@@ -1,0 +1,7 @@
+{
+  "name": "Astranov",
+  "description": "A decentralized-ready, AI-driven urban task and delivery platform with real-time map collaboration.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

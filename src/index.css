@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Space+Grotesk:wght@300;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --color-electric-blue: #00d2ff;
+  --color-deep-blue: #004e92;
+  
+  /* User's variables */
+  --color-panel: rgba(10, 14, 18, 0.92);
+  --color-stroke: rgba(87, 208, 255, 0.22);
+  --color-muted: rgba(255, 255, 255, 0.62);
+  --color-ok: #35f2a6;
+  --color-warn: #ffc63d;
+  --color-bad: #ff4d6d;
+}
+
+@layer utilities {
+  .glow-blue {
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+  }
+  .text-glow-blue {
+    text-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
+  }
+  .backdrop-blur-ribbon {
+    backdrop-filter: blur(8px);
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-black text-white antialiased selection:bg-electric-blue/30;
+  }
+}
+
+.pill-dot {
+  @apply w-2.5 h-2.5 rounded-full border-2 border-black/45 shadow-[0_8px_18px_rgba(0,0,0,0.45)];
+}
+
+.status-ok .pill-dot { @apply bg-ok; }
+.status-warn .pill-dot { @apply bg-warn; }
+.status-bad .pill-dot { @apply bg-bad; }
+
+.status-ok { @apply shadow-[0_0_0_1px_rgba(53,242,166,0.18)]; }
+.status-warn { @apply shadow-[0_0_0_1px_rgba(255,198,61,0.18)]; }
+.status-bad { @apply shadow-[0_0_0_1px_rgba(255,77,109,0.18)]; }
+
