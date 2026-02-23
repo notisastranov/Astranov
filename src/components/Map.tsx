@@ -194,10 +194,13 @@ export default function AstranovMap({ center, tasks, shops, users, onMapClick, o
           <div class="bg-black text-white p-3 rounded-xl font-sans min-w-[140px] border border-white/10 shadow-2xl">
             <p class="text-[10px] uppercase font-black text-electric-blue mb-1 tracking-widest">${task.type}</p>
             <p class="text-sm font-bold mb-2">${task.description}</p>
-            <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg">
+            <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg mb-2">
               <span class="text-[10px] text-white/40 uppercase">Offer</span>
               <span class="text-sm font-black text-ok">€${(task.price || 0).toFixed(2)}</span>
             </div>
+            ${userRole === 'deliverer' && task.status === 'pending_driver' ? 
+              `<button onclick="window.acceptTask('${task.id}')" class="w-full bg-electric-blue text-black font-black text-xs py-1.5 rounded-lg uppercase tracking-widest hover:bg-white transition-colors">Accept Task</button>` 
+              : ''}
           </div>
         `, { className: 'custom-popup' });
 

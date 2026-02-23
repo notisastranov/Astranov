@@ -4,7 +4,7 @@ import {
   X, Utensils, Coffee, ShoppingBag, Home, 
   Megaphone, Briefcase, Heart, Newspaper, 
   Store, Users, Truck, Globe, Settings,
-  CreditCard, FileText, BarChart3, Shield, Gamepad2, Bell
+  CreditCard, FileText, BarChart3, Shield, Gamepad2, Zap
 } from 'lucide-react';
 import StatusRibbon from './StatusRibbon';
 import { UserRole } from '../types';
@@ -25,9 +25,6 @@ interface CategoryDrawerProps {
   onRoleChange: (role: UserRole) => void;
   isVerifiedDriver: boolean;
   hasShop: boolean;
-  tasksCount: number;
-  hasNewTask: boolean;
-  onOpenTasks: () => void;
 }
 
 const CATEGORIES = [
@@ -46,6 +43,7 @@ const CATEGORIES = [
   { name: 'Invoices', icon: FileText, color: 'text-emerald-400' },
   { name: 'Analytics', icon: BarChart3, color: 'text-violet-400' },
   { name: 'Games', icon: Gamepad2, color: 'text-pink-500' },
+  { name: 'Simulation', icon: Zap, color: 'text-electric-blue' },
   { name: 'Settings', icon: Settings, color: 'text-zinc-500' },
 ];
 
@@ -53,7 +51,7 @@ export default function CategoryDrawer({
   isOpen, onClose, onSelectCategory, onSpawnWidget,
   balance, userName, userId, networkStatus, deviceInfo,
   onToggleStatus, isActive, currentRole, onRoleChange,
-  isVerifiedDriver, hasShop, tasksCount, hasNewTask, onOpenTasks
+  isVerifiedDriver, hasShop
 }: CategoryDrawerProps) {
   const [longPressTimer, setLongPressTimer] = React.useState<NodeJS.Timeout | null>(null);
 
@@ -87,18 +85,6 @@ export default function CategoryDrawer({
               <p className="text-white/40 text-[10px] uppercase tracking-widest">Select a service or long-press to pin</p>
             </div>
             <div className="flex items-center gap-2">
-              <button 
-                onClick={() => {
-                  onOpenTasks();
-                  onClose();
-                }}
-                className="relative w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <Bell className={`w-5 h-5 ${hasNewTask ? 'animate-bounce text-electric-blue' : ''}`} />
-                {tasksCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-electric-blue rounded-full shadow-[0_0_8px_#00d2ff]" />
-                )}
-              </button>
               <button onClick={onClose} className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
               </button>

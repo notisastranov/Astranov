@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bell, Menu, Truck, ShoppingBag, Store, X } from 'lucide-react';
 import Map from './components/Map';
 import AIInput from './components/AIInput';
-import TaskDrawer from './components/TaskDrawer';
 import VendorDashboard from './components/VendorDashboard';
 import ProductSearchModal from './components/ProductSearchModal';
 import RoleSelector from './components/RoleSelector';
@@ -26,7 +25,6 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [role, setRole] = useState<UserRole>('customer');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [isVendorDashboardOpen, setIsVendorDashboardOpen] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -254,7 +252,6 @@ export default function App() {
       if (msg.type === 'task_created') {
         setTasks(prev => [msg.data, ...prev]);
         setNewTaskId(msg.data.id);
-        setIsDrawerOpen(true);
         setLastReply(`New task: ${msg.data.description}`);
         try { new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3').play(); } catch(e) {}
         setTimeout(() => setNewTaskId(null), 5000);
@@ -350,7 +347,24 @@ export default function App() {
       body: JSON.stringify({ driverId: USER_ID })
     });
     setLastReply("Task accepted! The route is now visible on your map.");
+    // Close any open popups
+    const mapElement = document.querySelector('.leaflet-container');
+    if (mapElement) {
+      const clickEvent = new MouseEvent('click', {
+        view: window,
+        bubbles: true,
+        cancelable: true
+      });
+      mapElement.dispatchEvent(clickEvent);
+    }
   };
+
+  useEffect(() => {
+    (window as any).acceptTask = handleAcceptTask;
+    return () => {
+      delete (window as any).acceptTask;
+    };
+  }, []);
 
   const handleCommand = async (command: string) => {
     setIsLoading(true);
@@ -420,6 +434,8 @@ export default function App() {
   const handleCategorySelect = (category: string) => {
     if (category === 'Games') {
       setIsGamesModalOpen(true);
+    } else if (category === 'Simulation') {
+      handleDemo();
     } else if (category === 'Drivers') {
       handleRoleChange('deliverer');
     } else if (category === 'Shops') {
@@ -444,7 +460,6 @@ export default function App() {
       const task = tasks.find(t => t.id === id);
       if (task) {
         setNewTaskId(task.id);
-        setIsDrawerOpen(true);
         // Calculate route if driver
         if (role === 'deliverer') {
           setActiveRoute([
@@ -526,9 +541,6 @@ export default function App() {
             onRoleChange={handleRoleChange}
             isVerifiedDriver={!!currentUser?.is_verified_driver}
             hasShop={hasShop}
-            tasksCount={tasks.length}
-            hasNewTask={!!newTaskId}
-            onOpenTasks={() => setIsDrawerOpen(true)}
           />
         </div>
 
@@ -548,18 +560,6 @@ export default function App() {
           initialY={window.innerHeight / 2 - 50}
         />
       ))}
-
-      {/* Task Drawer */}
-      <TaskDrawer 
-        tasks={tasks} 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)} 
-        onAccept={handleAcceptTask}
-        onStartDemo={handleDemo}
-        newTaskId={newTaskId}
-        userRole={role}
-        isDemoMode={isDemoMode}
-      />
 
       {/* Vendor Dashboard */}
       {isVendorDashboardOpen && (
