@@ -30,6 +30,7 @@ export default function FloatingWidget({
       initial={{ x: initialX, y: initialY, opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       className="fixed z-[1500] pointer-events-auto cursor-grab active:cursor-grabbing"
+      style={{ top: 0, left: 0 }}
     >
       <div className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-electric-blue to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>

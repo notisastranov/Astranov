@@ -1,13 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  X, Utensils, Coffee, ShoppingBag, Home, 
-  Megaphone, Briefcase, Heart, Newspaper, 
-  Store, Users, Truck, Globe, Settings,
-  CreditCard, FileText, BarChart3, Shield, Gamepad2, Zap
-} from 'lucide-react';
+import { X, CreditCard, Shield } from 'lucide-react';
 import StatusRibbon from './StatusRibbon';
 import { UserRole } from '../types';
+import { CATEGORIES as INITIAL_CATEGORIES } from '../constants';
 
 interface CategoryDrawerProps {
   isOpen: boolean;
@@ -27,33 +23,61 @@ interface CategoryDrawerProps {
   hasShop: boolean;
 }
 
-const CATEGORIES = [
-  { name: 'Food', icon: Utensils, color: 'text-orange-400' },
-  { name: 'Drinks', icon: Coffee, color: 'text-yellow-400' },
-  { name: 'Supermarket', icon: ShoppingBag, color: 'text-green-400' },
-  { name: 'Real Estate', icon: Home, color: 'text-blue-400' },
-  { name: 'Ads', icon: Megaphone, color: 'text-purple-400' },
-  { name: 'Work', icon: Briefcase, color: 'text-zinc-400' },
-  { name: 'Dating', icon: Heart, color: 'text-pink-400' },
-  { name: 'News', icon: Newspaper, color: 'text-red-400' },
-  { name: 'Shops', icon: Store, color: 'text-indigo-400' },
-  { name: 'Team', icon: Users, color: 'text-cyan-400' },
-  { name: 'Drivers', icon: Truck, color: 'text-electric-blue' },
-  { name: 'Global', icon: Globe, color: 'text-white' },
-  { name: 'Invoices', icon: FileText, color: 'text-emerald-400' },
-  { name: 'Analytics', icon: BarChart3, color: 'text-violet-400' },
-  { name: 'Games', icon: Gamepad2, color: 'text-pink-500' },
-  { name: 'Simulation', icon: Zap, color: 'text-electric-blue' },
-  { name: 'Settings', icon: Settings, color: 'text-zinc-500' },
-];
-
 export default function CategoryDrawer({ 
   isOpen, onClose, onSelectCategory, onSpawnWidget,
   balance, userName, userId, networkStatus, deviceInfo,
   onToggleStatus, isActive, currentRole, onRoleChange,
   isVerifiedDriver, hasShop
 }: CategoryDrawerProps) {
-  const [longPressTimer, setLongPressTimer] = React.useState<NodeJS.Timeout | null>(null);
+  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+  const [draggedCat, setDraggedCat] = useState<string | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('astranov-categories');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const merged = parsed.map((p: any) => INITIAL_CATEGORIES.find(c => c.name === p.name)).filter(Boolean);
+        INITIAL_CATEGORIES.forEach(c => {
+          if (!merged.find((m: any) => m.name === c.name)) merged.push(c);
+        });
+        setCategories(merged);
+      } catch (e) {}
+    }
+  }, []);
+
+  const saveCategories = (cats: any[]) => {
+    setCategories(cats);
+    localStorage.setItem('astranov-categories', JSON.stringify(cats.map(c => ({ name: c.name }))));
+  };
+
+  const handleDragStart = (e: React.DragEvent, cat: any) => {
+    e.dataTransfer.setData('text/plain', cat.name);
+    setDraggedCat(cat.name);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetCat: any) => {
+    e.preventDefault();
+    if (!draggedCat || draggedCat === targetCat.name) return;
+    
+    const draggedIdx = categories.findIndex(c => c.name === draggedCat);
+    const targetIdx = categories.findIndex(c => c.name === targetCat.name);
+    
+    const newCats = [...categories];
+    const [removed] = newCats.splice(draggedIdx, 1);
+    newCats.splice(targetIdx, 0, removed);
+    setCategories(newCats);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedCat(null);
+    saveCategories(categories);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.stopPropagation();
+  };
 
   const handleTouchStart = (cat: any) => {
     const timer = setTimeout(() => {
@@ -108,21 +132,29 @@ export default function CategoryDrawer({
               />
             </div>
 
-            <div className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-              {CATEGORIES.map((cat) => (
+            <div 
+              className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4"
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              {categories.map((cat) => (
               <button
                 key={cat.name}
+                draggable
+                onDragStart={(e) => handleDragStart(e, cat)}
+                onDragOver={(e) => handleDragOver(e, cat)}
+                onDragEnd={handleDragEnd}
                 onClick={() => onSelectCategory?.(cat.name)}
                 onMouseDown={() => handleTouchStart(cat)}
                 onMouseUp={handleTouchEnd}
                 onMouseLeave={handleTouchEnd}
                 onTouchStart={() => handleTouchStart(cat)}
                 onTouchEnd={handleTouchEnd}
-                className="group relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border border-white/5 bg-white/5 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all active:scale-[0.98]"
+                className={`group relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border border-white/5 bg-white/5 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all active:scale-[0.98] cursor-grab active:cursor-grabbing ${draggedCat === cat.name ? 'opacity-50' : ''}`}
               >
-                <cat.icon className={`w-6 h-6 ${cat.color} group-hover:scale-110 transition-transform`} />
-                <span className="text-white text-[10px] uppercase tracking-widest font-black">{cat.name}</span>
-                <div className="absolute inset-0 rounded-2xl bg-electric-blue/0 group-hover:bg-electric-blue/5 transition-colors" />
+                <cat.icon className={`w-6 h-6 ${cat.color} group-hover:scale-110 transition-transform pointer-events-none`} />
+                <span className="text-white text-[10px] uppercase tracking-widest font-black pointer-events-none">{cat.name}</span>
+                <div className="absolute inset-0 rounded-2xl bg-electric-blue/0 group-hover:bg-electric-blue/5 transition-colors pointer-events-none" />
               </button>
             ))}
           </div>

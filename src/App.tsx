@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, Menu, Truck, ShoppingBag, Store, X } from 'lucide-react';
 import Map from './components/Map';
@@ -11,10 +11,13 @@ import ShopSetup from './components/ShopSetup';
 import StatusRibbon from './components/StatusRibbon';
 import CategoryDrawer from './components/CategoryDrawer';
 import GamesModal from './components/GamesModal';
+import RadarWidget from './components/RadarWidget';
 import { socketService } from './services/socket';
 import { processCommand } from './services/gemini';
 import FloatingWidget from './components/FloatingWidget';
 import { Task, User, UserRole, Product, Shop, Transaction } from './types';
+
+import { CATEGORIES } from './constants';
 
 const USER_ID = 'user-1';
 
@@ -28,6 +31,8 @@ export default function App() {
   const [isCategoryDrawerOpen, setIsCategoryDrawerOpen] = useState(false);
   const [isVendorDashboardOpen, setIsVendorDashboardOpen] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [isRadarOpen, setIsRadarOpen] = useState(false);
+  const [radarPosition, setRadarPosition] = useState({ x: window.innerWidth - 220, y: 80 });
 
   const handleDemo = useCallback(() => {
     setIsDemoMode(true);
@@ -436,6 +441,8 @@ export default function App() {
       setIsGamesModalOpen(true);
     } else if (category === 'Simulation') {
       handleDemo();
+    } else if (category === 'Radar') {
+      setIsRadarOpen(true);
     } else if (category === 'Drivers') {
       handleRoleChange('deliverer');
     } else if (category === 'Shops') {
@@ -447,8 +454,14 @@ export default function App() {
   };
 
   const handleSpawnWidget = (cat: any) => {
-    const id = `widget-${Date.now()}`;
-    setWidgets(prev => [...prev, { ...cat, id }]);
+    if (cat.name === 'Radar') {
+      setIsRadarOpen(true);
+      setIsCategoryDrawerOpen(false);
+    } else {
+      const id = `widget-${Date.now()}`;
+      setWidgets(prev => [...prev, { ...cat, id }]);
+      setIsCategoryDrawerOpen(false);
+    }
   };
 
   const removeWidget = (id: string) => {
@@ -477,6 +490,29 @@ export default function App() {
     }
   };
 
+  const handleDropOnMap = (e: React.DragEvent) => {
+    e.preventDefault();
+    const catName = e.dataTransfer.getData('text/plain');
+    if (catName) {
+      if (catName === 'Radar') {
+        setRadarPosition({ x: e.clientX - 96, y: e.clientY - 96 }); // 96 is half of 192px (w-48)
+        setIsRadarOpen(true);
+        setIsCategoryDrawerOpen(false);
+      } else {
+        const cat = CATEGORIES.find(c => c.name === catName);
+        if (cat) {
+          const id = `widget-${Date.now()}`;
+          setWidgets(prev => [...prev, { ...cat, id, initialX: e.clientX - 50, initialY: e.clientY - 50 }]);
+          setIsCategoryDrawerOpen(false);
+        }
+      }
+    }
+  };
+
+  const handleDragOverMap = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
   useEffect(() => {
     if (center.lat !== 40.7128 && isActive) {
       socketService.updateLocation(center.lat, center.lng, role);
@@ -484,7 +520,11 @@ export default function App() {
   }, [center, role, isActive]);
 
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden font-sans">
+    <div 
+      className="relative w-screen h-screen bg-black overflow-hidden font-sans"
+      onDrop={handleDropOnMap}
+      onDragOver={handleDragOverMap}
+    >
       {/* Background Map */}
       <div className="absolute inset-0 z-0">
         <Map 
@@ -560,6 +600,19 @@ export default function App() {
           initialY={window.innerHeight / 2 - 50}
         />
       ))}
+
+      {/* Radar Widget */}
+      {isRadarOpen && (
+        <RadarWidget 
+          onClose={() => setIsRadarOpen(false)}
+          center={center}
+          tasks={tasks}
+          users={users}
+          shops={shops}
+          initialX={radarPosition.x}
+          initialY={radarPosition.y}
+        />
+      )}
 
       {/* Vendor Dashboard */}
       {isVendorDashboardOpen && (
