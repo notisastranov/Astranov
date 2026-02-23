@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Menu, Truck, ShoppingBag, Store, X } from 'lucide-react';
+import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic } from 'lucide-react';
 import Map from './components/Map';
 import AIInput from './components/AIInput';
 import VendorDashboard from './components/VendorDashboard';
@@ -33,6 +33,7 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [isRadarOpen, setIsRadarOpen] = useState(false);
   const [radarPosition, setRadarPosition] = useState({ x: window.innerWidth - 220, y: 80 });
+  const [isListening, setIsListening] = useState(false);
 
   const handleDemo = useCallback(() => {
     setIsDemoMode(true);
@@ -513,6 +514,42 @@ export default function App() {
     e.preventDefault();
   };
 
+  const handleVoiceCommand = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setLastReply("Voice recognition is not supported in this browser.");
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setLastReply("Listening...");
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      handleCommand(transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error", event.error);
+      setLastReply("Sorry, I couldn't hear that.");
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
+
   useEffect(() => {
     if (center.lat !== 40.7128 && isActive) {
       socketService.updateLocation(center.lat, center.lng, role);
@@ -557,6 +594,12 @@ export default function App() {
                 inline={true}
               />
             </div>
+            <button 
+              onClick={handleVoiceCommand}
+              className={`w-11 h-11 shrink-0 rounded-xl border ${isListening ? 'border-red-500 bg-red-500/20 text-red-500 animate-pulse' : 'border-white/10 bg-white/5 text-white'} flex items-center justify-center hover:border-electric-blue/40 hover:bg-electric-blue/5 transition-all active:scale-[0.98]`}
+            >
+              <Mic className="w-5 h-5" />
+            </button>
             <button 
               onClick={() => setIsCategoryDrawerOpen(!isCategoryDrawerOpen)}
               className="w-11 h-11 shrink-0 rounded-xl border border-white/10 bg-white/5 text-white flex items-center justify-center hover:border-electric-blue/40 hover:bg-electric-blue/5 transition-all active:scale-[0.98]"
