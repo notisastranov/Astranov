@@ -9,10 +9,18 @@ interface ProductSearchModalProps {
 
 export default function ProductSearchModal({ products, onClose }: ProductSearchModalProps) {
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-6">
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-6"
+      onClick={() => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+      }}
+    >
       <motion.div 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
+        onClick={(e) => e.stopPropagation()}
         className="bg-zinc-900 border border-white/10 rounded-3xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col"
       >
         <div className="p-6 border-b border-white/5 flex justify-between items-center">
@@ -26,7 +34,14 @@ export default function ProductSearchModal({ products, onClose }: ProductSearchM
           {products.length === 0 ? (
             <div className="text-center py-20 text-white/20 italic">No products found for your search.</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div 
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+              onClick={() => {
+                if ('speechSynthesis' in window) {
+                  window.speechSynthesis.cancel();
+                }
+              }}
+            >
               {products.map(product => (
                 <div key={product.id} className="bg-zinc-800/50 border border-white/5 rounded-2xl overflow-hidden group">
                   <div className="aspect-square relative overflow-hidden">

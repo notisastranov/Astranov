@@ -23,6 +23,8 @@ interface StatusRibbonProps {
   onRoleChange: (role: UserRole) => void;
   isVerifiedDriver: boolean;
   hasShop: boolean;
+  onLoginClick?: () => void;
+  isAuthenticated: boolean;
 }
 
 export default function StatusRibbon({ 
@@ -36,7 +38,9 @@ export default function StatusRibbon({
   currentRole,
   onRoleChange,
   isVerifiedDriver,
-  hasShop
+  hasShop,
+  onLoginClick,
+  isAuthenticated
 }: StatusRibbonProps) {
   const [expandedPanel, setExpandedPanel] = useState<'device' | 'network' | 'balance' | 'user' | 'power' | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -149,65 +153,69 @@ export default function StatusRibbon({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="grid grid-cols-5 gap-1 sm:gap-2 p-2 sm:p-2.5 rounded-[22px] bg-gradient-to-b from-[rgba(10,14,18,0.92)] to-[rgba(10,14,18,0.55)] border border-white/10 shadow-2xl backdrop-blur-ribbon">
+      <div className="grid grid-cols-5 gap-2 p-3 rounded-[32px] bg-black/40 border border-white/10 shadow-2xl backdrop-blur-xl">
         {/* Device */}
         <button 
           onClick={() => handlePanelToggle('device')}
-          className={`pill flex items-center justify-center sm:justify-start ${expandedPanel === 'device' ? 'bg-electric-blue/20 border-electric-blue/40' : 'status-ok'} group`}
+          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-[0.95] group ${
+            expandedPanel === 'device' ? 'bg-electric-blue/20 border-electric-blue/40 shadow-[0_0_15px_rgba(0,210,255,0.3)]' : 'bg-emerald-500/5 border-emerald-500/20'
+          }`}
         >
-          <Monitor className="w-4 h-4 text-white/60 group-hover:text-white transition-colors shrink-0" />
-          <span className="text-[11px] uppercase tracking-widest font-black whitespace-nowrap hidden lg:inline">
-            Device
-          </span>
-          <div className="pill-dot shrink-0" />
+          <Monitor className={`w-6 h-6 ${expandedPanel === 'device' ? 'text-electric-blue' : 'text-emerald-500'} group-hover:scale-110 transition-transform`} />
+          <span className="text-[8px] uppercase tracking-[0.2em] font-black text-white/60">Device</span>
         </button>
 
         {/* Network */}
         <button 
           onClick={() => handlePanelToggle('network')}
-          className={`pill flex items-center justify-center sm:justify-start ${expandedPanel === 'network' ? 'bg-electric-blue/20 border-electric-blue/40' : `status-${networkStatus}`} group`}
+          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-[0.95] group ${
+            expandedPanel === 'network' ? 'bg-electric-blue/20 border-electric-blue/40 shadow-[0_0_15px_rgba(0,210,255,0.3)]' : 
+            networkStatus === 'ok' ? 'bg-emerald-500/5 border-emerald-500/20' : 
+            networkStatus === 'warn' ? 'bg-yellow-500/5 border-yellow-500/20' : 
+            'bg-red-500/5 border-red-500/20'
+          }`}
         >
-          <Radio className="w-4 h-4 text-white/60 group-hover:text-white transition-colors shrink-0" />
-          <span className="text-[11px] uppercase tracking-widest font-black whitespace-nowrap hidden lg:inline">
-            Network
-          </span>
-          <div className="pill-dot shrink-0" />
+          <Radio className={`w-6 h-6 ${
+            networkStatus === 'ok' ? 'text-emerald-500' : 
+            networkStatus === 'warn' ? 'text-yellow-500' : 
+            'text-red-500'
+          } group-hover:scale-110 transition-transform`} />
+          <span className="text-[8px] uppercase tracking-[0.2em] font-black text-white/60">Net</span>
         </button>
 
-        {/* User (Central) */}
+        {/* User */}
         <button 
-          onClick={() => handlePanelToggle('user')}
-          className={`pill flex items-center justify-center sm:justify-start ${expandedPanel === 'user' ? 'bg-electric-blue/20 border-electric-blue/40' : 'status-warn'} group`}
+          onClick={() => isAuthenticated ? handlePanelToggle('user') : onLoginClick?.()}
+          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-[0.95] group ${
+            expandedPanel === 'user' ? 'bg-electric-blue/20 border-electric-blue/40 shadow-[0_0_15px_rgba(0,210,255,0.3)]' : 
+            isAuthenticated ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'
+          }`}
         >
-          <UserIcon className="w-4 h-4 text-white/60 group-hover:text-white transition-colors shrink-0" />
-          <span className="text-[11px] uppercase tracking-widest font-black whitespace-nowrap hidden lg:inline">
-            {userName}
-          </span>
-          <div className="pill-dot shrink-0" />
+          <UserIcon className={`w-6 h-6 ${isAuthenticated ? 'text-emerald-500' : 'text-red-500'} group-hover:scale-110 transition-transform`} />
+          <span className="text-[8px] uppercase tracking-[0.2em] font-black text-white/60">Auth</span>
         </button>
 
         {/* Economy */}
         <button 
           onClick={() => handlePanelToggle('balance')}
-          className={`pill flex items-center justify-center sm:justify-start ${expandedPanel === 'balance' ? 'bg-electric-blue/20 border-electric-blue/40' : 'status-warn'} group`}
+          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-[0.95] group ${
+            expandedPanel === 'balance' ? 'bg-electric-blue/20 border-electric-blue/40 shadow-[0_0_15px_rgba(0,210,255,0.3)]' : 'bg-yellow-500/5 border-yellow-500/20'
+          }`}
         >
-          <Euro className="w-4 h-4 text-white/60 group-hover:text-white transition-colors shrink-0" />
-          <span className="text-[11px] uppercase tracking-widest font-black whitespace-nowrap hidden lg:inline">
-            {(balance || 0).toFixed(2)} €
-          </span>
-          <div className="pill-dot shrink-0" />
+          <Euro className="w-6 h-6 text-yellow-500 group-hover:scale-110 transition-transform" />
+          <span className="text-[8px] uppercase tracking-[0.2em] font-black text-white/60">Eco</span>
         </button>
 
-        {/* Power / Demo */}
+        {/* Power */}
         <button 
           onClick={() => handlePanelToggle('power')}
-          className={`pill flex items-center justify-center sm:justify-start ${expandedPanel === 'power' ? 'bg-electric-blue/20 border-electric-blue/40' : (isActive ? 'status-ok' : 'status-bad')} group`}
+          className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all active:scale-[0.95] group ${
+            expandedPanel === 'power' ? 'bg-electric-blue/20 border-electric-blue/40 shadow-[0_0_15px_rgba(0,210,255,0.3)]' : 
+            isActive ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'
+          }`}
         >
-          <Power className={`w-4 h-4 shrink-0 ${isActive ? 'text-ok' : 'text-bad'}`} />
-          <span className="text-[11px] font-black uppercase tracking-widest hidden lg:inline">
-            Power
-          </span>
-          <div className="pill-dot shrink-0" />
+          <Power className={`w-6 h-6 ${isActive ? 'text-emerald-500' : 'text-red-500'} group-hover:scale-110 transition-transform`} />
+          <span className="text-[8px] uppercase tracking-[0.2em] font-black text-white/60">Pwr</span>
         </button>
       </div>
 
@@ -326,7 +334,7 @@ export default function StatusRibbon({
                               <p className="text-[10px] text-white/40">{new Date(tx.timestamp).toLocaleDateString()}</p>
                             </div>
                             <span className={`text-xs font-mono font-bold ${tx.type === 'deposit' || tx.type === 'earnings' ? 'text-ok' : 'text-bad'}`}>
-                              {tx.type === 'deposit' || tx.type === 'earnings' ? '+' : '-'}{tx.amount.toFixed(2)} €
+                              {tx.type === 'deposit' || tx.type === 'earnings' ? '+' : '-'}{(tx.amount ?? 0).toFixed(2)} €
                             </span>
                           </div>
                         ))
@@ -386,7 +394,7 @@ export default function StatusRibbon({
               )}
               {expandedPanel === 'power' && (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <PowerButton 
                       icon={<Power />} 
                       label="On" 
@@ -407,21 +415,11 @@ export default function StatusRibbon({
                       color="text-warn" 
                       onClick={() => window.location.reload()} 
                     />
-                    <PowerButton 
-                      icon={<Play />} 
-                      label="Demo" 
-                      color="text-electric-blue" 
-                      onClick={() => {
-                        setExpandedPanel(null);
-                        // Demo logic in App.tsx will handle this via event or prop
-                        window.dispatchEvent(new CustomEvent('astranov-demo'));
-                      }} 
-                    />
                   </div>
                   <div className="p-4 bg-white/5 rounded-xl border border-white/5">
                     <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">System Status</p>
                     <p className="text-xs font-bold text-white">
-                      {isActive ? 'All systems operational. Ready for deployment.' : 'System standby. Manual activation required.'}
+                      {isActive ? 'All systems operational. Ready for use.' : 'System standby. Manual activation required.'}
                     </p>
                   </div>
                 </div>

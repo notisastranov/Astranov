@@ -25,6 +25,10 @@ class SocketService {
     };
   }
 
+  isConnected() {
+    return this.socket?.readyState === WebSocket.OPEN;
+  }
+
   send(data: any) {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(data));

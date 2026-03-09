@@ -1,4 +1,112 @@
-export type UserRole = 'customer' | 'deliverer' | 'vendor' | 'admin';
+export type UserRole = 'user' | 'deliverer' | 'vendor' | 'admin' | 'supervisor' | 'owner' | 'operator';
+
+export type HudRegion = 'top' | 'left' | 'right' | 'bottom';
+
+export interface HudButtonConfig {
+  id: string;
+  label: string;
+  icon: string; // Lucide icon name
+  region: HudRegion;
+  order: number;
+  enabled: boolean;
+  status?: 'healthy' | 'warning' | 'problem' | 'finance';
+  data?: string; // Embedded info
+}
+
+export interface UiPreferences {
+  userId: string;
+  buttons: HudButtonConfig[];
+  theme: 'dark' | 'light' | 'space';
+}
+
+export type OperatorCommandType = 'live_config_update' | 'ui_layout_update' | 'code_patch_request' | 'deployment_request';
+
+export interface OperatorCommand {
+  id: string;
+  timestamp: number;
+  actor: string;
+  role: UserRole;
+  command: string;
+  type: OperatorCommandType;
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'failed';
+  result?: string;
+  targetArea?: string;
+}
+
+export interface ChangeRequest {
+  id: string;
+  type: 'feature' | 'fix' | 'config' | 'layout';
+  description: string;
+  status: 'draft' | 'submitted' | 'review' | 'approved' | 'merged' | 'rejected';
+  creatorId: string;
+  createdAt: number;
+}
+
+export interface FeatureFlag {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  environment: 'dev' | 'staging' | 'prod';
+}
+
+export interface ConfigValue {
+  key: string;
+  value: any;
+  description: string;
+  updatedAt: number;
+}
+
+export interface DeploymentRequest {
+  id: string;
+  environment: 'staging' | 'production';
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  version: string;
+  requestedBy: string;
+  timestamp: number;
+}
+
+export interface PatchRequest {
+  id: string;
+  title: string;
+  description: string;
+  status: 'open' | 'applied' | 'rejected';
+  codeChanges?: string; // Diff or patch content
+  createdAt: number;
+}
+
+export interface AuditLog {
+  id: string;
+  timestamp: number;
+  actor: string;
+  action: string;
+  details: any;
+}
+
+export interface RepoSyncRequest {
+  id: string;
+  repo: string;
+  branch: string;
+  status: 'pending' | 'syncing' | 'completed' | 'failed';
+  requestedBy: string;
+  timestamp: number;
+}
+
+export interface PatchArtifact {
+  id: string;
+  name: string;
+  content: string;
+  type: 'frontend' | 'backend' | 'config';
+  createdAt: number;
+}
+
+export interface ReleaseRequest {
+  id: string;
+  version: string;
+  notes: string;
+  status: 'draft' | 'released';
+  createdAt: number;
+}
 
 export interface User {
   id: string;
@@ -10,6 +118,7 @@ export interface User {
   vehicle_details?: string;
   insurance_info?: string;
   is_verified_driver?: boolean;
+  accepted_terms_at?: string;
   team_id?: string;
 }
 
@@ -90,6 +199,21 @@ export interface Product {
   available: boolean;
   description: string;
   stock: number;
+}
+
+export interface Publication {
+  id: string;
+  user_id: string;
+  user_name: string;
+  type: 'video' | 'image' | 'text';
+  content_url?: string;
+  thumbnail_url?: string;
+  description: string;
+  lat: number;
+  lng: number;
+  timestamp: string;
+  likes: number;
+  views: number;
 }
 
 export type SocketMessage = 

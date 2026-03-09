@@ -79,7 +79,7 @@ export default function DriverSetup({ onComplete, onCancel }: DriverSetupProps) 
                     required 
                     value={details.vehicle}
                     onChange={e => setDetails({...details, vehicle: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-electric-blue/50 transition-all"
+                    className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-electric-blue/50 transition-all"
                     placeholder="e.g. Tesla Model 3 - ABC 123"
                   />
                 </div>
@@ -89,7 +89,7 @@ export default function DriverSetup({ onComplete, onCancel }: DriverSetupProps) 
                     required 
                     value={details.insurance}
                     onChange={e => setDetails({...details, insurance: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-electric-blue/50 transition-all"
+                    className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-electric-blue/50 transition-all"
                     placeholder="e.g. POL-99887766"
                   />
                 </div>

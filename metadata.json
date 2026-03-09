@@ -1,7 +1,10 @@
 {
   "name": "Astranov",
-  "description": "A decentralized-ready, AI-driven urban task and delivery platform with real-time map collaboration.",
+  "description": "A decentralized-ready, AI-driven urban task and delivery platform with real-time map collaboration and a complete Greece-compliant fintech architecture (myDATA, ELP).",
   "requestFramePermissions": [
-    "geolocation"
+    "geolocation",
+    "microphone",
+    "notifications",
+    "screen-wake-lock"
   ]
 }

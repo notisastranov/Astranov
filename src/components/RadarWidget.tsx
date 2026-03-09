@@ -1,30 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'motion/react';
-import { X, Radar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, useDragControls, useMotionValue } from 'motion/react';
+import { X, ChevronUp, ChevronDown, GripHorizontal } from 'lucide-react';
 import { Task, User, Shop } from '../types';
 
 interface RadarWidgetProps {
-  onClose: () => void;
-  center: { lat: number; lng: number };
   tasks: Task[];
   users: User[];
   shops: Shop[];
-  initialX?: number;
-  initialY?: number;
+  center: { lat: number; lng: number };
+  onClose: () => void;
 }
 
-export default function RadarWidget({
-  onClose,
-  center,
-  tasks,
-  users,
-  shops,
-  initialX = 20,
-  initialY = 100
-}: RadarWidgetProps) {
+export default function RadarWidget({ tasks, users, shops, center, onClose }: RadarWidgetProps) {
   const [rotation, setRotation] = useState(0);
+  const [heading, setHeading] = useState(0); // Compass heading in degrees
+  
+  // Load persisted state
+  const savedState = JSON.parse(localStorage.getItem('astranov_radar_state') || '{}');
+  const [size, setSize] = useState(savedState.size || 320);
+  
+  const dragControls = useDragControls();
+  const x = useMotionValue(savedState.x ?? (window.innerWidth - (savedState.size || 320) - 24));
+  const y = useMotionValue(savedState.y ?? (window.innerHeight - (savedState.size || 320) - 24));
 
-  // Radar sweep animation
+  // Persist size changes
+  useEffect(() => {
+    const currentState = JSON.parse(localStorage.getItem('astranov_radar_state') || '{}');
+    localStorage.setItem('astranov_radar_state', JSON.stringify({
+      ...currentState,
+      size,
+      x: x.get(),
+      y: y.get()
+    }));
+  }, [size]);
+
+  const handleDragEnd = () => {
+    const currentState = JSON.parse(localStorage.getItem('astranov_radar_state') || '{}');
+    localStorage.setItem('astranov_radar_state', JSON.stringify({
+      ...currentState,
+      x: x.get(),
+      y: y.get()
+    }));
+  };
+
   useEffect(() => {
     let animationFrameId: number;
     const animate = () => {
@@ -35,104 +53,148 @@ export default function RadarWidget({
     return () => cancelAnimationFrame(animationFrameId);
   }, []);
 
-  // Calculate position relative to center
-  // Radar radius in degrees (approx 5km)
   const RADAR_RADIUS = 0.05; 
-
   const getRelativePosition = (lat: number, lng: number) => {
     const dLat = lat - center.lat;
     const dLng = lng - center.lng;
-    
-    // Distance from center
     const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-    
-    // If outside radar, clamp to edge
     let normalizedDist = dist / RADAR_RADIUS;
     if (normalizedDist > 1) normalizedDist = 1;
-
-    // Angle
-    const angle = Math.atan2(dLng, dLat);
-
-    // Map to 0-100% for CSS top/left
-    // Center is 50%, 50%
+    
+    // Adjust angle by heading for the entities
+    const angle = Math.atan2(dLng, dLat) - (heading * Math.PI / 180);
+    
     const x = 50 + (Math.sin(angle) * normalizedDist * 50);
-    const y = 50 - (Math.cos(angle) * normalizedDist * 50); // - because top is 0
-
+    const y = 50 - (Math.cos(angle) * normalizedDist * 50);
     return { left: `${x}%`, top: `${y}%` };
   };
+
+  const compassPoints = [
+    { label: 'N', angle: 0 },
+    { label: 'E', angle: 90 },
+    { label: 'S', angle: 180 },
+    { label: 'W', angle: 270 },
+  ];
 
   return (
     <motion.div
       drag
       dragMomentum={false}
-      initial={{ x: initialX, y: initialY, opacity: 0, scale: 0.8 }}
+      onDragEnd={handleDragEnd}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="fixed z-[1500] pointer-events-auto cursor-grab active:cursor-grabbing"
-      style={{ top: 0, left: 0 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      className="fixed top-0 left-0 z-[2000] pointer-events-auto cursor-move group"
+      style={{ width: size, height: size, x, y }}
     >
-      <div className="relative group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-electric-blue to-green-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-        <div className="relative flex flex-col items-center p-4 bg-zinc-900/90 border border-white/10 rounded-full backdrop-blur-xl shadow-2xl w-48 h-48">
-          <button 
-            onClick={onClose}
-            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-bad/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
-          >
-            <X className="w-3 h-3" />
-          </button>
-          
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[9px] font-black uppercase tracking-widest text-electric-blue z-20 bg-black/50 px-2 py-0.5 rounded-full">
-            Radar
-          </div>
-
-          {/* Radar Background */}
-          <div className="absolute inset-4 rounded-full border border-electric-blue/30 bg-black overflow-hidden">
-            {/* Grid lines */}
-            <div className="absolute inset-0 border border-electric-blue/20 rounded-full m-4"></div>
-            <div className="absolute inset-0 border border-electric-blue/20 rounded-full m-8"></div>
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-electric-blue/20"></div>
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-electric-blue/20"></div>
-
-            {/* Sweep */}
+      {/* Outer Compass Ring */}
+      <div className="absolute inset-0 rounded-full border-2 border-electric-blue/30 shadow-[0_0_20px_rgba(0,210,255,0.2)]">
+        <div 
+          className="absolute inset-0 transition-transform duration-300 ease-out"
+          style={{ transform: `rotate(${-heading}deg)` }}
+        >
+          {compassPoints.map(p => (
             <div 
-              className="absolute top-1/2 left-1/2 w-1/2 h-1/2 origin-top-left border-l border-electric-blue/80"
-              style={{ 
-                transform: `rotate(${rotation}deg)`,
-                background: 'conic-gradient(from 180deg at 0 0, transparent 0deg, rgba(0, 210, 255, 0.4) 90deg, transparent 90deg)'
-              }}
-            ></div>
-
-            {/* Center dot (Me) */}
-            <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full bg-white shadow-[0_0_5px_#fff] z-10"></div>
-
-            {/* Tasks */}
-            {tasks.filter(t => t.status !== 'completed').map(task => (
-              <div 
-                key={task.id}
-                className="absolute w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full bg-yellow-400 shadow-[0_0_5px_#facc15]"
-                style={getRelativePosition(task.lat, task.lng)}
-              ></div>
-            ))}
-
-            {/* Shops */}
-            {shops.map(shop => (
-              <div 
-                key={shop.id}
-                className="absolute w-1.5 h-1.5 -ml-[3px] -mt-[3px] rounded-full bg-purple-500 shadow-[0_0_5px_#a855f7]"
-                style={getRelativePosition(shop.lat, shop.lng)}
-              ></div>
-            ))}
-
-            {/* Users */}
-            {users.map(user => (
-              <div 
-                key={user.id}
-                className={`absolute w-1 h-1 -ml-[2px] -mt-[2px] rounded-full ${user.role === 'deliverer' ? 'bg-electric-blue shadow-[0_0_5px_#00d2ff]' : 'bg-zinc-400'}`}
-                style={getRelativePosition(user.lat, user.lng)}
-              ></div>
-            ))}
-          </div>
+              key={p.label}
+              className="absolute top-0 left-1/2 -translate-x-1/2 h-full flex flex-col items-center"
+              style={{ transform: `rotate(${p.angle}deg)` }}
+            >
+              <span className={`text-[11px] font-black mt-0.5 select-none ${p.label === 'N' ? 'text-red-500' : 'text-white/80'}`}>
+                {p.label}
+              </span>
+              <div className={`w-0.5 h-1.5 ${p.label === 'N' ? 'bg-red-500' : 'bg-white/40'} mt-0.5`} />
+            </div>
+          ))}
+          
+          {/* Degree Ticks */}
+          {[...Array(24)].map((_, i) => (
+            <div 
+              key={i}
+              className="absolute top-0 left-1/2 -translate-x-1/2 h-full"
+              style={{ transform: `rotate(${i * 15}deg)` }}
+            >
+              <div className={`w-px ${i % 2 === 0 ? 'h-1.5 bg-white/20' : 'h-1 bg-white/10'} mt-4`} />
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Internal Radar Content */}
+      <div className="absolute inset-6 rounded-full bg-black/40 backdrop-blur-md overflow-hidden border border-white/10">
+        {/* Rotating Grid & Sweep */}
+        <div 
+          className="absolute inset-0 transition-transform duration-300 ease-out"
+          style={{ transform: `rotate(${-heading}deg)` }}
+        >
+          {/* Grid Lines */}
+          <div className="absolute inset-0 border border-electric-blue/10 rounded-full m-[15%]"></div>
+          <div className="absolute inset-0 border border-electric-blue/10 rounded-full m-[30%]"></div>
+          <div className="absolute top-1/2 left-0 right-0 h-px bg-electric-blue/10"></div>
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-electric-blue/10"></div>
+
+          {/* Sweep */}
+          <div 
+            className="absolute top-1/2 left-1/2 w-1/2 h-1/2 origin-top-left border-l border-electric-blue/60 z-10"
+            style={{ 
+              transform: `rotate(${rotation}deg)`,
+              background: 'conic-gradient(from 180deg at 0 0, transparent 0deg, rgba(0, 210, 255, 0.2) 90deg, transparent 90deg)'
+            }}
+          />
+        </div>
+
+        {/* Entities (Dots) - Adjusted for heading */}
+        <div className="absolute inset-0 pointer-events-none">
+          {tasks.filter(t => t.status !== 'completed').map(task => (
+            <div key={task.id} className="absolute w-1.5 h-1.5 -ml-0.75 -mt-0.75 rounded-full bg-yellow-400 shadow-[0_0_8px_#facc15] z-20 animate-pulse" style={getRelativePosition(task.lat, task.lng)} />
+          ))}
+          {shops.map(shop => (
+            <div key={shop.id} className="absolute w-1.5 h-1.5 -ml-0.75 -mt-0.75 rounded-full bg-purple-500 shadow-[0_0_8px_#a855f7] z-20" style={getRelativePosition(shop.lat, shop.lng)} />
+          ))}
+          {users.map(user => (
+            <div key={user.id} className={`absolute w-1 h-1 -ml-0.5 -mt-0.5 rounded-full z-20 ${user.role === 'deliverer' ? 'bg-electric-blue shadow-[0_0_8px_#00d2ff]' : 'bg-zinc-500'}`} style={getRelativePosition(user.lat, user.lng)} />
+          ))}
+        </div>
+
+        {/* Center (User) */}
+        <div className="absolute top-1/2 left-1/2 w-2 h-2 -ml-1 -mt-1 rounded-full bg-white shadow-[0_0_10px_#fff] z-30" />
+      </div>
+
+      {/* Subtle Close Button */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); onClose(); }}
+        className="absolute -top-2 -right-2 w-6 h-6 bg-black/60 border border-white/10 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-red-500/40 transition-all opacity-0 group-hover:opacity-100 z-[2100]"
+      >
+        <X className="w-3 h-3" />
+      </button>
+
+      {/* Heading Control (Invisible overlay to rotate compass with scroll or specific gesture) */}
+      <div 
+        className="absolute inset-0 rounded-full z-[2050]"
+        onWheel={(e) => {
+          setHeading(prev => (prev + e.deltaY * 0.1) % 360);
+        }}
+      />
+
+      {/* Resize Handle */}
+      <div 
+        className="absolute bottom-0 right-0 w-6 h-6 cursor-se-resize bg-electric-blue/40 rounded-tl-full z-[2100] opacity-0 group-hover:opacity-100"
+        onPointerDownCapture={(e) => e.stopPropagation()}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          const startX = e.clientX;
+          const startSize = size;
+          const onMouseMove = (moveEvent: MouseEvent) => {
+            const newSize = Math.max(100, Math.min(500, startSize + (moveEvent.clientX - startX)));
+            setSize(newSize);
+          };
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        }}
+      />
     </motion.div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CreditCard, Shield } from 'lucide-react';
+import { X, CreditCard, Shield, ArrowUpRight, Menu, Power, Settings, Gamepad2 } from 'lucide-react';
 import StatusRibbon from './StatusRibbon';
 import { UserRole } from '../types';
 import { CATEGORIES as INITIAL_CATEGORIES } from '../constants';
@@ -21,13 +21,19 @@ interface CategoryDrawerProps {
   onRoleChange: (role: UserRole) => void;
   isVerifiedDriver: boolean;
   hasShop: boolean;
+  onLoginClick?: () => void;
+  onComplianceClick?: () => void;
+  onSettingsClick?: () => void;
+  onGamesClick?: () => void;
+  isAuthenticated: boolean;
 }
 
 export default function CategoryDrawer({ 
   isOpen, onClose, onSelectCategory, onSpawnWidget,
   balance, userName, userId, networkStatus, deviceInfo,
   onToggleStatus, isActive, currentRole, onRoleChange,
-  isVerifiedDriver, hasShop
+  isVerifiedDriver, hasShop, onLoginClick, onComplianceClick,
+  onSettingsClick, onGamesClick, isAuthenticated
 }: CategoryDrawerProps) {
   const [categories, setCategories] = useState(INITIAL_CATEGORIES);
   const [draggedCat, setDraggedCat] = useState<string | null>(null);
@@ -97,78 +103,76 @@ export default function CategoryDrawer({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: -10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.98 }}
-          className="w-full rounded-[32px] bg-zinc-900/95 border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden backdrop-blur-2xl flex flex-col max-h-[80vh]"
-        >
-          <div className="p-4 sm:p-6 flex justify-between items-center border-b border-white/5 shrink-0">
-            <div>
-              <h3 className="text-white font-black text-lg uppercase tracking-[0.2em] italic">Astranov</h3>
-              <p className="text-white/40 text-[10px] uppercase tracking-widest">Select a service or long-press to pin</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={onClose} className="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+        <div className="fixed inset-0 z-[2000] pointer-events-none">
+          {/* Backdrop */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const catName = e.dataTransfer.getData('text/plain');
+              if (catName) {
+                const cat = INITIAL_CATEGORIES.find(c => c.name === catName);
+                if (cat) {
+                  onSpawnWidget?.(cat);
+                  onClose();
+                }
+              }
+            }}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto"
+          />
+
+          {/* Side Drawer */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="absolute top-0 right-0 bottom-0 w-full sm:w-[450px] bg-zinc-900/90 border-l border-white/10 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl flex flex-col pointer-events-auto"
+          >
+            {/* Header */}
+            <div className="p-6 sm:p-8 flex justify-between items-center border-b border-white/5 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-electric-blue/20 flex items-center justify-center text-electric-blue">
+                  <Menu className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white uppercase tracking-widest italic">Astranov</h2>
+                  <p className="text-[10px] text-white/40 uppercase tracking-[0.2em]">System Center</p>
+                </div>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-          </div>
 
-          <div className="overflow-y-auto custom-scrollbar flex-1">
-            <div className="p-4 sm:p-6 border-b border-white/5">
-              <StatusRibbon 
-                balance={balance}
-                userName={userName}
-                userId={userId}
-                networkStatus={networkStatus}
-                deviceInfo={deviceInfo}
-                onToggleStatus={onToggleStatus}
-                isActive={isActive}
-                currentRole={currentRole}
-                onRoleChange={onRoleChange}
-                isVerifiedDriver={isVerifiedDriver}
-                hasShop={hasShop}
-              />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-8 space-y-8">
+              {/* Categories / Widgets */}
+              <section className="space-y-4">
+                <h3 className="text-[10px] uppercase font-black tracking-[0.3em] text-white/20">Available Modules</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.map(cat => (
+                    <button 
+                      key={cat.name}
+                      onClick={() => { onSpawnWidget?.(cat); onClose(); }}
+                      className="group relative flex flex-col items-center justify-center gap-3 p-8 rounded-3xl border border-white/10 bg-white/5 hover:border-electric-blue/40 hover:bg-electric-blue/5 transition-all active:scale-[0.98]"
+                    >
+                      <cat.icon className="w-8 h-8 text-white/60 group-hover:text-white transition-colors" />
+                      <span className="text-white text-[12px] uppercase tracking-widest font-black">{cat.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
             </div>
-
-            <div 
-              className="p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4"
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-            >
-              {categories.map((cat) => (
-              <button
-                key={cat.name}
-                draggable
-                onDragStart={(e) => handleDragStart(e, cat)}
-                onDragOver={(e) => handleDragOver(e, cat)}
-                onDragEnd={handleDragEnd}
-                onClick={() => onSelectCategory?.(cat.name)}
-                onMouseDown={() => handleTouchStart(cat)}
-                onMouseUp={handleTouchEnd}
-                onMouseLeave={handleTouchEnd}
-                onTouchStart={() => handleTouchStart(cat)}
-                onTouchEnd={handleTouchEnd}
-                className={`group relative flex flex-col items-center justify-center gap-3 p-4 rounded-2xl border border-white/5 bg-white/5 hover:border-electric-blue/30 hover:bg-electric-blue/5 transition-all active:scale-[0.98] cursor-grab active:cursor-grabbing ${draggedCat === cat.name ? 'opacity-50' : ''}`}
-              >
-                <cat.icon className={`w-6 h-6 ${cat.color} group-hover:scale-110 transition-transform pointer-events-none`} />
-                <span className="text-white text-[10px] uppercase tracking-widest font-black pointer-events-none">{cat.name}</span>
-                <div className="absolute inset-0 rounded-2xl bg-electric-blue/0 group-hover:bg-electric-blue/5 transition-colors pointer-events-none" />
-              </button>
-            ))}
-          </div>
-
-          <div className="p-4 sm:p-6 flex gap-3 sm:gap-4 border-t border-white/5 bg-black/20 shrink-0">
-              <button className="flex-1 h-12 rounded-xl border border-white/10 bg-white/5 text-white text-[10px] uppercase tracking-widest font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                <CreditCard className="w-4 h-4" /> Billing
-              </button>
-              <button className="flex-1 h-12 rounded-xl border border-white/10 bg-white/5 text-white text-[10px] uppercase tracking-widest font-black hover:bg-white/10 transition-all flex items-center justify-center gap-2">
-                <Shield className="w-4 h-4" /> Security
-              </button>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       )}
     </AnimatePresence>
   );

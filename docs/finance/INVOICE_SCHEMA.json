@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Astranov Compliance Invoice",
+  "type": "object",
+  "properties": {
+    "header": {
+      "type": "object",
+      "properties": {
+        "series": { "type": "string" },
+        "number": { "type": "integer" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "enum": ["INVOICE", "RECEIPT", "CREDIT_NOTE"] }
+      },
+      "required": ["series", "number", "date", "type"]
+    },
+    "issuer": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tax_id": { "type": "string" },
+        "address": { "type": "string" },
+        "is_self_billing": { "type": "boolean" }
+      },
+      "required": ["name", "tax_id"]
+    },
+    "recipient": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tax_id": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "net_amount": { "type": "number" },
+          "vat_rate": { "type": "number" },
+          "vat_amount": { "type": "number" }
+        },
+        "required": ["description", "net_amount", "vat_rate", "vat_amount"]
+      }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "total_net": { "type": "number" },
+        "total_vat": { "type": "number" },
+        "total_gross": { "type": "number" }
+      },
+      "required": ["total_net", "total_vat", "total_gross"]
+    },
+    "compliance": {
+      "type": "object",
+      "properties": {
+        "mydata_mark": { "type": "string" },
+        "qr_code_url": { "type": "string" },
+        "legal_wording": { "type": "string" }
+      }
+    }
+  },
+  "required": ["header", "issuer", "recipient", "items", "totals"]
+}

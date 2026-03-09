@@ -44,7 +44,10 @@ export default function GamesModal({ isOpen, onClose }: GamesModalProps) {
                   <p className="text-white/40 text-xs uppercase tracking-widest">Earn bonus credits through challenges</p>
                 </div>
               </div>
-              <button onClick={onClose} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+              <button onClick={() => {
+                setActiveGame(null);
+                onClose();
+              }} className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors pointer-events-auto">
                 <X className="w-6 h-6" />
               </button>
             </div>

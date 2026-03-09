@@ -56,7 +56,7 @@ export default function ShopSetup({ onComplete, onCancel }: ShopSetupProps) {
                 required 
                 value={details.name}
                 onChange={e => setDetails({...details, name: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
+                className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
                 placeholder="e.g. The Galactic Bakery"
               />
             </div>
@@ -67,7 +67,7 @@ export default function ShopSetup({ onComplete, onCancel }: ShopSetupProps) {
                 rows={3}
                 value={details.description}
                 onChange={e => setDetails({...details, description: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all resize-none"
+                className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl px-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all resize-none"
                 placeholder="What do you sell?"
               />
             </div>
@@ -81,7 +81,7 @@ export default function ShopSetup({ onComplete, onCancel }: ShopSetupProps) {
                     required 
                     value={details.open}
                     onChange={e => setDetails({...details, open: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
+                    className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
                   />
                 </div>
               </div>
@@ -94,7 +94,7 @@ export default function ShopSetup({ onComplete, onCancel }: ShopSetupProps) {
                     required 
                     value={details.close}
                     onChange={e => setDetails({...details, close: e.target.value})}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
+                    className="w-full bg-black hover:bg-black focus:bg-black border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-white outline-none focus:border-purple-500/50 transition-all"
                   />
                 </div>
               </div>
