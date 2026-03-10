@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { WebSocketServer, WebSocket } from "ws";
@@ -6,11 +7,16 @@ import mysql from 'mysql2/promise';
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import db from "./firestore.js";
+import db, { isFirestoreDisabled } from "./firestore.js";
 import { CommerceService } from "./src/services/backend/commerceService";
 import { PaymentService } from "./src/services/backend/paymentService";
 import { LedgerService } from "./src/services/backend/ledgerService";
 import { aiToolHandlers } from "./src/services/backend/aiToolHandlers";
+import { SignalDistributionEngine } from "./src/services/signals/SignalDistributionEngine";
+import { UserSignalPreferenceService } from "./src/services/signals/UserSignalPreferenceService";
+import { APICostProtectionService } from "./src/services/signals/APICostProtectionService";
+import { SignalCacheService } from "./src/services/signals/SignalCacheService";
+import { RenderLayer } from "./src/types/signals";
 import { 
   OperatorCommandService, 
   ConfigService, 
@@ -21,6 +27,9 @@ import {
 } from "./src/services/backend/operatorService";
 import { GitHubBridgeService, RepoSyncRequestService, PatchArtifactService } from "./src/services/backend/githubService";
 import { AIOrchestratorService } from "./src/services/backend/aiOrchestratorService";
+import { YouTubeSignalHarvester } from "./src/services/youtube/YouTubeSignalHarvester";
+import { YouTubeSignalService } from "./src/services/youtube/YouTubeSignalService";
+import { YouTubeBackendService } from "./src/services/youtube/YouTubeBackendService";
 import { OrderStatus, FulfillmentMethod, OperatorActionType } from "./src/types/operational";
 import { GoogleGenAI, Type } from "@google/genai";
 
@@ -374,11 +383,24 @@ const initDb = async () => {
   }
 };
 
+import { SignalSimulationScenarios } from "./src/services/signals/SignalSimulationScenarios";
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 8080;
+
+  // Signal Simulation Endpoints
+  app.get("/api/signals/simulation/run", async (req, res) => {
+    try {
+      const results = await SignalSimulationScenarios.runAll();
+      const usage = await APICostProtectionService.getUsageSummary();
+      res.json({ results, usage });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
 
   // Initialize DB in background to avoid blocking server start
   initDbConnection().then(() => initDb()).catch(err => {
@@ -387,12 +409,175 @@ async function startServer() {
 
   app.use(express.json());
 
+  // GET /health endpoint returning { status: "ok" }
+  app.get("/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   // Middleware to check DB connection
   app.use((req, res, next) => {
+    // Allow health check and version check without DB
+    if (req.path === "/health" || req.path === "/api/version" || req.path === "/api/health") {
+      return next();
+    }
     if (!pool) {
-      return res.status(500).json({ error: "Database connection not configured. Please set DATABASE_URL." });
+      return res.status(503).json({ error: "Database connection not ready. Please try again in a moment." });
     }
     next();
+  });
+
+  // Signal Distribution Engine Endpoints
+  app.get("/api/signals", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string || 'anonymous';
+      const layer = (req.query.layer as RenderLayer) || 'orbital';
+      const lat = req.query.lat ? Number(req.query.lat) : undefined;
+      const lng = req.query.lng ? Number(req.query.lng) : undefined;
+      const zoomLevel = req.query.zoom ? Number(req.query.zoom) : undefined;
+      const viewportArea = req.query.area ? Number(req.query.area) : undefined;
+      
+      const bounds = req.query.minLat ? {
+        minLat: Number(req.query.minLat),
+        maxLat: Number(req.query.maxLat),
+        minLng: Number(req.query.minLng),
+        maxLng: Number(req.query.maxLng)
+      } : undefined;
+
+      const signals = await SignalDistributionEngine.getSignals(userId, layer, bounds, lat, lng, zoomLevel, viewportArea);
+      res.json(signals);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/signals/orbital", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string || 'anonymous';
+      const signals = await SignalDistributionEngine.getSignals(userId, 'orbital');
+      res.json(signals);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/signals/map", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string || 'anonymous';
+      const signals = await SignalDistributionEngine.getSignals(userId, 'planetary');
+      res.json(signals);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/signals/nearby", async (req, res) => {
+    try {
+      const userId = req.headers['x-user-id'] as string || 'anonymous';
+      const lat = Number(req.query.lat);
+      const lng = Number(req.query.lng);
+      const signals = await SignalDistributionEngine.getSignals(userId, 'local', undefined, lat, lng);
+      res.json(signals);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/signals/social", async (req, res) => {
+    try {
+      const { content, userId, lat, lng } = req.body;
+      const signalId = `sig-social-${Date.now()}`;
+      
+      const signalData = {
+        type: 'social_post',
+        title: 'Social Update',
+        description: content,
+        lat: lat || 0,
+        lng: lng || 0,
+        source: 'astranov_social',
+        sourceId: signalId,
+        authorId: userId,
+        createdAt: Date.now(),
+        priorityScore: 5.0,
+        renderLayer: 'local',
+        audienceScope: 'local',
+        signalStatus: 'active',
+        metadata: {
+          trustworthiness: 0.9,
+          popularity: 0.1
+        }
+      };
+
+      await db.collection('video_signals').doc(signalId).set(signalData);
+      res.json({ success: true, signalId });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/signals/preferences/:userId", async (req, res) => {
+    try {
+      const prefs = await UserSignalPreferenceService.getPreferences(req.params.userId);
+      res.json(prefs);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/signals/preferences/:userId", async (req, res) => {
+    try {
+      await UserSignalPreferenceService.updatePreferences(req.params.userId, req.body);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/operator/diagnostics", async (req, res) => {
+    try {
+      // Mock diagnostics for the operator debug panel
+      const diagnostics = {
+        signalCounts: {
+          orbital: 15,
+          planetary: 42,
+          local: 88
+        },
+        categoryMix: {
+          news: '25%',
+          video: '40%',
+          social: '15%',
+          other: '20%'
+        },
+        quotaUsage: {
+          youtube: '450/10000',
+          news: '120/5000',
+          maps: '80/1000'
+        },
+        cacheHealth: {
+          hits: 1245,
+          misses: 89,
+          hitRate: '93.3%'
+        },
+        lastIngestion: new Date().toISOString()
+      };
+      res.json(diagnostics);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/command", async (req, res) => {
+    const { command, userId, role, center } = req.body;
+    try {
+      const result = await AIOrchestratorService.processCommand(command, { 
+        userId, 
+        role, 
+        locationContext: center 
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("AI command error:", error);
+      res.status(500).json({ error: "Failed to process AI command." });
+    }
   });
 
   app.get("/api/version", (req, res) => {
@@ -406,27 +591,83 @@ async function startServer() {
 
   app.get("/api/health", async (req, res) => {
     try {
+      const health: any = { status: "ok", services: {} };
+
+      // Check MySQL
       if (!pool) {
-        return res.json({ 
-          status: "warn", 
-          message: "Database connection not configured. Using demo mode."
-        });
+        health.services.mysql = { status: "warn", message: "Database connection not configured. Using demo mode." };
+        health.status = "warn";
+      } else {
+        try {
+          await pool.query("SELECT 1");
+          health.services.mysql = { status: "ok", message: "Connected" };
+        } catch (e: any) {
+          health.services.mysql = { status: "critical", message: e.message };
+          health.status = "warn";
+        }
       }
-      // Attempt a simple query to verify connection
-      await pool.query("SELECT 1");
-      res.json({ status: "ok", message: "Successfully connected to the database." });
+
+      // Check Firestore
+      if (isFirestoreDisabled) {
+        health.services.firestore = { status: "critical", message: "Firestore API disabled or permission denied. Using mock data." };
+        health.status = "warn";
+      } else {
+        try {
+          // Simple check
+          await db.collection("health").limit(1).get();
+          health.services.firestore = { status: "ok", message: "Connected" };
+        } catch (e: any) {
+          health.services.firestore = { status: "critical", message: e.message };
+          health.status = "warn";
+        }
+      }
+
+      // Check Gemini AI
+      const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (!geminiKey) {
+        health.services.gemini = { status: "critical", message: "Gemini API Key is missing." };
+        health.status = "warn";
+      } else {
+        health.services.gemini = { status: "ok", message: "API Key detected." };
+      }
+
+      res.json(health);
     } catch (e: any) {
-      console.error("Database health check failed:", e);
+      console.error("Health check failed:", e);
       res.json({ 
-        status: "warn", 
-        message: "Failed to connect to the database. Using demo mode.", 
+        status: "error", 
+        message: "Health check failed", 
         details: e.message
+      });
+    }
+  });
+
+  app.get("/api/debug/firestore", async (req, res) => {
+    try {
+      const projectId = (db as any).projectId || "unknown";
+      const snapshot = await db.collection("orbital_signals").limit(5).get();
+      const signals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      
+      res.json({
+        projectId,
+        signalsCount: snapshot.size,
+        signals,
+        isFirestoreDisabled
+      });
+    } catch (e: any) {
+      res.status(500).json({
+        error: e.message,
+        projectId: (db as any).projectId || "unknown",
+        isFirestoreDisabled
       });
     }
   });
 
   app.get("/signals", async (req, res) => {
     try {
+      if (isFirestoreDisabled) {
+        return res.json([]);
+      }
       const snapshot = await db.collection("signals").get();
       const signals = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -434,7 +675,7 @@ async function startServer() {
       }));
       res.json(signals);
     } catch (e: any) {
-      console.error("Firestore error:", e);
+      console.error("Firestore error:", e.message);
       res.status(500).json({ error: "Firestore Error", details: e.message });
     }
   });
@@ -798,6 +1039,67 @@ async function startServer() {
     }
   });
 
+  app.get("/api/signals/:id", async (req, res) => {
+    try {
+      const signal = await YouTubeSignalService.getSignalDetails(req.params.id);
+      if (!signal) return res.status(404).json({ error: "Signal not found" });
+      res.json(signal);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post("/api/signals/submit", async (req, res) => {
+    try {
+      const { youtubeUrl, userId, lat, lng } = req.body;
+      const location = lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined;
+      
+      const videoId = YouTubeBackendService.extractVideoId(youtubeUrl);
+      if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+      const metadata = await YouTubeBackendService.getVideoMetadata(videoId);
+      if (location) {
+        metadata.recordingDetails = {
+          location: {
+            latitude: location.lat,
+            longitude: location.lng
+          }
+        };
+      }
+
+      const signalId = await YouTubeSignalHarvester.processVideo(metadata, 'user', userId);
+      res.json({ success: true, signalId });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // YouTube Ingestion Schedule (Every 30 minutes)
+  const CATEGORIES = ['travel', 'city vlog', 'street food', 'events', 'drone footage'];
+  let currentCategoryIndex = 0;
+
+  if (process.env.YOUTUBE_API_KEY) {
+    console.log("[YouTube Harvester] API Key detected. Initializing signal system...");
+    // Initial harvest cycle
+    YouTubeSignalHarvester.runHarvestCycle(CATEGORIES[0]).catch(e => {
+      console.error("[YouTube Harvester] Initial cycle failed:", e);
+    });
+  } else {
+    console.warn("[YouTube Harvester] YOUTUBE_API_KEY missing. Signal system will be inactive.");
+  }
+
+  setInterval(async () => {
+    if (!process.env.YOUTUBE_API_KEY) return;
+    const category = CATEGORIES[currentCategoryIndex];
+    console.log(`[YouTube Harvester] Starting cycle for category: ${category}`);
+    try {
+      await YouTubeSignalHarvester.runHarvestCycle(category);
+      currentCategoryIndex = (currentCategoryIndex + 1) % CATEGORIES.length;
+    } catch (e) {
+      console.error(`[YouTube Harvester] Cycle failed for ${category}:`, e);
+    }
+  }, 30 * 60 * 1000);
+
   // GitHub Bridge Routes
   app.post("/api/operator/repo-sync/create", async (req, res) => {
     const { actorId, actorRole, branch, commitMessage, files, role } = req.body;
@@ -1046,7 +1348,7 @@ async function startServer() {
   }
 
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on 0.0.0.0:${PORT}`);
   });
 }
 

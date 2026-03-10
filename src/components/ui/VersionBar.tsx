@@ -6,12 +6,14 @@ interface VersionBarProps {
   currentVersion: string;
   latestVersion: string;
   status: 'up-to-date' | 'update-available' | 'critical-update';
+  onUpdate?: () => void;
 }
 
 export const VersionBar: React.FC<VersionBarProps> = ({
   currentVersion,
   latestVersion,
-  status
+  status,
+  onUpdate
 }) => {
   const getStatusColor = () => {
     switch (status) {
@@ -37,7 +39,8 @@ export const VersionBar: React.FC<VersionBarProps> = ({
     <motion.div 
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-[1000] h-6 bg-black/80 backdrop-blur-md border-b border-white/5 flex items-center justify-center px-4 pointer-events-none"
+      onClick={status !== 'up-to-date' ? onUpdate : undefined}
+      className={`fixed top-0 left-0 right-0 z-[1000] h-6 bg-black/80 backdrop-blur-md border-b border-white/5 flex items-center justify-center px-4 transition-all ${status !== 'up-to-date' ? 'cursor-pointer hover:bg-white/5 pointer-events-auto' : 'pointer-events-none'}`}
     >
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2">

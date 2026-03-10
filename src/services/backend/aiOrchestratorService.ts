@@ -5,7 +5,29 @@ import { GitHubBridgeService, RepoSyncRequestService, PatchArtifactService } fro
 import { OperatorActionType } from "../../types/operational";
 
 export class AIOrchestratorService {
-  private static ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  private static _ai: GoogleGenAI | null = null;
+  private static _aiUnavailable = false;
+
+  private static get ai(): GoogleGenAI | null {
+    if (this._ai) return this._ai;
+    if (this._aiUnavailable) return null;
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      console.warn("WARNING: Gemini API key not found (GEMINI_API_KEY or GOOGLE_API_KEY). AI features will be unavailable.");
+      this._aiUnavailable = true;
+      return null;
+    }
+
+    try {
+      this._ai = new GoogleGenAI({ apiKey });
+      return this._ai;
+    } catch (e) {
+      console.error("Failed to initialize Gemini AI:", e);
+      this._aiUnavailable = true;
+      return null;
+    }
+  }
 
   private static tools = [
     {
@@ -238,6 +260,78 @@ export class AIOrchestratorService {
             },
             required: ["environment", "version"]
           }
+        },
+        {
+          name: "searchNearbySignals",
+          description: "Search for map signals, posts, tasks, and events near a location.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              lat: { type: Type.NUMBER },
+              lng: { type: Type.NUMBER },
+              radius: { type: Type.NUMBER, description: "Search radius in meters." }
+            },
+            required: ["lat", "lng"]
+          }
+        },
+        {
+          name: "searchNearbyVideos",
+          description: "Search for YouTube video signals near a specific location.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              lat: { type: Type.NUMBER },
+              lng: { type: Type.NUMBER },
+              radius: { type: Type.NUMBER, description: "Search radius in kilometers." }
+            },
+            required: ["lat", "lng"]
+          }
+        },
+        {
+          name: "searchRegionalVideos",
+          description: "Search for YouTube video signals in a specific region.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              regionKey: { type: Type.STRING, description: "The region key (e.g., first 3 chars of geohash)." }
+            },
+            required: ["regionKey"]
+          }
+        },
+        {
+          name: "getVideoSignalDetails",
+          description: "Get full details for a specific YouTube video signal.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              signalId: { type: Type.STRING }
+            },
+            required: ["signalId"]
+          }
+        },
+        {
+          name: "createVideoSignalFromUrl",
+          description: "Create a new planetary video signal from a YouTube URL.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              youtubeUrl: { type: Type.STRING },
+              lat: { type: Type.NUMBER, description: "Optional latitude override." },
+              lng: { type: Type.NUMBER, description: "Optional longitude override." }
+            },
+            required: ["youtubeUrl"]
+          }
+        },
+        {
+          name: "getTrendingVideoSignals",
+          description: "Get trending YouTube video signals based on scope.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              scope: { type: Type.STRING, enum: ["global", "regional", "local"] }
+            },
+            required: ["scope"]
+          }
         }
       ]
     },
@@ -248,6 +342,14 @@ export class AIOrchestratorService {
 
   static async processCommand(prompt: string, context: any) {
     const { userId, role, locationContext, history = [] } = context;
+
+    if (!this.ai) {
+      return {
+        reply: "AI features are currently unavailable. Please check the server configuration.",
+        action: "CHAT",
+        data: {}
+      };
+    }
 
     try {
       const response = await this.ai.models.generateContent({
@@ -408,6 +510,24 @@ export class AIOrchestratorService {
                 } else {
                   result = { error: "Unauthorized" };
                 }
+                break;
+              case "searchNearbySignals":
+                result = await aiToolHandlers.searchNearbySignals(call.args as any);
+                break;
+              case "searchNearbyVideos":
+                result = await aiToolHandlers.searchNearbyVideos(call.args as any);
+                break;
+              case "searchRegionalVideos":
+                result = await aiToolHandlers.searchRegionalVideos(call.args as any);
+                break;
+              case "getVideoSignalDetails":
+                result = await aiToolHandlers.getVideoSignalDetails(call.args as any);
+                break;
+              case "createVideoSignalFromUrl":
+                result = await aiToolHandlers.createVideoSignalFromUrl({ ...call.args as any, userId });
+                break;
+              case "getTrendingVideoSignals":
+                result = await aiToolHandlers.getTrendingVideoSignals(call.args as any);
                 break;
             }
             if (result) toolResults.push({ tool: call.name, result });

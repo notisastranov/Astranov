@@ -5,10 +5,11 @@ interface GlobalSignal {
   id: string;
   lat: number;
   lng: number;
-  type: 'news' | 'work' | 'social' | 'economy' | 'friend';
+  type: 'news' | 'work' | 'social' | 'economy' | 'friend' | 'youtube' | 'event';
   label: string;
   description: string;
   color: string;
+  youtubeId?: string;
 }
 
 interface GlobalSignalLayerProps {
@@ -29,6 +30,7 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
     const textureLoader = new THREE.TextureLoader();
     const nebulaTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0.png');
     const cloudTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0_alpha.png');
+    const youtubeTexture = textureLoader.load('https://cdn-icons-png.flaticon.com/512/1384/1384060.png');
 
     const latLngToVector3 = (lat: number, lng: number, radius: number) => {
       const phi = (90 - lat) * (Math.PI / 180);
@@ -41,19 +43,41 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
     };
 
     signals.forEach(signal => {
-      const pos = latLngToVector3(signal.lat, signal.lng, 5.2);
+      const altitude = 5.2 + Math.random() * 0.3;
+      const pos = latLngToVector3(signal.lat, signal.lng, altitude);
       const signalGroup = new THREE.Group();
       signalGroup.position.copy(pos);
       signalGroup.userData = { signal };
       group.add(signalGroup);
+
+      // Floating Cloud Effect
+      const cloudSpriteMat = new THREE.SpriteMaterial({
+        map: cloudTexture,
+        color: signal.color,
+        transparent: true,
+        opacity: 0.3,
+        blending: THREE.AdditiveBlending
+      });
+      const cloud = new THREE.Sprite(cloudSpriteMat);
+      cloud.scale.set(1.5, 1.5, 1);
+      signalGroup.add(cloud);
 
       // Core Marker
       let geometry: THREE.BufferGeometry;
       let material: THREE.Material;
 
       switch (signal.type) {
+        case 'youtube':
+          const ytSpriteMat = new THREE.SpriteMaterial({
+            map: youtubeTexture,
+            transparent: true,
+            opacity: 0.9,
+          });
+          const ytSprite = new THREE.Sprite(ytSpriteMat);
+          ytSprite.scale.set(0.4, 0.4, 1);
+          signalGroup.add(ytSprite);
+          break;
         case 'news':
-          // Nebula effect
           const spriteMaterial = new THREE.SpriteMaterial({
             map: nebulaTexture,
             color: signal.color,
@@ -62,65 +86,30 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
             blending: THREE.AdditiveBlending
           });
           const nebula = new THREE.Sprite(spriteMaterial);
-          nebula.scale.set(2, 2, 1);
+          nebula.scale.set(1, 1, 1);
           signalGroup.add(nebula);
           break;
-
         case 'work':
-          // Cloud-like pulses
-          geometry = new THREE.SphereGeometry(0.2, 16, 16);
+          geometry = new THREE.SphereGeometry(0.1, 16, 16);
           material = new THREE.MeshPhongMaterial({
             color: signal.color,
             transparent: true,
-            opacity: 0.6,
+            opacity: 0.8,
             emissive: signal.color,
             emissiveIntensity: 0.5
           });
-          const cloud = new THREE.Mesh(geometry, material);
-          signalGroup.add(cloud);
-          
-          // Pulse ring
-          const ringGeo = new THREE.RingGeometry(0.25, 0.3, 32);
-          const ringMat = new THREE.MeshBasicMaterial({ color: signal.color, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-          const ring = new THREE.Mesh(ringGeo, ringMat);
-          ring.lookAt(new THREE.Vector3(0, 0, 0));
-          signalGroup.add(ring);
+          const workNode = new THREE.Mesh(geometry, material);
+          signalGroup.add(workNode);
           break;
-
-        case 'social':
-          // Glowing signal bubbles
-          geometry = new THREE.SphereGeometry(0.15, 16, 16);
+        default:
+          geometry = new THREE.SphereGeometry(0.08, 16, 16);
           material = new THREE.MeshStandardMaterial({
             color: signal.color,
             emissive: signal.color,
             emissiveIntensity: 1,
-            roughness: 0.1,
-            metalness: 0.8
           });
-          const bubble = new THREE.Mesh(geometry, material);
-          signalGroup.add(bubble);
-          break;
-
-        case 'economy':
-          // Cluster nodes
-          geometry = new THREE.OctahedronGeometry(0.15);
-          material = new THREE.MeshPhongMaterial({
-            color: signal.color,
-            emissive: signal.color,
-            emissiveIntensity: 0.8,
-            flatShading: true
-          });
-          const node = new THREE.Mesh(geometry, material);
-          signalGroup.add(node);
-          break;
-
-        case 'friend':
-          // Highlighted personal markers
-          geometry = new THREE.ConeGeometry(0.1, 0.3, 16);
-          material = new THREE.MeshPhongMaterial({ color: signal.color });
-          const marker = new THREE.Mesh(geometry, material);
-          marker.rotation.x = Math.PI; // Point down
-          signalGroup.add(marker);
+          const dot = new THREE.Mesh(geometry, material);
+          signalGroup.add(dot);
           break;
       }
     });
@@ -192,7 +181,7 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
 
         // Type specific animations
         if (signal.type === 'work') {
-          const ring = child.children.find(c => c instanceof THREE.Mesh && c.geometry instanceof THREE.RingGeometry);
+          const ring = child.children.find(c => c instanceof THREE.Mesh && c.geometry instanceof THREE.RingGeometry) as THREE.Mesh;
           if (ring) {
             ring.scale.setScalar(1 + Math.sin(time * 2) * 0.2);
             (ring.material as THREE.Material).opacity = 0.5 - (Math.sin(time * 2) * 0.2);

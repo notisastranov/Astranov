@@ -68,6 +68,11 @@ export class PatchArtifactService {
 
 export class GitHubBridgeService {
   private static getGitHubConfig() {
+    // Ensure this is only executed in a server-side environment
+    if (typeof window !== 'undefined') {
+      throw new Error('GitHub configuration can only be accessed in server-side runtime');
+    }
+
     const token = process.env.GITHUB_TOKEN;
     const owner = process.env.GITHUB_OWNER;
     const repo = process.env.GITHUB_REPO;

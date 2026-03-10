@@ -6,7 +6,7 @@ interface MapSceneWrapperProps {
   zoom: number;
   onMapClick: (lat: number, lng: number, x: number, y: number) => void;
   onMapMove: (lat: number, lng: number, zoom: number) => void;
-  mapType: string;
+  mapType: 'roadmap' | 'satellite' | 'terrain' | 'hybrid' | 'dark' | 'earth';
   tasks: any[];
   shops: any[];
   publications: any[];
@@ -14,6 +14,8 @@ interface MapSceneWrapperProps {
   currentUserId: string | null;
   selectedLocation: { lat: number; lng: number } | null;
   groundingShops: any[];
+  userRole: string;
+  userId: string;
 }
 
 export const MapSceneWrapper: React.FC<MapSceneWrapperProps> = (props) => {

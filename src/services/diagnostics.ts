@@ -44,6 +44,7 @@ class DiagnosticService {
     await Promise.all([
       this.checkGeminiAPI(),
       this.checkGoogleMapsAPI(),
+      this.checkFirestoreAPI(),
       this.checkNetwork(),
       this.checkSocket(),
       this.checkPermissions(),
@@ -91,14 +92,57 @@ class DiagnosticService {
   }
 
   private async checkGeminiAPI() {
-    const hasKey = !!process.env.GEMINI_API_KEY;
-    this.results.set('gemini', {
-      id: 'gemini',
-      name: 'Gemini AI Engine',
-      status: hasKey ? 'healthy' : 'critical',
-      message: hasKey ? 'AI Core is operational.' : 'Gemini API Key is missing.',
-      technicalDetails: hasKey ? 'Key detected in environment.' : 'Missing GEMINI_API_KEY.'
-    });
+    try {
+      const response = await fetch('/api/health');
+      const data = await response.json();
+      const gemini = data.services?.gemini;
+
+      if (gemini) {
+        this.results.set('gemini', {
+          id: 'gemini',
+          name: 'Gemini AI Engine',
+          status: gemini.status === 'ok' ? 'healthy' : 'critical',
+          message: gemini.status === 'ok' ? 'AI Core is operational.' : gemini.message,
+          technicalDetails: gemini.message
+        });
+      }
+    } catch (e) {
+      this.results.set('gemini', {
+        id: 'gemini',
+        name: 'Gemini AI Engine',
+        status: 'warning',
+        message: 'Could not verify Gemini status.',
+        technicalDetails: 'Backend health check failed.'
+      });
+    }
+  }
+
+  private async checkFirestoreAPI() {
+    try {
+      const response = await fetch('/api/health');
+      const data = await response.json();
+      const firestore = data.services?.firestore;
+
+      if (firestore) {
+        this.results.set('firestore', {
+          id: 'firestore',
+          name: 'Signal Database',
+          status: firestore.status === 'ok' ? 'healthy' : 'critical',
+          message: firestore.status === 'ok' ? 'Firestore is operational.' : firestore.message,
+          technicalDetails: firestore.message,
+          actionLabel: firestore.status !== 'ok' ? 'Enable API' : undefined,
+          onAction: firestore.status !== 'ok' ? () => window.open('https://console.cloud.google.com/apis/api/firestore.googleapis.com/overview', '_blank') : undefined
+        });
+      }
+    } catch (e) {
+      this.results.set('firestore', {
+        id: 'firestore',
+        name: 'Signal Database',
+        status: 'warning',
+        message: 'Could not verify Firestore status.',
+        technicalDetails: 'Backend health check failed.'
+      });
+    }
   }
 
   private async checkGoogleMapsAPI() {

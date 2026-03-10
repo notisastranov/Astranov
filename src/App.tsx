@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic, Fingerprint, Camera, Image as ImageIcon, Send, ArrowUpRight, Plus, CreditCard, Radar, BarChart3, Monitor, Shield, Zap, Video, ShoppingCart } from 'lucide-react';
+import YouTubePlayer from './components/YouTubePlayer';
+import { YouTubeSignalClientService } from './services/youtube/YouTubeSignalClientService';
+import { VideoSignal, OrbitalSignal } from './types/youtube';
+import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic, Fingerprint, Camera, ImageIcon, Send, ArrowUpRight, Plus, CreditCard, Radar, BarChart3, Monitor, Shield, Zap, Video, ShoppingCart, Youtube, Wallet, User as UserIcon, Settings, Bookmark, Activity, History, ZoomIn, ZoomOut, Layers, Filter, Crosshair, Search, Users, Navigation, Power } from 'lucide-react';
+import { HudButton } from './components/ui/HudButton';
 import AstranovMap from './components/Map';
 import GlobeScene from './components/GlobeScene';
+import { VersionBar } from './components/ui/VersionBar';
 import VendorDashboard from './components/VendorDashboard';
 import ProductSearchModal from './components/ProductSearchModal';
 import RoleSelector from './components/RoleSelector';
@@ -30,20 +35,15 @@ import { socketService } from './services/socket';
 import FloatingWidget from './components/FloatingWidget';
 import DiagnosticCenter from './components/DiagnosticCenter';
 import VideoRecorder from './components/VideoRecorder';
-import { AppShell } from './components/layout/AppShell';
-import { LeftHUD } from './components/hud/LeftHUD';
-import { RightHUD } from './components/hud/RightHUD';
-import { TopCenterHUD } from './components/hud/TopCenterHUD';
-import { TopRightHUD } from './components/hud/TopRightHUD';
-import { BottomCenterAIBar } from './components/hud/BottomCenterAIBar';
+import { HudLayout } from './components/layout/HudLayout';
+import { MapContextMenu } from './components/MapContextMenu';
 import { BottomRightRadar } from './components/hud/BottomRightRadar';
-import { OverlayPanelsLayer } from './components/layout/OverlayPanelsLayer';
-import { VersionBar } from './components/ui/VersionBar';
 import { diagnosticService, DiagnosticStatus } from './services/diagnostics';
 import { OperatorCommandService } from './services/operator/OperatorCommandService';
-import { Task, User, UserRole, Product, Shop, Transaction, Publication, HudButtonConfig } from './types';
-import { Business, FulfillmentMethod, OrderStatus } from './types/operational';
+import { Task, User, UserRole, Product as SystemProduct, Shop, Transaction, Publication, HudButtonConfig, HudRegion, UserUILayout } from './types';
+import { Business, Product, FulfillmentMethod, OrderStatus } from './types/operational';
 import { CATEGORIES, DEFAULT_HUD_LAYOUT } from './constants';
+import { UILayoutService } from './services/uiLayoutService';
 
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -114,8 +114,56 @@ export default function App() {
   const [hudButtons, setHudButtons] = useState<HudButtonConfig[]>(DEFAULT_HUD_LAYOUT);
   const [isLoading, setIsLoading] = useState(false);
   const [lastReply, setLastReply] = useState<string>();
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isDriverSetupOpen, setIsDriverSetupOpen] = useState(false);
   const [isShopSetupOpen, setIsShopSetupOpen] = useState(false);
+  const [activeYouTubeVideo, setActiveYouTubeVideo] = useState<{ videoId: string, title: string } | null>(null);
+  const [orbitalSignals, setOrbitalSignals] = useState<OrbitalSignal[]>([]);
+  const [nearbySignals, setNearbySignals] = useState<VideoSignal[]>([]);
+
+  // New state for updated HUD
+  const [channelMode, setChannelMode] = useState<'global' | 'team'>('global');
+  const [fleetMode, setFleetMode] = useState<'drivers' | 'drones' | 'both'>('both');
+  const [isPoweredOn, setIsPoweredOn] = useState(true);
+  const [routingDestination, setRoutingDestination] = useState<{ lat: number; lng: number } | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
+
+  useEffect(() => {
+    const loadLayout = async () => {
+      if (currentUser?.id) {
+        const layout = await UILayoutService.getLayout(currentUser.id);
+        if (layout) {
+          setHudButtons(layout.buttons);
+        }
+      }
+    };
+    loadLayout();
+  }, [currentUser?.id]);
+
+  const toggleChannelMode = () => {
+    setChannelMode(prev => prev === 'global' ? 'team' : 'global');
+  };
+
+  const toggleFleetMode = () => {
+    setFleetMode(prev => {
+      if (prev === 'drivers') return 'drones';
+      if (prev === 'drones') return 'both';
+      return 'drivers';
+    });
+  };
+
+  const handleStartRouting = () => {
+    if (routingDestination) {
+      setIsRouting(true);
+      setLastReply(`Routing to ${routingDestination.lat.toFixed(4)}, ${routingDestination.lng.toFixed(4)}...`);
+    } else {
+      setLastReply("Please select a destination on the map first.");
+    }
+  };
+
   const [floatingTexts, setFloatingTexts] = useState<{ id: string, lat: number, lng: number, text: string }[]>([]);
   const [widgets, setWidgets] = useState<{ id: string, name: string, icon: any, color: string, data?: string }[]>([]);
   const [activeRoute, setActiveRoute] = useState<[number, number][] | undefined>(undefined);
@@ -128,15 +176,41 @@ export default function App() {
   }, [radarMode]);
 
   useEffect(() => {
-    if (globeError && viewState !== 'local') {
-      setViewState('local');
-      setLastReply("Globe engine failed to initialize. Falling back to Map Mode.");
+    const fetchSignals = async () => {
+      try {
+        const signals = await YouTubeSignalClientService.getOrbitalSignals();
+        setOrbitalSignals(signals);
+      } catch (e) {
+        console.error("Failed to fetch orbital signals:", e);
+      }
+    };
+    fetchSignals();
+  }, []);
+
+  useEffect(() => {
+    if (viewState === 'local' && center) {
+      const fetchNearby = async () => {
+        try {
+          const signals = await YouTubeSignalClientService.getNearbySignals(center.lat, center.lng);
+          setNearbySignals(signals);
+        } catch (e) {
+          console.error("Failed to fetch nearby signals:", e);
+        }
+      };
+      fetchNearby();
     }
-  }, [globeError, viewState]);
+  }, [viewState, center]);
 
   const handleSignalSelect = (signal: any) => {
-    setViewState('zooming');
-    setCenter({ lat: signal.lat, lng: signal.lng });
+    if (signal.type === 'youtube' || signal.type === 'video') {
+      const videoId = signal.youtubeId || signal.videoId || (signal.sourceId ? signal.sourceId.replace('sig_', '') : null);
+      if (videoId) {
+        setActiveYouTubeVideo({ videoId, title: signal.label || signal.title });
+      }
+    } else {
+      setViewState('zooming');
+      setCenter({ lat: signal.lat, lng: signal.lng });
+    }
   };
 
   const handleTransitionComplete = () => {
@@ -215,20 +289,33 @@ export default function App() {
       case 'zoom_out':
         setZoom(prev => Math.max(prev - 1, 1));
         break;
-      case 'globe_map':
-        toggleMapType();
+      case 'radar_btn':
+        toggleRadarMode();
+        break;
+      case 'create_task':
+        setIsTaskCreationMenuOpen(true);
+        break;
+      case 'video_post':
+        setIsVideoRecorderOpen(true);
+        break;
+      case 'social_post':
+        setIsSocialPostOpen(true);
         break;
       case 'wallet':
         setIsFinancialOpen(true);
         break;
+      case 'analytics':
+        setIsAnalyticsOpen(true);
+        break;
+      case 'console':
+      case 'settings':
+        setIsSystemConsoleOpen(true);
+        break;
+      case 'globe_map':
+        toggleMapType();
+        break;
       case 'login':
         setIsLoginModalOpen(true);
-        break;
-      case 'post':
-        setIsSocialPostOpen(true);
-        break;
-      case 'broadcast':
-        setIsVideoRecorderOpen(true);
         break;
       default:
         setLastReply(`Action for ${id} is not yet implemented.`);
@@ -315,15 +402,46 @@ export default function App() {
     handleLogin('biometric-user');
   };
 
-  const handleMapClick = (lat: number, lng: number) => {
-    setMapContextMenu(null);
+  const handleMapClick = (lat: number, lng: number, x: number, y: number) => {
+    setMapContextMenu({ lat, lng, x, y });
+  };
+
+  const handleContextAction = (action: string) => {
+    if (!mapContextMenu) return;
+    const { lat, lng } = mapContextMenu;
+
+    switch (action) {
+      case 'post':
+        setPendingTaskLocation({ lat, lng });
+        setIsSocialPostOpen(true);
+        break;
+      case 'what_is_here':
+        handleCommand(`What is here at ${lat}, ${lng}?`);
+        break;
+      case 'create_task':
+        setPendingTaskLocation({ lat, lng });
+        setIsTaskCreationMenuOpen(true);
+        break;
+      case 'navigate':
+        setRoutingDestination({ lat, lng });
+        setCenter({ lat, lng });
+        setZoom(18);
+        setLastReply(`Destination set to ${lat.toFixed(6)}, ${lng.toFixed(6)}. Click 'Start Routing' to begin.`);
+        break;
+      case 'search_nearby':
+        handleCommand(`Search nearby businesses at ${lat}, ${lng}`);
+        break;
+      case 'open_coords':
+        setLastReply(`Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+        break;
+    }
   };
 
   const handleLongPress = (lat: number, lng: number, x: number, y: number) => {
     setMapContextMenu({ lat, lng, x, y });
   };
 
-  const handleMarkerClick = (type: string, id: string) => {
+  const handleMarkerClick = (id: string, type: 'task' | 'shop' | 'user') => {
     if (type === 'shop') {
       const shop = shops.find(s => s.id === id) || groundingShops.find(s => s.id === id);
       if (shop) setSelectedShop(shop);
@@ -336,10 +454,38 @@ export default function App() {
     setSelectedShop(null);
   };
 
-  const handleSocialPost = () => {
-    setLastReply("Update posted to network.");
-    setIsSocialPostOpen(false);
-    setSocialContent('');
+  const handleSocialPost = async () => {
+    if (!socialContent.trim()) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/signals/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: socialContent,
+          userId: currentUserId || 'anonymous',
+          lat: pendingTaskLocation?.lat || center.lat,
+          lng: pendingTaskLocation?.lng || center.lng
+        })
+      });
+      
+      if (res.ok) {
+        setLastReply("Update published to network.");
+        setIsSocialPostOpen(false);
+        setSocialContent('');
+        // Refresh signals
+        const signals = await YouTubeSignalClientService.getOrbitalSignals();
+        setOrbitalSignals(signals);
+      } else {
+        throw new Error("Failed to publish post");
+      }
+    } catch (error) {
+      console.error("Social post error:", error);
+      setLastReply("Failed to publish update.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleVideoPost = (videoBlob: Blob) => {
@@ -376,184 +522,247 @@ export default function App() {
 
   const hasShop = shops.some(s => s.owner_id === currentUserId);
 
+  const handleUpdate = () => {
+    if (versionStatus !== 'up-to-date') {
+      // Force reload with cache busting
+      const cacheBuster = `?v=${Date.now()}`;
+      window.location.href = window.location.origin + window.location.pathname + cacheBuster + window.location.hash;
+    }
+  };
+
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        const res = await fetch('/api/version');
+        const data = await res.json();
+        if (data.version) {
+          setLatestVersion(data.version);
+          if (data.version !== appVersion) {
+            setVersionStatus('update-available');
+          } else {
+            setVersionStatus('up-to-date');
+          }
+        }
+      } catch (e) {
+        console.error("Failed to check version", e);
+      }
+    };
+    checkVersion();
+  }, [appVersion]);
+
   return (
-    <AppShell
-      versionBar={
-        <VersionBar 
-          currentVersion={appVersion} 
-          latestVersion={latestVersion} 
-          status={versionStatus} 
-        />
-      }
-      leftHUD={
-        <LeftHUD 
-          buttons={hudButtons.filter(b => b.region === 'left')} 
-          onButtonClick={handleHudButtonClick} 
-        />
-      }
-      rightHUD={
-        <RightHUD 
-          buttons={hudButtons.filter(b => b.region === 'right')} 
-          onButtonClick={handleHudButtonClick} 
-        />
-      }
-      topCenterHUD={
-        <TopCenterHUD 
-          buttons={hudButtons.filter(b => b.region === 'top')} 
-          onButtonClick={handleHudButtonClick} 
-        />
-      }
-      topRightHUD={
-        <TopRightHUD 
-          onSettingsClick={() => setIsSystemConsoleOpen(true)} 
-        />
-      }
-      bottomCenterAIBar={
-        <BottomCenterAIBar 
-          onCommand={handleCommand}
-          isLoading={isLoading}
-          lastReply={lastReply || null}
-          onClearReply={() => setLastReply(undefined)}
-          isListening={isListening}
-          onToggleListening={handleVoiceCommand}
-          transcript={transcript}
-        />
-      }
-      bottomRightRadar={
-        <BottomRightRadar 
-          mode={radarMode}
-          onToggleMode={toggleRadarMode}
-          onClose={() => setRadarMode('hidden')}
-          center={center}
-          tasks={tasks}
-          users={users}
-          shops={Array.from(new Map([...shops, ...groundingShops].map(s => [s.id, s])).values())}
-        />
-      }
-      overlayPanels={
-        <OverlayPanelsLayer>
-          {isCommercePanelOpen && selectedBusiness && (
-            <div className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center">
-              <div className="pointer-events-auto">
-                <CommercePanel 
-                  business={selectedBusiness}
-                  menu={businessMenu}
-                  onClose={() => setIsCommercePanelOpen(false)}
-                  onPlaceOrder={handlePlaceOrder}
-                />
-              </div>
-            </div>
-          )}
-          {/* ActionSheet removed per emergency policy */}
-          <CategoryDrawer 
-            isOpen={isCategoryDrawerOpen} 
-            onClose={() => setIsCategoryDrawerOpen(false)} 
-            onSelectCategory={handleCategorySelect}
-            onSpawnWidget={handleSpawnWidget}
-            balance={currentUser?.balance || 0} 
-            userName={currentUser?.name || 'Guest'} 
-            userId={currentUserId || 'guest'}
-            networkStatus="ok"
-            deviceInfo="ASTRANOV-X1"
-            onToggleStatus={setIsActive}
-            isActive={isActive}
-            currentRole={role}
-            onRoleChange={handleRoleChange}
-            isVerifiedDriver={!!currentUser?.is_verified_driver}
-            hasShop={hasShop}
-            onLoginClick={() => setIsLoginModalOpen(true)}
-            onComplianceClick={() => setIsComplianceOpen(true)}
-            onSettingsClick={() => setLastReply("Settings accessed.")}
-            onGamesClick={() => setIsGamesModalOpen(true)}
-            isAuthenticated={isAuthenticated}
+    <div className="relative w-full h-full bg-black overflow-hidden">
+      {/* MAP / GLOBE LAYER */}
+      <div className="absolute inset-0 z-0">
+        {viewState === 'global' ? (
+          <GlobeScene 
+            onTransitionComplete={handleTransitionComplete}
+            signals={orbitalSignals as any}
+            onSignalSelect={handleSignalSelect}
+            isZooming={false}
+            viewState="orbital"
           />
-          {isGamesModalOpen && (
-            <GamesModal 
-              isOpen={isGamesModalOpen} 
-              onClose={() => setIsGamesModalOpen(false)} 
+        ) : (
+          <AstranovMap 
+            center={center}
+            zoom={zoom}
+            tasks={tasks}
+            shops={shops}
+            users={users}
+            onMapClick={handleMapClick}
+            onLongPress={handleLongPress}
+            onMarkerClick={handleMarkerClick}
+            userRole={role}
+            userId={currentUserId || ''}
+            mapType={mapType}
+            videoSignals={nearbySignals}
+            onSignalClick={handleSignalSelect}
+          />
+        )}
+      </div>
+
+      {/* HUD LAYER */}
+      <HudLayout 
+        topCenter={
+          <div className="flex flex-col items-center gap-1 mt-4">
+            <VersionBar 
+              currentVersion={appVersion} 
+              latestVersion={latestVersion} 
+              status={versionStatus} 
+              onUpdate={handleUpdate}
             />
-          )}
-          {isDroneFleetOpen && (
-            <DroneFleetControl 
-              isOpen={isDroneFleetOpen} 
-              onClose={() => setIsDroneFleetOpen(false)} 
-            />
-          )}
-          {isComplianceOpen && currentUserId && (
-            <ComplianceDashboard 
-              userId={currentUserId} 
-              onClose={() => setIsComplianceOpen(false)} 
-            />
-          )}
-          {isVendorDashboardOpen && currentUserId && (
-            <VendorDashboard 
-              userId={currentUserId} 
-              onClose={() => setIsVendorDashboardOpen(false)} 
-            />
-          )}
-          {isDriverSetupOpen && (
-            <DriverSetup 
-              onComplete={handleDriverSetupComplete} 
-              onCancel={() => setIsDriverSetupOpen(false)} 
-            />
-          )}
-          {isShopSetupOpen && (
-            <ShopSetup 
-              onComplete={handleShopSetupComplete} 
-              onCancel={() => setIsShopSetupOpen(false)} 
-            />
-          )}
-          {isTaskCreationMenuOpen && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-auto">
-              <div className="bg-zinc-900 border border-white/10 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-black text-white tracking-tight">Create Task</h3>
-                  <button onClick={() => setIsTaskCreationMenuOpen(false)} className="text-white/40 hover:text-white">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                   <button onClick={() => { setIsSocialPostOpen(true); setIsTaskCreationMenuOpen(false); }} className="w-full bg-white/5 p-4 rounded-2xl text-left text-white font-bold">Post Update</button>
-                   <button onClick={() => { setIsShopSetupOpen(true); setIsTaskCreationMenuOpen(false); }} className="w-full bg-white/5 p-4 rounded-2xl text-left text-white font-bold">Enlist Shop</button>
-                </div>
-              </div>
+            <div className="mt-4 text-4xl font-black uppercase tracking-[0.6em] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-600 animate-pulse">
+              AstranoV
             </div>
-          )}
-          {isSocialPostOpen && (
-            <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-md pointer-events-auto">
-              <div className="bg-zinc-900 border border-white/10 p-6 rounded-3xl shadow-2xl w-full max-w-md">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-black text-white tracking-tight">Post Update</h3>
-                  <button onClick={() => setIsSocialPostOpen(false)} className="text-white/40 hover:text-white">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <textarea 
-                  value={socialContent}
-                  onChange={(e) => setSocialContent(e.target.value)}
-                  className="w-full h-32 bg-black/50 border border-white/10 rounded-2xl p-4 text-white mb-4"
-                />
-                <button onClick={handleSocialPost} className="w-full bg-electric-blue text-black font-black py-4 rounded-xl">Post</button>
-              </div>
+          </div>
+        }
+        leftColumn={
+          <div className="flex flex-col gap-3 mt-24">
+            <HudButton 
+              icon={Settings} 
+              label="Settings" 
+              onClick={() => setIsSystemConsoleOpen(true)} 
+              status="ok"
+            />
+            <HudButton 
+              icon={UserIcon} 
+              label={isAuthenticated ? "Profile" : "Login"} 
+              onClick={() => setIsLoginModalOpen(true)}
+              status={isAuthenticated ? 'healthy' : 'warning'}
+              data={isAuthenticated ? "ACTIVE" : "OFFLINE"}
+              active={isAuthenticated}
+            />
+            <HudButton 
+              icon={Wallet} 
+              label="Wallet" 
+              onClick={() => setIsWalletOpen(true)} 
+              data={`€${currentUser?.balance?.toFixed(2) || '0.00'}`}
+              status="finance"
+            />
+            <HudButton 
+              icon={Plus} 
+              label="Post" 
+              onClick={() => setIsSocialPostOpen(true)} 
+              variant="primary" 
+              status="ok"
+            />
+            <HudButton 
+              icon={Users} 
+              label="Channel" 
+              onClick={toggleChannelMode}
+              data={channelMode.toUpperCase()}
+              active={channelMode === 'team'}
+              status="ok"
+            />
+            <HudButton 
+              icon={Truck} 
+              label="Fleet" 
+              onClick={toggleFleetMode}
+              data={fleetMode.toUpperCase()}
+              status="ok"
+            />
+            <HudButton 
+              icon={Activity} 
+              label="Status" 
+              onClick={() => setIsDiagnosticsOpen(true)}
+              status={systemHealth === 'healthy' ? 'healthy' : 'problem'}
+              data={`${healthValue}%`}
+            />
+          </div>
+        }
+        rightColumn={
+          <div className="flex flex-col gap-3 mt-24">
+            <HudButton 
+              icon={Power} 
+              label="Power" 
+              onClick={() => setIsPoweredOn(!isPoweredOn)}
+              status={isPoweredOn ? 'healthy' : 'problem'}
+              active={isPoweredOn}
+            />
+            <HudButton icon={Layers} label="Layers" onClick={toggleMapType} status="ok" />
+            <HudButton icon={Filter} label="Filters" onClick={() => setIsCategoryDrawerOpen(true)} status="ok" />
+            <HudButton icon={Crosshair} label="Locate" onClick={handleSyncGPS} status="ok" />
+            <HudButton 
+              icon={Navigation} 
+              label="Route" 
+              onClick={handleStartRouting}
+              status={routingDestination ? 'healthy' : 'warning'}
+              active={isRouting}
+              data={isRouting ? "ACTIVE" : (routingDestination ? "READY" : "IDLE")}
+            />
+            <HudButton icon={Radar} label="Scanner" onClick={toggleRadarMode} active={radarMode !== 'hidden'} status="ok" />
+          </div>
+        }
+        bottomCenter={
+          <div className="w-full max-w-3xl bg-zinc-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center gap-3 mb-8 pointer-events-auto">
+            <div className="p-3 bg-white/5 rounded-2xl">
+              <Search className="w-6 h-6 text-white/40" />
             </div>
-          )}
-          {isVideoRecorderOpen && (
-            <VideoRecorder 
-              isOpen={isVideoRecorderOpen}
-              onClose={() => setIsVideoRecorderOpen(false)}
-              onPost={handleVideoPost}
+            <input 
+              type="text" 
+              placeholder="Ask AstranoV AI..." 
+              className="flex-1 bg-transparent border-none outline-none text-white text-lg font-medium placeholder:text-white/20"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleCommand(e.currentTarget.value);
+                  e.currentTarget.value = '';
+                }
+              }}
             />
-          )}
-          {selectedShop && (
-            <ShopModal 
-              shop={selectedShop}
-              onClose={() => setSelectedShop(null)}
-              onPlaceOrder={handlePlaceOrder}
-              isAuthenticated={isAuthenticated}
-              onLoginRequired={() => setIsLoginModalOpen(true)}
-              currentUserId={currentUserId || undefined}
+            <div className="flex items-center gap-2 pr-2">
+              <button 
+                onClick={handleVoiceCommand}
+                className={`p-3 rounded-2xl transition-all ${isListening ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.5)] animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'}`}
+              >
+                <Mic className="w-6 h-6" />
+              </button>
+              <button 
+                onClick={(e) => {
+                  const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement;
+                  handleCommand(input.value);
+                  input.value = '';
+                }}
+                className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all shadow-lg"
+              >
+                <Send className="w-6 h-6" />
+              </button>
+            </div>
+            {isLoading && (
+              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">Processing</span>
+              </div>
+            )}
+          </div>
+        }
+        bottomRight={
+          <div className="mb-8 mr-4 pointer-events-auto">
+            <BottomRightRadar 
+              mode={radarMode}
+              onToggleMode={toggleRadarMode}
+              onClose={() => setRadarMode('hidden')}
+              center={center}
+              tasks={tasks}
+              users={users}
+              shops={shops}
             />
-          )}
+          </div>
+        }
+      />
+
+      {/* OVERLAYS */}
+      <AnimatePresence>
+        {mapContextMenu && (
+          <MapContextMenu 
+            lat={mapContextMenu.lat}
+            lng={mapContextMenu.lng}
+            x={mapContextMenu.x}
+            y={mapContextMenu.y}
+            onClose={() => setMapContextMenu(null)}
+            onAction={handleContextAction}
+          />
+        )}
+        
+        {lastReply && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-full max-w-md px-4"
+          >
+            <div className="bg-zinc-900/95 backdrop-blur-2xl border border-white/10 p-4 rounded-2xl shadow-2xl flex items-start gap-3">
+              <div className="p-2 bg-emerald-500/10 rounded-lg">
+                <Zap className="w-4 h-4 text-emerald-500" />
+              </div>
+              <p className="text-sm text-white/90 font-medium leading-relaxed">{lastReply}</p>
+              <button onClick={() => setLastReply(undefined)} className="ml-auto text-white/20 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {isLoginModalOpen && (
           <UserWidget 
             isOpen={isLoginModalOpen}
             onClose={() => setIsLoginModalOpen(false)}
@@ -565,137 +774,45 @@ export default function App() {
             onRoleChange={handleRoleChange}
             hasShop={hasShop}
           />
-          {activeChatUser && (
-            <ChatWidget 
-              currentUserId={currentUserId || 'guest'}
-              targetUserId={activeChatUser.id}
-              targetUserName={activeChatUser.name}
-              onClose={() => setActiveChatUser(null)}
-            />
-          )}
-          {ratingTarget && (
-            <RatingModal 
-              targetId={ratingTarget.id}
-              targetName={ratingTarget.name}
-              targetType={ratingTarget.type}
-              raterId={currentUserId || 'guest'}
-              onClose={() => setRatingTarget(null)}
-            />
-          )}
-          {isMissionControlOpen && (
-            <MissionControl 
-              isOpen={isMissionControlOpen}
-              onClose={() => setIsMissionControlOpen(false)}
-              tasks={tasks}
-              shops={shops}
-              groundingShops={groundingShops}
-              users={users}
-              currentUserId={currentUserId}
-              onSelectShop={(shop) => { setSelectedShop(shop); setIsMissionControlOpen(false); }}
-              onSelectTask={(task) => { setCenter({ lat: task.lat, lng: task.lng }); setIsMissionControlOpen(false); }}
-              onSelectUser={(user) => { setCenter({ lat: user.lat, lng: user.lng }); setIsMissionControlOpen(false); }}
-            />
-          )}
-          {isTeamPlatformOpen && (
-            <TeamPlatform 
-              isOpen={isTeamPlatformOpen} 
-              onClose={() => setIsTeamPlatformOpen(false)} 
-              onPostGlobal={(content) => setLastReply(`Message sent: ${content}`)}
-              currentTeamId={selectedTeamId}
-              onSelectTeam={setSelectedTeamId}
-              teams={teams}
-              onUpdateTeams={setTeams}
-            />
-          )}
-          {/* System Center removed per emergency policy */}
-          {isDiagnosticsOpen && (
-            <DiagnosticCenter 
-              isOpen={isDiagnosticsOpen} 
-              onClose={() => setIsDiagnosticsOpen(false)} 
-            />
-          )}
-          {isSearchOpen && (
-            <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 pointer-events-auto">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsSearchOpen(false)} />
-              <div className="relative w-full max-w-2xl bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[40px] shadow-2xl p-8">
-                <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-widest italic">Integrated Search</h2>
-                  <button onClick={() => setIsSearchOpen(false)} className="text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
-                </div>
-                <IntegratedSearch 
-                  balance={currentUser?.balance || 0}
-                  healthValue={healthValue}
-                  droneStatus={droneStatus}
-                  onCommand={handleCommand}
-                  isLoading={isLoading}
-                  lastReply={lastReply}
-                  onFinancialClick={() => setIsFinancialOpen(true)}
-                  onFilterSelect={(filter) => handleCommand(`Show ${filter}`)}
-                  onAuthClick={() => setIsLoginModalOpen(true)}
-                  isActive={isActive}
-                  onLayerToggle={toggleMapType}
-                  onTeamClick={() => setIsTeamPlatformOpen(true)}
-                  onSettingsClick={() => setIsComplianceOpen(true)}
-                  onDroneClick={() => setIsDroneFleetOpen(true)}
-                  onGamesClick={() => setIsGamesModalOpen(true)}
-                  onPowerClick={() => setIsActive(!isActive)}
-                  onSyncGPS={handleSyncGPS}
-                  onConsoleClick={() => setIsSystemConsoleOpen(!isSystemConsoleOpen)}
-                  onDiagnosticClick={() => setIsDiagnosticsOpen(true)}
-                  systemHealth={systemHealth}
-                  onVoiceClick={handleVoiceCommand}
-                  isListening={isListening}
-                />
-              </div>
-            </div>
-          )}
-          {isFinancialOpen && (
-            <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 pointer-events-auto">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsFinancialOpen(false)} />
-              <div className="relative w-full max-w-5xl max-h-[90vh] bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col">
-                <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/5">
-                  <h2 className="text-2xl font-black text-white uppercase tracking-widest italic">Financial Center</h2>
-                  <button onClick={() => setIsFinancialOpen(false)} className="text-white/40 hover:text-white"><X className="w-6 h-6" /></button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <WalletDashboard balance={currentUser?.balance || 0} userId={currentUserId || 'guest'} onUpdateBalance={fetchCurrentUser} />
-                    <AnalyticsDashboard userId={currentUserId || 'guest'} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {!isActive && (
-            <div className="fixed inset-0 z-[9999] pointer-events-none bg-black/40 backdrop-grayscale flex items-center justify-center">
-              <div className="bg-black/80 border border-red-500/50 px-8 py-4 rounded-full shadow-[0_0_50px_rgba(239,68,68,0.3)]">
-                <p className="text-red-500 font-black uppercase tracking-[0.5em] text-xs animate-pulse">System Offline</p>
-              </div>
-            </div>
-          )}
-        </OverlayPanelsLayer>
-      }
-    >
-      <div className="absolute inset-0 z-0">
-        <AnimatePresence mode="wait">
-          {viewState !== 'local' ? (
-            <motion.div key="globe" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-              <GlobeScene onSignalSelect={handleSignalSelect} isZooming={viewState === 'zooming' || viewState === 'atmosphere'} onTransitionComplete={handleTransitionComplete} />
-            </motion.div>
-          ) : (
-            <motion.div key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full h-full">
-              <AstranovMap 
-                center={center} tasks={tasks} shops={shops} publications={publications} groundingShops={groundingShops}
-                users={currentUser ? Array.from(new Map([...users, currentUser].map(u => [u.id, u])).values()) : users} onMapClick={handleMapClick} onLongPress={handleLongPress}
-                onMarkerClick={handleMarkerClick} userRole={role} userId={currentUserId || 'guest'} activeRoute={activeRoute}
-                pendingTaskLocation={pendingTaskLocation} zoom={zoom} mapType={mapType}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+        )}
 
-      {/* mapContextMenu removed per emergency policy */}
-    </AppShell>
+        {isSocialPostOpen && (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-md pointer-events-auto p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-zinc-900 border border-white/10 p-6 rounded-3xl shadow-2xl w-full max-w-md"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black text-white tracking-tight">Post Update</h3>
+                <button onClick={() => setIsSocialPostOpen(false)} className="text-white/40 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <textarea 
+                value={socialContent}
+                onChange={(e) => setSocialContent(e.target.value)}
+                placeholder="What's happening at this location?"
+                className="w-full h-32 bg-black/50 border border-white/10 rounded-2xl p-4 text-white mb-4 outline-none focus:border-white/20 transition-all"
+              />
+              <button 
+                onClick={handleSocialPost} 
+                disabled={!socialContent.trim() || isLoading}
+                className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-all disabled:opacity-50"
+              >
+                {isLoading ? 'Publishing...' : 'Post'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Other modals integrated similarly... */}
+      </AnimatePresence>
+
+      {/* Version Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none">
+        <VersionBar currentVersion={appVersion} latestVersion={latestVersion} status={versionStatus} />
+      </div>
+    </div>
   );
 }

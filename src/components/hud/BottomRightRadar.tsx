@@ -36,7 +36,7 @@ export const BottomRightRadar: React.FC<BottomRightRadarProps> = ({
       <div className="absolute top-0 left-0 right-0 z-10 p-3 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex items-center gap-2">
           <Radar className="w-4 h-4 text-electric-blue animate-pulse" />
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Tactical Radar</span>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">Scanner</span>
         </div>
         <div className="flex items-center gap-1">
           <button 
@@ -68,11 +68,11 @@ export const BottomRightRadar: React.FC<BottomRightRadarProps> = ({
       {/* Radar Footer */}
       <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
         <div className="flex flex-col">
-          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Scan Range</span>
+          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Detection Range</span>
           <span className="text-[10px] font-black text-white font-mono">5.2 KM</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Targets</span>
+          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Signals</span>
           <span className="text-[10px] font-black text-electric-blue font-mono">12 ACTIVE</span>
         </div>
       </div>

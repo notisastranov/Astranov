@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { Task, User, Shop, Publication } from '../types';
+import { VideoSignal } from '../types/youtube';
 
 // Initialize Google Maps Loader
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || process.env.GOOGLE_MAPS_API_KEY || 'AIzaSyAMYYBnaazrVUTAx9i11HMR0JHwMwIaScA';
@@ -27,6 +28,8 @@ interface MapProps {
   pendingTaskLocation?: { lat: number, lng: number } | null;
   zoom?: number;
   mapType?: 'roadmap' | 'satellite' | 'terrain' | 'hybrid' | 'dark' | 'earth';
+  videoSignals?: VideoSignal[];
+  onSignalClick?: (signal: VideoSignal) => void;
 }
 
 const DARK_MAP_STYLES = [
@@ -50,7 +53,7 @@ const DARK_MAP_STYLES = [
   { featureType: "water", elementType: "labels.text.stroke", stylers: [{ color: "#17263c" }] },
 ];
 
-export default function AstranovMap({ center, tasks, shops, publications, groundingShops, users, onMapClick, onLongPress, onMarkerClick, userId, activeRoute, zoom, mapType = 'dark' }: MapProps) {
+export default function AstranovMap({ center, tasks, shops, publications, groundingShops, users, onMapClick, onLongPress, onMarkerClick, userId, activeRoute, zoom, mapType = 'dark', videoSignals = [], onSignalClick }: MapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<google.maps.Map | null>(null);
   const markers = useRef<Map<string, google.maps.Marker>>(new Map());
@@ -391,7 +394,47 @@ export default function AstranovMap({ center, tasks, shops, publications, ground
       }
     });
 
-  }, [isLoaded, tasks, shops, groundingShops, users, userId, isSimulated]);
+    // Video Signals
+    videoSignals.forEach(signal => {
+      const id = `signal-${signal.id}`;
+      if (!markers.current.has(id)) {
+        const marker = new google.maps.Marker({
+          position: { lat: signal.lat, lng: signal.lng },
+          map: mapInstance.current,
+          title: signal.title,
+          icon: {
+            url: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png',
+            scaledSize: new google.maps.Size(32, 32),
+            anchor: new google.maps.Point(16, 16)
+          }
+        });
+
+        marker.addListener('click', () => {
+          if (onSignalClick) onSignalClick(signal);
+          
+          if (infoWindow.current) infoWindow.current.close();
+          infoWindow.current = new google.maps.InfoWindow({
+            content: `
+              <div style="color: #000; padding: 8px; font-family: sans-serif;">
+                <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">${signal.title}</h3>
+                <p style="margin: 0; font-size: 11px; color: #666;">YouTube Signal • ${signal.locationConfidence > 0.8 ? 'Verified' : 'Estimated'}</p>
+                <button id="play-video-${signal.id}" style="margin-top: 8px; background: #ff0000; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; width: 100%;">PLAY VIDEO</button>
+              </div>
+            `
+          });
+          infoWindow.current.open(mapInstance.current, marker);
+          
+          google.maps.event.addListenerOnce(infoWindow.current, 'domready', () => {
+            document.getElementById(`play-video-${signal.id}`)?.addEventListener('click', () => {
+              if (onSignalClick) onSignalClick(signal);
+            });
+          });
+        });
+        markers.current.set(id, marker);
+      }
+    });
+
+  }, [isLoaded, tasks, shops, groundingShops, users, userId, isSimulated, videoSignals]);
 
   useEffect(() => {
     if (isSimulated || !isLoaded || !mapInstance.current || !activeRoute || activeRoute.length < 2) {

@@ -1,11 +1,70 @@
 import { CommerceService } from './commerceService';
 import { PaymentService } from './paymentService';
+import { YouTubeSignalHandlers } from '../youtube/YouTubeSignalHandlers';
 import { OrderStatus, FulfillmentMethod } from '../../types/operational';
 import db from '../../../firestore.js';
 
+import { SignalDistributionEngine } from '../signals/SignalDistributionEngine';
+import { UserSignalPreferenceService } from '../signals/UserSignalPreferenceService';
+import { SignalLayerPolicyService } from '../signals/SignalLayerPolicyService';
+import { AstranovSignal, RenderLayer, SignalCategory } from '../../types/signals';
+
 export const aiToolHandlers = {
+  // ... existing handlers ...
+  getSignalsForViewport: async (args: { userId: string; layer: RenderLayer; minLat?: number; maxLat?: number; minLng?: number; maxLng?: number; userLat?: number; userLng?: number }) => {
+    const bounds = args.minLat !== undefined ? { minLat: args.minLat, maxLat: args.maxLat!, minLng: args.minLng!, maxLng: args.maxLng! } : undefined;
+    return await SignalDistributionEngine.getSignals(args.userId, args.layer, bounds, args.userLat, args.userLng);
+  },
+  updateSignalPreferences: async (args: { userId: string; updates: any }) => {
+    await UserSignalPreferenceService.updatePreferences(args.userId, args.updates);
+    return { status: 'success' };
+  },
+  explainSignalReason: async (args: { signalId: string; userId: string }) => {
+    // In a real implementation, we'd look up the signal and explain why it was ranked high
+    return { 
+      reason: "This signal is shown because it matches your interest in global news and is currently trending in your region.",
+      signalId: args.signalId
+    };
+  },
+  hideSignalCategory: async (args: { userId: string; category: SignalCategory }) => {
+    const prefs = await UserSignalPreferenceService.getPreferences(args.userId);
+    if (prefs) {
+      const blocked = [...new Set([...prefs.blockedTopics, args.category])];
+      const preferred = prefs.preferredCategories.filter(c => c !== args.category);
+      await UserSignalPreferenceService.updatePreferences(args.userId, { 
+        blockedTopics: blocked,
+        preferredCategories: preferred
+      });
+    }
+    return { status: 'success', hiddenCategory: args.category };
+  },
+  boostSignalCategory: async (args: { userId: string; category: SignalCategory }) => {
+    const prefs = await UserSignalPreferenceService.getPreferences(args.userId);
+    if (prefs) {
+      const preferred = [...new Set([...prefs.preferredCategories, args.category])];
+      await UserSignalPreferenceService.updatePreferences(args.userId, { preferredCategories: preferred });
+    }
+    return { status: 'success', boostedCategory: args.category };
+  },
+  getMandatorySignals: async (args: { layer: RenderLayer }) => {
+    // Mock implementation for AI to see what's mandatory
+    return [
+      { id: 'm1', title: 'Global Climate Summit 2026', type: 'global_news', priorityScore: 10, metadata: { isMandatory: true } },
+      { id: 'm2', title: 'Major Solar Flare Alert', type: 'astronomy', priorityScore: 9.5, metadata: { isMandatory: true } }
+    ];
+  },
   searchNearby: async (args: { lat: number; lng: number; category?: string; radius?: number }) => {
     return await CommerceService.searchNearby(args.lat, args.lng, args.category);
+  },
+  searchNearbySignals: async (args: { lat: number; lng: number; radius?: number }) => {
+    const radius = args.radius || 5000;
+    const snapshot = await db.collection('map_signals').get();
+    const signals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Simple distance filter for mock implementation
+    return signals.filter((s: any) => {
+      const d = Math.sqrt(Math.pow(s.location.lat - args.lat, 2) + Math.pow(s.location.lng - args.lng, 2));
+      return d < (radius / 111000); // 1 degree is roughly 111km
+    });
   },
   searchWeb: async (args: { query: string }) => {
     // In a real app, we'd use a search API. 
@@ -66,5 +125,21 @@ export const aiToolHandlers = {
     };
     await db.collection('saved_locations').doc(loc.id).set(loc);
     return { status: 'success', locationId: loc.id };
+  },
+  searchNearbyVideos: async (args: { lat: number; lng: number; radius?: number }) => {
+    return await YouTubeSignalHandlers.searchNearbyVideos(args.lat, args.lng, args.radius);
+  },
+  searchRegionalVideos: async (args: { regionKey: string }) => {
+    return await YouTubeSignalHandlers.searchRegionalVideos(args.regionKey);
+  },
+  getVideoSignalDetails: async (args: { signalId: string }) => {
+    return await YouTubeSignalHandlers.getVideoSignalDetails(args.signalId);
+  },
+  createVideoSignalFromUrl: async (args: { youtubeUrl: string; userId: string; lat?: number; lng?: number }) => {
+    const location = args.lat && args.lng ? { lat: args.lat, lng: args.lng } : undefined;
+    return await YouTubeSignalHandlers.createVideoSignalFromUrl(args.youtubeUrl, args.userId, location);
+  },
+  getTrendingVideoSignals: async (args: { scope: 'global' | 'regional' | 'local' }) => {
+    return await YouTubeSignalHandlers.getTrendingVideoSignals(args.scope);
   }
 };

@@ -9,6 +9,7 @@ interface AppShellProps {
   topRightHUD?: React.ReactNode;
   bottomCenterAIBar?: React.ReactNode;
   bottomRightRadar?: React.ReactNode;
+  bottomCenterHUD?: React.ReactNode;
   overlayPanels?: React.ReactNode;
   versionBar?: React.ReactNode;
 }
@@ -21,6 +22,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   topRightHUD,
   bottomCenterAIBar,
   bottomRightRadar,
+  bottomCenterHUD,
   overlayPanels,
   versionBar,
 }) => {
@@ -47,14 +49,19 @@ export const AppShell: React.FC<AppShellProps> = ({
           {topRightHUD}
         </div>
 
-        {/* Left HUD Column - Starts higher */}
-        <div className="absolute top-24 sm:top-32 bottom-24 sm:bottom-32 left-4 sm:left-8 w-16 sm:w-20 flex flex-col items-center justify-start gap-3 sm:gap-4 pointer-events-auto">
+        {/* Left HUD Column */}
+        <div className="absolute top-24 sm:top-32 bottom-24 sm:bottom-32 left-4 sm:left-8 w-16 sm:w-20 flex flex-col items-center justify-start pointer-events-auto">
           {leftHUD}
         </div>
 
-        {/* Right HUD Column - Starts higher */}
-        <div className="absolute top-24 sm:top-32 bottom-24 sm:bottom-32 right-4 sm:right-8 w-16 sm:w-20 flex flex-col items-center justify-start gap-3 sm:gap-4 pointer-events-auto">
+        {/* Right HUD Column */}
+        <div className="absolute top-24 sm:top-32 bottom-24 sm:bottom-32 right-4 sm:right-8 w-16 sm:w-20 flex flex-col items-center justify-start pointer-events-auto">
           {rightHUD}
+        </div>
+
+        {/* Bottom Center HUD (Extra buttons) */}
+        <div className="absolute bottom-24 sm:bottom-32 left-1/2 -translate-x-1/2 pointer-events-auto">
+          {bottomCenterHUD}
         </div>
 
         {/* Bottom Center AI Bar */}

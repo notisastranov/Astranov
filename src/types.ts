@@ -1,6 +1,6 @@
 export type UserRole = 'user' | 'deliverer' | 'vendor' | 'admin' | 'supervisor' | 'owner' | 'operator';
 
-export type HudRegion = 'top' | 'left' | 'right' | 'bottom';
+export type HudRegion = 'top' | 'left' | 'right' | 'bottom-center' | 'bottom-right' | 'top-right';
 
 export interface HudButtonConfig {
   id: string;
@@ -9,8 +9,9 @@ export interface HudButtonConfig {
   region: HudRegion;
   order: number;
   enabled: boolean;
-  status?: 'healthy' | 'warning' | 'problem' | 'finance';
+  status?: 'healthy' | 'warning' | 'problem' | 'finance' | 'ok' | 'bad' | 'warn';
   data?: string; // Embedded info
+  position?: { x: number; y: number }; // For grid snapping
 }
 
 export interface UiPreferences {
@@ -214,6 +215,12 @@ export interface Publication {
   timestamp: string;
   likes: number;
   views: number;
+}
+
+export interface UserUILayout {
+  userId: string;
+  buttons: HudButtonConfig[];
+  updatedAt: string;
 }
 
 export type SocketMessage = 

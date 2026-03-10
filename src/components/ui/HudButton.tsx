@@ -11,7 +11,7 @@ interface HudButtonProps {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg' | 'xl';
   disabled?: boolean;
-  status?: 'healthy' | 'warning' | 'problem' | 'finance';
+  status?: 'healthy' | 'warning' | 'problem' | 'finance' | 'ok' | 'bad' | 'warn';
   data?: string;
 }
 
@@ -40,13 +40,16 @@ export const HudButton: React.FC<HudButtonProps> = ({
     if (disabled) return "bg-black/20 border-white/5 text-white/10";
     
     switch (status) {
-      case 'healthy': return active 
+      case 'healthy':
+      case 'ok': return active 
         ? "bg-blue-500/20 border-blue-500 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.4)]" 
         : "bg-black/40 border-white/10 text-white/70 hover:bg-black/60 hover:border-blue-500/30 hover:text-blue-400";
-      case 'warning': return active
+      case 'warning':
+      case 'warn': return active
         ? "bg-amber-500/20 border-amber-500 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
         : "bg-black/40 border-amber-500/20 text-amber-500/70 hover:bg-black/60 hover:border-amber-500/50 hover:text-amber-400";
-      case 'problem': return active
+      case 'problem':
+      case 'bad': return active
         ? "bg-rose-500/20 border-rose-500 text-rose-400 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
         : "bg-black/40 border-rose-500/20 text-rose-500/70 hover:bg-black/60 hover:border-rose-500/50 hover:text-rose-400";
       case 'finance': return active
@@ -72,10 +75,10 @@ export const HudButton: React.FC<HudButtonProps> = ({
         ${className}
       `}
     >
-      <Icon className={`${data ? 'w-6 h-6 mb-1' : 'w-full h-full'}`} />
+      <Icon className={`${data ? 'w-5 h-5 mb-0.5' : 'w-full h-full'}`} />
       
       {data && (
-        <span className="text-[8px] font-black uppercase tracking-tighter opacity-80">
+        <span className="text-[7px] sm:text-[8px] font-black uppercase tracking-tighter opacity-90 leading-none">
           {data}
         </span>
       )}
@@ -89,9 +92,9 @@ export const HudButton: React.FC<HudButtonProps> = ({
       {/* Status Dot */}
       {status && (
         <div className={`absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full ${
-          status === 'healthy' ? 'bg-blue-400' :
-          status === 'warning' ? 'bg-amber-400' :
-          status === 'problem' ? 'bg-rose-400' :
+          (status === 'healthy' || status === 'ok') ? 'bg-blue-400' :
+          (status === 'warning' || status === 'warn') ? 'bg-amber-400' :
+          (status === 'problem' || status === 'bad') ? 'bg-rose-400' :
           'bg-emerald-400'
         } shadow-[0_0_5px_currentColor]`} />
       )}

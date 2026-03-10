@@ -11,16 +11,19 @@ interface GlobalSignal {
   id: string;
   lat: number;
   lng: number;
-  type: 'news' | 'work' | 'social' | 'economy' | 'friend';
+  type: 'news' | 'work' | 'social' | 'economy' | 'friend' | 'youtube' | 'event';
   label: string;
   description: string;
   color: string;
+  youtubeId?: string;
 }
 
 interface GlobeSceneProps {
   onSignalSelect: (signal: GlobalSignal) => void;
   isZooming: boolean;
   onTransitionComplete: () => void;
+  viewState: 'orbital' | 'map' | 'city';
+  signals?: GlobalSignal[];
 }
 
 const SIGNALS: GlobalSignal[] = [
@@ -28,11 +31,11 @@ const SIGNALS: GlobalSignal[] = [
   { id: '2', lat: 51.5074, lng: -0.1278, type: 'news', label: 'London Nexus', description: 'Global financial updates incoming', color: '#ff4e00' },
   { id: '3', lat: 35.6762, lng: 139.6503, type: 'social', label: 'Tokyo Pulse', description: 'High social activity detected', color: '#f43f5e' },
   { id: '4', lat: -33.8688, lng: 151.2093, type: 'economy', label: 'Sydney Market', description: 'Commercial clusters forming', color: '#10b881' },
-  { id: '5', lat: -23.5505, lng: -46.6333, type: 'news', label: 'São Paulo Nebula', description: 'Regional news nebula detected', color: '#8b5cf6' },
+  { id: '5', lat: -23.5505, lng: -46.6333, type: 'youtube', label: 'São Paulo Nebula', description: 'Regional news nebula detected', color: '#ff0000', youtubeId: 'dQw4w9WgXcQ' },
   { id: '6', lat: 48.8566, lng: 2.3522, type: 'friend', label: 'Marc V.', description: 'Active now in Paris', color: '#ffffff' },
 ];
 
-export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComplete }: GlobeSceneProps) {
+export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComplete, viewState, signals = [] }: GlobeSceneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [sceneData, setSceneData] = useState<{
     scene: THREE.Scene;
@@ -49,7 +52,7 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
 
     // Scene setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -113,28 +116,39 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
     scene.add(atmosphere);
 
-    // Stars
+    // Stars and Constellations
     const starGeometry = new THREE.BufferGeometry();
-    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
+    const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.8 });
     const starVertices = [];
-    for (let i = 0; i < 10000; i++) {
-      const x = (Math.random() - 0.5) * 2000;
-      const y = (Math.random() - 0.5) * 2000;
-      const z = (Math.random() - 0.5) * 2000;
+    for (let i = 0; i < 15000; i++) {
+      const x = (Math.random() - 0.5) * 3000;
+      const y = (Math.random() - 0.5) * 3000;
+      const z = (Math.random() - 0.5) * 3000;
       starVertices.push(x, y, z);
     }
     starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
+    // Space Nebula
+    const nebulaGeometry = new THREE.SphereGeometry(800, 32, 32);
+    const nebulaMaterial = new THREE.MeshBasicMaterial({
+      side: THREE.BackSide,
+      transparent: true,
+      opacity: 0.1,
+      color: 0x1a0b2e // Realistic deep purple/blue
+    });
+    const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
+    scene.add(nebula);
+
     // Lights
     const ambientLight = new THREE.AmbientLight(0x404040, 2);
     scene.add(ambientLight);
     const sunLight = new THREE.DirectionalLight(0xffffff, 3);
-    sunLight.position.set(10, 10, 10);
+    sunLight.position.set(20, 10, 20);
     scene.add(sunLight);
 
-    camera.position.z = 15;
+    camera.position.z = 25; // Start further out for orbital view
 
     setSceneData({ scene, camera, renderer });
 
@@ -143,8 +157,9 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
       const frameId = requestAnimationFrame(animate);
       
       if (!isZooming) {
-        globe.rotation.y += 0.0005;
-        clouds.rotation.y += 0.0007;
+        globe.rotation.y += 0.0003;
+        clouds.rotation.y += 0.0004;
+        stars.rotation.y += 0.00005;
       }
 
       renderer.render(scene, camera);
@@ -167,6 +182,30 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
     };
   }, []);
 
+  useEffect(() => {
+    if (!sceneData) return;
+    
+    // Handle viewState transitions
+    const targetZ = viewState === 'orbital' ? 25 : 15;
+    const duration = 2000;
+    const startZ = sceneData.camera.position.z;
+    const startTime = Date.now();
+
+    const animateZoom = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3); // Cubic ease out
+      
+      sceneData.camera.position.z = startZ + (targetZ - startZ) * easeProgress;
+      setZoomProgress(easeProgress);
+
+      if (progress < 1) {
+        requestAnimationFrame(animateZoom);
+      }
+    };
+    animateZoom();
+  }, [viewState, sceneData]);
+
   const handleSignalSelect = (signal: GlobalSignal) => {
     setSelectedSignal(signal);
     onSignalSelect(signal);
@@ -185,7 +224,7 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
           />
           <GlobalSignalLayer 
             scene={sceneData.scene} 
-            signals={SIGNALS} 
+            signals={signals.length > 0 ? signals : SIGNALS} 
             onSignalSelect={handleSignalSelect} 
             onSignalHover={setHoveredSignal}
             camera={sceneData.camera}

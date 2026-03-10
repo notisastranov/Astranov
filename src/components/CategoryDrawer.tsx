@@ -44,7 +44,8 @@ export default function CategoryDrawer({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const merged = parsed.map((p: any) => INITIAL_CATEGORIES.find(c => c.name === p.name)).filter(Boolean);
+        const uniqueNames = Array.from(new Set(parsed.map((p: any) => p.name)));
+        const merged = uniqueNames.map(name => INITIAL_CATEGORIES.find(c => c.name === name)).filter(Boolean);
         INITIAL_CATEGORIES.forEach(c => {
           if (!merged.find((m: any) => m.name === c.name)) merged.push(c);
         });
