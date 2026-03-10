@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import YouTubePlayer from './components/YouTubePlayer';
 import { YouTubeSignalClientService } from './services/youtube/YouTubeSignalClientService';
 import { VideoSignal, OrbitalSignal } from './types/youtube';
-import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic, Fingerprint, Camera, ImageIcon, Send, ArrowUpRight, Plus, CreditCard, Radar, BarChart3, Monitor, Shield, Zap, Video, ShoppingCart, Youtube, Wallet, User as UserIcon, Settings, Bookmark, Activity, History, ZoomIn, ZoomOut, Layers, Filter, Crosshair, Search, Users, Navigation, Power } from 'lucide-react';
+import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic, Fingerprint, Camera, ImageIcon, Send, ArrowUpRight, Plus, CreditCard, Radar, BarChart3, Monitor, Shield, Zap, Video, ShoppingCart, Youtube, Wallet, User as UserIcon, Settings, Bookmark, Activity, History, ZoomIn, ZoomOut, Layers, Filter, Crosshair, Search, Users, Navigation, Power, Satellite, Globe, Map as MapIcon, Car, Bike, Info, RefreshCw, PowerOff, Wifi, Signal, MapPin, Route, Scan, Maximize2 } from 'lucide-react';
 import { HudButton } from './components/ui/HudButton';
+import { SideActionMenu } from './components/ui/SideActionMenu';
 import AstranovMap from './components/Map';
 import GlobeScene from './components/GlobeScene';
 import { VersionBar } from './components/ui/VersionBar';
@@ -130,6 +131,13 @@ export default function App() {
   const [isPoweredOn, setIsPoweredOn] = useState(true);
   const [routingDestination, setRoutingDestination] = useState<{ lat: number; lng: number } | null>(null);
   const [isRouting, setIsRouting] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+
+  const handleMenuOpen = (e: React.MouseEvent, id: string) => {
+    setAnchorRect(e.currentTarget.getBoundingClientRect());
+    setActiveMenu(prev => prev === id ? null : id);
+  };
 
   useEffect(() => {
     const loadLayout = async () => {
@@ -601,52 +609,57 @@ export default function App() {
             <HudButton 
               icon={Settings} 
               label="Settings" 
-              onClick={() => setIsSystemConsoleOpen(true)} 
+              onClick={(e) => handleMenuOpen(e, 'settings')} 
               status="ok"
+              active={activeMenu === 'settings'}
             />
             <HudButton 
               icon={UserIcon} 
               label={isAuthenticated ? "Profile" : "Login"} 
-              onClick={() => setIsLoginModalOpen(true)}
+              onClick={(e) => handleMenuOpen(e, 'profile')}
               status={isAuthenticated ? 'healthy' : 'warning'}
               data={isAuthenticated ? "ACTIVE" : "OFFLINE"}
-              active={isAuthenticated}
+              active={activeMenu === 'profile'}
             />
             <HudButton 
               icon={Wallet} 
               label="Wallet" 
-              onClick={() => setIsWalletOpen(true)} 
+              onClick={(e) => handleMenuOpen(e, 'wallet')} 
               data={`€${currentUser?.balance?.toFixed(2) || '0.00'}`}
               status="finance"
+              active={activeMenu === 'wallet'}
             />
             <HudButton 
               icon={Plus} 
               label="Post" 
-              onClick={() => setIsSocialPostOpen(true)} 
+              onClick={(e) => handleMenuOpen(e, 'post')} 
               variant="primary" 
               status="ok"
+              active={activeMenu === 'post'}
             />
             <HudButton 
               icon={Users} 
               label="Channel" 
-              onClick={toggleChannelMode}
+              onClick={(e) => handleMenuOpen(e, 'channel')}
               data={channelMode.toUpperCase()}
-              active={channelMode === 'team'}
+              active={activeMenu === 'channel'}
               status="ok"
             />
             <HudButton 
               icon={Truck} 
               label="Fleet" 
-              onClick={toggleFleetMode}
+              onClick={(e) => handleMenuOpen(e, 'fleet')}
               data={fleetMode.toUpperCase()}
               status="ok"
+              active={activeMenu === 'fleet'}
             />
             <HudButton 
               icon={Activity} 
               label="Status" 
-              onClick={() => setIsDiagnosticsOpen(true)}
+              onClick={(e) => handleMenuOpen(e, 'status')}
               status={systemHealth === 'healthy' ? 'healthy' : 'problem'}
               data={`${healthValue}%`}
+              active={activeMenu === 'status'}
             />
           </div>
         }
@@ -655,22 +668,56 @@ export default function App() {
             <HudButton 
               icon={Power} 
               label="Power" 
-              onClick={() => setIsPoweredOn(!isPoweredOn)}
+              onClick={(e) => handleMenuOpen(e, 'power')}
               status={isPoweredOn ? 'healthy' : 'problem'}
-              active={isPoweredOn}
+              active={activeMenu === 'power'}
             />
-            <HudButton icon={Layers} label="Layers" onClick={toggleMapType} status="ok" />
-            <HudButton icon={Filter} label="Filters" onClick={() => setIsCategoryDrawerOpen(true)} status="ok" />
-            <HudButton icon={Crosshair} label="Locate" onClick={handleSyncGPS} status="ok" />
+            <HudButton 
+              icon={Satellite} 
+              label="Network" 
+              onClick={(e) => handleMenuOpen(e, 'network')}
+              status="ok"
+              active={activeMenu === 'network'}
+            />
+            <HudButton 
+              icon={Layers} 
+              label="Layers" 
+              onClick={(e) => handleMenuOpen(e, 'layers')} 
+              status="ok"
+              active={activeMenu === 'layers'}
+            />
+            <HudButton 
+              icon={Filter} 
+              label="Filters" 
+              onClick={(e) => handleMenuOpen(e, 'filters')} 
+              status="ok"
+              active={activeMenu === 'filters'}
+            />
+            <HudButton 
+              icon={Crosshair} 
+              label="Locate" 
+              onClick={(e) => {
+                handleSyncGPS();
+                handleMenuOpen(e, 'locate');
+              }} 
+              status="ok"
+              active={activeMenu === 'locate'}
+            />
             <HudButton 
               icon={Navigation} 
               label="Route" 
-              onClick={handleStartRouting}
+              onClick={(e) => handleMenuOpen(e, 'route')}
               status={routingDestination ? 'healthy' : 'warning'}
-              active={isRouting}
+              active={activeMenu === 'route'}
               data={isRouting ? "ACTIVE" : (routingDestination ? "READY" : "IDLE")}
             />
-            <HudButton icon={Radar} label="Scanner" onClick={toggleRadarMode} active={radarMode !== 'hidden'} status="ok" />
+            <HudButton 
+              icon={Radar} 
+              label="Scanner" 
+              onClick={(e) => handleMenuOpen(e, 'scanner')} 
+              active={activeMenu === 'scanner'} 
+              status="ok" 
+            />
           </div>
         }
         bottomCenter={
@@ -731,6 +778,298 @@ export default function App() {
       />
 
       {/* OVERLAYS */}
+      {/* SIDE ACTION MENUS */}
+      {/* LEFT COLUMN MENUS */}
+      <SideActionMenu 
+        isOpen={activeMenu === 'settings'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Settings"
+      >
+        <button onClick={() => setIsSystemConsoleOpen(true)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Settings className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">System Console</span>
+        </button>
+        <button onClick={() => setIsDemoMode(!isDemoMode)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Info className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">{isDemoMode ? "Disable Demo" : "Enable Demo"}</span>
+        </button>
+        <button onClick={() => setIsEditMode(!isEditMode)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Layers className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">{isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'profile'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Profile"
+      >
+        <button onClick={() => setIsLoginModalOpen(true)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <UserIcon className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">{isAuthenticated ? "Account Details" : "Login / Register"}</span>
+        </button>
+        <button onClick={() => setIsAuthenticated(!isAuthenticated)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Fingerprint className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Security Sync</span>
+        </button>
+        <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <PowerOff className="w-4 h-4 text-rose-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Disconnect</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'wallet'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Wallet"
+      >
+        <div className="flex flex-col items-center gap-1 mb-4">
+          <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Projected Earnings</span>
+          <span className="text-sm font-black text-emerald-400">+€124.50</span>
+        </div>
+        <button onClick={() => setIsWalletOpen(true)} className="flex flex-col items-center gap-1 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl transition-all">
+          <span className="text-[8px] font-black text-blue-400 uppercase tracking-[0.2em]">Current Balance</span>
+          <span className="text-2xl font-black text-white">€{currentUser?.balance?.toFixed(2) || '0.00'}</span>
+        </button>
+        <div className="flex flex-col items-center gap-1 mt-4">
+          <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Debt / Liabilities</span>
+          <span className="text-sm font-black text-rose-500">-€0.00</span>
+        </div>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'post'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Post Signal"
+      >
+        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Globe className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Global</span>
+        </button>
+        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Users className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Team</span>
+        </button>
+        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <UserIcon className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Friend</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'channel'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Channel"
+      >
+        <button onClick={() => { setChannelMode('global'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${channelMode === 'global' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Globe className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Global</span>
+        </button>
+        <button onClick={() => { setChannelMode('team'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${channelMode === 'team' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Users className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">National</span>
+        </button>
+        <button onClick={() => { setChannelMode('team'); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <MapPin className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Local</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'fleet'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Fleet"
+      >
+        <button onClick={() => { setFleetMode('drones'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'drones' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Zap className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Drones</span>
+        </button>
+        <button onClick={() => { setFleetMode('drivers'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'drivers' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Car className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Cars</span>
+        </button>
+        <button onClick={() => { setFleetMode('both'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'both' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Bike className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Bikes</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'status'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="System Status"
+      >
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Health</span>
+            <span className="text-[10px] font-black text-blue-400">{healthValue}%</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Connection</span>
+            <span className="text-[10px] font-black text-emerald-400">OPTIMAL</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Server</span>
+            <span className="text-[10px] font-black text-emerald-400">ONLINE</span>
+          </div>
+          <button onClick={() => setIsDiagnosticsOpen(true)} className="mt-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-center">
+            <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">Open Diagnostics</span>
+          </button>
+        </div>
+      </SideActionMenu>
+
+      {/* RIGHT COLUMN MENUS */}
+      <SideActionMenu 
+        isOpen={activeMenu === 'power'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Power"
+      >
+        <button onClick={() => { setIsPoweredOn(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Zap className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Standby</span>
+        </button>
+        <button onClick={() => window.location.reload()} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <RefreshCw className="w-4 h-4 text-amber-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Reboot</span>
+        </button>
+        <button onClick={() => { setIsPoweredOn(false); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <PowerOff className="w-4 h-4 text-rose-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Turn Off</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'network'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Network"
+      >
+        <button className="flex items-center gap-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-xl transition-all text-left">
+          <Wifi className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Primary Network</span>
+        </button>
+        <button className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Satellite className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Satellite Network</span>
+        </button>
+        <button className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Signal className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Peer Network</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'layers'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Layers"
+      >
+        <div className="grid grid-cols-2 gap-2">
+          {['Orbital', 'Planetary', 'Local', 'Traffic', 'Weather', 'Commerce', 'Signals'].map(layer => (
+            <button key={layer} onClick={() => setActiveMenu(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-center">
+              <span className="text-[8px] font-black uppercase tracking-widest text-white">{layer}</span>
+            </button>
+          ))}
+        </div>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'filters'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Filters"
+      >
+        <div className="grid grid-cols-2 gap-2">
+          {['Supermarket', 'Food', 'Drinks', 'Real estate', 'Dating', 'Jobs', 'Events', 'Services', 'Deliveries'].map(filter => (
+            <button key={filter} onClick={() => setActiveMenu(null)} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-all text-center">
+              <span className="text-[8px] font-black uppercase tracking-widest text-white">{filter}</span>
+            </button>
+          ))}
+        </div>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'locate'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Positioning"
+      >
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-xl transition-all text-left">
+          <MapPin className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">GPS (US)</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Globe className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">GLONASS</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Satellite className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Baidu</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'route'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Routing"
+      >
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Route className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Road Route</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Truck className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Off-road Route</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Zap className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Aerial Route</span>
+        </button>
+      </SideActionMenu>
+
+      <SideActionMenu 
+        isOpen={activeMenu === 'scanner'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Scanner"
+      >
+        <button onClick={() => { toggleRadarMode(); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-xl transition-all text-left">
+          <Scan className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Start Scan</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Maximize2 className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Scan Radius</span>
+        </button>
+        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+          <Filter className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Scan Categories</span>
+        </button>
+      </SideActionMenu>
+
       <AnimatePresence>
         {mapContextMenu && (
           <MapContextMenu 

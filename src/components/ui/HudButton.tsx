@@ -4,7 +4,7 @@ import { LucideIcon } from 'lucide-react';
 
 interface HudButtonProps {
   icon: LucideIcon;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   active?: boolean;
   label?: string;
   className?: string;
