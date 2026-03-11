@@ -66,15 +66,6 @@ export const aiToolHandlers = {
       return d < (radius / 111000); // 1 degree is roughly 111km
     });
   },
-  searchWeb: async (args: { query: string }) => {
-    // In a real app, we'd use a search API. 
-    // Here we return a message indicating that Gemini's native search grounding should be used.
-    return { 
-      status: 'success', 
-      message: "Web search context requested. Please use native Google Search grounding for the most accurate results.",
-      query: args.query
-    };
-  },
   getBestRated: async (args: { lat: number; lng: number; category: string }) => {
     return await CommerceService.searchNearby(args.lat, args.lng, args.category, true);
   },

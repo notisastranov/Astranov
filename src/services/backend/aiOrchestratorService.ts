@@ -33,17 +33,6 @@ export class AIOrchestratorService {
     {
       functionDeclarations: [
         {
-          name: "searchWeb",
-          description: "Perform an internet search for real-time information.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              query: { type: Type.STRING, description: "The search query." }
-            },
-            required: ["query"]
-          }
-        },
-        {
           name: "searchNearby",
           description: "Search for businesses, shops, or points of interest near a location.",
           parameters: {
@@ -381,9 +370,6 @@ export class AIOrchestratorService {
 
           try {
             switch (call.name) {
-              case "searchWeb":
-                result = await aiToolHandlers.searchWeb(call.args as any);
-                break;
               case "searchNearby":
                 result = await aiToolHandlers.searchNearby(call.args as any);
                 break;

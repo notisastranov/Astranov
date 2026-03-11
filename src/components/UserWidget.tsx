@@ -93,41 +93,41 @@ export default function UserWidget({
             className="relative w-full max-w-md bg-zinc-900/95 border border-white/10 rounded-[32px] shadow-2xl overflow-hidden flex flex-col cursor-grab active:cursor-grabbing"
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <User className="w-6 h-6" />
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                  <User className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-white uppercase tracking-tighter italic">
-                    {isAuthenticated ? 'User Profile' : 'Authentication'}
+                  <h3 className="text-sm font-black text-white uppercase tracking-tight italic">
+                    {isAuthenticated ? 'Profile' : 'Auth'}
                   </h3>
-                  <p className="text-[10px] text-white/40 uppercase tracking-widest">
-                    {isAuthenticated ? 'Secure Session' : 'System Link Required'}
+                  <p className="text-[8px] text-white/40 uppercase tracking-widest">
+                    {isAuthenticated ? 'Secure' : 'Link Required'}
                   </p>
                 </div>
               </div>
               <button 
                 onClick={onClose}
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all"
+                className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="p-8">
+            <div className="p-6">
               {isAuthenticated && currentUser ? (
-                <div className="space-y-6">
+                <div className="space-y-4">
                   {/* User Info */}
-                  <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/10">
-                    <div className="w-16 h-16 rounded-full bg-blue-500/20 border-2 border-blue-500/40 flex items-center justify-center text-blue-400 text-2xl font-black">
+                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 text-lg font-black">
                       {currentUser.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h4 className="text-lg font-black text-white uppercase italic">{currentUser.name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
+                      <h4 className="text-sm font-black text-white uppercase italic">{currentUser.name}</h4>
+                      <div className="flex items-center gap-2 mt-0.5">
                         {getRoleIcon(currentUser.role)}
-                        <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">
+                        <span className="text-[8px] font-bold text-white/60 uppercase tracking-widest">
                           {getRoleLabel(currentUser.role)}
                         </span>
                       </div>
@@ -135,19 +135,19 @@ export default function UserWidget({
                   </div>
 
                   {/* Permissions Info */}
-                  <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-3">
+                  <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-2">
                     <div className="flex items-center gap-2">
-                      <BadgeCheck className="w-4 h-4 text-emerald-500" />
-                      <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Access Level</span>
+                      <BadgeCheck className="w-3 h-3 text-emerald-500" />
+                      <span className="text-[8px] font-black text-white/60 uppercase tracking-widest">Access Level</span>
                     </div>
-                    <p className="text-xs text-white/40 leading-relaxed">
+                    <p className="text-[10px] text-white/40 leading-relaxed">
                       {getRoleDescription(currentUser.role)}
                     </p>
                   </div>
 
                   {/* Role Selection */}
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1">Switch Role</label>
+                  <div className="space-y-2">
+                    <label className="text-[8px] font-black text-white/40 uppercase tracking-widest ml-1">Switch Role</label>
                     <RoleSelector 
                       currentRole={currentUser.role}
                       onRoleChange={onRoleChange}
@@ -158,27 +158,27 @@ export default function UserWidget({
                   </div>
 
                   {/* Actions */}
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 gap-2">
                     <button 
                       onClick={onLogout}
-                      className="w-full py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-3"
+                      className="w-full py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2"
                     >
-                      <LogOut className="w-5 h-5" />
+                      <LogOut className="w-4 h-4" />
                       Terminate Session
                     </button>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                   <div>
-                    <label className="block text-white/60 text-[10px] uppercase tracking-widest mb-2 ml-1">User ID / Phone</label>
+                    <label className="block text-white/60 text-[8px] uppercase tracking-widest mb-1.5 ml-1">User ID / Phone</label>
                     <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
                       <input 
                         type="text" 
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
-                        className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                        className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors text-xs"
                         placeholder="ID-8829-X / +1..."
                         required
                       />
@@ -188,14 +188,14 @@ export default function UserWidget({
                   {authMode === 'signup' && (
                     <>
                       <div>
-                        <label className="block text-white/60 text-[10px] uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                        <label className="block text-white/60 text-[8px] uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
                         <div className="relative">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
                           <input 
                             type="email" 
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                            className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors text-xs"
                             placeholder="user@astranov.net"
                             required
                           />
@@ -203,14 +203,14 @@ export default function UserWidget({
                       </div>
 
                       <div>
-                        <label className="block text-white/60 text-[10px] uppercase tracking-widest mb-2 ml-1">Biometric Device Signature</label>
+                        <label className="block text-white/60 text-[8px] uppercase tracking-widest mb-1.5 ml-1">Device Signature</label>
                         <div className="relative">
-                          <Cpu className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                          <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
                           <input 
                             type="text" 
                             value={deviceSignature}
                             onChange={(e) => setDeviceSignature(e.target.value)}
-                            className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                            className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors text-xs"
                             placeholder="HW-SIG-XXXX-XXXX"
                           />
                         </div>
@@ -219,15 +219,15 @@ export default function UserWidget({
                   )}
 
                   <div>
-                    <label className="block text-white/60 text-[10px] uppercase tracking-widest mb-2 ml-1">Access Key</label>
+                    <label className="block text-white/60 text-[8px] uppercase tracking-widest mb-1.5 ml-1">Access Key</label>
                     <div className="flex gap-2">
                       <div className="relative flex-1">
-                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
                         <input 
                           type={showPassword ? "text" : "password"} 
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors text-sm"
+                          className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-10 pr-3 py-2.5 text-white focus:outline-none focus:border-blue-500 transition-colors text-xs"
                           placeholder="••••••••"
                           required
                         />
@@ -235,41 +235,40 @@ export default function UserWidget({
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="w-12 h-12 flex items-center justify-center bg-black border border-white/10 rounded-xl text-white/40 hover:text-white hover:border-white/20 transition-all shrink-0"
-                        title={showPassword ? "Hide Password" : "Show Password"}
+                        className="w-10 h-10 flex items-center justify-center bg-black border border-white/10 rounded-lg text-white/40 hover:text-white hover:border-white/20 transition-all shrink-0"
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-4">
+                  <div className="flex gap-2 pt-2">
                     <button 
                       type="submit"
-                      className="flex-1 bg-blue-600 text-white font-black py-4 rounded-xl uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 text-xs flex items-center justify-center gap-2"
+                      className="flex-1 bg-blue-600 text-white font-black py-3 rounded-lg uppercase tracking-widest hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 text-[10px] flex items-center justify-center gap-2"
                     >
-                      <LogIn className="w-4 h-4" />
-                      {authMode === 'login' ? 'Establish Link' : 'Register User'}
+                      <LogIn className="w-3.5 h-3.5" />
+                      {authMode === 'login' ? 'Establish Link' : 'Register'}
                     </button>
                     {authMode === 'login' && (
                       <button 
                         type="button"
                         onClick={onBiometricLogin}
-                        className="w-16 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-white hover:bg-white/10 transition-all"
+                        className="w-12 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-white hover:bg-white/10 transition-all"
                       >
-                        <Fingerprint className="w-6 h-6" />
+                        <Fingerprint className="w-5 h-5" />
                       </button>
                     )}
                   </div>
 
-                  <div className="pt-4 text-center">
+                  <div className="pt-2 text-center">
                     <button 
                       type="button" 
                       onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                      className="text-[10px] text-white/40 hover:text-white uppercase tracking-widest transition-all"
+                      className="text-[8px] text-white/40 hover:text-white uppercase tracking-widest transition-all"
                     >
-                      {authMode === 'login' ? "Don't have an ID? " : "Already registered? "}
-                      <span className="text-blue-400">{authMode === 'login' ? 'Create One' : 'Login'}</span>
+                      {authMode === 'login' ? "No ID? " : "Registered? "}
+                      <span className="text-blue-400">{authMode === 'login' ? 'Create' : 'Login'}</span>
                     </button>
                   </div>
                 </form>

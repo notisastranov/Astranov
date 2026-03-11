@@ -5,10 +5,10 @@ import { YouTubeSignalClientService } from './services/youtube/YouTubeSignalClie
 import { VideoSignal, OrbitalSignal } from './types/youtube';
 import { Bell, Menu, Truck, ShoppingBag, Store, X, Mic, Fingerprint, Camera, ImageIcon, Send, ArrowUpRight, Plus, CreditCard, Radar, BarChart3, Monitor, Shield, Zap, Video, ShoppingCart, Youtube, Wallet, User as UserIcon, Settings, Bookmark, Activity, History, ZoomIn, ZoomOut, Layers, Filter, Crosshair, Search, Users, Navigation, Power, Satellite, Globe, Map as MapIcon, Car, Bike, Info, RefreshCw, PowerOff, Wifi, Signal, MapPin, Route, Scan, Maximize2 } from 'lucide-react';
 import { HudButton } from './components/ui/HudButton';
-import { SideActionMenu } from './components/ui/SideActionMenu';
+import { AnchoredButtonMenu } from './components/ui/AnchoredButtonMenu';
 import AstranovMap from './components/Map';
 import GlobeScene from './components/GlobeScene';
-import { VersionBar } from './components/ui/VersionBar';
+import { TopStatusStrip } from './components/hud/TopStatusStrip';
 import VendorDashboard from './components/VendorDashboard';
 import ProductSearchModal from './components/ProductSearchModal';
 import RoleSelector from './components/RoleSelector';
@@ -39,6 +39,9 @@ import VideoRecorder from './components/VideoRecorder';
 import { HudLayout } from './components/layout/HudLayout';
 import { MapContextMenu } from './components/MapContextMenu';
 import { BottomRightRadar } from './components/hud/BottomRightRadar';
+import { LeftHUD } from './components/hud/LeftHUD';
+import { RightHUD } from './components/hud/RightHUD';
+import { AICommandBar } from './components/hud/AICommandBar';
 import { diagnosticService, DiagnosticStatus } from './services/diagnostics';
 import { OperatorCommandService } from './services/operator/OperatorCommandService';
 import { Task, User, UserRole, Product as SystemProduct, Shop, Transaction, Publication, HudButtonConfig, HudRegion, UserUILayout } from './types';
@@ -85,6 +88,7 @@ export default function App() {
   const [isDroneFleetOpen, setIsDroneFleetOpen] = useState(false);
   const [isTeamPlatformOpen, setIsTeamPlatformOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isVoiceChatActive, setIsVoiceChatActive] = useState(false);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('global');
   const [teams, setTeams] = useState<any[]>([
     { id: 'global', name: 'Global', description: 'All users in the system', type: 'global', members: 1240 },
@@ -361,8 +365,14 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ command, userId, role, center })
         });
+        
+        if (!res.ok) {
+          throw new Error(`Server responded with ${res.status}`);
+        }
+        
         const result = await res.json();
         setLastReply(result.reply);
+        
         if (result.action === 'navigate') {
           setCenter({ lat: result.lat, lng: result.lng });
           setZoom(18);
@@ -530,6 +540,32 @@ export default function App() {
 
   const hasShop = shops.some(s => s.owner_id === currentUserId);
 
+  const handlePostGlobal = (content: string) => {
+    setSocialContent(content);
+    handleSocialPost();
+  };
+
+  const handleSelectShop = (shop: Shop) => {
+    setSelectedShop(shop);
+    setCenter({ lat: shop.lat, lng: shop.lng });
+    setZoom(18);
+    setIsMissionControlOpen(false);
+  };
+
+  const handleSelectTask = (task: Task) => {
+    setCenter({ lat: task.lat, lng: task.lng });
+    setZoom(18);
+    setIsMissionControlOpen(false);
+  };
+
+  const handleSelectUser = (user: User) => {
+    if (user.lat && user.lng) {
+      setCenter({ lat: user.lat, lng: user.lng });
+      setZoom(18);
+    }
+    setIsMissionControlOpen(false);
+  };
+
   const handleUpdate = () => {
     if (versionStatus !== 'up-to-date') {
       // Force reload with cache busting
@@ -591,196 +627,65 @@ export default function App() {
 
       {/* HUD LAYER */}
       <HudLayout 
-        topCenter={
-          <div className="flex flex-col items-center gap-1 mt-4">
-            <VersionBar 
-              currentVersion={appVersion} 
-              latestVersion={latestVersion} 
-              status={versionStatus} 
-              onUpdate={handleUpdate}
-            />
-            <div className="mt-4 text-4xl font-black uppercase tracking-[0.6em] drop-shadow-[0_0_15px_rgba(59,130,246,0.5)] text-transparent bg-clip-text bg-gradient-to-b from-blue-400 to-blue-600 animate-pulse">
-              AstranoV
-            </div>
-          </div>
+        topStrip={
+          <TopStatusStrip 
+            currentVersion={appVersion}
+            latestVersion={latestVersion}
+            status={versionStatus === 'up-to-date' ? 'healthy' : versionStatus === 'update-available' ? 'warning' : 'problem'}
+            onUpdate={handleUpdate}
+            onDiagnosticClick={() => setIsSystemConsoleOpen(true)}
+          />
         }
-        leftColumn={
-          <div className="flex flex-col gap-3 mt-24">
-            <HudButton 
-              icon={Settings} 
-              label="Settings" 
-              onClick={(e) => handleMenuOpen(e, 'settings')} 
-              status="ok"
-              active={activeMenu === 'settings'}
-            />
-            <HudButton 
-              icon={UserIcon} 
-              label={isAuthenticated ? "Profile" : "Login"} 
-              onClick={(e) => handleMenuOpen(e, 'profile')}
-              status={isAuthenticated ? 'healthy' : 'warning'}
-              data={isAuthenticated ? "ACTIVE" : "OFFLINE"}
-              active={activeMenu === 'profile'}
-            />
-            <HudButton 
-              icon={Wallet} 
-              label="Wallet" 
-              onClick={(e) => handleMenuOpen(e, 'wallet')} 
-              data={`€${currentUser?.balance?.toFixed(2) || '0.00'}`}
-              status="finance"
-              active={activeMenu === 'wallet'}
-            />
-            <HudButton 
-              icon={Plus} 
-              label="Post" 
-              onClick={(e) => handleMenuOpen(e, 'post')} 
-              variant="primary" 
-              status="ok"
-              active={activeMenu === 'post'}
-            />
-            <HudButton 
-              icon={Users} 
-              label="Channel" 
-              onClick={(e) => handleMenuOpen(e, 'channel')}
-              data={channelMode.toUpperCase()}
-              active={activeMenu === 'channel'}
-              status="ok"
-            />
-            <HudButton 
-              icon={Truck} 
-              label="Fleet" 
-              onClick={(e) => handleMenuOpen(e, 'fleet')}
-              data={fleetMode.toUpperCase()}
-              status="ok"
-              active={activeMenu === 'fleet'}
-            />
-            <HudButton 
-              icon={Activity} 
-              label="Status" 
-              onClick={(e) => handleMenuOpen(e, 'status')}
-              status={systemHealth === 'healthy' ? 'healthy' : 'problem'}
-              data={`${healthValue}%`}
-              active={activeMenu === 'status'}
-            />
-          </div>
+        leftHUD={
+          <LeftHUD 
+            activeMenu={activeMenu}
+            onMenuOpen={handleMenuOpen}
+            isAuthenticated={isAuthenticated}
+            balance={`€${currentUser?.balance?.toFixed(2) || '0.00'}`}
+            channelMode={channelMode.toUpperCase()}
+            fleetMode={fleetMode.toUpperCase()}
+            systemHealth={systemHealth}
+            healthValue={healthValue}
+          />
         }
-        rightColumn={
-          <div className="flex flex-col gap-3 mt-24">
-            <HudButton 
-              icon={Power} 
-              label="Power" 
-              onClick={(e) => handleMenuOpen(e, 'power')}
-              status={isPoweredOn ? 'healthy' : 'problem'}
-              active={activeMenu === 'power'}
-            />
-            <HudButton 
-              icon={Satellite} 
-              label="Network" 
-              onClick={(e) => handleMenuOpen(e, 'network')}
-              status="ok"
-              active={activeMenu === 'network'}
-            />
-            <HudButton 
-              icon={Layers} 
-              label="Layers" 
-              onClick={(e) => handleMenuOpen(e, 'layers')} 
-              status="ok"
-              active={activeMenu === 'layers'}
-            />
-            <HudButton 
-              icon={Filter} 
-              label="Filters" 
-              onClick={(e) => handleMenuOpen(e, 'filters')} 
-              status="ok"
-              active={activeMenu === 'filters'}
-            />
-            <HudButton 
-              icon={Crosshair} 
-              label="Locate" 
-              onClick={(e) => {
-                handleSyncGPS();
-                handleMenuOpen(e, 'locate');
-              }} 
-              status="ok"
-              active={activeMenu === 'locate'}
-            />
-            <HudButton 
-              icon={Navigation} 
-              label="Route" 
-              onClick={(e) => handleMenuOpen(e, 'route')}
-              status={routingDestination ? 'healthy' : 'warning'}
-              active={activeMenu === 'route'}
-              data={isRouting ? "ACTIVE" : (routingDestination ? "READY" : "IDLE")}
-            />
-            <HudButton 
-              icon={Radar} 
-              label="Scanner" 
-              onClick={(e) => handleMenuOpen(e, 'scanner')} 
-              active={activeMenu === 'scanner'} 
-              status="ok" 
-            />
-          </div>
+        rightHUD={
+          <RightHUD 
+            activeMenu={activeMenu}
+            onMenuOpen={handleMenuOpen}
+            isPoweredOn={isPoweredOn}
+            routingDestination={routingDestination}
+            isRouting={isRouting}
+            handleSyncGPS={handleSyncGPS}
+          />
         }
-        bottomCenter={
-          <div className="w-full max-w-3xl bg-zinc-900/95 backdrop-blur-3xl border border-white/10 rounded-3xl p-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex items-center gap-3 mb-8 pointer-events-auto">
-            <div className="p-3 bg-white/5 rounded-2xl">
-              <Search className="w-6 h-6 text-white/40" />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Ask AstranoV AI..." 
-              className="flex-1 bg-transparent border-none outline-none text-white text-lg font-medium placeholder:text-white/20"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleCommand(e.currentTarget.value);
-                  e.currentTarget.value = '';
-                }
-              }}
-            />
-            <div className="flex items-center gap-2 pr-2">
-              <button 
-                onClick={handleVoiceCommand}
-                className={`p-3 rounded-2xl transition-all ${isListening ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.5)] animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'}`}
-              >
-                <Mic className="w-6 h-6" />
-              </button>
-              <button 
-                onClick={(e) => {
-                  const input = e.currentTarget.parentElement?.previousElementSibling as HTMLInputElement;
-                  handleCommand(input.value);
-                  input.value = '';
-                }}
-                className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl transition-all shadow-lg"
-              >
-                <Send className="w-6 h-6" />
-              </button>
-            </div>
-            {isLoading && (
-              <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-900/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">Processing</span>
-              </div>
-            )}
-          </div>
+        aiCommandBar={
+          <AICommandBar 
+            onCommand={handleCommand}
+            isListening={isListening}
+            onVoiceToggle={handleVoiceCommand}
+            onCameraClick={() => setLastReply("Camera scan initiated.")}
+            isVoiceChatActive={isVoiceChatActive}
+            onVoiceChatToggle={() => setIsVoiceChatActive(!isVoiceChatActive)}
+            transcript={transcript}
+            isLoading={isLoading}
+          />
         }
-        bottomRight={
-          <div className="mb-8 mr-4 pointer-events-auto">
-            <BottomRightRadar 
-              mode={radarMode}
-              onToggleMode={toggleRadarMode}
-              onClose={() => setRadarMode('hidden')}
-              center={center}
-              tasks={tasks}
-              users={users}
-              shops={shops}
-            />
-          </div>
+        bottomRightRadar={
+          <BottomRightRadar 
+            mode={radarMode}
+            onToggleMode={toggleRadarMode}
+            onClose={() => setRadarMode('hidden')}
+            center={center}
+            tasks={tasks}
+            users={users}
+            shops={shops}
+          />
         }
       />
 
       {/* OVERLAYS */}
-      {/* SIDE ACTION MENUS */}
-      {/* LEFT COLUMN MENUS */}
-      <SideActionMenu 
+      {/* ANCHORED MENUS */}
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'settings'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -795,13 +700,9 @@ export default function App() {
           <Info className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">{isDemoMode ? "Disable Demo" : "Enable Demo"}</span>
         </button>
-        <button onClick={() => setIsEditMode(!isEditMode)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Layers className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">{isEditMode ? "Exit Edit Mode" : "Enter Edit Mode"}</span>
-        </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'profile'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -812,17 +713,13 @@ export default function App() {
           <UserIcon className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">{isAuthenticated ? "Account Details" : "Login / Register"}</span>
         </button>
-        <button onClick={() => setIsAuthenticated(!isAuthenticated)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Fingerprint className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Security Sync</span>
-        </button>
         <button onClick={() => setIsAuthenticated(false)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
           <PowerOff className="w-4 h-4 text-rose-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Disconnect</span>
         </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'wallet'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -833,38 +730,58 @@ export default function App() {
           <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Projected Earnings</span>
           <span className="text-sm font-black text-emerald-400">+€124.50</span>
         </div>
-        <button onClick={() => setIsWalletOpen(true)} className="flex flex-col items-center gap-1 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl transition-all">
+        <button onClick={() => setIsFinancialOpen(true)} className="flex flex-col items-center gap-1 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl transition-all">
           <span className="text-[8px] font-black text-blue-400 uppercase tracking-[0.2em]">Current Balance</span>
-          <span className="text-2xl font-black text-white">€{currentUser?.balance?.toFixed(2) || '0.00'}</span>
+          <span className="text-xl font-black text-white">€{currentUser?.balance?.toFixed(2) || '0.00'}</span>
         </button>
-        <div className="flex flex-col items-center gap-1 mt-4">
-          <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Debt / Liabilities</span>
-          <span className="text-sm font-black text-rose-500">-€0.00</span>
-        </div>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'post'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
         side="left" 
-        title="Post Signal"
+        title="Post"
       >
-        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Globe className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Global</span>
-        </button>
-        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Users className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Team</span>
-        </button>
-        <button onClick={() => { setIsSocialPostOpen(true); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <UserIcon className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Post to Friend</span>
-        </button>
-      </SideActionMenu>
+        {!isSocialPostOpen ? (
+          <>
+            <button onClick={() => setIsSocialPostOpen(true)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+              <Plus className="w-4 h-4 text-blue-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white">New Publication</span>
+            </button>
+            <button onClick={() => setIsVideoRecorderOpen(true)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
+              <Video className="w-4 h-4 text-blue-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white">Video Signal</span>
+            </button>
+          </>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <textarea 
+              value={socialContent}
+              onChange={(e) => setSocialContent(e.target.value)}
+              placeholder="Signal content..."
+              className="w-full h-24 bg-black/50 border border-white/10 rounded-xl p-3 text-[10px] text-white outline-none focus:border-blue-500/50 transition-all resize-none"
+            />
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsSocialPostOpen(false)}
+                className="flex-1 py-2 rounded-lg bg-white/5 text-white/40 text-[8px] font-black uppercase tracking-widest hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSocialPost}
+                disabled={!socialContent.trim() || isLoading}
+                className="flex-1 py-2 rounded-lg bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest hover:bg-blue-400 disabled:opacity-50"
+              >
+                {isLoading ? 'Sending...' : 'Transmit'}
+              </button>
+            </div>
+          </div>
+        )}
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'channel'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -876,16 +793,12 @@ export default function App() {
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Global</span>
         </button>
         <button onClick={() => { setChannelMode('team'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${channelMode === 'team' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
-          <Users className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">National</span>
-        </button>
-        <button onClick={() => { setChannelMode('team'); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
           <MapPin className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Local</span>
         </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'fleet'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -904,9 +817,9 @@ export default function App() {
           <Bike className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Bikes</span>
         </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'status'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -918,22 +831,14 @@ export default function App() {
             <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Health</span>
             <span className="text-[10px] font-black text-blue-400">{healthValue}%</span>
           </div>
-          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Connection</span>
-            <span className="text-[10px] font-black text-emerald-400">OPTIMAL</span>
-          </div>
-          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
-            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Server</span>
-            <span className="text-[10px] font-black text-emerald-400">ONLINE</span>
-          </div>
-          <button onClick={() => setIsDiagnosticsOpen(true)} className="mt-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-center">
+          <button onClick={() => setIsSystemConsoleOpen(true)} className="mt-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-center">
             <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">Open Diagnostics</span>
           </button>
         </div>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
       {/* RIGHT COLUMN MENUS */}
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'power'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -952,9 +857,9 @@ export default function App() {
           <PowerOff className="w-4 h-4 text-rose-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-rose-500">Turn Off</span>
         </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'network'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -967,15 +872,11 @@ export default function App() {
         </button>
         <button className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
           <Satellite className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Satellite Network</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Satellite</span>
         </button>
-        <button className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Signal className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Peer Network</span>
-        </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'layers'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -989,9 +890,9 @@ export default function App() {
             </button>
           ))}
         </div>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'filters'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -1005,9 +906,9 @@ export default function App() {
             </button>
           ))}
         </div>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'locate'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -1022,13 +923,9 @@ export default function App() {
           <Globe className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">GLONASS</span>
         </button>
-        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Satellite className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Baidu</span>
-        </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'route'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -1041,15 +938,11 @@ export default function App() {
         </button>
         <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
           <Truck className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Off-road Route</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Off-road</span>
         </button>
-        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Zap className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Aerial Route</span>
-        </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
-      <SideActionMenu 
+      <AnchoredButtonMenu 
         isOpen={activeMenu === 'scanner'} 
         onClose={() => setActiveMenu(null)} 
         anchorRect={anchorRect} 
@@ -1064,11 +957,7 @@ export default function App() {
           <Maximize2 className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Scan Radius</span>
         </button>
-        <button onClick={() => setActiveMenu(null)} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left">
-          <Filter className="w-4 h-4 text-blue-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-white">Scan Categories</span>
-        </button>
-      </SideActionMenu>
+      </AnchoredButtonMenu>
 
       <AnimatePresence>
         {mapContextMenu && (
@@ -1102,56 +991,98 @@ export default function App() {
         )}
 
         {isLoginModalOpen && (
-          <UserWidget 
-            isOpen={isLoginModalOpen}
-            onClose={() => setIsLoginModalOpen(false)}
-            currentUser={currentUser}
-            isAuthenticated={isAuthenticated}
-            onLogin={handleLogin}
-            onLogout={handleLogout}
-            onBiometricLogin={handleBiometricLogin}
-            onRoleChange={handleRoleChange}
-            hasShop={hasShop}
-          />
-        )}
-
-        {isSocialPostOpen && (
-          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/60 backdrop-blur-md pointer-events-auto p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-zinc-900 border border-white/10 p-6 rounded-3xl shadow-2xl w-full max-w-md"
-            >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-white tracking-tight">Post Update</h3>
-                <button onClick={() => setIsSocialPostOpen(false)} className="text-white/40 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <textarea 
-                value={socialContent}
-                onChange={(e) => setSocialContent(e.target.value)}
-                placeholder="What's happening at this location?"
-                className="w-full h-32 bg-black/50 border border-white/10 rounded-2xl p-4 text-white mb-4 outline-none focus:border-white/20 transition-all"
-              />
-              <button 
-                onClick={handleSocialPost} 
-                disabled={!socialContent.trim() || isLoading}
-                className="w-full bg-white text-black font-black py-4 rounded-xl hover:bg-zinc-200 transition-all disabled:opacity-50"
-              >
-                {isLoading ? 'Publishing...' : 'Post'}
-              </button>
-            </motion.div>
+          <div className="fixed inset-0 z-[2000] pointer-events-auto flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsLoginModalOpen(false)} />
+            <UserWidget 
+              isOpen={isLoginModalOpen}
+              onClose={() => setIsLoginModalOpen(false)}
+              currentUser={currentUser}
+              isAuthenticated={isAuthenticated}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              onBiometricLogin={handleBiometricLogin}
+              onRoleChange={handleRoleChange}
+              hasShop={hasShop}
+            />
           </div>
         )}
 
-        {/* Other modals integrated similarly... */}
-      </AnimatePresence>
+        {isVendorDashboardOpen && (
+          <VendorDashboard 
+            userId={currentUserId || ''}
+            onClose={() => setIsVendorDashboardOpen(false)}
+          />
+        )}
 
-      {/* Version Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none">
-        <VersionBar currentVersion={appVersion} latestVersion={latestVersion} status={versionStatus} />
-      </div>
+        {isGamesModalOpen && (
+          <GamesModal 
+            isOpen={isGamesModalOpen}
+            onClose={() => setIsGamesModalOpen(false)}
+          />
+        )}
+
+        {isComplianceOpen && (
+          <ComplianceDashboard 
+            userId={currentUserId || ''}
+            onClose={() => setIsComplianceOpen(false)}
+          />
+        )}
+
+        {isDroneFleetOpen && (
+          <DroneFleetControl 
+            isOpen={isDroneFleetOpen}
+            onClose={() => setIsDroneFleetOpen(false)}
+          />
+        )}
+
+        {isTeamPlatformOpen && (
+          <TeamPlatform 
+            isOpen={isTeamPlatformOpen}
+            onClose={() => setIsTeamPlatformOpen(false)}
+            teams={teams}
+            currentTeamId={selectedTeamId}
+            onSelectTeam={setSelectedTeamId}
+            onPostGlobal={handlePostGlobal}
+            onUpdateTeams={setTeams}
+          />
+        )}
+
+        {isMissionControlOpen && (
+          <MissionControl 
+            isOpen={isMissionControlOpen}
+            onClose={() => setIsMissionControlOpen(false)}
+            tasks={tasks}
+            shops={shops}
+            groundingShops={groundingShops}
+            users={users}
+            currentUserId={currentUserId}
+            onSelectShop={handleSelectShop}
+            onSelectTask={handleSelectTask}
+            onSelectUser={handleSelectUser}
+          />
+        )}
+
+        {isAnalyticsOpen && (
+          <AnalyticsDashboard 
+            userId={currentUserId || ''}
+          />
+        )}
+
+        {isFinancialOpen && (
+          <WalletDashboard 
+            userId={currentUserId || ''}
+            balance={currentUser?.balance || 0}
+            onUpdateBalance={fetchCurrentUser}
+          />
+        )}
+
+        {isDiagnosticsOpen && (
+          <DiagnosticCenter 
+            isOpen={isDiagnosticsOpen}
+            onClose={() => setIsDiagnosticsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

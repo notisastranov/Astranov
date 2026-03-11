@@ -68,8 +68,8 @@ export const SideActionMenu: React.FC<SideActionMenuProps> = ({
             transition={{ duration: 0.2, ease: "easeOut" }}
             style={{
               top: Math.max(20, Math.min(window.innerHeight - 320, top - 150)),
-              left: side === 'left' ? left : left - 320,
-              width: '320px',
+              left: side === 'left' ? left : left - 260,
+              width: '260px',
               height: '300px',
             }}
             className="absolute pointer-events-auto"

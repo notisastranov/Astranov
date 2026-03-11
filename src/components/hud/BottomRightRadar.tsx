@@ -30,32 +30,32 @@ export const BottomRightRadar: React.FC<BottomRightRadarProps> = ({
       initial={{ opacity: 0, scale: 0.9, x: 20, y: 20 }}
       animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, x: 20, y: 20 }}
-      className={`relative bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500 ${mode === 'big' ? 'w-[400px] h-[400px]' : 'w-[200px] h-[200px]'}`}
+      className={`relative bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-xl shadow-2xl overflow-hidden transition-all duration-500 ${mode === 'big' ? 'w-64 h-64 md:w-80 md:h-80' : 'w-32 h-32 md:w-40 md:h-40'}`}
     >
       {/* Radar Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 p-3 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent">
-        <div className="flex items-center gap-2">
-          <Radar className="w-4 h-4 text-electric-blue animate-pulse" />
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Scanner</span>
+      <div className="absolute top-0 left-0 right-0 z-10 p-2 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent">
+        <div className="flex items-center gap-1.5">
+          <Radar className="w-3 h-3 text-blue-400 animate-pulse" />
+          <span className="text-[7px] font-black text-white/60 uppercase tracking-widest">Scanner</span>
         </div>
         <div className="flex items-center gap-1">
           <button 
             onClick={onToggleMode}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all"
+            className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-all"
           >
-            {mode === 'big' ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            {mode === 'big' ? <Minimize2 className="w-2.5 h-2.5" /> : <Maximize2 className="w-2.5 h-2.5" />}
           </button>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-all"
+            className="p-1 rounded bg-white/5 hover:bg-white/10 text-white/30 hover:text-white transition-all"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-2.5 h-2.5" />
           </button>
         </div>
       </div>
 
       {/* Radar Content */}
-      <div className="w-full h-full">
+      <div className="w-full h-full opacity-80">
         <FloatingRadar 
           tasks={tasks}
           users={users}
@@ -66,14 +66,14 @@ export const BottomRightRadar: React.FC<BottomRightRadarProps> = ({
       </div>
 
       {/* Radar Footer */}
-      <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
+      <div className="absolute bottom-2 left-2 right-2 z-10 flex items-center justify-between pointer-events-none">
         <div className="flex flex-col">
-          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Detection Range</span>
-          <span className="text-[10px] font-black text-white font-mono">5.2 KM</span>
+          <span className="text-[6px] text-white/20 uppercase font-black tracking-widest">Range</span>
+          <span className="text-[8px] font-black text-white/60 font-mono">5.2KM</span>
         </div>
         <div className="flex flex-col items-end">
-          <span className="text-[8px] text-white/20 uppercase font-black tracking-widest">Signals</span>
-          <span className="text-[10px] font-black text-electric-blue font-mono">12 ACTIVE</span>
+          <span className="text-[6px] text-white/20 uppercase font-black tracking-widest">Signals</span>
+          <span className="text-[8px] font-black text-blue-400/80 font-mono">12</span>
         </div>
       </div>
     </motion.div>
