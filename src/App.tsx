@@ -38,7 +38,6 @@ import DiagnosticCenter from './components/DiagnosticCenter';
 import VideoRecorder from './components/VideoRecorder';
 import { HudLayout } from './components/layout/HudLayout';
 import { MapContextMenu } from './components/MapContextMenu';
-import { BottomRightRadar } from './components/hud/BottomRightRadar';
 import { LeftHUD } from './components/hud/LeftHUD';
 import { RightHUD } from './components/hud/RightHUD';
 import { AICommandBar } from './components/hud/AICommandBar';
@@ -139,8 +138,20 @@ export default function App() {
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
 
   const handleMenuOpen = (e: React.MouseEvent, id: string) => {
+    if (id === 'scanner') {
+      setRadarMode(prev => prev === 'hidden' ? 'small' : 'hidden');
+      return;
+    }
     setAnchorRect(e.currentTarget.getBoundingClientRect());
     setActiveMenu(prev => prev === id ? null : id);
+  };
+
+  const handleToggleRadarMode = () => {
+    setRadarMode(prev => prev === 'small' ? 'big' : 'small');
+  };
+
+  const handleCloseRadar = () => {
+    setRadarMode('hidden');
   };
 
   useEffect(() => {
@@ -688,6 +699,13 @@ export default function App() {
             routingDestination={routingDestination}
             isRouting={isRouting}
             handleSyncGPS={handleSyncGPS}
+            radarMode={radarMode}
+            onToggleRadarMode={toggleRadarMode}
+            onCloseRadar={() => setRadarMode('hidden')}
+            center={center}
+            tasks={tasks}
+            users={users}
+            shops={shops}
           />
         }
         aiCommandBar={
@@ -702,17 +720,7 @@ export default function App() {
             isLoading={isLoading}
           />
         }
-        bottomRightRadar={
-          <BottomRightRadar 
-            mode={radarMode}
-            onToggleMode={toggleRadarMode}
-            onClose={() => setRadarMode('hidden')}
-            center={center}
-            tasks={tasks}
-            users={users}
-            shops={shops}
-          />
-        }
+        bottomRightRadar={null}
       />
 
       {/* OVERLAYS */}

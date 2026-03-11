@@ -9,22 +9,16 @@ export class AIOrchestratorService {
   private static _aiUnavailable = false;
 
   private static get ai(): GoogleGenAI | null {
-    if (this._ai) return this._ai;
-    if (this._aiUnavailable) return null;
-
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
     if (!apiKey) {
-      console.warn("WARNING: Gemini API key not found (GEMINI_API_KEY or GOOGLE_API_KEY). AI features will be unavailable.");
-      this._aiUnavailable = true;
+      console.warn("WARNING: Gemini API key not found (GEMINI_API_KEY, GOOGLE_API_KEY, or API_KEY). AI features will be unavailable.");
       return null;
     }
 
     try {
-      this._ai = new GoogleGenAI({ apiKey });
-      return this._ai;
+      return new GoogleGenAI({ apiKey });
     } catch (e) {
       console.error("Failed to initialize Gemini AI:", e);
-      this._aiUnavailable = true;
       return null;
     }
   }
@@ -44,6 +38,19 @@ export class AIOrchestratorService {
               radius: { type: Type.NUMBER, description: "Search radius in meters." }
             },
             required: ["lat", "lng"]
+          }
+        },
+        {
+          name: "searchCategory",
+          description: "Search for businesses in a specific category (e.g., 'restaurants', 'pharmacies').",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              lat: { type: Type.NUMBER },
+              lng: { type: Type.NUMBER },
+              category: { type: Type.STRING }
+            },
+            required: ["lat", "lng", "category"]
           }
         },
         {
@@ -69,7 +76,18 @@ export class AIOrchestratorService {
           }
         },
         {
-          name: "getBestRated",
+          name: "getRatings",
+          description: "Get user ratings and reviews for a business.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              businessId: { type: Type.STRING }
+            },
+            required: ["businessId"]
+          }
+        },
+        {
+          name: "getBestOptions",
           description: "Find the highest-rated businesses or items in a category nearby.",
           parameters: {
             type: Type.OBJECT,
@@ -93,6 +111,30 @@ export class AIOrchestratorService {
               contentType: { type: Type.STRING, enum: ["social", "job", "alert", "event"] }
             },
             required: ["lat", "lng", "content"]
+          }
+        },
+        {
+          name: "createCart",
+          description: "Create a new shopping cart for a business.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              businessId: { type: Type.STRING }
+            },
+            required: ["businessId"]
+          }
+        },
+        {
+          name: "addCartItem",
+          description: "Add an item to the current shopping cart.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              cartId: { type: Type.STRING },
+              productId: { type: Type.STRING },
+              quantity: { type: Type.NUMBER }
+            },
+            required: ["cartId", "productId", "quantity"]
           }
         },
         {
@@ -155,18 +197,6 @@ export class AIOrchestratorService {
           }
         },
         {
-          name: "saveUserPreference",
-          description: "Save a user preference or setting.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              key: { type: Type.STRING },
-              value: { type: Type.STRING }
-            },
-            required: ["key", "value"]
-          }
-        },
-        {
           name: "saveLocation",
           description: "Save a specific location with a label for future reference.",
           parameters: {
@@ -180,6 +210,17 @@ export class AIOrchestratorService {
           }
         },
         {
+          name: "searchWeb",
+          description: "Search the web for information using Google Search.",
+          parameters: {
+            type: Type.OBJECT,
+            properties: {
+              query: { type: Type.STRING }
+            },
+            required: ["query"]
+          }
+        },
+        {
           name: "operatorCommand",
           description: "Execute an administrative operator action (Admin only).",
           parameters: {
@@ -189,137 +230,6 @@ export class AIOrchestratorService {
               payload: { type: Type.OBJECT }
             },
             required: ["action"]
-          }
-        },
-        {
-          name: "createPatchRequest",
-          description: "Create a new patch request with code changes.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              description: { type: Type.STRING },
-              files: { 
-                type: Type.ARRAY, 
-                items: { 
-                  type: Type.OBJECT,
-                  properties: {
-                    path: { type: Type.STRING },
-                    content: { type: Type.STRING },
-                    type: { type: Type.STRING, enum: ["frontend", "backend", "config"] }
-                  }
-                }
-              }
-            },
-            required: ["description", "files"]
-          }
-        },
-        {
-          name: "pushPatchToGitHub",
-          description: "Push an approved patch request to GitHub.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              requestId: { type: Type.STRING },
-              commitMessage: { type: Type.STRING },
-              branch: { type: Type.STRING }
-            },
-            required: ["requestId", "commitMessage"]
-          }
-        },
-        {
-          name: "pushLatestUpdateToGitHub",
-          description: "Gather latest changed files or patch artifacts and initiate a GitHub repository sync request. Requires operator approval.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              commitMessage: { type: Type.STRING },
-              branch: { type: Type.STRING }
-            },
-            required: ["commitMessage"]
-          }
-        },
-        {
-          name: "createDeploymentRequest",
-          description: "Request a deployment to a specific environment.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              environment: { type: Type.STRING, enum: ["staging", "production"] },
-              version: { type: Type.STRING }
-            },
-            required: ["environment", "version"]
-          }
-        },
-        {
-          name: "searchNearbySignals",
-          description: "Search for map signals, posts, tasks, and events near a location.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              lat: { type: Type.NUMBER },
-              lng: { type: Type.NUMBER },
-              radius: { type: Type.NUMBER, description: "Search radius in meters." }
-            },
-            required: ["lat", "lng"]
-          }
-        },
-        {
-          name: "searchNearbyVideos",
-          description: "Search for YouTube video signals near a specific location.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              lat: { type: Type.NUMBER },
-              lng: { type: Type.NUMBER },
-              radius: { type: Type.NUMBER, description: "Search radius in kilometers." }
-            },
-            required: ["lat", "lng"]
-          }
-        },
-        {
-          name: "searchRegionalVideos",
-          description: "Search for YouTube video signals in a specific region.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              regionKey: { type: Type.STRING, description: "The region key (e.g., first 3 chars of geohash)." }
-            },
-            required: ["regionKey"]
-          }
-        },
-        {
-          name: "getVideoSignalDetails",
-          description: "Get full details for a specific YouTube video signal.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              signalId: { type: Type.STRING }
-            },
-            required: ["signalId"]
-          }
-        },
-        {
-          name: "createVideoSignalFromUrl",
-          description: "Create a new planetary video signal from a YouTube URL.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              youtubeUrl: { type: Type.STRING },
-              lat: { type: Type.NUMBER, description: "Optional latitude override." },
-              lng: { type: Type.NUMBER, description: "Optional longitude override." }
-            },
-            required: ["youtubeUrl"]
-          }
-        },
-        {
-          name: "getTrendingVideoSignals",
-          description: "Get trending YouTube video signals based on scope.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              scope: { type: Type.STRING, enum: ["global", "regional", "local"] }
-            },
-            required: ["scope"]
           }
         }
       ]
@@ -331,18 +241,19 @@ export class AIOrchestratorService {
 
   static async processCommand(prompt: string, context: any) {
     const { userId, role, locationContext, history = [] } = context;
+    const ai = this.ai;
 
-    if (!this.ai) {
+    if (!ai) {
       return {
-        reply: "AI features are currently unavailable. Please check the server configuration.",
+        reply: "AI features are currently unavailable. Please check the server configuration (API Key missing).",
         action: "CHAT",
         data: {}
       };
     }
 
     try {
-      const response = await this.ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
         contents: [
           ...history,
           { role: 'user', parts: [{ text: `Context: ${JSON.stringify(locationContext)}. User Prompt: ${prompt}` }] }
@@ -371,6 +282,7 @@ export class AIOrchestratorService {
           try {
             switch (call.name) {
               case "searchNearby":
+              case "searchCategory":
                 result = await aiToolHandlers.searchNearby(call.args as any);
                 break;
               case "getBusinessDetails":
@@ -379,11 +291,21 @@ export class AIOrchestratorService {
               case "getMenu":
                 result = await aiToolHandlers.getMenu(call.args as any);
                 break;
+              case "getRatings":
+                result = await aiToolHandlers.getRatings(call.args as any);
+                break;
               case "getBestRated":
+              case "getBestOptions":
                 result = await aiToolHandlers.getBestRated(call.args as any);
                 break;
               case "createPostAtLocation":
                 result = await aiToolHandlers.createPostAtLocation({ ...call.args as any, userId });
+                break;
+              case "createCart":
+                result = await aiToolHandlers.createCart({ ...call.args as any, userId });
+                break;
+              case "addCartItem":
+                result = await aiToolHandlers.addCartItem(call.args as any);
                 break;
               case "createOrderDraft":
                 result = await aiToolHandlers.createOrder({ ...call.args as any, userId, fulfillment: { method: (call.args as any).deliveryMethod || 'pickup' } });
@@ -402,6 +324,13 @@ export class AIOrchestratorService {
                 break;
               case "saveLocation":
                 result = await aiToolHandlers.saveLocation({ ...call.args as any, userId });
+                break;
+              case "searchWeb":
+                result = await this.ai.models.generateContent({
+                  model: "gemini-3.1-pro-preview",
+                  contents: [{ role: 'user', parts: [{ text: (call.args as any).query }] }],
+                  config: { tools: [{ googleSearch: {} }] }
+                });
                 break;
               case "operatorCommand":
                 if (role === 'admin' || role === 'operator' || role === 'owner') {

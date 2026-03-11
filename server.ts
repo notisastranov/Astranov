@@ -389,7 +389,7 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
-  const PORT = Number(process.env.PORT) || 8080;
+  const PORT = 3000;
 
   // Signal Simulation Endpoints
   app.get("/api/signals/simulation/run", async (req, res) => {

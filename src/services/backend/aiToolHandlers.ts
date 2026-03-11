@@ -2,7 +2,7 @@ import { CommerceService } from './commerceService';
 import { PaymentService } from './paymentService';
 import { YouTubeSignalHandlers } from '../youtube/YouTubeSignalHandlers';
 import { OrderStatus, FulfillmentMethod } from '../../types/operational';
-import db from '../../../firestore.js';
+import db from '../../../firestore';
 
 import { SignalDistributionEngine } from '../signals/SignalDistributionEngine';
 import { UserSignalPreferenceService } from '../signals/UserSignalPreferenceService';
@@ -74,6 +74,34 @@ export const aiToolHandlers = {
   },
   getMenu: async (args: { businessId: string }) => {
     return await CommerceService.getMenu(args.businessId);
+  },
+  getRatings: async (args: { businessId: string }) => {
+    const snapshot = await db.collection('ratings').where('businessId', '==', args.businessId).get();
+    return snapshot.docs.map(doc => doc.data());
+  },
+  createCart: async (args: { businessId: string; userId: string }) => {
+    const cart = {
+      id: `cart_${Date.now()}`,
+      userId: args.userId,
+      businessId: args.businessId,
+      items: [],
+      createdAt: Date.now()
+    };
+    await db.collection('carts').doc(cart.id).set(cart);
+    return cart;
+  },
+  addCartItem: async (args: { cartId: string; productId: string; quantity: number }) => {
+    const cartDoc = await db.collection('carts').doc(args.cartId).get();
+    if (!cartDoc.exists) return { error: 'Cart not found' };
+    const cart = cartDoc.data();
+    const productDoc = await db.collection('products').doc(args.productId).get();
+    if (!productDoc.exists) return { error: 'Product not found' };
+    const product = productDoc.data();
+    
+    const items = [...(cart?.items || [])];
+    items.push({ ...product, quantity: args.quantity });
+    await db.collection('carts').doc(args.cartId).update({ items });
+    return { status: 'success', cartId: args.cartId };
   },
   createOrder: async (args: { userId: string; businessId: string; items: any[]; fulfillment: { method: FulfillmentMethod; address?: string } }) => {
     return await CommerceService.createOrder(args.userId, args.businessId, args.items, args.fulfillment);

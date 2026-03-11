@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Power, Satellite, Layers, Filter, Crosshair, Navigation, Radar } from 'lucide-react';
+import { Power, Satellite, Layers, Filter, Crosshair, Navigation, Radar as RadarIcon } from 'lucide-react';
+import { BottomRightRadar } from './BottomRightRadar';
+import { Task, User, Shop } from '../../types';
 
 interface RightHUDProps {
   activeMenu: string | null;
@@ -9,6 +11,13 @@ interface RightHUDProps {
   routingDestination: any;
   isRouting: boolean;
   handleSyncGPS: () => void;
+  radarMode: 'small' | 'big' | 'hidden';
+  onToggleRadarMode: () => void;
+  onCloseRadar: () => void;
+  center: { lat: number; lng: number };
+  tasks: Task[];
+  users: User[];
+  shops: Shop[];
 }
 
 const APPROVED_RIGHT_HUD_BUTTONS = ['power', 'network', 'layers', 'filters', 'locate', 'route', 'scanner'];
@@ -19,10 +28,17 @@ export const RightHUD: React.FC<RightHUDProps> = ({
   isPoweredOn,
   routingDestination,
   isRouting,
-  handleSyncGPS
+  handleSyncGPS,
+  radarMode,
+  onToggleRadarMode,
+  onCloseRadar,
+  center,
+  tasks,
+  users,
+  shops
 }) => {
   return (
-    <div className="flex flex-col gap-2 pointer-events-auto">
+    <div className="flex flex-col gap-2 pointer-events-auto items-end">
       {/* Power - Approved System Control on Right Rail per Spartan Script */}
       <HudButton 
         icon={<Power className="w-4 h-4" />} 
@@ -68,12 +84,28 @@ export const RightHUD: React.FC<RightHUDProps> = ({
         active={activeMenu === 'route'}
         data={isRouting ? "ACT" : (routingDestination ? "RDY" : "IDL")}
       />
-      <HudButton 
-        icon={<Radar className="w-4 h-4" />} 
-        label="Scanner" 
-        onClick={(e) => onMenuOpen(e, 'scanner')} 
-        active={activeMenu === 'scanner'} 
-      />
+      
+      <div className="relative">
+        <HudButton 
+          icon={<RadarIcon className="w-4 h-4" />} 
+          label="Scanner" 
+          onClick={(e) => onMenuOpen(e, 'scanner')} 
+          active={radarMode !== 'hidden'} 
+        />
+        
+        {/* Radar Panel - Anchored directly below the Scanner button */}
+        <div className="absolute top-full right-0 mt-2 z-50">
+          <BottomRightRadar 
+            mode={radarMode}
+            onToggleMode={onToggleRadarMode}
+            onClose={onCloseRadar}
+            center={center}
+            tasks={tasks}
+            users={users}
+            shops={shops}
+          />
+        </div>
+      </div>
     </div>
   );
 };
