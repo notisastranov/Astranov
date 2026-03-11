@@ -1,18 +1,11 @@
-import { db } from '../firebase';
-import { collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserUILayout, HudButtonConfig } from '../types';
 
 export class UILayoutService {
-  private static COLLECTION = 'user_ui_layouts';
-
   static async getLayout(userId: string): Promise<UserUILayout | null> {
     try {
-      const docRef = doc(db, this.COLLECTION, userId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        return docSnap.data() as UserUILayout;
-      }
-      return null;
+      const response = await fetch(`/api/ui-layout/${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch UI layout');
+      return response.json();
     } catch (error) {
       console.error('Error fetching UI layout:', error);
       return null;
@@ -21,11 +14,12 @@ export class UILayoutService {
 
   static async saveLayout(userId: string, layout: UserUILayout): Promise<void> {
     try {
-      const docRef = doc(db, this.COLLECTION, userId);
-      await setDoc(docRef, {
-        ...layout,
-        updatedAt: new Date().toISOString()
+      const response = await fetch(`/api/ui-layout/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(layout)
       });
+      if (!response.ok) throw new Error('Failed to save UI layout');
     } catch (error) {
       console.error('Error saving UI layout:', error);
     }

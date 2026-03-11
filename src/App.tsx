@@ -47,6 +47,7 @@ import { Task, User, UserRole, Product as SystemProduct, Shop, Transaction, Publ
 import { Business, Product, FulfillmentMethod, OrderStatus } from './types/operational';
 import { CATEGORIES, DEFAULT_HUD_LAYOUT } from './constants';
 import { UILayoutService } from './services/uiLayoutService';
+import { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged } from './firebase';
 
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -446,18 +447,57 @@ export default function App() {
     }
   };
 
-  const handleLogin = async (userId?: string, credentials?: any) => {
-    setIsLoginModalOpen(false);
-    setIsAuthenticated(true);
-    setCurrentUserId(userId || 'demo-user');
-    fetchCurrentUser();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setCurrentUserId(user.uid);
+        // Fetch or create user profile in Firestore
+        fetch(`/api/users/${user.uid}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(userData => {
+            if (userData) {
+              setCurrentUser(userData);
+            } else {
+              // Create default user profile
+              const newUser: User = {
+                id: user.uid,
+                name: user.displayName || 'New User',
+                role: 'user',
+                balance: 100,
+                is_verified_driver: false,
+                lat: center.lat,
+                lng: center.lng
+              };
+              setCurrentUser(newUser);
+            }
+          });
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUserId(null);
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogin = async (username?: string, password?: string, email?: string, mode?: 'login' | 'signup') => {
+    try {
+      await signInWithPopup(auth, googleProvider);
+      setIsLoginModalOpen(false);
+    } catch (error) {
+      console.error("Login error:", error);
+      setLastReply("Login failed. Please check if the domain is authorized in Firebase.");
+    }
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentUserId(null);
-    setCurrentUser(null);
-    setRole('user');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setLastReply("Session terminated.");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const handleBiometricLogin = () => {

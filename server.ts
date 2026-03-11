@@ -7,7 +7,7 @@ import mysql from 'mysql2/promise';
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-import db, { isFirestoreDisabled } from "./firestore.js";
+import db, { isFirestoreDisabled } from "./firestore";
 import { CommerceService } from "./src/services/backend/commerceService";
 import { PaymentService } from "./src/services/backend/paymentService";
 import { LedgerService } from "./src/services/backend/ledgerService";
@@ -580,6 +580,135 @@ async function startServer() {
     }
   });
 
+  // Alias for hard boundary compliance
+  app.post("/api/ai-command", async (req, res) => {
+    const { command, userId, role, center } = req.body;
+    try {
+      const result = await AIOrchestratorService.processCommand(command, { 
+        userId, 
+        role, 
+        locationContext: center 
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("AI command error:", error);
+      res.status(500).json({ error: "Failed to process AI command." });
+    }
+  });
+
+  app.post("/api/geo-action", async (req, res) => {
+    const { action, userId, lat, lng, label, destination } = req.body;
+    try {
+      switch (action) {
+        case 'save_location':
+          const locId = `loc_${Date.now()}`;
+          await db.collection('saved_locations').doc(locId).set({
+            id: locId, userId, label, location: { lat, lng }, timestamp: Date.now()
+          });
+          return res.json({ status: 'success', locationId: locId });
+        case 'get_route':
+          // Mock routing logic
+          return res.json({ 
+            status: 'success', 
+            route: [[lat, lng], [destination.lat, destination.lng]],
+            distance: 1.5,
+            duration: 12
+          });
+        default:
+          return res.status(400).json({ error: "Invalid geo action" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/business-action", async (req, res) => {
+    const { action, businessId, category, lat, lng, sortByRating } = req.body;
+    try {
+      switch (action) {
+        case 'search':
+          const results = await CommerceService.searchNearby(lat, lng, category, sortByRating);
+          return res.json(results);
+        case 'get_details':
+          const business = await CommerceService.getBusiness(businessId);
+          return res.json(business);
+        case 'get_menu':
+          const menu = await CommerceService.getMenu(businessId);
+          return res.json(menu);
+        default:
+          return res.status(400).json({ error: "Invalid business action" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/order-action", async (req, res) => {
+    const { action, userId, businessId, items, fulfillment, orderId, status } = req.body;
+    try {
+      switch (action) {
+        case 'create':
+          const order = await CommerceService.createOrder(userId, businessId, items, fulfillment);
+          return res.json(order);
+        case 'update_status':
+          await CommerceService.updateOrderStatus(orderId, status);
+          return res.json({ success: true });
+        case 'get_status':
+          const orderDoc = await db.collection('orders').doc(orderId).get();
+          return res.json(orderDoc.data());
+        default:
+          return res.status(400).json({ error: "Invalid order action" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/delivery-action", async (req, res) => {
+    const { action, orderId, driverId, lat, lng } = req.body;
+    try {
+      switch (action) {
+        case 'update_location':
+          await db.collection('deliveries').doc(orderId).set({
+            orderId, driverId, location: { lat, lng }, updatedAt: Date.now()
+          }, { merge: true });
+          return res.json({ success: true });
+        case 'assign_driver':
+          await db.collection('orders').doc(orderId).update({ 
+            driverId, 
+            status: 'assigned',
+            updatedAt: Date.now() 
+          });
+          return res.json({ success: true });
+        default:
+          return res.status(400).json({ error: "Invalid delivery action" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/ui-layout/:userId", async (req, res) => {
+    try {
+      const doc = await db.collection('user_ui_layouts').doc(req.params.userId).get();
+      res.json(doc.exists ? doc.data() : null);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/ui-layout/:userId", async (req, res) => {
+    try {
+      await db.collection('user_ui_layouts').doc(req.params.userId).set({
+        ...req.body,
+        updatedAt: new Date().toISOString()
+      });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/version", (req, res) => {
     try {
       const versionData = JSON.parse(fs.readFileSync(path.join(__dirname, "version.json"), "utf8"));
@@ -623,12 +752,13 @@ async function startServer() {
       }
 
       // Check Gemini AI
-      const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      const geminiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
       if (!geminiKey) {
         health.services.gemini = { status: "critical", message: "Gemini API Key is missing." };
         health.status = "warn";
       } else {
-        health.services.gemini = { status: "ok", message: "API Key detected." };
+        const source = process.env.GOOGLE_API_KEY ? "GOOGLE_API_KEY" : "GEMINI_API_KEY";
+        health.services.gemini = { status: "ok", message: `API Key detected from ${source}.` };
       }
 
       res.json(health);

@@ -5,11 +5,12 @@ import { GitHubBridgeService, RepoSyncRequestService, PatchArtifactService } fro
 import { OperatorActionType } from "../../types/operational";
 
 export class AIOrchestratorService {
-  private static _ai: GoogleGenAI | null = null;
-  private static _aiUnavailable = false;
-
   private static get ai(): GoogleGenAI | null {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (apiKey) {
+      const source = process.env.GOOGLE_API_KEY ? "GOOGLE_API_KEY" : (process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : "API_KEY");
+      console.log(`[AI Orchestrator] Using API Key from ${source} (starts with ${apiKey.substring(0, 4)})`);
+    }
     if (!apiKey) {
       console.warn("WARNING: Gemini API key not found (GEMINI_API_KEY, GOOGLE_API_KEY, or API_KEY). AI features will be unavailable.");
       return null;
@@ -227,7 +228,12 @@ export class AIOrchestratorService {
             type: Type.OBJECT,
             properties: {
               action: { type: Type.STRING },
-              payload: { type: Type.OBJECT }
+              payload: { 
+                type: Type.OBJECT,
+                properties: {
+                  data: { type: Type.STRING }
+                }
+              }
             },
             required: ["action"]
           }
@@ -253,7 +259,7 @@ export class AIOrchestratorService {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: [
           ...history,
           { role: 'user', parts: [{ text: `Context: ${JSON.stringify(locationContext)}. User Prompt: ${prompt}` }] }
@@ -326,11 +332,12 @@ export class AIOrchestratorService {
                 result = await aiToolHandlers.saveLocation({ ...call.args as any, userId });
                 break;
               case "searchWeb":
-                result = await this.ai.models.generateContent({
+                const searchRes = await ai.models.generateContent({
                   model: "gemini-3.1-pro-preview",
                   contents: [{ role: 'user', parts: [{ text: (call.args as any).query }] }],
                   config: { tools: [{ googleSearch: {} }] }
                 });
+                result = searchRes.text;
                 break;
               case "operatorCommand":
                 if (role === 'admin' || role === 'operator' || role === 'owner') {
@@ -458,7 +465,7 @@ export class AIOrchestratorService {
       }
 
       return {
-        reply: response.text,
+        reply: response.text || "I've processed your request.",
         toolResults,
         groundingMetadata: response.candidates?.[0]?.groundingMetadata
       };

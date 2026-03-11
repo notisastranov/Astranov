@@ -62,9 +62,9 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
     const geometry = new THREE.SphereGeometry(5, 64, 64);
     const textureLoader = new THREE.TextureLoader();
     
-    const earthTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
-    const bumpMap = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png');
-    const specMap = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-water-mask.png');
+    const earthTexture = textureLoader.load('/textures/earth-blue-marble.jpg');
+    const bumpMap = textureLoader.load('/textures/earth-topology.png');
+    const specMap = textureLoader.load('/textures/earth-water.png');
 
     const material = new THREE.MeshPhongMaterial({
       map: earthTexture,
@@ -79,11 +79,10 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
 
     // Clouds
     const cloudGeometry = new THREE.SphereGeometry(5.1, 64, 64);
-    const cloudTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-clouds.png');
     const cloudMaterial = new THREE.MeshPhongMaterial({
-      map: cloudTexture,
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.4
+      opacity: 0.2
     });
     const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     scene.add(clouds);
