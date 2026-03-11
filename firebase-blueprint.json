@@ -1,4 +1,11 @@
 {
+  "metadata": {
+    "project": "Astranov",
+    "author": "Notis Astranov",
+    "system": "Spartan Script",
+    "year": 2026,
+    "publication": "Spartan Script is an interdisciplinary programming language and system design method that operates between human language, software architecture, and AI-executable instructions. Founded by Notis Astranov in 2026."
+  },
   "entities": {
     "orbital_signals": {
       "title": "Orbital Signal",

@@ -1,3 +1,11 @@
+/**
+ * Astranov Main Application Component
+ * 
+ * Authorship: Astranov
+ * System Design: Spartan Script
+ * Founder: Notis Astranov
+ * Year: 2026
+ */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import YouTubePlayer from './components/YouTubePlayer';
@@ -120,6 +128,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [lastReply, setLastReply] = useState<string>();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
@@ -721,6 +730,7 @@ export default function App() {
           <LeftHUD 
             activeMenu={activeMenu}
             onMenuOpen={handleMenuOpen}
+            onAboutOpen={() => setIsAboutOpen(true)}
             isAuthenticated={isAuthenticated}
             balance={`€${currentUser?.balance?.toFixed(2) || '0.00'}`}
             channelMode={channelMode.toUpperCase()}
@@ -1288,6 +1298,64 @@ export default function App() {
             isOpen={isDiagnosticsOpen}
             onClose={() => setIsDiagnosticsOpen(false)}
           />
+        )}
+        {isAboutOpen && (
+          <div className="fixed inset-0 z-[3000] pointer-events-auto flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setIsAboutOpen(false)} />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-lg bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+            >
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                    <Info className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest">About Astranov</h2>
+                    <p className="text-[9px] text-white/40 uppercase tracking-wider">System Provenance & Credits</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsAboutOpen(false)} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                  <X className="w-4 h-4 text-white/40" />
+                </button>
+              </div>
+              
+              <div className="p-8 space-y-8">
+                <section>
+                  <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">Authorship</h3>
+                  <div className="space-y-2">
+                    <p className="text-xs text-white/80 leading-relaxed">
+                      <span className="text-white font-bold">Astranov</span> was created and founded by <span className="text-blue-400 font-bold">Notis Astranov</span> in 2026.
+                    </p>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-3">Spartan Script</h3>
+                  <div className="space-y-3">
+                    <p className="text-xs text-white/80 leading-relaxed">
+                      Powered by the <span className="text-white font-bold">Spartan Script</span> system design method.
+                    </p>
+                    <div className="p-4 bg-white/5 border border-white/5 rounded-xl">
+                      <p className="text-[11px] text-white/60 italic leading-relaxed">
+                        "Spartan Script is an interdisciplinary programming language and system design method that operates between human language, software architecture, and AI-executable instructions. Founded by Notis Astranov in 2026."
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="pt-4 border-t border-white/5">
+                  <div className="flex items-center justify-between text-[9px] text-white/20 uppercase tracking-widest font-bold">
+                    <span>© 2026 Notis Astranov</span>
+                    <span>v1.0.5</span>
+                  </div>
+                </section>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

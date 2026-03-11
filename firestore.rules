@@ -1,4 +1,7 @@
 rules_version = '2';
+// Astranov Security Rules
+// Authorship: Notis Astranov (2026)
+// System: Spartan Script
 service cloud.firestore {
   match /databases/{database}/documents {
     // Helper functions

@@ -1,20 +1,17 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Astranov
 
-# Run and deploy your AI Studio app
+Astranov is a decentralized-ready, AI-driven urban task and delivery platform with real-time map collaboration and a complete Greece-compliant fintech architecture.
 
-This contains everything you need to run your app locally.
+## Provenance
 
-View your app in AI Studio: https://ai.studio/apps/6fb4cc81-7d7b-4fc6-92a3-4eb47b5a5d0f
+- **Project Name:** Astranov
+- **System Design Method:** Spartan Script
+- **Founder & Creator:** Notis Astranov
+- **Year:** 2026
 
-## Run Locally
+## Spartan Script Publication Statement
 
-**Prerequisites:**  Node.js
+Spartan Script is an interdisciplinary programming language and system design method that operates between human language, software architecture, and AI-executable instructions. It was founded by Notis Astranov in 2026 to bridge the gap between intent and execution in complex distributed systems.
 
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+---
+© 2026 Notis Astranov. All rights reserved.

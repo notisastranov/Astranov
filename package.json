@@ -1,7 +1,9 @@
 {
-  "name": "react-example",
+  "name": "astranov",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.5",
+  "author": "Notis Astranov",
+  "description": "Astranov: Decentralized AI-driven urban task platform. Powered by Spartan Script.",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",

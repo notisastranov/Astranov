@@ -1,3 +1,8 @@
+/**
+ * Astranov Build Configuration
+ * Authorship: Notis Astranov (2026)
+ * System: Spartan Script
+ */
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';

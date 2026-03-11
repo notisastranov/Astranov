@@ -1,3 +1,14 @@
+/**
+ * Astranov Server Entry Point
+ * 
+ * Authorship: Astranov
+ * System Design: Spartan Script
+ * Founder: Notis Astranov
+ * Year: 2026
+ * 
+ * Spartan Script is an interdisciplinary programming language and system design method 
+ * that operates between human language, software architecture, and AI-executable instructions.
+ */
 import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";

@@ -1,10 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Settings, User, Wallet, Users, Truck, Activity, Plus } from 'lucide-react';
+import { Settings, User, Wallet, Users, Truck, Activity, Plus, Info } from 'lucide-react';
 
 interface LeftHUDProps {
   activeMenu: string | null;
   onMenuOpen: (e: React.MouseEvent, id: string) => void;
+  onAboutOpen: () => void;
   isAuthenticated: boolean;
   balance: string;
   channelMode: string;
@@ -13,11 +14,12 @@ interface LeftHUDProps {
   healthValue: number;
 }
 
-const APPROVED_LEFT_HUD_BUTTONS = ['settings', 'profile', 'wallet', 'channel', 'fleet', 'status', 'post'];
+const APPROVED_LEFT_HUD_BUTTONS = ['settings', 'profile', 'wallet', 'channel', 'fleet', 'status', 'post', 'about'];
 
 export const LeftHUD: React.FC<LeftHUDProps> = ({
   activeMenu,
   onMenuOpen,
+  onAboutOpen,
   isAuthenticated,
   balance,
   channelMode,
@@ -39,6 +41,11 @@ export const LeftHUD: React.FC<LeftHUDProps> = ({
         onClick={(e) => onMenuOpen(e, 'profile')}
         status={isAuthenticated ? 'healthy' : 'warning'}
         active={activeMenu === 'profile'}
+      />
+      <HudButton 
+        icon={<Info className="w-4 h-4" />} 
+        label="About" 
+        onClick={onAboutOpen} 
       />
       <HudButton 
         icon={<Wallet className="w-4 h-4" />} 

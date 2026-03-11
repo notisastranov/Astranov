@@ -1,3 +1,11 @@
+/**
+ * Astranov Firestore Service
+ * 
+ * Authorship: Astranov
+ * System Design: Spartan Script
+ * Founder: Notis Astranov
+ * Year: 2026
+ */
 import "dotenv/config";
 import { Firestore } from "@google-cloud/firestore";
 import firebaseConfig from "./firebase-applet-config.json";

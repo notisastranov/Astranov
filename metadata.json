@@ -1,6 +1,6 @@
 {
   "name": "Astranov",
-  "description": "A decentralized-ready, AI-driven urban task and delivery platform with real-time map collaboration and a complete Greece-compliant fintech architecture (myDATA, ELP).",
+  "description": "Astranov: Decentralized AI-driven urban task platform. Created by Notis Astranov (2026). Powered by Spartan Script.",
   "requestFramePermissions": [
     "geolocation",
     "microphone",
