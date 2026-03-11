@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Settings, User, Wallet, Plus, Users, Truck, Activity } from 'lucide-react';
+import { Settings, User, Wallet, Users, Truck, Activity, Plus } from 'lucide-react';
 
 interface LeftHUDProps {
   activeMenu: string | null;
@@ -12,6 +12,8 @@ interface LeftHUDProps {
   systemHealth: string;
   healthValue: number;
 }
+
+const APPROVED_LEFT_HUD_BUTTONS = ['settings', 'profile', 'wallet', 'channel', 'fleet', 'status', 'post'];
 
 export const LeftHUD: React.FC<LeftHUDProps> = ({
   activeMenu,
@@ -47,13 +49,6 @@ export const LeftHUD: React.FC<LeftHUDProps> = ({
         active={activeMenu === 'wallet'}
       />
       <HudButton 
-        icon={<Plus className="w-4 h-4" />} 
-        label="Post" 
-        onClick={(e) => onMenuOpen(e, 'post')} 
-        variant="primary" 
-        active={activeMenu === 'post'}
-      />
-      <HudButton 
         icon={<Users className="w-4 h-4" />} 
         label="Channel" 
         onClick={(e) => onMenuOpen(e, 'channel')}
@@ -74,6 +69,13 @@ export const LeftHUD: React.FC<LeftHUDProps> = ({
         status={systemHealth === 'healthy' ? 'healthy' : 'problem'}
         data={`${healthValue}%`}
         active={activeMenu === 'status'}
+      />
+      <HudButton 
+        icon={<Plus className="w-4 h-4" />} 
+        label="Post" 
+        onClick={(e) => onMenuOpen(e, 'post')} 
+        variant="primary" 
+        active={activeMenu === 'post'}
       />
     </div>
   );

@@ -58,6 +58,7 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
         opacity: 0.3,
         blending: THREE.AdditiveBlending
       });
+      cloudSpriteMat.userData.originalOpacity = 0.3;
       const cloud = new THREE.Sprite(cloudSpriteMat);
       cloud.scale.set(1.5, 1.5, 1);
       signalGroup.add(cloud);
@@ -73,6 +74,7 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
             transparent: true,
             opacity: 0.9,
           });
+          ytSpriteMat.userData.originalOpacity = 0.9;
           const ytSprite = new THREE.Sprite(ytSpriteMat);
           ytSprite.scale.set(0.4, 0.4, 1);
           signalGroup.add(ytSprite);
@@ -85,30 +87,35 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
             opacity: 0.8,
             blending: THREE.AdditiveBlending
           });
+          spriteMaterial.userData.originalOpacity = 0.8;
           const nebula = new THREE.Sprite(spriteMaterial);
           nebula.scale.set(1, 1, 1);
           signalGroup.add(nebula);
           break;
         case 'work':
           geometry = new THREE.SphereGeometry(0.1, 16, 16);
-          material = new THREE.MeshPhongMaterial({
+          const workMat = new THREE.MeshPhongMaterial({
             color: signal.color,
             transparent: true,
             opacity: 0.8,
             emissive: signal.color,
             emissiveIntensity: 0.5
           });
-          const workNode = new THREE.Mesh(geometry, material);
+          workMat.userData.originalOpacity = 0.8;
+          const workNode = new THREE.Mesh(geometry, workMat);
           signalGroup.add(workNode);
           break;
         default:
           geometry = new THREE.SphereGeometry(0.08, 16, 16);
-          material = new THREE.MeshStandardMaterial({
+          const dotMat = new THREE.MeshStandardMaterial({
             color: signal.color,
             emissive: signal.color,
             emissiveIntensity: 1,
+            transparent: true,
+            opacity: 1
           });
-          const dot = new THREE.Mesh(geometry, material);
+          dotMat.userData.originalOpacity = 1;
+          const dot = new THREE.Mesh(geometry, dotMat);
           signalGroup.add(dot);
           break;
       }
@@ -172,9 +179,28 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
   useEffect(() => {
     const animate = () => {
       const time = Date.now() * 0.001;
+      const cameraDist = camera.position.length();
+      
+      // Density scaling: signals become smaller and more transparent as we zoom out
+      // Globe radius is 5. Orbital view is at 25.
+      const scaleFactor = Math.max(0.2, Math.min(1, (25 - cameraDist) / 15 + 0.5));
+      const opacityFactor = Math.max(0.3, Math.min(1, (25 - cameraDist) / 10 + 0.3));
+
       groupRef.current.children.forEach((child, i) => {
         const signal = child.userData.signal as GlobalSignal;
         if (!signal) return;
+
+        // Apply scaling
+        child.scale.setScalar(scaleFactor);
+        
+        child.children.forEach(mesh => {
+          if (mesh instanceof THREE.Sprite || mesh instanceof THREE.Mesh) {
+            const mat = mesh.material as THREE.Material;
+            if (mat.transparent && mat.userData.originalOpacity !== undefined) {
+              mat.opacity = mat.userData.originalOpacity * opacityFactor;
+            }
+          }
+        });
 
         // Floating animation
         child.position.y += Math.sin(time + i) * 0.0005;

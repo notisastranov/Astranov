@@ -113,9 +113,9 @@ export default function App() {
   const [systemHealth, setSystemHealth] = useState<DiagnosticStatus>('checking');
   const [healthValue, setHealthValue] = useState<number>(98);
   const [droneStatus, setDroneStatus] = useState<'charged' | 'on_air' | 'low'>('charged');
-  const [appVersion, setAppVersion] = useState<string>("1.0.5");
-  const [latestVersion, setLatestVersion] = useState<string>("1.0.6");
-  const [versionStatus, setVersionStatus] = useState<'up-to-date' | 'update-available' | 'critical-update'>('update-available');
+  const [appVersion] = useState<string>("1.0.5"); // Sourced from client build
+  const [latestVersion, setLatestVersion] = useState<string>("1.0.5");
+  const [versionStatus, setVersionStatus] = useState<'up-to-date' | 'update-available' | 'critical-update'>('up-to-date');
   const [hudButtons, setHudButtons] = useState<HudButtonConfig[]>(DEFAULT_HUD_LAYOUT);
   const [isLoading, setIsLoading] = useState(false);
   const [lastReply, setLastReply] = useState<string>();
@@ -334,6 +334,15 @@ export default function App() {
     }
   };
 
+  const [isFleetMenuOpen, setIsFleetMenuOpen] = useState(false);
+  const [isNetworkMenuOpen, setIsNetworkMenuOpen] = useState(false);
+  const [isLayersMenuOpen, setIsLayersMenuOpen] = useState(false);
+  const [isFiltersMenuOpen, setIsFiltersMenuOpen] = useState(false);
+  const [isLocateMenuOpen, setIsLocateMenuOpen] = useState(false);
+  const [isRouteMenuOpen, setIsRouteMenuOpen] = useState(false);
+  const [isScannerMenuOpen, setIsScannerMenuOpen] = useState(false);
+  const [isPowerMenuOpen, setIsPowerMenuOpen] = useState(false);
+
   const handleCommand = async (command: string) => {
     if (!command.trim()) return;
     
@@ -341,7 +350,9 @@ export default function App() {
     setTranscript('');
     
     try {
-      // If user is an operator, process via OperatorCommandService
+      const userId = currentUserId || 'guest-user';
+      
+      // If user is an operator, record the command
       if (role === 'operator' || role === 'owner' || role === 'admin') {
         const opCmd = await OperatorCommandService.processCommand(
           currentUser?.name || 'Unknown Operator',
@@ -355,28 +366,50 @@ export default function App() {
           rationale: `Operator command classified as ${opCmd.type}`,
           timestamp: opCmd.timestamp
         }, ...prev]);
+      }
 
-        setLastReply(`Operator command received: ${opCmd.type}. Processing request...`);
-      } else {
-        // Standard AI response logic
-        const userId = currentUserId || 'guest-user';
-        const res = await fetch('/api/command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command, userId, role, center })
+      // Process via AI for everyone
+      const res = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, userId, role, center })
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+      
+      const result = await res.json();
+      setLastReply(result.reply);
+      
+      // Process tool results for UI actions
+      if (result.toolResults) {
+        result.toolResults.forEach((tr: any) => {
+          if (tr.tool === 'searchNearby' || tr.tool === 'searchNearbySignals' || tr.tool === 'searchNearbyVideos') {
+            if (tr.result && tr.result.length > 0) {
+              const first = tr.result[0];
+              if (first.lat && first.lng) {
+                setCenter({ lat: first.lat, lng: first.lng });
+                setZoom(16);
+                setViewState('local');
+              }
+            }
+          }
         });
-        
-        if (!res.ok) {
-          throw new Error(`Server responded with ${res.status}`);
-        }
-        
-        const result = await res.json();
-        setLastReply(result.reply);
-        
-        if (result.action === 'navigate') {
-          setCenter({ lat: result.lat, lng: result.lng });
-          setZoom(18);
-        }
+      }
+
+      if (result.action === 'navigate') {
+        setCenter({ lat: result.lat, lng: result.lng });
+        setZoom(18);
+        setViewState('local');
+      }
+
+      if (result.action === 'OPEN_MENU') {
+        setActiveMenu(result.menuId);
+      }
+
+      if (result.action === 'SHOW_SIGNAL') {
+        handleSignalSelect(result.signal);
       }
     } catch (error) {
       console.error('Command processing error:', error);
@@ -567,44 +600,43 @@ export default function App() {
   };
 
   const handleUpdate = () => {
-    if (versionStatus !== 'up-to-date') {
-      // Force reload with cache busting
-      const cacheBuster = `?v=${Date.now()}`;
-      window.location.href = window.location.origin + window.location.pathname + cacheBuster + window.location.hash;
-    }
+    // Force reload with cache busting to ensure newest build is fetched
+    const cacheBuster = `?v=${Date.now()}`;
+    window.location.href = window.location.origin + window.location.pathname + cacheBuster + window.location.hash;
   };
 
   useEffect(() => {
     const checkVersion = async () => {
       try {
+        // Sourced from deployment metadata / build reference endpoint
         const res = await fetch('/api/version');
         const data = await res.json();
         if (data.version) {
           setLatestVersion(data.version);
-          if (data.version !== appVersion) {
-            setVersionStatus('update-available');
-          } else {
-            setVersionStatus('up-to-date');
-          }
+          setVersionStatus(data.version !== appVersion ? 'update-available' : 'up-to-date');
         }
       } catch (e) {
-        console.error("Failed to check version", e);
+        // Fallback for simulation/dev
+        setLatestVersion("1.0.6");
+        setVersionStatus('update-available');
       }
     };
     checkVersion();
+    const interval = setInterval(checkVersion, 300000); // 5 min interval
+    return () => clearInterval(interval);
   }, [appVersion]);
 
   return (
     <div className="relative w-full h-full bg-black overflow-hidden">
       {/* MAP / GLOBE LAYER */}
       <div className="absolute inset-0 z-0">
-        {viewState === 'global' ? (
+        {(viewState === 'global' || viewState === 'zooming' || viewState === 'atmosphere') ? (
           <GlobeScene 
             onTransitionComplete={handleTransitionComplete}
             signals={orbitalSignals as any}
             onSignalSelect={handleSignalSelect}
-            isZooming={false}
-            viewState="orbital"
+            isZooming={viewState === 'zooming'}
+            viewState={viewState === 'global' ? 'orbital' : 'map'}
           />
         ) : (
           <AstranovMap 
@@ -805,6 +837,135 @@ export default function App() {
         side="left" 
         title="Fleet"
       >
+        <button onClick={() => { setFleetMode('drivers'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'drivers' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Bike className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Drivers Only</span>
+        </button>
+        <button onClick={() => { setFleetMode('drones'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'drones' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Satellite className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Drones Only</span>
+        </button>
+        <button onClick={() => { setFleetMode('both'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'both' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Truck className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Hybrid Fleet</span>
+        </button>
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'power'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="System Power"
+      >
+        <button onClick={() => { setIsPoweredOn(!isPoweredOn); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${isPoweredOn ? 'bg-rose-500/20 border border-rose-500/30' : 'bg-emerald-500/20 border border-emerald-500/30'}`}>
+          <Power className={`w-4 h-4 ${isPoweredOn ? 'text-rose-500' : 'text-emerald-500'}`} />
+          <span className={`text-[10px] font-black uppercase tracking-widest ${isPoweredOn ? 'text-rose-500' : 'text-emerald-500'}`}>{isPoweredOn ? "Shutdown System" : "Boot System"}</span>
+        </button>
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'network'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Network"
+      >
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Uplink</span>
+            <span className="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Connected</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Latency</span>
+            <span className="text-[8px] font-black text-white uppercase tracking-widest">24ms</span>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Security</span>
+            <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">AES-256</span>
+          </div>
+        </div>
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'layers'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Map Layers"
+      >
+        <button onClick={() => { setMapType('dark'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${mapType === 'dark' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Monitor className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Dark Tactical</span>
+        </button>
+        <button onClick={() => { setMapType('satellite'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${mapType === 'satellite' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <Satellite className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Satellite</span>
+        </button>
+        <button onClick={() => { setMapType('roadmap'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${mapType === 'roadmap' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
+          <MapIcon className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Roadmap</span>
+        </button>
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'route'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Routing"
+      >
+        {routingDestination ? (
+          <div className="flex flex-col gap-3">
+            <div className="p-3 bg-white/5 rounded-xl border border-white/10">
+              <span className="text-[8px] font-black text-white/20 uppercase tracking-widest block mb-1">Destination</span>
+              <span className="text-[10px] font-black text-white uppercase tracking-tight">{routingDestination.lat.toFixed(4)}, {routingDestination.lng.toFixed(4)}</span>
+            </div>
+            <button 
+              onClick={() => { handleStartRouting(); setActiveMenu(null); }}
+              className="w-full py-3 bg-blue-500 hover:bg-blue-400 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all"
+            >
+              {isRouting ? "Recalculating..." : "Initiate Route"}
+            </button>
+            <button 
+              onClick={() => { setRoutingDestination(null); setIsRouting(false); setActiveMenu(null); }}
+              className="w-full py-2 bg-white/5 hover:bg-white/10 text-white/40 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all"
+            >
+              Clear Target
+            </button>
+          </div>
+        ) : (
+          <div className="p-4 text-center">
+            <Navigation className="w-8 h-8 text-white/10 mx-auto mb-2" />
+            <p className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-relaxed">Select a coordinate on the map to initiate routing</p>
+          </div>
+        )}
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'scanner'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="right" 
+        title="Scanner"
+      >
+        <button onClick={() => { handleCommand("Scan for nearby signals"); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left w-full">
+          <Scan className="w-4 h-4 text-blue-400" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Deep Scan</span>
+        </button>
+        <button onClick={() => { handleCommand("Show trending videos"); setActiveMenu(null); }} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-left w-full">
+          <Youtube className="w-4 h-4 text-rose-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-white">Video Signals</span>
+        </button>
+      </AnchoredButtonMenu>
+
+      <AnchoredButtonMenu 
+        isOpen={activeMenu === 'fleet'} 
+        onClose={() => setActiveMenu(null)} 
+        anchorRect={anchorRect} 
+        side="left" 
+        title="Fleet"
+      >
         <button onClick={() => { setFleetMode('drones'); setActiveMenu(null); }} className={`flex items-center gap-3 p-3 rounded-xl transition-all text-left ${fleetMode === 'drones' ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 hover:bg-white/10'}`}>
           <Zap className="w-4 h-4 text-blue-400" />
           <span className="text-[10px] font-black uppercase tracking-widest text-white">Drones</span>
@@ -831,7 +992,7 @@ export default function App() {
             <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">Health</span>
             <span className="text-[10px] font-black text-blue-400">{healthValue}%</span>
           </div>
-          <button onClick={() => setIsSystemConsoleOpen(true)} className="mt-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-center">
+          <button onClick={() => { setIsDiagnosticsOpen(true); setActiveMenu(null); }} className="mt-2 p-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg transition-all text-center">
             <span className="text-[8px] font-black uppercase tracking-widest text-blue-400">Open Diagnostics</span>
           </button>
         </div>

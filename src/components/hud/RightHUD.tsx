@@ -11,6 +11,8 @@ interface RightHUDProps {
   handleSyncGPS: () => void;
 }
 
+const APPROVED_RIGHT_HUD_BUTTONS = ['power', 'network', 'layers', 'filters', 'locate', 'route', 'scanner'];
+
 export const RightHUD: React.FC<RightHUDProps> = ({
   activeMenu,
   onMenuOpen,
@@ -21,6 +23,7 @@ export const RightHUD: React.FC<RightHUDProps> = ({
 }) => {
   return (
     <div className="flex flex-col gap-2 pointer-events-auto">
+      {/* Power - Approved System Control on Right Rail per Spartan Script */}
       <HudButton 
         icon={<Power className="w-4 h-4" />} 
         label="Power" 
@@ -28,6 +31,8 @@ export const RightHUD: React.FC<RightHUDProps> = ({
         status={isPoweredOn ? 'healthy' : 'problem'}
         active={activeMenu === 'power'}
       />
+      
+      {/* Map Controls */}
       <HudButton 
         icon={<Satellite className="w-4 h-4" />} 
         label="Network" 

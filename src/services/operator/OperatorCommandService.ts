@@ -13,23 +13,38 @@ export class OperatorCommandService {
   ): Promise<OperatorCommand> {
     const type = this.classifyCommand(command);
     
-    const operatorCommand: OperatorCommand = {
-      id: `cmd-${Date.now()}`,
-      timestamp: Date.now(),
-      actor,
-      role,
-      command,
-      type,
-      status: 'pending',
-      targetArea: this.extractTargetArea(command),
-    };
-
-    console.log(`[OperatorCommandService] Processing ${type}: ${command}`);
-    
-    // Simulate Firestore save
-    // await db.collection(FIREBASE_COLLECTIONS.OPERATOR_COMMANDS).add(operatorCommand);
-    
-    return operatorCommand;
+    try {
+      const res = await fetch('/api/operator/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command, userId: actor, role })
+      });
+      
+      const result = res.ok ? await res.json() : null;
+      
+      return {
+        id: result?.id || `cmd-${Date.now()}`,
+        timestamp: Date.now(),
+        actor,
+        role,
+        command,
+        type,
+        status: res.ok ? 'completed' : 'pending',
+        targetArea: this.extractTargetArea(command),
+        result: result
+      };
+    } catch (e) {
+      return {
+        id: `cmd-${Date.now()}`,
+        timestamp: Date.now(),
+        actor,
+        role,
+        command,
+        type,
+        status: 'pending',
+        targetArea: this.extractTargetArea(command),
+      };
+    }
   }
 
   private static classifyCommand(command: string): OperatorCommandType {
