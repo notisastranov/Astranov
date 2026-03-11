@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "orbital_signals": {
+      "title": "Orbital Signal",
+      "description": "A high-level signal visible from orbit.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "geohash": { "type": "string" },
+        "priority": { "type": "number" },
+        "renderMode": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "freshnessScore": { "type": "number" },
+        "popularityScore": { "type": "number" }
+      },
+      "required": ["id", "type", "title", "lat", "lng"]
+    },
+    "audit_logs": {
+      "title": "Audit Log",
+      "description": "A log of operator actions.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorId": { "type": "string" },
+        "action": { "type": "string" },
+        "targetId": { "type": "string" },
+        "status": { "type": "string" },
+        "details": { "type": "object" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["id", "actorId", "action", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/orbital_signals/{signalId}": {
+      "schema": "orbital_signals",
+      "description": "Collection of orbital signals."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "audit_logs",
+      "description": "Collection of audit logs."
+    }
+  }
+}

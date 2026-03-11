@@ -4,36 +4,44 @@ import { motion } from 'motion/react';
 interface TopStatusStripProps {
   currentVersion: string;
   latestVersion: string;
-  status: 'healthy' | 'warning' | 'problem';
   onUpdate: () => void;
-  onDiagnosticClick: () => void;
 }
 
 export const TopStatusStrip: React.FC<TopStatusStripProps> = ({
   currentVersion,
   latestVersion,
-  status,
-  onUpdate,
-  onDiagnosticClick
+  onUpdate
 }) => {
-  const isUpdateAvailable = currentVersion !== latestVersion;
+  const isMatch = currentVersion === latestVersion;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-8 bg-black/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 z-[100] pointer-events-auto select-none font-mono">
-      {/* LEFT: Branding & Current Version */}
-      <div className="flex items-center gap-4">
-        <span className="text-[10px] font-black text-white uppercase tracking-[0.3em] font-sans">AstranoV</span>
-        <span className="text-[9px] text-blue-400/80 font-bold">v{currentVersion}</span>
-      </div>
+    <div className="fixed top-0 left-0 right-0 h-8 bg-black/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-center z-[100] pointer-events-auto select-none font-mono">
+      <div className="flex items-center gap-6">
+        {/* Astranov Name - Glowing Blue */}
+        <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] drop-shadow-[0_0_5px_rgba(96,165,250,0.8)]">
+          Astranov
+        </span>
 
-      {/* RIGHT: Latest Version (Clickable) */}
-      <div className="flex items-center gap-4">
-        <button 
-          onClick={onUpdate}
-          className={`text-[9px] font-bold transition-colors cursor-pointer ${isUpdateAvailable ? 'text-amber-400 hover:text-amber-300' : 'text-white/30 hover:text-white'}`}
-        >
-          latest v{latestVersion}
-        </button>
+        {/* Current Version - Glowing Blue */}
+        <span className="text-[9px] text-blue-400 font-bold drop-shadow-[0_0_3px_rgba(96,165,250,0.6)] uppercase tracking-wider">
+          current v{currentVersion}
+        </span>
+
+        {/* Latest Version & Update Action */}
+        <div className="flex items-center gap-3">
+          <span className={`text-[9px] font-bold uppercase tracking-wider ${isMatch ? 'text-green-500' : 'text-red-500'}`}>
+            latest v{latestVersion}
+          </span>
+          
+          {!isMatch && (
+            <button 
+              onClick={onUpdate}
+              className="text-[9px] font-bold text-yellow-400 underline cursor-pointer hover:text-yellow-300 transition-colors uppercase tracking-wider"
+            >
+              force refresh update
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

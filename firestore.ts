@@ -1,8 +1,10 @@
 import "dotenv/config";
 import { Firestore } from "@google-cloud/firestore";
+import firebaseConfig from "./firebase-applet-config.json";
 
 const firestore = new Firestore({
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID || "ais-europe-west1-d519425142f94"
+  projectId: firebaseConfig.projectId,
+  databaseId: firebaseConfig.firestoreDatabaseId
 });
 
 export let isFirestoreDisabled = false;

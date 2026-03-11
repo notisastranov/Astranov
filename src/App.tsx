@@ -714,9 +714,7 @@ export default function App() {
           <TopStatusStrip 
             currentVersion={appVersion}
             latestVersion={latestVersion}
-            status={versionStatus === 'up-to-date' ? 'healthy' : versionStatus === 'update-available' ? 'warning' : 'problem'}
             onUpdate={handleUpdate}
-            onDiagnosticClick={() => setIsSystemConsoleOpen(true)}
           />
         }
         leftHUD={

@@ -9,7 +9,10 @@ const textures = [
   { name: 'earth-blue-marble.jpg', url: 'https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg' },
   { name: 'earth-topology.png', url: 'https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png' },
   { name: 'earth-water.png', url: 'https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-water.png' },
-  { name: 'earth-clouds.png', url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_2048.png' }
+  { name: 'earth-clouds.png', url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png' },
+  { name: 'lensflare0.png', url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0.png' },
+  { name: 'lensflare0_alpha.png', url: 'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0_alpha.png' },
+  { name: 'youtube-icon.png', url: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png' }
 ];
 
 async function download(url: string, dest: string) {

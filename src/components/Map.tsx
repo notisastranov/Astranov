@@ -403,7 +403,7 @@ export default function AstranovMap({ center, tasks, shops, publications, ground
           map: mapInstance.current,
           title: signal.title,
           icon: {
-            url: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png',
+            url: '/assets/globe/youtube-icon.png',
             scaledSize: new google.maps.Size(32, 32),
             anchor: new google.maps.Point(16, 16)
           }

@@ -62,27 +62,28 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
     const geometry = new THREE.SphereGeometry(5, 64, 64);
     const textureLoader = new THREE.TextureLoader();
     
-    const earthTexture = textureLoader.load('/textures/earth-blue-marble.jpg');
-    const bumpMap = textureLoader.load('/textures/earth-topology.png');
-    const specMap = textureLoader.load('/textures/earth-water.png');
+    const earthTexture = textureLoader.load('/assets/globe/earth-dark.jpg');
+    const bumpMap = textureLoader.load('/assets/globe/earth-topology.png');
+    const specMap = textureLoader.load('/assets/globe/earth-water-mask.png');
 
     const material = new THREE.MeshPhongMaterial({
       map: earthTexture,
       bumpMap: bumpMap,
-      bumpScale: 0.05,
+      bumpScale: 0.1,
       specularMap: specMap,
       specular: new THREE.Color('grey'),
-      shininess: 5
+      shininess: 10
     });
     const globe = new THREE.Mesh(geometry, material);
     scene.add(globe);
 
     // Clouds
     const cloudGeometry = new THREE.SphereGeometry(5.1, 64, 64);
+    const cloudTexture = textureLoader.load('/assets/globe/earth-clouds.png');
     const cloudMaterial = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
+      map: cloudTexture,
       transparent: true,
-      opacity: 0.2
+      opacity: 0.4
     });
     const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     scene.add(clouds);
@@ -129,13 +130,14 @@ export default function GlobeScene({ onSignalSelect, isZooming, onTransitionComp
     const stars = new THREE.Points(starGeometry, starMaterial);
     scene.add(stars);
 
-    // Space Nebula
+    // Space Nebula / Starfield
     const nebulaGeometry = new THREE.SphereGeometry(800, 32, 32);
+    const starfieldTexture = textureLoader.load('/assets/globe/starfield.png');
     const nebulaMaterial = new THREE.MeshBasicMaterial({
+      map: starfieldTexture,
       side: THREE.BackSide,
       transparent: true,
-      opacity: 0.1,
-      color: 0x1a0b2e // Realistic deep purple/blue
+      opacity: 0.4
     });
     const nebula = new THREE.Mesh(nebulaGeometry, nebulaMaterial);
     scene.add(nebula);

@@ -1,4 +1,4 @@
-import { Firestore } from '@google-cloud/firestore';
+import firestore from "../../../firestore";
 import { 
   OperatorCommand, 
   OperatorActionType, 
@@ -6,8 +6,6 @@ import {
   DeploymentRequest, 
   AuditLog 
 } from '../../types/operational';
-
-const firestore = new Firestore();
 
 export class AuditLogService {
   private static logs = firestore.collection('audit_logs');

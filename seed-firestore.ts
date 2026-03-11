@@ -1,11 +1,14 @@
 import { Firestore } from "@google-cloud/firestore";
 
+import firebaseConfig from "./firebase-applet-config.json";
+
 const db = new Firestore({
-  projectId: "gen-lang-client-0836698357"
+  projectId: firebaseConfig.projectId,
+  databaseId: firebaseConfig.firestoreDatabaseId
 });
 
 async function testAndSeed() {
-  console.log("Testing Firestore connection to gen-lang-client-0836698357...");
+  console.log(`Testing Firestore connection to ${firebaseConfig.projectId} (${firebaseConfig.firestoreDatabaseId})...`);
   try {
     const collections = await db.listCollections();
     console.log("Found collections:", collections.map(c => c.id));

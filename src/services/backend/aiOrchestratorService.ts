@@ -6,20 +6,26 @@ import { OperatorActionType } from "../../types/operational";
 
 export class AIOrchestratorService {
   private static get ai(): GoogleGenAI | null {
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.API_KEY;
-    if (apiKey) {
-      const source = process.env.GOOGLE_API_KEY ? "GOOGLE_API_KEY" : (process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : "API_KEY");
-      console.log(`[AI Orchestrator] Using API Key from ${source} (starts with ${apiKey.substring(0, 4)})`);
-    }
-    if (!apiKey) {
-      console.warn("WARNING: Gemini API key not found (GEMINI_API_KEY, GOOGLE_API_KEY, or API_KEY). AI features will be unavailable.");
-      return null;
-    }
+    const googleKey = process.env.GOOGLE_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const envApiKey = process.env.API_KEY;
+    
+    // Filter out "undefined" string or empty strings
+    const isValid = (k: string | undefined) => k && k !== "undefined" && k.length > 0;
+    
+    const apiKey = isValid(googleKey) ? googleKey : (isValid(geminiKey) ? geminiKey : (isValid(envApiKey) ? envApiKey : null));
 
-    try {
-      return new GoogleGenAI({ apiKey });
-    } catch (e) {
-      console.error("Failed to initialize Gemini AI:", e);
+    if (apiKey) {
+      const source = apiKey === googleKey ? "GOOGLE_API_KEY" : (apiKey === geminiKey ? "GEMINI_API_KEY" : "API_KEY");
+      console.log(`[AI Orchestrator] Initializing with ${source}.`);
+      try {
+        return new GoogleGenAI({ apiKey });
+      } catch (e) {
+        console.error("[AI Orchestrator] Failed to initialize GoogleGenAI:", e);
+        return null;
+      }
+    } else {
+      console.warn("[AI Orchestrator] No valid API key found in GOOGLE_API_KEY, GEMINI_API_KEY, or API_KEY.");
       return null;
     }
   }
@@ -239,9 +245,6 @@ export class AIOrchestratorService {
           }
         }
       ]
-    },
-    {
-      googleSearch: {}
     }
   ];
 
@@ -259,7 +262,7 @@ export class AIOrchestratorService {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: [
           ...history,
           { role: 'user', parts: [{ text: `Context: ${JSON.stringify(locationContext)}. User Prompt: ${prompt}` }] }
@@ -333,7 +336,7 @@ export class AIOrchestratorService {
                 break;
               case "searchWeb":
                 const searchRes = await ai.models.generateContent({
-                  model: "gemini-3.1-pro-preview",
+                  model: "gemini-3-flash-preview",
                   contents: [{ role: 'user', parts: [{ text: (call.args as any).query }] }],
                   config: { tools: [{ googleSearch: {} }] }
                 });
@@ -470,9 +473,13 @@ export class AIOrchestratorService {
         groundingMetadata: response.candidates?.[0]?.groundingMetadata
       };
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("[AI Orchestrator] Error:", error);
-      throw error;
+      return {
+        reply: `I encountered an error: ${error.message || "Unknown error"}. This might be due to an invalid API key or service interruption.`,
+        action: "ERROR",
+        data: { error: error.message }
+      };
     }
   }
 }

@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Orbital Signals: Publicly readable, admin writable
+    match /orbital_signals/{signalId} {
+      allow read: if true;
+      allow write: if false; // Only backend/admin via service account
+    }
+
+    // Audit Logs: Private
+    match /audit_logs/{logId} {
+      allow read, write: if false; // Only backend/admin via service account
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -28,9 +28,9 @@ export default function GlobalSignalLayer({ scene, signals, onSignalSelect, onSi
     scene.add(group);
     
     const textureLoader = new THREE.TextureLoader();
-    const nebulaTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0.png');
-    const cloudTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0_alpha.png');
-    const youtubeTexture = textureLoader.load('https://cdn-icons-png.flaticon.com/512/1384/1384060.png');
+    const nebulaTexture = textureLoader.load('/assets/globe/lensflare0.png');
+    const cloudTexture = textureLoader.load('/assets/globe/lensflare0_alpha.png');
+    const youtubeTexture = textureLoader.load('/assets/globe/youtube-icon.png');
 
     const latLngToVector3 = (lat: number, lng: number, radius: number) => {
       const phi = (90 - lat) * (Math.PI / 180);

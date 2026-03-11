@@ -1,8 +1,6 @@
-import { Firestore } from '@google-cloud/firestore';
+import firestore from "../../../firestore";
 import { RepoSyncRequest, PatchArtifact } from '../../types/operational';
 import { AuditLogService } from './operatorService';
-
-const firestore = new Firestore();
 
 export class RepoSyncRequestService {
   private static collection = firestore.collection('repo_sync_requests');
