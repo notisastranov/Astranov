@@ -52,7 +52,10 @@ export class YouTubeSignalService {
       const signals = snapshot.docs.map(doc => doc.data() as MapSignal);
       // Deduplicate by ID to prevent frontend key warnings
       return Array.from(new Map(signals.map(s => [s.id, s])).values());
-    }, []);
+    }, [
+      { id: 'map_mock_1', sourceCollection: 'video_signals', sourceId: 'sig_mock_1', type: 'video', title: 'Local Event Alpha', thumbnailUrl: 'https://picsum.photos/seed/map1/200/200', lat: 40.7128, lng: -74.0060, geohash: 'dr5reg', priority: 1, renderMode: 'planetary', createdAt: Date.now(), freshnessScore: 1.0, popularityScore: 0.8 },
+      { id: 'map_mock_2', sourceCollection: 'video_signals', sourceId: 'sig_mock_2', type: 'video', title: 'Local Event Beta', thumbnailUrl: 'https://picsum.photos/seed/map2/200/200', lat: 34.0522, lng: -118.2437, geohash: '9q5ct', priority: 1, renderMode: 'planetary', createdAt: Date.now(), freshnessScore: 1.0, popularityScore: 0.9 },
+    ]);
   }
 
   /**
@@ -80,7 +83,10 @@ export class YouTubeSignalService {
       // Deduplicate by ID to prevent frontend key warnings (crucial for geohash range queries)
       const uniqueSignals = Array.from(new Map(signals.map(s => [s.id, s])).values());
       return uniqueSignals;
-    }, []);
+    }, [
+      { id: 'nearby_mock_1', type: 'video', title: 'Nearby Activity 1', description: 'Something happening nearby', lat: lat + 0.001, lng: lng + 0.001, geohash: 'mock', source: 'youtube', sourceId: 'mock1', authorId: 'mock_author', createdAt: Date.now(), priorityScore: 5, renderLayer: 'local', audienceScope: 'local', signalStatus: 'active', metadata: { trustworthiness: 0.9, popularity: 0.8 } },
+      { id: 'nearby_mock_2', type: 'video', title: 'Nearby Activity 2', description: 'Another thing happening nearby', lat: lat - 0.001, lng: lng - 0.001, geohash: 'mock', source: 'youtube', sourceId: 'mock2', authorId: 'mock_author', createdAt: Date.now(), priorityScore: 4, renderLayer: 'local', audienceScope: 'local', signalStatus: 'active', metadata: { trustworthiness: 0.8, popularity: 0.7 } }
+    ]);
   }
 
   /**

@@ -113,6 +113,11 @@ export class SignalDistributionEngine {
       }
       
       return allSignals;
-    }, []);
+    }, [
+      { id: 'mock_sig_1', type: 'youtube_video', title: 'Astranov Orbital Signal Alpha', description: 'Mock signal', lat: 40.7128, lng: -74.0060, geohash: 'dr5reg', source: 'video_signals', sourceId: 'sig_mock_1', createdAt: Date.now(), priorityScore: 1.0, relevanceScore: 1.0, freshnessScore: 1.0, renderLayer: layer, audienceScope: 'global', duplicateHash: 'hash1', signalStatus: 'active', metadata: { isMandatory: false, thumbnailUrl: 'https://picsum.photos/seed/astranov1/200/200', trustworthiness: 0.8, popularity: 0.8 } },
+      { id: 'mock_sig_2', type: 'youtube_video', title: 'Astranov Orbital Signal Beta', description: 'Mock signal', lat: 34.0522, lng: -118.2437, geohash: '9q5ct', source: 'video_signals', sourceId: 'sig_mock_2', createdAt: Date.now(), priorityScore: 1.0, relevanceScore: 1.0, freshnessScore: 1.0, renderLayer: layer, audienceScope: 'global', duplicateHash: 'hash2', signalStatus: 'active', metadata: { isMandatory: false, thumbnailUrl: 'https://picsum.photos/seed/astranov2/200/200', trustworthiness: 0.8, popularity: 0.9 } },
+      { id: 'mock_sig_3', type: 'global_news', title: 'Astranov Orbital Signal Gamma', description: 'Mock signal', lat: 51.5074, lng: -0.1278, geohash: 'gcpvj', source: 'video_signals', sourceId: 'sig_mock_3', createdAt: Date.now(), priorityScore: 1.0, relevanceScore: 1.0, freshnessScore: 1.0, renderLayer: layer, audienceScope: 'global', duplicateHash: 'hash3', signalStatus: 'active', metadata: { isMandatory: false, thumbnailUrl: 'https://picsum.photos/seed/astranov3/200/200', trustworthiness: 0.8, popularity: 0.7 } },
+      { id: 'mock_sig_4', type: 'global_news', title: 'Astranov Orbital Signal Delta', description: 'Mock signal', lat: 35.6762, lng: 139.6503, geohash: 'xn774', source: 'video_signals', sourceId: 'sig_mock_4', createdAt: Date.now(), priorityScore: 1.0, relevanceScore: 1.0, freshnessScore: 1.0, renderLayer: layer, audienceScope: 'global', duplicateHash: 'hash4', signalStatus: 'active', metadata: { isMandatory: false, thumbnailUrl: 'https://picsum.photos/seed/astranov4/200/200', trustworthiness: 0.8, popularity: 0.95 } }
+    ]);
   }
 }
