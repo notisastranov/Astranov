@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASTRANOV — Internet Replacement OS</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    /* Cosmic Layer — blue glowing spacecraft */
+    --cosmic-primary: #0a1628;
+    --cosmic-accent: #00b4ff;
+    --cosmic-glow: #0077cc;
+    --cosmic-text: #c8e6ff;
+    --cosmic-border: rgba(0, 180, 255, 0.25);
+    --cosmic-bg: rgba(10, 22, 40, 0.85);
+
+    /* Terrestrial Layer — city UI with wallets */
+    --terra-primary: #1a1a2e;
+    --terra-accent: #e6a919;
+    --terra-glow: #cc8800;
+    --terra-text: #f0e6cc;
+    --terra-border: rgba(230, 169, 25, 0.25);
+    --terra-bg: rgba(26, 26, 46, 0.85);
+
+    /* Abyssal Layer — submarine dark cyan */
+    --abyss-primary: #041a1a;
+    --abyss-accent: #00e5cc;
+    --abyss-glow: #009988;
+    --abyss-text: #b0f0e6;
+    --abyss-border: rgba(0, 229, 204, 0.25);
+    --abyss-bg: rgba(4, 26, 26, 0.85);
+
+    /* Active layer (default Cosmic) */
+    --hud-primary: var(--cosmic-primary);
+    --hud-accent: var(--cosmic-accent);
+    --hud-glow: var(--cosmic-glow);
+    --hud-text: var(--cosmic-text);
+    --hud-border: var(--cosmic-border);
+    --hud-bg: var(--cosmic-bg);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--hud-text);
+    cursor: crosshair;
+  }
+
+  /* ── CANVAS LAYERS ── */
+  #scene-cosmic {
+    position: fixed; inset: 0; z-index: 1;
+    transition: opacity 0.8s ease;
+  }
+  #scene-terrestrial {
+    position: fixed; inset: 0; z-index: 2;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+  #scene-abyssal {
+    position: fixed; inset: 0; z-index: 3;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.8s ease;
+  }
+
+  /* ── HUD CONTAINER ── */
+  #hud {
+    position: fixed; inset: 0; z-index: 100;
+    pointer-events: none;
+    transition: all 0.6s ease;
+  }
+  #hud > * { pointer-events: auto; }
+
+  /* ── TOP BAR (status) ── */
+  #top-bar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 48px;
+    background: var(--hud-bg);
+    border-bottom: 1px solid var(--hud-border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    backdrop-filter: blur(12px);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+  #top-bar .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 16px;
+    color: var(--hud-accent);
+    text-shadow: 0 0 20px var(--hud-glow);
+    letter-spacing: 4px;
+  }
+  #top-bar .status-group {
+    display: flex; gap: 20px; align-items: center;
+  }
+  .status-item {
+    display: flex; align-items: center; gap: 6px;
+    opacity: 0.7;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--hud-accent);
+    box-shadow: 0 0 8px var(--hud-glow);
+    animation: pulse-dot 2s ease infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .layer-indicator {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid var(--hud-accent);
+    border-radius: 2px;
+    color: var(--hud-accent);
+    text-shadow: 0 0 10px var(--hud-glow);
+    letter-spacing: 2px;
+  }
+
+  /* ── LEFT RAIL (menu) ── */
+  #left-rail {
+    position: absolute; top: 48px; left: 0; bottom: 44px;
+    width: 56px;
+    background: var(--hud-bg);
+    border-right: 1px solid var(--hud-border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    backdrop-filter: blur(12px);
+  }
+  .rail-btn {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--hud-text);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 18px;
+    position: relative;
+  }
+  .rail-btn:hover, .rail-btn.active {
+    border-color: var(--hud-accent);
+    background: rgba(255,255,255,0.04);
+    color: var(--hud-accent);
+    text-shadow: 0 0 12px var(--hud-glow);
+  }
+  .rail-btn.active::after {
+    content: '';
+    position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 20px;
+    background: var(--hud-accent);
+    box-shadow: 0 0 8px var(--hud-glow);
+    border-radius: 0 2px 2px 0;
+  }
+  .rail-sep {
+    width: 28px; height: 1px;
+    background: var(--hud-border);
+    margin: 6px 0;
+  }
+
+  /* ── RIGHT RAIL (controls) ── */
+  #right-rail {
+    position: absolute; top: 48px; right: 0; bottom: 44px;
+    width: 56px;
+    background: var(--hud-bg);
+    border-left: 1px solid var(--hud-border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0;
+    gap: 4px;
+    backdrop-filter: blur(12px);
+  }
+
+  /* ── ZOOM SLIDER (right rail) ── */
+  #zoom-track {
+    width: 3px; flex: 1; max-height: 200px;
+    background: var(--hud-border);
+    border-radius: 2px;
+    position: relative;
+    margin: 8px 0;
+    cursor: pointer;
+  }
+  #zoom-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--hud-accent);
+    background: var(--hud-primary);
+    box-shadow: 0 0 10px var(--hud-glow);
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    top: 0;
+    cursor: grab;
+    transition: top 0.3s ease;
+  }
+  .zoom-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    color: var(--hud-accent);
+    letter-spacing: 1px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    opacity: 0.6;
+  }
+
+  /* ── BOTTOM COMMAND BAR ── */
+  #bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 44px;
+    background: var(--hud-bg);
+    border-top: 1px solid var(--hud-border);
+    display: flex; align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    backdrop-filter: blur(12px);
+  }
+  #cmd-prefix {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--hud-accent);
+    text-shadow: 0 0 8px var(--hud-glow);
+    flex-shrink: 0;
+  }
+  #cmd-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--hud-text);
+    letter-spacing: 0.5px;
+    caret-color: var(--hud-accent);
+  }
+  #cmd-input::placeholder { color: rgba(255,255,255,0.2); }
+  .cmd-hint {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    opacity: 0.35;
+    flex-shrink: 0;
+  }
+
+  /* ── LAYER LABEL OVERLAY ── */
+  #layer-label {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 48px;
+    letter-spacing: 12px;
+    color: var(--hud-accent);
+    text-shadow: 0 0 60px var(--hud-glow), 0 0 120px var(--hud-glow);
+    opacity: 0;
+    z-index: 50;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #layer-label.visible {
+    animation: label-flash 1.8s ease forwards;
+  }
+  @keyframes label-flash {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.05); }
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  #scanlines {
+    position: fixed; inset: 0; z-index: 99;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+  }
+
+  /* ── LEAFLET OVERRIDES ── */
+  #map-container {
+    width: 100%; height: 100%;
+  }
+  .leaflet-control-zoom { display: none !important; }
+  .leaflet-control-attribution { display: none !important; }
+
+  /* ── ABYSSAL CANVAS ── */
+  #abyss-canvas { width: 100%; height: 100%; }
+
+  /* ── TRANSITION VIGNETTE ── */
+  #vignette {
+    position: fixed; inset: 0; z-index: 98;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+  }
+</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+</head>
+<body>
+
+<!-- SCENE LAYERS -->
+<div id="scene-cosmic"></div>
+<div id="scene-terrestrial"><div id="map-container"></div></div>
+<div id="scene-abyssal"><canvas id="abyss-canvas"></canvas></div>
+
+<!-- HUD -->
+<div id="hud">
+
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <span class="logo">ASTRANOV</span>
+      <span class="layer-indicator" id="layer-badge">COSMIC</span>
+    </div>
+    <div class="status-group">
+      <div class="status-item"><span class="status-dot"></span><span id="clock">00:00:00 UTC</span></div>
+      <div class="status-item"><span class="status-dot" style="background:#00e676;box-shadow:0 0 8px #00e676"></span><span>REALTIME</span></div>
+      <div class="status-item"><span>LAT 0.00 LON 0.00</span></div>
+      <div class="status-item" id="iss-status"><span class="status-dot" style="background:#ff5252;box-shadow:0 0 8px #ff5252"></span><span>ISS TRACKING</span></div>
+    </div>
+  </div>
+
+  <!-- LEFT RAIL -->
+  <div id="left-rail">
+    <button class="rail-btn active" data-layer="1" title="Cosmic — Globe">&#x1F310;</button>
+    <button class="rail-btn" data-layer="2" title="Terrestrial — Map">&#x1F3D9;</button>
+    <button class="rail-btn" data-layer="3" title="Abyssal — Deep">&#x1F30A;</button>
+    <div class="rail-sep"></div>
+    <button class="rail-btn" title="Marketplace">&#x1F6D2;</button>
+    <button class="rail-btn" title="Signals">&#x1F4E1;</button>
+    <button class="rail-btn" title="Messages">&#x1F4AC;</button>
+    <button class="rail-btn" title="Deliveries">&#x1F69A;</button>
+    <div class="rail-sep"></div>
+    <button class="rail-btn" title="Voting / DAO">&#x1F5F3;</button>
+    <button class="rail-btn" title="Profile">&#x1F464;</button>
+  </div>
+
+  <!-- RIGHT RAIL -->
+  <div id="right-rail">
+    <button class="rail-btn" title="Zoom In" id="btn-zoom-in">&#x2795;</button>
+    <div id="zoom-track"><div id="zoom-thumb"></div></div>
+    <button class="rail-btn" title="Zoom Out" id="btn-zoom-out">&#x2796;</button>
+    <div class="rail-sep"></div>
+    <span class="zoom-label" id="zoom-level-label">L1</span>
+    <div class="rail-sep"></div>
+    <button class="rail-btn" title="Fullscreen" id="btn-fs">&#x26F6;</button>
+    <button class="rail-btn" title="Settings">&#x2699;</button>
+  </div>
+
+  <!-- BOTTOM COMMAND BAR -->
+  <div id="bottom-bar">
+    <span id="cmd-prefix">ASTRANOV &gt;</span>
+    <input id="cmd-input" type="text" placeholder="search marketplace, /goto coords, /layer 1-3..." autocomplete="off" spellcheck="false">
+    <span class="cmd-hint">ESC clear · ENTER exec · /help</span>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div id="layer-label"></div>
+<div id="scanlines"></div>
+<div id="vignette"></div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  // ── STATE ──
+  const state = {
+    layer: 1,
+    zoom: 0,        // 0 = cosmic, 0.5 = terrestrial, 1 = abyssal
+    coords: { lat: 36.4, lon: 28.2 },  // Rhodes, Greece default
+  };
+
+  // ── CLOCK ──
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toUTCString().split(' ')[4] + ' UTC';
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  // ── LAYER SWITCHING ──
+  const scenes = {
+    1: document.getElementById('scene-cosmic'),
+    2: document.getElementById('scene-terrestrial'),
+    3: document.getElementById('scene-abyssal'),
+  };
+  const layerNames = { 1: 'COSMIC', 2: 'TERRESTRIAL', 3: 'ABYSSAL' };
+  const layerColors = {
+    1: { accent: '#00b4ff', glow: '#0077cc', text: '#c8e6ff', border: 'rgba(0,180,255,0.25)', bg: 'rgba(10,22,40,0.85)', primary: '#0a1628' },
+    2: { accent: '#e6a919', glow: '#cc8800', text: '#f0e6cc', border: 'rgba(230,169,25,0.25)', bg: 'rgba(26,26,46,0.85)', primary: '#1a1a2e' },
+    3: { accent: '#00e5cc', glow: '#009988', text: '#b0f0e6', border: 'rgba(0,229,204,0.25)', bg: 'rgba(4,26,26,0.85)', primary: '#041a1a' },
+  };
+
+  function switchLayer(n) {
+    if (n === state.layer) return;
+    state.layer = n;
+
+    // Scene visibility
+    Object.keys(scenes).forEach(k => {
+      const el = scenes[k];
+      if (parseInt(k) === n) {
+        el.style.opacity = '1';
+        el.style.pointerEvents = 'auto';
+      } else {
+        el.style.opacity = '0';
+        el.style.pointerEvents = 'none';
+      }
+    });
+
+    // HUD color adaptation
+    const c = layerColors[n];
+    const root = document.documentElement;
+    root.style.setProperty('--hud-accent', c.accent);
+    root.style.setProperty('--hud-glow', c.glow);
+    root.style.setProperty('--hud-text', c.text);
+    root.style.setProperty('--hud-border', c.border);
+    root.style.setProperty('--hud-bg', c.bg);
+    root.style.setProperty('--hud-primary', c.primary);
+
+    // Badge
+    document.getElementById('layer-badge').textContent = layerNames[n];
+
+    // Label flash
+    const label = document.getElementById('layer-label');
+    label.textContent = layerNames[n];
+    label.classList.remove('visible');
+    void label.offsetWidth;
+    label.classList.add('visible');
+
+    // Rail buttons
+    document.querySelectorAll('.rail-btn[data-layer]').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.layer) === n);
+    });
+
+    // Zoom label
+    document.getElementById('zoom-level-label').textContent = 'L' + n;
+
+    // Initialize terrestrial map lazily
+    if (n === 2 && !mapInit) initMap();
+
+    // Start abyssal if needed
+    if (n === 3 && !abyssInit) initAbyss();
+  }
+
+  // Rail button clicks
+  document.querySelectorAll('.rail-btn[data-layer]').forEach(btn => {
+    btn.addEventListener('click', () => switchLayer(parseInt(btn.dataset.layer)));
+  });
+
+  // Zoom buttons
+  document.getElementById('btn-zoom-in').addEventListener('click', () => {
+    if (state.layer < 3) switchLayer(state.layer + 1);
+  });
+  document.getElementById('btn-zoom-out').addEventListener('click', () => {
+    if (state.layer > 1) switchLayer(state.layer - 1);
+  });
+
+  // Fullscreen
+  document.getElementById('btn-fs').addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  });
+
+  // Scroll zoom between layers
+  let scrollAccum = 0;
+  window.addEventListener('wheel', (e) => {
+    if (state.layer === 2) return; // let map handle scroll
+    scrollAccum += e.deltaY;
+    if (scrollAccum > 300) { scrollAccum = 0; if (state.layer < 3) switchLayer(state.layer + 1); }
+    if (scrollAccum < -300) { scrollAccum = 0; if (state.layer > 1) switchLayer(state.layer - 1); }
+  }, { passive: true });
+
+  // ── COMMAND BAR ──
+  const cmdInput = document.getElementById('cmd-input');
+  cmdInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { cmdInput.value = ''; cmdInput.blur(); }
+    if (e.key === 'Enter') {
+      const val = cmdInput.value.trim().toLowerCase();
+      if (val === '/layer 1' || val === '/cosmic') switchLayer(1);
+      else if (val === '/layer 2' || val === '/terrestrial' || val === '/map') switchLayer(2);
+      else if (val === '/layer 3' || val === '/abyssal' || val === '/deep') switchLayer(3);
+      else if (val.startsWith('/goto ')) {
+        const parts = val.replace('/goto ', '').split(/[,\s]+/);
+        if (parts.length >= 2) {
+          state.coords.lat = parseFloat(parts[0]);
+          state.coords.lon = parseFloat(parts[1]);
+          if (leafletMap) leafletMap.setView([state.coords.lat, state.coords.lon], 14);
+          switchLayer(2);
+        }
+      }
+      cmdInput.value = '';
+    }
+  });
+
+  // ── THREE.JS — COSMIC LAYER ──
+  const cosmicEl = document.getElementById('scene-cosmic');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  cosmicEl.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.z = 3.2;
+
+  // Starfield
+  const starsGeo = new THREE.BufferGeometry();
+  const starsCount = 8000;
+  const starsPos = new Float32Array(starsCount * 3);
+  const starsSizes = new Float32Array(starsCount);
+  for (let i = 0; i < starsCount; i++) {
+    const r = 50 + Math.random() * 450;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(2 * Math.random() - 1);
+    starsPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+    starsPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+    starsPos[i*3+2] = r * Math.cos(phi);
+    starsSizes[i] = 0.5 + Math.random() * 2;
+  }
+  starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
+  starsGeo.setAttribute('size', new THREE.BufferAttribute(starsSizes, 1));
+  const starsMat = new THREE.PointsMaterial({
+    color: 0xffffff, size: 1.2, sizeAttenuation: true, transparent: true, opacity: 0.8
+  });
+  scene.add(new THREE.Points(starsGeo, starsMat));
+
+  // Earth sphere (procedural blue marble style)
+  const earthGeo = new THREE.SphereGeometry(1, 64, 64);
+
+  // Procedural earth texture via canvas
+  const earthCanvas = document.createElement('canvas');
+  earthCanvas.width = 1024; earthCanvas.height = 512;
+  const ectx = earthCanvas.getContext('2d');
+
+  // Ocean gradient
+  const oceanGrad = ectx.createLinearGradient(0, 0, 0, 512);
+  oceanGrad.addColorStop(0, '#1a3a5c');
+  oceanGrad.addColorStop(0.3, '#0d4f8b');
+  oceanGrad.addColorStop(0.5, '#0a5e9a');
+  oceanGrad.addColorStop(0.7, '#0d4f8b');
+  oceanGrad.addColorStop(1, '#1a3a5c');
+  ectx.fillStyle = oceanGrad;
+  ectx.fillRect(0, 0, 1024, 512);
+
+  // Simple continents (approximate shapes)
+  ectx.fillStyle = '#2d5a27';
+  function drawContinent(points) {
+    ectx.beginPath();
+    ectx.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) ectx.lineTo(points[i][0], points[i][1]);
+    ectx.closePath();
+    ectx.fill();
+  }
+  // Europe/Africa
+  drawContinent([[480,100],[520,100],[540,140],[530,180],[540,220],[520,300],[500,340],[480,320],[460,260],[450,200],[460,140]]);
+  // Americas
+  drawContinent([[220,80],[260,100],[270,140],[250,180],[260,220],[280,280],[270,340],[240,380],[220,360],[200,300],[190,240],[200,180],[210,120]]);
+  // Asia
+  drawContinent([[560,80],[640,70],[700,100],[720,140],[700,180],[660,200],[620,190],[580,160],[560,120]]);
+  // Australia
+  drawContinent([[680,280],[720,270],[740,290],[730,320],[700,320],[680,300]]);
+
+  // Ice caps
+  ectx.fillStyle = '#e8e8f0';
+  ectx.fillRect(0, 0, 1024, 30);
+  ectx.fillRect(0, 482, 1024, 30);
+
+  // Cloud wisps
+  ectx.globalAlpha = 0.15;
+  ectx.fillStyle = '#ffffff';
+  for (let i = 0; i < 40; i++) {
+    const cx = Math.random() * 1024;
+    const cy = 50 + Math.random() * 412;
+    const rx = 30 + Math.random() * 80;
+    const ry = 5 + Math.random() * 15;
+    ectx.beginPath();
+    ectx.ellipse(cx, cy, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+    ectx.fill();
+  }
+  ectx.globalAlpha = 1;
+
+  const earthTex = new THREE.CanvasTexture(earthCanvas);
+  const earthMat = new THREE.MeshPhongMaterial({
+    map: earthTex, specular: 0x333333, shininess: 15
+  });
+  const earth = new THREE.Mesh(earthGeo, earthMat);
+  scene.add(earth);
+
+  // Atmosphere glow
+  const atmosGeo = new THREE.SphereGeometry(1.02, 64, 64);
+  const atmosMat = new THREE.MeshBasicMaterial({
+    color: 0x00b4ff, transparent: true, opacity: 0.08, side: THREE.BackSide
+  });
+  scene.add(new THREE.Mesh(atmosGeo, atmosMat));
+
+  // Outer glow ring
+  const glowGeo = new THREE.SphereGeometry(1.15, 64, 64);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x0066aa, transparent: true, opacity: 0.04, side: THREE.BackSide
+  });
+  scene.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // Lighting
+  const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  sunLight.position.set(5, 3, 5);
+  scene.add(sunLight);
+  scene.add(new THREE.AmbientLight(0x334466, 0.4));
+
+  // ISS dot (orbiting)
+  const issGeo = new THREE.SphereGeometry(0.015, 8, 8);
+  const issMat = new THREE.MeshBasicMaterial({ color: 0xff5252 });
+  const iss = new THREE.Mesh(issGeo, issMat);
+  scene.add(iss);
+
+  // Satellites (small dots in various orbits)
+  const sats = [];
+  for (let i = 0; i < 12; i++) {
+    const sg = new THREE.SphereGeometry(0.006, 6, 6);
+    const sm = new THREE.MeshBasicMaterial({ color: 0x00e5cc, transparent: true, opacity: 0.6 });
+    const sat = new THREE.Mesh(sg, sm);
+    sat.userData = {
+      radius: 1.3 + Math.random() * 0.5,
+      speed: 0.2 + Math.random() * 0.5,
+      offset: Math.random() * Math.PI * 2,
+      tilt: (Math.random() - 0.5) * 1.2,
+    };
+    scene.add(sat);
+    sats.push(sat);
+  }
+
+  // Mouse rotation
+  let mouseX = 0, mouseY = 0;
+  let targetRotX = 0, targetRotY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Animate
+  let t = 0;
+  function animateCosmic() {
+    requestAnimationFrame(animateCosmic);
+    t += 0.005;
+
+    // Earth rotation
+    earth.rotation.y += 0.001;
+    targetRotX += (mouseY * 0.3 - targetRotX) * 0.02;
+    targetRotY += (mouseX * 0.5 - targetRotY) * 0.02;
+    earth.rotation.x = targetRotX;
+
+    // ISS orbit
+    const issR = 1.18;
+    iss.position.x = issR * Math.cos(t * 1.5);
+    iss.position.y = issR * Math.sin(t * 0.8) * 0.4;
+    iss.position.z = issR * Math.sin(t * 1.5);
+
+    // Satellites
+    sats.forEach(sat => {
+      const d = sat.userData;
+      const angle = t * d.speed + d.offset;
+      sat.position.x = d.radius * Math.cos(angle);
+      sat.position.y = d.radius * Math.sin(d.tilt) * Math.sin(angle);
+      sat.position.z = d.radius * Math.sin(angle) * Math.cos(d.tilt * 0.5);
+    });
+
+    // Gentle camera sway
+    camera.position.x += (mouseX * 0.3 - camera.position.x) * 0.01;
+    camera.position.y += (-mouseY * 0.2 - camera.position.y) * 0.01;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+  animateCosmic();
+
+  // ── LEAFLET — TERRESTRIAL LAYER ──
+  let leafletMap = null, mapInit = false;
+  function initMap() {
+    if (mapInit) return;
+    mapInit = true;
+    leafletMap = L.map('map-container', {
+      center: [state.coords.lat, state.coords.lon],
+      zoom: 12,
+      zoomControl: false,
+    });
+    // Dark OSM tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: ''
+    }).addTo(leafletMap);
+
+    // Sample shop markers
+    const shops = [
+      { lat: 36.4505, lon: 28.2245, name: '🤿 Dive Center Rhodes', type: 'service' },
+      { lat: 36.4410, lon: 28.2180, name: '🍕 Taverna Cosmos', type: 'food' },
+      { lat: 36.4460, lon: 28.2270, name: '🛍 Agora Market', type: 'shop' },
+      { lat: 36.4380, lon: 28.2150, name: '💇 Style Studio', type: 'service' },
+    ];
+    shops.forEach(s => {
+      const marker = L.circleMarker([s.lat, s.lon], {
+        radius: 8,
+        fillColor: '#e6a919',
+        color: '#cc8800',
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.7
+      }).addTo(leafletMap);
+      marker.bindPopup(`<div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;font-weight:600">${s.name}</div>`);
+    });
+
+    // Simulate a driver
+    let driverLat = 36.442, driverLon = 28.220;
+    const driverMarker = L.circleMarker([driverLat, driverLon], {
+      radius: 6, fillColor: '#00e676', color: '#00c853', weight: 2, opacity: 1, fillOpacity: 0.9
+    }).addTo(leafletMap);
+    driverMarker.bindPopup('<div style="font-family:Rajdhani,sans-serif;color:#1a1a2e;font-weight:600">🚗 Driver: Nikos</div>');
+
+    setInterval(() => {
+      driverLat += (Math.random() - 0.5) * 0.001;
+      driverLon += (Math.random() - 0.5) * 0.001;
+      driverMarker.setLatLng([driverLat, driverLon]);
+    }, 2000);
+
+    setTimeout(() => leafletMap.invalidateSize(), 300);
+  }
+
+  // ── ABYSSAL LAYER (Icosahedron + Particles) ──
+  let abyssInit = false;
+  function initAbyss() {
+    if (abyssInit) return;
+    abyssInit = true;
+
+    const canvas = document.getElementById('abyss-canvas');
+    const aRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    aRenderer.setSize(window.innerWidth, window.innerHeight);
+    aRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    aRenderer.setClearColor(0x041a1a, 1);
+
+    const aScene = new THREE.Scene();
+    const aCam = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    aCam.position.z = 5;
+
+    // Wireframe icosahedron
+    const icoGeo = new THREE.IcosahedronGeometry(1.5, 1);
+    const icoMat = new THREE.MeshBasicMaterial({ color: 0x00e5cc, wireframe: true, transparent: true, opacity: 0.4 });
+    const ico = new THREE.Mesh(icoGeo, icoMat);
+    aScene.add(ico);
+
+    // Inner icosahedron
+    const ico2Geo = new THREE.IcosahedronGeometry(0.8, 2);
+    const ico2Mat = new THREE.MeshBasicMaterial({ color: 0x009988, wireframe: true, transparent: true, opacity: 0.2 });
+    const ico2 = new THREE.Mesh(ico2Geo, ico2Mat);
+    aScene.add(ico2);
+
+    // Floating particles
+    const pCount = 3000;
+    const pGeo = new THREE.BufferGeometry();
+    const pPos = new Float32Array(pCount * 3);
+    for (let i = 0; i < pCount; i++) {
+      pPos[i*3] = (Math.random() - 0.5) * 20;
+      pPos[i*3+1] = (Math.random() - 0.5) * 20;
+      pPos[i*3+2] = (Math.random() - 0.5) * 20;
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+    const pMat = new THREE.PointsMaterial({ color: 0x00e5cc, size: 0.04, transparent: true, opacity: 0.5 });
+    aScene.add(new THREE.Points(pGeo, pMat));
+
+    // Ambient light ring
+    const ringGeo = new THREE.TorusGeometry(2.5, 0.01, 8, 100);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x009988, transparent: true, opacity: 0.3 });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.rotation.x = Math.PI / 2;
+    aScene.add(ring);
+
+    let at = 0;
+    function animateAbyss() {
+      requestAnimationFrame(animateAbyss);
+      at += 0.003;
+      ico.rotation.x = at * 0.5;
+      ico.rotation.y = at * 0.3;
+      ico2.rotation.x = -at * 0.3;
+      ico2.rotation.y = at * 0.5;
+      ring.rotation.z = at * 0.1;
+
+      aCam.position.x = Math.sin(at * 0.2) * 0.5;
+      aCam.position.y = Math.cos(at * 0.15) * 0.3;
+      aCam.lookAt(0, 0, 0);
+
+      aRenderer.render(aScene, aCam);
+    }
+    animateAbyss();
+
+    window.addEventListener('resize', () => {
+      aCam.aspect = window.innerWidth / window.innerHeight;
+      aCam.updateProjectionMatrix();
+      aRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  }
+
+  // ── RESIZE ──
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    if (leafletMap) leafletMap.invalidateSize();
+  });
+
+  // ── KEYBOARD SHORTCUTS ──
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement === cmdInput) return;
+    if (e.key === '1') switchLayer(1);
+    if (e.key === '2') switchLayer(2);
+    if (e.key === '3') switchLayer(3);
+    if (e.key === '/') { e.preventDefault(); cmdInput.focus(); }
+  });
+
+  // ── ZOOM THUMB POSITION ──
+  function updateZoomThumb() {
+    const pct = ((state.layer - 1) / 2) * 100;
+    document.getElementById('zoom-thumb').style.top = pct + '%';
+  }
+  const origSwitch = switchLayer;
+  const _switchLayer = switchLayer;
+  // Patch to update thumb
+  const origBtn = document.querySelectorAll('.rail-btn[data-layer]');
+
+  // Observer for layer changes
+  new MutationObserver(() => updateZoomThumb()).observe(
+    document.getElementById('layer-badge'), { childList: true }
+  );
+  updateZoomThumb();
+
+})();
+</script>
+</body>
+</html>
