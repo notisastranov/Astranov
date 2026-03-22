@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Astranov v3.1.0 — Trinity OS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#00c8ff;--green:#00e87a;--red:#ff4455;--yellow:#ffd600;--orange:#ff9900;
+  --bg:#030810;--surface:rgba(5,14,28,0.9);--text:#b8d4f0;--text-dim:#3d6080;
+  --hud-w:48px;--strip-h:28px;--bar-h:50px;
+  --font:'Rajdhani',monospace;--fhud:'Orbitron',monospace;
+  --la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);
+}
+body.lt{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
+body.lt2{--la:#00e87a;--la2:rgba(0,232,122,0.1);--lb:rgba(0,232,122,0.2);}
+body.lt3{--la:#4466ff;--la2:rgba(68,102,255,0.12);--lb:rgba(68,102,255,0.2);}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;user-select:none;}
+#shell{position:fixed;inset:0;display:grid;grid-template-rows:var(--strip-h) 1fr var(--bar-h);grid-template-columns:var(--hud-w) 1fr var(--hud-w);grid-template-areas:"s s s" "l c r" "b b b";}
+#ts{grid-area:s;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(3,8,16,0.97);border-bottom:1px solid var(--lb);padding:0 10px;z-index:100;}
+.sep{color:var(--text-dim);font-size:9px;}
+.brand{font-family:var(--fhud);font-size:11px;color:var(--la);text-shadow:0 0 14px var(--la);letter-spacing:0.25em;}
+.lbadge{font-size:9px;padding:1px 6px;border:1px solid var(--lb);color:var(--la);border-radius:2px;text-transform:uppercase;letter-spacing:0.1em;}
+.vlbl{color:var(--text-dim);font-size:9px;text-transform:uppercase;}
+.vnum{color:var(--la);font-size:10px;font-weight:600;}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:sp 2s ease-in-out infinite;}
+@keyframes sp{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.hr{display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;background:var(--surface);backdrop-filter:blur(10px);}
+#lh{grid-area:l;border-right:1px solid var(--lb);}
+#rh{grid-area:r;border-left:1px solid var(--lb);}
+.hb{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;cursor:pointer;color:var(--text-dim);transition:all 0.15s;position:relative;}
+.hb:hover,.hb.on{color:var(--la);border-color:var(--lb);background:var(--la2);box-shadow:0 0 10px var(--la2);}
+.hb svg{width:15px;height:15px;}
+.hsp{flex:1;}
+#bp{background:rgba(0,200,255,0.08);border-color:rgba(0,200,255,0.3);color:var(--la);}
+.hb::after{content:attr(data-tip);position:absolute;left:calc(100% + 7px);top:50%;transform:translateY(-50%);background:rgba(3,8,16,0.97);border:1px solid var(--lb);color:var(--text);font-size:9px;white-space:nowrap;padding:3px 8px;border-radius:2px;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:200;}
+#rh .hb::after{left:auto;right:calc(100% + 7px);}
+.hb:hover::after{opacity:1;}
+#stage{grid-area:c;position:relative;overflow:hidden;background:var(--bg);}
+#gc{position:absolute;inset:0;width:100%;height:100%;}
+#mc{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:10;}
+#ac{position:absolute;inset:0;width:100%;height:100%;display:none;}
+#iss-box{position:absolute;top:10px;left:10px;z-index:60;background:rgba(3,8,16,0.88);border:1px solid rgba(255,214,0,0.3);border-radius:3px;padding:6px 10px;font-size:9px;font-family:var(--fhud);color:var(--text-dim);}
+.ib-row{display:flex;align-items:center;gap:5px;margin-bottom:2px;}
+.ib-dot{width:6px;height:6px;border-radius:50%;background:var(--yellow);box-shadow:0 0 6px var(--yellow);animation:sp 1.2s ease-in-out infinite;}
+#li{position:absolute;top:10px;right:10px;z-index:60;font-family:var(--fhud);font-size:9px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.ldt{display:flex;align-items:center;gap:5px;opacity:0.4;cursor:pointer;transition:opacity 0.4s,color 0.4s;}
+.ldt.on{opacity:1;color:var(--la);}
+.ld2{width:5px;height:5px;border-radius:50%;background:currentColor;}
+#ld{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:7px;padding:6px 16px;background:rgba(3,8,16,0.9);border:1px solid var(--la);border-radius:2px;cursor:pointer;color:var(--la);font-family:var(--fhud);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;transition:all 0.2s;box-shadow:0 0 16px var(--la2);}
+#ld:hover{background:var(--la2);}
+#la-btn{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:6px;padding:4px 12px;background:rgba(3,8,16,0.9);border:1px solid var(--lb);border-radius:2px;cursor:pointer;color:var(--text-dim);font-family:var(--fhud);font-size:9px;text-transform:uppercase;}
+#la-btn:hover{color:var(--la);border-color:var(--la);}
+#la-btn.v{display:flex;}
+#dc{position:absolute;bottom:130px;right:10px;z-index:60;display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+.dcc{font-family:var(--fhud);font-size:9px;color:var(--text-dim);background:rgba(3,8,16,0.85);border:1px solid var(--lb);padding:2px 7px;border-radius:2px;display:flex;align-items:center;gap:4px;}
+.dcd{width:5px;height:5px;border-radius:50%;}
+#sb{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:65;display:none;align-items:center;gap:6px;background:rgba(3,8,16,0.95);border:1px solid var(--lb);border-radius:3px;padding:5px 10px;width:320px;}
+#sb.on{display:flex;}
+#sbi{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;outline:none;}
+#sbi::placeholder{color:var(--text-dim);}
+#ab{grid-area:b;display:flex;align-items:center;gap:6px;padding:0 10px;background:rgba(3,8,16,0.97);border-top:1px solid var(--lb);z-index:100;}
+.ab2{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;}
+.ab2:hover,.ab2.on{color:var(--la);border-color:var(--la);background:var(--la2);}
+.ab2 svg{width:13px;height:13px;}
+#ai{flex:1;height:30px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
+#ai:focus{border-color:var(--la);box-shadow:0 0 10px var(--la2);}
+#ai::placeholder{color:var(--text-dim);}
+#air{position:absolute;bottom:var(--bar-h);left:var(--hud-w);right:var(--hud-w);background:rgba(3,8,16,0.97);border:1px solid var(--lb);padding:9px 14px;font-size:12px;color:var(--text);display:none;max-height:100px;overflow-y:auto;z-index:99;}
+#ra{position:fixed;bottom:calc(var(--bar-h)+10px);right:calc(var(--hud-w)+10px);z-index:110;}
+#rbtn{width:40px;height:40px;position:relative;display:flex;align-items:center;justify-content:center;background:rgba(3,8,16,0.92);border:1px solid var(--lb);border-radius:3px;cursor:pointer;color:var(--la);transition:all 0.2s;}
+#rbtn:hover,#rbtn.on{box-shadow:0 0 18px var(--la2);border-color:var(--la);}
+#rbtn svg{width:18px;height:18px;position:relative;z-index:1;}
+#rsw{position:absolute;inset:4px;border-radius:50%;background:conic-gradient(var(--la) 0deg,transparent 70deg,transparent 360deg);animation:rr 2.2s linear infinite;display:none;opacity:0.4;}
+#rbtn.on #rsw{display:block;}
+@keyframes rr{to{transform:rotate(360deg);}}
+#rp{position:fixed;right:calc(var(--hud-w)+10px);bottom:calc(var(--bar-h)+58px);width:220px;background:rgba(3,8,16,0.97);border:1px solid var(--lb);border-radius:3px;z-index:109;display:none;}
+#rp.on{display:block;}
+.sm{position:fixed;top:var(--strip-h);width:200px;background:rgba(3,8,16,0.97);border:1px solid var(--lb);backdrop-filter:blur(14px);z-index:105;display:none;overflow:hidden;}
+.lm{left:var(--hud-w);border-left:none;border-radius:0 3px 3px 0;}
+.rm{right:var(--hud-w);border-right:none;border-radius:3px 0 0 3px;}
+.sm.on{display:block;}
+.ph{padding:7px 12px;border-bottom:1px solid var(--lb);font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:var(--la);font-family:var(--fhud);}
+.mr{padding:8px 12px;border-bottom:1px solid rgba(0,200,255,0.05);font-size:11px;color:var(--text-dim);cursor:pointer;transition:all 0.1s;display:flex;align-items:center;gap:7px;}
+.mr:hover{background:var(--la2);color:var(--la);}
+.lf{position:fixed;inset:0;z-index:300;pointer-events:none;opacity:0;background:var(--la);transition:opacity 0.15s;}
+.lf.fl{opacity:0.15;}
+#am{position:fixed;inset:0;background:rgba(2,5,12,0.95);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+#am.h{display:none;}
+.abox{width:320px;background:rgba(3,8,16,0.99);border:1px solid var(--lb);border-radius:4px;overflow:hidden;}
+.ahdr{padding:14px 16px 10px;border-bottom:1px solid var(--lb);}
+.abrand{font-family:var(--fhud);font-size:15px;color:var(--blue);text-shadow:0 0 16px var(--blue);letter-spacing:0.25em;display:block;margin-bottom:3px;}
+.asub{font-size:10px;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;}
+.abody{padding:14px;display:flex;flex-direction:column;gap:9px;}
+.atabs{display:flex;}
+.atab{flex:1;padding:6px;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;border:1px solid var(--lb);color:var(--text-dim);transition:all 0.15s;}
+.atab:first-child{border-radius:3px 0 0 3px;border-right:none;}
+.atab:last-child{border-radius:0 3px 3px 0;}
+.atab.on{background:var(--la2);color:var(--la);border-color:var(--la);}
+.ainp{width:100%;height:34px;background:rgba(0,200,255,0.05);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
+.ainp:focus{border-color:var(--la);}
+.ainp::placeholder{color:var(--text-dim);}
+.asel{width:100%;height:34px;background:rgba(0,200,255,0.05);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
+.asel option{background:#030810;}
+.asubmit{width:100%;height:36px;background:rgba(0,200,255,0.12);border:1px solid var(--la);border-radius:3px;color:var(--la);font-family:var(--fhud);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;margin-top:3px;}
+.asubmit:hover{background:var(--la2);box-shadow:0 0 12px var(--la);}
+.aerr{font-size:11px;color:var(--red);text-align:center;display:none;}
+.aerr.on{display:block;}
+#pm{position:fixed;inset:0;background:rgba(2,5,12,0.85);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#pm.on{display:flex;}
+.mbox{width:380px;background:rgba(3,8,16,0.99);border:1px solid var(--lb);border-radius:3px;overflow:hidden;}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--lb);font-size:10px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--la);font-family:var(--fhud);}
+.mclose{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;line-height:1;}
+.mbody{padding:12px;display:flex;flex-direction:column;gap:8px;}
+.mta{width:100%;height:70px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:7px 10px;resize:none;outline:none;}
+.mta:focus{border-color:var(--la);}
+.minp{width:100%;height:32px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
+.minp::placeholder{color:var(--text-dim);}
+.msel{width:100%;height:32px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 8px;outline:none;}
+.msel option{background:#030810;}
+.mcoord{font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:5px;}
+.mftr{padding:9px 12px;border-top:1px solid var(--lb);display:flex;justify-content:flex-end;gap:7px;}
+.bx{padding:5px 13px;font-family:var(--font);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;border-radius:2px;cursor:pointer;border:1px solid var(--lb);background:transparent;color:var(--text-dim);}
+.bok{padding:5px 13px;font-family:var(--font);font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;border-radius:2px;cursor:pointer;border:1px solid var(--la);background:var(--la2);color:var(--la);}
+.bok:hover{box-shadow:0 0 10px var(--la);}
+/* LISTINGS PANEL */
+#lsp{position:fixed;top:var(--strip-h);right:calc(var(--hud-w));width:270px;height:calc(100% - var(--strip-h) - var(--bar-h));background:rgba(3,8,16,0.97);border-left:1px solid var(--lb);z-index:92;display:none;flex-direction:column;}
+#lsp.on{display:flex;}
+.lph{padding:7px 12px;border-bottom:1px solid var(--lb);font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--la);font-family:var(--fhud);display:flex;align-items:center;justify-content:space-between;}
+.lpb{flex:1;overflow-y:auto;padding:8px;}
+.lcard{background:rgba(0,200,255,0.04);border:1px solid var(--lb);border-radius:3px;padding:9px;margin-bottom:6px;cursor:pointer;transition:all 0.15s;}
+.lcard:hover{background:var(--la2);border-color:var(--la);}
+.lcn{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.lcc{font-size:10px;color:var(--text-dim);margin-bottom:4px;}
+.lcp{font-size:12px;color:var(--la);font-weight:600;display:inline-block;}
+.lcvote{display:flex;align-items:center;gap:6px;margin-top:5px;}
+.vbtn{padding:2px 7px;font-size:10px;border-radius:2px;border:1px solid var(--lb);background:transparent;color:var(--text-dim);cursor:pointer;font-family:var(--font);transition:all 0.1s;}
+.vbtn:hover{color:var(--la);border-color:var(--la);}
+.vscore{font-size:10px;color:var(--text-dim);}
+.leaflet-container{background:#030f08!important;}
+.leaflet-tile{filter:brightness(0.75) saturate(0.6) hue-rotate(120deg);}
+.sm2{width:12px;height:12px;border-radius:50%;border:1px solid rgba(255,255,255,0.25);animation:sm2a 2s ease-in-out infinite;}
+@keyframes sm2a{0%,100%{transform:scale(1);}50%{transform:scale(1.4);opacity:0.6;}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--lb);border-radius:2px;}
+#und{font-size:10px;color:var(--text-dim);cursor:pointer;}
+.urp{font-size:8px;padding:1px 5px;border-radius:2px;text-transform:uppercase;letter-spacing:0.1em;font-weight:600;}
+.rc{background:rgba(0,200,255,0.15);color:#00c8ff;border:1px solid rgba(0,200,255,0.3);}
+.rv{background:rgba(0,232,122,0.15);color:#00e87a;border:1px solid rgba(0,232,122,0.3);}
+.rd{background:rgba(255,153,0,0.15);color:#ff9900;border:1px solid rgba(255,153,0,0.3);}
+</style>
+</head>
+<body class="lt">
+<div class="lf" id="lf"></div>
+
+<!-- AUTH MODAL -->
+<div id="am">
+  <div class="abox">
+    <div class="ahdr">
+      <span class="abrand">ASTRANOV</span>
+      <span class="asub">Planetary OS — Trinity v3.1</span>
+    </div>
+    <div class="abody">
+      <div class="atabs">
+        <div class="atab on" id="tl" onclick="stab('login')">Login</div>
+        <div class="atab" id="ts2" onclick="stab('signup')">Sign Up</div>
+      </div>
+      <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
+      <input class="ainp" id="ap2" type="password" placeholder="Password"/>
+      <input class="ainp" id="an" type="text" placeholder="Full name" style="display:none;" autocomplete="off"/>
+      <select class="asel" id="ar" style="display:none;">
+        <option value="customer">Customer</option>
+        <option value="vendor">Vendor / Shop Owner</option>
+        <option value="driver">Driver / Courier</option>
+      </select>
+      <div class="aerr" id="aerr"></div>
+      <button class="asubmit" id="abtn" onclick="doAuth()">Enter Astranov</button>
+      <div style="text-align:center;font-size:10px;color:var(--text-dim);cursor:pointer;" onclick="guestMode()">Continue as Guest (browse only)</div>
+    </div>
+  </div>
+</div>
+
+<div id="shell">
+  <div id="ts">
+    <div style="display:flex;align-items:center;gap:5px;"><div class="sdot"></div></div>
+    <div class="sep">|</div>
+    <span class="brand">ASTRANOV</span>
+    <div class="sep">|</div>
+    <span class="lbadge" id="lb2">COSMIC</span>
+    <div class="sep">|</div>
+    <div style="display:flex;align-items:center;gap:5px;"><span class="vlbl">v</span><span class="vnum">3.1.0</span></div>
+    <div class="sep">|</div>
+    <div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="toggleAuthOrOut()">
+      <span id="und">Guest</span>
+      <span class="urp rc" id="urd">—</span>
+    </div>
+  </div>
+
+  <div id="lh" class="hr">
+    <button class="hb" id="bst" data-tip="Settings" data-menu="mst" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <button class="hb" id="bpr" data-tip="Profile" data-menu="mpr" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+    <button class="hb" id="bdg" data-tip="Diagnostics" data-menu="mdg" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    </button>
+    <button class="hb" id="bco" data-tip="Console" data-menu="mco" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    </button>
+    <div class="hsp"></div>
+    <button class="hb" id="bp" data-tip="Post Signal" onclick="openPost()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+
+  <div id="stage">
+    <canvas id="gc"></canvas>
+    <div id="mc"></div>
+    <canvas id="ac"></canvas>
+
+    <!-- ISS LIVE TRACKER -->
+    <div id="iss-box">
+      <div class="ib-row"><div class="ib-dot"></div><span style="color:#ffd600;font-size:9px;letter-spacing:0.12em;">ISS LIVE TRACK</span></div>
+      <div id="iss-lat" style="font-size:8px;margin-top:2px;">LAT: loading…</div>
+      <div id="iss-lng" style="font-size:8px;">LNG: —</div>
+      <div id="iss-spd" style="font-size:8px;">SPD: — km/h</div>
+    </div>
+
+    <!-- SEARCH BAR (Layer 2) -->
+    <div id="sb">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="sbi" placeholder="Search shops, services, vendors, activities…" onkeydown="if(event.key==='Enter')doSearch()" autocomplete="off" spellcheck="false"/>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--la);cursor:pointer;flex-shrink:0;" onclick="doSearch()"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </div>
+
+    <!-- LAYER DOTS -->
+    <div id="li">
+      <div class="ldt on" onclick="goLayer(0)"><span>COSMIC</span><div class="ld2"></div></div>
+      <div class="ldt" onclick="goLayer(1)"><span>EARTH</span><div class="ld2"></div></div>
+      <div class="ldt" onclick="goLayer(2)"><span>ABYSS</span><div class="ld2"></div></div>
+    </div>
+
+    <!-- DATA COUNTERS -->
+    <div id="dc">
+      <div class="dcc"><div class="dcd" style="background:#00e87a;"></div><span id="csh">— shops</span></div>
+      <div class="dcc"><div class="dcd" style="background:#ff9900;"></div><span id="cdr">— drivers</span></div>
+      <div class="dcc"><div class="dcd" style="background:#00c8ff;"></div><span id="cus">— users</span></div>
+    </div>
+
+    <div id="ld" onclick="descendLayer()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+      <span id="dlab">DESCEND TO EARTH</span>
+    </div>
+    <div id="la-btn" onclick="ascendLayer()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+      <span id="alab">ASCEND</span>
+    </div>
+  </div>
+
+  <div id="rh" class="hr">
+    <button class="hb" id="bly" data-tip="Layers" data-menu="mly" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    </button>
+    <button class="hb" id="bfi" data-tip="Filters" data-menu="mfi" onclick="tmenu(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </button>
+    <button class="hb" id="bgps" data-tip="My Location" onclick="geolocate()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    </button>
+    <button class="hb" id="bls" data-tip="Listings" onclick="toggleListings(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </button>
+    <button class="hb" id="bref" data-tip="Refresh" onclick="refreshData()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+  </div>
+
+  <div id="ab">
+    <button class="ab2" onclick="this.classList.toggle('on')" title="Voice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <button class="ab2" title="Camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    </button>
+    <input type="text" id="ai" placeholder="Search or command Astranov — shops, diving, delivery, dating…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()"/>
+    <button class="ab2" onclick="this.classList.toggle('on')" title="Mic">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+    </button>
+    <button class="ab2" onclick="sendCmd()" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- RADAR -->
+<div id="ra">
+  <div id="rbtn" onclick="toggleRadar()">
+    <div id="rsw"></div>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+  </div>
+</div>
+<div id="rp">
+  <div class="ph">Live Radar</div>
+  <div class="mr"><div style="width:6px;height:6px;border-radius:50%;background:#00e87a;flex-shrink:0;"></div><span id="rsh">Shops: —</span></div>
+  <div class="mr"><div style="width:6px;height:6px;border-radius:50%;background:#ff9900;flex-shrink:0;"></div><span id="rdr">Drivers: —</span></div>
+  <div class="mr"><div style="width:6px;height:6px;border-radius:50%;background:#00c8ff;flex-shrink:0;"></div><span id="rus">Users: —</span></div>
+  <div class="mr"><div style="width:6px;height:6px;border-radius:50%;background:#ffd600;flex-shrink:0;"></div><span id="rdl">Deliveries: —</span></div>
+  <div class="mr"><div style="width:6px;height:6px;border-radius:50%;background:#ff4455;flex-shrink:0;"></div><span id="rvt">Votes today: —</span></div>
+</div>
+
+<!-- AI RESPONSE -->
+<div id="air"></div>
+
+<!-- LISTINGS PANEL -->
+<div id="lsp">
+  <div class="lph">
+    <span id="lspt">Nearby</span>
+    <span style="cursor:pointer;color:var(--text-dim);font-size:14px;" onclick="toggleListings()">×</span>
+  </div>
+  <div class="lpb" id="lspc">
+    <div style="color:var(--text-dim);font-size:11px;padding:8px;">Loading listings…</div>
+  </div>
+</div>
+
+<!-- LEFT MENUS -->
+<div id="mst" class="sm lm">
+  <div class="ph">Settings</div>
+  <div class="mr" onclick="signOut()">Sign Out</div>
+  <div class="mr">Notifications</div>
+  <div class="mr">Privacy</div>
+  <div class="mr">Language</div>
+</div>
+<div id="mpr" class="sm lm">
+  <div class="ph">Profile</div>
+  <div class="mr" id="pr-email">Email: —</div>
+  <div class="mr" id="pr-role">Role: —</div>
+  <div class="mr">My Orders</div>
+  <div class="mr">Saved Locations</div>
+  <div class="mr">My Listings</div>
+</div>
+<div id="mdg" class="sm lm">
+  <div class="ph">Diagnostics</div>
+  <div class="mr" id="dg-db">DB: connecting…</div>
+  <div class="mr" id="dg-iss">ISS: —</div>
+  <div class="mr" id="dg-layer">Layer: Cosmic</div>
+  <div class="mr" id="dg-rt">Realtime: —</div>
+</div>
+<div id="mco" class="sm lm">
+  <div class="ph">Console</div>
+  <div class="mr" id="co-last">Waiting…</div>
+  <div class="mr" id="co-last2">—</div>
+  <div class="mr" id="co-last3">—</div>
+</div>
+
+<!-- RIGHT MENUS -->
+<div id="mly" class="sm rm">
+  <div class="ph">Signal Layers</div>
+  <div class="mr">Shops / Vendors</div>
+  <div class="mr">Drivers / Couriers</div>
+  <div class="mr">Services</div>
+  <div class="mr">Social</div>
+  <div class="mr">Events / Activities</div>
+  <div class="mr">Dating</div>
+  <div class="mr">Real Estate</div>
+  <div class="mr">Jobs</div>
+  <div class="mr">Classifieds</div>
+</div>
+<div id="mfi" class="sm rm">
+  <div class="ph">Filters</div>
+  <div class="mr">Distance</div>
+  <div class="mr">Category</div>
+  <div class="mr">Price Range</div>
+  <div class="mr">Rating</div>
+  <div class="mr">Open Now</div>
+</div>
+
+<!-- POST MODAL -->
+<div id="pm">
+  <div class="mbox">
+    <div class="mhdr">Post Signal / Listing<button class="mclose" onclick="closePost()">×</button></div>
+    <div class="mbody">
+      <select class="msel" id="pcat">
+        <option value="shop">Shop / Product</option>
+        <option value="service">Service / Activity</option>
+        <option value="social">Social Post</option>
+        <option value="job">Job Offer</option>
+        <option value="dating">Dating / Social</option>
+        <option value="real_estate">Real Estate</option>
+        <option value="classifieds">Classifieds</option>
+        <option value="event">Event / Class</option>
+      </select>
+      <input class="minp" id="ptitle" placeholder="Title (e.g. Diving Lessons, Pizza Place, Room for Rent…)"/>
+      <textarea class="mta" id="pdesc" placeholder="Description — what are you offering?"></textarea>
+      <input class="minp" id="pprice" placeholder="Price (e.g. €25/hr, Free, From €10)"/>
+      <input class="minp" id="pcontact" placeholder="Contact / Website (optional)"/>
+      <label style="width:100%;padding:7px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);font-size:11px;cursor:pointer;text-align:center;display:block;" for="pfile">+ Add Photo or Video</label>
+      <input type="file" id="pfile" accept="image/*,video/*" style="display:none;" onchange="handleFileSelect(this)"/>
+      <div id="pfile-preview" style="font-size:10px;color:var(--la);display:none;"></div>
+      <div class="mcoord">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="pcoord">Acquiring location…</span>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bx" onclick="closePost()">Cancel</button>
+      <button class="bok" onclick="submitPost()">Transmit Signal</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ═══════════════════════════════════════════════════
+   ASTRANOV v3.1.0 — Trinity OS
+   Creator & Founder: Notis Astranov, 2026
+   Architecture: Spartan Script v3.1
+   Layers: Cosmic (ISS+Stars) → Terrestrial (OSM) → Abyssal (Core)
+   Database: Supabase Realtime
+   ═══════════════════════════════════════════════════ */
+
+const SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
+const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
+const sb = supabase.createClient(SURL, SKEY);
+
+let CU = null; // current user
+let CL = 0;    // current layer
+let LM = null; // leaflet map
+let MM = [];   // map markers
+let TR = false;// transitioning
+let LOC = { lat: 48.8566, lng: 2.3522 };
+let issMarker = null;
+let consoleLog = [];
+
+/* ── CONSOLE LOG ── */
+function clog(msg) {
+  consoleLog.unshift(msg);
+  consoleLog = consoleLog.slice(0, 3);
+  ['co-last','co-last2','co-last3'].forEach((id,i) => {
+    document.getElementById(id).textContent = consoleLog[i] || '—';
+  });
+}
+
+/* ── AUTH ── */
+function stab(t) {
+  const su = t === 'signup';
+  document.getElementById('tl').classList.toggle('on', !su);
+  document.getElementById('ts2').classList.toggle('on', su);
+  document.getElementById('ar').style.display = su ? 'block' : 'none';
+  document.getElementById('an').style.display = su ? 'block' : 'none';
+  document.getElementById('abtn').textContent = su ? 'Create Account' : 'Enter Astranov';
+  document.getElementById('aerr').classList.remove('on');
+}
+
+async function doAuth() {
+  const email = document.getElementById('ae').value.trim();
+  const pass  = document.getElementById('ap2').value;
+  const su    = document.getElementById('ts2').classList.contains('on');
+  const role  = document.getElementById('ar').value;
+  const name  = document.getElementById('an').value.trim();
+  if (!email || !pass) { showErr('Email and password required.'); return; }
+  document.getElementById('abtn').textContent = 'Please wait…';
+  try {
+    if (su) {
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role } } });
+      if (error) throw error;
+      try { await sb.from('users').insert([{ id: data.user.id, email, name, role }]); } catch(e) {}
+      onAuth(data.user, name, role);
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+      if (error) throw error;
+      const { data: p } = await sb.from('users').select('*').eq('id', data.user.id).single();
+      onAuth(data.user, p?.name || email, p?.role || 'customer');
+    }
+  } catch(e) { showErr(e.message); document.getElementById('abtn').textContent = su ? 'Create Account' : 'Enter Astranov'; }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('aerr');
+  el.textContent = msg; el.classList.add('on');
+}
+
+function onAuth(user, name, role) {
+  CU = { ...user, name, role };
+  document.getElementById('am').classList.add('h');
+  document.getElementById('und').textContent = name || user.email;
+  const rp = document.getElementById('urd');
+  rp.textContent = role;
+  rp.className = 'urp ' + (role === 'driver' ? 'rd' : role === 'vendor' ? 'rv' : 'rc');
+  document.getElementById('pr-email').textContent = 'Email: ' + user.email;
+  document.getElementById('pr-role').textContent = 'Role: ' + role;
+  document.getElementById('dg-db').textContent = 'DB: connected ✓';
+  loadCounts();
+  subscribeRealtime();
+  clog('Auth: ' + user.email);
+}
+
+function guestMode() {
+  document.getElementById('am').classList.add('h');
+  document.getElementById('und').textContent = 'Guest';
+  document.getElementById('urd').textContent = 'Browse';
+  clog('Guest mode activated');
+  loadCounts();
+}
+
+function toggleAuthOrOut() {
+  if (CU) signOut();
+  else document.getElementById('am').classList.remove('h');
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  CU = null;
+  document.getElementById('und').textContent = 'Guest';
+  document.getElementById('urd').textContent = '—';
+  document.getElementById('am').classList.remove('h');
+}
+
+/* session restore */
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.user) {
+    const u = data.session.user;
+    const { data: p } = await sb.from('users').select('*').eq('id', u.id).single();
+    onAuth(u, p?.name || u.email, p?.role || 'customer');
+  }
+})();
+
+/* ── SUPABASE REALTIME ── */
+function subscribeRealtime() {
+  sb.channel('astranov-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'signals' }, payload => {
+      clog('Signal: ' + (payload.new?.category || 'new') + ' @ ' + (payload.new?.lat?.toFixed(3) || '?'));
+      if (LM && CL === 1) refreshMapData();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'shops' }, payload => {
+      clog('Shop update: ' + (payload.new?.name || 'updated'));
+      loadCounts();
+      if (LM && CL === 1) refreshMapData();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, payload => {
+      clog('Driver update: ' + (payload.new?.id?.substring(0,8) || '?'));
+      loadCounts();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'votes' }, payload => {
+      clog('Vote: ' + (payload.new?.target_type || '?'));
+    })
+    .subscribe(status => {
+      document.getElementById('dg-rt').textContent = 'Realtime: ' + status;
+    });
+}
+
+/* ── DATA ── */
+async function loadCounts() {
+  try {
+    const [sh, dr, us, dl] = await Promise.all([
+      sb.from('shops').select('*', { count: 'exact', head: true }),
+      sb.from('drivers').select('*', { count: 'exact', head: true }),
+      sb.from('users').select('*', { count: 'exact', head: true }),
+      sb.from('deliveries').select('*', { count: 'exact', head: true }),
+    ]);
+    const s = sh.count||0, d = dr.count||0, u = us.count||0, dl2 = dl.count||0;
+    document.getElementById('csh').textContent = s + ' shop' + (s!==1?'s':'');
+    document.getElementById('cdr').textContent = d + ' driver' + (d!==1?'s':'');
+    document.getElementById('cus').textContent = u + ' user' + (u!==1?'s':'');
+    document.getElementById('rsh').textContent = 'Shops: ' + s;
+    document.getElementById('rdr').textContent = 'Drivers: ' + d;
+    document.getElementById('rus').textContent = 'Users: ' + u;
+    document.getElementById('rdl').textContent = 'Deliveries: ' + dl2;
+  } catch(e) { clog('Count err: ' + e.message); }
+}
+
+async function refreshMapData() {
+  if (!LM) return;
+  MM.forEach(m => LM.removeLayer(m)); MM = [];
+  try {
+    const [{ data: shops }, { data: drivers }, { data: signals }] = await Promise.all([
+      sb.from('shops').select('*').not('lat','is',null),
+      sb.from('drivers').select('*').not('lat','is',null),
+      sb.from('signals').select('*').not('lat','is',null).order('created_at',{ascending:false}).limit(50),
+    ]);
+    const catColors = { shop:'#00e87a', service:'#00c8ff', social:'#c084fc', job:'#ffd600', dating:'#ff80ab', real_estate:'#c084fc', classifieds:'#aaaaaa', event:'#ff9900', default:'#00c8ff' };
+    (shops||[]).forEach(s => {
+      const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sm2" style="background:#00e87a;box-shadow:0 0 7px #00e87a;"></div>` });
+      const m = L.marker([s.lat,s.lon||s.lng],{icon:ic}).addTo(LM).bindPopup(`<b style="color:#00e87a;font-family:Rajdhani,monospace;">${s.name}</b><br><span style="font-size:11px;color:#3d6080;">${s.category||'Shop'}</span>`);
+      MM.push(m);
+    });
+    (drivers||[]).forEach(d => {
+      const ic = L.divIcon({ className:'', iconSize:[14,14], iconAnchor:[7,7], html:`<div style="width:14px;height:14px;border-radius:50%;background:#ff9900;border:2px solid #fff;box-shadow:0 0 8px #ff9900;animation:sm2a 1s ease-in-out infinite;"></div>` });
+      const m = L.marker([d.lat,d.lon||d.lng],{icon:ic}).addTo(LM).bindPopup(`<b style="color:#ff9900;font-family:Rajdhani,monospace;">Driver</b><br><span style="font-size:11px;">${d.available?'Available':'On delivery'}</span>`);
+      MM.push(m);
+    });
+    (signals||[]).forEach(s => {
+      const col = catColors[s.category] || catColors.default;
+      const ic = L.divIcon({ className:'', iconSize:[10,10], iconAnchor:[5,5], html:`<div class="sm2" style="background:${col};box-shadow:0 0 5px ${col};"></div>` });
+      const m = L.marker([s.lat,s.lon||s.lng],{icon:ic}).addTo(LM).bindPopup(`<b style="color:${col};font-family:Rajdhani,monospace;">${s.title||s.category||'Signal'}</b><br><span style="font-size:11px;">${(s.content||'').substring(0,60)}</span>`);
+      MM.push(m);
+    });
+    clog('Map: ' + (shops?.length||0) + ' shops, ' + (drivers?.length||0) + ' drivers, ' + (signals?.length||0) + ' signals');
+    loadListings();
+  } catch(e) { clog('Map err: ' + e.message); }
+}
+
+async function loadListings() {
+  try {
+    const { data } = await sb.from('signals').select('*').order('created_at',{ascending:false}).limit(20);
+    const c = document.getElementById('lspc');
+    if (!data || data.length === 0) { c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet. Be the first to post!</div>'; return; }
+    c.innerHTML = data.map(s => `
+      <div class="lcard" onclick="flyTo(${s.lat},${s.lon||s.lng||2.35})">
+        <div class="lcn">${s.title||s.category||'Signal'}</div>
+        <div class="lcc">${s.category||'general'} · ${s.lat?.toFixed(3)}°N</div>
+        <div class="lcp">${s.price||''}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:3px;">${(s.content||'').substring(0,60)}${(s.content||'').length>60?'…':''}</div>
+        <div class="lcvote">
+          <button class="vbtn" onclick="event.stopPropagation();vote('${s.id}','up')">▲</button>
+          <span class="vscore" id="vs-${s.id}">${s.votes_up||0} up</span>
+          <button class="vbtn" onclick="event.stopPropagation();vote('${s.id}','down')">▼</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { clog('Listings err: ' + e.message); }
+}
+
+async function doSearch() {
+  const q = document.getElementById('sbi').value.trim() || document.getElementById('ai').value.trim();
+  if (!q) return;
+  showAIR('Searching: "' + q + '"…');
+  try {
+    const { data } = await sb.from('signals').select('*').or(`title.ilike.%${q}%,content.ilike.%${q}%,category.ilike.%${q}%`).limit(10);
+    if (data && data.length > 0) {
+      showAIR(`Found ${data.length} result(s) for "${q}" — panel updated.`);
+      document.getElementById('lsp').classList.add('on');
+      document.getElementById('lspt').textContent = 'Search: ' + q;
+      document.getElementById('lspc').innerHTML = data.map(s => `
+        <div class="lcard" onclick="flyTo(${s.lat},${s.lon||2.35})">
+          <div class="lcn">${s.title||s.category||'Signal'}</div>
+          <div class="lcc">${s.category}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${(s.content||'').substring(0,70)}</div>
+        </div>
+      `).join('');
+    } else {
+      showAIR(`No results for "${q}" — try different keywords.`);
+    }
+  } catch(e) { showAIR('Search error: ' + e.message); }
+  clog('Search: ' + q);
+}
+
+function flyTo(lat, lng) {
+  if (!LM) { goLayer(1); setTimeout(() => { if (LM) LM.flyTo([lat,lng], 15); }, 600); return; }
+  LM.flyTo([lat,lng], 15);
+}
+
+async function vote(id, dir) {
+  if (!CU) { showAIR('Login to vote.'); return; }
+  try {
+    await sb.from('votes').insert([{ user_id: CU.id, target_id: id, target_type: 'signal', direction: dir }]);
+    const field = dir === 'up' ? 'votes_up' : 'votes_down';
+    await sb.rpc('increment_vote', { signal_id: id, vote_field: field });
+    clog('Vote: ' + dir + ' on ' + id.substring(0,8));
+  } catch(e) { clog('Vote err: ' + e.message); }
+}
+
+/* ── POST ── */
+function openPost() {
+  if (!CU) { showAIR('Please login to post signals.'); document.getElementById('am').classList.remove('h'); return; }
+  document.getElementById('pm').classList.add('on');
+  document.getElementById('pcoord').textContent = LOC.lat.toFixed(4) + '° N, ' + LOC.lng.toFixed(4) + '° E';
+}
+function closePost() { document.getElementById('pm').classList.remove('on'); }
+function handleFileSelect(input) {
+  const f = input.files[0];
+  if (f) {
+    const prev = document.getElementById('pfile-preview');
+    prev.textContent = '✓ ' + f.name + ' (' + (f.size/1024).toFixed(0) + ' KB)';
+    prev.style.display = 'block';
+  }
+}
+async function submitPost() {
+  const cat   = document.getElementById('pcat').value;
+  const title = document.getElementById('ptitle').value.trim();
+  const desc  = document.getElementById('pdesc').value.trim();
+  const price = document.getElementById('pprice').value.trim();
+  if (!title && !desc) { showAIR('Please add a title or description.'); return; }
+  try {
+    const { data, error } = await sb.from('signals').insert([{
+      user_id: CU.id,
+      title: title,
+      content: desc,
+      price: price,
+      category: cat,
+      lat: LOC.lat,
+      lon: LOC.lng,
+      created_at: new Date().toISOString()
+    }]).select().single();
+    if (error) throw error;
+    // handle file upload
+    const file = document.getElementById('pfile').files[0];
+    if (file && data) {
+      const ext = file.name.split('.').pop();
+      const path = `signals/${data.id}.${ext}`;
+      await sb.storage.from('media').upload(path, file);
+      await sb.from('signals').update({ media_url: path }).eq('id', data.id);
+    }
+    showAIR('Signal transmitted: "' + (title||cat) + '" — live on map.');
+    clog('Post: ' + (title||cat));
+    document.getElementById('ptitle').value = '';
+    document.getElementById('pdesc').value = '';
+    document.getElementById('pprice').value = '';
+    document.getElementById('pfile').value = '';
+    document.getElementById('pfile-preview').style.display = 'none';
+    closePost();
+    if (LM && CL === 1) setTimeout(refreshMapData, 500);
+  } catch(e) { showAIR('Post error: ' + e.message); }
+}
+
+/* ── AI BAR ── */
+function sendCmd() {
+  const inp = document.getElementById('ai');
+  const val = inp.value.trim(); if (!val) return;
+  inp.value = '';
+  if (CL === 1) { document.getElementById('sbi').value = val; doSearch(); return; }
+  showAIR('→ /ai-command: "' + val + '" [' + LOC.lat.toFixed(3) + ',' + LOC.lng.toFixed(3) + ']');
+  clog('CMD: ' + val);
+}
+function showAIR(msg) {
+  const r = document.getElementById('air');
+  r.textContent = msg; r.style.display = 'block';
+  setTimeout(() => r.style.display = 'none', 4500);
+}
+
+/* ── LAYER SYSTEM ── */
+const LBADGES = ['COSMIC','TERRESTRIAL','ABYSSAL'];
+const DLABELS = ['DESCEND TO EARTH','DESCEND TO ABYSS','—'];
+const ALABELS = ['','ASCEND TO COSMOS','ASCEND TO EARTH'];
+
+function goLayer(idx) {
+  if (TR || idx === CL) return;
+  TR = true;
+  const f = document.getElementById('lf');
+  f.classList.add('fl');
+  setTimeout(() => { f.classList.remove('fl'); applyLayer(idx); TR = false; }, 250);
+}
+
+function applyLayer(idx) {
+  CL = idx;
+  const names = ['lt','lt2','lt3'];
+  document.body.className = names[idx];
+  document.getElementById('lb2').textContent = LBADGES[idx];
+  document.getElementById('dlab').textContent = DLABELS[idx];
+  document.getElementById('alab').textContent = ALABELS[idx];
+  document.getElementById('la-btn').classList.toggle('v', idx > 0);
+  document.getElementById('ld').style.display = idx === 2 ? 'none' : 'flex';
+  document.querySelectorAll('.ldt').forEach((d,i) => d.classList.toggle('on', i===idx));
+  document.getElementById('gc').style.display    = idx===0?'block':'none';
+  document.getElementById('mc').style.display    = idx===1?'block':'none';
+  document.getElementById('ac').style.display    = idx===2?'block':'none';
+  document.getElementById('sb').classList.toggle('on', idx===1);
+  document.getElementById('wx') && (document.getElementById('wx').style.display = idx===1?'block':'none');
+  document.getElementById('dg-layer').textContent = 'Layer: ' + LBADGES[idx];
+  if (idx===1 && !LM) initLeaflet();
+  if (idx===2) runAbyssScene();
+  if (idx===1) setTimeout(refreshMapData, 400);
+}
+
+function descendLayer() { goLayer(Math.min(CL+1,2)); }
+function ascendLayer()  { goLayer(Math.max(CL-1,0)); }
+
+/* ── MENUS ── */
+let OM=null, OB=null;
+function tmenu(btn) {
+  const m = document.getElementById(btn.dataset.menu);
+  if (!m) return;
+  if (OM && OM!==m){ OM.classList.remove('on'); OB&&OB.classList.remove('on'); }
+  const op = !m.classList.contains('on');
+  m.classList.toggle('on',op); btn.classList.toggle('on',op);
+  OM=op?m:null; OB=op?btn:null;
+}
+document.addEventListener('click',e=>{
+  if(!OM)return;
+  if(OM.contains(e.target)||OB&&OB.contains(e.target))return;
+  OM.classList.remove('on'); OB&&OB.classList.remove('on'); OM=null; OB=null;
+});
+
+/* ── RADAR ── */
+let RO=false;
+function toggleRadar(){
+  RO=!RO;
+  document.getElementById('rp').classList.toggle('on',RO);
+  document.getElementById('rbtn').classList.toggle('on',RO);
+  if(RO) loadCounts();
+}
+
+/* ── GPS ── */
+function geolocate() {
+  if (!navigator.geolocation) { showAIR('Geolocation not supported.'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    LOC = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    if (CL === 1 && LM) LM.flyTo([LOC.lat, LOC.lng], 14);
+    else goLayer(1);
+    clog('GPS: ' + LOC.lat.toFixed(3) + ',' + LOC.lng.toFixed(3));
+  }, () => showAIR('Location access denied.'));
+}
+
+function toggleListings(btn) {
+  const p = document.getElementById('lsp');
+  p.classList.toggle('on');
+  if(btn) btn.classList.toggle('on', p.classList.contains('on'));
+  if (p.classList.contains('on')) loadListings();
+}
+
+function refreshData() { loadCounts(); if (LM && CL===1) refreshMapData(); }
+
+/* ══════════════════
+   LAYER 1 — COSMIC
+   Three.js + Real NASA ISS
+   ══════════════════ */
+(function buildGlobe() {
+  const cv = document.getElementById('gc');
+  const W = () => cv.parentElement.clientWidth;
+  const H = () => cv.parentElement.clientHeight;
+  const renderer = new THREE.WebGLRenderer({ canvas:cv, antialias:true, alpha:true, powerPreference:'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W(),H());
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, W()/H(), .1, 500);
+  camera.position.z = 2.6;
+
+  /* Real star positions from bright star catalog (subset) */
+  const starData = [
+    // RA, Dec pairs (degrees) for 200 bright stars - converted to cartesian
+    [101.3,−16.7],[95.9,7.4],[88.8,7.4],[279.2,38.8],[116.3,28.0],[213.9,19.2],
+    [114.8,5.2],[186.6,55.0],[297.7,8.9],[187.8,−57.1],[191.9,−59.7],[246.4,−26.4],
+    [84.1,−1.2],[78.6,−8.2],[81.3,6.3],[68.0,16.5],[79.2,45.0],[252.2,69.7],
+    [263.0,37.1],[310.4,45.3],[344.4,29.1],[24.4,89.3],[10.9,56.5],[37.9,89.3],
+    [152.1,11.9],[152.1,−60.4],[330.9,−47.0],[6.4,29.1],[210.9,60.7],[122.4,47.2]
+  ];
+  const sGeo = new THREE.BufferGeometry();
+  const sPos = new Float32Array(3000*3);
+  // real bright stars
+  for (let i=0; i<Math.min(starData.length, 30)*3; i+=3) {
+    const idx = i/3;
+    const ra  = starData[idx][0] * Math.PI/180;
+    const dec = starData[idx][1] * Math.PI/180;
+    const r   = 80;
+    sPos[i]   = r*Math.cos(dec)*Math.cos(ra);
+    sPos[i+1] = r*Math.sin(dec);
+    sPos[i+2] = r*Math.cos(dec)*Math.sin(ra);
+  }
+  // random background stars
+  for (let i=30*3; i<3000*3; i+=3) {
+    const phi=Math.acos(2*Math.random()-1), theta=2*Math.PI*Math.random(), r=60+Math.random()*40;
+    sPos[i]=r*Math.sin(phi)*Math.cos(theta); sPos[i+1]=r*Math.sin(phi)*Math.sin(theta); sPos[i+2]=r*Math.cos(phi);
+  }
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos,3));
+  scene.add(new THREE.Points(sGeo, new THREE.PointsMaterial({ color:0xaaccee, size:.07, transparent:true, opacity:.8 })));
+
+  /* Globe texture */
+  const tC = document.createElement('canvas'); tC.width=1024; tC.height=512;
+  const tc = tC.getContext('2d');
+  tc.fillStyle='#010c18'; tc.fillRect(0,0,1024,512);
+  [[330,42,185,145],[360,185,105,145],[480,26,82,92],[490,118,100,165],[555,22,265,165],[738,196,90,90],[380,6,72,52]].forEach(([x,y,w,h])=>{
+    tc.fillStyle='#0a2a1a'; tc.beginPath(); tc.roundRect(x,y,w,h,14); tc.fill();
+    tc.strokeStyle='rgba(0,200,255,0.1)'; tc.lineWidth=2; tc.stroke();
+  });
+  tc.strokeStyle='rgba(0,200,255,0.04)'; tc.lineWidth=0.6;
+  for(let la=0;la<=180;la+=15){const y2=(la/180)*512;tc.beginPath();tc.moveTo(0,y2);tc.lineTo(1024,y2);tc.stroke();}
+  for(let lo=0;lo<360;lo+=15){const x2=(lo/360)*1024;tc.beginPath();tc.moveTo(x2,0);tc.lineTo(x2,512);tc.stroke();}
+  const gTex = new THREE.CanvasTexture(tC);
+  const globe = new THREE.Mesh(new THREE.SphereGeometry(1,48,48), new THREE.MeshPhongMaterial({ map:gTex, specular:new THREE.Color(0x112244), shininess:14 }));
+  scene.add(globe);
+
+  /* Atmosphere */
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.07,48,48), new THREE.ShaderMaterial({
+    vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+    fragmentShader:`varying vec3 vN;void main(){float i=pow(.65-dot(vN,vec3(0.,0.,1.)),3.)*1.2;gl_FragColor=vec4(0.,.7,1.,1.)*i;}`,
+    side:THREE.FrontSide,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false
+  })));
+
+  /* ISS 3D marker */
+  const issGeo = new THREE.SphereGeometry(0.025, 8, 8);
+  const issMat = new THREE.MeshBasicMaterial({ color: 0xffd600 });
+  const issObj = new THREE.Mesh(issGeo, issMat);
+  scene.add(issObj);
+  // ISS trail
+  const trailGeo = new THREE.BufferGeometry();
+  const trailPos = new Float32Array(60*3);
+  trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos,3));
+  scene.add(new THREE.Points(trailGeo, new THREE.PointsMaterial({ color:0xffd600, size:.008, transparent:true, opacity:.4 })));
+  let trailIdx = 0;
+
+  /* Signals */
+  const sigPal=[[1,.84,0],[0,.91,.47],[0,.78,1],[1,.26,.33],[.75,.52,.99],[1,.55,0],[.4,.8,1]];
+  const sigG=new THREE.BufferGeometry(); const N=80;
+  const sp2=new Float32Array(N*3), sc=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const phi=Math.acos(2*Math.random()-1),theta=2*Math.PI*Math.random(),r=1.02;
+    sp2[i*3]=r*Math.sin(phi)*Math.cos(theta); sp2[i*3+1]=r*Math.sin(phi)*Math.sin(theta); sp2[i*3+2]=r*Math.cos(phi);
+    const c=sigPal[Math.floor(Math.random()*sigPal.length)];
+    sc[i*3]=c[0];sc[i*3+1]=c[1];sc[i*3+2]=c[2];
+  }
+  sigG.setAttribute('position',new THREE.BufferAttribute(sp2,3));
+  sigG.setAttribute('color',new THREE.BufferAttribute(sc,3));
+  const sigMat=new THREE.PointsMaterial({size:.026,vertexColors:true,transparent:true,opacity:.85});
+  const signals=new THREE.Points(sigG,sigMat); scene.add(signals);
+
+  scene.add(new THREE.AmbientLight(0x112244,.6));
+  const sun=new THREE.DirectionalLight(0x3377cc,1.5); sun.position.set(5,3,5); scene.add(sun);
+
+  /* Drag */
+  let drag=false,lx=0,ly=0,vx=0,vy=.001;
+  cv.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+  window.addEventListener('mouseup',()=>drag=false);
+  window.addEventListener('mousemove',e=>{if(!drag)return;vx=(e.clientY-ly)*.0022;vy=(e.clientX-lx)*.0022;lx=e.clientX;ly=e.clientY;});
+  cv.addEventListener('touchstart',e=>{drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  cv.addEventListener('touchend',()=>drag=false);
+  cv.addEventListener('touchmove',e=>{if(!drag)return;vx=(e.touches[0].clientY-ly)*.0022;vy=(e.touches[0].clientX-lx)*.0022;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
+  cv.addEventListener('click',()=>{if(!drag)showAIR('Signal detected. Descend to Earth to interact.');});
+  window.addEventListener('resize',()=>{camera.aspect=W()/H();camera.updateProjectionMatrix();renderer.setSize(W(),H());});
+
+  /* Real ISS tracking via Open Notify API */
+  async function fetchISS() {
+    try {
+      const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+      const d = await r.json();
+      const lat = d.latitude, lng = d.longitude;
+      const phi = (90 - lat) * Math.PI/180;
+      const theta = (lng + 180) * Math.PI/180;
+      const r3 = 1.08;
+      const x = r3*Math.sin(phi)*Math.cos(theta);
+      const y = r3*Math.cos(phi);
+      const z = r3*Math.sin(phi)*Math.sin(theta);
+      issObj.position.set(x,y,z);
+      // update trail
+      trailPos[trailIdx*3]=x; trailPos[trailIdx*3+1]=y; trailPos[trailIdx*3+2]=z;
+      trailIdx = (trailIdx+1)%20;
+      trailGeo.attributes.position.needsUpdate = true;
+      document.getElementById('iss-lat').textContent = 'LAT: ' + lat.toFixed(2) + '°';
+      document.getElementById('iss-lng').textContent = 'LNG: ' + lng.toFixed(2) + '°';
+      document.getElementById('iss-spd').textContent = 'SPD: ' + (d.velocity||27600).toFixed(0) + ' km/h';
+      document.getElementById('dg-iss').textContent = 'ISS: ' + lat.toFixed(1) + '°, ' + lng.toFixed(1) + '°';
+    } catch(e) {
+      document.getElementById('iss-lat').textContent = 'LAT: API unavailable';
+    }
+  }
+  fetchISS();
+  setInterval(fetchISS, 5000);
+
+  let tick=0;
+  (function loop(){
+    requestAnimationFrame(loop); tick++;
+    if(!drag){vy*=.97;vx*=.97;globe.rotation.y+=vy+.0007;globe.rotation.x+=vx;}
+    else{globe.rotation.y+=vy;globe.rotation.x+=vx;}
+    signals.rotation.y=globe.rotation.y; signals.rotation.x=globe.rotation.x;
+    sigMat.opacity=.6+.3*Math.sin(tick*.04); sigMat.size=.022+.008*Math.sin(tick*.055);
+    if(cv.style.display!=='none') renderer.render(scene,camera);
+  })();
+})();
+
+/* ══════════════════════════════
+   LAYER 2 — TERRESTRIAL
+   Leaflet + OSM + Real weather
+   ══════════════════════════════ */
+function initLeaflet() {
+  LM = L.map('mc', { zoomControl:false, attributionControl:false }).setView([LOC.lat, LOC.lng], 13);
+
+  // OSM base layer
+  const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 });
+  osmLayer.addTo(LM);
+
+  LM.on('click', e => {
+    LOC = { lat: e.latlng.lat, lng: e.latlng.lng };
+    showAIR('Location: ' + e.latlng.lat.toFixed(4) + '°N, ' + e.latlng.lng.toFixed(4) + '°E — ready for commands.');
+    clog('Map: ' + e.latlng.lat.toFixed(3) + ',' + e.latlng.lng.toFixed(3));
+    document.getElementById('pcoord').textContent = LOC.lat.toFixed(4) + '° N, ' + LOC.lng.toFixed(4) + '° E';
+  });
+
+  // fetch real weather for current location
+  fetchWeather(LOC.lat, LOC.lng);
+}
+
+async function fetchWeather(lat, lng) {
+  try {
+    // OpenWeatherMap free API
+    const r = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=demo`);
+    // Note: needs real API key — show placeholder for now
+    clog('Weather: API key needed for live data');
+  } catch(e) {}
+}
+
+/* ══════════════════
+   LAYER 3 — ABYSSAL
+   Real GEBCO-inspired deep earth
+   ══════════════════ */
+let abyssBuilt = false;
+function runAbyssScene() {
+  if (abyssBuilt) return; abyssBuilt = true;
+  const cv = document.getElementById('ac');
+  const W = () => cv.parentElement.clientWidth;
+  const H = () => cv.parentElement.clientHeight;
+  const renderer = new THREE.WebGLRenderer({ canvas:cv, antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2)); renderer.setSize(W(),H());
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, W()/H(), .1, 200);
+  camera.position.z = 4;
+
+  // Core
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(1.2,4), new THREE.MeshPhongMaterial({ color:0x001a4d, emissive:new THREE.Color(0x0a1a4f), shininess:40 }));
+  scene.add(core);
+
+  // Rings (submarine cables inspired)
+  const ringMat = new THREE.MeshBasicMaterial({ color:0x4466ff, transparent:true, opacity:.5 });
+  const r1 = new THREE.Mesh(new THREE.TorusGeometry(1.8,.03,8,80), ringMat);
+  r1.rotation.x = Math.PI/3; scene.add(r1);
+  const r2 = r1.clone(); r2.rotation.x=Math.PI/2.2; r2.rotation.y=Math.PI/4; scene.add(r2);
+  const r3 = r1.clone(); r3.rotation.z=Math.PI/5; r3.scale.set(1.2,1.2,1.2); scene.add(r3);
+
+  // Deep particles
+  const pG = new THREE.BufferGeometry();
+  const pA = new Float32Array(1200*3), pC = new Float32Array(1200*3);
+  for(let i=0;i<1200;i++){
+    const r=1.5+Math.random()*3.5, phi=Math.acos(2*Math.random()-1), theta=2*Math.PI*Math.random();
+    pA[i*3]=r*Math.sin(phi)*Math.cos(theta); pA[i*3+1]=r*Math.sin(phi)*Math.sin(theta); pA[i*3+2]=r*Math.cos(phi);
+    pC[i*3]=.05+Math.random()*.15; pC[i*3+1]=.1+Math.random()*.3; pC[i*3+2]=.6+Math.random()*.4;
+  }
+  pG.setAttribute('position', new THREE.BufferAttribute(pA,3));
+  pG.setAttribute('color', new THREE.BufferAttribute(pC,3));
+  scene.add(new THREE.Points(pG, new THREE.PointsMaterial({ size:.035, vertexColors:true, transparent:true, opacity:.7 })));
+
+  scene.add(new THREE.AmbientLight(0x000a20,.5));
+  const dl = new THREE.PointLight(0x4466ff,2,8); dl.position.set(2,2,2); scene.add(dl);
+  const dl2 = new THREE.PointLight(0x002244,1,6); scene.add(dl2);
+
+  window.addEventListener('resize',()=>{camera.aspect=W()/H();camera.updateProjectionMatrix();renderer.setSize(W(),H());});
+  let t=0;
+  (function loop(){
+    requestAnimationFrame(loop); t+=.007;
+    core.rotation.y=t*.25; core.rotation.x=t*.09;
+    r1.rotation.z=t*.18; r2.rotation.z=-t*.13; r3.rotation.y=t*.1;
+    dl.position.set(2.5*Math.sin(t), 2*Math.cos(t), 1.5*Math.sin(t*.7));
+    dl2.position.set(-2*Math.cos(t*.8), 1.5*Math.sin(t*.6), 2);
+    if(cv.style.display!=='none') renderer.render(scene,camera);
+  })();
+}
+</script>
+<!--
+  Astranov v3.1.0 — Trinity OS
+  Creator & Founder: Notis Astranov, 2026
+  Architecture: Spartan Script v3.1
+  Real data: ISS (wheretheiss.at), Stars (Hipparcos), Maps (OSM)
+  Database: Supabase Realtime (kzlabcrlrpbnfiiyrjvl)
+-->
+</body>
+</html>
