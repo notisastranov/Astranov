@@ -171,6 +171,74 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .lf{position:fixed;inset:0;z-index:400;pointer-events:none;opacity:0;background:var(--la);transition:opacity 0.15s;}
 .lf.fl{opacity:0.15;}
 
+
+/* GLASS UPGRADE */
+#topbar,#bottombar{
+  background:linear-gradient(180deg,rgba(4,10,20,0.36),rgba(4,10,20,0.18));
+  backdrop-filter:blur(18px) saturate(130%);
+  -webkit-backdrop-filter:blur(18px) saturate(130%);
+}
+#left-panel,#right-panel{
+  background:linear-gradient(180deg,rgba(6,14,26,0.28),rgba(6,14,26,0.12));
+  backdrop-filter:blur(18px) saturate(125%);
+  -webkit-backdrop-filter:blur(18px) saturate(125%);
+  border-color:rgba(135,190,255,0.12);
+}
+.smenu{
+  background:linear-gradient(180deg,rgba(7,14,28,0.38),rgba(7,14,28,0.22));
+  border-color:rgba(135,190,255,0.16);
+  box-shadow:0 18px 40px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.mr:hover,.rp-btn:hover,.lp-btn:hover,.bb-btn:hover,.bb-btn.on{
+  background:rgba(0,200,255,0.09);
+}
+#orbital-feed{
+  position:absolute;inset:16px 62px 88px 62px;z-index:58;pointer-events:none;
+}
+.orb-card{
+  position:absolute;width:240px;min-height:124px;padding:12px 12px 11px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(7,18,34,0.62),rgba(7,18,34,0.34));
+  border:1px solid rgba(143,194,255,0.18);
+  box-shadow:0 18px 40px rgba(0,0,0,0.28), 0 0 24px rgba(0,200,255,0.08);
+  backdrop-filter:blur(22px) saturate(140%);
+  -webkit-backdrop-filter:blur(22px) saturate(140%);
+  pointer-events:auto;overflow:hidden;
+  animation:orb-pop 12s ease-in-out infinite;
+}
+.orb-card::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at top right, rgba(0,200,255,0.16), transparent 42%);
+}
+.orb-card h4{font-size:13px;color:#eff7ff;line-height:1.15;margin:8px 0 6px;font-weight:600;}
+.orb-card p{font-size:10px;color:#a5c2df;line-height:1.35;max-height:42px;overflow:hidden;}
+.orb-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+  font-size:9px;letter-spacing:0.11em;text-transform:uppercase;font-family:var(--fhud);
+  border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#d8ecff;
+}
+.orb-chip.offer{color:#00e87a;border-color:rgba(0,232,122,0.22);background:rgba(0,232,122,0.08);}
+.orb-chip.news{color:#00c8ff;border-color:rgba(0,200,255,0.2);background:rgba(0,200,255,0.08);}
+.orb-chip.space{color:#ffd600;border-color:rgba(255,214,0,0.22);background:rgba(255,214,0,0.08);}
+.orb-meta{margin-top:8px;font-size:9px;color:#7ea4c8;display:flex;justify-content:space-between;gap:8px;}
+.orb-hero{
+  position:absolute;right:12px;top:12px;width:76px;height:54px;border-radius:14px;
+  border:1px solid rgba(255,255,255,0.08);overflow:hidden;background:linear-gradient(135deg,rgba(0,200,255,0.18),rgba(223,241,255,0.03));
+}
+.orb-hero img,.orb-hero video{width:100%;height:100%;object-fit:cover;display:block;}
+.orb-pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;}
+.orb-card.pos-a{left:0;top:18px;animation-delay:0s;}
+.orb-card.pos-b{right:18px;top:34px;animation-delay:1.5s;}
+.orb-card.pos-c{left:12px;bottom:12px;animation-delay:3s;}
+.orb-card.pos-d{right:0;bottom:30px;animation-delay:4.5s;}
+@keyframes orb-pop{
+  0%,100%{transform:translateY(0) scale(1);opacity:0.94;}
+  25%{transform:translateY(-6px) scale(1.01);opacity:1;}
+  50%{transform:translateY(0) scale(0.995);opacity:0.96;}
+  75%{transform:translateY(7px) scale(1.01);opacity:0.98;}
+}
+#auth-helper{display:none;padding:8px 10px;border:1px solid rgba(0,200,255,0.18);border-radius:4px;background:rgba(0,200,255,0.05);font-size:10px;color:var(--text-dim);}
+#auth-helper.on{display:block;}
+
 /* AUTH MODAL */
 #am{position:fixed;inset:0;background:rgba(2,5,12,0.96);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 #am.h{display:none;}
@@ -283,7 +351,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div class="lf" id="lf"></div>
 
 <!-- AUTH MODAL -->
-<div id="am">
+<div id="am" class="h">
   <div class="abox">
     <div class="ahdr">
       <span class="abrand">ASTRANOV</span>
@@ -320,6 +388,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
         <button class="auth-view-btn" type="button" onclick="previewSelectedRole()">View</button>
       </div>
       <div id="auth-preview"></div>
+      <div id="auth-helper"></div>
       <div class="aerr" id="aerr"></div>
       <button class="asubmit" onclick="doAuth()">Enter Astranov</button>
       <div class="aguest" onclick="guestMode()">Continue as Guest (browse only)</div>
@@ -331,7 +400,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div id="topbar">
   <div class="tb-left">
     <span class="brand">ASTRANOV</span>
-    <span class="lbadge" id="lb2">COSMIC</span>
+    <span class="lbadge" id="lb2">LIVE EARTH</span>
   </div>
   <div class="tb-center">
     <div id="status-graph">
@@ -353,7 +422,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     </div>
     <div id="user-badge" onclick="toggleUserMenu()">
       <div class="user-avatar" id="uavatar">?</div>
-      <span class="user-name" id="uname">Login</span>
+      <span class="user-name" id="uname">Guest</span>
     </div>
   </div>
 </div>
@@ -410,6 +479,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div id="iss-info" style="margin-top:2px;">loading…</div>
   </div>
 
+  <div id="orbital-feed" aria-label="Live orbital feed"></div>
+
   <!-- Search bar (Layer 2) -->
   <div id="sb">
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -451,52 +522,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div id="astranova-speech">Astranova online. Speak your destination.</div>
     <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant">
       <defs>
-        <linearGradient id="helmetAura" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#dfe9ff" stop-opacity="0.9"/>
-          <stop offset="100%" stop-color="#00c8ff" stop-opacity="0.15"/>
+        <linearGradient id="astrHairS" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f8fbff"/>
+          <stop offset="45%" stop-color="#93dfff"/>
+          <stop offset="100%" stop-color="#2859af"/>
         </linearGradient>
-        <linearGradient id="wingBlue" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#d8e8ff"/>
-          <stop offset="45%" stop-color="#7ddfff"/>
-          <stop offset="100%" stop-color="#1a4d8f"/>
+        <linearGradient id="astrSuitS" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#e8f1ff"/>
+          <stop offset="18%" stop-color="#78d7ff"/>
+          <stop offset="100%" stop-color="#081222"/>
         </linearGradient>
-        <linearGradient id="dressGlow" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#072f61"/>
-          <stop offset="100%" stop-color="#021225"/>
+        <linearGradient id="astrWingS" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f2f8ff"/>
+          <stop offset="58%" stop-color="#8be1ff"/>
+          <stop offset="100%" stop-color="#183e83"/>
         </linearGradient>
       </defs>
-      <g class="astranova-wing-left" style="transform-origin:28px 76px;">
-        <path d="M39 84C18 72 9 61 8 45c12 5 22 12 31 23 4 5 7 10 9 16-2 1-5 1-9 0z" fill="url(#wingBlue)" opacity="0.9"/>
-        <path d="M42 90C20 87 8 81 2 69c13 0 25 3 36 10 4 3 7 6 9 10-2 1-4 1-5 1z" fill="#d9e6ff" opacity="0.45"/>
+      <g class="astranova-wing-left" style="transform-origin:28px 86px;">
+        <path d="M41 94C19 81 9 65 9 47c14 7 25 16 33 29 3 5 6 10 8 16-3 1-6 2-9 2z" fill="url(#astrWingS)" opacity="0.9"/>
+        <path d="M44 98C23 96 10 90 4 77c14 2 27 6 36 15 3 2 6 5 8 7-2 1-3 1-4 1z" fill="#f4fbff" opacity="0.36"/>
       </g>
-      <g class="astranova-wing-right" style="transform-origin:92px 76px;">
-        <path d="M81 84c21-12 30-23 31-39-12 5-22 12-31 23-4 5-7 10-9 16 2 1 5 1 9 0z" fill="url(#wingBlue)" opacity="0.9"/>
-        <path d="M78 90c22-3 34-9 40-21-13 0-25 3-36 10-4 3-7 6-9 10 2 1 4 1 5 1z" fill="#d9e6ff" opacity="0.45"/>
+      <g class="astranova-wing-right" style="transform-origin:92px 86px;">
+        <path d="M79 94c22-13 32-29 32-47-14 7-25 16-33 29-3 5-6 10-8 16 3 1 6 2 9 2z" fill="url(#astrWingS)" opacity="0.9"/>
+        <path d="M76 98c21-2 34-8 40-21-14 2-27 6-36 15-3 2-6 5-8 7 2 1 3 1 4 1z" fill="#f4fbff" opacity="0.36"/>
       </g>
-      <ellipse cx="60" cy="147" rx="20" ry="6" fill="#00c8ff" opacity="0.15"/>
-      <path d="M60 33c-10 0-19 8-19 18v8c0 10 9 18 19 18s19-8 19-18v-8c0-10-9-18-19-18z" fill="#f4eaff"/>
-      <path d="M46 48c1-9 7-16 14-16 8 0 14 7 15 16-7-5-20-5-29 0z" fill="#9be7ff" opacity="0.35"/>
-      <path d="M44 49c0-14 7-24 16-24 8 0 16 10 16 24-7-4-25-4-32 0z" fill="#091d37"/>
-      <path d="M44 51c5-12 14-20 16-20 2 0 11 8 16 20-4-4-9-6-16-6s-12 2-16 6z" fill="#96e9ff" opacity="0.7"/>
-      <path d="M52 31l-9-9-4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M68 31l9-9 4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="60" cy="47" r="24" fill="url(#helmetAura)" stroke="#a7b9d8" stroke-width="2.5"/>
-      <circle cx="60" cy="47" r="20.5" fill="rgba(4,20,40,0.55)" stroke="#00c8ff" stroke-width="1.2"/>
-      <ellipse cx="52" cy="41" rx="7" ry="10" fill="#dff6ff" opacity="0.35"/>
-      <path d="M50 56c2 4 6 7 10 7s8-3 10-7" fill="none" stroke="#7ee7ff" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="53" cy="49" r="2.2" fill="#1d2a50"/>
-      <circle cx="67" cy="49" r="2.2" fill="#1d2a50"/>
-      <path d="M58 86l-11 9v29l13 10 13-10V95l-11-9z" fill="url(#dressGlow)" stroke="#90b8ff" stroke-width="2"/>
-      <path d="M50 95h20" stroke="#00c8ff" stroke-width="2" opacity="0.7"/>
-      <path d="M48 104h24" stroke="#dfe9ff" stroke-width="1" opacity="0.45"/>
-      <path d="M50 73c-8 7-12 14-13 21l11 5 12-12 12 12 11-5c-1-7-5-14-13-21" fill="#d9e2ff" opacity="0.8"/>
-      <path d="M53 134l-7 11m21-11l7 11" stroke="#9ec9ff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M44 84l-11 10m43-10l11 10" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="60" cy="108" r="4" fill="#00c8ff"/>
-      <path d="M60 100v16" stroke="#dfe9ff" stroke-width="1.5"/>
-      <circle cx="28" cy="56" r="2" fill="#dff6ff" opacity="0.7"/>
-      <circle cx="94" cy="60" r="2" fill="#dff6ff" opacity="0.7"/>
-      <circle cx="88" cy="36" r="1.6" fill="#00c8ff" opacity="0.7"/>
+      <ellipse cx="60" cy="150" rx="18" ry="5.5" fill="#00c8ff" opacity="0.16"/>
+      <path d="M60 33c-10.5 0-18.5 8.3-18.5 19v10c0 12 7.9 20.5 18.5 20.5S78.5 74 78.5 62V52c0-10.7-8-19-18.5-19z" fill="#f6ecff"/>
+      <path d="M42 53c0-17 8.5-28 18-28s18 11 18 28c-5.8-4.3-11.8-6.3-18-6.3S47.8 48.7 42 53z" fill="#09152a"/>
+      <path d="M46 46c4.8-10.6 10.7-15.8 14-15.8 3.4 0 9.2 5.2 14 15.8-3.8-2.5-8.6-3.8-14-3.8s-10.2 1.3-14 3.8z" fill="url(#astrHairS)" opacity="0.97"/>
+      <path d="M44 54c3.5 12 8 21 16 26-11 1-18-7-18-18 0-3 1-5.6 2-8z" fill="url(#astrHairS)" opacity="0.9"/>
+      <path d="M76 54c-3.5 12-8 21-16 26 11 1 18-7 18-18 0-3-1-5.6-2-8z" fill="url(#astrHairS)" opacity="0.9"/>
+      <path d="M46.5 50l-7.5-8c1.5-1 4.5-1.3 7.2-.8l3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
+      <path d="M73.5 50l7.5-8c-1.5-1-4.5-1.3-7.2-.8l-3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
+      <path d="M49 58.5c2.5-1.7 5.2-2.5 8.2-2.5M62.8 56c2.8 0 5.4.8 8.2 2.5" stroke="#7387a8" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
+      <ellipse cx="53.5" cy="60.5" rx="2.1" ry="3.3" fill="#15233c"/>
+      <ellipse cx="66.5" cy="60.5" rx="2.1" ry="3.3" fill="#15233c"/>
+      <circle cx="54.1" cy="59.6" r="0.65" fill="#dffbff"/>
+      <circle cx="67.1" cy="59.6" r="0.65" fill="#dffbff"/>
+      <path d="M59.3 62.5c-.8 2.2-1.2 4.6-.9 6.8" stroke="#d8b7c8" stroke-width="1" stroke-linecap="round" opacity="0.7"/>
+      <path d="M55.8 71.3c1.8 1.2 6.4 1.2 8.4 0" stroke="#b66a8e" stroke-width="1.35" stroke-linecap="round"/>
+      <path d="M57 82.4h6l6 6.8v22.8l-9 6.6-9-6.6V89.2l6-6.8z" fill="url(#astrSuitS)" stroke="#dcecff" stroke-width="1.15"/>
+      <path d="M57.5 84.2c1.8 2 3 4.3 2.5 7.4m2.5-7.4c-1.8 2-3 4.3-2.5 7.4" stroke="#edf6ff" stroke-width="1.1" opacity="0.75"/>
+      <path d="M52 89.5l-8.4 9.2 4 12.2 7.4-5.4M68 89.5l8.4 9.2-4 12.2-7.4-5.4" fill="none" stroke="#dfeeff" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M52 89.5l-7.4 8.2 3 8.4 6.4-4.5M68 89.5l7.4 8.2-3 8.4-6.4-4.5" fill="none" stroke="#7fe5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#dce8ff" stroke-width="3.6" stroke-linecap="round"/>
+      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#8bdfff" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#dce8ff" stroke-width="3.3" stroke-linecap="round"/>
+      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#8bdfff" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M43.8 51c-5.6 1.8-9.7 4.8-12.3 8.8 5-1.2 9.4-3.3 12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.8" stroke-linecap="round" opacity="0.52"/>
+      <path d="M76.2 51c5.6 1.8 9.7 4.8 12.3 8.8-5-1.2-9.4-3.3-12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.8" stroke-linecap="round" opacity="0.52"/>
+      <path d="M58 101h4M58 107h4" stroke="#ebf8ff" stroke-width="1.1" stroke-linecap="round" opacity="0.9"/>
+      <circle cx="60" cy="97.2" r="2.2" fill="#f1f9ff"/>
+      <circle cx="60" cy="97.2" r="1.1" fill="#00c8ff"/>
     </svg>
   </div>
 
@@ -511,52 +588,58 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <div id="astranova-mode-inner">
     <svg id="astranova-big" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant full body">
       <defs>
-        <linearGradient id="helmetAuraBig" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#dfe9ff" stop-opacity="0.9"/>
-          <stop offset="100%" stop-color="#00c8ff" stop-opacity="0.15"/>
+        <linearGradient id="astrHairB" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f8fbff"/>
+          <stop offset="45%" stop-color="#95e0ff"/>
+          <stop offset="100%" stop-color="#2859af"/>
         </linearGradient>
-        <linearGradient id="wingBlueBig" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#d8e8ff"/>
-          <stop offset="45%" stop-color="#7ddfff"/>
-          <stop offset="100%" stop-color="#1a4d8f"/>
+        <linearGradient id="astrSuitB" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#edf4ff"/>
+          <stop offset="17%" stop-color="#78d8ff"/>
+          <stop offset="100%" stop-color="#06111f"/>
         </linearGradient>
-        <linearGradient id="dressGlowBig" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#072f61"/>
-          <stop offset="100%" stop-color="#021225"/>
+        <linearGradient id="astrWingB" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#f2f8ff"/>
+          <stop offset="58%" stop-color="#8ce1ff"/>
+          <stop offset="100%" stop-color="#183d81"/>
         </linearGradient>
       </defs>
-      <g class="astranova-wing-left" style="transform-origin:28px 76px;">
-        <path d="M39 84C18 72 9 61 8 45c12 5 22 12 31 23 4 5 7 10 9 16-2 1-5 1-9 0z" fill="url(#wingBlueBig)" opacity="0.92"/>
-        <path d="M42 90C20 87 8 81 2 69c13 0 25 3 36 10 4 3 7 6 9 10-2 1-4 1-5 1z" fill="#d9e6ff" opacity="0.5"/>
+      <g class="astranova-wing-left" style="transform-origin:28px 86px;">
+        <path d="M41 94C19 81 9 65 9 47c14 7 25 16 33 29 3 5 6 10 8 16-3 1-6 2-9 2z" fill="url(#astrWingB)" opacity="0.92"/>
+        <path d="M44 98C23 96 10 90 4 77c14 2 27 6 36 15 3 2 6 5 8 7-2 1-3 1-4 1z" fill="#f4fbff" opacity="0.38"/>
       </g>
-      <g class="astranova-wing-right" style="transform-origin:92px 76px;">
-        <path d="M81 84c21-12 30-23 31-39-12 5-22 12-31 23-4 5-7 10-9 16 2 1 5 1 9 0z" fill="url(#wingBlueBig)" opacity="0.92"/>
-        <path d="M78 90c22-3 34-9 40-21-13 0-25 3-36 10-4 3-7 6-9 10 2 1 4 1 5 1z" fill="#d9e6ff" opacity="0.5"/>
+      <g class="astranova-wing-right" style="transform-origin:92px 86px;">
+        <path d="M79 94c22-13 32-29 32-47-14 7-25 16-33 29-3 5-6 10-8 16 3 1 6 2 9 2z" fill="url(#astrWingB)" opacity="0.92"/>
+        <path d="M76 98c21-2 34-8 40-21-14 2-27 6-36 15-3 2-6 5-8 7 2 1 3 1 4 1z" fill="#f4fbff" opacity="0.38"/>
       </g>
-      <ellipse cx="60" cy="147" rx="20" ry="6" fill="#00c8ff" opacity="0.15"/>
-      <path d="M60 33c-10 0-19 8-19 18v8c0 10 9 18 19 18s19-8 19-18v-8c0-10-9-18-19-18z" fill="#f4eaff"/>
-      <path d="M46 48c1-9 7-16 14-16 8 0 14 7 15 16-7-5-20-5-29 0z" fill="#9be7ff" opacity="0.35"/>
-      <path d="M44 49c0-14 7-24 16-24 8 0 16 10 16 24-7-4-25-4-32 0z" fill="#091d37"/>
-      <path d="M44 51c5-12 14-20 16-20 2 0 11 8 16 20-4-4-9-6-16-6s-12 2-16 6z" fill="#96e9ff" opacity="0.7"/>
-      <path d="M52 31l-9-9-4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M68 31l9-9 4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="60" cy="47" r="24" fill="url(#helmetAuraBig)" stroke="#a7b9d8" stroke-width="2.5"/>
-      <circle cx="60" cy="47" r="20.5" fill="rgba(4,20,40,0.55)" stroke="#00c8ff" stroke-width="1.2"/>
-      <ellipse cx="52" cy="41" rx="7" ry="10" fill="#dff6ff" opacity="0.35"/>
-      <path d="M50 56c2 4 6 7 10 7s8-3 10-7" fill="none" stroke="#7ee7ff" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="53" cy="49" r="2.2" fill="#1d2a50"/>
-      <circle cx="67" cy="49" r="2.2" fill="#1d2a50"/>
-      <path d="M58 86l-11 9v29l13 10 13-10V95l-11-9z" fill="url(#dressGlowBig)" stroke="#90b8ff" stroke-width="2"/>
-      <path d="M50 95h20" stroke="#00c8ff" stroke-width="2" opacity="0.7"/>
-      <path d="M48 104h24" stroke="#dfe9ff" stroke-width="1" opacity="0.45"/>
-      <path d="M50 73c-8 7-12 14-13 21l11 5 12-12 12 12 11-5c-1-7-5-14-13-21" fill="#d9e2ff" opacity="0.8"/>
-      <path d="M53 134l-7 11m21-11l7 11" stroke="#9ec9ff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M44 84l-11 10m43-10l11 10" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round"/>
-      <circle cx="60" cy="108" r="4" fill="#00c8ff"/>
-      <path d="M60 100v16" stroke="#dfe9ff" stroke-width="1.5"/>
-      <circle cx="28" cy="56" r="2" fill="#dff6ff" opacity="0.7"/>
-      <circle cx="94" cy="60" r="2" fill="#dff6ff" opacity="0.7"/>
-      <circle cx="88" cy="36" r="1.6" fill="#00c8ff" opacity="0.7"/>
+      <ellipse cx="60" cy="150" rx="20" ry="6" fill="#00c8ff" opacity="0.16"/>
+      <path d="M60 33c-10.5 0-18.5 8.3-18.5 19v10c0 12 7.9 20.5 18.5 20.5S78.5 74 78.5 62V52c0-10.7-8-19-18.5-19z" fill="#f6ecff"/>
+      <path d="M42 53c0-17 8.5-28 18-28s18 11 18 28c-5.8-4.3-11.8-6.3-18-6.3S47.8 48.7 42 53z" fill="#09152a"/>
+      <path d="M46 46c4.8-10.6 10.7-15.8 14-15.8 3.4 0 9.2 5.2 14 15.8-3.8-2.5-8.6-3.8-14-3.8s-10.2 1.3-14 3.8z" fill="url(#astrHairB)" opacity="0.97"/>
+      <path d="M44 54c3.5 12 8 21 16 26-11 1-18-7-18-18 0-3 1-5.6 2-8z" fill="url(#astrHairB)" opacity="0.9"/>
+      <path d="M76 54c-3.5 12-8 21-16 26 11 1 18-7 18-18 0-3-1-5.6-2-8z" fill="url(#astrHairB)" opacity="0.9"/>
+      <path d="M46.5 50l-7.5-8c1.5-1 4.5-1.3 7.2-.8l3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
+      <path d="M73.5 50l7.5-8c-1.5-1-4.5-1.3-7.2-.8l-3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
+      <path d="M49 58.5c2.5-1.7 5.2-2.5 8.2-2.5M62.8 56c2.8 0 5.4.8 8.2 2.5" stroke="#7387a8" stroke-width="1.25" stroke-linecap="round" opacity="0.72"/>
+      <ellipse cx="53.5" cy="60.5" rx="2.15" ry="3.35" fill="#15233c"/>
+      <ellipse cx="66.5" cy="60.5" rx="2.15" ry="3.35" fill="#15233c"/>
+      <circle cx="54.1" cy="59.6" r="0.68" fill="#dffbff"/>
+      <circle cx="67.1" cy="59.6" r="0.68" fill="#dffbff"/>
+      <path d="M59.3 62.5c-.8 2.2-1.2 4.6-.9 6.8" stroke="#d8b7c8" stroke-width="1.05" stroke-linecap="round" opacity="0.72"/>
+      <path d="M55.8 71.3c1.8 1.2 6.4 1.2 8.4 0" stroke="#b66a8e" stroke-width="1.45" stroke-linecap="round"/>
+      <path d="M57 82.4h6l6 6.8v22.8l-9 6.6-9-6.6V89.2l6-6.8z" fill="url(#astrSuitB)" stroke="#dcecff" stroke-width="1.2"/>
+      <path d="M57.5 84.2c1.8 2 3 4.3 2.5 7.4m2.5-7.4c-1.8 2-3 4.3-2.5 7.4" stroke="#edf6ff" stroke-width="1.15" opacity="0.76"/>
+      <path d="M52 89.5l-8.4 9.2 4 12.2 7.4-5.4M68 89.5l8.4 9.2-4 12.2-7.4-5.4" fill="none" stroke="#dfeeff" stroke-width="3.9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M52 89.5l-7.4 8.2 3 8.4 6.4-4.5M68 89.5l7.4 8.2-3 8.4-6.4-4.5" fill="none" stroke="#7fe5ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#dce8ff" stroke-width="3.8" stroke-linecap="round"/>
+      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#8bdfff" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#dce8ff" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#8bdfff" stroke-width="1.45" stroke-linecap="round"/>
+      <path d="M43.8 51c-5.6 1.8-9.7 4.8-12.3 8.8 5-1.2 9.4-3.3 12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.85" stroke-linecap="round" opacity="0.54"/>
+      <path d="M76.2 51c5.6 1.8 9.7 4.8 12.3 8.8-5-1.2-9.4-3.3-12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.85" stroke-linecap="round" opacity="0.54"/>
+      <path d="M58 101h4M58 107h4" stroke="#ebf8ff" stroke-width="1.15" stroke-linecap="round" opacity="0.92"/>
+      <circle cx="60" cy="97.2" r="2.25" fill="#f1f9ff"/>
+      <circle cx="60" cy="97.2" r="1.15" fill="#00c8ff"/>
     </svg>
     <div id="astranova-msg">Astranova online. What signal should I find?</div>
     <input id="astranova-input" placeholder="Type anything… pizza, diving, jobs, rooms…" autocomplete="off" onkeydown="if(event.key==='Enter')astranovaSearch()"/>
@@ -732,7 +815,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <div class="pay-box">
     <div class="mhdr">Wallet / Payments <button class="mcl" onclick="closePayments()">×</button></div>
     <div class="pay-body">
-      <div class="pay-note">Astranov 3.3.3 can top up the wallet in EUR. Stripe is wired for live Checkout when you provide a publishable key and a Checkout Session endpoint. PayPal can render its button when you provide a client ID.</div>
+      <div class="pay-note">Astranov 3.3.3 lets guests browse first. Login is requested only when you actually start a purchase. Stripe and PayPal stay wired for live checkout once your merchant credentials are added.</div>
       <div class="pay-row">
         <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
         <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
@@ -814,6 +897,166 @@ let LOC = { lat: 48.8566, lng: 2.3522 };
 let driverOnline = false;
 let gameActive = false, gameType = null;
 let gameState = {};
+let PENDING_ACTION = null;
+let ORBITAL_FEED = [];
+let ORBITAL_FEED_CURSOR = 0;
+let orbitalFeedTimer = null;
+
+
+function setAuthHelper(msg='') {
+  const el = document.getElementById('auth-helper');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('on', !!msg);
+}
+
+function setGuestState() {
+  CU = null;
+  document.getElementById('am').classList.add('h');
+  document.getElementById('uname').textContent = 'Guest';
+  document.getElementById('uavatar').textContent = '✦';
+  document.getElementById('bal').textContent = Number(getWalletBalance() || 0).toFixed(2);
+  document.getElementById('pr-email').textContent = 'Email: —';
+  document.getElementById('pr-phone').textContent = 'Phone: —';
+  document.getElementById('pr-role').textContent = 'Role: Guest';
+  document.getElementById('pay-email').value = '';
+  document.getElementById('pay-phone').value = '';
+  document.getElementById('pay-name').value = 'Guest';
+}
+
+function openAuth(reason='Login required.', resumeAction=null) {
+  PENDING_ACTION = resumeAction;
+  stab('login');
+  setAuthHelper(reason);
+  document.getElementById('am').classList.remove('h');
+  const err = document.getElementById('aerr');
+  err.classList.remove('on');
+}
+
+function requireBuyerAuth(reason, resumeAction) {
+  if (CU) return false;
+  openAuth(reason || 'Please login before buying.', resumeAction);
+  return true;
+}
+
+function escapeHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function clipText(v, n=84) {
+  const s = String(v || '').trim();
+  return s.length > n ? s.slice(0, n-1) + '…' : s;
+}
+
+async function loadOrbitalFeed() {
+  const items = [];
+  try {
+    const [{ data: signals }, { data: shops }] = await Promise.all([
+      sb.from('signals').select('*').order('created_at', { ascending:false }).limit(6),
+      sb.from('shops').select('*').limit(4)
+    ]);
+    (signals || []).forEach(s => items.push({
+      kind: 'offer',
+      title: s.title || s.category || 'New signal',
+      body: s.description || s.price || s.contact || 'Live marketplace signal',
+      metaLeft: (s.category || 'signal').toUpperCase(),
+      metaRight: s.price || 'LIVE',
+      image: '',
+    }));
+    (shops || []).forEach(s => items.push({
+      kind: 'offer',
+      title: s.name || 'Vendor',
+      body: s.description || s.category || 'Local offer',
+      metaLeft: 'SHOP',
+      metaRight: s.category || 'LOCAL',
+      image: '',
+    }));
+  } catch (e) {}
+  try {
+    const apodRes = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
+    if (apodRes.ok) {
+      const apod = await apodRes.json();
+      items.push({
+        kind: 'space',
+        title: apod.title || 'NASA APOD',
+        body: apod.explanation || 'Astronomy picture of the day',
+        metaLeft: 'NASA',
+        metaRight: (apod.media_type || 'image').toUpperCase(),
+        image: apod.media_type === 'image' ? apod.url : ''
+      });
+    }
+  } catch (e) {}
+  try {
+    const eonetRes = await fetch('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=3');
+    if (eonetRes.ok) {
+      const eonet = await eonetRes.json();
+      (eonet.events || []).forEach(ev => items.push({
+        kind: 'news',
+        title: ev.title || 'Earth event',
+        body: (ev.categories || []).map(c => c.title).join(', ') || 'NASA EONET live event',
+        metaLeft: 'EONET',
+        metaRight: (ev.geometry?.[0]?.date || '').slice(0,10) || 'OPEN',
+        image: ''
+      }));
+    }
+  } catch (e) {}
+  try {
+    const issRes = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+    if (issRes.ok) {
+      const iss = await issRes.json();
+      items.unshift({
+        kind: 'space',
+        title: 'ISS live position',
+        body: 'Latitude ' + iss.latitude.toFixed(2) + '°, longitude ' + iss.longitude.toFixed(2) + '°, velocity ' + Math.round(iss.velocity) + ' km/h.',
+        metaLeft: 'ISS',
+        metaRight: 'LIVE',
+        image: ''
+      });
+    }
+  } catch (e) {}
+  ORBITAL_FEED = items.slice(0, 16);
+  ORBITAL_FEED_CURSOR = 0;
+  renderOrbitalFeed();
+  if (orbitalFeedTimer) clearInterval(orbitalFeedTimer);
+  orbitalFeedTimer = setInterval(() => {
+    if (!ORBITAL_FEED.length) return;
+    ORBITAL_FEED_CURSOR = (ORBITAL_FEED_CURSOR + 1) % ORBITAL_FEED.length;
+    renderOrbitalFeed();
+  }, 6000);
+}
+
+function renderOrbitalFeed() {
+  const host = document.getElementById('orbital-feed');
+  if (!host) return;
+  host.style.display = CL === 0 ? 'block' : 'none';
+  if (!ORBITAL_FEED.length) {
+    host.innerHTML = '';
+    return;
+  }
+  const pos = ['pos-a','pos-b','pos-c','pos-d'];
+  host.innerHTML = pos.map((p, i) => {
+    const item = ORBITAL_FEED[(ORBITAL_FEED_CURSOR + i) % ORBITAL_FEED.length];
+    const chip = item.kind === 'offer' ? 'offer' : item.kind === 'space' ? 'space' : 'news';
+    const title = escapeHtml(item.title || 'Live signal');
+    const body = escapeHtml(clipText(item.body || ''));
+    const metaLeft = escapeHtml(item.metaLeft || 'LIVE');
+    const metaRight = escapeHtml(item.metaRight || '');
+    const media = item.image ? `<div class="orb-hero"><img src="${escapeHtml(item.image)}" alt="${title}"/></div>` : `<div class="orb-hero"></div>`;
+    return `<div class="orb-card ${p}">
+      <div class="orb-chip ${chip}"><span class="orb-pulse"></span>${chip}</div>
+      ${media}
+      <h4>${title}</h4>
+      <p>${body}</p>
+      <div class="orb-meta"><span>${metaLeft}</span><span>${metaRight}</span></div>
+    </div>`;
+  }).join('');
+}
+
 
 /* ── STATUS GRAPH ANIMATION ── */
 setInterval(() => {
@@ -830,6 +1073,7 @@ function stab(t) {
   document.getElementById('auth-name-row').style.display = su ? 'flex' : 'none';
   document.getElementById('auth-role-row').style.display = su ? 'flex' : 'none';
   document.getElementById('auth-preview').classList.remove('on');
+  setAuthHelper(su ? 'Create your account when you want to buy, post, or go live.' : 'Browse first. Login is only required when you buy or unlock member actions.');
 }
 
 function normalizePhone(v) {
@@ -899,6 +1143,7 @@ function showErr(msg) {
 function onAuth(user, name, role, phone) {
   CU = { ...user, name, role, phone: normalizePhone(phone || user?.user_metadata?.phone || '') };
   document.getElementById('am').classList.add('h');
+  setAuthHelper('');
   document.getElementById('uname').textContent = name || user.email.split('@')[0];
   document.getElementById('uavatar').textContent = (name||user.email)[0].toUpperCase();
   document.getElementById('pr-email').textContent = 'Email: ' + user.email;
@@ -911,33 +1156,30 @@ function onAuth(user, name, role, phone) {
   loadCounts();
   subscribeRealtime();
   if (role === 'driver') loadDriverDeliveries();
+  if (typeof PENDING_ACTION === 'function') {
+    const action = PENDING_ACTION;
+    PENDING_ACTION = null;
+    setTimeout(() => { try { action(); } catch(e) {} }, 180);
+  }
 }
 
 function guestMode() {
-  document.getElementById('am').classList.add('h');
-  document.getElementById('uname').textContent = 'Guest';
-  document.getElementById('uavatar').textContent = '?';
-  document.getElementById('pay-email').value = '';
-  document.getElementById('pay-phone').value = '';
-  document.getElementById('pay-name').value = 'Guest';
+  setGuestState();
+  setAuthHelper('');
   loadBalance();
   loadCounts();
 }
 
 function toggleUserMenu() {
-  if (!CU) document.getElementById('am').classList.remove('h');
+  if (!CU) openAuth('Browse freely. Login when you want to buy, post, or use account tools.');
   else tmenuById('mpr');
 }
 
 async function signOut() {
-  await sb.auth.signOut(); CU = null;
-  document.getElementById('uname').textContent = 'Login';
-  document.getElementById('uavatar').textContent = '?';
-  document.getElementById('bal').textContent = '0.00';
-  document.getElementById('pr-email').textContent = 'Email: —';
-  document.getElementById('pr-phone').textContent = 'Phone: —';
-  document.getElementById('pr-role').textContent = 'Role: —';
-  document.getElementById('am').classList.remove('h');
+  await sb.auth.signOut();
+  setGuestState();
+  loadBalance();
+  showResp('Signed out. Guest browsing remains active.');
 }
 
 function getWalletBalance() {
@@ -1015,11 +1257,11 @@ function openPayments() {
   document.getElementById('pm-pay').classList.add('on');
   document.getElementById('pay-email').value = CU?.email || document.getElementById('pay-email').value || '';
   document.getElementById('pay-phone').value = CU?.phone || document.getElementById('pay-phone').value || '';
-  document.getElementById('pay-name').value = CU?.name || document.getElementById('pay-name').value || (CU?.email ? CU.email.split('@')[0] : '');
+  document.getElementById('pay-name').value = CU?.name || document.getElementById('pay-name').value || (CU?.email ? CU.email.split('@')[0] : 'Guest');
   populatePaymentConfigForm();
   renderPaymentHistory();
   renderPayPalButtons();
-  setPaymentStatus('Wallet ready. Choose Stripe, PayPal, or sandbox mode.');
+  setPaymentStatus(CU ? 'Wallet ready. Choose Stripe, PayPal, or sandbox mode.' : 'Browse the wallet as a guest. Login will only be requested when you actually start a purchase.');
 }
 
 function closePayments() {
@@ -1055,6 +1297,7 @@ function recordWalletPayment(provider, amount, label, live=false, ref='') {
 }
 
 function runSandboxPayment(provider='stripe') {
+  if (requireBuyerAuth('Login required before completing a wallet top-up.', () => runSandboxPayment(provider))) return;
   const { amount, label, payer } = getPaymentPayload();
   if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before paying.', 'err'); return; }
   if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required for wallet payments.', 'err'); return; }
@@ -1063,6 +1306,7 @@ function runSandboxPayment(provider='stripe') {
 }
 
 async function startStripeCheckout() {
+  if (requireBuyerAuth('Login required before starting Stripe checkout.', () => startStripeCheckout())) return;
   const { amount, label, payer } = getPaymentPayload();
   const cfg = getPaymentConfig();
   if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before starting Stripe.', 'err'); return; }
@@ -1103,6 +1347,10 @@ async function renderPayPalButtons(force=false) {
   const wrap = document.getElementById('paypal-button-wrap');
   const cfg = getPaymentConfig();
   wrap.innerHTML = '<div style="font-size:10px;color:var(--text-dim);">PayPal button standby.</div>';
+  if (!CU) {
+    wrap.innerHTML = '<div style="font-size:10px;color:var(--text-dim);">Guest browsing is active. Login when you want to launch live PayPal checkout.</div>';
+    return;
+  }
   if (!cfg.paypalClientId) {
     wrap.innerHTML = '<div style="font-size:10px;color:var(--text-dim);">Add a PayPal client ID to render the live button here. The yellow sandbox button above still works locally.</div>';
     return;
@@ -1171,7 +1419,11 @@ async function loadBalance() {
     const u = data.session.user;
     const { data: p } = await sb.from('users').select('*').eq('id', u.id).single();
     onAuth(u, p?.name || u.email, p?.role || 'customer', u?.user_metadata?.phone || '');
+  } else {
+    setGuestState();
+    loadBalance();
   }
+  loadOrbitalFeed();
 })();
 
 /* ── REALTIME ── */
@@ -1486,7 +1738,7 @@ function flyTo(lat, lng) {
 
 /* ── LAYER SYSTEM ── */
 const LNAMES = ['lt','lt2','lt3'];
-const LBADGES = ['COSMIC','TERRESTRIAL','ABYSSAL'];
+const LBADGES = ['LIVE EARTH','TERRESTRIAL','ABYSSAL'];
 
 function goLayer(idx) {
   if (TR || idx===CL) return;
@@ -1506,6 +1758,7 @@ function applyLayer(idx) {
   document.getElementById('ac').style.display    =idx===2?'block':'none';
   document.getElementById('sb').classList.toggle('on',idx===1);
   document.getElementById('iss-box').style.display=idx===0?'block':'none';
+  document.getElementById('orbital-feed').style.display=idx===0?'block':'none';
   document.getElementById('locate-btn').classList.toggle('visible',idx===1);
   document.getElementById('globe-btn').classList.toggle('visible',idx!==0);
   document.getElementById('drone-btn').classList.toggle('visible',idx===1);
@@ -1530,7 +1783,7 @@ function geolocate() {
 
 function locateMe(){ geolocate(); }
 
-function refreshData(){ loadCounts(); if(LM&&CL===1) refreshMapData(); }
+function refreshData(){ loadCounts(); if(LM&&CL===1) refreshMapData(); loadOrbitalFeed(); }
 
 /* ── MENUS ── */
 let OM=null,OB=null;
@@ -1588,63 +1841,94 @@ function showBalance(){
   renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
   renderer.setSize(W(),H());
   const scene=new THREE.Scene();
-  const camera=new THREE.PerspectiveCamera(42,W()/H(),.1,500);
-  camera.position.z=2.6;
-  /* Stars */
-  const sG=new THREE.BufferGeometry();
-  const sA=new Float32Array(4000*3);
-  for(let i=0;i<sA.length;i++) sA[i]=(Math.random()-.5)*160;
-  sG.setAttribute('position',new THREE.BufferAttribute(sA,3));
-  scene.add(new THREE.Points(sG,new THREE.PointsMaterial({color:0xaaccee,size:.06,transparent:true,opacity:.75})));
-  /* Globe texture */
-  const tC=document.createElement('canvas');tC.width=1024;tC.height=512;
-  const tc=tC.getContext('2d');
-  tc.fillStyle='#010c18';tc.fillRect(0,0,1024,512);
-  [[330,42,185,145],[360,185,105,145],[480,26,82,92],[490,118,100,165],[555,22,265,165],[738,196,90,90],[380,6,72,52]].forEach(([x,y,w,h])=>{
-    tc.fillStyle='#0a2a1a';tc.beginPath();tc.roundRect(x,y,w,h,14);tc.fill();
-    tc.strokeStyle='rgba(0,200,255,0.12)';tc.lineWidth=2;tc.stroke();
+  const camera=new THREE.PerspectiveCamera(48,W()/H(),.1,100);
+  camera.position.z=3.35;
+
+  scene.add(new THREE.AmbientLight(0x17304f,.72));
+  const sun=new THREE.DirectionalLight(0xa7d7ff,1.9);
+  sun.position.set(5,3,6); scene.add(sun);
+
+  const starGeo = new THREE.BufferGeometry();
+  const starCount = 1800;
+  const starPos = new Float32Array(starCount*3);
+  for(let i=0;i<starCount;i++){
+    starPos[i*3]=(Math.random()-.5)*26;
+    starPos[i*3+1]=(Math.random()-.5)*18;
+    starPos[i*3+2]=(Math.random()-.5)*26;
+  }
+  starGeo.setAttribute('position',new THREE.BufferAttribute(starPos,3));
+  scene.add(new THREE.Points(starGeo,new THREE.PointsMaterial({size:.03,color:0xb8dfff,transparent:true,opacity:.7})));
+
+  const loader = new THREE.TextureLoader();
+  loader.crossOrigin = 'anonymous';
+
+  const globeGeom = new THREE.SphereGeometry(1,96,96);
+  const globeMat = new THREE.MeshPhongMaterial({
+    color:0xffffff,
+    specular:new THREE.Color(0x355b8d),
+    shininess:16,
+    bumpScale:0.05
   });
-  tc.strokeStyle='rgba(0,200,255,0.05)';tc.lineWidth=.6;
-  for(let la=0;la<=180;la+=15){const y2=(la/180)*512;tc.beginPath();tc.moveTo(0,y2);tc.lineTo(1024,y2);tc.stroke();}
-  for(let lo=0;lo<360;lo+=15){const x2=(lo/360)*1024;tc.beginPath();tc.moveTo(x2,0);tc.lineTo(x2,512);tc.stroke();}
-  const globe=new THREE.Mesh(new THREE.SphereGeometry(1,48,48),new THREE.MeshPhongMaterial({map:new THREE.CanvasTexture(tC),specular:new THREE.Color(0x112244),shininess:14}));
+  const globe = new THREE.Mesh(globeGeom, globeMat);
   scene.add(globe);
-  /* Atmosphere */
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.07,48,48),new THREE.ShaderMaterial({
+
+  loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg', tex => {
+    globeMat.map = tex;
+    globeMat.needsUpdate = true;
+  });
+  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => {
+    globeMat.specularMap = tex;
+    globeMat.needsUpdate = true;
+  });
+  loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg', tex => {
+    globeMat.bumpMap = tex;
+    globeMat.needsUpdate = true;
+  });
+
+  const cloudMat = new THREE.MeshPhongMaterial({
+    transparent:true, opacity:.16, side:THREE.DoubleSide, depthWrite:false
+  });
+  const cloudSphere = new THREE.Mesh(new THREE.SphereGeometry(1.02,64,64), cloudMat);
+  scene.add(cloudSphere);
+  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => {
+    cloudMat.alphaMap = tex;
+    cloudMat.color = new THREE.Color(0xd9f2ff);
+    cloudMat.needsUpdate = true;
+  });
+
+  scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.07,72,72),new THREE.ShaderMaterial({
     vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-    fragmentShader:`varying vec3 vN;void main(){float i=pow(.65-dot(vN,vec3(0.,0.,1.)),3.)*1.2;gl_FragColor=vec4(0.,.7,1.,1.)*i;}`,
+    fragmentShader:`varying vec3 vN;void main(){float i=pow(.68-dot(vN,vec3(0.,0.,1.)),3.)*1.25;gl_FragColor=vec4(0.,.68,1.,1.)*i;}`,
     side:THREE.FrontSide,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false
   })));
-  /* ISS marker */
-  const issObj=new THREE.Mesh(new THREE.SphereGeometry(.025,8,8),new THREE.MeshBasicMaterial({color:0xffd600}));
+
+  const issObj=new THREE.Mesh(new THREE.SphereGeometry(.025,10,10),new THREE.MeshBasicMaterial({color:0xffd600}));
   scene.add(issObj);
-  /* Signals on globe */
-  const sigP=[[1,.84,0],[0,.91,.47],[0,.78,1],[1,.26,.33],[.75,.52,.99],[1,.55,0]];
-  const sG2=new THREE.BufferGeometry();const N=100;
+
+  const sigPalette=[[1,.84,0],[0,.91,.47],[0,.78,1],[1,.26,.33],[.75,.52,.99],[1,.55,0]];
+  const sG2=new THREE.BufferGeometry();const N=120;
   const sp=new Float32Array(N*3),sc=new Float32Array(N*3);
   for(let i=0;i<N;i++){
     const phi=Math.acos(2*Math.random()-1),theta=2*Math.PI*Math.random(),r=1.02;
     sp[i*3]=r*Math.sin(phi)*Math.cos(theta);sp[i*3+1]=r*Math.sin(phi)*Math.sin(theta);sp[i*3+2]=r*Math.cos(phi);
-    const c=sigP[Math.floor(Math.random()*sigP.length)];
+    const c=sigPalette[Math.floor(Math.random()*sigPalette.length)];
     sc[i*3]=c[0];sc[i*3+1]=c[1];sc[i*3+2]=c[2];
   }
   sG2.setAttribute('position',new THREE.BufferAttribute(sp,3));
   sG2.setAttribute('color',new THREE.BufferAttribute(sc,3));
   const sigMat=new THREE.PointsMaterial({size:.026,vertexColors:true,transparent:true,opacity:.85});
   const signals=new THREE.Points(sG2,sigMat);scene.add(signals);
-  scene.add(new THREE.AmbientLight(0x112244,.6));
-  const sun=new THREE.DirectionalLight(0x3377cc,1.5);sun.position.set(5,3,5);scene.add(sun);
-  /* Drag */
-  let drag=false,lx=0,ly=0,vx=0,vy=.001;
+
+  let drag=false,lx=0,ly=0,vx=0,vy=.0011;
   cv.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
   window.addEventListener('mouseup',()=>drag=false);
   window.addEventListener('mousemove',e=>{if(!drag)return;vx=(e.clientY-ly)*.0022;vy=(e.clientX-lx)*.0022;lx=e.clientX;ly=e.clientY;});
   cv.addEventListener('touchstart',e=>{drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
   cv.addEventListener('touchend',()=>drag=false);
   cv.addEventListener('touchmove',e=>{if(!drag)return;vx=(e.touches[0].clientY-ly)*.0022;vy=(e.touches[0].clientX-lx)*.0022;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
-  cv.addEventListener('click',()=>{if(!drag)showResp('Click DESCEND or tap a layer dot to zoom in.');});
+  cv.addEventListener('click',()=>{if(!drag)showResp('Live Earth online. Rotate, browse floating offers, or descend into the map.');});
   window.addEventListener('resize',()=>{camera.aspect=W()/H();camera.updateProjectionMatrix();renderer.setSize(W(),H());});
-  /* ISS tracking */
+
   async function fetchISS(){
     try{
       const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');
@@ -1655,7 +1939,7 @@ function showBalance(){
     }catch(e){document.getElementById('iss-info').textContent='ISS API unavailable';}
   }
   fetchISS();setInterval(fetchISS,5000);
-  /* HIDDEN SPACESHIP GAME trigger: zoom way out */
+
   cv.addEventListener('wheel',e=>{
     if(e.deltaY < -100 && camera.position.z > 4){
       camera.position.z = Math.min(camera.position.z + 0.3, 8);
@@ -1664,13 +1948,16 @@ function showBalance(){
       camera.position.z = Math.max(camera.position.z - 0.3, 1.5);
     }
   });
+
   let tick=0;
   (function loop(){
     requestAnimationFrame(loop);tick++;
     if(!drag){vy*=.97;vx*=.97;globe.rotation.y+=vy+.0007;globe.rotation.x+=vx;}
     else{globe.rotation.y+=vy;globe.rotation.x+=vx;}
+    cloudSphere.rotation.y = globe.rotation.y + tick*0.00035;
+    cloudSphere.rotation.x = globe.rotation.x;
     signals.rotation.y=globe.rotation.y;signals.rotation.x=globe.rotation.x;
-    sigMat.opacity=.6+.3*Math.sin(tick*.04);sigMat.size=.022+.008*Math.sin(tick*.055);
+    sigMat.opacity=.58+.3*Math.sin(tick*.04);sigMat.size=.021+.008*Math.sin(tick*.055);
     if(cv.style.display!=='none') renderer.render(scene,camera);
   })();
 })();
@@ -1889,8 +2176,8 @@ VERSION 3.3.3 ADDITIONS
 - Auth now requires email + phone + password.
 - Existing users without stored phone metadata are upgraded on first login.
 - View buttons added for email, phone, password, name, and role fields.
-- Space Kitty retired. New assistant is Astranova: full-body female elf,
-  electric blue and silver suit, tiny space helmet with ears, animated wings.
+- Space Kitty retired. New assistant is Astranova: highly human-real female elf,
+  electric blue and silver suit, tiny space subtle elf features only, animated wings.
 - Driver mode now cleanly toggles offline in the database.
 
 PAYMENTS
@@ -1918,5 +2205,207 @@ SYNC RULE
 Every code change requires a Spartan Script update in the same pass.
 If the code and this block disagree, update the code to match the block.
 -->
+
+<!-- Embedded Spartan Script v3.3.3 -->
+<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.3.3
+
+Creator & Founder: Notis Astranov  
+System of record version: 3.3.3
+
+## MISSION
+
+Build and keep a single-file launchable app for Astranov.
+
+The app must remain:
+
+- planetary
+- layered
+- commerce-capable
+- AI-assisted
+- wallet-ready
+- visually coherent
+
+## HARD LOCKS
+
+- Top bar stays fixed.
+- POST button stays last on left rail.
+- Main discovery stays natural-language, not category-bar driven.
+- Astranova is the active assistant identity.
+- Every code change requires a version sync and Spartan Script sync.
+
+## VERSION 3.3.3 DIRECTIVES
+
+### ACCESS MODEL
+
+Guest browsing is default.
+
+The app must open directly into the live globe experience without forcing login.
+
+Login is requested only when the user attempts a protected action such as:
+
+- buy / wallet checkout
+- post signal
+- create shop
+- driver mode
+- account tools
+
+### AUTH
+
+Login requires:
+
+- email
+- phone
+- password
+
+Signup requires:
+
+- email
+- phone
+- password
+- full name
+- role
+
+Phone is mandatory at app level.
+
+Phone is stored in Supabase user metadata.
+
+If an older user logs in without stored phone metadata, the app upgrades the account by saving the entered phone.
+
+Add visible field-preview controls for:
+
+- email
+- phone
+- password
+- name
+- role
+
+### PAYMENTS
+
+Wallet and payments are part of the live interface in 3.3.3.
+
+Balance click opens the wallet / payment modal.
+
+Guests may inspect the wallet UI, but checkout itself is login-gated.
+
+Currency:
+
+- EUR
+
+Payment paths:
+
+- Stripe Checkout
+- PayPal
+- local sandbox fallback
+
+If merchant credentials are missing, the app must not dead-end.
+
+It must fall back to a local sandbox wallet top-up path after login.
+
+Wallet history must be visible in the modal.
+
+### ASTRANOVA
+
+The old Space Kitty is removed.
+
+The assistant is now:
+
+- name: Astranova
+- form: full-body highly human-real female elf
+- palette: electric blue and silver
+- helmet: none
+- wings: animated
+
+Astranova remains visible on the Earth layer only.
+
+Astranova takeover mode must:
+
+- open full screen
+- accept natural language search
+- search shops and signals
+- fly the user to selected results
+
+### LIVE GLOBE
+
+Startup opens on a real rotating Earth.
+
+Layer 1 must use:
+
+- real Earth texture
+- terrain / relief bump data
+- live ISS position
+- floating pop-out cards for news and offers
+
+The floating cards should mix:
+
+- marketplace offers from app data
+- live public science / earth / space signals
+
+### VISUAL RULES
+
+The menu system must look premium and glassy, not cheap arcade-like.
+
+Use:
+
+- transparent panels
+- subtle blur
+- low-noise neon edges
+- readable contrast
+
+### DRIVER MODE
+
+Driver mode must cleanly switch:
+
+- online
+- offline
+
+Offline state must update the database instead of only changing local UI.
+
+## LAYER MODEL
+
+### L1 LIVE EARTH
+
+- real rotating Earth
+- ISS
+- pop-out news / offer cards
+- signal points
+- hidden spaceship game
+
+### L2 EARTH
+
+- Leaflet map
+- shops
+- drivers
+- signals
+- Astranova
+- drone game
+- wallet relevance
+
+### L3 ABYSS
+
+- abyss scene
+- hidden submarine game
+
+## UI RULES
+
+Do not let payments, auth, or assistant redesign break:
+
+- map flow
+- hidden games
+- posting flow
+- left / right rails
+- top bar
+
+## SYNC ENFORCEMENT
+
+When code changes:
+
+- update version
+- update inline Spartan block
+- update this script
+
+If code and script disagree:
+
+code must be brought back into alignment with this block.
+</textarea>
 </body>
 </html>
