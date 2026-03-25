@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov v3.1.0</title>
+<title>Astranov v3.3.3</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap');
@@ -93,28 +93,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #sbi::placeholder{color:var(--text-dim);}
 
 /* ELECTRIC BLUE KITTY */
-#kitty-wrapper{position:absolute;bottom:68px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:0;}
-#kitty-svg{width:52px;height:52px;cursor:pointer;transition:transform 0.2s;filter:drop-shadow(0 0 8px #00c8ff);}
-#kitty-svg:hover{transform:scale(1.1);}
-#kitty-speech{background:rgba(3,8,16,0.95);border:1px solid var(--la);border-radius:6px;padding:5px 10px;font-size:10px;color:var(--la);max-width:200px;text-align:center;display:none;margin-bottom:4px;font-family:var(--font);}
-#kitty-speech.on{display:block;}
+#astranova-wrapper{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:0;}
+#astranova-svg{width:76px;height:96px;cursor:pointer;transition:transform 0.2s;filter:drop-shadow(0 0 14px #00c8ff);}
+#astranova-svg:hover{transform:scale(1.06) translateY(-2px);}
+#astranova-speech{background:rgba(3,8,16,0.95);border:1px solid var(--la);border-radius:10px;padding:6px 12px;font-size:10px;color:var(--la);max-width:240px;text-align:center;display:none;margin-bottom:6px;font-family:var(--font);box-shadow:0 0 18px rgba(0,200,255,0.12);}
+#astranova-speech.on{display:block;}
 
 /* KITTY TAKEOVER */
-#kitty-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
-#kitty-mode.on{display:flex;}
-#kitty-mode-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:90%;max-width:400px;}
-#kitty-big{width:120px;height:120px;filter:drop-shadow(0 0 20px #00c8ff);animation:kitty-float 3s ease-in-out infinite;}
-@keyframes kitty-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-#kitty-msg{font-size:16px;color:var(--la);text-align:center;font-family:var(--font);letter-spacing:0.05em;min-height:24px;}
-#kitty-input{width:100%;height:44px;background:rgba(0,200,255,0.08);border:1px solid var(--la);border-radius:4px;color:var(--text);font-family:var(--font);font-size:14px;padding:0 14px;outline:none;text-align:center;}
-#kitty-input::placeholder{color:var(--text-dim);}
-#kitty-results{width:100%;max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+#astranova-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+#astranova-mode.on{display:flex;}
+#astranova-mode-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:90%;max-width:440px;}
+#astranova-big{width:190px;height:240px;filter:drop-shadow(0 0 22px #00c8ff);animation:astranova-float 3s ease-in-out infinite;}
+@keyframes astranova-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+@keyframes wing-flap-left{0%,100%{transform:rotate(-10deg) translateY(0);}50%{transform:rotate(-24deg) translateY(-3px);}}
+@keyframes wing-flap-right{0%,100%{transform:rotate(10deg) translateY(0);}50%{transform:rotate(24deg) translateY(-3px);}}
+.astranova-wing-left,.astranova-wing-right{transform-box:fill-box;}
+.astranova-wing-left{animation:wing-flap-left 2.2s ease-in-out infinite;}
+.astranova-wing-right{animation:wing-flap-right 2.2s ease-in-out infinite;}
+#astranova-msg{font-size:16px;color:var(--la);text-align:center;font-family:var(--font);letter-spacing:0.05em;min-height:24px;}
+#astranova-input{width:100%;height:44px;background:rgba(0,200,255,0.08);border:1px solid var(--la);border-radius:6px;color:var(--text);font-family:var(--font);font-size:14px;padding:0 14px;outline:none;text-align:center;}
+#astranova-input::placeholder{color:var(--text-dim);}
+#astranova-results{width:100%;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
 .kr{background:rgba(0,200,255,0.06);border:1px solid var(--lb);border-radius:3px;padding:8px 12px;cursor:pointer;transition:all 0.15s;}
 .kr:hover{background:var(--la2);border-color:var(--la);}
 .kr-title{font-size:12px;font-weight:600;color:var(--text);}
 .kr-sub{font-size:10px;color:var(--text-dim);}
-#kitty-close{padding:6px 20px;background:transparent;border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:11px;}
-#kitty-close:hover{color:var(--text);border-color:var(--text);}
+#astranova-close{padding:6px 20px;background:transparent;border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);cursor:pointer;font-family:var(--font);font-size:11px;}
+#astranova-close:hover{color:var(--text);border-color:var(--text);}
 
 /* BOTTOM BAR */
 #bottombar{
@@ -190,6 +195,32 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .aerr.on{display:block;}
 .aguest{text-align:center;font-size:10px;color:var(--text-dim);cursor:pointer;padding-top:2px;}
 .aguest:hover{color:var(--text);}
+.auth-field-row{display:flex;align-items:center;gap:6px;}
+.auth-field-row .ainp,.auth-field-row .asel{flex:1;}
+.auth-view-btn{height:34px;min-width:58px;padding:0 10px;background:rgba(0,200,255,0.08);border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);font-family:var(--fhud);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.auth-view-btn:hover{color:var(--la);border-color:var(--la);background:var(--la2);}
+#auth-preview{display:none;padding:8px 10px;border:1px solid var(--lb);border-radius:4px;background:rgba(0,200,255,0.05);font-size:11px;color:var(--text);word-break:break-word;}
+#auth-preview.on{display:block;}
+#pm-pay{position:fixed;inset:0;background:rgba(2,5,12,0.88);z-index:310;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+#pm-pay.on{display:flex;}
+.pay-box{width:390px;max-width:94vw;max-height:90vh;overflow-y:auto;background:rgba(3,8,16,0.99);border:1px solid var(--lb);border-radius:8px;box-shadow:0 0 30px rgba(0,200,255,0.12);}
+.pay-body{padding:14px;display:flex;flex-direction:column;gap:10px;}
+.pay-row{display:flex;gap:8px;}
+.pay-row .minp{flex:1;}
+.pay-note{font-size:10px;color:var(--text-dim);line-height:1.35;}
+.pay-stack{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid rgba(0,200,255,0.08);border-radius:6px;background:rgba(0,200,255,0.03);}
+.pay-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.pay-btn{flex:1;min-width:140px;height:36px;background:rgba(0,200,255,0.08);border:1px solid var(--lb);border-radius:4px;color:var(--text);font-family:var(--fhud);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
+.pay-btn:hover{border-color:var(--la);color:var(--la);background:var(--la2);}
+.pay-btn.green{border-color:rgba(0,232,122,0.35);color:var(--green);}
+.pay-btn.yellow{border-color:rgba(255,214,0,0.35);color:var(--yellow);}
+.pay-status{padding:10px;border-radius:6px;border:1px solid var(--lb);background:rgba(255,255,255,0.02);font-size:11px;color:var(--text-dim);line-height:1.45;}
+.pay-status.ok{border-color:rgba(0,232,122,0.35);color:var(--green);}
+.pay-status.err{border-color:rgba(255,68,85,0.35);color:var(--red);}
+.pay-history{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;}
+.pay-log{padding:8px;border:1px solid rgba(0,200,255,0.08);border-radius:6px;background:rgba(255,255,255,0.02);font-size:10px;}
+#paypal-button-wrap{min-height:46px;padding:6px;border:1px dashed rgba(255,255,255,0.08);border-radius:6px;}
+.pay-config{padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);}
 
 /* POST MODAL */
 #pm{position:fixed;inset:0;background:rgba(2,5,12,0.88);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
@@ -256,22 +287,39 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <div class="abox">
     <div class="ahdr">
       <span class="abrand">ASTRANOV</span>
-      <span class="asub">Planetary OS — Trinity v3.1</span>
+      <span class="asub">Planetary OS — Trinity v3.3.3</span>
     </div>
     <div class="abody">
       <div class="atabs">
         <div class="atab on" id="tl" onclick="stab('login')">Login</div>
         <div class="atab" id="ts2" onclick="stab('signup')">Sign Up</div>
       </div>
-      <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
-      <input class="ainp" id="ap2" type="password" placeholder="Password"/>
-      <input class="ainp" id="an" type="text" placeholder="Full name" style="display:none;" autocomplete="off"/>
-      <select class="asel" id="ar" style="display:none;">
-        <option value="customer">Customer</option>
-        <option value="vendor">Vendor / Shop Owner</option>
-        <option value="driver">Driver / Courier</option>
-        <option value="developer">Developer</option>
-      </select>
+      <div class="auth-field-row">
+        <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
+        <button class="auth-view-btn" type="button" onclick="previewAuthField('ae','Email')">View</button>
+      </div>
+      <div class="auth-field-row">
+        <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
+        <button class="auth-view-btn" type="button" onclick="previewAuthField('aphone','Phone')">View</button>
+      </div>
+      <div class="auth-field-row">
+        <input class="ainp" id="ap2" type="password" placeholder="Password"/>
+        <button class="auth-view-btn" type="button" onclick="togglePasswordView()">Show</button>
+      </div>
+      <div class="auth-field-row" id="auth-name-row" style="display:none;">
+        <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off"/>
+        <button class="auth-view-btn" type="button" onclick="previewAuthField('an','Name')">View</button>
+      </div>
+      <div class="auth-field-row" id="auth-role-row" style="display:none;">
+        <select class="asel" id="ar">
+          <option value="customer">Customer</option>
+          <option value="vendor">Vendor / Shop Owner</option>
+          <option value="driver">Driver / Courier</option>
+          <option value="developer">Developer</option>
+        </select>
+        <button class="auth-view-btn" type="button" onclick="previewSelectedRole()">View</button>
+      </div>
+      <div id="auth-preview"></div>
       <div class="aerr" id="aerr"></div>
       <button class="asubmit" onclick="doAuth()">Enter Astranov</button>
       <div class="aguest" onclick="guestMode()">Continue as Guest (browse only)</div>
@@ -295,8 +343,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       <div class="sg-bar" style="height:16px;"></div>
       <div class="sg-bar" style="height:8px;"></div>
     </div>
-    <span class="vinfo">v<span class="vcurrent">3.1.0</span></span>
-    <span class="vinfo">latest:<span class="vlatest-ok" id="vl">3.1.0</span></span>
+    <span class="vinfo">v<span class="vcurrent">3.3.3</span></span>
+    <span class="vinfo">latest:<span class="vlatest-ok" id="vl">3.3.3</span></span>
   </div>
   <div class="tb-right">
     <div id="balance-display" onclick="showBalance()">
@@ -398,61 +446,57 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <span>DRONE GAME</span>
   </div>
 
-  <!-- Electric Blue Kitty -->
-  <div id="kitty-wrapper">
-    <div id="kitty-speech">Meow! What are you looking for?</div>
-    <svg id="kitty-svg" onclick="openKitty()" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <!-- Space suit helmet -->
-      <circle cx="50" cy="52" r="32" fill="#001830" stroke="#00aaff" stroke-width="2.5"/>
-      <circle cx="50" cy="52" r="28" fill="#002244" stroke="#0088cc" stroke-width="1"/>
-      <!-- helmet visor reflection -->
-      <ellipse cx="42" cy="44" rx="6" ry="8" fill="rgba(0,200,255,0.15)" stroke="none"/>
-      <!-- Kitty face inside helmet -->
-      <!-- Head -->
-      <ellipse cx="50" cy="54" rx="16" ry="14" fill="#0044aa"/>
-      <!-- Electric blue fur texture -->
-      <ellipse cx="50" cy="54" rx="14" ry="12" fill="#0055cc"/>
-      <!-- Ears -->
-      <polygon points="38,44 34,34 44,42" fill="#0044aa" stroke="#00c8ff" stroke-width="0.8"/>
-      <polygon points="62,44 66,34 56,42" fill="#0044aa" stroke="#00c8ff" stroke-width="0.8"/>
-      <!-- Inner ears -->
-      <polygon points="39,43 36,36 43,42" fill="#00aaff" opacity="0.6"/>
-      <polygon points="61,43 64,36 57,42" fill="#00aaff" opacity="0.6"/>
-      <!-- Eyes -->
-      <ellipse cx="44" cy="52" rx="4" ry="4.5" fill="#001020"/>
-      <ellipse cx="56" cy="52" rx="4" ry="4.5" fill="#001020"/>
-      <!-- Eye shine - electric blue -->
-      <circle cx="44" cy="51" r="3.5" fill="#00c8ff" opacity="0.3"/>
-      <circle cx="56" cy="51" r="3.5" fill="#00c8ff" opacity="0.3"/>
-      <!-- Pupils -->
-      <ellipse cx="44" cy="52" rx="2" ry="3" fill="#001844"/>
-      <ellipse cx="56" cy="52" rx="2" ry="3" fill="#001844"/>
-      <!-- Eye sparkle -->
-      <circle cx="45.5" cy="50.5" r="1" fill="white" opacity="0.9"/>
-      <circle cx="57.5" cy="50.5" r="1" fill="white" opacity="0.9"/>
-      <!-- Nose -->
-      <ellipse cx="50" cy="57" rx="2" ry="1.5" fill="#ff88cc"/>
-      <!-- Mouth -->
-      <path d="M47,59 Q50,62 53,59" stroke="#ff88cc" stroke-width="1" fill="none"/>
-      <!-- Whiskers - silver -->
-      <line x1="38" y1="56" x2="46" y2="57.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="38" y1="58" x2="46" y2="58.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="62" y1="56" x2="54" y2="57.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="62" y1="58" x2="54" y2="58.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <!-- Helmet ring detail - silver -->
-      <circle cx="50" cy="52" r="31" fill="none" stroke="#88aacc" stroke-width="1" opacity="0.5"/>
-      <circle cx="50" cy="52" r="33" fill="none" stroke="#0066aa" stroke-width="1.5"/>
-      <!-- Helmet bolts - silver -->
-      <circle cx="20" cy="52" r="2.5" fill="#88aacc"/>
-      <circle cx="80" cy="52" r="2.5" fill="#88aacc"/>
-      <circle cx="50" cy="22" r="2.5" fill="#88aacc"/>
-      <!-- Electric glow effect -->
-      <circle cx="50" cy="52" r="34" fill="none" stroke="#00c8ff" stroke-width="0.5" opacity="0.4"/>
-      <!-- Suit collar -->
-      <rect x="32" y="80" width="36" height="12" rx="4" fill="#001830" stroke="#0088cc" stroke-width="1.5"/>
-      <rect x="36" y="82" width="28" height="8" rx="2" fill="#002244"/>
-      <!-- Suit chest detail -->
-      <rect x="43" y="83" width="14" height="5" rx="1" fill="#003366" stroke="#00aaff" stroke-width="0.5"/>
+  <!-- ASTRANOVA ELF ASSISTANT -->
+  <div id="astranova-wrapper">
+    <div id="astranova-speech">Astranova online. Speak your destination.</div>
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant">
+      <defs>
+        <linearGradient id="helmetAura" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#dfe9ff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#00c8ff" stop-opacity="0.15"/>
+        </linearGradient>
+        <linearGradient id="wingBlue" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#d8e8ff"/>
+          <stop offset="45%" stop-color="#7ddfff"/>
+          <stop offset="100%" stop-color="#1a4d8f"/>
+        </linearGradient>
+        <linearGradient id="dressGlow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#072f61"/>
+          <stop offset="100%" stop-color="#021225"/>
+        </linearGradient>
+      </defs>
+      <g class="astranova-wing-left" style="transform-origin:28px 76px;">
+        <path d="M39 84C18 72 9 61 8 45c12 5 22 12 31 23 4 5 7 10 9 16-2 1-5 1-9 0z" fill="url(#wingBlue)" opacity="0.9"/>
+        <path d="M42 90C20 87 8 81 2 69c13 0 25 3 36 10 4 3 7 6 9 10-2 1-4 1-5 1z" fill="#d9e6ff" opacity="0.45"/>
+      </g>
+      <g class="astranova-wing-right" style="transform-origin:92px 76px;">
+        <path d="M81 84c21-12 30-23 31-39-12 5-22 12-31 23-4 5-7 10-9 16 2 1 5 1 9 0z" fill="url(#wingBlue)" opacity="0.9"/>
+        <path d="M78 90c22-3 34-9 40-21-13 0-25 3-36 10-4 3-7 6-9 10 2 1 4 1 5 1z" fill="#d9e6ff" opacity="0.45"/>
+      </g>
+      <ellipse cx="60" cy="147" rx="20" ry="6" fill="#00c8ff" opacity="0.15"/>
+      <path d="M60 33c-10 0-19 8-19 18v8c0 10 9 18 19 18s19-8 19-18v-8c0-10-9-18-19-18z" fill="#f4eaff"/>
+      <path d="M46 48c1-9 7-16 14-16 8 0 14 7 15 16-7-5-20-5-29 0z" fill="#9be7ff" opacity="0.35"/>
+      <path d="M44 49c0-14 7-24 16-24 8 0 16 10 16 24-7-4-25-4-32 0z" fill="#091d37"/>
+      <path d="M44 51c5-12 14-20 16-20 2 0 11 8 16 20-4-4-9-6-16-6s-12 2-16 6z" fill="#96e9ff" opacity="0.7"/>
+      <path d="M52 31l-9-9-4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M68 31l9-9 4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="60" cy="47" r="24" fill="url(#helmetAura)" stroke="#a7b9d8" stroke-width="2.5"/>
+      <circle cx="60" cy="47" r="20.5" fill="rgba(4,20,40,0.55)" stroke="#00c8ff" stroke-width="1.2"/>
+      <ellipse cx="52" cy="41" rx="7" ry="10" fill="#dff6ff" opacity="0.35"/>
+      <path d="M50 56c2 4 6 7 10 7s8-3 10-7" fill="none" stroke="#7ee7ff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="53" cy="49" r="2.2" fill="#1d2a50"/>
+      <circle cx="67" cy="49" r="2.2" fill="#1d2a50"/>
+      <path d="M58 86l-11 9v29l13 10 13-10V95l-11-9z" fill="url(#dressGlow)" stroke="#90b8ff" stroke-width="2"/>
+      <path d="M50 95h20" stroke="#00c8ff" stroke-width="2" opacity="0.7"/>
+      <path d="M48 104h24" stroke="#dfe9ff" stroke-width="1" opacity="0.45"/>
+      <path d="M50 73c-8 7-12 14-13 21l11 5 12-12 12 12 11-5c-1-7-5-14-13-21" fill="#d9e2ff" opacity="0.8"/>
+      <path d="M53 134l-7 11m21-11l7 11" stroke="#9ec9ff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M44 84l-11 10m43-10l11 10" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="60" cy="108" r="4" fill="#00c8ff"/>
+      <path d="M60 100v16" stroke="#dfe9ff" stroke-width="1.5"/>
+      <circle cx="28" cy="56" r="2" fill="#dff6ff" opacity="0.7"/>
+      <circle cx="94" cy="60" r="2" fill="#dff6ff" opacity="0.7"/>
+      <circle cx="88" cy="36" r="1.6" fill="#00c8ff" opacity="0.7"/>
     </svg>
   </div>
 
@@ -462,46 +506,62 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   </div>
 </div>
 
-<!-- KITTY TAKEOVER MODE -->
-<div id="kitty-mode">
-  <div id="kitty-mode-inner">
-    <svg id="kitty-big" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="50" cy="52" r="32" fill="#001830" stroke="#00c8ff" stroke-width="2.5"/>
-      <circle cx="50" cy="52" r="28" fill="#002244" stroke="#0088cc" stroke-width="1"/>
-      <ellipse cx="42" cy="44" rx="6" ry="8" fill="rgba(0,200,255,0.15)"/>
-      <ellipse cx="50" cy="54" rx="16" ry="14" fill="#0044aa"/>
-      <ellipse cx="50" cy="54" rx="14" ry="12" fill="#0055cc"/>
-      <polygon points="38,44 34,34 44,42" fill="#0044aa" stroke="#00c8ff" stroke-width="0.8"/>
-      <polygon points="62,44 66,34 56,42" fill="#0044aa" stroke="#00c8ff" stroke-width="0.8"/>
-      <polygon points="39,43 36,36 43,42" fill="#00aaff" opacity="0.6"/>
-      <polygon points="61,43 64,36 57,42" fill="#00aaff" opacity="0.6"/>
-      <ellipse cx="44" cy="52" rx="4" ry="4.5" fill="#001020"/>
-      <ellipse cx="56" cy="52" rx="4" ry="4.5" fill="#001020"/>
-      <circle cx="44" cy="51" r="3.5" fill="#00c8ff" opacity="0.3"/>
-      <circle cx="56" cy="51" r="3.5" fill="#00c8ff" opacity="0.3"/>
-      <ellipse cx="44" cy="52" rx="2" ry="3" fill="#001844"/>
-      <ellipse cx="56" cy="52" rx="2" ry="3" fill="#001844"/>
-      <circle cx="45.5" cy="50.5" r="1" fill="white" opacity="0.9"/>
-      <circle cx="57.5" cy="50.5" r="1" fill="white" opacity="0.9"/>
-      <ellipse cx="50" cy="57" rx="2" ry="1.5" fill="#ff88cc"/>
-      <path d="M47,59 Q50,62 53,59" stroke="#ff88cc" stroke-width="1" fill="none"/>
-      <line x1="38" y1="56" x2="46" y2="57.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="38" y1="58" x2="46" y2="58.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="62" y1="56" x2="54" y2="57.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <line x1="62" y1="58" x2="54" y2="58.5" stroke="#aaccff" stroke-width="0.8" opacity="0.8"/>
-      <circle cx="50" cy="52" r="31" fill="none" stroke="#88aacc" stroke-width="1" opacity="0.5"/>
-      <circle cx="50" cy="52" r="33" fill="none" stroke="#0066aa" stroke-width="1.5"/>
-      <circle cx="20" cy="52" r="2.5" fill="#88aacc"/>
-      <circle cx="80" cy="52" r="2.5" fill="#88aacc"/>
-      <circle cx="50" cy="22" r="2.5" fill="#88aacc"/>
-      <rect x="32" y="80" width="36" height="12" rx="4" fill="#001830" stroke="#0088cc" stroke-width="1.5"/>
-      <rect x="36" y="82" width="28" height="8" rx="2" fill="#002244"/>
-      <rect x="43" y="83" width="14" height="5" rx="1" fill="#003366" stroke="#00aaff" stroke-width="0.5"/>
+<!-- ASTRANOVA TAKEOVER MODE -->
+<div id="astranova-mode">
+  <div id="astranova-mode-inner">
+    <svg id="astranova-big" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant full body">
+      <defs>
+        <linearGradient id="helmetAuraBig" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#dfe9ff" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#00c8ff" stop-opacity="0.15"/>
+        </linearGradient>
+        <linearGradient id="wingBlueBig" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#d8e8ff"/>
+          <stop offset="45%" stop-color="#7ddfff"/>
+          <stop offset="100%" stop-color="#1a4d8f"/>
+        </linearGradient>
+        <linearGradient id="dressGlowBig" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#072f61"/>
+          <stop offset="100%" stop-color="#021225"/>
+        </linearGradient>
+      </defs>
+      <g class="astranova-wing-left" style="transform-origin:28px 76px;">
+        <path d="M39 84C18 72 9 61 8 45c12 5 22 12 31 23 4 5 7 10 9 16-2 1-5 1-9 0z" fill="url(#wingBlueBig)" opacity="0.92"/>
+        <path d="M42 90C20 87 8 81 2 69c13 0 25 3 36 10 4 3 7 6 9 10-2 1-4 1-5 1z" fill="#d9e6ff" opacity="0.5"/>
+      </g>
+      <g class="astranova-wing-right" style="transform-origin:92px 76px;">
+        <path d="M81 84c21-12 30-23 31-39-12 5-22 12-31 23-4 5-7 10-9 16 2 1 5 1 9 0z" fill="url(#wingBlueBig)" opacity="0.92"/>
+        <path d="M78 90c22-3 34-9 40-21-13 0-25 3-36 10-4 3-7 6-9 10 2 1 4 1 5 1z" fill="#d9e6ff" opacity="0.5"/>
+      </g>
+      <ellipse cx="60" cy="147" rx="20" ry="6" fill="#00c8ff" opacity="0.15"/>
+      <path d="M60 33c-10 0-19 8-19 18v8c0 10 9 18 19 18s19-8 19-18v-8c0-10-9-18-19-18z" fill="#f4eaff"/>
+      <path d="M46 48c1-9 7-16 14-16 8 0 14 7 15 16-7-5-20-5-29 0z" fill="#9be7ff" opacity="0.35"/>
+      <path d="M44 49c0-14 7-24 16-24 8 0 16 10 16 24-7-4-25-4-32 0z" fill="#091d37"/>
+      <path d="M44 51c5-12 14-20 16-20 2 0 11 8 16 20-4-4-9-6-16-6s-12 2-16 6z" fill="#96e9ff" opacity="0.7"/>
+      <path d="M52 31l-9-9-4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M68 31l9-9 4 12" fill="none" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="60" cy="47" r="24" fill="url(#helmetAuraBig)" stroke="#a7b9d8" stroke-width="2.5"/>
+      <circle cx="60" cy="47" r="20.5" fill="rgba(4,20,40,0.55)" stroke="#00c8ff" stroke-width="1.2"/>
+      <ellipse cx="52" cy="41" rx="7" ry="10" fill="#dff6ff" opacity="0.35"/>
+      <path d="M50 56c2 4 6 7 10 7s8-3 10-7" fill="none" stroke="#7ee7ff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="53" cy="49" r="2.2" fill="#1d2a50"/>
+      <circle cx="67" cy="49" r="2.2" fill="#1d2a50"/>
+      <path d="M58 86l-11 9v29l13 10 13-10V95l-11-9z" fill="url(#dressGlowBig)" stroke="#90b8ff" stroke-width="2"/>
+      <path d="M50 95h20" stroke="#00c8ff" stroke-width="2" opacity="0.7"/>
+      <path d="M48 104h24" stroke="#dfe9ff" stroke-width="1" opacity="0.45"/>
+      <path d="M50 73c-8 7-12 14-13 21l11 5 12-12 12 12 11-5c-1-7-5-14-13-21" fill="#d9e2ff" opacity="0.8"/>
+      <path d="M53 134l-7 11m21-11l7 11" stroke="#9ec9ff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M44 84l-11 10m43-10l11 10" stroke="#dfe9ff" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="60" cy="108" r="4" fill="#00c8ff"/>
+      <path d="M60 100v16" stroke="#dfe9ff" stroke-width="1.5"/>
+      <circle cx="28" cy="56" r="2" fill="#dff6ff" opacity="0.7"/>
+      <circle cx="94" cy="60" r="2" fill="#dff6ff" opacity="0.7"/>
+      <circle cx="88" cy="36" r="1.6" fill="#00c8ff" opacity="0.7"/>
     </svg>
-    <div id="kitty-msg">Meow! What are you looking for?</div>
-    <input id="kitty-input" placeholder="Type anything… pizza, diving, jobs, rooms…" autocomplete="off" onkeydown="if(event.key==='Enter')kittySearch()"/>
-    <div id="kitty-results"></div>
-    <button id="kitty-close" onclick="closeKitty()">Close</button>
+    <div id="astranova-msg">Astranova online. What signal should I find?</div>
+    <input id="astranova-input" placeholder="Type anything… pizza, diving, jobs, rooms…" autocomplete="off" onkeydown="if(event.key==='Enter')astranovaSearch()"/>
+    <div id="astranova-results"></div>
+    <button id="astranova-close" onclick="closeAstranova()">Close</button>
   </div>
 </div>
 
@@ -539,6 +599,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <div id="mpr" class="smenu lmenu">
   <div class="mh">Profile</div>
   <div class="mr" id="pr-email">Email: —</div>
+  <div class="mr" id="pr-phone">Phone: —</div>
   <div class="mr" id="pr-role">Role: —</div>
   <div class="mr">My Orders</div>
   <div class="mr">Saved Locations</div>
@@ -666,6 +727,51 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   </div>
 </div>
 
+<!-- PAYMENT MODAL -->
+<div id="pm-pay">
+  <div class="pay-box">
+    <div class="mhdr">Wallet / Payments <button class="mcl" onclick="closePayments()">×</button></div>
+    <div class="pay-body">
+      <div class="pay-note">Astranov 3.3.3 can top up the wallet in EUR. Stripe is wired for live Checkout when you provide a publishable key and a Checkout Session endpoint. PayPal can render its button when you provide a client ID.</div>
+      <div class="pay-row">
+        <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
+        <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
+      </div>
+      <div class="pay-stack">
+        <div class="mlbl">Payer</div>
+        <div class="pay-row">
+          <input class="minp" id="pay-email" placeholder="Email"/>
+          <input class="minp" id="pay-phone" placeholder="Phone"/>
+        </div>
+        <input class="minp" id="pay-name" placeholder="Name"/>
+      </div>
+      <div class="pay-stack">
+        <div class="mlbl">Checkout</div>
+        <div class="pay-actions">
+          <button class="pay-btn green" onclick="startStripeCheckout()">Stripe Checkout</button>
+          <button class="pay-btn yellow" onclick="runSandboxPayment('paypal')">PayPal Sandbox</button>
+        </div>
+        <div id="paypal-button-wrap"></div>
+      </div>
+      <div class="pay-stack pay-config">
+        <div class="mlbl">Merchant config</div>
+        <input class="minp" id="cfg-stripe-key" placeholder="Stripe publishable key"/>
+        <input class="minp" id="cfg-stripe-endpoint" placeholder="Stripe Checkout Session endpoint, e.g. /api/stripe/create-checkout-session"/>
+        <input class="minp" id="cfg-paypal-client" placeholder="PayPal client ID"/>
+        <div class="pay-actions">
+          <button class="pay-btn" onclick="savePaymentConfig()">Save Config</button>
+          <button class="pay-btn" onclick="renderPayPalButtons(true)">Refresh PayPal</button>
+        </div>
+      </div>
+      <div id="pay-status" class="pay-status">Payments standing by.</div>
+      <div>
+        <div class="mlbl" style="margin-bottom:6px;">Recent wallet actions</div>
+        <div id="pay-history" class="pay-history"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM COMMAND BAR -->
 <div id="bottombar">
   <button class="bb-btn" onclick="this.classList.toggle('on')" title="Voice">
@@ -689,14 +795,19 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV v3.1.0 — Trinity OS
+   ASTRANOV v3.3.3 — Trinity OS
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script v3.1
+   Architecture: Spartan Script v3.3.3
    ═══════════════════════════════════════════════ */
 
 const SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 const sb = supabase.createClient(SURL, SKEY);
+const APP_VERSION = '3.3.3';
+const APP_ARCH = 'Spartan Script v3.3.3';
+const PAYMENT_CFG_KEY = 'astranov.payment.config';
+const WALLET_KEY = 'astranov.wallet.balance';
+const PAYMENT_LOG_KEY = 'astranov.payment.log';
 
 let CU = null, CL = 0, LM = null, MM = [], TR = false;
 let LOC = { lat: 48.8566, lng: 2.3522 };
@@ -716,28 +827,65 @@ function stab(t) {
   const su = t === 'signup';
   document.getElementById('tl').classList.toggle('on', !su);
   document.getElementById('ts2').classList.toggle('on', su);
-  document.getElementById('ar').style.display = su ? 'block' : 'none';
-  document.getElementById('an').style.display = su ? 'block' : 'none';
+  document.getElementById('auth-name-row').style.display = su ? 'flex' : 'none';
+  document.getElementById('auth-role-row').style.display = su ? 'flex' : 'none';
+  document.getElementById('auth-preview').classList.remove('on');
+}
+
+function normalizePhone(v) {
+  return String(v || '').replace(/[^0-9+]/g, '');
+}
+
+function previewAuthField(id, label) {
+  const value = document.getElementById(id)?.value || '—';
+  const el = document.getElementById('auth-preview');
+  el.innerHTML = '<b>'+label+':</b> ' + (value || '—');
+  el.classList.add('on');
+}
+
+function previewSelectedRole() {
+  const role = document.getElementById('ar').value || 'customer';
+  const el = document.getElementById('auth-preview');
+  el.innerHTML = '<b>Role:</b> ' + role;
+  el.classList.add('on');
+}
+
+function togglePasswordView() {
+  const input = document.getElementById('ap2');
+  const btn = input.parentElement.querySelector('.auth-view-btn');
+  const visible = input.type === 'text';
+  input.type = visible ? 'password' : 'text';
+  btn.textContent = visible ? 'Show' : 'Hide';
+  previewAuthField('ap2', 'Password');
 }
 
 async function doAuth() {
   const email = document.getElementById('ae').value.trim();
+  const phone = normalizePhone(document.getElementById('aphone').value.trim());
   const pass  = document.getElementById('ap2').value;
   const su    = document.getElementById('ts2').classList.contains('on');
   const role  = document.getElementById('ar').value;
   const name  = document.getElementById('an').value.trim();
-  if (!email || !pass) { showErr('Email and password required.'); return; }
+  if (!email || !phone || !pass) { showErr('Email, phone, and password are required.'); return; }
   try {
     if (su) {
-      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role } } });
+      const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name, role, phone } } });
       if (error) throw error;
       try { await sb.from('users').insert([{ id: data.user.id, email, name, role }]); } catch(e) {}
-      onAuth(data.user, name, role);
+      onAuth(data.user, name || email, role, phone);
     } else {
       const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
       if (error) throw error;
+      const storedPhone = normalizePhone(data.user?.user_metadata?.phone || '');
+      if (storedPhone && storedPhone !== phone) {
+        await sb.auth.signOut();
+        throw new Error('Phone does not match this account.');
+      }
+      if (!storedPhone) {
+        await sb.auth.updateUser({ data: { ...(data.user.user_metadata || {}), phone } });
+      }
       const { data: p } = await sb.from('users').select('*').eq('id', data.user.id).single();
-      onAuth(data.user, p?.name || email, p?.role || 'customer');
+      onAuth(data.user, p?.name || email, p?.role || 'customer', phone || storedPhone);
     }
   } catch(e) { showErr(e.message); }
 }
@@ -748,13 +896,17 @@ function showErr(msg) {
   setTimeout(() => el.classList.remove('on'), 3000);
 }
 
-function onAuth(user, name, role) {
-  CU = { ...user, name, role };
+function onAuth(user, name, role, phone) {
+  CU = { ...user, name, role, phone: normalizePhone(phone || user?.user_metadata?.phone || '') };
   document.getElementById('am').classList.add('h');
   document.getElementById('uname').textContent = name || user.email.split('@')[0];
   document.getElementById('uavatar').textContent = (name||user.email)[0].toUpperCase();
   document.getElementById('pr-email').textContent = 'Email: ' + user.email;
+  document.getElementById('pr-phone').textContent = 'Phone: ' + (CU.phone || '—');
   document.getElementById('pr-role').textContent = 'Role: ' + role;
+  document.getElementById('pay-email').value = user.email || '';
+  document.getElementById('pay-phone').value = CU.phone || '';
+  document.getElementById('pay-name').value = name || '';
   loadBalance();
   loadCounts();
   subscribeRealtime();
@@ -765,6 +917,10 @@ function guestMode() {
   document.getElementById('am').classList.add('h');
   document.getElementById('uname').textContent = 'Guest';
   document.getElementById('uavatar').textContent = '?';
+  document.getElementById('pay-email').value = '';
+  document.getElementById('pay-phone').value = '';
+  document.getElementById('pay-name').value = 'Guest';
+  loadBalance();
   loadCounts();
 }
 
@@ -778,11 +934,234 @@ async function signOut() {
   document.getElementById('uname').textContent = 'Login';
   document.getElementById('uavatar').textContent = '?';
   document.getElementById('bal').textContent = '0.00';
+  document.getElementById('pr-email').textContent = 'Email: —';
+  document.getElementById('pr-phone').textContent = 'Phone: —';
+  document.getElementById('pr-role').textContent = 'Role: —';
   document.getElementById('am').classList.remove('h');
 }
 
+function getWalletBalance() {
+  return Number(localStorage.getItem(WALLET_KEY) || '0');
+}
+
+function setWalletBalance(value) {
+  localStorage.setItem(WALLET_KEY, String(Number(value || 0).toFixed(2)));
+  document.getElementById('bal').textContent = Number(value || 0).toFixed(2);
+}
+
+function getPaymentLog() {
+  try { return JSON.parse(localStorage.getItem(PAYMENT_LOG_KEY) || '[]'); } catch (e) { return []; }
+}
+
+function setPaymentLog(log) {
+  localStorage.setItem(PAYMENT_LOG_KEY, JSON.stringify(log.slice(0, 12)));
+  renderPaymentHistory();
+}
+
+function addPaymentLog(entry) {
+  const log = getPaymentLog();
+  log.unshift(entry);
+  setPaymentLog(log);
+}
+
+function getPaymentConfig() {
+  try {
+    return {
+      stripePublishableKey: '',
+      stripeEndpoint: '',
+      paypalClientId: '',
+      ...JSON.parse(localStorage.getItem(PAYMENT_CFG_KEY) || '{}')
+    };
+  } catch (e) {
+    return { stripePublishableKey: '', stripeEndpoint: '', paypalClientId: '' };
+  }
+}
+
+function populatePaymentConfigForm() {
+  const cfg = getPaymentConfig();
+  document.getElementById('cfg-stripe-key').value = cfg.stripePublishableKey || '';
+  document.getElementById('cfg-stripe-endpoint').value = cfg.stripeEndpoint || '';
+  document.getElementById('cfg-paypal-client').value = cfg.paypalClientId || '';
+}
+
+function savePaymentConfig() {
+  const cfg = {
+    stripePublishableKey: document.getElementById('cfg-stripe-key').value.trim(),
+    stripeEndpoint: document.getElementById('cfg-stripe-endpoint').value.trim(),
+    paypalClientId: document.getElementById('cfg-paypal-client').value.trim()
+  };
+  localStorage.setItem(PAYMENT_CFG_KEY, JSON.stringify(cfg));
+  setPaymentStatus('Merchant config saved. Stripe and PayPal are now using your latest values.', 'ok');
+  renderPayPalButtons(true);
+}
+
+function renderPaymentHistory() {
+  const el = document.getElementById('pay-history');
+  const log = getPaymentLog();
+  if (!log.length) {
+    el.innerHTML = '<div class="pay-log" style="color:var(--text-dim);">No wallet actions yet.</div>';
+    return;
+  }
+  el.innerHTML = log.map(item => `<div class="pay-log"><div style="color:${item.live ? 'var(--green)' : 'var(--yellow)'};font-family:var(--fhud);font-size:9px;letter-spacing:0.08em;">${item.provider.toUpperCase()} · ${item.live ? 'LIVE' : 'SANDBOX'}</div><div style="margin-top:4px;color:var(--text);">€${Number(item.amount).toFixed(2)} · ${item.label}</div><div style="margin-top:2px;color:var(--text-dim);">${new Date(item.at).toLocaleString()} · ${item.id}</div></div>`).join('');
+}
+
+function setPaymentStatus(message, tone='') {
+  const el = document.getElementById('pay-status');
+  el.className = 'pay-status' + (tone ? ' ' + tone : '');
+  el.textContent = message;
+}
+
+function openPayments() {
+  document.getElementById('pm-pay').classList.add('on');
+  document.getElementById('pay-email').value = CU?.email || document.getElementById('pay-email').value || '';
+  document.getElementById('pay-phone').value = CU?.phone || document.getElementById('pay-phone').value || '';
+  document.getElementById('pay-name').value = CU?.name || document.getElementById('pay-name').value || (CU?.email ? CU.email.split('@')[0] : '');
+  populatePaymentConfigForm();
+  renderPaymentHistory();
+  renderPayPalButtons();
+  setPaymentStatus('Wallet ready. Choose Stripe, PayPal, or sandbox mode.');
+}
+
+function closePayments() {
+  document.getElementById('pm-pay').classList.remove('on');
+}
+
+async function loadExternalScript(src) {
+  if ([...document.scripts].some(s => s.src === src)) return;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('Failed to load ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+function getPaymentPayload() {
+  const amount = Number(document.getElementById('pay-amount').value || 0);
+  const label = document.getElementById('pay-label').value.trim() || 'Astranov wallet top-up';
+  const payer = {
+    email: document.getElementById('pay-email').value.trim(),
+    phone: normalizePhone(document.getElementById('pay-phone').value.trim()),
+    name: document.getElementById('pay-name').value.trim() || (CU?.name || '')
+  };
+  return { amount, label, payer };
+}
+
+function recordWalletPayment(provider, amount, label, live=false, ref='') {
+  const next = getWalletBalance() + Number(amount || 0);
+  setWalletBalance(next);
+  addPaymentLog({ provider, amount, label, live, at: new Date().toISOString(), id: ref || (provider + '-' + Math.random().toString(36).slice(2,10)) });
+}
+
+function runSandboxPayment(provider='stripe') {
+  const { amount, label, payer } = getPaymentPayload();
+  if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before paying.', 'err'); return; }
+  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required for wallet payments.', 'err'); return; }
+  recordWalletPayment(provider, amount, label, false);
+  setPaymentStatus(provider.toUpperCase() + ' sandbox top-up complete. Wallet credited locally with €' + amount.toFixed(2) + '.', 'ok');
+}
+
+async function startStripeCheckout() {
+  const { amount, label, payer } = getPaymentPayload();
+  const cfg = getPaymentConfig();
+  if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before starting Stripe.', 'err'); return; }
+  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required before starting Stripe.', 'err'); return; }
+  if (!cfg.stripePublishableKey || !cfg.stripeEndpoint) {
+    runSandboxPayment('stripe');
+    setPaymentStatus('Stripe keys or endpoint missing, so a sandbox wallet top-up was used instead. Add your publishable key and Checkout Session endpoint for live Stripe.', 'ok');
+    return;
+  }
+  try {
+    setPaymentStatus('Contacting Stripe Checkout…');
+    await loadExternalScript('https://js.stripe.com/v3/');
+    const stripe = window.Stripe(cfg.stripePublishableKey);
+    const response = await fetch(cfg.stripeEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount, currency: 'eur', description: label, customer: payer, return_url: location.href, cancel_url: location.href })
+    });
+    const json = await response.json();
+    if (!response.ok) throw new Error(json?.error || 'Stripe session creation failed.');
+    if (json.url) {
+      setPaymentStatus('Stripe session created. Redirecting to hosted checkout…', 'ok');
+      window.location.href = json.url;
+      return;
+    }
+    if (json.sessionId) {
+      const result = await stripe.redirectToCheckout({ sessionId: json.sessionId });
+      if (result?.error) throw result.error;
+      return;
+    }
+    throw new Error('Stripe endpoint did not return a checkout URL or sessionId.');
+  } catch (e) {
+    setPaymentStatus('Stripe error: ' + e.message, 'err');
+  }
+}
+
+async function renderPayPalButtons(force=false) {
+  const wrap = document.getElementById('paypal-button-wrap');
+  const cfg = getPaymentConfig();
+  wrap.innerHTML = '<div style="font-size:10px;color:var(--text-dim);">PayPal button standby.</div>';
+  if (!cfg.paypalClientId) {
+    wrap.innerHTML = '<div style="font-size:10px;color:var(--text-dim);">Add a PayPal client ID to render the live button here. The yellow sandbox button above still works locally.</div>';
+    return;
+  }
+  try {
+    const existing = document.querySelector('script[data-paypal-sdk="astranov"]');
+    const desiredSrc = 'https://www.paypal.com/sdk/js?client-id=' + encodeURIComponent(cfg.paypalClientId) + '&currency=EUR&intent=capture';
+    if (!existing || existing.src !== desiredSrc || force) {
+      if (existing) existing.remove();
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = desiredSrc;
+        s.dataset.paypalSdk = 'astranov';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Could not load PayPal SDK.'));
+        document.head.appendChild(s);
+      });
+    }
+    if (!window.paypal?.Buttons) throw new Error('PayPal SDK did not expose Buttons.');
+    wrap.innerHTML = '<div id="paypal-button-container"></div>';
+    window.paypal.Buttons({
+      style: { layout: 'vertical', label: 'paypal' },
+      createOrder: function(data, actions) {
+        const payload = getPaymentPayload();
+        if (!payload.amount || payload.amount <= 0) throw new Error('Invalid amount.');
+        if (!payload.payer.email || !payload.payer.phone) throw new Error('Email and phone required.');
+        setPaymentStatus('PayPal order created. Waiting for approval…');
+        return actions.order.create({
+          purchase_units: [{
+            description: payload.label,
+            amount: { currency_code: 'EUR', value: payload.amount.toFixed(2) }
+          }]
+        });
+      },
+      onApprove: function(data, actions) {
+        return actions.order.capture().then(function(details) {
+          const payload = getPaymentPayload();
+          recordWalletPayment('paypal', payload.amount, payload.label, true, data.orderID);
+          setPaymentStatus('PayPal capture complete for €' + payload.amount.toFixed(2) + '. Wallet updated.', 'ok');
+          return details;
+        });
+      },
+      onCancel: function() {
+        setPaymentStatus('PayPal checkout was cancelled.', 'err');
+      },
+      onError: function(err) {
+        setPaymentStatus('PayPal error: ' + (err?.message || err), 'err');
+      }
+    }).render('#paypal-button-container');
+    setPaymentStatus('PayPal live button rendered.');
+  } catch (e) {
+    wrap.innerHTML = '<div style="font-size:10px;color:var(--red);">' + e.message + '</div>';
+    setPaymentStatus('PayPal setup error: ' + e.message, 'err');
+  }
+}
+
 async function loadBalance() {
-  document.getElementById('bal').textContent = '0.00';
+  setWalletBalance(getWalletBalance());
+  renderPaymentHistory();
 }
 
 /* session restore */
@@ -791,7 +1170,7 @@ async function loadBalance() {
   if (data?.session?.user) {
     const u = data.session.user;
     const { data: p } = await sb.from('users').select('*').eq('id', u.id).single();
-    onAuth(u, p?.name || u.email, p?.role || 'customer');
+    onAuth(u, p?.name || u.email, p?.role || 'customer', u?.user_metadata?.phone || '');
   }
 })();
 
@@ -909,17 +1288,18 @@ async function toggleDriverMode() {
   btn.textContent = driverOnline ? 'Go Offline' : 'Go Online';
   status.textContent = 'Status: ' + (driverOnline ? 'Online ✓' : 'Offline');
   status.style.color = driverOnline ? 'var(--green)' : 'var(--text-dim)';
-  if (driverOnline) {
-    const veh = document.getElementById('dr-veh').value;
-    const price = document.getElementById('dr-price').value || 0.80;
-    try {
-      await sb.from('drivers').upsert([{
-        user_id: CU.id, lat: LOC.lat, lon: LOC.lng,
-        available: true, vehicle_type: veh, price_per_km: price
-      }], { onConflict: 'user_id' });
+  try {
+    if (driverOnline) {
+      const veh = document.getElementById('dr-veh').value;
+      const price = document.getElementById('dr-price').value || 0.80;
+      await sb.from('drivers').upsert([{ user_id: CU.id, lat: LOC.lat, lon: LOC.lng, available: true, vehicle_type: veh, price_per_km: price }], { onConflict: 'user_id' });
       startLocationTracking();
-    } catch(e) {}
-  }
+      showResp('Driver mode is live. Broadcasting your position.');
+    } else {
+      await sb.from('drivers').update({ available: false, updated_at: new Date().toISOString() }).eq('user_id', CU.id);
+      showResp('Driver mode offline.');
+    }
+  } catch(e) { showResp('Driver mode error: ' + e.message); }
 }
 
 function startLocationTracking() {
@@ -1002,65 +1382,66 @@ async function submitPost() {
 }
 
 /* ── KITTY AI ASSISTANT ── */
-const kittyLines = [
-  'Meow! What are you looking for?',
-  'Purr… searching the cosmos for you…',
-  'Zap! Found something interesting!',
-  'Meow! Anything else I can find?',
-  'Buzz… scanning signals…'
+const astranovaLines = [
+  'Astranova online. What signal should I find?',
+  'Scanning the orbit lanes for your request…',
+  'Signal locked. I found something bright.',
+  'Need another route through the stars?',
+  'Wingbeat search in progress…'
 ];
 
-function openKitty() {
-  document.getElementById('kitty-mode').classList.add('on');
-  document.getElementById('kitty-msg').textContent = kittyLines[0];
-  document.getElementById('kitty-input').value = '';
-  document.getElementById('kitty-results').innerHTML = '';
-  setTimeout(() => document.getElementById('kitty-input').focus(), 300);
+function openAstranova() {
+  document.getElementById('astranova-mode').classList.add('on');
+  document.getElementById('astranova-msg').textContent = astranovaLines[0];
+  document.getElementById('astranova-input').value = '';
+  document.getElementById('astranova-results').innerHTML = '';
+  setTimeout(() => document.getElementById('astranova-input').focus(), 300);
 }
 
-function closeKitty() {
-  document.getElementById('kitty-mode').classList.remove('on');
+function closeAstranova() {
+  document.getElementById('astranova-mode').classList.remove('on');
 }
 
-async function kittySearch() {
-  const q = document.getElementById('kitty-input').value.trim();
+async function astranovaSearch() {
+  const q = document.getElementById('astranova-input').value.trim();
   if (!q) return;
-  document.getElementById('kitty-msg').textContent = 'Purr… searching for "'+q+'"…';
-  document.getElementById('kitty-results').innerHTML = '<div style="color:var(--text-dim);font-size:11px;text-align:center;">Scanning signals…</div>';
+  document.getElementById('astranova-msg').textContent = 'Scanning the orbit lanes for "'+q+'"…';
+  document.getElementById('astranova-results').innerHTML = '<div style="color:var(--text-dim);font-size:11px;text-align:center;">Scanning signals…</div>';
   try {
-    const { data } = await sb.from('signals').select('*').or('title.ilike.%'+q+'%,description.ilike.%'+q+'%,category.ilike.%'+q+'%').limit(8);
-    const { data: shops } = await sb.from('shops').select('*').or('name.ilike.%'+q+'%,category.ilike.%'+q+'%,description.ilike.%'+q+'%').limit(4);
-    const results = [...(shops||[]).map(s=>({...s,_type:'shop'})), ...(data||[]).map(s=>({...s,_type:'signal'}))];
-    if (results.length === 0) {
-      document.getElementById('kitty-msg').textContent = 'Meow… nothing found for "'+q+'". Try different words!';
-      document.getElementById('kitty-results').innerHTML = '';
+    const [{ data: signals }, { data: shops }] = await Promise.all([
+      sb.from('signals').select('*').or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`).limit(10),
+      sb.from('shops').select('*').or(`name.ilike.%${q}%,category.ilike.%${q}%,description.ilike.%${q}%`).limit(10)
+    ]);
+    const results = [ ...(shops||[]).map(s => ({...s, type:'shop'})), ...(signals||[]).map(s => ({...s, type:'signal'})) ];
+    if (!results.length) {
+      document.getElementById('astranova-msg').textContent = 'No bright signal yet for "'+q+'". Try another word.';
+      document.getElementById('astranova-results').innerHTML = '';
       return;
     }
-    document.getElementById('kitty-msg').textContent = 'Zap! Found '+results.length+' result(s)!';
-    document.getElementById('kitty-results').innerHTML = results.map(r => `
-      <div class="kr" onclick="kittySelect(${r.lat||LOC.lat},${r.lon||r.lng||LOC.lng},'${(r.name||r.title||'').replace(/'/g,"\\'")}')">
-        <div class="kr-title">${r.name||r.title||'Signal'}</div>
-        <div class="kr-sub">${r.category||r._type} ${r.price?'· '+r.price:''}</div>
-      </div>
-    `).join('');
+    document.getElementById('astranova-msg').textContent = 'Signal locked. Found '+results.length+' result(s).';
+    document.getElementById('astranova-results').innerHTML = results.map(r => `
+      <div class="kr" onclick="astranovaSelect(${r.lat||LOC.lat},${r.lon||r.lng||LOC.lng},'${(r.name||r.title||'').replace(/'/g,"\'")}')">
+        <div class="kr-title">${r.name||r.title}</div>
+        <div class="kr-sub">${r.type==='shop' ? (r.category||'Shop') : (r.category||'Signal')}</div>
+      </div>`).join('');
   } catch(e) {
-    document.getElementById('kitty-msg').textContent = 'Meow! Search error: '+e.message;
+    document.getElementById('astranova-msg').textContent = 'Astranova search error: '+e.message;
   }
 }
 
-function kittySelect(lat, lng, name) {
-  closeKitty();
+function astranovaSelect(lat, lng, name) {
+  closeAstranova();
   goLayer(1);
   setTimeout(() => { if (LM) LM.flyTo([lat,lng],15); showResp('Navigating to: '+name); }, 500);
 }
 
 /* ── SEARCH ── */
 async function doSearch() {
-  const q = document.getElementById('sbi').value.trim() || document.getElementById('cmd-input').value.trim();
-  if (!q) { openKitty(); return; }
-  document.getElementById('kitty-input').value = q;
-  openKitty();
-  await kittySearch();
+  const q = document.getElementById('sbi').value.trim();
+  if (!q) return;
+  document.getElementById('astranova-input').value = q;
+  openAstranova();
+  await astranovaSearch();
 }
 
 /* ── LISTINGS ── */
@@ -1128,7 +1509,7 @@ function applyLayer(idx) {
   document.getElementById('locate-btn').classList.toggle('visible',idx===1);
   document.getElementById('globe-btn').classList.toggle('visible',idx!==0);
   document.getElementById('drone-btn').classList.toggle('visible',idx===1);
-  document.getElementById('kitty-wrapper').style.display=idx===1?'flex':'none';
+  document.getElementById('astranova-wrapper').style.display=idx===1?'flex':'none';
   if(idx===1&&!LM) initLeaflet();
   if(idx===2) runAbyssScene();
   if(idx===1) setTimeout(refreshMapData,400);
@@ -1177,12 +1558,13 @@ document.addEventListener('click',e=>{
 
 /* ── CMD BAR ── */
 function sendCmd(){
-  const inp=document.getElementById('cmd-input');
-  const val=inp.value.trim(); if(!val)return;
-  inp.value='';
-  document.getElementById('sbi').value=val;
-  if(CL===1){doSearch();return;}
+  const input=document.getElementById('cmd-input');
+  const val=input.value.trim();
+  if(!val)return;
+  if(/pay|stripe|paypal|wallet/i.test(val)){ openPayments(); input.value=''; return; }
+  if(/astranova|find|search/i.test(val) && CL===1){ document.getElementById('sbi').value = val; doSearch(); input.value=''; return; }
   showResp('Command: "'+val+'" — use AI on Earth layer for full search.');
+  input.value='';
 }
 
 function showResp(msg){
@@ -1192,7 +1574,7 @@ function showResp(msg){
 }
 
 function showBalance(){
-  showResp('Balance: €'+document.getElementById('bal').textContent+' EUR — payments coming soon.');
+  openPayments();
 }
 
 /* ══════════════════════════════
@@ -1483,210 +1865,58 @@ function runGame(type) {
 }
 </script>
 <!--
-  Astranov v3.1.0 — Trinity OS
-  Creator & Founder: Notis Astranov, 2026
-  Architecture: Spartan Script v3.1
-  Electric Blue Kitty AI Assistant
-  Hidden Games: Spaceship (L1) · Drone (L2) · Submarine (L3)
+SPARTAN SCRIPT — ASTRANOV 3.3.3
+Creator & Founder: Notis Astranov, 2026
+Architecture: Spartan Script v3.3.3
+
+MISSION
+Single-file launchable planetary marketplace with three layers, hidden games,
+wallet top-up flows, mandatory phone-gated auth, and the full-body Astranova AI.
+
+LOCKS
+- Top bar stays fixed.
+- POST button stays last on left rail.
+- Natural-language discovery stays centered on Astranova.
+- Version sync is mandatory on every pass.
+
+VERSION 3.3.3 ADDITIONS
+- Stripe Checkout launch path added through a configurable publishable key plus
+  Checkout Session endpoint.
+- PayPal button path added through configurable client ID.
+- Local sandbox top-up path added so the launchable build still works before
+  live merchant credentials are wired.
+- Balance display now opens wallet and payment modal.
+- Auth now requires email + phone + password.
+- Existing users without stored phone metadata are upgraded on first login.
+- View buttons added for email, phone, password, name, and role fields.
+- Space Kitty retired. New assistant is Astranova: full-body female elf,
+  electric blue and silver suit, tiny space helmet with ears, animated wings.
+- Driver mode now cleanly toggles offline in the database.
+
+PAYMENTS
+- Currency: EUR.
+- Wallet stores local balance for launch/testing.
+- Stripe live mode requires a publishable key and a server endpoint that creates
+  a Checkout Session.
+- PayPal live mode requires a client ID.
+- Missing merchant credentials fall back to sandbox wallet top-up instead of
+  dead buttons.
+
+AUTH
+- Login: email + phone + password.
+- Signup: email + phone + password + full name + role.
+- Phone is enforced at app level and persisted in Supabase user metadata.
+
+AI ASSISTANT
+- Name: Astranova.
+- Visible on Earth layer only.
+- Opens takeover search surface.
+- Searches shops and signals by natural language.
+- Results fly the user to the selected location.
+
+SYNC RULE
+Every code change requires a Spartan Script update in the same pass.
+If the code and this block disagree, update the code to match the block.
 -->
 </body>
 </html>
-<!--
-<!--
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  SPARTAN SCRIPT — ASTRANOV SYSTEM OF RECORD                                ║
-║  Creator & Founder: Notis Astranov, 2026. Method: Spartan Script.          ║
-║                                                                              ║
-║  SYNC RULE: This block MUST be updated every time the app changes.          ║
-║  It is the single source of truth. Any AI continuing this project           ║
-║  must read this first, build from it, and write changes back into it.       ║
-║  No exceptions. No drift. The app and this script are one document.         ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-
-VERSION: 3.1.0
-LAST_UPDATED: 2026-03-25
-DOMAIN: astranov.eu
-REPO: github.com/notisastranov/Astranov
-DB: kzlabcrlrpbnfiiyrjvl.supabase.co
-HOST: Vercel + Cloudflare DNS
-
-━━━ IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Astranov is the new Internet. Not an app. Not a map. Not a social network.
-A unified planetary OS replacing all fragmented internet services.
-One interface. Three nested realities. AI-first discovery. Real commerce.
-"Of the Stars" — descends from orbit to street to ocean floor.
-
-━━━ LAYERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-L1 COSMIC [body.lt / --la:#00c8ff]
-  Scene: Three.js globe. SphereGeometry(1,48,48). Starfield 4000pts.
-  ISS: wheretheiss.at API every 5s. Yellow sphere on globe.
-  Signals: 100 vertexColor points pulsing. Represent all marketplace activity.
-  Camera: z=2.6. Drag to rotate. Scroll to zoom.
-  HUD: Spacecraft. Electric blue. Angular. Targeting reticles.
-  Secret: camera.z >= 7 → spaceship game (accidental discovery).
-
-L2 TERRESTRIAL [body.lt2 / --la:#00e87a]
-  Scene: Leaflet + OSM. Tile filter: brightness(0.75) saturate(0.6) hue-rotate(120deg).
-  Markers: shops=green, food=yellow, drivers=orange, social=purple,
-           job=lightgreen, dating=pink, event=orange, service=cyan.
-  Kitty: visible. Bottom center. AI search assistant.
-  Drone game: visible button + hidden trigger (zoom level 19).
-  Zoom out to level 2: returns to globe.
-  HUD: City. Green accents. Commerce, wallet, delivery controls.
-
-L3 ABYSSAL [body.lt3 / --la:#4466ff]
-  Scene: Three.js IcosahedronGeometry(1.2,4). Three counter-rotating torus rings.
-  1200 blue particles. Two orbiting PointLights.
-  HUD: Submarine. Deep blue. Sonar, pressure, depth.
-  Secret: zoom L2 map to level 19 → submarine game (accidental discovery).
-
-Transitions: 150ms flash overlay → swap body class → swap canvas → update all CSS vars.
-Layer dots: always visible top-right. Click to jump directly.
-Globe return button: visible on L2/L3. Returns to L1.
-Locate me button: visible on L2. Geolocation → flyTo user position.
-
-━━━ TOP BAR — IMMUTABLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Fixed. 36px. Always visible. Cannot be modified without top-level developer approval.
-Left:   ASTRANOV (Orbitron, glow) + layer badge.
-Center: 7-bar animated status graph (updates 800ms) + current version + latest version
-        (green if match, red if mismatch).
-Right:  EUR balance (€0.00) + user avatar + username.
-Tap avatar → profile menu (logged in) or login modal (guest).
-Tap balance → show wallet details.
-
-━━━ ELECTRIC BLUE KITTY AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Electric blue cat. Space suit helmet. Silver bolt details. Inline SVG.
-Visible: Layer 2 only. Bottom center. 52px idle. CSS glow filter.
-Tap → full screen takeover. Background dims. Kitty floats (CSS animation).
-Says: "Meow! What are you looking for?"
-Search: ilike on signals(title,description,category) + shops(name,category,description).
-Results: clickable cards → flyTo location on map.
-Replaces category bar entirely. No categories exist. Pure natural language search.
-Lines: "Meow! What are you looking for?" / "Purr… searching…" / "Zap! Found it!" /
-       "Anything else?" / "Buzz… scanning signals…"
-
-━━━ HUD RAILS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Left (46px rail): settings → profile → shop → driver → [spacer] → POST (permanent, last).
-Right (46px rail): layers → listings → GPS → refresh → radar.
-Bottom bar: voice | camera | text input | mic | send.
-All menus: rectangular, semi-transparent, anchored to button, no triangular/detached.
-POST button: immutable. Always last in left rail. Cannot be removed or moved.
-Auxiliary buttons: managed by developer AI assistant. Add/remove via admin command.
-Immutable items: top bar + POST button. Everything else is developer-controlled.
-
-━━━ AUTH ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Supabase email/password. Roles: customer | vendor | driver | developer.
-Guest mode: browse all. Login triggers only on: post, vote, order, message, pay.
-Session: restored on load via sb.auth.getSession().
-Developer role: unlocks admin panel, AI UI assistant, button manager.
-Top-level developer: can modify immutable top bar (requires explicit confirmation).
-
-━━━ SHOP INFRASTRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Fields: name, category, description, phone, website, lat, lon, vendor_id.
-Photo: Supabase storage → media bucket → shops/{id}.{ext}.
-Categories: Restaurant/Food | Diving/Activities | Shop/Retail | Services |
-            Real Estate | Dating/Social | Events/Classes | Other.
-After creation: green marker on L2 map. Realtime sync to all users.
-Vendor role required to create. Public can browse without login.
-
-━━━ DRIVER INFRASTRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Fields: user_id, vehicle_type, price_per_km, available, lat, lon, verification_status.
-Go online: updates drivers table. Starts watchPosition. Orange dot on L2 map.
-Live location: navigator.geolocation.watchPosition → Supabase update on each move.
-Vehicle photo: media bucket → drivers/{id}.{ext}.
-Accept delivery: updates deliveries.driver_id + status='accepted'.
-Verification: pending | approved | rejected. Only approved drivers assignable.
-Price: driver sets own price_per_km (min €0.50 enforced by algorithm).
-
-━━━ DELIVERY PRICING ALGORITHM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-price = max(€3.00, €2.50 + distance_km × €0.80)
-Distance: Haversine formula. pickup LOC → dropoff LOC.
-Platform fee: 15% of delivery price.
-Future: surge +20% (high demand), weather +€0.50, express +€2.00.
-Displayed: delivery-calc overlay on map when user taps a listing.
-
-━━━ DATABASE SCHEMA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-users:      id(UUID PK), email, name, role, lat, lon, created_at
-shops:      id, vendor_id→users, name, category, description, lat, lon,
-            phone, website, rating, created_at
-signals:    id, user_id→users, title, description, category, lat, lon,
-            price, contact, votes_up, votes_down, created_at
-votes:      id, user_id→users, signal_id→signals, vote_type(up/down),
-            created_at. UNIQUE(user_id, signal_id)
-deliveries: id, customer_id→users, shop_id→shops, driver_id→users,
-            status(pending/accepted/in_transit/delivered),
-            pickup_lat, pickup_lon, dropoff_lat, dropoff_lon,
-            total_amount, created_at, updated_at
-drivers:    id, user_id→users UNIQUE, lat, lon, available,
-            vehicle_type, price_per_km, verification_status, updated_at
-RLS: enabled all tables. Public read: shops/signals/drivers/votes.
-     Own-write: users write own records only.
-Realtime: supabase_realtime publication on all tables.
-Storage: media bucket. Public read. Auth upload.
-         Paths: signals/{id}_{n}.{ext} | shops/{id}.{ext} | drivers/{id}.{ext}
-
-━━━ REALTIME SYNC ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Channel: sb.channel('astranov').
-Triggers: signals change → refreshMapData(). shops change → loadCounts() + refreshMapData().
-drivers change → loadCounts() + refreshMapData().
-Map updates without page refresh. Vote counts update in listings panel live.
-
-━━━ VOTING SYSTEM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Every signal has ▲/▼ vote buttons. Stored in votes table.
-UNIQUE constraint: one vote per user per signal.
-Future: high-vote signals surface higher in listings + glow brighter on map.
-Future: DAO governance — users vote on platform feature proposals.
-
-━━━ HIDDEN GAMES (NEVER ADVERTISED) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SPACESHIP [L1]: Trigger: scroll globe camera z >= 7. Delay 1.5s. Arrow keys + Space.
-  Enemy red ships. +50/kill. 3 lives. Waves escalate. ESC to exit.
-
-DRONE DELIVERY [L2]: Trigger 1: visible orange button. Trigger 2: future hidden.
-  Collect green packages. Avoid red obstacles. +100/package. 3 lives. ESC to exit.
-
-SUBMARINE [L3]: Trigger: Leaflet zoom level 19. Delay 1.5s. Arrow keys + Space.
-  Chase red enemy submarines. Sonar ping effect. Depth gauge. +50/kill. ESC to exit.
-
-━━━ DEPLOYMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Single file: index.html (no build step, no dependencies to install).
-GitHub push to main → Vercel auto-deploys in ~30 seconds.
-astranov.eu → Vercel CNAME (Valid Configuration ✓).
-www.astranov.eu → 301 permanent redirect to astranov.eu.
-Cloudflare: DNS management, DDoS protection, edge caching.
-
-━━━ NEXT PASSES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Pass 4:  Express backend + /ai-command endpoint (Claude API server-side)
-Pass 5:  Stripe EUR payment flow (checkout → paid → assign driver)
-Pass 6:  Order management (create, status tracking, completion)
-Pass 7:  Messaging (customer ↔ driver ↔ vendor, order context)
-Pass 8:  Developer admin panel (button manager, AI UI control)
-Pass 9:  Operator mode (feature flags, radar sensitivity, signal density)
-Pass 10: Native mobile shell (PWA or Capacitor wrapper)
-
-━━━ ANTI-DRIFT RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- No rogue HUD buttons without developer AI approval.
-- No category bar. Kitty handles all discovery.
-- No Google Maps / Firebase / Gemini.
-- No AI provider calls from frontend. Server-side only.
-- No dashboard drift. Center stage = scene only.
-- No ghost elements. No hidden placeholders.
-- 1 command = 1 subsystem = 1 result.
-- Diagnose before improvising.
-- This Spartan Script MUST be updated every time the app changes.
-
-━━━ SYNC ENFORCEMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RULE: Every code change to this app requires a corresponding update to this
-Spartan Script block. No exception. Version number increments with every pass.
-Any AI reading this file must treat this block as the binding contract.
-If this script and the code disagree, fix the code to match the script.
-If the script is incomplete, complete it before proceeding with code changes.
-The script travels with the app. The script IS the app specification.
-UPDATE_REQUIRED_ON: new feature, removed feature, schema change, layer change,
-                    HUD change, new button, removed button, version bump,
-                    deployment change, database change, auth change.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Astranov — Of the Stars.
-Creator & Founder: Notis Astranov, 2026.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
--->
