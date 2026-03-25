@@ -1491,3 +1491,202 @@ function runGame(type) {
 -->
 </body>
 </html>
+<!--
+<!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  SPARTAN SCRIPT — ASTRANOV SYSTEM OF RECORD                                ║
+║  Creator & Founder: Notis Astranov, 2026. Method: Spartan Script.          ║
+║                                                                              ║
+║  SYNC RULE: This block MUST be updated every time the app changes.          ║
+║  It is the single source of truth. Any AI continuing this project           ║
+║  must read this first, build from it, and write changes back into it.       ║
+║  No exceptions. No drift. The app and this script are one document.         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+VERSION: 3.1.0
+LAST_UPDATED: 2026-03-25
+DOMAIN: astranov.eu
+REPO: github.com/notisastranov/Astranov
+DB: kzlabcrlrpbnfiiyrjvl.supabase.co
+HOST: Vercel + Cloudflare DNS
+
+━━━ IDENTITY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Astranov is the new Internet. Not an app. Not a map. Not a social network.
+A unified planetary OS replacing all fragmented internet services.
+One interface. Three nested realities. AI-first discovery. Real commerce.
+"Of the Stars" — descends from orbit to street to ocean floor.
+
+━━━ LAYERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+L1 COSMIC [body.lt / --la:#00c8ff]
+  Scene: Three.js globe. SphereGeometry(1,48,48). Starfield 4000pts.
+  ISS: wheretheiss.at API every 5s. Yellow sphere on globe.
+  Signals: 100 vertexColor points pulsing. Represent all marketplace activity.
+  Camera: z=2.6. Drag to rotate. Scroll to zoom.
+  HUD: Spacecraft. Electric blue. Angular. Targeting reticles.
+  Secret: camera.z >= 7 → spaceship game (accidental discovery).
+
+L2 TERRESTRIAL [body.lt2 / --la:#00e87a]
+  Scene: Leaflet + OSM. Tile filter: brightness(0.75) saturate(0.6) hue-rotate(120deg).
+  Markers: shops=green, food=yellow, drivers=orange, social=purple,
+           job=lightgreen, dating=pink, event=orange, service=cyan.
+  Kitty: visible. Bottom center. AI search assistant.
+  Drone game: visible button + hidden trigger (zoom level 19).
+  Zoom out to level 2: returns to globe.
+  HUD: City. Green accents. Commerce, wallet, delivery controls.
+
+L3 ABYSSAL [body.lt3 / --la:#4466ff]
+  Scene: Three.js IcosahedronGeometry(1.2,4). Three counter-rotating torus rings.
+  1200 blue particles. Two orbiting PointLights.
+  HUD: Submarine. Deep blue. Sonar, pressure, depth.
+  Secret: zoom L2 map to level 19 → submarine game (accidental discovery).
+
+Transitions: 150ms flash overlay → swap body class → swap canvas → update all CSS vars.
+Layer dots: always visible top-right. Click to jump directly.
+Globe return button: visible on L2/L3. Returns to L1.
+Locate me button: visible on L2. Geolocation → flyTo user position.
+
+━━━ TOP BAR — IMMUTABLE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Fixed. 36px. Always visible. Cannot be modified without top-level developer approval.
+Left:   ASTRANOV (Orbitron, glow) + layer badge.
+Center: 7-bar animated status graph (updates 800ms) + current version + latest version
+        (green if match, red if mismatch).
+Right:  EUR balance (€0.00) + user avatar + username.
+Tap avatar → profile menu (logged in) or login modal (guest).
+Tap balance → show wallet details.
+
+━━━ ELECTRIC BLUE KITTY AI ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Electric blue cat. Space suit helmet. Silver bolt details. Inline SVG.
+Visible: Layer 2 only. Bottom center. 52px idle. CSS glow filter.
+Tap → full screen takeover. Background dims. Kitty floats (CSS animation).
+Says: "Meow! What are you looking for?"
+Search: ilike on signals(title,description,category) + shops(name,category,description).
+Results: clickable cards → flyTo location on map.
+Replaces category bar entirely. No categories exist. Pure natural language search.
+Lines: "Meow! What are you looking for?" / "Purr… searching…" / "Zap! Found it!" /
+       "Anything else?" / "Buzz… scanning signals…"
+
+━━━ HUD RAILS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Left (46px rail): settings → profile → shop → driver → [spacer] → POST (permanent, last).
+Right (46px rail): layers → listings → GPS → refresh → radar.
+Bottom bar: voice | camera | text input | mic | send.
+All menus: rectangular, semi-transparent, anchored to button, no triangular/detached.
+POST button: immutable. Always last in left rail. Cannot be removed or moved.
+Auxiliary buttons: managed by developer AI assistant. Add/remove via admin command.
+Immutable items: top bar + POST button. Everything else is developer-controlled.
+
+━━━ AUTH ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Supabase email/password. Roles: customer | vendor | driver | developer.
+Guest mode: browse all. Login triggers only on: post, vote, order, message, pay.
+Session: restored on load via sb.auth.getSession().
+Developer role: unlocks admin panel, AI UI assistant, button manager.
+Top-level developer: can modify immutable top bar (requires explicit confirmation).
+
+━━━ SHOP INFRASTRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Fields: name, category, description, phone, website, lat, lon, vendor_id.
+Photo: Supabase storage → media bucket → shops/{id}.{ext}.
+Categories: Restaurant/Food | Diving/Activities | Shop/Retail | Services |
+            Real Estate | Dating/Social | Events/Classes | Other.
+After creation: green marker on L2 map. Realtime sync to all users.
+Vendor role required to create. Public can browse without login.
+
+━━━ DRIVER INFRASTRUCTURE ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Fields: user_id, vehicle_type, price_per_km, available, lat, lon, verification_status.
+Go online: updates drivers table. Starts watchPosition. Orange dot on L2 map.
+Live location: navigator.geolocation.watchPosition → Supabase update on each move.
+Vehicle photo: media bucket → drivers/{id}.{ext}.
+Accept delivery: updates deliveries.driver_id + status='accepted'.
+Verification: pending | approved | rejected. Only approved drivers assignable.
+Price: driver sets own price_per_km (min €0.50 enforced by algorithm).
+
+━━━ DELIVERY PRICING ALGORITHM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+price = max(€3.00, €2.50 + distance_km × €0.80)
+Distance: Haversine formula. pickup LOC → dropoff LOC.
+Platform fee: 15% of delivery price.
+Future: surge +20% (high demand), weather +€0.50, express +€2.00.
+Displayed: delivery-calc overlay on map when user taps a listing.
+
+━━━ DATABASE SCHEMA ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+users:      id(UUID PK), email, name, role, lat, lon, created_at
+shops:      id, vendor_id→users, name, category, description, lat, lon,
+            phone, website, rating, created_at
+signals:    id, user_id→users, title, description, category, lat, lon,
+            price, contact, votes_up, votes_down, created_at
+votes:      id, user_id→users, signal_id→signals, vote_type(up/down),
+            created_at. UNIQUE(user_id, signal_id)
+deliveries: id, customer_id→users, shop_id→shops, driver_id→users,
+            status(pending/accepted/in_transit/delivered),
+            pickup_lat, pickup_lon, dropoff_lat, dropoff_lon,
+            total_amount, created_at, updated_at
+drivers:    id, user_id→users UNIQUE, lat, lon, available,
+            vehicle_type, price_per_km, verification_status, updated_at
+RLS: enabled all tables. Public read: shops/signals/drivers/votes.
+     Own-write: users write own records only.
+Realtime: supabase_realtime publication on all tables.
+Storage: media bucket. Public read. Auth upload.
+         Paths: signals/{id}_{n}.{ext} | shops/{id}.{ext} | drivers/{id}.{ext}
+
+━━━ REALTIME SYNC ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Channel: sb.channel('astranov').
+Triggers: signals change → refreshMapData(). shops change → loadCounts() + refreshMapData().
+drivers change → loadCounts() + refreshMapData().
+Map updates without page refresh. Vote counts update in listings panel live.
+
+━━━ VOTING SYSTEM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Every signal has ▲/▼ vote buttons. Stored in votes table.
+UNIQUE constraint: one vote per user per signal.
+Future: high-vote signals surface higher in listings + glow brighter on map.
+Future: DAO governance — users vote on platform feature proposals.
+
+━━━ HIDDEN GAMES (NEVER ADVERTISED) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SPACESHIP [L1]: Trigger: scroll globe camera z >= 7. Delay 1.5s. Arrow keys + Space.
+  Enemy red ships. +50/kill. 3 lives. Waves escalate. ESC to exit.
+
+DRONE DELIVERY [L2]: Trigger 1: visible orange button. Trigger 2: future hidden.
+  Collect green packages. Avoid red obstacles. +100/package. 3 lives. ESC to exit.
+
+SUBMARINE [L3]: Trigger: Leaflet zoom level 19. Delay 1.5s. Arrow keys + Space.
+  Chase red enemy submarines. Sonar ping effect. Depth gauge. +50/kill. ESC to exit.
+
+━━━ DEPLOYMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Single file: index.html (no build step, no dependencies to install).
+GitHub push to main → Vercel auto-deploys in ~30 seconds.
+astranov.eu → Vercel CNAME (Valid Configuration ✓).
+www.astranov.eu → 301 permanent redirect to astranov.eu.
+Cloudflare: DNS management, DDoS protection, edge caching.
+
+━━━ NEXT PASSES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pass 4:  Express backend + /ai-command endpoint (Claude API server-side)
+Pass 5:  Stripe EUR payment flow (checkout → paid → assign driver)
+Pass 6:  Order management (create, status tracking, completion)
+Pass 7:  Messaging (customer ↔ driver ↔ vendor, order context)
+Pass 8:  Developer admin panel (button manager, AI UI control)
+Pass 9:  Operator mode (feature flags, radar sensitivity, signal density)
+Pass 10: Native mobile shell (PWA or Capacitor wrapper)
+
+━━━ ANTI-DRIFT RULES ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- No rogue HUD buttons without developer AI approval.
+- No category bar. Kitty handles all discovery.
+- No Google Maps / Firebase / Gemini.
+- No AI provider calls from frontend. Server-side only.
+- No dashboard drift. Center stage = scene only.
+- No ghost elements. No hidden placeholders.
+- 1 command = 1 subsystem = 1 result.
+- Diagnose before improvising.
+- This Spartan Script MUST be updated every time the app changes.
+
+━━━ SYNC ENFORCEMENT ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RULE: Every code change to this app requires a corresponding update to this
+Spartan Script block. No exception. Version number increments with every pass.
+Any AI reading this file must treat this block as the binding contract.
+If this script and the code disagree, fix the code to match the script.
+If the script is incomplete, complete it before proceeding with code changes.
+The script travels with the app. The script IS the app specification.
+UPDATE_REQUIRED_ON: new feature, removed feature, schema change, layer change,
+                    HUD change, new button, removed button, version bump,
+                    deployment change, database change, auth change.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Astranov — Of the Stars.
+Creator & Founder: Notis Astranov, 2026.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+-->
