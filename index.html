@@ -6,17 +6,17 @@
 <title>Astranov v3.3.3</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --blue:#00c8ff;--green:#00e87a;--red:#ff4455;--yellow:#ffd600;--orange:#ff9900;
   --bg:#030810;--surface:rgba(5,14,28,0.92);--text:#b8d4f0;--text-dim:#3d6080;
-  --font:'Rajdhani',monospace;--fhud:'Orbitron',monospace;
+  --font:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;--fhud:'Orbitron',system-ui,sans-serif;
   --la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);
 }
 body.lt{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
-body.lt2{--la:#00e87a;--la2:rgba(0,232,122,0.1);--lb:rgba(0,232,122,0.2);}
-body.lt3{--la:#4466ff;--la2:rgba(68,102,255,0.12);--lb:rgba(68,102,255,0.2);}
+body.lt2{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
+body.lt3{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;user-select:none;}
 
 /* TOP BAR - always visible, locked */
@@ -33,11 +33,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .lbadge{font-size:8px;padding:1px 5px;border:1px solid var(--lb);color:var(--la);border-radius:2px;text-transform:uppercase;}
 .vinfo{font-size:8px;color:var(--text-dim);font-family:var(--fhud);}
 .vcurrent{color:var(--la);}
-.vlatest-ok{color:var(--green);}
+.vlatest-ok{color:var(--la);}
 .vlatest-old{color:var(--red);}
 /* status graph */
 #status-graph{display:flex;align-items:flex-end;gap:1px;height:16px;cursor:pointer;}
-.sg-bar{width:3px;background:var(--green);border-radius:1px;transition:height 0.3s;}
+.sg-bar{width:3px;background:var(--la);border-radius:1px;transition:height 0.3s;}
 /* user badge */
 #user-badge{display:flex;align-items:center;gap:6px;cursor:pointer;padding:3px 8px;border:1px solid var(--lb);border-radius:3px;}
 .user-avatar{width:22px;height:22px;border-radius:50%;background:var(--la2);border:1px solid var(--la);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--la);font-weight:600;overflow:hidden;}
@@ -94,7 +94,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 
 /* ELECTRIC BLUE KITTY */
 #astranova-wrapper{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:0;}
-#astranova-svg{width:76px;height:96px;cursor:pointer;transition:transform 0.2s;filter:drop-shadow(0 0 14px #00c8ff);}
+#astranova-svg{width:88px;height:148px;cursor:pointer;transition:transform 0.2s;filter:drop-shadow(0 0 14px #00c8ff);}
 #astranova-svg:hover{transform:scale(1.06) translateY(-2px);}
 #astranova-speech{background:rgba(3,8,16,0.95);border:1px solid var(--la);border-radius:10px;padding:6px 12px;font-size:10px;color:var(--la);max-width:240px;text-align:center;display:none;margin-bottom:6px;font-family:var(--font);box-shadow:0 0 18px rgba(0,200,255,0.12);}
 #astranova-speech.on{display:block;}
@@ -103,7 +103,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #astranova-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 #astranova-mode.on{display:flex;}
 #astranova-mode-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:90%;max-width:440px;}
-#astranova-big{width:190px;height:240px;filter:drop-shadow(0 0 22px #00c8ff);animation:astranova-float 3s ease-in-out infinite;}
+#astranova-big{width:228px;height:380px;filter:drop-shadow(0 0 22px #00c8ff);animation:astranova-float 3s ease-in-out infinite;}
 @keyframes astranova-float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
 @keyframes wing-flap-left{0%,100%{transform:rotate(-10deg) translateY(0);}50%{transform:rotate(-24deg) translateY(-3px);}}
 @keyframes wing-flap-right{0%,100%{transform:rotate(10deg) translateY(0);}50%{transform:rotate(24deg) translateY(-3px);}}
@@ -174,62 +174,65 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 
 /* GLASS UPGRADE */
 #topbar,#bottombar{
-  background:linear-gradient(180deg,rgba(4,10,20,0.36),rgba(4,10,20,0.18));
+  background:linear-gradient(180deg,rgba(4,10,20,0.28),rgba(4,10,20,0.12));
   backdrop-filter:blur(18px) saturate(130%);
   -webkit-backdrop-filter:blur(18px) saturate(130%);
 }
 #left-panel,#right-panel{
-  background:linear-gradient(180deg,rgba(6,14,26,0.28),rgba(6,14,26,0.12));
+  background:linear-gradient(180deg,rgba(6,14,26,0.20),rgba(6,14,26,0.08));
   backdrop-filter:blur(18px) saturate(125%);
   -webkit-backdrop-filter:blur(18px) saturate(125%);
   border-color:rgba(135,190,255,0.12);
 }
 .smenu{
-  background:linear-gradient(180deg,rgba(7,14,28,0.38),rgba(7,14,28,0.22));
+  background:linear-gradient(180deg,rgba(7,14,28,0.24),rgba(7,14,28,0.12));
   border-color:rgba(135,190,255,0.16);
   box-shadow:0 18px 40px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04);
 }
+.brand,.lbadge,.mh,.balance-amount,.abrand,.vcurrent,#astranova-msg{
+  color:var(--la);
+  text-shadow:0 0 10px rgba(0,200,255,0.38);
+}
+.user-name,.mr,.kr-title,.vinfo,.balance-label,.orb-meta,#cmd-response{color:#d8ecff;}
 .mr:hover,.rp-btn:hover,.lp-btn:hover,.bb-btn:hover,.bb-btn.on{
   background:rgba(0,200,255,0.09);
 }
 #orbital-feed{
-  position:absolute;inset:16px 62px 88px 62px;z-index:58;pointer-events:none;
+  position:absolute;inset:16px 62px 88px 62px;z-index:58;pointer-events:none;overflow:hidden;
 }
+.orb-connector{position:absolute;left:0;top:0;width:0;height:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .25s ease;}
+.orb-line{position:absolute;left:0;top:0;height:1.5px;width:var(--line-length,120px);transform:rotate(var(--line-angle,0deg));transform-origin:0 50%;background:linear-gradient(90deg,rgba(0,200,255,0.88),rgba(0,200,255,0.2));box-shadow:0 0 12px rgba(0,200,255,0.45);}
+.orb-pin{position:absolute;left:0;top:0;width:10px;height:10px;border-radius:999px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,255,255,0.98),rgba(0,200,255,0.72) 42%,rgba(0,200,255,0.18) 74%,transparent 75%);box-shadow:0 0 16px rgba(0,200,255,0.85);}
 .orb-card{
-  position:absolute;width:240px;min-height:124px;padding:12px 12px 11px;border-radius:18px;
-  background:linear-gradient(180deg,rgba(7,18,34,0.62),rgba(7,18,34,0.34));
-  border:1px solid rgba(143,194,255,0.18);
-  box-shadow:0 18px 40px rgba(0,0,0,0.28), 0 0 24px rgba(0,200,255,0.08);
-  backdrop-filter:blur(22px) saturate(140%);
-  -webkit-backdrop-filter:blur(22px) saturate(140%);
+  position:absolute;width:268px;height:168px;border-radius:20px;
+  background:rgba(8,18,34,0.28);
+  border:1px solid rgba(143,194,255,0.26);
+  box-shadow:0 18px 40px rgba(0,0,0,0.28), 0 0 24px rgba(0,200,255,0.10);
+  backdrop-filter:blur(12px) saturate(125%);
+  -webkit-backdrop-filter:blur(12px) saturate(125%);
   pointer-events:auto;overflow:hidden;
   animation:orb-pop 12s ease-in-out infinite;
 }
 .orb-card::before{
   content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(circle at top right, rgba(0,200,255,0.16), transparent 42%);
+  background:radial-gradient(circle at top right, rgba(0,200,255,0.18), transparent 38%);
 }
-.orb-card h4{font-size:13px;color:#eff7ff;line-height:1.15;margin:8px 0 6px;font-weight:600;}
-.orb-card p{font-size:10px;color:#a5c2df;line-height:1.35;max-height:42px;overflow:hidden;}
+.orb-media{position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,200,255,0.18),rgba(223,241,255,0.03));}
+.orb-media img,.orb-media video{width:100%;height:100%;object-fit:cover;display:block;}
+.orb-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,10,20,0.10) 0%,rgba(4,10,20,0.18) 30%,rgba(4,10,20,0.68) 100%);}
+.orb-body{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:12px;z-index:1;}
+.orb-card h4{font-size:14px;color:#f2fbff;line-height:1.18;margin:0;font-weight:600;max-width:94%;text-shadow:0 0 10px rgba(0,0,0,0.35);}
+.orb-card p{font-size:11px;color:#d8ecff;line-height:1.38;max-height:48px;overflow:hidden;margin-top:8px;text-shadow:0 0 8px rgba(0,0,0,0.26);}
 .orb-chip{
-  display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:999px;
   font-size:9px;letter-spacing:0.11em;text-transform:uppercase;font-family:var(--fhud);
-  border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#d8ecff;
+  border:1px solid rgba(255,255,255,0.18);background:rgba(4,10,20,0.34);color:#d8ecff;backdrop-filter:blur(8px);
 }
-.orb-chip.offer{color:#00e87a;border-color:rgba(0,232,122,0.22);background:rgba(0,232,122,0.08);}
-.orb-chip.news{color:#00c8ff;border-color:rgba(0,200,255,0.2);background:rgba(0,200,255,0.08);}
-.orb-chip.space{color:#ffd600;border-color:rgba(255,214,0,0.22);background:rgba(255,214,0,0.08);}
-.orb-meta{margin-top:8px;font-size:9px;color:#7ea4c8;display:flex;justify-content:space-between;gap:8px;}
-.orb-hero{
-  position:absolute;right:12px;top:12px;width:76px;height:54px;border-radius:14px;
-  border:1px solid rgba(255,255,255,0.08);overflow:hidden;background:linear-gradient(135deg,rgba(0,200,255,0.18),rgba(223,241,255,0.03));
-}
-.orb-hero img,.orb-hero video{width:100%;height:100%;object-fit:cover;display:block;}
+.orb-chip.offer{color:#00c8ff;border-color:rgba(0,200,255,0.30);background:rgba(0,200,255,0.12);}
+.orb-chip.news{color:#00c8ff;border-color:rgba(0,200,255,0.28);background:rgba(0,200,255,0.10);}
+.orb-chip.space{color:#ffd600;border-color:rgba(255,214,0,0.24);background:rgba(255,214,0,0.10);}
+.orb-meta{font-size:10px;color:#e8f7ff;display:flex;justify-content:space-between;gap:8px;text-shadow:0 0 8px rgba(0,0,0,0.24);}
 .orb-pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;}
-.orb-card.pos-a{left:0;top:18px;animation-delay:0s;}
-.orb-card.pos-b{right:18px;top:34px;animation-delay:1.5s;}
-.orb-card.pos-c{left:12px;bottom:12px;animation-delay:3s;}
-.orb-card.pos-d{right:0;bottom:30px;animation-delay:4.5s;}
 @keyframes orb-pop{
   0%,100%{transform:translateY(0) scale(1);opacity:0.94;}
   25%{transform:translateY(-6px) scale(1.01);opacity:1;}
@@ -345,6 +348,235 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--lb);border-radius:2px;}
+
+
+/* COMMERCIAL REALISM THEME OVERRIDE */
+:root{
+  --blue:#78aee0;
+  --green:#2aa56f;
+  --red:#d95b63;
+  --yellow:#d8b24a;
+  --orange:#cf8b46;
+  --bg:#07111a;
+  --surface:rgba(12,20,31,0.22);
+  --text:#e6eef6;
+  --text-dim:#95a8bb;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --fhud:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --la:#79aedd;
+  --la2:rgba(121,174,221,0.09);
+  --lb:rgba(205,220,236,0.14);
+}
+html,body{
+  background:radial-gradient(circle at top, #0d1b29 0%, #07111a 58%, #040910 100%);
+  color:var(--text);
+  font-family:var(--font);
+}
+#topbar,#bottombar,#left-panel,#right-panel,.smenu,#sb,#iss-box,#cmd-response,.abox,#astranova-speech,#globe-btn,#locate-btn,#drone-btn,.zoom-btn{
+  background:linear-gradient(180deg,rgba(10,18,28,0.30),rgba(10,18,28,0.18)) !important;
+  backdrop-filter:blur(18px) saturate(120%);
+  -webkit-backdrop-filter:blur(18px) saturate(120%);
+  border-color:rgba(220,232,244,0.12) !important;
+  box-shadow:0 12px 28px rgba(0,0,0,0.16);
+}
+#topbar,#bottombar{background:linear-gradient(180deg,rgba(10,18,28,0.42),rgba(10,18,28,0.24)) !important;}
+#left-panel,#right-panel{width:52px;}
+.smenu.lmenu{left:52px;}
+.smenu.rmenu{right:52px;}
+.brand,.abrand{
+  font-family:var(--font) !important;
+  font-weight:700;
+  letter-spacing:0.06em;
+  text-shadow:none !important;
+  color:#f4f8fc;
+}
+.brand{font-size:12px;}
+.abrand{font-size:15px;}
+.lbadge,.vinfo,.balance-amount,.balance-label,.mh,.orb-chip,#locate-btn,#drone-btn,#globe-btn,.asubmit,.atab,.tb-left,.tb-center,.tb-right{
+  font-family:var(--font) !important;
+  letter-spacing:0.04em !important;
+  text-shadow:none !important;
+}
+.lbadge,.mh,.orb-chip,.atab,.asubmit,#locate-btn,#drone-btn,#globe-btn{
+  text-transform:none;
+}
+.user-name,.mr,.kr-title,.kr-sub,.asub,.balance-label,.vinfo,.mr label,#astranova-msg,#astranova-speech,.orb-card h4,.orb-card p{
+  letter-spacing:0;
+}
+.lp-btn,.rp-btn,.bb-btn,.zoom-btn,.mr-submit,.asubmit,.atab,.ainp,.asel,#cmd-input,#astranova-input,#astranova-close,#user-badge,#balance-display,.kr,.abox,.smenu,.orb-card,#astranova-speech,#sb,.mr input,.mr select,.mr textarea{
+  border-radius:12px !important;
+}
+.lp-btn,.rp-btn,.bb-btn,.zoom-btn{
+  color:#c9d7e5;
+}
+.lp-btn:hover,.rp-btn:hover,.bb-btn:hover,.bb-btn.on,.lp-btn.on,.rp-btn.on,.zoom-btn:hover,.mr:hover,.kr:hover{
+  background:rgba(255,255,255,0.08) !important;
+  color:#f1f6fb !important;
+  border-color:rgba(220,232,244,0.20) !important;
+  box-shadow:none !important;
+}
+#btn-post{
+  background:rgba(121,174,221,0.10) !important;
+  border-color:rgba(121,174,221,0.20) !important;
+  color:#dfeaf5 !important;
+}
+.mh,.lbadge,.balance-amount,.orb-chip,.atab,.asubmit{font-size:10px;}
+.vinfo,.balance-label,.mr label,.kr-sub,.asub{font-size:11px;}
+#astranova-svg,#astranova-big{filter:drop-shadow(0 10px 20px rgba(121,174,221,0.18)) !important;}
+#astranova-mode{background:rgba(7,12,19,0.78) !important;backdrop-filter:blur(14px);}
+#astranova-input,.ainp,.asel,#cmd-input,.mr input,.mr select,.mr textarea{
+  background:rgba(255,255,255,0.08) !important;
+  border-color:rgba(220,232,244,0.14) !important;
+  color:#f4f8fb !important;
+}
+#astranova-input::placeholder,.ainp::placeholder,.asel::placeholder,#cmd-input::placeholder,.mr input::placeholder,.mr textarea::placeholder,.sbi::placeholder{
+  color:#9fb0c1 !important;
+}
+.asubmit,.mr-submit{
+  background:rgba(121,174,221,0.12) !important;
+  border-color:rgba(121,174,221,0.24) !important;
+  color:#edf4fb !important;
+}
+.atab.on{
+  background:rgba(121,174,221,0.14) !important;
+  color:#f5f9fd !important;
+  border-color:rgba(121,174,221,0.24) !important;
+}
+.orb-card{
+  background:linear-gradient(180deg,rgba(12,21,32,0.52),rgba(12,21,32,0.26)) !important;
+  border-color:rgba(220,232,244,0.12) !important;
+  box-shadow:0 16px 30px rgba(0,0,0,0.18) !important;
+}
+.orb-card::before{background:radial-gradient(circle at top right, rgba(255,255,255,0.06), transparent 42%) !important;}
+.orb-card h4{color:#f5f8fc !important;font-size:14px;}
+.orb-card p{color:#b1c0ce !important;font-size:11px;}
+.orb-chip{background:rgba(255,255,255,0.06) !important;border-color:rgba(255,255,255,0.10) !important;color:#edf4fb !important;}
+.orb-chip.offer{color:#b8f0d4 !important;background:rgba(42,165,111,0.10) !important;border-color:rgba(42,165,111,0.18) !important;}
+.orb-chip.news{color:#ddecfb !important;background:rgba(121,174,221,0.10) !important;border-color:rgba(121,174,221,0.18) !important;}
+.orb-chip.space{color:#f1e2b4 !important;background:rgba(216,178,74,0.10) !important;border-color:rgba(216,178,74,0.18) !important;}
+#astranova-speech{color:#eef5fb !important;border-color:rgba(220,232,244,0.14) !important;box-shadow:0 12px 24px rgba(0,0,0,0.12) !important;}
+#status-graph .sg-bar{background:#8fc6f0;}
+.user-avatar{background:rgba(255,255,255,0.08);border-color:rgba(220,232,244,0.16);color:#eef5fb;}
+#balance-display{border-color:rgba(42,165,111,0.22) !important;}
+#sb{width:340px;}
+#sbi{font-family:var(--font);font-size:13px;}
+
+
+/* === 3.3.3 DEPLOYMENT PATCH: locked neon-blue, depth-linked orbital cards, wallet offers === */
+
+.brand{
+  color:var(--blue) !important;
+  text-shadow:0 0 14px var(--blue), 0 0 28px rgba(0,200,255,0.22) !important;
+}
+.orb-card h4{
+  font-size:12px !important;
+}
+.orb-card p{
+  font-size:10px !important;
+  max-height:38px !important;
+}
+.orb-body{
+  padding:10px !important;
+}
+.orb-meta{
+  font-size:9px !important;
+}
+
+.orb-pin{transform:translate(-50%,-50%) scale(var(--pin-scale,1));}
+.orb-card{
+  animation:none !important;
+  transform-origin:50% 50%;
+  will-change:transform,left,top,opacity;
+  width:198px !important;
+  height:128px !important;
+  border-radius:16px !important;
+}
+}
+#topbar,.mr,.rp-btn,.lp-btn,#bottombar,#sb,#globe-btn,#locate-btn,#drone-btn,#delivery-calc{
+  border-color:rgba(0,200,255,0.22);
+}
+#topbar{background:rgba(3,8,16,0.74);}
+#lp{background:rgba(3,8,16,0.72);backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%);}
+.lpb{display:flex;flex-direction:column;gap:10px;}
+.lcard{
+  border-radius:14px;
+  padding:0;
+  overflow:hidden;
+  background:rgba(4,12,22,0.44);
+  border:1px solid rgba(0,200,255,0.20);
+  box-shadow:0 14px 32px rgba(0,0,0,0.28),0 0 18px rgba(0,200,255,0.08);
+}
+.lcard:hover{
+  border-color:rgba(0,200,255,0.52);
+  box-shadow:0 18px 36px rgba(0,0,0,0.34),0 0 22px rgba(0,200,255,0.14);
+  transform:translateY(-1px);
+}
+.lmedia{
+  position:relative;
+  height:148px;
+  background:linear-gradient(135deg,rgba(0,200,255,0.18),rgba(6,18,34,0.56));
+}
+.lmedia::after{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(4,10,20,0.08) 0%,rgba(4,10,20,0.14) 35%,rgba(4,10,20,0.72) 100%);
+}
+.lmedia img,.lmedia video{
+  width:100%;height:100%;display:block;object-fit:cover;
+}
+.lfallback{
+  position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-start;
+  padding:12px;color:#f2fbff;font-family:var(--fhud);font-size:11px;letter-spacing:0.14em;
+  background:
+    radial-gradient(circle at top right, rgba(0,200,255,0.20), transparent 32%),
+    linear-gradient(135deg, rgba(0,200,255,0.20), rgba(5,16,30,0.92));
+}
+.lcontent{padding:12px;}
+.lcn{font-size:13px;font-weight:700;color:#f1fbff;margin-bottom:3px;line-height:1.18;}
+.lcc{font-size:10px;color:var(--la);text-transform:uppercase;letter-spacing:0.12em;}
+.lcp{font-size:14px;color:var(--la);font-weight:700;margin-top:8px;text-shadow:0 0 10px rgba(0,200,255,0.24);}
+.ldesc{font-size:10px;color:#bcd9f4;line-height:1.45;margin-top:7px;}
+.lmeta{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+  margin-top:10px;
+}
+.lmeta-chip{
+  background:rgba(0,200,255,0.08);
+  border:1px solid rgba(0,200,255,0.16);
+  border-radius:10px;
+  padding:8px;
+}
+.lmeta-label{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;}
+.lmeta-value{font-size:11px;color:#e9f8ff;margin-top:4px;font-weight:600;}
+.lactions{display:flex;gap:8px;margin-top:12px;}
+.lbuy,.lreload{
+  flex:1;
+  border-radius:10px;
+  border:1px solid rgba(0,200,255,0.26);
+  background:rgba(0,200,255,0.08);
+  color:var(--la);
+  padding:10px 12px;
+  font-size:11px;
+  font-family:var(--fhud);
+  letter-spacing:0.10em;
+  text-transform:uppercase;
+  cursor:pointer;
+}
+.lbuy:hover,.lreload:hover{
+  background:rgba(0,200,255,0.14);
+  border-color:rgba(0,200,255,0.56);
+}
+.lbuy[disabled]{
+  opacity:0.48;cursor:not-allowed;
+}
+.lcvote{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,200,255,0.10);
+}
+.lvote-left{display:flex;align-items:center;gap:5px;}
+.vscore{color:#d8ecff;font-size:11px;}
+.pay-note{color:#d8ecff;}
+
 </style>
 </head>
 <body class="lt">
@@ -520,60 +752,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <!-- ASTRANOVA ELF ASSISTANT -->
   <div id="astranova-wrapper">
     <div id="astranova-speech">Astranova online. Speak your destination.</div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant">
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant">
       <defs>
-        <linearGradient id="astrHairS" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f8fbff"/>
-          <stop offset="45%" stop-color="#93dfff"/>
-          <stop offset="100%" stop-color="#2859af"/>
-        </linearGradient>
-        <linearGradient id="astrSuitS" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#e8f1ff"/>
-          <stop offset="18%" stop-color="#78d7ff"/>
-          <stop offset="100%" stop-color="#081222"/>
-        </linearGradient>
-        <linearGradient id="astrWingS" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f2f8ff"/>
-          <stop offset="58%" stop-color="#8be1ff"/>
-          <stop offset="100%" stop-color="#183e83"/>
-        </linearGradient>
+        <linearGradient id="astrHairS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7fbff"/><stop offset="40%" stop-color="#b7ebff"/><stop offset="100%" stop-color="#2a5db3"/></linearGradient>
+        <linearGradient id="astrSuitS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eef5ff"/><stop offset="24%" stop-color="#92e3ff"/><stop offset="100%" stop-color="#071120"/></linearGradient>
+        <linearGradient id="astrWingS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7fbff"/><stop offset="55%" stop-color="#95e4ff"/><stop offset="100%" stop-color="#173b7a"/></linearGradient>
       </defs>
-      <g class="astranova-wing-left" style="transform-origin:28px 86px;">
-        <path d="M41 94C19 81 9 65 9 47c14 7 25 16 33 29 3 5 6 10 8 16-3 1-6 2-9 2z" fill="url(#astrWingS)" opacity="0.9"/>
-        <path d="M44 98C23 96 10 90 4 77c14 2 27 6 36 15 3 2 6 5 8 7-2 1-3 1-4 1z" fill="#f4fbff" opacity="0.36"/>
-      </g>
-      <g class="astranova-wing-right" style="transform-origin:92px 86px;">
-        <path d="M79 94c22-13 32-29 32-47-14 7-25 16-33 29-3 5-6 10-8 16 3 1 6 2 9 2z" fill="url(#astrWingS)" opacity="0.9"/>
-        <path d="M76 98c21-2 34-8 40-21-14 2-27 6-36 15-3 2-6 5-8 7 2 1 3 1 4 1z" fill="#f4fbff" opacity="0.36"/>
-      </g>
-      <ellipse cx="60" cy="150" rx="18" ry="5.5" fill="#00c8ff" opacity="0.16"/>
-      <path d="M60 33c-10.5 0-18.5 8.3-18.5 19v10c0 12 7.9 20.5 18.5 20.5S78.5 74 78.5 62V52c0-10.7-8-19-18.5-19z" fill="#f6ecff"/>
-      <path d="M42 53c0-17 8.5-28 18-28s18 11 18 28c-5.8-4.3-11.8-6.3-18-6.3S47.8 48.7 42 53z" fill="#09152a"/>
-      <path d="M46 46c4.8-10.6 10.7-15.8 14-15.8 3.4 0 9.2 5.2 14 15.8-3.8-2.5-8.6-3.8-14-3.8s-10.2 1.3-14 3.8z" fill="url(#astrHairS)" opacity="0.97"/>
-      <path d="M44 54c3.5 12 8 21 16 26-11 1-18-7-18-18 0-3 1-5.6 2-8z" fill="url(#astrHairS)" opacity="0.9"/>
-      <path d="M76 54c-3.5 12-8 21-16 26 11 1 18-7 18-18 0-3-1-5.6-2-8z" fill="url(#astrHairS)" opacity="0.9"/>
-      <path d="M46.5 50l-7.5-8c1.5-1 4.5-1.3 7.2-.8l3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
-      <path d="M73.5 50l7.5-8c-1.5-1-4.5-1.3-7.2-.8l-3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
-      <path d="M49 58.5c2.5-1.7 5.2-2.5 8.2-2.5M62.8 56c2.8 0 5.4.8 8.2 2.5" stroke="#7387a8" stroke-width="1.2" stroke-linecap="round" opacity="0.7"/>
-      <ellipse cx="53.5" cy="60.5" rx="2.1" ry="3.3" fill="#15233c"/>
-      <ellipse cx="66.5" cy="60.5" rx="2.1" ry="3.3" fill="#15233c"/>
-      <circle cx="54.1" cy="59.6" r="0.65" fill="#dffbff"/>
-      <circle cx="67.1" cy="59.6" r="0.65" fill="#dffbff"/>
-      <path d="M59.3 62.5c-.8 2.2-1.2 4.6-.9 6.8" stroke="#d8b7c8" stroke-width="1" stroke-linecap="round" opacity="0.7"/>
-      <path d="M55.8 71.3c1.8 1.2 6.4 1.2 8.4 0" stroke="#b66a8e" stroke-width="1.35" stroke-linecap="round"/>
-      <path d="M57 82.4h6l6 6.8v22.8l-9 6.6-9-6.6V89.2l6-6.8z" fill="url(#astrSuitS)" stroke="#dcecff" stroke-width="1.15"/>
-      <path d="M57.5 84.2c1.8 2 3 4.3 2.5 7.4m2.5-7.4c-1.8 2-3 4.3-2.5 7.4" stroke="#edf6ff" stroke-width="1.1" opacity="0.75"/>
-      <path d="M52 89.5l-8.4 9.2 4 12.2 7.4-5.4M68 89.5l8.4 9.2-4 12.2-7.4-5.4" fill="none" stroke="#dfeeff" stroke-width="3.7" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M52 89.5l-7.4 8.2 3 8.4 6.4-4.5M68 89.5l7.4 8.2-3 8.4-6.4-4.5" fill="none" stroke="#7fe5ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#dce8ff" stroke-width="3.6" stroke-linecap="round"/>
-      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#8bdfff" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#dce8ff" stroke-width="3.3" stroke-linecap="round"/>
-      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#8bdfff" stroke-width="1.4" stroke-linecap="round"/>
-      <path d="M43.8 51c-5.6 1.8-9.7 4.8-12.3 8.8 5-1.2 9.4-3.3 12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.8" stroke-linecap="round" opacity="0.52"/>
-      <path d="M76.2 51c5.6 1.8 9.7 4.8 12.3 8.8-5-1.2-9.4-3.3-12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.8" stroke-linecap="round" opacity="0.52"/>
-      <path d="M58 101h4M58 107h4" stroke="#ebf8ff" stroke-width="1.1" stroke-linecap="round" opacity="0.9"/>
-      <circle cx="60" cy="97.2" r="2.2" fill="#f1f9ff"/>
-      <circle cx="60" cy="97.2" r="1.1" fill="#00c8ff"/>
+      <g class="astranova-wing-left" style="transform-origin:36px 100px;"><path d="M50 114C28 105 17 86 14 58c14 9 25 22 33 41 2 5 4 10 5 14-2 1-2 1-2 1z" fill="url(#astrWingS)" opacity="0.44"/><path d="M49 116C30 118 18 113 9 97c15 2 27 7 36 15 2 2 4 4 5 6-1 0-1 0-1 0z" fill="#f7fcff" opacity="0.18"/></g>
+      <g class="astranova-wing-right" style="transform-origin:84px 100px;"><path d="M70 114c22-9 33-28 36-56-14 9-25 22-33 41-2 5-4 10-5 14 2 1 2 1 2 1z" fill="url(#astrWingS)" opacity="0.44"/><path d="M71 116c19 2 31-3 40-19-15 2-27 7-36 15-2 2-4 4-5 6 1 0 1 0 1 0z" fill="#f7fcff" opacity="0.18"/></g>
+      <ellipse cx="60" cy="208" rx="19" ry="5.5" fill="#00c8ff" opacity="0.15"/>
+      <path d="M60 30c-10.9 0-18 8.8-18 20v11.8c0 15 7.7 25.6 18 25.6 10.4 0 18-10.6 18-25.6V50c0-11.2-7.1-20-18-20z" fill="#f6eaf0"/>
+      <path d="M43.3 54.8c3.4-17.1 11.2-29.6 16.7-29.6 5.6 0 13.7 12.6 17.1 30.2-4.2-6.1-10-9.8-17.1-9.8-7 0-12.6 3.5-16.7 9.2z" fill="url(#astrHairS)" opacity="0.98"/>
+      <path d="M41.7 56.2c1.5 12.1 7.5 24.4 18.3 31.7-14 .5-22-8.3-22-22 0-3.5 1.2-6.8 3.7-9.7z" fill="url(#astrHairS)" opacity="0.92"/>
+      <path d="M78.3 56.2C76.8 68.3 70.8 80.6 60 87.9c14 .5 22-8.3 22-22 0-3.5-1.2-6.8-3.7-9.7z" fill="url(#astrHairS)" opacity="0.92"/>
+      <path d="M46.6 61.6c-4 1.2-7.7 3.4-10.1 6.8 4.5-.7 8.5-2.2 11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.46"/>
+      <path d="M73.4 61.6c4 1.2 7.7 3.4 10.1 6.8-4.5-.7-8.5-2.2-11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.46"/>
+      <path d="M44 61.5c-3.6 1.7-6 4.4-7.1 8.1 3.8-.8 7-2.5 9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
+      <path d="M76 61.5c3.6 1.7 6 4.4 7.1 8.1-3.8-.8-7-2.5-9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
+      <path d="M49 61.2c2.2-1.2 4.6-1.8 7.2-1.8M63.8 59.4c2.5 0 5 .6 7.2 1.8" stroke="#7688a3" stroke-width="1" stroke-linecap="round" opacity="0.72"/>
+      <ellipse cx="53.8" cy="63.6" rx="1.45" ry="2.45" fill="#172235"/><ellipse cx="66.2" cy="63.6" rx="1.45" ry="2.45" fill="#172235"/><circle cx="54.3" cy="62.9" r="0.45" fill="#effcff"/><circle cx="66.7" cy="62.9" r="0.45" fill="#effcff"/>
+      <path d="M59 65.7c-.6 2-.8 4.1-.5 6.1" stroke="#d0a8ba" stroke-width="0.9" stroke-linecap="round" opacity="0.7"/><path d="M56.2 74.1c1.8 1 5.8 1 7.6 0" stroke="#b06489" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M56.7 87.5h6.6l6.7 8.5v30.5L60 134.2l-10-7.7V96l6.7-8.5z" fill="url(#astrSuitS)" stroke="#dcecff" stroke-width="1.05"/>
+      <path d="M53 95.6l-8.1 13 3.7 16.5 7.2-6.4M67 95.6l8.1 13-3.7 16.5-7.2-6.4" fill="none" stroke="#e7f4ff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M53 95.6l-7.2 11.5 2.8 11.5 6.1-5.4M67 95.6l7.2 11.5-2.8 11.5-6.1-5.4" fill="none" stroke="#7fe4ff" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#dce8ff" stroke-width="3.2" stroke-linecap="round"/><path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#8bdfff" stroke-width="1.15" stroke-linecap="round"/>
+      <path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#dce8ff" stroke-width="2.7" stroke-linecap="round"/><path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#8bdfff" stroke-width="1" stroke-linecap="round"/>
+      <path d="M53 183.8h8M59 91.4v23.5" stroke="#eef8ff" stroke-width="1" stroke-linecap="round" opacity="0.9"/>
+      <path d="M60 86.8l3 4.4-3 4.3-3-4.3z" fill="#f1f9ff"/><path d="M60 88.5l1.4 2.7-1.4 2.5-1.4-2.5z" fill="#00c8ff"/>
     </svg>
   </div>
 
@@ -586,60 +791,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 <!-- ASTRANOVA TAKEOVER MODE -->
 <div id="astranova-mode">
   <div id="astranova-mode-inner">
-    <svg id="astranova-big" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant full body">
+    <svg id="astranova-big" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant full body">
       <defs>
-        <linearGradient id="astrHairB" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f8fbff"/>
-          <stop offset="45%" stop-color="#95e0ff"/>
-          <stop offset="100%" stop-color="#2859af"/>
-        </linearGradient>
-        <linearGradient id="astrSuitB" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#edf4ff"/>
-          <stop offset="17%" stop-color="#78d8ff"/>
-          <stop offset="100%" stop-color="#06111f"/>
-        </linearGradient>
-        <linearGradient id="astrWingB" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#f2f8ff"/>
-          <stop offset="58%" stop-color="#8ce1ff"/>
-          <stop offset="100%" stop-color="#183d81"/>
-        </linearGradient>
+        <linearGradient id="astrHairB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f8fbff"/><stop offset="40%" stop-color="#b7ebff"/><stop offset="100%" stop-color="#2a5db3"/></linearGradient>
+        <linearGradient id="astrSuitB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0f6ff"/><stop offset="21%" stop-color="#8ce2ff"/><stop offset="100%" stop-color="#06111f"/></linearGradient>
+        <linearGradient id="astrWingB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f8fbff"/><stop offset="55%" stop-color="#91e3ff"/><stop offset="100%" stop-color="#173b79"/></linearGradient>
       </defs>
-      <g class="astranova-wing-left" style="transform-origin:28px 86px;">
-        <path d="M41 94C19 81 9 65 9 47c14 7 25 16 33 29 3 5 6 10 8 16-3 1-6 2-9 2z" fill="url(#astrWingB)" opacity="0.92"/>
-        <path d="M44 98C23 96 10 90 4 77c14 2 27 6 36 15 3 2 6 5 8 7-2 1-3 1-4 1z" fill="#f4fbff" opacity="0.38"/>
-      </g>
-      <g class="astranova-wing-right" style="transform-origin:92px 86px;">
-        <path d="M79 94c22-13 32-29 32-47-14 7-25 16-33 29-3 5-6 10-8 16 3 1 6 2 9 2z" fill="url(#astrWingB)" opacity="0.92"/>
-        <path d="M76 98c21-2 34-8 40-21-14 2-27 6-36 15-3 2-6 5-8 7 2 1 3 1 4 1z" fill="#f4fbff" opacity="0.38"/>
-      </g>
-      <ellipse cx="60" cy="150" rx="20" ry="6" fill="#00c8ff" opacity="0.16"/>
-      <path d="M60 33c-10.5 0-18.5 8.3-18.5 19v10c0 12 7.9 20.5 18.5 20.5S78.5 74 78.5 62V52c0-10.7-8-19-18.5-19z" fill="#f6ecff"/>
-      <path d="M42 53c0-17 8.5-28 18-28s18 11 18 28c-5.8-4.3-11.8-6.3-18-6.3S47.8 48.7 42 53z" fill="#09152a"/>
-      <path d="M46 46c4.8-10.6 10.7-15.8 14-15.8 3.4 0 9.2 5.2 14 15.8-3.8-2.5-8.6-3.8-14-3.8s-10.2 1.3-14 3.8z" fill="url(#astrHairB)" opacity="0.97"/>
-      <path d="M44 54c3.5 12 8 21 16 26-11 1-18-7-18-18 0-3 1-5.6 2-8z" fill="url(#astrHairB)" opacity="0.9"/>
-      <path d="M76 54c-3.5 12-8 21-16 26 11 1 18-7 18-18 0-3-1-5.6-2-8z" fill="url(#astrHairB)" opacity="0.9"/>
-      <path d="M46.5 50l-7.5-8c1.5-1 4.5-1.3 7.2-.8l3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
-      <path d="M73.5 50l7.5-8c-1.5-1-4.5-1.3-7.2-.8l-3.8 5.7" fill="#f5f8ff" opacity="0.8"/>
-      <path d="M49 58.5c2.5-1.7 5.2-2.5 8.2-2.5M62.8 56c2.8 0 5.4.8 8.2 2.5" stroke="#7387a8" stroke-width="1.25" stroke-linecap="round" opacity="0.72"/>
-      <ellipse cx="53.5" cy="60.5" rx="2.15" ry="3.35" fill="#15233c"/>
-      <ellipse cx="66.5" cy="60.5" rx="2.15" ry="3.35" fill="#15233c"/>
-      <circle cx="54.1" cy="59.6" r="0.68" fill="#dffbff"/>
-      <circle cx="67.1" cy="59.6" r="0.68" fill="#dffbff"/>
-      <path d="M59.3 62.5c-.8 2.2-1.2 4.6-.9 6.8" stroke="#d8b7c8" stroke-width="1.05" stroke-linecap="round" opacity="0.72"/>
-      <path d="M55.8 71.3c1.8 1.2 6.4 1.2 8.4 0" stroke="#b66a8e" stroke-width="1.45" stroke-linecap="round"/>
-      <path d="M57 82.4h6l6 6.8v22.8l-9 6.6-9-6.6V89.2l6-6.8z" fill="url(#astrSuitB)" stroke="#dcecff" stroke-width="1.2"/>
-      <path d="M57.5 84.2c1.8 2 3 4.3 2.5 7.4m2.5-7.4c-1.8 2-3 4.3-2.5 7.4" stroke="#edf6ff" stroke-width="1.15" opacity="0.76"/>
-      <path d="M52 89.5l-8.4 9.2 4 12.2 7.4-5.4M68 89.5l8.4 9.2-4 12.2-7.4-5.4" fill="none" stroke="#dfeeff" stroke-width="3.9" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M52 89.5l-7.4 8.2 3 8.4 6.4-4.5M68 89.5l7.4 8.2-3 8.4-6.4-4.5" fill="none" stroke="#7fe5ff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#dce8ff" stroke-width="3.8" stroke-linecap="round"/>
-      <path d="M56.6 118.4l-5.5 17.8M63.4 118.4l5.5 17.8" stroke="#8bdfff" stroke-width="1.6" stroke-linecap="round"/>
-      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#dce8ff" stroke-width="3.4" stroke-linecap="round"/>
-      <path d="M50.9 136.1l-3.4 12.5M69.1 136.1l3.4 12.5" stroke="#8bdfff" stroke-width="1.45" stroke-linecap="round"/>
-      <path d="M43.8 51c-5.6 1.8-9.7 4.8-12.3 8.8 5-1.2 9.4-3.3 12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.85" stroke-linecap="round" opacity="0.54"/>
-      <path d="M76.2 51c5.6 1.8 9.7 4.8 12.3 8.8-5-1.2-9.4-3.3-12.7-6.8" fill="none" stroke="#f2f7ff" stroke-width="1.85" stroke-linecap="round" opacity="0.54"/>
-      <path d="M58 101h4M58 107h4" stroke="#ebf8ff" stroke-width="1.15" stroke-linecap="round" opacity="0.92"/>
-      <circle cx="60" cy="97.2" r="2.25" fill="#f1f9ff"/>
-      <circle cx="60" cy="97.2" r="1.15" fill="#00c8ff"/>
+      <g class="astranova-wing-left" style="transform-origin:36px 100px;"><path d="M50 114C28 105 17 86 14 58c14 9 25 22 33 41 2 5 4 10 5 14-2 1-2 1-2 1z" fill="url(#astrWingB)" opacity="0.50"/><path d="M49 116C30 118 18 113 9 97c15 2 27 7 36 15 2 2 4 4 5 6-1 0-1 0-1 0z" fill="#f7fcff" opacity="0.22"/></g>
+      <g class="astranova-wing-right" style="transform-origin:84px 100px;"><path d="M70 114c22-9 33-28 36-56-14 9-25 22-33 41-2 5-4 10-5 14 2 1 2 1 2 1z" fill="url(#astrWingB)" opacity="0.50"/><path d="M71 116c19 2 31-3 40-19-15 2-27 7-36 15-2 2-4 4-5 6 1 0 1 0 1 0z" fill="#f7fcff" opacity="0.22"/></g>
+      <ellipse cx="60" cy="208" rx="20" ry="6" fill="#00c8ff" opacity="0.16"/>
+      <path d="M60 30c-10.9 0-18 8.8-18 20v11.8c0 15 7.7 25.6 18 25.6 10.4 0 18-10.6 18-25.6V50c0-11.2-7.1-20-18-20z" fill="#f6eaf0"/>
+      <path d="M43.3 54.8c3.4-17.1 11.2-29.6 16.7-29.6 5.6 0 13.7 12.6 17.1 30.2-4.2-6.1-10-9.8-17.1-9.8-7 0-12.6 3.5-16.7 9.2z" fill="url(#astrHairB)" opacity="0.98"/>
+      <path d="M41.7 56.2c1.5 12.1 7.5 24.4 18.3 31.7-14 .5-22-8.3-22-22 0-3.5 1.2-6.8 3.7-9.7z" fill="url(#astrHairB)" opacity="0.92"/>
+      <path d="M78.3 56.2C76.8 68.3 70.8 80.6 60 87.9c14 .5 22-8.3 22-22 0-3.5-1.2-6.8-3.7-9.7z" fill="url(#astrHairB)" opacity="0.92"/>
+      <path d="M46.6 61.6c-4 1.2-7.7 3.4-10.1 6.8 4.5-.7 8.5-2.2 11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.6" stroke-linecap="round" opacity="0.52"/>
+      <path d="M73.4 61.6c4 1.2 7.7 3.4 10.1 6.8-4.5-.7-8.5-2.2-11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.6" stroke-linecap="round" opacity="0.52"/>
+      <path d="M44 61.5c-3.6 1.7-6 4.4-7.1 8.1 3.8-.8 7-2.5 9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
+      <path d="M76 61.5c3.6 1.7 6 4.4 7.1 8.1-3.8-.8-7-2.5-9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
+      <path d="M49 61.2c2.2-1.2 4.6-1.8 7.2-1.8M63.8 59.4c2.5 0 5 .6 7.2 1.8" stroke="#7688a3" stroke-width="1.15" stroke-linecap="round" opacity="0.72"/>
+      <ellipse cx="53.8" cy="63.6" rx="1.6" ry="2.65" fill="#172235"/><ellipse cx="66.2" cy="63.6" rx="1.6" ry="2.65" fill="#172235"/><circle cx="54.3" cy="62.9" r="0.5" fill="#effcff"/><circle cx="66.7" cy="62.9" r="0.5" fill="#effcff"/>
+      <path d="M59 65.7c-.6 2-.8 4.1-.5 6.1" stroke="#d0a8ba" stroke-width="0.95" stroke-linecap="round" opacity="0.7"/><path d="M56.2 74.1c1.8 1 5.8 1 7.6 0" stroke="#b06489" stroke-width="1.25" stroke-linecap="round"/>
+      <path d="M56.7 87.5h6.6l6.7 8.5v30.5L60 134.2l-10-7.7V96l6.7-8.5z" fill="url(#astrSuitB)" stroke="#dcecff" stroke-width="1.15"/>
+      <path d="M53 95.6l-8.1 13 3.7 16.5 7.2-6.4M67 95.6l8.1 13-3.7 16.5-7.2-6.4" fill="none" stroke="#e7f4ff" stroke-width="3.35" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M53 95.6l-7.2 11.5 2.8 11.5 6.1-5.4M67 95.6l7.2 11.5-2.8 11.5-6.1-5.4" fill="none" stroke="#7fe4ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#dce8ff" stroke-width="3.45" stroke-linecap="round"/><path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#8bdfff" stroke-width="1.25" stroke-linecap="round"/>
+      <path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#dce8ff" stroke-width="2.9" stroke-linecap="round"/><path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#8bdfff" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M53 183.8h8M59 91.4v23.5" stroke="#eef8ff" stroke-width="1.05" stroke-linecap="round" opacity="0.92"/>
+      <path d="M60 86.8l3 4.4-3 4.3-3-4.3z" fill="#f1f9ff"/><path d="M60 88.5l1.4 2.7-1.4 2.5-1.4-2.5z" fill="#00c8ff"/>
     </svg>
     <div id="astranova-msg">Astranova online. What signal should I find?</div>
     <input id="astranova-input" placeholder="Type anything… pizza, diving, jobs, rooms…" autocomplete="off" onkeydown="if(event.key==='Enter')astranovaSearch()"/>
@@ -815,7 +993,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   <div class="pay-box">
     <div class="mhdr">Wallet / Payments <button class="mcl" onclick="closePayments()">×</button></div>
     <div class="pay-body">
-      <div class="pay-note">Astranov 3.3.3 lets guests browse first. Login is requested only when you actually start a purchase. Stripe and PayPal stay wired for live checkout once your merchant credentials are added.</div>
+      <div class="pay-note">Astranov 3.3.3 lets guests browse first. All vendor purchases use the in-app wallet balance. Reload the balance here inside the app, then buy directly from your balance.</div>
       <div class="pay-row">
         <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
         <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
@@ -953,6 +1131,129 @@ function clipText(v, n=84) {
   return s.length > n ? s.slice(0, n-1) + '…' : s;
 }
 
+
+const ORBITAL_FALLBACK_POINTS = [
+  { lat: 40.7128, lng: -74.0060 },
+  { lat: 51.5072, lng: -0.1276 },
+  { lat: 35.6762, lng: 139.6503 },
+  { lat: -33.8688, lng: 151.2093 },
+  { lat: 25.2048, lng: 55.2708 },
+  { lat: 37.9838, lng: 23.7275 },
+  { lat: -22.9068, lng: -43.1729 },
+  { lat: 1.3521, lng: 103.8198 }
+];
+
+function asFiniteNumber(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+function isImageUrl(url) {
+  return /\.(avif|webp|png|jpe?g|gif)(\?|#|$)/i.test(String(url || ''));
+}
+
+function isVideoUrl(url) {
+  return /\.(mp4|webm|ogg|m3u8)(\?|#|$)/i.test(String(url || ''));
+}
+
+function pickPreviewMedia(record) {
+  const keys = ['video','video_url','videoUrl','media_video','mediaVideo','preview_video','previewVideo','clip','clip_url','media','media_url','mediaUrl','image','image_url','imageUrl','photo','photo_url','thumbnail','thumb','preview','preview_url','url'];
+  let video = '';
+  let image = '';
+  for (const key of keys) {
+    const value = record && record[key];
+    if (typeof value !== 'string' || !value.trim()) continue;
+    const url = value.trim();
+    if (!video && isVideoUrl(url)) video = url;
+    else if (!image && isImageUrl(url)) image = url;
+  }
+  return { image, video };
+}
+
+function withOrbitalDefaults(item, index) {
+  const fallback = ORBITAL_FALLBACK_POINTS[index % ORBITAL_FALLBACK_POINTS.length];
+  const lat = asFiniteNumber(item.lat);
+  const lng = asFiniteNumber(item.lng ?? item.lon);
+  return {
+    ...item,
+    lat: lat === null ? fallback.lat : lat,
+    lng: lng === null ? fallback.lng : lng,
+    image: item.image || '',
+    video: item.video || ''
+  };
+}
+
+function safeMediaMarkup(item, title) {
+  if (item.video) return `<div class="orb-media"><video src="${escapeHtml(item.video)}" muted autoplay loop playsinline preload="metadata"></video></div>`;
+  if (item.image) return `<div class="orb-media"><img src="${escapeHtml(item.image)}" alt="${title}"/></div>`;
+  return `<div class="orb-media"></div>`;
+}
+
+
+function positionOrbitalFeed() {
+  const host = document.getElementById('orbital-feed');
+  if (!host || CL !== 0 || !globeController || typeof globeController.projectLatLng !== 'function') return;
+  const hostRect = host.getBoundingClientRect();
+  const cards = host.querySelectorAll('.orb-card');
+  const cameraZoom = typeof globeController.getZoom === 'function' ? globeController.getZoom() : 3.35;
+  cards.forEach((card, index) => {
+    const connector = host.querySelector(`.orb-connector[data-orb-card="${index}"]`);
+    const lat = Number(card.dataset.lat || 0);
+    const lng = Number(card.dataset.lng || 0);
+    const projection = globeController.projectLatLng(lat, lng);
+    if (!projection || !projection.visible) {
+      card.style.opacity = '0';
+      card.style.pointerEvents = 'none';
+      if (connector) connector.style.opacity = '0';
+      return;
+    }
+    const cardW = card.offsetWidth || 198;
+    const cardH = card.offsetHeight || 128;
+    const anchorX = projection.x - hostRect.left;
+    const anchorY = projection.y - hostRect.top;
+    const centerX = hostRect.width * 0.5;
+    const centerY = hostRect.height * 0.5;
+    const radialX = anchorX - centerX;
+    const radialY = anchorY - centerY;
+    const len = Math.hypot(radialX, radialY) || 1;
+    const ux = radialX / len;
+    const uy = radialY / len;
+    const depth = Math.max(0, Math.min(1, projection.depth ?? 0));
+    const centerFactor = Math.max(0, 1 - (len / Math.max(hostRect.width, hostRect.height)));
+    const zoomFactor = Math.max(0, (3.55 - cameraZoom));
+    const scale = Math.max(0.68, Math.min(1.16, 0.74 + depth * 0.24 + centerFactor * 0.12 + zoomFactor * 0.08));
+    const extra = 76 + depth * 16 + centerFactor * 8;
+    const originLeft = ux >= 0;
+    let left = anchorX + ux * extra - (originLeft ? 10 : cardW - 10);
+    let top = anchorY + uy * (extra * 0.40) - cardH * 0.5;
+    left = Math.max(10, Math.min(hostRect.width - cardW - 10, left));
+    top = Math.max(10, Math.min(hostRect.height - cardH - 10, top));
+    card.style.left = left + 'px';
+    card.style.top = top + 'px';
+    card.style.opacity = String(Math.max(0.42, Math.min(1, 0.55 + depth * 0.55 + centerFactor * 0.18)));
+    card.style.pointerEvents = 'auto';
+    card.style.zIndex = String(8 + Math.round(depth * 40));
+    card.style.transformOrigin = originLeft ? '0% 50%' : '100% 50%';
+    card.style.transform = 'translateZ(0) scale(' + scale.toFixed(3) + ')';
+    const tailX = left + (originLeft ? 14 : cardW - 14);
+    const tailY = top + cardH * 0.5;
+    const dx = anchorX - tailX;
+    const dy = anchorY - tailY;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (connector) {
+      connector.style.opacity = '1';
+      connector.style.left = tailX + 'px';
+      connector.style.top = tailY + 'px';
+      connector.style.zIndex = String(4 + Math.round(depth * 28));
+      connector.style.setProperty('--line-length', Math.max(18, dist) + 'px');
+      connector.style.setProperty('--line-angle', angle + 'deg');
+      connector.style.setProperty('--pin-scale', (0.88 + depth * 0.46).toFixed(3));
+    }
+  });
+}
+
+
 async function loadOrbitalFeed() {
   const items = [];
   try {
@@ -960,25 +1261,37 @@ async function loadOrbitalFeed() {
       sb.from('signals').select('*').order('created_at', { ascending:false }).limit(6),
       sb.from('shops').select('*').limit(4)
     ]);
-    (signals || []).forEach(s => items.push({
-      kind: 'offer',
-      title: s.title || s.category || 'New signal',
-      body: s.description || s.price || s.contact || 'Live marketplace signal',
-      metaLeft: (s.category || 'signal').toUpperCase(),
-      metaRight: s.price || 'LIVE',
-      image: '',
-    }));
-    (shops || []).forEach(s => items.push({
-      kind: 'offer',
-      title: s.name || 'Vendor',
-      body: s.description || s.category || 'Local offer',
-      metaLeft: 'SHOP',
-      metaRight: s.category || 'LOCAL',
-      image: '',
-    }));
+    (signals || []).forEach((s, idx) => {
+      const media = pickPreviewMedia(s);
+      items.push({
+        kind: 'offer',
+        title: s.title || s.category || 'New signal',
+        body: s.description || s.price || s.contact || 'Live marketplace signal',
+        metaLeft: (s.category || 'signal').toUpperCase(),
+        metaRight: s.price || 'LIVE',
+        image: media.image,
+        video: media.video,
+        lat: asFiniteNumber(s.lat),
+        lng: asFiniteNumber(s.lon ?? s.lng)
+      });
+    });
+    (shops || []).forEach((s, idx) => {
+      const media = pickPreviewMedia(s);
+      items.push({
+        kind: 'offer',
+        title: s.name || 'Vendor',
+        body: s.description || s.category || 'Local offer',
+        metaLeft: 'SHOP',
+        metaRight: s.category || 'LOCAL',
+        image: media.image,
+        video: media.video,
+        lat: asFiniteNumber(s.lat),
+        lng: asFiniteNumber(s.lon ?? s.lng)
+      });
+    });
   } catch (e) {}
   try {
-    const apodRes = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY');
+    const apodRes = await fetch('https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&thumbs=true');
     if (apodRes.ok) {
       const apod = await apodRes.json();
       items.push({
@@ -987,7 +1300,8 @@ async function loadOrbitalFeed() {
         body: apod.explanation || 'Astronomy picture of the day',
         metaLeft: 'NASA',
         metaRight: (apod.media_type || 'image').toUpperCase(),
-        image: apod.media_type === 'image' ? apod.url : ''
+        image: apod.media_type === 'image' ? (apod.hdurl || apod.url || '') : (apod.thumbnail_url || ''),
+        video: apod.media_type === 'video' && isVideoUrl(apod.url) ? apod.url : ''
       });
     }
   } catch (e) {}
@@ -995,14 +1309,23 @@ async function loadOrbitalFeed() {
     const eonetRes = await fetch('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&limit=3');
     if (eonetRes.ok) {
       const eonet = await eonetRes.json();
-      (eonet.events || []).forEach(ev => items.push({
-        kind: 'news',
-        title: ev.title || 'Earth event',
-        body: (ev.categories || []).map(c => c.title).join(', ') || 'NASA EONET live event',
-        metaLeft: 'EONET',
-        metaRight: (ev.geometry?.[0]?.date || '').slice(0,10) || 'OPEN',
-        image: ''
-      }));
+      (eonet.events || []).forEach((ev, idx) => {
+        const g = ev.geometry && ev.geometry.length ? ev.geometry[ev.geometry.length - 1] : null;
+        const coords = g && Array.isArray(g.coordinates) ? g.coordinates : [];
+        const lng = Array.isArray(coords) ? asFiniteNumber(coords[0]) : null;
+        const lat = Array.isArray(coords) ? asFiniteNumber(coords[1]) : null;
+        items.push({
+          kind: 'news',
+          title: ev.title || 'Earth event',
+          body: (ev.categories || []).map(c => c.title).join(', ') || 'NASA EONET live event',
+          metaLeft: 'EONET',
+          metaRight: (g?.date || '').slice(0,10) || 'OPEN',
+          image: '',
+          video: '',
+          lat,
+          lng
+        });
+      });
     }
   } catch (e) {}
   try {
@@ -1015,11 +1338,14 @@ async function loadOrbitalFeed() {
         body: 'Latitude ' + iss.latitude.toFixed(2) + '°, longitude ' + iss.longitude.toFixed(2) + '°, velocity ' + Math.round(iss.velocity) + ' km/h.',
         metaLeft: 'ISS',
         metaRight: 'LIVE',
-        image: ''
+        image: '',
+        video: '',
+        lat: iss.latitude,
+        lng: iss.longitude
       });
     }
   } catch (e) {}
-  ORBITAL_FEED = items.slice(0, 16);
+  ORBITAL_FEED = items.slice(0, 16).map((item, index) => withOrbitalDefaults(item, index));
   ORBITAL_FEED_CURSOR = 0;
   renderOrbitalFeed();
   if (orbitalFeedTimer) clearInterval(orbitalFeedTimer);
@@ -1038,23 +1364,29 @@ function renderOrbitalFeed() {
     host.innerHTML = '';
     return;
   }
-  const pos = ['pos-a','pos-b','pos-c','pos-d'];
-  host.innerHTML = pos.map((p, i) => {
+  const slots = [0,1,2,3];
+  host.innerHTML = slots.map((slot, i) => {
     const item = ORBITAL_FEED[(ORBITAL_FEED_CURSOR + i) % ORBITAL_FEED.length];
     const chip = item.kind === 'offer' ? 'offer' : item.kind === 'space' ? 'space' : 'news';
     const title = escapeHtml(item.title || 'Live signal');
-    const body = escapeHtml(clipText(item.body || ''));
+    const body = escapeHtml(clipText(item.body || '', 104));
     const metaLeft = escapeHtml(item.metaLeft || 'LIVE');
     const metaRight = escapeHtml(item.metaRight || '');
-    const media = item.image ? `<div class="orb-hero"><img src="${escapeHtml(item.image)}" alt="${title}"/></div>` : `<div class="orb-hero"></div>`;
-    return `<div class="orb-card ${p}">
-      <div class="orb-chip ${chip}"><span class="orb-pulse"></span>${chip}</div>
+    const media = safeMediaMarkup(item, title);
+    return `<div class="orb-connector" data-orb-card="${i}"><div class="orb-line"></div><div class="orb-pin"></div></div>
+    <div class="orb-card" data-orb-card="${i}" data-lat="${Number(item.lat).toFixed(5)}" data-lng="${Number(item.lng).toFixed(5)}">
       ${media}
-      <h4>${title}</h4>
-      <p>${body}</p>
-      <div class="orb-meta"><span>${metaLeft}</span><span>${metaRight}</span></div>
+      <div class="orb-body">
+        <div>
+          <div class="orb-chip ${chip}"><span class="orb-pulse"></span>${chip}</div>
+          <h4>${title}</h4>
+          <p>${body}</p>
+        </div>
+        <div class="orb-meta"><span>${metaLeft}</span><span>${metaRight}</span></div>
+      </div>
     </div>`;
   }).join('');
+  requestAnimationFrame(positionOrbitalFeed);
 }
 
 
@@ -1261,7 +1593,7 @@ function openPayments() {
   populatePaymentConfigForm();
   renderPaymentHistory();
   renderPayPalButtons();
-  setPaymentStatus(CU ? 'Wallet ready. Choose Stripe, PayPal, or sandbox mode.' : 'Browse the wallet as a guest. Login will only be requested when you actually start a purchase.');
+  setPaymentStatus(CU ? 'Wallet ready. Reload your in-app balance here, then use Buy now on vendor offers.' : 'Browse the wallet as a guest. Login will only be requested when you actually top up or buy.');
 }
 
 function closePayments() {
@@ -1697,24 +2029,178 @@ async function doSearch() {
 }
 
 /* ── LISTINGS ── */
+
+let LISTING_CACHE = [];
+
+function listingMediaMarkup(record) {
+  const media = pickPreviewMedia(record || {});
+  if (media.video) return `<div class="lmedia"><video src="${escapeHtml(media.video)}" muted autoplay loop playsinline preload="metadata"></video></div>`;
+  if (media.image) return `<div class="lmedia"><img src="${escapeHtml(media.image)}" alt="${escapeHtml(record?.name || record?.title || 'Offer')}"/></div>`;
+  return `<div class="lmedia"><div class="lfallback">${escapeHtml((record?.category || record?._type || 'LIVE OFFER').toUpperCase())}</div></div>`;
+}
+
+function extractNumeric(value) {
+  if (value == null) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  const raw = String(value).replace(',', '.').match(/-?\d+(\.\d+)?/);
+  return raw ? Number(raw[0]) : null;
+}
+
+function inferAvailability(record) {
+  const candidates = [record?.availability, record?.available, record?.stock, record?.status, record?.in_stock, record?.quantity];
+  for (const value of candidates) {
+    if (typeof value === 'boolean') return value ? 'Available now' : 'Unavailable';
+    if (typeof value === 'number' && Number.isFinite(value)) return value > 0 ? value + ' available' : 'Unavailable';
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return 'Live availability';
+}
+
+function inferVolumeLiters(record) {
+  const numeric = [record?.volume_liters, record?.volumeLiters, record?.liters, record?.litres, record?.volume_l, record?.volumeL, record?.size_liters]
+    .map(extractNumeric).find(v => Number.isFinite(v));
+  if (Number.isFinite(numeric) && numeric > 0) return numeric + ' L';
+  const textValue = [record?.volume, record?.size, record?.capacity].find(v => typeof v === 'string' && v.trim());
+  return textValue ? textValue.trim() : '—';
+}
+
+function inferDurationLabel(record) {
+  const candidates = [record?.duration, record?.duration_text, record?.durationText, record?.service_duration, record?.serviceDuration, record?.lead_time, record?.leadTime];
+  const textValue = candidates.find(v => typeof v === 'string' && v.trim());
+  if (textValue) return textValue.trim();
+  const numeric = [record?.duration_minutes, record?.durationMinutes, record?.minutes].map(extractNumeric).find(v => Number.isFinite(v));
+  if (Number.isFinite(numeric) && numeric > 0) return numeric + ' min';
+  return '—';
+}
+
+function inferPriceAmount(record) {
+  const candidates = [record?.price_eur, record?.priceEur, record?.price_amount, record?.priceAmount, record?.amount, record?.price];
+  for (const value of candidates) {
+    const parsed = extractNumeric(value);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+}
+
+function formatPriceLabel(record) {
+  const amount = inferPriceAmount(record);
+  if (Number.isFinite(amount)) return '€' + amount.toFixed(2);
+  const txt = [record?.price, record?.price_label, record?.priceLabel].find(v => typeof v === 'string' && v.trim());
+  return txt ? txt.trim() : 'Ask vendor';
+}
+
+function inferVendorName(record) {
+  return record?.vendor_name || record?.vendorName || record?.shop_name || record?.shopName || record?.name || record?.title || 'Vendor';
+}
+
+function prepareWalletReloadForListing(index) {
+  const record = LISTING_CACHE[index];
+  const price = inferPriceAmount(record);
+  openPayments();
+  if (Number.isFinite(price) && price > 0) {
+    document.getElementById('pay-amount').value = price.toFixed(2);
+    document.getElementById('pay-label').value = 'Wallet top-up for ' + inferVendorName(record);
+    setPaymentStatus('Top up your in-app balance, then return and buy directly from wallet.', 'ok');
+  } else {
+    setPaymentStatus('Set a wallet top-up amount, then return and buy from balance.', 'ok');
+  }
+}
+
+async function buyListingFromBalance(index) {
+  const record = LISTING_CACHE[index];
+  if (!record) return;
+  if (requireBuyerAuth('Login is required before buying from vendor balance.', () => buyListingFromBalance(index))) return;
+  const amount = inferPriceAmount(record);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showResp('This offer needs a numeric EUR price before wallet checkout can run.');
+    return;
+  }
+  const balance = getWalletBalance();
+  if (balance < amount) {
+    openPayments();
+    document.getElementById('pay-amount').value = (amount - balance).toFixed(2);
+    document.getElementById('pay-label').value = 'Wallet top-up for ' + inferVendorName(record);
+    setPaymentStatus('Balance too low for this purchase. Top up at least €' + (amount - balance).toFixed(2) + ' and try again.', 'err');
+    showResp('Balance too low. Opening wallet reload.');
+    return;
+  }
+  const next = Math.max(0, balance - amount);
+  setWalletBalance(next);
+  addPaymentLog({
+    provider: 'wallet-debit',
+    amount: -amount,
+    label: 'Vendor purchase · ' + (record?.name || record?.title || 'Offer'),
+    live: true,
+    at: new Date().toISOString(),
+    id: 'wallet-' + Math.random().toString(36).slice(2,10)
+  });
+  renderPaymentHistory();
+  showResp('Purchased: ' + (record?.name || record?.title || 'Offer') + ' for €' + amount.toFixed(2) + '. New balance €' + next.toFixed(2));
+  try {
+    await sb.from('orders').insert([{
+      user_id: CU?.id || null,
+      vendor_name: inferVendorName(record),
+      product_name: record?.name || record?.title || 'Offer',
+      amount_eur: amount,
+      quantity: 1,
+      status: 'paid_by_balance',
+      meta: {
+        availability: inferAvailability(record),
+        volume_liters: inferVolumeLiters(record),
+        duration: inferDurationLabel(record),
+        source_type: record?._type || record?.category || 'listing'
+      }
+    }]);
+  } catch(e) {}
+}
+
 function loadListings(signals, shops) {
   const c = document.getElementById('lp-content');
-  const all = [...(shops||[]).map(s=>({...s,_col:'#00e87a',_type:'Shop'})), ...(signals||[]).map(s=>({...s,_col:'#00c8ff',_type:s.category||'Signal'}))];
-  if (!all.length) { c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet.</div>'; return; }
-  c.innerHTML = all.slice(0,30).map(r => `
-    <div class="lcard" onclick="flyTo(${r.lat||LOC.lat},${r.lon||r.lng||LOC.lng})">
-      <div class="lcn">${r.name||r.title||'Signal'}</div>
-      <div class="lcc">${r._type}</div>
-      ${r.price?'<div class="lcp">'+r.price+'</div>':''}
-      <div style="font-size:10px;color:var(--text-dim);margin-top:2px;">${((r.description||'')).substring(0,60)}</div>
-      <div class="lcvote">
-        <button class="vbtn" onclick="event.stopPropagation();vote('${r.id}','up')">▲</button>
-        <span class="vscore">${r.votes_up||0}</span>
-        <button class="vbtn" onclick="event.stopPropagation();vote('${r.id}','down')">▼</button>
+  const all = [
+    ...(shops||[]).map(s=>({...s,_col:'#00c8ff',_type:'Vendor Offer'})),
+    ...(signals||[]).map(s=>({...s,_col:'#00c8ff',_type:(s.category||'Signal Offer')}))
+  ];
+  LISTING_CACHE = all.slice(0, 30);
+  if (!LISTING_CACHE.length) {
+    c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet.</div>';
+    return;
+  }
+  c.innerHTML = LISTING_CACHE.map((r, i) => {
+    const priceLabel = formatPriceLabel(r);
+    const priceAmount = inferPriceAmount(r);
+    const desc = escapeHtml(clipText(r.description || r.body || '', 120));
+    return `
+      <div class="lcard" onclick="flyTo(${r.lat||LOC.lat},${r.lon||r.lng||LOC.lng})">
+        ${listingMediaMarkup(r)}
+        <div class="lcontent">
+          <div class="lcc">${escapeHtml(r._type || 'Vendor Offer')}</div>
+          <div class="lcn">${escapeHtml(r.name || r.title || 'Signal')}</div>
+          <div class="lcp">${escapeHtml(priceLabel)}</div>
+          <div class="ldesc">${desc || 'Live vendor offer ready for wallet checkout.'}</div>
+          <div class="lmeta">
+            <div class="lmeta-chip"><div class="lmeta-label">Availability</div><div class="lmeta-value">${escapeHtml(inferAvailability(r))}</div></div>
+            <div class="lmeta-chip"><div class="lmeta-label">Volume</div><div class="lmeta-value">${escapeHtml(inferVolumeLiters(r))}</div></div>
+            <div class="lmeta-chip"><div class="lmeta-label">Duration</div><div class="lmeta-value">${escapeHtml(inferDurationLabel(r))}</div></div>
+            <div class="lmeta-chip"><div class="lmeta-label">Vendor</div><div class="lmeta-value">${escapeHtml(inferVendorName(r))}</div></div>
+          </div>
+          <div class="lactions">
+            <button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button>
+            <button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button>
+          </div>
+          <div class="lcvote">
+            <div class="lvote-left">
+              <button class="vbtn" onclick="event.stopPropagation();vote('${r.id}','up')">▲</button>
+              <span class="vscore">${r.votes_up||0}</span>
+              <button class="vbtn" onclick="event.stopPropagation();vote('${r.id}','down')">▼</button>
+            </div>
+            <div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div>
+          </div>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
+
 
 async function vote(id, dir) {
   if (!CU) { showResp('Login to vote.'); return; }
@@ -1735,6 +2221,11 @@ function flyTo(lat, lng) {
   LM.flyTo([lat,lng],15);
   showDeliveryCalc(lat,lng);
 }
+
+let globeController=null;
+let lastGameOrigin=null;
+let seaDepthCache=new Map();
+let lastSeaProbe=null;
 
 /* ── LAYER SYSTEM ── */
 const LNAMES = ['lt','lt2','lt3'];
@@ -1769,8 +2260,16 @@ function applyLayer(idx) {
 }
 
 function descendLayer(){ goLayer(Math.min(CL+1,2)); }
-function zoomIn(){ if(CL===1&&LM){LM.zoomIn();return;} if(CL===0) goLayer(1); }
-function zoomOut(){ if(CL===1&&LM){const z=LM.getZoom();if(z<=3){goLayer(0);}else{LM.zoomOut();}} if(CL===2) goLayer(1); }
+function zoomIn(){
+  if(CL===0 && globeController){ globeController.zoomIn(); return; }
+  if(CL===1&&LM){LM.zoomIn();return;}
+  if(CL===2) goLayer(1);
+}
+function zoomOut(){
+  if(CL===0 && globeController){ globeController.zoomOut(); return; }
+  if(CL===1&&LM){const z=LM.getZoom();if(z<=3){goLayer(0); setTimeout(()=>globeController&&globeController.resetView(),260);}else{LM.zoomOut();} return;}
+  if(CL===2) goLayer(1);
+}
 
 function geolocate() {
   if(!navigator.geolocation){showResp('Geolocation not supported.');return;}
@@ -1842,7 +2341,11 @@ function showBalance(){
   renderer.setSize(W(),H());
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(48,W()/H(),.1,100);
-  camera.position.z=3.35;
+  const BASE_Z=3.35, MIN_Z=1.35, MAX_Z=8.35, SPACE_TRIGGER_Z=7.05, MAP_TRIGGER_Z=1.72;
+  let targetZ=BASE_Z;
+  let spaceQueued=false;
+  let mapQueued=false;
+  camera.position.z=BASE_Z;
 
   scene.add(new THREE.AmbientLight(0x17304f,.72));
   const sun=new THREE.DirectionalLight(0xa7d7ff,1.9);
@@ -1863,38 +2366,15 @@ function showBalance(){
   loader.crossOrigin = 'anonymous';
 
   const globeGeom = new THREE.SphereGeometry(1,96,96);
-  const globeMat = new THREE.MeshPhongMaterial({
-    color:0xffffff,
-    specular:new THREE.Color(0x355b8d),
-    shininess:16,
-    bumpScale:0.05
-  });
-  const globe = new THREE.Mesh(globeGeom, globeMat);
-  scene.add(globe);
+  const globeMat = new THREE.MeshPhongMaterial({color:0xffffff,specular:new THREE.Color(0x355b8d),shininess:16,bumpScale:0.05});
+  const globe = new THREE.Mesh(globeGeom, globeMat); scene.add(globe);
+  loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg', tex => { globeMat.map = tex; globeMat.needsUpdate = true; });
+  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => { globeMat.specularMap = tex; globeMat.needsUpdate = true; });
+  loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg', tex => { globeMat.bumpMap = tex; globeMat.needsUpdate = true; });
 
-  loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg', tex => {
-    globeMat.map = tex;
-    globeMat.needsUpdate = true;
-  });
-  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => {
-    globeMat.specularMap = tex;
-    globeMat.needsUpdate = true;
-  });
-  loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg', tex => {
-    globeMat.bumpMap = tex;
-    globeMat.needsUpdate = true;
-  });
-
-  const cloudMat = new THREE.MeshPhongMaterial({
-    transparent:true, opacity:.16, side:THREE.DoubleSide, depthWrite:false
-  });
-  const cloudSphere = new THREE.Mesh(new THREE.SphereGeometry(1.02,64,64), cloudMat);
-  scene.add(cloudSphere);
-  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => {
-    cloudMat.alphaMap = tex;
-    cloudMat.color = new THREE.Color(0xd9f2ff);
-    cloudMat.needsUpdate = true;
-  });
+  const cloudMat = new THREE.MeshPhongMaterial({transparent:true, opacity:.16, side:THREE.DoubleSide, depthWrite:false});
+  const cloudSphere = new THREE.Mesh(new THREE.SphereGeometry(1.02,64,64), cloudMat); scene.add(cloudSphere);
+  loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => { cloudMat.alphaMap = tex; cloudMat.color = new THREE.Color(0xd9f2ff); cloudMat.needsUpdate = true; });
 
   scene.add(new THREE.Mesh(new THREE.SphereGeometry(1.07,72,72),new THREE.ShaderMaterial({
     vertexShader:`varying vec3 vN;void main(){vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
@@ -1902,22 +2382,16 @@ function showBalance(){
     side:THREE.FrontSide,blending:THREE.AdditiveBlending,transparent:true,depthWrite:false
   })));
 
-  const issObj=new THREE.Mesh(new THREE.SphereGeometry(.025,10,10),new THREE.MeshBasicMaterial({color:0xffd600}));
-  scene.add(issObj);
-
+  const issObj=new THREE.Mesh(new THREE.SphereGeometry(.025,10,10),new THREE.MeshBasicMaterial({color:0xffd600})); scene.add(issObj);
   const sigPalette=[[1,.84,0],[0,.91,.47],[0,.78,1],[1,.26,.33],[.75,.52,.99],[1,.55,0]];
-  const sG2=new THREE.BufferGeometry();const N=120;
-  const sp=new Float32Array(N*3),sc=new Float32Array(N*3);
+  const sG2=new THREE.BufferGeometry();const N=120; const sp=new Float32Array(N*3),sc=new Float32Array(N*3);
   for(let i=0;i<N;i++){
     const phi=Math.acos(2*Math.random()-1),theta=2*Math.PI*Math.random(),r=1.02;
     sp[i*3]=r*Math.sin(phi)*Math.cos(theta);sp[i*3+1]=r*Math.sin(phi)*Math.sin(theta);sp[i*3+2]=r*Math.cos(phi);
-    const c=sigPalette[Math.floor(Math.random()*sigPalette.length)];
-    sc[i*3]=c[0];sc[i*3+1]=c[1];sc[i*3+2]=c[2];
+    const c=sigPalette[Math.floor(Math.random()*sigPalette.length)]; sc[i*3]=c[0];sc[i*3+1]=c[1];sc[i*3+2]=c[2];
   }
-  sG2.setAttribute('position',new THREE.BufferAttribute(sp,3));
-  sG2.setAttribute('color',new THREE.BufferAttribute(sc,3));
-  const sigMat=new THREE.PointsMaterial({size:.026,vertexColors:true,transparent:true,opacity:.85});
-  const signals=new THREE.Points(sG2,sigMat);scene.add(signals);
+  sG2.setAttribute('position',new THREE.BufferAttribute(sp,3)); sG2.setAttribute('color',new THREE.BufferAttribute(sc,3));
+  const sigMat=new THREE.PointsMaterial({size:.026,vertexColors:true,transparent:true,opacity:.85}); const signals=new THREE.Points(sG2,sigMat); scene.add(signals);
 
   let drag=false,lx=0,ly=0,vx=0,vy=.0011;
   cv.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
@@ -1926,41 +2400,130 @@ function showBalance(){
   cv.addEventListener('touchstart',e=>{drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
   cv.addEventListener('touchend',()=>drag=false);
   cv.addEventListener('touchmove',e=>{if(!drag)return;vx=(e.touches[0].clientY-ly)*.0022;vy=(e.touches[0].clientX-lx)*.0022;lx=e.touches[0].clientX;ly=e.touches[0].clientY;},{passive:true});
-  cv.addEventListener('click',()=>{if(!drag)showResp('Live Earth online. Rotate, browse floating offers, or descend into the map.');});
+  cv.addEventListener('click',()=>{if(!drag)showResp('Live Earth online. Scroll outward for space. Scroll inward to descend toward Earth and sea.');});
   window.addEventListener('resize',()=>{camera.aspect=W()/H();camera.updateProjectionMatrix();renderer.setSize(W(),H());});
 
   async function fetchISS(){
     try{
-      const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');
-      const d=await r.json();
+      const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544'); const d=await r.json();
       const phi=(90-d.latitude)*Math.PI/180,theta=(d.longitude+180)*Math.PI/180,r3=1.09;
       issObj.position.set(r3*Math.sin(phi)*Math.cos(theta),r3*Math.cos(phi),r3*Math.sin(phi)*Math.sin(theta));
       document.getElementById('iss-info').textContent='LAT:'+d.latitude.toFixed(1)+'° LNG:'+d.longitude.toFixed(1)+'° '+d.velocity.toFixed(0)+'km/h';
-    }catch(e){document.getElementById('iss-info').textContent='ISS API unavailable';}
+    }catch(e){ document.getElementById('iss-info').textContent='ISS API unavailable'; }
   }
-  fetchISS();setInterval(fetchISS,5000);
+  fetchISS(); setInterval(fetchISS,5000);
 
+  function queueSpaceGame(){
+    if(spaceQueued || gameActive) return;
+    spaceQueued = true;
+    showResp('Orbit break achieved… [loading spaceship game]');
+    setTimeout(()=>{ if(CL===0 && !gameActive){ startGame('spaceship','space'); } spaceQueued = false; }, 650);
+  }
+  function queueMapDive(){
+    if(mapQueued || gameActive) return;
+    mapQueued = true;
+    showResp('Atmosphere lock… descending toward the surface.');
+    setTimeout(()=>{
+      if(CL===0 && !gameActive){
+        goLayer(1);
+        setTimeout(()=>{ if(LM){ LM.setView([LOC.lat,LOC.lng],16,{animate:true}); } }, 380);
+      }
+      mapQueued = false;
+    }, 420);
+  }
+  function setTarget(next){ targetZ = Math.max(MIN_Z, Math.min(MAX_Z, next)); }
   cv.addEventListener('wheel',e=>{
-    if(e.deltaY < -100 && camera.position.z > 4){
-      camera.position.z = Math.min(camera.position.z + 0.3, 8);
-      if(camera.position.z >= 7 && !gameActive){ showResp('You found a hidden feature… [loading spaceship game]'); setTimeout(()=>startGame('spaceship'),1500); }
-    } else if(e.deltaY > 0){
-      camera.position.z = Math.max(camera.position.z - 0.3, 1.5);
+    e.preventDefault();
+    if(e.deltaY > 0) setTarget(targetZ + 0.42);
+    else if(e.deltaY < 0) setTarget(targetZ - 0.32);
+  }, {passive:false});
+
+  globeController = {
+    zoomIn(){ setTarget(targetZ - 0.36); },
+    zoomOut(){ setTarget(targetZ + 0.46); },
+    resetView(){ targetZ = BASE_Z; camera.position.z = BASE_Z; spaceQueued = false; mapQueued = false; },
+    getZoom(){ return camera.position.z; },
+    setZoom(v){ setTarget(v); },
+    projectLatLng(lat, lng){
+      const latN = Number(lat), lngN = Number(lng);
+      if(!Number.isFinite(latN) || !Number.isFinite(lngN)) return null;
+      const phi = THREE.MathUtils.degToRad(90 - latN);
+      const theta = THREE.MathUtils.degToRad(lngN + 180);
+      const point = new THREE.Vector3(
+        -(1.03 * Math.sin(phi) * Math.cos(theta)),
+        (1.03 * Math.cos(phi)),
+        (1.03 * Math.sin(phi) * Math.sin(theta))
+      );
+      point.applyQuaternion(globe.quaternion);
+      const projected = point.clone().project(camera);
+      const front = point.z > 0;
+      return {
+        x: (projected.x * 0.5 + 0.5) * W(),
+        y: (-projected.y * 0.5 + 0.5) * H(),
+        visible: front && projected.z > -1 && projected.z < 1,
+        front,
+        depth: Math.max(0, Math.min(1, point.z)),
+        projectedZ: projected.z
+      };
     }
-  });
+  };
 
   let tick=0;
   (function loop(){
-    requestAnimationFrame(loop);tick++;
-    if(!drag){vy*=.97;vx*=.97;globe.rotation.y+=vy+.0007;globe.rotation.x+=vx;}
-    else{globe.rotation.y+=vy;globe.rotation.x+=vx;}
-    cloudSphere.rotation.y = globe.rotation.y + tick*0.00035;
-    cloudSphere.rotation.x = globe.rotation.x;
-    signals.rotation.y=globe.rotation.y;signals.rotation.x=globe.rotation.x;
-    sigMat.opacity=.58+.3*Math.sin(tick*.04);sigMat.size=.021+.008*Math.sin(tick*.055);
+    requestAnimationFrame(loop); tick++;
+    if(!drag){vy*=.97;vx*=.97;globe.rotation.y+=vy+.0007;globe.rotation.x+=vx;} else {globe.rotation.y+=vy;globe.rotation.x+=vx;}
+    cloudSphere.rotation.y = globe.rotation.y + tick*0.00035; cloudSphere.rotation.x = globe.rotation.x;
+    signals.rotation.y=globe.rotation.y; signals.rotation.x=globe.rotation.x;
+    sigMat.opacity=.58+.3*Math.sin(tick*.04); sigMat.size=.021+.008*Math.sin(tick*.055);
+    camera.position.z += (targetZ - camera.position.z) * 0.09;
+    if(camera.position.z >= SPACE_TRIGGER_Z && CL===0 && !gameActive) queueSpaceGame();
+    if(camera.position.z <= MAP_TRIGGER_Z && CL===0 && !gameActive) queueMapDive();
+    if (typeof positionOrbitalFeed === 'function' && CL===0) positionOrbitalFeed();
     if(cv.style.display!=='none') renderer.render(scene,camera);
   })();
 })();
+
+async function probeSeaDepth(lat,lng){
+  const key = lat.toFixed(3)+','+lng.toFixed(3);
+  if(seaDepthCache.has(key)) return seaDepthCache.get(key);
+  try{
+    const r = await fetch('https://api.opentopodata.org/v1/etopo1?locations='+encodeURIComponent(lat+','+lng));
+    const d = await r.json();
+    const elev = d && d.results && d.results[0] && typeof d.results[0].elevation === 'number' ? d.results[0].elevation : null;
+    seaDepthCache.set(key, elev);
+    return elev;
+  }catch(e){
+    seaDepthCache.set(key, null);
+    return null;
+  }
+}
+
+async function maybeStartSubmarineDive(force=false){
+  if(!LM || gameActive) return;
+  const z = LM.getZoom();
+  if(z < 17) return;
+  const c = LM.getCenter();
+  const token = Date.now() + Math.random();
+  lastSeaProbe = token;
+  const elev = await probeSeaDepth(c.lat, c.lng);
+  if(lastSeaProbe !== token || gameActive || !LM) return;
+  if(elev !== null && elev < -2){
+    showResp('Bathymetry lock: '+Math.round(elev)+'m. [loading submarine game]');
+    startGame('submarine','submarine');
+    return;
+  }
+  if(force && z >= 19){
+    showResp('Deep zoom reached. Water lock approximate… [loading submarine game]');
+    startGame('submarine','submarine');
+    return;
+  }
+  if(elev !== null){
+    showResp(elev >= 0 ? 'You are over land. Move the map over open water and zoom deeper to dive.' : 'Move a bit deeper over open water to dive.');
+  } else if(force) {
+    showResp('Bathymetry API unavailable. Deep zoom fallback engaged.');
+    startGame('submarine','submarine');
+  }
+}
 
 /* ══════════════════════════════
    LEAFLET MAP — LAYER 2
@@ -1972,11 +2535,16 @@ function initLeaflet(){
     LOC={lat:e.latlng.lat,lng:e.latlng.lng};
     showResp('Location: '+e.latlng.lat.toFixed(4)+'°N, '+e.latlng.lng.toFixed(4)+'°E');
     document.getElementById('pcoord').textContent=LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
+    if(LM.getZoom()>=17) maybeStartSubmarineDive(false);
+  });
+  LM.on('moveend',()=>{
+    const c = LM.getCenter();
+    document.getElementById('pcoord').textContent=c.lat.toFixed(4)+'°N, '+c.lng.toFixed(4)+'°E';
   });
   /* HIDDEN SUBMARINE GAME: zoom deep into water */
   LM.on('zoomend',()=>{
-    if(LM.getZoom()>=19 && !gameActive){ showResp('You found a hidden feature… [loading submarine game]'); setTimeout(()=>startGame('submarine'),1500); }
-    if(LM.getZoom()<=2){ goLayer(0); }
+    if(LM.getZoom()<=2){ goLayer(0); setTimeout(()=>globeController&&globeController.resetView(),260); return; }
+    maybeStartSubmarineDive(LM.getZoom()>=19);
   });
 }
 
@@ -2011,7 +2579,8 @@ function runAbyssScene(){
 /* ══════════════════════════════
    GAMES ENGINE
    ══════════════════════════════ */
-function startGame(type) {
+function startGame(type, origin=null) {
+  lastGameOrigin = origin || (type==='spaceship' ? 'space' : type==='submarine' ? 'submarine' : 'earth');
   gameType = type;
   gameActive = true;
   document.getElementById('game-ui').classList.add('on');
@@ -2024,12 +2593,21 @@ function startGame(type) {
 }
 
 function exitGame() {
+  const origin = lastGameOrigin;
   gameActive = false;
   gameType = null;
+  lastGameOrigin = null;
   document.getElementById('game-ui').classList.remove('on');
   const gc = document.getElementById('game-canvas-real');
   const ctx = gc.getContext('2d');
   ctx.clearRect(0,0,gc.width,gc.height);
+  if(origin === 'space'){
+    if(CL!==0) goLayer(0);
+    setTimeout(()=>{ if(globeController) globeController.resetView(); }, 260);
+  } else if(origin === 'submarine'){
+    if(CL!==1) goLayer(1);
+    setTimeout(()=>{ if(LM) LM.setView([LOC.lat,LOC.lng],16,{animate:true}); }, 320);
+  }
 }
 
 function runGame(type) {
@@ -2165,6 +2743,8 @@ LOCKS
 - POST button stays last on left rail.
 - Natural-language discovery stays centered on Astranova.
 - Version sync is mandatory on every pass.
+- Top-left app name stays electric neon blue.
+- Orbital cards stay compact and only enlarge modestly when passing in front.
 
 VERSION 3.3.3 ADDITIONS
 - Stripe Checkout launch path added through a configurable publishable key plus
@@ -2177,7 +2757,7 @@ VERSION 3.3.3 ADDITIONS
 - Existing users without stored phone metadata are upgraded on first login.
 - View buttons added for email, phone, password, name, and role fields.
 - Space Kitty retired. New assistant is Astranova: highly human-real female elf,
-  electric blue and silver suit, tiny space subtle elf features only, animated wings.
+  electric blue and silver suit, subtle elf features only, more human than mascot-like, animated wings.
 - Driver mode now cleanly toggles offline in the database.
 
 PAYMENTS
@@ -2209,203 +2789,55 @@ If the code and this block disagree, update the code to match the block.
 <!-- Embedded Spartan Script v3.3.3 -->
 <textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.3.3
 
-Creator & Founder: Notis Astranov  
-System of record version: 3.3.3
-
-## MISSION
-
-Build and keep a single-file launchable app for Astranov.
-
-The app must remain:
-
-- planetary
-- layered
-- commerce-capable
-- AI-assisted
-- wallet-ready
-- visually coherent
-
-## HARD LOCKS
-
-- Top bar stays fixed.
-- POST button stays last on left rail.
-- Main discovery stays natural-language, not category-bar driven.
-- Astranova is the active assistant identity.
-- Every code change requires a version sync and Spartan Script sync.
-
-## VERSION 3.3.3 DIRECTIVES
-
-### ACCESS MODEL
-
-Guest browsing is default.
-
-The app must open directly into the live globe experience without forcing login.
-
-Login is requested only when the user attempts a protected action such as:
-
-- buy / wallet checkout
-- post signal
-- create shop
-- driver mode
-- account tools
-
-### AUTH
-
-Login requires:
-
-- email
-- phone
-- password
-
-Signup requires:
-
-- email
-- phone
-- password
-- full name
-- role
-
-Phone is mandatory at app level.
-
-Phone is stored in Supabase user metadata.
-
-If an older user logs in without stored phone metadata, the app upgrades the account by saving the entered phone.
-
-Add visible field-preview controls for:
-
-- email
-- phone
-- password
-- name
-- role
-
-### PAYMENTS
-
-Wallet and payments are part of the live interface in 3.3.3.
-
-Balance click opens the wallet / payment modal.
-
-Guests may inspect the wallet UI, but checkout itself is login-gated.
-
-Currency:
-
-- EUR
-
-Payment paths:
-
-- Stripe Checkout
-- PayPal
-- local sandbox fallback
-
-If merchant credentials are missing, the app must not dead-end.
-
-It must fall back to a local sandbox wallet top-up path after login.
-
-Wallet history must be visible in the modal.
-
-### ASTRANOVA
-
-The old Space Kitty is removed.
-
-The assistant is now:
-
-- name: Astranova
-- form: full-body highly human-real female elf
-- palette: electric blue and silver
-- helmet: none
-- wings: animated
-
-Astranova remains visible on the Earth layer only.
-
-Astranova takeover mode must:
-
-- open full screen
-- accept natural language search
-- search shops and signals
-- fly the user to selected results
-
-### LIVE GLOBE
-
-Startup opens on a real rotating Earth.
-
-Layer 1 must use:
-
-- real Earth texture
-- terrain / relief bump data
-- live ISS position
-- floating pop-out cards for news and offers
-
-The floating cards should mix:
-
-- marketplace offers from app data
-- live public science / earth / space signals
-
-### VISUAL RULES
-
-The menu system must look premium and glassy, not cheap arcade-like.
-
-Use:
-
-- transparent panels
-- subtle blur
-- low-noise neon edges
-- readable contrast
-
-### DRIVER MODE
-
-Driver mode must cleanly switch:
-
-- online
-- offline
-
-Offline state must update the database instead of only changing local UI.
-
-## LAYER MODEL
-
-### L1 LIVE EARTH
-
-- real rotating Earth
-- ISS
-- pop-out news / offer cards
-- signal points
-- hidden spaceship game
-
-### L2 EARTH
-
-- Leaflet map
-- shops
-- drivers
-- signals
-- Astranova
-- drone game
-- wallet relevance
-
-### L3 ABYSS
-
-- abyss scene
-- hidden submarine game
-
-## UI RULES
-
-Do not let payments, auth, or assistant redesign break:
-
-- map flow
-- hidden games
-- posting flow
-- left / right rails
-- top bar
-
-## SYNC ENFORCEMENT
-
-When code changes:
-
-- update version
-- update inline Spartan block
-- update this script
-
-If code and script disagree:
-
-code must be brought back into alignment with this block.
-</textarea>
+MISSION
+Build a launchable Astranov app with a real rotating Earth startup scene, guest-first exploration, real orbital offer/news cards, Earth/space/abyss transitions, wallet-based vendor checkout, and a realistic commercial interface with locked electric neon blue branding.
+
+FOUNDATION
+- Version locked: 3.3.3
+- Single-file launchable HTML build
+- Earth is the true startup scene
+- User can explore before login
+- Login becomes mandatory only when protected actions start, especially buying or wallet top-up
+- Mandatory auth fields: phone + email + password
+- Input fields include view buttons
+- ASTRANOV electric neon blue must stay locked everywhere and must not be changed again
+- Top-left app name ASTRANOV must remain electric neon blue
+
+VISUAL RULES
+- Realistic commercial shell, not arcade
+- Transparent glass menus and panels
+- Main readable fonts stay normalized
+- Keep electric neon blue typography, labels, highlights, borders, and brand accents
+- Astranova stays as the earlier helper branch, but with NO helmet
+- Astranova must remain an original elf helper, not a pasted reference image
+
+EARTH SIGNAL RULES
+- Offer/news/space cards must visibly connect to Earth with a line
+- Cards must stay geo-anchored and rotate with Earth
+- Cards must change size dynamically while rotating so they feel closer when passing in front of the user
+- Orbital cards must stay compact and must never overtake the screen
+- Cards may grow only modestly when passing in front of the user
+- Card container must be filled by the preview image or video
+- Earth cards must feel orbit-linked, not floating UI stickers
+
+LAYER RULES
+- User must be able to zoom back out beyond Earth to activate the space layer/game
+- User must be able to zoom into water and trigger the submarine/abyss layer
+- Return-to-Earth flow must work reliably
+
+MARKETPLACE RULES
+- Vendor offers panel must support photo or video preview
+- Show price
+- Show availability
+- Show volume in liters when available
+- Show duration when available
+- Show Buy now button
+- Buy now uses ONLY the user wallet balance
+- If balance is low, open wallet reload inside the app
+- User reloads balance straight in the app
+- Keep wallet/payment history visible
+
+DELIVERY RULE
+- Produce the latest deployment-ready index.html with the Spartan Script embedded inside the HTML itself</textarea>
 </body>
 </html>
