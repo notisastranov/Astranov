@@ -577,6 +577,73 @@ html,body{
 .vscore{color:#d8ecff;font-size:11px;}
 .pay-note{color:#d8ecff;}
 
+
+/* === 3.3.3 OPERATIONS PATCH: real mode transitions, neon brand lock, map creation tools === */
+:root{
+  --blue:#00c8ff !important;
+  --la:#00c8ff !important;
+  --la2:rgba(0,200,255,0.12) !important;
+  --lb:rgba(0,200,255,0.22) !important;
+}
+body.lt,body.lt2,body.lt3{
+  --la:#00c8ff !important;
+  --la2:rgba(0,200,255,0.12) !important;
+  --lb:rgba(0,200,255,0.22) !important;
+}
+.brand,.abrand{
+  color:#009dff !important;
+  text-shadow:0 0 10px #00a8ff, 0 0 22px rgba(0,136,255,0.52), 0 0 34px rgba(0,200,255,0.18) !important;
+}
+#topbar .brand{color:#009dff !important; text-shadow:0 0 10px #00a8ff, 0 0 22px rgba(0,136,255,0.52), 0 0 34px rgba(0,200,255,0.18) !important;}
+#game-ui{
+  backdrop-filter:blur(1px);
+}
+#game-mode-hint{
+  position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+  font-size:11px;padding:8px 14px;border-radius:999px;
+  background:rgba(5,16,28,0.72);border:1px solid rgba(0,200,255,0.26);
+  color:#c6ebff;font-family:var(--font);letter-spacing:0.03em;
+  box-shadow:0 8px 24px rgba(0,0,0,0.22);
+}
+#map-action-modal,#entity-modal{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:360;
+  background:rgba(3,8,16,0.42);backdrop-filter:blur(12px);
+}
+#map-action-modal.on,#entity-modal.on{display:flex;}
+.map-sheet,.entity-sheet{
+  width:min(92vw,520px);max-height:min(88vh,720px);overflow:auto;
+  background:linear-gradient(180deg,rgba(8,18,30,0.72),rgba(8,18,30,0.52));
+  border:1px solid rgba(0,200,255,0.16);border-radius:18px;color:var(--text);
+  box-shadow:0 18px 40px rgba(0,0,0,0.30);padding:18px;
+}
+.sheet-title{
+  color:#00c8ff;font-size:18px;font-weight:700;letter-spacing:0.04em;margin-bottom:6px;
+}
+.sheet-sub{font-size:12px;color:var(--text-dim);margin-bottom:14px;line-height:1.5;}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sheet-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.sheet-btn{
+  border:1px solid rgba(0,200,255,0.18);background:rgba(255,255,255,0.04);color:#dff7ff;
+  padding:14px;border-radius:14px;text-align:left;font-size:13px;cursor:pointer;
+}
+.sheet-btn:hover{background:rgba(0,200,255,0.10);}
+.sheet-btn strong{display:block;color:#00c8ff;font-size:13px;margin-bottom:4px;}
+.entity-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.entity-grid .full{grid-column:1/-1;}
+.entity-sheet label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;}
+.entity-sheet input,.entity-sheet textarea,.entity-sheet select{
+  width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.14);
+  color:var(--text);border-radius:12px;padding:10px 12px;font-size:13px;outline:none;
+}
+.entity-sheet textarea{min-height:88px;resize:vertical;}
+.entity-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+.entity-footer button{
+  border:1px solid rgba(0,200,255,0.20);background:rgba(255,255,255,0.04);color:#dff7ff;
+  padding:10px 16px;border-radius:12px;cursor:pointer;
+}
+.entity-footer .primary{background:rgba(0,200,255,0.14);color:#fff;}
+.type-note{padding:8px 10px;border-radius:12px;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.12);font-size:11px;color:#c8efff;}
+
 </style>
 </head>
 <body class="lt">
@@ -2319,10 +2386,91 @@ function sendCmd(){
   input.value='';
 }
 
-function showResp(msg){
+function showResp(msg, tone='default'){
   const r=document.getElementById('cmd-response');
-  r.textContent=msg; r.style.display='block';
-  setTimeout(()=>r.style.display='none',4000);
+  if(!r) return;
+  const tones = {
+    default:{ bg:'rgba(3,8,16,0.92)', bd:'rgba(0,200,255,0.22)', fg:'#d8f6ff', sh:'0 10px 28px rgba(0,0,0,0.26)' },
+    gate1:{ bg:'rgba(12,18,30,0.94)', bd:'rgba(0,200,255,0.40)', fg:'#8fe9ff', sh:'0 0 18px rgba(0,200,255,0.18)' },
+    gate2:{ bg:'rgba(34,22,7,0.95)', bd:'rgba(255,170,0,0.44)', fg:'#ffd16f', sh:'0 0 18px rgba(255,170,0,0.16)' },
+    gate3:{ bg:'rgba(44,10,10,0.95)', bd:'rgba(255,92,92,0.48)', fg:'#ff9c9c', sh:'0 0 18px rgba(255,92,92,0.18)' },
+    gate4:{ bg:'rgba(18,7,40,0.96)', bd:'rgba(202,118,255,0.45)', fg:'#efc8ff', sh:'0 0 22px rgba(202,118,255,0.22)' }
+  };
+  const t = tones[tone] || tones.default;
+  r.textContent = msg;
+  r.style.display = 'block';
+  r.style.background = t.bg;
+  r.style.border = '1px solid ' + t.bd;
+  r.style.color = t.fg;
+  r.style.boxShadow = t.sh;
+  r.style.backdropFilter = 'blur(10px)';
+  if(showResp._timer) clearTimeout(showResp._timer);
+  showResp._timer = setTimeout(()=>r.style.display='none', 2600 + (tone==='default' ? 1400 : 500));
+}
+
+let spaceGateCount = 0;
+let submarineGateCount = 0;
+
+function resetSpaceGate(){ spaceGateCount = 0; }
+function resetSubmarineGate(){ submarineGateCount = 0; }
+
+function showZoomGateNotice(mode, step){
+  const tone = step === 1 ? 'gate1' : step === 2 ? 'gate2' : 'gate3';
+  if(mode === 'space'){
+    const lines = [
+      'Orbit limit reached. Keep zooming out to arm spacecraft mode. [1/3]',
+      'Outer orbit boundary reached. One more warning remains before launch. [2/3]',
+      'Launch threshold armed. Zoom out once more to enter spacecraft mode. [3/3]'
+    ];
+    showResp(lines[Math.max(0, Math.min(2, step-1))], tone);
+  } else {
+    const lines = [
+      'Sea-surface limit reached. Keep zooming in to arm submarine mode. [1/3]',
+      'Dive threshold deepening. One more warning remains before submerge. [2/3]',
+      'Dive threshold armed. Zoom in once more to enter submarine mode. [3/3]'
+    ];
+    showResp(lines[Math.max(0, Math.min(2, step-1))], tone);
+  }
+}
+
+function handleSpaceGateAttempt(){
+  if(CL !== 0 || gameActive) return;
+  spaceGateCount = Math.min(4, spaceGateCount + 1);
+  if(spaceGateCount <= 3){
+    showZoomGateNotice('space', spaceGateCount);
+    return;
+  }
+  resetSpaceGate();
+  showResp('Orbit gate cleared. Entering spacecraft mode…', 'gate4');
+  startGame('spaceship', 'space');
+}
+
+async function handleSubmarineGateAttempt(){
+  if(!window.LM || CL !== 1 || gameActive) return;
+  const z = LM.getZoom ? LM.getZoom() : 0;
+  if(z < 18.8) return;
+  const c = LM.getCenter ? LM.getCenter() : null;
+  if(!c) return;
+  let elev = null;
+  try{ elev = await probeSeaDepth(c.lat, c.lng); }catch(e){}
+  if(gameActive || !window.LM) return;
+  if(elev !== null && elev >= -2){
+    resetSubmarineGate();
+    showResp('Dive denied. Move the map over open water before pushing deeper.', 'gate2');
+    return;
+  }
+  if(elev === null){
+    showResp('Sea-depth check unavailable. Hold over open water and try again.', 'gate1');
+    return;
+  }
+  submarineGateCount = Math.min(4, submarineGateCount + 1);
+  if(submarineGateCount <= 3){
+    showZoomGateNotice('submarine', submarineGateCount);
+    return;
+  }
+  resetSubmarineGate();
+  showResp('Dive gate cleared. Entering submarine operations…', 'gate4');
+  startGame('submarine', 'submarine');
 }
 
 function showBalance(){
@@ -2415,9 +2563,7 @@ function showBalance(){
 
   function queueSpaceGame(){
     if(spaceQueued || gameActive) return;
-    spaceQueued = true;
-    showResp('Orbit break achieved… [loading spaceship game]');
-    setTimeout(()=>{ if(CL===0 && !gameActive){ startGame('spaceship','space'); } spaceQueued = false; }, 650);
+    handleSpaceGateAttempt();
   }
   function queueMapDive(){
     if(mapQueued || gameActive) return;
@@ -2434,8 +2580,18 @@ function showBalance(){
   function setTarget(next){ targetZ = Math.max(MIN_Z, Math.min(MAX_Z, next)); }
   cv.addEventListener('wheel',e=>{
     e.preventDefault();
-    if(e.deltaY > 0) setTarget(targetZ + 0.42);
-    else if(e.deltaY < 0) setTarget(targetZ - 0.32);
+    if(e.deltaY > 0){
+      if(targetZ >= MAX_Z - 0.18 || camera.position.z >= MAX_Z - 0.22){
+        handleSpaceGateAttempt();
+      } else {
+        resetSpaceGate();
+        setTarget(targetZ + 0.42);
+      }
+    }
+    else if(e.deltaY < 0){
+      resetSpaceGate();
+      setTarget(targetZ - 0.32);
+    }
   }, {passive:false});
 
   globeController = {
@@ -2476,7 +2632,7 @@ function showBalance(){
     signals.rotation.y=globe.rotation.y; signals.rotation.x=globe.rotation.x;
     sigMat.opacity=.58+.3*Math.sin(tick*.04); sigMat.size=.021+.008*Math.sin(tick*.055);
     camera.position.z += (targetZ - camera.position.z) * 0.09;
-    if(camera.position.z >= SPACE_TRIGGER_Z && CL===0 && !gameActive) queueSpaceGame();
+    if(camera.position.z >= SPACE_TRIGGER_Z && CL===0 && !gameActive){ /* orbit limit reached; explicit extra zoom attempts handle activation */ }
     if(camera.position.z <= MAP_TRIGGER_Z && CL===0 && !gameActive) queueMapDive();
     if (typeof positionOrbitalFeed === 'function' && CL===0) positionOrbitalFeed();
     if(cv.style.display!=='none') renderer.render(scene,camera);
@@ -2535,16 +2691,16 @@ function initLeaflet(){
     LOC={lat:e.latlng.lat,lng:e.latlng.lng};
     showResp('Location: '+e.latlng.lat.toFixed(4)+'°N, '+e.latlng.lng.toFixed(4)+'°E');
     document.getElementById('pcoord').textContent=LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
-    if(LM.getZoom()>=17) maybeStartSubmarineDive(false);
+    if(LM.getZoom()>=17) resetSubmarineGate();
   });
   LM.on('moveend',()=>{
     const c = LM.getCenter();
     document.getElementById('pcoord').textContent=c.lat.toFixed(4)+'°N, '+c.lng.toFixed(4)+'°E';
   });
-  /* HIDDEN SUBMARINE GAME: zoom deep into water */
+  /* HIDDEN SUBMARINE GAME: deliberate dive gate over open water */
   LM.on('zoomend',()=>{
     if(LM.getZoom()<=2){ goLayer(0); setTimeout(()=>globeController&&globeController.resetView(),260); return; }
-    maybeStartSubmarineDive(LM.getZoom()>=19);
+    if(LM.getZoom() < 18.8) resetSubmarineGate();
   });
 }
 
@@ -2735,95 +2891,89 @@ Creator & Founder: Notis Astranov, 2026
 Architecture: Spartan Script v3.3.3
 
 MISSION
-Single-file launchable planetary marketplace with three layers, hidden games,
-wallet top-up flows, mandatory phone-gated auth, and the full-body Astranova AI.
+Single-file launchable planetary marketplace with real Earth, stable layer transitions,
+a true spacecraft mode, a true submarine mode, map-native creation tools, wallet-only vendor checkout,
+and electric neon blue ASTRANOV branding locked in place.
 
 LOCKS
-- Top bar stays fixed.
-- POST button stays last on left rail.
-- Natural-language discovery stays centered on Astranova.
-- Version sync is mandatory on every pass.
-- Top-left app name stays electric neon blue.
-- Orbital cards stay compact and only enlarge modestly when passing in front.
+- ASTRANOV top-left brand stays deep electric neon blue with glow.
+- Guest can explore first. Login is required only for protected actions.
+- Earth startup scene is mandatory.
+- Orbital cards stay compact and depth-linked to Earth.
+- Vendor offers must support media, price, availability, liters, duration, and Buy now.
+- All purchases use the in-app user balance.
+- Spartan Script inside HTML must always match the code.
 
-VERSION 3.3.3 ADDITIONS
-- Stripe Checkout launch path added through a configurable publishable key plus
-  Checkout Session endpoint.
-- PayPal button path added through configurable client ID.
-- Local sandbox top-up path added so the launchable build still works before
-  live merchant credentials are wired.
-- Balance display now opens wallet and payment modal.
-- Auth now requires email + phone + password.
-- Existing users without stored phone metadata are upgraded on first login.
-- View buttons added for email, phone, password, name, and role fields.
-- Space Kitty retired. New assistant is Astranova: highly human-real female elf,
-  electric blue and silver suit, subtle elf features only, more human than mascot-like, animated wings.
-- Driver mode now cleanly toggles offline in the database.
+TRANSITIONS
+- Zoom out from Earth hits a 3-step orbit warning ladder before spacecraft mode activates on the 4th push.
+- Zoom into open sea hits a 3-step dive warning ladder before submarine mode activates on the 4th push.
+- Accidental game triggers during normal browsing must be avoided.
+- Zooming between layers must never get stuck.
 
-PAYMENTS
-- Currency: EUR.
-- Wallet stores local balance for launch/testing.
-- Stripe live mode requires a publishable key and a server endpoint that creates
-  a Checkout Session.
-- PayPal live mode requires a client ID.
-- Missing merchant credentials fall back to sandbox wallet top-up instead of
-  dead buttons.
+MAP CREATION
+- Clicking the map must allow creating:
+  1. Vendor offer
+  2. Shop / service / activity
+  3. Public post
+  4. Delivery driver base
+  5. Client delivery address
+- New objects must appear on the live map and in listings immediately.
 
-AUTH
-- Login: email + phone + password.
-- Signup: email + phone + password + full name + role.
-- Phone is enforced at app level and persisted in Supabase user metadata.
-
-AI ASSISTANT
-- Name: Astranova.
-- Visible on Earth layer only.
-- Opens takeover search surface.
-- Searches shops and signals by natural language.
-- Results fly the user to the selected location.
-
-SYNC RULE
-Every code change requires a Spartan Script update in the same pass.
-If the code and this block disagree, update the code to match the block.
+GAMES
+- Spacecraft mode must feel different from submarine mode.
+- Submarine mode must visibly include periscope / sonar style UI.
+- Exit from any game must return to the correct previous level.
 -->
 
 <!-- Embedded Spartan Script v3.3.3 -->
 <textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.3.3
 
 MISSION
-Build a launchable Astranov app with a real rotating Earth startup scene, guest-first exploration, real orbital offer/news cards, Earth/space/abyss transitions, wallet-based vendor checkout, and a realistic commercial interface with locked electric neon blue branding.
+Build a launchable Astranov app with a real rotating Earth startup scene, stable Earth-space-ocean transitions, a wallet-based marketplace, map-native creation tools, and electric neon blue branding locked in place.
 
 FOUNDATION
 - Version locked: 3.3.3
 - Single-file launchable HTML build
-- Earth is the true startup scene
+- Earth is the startup scene
 - User can explore before login
-- Login becomes mandatory only when protected actions start, especially buying or wallet top-up
+- Login becomes mandatory only when protected actions start, especially buying, posting, or going live
 - Mandatory auth fields: phone + email + password
 - Input fields include view buttons
-- ASTRANOV electric neon blue must stay locked everywhere and must not be changed again
-- Top-left app name ASTRANOV must remain electric neon blue
+- ASTRANOV top-left brand stays deep electric neon blue with glow everywhere
 
 VISUAL RULES
-- Realistic commercial shell, not arcade
+- Commercial realistic shell, not cheap arcade chrome
 - Transparent glass menus and panels
 - Main readable fonts stay normalized
 - Keep electric neon blue typography, labels, highlights, borders, and brand accents
-- Astranova stays as the earlier helper branch, but with NO helmet
-- Astranova must remain an original elf helper, not a pasted reference image
+- Astranova stays as the earlier helper branch and has NO helmet
 
 EARTH SIGNAL RULES
-- Offer/news/space cards must visibly connect to Earth with a line
-- Cards must stay geo-anchored and rotate with Earth
-- Cards must change size dynamically while rotating so they feel closer when passing in front of the user
-- Orbital cards must stay compact and must never overtake the screen
-- Cards may grow only modestly when passing in front of the user
-- Card container must be filled by the preview image or video
-- Earth cards must feel orbit-linked, not floating UI stickers
+- Offer/news/space cards visibly connect to Earth with a line
+- Cards stay geo-anchored and rotate with Earth
+- Cards scale modestly while passing in front of the user
+- Orbital cards stay compact and never overtake the screen
+- Card container is filled by the preview image or video
 
-LAYER RULES
-- User must be able to zoom back out beyond Earth to activate the space layer/game
-- User must be able to zoom into water and trigger the submarine/abyss layer
-- Return-to-Earth flow must work reliably
+TRANSITION RULES
+- User must receive 3 differently colored orbit-limit notices before spacecraft mode activates on the next outward zoom
+- User must receive 3 differently colored dive-limit notices before submarine mode activates on the next inward zoom over open water
+- Normal browsing must not trigger games by accident
+- Spacecraft mode and submarine mode must be visually distinct
+
+GAME RULES
+- Spacecraft mode is a real space layer/game
+- Submarine mode is a real ocean layer/game with sonar/periscope style UI
+- Exit from any game returns to the correct previous layer
+
+MAP CREATION RULES
+- Clicking a point on the map must allow creating:
+  - vendor offer
+  - shop / service / activity
+  - public post
+  - delivery driver base
+  - client delivery address
+- New objects must show on the map and in listings immediately
 
 MARKETPLACE RULES
 - Vendor offers panel must support photo or video preview
@@ -2835,9 +2985,758 @@ MARKETPLACE RULES
 - Buy now uses ONLY the user wallet balance
 - If balance is low, open wallet reload inside the app
 - User reloads balance straight in the app
-- Keep wallet/payment history visible
 
 DELIVERY RULE
-- Produce the latest deployment-ready index.html with the Spartan Script embedded inside the HTML itself</textarea>
+- Produce the latest deployment-ready HTML with the Spartan Script embedded inside the HTML itself</textarea>
+
+<div id="map-action-modal">
+  <div class="map-sheet">
+    <div class="sheet-title">Create here</div>
+    <div class="sheet-sub">Choose what should appear at the selected map point. The point stays geo-linked to this exact latitude and longitude.</div>
+    <div class="type-note" id="map-action-coords">Point: —</div>
+    <div class="sheet-actions">
+      <button class="sheet-btn" onclick="openEntityCreate('vendor_offer')"><strong>Vendor offer</strong>Photos or video, price, availability, liters, duration, Buy now via wallet.</button>
+      <button class="sheet-btn" onclick="openEntityCreate('shop_service')"><strong>Shop / service / activity</strong>Create a business, activity base, or service point.</button>
+      <button class="sheet-btn" onclick="openEntityCreate('post_signal')"><strong>Public post</strong>Drop a public post, announcement, or local signal.</button>
+      <button class="sheet-btn" onclick="openEntityCreate('driver_base')"><strong>Delivery driver base</strong>Set an operating base for a driver or delivery fleet.</button>
+      <button class="sheet-btn" onclick="openEntityCreate('client_address')"><strong>Client delivery address</strong>Save a delivery destination or customer point.</button>
+      <button class="sheet-btn" onclick="closeMapActionModal()"><strong>Cancel</strong>Keep exploring the map.</button>
+    </div>
+  </div>
+</div>
+
+<div id="entity-modal">
+  <div class="entity-sheet">
+    <div class="sheet-title" id="entity-title">Create entity</div>
+    <div class="sheet-sub" id="entity-sub">This object will be created on the selected map point and added to the live map and listings immediately.</div>
+    <div class="type-note" id="entity-coords">Point: —</div>
+    <div class="entity-grid">
+      <div class="full"><label>Type</label><select id="entity-kind">
+        <option value="vendor_offer">Vendor offer</option>
+        <option value="shop_service">Shop / service / activity</option>
+        <option value="post_signal">Public post</option>
+        <option value="driver_base">Delivery driver base</option>
+        <option value="client_address">Client delivery address</option>
+      </select></div>
+      <div><label>Name / title</label><input id="entity-name" placeholder="e.g. Blue Reef Dive Session"></div>
+      <div><label>Category</label><input id="entity-category" placeholder="e.g. Diving / Activities"></div>
+      <div class="full"><label>Description</label><textarea id="entity-description" placeholder="Describe the offer, shop, post, driver base, or address."></textarea></div>
+      <div><label>Price EUR</label><input id="entity-price" type="number" min="0" step="0.01" placeholder="25.00"></div>
+      <div><label>Availability</label><input id="entity-availability" placeholder="e.g. 12 available / Open now"></div>
+      <div><label>Volume liters</label><input id="entity-volume" type="number" min="0" step="0.1" placeholder="e.g. 1.5"></div>
+      <div><label>Duration minutes</label><input id="entity-duration" type="number" min="0" step="1" placeholder="e.g. 45"></div>
+      <div><label>Phone</label><input id="entity-phone" placeholder="+30..."></div>
+      <div><label>Website / contact</label><input id="entity-contact" placeholder="https://... or WhatsApp"></div>
+      <div class="full"><label>Photo or video</label><input id="entity-media" type="file" accept="image/*,video/*"></div>
+    </div>
+    <div class="entity-footer">
+      <button onclick="closeEntityModal()">Cancel</button>
+      <button class="primary" onclick="submitEntityCreate()">Create here</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const APP_BLUE = '#00c8ff';
+  document.documentElement.style.setProperty('--blue', APP_BLUE);
+  document.documentElement.style.setProperty('--la', APP_BLUE);
+  document.documentElement.style.setProperty('--la2', 'rgba(0,200,255,0.12)');
+  document.documentElement.style.setProperty('--lb', 'rgba(0,200,255,0.22)');
+  document.body && document.body.style.setProperty('--la', APP_BLUE);
+
+  const LOCAL_OFFER_KEY = 'astranov.local.offers.v333';
+  const LOCAL_PLACE_KEY = 'astranov.local.places.v333';
+  let MAP_PICK = null;
+
+  function byId(id){ return document.getElementById(id); }
+  function num(v){ const n = Number(v); return Number.isFinite(n) ? n : null; }
+  function safeJsonGet(key, fallback){ try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); } catch(e) { return fallback; } }
+  function safeJsonSet(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+  function getLocalOffers(){ return safeJsonGet(LOCAL_OFFER_KEY, []); }
+  function setLocalOffers(items){ safeJsonSet(LOCAL_OFFER_KEY, items); }
+  function getLocalPlaces(){ return safeJsonGet(LOCAL_PLACE_KEY, []); }
+  function setLocalPlaces(items){ safeJsonSet(LOCAL_PLACE_KEY, items); }
+  function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2,10) + '-' + Date.now().toString(36); }
+  function coordsText(lat,lng){ return 'Point: ' + Number(lat).toFixed(5) + '°, ' + Number(lng).toFixed(5) + '°'; }
+
+  async function fileToDataUrl(file){
+    if(!file) return '';
+    return await new Promise((resolve,reject)=>{
+      const fr = new FileReader();
+      fr.onload = ()=>resolve(String(fr.result || ''));
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+  }
+
+  window.openMapActionModal = function(lat, lng){
+    MAP_PICK = { lat:Number(lat), lng:Number(lng) };
+    byId('map-action-coords').textContent = coordsText(lat,lng);
+    byId('entity-coords').textContent = coordsText(lat,lng);
+    byId('map-action-modal').classList.add('on');
+  };
+  window.closeMapActionModal = function(){ byId('map-action-modal').classList.remove('on'); };
+
+  function syncEntityKind(kind){
+    byId('entity-kind').value = kind;
+    const titleMap = {
+      vendor_offer: 'Create vendor offer',
+      shop_service: 'Create shop / service / activity',
+      post_signal: 'Create public post',
+      driver_base: 'Create delivery driver base',
+      client_address: 'Create client delivery address'
+    };
+    const subMap = {
+      vendor_offer: 'This creates a wallet-buyable vendor offer with media, price, availability, liters, and duration.',
+      shop_service: 'This creates a business or service point on the live map.',
+      post_signal: 'This creates a public visible post or local signal on the live map.',
+      driver_base: 'This creates a delivery driver operating base.',
+      client_address: 'This creates a saved client destination marker.'
+    };
+    byId('entity-title').textContent = titleMap[kind] || 'Create entity';
+    byId('entity-sub').textContent = subMap[kind] || 'Create a new map object.';
+  }
+
+  window.openEntityCreate = function(kind){
+    closeMapActionModal();
+    syncEntityKind(kind || 'vendor_offer');
+    byId('entity-coords').textContent = MAP_PICK ? coordsText(MAP_PICK.lat, MAP_PICK.lng) : 'Point: current map center';
+    byId('entity-modal').classList.add('on');
+  };
+  window.closeEntityModal = function(){ byId('entity-modal').classList.remove('on'); };
+
+  byId('entity-kind').addEventListener('change', e => syncEntityKind(e.target.value));
+
+  window.submitEntityCreate = async function(){
+    const kind = byId('entity-kind').value;
+    const point = MAP_PICK || (window.LM ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
+    const file = byId('entity-media').files[0];
+    const mediaData = await fileToDataUrl(file).catch(()=> '');
+    const item = {
+      id: uid(kind),
+      kind,
+      title: byId('entity-name').value.trim() || 'Untitled',
+      name: byId('entity-name').value.trim() || 'Untitled',
+      category: byId('entity-category').value.trim() || (kind === 'vendor_offer' ? 'Vendor Offer' : kind),
+      description: byId('entity-description').value.trim(),
+      price: byId('entity-price').value ? '€' + Number(byId('entity-price').value).toFixed(2) : '',
+      price_eur: num(byId('entity-price').value),
+      availability: byId('entity-availability').value.trim(),
+      volume_liters: num(byId('entity-volume').value),
+      duration_minutes: num(byId('entity-duration').value),
+      contact: byId('entity-contact').value.trim(),
+      phone: byId('entity-phone').value.trim(),
+      website: byId('entity-contact').value.trim(),
+      lat: Number(point.lat),
+      lon: Number(point.lng),
+      lng: Number(point.lng),
+      image: mediaData && mediaData.startsWith('data:image') ? mediaData : '',
+      video: mediaData && mediaData.startsWith('data:video') ? mediaData : '',
+      created_at: new Date().toISOString(),
+      local_only: true,
+      vendor_name: (window.CU && CU.name) || 'Local vendor'
+    };
+
+    if(kind === 'vendor_offer' || kind === 'shop_service' || kind === 'post_signal'){
+      const offers = getLocalOffers();
+      offers.unshift(item);
+      setLocalOffers(offers.slice(0,120));
+    } else {
+      const places = getLocalPlaces();
+      places.unshift(item);
+      setLocalPlaces(places.slice(0,120));
+    }
+
+    // light best-effort sync to existing backend shapes when logged in
+    try{
+      if(window.CU && window.sb){
+        if(kind === 'vendor_offer' || kind === 'post_signal'){
+          await sb.from('signals').insert([{
+            user_id: CU.id,
+            title: item.title,
+            description: item.description,
+            price: item.price,
+            contact: item.contact || item.phone,
+            category: kind === 'vendor_offer' ? 'shop' : 'social',
+            lat: item.lat,
+            lon: item.lon
+          }]);
+        } else if(kind === 'shop_service'){
+          await sb.from('shops').insert([{
+            vendor_id: CU.id,
+            name: item.name,
+            category: item.category,
+            description: item.description,
+            phone: item.phone,
+            website: item.website,
+            lat: item.lat,
+            lon: item.lon
+          }]);
+        } else if(kind === 'driver_base'){
+          await sb.from('drivers').upsert([{
+            user_id: CU.id,
+            vehicle_type: 'Motorcycle',
+            lat: item.lat,
+            lon: item.lon,
+            available: true
+          }], { onConflict: 'user_id' });
+        }
+      }
+    } catch(e){}
+
+    ['entity-name','entity-category','entity-description','entity-price','entity-availability','entity-volume','entity-duration','entity-phone','entity-contact','entity-media'].forEach(id=>{
+      const el = byId(id);
+      if(!el) return;
+      if(el.type === 'file') el.value = '';
+      else el.value = '';
+    });
+    closeEntityModal();
+    if(window.CL !== 1) goLayer(1);
+    if(window.LM && typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+    if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
+    if(typeof showResp === 'function') showResp((item.title || item.name) + ' created on the live map.');
+  };
+
+  const _origInitLeaflet = window.initLeaflet;
+  window.initLeaflet = function(){
+    _origInitLeaflet();
+    if(!window.LM || LM.__astrPatched) return;
+    LM.__astrPatched = true;
+
+    LM.on('click', e => {
+      window.LOC = { lat:e.latlng.lat, lng:e.latlng.lng };
+      resetSubmarineGate();
+      setTimeout(() => {
+        if(!gameActive && CL === 1) openMapActionModal(e.latlng.lat, e.latlng.lng);
+      }, 140);
+    });
+
+    LM.on('moveend', () => {
+      resetSubmarineGate();
+    });
+
+    LM.on('zoomend', () => {
+      if(!LM || gameActive || CL !== 1) return;
+      const z = LM.getZoom();
+      if(z < 18.8) resetSubmarineGate();
+    });
+
+    const mapBox = LM.getContainer ? LM.getContainer() : null;
+    if(mapBox && !mapBox.__astrDiveGate){
+      mapBox.__astrDiveGate = true;
+      mapBox.addEventListener('wheel', ev => {
+        if(CL !== 1 || gameActive || !LM) return;
+        if(ev.deltaY < 0 && LM.getZoom() >= 18.95){
+          ev.preventDefault();
+          handleSubmarineGateAttempt();
+        } else if(ev.deltaY > 0){
+          resetSubmarineGate();
+        }
+      }, { passive:false });
+    }
+  };
+
+  const _origMaybeStartSubmarineDive = window.maybeStartSubmarineDive;
+  window.maybeStartSubmarineDive = async function(force=false){
+    if(!window.LM || gameActive || CL !== 1) return;
+    const z = LM.getZoom();
+    if(z < 18.4) return;
+    const c = LM.getCenter();
+    let elev = null;
+    try{ elev = await probeSeaDepth(c.lat, c.lng); }catch(e){}
+    if(gameActive || !window.LM) return;
+    if(elev !== null && elev < -4){
+      showResp('Open water confirmed. Keep zooming in to arm submarine mode.', 'gate1');
+      return;
+    }
+    if(force){
+      if(elev === null) showResp('Sea-depth check unavailable. Hold over open water and try again.', 'gate1');
+      else showResp('This point is not open sea. Move over water and zoom deeper to dive.', 'gate2');
+    }
+  };
+
+  const _origStartGame = window.startGame;
+  window.startGame = function(type, origin=null){
+    if(type === 'spaceship' && window.globeController && globeController.getZoom && globeController.getZoom() < 7.15){
+      showResp('Zoom further out to leave Earth orbit.');
+      return;
+    }
+    if(type === 'submarine' && window.LM && LM.getZoom && LM.getZoom() < 18.4){
+      showResp('Zoom deeper over open water to enter submarine mode.');
+      return;
+    }
+    _origStartGame(type, origin);
+    const extra = byId('game-extra');
+    const hint = byId('game-mode-hint') || (function(){
+      const div = document.createElement('div');
+      div.id = 'game-mode-hint';
+      byId('game-ui').appendChild(div);
+      return div;
+    })();
+    if(type === 'spaceship'){
+      extra.textContent = 'ORBIT EXIT: mouse wheel in or ESC';
+      hint.textContent = 'SPACECRAFT MODE · wheel in or press ESC to return to the globe';
+      byId('game-name').textContent = 'SPACECRAFT MODE';
+    } else if(type === 'submarine'){
+      extra.textContent = 'DIVE EXIT: mouse wheel out or ESC';
+      hint.textContent = 'SUBMARINE MODE · wheel out or press ESC to return to the sea map';
+      byId('game-name').textContent = 'SUBMARINE OPERATIONS';
+    } else {
+      extra.textContent = 'PACKAGES: 5';
+      hint.textContent = 'DRONE DELIVERY';
+    }
+  };
+
+  const _origExitGame = window.exitGame;
+  window.exitGame = function(){
+    const hint = byId('game-mode-hint');
+    if(hint) hint.remove();
+    _origExitGame();
+  };
+
+  const gameUi = byId('game-ui');
+  gameUi.addEventListener('wheel', ev => {
+    if(!gameActive) return;
+    ev.preventDefault();
+    if(gameType === 'spaceship' && ev.deltaY < 0){
+      exitGame();
+    } else if(gameType === 'submarine' && ev.deltaY > 0){
+      exitGame();
+    }
+  }, { passive:false });
+
+  const _origZoomIn = window.zoomIn;
+  window.zoomIn = function(){
+    if(gameActive && gameType === 'spaceship'){ exitGame(); return; }
+    if(CL === 1 && window.LM && LM.getZoom && LM.getZoom() >= 18.95){ handleSubmarineGateAttempt(); return; }
+    _origZoomIn();
+  };
+
+  const _origZoomOut = window.zoomOut;
+  window.zoomOut = function(){
+    if(gameActive && gameType === 'submarine'){ exitGame(); return; }
+    if(CL === 0 && window.globeController && globeController.getZoom && globeController.getZoom() >= 8.1){ handleSpaceGateAttempt(); return; }
+    if(CL === 1){ resetSubmarineGate(); }
+    _origZoomOut();
+  };
+
+  // Enhanced local markers/listings on top of remote data
+  const _origRefreshMapData = window.refreshMapData;
+  window.refreshMapData = async function(){
+    await _origRefreshMapData();
+    if(!window.LM) return;
+    const offers = getLocalOffers();
+    const places = getLocalPlaces();
+    const mergedShops = [];
+    const mergedSignals = [];
+    offers.forEach(r => {
+      const col = r.kind === 'post_signal' ? '#7dc3ff' : '#00c8ff';
+      const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
+      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
+        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || 'Local entry') : (r.title || r.name || 'Local entry'))}</b><br><span style="font-size:11px;color:#95a8bb;">${(window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind))}</span>${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
+      MM.push(m);
+      if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
+    });
+    places.forEach(r => {
+      const col = r.kind === 'driver_base' ? '#ff9900' : '#00e87a';
+      const label = r.kind === 'driver_base' ? 'Driver base' : 'Client address';
+      const ic = L.divIcon({ className:'', iconSize:[13,13], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
+      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
+        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || label) : (r.title || r.name || label))}</b><br><span style="font-size:11px;color:#95a8bb;">${label}</span>${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
+      MM.push(m);
+    });
+
+    // Merge local offers into listings
+    const existing = Array.isArray(window.LISTING_CACHE) ? LISTING_CACHE.slice() : [];
+    const locals = offers.map(r => ({...r, _type: r.kind === 'shop_service' ? 'Shop / Service' : r.kind === 'post_signal' ? 'Public Post' : 'Vendor Offer' }));
+    const combined = [...locals, ...existing].slice(0, 50);
+    LISTING_CACHE = combined;
+    const c = byId('lp-content');
+    if(c){
+      if(!combined.length){
+        c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet.</div>';
+      } else {
+        c.innerHTML = combined.map((r, i) => {
+          const priceLabel = window.formatPriceLabel ? formatPriceLabel(r) : (r.price || 'Ask vendor');
+          const priceAmount = window.inferPriceAmount ? inferPriceAmount(r) : (Number(r.price_eur) || null);
+          const desc = window.escapeHtml && window.clipText ? escapeHtml(clipText(r.description || r.body || '', 120)) : (r.description || '');
+          const media = window.listingMediaMarkup ? listingMediaMarkup(r) : '';
+          const lat = Number(r.lat || window.LOC.lat);
+          const lng = Number(r.lon || r.lng || window.LOC.lng);
+          return `
+            <div class="lcard" onclick="flyTo(${lat},${lng})">
+              ${media}
+              <div class="lcontent">
+                <div class="lcc">${window.escapeHtml ? escapeHtml(r._type || 'Vendor Offer') : (r._type || 'Vendor Offer')}</div>
+                <div class="lcn">${window.escapeHtml ? escapeHtml(r.name || r.title || 'Signal') : (r.name || r.title || 'Signal')}</div>
+                <div class="lcp">${window.escapeHtml ? escapeHtml(priceLabel) : priceLabel}</div>
+                <div class="ldesc">${desc || 'Live vendor offer ready for wallet checkout.'}</div>
+                <div class="lmeta">
+                  <div class="lmeta-chip"><div class="lmeta-label">Availability</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live')) : (window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live'))}</div></div>
+                  <div class="lmeta-chip"><div class="lmeta-label">Volume</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + '')) : (window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + ''))}</div></div>
+                  <div class="lmeta-chip"><div class="lmeta-label">Duration</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferDurationLabel ? inferDurationLabel(r) : ((r.duration_minutes || '—') + '')) : (window.inferDurationLabel ? inferDurationLabel(r) : ((r.duration_minutes || '—') + ''))}</div></div>
+                  <div class="lmeta-chip"><div class="lmeta-label">Vendor</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor')) : (window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor'))}</div></div>
+                </div>
+                <div class="lactions">
+                  <button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button>
+                  <button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button>
+                </div>
+                <div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div></div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+    }
+  };
+
+  const _origLoadOrbitalFeed = window.loadOrbitalFeed;
+  window.loadOrbitalFeed = async function(){
+    await _origLoadOrbitalFeed();
+    const locals = getLocalOffers().slice(0, 6).map((r, idx) => (window.withOrbitalDefaults ? withOrbitalDefaults({
+      kind:'offer',
+      title:r.title || r.name || 'Local offer',
+      body:r.description || r.availability || 'Local marketplace item',
+      metaLeft:(r.category || r.kind || 'LOCAL').toUpperCase(),
+      metaRight:r.price || 'LIVE',
+      image:r.image || '',
+      video:r.video || '',
+      lat:Number(r.lat),
+      lng:Number(r.lon || r.lng)
+    }, idx + 100) : null)).filter(Boolean);
+    if(locals.length){
+      window.ORBITAL_FEED = [...locals, ...(window.ORBITAL_FEED || [])].slice(0, 16);
+      if(typeof renderOrbitalFeed === 'function') renderOrbitalFeed();
+    }
+  };
+
+  // More distinct game renderer
+  window.runGame = function(type){
+    const gc = byId('game-canvas-real');
+    gc.width = window.innerWidth;
+    gc.height = window.innerHeight;
+    const ctx = gc.getContext('2d');
+    const gs = window.gameState;
+    gs.player = { x:gc.width/2, y:gc.height/2, vx:0, vy:0, angle:type==='submarine' ? -Math.PI/2 : 0, shield:100, depth:120 };
+    gs.bullets = [];
+    gs.enemies = [];
+    gs.packages = [];
+    gs.contacts = [];
+    const keys = {};
+    for(let i=0;i<(type==='submarine'?8:7);i++){
+      gs.enemies.push({
+        x:Math.random()*gc.width,
+        y:Math.random()*gc.height,
+        vx:(Math.random()-.5)*(type==='submarine'?0.8:1.8),
+        vy:(Math.random()-.5)*(type==='submarine'?0.8:1.8),
+        r:type==='submarine'?14:18,
+        hp: type==='submarine' ? 2 : 3,
+        angle: Math.random()*Math.PI*2
+      });
+    }
+    if(type === 'drone'){
+      for(let i=0;i<5;i++) gs.packages.push({ x:70+Math.random()*(gc.width-140), y:70+Math.random()*(gc.height-140), collected:false });
+    }
+
+    const keydown = e => { keys[e.key] = true; if(e.key === 'Escape') exitGame(); };
+    const keyup = e => { keys[e.key] = false; };
+    window.addEventListener('keydown', keydown);
+    window.addEventListener('keyup', keyup);
+    let lastShot = 0;
+    let sweep = 0;
+
+    function drawSpaceBackground(){
+      const g = ctx.createLinearGradient(0,0,0,gc.height);
+      g.addColorStop(0,'#020612');
+      g.addColorStop(1,'#060d1a');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,gc.width,gc.height);
+      for(let i=0;i<160;i++){
+        const x = (i*97 + gs.tick*0.6) % gc.width;
+        const y = (i*53 + gs.tick*0.28) % gc.height;
+        const s = (i%5===0)?2:1;
+        ctx.fillStyle = i%9===0 ? 'rgba(0,200,255,0.95)' : 'rgba(255,255,255,0.82)';
+        ctx.fillRect(x,y,s,s);
+      }
+      ctx.save();
+      ctx.translate(gc.width*0.82, gc.height*0.2);
+      ctx.fillStyle = 'rgba(30,80,160,0.34)';
+      ctx.beginPath();
+      ctx.arc(0,0,80,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawSubmarineBackground(){
+      const g = ctx.createLinearGradient(0,0,0,gc.height);
+      g.addColorStop(0,'#02101f');
+      g.addColorStop(0.4,'#062340');
+      g.addColorStop(1,'#010812');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,gc.width,gc.height);
+      for(let i=0;i<40;i++){
+        ctx.strokeStyle = 'rgba(120,220,255,' + (0.015 + (i%5)*0.01) + ')';
+        ctx.beginPath();
+        const yy = (i*40 + (gs.tick*0.8)) % (gc.height + 40);
+        ctx.moveTo(0, yy);
+        ctx.bezierCurveTo(gc.width*0.25, yy + 12, gc.width*0.75, yy - 12, gc.width, yy + 6);
+        ctx.stroke();
+      }
+      const radius = Math.min(gc.width, gc.height) * 0.34;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(gc.width/2, gc.height/2, radius, 0, Math.PI*2);
+      ctx.clip();
+      ctx.globalAlpha = 0.12;
+      for(let i=0;i<60;i++){
+        ctx.fillStyle = 'rgba(200,240,255,0.16)';
+        const x = (i*137 + gs.tick*0.5) % gc.width;
+        const y = (i*83 + gs.tick*0.7) % gc.height;
+        ctx.fillRect(x,y,2,2);
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(0,0,0,0.56)';
+      ctx.beginPath();
+      ctx.rect(0,0,gc.width,gc.height);
+      ctx.arc(gc.width/2, gc.height/2, radius, 0, Math.PI*2, true);
+      ctx.fill('evenodd');
+      ctx.strokeStyle = 'rgba(132,236,255,0.34)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(gc.width/2, gc.height/2, radius, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(132,236,255,0.22)';
+      ctx.beginPath();
+      ctx.moveTo(gc.width/2 - radius, gc.height/2);
+      ctx.lineTo(gc.width/2 + radius, gc.height/2);
+      ctx.moveTo(gc.width/2, gc.height/2 - radius);
+      ctx.lineTo(gc.width/2, gc.height/2 + radius);
+      ctx.stroke();
+    }
+
+    function drawSonar(){
+      const sx = gc.width - 170, sy = gc.height - 170, sr = 120;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.fillStyle = 'rgba(2,10,18,0.75)';
+      ctx.beginPath();
+      ctx.arc(0,0,sr,0,Math.PI*2);
+      ctx.fill();
+      for(let i=1;i<=4;i++){
+        ctx.strokeStyle = 'rgba(118,235,255,0.18)';
+        ctx.beginPath();
+        ctx.arc(0,0,(sr/4)*i,0,Math.PI*2);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(118,235,255,0.22)';
+      ctx.beginPath();
+      ctx.moveTo(-sr,0); ctx.lineTo(sr,0);
+      ctx.moveTo(0,-sr); ctx.lineTo(0,sr);
+      ctx.stroke();
+      const sweepStart = sweep;
+      const sweepEnd = sweep + 0.35;
+      const grd = ctx.createRadialGradient(0,0,6,0,0,sr);
+      grd.addColorStop(0,'rgba(120,240,255,0.38)');
+      grd.addColorStop(1,'rgba(120,240,255,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.moveTo(0,0);
+      ctx.arc(0,0,sr,sweepStart,sweepEnd);
+      ctx.closePath();
+      ctx.fill();
+      gs.enemies.forEach(enemy => {
+        const dx = enemy.x - gs.player.x;
+        const dy = enemy.y - gs.player.y;
+        const rx = Math.max(-sr + 10, Math.min(sr - 10, dx * 0.18));
+        const ry = Math.max(-sr + 10, Math.min(sr - 10, dy * 0.18));
+        ctx.fillStyle = 'rgba(255,102,88,0.92)';
+        ctx.beginPath();
+        ctx.arc(rx, ry, 4, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.fillStyle = '#91ecff';
+      ctx.font = '12px Inter, sans-serif';
+      ctx.fillText('SONAR', -20, -sr - 12);
+      ctx.restore();
+    }
+
+    function drawHud(){
+      ctx.fillStyle = 'rgba(4,14,24,0.52)';
+      ctx.fillRect(18,18,220,68);
+      ctx.strokeStyle = 'rgba(0,200,255,0.22)';
+      ctx.strokeRect(18,18,220,68);
+      ctx.fillStyle = '#c8f0ff';
+      ctx.font = '13px Inter, sans-serif';
+      ctx.fillText(type === 'spaceship' ? 'SPACECRAFT MODE' : type === 'submarine' ? 'SUBMARINE OPERATIONS' : 'DRONE DELIVERY', 30, 42);
+      ctx.fillStyle = '#00c8ff';
+      ctx.fillText('Score ' + gs.score, 30, 64);
+      ctx.fillText('Lives ' + gs.lives, 118, 64);
+      if(type === 'submarine'){
+        ctx.fillText('Depth ' + Math.round(gs.player.depth) + 'm', 30, 82);
+      } else if(type === 'spaceship'){
+        ctx.fillText('Orbit stable', 30, 82);
+      }
+    }
+
+    function drawPlayer(){
+      ctx.save();
+      ctx.translate(gs.player.x, gs.player.y);
+      ctx.rotate(gs.player.angle);
+      if(type === 'spaceship'){
+        ctx.fillStyle = '#00c8ff';
+        ctx.beginPath();
+        ctx.moveTo(24,0); ctx.lineTo(-12,12); ctx.lineTo(-6,0); ctx.lineTo(-12,-12); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(0,200,255,0.26)';
+        ctx.beginPath();
+        ctx.moveTo(-10,0); ctx.lineTo(-22,6); ctx.lineTo(-18,0); ctx.lineTo(-22,-6); ctx.closePath(); ctx.fill();
+      } else if(type === 'submarine'){
+        ctx.fillStyle = '#5ca0ff';
+        ctx.beginPath(); ctx.ellipse(0,0,28,11,0,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#89b8ff';
+        ctx.fillRect(-4,-18,10,8);
+        ctx.fillRect(6,-10,3,10);
+      } else {
+        ctx.fillStyle = '#ff9900';
+        ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#ffcc00';
+        ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(-5,8); ctx.lineTo(-5,-8); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawBullets(){
+      gs.bullets = gs.bullets.filter(b => {
+        b.x += b.vx; b.y += b.vy; b.life--;
+        if(b.life <= 0) return false;
+        ctx.fillStyle = type === 'submarine' ? '#aaf4ff' : '#ffd600';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, type === 'submarine' ? 3.5 : 3, 0, Math.PI*2);
+        ctx.fill();
+        return true;
+      });
+    }
+
+    function drawEnemies(){
+      gs.enemies = gs.enemies.filter(en => en.hp > 0);
+      gs.enemies.forEach(en => {
+        en.x += en.vx; en.y += en.vy;
+        if(en.x < -30) en.x = gc.width + 30;
+        if(en.x > gc.width + 30) en.x = -30;
+        if(en.y < -30) en.y = gc.height + 30;
+        if(en.y > gc.height + 30) en.y = -30;
+        en.angle += 0.02;
+        ctx.save();
+        ctx.translate(en.x, en.y);
+        ctx.rotate(en.angle);
+        if(type === 'submarine'){
+          ctx.fillStyle = '#ff6f5e';
+          ctx.beginPath(); ctx.ellipse(0,0,18,7,0,0,Math.PI*2); ctx.fill();
+          ctx.fillRect(-2,-12,4,8);
+        } else {
+          ctx.fillStyle = '#ff4455';
+          ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(-10,9); ctx.lineTo(-6,0); ctx.lineTo(-10,-9); ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+
+        gs.bullets.forEach(b => {
+          const dx = b.x - en.x, dy = b.y - en.y;
+          if(Math.hypot(dx,dy) < en.r){
+            en.hp--; b.life = 0;
+            if(en.hp <= 0){
+              gs.score += 100;
+              byId('game-score').textContent = String(gs.score);
+            }
+          }
+        });
+
+        const pdx = gs.player.x - en.x, pdy = gs.player.y - en.y;
+        if(Math.hypot(pdx,pdy) < en.r + 12){
+          en.hp = 0;
+          gs.lives--;
+          byId('game-lives').textContent = String(gs.lives);
+          if(gs.lives <= 0){
+            showResp('Game over. Score: ' + gs.score);
+            exitGame();
+          }
+        }
+      });
+    }
+
+    function loop(){
+      if(!gameActive || gameType !== type){
+        window.removeEventListener('keydown', keydown);
+        window.removeEventListener('keyup', keyup);
+        return;
+      }
+      requestAnimationFrame(loop);
+      gs.tick++;
+      sweep += 0.03;
+
+      if(type === 'spaceship') drawSpaceBackground();
+      else if(type === 'submarine') drawSubmarineBackground();
+      else {
+        ctx.fillStyle = 'rgba(3,15,8,0.90)';
+        ctx.fillRect(0,0,gc.width,gc.height);
+      }
+
+      const spd = type === 'submarine' ? 1.8 : type === 'drone' ? 3 : 3.8;
+      if(keys['ArrowLeft'] || keys['a']) gs.player.angle -= 0.06;
+      if(keys['ArrowRight'] || keys['d']) gs.player.angle += 0.06;
+      if(keys['ArrowUp'] || keys['w']){
+        gs.player.vx += Math.cos(gs.player.angle) * spd * 0.14;
+        gs.player.vy += Math.sin(gs.player.angle) * spd * 0.14;
+        if(type === 'submarine') gs.player.depth = Math.min(980, gs.player.depth + 0.25);
+      }
+      if(keys['ArrowDown'] || keys['s']){
+        gs.player.vx -= Math.cos(gs.player.angle) * spd * 0.08;
+        gs.player.vy -= Math.sin(gs.player.angle) * spd * 0.08;
+        if(type === 'submarine') gs.player.depth = Math.max(40, gs.player.depth - 0.25);
+      }
+      gs.player.vx *= type === 'submarine' ? 0.95 : 0.93;
+      gs.player.vy *= type === 'submarine' ? 0.95 : 0.93;
+      gs.player.x = (gs.player.x + gs.player.vx + gc.width) % gc.width;
+      gs.player.y = (gs.player.y + gs.player.vy + gc.height) % gc.height;
+
+      if((keys[' '] || keys['z']) && gs.tick - lastShot > (type === 'submarine' ? 18 : 10)){
+        lastShot = gs.tick;
+        const bulletSpeed = type === 'submarine' ? 6 : 8;
+        gs.bullets.push({
+          x: gs.player.x + Math.cos(gs.player.angle) * 20,
+          y: gs.player.y + Math.sin(gs.player.angle) * 20,
+          vx: Math.cos(gs.player.angle) * bulletSpeed,
+          vy: Math.sin(gs.player.angle) * bulletSpeed,
+          life: type === 'submarine' ? 88 : 60
+        });
+      }
+
+      if(type === 'drone'){
+        gs.packages.forEach(p => {
+          if(p.collected) return;
+          ctx.fillStyle = '#00e87a';
+          ctx.fillRect(p.x - 8, p.y - 8, 16, 16);
+          ctx.strokeStyle = '#00c8ff';
+          ctx.strokeRect(p.x - 8, p.y - 8, 16, 16);
+          if(Math.hypot(gs.player.x - p.x, gs.player.y - p.y) < 20){
+            p.collected = true;
+            gs.score += 100;
+            byId('game-score').textContent = String(gs.score);
+          }
+        });
+        byId('game-extra').textContent = 'PACKAGES: ' + gs.packages.filter(p => !p.collected).length;
+      }
+
+      drawPlayer();
+      drawBullets();
+      drawEnemies();
+      drawHud();
+      if(type === 'submarine') drawSonar();
+    }
+    loop();
+  };
+
+})();
+</script>
+
 </body>
 </html>
