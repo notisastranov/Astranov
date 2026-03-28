@@ -147,7 +147,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 /* Driver marker pulse on map */
 @keyframes driver-pulse{0%,100%{box-shadow:0 0 12px #ff9900,0 0 24px rgba(255,153,0,0.4);}50%{box-shadow:0 0 20px #ff9900,0 0 40px rgba(255,153,0,0.6);}}
 
-/* ASTRANOVA TAKEOVER */
+/* ASTRANOV TAKEOVER */
 #astranova-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 #astranova-mode.on{display:flex;}
 #astranova-mode-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:90%;max-width:440px;}
@@ -334,8 +334,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .aguest:hover{color:var(--text);}
 .auth-field-row{display:flex;align-items:center;gap:6px;}
 .auth-field-row .ainp,.auth-field-row .asel{flex:1;}
-.auth-view-btn{height:34px;min-width:58px;padding:0 10px;background:rgba(0,200,255,0.08);border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);font-family:var(--fhud);font-size:9px;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;transition:all 0.15s;}
-.auth-view-btn:hover{color:var(--la);border-color:var(--la);background:var(--la2);}
 #auth-preview{display:none;padding:8px 10px;border:1px solid var(--lb);border-radius:4px;background:rgba(0,200,255,0.05);font-size:11px;color:var(--text);word-break:break-word;}
 #auth-preview.on{display:block;}
 #pm-pay{position:fixed;inset:0;background:rgba(2,5,12,0.88);z-index:310;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
@@ -794,6 +792,44 @@ body.lt,body.lt2,body.lt3{
 .temp-opt[data-temp=hot].active{background:rgba(255,80,50,0.14);color:#ff6644;border-color:rgba(255,80,50,0.30);}
 .temp-opt[data-temp=neutral].active{background:rgba(255,255,255,0.08);color:#e6eef6;border-color:rgba(255,255,255,0.20);}
 
+/* ═══ COMPASS RADAR HUD ═══ */
+#compass-hud{
+  position:absolute;top:40px;right:0px;z-index:59;
+  width:114px;height:114px;
+  pointer-events:none;
+  opacity:0.5;
+  transition:opacity 0.4s;
+}
+#compass-hud:hover{opacity:0.92;pointer-events:auto;}
+#compass-hud.routing{opacity:0.75;}
+#compass-svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(0,200,255,0.4));}
+.compass-ring{fill:none;stroke:rgba(0,200,255,0.3);stroke-width:1.2;}
+.compass-ring-outer{fill:none;stroke:rgba(0,200,255,0.12);stroke-width:0.5;}
+.compass-tick{stroke:rgba(0,200,255,0.4);stroke-width:0.5;}
+.compass-tick-major{stroke:rgba(0,200,255,0.65);stroke-width:0.9;}
+.compass-tick-cardinal{stroke:#00c8ff;stroke-width:1.8;}
+.compass-text{fill:rgba(0,200,255,0.7);font-size:5.5px;text-anchor:middle;font-family:var(--font);font-weight:600;}
+.compass-text-cardinal{fill:#00c8ff;font-size:7.5px;text-anchor:middle;font-family:var(--font);font-weight:700;text-shadow:0 0 4px rgba(0,200,255,0.5);}
+.compass-mil{fill:rgba(0,200,255,0.3);font-size:3.5px;text-anchor:middle;font-family:var(--font);}
+.compass-needle{stroke:#ff4455;stroke-width:1.5;stroke-linecap:round;}
+.compass-needle-s{stroke:rgba(255,255,255,0.25);stroke-width:0.8;stroke-linecap:round;}
+.compass-center{fill:rgba(0,200,255,0.6);}
+.compass-heading{fill:#00c8ff;font-size:9px;text-anchor:middle;font-family:var(--font);font-weight:700;}
+.compass-heading-label{fill:rgba(0,200,255,0.5);font-size:4px;text-anchor:middle;font-family:var(--font);}
+/* Radar sweep — front quarter bright, back 3/4 dark */
+.radar-sweep{transform-origin:54px 54px;animation:radar-spin 3.5s linear infinite;}
+@keyframes radar-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.radar-blip{fill:#00e87a;opacity:0;animation:blip-pulse 3.5s ease-in-out infinite;}
+@keyframes blip-pulse{0%,75%,100%{opacity:0;r:1.5;}35%,55%{opacity:0.9;r:2.5;}}
+.radar-blip-delivery{fill:#ff9900;}
+.radar-blip-post{fill:#00c8ff;}
+.route-line{stroke:#ff9900;stroke-width:1.5;stroke-dasharray:4,3;stroke-linecap:round;opacity:0;}
+.route-line.active{opacity:0.8;animation:route-pulse 2s ease-in-out infinite;}
+@keyframes route-pulse{0%,100%{opacity:0.6;}50%{opacity:1;}}
+.waypoint-dot{fill:#ff9900;opacity:0;}
+.waypoint-dot.active{opacity:0.9;}
+.dist-label{fill:rgba(0,200,255,0.25);font-size:3px;text-anchor:middle;font-family:var(--font);}
+
 /* ═══ CHANNEL BUTTONS (left sidebar) ═══ */
 .ch-btn{transition:all 0.2s !important;position:relative;}
 .ch-btn.active{background:rgba(0,200,255,0.18) !important;color:#00c8ff !important;border-color:rgba(0,200,255,0.40) !important;box-shadow:0 0 12px rgba(0,200,255,0.30), inset 0 0 8px rgba(0,200,255,0.10) !important;}
@@ -863,37 +899,25 @@ body.lt,body.lt2,body.lt3{
   <div class="abox">
     <div class="ahdr">
       <span class="abrand">ASTRANOV</span>
-      <span class="asub">Planetary OS — Trinity v3.4.0</span>
+      <span class="asub">Planetary OS — Trinity v3.8.0</span>
     </div>
     <div class="abody">
       <div class="atabs">
         <div class="atab on" id="tl" onclick="stab('login')">Login</div>
         <div class="atab" id="ts2" onclick="stab('signup')">Sign Up</div>
       </div>
-      <div class="auth-field-row">
-        <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
-        <button class="auth-view-btn" type="button" onclick="previewAuthField('ae','Email')">View</button>
-      </div>
-      <div class="auth-field-row">
-        <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
-        <button class="auth-view-btn" type="button" onclick="previewAuthField('aphone','Phone')">View</button>
-      </div>
-      <div class="auth-field-row">
-        <input class="ainp" id="ap2" type="password" placeholder="Password"/>
-        <button class="auth-view-btn" type="button" onclick="togglePasswordView()">Show</button>
-      </div>
-      <div class="auth-field-row" id="auth-name-row" style="display:none;">
+      <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
+      <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
+      <input class="ainp" id="ap2" type="password" placeholder="Password"/>
+      <div id="auth-name-row" style="display:none;">
         <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off"/>
-        <button class="auth-view-btn" type="button" onclick="previewAuthField('an','Name')">View</button>
       </div>
-      <div class="auth-field-row" id="auth-role-row" style="display:none;">
+      <div id="auth-role-row" style="display:none;">
         <select class="asel" id="ar">
           <option value="user">User (Consumer)</option>
           <option value="admin">Admin (Driver / Shop Owner / Support)</option>
         </select>
-        <button class="auth-view-btn" type="button" onclick="previewSelectedRole()">View</button>
       </div>
-      <div id="auth-preview"></div>
       <div id="auth-helper"></div>
       <div class="aerr" id="aerr"></div>
       <button class="asubmit" onclick="doAuth()">Enter Astranov</button>
@@ -1010,6 +1034,77 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
+  <!-- COMPASS RADAR HUD (top-right) -->
+  <div id="compass-hud">
+    <svg id="compass-svg" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="radarSweepGrad" cx="50%" cy="50%">
+          <stop offset="0%" stop-color="rgba(0,200,255,0)" />
+          <stop offset="50%" stop-color="rgba(0,200,255,0.05)" />
+          <stop offset="100%" stop-color="rgba(0,200,255,0.25)" />
+        </radialGradient>
+        <!-- Front quarter bright, back dark -->
+        <radialGradient id="radarBg" cx="50%" cy="30%">
+          <stop offset="0%" stop-color="rgba(0,200,255,0.08)" />
+          <stop offset="40%" stop-color="rgba(3,12,24,0.15)" />
+          <stop offset="100%" stop-color="rgba(2,6,14,0.4)" />
+        </radialGradient>
+        <!-- Dark overlay for back 3/4 -->
+        <linearGradient id="radarDark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+          <stop offset="35%" stop-color="rgba(0,0,0,0)" />
+          <stop offset="100%" stop-color="rgba(0,0,0,0.35)" />
+        </linearGradient>
+        <!-- Bright front glow -->
+        <radialGradient id="frontGlow" cx="50%" cy="20%">
+          <stop offset="0%" stop-color="rgba(0,200,255,0.12)" />
+          <stop offset="50%" stop-color="rgba(0,200,255,0.03)" />
+          <stop offset="100%" stop-color="rgba(0,200,255,0)" />
+        </radialGradient>
+      </defs>
+      <!-- Dark background -->
+      <circle cx="54" cy="54" r="52" fill="url(#radarBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1.5"/>
+      <!-- Back 3/4 darkening -->
+      <circle cx="54" cy="54" r="51" fill="url(#radarDark)"/>
+      <!-- Front quarter brightness -->
+      <ellipse cx="54" cy="28" rx="40" ry="28" fill="url(#frontGlow)"/>
+      <!-- Distance rings (periscope style) -->
+      <circle cx="54" cy="54" r="48" class="compass-ring"/>
+      <circle cx="54" cy="54" r="36" class="compass-ring-outer"/>
+      <circle cx="54" cy="54" r="24" class="compass-ring-outer"/>
+      <circle cx="54" cy="54" r="12" class="compass-ring-outer"/>
+      <!-- Distance labels -->
+      <text x="54" y="19" class="dist-label">5km</text>
+      <text x="54" y="31" class="dist-label">3km</text>
+      <text x="54" y="43" class="dist-label">1km</text>
+      <!-- Compass tick marks (generated by JS) -->
+      <g id="compass-ticks"></g>
+      <!-- Mil markings (inner ring) -->
+      <g id="compass-mils"></g>
+      <!-- Radar sweep -->
+      <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"/>
+      <!-- Radar blips (populated by JS) -->
+      <g id="radar-blips"></g>
+      <!-- Route indicator line (populated by JS) -->
+      <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"/>
+      <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"/>
+      <!-- Compass needle group (rotated by JS) -->
+      <g id="compass-needle-group">
+        <line class="compass-needle" x1="54" y1="54" x2="54" y2="14"/>
+        <line class="compass-needle-s" x1="54" y1="54" x2="54" y2="94"/>
+        <!-- N arrow tip -->
+        <polygon points="54,12 51,20 57,20" fill="#ff4455" opacity="0.8"/>
+      </g>
+      <!-- Center dot -->
+      <circle cx="54" cy="54" r="2.5" class="compass-center"/>
+      <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"/>
+      <!-- Heading readout -->
+      <rect x="36" y="95" width="36" height="12" rx="3" fill="rgba(3,8,16,0.6)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
+      <text x="54" y="93" class="compass-heading-label">HDG</text>
+    </svg>
+  </div>
+
   <!-- Layer dots -->
   <div id="li">
     <div class="ldt on" onclick="goLayer(0)"><span>COSMIC</span><div class="ld2"></div></div>
@@ -1040,116 +1135,120 @@ body.lt,body.lt2,body.lt3{
     <span>DRONE GAME</span>
   </div>
 
-  <!-- ASTRANOVA — FLYING ELF AI ASSISTANT -->
+  <!-- ASTRANOV — NORDIC WARRIOR ANGEL AI -->
   <div id="astranova-wrapper">
     <div id="astranova-speech"></div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova AI elf assistant">
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov Nordic warrior angel AI">
       <defs>
-        <linearGradient id="elfHair" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f0f8ff"/><stop offset="35%" stop-color="#a8e0ff"/><stop offset="100%" stop-color="#1a5a9e"/></linearGradient>
-        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d0f0ff"/><stop offset="30%" stop-color="#60c8ff"/><stop offset="70%" stop-color="#1a6aaa"/><stop offset="100%" stop-color="#081830"/></linearGradient>
-        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/><stop offset="40%" stop-color="#80d8ff" stop-opacity="0.6"/><stop offset="100%" stop-color="#0088cc" stop-opacity="0.2"/></linearGradient>
-        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef0ea"/><stop offset="100%" stop-color="#f0d8cc"/></linearGradient>
-        <radialGradient id="elfGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#00c8ff" stop-opacity="0.3"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
-        <filter id="elfBlur"><feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/></filter>
+        <linearGradient id="elfHair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#fff8e0"/><stop offset="30%" stop-color="#f0d060"/><stop offset="70%" stop-color="#c8a030"/><stop offset="100%" stop-color="#8a6820"/></linearGradient>
+        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c0d8f0"/><stop offset="15%" stop-color="#4890c8"/><stop offset="50%" stop-color="#1a4a7a"/><stop offset="100%" stop-color="#081428"/></linearGradient>
+        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="30%" stop-color="#e0f0ff" stop-opacity="0.7"/><stop offset="60%" stop-color="#80c8f0" stop-opacity="0.4"/><stop offset="100%" stop-color="#2060a0" stop-opacity="0.15"/></linearGradient>
+        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef2e8"/><stop offset="100%" stop-color="#f0d4c0"/></linearGradient>
+        <linearGradient id="armorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4ff"/><stop offset="30%" stop-color="#6098c8"/><stop offset="100%" stop-color="#1a3a60"/></linearGradient>
+        <radialGradient id="elfGlow" cx="50%" cy="45%"><stop offset="0%" stop-color="#ffd860" stop-opacity="0.2"/><stop offset="50%" stop-color="#00c8ff" stop-opacity="0.15"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="haloGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#ffd600" stop-opacity="0.6"/><stop offset="100%" stop-color="#ffd600" stop-opacity="0"/></radialGradient>
       </defs>
-      <!-- Glow aura -->
-      <ellipse cx="70" cy="120" rx="55" ry="80" fill="url(#elfGlow)" opacity="0.4"/>
-      <!-- Left wing (large angel wing) -->
+      <!-- Divine golden glow aura -->
+      <ellipse cx="70" cy="110" rx="60" ry="90" fill="url(#elfGlow)" opacity="0.5"/>
+      <!-- LEFT WING — large feathered angel wing -->
       <g class="elf-wing-l">
-        <path d="M58 100 C30 85 8 55 5 30 C12 42 25 52 38 58 C20 45 10 25 8 10 C18 28 32 42 45 50 C35 38 22 18 20 5 C30 22 42 38 50 48 C48 55 52 70 58 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
-        <path d="M50 75 C35 65 18 42 15 28" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
-        <path d="M52 82 C38 70 22 50 18 35" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.6"/>
+        <path d="M56 95 C28 78 5 45 2 18 C10 32 22 44 35 50 C16 38 5 18 3 2 C14 22 28 38 42 46 C30 32 18 12 15 0 C28 18 40 36 50 46 C46 56 50 72 56 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+        <!-- Feather lines -->
+        <path d="M48 68 C32 55 16 32 12 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
+        <path d="M50 76 C36 64 20 44 16 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
+        <path d="M52 84 C40 72 26 52 22 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
+        <path d="M44 58 C30 46 14 24 10 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
       </g>
-      <!-- Right wing -->
+      <!-- RIGHT WING -->
       <g class="elf-wing-r">
-        <path d="M82 100 C110 85 132 55 135 30 C128 42 115 52 102 58 C120 45 130 25 132 10 C122 28 108 42 95 50 C105 38 118 18 120 5 C110 22 98 38 90 48 C92 55 88 70 82 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
-        <path d="M90 75 C105 65 122 42 125 28" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
-        <path d="M88 82 C102 70 118 50 122 35" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.6"/>
+        <path d="M84 95 C112 78 135 45 138 18 C130 32 118 44 105 50 C124 38 135 18 137 2 C126 22 112 38 98 46 C110 32 122 12 125 0 C112 18 100 36 90 46 C94 56 90 72 84 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+        <path d="M92 68 C108 55 124 32 128 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
+        <path d="M90 76 C104 64 120 44 124 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
+        <path d="M88 84 C100 72 114 52 118 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
+        <path d="M96 58 C110 46 126 24 130 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
       </g>
-      <!-- Sparkle particles -->
-      <circle cx="25" cy="45" r="1.5" fill="#fff" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.5s" repeatCount="indefinite"/></circle>
-      <circle cx="115" cy="40" r="1.2" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
-      <circle cx="40" cy="30" r="1" fill="#80d8ff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
-      <circle cx="100" cy="25" r="1.3" fill="#80d8ff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
-      <!-- Shadow on ground -->
-      <ellipse cx="70" cy="228" rx="18" ry="5" fill="#00c8ff" opacity="0.1"/>
-      <!-- Hair back (flowing) -->
+      <!-- Sparkle particles (divine) -->
+      <circle cx="22" cy="38" r="1.8" fill="#ffd860" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite"/></circle>
+      <circle cx="118" cy="32" r="1.5" fill="#ffd860" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
+      <circle cx="38" cy="22" r="1.2" fill="#fff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="1.8s" repeatCount="indefinite"/></circle>
+      <circle cx="102" cy="18" r="1" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="60" cy="12" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.8;0;0.8" dur="2.5s" repeatCount="indefinite"/></circle>
+      <circle cx="80" cy="8" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
+      <!-- Golden halo (prominent, glowing) -->
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="url(#haloGlow)" opacity="0.4"/>
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#ffd600" stroke-width="2" opacity="0.7"/>
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.4"/>
+      <!-- Long flowing blonde hair (back layer) -->
       <g class="elf-hair">
-        <path d="M50 52 C42 60 35 80 32 105 C34 100 38 85 44 72 C40 88 36 100 35 115 C40 105 46 90 50 78 L55 60 Z" fill="url(#elfHair)" opacity="0.85"/>
-        <path d="M90 52 C98 60 105 80 108 105 C106 100 102 85 96 72 C100 88 104 100 105 115 C100 105 94 90 90 78 L85 60 Z" fill="url(#elfHair)" opacity="0.85"/>
+        <path d="M48 48 C42 58 36 78 33 105 C35 98 40 82 46 68 C40 85 36 100 34 118 C40 106 48 88 52 74 Z" fill="url(#elfHair)" opacity="0.8"/>
+        <path d="M92 48 C98 58 104 78 107 105 C105 98 100 82 94 68 C100 85 104 100 106 118 C100 106 92 88 88 74 Z" fill="url(#elfHair)" opacity="0.8"/>
       </g>
-      <!-- Head (slightly rounder, more human) -->
-      <ellipse cx="70" cy="62" rx="18" ry="21" fill="url(#elfSkin)"/>
-      <!-- Elf ears (pointed, elegant) -->
-      <path d="M51 58 C45 49 36 44 30 40 C37 47 44 54 50 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
-      <path d="M89 58 C95 49 104 44 110 40 C103 47 96 54 90 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
-      <!-- Hair front (fuller, more flowing) -->
-      <path d="M52 48 C54 33 61 25 70 23 C79 25 86 33 88 48 C85 38 79 32 70 30 C61 32 55 38 52 48 Z" fill="url(#elfHair)"/>
-      <path d="M52 48 C49 55 47 65 49 76 C51 66 53 57 55 50 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <path d="M88 48 C91 55 93 65 91 76 C89 66 87 57 85 50 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <!-- Wispy hair strands -->
-      <path d="M55 35 C52 42 50 52 49 60" fill="none" stroke="rgba(168,224,255,0.4)" stroke-width="0.6" stroke-linecap="round"/>
-      <path d="M85 35 C88 42 90 52 91 60" fill="none" stroke="rgba(168,224,255,0.4)" stroke-width="0.6" stroke-linecap="round"/>
-      <!-- Eyes (larger, more expressive, anime-inspired) -->
-      <ellipse cx="62" cy="63" rx="5.5" ry="6" fill="#fff"/>
-      <ellipse cx="78" cy="63" rx="5.5" ry="6" fill="#fff"/>
-      <!-- Iris (gradient blue) -->
-      <ellipse cx="62.5" cy="64" rx="3.8" ry="4.2" fill="#2070b8"/>
-      <ellipse cx="78.5" cy="64" rx="3.8" ry="4.2" fill="#2070b8"/>
-      <!-- Lighter ring in iris -->
-      <ellipse cx="62.5" cy="64" rx="2.8" ry="3.2" fill="none" stroke="#40a0e0" stroke-width="0.5" opacity="0.6"/>
-      <ellipse cx="78.5" cy="64" rx="2.8" ry="3.2" fill="none" stroke="#40a0e0" stroke-width="0.5" opacity="0.6"/>
-      <!-- Pupil -->
-      <circle cx="63" cy="63.5" r="2" fill="#0a1a30"/>
-      <circle cx="79" cy="63.5" r="2" fill="#0a1a30"/>
-      <!-- Eye highlights (sparkle) -->
-      <circle cx="64" cy="62" r="1.2" fill="#fff"/>
-      <circle cx="80" cy="62" r="1.2" fill="#fff"/>
-      <circle cx="61.5" cy="65" r="0.6" fill="#fff" opacity="0.7"/>
-      <circle cx="77.5" cy="65" r="0.6" fill="#fff" opacity="0.7"/>
-      <!-- Eyelashes -->
-      <path d="M56 58 C58 56 61 55.5 67 57" fill="none" stroke="#4a6880" stroke-width="1" stroke-linecap="round"/>
-      <path d="M73 57 C79 55.5 82 56 84 58" fill="none" stroke="#4a6880" stroke-width="1" stroke-linecap="round"/>
-      <!-- Upper eyelid line -->
-      <path d="M56.5 60 C59 58 65 57.5 67.5 59" fill="none" stroke="#5a7890" stroke-width="0.6" stroke-linecap="round"/>
-      <path d="M72.5 59 C75 57.5 81 58 83.5 60" fill="none" stroke="#5a7890" stroke-width="0.6" stroke-linecap="round"/>
-      <!-- Nose (delicate) -->
-      <path d="M70 67 C69 70 69.5 72 70 72.5 C70.5 72 71 70 70 67" fill="none" stroke="#d4b0a0" stroke-width="0.6" stroke-linecap="round"/>
-      <!-- Mouth (animated when speaking) -->
-      <path class="elf-mouth" id="elf-mouth" d="M65 77 C67 79 73 79 75 77" fill="none" stroke="#c07088" stroke-width="1.3" stroke-linecap="round"/>
-      <!-- Soft smile line -->
-      <path d="M63 77.5 C64 76 66 75.5 67 76" fill="none" stroke="#d8a0b0" stroke-width="0.4" opacity="0.5"/>
-      <path d="M73 76 C74 75.5 76 76 77 77.5" fill="none" stroke="#d8a0b0" stroke-width="0.4" opacity="0.5"/>
-      <!-- Blush (softer, more natural) -->
-      <ellipse cx="57" cy="72" rx="5" ry="3" fill="#ffb8c8" opacity="0.2"/>
-      <ellipse cx="83" cy="72" rx="5" ry="3" fill="#ffb8c8" opacity="0.2"/>
+      <!-- Shadow -->
+      <ellipse cx="70" cy="228" rx="16" ry="4" fill="#00c8ff" opacity="0.08"/>
+      <!-- Head -->
+      <path d="M52 58 C52 40 59 32 70 32 C81 32 88 40 88 58 C88 72 82 80 70 80 C58 80 52 72 52 58 Z" fill="url(#elfSkin)"/>
+      <!-- Strong jaw -->
+      <path d="M56 70 C60 76 66 80 70 80 C74 80 80 76 84 70" fill="none" stroke="#e0c0b0" stroke-width="0.7"/>
+      <!-- Hair top (golden blonde, long, flowing) -->
+      <path d="M50 52 C52 34 60 26 70 24 C80 26 88 34 90 52 C87 40 80 33 70 30 C60 33 53 40 50 52 Z" fill="url(#elfHair)"/>
+      <!-- Hair sides flowing down -->
+      <path d="M50 52 C47 58 45 68 46 80 C48 72 50 62 52 55 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <path d="M90 52 C93 58 95 68 94 80 C92 72 90 62 88 55 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <!-- Hair shine highlights -->
+      <path d="M58 32 C60 28 66 25 70 24" fill="none" stroke="rgba(255,248,200,0.6)" stroke-width="0.8" stroke-linecap="round"/>
+      <path d="M62 34 C65 30 70 28 74 30" fill="none" stroke="rgba(255,248,200,0.4)" stroke-width="0.5" stroke-linecap="round"/>
+      <!-- Eyes (ice blue, intense) -->
+      <ellipse cx="63" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
+      <ellipse cx="77" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
+      <ellipse cx="63.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
+      <ellipse cx="77.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
+      <ellipse cx="63.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
+      <ellipse cx="77.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
+      <circle cx="64" cy="56" r="1.8" fill="#0a2040"/>
+      <circle cx="78" cy="56" r="1.8" fill="#0a2040"/>
+      <circle cx="64.8" cy="55" r="1" fill="#fff"/>
+      <circle cx="78.8" cy="55" r="1" fill="#fff"/>
+      <circle cx="62.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
+      <circle cx="76.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
+      <!-- Bold eyebrows -->
+      <path d="M56 51 C59 48.5 64 48 68 50" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M72 50 C76 48 81 48.5 84 51" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
+      <!-- Nose -->
+      <path d="M70 58 C69 62 68.5 65 69 66 L71 66 C71.5 65 71 62 70 58" fill="none" stroke="#d0a890" stroke-width="0.7" stroke-linecap="round"/>
+      <!-- Mouth -->
+      <path class="elf-mouth" id="elf-mouth" d="M66 71 C68 72.5 72 72.5 74 71" fill="none" stroke="#a06060" stroke-width="1.3" stroke-linecap="round"/>
+      <!-- Beard stubble -->
+      <ellipse cx="70" cy="74" rx="9" ry="5" fill="#c8a860" opacity="0.04"/>
       <!-- Neck -->
-      <path d="M65 80 L65 88 M75 80 L75 88" stroke="url(#elfSkin)" stroke-width="5" stroke-linecap="round"/>
-      <!-- Dress/robe (flowing) -->
-      <path d="M55 88 C52 95 48 115 42 145 C45 155 55 170 70 178 C85 170 95 155 98 145 C92 115 88 95 85 88 C80 86 60 86 55 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <!-- Dress glow lines -->
-      <path d="M55 95 C58 110 60 130 58 150" fill="none" stroke="rgba(0,200,255,0.25)" stroke-width="0.6"/>
-      <path d="M85 95 C82 110 80 130 82 150" fill="none" stroke="rgba(0,200,255,0.25)" stroke-width="0.6"/>
-      <path d="M70 92 L70 170" fill="none" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <!-- Belt/sash -->
-      <path d="M54 98 C60 100 80 100 86 98" fill="none" stroke="#40a0e0" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="70" cy="99" r="3" fill="#00c8ff" stroke="#fff" stroke-width="0.5" opacity="0.9"/>
-      <!-- Arms -->
-      <path d="M55 95 C48 105 44 115 42 120" fill="none" stroke="url(#elfSkin)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M85 95 C92 105 96 115 98 120" fill="none" stroke="url(#elfSkin)" stroke-width="4" stroke-linecap="round"/>
-      <!-- Hands -->
-      <circle cx="41" cy="121" r="3.5" fill="#fef0ea"/>
-      <circle cx="99" cy="121" r="3.5" fill="#fef0ea"/>
-      <!-- Feet (bare, elf-like) -->
-      <ellipse cx="60" cy="180" rx="6" ry="3" fill="#fef0ea" transform="rotate(-5,60,180)"/>
-      <ellipse cx="80" cy="180" rx="6" ry="3" fill="#fef0ea" transform="rotate(5,80,180)"/>
-      <!-- Tiara/circlet -->
-      <path d="M56 48 C60 44 66 42 70 41 C74 42 80 44 84 48" fill="none" stroke="#60c8ff" stroke-width="1.2" stroke-linecap="round"/>
-      <circle cx="70" cy="41" r="2.5" fill="#00c8ff" stroke="#fff" stroke-width="0.4"/>
-      <circle cx="62" cy="44" r="1.2" fill="#80d8ff"/>
-      <circle cx="78" cy="44" r="1.2" fill="#80d8ff"/>
+      <rect x="64" y="78" width="12" height="10" rx="3" fill="url(#elfSkin)"/>
+      <!-- NORSE ARMOR + ROBE -->
+      <path d="M42 88 C46 83 56 80 70 80 C84 80 94 83 98 88 C102 100 100 125 96 150 C92 162 80 174 70 178 C60 174 48 162 44 150 C40 125 38 100 42 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.12)" stroke-width="0.5"/>
+      <!-- Chest armor plate (Norse) -->
+      <path d="M52 90 C56 85 64 82 70 82 C76 82 84 85 88 90 L85 110 C80 115 70 117 70 117 C70 117 60 115 55 110 Z" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+      <!-- Armor rune/symbol -->
+      <path d="M70 88 L70 112" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="0.8"/>
+      <path d="M64 95 L76 95" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
+      <path d="M64 105 L70 100 L76 105" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
+      <circle cx="70" cy="92" r="2" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.4)" stroke-width="0.5"/>
+      <!-- Shoulder armor -->
+      <ellipse cx="48" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <ellipse cx="92" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <!-- Belt with golden buckle -->
+      <path d="M48 115 C56 117 84 117 92 115" fill="none" stroke="#c8a040" stroke-width="2.5" stroke-linecap="round"/>
+      <rect x="65" y="112" width="10" height="6" rx="1.5" fill="#ffd860" stroke="#c8a040" stroke-width="0.5"/>
+      <!-- Strong arms -->
+      <path d="M44 90 C36 100 32 114 30 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
+      <path d="M96 90 C104 100 108 114 110 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
+      <!-- Bracers (Norse) -->
+      <rect x="28" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <rect x="104" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <!-- Fists -->
+      <circle cx="29" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
+      <circle cx="111" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
+      <!-- Warrior boots -->
+      <path d="M54 174 C53 178 52 184 54 186 L66 186 C68 184 66 178 66 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+      <path d="M74 174 C73 178 72 184 74 186 L86 186 C88 184 86 178 86 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
     </svg>
-    <!-- Sparkle container for trail effect -->
     <div id="elf-sparkles" style="position:absolute;inset:0;pointer-events:none;overflow:visible;"></div>
   </div>
 
@@ -1159,7 +1258,7 @@ body.lt,body.lt2,body.lt3{
   </div>
 </div>
 
-<!-- ASTRANOVA TAKEOVER MODE -->
+<!-- ASTRANOV TAKEOVER MODE -->
 <!-- Astranova modal removed — AI uses bottom command bar -->
 
 <!-- GAME UI -->
@@ -1411,7 +1510,7 @@ body.lt,body.lt2,body.lt3{
   <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </button>
-  <input type="text" id="cmd-input" placeholder="Talk to Astranova — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
+  <input type="text" id="cmd-input" placeholder="Talk to Astranov — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
   <button class="bb-btn" onclick="sendCmd()" title="Send">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>
@@ -1425,19 +1524,19 @@ body.lt,body.lt2,body.lt3{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV v3.3.3 — Trinity OS
+   ASTRANOV v3.8.0 — Trinity OS
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script v3.3.3
+   Architecture: Spartan Script v3.8.0
    ═══════════════════════════════════════════════ */
 
-const SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
-const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
-const sb = supabase.createClient(SURL, SKEY);
-const APP_VERSION = '3.4.0';
-const APP_ARCH = 'Spartan Script v3.4.0';
-const PAYMENT_CFG_KEY = 'astranov.payment.config';
-const WALLET_KEY = 'astranov.wallet.balance';
-const PAYMENT_LOG_KEY = 'astranov.payment.log';
+var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
+var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
+var sb = supabase.createClient(SURL, SKEY);
+var APP_VERSION = '3.8.0';
+var APP_ARCH = 'Spartan Script v3.4.0';
+var PAYMENT_CFG_KEY = 'astranov.payment.config';
+var WALLET_KEY = 'astranov.wallet.balance';
+var PAYMENT_LOG_KEY = 'astranov.payment.log';
 
 var CU = null, CL = 0, LM = null, MM = [], TR = false;
 var LOC = { lat: 36.4441, lng: 28.2245 };
@@ -1485,9 +1584,77 @@ function getRoleLabel(role){
   return 'Guest';
 }
 var PENDING_POSTS = [];
-const PENDING_POSTS_KEY = 'astranov.pending.posts.v1';
+var PENDING_POSTS_KEY = 'astranov.pending.posts.v1';
 function getPendingPosts(){ try { return JSON.parse(localStorage.getItem(PENDING_POSTS_KEY) || '[]'); } catch(e){ return []; } }
 function setPendingPosts(p){ localStorage.setItem(PENDING_POSTS_KEY, JSON.stringify(p)); }
+
+/* ═══ AI MEMORY & LEARNING SYSTEM ═══ */
+var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
+var AI_CONV_HISTORY_KEY = 'astranov.ai.history.v1';
+var AI_USER_PREFS_KEY = 'astranov.ai.prefs.v1';
+
+function getAiMemory(){ try{ return JSON.parse(localStorage.getItem(AI_MEMORY_KEY) || '{}'); }catch(e){ return {}; } }
+function setAiMemory(m){ localStorage.setItem(AI_MEMORY_KEY, JSON.stringify(m)); }
+
+function getConvHistory(){ try{ return JSON.parse(localStorage.getItem(AI_CONV_HISTORY_KEY) || '[]'); }catch(e){ return []; } }
+function setConvHistory(h){ localStorage.setItem(AI_CONV_HISTORY_KEY, JSON.stringify(h.slice(-60))); }
+
+function getUserPrefs(){ try{ return JSON.parse(localStorage.getItem(AI_USER_PREFS_KEY) || '{}'); }catch(e){ return {}; } }
+function setUserPrefs(p){ localStorage.setItem(AI_USER_PREFS_KEY, JSON.stringify(p)); }
+
+function recordConversation(role, text){
+  var h = getConvHistory();
+  h.push({ role:role, text:text.substring(0,300), time:Date.now() });
+  setConvHistory(h);
+}
+
+function learnFromInteraction(userMsg, aiResponse){
+  var prefs = getUserPrefs();
+  var mem = getAiMemory();
+  var q = userMsg.toLowerCase();
+  // Track what user searches for
+  if(!prefs.searchHistory) prefs.searchHistory = [];
+  prefs.searchHistory.unshift({ query:q, time:Date.now() });
+  prefs.searchHistory = prefs.searchHistory.slice(0,30);
+  // Track food preferences
+  if(/pizza/i.test(q)) prefs.likesPizza = (prefs.likesPizza||0) + 1;
+  if(/beer/i.test(q)) prefs.likesBeer = (prefs.likesBeer||0) + 1;
+  if(/coffee/i.test(q)) prefs.likesCoffee = (prefs.likesCoffee||0) + 1;
+  if(/dive|diving/i.test(q)) prefs.likesDiving = (prefs.likesDiving||0) + 1;
+  if(/salad|healthy/i.test(q)) prefs.likesHealthy = (prefs.likesHealthy||0) + 1;
+  // Track order count
+  if(!mem.totalInteractions) mem.totalInteractions = 0;
+  mem.totalInteractions++;
+  mem.lastInteraction = Date.now();
+  // Track user name
+  if(CU && CU.name) mem.userName = CU.name;
+  setUserPrefs(prefs);
+  setAiMemory(mem);
+}
+
+function buildMemoryContext(){
+  var mem = getAiMemory();
+  var prefs = getUserPrefs();
+  var hist = getConvHistory();
+  var ctx = '';
+  // User preferences
+  var favs = [];
+  if(prefs.likesPizza > 1) favs.push('pizza (ordered '+prefs.likesPizza+' times)');
+  if(prefs.likesBeer > 1) favs.push('beer (asked '+prefs.likesBeer+' times)');
+  if(prefs.likesCoffee > 1) favs.push('coffee ('+prefs.likesCoffee+' times)');
+  if(prefs.likesDiving > 1) favs.push('diving ('+prefs.likesDiving+' times)');
+  if(prefs.likesHealthy > 1) favs.push('healthy food ('+prefs.likesHealthy+' times)');
+  if(favs.length) ctx += 'User preferences learned: likes ' + favs.join(', ') + '. Reference these naturally. ';
+  // Interaction count
+  if(mem.totalInteractions > 3) ctx += 'You have talked ' + mem.totalInteractions + ' times with this user — greet them warmly as a returning friend. ';
+  if(mem.userName) ctx += 'User name is ' + mem.userName + ' — use it sometimes. ';
+  // Recent conversation context (last 6 exchanges)
+  var recent = hist.slice(-6);
+  if(recent.length > 1){
+    ctx += 'Recent conversation: ' + recent.map(function(m){ return m.role + ': ' + m.text.substring(0,80); }).join(' | ') + '. ';
+  }
+  return ctx;
+}
 
 
 function setAuthHelper(msg='') {
@@ -1806,6 +1973,211 @@ setInterval(() => {
     b.style.height = (4 + Math.random() * 14) + 'px';
   });
 }, 800);
+
+/* ═══ COMPASS RADAR HUD ENGINE ═══ */
+(function initCompassHud(){
+  var ticksG = document.getElementById('compass-ticks');
+  var milsG = document.getElementById('compass-mils');
+  if(!ticksG || !milsG) return;
+
+  var cx = 54, cy = 54, outerR = 48, innerR = 42, milR = 38;
+  var cardinals = [{deg:0,label:'N'},{deg:90,label:'E'},{deg:180,label:'S'},{deg:270,label:'W'}];
+  var intercardinals = [{deg:45,label:'NE'},{deg:135,label:'SE'},{deg:225,label:'SW'},{deg:315,label:'NW'}];
+
+  // Generate tick marks every 5 degrees, major every 30, cardinal every 90
+  for(var d = 0; d < 360; d += 2){
+    var rad = (d - 90) * Math.PI / 180;
+    var isCardinal = (d % 90 === 0);
+    var isMajor = (d % 30 === 0);
+    var isMinor = (d % 10 === 0);
+    var r1 = outerR;
+    var r2 = isCardinal ? outerR - 8 : isMajor ? outerR - 6 : isMinor ? outerR - 4 : outerR - 2;
+    var x1 = cx + r1 * Math.cos(rad);
+    var y1 = cy + r1 * Math.sin(rad);
+    var x2 = cx + r2 * Math.cos(rad);
+    var y2 = cy + r2 * Math.sin(rad);
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class', isCardinal ? 'compass-tick-cardinal' : isMajor ? 'compass-tick-major' : 'compass-tick');
+    ticksG.appendChild(line);
+
+    // Degree labels every 30°
+    if(isMajor && !isCardinal){
+      var labelR = outerR - 11;
+      var tx = cx + labelR * Math.cos(rad);
+      var ty = cy + labelR * Math.sin(rad) + 2;
+      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+      txt.setAttribute('class','compass-text');
+      txt.textContent = d + '\u00B0';
+      ticksG.appendChild(txt);
+    }
+  }
+
+  // Cardinal labels
+  cardinals.forEach(function(c){
+    var rad = (c.deg - 90) * Math.PI / 180;
+    var labelR = outerR - 12;
+    var tx = cx + labelR * Math.cos(rad);
+    var ty = cy + labelR * Math.sin(rad) + 2.5;
+    var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+    txt.setAttribute('class','compass-text-cardinal');
+    txt.textContent = c.label;
+    ticksG.appendChild(txt);
+  });
+
+  // Mil markings (inner ring, every 200 mils = ~11.25°, key positions)
+  var milPositions = [0,400,800,1200,1600,2000,2400,2800,3200,3600,4000,4400,4800,5200,5600,6000];
+  milPositions.forEach(function(mil){
+    var deg = mil * 360 / 6400;
+    var rad = (deg - 90) * Math.PI / 180;
+    var r1 = milR;
+    var r2 = milR - 3;
+    var x1 = cx + r1 * Math.cos(rad);
+    var y1 = cy + r1 * Math.sin(rad);
+    var x2 = cx + r2 * Math.cos(rad);
+    var y2 = cy + r2 * Math.sin(rad);
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','rgba(0,200,255,0.3)'); line.setAttribute('stroke-width','0.4');
+    milsG.appendChild(line);
+    // Mil label
+    if(mil % 800 === 0){
+      var tx = cx + (milR - 6) * Math.cos(rad);
+      var ty = cy + (milR - 6) * Math.sin(rad) + 1.5;
+      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+      txt.setAttribute('class','compass-mil');
+      txt.textContent = mil;
+      milsG.appendChild(txt);
+    }
+  });
+
+  // Compass heading from device orientation
+  var currentHeading = 0;
+  var needleGroup = document.getElementById('compass-needle-group');
+  var headingText = document.getElementById('compass-heading');
+
+  function updateHeading(deg){
+    currentHeading = deg;
+    if(needleGroup) needleGroup.setAttribute('transform','rotate('+(-deg)+',54,54)');
+    if(headingText) headingText.textContent = Math.round(deg) + '\u00B0';
+  }
+
+  // Try device compass
+  function requestCompass(){
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission().then(function(state){
+        if(state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+      }).catch(function(){});
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  }
+
+  function handleOrientation(e){
+    var heading = e.webkitCompassHeading || (e.alpha ? (360 - e.alpha) : null);
+    if(heading !== null && heading !== undefined) updateHeading(heading);
+  }
+
+  // For desktop: slowly rotate or use mouse position
+  var desktopHeading = 0;
+  function desktopCompassFallback(){
+    if(!window.DeviceOrientationEvent || navigator.userAgent.match(/Windows|Mac|Linux/)){
+      setInterval(function(){
+        desktopHeading = (desktopHeading + 0.3) % 360;
+        updateHeading(desktopHeading);
+      }, 100);
+    }
+  }
+
+  requestCompass();
+  desktopCompassFallback();
+
+  // Radar blip scanner — scan nearby items and show as blips
+  function updateRadarBlips(){
+    var blipsG = document.getElementById('radar-blips');
+    if(!blipsG || !window.LM || CL !== 1) return;
+    blipsG.innerHTML = '';
+    var center = LM.getCenter();
+    try{
+      var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+      var places = JSON.parse(localStorage.getItem('astranov.local.places.v333') || '[]');
+      var all = offers.concat(places).slice(0, 20);
+      all.forEach(function(item){
+        if(!item.lat) return;
+        var dlat = item.lat - center.lat;
+        var dlng = (item.lon || item.lng || 0) - center.lng;
+        var dist = Math.sqrt(dlat*dlat + dlng*dlng);
+        if(dist > 0.08) return; // only nearby
+        // Map to radar coords (max radius = 44px for ~5km)
+        var scale = 44 / 0.05; // 0.05 degrees ≈ 5km
+        var rx = cx + dlng * scale;
+        var ry = cy - dlat * scale; // invert Y
+        // Clamp to radar circle
+        var dx = rx - cx, dy = ry - cy;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if(d > 44){ rx = cx + dx/d * 44; ry = cy + dy/d * 44; }
+        var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx', rx);
+        circle.setAttribute('cy', ry);
+        circle.setAttribute('r', '2');
+        var cls = 'radar-blip';
+        if(item.kind === 'driver_base') cls += ' radar-blip-delivery';
+        else if(item.kind === 'post_signal') cls += ' radar-blip-post';
+        circle.setAttribute('class', cls);
+        circle.style.animationDelay = (Math.random() * 3) + 's';
+        blipsG.appendChild(circle);
+      });
+    }catch(e){}
+  }
+
+  setInterval(updateRadarBlips, 3000);
+  setTimeout(updateRadarBlips, 1500);
+
+  // Route indicator — point toward active order destination
+  function updateRouteIndicator(){
+    var routeLine = document.getElementById('route-indicator');
+    var waypointDot = document.getElementById('waypoint-indicator');
+    if(!routeLine || !waypointDot) return;
+    // Check if there's an active delivery target
+    var target = window._compassTarget || null;
+    if(!target || !window.LM || CL !== 1){
+      routeLine.classList.remove('active');
+      waypointDot.classList.remove('active');
+      document.getElementById('compass-hud').classList.remove('routing');
+      return;
+    }
+    routeLine.classList.add('active');
+    waypointDot.classList.add('active');
+    document.getElementById('compass-hud').classList.add('routing');
+    var center = LM.getCenter();
+    var dlat = target.lat - center.lat;
+    var dlng = target.lng - center.lng;
+    var angle = Math.atan2(dlng, dlat) * 180 / Math.PI; // 0=N
+    var bearing = (90 - angle + currentHeading) * Math.PI / 180;
+    var endR = 46;
+    var ex = cx + endR * Math.cos(bearing - Math.PI/2);
+    var ey = cy + endR * Math.sin(bearing - Math.PI/2);
+    routeLine.setAttribute('x2', ex);
+    routeLine.setAttribute('y2', ey);
+    waypointDot.setAttribute('cx', ex);
+    waypointDot.setAttribute('cy', ey);
+  }
+
+  setInterval(updateRouteIndicator, 500);
+
+  // Make compass visible only on map layer
+  var compassEl = document.getElementById('compass-hud');
+  var _origApplyLayer2 = window.applyLayer;
+  window.applyLayer = function(idx){
+    _origApplyLayer2(idx);
+    if(compassEl) compassEl.style.display = idx === 1 ? 'block' : 'none';
+  };
+})();
 
 /* ── AUTH ── */
 function stab(t) {
@@ -2240,7 +2612,7 @@ function aiExecuteOrder(item, qty){
   // Check wallet
   var balance = getWalletBalance();
   if(balance < price){
-    addAiMessage('ai-msg-reply','Astranova','Your balance is €' + balance.toFixed(2) + ' but this order costs €' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
+    addAiMessage('ai-msg-reply','Astranov','Your balance is €' + balance.toFixed(2) + ' but this order costs €' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
     speakAstranova('Your balance is too low. Opening wallet to top up.');
     setTimeout(openPayments, 800);
     return;
@@ -2249,8 +2621,8 @@ function aiExecuteOrder(item, qty){
   // Animate Astranova
   bounceAstranova();
 
-  addAiMessage('ai-msg-reply','Astranova','Ordering ' + qty + 'x ' + item.name + ' from ' + shopName + ' for €' + price.toFixed(2) + '… Let me process this.');
-  speakAstranova('Ordering ' + qty + ' ' + item.name + ' from ' + shopName + ' for ' + price.toFixed(2) + ' euros.');
+  addAiMessage('ai-msg-reply','Astranov','Ordering ' + qty + 'x ' + item.name + ' from ' + shopName + ' for €' + price.toFixed(2) + '… Let me process this.');
+  speakAstranova('Attention comrade! Ordering ' + qty + ' ' + item.name + ' from ' + shopName + ' for ' + price.toFixed(2) + ' euros. Processing now, da.');
 
   // Pan map to shop + fly Astranova there
   if(item._shopLat && LM && CL === 1){
@@ -2279,8 +2651,8 @@ function aiExecuteOrder(item, qty){
     });
 
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranova','✅ Payment confirmed! €' + price.toFixed(2) + ' deducted. New balance: €' + newBal.toFixed(2) + '. Now finding a driver…');
-    speakAstranova('Payment confirmed. Finding a driver now.');
+    addAiMessage('ai-msg-reply','Astranov','✅ Da, payment confirmed comrade! €' + price.toFixed(2) + ' deducted. New balance: €' + newBal.toFixed(2) + '. Mobilizing nearest comrade driver…');
+    speakAstranova('Da, payment confirmed comrade. Now mobilizing nearest delivery operative.');
 
     // Calculate delivery
     var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
@@ -2291,8 +2663,8 @@ function aiExecuteOrder(item, qty){
       bounceAstranova();
       var vehicleIcon = totalVol > 6 ? '🚗' : '🛵';
       var eta = Math.round(dist * 3.5 + 8);
-      addAiMessage('ai-msg-reply','Astranova','🚀 Driver assigned! ' + vehicleIcon + ' ETA to shop: ~' + Math.round(dist * 2 + 3) + ' min. Delivery fee: €' + fee.toFixed(2) + '. Total ETA to you: ~' + eta + ' min.');
-      speakAstranova('Driver assigned! Estimated arrival in about ' + eta + ' minutes. Delivery fee is ' + fee.toFixed(2) + ' euros.');
+      addAiMessage('ai-msg-reply','Astranov','🚀 Comrade driver dispatched! ' + vehicleIcon + ' ETA to supply point: ~' + Math.round(dist * 2 + 3) + ' min. Delivery fee: €' + fee.toFixed(2) + '. Total ETA to your position comrade: ~' + eta + ' min.');
+      speakAstranova('Comrade driver dispatched! Estimated arrival in ' + eta + ' minutes. Delivery fee is ' + fee.toFixed(2) + ' euros. The supply chain moves, da!');
 
       if(DEMO_MODE){
         // Simulate the full delivery flow
@@ -2329,8 +2701,8 @@ function simulateDemoDelivery(item, shopName, eta, fee){
   // Step 1: Shop accepts (3s)
   setTimeout(function(){
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranova','🏪 ' + shopName + ' accepted the order! Preparing now…');
-    speakAstranova(shopName + ' accepted the order and started preparing.');
+    addAiMessage('ai-msg-reply','Astranov','🏪 ' + shopName + ' accepted the order! Preparing now…');
+    speakAstranova('Da, comrade. ' + shopName + ' has accepted the order. Kitchen operations are underway.');
     // Open shop popup on map
     MM.forEach(function(m){
       try{
@@ -2344,7 +2716,7 @@ function simulateDemoDelivery(item, shopName, eta, fee){
 
   // Step 2: Driver heading to shop (6s) — animate marker movement
   setTimeout(function(){
-    addAiMessage('ai-msg-reply','Astranova','🛵 Driver is heading to ' + shopName + '…');
+    addAiMessage('ai-msg-reply','Astranov','🛵 Comrade driver heading to ' + shopName + '…');
     // Draw route line
     routeLine = L.polyline([[driverLat,driverLng],[shopLat,shopLng]], {
       color:'#ff9900', weight:3, opacity:0.7, dashArray:'8,6'
@@ -2353,11 +2725,11 @@ function simulateDemoDelivery(item, shopName, eta, fee){
     animateMarker(driverMarker, driverLat, driverLng, shopLat, shopLng, 6000);
   }, 6000);
 
-  // Step 3: Driver arrived at shop (13s)
+  // Step 3: Comrade driver arrived at shop (13s)
   setTimeout(function(){
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranova','📍 Driver arrived at ' + shopName + '!');
-    speakAstranova('Driver arrived at the shop.');
+    addAiMessage('ai-msg-reply','Astranov','📍 Comrade driver arrived at ' + shopName + '!');
+    speakAstranova('Comrade driver has arrived at the shop. Standing by for pickup.');
     driverMarker.setLatLng([shopLat, shopLng]);
     driverMarker.bindPopup('<b style="color:#ff9900;">🛵 At shop — waiting for pickup</b>').openPopup();
     // Fly Astranova to shop
@@ -2372,16 +2744,16 @@ function simulateDemoDelivery(item, shopName, eta, fee){
   // Step 4: Order ready, driver picks up (18s)
   setTimeout(function(){
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranova','✅ Order ready! Driver picking up ' + item.name + ' now.');
-    speakAstranova('Order is ready. Driver is picking up.');
+    addAiMessage('ai-msg-reply','Astranov','✅ Order ready! Comrade driver securing package ' + item.name + ' now.');
+    speakAstranova('Excellent news comrade! Order is ready. Driver is securing the package now.');
     driverMarker.bindPopup('<b style="color:#00e87a;">📦 Order picked up!</b>').openPopup();
     if(routeLine){ LM.removeLayer(routeLine); routeLine = null; }
   }, 18000);
 
   // Step 5: Driver heading to client (21s) — animate
   setTimeout(function(){
-    addAiMessage('ai-msg-reply','Astranova','🛵 Driver is on the way to you! Follow the orange dot on the map.');
-    speakAstranova('Driver is on the way to you now.');
+    addAiMessage('ai-msg-reply','Astranov','🛵 Driver is on the way to you! Follow the orange dot on the map.');
+    speakAstranova('Comrade driver is en route to your location. The delivery is in motion, da!');
     routeLine = L.polyline([[shopLat,shopLng],[clientLat,clientLng]], {
       color:'#00c8ff', weight:3, opacity:0.7, dashArray:'8,6'
     }).addTo(LM);
@@ -2393,8 +2765,8 @@ function simulateDemoDelivery(item, shopName, eta, fee){
   // Step 6: Driver approaching (28s)
   setTimeout(function(){
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranova','📍 Driver is almost at your location!');
-    speakAstranova('Driver is almost there!');
+    addAiMessage('ai-msg-reply','Astranov','📍 Driver is almost at your location!');
+    speakAstranova('Almost there comrade! Driver approaching your position.');
   }, 28000);
 
   // Step 7: Delivered (33s)
@@ -2402,8 +2774,8 @@ function simulateDemoDelivery(item, shopName, eta, fee){
     bounceAstranova();
     driverMarker.setLatLng([clientLat, clientLng]);
     driverMarker.bindPopup('<b style="color:#00e87a;">🎉 Delivered!</b>').openPopup();
-    addAiMessage('ai-msg-reply','Astranova','🎉 Order delivered! ' + item.name + ' from ' + shopName + '. Enjoy! Total delivery fee: €' + fee.toFixed(2));
-    speakAstranova('Your order has been delivered! Enjoy your ' + item.name + '!');
+    addAiMessage('ai-msg-reply','Astranov','🎉 Mission accomplished, comrade! ' + item.name + ' from ' + shopName + '. For the people! Delivery fee: €' + fee.toFixed(2));
+    speakAstranova('Mission accomplished, comrade! Your ' + item.name + ' has been delivered. Enjoy, and remember — Astranov always delivers for the people!');
     // Fly Astranova to client position
     try{
       var pt = LM.latLngToContainerPoint([clientLat, clientLng]);
@@ -2415,6 +2787,7 @@ function simulateDemoDelivery(item, shopName, eta, fee){
     setTimeout(function(){
       if(routeLine){ LM.removeLayer(routeLine); }
       LM.removeLayer(driverMarker);
+      window._compassTarget = null; // Clear compass routing
     }, 8000);
   }, 33000);
 }
@@ -3338,9 +3711,9 @@ async function submitPost() {
   } catch(e) { showResp('Post error: '+e.message); }
 }
 
-/* ── ASTRANOVA ELF AI ASSISTANT ── */
+/* ── ASTRANOV ANGEL AI ASSISTANT ── */
 const astranovaLines = [
-  'Astranova online. What signal should I find?',
+  'Astranov online. What signal should I find?',
   'Scanning the orbit lanes for your request…',
   'Signal locked. I found something bright.',
   'Need another route through the stars?',
@@ -3357,13 +3730,12 @@ function openAstranova() {
   resp.style.display = 'flex';
   // Focus input
   input.focus();
-  input.placeholder = '🎤 Astranova listening — speak or type…';
-  // Start voice automatically
-  toggleVoiceInput();
-  // Add greeting if conversation is empty
+  // Focus input — user clicks mic manually for voice
+  input.placeholder = 'Ask Astranov anything — type or tap 🎤 for voice…';
+  // Add greeting if conversation is empty (text only, NO auto-speak)
   var conv = document.getElementById('ai-conv');
   if(conv && !conv.children.length){
-    addAiMessage('ai-msg-reply', 'Astranova', 'Hello! I\'m Astranova, your AI assistant. Ask me anything — search for food, find shops, check delivery prices, or just chat. I\'m listening.');
+    addAiMessage('ai-msg-reply', 'Astranov', '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435 (zdravstvuyte), \u0434\u0440\u0443\u0433! I am Astranov, your personal delivery commissar. Need food? Supplies? I find best deal for the people. Tap \ud83c\udf99 to speak, or type below. \u0412\u043F\u0435\u0440\u0451\u0434, let us begin!');
   }
 }
 
@@ -3373,7 +3745,7 @@ function closeAstranova() {
   resp.style.display = 'none';
   resp.className = '';
   var input = document.getElementById('cmd-input');
-  input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+  input.placeholder = 'Talk to Astranov — search, order, find, ask…';
   // Stop voice if active
   if(window._voiceRecog){
     try{ window._voiceRecog.stop(); }catch(e){}
@@ -3885,6 +4257,7 @@ function sendCmd(){
 
   // Show user message in conversation
   addAiMessage('user-msg', CU ? CU.name : 'You', val);
+  recordConversation('user', val);
 
   // Expand conversation panel
   var resp = document.getElementById('cmd-response');
@@ -3895,7 +4268,7 @@ function sendCmd(){
   if(detectOrderIntent(val)) return;
 
   // Quick local commands
-  if(/^(pay|wallet|stripe|paypal)/i.test(val)){ openPayments(); addAiMessage('ai-msg-reply','Astranova','Opening your wallet.'); return; }
+  if(/^(pay|wallet|stripe|paypal)/i.test(val)){ openPayments(); addAiMessage('ai-msg-reply','Astranov','Opening your wallet.'); return; }
   if(/^(close|collapse|minimize|hide)/i.test(val)){ closeAstranova(); return; }
 
   // Bounce Astranova when thinking
@@ -3925,8 +4298,8 @@ function sendCmd(){
       (products.length > 1 ? '<br><br>Also found: ' + products.slice(1,3).map(function(p){ return p.name + ' €' + (p.price||0).toFixed(2) + ' at ' + p._shopName; }).join(' · ') : '') +
       '<br><br>💬 Say <strong>"OK"</strong> or <strong>"Buy it"</strong> to order, or <strong>"2 of those"</strong> for multiple.';
 
-    addAiMessage('ai-msg-reply', 'Astranova', suggestion);
-    speakAstranova('I found ' + best.name + ' at ' + best._shopName + ' for ' + (best.price||0).toFixed(2) + ' euros. Distance is ' + dist.toFixed(1) + ' kilometers. Delivery fee is ' + fee.toFixed(2) + ' euros. Say OK to order.');
+    addAiMessage('ai-msg-reply', 'Astranov', suggestion);
+    speakAstranova('Da comrade, I have located ' + best.name + ' at ' + best._shopName + ' for ' + (best.price||0).toFixed(2) + ' euros. Distance is ' + dist.toFixed(1) + ' kilometers. Delivery fee ' + fee.toFixed(2) + ' euros. Say OK to order, da?');
     return;
   }
 
@@ -3935,25 +4308,86 @@ function sendCmd(){
   var typing = document.createElement('div');
   typing.className = 'ai-typing';
   typing.id = 'ai-typing';
-  typing.textContent = 'Astranova is thinking';
+  typing.textContent = 'Astranov is thinking';
   conv.appendChild(typing);
   conv.scrollTop = conv.scrollHeight;
 
+  // Learn from user message
+  learnFromUser(val);
+
   // Call Claude API for intelligent response
   callAstranovaAI(val);
+}
+
+/* ── AI MEMORY SYSTEM ── */
+/* Stores facts learned about the user across conversations */
+var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
+var AI_HISTORY_KEY = 'astranov.ai.history.v1';
+
+function getAiMemory(){
+  try{ return JSON.parse(localStorage.getItem(AI_MEMORY_KEY) || '[]'); }catch(e){ return []; }
+}
+function addAiMemory(fact){
+  var mem = getAiMemory();
+  // Don't duplicate
+  if(mem.some(function(m){ return m.fact === fact; })) return;
+  mem.push({ fact:fact, learned: new Date().toISOString() });
+  // Keep max 50 memories
+  if(mem.length > 50) mem = mem.slice(-50);
+  localStorage.setItem(AI_MEMORY_KEY, JSON.stringify(mem));
+}
+function getAiHistory(){
+  try{ return JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]'); }catch(e){ return []; }
+}
+function addAiHistory(role, text){
+  var hist = getAiHistory();
+  hist.push({ role:role, text:text.substring(0,200), time: new Date().toISOString() });
+  // Keep last 30 exchanges
+  if(hist.length > 30) hist = hist.slice(-30);
+  localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist));
+}
+
+/* Extract memorable facts from user messages */
+function learnFromUser(msg){
+  var q = msg.toLowerCase();
+  if(/my name is (\w+)/i.test(msg)) addAiMemory('User name: ' + msg.match(/my name is (\w+)/i)[1]);
+  if(/i like (\w+)/i.test(msg)) addAiMemory('User likes: ' + msg.match(/i like (.+)/i)[1]);
+  if(/i (live|stay|am) (in|at|near) (.+)/i.test(msg)) addAiMemory('User location: ' + msg.match(/i (?:live|stay|am) (?:in|at|near) (.+)/i)[1]);
+  if(/i (always|usually|often) (order|get|buy|eat|drink) (.+)/i.test(msg)) addAiMemory('User regularly orders: ' + msg.match(/i (?:always|usually|often) (?:order|get|buy|eat|drink) (.+)/i)[1]);
+  if(/favorite|favourite/i.test(q)) addAiMemory('User preference: ' + msg.substring(0,100));
+  if(/allergic|allergy|intolerant|vegan|vegetarian|halal|kosher/i.test(q)) addAiMemory('Dietary: ' + msg.substring(0,100));
+  if(/don.?t like|hate|dislike|avoid/i.test(q)) addAiMemory('User dislikes: ' + msg.substring(0,100));
+}
+
+/* Extract memorable facts from AI responses about the interaction */
+function learnFromInteraction(userMsg, aiResponse){
+  // Remember what user ordered
+  if(/order|buy|purchase|ok|yes|confirm/i.test(userMsg) && AI_LAST_SUGGESTION){
+    addAiMemory('User ordered: ' + (AI_LAST_SUGGESTION.name || '') + ' from ' + (AI_LAST_SUGGESTION._shopName || '') + ' on ' + new Date().toLocaleDateString());
+  }
+  // Remember what user searched for
+  if(userMsg.length > 3 && !/^(ok|yes|no|hi|hello|hey|thanks)$/i.test(userMsg.trim())){
+    addAiHistory('user', userMsg);
+  }
+  if(aiResponse){
+    addAiHistory('ai', aiResponse.substring(0,200));
+  }
 }
 
 async function callAstranovaAI(userMessage){
   var conv = document.getElementById('ai-conv');
 
   // Build context about the app state
-  var context = 'You are Astranova, the AI assistant for the Astranov delivery marketplace app on Rhodes island, Greece. ';
+  var context = 'You are Astranov, a male angel AI assistant for the Astranov delivery marketplace on Rhodes island, Greece. ';
+  context += 'PERSONALITY: You are a warm, wise, calm Russian male angel. You speak English but naturally mix in REAL Russian words (Cyrillic + transliteration): друг (droog/friend), брат (brat/brother), товарищ (tovarisch/comrade), да (da/yes), нет (nyet/no), хорошо (khorosho/good), молодец (molodets/well done), спасибо (spasibo/thanks), здравствуйте (zdravstvuyte/greetings), отлично (otlichno/excellent), вперёд (vperyod/forward), мой друг (moy droog/my friend), конечно (konechno/of course). Use old USSR-era humor: "for the people", "the motherland of delivery", "supply chain is strong", "five year plan for your stomach", "central planning says this is best deal". Be warm, witty, helpful. Include 2-3 Russian words per reply. ';
+  // MEMORY context from learning system
+  context += buildMemoryContext();
   context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
   context += 'App has ' + (function(){ try{ return JSON.parse(localStorage.getItem('astranov.local.offers.v333')||'[]').length; }catch(e){ return 0; } })() + ' listings. ';
-  context += 'Wallet balance: €' + (document.getElementById('bal')?.textContent || '0') + '. ';
-  context += 'Delivery pricing: €1/km base, +€1 if volume>6L, +€1 night (21-09), +€1 holiday, +€1 bad weather. Split orders >13L. Max 3 hot items per batch. ';
+  context += 'Wallet balance: \u20AC' + (document.getElementById('bal')?.textContent || '0') + '. ';
+  context += 'Delivery pricing: \u20AC1/km base, +\u20AC1 if volume>6L, +\u20AC1 night (21-09), +\u20AC1 holiday, +\u20AC1 bad weather. Split orders >13L. Max 3 hot items per batch. Min order \u20AC3. ';
   context += 'Current layer: ' + ['Globe','Map','Abyss'][CL] + '. ';
-  context += 'Location: Rhodes (' + LOC.lat.toFixed(4) + '°N, ' + LOC.lng.toFixed(4) + '°E). ';
+  context += 'Location: Rhodes (' + LOC.lat.toFixed(4) + 'N, ' + LOC.lng.toFixed(4) + 'E). ';
 
   // Search local data for relevant info
   var searchResults = '';
@@ -3980,7 +4414,7 @@ async function callAstranovaAI(userMessage){
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRespond concisely (2-4 sentences max). Be helpful, warm, and direct. If the user asks about shops/food/services, use the local data to give specific recommendations with prices. If asking about delivery, calculate using the pricing rules. Use emoji sparingly. You are a Greek island delivery assistant — be cheerful but professional.',
+        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nIMPORTANT RULES:\n1. Respond in 2-4 sentences max\n2. Include 2-3 Russian words (Cyrillic) per response\n3. Stay in character as warm Russian angel\n4. Give specific prices from local data when available\n5. Reference user memory/preferences when relevant ("Ah друг, you love pizza I remember!")\n6. If user says something you should remember, note it explicitly\n7. Be genuinely funny with USSR humor but always helpful\n8. Calculate delivery fees accurately when asked',
         messages: [{ role: 'user', content: userMessage }]
       })
     });
@@ -3992,7 +4426,9 @@ async function callAstranovaAI(userMessage){
     var typingEl = document.getElementById('ai-typing');
     if(typingEl) typingEl.remove();
 
-    addAiMessage('ai-msg-reply', 'Astranova', aiText);
+    addAiMessage('ai-msg-reply', 'Astranov', aiText);
+    recordConversation('ai', aiText);
+    learnFromInteraction(userMessage, aiText);
 
     // Speak the response
     speakAstranova(aiText);
@@ -4003,17 +4439,22 @@ async function callAstranovaAI(userMessage){
 
     // Fallback to local intelligence if API fails
     var fallback = localAstranovaResponse(userMessage);
-    addAiMessage('ai-msg-reply', 'Astranova', fallback);
+    addAiMessage('ai-msg-reply', 'Astranov', fallback);
+    recordConversation('ai', fallback);
+    learnFromInteraction(userMessage, fallback);
     speakAstranova(fallback);
   }
 }
 
 function localAstranovaResponse(msg){
   var q = msg.toLowerCase();
-  // Search local shops
+  var prefs = getUserPrefs();
+  var mem = getAiMemory();
+  var returning = (mem.totalInteractions || 0) > 3;
+  var nameGreet = mem.userName ? ', ' + mem.userName : '';
+
   try{
     var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
-    var shops = offers.filter(function(o){ return o.kind === 'shop_service'; });
     var matches = offers.filter(function(o){
       return (o.name||'').toLowerCase().includes(q) || (o.description||'').toLowerCase().includes(q) ||
              (o.category||'').toLowerCase().includes(q) ||
@@ -4021,19 +4462,41 @@ function localAstranovaResponse(msg){
     });
     if(matches.length){
       var m = matches[0];
-      var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (€' + (mi.price||'?') + ')'; }).join(', ');
-      return 'I found ' + m.name + '! ' + (m.description||'') + (menuStr ? ' They offer: ' + menuStr + '.' : '') + ' Check the Listings panel to order.';
+      var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (\u20AC' + (mi.price||'?') + ')'; }).join(', ');
+      return '\u0414\u0430 (da), \u0434\u0440\u0443\u0433 (friend)! I have located ' + m.name + ' for you. ' + (m.description||'') + (menuStr ? ' They serve: ' + menuStr + '. \u041E\u0442\u043B\u0438\u0447\u043D\u043E (otlichno)!' : '') + ' Check Listings to order, \u0434\u0430?';
     }
   }catch(e){}
 
-  if(/pizza/i.test(q)) return 'Looking for pizza? Try Nikolas Pizza Express — they have Margherita (€8), Pepperoni (€10.50), and Quattro Formaggi (€11). Open from 17:00. Check the Listings panel to order!';
-  if(/dive|diving|scuba/i.test(q)) return 'For diving, check out Aegean Dive Centre. They offer Discover Scuba (€75), PADI courses (€380), and wreck dives (€65). Open Mon-Sat from 08:00!';
-  if(/food|eat|restaurant|hungry/i.test(q)) return 'We have great options! Tamam Restaurant for traditional Greek (Moussaka €12.50, Octopus €16), or Nikolas Pizza for fast delivery. Check the Listings panel!';
-  if(/deliver|price|cost|fee/i.test(q)) return 'Delivery is €1/km. Extra charges: +€1 for volumes over 6L, +€1 for night hours (21:00-09:00), +€1 holidays, +€1 bad weather. Orders over 13L are split across multiple drivers.';
-  if(/weather/i.test(q)) return 'I can\'t check live weather yet (coming in Pass 4). You can toggle bad weather mode manually for delivery surcharge testing.';
-  if(/help|what can you/i.test(q)) return 'I can help you find shops, check menu prices, calculate delivery fees, search listings, and navigate the app. Try asking "find pizza" or "what restaurants are nearby" or "how much is delivery"!';
-  if(/hello|hi|hey|good/i.test(q)) return 'Hello! Welcome to Astranov on Rhodes. I\'m Astranova, your delivery assistant. Ask me about food, shops, diving, or anything else. What would you like?';
-  return 'I\'m still learning! Try searching for specific things like "pizza", "diving", "food", or ask about "delivery prices". I\'ll get smarter with the backend AI in Pass 4!';
+  if(/pizza/i.test(q)){
+    var extra = prefs.likesPizza > 2 ? ' Ah, \u0431\u0440\u0430\u0442 (brat/brother), you do love your pizza — I remember!' : '';
+    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433!' + extra + ' Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, and the glorious Quattro Formaggi \u20AC11. Open from 17:00. The people\'s five-year plan for your stomach, \u0434\u0430? Say "order" and I dispatch \u0432\u043F\u0435\u0440\u0451\u0434 (vperyod/forward)!';
+  }
+  if(/dive|diving|scuba/i.test(q)) return '\u041C\u043E\u0439 \u0434\u0440\u0443\u0433 (my friend)' + nameGreet + '! Aegean Dive Centre offers Discover Scuba \u20AC75, PADI course \u20AC380, wreck diving \u20AC65. Open Monday-Saturday. \u041E\u0442\u043B\u0438\u0447\u043D\u043E for building strong character, \u0434\u0430!';
+  if(/food|eat|restaurant|hungry/i.test(q)) return '\u0422\u043E\u0432\u0430\u0440\u0438\u0449 (tovarisch)' + nameGreet + ', the motherland provides! Tamam Restaurant — Moussaka \u20AC12.50, Octopus \u20AC16. Or Nikolas Pizza for fast delivery. \u0425\u043E\u0440\u043E\u0448\u043E (khorosho), what sounds good?';
+  if(/beer/i.test(q)){
+    var extra = prefs.likesBeer > 2 ? ' \u0411\u0440\u0430\u0442, I see you are a regular — \u043C\u043E\u043B\u043E\u0434\u0435\u0446 (molodets/well done)!' : '';
+    return '\u0414\u0430, \u0434\u0440\u0443\u0433!' + extra + ' Rhodes Mini Market has Mythos 500ml for only \u20AC2.50 — cheapest in the district. Available 24/7. The supply chain never sleeps, \u0442\u043E\u0432\u0430\u0440\u0438\u0449!';
+  }
+  if(/coffee/i.test(q)) return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (konechno/of course)' + nameGreet + '! Freddo Cappuccino \u20AC4.50 at Tamam, Greek Coffee \u20AC2 at Mini Market. Both \u043E\u0442\u043B\u0438\u0447\u043D\u043E! What you prefer, \u0434\u0440\u0443\u0433?';
+  if(/deliver|price|cost|fee/i.test(q)) return '\u0414\u0430, \u0442\u043E\u0432\u0430\u0440\u0438\u0449. The people\'s delivery rate: \u20AC1/km. Surcharges: +\u20AC1 volume over 6L, +\u20AC1 night (21:00-09:00), +\u20AC1 holidays, +\u20AC1 bad weather. Orders over 13L split across multiple \u0431\u0440\u0430\u0442-drivers. \u0425\u043E\u0440\u043E\u0448\u043E, very fair system, \u0434\u0430?';
+  if(/weather/i.test(q)) return '\u041D\u0435\u0442 (nyet), \u0434\u0440\u0443\u0433, weather intelligence not yet connected. Toggle bad weather in Settings. In the motherland, we deliver in any conditions! \u0412\u043F\u0435\u0440\u0451\u0434!';
+  if(/help|what can you/i.test(q)) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + '! I am Astranov — your personal delivery commissar. I find shops, check prices, calculate fees, place orders. Say "find pizza" or "cheapest beer" and I handle everything. For the people! \u0412\u043F\u0435\u0440\u0451\u0434!';
+  if(/hello|hi|hey|good/i.test(q)){
+    if(returning) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043C\u043E\u0439 \u0434\u0440\u0443\u0433' + nameGreet + '! Good to see you again — this is conversation number ' + (mem.totalInteractions||1) + ' between us. The commissar remembers! What can I find for you today, \u0431\u0440\u0430\u0442?';
+    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433! Welcome to Astranov marketplace on beautiful Rhodes. I am your delivery commissar. Tell me what you need and I mobilize entire supply chain, \u0434\u0430!';
+  }
+  if(/thank/i.test(q)) return '\u0421\u043F\u0430\u0441\u0438\u0431\u043E (spasibo) to you too, \u0434\u0440\u0443\u0433' + nameGreet + '! Serving the people is own reward. The commissar is always here. \u041E\u0442\u043B\u0438\u0447\u043D\u043E!';
+  if(/who are you|your name/i.test(q)) return 'I am Astranov, \u0442\u043E\u0432\u0430\u0440\u0438\u0449 — the AI delivery commissar. My mission: connect hungry people with shops, dispatch \u0431\u0440\u0430\u0442-drivers, ensure every order arrives. I operate with efficiency of old system, but heart of new. \u0414\u0430!';
+  if(/remember|you know me/i.test(q)){
+    var facts = [];
+    if(prefs.likesPizza) facts.push('you enjoy pizza');
+    if(prefs.likesBeer) facts.push('you appreciate good beer');
+    if(prefs.likesCoffee) facts.push('you need your coffee');
+    if(prefs.likesDiving) facts.push('you love diving');
+    if(mem.totalInteractions) facts.push('we have talked ' + mem.totalInteractions + ' times');
+    return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (of course) I remember, \u0434\u0440\u0443\u0433' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We are still getting to know each other.') + ' The commissar has excellent memory, \u0434\u0430!';
+  }
+  return '\u0425\u043C, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + ', my intelligence files on that topic are still expanding. Try asking about food, pizza, beer, coffee, diving, or delivery prices. \u041F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430 (pozhaluysta/please), give me clear mission and I deliver, \u0434\u0430?';
 }
 
 function addAiMessage(cssClass, sender, text){
@@ -4049,35 +4512,17 @@ function addAiMessage(cssClass, sender, text){
 }
 
 /* ── SOUND SYSTEM ── */
+/* All sounds disabled. Only the AI helper voice speaks. */
+function playZoop(){} /* intentionally empty — no sounds */
+
 var _lastSpeechTime = 0;
 var _speechQueue = [];
 var _isSpeaking = false;
 
-function playZoop(){
-  try{
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.08);
-    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.2);
-    setTimeout(function(){ ctx.close(); }, 300);
-  }catch(e){}
-}
-
 function speakAstranova(text){
   if(!text || !window.speechSynthesis) return;
-  // Throttle: don't speak more than once per 2 seconds
   var now = Date.now();
-  if(now - _lastSpeechTime < 2000){
-    // Queue it
+  if(now - _lastSpeechTime < 2500){
     _speechQueue.push(text);
     if(!_isSpeaking) processNextSpeech();
     return;
@@ -4089,24 +4534,26 @@ function speakAstranova(text){
 function doSpeak(text){
   if(!text) return;
   try{
-    // Pause voice recognition while speaking to prevent feedback
-    if(_voiceActive && _voiceRecog){
-      try{ _voiceRecog.stop(); }catch(e){}
-    }
+    if(_voiceActive && _voiceRecog){ try{ _voiceRecog.stop(); }catch(e){} }
     window.speechSynthesis.cancel();
     _isSpeaking = true;
     var clean = text.replace(/<[^>]+>/g,'').replace(/[€]/g,' euros ');
-    if(clean.length > 200) clean = clean.substring(0,197) + '...';
+    if(clean.length > 180) clean = clean.substring(0,177) + '...';
     var utt = new SpeechSynthesisUtterance(clean);
-    utt.rate = 1.05;
-    utt.pitch = 1.12;
-    utt.volume = 0.7;
+    utt.rate = 0.80; /* SLOW — calm Russian delivery */
+    utt.pitch = 0.65; /* DEEP male bass voice */
+    utt.volume = 0.85;
+    /* Find deepest male voice, prefer Russian or English-with-accent */
     var voices = speechSynthesis.getVoices();
-    var preferred = voices.find(function(v){ return /samantha|victoria|karen|fiona|zira|female/i.test(v.name); });
+    var preferred = null;
+    /* Priority 1: Russian voice speaking English */
+    preferred = voices.find(function(v){ return /russian|ru-/i.test(v.lang) || /russian/i.test(v.name); });
+    /* Priority 2: Deep male English voice */
+    if(!preferred) preferred = voices.find(function(v){ return /daniel|james|david|thomas|alex|google uk male/i.test(v.name) && !/female/i.test(v.name); });
+    /* Priority 3: Any male English voice */
+    if(!preferred) preferred = voices.find(function(v){ return v.lang && v.lang.startsWith('en') && !/female|samantha|victoria|karen|fiona|zira|susan|agnes/i.test(v.name); });
     if(preferred) utt.voice = preferred;
-    // Animate mouth
     setAstranovaSpeaking(true);
-    // Show speech bubble
     var speech = document.getElementById('astranova-speech');
     if(speech){
       speech.textContent = text.length > 60 ? text.substring(0,57).replace(/<[^>]+>/g,'') + '…' : text.replace(/<[^>]+>/g,'');
@@ -4116,20 +4563,14 @@ function doSpeak(text){
       setAstranovaSpeaking(false);
       _isSpeaking = false;
       if(speech) setTimeout(function(){ speech.classList.remove('on'); }, 1500);
-      // Resume voice recognition
-      if(_voiceActive && _voiceRecog){
-        try{ _voiceRecog.start(); }catch(e){}
-      }
-      // Process queue
-      if(_speechQueue.length) setTimeout(processNextSpeech, 500);
+      if(_voiceActive && _voiceRecog){ try{ _voiceRecog.start(); }catch(e){} }
+      if(_speechQueue.length) setTimeout(processNextSpeech, 800);
     };
     utt.onerror = function(){
       setAstranovaSpeaking(false);
       _isSpeaking = false;
-      if(_voiceActive && _voiceRecog){
-        try{ _voiceRecog.start(); }catch(e){}
-      }
-      if(_speechQueue.length) setTimeout(processNextSpeech, 500);
+      if(_voiceActive && _voiceRecog){ try{ _voiceRecog.start(); }catch(e){} }
+      if(_speechQueue.length) setTimeout(processNextSpeech, 800);
     };
     speechSynthesis.speak(utt);
   }catch(e){
@@ -4165,7 +4606,7 @@ function toggleVoiceInput(){
     _voiceActive = false;
     vb.classList.remove('voice-btn-active');
     bar.classList.remove('voice-active');
-    input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+    input.placeholder = 'Talk to Astranov — search, order, find, ask…';
     return;
   }
 
@@ -4211,7 +4652,7 @@ function toggleVoiceInput(){
     _voiceActive = false;
     vb.classList.remove('voice-btn-active');
     bar.classList.remove('voice-active');
-    input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+    input.placeholder = 'Talk to Astranov — search, order, find, ask…';
   };
 
   _voiceRecog.onend = function(){
@@ -4221,7 +4662,7 @@ function toggleVoiceInput(){
     } else {
       vb.classList.remove('voice-btn-active');
       bar.classList.remove('voice-active');
-      input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+      input.placeholder = 'Talk to Astranov — search, order, find, ask…';
     }
   };
 
@@ -4786,106 +5227,123 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV 3.4.0
-Creator & Founder: Notis Astranov, 2026
-Architecture: Spartan Script v3.4.0
+SPARTAN SCRIPT — ASTRANOV v3.8.0
+Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
+Architecture: Spartan Script v3.8.0 | Single Source of Record
 
-MISSION
-Single-file launchable planetary marketplace with real Earth, stable layer transitions,
-a true spacecraft mode, a true submarine mode, map-native creation tools, wallet-only vendor checkout,
-electric neon blue ASTRANOV branding, 3-option posting menu, full shop listings with menu/schedule,
-delivery address system, channel visibility infrastructure, order routing engine, and delivery chat.
+MISSION: Planetary delivery marketplace OS. Voice-first AI interface.
+STACK: Single HTML | Vercel | Cloudflare DNS | Supabase | Leaflet | Three.js
+DOMAIN: astranov.eu
 
-LOCKS
-- ASTRANOV top-left brand stays deep electric neon blue with glow.
-- Guest can explore first. Login is required only for protected actions.
-- Earth startup scene is mandatory.
-- Orbital cards stay compact and depth-linked to Earth.
-- Vendor offers must support media, price, availability, liters, duration, and Buy now.
-- All purchases use the in-app user balance.
-- Spartan Script inside HTML must always match the code.
+AI ASSISTANT — ASTRANOV (PRIMARY INTERFACE)
+Blonde Nordic warrior angel god. Golden hair, Norse armor, feathered wings.
+Deep male Russian voice. Cyrillic: друг, брат, товарищ, да, хорошо, отлично.
+Claude Sonnet API + local fallback. AI memory/learning system.
+Voice ordering: search→suggest→confirm→execute→deliver→narrate.
 
-TRANSITIONS
-- Zoom out from Earth hits a 3-step orbit warning ladder before spacecraft mode activates on the 4th push.
-- Zoom into open sea hits a 3-step dive warning ladder before submarine mode activates on the 4th push.
-- Accidental game triggers during normal browsing must be avoided.
-- Zooming between layers must never get stuck.
+COMPASS RADAR HUD (top-right, device compass, mils+degrees, radar blips)
+POSTING SYSTEM (right-click/long-press, 3 options, zoom 17+ gate)
+DELIVERY ENGINE (€1/km + surcharges, haversine routing, demo simulation)
+CHANNELS (All/Global/Local/Teams/Support on left sidebar)
+ROLES (User/Admin/Owner auto-detect)
+PRIVACY (delivery addresses hidden from shops, driver confidentiality)
+DEMO DATA (5 shops Rhodes, 30+ menu items with photos, wallet €50)
 
-MAP POSTING (v3.4.0)
-- Clicking the map opens 3-option chooser:
-  1. Post Something — visibility (global/local/team), team picker, title, description, category, price, media
-  2. List a Shop — entry photo, 7-day schedule, menu items (name, price, volume, qty, production rate,
-     available times, photo, temperature cold/hot/neutral), delivery range km, visibility
-  3. Set Delivery Location — street, number, floor, doorbell, name, phone, remarks
-- All objects appear on live map and listings immediately.
-
-CHANNELS (v3.4.0)
-- Filter bar: All / Global / Local / Teams + per-team pills
-- Posts and shops carry visibility metadata
-- Channel filter applies to map markers, listings, and orbital feed
-
-ORDER ROUTING (v3.4.0)
-- Buy now triggers driver routing: finds closest available driver via haversine
-- Calculates delivery fee (€2.50 base + €0.80/km, min €3.00) and ETA
-- Shows routing toast notification
-- Creates delivery record in Supabase
-
-DELIVERY CHAT (v3.4.0)
-- 3-party chat: vendor, deliverer, client
-- Opens after order placement
-- Messages persist in localStorage
-- Simulated vendor/driver responses (production: Supabase Realtime)
-
-GAMES
-- Spacecraft mode must feel different from submarine mode.
-- Submarine mode must visibly include periscope / sonar style UI.
-- Exit from any game must return to the correct previous level.
+ROADMAP: Pass 4=Express backend, 5=Stripe, 6=Orders, 7=Realtime, 8=3D engine
 -->
 
 <!-- Embedded Spartan Script v3.3.3 -->
-<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.4.0
+<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV v3.8.0
+# Single Source of Record | AI-Executable | Under 3000 chars
+# Creator: Graduate Candidate Captain Notis Astranov
+# Updated: 2026-03-28
 
 MISSION
-Build a launchable Astranov app with a real rotating Earth startup scene, stable Earth-space-ocean transitions, a wallet-based marketplace, map-native creation tools, 3-option posting menu, full shop listings, delivery addresses, channel visibility, order routing, delivery chat, and electric neon blue branding locked in place.
+Planetary delivery marketplace OS. Voice-first AI interface.
+Astranov = internet operating system for daily life.
 
-FOUNDATION
-- Version locked: 3.4.0
-- Single-file launchable HTML build
-- Earth is the startup scene
-- User can explore before login
-- Login becomes mandatory only when protected actions start
-- Mandatory auth fields: phone + email + password
-- ASTRANOV top-left brand stays deep electric neon blue with glow everywhere
+STACK [LOCKED]
+Single HTML | Vercel | Cloudflare DNS | Supabase kzlabcrlrpbnfiiyrjvl
+OpenStreetMap/Leaflet | Three.js globe | astranov.eu
 
-MAP POSTING
-- Map click opens 3-option chooser: Post Something, List a Shop, Set Delivery Location
-- Post Something: visibility (global/local/team), team picker, title, description, category, price, media
-- List a Shop: entry photo, 7-day schedule, menu items with name/price/volume/qty/rate/times/photo/temperature, delivery range, visibility
-- Set Delivery Location: street, number, floor, doorbell, name, phone, remarks
+LAYERS
+Cosmic=Three.js globe | Earth=Leaflet map | Abyss=submarine
+Zoom-depth switching only. No explicit layer buttons.
+
+DESIGN [LOCKED]
+Electric blue #00c8ff / black / transparent
+Glassmorphic UI. HUD: top strip, left rail, right rail, center stage
+AI command bar bottom. Compass radar top-right.
+
+AI ASSISTANT — ASTRANOV [PRIMARY INTERFACE]
+Character: Blonde Nordic warrior angel god (SVG)
+Golden hair, ice-blue eyes, Norse armor, large feathered wings
+Golden halo, shoulder armor, bracers, warrior boots
+Animations: float, wing-flap, hair-flow, mouth-speak, sparkle-trail
+fly-to-location, active-glow, bounce on action
+Voice: Deep male, pitch 0.65, rate 0.80, seeks Russian voice
+Personality: Russian with Cyrillic — друг, брат, товарищ, да, нет
+хорошо, отлично, вперёд, спасибо, здравствуйте, конечно, молодец
+USSR humor: commissar, motherland, supply chain, five-year plan
+Claude Sonnet API integration + local fallback brain
+AI-driven ordering: search→suggest→confirm→execute→deliver
+No modal windows. Bottom command bar + expandable conversation.
+
+AI MEMORY/LEARNING
+3 localStorage stores: memory, conv_history, user_prefs
+Tracks: food preferences, search history, interaction count, user name
+Conversation history (last 60) fed into Claude context
+Returning users get personalized greetings + preference recall
+buildMemoryContext() feeds all into API system prompt
+
+COMPASS RADAR HUD [TOP-RIGHT]
+Periscope/submarine style. Front quarter illuminated, back 3/4 dark.
+Degree ring 0-360 with N/S/E/W cardinal glowing labels.
+Artillery mil ring (0-6400) inner markings.
+Distance rings: 1km, 3km, 5km. Radar sweep beam 3.5s cycle.
+Blips: green=shops, orange=drivers, blue=posts. Scan every 3s.
+Device compass via DeviceOrientationEvent. Desktop: slow drift.
+Route indicator: orange dashed line to delivery destination.
+HDG readout in degrees. Visible map layer only. Opacity 0.5, hover 0.92.
+
+POSTING (right-click/3s long-press, zoom 17+ gate)
+3 options: Post Something | List a Shop | Set Delivery Location
+Shop: 7-day schedule, dynamic menu (name/price/volume/qty/rate/
+times/photo/temperature cold/hot/neutral), delivery range km
+Posts: title/desc/category/price/visibility global/local/team
+
+ROLES
+User=consumer (needs admin verification) | Admin=driver/shop/support
+Owner=auto-detect notisastranov@gmail.com or 306971930225
+
+DELIVERY ENGINE
+€1/km base | +€1 volume>6L | +€1 night 21-09 | +€1 holiday
++€1 bad weather | Min order €3 | Split >13L | Max 3 hot/batch
+Closest driver haversine matching. Demo mode simulates full flow:
+shop accepts→driver animates on map→pickup→delivery→complete
+Driver marker (orange pulse), route polylines, Astranov flies to shop.
+
+PRIVACY
+Delivery addresses private. Shops see area name only.
+Driver gets full address with CONFIDENTIALITY NOTICE.
 
 CHANNELS
-- Filter bar on map: All, Global, Local, Teams + per-team pills
-- Visibility metadata on all posts and shops
-- Filter applies to markers, listings, orbital feed
+Left sidebar: All/Global/Local/Teams/Support. Glow when active.
 
-ORDER ROUTING
-- Buy triggers closest-driver search via haversine
-- Calculates fee and ETA, shows routing toast
-- Creates delivery record
+VEHICLES: Motorcycle, Car, Scooter, Bicycle, Drone, Boat
 
-DELIVERY CHAT
-- 3-party: vendor, deliverer, client
-- Opens after order, messages persist locally
-- Production: Supabase Realtime via Express backend (Pass 4+)
+SETTINGS: Demo Mode toggle, Bad Weather toggle, Reset Demo Data
 
-MARKETPLACE RULES
-- Vendor offers panel must support photo or video preview
-- Show price, availability, volume, duration, menu items count, delivery range
-- Buy now uses ONLY the user wallet balance
-- If balance is low, open wallet reload inside the app
+DEMO DATA: 5 shops Rhodes (Tamam, Aegean Dive, Nikolas Pizza,
+Mini Market 24/7, Elli Beach) + 30 menu items with Unsplash photos
++ 4 posts + 3 drivers + 2 addresses. Wallet €50.
 
-DELIVERY RULE
-- Produce the latest deployment-ready HTML with the Spartan Script embedded inside the HTML itself</textarea>
+ROADMAP
+Pass 4: Express backend + server-side AI endpoints
+Pass 5: Stripe EUR payments
+Pass 6: Order management dashboard
+Pass 7: Supabase Realtime messaging
+Pass 8: High-end 3D graphics engine upgrade</textarea>
 
 <!-- POST CHOOSER (map right-click / long-press) -->
 <div id="post-chooser">
@@ -5779,6 +6237,8 @@ DELIVERY RULE
     } catch(e){}
 
     ACTIVE_ORDER = order;
+    // Set compass routing target
+    window._compassTarget = { lat: order.client_lat || LOC.lat, lng: order.client_lng || LOC.lng };
     openDeliveryChat(order);
     return order;
   };
