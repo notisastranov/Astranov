@@ -651,6 +651,21 @@ body.lt,body.lt2,body.lt3{
 .pc-title{color:#00c8ff;font-size:17px;font-weight:700;margin-bottom:4px;}
 .pc-sub{font-size:11px;color:var(--text-dim);margin-bottom:16px;line-height:1.5;}
 .pc-coords{font-size:10px;padding:6px 10px;border-radius:10px;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.12);color:#c8efff;margin-bottom:14px;}
+
+/* ═══ MINI-MAP LOCATION PICKER ═══ */
+.loc-picker{margin-bottom:14px;border-radius:14px;overflow:hidden;border:1px solid rgba(0,200,255,0.16);}
+.loc-map{width:100%;height:180px;background:#0a1520;position:relative;}
+.loc-map .leaflet-container{background:#0a1520 !important;}
+.loc-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:rgba(5,14,28,0.88);border-top:1px solid rgba(0,200,255,0.10);}
+.loc-coords{font-size:11px;color:#c8efff;font-family:var(--font);}
+.loc-zoom-badge{font-size:10px;padding:3px 9px;border-radius:8px;font-weight:600;transition:all 0.25s;}
+.loc-zoom-badge.too-far{background:rgba(255,68,85,0.14);color:#ff6b6b;border:1px solid rgba(255,68,85,0.22);}
+.loc-zoom-badge.close{background:rgba(255,214,0,0.12);color:#e8c840;border:1px solid rgba(255,214,0,0.18);}
+.loc-zoom-badge.ready{background:rgba(0,232,122,0.14);color:#00e87a;border:1px solid rgba(0,232,122,0.22);}
+.loc-hint{font-size:10px;color:var(--text-dim);text-align:center;padding:6px 10px;background:rgba(255,68,85,0.06);border-top:1px solid rgba(255,68,85,0.08);transition:all 0.25s;}
+.loc-hint.ready{background:rgba(0,232,122,0.06);border-color:rgba(0,232,122,0.08);color:#6fcf97;}
+.pc-opt.disabled{opacity:0.35;pointer-events:none;filter:grayscale(0.5);}
+.loc-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:600;pointer-events:none;width:28px;height:28px;}
 .pc-options{display:flex;flex-direction:column;gap:10px;}
 .pc-opt{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(0,200,255,0.14);border-radius:14px;background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.18s;}
 .pc-opt:hover{background:rgba(0,200,255,0.10);border-color:rgba(0,200,255,0.36);transform:translateY(-1px);}
@@ -742,6 +757,31 @@ body.lt,body.lt2,body.lt3{
 
 /* ═══ ORDER ROUTING TOAST ═══ */
 #routing-toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);z-index:290;display:none;padding:12px 20px;border-radius:14px;background:rgba(8,18,30,0.88);border:1px solid rgba(0,200,255,0.20);box-shadow:0 14px 30px rgba(0,0,0,0.30);backdrop-filter:blur(10px);font-size:12px;color:#d8f0ff;max-width:400px;text-align:center;}
+
+/* ═══ VERIFICATION CHAT ═══ */
+#verify-chat{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:390;background:rgba(3,8,16,0.62);backdrop-filter:blur(14px);}
+#verify-chat.on{display:flex;}
+.vc-sheet{width:min(94vw,460px);max-height:88vh;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(8,18,30,0.82),rgba(8,18,30,0.62));border:1px solid rgba(0,200,255,0.16);border-radius:18px;box-shadow:0 24px 48px rgba(0,0,0,0.36);overflow:hidden;}
+.vc-header{padding:14px 18px;border-bottom:1px solid rgba(0,200,255,0.12);display:flex;align-items:center;justify-content:space-between;}
+.vc-header h3{color:#00c8ff;font-size:14px;font-weight:700;margin:0;}
+.vc-status-pending{font-size:9px;padding:3px 8px;border-radius:999px;background:rgba(255,214,0,0.12);color:#e8c840;border:1px solid rgba(255,214,0,0.18);}
+.vc-status-approved{font-size:9px;padding:3px 8px;border-radius:999px;background:rgba(0,232,122,0.12);color:#00e87a;border:1px solid rgba(0,232,122,0.18);}
+.vc-close{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;}
+.vc-summary{padding:12px 18px;border-bottom:1px solid rgba(0,200,255,0.08);font-size:11px;color:var(--text-dim);line-height:1.5;}
+.vc-summary strong{color:#d8f0ff;font-weight:600;}
+.vc-messages{flex:1;overflow-y:auto;padding:12px 18px;display:flex;flex-direction:column;gap:6px;min-height:140px;max-height:300px;}
+.vc-msg{max-width:82%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.45;}
+.vc-msg.system{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.14);color:#e8c840;font-size:11px;text-align:center;max-width:90%;}
+.vc-msg.user{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.18);color:#d8f0ff;}
+.vc-msg.admin-reply{align-self:flex-start;background:rgba(0,232,122,0.10);border:1px solid rgba(0,232,122,0.16);color:#c8f0d4;}
+.vc-msg .vc-sender{font-size:9px;font-weight:600;margin-bottom:2px;opacity:0.6;}
+.vc-input-row{padding:10px 14px;border-top:1px solid rgba(0,200,255,0.10);display:flex;gap:6px;}
+.vc-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.12);border-radius:10px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;}
+.vc-send{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,200,255,0.20);background:rgba(0,200,255,0.10);color:#00c8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* privacy badge */
+.priv-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;padding:2px 7px;border-radius:6px;background:rgba(255,153,0,0.10);color:#ff9900;border:1px solid rgba(255,153,0,0.16);}
+.priv-notice{font-size:10px;padding:8px 12px;border-radius:10px;background:rgba(255,153,0,0.08);border:1px solid rgba(255,153,0,0.14);color:#ffc266;line-height:1.5;margin:8px 0;}
 #routing-toast.on{display:block;animation:toast-in 0.4s ease-out;}
 @keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
 .rt-driver{color:#ff9900;font-weight:600;}
@@ -783,10 +823,8 @@ body.lt,body.lt2,body.lt3{
       </div>
       <div class="auth-field-row" id="auth-role-row" style="display:none;">
         <select class="asel" id="ar">
-          <option value="customer">Customer</option>
-          <option value="vendor">Vendor / Shop Owner</option>
-          <option value="driver">Driver / Courier</option>
-          <option value="developer">Developer</option>
+          <option value="user">User (Consumer)</option>
+          <option value="admin">Admin (Driver / Shop Owner / Support)</option>
         </select>
         <button class="auth-view-btn" type="button" onclick="previewSelectedRole()">View</button>
       </div>
@@ -845,7 +883,7 @@ body.lt,body.lt2,body.lt3{
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
   </button>
   <div class="lp-sp"></div>
-  <button class="lp-btn" id="btn-post" data-tip="Post Signal" onclick="openPost()">
+  <button class="lp-btn" id="btn-post" data-tip="+ Post" onclick="openPost()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </button>
 </div>
@@ -1126,7 +1164,7 @@ body.lt,body.lt2,body.lt3{
 <!-- POST MODAL -->
 <div id="pm">
   <div class="mbox">
-    <div class="mhdr">Post Signal / Listing <button class="mcl" onclick="closePost()">×</button></div>
+    <div class="mhdr">+ Post <button class="mcl" onclick="closePost()">×</button></div>
     <div class="mbdy">
       <select class="msel" id="pcat">
         <option value="shop">Shop / Product</option>
@@ -1154,7 +1192,7 @@ body.lt,body.lt2,body.lt3{
     </div>
     <div class="mftr">
       <button class="bx" onclick="closePost()">Cancel</button>
-      <button class="bok" onclick="submitPost()">Transmit Signal</button>
+      <button class="bok" onclick="submitPost()">+ Post</button>
     </div>
   </div>
 </div>
@@ -1250,6 +1288,41 @@ let PENDING_ACTION = null;
 let ORBITAL_FEED = [];
 let ORBITAL_FEED_CURSOR = 0;
 let orbitalFeedTimer = null;
+
+/* ═══ ROLE SYSTEM ═══
+   user  = consumer, can browse/buy, posts need admin verification
+   admin = driver/shop owner/support, posts go live immediately
+   owner = Notis Astranov only, full control
+*/
+const OWNER_EMAIL = 'notisastranov@gmail.com';
+const OWNER_PHONE = '+306971930225';
+const OWNER_PHONE_ALT = '306971930225';
+
+function isOwner(user){
+  if(!user) return false;
+  const email = (user.email || '').toLowerCase().trim();
+  const phone = (user.phone || '').replace(/[^0-9+]/g,'');
+  return email === OWNER_EMAIL || phone === OWNER_PHONE || phone === OWNER_PHONE_ALT;
+}
+function getUserRole(user){
+  if(!user) return 'guest';
+  if(isOwner(user)) return 'owner';
+  return user.role || 'user';
+}
+function canPostDirectly(user){
+  const role = getUserRole(user);
+  return role === 'owner' || role === 'admin';
+}
+function getRoleLabel(role){
+  if(role === 'owner') return 'Owner';
+  if(role === 'admin') return 'Admin';
+  if(role === 'user') return 'User';
+  return 'Guest';
+}
+let PENDING_POSTS = [];
+const PENDING_POSTS_KEY = 'astranov.pending.posts.v1';
+function getPendingPosts(){ try { return JSON.parse(localStorage.getItem(PENDING_POSTS_KEY) || '[]'); } catch(e){ return []; } }
+function setPendingPosts(p){ localStorage.setItem(PENDING_POSTS_KEY, JSON.stringify(p)); }
 
 
 function setAuthHelper(msg='') {
@@ -1591,7 +1664,7 @@ function previewAuthField(id, label) {
 }
 
 function previewSelectedRole() {
-  const role = document.getElementById('ar').value || 'customer';
+  const role = document.getElementById('ar').value || 'user';
   const el = document.getElementById('auth-preview');
   el.innerHTML = '<b>Role:</b> ' + role;
   el.classList.add('on');
@@ -1632,7 +1705,7 @@ async function doAuth() {
         await sb.auth.updateUser({ data: { ...(data.user.user_metadata || {}), phone } });
       }
       const { data: p } = await sb.from('users').select('*').eq('id', data.user.id).single();
-      onAuth(data.user, p?.name || email, p?.role || 'customer', phone || storedPhone);
+      onAuth(data.user, p?.name || email, p?.role || 'user', phone || storedPhone);
     }
   } catch(e) { showErr(e.message); }
 }
@@ -1645,20 +1718,28 @@ function showErr(msg) {
 
 function onAuth(user, name, role, phone) {
   CU = { ...user, name, role, phone: normalizePhone(phone || user?.user_metadata?.phone || '') };
+  // Owner auto-detection overrides any role
+  if(isOwner(CU)){
+    CU.role = 'owner';
+    role = 'owner';
+  } else if(role === 'customer'){
+    CU.role = 'user'; // normalize legacy role
+    role = 'user';
+  }
   document.getElementById('am').classList.add('h');
   setAuthHelper('');
   document.getElementById('uname').textContent = name || user.email.split('@')[0];
   document.getElementById('uavatar').textContent = (name||user.email)[0].toUpperCase();
   document.getElementById('pr-email').textContent = 'Email: ' + user.email;
   document.getElementById('pr-phone').textContent = 'Phone: ' + (CU.phone || '—');
-  document.getElementById('pr-role').textContent = 'Role: ' + role;
+  document.getElementById('pr-role').textContent = 'Role: ' + getRoleLabel(role);
   document.getElementById('pay-email').value = user.email || '';
   document.getElementById('pay-phone').value = CU.phone || '';
   document.getElementById('pay-name').value = name || '';
   loadBalance();
   loadCounts();
   subscribeRealtime();
-  if (role === 'driver') loadDriverDeliveries();
+  if (role === 'driver' || role === 'admin') loadDriverDeliveries();
   if (typeof PENDING_ACTION === 'function') {
     const action = PENDING_ACTION;
     PENDING_ACTION = null;
@@ -1921,7 +2002,7 @@ async function loadBalance() {
   if (data?.session?.user) {
     const u = data.session.user;
     const { data: p } = await sb.from('users').select('*').eq('id', u.id).single();
-    onAuth(u, p?.name || u.email, p?.role || 'customer', u?.user_metadata?.phone || '');
+    onAuth(u, p?.name || u.email, p?.role || 'user', u?.user_metadata?.phone || '');
   } else {
     setGuestState();
     loadBalance();
@@ -2093,9 +2174,14 @@ async function acceptDelivery(id) {
 
 /* ── POST ── */
 function openPost() {
-  if (!CU) { showResp('Login to post signals.'); document.getElementById('am').classList.remove('h'); return; }
+  if(typeof openPostChooser === 'function'){
+    openPostChooser(LOC.lat, LOC.lng);
+    return;
+  }
+  if (!CU) { showResp('Login to post.'); document.getElementById('am').classList.remove('h'); return; }
   document.getElementById('pm').classList.add('on');
-  document.getElementById('pcoord').textContent = LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
+  var pc = document.getElementById('pcoord');
+  if(pc) pc.textContent = LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
 }
 function closePost() { document.getElementById('pm').classList.remove('on'); }
 function handleFiles(input) {
@@ -2125,7 +2211,7 @@ async function submitPost() {
       const ext = f.name.split('.').pop();
       await sb.storage.from('media').upload('signals/'+data.id+'_'+i+'.'+ext, f);
     }
-    showResp('Signal "'+title+'" transmitted!');
+    showResp('"'+title+'" posted!');
     document.getElementById('ptitle').value='';
     document.getElementById('pdesc').value='';
     document.getElementById('pprice').value='';
@@ -2427,7 +2513,13 @@ function applyLayer(idx) {
   document.getElementById('astranova-wrapper').style.display=idx===1?'flex':'none';
   if(idx===1&&!LM) initLeaflet();
   if(idx===2) runAbyssScene();
-  if(idx===1) setTimeout(refreshMapData,400);
+  if(idx===1){
+    setTimeout(refreshMapData,400);
+    if(!applyLayer._mapHintShown){
+      applyLayer._mapHintShown = true;
+      setTimeout(()=>showResp('Right-click (desktop) or long-press 3s (touch) anywhere on the map to post.'), 1200);
+    }
+  }
 }
 
 function descendLayer(){ goLayer(Math.min(CL+1,2)); }
@@ -2789,17 +2881,68 @@ async function maybeStartSubmarineDive(force=false){
    LEAFLET MAP — LAYER 2
    ══════════════════════════════ */
 function initLeaflet(){
-  LM=L.map('mc',{zoomControl:false,attributionControl:false}).setView([LOC.lat,LOC.lng],13);
+  LM=L.map('mc',{zoomControl:false,attributionControl:false,tap:true,tapTolerance:20,touchZoom:true,dragging:true}).setView([LOC.lat,LOC.lng],13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(LM);
-  LM.on('click',e=>{
+
+  /* normal click — just updates coords, no menu */
+  LM.on('click',function(e){
     LOC={lat:e.latlng.lat,lng:e.latlng.lng};
     showResp('Location: '+e.latlng.lat.toFixed(4)+'°N, '+e.latlng.lng.toFixed(4)+'°E');
-    document.getElementById('pcoord').textContent=LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
+    var pc = document.getElementById('pcoord');
+    if(pc) pc.textContent=LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
     if(LM.getZoom()>=17) resetSubmarineGate();
   });
+
+  /* RIGHT CLICK (desktop) — opens post menu */
+  LM.on('contextmenu',function(e){
+    L.DomEvent.preventDefault(e.originalEvent);
+    if(!gameActive && CL === 1 && typeof openPostChooser === 'function'){
+      openPostChooser(e.latlng.lat, e.latlng.lng);
+    }
+  });
+
+  /* LONG PRESS 3s (touch) — opens post menu */
+  var _lp = null;
+  var _lpFired = false;
+  var mapEl = document.getElementById('mc');
+  if(mapEl){
+    mapEl.addEventListener('touchstart', function(ev){
+      _lpFired = false;
+      if(ev.touches.length !== 1){ clearTimeout(_lp); _lp=null; return; }
+      var sx = ev.touches[0].clientX, sy = ev.touches[0].clientY;
+      _lp = setTimeout(function(){
+        _lp = null;
+        _lpFired = true;
+        if(!LM || gameActive || CL !== 1) return;
+        /* convert screen coords to latlng */
+        var rect = mapEl.getBoundingClientRect();
+        var point = LM.containerPointToLatLng(L.point(sx - rect.left, sy - rect.top));
+        if(!point) return;
+        /* visual feedback */
+        if(navigator.vibrate) try{ navigator.vibrate(40); }catch(e){}
+        openPostChooser(point.lat, point.lng);
+      }, 3000);
+      /* cancel if finger moves more than 12px */
+      function onMove(me){
+        var dx = Math.abs(me.touches[0].clientX - sx);
+        var dy = Math.abs(me.touches[0].clientY - sy);
+        if(dx > 12 || dy > 12){ clearTimeout(_lp); _lp=null; mapEl.removeEventListener('touchmove',onMove); }
+      }
+      mapEl.addEventListener('touchmove', onMove, { passive:true });
+      mapEl.addEventListener('touchend', function te(){
+        clearTimeout(_lp); _lp=null;
+        mapEl.removeEventListener('touchmove',onMove);
+        mapEl.removeEventListener('touchend',te);
+      }, { once:true });
+    }, { passive:true });
+    /* prevent default context menu on long press in mobile browsers */
+    mapEl.addEventListener('contextmenu', function(ev){ ev.preventDefault(); }, { passive:false });
+  }
+
   LM.on('moveend',()=>{
     const c = LM.getCenter();
-    document.getElementById('pcoord').textContent=c.lat.toFixed(4)+'°N, '+c.lng.toFixed(4)+'°E';
+    var pc = document.getElementById('pcoord');
+    if(pc) pc.textContent=c.lat.toFixed(4)+'°N, '+c.lng.toFixed(4)+'°E';
   });
   /* HIDDEN SUBMARINE GAME: deliberate dive gate over open water */
   LM.on('zoomend',()=>{
@@ -3091,22 +3234,40 @@ MARKETPLACE RULES
 DELIVERY RULE
 - Produce the latest deployment-ready HTML with the Spartan Script embedded inside the HTML itself</textarea>
 
-<!-- POST CHOOSER (map click) -->
+<!-- POST CHOOSER (map right-click / long-press) -->
 <div id="post-chooser">
   <div class="pc-sheet">
-    <div class="pc-title">What do you want to create?</div>
-    <div class="pc-sub">This will be placed at the selected map point. Choose an option to continue.</div>
-    <div class="pc-coords" id="pc-coords">Point: —</div>
-    <div class="pc-options">
-      <div class="pc-opt" onclick="openPostForm()">
+    <div class="pc-title">+ Post here</div>
+    <div class="pc-sub">Zoom in and center the crosshair on the exact spot before choosing an option.</div>
+
+    <!-- MINI-MAP LOCATION PICKER -->
+    <div class="loc-picker">
+      <div class="loc-map" id="loc-map-container">
+        <svg class="loc-crosshair" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="6" stroke="#00c8ff" stroke-width="2" fill="rgba(0,200,255,0.15)"/>
+          <line x1="14" y1="2" x2="14" y2="10" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="14" y1="18" x2="14" y2="26" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="2" y1="14" x2="10" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="18" y1="14" x2="26" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="loc-bar">
+        <span class="loc-coords" id="loc-coords">—</span>
+        <span class="loc-zoom-badge too-far" id="loc-zoom-badge">Zoom: —</span>
+      </div>
+      <div class="loc-hint" id="loc-hint">⚠ Zoom all the way in and center the crosshair on the exact spot</div>
+    </div>
+
+    <div class="pc-options" id="pc-options">
+      <div class="pc-opt disabled" onclick="openPostForm()">
         <div class="pc-opt-icon post-it">📢</div>
         <div class="pc-opt-text"><h3>Post Something</h3><p>Share a post, announcement, offer, or signal. Choose who sees it — global, local, or your team.</p></div>
       </div>
-      <div class="pc-opt" onclick="openShopForm()">
+      <div class="pc-opt disabled" onclick="openShopForm()">
         <div class="pc-opt-icon shop-it">🏪</div>
         <div class="pc-opt-text"><h3>List a Shop</h3><p>Full shop listing with photo, hours, menu items, prices, availability, temperature, delivery range.</p></div>
       </div>
-      <div class="pc-opt" onclick="openDeliveryForm()">
+      <div class="pc-opt disabled" onclick="openDeliveryForm()">
         <div class="pc-opt-icon addr-it">📍</div>
         <div class="pc-opt-text"><h3>Set Delivery Location</h3><p>Save your delivery address with street, floor, doorbell, name, phone, and special remarks.</p></div>
       </div>
@@ -3235,6 +3396,8 @@ DELIVERY RULE
     <div class="form-section">Remarks</div>
     <div class="form-group"><label>Special instructions for delivery</label><textarea id="df-remarks" placeholder="e.g. Be quiet — baby sleeping. Ring twice. Gate code 1234. Leave at door."></textarea></div>
 
+    <div class="priv-notice">🔒 <strong>Your address is private.</strong> Only you and your assigned delivery driver will see your exact address, floor, doorbell, and phone number. Shop owners will only see your general area name. Drivers are contractually bound not to disclose your details to shops or any third party.</div>
+
     <div class="form-footer">
       <button onclick="closeDeliveryForm()">Cancel</button>
       <button class="primary" onclick="submitDeliveryForm()">Save Delivery Location</button>
@@ -3273,6 +3436,25 @@ DELIVERY RULE
 
 <!-- ROUTING TOAST -->
 <div id="routing-toast"></div>
+
+<!-- VERIFICATION CHAT (user posts need admin approval) -->
+<div id="verify-chat">
+  <div class="vc-sheet">
+    <div class="vc-header">
+      <h3>Post Verification</h3>
+      <span class="vc-status-pending" id="vc-status">Pending review</span>
+      <button class="vc-close" onclick="closeVerifyChat()">×</button>
+    </div>
+    <div class="vc-summary" id="vc-summary">Your post will be reviewed by an admin before going live.</div>
+    <div class="vc-messages" id="vc-messages"></div>
+    <div class="vc-input-row">
+      <input class="vc-input" id="vc-input" placeholder="Message admin…" onkeydown="if(event.key==='Enter')sendVerifyMsg()">
+      <button class="vc-send" onclick="sendVerifyMsg()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
 
 
 <script>
@@ -3375,16 +3557,115 @@ DELIVERY RULE
   }
 
   // ═══ POST CHOOSER ═══
+  // ═══ MINI-MAP LOCATION PICKER ═══
+  var LOC_MAP = null;
+  var LOC_READY = false;
+  var LOC_MIN_ZOOM = 17;
+
+  function updateLocPicker(){
+    if(!LOC_MAP) return;
+    var z = LOC_MAP.getZoom();
+    var c = LOC_MAP.getCenter();
+    MAP_PICK = { lat: c.lat, lng: c.lng };
+
+    // update coords display
+    var coordsEl = byId('loc-coords');
+    if(coordsEl) coordsEl.textContent = c.lat.toFixed(6) + '°, ' + c.lng.toFixed(6) + '°';
+
+    // update zoom badge
+    var badge = byId('loc-zoom-badge');
+    if(badge){
+      badge.textContent = 'Zoom: ' + z;
+      badge.className = 'loc-zoom-badge ' + (z >= LOC_MIN_ZOOM ? 'ready' : z >= 14 ? 'close' : 'too-far');
+    }
+
+    // update hint
+    var hint = byId('loc-hint');
+    if(hint){
+      if(z >= LOC_MIN_ZOOM){
+        hint.textContent = '✓ Location is accurate — choose an option below';
+        hint.className = 'loc-hint ready';
+      } else if(z >= 14){
+        hint.textContent = '⚠ Almost there — zoom in ' + (LOC_MIN_ZOOM - z) + ' more level' + (LOC_MIN_ZOOM - z > 1 ? 's' : '');
+        hint.className = 'loc-hint';
+      } else {
+        hint.textContent = '⚠ Zoom all the way in and center the crosshair on the exact spot';
+        hint.className = 'loc-hint';
+      }
+    }
+
+    // enable/disable options
+    LOC_READY = z >= LOC_MIN_ZOOM;
+    var opts = byId('pc-options');
+    if(opts){
+      opts.querySelectorAll('.pc-opt').forEach(function(o){
+        o.classList.toggle('disabled', !LOC_READY);
+      });
+    }
+
+    // also update form coord fields
+    var ct = coordsText(c.lat, c.lng);
+    var pf = byId('pf-coords'); if(pf) pf.textContent = ct;
+    var sf = byId('sf-coords'); if(sf) sf.textContent = ct;
+    var df = byId('df-coords'); if(df) df.textContent = ct;
+  }
+
+  function destroyLocMap(){
+    if(LOC_MAP){
+      try{ LOC_MAP.remove(); }catch(e){}
+      LOC_MAP = null;
+    }
+    LOC_READY = false;
+  }
+
   window.openPostChooser = function(lat, lng){
     MAP_PICK = { lat:Number(lat), lng:Number(lng) };
-    const ct = coordsText(lat,lng);
-    byId('pc-coords').textContent = ct;
-    byId('pf-coords').textContent = ct;
-    byId('sf-coords').textContent = ct;
-    byId('df-coords').textContent = ct;
     byId('post-chooser').classList.add('on');
+
+    // init mini-map after DOM is visible
+    setTimeout(function(){
+      destroyLocMap();
+      var container = byId('loc-map-container');
+      if(!container) return;
+
+      // create a new div for the leaflet map (avoid conflicts)
+      var mapDiv = container.querySelector('.loc-map-inner');
+      if(mapDiv) mapDiv.remove();
+      mapDiv = document.createElement('div');
+      mapDiv.className = 'loc-map-inner';
+      mapDiv.style.cssText = 'width:100%;height:100%;position:absolute;inset:0;z-index:1;';
+      container.appendChild(mapDiv);
+
+      LOC_MAP = L.map(mapDiv, {
+        zoomControl: true,
+        attributionControl: false,
+        tap: true,
+        tapTolerance: 15,
+        dragging: true,
+        touchZoom: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        zoomSnap: 1,
+        zoomDelta: 1
+      }).setView([MAP_PICK.lat, MAP_PICK.lng], 15);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+      }).addTo(LOC_MAP);
+
+      // update on every move
+      LOC_MAP.on('moveend', updateLocPicker);
+      LOC_MAP.on('zoomend', updateLocPicker);
+
+      // initial state
+      updateLocPicker();
+    }, 80);
   };
-  window.closePostChooser = function(){ byId('post-chooser').classList.remove('on'); };
+
+  window.closePostChooser = function(){
+    byId('post-chooser').classList.remove('on');
+    destroyLocMap();
+  };
 
   // Keep backwards compat
   window.openMapActionModal = window.openPostChooser;
@@ -3397,6 +3678,97 @@ DELIVERY RULE
     populateTeamSelects();
   };
   window.closePostForm = function(){ byId('post-form').classList.remove('on'); };
+
+  // ═══ VERIFICATION CHAT SYSTEM ═══
+  var VERIFY_PENDING = null;
+  var VERIFY_MSGS_KEY = 'astranov.verify.msgs.v1';
+
+  function getVerifyMsgs(){ return safeJsonGet(VERIFY_MSGS_KEY, []); }
+  function setVerifyMsgs(m){ safeJsonSet(VERIFY_MSGS_KEY, m); }
+
+  window.openVerifyChat = function(pendingItem){
+    VERIFY_PENDING = pendingItem;
+    byId('verify-chat').classList.add('on');
+    var kindLabel = pendingItem.kind === 'shop_service' ? 'Shop listing' : pendingItem.kind === 'client_address' ? 'Delivery location' : 'Post';
+    byId('vc-summary').innerHTML = '<strong>' + kindLabel + ':</strong> ' + (pendingItem.title || pendingItem.name || pendingItem.street || '—') +
+      '<br>Your submission is pending admin review. You can chat with an admin here. Once approved, it will appear on the live map.';
+    byId('vc-status').textContent = 'Pending review';
+    byId('vc-status').className = 'vc-status-pending';
+
+    // save to pending
+    var pending = getPendingPosts();
+    if(!pending.find(function(p){ return p.id === pendingItem.id; })){
+      pending.unshift(pendingItem);
+      setPendingPosts(pending.slice(0, 50));
+    }
+
+    // add system message
+    var msgs = getVerifyMsgs().filter(function(m){ return m.post_id === pendingItem.id; });
+    if(!msgs.length){
+      addVerifyMsg('system', 'Your ' + kindLabel.toLowerCase() + ' has been submitted for review. An admin will verify it shortly.');
+    }
+    renderVerifyMsgs();
+  };
+
+  window.closeVerifyChat = function(){
+    byId('verify-chat').classList.remove('on');
+    VERIFY_PENDING = null;
+  };
+
+  function addVerifyMsg(role, text){
+    if(!VERIFY_PENDING) return;
+    var msgs = getVerifyMsgs();
+    msgs.push({
+      id: uid('vm'),
+      post_id: VERIFY_PENDING.id,
+      role: role,
+      text: text,
+      sender: role === 'system' ? 'System' : role === 'admin-reply' ? 'Admin' : (window.CU?.name || 'You'),
+      time: new Date().toISOString()
+    });
+    setVerifyMsgs(msgs.slice(-200));
+    renderVerifyMsgs();
+  }
+
+  function renderVerifyMsgs(){
+    var container = byId('vc-messages');
+    if(!container || !VERIFY_PENDING) return;
+    var msgs = getVerifyMsgs().filter(function(m){ return m.post_id === VERIFY_PENDING.id; });
+    if(!msgs.length){
+      container.innerHTML = '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:16px;">Waiting for admin…</div>';
+      return;
+    }
+    container.innerHTML = msgs.map(function(m){
+      return '<div class="vc-msg ' + m.role + '"><div class="vc-sender">' + m.sender + '</div>' + m.text + '</div>';
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  window.sendVerifyMsg = function(){
+    var input = byId('vc-input');
+    var text = input.value.trim();
+    if(!text || !VERIFY_PENDING) return;
+    addVerifyMsg('user', text);
+    input.value = '';
+    // Simulate admin response
+    setTimeout(function(){
+      if(!VERIFY_PENDING) return;
+      addVerifyMsg('admin-reply', 'Thank you for your submission. We are reviewing it now and will get back to you shortly.');
+    }, 2000 + Math.random() * 3000);
+  };
+
+  // Helper: either post directly or open verification
+  function postOrVerify(item, postFn){
+    if(canPostDirectly(window.CU)){
+      postFn(item);
+      if(typeof showResp === 'function') showResp((item.title || item.name || 'Item') + ' posted live.');
+    } else {
+      item.status = 'pending';
+      item.submitted_by = window.CU?.id || 'guest';
+      openVerifyChat(item);
+      if(typeof showResp === 'function') showResp('Submitted for admin verification.');
+    }
+  }
 
   window.setPostVis = function(el){
     el.parentElement.querySelectorAll('.vis-opt').forEach(o => o.classList.remove('active'));
@@ -3431,27 +3803,28 @@ DELIVERY RULE
       local_only: true,
       vendor_name: (window.CU && CU.name) || 'Local user'
     };
-    const offers = getLocalOffers();
-    offers.unshift(item);
-    setLocalOffers(offers.slice(0,120));
-
-    try{
-      if(window.CU && window.sb){
-        await sb.from('signals').insert([{
-          user_id: CU.id, title: item.title, description: item.description,
-          price: item.price, contact: item.contact, category: item.category,
-          lat: item.lat, lon: item.lon
-        }]);
-      }
-    } catch(e){}
 
     ['pf-title','pf-desc','pf-price','pf-contact'].forEach(id => { const el=byId(id); if(el) el.value=''; });
     if(byId('pf-media')) byId('pf-media').value='';
     closePostForm();
-    if(window.CL !== 1) goLayer(1);
-    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
-    if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
-    if(typeof showResp === 'function') showResp(item.title + ' posted to ' + vis + (teamId ? ' ('+getTeams().find(t=>t.id===teamId)?.name+')' : ''));
+
+    postOrVerify(item, function(approvedItem){
+      const offers = getLocalOffers();
+      offers.unshift(approvedItem);
+      setLocalOffers(offers.slice(0,120));
+      try{
+        if(window.CU && window.sb){
+          sb.from('signals').insert([{
+            user_id: CU.id, title: approvedItem.title, description: approvedItem.description,
+            price: approvedItem.price, contact: approvedItem.contact, category: approvedItem.category,
+            lat: approvedItem.lat, lon: approvedItem.lon
+          }]);
+        }
+      } catch(e){}
+      if(window.CL !== 1) goLayer(1);
+      if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+      if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
+    });
   };
 
   // ═══ SHOP FORM ═══
@@ -3580,29 +3953,29 @@ DELIVERY RULE
       vendor_name: (window.CU && CU.name) || 'Local vendor'
     };
 
-    const offers = getLocalOffers();
-    offers.unshift(item);
-    setLocalOffers(offers.slice(0,120));
-
-    try{
-      if(window.CU && window.sb){
-        await sb.from('shops').insert([{
-          vendor_id: CU.id, name: item.name, category: item.category,
-          description: item.description, phone: item.phone, website: item.website,
-          lat: item.lat, lon: item.lon
-        }]);
-      }
-    } catch(e){}
-
     ['sf-name','sf-desc','sf-phone','sf-web','sf-range'].forEach(id => { const el=byId(id); if(el) el.value=''; });
     if(byId('sf-photo')) byId('sf-photo').value='';
     byId('sf-menu-list').innerHTML='';
     MENU_ITEM_COUNT=0;
     closeShopForm();
-    if(window.CL !== 1) goLayer(1);
-    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
-    if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
-    if(typeof showResp === 'function') showResp('Shop "'+item.name+'" listed on the live map.');
+
+    postOrVerify(item, function(approvedItem){
+      const offers = getLocalOffers();
+      offers.unshift(approvedItem);
+      setLocalOffers(offers.slice(0,120));
+      try{
+        if(window.CU && window.sb){
+          sb.from('shops').insert([{
+            vendor_id: CU.id, name: approvedItem.name, category: approvedItem.category,
+            description: approvedItem.description, phone: approvedItem.phone, website: approvedItem.website,
+            lat: approvedItem.lat, lon: approvedItem.lon
+          }]);
+        }
+      } catch(e){}
+      if(window.CL !== 1) goLayer(1);
+      if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+      if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
+    });
   };
 
   // ═══ DELIVERY LOCATION FORM ═══
@@ -3622,6 +3995,8 @@ DELIVERY RULE
     const addr = {
       id: uid('addr'),
       kind: 'client_address',
+      private: true, // NEVER publicly visible
+      owner_id: window.CU?.id || 'guest',
       street: byId('df-street').value.trim(),
       number: byId('df-number').value.trim(),
       floor: byId('df-floor').value.trim(),
@@ -3634,23 +4009,29 @@ DELIVERY RULE
       lng: Number(point.lng),
       created_at: new Date().toISOString()
     };
-    const addrs = getDeliveryAddresses();
-    addrs.unshift(addr);
-    setDeliveryAddresses(addrs.slice(0,20));
-
-    // Also save as a local place marker
-    const places = getLocalPlaces();
-    places.unshift({
-      ...addr,
-      title: addr.name + ' — ' + addr.street + ' ' + addr.number,
-      description: [addr.floor ? 'Floor: '+addr.floor : '', addr.doorbell ? 'Bell: '+addr.doorbell : '', addr.remarks].filter(Boolean).join(' · ')
-    });
-    setLocalPlaces(places.slice(0,120));
 
     ['df-street','df-number','df-floor','df-doorbell','df-name','df-phone','df-remarks'].forEach(id => { const el=byId(id); if(el) el.value=''; });
     closeDeliveryForm();
-    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
-    if(typeof showResp === 'function') showResp('Delivery location saved: ' + addr.street + ' ' + addr.number);
+
+    postOrVerify(addr, function(approvedAddr){
+      const addrs = getDeliveryAddresses();
+      addrs.unshift(approvedAddr);
+      setDeliveryAddresses(addrs.slice(0,20));
+
+      // Save as private place marker (only visible to owner)
+      const places = getLocalPlaces();
+      places.unshift({
+        ...approvedAddr,
+        private: true,
+        owner_id: approvedAddr.owner_id,
+        title: approvedAddr.name + ' — ' + approvedAddr.street + ' ' + approvedAddr.number,
+        description: [approvedAddr.floor ? 'Floor: '+approvedAddr.floor : '', approvedAddr.doorbell ? 'Bell: '+approvedAddr.doorbell : '', approvedAddr.remarks].filter(Boolean).join(' · ')
+      });
+      setLocalPlaces(places.slice(0,120));
+
+      if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+      if(typeof showResp === 'function') showResp('Delivery location saved (private — visible only to you and your delivery driver).');
+    });
   };
 
   // ═══ ORDER ROUTING ENGINE ═══
@@ -3700,12 +4081,19 @@ DELIVERY RULE
     const deliveryDist = haversine(driver.lat, driver.lon || driver.lng || 0, orderData.client_lat || LOC.lat, orderData.client_lng || LOC.lng);
     const totalDist = driver.distance_km + deliveryDist;
     const price = Math.max(3.00, 2.50 + totalDist * (driver.price_per_km || 0.80));
-    const eta = Math.round(totalDist * 3.5 + 5); // rough ETA in minutes
+    const eta = Math.round(totalDist * 3.5 + 5);
 
     toast.innerHTML = `🚀 Driver found! <span class="rt-driver">${driver.vehicle_type || 'Driver'}</span> is <span class="rt-eta">${driver.distance_km.toFixed(1)}km away</span>. Delivery fee: <span class="rt-price">€${price.toFixed(2)}</span> · ETA: <span class="rt-eta">~${eta} min</span>`;
     setTimeout(() => toast.classList.remove('on'), 6000);
 
-    // Create the order record
+    // Get client delivery address (private data)
+    const addrs = getDeliveryAddresses();
+    const clientAddr = addrs[0] || null;
+    // Area-only description for vendor (no exact address)
+    const areaLat = (orderData.client_lat || LOC.lat).toFixed(2);
+    const areaLng = (orderData.client_lng || LOC.lng).toFixed(2);
+    const areaName = 'Area near ' + areaLat + '°N, ' + areaLng + '°E (~' + deliveryDist.toFixed(1) + 'km)';
+
     const order = {
       id: uid('order'),
       vendor_name: orderData.vendor_name || 'Vendor',
@@ -3717,6 +4105,14 @@ DELIVERY RULE
       status: 'assigned',
       vendor_lat: orderData.vendor_lat, vendor_lng: orderData.vendor_lng,
       client_lat: orderData.client_lat, client_lng: orderData.client_lng,
+      // PRIVACY: full address only for driver, area-only for vendor
+      client_area_name: areaName,
+      client_full_address: clientAddr ? [clientAddr.street, clientAddr.number].filter(Boolean).join(' ') : '',
+      client_floor: clientAddr ? clientAddr.floor : '',
+      client_doorbell: clientAddr ? clientAddr.doorbell : '',
+      client_name: clientAddr ? clientAddr.name : (window.CU?.name || ''),
+      client_phone: clientAddr ? clientAddr.phone : (window.CU?.phone || ''),
+      client_remarks: clientAddr ? clientAddr.remarks : '',
       created_at: new Date().toISOString()
     };
 
@@ -3730,7 +4126,6 @@ DELIVERY RULE
       }
     } catch(e){}
 
-    // Open delivery chat
     ACTIVE_ORDER = order;
     openDeliveryChat(order);
     return order;
@@ -3745,9 +4140,25 @@ DELIVERY RULE
     chat.classList.add('on');
     renderChatMessages();
 
-    // Add system message
+    // Add system messages with privacy enforcement
     if(ACTIVE_ORDER && !getChatMessages().find(m => m.order_id === ACTIVE_ORDER.id)){
-      addChatMessage('system', '📦 Order created. ' + (ACTIVE_ORDER.driver_vehicle||'Driver') + ' is on the way. ETA ~' + (ACTIVE_ORDER.eta_minutes||'?') + ' min. Delivery fee: €' + (ACTIVE_ORDER.delivery_fee||0).toFixed(2));
+      const o = ACTIVE_ORDER;
+      // Order confirmation
+      addChatMessage('system', '📦 Order created. ' + (o.driver_vehicle||'Driver') + ' is on the way. ETA ~' + (o.eta_minutes||'?') + ' min. Delivery fee: €' + (o.delivery_fee||0).toFixed(2));
+
+      // VENDOR sees area only — no exact address
+      addChatMessage('vendor', '📍 Delivery to: ' + (o.client_area_name || 'nearby area') + '\n🍕 Preparing order now.');
+
+      // DRIVER gets full address + CONFIDENTIALITY NOTICE
+      const addrParts = [o.client_full_address, o.client_floor ? 'Floor: '+o.client_floor : '', o.client_doorbell ? 'Bell: '+o.client_doorbell : ''].filter(Boolean);
+      const driverAddr = addrParts.length ? addrParts.join(' · ') : 'See map pin';
+      addChatMessage('driver', '📍 Pickup from: ' + (o.vendor_name||'Vendor') + '\n🏠 Deliver to: ' + driverAddr + '\n👤 ' + (o.client_name||'Client') + (o.client_phone ? ' · ' + o.client_phone : '') + (o.client_remarks ? '\n⚠️ ' + o.client_remarks : ''));
+
+      // PRIVACY ENFORCEMENT — driver confidentiality notice
+      addChatMessage('system', '🔒 CONFIDENTIALITY NOTICE: The delivery address and client contact details are strictly confidential. The driver must NOT disclose the client\'s exact address, phone number, floor, or any personal information to the shop owner or any third party. Violation of this policy will result in immediate account suspension. Only the assigned driver may access client delivery details.');
+
+      // CLIENT confirmation
+      addChatMessage('system', '🛡️ Your exact address is protected. The shop owner can only see your general area ("' + (o.client_area_name||'nearby') + '"). Only your assigned driver has your full delivery details.');
     }
   };
 
@@ -3826,22 +4237,7 @@ DELIVERY RULE
     if(!window.LM || LM.__astrPatched) return;
     LM.__astrPatched = true;
 
-    LM.on('click', e => {
-      window.LOC = { lat:e.latlng.lat, lng:e.latlng.lng };
-      resetSubmarineGate();
-      setTimeout(() => {
-        if(!gameActive && CL === 1) openPostChooser(e.latlng.lat, e.latlng.lng);
-      }, 140);
-    });
-
-    LM.on('moveend', () => { resetSubmarineGate(); });
-
-    LM.on('zoomend', () => {
-      if(!LM || gameActive || CL !== 1) return;
-      const z = LM.getZoom();
-      if(z < 18.8) resetSubmarineGate();
-    });
-
+    /* submarine dive gate: wheel handler */
     const mapBox = LM.getContainer ? LM.getContainer() : null;
     if(mapBox && !mapBox.__astrDiveGate){
       mapBox.__astrDiveGate = true;
@@ -3882,11 +4278,15 @@ DELIVERY RULE
       if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
     });
     places.forEach(r => {
+      // PRIVACY: private delivery addresses only visible to the owner
+      if(r.private && r.owner_id && r.owner_id !== (window.CU?.id || '')) return;
+
       const col = r.kind === 'driver_base' ? '#ff9900' : '#00e87a';
-      const label = r.kind === 'driver_base' ? 'Driver base' : 'Delivery Address';
+      const label = r.kind === 'driver_base' ? 'Driver base' : 'My Delivery Address';
       const ic = L.divIcon({ className:'', iconSize:[13,13], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
-      const popup = r.kind === 'client_address'
-        ? `<b style="color:${col};font-size:13px;">${(window.escapeHtml?escapeHtml(r.name||'Client'):(r.name||'Client'))}</b><br><span style="font-size:11px;">${[r.street,r.number].filter(Boolean).join(' ')}</span>${r.floor?'<br><span style="font-size:10px;">Floor: '+r.floor+'</span>':''}${r.remarks?'<br><span style="font-size:10px;color:#ff9900;">'+r.remarks+'</span>':''}`
+      const isMyAddr = r.kind === 'client_address' && (!r.owner_id || r.owner_id === (window.CU?.id || ''));
+      const popup = r.kind === 'client_address' && isMyAddr
+        ? `<b style="color:${col};font-size:13px;">🔒 ${(window.escapeHtml?escapeHtml(r.name||'Client'):(r.name||'Client'))}</b><br><span style="font-size:11px;">${[r.street,r.number].filter(Boolean).join(' ')}</span>${r.floor?'<br><span style="font-size:10px;">Floor: '+r.floor+'</span>':''}${r.remarks?'<br><span style="font-size:10px;color:#ff9900;">'+r.remarks+'</span>':''}<br><span style="font-size:9px;color:#ff9900;">🔒 Private — only you and your delivery driver can see this</span>`
         : `<b style="color:${col};font-size:13px;">${(window.escapeHtml?escapeHtml(r.title||r.name||label):(r.title||r.name||label))}</b><br><span style="font-size:11px;color:#95a8bb;">${label}</span>`;
       const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM).bindPopup(popup);
       MM.push(m);
