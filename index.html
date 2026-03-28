@@ -2204,26 +2204,98 @@ async function refreshMapData() {
   } catch(e) { showResp('Map error: '+e.message); }
 }
 
-/* ── DELIVERY PRICING ALGORITHM ── */
+/* ── DELIVERY PRICING ALGORITHM v2 ── */
+/*  Base: €1.00/km (pro-rata)
+    +€1 if volume > 6L
+    Split to multiple drivers if > 13L
+    +€1 night hours (21:00–09:00)
+    +€1 bad weather
+    +€1 holidays
+    Max 3 hot items per batch, same direction
+*/
+function isNightHours(){
+  var h = new Date().getHours();
+  return h >= 21 || h < 9;
+}
+function isGreekHoliday(){
+  var d = new Date();
+  var mm = d.getMonth() + 1;
+  var dd = d.getDate();
+  var dow = d.getDay(); // 0=Sun
+  // Greek public holidays (fixed dates)
+  var holidays = [[1,1],[1,6],[3,25],[5,1],[8,15],[10,28],[12,25],[12,26]];
+  for(var i=0;i<holidays.length;i++){
+    if(mm === holidays[i][0] && dd === holidays[i][1]) return true;
+  }
+  // Sundays count as holidays for delivery surcharge
+  if(dow === 0) return true;
+  return false;
+}
+function isBadWeather(){
+  // Check if we stored weather data from an API or manual toggle
+  return window._astranovBadWeather || false;
+}
+function calcDeliveryFee(distKm, volumeL){
+  var fee = Math.max(1.00, Math.ceil(distKm) * 1.00); // €1/km, min €1, round up partial km
+  if(volumeL > 6) fee += 1.00;   // volume surcharge
+  if(isNightHours()) fee += 1.00; // night 21:00-09:00
+  if(isBadWeather()) fee += 1.00; // bad weather
+  if(isGreekHoliday()) fee += 1.00; // holiday/Sunday
+  return fee;
+}
+function shouldSplitOrder(volumeL){
+  return volumeL > 13;
+}
+function splitOrderIntoDrivers(items, totalVolumeL){
+  // Split into batches of max 13L each
+  var batches = [];
+  var current = { items:[], volume:0 };
+  for(var i=0;i<items.length;i++){
+    var itemVol = items[i].volume_liters || 0.5;
+    if(current.volume + itemVol > 13 && current.items.length > 0){
+      batches.push(current);
+      current = { items:[], volume:0 };
+    }
+    current.items.push(items[i]);
+    current.volume += itemVol;
+  }
+  if(current.items.length) batches.push(current);
+  return batches;
+}
+function canBatchWithHotItems(existingHotCount, newItemTemp){
+  // Max 3 hot items per batch
+  if(newItemTemp === 'hot' && existingHotCount >= 3) return false;
+  return true;
+}
+// Old function kept for backwards compat (map popups etc)
 function calcDeliveryPrice(lat1, lng1, lat2, lng2) {
-  const R = 6371;
-  const dLat = (lat2-lat1) * Math.PI/180;
-  const dLng = (lng2-lng1) * Math.PI/180;
-  const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
-  const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const basePrice = 2.50;
-  const perKm = 0.80;
-  const minPrice = 3.00;
-  const total = Math.max(minPrice, basePrice + dist * perKm);
-  return '€' + total.toFixed(2);
+  var R = 6371;
+  var dLat = (lat2-lat1) * Math.PI/180;
+  var dLng = (lng2-lng1) * Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  var dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  var fee = calcDeliveryFee(dist, 0);
+  return '€' + fee.toFixed(2);
 }
 
 function showDeliveryCalc(lat, lng) {
-  const price = calcDeliveryPrice(LOC.lat, LOC.lng, lat, lng);
-  const el = document.getElementById('delivery-calc');
-  document.getElementById('dc-content').textContent = 'Delivery: ' + price + ' (base €2.50 + €0.80/km, min €3.00)';
+  var dist = haversineGlobal(LOC.lat, LOC.lng, lat, lng);
+  var fee = calcDeliveryFee(dist, 0);
+  var breakdown = '€1/km';
+  if(isNightHours()) breakdown += ' +€1 night';
+  if(isBadWeather()) breakdown += ' +€1 weather';
+  if(isGreekHoliday()) breakdown += ' +€1 holiday';
+  var el = document.getElementById('delivery-calc');
+  document.getElementById('dc-content').textContent = 'Delivery: €' + fee.toFixed(2) + ' (' + dist.toFixed(1) + 'km · ' + breakdown + ')';
   el.classList.add('on');
   setTimeout(() => el.classList.remove('on'), 4000);
+}
+function haversineGlobal(lat1,lng1,lat2,lng2){
+  var R = 6371;
+  var dLat = (lat2-lat1)*Math.PI/180;
+  var dLng = (lng2-lng1)*Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 /* ── SHOP CREATION ── */
