@@ -92,14 +92,59 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #sbi{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;outline:none;}
 #sbi::placeholder{color:var(--text-dim);}
 
-/* ELECTRIC BLUE KITTY */
-#astranova-wrapper{position:absolute;bottom:64px;left:50%;transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:0;}
-#astranova-svg{width:88px;height:148px;cursor:pointer;transition:transform 0.2s;filter:drop-shadow(0 0 14px #00c8ff);}
-#astranova-svg:hover{transform:scale(1.06) translateY(-2px);}
-#astranova-speech{background:rgba(3,8,16,0.95);border:1px solid var(--la);border-radius:10px;padding:6px 12px;font-size:10px;color:var(--la);max-width:240px;text-align:center;display:none;margin-bottom:6px;font-family:var(--font);box-shadow:0 0 18px rgba(0,200,255,0.12);}
-#astranova-speech.on{display:block;}
+/* ASTRANOVA — FLYING ELF AI ASSISTANT */
+#astranova-wrapper{
+  position:absolute;bottom:70px;right:60px;z-index:70;
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  transition:all 1.2s cubic-bezier(0.22,1,0.36,1);
+  pointer-events:none;
+}
+#astranova-wrapper.map-active{display:flex;}
+#astranova-svg{
+  width:100px;height:160px;cursor:pointer;pointer-events:all;
+  filter:drop-shadow(0 0 18px rgba(0,200,255,0.5)) drop-shadow(0 0 40px rgba(0,200,255,0.2));
+  animation:elf-float 3.5s ease-in-out infinite;
+  transition:transform 0.4s ease, filter 0.3s;
+}
+#astranova-svg:hover{transform:scale(1.08) translateY(-4px);filter:drop-shadow(0 0 28px rgba(0,200,255,0.7)) drop-shadow(0 0 50px rgba(0,200,255,0.3));}
+@keyframes elf-float{
+  0%,100%{transform:translateY(0) rotate(-1deg);}
+  25%{transform:translateY(-8px) rotate(0.5deg);}
+  50%{transform:translateY(-3px) rotate(1deg);}
+  75%{transform:translateY(-10px) rotate(-0.5deg);}
+}
+/* Wing flap */
+.elf-wing-l{animation:wing-l 2s ease-in-out infinite;transform-origin:70% 50%;}
+.elf-wing-r{animation:wing-r 2s ease-in-out infinite;transform-origin:30% 50%;}
+@keyframes wing-l{0%,100%{transform:rotate(0) scaleX(1);}30%{transform:rotate(-12deg) scaleX(1.05);}60%{transform:rotate(5deg) scaleX(0.95);}}
+@keyframes wing-r{0%,100%{transform:rotate(0) scaleX(1);}30%{transform:rotate(12deg) scaleX(1.05);}60%{transform:rotate(-5deg) scaleX(0.95);}}
+/* Hair flow */
+.elf-hair{animation:hair-flow 4s ease-in-out infinite;}
+@keyframes hair-flow{0%,100%{transform:rotate(0);}50%{transform:rotate(2deg) translateX(1px);}}
+/* Speaking mouth */
+.elf-mouth{transition:d 0.15s;}
+#astranova-svg.speaking .elf-mouth{animation:mouth-talk 0.35s ease-in-out infinite alternate;}
+@keyframes mouth-talk{0%{transform:scaleY(0.6);}100%{transform:scaleY(1.4);}}
+/* Sparkle trail */
+.elf-sparkle{position:absolute;width:4px;height:4px;border-radius:50%;background:#00c8ff;pointer-events:none;animation:sparkle-fade 1.2s ease-out forwards;}
+@keyframes sparkle-fade{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(0) translateY(-20px);}}
+/* Flying to target */
+#astranova-wrapper.flying{animation:none !important;transition:all 0.8s cubic-bezier(0.22,1,0.36,1);}
+#astranova-wrapper.flying #astranova-svg{animation:elf-fly 0.6s ease-in-out infinite;}
+@keyframes elf-fly{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-5px) rotate(3deg);}}
+/* Active/thinking glow */
+#astranova-svg.active{filter:drop-shadow(0 0 30px rgba(0,200,255,0.8)) drop-shadow(0 0 60px rgba(0,200,255,0.4));animation:elf-active 1.5s ease-in-out infinite;}
+@keyframes elf-active{0%,100%{filter:drop-shadow(0 0 30px rgba(0,200,255,0.8));}50%{filter:drop-shadow(0 0 50px rgba(0,200,255,1)) drop-shadow(0 0 80px rgba(100,220,255,0.5));}}
+/* Speech bubble */
+#astranova-speech{
+  background:rgba(3,8,16,0.92);border:1px solid rgba(0,200,255,0.30);border-radius:14px;
+  padding:8px 14px;font-size:11px;color:#c8efff;max-width:220px;text-align:center;
+  display:none;margin-bottom:8px;font-family:var(--font);
+  box-shadow:0 0 24px rgba(0,200,255,0.15);backdrop-filter:blur(10px);pointer-events:all;
+}
+#astranova-speech.on{display:block;animation:speech-in 0.3s ease-out;}
 
-/* KITTY TAKEOVER */
+/* ASTRANOVA TAKEOVER */
 #astranova-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 #astranova-mode.on{display:flex;}
 #astranova-mode-inner{display:flex;flex-direction:column;align-items:center;gap:16px;width:90%;max-width:440px;}
@@ -135,7 +180,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #cmd-input{flex:1;height:36px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
 #cmd-input:focus{border-color:var(--la);}
 #cmd-input::placeholder{color:var(--text-dim);}
-#cmd-response{position:absolute;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.97);border-top:1px solid var(--lb);padding:9px 14px;font-size:12px;color:var(--text);display:none;z-index:199;}
+#cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.97);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow-y:auto;backdrop-filter:blur(14px);transition:max-height 0.3s ease;}
+#cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
+#cmd-response.expanded{display:flex;max-height:50vh;padding:0;}
+.ai-conv{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;}
+.ai-msg{max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.45;word-break:break-word;animation:ai-fade 0.25s ease-out;}
+.ai-msg.user-msg{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.20);color:#d8f0ff;}
+.ai-msg.ai-msg-reply{align-self:flex-start;background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.16);color:#c8f0d4;}
+.ai-msg.system-msg{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.12);color:#e8c840;font-size:11px;max-width:90%;text-align:center;}
+.ai-msg .ai-sender{font-size:9px;font-weight:600;margin-bottom:2px;opacity:0.6;}
+@keyframes ai-fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.ai-typing{align-self:flex-start;color:var(--text-dim);font-size:11px;padding:4px 12px;}
+.ai-typing::after{content:'...';animation:dots 1.2s steps(4,end) infinite;}
+@keyframes dots{0%,20%{content:'.';}40%{content:'..';}60%,100%{content:'...';}}
+/* Voice active indicator on bottom bar */
+#bottombar.voice-active{border-color:rgba(0,232,122,0.40) !important;box-shadow:0 0 20px rgba(0,232,122,0.15) !important;}
+#bottombar.voice-active #cmd-input{border-color:rgba(0,232,122,0.40);background:rgba(0,232,122,0.08);}
+#bottombar.voice-active #cmd-input::placeholder{color:#6fcf97;}
+.voice-btn-active{color:#00e87a !important;border-color:rgba(0,232,122,0.40) !important;background:rgba(0,232,122,0.12) !important;animation:voice-pulse 1.5s ease-in-out infinite !important;}
+@keyframes voice-pulse{0%,100%{box-shadow:0 0 4px rgba(0,232,122,0.2);}50%{box-shadow:0 0 16px rgba(0,232,122,0.5);}}
 
 /* LEFT PANEL */
 #left-panel{position:fixed;top:36px;left:0;width:46px;bottom:60px;background:var(--surface);border-right:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
@@ -974,37 +1037,100 @@ body.lt,body.lt2,body.lt3{
     <span>DRONE GAME</span>
   </div>
 
-  <!-- ASTRANOVA ELF ASSISTANT -->
+  <!-- ASTRANOVA — FLYING ELF AI ASSISTANT -->
   <div id="astranova-wrapper">
-    <div id="astranova-speech">Astranova online. Speak your destination.</div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant">
+    <div id="astranova-speech"></div>
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova AI elf assistant">
       <defs>
-        <linearGradient id="astrHairS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7fbff"/><stop offset="40%" stop-color="#b7ebff"/><stop offset="100%" stop-color="#2a5db3"/></linearGradient>
-        <linearGradient id="astrSuitS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eef5ff"/><stop offset="24%" stop-color="#92e3ff"/><stop offset="100%" stop-color="#071120"/></linearGradient>
-        <linearGradient id="astrWingS" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7fbff"/><stop offset="55%" stop-color="#95e4ff"/><stop offset="100%" stop-color="#173b7a"/></linearGradient>
+        <linearGradient id="elfHair" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f0f8ff"/><stop offset="35%" stop-color="#a8e0ff"/><stop offset="100%" stop-color="#1a5a9e"/></linearGradient>
+        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d0f0ff"/><stop offset="30%" stop-color="#60c8ff"/><stop offset="70%" stop-color="#1a6aaa"/><stop offset="100%" stop-color="#081830"/></linearGradient>
+        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/><stop offset="40%" stop-color="#80d8ff" stop-opacity="0.6"/><stop offset="100%" stop-color="#0088cc" stop-opacity="0.2"/></linearGradient>
+        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef0ea"/><stop offset="100%" stop-color="#f0d8cc"/></linearGradient>
+        <radialGradient id="elfGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#00c8ff" stop-opacity="0.3"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
+        <filter id="elfBlur"><feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/></filter>
       </defs>
-      <g class="astranova-wing-left" style="transform-origin:36px 100px;"><path d="M50 114C28 105 17 86 14 58c14 9 25 22 33 41 2 5 4 10 5 14-2 1-2 1-2 1z" fill="url(#astrWingS)" opacity="0.44"/><path d="M49 116C30 118 18 113 9 97c15 2 27 7 36 15 2 2 4 4 5 6-1 0-1 0-1 0z" fill="#f7fcff" opacity="0.18"/></g>
-      <g class="astranova-wing-right" style="transform-origin:84px 100px;"><path d="M70 114c22-9 33-28 36-56-14 9-25 22-33 41-2 5-4 10-5 14 2 1 2 1 2 1z" fill="url(#astrWingS)" opacity="0.44"/><path d="M71 116c19 2 31-3 40-19-15 2-27 7-36 15-2 2-4 4-5 6 1 0 1 0 1 0z" fill="#f7fcff" opacity="0.18"/></g>
-      <ellipse cx="60" cy="208" rx="19" ry="5.5" fill="#00c8ff" opacity="0.15"/>
-      <path d="M60 30c-10.9 0-18 8.8-18 20v11.8c0 15 7.7 25.6 18 25.6 10.4 0 18-10.6 18-25.6V50c0-11.2-7.1-20-18-20z" fill="#f6eaf0"/>
-      <path d="M43.3 54.8c3.4-17.1 11.2-29.6 16.7-29.6 5.6 0 13.7 12.6 17.1 30.2-4.2-6.1-10-9.8-17.1-9.8-7 0-12.6 3.5-16.7 9.2z" fill="url(#astrHairS)" opacity="0.98"/>
-      <path d="M41.7 56.2c1.5 12.1 7.5 24.4 18.3 31.7-14 .5-22-8.3-22-22 0-3.5 1.2-6.8 3.7-9.7z" fill="url(#astrHairS)" opacity="0.92"/>
-      <path d="M78.3 56.2C76.8 68.3 70.8 80.6 60 87.9c14 .5 22-8.3 22-22 0-3.5-1.2-6.8-3.7-9.7z" fill="url(#astrHairS)" opacity="0.92"/>
-      <path d="M46.6 61.6c-4 1.2-7.7 3.4-10.1 6.8 4.5-.7 8.5-2.2 11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.46"/>
-      <path d="M73.4 61.6c4 1.2 7.7 3.4 10.1 6.8-4.5-.7-8.5-2.2-11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.3" stroke-linecap="round" opacity="0.46"/>
-      <path d="M44 61.5c-3.6 1.7-6 4.4-7.1 8.1 3.8-.8 7-2.5 9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
-      <path d="M76 61.5c3.6 1.7 6 4.4 7.1 8.1-3.8-.8-7-2.5-9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
-      <path d="M49 61.2c2.2-1.2 4.6-1.8 7.2-1.8M63.8 59.4c2.5 0 5 .6 7.2 1.8" stroke="#7688a3" stroke-width="1" stroke-linecap="round" opacity="0.72"/>
-      <ellipse cx="53.8" cy="63.6" rx="1.45" ry="2.45" fill="#172235"/><ellipse cx="66.2" cy="63.6" rx="1.45" ry="2.45" fill="#172235"/><circle cx="54.3" cy="62.9" r="0.45" fill="#effcff"/><circle cx="66.7" cy="62.9" r="0.45" fill="#effcff"/>
-      <path d="M59 65.7c-.6 2-.8 4.1-.5 6.1" stroke="#d0a8ba" stroke-width="0.9" stroke-linecap="round" opacity="0.7"/><path d="M56.2 74.1c1.8 1 5.8 1 7.6 0" stroke="#b06489" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M56.7 87.5h6.6l6.7 8.5v30.5L60 134.2l-10-7.7V96l6.7-8.5z" fill="url(#astrSuitS)" stroke="#dcecff" stroke-width="1.05"/>
-      <path d="M53 95.6l-8.1 13 3.7 16.5 7.2-6.4M67 95.6l8.1 13-3.7 16.5-7.2-6.4" fill="none" stroke="#e7f4ff" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M53 95.6l-7.2 11.5 2.8 11.5 6.1-5.4M67 95.6l7.2 11.5-2.8 11.5-6.1-5.4" fill="none" stroke="#7fe4ff" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#dce8ff" stroke-width="3.2" stroke-linecap="round"/><path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#8bdfff" stroke-width="1.15" stroke-linecap="round"/>
-      <path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#dce8ff" stroke-width="2.7" stroke-linecap="round"/><path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#8bdfff" stroke-width="1" stroke-linecap="round"/>
-      <path d="M53 183.8h8M59 91.4v23.5" stroke="#eef8ff" stroke-width="1" stroke-linecap="round" opacity="0.9"/>
-      <path d="M60 86.8l3 4.4-3 4.3-3-4.3z" fill="#f1f9ff"/><path d="M60 88.5l1.4 2.7-1.4 2.5-1.4-2.5z" fill="#00c8ff"/>
+      <!-- Glow aura -->
+      <ellipse cx="70" cy="120" rx="55" ry="80" fill="url(#elfGlow)" opacity="0.4"/>
+      <!-- Left wing (large angel wing) -->
+      <g class="elf-wing-l">
+        <path d="M58 100 C30 85 8 55 5 30 C12 42 25 52 38 58 C20 45 10 25 8 10 C18 28 32 42 45 50 C35 38 22 18 20 5 C30 22 42 38 50 48 C48 55 52 70 58 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+        <path d="M50 75 C35 65 18 42 15 28" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
+        <path d="M52 82 C38 70 22 50 18 35" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.6"/>
+      </g>
+      <!-- Right wing -->
+      <g class="elf-wing-r">
+        <path d="M82 100 C110 85 132 55 135 30 C128 42 115 52 102 58 C120 45 130 25 132 10 C122 28 108 42 95 50 C105 38 118 18 120 5 C110 22 98 38 90 48 C92 55 88 70 82 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+        <path d="M90 75 C105 65 122 42 125 28" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="0.8"/>
+        <path d="M88 82 C102 70 118 50 122 35" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.6"/>
+      </g>
+      <!-- Sparkle particles -->
+      <circle cx="25" cy="45" r="1.5" fill="#fff" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.5s" repeatCount="indefinite"/></circle>
+      <circle cx="115" cy="40" r="1.2" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
+      <circle cx="40" cy="30" r="1" fill="#80d8ff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
+      <circle cx="100" cy="25" r="1.3" fill="#80d8ff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
+      <!-- Shadow on ground -->
+      <ellipse cx="70" cy="228" rx="18" ry="5" fill="#00c8ff" opacity="0.1"/>
+      <!-- Hair back (flowing) -->
+      <g class="elf-hair">
+        <path d="M50 52 C42 60 35 80 32 105 C34 100 38 85 44 72 C40 88 36 100 35 115 C40 105 46 90 50 78 L55 60 Z" fill="url(#elfHair)" opacity="0.85"/>
+        <path d="M90 52 C98 60 105 80 108 105 C106 100 102 85 96 72 C100 88 104 100 105 115 C100 105 94 90 90 78 L85 60 Z" fill="url(#elfHair)" opacity="0.85"/>
+      </g>
+      <!-- Head -->
+      <ellipse cx="70" cy="62" rx="17" ry="20" fill="url(#elfSkin)"/>
+      <!-- Elf ears (pointed) -->
+      <path d="M52 58 C46 50 38 46 32 42 C38 48 44 54 50 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
+      <path d="M88 58 C94 50 102 46 108 42 C102 48 96 54 90 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
+      <!-- Hair front -->
+      <path d="M53 48 C55 35 62 28 70 26 C78 28 85 35 87 48 C84 40 78 35 70 33 C62 35 56 40 53 48 Z" fill="url(#elfHair)"/>
+      <path d="M53 48 C50 54 48 62 50 72 C52 64 54 56 56 50 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <path d="M87 48 C90 54 92 62 90 72 C88 64 86 56 84 50 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <!-- Eyes (large, expressive) -->
+      <ellipse cx="62" cy="62" rx="4.5" ry="5" fill="#fff"/>
+      <ellipse cx="78" cy="62" rx="4.5" ry="5" fill="#fff"/>
+      <ellipse cx="62.5" cy="63" rx="3" ry="3.5" fill="#1a5a9e"/>
+      <ellipse cx="78.5" cy="63" rx="3" ry="3.5" fill="#1a5a9e"/>
+      <circle cx="63" cy="62" r="1.5" fill="#0a2a4a"/>
+      <circle cx="79" cy="62" r="1.5" fill="#0a2a4a"/>
+      <circle cx="63.8" cy="61" r="0.8" fill="#fff"/>
+      <circle cx="79.8" cy="61" r="0.8" fill="#fff"/>
+      <!-- Eyebrows -->
+      <path d="M57 56 C59 54 63 53.5 67 55" fill="none" stroke="#8aa0b8" stroke-width="0.8" stroke-linecap="round"/>
+      <path d="M73 55 C77 53.5 81 54 83 56" fill="none" stroke="#8aa0b8" stroke-width="0.8" stroke-linecap="round"/>
+      <!-- Nose -->
+      <path d="M70 65 C69 68 69.5 70 70 70.5" fill="none" stroke="#d4b0a0" stroke-width="0.7" stroke-linecap="round"/>
+      <!-- Mouth (animated when speaking) -->
+      <path class="elf-mouth" id="elf-mouth" d="M65 75 C67 77 73 77 75 75" fill="none" stroke="#c07088" stroke-width="1.2" stroke-linecap="round"/>
+      <!-- Blush -->
+      <ellipse cx="58" cy="70" rx="4" ry="2.5" fill="#ffb8c8" opacity="0.3"/>
+      <ellipse cx="82" cy="70" rx="4" ry="2.5" fill="#ffb8c8" opacity="0.3"/>
+      <!-- Neck -->
+      <path d="M65 80 L65 88 M75 80 L75 88" stroke="url(#elfSkin)" stroke-width="5" stroke-linecap="round"/>
+      <!-- Dress/robe (flowing) -->
+      <path d="M55 88 C52 95 48 115 42 145 C45 155 55 170 70 178 C85 170 95 155 98 145 C92 115 88 95 85 88 C80 86 60 86 55 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <!-- Dress glow lines -->
+      <path d="M55 95 C58 110 60 130 58 150" fill="none" stroke="rgba(0,200,255,0.25)" stroke-width="0.6"/>
+      <path d="M85 95 C82 110 80 130 82 150" fill="none" stroke="rgba(0,200,255,0.25)" stroke-width="0.6"/>
+      <path d="M70 92 L70 170" fill="none" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+      <!-- Belt/sash -->
+      <path d="M54 98 C60 100 80 100 86 98" fill="none" stroke="#40a0e0" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="70" cy="99" r="3" fill="#00c8ff" stroke="#fff" stroke-width="0.5" opacity="0.9"/>
+      <!-- Arms -->
+      <path d="M55 95 C48 105 44 115 42 120" fill="none" stroke="url(#elfSkin)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M85 95 C92 105 96 115 98 120" fill="none" stroke="url(#elfSkin)" stroke-width="4" stroke-linecap="round"/>
+      <!-- Hands -->
+      <circle cx="41" cy="121" r="3.5" fill="#fef0ea"/>
+      <circle cx="99" cy="121" r="3.5" fill="#fef0ea"/>
+      <!-- Feet (bare, elf-like) -->
+      <ellipse cx="60" cy="180" rx="6" ry="3" fill="#fef0ea" transform="rotate(-5,60,180)"/>
+      <ellipse cx="80" cy="180" rx="6" ry="3" fill="#fef0ea" transform="rotate(5,80,180)"/>
+      <!-- Tiara/circlet -->
+      <path d="M56 48 C60 44 66 42 70 41 C74 42 80 44 84 48" fill="none" stroke="#60c8ff" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="70" cy="41" r="2.5" fill="#00c8ff" stroke="#fff" stroke-width="0.4"/>
+      <circle cx="62" cy="44" r="1.2" fill="#80d8ff"/>
+      <circle cx="78" cy="44" r="1.2" fill="#80d8ff"/>
     </svg>
+    <!-- Sparkle container for trail effect -->
+    <div id="elf-sparkles" style="position:absolute;inset:0;pointer-events:none;overflow:visible;"></div>
   </div>
 
   <!-- Delivery calculator display -->
@@ -1014,42 +1140,7 @@ body.lt,body.lt2,body.lt3{
 </div>
 
 <!-- ASTRANOVA TAKEOVER MODE -->
-<div id="astranova-mode">
-  <div id="astranova-mode-inner">
-    <svg id="astranova-big" viewBox="0 0 120 220" xmlns="http://www.w3.org/2000/svg" aria-label="Astranova assistant full body">
-      <defs>
-        <linearGradient id="astrHairB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f8fbff"/><stop offset="40%" stop-color="#b7ebff"/><stop offset="100%" stop-color="#2a5db3"/></linearGradient>
-        <linearGradient id="astrSuitB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0f6ff"/><stop offset="21%" stop-color="#8ce2ff"/><stop offset="100%" stop-color="#06111f"/></linearGradient>
-        <linearGradient id="astrWingB" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f8fbff"/><stop offset="55%" stop-color="#91e3ff"/><stop offset="100%" stop-color="#173b79"/></linearGradient>
-      </defs>
-      <g class="astranova-wing-left" style="transform-origin:36px 100px;"><path d="M50 114C28 105 17 86 14 58c14 9 25 22 33 41 2 5 4 10 5 14-2 1-2 1-2 1z" fill="url(#astrWingB)" opacity="0.50"/><path d="M49 116C30 118 18 113 9 97c15 2 27 7 36 15 2 2 4 4 5 6-1 0-1 0-1 0z" fill="#f7fcff" opacity="0.22"/></g>
-      <g class="astranova-wing-right" style="transform-origin:84px 100px;"><path d="M70 114c22-9 33-28 36-56-14 9-25 22-33 41-2 5-4 10-5 14 2 1 2 1 2 1z" fill="url(#astrWingB)" opacity="0.50"/><path d="M71 116c19 2 31-3 40-19-15 2-27 7-36 15-2 2-4 4-5 6 1 0 1 0 1 0z" fill="#f7fcff" opacity="0.22"/></g>
-      <ellipse cx="60" cy="208" rx="20" ry="6" fill="#00c8ff" opacity="0.16"/>
-      <path d="M60 30c-10.9 0-18 8.8-18 20v11.8c0 15 7.7 25.6 18 25.6 10.4 0 18-10.6 18-25.6V50c0-11.2-7.1-20-18-20z" fill="#f6eaf0"/>
-      <path d="M43.3 54.8c3.4-17.1 11.2-29.6 16.7-29.6 5.6 0 13.7 12.6 17.1 30.2-4.2-6.1-10-9.8-17.1-9.8-7 0-12.6 3.5-16.7 9.2z" fill="url(#astrHairB)" opacity="0.98"/>
-      <path d="M41.7 56.2c1.5 12.1 7.5 24.4 18.3 31.7-14 .5-22-8.3-22-22 0-3.5 1.2-6.8 3.7-9.7z" fill="url(#astrHairB)" opacity="0.92"/>
-      <path d="M78.3 56.2C76.8 68.3 70.8 80.6 60 87.9c14 .5 22-8.3 22-22 0-3.5-1.2-6.8-3.7-9.7z" fill="url(#astrHairB)" opacity="0.92"/>
-      <path d="M46.6 61.6c-4 1.2-7.7 3.4-10.1 6.8 4.5-.7 8.5-2.2 11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.6" stroke-linecap="round" opacity="0.52"/>
-      <path d="M73.4 61.6c4 1.2 7.7 3.4 10.1 6.8-4.5-.7-8.5-2.2-11.3-5.1" fill="none" stroke="#eef6ff" stroke-width="1.6" stroke-linecap="round" opacity="0.52"/>
-      <path d="M44 61.5c-3.6 1.7-6 4.4-7.1 8.1 3.8-.8 7-2.5 9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
-      <path d="M76 61.5c3.6 1.7 6 4.4 7.1 8.1-3.8-.8-7-2.5-9.2-5.4" fill="#f6d7e8" opacity="0.88"/>
-      <path d="M49 61.2c2.2-1.2 4.6-1.8 7.2-1.8M63.8 59.4c2.5 0 5 .6 7.2 1.8" stroke="#7688a3" stroke-width="1.15" stroke-linecap="round" opacity="0.72"/>
-      <ellipse cx="53.8" cy="63.6" rx="1.6" ry="2.65" fill="#172235"/><ellipse cx="66.2" cy="63.6" rx="1.6" ry="2.65" fill="#172235"/><circle cx="54.3" cy="62.9" r="0.5" fill="#effcff"/><circle cx="66.7" cy="62.9" r="0.5" fill="#effcff"/>
-      <path d="M59 65.7c-.6 2-.8 4.1-.5 6.1" stroke="#d0a8ba" stroke-width="0.95" stroke-linecap="round" opacity="0.7"/><path d="M56.2 74.1c1.8 1 5.8 1 7.6 0" stroke="#b06489" stroke-width="1.25" stroke-linecap="round"/>
-      <path d="M56.7 87.5h6.6l6.7 8.5v30.5L60 134.2l-10-7.7V96l6.7-8.5z" fill="url(#astrSuitB)" stroke="#dcecff" stroke-width="1.15"/>
-      <path d="M53 95.6l-8.1 13 3.7 16.5 7.2-6.4M67 95.6l8.1 13-3.7 16.5-7.2-6.4" fill="none" stroke="#e7f4ff" stroke-width="3.35" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M53 95.6l-7.2 11.5 2.8 11.5 6.1-5.4M67 95.6l7.2 11.5-2.8 11.5-6.1-5.4" fill="none" stroke="#7fe4ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#dce8ff" stroke-width="3.45" stroke-linecap="round"/><path d="M50.2 126.2l-5.1 26.5M69.8 126.2l5.1 26.5" stroke="#8bdfff" stroke-width="1.25" stroke-linecap="round"/>
-      <path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#dce8ff" stroke-width="2.9" stroke-linecap="round"/><path d="M45.3 152.6l-2.2 22.5M74.7 152.6l2.2 22.5" stroke="#8bdfff" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M53 183.8h8M59 91.4v23.5" stroke="#eef8ff" stroke-width="1.05" stroke-linecap="round" opacity="0.92"/>
-      <path d="M60 86.8l3 4.4-3 4.3-3-4.3z" fill="#f1f9ff"/><path d="M60 88.5l1.4 2.7-1.4 2.5-1.4-2.5z" fill="#00c8ff"/>
-    </svg>
-    <div id="astranova-msg">Astranova online. What signal should I find?</div>
-    <input id="astranova-input" placeholder="Type anything… pizza, diving, jobs, rooms…" autocomplete="off" onkeydown="if(event.key==='Enter')astranovaSearch()"/>
-    <div id="astranova-results"></div>
-    <button id="astranova-close" onclick="closeAstranova()">Close</button>
-  </div>
-</div>
+<!-- Astranova modal removed — AI uses bottom command bar -->
 
 <!-- GAME UI -->
 <div id="game-ui">
@@ -1078,6 +1169,15 @@ body.lt,body.lt2,body.lt3{
 <div id="mst" class="smenu lmenu">
   <div class="mh">Settings</div>
   <div class="mr" onclick="signOut()">Sign Out</div>
+  <div class="mr" onclick="toggleDemoMode()" id="demo-mode-row" style="justify-content:space-between;">
+    <span>🧪 Demo Mode</span>
+    <span id="demo-mode-badge" style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(0,232,122,0.14);color:#00e87a;border:1px solid rgba(0,232,122,0.20);">ON</span>
+  </div>
+  <div class="mr" onclick="toggleBadWeather()" style="justify-content:space-between;">
+    <span>🌧 Bad Weather Surcharge</span>
+    <span id="weather-badge" style="font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--text-dim);border:1px solid rgba(255,255,255,0.10);">OFF</span>
+  </div>
+  <div class="mr" onclick="resetDemoData()">🔄 Reset Demo Data</div>
   <div class="mr">Notifications</div>
   <div class="mr">Language</div>
   <div class="mr">Privacy</div>
@@ -1166,6 +1266,7 @@ body.lt,body.lt2,body.lt3{
       <option>Car</option>
       <option>Bicycle</option>
       <option>Drone</option>
+      <option>Boat</option>
       <option>Scooter</option>
     </select>
   </div>
@@ -1287,21 +1388,17 @@ body.lt,body.lt2,body.lt3{
 
 <!-- BOTTOM COMMAND BAR -->
 <div id="bottombar">
-  <button class="bb-btn" onclick="this.classList.toggle('on')" title="Voice">
+  <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </button>
-  <button class="bb-btn" title="Camera">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-  </button>
-  <input type="text" id="cmd-input" placeholder="Command Astranov — search, order, find, post…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()"/>
-  <button class="bb-btn" onclick="this.classList.toggle('on')" title="Mic">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-  </button>
+  <input type="text" id="cmd-input" placeholder="Talk to Astranova — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
   <button class="bb-btn" onclick="sendCmd()" title="Send">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>
 </div>
-<div id="cmd-response"></div>
+<div id="cmd-response">
+  <div class="ai-conv" id="ai-conv"></div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -2064,6 +2161,263 @@ function deleteMyShop(idx){
   if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 200);
 }
 
+/* ── DEMO MODE ── */
+var DEMO_MODE = true;
+
+function toggleDemoMode(){
+  DEMO_MODE = !DEMO_MODE;
+  var badge = document.getElementById('demo-mode-badge');
+  if(badge){
+    badge.textContent = DEMO_MODE ? 'ON' : 'OFF';
+    badge.style.background = DEMO_MODE ? 'rgba(0,232,122,0.14)' : 'rgba(255,255,255,0.06)';
+    badge.style.color = DEMO_MODE ? '#00e87a' : 'var(--text-dim)';
+    badge.style.borderColor = DEMO_MODE ? 'rgba(0,232,122,0.20)' : 'rgba(255,255,255,0.10)';
+  }
+  showResp('Demo mode ' + (DEMO_MODE ? 'ON — delivery simulation active' : 'OFF — live mode'));
+}
+
+function toggleBadWeather(){
+  window._astranovBadWeather = !window._astranovBadWeather;
+  var badge = document.getElementById('weather-badge');
+  if(badge){
+    badge.textContent = window._astranovBadWeather ? '+€1' : 'OFF';
+    badge.style.background = window._astranovBadWeather ? 'rgba(255,153,0,0.14)' : 'rgba(255,255,255,0.06)';
+    badge.style.color = window._astranovBadWeather ? '#ff9900' : 'var(--text-dim)';
+  }
+  showResp('Bad weather surcharge ' + (window._astranovBadWeather ? 'ON (+€1 per delivery)' : 'OFF'));
+}
+
+function resetDemoData(){
+  localStorage.removeItem('astranov.demo.loaded.v4');
+  localStorage.removeItem('astranov.local.offers.v333');
+  localStorage.removeItem('astranov.local.places.v333');
+  localStorage.removeItem('astranov.delivery.addresses.v1');
+  localStorage.removeItem('astranov.chat.messages.v1');
+  localStorage.removeItem('astranov.verify.msgs.v1');
+  localStorage.removeItem('astranov.pending.posts.v1');
+  showResp('Demo data cleared. Refreshing…');
+  setTimeout(function(){ location.reload(); }, 800);
+}
+
+/* ── AI-DRIVEN ORDERING (voice-first) ── */
+/*
+  User says: "What's the cheapest beer nearby?"
+  Astranova searches → finds Mythos €2.50 at Mini Market
+  User says: "OK buy it" or "Order that"
+  Astranova executes purchase → assigns driver → narrates everything
+  Map pans to shop → Astranova bounces/glows
+*/
+var AI_LAST_SUGGESTION = null; // stores the item Astranova just suggested
+
+function aiExecuteOrder(item, qty){
+  qty = qty || 1;
+  if(!item) return;
+  var price = (item.price || 0) * qty;
+  var volume = parseFloat(item.volume) || 0.5;
+  var totalVol = volume * qty;
+  var shopName = item._shopName || item.vendor_name || 'Shop';
+
+  // Check wallet
+  var balance = getWalletBalance();
+  if(balance < price){
+    addAiMessage('ai-msg-reply','Astranova','Your balance is €' + balance.toFixed(2) + ' but this order costs €' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
+    speakAstranova('Your balance is too low. Opening wallet to top up.');
+    setTimeout(openPayments, 800);
+    return;
+  }
+
+  // Animate Astranova
+  bounceAstranova();
+
+  addAiMessage('ai-msg-reply','Astranova','Ordering ' + qty + 'x ' + item.name + ' from ' + shopName + ' for €' + price.toFixed(2) + '… Let me process this.');
+  speakAstranova('Ordering ' + qty + ' ' + item.name + ' from ' + shopName + ' for ' + price.toFixed(2) + ' euros.');
+
+  // Pan map to shop + fly Astranova there
+  if(item._shopLat && LM && CL === 1){
+    LM.flyTo([item._shopLat, item._shopLng], 16);
+    addAiMessage('system-msg','System','📍 Showing ' + shopName + ' on map');
+    // Fly elf to shop position on screen
+    setTimeout(function(){
+      try{
+        var shopPoint = LM.latLngToContainerPoint([item._shopLat, item._shopLng]);
+        var stageRect = document.getElementById('stage').getBoundingClientRect();
+        flyAstranovaTo(stageRect.left + shopPoint.x, stageRect.top + shopPoint.y);
+        setTimeout(flyAstranovaHome, 3000);
+      }catch(e){}
+    }, 1500);
+  }
+
+  // Deduct from wallet
+  setTimeout(function(){
+    var newBal = Math.max(0, getWalletBalance() - price);
+    setWalletBalance(newBal);
+    addPaymentLog({
+      provider:'wallet-debit', amount:-price,
+      label:'AI Order · ' + qty + 'x ' + item.name + ' from ' + shopName,
+      live: true, at: new Date().toISOString(),
+      id: 'ai-' + Math.random().toString(36).slice(2,10)
+    });
+
+    bounceAstranova();
+    addAiMessage('ai-msg-reply','Astranova','✅ Payment confirmed! €' + price.toFixed(2) + ' deducted. New balance: €' + newBal.toFixed(2) + '. Now finding a driver…');
+    speakAstranova('Payment confirmed. Finding a driver now.');
+
+    // Calculate delivery
+    var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
+    var fee = calcDeliveryFee(dist, totalVol);
+
+    // Route to driver
+    setTimeout(function(){
+      bounceAstranova();
+      var vehicleIcon = totalVol > 6 ? '🚗' : '🛵';
+      var eta = Math.round(dist * 3.5 + 8);
+      addAiMessage('ai-msg-reply','Astranova','🚀 Driver assigned! ' + vehicleIcon + ' ETA to shop: ~' + Math.round(dist * 2 + 3) + ' min. Delivery fee: €' + fee.toFixed(2) + '. Total ETA to you: ~' + eta + ' min.');
+      speakAstranova('Driver assigned! Estimated arrival in about ' + eta + ' minutes. Delivery fee is ' + fee.toFixed(2) + ' euros.');
+
+      if(DEMO_MODE){
+        // Simulate the full delivery flow
+        simulateDemoDelivery(item, shopName, eta, fee);
+      }
+    }, 2000);
+  }, 1500);
+}
+
+function simulateDemoDelivery(item, shopName, eta, fee){
+  var steps = [
+    { delay:5000, msg:'🏪 ' + shopName + ' has accepted the order and started preparing.', voice: shopName + ' accepted the order.' },
+    { delay:12000, msg:'🛵 Driver is heading to ' + shopName + '…', voice:'Driver is on the way to the shop.' },
+    { delay:20000, msg:'📍 Driver arrived at ' + shopName + '. Waiting for pickup.', voice:'Driver arrived at the shop.' },
+    { delay:25000, msg:'✅ ' + shopName + ' says: Order ready! Driver picking up now.', voice:'Order is ready. Driver picking up.' },
+    { delay:28000, msg:'📦 Driver picked up the order! Now heading to your location.', voice:'Order picked up! Driver heading to you now.' },
+    { delay:38000, msg:'📍 Driver is approaching your location…', voice:'Driver is almost there.' },
+    { delay:45000, msg:'🎉 Order delivered! ' + item.name + ' from ' + shopName + '. Enjoy! Delivery fee: €' + fee.toFixed(2), voice:'Your order has been delivered! Enjoy your ' + item.name + '!' }
+  ];
+  steps.forEach(function(step){
+    setTimeout(function(){
+      bounceAstranova();
+      addAiMessage('ai-msg-reply','Astranova', step.msg);
+      speakAstranova(step.voice);
+    }, step.delay);
+  });
+}
+
+function bounceAstranova(){
+  var svg = document.getElementById('astranova-svg');
+  if(!svg) return;
+  svg.classList.add('active');
+  setTimeout(function(){ svg.classList.remove('active'); }, 1200);
+  spawnSparkles();
+}
+
+function setAstranovaSpeaking(on){
+  var svg = document.getElementById('astranova-svg');
+  if(!svg) return;
+  if(on) svg.classList.add('speaking');
+  else svg.classList.remove('speaking');
+}
+
+function spawnSparkles(){
+  var container = document.getElementById('elf-sparkles');
+  if(!container) return;
+  for(var i = 0; i < 5; i++){
+    setTimeout(function(){
+      var s = document.createElement('div');
+      s.className = 'elf-sparkle';
+      s.style.left = (20 + Math.random() * 60) + 'px';
+      s.style.top = (20 + Math.random() * 100) + 'px';
+      s.style.width = (2 + Math.random() * 4) + 'px';
+      s.style.height = s.style.width;
+      container.appendChild(s);
+      setTimeout(function(){ s.remove(); }, 1200);
+    }, i * 100);
+  }
+}
+
+function flyAstranovaTo(targetX, targetY){
+  var wrapper = document.getElementById('astranova-wrapper');
+  if(!wrapper) return;
+  wrapper.classList.add('flying');
+  wrapper.style.position = 'fixed';
+  wrapper.style.left = targetX + 'px';
+  wrapper.style.top = targetY + 'px';
+  wrapper.style.right = 'auto';
+  wrapper.style.bottom = 'auto';
+  wrapper.style.transform = 'translate(-50%,-50%)';
+  spawnSparkles();
+  setTimeout(function(){
+    wrapper.classList.remove('flying');
+  }, 1000);
+}
+
+function flyAstranovaHome(){
+  var wrapper = document.getElementById('astranova-wrapper');
+  if(!wrapper) return;
+  wrapper.classList.add('flying');
+  setTimeout(function(){
+    wrapper.style.position = '';
+    wrapper.style.left = '';
+    wrapper.style.top = '';
+    wrapper.style.right = '';
+    wrapper.style.bottom = '';
+    wrapper.style.transform = '';
+    wrapper.classList.remove('flying');
+  }, 800);
+}
+
+/* ── AI SEARCH & ORDER INTENT DETECTION ── */
+function detectOrderIntent(msg){
+  var q = msg.toLowerCase();
+  // "OK", "buy it", "order that", "yes", "go ahead", "confirm"
+  if(/^(ok|yes|buy|order|confirm|go ahead|sure|do it|yeah|yep|get it|i.?ll take)/i.test(q)){
+    if(AI_LAST_SUGGESTION){
+      var qty = 1;
+      var qtyMatch = q.match(/(\d+)/);
+      if(qtyMatch) qty = parseInt(qtyMatch[1]) || 1;
+      aiExecuteOrder(AI_LAST_SUGGESTION, qty);
+      AI_LAST_SUGGESTION = null;
+      return true;
+    }
+  }
+  return false;
+}
+
+function aiSearchProducts(query){
+  var q = query.toLowerCase();
+  var results = [];
+  try{
+    var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+    offers.forEach(function(shop){
+      if(!shop.menu) return;
+      shop.menu.forEach(function(item){
+        var score = 0;
+        if((item.name||'').toLowerCase().includes(q)) score += 10;
+        if((shop.name||'').toLowerCase().includes(q)) score += 5;
+        if((shop.category||'').toLowerCase().includes(q)) score += 3;
+        // Generic food terms
+        if(/beer/i.test(q) && /beer|mythos|lager|ale/i.test(item.name)) score += 10;
+        if(/pizza/i.test(q) && /pizza|margherita|pepperoni/i.test(item.name)) score += 10;
+        if(/coffee/i.test(q) && /coffee|cappuccino|freddo|espresso/i.test(item.name)) score += 10;
+        if(/water/i.test(q) && /water/i.test(item.name)) score += 10;
+        if(/sandwich/i.test(q) && /sandwich/i.test(item.name)) score += 10;
+        if(/cheap/i.test(q)) score += (item.price < 5) ? 8 : (item.price < 10) ? 4 : 0;
+        if(score > 0){
+          results.push({
+            ...item,
+            _score: score,
+            _shopName: shop.name,
+            _shopLat: shop.lat,
+            _shopLng: shop.lon || shop.lng,
+            _shopCategory: shop.category,
+            _shopImage: shop.image
+          });
+        }
+      });
+    });
+  }catch(e){}
+  results.sort(function(a,b){ return b._score - a._score; });
+  return results;
+}
+
 function getWalletBalance() {
   return Number(localStorage.getItem(WALLET_KEY) || '0');
 }
@@ -2329,7 +2683,7 @@ function loadDemoData(){
       phone:'+302241076575', website:'https://tamam-rhodes.gr',
       delivery_range_km: 8, visibility:'global',
       lat:36.4441, lon:28.2243, lng:28.2243,
-      image:'', vendor_name:'Maria Konstantinou',
+      image:'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=250&fit=crop', vendor_name:'Maria Konstantinou',
       created_at: new Date().toISOString(), local_only:true,
       schedule:{
         mon:{active:true,open:'11:00',close:'23:00'},
@@ -2341,12 +2695,12 @@ function loadDemoData(){
         sun:{active:true,open:'10:00',close:'22:00'}
       },
       menu:[
-        {name:'Moussaka',price:12.50,volume:'0.8L',qty_available:20,production_rate:'8/hr',available_times:'11:00-22:00',temperature:'hot',photo:''},
-        {name:'Grilled Octopus',price:16.00,volume:'0.5L',qty_available:12,production_rate:'4/hr',available_times:'12:00-22:00',temperature:'hot',photo:''},
-        {name:'Greek Salad Large',price:8.50,volume:'1.2L',qty_available:30,production_rate:'12/hr',available_times:'11:00-23:00',temperature:'cold',photo:''},
-        {name:'Souvlaki Plate (Chicken)',price:10.00,volume:'0.6L',qty_available:25,production_rate:'10/hr',available_times:'11:00-22:30',temperature:'hot',photo:''},
-        {name:'Baklava (3 pieces)',price:6.00,volume:'0.3L',qty_available:40,production_rate:'20/hr',available_times:'11:00-23:00',temperature:'neutral',photo:''},
-        {name:'Freddo Cappuccino',price:4.50,volume:'0.35L',qty_available:50,production_rate:'15/hr',available_times:'08:00-23:00',temperature:'cold',photo:''}
+        {name:'Moussaka',price:12.50,volume:'0.8L',qty_available:20,production_rate:'8/hr',available_times:'11:00-22:00',temperature:'hot',photo:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=200&h=150&fit=crop'},
+        {name:'Grilled Octopus',price:16.00,volume:'0.5L',qty_available:12,production_rate:'4/hr',available_times:'12:00-22:00',temperature:'hot',photo:'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=200&h=150&fit=crop'},
+        {name:'Greek Salad Large',price:8.50,volume:'1.2L',qty_available:30,production_rate:'12/hr',available_times:'11:00-23:00',temperature:'cold',photo:'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=200&h=150&fit=crop'},
+        {name:'Souvlaki Plate (Chicken)',price:10.00,volume:'0.6L',qty_available:25,production_rate:'10/hr',available_times:'11:00-22:30',temperature:'hot',photo:'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=200&h=150&fit=crop'},
+        {name:'Baklava (3 pieces)',price:6.00,volume:'0.3L',qty_available:40,production_rate:'20/hr',available_times:'11:00-23:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1519676867240-f03562e64548?w=200&h=150&fit=crop'},
+        {name:'Freddo Cappuccino',price:4.50,volume:'0.35L',qty_available:50,production_rate:'15/hr',available_times:'08:00-23:00',temperature:'cold',photo:'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=200&h=150&fit=crop'}
       ]
     },
     {
@@ -2357,7 +2711,7 @@ function loadDemoData(){
       phone:'+302241035654', website:'https://aegeandive.gr',
       delivery_range_km: 3, visibility:'global',
       lat:36.4512, lon:28.2178, lng:28.2178,
-      image:'', vendor_name:'Kostas Papadopoulos',
+      image:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=250&fit=crop', vendor_name:'Kostas Papadopoulos',
       created_at: new Date().toISOString(), local_only:true,
       schedule:{
         mon:{active:true,open:'08:00',close:'18:00'},
@@ -2369,10 +2723,10 @@ function loadDemoData(){
         sun:{active:false,open:'09:00',close:'14:00'}
       },
       menu:[
-        {name:'Discover Scuba Diving',price:75.00,volume:'',qty_available:6,production_rate:'2 groups/day',available_times:'09:00-12:00, 14:00-17:00',temperature:'neutral',photo:''},
-        {name:'PADI Open Water Course (3 days)',price:380.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:00-16:00',temperature:'neutral',photo:''},
-        {name:'Snorkelling Trip (2hr)',price:35.00,volume:'',qty_available:12,production_rate:'3 groups/day',available_times:'10:00-12:00, 14:00-16:00',temperature:'neutral',photo:''},
-        {name:'Wreck Dive (certified)',price:65.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:30-12:00',temperature:'neutral',photo:''}
+        {name:'Discover Scuba Diving',price:75.00,volume:'',qty_available:6,production_rate:'2 groups/day',available_times:'09:00-12:00, 14:00-17:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200&h=150&fit=crop'},
+        {name:'PADI Open Water Course (3 days)',price:380.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:00-16:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'},
+        {name:'Snorkelling Trip (2hr)',price:35.00,volume:'',qty_available:12,production_rate:'3 groups/day',available_times:'10:00-12:00, 14:00-16:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'},
+        {name:'Wreck Dive (certified)',price:65.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:30-12:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'}
       ]
     },
     {
@@ -2383,7 +2737,7 @@ function loadDemoData(){
       phone:'+302241029800', website:'',
       delivery_range_km: 10, visibility:'global',
       lat:36.4385, lon:28.2290, lng:28.2290,
-      image:'', vendor_name:'Nikolas Stavridis',
+      image:'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=250&fit=crop', vendor_name:'Nikolas Stavridis',
       created_at: new Date().toISOString(), local_only:true,
       schedule:{
         mon:{active:true,open:'17:00',close:'01:00'},
@@ -2395,13 +2749,13 @@ function loadDemoData(){
         sun:{active:true,open:'17:00',close:'00:00'}
       },
       menu:[
-        {name:'Margherita Pizza',price:8.00,volume:'2.0L',qty_available:50,production_rate:'15/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
-        {name:'Pepperoni Special',price:10.50,volume:'2.0L',qty_available:40,production_rate:'12/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
-        {name:'Quattro Formaggi',price:11.00,volume:'2.0L',qty_available:30,production_rate:'10/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
-        {name:'Calzone Stuffed',price:9.50,volume:'1.5L',qty_available:20,production_rate:'8/hr',available_times:'17:00-00:00',temperature:'hot',photo:''},
-        {name:'Spaghetti Bolognese',price:9.00,volume:'0.8L',qty_available:25,production_rate:'10/hr',available_times:'17:00-23:00',temperature:'hot',photo:''},
-        {name:'Tiramisu',price:5.50,volume:'0.4L',qty_available:15,production_rate:'batch',available_times:'17:00-00:00',temperature:'cold',photo:''},
-        {name:'Coca-Cola 500ml',price:2.00,volume:'0.5L',qty_available:100,production_rate:'instant',available_times:'17:00-02:00',temperature:'cold',photo:''}
+        {name:'Margherita Pizza',price:8.00,volume:'2.0L',qty_available:50,production_rate:'15/hr',available_times:'17:00-00:30',temperature:'hot',photo:'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=200&h=150&fit=crop'},
+        {name:'Pepperoni Special',price:10.50,volume:'2.0L',qty_available:40,production_rate:'12/hr',available_times:'17:00-00:30',temperature:'hot',photo:'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=200&h=150&fit=crop'},
+        {name:'Quattro Formaggi',price:11.00,volume:'2.0L',qty_available:30,production_rate:'10/hr',available_times:'17:00-00:30',temperature:'hot',photo:'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&h=150&fit=crop'},
+        {name:'Calzone Stuffed',price:9.50,volume:'1.5L',qty_available:20,production_rate:'8/hr',available_times:'17:00-00:00',temperature:'hot',photo:'https://images.unsplash.com/photo-1536964549942-a61a4cbe0498?w=200&h=150&fit=crop'},
+        {name:'Spaghetti Bolognese',price:9.00,volume:'0.8L',qty_available:25,production_rate:'10/hr',available_times:'17:00-23:00',temperature:'hot',photo:'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?w=200&h=150&fit=crop'},
+        {name:'Tiramisu',price:5.50,volume:'0.4L',qty_available:15,production_rate:'batch',available_times:'17:00-00:00',temperature:'cold',photo:'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=200&h=150&fit=crop'},
+        {name:'Coca-Cola 500ml',price:2.00,volume:'0.5L',qty_available:100,production_rate:'instant',available_times:'17:00-02:00',temperature:'cold',photo:'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=200&h=150&fit=crop'}
       ]
     },
     {
@@ -2412,7 +2766,7 @@ function loadDemoData(){
       phone:'+302241044210', website:'',
       delivery_range_km: 5, visibility:'local',
       lat:36.4420, lon:28.2310, lng:28.2310,
-      image:'', vendor_name:'Yannis Georgiou',
+      image:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=400&h=250&fit=crop', vendor_name:'Yannis Georgiou',
       created_at: new Date().toISOString(), local_only:true,
       schedule:{
         mon:{active:true,open:'00:00',close:'23:59'},
@@ -2424,12 +2778,12 @@ function loadDemoData(){
         sun:{active:true,open:'00:00',close:'23:59'}
       },
       menu:[
-        {name:'Water 1.5L',price:0.80,volume:'1.5L',qty_available:200,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:''},
-        {name:'Beer Mythos 500ml',price:2.50,volume:'0.5L',qty_available:80,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:''},
-        {name:'Sunscreen SPF50',price:12.00,volume:'0.2L',qty_available:15,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:''},
-        {name:'Phone Charger USB-C',price:8.00,volume:'0.1L',qty_available:10,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:''},
-        {name:'Fresh Sandwich (Ham & Cheese)',price:3.50,volume:'0.4L',qty_available:20,production_rate:'6/hr',available_times:'06:00-22:00',temperature:'cold',photo:''},
-        {name:'Greek Coffee (Ellinikos)',price:2.00,volume:'0.15L',qty_available:100,production_rate:'instant',available_times:'06:00-23:00',temperature:'hot',photo:''}
+        {name:'Water 1.5L',price:0.80,volume:'1.5L',qty_available:200,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=200&h=150&fit=crop'},
+        {name:'Beer Mythos 500ml',price:2.50,volume:'0.5L',qty_available:80,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=200&h=150&fit=crop'},
+        {name:'Sunscreen SPF50',price:12.00,volume:'0.2L',qty_available:15,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=200&h=150&fit=crop'},
+        {name:'Phone Charger USB-C',price:8.00,volume:'0.1L',qty_available:10,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=200&h=150&fit=crop'},
+        {name:'Fresh Sandwich (Ham & Cheese)',price:3.50,volume:'0.4L',qty_available:20,production_rate:'6/hr',available_times:'06:00-22:00',temperature:'cold',photo:'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=200&h=150&fit=crop'},
+        {name:'Greek Coffee (Ellinikos)',price:2.00,volume:'0.15L',qty_available:100,production_rate:'instant',available_times:'06:00-23:00',temperature:'hot',photo:'https://images.unsplash.com/photo-1514432324607-a09d9b4aefda?w=200&h=150&fit=crop'}
       ]
     },
     {
@@ -2440,7 +2794,7 @@ function loadDemoData(){
       phone:'+302241068900', website:'https://ellibeachsports.gr',
       delivery_range_km: 2, visibility:'global',
       lat:36.4530, lon:28.2280, lng:28.2280,
-      image:'', vendor_name:'Dimitris Alexiou',
+      image:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&h=250&fit=crop', vendor_name:'Dimitris Alexiou',
       created_at: new Date().toISOString(), local_only:true,
       schedule:{
         mon:{active:true,open:'09:00',close:'19:00'},
@@ -2452,10 +2806,10 @@ function loadDemoData(){
         sun:{active:true,open:'09:00',close:'18:00'}
       },
       menu:[
-        {name:'Jet Ski 30min',price:60.00,volume:'',qty_available:4,production_rate:'8 slots/day',available_times:'09:00-18:00',temperature:'neutral',photo:''},
-        {name:'Parasailing (tandem)',price:50.00,volume:'',qty_available:6,production_rate:'4/hr',available_times:'10:00-17:00',temperature:'neutral',photo:''},
-        {name:'SUP Board 1hr',price:15.00,volume:'',qty_available:10,production_rate:'instant',available_times:'09:00-18:00',temperature:'neutral',photo:''},
-        {name:'Banana Boat Ride',price:12.00,volume:'',qty_available:8,production_rate:'6/hr',available_times:'10:00-17:00',temperature:'neutral',photo:''}
+        {name:'Jet Ski 30min',price:60.00,volume:'',qty_available:4,production_rate:'8 slots/day',available_times:'09:00-18:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'},
+        {name:'Parasailing (tandem)',price:50.00,volume:'',qty_available:6,production_rate:'4/hr',available_times:'10:00-17:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'},
+        {name:'SUP Board 1hr',price:15.00,volume:'',qty_available:10,production_rate:'instant',available_times:'09:00-18:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'},
+        {name:'Banana Boat Ride',price:12.00,volume:'',qty_available:8,production_rate:'6/hr',available_times:'10:00-17:00',temperature:'neutral',photo:'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=200&h=150&fit=crop'}
       ]
     }
   ];
@@ -2851,7 +3205,7 @@ async function submitPost() {
   } catch(e) { showResp('Post error: '+e.message); }
 }
 
-/* ── KITTY AI ASSISTANT ── */
+/* ── ASTRANOVA ELF AI ASSISTANT ── */
 const astranovaLines = [
   'Astranova online. What signal should I find?',
   'Scanning the orbit lanes for your request…',
@@ -2861,15 +3215,40 @@ const astranovaLines = [
 ];
 
 function openAstranova() {
-  document.getElementById('astranova-mode').classList.add('on');
-  document.getElementById('astranova-msg').textContent = astranovaLines[0];
-  document.getElementById('astranova-input').value = '';
-  document.getElementById('astranova-results').innerHTML = '';
-  setTimeout(() => document.getElementById('astranova-input').focus(), 300);
+  // NO MODAL — activate bottom command bar in hands-free mode
+  var input = document.getElementById('cmd-input');
+  var bar = document.getElementById('bottombar');
+  var resp = document.getElementById('cmd-response');
+  // Expand conversation panel
+  resp.className = 'expanded';
+  resp.style.display = 'flex';
+  // Focus input
+  input.focus();
+  input.placeholder = '🎤 Astranova listening — speak or type…';
+  // Start voice automatically
+  toggleVoiceInput();
+  // Add greeting if conversation is empty
+  var conv = document.getElementById('ai-conv');
+  if(conv && !conv.children.length){
+    addAiMessage('ai-msg-reply', 'Astranova', 'Hello! I\'m Astranova, your AI assistant. Ask me anything — search for food, find shops, check delivery prices, or just chat. I\'m listening.');
+  }
 }
 
 function closeAstranova() {
-  document.getElementById('astranova-mode').classList.remove('on');
+  // Collapse conversation
+  var resp = document.getElementById('cmd-response');
+  resp.style.display = 'none';
+  resp.className = '';
+  var input = document.getElementById('cmd-input');
+  input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+  // Stop voice if active
+  if(window._voiceRecog){
+    try{ window._voiceRecog.stop(); }catch(e){}
+    window._voiceActive = false;
+    var vb = document.getElementById('voice-btn');
+    if(vb){ vb.classList.remove('voice-btn-active'); }
+    document.getElementById('bottombar').classList.remove('voice-active');
+  }
 }
 
 async function astranovaSearch() {
@@ -3366,35 +3745,312 @@ document.addEventListener('click',e=>{
 
 /* ── CMD BAR ── */
 function sendCmd(){
-  const input=document.getElementById('cmd-input');
-  const val=input.value.trim();
-  if(!val)return;
-  if(/pay|stripe|paypal|wallet/i.test(val)){ openPayments(); input.value=''; return; }
-  if(/astranova|find|search/i.test(val) && CL===1){ document.getElementById('sbi').value = val; doSearch(); input.value=''; return; }
-  showResp('Command: "'+val+'" — use AI on Earth layer for full search.');
-  input.value='';
+  var input = document.getElementById('cmd-input');
+  var val = input.value.trim();
+  if(!val) return;
+  input.value = '';
+
+  // Show user message in conversation
+  addAiMessage('user-msg', CU ? CU.name : 'You', val);
+
+  // Expand conversation panel
+  var resp = document.getElementById('cmd-response');
+  resp.className = 'expanded';
+  resp.style.display = 'flex';
+
+  // Check for order confirmation first
+  if(detectOrderIntent(val)) return;
+
+  // Quick local commands
+  if(/^(pay|wallet|stripe|paypal)/i.test(val)){ openPayments(); addAiMessage('ai-msg-reply','Astranova','Opening your wallet.'); return; }
+  if(/^(close|collapse|minimize|hide)/i.test(val)){ closeAstranova(); return; }
+
+  // Bounce Astranova when thinking
+  bounceAstranova();
+
+  // Search products first for food/drink/item queries
+  var products = aiSearchProducts(val);
+  if(products.length > 0){
+    var best = products[0];
+    var dist = haversineGlobal(LOC.lat, LOC.lng, best._shopLat || LOC.lat, best._shopLng || LOC.lng);
+    var fee = calcDeliveryFee(dist, parseFloat(best.volume) || 0.5);
+    AI_LAST_SUGGESTION = best;
+
+    // Pan map to shop
+    if(best._shopLat && LM && CL === 1){
+      LM.flyTo([best._shopLat, best._shopLng], 16);
+    }
+
+    var photoHtml = best.photo ? '<br><img src="'+best.photo+'" style="width:100%;max-width:180px;border-radius:8px;margin-top:6px;">' : '';
+    var shopPhotoHtml = best._shopImage ? '<br><img src="'+best._shopImage+'" style="width:100%;max-width:180px;border-radius:8px;margin-top:4px;">' : '';
+    var tempIcon = best.temperature === 'hot' ? '🔥' : best.temperature === 'cold' ? '❄️' : '🍽';
+
+    var suggestion = '🔍 Best match: <strong>' + best.name + '</strong> at <strong>' + best._shopName + '</strong>' + photoHtml +
+      '<br>💰 Price: <strong>€' + (best.price||0).toFixed(2) + '</strong> ' + tempIcon +
+      '<br>📍 Distance: ' + dist.toFixed(1) + 'km · Delivery: €' + fee.toFixed(2) +
+      '<br>📦 Available: ' + (best.qty_available || '∞') +
+      (products.length > 1 ? '<br><br>Also found: ' + products.slice(1,3).map(function(p){ return p.name + ' €' + (p.price||0).toFixed(2) + ' at ' + p._shopName; }).join(' · ') : '') +
+      '<br><br>💬 Say <strong>"OK"</strong> or <strong>"Buy it"</strong> to order, or <strong>"2 of those"</strong> for multiple.';
+
+    addAiMessage('ai-msg-reply', 'Astranova', suggestion);
+    speakAstranova('I found ' + best.name + ' at ' + best._shopName + ' for ' + (best.price||0).toFixed(2) + ' euros. Distance is ' + dist.toFixed(1) + ' kilometers. Delivery fee is ' + fee.toFixed(2) + ' euros. Say OK to order.');
+    return;
+  }
+
+  // Show typing indicator
+  var conv = document.getElementById('ai-conv');
+  var typing = document.createElement('div');
+  typing.className = 'ai-typing';
+  typing.id = 'ai-typing';
+  typing.textContent = 'Astranova is thinking';
+  conv.appendChild(typing);
+  conv.scrollTop = conv.scrollHeight;
+
+  // Call Claude API for intelligent response
+  callAstranovaAI(val);
+}
+
+async function callAstranovaAI(userMessage){
+  var conv = document.getElementById('ai-conv');
+
+  // Build context about the app state
+  var context = 'You are Astranova, the AI assistant for the Astranov delivery marketplace app on Rhodes island, Greece. ';
+  context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
+  context += 'App has ' + (function(){ try{ return JSON.parse(localStorage.getItem('astranov.local.offers.v333')||'[]').length; }catch(e){ return 0; } })() + ' listings. ';
+  context += 'Wallet balance: €' + (document.getElementById('bal')?.textContent || '0') + '. ';
+  context += 'Delivery pricing: €1/km base, +€1 if volume>6L, +€1 night (21-09), +€1 holiday, +€1 bad weather. Split orders >13L. Max 3 hot items per batch. ';
+  context += 'Current layer: ' + ['Globe','Map','Abyss'][CL] + '. ';
+  context += 'Location: Rhodes (' + LOC.lat.toFixed(4) + '°N, ' + LOC.lng.toFixed(4) + '°E). ';
+
+  // Search local data for relevant info
+  var searchResults = '';
+  try{
+    var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+    var q = userMessage.toLowerCase();
+    var matches = offers.filter(function(o){
+      return (o.name||'').toLowerCase().includes(q) || (o.title||'').toLowerCase().includes(q) ||
+             (o.category||'').toLowerCase().includes(q) || (o.description||'').toLowerCase().includes(q) ||
+             (o.menu||[]).some(function(m){ return (m.name||'').toLowerCase().includes(q); });
+    }).slice(0,5);
+    if(matches.length){
+      searchResults = 'Relevant local listings found: ' + matches.map(function(m){
+        var menuInfo = m.menu ? ' Menu: ' + m.menu.map(function(mi){ return mi.name + ' €' + (mi.price||'?'); }).join(', ') : '';
+        return m.name + ' (' + (m.category||'') + ')' + menuInfo;
+      }).join(' | ');
+    }
+  }catch(e){}
+
+  try{
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRespond concisely (2-4 sentences max). Be helpful, warm, and direct. If the user asks about shops/food/services, use the local data to give specific recommendations with prices. If asking about delivery, calculate using the pricing rules. Use emoji sparingly. You are a Greek island delivery assistant — be cheerful but professional.',
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    var data = await response.json();
+    var aiText = data.content ? data.content.map(function(c){ return c.text || ''; }).filter(Boolean).join('\n') : 'I couldn\'t process that right now. Try again or type a simpler question.';
+
+    // Remove typing indicator
+    var typingEl = document.getElementById('ai-typing');
+    if(typingEl) typingEl.remove();
+
+    addAiMessage('ai-msg-reply', 'Astranova', aiText);
+
+    // Speak the response
+    speakAstranova(aiText);
+
+  }catch(e){
+    var typingEl = document.getElementById('ai-typing');
+    if(typingEl) typingEl.remove();
+
+    // Fallback to local intelligence if API fails
+    var fallback = localAstranovaResponse(userMessage);
+    addAiMessage('ai-msg-reply', 'Astranova', fallback);
+    speakAstranova(fallback);
+  }
+}
+
+function localAstranovaResponse(msg){
+  var q = msg.toLowerCase();
+  // Search local shops
+  try{
+    var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+    var shops = offers.filter(function(o){ return o.kind === 'shop_service'; });
+    var matches = offers.filter(function(o){
+      return (o.name||'').toLowerCase().includes(q) || (o.description||'').toLowerCase().includes(q) ||
+             (o.category||'').toLowerCase().includes(q) ||
+             (o.menu||[]).some(function(m){ return (m.name||'').toLowerCase().includes(q); });
+    });
+    if(matches.length){
+      var m = matches[0];
+      var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (€' + (mi.price||'?') + ')'; }).join(', ');
+      return 'I found ' + m.name + '! ' + (m.description||'') + (menuStr ? ' They offer: ' + menuStr + '.' : '') + ' Check the Listings panel to order.';
+    }
+  }catch(e){}
+
+  if(/pizza/i.test(q)) return 'Looking for pizza? Try Nikolas Pizza Express — they have Margherita (€8), Pepperoni (€10.50), and Quattro Formaggi (€11). Open from 17:00. Check the Listings panel to order!';
+  if(/dive|diving|scuba/i.test(q)) return 'For diving, check out Aegean Dive Centre. They offer Discover Scuba (€75), PADI courses (€380), and wreck dives (€65). Open Mon-Sat from 08:00!';
+  if(/food|eat|restaurant|hungry/i.test(q)) return 'We have great options! Tamam Restaurant for traditional Greek (Moussaka €12.50, Octopus €16), or Nikolas Pizza for fast delivery. Check the Listings panel!';
+  if(/deliver|price|cost|fee/i.test(q)) return 'Delivery is €1/km. Extra charges: +€1 for volumes over 6L, +€1 for night hours (21:00-09:00), +€1 holidays, +€1 bad weather. Orders over 13L are split across multiple drivers.';
+  if(/weather/i.test(q)) return 'I can\'t check live weather yet (coming in Pass 4). You can toggle bad weather mode manually for delivery surcharge testing.';
+  if(/help|what can you/i.test(q)) return 'I can help you find shops, check menu prices, calculate delivery fees, search listings, and navigate the app. Try asking "find pizza" or "what restaurants are nearby" or "how much is delivery"!';
+  if(/hello|hi|hey|good/i.test(q)) return 'Hello! Welcome to Astranov on Rhodes. I\'m Astranova, your delivery assistant. Ask me about food, shops, diving, or anything else. What would you like?';
+  return 'I\'m still learning! Try searching for specific things like "pizza", "diving", "food", or ask about "delivery prices". I\'ll get smarter with the backend AI in Pass 4!';
+}
+
+function addAiMessage(cssClass, sender, text){
+  var conv = document.getElementById('ai-conv');
+  if(!conv) return;
+  var div = document.createElement('div');
+  div.className = 'ai-msg ' + cssClass;
+  div.innerHTML = '<div class="ai-sender">' + sender + '</div>' + text.replace(/\n/g,'<br>');
+  conv.appendChild(div);
+  conv.scrollTop = conv.scrollHeight;
+}
+
+function speakAstranova(text){
+  if(!window.speechSynthesis) return;
+  try{
+    window.speechSynthesis.cancel();
+    var utt = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g,''));
+    utt.rate = 1.05;
+    utt.pitch = 1.15;
+    utt.volume = 0.8;
+    var voices = speechSynthesis.getVoices();
+    var preferred = voices.find(function(v){ return /female|samantha|victoria|karen|fiona|zira/i.test(v.name); });
+    if(preferred) utt.voice = preferred;
+    // Animate mouth while speaking
+    setAstranovaSpeaking(true);
+    bounceAstranova();
+    // Show speech bubble with short text
+    var speech = document.getElementById('astranova-speech');
+    if(speech){
+      speech.textContent = text.length > 80 ? text.substring(0,77) + '…' : text;
+      speech.classList.add('on');
+      setTimeout(function(){ speech.classList.remove('on'); }, Math.min(8000, text.length * 80));
+    }
+    utt.onend = function(){ setAstranovaSpeaking(false); };
+    utt.onerror = function(){ setAstranovaSpeaking(false); };
+    speechSynthesis.speak(utt);
+  }catch(e){ setAstranovaSpeaking(false); }
+}
+
+function expandConversation(){
+  var resp = document.getElementById('cmd-response');
+  resp.className = 'expanded';
+  resp.style.display = 'flex';
+}
+
+/* VOICE INPUT — Web Speech API */
+var _voiceActive = false;
+var _voiceRecog = null;
+
+function toggleVoiceInput(){
+  var vb = document.getElementById('voice-btn');
+  var bar = document.getElementById('bottombar');
+  var input = document.getElementById('cmd-input');
+
+  if(_voiceActive){
+    // Stop listening
+    if(_voiceRecog) try{ _voiceRecog.stop(); }catch(e){}
+    _voiceActive = false;
+    vb.classList.remove('voice-btn-active');
+    bar.classList.remove('voice-active');
+    input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+    return;
+  }
+
+  // Start listening
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    addAiMessage('system-msg', 'System', 'Voice input is not supported in this browser. Please type your message instead.');
+    return;
+  }
+
+  _voiceRecog = new SpeechRecognition();
+  _voiceRecog.continuous = true;
+  _voiceRecog.interimResults = true;
+  _voiceRecog.lang = 'en-US';
+  _voiceActive = true;
+  vb.classList.add('voice-btn-active');
+  bar.classList.add('voice-active');
+  input.placeholder = '🎤 Listening… speak now';
+
+  // Expand conversation
+  expandConversation();
+
+  _voiceRecog.onresult = function(event){
+    var transcript = '';
+    var isFinal = false;
+    for(var i = event.resultIndex; i < event.results.length; i++){
+      transcript += event.results[i][0].transcript;
+      if(event.results[i].isFinal) isFinal = true;
+    }
+    // Show live transcript in input
+    input.value = transcript;
+    // When final, send as command
+    if(isFinal && transcript.trim()){
+      input.value = transcript.trim();
+      sendCmd();
+    }
+  };
+
+  _voiceRecog.onerror = function(e){
+    if(e.error !== 'no-speech'){
+      addAiMessage('system-msg', 'System', 'Voice error: ' + e.error + '. Click mic to try again.');
+    }
+    _voiceActive = false;
+    vb.classList.remove('voice-btn-active');
+    bar.classList.remove('voice-active');
+    input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+  };
+
+  _voiceRecog.onend = function(){
+    // Restart if still active (continuous mode)
+    if(_voiceActive){
+      try{ _voiceRecog.start(); }catch(e){}
+    } else {
+      vb.classList.remove('voice-btn-active');
+      bar.classList.remove('voice-active');
+      input.placeholder = 'Talk to Astranova — search, order, find, ask…';
+    }
+  };
+
+  try{ _voiceRecog.start(); }catch(e){
+    addAiMessage('system-msg', 'System', 'Could not start voice recognition. Please check microphone permissions.');
+    _voiceActive = false;
+    vb.classList.remove('voice-btn-active');
+    bar.classList.remove('voice-active');
+  }
 }
 
 function showResp(msg, tone='default'){
-  const r=document.getElementById('cmd-response');
-  if(!r) return;
-  const tones = {
-    default:{ bg:'rgba(3,8,16,0.92)', bd:'rgba(0,200,255,0.22)', fg:'#d8f6ff', sh:'0 10px 28px rgba(0,0,0,0.26)' },
-    gate1:{ bg:'rgba(12,18,30,0.94)', bd:'rgba(0,200,255,0.40)', fg:'#8fe9ff', sh:'0 0 18px rgba(0,200,255,0.18)' },
-    gate2:{ bg:'rgba(34,22,7,0.95)', bd:'rgba(255,170,0,0.44)', fg:'#ffd16f', sh:'0 0 18px rgba(255,170,0,0.16)' },
-    gate3:{ bg:'rgba(44,10,10,0.95)', bd:'rgba(255,92,92,0.48)', fg:'#ff9c9c', sh:'0 0 18px rgba(255,92,92,0.18)' },
-    gate4:{ bg:'rgba(18,7,40,0.96)', bd:'rgba(202,118,255,0.45)', fg:'#efc8ff', sh:'0 0 22px rgba(202,118,255,0.22)' }
-  };
-  const t = tones[tone] || tones.default;
-  r.textContent = msg;
-  r.style.display = 'block';
-  r.style.background = t.bg;
-  r.style.border = '1px solid ' + t.bd;
-  r.style.color = t.fg;
-  r.style.boxShadow = t.sh;
-  r.style.backdropFilter = 'blur(10px)';
-  if(showResp._timer) clearTimeout(showResp._timer);
-  showResp._timer = setTimeout(()=>r.style.display='none', 2600 + (tone==='default' ? 1400 : 500));
+  // Add to AI conversation panel
+  if(tone === 'default'){
+    addAiMessage('system-msg', 'System', msg);
+  } else {
+    addAiMessage('system-msg', 'System', msg);
+  }
+  // Also show as toast briefly
+  var resp = document.getElementById('cmd-response');
+  if(resp && !resp.classList.contains('expanded')){
+    resp.className = 'toast';
+    resp.style.display = 'block';
+    var conv = document.getElementById('ai-conv');
+    if(conv) conv.scrollTop = conv.scrollHeight;
+    if(showResp._timer) clearTimeout(showResp._timer);
+    showResp._timer = setTimeout(function(){
+      if(!resp.classList.contains('expanded')){
+        resp.style.display = 'none';
+        resp.className = '';
+      }
+    }, 3500);
+  }
 }
 
 var spaceGateCount = 0;
