@@ -2596,8 +2596,13 @@ async function refreshMapData() {
     const catCol = { shop:'#00e87a', food:'#ffd600', service:'#00c8ff', social:'#c084fc', job:'#aaffaa', dating:'#ff80ab', real_estate:'#c084fc', event:'#ff9900', default:'#00c8ff' };
     (shops||[]).forEach(s => {
       const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:#00e87a;box-shadow:0 0 7px #00e87a;"></div>` });
-      const m = L.marker([s.lat, s.lon||s.lng||2.35], {icon:ic}).addTo(LM)
-        .bindPopup(`<b style="color:#00e87a;font-family:Rajdhani,monospace;font-size:13px;">${s.name}</b><br><span style="font-size:11px;color:#3d6080;">${s.category||'Shop'}</span>${s.description?'<br><span style="font-size:11px;">'+s.description+'</span>':''}`);
+      const popupHtml = `<div style="min-width:180px;">
+        <b style="color:#00e87a;font-size:13px;">${escapeHtml(s.name)}</b><br>
+        <span style="font-size:11px;color:#3d6080;">${escapeHtml(s.category||'Shop')}</span>
+        ${s.description?'<br><span style="font-size:11px;">'+escapeHtml(s.description).substring(0,80)+'</span>':''}
+        <br><a href="#" onclick="event.preventDefault();openShopDetail('${escapeHtml(s.name)}',${s.lat},${s.lon||s.lng||2.35})" style="display:inline-block;margin-top:6px;padding:5px 12px;background:rgba(0,232,122,0.15);border:1px solid rgba(0,232,122,0.30);border-radius:8px;color:#00e87a;font-size:11px;font-weight:600;text-decoration:none;">🛒 Order from here</a>
+      </div>`;
+      const m = L.marker([s.lat, s.lon||s.lng||2.35], {icon:ic}).addTo(LM).bindPopup(popupHtml);
       MM.push(m);
     });
     (drivers||[]).filter(d=>d.available).forEach(d => {
@@ -2870,34 +2875,59 @@ function closeAstranova() {
 async function astranovaSearch() {
   const q = document.getElementById('astranova-input').value.trim();
   if (!q) return;
-  document.getElementById('astranova-msg').textContent = 'Scanning the orbit lanes for "'+q+'"…';
-  document.getElementById('astranova-results').innerHTML = '<div style="color:var(--text-dim);font-size:11px;text-align:center;">Scanning signals…</div>';
+  document.getElementById('astranova-msg').textContent = 'Scanning for "'+q+'"…';
+  document.getElementById('astranova-results').innerHTML = '<div style="color:var(--text-dim);font-size:11px;text-align:center;">Scanning…</div>';
+  
+  var results = [];
+  
+  // Search local offers first (demo data + user-created)
+  try{
+    var localOffers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+    var ql = q.toLowerCase();
+    localOffers.forEach(function(s){
+      var match = (s.name||'').toLowerCase().includes(ql) || (s.title||'').toLowerCase().includes(ql) ||
+        (s.category||'').toLowerCase().includes(ql) || (s.description||'').toLowerCase().includes(ql);
+      // Also search menu items
+      if(!match && s.menu){
+        s.menu.forEach(function(mi){ if((mi.name||'').toLowerCase().includes(ql)) match = true; });
+      }
+      if(match) results.push({...s, type: s.kind === 'shop_service' ? 'shop' : 'signal'});
+    });
+  }catch(e){}
+
+  // Also search Supabase
   try {
     const [{ data: signals }, { data: shops }] = await Promise.all([
       sb.from('signals').select('*').or(`title.ilike.%${q}%,description.ilike.%${q}%,category.ilike.%${q}%`).limit(10),
       sb.from('shops').select('*').or(`name.ilike.%${q}%,category.ilike.%${q}%,description.ilike.%${q}%`).limit(10)
     ]);
-    const results = [ ...(shops||[]).map(s => ({...s, type:'shop'})), ...(signals||[]).map(s => ({...s, type:'signal'})) ];
-    if (!results.length) {
-      document.getElementById('astranova-msg').textContent = 'No bright signal yet for "'+q+'". Try another word.';
-      document.getElementById('astranova-results').innerHTML = '';
-      return;
-    }
-    document.getElementById('astranova-msg').textContent = 'Signal locked. Found '+results.length+' result(s).';
-    document.getElementById('astranova-results').innerHTML = results.map(r => `
-      <div class="kr" onclick="astranovaSelect(${r.lat||LOC.lat},${r.lon||r.lng||LOC.lng},'${(r.name||r.title||'').replace(/'/g,"\'")}')">
-        <div class="kr-title">${r.name||r.title}</div>
-        <div class="kr-sub">${r.type==='shop' ? (r.category||'Shop') : (r.category||'Signal')}</div>
-      </div>`).join('');
-  } catch(e) {
-    document.getElementById('astranova-msg').textContent = 'Astranova search error: '+e.message;
+    (shops||[]).forEach(s => { if(!results.find(r=>r.name===s.name)) results.push({...s, type:'shop'}); });
+    (signals||[]).forEach(s => { if(!results.find(r=>r.title===s.title)) results.push({...s, type:'signal'}); });
+  } catch(e) {}
+
+  if (!results.length) {
+    document.getElementById('astranova-msg').textContent = 'No results for "'+q+'". Try another word.';
+    document.getElementById('astranova-results').innerHTML = '';
+    return;
   }
+  document.getElementById('astranova-msg').textContent = 'Found '+results.length+' result(s).';
+  document.getElementById('astranova-results').innerHTML = results.map(r => {
+    var lat = r.lat||LOC.lat;
+    var lng = r.lon||r.lng||LOC.lng;
+    var safeName = (r.name||r.title||'').replace(/'/g,"\\'");
+    var isShop = r.type === 'shop' || r.kind === 'shop_service';
+    var menuCount = (r.menu && r.menu.length) ? ' · ' + r.menu.length + ' items' : '';
+    return `<div class="kr" onclick="${isShop ? 'closeAstranova();openShopDetail(\''+safeName+'\','+lat+','+lng+')' : 'astranovaSelect('+lat+','+lng+',\''+safeName+'\')'}">
+      <div class="kr-title">${isShop ? '🏪 ' : '📢 '}${r.name||r.title}</div>
+      <div class="kr-sub">${r.category||r.kind||'Signal'}${menuCount}${r.price ? ' · '+r.price : ''}</div>
+    </div>`;
+  }).join('');
 }
 
 function astranovaSelect(lat, lng, name) {
   closeAstranova();
   goLayer(1);
-  setTimeout(() => { if (LM) LM.flyTo([lat,lng],15); showResp('Navigating to: '+name); }, 500);
+  setTimeout(() => { if (LM) LM.flyTo([lat,lng],16); showResp('Navigating to: '+name); }, 500);
 }
 
 /* ── SEARCH ── */
@@ -3101,6 +3131,145 @@ function flyTo(lat, lng) {
   if (!LM) { goLayer(1); setTimeout(()=>{ if(LM) LM.flyTo([lat,lng],15); }, 600); return; }
   LM.flyTo([lat,lng],15);
   showDeliveryCalc(lat,lng);
+}
+
+/* ── OPEN SHOP DETAIL from popup click ── */
+function openShopDetail(shopName, lat, lng) {
+  // Open listings panel
+  var lp = document.getElementById('lp');
+  if(lp) lp.classList.add('on');
+
+  // Find the shop in LISTING_CACHE or local offers
+  var allOffers = [];
+  try { allOffers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]'); } catch(e){}
+  var shop = allOffers.find(function(o){ return o.name === shopName || o.title === shopName; });
+
+  if(!shop){
+    showResp('Opening listings for ' + shopName);
+    return;
+  }
+
+  // Build detailed shop view in the listings panel
+  var c = document.getElementById('lp-content');
+  if(!c) return;
+  document.getElementById('lp-title').textContent = shopName;
+
+  var menuHtml = '';
+  if(shop.menu && shop.menu.length){
+    menuHtml = shop.menu.map(function(mi, idx){
+      var tempIcon = mi.temperature === 'hot' ? '🔥' : mi.temperature === 'cold' ? '❄️' : '🍽';
+      var priceVal = Number(mi.price);
+      var canBuy = Number.isFinite(priceVal) && priceVal > 0;
+      return '<div style="background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.10);border-radius:10px;padding:10px;margin-bottom:6px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+          '<div><div style="font-size:13px;font-weight:600;color:#f2fbff;">' + tempIcon + ' ' + escapeHtml(mi.name) + '</div>' +
+          '<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">' +
+            (mi.volume ? mi.volume + ' · ' : '') +
+            (mi.qty_available ? mi.qty_available + ' available · ' : '') +
+            (mi.production_rate ? mi.production_rate : '') +
+          '</div>' +
+          (mi.available_times ? '<div style="font-size:9px;color:var(--text-dim);">⏰ ' + escapeHtml(mi.available_times) + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<div style="font-size:14px;font-weight:700;color:#00c8ff;">€' + (Number(mi.price)||0).toFixed(2) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<button onclick="event.stopPropagation();orderMenuItem(\'' + escapeHtml(shopName) + '\',' + idx + ',' + lat + ',' + lng + ')" ' +
+          (canBuy ? '' : 'disabled ') +
+          'style="width:100%;margin-top:8px;padding:8px;border:1px solid rgba(0,200,255,0.22);background:rgba(0,200,255,0.10);color:#00c8ff;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;"' +
+        '>🛒 Add to order · €' + (Number(mi.price)||0).toFixed(2) + '</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Schedule display
+  var schedHtml = '';
+  if(shop.schedule){
+    var days = ['mon','tue','wed','thu','fri','sat','sun'];
+    var dayLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    schedHtml = '<div style="margin-top:10px;padding:8px;background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.08);border-radius:10px;">' +
+      '<div style="font-size:10px;color:var(--la);font-weight:600;margin-bottom:4px;">Operating Hours</div>';
+    days.forEach(function(d, i){
+      var s = shop.schedule[d];
+      if(!s) return;
+      schedHtml += '<div style="font-size:10px;color:' + (s.active ? '#d8f0ff' : 'var(--text-dim)') + ';display:flex;justify-content:space-between;">' +
+        '<span>' + dayLabels[i] + '</span>' +
+        '<span>' + (s.active ? s.open + '–' + s.close : 'Closed') + '</span></div>';
+    });
+    schedHtml += '</div>';
+  }
+
+  c.innerHTML = '<div style="padding:4px;">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+      '<span onclick="resetListings()" style="cursor:pointer;font-size:16px;color:var(--text-dim);">←</span>' +
+      '<div>' +
+        '<div style="font-size:15px;font-weight:700;color:#f2fbff;">' + escapeHtml(shopName) + '</div>' +
+        '<div style="font-size:10px;color:var(--la);">' + escapeHtml(shop.category || 'Shop') + (shop.delivery_range_km ? ' · ' + shop.delivery_range_km + 'km delivery' : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    (shop.description ? '<div style="font-size:11px;color:#bcd9f4;line-height:1.5;margin-bottom:10px;">' + escapeHtml(shop.description) + '</div>' : '') +
+    (shop.phone ? '<div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">📞 ' + escapeHtml(shop.phone) + '</div>' : '') +
+    (shop.website ? '<div style="font-size:10px;color:var(--text-dim);margin-bottom:8px;">🌐 ' + escapeHtml(shop.website) + '</div>' : '') +
+    '<div style="font-size:12px;font-weight:600;color:#00c8ff;margin-bottom:8px;">Menu (' + (shop.menu ? shop.menu.length : 0) + ' items)</div>' +
+    menuHtml +
+    schedHtml +
+    '<button onclick="resetListings()" style="width:100%;margin-top:12px;padding:10px;border:1px solid rgba(0,200,255,0.16);background:transparent;color:var(--text-dim);border-radius:10px;font-size:11px;cursor:pointer;">← Back to all listings</button>' +
+  '</div>';
+}
+
+function resetListings(){
+  document.getElementById('lp-title').textContent = 'Nearby';
+  if(typeof refreshMapData === 'function') refreshMapData();
+}
+
+function orderMenuItem(shopName, menuIdx, shopLat, shopLng){
+  var allOffers = [];
+  try { allOffers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]'); } catch(e){}
+  var shop = allOffers.find(function(o){ return o.name === shopName || o.title === shopName; });
+  if(!shop || !shop.menu || !shop.menu[menuIdx]){
+    showResp('Item not found.'); return;
+  }
+  var mi = shop.menu[menuIdx];
+  var price = Number(mi.price) || 0;
+  var balance = getWalletBalance();
+
+  if(balance < price){
+    showResp('Balance too low (€' + balance.toFixed(2) + '). Top up your wallet first.');
+    if(typeof openPayments === 'function') openPayments();
+    return;
+  }
+
+  // Deduct from wallet
+  var newBal = Math.max(0, balance - price);
+  setWalletBalance(newBal);
+  addPaymentLog({
+    provider: 'wallet-debit',
+    amount: -price,
+    label: mi.name + ' from ' + shopName,
+    live: true,
+    at: new Date().toISOString(),
+    id: 'order-' + Math.random().toString(36).slice(2,10)
+  });
+
+  showResp('✓ Ordered: ' + mi.name + ' (€' + price.toFixed(2) + ') from ' + shopName + '. Finding driver…');
+
+  // Trigger delivery routing
+  var addrs = [];
+  try { addrs = JSON.parse(localStorage.getItem('astranov.delivery.addresses.v1') || '[]'); } catch(e){}
+  var clientAddr = addrs[0] || { lat: LOC.lat, lng: LOC.lng };
+
+  if(typeof routeOrderToDriver === 'function'){
+    routeOrderToDriver({
+      vendor_name: shopName,
+      product_name: mi.name,
+      vendor_lat: shopLat,
+      vendor_lng: shopLng,
+      client_lat: clientAddr.lat || LOC.lat,
+      client_lng: clientAddr.lon || clientAddr.lng || LOC.lng,
+      volume_liters: parseFloat(mi.volume) || 0.5,
+      temperature: mi.temperature || 'neutral'
+    });
+  }
 }
 
 var globeController=null;
@@ -4895,8 +5064,15 @@ DELIVERY RULE
     offers.forEach(r => {
       const col = r.kind === 'post_signal' ? '#7dc3ff' : '#00c8ff';
       const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
-      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
-        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || 'Local entry') : (r.title || r.name || 'Local entry'))}</b><br><span style="font-size:11px;color:#95a8bb;">${(window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind))}</span>${r.visibility ? '<br><span style="font-size:9px;color:#5ca0ff;">'+r.visibility.toUpperCase()+'</span>' : ''}${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
+      const safeName = window.escapeHtml ? escapeHtml(r.title || r.name || 'Local entry') : (r.title || r.name || 'Local entry');
+      const safeCat = window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind);
+      const safeDesc = r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description).substring(0,80) : r.description.substring(0,80)) + '</span>' : '';
+      const visBadge = r.visibility ? '<br><span style="font-size:9px;color:#5ca0ff;">'+r.visibility.toUpperCase()+'</span>' : '';
+      const orderBtn = r.kind === 'shop_service'
+        ? '<br><a href="#" onclick="event.preventDefault();openShopDetail(\''+safeName.replace(/'/g,"\\'")+'\','+r.lat+','+(r.lon||r.lng)+')" style="display:inline-block;margin-top:6px;padding:5px 12px;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.24);border-radius:8px;color:#00c8ff;font-size:11px;font-weight:600;text-decoration:none;">🛒 Order from here</a>'
+        : '';
+      const popupHtml = '<div style="min-width:160px;"><b style="color:'+col+';font-size:13px;">'+safeName+'</b><br><span style="font-size:11px;color:#95a8bb;">'+safeCat+'</span>'+visBadge+safeDesc+orderBtn+'</div>';
+      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM).bindPopup(popupHtml);
       MM.push(m);
       if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
     });
