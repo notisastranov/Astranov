@@ -1323,7 +1323,7 @@ const WALLET_KEY = 'astranov.wallet.balance';
 const PAYMENT_LOG_KEY = 'astranov.payment.log';
 
 var CU = null, CL = 0, LM = null, MM = [], TR = false;
-var LOC = { lat: 48.8566, lng: 2.3522 };
+var LOC = { lat: 36.4441, lng: 28.2245 };
 var driverOnline = false;
 var gameActive = false, gameType = null;
 var gameState = {};
@@ -2306,7 +2306,261 @@ async function loadBalance() {
     loadBalance();
   }
   loadOrbitalFeed();
+  loadDemoData();
 })();
+
+/* ══════════════════════════════
+   DEMO DATA — Rhodes, Greece
+   Remove this block before production
+   ══════════════════════════════ */
+function loadDemoData(){
+  var DEMO_KEY = 'astranov.demo.loaded.v4';
+  if(localStorage.getItem(DEMO_KEY)) return; // only load once
+
+  // Set location to Rhodes old town
+  LOC = { lat: 36.4441, lng: 28.2245 };
+
+  var demoShops = [
+    {
+      id:'demo-shop-1', kind:'shop_service',
+      name:'Tamam Restaurant', title:'Tamam Restaurant',
+      category:'Restaurant / Food',
+      description:'Traditional Greek cuisine in the heart of Rhodes Old Town. Fresh seafood, moussaka, souvlaki, and local wine.',
+      phone:'+302241076575', website:'https://tamam-rhodes.gr',
+      delivery_range_km: 8, visibility:'global',
+      lat:36.4441, lon:28.2243, lng:28.2243,
+      image:'', vendor_name:'Maria Konstantinou',
+      created_at: new Date().toISOString(), local_only:true,
+      schedule:{
+        mon:{active:true,open:'11:00',close:'23:00'},
+        tue:{active:true,open:'11:00',close:'23:00'},
+        wed:{active:true,open:'11:00',close:'23:00'},
+        thu:{active:true,open:'11:00',close:'23:00'},
+        fri:{active:true,open:'11:00',close:'00:00'},
+        sat:{active:true,open:'10:00',close:'00:00'},
+        sun:{active:true,open:'10:00',close:'22:00'}
+      },
+      menu:[
+        {name:'Moussaka',price:12.50,volume:'0.8L',qty_available:20,production_rate:'8/hr',available_times:'11:00-22:00',temperature:'hot',photo:''},
+        {name:'Grilled Octopus',price:16.00,volume:'0.5L',qty_available:12,production_rate:'4/hr',available_times:'12:00-22:00',temperature:'hot',photo:''},
+        {name:'Greek Salad Large',price:8.50,volume:'1.2L',qty_available:30,production_rate:'12/hr',available_times:'11:00-23:00',temperature:'cold',photo:''},
+        {name:'Souvlaki Plate (Chicken)',price:10.00,volume:'0.6L',qty_available:25,production_rate:'10/hr',available_times:'11:00-22:30',temperature:'hot',photo:''},
+        {name:'Baklava (3 pieces)',price:6.00,volume:'0.3L',qty_available:40,production_rate:'20/hr',available_times:'11:00-23:00',temperature:'neutral',photo:''},
+        {name:'Freddo Cappuccino',price:4.50,volume:'0.35L',qty_available:50,production_rate:'15/hr',available_times:'08:00-23:00',temperature:'cold',photo:''}
+      ]
+    },
+    {
+      id:'demo-shop-2', kind:'shop_service',
+      name:'Aegean Dive Centre', title:'Aegean Dive Centre',
+      category:'Diving / Activities',
+      description:'PADI certified diving school. Discover scuba, open water courses, wreck dives, and snorkelling trips around Rhodes.',
+      phone:'+302241035654', website:'https://aegeandive.gr',
+      delivery_range_km: 3, visibility:'global',
+      lat:36.4512, lon:28.2178, lng:28.2178,
+      image:'', vendor_name:'Kostas Papadopoulos',
+      created_at: new Date().toISOString(), local_only:true,
+      schedule:{
+        mon:{active:true,open:'08:00',close:'18:00'},
+        tue:{active:true,open:'08:00',close:'18:00'},
+        wed:{active:true,open:'08:00',close:'18:00'},
+        thu:{active:true,open:'08:00',close:'18:00'},
+        fri:{active:true,open:'08:00',close:'18:00'},
+        sat:{active:true,open:'07:00',close:'19:00'},
+        sun:{active:false,open:'09:00',close:'14:00'}
+      },
+      menu:[
+        {name:'Discover Scuba Diving',price:75.00,volume:'',qty_available:6,production_rate:'2 groups/day',available_times:'09:00-12:00, 14:00-17:00',temperature:'neutral',photo:''},
+        {name:'PADI Open Water Course (3 days)',price:380.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:00-16:00',temperature:'neutral',photo:''},
+        {name:'Snorkelling Trip (2hr)',price:35.00,volume:'',qty_available:12,production_rate:'3 groups/day',available_times:'10:00-12:00, 14:00-16:00',temperature:'neutral',photo:''},
+        {name:'Wreck Dive (certified)',price:65.00,volume:'',qty_available:4,production_rate:'1 group/day',available_times:'08:30-12:00',temperature:'neutral',photo:''}
+      ]
+    },
+    {
+      id:'demo-shop-3', kind:'shop_service',
+      name:'Nikolas Pizza Express', title:'Nikolas Pizza Express',
+      category:'Restaurant / Food',
+      description:'Fast wood-fired pizza delivery. 15 varieties, calzones, and fresh pasta. Fastest delivery in Rhodes — 20 min guaranteed.',
+      phone:'+302241029800', website:'',
+      delivery_range_km: 10, visibility:'global',
+      lat:36.4385, lon:28.2290, lng:28.2290,
+      image:'', vendor_name:'Nikolas Stavridis',
+      created_at: new Date().toISOString(), local_only:true,
+      schedule:{
+        mon:{active:true,open:'17:00',close:'01:00'},
+        tue:{active:true,open:'17:00',close:'01:00'},
+        wed:{active:true,open:'17:00',close:'01:00'},
+        thu:{active:true,open:'17:00',close:'01:00'},
+        fri:{active:true,open:'16:00',close:'02:00'},
+        sat:{active:true,open:'16:00',close:'02:00'},
+        sun:{active:true,open:'17:00',close:'00:00'}
+      },
+      menu:[
+        {name:'Margherita Pizza',price:8.00,volume:'2.0L',qty_available:50,production_rate:'15/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
+        {name:'Pepperoni Special',price:10.50,volume:'2.0L',qty_available:40,production_rate:'12/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
+        {name:'Quattro Formaggi',price:11.00,volume:'2.0L',qty_available:30,production_rate:'10/hr',available_times:'17:00-00:30',temperature:'hot',photo:''},
+        {name:'Calzone Stuffed',price:9.50,volume:'1.5L',qty_available:20,production_rate:'8/hr',available_times:'17:00-00:00',temperature:'hot',photo:''},
+        {name:'Spaghetti Bolognese',price:9.00,volume:'0.8L',qty_available:25,production_rate:'10/hr',available_times:'17:00-23:00',temperature:'hot',photo:''},
+        {name:'Tiramisu',price:5.50,volume:'0.4L',qty_available:15,production_rate:'batch',available_times:'17:00-00:00',temperature:'cold',photo:''},
+        {name:'Coca-Cola 500ml',price:2.00,volume:'0.5L',qty_available:100,production_rate:'instant',available_times:'17:00-02:00',temperature:'cold',photo:''}
+      ]
+    },
+    {
+      id:'demo-shop-4', kind:'shop_service',
+      name:'Rhodes Mini Market', title:'Rhodes Mini Market',
+      category:'Shop / Retail',
+      description:'24/7 convenience store. Groceries, drinks, cigarettes, toiletries, phone chargers, sunscreen, and beach essentials.',
+      phone:'+302241044210', website:'',
+      delivery_range_km: 5, visibility:'local',
+      lat:36.4420, lon:28.2310, lng:28.2310,
+      image:'', vendor_name:'Yannis Georgiou',
+      created_at: new Date().toISOString(), local_only:true,
+      schedule:{
+        mon:{active:true,open:'00:00',close:'23:59'},
+        tue:{active:true,open:'00:00',close:'23:59'},
+        wed:{active:true,open:'00:00',close:'23:59'},
+        thu:{active:true,open:'00:00',close:'23:59'},
+        fri:{active:true,open:'00:00',close:'23:59'},
+        sat:{active:true,open:'00:00',close:'23:59'},
+        sun:{active:true,open:'00:00',close:'23:59'}
+      },
+      menu:[
+        {name:'Water 1.5L',price:0.80,volume:'1.5L',qty_available:200,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:''},
+        {name:'Beer Mythos 500ml',price:2.50,volume:'0.5L',qty_available:80,production_rate:'instant',available_times:'00:00-23:59',temperature:'cold',photo:''},
+        {name:'Sunscreen SPF50',price:12.00,volume:'0.2L',qty_available:15,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:''},
+        {name:'Phone Charger USB-C',price:8.00,volume:'0.1L',qty_available:10,production_rate:'instant',available_times:'00:00-23:59',temperature:'neutral',photo:''},
+        {name:'Fresh Sandwich (Ham & Cheese)',price:3.50,volume:'0.4L',qty_available:20,production_rate:'6/hr',available_times:'06:00-22:00',temperature:'cold',photo:''},
+        {name:'Greek Coffee (Ellinikos)',price:2.00,volume:'0.15L',qty_available:100,production_rate:'instant',available_times:'06:00-23:00',temperature:'hot',photo:''}
+      ]
+    },
+    {
+      id:'demo-shop-5', kind:'shop_service',
+      name:'Elli Beach Watersports', title:'Elli Beach Watersports',
+      category:'Diving / Activities',
+      description:'Jet ski rental, parasailing, banana boat, SUP boards, and kayak tours along the eastern coast of Rhodes.',
+      phone:'+302241068900', website:'https://ellibeachsports.gr',
+      delivery_range_km: 2, visibility:'global',
+      lat:36.4530, lon:28.2280, lng:28.2280,
+      image:'', vendor_name:'Dimitris Alexiou',
+      created_at: new Date().toISOString(), local_only:true,
+      schedule:{
+        mon:{active:true,open:'09:00',close:'19:00'},
+        tue:{active:true,open:'09:00',close:'19:00'},
+        wed:{active:true,open:'09:00',close:'19:00'},
+        thu:{active:true,open:'09:00',close:'19:00'},
+        fri:{active:true,open:'09:00',close:'20:00'},
+        sat:{active:true,open:'08:00',close:'20:00'},
+        sun:{active:true,open:'09:00',close:'18:00'}
+      },
+      menu:[
+        {name:'Jet Ski 30min',price:60.00,volume:'',qty_available:4,production_rate:'8 slots/day',available_times:'09:00-18:00',temperature:'neutral',photo:''},
+        {name:'Parasailing (tandem)',price:50.00,volume:'',qty_available:6,production_rate:'4/hr',available_times:'10:00-17:00',temperature:'neutral',photo:''},
+        {name:'SUP Board 1hr',price:15.00,volume:'',qty_available:10,production_rate:'instant',available_times:'09:00-18:00',temperature:'neutral',photo:''},
+        {name:'Banana Boat Ride',price:12.00,volume:'',qty_available:8,production_rate:'6/hr',available_times:'10:00-17:00',temperature:'neutral',photo:''}
+      ]
+    }
+  ];
+
+  var demoPosts = [
+    {
+      id:'demo-post-1', kind:'post_signal',
+      title:'Room for rent — Old Town', name:'Room for rent — Old Town',
+      category:'Real Estate', description:'Cozy studio apartment in Rhodes Old Town, 5 min walk from the harbour. €450/month utilities included. Available from July.',
+      price:'€450/month', price_eur:450, contact:'+30 697 555 1234',
+      visibility:'global', lat:36.4435, lon:28.2255, lng:28.2255,
+      created_at: new Date().toISOString(), local_only:true, vendor_name:'Anna Vlachaki'
+    },
+    {
+      id:'demo-post-2', kind:'post_signal',
+      title:'Yacht crew needed — sailing season', name:'Yacht crew needed — sailing season',
+      category:'Job', description:'Looking for experienced deck hand for 40ft sailing yacht. Season May-October. Competitive pay + tips. Must have boating license.',
+      price:'€2000/month + tips', price_eur:2000, contact:'yachtjobs.rhodes@gmail.com',
+      visibility:'global', lat:36.4490, lon:28.2190, lng:28.2190,
+      created_at: new Date().toISOString(), local_only:true, vendor_name:'Captain Stefanos'
+    },
+    {
+      id:'demo-post-3', kind:'post_signal',
+      title:'Live music tonight at Socratous Garden', name:'Live music tonight at Socratous Garden',
+      category:'Event', description:'Traditional rebetiko and Greek folk music. Live band starting 21:00. Free entry, drinks from €4. Everyone welcome!',
+      price:'Free', contact:'+30 697 888 4321',
+      visibility:'local', lat:36.4448, lon:28.2240, lng:28.2240,
+      created_at: new Date().toISOString(), local_only:true, vendor_name:'Socratous Garden Bar'
+    },
+    {
+      id:'demo-post-4', kind:'post_signal',
+      title:'Lost cat — grey tabby near Mandraki', name:'Lost cat — grey tabby near Mandraki',
+      category:'General', description:'Please help! Grey tabby cat with white paws, responds to "Milo". Lost near Mandraki harbour area. Reward offered. Call or WhatsApp anytime.',
+      price:'', contact:'+30 694 222 8765',
+      visibility:'local', lat:36.4505, lon:28.2215, lng:28.2215,
+      created_at: new Date().toISOString(), local_only:true, vendor_name:'Elena K.'
+    }
+  ];
+
+  // Demo drivers positioned around Rhodes
+  var demoDrivers = [
+    {
+      id:'demo-driver-1', kind:'driver_base',
+      title:'Yorgos — Motorcycle', name:'Yorgos',
+      description:'Fast motorcycle courier. Old Town specialist.',
+      lat:36.4460, lon:28.2260, lng:28.2260,
+      created_at: new Date().toISOString(),
+      vehicle_type:'Motorcycle', price_per_km:1.00
+    },
+    {
+      id:'demo-driver-2', kind:'driver_base',
+      title:'Petros — Car', name:'Petros',
+      description:'Car delivery. Larger orders, AC transport.',
+      lat:36.4400, lon:28.2300, lng:28.2300,
+      created_at: new Date().toISOString(),
+      vehicle_type:'Car', price_per_km:1.00
+    },
+    {
+      id:'demo-driver-3', kind:'driver_base',
+      title:'Nikos — Scooter', name:'Nikos',
+      description:'Scooter courier. Quick and nimble in traffic.',
+      lat:36.4480, lon:28.2200, lng:28.2200,
+      created_at: new Date().toISOString(),
+      vehicle_type:'Scooter', price_per_km:1.00
+    }
+  ];
+
+  // Demo delivery addresses (private)
+  var demoAddresses = [
+    {
+      id:'demo-addr-1', kind:'client_address', private:true,
+      owner_id:'demo-client-1',
+      street:'Odos Sokratous', number:'42', floor:'2nd', doorbell:'Papadimitriou',
+      name:'Eleni Papadimitriou', phone:'+30 694 111 2233',
+      remarks:'Ring twice. Gate code 4421.',
+      lat:36.4445, lon:28.2248, lng:28.2248,
+      created_at: new Date().toISOString()
+    },
+    {
+      id:'demo-addr-2', kind:'client_address', private:true,
+      owner_id:'demo-client-2',
+      street:'Odos Ippokratous', number:'15', floor:'Ground', doorbell:'Stavros',
+      name:'Michalis Stavros', phone:'+30 697 333 4455',
+      remarks:'Leave at the blue door if no answer.',
+      lat:36.4430, lon:28.2270, lng:28.2270,
+      created_at: new Date().toISOString()
+    }
+  ];
+
+  // Store everything
+  var offers = demoShops.concat(demoPosts);
+  localStorage.setItem('astranov.local.offers.v333', JSON.stringify(offers));
+  localStorage.setItem('astranov.local.places.v333', JSON.stringify(demoDrivers.concat(demoAddresses)));
+  localStorage.setItem('astranov.delivery.addresses.v1', JSON.stringify(demoAddresses));
+
+  // Set wallet to €50 for testing purchases
+  localStorage.setItem('astranov.wallet.balance', '50.00');
+  document.getElementById('bal').textContent = '50.00';
+
+  // Mark demo loaded
+  localStorage.setItem(DEMO_KEY, new Date().toISOString());
+
+  console.log('[Astranov Demo] Loaded: ' + demoShops.length + ' shops, ' + demoPosts.length + ' posts, ' + demoDrivers.length + ' drivers, ' + demoAddresses.length + ' addresses. Wallet: €50.00');
+  showResp('Demo data loaded — ' + demoShops.length + ' shops, ' + demoPosts.length + ' posts, ' + demoDrivers.length + ' drivers in Rhodes. Wallet: €50. Zoom into Rhodes to test.');
+}
 
 /* ── REALTIME ── */
 function subscribeRealtime() {
