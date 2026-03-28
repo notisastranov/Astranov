@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov v3.3.3</title>
+<title>Astranov v3.4.0</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -644,6 +644,110 @@ body.lt,body.lt2,body.lt3{
 .entity-footer .primary{background:rgba(0,200,255,0.14);color:#fff;}
 .type-note{padding:8px 10px;border-radius:12px;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.12);font-size:11px;color:#c8efff;}
 
+/* ═══ POSTING MENU ═══ */
+#post-chooser{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:370;background:rgba(3,8,16,0.52);backdrop-filter:blur(14px);}
+#post-chooser.on{display:flex;}
+.pc-sheet{width:min(94vw,440px);background:linear-gradient(180deg,rgba(8,18,30,0.78),rgba(8,18,30,0.56));border:1px solid rgba(0,200,255,0.16);border-radius:18px;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,0.36);}
+.pc-title{color:#00c8ff;font-size:17px;font-weight:700;margin-bottom:4px;}
+.pc-sub{font-size:11px;color:var(--text-dim);margin-bottom:16px;line-height:1.5;}
+.pc-coords{font-size:10px;padding:6px 10px;border-radius:10px;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.12);color:#c8efff;margin-bottom:14px;}
+.pc-options{display:flex;flex-direction:column;gap:10px;}
+.pc-opt{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(0,200,255,0.14);border-radius:14px;background:rgba(255,255,255,0.03);cursor:pointer;transition:all 0.18s;}
+.pc-opt:hover{background:rgba(0,200,255,0.10);border-color:rgba(0,200,255,0.36);transform:translateY(-1px);}
+.pc-opt-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.pc-opt-icon.post-it{background:rgba(0,200,255,0.12);color:#00c8ff;}
+.pc-opt-icon.shop-it{background:rgba(0,232,122,0.12);color:#00e87a;}
+.pc-opt-icon.addr-it{background:rgba(255,153,0,0.12);color:#ff9900;}
+.pc-opt-text h3{font-size:14px;color:#f2fbff;margin:0 0 3px;font-weight:600;}
+.pc-opt-text p{font-size:11px;color:var(--text-dim);margin:0;line-height:1.4;}
+.pc-cancel{margin-top:12px;text-align:center;font-size:11px;color:var(--text-dim);cursor:pointer;padding:8px;}
+.pc-cancel:hover{color:#f2fbff;}
+
+/* ═══ FULL FORM MODALS ═══ */
+.form-modal{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;z-index:380;background:rgba(3,8,16,0.52);backdrop-filter:blur(14px);overflow-y:auto;padding:40px 0;}
+.form-modal.on{display:flex;}
+.form-sheet{width:min(96vw,560px);background:linear-gradient(180deg,rgba(8,18,30,0.82),rgba(8,18,30,0.62));border:1px solid rgba(0,200,255,0.16);border-radius:18px;padding:22px;box-shadow:0 24px 48px rgba(0,0,0,0.36);margin:auto 0;}
+.form-sheet .sheet-title{color:#00c8ff;font-size:17px;font-weight:700;margin-bottom:3px;}
+.form-sheet .sheet-sub{font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.5;}
+.form-group{margin-bottom:12px;}
+.form-group label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;letter-spacing:0.03em;}
+.form-group input,.form-group textarea,.form-group select{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.14);color:var(--text);border-radius:12px;padding:10px 12px;font-size:13px;outline:none;font-family:var(--font);}
+.form-group textarea{min-height:70px;resize:vertical;}
+.form-group select option{background:#0a1520;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.form-section{font-size:12px;color:#00c8ff;font-weight:600;margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid rgba(0,200,255,0.12);}
+.form-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
+.form-footer button{border:1px solid rgba(0,200,255,0.20);background:rgba(255,255,255,0.04);color:#dff7ff;padding:10px 18px;border-radius:12px;cursor:pointer;font-size:12px;}
+.form-footer .primary{background:rgba(0,200,255,0.14);color:#fff;font-weight:600;}
+.form-footer .primary:hover{background:rgba(0,200,255,0.24);}
+
+/* visibility selector */
+.vis-selector{display:flex;gap:0;border-radius:12px;overflow:hidden;border:1px solid rgba(0,200,255,0.14);margin-bottom:8px;}
+.vis-opt{flex:1;padding:9px 6px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,0.03);color:var(--text-dim);transition:all 0.15s;border-right:1px solid rgba(0,200,255,0.10);}
+.vis-opt:last-child{border-right:none;}
+.vis-opt.active{background:rgba(0,200,255,0.14);color:#00c8ff;}
+.vis-opt:hover:not(.active){background:rgba(255,255,255,0.06);}
+.team-picker{display:none;margin-top:8px;}
+.team-picker.on{display:block;}
+
+/* schedule grid */
+.sched-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:center;font-size:11px;}
+.sched-grid .day-label{color:var(--text-dim);font-weight:600;font-size:10px;}
+.sched-grid input[type=time]{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.12);border-radius:8px;padding:5px 6px;color:var(--text);font-size:11px;}
+.sched-grid input[type=checkbox]{accent-color:#00c8ff;}
+
+/* menu item builder */
+.menu-items-list{display:flex;flex-direction:column;gap:8px;}
+.menu-item-entry{background:rgba(0,200,255,0.04);border:1px solid rgba(0,200,255,0.10);border-radius:12px;padding:10px;}
+.menu-item-entry .form-row{margin-bottom:4px;}
+.add-menu-item-btn{width:100%;padding:8px;border:1px dashed rgba(0,200,255,0.22);border-radius:12px;background:transparent;color:#00c8ff;font-size:11px;cursor:pointer;margin-top:6px;}
+.add-menu-item-btn:hover{background:rgba(0,200,255,0.08);}
+.remove-menu-item{font-size:10px;color:var(--red);cursor:pointer;float:right;padding:2px 6px;}
+
+/* temperature badge */
+.temp-selector{display:flex;gap:6px;}
+.temp-opt{padding:5px 10px;border-radius:8px;border:1px solid rgba(0,200,255,0.14);font-size:10px;cursor:pointer;background:transparent;color:var(--text-dim);}
+.temp-opt.active{font-weight:600;}
+.temp-opt[data-temp=cold].active{background:rgba(0,150,255,0.14);color:#5ca0ff;border-color:rgba(0,150,255,0.30);}
+.temp-opt[data-temp=hot].active{background:rgba(255,80,50,0.14);color:#ff6644;border-color:rgba(255,80,50,0.30);}
+.temp-opt[data-temp=neutral].active{background:rgba(255,255,255,0.08);color:#e6eef6;border-color:rgba(255,255,255,0.20);}
+
+/* ═══ CHANNEL FILTER BAR ═══ */
+#channel-bar{position:fixed;top:44px;left:52px;right:52px;z-index:162;display:none;align-items:center;justify-content:center;gap:6px;padding:6px 10px;}
+#channel-bar.on{display:flex;}
+.ch-pill{padding:5px 12px;border-radius:999px;border:1px solid rgba(0,200,255,0.16);background:rgba(5,14,28,0.72);color:var(--text-dim);font-size:10px;font-weight:600;cursor:pointer;backdrop-filter:blur(8px);transition:all 0.15s;white-space:nowrap;}
+.ch-pill.active{background:rgba(0,200,255,0.14);color:#00c8ff;border-color:rgba(0,200,255,0.36);}
+.ch-pill:hover:not(.active){background:rgba(255,255,255,0.06);}
+.ch-team-pills{display:flex;gap:4px;margin-left:4px;}
+
+/* ═══ DELIVERY CHAT ═══ */
+#delivery-chat{position:fixed;bottom:64px;right:52px;width:320px;max-height:420px;display:none;flex-direction:column;z-index:280;background:linear-gradient(180deg,rgba(8,18,30,0.88),rgba(8,18,30,0.72));border:1px solid rgba(0,200,255,0.16);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,0.30);backdrop-filter:blur(14px);}
+#delivery-chat.on{display:flex;}
+.dc-header{padding:10px 14px;border-bottom:1px solid rgba(0,200,255,0.12);display:flex;align-items:center;justify-content:space-between;}
+.dc-title{font-size:12px;font-weight:600;color:#00c8ff;}
+.dc-status{font-size:9px;padding:3px 8px;border-radius:999px;background:rgba(0,232,122,0.12);color:#00e87a;border:1px solid rgba(0,232,122,0.20);}
+.dc-close{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px;}
+.dc-messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:180px;max-height:280px;}
+.dc-msg{max-width:80%;padding:8px 11px;border-radius:12px;font-size:12px;line-height:1.45;word-break:break-word;}
+.dc-msg.vendor{align-self:flex-start;background:rgba(0,232,122,0.10);border:1px solid rgba(0,232,122,0.16);color:#c8f0d4;}
+.dc-msg.driver{align-self:flex-start;background:rgba(255,153,0,0.10);border:1px solid rgba(255,153,0,0.16);color:#ffe0b4;}
+.dc-msg.client{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.18);color:#d8f0ff;}
+.dc-msg .dc-sender{font-size:9px;font-weight:600;margin-bottom:2px;opacity:0.7;}
+.dc-msg .dc-time{font-size:8px;opacity:0.5;margin-top:2px;text-align:right;}
+.dc-input-row{padding:8px 10px;border-top:1px solid rgba(0,200,255,0.10);display:flex;gap:6px;}
+.dc-input{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.12);border-radius:10px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;}
+.dc-send{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,200,255,0.20);background:rgba(0,200,255,0.10);color:#00c8ff;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.dc-send:hover{background:rgba(0,200,255,0.20);}
+
+/* ═══ ORDER ROUTING TOAST ═══ */
+#routing-toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);z-index:290;display:none;padding:12px 20px;border-radius:14px;background:rgba(8,18,30,0.88);border:1px solid rgba(0,200,255,0.20);box-shadow:0 14px 30px rgba(0,0,0,0.30);backdrop-filter:blur(10px);font-size:12px;color:#d8f0ff;max-width:400px;text-align:center;}
+#routing-toast.on{display:block;animation:toast-in 0.4s ease-out;}
+@keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.rt-driver{color:#ff9900;font-weight:600;}
+.rt-price{color:#00e87a;font-weight:600;}
+.rt-eta{color:#00c8ff;}
+
 </style>
 </head>
 <body class="lt">
@@ -654,7 +758,7 @@ body.lt,body.lt2,body.lt3{
   <div class="abox">
     <div class="ahdr">
       <span class="abrand">ASTRANOV</span>
-      <span class="asub">Planetary OS — Trinity v3.3.3</span>
+      <span class="asub">Planetary OS — Trinity v3.4.0</span>
     </div>
     <div class="abody">
       <div class="atabs">
@@ -711,8 +815,8 @@ body.lt,body.lt2,body.lt3{
       <div class="sg-bar" style="height:16px;"></div>
       <div class="sg-bar" style="height:8px;"></div>
     </div>
-    <span class="vinfo">v<span class="vcurrent">3.3.3</span></span>
-    <span class="vinfo">latest:<span class="vlatest-ok" id="vl">3.3.3</span></span>
+    <span class="vinfo">v<span class="vcurrent">3.4.0</span></span>
+    <span class="vinfo">latest:<span class="vlatest-ok" id="vl">3.4.0</span></span>
   </div>
   <div class="tb-right">
     <div id="balance-display" onclick="showBalance()">
@@ -1131,8 +1235,8 @@ body.lt,body.lt2,body.lt3{
 const SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 const SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 const sb = supabase.createClient(SURL, SKEY);
-const APP_VERSION = '3.3.3';
-const APP_ARCH = 'Spartan Script v3.3.3';
+const APP_VERSION = '3.4.0';
+const APP_ARCH = 'Spartan Script v3.4.0';
 const PAYMENT_CFG_KEY = 'astranov.payment.config';
 const WALLET_KEY = 'astranov.wallet.balance';
 const PAYMENT_LOG_KEY = 'astranov.payment.log';
@@ -2886,14 +2990,15 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV 3.3.3
+SPARTAN SCRIPT — ASTRANOV 3.4.0
 Creator & Founder: Notis Astranov, 2026
-Architecture: Spartan Script v3.3.3
+Architecture: Spartan Script v3.4.0
 
 MISSION
 Single-file launchable planetary marketplace with real Earth, stable layer transitions,
 a true spacecraft mode, a true submarine mode, map-native creation tools, wallet-only vendor checkout,
-and electric neon blue ASTRANOV branding locked in place.
+electric neon blue ASTRANOV branding, 3-option posting menu, full shop listings with menu/schedule,
+delivery address system, channel visibility infrastructure, order routing engine, and delivery chat.
 
 LOCKS
 - ASTRANOV top-left brand stays deep electric neon blue with glow.
@@ -2910,14 +3015,30 @@ TRANSITIONS
 - Accidental game triggers during normal browsing must be avoided.
 - Zooming between layers must never get stuck.
 
-MAP CREATION
-- Clicking the map must allow creating:
-  1. Vendor offer
-  2. Shop / service / activity
-  3. Public post
-  4. Delivery driver base
-  5. Client delivery address
-- New objects must appear on the live map and in listings immediately.
+MAP POSTING (v3.4.0)
+- Clicking the map opens 3-option chooser:
+  1. Post Something — visibility (global/local/team), team picker, title, description, category, price, media
+  2. List a Shop — entry photo, 7-day schedule, menu items (name, price, volume, qty, production rate,
+     available times, photo, temperature cold/hot/neutral), delivery range km, visibility
+  3. Set Delivery Location — street, number, floor, doorbell, name, phone, remarks
+- All objects appear on live map and listings immediately.
+
+CHANNELS (v3.4.0)
+- Filter bar: All / Global / Local / Teams + per-team pills
+- Posts and shops carry visibility metadata
+- Channel filter applies to map markers, listings, and orbital feed
+
+ORDER ROUTING (v3.4.0)
+- Buy now triggers driver routing: finds closest available driver via haversine
+- Calculates delivery fee (€2.50 base + €0.80/km, min €3.00) and ETA
+- Shows routing toast notification
+- Creates delivery record in Supabase
+
+DELIVERY CHAT (v3.4.0)
+- 3-party chat: vendor, deliverer, client
+- Opens after order placement
+- Messages persist in localStorage
+- Simulated vendor/driver responses (production: Supabase Realtime)
 
 GAMES
 - Spacecraft mode must feel different from submarine mode.
@@ -2926,115 +3047,232 @@ GAMES
 -->
 
 <!-- Embedded Spartan Script v3.3.3 -->
-<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.3.3
+<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV 3.4.0
 
 MISSION
-Build a launchable Astranov app with a real rotating Earth startup scene, stable Earth-space-ocean transitions, a wallet-based marketplace, map-native creation tools, and electric neon blue branding locked in place.
+Build a launchable Astranov app with a real rotating Earth startup scene, stable Earth-space-ocean transitions, a wallet-based marketplace, map-native creation tools, 3-option posting menu, full shop listings, delivery addresses, channel visibility, order routing, delivery chat, and electric neon blue branding locked in place.
 
 FOUNDATION
-- Version locked: 3.3.3
+- Version locked: 3.4.0
 - Single-file launchable HTML build
 - Earth is the startup scene
 - User can explore before login
-- Login becomes mandatory only when protected actions start, especially buying, posting, or going live
+- Login becomes mandatory only when protected actions start
 - Mandatory auth fields: phone + email + password
-- Input fields include view buttons
 - ASTRANOV top-left brand stays deep electric neon blue with glow everywhere
 
-VISUAL RULES
-- Commercial realistic shell, not cheap arcade chrome
-- Transparent glass menus and panels
-- Main readable fonts stay normalized
-- Keep electric neon blue typography, labels, highlights, borders, and brand accents
-- Astranova stays as the earlier helper branch and has NO helmet
+MAP POSTING
+- Map click opens 3-option chooser: Post Something, List a Shop, Set Delivery Location
+- Post Something: visibility (global/local/team), team picker, title, description, category, price, media
+- List a Shop: entry photo, 7-day schedule, menu items with name/price/volume/qty/rate/times/photo/temperature, delivery range, visibility
+- Set Delivery Location: street, number, floor, doorbell, name, phone, remarks
 
-EARTH SIGNAL RULES
-- Offer/news/space cards visibly connect to Earth with a line
-- Cards stay geo-anchored and rotate with Earth
-- Cards scale modestly while passing in front of the user
-- Orbital cards stay compact and never overtake the screen
-- Card container is filled by the preview image or video
+CHANNELS
+- Filter bar on map: All, Global, Local, Teams + per-team pills
+- Visibility metadata on all posts and shops
+- Filter applies to markers, listings, orbital feed
 
-TRANSITION RULES
-- User must receive 3 differently colored orbit-limit notices before spacecraft mode activates on the next outward zoom
-- User must receive 3 differently colored dive-limit notices before submarine mode activates on the next inward zoom over open water
-- Normal browsing must not trigger games by accident
-- Spacecraft mode and submarine mode must be visually distinct
+ORDER ROUTING
+- Buy triggers closest-driver search via haversine
+- Calculates fee and ETA, shows routing toast
+- Creates delivery record
 
-GAME RULES
-- Spacecraft mode is a real space layer/game
-- Submarine mode is a real ocean layer/game with sonar/periscope style UI
-- Exit from any game returns to the correct previous layer
-
-MAP CREATION RULES
-- Clicking a point on the map must allow creating:
-  - vendor offer
-  - shop / service / activity
-  - public post
-  - delivery driver base
-  - client delivery address
-- New objects must show on the map and in listings immediately
+DELIVERY CHAT
+- 3-party: vendor, deliverer, client
+- Opens after order, messages persist locally
+- Production: Supabase Realtime via Express backend (Pass 4+)
 
 MARKETPLACE RULES
 - Vendor offers panel must support photo or video preview
-- Show price
-- Show availability
-- Show volume in liters when available
-- Show duration when available
-- Show Buy now button
+- Show price, availability, volume, duration, menu items count, delivery range
 - Buy now uses ONLY the user wallet balance
 - If balance is low, open wallet reload inside the app
-- User reloads balance straight in the app
 
 DELIVERY RULE
 - Produce the latest deployment-ready HTML with the Spartan Script embedded inside the HTML itself</textarea>
 
-<div id="map-action-modal">
-  <div class="map-sheet">
-    <div class="sheet-title">Create here</div>
-    <div class="sheet-sub">Choose what should appear at the selected map point. The point stays geo-linked to this exact latitude and longitude.</div>
-    <div class="type-note" id="map-action-coords">Point: —</div>
-    <div class="sheet-actions">
-      <button class="sheet-btn" onclick="openEntityCreate('vendor_offer')"><strong>Vendor offer</strong>Photos or video, price, availability, liters, duration, Buy now via wallet.</button>
-      <button class="sheet-btn" onclick="openEntityCreate('shop_service')"><strong>Shop / service / activity</strong>Create a business, activity base, or service point.</button>
-      <button class="sheet-btn" onclick="openEntityCreate('post_signal')"><strong>Public post</strong>Drop a public post, announcement, or local signal.</button>
-      <button class="sheet-btn" onclick="openEntityCreate('driver_base')"><strong>Delivery driver base</strong>Set an operating base for a driver or delivery fleet.</button>
-      <button class="sheet-btn" onclick="openEntityCreate('client_address')"><strong>Client delivery address</strong>Save a delivery destination or customer point.</button>
-      <button class="sheet-btn" onclick="closeMapActionModal()"><strong>Cancel</strong>Keep exploring the map.</button>
+<!-- POST CHOOSER (map click) -->
+<div id="post-chooser">
+  <div class="pc-sheet">
+    <div class="pc-title">What do you want to create?</div>
+    <div class="pc-sub">This will be placed at the selected map point. Choose an option to continue.</div>
+    <div class="pc-coords" id="pc-coords">Point: —</div>
+    <div class="pc-options">
+      <div class="pc-opt" onclick="openPostForm()">
+        <div class="pc-opt-icon post-it">📢</div>
+        <div class="pc-opt-text"><h3>Post Something</h3><p>Share a post, announcement, offer, or signal. Choose who sees it — global, local, or your team.</p></div>
+      </div>
+      <div class="pc-opt" onclick="openShopForm()">
+        <div class="pc-opt-icon shop-it">🏪</div>
+        <div class="pc-opt-text"><h3>List a Shop</h3><p>Full shop listing with photo, hours, menu items, prices, availability, temperature, delivery range.</p></div>
+      </div>
+      <div class="pc-opt" onclick="openDeliveryForm()">
+        <div class="pc-opt-icon addr-it">📍</div>
+        <div class="pc-opt-text"><h3>Set Delivery Location</h3><p>Save your delivery address with street, floor, doorbell, name, phone, and special remarks.</p></div>
+      </div>
+    </div>
+    <div class="pc-cancel" onclick="closePostChooser()">Cancel — keep browsing</div>
+  </div>
+</div>
+
+<!-- POST FORM (visibility + content) -->
+<div id="post-form" class="form-modal">
+  <div class="form-sheet">
+    <div class="sheet-title">Post Something</div>
+    <div class="sheet-sub">Share a post, offer, or announcement. Choose the visibility level.</div>
+    <div class="pc-coords" id="pf-coords">Point: —</div>
+
+    <div class="form-section">Visibility</div>
+    <div class="vis-selector" id="pf-vis">
+      <div class="vis-opt active" data-vis="global" onclick="setPostVis(this)">🌍 Global</div>
+      <div class="vis-opt" data-vis="local" onclick="setPostVis(this)">📍 Local</div>
+      <div class="vis-opt" data-vis="team" onclick="setPostVis(this)">👥 Team</div>
+    </div>
+    <div class="team-picker" id="pf-team-picker">
+      <div class="form-group">
+        <label>Select team</label>
+        <select id="pf-team-select"><option value="">— Choose a team —</option></select>
+      </div>
+    </div>
+
+    <div class="form-section">Content</div>
+    <div class="form-group"><label>Title</label><input id="pf-title" placeholder="What's this about?"></div>
+    <div class="form-group"><label>Description</label><textarea id="pf-desc" placeholder="Tell people what you're sharing…"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="pf-cat"><option>General</option><option>Offer</option><option>Announcement</option><option>Event</option><option>Job</option><option>Dating / Social</option><option>Real Estate</option><option>Classifieds</option></select>
+      </div>
+      <div class="form-group"><label>Price (optional)</label><input id="pf-price" type="number" min="0" step="0.01" placeholder="€0.00"></div>
+    </div>
+    <div class="form-group"><label>Contact / WhatsApp / Link</label><input id="pf-contact" placeholder="How to reach you"></div>
+    <div class="form-group"><label>Photos or video (up to 3)</label><input id="pf-media" type="file" accept="image/*,video/*" multiple></div>
+
+    <div class="form-footer">
+      <button onclick="closePostForm()">Cancel</button>
+      <button class="primary" onclick="submitPostForm()">Publish Post</button>
     </div>
   </div>
 </div>
 
-<div id="entity-modal">
-  <div class="entity-sheet">
-    <div class="sheet-title" id="entity-title">Create entity</div>
-    <div class="sheet-sub" id="entity-sub">This object will be created on the selected map point and added to the live map and listings immediately.</div>
-    <div class="type-note" id="entity-coords">Point: —</div>
-    <div class="entity-grid">
-      <div class="full"><label>Type</label><select id="entity-kind">
-        <option value="vendor_offer">Vendor offer</option>
-        <option value="shop_service">Shop / service / activity</option>
-        <option value="post_signal">Public post</option>
-        <option value="driver_base">Delivery driver base</option>
-        <option value="client_address">Client delivery address</option>
-      </select></div>
-      <div><label>Name / title</label><input id="entity-name" placeholder="e.g. Blue Reef Dive Session"></div>
-      <div><label>Category</label><input id="entity-category" placeholder="e.g. Diving / Activities"></div>
-      <div class="full"><label>Description</label><textarea id="entity-description" placeholder="Describe the offer, shop, post, driver base, or address."></textarea></div>
-      <div><label>Price EUR</label><input id="entity-price" type="number" min="0" step="0.01" placeholder="25.00"></div>
-      <div><label>Availability</label><input id="entity-availability" placeholder="e.g. 12 available / Open now"></div>
-      <div><label>Volume liters</label><input id="entity-volume" type="number" min="0" step="0.1" placeholder="e.g. 1.5"></div>
-      <div><label>Duration minutes</label><input id="entity-duration" type="number" min="0" step="1" placeholder="e.g. 45"></div>
-      <div><label>Phone</label><input id="entity-phone" placeholder="+30..."></div>
-      <div><label>Website / contact</label><input id="entity-contact" placeholder="https://... or WhatsApp"></div>
-      <div class="full"><label>Photo or video</label><input id="entity-media" type="file" accept="image/*,video/*"></div>
+<!-- SHOP LISTING FORM -->
+<div id="shop-form" class="form-modal">
+  <div class="form-sheet">
+    <div class="sheet-title">List a Shop</div>
+    <div class="sheet-sub">Create a full shop listing with operating schedule, menu, prices, and delivery range.</div>
+    <div class="pc-coords" id="sf-coords">Point: —</div>
+
+    <div class="form-section">Visibility</div>
+    <div class="vis-selector" id="sf-vis">
+      <div class="vis-opt active" data-vis="global" onclick="setShopVis(this)">🌍 Global</div>
+      <div class="vis-opt" data-vis="local" onclick="setShopVis(this)">📍 Local</div>
+      <div class="vis-opt" data-vis="team" onclick="setShopVis(this)">👥 Team only</div>
     </div>
-    <div class="entity-footer">
-      <button onclick="closeEntityModal()">Cancel</button>
-      <button class="primary" onclick="submitEntityCreate()">Create here</button>
+    <div class="team-picker" id="sf-team-picker">
+      <div class="form-group"><label>Select team</label><select id="sf-team-select"><option value="">— Choose a team —</option></select></div>
+    </div>
+
+    <div class="form-section">Shop Details</div>
+    <div class="form-group"><label>Shop Name</label><input id="sf-name" placeholder="e.g. Aegean Diving Centre"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Category</label>
+        <select id="sf-cat"><option>Restaurant / Food</option><option>Café / Bar</option><option>Diving / Activities</option><option>Shop / Retail</option><option>Services</option><option>Health / Beauty</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Delivery Range (km)</label><input id="sf-range" type="number" min="0" step="0.5" placeholder="5"></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea id="sf-desc" placeholder="What does your shop offer?"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone</label><input id="sf-phone" placeholder="+30..."></div>
+      <div class="form-group"><label>Website</label><input id="sf-web" placeholder="https://..."></div>
+    </div>
+    <div class="form-group"><label>Entry Photo</label><input id="sf-photo" type="file" accept="image/*"></div>
+
+    <div class="form-section">Operating Schedule</div>
+    <div class="sched-grid" id="sf-schedule">
+      <span></span><span style="font-size:10px;color:var(--text-dim);text-align:center;">Open</span><span style="font-size:10px;color:var(--text-dim);text-align:center;">Close</span>
+      <span class="day-label"><input type="checkbox" checked> Mon</span><input type="time" data-day="mon" data-slot="open" value="09:00"><input type="time" data-day="mon" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked> Tue</span><input type="time" data-day="tue" data-slot="open" value="09:00"><input type="time" data-day="tue" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked> Wed</span><input type="time" data-day="wed" data-slot="open" value="09:00"><input type="time" data-day="wed" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked> Thu</span><input type="time" data-day="thu" data-slot="open" value="09:00"><input type="time" data-day="thu" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked> Fri</span><input type="time" data-day="fri" data-slot="open" value="09:00"><input type="time" data-day="fri" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked> Sat</span><input type="time" data-day="sat" data-slot="open" value="10:00"><input type="time" data-day="sat" data-slot="close" value="23:00">
+      <span class="day-label"><input type="checkbox"> Sun</span><input type="time" data-day="sun" data-slot="open" value="10:00"><input type="time" data-day="sun" data-slot="close" value="20:00">
+    </div>
+
+    <div class="form-section">Menu Items</div>
+    <div class="menu-items-list" id="sf-menu-list">
+      <!-- dynamic menu items go here -->
+    </div>
+    <button class="add-menu-item-btn" onclick="addMenuItem()">+ Add Menu Item</button>
+
+    <div class="form-footer">
+      <button onclick="closeShopForm()">Cancel</button>
+      <button class="primary" onclick="submitShopForm()">Create Shop Listing</button>
     </div>
   </div>
 </div>
+
+<!-- DELIVERY LOCATION FORM -->
+<div id="delivery-form" class="form-modal">
+  <div class="form-sheet">
+    <div class="sheet-title">Set Delivery Location</div>
+    <div class="sheet-sub">Save your delivery address so vendors and drivers know exactly where to bring your order.</div>
+    <div class="pc-coords" id="df-coords">Point: —</div>
+
+    <div class="form-section">Address</div>
+    <div class="form-group"><label>Street</label><input id="df-street" placeholder="e.g. Odos Eleftherias"></div>
+    <div class="form-row3">
+      <div class="form-group"><label>Number</label><input id="df-number" placeholder="42"></div>
+      <div class="form-group"><label>Floor</label><input id="df-floor" placeholder="3rd"></div>
+      <div class="form-group"><label>Doorbell</label><input id="df-doorbell" placeholder="Astranov"></div>
+    </div>
+
+    <div class="form-section">Contact</div>
+    <div class="form-row">
+      <div class="form-group"><label>Full Name</label><input id="df-name" placeholder="Your name"></div>
+      <div class="form-group"><label>Phone Number</label><input id="df-phone" placeholder="+30..."></div>
+    </div>
+
+    <div class="form-section">Remarks</div>
+    <div class="form-group"><label>Special instructions for delivery</label><textarea id="df-remarks" placeholder="e.g. Be quiet — baby sleeping. Ring twice. Gate code 1234. Leave at door."></textarea></div>
+
+    <div class="form-footer">
+      <button onclick="closeDeliveryForm()">Cancel</button>
+      <button class="primary" onclick="submitDeliveryForm()">Save Delivery Location</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANNEL FILTER BAR (on map layer) -->
+<div id="channel-bar">
+  <div class="ch-pill active" data-ch="all" onclick="setChannel('all',this)">All</div>
+  <div class="ch-pill" data-ch="global" onclick="setChannel('global',this)">🌍 Global</div>
+  <div class="ch-pill" data-ch="local" onclick="setChannel('local',this)">📍 Local</div>
+  <div class="ch-pill" data-ch="team" onclick="setChannel('team',this)">👥 Teams</div>
+  <div class="ch-team-pills" id="ch-team-pills"></div>
+</div>
+
+<!-- DELIVERY CHAT WINDOW -->
+<div id="delivery-chat">
+  <div class="dc-header">
+    <div>
+      <div class="dc-title" id="dc-title">Delivery Chat</div>
+      <div class="dc-status" id="dc-status">Active</div>
+    </div>
+    <button class="dc-close" onclick="closeDeliveryChat()">×</button>
+  </div>
+  <div class="dc-messages" id="dc-messages">
+    <div style="font-size:11px;color:var(--text-dim);text-align:center;padding:20px;">No messages yet. Chat will activate when an order is placed.</div>
+  </div>
+  <div class="dc-input-row">
+    <input class="dc-input" id="dc-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChatMsg()">
+    <button class="dc-send" onclick="sendChatMsg()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ROUTING TOAST -->
+<div id="routing-toast"></div>
 
 
 <script>
@@ -3048,7 +3286,15 @@ DELIVERY RULE
 
   const LOCAL_OFFER_KEY = 'astranov.local.offers.v333';
   const LOCAL_PLACE_KEY = 'astranov.local.places.v333';
+  const TEAMS_KEY = 'astranov.teams.v1';
+  const DELIVERY_ADDR_KEY = 'astranov.delivery.addresses.v1';
+  const CHAT_KEY = 'astranov.chat.messages.v1';
+  const CHANNEL_KEY = 'astranov.channel.filter.v1';
   let MAP_PICK = null;
+  let ACTIVE_CHANNEL = 'all';
+  let ACTIVE_TEAM = null;
+  let ACTIVE_ORDER = null;
+  let MENU_ITEM_COUNT = 0;
 
   function byId(id){ return document.getElementById(id); }
   function num(v){ const n = Number(v); return Number.isFinite(n) ? n : null; }
@@ -3058,6 +3304,12 @@ DELIVERY RULE
   function setLocalOffers(items){ safeJsonSet(LOCAL_OFFER_KEY, items); }
   function getLocalPlaces(){ return safeJsonGet(LOCAL_PLACE_KEY, []); }
   function setLocalPlaces(items){ safeJsonSet(LOCAL_PLACE_KEY, items); }
+  function getTeams(){ return safeJsonGet(TEAMS_KEY, [{id:'team-default',name:'My Team'}]); }
+  function setTeams(t){ safeJsonSet(TEAMS_KEY, t); }
+  function getDeliveryAddresses(){ return safeJsonGet(DELIVERY_ADDR_KEY, []); }
+  function setDeliveryAddresses(items){ safeJsonSet(DELIVERY_ADDR_KEY, items); }
+  function getChatMessages(){ return safeJsonGet(CHAT_KEY, []); }
+  function setChatMessages(msgs){ safeJsonSet(CHAT_KEY, msgs); }
   function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2,10) + '-' + Date.now().toString(36); }
   function coordsText(lat,lng){ return 'Point: ' + Number(lat).toFixed(5) + '°, ' + Number(lng).toFixed(5) + '°'; }
 
@@ -3071,64 +3323,105 @@ DELIVERY RULE
     });
   }
 
-  window.openMapActionModal = function(lat, lng){
-    MAP_PICK = { lat:Number(lat), lng:Number(lng) };
-    byId('map-action-coords').textContent = coordsText(lat,lng);
-    byId('entity-coords').textContent = coordsText(lat,lng);
-    byId('map-action-modal').classList.add('on');
-  };
-  window.closeMapActionModal = function(){ byId('map-action-modal').classList.remove('on'); };
-
-  function syncEntityKind(kind){
-    byId('entity-kind').value = kind;
-    const titleMap = {
-      vendor_offer: 'Create vendor offer',
-      shop_service: 'Create shop / service / activity',
-      post_signal: 'Create public post',
-      driver_base: 'Create delivery driver base',
-      client_address: 'Create client delivery address'
-    };
-    const subMap = {
-      vendor_offer: 'This creates a wallet-buyable vendor offer with media, price, availability, liters, and duration.',
-      shop_service: 'This creates a business or service point on the live map.',
-      post_signal: 'This creates a public visible post or local signal on the live map.',
-      driver_base: 'This creates a delivery driver operating base.',
-      client_address: 'This creates a saved client destination marker.'
-    };
-    byId('entity-title').textContent = titleMap[kind] || 'Create entity';
-    byId('entity-sub').textContent = subMap[kind] || 'Create a new map object.';
+  // ═══ TEAM MANAGEMENT ═══
+  function populateTeamSelects(){
+    const teams = getTeams();
+    ['pf-team-select','sf-team-select'].forEach(id => {
+      const sel = byId(id);
+      if(!sel) return;
+      sel.innerHTML = '<option value="">— Choose a team —</option>' + teams.map(t => '<option value="'+t.id+'">'+t.name+'</option>').join('');
+    });
+    renderTeamPills();
   }
 
-  window.openEntityCreate = function(kind){
-    closeMapActionModal();
-    syncEntityKind(kind || 'vendor_offer');
-    byId('entity-coords').textContent = MAP_PICK ? coordsText(MAP_PICK.lat, MAP_PICK.lng) : 'Point: current map center';
-    byId('entity-modal').classList.add('on');
+  function renderTeamPills(){
+    const container = byId('ch-team-pills');
+    if(!container) return;
+    const teams = getTeams();
+    container.innerHTML = teams.map(t => '<div class="ch-pill'+(ACTIVE_TEAM===t.id?' active':'')+'" data-team="'+t.id+'" onclick="setTeamChannel(\''+t.id+'\',this)">'+t.name+'</div>').join('');
+    container.style.display = ACTIVE_CHANNEL === 'team' ? 'flex' : 'none';
+  }
+
+  // ═══ CHANNEL SYSTEM ═══
+  window.setChannel = function(ch, el){
+    ACTIVE_CHANNEL = ch;
+    ACTIVE_TEAM = null;
+    document.querySelectorAll('#channel-bar > .ch-pill').forEach(p => p.classList.toggle('active', p.dataset.ch === ch));
+    renderTeamPills();
+    safeJsonSet(CHANNEL_KEY, {channel:ch, team:null});
+    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 100);
   };
-  window.closeEntityModal = function(){ byId('entity-modal').classList.remove('on'); };
 
-  byId('entity-kind').addEventListener('change', e => syncEntityKind(e.target.value));
+  window.setTeamChannel = function(teamId, el){
+    ACTIVE_CHANNEL = 'team';
+    ACTIVE_TEAM = teamId;
+    document.querySelectorAll('#channel-bar > .ch-pill').forEach(p => p.classList.toggle('active', p.dataset.ch === 'team'));
+    document.querySelectorAll('#ch-team-pills .ch-pill').forEach(p => p.classList.toggle('active', p.dataset.team === teamId));
+    safeJsonSet(CHANNEL_KEY, {channel:'team', team:teamId});
+    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 100);
+  };
 
-  window.submitEntityCreate = async function(){
-    const kind = byId('entity-kind').value;
+  function itemMatchesChannel(item){
+    if(ACTIVE_CHANNEL === 'all') return true;
+    const vis = item.visibility || 'global';
+    if(ACTIVE_CHANNEL === 'global') return vis === 'global';
+    if(ACTIVE_CHANNEL === 'local') return vis === 'local' || vis === 'global';
+    if(ACTIVE_CHANNEL === 'team'){
+      if(vis !== 'team') return false;
+      if(ACTIVE_TEAM) return item.team_id === ACTIVE_TEAM;
+      return true;
+    }
+    return true;
+  }
+
+  // ═══ POST CHOOSER ═══
+  window.openPostChooser = function(lat, lng){
+    MAP_PICK = { lat:Number(lat), lng:Number(lng) };
+    const ct = coordsText(lat,lng);
+    byId('pc-coords').textContent = ct;
+    byId('pf-coords').textContent = ct;
+    byId('sf-coords').textContent = ct;
+    byId('df-coords').textContent = ct;
+    byId('post-chooser').classList.add('on');
+  };
+  window.closePostChooser = function(){ byId('post-chooser').classList.remove('on'); };
+
+  // Keep backwards compat
+  window.openMapActionModal = window.openPostChooser;
+  window.closeMapActionModal = window.closePostChooser;
+
+  // ═══ POST FORM ═══
+  window.openPostForm = function(){
+    closePostChooser();
+    byId('post-form').classList.add('on');
+    populateTeamSelects();
+  };
+  window.closePostForm = function(){ byId('post-form').classList.remove('on'); };
+
+  window.setPostVis = function(el){
+    el.parentElement.querySelectorAll('.vis-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    byId('pf-team-picker').classList.toggle('on', el.dataset.vis === 'team');
+  };
+
+  window.submitPostForm = async function(){
+    const vis = byId('pf-vis').querySelector('.vis-opt.active')?.dataset.vis || 'global';
+    const teamId = vis === 'team' ? byId('pf-team-select').value : '';
+    const file = byId('pf-media')?.files[0];
+    const mediaData = await fileToDataUrl(file).catch(()=>'');
     const point = MAP_PICK || (window.LM ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
-    const file = byId('entity-media').files[0];
-    const mediaData = await fileToDataUrl(file).catch(()=> '');
     const item = {
-      id: uid(kind),
-      kind,
-      title: byId('entity-name').value.trim() || 'Untitled',
-      name: byId('entity-name').value.trim() || 'Untitled',
-      category: byId('entity-category').value.trim() || (kind === 'vendor_offer' ? 'Vendor Offer' : kind),
-      description: byId('entity-description').value.trim(),
-      price: byId('entity-price').value ? '€' + Number(byId('entity-price').value).toFixed(2) : '',
-      price_eur: num(byId('entity-price').value),
-      availability: byId('entity-availability').value.trim(),
-      volume_liters: num(byId('entity-volume').value),
-      duration_minutes: num(byId('entity-duration').value),
-      contact: byId('entity-contact').value.trim(),
-      phone: byId('entity-phone').value.trim(),
-      website: byId('entity-contact').value.trim(),
+      id: uid('post'),
+      kind: 'post_signal',
+      title: byId('pf-title').value.trim() || 'Untitled Post',
+      name: byId('pf-title').value.trim() || 'Untitled Post',
+      category: byId('pf-cat').value,
+      description: byId('pf-desc').value.trim(),
+      price: byId('pf-price').value ? '€'+Number(byId('pf-price').value).toFixed(2) : '',
+      price_eur: num(byId('pf-price').value),
+      contact: byId('pf-contact').value.trim(),
+      visibility: vis,
+      team_id: teamId,
       lat: Number(point.lat),
       lon: Number(point.lng),
       lng: Number(point.lng),
@@ -3136,69 +3429,397 @@ DELIVERY RULE
       video: mediaData && mediaData.startsWith('data:video') ? mediaData : '',
       created_at: new Date().toISOString(),
       local_only: true,
-      vendor_name: (window.CU && CU.name) || 'Local vendor'
+      vendor_name: (window.CU && CU.name) || 'Local user'
     };
+    const offers = getLocalOffers();
+    offers.unshift(item);
+    setLocalOffers(offers.slice(0,120));
 
-    if(kind === 'vendor_offer' || kind === 'shop_service' || kind === 'post_signal'){
-      const offers = getLocalOffers();
-      offers.unshift(item);
-      setLocalOffers(offers.slice(0,120));
-    } else {
-      const places = getLocalPlaces();
-      places.unshift(item);
-      setLocalPlaces(places.slice(0,120));
-    }
-
-    // light best-effort sync to existing backend shapes when logged in
     try{
       if(window.CU && window.sb){
-        if(kind === 'vendor_offer' || kind === 'post_signal'){
-          await sb.from('signals').insert([{
-            user_id: CU.id,
-            title: item.title,
-            description: item.description,
-            price: item.price,
-            contact: item.contact || item.phone,
-            category: kind === 'vendor_offer' ? 'shop' : 'social',
-            lat: item.lat,
-            lon: item.lon
-          }]);
-        } else if(kind === 'shop_service'){
-          await sb.from('shops').insert([{
-            vendor_id: CU.id,
-            name: item.name,
-            category: item.category,
-            description: item.description,
-            phone: item.phone,
-            website: item.website,
-            lat: item.lat,
-            lon: item.lon
-          }]);
-        } else if(kind === 'driver_base'){
-          await sb.from('drivers').upsert([{
-            user_id: CU.id,
-            vehicle_type: 'Motorcycle',
-            lat: item.lat,
-            lon: item.lon,
-            available: true
-          }], { onConflict: 'user_id' });
-        }
+        await sb.from('signals').insert([{
+          user_id: CU.id, title: item.title, description: item.description,
+          price: item.price, contact: item.contact, category: item.category,
+          lat: item.lat, lon: item.lon
+        }]);
       }
     } catch(e){}
 
-    ['entity-name','entity-category','entity-description','entity-price','entity-availability','entity-volume','entity-duration','entity-phone','entity-contact','entity-media'].forEach(id=>{
-      const el = byId(id);
-      if(!el) return;
-      if(el.type === 'file') el.value = '';
-      else el.value = '';
-    });
-    closeEntityModal();
+    ['pf-title','pf-desc','pf-price','pf-contact'].forEach(id => { const el=byId(id); if(el) el.value=''; });
+    if(byId('pf-media')) byId('pf-media').value='';
+    closePostForm();
     if(window.CL !== 1) goLayer(1);
-    if(window.LM && typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
     if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
-    if(typeof showResp === 'function') showResp((item.title || item.name) + ' created on the live map.');
+    if(typeof showResp === 'function') showResp(item.title + ' posted to ' + vis + (teamId ? ' ('+getTeams().find(t=>t.id===teamId)?.name+')' : ''));
   };
 
+  // ═══ SHOP FORM ═══
+  window.openShopForm = function(){
+    closePostChooser();
+    byId('shop-form').classList.add('on');
+    populateTeamSelects();
+    if(!byId('sf-menu-list').children.length) addMenuItem();
+  };
+  window.closeShopForm = function(){ byId('shop-form').classList.remove('on'); };
+
+  window.setShopVis = function(el){
+    el.parentElement.querySelectorAll('.vis-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    byId('sf-team-picker').classList.toggle('on', el.dataset.vis === 'team');
+  };
+
+  window.addMenuItem = function(){
+    MENU_ITEM_COUNT++;
+    const i = MENU_ITEM_COUNT;
+    const html = `<div class="menu-item-entry" id="mi-${i}">
+      <span class="remove-menu-item" onclick="this.parentElement.remove()">✕ remove</span>
+      <div class="form-row">
+        <div class="form-group"><label>Item Name</label><input data-mi="${i}" data-field="name" placeholder="e.g. Margherita Pizza"></div>
+        <div class="form-group"><label>Price €</label><input data-mi="${i}" data-field="price" type="number" min="0" step="0.01" placeholder="8.50"></div>
+      </div>
+      <div class="form-row3">
+        <div class="form-group"><label>Volume/Size</label><input data-mi="${i}" data-field="volume" placeholder="e.g. 500ml"></div>
+        <div class="form-group"><label>Qty Available</label><input data-mi="${i}" data-field="qty" type="number" min="0" placeholder="∞"></div>
+        <div class="form-group"><label>Production Rate</label><input data-mi="${i}" data-field="rate" placeholder="e.g. 6/hr"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Available Times</label><input data-mi="${i}" data-field="times" placeholder="e.g. 11:00-15:00, 18:00-22:00"></div>
+        <div class="form-group"><label>Photo</label><input data-mi="${i}" data-field="photo" type="file" accept="image/*"></div>
+      </div>
+      <div class="form-group"><label>Temperature</label>
+        <div class="temp-selector">
+          <div class="temp-opt" data-temp="cold" data-mi="${i}" onclick="setMenuTemp(this)">❄️ Cold</div>
+          <div class="temp-opt active" data-temp="neutral" data-mi="${i}" onclick="setMenuTemp(this)">🍽 Neutral</div>
+          <div class="temp-opt" data-temp="hot" data-mi="${i}" onclick="setMenuTemp(this)">🔥 Hot</div>
+        </div>
+      </div>
+    </div>`;
+    byId('sf-menu-list').insertAdjacentHTML('beforeend', html);
+  };
+
+  window.setMenuTemp = function(el){
+    const mi = el.dataset.mi;
+    document.querySelectorAll('.temp-opt[data-mi="'+mi+'"]').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+  };
+
+  function collectSchedule(){
+    const schedule = {};
+    const days = ['mon','tue','wed','thu','fri','sat','sun'];
+    days.forEach(day => {
+      const checkbox = byId('sf-schedule').querySelector(`[data-day="${day}"]`)?.closest('.day-label')?.querySelector('input[type=checkbox]');
+      const open = byId('sf-schedule').querySelector(`input[data-day="${day}"][data-slot="open"]`);
+      const close = byId('sf-schedule').querySelector(`input[data-day="${day}"][data-slot="close"]`);
+      schedule[day] = {
+        active: checkbox ? checkbox.checked : true,
+        open: open ? open.value : '09:00',
+        close: close ? close.value : '22:00'
+      };
+    });
+    return schedule;
+  }
+
+  async function collectMenuItems(){
+    const items = [];
+    const entries = byId('sf-menu-list').querySelectorAll('.menu-item-entry');
+    for(const entry of entries){
+      const mi = entry.id.replace('mi-','');
+      const nameEl = entry.querySelector(`[data-field="name"]`);
+      const priceEl = entry.querySelector(`[data-field="price"]`);
+      const volumeEl = entry.querySelector(`[data-field="volume"]`);
+      const qtyEl = entry.querySelector(`[data-field="qty"]`);
+      const rateEl = entry.querySelector(`[data-field="rate"]`);
+      const timesEl = entry.querySelector(`[data-field="times"]`);
+      const photoEl = entry.querySelector(`[data-field="photo"]`);
+      const activeTemp = entry.querySelector('.temp-opt.active');
+      const photoData = photoEl?.files[0] ? await fileToDataUrl(photoEl.files[0]).catch(()=>'') : '';
+      items.push({
+        name: nameEl?.value?.trim() || 'Unnamed item',
+        price: num(priceEl?.value),
+        volume: volumeEl?.value?.trim() || '',
+        qty_available: num(qtyEl?.value),
+        production_rate: rateEl?.value?.trim() || '',
+        available_times: timesEl?.value?.trim() || '',
+        temperature: activeTemp?.dataset.temp || 'neutral',
+        photo: photoData
+      });
+    }
+    return items;
+  }
+
+  window.submitShopForm = async function(){
+    const vis = byId('sf-vis').querySelector('.vis-opt.active')?.dataset.vis || 'global';
+    const teamId = vis === 'team' ? byId('sf-team-select').value : '';
+    const point = MAP_PICK || (window.LM ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
+    const entryPhotoFile = byId('sf-photo')?.files[0];
+    const entryPhoto = await fileToDataUrl(entryPhotoFile).catch(()=>'');
+    const schedule = collectSchedule();
+    const menuItems = await collectMenuItems();
+
+    const item = {
+      id: uid('shop'),
+      kind: 'shop_service',
+      name: byId('sf-name').value.trim() || 'Unnamed Shop',
+      title: byId('sf-name').value.trim() || 'Unnamed Shop',
+      category: byId('sf-cat').value,
+      description: byId('sf-desc').value.trim(),
+      phone: byId('sf-phone').value.trim(),
+      website: byId('sf-web').value.trim(),
+      delivery_range_km: num(byId('sf-range').value) || 5,
+      visibility: vis,
+      team_id: teamId,
+      schedule: schedule,
+      menu: menuItems,
+      image: entryPhoto && entryPhoto.startsWith('data:image') ? entryPhoto : '',
+      lat: Number(point.lat),
+      lon: Number(point.lng),
+      lng: Number(point.lng),
+      created_at: new Date().toISOString(),
+      local_only: true,
+      vendor_name: (window.CU && CU.name) || 'Local vendor'
+    };
+
+    const offers = getLocalOffers();
+    offers.unshift(item);
+    setLocalOffers(offers.slice(0,120));
+
+    try{
+      if(window.CU && window.sb){
+        await sb.from('shops').insert([{
+          vendor_id: CU.id, name: item.name, category: item.category,
+          description: item.description, phone: item.phone, website: item.website,
+          lat: item.lat, lon: item.lon
+        }]);
+      }
+    } catch(e){}
+
+    ['sf-name','sf-desc','sf-phone','sf-web','sf-range'].forEach(id => { const el=byId(id); if(el) el.value=''; });
+    if(byId('sf-photo')) byId('sf-photo').value='';
+    byId('sf-menu-list').innerHTML='';
+    MENU_ITEM_COUNT=0;
+    closeShopForm();
+    if(window.CL !== 1) goLayer(1);
+    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+    if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
+    if(typeof showResp === 'function') showResp('Shop "'+item.name+'" listed on the live map.');
+  };
+
+  // ═══ DELIVERY LOCATION FORM ═══
+  window.openDeliveryForm = function(){
+    closePostChooser();
+    byId('delivery-form').classList.add('on');
+    // Pre-fill name/phone from auth
+    if(window.CU){
+      if(!byId('df-name').value) byId('df-name').value = CU.name || '';
+      if(!byId('df-phone').value) byId('df-phone').value = CU.phone || '';
+    }
+  };
+  window.closeDeliveryForm = function(){ byId('delivery-form').classList.remove('on'); };
+
+  window.submitDeliveryForm = function(){
+    const point = MAP_PICK || (window.LM ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
+    const addr = {
+      id: uid('addr'),
+      kind: 'client_address',
+      street: byId('df-street').value.trim(),
+      number: byId('df-number').value.trim(),
+      floor: byId('df-floor').value.trim(),
+      doorbell: byId('df-doorbell').value.trim(),
+      name: byId('df-name').value.trim() || 'Client',
+      phone: byId('df-phone').value.trim(),
+      remarks: byId('df-remarks').value.trim(),
+      lat: Number(point.lat),
+      lon: Number(point.lng),
+      lng: Number(point.lng),
+      created_at: new Date().toISOString()
+    };
+    const addrs = getDeliveryAddresses();
+    addrs.unshift(addr);
+    setDeliveryAddresses(addrs.slice(0,20));
+
+    // Also save as a local place marker
+    const places = getLocalPlaces();
+    places.unshift({
+      ...addr,
+      title: addr.name + ' — ' + addr.street + ' ' + addr.number,
+      description: [addr.floor ? 'Floor: '+addr.floor : '', addr.doorbell ? 'Bell: '+addr.doorbell : '', addr.remarks].filter(Boolean).join(' · ')
+    });
+    setLocalPlaces(places.slice(0,120));
+
+    ['df-street','df-number','df-floor','df-doorbell','df-name','df-phone','df-remarks'].forEach(id => { const el=byId(id); if(el) el.value=''; });
+    closeDeliveryForm();
+    if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+    if(typeof showResp === 'function') showResp('Delivery location saved: ' + addr.street + ' ' + addr.number);
+  };
+
+  // ═══ ORDER ROUTING ENGINE ═══
+  function haversine(lat1,lng1,lat2,lng2){
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLng = (lng2-lng1)*Math.PI/180;
+    const a = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  async function findClosestDriver(vendorLat, vendorLng){
+    let drivers = [];
+    try{
+      const { data } = await sb.from('drivers').select('*').eq('available', true);
+      drivers = data || [];
+    } catch(e){}
+    // Also add local driver bases
+    getLocalPlaces().filter(p => p.kind === 'driver_base').forEach(d => {
+      drivers.push({ user_id: d.id, lat: d.lat, lon: d.lon || d.lng, vehicle_type: 'Motorcycle', price_per_km: 0.80, local: true });
+    });
+    if(!drivers.length) return null;
+    let closest = null, minDist = Infinity;
+    drivers.forEach(d => {
+      const dist = haversine(vendorLat, vendorLng, d.lat, d.lon || d.lng || 0);
+      if(dist < minDist){
+        minDist = dist;
+        closest = { ...d, distance_km: dist };
+      }
+    });
+    return closest;
+  }
+
+  window.routeOrderToDriver = async function(orderData){
+    const toast = byId('routing-toast');
+    toast.innerHTML = '🔄 Finding closest available driver…';
+    toast.classList.add('on');
+
+    const driver = await findClosestDriver(orderData.vendor_lat || LOC.lat, orderData.vendor_lng || LOC.lng);
+
+    if(!driver){
+      toast.innerHTML = '⚠️ No drivers available right now. Your order will be queued.';
+      setTimeout(() => toast.classList.remove('on'), 4000);
+      return null;
+    }
+
+    const deliveryDist = haversine(driver.lat, driver.lon || driver.lng || 0, orderData.client_lat || LOC.lat, orderData.client_lng || LOC.lng);
+    const totalDist = driver.distance_km + deliveryDist;
+    const price = Math.max(3.00, 2.50 + totalDist * (driver.price_per_km || 0.80));
+    const eta = Math.round(totalDist * 3.5 + 5); // rough ETA in minutes
+
+    toast.innerHTML = `🚀 Driver found! <span class="rt-driver">${driver.vehicle_type || 'Driver'}</span> is <span class="rt-eta">${driver.distance_km.toFixed(1)}km away</span>. Delivery fee: <span class="rt-price">€${price.toFixed(2)}</span> · ETA: <span class="rt-eta">~${eta} min</span>`;
+    setTimeout(() => toast.classList.remove('on'), 6000);
+
+    // Create the order record
+    const order = {
+      id: uid('order'),
+      vendor_name: orderData.vendor_name || 'Vendor',
+      product_name: orderData.product_name || 'Order',
+      driver_id: driver.user_id,
+      driver_vehicle: driver.vehicle_type,
+      delivery_fee: price,
+      eta_minutes: eta,
+      status: 'assigned',
+      vendor_lat: orderData.vendor_lat, vendor_lng: orderData.vendor_lng,
+      client_lat: orderData.client_lat, client_lng: orderData.client_lng,
+      created_at: new Date().toISOString()
+    };
+
+    try{
+      if(window.CU && window.sb){
+        await sb.from('deliveries').insert([{
+          user_id: CU.id, status: 'assigned',
+          pickup_lat: order.vendor_lat, pickup_lon: order.vendor_lng,
+          dropoff_lat: order.client_lat, dropoff_lon: order.client_lng
+        }]);
+      }
+    } catch(e){}
+
+    // Open delivery chat
+    ACTIVE_ORDER = order;
+    openDeliveryChat(order);
+    return order;
+  };
+
+  // ═══ DELIVERY CHAT ═══
+  window.openDeliveryChat = function(order){
+    ACTIVE_ORDER = order || ACTIVE_ORDER;
+    const chat = byId('delivery-chat');
+    byId('dc-title').textContent = 'Order: ' + (ACTIVE_ORDER?.product_name || 'Delivery');
+    byId('dc-status').textContent = ACTIVE_ORDER?.status === 'assigned' ? 'Driver assigned' : 'Active';
+    chat.classList.add('on');
+    renderChatMessages();
+
+    // Add system message
+    if(ACTIVE_ORDER && !getChatMessages().find(m => m.order_id === ACTIVE_ORDER.id)){
+      addChatMessage('system', '📦 Order created. ' + (ACTIVE_ORDER.driver_vehicle||'Driver') + ' is on the way. ETA ~' + (ACTIVE_ORDER.eta_minutes||'?') + ' min. Delivery fee: €' + (ACTIVE_ORDER.delivery_fee||0).toFixed(2));
+    }
+  };
+
+  window.closeDeliveryChat = function(){ byId('delivery-chat').classList.remove('on'); };
+
+  function addChatMessage(role, text){
+    const msgs = getChatMessages();
+    msgs.push({
+      id: uid('msg'),
+      order_id: ACTIVE_ORDER?.id || '',
+      role: role, // 'vendor','driver','client','system'
+      text: text,
+      sender: role === 'client' ? (window.CU?.name || 'You') : role === 'system' ? 'System' : role.charAt(0).toUpperCase()+role.slice(1),
+      time: new Date().toISOString()
+    });
+    setChatMessages(msgs.slice(-200));
+    renderChatMessages();
+  }
+
+  function renderChatMessages(){
+    const container = byId('dc-messages');
+    const msgs = getChatMessages().filter(m => !ACTIVE_ORDER || m.order_id === ACTIVE_ORDER.id);
+    if(!msgs.length){
+      container.innerHTML = '<div style="font-size:11px;color:var(--text-dim);text-align:center;padding:20px;">No messages yet.</div>';
+      return;
+    }
+    container.innerHTML = msgs.map(m => {
+      const roleClass = m.role === 'vendor' ? 'vendor' : m.role === 'driver' ? 'driver' : 'client';
+      return `<div class="dc-msg ${roleClass}"><div class="dc-sender">${m.sender}</div>${m.text}<div class="dc-time">${new Date(m.time).toLocaleTimeString()}</div></div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  window.sendChatMsg = function(){
+    const input = byId('dc-input');
+    const text = input.value.trim();
+    if(!text) return;
+    addChatMessage('client', text);
+    input.value = '';
+
+    // Simulate vendor/driver responses
+    if(ACTIVE_ORDER){
+      setTimeout(() => {
+        addChatMessage('vendor', 'Got it! Preparing your order now. 🍕');
+      }, 1500 + Math.random()*2000);
+      setTimeout(() => {
+        addChatMessage('driver', 'On my way to pick up! Will update when I arrive. 🛵');
+      }, 3000 + Math.random()*2000);
+    }
+  };
+
+  // ═══ ENHANCED BUY FLOW WITH ROUTING ═══
+  const _origBuyFromBalance = window.buyListingFromBalance;
+  window.buyListingFromBalance = async function(index){
+    if(typeof _origBuyFromBalance === 'function') await _origBuyFromBalance(index);
+
+    // After purchase, trigger routing
+    const record = (window.LISTING_CACHE || [])[index];
+    if(!record) return;
+    const addrs = getDeliveryAddresses();
+    const clientAddr = addrs[0] || { lat: LOC.lat, lng: LOC.lng };
+    await routeOrderToDriver({
+      vendor_name: record.name || record.title || 'Vendor',
+      product_name: record.name || record.title || 'Order',
+      vendor_lat: record.lat || LOC.lat,
+      vendor_lng: record.lon || record.lng || LOC.lng,
+      client_lat: clientAddr.lat || LOC.lat,
+      client_lng: clientAddr.lon || clientAddr.lng || LOC.lng
+    });
+  };
+
+  // ═══ MAP CLICK HANDLER (patched) ═══
   const _origInitLeaflet = window.initLeaflet;
   window.initLeaflet = function(){
     _origInitLeaflet();
@@ -3209,13 +3830,11 @@ DELIVERY RULE
       window.LOC = { lat:e.latlng.lat, lng:e.latlng.lng };
       resetSubmarineGate();
       setTimeout(() => {
-        if(!gameActive && CL === 1) openMapActionModal(e.latlng.lat, e.latlng.lng);
+        if(!gameActive && CL === 1) openPostChooser(e.latlng.lat, e.latlng.lng);
       }, 140);
     });
 
-    LM.on('moveend', () => {
-      resetSubmarineGate();
-    });
+    LM.on('moveend', () => { resetSubmarineGate(); });
 
     LM.on('zoomend', () => {
       if(!LM || gameActive || CL !== 1) return;
@@ -3238,6 +3857,109 @@ DELIVERY RULE
     }
   };
 
+  // ═══ CHANNEL BAR VISIBILITY ═══
+  const _origApplyLayer = window.applyLayer;
+  window.applyLayer = function(idx){
+    _origApplyLayer(idx);
+    byId('channel-bar').classList.toggle('on', idx === 1);
+  };
+
+  // ═══ ENHANCED MAP DATA WITH CHANNEL FILTER ═══
+  const _origRefreshMapData = window.refreshMapData;
+  window.refreshMapData = async function(){
+    await _origRefreshMapData();
+    if(!window.LM) return;
+    const offers = getLocalOffers().filter(itemMatchesChannel);
+    const places = getLocalPlaces();
+    const mergedShops = [];
+    const mergedSignals = [];
+    offers.forEach(r => {
+      const col = r.kind === 'post_signal' ? '#7dc3ff' : '#00c8ff';
+      const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
+      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
+        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || 'Local entry') : (r.title || r.name || 'Local entry'))}</b><br><span style="font-size:11px;color:#95a8bb;">${(window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind))}</span>${r.visibility ? '<br><span style="font-size:9px;color:#5ca0ff;">'+r.visibility.toUpperCase()+'</span>' : ''}${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
+      MM.push(m);
+      if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
+    });
+    places.forEach(r => {
+      const col = r.kind === 'driver_base' ? '#ff9900' : '#00e87a';
+      const label = r.kind === 'driver_base' ? 'Driver base' : 'Delivery Address';
+      const ic = L.divIcon({ className:'', iconSize:[13,13], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
+      const popup = r.kind === 'client_address'
+        ? `<b style="color:${col};font-size:13px;">${(window.escapeHtml?escapeHtml(r.name||'Client'):(r.name||'Client'))}</b><br><span style="font-size:11px;">${[r.street,r.number].filter(Boolean).join(' ')}</span>${r.floor?'<br><span style="font-size:10px;">Floor: '+r.floor+'</span>':''}${r.remarks?'<br><span style="font-size:10px;color:#ff9900;">'+r.remarks+'</span>':''}`
+        : `<b style="color:${col};font-size:13px;">${(window.escapeHtml?escapeHtml(r.title||r.name||label):(r.title||r.name||label))}</b><br><span style="font-size:11px;color:#95a8bb;">${label}</span>`;
+      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM).bindPopup(popup);
+      MM.push(m);
+    });
+
+    // Merge into listings
+    const existing = Array.isArray(window.LISTING_CACHE) ? LISTING_CACHE.slice() : [];
+    const locals = offers.map(r => ({...r, _type: r.kind === 'shop_service' ? 'Shop / Service' : r.kind === 'post_signal' ? 'Public Post' : 'Vendor Offer' }));
+    const combined = [...locals, ...existing].slice(0, 50);
+    LISTING_CACHE = combined;
+    const c = byId('lp-content');
+    if(c){
+      if(!combined.length){
+        c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet.</div>';
+      } else {
+        c.innerHTML = combined.map((r, i) => {
+          const priceLabel = window.formatPriceLabel ? formatPriceLabel(r) : (r.price || 'Ask vendor');
+          const priceAmount = window.inferPriceAmount ? inferPriceAmount(r) : (Number(r.price_eur) || null);
+          const desc = window.escapeHtml && window.clipText ? escapeHtml(clipText(r.description || r.body || '', 120)) : (r.description || '');
+          const media = window.listingMediaMarkup ? listingMediaMarkup(r) : '';
+          const lat = Number(r.lat || window.LOC.lat);
+          const lng = Number(r.lon || r.lng || window.LOC.lng);
+          const visBadge = r.visibility ? `<span style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(0,200,255,0.08);color:#5ca0ff;margin-left:6px;">${r.visibility}</span>` : '';
+          // Shop-specific: show schedule + menu count
+          const shopMeta = r.kind === 'shop_service' && r.menu ? `<div class="lmeta-chip"><div class="lmeta-label">Menu Items</div><div class="lmeta-value">${r.menu.length}</div></div><div class="lmeta-chip"><div class="lmeta-label">Delivery</div><div class="lmeta-value">${r.delivery_range_km||'—'}km</div></div>` : '';
+          return `
+            <div class="lcard" onclick="flyTo(${lat},${lng})">
+              ${media}
+              <div class="lcontent">
+                <div class="lcc">${window.escapeHtml ? escapeHtml(r._type || 'Vendor Offer') : (r._type || 'Vendor Offer')}${visBadge}</div>
+                <div class="lcn">${window.escapeHtml ? escapeHtml(r.name || r.title || 'Signal') : (r.name || r.title || 'Signal')}</div>
+                <div class="lcp">${window.escapeHtml ? escapeHtml(priceLabel) : priceLabel}</div>
+                <div class="ldesc">${desc || 'Live vendor offer ready for wallet checkout.'}</div>
+                <div class="lmeta">
+                  <div class="lmeta-chip"><div class="lmeta-label">Availability</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live')) : (window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live'))}</div></div>
+                  <div class="lmeta-chip"><div class="lmeta-label">Volume</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + '')) : (window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + ''))}</div></div>
+                  ${shopMeta}
+                  <div class="lmeta-chip"><div class="lmeta-label">Vendor</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor')) : (window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor'))}</div></div>
+                </div>
+                <div class="lactions">
+                  <button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button>
+                  <button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button>
+                </div>
+                <div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div></div>
+              </div>
+            </div>`;
+        }).join('');
+      }
+    }
+  };
+
+  // ═══ ORBITAL FEED PATCH ═══
+  const _origLoadOrbitalFeed = window.loadOrbitalFeed;
+  window.loadOrbitalFeed = async function(){
+    await _origLoadOrbitalFeed();
+    const locals = getLocalOffers().filter(itemMatchesChannel).slice(0, 6).map((r, idx) => (window.withOrbitalDefaults ? withOrbitalDefaults({
+      kind:'offer',
+      title:r.title || r.name || 'Local offer',
+      body:r.description || r.availability || 'Local marketplace item',
+      metaLeft:(r.category || r.kind || 'LOCAL').toUpperCase(),
+      metaRight:r.price || 'LIVE',
+      image:r.image || '',
+      video:r.video || '',
+      lat:Number(r.lat),
+      lng:Number(r.lon || r.lng)
+    }, idx + 100) : null)).filter(Boolean);
+    if(locals.length){
+      window.ORBITAL_FEED = [...locals, ...(window.ORBITAL_FEED || [])].slice(0, 16);
+      if(typeof renderOrbitalFeed === 'function') renderOrbitalFeed();
+    }
+  };
+
+  // ═══ GAME PATCHES ═══
   const _origMaybeStartSubmarineDive = window.maybeStartSubmarineDive;
   window.maybeStartSubmarineDive = async function(force=false){
     if(!window.LM || gameActive || CL !== 1) return;
@@ -3300,11 +4022,8 @@ DELIVERY RULE
   gameUi.addEventListener('wheel', ev => {
     if(!gameActive) return;
     ev.preventDefault();
-    if(gameType === 'spaceship' && ev.deltaY < 0){
-      exitGame();
-    } else if(gameType === 'submarine' && ev.deltaY > 0){
-      exitGame();
-    }
+    if(gameType === 'spaceship' && ev.deltaY < 0) exitGame();
+    else if(gameType === 'submarine' && ev.deltaY > 0) exitGame();
   }, { passive:false });
 
   const _origZoomIn = window.zoomIn;
@@ -3318,98 +4037,17 @@ DELIVERY RULE
   window.zoomOut = function(){
     if(gameActive && gameType === 'submarine'){ exitGame(); return; }
     if(CL === 0 && window.globeController && globeController.getZoom && globeController.getZoom() >= 8.1){ handleSpaceGateAttempt(); return; }
-    if(CL === 1){ resetSubmarineGate(); }
+    if(CL === 1) resetSubmarineGate();
     _origZoomOut();
   };
 
-  // Enhanced local markers/listings on top of remote data
-  const _origRefreshMapData = window.refreshMapData;
-  window.refreshMapData = async function(){
-    await _origRefreshMapData();
-    if(!window.LM) return;
-    const offers = getLocalOffers();
-    const places = getLocalPlaces();
-    const mergedShops = [];
-    const mergedSignals = [];
-    offers.forEach(r => {
-      const col = r.kind === 'post_signal' ? '#7dc3ff' : '#00c8ff';
-      const ic = L.divIcon({ className:'', iconSize:[12,12], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
-      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
-        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || 'Local entry') : (r.title || r.name || 'Local entry'))}</b><br><span style="font-size:11px;color:#95a8bb;">${(window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind))}</span>${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
-      MM.push(m);
-      if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
-    });
-    places.forEach(r => {
-      const col = r.kind === 'driver_base' ? '#ff9900' : '#00e87a';
-      const label = r.kind === 'driver_base' ? 'Driver base' : 'Client address';
-      const ic = L.divIcon({ className:'', iconSize:[13,13], iconAnchor:[6,6], html:`<div class="sig-dot" style="background:${col};box-shadow:0 0 7px ${col};"></div>` });
-      const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM)
-        .bindPopup(`<b style="color:${col};font-family:Inter,sans-serif;font-size:13px;">${(window.escapeHtml ? escapeHtml(r.title || r.name || label) : (r.title || r.name || label))}</b><br><span style="font-size:11px;color:#95a8bb;">${label}</span>${r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description) : r.description) + '</span>' : ''}`);
-      MM.push(m);
-    });
-
-    // Merge local offers into listings
-    const existing = Array.isArray(window.LISTING_CACHE) ? LISTING_CACHE.slice() : [];
-    const locals = offers.map(r => ({...r, _type: r.kind === 'shop_service' ? 'Shop / Service' : r.kind === 'post_signal' ? 'Public Post' : 'Vendor Offer' }));
-    const combined = [...locals, ...existing].slice(0, 50);
-    LISTING_CACHE = combined;
-    const c = byId('lp-content');
-    if(c){
-      if(!combined.length){
-        c.innerHTML = '<div style="color:var(--text-dim);font-size:11px;padding:8px;">No listings yet.</div>';
-      } else {
-        c.innerHTML = combined.map((r, i) => {
-          const priceLabel = window.formatPriceLabel ? formatPriceLabel(r) : (r.price || 'Ask vendor');
-          const priceAmount = window.inferPriceAmount ? inferPriceAmount(r) : (Number(r.price_eur) || null);
-          const desc = window.escapeHtml && window.clipText ? escapeHtml(clipText(r.description || r.body || '', 120)) : (r.description || '');
-          const media = window.listingMediaMarkup ? listingMediaMarkup(r) : '';
-          const lat = Number(r.lat || window.LOC.lat);
-          const lng = Number(r.lon || r.lng || window.LOC.lng);
-          return `
-            <div class="lcard" onclick="flyTo(${lat},${lng})">
-              ${media}
-              <div class="lcontent">
-                <div class="lcc">${window.escapeHtml ? escapeHtml(r._type || 'Vendor Offer') : (r._type || 'Vendor Offer')}</div>
-                <div class="lcn">${window.escapeHtml ? escapeHtml(r.name || r.title || 'Signal') : (r.name || r.title || 'Signal')}</div>
-                <div class="lcp">${window.escapeHtml ? escapeHtml(priceLabel) : priceLabel}</div>
-                <div class="ldesc">${desc || 'Live vendor offer ready for wallet checkout.'}</div>
-                <div class="lmeta">
-                  <div class="lmeta-chip"><div class="lmeta-label">Availability</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live')) : (window.inferAvailability ? inferAvailability(r) : (r.availability || 'Live'))}</div></div>
-                  <div class="lmeta-chip"><div class="lmeta-label">Volume</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + '')) : (window.inferVolumeLiters ? inferVolumeLiters(r) : ((r.volume_liters || '—') + ''))}</div></div>
-                  <div class="lmeta-chip"><div class="lmeta-label">Duration</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferDurationLabel ? inferDurationLabel(r) : ((r.duration_minutes || '—') + '')) : (window.inferDurationLabel ? inferDurationLabel(r) : ((r.duration_minutes || '—') + ''))}</div></div>
-                  <div class="lmeta-chip"><div class="lmeta-label">Vendor</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor')) : (window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor'))}</div></div>
-                </div>
-                <div class="lactions">
-                  <button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button>
-                  <button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button>
-                </div>
-                <div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div></div>
-              </div>
-            </div>`;
-        }).join('');
-      }
-    }
-  };
-
-  const _origLoadOrbitalFeed = window.loadOrbitalFeed;
-  window.loadOrbitalFeed = async function(){
-    await _origLoadOrbitalFeed();
-    const locals = getLocalOffers().slice(0, 6).map((r, idx) => (window.withOrbitalDefaults ? withOrbitalDefaults({
-      kind:'offer',
-      title:r.title || r.name || 'Local offer',
-      body:r.description || r.availability || 'Local marketplace item',
-      metaLeft:(r.category || r.kind || 'LOCAL').toUpperCase(),
-      metaRight:r.price || 'LIVE',
-      image:r.image || '',
-      video:r.video || '',
-      lat:Number(r.lat),
-      lng:Number(r.lon || r.lng)
-    }, idx + 100) : null)).filter(Boolean);
-    if(locals.length){
-      window.ORBITAL_FEED = [...locals, ...(window.ORBITAL_FEED || [])].slice(0, 16);
-      if(typeof renderOrbitalFeed === 'function') renderOrbitalFeed();
-    }
-  };
+  // Initialize channel bar + teams on load
+  populateTeamSelects();
+  const savedCh = safeJsonGet(CHANNEL_KEY, {channel:'all',team:null});
+  ACTIVE_CHANNEL = savedCh.channel || 'all';
+  ACTIVE_TEAM = savedCh.team || null;
+  document.querySelectorAll('#channel-bar > .ch-pill').forEach(p => p.classList.toggle('active', p.dataset.ch === ACTIVE_CHANNEL));
+  renderTeamPills();
 
   // More distinct game renderer
   window.runGame = function(type){
