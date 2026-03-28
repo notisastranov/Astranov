@@ -143,6 +143,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   box-shadow:0 0 24px rgba(0,200,255,0.15);backdrop-filter:blur(10px);pointer-events:all;
 }
 #astranova-speech.on{display:block;animation:speech-in 0.3s ease-out;}
+@keyframes speech-in{from{opacity:0;transform:translateY(8px) scale(0.9);}to{opacity:1;transform:translateY(0) scale(1);}}
+/* Driver marker pulse on map */
+@keyframes driver-pulse{0%,100%{box-shadow:0 0 12px #ff9900,0 0 24px rgba(255,153,0,0.4);}50%{box-shadow:0 0 20px #ff9900,0 0 40px rgba(255,153,0,0.6);}}
 
 /* ASTRANOVA TAKEOVER */
 #astranova-mode{position:fixed;inset:0;background:rgba(2,5,16,0.96);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
@@ -1075,34 +1078,51 @@ body.lt,body.lt2,body.lt3{
         <path d="M50 52 C42 60 35 80 32 105 C34 100 38 85 44 72 C40 88 36 100 35 115 C40 105 46 90 50 78 L55 60 Z" fill="url(#elfHair)" opacity="0.85"/>
         <path d="M90 52 C98 60 105 80 108 105 C106 100 102 85 96 72 C100 88 104 100 105 115 C100 105 94 90 90 78 L85 60 Z" fill="url(#elfHair)" opacity="0.85"/>
       </g>
-      <!-- Head -->
-      <ellipse cx="70" cy="62" rx="17" ry="20" fill="url(#elfSkin)"/>
-      <!-- Elf ears (pointed) -->
-      <path d="M52 58 C46 50 38 46 32 42 C38 48 44 54 50 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
-      <path d="M88 58 C94 50 102 46 108 42 C102 48 96 54 90 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
-      <!-- Hair front -->
-      <path d="M53 48 C55 35 62 28 70 26 C78 28 85 35 87 48 C84 40 78 35 70 33 C62 35 56 40 53 48 Z" fill="url(#elfHair)"/>
-      <path d="M53 48 C50 54 48 62 50 72 C52 64 54 56 56 50 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <path d="M87 48 C90 54 92 62 90 72 C88 64 86 56 84 50 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <!-- Eyes (large, expressive) -->
-      <ellipse cx="62" cy="62" rx="4.5" ry="5" fill="#fff"/>
-      <ellipse cx="78" cy="62" rx="4.5" ry="5" fill="#fff"/>
-      <ellipse cx="62.5" cy="63" rx="3" ry="3.5" fill="#1a5a9e"/>
-      <ellipse cx="78.5" cy="63" rx="3" ry="3.5" fill="#1a5a9e"/>
-      <circle cx="63" cy="62" r="1.5" fill="#0a2a4a"/>
-      <circle cx="79" cy="62" r="1.5" fill="#0a2a4a"/>
-      <circle cx="63.8" cy="61" r="0.8" fill="#fff"/>
-      <circle cx="79.8" cy="61" r="0.8" fill="#fff"/>
-      <!-- Eyebrows -->
-      <path d="M57 56 C59 54 63 53.5 67 55" fill="none" stroke="#8aa0b8" stroke-width="0.8" stroke-linecap="round"/>
-      <path d="M73 55 C77 53.5 81 54 83 56" fill="none" stroke="#8aa0b8" stroke-width="0.8" stroke-linecap="round"/>
-      <!-- Nose -->
-      <path d="M70 65 C69 68 69.5 70 70 70.5" fill="none" stroke="#d4b0a0" stroke-width="0.7" stroke-linecap="round"/>
+      <!-- Head (slightly rounder, more human) -->
+      <ellipse cx="70" cy="62" rx="18" ry="21" fill="url(#elfSkin)"/>
+      <!-- Elf ears (pointed, elegant) -->
+      <path d="M51 58 C45 49 36 44 30 40 C37 47 44 54 50 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
+      <path d="M89 58 C95 49 104 44 110 40 C103 47 96 54 90 60 Z" fill="#f0d8cc" stroke="#e8c8b8" stroke-width="0.5"/>
+      <!-- Hair front (fuller, more flowing) -->
+      <path d="M52 48 C54 33 61 25 70 23 C79 25 86 33 88 48 C85 38 79 32 70 30 C61 32 55 38 52 48 Z" fill="url(#elfHair)"/>
+      <path d="M52 48 C49 55 47 65 49 76 C51 66 53 57 55 50 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <path d="M88 48 C91 55 93 65 91 76 C89 66 87 57 85 50 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <!-- Wispy hair strands -->
+      <path d="M55 35 C52 42 50 52 49 60" fill="none" stroke="rgba(168,224,255,0.4)" stroke-width="0.6" stroke-linecap="round"/>
+      <path d="M85 35 C88 42 90 52 91 60" fill="none" stroke="rgba(168,224,255,0.4)" stroke-width="0.6" stroke-linecap="round"/>
+      <!-- Eyes (larger, more expressive, anime-inspired) -->
+      <ellipse cx="62" cy="63" rx="5.5" ry="6" fill="#fff"/>
+      <ellipse cx="78" cy="63" rx="5.5" ry="6" fill="#fff"/>
+      <!-- Iris (gradient blue) -->
+      <ellipse cx="62.5" cy="64" rx="3.8" ry="4.2" fill="#2070b8"/>
+      <ellipse cx="78.5" cy="64" rx="3.8" ry="4.2" fill="#2070b8"/>
+      <!-- Lighter ring in iris -->
+      <ellipse cx="62.5" cy="64" rx="2.8" ry="3.2" fill="none" stroke="#40a0e0" stroke-width="0.5" opacity="0.6"/>
+      <ellipse cx="78.5" cy="64" rx="2.8" ry="3.2" fill="none" stroke="#40a0e0" stroke-width="0.5" opacity="0.6"/>
+      <!-- Pupil -->
+      <circle cx="63" cy="63.5" r="2" fill="#0a1a30"/>
+      <circle cx="79" cy="63.5" r="2" fill="#0a1a30"/>
+      <!-- Eye highlights (sparkle) -->
+      <circle cx="64" cy="62" r="1.2" fill="#fff"/>
+      <circle cx="80" cy="62" r="1.2" fill="#fff"/>
+      <circle cx="61.5" cy="65" r="0.6" fill="#fff" opacity="0.7"/>
+      <circle cx="77.5" cy="65" r="0.6" fill="#fff" opacity="0.7"/>
+      <!-- Eyelashes -->
+      <path d="M56 58 C58 56 61 55.5 67 57" fill="none" stroke="#4a6880" stroke-width="1" stroke-linecap="round"/>
+      <path d="M73 57 C79 55.5 82 56 84 58" fill="none" stroke="#4a6880" stroke-width="1" stroke-linecap="round"/>
+      <!-- Upper eyelid line -->
+      <path d="M56.5 60 C59 58 65 57.5 67.5 59" fill="none" stroke="#5a7890" stroke-width="0.6" stroke-linecap="round"/>
+      <path d="M72.5 59 C75 57.5 81 58 83.5 60" fill="none" stroke="#5a7890" stroke-width="0.6" stroke-linecap="round"/>
+      <!-- Nose (delicate) -->
+      <path d="M70 67 C69 70 69.5 72 70 72.5 C70.5 72 71 70 70 67" fill="none" stroke="#d4b0a0" stroke-width="0.6" stroke-linecap="round"/>
       <!-- Mouth (animated when speaking) -->
-      <path class="elf-mouth" id="elf-mouth" d="M65 75 C67 77 73 77 75 75" fill="none" stroke="#c07088" stroke-width="1.2" stroke-linecap="round"/>
-      <!-- Blush -->
-      <ellipse cx="58" cy="70" rx="4" ry="2.5" fill="#ffb8c8" opacity="0.3"/>
-      <ellipse cx="82" cy="70" rx="4" ry="2.5" fill="#ffb8c8" opacity="0.3"/>
+      <path class="elf-mouth" id="elf-mouth" d="M65 77 C67 79 73 79 75 77" fill="none" stroke="#c07088" stroke-width="1.3" stroke-linecap="round"/>
+      <!-- Soft smile line -->
+      <path d="M63 77.5 C64 76 66 75.5 67 76" fill="none" stroke="#d8a0b0" stroke-width="0.4" opacity="0.5"/>
+      <path d="M73 76 C74 75.5 76 76 77 77.5" fill="none" stroke="#d8a0b0" stroke-width="0.4" opacity="0.5"/>
+      <!-- Blush (softer, more natural) -->
+      <ellipse cx="57" cy="72" rx="5" ry="3" fill="#ffb8c8" opacity="0.2"/>
+      <ellipse cx="83" cy="72" rx="5" ry="3" fill="#ffb8c8" opacity="0.2"/>
       <!-- Neck -->
       <path d="M65 80 L65 88 M75 80 L75 88" stroke="url(#elfSkin)" stroke-width="5" stroke-linecap="round"/>
       <!-- Dress/robe (flowing) -->
@@ -2283,22 +2303,135 @@ function aiExecuteOrder(item, qty){
 }
 
 function simulateDemoDelivery(item, shopName, eta, fee){
-  var steps = [
-    { delay:5000, msg:'🏪 ' + shopName + ' has accepted the order and started preparing.', voice: shopName + ' accepted the order.' },
-    { delay:12000, msg:'🛵 Driver is heading to ' + shopName + '…', voice:'Driver is on the way to the shop.' },
-    { delay:20000, msg:'📍 Driver arrived at ' + shopName + '. Waiting for pickup.', voice:'Driver arrived at the shop.' },
-    { delay:25000, msg:'✅ ' + shopName + ' says: Order ready! Driver picking up now.', voice:'Order is ready. Driver picking up.' },
-    { delay:28000, msg:'📦 Driver picked up the order! Now heading to your location.', voice:'Order picked up! Driver heading to you now.' },
-    { delay:38000, msg:'📍 Driver is approaching your location…', voice:'Driver is almost there.' },
-    { delay:45000, msg:'🎉 Order delivered! ' + item.name + ' from ' + shopName + '. Enjoy! Delivery fee: €' + fee.toFixed(2), voice:'Your order has been delivered! Enjoy your ' + item.name + '!' }
-  ];
-  steps.forEach(function(step){
-    setTimeout(function(){
-      bounceAstranova();
-      addAiMessage('ai-msg-reply','Astranova', step.msg);
-      speakAstranova(step.voice);
-    }, step.delay);
+  if(!LM || CL !== 1) return;
+  var shopLat = item._shopLat || LOC.lat;
+  var shopLng = item._shopLng || LOC.lng;
+  var clientLat = LOC.lat;
+  var clientLng = LOC.lng;
+
+  // Create driver marker on map
+  var driverIcon = L.divIcon({
+    className:'',
+    iconSize:[20,20],
+    iconAnchor:[10,10],
+    html:'<div style="width:20px;height:20px;border-radius:50%;background:#ff9900;border:3px solid #fff;box-shadow:0 0 12px #ff9900,0 0 24px rgba(255,153,0,0.4);animation:driver-pulse 1s infinite;"></div>'
   });
+
+  // Driver starts near shop (slightly offset)
+  var driverLat = shopLat + 0.003;
+  var driverLng = shopLng + 0.002;
+  var driverMarker = L.marker([driverLat, driverLng], {icon:driverIcon}).addTo(LM);
+  driverMarker.bindPopup('<b style="color:#ff9900;">🛵 Driver en route</b>');
+
+  // Route line
+  var routeLine = null;
+
+  // Step 1: Shop accepts (3s)
+  setTimeout(function(){
+    bounceAstranova();
+    addAiMessage('ai-msg-reply','Astranova','🏪 ' + shopName + ' accepted the order! Preparing now…');
+    speakAstranova(shopName + ' accepted the order and started preparing.');
+    // Open shop popup on map
+    MM.forEach(function(m){
+      try{
+        var ll = m.getLatLng();
+        if(Math.abs(ll.lat - shopLat) < 0.001 && Math.abs(ll.lng - shopLng) < 0.001){
+          m.openPopup();
+        }
+      }catch(e){}
+    });
+  }, 3000);
+
+  // Step 2: Driver heading to shop (6s) — animate marker movement
+  setTimeout(function(){
+    addAiMessage('ai-msg-reply','Astranova','🛵 Driver is heading to ' + shopName + '…');
+    // Draw route line
+    routeLine = L.polyline([[driverLat,driverLng],[shopLat,shopLng]], {
+      color:'#ff9900', weight:3, opacity:0.7, dashArray:'8,6'
+    }).addTo(LM);
+    // Animate driver moving to shop
+    animateMarker(driverMarker, driverLat, driverLng, shopLat, shopLng, 6000);
+  }, 6000);
+
+  // Step 3: Driver arrived at shop (13s)
+  setTimeout(function(){
+    bounceAstranova();
+    addAiMessage('ai-msg-reply','Astranova','📍 Driver arrived at ' + shopName + '!');
+    speakAstranova('Driver arrived at the shop.');
+    driverMarker.setLatLng([shopLat, shopLng]);
+    driverMarker.bindPopup('<b style="color:#ff9900;">🛵 At shop — waiting for pickup</b>').openPopup();
+    // Fly Astranova to shop
+    try{
+      var pt = LM.latLngToContainerPoint([shopLat, shopLng]);
+      var rect = document.getElementById('stage').getBoundingClientRect();
+      flyAstranovaTo(rect.left + pt.x, rect.top + pt.y);
+      setTimeout(flyAstranovaHome, 2500);
+    }catch(e){}
+  }, 13000);
+
+  // Step 4: Order ready, driver picks up (18s)
+  setTimeout(function(){
+    bounceAstranova();
+    addAiMessage('ai-msg-reply','Astranova','✅ Order ready! Driver picking up ' + item.name + ' now.');
+    speakAstranova('Order is ready. Driver is picking up.');
+    driverMarker.bindPopup('<b style="color:#00e87a;">📦 Order picked up!</b>').openPopup();
+    if(routeLine){ LM.removeLayer(routeLine); routeLine = null; }
+  }, 18000);
+
+  // Step 5: Driver heading to client (21s) — animate
+  setTimeout(function(){
+    addAiMessage('ai-msg-reply','Astranova','🛵 Driver is on the way to you! Follow the orange dot on the map.');
+    speakAstranova('Driver is on the way to you now.');
+    routeLine = L.polyline([[shopLat,shopLng],[clientLat,clientLng]], {
+      color:'#00c8ff', weight:3, opacity:0.7, dashArray:'8,6'
+    }).addTo(LM);
+    animateMarker(driverMarker, shopLat, shopLng, clientLat, clientLng, 10000);
+    // Pan map to show route
+    LM.fitBounds([[shopLat,shopLng],[clientLat,clientLng]], {padding:[60,60]});
+  }, 21000);
+
+  // Step 6: Driver approaching (28s)
+  setTimeout(function(){
+    bounceAstranova();
+    addAiMessage('ai-msg-reply','Astranova','📍 Driver is almost at your location!');
+    speakAstranova('Driver is almost there!');
+  }, 28000);
+
+  // Step 7: Delivered (33s)
+  setTimeout(function(){
+    bounceAstranova();
+    driverMarker.setLatLng([clientLat, clientLng]);
+    driverMarker.bindPopup('<b style="color:#00e87a;">🎉 Delivered!</b>').openPopup();
+    addAiMessage('ai-msg-reply','Astranova','🎉 Order delivered! ' + item.name + ' from ' + shopName + '. Enjoy! Total delivery fee: €' + fee.toFixed(2));
+    speakAstranova('Your order has been delivered! Enjoy your ' + item.name + '!');
+    // Fly Astranova to client position
+    try{
+      var pt = LM.latLngToContainerPoint([clientLat, clientLng]);
+      var rect = document.getElementById('stage').getBoundingClientRect();
+      flyAstranovaTo(rect.left + pt.x, rect.top + pt.y);
+      setTimeout(flyAstranovaHome, 3000);
+    }catch(e){}
+    // Clean up after 8s
+    setTimeout(function(){
+      if(routeLine){ LM.removeLayer(routeLine); }
+      LM.removeLayer(driverMarker);
+    }, 8000);
+  }, 33000);
+}
+
+/* Animate a Leaflet marker from A to B over duration ms */
+function animateMarker(marker, fromLat, fromLng, toLat, toLng, duration){
+  var start = Date.now();
+  var timer = setInterval(function(){
+    var elapsed = Date.now() - start;
+    var t = Math.min(1, elapsed / duration);
+    // Ease-in-out
+    t = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
+    var lat = fromLat + (toLat - fromLat) * t;
+    var lng = fromLng + (toLng - fromLng) * t;
+    marker.setLatLng([lat, lng]);
+    if(t >= 1) clearInterval(timer);
+  }, 50);
 }
 
 function bounceAstranova(){
@@ -3911,33 +4044,104 @@ function addAiMessage(cssClass, sender, text){
   div.innerHTML = '<div class="ai-sender">' + sender + '</div>' + text.replace(/\n/g,'<br>');
   conv.appendChild(div);
   conv.scrollTop = conv.scrollHeight;
+  // Play zoop for AI and system messages (NOT for user messages)
+  if(cssClass !== 'user-msg') playZoop();
+}
+
+/* ── SOUND SYSTEM ── */
+var _lastSpeechTime = 0;
+var _speechQueue = [];
+var _isSpeaking = false;
+
+function playZoop(){
+  try{
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.2);
+    setTimeout(function(){ ctx.close(); }, 300);
+  }catch(e){}
 }
 
 function speakAstranova(text){
-  if(!window.speechSynthesis) return;
+  if(!text || !window.speechSynthesis) return;
+  // Throttle: don't speak more than once per 2 seconds
+  var now = Date.now();
+  if(now - _lastSpeechTime < 2000){
+    // Queue it
+    _speechQueue.push(text);
+    if(!_isSpeaking) processNextSpeech();
+    return;
+  }
+  _lastSpeechTime = now;
+  doSpeak(text);
+}
+
+function doSpeak(text){
+  if(!text) return;
   try{
+    // Pause voice recognition while speaking to prevent feedback
+    if(_voiceActive && _voiceRecog){
+      try{ _voiceRecog.stop(); }catch(e){}
+    }
     window.speechSynthesis.cancel();
-    var utt = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g,''));
+    _isSpeaking = true;
+    var clean = text.replace(/<[^>]+>/g,'').replace(/[€]/g,' euros ');
+    if(clean.length > 200) clean = clean.substring(0,197) + '...';
+    var utt = new SpeechSynthesisUtterance(clean);
     utt.rate = 1.05;
-    utt.pitch = 1.15;
-    utt.volume = 0.8;
+    utt.pitch = 1.12;
+    utt.volume = 0.7;
     var voices = speechSynthesis.getVoices();
-    var preferred = voices.find(function(v){ return /female|samantha|victoria|karen|fiona|zira/i.test(v.name); });
+    var preferred = voices.find(function(v){ return /samantha|victoria|karen|fiona|zira|female/i.test(v.name); });
     if(preferred) utt.voice = preferred;
-    // Animate mouth while speaking
+    // Animate mouth
     setAstranovaSpeaking(true);
-    bounceAstranova();
-    // Show speech bubble with short text
+    // Show speech bubble
     var speech = document.getElementById('astranova-speech');
     if(speech){
-      speech.textContent = text.length > 80 ? text.substring(0,77) + '…' : text;
+      speech.textContent = text.length > 60 ? text.substring(0,57).replace(/<[^>]+>/g,'') + '…' : text.replace(/<[^>]+>/g,'');
       speech.classList.add('on');
-      setTimeout(function(){ speech.classList.remove('on'); }, Math.min(8000, text.length * 80));
     }
-    utt.onend = function(){ setAstranovaSpeaking(false); };
-    utt.onerror = function(){ setAstranovaSpeaking(false); };
+    utt.onend = function(){
+      setAstranovaSpeaking(false);
+      _isSpeaking = false;
+      if(speech) setTimeout(function(){ speech.classList.remove('on'); }, 1500);
+      // Resume voice recognition
+      if(_voiceActive && _voiceRecog){
+        try{ _voiceRecog.start(); }catch(e){}
+      }
+      // Process queue
+      if(_speechQueue.length) setTimeout(processNextSpeech, 500);
+    };
+    utt.onerror = function(){
+      setAstranovaSpeaking(false);
+      _isSpeaking = false;
+      if(_voiceActive && _voiceRecog){
+        try{ _voiceRecog.start(); }catch(e){}
+      }
+      if(_speechQueue.length) setTimeout(processNextSpeech, 500);
+    };
     speechSynthesis.speak(utt);
-  }catch(e){ setAstranovaSpeaking(false); }
+  }catch(e){
+    setAstranovaSpeaking(false);
+    _isSpeaking = false;
+  }
+}
+
+function processNextSpeech(){
+  if(_isSpeaking || !_speechQueue.length) return;
+  _lastSpeechTime = Date.now();
+  doSpeak(_speechQueue.shift());
 }
 
 function expandConversation(){
