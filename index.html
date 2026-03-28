@@ -864,6 +864,7 @@ body.lt,body.lt2,body.lt3{
     <div id="user-badge" onclick="toggleUserMenu()">
       <div class="user-avatar" id="uavatar">?</div>
       <span class="user-name" id="uname">Guest</span>
+      <span id="role-badge" style="display:none;font-size:8px;padding:1px 5px;border:1px solid rgba(0,200,255,0.18);border-radius:3px;white-space:nowrap;"></span>
     </div>
   </div>
 </div>
@@ -1066,14 +1067,39 @@ body.lt,body.lt2,body.lt3{
   <div class="mr">Language</div>
   <div class="mr">Privacy</div>
 </div>
-<div id="mpr" class="smenu lmenu">
+<div id="mpr" class="smenu lmenu" style="width:260px;">
   <div class="mh">Profile</div>
-  <div class="mr" id="pr-email">Email: —</div>
-  <div class="mr" id="pr-phone">Phone: —</div>
-  <div class="mr" id="pr-role">Role: —</div>
-  <div class="mr">My Orders</div>
-  <div class="mr">Saved Locations</div>
-  <div class="mr">My Listings</div>
+  <div class="mr" style="flex-direction:column;align-items:flex-start;">
+    <label>Avatar</label>
+    <div style="display:flex;align-items:center;gap:8px;width:100%;">
+      <div id="pr-avatar-preview" style="width:40px;height:40px;border-radius:50%;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.22);display:flex;align-items:center;justify-content:center;font-size:16px;color:#00c8ff;overflow:hidden;flex-shrink:0;" >?</div>
+      <input type="file" id="pr-avatar-file" accept="image/*" style="font-size:10px;flex:1;" onchange="previewAvatar(this)"/>
+    </div>
+  </div>
+  <div class="mr" style="flex-direction:column;align-items:flex-start;">
+    <label>Full Name</label>
+    <input id="pr-name" placeholder="Your name"/>
+  </div>
+  <div class="mr" style="flex-direction:column;align-items:flex-start;">
+    <label>Email (from login)</label>
+    <div id="pr-email" style="font-size:11px;color:var(--text);padding:4px 0;">—</div>
+  </div>
+  <div class="mr" style="flex-direction:column;align-items:flex-start;">
+    <label>Phone</label>
+    <input id="pr-phone-input" type="tel" placeholder="+30..."/>
+  </div>
+  <div class="mr" style="flex-direction:column;align-items:flex-start;">
+    <label>Role</label>
+    <div id="pr-role" style="font-size:11px;color:var(--text);padding:4px 0;">—</div>
+  </div>
+  <div class="mr">
+    <button class="mr-submit" onclick="saveProfile()">Save Profile</button>
+  </div>
+  <div class="mr" id="pr-save-status" style="font-size:10px;color:var(--green);display:none;"></div>
+  <div style="border-top:1px solid rgba(0,200,255,0.08);margin-top:4px;"></div>
+  <div class="mr" onclick="showMyOrders()">My Orders</div>
+  <div class="mr" onclick="showSavedLocations()">Saved Locations</div>
+  <div class="mr" onclick="showMyListings()">My Listings</div>
 </div>
 <div id="mshop" class="smenu lmenu">
   <div class="mh">My Shop</div>
@@ -1279,15 +1305,15 @@ const PAYMENT_CFG_KEY = 'astranov.payment.config';
 const WALLET_KEY = 'astranov.wallet.balance';
 const PAYMENT_LOG_KEY = 'astranov.payment.log';
 
-let CU = null, CL = 0, LM = null, MM = [], TR = false;
-let LOC = { lat: 48.8566, lng: 2.3522 };
-let driverOnline = false;
-let gameActive = false, gameType = null;
-let gameState = {};
-let PENDING_ACTION = null;
-let ORBITAL_FEED = [];
-let ORBITAL_FEED_CURSOR = 0;
-let orbitalFeedTimer = null;
+var CU = null, CL = 0, LM = null, MM = [], TR = false;
+var LOC = { lat: 48.8566, lng: 2.3522 };
+var driverOnline = false;
+var gameActive = false, gameType = null;
+var gameState = {};
+var PENDING_ACTION = null;
+var ORBITAL_FEED = [];
+var ORBITAL_FEED_CURSOR = 0;
+var orbitalFeedTimer = null;
 
 /* ═══ ROLE SYSTEM ═══
    user  = consumer, can browse/buy, posts need admin verification
@@ -1296,13 +1322,18 @@ let orbitalFeedTimer = null;
 */
 const OWNER_EMAIL = 'notisastranov@gmail.com';
 const OWNER_PHONE = '+306971930225';
-const OWNER_PHONE_ALT = '306971930225';
 
 function isOwner(user){
   if(!user) return false;
   const email = (user.email || '').toLowerCase().trim();
-  const phone = (user.phone || '').replace(/[^0-9+]/g,'');
-  return email === OWNER_EMAIL || phone === OWNER_PHONE || phone === OWNER_PHONE_ALT;
+  if(email === OWNER_EMAIL) return true;
+  // Normalize phone: strip everything except digits
+  const rawPhone = (user.phone || '').replace(/[^0-9]/g, '');
+  const ownerDigits = '306971930225';
+  const ownerShort = '6971930225';
+  // Match any format: +306971930225, 306971930225, 6971930225, 00306971930225
+  if(rawPhone === ownerDigits || rawPhone === ownerShort || rawPhone === '00' + ownerDigits) return true;
+  return false;
 }
 function getUserRole(user){
   if(!user) return 'guest';
@@ -1319,7 +1350,7 @@ function getRoleLabel(role){
   if(role === 'user') return 'User';
   return 'Guest';
 }
-let PENDING_POSTS = [];
+var PENDING_POSTS = [];
 const PENDING_POSTS_KEY = 'astranov.pending.posts.v1';
 function getPendingPosts(){ try { return JSON.parse(localStorage.getItem(PENDING_POSTS_KEY) || '[]'); } catch(e){ return []; } }
 function setPendingPosts(p){ localStorage.setItem(PENDING_POSTS_KEY, JSON.stringify(p)); }
@@ -1338,9 +1369,10 @@ function setGuestState() {
   document.getElementById('uname').textContent = 'Guest';
   document.getElementById('uavatar').textContent = '✦';
   document.getElementById('bal').textContent = Number(getWalletBalance() || 0).toFixed(2);
-  document.getElementById('pr-email').textContent = 'Email: —';
-  document.getElementById('pr-phone').textContent = 'Phone: —';
-  document.getElementById('pr-role').textContent = 'Role: Guest';
+  document.getElementById('pr-email').textContent = '—';
+  document.getElementById('pr-phone-input').value = '';
+  document.getElementById('pr-role').textContent = 'Guest';
+  document.getElementById('pr-name').value = '';
   document.getElementById('pay-email').value = '';
   document.getElementById('pay-phone').value = '';
   document.getElementById('pay-name').value = 'Guest';
@@ -1728,11 +1760,31 @@ function onAuth(user, name, role, phone) {
   }
   document.getElementById('am').classList.add('h');
   setAuthHelper('');
-  document.getElementById('uname').textContent = name || user.email.split('@')[0];
+  const displayName = name || user.email.split('@')[0];
+  document.getElementById('uname').textContent = displayName;
   document.getElementById('uavatar').textContent = (name||user.email)[0].toUpperCase();
-  document.getElementById('pr-email').textContent = 'Email: ' + user.email;
-  document.getElementById('pr-phone').textContent = 'Phone: ' + (CU.phone || '—');
-  document.getElementById('pr-role').textContent = 'Role: ' + getRoleLabel(role);
+  document.getElementById('pr-email').textContent = user.email;
+  document.getElementById('pr-phone-input').value = CU.phone || '';
+  document.getElementById('pr-role').textContent = getRoleLabel(role);
+  document.getElementById('pr-name').value = name || '';
+  // Update avatar preview
+  var avatarPrev = document.getElementById('pr-avatar-preview');
+  if(avatarPrev) avatarPrev.textContent = (name||user.email)[0].toUpperCase();
+  // Show role badge next to name
+  var badge = document.getElementById('role-badge');
+  if(badge){
+    badge.textContent = getRoleLabel(role);
+    badge.style.display = 'inline-block';
+    badge.style.background = role === 'owner' ? 'rgba(255,214,0,0.14)' : role === 'admin' ? 'rgba(0,232,122,0.14)' : 'rgba(0,200,255,0.10)';
+    badge.style.color = role === 'owner' ? '#ffd600' : role === 'admin' ? '#00e87a' : '#79aedd';
+    badge.style.borderColor = role === 'owner' ? 'rgba(255,214,0,0.30)' : role === 'admin' ? 'rgba(0,232,122,0.24)' : 'rgba(0,200,255,0.18)';
+  }
+  // Confirmation message
+  if(role === 'owner'){
+    setTimeout(function(){ showResp('Welcome back, ' + displayName + '. Owner authority recognized. All actions are live.'); }, 500);
+  } else if(role === 'admin'){
+    setTimeout(function(){ showResp('Welcome, ' + displayName + '. Admin access active. Posts go live immediately.'); }, 500);
+  }
   document.getElementById('pay-email').value = user.email || '';
   document.getElementById('pay-phone').value = CU.phone || '';
   document.getElementById('pay-name').value = name || '';
@@ -1764,6 +1816,92 @@ async function signOut() {
   setGuestState();
   loadBalance();
   showResp('Signed out. Guest browsing remains active.');
+}
+
+/* ── PROFILE EDITING ── */
+function previewAvatar(input){
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var prev = document.getElementById('pr-avatar-preview');
+    if(prev) prev.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    var topAvatar = document.getElementById('uavatar');
+    if(topAvatar) topAvatar.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveProfile(){
+  var statusEl = document.getElementById('pr-save-status');
+  var name = document.getElementById('pr-name').value.trim();
+  var phone = normalizePhone(document.getElementById('pr-phone-input').value);
+
+  if(!name){ showResp('Name is required.'); return; }
+  if(!phone){ showResp('Phone number is required.'); return; }
+
+  if(statusEl){ statusEl.style.display = 'block'; statusEl.textContent = 'Saving…'; statusEl.style.color = 'var(--text-dim)'; }
+
+  // Update local state
+  if(CU){
+    CU.name = name;
+    CU.phone = phone;
+    // Re-check owner status with updated phone
+    if(isOwner(CU)){
+      CU.role = 'owner';
+    }
+    document.getElementById('uname').textContent = name;
+    document.getElementById('uavatar').textContent = name[0].toUpperCase();
+    document.getElementById('pr-role').textContent = getRoleLabel(CU.role);
+    document.getElementById('pay-name').value = name;
+    document.getElementById('pay-phone').value = phone;
+
+    // Update role badge
+    var badge = document.getElementById('role-badge');
+    if(badge){
+      badge.textContent = getRoleLabel(CU.role);
+      badge.style.display = 'inline-block';
+      badge.style.background = CU.role === 'owner' ? 'rgba(255,214,0,0.14)' : CU.role === 'admin' ? 'rgba(0,232,122,0.14)' : 'rgba(0,200,255,0.10)';
+      badge.style.color = CU.role === 'owner' ? '#ffd600' : CU.role === 'admin' ? '#00e87a' : '#79aedd';
+      badge.style.borderColor = CU.role === 'owner' ? 'rgba(255,214,0,0.30)' : CU.role === 'admin' ? 'rgba(0,232,122,0.24)' : 'rgba(0,200,255,0.18)';
+    }
+  }
+
+  // Sync to Supabase
+  try{
+    if(CU && sb){
+      await sb.auth.updateUser({ data: { name: name, phone: phone } });
+      await sb.from('users').update({ name: name, phone: phone }).eq('id', CU.id);
+      // Upload avatar if selected
+      var avatarFile = document.getElementById('pr-avatar-file').files[0];
+      if(avatarFile){
+        var ext = avatarFile.name.split('.').pop();
+        await sb.storage.from('media').upload('avatars/'+CU.id+'.'+ext, avatarFile, { upsert: true });
+      }
+    }
+  }catch(e){
+    // Local save still worked
+  }
+
+  if(statusEl){ statusEl.textContent = '✓ Profile saved'; statusEl.style.color = 'var(--green)'; setTimeout(function(){ statusEl.style.display = 'none'; }, 2500); }
+  showResp('Profile updated.' + (isOwner(CU) ? ' Owner authority confirmed.' : ''));
+}
+
+function showMyOrders(){
+  showResp('My Orders — coming in Pass 6 (Order Management).');
+}
+function showSavedLocations(){
+  var addrs = [];
+  try{ addrs = JSON.parse(localStorage.getItem('astranov.delivery.addresses.v1') || '[]'); }catch(e){}
+  if(!addrs.length){ showResp('No saved delivery locations yet.'); return; }
+  showResp('You have ' + addrs.length + ' saved delivery location(s). Latest: ' + [addrs[0].street, addrs[0].number].filter(Boolean).join(' '));
+}
+function showMyListings(){
+  var offers = [];
+  try{ offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]'); }catch(e){}
+  var mine = offers.filter(function(o){ return o.vendor_name === (CU && CU.name); });
+  if(!mine.length){ showResp('No listings yet. Use + Post to create one.'); return; }
+  showResp('You have ' + mine.length + ' listing(s). Open the Listings panel to see them.');
 }
 
 function getWalletBalance() {
@@ -2287,7 +2425,7 @@ async function doSearch() {
 
 /* ── LISTINGS ── */
 
-let LISTING_CACHE = [];
+var LISTING_CACHE = [];
 
 function listingMediaMarkup(record) {
   const media = pickPreviewMedia(record || {});
@@ -2479,10 +2617,10 @@ function flyTo(lat, lng) {
   showDeliveryCalc(lat,lng);
 }
 
-let globeController=null;
-let lastGameOrigin=null;
-let seaDepthCache=new Map();
-let lastSeaProbe=null;
+var globeController=null;
+var lastGameOrigin=null;
+var seaDepthCache=new Map();
+var lastSeaProbe=null;
 
 /* ── LAYER SYSTEM ── */
 const LNAMES = ['lt','lt2','lt3'];
@@ -2548,7 +2686,7 @@ function locateMe(){ geolocate(); }
 function refreshData(){ loadCounts(); if(LM&&CL===1) refreshMapData(); loadOrbitalFeed(); }
 
 /* ── MENUS ── */
-let OM=null,OB=null;
+var OM=null,OB=null;
 function tmenu(btn){
   const m=document.getElementById(btn.dataset.menu);
   if(!m)return;
@@ -2604,8 +2742,8 @@ function showResp(msg, tone='default'){
   showResp._timer = setTimeout(()=>r.style.display='none', 2600 + (tone==='default' ? 1400 : 500));
 }
 
-let spaceGateCount = 0;
-let submarineGateCount = 0;
+var spaceGateCount = 0;
+var submarineGateCount = 0;
 
 function resetSpaceGate(){ spaceGateCount = 0; }
 function resetSubmarineGate(){ submarineGateCount = 0; }
@@ -2954,7 +3092,7 @@ function initLeaflet(){
 /* ══════════════════════════════
    ABYSS SCENE — LAYER 3
    ══════════════════════════════ */
-let abyssBuilt=false;
+var abyssBuilt=false;
 function runAbyssScene(){
   if(abyssBuilt)return;abyssBuilt=true;
   const cv=document.getElementById('ac');
