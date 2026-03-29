@@ -20,39 +20,107 @@ body.lt2{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 body.lt3{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;user-select:none;}
 
-/* === 3D DEPTH SYSTEM === */
-/* Controls start slightly pulled back - visible but understated.
-   On hover/focus/tap they come fully forward and crisp. */
-.depth-recede{
-  transform:scale(0.88);
-  opacity:0.55;
-  transition:transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
-  will-change:transform,opacity;
+/* ═══ 3D SPACE ENGINE ═══ */
+/* Controls orbit in 3D space around the globe.
+   Small + glowing in orbit. AI flies them to the user when needed. */
+#stage{perspective:900px;perspective-origin:50% 45%;}
+
+/* Base orbit state: small, deep, glowing */
+.in-orbit{
+  transform:perspective(900px) translateZ(-180px) scale(0.65);
+  opacity:0.6;
+  box-shadow:0 0 8px rgba(0,200,255,0.5), 0 0 20px rgba(0,200,255,0.15);
+  transition:transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease, box-shadow 0.4s ease;
   pointer-events:auto;
+  cursor:pointer;
 }
-.depth-recede:hover,.depth-recede:focus-within,.depth-recede.depth-forward{
-  transform:scale(1);
+/* Hover/tap: come halfway forward */
+.in-orbit:hover,.in-orbit:focus-within{
+  transform:perspective(900px) translateZ(-40px) scale(0.9);
+  opacity:0.9;
+  box-shadow:0 0 12px rgba(0,200,255,0.6), 0 0 30px rgba(0,200,255,0.2);
+}
+/* Fully forward: AI flew it to the user */
+.in-orbit.brought-forward{
+  transform:perspective(900px) translateZ(20px) scale(1.05);
   opacity:1;
+  box-shadow:0 0 18px rgba(0,200,255,0.7), 0 0 40px rgba(0,200,255,0.3), 0 0 60px rgba(0,200,255,0.1);
+  z-index:220;
+}
+.in-orbit.brought-forward:active{
+  transform:perspective(900px) translateZ(30px) scale(1.08);
+}
+/* Clicked/active state */
+.in-orbit.ui-awake{
+  transform:perspective(900px) translateZ(0) scale(1);
+  opacity:1;
+  box-shadow:0 0 10px rgba(0,200,255,0.4), 0 0 24px rgba(0,200,255,0.15);
   z-index:210;
 }
-.depth-recede:active{transform:scale(1.04);opacity:1;}
-#bottombar.depth-recede:focus-within,#bottombar.depth-forward,#cmd-response.depth-forward{
-  transform:scale(1) !important;opacity:1 !important;
+
+/* Astranov warrior — always more present, bigger glow */
+#astranova-wrapper.in-orbit{
+  transform:perspective(900px) translateZ(-100px) scale(0.75);
+  opacity:0.7;
+  box-shadow:none;
+  filter:drop-shadow(0 0 12px rgba(0,200,255,0.6)) drop-shadow(0 0 28px rgba(0,200,255,0.2));
 }
-#astranova-wrapper.depth-recede{transform:scale(0.92);opacity:0.65;}
-#astranova-wrapper.depth-recede:hover,#astranova-wrapper.depth-forward{transform:scale(1);opacity:1;}
+#astranova-wrapper.in-orbit:hover,
+#astranova-wrapper.ui-awake,
+#astranova-wrapper.brought-forward{
+  transform:perspective(900px) translateZ(0) scale(1);
+  opacity:1;
+  filter:drop-shadow(0 0 8px rgba(0,200,255,0.5));
+}
+
+/* Chat bar — never in orbit, always present */
+#bottombar{
+  transform:none !important;
+  opacity:1 !important;
+  box-shadow:0 0 10px rgba(0,200,255,0.2), 0 0 20px rgba(0,0,0,0.3) !important;
+}
+
+/* Mobile: slightly less deep so controls are reachable */
 @media (hover:none){
-  .depth-recede{transform:scale(0.9);opacity:0.6;}
+  .in-orbit{
+    transform:perspective(900px) translateZ(-120px) scale(0.7);
+    opacity:0.65;
+  }
 }
-body.keyboard-open .depth-recede:not(.depth-forward):not(#bottombar){
-  transform:scale(0.5) !important;opacity:0.12 !important;pointer-events:none;
+
+/* Keyboard open: push non-essential controls far back */
+body.keyboard-open .in-orbit:not(.brought-forward):not(.ui-awake){
+  transform:perspective(900px) translateZ(-300px) scale(0.35) !important;
+  opacity:0.12 !important;
+  pointer-events:none;
 }
-body.keyboard-open #bottombar.depth-recede{
-  transform:scale(1) !important;opacity:1 !important;pointer-events:auto !important;
-}
+body.keyboard-open #bottombar{transform:none !important;opacity:1 !important;pointer-events:auto !important;}
 body.keyboard-open #cmd-response{max-height:35vh !important;}
-body.keyboard-open #astranova-wrapper{
-  transform:scale(0.3) !important;opacity:0.1 !important;pointer-events:none !important;
+
+/* Flying animation — used when AI sends a control to the user */
+@keyframes flyToUser{
+  0%{transform:perspective(900px) translateZ(-300px) scale(0.3) rotate(-8deg);opacity:0.3;box-shadow:0 0 6px rgba(0,200,255,0.4);}
+  60%{transform:perspective(900px) translateZ(40px) scale(1.1) rotate(2deg);opacity:1;box-shadow:0 0 24px rgba(0,200,255,0.8), 0 0 50px rgba(0,200,255,0.3);}
+  100%{transform:perspective(900px) translateZ(20px) scale(1.05) rotate(0);opacity:1;box-shadow:0 0 18px rgba(0,200,255,0.7), 0 0 40px rgba(0,200,255,0.3);}
+}
+@keyframes sendToOrbit{
+  0%{transform:perspective(900px) translateZ(20px) scale(1.05);opacity:1;box-shadow:0 0 18px rgba(0,200,255,0.7);}
+  100%{transform:perspective(900px) translateZ(-180px) scale(0.65);opacity:0.6;box-shadow:0 0 8px rgba(0,200,255,0.5);}
+}
+.fly-to-user{animation:flyToUser 0.7s cubic-bezier(0.22,1,0.36,1) forwards;}
+.send-to-orbit{animation:sendToOrbit 0.5s ease-in forwards;}
+
+/* Chat connection — input and chat window merge */
+#cmd-response.expanded{
+  border-bottom-left-radius:0 !important;
+  border-bottom-right-radius:0 !important;
+  border-bottom:none !important;
+  margin-bottom:-1px;
+}
+body.chat-active #bottombar{
+  border-top-left-radius:0 !important;
+  border-top-right-radius:0 !important;
+  border-top:1px solid rgba(0,200,255,0.08) !important;
 }
 
 /* TOP BAR - always visible, locked */
@@ -6118,6 +6186,7 @@ function closeAstranov() {
   var resp = document.getElementById('cmd-response');
   resp.style.display = 'none';
   resp.className = '';
+  document.body.classList.remove('chat-active');
   var input = document.getElementById('cmd-input');
   input.placeholder = 'Talk to Astranov — search, order, find, ask…';
   // Stop voice if active
@@ -7025,6 +7094,7 @@ function processNextSpeech(){
 var _chatHeight = Math.round(window.innerHeight * 0.33); // start at 1/3
 
 function expandConversation(){
+  document.body.classList.add('chat-active');
   var resp = document.getElementById('cmd-response');
   if(!resp) return;
   resp.className = 'expanded';
@@ -10356,6 +10426,27 @@ AI provider research may rescan configured provider manifests once per day while
   function setClaudeKey(k){ try{ localStorage.setItem(CLAUDE_KEY_STORE, String(k||'').trim()); }catch(e){} }
 
   /* ── Call Claude Sonnet directly (CORS enabled with special header) ── */
+  
+  /* ── Call Claude via Artifact mode (NO KEY — works inside Claude UI) ── */
+  async function callClaudeArtifact(systemPrompt, userMessage){
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+    if(!res.ok) throw new Error('Claude artifact mode HTTP ' + res.status);
+    var data = await res.json();
+    var text = '';
+    try{ text = data.content.map(function(p){ return p.text||''; }).join(''); }catch(e){}
+    if(!text) throw new Error('Claude artifact returned empty');
+    return { text: text, provider: 'Claude Sonnet (built-in)', cloud: true };
+  }
+
   async function callClaudeDirect(systemPrompt, userMessage){
     var key = getClaudeKey();
     if(!key) throw new Error('No Claude API key configured');
@@ -10496,29 +10587,27 @@ AI provider research may rescan configured provider manifests once per day while
   /* ── AI CYCLE ENGINE — tries all providers in order ── */
   async function runAstranovAiCycle(systemPrompt, userMessage, payload){
     var errors = [];
-    /* 0. CLAUDE — TOP PRIORITY (direct browser CORS) */
-    if(getClaudeKey()){
-      try{ return await callClaudeDirect(systemPrompt, userMessage); }catch(e){ errors.push('Claude: ' + e.message); }
-    }
-    /* 1. Server routes (fastest if available) */
-    try{ return await callAstranovServer(systemPrompt, userMessage, payload); }catch(e){ errors.push('Server: ' + e.message); }
-    /* 2. Gemini (free, browser-direct) */
+    /* 0. CLAUDE ARTIFACT MODE — no key needed, works in Claude UI */
+    try{ return await callClaudeArtifact(systemPrompt, userMessage); }catch(e){ errors.push('Claude artifact: ' + e.message); }
+    /* 1. GEMINI — free tier, browser-direct */
     if(getGeminiKey()){
       try{ return await callGeminiDirect(systemPrompt, userMessage); }catch(e){ errors.push('Gemini: ' + e.message); }
     }
-    /* 3. Groq (free, browser-direct) */
+    /* 2. GROQ — free tier, browser-direct */
     if(getGroqKey()){
       try{ return await callGroqDirect(systemPrompt, userMessage); }catch(e){ errors.push('Groq: ' + e.message); }
     }
-    /* 4. OpenRouter (free models, browser-direct) */
+    /* 3. OPENROUTER — free models available */
     if(getOpenRouterKey()){
       try{ return await callOpenRouterDirect(systemPrompt, userMessage); }catch(e){ errors.push('OpenRouter: ' + e.message); }
     }
-    /* 5. No keys configured at all — guide the user */
-    var hasAnyKey = getClaudeKey() || getGeminiKey() || getGroqKey() || getOpenRouterKey();
-    if(!hasAnyKey){
-      errors.push('No AI keys configured');
+    /* 4. CLAUDE WITH KEY — paid, if user configured */
+    if(getClaudeKey()){
+      try{ return await callClaudeDirect(systemPrompt, userMessage); }catch(e){ errors.push('Claude API: ' + e.message); }
     }
+    /* 5. Server routes (if backend deployed) */
+    try{ return await callAstranovServer(systemPrompt, userMessage, payload); }catch(e){ errors.push('Server: ' + e.message); }
+    /* All cloud options exhausted */
     throw new Error(errors.join(' → ') || 'All AI providers failed');
   }
 
@@ -10571,7 +10660,7 @@ AI provider research may rescan configured provider manifests once per day while
     /* ── AI status ── */
     if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(ql)){
       var keys = [];
-      if(getClaudeKey()) keys.push('Claude ⭐ (top priority)');
+      keys.push('Claude ⭐ (built-in, no key)');\nif(getClaudeKey()) keys.push('Claude API (paid key)');
       if(getGeminiKey()) keys.push('Gemini ✅');
       if(getGroqKey()) keys.push('Groq ✅');
       if(getOpenRouterKey()) keys.push('OpenRouter ✅');
@@ -10588,9 +10677,9 @@ AI provider research may rescan configured provider manifests once per day while
     if(/^(ai help|ai setup|setup ai|how to ai|ai commands)/.test(ql)){
       addAiMessage('ai-msg-reply','Astranov',
         '🧠 <strong>AI Setup Commands:</strong><br><br>' +
-        '⭐ <strong>claude key YOUR_KEY</strong> — Set Claude API key (best AI, <a href="https://console.anthropic.com" target="_blank" style="color:#00c8ff">console.anthropic.com</a>)<br>' +
-        '• <strong>ai key YOUR_KEY</strong> — Set Gemini key (free at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>)<br>' +
-        '• <strong>groq key YOUR_KEY</strong> — Set Groq key (free at <a href="https://console.groq.com" target="_blank" style="color:#00c8ff">console.groq.com</a>)<br>' +
+        '✅ <strong>No key needed!</strong> — Claude works automatically inside this app<br>' +
+        '✅ <strong>ai key YOUR_KEY</strong> — Gemini Flash (FREE tier at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>)<br>' +
+        '✅ <strong>groq key YOUR_KEY</strong> — Groq Llama (FREE tier at <a href="https://console.groq.com" target="_blank" style="color:#00c8ff">console.groq.com</a>)<br>' +
         '• <strong>openrouter key YOUR_KEY</strong> — Set OpenRouter key<br>' +
         '• <strong>ai status</strong> — Check which AI is active<br>' +
         '• <strong>clear ai key</strong> — Remove all keys<br>' +
@@ -10621,7 +10710,9 @@ AI provider research may rescan configured provider manifests once per day while
     var context = 'You are Astranov, a Astranov winged Nordic warrior AI assistant for Astranov — a planetary delivery marketplace and Internet Operating System based on Rhodes island, Greece. ';
     context += 'PERSONALITY: You are calm, disciplined, and wickedly competent. You speak with confident brevity — a Nordic warrior who gets things done. Occasionally pepper in Cyrillic-flavored vocabulary for character. ';
     context += 'LANGUAGE RULE: ALWAYS reply in the same language the user writes in. If they write Greek, reply in Greek. Keep responses to 2-4 sentences unless the user asks for detail. Be concrete, helpful, and actionable. ';
-    context += 'CAPABILITIES: You help users find shops, order food/drinks, check delivery prices, navigate Rhodes, and answer questions about the platform. ';
+    context += 'CAPABILITIES: You help users find shops, order food/drinks, check delivery prices, navigate Rhodes, and answer questions about the platform.
+UI CONTROL: You can fly UI controls to the user by including commands in your response. If the user needs to log in, say [FLY:user-badge]. If they need to see their wallet, say [FLY:balance-display]. If they need to post video, say [FLY:video-post-btn]. These commands are invisible to the user but trigger 3D animations that bring controls forward.
+Available controls: user-badge, balance-display, video-post-btn, pause-ui-btn, force-update-btn, locate-btn, drone-btn, perf-hud, compass-hud. ';
     try{ context += buildMemoryContext(); }catch(e){}
     context += 'Current user: ' + (window.CU ? (CU.name + ' (role: ' + getUserRole(CU) + ')') : 'Guest') + '. ';
     context += 'Wallet balance: €' + (((document.getElementById('bal') || {}).textContent) || '0') + '. ';
@@ -10686,13 +10777,26 @@ AI provider research may rescan configured provider manifests once per day while
       var hasAnyKey = getClaudeKey() || getGeminiKey() || getGroqKey() || getOpenRouterKey();
       if(!hasAnyKey && !window._aiSetupHintShown){
         window._aiSetupHintShown = true;
-        aiText += '<br><br>💡 <em>Want real AI? Type <strong>claude key YOUR_KEY</strong> or <strong>ai help</strong> to learn how to connect a free AI brain in 30 seconds.</em>';
+        aiText += '<br><br>💡 <em>Type <strong>ai help</strong> for AI options to learn how to connect a free AI brain in 30 seconds.</em>';
       }
     }
 
     /* Remove typing indicator */
     var typingEl = document.getElementById('ai-typing-v2') || document.getElementById('ai-typing');
     if(typingEl) typingEl.remove();
+
+    /* Parse [FLY:control-id] commands from AI response */
+    try{
+      var flyMatches = aiText.match(/\[FLY:([a-z0-9-]+)\]/gi);
+      if(flyMatches){
+        flyMatches.forEach(function(m){
+          var id = m.replace(/\[FLY:|\]/gi,'');
+          if(typeof flyControlToUser === 'function') flyControlToUser(id, 15000);
+        });
+        /* Strip FLY commands from visible text */
+        aiText = aiText.replace(/\[FLY:[a-z0-9-]+\]/gi, '').trim();
+      }
+    }catch(e){}
 
     addAiMessage('ai-msg-reply', 'Astranov', aiText);
     recordConversation('ai', aiText);
@@ -11338,6 +11442,51 @@ AI provider research may rescan configured provider manifests once per day while
     });
   }
   /* ═══ 3D DEPTH SYSTEM — buttons recede into space, zoom forward on tap ═══ */
+  
+  /* ═══ 3D SPACE CONTROL FUNCTIONS ═══ */
+  /* AI calls these to fly controls to the user or send them back to orbit */
+  window.flyControlToUser = function(elementId, durationMs){
+    var el = document.getElementById(elementId);
+    if(!el) return;
+    el.classList.remove('send-to-orbit','in-orbit');
+    el.classList.add('brought-forward','fly-to-user');
+    el.style.pointerEvents = 'auto';
+    /* Remove animation class after it finishes so brought-forward holds */
+    setTimeout(function(){ el.classList.remove('fly-to-user'); }, 750);
+    /* Auto-return to orbit after duration (default 12s) */
+    clearTimeout(el._orbitTimer);
+    el._orbitTimer = setTimeout(function(){
+      if(!el.contains(document.activeElement)){
+        sendControlToOrbit(elementId);
+      }
+    }, durationMs || 12000);
+  };
+
+  window.sendControlToOrbit = function(elementId){
+    var el = document.getElementById(elementId);
+    if(!el) return;
+    el.classList.remove('brought-forward','fly-to-user','ui-awake');
+    el.classList.add('send-to-orbit');
+    setTimeout(function(){
+      el.classList.remove('send-to-orbit');
+      if(!el.classList.contains('in-orbit')) el.classList.add('in-orbit');
+    }, 550);
+  };
+
+  /* AI can call this to bring multiple controls forward at once */
+  window.flyControlsToUser = function(ids, durationMs){
+    (ids || []).forEach(function(id){ flyControlToUser(id, durationMs); });
+  };
+
+  /* Send all controls back to orbit */
+  window.sendAllToOrbit = function(){
+    document.querySelectorAll('.brought-forward,.ui-awake').forEach(function(el){
+      if(el.id && el.id !== 'bottombar' && !el.contains(document.activeElement)){
+        sendControlToOrbit(el.id);
+      }
+    });
+  };
+
   function initDepthUI(){
     var depthTargets = [
       'force-update-btn','balance-display','video-post-btn',
@@ -11346,33 +11495,31 @@ AI provider research may rescan configured provider manifests once per day while
     ];
     depthTargets.forEach(function(id){
       var el = document.getElementById(id);
-      if(el && !el.classList.contains('depth-recede')){
-        el.classList.add('depth-recede');
+      if(el && !el.classList.contains('in-orbit')){
+        el.classList.add('in-orbit');
       }
     });
-    /* Bottombar gets depth but starts forward when focused */
+    /* Bottombar stays fully visible - never in orbit */
     var bb = document.getElementById('bottombar');
-    if(bb && !bb.classList.contains('depth-recede')){
-      bb.classList.add('depth-recede');
-    }
+    if(bb){ bb.classList.remove('in-orbit'); bb.style.transform='none'; bb.style.opacity='1'; }
     /* Touch: bring forward on tap, recede after 6s inactivity */
     document.addEventListener('pointerdown', function(ev){
-      var target = ev.target && ev.target.closest ? ev.target.closest('.depth-recede') : null;
+      var target = ev.target && ev.target.closest ? ev.target.closest('.in-orbit,.brought-forward') : null;
       if(target){
         /* Bring this control forward */
-        target.classList.add('depth-forward');
+        target.classList.add('ui-awake');
         clearTimeout(target._depthTimer);
         target._depthTimer = setTimeout(function(){
           /* Don't recede if it has focus (chat input etc) */
           if(!target.contains(document.activeElement)){
-            target.classList.remove('depth-forward');
+            target.classList.remove('ui-awake');
           }
         }, 6000);
       } else {
         /* Tapped empty space — recede everything except focused */
-        document.querySelectorAll('.depth-forward').forEach(function(el){
+        document.querySelectorAll('.ui-awake').forEach(function(el){
           if(!el.contains(document.activeElement)){
-            el.classList.remove('depth-forward');
+            el.classList.remove('ui-awake');
           }
         });
       }
@@ -11383,15 +11530,15 @@ AI provider research may rescan configured provider manifests once per day while
       cmdInput.addEventListener('focus', function(){
         var bar = document.getElementById('bottombar');
         var resp = document.getElementById('cmd-response');
-        if(bar) bar.classList.add('depth-forward');
-        if(resp) resp.classList.add('depth-forward');
+        if(bar) bar.classList.add('ui-awake');
+        if(resp) resp.classList.add('ui-awake');
       });
       cmdInput.addEventListener('blur', function(){
         setTimeout(function(){
           var bar = document.getElementById('bottombar');
           var resp = document.getElementById('cmd-response');
-          if(bar && !bar.contains(document.activeElement)) bar.classList.remove('depth-forward');
-          if(resp && !resp.contains(document.activeElement)) resp.classList.remove('depth-forward');
+          if(bar && !bar.contains(document.activeElement)) bar.classList.remove('ui-awake');
+          if(resp && !resp.contains(document.activeElement)) resp.classList.remove('ui-awake');
         }, 300);
       });
     }
@@ -11401,7 +11548,7 @@ AI provider research may rescan configured provider manifests once per day while
   function initKeyboardDetection(){
     if(!window.visualViewport) return;
     var initialHeight = window.visualViewport.height;
-    var KEYBOARD_THRESHOLD = 150; /* px difference to count as keyboard open */
+    var KEYBOARD_THRESHOLD = 200; /* px - must be significant to avoid false triggers */
     window.visualViewport.addEventListener('resize', function(){
       var currentHeight = window.visualViewport.height;
       var diff = initialHeight - currentHeight;
@@ -11423,14 +11570,17 @@ AI provider research may rescan configured provider manifests once per day while
       }
     });
     /* Also update on scroll (iOS quirk) */
-    window.visualViewport.addEventListener('scroll', function(){
-      if(document.body.classList.contains('keyboard-open')){
-        var bb = document.getElementById('bottombar');
-        if(bb){
-          bb.style.bottom = (initialHeight - window.visualViewport.height + window.visualViewport.offsetTop + 8) + 'px';
+    try{
+      window.visualViewport.addEventListener('scroll', function(){
+        if(document.body.classList.contains('keyboard-open')){
+          var bb = document.getElementById('bottombar');
+          if(bb){
+            var offset = Math.max(0, window.visualViewport.offsetTop || 0);
+            bb.style.bottom = Math.max(8, initialHeight - window.visualViewport.height + offset + 8) + 'px';
+          }
         }
-      }
-    });
+      });
+    }catch(e){}
   }
 
   /* Hook into initV6 */
