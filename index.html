@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov V3</title>
-<meta name="astranov-version" content="V3"/>
+<title>Astranov V2</title>
+<meta name="astranov-version" content="V2"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -1040,6 +1040,96 @@ body.lt,body.lt2,body.lt3{
 .rt-price{color:#00e87a;font-weight:600;}
 .rt-eta{color:#00c8ff;}
 
+
+/* === V1 REPAIR OVERRIDES === */
+#topbar{height:44px;display:grid !important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px;padding:0 12px;}
+#stage{top:44px !important;}
+#left-panel,#right-panel{display:none !important;}
+.tb-left,.tb-center,.tb-right{display:flex;align-items:center;min-width:0;}
+.tb-left{justify-content:flex-start;}
+.tb-center{justify-content:center;gap:8px;overflow:hidden;}
+.tb-right{justify-content:flex-end;gap:8px;}
+#version-cluster{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap;max-width:100%;}
+.version-chip{display:inline-flex !important;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;padding:5px 10px !important;min-width:112px;border-radius:14px !important;border:1px solid rgba(0,200,255,0.18) !important;background:rgba(8,18,30,0.58) !important;line-height:1.05;}
+.version-kicker{font-size:9px;color:#93b3cd;letter-spacing:0.02em;text-transform:none;font-family:var(--font) !important;}
+.version-value{font-size:13px;font-weight:700;color:#eef7ff;letter-spacing:0.02em;}
+#force-update-btn{display:inline-flex !important;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px !important;border:1px solid rgba(0,200,255,0.22) !important;background:rgba(10,18,28,0.72) !important;color:#d8ecff !important;opacity:1 !important;}
+#force-update-btn .update-icon{font-size:14px;line-height:1;}
+#force-update-btn .update-copy{font-size:11px;font-weight:700;letter-spacing:0.02em;}
+#force-update-btn.needs-update{color:#ffd600 !important;border-color:rgba(255,214,0,0.46) !important;background:rgba(255,214,0,0.10) !important;box-shadow:0 0 18px rgba(255,214,0,0.18) !important;animation:updatePulse 1.2s ease-in-out infinite;}
+#force-update-btn.up-to-date{color:#d8ecff !important;border-color:rgba(0,200,255,0.22) !important;background:rgba(10,18,28,0.72) !important;animation:none !important;}
+#video-post-btn{height:34px;padding:0 12px;border-radius:999px !important;}
+#pause-ui-btn.pause-switch{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 10px 0 8px;border-radius:999px !important;border:1px solid rgba(0,200,255,0.26) !important;background:rgba(0,200,255,0.12) !important;color:#eaf7ff !important;box-shadow:0 0 14px rgba(0,200,255,0.14);}
+#pause-ui-btn .pause-switch-track{position:relative;display:inline-flex;align-items:center;width:44px;height:22px;border-radius:999px;background:rgba(0,200,255,0.18);border:1px solid rgba(0,200,255,0.24);}
+#pause-ui-btn .pause-switch-thumb{position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#eaf8ff;box-shadow:0 0 10px rgba(0,200,255,0.35);transition:transform .22s ease;}
+#pause-ui-btn .pause-switch-label{font-size:10px;font-weight:700;letter-spacing:0.08em;min-width:24px;text-align:center;}
+#pause-ui-btn.active{background:rgba(8,18,30,0.72) !important;color:#ffd600 !important;border-color:rgba(255,214,0,0.34) !important;box-shadow:0 0 16px rgba(255,214,0,0.14);}
+#pause-ui-btn.active .pause-switch-track{background:rgba(255,214,0,0.14);border-color:rgba(255,214,0,0.22);}
+#pause-ui-btn.active .pause-switch-thumb{transform:translateX(22px);background:#ffd600;box-shadow:0 0 12px rgba(255,214,0,0.35);}
+#perf-hud,#compass-hud{width:110px !important;height:110px !important;opacity:0.18 !important;transition:opacity .22s ease, width .22s ease, height .22s ease, transform .22s ease !important;touch-action:none;user-select:none;}
+#perf-hud.visible,#compass-hud.visible{opacity:0.92 !important;}
+#perf-hud.expanded,#compass-hud.expanded{width:min(42vw,220px) !important;height:min(42vw,220px) !important;opacity:0.98 !important;z-index:220 !important;}
+#perf-hud.moveable,#compass-hud.moveable{cursor:move !important;outline:1px dashed rgba(0,200,255,0.45) !important;border-radius:50% !important;}
+#perf-hud{top:56px !important;left:18px !important;}
+#compass-hud{top:56px !important;right:18px !important;}
+@media (max-width:900px){
+  #topbar{grid-template-columns:auto minmax(0,1fr) auto;gap:6px;padding:0 8px;}
+  .version-chip{min-width:86px;padding:4px 8px !important;}
+  .version-kicker{font-size:8px;}
+  .version-value{font-size:12px;}
+  #video-post-btn span{display:none;}
+  #force-update-btn .update-copy{font-size:10px;}
+}
+
+
+/* === V2 OVERRIDES: ribbon balance, YouTube upload chain, AI engine UI === */
+#topbar{height:46px !important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) !important;gap:12px !important;}
+.tb-left,.tb-center,.tb-right{display:flex;align-items:center;min-width:0;}
+.tb-left{justify-content:flex-start;}
+.tb-center{justify-content:center;gap:8px;overflow:visible;}
+.tb-right{justify-content:flex-end;gap:10px;}
+#version-cluster{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:nowrap;max-width:100%;}
+#version-cluster #balance-display{display:inline-flex !important;height:34px;padding:0 12px;border-radius:999px !important;background:rgba(0,232,122,0.08) !important;border:1px solid rgba(0,232,122,0.24) !important;}
+body.micro-ribbon .tb-center #balance-display{display:none !important;}
+#video-post-btn.video-ribbon-btn{
+  display:inline-flex !important;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:999px !important;
+  border:1px solid rgba(255,255,255,0.16) !important;background:linear-gradient(180deg,rgba(180,20,40,0.20),rgba(255,40,70,0.10)) !important;
+  color:#f7fbff !important;box-shadow:0 0 18px rgba(255,45,85,0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+#video-post-btn.video-ribbon-btn:hover{border-color:rgba(255,255,255,0.28) !important;box-shadow:0 0 22px rgba(255,45,85,0.22);}
+#video-post-btn .video-btn-plus{
+  width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.12);font-size:15px;line-height:1;font-weight:700;
+}
+#video-post-btn .video-btn-icon{font-size:16px;line-height:1;}
+#video-post-btn .video-btn-copy{font-size:12px;font-weight:700;letter-spacing:0.02em;}
+body.micro-ribbon #video-post-btn .video-btn-copy{display:none;}
+.video-connect-row{display:flex;flex-direction:column;gap:10px;margin:10px 0 12px;}
+.video-connect-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.video-connect-actions button,.video-inline-row button{
+  border:1px solid rgba(0,200,255,0.20);background:rgba(255,255,255,0.04);color:#dff7ff;
+  padding:10px 14px;border-radius:12px;cursor:pointer;font-size:12px;
+}
+.video-connect-actions button:hover,.video-inline-row button:hover{background:rgba(0,200,255,0.10);}
+.video-inline-row{display:flex;gap:8px;align-items:center;}
+.video-inline-row input{flex:1;}
+#video-local-preview{display:none;width:100%;max-height:240px;border-radius:16px;background:#02070d;object-fit:contain;}
+#video-local-preview.on{display:block;}
+.video-inline-note.ok{border-color:rgba(0,232,122,0.22);background:rgba(0,232,122,0.08);color:#baf4d2;}
+.video-inline-note.err{border-color:rgba(255,68,85,0.22);background:rgba(255,68,85,0.08);color:#ffd4db;}
+.video-inline-note.busy{border-color:rgba(255,214,0,0.22);background:rgba(255,214,0,0.08);color:#ffe69f;}
+@media (max-width:920px){
+  #topbar{grid-template-columns:auto minmax(0,1fr) auto !important;gap:8px !important;padding:0 8px !important;}
+  .version-chip{min-width:92px !important;}
+  #video-post-btn.video-ribbon-btn{padding:0 12px !important;}
+}
+@media (max-width:760px){
+  #topbar{height:50px !important;}
+  .tb-center{gap:6px !important;}
+  #video-post-btn .video-btn-copy{display:none;}
+  #video-post-btn.video-ribbon-btn{padding:0 12px !important;}
+}
+
 </style>
 </head>
 <body class="lt">
@@ -1086,27 +1176,43 @@ body.lt,body.lt2,body.lt3{
     <span class="brand">ASTRANOV</span>
   </div>
   <div class="tb-center" id="version-cluster">
-    <span class="vinfo version-chip"><span class="version-label">Current</span> <span class="vcurrent" id="vcurrent">V3</span></span>
-    <span class="vinfo version-chip"><span class="version-label">Latest</span> <span class="vlatest-ok" id="vlatest">V3</span></span>
-    <button id="force-update-btn" class="hidden-update" onclick="hardRefreshUpdate()" title="Load the latest build with a hard refresh">⟳ <span>Update</span></button>
-    <button id="pause-ui-btn" class="ribbon-btn" onclick="togglePauseMode()" title="Pause visual motion and media">⏸ <span>Pause</span></button>
-    <button id="video-post-btn" class="ribbon-btn" onclick="openVideoPostModal()" title="Post a channel video pinned to your current location">🎬 <span>Post Video</span></button>
-  </div>
-  <div class="tb-right">
+    <span class="version-chip version-chip-current" title="Current loaded version">
+      <span class="version-kicker">Current version</span>
+      <span class="version-value vcurrent" id="vcurrent">V2</span>
+    </span>
+    <span class="version-chip version-chip-latest" title="Latest detected version">
+      <span class="version-kicker">Latest version</span>
+      <span class="version-value vlatest-ok" id="vlatest">V2</span>
+    </span>
+    <button id="force-update-btn" onclick="hardRefreshUpdate()" title="Hard refresh update">
+      <span class="update-icon">⟳</span>
+      <span class="update-copy" id="force-update-copy">Refresh</span>
+    </button>
     <div id="balance-display" onclick="showBalance()">
       <span class="balance-label">EUR</span>
       <span class="balance-amount" id="bal">0.00</span>
     </div>
+  </div>
+  <div class="tb-right">
+    <button id="video-post-btn" class="ribbon-btn video-ribbon-btn" onclick="openVideoPostModal()" title="Capture or upload a YouTube video and pin it on your globe location">
+      <span class="video-btn-plus">＋</span>
+      <span class="video-btn-icon">🎥</span>
+      <span class="video-btn-copy">Post Video</span>
+    </button>
     <div id="user-badge" onclick="toggleUserMenu()">
       <div class="user-avatar" id="uavatar">?</div>
       <span class="user-name" id="uname">Guest</span>
       <span id="role-badge" style="display:none;font-size:8px;padding:1px 5px;border:1px solid rgba(0,200,255,0.18);border-radius:3px;white-space:nowrap;"></span>
     </div>
+    <button id="pause-ui-btn" class="pause-switch" onclick="togglePauseMode()" title="Pause visual motion and media" aria-pressed="false">
+      <span class="pause-switch-track"><span class="pause-switch-thumb"></span></span>
+      <span class="pause-switch-label" id="pause-switch-label">ON</span>
+    </button>
   </div>
 </div>
 <div id="ui-pause-indicator">UI PAUSED</div>
 
-<div id="context-left" class="context-dock" aria-label="Context controls left"></div> class="context-dock" aria-label="Context controls left"></div>
+<div id="context-left" class="context-dock" aria-label="Context controls left"></div>
 <div id="context-right" class="context-dock" aria-label="Context controls right"></div>
 
 <!-- LEFT PANEL -->
@@ -1575,42 +1681,64 @@ body.lt,body.lt2,body.lt3{
 <!-- PAYMENT MODAL -->
 <div id="pm-pay">
   <div class="pay-box">
-    <div class="mhdr">Wallet / Payments <button class="mcl" onclick="closePayments()">×</button></div>
+    <div class="mhdr">Astranov Economics <button class="mcl" onclick="closePayments()">×</button></div>
     <div class="pay-body">
-      <div class="pay-note">Astranov V3 lets guests browse first. All vendor purchases use the in-app wallet balance. Reload the balance here inside the app, then buy directly from your balance.</div>
-      <div class="pay-row">
-        <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
-        <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
-      </div>
+      <div class="pay-note">Every confirmed in-app marketplace transaction charges a fixed 3% owner commission credited instantly to owner balance. No fake money creation is allowed. Use this panel to manage deposits to the Astranov user wallet and honest withdrawal requests to external destinations.</div>
       <div class="pay-stack">
-        <div class="mlbl">Payer</div>
+        <div class="mlbl">Deposit to Astranov user wallet</div>
         <div class="pay-row">
-          <input class="minp" id="pay-email" placeholder="Email"/>
-          <input class="minp" id="pay-phone" placeholder="Phone"/>
+          <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
+          <input class="minp" id="pay-label" value="Deposit to Astranov user wallet" placeholder="Description"/>
         </div>
-        <input class="minp" id="pay-name" placeholder="Name"/>
-      </div>
-      <div class="pay-stack">
-        <div class="mlbl">Checkout</div>
+        <div class="pay-stack">
+          <div class="mlbl">Payer</div>
+          <div class="pay-row">
+            <input class="minp" id="pay-email" placeholder="Email"/>
+            <input class="minp" id="pay-phone" placeholder="Phone"/>
+          </div>
+          <input class="minp" id="pay-name" placeholder="Name"/>
+        </div>
         <div class="pay-actions">
-          <button class="pay-btn green" onclick="startStripeCheckout()">Stripe Checkout</button>
-          <button class="pay-btn yellow" onclick="runSandboxPayment('paypal')">PayPal Sandbox</button>
+          <button class="pay-btn green" onclick="startStripeCheckout()">Charge Card / Stripe</button>
+          <button class="pay-btn yellow" onclick="runSandboxPayment('paypal')">Deposit via PayPal</button>
         </div>
         <div id="paypal-button-wrap"></div>
       </div>
+      <div class="pay-stack">
+        <div class="mlbl">Withdrawal to user external account, card, wallet</div>
+        <div class="pay-row">
+          <input class="minp" id="wd-amount" type="number" min="1" step="0.50" value="25.00" placeholder="Amount EUR"/>
+          <select class="msel" id="wd-method">
+            <option value="bank">Bank account</option>
+            <option value="card">Card</option>
+            <option value="paypal">PayPal</option>
+            <option value="stripe">Stripe</option>
+            <option value="wallet">Wallet</option>
+          </select>
+        </div>
+        <input class="minp" id="wd-destination" placeholder="IBAN, card reference, PayPal email, Stripe connected account, or wallet handle"/>
+        <textarea class="mta" id="wd-note" placeholder="Destination note, beneficiary name, or routing note"></textarea>
+        <div class="pay-actions">
+          <button class="pay-btn" onclick="queueWithdrawalRequest()">Request Withdrawal</button>
+          <button class="pay-btn green" onclick="startStripeWithdrawal()">Stripe Withdrawal</button>
+          <button class="pay-btn yellow" onclick="startPayPalWithdrawal()">PayPal Withdrawal</button>
+        </div>
+      </div>
       <div class="pay-stack pay-config">
-        <div class="mlbl">Merchant config</div>
+        <div class="mlbl">Economics config</div>
         <input class="minp" id="cfg-stripe-key" placeholder="Stripe publishable key"/>
         <input class="minp" id="cfg-stripe-endpoint" placeholder="Stripe Checkout Session endpoint, e.g. /api/stripe/create-checkout-session"/>
+        <input class="minp" id="cfg-stripe-payout-endpoint" placeholder="Stripe withdrawal endpoint, e.g. /api/stripe/request-payout"/>
         <input class="minp" id="cfg-paypal-client" placeholder="PayPal client ID"/>
+        <input class="minp" id="cfg-paypal-payout-endpoint" placeholder="PayPal payout endpoint, e.g. /api/paypal/payout"/>
         <div class="pay-actions">
           <button class="pay-btn" onclick="savePaymentConfig()">Save Config</button>
           <button class="pay-btn" onclick="renderPayPalButtons(true)">Refresh PayPal</button>
         </div>
       </div>
-      <div id="pay-status" class="pay-status">Payments standing by.</div>
+      <div id="pay-status" class="pay-status">Economics standing by.</div>
       <div>
-        <div class="mlbl" style="margin-bottom:6px;">Recent wallet actions</div>
+        <div class="mlbl" style="margin-bottom:6px;">Recent economics actions</div>
         <div id="pay-history" class="pay-history"></div>
       </div>
     </div>
@@ -1620,20 +1748,39 @@ body.lt,body.lt2,body.lt3{
 
 <div id="video-post-modal" class="video-modal" aria-hidden="true">
   <div class="video-sheet">
-    <div class="sheet-title">Channel Video Pin</div>
-    <div class="sheet-sub">Post a video pin at your current location and route it only into the selected channel from the chat bar.</div>
-    <div id="video-post-status" class="video-inline-note">Select a non-AI channel in the chat bar, then post your video pin here.</div>
+    <div class="sheet-title">YouTube Channel Video Pin</div>
+    <div class="sheet-sub">Connect your YouTube account, capture or select a video, auto-fill its metadata, upload it, then pin it on your current globe location inside the selected Astranov channel.</div>
+    <div id="video-post-status" class="video-inline-note">Select Global, Local, or Team in the chat bar, then start the upload chain here.</div>
+    <div class="video-connect-row full">
+      <div id="youtube-conn-state" class="video-note">YouTube not connected yet.</div>
+      <div class="video-connect-actions">
+        <button type="button" id="youtube-connect-btn" onclick="connectYouTubeAccount(true)">Connect YouTube</button>
+        <button type="button" onclick="disconnectYouTubeAccount()">Disconnect</button>
+        <button type="button" onclick="pickVideoFile()">Capture / Select Video</button>
+      </div>
+    </div>
     <div class="video-grid">
       <div class="full">
+        <label for="youtube-client-id">Google OAuth Client ID</label>
+        <div class="video-inline-row">
+          <input id="youtube-client-id" type="text" placeholder="Paste your Google Web OAuth Client ID"/>
+          <button type="button" onclick="saveYouTubeClientId()">Save</button>
+        </div>
+      </div>
+      <div class="full">
+        <input id="video-file-input" type="file" accept="video/*" capture="environment" style="display:none"/>
+        <video id="video-local-preview" playsinline controls muted preload="metadata"></video>
+      </div>
+      <div class="full">
         <label for="video-title">Title</label>
-        <input id="video-title" type="text" placeholder="Video title"/>
+        <input id="video-title" type="text" placeholder="Auto-filled from your name, location, and date"/>
       </div>
       <div class="full">
         <label for="video-description">Description</label>
-        <textarea id="video-description" placeholder="What does this video show?"></textarea>
+        <textarea id="video-description" placeholder="Auto-filled with owner/user, location, channel, and date"></textarea>
       </div>
       <div class="full">
-        <label for="video-youtube-url">YouTube link</label>
+        <label for="video-youtube-url">Existing YouTube link (optional manual fallback)</label>
         <input id="video-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..."/>
       </div>
       <div>
@@ -1646,12 +1793,12 @@ body.lt,body.lt2,body.lt3{
       </div>
       <div class="full">
         <label for="video-privacy-note">Access model</label>
-        <div id="video-privacy-note" class="video-note">Pinned inside the selected app channel and shown only to signed-in Astranov users inside the app. YouTube privacy itself stays controlled by the YouTube link you provide.</div>
+        <div id="video-privacy-note" class="video-note">Browser upload mode defaults to unlisted YouTube playback so Astranov members can watch it inside the app. The in-app globe pin stays channel-gated. Fully private YouTube playback for multiple users needs backend-authorized upload logic.</div>
       </div>
     </div>
     <div class="video-actions">
       <button type="button" onclick="closeVideoPostModal()">Cancel</button>
-      <button type="button" class="primary" onclick="submitVideoPost()">Post video pin</button>
+      <button type="button" class="primary" onclick="submitVideoPost()">Upload to YouTube and pin</button>
     </div>
   </div>
 </div>
@@ -1697,6 +1844,7 @@ body.lt,body.lt2,body.lt3{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ═══════════════════════════════════════════════
    ASTRANOV V3 — Internet Operating System
@@ -1729,12 +1877,21 @@ var UI_CONTROL_IDS = Object.freeze({
 var APP_NAME = 'ASTRANOV';
 var APP_DESCRIPTION = 'Internet Operating System';
 var APP_VERSION_SERIES = 'V + integer';
+var AI_PREF_KEY = 'astranov.ai.pref.v1';
+var AI_ENDPOINT_KEY = 'astranov.ai.endpoint.v1';
+var AI_STATUS_KEY = 'astranov.ai.status.v1';
+var AI_BACKEND_STATUS = { provider: 'local', cloud: false, endpoint: '', lastError: '' };
 var APP_PAUSE_KEY = 'astranov.ui.paused.v1';
 var APP_PAUSED = false;
-var UI_LAYOUT_POLICY_KEY = 'astranov.ui.layout.policy.v3';
+var UI_LAYOUT_POLICY_KEY = 'astranov.ui.layout.policy.v1';
 var VIDEO_POST_MODAL_ID = 'video-post-modal';
 var VIDEO_VIEWER_MODAL_ID = 'video-viewer-modal';
 var VIDEO_POST_REQUIRE_AUTH = true;
+var YT_CLIENT_ID_KEY = 'astranov.youtube.client_id.v2';
+var YT_META_KEY = 'astranov.youtube.meta.v2';
+var AI_PROVIDER_LOCK_KEY = 'astranov.ai.provider.lock.v2';
+var AI_PROVIDER_SCAN_KEY = 'astranov.ai.provider.scan.v2';
+var AI_PROVIDER_SCAN_TTL_MS = 15 * 60 * 1000;
 ['pointerdown','keydown','mousemove','touchstart','scroll'].forEach(function(evt){ window.addEventListener(evt, function(){ LAST_USER_ACTIVITY_AT = Date.now(); }, {passive:true}); });
 var APP_GUARDRAILS = Object.freeze({
   identity: { name: APP_NAME, description: APP_DESCRIPTION, version: APP_VERSION, series: APP_VERSION_SERIES },
@@ -1749,6 +1906,8 @@ var APP_GUARDRAILS = Object.freeze({
     'Only glow the update button when a newer version is detected. Auto-refresh only when the page is hidden or the user is idle.',
     'If the owner account is authenticated, reset the owner wallet to €3000 at local midnight exactly once per day.',
     'Astranov AI helper visual identity is a winged Nordic warrior, never a halo angel or bug-like figure.',
+    'YouTube posting must support user OAuth connection, metadata auto-fill, upload chain, readiness polling, and channel-gated globe pinning.',
+    'AI engine must cycle through configured no-key-capable routes and local fallback, notify the user in chat, and lock onto the last working provider until failure.',
     'Do not restore permanent sidebars. Side controls are contextual and appear only when relevant.',
     'Default to minimal controls. Hide non-essential buttons until the AI helper needs them or the user requests them.',
     'Only the authenticated owner may grant persistent AI UI repair authority by direct verbal or typed instruction.',
@@ -1963,15 +2122,20 @@ function setVersionRibbon(currentVersion, latestVersion){
   var cur = document.getElementById('vcurrent');
   var lat = document.getElementById('vlatest');
   var btn = document.getElementById('force-update-btn');
-  if(cur) cur.textContent = currentVersion || APP_VERSION;
-  if(lat) lat.textContent = latestVersion || APP_LATEST_VERSION || APP_VERSION;
-  var needs = String(latestVersion || APP_LATEST_VERSION || APP_VERSION) !== String(currentVersion || APP_VERSION);
-  if(lat) lat.className = needs ? 'vlatest-old' : 'vlatest-ok';
+  var btnCopy = document.getElementById('force-update-copy');
+  var current = String(currentVersion || APP_VERSION || 'V2');
+  var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V2');
+  var needs = latest !== current;
+  if(cur) cur.textContent = current;
+  if(lat) lat.textContent = latest;
+  if(lat) lat.className = needs ? 'version-value vlatest-old' : 'version-value vlatest-ok';
   if(btn){
     btn.classList.toggle('needs-update', needs);
-    btn.classList.toggle('hidden-update', !needs);
-    btn.textContent = needs ? 'Update' : 'Current';
+    btn.classList.toggle('up-to-date', !needs);
+    btn.setAttribute('title', needs ? ('Update available. Current ' + current + ' · Latest ' + latest) : ('Up to date. Current ' + current + ' · Latest ' + latest));
+    btn.setAttribute('aria-label', needs ? ('Hard refresh update from ' + current + ' to ' + latest) : ('Hard refresh current build ' + current));
   }
+  if(btnCopy) btnCopy.textContent = needs ? ('Update ' + current + '→' + latest) : ('Refresh ' + current);
 }
 
 
@@ -1988,10 +2152,13 @@ function setPausedState(paused){
   APP_PAUSED = !!paused;
   document.body.classList.toggle('app-paused', APP_PAUSED);
   var btn = document.getElementById('pause-ui-btn');
+  var lbl = document.getElementById('pause-switch-label');
   if(btn){
     btn.classList.toggle('active', APP_PAUSED);
-    btn.innerHTML = APP_PAUSED ? '▶ <span>Resume</span>' : '⏸ <span>Pause</span>';
+    btn.setAttribute('aria-pressed', APP_PAUSED ? 'true' : 'false');
+    btn.setAttribute('title', APP_PAUSED ? 'Resume visual motion and media' : 'Pause visual motion and media');
   }
+  if(lbl) lbl.textContent = APP_PAUSED ? 'OFF' : 'ON';
   pauseUiMedia(APP_PAUSED);
   try{ localStorage.setItem(APP_PAUSE_KEY, APP_PAUSED ? '1' : '0'); }catch(e){}
   if(window.showAstranovaStatusBubble){
@@ -2211,6 +2378,86 @@ function scheduleOwnerMidnightReset(){
   }, Math.max(1000, next.getTime() - now.getTime()));
 }
 
+
+function roundMoney(value){
+  return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+function getOwnerWalletStorageKey(){
+  return WALLET_KEY + '.owner';
+}
+
+function getOwnerPaymentLogStorageKey(){
+  return PAYMENT_LOG_KEY + '.owner';
+}
+
+function ensureOwnerEconomicsBootstrap(){
+  try{
+    if(localStorage.getItem(getOwnerWalletStorageKey()) == null){
+      localStorage.setItem(getOwnerWalletStorageKey(), Number(OWNER_MIDNIGHT_BALANCE_EUR).toFixed(2));
+    }
+    if(localStorage.getItem(getOwnerPaymentLogStorageKey()) == null){
+      localStorage.setItem(getOwnerPaymentLogStorageKey(), '[]');
+    }
+  }catch(e){}
+}
+
+function getOwnerWalletBalance(){
+  ensureOwnerEconomicsBootstrap();
+  return Number(localStorage.getItem(getOwnerWalletStorageKey()) || '0');
+}
+
+function appendOwnerPaymentLog(entry){
+  ensureOwnerEconomicsBootstrap();
+  var log = [];
+  try{ log = JSON.parse(localStorage.getItem(getOwnerPaymentLogStorageKey()) || '[]'); }catch(e){}
+  log.unshift(entry);
+  localStorage.setItem(getOwnerPaymentLogStorageKey(), JSON.stringify(log.slice(0, 24)));
+  if(CU && isOwner(CU)) renderPaymentHistory();
+}
+
+function creditOwnerCommission(grossAmount, label, meta){
+  ensureOwnerEconomicsBootstrap();
+  var gross = roundMoney(grossAmount);
+  if(!(gross > 0)) return 0;
+  var commission = roundMoney(gross * OWNER_COMMISSION_PCT);
+  if(!(commission > 0)) return 0;
+  var next = roundMoney(getOwnerWalletBalance() + commission);
+  localStorage.setItem(getOwnerWalletStorageKey(), next.toFixed(2));
+  appendOwnerPaymentLog({
+    provider:'owner-commission',
+    amount:commission,
+    label:'3% owner commission · ' + label,
+    live:true,
+    at:new Date().toISOString(),
+    id:'owner-comm-' + Math.random().toString(36).slice(2,10),
+    meta:{ gross_eur:gross, owner:OWNER_NAME, ...(meta || {}) }
+  });
+  if(CU && isOwner(CU)) document.getElementById('bal').textContent = next.toFixed(2);
+  return commission;
+}
+
+function finalizeWalletTransactionWithCommission(amount, label, meta){
+  var gross = roundMoney(amount);
+  if(!(gross > 0)) return { ok:false, error:'invalid-amount' };
+  var balance = getWalletBalance();
+  if(balance < gross) return { ok:false, error:'insufficient', balance:balance, amount:gross };
+  var next = roundMoney(balance - gross);
+  var commission = creditOwnerCommission(gross, label, meta || {});
+  setWalletBalance(next);
+  addPaymentLog({
+    provider:'wallet-debit',
+    amount:-gross,
+    label: label + ' · 3% owner commission €' + commission.toFixed(2),
+    live:true,
+    at:new Date().toISOString(),
+    id:'wallet-' + Math.random().toString(36).slice(2,10),
+    meta:{ commission_eur:commission, ...(meta || {}) }
+  });
+  renderPaymentHistory();
+  return { ok:true, newBalance:next, commission:commission };
+}
+
 function enforceSpartanGuardrails(){
   applyBrandLock();
   var cmdResponse = document.getElementById('cmd-response');
@@ -2259,8 +2506,10 @@ var orbitalFeedTimer = null;
    admin = driver/shop owner/support, posts go live immediately
    owner = Notis Astranov only, full control
 */
+const OWNER_NAME = 'Notis Astranov';
 const OWNER_EMAIL = 'notisastranov@gmail.com';
 const OWNER_PHONE = '+306971930225';
+const OWNER_COMMISSION_PCT = 0.03;
 
 function isOwner(user){
   if(!user) return false;
@@ -2391,65 +2640,102 @@ function initGadgetCycle(elId, opts){
   var allowExpand = opts.allowExpand !== false;
   var el = document.getElementById(elId);
   if(!el) return;
-  var state = 0; // 0=transparent, 1=visible, 2=expanded
-  var clickTimer = null;
-  var pressTimer = null;
-  var moveable = false, dragging = false;
-  var sx=0, sy=0, ol=0, ot=0;
+  var state = 0;
+  var holdTimer = null;
+  var pointerDown = false;
+  var dragging = false;
+  var holdTriggered = false;
+  var startX = 0, startY = 0, originLeft = 0, originTop = 0;
+  var HOLD_MS = opts.holdMs || 420;
+  var MOVE_TOL = 6;
 
-  el.addEventListener('click', function(e){
-    if(dragging) return;
-    if(clickTimer) clearTimeout(clickTimer);
-    clickTimer = setTimeout(function(){
-      state = allowExpand ? ((state + 1) % 3) : (state === 1 ? 0 : 1);
-      el.classList.remove('visible','expanded');
-      if(state === 1) el.classList.add('visible');
-      else if(state === 2 && allowExpand) el.classList.add('expanded');
-    }, 200);
-  });
+  function clampToViewport(){
+    var rect = el.getBoundingClientRect();
+    var maxLeft = Math.max(8, window.innerWidth - rect.width - 8);
+    var maxTop = Math.max(48, window.innerHeight - rect.height - 70);
+    var left = Math.min(Math.max(rect.left, 8), maxLeft);
+    var top = Math.min(Math.max(rect.top, 44), maxTop);
+    el.style.position = 'fixed';
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    el.style.right = 'auto';
+    el.style.transform = 'none';
+  }
 
-  el.addEventListener('mousedown', function(e){
-    pressTimer = setTimeout(function(){
-      moveable = !moveable;
-      el.classList.toggle('moveable', moveable);
-    }, 3000);
-    if(moveable){ dragging = true; sx = e.clientX; sy = e.clientY; var r = el.getBoundingClientRect(); ol = r.left; ot = r.top; e.preventDefault(); }
-  });
-  el.addEventListener('touchstart', function(e){
-    pressTimer = setTimeout(function(){
-      moveable = !moveable;
-      el.classList.toggle('moveable', moveable);
-    }, 3000);
-    if(moveable && e.touches.length){ dragging = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY; var r = el.getBoundingClientRect(); ol = r.left; ot = r.top; }
-  }, {passive:true});
+  function applyState(next){
+    state = next;
+    el.classList.remove('visible','expanded');
+    if(state === 1) el.classList.add('visible');
+    if(state === 2 && allowExpand) el.classList.add('expanded');
+    clampToViewport();
+  }
 
-  document.addEventListener('mousemove', function(e){
-    if(pressTimer && Math.abs(e.clientX - sx) > 5) clearTimeout(pressTimer);
+  function cycleState(){
+    var next = allowExpand ? ((state + 1) % 3) : (state === 1 ? 0 : 1);
+    applyState(next);
+  }
+
+  function clearHold(){ if(holdTimer){ clearTimeout(holdTimer); holdTimer = null; } }
+
+  function onPointerDown(e){
+    var pt = e.touches ? e.touches[0] : e;
+    pointerDown = true;
+    dragging = false;
+    holdTriggered = false;
+    startX = pt.clientX;
+    startY = pt.clientY;
+    var rect = el.getBoundingClientRect();
+    originLeft = rect.left;
+    originTop = rect.top;
+    clearHold();
+    holdTimer = setTimeout(function(){
+      if(!pointerDown) return;
+      holdTriggered = true;
+      dragging = true;
+      el.classList.add('moveable');
+      if(state === 0) applyState(1);
+    }, HOLD_MS);
+  }
+
+  function onPointerMove(e){
+    if(!pointerDown) return;
+    var pt = e.touches ? e.touches[0] : e;
+    var dx = pt.clientX - startX;
+    var dy = pt.clientY - startY;
+    if(!holdTriggered && (Math.abs(dx) > MOVE_TOL || Math.abs(dy) > MOVE_TOL)) clearHold();
     if(!dragging) return;
+    if(e.preventDefault) e.preventDefault();
     el.style.position = 'fixed';
-    el.style.left = (ol + e.clientX - sx) + 'px';
-    el.style.top = (ot + e.clientY - sy) + 'px';
+    el.style.left = (originLeft + dx) + 'px';
+    el.style.top = (originTop + dy) + 'px';
     el.style.right = 'auto';
     el.style.transform = 'none';
-  });
-  document.addEventListener('touchmove', function(e){
-    if(pressTimer && e.touches.length && Math.abs(e.touches[0].clientX - sx) > 5) clearTimeout(pressTimer);
-    if(!dragging || !e.touches.length) return;
-    el.style.position = 'fixed';
-    el.style.left = (ol + e.touches[0].clientX - sx) + 'px';
-    el.style.top = (ot + e.touches[0].clientY - sy) + 'px';
-    el.style.right = 'auto';
-    el.style.transform = 'none';
-  }, {passive:true});
-  function endDrag(){ if(pressTimer) clearTimeout(pressTimer); dragging = false; }
-  document.addEventListener('mouseup', endDrag);
-  document.addEventListener('touchend', endDrag);
+  }
+
+  function onPointerUp(){
+    if(pointerDown && !holdTriggered && !dragging) cycleState();
+    pointerDown = false;
+    clearHold();
+    if(dragging){
+      dragging = false;
+      clampToViewport();
+      setTimeout(function(){ el.classList.remove('moveable'); }, 140);
+    }
+  }
+
+  el.addEventListener('mousedown', onPointerDown);
+  el.addEventListener('touchstart', onPointerDown, {passive:true});
+  document.addEventListener('mousemove', onPointerMove);
+  document.addEventListener('touchmove', onPointerMove, {passive:false});
+  document.addEventListener('mouseup', onPointerUp);
+  document.addEventListener('touchend', onPointerUp);
+  window.addEventListener('resize', clampToViewport);
+  window.addEventListener('orientationchange', function(){ setTimeout(clampToViewport, 120); });
 }
 
-// Initialize both gadgets
 setTimeout(function(){
-  initGadgetCycle('compass-hud', { allowExpand:false });
-  initGadgetCycle('perf-hud', { allowExpand:false });
+  initGadgetCycle('compass-hud', { allowExpand:true, holdMs:420 });
+  initGadgetCycle('perf-hud', { allowExpand:true, holdMs:420 });
 }, 500);
 
 function setGuestState() {
@@ -3687,7 +3973,7 @@ function aiExecuteOrder(item, qty){
   var balance = getWalletBalance();
   if(balance < price){
     addAiMessage('ai-msg-reply','Astranov','Your balance is \u20AC' + balance.toFixed(2) + ' but this order costs \u20AC' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
-    speakAstranova('Your balance is too low. Opening wallet to top up.');
+    speakAstranova('Your balance is too low. Opening Astranov economics for a wallet deposit.');
     setTimeout(openPayments, 800);
     return;
   }
@@ -3727,20 +4013,23 @@ function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
     }, 1500);
   }
 
-  // Deduct from wallet
+  // Deduct from wallet and credit owner commission
   setTimeout(function(){
-    var newBal = Math.max(0, getWalletBalance() - price);
-    setWalletBalance(newBal);
-    addPaymentLog({
-      provider:'wallet-debit', amount:-price,
-      label:'AI Order · ' + qty + 'x ' + item.name + ' from ' + shopName,
-      live: true, at: new Date().toISOString(),
-      id: 'ai-' + Math.random().toString(36).slice(2,10)
+    var tx = finalizeWalletTransactionWithCommission(price, 'AI Order · ' + qty + 'x ' + item.name + ' from ' + shopName, {
+      vendor_name: shopName,
+      quantity: qty,
+      total_volume_liters: totalVol
     });
+    if(!tx.ok){
+      addAiMessage('ai-msg-reply','Astranov','⚠️ I could not finalize that order safely. Please check your balance and try again.');
+      speakAstranova('I could not finalize that order safely. Please check your balance and try again.');
+      return;
+    }
+    var newBal = tx.newBalance;
 
     bounceAstranova();
-    addAiMessage('ai-msg-reply','Astranov','✅ Da, payment confirmed comrade! €' + price.toFixed(2) + ' deducted. New balance: €' + newBal.toFixed(2) + '. Mobilizing nearest comrade driver…');
-    speakAstranova('Da, payment confirmed comrade. Now mobilizing nearest delivery operative.');
+    addAiMessage('ai-msg-reply','Astranov','✅ Da, payment confirmed comrade! €' + price.toFixed(2) + ' deducted. 3% owner commission €' + tx.commission.toFixed(2) + ' credited instantly. New balance: €' + newBal.toFixed(2) + '. Mobilizing nearest comrade driver…');
+    speakAstranova('Da, payment confirmed comrade. Three percent owner commission has been credited instantly. Now mobilizing nearest delivery operative.');
 
     // Calculate delivery
     var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
@@ -4045,11 +4334,13 @@ function getPaymentConfig() {
     return {
       stripePublishableKey: '',
       stripeEndpoint: '',
+      stripePayoutEndpoint: '',
       paypalClientId: '',
+      paypalPayoutEndpoint: '',
       ...JSON.parse(localStorage.getItem(PAYMENT_CFG_KEY) || '{}')
     };
   } catch (e) {
-    return { stripePublishableKey: '', stripeEndpoint: '', paypalClientId: '' };
+    return { stripePublishableKey: '', stripeEndpoint: '', stripePayoutEndpoint: '', paypalClientId: '', paypalPayoutEndpoint: '' };
   }
 }
 
@@ -4057,17 +4348,21 @@ function populatePaymentConfigForm() {
   const cfg = getPaymentConfig();
   document.getElementById('cfg-stripe-key').value = cfg.stripePublishableKey || '';
   document.getElementById('cfg-stripe-endpoint').value = cfg.stripeEndpoint || '';
+  document.getElementById('cfg-stripe-payout-endpoint').value = cfg.stripePayoutEndpoint || '';
   document.getElementById('cfg-paypal-client').value = cfg.paypalClientId || '';
+  document.getElementById('cfg-paypal-payout-endpoint').value = cfg.paypalPayoutEndpoint || '';
 }
 
 function savePaymentConfig() {
   const cfg = {
     stripePublishableKey: document.getElementById('cfg-stripe-key').value.trim(),
     stripeEndpoint: document.getElementById('cfg-stripe-endpoint').value.trim(),
-    paypalClientId: document.getElementById('cfg-paypal-client').value.trim()
+    stripePayoutEndpoint: document.getElementById('cfg-stripe-payout-endpoint').value.trim(),
+    paypalClientId: document.getElementById('cfg-paypal-client').value.trim(),
+    paypalPayoutEndpoint: document.getElementById('cfg-paypal-payout-endpoint').value.trim()
   };
   localStorage.setItem(PAYMENT_CFG_KEY, JSON.stringify(cfg));
-  setPaymentStatus('Merchant config saved. Stripe and PayPal are now using your latest values.', 'ok');
+  setPaymentStatus('Economics config saved. Deposits use the latest Stripe and PayPal values, and live withdrawals will use the payout endpoints when you provide them.', 'ok');
   renderPayPalButtons(true);
 }
 
@@ -4075,7 +4370,7 @@ function renderPaymentHistory() {
   const el = document.getElementById('pay-history');
   const log = getPaymentLog();
   if (!log.length) {
-    el.innerHTML = '<div class="pay-log" style="color:var(--text-dim);">No wallet actions yet.</div>';
+    el.innerHTML = '<div class="pay-log" style="color:var(--text-dim);">No economics actions yet.</div>';
     return;
   }
   el.innerHTML = log.map(item => `<div class="pay-log"><div style="color:${item.live ? 'var(--green)' : 'var(--yellow)'};font-family:var(--fhud);font-size:9px;letter-spacing:0.08em;">${item.provider.toUpperCase()} · ${item.live ? 'LIVE' : 'SANDBOX'}</div><div style="margin-top:4px;color:var(--text);">€${Number(item.amount).toFixed(2)} · ${item.label}</div><div style="margin-top:2px;color:var(--text-dim);">${new Date(item.at).toLocaleString()} · ${item.id}</div></div>`).join('');
@@ -4095,7 +4390,7 @@ function openPayments() {
   populatePaymentConfigForm();
   renderPaymentHistory();
   renderPayPalButtons();
-  setPaymentStatus(CU ? 'Wallet ready. Reload your in-app balance here, then use Buy now on vendor offers.' : 'Browse the wallet as a guest. Login will only be requested when you actually top up or buy.');
+  setPaymentStatus(CU ? 'Economics ready. Deposit to Astranov user wallet, or request a withdrawal to your external account, card, or wallet.' : 'Browse the economics panel as a guest. Login will only be requested when you actually deposit, buy, or submit a withdrawal request.');
 }
 
 function closePayments() {
@@ -4114,8 +4409,8 @@ async function loadExternalScript(src) {
 }
 
 function getPaymentPayload() {
-  const amount = Number(document.getElementById('pay-amount').value || 0);
-  const label = document.getElementById('pay-label').value.trim() || 'Astranov wallet top-up';
+  const amount = roundMoney(document.getElementById('pay-amount').value || 0);
+  const label = document.getElementById('pay-label').value.trim() || 'Deposit to Astranov user wallet';
   const payer = {
     email: document.getElementById('pay-email').value.trim(),
     phone: normalizePhone(document.getElementById('pay-phone').value.trim()),
@@ -4124,34 +4419,126 @@ function getPaymentPayload() {
   return { amount, label, payer };
 }
 
+function getWithdrawalPayload() {
+  const amount = roundMoney(document.getElementById('wd-amount').value || 0);
+  const method = document.getElementById('wd-method').value || 'bank';
+  const destination = document.getElementById('wd-destination').value.trim();
+  const note = document.getElementById('wd-note').value.trim();
+  const requester = {
+    email: (CU?.email || document.getElementById('pay-email').value || '').trim(),
+    phone: normalizePhone(CU?.phone || document.getElementById('pay-phone').value || ''),
+    name: (CU?.name || document.getElementById('pay-name').value || '').trim()
+  };
+  return { amount, method, destination, note, requester };
+}
+
 function recordWalletPayment(provider, amount, label, live=false, ref='') {
-  const next = getWalletBalance() + Number(amount || 0);
+  const value = roundMoney(amount);
+  if (!(value > 0)) {
+    setPaymentStatus('Wallet deposits must be positive and confirmed. No fake money creation is allowed.', 'err');
+    return false;
+  }
+  const next = roundMoney(getWalletBalance() + value);
   setWalletBalance(next);
-  addPaymentLog({ provider, amount, label, live, at: new Date().toISOString(), id: ref || (provider + '-' + Math.random().toString(36).slice(2,10)) });
+  addPaymentLog({ provider, amount:value, label, live, at: new Date().toISOString(), id: ref || (provider + '-' + Math.random().toString(36).slice(2,10)) });
+  return true;
+}
+
+function queueWithdrawalRequest() {
+  if (requireBuyerAuth('Login required before submitting a withdrawal request.', () => queueWithdrawalRequest())) return;
+  const { amount, method, destination, note, requester } = getWithdrawalPayload();
+  if (!(amount > 0)) { setPaymentStatus('Enter a valid EUR amount before requesting a withdrawal.', 'err'); return; }
+  if (getWalletBalance() < amount) { setPaymentStatus('Balance too low for this withdrawal request. Deposit funds first or lower the amount.', 'err'); return; }
+  if (!destination) { setPaymentStatus('Enter the destination account, card, wallet, or PayPal identifier.', 'err'); return; }
+  addPaymentLog({
+    provider:'withdrawal-request',
+    amount:0,
+    label:'Pending withdrawal request · €' + amount.toFixed(2) + ' → ' + method + ' · ' + destination,
+    live:false,
+    at:new Date().toISOString(),
+    id:'wdq-' + Math.random().toString(36).slice(2,10),
+    meta:{ amount_eur:amount, method, destination, note, requester }
+  });
+  renderPaymentHistory();
+  setPaymentStatus('Withdrawal request queued. No funds were deducted because no live payout backend confirmed the transfer yet.', 'ok');
+}
+
+async function startStripeWithdrawal() {
+  if (requireBuyerAuth('Login required before starting a Stripe withdrawal.', () => startStripeWithdrawal())) return;
+  const { amount, method, destination, note, requester } = getWithdrawalPayload();
+  const cfg = getPaymentConfig();
+  if (!(amount > 0)) { setPaymentStatus('Enter a valid EUR amount before starting Stripe withdrawal.', 'err'); return; }
+  if (getWalletBalance() < amount) { setPaymentStatus('Balance too low for this Stripe withdrawal.', 'err'); return; }
+  if (!destination) { setPaymentStatus('Enter the Stripe-connected destination or external account reference.', 'err'); return; }
+  if (!cfg.stripePayoutEndpoint) { queueWithdrawalRequest(); setPaymentStatus('Stripe payout endpoint missing, so the withdrawal was queued instead of faked as completed.', 'ok'); return; }
+  try {
+    setPaymentStatus('Contacting Stripe withdrawal endpoint…');
+    const response = await fetch(cfg.stripePayoutEndpoint, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ amount, currency:'eur', method, destination, note, requester, app:'Astranov', version:APP_VERSION })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(json?.error || 'Stripe withdrawal request failed.');
+    const next = roundMoney(getWalletBalance() - amount);
+    setWalletBalance(next);
+    addPaymentLog({ provider:'stripe-withdrawal', amount:-amount, label:'Withdrawal to user external account, card, wallet · Stripe', live:true, at:new Date().toISOString(), id: json?.payoutId || ('stripe-wd-' + Math.random().toString(36).slice(2,10)), meta:{ method, destination } });
+    renderPaymentHistory();
+    setPaymentStatus('Stripe withdrawal accepted. Wallet debited by €' + amount.toFixed(2) + '.', 'ok');
+  } catch (e) {
+    setPaymentStatus('Stripe withdrawal error: ' + e.message, 'err');
+  }
+}
+
+async function startPayPalWithdrawal() {
+  if (requireBuyerAuth('Login required before starting a PayPal withdrawal.', () => startPayPalWithdrawal())) return;
+  const { amount, method, destination, note, requester } = getWithdrawalPayload();
+  const cfg = getPaymentConfig();
+  if (!(amount > 0)) { setPaymentStatus('Enter a valid EUR amount before starting PayPal withdrawal.', 'err'); return; }
+  if (getWalletBalance() < amount) { setPaymentStatus('Balance too low for this PayPal withdrawal.', 'err'); return; }
+  if (!destination) { setPaymentStatus('Enter the PayPal recipient email, phone, or wallet destination.', 'err'); return; }
+  if (!cfg.paypalPayoutEndpoint) { queueWithdrawalRequest(); setPaymentStatus('PayPal payout endpoint missing, so the withdrawal was queued instead of faked as completed.', 'ok'); return; }
+  try {
+    setPaymentStatus('Contacting PayPal withdrawal endpoint…');
+    const response = await fetch(cfg.paypalPayoutEndpoint, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ amount, currency:'EUR', method, destination, note, requester, app:'Astranov', version:APP_VERSION })
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(json?.error || 'PayPal withdrawal request failed.');
+    const next = roundMoney(getWalletBalance() - amount);
+    setWalletBalance(next);
+    addPaymentLog({ provider:'paypal-withdrawal', amount:-amount, label:'Withdrawal to user external account, card, wallet · PayPal', live:true, at:new Date().toISOString(), id: json?.payoutBatchId || ('paypal-wd-' + Math.random().toString(36).slice(2,10)), meta:{ method, destination } });
+    renderPaymentHistory();
+    setPaymentStatus('PayPal withdrawal accepted. Wallet debited by €' + amount.toFixed(2) + '.', 'ok');
+  } catch (e) {
+    setPaymentStatus('PayPal withdrawal error: ' + e.message, 'err');
+  }
 }
 
 function runSandboxPayment(provider='stripe') {
-  if (requireBuyerAuth('Login required before completing a wallet top-up.', () => runSandboxPayment(provider))) return;
+  if (requireBuyerAuth('Login required before completing a wallet deposit.', () => runSandboxPayment(provider))) return;
   const { amount, label, payer } = getPaymentPayload();
-  if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before paying.', 'err'); return; }
-  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required for wallet payments.', 'err'); return; }
+  if (!(amount > 0)) { setPaymentStatus('Enter a valid EUR amount before depositing.', 'err'); return; }
+  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required for wallet deposits.', 'err'); return; }
   recordWalletPayment(provider, amount, label, false);
-  setPaymentStatus(provider.toUpperCase() + ' sandbox top-up complete. Wallet credited locally with €' + amount.toFixed(2) + '.', 'ok');
+  setPaymentStatus(provider.toUpperCase() + ' sandbox deposit complete. Wallet deposited locally with €' + amount.toFixed(2) + '.', 'ok');
 }
 
 async function startStripeCheckout() {
-  if (requireBuyerAuth('Login required before starting Stripe checkout.', () => startStripeCheckout())) return;
+  if (requireBuyerAuth('Login required before starting a wallet deposit through Stripe.', () => startStripeCheckout())) return;
   const { amount, label, payer } = getPaymentPayload();
   const cfg = getPaymentConfig();
-  if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before starting Stripe.', 'err'); return; }
-  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required before starting Stripe.', 'err'); return; }
+  if (!amount || amount <= 0) { setPaymentStatus('Enter a valid EUR amount before starting the Stripe deposit.', 'err'); return; }
+  if (!payer.email || !payer.phone) { setPaymentStatus('Email and phone are required before starting the Stripe deposit.', 'err'); return; }
   if (!cfg.stripePublishableKey || !cfg.stripeEndpoint) {
     runSandboxPayment('stripe');
-    setPaymentStatus('Stripe keys or endpoint missing, so a sandbox wallet top-up was used instead. Add your publishable key and Checkout Session endpoint for live Stripe.', 'ok');
+    setPaymentStatus('Stripe keys or endpoint missing, so a sandbox wallet deposit was used instead. Add your publishable key and Checkout Session endpoint for live Stripe deposits.', 'ok');
     return;
   }
   try {
-    setPaymentStatus('Contacting Stripe Checkout…');
+    setPaymentStatus('Contacting Stripe Checkout for wallet deposit…');
     await loadExternalScript('https://js.stripe.com/v3/');
     const stripe = window.Stripe(cfg.stripePublishableKey);
     const response = await fetch(cfg.stripeEndpoint, {
@@ -4162,7 +4549,7 @@ async function startStripeCheckout() {
     const json = await response.json();
     if (!response.ok) throw new Error(json?.error || 'Stripe session creation failed.');
     if (json.url) {
-      setPaymentStatus('Stripe session created. Redirecting to hosted checkout…', 'ok');
+      setPaymentStatus('Stripe deposit session created. Redirecting to hosted checkout…', 'ok');
       window.location.href = json.url;
       return;
     }
@@ -5211,10 +5598,10 @@ function prepareWalletReloadForListing(index) {
   openPayments();
   if (Number.isFinite(price) && price > 0) {
     document.getElementById('pay-amount').value = price.toFixed(2);
-    document.getElementById('pay-label').value = 'Wallet top-up for ' + inferVendorName(record);
-    setPaymentStatus('Top up your in-app balance, then return and buy directly from wallet.', 'ok');
+    document.getElementById('pay-label').value = 'Deposit to Astranov user wallet for ' + inferVendorName(record);
+    setPaymentStatus('Deposit to Astranov user wallet, then return and buy directly from balance.', 'ok');
   } else {
-    setPaymentStatus('Set a wallet top-up amount, then return and buy from balance.', 'ok');
+    setPaymentStatus('Set a deposit amount, then return and buy from balance.', 'ok');
   }
 }
 
@@ -5231,23 +5618,20 @@ async function buyListingFromBalance(index) {
   if (balance < amount) {
     openPayments();
     document.getElementById('pay-amount').value = (amount - balance).toFixed(2);
-    document.getElementById('pay-label').value = 'Wallet top-up for ' + inferVendorName(record);
-    setPaymentStatus('Balance too low for this purchase. Top up at least €' + (amount - balance).toFixed(2) + ' and try again.', 'err');
-    showResp('Balance too low. Opening wallet reload.');
+    document.getElementById('pay-label').value = 'Deposit to Astranov user wallet for ' + inferVendorName(record);
+    setPaymentStatus('Balance too low for this purchase. Deposit at least €' + (amount - balance).toFixed(2) + ' and try again.', 'err');
+    showResp('Balance too low. Opening economics panel for deposit.');
     return;
   }
-  const next = Math.max(0, balance - amount);
-  setWalletBalance(next);
-  addPaymentLog({
-    provider: 'wallet-debit',
-    amount: -amount,
-    label: 'Vendor purchase · ' + (record?.name || record?.title || 'Offer'),
-    live: true,
-    at: new Date().toISOString(),
-    id: 'wallet-' + Math.random().toString(36).slice(2,10)
+  const tx = finalizeWalletTransactionWithCommission(amount, 'Vendor purchase · ' + (record?.name || record?.title || 'Offer'), {
+    vendor_name: inferVendorName(record),
+    source_type: record?._type || record?.category || 'listing'
   });
-  renderPaymentHistory();
-  showResp('Purchased: ' + (record?.name || record?.title || 'Offer') + ' for €' + amount.toFixed(2) + '. New balance €' + next.toFixed(2));
+  if (!tx.ok) {
+    setPaymentStatus('This purchase could not be finalized safely.', 'err');
+    return;
+  }
+  showResp('Purchased: ' + (record?.name || record?.title || 'Offer') + ' for €' + amount.toFixed(2) + '. Owner commission €' + tx.commission.toFixed(2) + '. New balance €' + tx.newBalance.toFixed(2));
   try {
     await sb.from('orders').insert([{
       user_id: CU?.id || null,
@@ -5255,6 +5639,7 @@ async function buyListingFromBalance(index) {
       product_name: record?.name || record?.title || 'Offer',
       amount_eur: amount,
       quantity: 1,
+      owner_commission_eur: tx.commission,
       status: 'paid_by_balance',
       meta: {
         availability: inferAvailability(record),
@@ -5591,6 +5976,7 @@ function sendCmd(){
   resp.style.display = 'flex';
 
   if(handleOwnerUiAuthorityCommand(val)) return;
+  if(handleAiBackendCommand(val)) return;
   if(handleUiControlCommand(val)) return;
   if(handleVideoCommand(val)) return;
   if(/^(pause|freeze|hold ui|pause ui|resume ui|unpause)/i.test(val)){ togglePauseMode(); return; }
@@ -5730,22 +6116,105 @@ function learnFromInteraction(userMsg, aiResponse){
   }
 }
 
-async function callAstranovaAI(userMessage){
-  var conv = document.getElementById('ai-conv');
+function getAiPreference(){
+  try{ return String(localStorage.getItem(AI_PREF_KEY) || 'auto').toLowerCase(); }catch(e){ return 'auto'; }
+}
+function setAiPreference(pref){
+  pref = String(pref || 'auto').toLowerCase();
+  if(pref === 'openai') pref = 'chatgpt';
+  if(pref === 'anthropic') pref = 'claude';
+  if(!/^(auto|chatgpt|claude|local)$/.test(pref)) pref = 'auto';
+  try{ localStorage.setItem(AI_PREF_KEY, pref); }catch(e){}
+  AI_BACKEND_STATUS.provider = pref;
+  return pref;
+}
+function getAiEndpoint(){
+  try{ return String(localStorage.getItem(AI_ENDPOINT_KEY) || '').trim(); }catch(e){ return ''; }
+}
+function normalizeAiReply(payload){
+  if(!payload) return '';
+  if(typeof payload === 'string') return payload;
+  if(typeof payload.text === 'string') return payload.text;
+  if(typeof payload.output_text === 'string') return payload.output_text;
+  if(payload.response && typeof payload.response.text === 'string') return payload.response.text;
+  if(Array.isArray(payload.content)) return payload.content.map(function(part){ return part && (part.text || '') || ''; }).filter(Boolean).join('\n');
+  if(payload.choices && payload.choices[0] && payload.choices[0].message){
+    var c = payload.choices[0].message.content;
+    if(typeof c === 'string') return c;
+    if(Array.isArray(c)) return c.map(function(part){ return part && (part.text || '') || ''; }).filter(Boolean).join('\n');
+  }
+  return '';
+}
+async function queryAstranovCloud(payload){
+  var pref = getAiPreference();
+  var endpoints = [];
+  var custom = getAiEndpoint();
+  if(custom) endpoints.push({ id:'custom', url:custom });
+  endpoints.push({ id:'router', url:'/api/ai-router.php' });
+  endpoints.push({ id:'router-fallback', url:'/api/ai.php' });
+  var lastErr = null;
+  for(var i=0;i<endpoints.length;i++){
+    var ep = endpoints[i];
+    try{
+      var res = await fetch(ep.url, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({
+          provider_preference: pref,
+          app: APP_NAME,
+          app_version: APP_VERSION,
+          message: payload.userMessage,
+          system: payload.system,
+          context: payload.context,
+          searchResults: payload.searchResults,
+          location: payload.location,
+          user: payload.user
+        })
+      });
+      if(!res.ok) throw new Error('AI route ' + ep.id + ' returned ' + res.status);
+      var data = await res.json();
+      var text = normalizeAiReply(data);
+      if(!text) throw new Error('AI route ' + ep.id + ' returned no text');
+      return { text:text, provider:data.provider || pref || 'cloud', endpoint:ep.url, cloud:true };
+    }catch(err){ lastErr = err; }
+  }
+  throw lastErr || new Error('No cloud AI route is available');
+}
+function handleAiBackendCommand(val){
+  var q = String(val || '').trim().toLowerCase();
+  var m = q.match(/^(?:use|switch to|set ai to|set brain to|prefer)\s+(chatgpt|openai|claude|anthropic|local|auto)/);
+  if(m){
+    var pref = m[1];
+    if(pref === 'openai') pref = 'chatgpt';
+    if(pref === 'anthropic') pref = 'claude';
+    setAiPreference(pref);
+    addAiMessage('ai-msg-reply','Astranov','AI preference set to ' + pref.toUpperCase() + '. I will use that provider when a secure cloud route is available, and fall back safely when it is not.');
+    return true;
+  }
+  if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(q)){
+    var prefNow = getAiPreference();
+    var mode = AI_BACKEND_STATUS.cloud ? ('Cloud route live via ' + (AI_BACKEND_STATUS.provider || prefNow).toUpperCase()) : 'Local fallback brain active';
+    addAiMessage('ai-msg-reply','Astranov', mode + '. Preference: ' + prefNow.toUpperCase() + (AI_BACKEND_STATUS.lastError ? (' · Last cloud issue: ' + AI_BACKEND_STATUS.lastError) : '') + '.');
+    return true;
+  }
+  if(/^(fix ui|repair ui|heal ui|stabilize ui|repair interface|fix interface)/.test(q)){
+    aiSuperviseLayout();
+    hideUselessButtons(canHelperPermanentlyRepairUi());
+    addAiMessage('ai-msg-reply','Astranov','UI repair sequence complete. I rebalanced the layout, reduced visual clutter, and kept the critical controls in view.');
+    return true;
+  }
+  return false;
+}
 
-  // Build context about the app state
+async function callAstranovaAI(userMessage){
   var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov, an Internet Operating System on Rhodes island, Greece. ';
-  context += 'PERSONALITY: You are Astranov, a calm, disciplined winged Nordic warrior AI assistant. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. Give specific product recommendations with prices from local data. Be a trusted advisor — friendly but efficient. ';
-  // MEMORY context from learning system
+  context += 'PERSONALITY: You are Astranov, calm, disciplined, and useful. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. LANGUAGE RULE: reply in the same language the user writes in. Keep responses to 2-4 sentences and concrete. ';
   context += buildMemoryContext();
   context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
-  context += 'App has ' + (function(){ try{ return JSON.parse(localStorage.getItem('astranov.local.offers.v333')||'[]').length; }catch(e){ return 0; } })() + ' listings. ';
-  context += 'Wallet balance: \u20AC' + (document.getElementById('bal')?.textContent || '0') + '. ';
-  context += 'Delivery pricing: \u20AC1/km base, +\u20AC1 if volume>6L, +\u20AC1 night (21-09), +\u20AC1 holiday, +\u20AC1 bad weather. Split orders >13L. Max 3 hot items per batch. Min order \u20AC3. ';
+  context += 'Wallet balance: €' + (document.getElementById('bal')?.textContent || '0') + '. ';
   context += 'Current layer: ' + ['Globe','Map','Abyss'][CL] + '. ';
   context += 'Location: Rhodes (' + LOC.lat.toFixed(4) + 'N, ' + LOC.lng.toFixed(4) + 'E). ';
 
-  // Search local data for relevant info
   var searchResults = '';
   try{
     var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
@@ -5763,43 +6232,33 @@ async function callAstranovaAI(userMessage){
     }
   }catch(e){}
 
+  var aiText = '';
   try{
-    var response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRULES:\n1. Reply in 2-4 sentences\n2. Match the user\'s language (English/Greek/Russian/etc)\n3. Give specific prices from local data\n4. Reference user memory when relevant\n5. Only use Russian words if user writes in Russian\n6. Be genuinely helpful and warm\n7. Calculate delivery fees when asked\n8. Max 1 emoji per message',
-        messages: [{ role: 'user', content: userMessage }]
-      })
+    if(getAiPreference() === 'local') throw new Error('Local-only mode selected');
+    var routed = await queryAstranovCloud({
+      userMessage:userMessage,
+      system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRules: reply briefly, match the user language, use local data when available, and prioritize working UI commands.',
+      context: context,
+      searchResults: searchResults,
+      location: { lat: LOC.lat, lng: LOC.lng },
+      user: CU ? { id: CU.id, name: CU.name, role: getUserRole(CU), email: CU.email || '' } : null
     });
-
-    var data = await response.json();
-    var aiText = data.content ? data.content.map(function(c){ return c.text || ''; }).filter(Boolean).join('\n') : 'I couldn\'t process that right now. Try again or type a simpler question.';
-
-    // Remove typing indicator
-    var typingEl = document.getElementById('ai-typing');
-    if(typingEl) typingEl.remove();
-
-    addAiMessage('ai-msg-reply', 'Astranov', aiText);
-    recordConversation('ai', aiText);
-    learnFromInteraction(userMessage, aiText);
-
-    // Speak the response
-    speakAstranova(aiText);
-
+    aiText = routed.text;
+    AI_BACKEND_STATUS = { provider: routed.provider || getAiPreference(), cloud: true, endpoint: routed.endpoint || '', lastError: '' };
+    try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
   }catch(e){
-    var typingEl = document.getElementById('ai-typing');
-    if(typingEl) typingEl.remove();
-
-    // Fallback to local intelligence if API fails
-    var fallback = localAstranovaResponse(userMessage);
-    addAiMessage('ai-msg-reply', 'Astranov', fallback);
-    recordConversation('ai', fallback);
-    learnFromInteraction(userMessage, fallback);
-    speakAstranova(fallback);
+    AI_BACKEND_STATUS = { provider: 'local', cloud: false, endpoint: '', lastError: (e && e.message) ? e.message : 'cloud-offline' };
+    try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(err){}
+    aiText = localAstranovaResponse(userMessage);
+    showAstranovaStatusBubble('Cloud AI unavailable. Local bridge active.', 1600);
   }
+
+  var typingEl = document.getElementById('ai-typing');
+  if(typingEl) typingEl.remove();
+  addAiMessage('ai-msg-reply', 'Astranov', aiText);
+  recordConversation('ai', aiText);
+  learnFromInteraction(userMessage, aiText);
+  speakAstranova(aiText);
 }
 
 function localAstranovaResponse(msg){
@@ -6690,9 +7149,11 @@ Always show:
 Update button stays quiet when current == latest.
 Update button glows/flashes only when latest != current.
 Auto-refresh may happen only when page is hidden or user is idle. Do not pester active users.
+Current and Latest labels must be explicit. Update button must remain visible at all times.
 
 PAUSE MODE [LOCKED]
 Pause button freezes non-essential visual motion and media without breaking the app state.
+Pause control must be a round glowing blue on-off switch placed beside the user login badge on the right.
 Pause must never log the user out, reset the globe, lose the chat, or hide critical controls.
 
 OWNER ACCOUNT [LOCKED]
@@ -6701,6 +7162,40 @@ Owner email: notisastranov@gmail.com
 Owner phone: +306971930225
 When the authenticated owner account is active, its wallet resets to exactly €3000.00 at each local midnight, once per day.
 Never grant owner privileges to any other account.
+
+ECONOMICS [LOCKED]
+Every confirmed in-app marketplace transaction charges a fixed 3% owner commission in favor of the owner and credits it instantly to owner balance.
+Owner identity for economics is only Notis Astranov, notisastranov@gmail.com, +306971930225.
+No fake money creation is allowed.
+The only permitted wallet credit sources are:
+1. Confirmed user deposit to Astranov user wallet
+2. Fixed 3% owner commission
+3. Owner midnight reset to exactly €3000.00
+4. Explicit migration recovery approved by owner
+Do not mint, simulate, or silently inject wallet funds from any other source.
+When the balance button is pressed, the full economics menu must open.
+Economics menu labels are locked as:
+- Deposit to Astranov user wallet
+- Withdrawal to user external account, card, wallet
+Economics menu must offer card / Stripe deposit, PayPal deposit, destination-based withdrawal requests, status, and history.
+If a live payout backend is missing, withdrawals must be queued or requested honestly and never faked as completed.
+
+ECONOMICS [LOCKED]
+Every confirmed in-app marketplace transaction charges a fixed 3% owner commission in favor of the owner and credits it instantly to owner balance.
+Owner identity for economics is only Notis Astranov, notisastranov@gmail.com, +306971930225.
+No fake money creation is allowed.
+The only permitted wallet credit sources are:
+1. Confirmed user deposit to Astranov user wallet
+2. Fixed 3% owner commission
+3. Owner midnight reset to exactly €3000.00
+4. Explicit migration recovery approved by owner
+Do not mint, simulate, or silently inject wallet funds from any other source.
+When the balance button is pressed, the full economics menu must open.
+Economics menu labels are locked as:
+- Deposit to Astranov user wallet
+- Withdrawal to user external account, card, wallet
+Economics menu must offer card / Stripe deposit, PayPal deposit, destination-based withdrawal requests, status, and history.
+If a live payout backend is missing, withdrawals must be queued or requested honestly and never faked as completed.
 
 OWNER UI AUTHORITY [LOCKED]
 The authenticated owner may verbally or by text authorize Astranov helper to repair the UI permanently.
@@ -6738,18 +7233,32 @@ Priority order:
 If a conflict occurs, compress or hide secondary controls before moving or hiding primary controls.
 
 CHANNEL VIDEO PINNING [LOCKED]
-Top ribbon must include a video posting control.
-Video posts are attached to the user's current location and pinned into the active app channel selected in the dropdown above the chat window.
+Top ribbon must include a large premium YouTube video posting control with plus and camera icon, placed to the left of the user login badge.
+Video posting starts from the user's current location and the active app channel selected in the dropdown above the chat window.
 AI channel is not a posting lane. Valid posting lanes are Global, Local, and Team.
-Video pins must be visible only inside the selected channel feed in Astranov and only to signed-in users of the app.
-If the source is a YouTube link, the app may embed or open that source, but it must not spray the post into other channels.
+The app should auto-fill video title and description with the user's name, current location, current channel, and current local date.
+The app should support connecting the user's YouTube account through browser OAuth when a valid Google Web OAuth Client ID is configured.
+Upload chain order:
+1. Connect YouTube account
+2. Capture or select video
+3. Upload to YouTube
+4. Poll until YouTube processing is ready
+5. Pin the resulting video link and preview on the Astranov globe at the user's location
+Video pins must remain channel-gated inside Astranov and never spray into other channels.
 Keep the channel selector attached to the chat window and never move it elsewhere.
 
-AI HELPER VISUAL IDENTITY [LOCKED]
+AI ENGINE [LOCKED]
 Astranov helper is a winged Nordic warrior.
 Never use halo-angel, bug-like, fairy, cartoon-insect, or soft-cherub visuals.
 Preserve warrior silhouette, metallic armor, stern face, blue glow, winged profile.
 The helper must not feel static. Keep subtle motion, status life, and command presence.
+The app must run an AI cycle engine:
+1. Re-check configured no-key-capable providers and same-origin AI routes
+2. Try the last working provider first
+3. On failure, cycle automatically through the remaining providers
+4. Notify the user in the main chat window about probing, skipping, locking, fallback, and the model/provider currently in use
+5. If no cloud/provider route works, local fallback must still answer, speak, and execute UI commands
+Never hard-code or expose secret API keys in client-side code.
 
 RENDER ENGINE [LOCKED]
 Prefer high-performance rendering.
@@ -6761,11 +7270,11 @@ ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
 2. Never rename or rebrand the app.
 3. Never restore permanent sidebars after they are removed into contextual controls.
 4. Never move the AI command/chat bar or its channel selector away from the bottom chat window.
-5. Never enlarge compass/perf HUD beyond defined bounds.
+5. Compass and performance HUD follow click-cycle only: 1 click visible, 2 clicks expanded, 3 clicks return to small transparent. Hold-and-drag must reposition them. Never let them exceed safe bounds.
 6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
 7. Never duplicate IDs, widgets, or handlers.
 8. Never leave stray braces, broken HTML, or dead event bindings.
-9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, pause works, video button works, channel bar stays in chat, compass stays bounded, no syntax errors.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, balance sits in the ribbon center, pause switch sits at the user-right edge, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD click-cycle works, HUD drag works, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
 10. If any guardrail fails, revert the patch instead of improvising.
 
 MISSION [LOCKED]
@@ -6809,9 +7318,11 @@ Always show:
 Update button stays quiet when current == latest.
 Update button glows/flashes only when latest != current.
 Auto-refresh may happen only when page is hidden or user is idle. Do not pester active users.
+Current and Latest labels must be explicit. Update button must remain visible at all times.
 
 PAUSE MODE [LOCKED]
 Pause button freezes non-essential visual motion and media without breaking the app state.
+Pause control must be a round glowing blue on-off switch placed beside the user login badge on the right.
 Pause must never log the user out, reset the globe, lose the chat, or hide critical controls.
 
 OWNER ACCOUNT [LOCKED]
@@ -6820,6 +7331,40 @@ Owner email: notisastranov@gmail.com
 Owner phone: +306971930225
 When the authenticated owner account is active, its wallet resets to exactly €3000.00 at each local midnight, once per day.
 Never grant owner privileges to any other account.
+
+ECONOMICS [LOCKED]
+Every confirmed in-app marketplace transaction charges a fixed 3% owner commission in favor of the owner and credits it instantly to owner balance.
+Owner identity for economics is only Notis Astranov, notisastranov@gmail.com, +306971930225.
+No fake money creation is allowed.
+The only permitted wallet credit sources are:
+1. Confirmed user deposit to Astranov user wallet
+2. Fixed 3% owner commission
+3. Owner midnight reset to exactly €3000.00
+4. Explicit migration recovery approved by owner
+Do not mint, simulate, or silently inject wallet funds from any other source.
+When the balance button is pressed, the full economics menu must open.
+Economics menu labels are locked as:
+- Deposit to Astranov user wallet
+- Withdrawal to user external account, card, wallet
+Economics menu must offer card / Stripe deposit, PayPal deposit, destination-based withdrawal requests, status, and history.
+If a live payout backend is missing, withdrawals must be queued or requested honestly and never faked as completed.
+
+ECONOMICS [LOCKED]
+Every confirmed in-app marketplace transaction charges a fixed 3% owner commission in favor of the owner and credits it instantly to owner balance.
+Owner identity for economics is only Notis Astranov, notisastranov@gmail.com, +306971930225.
+No fake money creation is allowed.
+The only permitted wallet credit sources are:
+1. Confirmed user deposit to Astranov user wallet
+2. Fixed 3% owner commission
+3. Owner midnight reset to exactly €3000.00
+4. Explicit migration recovery approved by owner
+Do not mint, simulate, or silently inject wallet funds from any other source.
+When the balance button is pressed, the full economics menu must open.
+Economics menu labels are locked as:
+- Deposit to Astranov user wallet
+- Withdrawal to user external account, card, wallet
+Economics menu must offer card / Stripe deposit, PayPal deposit, destination-based withdrawal requests, status, and history.
+If a live payout backend is missing, withdrawals must be queued or requested honestly and never faked as completed.
 
 OWNER UI AUTHORITY [LOCKED]
 The authenticated owner may verbally or by text authorize Astranov helper to repair the UI permanently.
@@ -6864,11 +7409,18 @@ Video pins must be visible only inside the selected channel feed in Astranov and
 If the source is a YouTube link, the app may embed or open that source, but it must not spray the post into other channels.
 Keep the channel selector attached to the chat window and never move it elsewhere.
 
-AI HELPER VISUAL IDENTITY [LOCKED]
+AI ENGINE [LOCKED]
 Astranov helper is a winged Nordic warrior.
 Never use halo-angel, bug-like, fairy, cartoon-insect, or soft-cherub visuals.
 Preserve warrior silhouette, metallic armor, stern face, blue glow, winged profile.
 The helper must not feel static. Keep subtle motion, status life, and command presence.
+The app must run an AI cycle engine:
+1. Re-check configured no-key-capable providers and same-origin AI routes
+2. Try the last working provider first
+3. On failure, cycle automatically through the remaining providers
+4. Notify the user in the main chat window about probing, skipping, locking, fallback, and the model/provider currently in use
+5. If no cloud/provider route works, local fallback must still answer, speak, and execute UI commands
+Never hard-code or expose secret API keys in client-side code.
 
 RENDER ENGINE [LOCKED]
 Prefer high-performance rendering.
@@ -6880,11 +7432,11 @@ ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
 2. Never rename or rebrand the app.
 3. Never restore permanent sidebars after they are removed into contextual controls.
 4. Never move the AI command/chat bar or its channel selector away from the bottom chat window.
-5. Never enlarge compass/perf HUD beyond defined bounds.
+5. Compass and performance HUD follow click-cycle only: 1 click visible, 2 clicks expanded, 3 clicks return to small transparent. Hold-and-drag must reposition them. Never let them exceed safe bounds.
 6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
 7. Never duplicate IDs, widgets, or handlers.
 8. Never leave stray braces, broken HTML, or dead event bindings.
-9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, pause works, video button works, channel bar stays in chat, compass stays bounded, no syntax errors.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, balance sits in the ribbon center, pause switch sits at the user-right edge, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD click-cycle works, HUD drag works, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
 10. If any guardrail fails, revert the patch instead of improvising.
 
 MISSION [LOCKED]
@@ -8730,6 +9282,666 @@ No rogue relocations. No fake rebranding. No hidden critical controls.</textarea
   };
 
 })();
+/* === V2 PATCH: YouTube chain + resilient AI cycle engine === */
+(function(){
+  var YT_STATE = { token:'', expiresAt:0, channel:null, connected:false, uploading:false };
+  function aiNotify(text, speakIt){
+    try{ addAiMessage('system-msg','AI Engine', text); }catch(e){}
+    if(speakIt){ try{ speakAstranova(text); }catch(e){} }
+  }
+  function safeText(v){ return String(v == null ? '' : v); }
+  function getLocalDateStamp(){
+    try{
+      var d = new Date();
+      var y = d.getFullYear();
+      var m = String(d.getMonth()+1).padStart(2,'0');
+      var day = String(d.getDate()).padStart(2,'0');
+      return y + '-' + m + '-' + day;
+    }catch(e){ return new Date().toISOString().slice(0,10); }
+  }
+  function currentLocationLabel(){
+    var lat = Number(window.LOC && window.LOC.lat || 0);
+    var lng = Number(window.LOC && window.LOC.lng || 0);
+    if(!isFinite(lat) || !isFinite(lng) || (!lat && !lng)) return 'Current location';
+    var base = (Math.abs(lat - 36.434) < 2 && Math.abs(lng - 28.217) < 2) ? 'Rhodes' : 'Current location';
+    return base + ' ' + lat.toFixed(4) + ', ' + lng.toFixed(4);
+  }
+  function videoAutoMeta(){
+    var actor = (window.CU && (CU.name || CU.email)) || 'Astranov user';
+    var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'local') || 'local';
+    var loc = currentLocationLabel();
+    var date = getLocalDateStamp();
+    return {
+      title: actor + ' · ' + loc + ' · ' + date,
+      description:
+        'Recorded by: ' + actor + '\n' +
+        'Location: ' + loc + '\n' +
+        'Date: ' + date + '\n' +
+        'Channel: ' + String(channel).toUpperCase() + '\n' +
+        'App: ASTRANOV · Internet Operating System'
+    };
+  }
+  function setVideoStatus(msg, tone){
+    var el = document.getElementById('video-post-status');
+    if(!el) return;
+    el.className = 'video-inline-note' + (tone ? (' ' + tone) : '');
+    el.textContent = msg;
+  }
+  function getSavedYouTubeClientId(){
+    try{ return String(localStorage.getItem(YT_CLIENT_ID_KEY) || '').trim(); }catch(e){ return ''; }
+  }
+  function saveYouTubeClientId(){
+    var input = document.getElementById('youtube-client-id');
+    var value = String(input && input.value || '').trim();
+    if(!value){
+      setVideoStatus('Paste a Google Web OAuth Client ID first.', 'warn');
+      return false;
+    }
+    try{ localStorage.setItem(YT_CLIENT_ID_KEY, value); }catch(e){}
+    setVideoStatus('Google OAuth Client ID saved. You can now connect YouTube.', 'ok');
+    updateYouTubeUi();
+    return true;
+  }
+  window.saveYouTubeClientId = saveYouTubeClientId;
+
+  function getSavedYouTubeMeta(){
+    try{ return JSON.parse(localStorage.getItem(YT_META_KEY) || 'null'); }catch(e){ return null; }
+  }
+  function saveYouTubeMeta(meta){
+    try{ localStorage.setItem(YT_META_KEY, JSON.stringify(meta || null)); }catch(e){}
+  }
+  function updateYouTubeUi(){
+    var clientInput = document.getElementById('youtube-client-id');
+    if(clientInput && document.activeElement !== clientInput){
+      clientInput.value = getSavedYouTubeClientId();
+    }
+    var state = document.getElementById('youtube-conn-state');
+    var meta = YT_STATE.channel || getSavedYouTubeMeta();
+    if(state){
+      if(YT_STATE.connected && meta){
+        state.textContent = 'Connected to YouTube as ' + (meta.title || meta.customUrl || meta.id || 'channel') + '.';
+      }else if(getSavedYouTubeClientId()){
+        state.textContent = 'YouTube client is configured. Connect your account to upload.';
+      }else{
+        state.textContent = 'YouTube not connected yet. Save a Google Web OAuth Client ID, then connect.';
+      }
+    }
+  }
+  async function ensureGisReady(ms){
+    var start = Date.now();
+    while(!(window.google && google.accounts && google.accounts.oauth2)){
+      if(Date.now() - start > (ms || 5000)) throw new Error('Google Identity Services did not load');
+      await new Promise(function(r){ setTimeout(r, 120); });
+    }
+    return true;
+  }
+  async function fetchYouTubeChannelProfile(token){
+    try{
+      var res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true', {
+        headers:{ 'Authorization':'Bearer ' + token }
+      });
+      if(!res.ok) throw new Error('YouTube channel lookup failed (' + res.status + ')');
+      var data = await res.json();
+      var item = data && data.items && data.items[0];
+      if(!item) return null;
+      var meta = {
+        id: item.id || '',
+        title: item.snippet && item.snippet.title || '',
+        customUrl: item.snippet && item.snippet.customUrl || ''
+      };
+      YT_STATE.channel = meta;
+      saveYouTubeMeta(meta);
+      return meta;
+    }catch(e){
+      return null;
+    }
+  }
+  async function ensureYouTubeToken(interactive){
+    if(YT_STATE.token && Date.now() < YT_STATE.expiresAt - 15000){
+      return YT_STATE.token;
+    }
+    var clientId = getSavedYouTubeClientId();
+    if(!clientId) throw new Error('Google Web OAuth Client ID is missing');
+    await ensureGisReady(7000);
+    return await new Promise(function(resolve, reject){
+      var done = false;
+      var timeout = setTimeout(function(){
+        if(done) return;
+        done = true;
+        reject(new Error('YouTube authorization timed out'));
+      }, 60000);
+      var tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly',
+        callback: async function(resp){
+          if(done) return;
+          clearTimeout(timeout);
+          if(resp && resp.access_token){
+            YT_STATE.token = resp.access_token;
+            YT_STATE.expiresAt = Date.now() + ((Number(resp.expires_in || 3600)) * 1000);
+            YT_STATE.connected = true;
+            await fetchYouTubeChannelProfile(resp.access_token);
+            updateYouTubeUi();
+            done = true;
+            resolve(resp.access_token);
+          }else{
+            done = true;
+            reject(new Error(resp && resp.error ? resp.error : 'No YouTube access token returned'));
+          }
+        }
+      });
+      try{
+        tokenClient.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+      }catch(err){
+        clearTimeout(timeout);
+        done = true;
+        reject(err);
+      }
+    });
+  }
+  window.connectYouTubeAccount = async function(interactive){
+    try{
+      setVideoStatus('Opening YouTube authorization…', 'busy');
+      var token = await ensureYouTubeToken(interactive !== false);
+      await fetchYouTubeChannelProfile(token);
+      setVideoStatus('YouTube connected. Capture or select a video to continue.', 'ok');
+      updateYouTubeUi();
+      aiNotify('YouTube connection established.', false);
+      return token;
+    }catch(err){
+      setVideoStatus('YouTube connection failed: ' + (err && err.message ? err.message : 'unknown error'), 'err');
+      aiNotify('YouTube connection failed. ' + (err && err.message ? err.message : 'Unknown error') + '.', false);
+      throw err;
+    }
+  };
+  window.disconnectYouTubeAccount = function(){
+    try{
+      if(window.google && google.accounts && google.accounts.oauth2 && YT_STATE.token){
+        google.accounts.oauth2.revoke(YT_STATE.token, function(){});
+      }
+    }catch(e){}
+    YT_STATE.token = '';
+    YT_STATE.expiresAt = 0;
+    YT_STATE.connected = false;
+    YT_STATE.channel = null;
+    saveYouTubeMeta(null);
+    updateYouTubeUi();
+    setVideoStatus('YouTube disconnected.', 'ok');
+  };
+  window.pickVideoFile = function(){
+    var input = document.getElementById('video-file-input');
+    if(input) input.click();
+  };
+  function bindVideoPicker(){
+    var input = document.getElementById('video-file-input');
+    if(!input || input._astranovBound) return;
+    input._astranovBound = true;
+    input.addEventListener('change', function(){
+      var file = input.files && input.files[0];
+      var preview = document.getElementById('video-local-preview');
+      if(preview){
+        if(file){
+          try{
+            var url = URL.createObjectURL(file);
+            preview.src = url;
+            preview.classList.add('on');
+          }catch(e){}
+        }else{
+          preview.pause();
+          preview.removeAttribute('src');
+          preview.classList.remove('on');
+        }
+      }
+      if(file){
+        setVideoStatus('Video selected: ' + file.name + '. Ready to upload.', 'ok');
+      }
+    });
+  }
+  function fillVideoMetadata(force){
+    var meta = videoAutoMeta();
+    var title = document.getElementById('video-title');
+    var desc = document.getElementById('video-description');
+    var loc = document.getElementById('video-location-locked');
+    var ch = document.getElementById('video-channel-locked');
+    if(title && (force || !String(title.value || '').trim())) title.value = meta.title;
+    if(desc && (force || !String(desc.value || '').trim())) desc.value = meta.description;
+    if(loc) loc.value = currentLocationLabel();
+    if(ch){
+      var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'ai') || 'ai';
+      ch.value = channel === 'ai' ? 'Choose Global / Local / Team in chat bar' : channel.toUpperCase();
+    }
+  }
+  async function pollYouTubeReady(videoId, attempts){
+    var token = await ensureYouTubeToken(false);
+    var tries = attempts || 18;
+    for(var i=0;i<tries;i++){
+      var res = await fetch('https://www.googleapis.com/youtube/v3/videos?part=status,processingDetails&id=' + encodeURIComponent(videoId), {
+        headers:{ 'Authorization':'Bearer ' + token }
+      });
+      if(res.ok){
+        var data = await res.json();
+        var item = data && data.items && data.items[0];
+        var status = item && item.status && item.status.uploadStatus || '';
+        var proc = item && item.processingDetails && item.processingDetails.processingStatus || '';
+        if(status === 'processed' || proc === 'succeeded' || proc === 'processingComplete'){
+          return { ready:true, item:item };
+        }
+        if(status === 'rejected' || status === 'failed'){
+          throw new Error('YouTube rejected the upload');
+        }
+      }
+      await new Promise(function(r){ setTimeout(r, 5000); });
+    }
+    return { ready:false };
+  }
+  function createPinnedVideoRecord(meta){
+    var offers = getLocalOffers();
+    var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'local') || 'local';
+    var title = meta.title || 'Pinned Video';
+    var record = {
+      id: uid('vid'),
+      kind: 'video_post',
+      title: title,
+      name: title,
+      category: 'Video Post',
+      description: meta.description || 'Channel video pin',
+      vendor_name: window.CU && (CU.name || CU.email) || 'Astranov user',
+      user_id: window.CU && CU.id || null,
+      user_email: window.CU && CU.email || null,
+      lat: Number(window.LOC && LOC.lat || 0),
+      lon: Number(window.LOC && LOC.lng || 0),
+      lng: Number(window.LOC && LOC.lng || 0),
+      visibility: channel,
+      channel: channel,
+      team_id: channel === 'team' && typeof currentPostingTeam === 'function' ? currentPostingTeam() : null,
+      watch_url: meta.watch_url,
+      youtube_url: meta.youtube_url || meta.watch_url,
+      image: meta.image || (typeof youtubeThumb === 'function' ? youtubeThumb(meta.watch_url) : ''),
+      availability: 'Members only in app',
+      price: 'Watch inside Astranov',
+      created_at: new Date().toISOString(),
+      private_link_note: 'Access routed through Astranov channel visibility'
+    };
+    offers.unshift(record);
+    setLocalOffers(offers.slice(0, 200));
+    return record;
+  }
+  async function uploadSelectedVideoToYouTube(){
+    var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'ai') || 'ai';
+    if(channel === 'ai') throw new Error('Choose Global, Local, or Team in the chat selector first');
+    if(VIDEO_POST_REQUIRE_AUTH && !window.CU) throw new Error('Sign in first to post a channel video pin');
+    fillVideoMetadata(false);
+    var input = document.getElementById('video-file-input');
+    var file = input && input.files && input.files[0];
+    var manualUrl = String((document.getElementById('video-youtube-url') || {}).value || '').trim();
+    if(!file && manualUrl){
+      if(typeof isYouTubeLink === 'function' && !isYouTubeLink(manualUrl)) throw new Error('Paste a valid YouTube link');
+      var manualRecord = createPinnedVideoRecord({
+        title: String((document.getElementById('video-title') || {}).value || '').trim() || 'Pinned Video',
+        description: String((document.getElementById('video-description') || {}).value || '').trim(),
+        watch_url: manualUrl,
+        youtube_url: manualUrl,
+        image: typeof youtubeThumb === 'function' ? youtubeThumb(manualUrl) : ''
+      });
+      return { manual:true, watch_url: manualUrl, record: manualRecord };
+    }
+    if(!file) throw new Error('Capture or select a video first');
+    setVideoStatus('Authorizing YouTube…', 'busy');
+    var token = await ensureYouTubeToken(true);
+    var title = String((document.getElementById('video-title') || {}).value || '').trim() || videoAutoMeta().title;
+    var description = String((document.getElementById('video-description') || {}).value || '').trim() || videoAutoMeta().description;
+    setVideoStatus('Creating YouTube upload session…', 'busy');
+    var startRes = await fetch('https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-Upload-Content-Length': String(file.size),
+        'X-Upload-Content-Type': file.type || 'video/mp4'
+      },
+      body: JSON.stringify({
+        snippet: {
+          title: title,
+          description: description,
+          categoryId: '22'
+        },
+        status: {
+          privacyStatus: 'unlisted'
+        }
+      })
+    });
+    if(!startRes.ok) throw new Error('YouTube upload session failed (' + startRes.status + ')');
+    var uploadUrl = startRes.headers.get('Location');
+    if(!uploadUrl) throw new Error('YouTube upload session returned no upload URL');
+    setVideoStatus('Uploading video to YouTube…', 'busy');
+    var uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'video/mp4' },
+      body: file
+    });
+    if(!uploadRes.ok) throw new Error('YouTube upload failed (' + uploadRes.status + ')');
+    var uploadData = await uploadRes.json();
+    var videoId = uploadData && uploadData.id;
+    if(!videoId) throw new Error('YouTube upload returned no video ID');
+    var watchUrl = 'https://www.youtube.com/watch?v=' + videoId;
+    setVideoStatus('Upload complete. Waiting for YouTube processing…', 'busy');
+    aiNotify('Video uploaded to YouTube. Waiting for processing.', false);
+    var ready = await pollYouTubeReady(videoId, 18);
+    var record = createPinnedVideoRecord({
+      title: title,
+      description: description,
+      watch_url: watchUrl,
+      youtube_url: watchUrl,
+      image: typeof youtubeThumb === 'function' ? youtubeThumb(watchUrl) : ''
+    });
+    return { videoId: videoId, watch_url: watchUrl, ready: ready && ready.ready, record: record };
+  }
+  window.openVideoPostModal = function(){
+    bindVideoPicker();
+    fillVideoMetadata(false);
+    updateYouTubeUi();
+    var modal = document.getElementById(VIDEO_POST_MODAL_ID);
+    if(!modal) return;
+    var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'ai') || 'ai';
+    setVideoStatus(
+      channel === 'ai'
+        ? 'Select Global, Local, or Team in the chat channel selector first. The upload chain will publish into that channel.'
+        : 'Upload chain will target ' + channel.toUpperCase() + ' at your current globe location.',
+      channel === 'ai' ? 'warn' : 'ok'
+    );
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden', 'false');
+    try{ aiSuperviseLayout && aiSuperviseLayout(); }catch(e){}
+    if(channel !== 'ai' && getSavedYouTubeClientId()){
+      setTimeout(function(){
+        var picker = document.getElementById('video-file-input');
+        if(picker && !(picker.files && picker.files[0])){ try{ picker.click(); }catch(e){} }
+      }, 60);
+    }
+  };
+  window.closeVideoPostModal = function(){
+    var modal = document.getElementById(VIDEO_POST_MODAL_ID);
+    if(modal){
+      modal.classList.remove('on');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  };
+  window.submitVideoPost = async function(){
+    try{
+      aiNotify('Video posting chain started.', false);
+      setVideoStatus('Starting upload chain…', 'busy');
+      var result = await uploadSelectedVideoToYouTube();
+      if(result && result.record){
+        try{ if(typeof refreshMapData === 'function') refreshMapData(); }catch(e){}
+        try{ if(typeof loadOrbitalFeed === 'function') loadOrbitalFeed(); }catch(e){}
+        try{ if(window.CL !== 0 && window.LM){ window.LM.flyTo([result.record.lat, result.record.lng], 15); } }catch(e){}
+      }
+      closeVideoPostModal();
+      var channel = (typeof currentPostingChannel === 'function' ? currentPostingChannel() : 'local') || 'local';
+      var msg = result && result.manual
+        ? 'Existing YouTube link pinned into ' + channel.toUpperCase() + '.'
+        : 'YouTube upload finished and globe pin published into ' + channel.toUpperCase() + '.';
+      addAiMessage('system-msg','System','🎬 ' + msg);
+      showResp(msg);
+      aiNotify(msg, false);
+    }catch(err){
+      var msg = (err && err.message) ? err.message : 'Unknown video posting error';
+      setVideoStatus(msg, 'err');
+      addAiMessage('system-msg','System','Video posting failed: ' + msg);
+      aiNotify('Video posting failed. ' + msg, false);
+    }
+  };
+
+  function getConfiguredAiCatalog(){
+    var catalog = [
+      { id:'astranov-router', label:'Astranov Router', kind:'endpoint', url:'/api/ai-router.php', noKeyClient:true },
+      { id:'astranov-legacy', label:'Astranov Legacy Route', kind:'endpoint', url:'/api/ai.php', noKeyClient:true },
+      { id:'openai-official', label:'OpenAI official API', kind:'official', noKeyClient:false, reason:'Official API requires a secret server-side API key.' },
+      { id:'claude-official', label:'Claude official API', kind:'official', noKeyClient:false, reason:'Official Claude API requires x-api-key authentication.' },
+      { id:'gemini-official', label:'Gemini official API', kind:'official', noKeyClient:false, reason:'Gemini API requires an API key or OAuth setup.' },
+      { id:'huggingface-official', label:'Hugging Face Inference Providers', kind:'official', noKeyClient:false, reason:'Inference Providers requires a Hugging Face token or routed billing credits.' },
+      { id:'local-bridge', label:'Local bridge', kind:'local', noKeyClient:true }
+    ];
+    return catalog;
+  }
+  async function fetchAiProviderManifest(){
+    var cached = null;
+    try{ cached = JSON.parse(localStorage.getItem(AI_PROVIDER_SCAN_KEY) || 'null'); }catch(e){}
+    if(cached && cached.time && (Date.now() - cached.time < AI_PROVIDER_SCAN_TTL_MS) && Array.isArray(cached.providers)){
+      return cached.providers;
+    }
+    var urls = ['/api/ai-providers.json', '/api/free-ai-providers.json', '/api/ai-providers.php'];
+    for(var i=0;i<urls.length;i++){
+      try{
+        var res = await fetch(urls[i], { cache:'no-store' });
+        if(!res.ok) continue;
+        var data = await res.json();
+        var providers = Array.isArray(data) ? data : (Array.isArray(data.providers) ? data.providers : []);
+        if(providers.length){
+          try{ localStorage.setItem(AI_PROVIDER_SCAN_KEY, JSON.stringify({ time:Date.now(), providers:providers })); }catch(e){}
+          return providers;
+        }
+      }catch(e){}
+    }
+    try{ localStorage.setItem(AI_PROVIDER_SCAN_KEY, JSON.stringify({ time:Date.now(), providers:[] })); }catch(e){}
+    return [];
+  }
+  async function discoverAiProviders(){
+    var catalog = getConfiguredAiCatalog();
+    var manifest = await fetchAiProviderManifest();
+    manifest.forEach(function(item){
+      if(item && item.id && item.url && !catalog.some(function(c){ return c.id === item.id; })){
+        catalog.splice(catalog.length - 1, 0, {
+          id: item.id,
+          label: item.label || item.id,
+          kind: item.kind || 'endpoint',
+          url: item.url,
+          noKeyClient: item.noKeyClient !== false
+        });
+      }
+    });
+    return catalog;
+  }
+  function aiPrefToCandidateId(pref){
+    pref = String(pref || 'auto').toLowerCase();
+    if(pref === 'chatgpt' || pref === 'openai') return 'openai-official';
+    if(pref === 'claude' || pref === 'anthropic') return 'claude-official';
+    if(pref === 'local') return 'local-bridge';
+    if(pref === 'router') return 'astranov-router';
+    return '';
+  }
+  function orderAiProviders(providers){
+    var locked = '';
+    try{ locked = String(localStorage.getItem(AI_PROVIDER_LOCK_KEY) || ''); }catch(e){}
+    var pref = typeof getAiPreference === 'function' ? getAiPreference() : 'auto';
+    var prefId = aiPrefToCandidateId(pref);
+    return providers.slice().sort(function(a,b){
+      function rank(p){
+        if(pref !== 'auto' && p.id === prefId) return 0;
+        if(locked && p.id === locked) return 1;
+        if(p.kind === 'endpoint') return 2;
+        if(p.kind === 'local') return 9;
+        return 5;
+      }
+      return rank(a) - rank(b);
+    });
+  }
+  async function tryAiEndpointProvider(provider, payload){
+    var res = await fetch(provider.url, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        provider_cycle: true,
+        allow_keyless_only: true,
+        app: APP_NAME,
+        app_version: APP_VERSION,
+        provider_preference: provider.id,
+        message: payload.userMessage,
+        system: payload.system,
+        context: payload.context,
+        searchResults: payload.searchResults,
+        location: payload.location,
+        user: payload.user
+      })
+    });
+    if(!res.ok) throw new Error(provider.label + ' returned ' + res.status);
+    var data = await res.json();
+    var text = typeof normalizeAiReply === 'function' ? normalizeAiReply(data) : '';
+    if(!text) throw new Error(provider.label + ' returned no text');
+    return {
+      text: text,
+      provider: data.provider || provider.label,
+      model: data.model || data.provider || provider.label,
+      endpoint: provider.url,
+      cloud: true
+    };
+  }
+  async function runAstranovaAiCycle(payload){
+    var providers = orderAiProviders(await discoverAiProviders());
+    aiNotify('AI cycle started. Scanning for a working provider.', false);
+    for(var i=0;i<providers.length;i++){
+      var provider = providers[i];
+      if(provider.kind === 'official'){
+        aiNotify(provider.label + ' skipped in browser no-key mode. ' + (provider.reason || ''), false);
+        continue;
+      }
+      if(provider.kind === 'endpoint'){
+        aiNotify('Probing ' + provider.label + '…', false);
+        try{
+          var routed = await tryAiEndpointProvider(provider, payload);
+          AI_BACKEND_STATUS = { provider: routed.provider || provider.id, cloud: true, endpoint: routed.endpoint || provider.url, lastError: '' };
+          try{ localStorage.setItem(AI_PROVIDER_LOCK_KEY, provider.id); }catch(e){}
+          try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
+          aiNotify('AI cycle locked on ' + (routed.model || routed.provider || provider.label) + '.', true);
+          return routed;
+        }catch(err){
+          AI_BACKEND_STATUS.lastError = err && err.message ? err.message : 'endpoint error';
+          aiNotify(provider.label + ' failed. Cycling onward.', false);
+          continue;
+        }
+      }
+      if(provider.kind === 'local'){
+        aiNotify('Cloud routes unavailable. Local bridge locked in.', true);
+        AI_BACKEND_STATUS = { provider: 'local-bridge', cloud: false, endpoint: '', lastError: AI_BACKEND_STATUS.lastError || '' };
+        try{ localStorage.setItem(AI_PROVIDER_LOCK_KEY, provider.id); }catch(e){}
+        try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
+        return {
+          text: localAstranovaResponse(payload.userMessage),
+          provider: 'Local bridge',
+          model: 'local-bridge',
+          endpoint: '',
+          cloud: false
+        };
+      }
+    }
+    return {
+      text: localAstranovaResponse(payload.userMessage),
+      provider: 'Local bridge',
+      model: 'local-bridge',
+      endpoint: '',
+      cloud: false
+    };
+  }
+
+  window.handleAiBackendCommand = function(val){
+    var q = String(val || '').trim().toLowerCase();
+    var m = q.match(/^(?:use|switch to|set ai to|set brain to|prefer)\s+(chatgpt|openai|claude|anthropic|local|auto|router)$/i);
+    if(m){
+      var pref = String(m[1] || 'auto').toLowerCase();
+      if(pref === 'openai') pref = 'chatgpt';
+      if(pref === 'anthropic') pref = 'claude';
+      if(typeof setAiPreference === 'function') setAiPreference(pref);
+      addAiMessage('ai-msg-reply','Astranov','AI preference set to ' + pref.toUpperCase() + '. I will prefer that route when possible, then cycle if it fails.');
+      return true;
+    }
+    if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(q)){
+      var prefNow = typeof getAiPreference === 'function' ? getAiPreference() : 'auto';
+      var locked = '';
+      try{ locked = String(localStorage.getItem(AI_PROVIDER_LOCK_KEY) || ''); }catch(e){}
+      var mode = AI_BACKEND_STATUS.cloud ? ('Cloud route live via ' + (AI_BACKEND_STATUS.provider || prefNow).toUpperCase()) : 'Local fallback brain active';
+      addAiMessage('ai-msg-reply','Astranov', mode + '. Preference: ' + prefNow.toUpperCase() + '. Locked provider: ' + (locked || 'none') + (AI_BACKEND_STATUS.lastError ? (' · Last issue: ' + AI_BACKEND_STATUS.lastError) : '') + '.');
+      return true;
+    }
+    if(/^(ai cycle|cycle ai|scan ai|research ai|refresh ai providers)/.test(q)){
+      try{ localStorage.removeItem(AI_PROVIDER_LOCK_KEY); }catch(e){}
+      addAiMessage('ai-msg-reply','Astranov','AI cycle lock cleared. I will rescan providers on the next request.');
+      return true;
+    }
+    if(/^(fix ui|repair ui|heal ui|stabilize ui|repair interface|fix interface)/.test(q)){
+      aiSuperviseLayout();
+      hideUselessButtons(canHelperPermanentlyRepairUi());
+      addAiMessage('ai-msg-reply','Astranov','UI repair sequence complete. I rebalanced the layout, reduced visual clutter, and kept the critical controls in view.');
+      return true;
+    }
+    return false;
+  };
+
+  window.callAstranovaAI = async function(userMessage){
+    var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov, an Internet Operating System on Rhodes island, Greece. ';
+    context += 'PERSONALITY: calm, disciplined, useful. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. ';
+    context += 'LANGUAGE RULE: reply in the same language the user writes in. Keep responses to 2-4 sentences and concrete. ';
+    try{ context += buildMemoryContext(); }catch(e){}
+    context += 'Current user: ' + (window.CU ? (CU.name + ' (role: ' + getUserRole(CU) + ')') : 'Guest') + '. ';
+    context += 'Wallet balance: €' + (((document.getElementById('bal') || {}).textContent) || '0') + '. ';
+    context += 'Current layer: ' + ['Globe','Map','Abyss'][window.CL || 0] + '. ';
+    context += 'Location: ' + currentLocationLabel() + '. ';
+
+    var searchResults = '';
+    try{
+      var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+      var q = String(userMessage || '').toLowerCase();
+      var matches = offers.filter(function(o){
+        return safeText(o.name).toLowerCase().includes(q) ||
+               safeText(o.title).toLowerCase().includes(q) ||
+               safeText(o.category).toLowerCase().includes(q) ||
+               safeText(o.description).toLowerCase().includes(q) ||
+               (o.menu || []).some(function(m){ return safeText(m.name).toLowerCase().includes(q); });
+      }).slice(0,5);
+      if(matches.length){
+        searchResults = 'Relevant local listings found: ' + matches.map(function(m){
+          return safeText(m.name || m.title) + ' (' + safeText(m.category) + ')';
+        }).join(' | ');
+      }
+    }catch(e){}
+
+    var payload = {
+      userMessage: userMessage,
+      system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRules: reply briefly, match the user language, use local data when available, and prioritize working UI commands.',
+      context: context,
+      searchResults: searchResults,
+      location: { lat: window.LOC && LOC.lat || 0, lng: window.LOC && LOC.lng || 0 },
+      user: window.CU ? { id: CU.id, name: CU.name, role: getUserRole(CU), email: CU.email || '' } : null
+    };
+
+    try{
+      var routed = await runAstranovaAiCycle(payload);
+      var aiText = routed && routed.text ? routed.text : localAstranovaResponse(userMessage);
+      AI_BACKEND_STATUS.provider = routed.provider || AI_BACKEND_STATUS.provider || 'local-bridge';
+      AI_BACKEND_STATUS.cloud = !!routed.cloud;
+      AI_BACKEND_STATUS.endpoint = routed.endpoint || '';
+      AI_BACKEND_STATUS.lastError = AI_BACKEND_STATUS.lastError || '';
+      addAiMessage('ai-msg-reply', 'Astranov', aiText);
+      recordConversation('ai', aiText);
+      try{ learnFromInteraction(userMessage, aiText); }catch(e){}
+      speakAstranova(aiText);
+    }catch(err){
+      var aiText = localAstranovaResponse(userMessage);
+      AI_BACKEND_STATUS = { provider:'local-bridge', cloud:false, endpoint:'', lastError: (err && err.message) ? err.message : 'AI cycle failure' };
+      try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
+      addAiMessage('system-msg', 'AI Engine', 'AI cycle failed. Local bridge engaged.');
+      addAiMessage('ai-msg-reply', 'Astranov', aiText);
+      recordConversation('ai', aiText);
+      speakAstranova(aiText);
+    }
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    updateYouTubeUi();
+    bindVideoPicker();
+    fillVideoMetadata(false);
+  });
+})();
+
 </script>
 
 </body>
