@@ -202,6 +202,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #cmd-input{flex:1;height:36px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
 #cmd-input:focus{border-color:var(--la);}
 #cmd-input::placeholder{color:var(--text-dim);}
+<<<<<<< HEAD
 #cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.92);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(14px);transition:max-height 0.25s ease;max-height:66vh;}
 #cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
 #cmd-response.expanded{display:flex;padding:0;max-height:66vh;}
@@ -209,6 +210,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .chat-drag-handle{width:100%;height:20px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:none;user-select:none;}
 .chat-drag-handle::after{content:'';width:40px;height:4px;border-radius:2px;background:rgba(0,200,255,0.3);}
 .chat-drag-handle:hover::after,.chat-drag-handle:active::after{background:rgba(0,200,255,0.6);}
+=======
+#cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.97);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow-y:auto;backdrop-filter:blur(14px);transition:max-height 0.3s ease;}
+#cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
+#cmd-response.expanded{display:flex;max-height:50vh;padding:0;}
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 .ai-conv{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;}
 .ai-msg{max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.45;word-break:break-word;animation:ai-fade 0.25s ease-out;}
 .ai-msg.user-msg{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.20);color:#d8f0ff;}
@@ -815,6 +821,7 @@ body.lt,body.lt2,body.lt3{
 .temp-opt[data-temp=hot].active{background:rgba(255,80,50,0.14);color:#ff6644;border-color:rgba(255,80,50,0.30);}
 .temp-opt[data-temp=neutral].active{background:rgba(255,255,255,0.08);color:#e6eef6;border-color:rgba(255,255,255,0.20);}
 
+<<<<<<< HEAD
 /* ═══ COMPASS RADAR HUD (top-right, inside panels) ═══ */
 #compass-hud{
   position:absolute;top:38px;right:48px;z-index:65;
@@ -841,6 +848,33 @@ body.lt,body.lt2,body.lt3{
 .compass-heading{fill:#00c8ff;font-size:10px;text-anchor:middle;font-family:var(--font);font-weight:700;}
 .compass-heading-label{fill:rgba(0,200,255,0.45);font-size:4px;text-anchor:middle;font-family:var(--font);}
 /* Radar sweep beam — GREEN scanning line */
+=======
+/* ═══ COMPASS RADAR HUD ═══ */
+#compass-hud{
+  position:absolute;top:40px;right:0px;z-index:59;
+  width:114px;height:114px;
+  pointer-events:none;
+  opacity:0.5;
+  transition:opacity 0.4s;
+}
+#compass-hud:hover{opacity:0.92;pointer-events:auto;}
+#compass-hud.routing{opacity:0.75;}
+#compass-svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(0,200,255,0.4));}
+.compass-ring{fill:none;stroke:rgba(0,200,255,0.3);stroke-width:1.2;}
+.compass-ring-outer{fill:none;stroke:rgba(0,200,255,0.12);stroke-width:0.5;}
+.compass-tick{stroke:rgba(0,200,255,0.4);stroke-width:0.5;}
+.compass-tick-major{stroke:rgba(0,200,255,0.65);stroke-width:0.9;}
+.compass-tick-cardinal{stroke:#00c8ff;stroke-width:1.8;}
+.compass-text{fill:rgba(0,200,255,0.7);font-size:5.5px;text-anchor:middle;font-family:var(--font);font-weight:600;}
+.compass-text-cardinal{fill:#00c8ff;font-size:7.5px;text-anchor:middle;font-family:var(--font);font-weight:700;text-shadow:0 0 4px rgba(0,200,255,0.5);}
+.compass-mil{fill:rgba(0,200,255,0.3);font-size:3.5px;text-anchor:middle;font-family:var(--font);}
+.compass-needle{stroke:#ff4455;stroke-width:1.5;stroke-linecap:round;}
+.compass-needle-s{stroke:rgba(255,255,255,0.25);stroke-width:0.8;stroke-linecap:round;}
+.compass-center{fill:rgba(0,200,255,0.6);}
+.compass-heading{fill:#00c8ff;font-size:9px;text-anchor:middle;font-family:var(--font);font-weight:700;}
+.compass-heading-label{fill:rgba(0,200,255,0.5);font-size:4px;text-anchor:middle;font-family:var(--font);}
+/* Radar sweep — front quarter bright, back 3/4 dark */
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 .radar-sweep{transform-origin:54px 54px;animation:radar-spin 3.5s linear infinite;}
 @keyframes radar-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 .radar-blip{fill:#00e87a;opacity:0;animation:blip-pulse 3.5s ease-in-out infinite;}
@@ -853,6 +887,7 @@ body.lt,body.lt2,body.lt3{
 .waypoint-dot{fill:#ff9900;opacity:0;}
 .waypoint-dot.active{opacity:0.9;}
 .dist-label{fill:rgba(0,200,255,0.25);font-size:3px;text-anchor:middle;font-family:var(--font);}
+<<<<<<< HEAD
 /* Menu button flash for new content */
 .lp-btn.has-new::after,.rp-btn.has-new::after{content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#ff4455;box-shadow:0 0 8px #ff4455;animation:btn-flash 1.5s ease-in-out infinite;}
 @keyframes btn-flash{0%,100%{opacity:1;}50%{opacity:0.3;}}
@@ -898,6 +933,15 @@ body.lt,body.lt2,body.lt3{
 .escalation-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .escalation-badge.admin{background:rgba(255,153,0,0.15);color:#ff9900;border:1px solid rgba(255,153,0,0.25);}
 .escalation-badge.owner{background:rgba(255,68,85,0.15);color:#ff4455;border:1px solid rgba(255,68,85,0.25);}
+=======
+
+/* ═══ CHANNEL BUTTONS (left sidebar) ═══ */
+.ch-btn{transition:all 0.2s !important;position:relative;}
+.ch-btn.active{background:rgba(0,200,255,0.18) !important;color:#00c8ff !important;border-color:rgba(0,200,255,0.40) !important;box-shadow:0 0 12px rgba(0,200,255,0.30), inset 0 0 8px rgba(0,200,255,0.10) !important;}
+.ch-btn.active::before{content:'';position:absolute;left:-1px;top:20%;bottom:20%;width:3px;background:#00c8ff;border-radius:0 2px 2px 0;box-shadow:0 0 8px #00c8ff;}
+.ch-btn[data-ch="support"].active{background:rgba(255,214,0,0.14) !important;color:#ffd600 !important;border-color:rgba(255,214,0,0.35) !important;box-shadow:0 0 12px rgba(255,214,0,0.25) !important;}
+.ch-btn[data-ch="support"].active::before{background:#ffd600;box-shadow:0 0 8px #ffd600;}
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 
 /* ═══ DELIVERY CHAT ═══ */
 #delivery-chat{position:fixed;bottom:64px;right:52px;width:320px;max-height:420px;display:none;flex-direction:column;z-index:280;background:linear-gradient(180deg,rgba(8,18,30,0.88),rgba(8,18,30,0.72));border:1px solid rgba(0,200,255,0.16);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,0.30);backdrop-filter:blur(14px);}
@@ -970,10 +1014,14 @@ body.lt,body.lt2,body.lt3{
       </div>
       <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
       <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
+<<<<<<< HEAD
       <div style="position:relative;">
         <input class="ainp" id="ap2" type="password" placeholder="Password" style="padding-right:50px;"/>
         <button type="button" onclick="togglePwdView()" id="pwd-toggle" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.15);border-radius:4px;color:var(--text-dim);font-size:9px;padding:4px 8px;cursor:pointer;font-family:var(--font);">SHOW</button>
       </div>
+=======
+      <input class="ainp" id="ap2" type="password" placeholder="Password"/>
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <div id="auth-name-row" style="display:none;">
         <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off"/>
       </div>
@@ -1073,6 +1121,7 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
+<<<<<<< HEAD
   <!-- PERFORMANCE MONITOR (top-left) -->
   <div id="perf-hud">
     <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
@@ -1152,6 +1201,8 @@ body.lt,body.lt2,body.lt3{
     </svg>
   </div>
 
+=======
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   <!-- COMPASS RADAR HUD (top-right) -->
   <div id="compass-hud">
     <svg id="compass-svg" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
@@ -1195,6 +1246,7 @@ body.lt,body.lt2,body.lt3{
       <text x="54" y="19" class="dist-label">5km</text>
       <text x="54" y="31" class="dist-label">3km</text>
       <text x="54" y="43" class="dist-label">1km</text>
+<<<<<<< HEAD
       <!-- Fixed forward indicator (always points up = user's facing direction) -->
       <polygon points="54,4 51,10 57,10" fill="#00c8ff" opacity="0.7"/>
       <!-- Compass bezel group (ROTATES with heading — ticks, cardinals, mils all rotate) -->
@@ -1204,6 +1256,12 @@ body.lt,body.lt2,body.lt3{
         <!-- Mil markings -->
         <g id="compass-mils"></g>
       </g>
+=======
+      <!-- Compass tick marks (generated by JS) -->
+      <g id="compass-ticks"></g>
+      <!-- Mil markings (inner ring) -->
+      <g id="compass-mils"></g>
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <!-- Radar sweep -->
       <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"/>
       <!-- Radar blips (populated by JS) -->
@@ -1211,7 +1269,17 @@ body.lt,body.lt2,body.lt3{
       <!-- Route indicator line (populated by JS) -->
       <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"/>
       <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"/>
+<<<<<<< HEAD
       <!-- (Bezel rotation handles compass heading — no static needle) -->
+=======
+      <!-- Compass needle group (rotated by JS) -->
+      <g id="compass-needle-group">
+        <line class="compass-needle" x1="54" y1="54" x2="54" y2="14"/>
+        <line class="compass-needle-s" x1="54" y1="54" x2="54" y2="94"/>
+        <!-- N arrow tip -->
+        <polygon points="54,12 51,20 57,20" fill="#ff4455" opacity="0.8"/>
+      </g>
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <!-- Center dot -->
       <circle cx="54" cy="54" r="2.5" class="compass-center"/>
       <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"/>
@@ -1633,6 +1701,7 @@ body.lt,body.lt2,body.lt3{
   </button>
 </div>
 <div id="cmd-response">
+<<<<<<< HEAD
   <div class="chat-drag-handle" id="chat-drag"></div>
   <!-- CHANNEL SELECTOR DROPDOWN -->
   <div id="chat-channel-bar">
@@ -1644,6 +1713,8 @@ body.lt,body.lt2,body.lt3{
       <option value="team">👥 Teams</option>
     </select>
   </div>
+=======
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   <div class="ai-conv" id="ai-conv"></div>
 </div>
 
@@ -2669,6 +2740,211 @@ window.detectOrderIntent = function(msg){
   return _origDetectOrder(msg);
 };
 
+/* ═══ COMPASS RADAR HUD ENGINE ═══ */
+(function initCompassHud(){
+  var ticksG = document.getElementById('compass-ticks');
+  var milsG = document.getElementById('compass-mils');
+  if(!ticksG || !milsG) return;
+
+  var cx = 54, cy = 54, outerR = 48, innerR = 42, milR = 38;
+  var cardinals = [{deg:0,label:'N'},{deg:90,label:'E'},{deg:180,label:'S'},{deg:270,label:'W'}];
+  var intercardinals = [{deg:45,label:'NE'},{deg:135,label:'SE'},{deg:225,label:'SW'},{deg:315,label:'NW'}];
+
+  // Generate tick marks every 5 degrees, major every 30, cardinal every 90
+  for(var d = 0; d < 360; d += 2){
+    var rad = (d - 90) * Math.PI / 180;
+    var isCardinal = (d % 90 === 0);
+    var isMajor = (d % 30 === 0);
+    var isMinor = (d % 10 === 0);
+    var r1 = outerR;
+    var r2 = isCardinal ? outerR - 8 : isMajor ? outerR - 6 : isMinor ? outerR - 4 : outerR - 2;
+    var x1 = cx + r1 * Math.cos(rad);
+    var y1 = cy + r1 * Math.sin(rad);
+    var x2 = cx + r2 * Math.cos(rad);
+    var y2 = cy + r2 * Math.sin(rad);
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('class', isCardinal ? 'compass-tick-cardinal' : isMajor ? 'compass-tick-major' : 'compass-tick');
+    ticksG.appendChild(line);
+
+    // Degree labels every 30°
+    if(isMajor && !isCardinal){
+      var labelR = outerR - 11;
+      var tx = cx + labelR * Math.cos(rad);
+      var ty = cy + labelR * Math.sin(rad) + 2;
+      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+      txt.setAttribute('class','compass-text');
+      txt.textContent = d + '\u00B0';
+      ticksG.appendChild(txt);
+    }
+  }
+
+  // Cardinal labels
+  cardinals.forEach(function(c){
+    var rad = (c.deg - 90) * Math.PI / 180;
+    var labelR = outerR - 12;
+    var tx = cx + labelR * Math.cos(rad);
+    var ty = cy + labelR * Math.sin(rad) + 2.5;
+    var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+    txt.setAttribute('class','compass-text-cardinal');
+    txt.textContent = c.label;
+    ticksG.appendChild(txt);
+  });
+
+  // Mil markings (inner ring, every 200 mils = ~11.25°, key positions)
+  var milPositions = [0,400,800,1200,1600,2000,2400,2800,3200,3600,4000,4400,4800,5200,5600,6000];
+  milPositions.forEach(function(mil){
+    var deg = mil * 360 / 6400;
+    var rad = (deg - 90) * Math.PI / 180;
+    var r1 = milR;
+    var r2 = milR - 3;
+    var x1 = cx + r1 * Math.cos(rad);
+    var y1 = cy + r1 * Math.sin(rad);
+    var x2 = cx + r2 * Math.cos(rad);
+    var y2 = cy + r2 * Math.sin(rad);
+    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','rgba(0,200,255,0.3)'); line.setAttribute('stroke-width','0.4');
+    milsG.appendChild(line);
+    // Mil label
+    if(mil % 800 === 0){
+      var tx = cx + (milR - 6) * Math.cos(rad);
+      var ty = cy + (milR - 6) * Math.sin(rad) + 1.5;
+      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
+      txt.setAttribute('class','compass-mil');
+      txt.textContent = mil;
+      milsG.appendChild(txt);
+    }
+  });
+
+  // Compass heading from device orientation
+  var currentHeading = 0;
+  var needleGroup = document.getElementById('compass-needle-group');
+  var headingText = document.getElementById('compass-heading');
+
+  function updateHeading(deg){
+    currentHeading = deg;
+    if(needleGroup) needleGroup.setAttribute('transform','rotate('+(-deg)+',54,54)');
+    if(headingText) headingText.textContent = Math.round(deg) + '\u00B0';
+  }
+
+  // Try device compass
+  function requestCompass(){
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      DeviceOrientationEvent.requestPermission().then(function(state){
+        if(state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+      }).catch(function(){});
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+  }
+
+  function handleOrientation(e){
+    var heading = e.webkitCompassHeading || (e.alpha ? (360 - e.alpha) : null);
+    if(heading !== null && heading !== undefined) updateHeading(heading);
+  }
+
+  // For desktop: slowly rotate or use mouse position
+  var desktopHeading = 0;
+  function desktopCompassFallback(){
+    if(!window.DeviceOrientationEvent || navigator.userAgent.match(/Windows|Mac|Linux/)){
+      setInterval(function(){
+        desktopHeading = (desktopHeading + 0.3) % 360;
+        updateHeading(desktopHeading);
+      }, 100);
+    }
+  }
+
+  requestCompass();
+  desktopCompassFallback();
+
+  // Radar blip scanner — scan nearby items and show as blips
+  function updateRadarBlips(){
+    var blipsG = document.getElementById('radar-blips');
+    if(!blipsG || !window.LM || CL !== 1) return;
+    blipsG.innerHTML = '';
+    var center = LM.getCenter();
+    try{
+      var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+      var places = JSON.parse(localStorage.getItem('astranov.local.places.v333') || '[]');
+      var all = offers.concat(places).slice(0, 20);
+      all.forEach(function(item){
+        if(!item.lat) return;
+        var dlat = item.lat - center.lat;
+        var dlng = (item.lon || item.lng || 0) - center.lng;
+        var dist = Math.sqrt(dlat*dlat + dlng*dlng);
+        if(dist > 0.08) return; // only nearby
+        // Map to radar coords (max radius = 44px for ~5km)
+        var scale = 44 / 0.05; // 0.05 degrees ≈ 5km
+        var rx = cx + dlng * scale;
+        var ry = cy - dlat * scale; // invert Y
+        // Clamp to radar circle
+        var dx = rx - cx, dy = ry - cy;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if(d > 44){ rx = cx + dx/d * 44; ry = cy + dy/d * 44; }
+        var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx', rx);
+        circle.setAttribute('cy', ry);
+        circle.setAttribute('r', '2');
+        var cls = 'radar-blip';
+        if(item.kind === 'driver_base') cls += ' radar-blip-delivery';
+        else if(item.kind === 'post_signal') cls += ' radar-blip-post';
+        circle.setAttribute('class', cls);
+        circle.style.animationDelay = (Math.random() * 3) + 's';
+        blipsG.appendChild(circle);
+      });
+    }catch(e){}
+  }
+
+  setInterval(updateRadarBlips, 3000);
+  setTimeout(updateRadarBlips, 1500);
+
+  // Route indicator — point toward active order destination
+  function updateRouteIndicator(){
+    var routeLine = document.getElementById('route-indicator');
+    var waypointDot = document.getElementById('waypoint-indicator');
+    if(!routeLine || !waypointDot) return;
+    // Check if there's an active delivery target
+    var target = window._compassTarget || null;
+    if(!target || !window.LM || CL !== 1){
+      routeLine.classList.remove('active');
+      waypointDot.classList.remove('active');
+      document.getElementById('compass-hud').classList.remove('routing');
+      return;
+    }
+    routeLine.classList.add('active');
+    waypointDot.classList.add('active');
+    document.getElementById('compass-hud').classList.add('routing');
+    var center = LM.getCenter();
+    var dlat = target.lat - center.lat;
+    var dlng = target.lng - center.lng;
+    var angle = Math.atan2(dlng, dlat) * 180 / Math.PI; // 0=N
+    var bearing = (90 - angle + currentHeading) * Math.PI / 180;
+    var endR = 46;
+    var ex = cx + endR * Math.cos(bearing - Math.PI/2);
+    var ey = cy + endR * Math.sin(bearing - Math.PI/2);
+    routeLine.setAttribute('x2', ex);
+    routeLine.setAttribute('y2', ey);
+    waypointDot.setAttribute('cx', ex);
+    waypointDot.setAttribute('cy', ey);
+  }
+
+  setInterval(updateRouteIndicator, 500);
+
+  // Make compass visible only on map layer
+  var compassEl = document.getElementById('compass-hud');
+  var _origApplyLayer2 = window.applyLayer;
+  window.applyLayer = function(idx){
+    _origApplyLayer2(idx);
+    if(compassEl) compassEl.style.display = idx === 1 ? 'block' : 'none';
+  };
+})();
+
 /* ── AUTH ── */
 function stab(t) {
   const su = t === 'signup';
@@ -3102,12 +3378,17 @@ function aiExecuteOrder(item, qty){
   // Check wallet
   var balance = getWalletBalance();
   if(balance < price){
+<<<<<<< HEAD
     addAiMessage('ai-msg-reply','Astranov','Your balance is \u20AC' + balance.toFixed(2) + ' but this order costs \u20AC' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
+=======
+    addAiMessage('ai-msg-reply','Astranov','Your balance is €' + balance.toFixed(2) + ' but this order costs €' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     speakAstranova('Your balance is too low. Opening wallet to top up.');
     setTimeout(openPayments, 800);
     return;
   }
 
+<<<<<<< HEAD
   // Distance verification for extreme orders
   var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
   var fee = calcDeliveryFee(dist, totalVol);
@@ -3122,6 +3403,8 @@ function aiExecuteOrder(item, qty){
 }
 
 function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
+=======
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   // Animate Astranova
   bounceAstranova();
 
@@ -3671,6 +3954,7 @@ async function loadBalance() {
   }
   loadOrbitalFeed();
   loadDemoData();
+<<<<<<< HEAD
   // Start AI assistant after a brief delay
   setTimeout(initAstranovStartup, 2500);
 })();
@@ -3741,6 +4025,10 @@ function startAstranovGreeting(micAvailable){
   }
 }
 
+=======
+})();
+
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 /* ══════════════════════════════
    DEMO DATA — Rhodes, Greece
    Remove this block before production
@@ -4836,6 +5124,7 @@ function sendCmd(){
   resp.className = 'expanded';
   resp.style.display = 'flex';
 
+<<<<<<< HEAD
   // CHANNEL ROUTING — if not on AI channel, post to that channel
   if(typeof CHAT_CHANNEL !== 'undefined' && CHAT_CHANNEL !== 'ai'){
     addAiMessage('system-msg', CHAT_CHANNEL.toUpperCase(), 'Message posted to ' + CHAT_CHANNEL + ' channel.');
@@ -4858,6 +5147,8 @@ function sendCmd(){
     return;
   }
 
+=======
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   // Check for order confirmation first
   if(detectOrderIntent(val)) return;
 
@@ -4973,7 +5264,11 @@ async function callAstranovaAI(userMessage){
 
   // Build context about the app state
   var context = 'You are Astranov, a male angel AI assistant for the Astranov delivery marketplace on Rhodes island, Greece. ';
+<<<<<<< HEAD
   context += 'PERSONALITY: You are Astranov, a calm, wise male angel AI assistant. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. Give specific product recommendations with prices from local data. Be a trusted advisor — friendly but efficient. ';
+=======
+  context += 'PERSONALITY: You are a warm, wise, calm Russian male angel. You speak English but naturally mix in REAL Russian words (Cyrillic + transliteration): друг (droog/friend), брат (brat/brother), товарищ (tovarisch/comrade), да (da/yes), нет (nyet/no), хорошо (khorosho/good), молодец (molodets/well done), спасибо (spasibo/thanks), здравствуйте (zdravstvuyte/greetings), отлично (otlichno/excellent), вперёд (vperyod/forward), мой друг (moy droog/my friend), конечно (konechno/of course). Use old USSR-era humor: "for the people", "the motherland of delivery", "supply chain is strong", "five year plan for your stomach", "central planning says this is best deal". Be warm, witty, helpful. Include 2-3 Russian words per reply. ';
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   // MEMORY context from learning system
   context += buildMemoryContext();
   context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
@@ -5008,7 +5303,11 @@ async function callAstranovaAI(userMessage){
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
+<<<<<<< HEAD
         system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRULES:\n1. Reply in 2-4 sentences\n2. Match the user\'s language (English/Greek/Russian/etc)\n3. Give specific prices from local data\n4. Reference user memory when relevant\n5. Only use Russian words if user writes in Russian\n6. Be genuinely helpful and warm\n7. Calculate delivery fees when asked\n8. Max 1 emoji per message',
+=======
+        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nIMPORTANT RULES:\n1. Respond in 2-4 sentences max\n2. Include 2-3 Russian words (Cyrillic) per response\n3. Stay in character as warm Russian angel\n4. Give specific prices from local data when available\n5. Reference user memory/preferences when relevant ("Ah друг, you love pizza I remember!")\n6. If user says something you should remember, note it explicitly\n7. Be genuinely funny with USSR humor but always helpful\n8. Calculate delivery fees accurately when asked',
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
         messages: [{ role: 'user', content: userMessage }]
       })
     });
@@ -5044,10 +5343,16 @@ function localAstranovaResponse(msg){
   var q = msg.toLowerCase();
   var prefs = getUserPrefs();
   var mem = getAiMemory();
+<<<<<<< HEAD
   var nameGreet = mem.userName ? ', ' + mem.userName : '';
   var isGreek = /[\u0370-\u03FF]/.test(msg);
 
   // Search local shops first
+=======
+  var returning = (mem.totalInteractions || 0) > 3;
+  var nameGreet = mem.userName ? ', ' + mem.userName : '';
+
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   try{
     var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
     var matches = offers.filter(function(o){
@@ -5058,12 +5363,17 @@ function localAstranovaResponse(msg){
     if(matches.length){
       var m = matches[0];
       var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (\u20AC' + (mi.price||'?') + ')'; }).join(', ');
+<<<<<<< HEAD
       if(isGreek) return '\u0392\u03C1\u03AE\u03BA\u03B1 \u03C4\u03BF ' + m.name + '! ' + (menuStr ? '\u03A0\u03C1\u03BF\u03C3\u03C6\u03AD\u03C1\u03BF\u03C5\u03BD: ' + menuStr + '.' : '');
       return 'Found ' + m.name + ' for you' + nameGreet + '! ' + (menuStr ? 'They offer: ' + menuStr + '.' : '') + ' Check the Listings panel to order.';
+=======
+      return '\u0414\u0430 (da), \u0434\u0440\u0443\u0433 (friend)! I have located ' + m.name + ' for you. ' + (m.description||'') + (menuStr ? ' They serve: ' + menuStr + '. \u041E\u0442\u043B\u0438\u0447\u043D\u043E (otlichno)!' : '') + ' Check Listings to order, \u0434\u0430?';
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     }
   }catch(e){}
 
   if(/pizza/i.test(q)){
+<<<<<<< HEAD
     if(isGreek) return 'Nikolas Pizza Express \u03AD\u03C7\u03B5\u03B9 Margherita \u20AC8, Pepperoni \u20AC10.50. \u0391\u03BD\u03BF\u03B9\u03C7\u03C4\u03CC \u03B1\u03C0\u03CC 17:00. \u03A0\u03B5\u03C2 "order" \u03B3\u03B9\u03B1 \u03BD\u03B1 \u03C0\u03B1\u03C1\u03B1\u03B3\u03B3\u03B5\u03AF\u03BB\u03B5\u03B9\u03C2!';
     return 'Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, Quattro Formaggi \u20AC11. Open from 17:00. Say "order" to place your order' + nameGreet + '!';
   }
@@ -5091,6 +5401,37 @@ function localAstranovaResponse(msg){
     return 'Of course I remember' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We\'re still getting to know each other!');
   }
   return isGreek ? '\u0394\u03BF\u03BA\u03AF\u03BC\u03B1\u03C3\u03B5 \u03BD\u03B1 \u03C1\u03C9\u03C4\u03AE\u03C3\u03B5\u03B9\u03C2 \u03B3\u03B9\u03B1 pizza, \u03BC\u03C0\u03AF\u03C1\u03B1, \u03BA\u03B1\u03C6\u03AD, \u03AE \u03C4\u03B9\u03BC\u03AD\u03C2 \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7\u03C2!' : 'Try asking about pizza, beer, coffee, diving, or delivery prices' + nameGreet + '. I work best with specific requests!';
+=======
+    var extra = prefs.likesPizza > 2 ? ' Ah, \u0431\u0440\u0430\u0442 (brat/brother), you do love your pizza — I remember!' : '';
+    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433!' + extra + ' Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, and the glorious Quattro Formaggi \u20AC11. Open from 17:00. The people\'s five-year plan for your stomach, \u0434\u0430? Say "order" and I dispatch \u0432\u043F\u0435\u0440\u0451\u0434 (vperyod/forward)!';
+  }
+  if(/dive|diving|scuba/i.test(q)) return '\u041C\u043E\u0439 \u0434\u0440\u0443\u0433 (my friend)' + nameGreet + '! Aegean Dive Centre offers Discover Scuba \u20AC75, PADI course \u20AC380, wreck diving \u20AC65. Open Monday-Saturday. \u041E\u0442\u043B\u0438\u0447\u043D\u043E for building strong character, \u0434\u0430!';
+  if(/food|eat|restaurant|hungry/i.test(q)) return '\u0422\u043E\u0432\u0430\u0440\u0438\u0449 (tovarisch)' + nameGreet + ', the motherland provides! Tamam Restaurant — Moussaka \u20AC12.50, Octopus \u20AC16. Or Nikolas Pizza for fast delivery. \u0425\u043E\u0440\u043E\u0448\u043E (khorosho), what sounds good?';
+  if(/beer/i.test(q)){
+    var extra = prefs.likesBeer > 2 ? ' \u0411\u0440\u0430\u0442, I see you are a regular — \u043C\u043E\u043B\u043E\u0434\u0435\u0446 (molodets/well done)!' : '';
+    return '\u0414\u0430, \u0434\u0440\u0443\u0433!' + extra + ' Rhodes Mini Market has Mythos 500ml for only \u20AC2.50 — cheapest in the district. Available 24/7. The supply chain never sleeps, \u0442\u043E\u0432\u0430\u0440\u0438\u0449!';
+  }
+  if(/coffee/i.test(q)) return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (konechno/of course)' + nameGreet + '! Freddo Cappuccino \u20AC4.50 at Tamam, Greek Coffee \u20AC2 at Mini Market. Both \u043E\u0442\u043B\u0438\u0447\u043D\u043E! What you prefer, \u0434\u0440\u0443\u0433?';
+  if(/deliver|price|cost|fee/i.test(q)) return '\u0414\u0430, \u0442\u043E\u0432\u0430\u0440\u0438\u0449. The people\'s delivery rate: \u20AC1/km. Surcharges: +\u20AC1 volume over 6L, +\u20AC1 night (21:00-09:00), +\u20AC1 holidays, +\u20AC1 bad weather. Orders over 13L split across multiple \u0431\u0440\u0430\u0442-drivers. \u0425\u043E\u0440\u043E\u0448\u043E, very fair system, \u0434\u0430?';
+  if(/weather/i.test(q)) return '\u041D\u0435\u0442 (nyet), \u0434\u0440\u0443\u0433, weather intelligence not yet connected. Toggle bad weather in Settings. In the motherland, we deliver in any conditions! \u0412\u043F\u0435\u0440\u0451\u0434!';
+  if(/help|what can you/i.test(q)) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + '! I am Astranov — your personal delivery commissar. I find shops, check prices, calculate fees, place orders. Say "find pizza" or "cheapest beer" and I handle everything. For the people! \u0412\u043F\u0435\u0440\u0451\u0434!';
+  if(/hello|hi|hey|good/i.test(q)){
+    if(returning) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043C\u043E\u0439 \u0434\u0440\u0443\u0433' + nameGreet + '! Good to see you again — this is conversation number ' + (mem.totalInteractions||1) + ' between us. The commissar remembers! What can I find for you today, \u0431\u0440\u0430\u0442?';
+    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433! Welcome to Astranov marketplace on beautiful Rhodes. I am your delivery commissar. Tell me what you need and I mobilize entire supply chain, \u0434\u0430!';
+  }
+  if(/thank/i.test(q)) return '\u0421\u043F\u0430\u0441\u0438\u0431\u043E (spasibo) to you too, \u0434\u0440\u0443\u0433' + nameGreet + '! Serving the people is own reward. The commissar is always here. \u041E\u0442\u043B\u0438\u0447\u043D\u043E!';
+  if(/who are you|your name/i.test(q)) return 'I am Astranov, \u0442\u043E\u0432\u0430\u0440\u0438\u0449 — the AI delivery commissar. My mission: connect hungry people with shops, dispatch \u0431\u0440\u0430\u0442-drivers, ensure every order arrives. I operate with efficiency of old system, but heart of new. \u0414\u0430!';
+  if(/remember|you know me/i.test(q)){
+    var facts = [];
+    if(prefs.likesPizza) facts.push('you enjoy pizza');
+    if(prefs.likesBeer) facts.push('you appreciate good beer');
+    if(prefs.likesCoffee) facts.push('you need your coffee');
+    if(prefs.likesDiving) facts.push('you love diving');
+    if(mem.totalInteractions) facts.push('we have talked ' + mem.totalInteractions + ' times');
+    return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (of course) I remember, \u0434\u0440\u0443\u0433' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We are still getting to know each other.') + ' The commissar has excellent memory, \u0434\u0430!';
+  }
+  return '\u0425\u043C, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + ', my intelligence files on that topic are still expanding. Try asking about food, pizza, beer, coffee, diving, or delivery prices. \u041F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430 (pozhaluysta/please), give me clear mission and I deliver, \u0434\u0430?';
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 }
 
 function addAiMessage(cssClass, sender, text){
@@ -5134,6 +5475,7 @@ function doSpeak(text){
     var clean = text.replace(/<[^>]+>/g,'').replace(/[€]/g,' euros ');
     if(clean.length > 180) clean = clean.substring(0,177) + '...';
     var utt = new SpeechSynthesisUtterance(clean);
+<<<<<<< HEAD
     utt.rate = 0.88;
     utt.pitch = 0.72;
     utt.volume = 0.85;
@@ -5154,6 +5496,20 @@ function doSpeak(text){
       if(!preferred) preferred = voices.find(function(v){ return v.lang && v.lang.startsWith('en') && !/female|samantha|victoria|karen|fiona|zira|susan/i.test(v.name); });
       utt.lang = 'en-US';
     }
+=======
+    utt.rate = 0.80; /* SLOW — calm Russian delivery */
+    utt.pitch = 0.65; /* DEEP male bass voice */
+    utt.volume = 0.85;
+    /* Find deepest male voice, prefer Russian or English-with-accent */
+    var voices = speechSynthesis.getVoices();
+    var preferred = null;
+    /* Priority 1: Russian voice speaking English */
+    preferred = voices.find(function(v){ return /russian|ru-/i.test(v.lang) || /russian/i.test(v.name); });
+    /* Priority 2: Deep male English voice */
+    if(!preferred) preferred = voices.find(function(v){ return /daniel|james|david|thomas|alex|google uk male/i.test(v.name) && !/female/i.test(v.name); });
+    /* Priority 3: Any male English voice */
+    if(!preferred) preferred = voices.find(function(v){ return v.lang && v.lang.startsWith('en') && !/female|samantha|victoria|karen|fiona|zira|susan|agnes/i.test(v.name); });
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     if(preferred) utt.voice = preferred;
     setAstranovaSpeaking(true);
     var speech = document.getElementById('astranova-speech');
@@ -5187,12 +5543,16 @@ function processNextSpeech(){
   doSpeak(_speechQueue.shift());
 }
 
+<<<<<<< HEAD
 var _chatHeight = Math.round(window.innerHeight * 0.33); // start at 1/3
 
+=======
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 function expandConversation(){
   var resp = document.getElementById('cmd-response');
   resp.className = 'expanded';
   resp.style.display = 'flex';
+<<<<<<< HEAD
   _chatHeight = Math.round(window.innerHeight * 0.66);
   resp.style.maxHeight = _chatHeight + 'px';
   var conv = document.getElementById('ai-conv');
@@ -5254,6 +5614,10 @@ function expandConversation(){
   window.addEventListener('resize', function(){ maxH = Math.round(window.innerHeight * 0.66); });
 })();
 
+=======
+}
+
+>>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 /* VOICE INPUT — Web Speech API */
 var _voiceActive = false;
 var _voiceRecog = null;

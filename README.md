@@ -1,9 +1,8 @@
 # Astranov
 
-**Planetary Operating Interface — Trinity OS**
+**Internet Operating System**
 
-Astranov is a celestial operating system where the Earth itself is the interface.
-It descends through three nested realities: Cosmic → Terrestrial → Abyssal.
+Astranov is an internet operating system where the Earth itself is the interface.
 
 ---
 
