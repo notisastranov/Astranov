@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov V2</title>
-<meta name="astranov-version" content="V2"/>
+<title>Astranov V4</title>
+<meta name="astranov-version" content="V5"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -1130,6 +1130,363 @@ body.micro-ribbon #video-post-btn .video-btn-copy{display:none;}
   #video-post-btn.video-ribbon-btn{padding:0 12px !important;}
 }
 
+
+/* === V4 RIBBON + CHAT + HUD SELF-HEAL OVERRIDES === */
+#topbar{
+  position:fixed !important;
+  top:0; left:0; right:0;
+  display:flex !important;
+  flex-wrap:nowrap;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  min-height:56px;
+  height:auto !important;
+  padding:8px 14px !important;
+  z-index:240;
+}
+#topbar .tb-left,
+#topbar .tb-center,
+#topbar .tb-right{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+#topbar .tb-left{flex:1 1 220px;justify-content:flex-start;}
+#topbar .tb-center{flex:0 1 auto;justify-content:center;max-width:min(58vw,760px);}
+#topbar .tb-right{flex:1 1 320px;justify-content:flex-end;flex-wrap:nowrap;}
+#version-cluster{
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  min-width:0;
+  max-width:100%;
+}
+#force-update-btn.version-unified{
+  display:inline-flex !important;
+  align-items:center;
+  gap:10px;
+  min-height:42px;
+  padding:7px 14px;
+  border-radius:18px !important;
+  border:1px solid rgba(0,200,255,0.22) !important;
+  background:linear-gradient(180deg, rgba(10,18,28,0.84), rgba(10,18,28,0.66)) !important;
+  color:#eef8ff !important;
+  box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  opacity:1 !important;
+  white-space:nowrap;
+}
+#force-update-btn.version-unified .update-icon{
+  display:inline-flex !important;
+  width:22px;height:22px;
+  align-items:center;justify-content:center;
+  color:#9ad8ff;
+  flex:0 0 auto;
+}
+#force-update-btn.version-unified .update-icon svg{width:18px;height:18px;display:block;}
+#force-update-btn.version-unified .version-summary{
+  display:flex !important;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:2px;
+  min-width:0;
+}
+#force-update-btn.version-unified .version-line{
+  display:flex !important;
+  align-items:center;
+  gap:6px;
+  line-height:1;
+}
+#force-update-btn.version-unified .version-kicker{
+  font-size:10px;
+  color:#8eafc8;
+  min-width:46px;
+}
+#force-update-btn.version-unified .version-value{
+  font-size:13px;
+  font-weight:700;
+  color:#f2fbff;
+}
+#force-update-btn.version-unified .update-copy{
+  display:inline-flex !important;
+  align-items:center;
+  font-size:11px;
+  font-weight:700;
+  color:#c9f2ff;
+  padding-left:10px;
+  margin-left:2px;
+  border-left:1px solid rgba(0,200,255,0.14);
+}
+#force-update-btn.version-unified.needs-update{
+  color:#ffd600 !important;
+  border-color:rgba(255,214,0,0.46) !important;
+  background:linear-gradient(180deg, rgba(46,35,0,0.55), rgba(22,16,0,0.42)) !important;
+  box-shadow:0 0 18px rgba(255,214,0,0.18), 0 0 32px rgba(255,214,0,0.10) !important;
+  animation:updatePulse 1.18s ease-in-out infinite;
+}
+#force-update-btn.version-unified.needs-update .update-copy,
+#force-update-btn.version-unified.needs-update .update-icon,
+#force-update-btn.version-unified.needs-update .version-value.vlatest-old{
+  color:#ffe681 !important;
+}
+#force-update-btn.version-unified.up-to-date{
+  animation:none !important;
+}
+#balance-display{
+  display:inline-flex !important;
+  align-items:center;
+  gap:8px;
+  min-height:42px;
+  padding:0 14px !important;
+  border-radius:999px !important;
+  background:rgba(0,232,122,0.08) !important;
+  border:1px solid rgba(0,232,122,0.24) !important;
+}
+#balance-display .balance-label{font-size:10px;color:#b7d8c5 !important;}
+#balance-display .balance-amount{font-size:14px;font-weight:700;}
+#video-post-btn.video-ribbon-btn{
+  display:inline-flex !important;
+  align-items:center;
+  gap:8px;
+  min-height:42px;
+  padding:0 16px !important;
+  border-radius:16px !important;
+  border:1px solid rgba(255,54,102,0.30) !important;
+  background:linear-gradient(180deg, rgba(255,54,102,0.20), rgba(255,54,102,0.10)) !important;
+  color:#fff2f6 !important;
+  box-shadow:0 10px 22px rgba(255,54,102,0.12);
+}
+#video-post-btn.video-ribbon-btn .video-btn-icon{
+  display:inline-flex !important;
+  width:20px;height:20px;
+  align-items:center;justify-content:center;
+}
+#video-post-btn.video-ribbon-btn .video-btn-icon svg{width:18px;height:18px;display:block;}
+#video-post-btn.video-ribbon-btn .video-btn-plus{
+  display:inline-flex !important;
+  align-items:center;justify-content:center;
+  width:20px;height:20px;
+  border-radius:999px;
+  background:rgba(255,255,255,0.14);
+  font-size:15px;font-weight:700;line-height:1;
+}
+#video-post-btn.video-ribbon-btn .video-btn-copy{
+  display:inline-flex !important;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:0.05em;
+}
+#pause-ui-btn.pause-orb{
+  display:inline-flex !important;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:52px;height:52px;
+  border-radius:999px !important;
+  border:1px solid rgba(0,200,255,0.34) !important;
+  background:radial-gradient(circle at 30% 30%, rgba(0,200,255,0.32), rgba(0,122,255,0.14) 55%, rgba(8,18,30,0.84) 100%) !important;
+  color:#eaf8ff !important;
+  box-shadow:0 0 18px rgba(0,200,255,0.24), inset 0 0 16px rgba(0,200,255,0.10);
+}
+#pause-ui-btn.pause-orb .pause-icon{
+  display:inline-flex !important;
+  width:20px;height:20px;align-items:center;justify-content:center;
+}
+#pause-ui-btn.pause-orb .pause-icon svg{width:18px;height:18px;display:block;}
+#pause-ui-btn.pause-orb .pause-orb-label{
+  display:block !important;
+  margin-top:1px;
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:0.12em;
+}
+#pause-ui-btn.pause-orb.active{
+  color:#ffd600 !important;
+  border-color:rgba(255,214,0,0.42) !important;
+  background:radial-gradient(circle at 30% 30%, rgba(255,214,0,0.30), rgba(130,98,0,0.18) 55%, rgba(18,14,3,0.92) 100%) !important;
+  box-shadow:0 0 20px rgba(255,214,0,0.26), inset 0 0 18px rgba(255,214,0,0.12);
+}
+body.wrap-ribbon #topbar{
+  flex-wrap:wrap;
+  row-gap:8px;
+}
+body.wrap-ribbon #topbar .tb-left,
+body.wrap-ribbon #topbar .tb-center,
+body.wrap-ribbon #topbar .tb-right{
+  flex:1 1 100%;
+  justify-content:center;
+}
+body.compact-ribbon #force-update-btn.version-unified .update-copy{
+  font-size:10px;
+}
+body.compact-ribbon #force-update-btn.version-unified .version-kicker{
+  min-width:40px;
+}
+body.micro-ribbon #force-update-btn.version-unified .update-copy,
+body.micro-ribbon #video-post-btn.video-ribbon-btn .video-btn-copy{
+  display:none !important;
+}
+body.micro-ribbon #topbar{
+  gap:8px;
+  padding:8px 8px !important;
+}
+body.micro-ribbon #topbar .tb-left{flex:1 1 100%;justify-content:center;}
+body.micro-ribbon #topbar .tb-center{flex:1 1 auto;max-width:100%;}
+body.micro-ribbon #topbar .tb-right{flex:1 1 auto;}
+body.micro-ribbon #force-update-btn.version-unified{
+  padding:7px 10px !important;
+}
+body.micro-ribbon #force-update-btn.version-unified .version-kicker{font-size:9px;}
+body.micro-ribbon #force-update-btn.version-unified .version-value{font-size:12px;}
+body.micro-ribbon #balance-display{padding:0 10px !important;}
+#cmd-response,
+#cmd-response.expanded{
+  max-height:min(66.666vh, calc(100vh - 146px)) !important;
+}
+#astranova-wrapper{
+  z-index:230 !important;
+  pointer-events:none;
+}
+#astranova-wrapper #astranova-svg,
+#astranova-wrapper #astranova-speech{
+  pointer-events:auto;
+}
+#perf-hud,#compass-hud{
+  z-index:225 !important;
+  touch-action:none !important;
+  user-select:none !important;
+}
+#perf-hud.visible,#compass-hud.visible{opacity:0.95 !important;}
+#perf-hud.expanded,#compass-hud.expanded{
+  width:min(38vw,220px) !important;
+  height:min(38vw,220px) !important;
+}
+
+/* === V5 FLOATING UI OVERRIDE === */
+#topbar{
+  height:auto !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  padding:10px 12px 0 !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+  gap:12px !important;
+  flex-wrap:wrap !important;
+  pointer-events:none !important;
+}
+#topbar .tb-left{display:none !important;}
+#topbar .tb-center,
+#topbar .tb-right{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+  flex:0 1 auto !important;
+  max-width:none !important;
+  pointer-events:auto !important;
+}
+#topbar .tb-center{order:1;}
+#topbar .tb-right{order:2;}
+#version-cluster{gap:10px !important; max-width:none !important;}
+#force-update-btn.version-unified{
+  min-width:min(72vw,560px) !important;
+  min-height:68px !important;
+  padding:12px 16px !important;
+  border-radius:22px !important;
+  align-items:center !important;
+  gap:12px !important;
+  box-shadow:0 14px 34px rgba(0,0,0,0.26), 0 0 22px rgba(0,200,255,0.10) !important;
+}
+#force-update-btn.version-unified .version-summary{gap:3px !important;}
+#force-update-btn.version-unified .app-badge-title{
+  display:block;
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:0.08em;
+  color:#eef8ff;
+  text-shadow:0 0 14px rgba(0,200,255,0.35);
+}
+#force-update-btn.version-unified .version-line{display:flex;align-items:baseline;gap:8px;}
+#force-update-btn.version-unified .version-kicker{font-size:10px !important;}
+#force-update-btn.version-unified .version-value{font-size:14px !important;}
+#force-update-btn.version-unified .update-copy{font-size:11px !important;line-height:1.25 !important;max-width:140px;}
+#balance-display,#video-post-btn,#user-badge,#pause-ui-btn{
+  position:relative;
+  pointer-events:auto !important;
+  min-height:54px !important;
+  border-radius:18px !important;
+  box-shadow:0 12px 28px rgba(0,0,0,0.22), 0 0 16px rgba(0,200,255,0.08) !important;
+}
+#video-post-btn{padding:0 16px !important;min-width:154px !important;}
+#balance-display{min-width:124px !important;justify-content:center !important;}
+#pause-ui-btn{width:58px !important;min-width:58px !important;height:58px !important;border-radius:999px !important;}
+#pause-ui-btn .pause-orb-label{display:none !important;}
+#bottombar{
+  position:fixed !important;
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  bottom:16px !important;
+  width:min(92vw,760px) !important;
+  height:60px !important;
+  padding:0 10px !important;
+  border-radius:22px !important;
+  border:1px solid rgba(0,200,255,0.18) !important;
+  background:linear-gradient(180deg,rgba(8,18,30,0.72),rgba(8,18,30,0.56)) !important;
+  box-shadow:0 18px 40px rgba(0,0,0,0.28) !important;
+  backdrop-filter:blur(18px) saturate(125%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(125%) !important;
+}
+#cmd-response,#cmd-response.expanded{
+  position:fixed !important;
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  bottom:86px !important;
+  width:min(92vw,760px) !important;
+  max-height:66vh !important;
+  border-radius:22px !important;
+  overflow:hidden !important;
+  border:1px solid rgba(0,200,255,0.18) !important;
+  background:linear-gradient(180deg,rgba(8,18,30,0.82),rgba(8,18,30,0.60)) !important;
+  box-shadow:0 22px 46px rgba(0,0,0,0.34) !important;
+}
+#cmd-response.toast{
+  width:min(92vw,760px) !important;
+  left:50% !important;
+  right:auto !important;
+  transform:translateX(-50%) !important;
+  bottom:86px !important;
+  border-radius:18px !important;
+}
+#chat-channel-bar{cursor:grab;}
+#chat-channel-bar.float-holding,#bottombar.float-holding,#perf-hud.float-holding,#compass-hud.float-holding{outline:1px dashed rgba(0,200,255,0.4);}
+#astranova-wrapper{z-index:240 !important;}
+#perf-hud,#compass-hud{
+  width:128px !important;
+  height:128px !important;
+  opacity:0.24 !important;
+  min-width:96px;
+  min-height:96px;
+}
+#perf-hud.expanded,#compass-hud.expanded{width:min(46vw,240px) !important;height:min(46vw,240px) !important;}
+.ui-resize-handle{
+  position:absolute;width:18px;height:18px;right:-6px;bottom:-6px;border-radius:999px;
+  background:radial-gradient(circle, rgba(255,255,255,0.92), rgba(0,200,255,0.80) 55%, rgba(0,200,255,0.26) 56%, rgba(0,200,255,0.12) 100%);
+  box-shadow:0 0 14px rgba(0,200,255,0.46);cursor:nwse-resize;z-index:4;
+}
+.floatable-user-placed{box-shadow:0 18px 36px rgba(0,0,0,0.32), 0 0 18px rgba(0,200,255,0.16) !important;}
+@media (max-width: 980px){
+  #force-update-btn.version-unified{min-width:min(94vw,560px) !important;width:min(94vw,560px) !important;}
+  #topbar{gap:8px !important;}
+}
 </style>
 </head>
 <body class="lt">
@@ -1176,27 +1533,39 @@ body.micro-ribbon #video-post-btn .video-btn-copy{display:none;}
     <span class="brand">ASTRANOV</span>
   </div>
   <div class="tb-center" id="version-cluster">
-    <span class="version-chip version-chip-current" title="Current loaded version">
-      <span class="version-kicker">Current version</span>
-      <span class="version-value vcurrent" id="vcurrent">V2</span>
-    </span>
-    <span class="version-chip version-chip-latest" title="Latest detected version">
-      <span class="version-kicker">Latest version</span>
-      <span class="version-value vlatest-ok" id="vlatest">V2</span>
-    </span>
-    <button id="force-update-btn" onclick="hardRefreshUpdate()" title="Hard refresh update">
-      <span class="update-icon">⟳</span>
-      <span class="update-copy" id="force-update-copy">Refresh</span>
+    <button id="force-update-btn" class="version-unified up-to-date" onclick="hardRefreshUpdate()" title="Version check and hard refresh update">
+      <span class="update-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+          <path d="M21 3v6h-6"/>
+        </svg>
+      </span>
+      <span class="version-summary">
+        <span class="version-line">
+          <span class="version-kicker">Current</span>
+          <span class="version-value vcurrent" id="vcurrent">V5</span>
+        </span>
+        <span class="version-line">
+          <span class="version-kicker">Latest</span>
+          <span class="version-value vlatest-ok" id="vlatest">V5</span>
+        </span>
+      </span>
+      <span class="update-copy" id="force-update-copy">Up to date</span>
     </button>
-    <div id="balance-display" onclick="showBalance()">
-      <span class="balance-label">EUR</span>
+    <div id="balance-display" onclick="showBalance()" title="Astranov wallet and economics">
+      <span class="balance-label">Wallet EUR</span>
       <span class="balance-amount" id="bal">0.00</span>
     </div>
   </div>
   <div class="tb-right">
     <button id="video-post-btn" class="ribbon-btn video-ribbon-btn" onclick="openVideoPostModal()" title="Capture or upload a YouTube video and pin it on your globe location">
-      <span class="video-btn-plus">＋</span>
-      <span class="video-btn-icon">🎥</span>
+      <span class="video-btn-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="6" width="13" height="12" rx="3"></rect>
+          <path d="M16 10l5-3v10l-5-3z"></path>
+        </svg>
+      </span>
+      <span class="video-btn-plus" aria-hidden="true">+</span>
       <span class="video-btn-copy">Post Video</span>
     </button>
     <div id="user-badge" onclick="toggleUserMenu()">
@@ -1204,9 +1573,14 @@ body.micro-ribbon #video-post-btn .video-btn-copy{display:none;}
       <span class="user-name" id="uname">Guest</span>
       <span id="role-badge" style="display:none;font-size:8px;padding:1px 5px;border:1px solid rgba(0,200,255,0.18);border-radius:3px;white-space:nowrap;"></span>
     </div>
-    <button id="pause-ui-btn" class="pause-switch" onclick="togglePauseMode()" title="Pause visual motion and media" aria-pressed="false">
-      <span class="pause-switch-track"><span class="pause-switch-thumb"></span></span>
-      <span class="pause-switch-label" id="pause-switch-label">ON</span>
+    <button id="pause-ui-btn" class="pause-orb" onclick="togglePauseMode()" title="Pause visual motion and media" aria-pressed="false">
+      <span class="pause-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v8"></path>
+          <path d="M6.2 5.8a9 9 0 1 0 11.6 0"></path>
+        </svg>
+      </span>
+      <span class="pause-orb-label" id="pause-switch-label">LIVE</span>
     </button>
   </div>
 </div>
@@ -1847,16 +2221,16 @@ body.micro-ribbon #video-post-btn .video-btn-copy{display:none;}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV V3 — Internet Operating System
+   ASTRANOV V5 — Internet Operating System
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script V3
+   Architecture: Spartan Script V5
    ═══════════════════════════════════════════════ */
 
 var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 var sb = supabase.createClient(SURL, SKEY);
-var APP_VERSION = 'V3';
-var APP_ARCH = 'Spartan Script V3';
+var APP_VERSION = 'V5';
+var APP_ARCH = 'Spartan Script V5';
 var PAYMENT_CFG_KEY = 'astranov.payment.config';
 var WALLET_KEY = 'astranov.wallet.balance';
 var PAYMENT_LOG_KEY = 'astranov.payment.log';
@@ -1891,7 +2265,7 @@ var YT_CLIENT_ID_KEY = 'astranov.youtube.client_id.v2';
 var YT_META_KEY = 'astranov.youtube.meta.v2';
 var AI_PROVIDER_LOCK_KEY = 'astranov.ai.provider.lock.v2';
 var AI_PROVIDER_SCAN_KEY = 'astranov.ai.provider.scan.v2';
-var AI_PROVIDER_SCAN_TTL_MS = 15 * 60 * 1000;
+var AI_PROVIDER_SCAN_TTL_MS = 24 * 60 * 60 * 1000;
 ['pointerdown','keydown','mousemove','touchstart','scroll'].forEach(function(evt){ window.addEventListener(evt, function(){ LAST_USER_ACTIVITY_AT = Date.now(); }, {passive:true}); });
 var APP_GUARDRAILS = Object.freeze({
   identity: { name: APP_NAME, description: APP_DESCRIPTION, version: APP_VERSION, series: APP_VERSION_SERIES },
@@ -1902,7 +2276,7 @@ var APP_GUARDRAILS = Object.freeze({
     'Do not move the AI command/chat bar or its channel selector away from the bottom chat window.',
     'Do not let compass or performance HUD exceed their defined max bounds.',
     'Do not ship duplicate IDs, stray braces, or broken event bindings.',
-    'Always show current loaded version, latest detected version, and a hard refresh update control in the top ribbon.',
+    'Always unify current loaded version, latest detected version, and hard refresh update into one always-visible version check button in the top ribbon.',
     'Only glow the update button when a newer version is detected. Auto-refresh only when the page is hidden or the user is idle.',
     'If the owner account is authenticated, reset the owner wallet to €3000 at local midnight exactly once per day.',
     'Astranov AI helper visual identity is a winged Nordic warrior, never a halo angel or bug-like figure.',
@@ -1912,7 +2286,10 @@ var APP_GUARDRAILS = Object.freeze({
     'Default to minimal controls. Hide non-essential buttons until the AI helper needs them or the user requests them.',
     'Only the authenticated owner may grant persistent AI UI repair authority by direct verbal or typed instruction.',
     'Globe view is the startup UI. The AI helper is visible on globe and map, activates immediately, and may request core permissions at startup.',
-    'Always keep a glowing Zoom to My City control available on globe and map.'
+    'Always keep a glowing Zoom to My City control available on globe and map.',
+    'Empty buttons are forbidden. Every visible top ribbon control must have a visible symbol or label.',
+    'Chat window must never exceed two-thirds of the viewport height. The AI helper must always render above it.',
+    'Radar and performance HUD must support one click visible, second click expanded, third click reset, and tap-hold drag.'
   ]
 });
 
@@ -2123,21 +2500,24 @@ function setVersionRibbon(currentVersion, latestVersion){
   var lat = document.getElementById('vlatest');
   var btn = document.getElementById('force-update-btn');
   var btnCopy = document.getElementById('force-update-copy');
-  var current = String(currentVersion || APP_VERSION || 'V2');
-  var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V2');
+  var current = String(currentVersion || APP_VERSION || 'V4');
+  var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V4');
   var needs = latest !== current;
   if(cur) cur.textContent = current;
-  if(lat) lat.textContent = latest;
-  if(lat) lat.className = needs ? 'version-value vlatest-old' : 'version-value vlatest-ok';
+  if(lat){
+    lat.textContent = latest;
+    lat.className = needs ? 'version-value vlatest-old' : 'version-value vlatest-ok';
+  }
   if(btn){
     btn.classList.toggle('needs-update', needs);
     btn.classList.toggle('up-to-date', !needs);
-    btn.setAttribute('title', needs ? ('Update available. Current ' + current + ' · Latest ' + latest) : ('Up to date. Current ' + current + ' · Latest ' + latest));
-    btn.setAttribute('aria-label', needs ? ('Hard refresh update from ' + current + ' to ' + latest) : ('Hard refresh current build ' + current));
+    btn.dataset.currentVersion = current;
+    btn.dataset.latestVersion = latest;
+    btn.setAttribute('title', needs ? ('Update available. Current ' + current + ' · Latest ' + latest + ' · Click for hard refresh.') : ('Current ' + current + ' · Latest ' + latest + ' · Hard refresh available.'));
+    btn.setAttribute('aria-label', needs ? ('Version check. Current ' + current + '. Latest ' + latest + '. Hard refresh update available.') : ('Version check. Current ' + current + '. Latest ' + latest + '. Already up to date.'));
   }
-  if(btnCopy) btnCopy.textContent = needs ? ('Update ' + current + '→' + latest) : ('Refresh ' + current);
+  if(btnCopy) btnCopy.textContent = needs ? 'Hard refresh update' : 'Up to date';
 }
-
 
 function pauseUiMedia(paused){
   try{
@@ -2158,7 +2538,7 @@ function setPausedState(paused){
     btn.setAttribute('aria-pressed', APP_PAUSED ? 'true' : 'false');
     btn.setAttribute('title', APP_PAUSED ? 'Resume visual motion and media' : 'Pause visual motion and media');
   }
-  if(lbl) lbl.textContent = APP_PAUSED ? 'OFF' : 'ON';
+  if(lbl) lbl.textContent = APP_PAUSED ? 'PAUSE' : 'LIVE';
   pauseUiMedia(APP_PAUSED);
   try{ localStorage.setItem(APP_PAUSE_KEY, APP_PAUSED ? '1' : '0'); }catch(e){}
   if(window.showAstranovaStatusBubble){
@@ -2186,34 +2566,50 @@ function aiSuperviseLayout(){
   var body = document.body;
   if(!body) return;
   var topbar = document.getElementById('topbar');
+  var stage = document.getElementById('stage');
   var bottombar = document.getElementById('bottombar');
   var cmd = document.getElementById('cmd-response');
   var helper = document.getElementById('astranova-wrapper');
   var locate = document.getElementById('locate-btn');
   var zoom = document.getElementById('zoom-btns');
   var perf = document.getElementById('perf-hud');
+  var compass = document.getElementById('compass-hud');
   var leftDock = document.getElementById('context-left');
   var rightDock = document.getElementById('context-right');
   var w = window.innerWidth || document.documentElement.clientWidth || 1280;
   var h = window.innerHeight || document.documentElement.clientHeight || 720;
+  var topbarH = topbar ? Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || topbar.offsetHeight || 52)) : 52;
+  var bottomSpace = (bottombar ? bottombar.offsetHeight : 60);
 
   body.classList.toggle('narrow-ui', w < 980 || h < 680);
+
   if(topbar){
     var left = topbar.querySelector('.tb-left');
     var center = topbar.querySelector('.tb-center');
     var right = topbar.querySelector('.tb-right');
-    var total = (left ? left.scrollWidth : 0) + (center ? center.scrollWidth : 0) + (right ? right.scrollWidth : 0) + 80;
-    body.classList.toggle('compact-ribbon', total > w || w < 1180);
-    body.classList.toggle('micro-ribbon', total > (w - 70) || w < 860 || h < 620);
+    var total = (left ? left.scrollWidth : 0) + (center ? center.scrollWidth : 0) + (right ? right.scrollWidth : 0) + 100;
+    body.classList.toggle('compact-ribbon', total > (w - 30) || w < 1260);
+    body.classList.toggle('micro-ribbon', total > (w - 80) || w < 940 || h < 680);
+    body.classList.toggle('wrap-ribbon', total > (w - 20) || w < 760);
   }
-  var bottomSpace = (bottombar ? bottombar.offsetHeight : 60);
+
+  if(stage){
+    stage.style.top = topbarH + 'px';
+    stage.style.bottom = bottomSpace + 'px';
+  }
+
   [leftDock,rightDock].forEach(function(dock){
     if(!dock) return;
-    dock.style.top = (topbar ? topbar.offsetHeight + 12 : 52) + 'px';
+    dock.style.top = (topbarH + 12) + 'px';
     dock.style.bottom = (bottomSpace + 12) + 'px';
   });
+
+  var maxChat = Math.max(160, Math.floor(h * (2/3)));
+  if(typeof _chatHeight === 'number' && _chatHeight > maxChat) _chatHeight = maxChat;
+
   if(cmd){
     cmd.style.bottom = bottomSpace + 'px';
+    cmd.style.maxHeight = maxChat + 'px';
     if(w > 1040){
       cmd.style.left = Math.max(0, Math.round((w - 980) / 2)) + 'px';
       cmd.style.right = Math.max(0, Math.round((w - 980) / 2)) + 'px';
@@ -2221,13 +2617,27 @@ function aiSuperviseLayout(){
       cmd.style.left = '0';
       cmd.style.right = '0';
     }
+    if(cmd.classList.contains('expanded')){
+      cmd.style.maxHeight = Math.min(maxChat, Math.max(160, _chatHeight || maxChat)) + 'px';
+      var conv = document.getElementById('ai-conv');
+      if(conv) conv.style.maxHeight = Math.max(100, Math.min(maxChat, Math.max(160, _chatHeight || maxChat)) - 20) + 'px';
+    }
   }
+
   if(helper){
-    helper.style.bottom = (bottomSpace + 10) + 'px';
-    helper.style.right = body.classList.contains('micro-ribbon') ? '14px' : '56px';
+    var helperH = Math.max(140, helper.offsetHeight || 170);
+    var helperBottom = bottomSpace + 14;
+    if(cmd && getComputedStyle(cmd).display !== 'none'){
+      var cmdRect = cmd.getBoundingClientRect();
+      helperBottom = Math.max(helperBottom, Math.round(h - cmdRect.top + 14));
+    }
+    var maxBottom = Math.max(helperBottom, h - topbarH - helperH - 20);
+    helper.style.bottom = Math.min(helperBottom, maxBottom) + 'px';
+    helper.style.right = body.classList.contains('micro-ribbon') ? '14px' : '54px';
   }
+
   if(locate){
-    locate.style.bottom = (bottomSpace + (body.classList.contains('micro-ribbon') ? 82 : 96)) + 'px';
+    locate.style.bottom = (bottomSpace + (body.classList.contains('micro-ribbon') ? 84 : 100)) + 'px';
     locate.style.right = body.classList.contains('micro-ribbon') ? '10px' : '14px';
   }
   if(zoom){
@@ -2235,17 +2645,19 @@ function aiSuperviseLayout(){
     zoom.style.right = body.classList.contains('micro-ribbon') ? '10px' : '14px';
   }
   if(perf){
-    perf.style.top = (topbar ? topbar.offsetHeight + 12 : 52) + 'px';
-    perf.style.left = '16px';
+    if(!perf.style.left || perf.style.left == '16px') perf.style.left = '16px';
+    if(!perf.style.top || perf.style.top == '56px') perf.style.top = (topbarH + 12) + 'px';
   }
-  if(helper && cmd && rectsOverlap(helper.getBoundingClientRect(), cmd.getBoundingClientRect(), 8)){
-    helper.style.bottom = (bottomSpace + 132) + 'px';
+  if(compass){
+    if(!compass.style.right || compass.style.right == '18px') compass.style.right = '16px';
+    if(!compass.style.top || compass.style.top == '56px') compass.style.top = (topbarH + 12) + 'px';
   }
+
   if(helper && rightDock && rectsOverlap(helper.getBoundingClientRect(), rightDock.getBoundingClientRect(), 8)){
-    helper.style.right = '92px';
+    helper.style.right = '94px';
   }
   if(locate && helper && rectsOverlap(locate.getBoundingClientRect(), helper.getBoundingClientRect(), 8)){
-    locate.style.bottom = (bottomSpace + 168) + 'px';
+    locate.style.bottom = (bottomSpace + 182) + 'px';
   }
   if(window.getUiPolicy){
     var policy = getUiPolicy();
@@ -2734,8 +3146,8 @@ function initGadgetCycle(elId, opts){
 }
 
 setTimeout(function(){
-  initGadgetCycle('compass-hud', { allowExpand:true, holdMs:420 });
-  initGadgetCycle('perf-hud', { allowExpand:true, holdMs:420 });
+  initGadgetCycle('compass-hud', { allowExpand:true, holdMs:3000 });
+  initGadgetCycle('perf-hud', { allowExpand:true, holdMs:3000 });
 }, 500);
 
 function setGuestState() {
@@ -6414,7 +6826,7 @@ function expandConversation(){
   var resp = document.getElementById('cmd-response');
   resp.className = 'expanded';
   resp.style.display = 'flex';
-  _chatHeight = Math.round(window.innerHeight * 0.66);
+  _chatHeight = Math.floor(window.innerHeight * (2/3));
   resp.style.maxHeight = _chatHeight + 'px';
   var conv = document.getElementById('ai-conv');
   if(conv){ conv.style.maxHeight = (_chatHeight - 20) + 'px'; }
@@ -6427,7 +6839,7 @@ function expandConversation(){
   if(!handle || !resp) return;
   var dragging = false, startY = 0, startH = 0;
   var lastY = 0, lastTime = 0, velocity = 0;
-  var maxH = Math.round(window.innerHeight * 0.66);
+  var maxH = Math.floor(window.innerHeight * (2/3));
   var minH = 80;
 
   function onStart(y){
@@ -6461,7 +6873,7 @@ function expandConversation(){
     }
     // Fast swipe up = maximize
     else if(velocity > 800){
-      _chatHeight = Math.round(window.innerHeight * 0.85);
+      _chatHeight = Math.floor(window.innerHeight * (2/3));
       resp.style.maxHeight = _chatHeight + 'px';
     }
   }
@@ -6472,7 +6884,7 @@ function expandConversation(){
   handle.addEventListener('touchstart', function(e){ onStart(e.touches[0].clientY); }, {passive:true});
   window.addEventListener('touchmove', function(e){ if(dragging) onMove(e.touches[0].clientY); }, {passive:true});
   window.addEventListener('touchend', onEnd);
-  window.addEventListener('resize', function(){ maxH = Math.round(window.innerHeight * 0.66); });
+  window.addEventListener('resize', function(){ maxH = Math.floor(window.innerHeight * (2/3)); if(_chatHeight > maxH) _chatHeight = maxH; });
 })();
 
 /* VOICE INPUT — Web Speech API */
@@ -7122,15 +7534,15 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV V3
+SPARTAN SCRIPT — ASTRANOV V5
 Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script V3 | Single Source of Record
+Architecture: Spartan Script V5 | Single Source of Record
 
 IDENTITY [LOCKED]
 App name: ASTRANOV
 Description: Internet Operating System
 Version rule: V followed by an integer only
-Current version: V3
+Current version: V5
 Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
 AUTHORITY [LOCKED]
@@ -7139,7 +7551,7 @@ If a helper conflicts with this script, this script wins.
 If uncertain, preserve working behavior and omit risky edits.
 
 TOP RIBBON [LOCKED]
-Top ribbon content must stay centered, balanced, and readable.
+Top ribbon content must stay centered, grouped, labeled, balanced, and readable with no empty controls.
 Always show:
 1. Current loaded version
 2. Latest detected version
@@ -7226,14 +7638,14 @@ Astranov helper supervises the full graphical UI.
 The UI must dynamically rearrange, compact, trim labels, and reposition floating controls so that no critical element overlaps another on any common screen size or screen rotation.
 Priority order:
 1. Keep globe/map visible
-2. Keep top ribbon readable
+2. Keep top ribbon readable and self-healing
 3. Keep bottom chat/channel bar usable
 4. Keep helper visible
 5. Keep city-jump and contextual controls reachable
 If a conflict occurs, compress or hide secondary controls before moving or hiding primary controls.
 
 CHANNEL VIDEO PINNING [LOCKED]
-Top ribbon must include a large premium YouTube video posting control with plus and camera icon, placed to the left of the user login badge.
+Top ribbon must include one unified version-check button, visible wallet balance, a labeled video posting control with plus and camera icon to the left of the user login badge, and a round glowing pause orb with a visible power symbol on the far right.
 Video posting starts from the user's current location and the active app channel selected in the dropdown above the chat window.
 AI channel is not a posting lane. Valid posting lanes are Global, Local, and Team.
 The app should auto-fill video title and description with the user's name, current location, current channel, and current local date.
@@ -7274,7 +7686,7 @@ ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
 6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
 7. Never duplicate IDs, widgets, or handlers.
 8. Never leave stray braces, broken HTML, or dead event bindings.
-9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, balance sits in the ribbon center, pause switch sits at the user-right edge, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD click-cycle works, HUD drag works, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, one unified version-check ribbon button works, wallet balance sits in the ribbon center, pause orb sits at the user-right edge, no ribbon button is empty, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD single click reveals, second click expands, third click resets, hold drag works, chat stays at or below two-thirds height, helper stays above chat, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
 10. If any guardrail fails, revert the patch instead of improvising.
 
 MISSION [LOCKED]
@@ -7288,18 +7700,32 @@ DESIGN [LOCKED]
 Electric blue #00c8ff / black / transparent.
 Top ribbon centered, center stage, contextual side controls, bottom AI command/chat bar.
 No rogue relocations. No fake rebranding. No hidden critical controls.
+V5 FLOATING UI OVERRIDE [LOCKED]
+Top and bottom ribbons must not render as full-width bars. Keep only floating controls in their place.
+Visible permanent floating controls:
+1. One unified ASTRANOV button showing app name, loaded version, latest version, and update status
+2. Wallet balance
+3. Video posting
+4. User login badge
+5. Pause orb
+All permanent controls must be floatable after a 3-second hold or click-hold. Persist user positions per device.
+The unified ASTRANOV button is also the hard refresh / version check button. It must clearly state Loaded and Latest.
+The chat composer stays bottom-center by default, remains expandable/contractible, never exceeds two-thirds of viewport height, and becomes floatable after a 3-second hold on the channel bar.
+Astranov helper must always stay above the chat window.
+Performance HUD and compass HUD must default to a slightly larger readable size, preserve the 1-click / 2-click / 3-click visibility cycle, and support drag plus resize without leaving safe screen bounds.
+AI provider research may rescan configured provider manifests once per day while the app is open. If a provider manifest includes source URLs or docs URLs, cite them in chat notifications. Never claim official no-key browser support where it does not exist.
 -->
 
-<!-- Embedded Spartan Script V3 -->
-<textarea id="spartan-script" style="display:none;">SPARTAN SCRIPT — ASTRANOV V3
+<!-- Embedded Spartan Script V5 -->
+<textarea id="spartan-script" style="display:none;">SPARTAN SCRIPT — ASTRANOV V5
 Creator &amp; Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script V3 | Single Source of Record
+Architecture: Spartan Script V5 | Single Source of Record
 
 IDENTITY [LOCKED]
 App name: ASTRANOV
 Description: Internet Operating System
 Version rule: V followed by an integer only
-Current version: V3
+Current version: V5
 Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
 AUTHORITY [LOCKED]
@@ -7308,7 +7734,7 @@ If a helper conflicts with this script, this script wins.
 If uncertain, preserve working behavior and omit risky edits.
 
 TOP RIBBON [LOCKED]
-Top ribbon content must stay centered, balanced, and readable.
+Top ribbon content must stay centered, grouped, labeled, balanced, and readable with no empty controls.
 Always show:
 1. Current loaded version
 2. Latest detected version
@@ -7395,14 +7821,14 @@ Astranov helper supervises the full graphical UI.
 The UI must dynamically rearrange, compact, trim labels, and reposition floating controls so that no critical element overlaps another on any common screen size or screen rotation.
 Priority order:
 1. Keep globe/map visible
-2. Keep top ribbon readable
+2. Keep top ribbon readable and self-healing
 3. Keep bottom chat/channel bar usable
 4. Keep helper visible
 5. Keep city-jump and contextual controls reachable
 If a conflict occurs, compress or hide secondary controls before moving or hiding primary controls.
 
 CHANNEL VIDEO PINNING [LOCKED]
-Top ribbon must include a video posting control.
+Top ribbon must include one unified version-check button, visible wallet balance, a labeled video posting control, user badge, and a round glowing pause orb with a visible power symbol.
 Video posts are attached to the user&#x27;s current location and pinned into the active app channel selected in the dropdown above the chat window.
 AI channel is not a posting lane. Valid posting lanes are Global, Local, and Team.
 Video pins must be visible only inside the selected channel feed in Astranov and only to signed-in users of the app.
@@ -7436,7 +7862,7 @@ ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
 6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
 7. Never duplicate IDs, widgets, or handlers.
 8. Never leave stray braces, broken HTML, or dead event bindings.
-9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, balance sits in the ribbon center, pause switch sits at the user-right edge, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD click-cycle works, HUD drag works, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, one unified version-check ribbon button works, wallet balance sits in the ribbon center, pause orb sits at the user-right edge, no ribbon button is empty, YouTube video button works, YouTube OAuth UI appears, upload chain can start, HUD single click reveals, second click expands, third click resets, hold drag works, chat stays at or below two-thirds height, helper stays above chat, channel bar stays in chat, compass stays bounded, AI cycle notifies the chat, local AI fallback answers, no syntax errors.
 10. If any guardrail fails, revert the patch instead of improvising.
 
 MISSION [LOCKED]
@@ -7449,7 +7875,23 @@ Single HTML | Supabase | Leaflet | Three.js | astranov.eu
 DESIGN [LOCKED]
 Electric blue #00c8ff / black / transparent.
 Top ribbon centered, center stage, contextual side controls, bottom AI command/chat bar.
-No rogue relocations. No fake rebranding. No hidden critical controls.</textarea>
+No rogue relocations. No fake rebranding. No hidden critical controls.
+
+V5 FLOATING UI OVERRIDE [LOCKED]
+Top and bottom ribbons must not render as full-width bars. Keep only floating controls in their place.
+Visible permanent floating controls:
+1. One unified ASTRANOV button showing app name, loaded version, latest version, and update status
+2. Wallet balance
+3. Video posting
+4. User login badge
+5. Pause orb
+All permanent controls must be floatable after a 3-second hold or click-hold. Persist user positions per device.
+The unified ASTRANOV button is also the hard refresh / version check button. It must clearly state Loaded and Latest.
+The chat composer stays bottom-center by default, remains expandable/contractible, never exceeds two-thirds of viewport height, and becomes floatable after a 3-second hold on the channel bar.
+Astranov helper must always stay above the chat window.
+Performance HUD and compass HUD must default to a slightly larger readable size, preserve the 1-click / 2-click / 3-click visibility cycle, and support drag plus resize without leaving safe screen bounds.
+AI provider research may rescan configured provider manifests once per day while the app is open. If a provider manifest includes source URLs or docs URLs, cite them in chat notifications. Never claim official no-key browser support where it does not exist.
+</textarea>
 
 <!-- POST CHOOSER (map right-click / long-press) -->
 <div id="post-chooser">
@@ -9942,6 +10384,405 @@ No rogue relocations. No fake rebranding. No hidden critical controls.</textarea
   });
 })();
 
+/* === V5 FLOATING UI PATCH === */
+(function(){
+  function safeJsonGet(key, fallback){
+    try{
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){
+      return fallback;
+    }
+  }
+  function safeJsonSet(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+  }
+  var FLOAT_KEY_PREFIX = 'astranov.float.v5.';
+  var SIZE_KEY_PREFIX = 'astranov.size.v5.';
+  var DAILY_AI_RESEARCH_KEY = 'astranov.ai.daily.research.date';
+  var FLOAT_HOLD_MS = 3000;
+  var V5_FLOAT_IDS = ['force-update-btn','balance-display','video-post-btn','user-badge','pause-ui-btn','bottombar','perf-hud','compass-hud'];
+  APP_VERSION = 'V5';
+  APP_ARCH = 'Spartan Script V5';
+  APP_LATEST_VERSION = APP_LATEST_VERSION || APP_VERSION;
+
+  function cleanFloatRect(rect, el){
+    var pad = 8;
+    var maxLeft = Math.max(pad, window.innerWidth - rect.width - pad);
+    var maxTop = Math.max(pad, window.innerHeight - rect.height - pad);
+    return {
+      left: Math.min(Math.max(rect.left, pad), maxLeft),
+      top: Math.min(Math.max(rect.top, pad), maxTop)
+    };
+  }
+
+  function saveFloatState(el){
+    if(!el || !el.id) return;
+    var rect = el.getBoundingClientRect();
+    safeJsonSet(FLOAT_KEY_PREFIX + el.id, {
+      left: Math.round(rect.left),
+      top: Math.round(rect.top),
+      width: Math.round(rect.width),
+      height: Math.round(rect.height)
+    });
+  }
+
+  function restoreFloatState(el){
+    if(!el || !el.id) return false;
+    var data = safeJsonGet(FLOAT_KEY_PREFIX + el.id, null);
+    if(!data || !Number.isFinite(data.left) || !Number.isFinite(data.top)) return false;
+    el.style.position = 'fixed';
+    el.style.left = data.left + 'px';
+    el.style.top = data.top + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+    el.style.transform = 'none';
+    el.dataset.userPlaced = '1';
+    el.classList.add('floatable-user-placed');
+    return true;
+  }
+
+  function clearDefaultTransform(el){
+    if(!el) return;
+    var rect = el.getBoundingClientRect();
+    el.style.position = 'fixed';
+    el.style.left = rect.left + 'px';
+    el.style.top = rect.top + 'px';
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+    el.style.transform = 'none';
+  }
+
+  function makeFloatable(elOrId, opts){
+    opts = opts || {};
+    var el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if(!el || el.dataset.v5FloatBound === '1') return;
+    el.dataset.v5FloatBound = '1';
+    restoreFloatState(el);
+
+    var handle = opts.handleSelector ? el.querySelector(opts.handleSelector) : el;
+    if(!handle) handle = el;
+    var pointerDown = false, dragging = false, holdTimer = null, startX = 0, startY = 0, baseLeft = 0, baseTop = 0, pointerOffsetX = 0, pointerOffsetY = 0;
+    var MOVE_TOL = 8;
+    function point(ev){ return ev.touches ? ev.touches[0] : ev; }
+    function cancelHold(){ if(holdTimer){ clearTimeout(holdTimer); holdTimer = null; } el.classList.remove('float-holding'); }
+    function clampAndSave(){
+      var rect = el.getBoundingClientRect();
+      var next = cleanFloatRect(rect, el);
+      el.style.left = next.left + 'px';
+      el.style.top = next.top + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.transform = 'none';
+      el.dataset.userPlaced = '1';
+      el.classList.add('floatable-user-placed');
+      saveFloatState(el);
+    }
+    function startDrag(ev){
+      var pt = point(ev);
+      dragging = true;
+      clearDefaultTransform(el);
+      var rect = el.getBoundingClientRect();
+      baseLeft = rect.left;
+      baseTop = rect.top;
+      pointerOffsetX = pt.clientX - rect.left;
+      pointerOffsetY = pt.clientY - rect.top;
+      el.classList.add('moveable');
+    }
+    function onDown(ev){
+      if(opts.cancelSelector && ev.target && ev.target.closest && ev.target.closest(opts.cancelSelector)) return;
+      var pt = point(ev);
+      pointerDown = true;
+      dragging = false;
+      startX = pt.clientX;
+      startY = pt.clientY;
+      cancelHold();
+      el.classList.add('float-holding');
+      holdTimer = setTimeout(function(){
+        if(!pointerDown) return;
+        startDrag(ev);
+      }, Number.isFinite(opts.holdMs) ? opts.holdMs : FLOAT_HOLD_MS);
+    }
+    function onMove(ev){
+      if(!pointerDown) return;
+      var pt = point(ev);
+      var dx = pt.clientX - startX;
+      var dy = pt.clientY - startY;
+      if(!dragging && (Math.abs(dx) > MOVE_TOL || Math.abs(dy) > MOVE_TOL)) cancelHold();
+      if(!dragging) return;
+      if(ev.preventDefault) ev.preventDefault();
+      el.style.left = (pt.clientX - pointerOffsetX) + 'px';
+      el.style.top = (pt.clientY - pointerOffsetY) + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.transform = 'none';
+    }
+    function onUp(){
+      if(!pointerDown) return;
+      pointerDown = false;
+      cancelHold();
+      if(dragging){
+        dragging = false;
+        el.classList.remove('moveable');
+        clampAndSave();
+      }
+    }
+
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, {passive:true});
+    window.addEventListener('mousemove', onMove, {passive:false});
+    window.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+    window.addEventListener('orientationchange', function(){ setTimeout(clampAndSave, 120); });
+  }
+
+  function ensureResizeHandle(elId, opts){
+    opts = opts || {};
+    var el = document.getElementById(elId);
+    if(!el || el.dataset.v5ResizeBound === '1') return;
+    el.dataset.v5ResizeBound = '1';
+    var sizeKey = SIZE_KEY_PREFIX + elId;
+    var stored = safeJsonGet(sizeKey, null);
+    if(stored && Number.isFinite(stored.size)){
+      el.style.width = stored.size + 'px';
+      el.style.height = stored.size + 'px';
+    }
+    var handle = document.createElement('div');
+    handle.className = 'ui-resize-handle';
+    handle.title = 'Resize';
+    el.appendChild(handle);
+    var resizing = false, startX = 0, startY = 0, startSize = 0;
+    var minSize = opts.min || 96, maxSize = opts.max || 260;
+    function onDown(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      var pt = ev.touches ? ev.touches[0] : ev;
+      resizing = true;
+      startX = pt.clientX;
+      startY = pt.clientY;
+      startSize = Math.max(el.offsetWidth || minSize, minSize);
+    }
+    function onMove(ev){
+      if(!resizing) return;
+      var pt = ev.touches ? ev.touches[0] : ev;
+      var delta = Math.max(pt.clientX - startX, pt.clientY - startY);
+      var size = Math.min(maxSize, Math.max(minSize, startSize + delta));
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+    }
+    function onUp(){
+      if(!resizing) return;
+      resizing = false;
+      var size = Math.max(parseInt(el.style.width, 10) || el.offsetWidth || minSize, minSize);
+      safeJsonSet(sizeKey, { size:size });
+    }
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, {passive:false});
+    window.addEventListener('mousemove', onMove, {passive:false});
+    window.addEventListener('touchmove', onMove, {passive:false});
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+  }
+
+  function setButtonHtml(){
+    var btn = document.getElementById('force-update-btn');
+    if(!btn) return;
+    btn.innerHTML = ''
+      + '<span class="update-icon" aria-hidden="true">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 12a9 9 0 1 1-2.64-6.36"></path>'
+      + '<path d="M21 3v6h-6"></path>'
+      + '</svg>'
+      + '</span>'
+      + '<span class="version-summary">'
+      + '<span class="app-badge-title">ASTRANOV</span>'
+      + '<span class="version-line"><span class="version-kicker">Loaded</span><span class="version-value vcurrent" id="vcurrent">' + (APP_VERSION || 'V5') + '</span></span>'
+      + '<span class="version-line"><span class="version-kicker">Latest</span><span class="version-value vlatest-ok" id="vlatest">' + (APP_LATEST_VERSION || APP_VERSION || 'V5') + '</span></span>'
+      + '</span>'
+      + '<span class="update-copy" id="force-update-copy">Checking</span>';
+    btn.title = 'Astranov version check and hard refresh';
+    btn.onclick = function(){
+      if((APP_LATEST_VERSION || APP_VERSION) !== APP_VERSION) hardRefreshUpdate(APP_LATEST_VERSION);
+      else checkLatestVersion(false);
+    };
+  }
+
+  var _setVersionRibbonV4 = window.setVersionRibbon;
+  window.setVersionRibbon = function(currentVersion, latestVersion){
+    if(typeof _setVersionRibbonV4 === 'function') _setVersionRibbonV4(currentVersion, latestVersion);
+    setButtonHtml();
+    var btn = document.getElementById('force-update-btn');
+    var cur = document.getElementById('vcurrent');
+    var lat = document.getElementById('vlatest');
+    var copy = document.getElementById('force-update-copy');
+    var current = String(currentVersion || APP_VERSION || 'V5');
+    var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V5');
+    APP_LATEST_VERSION = latest;
+    var needs = current !== latest;
+    if(cur) cur.textContent = current;
+    if(lat){
+      lat.textContent = latest;
+      lat.className = needs ? 'version-value vlatest-old' : 'version-value vlatest-ok';
+    }
+    if(copy) copy.textContent = needs ? 'Hard refresh update' : 'Up to date';
+    if(btn){
+      btn.classList.toggle('needs-update', needs);
+      btn.classList.toggle('up-to-date', !needs);
+      btn.setAttribute('aria-label', needs ? ('Astranov ' + current + ' loaded. Latest ' + latest + '. Hard refresh update available.') : ('Astranov ' + current + ' loaded. Latest ' + latest + '. Already up to date.'));
+    }
+  };
+
+  function applyFloatingDefaults(){
+    var stage = document.getElementById('stage');
+    var bar = document.getElementById('bottombar');
+    var cmd = document.getElementById('cmd-response');
+    var helper = document.getElementById('astranova-wrapper');
+    var perf = document.getElementById('perf-hud');
+    var compass = document.getElementById('compass-hud');
+    var zoom = document.getElementById('zoom-btns');
+    var locate = document.getElementById('locate-btn');
+    var globe = document.getElementById('globe-btn');
+    var h = window.innerHeight || 800;
+    var w = window.innerWidth || 1280;
+    if(stage){
+      stage.style.top = '0px';
+      stage.style.bottom = '0px';
+    }
+    if(bar && bar.dataset.userPlaced !== '1'){
+      bar.style.position = 'fixed';
+      bar.style.left = '50%';
+      bar.style.bottom = '16px';
+      bar.style.top = 'auto';
+      bar.style.right = 'auto';
+      bar.style.transform = 'translateX(-50%)';
+      bar.style.width = 'min(92vw,760px)';
+    }
+    var maxChat = Math.floor(h * (2/3));
+    if(typeof _chatHeight === 'number' && _chatHeight > maxChat) _chatHeight = maxChat;
+    if(cmd){
+      cmd.style.maxHeight = maxChat + 'px';
+      if(cmd.dataset.userPlaced !== '1'){
+        cmd.style.position = 'fixed';
+        cmd.style.left = '50%';
+        cmd.style.bottom = '86px';
+        cmd.style.top = 'auto';
+        cmd.style.right = 'auto';
+        cmd.style.transform = 'translateX(-50%)';
+        cmd.style.width = 'min(92vw,760px)';
+      }
+      var conv = document.getElementById('ai-conv');
+      if(conv && cmd.classList.contains('expanded')){
+        conv.style.maxHeight = Math.max(120, Math.min(maxChat, _chatHeight || maxChat) - 48) + 'px';
+      }
+    }
+    if(helper){
+      var cmdRect = cmd && getComputedStyle(cmd).display !== 'none' ? cmd.getBoundingClientRect() : null;
+      var baseBottom = 120;
+      if(cmdRect) baseBottom = Math.max(baseBottom, Math.round(h - cmdRect.top + 10));
+      helper.style.bottom = baseBottom + 'px';
+      if(helper.dataset.userPlaced !== '1') helper.style.right = '28px';
+    }
+    if(perf && perf.dataset.userPlaced !== '1'){
+      perf.style.left = '18px';
+      perf.style.top = '18px';
+      perf.style.right = 'auto';
+      perf.style.transform = 'none';
+    }
+    if(compass && compass.dataset.userPlaced !== '1'){
+      compass.style.right = '18px';
+      compass.style.top = '18px';
+      compass.style.left = 'auto';
+      compass.style.transform = 'none';
+    }
+    if(zoom && zoom.dataset.userPlaced !== '1'){
+      zoom.style.bottom = '98px';
+      zoom.style.right = '16px';
+    }
+    if(locate && locate.dataset.userPlaced !== '1'){
+      locate.style.bottom = '162px';
+      locate.style.right = '18px';
+    }
+    if(globe && globe.dataset.userPlaced !== '1'){
+      globe.style.top = '18px';
+    }
+  }
+
+  var _aiSuperviseLayoutV4 = window.aiSuperviseLayout;
+  window.aiSuperviseLayout = function(){
+    try{ if(typeof _aiSuperviseLayoutV4 === 'function') _aiSuperviseLayoutV4(); }catch(e){}
+    applyFloatingDefaults();
+  };
+
+  function initV5Floatability(){
+    makeFloatable('force-update-btn', { holdMs:3000 });
+    makeFloatable('balance-display', { holdMs:3000 });
+    makeFloatable('video-post-btn', { holdMs:3000 });
+    makeFloatable('user-badge', { holdMs:3000 });
+    makeFloatable('pause-ui-btn', { holdMs:3000 });
+    makeFloatable('bottombar', { holdMs:3000, cancelSelector:'input,textarea,select,button' });
+    makeFloatable('cmd-response', { holdMs:3000, handleSelector:'#chat-channel-bar', cancelSelector:'.ai-conv,textarea,input,select,button,#chat-drag' });
+    makeFloatable('perf-hud', { holdMs:3000 });
+    makeFloatable('compass-hud', { holdMs:3000 });
+    ensureResizeHandle('perf-hud', { min:104, max:260 });
+    ensureResizeHandle('compass-hud', { min:104, max:260 });
+  }
+
+  async function runDailyAiResearch(force){
+    var today = new Date().toISOString().slice(0,10);
+    var last = '';
+    try{ last = String(localStorage.getItem(DAILY_AI_RESEARCH_KEY) || ''); }catch(e){}
+    if(!force && last === today) return;
+    try{ localStorage.setItem(DAILY_AI_RESEARCH_KEY, today); }catch(e){}
+    try{ localStorage.removeItem(AI_PROVIDER_SCAN_KEY); }catch(e){}
+    addAiMessage('system-msg', 'AI Engine', 'Daily AI provider research started. Scanning configured provider manifests while the app is active.');
+    try{
+      var providers = await discoverAiProviders();
+      var notes = providers
+        .filter(function(p){ return p.kind === 'endpoint' || p.kind === 'local'; })
+        .map(function(p){ return p.label + (p.url ? (' · ' + p.url) : ''); })
+        .join(' | ');
+      if(notes){
+        addAiMessage('system-msg', 'AI Engine', 'AI registry refreshed: ' + notes);
+      }
+    }catch(e){
+      addAiMessage('system-msg', 'AI Engine', 'Daily AI provider research could not refresh right now.');
+    }
+  }
+
+  function syncSpartanTextareaV5(){
+    var ta = document.getElementById('spartan-script');
+    if(!ta) return;
+    if(ta.value.indexOf('V5 FLOATING UI OVERRIDE [LOCKED]') === -1){
+      ta.value = ta.value.replace(/SPARTAN SCRIPT — ASTRANOV V\d+/g, 'SPARTAN SCRIPT — ASTRANOV V5')
+        .replace(/Architecture: Spartan Script V\d+/g, 'Architecture: Spartan Script V5')
+        .replace(/Current version: V\d+/g, 'Current version: V5')
+        + '\n\nV5 FLOATING UI OVERRIDE [LOCKED]\n'
+        + 'Top and bottom ribbons are removed as full-width bars. Keep only floating controls in their place.\n'
+        + 'All permanent controls become floatable after a 3-second hold and must persist user positions per device.\n'
+        + 'The unified ASTRANOV button must show app name, loaded version, latest version, and update status in one control.\n'
+        + 'Chat stays bottom-center by default, remains expandable/contractible, never exceeds two-thirds viewport height, and becomes floatable after a 3-second hold on the channel bar.\n'
+        + 'Astranov helper always stays above chat.\n'
+        + 'Performance HUD and compass HUD default larger, keep click-cycle behavior, and support drag plus resize.\n'
+        + 'Daily AI provider research may rescan configured provider manifests once per day while the app is open. If manifests include source URLs, cite them in chat notifications. Never claim official no-key browser support where it does not exist.\n';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setButtonHtml();
+    initV5Floatability();
+    applyFloatingDefaults();
+    syncSpartanTextareaV5();
+    setTimeout(function(){ setVersionRibbon(APP_VERSION, APP_LATEST_VERSION); }, 60);
+    setTimeout(function(){ runDailyAiResearch(false); }, 2600);
+  });
+  window.addEventListener('resize', function(){ setTimeout(applyFloatingDefaults, 20); }, {passive:true});
+  window.addEventListener('orientationchange', function(){ setTimeout(applyFloatingDefaults, 120); });
+  window.addEventListener('load', function(){ setTimeout(applyFloatingDefaults, 140); });
+  setInterval(function(){
+    if(!APP_PAUSED && document.visibilityState === 'visible') runDailyAiResearch(false);
+  }, 60 * 60 * 1000);
+})();
 </script>
 
 </body>
