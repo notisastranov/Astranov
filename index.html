@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov v3.4.0</title>
+<title>Astranov V3</title>
+<meta name="astranov-version" content="V3"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -21,20 +22,90 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 
 /* TOP BAR - always visible, locked */
 #topbar{
-  position:fixed;top:0;left:0;right:0;height:36px;
-  display:flex;align-items:center;justify-content:space-between;
+  position:fixed;top:0;left:0;right:0;height:40px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  align-items:center;
   background:rgba(3,8,16,0.97);border-bottom:1px solid var(--lb);
-  padding:0 12px;z-index:200;
+  padding:0 12px;z-index:200;gap:10px;
 }
-.tb-left{display:flex;align-items:center;gap:10px;}
-.tb-center{display:flex;align-items:center;gap:10px;}
-.tb-right{display:flex;align-items:center;gap:10px;}
+.tb-left,.tb-center,.tb-right{min-width:0;display:flex;align-items:center;gap:8px;}
+.tb-left{justify-content:flex-start;}
+.tb-center{justify-content:center;flex-wrap:nowrap;overflow:hidden;}
+.tb-right{justify-content:flex-end;}
 .brand{font-family:var(--fhud);font-size:10px;color:var(--la);text-shadow:0 0 12px var(--la);letter-spacing:0.22em;}
 .lbadge{font-size:8px;padding:1px 5px;border:1px solid var(--lb);color:var(--la);border-radius:2px;text-transform:uppercase;}
 .vinfo{font-size:8px;color:var(--text-dim);font-family:var(--fhud);}
 .vcurrent{color:var(--la);}
 .vlatest-ok{color:var(--la);}
 .vlatest-old{color:var(--red);}
+#version-cluster{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:nowrap;max-width:100%;}
+.version-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border:1px solid var(--lb);border-radius:999px;background:rgba(0,200,255,0.06);white-space:nowrap;}
+.version-label{opacity:0.72;}
+.ribbon-btn,#force-update-btn{
+  height:24px;padding:0 11px;border:1px solid rgba(0,200,255,0.16);border-radius:999px;background:rgba(255,255,255,0.04);
+  color:var(--text-dim);font-size:9px;font-family:var(--font);letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.ribbon-btn:hover,#force-update-btn:hover{color:var(--text);border-color:rgba(0,200,255,0.34);}
+.ribbon-btn.active{color:#eaf8ff;border-color:rgba(0,200,255,0.40);background:rgba(0,200,255,0.14);box-shadow:0 0 14px rgba(0,200,255,0.12);}
+#pause-ui-btn.active{color:#ffd600;border-color:rgba(255,214,0,0.40);background:rgba(255,214,0,0.10);}
+#video-post-btn{color:#d8ecff;}
+#force-update-btn{opacity:0.55;}
+#force-update-btn.needs-update{opacity:1;color:#ffd600;border-color:rgba(255,214,0,0.40);background:rgba(255,214,0,0.10);box-shadow:0 0 16px rgba(255,214,0,0.14);animation:updatePulse 1.2s ease-in-out infinite;}
+#force-update-btn.hidden-update{display:none;}
+@keyframes updatePulse{0%,100%{transform:scale(1);box-shadow:0 0 10px rgba(255,214,0,0.12);}50%{transform:scale(1.03);box-shadow:0 0 18px rgba(255,214,0,0.28);}}
+body.compact-ribbon .version-label{display:none;}
+body.compact-ribbon #video-post-btn{padding:0 9px;}
+body.micro-ribbon #topbar{grid-template-columns:auto minmax(0,1fr) auto;padding:0 8px;gap:6px;}
+body.micro-ribbon .brand{font-size:9px;letter-spacing:0.12em;}
+body.micro-ribbon .tb-right #balance-display{display:none;}
+body.micro-ribbon #version-cluster{gap:4px;}
+body.micro-ribbon .version-chip{padding:2px 5px;}
+body.micro-ribbon #video-post-btn span,
+body.micro-ribbon #pause-ui-btn span,
+body.micro-ribbon #force-update-btn span{display:none;}
+body.app-paused *{scroll-behavior:auto !important;}
+body.app-paused .elf-wing-l,body.app-paused .elf-wing-r,body.app-paused #astranova-svg,body.app-paused #astranova-big{animation-play-state:paused !important;}
+body.app-paused .orb-card,body.app-paused .sig-dot,body.app-paused .iss-dot{animation-play-state:paused !important;}
+body.app-paused #stage{filter:saturate(0.86) brightness(0.92);}
+#ui-pause-indicator{
+  position:fixed;top:52px;left:50%;transform:translateX(-50%);z-index:205;
+  display:none;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,214,0,0.28);
+  background:rgba(10,18,28,0.72);color:#ffd600;font-size:11px;letter-spacing:0.08em;
+  backdrop-filter:blur(12px);box-shadow:0 10px 24px rgba(0,0,0,0.22);
+}
+body.app-paused #ui-pause-indicator{display:block;}
+#left-panel,#right-panel{display:none !important;}
+.video-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:340;background:rgba(3,8,16,0.58);backdrop-filter:blur(14px);}
+.video-modal.on{display:flex;}
+.video-sheet{
+  width:min(94vw,560px);max-height:min(88vh,760px);overflow:auto;padding:18px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(8,18,30,0.84),rgba(8,18,30,0.62));
+  border:1px solid rgba(0,200,255,0.16);box-shadow:0 18px 48px rgba(0,0,0,0.32);
+}
+.video-sheet.viewer{width:min(94vw,900px);}
+.video-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.video-grid .full{grid-column:1/-1;}
+.video-sheet label{display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px;}
+.video-sheet input,.video-sheet textarea,.video-sheet select{
+  width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(0,200,255,0.14);
+  color:var(--text);border-radius:12px;padding:10px 12px;font-size:13px;outline:none;
+}
+.video-sheet textarea{min-height:88px;resize:vertical;}
+.video-sheet .video-note,.video-sheet .video-inline-note{
+  font-size:11px;line-height:1.5;color:#c8efff;padding:10px 12px;border-radius:12px;
+  background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.12);
+}
+.video-sheet .video-inline-note.warn{color:#ffd600;border-color:rgba(255,214,0,0.16);background:rgba(255,214,0,0.08);}
+.video-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
+.video-actions button,.video-actions a{
+  border:1px solid rgba(0,200,255,0.20);background:rgba(255,255,255,0.04);color:#dff7ff;
+  padding:10px 16px;border-radius:12px;cursor:pointer;text-decoration:none;font-size:12px;
+}
+.video-actions .primary{background:rgba(0,200,255,0.14);color:#fff;}
+#video-viewer-frame{width:100%;aspect-ratio:16/9;border:0;border-radius:16px;background:#02070d;}
+#video-viewer-fallback{display:none;width:100%;border-radius:16px;background:#02070d;max-height:70vh;}
+body.narrow-ui .video-grid{grid-template-columns:1fr;}
+
 /* ═══ PERFORMANCE MONITOR (top-left, inside panels) ═══ */
 #perf-hud{
   position:absolute;top:38px;left:48px;z-index:65;
@@ -44,7 +115,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   transition:opacity 0.4s, width 0.4s, height 0.4s;
 }
 #perf-hud.visible{opacity:0.75;}
-#perf-hud.expanded{opacity:0.95;width:min(85vw,400px);height:min(85vw,400px);z-index:200;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);}
+#perf-hud.expanded{opacity:0.95;width:120px;height:120px;z-index:65;position:absolute;top:38px;left:48px;transform:none;}
 #perf-hud.has-critical{opacity:0.65;}
 #perf-hud.moveable{cursor:move;outline:1px dashed rgba(0,200,255,0.4);border-radius:50%;}
 #perf-svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(0,200,255,0.25));}
@@ -68,7 +139,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .balance-label{font-size:8px;color:var(--text-dim);}
 
 /* STAGE */
-#stage{position:fixed;top:36px;left:0;right:0;bottom:60px;}
+#stage{position:fixed;top:40px;left:0;right:0;bottom:60px;}
 #gc{position:absolute;inset:0;width:100%;height:100%;}
 #mc{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:10;}
 #ac{position:absolute;inset:0;width:100%;height:100%;display:none;}
@@ -91,9 +162,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .zoom-btn:hover{background:var(--la2);box-shadow:0 0 10px var(--la2);}
 
 /* locate me button */
-#locate-btn{position:absolute;bottom:140px;right:10px;z-index:60;display:none;flex-direction:column;align-items:center;gap:2px;padding:7px 10px;background:rgba(3,8,16,0.9);border:1px solid var(--la);border-radius:3px;cursor:pointer;color:var(--la);font-family:var(--fhud);font-size:8px;letter-spacing:0.1em;text-align:center;transition:all 0.2s;}
-#locate-btn:hover{background:var(--la2);}
+#locate-btn{position:absolute;bottom:86px;right:14px;z-index:68;display:none;align-items:center;gap:8px;padding:10px 14px;background:linear-gradient(180deg,rgba(0,200,255,0.18),rgba(0,200,255,0.09));border:1px solid rgba(0,200,255,0.48);border-radius:16px;cursor:pointer;color:#eaf9ff;font-family:var(--font);font-size:11px;font-weight:700;letter-spacing:0.06em;text-align:center;transition:all 0.22s;box-shadow:0 0 16px rgba(0,200,255,0.28),0 0 34px rgba(0,200,255,0.16);animation:locate-glow 2.1s ease-in-out infinite;}
+#locate-btn:hover{transform:translateY(-1px) scale(1.02);background:linear-gradient(180deg,rgba(0,200,255,0.24),rgba(0,200,255,0.12));box-shadow:0 0 22px rgba(0,200,255,0.36),0 0 44px rgba(0,200,255,0.24);}
 #locate-btn.visible{display:flex;}
+#locate-btn .locate-sub{display:block;font-size:9px;font-weight:500;letter-spacing:0.03em;color:#bfefff;}
+@keyframes locate-glow{0%,100%{box-shadow:0 0 12px rgba(0,200,255,0.24),0 0 30px rgba(0,200,255,0.12);}50%{box-shadow:0 0 22px rgba(0,200,255,0.44),0 0 54px rgba(0,200,255,0.20);}}
 
 /* globe return button */
 #globe-btn{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:none;align-items:center;gap:5px;padding:5px 12px;background:rgba(3,8,16,0.9);border:1px solid var(--lb);border-radius:2px;cursor:pointer;color:var(--text-dim);font-family:var(--fhud);font-size:8px;text-transform:uppercase;letter-spacing:0.12em;}
@@ -202,7 +275,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #cmd-input{flex:1;height:36px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
 #cmd-input:focus{border-color:var(--la);}
 #cmd-input::placeholder{color:var(--text-dim);}
-<<<<<<< HEAD
 #cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.92);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(14px);transition:max-height 0.25s ease;max-height:66vh;}
 #cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
 #cmd-response.expanded{display:flex;padding:0;max-height:66vh;}
@@ -210,11 +282,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .chat-drag-handle{width:100%;height:20px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:none;user-select:none;}
 .chat-drag-handle::after{content:'';width:40px;height:4px;border-radius:2px;background:rgba(0,200,255,0.3);}
 .chat-drag-handle:hover::after,.chat-drag-handle:active::after{background:rgba(0,200,255,0.6);}
-=======
-#cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.97);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow-y:auto;backdrop-filter:blur(14px);transition:max-height 0.3s ease;}
-#cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
-#cmd-response.expanded{display:flex;max-height:50vh;padding:0;}
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 .ai-conv{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;}
 .ai-msg{max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.45;word-break:break-word;animation:ai-fade 0.25s ease-out;}
 .ai-msg.user-msg{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.20);color:#d8f0ff;}
@@ -233,7 +300,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 @keyframes voice-pulse{0%,100%{box-shadow:0 0 4px rgba(0,232,122,0.2);}50%{box-shadow:0 0 16px rgba(0,232,122,0.5);}}
 
 /* LEFT PANEL */
-#left-panel{position:fixed;top:36px;left:0;width:46px;bottom:60px;background:var(--surface);border-right:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
+#left-panel{position:fixed;top:40px;left:0;width:46px;bottom:60px;background:var(--surface);border-right:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
 .lp-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;cursor:pointer;color:var(--text-dim);transition:all 0.15s;position:relative;}
 .lp-btn:hover,.lp-btn.on{color:var(--la);border-color:var(--lb);background:var(--la2);}
 .lp-btn svg{width:15px;height:15px;}
@@ -243,12 +310,29 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .lp-btn:hover::after{opacity:1;}
 
 /* RIGHT PANEL */
-#right-panel{position:fixed;top:36px;right:0;width:46px;bottom:60px;background:var(--surface);border-left:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
+#right-panel{position:fixed;top:40px;right:0;width:46px;bottom:60px;background:var(--surface);border-left:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
 .rp-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;cursor:pointer;color:var(--text-dim);transition:all 0.15s;position:relative;}
 .rp-btn:hover,.rp-btn.on{color:var(--la);border-color:var(--lb);background:var(--la2);}
 .rp-btn svg{width:15px;height:15px;}
 .rp-btn::after{content:attr(data-tip);position:absolute;right:calc(100% + 7px);top:50%;transform:translateY(-50%);background:rgba(3,8,16,0.97);border:1px solid var(--lb);color:var(--text);font-size:9px;white-space:nowrap;padding:3px 8px;border-radius:2px;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:200;}
 .rp-btn:hover::after{opacity:1;}
+
+/* CONTEXTUAL SIDE CONTROLS */
+#left-panel,#right-panel{display:none !important;}
+.context-dock{position:fixed;top:86px;bottom:74px;width:62px;z-index:166;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+#context-left{left:10px;align-items:flex-start;}
+#context-right{right:10px;align-items:flex-end;}
+.context-dock .dock-spacer{flex:1;}
+.ctx-btn{width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(8,18,30,0.60),rgba(8,18,30,0.34));border:1px solid rgba(0,200,255,0.18);border-radius:16px;color:#d8ecff;cursor:pointer;transition:all 0.18s;position:relative;pointer-events:auto;box-shadow:0 12px 26px rgba(0,0,0,0.18);backdrop-filter:blur(14px) saturate(122%);-webkit-backdrop-filter:blur(14px) saturate(122%);}
+.ctx-btn svg{width:18px;height:18px;}
+.ctx-btn:hover,.ctx-btn.on{transform:translateY(-1px) scale(1.03);background:linear-gradient(180deg,rgba(0,200,255,0.18),rgba(8,18,30,0.44));border-color:rgba(0,200,255,0.42);color:#f4fbff;box-shadow:0 16px 30px rgba(0,0,0,0.24),0 0 16px rgba(0,200,255,0.12);}
+.ctx-btn.primary{background:linear-gradient(180deg,rgba(0,200,255,0.24),rgba(0,200,255,0.10));border-color:rgba(0,200,255,0.46);color:#f5fcff;animation:ctx-pulse 2s ease-in-out infinite;}
+.ctx-btn.warn{border-color:rgba(255,214,0,0.34);color:#ffe48a;}
+.ctx-btn::after{content:attr(data-tip);position:absolute;top:50%;max-width:180px;transform:translateY(-50%);background:rgba(3,8,16,0.94);border:1px solid rgba(0,200,255,0.18);color:#eaf7ff;font-size:10px;white-space:nowrap;padding:4px 9px;border-radius:10px;pointer-events:none;opacity:0;transition:opacity 0.15s,transform 0.15s;box-shadow:0 10px 20px rgba(0,0,0,0.18);}
+#context-left .ctx-btn::after{left:calc(100% + 8px);transform:translateY(-50%) translateX(-2px);}
+#context-right .ctx-btn::after{right:calc(100% + 8px);transform:translateY(-50%) translateX(2px);}
+.context-dock .ctx-btn:hover::after{opacity:1;transform:translateY(-50%) translateX(0);}
+@keyframes ctx-pulse{0%,100%{box-shadow:0 10px 22px rgba(0,0,0,0.18),0 0 10px rgba(0,200,255,0.16);}50%{box-shadow:0 14px 26px rgba(0,0,0,0.22),0 0 22px rgba(0,200,255,0.34);}}
 
 /* SIDE MENUS */
 .smenu{position:fixed;top:36px;width:200px;background:rgba(3,8,16,0.98);border:1px solid var(--lb);backdrop-filter:blur(14px);z-index:160;display:none;overflow:hidden;max-height:calc(100vh - 100px);overflow-y:auto;}
@@ -555,7 +639,7 @@ html,body{
 #sbi{font-family:var(--font);font-size:13px;}
 
 
-/* === 3.3.3 DEPLOYMENT PATCH: locked neon-blue, depth-linked orbital cards, wallet offers === */
+/* === V1 DEPLOYMENT PATCH: locked neon-blue, depth-linked orbital cards, wallet offers === */
 
 .brand{
   color:var(--blue) !important;
@@ -583,7 +667,6 @@ html,body{
   width:198px !important;
   height:128px !important;
   border-radius:16px !important;
-}
 }
 #topbar,.mr,.rp-btn,.lp-btn,#bottombar,#sb,#globe-btn,#locate-btn,#drone-btn,#delivery-calc{
   border-color:rgba(0,200,255,0.22);
@@ -671,7 +754,7 @@ html,body{
 .pay-note{color:#d8ecff;}
 
 
-/* === 3.3.3 OPERATIONS PATCH: real mode transitions, neon brand lock, map creation tools === */
+/* === V1 OPERATIONS PATCH: real mode transitions, neon brand lock, map creation tools === */
 :root{
   --blue:#00c8ff !important;
   --la:#00c8ff !important;
@@ -821,7 +904,6 @@ body.lt,body.lt2,body.lt3{
 .temp-opt[data-temp=hot].active{background:rgba(255,80,50,0.14);color:#ff6644;border-color:rgba(255,80,50,0.30);}
 .temp-opt[data-temp=neutral].active{background:rgba(255,255,255,0.08);color:#e6eef6;border-color:rgba(255,255,255,0.20);}
 
-<<<<<<< HEAD
 /* ═══ COMPASS RADAR HUD (top-right, inside panels) ═══ */
 #compass-hud{
   position:absolute;top:38px;right:48px;z-index:65;
@@ -831,7 +913,7 @@ body.lt,body.lt2,body.lt3{
   transition:opacity 0.4s, width 0.4s, height 0.4s;
 }
 #compass-hud.visible{opacity:0.75;}
-#compass-hud.expanded{opacity:0.95;width:min(85vw,400px);height:min(85vw,400px);z-index:200;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);right:auto;}
+#compass-hud.expanded{opacity:0.95;width:120px;height:120px;z-index:65;position:absolute;top:38px;left:auto;right:48px;transform:none;}
 #compass-hud.routing{opacity:0.65;}
 #compass-hud.moveable{cursor:move;outline:1px dashed rgba(0,200,255,0.4);border-radius:50%;}
 #compass-svg{width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(0,200,255,0.35));}
@@ -848,33 +930,6 @@ body.lt,body.lt2,body.lt3{
 .compass-heading{fill:#00c8ff;font-size:10px;text-anchor:middle;font-family:var(--font);font-weight:700;}
 .compass-heading-label{fill:rgba(0,200,255,0.45);font-size:4px;text-anchor:middle;font-family:var(--font);}
 /* Radar sweep beam — GREEN scanning line */
-=======
-/* ═══ COMPASS RADAR HUD ═══ */
-#compass-hud{
-  position:absolute;top:40px;right:0px;z-index:59;
-  width:114px;height:114px;
-  pointer-events:none;
-  opacity:0.5;
-  transition:opacity 0.4s;
-}
-#compass-hud:hover{opacity:0.92;pointer-events:auto;}
-#compass-hud.routing{opacity:0.75;}
-#compass-svg{width:100%;height:100%;filter:drop-shadow(0 0 8px rgba(0,200,255,0.4));}
-.compass-ring{fill:none;stroke:rgba(0,200,255,0.3);stroke-width:1.2;}
-.compass-ring-outer{fill:none;stroke:rgba(0,200,255,0.12);stroke-width:0.5;}
-.compass-tick{stroke:rgba(0,200,255,0.4);stroke-width:0.5;}
-.compass-tick-major{stroke:rgba(0,200,255,0.65);stroke-width:0.9;}
-.compass-tick-cardinal{stroke:#00c8ff;stroke-width:1.8;}
-.compass-text{fill:rgba(0,200,255,0.7);font-size:5.5px;text-anchor:middle;font-family:var(--font);font-weight:600;}
-.compass-text-cardinal{fill:#00c8ff;font-size:7.5px;text-anchor:middle;font-family:var(--font);font-weight:700;text-shadow:0 0 4px rgba(0,200,255,0.5);}
-.compass-mil{fill:rgba(0,200,255,0.3);font-size:3.5px;text-anchor:middle;font-family:var(--font);}
-.compass-needle{stroke:#ff4455;stroke-width:1.5;stroke-linecap:round;}
-.compass-needle-s{stroke:rgba(255,255,255,0.25);stroke-width:0.8;stroke-linecap:round;}
-.compass-center{fill:rgba(0,200,255,0.6);}
-.compass-heading{fill:#00c8ff;font-size:9px;text-anchor:middle;font-family:var(--font);font-weight:700;}
-.compass-heading-label{fill:rgba(0,200,255,0.5);font-size:4px;text-anchor:middle;font-family:var(--font);}
-/* Radar sweep — front quarter bright, back 3/4 dark */
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 .radar-sweep{transform-origin:54px 54px;animation:radar-spin 3.5s linear infinite;}
 @keyframes radar-spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
 .radar-blip{fill:#00e87a;opacity:0;animation:blip-pulse 3.5s ease-in-out infinite;}
@@ -887,7 +942,6 @@ body.lt,body.lt2,body.lt3{
 .waypoint-dot{fill:#ff9900;opacity:0;}
 .waypoint-dot.active{opacity:0.9;}
 .dist-label{fill:rgba(0,200,255,0.25);font-size:3px;text-anchor:middle;font-family:var(--font);}
-<<<<<<< HEAD
 /* Menu button flash for new content */
 .lp-btn.has-new::after,.rp-btn.has-new::after{content:'';position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#ff4455;box-shadow:0 0 8px #ff4455;animation:btn-flash 1.5s ease-in-out infinite;}
 @keyframes btn-flash{0%,100%{opacity:1;}50%{opacity:0.3;}}
@@ -920,7 +974,7 @@ body.lt,body.lt2,body.lt3{
 .perf-center-label{fill:rgba(0,200,255,0.5);font-size:4px;text-anchor:middle;font-family:var(--font);}
 
 /* ═══ CHAT CHANNEL DROPDOWN ═══ */
-#chat-channel-bar{display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid rgba(0,200,255,0.10);flex-shrink:0;}
+#chat-channel-bar{display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid rgba(0,200,255,0.10);flex-shrink:0;position:sticky;top:0;z-index:2;background:rgba(8,18,30,0.92);backdrop-filter:blur(10px);}
 #chat-channel-select{
   flex:1;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.18);border-radius:8px;
   color:#00c8ff;font-family:var(--font);font-size:11px;font-weight:600;padding:6px 10px;
@@ -933,15 +987,6 @@ body.lt,body.lt2,body.lt3{
 .escalation-badge{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;margin-left:4px;vertical-align:middle;}
 .escalation-badge.admin{background:rgba(255,153,0,0.15);color:#ff9900;border:1px solid rgba(255,153,0,0.25);}
 .escalation-badge.owner{background:rgba(255,68,85,0.15);color:#ff4455;border:1px solid rgba(255,68,85,0.25);}
-=======
-
-/* ═══ CHANNEL BUTTONS (left sidebar) ═══ */
-.ch-btn{transition:all 0.2s !important;position:relative;}
-.ch-btn.active{background:rgba(0,200,255,0.18) !important;color:#00c8ff !important;border-color:rgba(0,200,255,0.40) !important;box-shadow:0 0 12px rgba(0,200,255,0.30), inset 0 0 8px rgba(0,200,255,0.10) !important;}
-.ch-btn.active::before{content:'';position:absolute;left:-1px;top:20%;bottom:20%;width:3px;background:#00c8ff;border-radius:0 2px 2px 0;box-shadow:0 0 8px #00c8ff;}
-.ch-btn[data-ch="support"].active{background:rgba(255,214,0,0.14) !important;color:#ffd600 !important;border-color:rgba(255,214,0,0.35) !important;box-shadow:0 0 12px rgba(255,214,0,0.25) !important;}
-.ch-btn[data-ch="support"].active::before{background:#ffd600;box-shadow:0 0 8px #ffd600;}
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 
 /* ═══ DELIVERY CHAT ═══ */
 #delivery-chat{position:fixed;bottom:64px;right:52px;width:320px;max-height:420px;display:none;flex-direction:column;z-index:280;background:linear-gradient(180deg,rgba(8,18,30,0.88),rgba(8,18,30,0.72));border:1px solid rgba(0,200,255,0.16);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,0.30);backdrop-filter:blur(14px);}
@@ -1005,7 +1050,7 @@ body.lt,body.lt2,body.lt3{
   <div class="abox">
     <div class="ahdr">
       <span class="abrand">ASTRANOV</span>
-      <span class="asub">Planetary OS — Trinity v3.8.0</span>
+      <span class="asub">Internet Operating System</span>
     </div>
     <div class="abody">
       <div class="atabs">
@@ -1014,14 +1059,10 @@ body.lt,body.lt2,body.lt3{
       </div>
       <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
       <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
-<<<<<<< HEAD
       <div style="position:relative;">
         <input class="ainp" id="ap2" type="password" placeholder="Password" style="padding-right:50px;"/>
         <button type="button" onclick="togglePwdView()" id="pwd-toggle" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.15);border-radius:4px;color:var(--text-dim);font-size:9px;padding:4px 8px;cursor:pointer;font-family:var(--font);">SHOW</button>
       </div>
-=======
-      <input class="ainp" id="ap2" type="password" placeholder="Password"/>
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <div id="auth-name-row" style="display:none;">
         <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off"/>
       </div>
@@ -1043,10 +1084,13 @@ body.lt,body.lt2,body.lt3{
 <div id="topbar">
   <div class="tb-left">
     <span class="brand">ASTRANOV</span>
-    
   </div>
-  <div class="tb-center">
-    <span class="vinfo">v<span class="vcurrent">3.8.0</span></span>
+  <div class="tb-center" id="version-cluster">
+    <span class="vinfo version-chip"><span class="version-label">Current</span> <span class="vcurrent" id="vcurrent">V3</span></span>
+    <span class="vinfo version-chip"><span class="version-label">Latest</span> <span class="vlatest-ok" id="vlatest">V3</span></span>
+    <button id="force-update-btn" class="hidden-update" onclick="hardRefreshUpdate()" title="Load the latest build with a hard refresh">⟳ <span>Update</span></button>
+    <button id="pause-ui-btn" class="ribbon-btn" onclick="togglePauseMode()" title="Pause visual motion and media">⏸ <span>Pause</span></button>
+    <button id="video-post-btn" class="ribbon-btn" onclick="openVideoPostModal()" title="Post a channel video pinned to your current location">🎬 <span>Post Video</span></button>
   </div>
   <div class="tb-right">
     <div id="balance-display" onclick="showBalance()">
@@ -1060,6 +1104,10 @@ body.lt,body.lt2,body.lt3{
     </div>
   </div>
 </div>
+<div id="ui-pause-indicator">UI PAUSED</div>
+
+<div id="context-left" class="context-dock" aria-label="Context controls left"></div> class="context-dock" aria-label="Context controls left"></div>
+<div id="context-right" class="context-dock" aria-label="Context controls right"></div>
 
 <!-- LEFT PANEL -->
 <div id="left-panel">
@@ -1121,61 +1169,6 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
-<<<<<<< HEAD
-  <!-- PERFORMANCE MONITOR (top-left) -->
-  <div id="perf-hud">
-    <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"/><stop offset="100%" stop-color="rgba(3,8,16,0.35)"/></radialGradient>
-      </defs>
-      <!-- Background -->
-      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
-      <!-- 6 sections of 60° each — pie wedges from center -->
-      <!-- Section 0: CPU (top, 330°-30°) -->
-      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"/>
-      <!-- Section 1: MAP (60°, 30°-90°) -->
-      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"/>
-      <!-- Section 2: RAM (120°, 90°-150°) -->
-      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"/>
-      <!-- Section 3: STORAGE (180°, 150°-210°) -->
-      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"/>
-      <!-- Section 4: BATTERY (240°, 210°-270°) -->
-      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"/>
-      <!-- Section 5: NETWORK (300°, 270°-330°) -->
-      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"/>
-      <!-- Divider lines -->
-      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"/>
-      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"/>
-      <!-- Inner circle -->
-      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <!-- Section labels (around the edge) -->
-      <text x="78" y="20" class="perf-label">CPU</text>
-      <text x="106" y="50" class="perf-label">MAP</text>
-      <text x="106" y="76" class="perf-label">RAM</text>
-      <text x="78" y="106" class="perf-label">STO</text>
-      <text x="42" y="106" class="perf-label">BAT</text>
-      <text x="16" y="50" class="perf-label">NET</text>
-      <!-- Section values (updated by JS) -->
-      <text id="pv0" x="78" y="28" class="perf-value good">—</text>
-      <text id="pv1" x="100" y="56" class="perf-value good">—</text>
-      <text id="pv2" x="100" y="82" class="perf-value good">—</text>
-      <text id="pv3" x="78" y="100" class="perf-value good">—</text>
-      <text id="pv4" x="42" y="100" class="perf-value good">—</text>
-      <text id="pv5" x="22" y="56" class="perf-value good">—</text>
-      <!-- Network sub-labels -->
-      <text id="pv5-tx" x="16" y="62" class="perf-center-label">TX —</text>
-      <text id="pv5-rx" x="16" y="68" class="perf-center-label">RX —</text>
-      <!-- Center label -->
-      <text x="60" y="58" class="perf-center-label">PERF</text>
-      <text id="perf-overall" x="60" y="66" style="fill:#00e87a;font-size:7px;text-anchor:middle;font-family:var(--font);font-weight:700;">OK</text>
-    </svg>
-  </div>
-
   <!-- PERFORMANCE MONITOR HUD (top-left) -->
   <div id="perf-hud">
     <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
@@ -1201,8 +1194,6 @@ body.lt,body.lt2,body.lt3{
     </svg>
   </div>
 
-=======
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   <!-- COMPASS RADAR HUD (top-right) -->
   <div id="compass-hud">
     <svg id="compass-svg" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
@@ -1246,7 +1237,6 @@ body.lt,body.lt2,body.lt3{
       <text x="54" y="19" class="dist-label">5km</text>
       <text x="54" y="31" class="dist-label">3km</text>
       <text x="54" y="43" class="dist-label">1km</text>
-<<<<<<< HEAD
       <!-- Fixed forward indicator (always points up = user's facing direction) -->
       <polygon points="54,4 51,10 57,10" fill="#00c8ff" opacity="0.7"/>
       <!-- Compass bezel group (ROTATES with heading — ticks, cardinals, mils all rotate) -->
@@ -1256,12 +1246,6 @@ body.lt,body.lt2,body.lt3{
         <!-- Mil markings -->
         <g id="compass-mils"></g>
       </g>
-=======
-      <!-- Compass tick marks (generated by JS) -->
-      <g id="compass-ticks"></g>
-      <!-- Mil markings (inner ring) -->
-      <g id="compass-mils"></g>
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <!-- Radar sweep -->
       <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"/>
       <!-- Radar blips (populated by JS) -->
@@ -1269,17 +1253,7 @@ body.lt,body.lt2,body.lt3{
       <!-- Route indicator line (populated by JS) -->
       <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"/>
       <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"/>
-<<<<<<< HEAD
       <!-- (Bezel rotation handles compass heading — no static needle) -->
-=======
-      <!-- Compass needle group (rotated by JS) -->
-      <g id="compass-needle-group">
-        <line class="compass-needle" x1="54" y1="54" x2="54" y2="14"/>
-        <line class="compass-needle-s" x1="54" y1="54" x2="54" y2="94"/>
-        <!-- N arrow tip -->
-        <polygon points="54,12 51,20 57,20" fill="#ff4455" opacity="0.8"/>
-      </g>
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
       <!-- Center dot -->
       <circle cx="54" cy="54" r="2.5" class="compass-center"/>
       <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"/>
@@ -1305,8 +1279,8 @@ body.lt,body.lt2,body.lt3{
 
   <!-- Locate me + Globe return -->
   <div id="locate-btn" onclick="locateMe()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-    <span>LOCATE ME</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    <span><strong>ZOOM TO MY CITY</strong><span class="locate-sub">GPS jump into local work mode</span></span>
   </div>
 
   <div id="globe-btn" onclick="goLayer(0)">
@@ -1320,119 +1294,72 @@ body.lt,body.lt2,body.lt3{
     <span>DRONE GAME</span>
   </div>
 
-  <!-- ASTRANOV — NORDIC WARRIOR ANGEL AI -->
+  <!-- ASTRANOV — WINGED NORDIC WARRIOR AI -->
   <div id="astranova-wrapper">
     <div id="astranova-speech"></div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov Nordic warrior angel AI">
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 160 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov winged Nordic warrior AI">
       <defs>
-        <linearGradient id="elfHair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#fff8e0"/><stop offset="30%" stop-color="#f0d060"/><stop offset="70%" stop-color="#c8a030"/><stop offset="100%" stop-color="#8a6820"/></linearGradient>
-        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c0d8f0"/><stop offset="15%" stop-color="#4890c8"/><stop offset="50%" stop-color="#1a4a7a"/><stop offset="100%" stop-color="#081428"/></linearGradient>
-        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="30%" stop-color="#e0f0ff" stop-opacity="0.7"/><stop offset="60%" stop-color="#80c8f0" stop-opacity="0.4"/><stop offset="100%" stop-color="#2060a0" stop-opacity="0.15"/></linearGradient>
-        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef2e8"/><stop offset="100%" stop-color="#f0d4c0"/></linearGradient>
-        <linearGradient id="armorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4ff"/><stop offset="30%" stop-color="#6098c8"/><stop offset="100%" stop-color="#1a3a60"/></linearGradient>
-        <radialGradient id="elfGlow" cx="50%" cy="45%"><stop offset="0%" stop-color="#ffd860" stop-opacity="0.2"/><stop offset="50%" stop-color="#00c8ff" stop-opacity="0.15"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
-        <radialGradient id="haloGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#ffd600" stop-opacity="0.6"/><stop offset="100%" stop-color="#ffd600" stop-opacity="0"/></radialGradient>
+        <linearGradient id="warriorMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f4fbff"/><stop offset="35%" stop-color="#88b8de"/><stop offset="100%" stop-color="#17324b"/></linearGradient>
+        <linearGradient id="warriorBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2c5f8e"/><stop offset="45%" stop-color="#12304f"/><stop offset="100%" stop-color="#071322"/></linearGradient>
+        <linearGradient id="warriorCape" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#102a44"/><stop offset="50%" stop-color="#0a1c2f"/><stop offset="100%" stop-color="#030a14"/></linearGradient>
+        <linearGradient id="warriorSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f7e7dc"/><stop offset="100%" stop-color="#e2c2af"/></linearGradient>
+        <linearGradient id="warriorHair" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f7e9a0"/><stop offset="55%" stop-color="#d2a94b"/><stop offset="100%" stop-color="#835d22"/></linearGradient>
+        <linearGradient id="warriorWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f9fdff" stop-opacity="0.96"/><stop offset="38%" stop-color="#d8eeff" stop-opacity="0.74"/><stop offset="100%" stop-color="#2b6da0" stop-opacity="0.12"/></linearGradient>
+        <radialGradient id="warriorAura" cx="50%" cy="42%" r="65%"><stop offset="0%" stop-color="#00c8ff" stop-opacity="0.18"/><stop offset="55%" stop-color="#00c8ff" stop-opacity="0.08"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
       </defs>
-      <!-- Divine golden glow aura -->
-      <ellipse cx="70" cy="110" rx="60" ry="90" fill="url(#elfGlow)" opacity="0.5"/>
-      <!-- LEFT WING — large feathered angel wing -->
+      <ellipse cx="80" cy="116" rx="62" ry="92" fill="url(#warriorAura)"/>
       <g class="elf-wing-l">
-        <path d="M56 95 C28 78 5 45 2 18 C10 32 22 44 35 50 C16 38 5 18 3 2 C14 22 28 38 42 46 C30 32 18 12 15 0 C28 18 40 36 50 46 C46 56 50 72 56 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
-        <!-- Feather lines -->
-        <path d="M48 68 C32 55 16 32 12 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
-        <path d="M50 76 C36 64 20 44 16 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
-        <path d="M52 84 C40 72 26 52 22 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-        <path d="M44 58 C30 46 14 24 10 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
+        <path d="M62 98 C34 78 13 48 8 18 C18 30 29 42 42 48 C24 36 14 16 12 2 C23 20 37 34 49 42 C38 28 28 12 26 0 C38 16 50 31 58 43 C58 56 60 74 62 92 Z" fill="url(#warriorWing)" stroke="rgba(255,255,255,0.30)" stroke-width="0.8"/>
+        <path d="M54 62 C39 50 26 31 22 18" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="0.7"/>
+        <path d="M56 74 C43 63 31 46 27 33" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.6"/>
       </g>
-      <!-- RIGHT WING -->
       <g class="elf-wing-r">
-        <path d="M84 95 C112 78 135 45 138 18 C130 32 118 44 105 50 C124 38 135 18 137 2 C126 22 112 38 98 46 C110 32 122 12 125 0 C112 18 100 36 90 46 C94 56 90 72 84 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
-        <path d="M92 68 C108 55 124 32 128 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
-        <path d="M90 76 C104 64 120 44 124 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
-        <path d="M88 84 C100 72 114 52 118 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-        <path d="M96 58 C110 46 126 24 130 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
+        <path d="M98 98 C126 78 147 48 152 18 C142 30 131 42 118 48 C136 36 146 16 148 2 C137 20 123 34 111 42 C122 28 132 12 134 0 C122 16 110 31 102 43 C102 56 100 74 98 92 Z" fill="url(#warriorWing)" stroke="rgba(255,255,255,0.30)" stroke-width="0.8"/>
+        <path d="M106 62 C121 50 134 31 138 18" fill="none" stroke="rgba(255,255,255,0.24)" stroke-width="0.7"/>
+        <path d="M104 74 C117 63 129 46 133 33" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.6"/>
       </g>
-      <!-- Sparkle particles (divine) -->
-      <circle cx="22" cy="38" r="1.8" fill="#ffd860" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite"/></circle>
-      <circle cx="118" cy="32" r="1.5" fill="#ffd860" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
-      <circle cx="38" cy="22" r="1.2" fill="#fff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="1.8s" repeatCount="indefinite"/></circle>
-      <circle cx="102" cy="18" r="1" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
-      <circle cx="60" cy="12" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.8;0;0.8" dur="2.5s" repeatCount="indefinite"/></circle>
-      <circle cx="80" cy="8" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
-      <!-- Golden halo (prominent, glowing) -->
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="url(#haloGlow)" opacity="0.4"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#ffd600" stroke-width="2" opacity="0.7"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.4"/>
-      <!-- Long flowing blonde hair (back layer) -->
+      <ellipse cx="80" cy="228" rx="18" ry="5" fill="#00c8ff" opacity="0.10"/>
       <g class="elf-hair">
-        <path d="M48 48 C42 58 36 78 33 105 C35 98 40 82 46 68 C40 85 36 100 34 118 C40 106 48 88 52 74 Z" fill="url(#elfHair)" opacity="0.8"/>
-        <path d="M92 48 C98 58 104 78 107 105 C105 98 100 82 94 68 C100 85 104 100 106 118 C100 106 92 88 88 74 Z" fill="url(#elfHair)" opacity="0.8"/>
+        <path d="M58 56 C52 72 50 92 52 112 C57 98 61 80 66 64 Z" fill="url(#warriorHair)" opacity="0.88"/>
+        <path d="M102 56 C108 72 110 92 108 112 C103 98 99 80 94 64 Z" fill="url(#warriorHair)" opacity="0.88"/>
       </g>
-      <!-- Shadow -->
-      <ellipse cx="70" cy="228" rx="16" ry="4" fill="#00c8ff" opacity="0.08"/>
-      <!-- Head -->
-      <path d="M52 58 C52 40 59 32 70 32 C81 32 88 40 88 58 C88 72 82 80 70 80 C58 80 52 72 52 58 Z" fill="url(#elfSkin)"/>
-      <!-- Strong jaw -->
-      <path d="M56 70 C60 76 66 80 70 80 C74 80 80 76 84 70" fill="none" stroke="#e0c0b0" stroke-width="0.7"/>
-      <!-- Hair top (golden blonde, long, flowing) -->
-      <path d="M50 52 C52 34 60 26 70 24 C80 26 88 34 90 52 C87 40 80 33 70 30 C60 33 53 40 50 52 Z" fill="url(#elfHair)"/>
-      <!-- Hair sides flowing down -->
-      <path d="M50 52 C47 58 45 68 46 80 C48 72 50 62 52 55 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <path d="M90 52 C93 58 95 68 94 80 C92 72 90 62 88 55 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <!-- Hair shine highlights -->
-      <path d="M58 32 C60 28 66 25 70 24" fill="none" stroke="rgba(255,248,200,0.6)" stroke-width="0.8" stroke-linecap="round"/>
-      <path d="M62 34 C65 30 70 28 74 30" fill="none" stroke="rgba(255,248,200,0.4)" stroke-width="0.5" stroke-linecap="round"/>
-      <!-- Eyes (ice blue, intense) -->
-      <ellipse cx="63" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
-      <ellipse cx="77" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
-      <ellipse cx="63.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
-      <ellipse cx="77.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
-      <ellipse cx="63.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
-      <ellipse cx="77.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
-      <circle cx="64" cy="56" r="1.8" fill="#0a2040"/>
-      <circle cx="78" cy="56" r="1.8" fill="#0a2040"/>
-      <circle cx="64.8" cy="55" r="1" fill="#fff"/>
-      <circle cx="78.8" cy="55" r="1" fill="#fff"/>
-      <circle cx="62.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
-      <circle cx="76.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
-      <!-- Bold eyebrows -->
-      <path d="M56 51 C59 48.5 64 48 68 50" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M72 50 C76 48 81 48.5 84 51" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
-      <!-- Nose -->
-      <path d="M70 58 C69 62 68.5 65 69 66 L71 66 C71.5 65 71 62 70 58" fill="none" stroke="#d0a890" stroke-width="0.7" stroke-linecap="round"/>
-      <!-- Mouth -->
-      <path class="elf-mouth" id="elf-mouth" d="M66 71 C68 72.5 72 72.5 74 71" fill="none" stroke="#a06060" stroke-width="1.3" stroke-linecap="round"/>
-      <!-- Beard stubble -->
-      <ellipse cx="70" cy="74" rx="9" ry="5" fill="#c8a860" opacity="0.04"/>
-      <!-- Neck -->
-      <rect x="64" y="78" width="12" height="10" rx="3" fill="url(#elfSkin)"/>
-      <!-- NORSE ARMOR + ROBE -->
-      <path d="M42 88 C46 83 56 80 70 80 C84 80 94 83 98 88 C102 100 100 125 96 150 C92 162 80 174 70 178 C60 174 48 162 44 150 C40 125 38 100 42 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.12)" stroke-width="0.5"/>
-      <!-- Chest armor plate (Norse) -->
-      <path d="M52 90 C56 85 64 82 70 82 C76 82 84 85 88 90 L85 110 C80 115 70 117 70 117 C70 117 60 115 55 110 Z" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
-      <!-- Armor rune/symbol -->
-      <path d="M70 88 L70 112" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="0.8"/>
-      <path d="M64 95 L76 95" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
-      <path d="M64 105 L70 100 L76 105" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
-      <circle cx="70" cy="92" r="2" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.4)" stroke-width="0.5"/>
-      <!-- Shoulder armor -->
-      <ellipse cx="48" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <ellipse cx="92" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <!-- Belt with golden buckle -->
-      <path d="M48 115 C56 117 84 117 92 115" fill="none" stroke="#c8a040" stroke-width="2.5" stroke-linecap="round"/>
-      <rect x="65" y="112" width="10" height="6" rx="1.5" fill="#ffd860" stroke="#c8a040" stroke-width="0.5"/>
-      <!-- Strong arms -->
-      <path d="M44 90 C36 100 32 114 30 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
-      <path d="M96 90 C104 100 108 114 110 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
-      <!-- Bracers (Norse) -->
-      <rect x="28" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <rect x="104" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <!-- Fists -->
-      <circle cx="29" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
-      <circle cx="111" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
-      <!-- Warrior boots -->
-      <path d="M54 174 C53 178 52 184 54 186 L66 186 C68 184 66 178 66 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <path d="M74 174 C73 178 72 184 74 186 L86 186 C88 184 86 178 86 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+      <path d="M58 44 C63 26 72 19 80 18 C88 19 97 26 102 44 L98 56 C92 46 87 41 80 40 C73 41 68 46 62 56 Z" fill="url(#warriorHair)"/>
+      <path d="M62 64 C62 44 69 34 80 34 C91 34 98 44 98 64 C98 78 91 86 80 86 C69 86 62 78 62 64 Z" fill="url(#warriorSkin)"/>
+      <path d="M67 56 C71 52 76 51 80 51 C84 51 89 52 93 56" fill="none" stroke="#5f4b2d" stroke-width="1.8" stroke-linecap="round"/>
+      <ellipse cx="73" cy="63" rx="4.8" ry="4.3" fill="#fff"/>
+      <ellipse cx="87" cy="63" rx="4.8" ry="4.3" fill="#fff"/>
+      <circle cx="73" cy="63" r="2.4" fill="#0c223c"/>
+      <circle cx="87" cy="63" r="2.4" fill="#0c223c"/>
+      <circle cx="74" cy="62" r="0.8" fill="#fff"/>
+      <circle cx="88" cy="62" r="0.8" fill="#fff"/>
+      <path d="M80 64 C79 68 79 71 80 73" fill="none" stroke="#c69078" stroke-width="0.8" stroke-linecap="round"/>
+      <path class="elf-mouth" id="elf-mouth" d="M74 77 C77 79 83 79 86 77" fill="none" stroke="#915e5e" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M57 47 L70 38 L90 38 L103 47 L99 57 C95 52 90 49 80 48 C70 49 65 52 61 57 Z" fill="url(#warriorMetal)" stroke="rgba(255,255,255,0.26)" stroke-width="1.1"/>
+      <path d="M69 38 L58 28" fill="none" stroke="url(#warriorMetal)" stroke-width="5.2" stroke-linecap="round"/>
+      <path d="M91 38 L102 28" fill="none" stroke="url(#warriorMetal)" stroke-width="5.2" stroke-linecap="round"/>
+      <path d="M59 29 C49 18 43 10 37 5" fill="none" stroke="url(#warriorMetal)" stroke-width="5.2" stroke-linecap="round"/>
+      <path d="M101 29 C111 18 117 10 123 5" fill="none" stroke="url(#warriorMetal)" stroke-width="5.2" stroke-linecap="round"/>
+      <rect x="72" y="84" width="16" height="12" rx="4" fill="url(#warriorSkin)"/>
+      <path d="M52 98 C57 90 67 86 80 86 C93 86 103 90 108 98 C112 114 110 140 106 166 C98 175 90 181 80 184 C70 181 62 175 54 166 C50 140 48 114 52 98 Z" fill="url(#warriorBlue)" stroke="rgba(0,200,255,0.18)" stroke-width="1"/>
+      <path d="M44 98 C36 126 40 160 56 184 C42 176 32 160 30 136 C29 121 33 108 40 96 Z" fill="url(#warriorCape)" opacity="0.86"/>
+      <path d="M116 98 C124 126 120 160 104 184 C118 176 128 160 130 136 C131 121 127 108 120 96 Z" fill="url(#warriorCape)" opacity="0.86"/>
+      <path d="M60 98 C64 92 72 89 80 89 C88 89 96 92 100 98 L96 120 C91 126 85 130 80 132 C75 130 69 126 64 120 Z" fill="url(#warriorMetal)" stroke="rgba(255,255,255,0.26)" stroke-width="1.1"/>
+      <path d="M80 95 L80 128" fill="none" stroke="rgba(0,200,255,0.42)" stroke-width="1.1"/>
+      <path d="M70 106 L90 106" fill="none" stroke="rgba(0,200,255,0.32)" stroke-width="0.9"/>
+      <circle cx="80" cy="99" r="3" fill="rgba(0,200,255,0.18)" stroke="rgba(0,200,255,0.40)" stroke-width="0.8"/>
+      <ellipse cx="58" cy="101" rx="9" ry="6" fill="url(#warriorMetal)" stroke="rgba(255,255,255,0.22)" stroke-width="0.8"/>
+      <ellipse cx="102" cy="101" rx="9" ry="6" fill="url(#warriorMetal)" stroke="rgba(255,255,255,0.22)" stroke-width="0.8"/>
+      <path d="M52 102 C44 112 40 124 38 136" fill="none" stroke="url(#warriorSkin)" stroke-width="8" stroke-linecap="round"/>
+      <path d="M108 102 C116 112 120 124 122 136" fill="none" stroke="url(#warriorSkin)" stroke-width="8" stroke-linecap="round"/>
+      <rect x="34" y="128" width="9" height="14" rx="2" fill="url(#warriorMetal)"/>
+      <rect x="117" y="128" width="9" height="14" rx="2" fill="url(#warriorMetal)"/>
+      <circle cx="38" cy="146" r="5.5" fill="#f2ddd0"/>
+      <circle cx="122" cy="146" r="5.5" fill="#f2ddd0"/>
+      <path d="M66 182 C65 188 64 193 66 196 L78 196 C80 193 79 188 78 182 Z" fill="#14314e" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+      <path d="M82 182 C81 188 80 193 82 196 L94 196 C96 193 95 188 94 182 Z" fill="#14314e" stroke="rgba(255,255,255,0.10)" stroke-width="0.8"/>
+      <circle cx="40" cy="34" r="1.5" fill="#dff8ff" opacity="0.55"><animate attributeName="opacity" values="0.55;0.15;0.55" dur="2.4s" repeatCount="indefinite"/></circle>
+      <circle cx="120" cy="30" r="1.2" fill="#dff8ff" opacity="0.42"><animate attributeName="opacity" values="0.42;0.1;0.42" dur="2.9s" repeatCount="indefinite"/></circle>
+      <circle cx="80" cy="14" r="1.3" fill="#00c8ff" opacity="0.55"><animate attributeName="opacity" values="0.55;0;0.55" dur="2.1s" repeatCount="indefinite"/></circle>
     </svg>
     <div id="elf-sparkles" style="position:absolute;inset:0;pointer-events:none;overflow:visible;"></div>
   </div>
@@ -1650,7 +1577,7 @@ body.lt,body.lt2,body.lt3{
   <div class="pay-box">
     <div class="mhdr">Wallet / Payments <button class="mcl" onclick="closePayments()">×</button></div>
     <div class="pay-body">
-      <div class="pay-note">Astranov 3.3.3 lets guests browse first. All vendor purchases use the in-app wallet balance. Reload the balance here inside the app, then buy directly from your balance.</div>
+      <div class="pay-note">Astranov V3 lets guests browse first. All vendor purchases use the in-app wallet balance. Reload the balance here inside the app, then buy directly from your balance.</div>
       <div class="pay-row">
         <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
         <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
@@ -1690,6 +1617,58 @@ body.lt,body.lt2,body.lt3{
   </div>
 </div>
 
+
+<div id="video-post-modal" class="video-modal" aria-hidden="true">
+  <div class="video-sheet">
+    <div class="sheet-title">Channel Video Pin</div>
+    <div class="sheet-sub">Post a video pin at your current location and route it only into the selected channel from the chat bar.</div>
+    <div id="video-post-status" class="video-inline-note">Select a non-AI channel in the chat bar, then post your video pin here.</div>
+    <div class="video-grid">
+      <div class="full">
+        <label for="video-title">Title</label>
+        <input id="video-title" type="text" placeholder="Video title"/>
+      </div>
+      <div class="full">
+        <label for="video-description">Description</label>
+        <textarea id="video-description" placeholder="What does this video show?"></textarea>
+      </div>
+      <div class="full">
+        <label for="video-youtube-url">YouTube link</label>
+        <input id="video-youtube-url" type="url" placeholder="https://www.youtube.com/watch?v=..."/>
+      </div>
+      <div>
+        <label for="video-channel-locked">Channel</label>
+        <input id="video-channel-locked" type="text" readonly/>
+      </div>
+      <div>
+        <label for="video-location-locked">Location</label>
+        <input id="video-location-locked" type="text" readonly/>
+      </div>
+      <div class="full">
+        <label for="video-privacy-note">Access model</label>
+        <div id="video-privacy-note" class="video-note">Pinned inside the selected app channel and shown only to signed-in Astranov users inside the app. YouTube privacy itself stays controlled by the YouTube link you provide.</div>
+      </div>
+    </div>
+    <div class="video-actions">
+      <button type="button" onclick="closeVideoPostModal()">Cancel</button>
+      <button type="button" class="primary" onclick="submitVideoPost()">Post video pin</button>
+    </div>
+  </div>
+</div>
+
+<div id="video-viewer-modal" class="video-modal" aria-hidden="true">
+  <div class="video-sheet viewer">
+    <div class="sheet-title">Pinned Video</div>
+    <div id="video-viewer-meta" class="sheet-sub">Astranov channel video</div>
+    <iframe id="video-viewer-frame" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <video id="video-viewer-fallback" controls playsinline></video>
+    <div class="video-actions">
+      <a id="video-viewer-open" href="#" target="_blank" rel="noopener">Open source</a>
+      <button type="button" onclick="closeVideoViewer()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM COMMAND BAR -->
 <div id="bottombar">
   <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
@@ -1701,20 +1680,17 @@ body.lt,body.lt2,body.lt3{
   </button>
 </div>
 <div id="cmd-response">
-<<<<<<< HEAD
   <div class="chat-drag-handle" id="chat-drag"></div>
   <!-- CHANNEL SELECTOR DROPDOWN -->
   <div id="chat-channel-bar">
     <span id="chat-channel-label">Channel</span>
-    <select id="chat-channel-select" onchange="switchChatChannel(this.value)">
+    <select id="chat-channel-select" onchange="switchChatChannel(this.value)" aria-label="Chat channel">
       <option value="ai" selected>🤖 Astranov AI Agent</option>
       <option value="global">🌍 Global</option>
       <option value="local">📍 Local</option>
       <option value="team">👥 Teams</option>
     </select>
   </div>
-=======
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   <div class="ai-conv" id="ai-conv"></div>
 </div>
 
@@ -1723,19 +1699,550 @@ body.lt,body.lt2,body.lt3{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV v3.8.0 — Trinity OS
+   ASTRANOV V3 — Internet Operating System
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script v3.8.0
+   Architecture: Spartan Script V3
    ═══════════════════════════════════════════════ */
 
 var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 var sb = supabase.createClient(SURL, SKEY);
-var APP_VERSION = '3.8.0';
-var APP_ARCH = 'Spartan Script v3.4.0';
+var APP_VERSION = 'V3';
+var APP_ARCH = 'Spartan Script V3';
 var PAYMENT_CFG_KEY = 'astranov.payment.config';
 var WALLET_KEY = 'astranov.wallet.balance';
 var PAYMENT_LOG_KEY = 'astranov.payment.log';
+var APP_LATEST_VERSION = APP_VERSION;
+var APP_UPDATE_CHECK_INTERVAL_MS = 180000;
+var APP_UPDATE_IDLE_MS = 90000;
+var APP_UPDATE_NOTICE_KEY = 'astranov.update.notice';
+var OWNER_MIDNIGHT_BALANCE_EUR = 3000;
+var OWNER_BALANCE_RESET_KEY = 'astranov.owner.balance.reset.date';
+var LAST_USER_ACTIVITY_AT = Date.now();
+var ownerMidnightResetTimer = null;
+var UI_POLICY_KEY = 'astranov.ui.policy.v2';
+var UI_TEMP_REVEAL_MS = 10 * 60 * 1000;
+var UI_CONTROL_IDS = Object.freeze({
+  profile:'ctx-user', settings:'ctx-settings', post:'ctx-post', listings:'ctx-listings', location:'ctx-city', layers:'ctx-layers', refresh:'ctx-refresh', radar:'ctx-radar', globe:'ctx-globe'
+});
+
+var APP_NAME = 'ASTRANOV';
+var APP_DESCRIPTION = 'Internet Operating System';
+var APP_VERSION_SERIES = 'V + integer';
+var APP_PAUSE_KEY = 'astranov.ui.paused.v1';
+var APP_PAUSED = false;
+var UI_LAYOUT_POLICY_KEY = 'astranov.ui.layout.policy.v3';
+var VIDEO_POST_MODAL_ID = 'video-post-modal';
+var VIDEO_VIEWER_MODAL_ID = 'video-viewer-modal';
+var VIDEO_POST_REQUIRE_AUTH = true;
+['pointerdown','keydown','mousemove','touchstart','scroll'].forEach(function(evt){ window.addEventListener(evt, function(){ LAST_USER_ACTIVITY_AT = Date.now(); }, {passive:true}); });
+var APP_GUARDRAILS = Object.freeze({
+  identity: { name: APP_NAME, description: APP_DESCRIPTION, version: APP_VERSION, series: APP_VERSION_SERIES },
+  lockedZones: ['topbar','context-left','context-right','stage','bottombar','cmd-response','chat-channel-bar'],
+  rules: [
+    'Do not rename or rebrand the app.',
+    'Do not change the version numbering rule outside V followed by an integer without direct user instruction.',
+    'Do not move the AI command/chat bar or its channel selector away from the bottom chat window.',
+    'Do not let compass or performance HUD exceed their defined max bounds.',
+    'Do not ship duplicate IDs, stray braces, or broken event bindings.',
+    'Always show current loaded version, latest detected version, and a hard refresh update control in the top ribbon.',
+    'Only glow the update button when a newer version is detected. Auto-refresh only when the page is hidden or the user is idle.',
+    'If the owner account is authenticated, reset the owner wallet to €3000 at local midnight exactly once per day.',
+    'Astranov AI helper visual identity is a winged Nordic warrior, never a halo angel or bug-like figure.',
+    'Do not restore permanent sidebars. Side controls are contextual and appear only when relevant.',
+    'Default to minimal controls. Hide non-essential buttons until the AI helper needs them or the user requests them.',
+    'Only the authenticated owner may grant persistent AI UI repair authority by direct verbal or typed instruction.',
+    'Globe view is the startup UI. The AI helper is visible on globe and map, activates immediately, and may request core permissions at startup.',
+    'Always keep a glowing Zoom to My City control available on globe and map.'
+  ]
+});
+
+
+function defaultUiPolicy(){
+  return {
+    minimal:true,
+    hideIdleButtons:true,
+    revealed:{},
+    ownerVoiceAuthority:false,
+    ownerPermanentUiRepair:false,
+    lastOwnerGrantAt:null
+  };
+}
+
+function getUiPolicy(){
+  var base = defaultUiPolicy();
+  try{
+    var raw = JSON.parse(localStorage.getItem(UI_POLICY_KEY) || '{}') || {};
+    var out = Object.assign({}, base, raw);
+    out.revealed = Object.assign({}, base.revealed, raw.revealed || {});
+    var changed = false;
+    Object.keys(out.revealed).forEach(function(key){
+      var item = out.revealed[key];
+      if(!item) return;
+      if(!item.persist && item.until && item.until < Date.now()){
+        delete out.revealed[key];
+        changed = true;
+      }
+    });
+    if(changed){ localStorage.setItem(UI_POLICY_KEY, JSON.stringify(out)); }
+    return out;
+  }catch(e){
+    return base;
+  }
+}
+
+function setUiPolicy(policy){
+  try{ localStorage.setItem(UI_POLICY_KEY, JSON.stringify(policy)); }catch(e){}
+}
+
+function isControlRevealed(key){
+  var policy = getUiPolicy();
+  var item = policy.revealed && policy.revealed[key];
+  if(!item) return false;
+  if(item.persist) return true;
+  if(item.until && item.until > Date.now()) return true;
+  delete policy.revealed[key];
+  setUiPolicy(policy);
+  return false;
+}
+
+function requestUiControl(key, persist){
+  if(!key) return false;
+  var policy = getUiPolicy();
+  if(!policy.revealed) policy.revealed = {};
+  policy.revealed[key] = persist ? { persist:true, requestedAt:Date.now() } : { persist:false, requestedAt:Date.now(), until:Date.now() + UI_TEMP_REVEAL_MS };
+  setUiPolicy(policy);
+  renderContextButtons();
+  return true;
+}
+
+function hideUselessButtons(persist){
+  var policy = getUiPolicy();
+  policy.minimal = true;
+  policy.hideIdleButtons = true;
+  policy.revealed = {};
+  if(persist && canHelperPermanentlyRepairUi()){
+    policy.lastOwnerGrantAt = new Date().toISOString();
+  }
+  setUiPolicy(policy);
+  renderContextButtons();
+}
+
+function revealRelevantControlsTemporarily(){
+  var keys = CL === 0 ? ['layers','refresh'] : CL === 1 ? ['listings','refresh','radar'] : ['refresh'];
+  keys.forEach(function(k){ requestUiControl(k, false); });
+}
+
+function normalizeUiControlKey(text){
+  var q = String(text || '').toLowerCase();
+  if(/profile|login|user badge|account/.test(q)) return 'profile';
+  if(/setting|config|preferences/.test(q)) return 'settings';
+  if(/post|listing form|publish/.test(q)) return 'post';
+  if(/listings|offers|results|cards|shops/.test(q)) return 'listings';
+  if(/zoom to my city|my city|my location|locate|gps|city jump|where am i/.test(q)) return 'location';
+  if(/layer|signals|filters/.test(q)) return 'layers';
+  if(/refresh|reload|update data|rescan/.test(q)) return 'refresh';
+  if(/radar|compass/.test(q)) return 'radar';
+  if(/globe|planet|world/.test(q)) return 'globe';
+  return '';
+}
+
+function controlActionByKey(key){
+  return {
+    profile:function(){ toggleUserMenu(); },
+    settings:function(){ tmenuById('mst'); },
+    post:function(){ openPost(); },
+    listings:function(){ toggleListings(document.getElementById('ctx-listings') || null); },
+    location:function(){ locateMe(); },
+    layers:function(){ tmenuById('mly'); },
+    refresh:function(){ refreshData(); },
+    radar:function(){ toggleRadar(document.getElementById('ctx-radar') || null); },
+    globe:function(){ goLayer(0); }
+  }[key] || null;
+}
+
+function canHelperPermanentlyRepairUi(){
+  var policy = getUiPolicy();
+  return !!(CU && isOwner(CU) && policy.ownerPermanentUiRepair);
+}
+
+function authorizeOwnerUiRepair(){
+  if(!(CU && isOwner(CU))) return false;
+  var policy = getUiPolicy();
+  policy.ownerVoiceAuthority = true;
+  policy.ownerPermanentUiRepair = true;
+  policy.lastOwnerGrantAt = new Date().toISOString();
+  policy.minimal = true;
+  policy.hideIdleButtons = true;
+  setUiPolicy(policy);
+  renderContextButtons();
+  return true;
+}
+
+function revokeOwnerUiRepairAuthority(){
+  if(!(CU && isOwner(CU))) return false;
+  var policy = getUiPolicy();
+  policy.ownerVoiceAuthority = false;
+  policy.ownerPermanentUiRepair = false;
+  policy.lastOwnerGrantAt = new Date().toISOString();
+  setUiPolicy(policy);
+  return true;
+}
+
+function handleOwnerUiAuthorityCommand(val){
+  var q = String(val || '').toLowerCase();
+  var grant = /(authorize|authorise|grant|allow|enable).*(astranov|ai|helper).*(repair|fix|change|control).*(ui|interface)|((astranov|ai|helper).*(repair|fix|change).*(ui|interface).*(permanent|permanently))|((permanent|permanently).*(ui|interface).*(repair|fix))/i;
+  var revoke = /(revoke|remove|disable|stop).*(astranov|ai|helper).*(ui|interface).*(authority|authorization|authorisation|repair|control)/i;
+  if(revoke.test(q)){
+    if(revokeOwnerUiRepairAuthority()){
+      addAiMessage('ai-msg-reply','Astranov','Owner UI repair authority revoked. I will keep the interface minimal and stop applying persistent UI changes.');
+      return true;
+    }
+    addAiMessage('system-msg','System','Only the authenticated owner can revoke helper UI authority.');
+    return true;
+  }
+  if(!grant.test(q)) return false;
+  if(authorizeOwnerUiRepair()){
+    addAiMessage('ai-msg-reply','Astranov','Owner authority confirmed. I am now authorized to apply persistent UI repairs and permanent button-policy changes when you request them verbally or by text.');
+  } else {
+    addAiMessage('system-msg','System','Persistent UI repair authority is restricted to the authenticated owner account.');
+  }
+  return true;
+}
+
+function handleUiControlCommand(val){
+  var q = String(val || '').toLowerCase();
+  if(/hide useless buttons|hide idle buttons|minimal ui|clean ui|quiet ui|silent ui|hide buttons/.test(q)){
+    hideUselessButtons(/always|permanent|persist/.test(q) && canHelperPermanentlyRepairUi());
+    addAiMessage('ai-msg-reply','Astranov','Non-essential controls dismissed. I will surface buttons only when they are needed or when you request them.');
+    return true;
+  }
+  if(/show buttons|show controls|show tools/.test(q) && !normalizeUiControlKey(q)){
+    revealRelevantControlsTemporarily();
+    addAiMessage('ai-msg-reply','Astranov','Relevant controls are visible for this context. Ask for a specific tool any time and I will bring it forward.');
+    return true;
+  }
+  var key = normalizeUiControlKey(q);
+  if(!key) return false;
+  var wantsHide = /(hide|dismiss|remove)/.test(q);
+  var wantsOpen = /(open|launch|start|go to|activate|enable|show)/.test(q);
+  var persist = /(always|permanent|permanently|from now on|persist)/.test(q) && canHelperPermanentlyRepairUi();
+  if(wantsHide){
+    var policy = getUiPolicy();
+    if(policy.revealed && policy.revealed[key]) delete policy.revealed[key];
+    setUiPolicy(policy);
+    renderContextButtons();
+    addAiMessage('ai-msg-reply','Astranov','Understood. I hid that control.');
+    return true;
+  }
+  if(wantsOpen || /need|want|bring|surface/.test(q)){
+    requestUiControl(key, persist);
+    var act = controlActionByKey(key);
+    if(act && /open|launch|start|go to|activate/.test(q)){
+      try{ act(); }catch(e){}
+    }
+    addAiMessage('ai-msg-reply','Astranov', persist ? 'Control pinned. I will keep it available from now on.' : 'Control surfaced. It is now available here when you need it.');
+    return true;
+  }
+  return false;
+}
+
+
+function cleanAppUrl(){
+  var u = new URL(window.location.href);
+  u.hash = '';
+  u.search = '';
+  return u.toString();
+}
+
+function isVersionWithinSeries(v){
+  return /^V\d+$/i.test(String(v || '').trim());
+}
+
+function setVersionRibbon(currentVersion, latestVersion){
+  var cur = document.getElementById('vcurrent');
+  var lat = document.getElementById('vlatest');
+  var btn = document.getElementById('force-update-btn');
+  if(cur) cur.textContent = currentVersion || APP_VERSION;
+  if(lat) lat.textContent = latestVersion || APP_LATEST_VERSION || APP_VERSION;
+  var needs = String(latestVersion || APP_LATEST_VERSION || APP_VERSION) !== String(currentVersion || APP_VERSION);
+  if(lat) lat.className = needs ? 'vlatest-old' : 'vlatest-ok';
+  if(btn){
+    btn.classList.toggle('needs-update', needs);
+    btn.classList.toggle('hidden-update', !needs);
+    btn.textContent = needs ? 'Update' : 'Current';
+  }
+}
+
+
+function pauseUiMedia(paused){
+  try{
+    document.querySelectorAll('video').forEach(function(v){
+      try{ paused ? v.pause() : (v.hasAttribute('autoplay') ? v.play().catch(function(){}) : null); }catch(e){}
+    });
+  }catch(e){}
+  try{ if(paused && window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+}
+
+function setPausedState(paused){
+  APP_PAUSED = !!paused;
+  document.body.classList.toggle('app-paused', APP_PAUSED);
+  var btn = document.getElementById('pause-ui-btn');
+  if(btn){
+    btn.classList.toggle('active', APP_PAUSED);
+    btn.innerHTML = APP_PAUSED ? '▶ <span>Resume</span>' : '⏸ <span>Pause</span>';
+  }
+  pauseUiMedia(APP_PAUSED);
+  try{ localStorage.setItem(APP_PAUSE_KEY, APP_PAUSED ? '1' : '0'); }catch(e){}
+  if(window.showAstranovaStatusBubble){
+    showAstranovaStatusBubble(APP_PAUSED ? 'UI paused. Tap again to resume motion.' : 'UI resumed.', 1200);
+  }
+  aiSuperviseLayout();
+}
+
+function togglePauseMode(){
+  setPausedState(!APP_PAUSED);
+}
+
+function restorePausedState(){
+  try{ APP_PAUSED = localStorage.getItem(APP_PAUSE_KEY) === '1'; }catch(e){ APP_PAUSED = false; }
+  setPausedState(APP_PAUSED);
+}
+
+function rectsOverlap(a,b,pad){
+  pad = Number.isFinite(pad) ? pad : 0;
+  if(!a || !b) return false;
+  return !(a.right + pad < b.left || a.left - pad > b.right || a.bottom + pad < b.top || a.top - pad > b.bottom);
+}
+
+function aiSuperviseLayout(){
+  var body = document.body;
+  if(!body) return;
+  var topbar = document.getElementById('topbar');
+  var bottombar = document.getElementById('bottombar');
+  var cmd = document.getElementById('cmd-response');
+  var helper = document.getElementById('astranova-wrapper');
+  var locate = document.getElementById('locate-btn');
+  var zoom = document.getElementById('zoom-btns');
+  var perf = document.getElementById('perf-hud');
+  var leftDock = document.getElementById('context-left');
+  var rightDock = document.getElementById('context-right');
+  var w = window.innerWidth || document.documentElement.clientWidth || 1280;
+  var h = window.innerHeight || document.documentElement.clientHeight || 720;
+
+  body.classList.toggle('narrow-ui', w < 980 || h < 680);
+  if(topbar){
+    var left = topbar.querySelector('.tb-left');
+    var center = topbar.querySelector('.tb-center');
+    var right = topbar.querySelector('.tb-right');
+    var total = (left ? left.scrollWidth : 0) + (center ? center.scrollWidth : 0) + (right ? right.scrollWidth : 0) + 80;
+    body.classList.toggle('compact-ribbon', total > w || w < 1180);
+    body.classList.toggle('micro-ribbon', total > (w - 70) || w < 860 || h < 620);
+  }
+  var bottomSpace = (bottombar ? bottombar.offsetHeight : 60);
+  [leftDock,rightDock].forEach(function(dock){
+    if(!dock) return;
+    dock.style.top = (topbar ? topbar.offsetHeight + 12 : 52) + 'px';
+    dock.style.bottom = (bottomSpace + 12) + 'px';
+  });
+  if(cmd){
+    cmd.style.bottom = bottomSpace + 'px';
+    if(w > 1040){
+      cmd.style.left = Math.max(0, Math.round((w - 980) / 2)) + 'px';
+      cmd.style.right = Math.max(0, Math.round((w - 980) / 2)) + 'px';
+    } else {
+      cmd.style.left = '0';
+      cmd.style.right = '0';
+    }
+  }
+  if(helper){
+    helper.style.bottom = (bottomSpace + 10) + 'px';
+    helper.style.right = body.classList.contains('micro-ribbon') ? '14px' : '56px';
+  }
+  if(locate){
+    locate.style.bottom = (bottomSpace + (body.classList.contains('micro-ribbon') ? 82 : 96)) + 'px';
+    locate.style.right = body.classList.contains('micro-ribbon') ? '10px' : '14px';
+  }
+  if(zoom){
+    zoom.style.bottom = (bottomSpace + 18) + 'px';
+    zoom.style.right = body.classList.contains('micro-ribbon') ? '10px' : '14px';
+  }
+  if(perf){
+    perf.style.top = (topbar ? topbar.offsetHeight + 12 : 52) + 'px';
+    perf.style.left = '16px';
+  }
+  if(helper && cmd && rectsOverlap(helper.getBoundingClientRect(), cmd.getBoundingClientRect(), 8)){
+    helper.style.bottom = (bottomSpace + 132) + 'px';
+  }
+  if(helper && rightDock && rectsOverlap(helper.getBoundingClientRect(), rightDock.getBoundingClientRect(), 8)){
+    helper.style.right = '92px';
+  }
+  if(locate && helper && rectsOverlap(locate.getBoundingClientRect(), helper.getBoundingClientRect(), 8)){
+    locate.style.bottom = (bottomSpace + 168) + 'px';
+  }
+  if(window.getUiPolicy){
+    var policy = getUiPolicy();
+    if(policy && policy.minimal && w < 780){
+      if(leftDock) leftDock.style.display = 'none';
+      if(rightDock && !rightDock.querySelector('.primary')) rightDock.style.display = 'none';
+    }
+  }
+}
+
+function applyBrandLock(){
+  document.title = 'Astranov ' + APP_VERSION;
+  var metaVer = document.querySelector('meta[name="astranov-version"]');
+  if(metaVer) metaVer.setAttribute('content', APP_VERSION);
+  var authSubtitle = document.querySelector('#am .asub');
+  if(authSubtitle) authSubtitle.textContent = APP_DESCRIPTION;
+  setVersionRibbon(APP_VERSION, APP_LATEST_VERSION);
+  aiSuperviseLayout();
+}
+
+function isUiBusyForAutoRefresh(){
+  var authOpen = (function(){ var el = document.getElementById('am'); return !!(el && !el.classList.contains('h')); })();
+  var modalOpen = ['pm','pm-pay','post-chooser','map-action-modal','entity-modal'].some(function(id){
+    var el = document.getElementById(id);
+    return !!(el && el.classList.contains('on'));
+  });
+  var chatExpanded = (function(){ var el = document.getElementById('cmd-response'); return !!(el && el.classList.contains('expanded')); })();
+  return authOpen || modalOpen || chatExpanded || APP_PAUSED;
+}
+
+function hardRefreshUpdate(targetVersion){
+  var nextVersion = String(targetVersion || APP_LATEST_VERSION || APP_VERSION);
+  try{ localStorage.setItem('astranov.auto.updated.' + nextVersion, '1'); }catch(e){}
+  var nextUrl = cleanAppUrl() + '?v=' + encodeURIComponent(nextVersion) + '&refresh=' + Date.now();
+  window.location.replace(nextUrl);
+}
+
+function maybeAutoRefreshUpdate(){
+  if(APP_LATEST_VERSION === APP_VERSION) return;
+  var autoKey = 'astranov.auto.updated.' + APP_LATEST_VERSION;
+  try{ if(localStorage.getItem(autoKey) === '1') return; }catch(e){}
+  var idleLongEnough = (Date.now() - LAST_USER_ACTIVITY_AT) > APP_UPDATE_IDLE_MS;
+  if(document.hidden || (idleLongEnough && !isUiBusyForAutoRefresh())) hardRefreshUpdate(APP_LATEST_VERSION);
+}
+
+async function checkLatestVersion(forceSilent){
+  try{
+    var res = await fetch(cleanAppUrl() + '?version_probe=' + Date.now(), { cache:'no-store' });
+    var htmlText = await res.text();
+    var metaMatch = htmlText.match(/<meta\s+name=["']astranov-version["']\s+content=["']([^"']+)["']/i);
+    var jsMatch = htmlText.match(/var\s+APP_VERSION\s*=\s*'([^']+)'/);
+    var latest = (metaMatch && metaMatch[1]) || (jsMatch && jsMatch[1]) || APP_VERSION;
+    if(!isVersionWithinSeries(latest)) latest = APP_VERSION;
+    APP_LATEST_VERSION = latest;
+    applyBrandLock();
+    if(latest !== APP_VERSION){
+      var noticeKey = APP_UPDATE_NOTICE_KEY + '.' + latest;
+      if(!forceSilent){ try{ if(localStorage.getItem(noticeKey) !== '1') localStorage.setItem(noticeKey, '1'); }catch(e){} }
+      maybeAutoRefreshUpdate();
+    }
+  }catch(e){
+    applyBrandLock();
+  }
+}
+
+function getLocalDateStamp(dt){
+  var d = dt || new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + day;
+}
+
+function getWalletStorageKey(){
+  if(CU && isOwner(CU)) return WALLET_KEY + '.owner';
+  if(CU && CU.id) return WALLET_KEY + '.' + CU.id;
+  return WALLET_KEY + '.guest';
+}
+
+function getPaymentLogStorageKey(){
+  if(CU && isOwner(CU)) return PAYMENT_LOG_KEY + '.owner';
+  if(CU && CU.id) return PAYMENT_LOG_KEY + '.' + CU.id;
+  return PAYMENT_LOG_KEY + '.guest';
+}
+
+function migrateLegacyWalletScope(){
+  try{
+    var scoped = getWalletStorageKey();
+    if(localStorage.getItem(scoped) == null){
+      var legacy = localStorage.getItem(WALLET_KEY);
+      if(legacy != null) localStorage.setItem(scoped, legacy);
+    }
+    var scopedLog = getPaymentLogStorageKey();
+    if(localStorage.getItem(scopedLog) == null){
+      var legacyLog = localStorage.getItem(PAYMENT_LOG_KEY);
+      if(legacyLog != null) localStorage.setItem(scopedLog, legacyLog);
+    }
+  }catch(e){}
+}
+
+function enforceOwnerWalletMidnightReset(force){
+  if(!(CU && isOwner(CU))) return false;
+  migrateLegacyWalletScope();
+  var today = getLocalDateStamp();
+  var last = localStorage.getItem(OWNER_BALANCE_RESET_KEY) || '';
+  if(force || last !== today){
+    localStorage.setItem(OWNER_BALANCE_RESET_KEY, today);
+    localStorage.setItem(getWalletStorageKey(), Number(OWNER_MIDNIGHT_BALANCE_EUR).toFixed(2));
+    document.getElementById('bal').textContent = Number(OWNER_MIDNIGHT_BALANCE_EUR).toFixed(2);
+    try{
+      var log = JSON.parse(localStorage.getItem(getPaymentLogStorageKey()) || '[]');
+      log.unshift({provider:'system-reset', amount:Number(OWNER_MIDNIGHT_BALANCE_EUR), label:'Owner midnight balance reset → €' + Number(OWNER_MIDNIGHT_BALANCE_EUR).toFixed(2), live:true, at:new Date().toISOString(), id:'owner-reset-' + today});
+      localStorage.setItem(getPaymentLogStorageKey(), JSON.stringify(log.slice(0,12)));
+    }catch(e){}
+    return true;
+  }
+  return false;
+}
+
+function scheduleOwnerMidnightReset(){
+  if(ownerMidnightResetTimer) clearTimeout(ownerMidnightResetTimer);
+  var now = new Date();
+  var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 120);
+  ownerMidnightResetTimer = setTimeout(function(){
+    if(CU && isOwner(CU)){
+      enforceOwnerWalletMidnightReset(true);
+      renderPaymentHistory();
+    }
+    scheduleOwnerMidnightReset();
+  }, Math.max(1000, next.getTime() - now.getTime()));
+}
+
+function enforceSpartanGuardrails(){
+  applyBrandLock();
+  var cmdResponse = document.getElementById('cmd-response');
+  var channelBar = document.getElementById('chat-channel-bar');
+  if(cmdResponse && channelBar && !cmdResponse.contains(channelBar)) cmdResponse.insertBefore(channelBar, cmdResponse.firstChild);
+  var perfHud = document.getElementById('perf-hud');
+  if(perfHud){
+    perfHud.style.maxWidth = '140px';
+    perfHud.style.maxHeight = '140px';
+  }
+  aiSuperviseLayout();
+}
+
+applyBrandLock();
+setTimeout(enforceSpartanGuardrails, 0);
+window.addEventListener('load', function(){
+  enforceSpartanGuardrails();
+  restorePausedState();
+  scheduleOwnerMidnightReset();
+  aiSuperviseLayout();
+  setTimeout(function(){ checkLatestVersion(true); }, 2200);
+  setInterval(function(){ if(!APP_PAUSED) checkLatestVersion(true); }, APP_UPDATE_CHECK_INTERVAL_MS);
+});
+window.addEventListener('visibilitychange', function(){
+  if(document.hidden) maybeAutoRefreshUpdate();
+  else if(!APP_PAUSED) checkLatestVersion(true);
+});
+window.addEventListener('resize', aiSuperviseLayout, { passive:true });
+window.addEventListener('orientationchange', function(){ setTimeout(aiSuperviseLayout, 60); });
+document.addEventListener('fullscreenchange', aiSuperviseLayout);
+setTimeout(enforceSpartanGuardrails, 900);
+setTimeout(aiSuperviseLayout, 1200);
 
 var CU = null, CL = 0, LM = null, MM = [], TR = false;
 var LOC = { lat: 36.4441, lng: 28.2245 };
@@ -1788,7 +2295,7 @@ function getPendingPosts(){ try { return JSON.parse(localStorage.getItem(PENDING
 function setPendingPosts(p){ localStorage.setItem(PENDING_POSTS_KEY, JSON.stringify(p)); }
 
 /* ═══ AI MEMORY & LEARNING SYSTEM ═══ */
-var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
+var AI_MEMORY_KEY = 'astranov.ai.memory.v2';
 var AI_CONV_HISTORY_KEY = 'astranov.ai.history.v1';
 var AI_USER_PREFS_KEY = 'astranov.ai.prefs.v1';
 
@@ -1879,7 +2386,9 @@ function togglePwdView(){
 }
 
 /* ═══ GADGET CLICK-CYCLE: transparent → visible → expanded → transparent ═══ */
-function initGadgetCycle(elId){
+function initGadgetCycle(elId, opts){
+  opts = opts || {};
+  var allowExpand = opts.allowExpand !== false;
   var el = document.getElementById(elId);
   if(!el) return;
   var state = 0; // 0=transparent, 1=visible, 2=expanded
@@ -1890,18 +2399,15 @@ function initGadgetCycle(elId){
 
   el.addEventListener('click', function(e){
     if(dragging) return;
-    // Debounce fast clicks
     if(clickTimer) clearTimeout(clickTimer);
     clickTimer = setTimeout(function(){
-      state = (state + 1) % 3;
+      state = allowExpand ? ((state + 1) % 3) : (state === 1 ? 0 : 1);
       el.classList.remove('visible','expanded');
       if(state === 1) el.classList.add('visible');
-      else if(state === 2) el.classList.add('expanded');
-      // state 0 = back to transparent (no class)
+      else if(state === 2 && allowExpand) el.classList.add('expanded');
     }, 200);
   });
 
-  // Long-press to toggle moveable
   el.addEventListener('mousedown', function(e){
     pressTimer = setTimeout(function(){
       moveable = !moveable;
@@ -1927,7 +2433,7 @@ function initGadgetCycle(elId){
     el.style.transform = 'none';
   });
   document.addEventListener('touchmove', function(e){
-    if(pressTimer) clearTimeout(pressTimer);
+    if(pressTimer && e.touches.length && Math.abs(e.touches[0].clientX - sx) > 5) clearTimeout(pressTimer);
     if(!dragging || !e.touches.length) return;
     el.style.position = 'fixed';
     el.style.left = (ol + e.touches[0].clientX - sx) + 'px';
@@ -1935,7 +2441,6 @@ function initGadgetCycle(elId){
     el.style.right = 'auto';
     el.style.transform = 'none';
   }, {passive:true});
-
   function endDrag(){ if(pressTimer) clearTimeout(pressTimer); dragging = false; }
   document.addEventListener('mouseup', endDrag);
   document.addEventListener('touchend', endDrag);
@@ -1943,8 +2448,8 @@ function initGadgetCycle(elId){
 
 // Initialize both gadgets
 setTimeout(function(){
-  initGadgetCycle('compass-hud');
-  initGadgetCycle('perf-hud');
+  initGadgetCycle('compass-hud', { allowExpand:false });
+  initGadgetCycle('perf-hud', { allowExpand:false });
 }, 500);
 
 function setGuestState() {
@@ -1952,7 +2457,10 @@ function setGuestState() {
   document.getElementById('am').classList.add('h');
   document.getElementById('uname').textContent = 'Guest';
   document.getElementById('uavatar').textContent = '✦';
-  document.getElementById('bal').textContent = Number(getWalletBalance() || 0).toFixed(2);
+  document.getElementById('bal').textContent = '0.00';
+  var roleBadge = document.getElementById('role-badge');
+  if(roleBadge) roleBadge.style.display = 'none';
+  if(ownerMidnightResetTimer){ clearTimeout(ownerMidnightResetTimer); ownerMidnightResetTimer = null; }
   document.getElementById('pr-email').textContent = '—';
   document.getElementById('pr-phone-input').value = '';
   document.getElementById('pr-role').textContent = 'Guest';
@@ -1960,6 +2468,7 @@ function setGuestState() {
   document.getElementById('pay-email').value = '';
   document.getElementById('pay-phone').value = '';
   document.getElementById('pay-name').value = 'Guest';
+  renderContextButtons();
 }
 
 function openAuth(reason='Login required.', resumeAction=null) {
@@ -2740,211 +3249,6 @@ window.detectOrderIntent = function(msg){
   return _origDetectOrder(msg);
 };
 
-/* ═══ COMPASS RADAR HUD ENGINE ═══ */
-(function initCompassHud(){
-  var ticksG = document.getElementById('compass-ticks');
-  var milsG = document.getElementById('compass-mils');
-  if(!ticksG || !milsG) return;
-
-  var cx = 54, cy = 54, outerR = 48, innerR = 42, milR = 38;
-  var cardinals = [{deg:0,label:'N'},{deg:90,label:'E'},{deg:180,label:'S'},{deg:270,label:'W'}];
-  var intercardinals = [{deg:45,label:'NE'},{deg:135,label:'SE'},{deg:225,label:'SW'},{deg:315,label:'NW'}];
-
-  // Generate tick marks every 5 degrees, major every 30, cardinal every 90
-  for(var d = 0; d < 360; d += 2){
-    var rad = (d - 90) * Math.PI / 180;
-    var isCardinal = (d % 90 === 0);
-    var isMajor = (d % 30 === 0);
-    var isMinor = (d % 10 === 0);
-    var r1 = outerR;
-    var r2 = isCardinal ? outerR - 8 : isMajor ? outerR - 6 : isMinor ? outerR - 4 : outerR - 2;
-    var x1 = cx + r1 * Math.cos(rad);
-    var y1 = cy + r1 * Math.sin(rad);
-    var x2 = cx + r2 * Math.cos(rad);
-    var y2 = cy + r2 * Math.sin(rad);
-    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-    line.setAttribute('class', isCardinal ? 'compass-tick-cardinal' : isMajor ? 'compass-tick-major' : 'compass-tick');
-    ticksG.appendChild(line);
-
-    // Degree labels every 30°
-    if(isMajor && !isCardinal){
-      var labelR = outerR - 11;
-      var tx = cx + labelR * Math.cos(rad);
-      var ty = cy + labelR * Math.sin(rad) + 2;
-      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
-      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
-      txt.setAttribute('class','compass-text');
-      txt.textContent = d + '\u00B0';
-      ticksG.appendChild(txt);
-    }
-  }
-
-  // Cardinal labels
-  cardinals.forEach(function(c){
-    var rad = (c.deg - 90) * Math.PI / 180;
-    var labelR = outerR - 12;
-    var tx = cx + labelR * Math.cos(rad);
-    var ty = cy + labelR * Math.sin(rad) + 2.5;
-    var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
-    txt.setAttribute('x',tx); txt.setAttribute('y',ty);
-    txt.setAttribute('class','compass-text-cardinal');
-    txt.textContent = c.label;
-    ticksG.appendChild(txt);
-  });
-
-  // Mil markings (inner ring, every 200 mils = ~11.25°, key positions)
-  var milPositions = [0,400,800,1200,1600,2000,2400,2800,3200,3600,4000,4400,4800,5200,5600,6000];
-  milPositions.forEach(function(mil){
-    var deg = mil * 360 / 6400;
-    var rad = (deg - 90) * Math.PI / 180;
-    var r1 = milR;
-    var r2 = milR - 3;
-    var x1 = cx + r1 * Math.cos(rad);
-    var y1 = cy + r1 * Math.sin(rad);
-    var x2 = cx + r2 * Math.cos(rad);
-    var y2 = cy + r2 * Math.sin(rad);
-    var line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-    line.setAttribute('stroke','rgba(0,200,255,0.3)'); line.setAttribute('stroke-width','0.4');
-    milsG.appendChild(line);
-    // Mil label
-    if(mil % 800 === 0){
-      var tx = cx + (milR - 6) * Math.cos(rad);
-      var ty = cy + (milR - 6) * Math.sin(rad) + 1.5;
-      var txt = document.createElementNS('http://www.w3.org/2000/svg','text');
-      txt.setAttribute('x',tx); txt.setAttribute('y',ty);
-      txt.setAttribute('class','compass-mil');
-      txt.textContent = mil;
-      milsG.appendChild(txt);
-    }
-  });
-
-  // Compass heading from device orientation
-  var currentHeading = 0;
-  var needleGroup = document.getElementById('compass-needle-group');
-  var headingText = document.getElementById('compass-heading');
-
-  function updateHeading(deg){
-    currentHeading = deg;
-    if(needleGroup) needleGroup.setAttribute('transform','rotate('+(-deg)+',54,54)');
-    if(headingText) headingText.textContent = Math.round(deg) + '\u00B0';
-  }
-
-  // Try device compass
-  function requestCompass(){
-    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
-      DeviceOrientationEvent.requestPermission().then(function(state){
-        if(state === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-      }).catch(function(){});
-    } else {
-      window.addEventListener('deviceorientation', handleOrientation);
-    }
-  }
-
-  function handleOrientation(e){
-    var heading = e.webkitCompassHeading || (e.alpha ? (360 - e.alpha) : null);
-    if(heading !== null && heading !== undefined) updateHeading(heading);
-  }
-
-  // For desktop: slowly rotate or use mouse position
-  var desktopHeading = 0;
-  function desktopCompassFallback(){
-    if(!window.DeviceOrientationEvent || navigator.userAgent.match(/Windows|Mac|Linux/)){
-      setInterval(function(){
-        desktopHeading = (desktopHeading + 0.3) % 360;
-        updateHeading(desktopHeading);
-      }, 100);
-    }
-  }
-
-  requestCompass();
-  desktopCompassFallback();
-
-  // Radar blip scanner — scan nearby items and show as blips
-  function updateRadarBlips(){
-    var blipsG = document.getElementById('radar-blips');
-    if(!blipsG || !window.LM || CL !== 1) return;
-    blipsG.innerHTML = '';
-    var center = LM.getCenter();
-    try{
-      var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
-      var places = JSON.parse(localStorage.getItem('astranov.local.places.v333') || '[]');
-      var all = offers.concat(places).slice(0, 20);
-      all.forEach(function(item){
-        if(!item.lat) return;
-        var dlat = item.lat - center.lat;
-        var dlng = (item.lon || item.lng || 0) - center.lng;
-        var dist = Math.sqrt(dlat*dlat + dlng*dlng);
-        if(dist > 0.08) return; // only nearby
-        // Map to radar coords (max radius = 44px for ~5km)
-        var scale = 44 / 0.05; // 0.05 degrees ≈ 5km
-        var rx = cx + dlng * scale;
-        var ry = cy - dlat * scale; // invert Y
-        // Clamp to radar circle
-        var dx = rx - cx, dy = ry - cy;
-        var d = Math.sqrt(dx*dx + dy*dy);
-        if(d > 44){ rx = cx + dx/d * 44; ry = cy + dy/d * 44; }
-        var circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-        circle.setAttribute('cx', rx);
-        circle.setAttribute('cy', ry);
-        circle.setAttribute('r', '2');
-        var cls = 'radar-blip';
-        if(item.kind === 'driver_base') cls += ' radar-blip-delivery';
-        else if(item.kind === 'post_signal') cls += ' radar-blip-post';
-        circle.setAttribute('class', cls);
-        circle.style.animationDelay = (Math.random() * 3) + 's';
-        blipsG.appendChild(circle);
-      });
-    }catch(e){}
-  }
-
-  setInterval(updateRadarBlips, 3000);
-  setTimeout(updateRadarBlips, 1500);
-
-  // Route indicator — point toward active order destination
-  function updateRouteIndicator(){
-    var routeLine = document.getElementById('route-indicator');
-    var waypointDot = document.getElementById('waypoint-indicator');
-    if(!routeLine || !waypointDot) return;
-    // Check if there's an active delivery target
-    var target = window._compassTarget || null;
-    if(!target || !window.LM || CL !== 1){
-      routeLine.classList.remove('active');
-      waypointDot.classList.remove('active');
-      document.getElementById('compass-hud').classList.remove('routing');
-      return;
-    }
-    routeLine.classList.add('active');
-    waypointDot.classList.add('active');
-    document.getElementById('compass-hud').classList.add('routing');
-    var center = LM.getCenter();
-    var dlat = target.lat - center.lat;
-    var dlng = target.lng - center.lng;
-    var angle = Math.atan2(dlng, dlat) * 180 / Math.PI; // 0=N
-    var bearing = (90 - angle + currentHeading) * Math.PI / 180;
-    var endR = 46;
-    var ex = cx + endR * Math.cos(bearing - Math.PI/2);
-    var ey = cy + endR * Math.sin(bearing - Math.PI/2);
-    routeLine.setAttribute('x2', ex);
-    routeLine.setAttribute('y2', ey);
-    waypointDot.setAttribute('cx', ex);
-    waypointDot.setAttribute('cy', ey);
-  }
-
-  setInterval(updateRouteIndicator, 500);
-
-  // Make compass visible only on map layer
-  var compassEl = document.getElementById('compass-hud');
-  var _origApplyLayer2 = window.applyLayer;
-  window.applyLayer = function(idx){
-    _origApplyLayer2(idx);
-    if(compassEl) compassEl.style.display = idx === 1 ? 'block' : 'none';
-  };
-})();
-
 /* ── AUTH ── */
 function stab(t) {
   const su = t === 'signup';
@@ -3060,10 +3364,13 @@ function onAuth(user, name, role, phone) {
   document.getElementById('pay-email').value = user.email || '';
   document.getElementById('pay-phone').value = CU.phone || '';
   document.getElementById('pay-name').value = name || '';
+  scheduleOwnerMidnightReset();
+  if(isOwner(CU)) enforceOwnerWalletMidnightReset(false);
   loadBalance();
   loadCounts();
   subscribeRealtime();
   if (role === 'driver' || role === 'admin') loadDriverDeliveries();
+  renderContextButtons();
   if (typeof PENDING_ACTION === 'function') {
     const action = PENDING_ACTION;
     PENDING_ACTION = null;
@@ -3076,6 +3383,7 @@ function guestMode() {
   setAuthHelper('');
   loadBalance();
   loadCounts();
+  renderContextButtons();
 }
 
 function toggleUserMenu() {
@@ -3378,17 +3686,12 @@ function aiExecuteOrder(item, qty){
   // Check wallet
   var balance = getWalletBalance();
   if(balance < price){
-<<<<<<< HEAD
     addAiMessage('ai-msg-reply','Astranov','Your balance is \u20AC' + balance.toFixed(2) + ' but this order costs \u20AC' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
-=======
-    addAiMessage('ai-msg-reply','Astranov','Your balance is €' + balance.toFixed(2) + ' but this order costs €' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     speakAstranova('Your balance is too low. Opening wallet to top up.');
     setTimeout(openPayments, 800);
     return;
   }
 
-<<<<<<< HEAD
   // Distance verification for extreme orders
   var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
   var fee = calcDeliveryFee(dist, totalVol);
@@ -3403,8 +3706,6 @@ function aiExecuteOrder(item, qty){
 }
 
 function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
-=======
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   // Animate Astranova
   bounceAstranova();
 
@@ -3712,20 +4013,24 @@ function aiSearchProducts(query){
 }
 
 function getWalletBalance() {
-  return Number(localStorage.getItem(WALLET_KEY) || '0');
+  migrateLegacyWalletScope();
+  return Number(localStorage.getItem(getWalletStorageKey()) || '0');
 }
 
 function setWalletBalance(value) {
-  localStorage.setItem(WALLET_KEY, String(Number(value || 0).toFixed(2)));
+  migrateLegacyWalletScope();
+  localStorage.setItem(getWalletStorageKey(), String(Number(value || 0).toFixed(2)));
   document.getElementById('bal').textContent = Number(value || 0).toFixed(2);
 }
 
 function getPaymentLog() {
-  try { return JSON.parse(localStorage.getItem(PAYMENT_LOG_KEY) || '[]'); } catch (e) { return []; }
+  migrateLegacyWalletScope();
+  try { return JSON.parse(localStorage.getItem(getPaymentLogStorageKey()) || '[]'); } catch (e) { return []; }
 }
 
 function setPaymentLog(log) {
-  localStorage.setItem(PAYMENT_LOG_KEY, JSON.stringify(log.slice(0, 12)));
+  migrateLegacyWalletScope();
+  localStorage.setItem(getPaymentLogStorageKey(), JSON.stringify(log.slice(0, 12)));
   renderPaymentHistory();
 }
 
@@ -3937,6 +4242,12 @@ async function renderPayPalButtons(force=false) {
 }
 
 async function loadBalance() {
+  if(CU && isOwner(CU)) enforceOwnerWalletMidnightReset(false);
+  if(!CU){
+    document.getElementById('bal').textContent = '0.00';
+    renderPaymentHistory();
+    return;
+  }
   setWalletBalance(getWalletBalance());
   renderPaymentHistory();
 }
@@ -3954,81 +4265,217 @@ async function loadBalance() {
   }
   loadOrbitalFeed();
   loadDemoData();
-<<<<<<< HEAD
-  // Start AI assistant after a brief delay
-  setTimeout(initAstranovStartup, 2500);
+  renderContextButtons();
+  try{ if(CL !== 0) goLayer(0); }catch(e){}
+  // Start AI assistant immediately after boot settles
+  setTimeout(initAstranovStartup, 420);
 })();
 
-/* ── AI STARTUP — Request mic + initiate conversation ── */
-function initAstranovStartup(){
-  // Request microphone permission immediately
-  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+
+var STARTUP_PERMISSIONS = { attempted:false, microphone:false, gps:false, notifications:false, speakerReady:false };
+var _astranovaPresenceTimer = null;
+
+function requestMicPermission(){
+  return new Promise(function(resolve){
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return resolve(false);
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-      // Permission granted — stop the stream (we'll use SpeechRecognition)
-      stream.getTracks().forEach(function(t){ t.stop(); });
-      console.log('[Astranov] Microphone permission granted');
-      startAstranovGreeting(true);
-    }).catch(function(e){
-      console.log('[Astranov] Microphone denied:', e.message);
-      startAstranovGreeting(false);
-    });
-  } else {
-    startAstranovGreeting(false);
+      try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+      STARTUP_PERMISSIONS.microphone = true;
+      resolve(true);
+    }).catch(function(){ resolve(false); });
+  });
+}
+
+function requestGeoPermission(){
+  return new Promise(function(resolve){
+    if(!navigator.geolocation) return resolve(false);
+    navigator.geolocation.getCurrentPosition(function(pos){
+      LOC = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      STARTUP_PERMISSIONS.gps = true;
+      resolve(true);
+    }, function(){ resolve(false); }, { enableHighAccuracy:true, timeout:8000, maximumAge:300000 });
+  });
+}
+
+function requestNotificationPermission(triggeredByUser){
+  return new Promise(function(resolve){
+    if(!('Notification' in window)) return resolve(false);
+    if(Notification.permission === 'granted'){
+      STARTUP_PERMISSIONS.notifications = true;
+      return resolve(true);
+    }
+    if(Notification.permission === 'denied') return resolve(false);
+    if(!triggeredByUser) return resolve(false);
+    Notification.requestPermission().then(function(state){
+      STARTUP_PERMISSIONS.notifications = (state === 'granted');
+      resolve(state === 'granted');
+    }).catch(function(){ resolve(false); });
+  });
+}
+
+function primeSpeakerReady(){
+  try{
+    if(window.speechSynthesis && typeof speechSynthesis.getVoices === 'function') speechSynthesis.getVoices();
+    STARTUP_PERMISSIONS.speakerReady = !!window.speechSynthesis;
+    return Promise.resolve(STARTUP_PERMISSIONS.speakerReady);
+  }catch(e){
+    return Promise.resolve(false);
   }
 }
 
-function startAstranovGreeting(micAvailable){
-  // Open conversation panel
+function requestStartupPermissions(triggeredByUser){
+  STARTUP_PERMISSIONS.attempted = true;
+  return Promise.allSettled([
+    requestMicPermission(),
+    requestGeoPermission(),
+    requestNotificationPermission(!!triggeredByUser),
+    primeSpeakerReady()
+  ]).then(function(){ return STARTUP_PERMISSIONS; });
+}
+
+function showAstranovaStatusBubble(text, ms){
+  var speech = document.getElementById('astranova-speech');
+  if(!speech) return;
+  speech.textContent = text;
+  speech.classList.add('on');
+  clearTimeout(showAstranovaStatusBubble._timer);
+  showAstranovaStatusBubble._timer = setTimeout(function(){ speech.classList.remove('on'); }, ms || 2200);
+}
+
+function initAstranovaPresence(){
+  if(_astranovaPresenceTimer) clearInterval(_astranovaPresenceTimer);
+  _astranovaPresenceTimer = setInterval(function(){
+    if(CL === 2) return;
+    bounceAstranova();
+    if(Math.random() > 0.55){
+      var lines = [
+        'Command bridge online.',
+        STARTUP_PERMISSIONS.gps ? 'GPS lock is warm. Jump into your city when ready.' : 'Location access will unlock instant city zoom.',
+        'Astranov standing by for routing, posting, search, and control.',
+        'Tap me to expand command control.'
+      ];
+      showAstranovaStatusBubble(lines[Math.floor(Math.random()*lines.length)], 2100);
+    }
+  }, 12000);
+}
+
+function tryEnterAssistantFullscreen(){
+  try{
+    var el = document.documentElement;
+    if(!document.fullscreenElement && el && el.requestFullscreen) el.requestFullscreen().catch(function(){});
+  }catch(e){}
+}
+
+function getContextualControls(){
+  var left = [];
+  var right = [];
+  var policy = getUiPolicy();
+  var layersIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>';
+  var userIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var settingsIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+  var postIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  var listIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  var locateIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>';
+  var refreshIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
+  var globeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+  var radarIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>';
+  function add(side, btn){ (side === 'left' ? left : right).push(btn); }
+  function maybe(side, key, btn, essential){
+    if(essential || isControlRevealed(key)) add(side, btn);
+  }
+
+  maybe('left', 'profile', { id:'ctx-user', tip: CU ? 'Profile' : 'Login', action:'toggleUserMenu()', icon:userIcon }, false);
+  maybe('left', 'settings', { id:'ctx-settings', tip:'Settings', action:"tmenuById('mst')", icon:settingsIcon }, false);
+
+  if(CL === 1){
+    maybe('right', 'post', { id:'ctx-post', tip:'+ Post here', action:'openPost()', icon:postIcon, primary:true }, true);
+    maybe('right', 'globe', { id:'ctx-globe', tip:'Return to Globe', action:'goLayer(0)', icon:globeIcon }, true);
+    maybe('right', 'listings', { id:'ctx-listings', tip:'Listings', action:"toggleListings(document.getElementById('ctx-listings'))", icon:listIcon }, false);
+    maybe('right', 'location', { id:'ctx-city', tip:'Zoom to My City', action:'locateMe()', icon:locateIcon }, false);
+    maybe('right', 'refresh', { id:'ctx-refresh', tip:'Refresh local data', action:'refreshData()', icon:refreshIcon }, false);
+    maybe('right', 'radar', { id:'ctx-radar', tip:'Radar', action:"toggleRadar(document.getElementById('ctx-radar'))", icon:radarIcon }, false);
+  } else if(CL === 0){
+    maybe('right', 'location', { id:'ctx-city', tip:'Zoom to My City', action:'locateMe()', icon:locateIcon, primary:true }, true);
+    maybe('right', 'globe', { id:'ctx-globe', tip:'Reset globe view', action:'goLayer(0)', icon:globeIcon }, false);
+    maybe('right', 'layers', { id:'ctx-layers', tip:'Layer tools', action:"tmenuById('mly')", icon:layersIcon }, false);
+    maybe('right', 'refresh', { id:'ctx-refresh', tip:'Refresh signals', action:'refreshData()', icon:refreshIcon }, false);
+  } else {
+    maybe('right', 'globe', { id:'ctx-globe', tip:'Return to Globe', action:'goLayer(0)', icon:globeIcon, primary:true }, true);
+    maybe('right', 'refresh', { id:'ctx-refresh', tip:'Refresh', action:'refreshData()', icon:refreshIcon }, false);
+  }
+  return { left:left, right:right };
+}
+
+function renderContextButtons(){
+  var leftHost = document.getElementById('context-left');
+  var rightHost = document.getElementById('context-right');
+  if(!leftHost || !rightHost) return;
+  var packs = getContextualControls();
+  function render(list){
+    if(!list.length) return '';
+    return list.map(function(btn){
+      var cls = 'ctx-btn' + (btn.primary ? ' primary' : '') + (btn.warn ? ' warn' : '');
+      return '<button id="'+btn.id+'" class="'+cls+'" data-tip="'+escapeHtml(btn.tip)+'" onclick="'+btn.action.replace(/"/g,'&quot;')+'" aria-label="'+escapeHtml(btn.tip)+'">'+btn.icon+'</button>';
+    }).join('') + '<div class="dock-spacer"></div>';
+  }
+  leftHost.innerHTML = render(packs.left);
+  rightHost.innerHTML = render(packs.right);
+  leftHost.style.display = packs.left.length ? 'flex' : 'none';
+  rightHost.style.display = packs.right.length ? 'flex' : 'none';
+  setTimeout(aiSuperviseLayout, 0);
+}
+
+/* ── AI STARTUP — Request mic + initiate conversation ── */
+function initAstranovStartup(){
+  try{ if(CL !== 0) goLayer(0); }catch(e){}
+  setTimeout(function(){ try{ if(globeController) globeController.resetView(); }catch(e){} }, 420);
+  renderContextButtons();
+  initAstranovaPresence();
+  bounceAstranova();
+  showAstranovaStatusBubble('Initializing command bridge…', 1800);
+  requestStartupPermissions(false).then(function(perms){
+    startAstranovGreeting(perms);
+  });
+}
+
+function startAstranovGreeting(perms){
+  perms = perms || STARTUP_PERMISSIONS || {};
+  var micAvailable = !!perms.microphone;
+  var gpsAvailable = !!perms.gps;
   var resp = document.getElementById('cmd-response');
   resp.className = 'expanded';
   resp.style.display = 'flex';
   resp.style.maxHeight = _chatHeight + 'px';
 
-  // Bounce the character to draw attention
   bounceAstranova();
+  renderContextButtons();
 
-  // Detect user language from browser
   var lang = (navigator.language || navigator.userLanguage || 'en').substring(0,2);
   var mem = getAiMemory();
   var name = (mem.userName || (CU ? CU.name : ''));
   var nameStr = name ? ', ' + name : '';
 
-  var greeting, voiceLang;
+  var greeting;
   if(lang === 'el'){
-    greeting = 'Γεια σου' + nameStr + '! Είμαι ο Astranov, ο προσωπικός σου βοηθός. Πες μου τι χρειάζεσαι — φαγητό, καταστήματα, παραδόσεις. Πάτα το μικρόφωνο για να μιλήσεις ή γράψε εδώ κάτω.';
-    voiceLang = 'el-GR';
+    greeting = 'Γεια σου' + nameStr + '! Είμαι ο Astranov, η κεντρική τεχνητή νοημοσύνη του Internet Operating System. Ξεκινάμε από την υδρόγειο. Ζήτησα πρόσβαση σε μικρόφωνο, τοποθεσία και φωνητική έξοδο. Πάτα το φωτεινό κουμπί «Zoom to My City» για άμεσο πέρασμα στην πόλη σου ή πες μου τι θέλεις να κάνω.';
   } else {
-    greeting = 'Greetings' + nameStr + '! I am Astranov, your personal delivery assistant. Tell me what you need — food, shops, supplies. ' + (micAvailable ? 'Tap the microphone to speak, or type below.' : 'Type your request below.');
-    voiceLang = 'en-US';
+    greeting = 'Greetings' + nameStr + '! I am Astranov, command AI of the Internet Operating System. We begin from the globe. I am requesting microphone, location, and voice readiness so I can help immediately while keeping the interface clean and task-driven. Tap the glowing Zoom to My City control to jump into your city, or tell me what to do.';
   }
 
   if((mem.totalInteractions || 0) > 3){
-    if(lang === 'el'){
-      greeting = 'Καλώς ήρθες πίσω' + nameStr + '! Τι μπορώ να κάνω για σένα σήμερα;';
-    } else {
-      greeting = 'Welcome back' + nameStr + '! What can I find for you today?';
-    }
+    greeting = (lang === 'el')
+      ? 'Καλώς ήρθες πίσω' + nameStr + '! Η υδρόγειος είναι έτοιμη. Πάτα «Zoom to My City» ή δώσε μου εντολή.'
+      : 'Welcome back' + nameStr + '! The globe is hot and ready. Hit Zoom to My City or give me a command.';
   }
 
   addAiMessage('ai-msg-reply', 'Astranov', greeting);
-
-  // Speak the greeting after a moment
-  setTimeout(function(){
-    speakAstranova(greeting);
-  }, 800);
-
-  // If mic available, show a hint
-  if(micAvailable){
-    setTimeout(function(){
-      addAiMessage('system-msg', 'System', '🎤 Microphone ready — tap the mic button to speak hands-free');
-    }, 3000);
+  addAiMessage('system-msg', 'System', (gpsAvailable ? '📍 GPS ready for instant city jump.' : '📍 Allow location access to unlock instant city jump.') + ' ' + (micAvailable ? '🎤 Microphone ready.' : '🎤 Microphone not granted yet.'));
+  if(!perms.notifications && 'Notification' in window){
+    addAiMessage('system-msg', 'System', '🔔 Notifications can be granted on a direct tap if you want proactive alerts.');
   }
+  setTimeout(function(){ speakAstranova(greeting); }, 700);
 }
 
-=======
-})();
-
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 /* ══════════════════════════════
    DEMO DATA — Rhodes, Greece
    Remove this block before production
@@ -4571,31 +5018,41 @@ async function submitPost() {
   } catch(e) { showResp('Post error: '+e.message); }
 }
 
-/* ── ASTRANOV ANGEL AI ASSISTANT ── */
+/* ── ASTRANOV NORDIC WARRIOR AI ASSISTANT ── */
 const astranovaLines = [
-  'Astranov online. What signal should I find?',
-  'Scanning the orbit lanes for your request…',
-  'Signal locked. I found something bright.',
-  'Need another route through the stars?',
-  'Wingbeat search in progress…'
+  'Astranov online. Name the signal and I will surface the right controls.',
+  'Command bridge active. Minimal UI, maximum readiness.',
+  'Need a tool? Ask and I will bring it forward.',
+  'Scanning the orbit lanes and keeping the deck clear.',
+  'Winged warrior standing by for route, search, and repair.'
 ];
 
 function openAstranova() {
-  // NO MODAL — activate bottom command bar in hands-free mode
+  tryEnterAssistantFullscreen();
+  requestStartupPermissions(true).then(function(){ revealRelevantControlsTemporarily(); renderContextButtons(); });
+  showAstranovaStatusBubble('Assistant control focus engaged.', 1800);
+  bounceAstranova();
   var input = document.getElementById('cmd-input');
   var bar = document.getElementById('bottombar');
   var resp = document.getElementById('cmd-response');
   // Expand conversation panel
   resp.className = 'expanded';
   resp.style.display = 'flex';
+  // Force AI channel so the helper always answers
+  try{
+    if(typeof switchChatChannel === 'function') switchChatChannel('ai');
+    var chSel = document.getElementById('chat-channel-select');
+    if(chSel) chSel.value = 'ai';
+  }catch(e){}
   // Focus input
   input.focus();
   // Focus input — user clicks mic manually for voice
   input.placeholder = 'Ask Astranov anything — type or tap 🎤 for voice…';
   // Add greeting if conversation is empty (text only, NO auto-speak)
   var conv = document.getElementById('ai-conv');
+  aiSuperviseLayout();
   if(conv && !conv.children.length){
-    addAiMessage('ai-msg-reply', 'Astranov', '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435 (zdravstvuyte), \u0434\u0440\u0443\u0433! I am Astranov, your personal delivery commissar. Need food? Supplies? I find best deal for the people. Tap \ud83c\udf99 to speak, or type below. \u0412\u043F\u0435\u0440\u0451\u0434, let us begin!');
+    addAiMessage('ai-msg-reply', 'Astranov', 'Command bridge open. I am Astranov, command AI of the Internet Operating System. The deck stays minimal. Ask for any control and I will surface it when needed.');
   }
 }
 
@@ -5044,10 +5501,11 @@ function applyLayer(idx) {
   document.getElementById('sb').classList.toggle('on',idx===1);
   document.getElementById('iss-box').style.display=idx===0?'block':'none';
   document.getElementById('orbital-feed').style.display=idx===0?'block':'none';
-  document.getElementById('locate-btn').classList.toggle('visible',idx===1);
+  document.getElementById('locate-btn').classList.toggle('visible',idx!==2);
   document.getElementById('globe-btn').classList.toggle('visible',idx!==0);
   document.getElementById('drone-btn').classList.toggle('visible',idx===1);
-  document.getElementById('astranova-wrapper').style.display=idx===1?'flex':'none';
+  document.getElementById('astranova-wrapper').style.display=idx!==2?'flex':'none';
+  renderContextButtons();
   if(idx===1&&!LM) initLeaflet();
   if(idx===2) runAbyssScene();
   if(idx===1){
@@ -5073,11 +5531,19 @@ function zoomOut(){
 
 function geolocate() {
   if(!navigator.geolocation){showResp('Geolocation not supported.');return;}
-  navigator.geolocation.getCurrentPosition(pos=>{
+  showAstranovaStatusBubble('Locking onto your city…', 1800);
+  navigator.geolocation.getCurrentPosition(function(pos){
     LOC={lat:pos.coords.latitude,lng:pos.coords.longitude};
-    if(CL===1&&LM) LM.flyTo([LOC.lat,LOC.lng],14);
-    else goLayer(1);
-  },()=>showResp('Location access denied.'));
+    STARTUP_PERMISSIONS.gps = true;
+    renderContextButtons();
+    if(CL!==1) goLayer(1);
+    setTimeout(function(){
+      if(!LM) initLeaflet();
+      setTimeout(function(){ if(LM) LM.flyTo([LOC.lat,LOC.lng],14,{duration:1.2}); }, LM ? 60 : 520);
+    }, 40);
+    showResp('City lock acquired. Dropping into your local workspace.');
+    showAstranovaStatusBubble('City lock acquired. Moving to local work mode.', 2400);
+  },function(){showResp('Location access denied.'); showAstranovaStatusBubble('Location permission denied.', 1800);});
 }
 
 function locateMe(){ geolocate(); }
@@ -5124,7 +5590,11 @@ function sendCmd(){
   resp.className = 'expanded';
   resp.style.display = 'flex';
 
-<<<<<<< HEAD
+  if(handleOwnerUiAuthorityCommand(val)) return;
+  if(handleUiControlCommand(val)) return;
+  if(handleVideoCommand(val)) return;
+  if(/^(pause|freeze|hold ui|pause ui|resume ui|unpause)/i.test(val)){ togglePauseMode(); return; }
+
   // CHANNEL ROUTING — if not on AI channel, post to that channel
   if(typeof CHAT_CHANNEL !== 'undefined' && CHAT_CHANNEL !== 'ai'){
     addAiMessage('system-msg', CHAT_CHANNEL.toUpperCase(), 'Message posted to ' + CHAT_CHANNEL + ' channel.');
@@ -5147,8 +5617,6 @@ function sendCmd(){
     return;
   }
 
-=======
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   // Check for order confirmation first
   if(detectOrderIntent(val)) return;
 
@@ -5166,6 +5634,9 @@ function sendCmd(){
     var dist = haversineGlobal(LOC.lat, LOC.lng, best._shopLat || LOC.lat, best._shopLng || LOC.lng);
     var fee = calcDeliveryFee(dist, parseFloat(best.volume) || 0.5);
     AI_LAST_SUGGESTION = best;
+
+    requestUiControl('listings', false);
+    requestUiControl('refresh', false);
 
     // Pan map to shop
     if(best._shopLat && LM && CL === 1){
@@ -5206,8 +5677,8 @@ function sendCmd(){
 
 /* ── AI MEMORY SYSTEM ── */
 /* Stores facts learned about the user across conversations */
-var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
-var AI_HISTORY_KEY = 'astranov.ai.history.v1';
+var AI_MEMORY_KEY = 'astranov.ai.memory.v2';
+var AI_HISTORY_KEY = 'astranov.ai.history.v2';
 
 function getAiMemory(){
   try{ return JSON.parse(localStorage.getItem(AI_MEMORY_KEY) || '[]'); }catch(e){ return []; }
@@ -5263,12 +5734,8 @@ async function callAstranovaAI(userMessage){
   var conv = document.getElementById('ai-conv');
 
   // Build context about the app state
-  var context = 'You are Astranov, a male angel AI assistant for the Astranov delivery marketplace on Rhodes island, Greece. ';
-<<<<<<< HEAD
-  context += 'PERSONALITY: You are Astranov, a calm, wise male angel AI assistant. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. Give specific product recommendations with prices from local data. Be a trusted advisor — friendly but efficient. ';
-=======
-  context += 'PERSONALITY: You are a warm, wise, calm Russian male angel. You speak English but naturally mix in REAL Russian words (Cyrillic + transliteration): друг (droog/friend), брат (brat/brother), товарищ (tovarisch/comrade), да (da/yes), нет (nyet/no), хорошо (khorosho/good), молодец (molodets/well done), спасибо (spasibo/thanks), здравствуйте (zdravstvuyte/greetings), отлично (otlichno/excellent), вперёд (vperyod/forward), мой друг (moy droog/my friend), конечно (konechno/of course). Use old USSR-era humor: "for the people", "the motherland of delivery", "supply chain is strong", "five year plan for your stomach", "central planning says this is best deal". Be warm, witty, helpful. Include 2-3 Russian words per reply. ';
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
+  var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov, an Internet Operating System on Rhodes island, Greece. ';
+  context += 'PERSONALITY: You are Astranov, a calm, disciplined winged Nordic warrior AI assistant. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. Give specific product recommendations with prices from local data. Be a trusted advisor — friendly but efficient. ';
   // MEMORY context from learning system
   context += buildMemoryContext();
   context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
@@ -5303,11 +5770,7 @@ async function callAstranovaAI(userMessage){
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-<<<<<<< HEAD
         system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRULES:\n1. Reply in 2-4 sentences\n2. Match the user\'s language (English/Greek/Russian/etc)\n3. Give specific prices from local data\n4. Reference user memory when relevant\n5. Only use Russian words if user writes in Russian\n6. Be genuinely helpful and warm\n7. Calculate delivery fees when asked\n8. Max 1 emoji per message',
-=======
-        system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nIMPORTANT RULES:\n1. Respond in 2-4 sentences max\n2. Include 2-3 Russian words (Cyrillic) per response\n3. Stay in character as warm Russian angel\n4. Give specific prices from local data when available\n5. Reference user memory/preferences when relevant ("Ah друг, you love pizza I remember!")\n6. If user says something you should remember, note it explicitly\n7. Be genuinely funny with USSR humor but always helpful\n8. Calculate delivery fees accurately when asked',
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
         messages: [{ role: 'user', content: userMessage }]
       })
     });
@@ -5343,16 +5806,10 @@ function localAstranovaResponse(msg){
   var q = msg.toLowerCase();
   var prefs = getUserPrefs();
   var mem = getAiMemory();
-<<<<<<< HEAD
   var nameGreet = mem.userName ? ', ' + mem.userName : '';
   var isGreek = /[\u0370-\u03FF]/.test(msg);
 
   // Search local shops first
-=======
-  var returning = (mem.totalInteractions || 0) > 3;
-  var nameGreet = mem.userName ? ', ' + mem.userName : '';
-
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
   try{
     var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
     var matches = offers.filter(function(o){
@@ -5363,17 +5820,12 @@ function localAstranovaResponse(msg){
     if(matches.length){
       var m = matches[0];
       var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (\u20AC' + (mi.price||'?') + ')'; }).join(', ');
-<<<<<<< HEAD
       if(isGreek) return '\u0392\u03C1\u03AE\u03BA\u03B1 \u03C4\u03BF ' + m.name + '! ' + (menuStr ? '\u03A0\u03C1\u03BF\u03C3\u03C6\u03AD\u03C1\u03BF\u03C5\u03BD: ' + menuStr + '.' : '');
       return 'Found ' + m.name + ' for you' + nameGreet + '! ' + (menuStr ? 'They offer: ' + menuStr + '.' : '') + ' Check the Listings panel to order.';
-=======
-      return '\u0414\u0430 (da), \u0434\u0440\u0443\u0433 (friend)! I have located ' + m.name + ' for you. ' + (m.description||'') + (menuStr ? ' They serve: ' + menuStr + '. \u041E\u0442\u043B\u0438\u0447\u043D\u043E (otlichno)!' : '') + ' Check Listings to order, \u0434\u0430?';
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     }
   }catch(e){}
 
   if(/pizza/i.test(q)){
-<<<<<<< HEAD
     if(isGreek) return 'Nikolas Pizza Express \u03AD\u03C7\u03B5\u03B9 Margherita \u20AC8, Pepperoni \u20AC10.50. \u0391\u03BD\u03BF\u03B9\u03C7\u03C4\u03CC \u03B1\u03C0\u03CC 17:00. \u03A0\u03B5\u03C2 "order" \u03B3\u03B9\u03B1 \u03BD\u03B1 \u03C0\u03B1\u03C1\u03B1\u03B3\u03B3\u03B5\u03AF\u03BB\u03B5\u03B9\u03C2!';
     return 'Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, Quattro Formaggi \u20AC11. Open from 17:00. Say "order" to place your order' + nameGreet + '!';
   }
@@ -5401,37 +5853,6 @@ function localAstranovaResponse(msg){
     return 'Of course I remember' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We\'re still getting to know each other!');
   }
   return isGreek ? '\u0394\u03BF\u03BA\u03AF\u03BC\u03B1\u03C3\u03B5 \u03BD\u03B1 \u03C1\u03C9\u03C4\u03AE\u03C3\u03B5\u03B9\u03C2 \u03B3\u03B9\u03B1 pizza, \u03BC\u03C0\u03AF\u03C1\u03B1, \u03BA\u03B1\u03C6\u03AD, \u03AE \u03C4\u03B9\u03BC\u03AD\u03C2 \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7\u03C2!' : 'Try asking about pizza, beer, coffee, diving, or delivery prices' + nameGreet + '. I work best with specific requests!';
-=======
-    var extra = prefs.likesPizza > 2 ? ' Ah, \u0431\u0440\u0430\u0442 (brat/brother), you do love your pizza — I remember!' : '';
-    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433!' + extra + ' Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, and the glorious Quattro Formaggi \u20AC11. Open from 17:00. The people\'s five-year plan for your stomach, \u0434\u0430? Say "order" and I dispatch \u0432\u043F\u0435\u0440\u0451\u0434 (vperyod/forward)!';
-  }
-  if(/dive|diving|scuba/i.test(q)) return '\u041C\u043E\u0439 \u0434\u0440\u0443\u0433 (my friend)' + nameGreet + '! Aegean Dive Centre offers Discover Scuba \u20AC75, PADI course \u20AC380, wreck diving \u20AC65. Open Monday-Saturday. \u041E\u0442\u043B\u0438\u0447\u043D\u043E for building strong character, \u0434\u0430!';
-  if(/food|eat|restaurant|hungry/i.test(q)) return '\u0422\u043E\u0432\u0430\u0440\u0438\u0449 (tovarisch)' + nameGreet + ', the motherland provides! Tamam Restaurant — Moussaka \u20AC12.50, Octopus \u20AC16. Or Nikolas Pizza for fast delivery. \u0425\u043E\u0440\u043E\u0448\u043E (khorosho), what sounds good?';
-  if(/beer/i.test(q)){
-    var extra = prefs.likesBeer > 2 ? ' \u0411\u0440\u0430\u0442, I see you are a regular — \u043C\u043E\u043B\u043E\u0434\u0435\u0446 (molodets/well done)!' : '';
-    return '\u0414\u0430, \u0434\u0440\u0443\u0433!' + extra + ' Rhodes Mini Market has Mythos 500ml for only \u20AC2.50 — cheapest in the district. Available 24/7. The supply chain never sleeps, \u0442\u043E\u0432\u0430\u0440\u0438\u0449!';
-  }
-  if(/coffee/i.test(q)) return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (konechno/of course)' + nameGreet + '! Freddo Cappuccino \u20AC4.50 at Tamam, Greek Coffee \u20AC2 at Mini Market. Both \u043E\u0442\u043B\u0438\u0447\u043D\u043E! What you prefer, \u0434\u0440\u0443\u0433?';
-  if(/deliver|price|cost|fee/i.test(q)) return '\u0414\u0430, \u0442\u043E\u0432\u0430\u0440\u0438\u0449. The people\'s delivery rate: \u20AC1/km. Surcharges: +\u20AC1 volume over 6L, +\u20AC1 night (21:00-09:00), +\u20AC1 holidays, +\u20AC1 bad weather. Orders over 13L split across multiple \u0431\u0440\u0430\u0442-drivers. \u0425\u043E\u0440\u043E\u0448\u043E, very fair system, \u0434\u0430?';
-  if(/weather/i.test(q)) return '\u041D\u0435\u0442 (nyet), \u0434\u0440\u0443\u0433, weather intelligence not yet connected. Toggle bad weather in Settings. In the motherland, we deliver in any conditions! \u0412\u043F\u0435\u0440\u0451\u0434!';
-  if(/help|what can you/i.test(q)) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + '! I am Astranov — your personal delivery commissar. I find shops, check prices, calculate fees, place orders. Say "find pizza" or "cheapest beer" and I handle everything. For the people! \u0412\u043F\u0435\u0440\u0451\u0434!';
-  if(/hello|hi|hey|good/i.test(q)){
-    if(returning) return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u043C\u043E\u0439 \u0434\u0440\u0443\u0433' + nameGreet + '! Good to see you again — this is conversation number ' + (mem.totalInteractions||1) + ' between us. The commissar remembers! What can I find for you today, \u0431\u0440\u0430\u0442?';
-    return '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435, \u0434\u0440\u0443\u0433! Welcome to Astranov marketplace on beautiful Rhodes. I am your delivery commissar. Tell me what you need and I mobilize entire supply chain, \u0434\u0430!';
-  }
-  if(/thank/i.test(q)) return '\u0421\u043F\u0430\u0441\u0438\u0431\u043E (spasibo) to you too, \u0434\u0440\u0443\u0433' + nameGreet + '! Serving the people is own reward. The commissar is always here. \u041E\u0442\u043B\u0438\u0447\u043D\u043E!';
-  if(/who are you|your name/i.test(q)) return 'I am Astranov, \u0442\u043E\u0432\u0430\u0440\u0438\u0449 — the AI delivery commissar. My mission: connect hungry people with shops, dispatch \u0431\u0440\u0430\u0442-drivers, ensure every order arrives. I operate with efficiency of old system, but heart of new. \u0414\u0430!';
-  if(/remember|you know me/i.test(q)){
-    var facts = [];
-    if(prefs.likesPizza) facts.push('you enjoy pizza');
-    if(prefs.likesBeer) facts.push('you appreciate good beer');
-    if(prefs.likesCoffee) facts.push('you need your coffee');
-    if(prefs.likesDiving) facts.push('you love diving');
-    if(mem.totalInteractions) facts.push('we have talked ' + mem.totalInteractions + ' times');
-    return '\u041A\u043E\u043D\u0435\u0447\u043D\u043E (of course) I remember, \u0434\u0440\u0443\u0433' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We are still getting to know each other.') + ' The commissar has excellent memory, \u0434\u0430!';
-  }
-  return '\u0425\u043C, \u0442\u043E\u0432\u0430\u0440\u0438\u0449' + nameGreet + ', my intelligence files on that topic are still expanding. Try asking about food, pizza, beer, coffee, diving, or delivery prices. \u041F\u043E\u0436\u0430\u043B\u0443\u0439\u0441\u0442\u0430 (pozhaluysta/please), give me clear mission and I deliver, \u0434\u0430?';
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 }
 
 function addAiMessage(cssClass, sender, text){
@@ -5475,7 +5896,6 @@ function doSpeak(text){
     var clean = text.replace(/<[^>]+>/g,'').replace(/[€]/g,' euros ');
     if(clean.length > 180) clean = clean.substring(0,177) + '...';
     var utt = new SpeechSynthesisUtterance(clean);
-<<<<<<< HEAD
     utt.rate = 0.88;
     utt.pitch = 0.72;
     utt.volume = 0.85;
@@ -5496,20 +5916,6 @@ function doSpeak(text){
       if(!preferred) preferred = voices.find(function(v){ return v.lang && v.lang.startsWith('en') && !/female|samantha|victoria|karen|fiona|zira|susan/i.test(v.name); });
       utt.lang = 'en-US';
     }
-=======
-    utt.rate = 0.80; /* SLOW — calm Russian delivery */
-    utt.pitch = 0.65; /* DEEP male bass voice */
-    utt.volume = 0.85;
-    /* Find deepest male voice, prefer Russian or English-with-accent */
-    var voices = speechSynthesis.getVoices();
-    var preferred = null;
-    /* Priority 1: Russian voice speaking English */
-    preferred = voices.find(function(v){ return /russian|ru-/i.test(v.lang) || /russian/i.test(v.name); });
-    /* Priority 2: Deep male English voice */
-    if(!preferred) preferred = voices.find(function(v){ return /daniel|james|david|thomas|alex|google uk male/i.test(v.name) && !/female/i.test(v.name); });
-    /* Priority 3: Any male English voice */
-    if(!preferred) preferred = voices.find(function(v){ return v.lang && v.lang.startsWith('en') && !/female|samantha|victoria|karen|fiona|zira|susan|agnes/i.test(v.name); });
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
     if(preferred) utt.voice = preferred;
     setAstranovaSpeaking(true);
     var speech = document.getElementById('astranova-speech');
@@ -5543,16 +5949,12 @@ function processNextSpeech(){
   doSpeak(_speechQueue.shift());
 }
 
-<<<<<<< HEAD
 var _chatHeight = Math.round(window.innerHeight * 0.33); // start at 1/3
 
-=======
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 function expandConversation(){
   var resp = document.getElementById('cmd-response');
   resp.className = 'expanded';
   resp.style.display = 'flex';
-<<<<<<< HEAD
   _chatHeight = Math.round(window.innerHeight * 0.66);
   resp.style.maxHeight = _chatHeight + 'px';
   var conv = document.getElementById('ai-conv');
@@ -5614,10 +6016,6 @@ function expandConversation(){
   window.addEventListener('resize', function(){ maxH = Math.round(window.innerHeight * 0.66); });
 })();
 
-=======
-}
-
->>>>>>> 5c4b571b00754a9c3bd16c23a242bd1cd24a217c
 /* VOICE INPUT — Web Speech API */
 var _voiceActive = false;
 var _voiceRecog = null;
@@ -5802,8 +6200,14 @@ function showBalance(){
   const W=()=>cv.parentElement.clientWidth;
   const H=()=>cv.parentElement.clientHeight;
   const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2.2));
   renderer.setSize(W(),H());
+  renderer.physicallyCorrectLights = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
   const scene=new THREE.Scene();
   const camera=new THREE.PerspectiveCamera(48,W()/H(),.1,100);
   const BASE_Z=3.35, MIN_Z=1.35, MAX_Z=8.35, SPACE_TRIGGER_Z=7.05, MAP_TRIGGER_Z=1.72;
@@ -5812,12 +6216,13 @@ function showBalance(){
   let mapQueued=false;
   camera.position.z=BASE_Z;
 
-  scene.add(new THREE.AmbientLight(0x17304f,.72));
-  const sun=new THREE.DirectionalLight(0xa7d7ff,1.9);
+  scene.add(new THREE.AmbientLight(0x1d3652,.82));
+  const hemi=new THREE.HemisphereLight(0xb6e4ff,0x07121f,.85); scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xcbe9ff,2.25);
   sun.position.set(5,3,6); scene.add(sun);
 
   const starGeo = new THREE.BufferGeometry();
-  const starCount = 1800;
+  const starCount = 2600;
   const starPos = new Float32Array(starCount*3);
   for(let i=0;i<starCount;i++){
     starPos[i*3]=(Math.random()-.5)*26;
@@ -5837,7 +6242,7 @@ function showBalance(){
   loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => { globeMat.specularMap = tex; globeMat.needsUpdate = true; });
   loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg', tex => { globeMat.bumpMap = tex; globeMat.needsUpdate = true; });
 
-  const cloudMat = new THREE.MeshPhongMaterial({transparent:true, opacity:.16, side:THREE.DoubleSide, depthWrite:false});
+  const cloudMat = new THREE.MeshPhongMaterial({transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false});
   const cloudSphere = new THREE.Mesh(new THREE.SphereGeometry(1.02,64,64), cloudMat); scene.add(cloudSphere);
   loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', tex => { cloudMat.alphaMap = tex; cloudMat.color = new THREE.Color(0xd9f2ff); cloudMat.needsUpdate = true; });
 
@@ -6080,8 +6485,12 @@ function runAbyssScene(){
   if(abyssBuilt)return;abyssBuilt=true;
   const cv=document.getElementById('ac');
   const W=()=>cv.parentElement.clientWidth;const H=()=>cv.parentElement.clientHeight;
-  const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.setSize(W(),H());
+  const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true,powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2.2));renderer.setSize(W(),H());
+  renderer.physicallyCorrectLights = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
+  if('outputEncoding' in renderer) renderer.outputEncoding = THREE.sRGBEncoding;
   const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(55,W()/H(),.1,200);camera.position.z=4;
   const core=new THREE.Mesh(new THREE.IcosahedronGeometry(1.2,4),new THREE.MeshPhongMaterial({color:0x001a4d,emissive:new THREE.Color(0x0a1a4f),shininess:40}));
   scene.add(core);
@@ -6254,123 +6663,241 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV v3.8.0
+SPARTAN SCRIPT — ASTRANOV V3
 Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script v3.8.0 | Single Source of Record
+Architecture: Spartan Script V3 | Single Source of Record
 
-MISSION: Planetary delivery marketplace OS. Voice-first AI interface.
-STACK: Single HTML | Vercel | Cloudflare DNS | Supabase | Leaflet | Three.js
-DOMAIN: astranov.eu
+IDENTITY [LOCKED]
+App name: ASTRANOV
+Description: Internet Operating System
+Version rule: V followed by an integer only
+Current version: V3
+Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
-AI ASSISTANT — ASTRANOV (PRIMARY INTERFACE)
-Blonde Nordic warrior angel god. Golden hair, Norse armor, feathered wings.
-Deep male Russian voice. Cyrillic: друг, брат, товарищ, да, хорошо, отлично.
-Claude Sonnet API + local fallback. AI memory/learning system.
-Voice ordering: search→suggest→confirm→execute→deliver→narrate.
+AUTHORITY [LOCKED]
+User instruction > Spartan Script > working code > helper preference.
+If a helper conflicts with this script, this script wins.
+If uncertain, preserve working behavior and omit risky edits.
 
-COMPASS RADAR HUD (top-right, device compass, mils+degrees, radar blips)
-POSTING SYSTEM (right-click/long-press, 3 options, zoom 17+ gate)
-DELIVERY ENGINE (€1/km + surcharges, haversine routing, demo simulation)
-CHANNELS (All/Global/Local/Teams/Support on left sidebar)
-ROLES (User/Admin/Owner auto-detect)
-PRIVACY (delivery addresses hidden from shops, driver confidentiality)
-DEMO DATA (5 shops Rhodes, 30+ menu items with photos, wallet €50)
+TOP RIBBON [LOCKED]
+Top ribbon content must stay centered, balanced, and readable.
+Always show:
+1. Current loaded version
+2. Latest detected version
+3. Hard refresh update button
+4. Pause button
+5. Video posting button
+Update button stays quiet when current == latest.
+Update button glows/flashes only when latest != current.
+Auto-refresh may happen only when page is hidden or user is idle. Do not pester active users.
 
-ROADMAP: Pass 4=Express backend, 5=Stripe, 6=Orders, 7=Realtime, 8=3D engine
--->
+PAUSE MODE [LOCKED]
+Pause button freezes non-essential visual motion and media without breaking the app state.
+Pause must never log the user out, reset the globe, lose the chat, or hide critical controls.
 
-<!-- Embedded Spartan Script v3.3.3 -->
-<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV v3.8.0
-# Single Source of Record | AI-Executable | Under 3000 chars
-# Creator: Graduate Candidate Captain Notis Astranov
-# Updated: 2026-03-28
+OWNER ACCOUNT [LOCKED]
+Owner identity is only Notis Astranov.
+Owner email: notisastranov@gmail.com
+Owner phone: +306971930225
+When the authenticated owner account is active, its wallet resets to exactly €3000.00 at each local midnight, once per day.
+Never grant owner privileges to any other account.
 
-MISSION
-Planetary delivery marketplace OS. Voice-first AI interface.
-Astranov = internet operating system for daily life.
+OWNER UI AUTHORITY [LOCKED]
+The authenticated owner may verbally or by text authorize Astranov helper to repair the UI permanently.
+That owner command grants persistent in-app UI repair authority, layout authority, and persistent button-policy authority.
+No non-owner account may grant or revoke that authority.
+
+STARTUP MODE [LOCKED]
+Globe view is the startup UI.
+The globe is the first visual state after boot and after any helper patch unless the user directly requests otherwise.
+Astranov helper must be visible immediately on startup on the globe and on the map.
+The helper activates immediately and requests core permissions as safely as the browser allows: GPS, microphone, notifications when triggered by user gesture, and voice output readiness.
+Clicking the helper should try to enter assistant-focus mode again, including fullscreen attempt where allowed.
+
+LOCATION FAST ENTRY [LOCKED]
+Always show a glowing Zoom to My City control on globe and map.
+If location permission is granted, that control must jump the user from globe to map and center the city quickly.
+Do not hide or bury the city-jump control.
+
+CONTEXTUAL CONTROLS [LOCKED]
+No permanent left or right button sidebars.
+Default state is minimal: hide non-essential side buttons.
+Show only the needed controls for the current layer and current occasion.
+Astranov helper may surface controls temporarily when needed for the active task or when the user requests them.
+Use the established common visual language: glass, electric blue, compact, premium, readable.
+
+DYNAMIC LAYOUT SUPERVISION [LOCKED]
+Astranov helper supervises the full graphical UI.
+The UI must dynamically rearrange, compact, trim labels, and reposition floating controls so that no critical element overlaps another on any common screen size or screen rotation.
+Priority order:
+1. Keep globe/map visible
+2. Keep top ribbon readable
+3. Keep bottom chat/channel bar usable
+4. Keep helper visible
+5. Keep city-jump and contextual controls reachable
+If a conflict occurs, compress or hide secondary controls before moving or hiding primary controls.
+
+CHANNEL VIDEO PINNING [LOCKED]
+Top ribbon must include a video posting control.
+Video posts are attached to the user's current location and pinned into the active app channel selected in the dropdown above the chat window.
+AI channel is not a posting lane. Valid posting lanes are Global, Local, and Team.
+Video pins must be visible only inside the selected channel feed in Astranov and only to signed-in users of the app.
+If the source is a YouTube link, the app may embed or open that source, but it must not spray the post into other channels.
+Keep the channel selector attached to the chat window and never move it elsewhere.
+
+AI HELPER VISUAL IDENTITY [LOCKED]
+Astranov helper is a winged Nordic warrior.
+Never use halo-angel, bug-like, fairy, cartoon-insect, or soft-cherub visuals.
+Preserve warrior silhouette, metallic armor, stern face, blue glow, winged profile.
+The helper must not feel static. Keep subtle motion, status life, and command presence.
+
+RENDER ENGINE [LOCKED]
+Prefer high-performance rendering.
+Use antialiasing, HDR-style tone mapping, physically-correct lighting where supported, strong depth, crisp atmosphere, premium contrast.
+Improve visuals without breaking controls, routing, login, map, posting, AI, wallet, or chat.
+
+ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
+1. Minimal diffs only.
+2. Never rename or rebrand the app.
+3. Never restore permanent sidebars after they are removed into contextual controls.
+4. Never move the AI command/chat bar or its channel selector away from the bottom chat window.
+5. Never enlarge compass/perf HUD beyond defined bounds.
+6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
+7. Never duplicate IDs, widgets, or handlers.
+8. Never leave stray braces, broken HTML, or dead event bindings.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, pause works, video button works, channel bar stays in chat, compass stays bounded, no syntax errors.
+10. If any guardrail fails, revert the patch instead of improvising.
+
+MISSION [LOCKED]
+ASTRANOV is an Internet Operating System.
+Map, globe, posts, shops, routing, chat, wallet, channel video pins, and AI are modules of one OS.
 
 STACK [LOCKED]
-Single HTML | Vercel | Cloudflare DNS | Supabase kzlabcrlrpbnfiiyrjvl
-OpenStreetMap/Leaflet | Three.js globe | astranov.eu
-
-LAYERS
-Cosmic=Three.js globe | Earth=Leaflet map | Abyss=submarine
-Zoom-depth switching only. No explicit layer buttons.
+Single HTML | Supabase | Leaflet | Three.js | astranov.eu
 
 DESIGN [LOCKED]
-Electric blue #00c8ff / black / transparent
-Glassmorphic UI. HUD: top strip, left rail, right rail, center stage
-AI command bar bottom. Compass radar top-right.
+Electric blue #00c8ff / black / transparent.
+Top ribbon centered, center stage, contextual side controls, bottom AI command/chat bar.
+No rogue relocations. No fake rebranding. No hidden critical controls.
+-->
 
-AI ASSISTANT — ASTRANOV [PRIMARY INTERFACE]
-Character: Blonde Nordic warrior angel god (SVG)
-Golden hair, ice-blue eyes, Norse armor, large feathered wings
-Golden halo, shoulder armor, bracers, warrior boots
-Animations: float, wing-flap, hair-flow, mouth-speak, sparkle-trail
-fly-to-location, active-glow, bounce on action
-Voice: Deep male, pitch 0.65, rate 0.80, seeks Russian voice
-Personality: Russian with Cyrillic — друг, брат, товарищ, да, нет
-хорошо, отлично, вперёд, спасибо, здравствуйте, конечно, молодец
-USSR humor: commissar, motherland, supply chain, five-year plan
-Claude Sonnet API integration + local fallback brain
-AI-driven ordering: search→suggest→confirm→execute→deliver
-No modal windows. Bottom command bar + expandable conversation.
+<!-- Embedded Spartan Script V3 -->
+<textarea id="spartan-script" style="display:none;">SPARTAN SCRIPT — ASTRANOV V3
+Creator &amp; Founder: Graduate Candidate Captain Notis Astranov, 2026
+Architecture: Spartan Script V3 | Single Source of Record
 
-AI MEMORY/LEARNING
-3 localStorage stores: memory, conv_history, user_prefs
-Tracks: food preferences, search history, interaction count, user name
-Conversation history (last 60) fed into Claude context
-Returning users get personalized greetings + preference recall
-buildMemoryContext() feeds all into API system prompt
+IDENTITY [LOCKED]
+App name: ASTRANOV
+Description: Internet Operating System
+Version rule: V followed by an integer only
+Current version: V3
+Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
-COMPASS RADAR HUD [TOP-RIGHT]
-Periscope/submarine style. Front quarter illuminated, back 3/4 dark.
-Degree ring 0-360 with N/S/E/W cardinal glowing labels.
-Artillery mil ring (0-6400) inner markings.
-Distance rings: 1km, 3km, 5km. Radar sweep beam 3.5s cycle.
-Blips: green=shops, orange=drivers, blue=posts. Scan every 3s.
-Device compass via DeviceOrientationEvent. Desktop: slow drift.
-Route indicator: orange dashed line to delivery destination.
-HDG readout in degrees. Visible map layer only. Opacity 0.5, hover 0.92.
+AUTHORITY [LOCKED]
+User instruction &gt; Spartan Script &gt; working code &gt; helper preference.
+If a helper conflicts with this script, this script wins.
+If uncertain, preserve working behavior and omit risky edits.
 
-POSTING (right-click/3s long-press, zoom 17+ gate)
-3 options: Post Something | List a Shop | Set Delivery Location
-Shop: 7-day schedule, dynamic menu (name/price/volume/qty/rate/
-times/photo/temperature cold/hot/neutral), delivery range km
-Posts: title/desc/category/price/visibility global/local/team
+TOP RIBBON [LOCKED]
+Top ribbon content must stay centered, balanced, and readable.
+Always show:
+1. Current loaded version
+2. Latest detected version
+3. Hard refresh update button
+4. Pause button
+5. Video posting button
+Update button stays quiet when current == latest.
+Update button glows/flashes only when latest != current.
+Auto-refresh may happen only when page is hidden or user is idle. Do not pester active users.
 
-ROLES
-User=consumer (needs admin verification) | Admin=driver/shop/support
-Owner=auto-detect notisastranov@gmail.com or 306971930225
+PAUSE MODE [LOCKED]
+Pause button freezes non-essential visual motion and media without breaking the app state.
+Pause must never log the user out, reset the globe, lose the chat, or hide critical controls.
 
-DELIVERY ENGINE
-€1/km base | +€1 volume>6L | +€1 night 21-09 | +€1 holiday
-+€1 bad weather | Min order €3 | Split >13L | Max 3 hot/batch
-Closest driver haversine matching. Demo mode simulates full flow:
-shop accepts→driver animates on map→pickup→delivery→complete
-Driver marker (orange pulse), route polylines, Astranov flies to shop.
+OWNER ACCOUNT [LOCKED]
+Owner identity is only Notis Astranov.
+Owner email: notisastranov@gmail.com
+Owner phone: +306971930225
+When the authenticated owner account is active, its wallet resets to exactly €3000.00 at each local midnight, once per day.
+Never grant owner privileges to any other account.
 
-PRIVACY
-Delivery addresses private. Shops see area name only.
-Driver gets full address with CONFIDENTIALITY NOTICE.
+OWNER UI AUTHORITY [LOCKED]
+The authenticated owner may verbally or by text authorize Astranov helper to repair the UI permanently.
+That owner command grants persistent in-app UI repair authority, layout authority, and persistent button-policy authority.
+No non-owner account may grant or revoke that authority.
 
-CHANNELS
-Left sidebar: All/Global/Local/Teams/Support. Glow when active.
+STARTUP MODE [LOCKED]
+Globe view is the startup UI.
+The globe is the first visual state after boot and after any helper patch unless the user directly requests otherwise.
+Astranov helper must be visible immediately on startup on the globe and on the map.
+The helper activates immediately and requests core permissions as safely as the browser allows: GPS, microphone, notifications when triggered by user gesture, and voice output readiness.
+Clicking the helper should try to enter assistant-focus mode again, including fullscreen attempt where allowed.
 
-VEHICLES: Motorcycle, Car, Scooter, Bicycle, Drone, Boat
+LOCATION FAST ENTRY [LOCKED]
+Always show a glowing Zoom to My City control on globe and map.
+If location permission is granted, that control must jump the user from globe to map and center the city quickly.
+Do not hide or bury the city-jump control.
 
-SETTINGS: Demo Mode toggle, Bad Weather toggle, Reset Demo Data
+CONTEXTUAL CONTROLS [LOCKED]
+No permanent left or right button sidebars.
+Default state is minimal: hide non-essential side buttons.
+Show only the needed controls for the current layer and current occasion.
+Astranov helper may surface controls temporarily when needed for the active task or when the user requests them.
+Use the established common visual language: glass, electric blue, compact, premium, readable.
 
-DEMO DATA: 5 shops Rhodes (Tamam, Aegean Dive, Nikolas Pizza,
-Mini Market 24/7, Elli Beach) + 30 menu items with Unsplash photos
-+ 4 posts + 3 drivers + 2 addresses. Wallet €50.
+DYNAMIC LAYOUT SUPERVISION [LOCKED]
+Astranov helper supervises the full graphical UI.
+The UI must dynamically rearrange, compact, trim labels, and reposition floating controls so that no critical element overlaps another on any common screen size or screen rotation.
+Priority order:
+1. Keep globe/map visible
+2. Keep top ribbon readable
+3. Keep bottom chat/channel bar usable
+4. Keep helper visible
+5. Keep city-jump and contextual controls reachable
+If a conflict occurs, compress or hide secondary controls before moving or hiding primary controls.
 
-ROADMAP
-Pass 4: Express backend + server-side AI endpoints
-Pass 5: Stripe EUR payments
-Pass 6: Order management dashboard
-Pass 7: Supabase Realtime messaging
-Pass 8: High-end 3D graphics engine upgrade</textarea>
+CHANNEL VIDEO PINNING [LOCKED]
+Top ribbon must include a video posting control.
+Video posts are attached to the user&#x27;s current location and pinned into the active app channel selected in the dropdown above the chat window.
+AI channel is not a posting lane. Valid posting lanes are Global, Local, and Team.
+Video pins must be visible only inside the selected channel feed in Astranov and only to signed-in users of the app.
+If the source is a YouTube link, the app may embed or open that source, but it must not spray the post into other channels.
+Keep the channel selector attached to the chat window and never move it elsewhere.
+
+AI HELPER VISUAL IDENTITY [LOCKED]
+Astranov helper is a winged Nordic warrior.
+Never use halo-angel, bug-like, fairy, cartoon-insect, or soft-cherub visuals.
+Preserve warrior silhouette, metallic armor, stern face, blue glow, winged profile.
+The helper must not feel static. Keep subtle motion, status life, and command presence.
+
+RENDER ENGINE [LOCKED]
+Prefer high-performance rendering.
+Use antialiasing, HDR-style tone mapping, physically-correct lighting where supported, strong depth, crisp atmosphere, premium contrast.
+Improve visuals without breaking controls, routing, login, map, posting, AI, wallet, or chat.
+
+ANTI-ROGUE PATCH PROTOCOL [MANDATORY]
+1. Minimal diffs only.
+2. Never rename or rebrand the app.
+3. Never restore permanent sidebars after they are removed into contextual controls.
+4. Never move the AI command/chat bar or its channel selector away from the bottom chat window.
+5. Never enlarge compass/perf HUD beyond defined bounds.
+6. Never break login, auth modal, AI helper, map, posting, wallet, version ribbon, or channel routing.
+7. Never duplicate IDs, widgets, or handlers.
+8. Never leave stray braces, broken HTML, or dead event bindings.
+9. Before shipping verify: globe boots first, helper appears immediately, city-jump control glows, auth opens, owner detection works, current/latest/update ribbon works, pause works, video button works, channel bar stays in chat, compass stays bounded, no syntax errors.
+10. If any guardrail fails, revert the patch instead of improvising.
+
+MISSION [LOCKED]
+ASTRANOV is an Internet Operating System.
+Map, globe, posts, shops, routing, chat, wallet, channel video pins, and AI are modules of one OS.
+
+STACK [LOCKED]
+Single HTML | Supabase | Leaflet | Three.js | astranov.eu
+
+DESIGN [LOCKED]
+Electric blue #00c8ff / black / transparent.
+Top ribbon centered, center stage, contextual side controls, bottom AI command/chat bar.
+No rogue relocations. No fake rebranding. No hidden critical controls.</textarea>
 
 <!-- POST CHOOSER (map right-click / long-press) -->
 <div id="post-chooser">
@@ -6627,6 +7154,179 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
   function uid(prefix){ return prefix + '-' + Math.random().toString(36).slice(2,10) + '-' + Date.now().toString(36); }
   function coordsText(lat,lng){ return 'Point: ' + Number(lat).toFixed(5) + '°, ' + Number(lng).toFixed(5) + '°'; }
 
+  function currentPostingChannel(){
+    var sel = byId('chat-channel-select');
+    var ch = sel ? sel.value : (window.CHAT_CHANNEL || 'ai');
+    return ch || 'ai';
+  }
+  function currentPostingTeam(){
+    return window.ACTIVE_TEAM || null;
+  }
+  function youtubeVideoId(url){
+    try{
+      var raw = String(url || '').trim();
+      if(!raw) return '';
+      var m = raw.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/i);
+      if(m) return m[1];
+      var u = new URL(raw);
+      return u.searchParams.get('v') || '';
+    }catch(e){ return ''; }
+  }
+  function isYouTubeLink(url){ return !!youtubeVideoId(url); }
+  function youtubeThumb(url){
+    var id = youtubeVideoId(url);
+    return id ? 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg' : '';
+  }
+  function youtubeEmbed(url){
+    var id = youtubeVideoId(url);
+    return id ? 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0&modestbranding=1' : '';
+  }
+  window.openVideoPostModal = function(){
+    if(VIDEO_POST_REQUIRE_AUTH && !window.CU){
+      addAiMessage('system-msg','System','Sign in first so pinned channel videos stay inside the user network.');
+      try{ guestMode && guestMode(); }catch(e){}
+      toggleUserMenu && toggleUserMenu();
+      return;
+    }
+    var modal = byId(VIDEO_POST_MODAL_ID);
+    if(!modal) return;
+    var channel = currentPostingChannel();
+    var status = byId('video-post-status');
+    var chField = byId('video-channel-locked');
+    var locField = byId('video-location-locked');
+    if(chField) chField.value = channel === 'ai' ? 'Choose Global / Local / Team in chat bar' : channel.toUpperCase();
+    if(locField) locField.value = coordsText(window.LOC?.lat || 0, window.LOC?.lng || 0);
+    if(status){
+      status.className = 'video-inline-note' + (channel === 'ai' ? ' warn' : '');
+      status.textContent = channel === 'ai'
+        ? 'Select Global, Local, or Team in the chat channel selector first. Video pins are published into that channel, not into the AI lane.'
+        : 'Video pin will publish into the ' + channel.toUpperCase() + ' channel at your current location.';
+    }
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden','false');
+    setTimeout(function(){ byId('video-title') && byId('video-title').focus(); }, 40);
+    aiSuperviseLayout();
+  };
+  window.closeVideoPostModal = function(){
+    var modal = byId(VIDEO_POST_MODAL_ID);
+    if(modal){ modal.classList.remove('on'); modal.setAttribute('aria-hidden','true'); }
+  };
+  window.submitVideoPost = function(){
+    var channel = currentPostingChannel();
+    if(channel === 'ai'){
+      addAiMessage('system-msg','System','Choose Global, Local, or Team in the chat channel selector before posting a video pin.');
+      return;
+    }
+    if(VIDEO_POST_REQUIRE_AUTH && !window.CU){
+      addAiMessage('system-msg','System','Sign in first to post a channel video pin.');
+      return;
+    }
+    var title = String((byId('video-title') && byId('video-title').value) || '').trim();
+    var desc = String((byId('video-description') && byId('video-description').value) || '').trim();
+    var yt = String((byId('video-youtube-url') && byId('video-youtube-url').value) || '').trim();
+    if(!title){ addAiMessage('system-msg','System','Video title is required.'); return; }
+    if(!yt || !isYouTubeLink(yt)){ addAiMessage('system-msg','System','Paste a valid YouTube link to create the pinned video post.'); return; }
+    var offers = getLocalOffers();
+    var record = {
+      id: uid('vid'),
+      kind: 'video_post',
+      title: title,
+      name: title,
+      category: 'Video Post',
+      description: desc || 'Channel video pin',
+      vendor_name: window.CU?.name || 'Astranov user',
+      user_id: window.CU?.id || null,
+      user_email: window.CU?.email || null,
+      lat: Number(window.LOC?.lat || 0),
+      lon: Number(window.LOC?.lng || 0),
+      lng: Number(window.LOC?.lng || 0),
+      visibility: channel,
+      channel: channel,
+      team_id: channel === 'team' ? currentPostingTeam() : null,
+      watch_url: yt,
+      youtube_url: yt,
+      image: youtubeThumb(yt),
+      availability: 'Members only in app',
+      price: 'Watch inside Astranov',
+      created_at: new Date().toISOString(),
+      private_link_note: 'Access routed through Astranov channel visibility'
+    };
+    offers.unshift(record);
+    setLocalOffers(offers.slice(0, 200));
+    closeVideoPostModal();
+    if(byId('video-title')) byId('video-title').value = '';
+    if(byId('video-description')) byId('video-description').value = '';
+    if(byId('video-youtube-url')) byId('video-youtube-url').value = '';
+    addAiMessage('system-msg','System','🎬 Video pinned on your location in the ' + channel.toUpperCase() + ' channel.');
+    try{ if(typeof refreshMapData === 'function') refreshMapData(); }catch(e){}
+    try{ if(typeof loadOrbitalFeed === 'function') loadOrbitalFeed(); }catch(e){}
+    try{ if(window.CL !== 0 && window.LM){ window.LM.flyTo([record.lat, record.lng], 15); } }catch(e){}
+    showResp('Video pin posted to ' + channel.toUpperCase() + ' at your location.');
+  };
+  window.openPinnedVideo = function(idOrUrl){
+    if(VIDEO_POST_REQUIRE_AUTH && !window.CU){
+      addAiMessage('system-msg','System','Sign in to view member video pins.');
+      return;
+    }
+    var record = null;
+    if(typeof idOrUrl === 'string' && /^https?:/i.test(idOrUrl)){
+      record = { title:'Pinned Video', watch_url:idOrUrl, youtube_url:idOrUrl };
+    } else {
+      record = getLocalOffers().find(function(item){ return item.id === idOrUrl; }) || null;
+    }
+    if(!record) return;
+    var modal = byId(VIDEO_VIEWER_MODAL_ID);
+    var frame = byId('video-viewer-frame');
+    var fallback = byId('video-viewer-fallback');
+    var meta = byId('video-viewer-meta');
+    var open = byId('video-viewer-open');
+    if(!modal || !frame || !fallback || !meta || !open) return;
+    var src = record.youtube_url || record.watch_url || '';
+    var embed = youtubeEmbed(src);
+    meta.textContent = (record.title || 'Pinned Video') + ' · ' + ((record.channel || record.visibility || 'channel').toUpperCase());
+    open.href = src || '#';
+    if(embed){
+      frame.style.display = 'block';
+      frame.src = embed;
+      fallback.style.display = 'none';
+      fallback.pause();
+      fallback.removeAttribute('src');
+    } else {
+      frame.style.display = 'none';
+      frame.src = 'about:blank';
+      fallback.style.display = 'block';
+      fallback.src = src;
+      fallback.load();
+    }
+    modal.classList.add('on');
+    modal.setAttribute('aria-hidden','false');
+  };
+  window.closeVideoViewer = function(){
+    var modal = byId(VIDEO_VIEWER_MODAL_ID);
+    var frame = byId('video-viewer-frame');
+    var fallback = byId('video-viewer-fallback');
+    if(frame) frame.src = 'about:blank';
+    if(fallback){
+      try{ fallback.pause(); }catch(e){}
+      fallback.removeAttribute('src');
+    }
+    if(modal){ modal.classList.remove('on'); modal.setAttribute('aria-hidden','true'); }
+  };
+  function handleVideoCommand(val){
+    var q = String(val || '').toLowerCase();
+    if(/(post|upload|pin|share).*(video|youtube|clip)|(video|youtube|clip).*(post|upload|pin|share)/.test(q)){
+      window.openVideoPostModal();
+      addAiMessage('ai-msg-reply','Astranov','Video pin bridge ready. I will attach the post to your current location and to the selected chat channel.');
+      return true;
+    }
+    if(/watch.*video|open.*video|play.*video/.test(q)){
+      requestUiControl('listings', false);
+      addAiMessage('ai-msg-reply','Astranov','I surfaced the listings so you can open a pinned video.');
+      return true;
+    }
+    return false;
+  }
+
   async function fileToDataUrl(file){
     if(!file) return '';
     return await new Promise((resolve,reject)=>{
@@ -6705,7 +7405,7 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
      Owner gets in-app notification + email trigger
   */
   var ESCALATION_LOG = [];
-  var ESCALATION_KEY = 'astranov.escalations.v1';
+  var ESCALATION_KEY = 'astranov.escalations.v2';
 
   function getEscalations(){ try{ return JSON.parse(localStorage.getItem(ESCALATION_KEY)||'[]'); }catch(e){ return []; } }
   function setEscalations(e){ localStorage.setItem(ESCALATION_KEY, JSON.stringify(e.slice(-50))); }
@@ -7524,10 +8224,12 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
       const safeCat = window.escapeHtml ? escapeHtml(r.category || r.kind) : (r.category || r.kind);
       const safeDesc = r.description ? '<br><span style="font-size:11px;">' + (window.escapeHtml ? escapeHtml(r.description).substring(0,80) : r.description.substring(0,80)) + '</span>' : '';
       const visBadge = r.visibility ? '<br><span style="font-size:9px;color:#5ca0ff;">'+r.visibility.toUpperCase()+'</span>' : '';
-      const orderBtn = r.kind === 'shop_service'
+      const actionBtn = r.kind === 'shop_service'
         ? '<br><a href="#" onclick="event.preventDefault();openShopDetail(\''+safeName.replace(/'/g,"\\'")+'\','+r.lat+','+(r.lon||r.lng)+')" style="display:inline-block;margin-top:6px;padding:5px 12px;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.24);border-radius:8px;color:#00c8ff;font-size:11px;font-weight:600;text-decoration:none;">🛒 Order from here</a>'
+        : r.kind === 'video_post'
+        ? '<br><a href="#" onclick="event.preventDefault();openPinnedVideo(\''+String(r.id || '').replace(/'/g,"\\'")+'\')" style="display:inline-block;margin-top:6px;padding:5px 12px;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.24);border-radius:8px;color:#00c8ff;font-size:11px;font-weight:600;text-decoration:none;">🎬 Watch video</a>'
         : '';
-      const popupHtml = '<div style="min-width:160px;"><b style="color:'+col+';font-size:13px;">'+safeName+'</b><br><span style="font-size:11px;color:#95a8bb;">'+safeCat+'</span>'+visBadge+safeDesc+orderBtn+'</div>';
+      const popupHtml = '<div style="min-width:160px;"><b style="color:'+col+';font-size:13px;">'+safeName+'</b><br><span style="font-size:11px;color:#95a8bb;">'+safeCat+'</span>'+visBadge+safeDesc+actionBtn+'</div>';
       const m = L.marker([r.lat, r.lon || r.lng], {icon:ic}).addTo(LM).bindPopup(popupHtml);
       MM.push(m);
       if(r.kind === 'shop_service') mergedShops.push(r); else mergedSignals.push(r);
@@ -7549,7 +8251,7 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
 
     // Merge into listings
     const existing = Array.isArray(window.LISTING_CACHE) ? LISTING_CACHE.slice() : [];
-    const locals = offers.map(r => ({...r, _type: r.kind === 'shop_service' ? 'Shop / Service' : r.kind === 'post_signal' ? 'Public Post' : 'Vendor Offer' }));
+    const locals = offers.map(r => ({...r, _type: r.kind === 'shop_service' ? 'Shop / Service' : r.kind === 'post_signal' ? 'Public Post' : r.kind === 'video_post' ? 'Channel Video' : 'Vendor Offer' }));
     const combined = [...locals, ...existing].slice(0, 50);
     LISTING_CACHE = combined;
     const c = byId('lp-content');
@@ -7567,6 +8269,9 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
           const visBadge = r.visibility ? `<span style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(0,200,255,0.08);color:#5ca0ff;margin-left:6px;">${r.visibility}</span>` : '';
           // Shop-specific: show schedule + menu count
           const shopMeta = r.kind === 'shop_service' && r.menu ? `<div class="lmeta-chip"><div class="lmeta-label">Menu Items</div><div class="lmeta-value">${r.menu.length}</div></div><div class="lmeta-chip"><div class="lmeta-label">Delivery</div><div class="lmeta-value">${r.delivery_range_km||'—'}km</div></div>` : '';
+          const actionMarkup = r.kind === 'video_post'
+            ? `<div class="lactions"><button class="lbuy" onclick="event.stopPropagation();openPinnedVideo('${String(r.id || '').replace(/'/g,"\\'")}')">Watch inside Astranov</button><a class="lreload" href="${window.escapeHtml ? escapeHtml(r.watch_url || r.youtube_url || '#') : (r.watch_url || r.youtube_url || '#')}" target="_blank" rel="noopener" onclick="event.stopPropagation();">Open source</a></div><div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Channel-gated video pin</div></div>`
+            : `<div class="lactions"><button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button><button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button></div><div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div></div>`;
           return `
             <div class="lcard" onclick="flyTo(${lat},${lng})">
               ${media}
@@ -7581,11 +8286,7 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
                   ${shopMeta}
                   <div class="lmeta-chip"><div class="lmeta-label">Vendor</div><div class="lmeta-value">${window.escapeHtml ? escapeHtml(window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor')) : (window.inferVendorName ? inferVendorName(r) : (r.vendor_name || 'Vendor'))}</div></div>
                 </div>
-                <div class="lactions">
-                  <button class="lbuy" onclick="event.stopPropagation();buyListingFromBalance(${i})"${Number.isFinite(priceAmount) ? '' : ' disabled'}>Buy now</button>
-                  <button class="lreload" onclick="event.stopPropagation();prepareWalletReloadForListing(${i})">Reload balance</button>
-                </div>
-                <div class="lcvote"><div style="font-size:10px;color:var(--text-dim);">Wallet-only checkout</div></div>
+                ${actionMarkup}
               </div>
             </div>`;
         }).join('');
