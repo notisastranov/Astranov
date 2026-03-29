@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Astranov v3.4.0</title>
+<title>Astranov Internet Operating System · V2</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -951,6 +951,59 @@ body.lt,body.lt2,body.lt3{
 .rt-price{color:#00e87a;font-weight:600;}
 .rt-eta{color:#00c8ff;}
 
+
+
+/* OWNER WORKSHOP + TRANSPARENT RAIL PATCH */
+#topbar,#bottombar,#left-panel,#right-panel{
+  background:linear-gradient(180deg,rgba(6,16,28,0.14),rgba(6,16,28,0.05)) !important;
+  border-color:rgba(0,200,255,0.10) !important;
+  box-shadow:none !important;
+}
+#left-panel,#right-panel{
+  background:linear-gradient(180deg,rgba(6,16,28,0.10),rgba(6,16,28,0.03)) !important;
+  opacity:0.72;
+}
+#left-panel:hover,#right-panel:hover,#topbar:hover,#bottombar:hover{opacity:1;}
+.smenu,#cmd-response,.abox,#astranova-speech,#iss-box,#sb,#globe-btn,#locate-btn,#drone-btn,.zoom-btn{
+  background:linear-gradient(180deg,rgba(6,16,28,0.24),rgba(6,16,28,0.12)) !important;
+}
+.owner-chip{
+  display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;
+  border-radius:999px;border:1px solid rgba(0,200,255,0.18);background:rgba(0,200,255,0.08);
+  color:#c8efff;cursor:pointer;font-size:11px;font-family:var(--font);
+}
+.owner-chip:hover{background:rgba(0,200,255,0.16);color:#fff;}
+#owner-console{
+  position:fixed;inset:56px 24px 84px 72px;z-index:380;display:none;flex-direction:column;
+  background:linear-gradient(180deg,rgba(6,16,28,0.78),rgba(6,16,28,0.54));backdrop-filter:blur(18px);
+  border:1px solid rgba(0,200,255,0.16);border-radius:18px;box-shadow:0 22px 54px rgba(0,0,0,0.34);
+}
+#owner-console.on{display:flex;}
+.owner-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px 12px;border-bottom:1px solid rgba(0,200,255,0.10);}
+.owner-console-title{font-size:18px;font-weight:700;color:#dff7ff;}
+.owner-console-sub{font-size:11px;color:#9fc0d8;margin-top:4px;line-height:1.45;}
+.owner-console-close{width:34px;height:34px;border-radius:12px;border:1px solid rgba(0,200,255,0.18);background:rgba(255,255,255,0.04);color:#dff7ff;cursor:pointer;font-size:20px;line-height:1;}
+.owner-console-grid{display:grid;grid-template-columns:minmax(280px,0.95fr) minmax(340px,1.25fr);gap:14px;padding:14px 18px 18px;min-height:0;flex:1;}
+.owner-console-stack{display:flex;flex-direction:column;gap:10px;min-height:0;}
+.owner-console-label{font-size:11px;color:#8fc8ea;letter-spacing:0.04em;text-transform:uppercase;}
+.owner-console-row{display:flex;gap:8px;}
+.owner-console-input{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(0,200,255,0.14);border-radius:12px;color:#eff8ff;padding:10px 12px;font-size:12px;outline:none;font-family:var(--font);}
+.owner-console-input::placeholder{color:#8eaabf;}
+.owner-console-textarea{min-height:120px;resize:vertical;}
+.owner-console-thread{flex:1;min-height:200px;overflow:auto;border:1px solid rgba(0,200,255,0.10);border-radius:14px;background:rgba(255,255,255,0.03);padding:10px;display:flex;flex-direction:column;gap:8px;}
+.owner-msg{max-width:88%;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5;}
+.owner-msg.owner{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.18);color:#e7f9ff;}
+.owner-msg.assistant{align-self:flex-start;background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.14);color:#dff7e8;}
+.owner-msg.system{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.14);color:#ffe58f;max-width:95%;text-align:center;}
+.owner-console-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.owner-console-btn{padding:9px 12px;border-radius:12px;border:1px solid rgba(0,200,255,0.16);background:rgba(255,255,255,0.04);color:#dff7ff;cursor:pointer;font-size:11px;font-family:var(--font);}
+.owner-console-btn.primary{background:rgba(0,200,255,0.14);border-color:rgba(0,200,255,0.28);}
+.owner-console-note{font-size:10px;color:#98b7cb;line-height:1.5;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);}
+@media (max-width:980px){
+  #owner-console{inset:48px 12px 74px 12px;}
+  .owner-console-grid{grid-template-columns:1fr;}
+}
+
 </style>
 </head>
 <body class="lt">
@@ -960,8 +1013,8 @@ body.lt,body.lt2,body.lt3{
 <div id="am" class="h">
   <div class="abox">
     <div class="ahdr">
-      <span class="abrand">ASTRANOV</span>
-      <span class="asub">Planetary OS — Trinity v3.8.0</span>
+      <span class="abrand">ASTRANOV INTERNET OPERATING SYSTEM</span>
+      <span class="asub">Astranov Internet Operating System · V2</span>
     </div>
     <div class="abody">
       <div class="atabs">
@@ -994,13 +1047,14 @@ body.lt,body.lt2,body.lt3{
 <!-- TOP BAR - LOCKED -->
 <div id="topbar">
   <div class="tb-left">
-    <span class="brand">ASTRANOV</span>
+    <span class="brand">ASTRANOV INTERNET OPERATING SYSTEM</span>
     
   </div>
   <div class="tb-center">
-    <span class="vinfo">v<span class="vcurrent">3.8.0</span></span>
+    <span class="vinfo">Astranov Internet Operating System · <span class="vcurrent">V2</span></span>
   </div>
   <div class="tb-right">
+    <button id="owner-workshop-btn" class="owner-chip" onclick="toggleOwnerWorkshop()" title="Owner Workshop" style="display:none;">🛠 <span>Workshop</span></button>
     <div id="balance-display" onclick="showBalance()">
       <span class="balance-label">EUR</span>
       <span class="balance-amount" id="bal">0.00</span>
@@ -1652,7 +1706,7 @@ body.lt,body.lt2,body.lt3{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV v3.8.0 — Trinity OS
+   ASTRANOV INTERNET OPERATING SYSTEM · V2
    Creator & Founder: Notis Astranov, 2026
    Architecture: Spartan Script v3.8.0
    ═══════════════════════════════════════════════ */
@@ -1660,8 +1714,8 @@ body.lt,body.lt2,body.lt3{
 var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 var sb = supabase.createClient(SURL, SKEY);
-var APP_VERSION = '3.8.0';
-var APP_ARCH = 'Spartan Script v3.4.0';
+var APP_VERSION = 'V2';
+var APP_ARCH = 'Spartan Script V2';
 var PAYMENT_CFG_KEY = 'astranov.payment.config';
 var WALLET_KEY = 'astranov.wallet.balance';
 var PAYMENT_LOG_KEY = 'astranov.payment.log';
@@ -1715,6 +1769,145 @@ var PENDING_POSTS = [];
 var PENDING_POSTS_KEY = 'astranov.pending.posts.v1';
 function getPendingPosts(){ try { return JSON.parse(localStorage.getItem(PENDING_POSTS_KEY) || '[]'); } catch(e){ return []; } }
 function setPendingPosts(p){ localStorage.setItem(PENDING_POSTS_KEY, JSON.stringify(p)); }
+
+const OWNER_GITHUB_CFG_KEY = 'astranov.owner.github.cfg.v1';
+const OWNER_WORKSHOP_LOG_KEY = 'astranov.owner.workshop.log.v1';
+window._ownerPatchedHtml = '';
+
+function getOwnerGithubCfg(){
+  try{ return JSON.parse(localStorage.getItem(OWNER_GITHUB_CFG_KEY) || '{}'); }catch(e){ return {}; }
+}
+function saveOwnerGithubCfg(silent){
+  const cfg = {
+    owner: document.getElementById('owner-gh-owner')?.value.trim() || '',
+    repo: document.getElementById('owner-gh-repo')?.value.trim() || '',
+    branch: document.getElementById('owner-gh-branch')?.value.trim() || 'main',
+    path: document.getElementById('owner-gh-path')?.value.trim() || 'index.html',
+    token: document.getElementById('owner-gh-token')?.value.trim() || ''
+  };
+  localStorage.setItem(OWNER_GITHUB_CFG_KEY, JSON.stringify(cfg));
+  if(!silent) ownerConsoleAddMessage('system', 'GitHub settings saved locally in this browser.');
+  return cfg;
+}
+function hydrateOwnerGithubCfg(){
+  const cfg = getOwnerGithubCfg();
+  const ids = [['owner-gh-owner','owner'],['owner-gh-repo','repo'],['owner-gh-branch','branch'],['owner-gh-path','path'],['owner-gh-token','token']];
+  ids.forEach(([id,key])=>{ const el=document.getElementById(id); if(el) el.value = cfg[key] || (key==='branch' ? 'main' : key==='path' ? 'index.html' : ''); });
+}
+function getOwnerWorkshopLog(){ try{ return JSON.parse(localStorage.getItem(OWNER_WORKSHOP_LOG_KEY) || '[]'); }catch(e){ return []; } }
+function setOwnerWorkshopLog(items){ localStorage.setItem(OWNER_WORKSHOP_LOG_KEY, JSON.stringify(items.slice(-80))); }
+function ownerConsoleAddMessage(role, text){
+  const thread = document.getElementById('owner-console-thread');
+  const msg = { role: role, text: String(text || ''), time: new Date().toISOString() };
+  const hist = getOwnerWorkshopLog(); hist.push(msg); setOwnerWorkshopLog(hist);
+  if(thread){
+    const div = document.createElement('div'); div.className = 'owner-msg ' + role; div.textContent = msg.text; thread.appendChild(div); thread.scrollTop = thread.scrollHeight;
+  }
+}
+function renderOwnerWorkshopLog(){
+  const thread = document.getElementById('owner-console-thread'); if(!thread) return; thread.innerHTML = '';
+  getOwnerWorkshopLog().forEach(m=>{ const div=document.createElement('div'); div.className='owner-msg ' + m.role; div.textContent=m.text; thread.appendChild(div); });
+  thread.scrollTop = thread.scrollHeight;
+}
+function updateOwnerWorkshopVisibility(){
+  const visible = !!CU && isOwner(CU);
+  const btn = document.getElementById('owner-workshop-btn');
+  const panel = document.getElementById('owner-console');
+  if(btn) btn.style.display = visible ? 'inline-flex' : 'none';
+  if(!visible && panel) panel.classList.remove('on');
+}
+function openOwnerWorkshop(){
+  if(!(CU && isOwner(CU))) return openAuth('Owner login required for the in-app workshop.');
+  hydrateOwnerGithubCfg();
+  renderOwnerWorkshopLog();
+  document.getElementById('owner-console').classList.add('on');
+  if(!getOwnerWorkshopLog().length){
+    ownerConsoleAddMessage('assistant', 'Owner workshop online. I can summarize the current app state, export the live index.html, and send the current file to GitHub when repo settings are configured.');
+  }
+}
+function closeOwnerWorkshop(){ document.getElementById('owner-console')?.classList.remove('on'); }
+function toggleOwnerWorkshop(){ const panel=document.getElementById('owner-console'); if(panel?.classList.contains('on')) closeOwnerWorkshop(); else openOwnerWorkshop(); }
+function currentIndexHtml(){ return '<!DOCTYPE html>\n' + document.documentElement.outerHTML; }
+function downloadBlobText(filename, text){ const blob = new Blob([text], {type:'text/html;charset=utf-8'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000); }
+function downloadCurrentIndexHtml(){ const filename = 'index_' + (APP_VERSION || 'build') + '.html'; downloadBlobText(filename, currentIndexHtml()); ownerConsoleAddMessage('system', 'Downloaded ' + filename + ' from the live DOM.'); }
+function ownerSeedCurrentState(){
+  const summary = [
+    'App: Astranov Internet Operating System ' + APP_VERSION,
+    'User: ' + (CU ? (CU.name + ' [' + getUserRole(CU) + ']') : 'Guest'),
+    'Layer: ' + ['Globe','Map','Abyss'][CL],
+    'Location: ' + LOC.lat.toFixed(4) + ', ' + LOC.lng.toFixed(4),
+    'Channel: ' + (window.CHAT_CHANNEL || 'ai'),
+    'Balance: €' + (document.getElementById('bal')?.textContent || '0.00')
+  ].join(' | ');
+  ownerConsoleAddMessage('assistant', summary);
+}
+function ownerWorkshopLocalReply(prompt){
+  const q = String(prompt || '').toLowerCase();
+  if(/download|export/.test(q)) return 'Use “Download Current index.html” to export the live DOM version immediately.';
+  if(/github|commit|push|publish/.test(q)) return 'GitHub send is ready. Save repo owner, repo, branch, path, and a GitHub token, then use “Send Current index.html to GitHub”.';
+  if(/summarize|status|state/.test(q)) return 'Use “Summarize Current App State” for a live state digest pulled from the current session.';
+  return 'Owner workshop is active. For live remote AI patching, connect a same-origin backend endpoint at /api/owner_workshop.php. Until then, this panel can export the current index and push it to GitHub.';
+}
+async function ownerSendWorkshop(){
+  if(!(CU && isOwner(CU))) return openAuth('Owner login required for the workshop.');
+  const input = document.getElementById('owner-console-input');
+  const prompt = (input?.value || '').trim();
+  if(!prompt) return;
+  input.value = '';
+  ownerConsoleAddMessage('owner', prompt);
+  try{
+    const res = await fetch('/api/owner_workshop.php', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt: prompt, current_html: currentIndexHtml(), app_name: 'Astranov Internet Operating System', version: APP_VERSION, owner: CU })
+    });
+    if(!res.ok) throw new Error('Owner AI bridge unavailable (' + res.status + ').');
+    const data = await res.json();
+    if(data.reply) ownerConsoleAddMessage('assistant', data.reply);
+    if(data.patched_html){ window._ownerPatchedHtml = data.patched_html; ownerConsoleAddMessage('system', 'Patched HTML buffer received. Ask the backend bridge to persist it, or export it from the bridge.'); }
+  }catch(e){
+    ownerConsoleAddMessage('assistant', ownerWorkshopLocalReply(prompt));
+  }
+}
+function githubContentPath(owner, repo, path){
+  return 'https://api.github.com/repos/' + encodeURIComponent(owner) + '/' + encodeURIComponent(repo) + '/contents/' + path.split('/').map(encodeURIComponent).join('/');
+}
+function utf8ToBase64(str){ return btoa(unescape(encodeURIComponent(str))); }
+async function ownerGithubPushCurrentIndex(){
+  if(!(CU && isOwner(CU))) return openAuth('Owner login required for GitHub push.');
+  const cfg = saveOwnerGithubCfg(true);
+  if(!cfg.owner || !cfg.repo || !cfg.path || !cfg.token){
+    ownerConsoleAddMessage('system', 'Fill repo owner, repository, path, and token first.');
+    return;
+  }
+  ownerConsoleAddMessage('system', 'Preparing GitHub commit for ' + cfg.owner + '/' + cfg.repo + ' → ' + cfg.path + ' on ' + (cfg.branch || 'main') + '.');
+  const url = githubContentPath(cfg.owner, cfg.repo, cfg.path);
+  const headers = {
+    'Accept':'application/vnd.github+json',
+    'Authorization':'Bearer ' + cfg.token,
+    'X-GitHub-Api-Version':'2022-11-28'
+  };
+  let sha = null;
+  try{
+    const getRes = await fetch(url + '?ref=' + encodeURIComponent(cfg.branch || 'main'), { headers: headers });
+    if(getRes.ok){ const existing = await getRes.json(); sha = existing.sha || null; }
+  }catch(e){}
+  const payload = {
+    message: 'Astranov ' + APP_VERSION + ' owner update ' + new Date().toISOString(),
+    content: utf8ToBase64(currentIndexHtml()),
+    branch: cfg.branch || 'main'
+  };
+  if(sha) payload.sha = sha;
+  const putRes = await fetch(url, { method:'PUT', headers:{...headers,'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  if(!putRes.ok){
+    const errText = await putRes.text();
+    ownerConsoleAddMessage('system', 'GitHub push failed: ' + errText.slice(0, 220));
+    return;
+  }
+  const data = await putRes.json();
+  ownerConsoleAddMessage('assistant', 'GitHub updated successfully. Commit: ' + ((data.commit && data.commit.sha) ? data.commit.sha.slice(0,7) : 'ok'));
+}
+
 
 /* ═══ AI MEMORY & LEARNING SYSTEM ═══ */
 var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
@@ -1889,6 +2082,7 @@ function setGuestState() {
   document.getElementById('pay-email').value = '';
   document.getElementById('pay-phone').value = '';
   document.getElementById('pay-name').value = 'Guest';
+  updateOwnerWorkshopVisibility();
 }
 
 function openAuth(reason='Login required.', resumeAction=null) {
@@ -2787,6 +2981,7 @@ function onAuth(user, name, role, phone) {
   loadBalance();
   loadCounts();
   subscribeRealtime();
+  updateOwnerWorkshopVisibility();
   if (role === 'driver' || role === 'admin') loadDriverDeliveries();
   if (typeof PENDING_ACTION === 'function') {
     const action = PENDING_ACTION;
@@ -2811,6 +3006,7 @@ async function signOut() {
   await sb.auth.signOut();
   setGuestState();
   loadBalance();
+  updateOwnerWorkshopVisibility();
   showResp('Signed out. Guest browsing remains active.');
 }
 
@@ -2861,6 +3057,7 @@ async function saveProfile(){
       badge.style.color = CU.role === 'owner' ? '#ffd600' : CU.role === 'admin' ? '#00e87a' : '#79aedd';
       badge.style.borderColor = CU.role === 'owner' ? 'rgba(255,214,0,0.30)' : CU.role === 'admin' ? 'rgba(0,232,122,0.24)' : 'rgba(0,200,255,0.18)';
     }
+    updateOwnerWorkshopVisibility();
   }
 
   // Sync to Supabase
@@ -4972,8 +5169,8 @@ async function callAstranovaAI(userMessage){
   var conv = document.getElementById('ai-conv');
 
   // Build context about the app state
-  var context = 'You are Astranov, a male angel AI assistant for the Astranov delivery marketplace on Rhodes island, Greece. ';
-  context += 'PERSONALITY: You are Astranov, a calm, wise male angel AI assistant. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. Give specific product recommendations with prices from local data. Be a trusted advisor — friendly but efficient. ';
+  var context = 'You are Astranov, the AI systems operator for Astranov Internet Operating System on Rhodes island, Greece. ';
+  context += 'PERSONALITY: You are Astranov, a calm, direct AI systems operator. LANGUAGE RULE: Reply in the SAME LANGUAGE the user writes in. If they write English, reply in English. If they write Greek, reply in Greek. If they write Russian, reply in Russian with Cyrillic and USSR humor (друг, товарищ, da, motherland). For any language, be warm, helpful, and direct. Keep responses to 2-4 sentences. You help the user operate the app, find content, route actions, and manage marketplace tasks. ';
   // MEMORY context from learning system
   context += buildMemoryContext();
   context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
@@ -5078,7 +5275,7 @@ function localAstranovaResponse(msg){
   if(/help|\u03B2\u03BF\u03AE\u03B8\u03B5\u03B9\u03B1/i.test(q)) return isGreek ? '\u0395\u03AF\u03BC\u03B1\u03B9 \u03BF Astranov! \u039C\u03C0\u03BF\u03C1\u03CE \u03BD\u03B1 \u03B2\u03C1\u03C9 \u03BA\u03B1\u03C4\u03B1\u03C3\u03C4\u03AE\u03BC\u03B1\u03C4\u03B1, \u03BD\u03B1 \u03B5\u03BB\u03AD\u03B3\u03BE\u03C9 \u03C4\u03B9\u03BC\u03AD\u03C2, \u03BD\u03B1 \u03C0\u03B1\u03C1\u03B1\u03B3\u03B3\u03B5\u03AF\u03BB\u03C9 \u03B3\u03B9\u03B1 \u03C3\u03AD\u03BD\u03B1!' : 'I can find shops, check prices, calculate delivery fees, and place orders for you' + nameGreet + '. Try "find pizza" or "cheapest beer"!';
   if(/hello|hi|hey|good|\u03B3\u03B5\u03B9\u03B1/i.test(q)){
     if(isGreek) return '\u0393\u03B5\u03B9\u03B1 \u03C3\u03BF\u03C5' + nameGreet + '! \u03A4\u03B9 \u03B8\u03B1 \u03AE\u03B8\u03B5\u03BB\u03B5\u03C2 \u03C3\u03AE\u03BC\u03B5\u03C1\u03B1;';
-    return 'Hello' + nameGreet + '! Welcome to Astranov on Rhodes. What can I find for you today?';
+    return 'Hello' + nameGreet + '! Welcome to Astranov Internet Operating System. What would you like to do today?';
   }
   if(/thank|\u03B5\u03C5\u03C7\u03B1\u03C1\u03B9\u03C3\u03C4/i.test(q)) return isGreek ? '\u03A0\u03B1\u03C1\u03B1\u03BA\u03B1\u03BB\u03CE' + nameGreet + '! \u0395\u03AF\u03BC\u03B1\u03B9 \u03C0\u03AC\u03BD\u03C4\u03B1 \u03B5\u03B4\u03CE!' : 'You\'re welcome' + nameGreet + '! I\'m always here to help.';
   if(/remember|you know me/i.test(q)){
@@ -5890,123 +6087,81 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV v3.8.0
+SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V2
 Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script v3.8.0 | Single Source of Record
+Architecture: Spartan Script V2 | Single Source of Record
 
-MISSION: Planetary delivery marketplace OS. Voice-first AI interface.
-STACK: Single HTML | Vercel | Cloudflare DNS | Supabase | Leaflet | Three.js
-DOMAIN: astranov.eu
+MISSION: Internet operating system with AI-first control.
+NAME: Astranov Internet Operating System. No Trinity naming anywhere.
+STACK: Single HTML | Supabase | Leaflet | Three.js | astranov.eu
 
-AI ASSISTANT — ASTRANOV (PRIMARY INTERFACE)
-Blonde Nordic warrior angel god. Golden hair, Norse armor, feathered wings.
-Deep male Russian voice. Cyrillic: друг, брат, товарищ, да, хорошо, отлично.
-Claude Sonnet API + local fallback. AI memory/learning system.
-Voice ordering: search→suggest→confirm→execute→deliver→narrate.
+OWNER RULE
+Only Notis Astranov (notisastranov@gmail.com / +306971930225) is owner.
+Owner workshop is visible only when owner is logged in.
 
-COMPASS RADAR HUD (top-right, device compass, mils+degrees, radar blips)
-POSTING SYSTEM (right-click/long-press, 3 options, zoom 17+ gate)
-DELIVERY ENGINE (€1/km + surcharges, haversine routing, demo simulation)
-CHANNELS (All/Global/Local/Teams/Support on left sidebar)
-ROLES (User/Admin/Owner auto-detect)
-PRIVACY (delivery addresses hidden from shops, driver confidentiality)
-DEMO DATA (5 shops Rhodes, 30+ menu items with photos, wallet €50)
+WORKSHOP RULE
+Inside the app, owner can open a hidden workshop, talk to the build bridge,
+export the live index.html, and send the current index.html to GitHub.
 
-ROADMAP: Pass 4=Express backend, 5=Stripe, 6=Orders, 7=Realtime, 8=3D engine
+UI RULE
+Top and side rails stay transparent and non-blocking.
+Keep data visible and controls accessible without covering the globe.
+
+AI RULE
+Astranov is the in-app systems operator.
+Owner workshop tries same-origin /api/owner_workshop.php first, then local fallback.
+
+GITHUB RULE
+Owner GitHub send uses repo settings + token supplied by owner.
+Push current index.html through GitHub Contents API.
 -->
 
-<!-- Embedded Spartan Script v3.3.3 -->
-<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV v3.8.0
-# Single Source of Record | AI-Executable | Under 3000 chars
+<!-- Embedded Spartan Script V2 -->
+<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V2
+# Single Source of Record
 # Creator: Graduate Candidate Captain Notis Astranov
-# Updated: 2026-03-28
+# Updated: 2026-03-30
 
 MISSION
-Planetary delivery marketplace OS. Voice-first AI interface.
-Astranov = internet operating system for daily life.
+Astranov Internet Operating System. AI-first control interface.
+No Trinity naming anywhere.
 
 STACK [LOCKED]
-Single HTML | Vercel | Cloudflare DNS | Supabase kzlabcrlrpbnfiiyrjvl
-OpenStreetMap/Leaflet | Three.js globe | astranov.eu
+Single HTML | Supabase | Leaflet | Three.js | astranov.eu
+
+OWNER [LOCKED]
+Owner only = Notis Astranov
+Email = notisastranov@gmail.com
+Phone = +306971930225 / 6971930225
+Owner workshop visible only when owner is logged in.
+
+UI [LOCKED]
+Top bar, bottom bar, left rail, right rail = transparent glass, non-blocking.
+Keep globe visible. Keep data accessible.
+Do not let decorative chrome overpower content.
+
+OWNER WORKSHOP [LOCKED]
+Provide hidden owner-only workshop inside app.
+Functions: owner chat bridge, export current index.html, save GitHub repo settings,
+send current index.html to GitHub, summarize live app state.
+Try /api/owner_workshop.php first. If unavailable, explain local fallback options.
+
+GITHUB [LOCKED]
+Send current live DOM index.html to GitHub via Contents API when owner config exists.
+Use owner-supplied repo owner, repo, branch, path, token.
+Never expose workshop to non-owner accounts.
+
+AI ASSISTANT
+Astranov = in-app systems operator for the Internet Operating System.
+Warm, direct, same-language replies. Help run UI, content, routing, and marketplace actions.
 
 LAYERS
-Cosmic=Three.js globe | Earth=Leaflet map | Abyss=submarine
-Zoom-depth switching only. No explicit layer buttons.
+Globe = primary start point. Map = local work surface.
 
-DESIGN [LOCKED]
-Electric blue #00c8ff / black / transparent
-Glassmorphic UI. HUD: top strip, left rail, right rail, center stage
-AI command bar bottom. Compass radar top-right.
-
-AI ASSISTANT — ASTRANOV [PRIMARY INTERFACE]
-Character: Blonde Nordic warrior angel god (SVG)
-Golden hair, ice-blue eyes, Norse armor, large feathered wings
-Golden halo, shoulder armor, bracers, warrior boots
-Animations: float, wing-flap, hair-flow, mouth-speak, sparkle-trail
-fly-to-location, active-glow, bounce on action
-Voice: Deep male, pitch 0.65, rate 0.80, seeks Russian voice
-Personality: Russian with Cyrillic — друг, брат, товарищ, да, нет
-хорошо, отлично, вперёд, спасибо, здравствуйте, конечно, молодец
-USSR humor: commissar, motherland, supply chain, five-year plan
-Claude Sonnet API integration + local fallback brain
-AI-driven ordering: search→suggest→confirm→execute→deliver
-No modal windows. Bottom command bar + expandable conversation.
-
-AI MEMORY/LEARNING
-3 localStorage stores: memory, conv_history, user_prefs
-Tracks: food preferences, search history, interaction count, user name
-Conversation history (last 60) fed into Claude context
-Returning users get personalized greetings + preference recall
-buildMemoryContext() feeds all into API system prompt
-
-COMPASS RADAR HUD [TOP-RIGHT]
-Periscope/submarine style. Front quarter illuminated, back 3/4 dark.
-Degree ring 0-360 with N/S/E/W cardinal glowing labels.
-Artillery mil ring (0-6400) inner markings.
-Distance rings: 1km, 3km, 5km. Radar sweep beam 3.5s cycle.
-Blips: green=shops, orange=drivers, blue=posts. Scan every 3s.
-Device compass via DeviceOrientationEvent. Desktop: slow drift.
-Route indicator: orange dashed line to delivery destination.
-HDG readout in degrees. Visible map layer only. Opacity 0.5, hover 0.92.
-
-POSTING (right-click/3s long-press, zoom 17+ gate)
-3 options: Post Something | List a Shop | Set Delivery Location
-Shop: 7-day schedule, dynamic menu (name/price/volume/qty/rate/
-times/photo/temperature cold/hot/neutral), delivery range km
-Posts: title/desc/category/price/visibility global/local/team
-
-ROLES
-User=consumer (needs admin verification) | Admin=driver/shop/support
-Owner=auto-detect notisastranov@gmail.com or 306971930225
-
-DELIVERY ENGINE
-€1/km base | +€1 volume>6L | +€1 night 21-09 | +€1 holiday
-+€1 bad weather | Min order €3 | Split >13L | Max 3 hot/batch
-Closest driver haversine matching. Demo mode simulates full flow:
-shop accepts→driver animates on map→pickup→delivery→complete
-Driver marker (orange pulse), route polylines, Astranov flies to shop.
-
-PRIVACY
-Delivery addresses private. Shops see area name only.
-Driver gets full address with CONFIDENTIALITY NOTICE.
-
-CHANNELS
-Left sidebar: All/Global/Local/Teams/Support. Glow when active.
-
-VEHICLES: Motorcycle, Car, Scooter, Bicycle, Drone, Boat
-
-SETTINGS: Demo Mode toggle, Bad Weather toggle, Reset Demo Data
-
-DEMO DATA: 5 shops Rhodes (Tamam, Aegean Dive, Nikolas Pizza,
-Mini Market 24/7, Elli Beach) + 30 menu items with Unsplash photos
-+ 4 posts + 3 drivers + 2 addresses. Wallet €50.
-
-ROADMAP
-Pass 4: Express backend + server-side AI endpoints
-Pass 5: Stripe EUR payments
-Pass 6: Order management dashboard
-Pass 7: Supabase Realtime messaging
-Pass 8: High-end 3D graphics engine upgrade</textarea>
+DESIGN
+Electric blue / black / transparent.
+Keep rails and ribbons transparent. Keep controls readable.
+</textarea>
 
 <!-- POST CHOOSER (map right-click / long-press) -->
 <div id="post-chooser">
@@ -7666,6 +7821,50 @@ Pass 8: High-end 3D graphics engine upgrade</textarea>
 
 })();
 </script>
+
+
+
+<!-- OWNER WORKSHOP: visible only to owner account -->
+<div id="owner-console">
+  <div class="owner-console-head">
+    <div>
+      <div class="owner-console-title">Owner Workshop</div>
+      <div class="owner-console-sub">Talk to the in-app build bridge, export the live index, or commit to GitHub.</div>
+    </div>
+    <button class="owner-console-close" onclick="closeOwnerWorkshop()">×</button>
+  </div>
+  <div class="owner-console-grid">
+    <div class="owner-console-stack">
+      <div class="owner-console-label">GitHub repo settings</div>
+      <div class="owner-console-row">
+        <input id="owner-gh-owner" class="owner-console-input" placeholder="Repo owner"/>
+        <input id="owner-gh-repo" class="owner-console-input" placeholder="Repository"/>
+      </div>
+      <div class="owner-console-row">
+        <input id="owner-gh-branch" class="owner-console-input" placeholder="Branch"/>
+        <input id="owner-gh-path" class="owner-console-input" placeholder="Path, e.g. index.html"/>
+      </div>
+      <input id="owner-gh-token" class="owner-console-input" placeholder="GitHub token or fine-grained PAT" type="password"/>
+      <div class="owner-console-note">Stored locally in this browser for the owner only. For safer deployment, route GitHub writes through your own backend.</div>
+      <div class="owner-console-actions">
+        <button class="owner-console-btn" onclick="saveOwnerGithubCfg()">Save GitHub Settings</button>
+        <button class="owner-console-btn" onclick="downloadCurrentIndexHtml()">Download Current index.html</button>
+        <button class="owner-console-btn primary" onclick="ownerGithubPushCurrentIndex()">Send Current index.html to GitHub</button>
+      </div>
+    </div>
+    <div class="owner-console-stack">
+      <div class="owner-console-label">Owner conversation</div>
+      <div id="owner-console-thread" class="owner-console-thread"></div>
+      <div class="owner-console-input-wrap">
+        <textarea id="owner-console-input" class="owner-console-input owner-console-textarea" placeholder="Owner instructions: patch the UI, clean transparency, update version text, prepare GitHub commit..."></textarea>
+        <div class="owner-console-actions">
+          <button class="owner-console-btn" onclick="ownerSeedCurrentState()">Summarize Current App State</button>
+          <button class="owner-console-btn primary" onclick="ownerSendWorkshop()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
