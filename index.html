@@ -11488,6 +11488,8 @@ Available controls: user-badge, balance-display, video-post-btn, pause-ui-btn, f
   };
 
   function initDepthUI(){
+    /* 3D orbit engine is ready but controls start FULLY VISIBLE.
+       AI calls flyControlToUser()/sendControlToOrbit() to move them. */
     var depthTargets = [
       'force-update-btn','balance-display','video-post-btn',
       'user-badge','pause-ui-btn','astranova-wrapper',
@@ -11495,9 +11497,7 @@ Available controls: user-badge, balance-display, video-post-btn, pause-ui-btn, f
     ];
     depthTargets.forEach(function(id){
       var el = document.getElementById(id);
-      if(el && !el.classList.contains('in-orbit')){
-        el.classList.add('in-orbit');
-      }
+      if(el) el.classList.remove('in-orbit');
     });
     /* Bottombar stays fully visible - never in orbit */
     var bb = document.getElementById('bottombar');
@@ -11508,15 +11508,9 @@ Available controls: user-badge, balance-display, video-post-btn, pause-ui-btn, f
       if(target){
         /* Bring this control forward */
         target.classList.add('ui-awake');
-        clearTimeout(target._depthTimer);
-        target._depthTimer = setTimeout(function(){
-          /* Don't recede if it has focus (chat input etc) */
-          if(!target.contains(document.activeElement)){
-            target.classList.remove('ui-awake');
-          }
-        }, 6000);
+        /* No auto-hide timer — controls stay visible until AI moves them */
       } else {
-        /* Tapped empty space — recede everything except focused */
+        /* Tapped empty space — remove awake state but don't push to orbit */
         document.querySelectorAll('.ui-awake').forEach(function(el){
           if(!el.contains(document.activeElement)){
             el.classList.remove('ui-awake');
