@@ -6709,75 +6709,30 @@ function sendCmd(){
     return;
   }
 
-  // Show typing indicator
-  var conv = document.getElementById('ai-conv');
-  var typing = document.createElement('div');
-  typing.className = 'ai-typing';
-  typing.id = 'ai-typing';
-  typing.textContent = 'Astranov is thinking';
-  conv.appendChild(typing);
-  conv.scrollTop = conv.scrollHeight;
-
   // Learn from user message
-  learnFromUser(val);
+  try{ learnFromUser(val); }catch(e){}
 
-  // Call Claude API for intelligent response
+  // Call AI engine (Gemini → Groq → OpenRouter → Server → Local fallback)
   callAstranovaAI(val);
 }
 
-/* ── AI MEMORY SYSTEM ── */
-/* Stores facts learned about the user across conversations */
-var AI_MEMORY_KEY = 'astranov.ai.memory.v2';
-var AI_HISTORY_KEY = 'astranov.ai.history.v2';
-
-function getAiMemory(){
-  try{ return JSON.parse(localStorage.getItem(AI_MEMORY_KEY) || '[]'); }catch(e){ return []; }
-}
-function addAiMemory(fact){
-  var mem = getAiMemory();
-  // Don't duplicate
-  if(mem.some(function(m){ return m.fact === fact; })) return;
-  mem.push({ fact:fact, learned: new Date().toISOString() });
-  // Keep max 50 memories
-  if(mem.length > 50) mem = mem.slice(-50);
-  localStorage.setItem(AI_MEMORY_KEY, JSON.stringify(mem));
-}
-function getAiHistory(){
-  try{ return JSON.parse(localStorage.getItem(AI_HISTORY_KEY) || '[]'); }catch(e){ return []; }
-}
-function addAiHistory(role, text){
-  var hist = getAiHistory();
-  hist.push({ role:role, text:text.substring(0,200), time: new Date().toISOString() });
-  // Keep last 30 exchanges
-  if(hist.length > 30) hist = hist.slice(-30);
-  localStorage.setItem(AI_HISTORY_KEY, JSON.stringify(hist));
-}
-
-/* Extract memorable facts from user messages */
+/* ── AI MEMORY — unified with V1 system (getAiMemory returns {}, getUserPrefs, getConvHistory) ── */
+/* learnFromUser — extracts preferences from messages and stores in V1 prefs */
 function learnFromUser(msg){
   var q = msg.toLowerCase();
-  if(/my name is (\w+)/i.test(msg)) addAiMemory('User name: ' + msg.match(/my name is (\w+)/i)[1]);
-  if(/i like (\w+)/i.test(msg)) addAiMemory('User likes: ' + msg.match(/i like (.+)/i)[1]);
-  if(/i (live|stay|am) (in|at|near) (.+)/i.test(msg)) addAiMemory('User location: ' + msg.match(/i (?:live|stay|am) (?:in|at|near) (.+)/i)[1]);
-  if(/i (always|usually|often) (order|get|buy|eat|drink) (.+)/i.test(msg)) addAiMemory('User regularly orders: ' + msg.match(/i (?:always|usually|often) (?:order|get|buy|eat|drink) (.+)/i)[1]);
-  if(/favorite|favourite/i.test(q)) addAiMemory('User preference: ' + msg.substring(0,100));
-  if(/allergic|allergy|intolerant|vegan|vegetarian|halal|kosher/i.test(q)) addAiMemory('Dietary: ' + msg.substring(0,100));
-  if(/don.?t like|hate|dislike|avoid/i.test(q)) addAiMemory('User dislikes: ' + msg.substring(0,100));
-}
-
-/* Extract memorable facts from AI responses about the interaction */
-function learnFromInteraction(userMsg, aiResponse){
-  // Remember what user ordered
-  if(/order|buy|purchase|ok|yes|confirm/i.test(userMsg) && AI_LAST_SUGGESTION){
-    addAiMemory('User ordered: ' + (AI_LAST_SUGGESTION.name || '') + ' from ' + (AI_LAST_SUGGESTION._shopName || '') + ' on ' + new Date().toLocaleDateString());
+  var prefs = getUserPrefs();
+  var mem = getAiMemory();
+  if(/my name is (\w+)/i.test(msg)){ mem.userName = msg.match(/my name is (\w+)/i)[1]; setAiMemory(mem); }
+  if(/i like (\w+)/i.test(msg) && /pizza/i.test(q)) prefs.likesPizza = (prefs.likesPizza||0) + 1;
+  if(/i like (\w+)/i.test(msg) && /beer|μπίρα/i.test(q)) prefs.likesBeer = (prefs.likesBeer||0) + 1;
+  if(/i like (\w+)/i.test(msg) && /coffee|καφέ/i.test(q)) prefs.likesCoffee = (prefs.likesCoffee||0) + 1;
+  if(/favorite|favourite/i.test(q) && /pizza/i.test(q)) prefs.likesPizza = (prefs.likesPizza||0) + 1;
+  if(/allergic|allergy|intolerant|vegan|vegetarian|halal|kosher/i.test(q)){
+    if(!prefs.dietary) prefs.dietary = [];
+    prefs.dietary.push(msg.substring(0,100));
+    prefs.dietary = prefs.dietary.slice(-5);
   }
-  // Remember what user searched for
-  if(userMsg.length > 3 && !/^(ok|yes|no|hi|hello|hey|thanks)$/i.test(userMsg.trim())){
-    addAiHistory('user', userMsg);
-  }
-  if(aiResponse){
-    addAiHistory('ai', aiResponse.substring(0,200));
-  }
+  setUserPrefs(prefs);
 }
 
 function getAiPreference(){
@@ -6787,7 +6742,7 @@ function setAiPreference(pref){
   pref = String(pref || 'auto').toLowerCase();
   if(pref === 'openai') pref = 'chatgpt';
   if(pref === 'anthropic') pref = 'claude';
-  if(!/^(auto|chatgpt|claude|local)$/.test(pref)) pref = 'auto';
+  if(!/^(auto|chatgpt|claude|local|gemini|groq|openrouter)$/.test(pref)) pref = 'auto';
   try{ localStorage.setItem(AI_PREF_KEY, pref); }catch(e){}
   AI_BACKEND_STATUS.provider = pref;
   return pref;
@@ -6809,120 +6764,11 @@ function normalizeAiReply(payload){
   }
   return '';
 }
-async function queryAstranovCloud(payload){
-  var pref = getAiPreference();
-  var endpoints = [];
-  var custom = getAiEndpoint();
-  if(custom) endpoints.push({ id:'custom', url:custom });
-  endpoints.push({ id:'router', url:'/api/ai-router.php' });
-  endpoints.push({ id:'router-fallback', url:'/api/ai.php' });
-  var lastErr = null;
-  for(var i=0;i<endpoints.length;i++){
-    var ep = endpoints[i];
-    try{
-      var res = await fetch(ep.url, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({
-          provider_preference: pref,
-          app: APP_NAME,
-          app_version: APP_VERSION,
-          message: payload.userMessage,
-          system: payload.system,
-          context: payload.context,
-          searchResults: payload.searchResults,
-          location: payload.location,
-          user: payload.user
-        })
-      });
-      if(!res.ok) throw new Error('AI route ' + ep.id + ' returned ' + res.status);
-      var data = await res.json();
-      var text = normalizeAiReply(data);
-      if(!text) throw new Error('AI route ' + ep.id + ' returned no text');
-      return { text:text, provider:data.provider || pref || 'cloud', endpoint:ep.url, cloud:true };
-    }catch(err){ lastErr = err; }
-  }
-  throw lastErr || new Error('No cloud AI route is available');
-}
-function handleAiBackendCommand(val){
-  var q = String(val || '').trim().toLowerCase();
-  var m = q.match(/^(?:use|switch to|set ai to|set brain to|prefer)\s+(chatgpt|openai|claude|anthropic|local|auto)/);
-  if(m){
-    var pref = m[1];
-    if(pref === 'openai') pref = 'chatgpt';
-    if(pref === 'anthropic') pref = 'claude';
-    setAiPreference(pref);
-    addAiMessage('ai-msg-reply','Astranov','AI preference set to ' + pref.toUpperCase() + '. I will use that provider when a secure cloud route is available, and fall back safely when it is not.');
-    return true;
-  }
-  if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(q)){
-    var prefNow = getAiPreference();
-    var mode = AI_BACKEND_STATUS.cloud ? ('Cloud route live via ' + (AI_BACKEND_STATUS.provider || prefNow).toUpperCase()) : 'Local fallback brain active';
-    addAiMessage('ai-msg-reply','Astranov', mode + '. Preference: ' + prefNow.toUpperCase() + (AI_BACKEND_STATUS.lastError ? (' · Last cloud issue: ' + AI_BACKEND_STATUS.lastError) : '') + '.');
-    return true;
-  }
-  if(/^(fix ui|repair ui|heal ui|stabilize ui|repair interface|fix interface)/.test(q)){
-    aiSuperviseLayout();
-    hideUselessButtons(canHelperPermanentlyRepairUi());
-    addAiMessage('ai-msg-reply','Astranov','UI repair sequence complete. I rebalanced the layout, reduced visual clutter, and kept the critical controls in view.');
-    return true;
-  }
-  return false;
-}
-
+/* queryAstranovCloud, handleAiBackendCommand, callAstranovaAI —
+   Dead code removed. These are now overridden by the V2 Gemini AI Engine IIFE below. */
+function handleAiBackendCommand(val){ return false; }
 async function callAstranovaAI(userMessage){
-  var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov, an Internet Operating System on Rhodes island, Greece. ';
-  context += 'PERSONALITY: You are Astranov, calm, disciplined, and useful. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. LANGUAGE RULE: reply in the same language the user writes in. Keep responses to 2-4 sentences and concrete. ';
-  context += buildMemoryContext();
-  context += 'Current user: ' + (CU ? CU.name + ' (role: ' + getUserRole(CU) + ')' : 'Guest') + '. ';
-  context += 'Wallet balance: €' + (document.getElementById('bal')?.textContent || '0') + '. ';
-  context += 'Current layer: ' + ['Globe','Map','Abyss'][CL] + '. ';
-  context += 'Location: Rhodes (' + LOC.lat.toFixed(4) + 'N, ' + LOC.lng.toFixed(4) + 'E). ';
-
-  var searchResults = '';
-  try{
-    var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
-    var q = userMessage.toLowerCase();
-    var matches = offers.filter(function(o){
-      return (o.name||'').toLowerCase().includes(q) || (o.title||'').toLowerCase().includes(q) ||
-             (o.category||'').toLowerCase().includes(q) || (o.description||'').toLowerCase().includes(q) ||
-             (o.menu||[]).some(function(m){ return (m.name||'').toLowerCase().includes(q); });
-    }).slice(0,5);
-    if(matches.length){
-      searchResults = 'Relevant local listings found: ' + matches.map(function(m){
-        var menuInfo = m.menu ? ' Menu: ' + m.menu.map(function(mi){ return mi.name + ' €' + (mi.price||'?'); }).join(', ') : '';
-        return m.name + ' (' + (m.category||'') + ')' + menuInfo;
-      }).join(' | ');
-    }
-  }catch(e){}
-
-  var aiText = '';
-  try{
-    if(getAiPreference() === 'local') throw new Error('Local-only mode selected');
-    var routed = await queryAstranovCloud({
-      userMessage:userMessage,
-      system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRules: reply briefly, match the user language, use local data when available, and prioritize working UI commands.',
-      context: context,
-      searchResults: searchResults,
-      location: { lat: LOC.lat, lng: LOC.lng },
-      user: CU ? { id: CU.id, name: CU.name, role: getUserRole(CU), email: CU.email || '' } : null
-    });
-    aiText = routed.text;
-    AI_BACKEND_STATUS = { provider: routed.provider || getAiPreference(), cloud: true, endpoint: routed.endpoint || '', lastError: '' };
-    try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
-  }catch(e){
-    AI_BACKEND_STATUS = { provider: 'local', cloud: false, endpoint: '', lastError: (e && e.message) ? e.message : 'cloud-offline' };
-    try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(err){}
-    aiText = localAstranovaResponse(userMessage);
-    showAstranovaStatusBubble('Cloud AI unavailable. Local bridge active.', 1600);
-  }
-
-  var typingEl = document.getElementById('ai-typing');
-  if(typingEl) typingEl.remove();
-  addAiMessage('ai-msg-reply', 'Astranov', aiText);
-  recordConversation('ai', aiText);
-  learnFromInteraction(userMessage, aiText);
-  speakAstranova(aiText);
+  addAiMessage('ai-msg-reply','Astranov', localAstranovaResponse(userMessage));
 }
 
 function localAstranovaResponse(msg){
@@ -6931,51 +6777,149 @@ function localAstranovaResponse(msg){
   var mem = getAiMemory();
   var nameGreet = mem.userName ? ', ' + mem.userName : '';
   var isGreek = /[\u0370-\u03FF]/.test(msg);
+  var hour = new Date().getHours();
+  var timeGreet = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
 
-  // Search local shops first
+  // Search local shops/offers first
   try{
     var offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]');
+    var words = q.split(/\s+/).filter(function(w){ return w.length > 2; });
     var matches = offers.filter(function(o){
-      return (o.name||'').toLowerCase().includes(q) || (o.description||'').toLowerCase().includes(q) ||
-             (o.category||'').toLowerCase().includes(q) ||
-             (o.menu||[]).some(function(m){ return (m.name||'').toLowerCase().includes(q); });
+      var haystack = ((o.name||'') + ' ' + (o.description||'') + ' ' + (o.category||'')).toLowerCase();
+      var menuHay = (o.menu||[]).map(function(m){ return (m.name||'').toLowerCase(); }).join(' ');
+      return words.some(function(w){ return haystack.includes(w) || menuHay.includes(w); });
     });
     if(matches.length){
       var m = matches[0];
-      var menuStr = (m.menu||[]).slice(0,3).map(function(mi){ return mi.name + ' (\u20AC' + (mi.price||'?') + ')'; }).join(', ');
-      if(isGreek) return '\u0392\u03C1\u03AE\u03BA\u03B1 \u03C4\u03BF ' + m.name + '! ' + (menuStr ? '\u03A0\u03C1\u03BF\u03C3\u03C6\u03AD\u03C1\u03BF\u03C5\u03BD: ' + menuStr + '.' : '');
-      return 'Found ' + m.name + ' for you' + nameGreet + '! ' + (menuStr ? 'They offer: ' + menuStr + '.' : '') + ' Check the Listings panel to order.';
+      var menuStr = (m.menu||[]).slice(0,4).map(function(mi){ return mi.name + ' (€' + (mi.price||'?') + ')'; }).join(', ');
+      if(isGreek) return 'Βρήκα το ' + m.name + '! ' + (menuStr ? 'Προσφέρουν: ' + menuStr + '.' : '') + ' Πες "order" για παραγγελία.';
+      return 'Found <strong>' + m.name + '</strong> for you' + nameGreet + '! ' + (menuStr ? 'They offer: ' + menuStr + '.' : '') + ' Say "order" to place your order.';
     }
   }catch(e){}
 
-  if(/pizza/i.test(q)){
-    if(isGreek) return 'Nikolas Pizza Express \u03AD\u03C7\u03B5\u03B9 Margherita \u20AC8, Pepperoni \u20AC10.50. \u0391\u03BD\u03BF\u03B9\u03C7\u03C4\u03CC \u03B1\u03C0\u03CC 17:00. \u03A0\u03B5\u03C2 "order" \u03B3\u03B9\u03B1 \u03BD\u03B1 \u03C0\u03B1\u03C1\u03B1\u03B3\u03B3\u03B5\u03AF\u03BB\u03B5\u03B9\u03C2!';
-    return 'Nikolas Pizza Express has Margherita \u20AC8, Pepperoni \u20AC10.50, Quattro Formaggi \u20AC11. Open from 17:00. Say "order" to place your order' + nameGreet + '!';
+  // ── Greetings ──
+  if(/^(hello|hi|hey|yo|sup|good\s*(morning|afternoon|evening|day)|greetings|γεια|καλημέρα|καλησπέρα|καλό)/i.test(q)){
+    if(isGreek) return 'Γεια σου' + nameGreet + '! Καλό ' + (hour < 12 ? 'πρωί' : hour < 18 ? 'απόγευμα' : 'βράδυ') + '. Τι θα ήθελες σήμερα; Μπορώ να βρω μαγαζιά, φαγητό, ποτά, ή οτιδήποτε χρειάζεσαι στη Ρόδο.';
+    return 'Good ' + timeGreet + nameGreet + '! Welcome to Astranov. I can find shops, food, drinks, check delivery prices, or help you explore Rhodes. What do you need?';
   }
-  if(/beer|\u03BC\u03C0\u03AF\u03C1\u03B1/i.test(q)){
-    if(isGreek) return 'Rhodes Mini Market \u03AD\u03C7\u03B5\u03B9 Mythos 500ml \u03BC\u03CC\u03BD\u03BF \u20AC2.50! \u0391\u03BD\u03BF\u03B9\u03C7\u03C4\u03CC 24/7.';
-    return 'Rhodes Mini Market has Mythos 500ml for just \u20AC2.50 — cheapest around. Open 24/7' + nameGreet + '!';
+
+  // ── Thanks ──
+  if(/thank|ευχαριστ|merci|danke|gracias/i.test(q)){
+    if(isGreek) return 'Παρακαλώ' + nameGreet + '! Είμαι πάντα εδώ.';
+    return 'You\'re welcome' + nameGreet + '! Always here when you need me.';
   }
-  if(/coffee|\u03BA\u03B1\u03C6\u03AD/i.test(q)) return isGreek ? 'Freddo Cappuccino \u20AC4.50 \u03C3\u03C4\u03BF Tamam, \u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03CC\u03C2 \u03BA\u03B1\u03C6\u03AD\u03C2 \u20AC2 \u03C3\u03C4\u03BF Mini Market!' : 'Freddo Cappuccino \u20AC4.50 at Tamam, Greek Coffee \u20AC2 at Mini Market' + nameGreet + '!';
-  if(/food|eat|hungry|\u03C6\u03B1\u03B3\u03B7\u03C4/i.test(q)) return isGreek ? 'Tamam Restaurant: \u039C\u03BF\u03C5\u03C3\u03B1\u03BA\u03AC\u03C2 \u20AC12.50, \u03A7\u03C4\u03B1\u03C0\u03CC\u03B4\u03B9 \u20AC16. \u0389 Nikolas Pizza \u03B3\u03B9\u03B1 \u03B3\u03C1\u03AE\u03B3\u03BF\u03C1\u03B7 \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7!' : 'Tamam Restaurant has Moussaka \u20AC12.50, Grilled Octopus \u20AC16. Or Nikolas Pizza for fast delivery' + nameGreet + '!';
-  if(/dive|diving/i.test(q)) return 'Aegean Dive Centre: Discover Scuba \u20AC75, PADI Open Water \u20AC380, Wreck Dive \u20AC65. Open Mon-Sat from 08:00' + nameGreet + '!';
-  if(/deliver|price|cost|fee|\u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3/i.test(q)) return isGreek ? '\u03A4\u03B9\u03BC\u03AE \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7\u03C2: \u20AC1/km. +\u20AC1 \u03B3\u03B9\u03B1 \u03CC\u03B3\u03BA\u03BF >6L, +\u20AC1 \u03BD\u03CD\u03C7\u03C4\u03B1 (21-09), +\u20AC1 \u03B1\u03C1\u03B3\u03AF\u03B5\u03C2.' : 'Delivery pricing: \u20AC1/km base. Surcharges: +\u20AC1 volume over 6L, +\u20AC1 night (21:00-09:00), +\u20AC1 holidays, +\u20AC1 bad weather' + nameGreet + '.';
-  if(/help|\u03B2\u03BF\u03AE\u03B8\u03B5\u03B9\u03B1/i.test(q)) return isGreek ? '\u0395\u03AF\u03BC\u03B1\u03B9 \u03BF Astranov! \u039C\u03C0\u03BF\u03C1\u03CE \u03BD\u03B1 \u03B2\u03C1\u03C9 \u03BA\u03B1\u03C4\u03B1\u03C3\u03C4\u03AE\u03BC\u03B1\u03C4\u03B1, \u03BD\u03B1 \u03B5\u03BB\u03AD\u03B3\u03BE\u03C9 \u03C4\u03B9\u03BC\u03AD\u03C2, \u03BD\u03B1 \u03C0\u03B1\u03C1\u03B1\u03B3\u03B3\u03B5\u03AF\u03BB\u03C9 \u03B3\u03B9\u03B1 \u03C3\u03AD\u03BD\u03B1!' : 'I can find shops, check prices, calculate delivery fees, and place orders for you' + nameGreet + '. Try "find pizza" or "cheapest beer"!';
-  if(/hello|hi|hey|good|\u03B3\u03B5\u03B9\u03B1/i.test(q)){
-    if(isGreek) return '\u0393\u03B5\u03B9\u03B1 \u03C3\u03BF\u03C5' + nameGreet + '! \u03A4\u03B9 \u03B8\u03B1 \u03AE\u03B8\u03B5\u03BB\u03B5\u03C2 \u03C3\u03AE\u03BC\u03B5\u03C1\u03B1;';
-    return 'Hello' + nameGreet + '! Welcome to Astranov on Rhodes. What can I find for you today?';
-  }
-  if(/thank|\u03B5\u03C5\u03C7\u03B1\u03C1\u03B9\u03C3\u03C4/i.test(q)) return isGreek ? '\u03A0\u03B1\u03C1\u03B1\u03BA\u03B1\u03BB\u03CE' + nameGreet + '! \u0395\u03AF\u03BC\u03B1\u03B9 \u03C0\u03AC\u03BD\u03C4\u03B1 \u03B5\u03B4\u03CE!' : 'You\'re welcome' + nameGreet + '! I\'m always here to help.';
-  if(/remember|you know me/i.test(q)){
+
+  // ── Memory / Recognition ──
+  if(/remember|you know me|what do you know|ξέρεις|θυμάσαι/i.test(q)){
     var facts = [];
     if(prefs.likesPizza) facts.push('you enjoy pizza');
-    if(prefs.likesBeer) facts.push('you like beer');
+    if(prefs.likesBeer) facts.push('you\'re a beer person');
     if(prefs.likesCoffee) facts.push('you need your coffee');
     if(prefs.likesDiving) facts.push('you love diving');
-    if(mem.totalInteractions) facts.push('we\'ve talked ' + mem.totalInteractions + ' times');
-    return 'Of course I remember' + nameGreet + '! ' + (facts.length ? 'I know that ' + facts.join(', ') + '.' : 'We\'re still getting to know each other!');
+    if(prefs.likesHealthy) facts.push('you prefer healthy options');
+    if(mem.totalInteractions) facts.push('we\'ve spoken ' + mem.totalInteractions + ' times');
+    if(mem.userName) facts.push('your name is ' + mem.userName);
+    return facts.length
+      ? 'Da' + nameGreet + ', I remember well. ' + facts.join(', ') + '. A warrior never forgets his comrades.'
+      : 'We are still getting acquainted' + nameGreet + '. Talk to me more and I will learn your preferences, da.';
   }
-  return isGreek ? '\u0394\u03BF\u03BA\u03AF\u03BC\u03B1\u03C3\u03B5 \u03BD\u03B1 \u03C1\u03C9\u03C4\u03AE\u03C3\u03B5\u03B9\u03C2 \u03B3\u03B9\u03B1 pizza, \u03BC\u03C0\u03AF\u03C1\u03B1, \u03BA\u03B1\u03C6\u03AD, \u03AE \u03C4\u03B9\u03BC\u03AD\u03C2 \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7\u03C2!' : 'Try asking about pizza, beer, coffee, diving, or delivery prices' + nameGreet + '. I work best with specific requests!';
+
+  // ── Pizza ──
+  if(/pizza|πίτσα/i.test(q)){
+    if(isGreek) return 'Nikolas Pizza Express: Margherita €8, Pepperoni €10.50, Quattro Formaggi €11. Ανοιχτό από 17:00. Πες "order pizza" για παραγγελία!';
+    return 'Nikolas Pizza Express: Margherita €8, Pepperoni €10.50, Quattro Formaggi €11. Open from 17:00' + nameGreet + '. Say "order pizza" to get one delivered!';
+  }
+
+  // ── Beer ──
+  if(/beer|μπίρα|lager|ale/i.test(q)){
+    if(isGreek) return 'Rhodes Mini Market: Mythos 500ml €2.50 — η καλύτερη τιμή! Ανοιχτό 24/7. Εναλλακτικά, Tamam έχει draft μπίρα €5.';
+    return 'Rhodes Mini Market has Mythos 500ml for €2.50 — best price on the island' + nameGreet + '! Open 24/7. Or Tamam serves draft beer for €5.';
+  }
+
+  // ── Coffee ──
+  if(/coffee|καφέ|espresso|cappuccino|freddo|frappe/i.test(q)){
+    if(isGreek) return 'Freddo Cappuccino €4.50 στο Tamam (εξαιρετικός!), Ελληνικός καφές €2 στο Mini Market. Τι προτιμάς;';
+    return 'Freddo Cappuccino €4.50 at Tamam (excellent quality), Greek Coffee €2 at Mini Market' + nameGreet + '. What\'s your preference?';
+  }
+
+  // ── Food / Hungry ──
+  if(/food|eat|hungry|restaurant|φαγητό|πεινά|εστιατόριο|lunch|dinner|breakfast/i.test(q)){
+    if(isGreek) return 'Tamam Restaurant: Μουσακάς €12.50, Χταπόδι Σχάρας €16, Σουβλάκι €9. Ή Nikolas Pizza για γρήγορη παράδοση. Τι θα ήθελες;';
+    return 'Tamam Restaurant: Moussaka €12.50, Grilled Octopus €16, Souvlaki €9. Or Nikolas Pizza for fast delivery' + nameGreet + '!';
+  }
+
+  // ── Diving ──
+  if(/dive|diving|scuba|κατάδυση/i.test(q)){
+    return 'Aegean Dive Centre: Discover Scuba €75, PADI Open Water €380, Wreck Dive €65. Open Mon-Sat from 08:00' + nameGreet + '!';
+  }
+
+  // ── Delivery / Pricing ──
+  if(/deliver|shipping|price|cost|fee|παράδοση|τιμή|κόστος/i.test(q)){
+    if(isGreek) return 'Τιμή παράδοσης: €1/km βασική χρέωση. Προσαυξήσεις: +€1 για >6L όγκο, +€1 νύχτα (21:00-09:00), +€1 αργίες.';
+    return 'Delivery: €1/km base rate. Surcharges: +€1 for volume over 6L, +€1 night (21:00-09:00), +€1 holidays, +€1 bad weather' + nameGreet + '.';
+  }
+
+  // ── Weather ──
+  if(/weather|καιρό|rain|βρέχει|temperature|θερμοκρασία|sun|wind/i.test(q)){
+    if(isGreek) return 'Δεν έχω ζωντανά δεδομένα καιρού ακόμα, αλλά η Ρόδος έχει 300+ ηλιόλουστες μέρες τον χρόνο! Για ακριβείς πληροφορίες δοκίμασε weather.com.';
+    return 'I don\'t have live weather data yet, but Rhodes enjoys 300+ sunny days per year' + nameGreet + '! For real-time info, check weather.com.';
+  }
+
+  // ── Map / Location ──
+  if(/where am i|location|map|τοποθεσία|πού είμαι|navigate|χάρτη/i.test(q)){
+    var lat = (window.LOC && LOC.lat) || 0;
+    var lng = (window.LOC && LOC.lng) || 0;
+    if(lat && lng) return 'Your position: ' + lat.toFixed(4) + '°N, ' + lng.toFixed(4) + '°E. Zoom into the map to see nearby shops and services' + nameGreet + '.';
+    return 'I need your location to help with navigation. Click the locate button (bottom-right) to share your position' + nameGreet + '.';
+  }
+
+  // ── Help / Commands ──
+  if(/help|βοήθεια|commands|what can you do|τι κάνεις|how to/i.test(q)){
+    if(isGreek) return 'Είμαι ο Astranov! Μπορώ να: 🔍 Βρω μαγαζιά & προϊόντα · 🛒 Παραγγείλω φαγητό/ποτά · 💰 Υπολογίσω κόστος παράδοσης · 🗺️ Πλοηγήσω στη Ρόδο · Πληκτρολόγησε <strong>ai help</strong> για ρύθμιση AI.';
+    return 'I\'m Astranov, your Nordic warrior guide' + nameGreet + '! I can: 🔍 Find shops & products · 🛒 Order food/drinks · 💰 Calculate delivery costs · 🗺️ Navigate Rhodes · 🧠 Type <strong>ai help</strong> to setup a full AI brain!';
+  }
+
+  // ── Who are you ──
+  if(/who are you|what are you|τι είσαι|ποιος είσαι|your name|about you/i.test(q)){
+    return 'I am Astranov — a winged Nordic warrior, guardian of this planetary delivery marketplace' + nameGreet + '. I watch over Rhodes from above and help you find what you need. Think of me as your digital commissar of convenience, da.';
+  }
+
+  // ── Time ──
+  if(/time|ώρα|what time|τι ώρα/i.test(q)){
+    return 'The time is ' + new Date().toLocaleTimeString() + nameGreet + '. Rhodes runs on Eastern European Time (EET/EEST).';
+  }
+
+  // ── Rhodes info ──
+  if(/rhodes|ρόδος|rodos|old town|lindos|medieval|παλιά πόλη/i.test(q)){
+    if(isGreek) return 'Η Ρόδος είναι υπέροχο νησί! Μεσαιωνική Παλιά Πόλη (UNESCO), Λίνδος, Κολοσσός, και φανταστικές παραλίες. Θέλεις να βρω κάτι συγκεκριμένο;';
+    return 'Rhodes is a magnificent island! Medieval Old Town (UNESCO), Lindos Acropolis, Valley of Butterflies, and stunning beaches' + nameGreet + '. Want me to find something specific?';
+  }
+
+  // ── Wallet / Payment ──
+  if(/wallet|pay|πληρωμή|πορτοφόλι|balance|stripe|paypal/i.test(q)){
+    var bal = (document.getElementById('bal') || {}).textContent || '0';
+    return 'Your wallet balance: €' + bal + nameGreet + '. You can add funds or pay via the payment system. Click the wallet button to manage your account.';
+  }
+
+  // ── Settings / Account ──
+  if(/settings|account|profile|λογαριασμό|ρυθμίσεις/i.test(q)){
+    return 'Click the user badge (top area) to access your account and settings' + nameGreet + '. You can update your profile, manage payments, and configure preferences there.';
+  }
+
+  // ── Compliments ──
+  if(/you.re (great|amazing|awesome|cool|best)|love you|αγάπη|τέλειος/i.test(q)){
+    return 'A warrior accepts praise with humility' + nameGreet + '. Thank you. I strive to serve with honor. Now, what can I find for you?';
+  }
+
+  // ── Goodbye ──
+  if(/bye|goodbye|αντίο|γεια σου|see you|later|φεύγω/i.test(q)){
+    if(isGreek) return 'Αντίο' + nameGreet + '! Καλό ταξίδι. Θα είμαι εδώ όταν επιστρέψεις.';
+    return 'Farewell' + nameGreet + '! Safe travels. I\'ll be watching over the marketplace until you return.';
+  }
+
+  // ── Default fallback ──
+  if(isGreek) return 'Κατάλαβα' + nameGreet + '. Μπορώ να ψάξω για μαγαζιά, φαγητό, ποτά, ή υπηρεσίες στη Ρόδο. Δοκίμασε κάτι πιο συγκεκριμένο! Πληκτρολόγησε <strong>ai help</strong> για ρύθμιση πλήρους AI εγκεφάλου.';
+  return 'I hear you' + nameGreet + '. I\'m best at finding shops, food, drinks, and services on Rhodes. Try something specific like "find pizza" or "cheapest beer". Or type <strong>ai help</strong> to connect a full AI brain for smarter conversations!';
 }
 
 function addAiMessage(cssClass, sender, text){
@@ -10386,199 +10330,236 @@ AI provider research may rescan configured provider manifests once per day while
     }
   };
 
-  function getConfiguredAiCatalog(){
-    var catalog = [
-      { id:'astranov-router', label:'Astranov Router', kind:'endpoint', url:'/api/ai-router.php', noKeyClient:true },
-      { id:'astranov-legacy', label:'Astranov Legacy Route', kind:'endpoint', url:'/api/ai.php', noKeyClient:true },
-      { id:'openai-official', label:'OpenAI official API', kind:'official', noKeyClient:false, reason:'Official API requires a secret server-side API key.' },
-      { id:'claude-official', label:'Claude official API', kind:'official', noKeyClient:false, reason:'Official Claude API requires x-api-key authentication.' },
-      { id:'gemini-official', label:'Gemini official API', kind:'official', noKeyClient:false, reason:'Gemini API requires an API key or OAuth setup.' },
-      { id:'huggingface-official', label:'Hugging Face Inference Providers', kind:'official', noKeyClient:false, reason:'Inference Providers requires a Hugging Face token or routed billing credits.' },
-      { id:'local-bridge', label:'Local bridge', kind:'local', noKeyClient:true }
-    ];
-    return catalog;
-  }
-  async function fetchAiProviderManifest(){
-    var cached = null;
-    try{ cached = JSON.parse(localStorage.getItem(AI_PROVIDER_SCAN_KEY) || 'null'); }catch(e){}
-    if(cached && cached.time && (Date.now() - cached.time < AI_PROVIDER_SCAN_TTL_MS) && Array.isArray(cached.providers)){
-      return cached.providers;
-    }
-    var urls = ['/api/ai-providers.json', '/api/free-ai-providers.json', '/api/ai-providers.php'];
-    for(var i=0;i<urls.length;i++){
-      try{
-        var res = await fetch(urls[i], { cache:'no-store' });
-        if(!res.ok) continue;
-        var data = await res.json();
-        var providers = Array.isArray(data) ? data : (Array.isArray(data.providers) ? data.providers : []);
-        if(providers.length){
-          try{ localStorage.setItem(AI_PROVIDER_SCAN_KEY, JSON.stringify({ time:Date.now(), providers:providers })); }catch(e){}
-          return providers;
-        }
-      }catch(e){}
-    }
-    try{ localStorage.setItem(AI_PROVIDER_SCAN_KEY, JSON.stringify({ time:Date.now(), providers:[] })); }catch(e){}
-    return [];
-  }
-  async function discoverAiProviders(){
-    var catalog = getConfiguredAiCatalog();
-    var manifest = await fetchAiProviderManifest();
-    manifest.forEach(function(item){
-      if(item && item.id && item.url && !catalog.some(function(c){ return c.id === item.id; })){
-        catalog.splice(catalog.length - 1, 0, {
-          id: item.id,
-          label: item.label || item.id,
-          kind: item.kind || 'endpoint',
-          url: item.url,
-          noKeyClient: item.noKeyClient !== false
-        });
-      }
-    });
-    return catalog;
-  }
-  function aiPrefToCandidateId(pref){
-    pref = String(pref || 'auto').toLowerCase();
-    if(pref === 'chatgpt' || pref === 'openai') return 'openai-official';
-    if(pref === 'claude' || pref === 'anthropic') return 'claude-official';
-    if(pref === 'local') return 'local-bridge';
-    if(pref === 'router') return 'astranov-router';
-    return '';
-  }
-  function orderAiProviders(providers){
-    var locked = '';
-    try{ locked = String(localStorage.getItem(AI_PROVIDER_LOCK_KEY) || ''); }catch(e){}
-    var pref = typeof getAiPreference === 'function' ? getAiPreference() : 'auto';
-    var prefId = aiPrefToCandidateId(pref);
-    return providers.slice().sort(function(a,b){
-      function rank(p){
-        if(pref !== 'auto' && p.id === prefId) return 0;
-        if(locked && p.id === locked) return 1;
-        if(p.kind === 'endpoint') return 2;
-        if(p.kind === 'local') return 9;
-        return 5;
-      }
-      return rank(a) - rank(b);
-    });
-  }
-  async function tryAiEndpointProvider(provider, payload){
-    var res = await fetch(provider.url, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
+  /* ═══ GEMINI AI ENGINE — WORKING BROWSER-SIDE AI ═══ */
+  var GEMINI_KEY_STORE = 'astranov.gemini.key.v1';
+  var GROQ_KEY_STORE = 'astranov.groq.key.v1';
+  var OPENROUTER_KEY_STORE = 'astranov.openrouter.key.v1';
+
+  function getGeminiKey(){ try{ return String(localStorage.getItem(GEMINI_KEY_STORE)||'').trim(); }catch(e){ return ''; } }
+  function setGeminiKey(k){ try{ localStorage.setItem(GEMINI_KEY_STORE, String(k||'').trim()); }catch(e){} }
+  function getGroqKey(){ try{ return String(localStorage.getItem(GROQ_KEY_STORE)||'').trim(); }catch(e){ return ''; } }
+  function setGroqKey(k){ try{ localStorage.setItem(GROQ_KEY_STORE, String(k||'').trim()); }catch(e){} }
+  function getOpenRouterKey(){ try{ return String(localStorage.getItem(OPENROUTER_KEY_STORE)||'').trim(); }catch(e){ return ''; } }
+  function setOpenRouterKey(k){ try{ localStorage.setItem(OPENROUTER_KEY_STORE, String(k||'').trim()); }catch(e){} }
+
+  /* ── Call Google Gemini (free tier, CORS-enabled from browser) ── */
+  async function callGeminiDirect(systemPrompt, userMessage){
+    var key = getGeminiKey();
+    if(!key) throw new Error('No Gemini API key configured');
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key);
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        provider_cycle: true,
-        allow_keyless_only: true,
-        app: APP_NAME,
-        app_version: APP_VERSION,
-        provider_preference: provider.id,
-        message: payload.userMessage,
-        system: payload.system,
-        context: payload.context,
-        searchResults: payload.searchResults,
-        location: payload.location,
-        user: payload.user
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+        generationConfig: { maxOutputTokens: 400, temperature: 0.7 }
       })
     });
-    if(!res.ok) throw new Error(provider.label + ' returned ' + res.status);
-    var data = await res.json();
-    var text = typeof normalizeAiReply === 'function' ? normalizeAiReply(data) : '';
-    if(!text) throw new Error(provider.label + ' returned no text');
-    return {
-      text: text,
-      provider: data.provider || provider.label,
-      model: data.model || data.provider || provider.label,
-      endpoint: provider.url,
-      cloud: true
-    };
-  }
-  async function runAstranovaAiCycle(payload){
-    var providers = orderAiProviders(await discoverAiProviders());
-    aiNotify('AI cycle started. Scanning for a working provider.', false);
-    for(var i=0;i<providers.length;i++){
-      var provider = providers[i];
-      if(provider.kind === 'official'){
-        aiNotify(provider.label + ' skipped in browser no-key mode. ' + (provider.reason || ''), false);
-        continue;
-      }
-      if(provider.kind === 'endpoint'){
-        aiNotify('Probing ' + provider.label + '…', false);
-        try{
-          var routed = await tryAiEndpointProvider(provider, payload);
-          AI_BACKEND_STATUS = { provider: routed.provider || provider.id, cloud: true, endpoint: routed.endpoint || provider.url, lastError: '' };
-          try{ localStorage.setItem(AI_PROVIDER_LOCK_KEY, provider.id); }catch(e){}
-          try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
-          aiNotify('AI cycle locked on ' + (routed.model || routed.provider || provider.label) + '.', true);
-          return routed;
-        }catch(err){
-          AI_BACKEND_STATUS.lastError = err && err.message ? err.message : 'endpoint error';
-          aiNotify(provider.label + ' failed. Cycling onward.', false);
-          continue;
-        }
-      }
-      if(provider.kind === 'local'){
-        aiNotify('Cloud routes unavailable. Local bridge locked in.', true);
-        AI_BACKEND_STATUS = { provider: 'local-bridge', cloud: false, endpoint: '', lastError: AI_BACKEND_STATUS.lastError || '' };
-        try{ localStorage.setItem(AI_PROVIDER_LOCK_KEY, provider.id); }catch(e){}
-        try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
-        return {
-          text: localAstranovaResponse(payload.userMessage),
-          provider: 'Local bridge',
-          model: 'local-bridge',
-          endpoint: '',
-          cloud: false
-        };
-      }
+    if(!res.ok){
+      var errBody = ''; try{ errBody = await res.text(); }catch(e){}
+      if(res.status === 429) throw new Error('Gemini rate limit — try again in a moment');
+      if(res.status === 403 || res.status === 401) throw new Error('Gemini key invalid or expired. Get a free key at ai.google.dev');
+      throw new Error('Gemini HTTP ' + res.status + ': ' + errBody.substring(0,120));
     }
-    return {
-      text: localAstranovaResponse(payload.userMessage),
-      provider: 'Local bridge',
-      model: 'local-bridge',
-      endpoint: '',
-      cloud: false
-    };
+    var data = await res.json();
+    var text = '';
+    try{ text = data.candidates[0].content.parts.map(function(p){ return p.text||''; }).join(''); }catch(e){}
+    if(!text) throw new Error('Gemini returned empty response');
+    return { text: text, provider: 'Gemini 2.0 Flash', cloud: true };
   }
 
+  /* ── Call Groq (free tier, CORS-enabled) ── */
+  async function callGroqDirect(systemPrompt, userMessage){
+    var key = getGroqKey();
+    if(!key) throw new Error('No Groq API key configured');
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 400,
+        temperature: 0.7
+      })
+    });
+    if(!res.ok){
+      if(res.status === 429) throw new Error('Groq rate limit — try again shortly');
+      if(res.status === 401) throw new Error('Groq key invalid. Get a free key at console.groq.com');
+      throw new Error('Groq HTTP ' + res.status);
+    }
+    var data = await res.json();
+    var text = ''; try{ text = data.choices[0].message.content; }catch(e){}
+    if(!text) throw new Error('Groq returned empty response');
+    return { text: text, provider: 'Groq Llama-3.3-70B', cloud: true };
+  }
+
+  /* ── Call OpenRouter (many free models, CORS-enabled) ── */
+  async function callOpenRouterDirect(systemPrompt, userMessage){
+    var key = getOpenRouterKey();
+    if(!key) throw new Error('No OpenRouter API key configured');
+    var res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key, 'HTTP-Referer': window.location.href, 'X-Title': 'Astranov' },
+      body: JSON.stringify({
+        model: 'google/gemini-2.0-flash-exp:free',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage }
+        ],
+        max_tokens: 400,
+        temperature: 0.7
+      })
+    });
+    if(!res.ok) throw new Error('OpenRouter HTTP ' + res.status);
+    var data = await res.json();
+    var text = ''; try{ text = data.choices[0].message.content; }catch(e){}
+    if(!text) throw new Error('OpenRouter returned empty response');
+    return { text: text, provider: 'OpenRouter ' + (data.model||''), cloud: true };
+  }
+
+  /* ── Try Astranov server routes (if deployed with backend) ── */
+  async function callAstranovServer(systemPrompt, userMessage, payload){
+    var endpoints = ['/api/ai-router.php', '/api/ai.php'];
+    var custom = typeof getAiEndpoint === 'function' ? getAiEndpoint() : '';
+    if(custom) endpoints.unshift(custom);
+    for(var i=0; i<endpoints.length; i++){
+      try{
+        var res = await fetch(endpoints[i], {
+          method:'POST', headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ message: userMessage, system: systemPrompt, app: APP_NAME, app_version: APP_VERSION, context: payload.context, location: payload.location, user: payload.user })
+        });
+        if(!res.ok) continue;
+        var data = await res.json();
+        var text = typeof normalizeAiReply === 'function' ? normalizeAiReply(data) : '';
+        if(text) return { text: text, provider: data.provider || 'Astranov Server', cloud: true };
+      }catch(e){ /* next */ }
+    }
+    throw new Error('No server routes available');
+  }
+
+  /* ── AI CYCLE ENGINE — tries all providers in order ── */
+  async function runAstranovaAiCycle(systemPrompt, userMessage, payload){
+    var errors = [];
+    /* 1. Server routes (fastest if available) */
+    try{ return await callAstranovServer(systemPrompt, userMessage, payload); }catch(e){ errors.push('Server: ' + e.message); }
+    /* 2. Gemini (free, browser-direct) */
+    if(getGeminiKey()){
+      try{ return await callGeminiDirect(systemPrompt, userMessage); }catch(e){ errors.push('Gemini: ' + e.message); }
+    }
+    /* 3. Groq (free, browser-direct) */
+    if(getGroqKey()){
+      try{ return await callGroqDirect(systemPrompt, userMessage); }catch(e){ errors.push('Groq: ' + e.message); }
+    }
+    /* 4. OpenRouter (free models, browser-direct) */
+    if(getOpenRouterKey()){
+      try{ return await callOpenRouterDirect(systemPrompt, userMessage); }catch(e){ errors.push('OpenRouter: ' + e.message); }
+    }
+    /* 5. No keys configured at all — guide the user */
+    var hasAnyKey = getGeminiKey() || getGroqKey() || getOpenRouterKey();
+    if(!hasAnyKey){
+      errors.push('No AI keys configured');
+    }
+    throw new Error(errors.join(' → ') || 'All AI providers failed');
+  }
+
+  /* ═══ BACKEND COMMAND HANDLER (overrides earlier definition) ═══ */
   window.handleAiBackendCommand = function(val){
-    var q = String(val || '').trim().toLowerCase();
-    var m = q.match(/^(?:use|switch to|set ai to|set brain to|prefer)\s+(chatgpt|openai|claude|anthropic|local|auto|router)$/i);
-    if(m){
-      var pref = String(m[1] || 'auto').toLowerCase();
-      if(pref === 'openai') pref = 'chatgpt';
-      if(pref === 'anthropic') pref = 'claude';
+    var q = String(val || '').trim();
+    var ql = q.toLowerCase();
+
+    /* ── Set Gemini key ── */
+    var gm = q.match(/^(?:ai key|gemini key|set gemini key|set ai key)\s+(.+)/i);
+    if(gm){
+      var key = gm[1].trim();
+      if(key.length < 10){ addAiMessage('ai-msg-reply','Astranov','That key looks too short. Get a free Gemini key at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>'); return true; }
+      setGeminiKey(key);
+      AI_BACKEND_STATUS = { provider:'gemini', cloud:true, endpoint:'gemini-direct', lastError:'' };
+      addAiMessage('ai-msg-reply','Astranov','✅ Gemini API key saved! I now have a real AI brain. Ask me anything.');
+      return true;
+    }
+    /* ── Set Groq key ── */
+    var grq = q.match(/^(?:groq key|set groq key)\s+(.+)/i);
+    if(grq){
+      setGroqKey(grq[1].trim());
+      addAiMessage('ai-msg-reply','Astranov','✅ Groq API key saved! Llama-3.3-70B is now available as a fallback brain.');
+      return true;
+    }
+    /* ── Set OpenRouter key ── */
+    var ork = q.match(/^(?:openrouter key|set openrouter key)\s+(.+)/i);
+    if(ork){
+      setOpenRouterKey(ork[1].trim());
+      addAiMessage('ai-msg-reply','Astranov','✅ OpenRouter key saved! Free models now available.');
+      return true;
+    }
+    /* ── Remove keys ── */
+    if(/^(clear ai key|remove ai key|clear gemini key|forget key)/i.test(ql)){
+      setGeminiKey(''); setGroqKey(''); setOpenRouterKey('');
+      AI_BACKEND_STATUS = { provider:'local', cloud:false, endpoint:'', lastError:'' };
+      addAiMessage('ai-msg-reply','Astranov','All AI keys cleared. I will use the local brain until a new key is set.');
+      return true;
+    }
+    /* ── AI status ── */
+    if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(ql)){
+      var keys = [];
+      if(getGeminiKey()) keys.push('Gemini ✅');
+      if(getGroqKey()) keys.push('Groq ✅');
+      if(getOpenRouterKey()) keys.push('OpenRouter ✅');
+      var mode = AI_BACKEND_STATUS.cloud
+        ? ('Cloud AI active via <strong>' + (AI_BACKEND_STATUS.provider||'unknown').toUpperCase() + '</strong>')
+        : 'Local fallback brain active';
+      var keyStatus = keys.length ? 'Configured keys: ' + keys.join(', ') : 'No AI keys configured — type <strong>ai key YOUR_KEY</strong> to activate';
+      addAiMessage('ai-msg-reply','Astranov', mode + '.<br>' + keyStatus +
+        (AI_BACKEND_STATUS.lastError ? '<br>Last issue: ' + AI_BACKEND_STATUS.lastError : '') +
+        '<br><br>💡 Get a free Gemini key at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>');
+      return true;
+    }
+    /* ── AI help ── */
+    if(/^(ai help|ai setup|setup ai|how to ai|ai commands)/.test(ql)){
+      addAiMessage('ai-msg-reply','Astranov',
+        '🧠 <strong>AI Setup Commands:</strong><br><br>' +
+        '• <strong>ai key YOUR_KEY</strong> — Set Gemini API key (free at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>)<br>' +
+        '• <strong>groq key YOUR_KEY</strong> — Set Groq key (free at <a href="https://console.groq.com" target="_blank" style="color:#00c8ff">console.groq.com</a>)<br>' +
+        '• <strong>openrouter key YOUR_KEY</strong> — Set OpenRouter key<br>' +
+        '• <strong>ai status</strong> — Check which AI is active<br>' +
+        '• <strong>clear ai key</strong> — Remove all keys<br>' +
+        '• <strong>fix ui</strong> — Repair layout<br><br>' +
+        '🚀 Gemini is recommended — free, fast, works directly in your browser!');
+      return true;
+    }
+    /* ── Preference switching (legacy compat) ── */
+    var prefMatch = ql.match(/^(?:use|switch to|set ai to|set brain to|prefer)\s+(chatgpt|openai|claude|anthropic|local|auto|gemini|groq)/);
+    if(prefMatch){
+      var pref = prefMatch[1];
       if(typeof setAiPreference === 'function') setAiPreference(pref);
-      addAiMessage('ai-msg-reply','Astranov','AI preference set to ' + pref.toUpperCase() + '. I will prefer that route when possible, then cycle if it fails.');
+      addAiMessage('ai-msg-reply','Astranov','AI preference noted: ' + pref.toUpperCase() + '. The cycle will prioritize that provider if a key is set.');
       return true;
     }
-    if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(q)){
-      var prefNow = typeof getAiPreference === 'function' ? getAiPreference() : 'auto';
-      var locked = '';
-      try{ locked = String(localStorage.getItem(AI_PROVIDER_LOCK_KEY) || ''); }catch(e){}
-      var mode = AI_BACKEND_STATUS.cloud ? ('Cloud route live via ' + (AI_BACKEND_STATUS.provider || prefNow).toUpperCase()) : 'Local fallback brain active';
-      addAiMessage('ai-msg-reply','Astranov', mode + '. Preference: ' + prefNow.toUpperCase() + '. Locked provider: ' + (locked || 'none') + (AI_BACKEND_STATUS.lastError ? (' · Last issue: ' + AI_BACKEND_STATUS.lastError) : '') + '.');
-      return true;
-    }
-    if(/^(ai cycle|cycle ai|scan ai|research ai|refresh ai providers)/.test(q)){
-      try{ localStorage.removeItem(AI_PROVIDER_LOCK_KEY); }catch(e){}
-      addAiMessage('ai-msg-reply','Astranov','AI cycle lock cleared. I will rescan providers on the next request.');
-      return true;
-    }
-    if(/^(fix ui|repair ui|heal ui|stabilize ui|repair interface|fix interface)/.test(q)){
-      aiSuperviseLayout();
-      hideUselessButtons(canHelperPermanentlyRepairUi());
-      addAiMessage('ai-msg-reply','Astranov','UI repair sequence complete. I rebalanced the layout, reduced visual clutter, and kept the critical controls in view.');
+    /* ── Fix UI ── */
+    if(/^(fix ui|repair ui|heal ui|stabilize ui|repair interface|fix interface)/.test(ql)){
+      if(typeof aiSuperviseLayout === 'function') aiSuperviseLayout();
+      if(typeof hideUselessButtons === 'function') hideUselessButtons(typeof canHelperPermanentlyRepairUi === 'function' && canHelperPermanentlyRepairUi());
+      addAiMessage('ai-msg-reply','Astranov','UI repair sequence complete. Layout rebalanced, clutter reduced.');
       return true;
     }
     return false;
   };
 
+  /* ═══ MAIN AI ENTRY POINT (overrides earlier definition) ═══ */
   window.callAstranovaAI = async function(userMessage){
-    var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov, an Internet Operating System on Rhodes island, Greece. ';
-    context += 'PERSONALITY: calm, disciplined, useful. Keep the interface minimal, surface controls only when needed or requested, and respect authenticated owner authority for persistent UI repairs. ';
-    context += 'LANGUAGE RULE: reply in the same language the user writes in. Keep responses to 2-4 sentences and concrete. ';
+    var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov — a planetary delivery marketplace and Internet Operating System based on Rhodes island, Greece. ';
+    context += 'PERSONALITY: You are calm, disciplined, and wickedly competent. You speak with confident brevity — a Nordic warrior who gets things done. Occasionally pepper in Cyrillic-flavored vocabulary for character. ';
+    context += 'LANGUAGE RULE: ALWAYS reply in the same language the user writes in. If they write Greek, reply in Greek. Keep responses to 2-4 sentences unless the user asks for detail. Be concrete, helpful, and actionable. ';
+    context += 'CAPABILITIES: You help users find shops, order food/drinks, check delivery prices, navigate Rhodes, and answer questions about the platform. ';
     try{ context += buildMemoryContext(); }catch(e){}
     context += 'Current user: ' + (window.CU ? (CU.name + ' (role: ' + getUserRole(CU) + ')') : 'Guest') + '. ';
     context += 'Wallet balance: €' + (((document.getElementById('bal') || {}).textContent) || '0') + '. ';
     context += 'Current layer: ' + ['Globe','Map','Abyss'][window.CL || 0] + '. ';
     context += 'Location: ' + currentLocationLabel() + '. ';
+    context += 'Time: ' + new Date().toLocaleTimeString() + '. ';
 
     var searchResults = '';
     try{
@@ -10593,40 +10574,62 @@ AI provider research may rescan configured provider manifests once per day while
       }).slice(0,5);
       if(matches.length){
         searchResults = 'Relevant local listings found: ' + matches.map(function(m){
-          return safeText(m.name || m.title) + ' (' + safeText(m.category) + ')';
+          var menuInfo = (m.menu||[]).slice(0,4).map(function(mi){ return mi.name + ' €' + (mi.price||'?'); }).join(', ');
+          return safeText(m.name || m.title) + ' (' + safeText(m.category) + ')' + (menuInfo ? ' — ' + menuInfo : '');
         }).join(' | ');
       }
     }catch(e){}
 
+    var fullSystem = context + (searchResults ? '\n\nLocal marketplace data: ' + searchResults : '') +
+      '\n\nRules: reply briefly in the user\'s language. Use local data when available. Be warm but efficient. Never say you are just a local fallback.';
+
     var payload = {
-      userMessage: userMessage,
-      system: context + (searchResults ? '\n\nLocal data: ' + searchResults : '') + '\n\nRules: reply briefly, match the user language, use local data when available, and prioritize working UI commands.',
-      context: context,
-      searchResults: searchResults,
-      location: { lat: window.LOC && LOC.lat || 0, lng: window.LOC && LOC.lng || 0 },
+      context: context, location: { lat: window.LOC && LOC.lat || 0, lng: window.LOC && LOC.lng || 0 },
       user: window.CU ? { id: CU.id, name: CU.name, role: getUserRole(CU), email: CU.email || '' } : null
     };
 
+    /* Remove old typing indicator if stuck */
+    var oldTyping = document.getElementById('ai-typing');
+    if(oldTyping) oldTyping.remove();
+
+    /* Show fresh typing indicator */
+    var conv = document.getElementById('ai-conv');
+    var typing = document.createElement('div');
+    typing.className = 'ai-typing';
+    typing.id = 'ai-typing-v2';
+    typing.textContent = 'Astranov is thinking';
+    if(conv){ conv.appendChild(typing); conv.scrollTop = conv.scrollHeight; }
+
+    var aiText = '';
+    var usedCloud = false;
     try{
-      var routed = await runAstranovaAiCycle(payload);
-      var aiText = routed && routed.text ? routed.text : localAstranovaResponse(userMessage);
-      AI_BACKEND_STATUS.provider = routed.provider || AI_BACKEND_STATUS.provider || 'local-bridge';
-      AI_BACKEND_STATUS.cloud = !!routed.cloud;
-      AI_BACKEND_STATUS.endpoint = routed.endpoint || '';
-      AI_BACKEND_STATUS.lastError = AI_BACKEND_STATUS.lastError || '';
-      addAiMessage('ai-msg-reply', 'Astranov', aiText);
-      recordConversation('ai', aiText);
-      try{ learnFromInteraction(userMessage, aiText); }catch(e){}
-      speakAstranova(aiText);
-    }catch(err){
-      var aiText = localAstranovaResponse(userMessage);
-      AI_BACKEND_STATUS = { provider:'local-bridge', cloud:false, endpoint:'', lastError: (err && err.message) ? err.message : 'AI cycle failure' };
+      var result = await runAstranovaAiCycle(fullSystem, userMessage, payload);
+      aiText = result.text;
+      usedCloud = !!result.cloud;
+      AI_BACKEND_STATUS = { provider: result.provider || 'cloud', cloud: true, endpoint: 'direct', lastError: '' };
       try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
-      addAiMessage('system-msg', 'AI Engine', 'AI cycle failed. Local bridge engaged.');
-      addAiMessage('ai-msg-reply', 'Astranov', aiText);
-      recordConversation('ai', aiText);
-      speakAstranova(aiText);
+    }catch(err){
+      var errMsg = (err && err.message) || 'AI cycle failure';
+      AI_BACKEND_STATUS = { provider:'local-bridge', cloud:false, endpoint:'', lastError: errMsg };
+      try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
+      /* Smart local fallback */
+      aiText = localAstranovaResponse(userMessage);
+      /* If no keys configured, append setup hint (only first time) */
+      var hasAnyKey = getGeminiKey() || getGroqKey() || getOpenRouterKey();
+      if(!hasAnyKey && !window._aiSetupHintShown){
+        window._aiSetupHintShown = true;
+        aiText += '<br><br>💡 <em>Want smarter AI? Type <strong>ai help</strong> to learn how to connect a free AI brain in 30 seconds.</em>';
+      }
     }
+
+    /* Remove typing indicator */
+    var typingEl = document.getElementById('ai-typing-v2') || document.getElementById('ai-typing');
+    if(typingEl) typingEl.remove();
+
+    addAiMessage('ai-msg-reply', 'Astranov', aiText);
+    recordConversation('ai', aiText);
+    try{ learnFromInteraction(userMessage, aiText); }catch(e){}
+    speakAstranova(aiText);
   };
 
   document.addEventListener('DOMContentLoaded', function(){
