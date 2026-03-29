@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Astranov V4</title>
-<meta name="astranov-version" content="V5"/>
+<meta name="astranov-version" content="V6"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
@@ -1487,6 +1487,258 @@ body.micro-ribbon #balance-display{padding:0 10px !important;}
   #force-update-btn.version-unified{min-width:min(94vw,560px) !important;width:min(94vw,560px) !important;}
   #topbar{gap:8px !important;}
 }
+
+
+/* === V6 GHOST-DOCK UI ENGINE [LOCKED] === */
+#topbar{
+  position:fixed !important;
+  top:0 !important; left:0 !important; right:0 !important;
+  height:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  overflow:visible !important;
+  pointer-events:none !important;
+  z-index:260 !important;
+}
+#topbar .tb-left,#topbar .tb-center,#topbar .tb-right{
+  display:block !important;
+  flex:none !important;
+  min-width:0 !important;
+  max-width:none !important;
+  pointer-events:none !important;
+}
+#topbar .brand{display:none !important;}
+
+#force-update-btn,
+#balance-display,
+#video-post-btn,
+#user-badge,
+#pause-ui-btn,
+#bottombar,
+#cmd-response{
+  pointer-events:auto !important;
+}
+
+#force-update-btn,
+#balance-display,
+#video-post-btn,
+#user-badge,
+#pause-ui-btn{
+  position:fixed !important;
+  z-index:262 !important;
+  opacity:0.20 !important;
+  transform:translateZ(0) scale(0.82) !important;
+  transform-origin:center center !important;
+  filter:saturate(0.82) !important;
+  transition:opacity .22s ease, transform .22s ease, filter .22s ease, box-shadow .22s ease !important;
+  backdrop-filter:blur(10px) !important;
+  -webkit-backdrop-filter:blur(10px) !important;
+}
+#force-update-btn.ui-awake,
+#balance-display.ui-awake,
+#video-post-btn.ui-awake,
+#user-badge.ui-awake,
+#pause-ui-btn.ui-awake,
+#force-update-btn:focus-visible,
+#balance-display:focus-visible,
+#video-post-btn:focus-visible,
+#user-badge:focus-visible,
+#pause-ui-btn:focus-visible,
+#force-update-btn:hover,
+#balance-display:hover,
+#video-post-btn:hover,
+#user-badge:hover,
+#pause-ui-btn:hover{
+  opacity:0.96 !important;
+  transform:translateZ(0) scale(1) !important;
+  filter:none !important;
+}
+#force-update-btn.moveable,
+#balance-display.moveable,
+#video-post-btn.moveable,
+#user-badge.moveable,
+#pause-ui-btn.moveable{
+  opacity:1 !important;
+  transform:none !important;
+}
+#force-update-btn.float-holding,
+#balance-display.float-holding,
+#video-post-btn.float-holding,
+#user-badge.float-holding,
+#pause-ui-btn.float-holding{
+  opacity:1 !important;
+  outline:1px dashed rgba(0,200,255,0.45) !important;
+}
+
+#force-update-btn.version-unified{
+  min-height:34px !important;
+  min-width:0 !important;
+  width:auto !important;
+  max-width:min(58vw,210px) !important;
+  padding:6px 10px !important;
+  gap:7px !important;
+  border-radius:15px !important;
+  border:1px solid rgba(0,200,255,0.16) !important;
+  background:linear-gradient(180deg, rgba(8,18,30,0.42), rgba(8,18,30,0.24)) !important;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12) !important;
+}
+#force-update-btn.version-unified .update-icon{
+  width:18px !important; height:18px !important;
+  color:#9fd9ff !important;
+}
+#force-update-btn.version-unified .update-icon svg{width:16px !important; height:16px !important;}
+#force-update-btn.version-unified .version-summary{
+  gap:1px !important;
+  min-width:0 !important;
+}
+#force-update-btn.version-unified .app-badge-title{
+  display:block !important;
+  color:#74cfff !important;
+  font-size:10px !important;
+  font-weight:700 !important;
+  line-height:1.05 !important;
+  letter-spacing:0.14em !important;
+  text-shadow:0 0 10px rgba(0,200,255,0.32) !important;
+}
+#force-update-btn.version-unified .version-line{
+  gap:5px !important;
+  line-height:1.02 !important;
+}
+#force-update-btn.version-unified .version-kicker{
+  font-size:8px !important;
+  min-width:36px !important;
+  color:#8caec8 !important;
+}
+#force-update-btn.version-unified .version-value{
+  font-size:11px !important;
+}
+#force-update-btn.version-unified .update-copy{
+  display:none !important;
+  font-size:9px !important;
+  padding-left:8px !important;
+  margin-left:3px !important;
+  border-left:1px solid rgba(0,200,255,0.14) !important;
+  max-width:110px !important;
+  white-space:normal !important;
+  line-height:1.15 !important;
+}
+#force-update-btn.version-unified.ui-awake,
+#force-update-btn.version-unified:hover,
+#force-update-btn.version-unified:focus-visible{
+  max-width:min(88vw,330px) !important;
+  padding:8px 12px !important;
+}
+#force-update-btn.version-unified.ui-awake .update-copy,
+#force-update-btn.version-unified:hover .update-copy,
+#force-update-btn.version-unified:focus-visible .update-copy,
+#force-update-btn.version-unified.needs-update .update-copy{
+  display:inline-flex !important;
+}
+#force-update-btn.version-unified.needs-update{
+  opacity:0.42 !important;
+  animation:updatePulse 1.18s ease-in-out infinite !important;
+}
+#force-update-btn.version-unified.needs-update.ui-awake,
+#force-update-btn.version-unified.needs-update:hover{
+  opacity:0.98 !important;
+}
+
+#balance-display{
+  min-height:34px !important;
+  padding:0 10px !important;
+  gap:6px !important;
+  border-radius:999px !important;
+  background:rgba(0,232,122,0.06) !important;
+  border:1px solid rgba(0,232,122,0.18) !important;
+}
+#balance-display .balance-label{display:none !important; font-size:9px !important;}
+#balance-display.ui-awake .balance-label,
+#balance-display:hover .balance-label,
+#balance-display:focus-visible .balance-label{display:inline !important;}
+#balance-display .balance-amount{font-size:11px !important;}
+
+#video-post-btn.video-ribbon-btn{
+  min-height:34px !important;
+  padding:0 9px !important;
+  gap:6px !important;
+  border-radius:14px !important;
+  background:linear-gradient(180deg, rgba(255,54,102,0.14), rgba(255,54,102,0.07)) !important;
+  border:1px solid rgba(255,54,102,0.18) !important;
+}
+#video-post-btn.video-ribbon-btn .video-btn-icon{width:18px !important;height:18px !important;}
+#video-post-btn.video-ribbon-btn .video-btn-icon svg{width:16px !important;height:16px !important;}
+#video-post-btn.video-ribbon-btn .video-btn-plus{width:16px !important;height:16px !important;font-size:13px !important;}
+#video-post-btn.video-ribbon-btn .video-btn-copy{display:none !important;font-size:10px !important;letter-spacing:0.03em !important;}
+#video-post-btn.video-ribbon-btn.ui-awake .video-btn-copy,
+#video-post-btn.video-ribbon-btn:hover .video-btn-copy,
+#video-post-btn.video-ribbon-btn:focus-visible .video-btn-copy{display:inline-flex !important;}
+
+#user-badge{
+  min-height:34px !important;
+  padding:4px 7px !important;
+  gap:5px !important;
+  border-radius:999px !important;
+  background:rgba(8,18,30,0.38) !important;
+  border:1px solid rgba(0,200,255,0.14) !important;
+}
+#user-badge .user-avatar{width:22px !important;height:22px !important;}
+#user-badge .user-name,
+#user-badge #role-badge{display:none !important;}
+#user-badge.ui-awake .user-name,
+#user-badge:hover .user-name,
+#user-badge:focus-visible .user-name,
+#user-badge.ui-awake #role-badge,
+#user-badge:hover #role-badge,
+#user-badge:focus-visible #role-badge{display:inline-block !important;}
+
+#pause-ui-btn.pause-orb{
+  width:38px !important;
+  height:38px !important;
+  border-radius:999px !important;
+}
+#pause-ui-btn.pause-orb .pause-icon{width:16px !important;height:16px !important;}
+#pause-ui-btn.pause-orb .pause-icon svg{width:15px !important;height:15px !important;}
+#pause-ui-btn.pause-orb .pause-orb-label{display:none !important; font-size:7px !important;}
+#pause-ui-btn.pause-orb.ui-awake .pause-orb-label,
+#pause-ui-btn.pause-orb:hover .pause-orb-label,
+#pause-ui-btn.pause-orb:focus-visible .pause-orb-label{display:block !important;}
+
+#bottombar{
+  opacity:0.30 !important;
+  transition:opacity .22s ease, box-shadow .22s ease !important;
+}
+#bottombar.ui-awake,
+#bottombar:hover,
+#bottombar:focus-within{opacity:0.96 !important;}
+#cmd-response{
+  opacity:0.34 !important;
+  transition:opacity .22s ease, box-shadow .22s ease !important;
+}
+#cmd-response.ui-awake,
+#cmd-response:hover,
+#cmd-response:focus-within,
+#cmd-response.expanded{opacity:0.96 !important;}
+
+#perf-hud,#compass-hud{
+  width:124px !important;
+  height:124px !important;
+}
+#perf-hud,#compass-hud,#bottombar,#cmd-response{z-index:235 !important;}
+
+@media (max-width: 900px){
+  #force-update-btn.version-unified{max-width:min(70vw,200px) !important;}
+}
+@media (max-width: 640px){
+  #force-update-btn.version-unified{max-width:min(86vw,190px) !important;}
+  #force-update-btn.version-unified .update-icon{display:none !important;}
+  #force-update-btn.version-unified .version-kicker{min-width:32px !important;}
+  #force-update-btn.version-unified .version-value{font-size:10px !important;}
+}
+
 </style>
 </head>
 <body class="lt">
@@ -1543,11 +1795,11 @@ body.micro-ribbon #balance-display{padding:0 10px !important;}
       <span class="version-summary">
         <span class="version-line">
           <span class="version-kicker">Current</span>
-          <span class="version-value vcurrent" id="vcurrent">V5</span>
+          <span class="version-value vcurrent" id="vcurrent">V6</span>
         </span>
         <span class="version-line">
           <span class="version-kicker">Latest</span>
-          <span class="version-value vlatest-ok" id="vlatest">V5</span>
+          <span class="version-value vlatest-ok" id="vlatest">V6</span>
         </span>
       </span>
       <span class="update-copy" id="force-update-copy">Up to date</span>
@@ -2221,15 +2473,15 @@ body.micro-ribbon #balance-display{padding:0 10px !important;}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
 /* ═══════════════════════════════════════════════
-   ASTRANOV V5 — Internet Operating System
+   ASTRANOV V6 — Internet Operating System
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script V5
+   Architecture: Spartan Script V6
    ═══════════════════════════════════════════════ */
 
 var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 var sb = supabase.createClient(SURL, SKEY);
-var APP_VERSION = 'V5';
+var APP_VERSION = 'V6';
 var APP_ARCH = 'Spartan Script V5';
 var PAYMENT_CFG_KEY = 'astranov.payment.config';
 var WALLET_KEY = 'astranov.wallet.balance';
@@ -7534,15 +7786,15 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV V5
+SPARTAN SCRIPT — ASTRANOV V6
 Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script V5 | Single Source of Record
+Architecture: Spartan Script V6 | Single Source of Record
 
 IDENTITY [LOCKED]
 App name: ASTRANOV
 Description: Internet Operating System
 Version rule: V followed by an integer only
-Current version: V5
+Current version: V6
 Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
 AUTHORITY [LOCKED]
@@ -7717,15 +7969,15 @@ AI provider research may rescan configured provider manifests once per day while
 -->
 
 <!-- Embedded Spartan Script V5 -->
-<textarea id="spartan-script" style="display:none;">SPARTAN SCRIPT — ASTRANOV V5
+<textarea id="spartan-script" style="display:none;">SPARTAN SCRIPT — ASTRANOV V6
 Creator &amp; Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script V5 | Single Source of Record
+Architecture: Spartan Script V6 | Single Source of Record
 
 IDENTITY [LOCKED]
 App name: ASTRANOV
 Description: Internet Operating System
 Version rule: V followed by an integer only
-Current version: V5
+Current version: V6
 Rule: version starts from V1 and increments to V2, V3, V4 and so on without commas or periods. Do not break this sequence without direct user instruction.
 
 AUTHORITY [LOCKED]
@@ -10402,7 +10654,7 @@ AI provider research may rescan configured provider manifests once per day while
   var DAILY_AI_RESEARCH_KEY = 'astranov.ai.daily.research.date';
   var FLOAT_HOLD_MS = 3000;
   var V5_FLOAT_IDS = ['force-update-btn','balance-display','video-post-btn','user-badge','pause-ui-btn','bottombar','perf-hud','compass-hud'];
-  APP_VERSION = 'V5';
+  APP_VERSION = 'V6';
   APP_ARCH = 'Spartan Script V5';
   APP_LATEST_VERSION = APP_LATEST_VERSION || APP_VERSION;
 
@@ -10597,8 +10849,8 @@ AI provider research may rescan configured provider manifests once per day while
       + '</span>'
       + '<span class="version-summary">'
       + '<span class="app-badge-title">ASTRANOV</span>'
-      + '<span class="version-line"><span class="version-kicker">Loaded</span><span class="version-value vcurrent" id="vcurrent">' + (APP_VERSION || 'V5') + '</span></span>'
-      + '<span class="version-line"><span class="version-kicker">Latest</span><span class="version-value vlatest-ok" id="vlatest">' + (APP_LATEST_VERSION || APP_VERSION || 'V5') + '</span></span>'
+      + '<span class="version-line"><span class="version-kicker">Loaded</span><span class="version-value vcurrent" id="vcurrent">' + (APP_VERSION || 'V6') + '</span></span>'
+      + '<span class="version-line"><span class="version-kicker">Latest</span><span class="version-value vlatest-ok" id="vlatest">' + (APP_LATEST_VERSION || APP_VERSION || 'V6') + '</span></span>'
       + '</span>'
       + '<span class="update-copy" id="force-update-copy">Checking</span>';
     btn.title = 'Astranov version check and hard refresh';
@@ -10616,8 +10868,8 @@ AI provider research may rescan configured provider manifests once per day while
     var cur = document.getElementById('vcurrent');
     var lat = document.getElementById('vlatest');
     var copy = document.getElementById('force-update-copy');
-    var current = String(currentVersion || APP_VERSION || 'V5');
-    var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V5');
+    var current = String(currentVersion || APP_VERSION || 'V6');
+    var latest = String(latestVersion || APP_LATEST_VERSION || APP_VERSION || 'V6');
     APP_LATEST_VERSION = latest;
     var needs = current !== latest;
     if(cur) cur.textContent = current;
@@ -10754,9 +11006,9 @@ AI provider research may rescan configured provider manifests once per day while
     var ta = document.getElementById('spartan-script');
     if(!ta) return;
     if(ta.value.indexOf('V5 FLOATING UI OVERRIDE [LOCKED]') === -1){
-      ta.value = ta.value.replace(/SPARTAN SCRIPT — ASTRANOV V\d+/g, 'SPARTAN SCRIPT — ASTRANOV V5')
-        .replace(/Architecture: Spartan Script V\d+/g, 'Architecture: Spartan Script V5')
-        .replace(/Current version: V\d+/g, 'Current version: V5')
+      ta.value = ta.value.replace(/SPARTAN SCRIPT — ASTRANOV V\d+/g, 'SPARTAN SCRIPT — ASTRANOV V6')
+        .replace(/Architecture: Spartan Script V\d+/g, 'Architecture: Spartan Script V6')
+        .replace(/Current version: V\d+/g, 'Current version: V6')
         + '\n\nV5 FLOATING UI OVERRIDE [LOCKED]\n'
         + 'Top and bottom ribbons are removed as full-width bars. Keep only floating controls in their place.\n'
         + 'All permanent controls become floatable after a 3-second hold and must persist user positions per device.\n'
@@ -10782,6 +11034,204 @@ AI provider research may rescan configured provider manifests once per day while
   setInterval(function(){
     if(!APP_PAUSED && document.visibilityState === 'visible') runDailyAiResearch(false);
   }, 60 * 60 * 1000);
+})();
+</script>
+
+
+<script id="v6-ghost-dock-engine">
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  var CONTROL_IDS = ['force-update-btn','balance-display','video-post-btn','user-badge','pause-ui-btn','bottombar','cmd-response'];
+  var wakeTimers = Object.create(null);
+
+  function wakeControl(el, ms){
+    if(!el) return;
+    el.classList.add('ui-awake');
+    if(wakeTimers[el.id]) clearTimeout(wakeTimers[el.id]);
+    wakeTimers[el.id] = setTimeout(function(){
+      if(!el.matches(':hover') && !el.classList.contains('moveable') && !(el.id === 'cmd-response' && el.classList.contains('expanded'))) el.classList.remove('ui-awake');
+    }, ms || 5000);
+  }
+  function sleepAll(except){
+    CONTROL_IDS.forEach(function(id){
+      var el = byId(id);
+      if(!el || el === except || (except && except.contains && except.contains(el))) return;
+      if(el.id === 'cmd-response' && el.classList.contains('expanded')) return;
+      if(el.classList.contains('moveable')) return;
+      el.classList.remove('ui-awake');
+    });
+  }
+  function bindWake(el){
+    if(!el || el.dataset.v6WakeBound === '1') return;
+    el.dataset.v6WakeBound = '1';
+    el.addEventListener('pointerdown', function(){ wakeControl(el, 6500); }, {passive:true});
+    el.addEventListener('focusin', function(){ wakeControl(el, 6500); });
+    el.addEventListener('mouseenter', function(){ wakeControl(el, 6500); });
+  }
+  function setCompactVersionButton(currentVersion, latestVersion){
+    var btn = byId('force-update-btn');
+    if(!btn) return;
+    var current = String(currentVersion || window.APP_VERSION || 'V6');
+    var latest = String(latestVersion || window.APP_LATEST_VERSION || window.APP_VERSION || 'V6');
+    var needs = current !== latest;
+    btn.innerHTML = ''
+      + '<span class="update-icon" aria-hidden="true">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+      + '<path d="M21 12a9 9 0 1 1-2.64-6.36"></path>'
+      + '<path d="M21 3v6h-6"></path>'
+      + '</svg>'
+      + '</span>'
+      + '<span class="version-summary">'
+      + '<span class="app-badge-title">ASTRANOV</span>'
+      + '<span class="version-line"><span class="version-kicker">Loaded</span><span class="version-value vcurrent" id="vcurrent">' + current + '</span></span>'
+      + '<span class="version-line"><span class="version-kicker">Latest</span><span class="version-value ' + (needs ? 'vlatest-old' : 'vlatest-ok') + '" id="vlatest">' + latest + '</span></span>'
+      + '</span>'
+      + '<span class="update-copy" id="force-update-copy">' + (needs ? 'Tap to hard refresh' : 'Up to date') + '</span>';
+    btn.classList.toggle('needs-update', needs);
+    btn.classList.toggle('up-to-date', !needs);
+    btn.title = needs ? ('ASTRANOV loaded ' + current + '. Latest ' + latest + '. Tap for hard refresh update.') : ('ASTRANOV loaded ' + current + '. Latest ' + latest + '. Up to date.');
+    btn.onclick = function(){
+      wakeControl(btn, 8000);
+      if((window.APP_LATEST_VERSION || window.APP_VERSION) !== window.APP_VERSION && typeof window.hardRefreshUpdate === 'function') window.hardRefreshUpdate(window.APP_LATEST_VERSION);
+      else if(typeof window.checkLatestVersion === 'function') window.checkLatestVersion(false);
+    };
+  }
+
+  function arrangeGhostDock(){
+    var w = window.innerWidth || 1280;
+    var topY = 10;
+    var secondY = 52;
+    var thirdY = 94;
+    var gap = 8;
+    var version = byId('force-update-btn');
+    var balance = byId('balance-display');
+    var video = byId('video-post-btn');
+    var user = byId('user-badge');
+    var pause = byId('pause-ui-btn');
+    if(version && version.dataset.userPlaced !== '1'){
+      version.style.left = '50%';
+      version.style.top = topY + 'px';
+      version.style.right = 'auto';
+      version.style.bottom = 'auto';
+      version.style.transform = 'translateX(-50%) scale(' + (version.classList.contains('ui-awake') ? '1' : '0.82') + ')';
+    }
+    if(w >= 980){
+      var right = 12;
+      if(pause && pause.dataset.userPlaced !== '1'){
+        pause.style.right = right + 'px'; pause.style.top = topY + 'px'; pause.style.left = 'auto'; pause.style.bottom = 'auto';
+        right += (pause.getBoundingClientRect().width || 38) + gap;
+      }
+      if(user && user.dataset.userPlaced !== '1'){
+        user.style.right = right + 'px'; user.style.top = topY + 'px'; user.style.left = 'auto'; user.style.bottom = 'auto';
+        right += (user.getBoundingClientRect().width || 46) + gap;
+      }
+      if(video && video.dataset.userPlaced !== '1'){
+        video.style.right = right + 'px'; video.style.top = topY + 'px'; video.style.left = 'auto'; video.style.bottom = 'auto';
+      }
+      if(balance && balance.dataset.userPlaced !== '1'){
+        balance.style.left = '12px'; balance.style.top = topY + 'px'; balance.style.right = 'auto'; balance.style.bottom = 'auto';
+      }
+    } else if(w >= 680){
+      if(balance && balance.dataset.userPlaced !== '1'){
+        balance.style.left = '12px'; balance.style.top = topY + 'px'; balance.style.right = 'auto'; balance.style.bottom = 'auto';
+      }
+      var right = 12;
+      [pause, user, video].forEach(function(el){
+        if(!el || el.dataset.userPlaced === '1') return;
+        el.style.right = right + 'px'; el.style.top = secondY + 'px'; el.style.left = 'auto'; el.style.bottom = 'auto';
+        right += (el.getBoundingClientRect().width || 40) + gap;
+      });
+    } else {
+      if(balance && balance.dataset.userPlaced !== '1'){
+        balance.style.left = '10px'; balance.style.top = secondY + 'px'; balance.style.right = 'auto'; balance.style.bottom = 'auto';
+      }
+      if(video && video.dataset.userPlaced !== '1'){
+        video.style.left = '10px'; video.style.top = thirdY + 'px'; video.style.right = 'auto'; video.style.bottom = 'auto';
+      }
+      if(user && user.dataset.userPlaced !== '1'){
+        user.style.right = '58px'; user.style.top = secondY + 'px'; user.style.left = 'auto'; user.style.bottom = 'auto';
+      }
+      if(pause && pause.dataset.userPlaced !== '1'){
+        pause.style.right = '10px'; pause.style.top = secondY + 'px'; pause.style.left = 'auto'; pause.style.bottom = 'auto';
+      }
+    }
+    var bar = byId('bottombar');
+    var cmd = byId('cmd-response');
+    if(bar && bar.dataset.userPlaced !== '1'){
+      bar.style.left = '50%';
+      bar.style.bottom = '14px';
+      bar.style.top = 'auto';
+      bar.style.right = 'auto';
+      bar.style.transform = 'translateX(-50%)';
+      bar.style.width = 'min(92vw,760px)';
+    }
+    var maxChat = Math.floor((window.innerHeight || 800) * (2/3));
+    if(cmd){
+      cmd.style.maxHeight = maxChat + 'px';
+      if(cmd.dataset.userPlaced !== '1'){
+        cmd.style.left = '50%';
+        cmd.style.bottom = '82px';
+        cmd.style.top = 'auto';
+        cmd.style.right = 'auto';
+        cmd.style.transform = 'translateX(-50%)';
+        cmd.style.width = 'min(92vw,760px)';
+      }
+    }
+    if(typeof window.applyFloatingDefaults === 'function') {
+      try { window.applyFloatingDefaults(); } catch(e){}
+    }
+  }
+
+  function syncSpartanV6(){
+    var ta = byId('spartan-script');
+    if(!ta) return;
+    ta.value = ta.value.replace(/SPARTAN SCRIPT — ASTRANOV V\d+/g, 'SPARTAN SCRIPT — ASTRANOV V6')
+      .replace(/Architecture: Spartan Script V\d+/g, 'Architecture: Spartan Script V6')
+      .replace(/Current version: V\d+/g, 'Current version: V6');
+    if(ta.value.indexOf('V6 GHOST-DOCK UI OVERRIDE [LOCKED]') === -1){
+      ta.value += '\n\nV6 GHOST-DOCK UI OVERRIDE [LOCKED]\n'
+        + 'Visible controls must stay small, transparent, and docked away from the spinning Earth by default.\n'
+        + 'Controls wake only on user tap or focus, become more visible and larger while awake, and fall back to ghost state after inactivity.\n'
+        + 'Three-second hold on a control enables dragging. Do not block normal click actions while waking a control.\n'
+        + 'The unified ASTRANOV button must remain compact by default and must always state loaded version and latest version.\n'
+        + 'No full-width ribbons. Keep top controls as independent floating controls near safe screen edges.\n'
+        + 'Automatic UI engine must keep floating controls off the globe, prevent overlaps, and re-dock them on resize and rotation unless user-placed.\n'
+        + 'Chat stays bottom-centered, capped at two-thirds viewport height, wakes on interaction, and remains floatable.\n';
+    }
+  }
+
+  function initV6(){
+    var meta = document.querySelector('meta[name="astranov-version"]');
+    if(meta) meta.setAttribute('content', 'V6');
+    if(typeof window.APP_VERSION !== 'undefined') window.APP_VERSION = 'V6';
+    if(typeof window.APP_LATEST_VERSION === 'undefined' || !window.APP_LATEST_VERSION) window.APP_LATEST_VERSION = 'V6';
+    var shell = byId('topbar');
+    if(shell) shell.classList.add('v6-topbar-shell');
+    ['force-update-btn','balance-display','video-post-btn','user-badge','pause-ui-btn','bottombar','cmd-response'].forEach(function(id){ bindWake(byId(id)); });
+    var prevSetVersionRibbon = window.setVersionRibbon;
+    window.setVersionRibbon = function(currentVersion, latestVersion){
+      if(typeof prevSetVersionRibbon === 'function'){
+        try{ prevSetVersionRibbon(currentVersion, latestVersion); }catch(e){}
+      }
+      setCompactVersionButton(currentVersion || window.APP_VERSION, latestVersion || window.APP_LATEST_VERSION || window.APP_VERSION);
+      arrangeGhostDock();
+    };
+    setCompactVersionButton(window.APP_VERSION, window.APP_LATEST_VERSION || window.APP_VERSION);
+    arrangeGhostDock();
+    syncSpartanV6();
+    document.addEventListener('pointerdown', function(ev){
+      var target = ev.target && ev.target.closest ? ev.target.closest('#force-update-btn,#balance-display,#video-post-btn,#user-badge,#pause-ui-btn,#bottombar,#cmd-response,#astranova-wrapper,#perf-hud,#compass-hud') : null;
+      if(target) wakeControl(target.closest('#force-update-btn,#balance-display,#video-post-btn,#user-badge,#pause-ui-btn,#bottombar,#cmd-response') || target, 6500);
+      else sleepAll();
+    }, true);
+    window.addEventListener('resize', arrangeGhostDock, {passive:true});
+    window.addEventListener('orientationchange', function(){ setTimeout(arrangeGhostDock, 120); });
+    window.addEventListener('load', function(){ setTimeout(arrangeGhostDock, 160); });
+    setTimeout(arrangeGhostDock, 120);
+    setTimeout(function(){ if(typeof window.setVersionRibbon === 'function') window.setVersionRibbon(window.APP_VERSION, window.APP_LATEST_VERSION || window.APP_VERSION); }, 200);
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initV6, {once:true});
+  else initV6();
 })();
 </script>
 
