@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Astranov V4</title>
 <meta name="astranov-version" content="V6"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
@@ -19,6 +19,77 @@ body.lt{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 body.lt2{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 body.lt3{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;user-select:none;}
+
+/* ═══ 3D DEPTH PERSPECTIVE SYSTEM ═══ */
+/* All floating controls recede into deep space by default.
+   On hover/focus/tap they zoom forward into the user's hands. */
+#stage{perspective:1200px;perspective-origin:50% 50%;transform-style:preserve-3d;}
+.depth-recede{
+  transform:translateZ(-220px) scale(0.62);
+  opacity:0.32;
+  filter:blur(0.5px);
+  transition:transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease, filter 0.4s ease;
+  transform-style:preserve-3d;
+  will-change:transform,opacity;
+  pointer-events:auto;
+}
+.depth-recede:hover,.depth-recede:focus-within,.depth-recede.depth-forward{
+  transform:translateZ(0) scale(1);
+  opacity:1;
+  filter:blur(0);
+  z-index:210;
+}
+.depth-recede:active{
+  transform:translateZ(10px) scale(1.03);
+  opacity:1;
+  filter:blur(0);
+}
+/* The chat bar and response — always forward when focused */
+#bottombar.depth-recede:focus-within,
+#bottombar.depth-forward,
+#cmd-response.depth-forward{
+  transform:translateZ(0) scale(1) !important;
+  opacity:1 !important;
+  filter:none !important;
+}
+/* Astranova wrapper — recedes less, always semi-present */
+#astranova-wrapper.depth-recede{
+  transform:translateZ(-120px) scale(0.7);
+  opacity:0.45;
+}
+#astranova-wrapper.depth-recede:hover,
+#astranova-wrapper.depth-forward{
+  transform:translateZ(0) scale(1);
+  opacity:1;
+}
+/* Mobile: touch devices get slightly less recession so buttons are findable */
+@media (hover:none){
+  .depth-recede{
+    transform:translateZ(-140px) scale(0.68);
+    opacity:0.38;
+    filter:blur(0.3px);
+  }
+}
+/* Keyboard-open state: recede controls even further to clear space */
+body.keyboard-open .depth-recede:not(.depth-forward){
+  transform:translateZ(-400px) scale(0.3) !important;
+  opacity:0.15 !important;
+  pointer-events:none;
+}
+body.keyboard-open #bottombar.depth-recede{
+  transform:translateZ(0) scale(1) !important;
+  opacity:1 !important;
+  pointer-events:auto !important;
+  filter:none !important;
+}
+body.keyboard-open #cmd-response{
+  max-height:35vh !important;
+}
+body.keyboard-open #astranova-wrapper{
+  transform:translateZ(-500px) scale(0.2) !important;
+  opacity:0.1 !important;
+  pointer-events:none !important;
+}
 
 /* TOP BAR - always visible, locked */
 #topbar{
@@ -1489,246 +1560,208 @@ body.micro-ribbon #balance-display{padding:0 10px !important;}
 }
 
 
-/* === V6 GHOST-DOCK UI ENGINE [LOCKED] === */
+/* === V7 SPACE-DEPTH UI ENGINE === */
+/* Controls live "far away in space" — small, dim, blurred.
+   Tap/hover brings them zooming forward into focus.
+   Spring-overshoot transition for satisfying feel. */
+
+/* Kill the old topbar — it's now just a container for floating elements */
 #topbar{
-  position:fixed !important;
-  top:0 !important; left:0 !important; right:0 !important;
-  height:0 !important;
-  padding:0 !important;
-  background:transparent !important;
-  border:none !important;
-  box-shadow:none !important;
-  backdrop-filter:none !important;
-  -webkit-backdrop-filter:none !important;
-  overflow:visible !important;
-  pointer-events:none !important;
-  z-index:260 !important;
+  position:fixed !important;top:0 !important;left:0 !important;right:0 !important;
+  height:0 !important;padding:0 !important;
+  background:transparent !important;border:none !important;
+  box-shadow:none !important;backdrop-filter:none !important;
+  overflow:visible !important;pointer-events:none !important;z-index:260 !important;
 }
 #topbar .tb-left,#topbar .tb-center,#topbar .tb-right{
-  display:block !important;
-  flex:none !important;
-  min-width:0 !important;
-  max-width:none !important;
-  pointer-events:none !important;
+  display:block !important;flex:none !important;pointer-events:none !important;
 }
 #topbar .brand{display:none !important;}
 
-#force-update-btn,
-#balance-display,
-#video-post-btn,
-#user-badge,
-#pause-ui-btn,
-#bottombar,
-#cmd-response{
-  pointer-events:auto !important;
-}
-
-#force-update-btn,
-#balance-display,
-#video-post-btn,
-#user-badge,
-#pause-ui-btn{
-  position:fixed !important;
-  z-index:262 !important;
-  opacity:0.20 !important;
-  transform:translateZ(0) scale(0.82) !important;
+/* ── SPACE-DEPTH: All floating controls ── */
+#force-update-btn,#balance-display,#video-post-btn,#user-badge,#pause-ui-btn{
+  pointer-events:auto !important;position:fixed !important;z-index:262 !important;
+  /* THE SPACE EFFECT — far away */
+  opacity:0.15 !important;
+  transform:scale(0.32) !important;
   transform-origin:center center !important;
-  filter:saturate(0.82) !important;
-  transition:opacity .22s ease, transform .22s ease, filter .22s ease, box-shadow .22s ease !important;
+  filter:blur(1.2px) saturate(0.5) brightness(0.7) !important;
+  /* Spring overshoot transition */
+  transition:
+    opacity 0.5s cubic-bezier(0.34,1.56,0.64,1),
+    transform 0.5s cubic-bezier(0.34,1.56,0.64,1),
+    filter 0.4s ease,
+    box-shadow 0.4s ease !important;
   backdrop-filter:blur(10px) !important;
-  -webkit-backdrop-filter:blur(10px) !important;
+  border-radius:999px !important;
 }
-#force-update-btn.ui-awake,
-#balance-display.ui-awake,
-#video-post-btn.ui-awake,
-#user-badge.ui-awake,
-#pause-ui-btn.ui-awake,
-#force-update-btn:focus-visible,
-#balance-display:focus-visible,
-#video-post-btn:focus-visible,
-#user-badge:focus-visible,
-#pause-ui-btn:focus-visible,
-#force-update-btn:hover,
-#balance-display:hover,
-#video-post-btn:hover,
-#user-badge:hover,
-#pause-ui-btn:hover{
-  opacity:0.96 !important;
-  transform:translateZ(0) scale(1) !important;
+/* ── ZOOMED FORWARD — on interaction ── */
+#force-update-btn.ui-awake,#balance-display.ui-awake,
+#video-post-btn.ui-awake,#user-badge.ui-awake,#pause-ui-btn.ui-awake,
+#force-update-btn:hover,#balance-display:hover,
+#video-post-btn:hover,#user-badge:hover,#pause-ui-btn:hover,
+#force-update-btn:focus-visible,#balance-display:focus-visible,
+#video-post-btn:focus-visible,#user-badge:focus-visible,#pause-ui-btn:focus-visible{
+  opacity:1 !important;
+  transform:scale(1) !important;
   filter:none !important;
+  box-shadow:0 0 30px rgba(0,200,255,0.25), 0 8px 32px rgba(0,0,0,0.4) !important;
 }
-#force-update-btn.moveable,
-#balance-display.moveable,
-#video-post-btn.moveable,
-#user-badge.moveable,
-#pause-ui-btn.moveable{
-  opacity:1 !important;
-  transform:none !important;
+/* Dragging */
+#force-update-btn.moveable,#balance-display.moveable,
+#video-post-btn.moveable,#user-badge.moveable,#pause-ui-btn.moveable{
+  opacity:1 !important;transform:none !important;filter:none !important;
 }
-#force-update-btn.float-holding,
-#balance-display.float-holding,
-#video-post-btn.float-holding,
-#user-badge.float-holding,
-#pause-ui-btn.float-holding{
-  opacity:1 !important;
-  outline:1px dashed rgba(0,200,255,0.45) !important;
+#force-update-btn.float-holding,#balance-display.float-holding,
+#video-post-btn.float-holding,#user-badge.float-holding,#pause-ui-btn.float-holding{
+  opacity:1 !important;outline:1px dashed rgba(0,200,255,0.45) !important;
 }
 
+/* ── VERSION BUTTON specific ── */
 #force-update-btn.version-unified{
-  min-height:34px !important;
-  min-width:0 !important;
-  width:auto !important;
+  min-height:34px !important;width:auto !important;
   max-width:min(58vw,210px) !important;
-  padding:6px 10px !important;
-  gap:7px !important;
+  padding:6px 10px !important;gap:7px !important;
   border-radius:15px !important;
   border:1px solid rgba(0,200,255,0.16) !important;
-  background:linear-gradient(180deg, rgba(8,18,30,0.42), rgba(8,18,30,0.24)) !important;
-  box-shadow:0 6px 18px rgba(0,0,0,0.12) !important;
+  background:linear-gradient(180deg,rgba(8,18,30,0.82),rgba(8,18,30,0.60)) !important;
 }
-#force-update-btn.version-unified .update-icon{
-  width:18px !important; height:18px !important;
-  color:#9fd9ff !important;
-}
-#force-update-btn.version-unified .update-icon svg{width:16px !important; height:16px !important;}
-#force-update-btn.version-unified .version-summary{
-  gap:1px !important;
-  min-width:0 !important;
-}
-#force-update-btn.version-unified .app-badge-title{
-  display:block !important;
-  color:#74cfff !important;
-  font-size:10px !important;
-  font-weight:700 !important;
-  line-height:1.05 !important;
-  letter-spacing:0.14em !important;
-  text-shadow:0 0 10px rgba(0,200,255,0.32) !important;
-}
-#force-update-btn.version-unified .version-line{
-  gap:5px !important;
-  line-height:1.02 !important;
-}
-#force-update-btn.version-unified .version-kicker{
-  font-size:8px !important;
-  min-width:36px !important;
-  color:#8caec8 !important;
-}
-#force-update-btn.version-unified .version-value{
-  font-size:11px !important;
-}
-#force-update-btn.version-unified .update-copy{
-  display:none !important;
-  font-size:9px !important;
-  padding-left:8px !important;
-  margin-left:3px !important;
-  border-left:1px solid rgba(0,200,255,0.14) !important;
-  max-width:110px !important;
-  white-space:normal !important;
-  line-height:1.15 !important;
-}
-#force-update-btn.version-unified.ui-awake,
-#force-update-btn.version-unified:hover,
-#force-update-btn.version-unified:focus-visible{
-  max-width:min(88vw,330px) !important;
-  padding:8px 12px !important;
-}
+#force-update-btn.version-unified .update-icon{width:18px !important;height:18px !important;color:#9fd9ff !important;}
+#force-update-btn.version-unified .update-icon svg{width:16px !important;height:16px !important;}
+#force-update-btn.version-unified .version-summary{gap:1px !important;}
+#force-update-btn.version-unified .app-badge-title{display:block !important;color:#74cfff !important;font-size:7px !important;font-family:var(--fhud) !important;letter-spacing:0.2em !important;text-transform:uppercase !important;font-weight:500 !important;}
+#force-update-btn.version-unified .version-kicker{display:block !important;font-size:7.5px !important;color:var(--text-dim) !important;font-family:var(--font) !important;white-space:nowrap !important;min-width:50px !important;}
+#force-update-btn.version-unified .version-value{font-weight:600 !important;font-size:11px !important;letter-spacing:0.06em !important;}
+#force-update-btn.version-unified .update-copy{display:none !important;}
 #force-update-btn.version-unified.ui-awake .update-copy,
-#force-update-btn.version-unified:hover .update-copy,
-#force-update-btn.version-unified:focus-visible .update-copy,
-#force-update-btn.version-unified.needs-update .update-copy{
-  display:inline-flex !important;
-}
+#force-update-btn.version-unified:hover .update-copy{display:flex !important;}
 #force-update-btn.version-unified.needs-update{
-  opacity:0.42 !important;
-  animation:updatePulse 1.18s ease-in-out infinite !important;
+  border-color:rgba(255,214,0,0.35) !important;
+  background:linear-gradient(180deg,rgba(40,30,8,0.82),rgba(40,30,8,0.60)) !important;
 }
 #force-update-btn.version-unified.needs-update.ui-awake,
 #force-update-btn.version-unified.needs-update:hover{
-  opacity:0.98 !important;
+  box-shadow:0 0 24px rgba(255,214,0,0.3),0 8px 32px rgba(0,0,0,0.3) !important;
 }
-
-#balance-display{
-  min-height:34px !important;
-  padding:0 10px !important;
-  gap:6px !important;
-  border-radius:999px !important;
-  background:rgba(0,232,122,0.06) !important;
-  border:1px solid rgba(0,232,122,0.18) !important;
-}
-#balance-display .balance-label{display:none !important; font-size:9px !important;}
-#balance-display.ui-awake .balance-label,
-#balance-display:hover .balance-label,
-#balance-display:focus-visible .balance-label{display:inline !important;}
-#balance-display .balance-amount{font-size:11px !important;}
-
-#video-post-btn.video-ribbon-btn{
-  min-height:34px !important;
-  padding:0 9px !important;
-  gap:6px !important;
-  border-radius:14px !important;
-  background:linear-gradient(180deg, rgba(255,54,102,0.14), rgba(255,54,102,0.07)) !important;
-  border:1px solid rgba(255,54,102,0.18) !important;
-}
-#video-post-btn.video-ribbon-btn .video-btn-icon{width:18px !important;height:18px !important;}
-#video-post-btn.video-ribbon-btn .video-btn-icon svg{width:16px !important;height:16px !important;}
-#video-post-btn.video-ribbon-btn .video-btn-plus{width:16px !important;height:16px !important;font-size:13px !important;}
-#video-post-btn.video-ribbon-btn .video-btn-copy{display:none !important;font-size:10px !important;letter-spacing:0.03em !important;}
+/* Balance */
+#balance-display.ui-awake .balance-label,#balance-display:hover .balance-label{display:block !important;}
+/* Video */
+#video-post-btn.video-ribbon-btn{min-height:34px !important;border-radius:999px !important;gap:6px !important;padding:0 12px !important;}
+#video-post-btn.video-ribbon-btn .video-btn-icon{width:16px !important;height:16px !important;}
+#video-post-btn.video-ribbon-btn .video-btn-copy{display:none !important;}
 #video-post-btn.video-ribbon-btn.ui-awake .video-btn-copy,
-#video-post-btn.video-ribbon-btn:hover .video-btn-copy,
-#video-post-btn.video-ribbon-btn:focus-visible .video-btn-copy{display:inline-flex !important;}
-
-#user-badge{
-  min-height:34px !important;
-  padding:4px 7px !important;
-  gap:5px !important;
-  border-radius:999px !important;
-  background:rgba(8,18,30,0.38) !important;
-  border:1px solid rgba(0,200,255,0.14) !important;
-}
-#user-badge .user-avatar{width:22px !important;height:22px !important;}
-#user-badge .user-name,
-#user-badge #role-badge{display:none !important;}
-#user-badge.ui-awake .user-name,
-#user-badge:hover .user-name,
-#user-badge:focus-visible .user-name,
-#user-badge.ui-awake #role-badge,
-#user-badge:hover #role-badge,
-#user-badge:focus-visible #role-badge{display:inline-block !important;}
-
-#pause-ui-btn.pause-orb{
-  width:38px !important;
-  height:38px !important;
-  border-radius:999px !important;
-}
+#video-post-btn.video-ribbon-btn:hover .video-btn-copy{display:block !important;}
+/* User */
+#user-badge.ui-awake .user-name,#user-badge:hover .user-name{display:block !important;}
+#user-badge.ui-awake #role-badge,#user-badge:hover #role-badge{display:inline-block !important;}
+/* Pause */
+#pause-ui-btn.pause-orb{min-width:38px !important;min-height:38px !important;height:38px !important;border-radius:999px !important;}
 #pause-ui-btn.pause-orb .pause-icon{width:16px !important;height:16px !important;}
 #pause-ui-btn.pause-orb .pause-icon svg{width:15px !important;height:15px !important;}
-#pause-ui-btn.pause-orb .pause-orb-label{display:none !important; font-size:7px !important;}
+#pause-ui-btn.pause-orb .pause-orb-label{display:none !important;font-size:7px !important;}
 #pause-ui-btn.pause-orb.ui-awake .pause-orb-label,
-#pause-ui-btn.pause-orb:hover .pause-orb-label,
-#pause-ui-btn.pause-orb:focus-visible .pause-orb-label{display:block !important;}
+#pause-ui-btn.pause-orb:hover .pause-orb-label{display:block !important;}
 
+/* ── BOTTOMBAR — compact capsule by default ── */
 #bottombar{
-  opacity:0.30 !important;
-  transition:opacity .22s ease, box-shadow .22s ease !important;
+  position:fixed !important;z-index:235 !important;
+  bottom:14px !important;bottom:calc(14px + env(safe-area-inset-bottom)) !important;
+  left:50% !important;transform:translateX(-50%) scale(0.55) !important;
+  width:min(92vw,760px) !important;
+  opacity:0.20 !important;
+  filter:blur(0.8px) brightness(0.7) !important;
+  border-radius:22px !important;
+  transition:
+    opacity 0.4s cubic-bezier(0.34,1.56,0.64,1),
+    transform 0.4s cubic-bezier(0.34,1.56,0.64,1),
+    filter 0.35s ease,
+    bottom 0.3s ease,
+    box-shadow 0.35s ease !important;
+  pointer-events:auto !important;
 }
-#bottombar.ui-awake,
-#bottombar:hover,
-#bottombar:focus-within{opacity:0.96 !important;}
+#bottombar.ui-awake,#bottombar:hover,#bottombar:focus-within{
+  opacity:1 !important;
+  transform:translateX(-50%) scale(1) !important;
+  filter:none !important;
+  box-shadow:0 -4px 40px rgba(0,200,255,0.15), 0 12px 40px rgba(0,0,0,0.5) !important;
+}
+
+/* ── CHAT RESPONSE — also deep-space by default ── */
 #cmd-response{
-  opacity:0.34 !important;
-  transition:opacity .22s ease, box-shadow .22s ease !important;
+  position:fixed !important;z-index:234 !important;
+  bottom:80px !important;bottom:calc(80px + env(safe-area-inset-bottom)) !important;
+  left:50% !important;transform:translateX(-50%) scale(0.6) !important;
+  width:min(92vw,760px) !important;
+  opacity:0 !important;
+  filter:blur(2px) !important;
+  border-radius:18px !important;
+  max-height:50vh !important;
+  transition:
+    opacity 0.4s cubic-bezier(0.34,1.56,0.64,1),
+    transform 0.4s cubic-bezier(0.34,1.56,0.64,1),
+    filter 0.35s ease,
+    bottom 0.3s ease,
+    max-height 0.3s ease !important;
+  pointer-events:auto !important;
 }
-#cmd-response.ui-awake,
-#cmd-response:hover,
-#cmd-response:focus-within,
-#cmd-response.expanded{opacity:0.96 !important;}
+#cmd-response.expanded,#cmd-response.ui-awake{
+  opacity:1 !important;
+  transform:translateX(-50%) scale(1) !important;
+  filter:none !important;
+  display:flex !important;
+  box-shadow:0 -8px 48px rgba(0,0,0,0.5), 0 0 24px rgba(0,200,255,0.1) !important;
+}
 
+/* ── KEYBOARD AWARENESS ── */
+body.keyboard-open #bottombar{
+  bottom:6px !important;
+  border-radius:14px 14px 0 0 !important;
+}
+body.keyboard-open #cmd-response{
+  max-height:30vh !important;
+  bottom:66px !important;
+}
+body.keyboard-open #astranova-wrapper{
+  opacity:0.1 !important;
+  transform:scale(0.3) translateY(-40px) !important;
+  pointer-events:none !important;
+}
+
+/* ── ASTRANOVA — sits above chat, connected by speech trail ── */
+#astranova-wrapper{
+  z-index:240 !important;
+  transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1) !important;
+}
+#astranova-speech{
+  position:relative !important;
+}
+/* Speech bubble tail pointing down to chat */
+#astranova-speech.on::after{
+  content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;
+  border-top:8px solid rgba(0,200,255,0.30);
+}
+
+/* ── Perf & Compass HUDs ── */
 #perf-hud,#compass-hud{
-  width:124px !important;
-  height:124px !important;
+  width:124px !important;height:124px !important;z-index:235 !important;
+  /* Space-depth for gadgets too */
+  opacity:0.12 !important;
+  transform:scale(0.4) !important;
+  filter:blur(1px) saturate(0.5) !important;
+  transition:
+    opacity 0.5s cubic-bezier(0.34,1.56,0.64,1),
+    transform 0.5s cubic-bezier(0.34,1.56,0.64,1),
+    filter 0.4s ease !important;
 }
-#perf-hud,#compass-hud,#bottombar,#cmd-response{z-index:235 !important;}
+#perf-hud.visible,#perf-hud:hover,#compass-hud:hover,
+#perf-hud.expanded,#compass-hud.expanded{
+  opacity:0.9 !important;
+  transform:scale(1) !important;
+  filter:none !important;
+}
 
+/* ── Mobile breakpoints ── */
 @media (max-width: 900px){
   #force-update-btn.version-unified{max-width:min(70vw,200px) !important;}
 }
@@ -1737,6 +1770,15 @@ body.micro-ribbon #balance-display{padding:0 10px !important;}
   #force-update-btn.version-unified .update-icon{display:none !important;}
   #force-update-btn.version-unified .version-kicker{min-width:32px !important;}
   #force-update-btn.version-unified .version-value{font-size:10px !important;}
+  /* Smaller space-depth on mobile — still visible but more compact */
+  #force-update-btn,#balance-display,#video-post-btn,#user-badge,#pause-ui-btn{
+    transform:scale(0.28) !important;
+    opacity:0.12 !important;
+  }
+  #bottombar{
+    transform:translateX(-50%) scale(0.5) !important;
+    opacity:0.18 !important;
+  }
 }
 
 </style>
@@ -7020,12 +7062,22 @@ var _chatHeight = Math.round(window.innerHeight * 0.33); // start at 1/3
 
 function expandConversation(){
   var resp = document.getElementById('cmd-response');
+  if(!resp) return;
   resp.className = 'expanded';
   resp.style.display = 'flex';
-  _chatHeight = Math.floor(window.innerHeight * (2/3));
+  /* Limit chat height — 50% on mobile, 60% on desktop */
+  var vph = (window.visualViewport ? window.visualViewport.height : window.innerHeight) || 700;
+  var isMobile = (window.innerWidth || 400) < 768;
+  _chatHeight = Math.floor(vph * (isMobile ? 0.45 : 0.55));
   resp.style.maxHeight = _chatHeight + 'px';
   var conv = document.getElementById('ai-conv');
-  if(conv){ conv.style.maxHeight = (_chatHeight - 20) + 'px'; }
+  if(conv){ conv.style.maxHeight = (_chatHeight - 40) + 'px'; }
+  /* Wake the chat and bottombar */
+  if(typeof wakeControl === 'function'){
+    wakeControl(resp, 30000);
+    var bar = document.getElementById('bottombar');
+    if(bar) wakeControl(bar, 30000);
+  }
 }
 
 /* Drag to resize chat panel — swipe fast to collapse */
@@ -10330,10 +10382,46 @@ AI provider research may rescan configured provider manifests once per day while
     }
   };
 
-  /* ═══ GEMINI AI ENGINE — WORKING BROWSER-SIDE AI ═══ */
+  /* ═══ AI ENGINE — CLAUDE (TOP PRIORITY) + GEMINI + GROQ + OPENROUTER ═══ */
+  var CLAUDE_KEY_STORE = 'astranov.claude.key.v1';
   var GEMINI_KEY_STORE = 'astranov.gemini.key.v1';
   var GROQ_KEY_STORE = 'astranov.groq.key.v1';
   var OPENROUTER_KEY_STORE = 'astranov.openrouter.key.v1';
+
+  function getClaudeKey(){ try{ return String(localStorage.getItem(CLAUDE_KEY_STORE)||'').trim(); }catch(e){ return ''; } }
+  function setClaudeKey(k){ try{ localStorage.setItem(CLAUDE_KEY_STORE, String(k||'').trim()); }catch(e){} }
+
+  /* ── Call Claude Sonnet directly (CORS enabled with special header) ── */
+  async function callClaudeDirect(systemPrompt, userMessage){
+    var key = getClaudeKey();
+    if(!key) throw new Error('No Claude API key configured');
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 512,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+    if(!res.ok){
+      var errBody = ''; try{ errBody = await res.text(); }catch(e){}
+      if(res.status === 429) throw new Error('Claude rate limit — try again shortly');
+      if(res.status === 401 || res.status === 403) throw new Error('Claude key invalid. Get one at console.anthropic.com');
+      throw new Error('Claude HTTP ' + res.status + ': ' + errBody.substring(0,120));
+    }
+    var data = await res.json();
+    var text = '';
+    try{ text = data.content.map(function(p){ return p.text||''; }).join(''); }catch(e){}
+    if(!text) throw new Error('Claude returned empty response');
+    return { text: text, provider: 'Claude Sonnet 4', cloud: true };
+  }
 
   function getGeminiKey(){ try{ return String(localStorage.getItem(GEMINI_KEY_STORE)||'').trim(); }catch(e){ return ''; } }
   function setGeminiKey(k){ try{ localStorage.setItem(GEMINI_KEY_STORE, String(k||'').trim()); }catch(e){} }
@@ -10444,6 +10532,10 @@ AI provider research may rescan configured provider manifests once per day while
   /* ── AI CYCLE ENGINE — tries all providers in order ── */
   async function runAstranovaAiCycle(systemPrompt, userMessage, payload){
     var errors = [];
+    /* 0. CLAUDE — TOP PRIORITY (direct browser CORS) */
+    if(getClaudeKey()){
+      try{ return await callClaudeDirect(systemPrompt, userMessage); }catch(e){ errors.push('Claude: ' + e.message); }
+    }
     /* 1. Server routes (fastest if available) */
     try{ return await callAstranovServer(systemPrompt, userMessage, payload); }catch(e){ errors.push('Server: ' + e.message); }
     /* 2. Gemini (free, browser-direct) */
@@ -10471,6 +10563,16 @@ AI provider research may rescan configured provider manifests once per day while
     var q = String(val || '').trim();
     var ql = q.toLowerCase();
 
+    /* ── Set Claude key (TOP PRIORITY) ── */
+    var ck = q.match(/^(?:claude key|set claude key|anthropic key|set anthropic key)\s+(.+)/i);
+    if(ck){
+      var key = ck[1].trim();
+      if(key.length < 10){ addAiMessage('ai-msg-reply','Astranov','That key looks too short. Get one at <a href="https://console.anthropic.com" target="_blank" style="color:#00c8ff">console.anthropic.com</a>'); return true; }
+      setClaudeKey(key);
+      AI_BACKEND_STATUS = { provider:'Claude Sonnet 4', cloud:true, endpoint:'anthropic-direct', lastError:'' };
+      addAiMessage('ai-msg-reply','Astranov','✅ Claude API key saved! I am now running on Claude Sonnet — top-tier AI brain active. Ask me anything, comrade.');
+      return true;
+    }
     /* ── Set Gemini key ── */
     var gm = q.match(/^(?:ai key|gemini key|set gemini key|set ai key)\s+(.+)/i);
     if(gm){
@@ -10478,14 +10580,14 @@ AI provider research may rescan configured provider manifests once per day while
       if(key.length < 10){ addAiMessage('ai-msg-reply','Astranov','That key looks too short. Get a free Gemini key at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>'); return true; }
       setGeminiKey(key);
       AI_BACKEND_STATUS = { provider:'gemini', cloud:true, endpoint:'gemini-direct', lastError:'' };
-      addAiMessage('ai-msg-reply','Astranov','✅ Gemini API key saved! I now have a real AI brain. Ask me anything.');
+      addAiMessage('ai-msg-reply','Astranov','✅ Gemini API key saved! AI brain active. Ask me anything.');
       return true;
     }
     /* ── Set Groq key ── */
     var grq = q.match(/^(?:groq key|set groq key)\s+(.+)/i);
     if(grq){
       setGroqKey(grq[1].trim());
-      addAiMessage('ai-msg-reply','Astranov','✅ Groq API key saved! Llama-3.3-70B is now available as a fallback brain.');
+      addAiMessage('ai-msg-reply','Astranov','✅ Groq API key saved! Llama-3.3-70B available as fallback.');
       return true;
     }
     /* ── Set OpenRouter key ── */
@@ -10496,38 +10598,40 @@ AI provider research may rescan configured provider manifests once per day while
       return true;
     }
     /* ── Remove keys ── */
-    if(/^(clear ai key|remove ai key|clear gemini key|forget key)/i.test(ql)){
-      setGeminiKey(''); setGroqKey(''); setOpenRouterKey('');
+    if(/^(clear ai key|remove ai key|clear gemini key|clear claude key|forget key)/i.test(ql)){
+      setClaudeKey(''); setGeminiKey(''); setGroqKey(''); setOpenRouterKey('');
       AI_BACKEND_STATUS = { provider:'local', cloud:false, endpoint:'', lastError:'' };
-      addAiMessage('ai-msg-reply','Astranov','All AI keys cleared. I will use the local brain until a new key is set.');
+      addAiMessage('ai-msg-reply','Astranov','All AI keys cleared. Local brain active until a new key is set.');
       return true;
     }
     /* ── AI status ── */
     if(/^(ai status|brain status|cloud ai status|which ai|which brain)/.test(ql)){
       var keys = [];
+      if(getClaudeKey()) keys.push('Claude ⭐ (top priority)');
       if(getGeminiKey()) keys.push('Gemini ✅');
       if(getGroqKey()) keys.push('Groq ✅');
       if(getOpenRouterKey()) keys.push('OpenRouter ✅');
       var mode = AI_BACKEND_STATUS.cloud
-        ? ('Cloud AI active via <strong>' + (AI_BACKEND_STATUS.provider||'unknown').toUpperCase() + '</strong>')
+        ? ('Cloud AI active via <strong>' + (AI_BACKEND_STATUS.provider||'unknown') + '</strong>')
         : 'Local fallback brain active';
-      var keyStatus = keys.length ? 'Configured keys: ' + keys.join(', ') : 'No AI keys configured — type <strong>ai key YOUR_KEY</strong> to activate';
+      var keyStatus = keys.length ? 'Configured: ' + keys.join(', ') : 'No AI keys — type <strong>claude key YOUR_KEY</strong> to activate';
       addAiMessage('ai-msg-reply','Astranov', mode + '.<br>' + keyStatus +
         (AI_BACKEND_STATUS.lastError ? '<br>Last issue: ' + AI_BACKEND_STATUS.lastError : '') +
-        '<br><br>💡 Get a free Gemini key at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>');
+        '<br><br>⭐ Best: <a href="https://console.anthropic.com" target="_blank" style="color:#00c8ff">Claude key</a> · Free: <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">Gemini key</a>');
       return true;
     }
     /* ── AI help ── */
     if(/^(ai help|ai setup|setup ai|how to ai|ai commands)/.test(ql)){
       addAiMessage('ai-msg-reply','Astranov',
         '🧠 <strong>AI Setup Commands:</strong><br><br>' +
-        '• <strong>ai key YOUR_KEY</strong> — Set Gemini API key (free at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>)<br>' +
+        '⭐ <strong>claude key YOUR_KEY</strong> — Set Claude API key (best AI, <a href="https://console.anthropic.com" target="_blank" style="color:#00c8ff">console.anthropic.com</a>)<br>' +
+        '• <strong>ai key YOUR_KEY</strong> — Set Gemini key (free at <a href="https://ai.google.dev" target="_blank" style="color:#00c8ff">ai.google.dev</a>)<br>' +
         '• <strong>groq key YOUR_KEY</strong> — Set Groq key (free at <a href="https://console.groq.com" target="_blank" style="color:#00c8ff">console.groq.com</a>)<br>' +
         '• <strong>openrouter key YOUR_KEY</strong> — Set OpenRouter key<br>' +
         '• <strong>ai status</strong> — Check which AI is active<br>' +
         '• <strong>clear ai key</strong> — Remove all keys<br>' +
         '• <strong>fix ui</strong> — Repair layout<br><br>' +
-        '🚀 Gemini is recommended — free, fast, works directly in your browser!');
+        '🚀 <strong>Claude is #1 priority</strong> — smartest, best for orders. Gemini is free fallback.');
       return true;
     }
     /* ── Preference switching (legacy compat) ── */
@@ -10615,7 +10719,7 @@ AI provider research may rescan configured provider manifests once per day while
       /* Smart local fallback */
       aiText = localAstranovaResponse(userMessage);
       /* If no keys configured, append setup hint (only first time) */
-      var hasAnyKey = getGeminiKey() || getGroqKey() || getOpenRouterKey();
+      var hasAnyKey = getClaudeKey() || getGeminiKey() || getGroqKey() || getOpenRouterKey();
       if(!hasAnyKey && !window._aiSetupHintShown){
         window._aiSetupHintShown = true;
         aiText += '<br><br>💡 <em>Want smarter AI? Type <strong>ai help</strong> to learn how to connect a free AI brain in 30 seconds.</em>';
@@ -11116,7 +11220,10 @@ AI provider research may rescan configured provider manifests once per day while
       version.style.top = topY + 'px';
       version.style.right = 'auto';
       version.style.bottom = 'auto';
-      version.style.transform = 'translateX(-50%) scale(' + (version.classList.contains('ui-awake') ? '1' : '0.82') + ')';
+      /* Let CSS handle the scale via space-depth. Only set translateX for centering. */
+      if(!version.classList.contains('ui-awake') && !version.classList.contains('moveable')){
+        version.style.transform = '';  /* CSS takes over */
+      }
     }
     if(w >= 980){
       var right = 12;
@@ -11160,25 +11267,13 @@ AI provider research may rescan configured provider manifests once per day while
     }
     var bar = byId('bottombar');
     var cmd = byId('cmd-response');
+    /* Let CSS handle transforms/positioning for bottombar and cmd-response.
+       Only set width. The space-depth CSS handles scale, opacity, blur, position. */
     if(bar && bar.dataset.userPlaced !== '1'){
-      bar.style.left = '50%';
-      bar.style.bottom = '14px';
-      bar.style.top = 'auto';
-      bar.style.right = 'auto';
-      bar.style.transform = 'translateX(-50%)';
       bar.style.width = 'min(92vw,760px)';
     }
-    var maxChat = Math.floor((window.innerHeight || 800) * (2/3));
     if(cmd){
-      cmd.style.maxHeight = maxChat + 'px';
-      if(cmd.dataset.userPlaced !== '1'){
-        cmd.style.left = '50%';
-        cmd.style.bottom = '82px';
-        cmd.style.top = 'auto';
-        cmd.style.right = 'auto';
-        cmd.style.transform = 'translateX(-50%)';
-        cmd.style.width = 'min(92vw,760px)';
-      }
+      cmd.style.width = 'min(92vw,760px)';
     }
     if(typeof window.applyFloatingDefaults === 'function') {
       try { window.applyFloatingDefaults(); } catch(e){}
@@ -11205,9 +11300,9 @@ AI provider research may rescan configured provider manifests once per day while
 
   function initV6(){
     var meta = document.querySelector('meta[name="astranov-version"]');
-    if(meta) meta.setAttribute('content', 'V6');
-    if(typeof window.APP_VERSION !== 'undefined') window.APP_VERSION = 'V6';
-    if(typeof window.APP_LATEST_VERSION === 'undefined' || !window.APP_LATEST_VERSION) window.APP_LATEST_VERSION = 'V6';
+    if(meta) meta.setAttribute('content', 'V7');
+    if(typeof window.APP_VERSION !== 'undefined') window.APP_VERSION = 'V7';
+    if(typeof window.APP_LATEST_VERSION === 'undefined' || !window.APP_LATEST_VERSION) window.APP_LATEST_VERSION = 'V7';
     var shell = byId('topbar');
     if(shell) shell.classList.add('v6-topbar-shell');
     ['force-update-btn','balance-display','video-post-btn','user-badge','pause-ui-btn','bottombar','cmd-response'].forEach(function(id){ bindWake(byId(id)); });
@@ -11232,9 +11327,158 @@ AI provider research may rescan configured provider manifests once per day while
     window.addEventListener('load', function(){ setTimeout(arrangeGhostDock, 160); });
     setTimeout(arrangeGhostDock, 120);
     setTimeout(function(){ if(typeof window.setVersionRibbon === 'function') window.setVersionRibbon(window.APP_VERSION, window.APP_LATEST_VERSION || window.APP_VERSION); }, 200);
+
+    /* ═══ KEYBOARD DETECTION — visualViewport API ═══ */
+    /* Detects mobile keyboard and adds body.keyboard-open class */
+    if(window.visualViewport){
+      var initialHeight = window.visualViewport.height;
+      var keyboardThreshold = 150; /* px difference to detect keyboard */
+      window.visualViewport.addEventListener('resize', function(){
+        var currentHeight = window.visualViewport.height;
+        var diff = initialHeight - currentHeight;
+        var isKeyboard = diff > keyboardThreshold;
+        document.body.classList.toggle('keyboard-open', isKeyboard);
+        /* Adjust bottombar position to stay above keyboard */
+        var bar = byId('bottombar');
+        var cmd = byId('cmd-response');
+        if(isKeyboard && bar){
+          bar.style.bottom = Math.max(6, diff - 10) + 'px';
+          if(cmd && cmd.classList.contains('expanded')){
+            cmd.style.bottom = (Math.max(6, diff - 10) + 58) + 'px';
+            cmd.style.maxHeight = Math.max(100, currentHeight - 80) + 'px';
+          }
+        } else {
+          if(bar) bar.style.bottom = '';
+          if(cmd){ cmd.style.bottom = ''; cmd.style.maxHeight = ''; }
+        }
+      });
+      /* Also update initialHeight on orientation change */
+      window.addEventListener('orientationchange', function(){
+        setTimeout(function(){ initialHeight = window.visualViewport.height; }, 300);
+      });
+    }
+    /* Fallback: detect keyboard via focus/blur on inputs */
+    document.addEventListener('focusin', function(ev){
+      if(ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')){
+        /* Wake the bottombar when input is focused */
+        var bar = byId('bottombar');
+        var cmd = byId('cmd-response');
+        if(bar) wakeControl(bar, 30000);
+        if(cmd && cmd.classList.contains('expanded')) wakeControl(cmd, 30000);
+      }
+    });
+    document.addEventListener('focusout', function(ev){
+      if(ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')){
+        setTimeout(function(){ document.body.classList.remove('keyboard-open'); }, 300);
+      }
+    });
   }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initV6, {once:true});
-  else initV6();
+  /* ═══ 3D DEPTH SYSTEM — buttons recede into space, zoom forward on tap ═══ */
+  function initDepthUI(){
+    var depthTargets = [
+      'force-update-btn','balance-display','video-post-btn',
+      'user-badge','pause-ui-btn','astranova-wrapper',
+      'perf-hud','compass-hud','globe-btn','locate-btn','drone-btn'
+    ];
+    depthTargets.forEach(function(id){
+      var el = document.getElementById(id);
+      if(el && !el.classList.contains('depth-recede')){
+        el.classList.add('depth-recede');
+      }
+    });
+    /* Bottombar gets depth but starts forward when focused */
+    var bb = document.getElementById('bottombar');
+    if(bb && !bb.classList.contains('depth-recede')){
+      bb.classList.add('depth-recede');
+    }
+    /* Touch: bring forward on tap, recede after 6s inactivity */
+    document.addEventListener('pointerdown', function(ev){
+      var target = ev.target && ev.target.closest ? ev.target.closest('.depth-recede') : null;
+      if(target){
+        /* Bring this control forward */
+        target.classList.add('depth-forward');
+        clearTimeout(target._depthTimer);
+        target._depthTimer = setTimeout(function(){
+          /* Don't recede if it has focus (chat input etc) */
+          if(!target.contains(document.activeElement)){
+            target.classList.remove('depth-forward');
+          }
+        }, 6000);
+      } else {
+        /* Tapped empty space — recede everything except focused */
+        document.querySelectorAll('.depth-forward').forEach(function(el){
+          if(!el.contains(document.activeElement)){
+            el.classList.remove('depth-forward');
+          }
+        });
+      }
+    }, true);
+    /* Keep chat forward while input is focused */
+    var cmdInput = document.getElementById('cmd-input');
+    if(cmdInput){
+      cmdInput.addEventListener('focus', function(){
+        var bar = document.getElementById('bottombar');
+        var resp = document.getElementById('cmd-response');
+        if(bar) bar.classList.add('depth-forward');
+        if(resp) resp.classList.add('depth-forward');
+      });
+      cmdInput.addEventListener('blur', function(){
+        setTimeout(function(){
+          var bar = document.getElementById('bottombar');
+          var resp = document.getElementById('cmd-response');
+          if(bar && !bar.contains(document.activeElement)) bar.classList.remove('depth-forward');
+          if(resp && !resp.contains(document.activeElement)) resp.classList.remove('depth-forward');
+        }, 300);
+      });
+    }
+  }
+
+  /* ═══ MOBILE KEYBOARD DETECTION — recede everything when keyboard opens ═══ */
+  function initKeyboardDetection(){
+    if(!window.visualViewport) return;
+    var initialHeight = window.visualViewport.height;
+    var KEYBOARD_THRESHOLD = 150; /* px difference to count as keyboard open */
+    window.visualViewport.addEventListener('resize', function(){
+      var currentHeight = window.visualViewport.height;
+      var diff = initialHeight - currentHeight;
+      if(diff > KEYBOARD_THRESHOLD){
+        /* Keyboard is open */
+        document.body.classList.add('keyboard-open');
+        /* Move bottombar above keyboard */
+        var bb = document.getElementById('bottombar');
+        if(bb){
+          bb.style.bottom = (initialHeight - currentHeight + 8) + 'px';
+        }
+      } else {
+        /* Keyboard closed */
+        document.body.classList.remove('keyboard-open');
+        var bb = document.getElementById('bottombar');
+        if(bb){
+          bb.style.bottom = '';
+        }
+      }
+    });
+    /* Also update on scroll (iOS quirk) */
+    window.visualViewport.addEventListener('scroll', function(){
+      if(document.body.classList.contains('keyboard-open')){
+        var bb = document.getElementById('bottombar');
+        if(bb){
+          bb.style.bottom = (initialHeight - window.visualViewport.height + window.visualViewport.offsetTop + 8) + 'px';
+        }
+      }
+    });
+  }
+
+  /* Hook into initV6 */
+  var _origInitV6 = initV6;
+  function initV6WithDepth(){
+    _origInitV6();
+    setTimeout(initDepthUI, 200);
+    setTimeout(initKeyboardDetection, 300);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initV6WithDepth, {once:true});
+  else initV6WithDepth();
 })();
 </script>
 
