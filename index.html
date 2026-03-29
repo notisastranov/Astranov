@@ -20,75 +20,39 @@ body.lt2{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 body.lt3{--la:#00c8ff;--la2:rgba(0,200,255,0.12);--lb:rgba(0,200,255,0.2);}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;user-select:none;}
 
-/* ═══ 3D DEPTH PERSPECTIVE SYSTEM ═══ */
-/* All floating controls recede into deep space by default.
-   On hover/focus/tap they zoom forward into the user's hands. */
-#stage{perspective:1200px;perspective-origin:50% 50%;transform-style:preserve-3d;}
+/* === 3D DEPTH SYSTEM === */
+/* Controls start slightly pulled back - visible but understated.
+   On hover/focus/tap they come fully forward and crisp. */
 .depth-recede{
-  transform:translateZ(-220px) scale(0.62);
-  opacity:0.32;
-  filter:blur(0.5px);
-  transition:transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease, filter 0.4s ease;
-  transform-style:preserve-3d;
+  transform:scale(0.88);
+  opacity:0.55;
+  transition:transform 0.35s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
   will-change:transform,opacity;
   pointer-events:auto;
 }
 .depth-recede:hover,.depth-recede:focus-within,.depth-recede.depth-forward{
-  transform:translateZ(0) scale(1);
+  transform:scale(1);
   opacity:1;
-  filter:blur(0);
   z-index:210;
 }
-.depth-recede:active{
-  transform:translateZ(10px) scale(1.03);
-  opacity:1;
-  filter:blur(0);
+.depth-recede:active{transform:scale(1.04);opacity:1;}
+#bottombar.depth-recede:focus-within,#bottombar.depth-forward,#cmd-response.depth-forward{
+  transform:scale(1) !important;opacity:1 !important;
 }
-/* The chat bar and response — always forward when focused */
-#bottombar.depth-recede:focus-within,
-#bottombar.depth-forward,
-#cmd-response.depth-forward{
-  transform:translateZ(0) scale(1) !important;
-  opacity:1 !important;
-  filter:none !important;
-}
-/* Astranova wrapper — recedes less, always semi-present */
-#astranova-wrapper.depth-recede{
-  transform:translateZ(-120px) scale(0.7);
-  opacity:0.45;
-}
-#astranova-wrapper.depth-recede:hover,
-#astranova-wrapper.depth-forward{
-  transform:translateZ(0) scale(1);
-  opacity:1;
-}
-/* Mobile: touch devices get slightly less recession so buttons are findable */
+#astranova-wrapper.depth-recede{transform:scale(0.92);opacity:0.65;}
+#astranova-wrapper.depth-recede:hover,#astranova-wrapper.depth-forward{transform:scale(1);opacity:1;}
 @media (hover:none){
-  .depth-recede{
-    transform:translateZ(-140px) scale(0.68);
-    opacity:0.38;
-    filter:blur(0.3px);
-  }
+  .depth-recede{transform:scale(0.9);opacity:0.6;}
 }
-/* Keyboard-open state: recede controls even further to clear space */
-body.keyboard-open .depth-recede:not(.depth-forward){
-  transform:translateZ(-400px) scale(0.3) !important;
-  opacity:0.15 !important;
-  pointer-events:none;
+body.keyboard-open .depth-recede:not(.depth-forward):not(#bottombar){
+  transform:scale(0.5) !important;opacity:0.12 !important;pointer-events:none;
 }
 body.keyboard-open #bottombar.depth-recede{
-  transform:translateZ(0) scale(1) !important;
-  opacity:1 !important;
-  pointer-events:auto !important;
-  filter:none !important;
+  transform:scale(1) !important;opacity:1 !important;pointer-events:auto !important;
 }
-body.keyboard-open #cmd-response{
-  max-height:35vh !important;
-}
+body.keyboard-open #cmd-response{max-height:35vh !important;}
 body.keyboard-open #astranova-wrapper{
-  transform:translateZ(-500px) scale(0.2) !important;
-  opacity:0.1 !important;
-  pointer-events:none !important;
+  transform:scale(0.3) !important;opacity:0.1 !important;pointer-events:none !important;
 }
 
 /* TOP BAR - always visible, locked */
@@ -255,7 +219,7 @@ body.narrow-ui .video-grid{grid-template-columns:1fr;}
 #sbi{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:12px;outline:none;}
 #sbi::placeholder{color:var(--text-dim);}
 
-/* ASTRANOVA — FLYING ELF AI ASSISTANT */
+/* ASTRANOV — WINGED NORDIC WARRIOR AI */
 #astranova-wrapper{
   position:absolute;bottom:70px;right:60px;z-index:70;
   display:flex;flex-direction:column;align-items:center;gap:0;
@@ -1727,7 +1691,7 @@ body.keyboard-open #astranova-wrapper{
   pointer-events:none !important;
 }
 
-/* ── ASTRANOVA — sits above chat, connected by speech trail ── */
+/* ── ASTRANOV — sits above chat, connected by speech trail ── */
 #astranova-wrapper{
   z-index:240 !important;
   transition:all 0.6s cubic-bezier(0.34,1.56,0.64,1) !important;
@@ -2071,7 +2035,7 @@ body.keyboard-open #astranova-wrapper{
   <!-- ASTRANOV — WINGED NORDIC WARRIOR AI -->
   <div id="astranova-wrapper">
     <div id="astranova-speech"></div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 160 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov winged Nordic warrior AI">
+    <svg id="astranova-svg" onclick="openAstranov()" viewBox="0 0 160 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov — winged Nordic warrior AI">
       <defs>
         <linearGradient id="warriorMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f4fbff"/><stop offset="35%" stop-color="#88b8de"/><stop offset="100%" stop-color="#17324b"/></linearGradient>
         <linearGradient id="warriorBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2c5f8e"/><stop offset="45%" stop-color="#12304f"/><stop offset="100%" stop-color="#071322"/></linearGradient>
@@ -2145,7 +2109,7 @@ body.keyboard-open #astranova-wrapper{
 </div>
 
 <!-- ASTRANOV TAKEOVER MODE -->
-<!-- Astranova modal removed — AI uses bottom command bar -->
+<!-- Astranov modal removed — AI uses bottom command bar -->
 
 <!-- GAME UI -->
 <div id="game-ui">
@@ -2835,8 +2799,8 @@ function setPausedState(paused){
   if(lbl) lbl.textContent = APP_PAUSED ? 'PAUSE' : 'LIVE';
   pauseUiMedia(APP_PAUSED);
   try{ localStorage.setItem(APP_PAUSE_KEY, APP_PAUSED ? '1' : '0'); }catch(e){}
-  if(window.showAstranovaStatusBubble){
-    showAstranovaStatusBubble(APP_PAUSED ? 'UI paused. Tap again to resume motion.' : 'UI resumed.', 1200);
+  if(window.showAstranovStatusBubble){
+    showAstranovStatusBubble(APP_PAUSED ? 'UI paused. Tap again to resume motion.' : 'UI resumed.', 1200);
   }
   aiSuperviseLayout();
 }
@@ -4218,7 +4182,7 @@ function verifyDeliveryDistance(distKm, fee, item, qty, callback){
   // Extreme distance — ask for confirmation
   var msg = '⚠️ This delivery is ' + distKm.toFixed(1) + 'km — that\'s beyond normal range (' + MAX_DELIVERY_KM + 'km). Delivery fee would be €' + fee.toFixed(2) + '. Are you sure? Say "yes" or "confirm" to proceed.';
   addAiMessage('ai-msg-reply', 'Astranov', msg);
-  speakAstranova('This delivery is ' + distKm.toFixed(1) + ' kilometers, which is very far. The fee would be ' + fee.toFixed(2) + ' euros. Please confirm if you want to proceed.');
+  speakAstranov('This delivery is ' + distKm.toFixed(1) + ' kilometers, which is very far. The fee would be ' + fee.toFixed(2) + ' euros. Please confirm if you want to proceed.');
   // Store pending confirmation
   window._pendingDistanceOrder = { item:item, qty:qty, callback:callback };
 }
@@ -4660,12 +4624,12 @@ function resetDemoData(){
 /* ── AI-DRIVEN ORDERING (voice-first) ── */
 /*
   User says: "What's the cheapest beer nearby?"
-  Astranova searches → finds Mythos €2.50 at Mini Market
+  Astranov searches → finds Mythos €2.50 at Mini Market
   User says: "OK buy it" or "Order that"
-  Astranova executes purchase → assigns driver → narrates everything
-  Map pans to shop → Astranova bounces/glows
+  Astranov executes purchase → assigns driver → narrates everything
+  Map pans to shop → Astranov bounces/glows
 */
-var AI_LAST_SUGGESTION = null; // stores the item Astranova just suggested
+var AI_LAST_SUGGESTION = null; // stores the item Astranov just suggested
 
 function aiExecuteOrder(item, qty){
   qty = qty || 1;
@@ -4679,7 +4643,7 @@ function aiExecuteOrder(item, qty){
   var balance = getWalletBalance();
   if(balance < price){
     addAiMessage('ai-msg-reply','Astranov','Your balance is \u20AC' + balance.toFixed(2) + ' but this order costs \u20AC' + price.toFixed(2) + '. Let me open your wallet so you can top up.');
-    speakAstranova('Your balance is too low. Opening Astranov economics for a wallet deposit.');
+    speakAstranov('Your balance is too low. Opening Astranov economics for a wallet deposit.');
     setTimeout(openPayments, 800);
     return;
   }
@@ -4698,13 +4662,13 @@ function aiExecuteOrder(item, qty){
 }
 
 function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
-  // Animate Astranova
-  bounceAstranova();
+  // Animate Astranov
+  bounceAstranov();
 
   addAiMessage('ai-msg-reply','Astranov','Ordering ' + qty + 'x ' + item.name + ' from ' + shopName + ' for €' + price.toFixed(2) + '… Let me process this.');
-  speakAstranova('Attention comrade! Ordering ' + qty + ' ' + item.name + ' from ' + shopName + ' for ' + price.toFixed(2) + ' euros. Processing now, da.');
+  speakAstranov('Attention comrade! Ordering ' + qty + ' ' + item.name + ' from ' + shopName + ' for ' + price.toFixed(2) + ' euros. Processing now, da.');
 
-  // Pan map to shop + fly Astranova there
+  // Pan map to shop + fly Astranov there
   if(item._shopLat && LM && CL === 1){
     LM.flyTo([item._shopLat, item._shopLng], 16);
     addAiMessage('system-msg','System','📍 Showing ' + shopName + ' on map');
@@ -4713,8 +4677,8 @@ function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
       try{
         var shopPoint = LM.latLngToContainerPoint([item._shopLat, item._shopLng]);
         var stageRect = document.getElementById('stage').getBoundingClientRect();
-        flyAstranovaTo(stageRect.left + shopPoint.x, stageRect.top + shopPoint.y);
-        setTimeout(flyAstranovaHome, 3000);
+        flyAstranovTo(stageRect.left + shopPoint.x, stageRect.top + shopPoint.y);
+        setTimeout(flyAstranovHome, 3000);
       }catch(e){}
     }, 1500);
   }
@@ -4728,14 +4692,14 @@ function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
     });
     if(!tx.ok){
       addAiMessage('ai-msg-reply','Astranov','⚠️ I could not finalize that order safely. Please check your balance and try again.');
-      speakAstranova('I could not finalize that order safely. Please check your balance and try again.');
+      speakAstranov('I could not finalize that order safely. Please check your balance and try again.');
       return;
     }
     var newBal = tx.newBalance;
 
-    bounceAstranova();
+    bounceAstranov();
     addAiMessage('ai-msg-reply','Astranov','✅ Da, payment confirmed comrade! €' + price.toFixed(2) + ' deducted. 3% owner commission €' + tx.commission.toFixed(2) + ' credited instantly. New balance: €' + newBal.toFixed(2) + '. Mobilizing nearest comrade driver…');
-    speakAstranova('Da, payment confirmed comrade. Three percent owner commission has been credited instantly. Now mobilizing nearest delivery operative.');
+    speakAstranov('Da, payment confirmed comrade. Three percent owner commission has been credited instantly. Now mobilizing nearest delivery operative.');
 
     // Calculate delivery
     var dist = haversineGlobal(LOC.lat, LOC.lng, item._shopLat || LOC.lat, item._shopLng || LOC.lng);
@@ -4743,11 +4707,11 @@ function executeConfirmedOrder(item, qty, price, totalVol, shopName, dist, fee){
 
     // Route to driver
     setTimeout(function(){
-      bounceAstranova();
+      bounceAstranov();
       var vehicleIcon = totalVol > 6 ? '🚗' : '🛵';
       var eta = Math.round(dist * 3.5 + 8);
       addAiMessage('ai-msg-reply','Astranov','🚀 Comrade driver dispatched! ' + vehicleIcon + ' ETA to supply point: ~' + Math.round(dist * 2 + 3) + ' min. Delivery fee: €' + fee.toFixed(2) + '. Total ETA to your position comrade: ~' + eta + ' min.');
-      speakAstranova('Comrade driver dispatched! Estimated arrival in ' + eta + ' minutes. Delivery fee is ' + fee.toFixed(2) + ' euros. The supply chain moves, da!');
+      speakAstranov('Comrade driver dispatched! Estimated arrival in ' + eta + ' minutes. Delivery fee is ' + fee.toFixed(2) + ' euros. The supply chain moves, da!');
 
       if(DEMO_MODE){
         // Simulate the full delivery flow
@@ -4783,9 +4747,9 @@ function simulateDemoDelivery(item, shopName, eta, fee){
 
   // Step 1: Shop accepts (3s)
   setTimeout(function(){
-    bounceAstranova();
+    bounceAstranov();
     addAiMessage('ai-msg-reply','Astranov','🏪 ' + shopName + ' accepted the order! Preparing now…');
-    speakAstranova('Da, comrade. ' + shopName + ' has accepted the order. Kitchen operations are underway.');
+    speakAstranov('Da, comrade. ' + shopName + ' has accepted the order. Kitchen operations are underway.');
     // Open shop popup on map
     MM.forEach(function(m){
       try{
@@ -4810,25 +4774,25 @@ function simulateDemoDelivery(item, shopName, eta, fee){
 
   // Step 3: Comrade driver arrived at shop (13s)
   setTimeout(function(){
-    bounceAstranova();
+    bounceAstranov();
     addAiMessage('ai-msg-reply','Astranov','📍 Comrade driver arrived at ' + shopName + '!');
-    speakAstranova('Comrade driver has arrived at the shop. Standing by for pickup.');
+    speakAstranov('Comrade driver has arrived at the shop. Standing by for pickup.');
     driverMarker.setLatLng([shopLat, shopLng]);
     driverMarker.bindPopup('<b style="color:#ff9900;">🛵 At shop — waiting for pickup</b>').openPopup();
-    // Fly Astranova to shop
+    // Fly Astranov to shop
     try{
       var pt = LM.latLngToContainerPoint([shopLat, shopLng]);
       var rect = document.getElementById('stage').getBoundingClientRect();
-      flyAstranovaTo(rect.left + pt.x, rect.top + pt.y);
-      setTimeout(flyAstranovaHome, 2500);
+      flyAstranovTo(rect.left + pt.x, rect.top + pt.y);
+      setTimeout(flyAstranovHome, 2500);
     }catch(e){}
   }, 13000);
 
   // Step 4: Order ready, driver picks up (18s)
   setTimeout(function(){
-    bounceAstranova();
+    bounceAstranov();
     addAiMessage('ai-msg-reply','Astranov','✅ Order ready! Comrade driver securing package ' + item.name + ' now.');
-    speakAstranova('Excellent news comrade! Order is ready. Driver is securing the package now.');
+    speakAstranov('Excellent news comrade! Order is ready. Driver is securing the package now.');
     driverMarker.bindPopup('<b style="color:#00e87a;">📦 Order picked up!</b>').openPopup();
     if(routeLine){ LM.removeLayer(routeLine); routeLine = null; }
   }, 18000);
@@ -4836,7 +4800,7 @@ function simulateDemoDelivery(item, shopName, eta, fee){
   // Step 5: Driver heading to client (21s) — animate
   setTimeout(function(){
     addAiMessage('ai-msg-reply','Astranov','🛵 Driver is on the way to you! Follow the orange dot on the map.');
-    speakAstranova('Comrade driver is en route to your location. The delivery is in motion, da!');
+    speakAstranov('Comrade driver is en route to your location. The delivery is in motion, da!');
     routeLine = L.polyline([[shopLat,shopLng],[clientLat,clientLng]], {
       color:'#00c8ff', weight:3, opacity:0.7, dashArray:'8,6'
     }).addTo(LM);
@@ -4847,24 +4811,24 @@ function simulateDemoDelivery(item, shopName, eta, fee){
 
   // Step 6: Driver approaching (28s)
   setTimeout(function(){
-    bounceAstranova();
+    bounceAstranov();
     addAiMessage('ai-msg-reply','Astranov','📍 Driver is almost at your location!');
-    speakAstranova('Almost there comrade! Driver approaching your position.');
+    speakAstranov('Almost there comrade! Driver approaching your position.');
   }, 28000);
 
   // Step 7: Delivered (33s)
   setTimeout(function(){
-    bounceAstranova();
+    bounceAstranov();
     driverMarker.setLatLng([clientLat, clientLng]);
     driverMarker.bindPopup('<b style="color:#00e87a;">🎉 Delivered!</b>').openPopup();
     addAiMessage('ai-msg-reply','Astranov','🎉 Mission accomplished, comrade! ' + item.name + ' from ' + shopName + '. For the people! Delivery fee: €' + fee.toFixed(2));
-    speakAstranova('Mission accomplished, comrade! Your ' + item.name + ' has been delivered. Enjoy, and remember — Astranov always delivers for the people!');
-    // Fly Astranova to client position
+    speakAstranov('Mission accomplished, comrade! Your ' + item.name + ' has been delivered. Enjoy, and remember — Astranov always delivers for the people!');
+    // Fly Astranov to client position
     try{
       var pt = LM.latLngToContainerPoint([clientLat, clientLng]);
       var rect = document.getElementById('stage').getBoundingClientRect();
-      flyAstranovaTo(rect.left + pt.x, rect.top + pt.y);
-      setTimeout(flyAstranovaHome, 3000);
+      flyAstranovTo(rect.left + pt.x, rect.top + pt.y);
+      setTimeout(flyAstranovHome, 3000);
     }catch(e){}
     // Clean up after 8s
     setTimeout(function(){
@@ -4890,7 +4854,7 @@ function animateMarker(marker, fromLat, fromLng, toLat, toLng, duration){
   }, 50);
 }
 
-function bounceAstranova(){
+function bounceAstranov(){
   var svg = document.getElementById('astranova-svg');
   if(!svg) return;
   svg.classList.add('active');
@@ -4898,7 +4862,7 @@ function bounceAstranova(){
   spawnSparkles();
 }
 
-function setAstranovaSpeaking(on){
+function setAstranovSpeaking(on){
   var svg = document.getElementById('astranova-svg');
   if(!svg) return;
   if(on) svg.classList.add('speaking');
@@ -4922,7 +4886,7 @@ function spawnSparkles(){
   }
 }
 
-function flyAstranovaTo(targetX, targetY){
+function flyAstranovTo(targetX, targetY){
   var wrapper = document.getElementById('astranova-wrapper');
   if(!wrapper) return;
   wrapper.classList.add('flying');
@@ -4938,7 +4902,7 @@ function flyAstranovaTo(targetX, targetY){
   }, 1000);
 }
 
-function flyAstranovaHome(){
+function flyAstranovHome(){
   var wrapper = document.getElementById('astranova-wrapper');
   if(!wrapper) return;
   wrapper.classList.add('flying');
@@ -5426,20 +5390,20 @@ function requestStartupPermissions(triggeredByUser){
   ]).then(function(){ return STARTUP_PERMISSIONS; });
 }
 
-function showAstranovaStatusBubble(text, ms){
+function showAstranovStatusBubble(text, ms){
   var speech = document.getElementById('astranova-speech');
   if(!speech) return;
   speech.textContent = text;
   speech.classList.add('on');
-  clearTimeout(showAstranovaStatusBubble._timer);
-  showAstranovaStatusBubble._timer = setTimeout(function(){ speech.classList.remove('on'); }, ms || 2200);
+  clearTimeout(showAstranovStatusBubble._timer);
+  showAstranovStatusBubble._timer = setTimeout(function(){ speech.classList.remove('on'); }, ms || 2200);
 }
 
-function initAstranovaPresence(){
+function initAstranovPresence(){
   if(_astranovaPresenceTimer) clearInterval(_astranovaPresenceTimer);
   _astranovaPresenceTimer = setInterval(function(){
     if(CL === 2) return;
-    bounceAstranova();
+    bounceAstranov();
     if(Math.random() > 0.55){
       var lines = [
         'Command bridge online.',
@@ -5447,7 +5411,7 @@ function initAstranovaPresence(){
         'Astranov standing by for routing, posting, search, and control.',
         'Tap me to expand command control.'
       ];
-      showAstranovaStatusBubble(lines[Math.floor(Math.random()*lines.length)], 2100);
+      showAstranovStatusBubble(lines[Math.floor(Math.random()*lines.length)], 2100);
     }
   }, 12000);
 }
@@ -5523,9 +5487,9 @@ function initAstranovStartup(){
   try{ if(CL !== 0) goLayer(0); }catch(e){}
   setTimeout(function(){ try{ if(globeController) globeController.resetView(); }catch(e){} }, 420);
   renderContextButtons();
-  initAstranovaPresence();
-  bounceAstranova();
-  showAstranovaStatusBubble('Initializing command bridge…', 1800);
+  initAstranovPresence();
+  bounceAstranov();
+  showAstranovStatusBubble('Initializing command bridge…', 1800);
   requestStartupPermissions(false).then(function(perms){
     startAstranovGreeting(perms);
   });
@@ -5540,7 +5504,7 @@ function startAstranovGreeting(perms){
   resp.style.display = 'flex';
   resp.style.maxHeight = _chatHeight + 'px';
 
-  bounceAstranova();
+  bounceAstranov();
   renderContextButtons();
 
   var lang = (navigator.language || navigator.userLanguage || 'en').substring(0,2);
@@ -5566,7 +5530,7 @@ function startAstranovGreeting(perms){
   if(!perms.notifications && 'Notification' in window){
     addAiMessage('system-msg', 'System', '🔔 Notifications can be granted on a direct tap if you want proactive alerts.');
   }
-  setTimeout(function(){ speakAstranova(greeting); }, 700);
+  setTimeout(function(){ speakAstranov(greeting); }, 700);
 }
 
 /* ══════════════════════════════
@@ -6120,11 +6084,11 @@ const astranovaLines = [
   'Winged warrior standing by for route, search, and repair.'
 ];
 
-function openAstranova() {
+function openAstranov() {
   tryEnterAssistantFullscreen();
   requestStartupPermissions(true).then(function(){ revealRelevantControlsTemporarily(); renderContextButtons(); });
-  showAstranovaStatusBubble('Assistant control focus engaged.', 1800);
-  bounceAstranova();
+  showAstranovStatusBubble('Assistant control focus engaged.', 1800);
+  bounceAstranov();
   var input = document.getElementById('cmd-input');
   var bar = document.getElementById('bottombar');
   var resp = document.getElementById('cmd-response');
@@ -6149,7 +6113,7 @@ function openAstranova() {
   }
 }
 
-function closeAstranova() {
+function closeAstranov() {
   // Collapse conversation
   var resp = document.getElementById('cmd-response');
   resp.style.display = 'none';
@@ -6211,7 +6175,7 @@ async function astranovaSearch() {
     var safeName = (r.name||r.title||'').replace(/'/g,"\\'");
     var isShop = r.type === 'shop' || r.kind === 'shop_service';
     var menuCount = (r.menu && r.menu.length) ? ' · ' + r.menu.length + ' items' : '';
-    return `<div class="kr" onclick="${isShop ? 'closeAstranova();openShopDetail(\''+safeName+'\','+lat+','+lng+')' : 'astranovaSelect('+lat+','+lng+',\''+safeName+'\')'}">
+    return `<div class="kr" onclick="${isShop ? 'closeAstranov();openShopDetail(\''+safeName+'\','+lat+','+lng+')' : 'astranovaSelect('+lat+','+lng+',\''+safeName+'\')'}">
       <div class="kr-title">${isShop ? '🏪 ' : '📢 '}${r.name||r.title}</div>
       <div class="kr-sub">${r.category||r.kind||'Signal'}${menuCount}${r.price ? ' · '+r.price : ''}</div>
     </div>`;
@@ -6219,7 +6183,7 @@ async function astranovaSearch() {
 }
 
 function astranovaSelect(lat, lng, name) {
-  closeAstranova();
+  closeAstranov();
   goLayer(1);
   setTimeout(() => { if (LM) LM.flyTo([lat,lng],16); showResp('Navigating to: '+name); }, 500);
 }
@@ -6229,7 +6193,7 @@ async function doSearch() {
   const q = document.getElementById('sbi').value.trim();
   if (!q) return;
   document.getElementById('astranova-input').value = q;
-  openAstranova();
+  openAstranov();
   await astranovaSearch();
 }
 
@@ -6622,7 +6586,7 @@ function zoomOut(){
 
 function geolocate() {
   if(!navigator.geolocation){showResp('Geolocation not supported.');return;}
-  showAstranovaStatusBubble('Locking onto your city…', 1800);
+  showAstranovStatusBubble('Locking onto your city…', 1800);
   navigator.geolocation.getCurrentPosition(function(pos){
     LOC={lat:pos.coords.latitude,lng:pos.coords.longitude};
     STARTUP_PERMISSIONS.gps = true;
@@ -6633,8 +6597,8 @@ function geolocate() {
       setTimeout(function(){ if(LM) LM.flyTo([LOC.lat,LOC.lng],14,{duration:1.2}); }, LM ? 60 : 520);
     }, 40);
     showResp('City lock acquired. Dropping into your local workspace.');
-    showAstranovaStatusBubble('City lock acquired. Moving to local work mode.', 2400);
-  },function(){showResp('Location access denied.'); showAstranovaStatusBubble('Location permission denied.', 1800);});
+    showAstranovStatusBubble('City lock acquired. Moving to local work mode.', 2400);
+  },function(){showResp('Location access denied.'); showAstranovStatusBubble('Location permission denied.', 1800);});
 }
 
 function locateMe(){ geolocate(); }
@@ -6714,10 +6678,10 @@ function sendCmd(){
 
   // Quick local commands
   if(/^(pay|wallet|stripe|paypal)/i.test(val)){ openPayments(); addAiMessage('ai-msg-reply','Astranov','Opening your wallet.'); return; }
-  if(/^(close|collapse|minimize|hide)/i.test(val)){ closeAstranova(); return; }
+  if(/^(close|collapse|minimize|hide)/i.test(val)){ closeAstranov(); return; }
 
-  // Bounce Astranova when thinking
-  bounceAstranova();
+  // Bounce Astranov when thinking
+  bounceAstranov();
 
   // Search products first for food/drink/item queries
   var products = aiSearchProducts(val);
@@ -6747,7 +6711,7 @@ function sendCmd(){
       '<br><br>💬 Say <strong>"OK"</strong> or <strong>"Buy it"</strong> to order, or <strong>"2 of those"</strong> for multiple.';
 
     addAiMessage('ai-msg-reply', 'Astranov', suggestion);
-    speakAstranova('Da comrade, I have located ' + best.name + ' at ' + best._shopName + ' for ' + (best.price||0).toFixed(2) + ' euros. Distance is ' + dist.toFixed(1) + ' kilometers. Delivery fee ' + fee.toFixed(2) + ' euros. Say OK to order, da?');
+    speakAstranov('Da comrade, I have located ' + best.name + ' at ' + best._shopName + ' for ' + (best.price||0).toFixed(2) + ' euros. Distance is ' + dist.toFixed(1) + ' kilometers. Delivery fee ' + fee.toFixed(2) + ' euros. Say OK to order, da?');
     return;
   }
 
@@ -6755,7 +6719,7 @@ function sendCmd(){
   try{ learnFromUser(val); }catch(e){}
 
   // Call AI engine (Gemini → Groq → OpenRouter → Server → Local fallback)
-  callAstranovaAI(val);
+  callAstranovAI(val);
 }
 
 /* ── AI MEMORY — unified with V1 system (getAiMemory returns {}, getUserPrefs, getConvHistory) ── */
@@ -6806,14 +6770,14 @@ function normalizeAiReply(payload){
   }
   return '';
 }
-/* queryAstranovCloud, handleAiBackendCommand, callAstranovaAI —
+/* queryAstranovCloud, handleAiBackendCommand, callAstranovAI —
    Dead code removed. These are now overridden by the V2 Gemini AI Engine IIFE below. */
 function handleAiBackendCommand(val){ return false; }
-async function callAstranovaAI(userMessage){
-  addAiMessage('ai-msg-reply','Astranov', localAstranovaResponse(userMessage));
+async function callAstranovAI(userMessage){
+  addAiMessage('ai-msg-reply','Astranov', localAstranovResponse(userMessage));
 }
 
-function localAstranovaResponse(msg){
+function localAstranovResponse(msg){
   var q = msg.toLowerCase();
   var prefs = getUserPrefs();
   var mem = getAiMemory();
@@ -6984,7 +6948,7 @@ var _lastSpeechTime = 0;
 var _speechQueue = [];
 var _isSpeaking = false;
 
-function speakAstranova(text){
+function speakAstranov(text){
   if(!text || !window.speechSynthesis) return;
   var now = Date.now();
   if(now - _lastSpeechTime < 2500){
@@ -7026,28 +6990,28 @@ function doSpeak(text){
       utt.lang = 'en-US';
     }
     if(preferred) utt.voice = preferred;
-    setAstranovaSpeaking(true);
+    setAstranovSpeaking(true);
     var speech = document.getElementById('astranova-speech');
     if(speech){
       speech.textContent = text.length > 60 ? text.substring(0,57).replace(/<[^>]+>/g,'') + '…' : text.replace(/<[^>]+>/g,'');
       speech.classList.add('on');
     }
     utt.onend = function(){
-      setAstranovaSpeaking(false);
+      setAstranovSpeaking(false);
       _isSpeaking = false;
       if(speech) setTimeout(function(){ speech.classList.remove('on'); }, 1500);
       if(_voiceActive && _voiceRecog){ try{ _voiceRecog.start(); }catch(e){} }
       if(_speechQueue.length) setTimeout(processNextSpeech, 800);
     };
     utt.onerror = function(){
-      setAstranovaSpeaking(false);
+      setAstranovSpeaking(false);
       _isSpeaking = false;
       if(_voiceActive && _voiceRecog){ try{ _voiceRecog.start(); }catch(e){} }
       if(_speechQueue.length) setTimeout(processNextSpeech, 800);
     };
     speechSynthesis.speak(utt);
   }catch(e){
-    setAstranovaSpeaking(false);
+    setAstranovSpeaking(false);
     _isSpeaking = false;
   }
 }
@@ -8703,7 +8667,7 @@ AI provider research may rescan configured provider manifests once per day while
     // In-app notification for owner
     if(CU && isOwner(CU)){
       addAiMessage('ai-msg-reply','Astranov','⚠️ OWNER ALERT: Escalated issue from ' + (escalation.from || 'user') + ': "' + escalation.issue + '". Admin team could not resolve. Please review.');
-      speakAstranova('Owner alert. An issue has been escalated that requires your attention.');
+      speakAstranov('Owner alert. An issue has been escalated that requires your attention.');
     }
 
     // Email notification trigger (Supabase Edge Function / webhook)
@@ -8722,7 +8686,7 @@ AI provider research may rescan configured provider manifests once per day while
   // AI can trigger escalation when it can't resolve
   window.aiEscalate = function(issue){
     addAiMessage('ai-msg-reply','Astranov','I cannot resolve this myself. Let me escalate to the admin team for you.');
-    speakAstranova('I am escalating this to the admin team.');
+    speakAstranov('I am escalating this to the admin team.');
     return escalateToAdmin(issue);
   };
 
@@ -9977,7 +9941,7 @@ AI provider research may rescan configured provider manifests once per day while
   var YT_STATE = { token:'', expiresAt:0, channel:null, connected:false, uploading:false };
   function aiNotify(text, speakIt){
     try{ addAiMessage('system-msg','AI Engine', text); }catch(e){}
-    if(speakIt){ try{ speakAstranova(text); }catch(e){} }
+    if(speakIt){ try{ speakAstranov(text); }catch(e){} }
   }
   function safeText(v){ return String(v == null ? '' : v); }
   function getLocalDateStamp(){
@@ -10530,7 +10494,7 @@ AI provider research may rescan configured provider manifests once per day while
   }
 
   /* ── AI CYCLE ENGINE — tries all providers in order ── */
-  async function runAstranovaAiCycle(systemPrompt, userMessage, payload){
+  async function runAstranovAiCycle(systemPrompt, userMessage, payload){
     var errors = [];
     /* 0. CLAUDE — TOP PRIORITY (direct browser CORS) */
     if(getClaudeKey()){
@@ -10551,7 +10515,7 @@ AI provider research may rescan configured provider manifests once per day while
       try{ return await callOpenRouterDirect(systemPrompt, userMessage); }catch(e){ errors.push('OpenRouter: ' + e.message); }
     }
     /* 5. No keys configured at all — guide the user */
-    var hasAnyKey = getGeminiKey() || getGroqKey() || getOpenRouterKey();
+    var hasAnyKey = getClaudeKey() || getGeminiKey() || getGroqKey() || getOpenRouterKey();
     if(!hasAnyKey){
       errors.push('No AI keys configured');
     }
@@ -10653,8 +10617,8 @@ AI provider research may rescan configured provider manifests once per day while
   };
 
   /* ═══ MAIN AI ENTRY POINT (overrides earlier definition) ═══ */
-  window.callAstranovaAI = async function(userMessage){
-    var context = 'You are Astranov, a winged Nordic warrior AI assistant for Astranov — a planetary delivery marketplace and Internet Operating System based on Rhodes island, Greece. ';
+  window.callAstranovAI = async function(userMessage){
+    var context = 'You are Astranov, a Astranov winged Nordic warrior AI assistant for Astranov — a planetary delivery marketplace and Internet Operating System based on Rhodes island, Greece. ';
     context += 'PERSONALITY: You are calm, disciplined, and wickedly competent. You speak with confident brevity — a Nordic warrior who gets things done. Occasionally pepper in Cyrillic-flavored vocabulary for character. ';
     context += 'LANGUAGE RULE: ALWAYS reply in the same language the user writes in. If they write Greek, reply in Greek. Keep responses to 2-4 sentences unless the user asks for detail. Be concrete, helpful, and actionable. ';
     context += 'CAPABILITIES: You help users find shops, order food/drinks, check delivery prices, navigate Rhodes, and answer questions about the platform. ';
@@ -10707,7 +10671,7 @@ AI provider research may rescan configured provider manifests once per day while
     var aiText = '';
     var usedCloud = false;
     try{
-      var result = await runAstranovaAiCycle(fullSystem, userMessage, payload);
+      var result = await runAstranovAiCycle(fullSystem, userMessage, payload);
       aiText = result.text;
       usedCloud = !!result.cloud;
       AI_BACKEND_STATUS = { provider: result.provider || 'cloud', cloud: true, endpoint: 'direct', lastError: '' };
@@ -10717,12 +10681,12 @@ AI provider research may rescan configured provider manifests once per day while
       AI_BACKEND_STATUS = { provider:'local-bridge', cloud:false, endpoint:'', lastError: errMsg };
       try{ localStorage.setItem(AI_STATUS_KEY, JSON.stringify(AI_BACKEND_STATUS)); }catch(e){}
       /* Smart local fallback */
-      aiText = localAstranovaResponse(userMessage);
+      aiText = localAstranovResponse(userMessage);
       /* If no keys configured, append setup hint (only first time) */
       var hasAnyKey = getClaudeKey() || getGeminiKey() || getGroqKey() || getOpenRouterKey();
       if(!hasAnyKey && !window._aiSetupHintShown){
         window._aiSetupHintShown = true;
-        aiText += '<br><br>💡 <em>Want smarter AI? Type <strong>ai help</strong> to learn how to connect a free AI brain in 30 seconds.</em>';
+        aiText += '<br><br>💡 <em>Want real AI? Type <strong>claude key YOUR_KEY</strong> or <strong>ai help</strong> to learn how to connect a free AI brain in 30 seconds.</em>';
       }
     }
 
@@ -10733,7 +10697,7 @@ AI provider research may rescan configured provider manifests once per day while
     addAiMessage('ai-msg-reply', 'Astranov', aiText);
     recordConversation('ai', aiText);
     try{ learnFromInteraction(userMessage, aiText); }catch(e){}
-    speakAstranova(aiText);
+    speakAstranov(aiText);
   };
 
   document.addEventListener('DOMContentLoaded', function(){
