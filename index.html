@@ -23,12 +23,36 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #topbar{
   position:fixed;top:0;left:0;right:0;height:36px;
   display:flex;align-items:center;justify-content:space-between;
-  background:rgba(3,8,16,0.97);border-bottom:1px solid var(--lb);
-  padding:0 12px;z-index:200;
+  background:rgba(3,8,16,0.45);border-bottom:1px solid rgba(0,200,255,0.08);
+  padding:0 12px;z-index:200;backdrop-filter:blur(12px);
 }
-.tb-left{display:flex;align-items:center;gap:10px;}
-.tb-center{display:flex;align-items:center;gap:10px;}
-.tb-right{display:flex;align-items:center;gap:10px;}
+.tb-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
+.tb-center{display:flex;align-items:center;justify-content:center;flex:0 1 33.33%;max-width:33.33%;}
+.tb-right{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:1;min-width:0;}
+/* ═══ SMART APP STATUS BUTTON ═══ */
+#app-status-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:4px 14px;
+  border:1px solid rgba(0,120,255,0.25);border-radius:4px;
+  background:transparent;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all 0.4s;
+  box-shadow:0 0 12px rgba(0,120,255,0.15), inset 0 0 8px rgba(0,120,255,0.05);
+}
+/* STATE: OK — deep electric blue glow */
+#app-status-btn.ok{border-color:rgba(0,120,255,0.30);box-shadow:0 0 16px rgba(0,120,255,0.20), inset 0 0 10px rgba(0,120,255,0.06);}
+/* STATE: UPDATING — yellow glow */
+#app-status-btn.updating{border-color:rgba(255,200,0,0.35);box-shadow:0 0 18px rgba(255,200,0,0.20), inset 0 0 10px rgba(255,200,0,0.06);}
+#app-status-btn.updating .asb-name,#app-status-btn.updating .asb-ver,#app-status-btn.updating .asb-sep{color:#ffc800 !important;}
+/* STATE: ACTION REQUIRED — red glow */
+#app-status-btn.action{border-color:rgba(255,68,68,0.35);box-shadow:0 0 18px rgba(255,68,68,0.20), inset 0 0 10px rgba(255,68,68,0.06);animation:status-pulse 1.8s infinite;}
+#app-status-btn.action .asb-name,#app-status-btn.action .asb-ver,#app-status-btn.action .asb-sep{color:#ff4444 !important;}
+@keyframes status-pulse{0%,100%{box-shadow:0 0 18px rgba(255,68,68,0.20);}50%{box-shadow:0 0 28px rgba(255,68,68,0.35);}}
+.asb-name{font-family:var(--fhud);font-size:9px;color:#0088ff;letter-spacing:0.18em;text-shadow:0 0 10px rgba(0,120,255,0.4);}
+.asb-sep{color:rgba(0,120,255,0.3);font-size:8px;}
+.asb-ver{font-family:var(--fhud);font-size:9px;color:#0088ff;letter-spacing:0.06em;}
+.asb-latest{font-family:var(--fhud);font-size:9px;color:#ffc800;letter-spacing:0.06em;}
 .brand{font-family:var(--fhud);font-size:10px;color:var(--la);text-shadow:0 0 12px var(--la);letter-spacing:0.22em;}
 .lbadge{font-size:8px;padding:1px 5px;border:1px solid var(--lb);color:var(--la);border-radius:2px;text-transform:uppercase;}
 .vinfo{font-size:8px;color:var(--text-dim);font-family:var(--fhud);}
@@ -193,8 +217,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   position:fixed;bottom:0;left:0;right:0;height:60px;
   display:flex;align-items:center;gap:6px;
   padding:0 10px;
-  background:rgba(3,8,16,0.97);border-top:1px solid var(--lb);
-  z-index:200;
+  background:rgba(3,8,16,0.40);border-top:1px solid rgba(0,200,255,0.08);
+  z-index:200;backdrop-filter:blur(12px);
 }
 .bb-btn{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;}
 .bb-btn:hover,.bb-btn.on{color:var(--la);border-color:var(--la);background:var(--la2);}
@@ -227,7 +251,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 @keyframes voice-pulse{0%,100%{box-shadow:0 0 4px rgba(0,232,122,0.2);}50%{box-shadow:0 0 16px rgba(0,232,122,0.5);}}
 
 /* LEFT PANEL */
-#left-panel{position:fixed;top:36px;left:0;width:46px;bottom:60px;background:var(--surface);border-right:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
+#left-panel{position:fixed;top:36px;left:0;width:46px;bottom:60px;background:rgba(3,8,16,0.35);border-right:1px solid rgba(0,200,255,0.06);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;backdrop-filter:blur(10px);}
 .lp-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;cursor:pointer;color:var(--text-dim);transition:all 0.15s;position:relative;}
 .lp-btn:hover,.lp-btn.on{color:var(--la);border-color:var(--lb);background:var(--la2);}
 .lp-btn svg{width:15px;height:15px;}
@@ -237,7 +261,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .lp-btn:hover::after{opacity:1;}
 
 /* RIGHT PANEL */
-#right-panel{position:fixed;top:36px;right:0;width:46px;bottom:60px;background:var(--surface);border-left:1px solid var(--lb);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;}
+#right-panel{position:fixed;top:36px;right:0;width:46px;bottom:60px;background:rgba(3,8,16,0.35);border-left:1px solid rgba(0,200,255,0.06);z-index:150;display:flex;flex-direction:column;align-items:center;padding:6px 0;gap:3px;backdrop-filter:blur(10px);}
 .rp-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;border-radius:3px;cursor:pointer;color:var(--text-dim);transition:all 0.15s;position:relative;}
 .rp-btn:hover,.rp-btn.on{color:var(--la);border-color:var(--lb);background:var(--la2);}
 .rp-btn svg{width:15px;height:15px;}
@@ -582,7 +606,7 @@ html,body{
 #topbar,.mr,.rp-btn,.lp-btn,#bottombar,#sb,#globe-btn,#locate-btn,#drone-btn,#delivery-calc{
   border-color:rgba(0,200,255,0.22);
 }
-#topbar{background:rgba(3,8,16,0.74);}
+#topbar{background:rgba(3,8,16,0.35);}
 #lp{background:rgba(3,8,16,0.72);backdrop-filter:blur(14px) saturate(120%);-webkit-backdrop-filter:blur(14px) saturate(120%);}
 .lpb{display:flex;flex-direction:column;gap:10px;}
 .lcard{
@@ -973,41 +997,62 @@ body.lt,body.lt2,body.lt3{
   color:#c8efff;cursor:pointer;font-size:11px;font-family:var(--font);
 }
 .owner-chip:hover{background:rgba(0,200,255,0.16);color:#fff;}
-#owner-console{
-  position:fixed;inset:56px 24px 84px 72px;z-index:380;display:none;flex-direction:column;
-  background:linear-gradient(180deg,rgba(6,16,28,0.78),rgba(6,16,28,0.54));backdrop-filter:blur(18px);
-  border:1px solid rgba(0,200,255,0.16);border-radius:18px;box-shadow:0 22px 54px rgba(0,0,0,0.34);
-}
+/* ═══ STARTUP SPLASH ═══ */
+#app-splash{position:fixed;top:0;left:0;width:33.33vw;bottom:0;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(3,8,16,0.2);backdrop-filter:blur(14px);border-right:1px solid rgba(0,200,255,0.06);cursor:pointer;transition:opacity 0.6s;}
+#app-splash.hidden{opacity:0;pointer-events:none;}
+.splash-name{font-family:var(--fhud);font-size:13px;color:#00c8ff;letter-spacing:0.3em;text-shadow:0 0 18px rgba(0,200,255,0.4);}
+.splash-full{font-size:9px;color:rgba(0,200,255,0.4);letter-spacing:0.06em;margin:4px 0 16px;}
+.splash-ver{font-family:var(--fhud);font-size:32px;color:rgba(0,200,255,0.6);font-weight:700;}
+.splash-ver-label{font-size:8px;color:rgba(0,200,255,0.3);letter-spacing:0.1em;margin-bottom:18px;}
+.splash-update{padding:6px 18px;border:1px solid rgba(0,200,255,0.12);border-radius:6px;background:transparent;color:rgba(0,200,255,0.4);font-size:9px;font-family:var(--font);cursor:pointer;transition:all 0.3s;}
+.splash-update:hover{background:rgba(0,200,255,0.08);color:#00c8ff;}
+.splash-update.outdated{border-color:rgba(255,153,0,0.3);color:#ff9900;animation:splash-glow 2s infinite;}
+@keyframes splash-glow{0%,100%{box-shadow:none;}50%{box-shadow:0 0 14px rgba(255,153,0,0.2);}}
+.splash-tap{font-size:7px;color:rgba(255,255,255,0.12);margin-top:22px;letter-spacing:0.1em;}
+/* ═══ MULTI-AI DEVELOPER CONSOLE ═══ */
+#owner-console{position:fixed;inset:8px;z-index:380;display:none;flex-direction:column;background:rgba(4,10,20,0.90);backdrop-filter:blur(20px);border:1px solid rgba(0,200,255,0.12);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.5);overflow:hidden;}
 #owner-console.on{display:flex;}
-.owner-console-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 18px 12px;border-bottom:1px solid rgba(0,200,255,0.10);}
-.owner-console-title{font-size:18px;font-weight:700;color:#dff7ff;}
-.owner-console-sub{font-size:11px;color:#9fc0d8;margin-top:4px;line-height:1.45;}
-.owner-console-close{width:34px;height:34px;border-radius:12px;border:1px solid rgba(0,200,255,0.18);background:rgba(255,255,255,0.04);color:#dff7ff;cursor:pointer;font-size:20px;line-height:1;}
-.owner-console-grid{display:grid;grid-template-columns:minmax(280px,0.95fr) minmax(340px,1.25fr);gap:14px;padding:14px 18px 18px;min-height:0;flex:1;}
-.owner-console-stack{display:flex;flex-direction:column;gap:10px;min-height:0;}
-.owner-console-label{font-size:11px;color:#8fc8ea;letter-spacing:0.04em;text-transform:uppercase;}
-.owner-console-row{display:flex;gap:8px;}
-.owner-console-input{width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(0,200,255,0.14);border-radius:12px;color:#eff8ff;padding:10px 12px;font-size:12px;outline:none;font-family:var(--font);}
-.owner-console-input::placeholder{color:#8eaabf;}
-.owner-console-textarea{min-height:120px;resize:vertical;}
-.owner-console-thread{flex:1;min-height:200px;overflow:auto;border:1px solid rgba(0,200,255,0.10);border-radius:14px;background:rgba(255,255,255,0.03);padding:10px;display:flex;flex-direction:column;gap:8px;}
-.owner-msg{max-width:88%;padding:10px 12px;border-radius:14px;font-size:12px;line-height:1.5;}
-.owner-msg.owner{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.18);color:#e7f9ff;}
-.owner-msg.assistant{align-self:flex-start;background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.14);color:#dff7e8;}
-.owner-msg.system{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.14);color:#ffe58f;max-width:95%;text-align:center;}
-.owner-console-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.owner-console-btn{padding:9px 12px;border-radius:12px;border:1px solid rgba(0,200,255,0.16);background:rgba(255,255,255,0.04);color:#dff7ff;cursor:pointer;font-size:11px;font-family:var(--font);}
-.owner-console-btn.primary{background:rgba(0,200,255,0.14);border-color:rgba(0,200,255,0.28);}
-.owner-console-note{font-size:10px;color:#98b7cb;line-height:1.5;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);}
-@media (max-width:980px){
-  #owner-console{inset:48px 12px 74px 12px;}
-  .owner-console-grid{grid-template-columns:1fr;}
-}
+.owner-console-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(0,200,255,0.08);flex-shrink:0;}
+.owner-console-title{font-size:14px;font-weight:700;color:#dff7ff;}
+.owner-console-sub{font-size:9px;color:#6a98b8;margin-left:10px;}
+.owner-console-close{width:28px;height:28px;border-radius:8px;border:1px solid rgba(0,200,255,0.15);background:rgba(255,255,255,0.03);color:#dff7ff;cursor:pointer;font-size:16px;line-height:1;}
+.ai-tab-bar{display:flex;gap:4px;padding:5px 16px;border-bottom:1px solid rgba(0,200,255,0.06);flex-shrink:0;overflow-x:auto;}
+.ai-tab{padding:5px 12px;border-radius:6px;border:1px solid rgba(0,200,255,0.10);background:transparent;color:rgba(0,200,255,0.45);font-size:10px;font-family:var(--font);font-weight:600;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.ai-tab.active{background:rgba(0,200,255,0.10);color:#00c8ff;border-color:rgba(0,200,255,0.28);}
+.ai-tab:hover:not(.active){background:rgba(255,255,255,0.03);color:rgba(0,200,255,0.6);}
+.owner-console-grid{display:grid;grid-template-columns:300px 1fr;gap:10px;padding:10px 16px;min-height:0;flex:1;overflow:hidden;}
+.owner-console-stack{display:flex;flex-direction:column;gap:6px;min-height:0;overflow-y:auto;}
+.owner-console-label{font-size:9px;color:#6a98b8;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;}
+.owner-console-row{display:flex;gap:6px;}
+.owner-console-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(0,200,255,0.10);border-radius:6px;color:#eff8ff;padding:7px 9px;font-size:11px;outline:none;font-family:var(--font);}
+.owner-console-input::placeholder{color:#5a8098;}
+.owner-console-textarea{min-height:80px;resize:vertical;font-family:monospace;font-size:10px;}
+.owner-console-thread{flex:1;min-height:0;overflow-y:auto;border:1px solid rgba(0,200,255,0.06);border-radius:10px;background:rgba(0,0,0,0.12);padding:8px;display:flex;flex-direction:column;gap:6px;}
+.owner-msg{max-width:90%;padding:7px 10px;border-radius:10px;font-size:10px;line-height:1.5;word-break:break-word;white-space:pre-wrap;}
+.owner-msg.owner{align-self:flex-end;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.14);color:#d8f0ff;}
+.owner-msg.assistant{align-self:flex-start;background:rgba(0,232,122,0.05);border:1px solid rgba(0,232,122,0.10);color:#d0f0d8;}
+.owner-msg.system{align-self:center;background:rgba(255,214,0,0.05);border:1px solid rgba(255,214,0,0.08);color:#ffd860;max-width:95%;text-align:center;font-size:9px;}
+.owner-console-actions{display:flex;gap:5px;flex-wrap:wrap;}
+.owner-console-btn{padding:6px 10px;border-radius:6px;border:1px solid rgba(0,200,255,0.12);background:rgba(255,255,255,0.02);color:#b8d8f0;cursor:pointer;font-size:9px;font-family:var(--font);transition:all 0.2s;}
+.owner-console-btn:hover{background:rgba(0,200,255,0.06);}
+.owner-console-btn.primary{background:rgba(0,200,255,0.10);border-color:rgba(0,200,255,0.22);color:#00c8ff;}
+.owner-console-note{font-size:8px;color:#5a8098;line-height:1.4;padding:4px 6px;}
+@media(max-width:800px){#owner-console{inset:4px;}.owner-console-grid{grid-template-columns:1fr;overflow-y:auto;}}
 
 </style>
 </head>
 <body class="lt">
 <div class="lf" id="lf"></div>
+
+<!-- STARTUP SPLASH (left 1/3 of screen) -->
+<div id="app-splash" onclick="dismissSplash()">
+  <div class="splash-name">ASTRANOV</div>
+  <div class="splash-full">Internet Operating System</div>
+  <div class="splash-ver" id="splash-ver">1</div>
+  <div class="splash-ver-label">VERSION LOADED</div>
+  <button class="splash-update" id="splash-update-btn" onclick="event.stopPropagation();forceUpdate()">UP TO DATE</button>
+  <div class="splash-tap">TAP ANYWHERE TO ENTER</div>
+</div>
 
 <!-- AUTH MODAL -->
 <div id="am" class="h">
@@ -1047,18 +1092,25 @@ body.lt,body.lt2,body.lt3{
 <!-- TOP BAR - LOCKED -->
 <div id="topbar">
   <div class="tb-left">
-    <span class="brand">ASTRANOV INTERNET OPERATING SYSTEM</span>
-    
-  </div>
-  <div class="tb-center">
-    <span class="vinfo">Astranov Internet Operating System · <span class="vcurrent">V2</span></span>
-  </div>
-  <div class="tb-right">
-    <button id="owner-workshop-btn" class="owner-chip" onclick="toggleOwnerWorkshop()" title="Owner Workshop" style="display:none;">🛠 <span>Workshop</span></button>
+    <button id="owner-workshop-btn" class="owner-chip" onclick="toggleOwnerWorkshop()" title="Developer Console" style="display:none;">⚡ Dev</button>
     <div id="balance-display" onclick="showBalance()">
       <span class="balance-label">EUR</span>
       <span class="balance-amount" id="bal">0.00</span>
     </div>
+  </div>
+  <!-- SMART APP NAME BUTTON — centered, 1/3 width max, dynamic -->
+  <div class="tb-center">
+    <button id="app-status-btn" onclick="handleAppStatusClick()">
+      <span class="asb-name">ASTRANOV</span>
+      <span class="asb-sep">·</span>
+      <span class="asb-ver">v<span id="asb-loaded">1</span></span>
+      <span class="asb-latest" id="asb-latest-wrap" style="display:none;">
+        <span class="asb-sep">→</span>
+        <span id="asb-latest">1</span>
+      </span>
+    </button>
+  </div>
+  <div class="tb-right">
     <div id="user-badge" onclick="toggleUserMenu()">
       <div class="user-avatar" id="uavatar">?</div>
       <span class="user-name" id="uname">Guest</span>
@@ -1708,13 +1760,13 @@ body.lt,body.lt2,body.lt3{
 /* ═══════════════════════════════════════════════
    ASTRANOV INTERNET OPERATING SYSTEM · V2
    Creator & Founder: Notis Astranov, 2026
-   Architecture: Spartan Script v3.8.0
+   Architecture: Spartan Script V1
    ═══════════════════════════════════════════════ */
 
 var SURL = 'https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
 var sb = supabase.createClient(SURL, SKEY);
-var APP_VERSION = 'V2';
+var APP_VERSION = '1';
 var APP_ARCH = 'Spartan Script V2';
 var PAYMENT_CFG_KEY = 'astranov.payment.config';
 var WALLET_KEY = 'astranov.wallet.balance';
@@ -1822,7 +1874,7 @@ function openOwnerWorkshop(){
   renderOwnerWorkshopLog();
   document.getElementById('owner-console').classList.add('on');
   if(!getOwnerWorkshopLog().length){
-    ownerConsoleAddMessage('assistant', 'Owner workshop online. I can summarize the current app state, export the live index.html, and send the current file to GitHub when repo settings are configured.');
+    ownerConsoleAddMessage('assistant', 'Developer console online. Claude AI connected directly — ask me to analyze code, suggest fixes, write patches. Export HTML or push to GitHub anytime.');
   }
 }
 function closeOwnerWorkshop(){ document.getElementById('owner-console')?.classList.remove('on'); }
@@ -1832,7 +1884,7 @@ function downloadBlobText(filename, text){ const blob = new Blob([text], {type:'
 function downloadCurrentIndexHtml(){ const filename = 'index_' + (APP_VERSION || 'build') + '.html'; downloadBlobText(filename, currentIndexHtml()); ownerConsoleAddMessage('system', 'Downloaded ' + filename + ' from the live DOM.'); }
 function ownerSeedCurrentState(){
   const summary = [
-    'App: Astranov Internet Operating System ' + APP_VERSION,
+    'App: Astranov Internet Operating System ' + APP_VERSION + ' | Lines: ~' + currentIndexHtml().split('\n').length + ' | Size: ' + (currentIndexHtml().length/1024).toFixed(0) + 'KB',
     'User: ' + (CU ? (CU.name + ' [' + getUserRole(CU) + ']') : 'Guest'),
     'Layer: ' + ['Globe','Map','Abyss'][CL],
     'Location: ' + LOC.lat.toFixed(4) + ', ' + LOC.lng.toFixed(4),
@@ -1846,7 +1898,7 @@ function ownerWorkshopLocalReply(prompt){
   if(/download|export/.test(q)) return 'Use “Download Current index.html” to export the live DOM version immediately.';
   if(/github|commit|push|publish/.test(q)) return 'GitHub send is ready. Save repo owner, repo, branch, path, and a GitHub token, then use “Send Current index.html to GitHub”.';
   if(/summarize|status|state/.test(q)) return 'Use “Summarize Current App State” for a live state digest pulled from the current session.';
-  return 'Owner workshop is active. For live remote AI patching, connect a same-origin backend endpoint at /api/owner_workshop.php. Until then, this panel can export the current index and push it to GitHub.';
+  return 'Developer console active. Claude AI handles code questions when online. Export HTML or push to GitHub.';
 }
 async function ownerSendWorkshop(){
   if(!(CU && isOwner(CU))) return openAuth('Owner login required for the workshop.');
@@ -1855,18 +1907,43 @@ async function ownerSendWorkshop(){
   if(!prompt) return;
   input.value = '';
   ownerConsoleAddMessage('owner', prompt);
+
+  // Direct Claude API call — no backend needed
   try{
-    const res = await fetch('/api/owner_workshop.php', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt: prompt, current_html: currentIndexHtml(), app_name: 'Astranov Internet Operating System', version: APP_VERSION, owner: CU })
+    ownerConsoleAddMessage('system', 'Sending to Claude...');
+    const systemPrompt = [
+      'You are the developer console AI for Astranov Internet Operating System.',
+      'The owner (Notis Astranov) is talking to you directly from inside the app.',
+      'Current app version: ' + APP_VERSION + '. Single-file HTML app, ' + document.documentElement.outerHTML.length + ' chars.',
+      'Stack: Single HTML, Vercel hosting, Cloudflare DNS, Supabase, Leaflet, Three.js.',
+      'You can: analyze the code, suggest fixes, write patches, explain architecture.',
+      'When asked to make changes, provide the EXACT code to replace (old → new) in a clear format.',
+      'Format code changes as: REPLACE: ```old code``` WITH: ```new code```',
+      'Be concise and precise. You are talking to the app creator who knows the codebase.',
+      'Current user: ' + (CU ? CU.name : 'unknown') + ' (Owner)',
+      'App name: Astranov Internet Operating System'
+    ].join(' ');
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: prompt }]
+      })
     });
-    if(!res.ok) throw new Error('Owner AI bridge unavailable (' + res.status + ').');
+
+    if(!res.ok) throw new Error('Claude API error: ' + res.status);
     const data = await res.json();
-    if(data.reply) ownerConsoleAddMessage('assistant', data.reply);
-    if(data.patched_html){ window._ownerPatchedHtml = data.patched_html; ownerConsoleAddMessage('system', 'Patched HTML buffer received. Ask the backend bridge to persist it, or export it from the bridge.'); }
+    const reply = data.content ? data.content.map(function(c){ return c.text || ''; }).filter(Boolean).join('\n') : 'No response received.';
+    ownerConsoleAddMessage('assistant', reply);
+
   }catch(e){
+    // Fallback to local commands
     ownerConsoleAddMessage('assistant', ownerWorkshopLocalReply(prompt));
+    ownerConsoleAddMessage('system', 'Claude API unavailable: ' + e.message + '. Using local mode.');
   }
 }
 function githubContentPath(owner, repo, path){
@@ -1908,8 +1985,386 @@ async function ownerGithubPushCurrentIndex(){
   ownerConsoleAddMessage('assistant', 'GitHub updated successfully. Commit: ' + ((data.commit && data.commit.sha) ? data.commit.sha.slice(0,7) : 'ok'));
 }
 
+/* ═══ LIVE PATCH SYSTEM ═══ */
+var _patchUndoStack = [];
+
+function applyManualPatch(){
+  var findEl = document.getElementById('patch-find');
+  var replaceEl = document.getElementById('patch-replace');
+  var statusEl = document.getElementById('patch-status');
+  if(!findEl || !replaceEl) return;
+  var findText = findEl.value;
+  var replaceText = replaceEl.value;
+  if(!findText){ if(statusEl) statusEl.textContent = '⚠ FIND field is empty.'; return; }
+
+  var html = document.documentElement.outerHTML;
+  if(html.indexOf(findText) === -1){
+    if(statusEl) statusEl.textContent = '✗ Text not found in the live HTML. Check for exact match.';
+    ownerConsoleAddMessage('system', 'Patch failed: text not found in live HTML.');
+    return;
+  }
+
+  // Save undo state
+  _patchUndoStack.push({ find: replaceText, replace: findText });
+
+  // Apply patch to live DOM by rewriting the page
+  var newHtml = html.replace(findText, replaceText);
+  document.open();
+  document.write('<!DOCTYPE html>\n<html' + newHtml.substring(newHtml.indexOf('<html') + 5));
+  document.close();
+
+  // Note: this will reload all scripts so the state resets
+  // For safer patching, we store the patch and apply after export
+  if(statusEl) statusEl.textContent = '✓ Patch applied to live DOM.';
+  ownerConsoleAddMessage('system', 'Patch applied. The change is live in the DOM. Export or push to GitHub to persist.');
+}
+
+function undoLastPatch(){
+  if(!_patchUndoStack.length){
+    ownerConsoleAddMessage('system', 'Nothing to undo.');
+    return;
+  }
+  var undo = _patchUndoStack.pop();
+  document.getElementById('patch-find').value = undo.find;
+  document.getElementById('patch-replace').value = undo.replace;
+  ownerConsoleAddMessage('system', 'Undo loaded into patch fields. Click "Apply Patch" to revert.');
+}
+
+/* Send message WITH code context to Claude */
+async function ownerSendCodeContext(){
+  if(!(CU && isOwner(CU))) return openAuth('Owner login required.');
+  var input = document.getElementById('owner-console-input');
+  var prompt = (input?.value || '').trim();
+  if(!prompt) return;
+  input.value = '';
+  ownerConsoleAddMessage('owner', prompt);
+  ownerConsoleAddMessage('system', 'Sending with full code context to Claude...');
+
+  // Extract a relevant section of the HTML (first 8000 chars of JS to stay under token limit)
+  var fullHtml = currentIndexHtml();
+  var scriptMatch = fullHtml.match(/<script[^>]*>([\s\S]{0,12000})/);
+  var codeSnippet = scriptMatch ? scriptMatch[1].substring(0, 8000) : fullHtml.substring(0, 6000);
+
+  try{
+    var systemPrompt = [
+      'You are Claude, the AI developer for Astranov Internet Operating System v' + APP_VERSION + '.',
+      'The owner is requesting code changes. The app is a single HTML file (' + (fullHtml.length/1024).toFixed(0) + 'KB, ~' + fullHtml.split('\\n').length + ' lines).',
+      'Stack: Single HTML, Vercel, Cloudflare, Supabase, Leaflet, Three.js, Claude API.',
+      'IMPORTANT: When suggesting code changes, format them as:',
+      'FIND: ```exact text to find in the HTML```',
+      'REPLACE: ```exact replacement text```',
+      'This allows the owner to copy-paste into the patch applicator and apply instantly.',
+      'Be precise — the FIND text must match EXACTLY what exists in the code.',
+      'Keep patches minimal — change only what is needed.',
+      'Here is a section of the current code for context:'
+    ].join(' ');
+
+    var res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 3000,
+        system: systemPrompt,
+        messages: [
+          { role: 'user', content: 'CODE CONTEXT:\n```\n' + codeSnippet + '\n```\n\nREQUEST: ' + prompt }
+        ]
+      })
+    });
+
+    if(!res.ok) throw new Error('Claude API error: ' + res.status);
+    var data = await res.json();
+    var reply = data.content ? data.content.map(function(c){ return c.text || ''; }).filter(Boolean).join('\n') : 'No response.';
+    ownerConsoleAddMessage('assistant', reply);
+
+    autoExtractPatch(reply);
+
+  }catch(e){
+    ownerConsoleAddMessage('system', 'Claude API error: ' + e.message);
+    ownerConsoleAddMessage('assistant', ownerWorkshopLocalReply(prompt));
+  }
+}
+
 
 /* ═══ AI MEMORY & LEARNING SYSTEM ═══ */
+
+/* ── STARTUP SPLASH ── */
+function dismissSplash(){
+  var splash = document.getElementById('app-splash');
+  if(splash){ splash.classList.add('hidden'); setTimeout(function(){ splash.style.display='none'; }, 600); }
+}
+function forceUpdate(){ location.reload(true); }
+setTimeout(dismissSplash, 5000);
+document.addEventListener('keydown', dismissSplash, {once:true});
+setTimeout(function(){
+  var sv = document.getElementById('splash-ver');
+  if(sv) sv.textContent = APP_VERSION;
+}, 50);
+
+/* ═══ APP STATUS BUTTON ENGINE ═══ */
+var APP_STATUS = 'ok'; // ok, updating, action
+var APP_LATEST_VERSION = null;
+var APP_PERMISSIONS_OK = true;
+var APP_STATUS_MESSAGE = '';
+
+function setAppStatus(status, message){
+  APP_STATUS = status;
+  APP_STATUS_MESSAGE = message || '';
+  var btn = document.getElementById('app-status-btn');
+  if(!btn) return;
+  btn.className = status;
+  // Update loaded version
+  var loadedEl = document.getElementById('asb-loaded');
+  if(loadedEl) loadedEl.textContent = APP_VERSION;
+}
+
+function handleAppStatusClick(){
+  if(APP_STATUS === 'action'){
+    // Try to fix — request permissions + force reload
+    requestAllPermissions();
+    if(APP_LATEST_VERSION && APP_LATEST_VERSION !== APP_VERSION){
+      setAppStatus('updating', 'Forcing update...');
+      setTimeout(function(){ location.reload(true); }, 500);
+    }
+  } else if(APP_STATUS === 'updating'){
+    // Force hard reload
+    location.reload(true);
+  } else {
+    // OK state — show info toast
+    showResp('Astranov v' + APP_VERSION + ' · All systems operational');
+  }
+}
+
+/* Check for latest version from GitHub */
+async function checkLatestVersion(){
+  try{
+    var cfg = getOwnerGithubCfg();
+    if(!cfg.owner || !cfg.repo || !cfg.path) return;
+    var url = 'https://api.github.com/repos/' + cfg.owner + '/' + cfg.repo + '/contents/' + cfg.path + '?ref=' + (cfg.branch||'main');
+    var res = await fetch(url, { headers:{'Accept':'application/vnd.github+json'} });
+    if(!res.ok) return;
+    var data = await res.json();
+    // Extract version from the file content (look for APP_VERSION)
+    var content = atob(data.content.replace(/\n/g,''));
+    var match = content.match(/APP_VERSION\s*=\s*'(\d+)'/);
+    if(match){
+      APP_LATEST_VERSION = match[1];
+      var latestEl = document.getElementById('asb-latest');
+      var wrapEl = document.getElementById('asb-latest-wrap');
+      if(latestEl) latestEl.textContent = APP_LATEST_VERSION;
+      if(APP_LATEST_VERSION !== APP_VERSION){
+        if(wrapEl) wrapEl.style.display = 'inline';
+        // Try auto-update
+        setAppStatus('updating', 'New version available: ' + APP_LATEST_VERSION);
+        setTimeout(function(){
+          // If still here after 3s, auto-update failed
+          setAppStatus('action', 'Manual update required. Click to force reload.');
+        }, 3000);
+        location.reload(true);
+      } else {
+        if(wrapEl) wrapEl.style.display = 'none';
+        setAppStatus('ok', 'Up to date');
+      }
+    }
+  }catch(e){ /* silent fail */ }
+}
+
+/* Check all necessary permissions */
+function checkPermissions(){
+  var issues = [];
+
+  // Geolocation
+  if(navigator.permissions){
+    navigator.permissions.query({name:'geolocation'}).then(function(r){
+      if(r.state === 'denied') issues.push('Location access denied');
+      updatePermissionStatus(issues);
+    }).catch(function(){});
+  }
+
+  // Notifications
+  if('Notification' in window && Notification.permission === 'denied'){
+    issues.push('Notifications blocked');
+  }
+
+  // Microphone (for voice)
+  if(navigator.permissions){
+    navigator.permissions.query({name:'microphone'}).then(function(r){
+      if(r.state === 'denied') issues.push('Microphone access denied');
+      updatePermissionStatus(issues);
+    }).catch(function(){});
+  }
+
+  setTimeout(function(){ updatePermissionStatus(issues); }, 1000);
+}
+
+function updatePermissionStatus(issues){
+  if(issues.length > 0){
+    APP_PERMISSIONS_OK = false;
+    setAppStatus('action', 'Permissions needed: ' + issues.join(', '));
+  }
+}
+
+function requestAllPermissions(){
+  // Request geolocation
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(){}, function(){}, {timeout:3000});
+  }
+  // Request notifications
+  if('Notification' in window && Notification.permission === 'default'){
+    Notification.requestPermission();
+  }
+  // Request microphone
+  if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
+      s.getTracks().forEach(function(t){ t.stop(); });
+    }).catch(function(){});
+  }
+  // Recheck after 2s
+  setTimeout(function(){
+    APP_PERMISSIONS_OK = true;
+    checkPermissions();
+    if(APP_PERMISSIONS_OK) setAppStatus('ok', 'All permissions granted');
+  }, 2000);
+}
+
+// Run checks on startup
+setTimeout(function(){
+  setAppStatus('ok', 'Loaded');
+  checkPermissions();
+  checkLatestVersion();
+}, 1500);
+
+// Recheck version every 5 minutes
+setInterval(checkLatestVersion, 300000);
+
+/* ── MULTI-AI DEVELOPER SYSTEM ── */
+var DEV_AI_KEYS_KEY = 'astranov.dev.ai.keys.v1';
+var ACTIVE_DEV_AI = 'claude';
+var DEV_AI_HISTORIES = { claude:[], chatgpt:[], custom:[] };
+
+function getDevAIKeys(){ try{ return JSON.parse(localStorage.getItem(DEV_AI_KEYS_KEY)||'{}'); }catch(e){ return {}; } }
+function saveDevAIKeys(){
+  var keys = {
+    openai: (document.getElementById('dev-openai-key')||{}).value || '',
+    customUrl: (document.getElementById('dev-custom-url')||{}).value || '',
+    customKey: (document.getElementById('dev-custom-key')||{}).value || ''
+  };
+  localStorage.setItem(DEV_AI_KEYS_KEY, JSON.stringify(keys));
+  ownerConsoleAddMessage('system','AI keys saved locally.');
+}
+function hydrateDevAIKeys(){
+  var keys = getDevAIKeys();
+  var el;
+  el = document.getElementById('dev-openai-key'); if(el && keys.openai) el.value = keys.openai;
+  el = document.getElementById('dev-custom-url'); if(el && keys.customUrl) el.value = keys.customUrl;
+  el = document.getElementById('dev-custom-key'); if(el && keys.customKey) el.value = keys.customKey;
+}
+
+function switchDevAI(ai, tabEl){
+  // Save current history
+  var thread = document.getElementById('owner-console-thread');
+  if(thread) DEV_AI_HISTORIES[ACTIVE_DEV_AI] = thread.innerHTML;
+  ACTIVE_DEV_AI = ai;
+  // Update tab UI
+  document.querySelectorAll('.ai-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.ai === ai); });
+  // Restore history
+  if(thread) thread.innerHTML = DEV_AI_HISTORIES[ai] || '';
+  // Update label
+  var label = document.getElementById('dev-ai-label');
+  var labels = { claude:'Claude (Anthropic) — Developer Chat', chatgpt:'ChatGPT (OpenAI) — Developer Chat', custom:'Custom API — Developer Chat' };
+  if(label) label.textContent = labels[ai] || 'Developer Chat';
+}
+
+/* Override ownerSendWorkshop to route to active AI */
+var _origOwnerSend = ownerSendWorkshop;
+ownerSendWorkshop = async function(){
+  if(ACTIVE_DEV_AI === 'claude') return _origOwnerSend();
+  if(ACTIVE_DEV_AI === 'chatgpt') return sendToDevChatGPT();
+  if(ACTIVE_DEV_AI === 'custom') return sendToDevCustom();
+};
+
+async function sendToDevChatGPT(){
+  if(!(CU && isOwner(CU))) return;
+  var input = document.getElementById('owner-console-input');
+  var prompt = (input?.value || '').trim();
+  if(!prompt) return;
+  input.value = '';
+  ownerConsoleAddMessage('owner', prompt);
+  var keys = getDevAIKeys();
+  if(!keys.openai){
+    ownerConsoleAddMessage('system','OpenAI API key not set. Add it in the AI Keys section on the left.');
+    return;
+  }
+  ownerConsoleAddMessage('system','Sending to ChatGPT...');
+  try{
+    var res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + keys.openai },
+      body: JSON.stringify({
+        model:'gpt-4o',
+        max_tokens:2000,
+        messages:[
+          { role:'system', content:'You are a developer assistant for Astranov Internet Operating System (single HTML file, ' + (currentIndexHtml().length/1024).toFixed(0) + 'KB). Format code changes as FIND: ```old``` REPLACE: ```new```. Be precise.' },
+          { role:'user', content: prompt }
+        ]
+      })
+    });
+    if(!res.ok) throw new Error('OpenAI API: ' + res.status);
+    var data = await res.json();
+    var reply = data.choices?.[0]?.message?.content || 'No response.';
+    ownerConsoleAddMessage('assistant', reply);
+    autoExtractPatch(reply);
+  }catch(e){
+    ownerConsoleAddMessage('system','ChatGPT error: ' + e.message);
+  }
+}
+
+async function sendToDevCustom(){
+  if(!(CU && isOwner(CU))) return;
+  var input = document.getElementById('owner-console-input');
+  var prompt = (input?.value || '').trim();
+  if(!prompt) return;
+  input.value = '';
+  ownerConsoleAddMessage('owner', prompt);
+  var keys = getDevAIKeys();
+  if(!keys.customUrl){
+    ownerConsoleAddMessage('system','Custom API URL not set. Add it in the AI Keys section.');
+    return;
+  }
+  ownerConsoleAddMessage('system','Sending to custom API...');
+  try{
+    var headers = { 'Content-Type':'application/json' };
+    if(keys.customKey) headers['Authorization'] = 'Bearer ' + keys.customKey;
+    var res = await fetch(keys.customUrl, {
+      method:'POST', headers:headers,
+      body: JSON.stringify({ prompt:prompt, app_name:'Astranov Internet Operating System', version:APP_VERSION })
+    });
+    if(!res.ok) throw new Error('Custom API: ' + res.status);
+    var data = await res.json();
+    var reply = data.reply || data.content || data.choices?.[0]?.message?.content || JSON.stringify(data).substring(0,500);
+    ownerConsoleAddMessage('assistant', reply);
+    autoExtractPatch(reply);
+  }catch(e){
+    ownerConsoleAddMessage('system','Custom API error: ' + e.message);
+  }
+}
+
+function autoExtractPatch(reply){
+  var findMatch = reply.match(/FIND:\s*```([\s\S]*?)```/);
+  var replaceMatch = reply.match(/REPLACE:\s*```([\s\S]*?)```/);
+  if(findMatch && replaceMatch){
+    document.getElementById('patch-find').value = findMatch[1].trim();
+    document.getElementById('patch-replace').value = replaceMatch[1].trim();
+    ownerConsoleAddMessage('system','✓ Patch auto-loaded. Review and click Apply.');
+  }
+}
+
+// Hydrate keys on workshop open
+var _origOpenWorkshop = openOwnerWorkshop;
+openOwnerWorkshop = function(){
+  _origOpenWorkshop();
+  hydrateDevAIKeys();
+};
 var AI_MEMORY_KEY = 'astranov.ai.memory.v1';
 var AI_CONV_HISTORY_KEY = 'astranov.ai.history.v1';
 var AI_USER_PREFS_KEY = 'astranov.ai.prefs.v1';
@@ -6092,7 +6547,7 @@ Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
 Architecture: Spartan Script V2 | Single Source of Record
 
 MISSION: Internet operating system with AI-first control.
-NAME: Astranov Internet Operating System. No Trinity naming anywhere.
+NAME: Astranov Internet Operating System. No Astranov naming anywhere.
 STACK: Single HTML | Supabase | Leaflet | Three.js | astranov.eu
 
 OWNER RULE
@@ -6124,7 +6579,7 @@ Push current index.html through GitHub Contents API.
 
 MISSION
 Astranov Internet Operating System. AI-first control interface.
-No Trinity naming anywhere.
+No Astranov naming anywhere.
 
 STACK [LOCKED]
 Single HTML | Supabase | Leaflet | Three.js | astranov.eu
@@ -7827,40 +8282,63 @@ Keep rails and ribbons transparent. Keep controls readable.
 <!-- OWNER WORKSHOP: visible only to owner account -->
 <div id="owner-console">
   <div class="owner-console-head">
-    <div>
-      <div class="owner-console-title">Owner Workshop</div>
-      <div class="owner-console-sub">Talk to the in-app build bridge, export the live index, or commit to GitHub.</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="owner-console-title">⚡ Developer Console</div>
+      <div class="owner-console-sub">Multi-AI · Unified GitHub Deploy</div>
     </div>
     <button class="owner-console-close" onclick="closeOwnerWorkshop()">×</button>
   </div>
+  <!-- AI SELECTOR TABS -->
+  <div class="ai-tab-bar">
+    <button class="ai-tab active" data-ai="claude" onclick="switchDevAI('claude',this)">Claude (Anthropic)</button>
+    <button class="ai-tab" data-ai="chatgpt" onclick="switchDevAI('chatgpt',this)">ChatGPT (OpenAI)</button>
+    <button class="ai-tab" data-ai="custom" onclick="switchDevAI('custom',this)">Custom API</button>
+  </div>
   <div class="owner-console-grid">
+    <!-- LEFT: Tools + GitHub + Patch -->
     <div class="owner-console-stack">
-      <div class="owner-console-label">GitHub repo settings</div>
+      <div class="owner-console-label">GitHub deploy</div>
       <div class="owner-console-row">
         <input id="owner-gh-owner" class="owner-console-input" placeholder="Repo owner"/>
         <input id="owner-gh-repo" class="owner-console-input" placeholder="Repository"/>
       </div>
       <div class="owner-console-row">
-        <input id="owner-gh-branch" class="owner-console-input" placeholder="Branch"/>
-        <input id="owner-gh-path" class="owner-console-input" placeholder="Path, e.g. index.html"/>
+        <input id="owner-gh-branch" class="owner-console-input" placeholder="Branch (main)"/>
+        <input id="owner-gh-path" class="owner-console-input" placeholder="Path (index.html)"/>
       </div>
-      <input id="owner-gh-token" class="owner-console-input" placeholder="GitHub token or fine-grained PAT" type="password"/>
-      <div class="owner-console-note">Stored locally in this browser for the owner only. For safer deployment, route GitHub writes through your own backend.</div>
+      <input id="owner-gh-token" class="owner-console-input" placeholder="GitHub token" type="password"/>
       <div class="owner-console-actions">
-        <button class="owner-console-btn" onclick="saveOwnerGithubCfg()">Save GitHub Settings</button>
-        <button class="owner-console-btn" onclick="downloadCurrentIndexHtml()">Download Current index.html</button>
-        <button class="owner-console-btn primary" onclick="ownerGithubPushCurrentIndex()">Send Current index.html to GitHub</button>
+        <button class="owner-console-btn" onclick="saveOwnerGithubCfg()">💾 Save</button>
+        <button class="owner-console-btn" onclick="downloadCurrentIndexHtml()">📥 Export</button>
+        <button class="owner-console-btn primary" onclick="ownerGithubPushCurrentIndex()">🚀 Push to GitHub</button>
       </div>
+      <!-- AI API Keys -->
+      <div class="owner-console-label" style="margin-top:6px;">AI API Keys (optional — stored locally)</div>
+      <input id="dev-openai-key" class="owner-console-input" placeholder="OpenAI API key (for ChatGPT tab)" type="password"/>
+      <input id="dev-custom-url" class="owner-console-input" placeholder="Custom API endpoint URL"/>
+      <input id="dev-custom-key" class="owner-console-input" placeholder="Custom API key" type="password"/>
+      <div class="owner-console-actions">
+        <button class="owner-console-btn" onclick="saveDevAIKeys()">💾 Save AI Keys</button>
+      </div>
+      <!-- Patch applicator -->
+      <div class="owner-console-label" style="margin-top:6px;">Quick patch (find → replace)</div>
+      <textarea id="patch-find" class="owner-console-input" style="min-height:50px;font-family:monospace;font-size:9px;" placeholder="FIND this exact text..."></textarea>
+      <textarea id="patch-replace" class="owner-console-input" style="min-height:50px;font-family:monospace;font-size:9px;" placeholder="REPLACE with..."></textarea>
+      <div class="owner-console-actions">
+        <button class="owner-console-btn" onclick="applyManualPatch()">⚡ Apply</button>
+        <button class="owner-console-btn" onclick="undoLastPatch()">↩ Undo</button>
+      </div>
+      <div id="patch-status" style="font-size:8px;color:var(--text-dim);"></div>
     </div>
+    <!-- RIGHT: AI Chat -->
     <div class="owner-console-stack">
-      <div class="owner-console-label">Owner conversation</div>
+      <div class="owner-console-label" id="dev-ai-label">Claude AI (Anthropic) — Developer Chat</div>
       <div id="owner-console-thread" class="owner-console-thread"></div>
-      <div class="owner-console-input-wrap">
-        <textarea id="owner-console-input" class="owner-console-input owner-console-textarea" placeholder="Owner instructions: patch the UI, clean transparency, update version text, prepare GitHub commit..."></textarea>
-        <div class="owner-console-actions">
-          <button class="owner-console-btn" onclick="ownerSeedCurrentState()">Summarize Current App State</button>
-          <button class="owner-console-btn primary" onclick="ownerSendWorkshop()">Send</button>
-        </div>
+      <textarea id="owner-console-input" class="owner-console-input owner-console-textarea" placeholder="Describe changes, bugs, features. The AI will analyze the code and suggest patches..."></textarea>
+      <div class="owner-console-actions">
+        <button class="owner-console-btn" onclick="ownerSeedCurrentState()">📊 State</button>
+        <button class="owner-console-btn" onclick="ownerSendCodeContext()">📋 + Code Context</button>
+        <button class="owner-console-btn primary" onclick="ownerSendWorkshop()">💬 Send</button>
       </div>
     </div>
   </div>
