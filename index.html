@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<html lang="en" style="--blue: #00c8ff; --la: #00c8ff; --la2: rgba(0,200,255,0.12); --lb: rgba(0,200,255,0.22);"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Astranov Internet Operating System · V2</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -1041,11 +1040,11 @@ body.lt,body.lt2,body.lt3{
 
 </style>
 </head>
-<body class="lt">
+<body class="lt2" style="--la: #00c8ff;">
 <div class="lf" id="lf"></div>
 
 <!-- STARTUP SPLASH (left 1/3 of screen) -->
-<div id="app-splash" onclick="dismissSplash()">
+<div id="app-splash" onclick="dismissSplash()" class="hidden" style="display: none;">
   <div class="splash-name">ASTRANOV</div>
   <div class="splash-full">Internet Operating System</div>
   <div class="splash-ver" id="splash-ver">1</div>
@@ -1066,14 +1065,14 @@ body.lt,body.lt2,body.lt3{
         <div class="atab on" id="tl" onclick="stab('login')">Login</div>
         <div class="atab" id="ts2" onclick="stab('signup')">Sign Up</div>
       </div>
-      <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off"/>
-      <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off"/>
+      <input class="ainp" id="ae" type="email" placeholder="Email address" autocomplete="off">
+      <input class="ainp" id="aphone" type="tel" placeholder="Phone number" autocomplete="off">
       <div style="position:relative;">
-        <input class="ainp" id="ap2" type="password" placeholder="Password" style="padding-right:50px;"/>
+        <input class="ainp" id="ap2" type="password" placeholder="Password" style="padding-right:50px;">
         <button type="button" onclick="togglePwdView()" id="pwd-toggle" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.15);border-radius:4px;color:var(--text-dim);font-size:9px;padding:4px 8px;cursor:pointer;font-family:var(--font);">SHOW</button>
       </div>
       <div id="auth-name-row" style="display:none;">
-        <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off"/>
+        <input class="ainp" id="an" type="text" placeholder="Full name" autocomplete="off">
       </div>
       <div id="auth-role-row" style="display:none;">
         <select class="asel" id="ar">
@@ -1094,12 +1093,12 @@ body.lt,body.lt2,body.lt3{
   <div class="tb-left">
     <div id="balance-display" onclick="showBalance()">
       <span class="balance-label">EUR</span>
-      <span class="balance-amount" id="bal">0.00</span>
+      <span class="balance-amount" id="bal">50.00</span>
     </div>
   </div>
   <!-- SMART APP NAME BUTTON — centered, 1/3 width max, dynamic -->
   <div class="tb-center">
-    <button id="app-status-btn" onclick="handleAppStatusClick()">
+    <button id="app-status-btn" onclick="handleAppStatusClick()" class="ok">
       <span class="asb-name">ASTRANOV</span>
       <span class="asb-sep">·</span>
       <span class="asb-ver">v<span id="asb-loaded">1</span></span>
@@ -1111,9 +1110,9 @@ body.lt,body.lt2,body.lt3{
   </div>
   <div class="tb-right">
     <div id="user-badge" onclick="toggleUserMenu()">
-      <div class="user-avatar" id="uavatar">?</div>
-      <span class="user-name" id="uname">Guest</span>
-      <span id="role-badge" style="display:none;font-size:8px;padding:1px 5px;border:1px solid rgba(0,200,255,0.18);border-radius:3px;white-space:nowrap;"></span>
+      <div class="user-avatar" id="uavatar">N</div>
+      <span class="user-name" id="uname">notisastranov@gmail.com</span>
+      <span id="role-badge" style="display: inline-block; font-size: 8px; padding: 1px 5px; border: 1px solid rgba(255, 214, 0, 0.3); border-radius: 3px; white-space: nowrap; background: rgba(255, 214, 0, 0.14); color: rgb(255, 214, 0);">Owner</span>
     </div>
   </div>
 </div>
@@ -1121,45 +1120,45 @@ body.lt,body.lt2,body.lt3{
 <!-- LEFT PANEL -->
 <div id="left-panel">
   <button class="lp-btn" data-tip="Settings" data-menu="mst" onclick="tmenu(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
   </button>
   <button class="lp-btn" data-tip="Profile" data-menu="mpr" onclick="tmenu(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
   </button>
   <button class="lp-btn" data-tip="My Shop" data-menu="mshop" onclick="tmenu(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
   </button>
   <button class="lp-btn" data-tip="Driver Mode" data-menu="mdriver" onclick="tmenu(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
   </button>
   <div class="lp-sp"></div>
   <button class="lp-btn" id="btn-post" data-tip="+ Post" onclick="openPost()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
   </button>
 </div>
 
 <!-- RIGHT PANEL -->
 <div id="right-panel">
   <button class="rp-btn" data-tip="Layers" data-menu="mly" onclick="tmenu(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
   </button>
   <button class="rp-btn" data-tip="Listings" onclick="toggleListings(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
   </button>
   <button class="rp-btn" data-tip="My Location" onclick="geolocate()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>
   </button>
   <button class="rp-btn" data-tip="Refresh" onclick="refreshData()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
   </button>
   <button class="rp-btn" data-tip="Radar" onclick="toggleRadar(this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
   </button>
 </div>
 
 <!-- STAGE -->
 <div id="stage">
-  <canvas id="gc"></canvas>
+  <canvas id="gc" width="956" height="1108" style="width: 478px; height: 554px;"></canvas>
   <div id="mc"></div>
   <canvas id="ac"></canvas>
   <canvas id="game-canvas"></canvas>
@@ -1167,48 +1166,92 @@ body.lt,body.lt2,body.lt3{
   <!-- ISS tracker (Layer 1) -->
   <div id="iss-box">
     <span class="iss-dot"></span><span style="color:#ffd600;letter-spacing:0.1em;">ISS LIVE</span>
-    <div id="iss-info" style="margin-top:2px;">loading…</div>
+    <div id="iss-info" style="margin-top:2px;">LAT:51.8° LNG:86.0° 27566km/h</div>
   </div>
 
-  <div id="orbital-feed" aria-label="Live orbital feed"></div>
+  <div id="orbital-feed" aria-label="Live orbital feed" style="display: none;"><div class="orb-connector" data-orb-card="0"><div class="orb-line"></div><div class="orb-pin"></div></div>
+    <div class="orb-card" data-orb-card="0" data-lat="0.00000" data-lng="103.81980">
+      <div class="orb-media"></div>
+      <div class="orb-body">
+        <div>
+          <div class="orb-chip offer"><span class="orb-pulse"></span>offer</div>
+          <h4>Deep Blue Dive Center</h4>
+          <p>PADI certified diving school. Discover shipwrecks, caves, and reef dives around Rhodes and nearby islan…</p>
+        </div>
+        <div class="orb-meta"><span>SHOP</span><span>diving</span></div>
+      </div>
+    </div><div class="orb-connector" data-orb-card="1"><div class="orb-line"></div><div class="orb-pin"></div></div>
+    <div class="orb-card" data-orb-card="1" data-lat="0.00000" data-lng="-74.00600">
+      <div class="orb-media"></div>
+      <div class="orb-body">
+        <div>
+          <div class="orb-chip offer"><span class="orb-pulse"></span>offer</div>
+          <h4>Taverna Cosmos</h4>
+          <p>Traditional Greek kitchen. Fresh fish daily, meze plates, local wine. Rooftop terrace with Aegean views.</p>
+        </div>
+        <div class="orb-meta"><span>SHOP</span><span>food</span></div>
+      </div>
+    </div><div class="orb-connector" data-orb-card="2"><div class="orb-line"></div><div class="orb-pin"></div></div>
+    <div class="orb-card" data-orb-card="2" data-lat="0.00000" data-lng="-0.12760">
+      <div class="orb-media"></div>
+      <div class="orb-body">
+        <div>
+          <div class="orb-chip offer"><span class="orb-pulse"></span>offer</div>
+          <h4>Yiannis Barber &amp; Style</h4>
+          <p>Old school barbershop meets modern style. Haircuts, beard trims, hot towel shaves. Walk-ins welcome.</p>
+        </div>
+        <div class="orb-meta"><span>SHOP</span><span>salon</span></div>
+      </div>
+    </div><div class="orb-connector" data-orb-card="3"><div class="orb-line"></div><div class="orb-pin"></div></div>
+    <div class="orb-card" data-orb-card="3" data-lat="36.44410" data-lng="28.22430">
+      <div class="orb-media"><img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&amp;h=250&amp;fit=crop" alt="Tamam Restaurant"></div>
+      <div class="orb-body">
+        <div>
+          <div class="orb-chip offer"><span class="orb-pulse"></span>offer</div>
+          <h4>Tamam Restaurant</h4>
+          <p>Traditional Greek cuisine in the heart of Rhodes Old Town. Fresh seafood, moussaka, souvlaki, and local…</p>
+        </div>
+        <div class="orb-meta"><span>RESTAURANT / FOOD</span><span>LIVE</span></div>
+      </div>
+    </div></div>
 
   <!-- Search bar (Layer 2) -->
   <div id="sb">
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);flex-shrink:0;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--text-dim);flex-shrink:0;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()">
   </div>
 
   <!-- PERFORMANCE MONITOR (top-left) -->
   <div id="perf-hud">
     <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"/><stop offset="100%" stop-color="rgba(3,8,16,0.35)"/></radialGradient>
+        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"></stop><stop offset="100%" stop-color="rgba(3,8,16,0.35)"></stop></radialGradient>
       </defs>
       <!-- Background -->
-      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
+      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"></circle>
       <!-- 6 sections of 60° each — pie wedges from center -->
       <!-- Section 0: CPU (top, 330°-30°) -->
-      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"/>
+      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"></path>
       <!-- Section 1: MAP (60°, 30°-90°) -->
-      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"/>
+      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"></path>
       <!-- Section 2: RAM (120°, 90°-150°) -->
-      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"/>
+      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"></path>
       <!-- Section 3: STORAGE (180°, 150°-210°) -->
-      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"/>
+      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"></path>
       <!-- Section 4: BATTERY (240°, 210°-270°) -->
-      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"/>
+      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"></path>
       <!-- Section 5: NETWORK (300°, 270°-330°) -->
-      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"/>
+      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"></path>
       <!-- Divider lines -->
-      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"/>
-      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"/>
+      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"></line>
+      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"></line>
       <!-- Inner circle -->
-      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"></circle>
       <!-- Section labels (around the edge) -->
       <text x="78" y="20" class="perf-label">CPU</text>
       <text x="106" y="50" class="perf-label">MAP</text>
@@ -1237,20 +1280,20 @@ body.lt,body.lt2,body.lt3{
     <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="perfBg" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(3,8,16,0.15)"/>
-          <stop offset="80%" stop-color="rgba(3,8,16,0.08)"/>
-          <stop offset="100%" stop-color="rgba(3,8,16,0)"/>
+          <stop offset="0%" stop-color="rgba(3,8,16,0.15)"></stop>
+          <stop offset="80%" stop-color="rgba(3,8,16,0.08)"></stop>
+          <stop offset="100%" stop-color="rgba(3,8,16,0)"></stop>
         </radialGradient>
       </defs>
       <!-- Background -->
-      <circle cx="55" cy="55" r="52" fill="url(#perfBg)" stroke="rgba(0,200,255,0.15)" stroke-width="1"/>
+      <circle cx="55" cy="55" r="52" fill="url(#perfBg)" stroke="rgba(0,200,255,0.15)" stroke-width="1"></circle>
       <!-- Inner ring -->
-      <circle cx="55" cy="55" r="32" fill="none" stroke="rgba(0,200,255,0.08)" stroke-width="0.5"/>
+      <circle cx="55" cy="55" r="32" fill="none" stroke="rgba(0,200,255,0.08)" stroke-width="0.5"></circle>
       <!-- 6 performance arc sections (each 55° with 5° gap) -->
       <!-- Section arcs drawn by JS with correct colors -->
-      <g id="perf-arcs"></g>
+      <g id="perf-arcs"><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-cpu" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="69.11503837897544" style="transform-origin: 55px 55px;"></circle><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-ram" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="23.03834612632515" style="transform-origin: 55px 55px;"></circle><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-storage" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="-23.03834612632515" style="transform-origin: 55px 55px;"></circle><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-battery" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="-69.11503837897544" style="transform-origin: 55px 55px;"></circle><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-temp" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="-115.19173063162573" style="transform-origin: 55px 55px;"></circle><circle cx="55" cy="55" r="44" class="perf-section good" id="perf-arc-network" stroke-dasharray="42.23696789826277 234.223185617639" stroke-dashoffset="-161.26842288427602" style="transform-origin: 55px 55px;"></circle></g>
       <!-- Section labels and values (positioned by JS) -->
-      <g id="perf-labels"></g>
+      <g id="perf-labels"><text x="68.39070978381599" y="25.27668583783157" class="perf-icon">⚙</text><text x="68.39070978381599" y="33.27668583783157" class="perf-label">CPU</text><text x="68.39070978381599" y="41.27668583783157" class="perf-value" id="perf-val-cpu">10%</text><text x="83.97239842587388" y="49.735037766405256" class="perf-icon">☰</text><text x="83.97239842587388" y="57.735037766405256" class="perf-label">RAM</text><text x="83.97239842587388" y="65.73503776640526" class="perf-value" id="perf-val-ram">0%</text><text x="70.5816886420579" y="75.45835192857368" class="perf-icon">■</text><text x="70.5816886420579" y="83.45835192857368" class="perf-label">STOR</text><text x="70.5816886420579" y="91.45835192857368" class="perf-value" id="perf-val-storage">0%</text><text x="41.60929021618402" y="76.72331416216844" class="perf-icon">⚡</text><text x="41.60929021618402" y="84.72331416216844" class="perf-label">BAT</text><text x="41.60929021618402" y="92.72331416216844" class="perf-value" id="perf-val-battery">98%</text><text x="26.027601574126123" y="52.264962233594744" class="perf-icon">℃</text><text x="26.027601574126123" y="60.264962233594744" class="perf-label">TEMP</text><text x="26.027601574126123" y="68.26496223359474" class="perf-value" id="perf-val-temp">30°</text><text x="39.4183113579421" y="26.54164807142632" class="perf-icon">⇅</text><text x="39.4183113579421" y="34.54164807142632" class="perf-label">NET</text><text x="39.4183113579421" y="42.54164807142632" class="perf-value" id="perf-val-network">10.0Mb</text></g>
       <!-- Center readout -->
       <text x="55" y="52" class="perf-center-label">SYSTEM</text>
       <text x="55" y="62" class="perf-center-value" id="perf-overall">OK</text>
@@ -1258,71 +1301,71 @@ body.lt,body.lt2,body.lt3{
   </div>
 
   <!-- COMPASS RADAR HUD (top-right) -->
-  <div id="compass-hud">
+  <div id="compass-hud" class="">
     <svg id="compass-svg" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="radarSweepGrad" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0)" />
-          <stop offset="50%" stop-color="rgba(0,200,255,0.05)" />
-          <stop offset="100%" stop-color="rgba(0,200,255,0.25)" />
+          <stop offset="0%" stop-color="rgba(0,200,255,0)"></stop>
+          <stop offset="50%" stop-color="rgba(0,200,255,0.05)"></stop>
+          <stop offset="100%" stop-color="rgba(0,200,255,0.25)"></stop>
         </radialGradient>
         <!-- Front quarter bright, back dark -->
         <radialGradient id="radarBg" cx="50%" cy="30%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0.08)" />
-          <stop offset="40%" stop-color="rgba(3,12,24,0.15)" />
-          <stop offset="100%" stop-color="rgba(2,6,14,0.4)" />
+          <stop offset="0%" stop-color="rgba(0,200,255,0.08)"></stop>
+          <stop offset="40%" stop-color="rgba(3,12,24,0.15)"></stop>
+          <stop offset="100%" stop-color="rgba(2,6,14,0.4)"></stop>
         </radialGradient>
         <!-- Dark overlay for back 3/4 -->
         <linearGradient id="radarDark" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-          <stop offset="35%" stop-color="rgba(0,0,0,0)" />
-          <stop offset="100%" stop-color="rgba(0,0,0,0.35)" />
+          <stop offset="0%" stop-color="rgba(0,0,0,0)"></stop>
+          <stop offset="35%" stop-color="rgba(0,0,0,0)"></stop>
+          <stop offset="100%" stop-color="rgba(0,0,0,0.35)"></stop>
         </linearGradient>
         <!-- Bright front glow -->
         <radialGradient id="frontGlow" cx="50%" cy="20%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0.12)" />
-          <stop offset="50%" stop-color="rgba(0,200,255,0.03)" />
-          <stop offset="100%" stop-color="rgba(0,200,255,0)" />
+          <stop offset="0%" stop-color="rgba(0,200,255,0.12)"></stop>
+          <stop offset="50%" stop-color="rgba(0,200,255,0.03)"></stop>
+          <stop offset="100%" stop-color="rgba(0,200,255,0)"></stop>
         </radialGradient>
       </defs>
       <!-- Dark background -->
-      <circle cx="54" cy="54" r="52" fill="url(#radarBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1.5"/>
+      <circle cx="54" cy="54" r="52" fill="url(#radarBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1.5"></circle>
       <!-- Back 3/4 darkening -->
-      <circle cx="54" cy="54" r="51" fill="url(#radarDark)"/>
+      <circle cx="54" cy="54" r="51" fill="url(#radarDark)"></circle>
       <!-- Front quarter brightness -->
-      <ellipse cx="54" cy="28" rx="40" ry="28" fill="url(#frontGlow)"/>
+      <ellipse cx="54" cy="28" rx="40" ry="28" fill="url(#frontGlow)"></ellipse>
       <!-- Distance rings (periscope style) -->
-      <circle cx="54" cy="54" r="48" class="compass-ring"/>
-      <circle cx="54" cy="54" r="36" class="compass-ring-outer"/>
-      <circle cx="54" cy="54" r="24" class="compass-ring-outer"/>
-      <circle cx="54" cy="54" r="12" class="compass-ring-outer"/>
+      <circle cx="54" cy="54" r="48" class="compass-ring"></circle>
+      <circle cx="54" cy="54" r="36" class="compass-ring-outer"></circle>
+      <circle cx="54" cy="54" r="24" class="compass-ring-outer"></circle>
+      <circle cx="54" cy="54" r="12" class="compass-ring-outer"></circle>
       <!-- Distance labels -->
       <text x="54" y="19" class="dist-label">5km</text>
       <text x="54" y="31" class="dist-label">3km</text>
       <text x="54" y="43" class="dist-label">1km</text>
       <!-- Fixed forward indicator (always points up = user's facing direction) -->
-      <polygon points="54,4 51,10 57,10" fill="#00c8ff" opacity="0.7"/>
+      <polygon points="54,4 51,10 57,10" fill="#00c8ff" opacity="0.7"></polygon>
       <!-- Compass bezel group (ROTATES with heading — ticks, cardinals, mils all rotate) -->
-      <g id="compass-needle-group">
+      <g id="compass-needle-group" transform="rotate(-51.30000000002357,54,54)">
         <!-- Ticks generated by JS -->
-        <g id="compass-ticks"></g>
+        <g id="compass-ticks"><line x1="54" y1="6" x2="54" y2="14" class="compass-tick-cardinal"></line><line x1="55.675175841720055" y1="6.029240303083405" x2="55.605376848315046" y2="8.028021957121595" class="compass-tick"></line><line x1="57.34831073971802" y1="6.116925587528442" x2="57.208797792229774" y2="8.112053688048086" class="compass-tick"></line><line x1="59.017366236847366" y1="6.262949022322886" x2="58.80830931031206" y2="8.25199281305943" class="compass-tick"></line><line x1="60.68030884608315" y1="6.467132700404626" x2="60.40196264416302" y2="8.447668837887768" class="compass-tick"></line><line x1="62.33511252801266" y1="6.729227855414017" x2="61.64051981734494" y2="10.668458867462846" class="compass-tick"></line><line x1="63.979761159252455" y1="7.048915164777334" x2="63.563937777616935" y2="9.005210366244945" class="compass-tick"></line><line x1="65.61225098878406" y1="7.4258051387521675" x2="65.12840719758472" y2="9.36639659130416" class="compass-tick"></line><line x1="67.23059307921596" y1="7.859438594960693" x2="66.67931836758196" y2="9.78196198683733" class="compass-tick"></line><line x1="68.83281572999748" y1="8.349287217832632" x2="68.21478174124758" y2="10.25140025042294" class="compass-tick"></line><line x1="70.4169668796321" y1="8.894754202276403" x2="69.04888630632942" y2="12.653524685420031" class="compass-tick"></line><line x1="71.98111648396377" y1="9.495174980794204" x2="71.23190329713195" y2="11.34954268992778" class="compass-tick"></line><line x1="73.52335886763841" y1="10.149818033155157" x2="72.70988558148682" y2="11.97690894844036" class="compass-tick"></line><line x1="75.04181504587572" y1="10.857885777639979" x2="74.16507275229756" y2="12.655473870238318" class="compass-tick"></line><line x1="76.53463501372276" y1="11.618515542771512" x2="75.59569188815098" y2="13.384410728489364" class="compass-tick"></line><line x1="78" y1="12.430780618346944" x2="75" y2="17.626933041053576" class="compass-tick-major"></line><text x="72.5" y="23.957060059975774" class="compass-text">30°</text><line x1="79.43612468319384" y1="13.293691384491552" x2="78.37628615472742" y2="14.989787576804403" class="compass-tick"></line><line x1="80.84125936659585" y1="14.206196517357995" x2="79.72287355965435" y2="15.864271662468077" class="compass-tick"></line><line x1="82.2136921100387" y1="15.167184270002522" x2="81.03812160545377" y2="16.785218258752415" class="compass-tick"></line><line x1="83.5517508156316" y1="16.17548382687734" x2="82.32042786498027" y2="17.751505334090787" class="compass-tick"></line><line x1="84.85380526495389" y1="17.229866730289054" x2="82.28265482620773" y2="20.29404450276497" class="compass-tick"></line><line x1="86.1182691052252" y1="18.329048377085073" x2="84.78000789250748" y2="19.815338028039868" class="compass-tick"></line><line x1="87.34360178203187" y1="19.471689583744748" x2="85.95428504111388" y2="20.910369184422052" class="compass-tick"></line><line x1="88.52831041625527" y1="20.656398217968132" x2="87.08963081557795" y2="22.045714958886126" class="compass-tick"></line><line x1="89.67095162291493" y1="21.881730894774805" x2="88.18466197196014" y2="23.219992107492523" class="compass-tick"></line><line x1="90.77013326971095" y1="23.146194735046116" x2="87.70595549723504" y2="25.717345173792275" class="compass-tick"></line><line x1="91.82451617312266" y1="24.448249184368407" x2="90.24849466590922" y2="25.679572135019725" class="compass-tick"></line><line x1="92.83281572999748" y1="25.78630788996129" x2="91.21478174124758" y2="26.961878394546236" class="compass-tick"></line><line x1="93.793803482642" y1="27.15874063340415" x2="92.13572833753192" y2="28.277126440345643" class="compass-tick"></line><line x1="94.70630861550845" y1="28.563875316806165" x2="93.0102124231956" y2="29.623713845272576" class="compass-tick"></line><line x1="95.56921938165306" y1="30.000000000000004" x2="90.37306695894642" y2="33" class="compass-tick-major"></line><text x="86.04293994002424" y="37.5" class="compass-text">60°</text><line x1="96.3814844572285" y1="31.46536498627724" x2="94.61558927151064" y2="32.40430811184902" class="compass-tick"></line><line x1="97.14211422236002" y1="32.958184954124285" x2="95.34452612976168" y2="33.83492724770244" class="compass-tick"></line><line x1="97.85018196684484" y1="34.47664113236159" x2="96.02309105155965" y2="35.29011441851319" class="compass-tick"></line><line x1="98.5048250192058" y1="36.018883516036226" x2="96.65045731007223" y2="36.76809670286805" class="compass-tick"></line><line x1="99.1052457977236" y1="37.5830331203679" x2="95.34647531457998" y2="38.95111369367058" class="compass-tick"></line><line x1="99.65071278216737" y1="39.16718427000252" x2="97.74859974957707" y2="39.78521825875242" class="compass-tick"></line><line x1="100.1405614050393" y1="40.769406920784036" x2="98.21803801316267" y2="41.32068163241804" class="compass-tick"></line><line x1="100.57419486124783" y1="42.387749011215945" x2="98.63360340869585" y2="42.871592802415286" class="compass-tick"></line><line x1="100.95108483522267" y1="44.02023884074755" x2="98.99478963375506" y2="44.43606222238307" class="compass-tick"></line><line x1="101.27077214458598" y1="45.66488747198734" x2="97.33154113253715" y2="46.35948018265506" class="compass-tick"></line><line x1="101.53286729959538" y1="47.31969115391686" x2="99.55233116211224" y2="47.59803735583699" class="compass-tick"></line><line x1="101.73705097767711" y1="48.982633763152634" x2="99.74800718694057" y2="49.19169068968794" class="compass-tick"></line><line x1="101.88307441247156" y1="50.651689260281984" x2="99.88794631195191" y2="50.79120220777023" class="compass-tick"></line><line x1="101.97075969691659" y1="52.32482415827995" x2="99.9719780428784" y2="52.394623151684954" class="compass-tick"></line><line x1="102" y1="54" x2="94" y2="54" class="compass-tick-cardinal"></line><line x1="101.97075969691659" y1="55.67517584172005" x2="99.9719780428784" y2="55.605376848315046" class="compass-tick"></line><line x1="101.88307441247156" y1="57.348310739718016" x2="99.88794631195191" y2="57.20879779222977" class="compass-tick"></line><line x1="101.73705097767711" y1="59.017366236847366" x2="99.74800718694057" y2="58.80830931031206" class="compass-tick"></line><line x1="101.53286729959538" y1="60.68030884608314" x2="99.55233116211224" y2="60.40196264416301" class="compass-tick"></line><line x1="101.27077214458598" y1="62.33511252801266" x2="97.33154113253715" y2="61.64051981734494" class="compass-tick"></line><line x1="100.95108483522267" y1="63.97976115925245" x2="98.99478963375506" y2="63.56393777761693" class="compass-tick"></line><line x1="100.57419486124783" y1="65.61225098878406" x2="98.63360340869585" y2="65.12840719758472" class="compass-tick"></line><line x1="100.1405614050393" y1="67.23059307921596" x2="98.21803801316267" y2="66.67931836758196" class="compass-tick"></line><line x1="99.65071278216737" y1="68.83281572999748" x2="97.74859974957707" y2="68.21478174124758" class="compass-tick"></line><line x1="99.1052457977236" y1="70.4169668796321" x2="95.34647531457998" y2="69.04888630632942" class="compass-tick"></line><line x1="98.5048250192058" y1="71.98111648396377" x2="96.65045731007223" y2="71.23190329713195" class="compass-tick"></line><line x1="97.85018196684484" y1="73.52335886763841" x2="96.02309105155965" y2="72.70988558148682" class="compass-tick"></line><line x1="97.14211422236002" y1="75.04181504587572" x2="95.34452612976168" y2="74.16507275229756" class="compass-tick"></line><line x1="96.3814844572285" y1="76.53463501372276" x2="94.61558927151064" y2="75.59569188815098" class="compass-tick"></line><line x1="95.56921938165306" y1="78" x2="90.37306695894642" y2="75" class="compass-tick-major"></line><text x="86.04293994002424" y="74.5" class="compass-text">120°</text><line x1="94.70630861550845" y1="79.43612468319384" x2="93.0102124231956" y2="78.37628615472742" class="compass-tick"></line><line x1="93.793803482642" y1="80.84125936659585" x2="92.13572833753192" y2="79.72287355965436" class="compass-tick"></line><line x1="92.83281572999748" y1="82.2136921100387" x2="91.21478174124758" y2="81.03812160545377" class="compass-tick"></line><line x1="91.82451617312266" y1="83.55175081563159" x2="90.24849466590922" y2="82.32042786498027" class="compass-tick"></line><line x1="90.77013326971095" y1="84.85380526495388" x2="87.70595549723504" y2="82.28265482620773" class="compass-tick"></line><line x1="89.67095162291493" y1="86.1182691052252" x2="88.18466197196014" y2="84.78000789250748" class="compass-tick"></line><line x1="88.52831041625527" y1="87.34360178203187" x2="87.08963081557795" y2="85.95428504111388" class="compass-tick"></line><line x1="87.34360178203187" y1="88.52831041625525" x2="85.95428504111388" y2="87.08963081557795" class="compass-tick"></line><line x1="86.1182691052252" y1="89.67095162291493" x2="84.78000789250748" y2="88.18466197196014" class="compass-tick"></line><line x1="84.85380526495389" y1="90.77013326971095" x2="82.28265482620773" y2="87.70595549723504" class="compass-tick"></line><line x1="83.5517508156316" y1="91.82451617312266" x2="82.32042786498027" y2="90.24849466590922" class="compass-tick"></line><line x1="82.2136921100387" y1="92.83281572999748" x2="81.03812160545377" y2="91.21478174124758" class="compass-tick"></line><line x1="80.84125936659585" y1="93.793803482642" x2="79.72287355965435" y2="92.13572833753193" class="compass-tick"></line><line x1="79.43612468319384" y1="94.70630861550845" x2="78.37628615472742" y2="93.0102124231956" class="compass-tick"></line><line x1="78" y1="95.56921938165306" x2="75" y2="90.37306695894642" class="compass-tick-major"></line><text x="72.5" y="88.04293994002423" class="compass-text">150°</text><line x1="76.53463501372276" y1="96.38148445722848" x2="75.59569188815098" y2="94.61558927151063" class="compass-tick"></line><line x1="75.04181504587572" y1="97.14211422236002" x2="74.16507275229756" y2="95.34452612976168" class="compass-tick"></line><line x1="73.52335886763841" y1="97.85018196684484" x2="72.70988558148682" y2="96.02309105155965" class="compass-tick"></line><line x1="71.98111648396377" y1="98.5048250192058" x2="71.23190329713195" y2="96.65045731007223" class="compass-tick"></line><line x1="70.4169668796321" y1="99.1052457977236" x2="69.04888630632942" y2="95.34647531457998" class="compass-tick"></line><line x1="68.83281572999748" y1="99.65071278216737" x2="68.21478174124758" y2="97.74859974957707" class="compass-tick"></line><line x1="67.23059307921596" y1="100.1405614050393" x2="66.67931836758196" y2="98.21803801316267" class="compass-tick"></line><line x1="65.61225098878406" y1="100.57419486124783" x2="65.12840719758472" y2="98.63360340869585" class="compass-tick"></line><line x1="63.979761159252455" y1="100.95108483522267" x2="63.563937777616935" y2="98.99478963375506" class="compass-tick"></line><line x1="62.33511252801266" y1="101.27077214458598" x2="61.64051981734494" y2="97.33154113253715" class="compass-tick"></line><line x1="60.68030884608315" y1="101.53286729959538" x2="60.40196264416302" y2="99.55233116211224" class="compass-tick"></line><line x1="59.017366236847366" y1="101.73705097767711" x2="58.80830931031206" y2="99.74800718694057" class="compass-tick"></line><line x1="57.34831073971802" y1="101.88307441247156" x2="57.208797792229774" y2="99.88794631195191" class="compass-tick"></line><line x1="55.675175841720055" y1="101.97075969691659" x2="55.605376848315046" y2="99.9719780428784" class="compass-tick"></line><line x1="54" y1="102" x2="54" y2="94" class="compass-tick-cardinal"></line><line x1="52.32482415827997" y1="101.97075969691659" x2="52.39462315168497" y2="99.9719780428784" class="compass-tick"></line><line x1="50.651689260281984" y1="101.88307441247156" x2="50.79120220777023" y2="99.88794631195191" class="compass-tick"></line><line x1="48.98263376315264" y1="101.73705097767711" x2="49.191690689687945" y2="99.74800718694058" class="compass-tick"></line><line x1="47.319691153916864" y1="101.53286729959538" x2="47.59803735583699" y2="99.55233116211224" class="compass-tick"></line><line x1="45.66488747198734" y1="101.27077214458598" x2="46.35948018265507" y2="97.33154113253715" class="compass-tick"></line><line x1="44.02023884074757" y1="100.95108483522267" x2="44.43606222238308" y2="98.99478963375506" class="compass-tick"></line><line x1="42.387749011215945" y1="100.57419486124783" x2="42.87159280241528" y2="98.63360340869585" class="compass-tick"></line><line x1="40.76940692078405" y1="100.1405614050393" x2="41.320681632418044" y2="98.21803801316267" class="compass-tick"></line><line x1="39.16718427000253" y1="99.65071278216737" x2="39.78521825875242" y2="97.74859974957707" class="compass-tick"></line><line x1="37.5830331203679" y1="99.1052457977236" x2="38.95111369367058" y2="95.34647531457998" class="compass-tick"></line><line x1="36.01888351603622" y1="98.5048250192058" x2="36.76809670286805" y2="96.65045731007223" class="compass-tick"></line><line x1="34.4766411323616" y1="97.85018196684484" x2="35.2901144185132" y2="96.02309105155965" class="compass-tick"></line><line x1="32.95818495412428" y1="97.14211422236002" x2="33.83492724770244" y2="95.34452612976168" class="compass-tick"></line><line x1="31.465364986277255" y1="96.38148445722851" x2="32.40430811184903" y2="94.61558927151064" class="compass-tick"></line><line x1="30.00000000000001" y1="95.56921938165306" x2="33.000000000000014" y2="90.37306695894642" class="compass-tick-major"></line><text x="35.50000000000001" y="88.04293994002424" class="compass-text">210°</text><line x1="28.56387531680617" y1="94.70630861550845" x2="29.62371384527258" y2="93.0102124231956" class="compass-tick"></line><line x1="27.158740633404157" y1="93.793803482642" x2="28.277126440345654" y2="92.13572833753193" class="compass-tick"></line><line x1="25.786307889961293" y1="92.83281572999748" x2="26.96187839454624" y2="91.21478174124758" class="compass-tick"></line><line x1="24.4482491843684" y1="91.82451617312266" x2="25.67957213501972" y2="90.24849466590922" class="compass-tick"></line><line x1="23.14619473504611" y1="90.77013326971095" x2="25.717345173792268" y2="87.70595549723504" class="compass-tick"></line><line x1="21.881730894774805" y1="89.67095162291493" x2="23.219992107492523" y2="88.18466197196014" class="compass-tick"></line><line x1="20.656398217968146" y1="88.52831041625527" x2="22.045714958886137" y2="87.08963081557796" class="compass-tick"></line><line x1="19.47168958374474" y1="87.34360178203187" x2="20.910369184422045" y2="85.95428504111388" class="compass-tick"></line><line x1="18.329048377085087" y1="86.11826910522521" x2="19.815338028039875" y2="84.78000789250748" class="compass-tick"></line><line x1="17.22986673028906" y1="84.85380526495389" x2="20.294044502764976" y2="82.28265482620773" class="compass-tick"></line><line x1="16.175483826877347" y1="83.5517508156316" x2="17.751505334090794" y2="82.32042786498029" class="compass-tick"></line><line x1="15.16718427000253" y1="82.21369211003872" x2="16.785218258752423" y2="81.03812160545377" class="compass-tick"></line><line x1="14.206196517358002" y1="80.84125936659585" x2="15.864271662468084" y2="79.72287355965436" class="compass-tick"></line><line x1="13.293691384491552" y1="79.43612468319384" x2="14.989787576804403" y2="78.37628615472742" class="compass-tick"></line><line x1="12.430780618346944" y1="78" x2="17.626933041053576" y2="75" class="compass-tick-major"></line><text x="21.957060059975767" y="74.5" class="compass-text">240°</text><line x1="11.618515542771519" y1="76.53463501372278" x2="13.384410728489371" y2="75.595691888151" class="compass-tick"></line><line x1="10.857885777639979" y1="75.04181504587571" x2="12.655473870238318" y2="74.16507275229756" class="compass-tick"></line><line x1="10.149818033155164" y1="73.52335886763842" x2="11.976908948440368" y2="72.70988558148682" class="compass-tick"></line><line x1="9.49517498079421" y1="71.98111648396379" x2="11.34954268992778" y2="71.23190329713196" class="compass-tick"></line><line x1="8.894754202276403" y1="70.4169668796321" x2="12.653524685420031" y2="69.04888630632944" class="compass-tick"></line><line x1="8.349287217832632" y1="68.83281572999748" x2="10.25140025042294" y2="68.21478174124758" class="compass-tick"></line><line x1="7.859438594960707" y1="67.23059307921598" x2="9.781961986837338" y2="66.67931836758198" class="compass-tick"></line><line x1="7.4258051387521675" y1="65.61225098878406" x2="9.36639659130416" y2="65.12840719758472" class="compass-tick"></line><line x1="7.048915164777327" y1="63.97976115925245" x2="9.005210366244938" y2="63.56393777761693" class="compass-tick"></line><line x1="6.729227855414017" y1="62.33511252801265" x2="10.668458867462846" y2="61.64051981734493" class="compass-tick"></line><line x1="6.467132700404626" y1="60.68030884608316" x2="8.447668837887768" y2="60.40196264416302" class="compass-tick"></line><line x1="6.262949022322886" y1="59.01736623684738" x2="8.25199281305943" y2="58.80830931031207" class="compass-tick"></line><line x1="6.116925587528442" y1="57.34831073971802" x2="8.112053688048086" y2="57.208797792229774" class="compass-tick"></line><line x1="6.029240303083405" y1="55.67517584172003" x2="8.028021957121595" y2="55.60537684831503" class="compass-tick"></line><line x1="6" y1="54.00000000000001" x2="14" y2="54.00000000000001" class="compass-tick-cardinal"></line><line x1="6.029240303083405" y1="52.32482415827996" x2="8.028021957121595" y2="52.39462315168496" class="compass-tick"></line><line x1="6.116925587528435" y1="50.651689260282005" x2="8.112053688048078" y2="50.791202207770255" class="compass-tick"></line><line x1="6.2629490223228785" y1="48.982633763152656" x2="8.251992813059424" y2="49.19169068968796" class="compass-tick"></line><line x1="6.467132700404626" y1="47.31969115391686" x2="8.447668837887768" y2="47.598037355836986" class="compass-tick"></line><line x1="6.729227855414017" y1="45.66488747198734" x2="10.668458867462846" y2="46.35948018265506" class="compass-tick"></line><line x1="7.048915164777327" y1="44.02023884074757" x2="9.005210366244938" y2="44.436062222383086" class="compass-tick"></line><line x1="7.4258051387521675" y1="42.38774901121596" x2="9.36639659130416" y2="42.87159280241529" class="compass-tick"></line><line x1="7.859438594960693" y1="40.76940692078405" x2="9.78196198683733" y2="41.320681632418044" class="compass-tick"></line><line x1="8.349287217832632" y1="39.16718427000251" x2="10.25140025042294" y2="39.78521825875241" class="compass-tick"></line><line x1="8.894754202276395" y1="37.5830331203679" x2="12.653524685420031" y2="38.95111369367058" class="compass-tick"></line><line x1="9.495174980794204" y1="36.018883516036226" x2="11.34954268992778" y2="36.76809670286805" class="compass-tick"></line><line x1="10.14981803315515" y1="34.47664113236161" x2="11.976908948440347" y2="35.29011441851321" class="compass-tick"></line><line x1="10.857885777639979" y1="32.9581849541243" x2="12.65547387023831" y2="33.83492724770245" class="compass-tick"></line><line x1="11.618515542771512" y1="31.465364986277237" x2="13.384410728489364" y2="32.40430811184902" class="compass-tick"></line><line x1="12.430780618346944" y1="29.999999999999993" x2="17.626933041053576" y2="33" class="compass-tick-major"></line><text x="21.957060059975774" y="37.5" class="compass-text">300°</text><line x1="13.293691384491552" y1="28.56387531680617" x2="14.989787576804403" y2="29.62371384527258" class="compass-tick"></line><line x1="14.206196517357995" y1="27.158740633404157" x2="15.864271662468077" y2="28.277126440345654" class="compass-tick"></line><line x1="15.167184270002515" y1="25.786307889961293" x2="16.785218258752415" y2="26.96187839454624" class="compass-tick"></line><line x1="16.175483826877333" y1="24.44824918436842" x2="17.75150533409078" y2="25.67957213501974" class="compass-tick"></line><line x1="17.229866730289054" y1="23.146194735046116" x2="20.29404450276497" y2="25.717345173792275" class="compass-tick"></line><line x1="18.329048377085073" y1="21.881730894774805" x2="19.815338028039868" y2="23.219992107492523" class="compass-tick"></line><line x1="19.471689583744748" y1="20.656398217968125" x2="20.910369184422052" y2="22.045714958886123" class="compass-tick"></line><line x1="20.656398217968118" y1="19.471689583744762" x2="22.045714958886112" y2="20.91036918442206" class="compass-tick"></line><line x1="21.88173089477479" y1="18.329048377085087" x2="23.219992107492512" y2="19.815338028039875" class="compass-tick"></line><line x1="23.146194735046105" y1="17.22986673028906" x2="25.717345173792264" y2="20.294044502764976" class="compass-tick"></line><line x1="24.448249184368414" y1="16.17548382687734" x2="25.67957213501973" y2="17.75150533409078" class="compass-tick"></line><line x1="25.786307889961286" y1="15.16718427000253" x2="26.96187839454623" y2="16.785218258752423" class="compass-tick"></line><line x1="27.158740633404133" y1="14.20619651735801" x2="28.277126440345626" y2="15.864271662468099" class="compass-tick"></line><line x1="28.56387531680616" y1="13.293691384491552" x2="29.62371384527257" y2="14.989787576804403" class="compass-tick"></line><line x1="29.99999999999998" y1="12.430780618346958" x2="32.999999999999986" y2="17.62693304105359" class="compass-tick-major"></line><text x="35.499999999999986" y="23.95706005997578" class="compass-text">330°</text><line x1="31.465364986277244" y1="11.618515542771505" x2="32.404308111849026" y2="13.384410728489357" class="compass-tick"></line><line x1="32.95818495412427" y1="10.857885777639993" x2="33.834927247702424" y2="12.655473870238325" class="compass-tick"></line><line x1="34.47664113236159" y1="10.149818033155157" x2="35.2901144185132" y2="11.976908948440354" class="compass-tick"></line><line x1="36.01888351603621" y1="9.49517498079421" x2="36.768096702868036" y2="11.34954268992778" class="compass-tick"></line><line x1="37.58303312036787" y1="8.894754202276403" x2="38.95111369367055" y2="12.653524685420038" class="compass-tick"></line><line x1="39.167184270002515" y1="8.349287217832632" x2="39.78521825875241" y2="10.25140025042294" class="compass-tick"></line><line x1="40.76940692078405" y1="7.859438594960686" x2="41.32068163241805" y2="9.781961986837324" class="compass-tick"></line><line x1="42.387749011215945" y1="7.4258051387521675" x2="42.87159280241528" y2="9.36639659130416" class="compass-tick"></line><line x1="44.02023884074753" y1="7.048915164777334" x2="44.43606222238305" y2="9.005210366244945" class="compass-tick"></line><line x1="45.66488747198734" y1="6.729227855414017" x2="46.35948018265506" y2="10.668458867462846" class="compass-tick"></line><line x1="47.319691153916885" y1="6.467132700404619" x2="47.598037355837015" y2="8.447668837887761" class="compass-tick"></line><line x1="48.98263376315264" y1="6.2629490223228785" x2="49.191690689687945" y2="8.251992813059424" class="compass-tick"></line><line x1="50.65168926028197" y1="6.116925587528442" x2="50.791202207770226" y2="8.112053688048086" class="compass-tick"></line><line x1="52.324824158279924" y1="6.029240303083412" x2="52.394623151684925" y2="8.028021957121602" class="compass-tick"></line><text x="54" y="20.5" class="compass-text-cardinal">N</text><text x="90" y="56.5" class="compass-text-cardinal">E</text><text x="54" y="92.5" class="compass-text-cardinal">S</text><text x="18" y="56.50000000000001" class="compass-text-cardinal">W</text></g>
         <!-- Mil markings -->
-        <g id="compass-mils"></g>
+        <g id="compass-mils"><line x1="54" y1="16" x2="54" y2="19" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="54" y="23.5" class="compass-mil">0</text><line x1="68.54197042987342" y1="18.8925777645711" x2="67.39392013277815" y2="21.664216362104966" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="80.87005768508881" y1="27.129942314911197" x2="78.74873734152916" y2="29.25126265847084" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="76.62741699796952" y="32.87258300203048" class="compass-mil">800</text><line x1="89.1074222354289" y1="39.458029570126584" x2="86.33578363789503" y2="40.60607986722186" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="92" y1="54" x2="89" y2="54" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="86" y="55.5" class="compass-mil">1600</text><line x1="89.1074222354289" y1="68.54197042987342" x2="86.33578363789503" y2="67.39392013277813" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="80.87005768508881" y1="80.8700576850888" x2="78.74873734152916" y2="78.74873734152916" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="76.62741699796952" y="78.12741699796952" class="compass-mil">2400</text><line x1="68.54197042987342" y1="89.1074222354289" x2="67.39392013277815" y2="86.33578363789503" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="54" y1="92" x2="54" y2="89" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="54" y="87.5" class="compass-mil">3200</text><line x1="39.45802957012659" y1="89.1074222354289" x2="40.60607986722186" y2="86.33578363789503" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="27.129942314911197" y1="80.87005768508881" x2="29.25126265847084" y2="78.74873734152916" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="31.37258300203048" y="78.12741699796952" class="compass-mil">4000</text><line x1="18.8925777645711" y1="68.54197042987342" x2="21.664216362104966" y2="67.39392013277815" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="16" y1="54.00000000000001" x2="19" y2="54.00000000000001" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="22" y="55.50000000000001" class="compass-mil">4800</text><line x1="18.892577764571094" y1="39.45802957012661" x2="21.66421636210496" y2="40.60607986722188" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><line x1="27.129942314911187" y1="27.129942314911197" x2="29.251262658470832" y2="29.25126265847084" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line><text x="31.372583002030474" y="32.87258300203048" class="compass-mil">5600</text><line x1="39.4580295701266" y1="18.8925777645711" x2="40.606079867221865" y2="21.66421636210496" stroke="rgba(0,200,255,0.3)" stroke-width="0.4"></line></g>
       </g>
       <!-- Radar sweep -->
-      <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"/>
+      <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"></path>
       <!-- Radar blips (populated by JS) -->
       <g id="radar-blips"></g>
       <!-- Route indicator line (populated by JS) -->
-      <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"/>
-      <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"/>
+      <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"></line>
+      <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"></circle>
       <!-- (Bezel rotation handles compass heading — no static needle) -->
       <!-- Center dot -->
-      <circle cx="54" cy="54" r="2.5" class="compass-center"/>
-      <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"/>
+      <circle cx="54" cy="54" r="2.5" class="compass-center"></circle>
+      <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"></circle>
       <!-- Heading readout -->
-      <rect x="36" y="95" width="36" height="12" rx="3" fill="rgba(3,8,16,0.6)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
+      <rect x="36" y="95" width="36" height="12" rx="3" fill="rgba(3,8,16,0.6)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"></rect>
+      <text id="compass-heading" x="54" y="104" class="compass-heading">51°</text>
       <text x="54" y="93" class="compass-heading-label">HDG</text>
     </svg>
   </div>
@@ -1342,18 +1385,18 @@ body.lt,body.lt2,body.lt3{
 
   <!-- Locate me + Globe return -->
   <div id="locate-btn" onclick="locateMe()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>
     <span>LOCATE ME</span>
   </div>
 
   <div id="globe-btn" onclick="goLayer(0)">
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
     <span>GLOBE VIEW</span>
   </div>
 
   <!-- Drone game button (Layer 2) -->
   <div id="drone-btn" onclick="startGame('drone')">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
     <span>DRONE GAME</span>
   </div>
 
@@ -1362,114 +1405,114 @@ body.lt,body.lt2,body.lt3{
     <div id="astranova-speech"></div>
     <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov Nordic warrior angel AI">
       <defs>
-        <linearGradient id="elfHair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#fff8e0"/><stop offset="30%" stop-color="#f0d060"/><stop offset="70%" stop-color="#c8a030"/><stop offset="100%" stop-color="#8a6820"/></linearGradient>
-        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c0d8f0"/><stop offset="15%" stop-color="#4890c8"/><stop offset="50%" stop-color="#1a4a7a"/><stop offset="100%" stop-color="#081428"/></linearGradient>
-        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"/><stop offset="30%" stop-color="#e0f0ff" stop-opacity="0.7"/><stop offset="60%" stop-color="#80c8f0" stop-opacity="0.4"/><stop offset="100%" stop-color="#2060a0" stop-opacity="0.15"/></linearGradient>
-        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef2e8"/><stop offset="100%" stop-color="#f0d4c0"/></linearGradient>
-        <linearGradient id="armorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4ff"/><stop offset="30%" stop-color="#6098c8"/><stop offset="100%" stop-color="#1a3a60"/></linearGradient>
-        <radialGradient id="elfGlow" cx="50%" cy="45%"><stop offset="0%" stop-color="#ffd860" stop-opacity="0.2"/><stop offset="50%" stop-color="#00c8ff" stop-opacity="0.15"/><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"/></radialGradient>
-        <radialGradient id="haloGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#ffd600" stop-opacity="0.6"/><stop offset="100%" stop-color="#ffd600" stop-opacity="0"/></radialGradient>
+        <linearGradient id="elfHair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#fff8e0"></stop><stop offset="30%" stop-color="#f0d060"></stop><stop offset="70%" stop-color="#c8a030"></stop><stop offset="100%" stop-color="#8a6820"></stop></linearGradient>
+        <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c0d8f0"></stop><stop offset="15%" stop-color="#4890c8"></stop><stop offset="50%" stop-color="#1a4a7a"></stop><stop offset="100%" stop-color="#081428"></stop></linearGradient>
+        <linearGradient id="elfWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.95"></stop><stop offset="30%" stop-color="#e0f0ff" stop-opacity="0.7"></stop><stop offset="60%" stop-color="#80c8f0" stop-opacity="0.4"></stop><stop offset="100%" stop-color="#2060a0" stop-opacity="0.15"></stop></linearGradient>
+        <linearGradient id="elfSkin" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef2e8"></stop><stop offset="100%" stop-color="#f0d4c0"></stop></linearGradient>
+        <linearGradient id="armorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e8f4ff"></stop><stop offset="30%" stop-color="#6098c8"></stop><stop offset="100%" stop-color="#1a3a60"></stop></linearGradient>
+        <radialGradient id="elfGlow" cx="50%" cy="45%"><stop offset="0%" stop-color="#ffd860" stop-opacity="0.2"></stop><stop offset="50%" stop-color="#00c8ff" stop-opacity="0.15"></stop><stop offset="100%" stop-color="#00c8ff" stop-opacity="0"></stop></radialGradient>
+        <radialGradient id="haloGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#ffd600" stop-opacity="0.6"></stop><stop offset="100%" stop-color="#ffd600" stop-opacity="0"></stop></radialGradient>
       </defs>
       <!-- Divine golden glow aura -->
-      <ellipse cx="70" cy="110" rx="60" ry="90" fill="url(#elfGlow)" opacity="0.5"/>
+      <ellipse cx="70" cy="110" rx="60" ry="90" fill="url(#elfGlow)" opacity="0.5"></ellipse>
       <!-- LEFT WING — large feathered angel wing -->
       <g class="elf-wing-l">
-        <path d="M56 95 C28 78 5 45 2 18 C10 32 22 44 35 50 C16 38 5 18 3 2 C14 22 28 38 42 46 C30 32 18 12 15 0 C28 18 40 36 50 46 C46 56 50 72 56 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
+        <path d="M56 95 C28 78 5 45 2 18 C10 32 22 44 35 50 C16 38 5 18 3 2 C14 22 28 38 42 46 C30 32 18 12 15 0 C28 18 40 36 50 46 C46 56 50 72 56 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"></path>
         <!-- Feather lines -->
-        <path d="M48 68 C32 55 16 32 12 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
-        <path d="M50 76 C36 64 20 44 16 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
-        <path d="M52 84 C40 72 26 52 22 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-        <path d="M44 58 C30 46 14 24 10 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
+        <path d="M48 68 C32 55 16 32 12 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"></path>
+        <path d="M50 76 C36 64 20 44 16 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"></path>
+        <path d="M52 84 C40 72 26 52 22 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"></path>
+        <path d="M44 58 C30 46 14 24 10 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"></path>
       </g>
       <!-- RIGHT WING -->
       <g class="elf-wing-r">
-        <path d="M84 95 C112 78 135 45 138 18 C130 32 118 44 105 50 C124 38 135 18 137 2 C126 22 112 38 98 46 C110 32 122 12 125 0 C112 18 100 36 90 46 C94 56 90 72 84 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"/>
-        <path d="M92 68 C108 55 124 32 128 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"/>
-        <path d="M90 76 C104 64 120 44 124 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"/>
-        <path d="M88 84 C100 72 114 52 118 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"/>
-        <path d="M96 58 C110 46 126 24 130 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"/>
+        <path d="M84 95 C112 78 135 45 138 18 C130 32 118 44 105 50 C124 38 135 18 137 2 C126 22 112 38 98 46 C110 32 122 12 125 0 C112 18 100 36 90 46 C94 56 90 72 84 85 Z" fill="url(#elfWing)" stroke="rgba(255,255,255,0.35)" stroke-width="0.6"></path>
+        <path d="M92 68 C108 55 124 32 128 18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="0.7"></path>
+        <path d="M90 76 C104 64 120 44 124 28" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.6"></path>
+        <path d="M88 84 C100 72 114 52 118 38" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="0.5"></path>
+        <path d="M96 58 C110 46 126 24 130 10" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.4"></path>
       </g>
       <!-- Sparkle particles (divine) -->
-      <circle cx="22" cy="38" r="1.8" fill="#ffd860" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite"/></circle>
-      <circle cx="118" cy="32" r="1.5" fill="#ffd860" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"/></circle>
-      <circle cx="38" cy="22" r="1.2" fill="#fff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="1.8s" repeatCount="indefinite"/></circle>
-      <circle cx="102" cy="18" r="1" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
-      <circle cx="60" cy="12" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.8;0;0.8" dur="2.5s" repeatCount="indefinite"/></circle>
-      <circle cx="80" cy="8" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
+      <circle cx="22" cy="38" r="1.8" fill="#ffd860" opacity="0.7"><animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.2s" repeatCount="indefinite"></animate></circle>
+      <circle cx="118" cy="32" r="1.5" fill="#ffd860" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.8s" repeatCount="indefinite"></animate></circle>
+      <circle cx="38" cy="22" r="1.2" fill="#fff" opacity="0.6"><animate attributeName="opacity" values="0.6;0;0.6" dur="1.8s" repeatCount="indefinite"></animate></circle>
+      <circle cx="102" cy="18" r="1" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"></animate></circle>
+      <circle cx="60" cy="12" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.8;0;0.8" dur="2.5s" repeatCount="indefinite"></animate></circle>
+      <circle cx="80" cy="8" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"></animate></circle>
       <!-- Golden halo (prominent, glowing) -->
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="url(#haloGlow)" opacity="0.4"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#ffd600" stroke-width="2" opacity="0.7"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.4"/>
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="url(#haloGlow)" opacity="0.4"></ellipse>
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#ffd600" stroke-width="2" opacity="0.7"></ellipse>
+      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.4"></ellipse>
       <!-- Long flowing blonde hair (back layer) -->
       <g class="elf-hair">
-        <path d="M48 48 C42 58 36 78 33 105 C35 98 40 82 46 68 C40 85 36 100 34 118 C40 106 48 88 52 74 Z" fill="url(#elfHair)" opacity="0.8"/>
-        <path d="M92 48 C98 58 104 78 107 105 C105 98 100 82 94 68 C100 85 104 100 106 118 C100 106 92 88 88 74 Z" fill="url(#elfHair)" opacity="0.8"/>
+        <path d="M48 48 C42 58 36 78 33 105 C35 98 40 82 46 68 C40 85 36 100 34 118 C40 106 48 88 52 74 Z" fill="url(#elfHair)" opacity="0.8"></path>
+        <path d="M92 48 C98 58 104 78 107 105 C105 98 100 82 94 68 C100 85 104 100 106 118 C100 106 92 88 88 74 Z" fill="url(#elfHair)" opacity="0.8"></path>
       </g>
       <!-- Shadow -->
-      <ellipse cx="70" cy="228" rx="16" ry="4" fill="#00c8ff" opacity="0.08"/>
+      <ellipse cx="70" cy="228" rx="16" ry="4" fill="#00c8ff" opacity="0.08"></ellipse>
       <!-- Head -->
-      <path d="M52 58 C52 40 59 32 70 32 C81 32 88 40 88 58 C88 72 82 80 70 80 C58 80 52 72 52 58 Z" fill="url(#elfSkin)"/>
+      <path d="M52 58 C52 40 59 32 70 32 C81 32 88 40 88 58 C88 72 82 80 70 80 C58 80 52 72 52 58 Z" fill="url(#elfSkin)"></path>
       <!-- Strong jaw -->
-      <path d="M56 70 C60 76 66 80 70 80 C74 80 80 76 84 70" fill="none" stroke="#e0c0b0" stroke-width="0.7"/>
+      <path d="M56 70 C60 76 66 80 70 80 C74 80 80 76 84 70" fill="none" stroke="#e0c0b0" stroke-width="0.7"></path>
       <!-- Hair top (golden blonde, long, flowing) -->
-      <path d="M50 52 C52 34 60 26 70 24 C80 26 88 34 90 52 C87 40 80 33 70 30 C60 33 53 40 50 52 Z" fill="url(#elfHair)"/>
+      <path d="M50 52 C52 34 60 26 70 24 C80 26 88 34 90 52 C87 40 80 33 70 30 C60 33 53 40 50 52 Z" fill="url(#elfHair)"></path>
       <!-- Hair sides flowing down -->
-      <path d="M50 52 C47 58 45 68 46 80 C48 72 50 62 52 55 Z" fill="url(#elfHair)" opacity="0.9"/>
-      <path d="M90 52 C93 58 95 68 94 80 C92 72 90 62 88 55 Z" fill="url(#elfHair)" opacity="0.9"/>
+      <path d="M50 52 C47 58 45 68 46 80 C48 72 50 62 52 55 Z" fill="url(#elfHair)" opacity="0.9"></path>
+      <path d="M90 52 C93 58 95 68 94 80 C92 72 90 62 88 55 Z" fill="url(#elfHair)" opacity="0.9"></path>
       <!-- Hair shine highlights -->
-      <path d="M58 32 C60 28 66 25 70 24" fill="none" stroke="rgba(255,248,200,0.6)" stroke-width="0.8" stroke-linecap="round"/>
-      <path d="M62 34 C65 30 70 28 74 30" fill="none" stroke="rgba(255,248,200,0.4)" stroke-width="0.5" stroke-linecap="round"/>
+      <path d="M58 32 C60 28 66 25 70 24" fill="none" stroke="rgba(255,248,200,0.6)" stroke-width="0.8" stroke-linecap="round"></path>
+      <path d="M62 34 C65 30 70 28 74 30" fill="none" stroke="rgba(255,248,200,0.4)" stroke-width="0.5" stroke-linecap="round"></path>
       <!-- Eyes (ice blue, intense) -->
-      <ellipse cx="63" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
-      <ellipse cx="77" cy="56" rx="4.8" ry="4.2" fill="#fff"/>
-      <ellipse cx="63.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
-      <ellipse cx="77.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"/>
-      <ellipse cx="63.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
-      <ellipse cx="77.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"/>
-      <circle cx="64" cy="56" r="1.8" fill="#0a2040"/>
-      <circle cx="78" cy="56" r="1.8" fill="#0a2040"/>
-      <circle cx="64.8" cy="55" r="1" fill="#fff"/>
-      <circle cx="78.8" cy="55" r="1" fill="#fff"/>
-      <circle cx="62.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
-      <circle cx="76.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"/>
+      <ellipse cx="63" cy="56" rx="4.8" ry="4.2" fill="#fff"></ellipse>
+      <ellipse cx="77" cy="56" rx="4.8" ry="4.2" fill="#fff"></ellipse>
+      <ellipse cx="63.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"></ellipse>
+      <ellipse cx="77.5" cy="56.5" rx="3.2" ry="3.5" fill="#3088c8"></ellipse>
+      <ellipse cx="63.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"></ellipse>
+      <ellipse cx="77.5" cy="56.5" rx="2.2" ry="2.5" fill="none" stroke="#50b0e8" stroke-width="0.5" opacity="0.5"></ellipse>
+      <circle cx="64" cy="56" r="1.8" fill="#0a2040"></circle>
+      <circle cx="78" cy="56" r="1.8" fill="#0a2040"></circle>
+      <circle cx="64.8" cy="55" r="1" fill="#fff"></circle>
+      <circle cx="78.8" cy="55" r="1" fill="#fff"></circle>
+      <circle cx="62.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"></circle>
+      <circle cx="76.5" cy="57.5" r="0.5" fill="#fff" opacity="0.6"></circle>
       <!-- Bold eyebrows -->
-      <path d="M56 51 C59 48.5 64 48 68 50" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
-      <path d="M72 50 C76 48 81 48.5 84 51" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M56 51 C59 48.5 64 48 68 50" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"></path>
+      <path d="M72 50 C76 48 81 48.5 84 51" fill="none" stroke="#8a7040" stroke-width="1.5" stroke-linecap="round"></path>
       <!-- Nose -->
-      <path d="M70 58 C69 62 68.5 65 69 66 L71 66 C71.5 65 71 62 70 58" fill="none" stroke="#d0a890" stroke-width="0.7" stroke-linecap="round"/>
+      <path d="M70 58 C69 62 68.5 65 69 66 L71 66 C71.5 65 71 62 70 58" fill="none" stroke="#d0a890" stroke-width="0.7" stroke-linecap="round"></path>
       <!-- Mouth -->
-      <path class="elf-mouth" id="elf-mouth" d="M66 71 C68 72.5 72 72.5 74 71" fill="none" stroke="#a06060" stroke-width="1.3" stroke-linecap="round"/>
+      <path class="elf-mouth" id="elf-mouth" d="M66 71 C68 72.5 72 72.5 74 71" fill="none" stroke="#a06060" stroke-width="1.3" stroke-linecap="round"></path>
       <!-- Beard stubble -->
-      <ellipse cx="70" cy="74" rx="9" ry="5" fill="#c8a860" opacity="0.04"/>
+      <ellipse cx="70" cy="74" rx="9" ry="5" fill="#c8a860" opacity="0.04"></ellipse>
       <!-- Neck -->
-      <rect x="64" y="78" width="12" height="10" rx="3" fill="url(#elfSkin)"/>
+      <rect x="64" y="78" width="12" height="10" rx="3" fill="url(#elfSkin)"></rect>
       <!-- NORSE ARMOR + ROBE -->
-      <path d="M42 88 C46 83 56 80 70 80 C84 80 94 83 98 88 C102 100 100 125 96 150 C92 162 80 174 70 178 C60 174 48 162 44 150 C40 125 38 100 42 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.12)" stroke-width="0.5"/>
+      <path d="M42 88 C46 83 56 80 70 80 C84 80 94 83 98 88 C102 100 100 125 96 150 C92 162 80 174 70 178 C60 174 48 162 44 150 C40 125 38 100 42 88 Z" fill="url(#elfDress)" stroke="rgba(0,200,255,0.12)" stroke-width="0.5"></path>
       <!-- Chest armor plate (Norse) -->
-      <path d="M52 90 C56 85 64 82 70 82 C76 82 84 85 88 90 L85 110 C80 115 70 117 70 117 C70 117 60 115 55 110 Z" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+      <path d="M52 90 C56 85 64 82 70 82 C76 82 84 85 88 90 L85 110 C80 115 70 117 70 117 C70 117 60 115 55 110 Z" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.3)" stroke-width="1"></path>
       <!-- Armor rune/symbol -->
-      <path d="M70 88 L70 112" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="0.8"/>
-      <path d="M64 95 L76 95" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
-      <path d="M64 105 L70 100 L76 105" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"/>
-      <circle cx="70" cy="92" r="2" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.4)" stroke-width="0.5"/>
+      <path d="M70 88 L70 112" fill="none" stroke="rgba(0,200,255,0.4)" stroke-width="0.8"></path>
+      <path d="M64 95 L76 95" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"></path>
+      <path d="M64 105 L70 100 L76 105" fill="none" stroke="rgba(0,200,255,0.3)" stroke-width="0.6"></path>
+      <circle cx="70" cy="92" r="2" fill="rgba(0,200,255,0.2)" stroke="rgba(0,200,255,0.4)" stroke-width="0.5"></circle>
       <!-- Shoulder armor -->
-      <ellipse cx="48" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <ellipse cx="92" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <ellipse cx="48" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"></ellipse>
+      <ellipse cx="92" cy="90" rx="8" ry="5" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"></ellipse>
       <!-- Belt with golden buckle -->
-      <path d="M48 115 C56 117 84 117 92 115" fill="none" stroke="#c8a040" stroke-width="2.5" stroke-linecap="round"/>
-      <rect x="65" y="112" width="10" height="6" rx="1.5" fill="#ffd860" stroke="#c8a040" stroke-width="0.5"/>
+      <path d="M48 115 C56 117 84 117 92 115" fill="none" stroke="#c8a040" stroke-width="2.5" stroke-linecap="round"></path>
+      <rect x="65" y="112" width="10" height="6" rx="1.5" fill="#ffd860" stroke="#c8a040" stroke-width="0.5"></rect>
       <!-- Strong arms -->
-      <path d="M44 90 C36 100 32 114 30 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
-      <path d="M96 90 C104 100 108 114 110 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"/>
+      <path d="M44 90 C36 100 32 114 30 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"></path>
+      <path d="M96 90 C104 100 108 114 110 125" fill="none" stroke="url(#elfSkin)" stroke-width="7" stroke-linecap="round"></path>
       <!-- Bracers (Norse) -->
-      <rect x="28" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <rect x="104" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+      <rect x="28" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"></rect>
+      <rect x="104" y="116" width="8" height="12" rx="2" fill="url(#armorGrad)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"></rect>
       <!-- Fists -->
-      <circle cx="29" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
-      <circle cx="111" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"/>
+      <circle cx="29" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"></circle>
+      <circle cx="111" cy="130" r="5" fill="#fef0ea" stroke="#e8c8b8" stroke-width="0.5"></circle>
       <!-- Warrior boots -->
-      <path d="M54 174 C53 178 52 184 54 186 L66 186 C68 184 66 178 66 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <path d="M74 174 C73 178 72 184 74 186 L86 186 C88 184 86 178 86 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+      <path d="M54 174 C53 178 52 184 54 186 L66 186 C68 184 66 178 66 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"></path>
+      <path d="M74 174 C73 178 72 184 74 186 L86 186 C88 184 86 178 86 174 Z" fill="#1a3050" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"></path>
     </svg>
     <div id="elf-sparkles" style="position:absolute;inset:0;pointer-events:none;overflow:visible;"></div>
   </div>
@@ -1496,7 +1539,7 @@ body.lt,body.lt2,body.lt3{
 </div>
 
 <!-- LISTINGS PANEL -->
-<div id="lp">
+<div id="lp" class="">
   <div class="lph">
     <span id="lp-title">Nearby</span>
     <span style="cursor:pointer;color:var(--text-dim);font-size:14px;" onclick="toggleListings()">×</span>
@@ -1528,25 +1571,25 @@ body.lt,body.lt2,body.lt3{
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Avatar</label>
     <div style="display:flex;align-items:center;gap:8px;width:100%;">
-      <div id="pr-avatar-preview" style="width:40px;height:40px;border-radius:50%;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.22);display:flex;align-items:center;justify-content:center;font-size:16px;color:#00c8ff;overflow:hidden;flex-shrink:0;" >?</div>
-      <input type="file" id="pr-avatar-file" accept="image/*" style="font-size:10px;flex:1;" onchange="previewAvatar(this)"/>
+      <div id="pr-avatar-preview" style="width:40px;height:40px;border-radius:50%;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.22);display:flex;align-items:center;justify-content:center;font-size:16px;color:#00c8ff;overflow:hidden;flex-shrink:0;">N</div>
+      <input type="file" id="pr-avatar-file" accept="image/*" style="font-size:10px;flex:1;" onchange="previewAvatar(this)">
     </div>
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Full Name</label>
-    <input id="pr-name" placeholder="Your name"/>
+    <input id="pr-name" placeholder="Your name">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Email (from login)</label>
-    <div id="pr-email" style="font-size:11px;color:var(--text);padding:4px 0;">—</div>
+    <div id="pr-email" style="font-size:11px;color:var(--text);padding:4px 0;">notisastranov@gmail.com</div>
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Phone</label>
-    <input id="pr-phone-input" type="tel" placeholder="+30..."/>
+    <input id="pr-phone-input" type="tel" placeholder="+30...">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Role</label>
-    <div id="pr-role" style="font-size:11px;color:var(--text);padding:4px 0;">—</div>
+    <div id="pr-role" style="font-size:11px;color:var(--text);padding:4px 0;">Owner</div>
   </div>
   <div class="mr">
     <button class="mr-submit" onclick="saveProfile()">Save Profile</button>
@@ -1563,7 +1606,7 @@ body.lt,body.lt2,body.lt3{
   <div class="mh">My Shop</div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Shop Name</label>
-    <input id="sh-name" placeholder="e.g. Aegean Diving Centre"/>
+    <input id="sh-name" placeholder="e.g. Aegean Diving Centre">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Category</label>
@@ -1580,19 +1623,19 @@ body.lt,body.lt2,body.lt3{
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Description</label>
-    <input id="sh-desc" placeholder="What do you offer?"/>
+    <input id="sh-desc" placeholder="What do you offer?">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Phone</label>
-    <input id="sh-phone" placeholder="+30..."/>
+    <input id="sh-phone" placeholder="+30...">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Website</label>
-    <input id="sh-web" placeholder="https://..."/>
+    <input id="sh-web" placeholder="https://...">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Photo</label>
-    <input type="file" id="sh-photo" accept="image/*"/>
+    <input type="file" id="sh-photo" accept="image/*">
   </div>
   <div class="mr">
     <button class="mr-submit" onclick="createShop()">Create Shop</button>
@@ -1613,15 +1656,15 @@ body.lt,body.lt2,body.lt3{
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Price per km (EUR)</label>
-    <input id="dr-price" type="number" placeholder="0.80" step="0.10" min="0.50"/>
+    <input id="dr-price" type="number" placeholder="0.80" step="0.10" min="0.50">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Available Hours</label>
-    <input id="dr-hours" placeholder="e.g. 9:00-22:00"/>
+    <input id="dr-hours" placeholder="e.g. 9:00-22:00">
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
     <label>Vehicle Photo</label>
-    <input type="file" id="dr-photo" accept="image/*"/>
+    <input type="file" id="dr-photo" accept="image/*">
   </div>
   <div class="mr" id="dr-status" style="color:var(--text-dim);">Status: Offline</div>
   <div class="mr">
@@ -1662,16 +1705,16 @@ body.lt,body.lt2,body.lt3{
         <option value="classifieds">Classifieds</option>
         <option value="event">Event / Class</option>
       </select>
-      <input class="minp" id="ptitle" placeholder="Title (e.g. Diving Lessons, Pizza, Room for rent…)"/>
+      <input class="minp" id="ptitle" placeholder="Title (e.g. Diving Lessons, Pizza, Room for rent…)">
       <textarea class="mta" id="pdesc" placeholder="Description — what are you offering?"></textarea>
-      <input class="minp" id="pprice" placeholder="Price (e.g. €25/hr, Free, From €10)"/>
-      <input class="minp" id="pcontact" placeholder="Contact / WhatsApp / Website"/>
+      <input class="minp" id="pprice" placeholder="Price (e.g. €25/hr, Free, From €10)">
+      <input class="minp" id="pcontact" placeholder="Contact / WhatsApp / Website">
       <span class="mlbl">Photos / Videos (up to 3 files)</span>
       <label class="mfile-btn" for="pfile">+ Add Photos or Video</label>
-      <input type="file" id="pfile" accept="image/*,video/*" multiple style="display:none;" onchange="handleFiles(this)"/>
+      <input type="file" id="pfile" accept="image/*,video/*" multiple="" style="display:none;" onchange="handleFiles(this)">
       <div id="pfile-info" style="font-size:10px;color:var(--la);display:none;"></div>
       <div class="mcoord">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         <span id="pcoord">Acquiring location…</span>
       </div>
     </div>
@@ -1689,16 +1732,16 @@ body.lt,body.lt2,body.lt3{
     <div class="pay-body">
       <div class="pay-note">Astranov 3.3.3 lets guests browse first. All vendor purchases use the in-app wallet balance. Reload the balance here inside the app, then buy directly from your balance.</div>
       <div class="pay-row">
-        <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR"/>
-        <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description"/>
+        <input class="minp" id="pay-amount" type="number" min="1" step="0.50" value="10.00" placeholder="Amount EUR">
+        <input class="minp" id="pay-label" value="Astranov wallet top-up" placeholder="Description">
       </div>
       <div class="pay-stack">
         <div class="mlbl">Payer</div>
         <div class="pay-row">
-          <input class="minp" id="pay-email" placeholder="Email"/>
-          <input class="minp" id="pay-phone" placeholder="Phone"/>
+          <input class="minp" id="pay-email" placeholder="Email">
+          <input class="minp" id="pay-phone" placeholder="Phone">
         </div>
-        <input class="minp" id="pay-name" placeholder="Name"/>
+        <input class="minp" id="pay-name" placeholder="Name">
       </div>
       <div class="pay-stack">
         <div class="mlbl">Checkout</div>
@@ -1710,9 +1753,9 @@ body.lt,body.lt2,body.lt3{
       </div>
       <div class="pay-stack pay-config">
         <div class="mlbl">Merchant config</div>
-        <input class="minp" id="cfg-stripe-key" placeholder="Stripe publishable key"/>
-        <input class="minp" id="cfg-stripe-endpoint" placeholder="Stripe Checkout Session endpoint, e.g. /api/stripe/create-checkout-session"/>
-        <input class="minp" id="cfg-paypal-client" placeholder="PayPal client ID"/>
+        <input class="minp" id="cfg-stripe-key" placeholder="Stripe publishable key">
+        <input class="minp" id="cfg-stripe-endpoint" placeholder="Stripe Checkout Session endpoint, e.g. /api/stripe/create-checkout-session">
+        <input class="minp" id="cfg-paypal-client" placeholder="PayPal client ID">
         <div class="pay-actions">
           <button class="pay-btn" onclick="savePaymentConfig()">Save Config</button>
           <button class="pay-btn" onclick="renderPayPalButtons(true)">Refresh PayPal</button>
@@ -1721,48 +1764,44 @@ body.lt,body.lt2,body.lt3{
       <div id="pay-status" class="pay-status">Payments standing by.</div>
       <div>
         <div class="mlbl" style="margin-bottom:6px;">Recent wallet actions</div>
-        <div id="pay-history" class="pay-history"></div>
+        <div id="pay-history" class="pay-history"><div class="pay-log" style="color:var(--text-dim);">No wallet actions yet.</div></div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- BOTTOM COMMAND BAR -->
-<div id="bottombar">
+<div id="bottombar" class="">
   <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
   </button>
-  <button class="bb-btn" id="speaker-btn" onclick="toggleSpeaker()" title="Speaker OFF — text only">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+  <button class="bb-btn on" id="speaker-btn" onclick="toggleSpeaker()" title="Speaker ON">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
   </button>
-  <input type="text" id="cmd-input" placeholder="Talk to Astranov — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
+  <input type="text" id="cmd-input" placeholder="Talk to Astranov..." autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()">
   <button class="bb-btn" onclick="sendCmd()" title="Send">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
   </button>
 </div>
-<div id="cmd-response">
+<div id="cmd-response" class="expanded" style="display: flex; max-height: 80vh;">
   <div class="chat-drag-handle" id="chat-drag"></div>
   <!-- CHANNEL SELECTOR DROPDOWN -->
   <div id="chat-channel-bar">
-    <span id="chat-channel-label">Channel</span>
+    <span id="chat-channel-label">Support &amp; Ideas</span>
     <select id="chat-channel-select" onchange="switchChatChannel(this.value)">
-      <option value="ai" selected>🤖 Astranov C.I.</option>
+      <option value="ai" selected="">🤖 Astranov C.I.</option>
       <option value="global">🌍 Global</option>
-      <optgroup label="📍 Local" id="local-channels-group">
-        <option value="local">📍 My Area</option>
-      </optgroup>
-      <optgroup label="👥 Teams" id="team-channels-group">
-        <option value="team">👥 General Team</option>
-      </optgroup>
-      <option value="support">💬 Support & Ideas</option>
+      <optgroup label="📍 Local" id="local-channels-group"><option value="local">📍 My Area</option><option value="local:local-municipal-unit-of-rhodes">📍 Municipal Unit of Rhodes</option></optgroup>
+      <optgroup label="👥 Teams" id="team-channels-group"><option value="team:team-default">🔒 My Team</option><option value="team:team-admins-mnft98mh">🔒 Admins</option></optgroup>
+      <option value="support">💬 Support &amp; Ideas</option>
     </select>
     <button onclick="promptNewTeam()" title="Suggest new team channel" style="width:26px;height:26px;border:1px solid rgba(0,200,255,0.15);border-radius:6px;background:rgba(0,200,255,0.06);color:#00c8ff;cursor:pointer;font-size:14px;font-weight:700;line-height:1;flex-shrink:0;">+</button>
   </div>
   <!-- REGULAR CHAT -->
-  <div class="ai-conv" id="ai-conv"></div>
+  <div class="ai-conv" id="ai-conv" style="display: none;"><div class="ai-msg system-msg"><div class="ai-sender">System</div>Live Earth online. Scroll outward for space. Scroll inward to descend toward Earth and sea.</div><div class="ai-msg system-msg"><div class="ai-sender">System</div>Speaker ON</div><div class="ai-msg system-msg"><div class="ai-sender">System</div>Speaker OFF — text only</div><div class="ai-msg system-msg"><div class="ai-sender">System</div>Speaker ON</div></div>
   <!-- DEV TOOLS (shown only when developer channel active) -->
   <!-- SUPPORT & IDEAS PANEL (shown when support channel active) -->
-  <div id="support-panel" style="display:none;flex:1;overflow-y:auto;padding:8px 12px;flex-direction:column;gap:6px;">
+  <div id="support-panel" style="display: flex; flex: 1 1 0%; overflow-y: auto; padding: 8px 12px; flex-direction: column; gap: 6px;">
     <!-- PUBLIC: Support thread (everyone sees) -->
     <div id="support-thread" style="flex:1;min-height:100px;max-height:35vh;overflow-y:auto;border:1px solid rgba(0,200,255,0.08);border-radius:8px;background:rgba(0,0,0,0.10);padding:8px;display:flex;flex-direction:column;gap:6px;"></div>
     <!-- PUBLIC: Idea/vote/support input -->
@@ -1773,19 +1812,19 @@ body.lt,body.lt2,body.lt3{
         <option value="vote">Start Vote</option>
         <option value="bug">Report Bug</option>
       </select>
-      <input id="support-input" class="owner-console-input" placeholder="Type your message, idea, or question..." style="flex:1;font-size:11px;padding:7px 10px;"/>
+      <input id="support-input" class="owner-console-input" placeholder="Type your message, idea, or question..." style="flex:1;font-size:11px;padding:7px 10px;">
       <button class="owner-console-btn primary" onclick="submitSupport()" style="white-space:nowrap;">Send</button>
     </div>
     <!-- PUBLIC: Active votes -->
     <div id="active-votes" style="display:none;margin-top:4px;"></div>
     <!-- PUBLIC: Announcements from owner (visible to all) -->
-    <div id="owner-announcements" style="display:none;margin-top:4px;border-top:1px solid rgba(0,200,255,0.06);padding-top:6px;"></div>
+    <div id="owner-announcements" style="display: block; margin-top: 4px; border-top: 1px solid rgba(0, 200, 255, 0.06); padding-top: 6px;"><div style="font-size:9px;color:#6a98b8;margin-bottom:4px;">ANNOUNCEMENTS</div><div style="font-size:9px;color:#c8e0f0;padding:3px 6px;border-left:2px solid rgba(0,200,255,0.3);margin-bottom:2px;">📢 New private team channel: "Admins" created.</div></div>
 
     <!-- ═══ OWNER-ONLY LAYER (hidden from regular users) ═══ -->
-    <div id="owner-dev-layer" style="display:none;margin-top:8px;border-top:1px solid rgba(255,153,0,0.15);padding-top:8px;">
+    <div id="owner-dev-layer" style="display: block; margin-top: 8px; border-top: 1px solid rgba(255, 153, 0, 0.15); padding-top: 8px;">
       <div style="font-size:9px;color:#ff9900;letter-spacing:0.06em;font-weight:600;margin-bottom:6px;">OWNER DEVELOPMENT (hidden from users)</div>
       <!-- Pending proposals for approval -->
-      <div id="approval-queue" style="margin-bottom:8px;"></div>
+      <div id="approval-queue" style="margin-bottom:8px;"><div style="font-size:9px;color:#5a8098;">No pending proposals.</div></div>
       <!-- AI tabs -->
       <div class="ai-tab-bar" style="margin-bottom:6px;">
         <button class="ai-tab active" data-ai="claude" onclick="switchDevAI('claude',this)">Claude</button>
@@ -1793,7 +1832,7 @@ body.lt,body.lt2,body.lt3{
         <button class="ai-tab" data-ai="custom" onclick="switchDevAI('custom',this)">Custom</button>
       </div>
       <!-- Dev thread -->
-      <div id="dev-thread" style="min-height:80px;max-height:30vh;overflow-y:auto;border:1px solid rgba(0,200,255,0.08);border-radius:8px;background:rgba(0,0,0,0.12);padding:8px;margin-bottom:6px;display:flex;flex-direction:column;gap:6px;"></div>
+      <div id="dev-thread" style="min-height:80px;max-height:30vh;overflow-y:auto;border:1px solid rgba(0,200,255,0.08);border-radius:8px;background:rgba(0,0,0,0.12);padding:8px;margin-bottom:6px;display:flex;flex-direction:column;gap:6px;"><div class="owner-msg owner">zoom button to my location doesn't work</div><div class="owner-msg system">Sending to Claude...</div><div class="owner-msg system">Error: Failed to fetch</div><div class="owner-msg system">Astranov v1 · 41 lines · 468KB · User: notisastranov@gmail.com [owner] · Layer: Map · Loc: 36.4319, 28.2277</div><div class="owner-msg system">Preparing GitHub commit for notisastranov/Astranov → index.html on main.</div></div>
       <textarea id="dev-input" class="owner-console-input owner-console-textarea" style="margin-bottom:4px;" placeholder="Owner: describe code changes, ask AI, build patches..."></textarea>
       <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">
         <button class="owner-console-btn" onclick="devSendMsg()">💬 Send</button>
@@ -1803,20 +1842,20 @@ body.lt,body.lt2,body.lt3{
         <button class="owner-console-btn primary" onclick="ownerGithubPushCurrentIndex()">🚀 Push</button>
       </div>
       <details style="margin-bottom:4px;">
-        <summary style="font-size:9px;color:#6a98b8;cursor:pointer;">GitHub & API Keys ▾</summary>
+        <summary style="font-size:9px;color:#6a98b8;cursor:pointer;">GitHub &amp; API Keys ▾</summary>
         <div style="padding:4px 0;display:flex;flex-direction:column;gap:3px;">
           <div style="display:flex;gap:3px;">
-            <input id="owner-gh-owner" class="owner-console-input" placeholder="Repo owner" style="font-size:9px;padding:4px 6px;"/>
-            <input id="owner-gh-repo" class="owner-console-input" placeholder="Repo" style="font-size:9px;padding:4px 6px;"/>
+            <input id="owner-gh-owner" class="owner-console-input" placeholder="Repo owner" style="font-size:9px;padding:4px 6px;">
+            <input id="owner-gh-repo" class="owner-console-input" placeholder="Repo" style="font-size:9px;padding:4px 6px;">
           </div>
           <div style="display:flex;gap:3px;">
-            <input id="owner-gh-branch" class="owner-console-input" placeholder="Branch" style="font-size:9px;padding:4px 6px;"/>
-            <input id="owner-gh-path" class="owner-console-input" placeholder="Path" style="font-size:9px;padding:4px 6px;"/>
+            <input id="owner-gh-branch" class="owner-console-input" placeholder="Branch" style="font-size:9px;padding:4px 6px;">
+            <input id="owner-gh-path" class="owner-console-input" placeholder="Path" style="font-size:9px;padding:4px 6px;">
           </div>
-          <input id="owner-gh-token" class="owner-console-input" placeholder="GitHub fine-grained PAT" type="password" style="font-size:9px;padding:4px 6px;"/>
-          <input id="dev-openai-key" class="owner-console-input" placeholder="OpenAI key" type="password" style="font-size:9px;padding:4px 6px;"/>
-          <input id="dev-custom-url" class="owner-console-input" placeholder="Custom API URL" style="font-size:9px;padding:4px 6px;"/>
-          <input id="dev-custom-key" class="owner-console-input" placeholder="Custom key" type="password" style="font-size:9px;padding:4px 6px;"/>
+          <input id="owner-gh-token" class="owner-console-input" placeholder="GitHub fine-grained PAT" type="password" style="font-size:9px;padding:4px 6px;">
+          <input id="dev-openai-key" class="owner-console-input" placeholder="OpenAI key" type="password" style="font-size:9px;padding:4px 6px;">
+          <input id="dev-custom-url" class="owner-console-input" placeholder="Custom API URL" style="font-size:9px;padding:4px 6px;">
+          <input id="dev-custom-key" class="owner-console-input" placeholder="Custom key" type="password" style="font-size:9px;padding:4px 6px;">
           <button class="owner-console-btn" onclick="saveOwnerGithubCfg();saveDevAIKeys();">💾 Save</button>
           <div style="font-size:7px;color:#5a8098;">Any AI can connect: provide the GitHub PAT + repo details above. AI sends FIND/REPLACE patches, owner approves with one click.</div>
         </div>
@@ -6650,11 +6689,11 @@ Keep rails and ribbons transparent. Keep controls readable.
     <div class="loc-picker">
       <div class="loc-map" id="loc-map-container">
         <svg class="loc-crosshair" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="14" cy="14" r="6" stroke="#00c8ff" stroke-width="2" fill="rgba(0,200,255,0.15)"/>
-          <line x1="14" y1="2" x2="14" y2="10" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="14" y1="18" x2="14" y2="26" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="2" y1="14" x2="10" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
-          <line x1="18" y1="14" x2="26" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="6" stroke="#00c8ff" stroke-width="2" fill="rgba(0,200,255,0.15)"></circle>
+          <line x1="14" y1="2" x2="14" y2="10" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"></line>
+          <line x1="14" y1="18" x2="14" y2="26" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"></line>
+          <line x1="2" y1="14" x2="10" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"></line>
+          <line x1="18" y1="14" x2="26" y2="14" stroke="#00c8ff" stroke-width="1.5" stroke-linecap="round"></line>
         </svg>
       </div>
       <div class="loc-bar">
@@ -6698,7 +6737,7 @@ Keep rails and ribbons transparent. Keep controls readable.
     <div class="team-picker" id="pf-team-picker">
       <div class="form-group">
         <label>Select team</label>
-        <select id="pf-team-select"><option value="">— Choose a team —</option></select>
+        <select id="pf-team-select"><option value="">— Choose a team —</option><option value="team-default">My Team</option></select>
       </div>
     </div>
 
@@ -6712,7 +6751,7 @@ Keep rails and ribbons transparent. Keep controls readable.
       <div class="form-group"><label>Price (optional)</label><input id="pf-price" type="number" min="0" step="0.01" placeholder="€0.00"></div>
     </div>
     <div class="form-group"><label>Contact / WhatsApp / Link</label><input id="pf-contact" placeholder="How to reach you"></div>
-    <div class="form-group"><label>Photos or video (up to 3)</label><input id="pf-media" type="file" accept="image/*,video/*" multiple></div>
+    <div class="form-group"><label>Photos or video (up to 3)</label><input id="pf-media" type="file" accept="image/*,video/*" multiple=""></div>
 
     <div class="form-footer">
       <button onclick="closePostForm()">Cancel</button>
@@ -6735,7 +6774,7 @@ Keep rails and ribbons transparent. Keep controls readable.
       <div class="vis-opt" data-vis="team" onclick="setShopVis(this)">👥 Team only</div>
     </div>
     <div class="team-picker" id="sf-team-picker">
-      <div class="form-group"><label>Select team</label><select id="sf-team-select"><option value="">— Choose a team —</option></select></div>
+      <div class="form-group"><label>Select team</label><select id="sf-team-select"><option value="">— Choose a team —</option><option value="team-default">My Team</option></select></div>
     </div>
 
     <div class="form-section">Shop Details</div>
@@ -6756,12 +6795,12 @@ Keep rails and ribbons transparent. Keep controls readable.
     <div class="form-section">Operating Schedule</div>
     <div class="sched-grid" id="sf-schedule">
       <span></span><span style="font-size:10px;color:var(--text-dim);text-align:center;">Open</span><span style="font-size:10px;color:var(--text-dim);text-align:center;">Close</span>
-      <span class="day-label"><input type="checkbox" checked> Mon</span><input type="time" data-day="mon" data-slot="open" value="09:00"><input type="time" data-day="mon" data-slot="close" value="22:00">
-      <span class="day-label"><input type="checkbox" checked> Tue</span><input type="time" data-day="tue" data-slot="open" value="09:00"><input type="time" data-day="tue" data-slot="close" value="22:00">
-      <span class="day-label"><input type="checkbox" checked> Wed</span><input type="time" data-day="wed" data-slot="open" value="09:00"><input type="time" data-day="wed" data-slot="close" value="22:00">
-      <span class="day-label"><input type="checkbox" checked> Thu</span><input type="time" data-day="thu" data-slot="open" value="09:00"><input type="time" data-day="thu" data-slot="close" value="22:00">
-      <span class="day-label"><input type="checkbox" checked> Fri</span><input type="time" data-day="fri" data-slot="open" value="09:00"><input type="time" data-day="fri" data-slot="close" value="22:00">
-      <span class="day-label"><input type="checkbox" checked> Sat</span><input type="time" data-day="sat" data-slot="open" value="10:00"><input type="time" data-day="sat" data-slot="close" value="23:00">
+      <span class="day-label"><input type="checkbox" checked=""> Mon</span><input type="time" data-day="mon" data-slot="open" value="09:00"><input type="time" data-day="mon" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked=""> Tue</span><input type="time" data-day="tue" data-slot="open" value="09:00"><input type="time" data-day="tue" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked=""> Wed</span><input type="time" data-day="wed" data-slot="open" value="09:00"><input type="time" data-day="wed" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked=""> Thu</span><input type="time" data-day="thu" data-slot="open" value="09:00"><input type="time" data-day="thu" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked=""> Fri</span><input type="time" data-day="fri" data-slot="open" value="09:00"><input type="time" data-day="fri" data-slot="close" value="22:00">
+      <span class="day-label"><input type="checkbox" checked=""> Sat</span><input type="time" data-day="sat" data-slot="open" value="10:00"><input type="time" data-day="sat" data-slot="close" value="23:00">
       <span class="day-label"><input type="checkbox"> Sun</span><input type="time" data-day="sun" data-slot="open" value="10:00"><input type="time" data-day="sun" data-slot="close" value="20:00">
     </div>
 
@@ -6829,7 +6868,7 @@ Keep rails and ribbons transparent. Keep controls readable.
   <div class="dc-input-row">
     <input class="dc-input" id="dc-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendChatMsg()">
     <button class="dc-send" onclick="sendChatMsg()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
     </button>
   </div>
 </div>
@@ -6850,7 +6889,7 @@ Keep rails and ribbons transparent. Keep controls readable.
     <div class="vc-input-row">
       <input class="vc-input" id="vc-input" placeholder="Message admin…" onkeydown="if(event.key==='Enter')sendVerifyMsg()">
       <button class="vc-send" onclick="sendVerifyMsg()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
       </button>
     </div>
   </div>
@@ -8876,5 +8915,6 @@ Keep rails and ribbons transparent. Keep controls readable.
 <!-- OWNER WORKSHOP: visible only to owner account -->
 <!-- Developer console integrated into chat panel — no separate overlay needed -->
 
-</body>
-</html>
+
+
+</body></html>
