@@ -1,0 +1,4 @@
+project_id = "YOUR_PROJECT_REF"
+
+[functions.ai-router]
+verify_jwt = false
