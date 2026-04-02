@@ -1039,20 +1039,50 @@ body.lt,body.lt2,body.lt3{
 .owner-console-note{font-size:8px;color:#5a8098;line-height:1.4;padding:4px 6px;}
 @media(max-width:800px){#owner-console{inset:4px;}.owner-console-grid{grid-template-columns:1fr;overflow-y:auto;}}
 
+
+
+/* ═══ PATCH: CHAT DRAWER + PERFORMANCE JOYSTICK ═══ */
+#app-splash{display:none !important;}
+#cmd-response{padding:0;max-height:none;will-change:height;}
+#cmd-response.expanded{display:flex;padding:0;height:var(--chat-panel-height,42vh);max-height:calc(100vh - 96px);}
+#cmd-response.drawer-dragging{transition:none !important;user-select:none;}
+#cmd-response.toast{height:auto;max-height:48px;}
+.chat-drag-handle{opacity:0.55;pointer-events:none;}
+
+#perf-hud{opacity:0.82;transition:opacity 0.25s ease,width 0.28s ease,height 0.28s ease,transform 0.28s ease,box-shadow 0.28s ease,background 0.28s ease,border-radius 0.28s ease;overflow:hidden;}
+#perf-hud.visible{opacity:0.92;}
+#perf-hud.expanded{position:fixed;left:50% !important;top:50% !important;right:auto !important;transform:translate(-50%,-50%) !important;width:min(92vw,430px);height:min(86vh,520px);padding:14px 14px 16px;border-radius:28px;background:linear-gradient(180deg,rgba(8,18,34,0.94),rgba(6,14,26,0.88));border:1px solid rgba(0,200,255,0.20);box-shadow:0 22px 60px rgba(0,0,0,0.38),0 0 28px rgba(0,200,255,0.18);}
+#perf-hud.expanded #perf-svg{height:190px;max-height:38%;}
+#perf-hud.expanded.moveable{border-radius:28px;}
+.perf-center-value{fill:#00c8ff;font-size:9px;text-anchor:middle;font-family:var(--font);font-weight:700;}
+.perf-joystick-ui{display:none;flex:1;min-height:0;gap:12px;flex-direction:column;}
+#perf-hud.expanded .perf-joystick-ui{display:flex;}
+.perf-drone-readouts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.perf-readout{padding:8px 10px;border-radius:14px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.14);display:flex;flex-direction:column;gap:4px;}
+.perf-readout span{font-size:10px;letter-spacing:0.08em;color:rgba(216,236,255,0.58);}
+.perf-readout strong{font-size:13px;color:#dff6ff;}
+.perf-stick-pad{position:relative;flex:1;min-height:180px;border-radius:26px;background:radial-gradient(circle at center,rgba(0,200,255,0.10),rgba(0,200,255,0.03) 48%,rgba(255,255,255,0.02) 70%);border:1px solid rgba(0,200,255,0.14);overflow:hidden;touch-action:none;}
+.perf-stick-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px);background-size:32px 32px;opacity:0.25;}
+.perf-stick-pad::before,.perf-stick-pad::after{content:"";position:absolute;background:rgba(0,200,255,0.18);} 
+.perf-stick-pad::before{left:50%;top:12px;bottom:12px;width:1px;transform:translateX(-50%);} 
+.perf-stick-pad::after{top:50%;left:12px;right:12px;height:1px;transform:translateY(-50%);} 
+.perf-stick-knob{position:absolute;left:50%;top:50%;width:72px;height:72px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.92),rgba(0,200,255,0.76) 35%,rgba(0,90,160,0.78) 80%);box-shadow:0 0 24px rgba(0,200,255,0.30), inset 0 0 14px rgba(255,255,255,0.24);border:1px solid rgba(255,255,255,0.20);pointer-events:none;}
+.perf-stick-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:92px;height:38px;border-radius:999px;border:1px solid rgba(0,200,255,0.20);background:rgba(5,12,22,0.84);color:#dff6ff;font-family:var(--fhud);font-size:11px;letter-spacing:0.10em;cursor:pointer;z-index:2;}
+.perf-stick-center.is-loaded{border-color:rgba(0,232,122,0.30);color:#00e87a;box-shadow:0 0 14px rgba(0,232,122,0.16);}
+.perf-joy-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.perf-action-btn{height:38px;border-radius:12px;border:1px solid rgba(0,200,255,0.16);background:rgba(0,200,255,0.08);color:#dff6ff;font-family:var(--fhud);font-size:10px;letter-spacing:0.10em;cursor:pointer;}
+.perf-action-btn.active{border-color:rgba(0,232,122,0.30);color:#00e87a;background:rgba(0,232,122,0.10);}
+.perf-joy-status{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:11px;line-height:1.45;color:#d8ecff;}
+@media(max-width:680px){
+  #perf-hud.expanded{width:min(96vw,430px);height:min(84vh,560px);padding:12px;}
+  .perf-drone-readouts{grid-template-columns:repeat(2,1fr);}
+  .perf-stick-knob{width:64px;height:64px;}
+}
+
 </style>
 </head>
 <body class="lt">
 <div class="lf" id="lf"></div>
-
-<!-- STARTUP SPLASH (left 1/3 of screen) -->
-<div id="app-splash" onclick="dismissSplash()">
-  <div class="splash-name">ASTRANOV</div>
-  <div class="splash-full">Internet Operating System</div>
-  <div class="splash-ver" id="splash-ver">1</div>
-  <div class="splash-ver-label">VERSION LOADED</div>
-  <button class="splash-update" id="splash-update-btn" onclick="event.stopPropagation();forceUpdate()">UP TO DATE</button>
-  <div class="splash-tap">TAP ANYWHERE TO ENTER</div>
-</div>
 
 <!-- AUTH MODAL -->
 <div id="am" class="h">
@@ -1178,62 +1208,8 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
-  <!-- PERFORMANCE MONITOR (top-left) -->
-  <div id="perf-hud">
-    <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"/><stop offset="100%" stop-color="rgba(3,8,16,0.35)"/></radialGradient>
-      </defs>
-      <!-- Background -->
-      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
-      <!-- 6 sections of 60° each — pie wedges from center -->
-      <!-- Section 0: CPU (top, 330°-30°) -->
-      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"/>
-      <!-- Section 1: MAP (60°, 30°-90°) -->
-      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"/>
-      <!-- Section 2: RAM (120°, 90°-150°) -->
-      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"/>
-      <!-- Section 3: STORAGE (180°, 150°-210°) -->
-      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"/>
-      <!-- Section 4: BATTERY (240°, 210°-270°) -->
-      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"/>
-      <!-- Section 5: NETWORK (300°, 270°-330°) -->
-      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"/>
-      <!-- Divider lines -->
-      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"/>
-      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"/>
-      <!-- Inner circle -->
-      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <!-- Section labels (around the edge) -->
-      <text x="78" y="20" class="perf-label">CPU</text>
-      <text x="106" y="50" class="perf-label">MAP</text>
-      <text x="106" y="76" class="perf-label">RAM</text>
-      <text x="78" y="106" class="perf-label">STO</text>
-      <text x="42" y="106" class="perf-label">BAT</text>
-      <text x="16" y="50" class="perf-label">NET</text>
-      <!-- Section values (updated by JS) -->
-      <text id="pv0" x="78" y="28" class="perf-value good">—</text>
-      <text id="pv1" x="100" y="56" class="perf-value good">—</text>
-      <text id="pv2" x="100" y="82" class="perf-value good">—</text>
-      <text id="pv3" x="78" y="100" class="perf-value good">—</text>
-      <text id="pv4" x="42" y="100" class="perf-value good">—</text>
-      <text id="pv5" x="22" y="56" class="perf-value good">—</text>
-      <!-- Network sub-labels -->
-      <text id="pv5-tx" x="16" y="62" class="perf-center-label">TX —</text>
-      <text id="pv5-rx" x="16" y="68" class="perf-center-label">RX —</text>
-      <!-- Center label -->
-      <text x="60" y="58" class="perf-center-label">PERF</text>
-      <text id="perf-overall" x="60" y="66" style="fill:#00e87a;font-size:7px;text-anchor:middle;font-family:var(--font);font-weight:700;">OK</text>
-    </svg>
-  </div>
-
   <!-- PERFORMANCE MONITOR HUD (top-left) -->
-  <div id="perf-hud">
+  <div id="perf-hud" class="visible" aria-label="Performance drone joystick">
     <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="perfBg" cx="50%" cy="50%">
@@ -1246,7 +1222,6 @@ body.lt,body.lt2,body.lt3{
       <circle cx="55" cy="55" r="52" fill="url(#perfBg)" stroke="rgba(0,200,255,0.15)" stroke-width="1"/>
       <!-- Inner ring -->
       <circle cx="55" cy="55" r="32" fill="none" stroke="rgba(0,200,255,0.08)" stroke-width="0.5"/>
-      <!-- 6 performance arc sections (each 55° with 5° gap) -->
       <!-- Section arcs drawn by JS with correct colors -->
       <g id="perf-arcs"></g>
       <!-- Section labels and values (positioned by JS) -->
@@ -1255,6 +1230,24 @@ body.lt,body.lt2,body.lt3{
       <text x="55" y="52" class="perf-center-label">SYSTEM</text>
       <text x="55" y="62" class="perf-center-value" id="perf-overall">OK</text>
     </svg>
+    <div class="perf-joystick-ui" id="perf-joystick-ui">
+      <div class="perf-drone-readouts">
+        <div class="perf-readout"><span>LINK</span><strong id="perf-link-state">STANDBY</strong></div>
+        <div class="perf-readout"><span>BAT</span><strong id="perf-joy-battery">--%</strong></div>
+        <div class="perf-readout"><span>SPD</span><strong id="perf-joy-speed">0 km/h</strong></div>
+        <div class="perf-readout"><span>ALT</span><strong id="perf-joy-altitude">0 m</strong></div>
+      </div>
+      <div class="perf-stick-pad" id="perf-stick-pad" aria-label="Drone joystick pad">
+        <div class="perf-stick-grid"></div>
+        <div class="perf-stick-knob" id="perf-stick-knob"></div>
+        <button class="perf-stick-center" id="perf-load-toggle" type="button">LOAD</button>
+      </div>
+      <div class="perf-joy-actions">
+        <button class="perf-action-btn" id="perf-drone-link" type="button">LINK DRONE</button>
+        <button class="perf-action-btn" id="perf-camera-toggle" type="button">CAMERA OFF</button>
+      </div>
+      <div class="perf-joy-status" id="perf-joy-status">Tap the performance joystick to expand. Drag the knob to simulate drone control. Load/unload and camera toggle stay inside the same panel.</div>
+    </div>
   </div>
 
   <!-- COMPASS RADAR HUD (top-right) -->
@@ -2182,18 +2175,9 @@ async function ownerSendCodeContext(){
 
 /* ═══ AI MEMORY & LEARNING SYSTEM ═══ */
 
-/* ── STARTUP SPLASH ── */
-function dismissSplash(){
-  var splash = document.getElementById('app-splash');
-  if(splash){ splash.classList.add('hidden'); setTimeout(function(){ splash.style.display='none'; }, 600); }
-}
+/* ── STARTUP SPLASH DISABLED ── */
+function dismissSplash(){}
 function forceUpdate(){ location.reload(true); }
-setTimeout(dismissSplash, 5000);
-document.addEventListener('keydown', dismissSplash, {once:true});
-setTimeout(function(){
-  var sv = document.getElementById('splash-ver');
-  if(sv) sv.textContent = APP_VERSION;
-}, 50);
 
 /* ═══ APP STATUS BUTTON ENGINE ═══ */
 var APP_STATUS = 'ok'; // ok, updating, action
@@ -2615,7 +2599,7 @@ function initGadgetCycle(elId){
 // Initialize both gadgets
 setTimeout(function(){
   initGadgetCycle('compass-hud');
-  initGadgetCycle('perf-hud');
+  // perf-hud now uses dedicated joystick behavior
 }, 500);
 
 function setGuestState() {
@@ -6583,6 +6567,9 @@ export the live index.html, and send the current index.html to GitHub.
 UI RULE
 Top and side rails stay transparent and non-blocking.
 Keep data visible and controls accessible without covering the globe.
+No startup version splash drawer.
+Chat drawer retracts from drag anywhere on the drawer.
+Performance gadget expands into a real joystick panel.
 
 AI RULE
 Astranov is the in-app systems operator.
@@ -6597,7 +6584,7 @@ Push current index.html through GitHub Contents API.
 <textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V2
 # Single Source of Record
 # Creator: Graduate Candidate Captain Notis Astranov
-# Updated: 2026-03-30
+# Updated: 2026-04-02
 
 MISSION
 Astranov Internet Operating System. AI-first control interface.
@@ -6616,6 +6603,9 @@ UI [LOCKED]
 Top bar, bottom bar, left rail, right rail = transparent glass, non-blocking.
 Keep globe visible. Keep data accessible.
 Do not let decorative chrome overpower content.
+Delete startup version splash drawer.
+Chat drawer must be retractable by dragging from anywhere on the drawer, not only a header strip.
+Performance gadget expands on tap into a real joystick panel with drone link, camera toggle, telemetry, and load/unload center button.
 
 OWNER WORKSHOP [LOCKED]
 Provide hidden owner-only workshop inside app.
@@ -9170,6 +9160,246 @@ Keep rails and ribbons transparent. Keep controls readable.
     installRelayUi();
   }
   setTimeout(installRelayUi, 800);
+})();
+</script>
+
+
+<script>
+(function(){
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  /* Chat drawer: drag anywhere on the drawer to resize / retract */
+  var resp = document.getElementById('cmd-response');
+  var input = document.getElementById('cmd-input');
+  var defaultChatHeight = Math.round(window.innerHeight * 0.42);
+  var minChatHeight = 88;
+  var maxChatHeight = function(){ return Math.max(240, Math.min(window.innerHeight - 96, Math.round(window.innerHeight * 0.82))); };
+  window._chatHeight = clamp(defaultChatHeight, 240, maxChatHeight());
+
+  function applyChatHeight(h){
+    if(!resp) return;
+    window._chatHeight = clamp(Math.round(h), minChatHeight, maxChatHeight());
+    resp.style.setProperty('--chat-panel-height', window._chatHeight + 'px');
+    if(resp.classList.contains('expanded')) resp.style.height = window._chatHeight + 'px';
+  }
+  function showExpandedChat(){
+    if(!resp) return;
+    applyChatHeight(window._chatHeight || defaultChatHeight);
+    resp.classList.remove('toast');
+    resp.classList.add('expanded');
+    resp.style.display = 'flex';
+  }
+  function hideChatDrawer(){
+    if(!resp) return;
+    resp.style.display = 'none';
+    resp.classList.remove('expanded','toast','drawer-dragging');
+    resp.style.height = '';
+  }
+  window.expandConversation = showExpandedChat;
+  window.retractConversation = hideChatDrawer;
+  window.hideConversationDrawer = hideChatDrawer;
+  applyChatHeight(window._chatHeight);
+
+  if(resp){
+    var drag = null;
+    var excludedSel = 'input,textarea,select,button,a,label,option,video,iframe';
+    function findScrollable(node){
+      return node && node.closest ? node.closest('.ai-conv,#support-panel,#support-thread,#dev-thread,.dc-messages') : null;
+    }
+    resp.addEventListener('pointerdown', function(ev){
+      if(!resp.classList.contains('expanded')) return;
+      if(ev.button !== undefined && ev.button !== 0) return;
+      if(ev.target.closest(excludedSel)) return;
+      drag = {
+        id: ev.pointerId,
+        startY: ev.clientY,
+        startHeight: resp.getBoundingClientRect().height,
+        scrollEl: findScrollable(ev.target),
+        active: false,
+        allow: !findScrollable(ev.target)
+      };
+    });
+    window.addEventListener('pointermove', function(ev){
+      if(!drag || ev.pointerId !== drag.id) return;
+      var dy = ev.clientY - drag.startY;
+      if(!drag.active){
+        if(Math.abs(dy) < 6) return;
+        if(!drag.allow && drag.scrollEl){
+          var el = drag.scrollEl;
+          var atTop = el.scrollTop <= 0;
+          var atBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight;
+          if((dy > 0 && atTop) || (dy < 0 && atBottom)) drag.allow = true;
+        }
+        if(!drag.allow) return;
+        drag.active = true;
+        resp.classList.add('drawer-dragging');
+      }
+      ev.preventDefault();
+      var next = clamp(drag.startHeight - dy, 0, maxChatHeight());
+      if(next <= minChatHeight){
+        resp.style.height = Math.max(0, next) + 'px';
+      } else {
+        applyChatHeight(next);
+      }
+    }, {passive:false});
+    function endDrawerDrag(ev){
+      if(!drag || (ev.pointerId !== undefined && ev.pointerId !== drag.id)) return;
+      if(drag.active){
+        var finalHeight = resp.getBoundingClientRect().height;
+        if(finalHeight < 120 || (drag.startY < (ev.clientY || drag.startY) && finalHeight < 160)){
+          hideChatDrawer();
+        } else {
+          applyChatHeight(finalHeight < 180 ? 220 : finalHeight);
+          showExpandedChat();
+        }
+      }
+      drag = null;
+      resp.classList.remove('drawer-dragging');
+    }
+    window.addEventListener('pointerup', endDrawerDrag);
+    window.addEventListener('pointercancel', endDrawerDrag);
+  }
+
+  /* Performance joystick: tap to expand, then operate as a real joystick */
+  var perf = document.getElementById('perf-hud');
+  if(perf){
+    var expanded = false;
+    var moveable = false;
+    var pressTimer = null;
+    var perfMoved = false;
+
+    function setPerfExpanded(on){
+      expanded = !!on;
+      perf.classList.add('visible');
+      perf.classList.toggle('expanded', expanded);
+      if(!expanded){
+        perf.style.width = '';
+        perf.style.height = '';
+      }
+    }
+
+    perf.addEventListener('click', function(ev){
+      if(perfMoved) return;
+      if(ev.target.closest('#perf-stick-pad,#perf-load-toggle,#perf-drone-link,#perf-camera-toggle')) return;
+      setPerfExpanded(!expanded);
+    });
+
+    perf.addEventListener('mousedown', function(){
+      pressTimer = setTimeout(function(){
+        moveable = !moveable;
+        perf.classList.toggle('moveable', moveable);
+      }, 3000);
+    });
+    perf.addEventListener('touchstart', function(){
+      pressTimer = setTimeout(function(){
+        moveable = !moveable;
+        perf.classList.toggle('moveable', moveable);
+      }, 3000);
+    }, {passive:true});
+    ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(evt){
+      perf.addEventListener(evt, function(){ if(pressTimer) clearTimeout(pressTimer); });
+    });
+
+    var linked = false;
+    var cameraOn = false;
+    var loaded = false;
+    var pad = document.getElementById('perf-stick-pad');
+    var knob = document.getElementById('perf-stick-knob');
+    var status = document.getElementById('perf-joy-status');
+    var linkBtn = document.getElementById('perf-drone-link');
+    var camBtn = document.getElementById('perf-camera-toggle');
+    var loadBtn = document.getElementById('perf-load-toggle');
+    var linkState = document.getElementById('perf-link-state');
+    var bat = document.getElementById('perf-joy-battery');
+    var speed = document.getElementById('perf-joy-speed');
+    var alt = document.getElementById('perf-joy-altitude');
+    var joy = {x:0,y:0,drag:false,pid:null};
+
+    function updateTelemetry(){
+      var mag = Math.sqrt(joy.x*joy.x + joy.y*joy.y);
+      var spd = linked ? Math.round(mag * 42) : 0;
+      var altitude = linked ? Math.max(0, Math.round((-joy.y + 1) * 18)) : 0;
+      var battery = linked ? Math.max(18, 100 - Math.round(mag * 28) - (cameraOn ? 6 : 0) - (loaded ? 8 : 0)) : '--';
+      if(linkState) linkState.textContent = linked ? 'LINKED' : 'STANDBY';
+      if(bat) bat.textContent = linked ? battery + '%' : '--%';
+      if(speed) speed.textContent = spd + ' km/h';
+      if(alt) alt.textContent = altitude + ' m';
+    }
+    function resetKnob(){
+      joy.x = 0; joy.y = 0;
+      if(knob) knob.style.transform = 'translate(-50%,-50%)';
+      updateTelemetry();
+    }
+    function setStatus(msg){ if(status) status.textContent = msg; }
+
+    if(linkBtn) linkBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      linked = !linked;
+      linkBtn.classList.toggle('active', linked);
+      linkBtn.textContent = linked ? 'DRONE LINKED' : 'LINK DRONE';
+      setStatus(linked ? 'Drone link locked. Expand the joystick pad and drag to simulate control, payload, and camera state.' : 'Drone link released. Telemetry is back in standby.');
+      updateTelemetry();
+    });
+    if(camBtn) camBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      cameraOn = !cameraOn;
+      camBtn.classList.toggle('active', cameraOn);
+      camBtn.textContent = cameraOn ? 'CAMERA ON' : 'CAMERA OFF';
+      setStatus(cameraOn ? 'Drone camera routed to the main screen hook. Connect the live feed source when the drone backend is ready.' : 'Drone camera view disengaged from the main screen hook.');
+      updateTelemetry();
+    });
+    if(loadBtn) loadBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      loaded = !loaded;
+      loadBtn.classList.toggle('is-loaded', loaded);
+      loadBtn.textContent = loaded ? 'UNLOAD' : 'LOAD';
+      setStatus(loaded ? 'Payload secured. Center button is now armed for unload.' : 'Payload released. Center button is ready to load again.');
+      updateTelemetry();
+    });
+
+    if(pad){
+      function moveStick(clientX, clientY){
+        var rect = pad.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = clientX - cx;
+        var dy = clientY - cy;
+        var radius = Math.min(rect.width, rect.height) * 0.32;
+        var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        if(dist > radius){ dx = dx / dist * radius; dy = dy / dist * radius; }
+        joy.x = +(dx / radius).toFixed(2);
+        joy.y = +(dy / radius).toFixed(2);
+        if(knob) knob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+        updateTelemetry();
+        setStatus(linked ? ('Joystick live · X ' + joy.x.toFixed(2) + ' · Y ' + joy.y.toFixed(2) + ' · ' + (loaded ? 'payload onboard' : 'payload clear')) : 'Link a drone first, then drag the joystick.');
+      }
+      pad.addEventListener('pointerdown', function(ev){
+        ev.stopPropagation();
+        if(!expanded) setPerfExpanded(true);
+        joy.drag = true; joy.pid = ev.pointerId; perfMoved = false;
+        moveStick(ev.clientX, ev.clientY);
+      });
+      window.addEventListener('pointermove', function(ev){
+        if(!joy.drag || ev.pointerId !== joy.pid) return;
+        perfMoved = true;
+        moveStick(ev.clientX, ev.clientY);
+      });
+      function endStick(ev){
+        if(!joy.drag || (ev.pointerId !== undefined && ev.pointerId !== joy.pid)) return;
+        joy.drag = false; joy.pid = null;
+        resetKnob();
+      }
+      window.addEventListener('pointerup', endStick);
+      window.addEventListener('pointercancel', endStick);
+    }
+
+    updateTelemetry();
+    setPerfExpanded(false);
+  }
+
+  window.addEventListener('resize', function(){
+    applyChatHeight(window._chatHeight || defaultChatHeight);
+  });
 })();
 </script>
 
