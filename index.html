@@ -11185,5 +11185,316 @@ body.chat-open #chat-drag::before{content:'⌄';}
 })();
 </script>
 
+
+<style id="apr03-v7-style">
+#voice-btn,
+.mode-toggle-btn,
+#chat-toggle-btn,
+#fab-add,
+#speaker-btn,
+#left-panel,
+#right-panel,
+#locate-btn,
+#zoom-btns{
+  display:none !important;
+}
+#bottombar{
+  grid-template-columns:auto 1fr auto !important;
+  gap:10px !important;
+  padding:10px 12px !important;
+}
+#astranova-wrapper{
+  left:10px !important;
+  right:auto !important;
+  bottom:76px !important;
+  z-index:235 !important;
+}
+#primary-action-btn{
+  margin-left:0 !important;
+}
+#cmd-response{
+  left:10px !important;
+  right:10px !important;
+  bottom:72px !important;
+}
+#cmd-response.collapsed{
+  display:flex !important;
+}
+#chat-drag{
+  display:flex !important;
+  height:28px !important;
+  min-height:28px !important;
+  align-items:center !important;
+  justify-content:center !important;
+  cursor:pointer !important;
+  background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)) !important;
+  border-bottom:1px solid rgba(0,200,255,0.08) !important;
+}
+#chat-drag::before{
+  content:'⌃' !important;
+  width:52px !important;
+  height:14px !important;
+  border-radius:999px !important;
+  border:1px solid rgba(0,200,255,0.18) !important;
+  background:rgba(5,12,22,0.72) !important;
+  color:#dff6ff !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:10px !important;
+  line-height:1 !important;
+}
+body.chat-open #chat-drag::before{
+  content:'⌄' !important;
+}
+</style>
+
+
+<script id="apr03-v7-script">
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function removeNode(id){ var el = byId(id); if(el && el.parentNode) el.parentNode.removeChild(el); }
+  function hideNode(id){ var el = byId(id); if(el) el.style.display = 'none'; }
+
+  removeNode('voice-btn');
+  removeNode('chat-toggle-btn');
+  hideNode('left-panel');
+  hideNode('right-panel');
+  hideNode('locate-btn');
+  hideNode('zoom-btns');
+
+  function helperBubble(text, hold){
+    var bubble = byId('astranova-speech');
+    if(!bubble) return;
+    bubble.textContent = text;
+    bubble.classList.add('on');
+    clearTimeout(helperBubble._t);
+    helperBubble._t = setTimeout(function(){ bubble.classList.remove('on'); }, hold || 2400);
+  }
+
+  function setChatState(open){
+    var resp = byId('cmd-response');
+    if(!resp) return;
+    if(open){
+      resp.style.display = 'flex';
+      resp.classList.remove('collapsed');
+      resp.classList.add('expanded');
+      document.body.classList.add('chat-open');
+    }else{
+      resp.style.display = 'flex';
+      resp.classList.remove('expanded');
+      resp.classList.add('collapsed');
+      document.body.classList.remove('chat-open');
+    }
+  }
+
+  window.expandConversation = function(){ setChatState(true); };
+  window.retractConversation = function(){ setChatState(false); };
+  window.hideConversationDrawer = window.retractConversation;
+  window.toggleChatDrawer = function(){
+    var resp = byId('cmd-response');
+    if(!resp) return;
+    setChatState(resp.classList.contains('collapsed') || !resp.classList.contains('expanded'));
+  };
+
+  var drag = byId('chat-drag');
+  if(drag && !drag.dataset.v7bound){
+    drag.dataset.v7bound = '1';
+    drag.addEventListener('click', function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.toggleChatDrawer();
+    });
+  }
+  setTimeout(function(){ setChatState(false); }, 80);
+
+  var helperSvg = byId('astranova-svg');
+  if(helperSvg){
+    helperSvg.onclick = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(typeof window.toggleInteractionMode === 'function'){
+        window.toggleInteractionMode();
+      }else{
+        helperBubble('Astranov Collective Intelligence ready.', 1800);
+      }
+      return false;
+    };
+  }
+
+  var localZoomActive = false;
+  function getStoredLoc(){
+    var loc = window.LOC || {};
+    var lat = Number(loc.lat), lng = Number(loc.lng);
+    if(Number.isFinite(lat) && Number.isFinite(lng)) return {lat:lat,lng:lng};
+    return {lat:36.4349,lng:28.2176};
+  }
+
+  function syncRadarUi(){
+    var btn = byId('radar-core-toggle');
+    var readout = byId('radar-zoom-state');
+    if(btn){
+      btn.classList.toggle('zoom-in', !localZoomActive);
+      btn.classList.toggle('zoom-out', localZoomActive);
+      btn.setAttribute('aria-label', localZoomActive ? 'Zoom out to globe view' : 'Zoom in to your location');
+      btn.title = localZoomActive ? 'Zoom out to globe view' : 'Zoom in to your location';
+      btn.innerHTML = '<span class="zoom-arrow" aria-hidden="true">' + (localZoomActive ? '▲' : '▼') + '</span>';
+    }
+    if(readout) readout.textContent = localZoomActive ? 'OUT' : 'IN';
+  }
+
+  function flyToLocal(){
+    var loc = getStoredLoc();
+    if(typeof window.goLayer === 'function' && window.CL !== 1){
+      window.goLayer(1);
+    }
+    setTimeout(function(){
+      try{
+        if(window.LM && typeof window.LM.flyTo === 'function'){
+          window.LM.flyTo([loc.lat, loc.lng], 16, {animate:true, duration:0.8});
+        }else if(window.LM && typeof window.LM.setView === 'function'){
+          window.LM.setView([loc.lat, loc.lng], 16);
+        }
+      }catch(e){}
+    }, window.CL === 1 ? 0 : 320);
+    localZoomActive = true;
+    syncRadarUi();
+    helperBubble('Zooming in to your location.', 1400);
+  }
+
+  function flyToGlobe(){
+    localZoomActive = false;
+    syncRadarUi();
+    if(typeof window.goLayer === 'function'){
+      window.goLayer(0);
+      setTimeout(function(){
+        try{
+          if(window.globeController && typeof window.globeController.resetView === 'function'){
+            window.globeController.resetView();
+          }
+        }catch(e){}
+      }, 320);
+    }else if(window.globeController && typeof window.globeController.resetView === 'function'){
+      try{ window.globeController.resetView(); }catch(e){}
+    }
+    helperBubble('Zooming back out to the globe.', 1400);
+  }
+
+  function refreshLocThen(next){
+    if(!navigator.geolocation){ next(); return; }
+    navigator.geolocation.getCurrentPosition(function(pos){
+      window.LOC = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+      next();
+    }, function(){ next(); }, {enableHighAccuracy:true, timeout:3500, maximumAge:15000});
+  }
+
+  window.toggleRadarLocationZoom = function(){
+    if(localZoomActive || window.CL === 1){
+      flyToGlobe();
+      return;
+    }
+    refreshLocThen(flyToLocal);
+  };
+
+  var radarBtn = byId('radar-core-toggle');
+  if(radarBtn && !radarBtn.dataset.v7bound){
+    radarBtn.dataset.v7bound = '1';
+    radarBtn.onclick = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.toggleRadarLocationZoom();
+      return false;
+    };
+  }
+  syncRadarUi();
+
+  var primary = byId('primary-action-btn');
+  var input = byId('cmd-input');
+  function syncPrimary(){
+    if(!primary || !input) return;
+    var hasText = !!(input.value && input.value.trim());
+    primary.classList.toggle('text-ready', hasText);
+    primary.classList.toggle('empty-ready', !hasText);
+  }
+  if(input){
+    input.addEventListener('input', syncPrimary);
+    input.addEventListener('keyup', syncPrimary);
+  }
+  if(primary){
+    primary.onclick = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      var hasText = !!(input && input.value && input.value.trim());
+      if(hasText){
+        if(typeof window.sendCmd === 'function') window.sendCmd();
+        setTimeout(syncPrimary, 30);
+        return false;
+      }
+      if(typeof window.openActionRing === 'function'){
+        var loc = getStoredLoc();
+        if(window.LM && typeof window.LM.getCenter === 'function'){
+          try{
+            var c = window.LM.getCenter();
+            loc = {lat:c.lat, lng:c.lng};
+          }catch(e){}
+        }
+        window.openActionRing(loc.lat, loc.lng);
+      }else if(typeof window.openPost === 'function'){
+        window.openPost();
+      }
+      return false;
+    };
+  }
+  syncPrimary();
+
+  document.querySelectorAll('.form-modal').forEach(function(modal){
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+  });
+  document.querySelectorAll('.form-sheet').forEach(function(sheet){
+    sheet.style.maxHeight = 'min(82vh, 680px)';
+    sheet.style.overflowY = 'auto';
+    if(!sheet.querySelector('.floating-close')){
+      var x = document.createElement('button');
+      x.className = 'floating-close';
+      x.type = 'button';
+      x.textContent = '✕';
+      x.style.position = 'sticky';
+      x.style.top = '0';
+      x.style.float = 'right';
+      x.style.width = '42px';
+      x.style.height = '42px';
+      x.style.borderRadius = '50%';
+      x.style.border = '1px solid rgba(255,90,90,0.35)';
+      x.style.background = 'rgba(28,8,10,0.92)';
+      x.style.color = '#ffe3e7';
+      x.style.fontSize = '22px';
+      x.style.cursor = 'pointer';
+      x.style.zIndex = '5';
+      x.onclick = function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        var modal = sheet.closest('.form-modal');
+        if(modal) modal.classList.remove('on');
+      };
+      sheet.prepend(x);
+    }
+  });
+
+  var originalShowResp = window.showResp;
+  window.showResp = function(msg, tone){
+    if(tone === 'urgent' && typeof originalShowResp === 'function'){
+      return originalShowResp(msg, tone);
+    }
+    try{
+      if(typeof window.addAiMessage === 'function' && msg){
+        window.addAiMessage('system-msg', 'System', msg);
+      }
+    }catch(e){}
+    return;
+  };
+})();
+</script>
+
 </body>
 </html>
