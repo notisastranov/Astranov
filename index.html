@@ -2,791 +2,1397 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Astranov Internet Operating System</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
+/*
+SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v4
+
+MISSION
+Rebuild the entire Astranov index.html from zero as one coherent operational file.
+
+ABSOLUTE BUILD LAW
+Never patch.
+Never layer new systems over old systems.
+Never keep obsolete code alive under new code.
+Every structural change requires full reconstruction of the whole index.html.
+
+RECONSTRUCTION LAW
+On every rebuild:
+- rebuild the whole file from scratch
+- keep only the live mission systems
+- delete replaced implementations completely
+- remove obsolete HTML, CSS, JS, handlers, state, menus, labels, icons, overlays, ribbons, toggles, fallbacks, and dead branches
+- leave no ghost controls, duplicate controls, hidden parallel systems, or compatibility leftovers
+
+SPARTANIZATION LAW
+On every rebuild take every reasonable step to Spartanize the code:
+- reduce duplication
+- merge repeated logic
+- compress architecture
+- remove dead code
+- remove decorative complexity without function
+- keep one source of truth per behavior
+- keep code as small, efficient, and maintainable as possible
+Do not sacrifice any required feature, mission-critical behavior, core usability, visual integrity, or essential readability.
+
+CONTROL LAW
+One control per role.
+If a feature is replaced, the previous version must be deleted completely.
+Visible controls must always match real behavior.
+No fake toggles. No fake buttons. No duplicate action paths.
+
+ANTI-STRIP-DOWN LAW
+Do not strip the app down into a demo shell, toy shell, placeholder shell, wireframe shell, simplified mock shell, or reduced proof-of-concept.
+Do not skin the app alive in the name of cleanup.
+Reconstruction must preserve the real Astranov identity, operational density, and production intent.
+Clean does not mean empty.
+Spartan does not mean weak.
+Reduction is forbidden if it removes required Astranov character, workflow, world interface, or commercial readiness.
+
+FAILURE-LOCK LAW
+Every time a rebuild fails, the Spartan Script must be updated immediately.
+The update must explicitly name the failure pattern and forbid it on future rebuilds.
+Each failure becomes a new hard restriction.
+Do not repeat a previously observed failure class.
+
+POST-MORTEM LAW
+After a failed rebuild, identify exactly:
+- what was stripped too far
+- what was duplicated
+- what stayed obsolete
+- what behavior was fake or broken
+- what visual or workflow identity was lost
+Then convert those findings into new restrictions inside this Spartan Script before the next rebuild begins.
+
+LIVE UI MISSION
+Keep only these active systems unless explicitly replaced:
+1. Globe and city map as the core world interface.
+2. AI helper at bottom-left only.
+3. Composer at bottom-center only.
+4. Main add button at bottom-right only.
+5. Radar HUD with one real center zoom toggle only.
+6. Performance HUD with one real center load/unload toggle only.
+7. Add flow as contextual bubble actions around globe or map without blocking world view.
+8. Listing flow for product, service, delivery location, and driver base.
+9. Astranov shell must still feel like the real app, not a blank rebuild.
+
+COMPOSER LAW
+All conversational, status, and assistant text belongs inside the composer or its linked drawer.
+No floating greetings, role labels, or assistant chatter outside the composer flow.
+Composer must contain:
+- microphone button on the left
+- channel selector with visible left-side dropdown arrow
+- channel add button
+- text input
+- separate send button
+The add button remains a separate right-side control outside the composer.
+
+CHAT LAW
+No visible handle bars.
+Chat expansion and retraction must be controlled by gesture inside the text area or by compact explicit drawer logic that does not waste screen space.
+The drawer must remain compact and subordinate to the composer.
+
+ZOOM LAW
+Radar center button must perform a real navigation toggle:
+- globe to user location or city map
+- map back to globe
+No visual-only zoom state is allowed.
+
+ADD FLOW LAW
+The add button must not open a giant blocking overlay.
+The globe or map must remain visible.
+Options appear around the world view as clear bubble actions.
+No unnecessary central bubble.
+No obsolete close systems.
+No stuck actions left on screen.
+
+FAITHFULNESS LAW
+A rebuild must remain faithful to the latest decent Astranov state.
+Do not rebuild from an abstract template when a richer valid app state exists.
+Use the latest decent app shell as the reconstruction anchor, then clean and reconstruct from there.
+
+OUTPUT LAW
+Every future Astranov rebuild must be delivered as one freshly reconstructed full index.html only.
+No patches.
+No layered overrides.
+No versioned HTML names.
+Final filename must be exactly index.html.
+*/
 :root{
-  --bg:#04111b;
-  --bg2:#071b2b;
-  --panel:rgba(7,19,31,.28);
+  --bg:#04101f;
+  --bg2:#071728;
+  --glass:rgba(7,17,31,.44);
+  --glass-strong:rgba(7,17,31,.72);
   --line:rgba(0,200,255,.22);
   --line-strong:rgba(0,200,255,.42);
-  --cyan:#00c8ff;
-  --cyan-soft:#8fefff;
-  --text:#d9f9ff;
-  --muted:#80b9c9;
-  --green:#00db84;
-  --red:#ff405d;
-  --shadow:0 18px 42px rgba(0,0,0,.28),0 0 24px rgba(0,200,255,.08);
-  --hud-size:clamp(126px,12vw,162px);
-  --hud-btn:clamp(34px,3vw,40px);
-  --composer-w:min(62vw,720px);
-  --font:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --blue:#00c8ff;
+  --blue-soft:#7feeff;
+  --blue-dim:#8ac7db;
+  --green:#00e87a;
+  --red:#ff4c6b;
+  --yellow:#ffd24a;
+  --text:#dff8ff;
+  --text-dim:#81a8bb;
+  --shadow:0 18px 40px rgba(0,0,0,.32), 0 0 24px rgba(0,200,255,.08);
+  --radius:20px;
+  --font:Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at top,#0d2740 0%,#071726 45%,#040c13 100%);color:var(--text);font-family:var(--font)}
-button,input,select,textarea{font:inherit}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 28%, #0f3661 0%, #06111f 28%, #03101b 58%, #020913 100%);font-family:var(--font);color:var(--text)}
 body{user-select:none}
-#app{position:fixed;inset:0;overflow:hidden}
-#topbrand{
-  position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:40;
-  padding:7px 14px;border:1px solid rgba(0,200,255,.18);border-radius:999px;
-  background:rgba(4,13,22,.2);backdrop-filter:blur(14px) saturate(130%);
-  -webkit-backdrop-filter:blur(14px) saturate(130%);
-  color:var(--cyan-soft);letter-spacing:.12em;font-size:11px;text-transform:uppercase;
-  box-shadow:var(--shadow)
+button,input,select,textarea{font:inherit}
+button{border:none;background:none;color:inherit}
+.hidden{display:none !important}
+.glass{
+  background:linear-gradient(180deg, rgba(9,21,38,.58), rgba(5,13,24,.38));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  backdrop-filter:blur(18px) saturate(130%);
+  -webkit-backdrop-filter:blur(18px) saturate(130%);
+  box-shadow:var(--shadow);
 }
-#world{position:absolute;inset:0 0 0 0;overflow:hidden}
-#stars,#globeLayer,#mapLayer,#addOrbit{position:absolute;inset:0}
-#stars{background:
-  radial-gradient(circle at 20% 25%, rgba(255,255,255,.18) 0 1px, transparent 1.5px) 0 0/120px 120px,
-  radial-gradient(circle at 70% 15%, rgba(255,255,255,.16) 0 1px, transparent 1.4px) 0 0/140px 140px,
-  radial-gradient(circle at 35% 75%, rgba(0,200,255,.18) 0 1px, transparent 1.5px) 0 0/160px 160px,
-  radial-gradient(circle at 85% 80%, rgba(255,255,255,.14) 0 1px, transparent 1.4px) 0 0/180px 180px,
-  radial-gradient(circle at center, rgba(0,120,255,.08), transparent 52%);
-  opacity:.9
+.soft-glow{box-shadow:0 0 16px rgba(0,200,255,.18), inset 0 0 12px rgba(0,200,255,.04)}
+#app{
+  position:fixed; inset:0;
 }
-#globeLayer{display:grid;place-items:center;transition:opacity .35s ease,transform .35s ease}
-#globeShell{
-  position:relative;width:min(56vw,640px);aspect-ratio:1/1;display:grid;place-items:center;
-  filter:drop-shadow(0 0 50px rgba(0,180,255,.12))
+#topbar{
+  position:absolute; left:12px; right:12px; top:10px; height:40px; z-index:80;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:0 10px;
 }
-#globeHalo{position:absolute;inset:-12%;border-radius:50%;background:radial-gradient(circle,rgba(0,200,255,.1),transparent 64%);filter:blur(18px);animation:pulse 5s ease-in-out infinite}
-#globe{
-  position:relative;width:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;
+.balance-chip,.brand-chip,.guest-chip{
+  height:30px; padding:0 12px; border-radius:999px; display:flex; align-items:center; gap:8px;
+  background:rgba(5,13,24,.46); border:1px solid var(--line);
+  color:var(--blue-soft); font-size:11px; letter-spacing:.06em;
+}
+.balance-chip{min-width:86px}
+.balance-chip strong{color:#7dffbb}
+.brand-chip{min-width:180px; justify-content:center; color:var(--blue); font-weight:700; text-shadow:0 0 12px rgba(0,200,255,.35)}
+.guest-chip{min-width:74px; justify-content:center; color:var(--text-dim)}
+#stage{
+  position:absolute; inset:0;
+}
+#globeWrap,#mapWrap{
+  position:absolute; inset:0;
+}
+#globeCanvas,#map{
+  position:absolute; inset:0; width:100%; height:100%;
+}
+#mapWrap{display:none}
+#spaceGlow{
+  position:absolute; inset:0; pointer-events:none;
   background:
-    radial-gradient(circle at 30% 30%, rgba(100,220,255,.28), transparent 35%),
-    radial-gradient(circle at 65% 65%, rgba(0,90,255,.22), transparent 32%),
-    linear-gradient(160deg,#0e8bd5 0%,#0d6eae 18%,#08496f 42%,#082942 72%,#041520 100%);
-  box-shadow:inset -26px -26px 54px rgba(0,0,0,.34), inset 14px 14px 38px rgba(255,255,255,.08), 0 0 0 1px rgba(135,226,255,.14)
+    radial-gradient(circle at 70% 34%, rgba(0,200,255,.26), transparent 15%),
+    radial-gradient(circle at 26% 20%, rgba(0,100,255,.15), transparent 18%),
+    radial-gradient(circle at 50% 100%, rgba(0,200,255,.09), transparent 26%);
 }
-#globe::before{
-  content:"";position:absolute;inset:0;border-radius:50%;opacity:.26;
-  background:
-   radial-gradient(circle at 28% 33%, transparent 0 16%, rgba(170,255,210,.7) 16.5% 22%, transparent 22.5%),
-   radial-gradient(circle at 60% 42%, transparent 0 11%, rgba(170,255,210,.6) 11.5% 15.5%, transparent 16%),
-   radial-gradient(circle at 54% 66%, transparent 0 13%, rgba(170,255,210,.6) 13.5% 18.5%, transparent 19%),
-   radial-gradient(circle at 37% 64%, transparent 0 9%, rgba(170,255,210,.58) 9.5% 13.5%, transparent 14%),
-   radial-gradient(circle at 73% 59%, transparent 0 8%, rgba(170,255,210,.55) 8.5% 12%, transparent 12.5%);
-  mix-blend-mode:screen
+#focusCard{
+  position:absolute; left:50%; top:26%; transform:translateX(-50%);
+  width:min(360px, calc(100vw - 48px));
+  z-index:60; padding:16px 18px; pointer-events:none;
 }
-#globe::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(90deg, rgba(255,255,255,.16), transparent 28%, transparent 68%, rgba(0,0,0,.26));}
-#orbitDots{position:absolute;inset:0;pointer-events:none}
-.orbitDot{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#fff 0%,#7beeff 45%,rgba(0,200,255,.1) 75%,transparent 76%);box-shadow:0 0 16px rgba(0,200,255,.5)}
-#globeLegend{
-  position:absolute;bottom:7%;left:50%;transform:translateX(-50%);
-  padding:8px 14px;border-radius:999px;border:1px solid rgba(0,200,255,.18);
-  background:rgba(7,19,31,.22);backdrop-filter:blur(12px);
-  color:var(--cyan-soft);font-size:12px;white-space:nowrap;box-shadow:var(--shadow)
+#focusCard .tag{font-size:10px; color:#92efff; letter-spacing:.12em; text-transform:uppercase; margin-bottom:8px}
+#focusCard h3{font-size:20px; font-weight:700; margin-bottom:8px; color:#f3fdff}
+#focusCard p{font-size:12px; line-height:1.45; color:#bde6f2; max-width:28ch}
+#focusCard .meta{margin-top:10px; display:flex; gap:12px; font-size:10px; color:#86bdd0}
+#focusMarker{
+  position:absolute; left:50%; top:17%; transform:translate(-50%,-50%);
+  width:10px; height:10px; border-radius:50%;
+  background:var(--blue-soft); box-shadow:0 0 16px rgba(0,200,255,.85), 0 0 36px rgba(0,200,255,.35);
+  z-index:61; pointer-events:none;
 }
-#mapLayer{display:none}
-#map{position:absolute;inset:0;filter:saturate(.88) brightness(.88) hue-rotate(168deg)}
-.leaflet-container{background:#07131f}
-.leaflet-control-container{display:none}
-.leaflet-tile{filter:brightness(.8) saturate(.74) hue-rotate(150deg)}
-#addOrbit{pointer-events:none;z-index:18}
-#addOrbit.open{pointer-events:auto}
-.addNode{
-  position:absolute;width:112px;height:112px;border-radius:50%;display:grid;place-items:center;
-  text-align:center;padding:12px;border:1px solid var(--line);color:var(--text);cursor:pointer;
-  background:radial-gradient(circle at 32% 28%, rgba(0,200,255,.28), rgba(7,19,31,.88) 68%);
-  backdrop-filter:blur(12px) saturate(135%);-webkit-backdrop-filter:blur(12px) saturate(135%);
-  box-shadow:var(--shadow);opacity:0;transform:translate(-50%,-50%) scale(.76);transition:transform .2s ease,opacity .2s ease,border-color .2s ease;
+#focusMarker::after{
+  content:""; position:absolute; left:50%; top:100%; width:1px; height:34px; transform:translateX(-50%);
+  background:linear-gradient(180deg, rgba(127,238,255,.72), rgba(127,238,255,0));
 }
-.addNode.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.addNode:hover{border-color:var(--line-strong);transform:translate(-50%,-50%) scale(1.04)}
-.addNode strong{display:block;font-size:12px;line-height:1.1;letter-spacing:.02em}
-.addNode span{display:block;font-size:10px;color:var(--muted);margin-top:4px;line-height:1.25}
-#hudLeft,#hudRight{
-  position:fixed;bottom:118px;width:var(--hud-size);height:var(--hud-size);z-index:24;
-  border-radius:50%;display:grid;place-items:center;
-  background:radial-gradient(circle at center, rgba(0,200,255,.04), transparent 62%);
+.hud{
+  position:absolute; bottom:104px; width:156px; height:156px; z-index:75;
+  pointer-events:auto;
 }
-#hudLeft{left:16px}
-#hudRight{right:16px}
-.hudSvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 0 14px rgba(0,200,255,.16))}
-.hudBtn{
-  position:relative;z-index:2;width:var(--hud-btn);height:var(--hud-btn);border-radius:50%;
-  border:1px solid var(--line);background:radial-gradient(circle at 30% 25%, rgba(0,200,255,.26), rgba(7,19,31,.9) 72%);
-  color:var(--text);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 16px rgba(0,200,255,.16);transition:transform .16s ease,border-color .16s ease
+.hud.left{left:14px}
+.hud.right{right:14px}
+.hud svg{width:100%; height:100%; display:block; overflow:visible}
+.hud .ring{fill:rgba(4,12,24,.36); stroke:rgba(0,200,255,.22); stroke-width:2}
+.hud .tick{stroke:rgba(0,200,255,.3); stroke-width:1.5; stroke-linecap:round}
+.hud .major{stroke:rgba(0,200,255,.48); stroke-width:2}
+.hud .label{fill:#98d6e6; font-size:10px; letter-spacing:.08em}
+.hud .value{fill:#e8fbff; font-size:12px; font-weight:700}
+.hudCenter{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:42px; height:42px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  background:radial-gradient(circle at 35% 25%, rgba(0,200,255,.34), rgba(5,14,28,.92) 70%);
+  border:1px solid var(--line-strong); box-shadow:0 0 20px rgba(0,200,255,.18), inset 0 0 14px rgba(0,200,255,.08);
 }
-.hudBtn:hover{transform:scale(1.06);border-color:var(--line-strong)}
-.hudBtn svg{width:18px;height:18px}
-#zoomArrowUp,#zoomArrowDown{display:none}
-body.globe-view #zoomArrowDown{display:block}
-body.map-view #zoomArrowUp{display:block}
-#grabOpen,#grabClosed{display:none}
-body.unloaded #grabOpen{display:block}
-body.loaded #grabClosed{display:block}
-#helperDock{position:fixed;left:12px;bottom:10px;z-index:28;width:86px;height:92px;display:grid;place-items:end center}
-#helperBtn{position:relative;width:74px;height:86px;background:none;border:none;padding:0;cursor:pointer;filter:drop-shadow(0 8px 20px rgba(0,200,255,.18))}
-#helperBtn svg{width:74px;height:86px;display:block}
+.hudCenter.small{width:40px; height:40px}
+.hudCenter:hover{transform:translate(-50%,-50%) scale(1.06)}
+.hudCenter svg{width:20px; height:20px}
+#zoomIconOut{display:none}
+body.map-view #zoomIconIn{display:none}
+body.map-view #zoomIconOut{display:block}
+#grabBtn.unloaded{border-color:rgba(0,232,122,.38)}
+#grabBtn.loaded{border-color:rgba(255,76,107,.38)}
+#grabOpen{display:block}
+#grabClosed{display:none}
+#grabBtn.loaded #grabOpen{display:none}
+#grabBtn.loaded #grabClosed{display:block}
+#helperDock{
+  position:absolute; left:10px; bottom:8px; width:90px; height:96px; z-index:95;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+#helperBtn{
+  width:84px; height:94px; cursor:pointer; filter:drop-shadow(0 10px 16px rgba(0,0,0,.24)) drop-shadow(0 0 16px rgba(0,200,255,.12));
+}
 #helperBtn:hover{transform:translateY(-2px)}
+#helperDock .modeDot{
+  position:absolute; right:6px; top:10px; width:12px; height:12px; border-radius:50%;
+  background:var(--blue); box-shadow:0 0 12px rgba(0,200,255,.55);
+}
+body.voice-mode #helperDock .modeDot{background:var(--green); box-shadow:0 0 12px rgba(0,232,122,.55)}
 #composer{
-  position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:26;width:var(--composer-w);
-  min-width:min(320px,calc(100vw - 164px));max-width:calc(100vw - 164px);
-  display:flex;flex-direction:column;gap:8px
+  position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
+  width:min(60vw, 620px); min-width:320px; height:86px; z-index:96;
+  padding:8px 12px 10px; display:flex; flex-direction:column; gap:8px;
 }
-#drawer{
-  width:100%;max-height:0;overflow:hidden;border-radius:22px 22px 14px 14px;
-  background:linear-gradient(180deg, rgba(7,19,31,.26), rgba(7,19,31,.18));
-  border:1px solid transparent;backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%);
-  transition:max-height .22s ease,border-color .22s ease,padding .22s ease;box-shadow:var(--shadow)
+#composer.dragging,#composer.resizing{border-color:var(--line-strong)}
+#composer::after{
+  content:""; position:absolute; right:8px; bottom:8px; width:16px; height:16px;
+  border-right:2px solid rgba(0,200,255,.22); border-bottom:2px solid rgba(0,200,255,.22); border-radius:0 0 10px 0;
 }
-#drawer.open{max-height:min(38vh,320px);border-color:var(--line);padding:10px 12px}
-#thread{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:min(38vh,300px);padding-right:4px}
-.msg{padding:10px 12px;border-radius:16px;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.12);color:var(--cyan-soft);font-size:12px;line-height:1.45;word-break:break-word}
-.msg.user{align-self:flex-end;color:#dffcff;background:rgba(0,200,255,.11)}
-.msg.ai{align-self:flex-start}
-.msg.sys{align-self:center;color:var(--muted);background:rgba(255,255,255,.03)}
-#composerBar{
-  width:100%;display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:24px;
-  background:linear-gradient(180deg, rgba(7,19,31,.24), rgba(7,19,31,.14));border:1px solid var(--line);
-  box-shadow:var(--shadow);backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%);
-  touch-action:none
+#composerTop,#composerBottom{display:flex; align-items:center; gap:8px; min-width:0}
+.iconBtn,.sendBtn,.addBtn{
+  display:flex; align-items:center; justify-content:center; border-radius:999px;
+  background:rgba(0,0,0,.02); border:1px solid var(--line); color:var(--blue-soft);
+  box-shadow:inset 0 0 14px rgba(0,200,255,.05);
 }
-#micBtn,#sendBtn,#channelAdd,#addBtn{
-  flex:0 0 auto;width:42px;height:42px;border:none;border-radius:50%;cursor:pointer;color:var(--text);
-  display:grid;place-items:center;background:radial-gradient(circle at 30% 25%, rgba(0,200,255,.28), rgba(7,19,31,.9) 70%);
-  box-shadow:0 12px 24px rgba(0,0,0,.24),0 0 16px rgba(0,200,255,.08);border:1px solid var(--line);transition:transform .16s ease,border-color .16s ease
+.iconBtn{width:38px; height:38px; flex:0 0 auto; cursor:pointer}
+.iconBtn:hover,.sendBtn:hover,.addBtn:hover{border-color:var(--line-strong)}
+#micBtn.active{border-color:rgba(0,232,122,.42); color:#afffd4; box-shadow:0 0 14px rgba(0,232,122,.18), inset 0 0 14px rgba(0,232,122,.08)}
+#channelWrap{
+  position:relative; flex:1 1 auto; min-width:0; height:32px;
 }
-#micBtn:hover,#sendBtn:hover,#channelAdd:hover,#addBtn:hover{transform:scale(1.05);border-color:var(--line-strong)}
-#sendBtn svg,#micBtn svg,#addBtn svg{width:20px;height:20px}
-#channelWrap{position:relative;display:flex;align-items:center;min-width:170px;max-width:220px;height:42px;padding:0 8px 0 34px;border-radius:999px;border:1px solid var(--line);background:rgba(0,200,255,.05)}
-#channelArrow{position:absolute;left:12px;color:var(--cyan-soft);font-size:12px;pointer-events:none}
-#channelSelect{appearance:none;-webkit-appearance:none;-moz-appearance:none;width:100%;height:100%;border:none;background:transparent;color:var(--cyan-soft);outline:none;font-size:12px;padding-right:4px}
-#channelSelect option{background:#08141f;color:var(--text)}
-#channelAdd{width:34px;height:34px}
-#promptInput{flex:1;min-width:80px;height:42px;border:none;background:transparent;color:var(--cyan-soft);outline:none;font-size:14px;text-shadow:0 0 10px rgba(0,200,255,.2)}
-#promptInput::placeholder{color:rgba(143,239,255,.6)}
-#addDock{position:fixed;right:12px;bottom:10px;z-index:28}
-#addBtn{width:58px;height:58px}
-#addBtn.open{transform:scale(1.05);border-color:var(--line-strong)}
-#cardHost{position:fixed;right:16px;top:58px;z-index:30;display:flex;flex-direction:column;gap:10px;max-width:min(360px,calc(100vw - 24px));pointer-events:none}
-.card{
-  pointer-events:auto;border-radius:22px;padding:14px;background:linear-gradient(180deg, rgba(7,19,31,.28), rgba(7,19,31,.16));border:1px solid var(--line);
-  box-shadow:var(--shadow);backdrop-filter:blur(18px) saturate(135%);-webkit-backdrop-filter:blur(18px) saturate(135%);color:var(--text)
+#channelArrow{
+  position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--blue-soft); font-size:11px; pointer-events:none;
 }
-.cardHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.cardTitle{font-size:14px;font-weight:700;color:var(--cyan-soft)}
-.cardClose{width:34px;height:34px;border:none;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text)}
-.cardHint{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:10px}
-.formGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.formGrid .full{grid-column:1 / -1}
-.formGrid label{display:grid;gap:6px;font-size:11px;color:var(--muted)}
+#channelSelect{
+  width:100%; height:100%; padding:0 12px 0 28px; border-radius:999px;
+  border:1px solid var(--line); background:rgba(0,0,0,.02); color:var(--blue-soft);
+  appearance:none; outline:none; box-shadow:inset 0 0 14px rgba(0,200,255,.05);
+}
+#channelAdd{width:32px; height:32px; cursor:pointer; font-size:18px}
+#chatInput{
+  flex:1 1 auto; min-width:0; height:38px; padding:0 14px;
+  border-radius:999px; border:1px solid var(--line); outline:none;
+  background:transparent; color:var(--blue-soft);
+  box-shadow:inset 0 0 14px rgba(0,200,255,.05);
+}
+#chatInput::placeholder{color:rgba(127,238,255,.66)}
+.sendBtn{
+  width:42px; height:38px; cursor:pointer; flex:0 0 auto;
+}
+#chatDrawer{
+  position:absolute; left:50%; transform:translateX(-50%);
+  bottom:104px; width:min(60vw, 620px); min-width:320px; z-index:94;
+  max-height:0; overflow:hidden; transition:max-height .2s ease, opacity .2s ease;
+  opacity:0;
+}
+#chatDrawer.open{max-height:min(44vh, 340px); opacity:1}
+#chatDrawerInner{padding:12px; display:flex; flex-direction:column; gap:8px}
+.chatRow{display:flex}
+.chatMsg{
+  max-width:92%; padding:10px 12px; border-radius:16px; font-size:12px; line-height:1.45;
+}
+.chatMsg.assistant{background:rgba(0,200,255,.06); border:1px solid rgba(0,200,255,.14); color:#b9f4ff}
+.chatMsg.user{margin-left:auto; background:rgba(0,200,255,.12); border:1px solid rgba(0,200,255,.22); color:#effcff}
+.chatMsg.system{margin:0 auto; background:rgba(255,210,74,.08); border:1px solid rgba(255,210,74,.16); color:#ffe795; font-size:11px}
+#addDock{
+  position:absolute; right:12px; bottom:10px; width:74px; height:74px; z-index:96;
+}
+.addBtn{
+  width:66px; height:66px; margin:4px auto 0; cursor:pointer;
+  background:radial-gradient(circle at 35% 25%, rgba(0,200,255,.28), rgba(8,18,30,.88) 70%);
+  box-shadow:0 16px 34px rgba(0,0,0,.3), 0 0 18px rgba(0,200,255,.16);
+}
+.addBtn svg{width:28px; height:28px}
+#radialMenu{
+  position:absolute; inset:0; z-index:92; pointer-events:none;
+}
+.radialNode{
+  position:absolute; width:124px; height:124px; border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  text-align:center; padding:14px; pointer-events:auto; cursor:pointer;
+  background:radial-gradient(circle at 35% 25%, rgba(0,200,255,.28), rgba(8,18,30,.88) 74%);
+  border:1px solid var(--line); box-shadow:var(--shadow);
+  color:var(--text); opacity:0; transform:scale(.7);
+  transition:opacity .18s ease, transform .18s ease;
+}
+#radialMenu.open .radialNode{opacity:1; transform:scale(1)}
+.radialNode strong{font-size:13px; line-height:1.1}
+.radialNode span{font-size:10px; line-height:1.3; color:#9bdff0}
+#listingPanel{
+  position:absolute; left:50%; top:16%; transform:translateX(-50%); z-index:93;
+  width:min(440px, calc(100vw - 28px)); max-height:min(68vh, 560px); display:none;
+}
+#listingPanel.open{display:block}
+#listingInner{padding:16px}
+.panelHeader{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px}
+.panelHeader h4{font-size:18px; color:#ebfdff}
+.closeBtn{
+  width:36px; height:36px; border-radius:999px; border:1px solid var(--line); cursor:pointer; color:var(--text-dim)
+}
+.formGrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.formGrid .full{grid-column:1/-1}
+.formGrid label{display:grid; gap:6px; font-size:11px; color:#9bdff0}
 .formGrid input,.formGrid select,.formGrid textarea{
-  width:100%;border:none;outline:none;border-radius:14px;padding:10px 12px;background:rgba(0,200,255,.06);border:1px solid rgba(0,200,255,.12);color:var(--text)
+  width:100%; padding:10px 12px; border-radius:14px; border:1px solid var(--line);
+  background:rgba(255,255,255,.04); color:var(--text); outline:none;
 }
-.formGrid textarea{min-height:88px;resize:vertical}
-.formActions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.softBtn,.solidBtn{
-  border:none;cursor:pointer;border-radius:999px;padding:10px 14px;border:1px solid var(--line);color:var(--text)
+.formGrid textarea{min-height:88px; resize:vertical}
+.submitBtn{
+  margin-top:12px; width:100%; height:42px; border-radius:14px; cursor:pointer;
+  background:rgba(0,200,255,.12); border:1px solid var(--line-strong); color:#edfdff; letter-spacing:.06em
 }
-.softBtn{background:rgba(255,255,255,.04)}
-.solidBtn{background:radial-gradient(circle at 30% 25%, rgba(0,200,255,.28), rgba(7,19,31,.9) 68%)}
-#miniStatus{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:29;padding:8px 12px;border-radius:999px;background:rgba(7,19,31,.24);border:1px solid var(--line);color:var(--cyan-soft);font-size:11px;backdrop-filter:blur(14px);opacity:0;pointer-events:none;transition:opacity .18s ease}
-#miniStatus.show{opacity:1}
-.listingPin{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle,#fff 0 20%, #79efff 24% 44%, rgba(0,200,255,.18) 68%, transparent 70%);box-shadow:0 0 14px rgba(0,200,255,.55)}
-.scrollbar::-webkit-scrollbar{width:5px}
-.scrollbar::-webkit-scrollbar-thumb{background:rgba(0,200,255,.22);border-radius:999px}
-@keyframes pulse{0%,100%{transform:scale(1);opacity:.82}50%{transform:scale(1.04);opacity:1}}
-@media (max-width: 820px){
-  #globeShell{width:min(70vw,520px)}
-  #composer{width:calc(100vw - 164px);max-width:calc(100vw - 164px)}
-  #channelWrap{min-width:132px;max-width:168px}
+#listingsDrawer{
+  position:absolute; right:14px; top:70px; width:min(320px, calc(100vw - 24px)); max-height:calc(100vh - 220px);
+  z-index:70; overflow:auto; padding:10px; display:flex; flex-direction:column; gap:10px;
 }
-@media (max-width: 640px){
-  #helperDock{left:8px}
-  #addDock{right:8px}
-  #composer{width:calc(100vw - 124px);max-width:calc(100vw - 124px)}
-  #composerBar{gap:6px;padding:8px 10px}
-  #channelWrap{min-width:112px;max-width:124px;padding-left:30px}
-  #channelAdd{display:none}
-  #promptInput{font-size:13px}
-  #hudLeft,#hudRight{bottom:88px}
-  .addNode{width:92px;height:92px;padding:10px}
-  .addNode strong{font-size:11px}
-  .addNode span{font-size:9px}
-  #cardHost{left:8px;right:8px;max-width:none}
+.listCard{padding:0; overflow:hidden}
+.listCardMedia{height:116px; background:linear-gradient(135deg, rgba(0,200,255,.18), rgba(6,18,34,.56)); display:flex; align-items:flex-end; padding:12px}
+.listCardMedia span{font-size:12px; letter-spacing:.12em; color:#effcff}
+.listCardBody{padding:12px}
+.listCardBody h5{font-size:14px; color:#f3fdff; margin-bottom:6px}
+.listCardBody p{font-size:11px; color:#bde6f2; line-height:1.4; margin-bottom:8px}
+.listMeta{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.metaChip{padding:8px; border-radius:12px; border:1px solid rgba(0,200,255,.14); background:rgba(0,200,255,.05)}
+.metaChip strong{display:block; font-size:9px; color:#7fddee; letter-spacing:.08em; margin-bottom:4px}
+.metaChip span{font-size:11px; color:#f1fdff}
+.leaflet-container{background:#06111f}
+.leaflet-tile{filter:brightness(.8) saturate(.78)}
+.map-marker{
+  width:16px; height:16px; border-radius:50%; border:2px solid #fff; background:#00c8ff;
+  box-shadow:0 0 12px rgba(0,200,255,.65);
+}
+.map-marker.service{background:#00c8ff}
+.map-marker.product{background:#ffd24a}
+.map-marker.driver{background:#00e87a}
+.map-marker.delivery{background:#ff4c6b}
+.map-marker.media{background:#c18aff}
+#mapHint{
+  position:absolute; left:50%; top:76px; transform:translateX(-50%);
+  z-index:65; padding:8px 14px; font-size:11px; color:#c7f7ff; display:none;
+}
+body.map-view #mapHint{display:block}
+@media (max-width: 900px){
+  #composer,#chatDrawer{width:min(70vw, 560px)}
+}
+@media (max-width: 720px){
+  #focusCard{top:24%; width:calc(100vw - 42px)}
+  .hud{width:142px; height:142px; bottom:98px}
+  #helperDock{width:84px; height:90px}
+  #helperBtn{width:78px; height:88px}
+  #composer,#chatDrawer{
+    width:calc(100vw - 180px); min-width:200px;
+  }
+  #composer{left:92px; transform:none}
+  #chatDrawer{left:92px; transform:none}
+  #addDock{right:10px}
+  #listingPanel{top:12%}
+}
+@media (max-width: 560px){
+  #topbar{left:8px; right:8px; top:8px; gap:8px}
+  .brand-chip{min-width:136px; font-size:10px; padding:0 10px}
+  .balance-chip,.guest-chip{min-width:auto; font-size:10px; padding:0 10px}
+  #focusCard h3{font-size:18px}
+  .hud{width:132px; height:132px; bottom:94px}
+  #composer,#chatDrawer{width:calc(100vw - 164px)}
+  #composer{padding:8px 10px 10px}
+  #composerTop{gap:6px}
+  #channelAdd{width:30px; height:30px}
+  .iconBtn{width:36px; height:36px}
+  #chatInput{font-size:13px}
 }
 </style>
 </head>
-<body class="globe-view unloaded">
+<body class="globe-view">
 <div id="app">
-  <div id="topbrand">Astranov Internet Operating System</div>
-  <div id="miniStatus"></div>
+  <div id="topbar">
+    <div class="balance-chip glass soft-glow">EUR <strong id="walletValue">0.00</strong></div>
+    <div class="brand-chip glass soft-glow">ASTRANOV · INTERNET OPERATING SYSTEM</div>
+    <div class="guest-chip glass">Guest</div>
+  </div>
 
-  <main id="world">
-    <div id="stars"></div>
-    <section id="globeLayer" aria-label="Globe view">
-      <div id="globeShell">
-        <div id="globeHalo"></div>
-        <div id="globe"></div>
-        <div id="orbitDots">
-          <div class="orbitDot" style="left:20%;top:38%"></div>
-          <div class="orbitDot" style="left:61%;top:26%"></div>
-          <div class="orbitDot" style="left:70%;top:61%"></div>
-          <div class="orbitDot" style="left:31%;top:70%"></div>
+  <div id="stage">
+    <div id="globeWrap">
+      <canvas id="globeCanvas"></canvas>
+      <div id="spaceGlow"></div>
+      <div id="focusMarker"></div>
+      <div id="focusCard" class="glass">
+        <div class="tag">offer</div>
+        <h3 id="focusTitle">Freediving Course · 2 Days</h3>
+        <p id="focusDesc">Learn breath-hold techniques, safety drills, and sea awareness. Small group. South coast.</p>
+        <div class="meta">
+          <span id="focusMetaA">5h away</span>
+          <span id="focusMetaB">direct access</span>
+          <span id="focusMetaC">new signal</span>
         </div>
-        <div id="globeLegend">Earth, city, and listings live here</div>
       </div>
-    </section>
-    <section id="mapLayer" aria-label="Map view"><div id="map"></div></section>
-    <div id="addOrbit"></div>
-  </main>
+    </div>
+    <div id="mapWrap">
+      <div id="map"></div>
+    </div>
+    <div id="mapHint" class="glass">Tap and drag the map. Use the radar center button to return to the globe.</div>
+  </div>
 
-  <div id="hudLeft" aria-label="Performance HUD">
-    <svg class="hudSvg" viewBox="0 0 200 200" aria-hidden="true">
-      <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(0,200,255,.14)" stroke-width="3" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(0,200,255,.18)" stroke-dasharray="18 14" stroke-width="6" stroke-linecap="round" />
-      <circle cx="100" cy="100" r="56" fill="none" stroke="rgba(0,200,255,.14)" stroke-dasharray="10 10" stroke-width="2" />
-      <g font-size="10" fill="rgba(143,239,255,.84)" font-family="Inter,system-ui,sans-serif" text-anchor="middle">
-        <text x="100" y="28">LOAD</text>
-        <text x="100" y="188">STATE</text>
-        <text x="26" y="104">GRIP</text>
-        <text x="174" y="104">DRONE</text>
+  <div id="listingsDrawer"></div>
+
+  <div class="hud left" id="performanceHud">
+    <svg viewBox="0 0 156 156" aria-hidden="true">
+      <circle class="ring" cx="78" cy="78" r="72"></circle>
+      <circle class="ring" cx="78" cy="78" r="56" style="stroke-dasharray:3 7"></circle>
+      <g>
+        <line class="tick major" x1="78" y1="8" x2="78" y2="18"></line>
+        <line class="tick major" x1="148" y1="78" x2="138" y2="78"></line>
+        <line class="tick major" x1="78" y1="148" x2="78" y2="138"></line>
+        <line class="tick major" x1="8" y1="78" x2="18" y2="78"></line>
       </g>
+      <text class="label" x="78" y="28" text-anchor="middle">SIGNAL</text>
+      <text class="value" x="78" y="44" text-anchor="middle" id="hudSignal">97%</text>
+      <text class="label" x="126" y="82" text-anchor="middle">BAT</text>
+      <text class="value" x="126" y="98" text-anchor="middle" id="hudBattery">82</text>
+      <text class="label" x="78" y="126" text-anchor="middle">LOAD</text>
+      <text class="value" x="78" y="142" text-anchor="middle" id="hudLoad">EMPTY</text>
+      <text class="label" x="30" y="82" text-anchor="middle">STOR</text>
+      <text class="value" x="30" y="98" text-anchor="middle" id="hudStorage">41</text>
     </svg>
-    <button id="loadBtn" class="hudBtn" aria-label="Load or unload">
-      <svg id="grabOpen" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M15.5 6c-2.4 0-4.2 1.3-5.7 3.1-1.4 1.7-2.4 3.8-2.4 5.9 0 2.1 1.1 3.5 3.2 3.5 2.6 0 4.3-1.5 5.9-3.2"/>
-        <path d="M17.8 7.4v9.2"/>
+    <button class="hudCenter small" id="grabBtn" aria-label="Load or unload">
+      <svg id="grabOpen" viewBox="0 0 24 24" fill="none" stroke="#a6ffd0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15.8 6.4c-1.1-1.6-3.6-2.2-5.7-1.2-2.7 1.3-4.3 4.8-3.3 8.1 1.1 3.7 4 5.5 7 5.5h1.1"></path>
       </svg>
-      <svg id="grabClosed" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M7.3 9.2c1.5-1.8 3.4-3.2 5.7-3.2 2.2 0 3.7 1.4 3.7 3.4 0 2-1 4-2.6 5.8-1.6 1.8-3.3 3.1-5.8 3.1-2 0-3.3-1.3-3.3-3.3 0-1.8.8-3.7 2.3-5.8z"/>
-        <circle cx="17.6" cy="17.2" r="2.1" fill="var(--red)" stroke="none"/>
+      <svg id="grabClosed" viewBox="0 0 24 24" fill="none" stroke="#ff8da0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 10.5c.8-3 3.2-5.3 6-5.3 3.3 0 5.8 3 5.8 6.8 0 3.6-2.4 6-5.8 6H10"></path>
+        <circle cx="15.4" cy="12" r="2.1" fill="#ff4c6b" stroke="none"></circle>
       </svg>
     </button>
   </div>
 
-  <div id="hudRight" aria-label="Radar HUD">
-    <svg class="hudSvg" viewBox="0 0 200 200" aria-hidden="true">
-      <circle cx="100" cy="100" r="84" fill="none" stroke="rgba(0,200,255,.14)" stroke-width="3" />
-      <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(0,200,255,.18)" stroke-dasharray="18 14" stroke-width="6" stroke-linecap="round" />
-      <circle cx="100" cy="100" r="56" fill="none" stroke="rgba(0,200,255,.14)" stroke-dasharray="10 10" stroke-width="2" />
-      <path d="M100 18v30M100 152v30M18 100h30M152 100h30" stroke="rgba(0,200,255,.12)" stroke-width="2" stroke-linecap="round"/>
+  <div class="hud right" id="radarHud">
+    <svg viewBox="0 0 156 156" aria-hidden="true">
+      <circle class="ring" cx="78" cy="78" r="72"></circle>
+      <circle class="ring" cx="78" cy="78" r="56" style="stroke-dasharray:3 7"></circle>
+      <circle cx="78" cy="78" r="42" fill="none" stroke="rgba(0,200,255,.12)" stroke-width="1.6"></circle>
+      <g>
+        <line class="tick major" x1="78" y1="8" x2="78" y2="18"></line>
+        <line class="tick major" x1="148" y1="78" x2="138" y2="78"></line>
+        <line class="tick major" x1="78" y1="148" x2="78" y2="138"></line>
+        <line class="tick major" x1="8" y1="78" x2="18" y2="78"></line>
+        <line class="tick" x1="118" y1="24" x2="113" y2="31"></line>
+        <line class="tick" x1="132" y1="118" x2="124" y2="113"></line>
+        <line class="tick" x1="37" y1="24" x2="43" y2="31"></line>
+        <line class="tick" x1="24" y1="118" x2="31" y2="113"></line>
+      </g>
+      <text class="label" x="78" y="30" text-anchor="middle">RANGE</text>
+      <text class="value" x="78" y="46" text-anchor="middle" id="hudRange">CITY</text>
+      <text class="label" x="124" y="84" text-anchor="middle">LAT</text>
+      <text class="value" x="124" y="100" text-anchor="middle" id="hudLat">36.44</text>
+      <text class="label" x="78" y="126" text-anchor="middle">VIEW</text>
+      <text class="value" x="78" y="142" text-anchor="middle" id="hudView">GLOBE</text>
+      <text class="label" x="30" y="84" text-anchor="middle">LON</text>
+      <text class="value" x="30" y="100" text-anchor="middle" id="hudLon">28.22</text>
     </svg>
-    <button id="zoomBtn" class="hudBtn" aria-label="Zoom to your location or back to globe">
-      <svg id="zoomArrowDown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 5v13"/><path d="M6.8 13.4 12 18.7l5.2-5.3"/>
+    <button class="hudCenter" id="zoomBtn" aria-label="Zoom in or out">
+      <svg id="zoomIconIn" viewBox="0 0 24 24" fill="none" stroke="#b9f6ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 6v12"></path><path d="M7 11l5-5 5 5"></path>
       </svg>
-      <svg id="zoomArrowUp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M12 19V6"/><path d="M17.2 10.6 12 5.3 6.8 10.6"/>
+      <svg id="zoomIconOut" viewBox="0 0 24 24" fill="none" stroke="#b9f6ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 18V6"></path><path d="M7 13l5 5 5-5"></path>
       </svg>
     </button>
   </div>
 
   <div id="helperDock">
-    <button id="helperBtn" aria-label="Toggle Astranov Collective Intelligence hands-free mode">
-      <svg viewBox="0 0 120 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M20 72c-7-3-12-10-14-18 9 0 16 3 23 8-1 3-4 7-9 10zm80 0c7-3 12-10 14-18-9 0-16 3-23 8 1 3 4 7 9 10z" fill="rgba(143,239,255,.24)" stroke="rgba(143,239,255,.5)" stroke-width="2"/>
-        <path d="M34 36c2-14 12-22 26-22s24 8 26 22c3 0 7 4 7 9 0 4-3 8-7 9-2 11-9 19-18 24v14H52V78c-9-5-16-13-18-24-4-1-7-5-7-9 0-5 4-9 7-9z" fill="rgba(8,18,30,.92)" stroke="rgba(143,239,255,.72)" stroke-width="2.4"/>
-        <path d="M41 22 32 6l18 11m29 5 9-16-18 11" stroke="rgba(143,239,255,.8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="50" cy="44" r="4" fill="#8fefff"/>
-        <circle cx="70" cy="44" r="4" fill="#8fefff"/>
-        <path d="M49 59c6 4 16 4 22 0" stroke="#8fefff" stroke-width="3" stroke-linecap="round"/>
-        <path d="M60 90v26" stroke="rgba(143,239,255,.8)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M60 114 49 132m11-18 11 18" stroke="rgba(143,239,255,.8)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M84 74 104 118" stroke="rgba(143,239,255,.8)" stroke-width="4" stroke-linecap="round"/>
-        <path d="M99 107 111 112l-9 12" stroke="rgba(143,239,255,.8)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <div class="modeDot" title="Current mode"></div>
+    <svg id="helperBtn" viewBox="0 0 120 140" aria-label="Astranov Collective Intelligence">
+      <defs>
+        <linearGradient id="wingGrad" x1="0" x2="1">
+          <stop offset="0%" stop-color="#2fe2ff" stop-opacity=".05"/>
+          <stop offset="100%" stop-color="#2fe2ff" stop-opacity=".56"/>
+        </linearGradient>
+        <linearGradient id="armorGrad" x1="0" x2="1">
+          <stop offset="0%" stop-color="#d7f8ff"/>
+          <stop offset="100%" stop-color="#78dfff"/>
+        </linearGradient>
+      </defs>
+      <path d="M20 70c-15 2-22 16-16 31 9-10 19-12 28-8-1-7-4-15-12-23z" fill="url(#wingGrad)" stroke="#65e8ff" stroke-opacity=".38"/>
+      <path d="M100 70c15 2 22 16 16 31-9-10-19-12-28-8 1-7 4-15 12-23z" fill="url(#wingGrad)" stroke="#65e8ff" stroke-opacity=".38"/>
+      <path d="M60 16c14 0 22 9 22 20 0 8-4 15-11 19v13H49V55c-7-4-11-11-11-19 0-11 8-20 22-20z" fill="#0a1526" stroke="#6aeaff" stroke-opacity=".55"/>
+      <path d="M42 20l-8-9 7-3 10 10" fill="#96eeff"/>
+      <path d="M78 20l8-9-7-3-10 10" fill="#96eeff"/>
+      <circle cx="60" cy="37" r="16" fill="url(#armorGrad)" opacity=".94"/>
+      <circle cx="54" cy="36" r="2.2" fill="#03101b"/>
+      <circle cx="66" cy="36" r="2.2" fill="#03101b"/>
+      <path d="M54 44c4 3 8 3 12 0" fill="none" stroke="#04111f" stroke-width="2" stroke-linecap="round"/>
+      <path d="M47 63l13 8 13-8 8 19-8 28H47l-8-28z" fill="#0d2033" stroke="#72ebff" stroke-opacity=".46"/>
+      <path d="M60 71v39" stroke="#7cf2ff" stroke-opacity=".58" stroke-width="2"/>
+      <path d="M42 82l-10 24M78 82l10 24" stroke="#8ff7ff" stroke-opacity=".38" stroke-width="5" stroke-linecap="round"/>
+      <path d="M54 110l-8 20M66 110l8 20" stroke="#8ff7ff" stroke-opacity=".5" stroke-width="6" stroke-linecap="round"/>
+      <path d="M92 56l10 52" stroke="#bcefff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M95 108l10 6-4 5-9-5z" fill="#d7f8ff"/>
+    </svg>
+  </div>
+
+  <div id="chatDrawer">
+    <div id="chatDrawerInner" class="glass"></div>
+  </div>
+
+  <div id="composer" class="glass">
+    <div id="composerTop">
+      <button id="micBtn" class="iconBtn" aria-label="Voice typing">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="3.5" width="6" height="11" rx="3"></rect>
+          <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path>
+          <path d="M12 18v3"></path>
+          <path d="M8.5 21h7"></path>
+        </svg>
+      </button>
+      <div id="channelWrap">
+        <div id="channelArrow">▾</div>
+        <select id="channelSelect" aria-label="Select channel">
+          <option>Global</option>
+          <option>Local</option>
+          <option>Team</option>
+          <option>Astranov Collective</option>
+        </select>
+      </div>
+      <button id="channelAdd" class="iconBtn" aria-label="Add channel">+</button>
+    </div>
+    <div id="composerBottom">
+      <input id="chatInput" placeholder="Tell Astranov what to do" />
+      <button id="sendBtn" class="sendBtn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 3L11 13"></path>
+          <path d="M21 3l-6 18-4-8-8-4z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="addDock">
+    <button id="addBtn" class="addBtn" aria-label="Add something">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+        <path d="M12 5v14"></path><path d="M5 12h14"></path>
       </svg>
     </button>
   </div>
 
-  <section id="composer" aria-label="Composer">
-    <div id="drawer" class="scrollbar">
-      <div id="thread" class="scrollbar"></div>
-    </div>
-    <div id="composerBar">
-      <button id="micBtn" aria-label="Voice typing">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a4 4 0 0 0 4-4V7a4 4 0 1 0-8 0v4a4 4 0 0 0 4 4Z"/><path d="M19 11a7 7 0 0 1-14 0"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
-      </button>
-      <div id="channelWrap">
-        <span id="channelArrow">▾</span>
-        <select id="channelSelect" aria-label="Channel selector">
-          <option>Astranov Collective Intelligence</option>
-          <option>Global</option>
-          <option>Local</option>
-          <option>Drivers</option>
-          <option>Vendors</option>
-        </select>
+  <div id="radialMenu"></div>
+
+  <div id="listingPanel" class="glass">
+    <div id="listingInner">
+      <div class="panelHeader">
+        <h4 id="panelTitle">List something</h4>
+        <button class="closeBtn" id="panelClose" aria-label="Close">✕</button>
       </div>
-      <button id="channelAdd" aria-label="Add channel">+</button>
-      <input id="promptInput" type="text" placeholder="Tell Astranov what to do" autocomplete="off" />
-      <button id="sendBtn" aria-label="Send command">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4 18-7Z"/></svg>
-      </button>
+      <form id="listingForm" class="formGrid"></form>
     </div>
-  </section>
-
-  <div id="addDock">
-    <button id="addBtn" aria-label="Add listing or post">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
   </div>
-
-  <div id="cardHost"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-(() => {
+(()=>{
   const state = {
-    view: 'globe',
-    handsFree: false,
-    loaded: false,
-    drawerOpen: false,
+    mode: 'globe',
+    voiceMode: false,
+    drawerHeight: 0,
+    helperMode: 'manual',
+    currentLocation: { lat: 36.4441, lng: 28.2245, label: 'Rhodes' },
+    hasGeo: false,
+    loadState: 'unloaded',
     radialOpen: false,
     pendingAction: null,
-    recognitionMode: null,
-    userLoc: { lat: 37.9838, lng: 23.7275, label: 'Athens, Greece' },
     map: null,
-    currentForm: null,
-    listings: [],
-    listening: false,
+    markersLayer: null,
+    records: loadJSON('astranov.records.v1', []),
+    chat: loadJSON('astranov.chat.v1', [
+      { kind:'assistant', text:'Astranov Collective Intelligence online.' },
+      { kind:'system', text:'Use the radar wheel to zoom from globe to your location.' }
+    ]),
+    composerRect: loadJSON('astranov.composer.rect.v2', null)
   };
 
-  const els = {
+  const el = {
     body: document.body,
-    globeLayer: document.getElementById('globeLayer'),
-    mapLayer: document.getElementById('mapLayer'),
-    map: document.getElementById('map'),
-    addOrbit: document.getElementById('addOrbit'),
-    zoomBtn: document.getElementById('zoomBtn'),
-    loadBtn: document.getElementById('loadBtn'),
-    helperBtn: document.getElementById('helperBtn'),
-    composer: document.getElementById('composer'),
-    composerBar: document.getElementById('composerBar'),
-    drawer: document.getElementById('drawer'),
-    thread: document.getElementById('thread'),
-    micBtn: document.getElementById('micBtn'),
-    sendBtn: document.getElementById('sendBtn'),
-    addBtn: document.getElementById('addBtn'),
-    channelSelect: document.getElementById('channelSelect'),
-    channelAdd: document.getElementById('channelAdd'),
-    input: document.getElementById('promptInput'),
-    cardHost: document.getElementById('cardHost'),
-    miniStatus: document.getElementById('miniStatus'),
-    world: document.getElementById('world'),
-    globeShell: document.getElementById('globeShell')
+    globeWrap: byId('globeWrap'),
+    mapWrap: byId('mapWrap'),
+    globeCanvas: byId('globeCanvas'),
+    focusTitle: byId('focusTitle'),
+    focusDesc: byId('focusDesc'),
+    focusMetaA: byId('focusMetaA'),
+    focusMetaB: byId('focusMetaB'),
+    focusMetaC: byId('focusMetaC'),
+    hudRange: byId('hudRange'),
+    hudLat: byId('hudLat'),
+    hudLon: byId('hudLon'),
+    hudView: byId('hudView'),
+    hudLoad: byId('hudLoad'),
+    hudSignal: byId('hudSignal'),
+    hudBattery: byId('hudBattery'),
+    hudStorage: byId('hudStorage'),
+    zoomBtn: byId('zoomBtn'),
+    grabBtn: byId('grabBtn'),
+    helperBtn: byId('helperBtn'),
+    composer: byId('composer'),
+    drawer: byId('chatDrawer'),
+    drawerInner: byId('chatDrawerInner'),
+    micBtn: byId('micBtn'),
+    channelSelect: byId('channelSelect'),
+    channelAdd: byId('channelAdd'),
+    input: byId('chatInput'),
+    sendBtn: byId('sendBtn'),
+    addBtn: byId('addBtn'),
+    radialMenu: byId('radialMenu'),
+    listingPanel: byId('listingPanel'),
+    listingForm: byId('listingForm'),
+    panelTitle: byId('panelTitle'),
+    panelClose: byId('panelClose'),
+    listingsDrawer: byId('listingsDrawer'),
+    mapHint: byId('mapHint')
   };
 
-  const ACTIONS = [
-    { id:'product', title:'List product', hint:'Item, price, quantity, temperature' },
-    { id:'service', title:'List service', hint:'Hotel, rent-a-car, diving, appointment' },
-    { id:'location', title:'Delivery spot', hint:'Receive offers and deliveries here' },
-    { id:'driver', title:'Driver base', hint:'Activate delivery driver base location' },
-    { id:'media', title:'Photo / video', hint:'Post media to this place' }
+  let globe = null;
+  let globeAnimator = null;
+  let composerGesture = null;
+  const radialDefs = [
+    { key:'product', title:'List product', sub:'item, menu, volume, quantity' },
+    { key:'service', title:'List service', sub:'hotel, rent-a-car, diving, tour' },
+    { key:'delivery', title:'Delivery location', sub:'save any address' },
+    { key:'driver', title:'Driver base', sub:'mark a delivery base' },
+    { key:'media', title:'Photo or video', sub:'post to this place' }
   ];
+  const fieldSets = {
+    product: {
+      title:'List product',
+      fields:[
+        ['title','Product title','text','full'],
+        ['category','Category','select','full',['Food market','Supermarket','Coffee','Pizza','Car rental','Other']],
+        ['price','Price','text'],
+        ['quantity','Quantity','number'],
+        ['volume','Volume','text'],
+        ['temperature','Temperature','select',['Neutral','Cold','Hot']],
+        ['maxTransport','Max transport min','number'],
+        ['availability','Available dates/times','text','full'],
+        ['media','Photo or video URL','url','full'],
+        ['description','Description','textarea','full']
+      ]
+    },
+    service: {
+      title:'List service',
+      fields:[
+        ['title','Service title','text','full'],
+        ['serviceKind','Kind','select','full',['Hotel','Rent-a-car','Diving school','Tour','Restaurant','Delivery','Other']],
+        ['price','Price','text'],
+        ['hours','Hours or appointment slots','text'],
+        ['slots','Appointments per hour','number'],
+        ['range','Service range','text'],
+        ['media','Photo or video URL','url','full'],
+        ['description','Description','textarea','full']
+      ]
+    },
+    delivery: {
+      title:'Save delivery location',
+      fields:[
+        ['label','Location label','text','full'],
+        ['street','Street','text'],
+        ['number','Number','text'],
+        ['floor','Floor','text'],
+        ['doorbell','Doorbell name','text'],
+        ['phone','Phone','tel'],
+        ['remarks','Remarks','textarea','full']
+      ]
+    },
+    driver: {
+      title:'List driver base',
+      fields:[
+        ['label','Driver base name','text','full'],
+        ['vehicle','Vehicle type','select',['Scooter','Bike','Car','Van','Boat','Drone']],
+        ['coverage','Coverage range','text'],
+        ['hours','Operating hours','text'],
+        ['phone','Phone','tel'],
+        ['description','Notes','textarea','full']
+      ]
+    },
+    media: {
+      title:'Post photo or video',
+      fields:[
+        ['title','Post title','text','full'],
+        ['media','Media URL','url','full'],
+        ['visibility','Visibility','select',['Global','Local','Team']],
+        ['description','Caption','textarea','full']
+      ]
+    }
+  };
 
-  function showMiniStatus(text, ms = 1800) {
-    els.miniStatus.textContent = text;
-    els.miniStatus.classList.add('show');
-    clearTimeout(showMiniStatus.t);
-    showMiniStatus.t = setTimeout(() => els.miniStatus.classList.remove('show'), ms);
-  }
+  buildGlobe();
+  initUI();
+  syncAll();
+  renderChat();
+  renderListings();
+  renderRadial();
+  refreshFocusCard();
 
-  function setDrawer(open) {
-    state.drawerOpen = open;
-    els.drawer.classList.toggle('open', open);
-  }
+  function byId(id){ return document.getElementById(id); }
+  function loadJSON(key, fallback){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }catch(e){ return fallback; } }
+  function saveJSON(key, value){ try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){} }
 
-  function addMessage(kind, text) {
-    const div = document.createElement('div');
-    div.className = `msg ${kind}`;
-    div.textContent = text;
-    els.thread.appendChild(div);
-    setDrawer(true);
-    requestAnimationFrame(() => { els.thread.scrollTop = els.thread.scrollHeight; });
-  }
+  function buildGlobe(){
+    const canvas = el.globeCanvas;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.z = 3.35;
+    scene.add(new THREE.AmbientLight(0x6ad9ff, 0.78));
+    const light = new THREE.DirectionalLight(0xffffff, 1.25);
+    light.position.set(4, 2, 5);
+    scene.add(light);
 
-  function setView(view) {
-    state.view = view;
-    els.body.classList.toggle('globe-view', view === 'globe');
-    els.body.classList.toggle('map-view', view === 'map');
-    const onMap = view === 'map';
-    els.globeLayer.style.display = onMap ? 'none' : 'grid';
-    els.mapLayer.style.display = onMap ? 'block' : 'none';
-    if (onMap) ensureMap();
-    if (state.radialOpen) layoutRadial();
-  }
+    const globeGroup = new THREE.Group();
+    scene.add(globeGroup);
 
-  function setLoadState(loaded) {
-    state.loaded = loaded;
-    els.body.classList.toggle('loaded', loaded);
-    els.body.classList.toggle('unloaded', !loaded);
-  }
+    const textureLoader = new THREE.TextureLoader();
+    const earth = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 96, 96),
+      new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        specular: new THREE.Color(0x355b8d),
+        shininess: 16
+      })
+    );
+    globeGroup.add(earth);
+    textureLoader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg', t=>{ earth.material.map=t; earth.material.needsUpdate=true; });
+    textureLoader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg', t=>{ earth.material.specularMap=t; earth.material.needsUpdate=true; });
+    textureLoader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg', t=>{ earth.material.normalMap=t; earth.material.normalScale = new THREE.Vector2(0.55,0.55); earth.material.needsUpdate=true; });
 
-  function ensureLocation(forceFresh = false) {
-    return new Promise(resolve => {
-      if (!navigator.geolocation) return resolve(state.userLoc);
-      if (!forceFresh && state.userLoc && state.userLoc.lat) return resolve(state.userLoc);
-      navigator.geolocation.getCurrentPosition(pos => {
-        state.userLoc = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          label: 'Your location'
-        };
-        resolve(state.userLoc);
-      }, () => resolve(state.userLoc), { enableHighAccuracy: true, timeout: 7000, maximumAge: 120000 });
+    const cloud = new THREE.Mesh(
+      new THREE.SphereGeometry(1.018, 72, 72),
+      new THREE.MeshPhongMaterial({ transparent:true, opacity:0.22, color:0xdffcff, depthWrite:false })
+    );
+    globeGroup.add(cloud);
+    textureLoader.load('https://threejs.org/examples/textures/planets/earth_clouds_1024.png', t=>{ cloud.material.map=t; cloud.material.needsUpdate=true; });
+
+    const atmosphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1.08, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x66dfff, transparent:true, opacity:0.08, side:THREE.BackSide })
+    );
+    globeGroup.add(atmosphere);
+
+    const signalsGroup = new THREE.Group();
+    globeGroup.add(signalsGroup);
+    const signalPoints = [
+      [36.44, 28.22, 0x6ff4ff],
+      [35.34, 25.14, 0x72ffb4],
+      [37.98, 23.72, 0xffd766]
+    ];
+    signalPoints.forEach(([lat,lng,color], i)=>{
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.018, 16, 16),
+        new THREE.MeshBasicMaterial({ color })
+      );
+      const line = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.003, 0.003, 0.12, 10),
+        new THREE.MeshBasicMaterial({ color, transparent:true, opacity:.8 })
+      );
+      const pos = latLngToVector(lat, lng, 1.06);
+      marker.position.copy(pos);
+      line.position.copy(latLngToVector(lat, lng, 1.03));
+      line.lookAt(pos.clone().multiplyScalar(1.2));
+      line.rotateX(Math.PI/2);
+      signalsGroup.add(line);
+      signalsGroup.add(marker);
     });
+
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 700;
+    const starPos = new Float32Array(starCount*3);
+    for(let i=0;i<starCount;i++){
+      const r = 18 + Math.random()*36;
+      const theta = Math.random()*Math.PI*2;
+      const phi = Math.acos((Math.random()*2)-1);
+      starPos[i*3] = r*Math.sin(phi)*Math.cos(theta);
+      starPos[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+      starPos[i*3+2] = r*Math.cos(phi);
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color:0xbef6ff, size:0.05, transparent:true, opacity:0.9 })));
+
+    let drag = false, lastX = 0, lastY = 0, velX = 0, velY = 0;
+    canvas.addEventListener('pointerdown', e=>{
+      drag = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', e=>{
+      if(!drag || state.mode !== 'globe') return;
+      const dx = (e.clientX - lastX) * 0.0046;
+      const dy = (e.clientY - lastY) * 0.0046;
+      lastX = e.clientX; lastY = e.clientY;
+      velX = dx; velY = dy;
+      globeGroup.rotation.y += dx;
+      globeGroup.rotation.x += dy;
+      globeGroup.rotation.x = Math.max(-0.75, Math.min(0.75, globeGroup.rotation.x));
+    });
+    const stopDrag = e=>{ drag=false; try{ canvas.releasePointerCapture(e.pointerId); }catch(err){} };
+    canvas.addEventListener('pointerup', stopDrag);
+    canvas.addEventListener('pointercancel', stopDrag);
+
+    const resize = ()=>{
+      const w = window.innerWidth, h = window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    function animate(){
+      globeAnimator = requestAnimationFrame(animate);
+      if(state.mode === 'globe' && !drag){
+        velX *= 0.98; velY *= 0.98;
+        globeGroup.rotation.y += 0.0009 + velX;
+        globeGroup.rotation.x += velY;
+        globeGroup.rotation.x = Math.max(-0.75, Math.min(0.75, globeGroup.rotation.x));
+      }
+      cloud.rotation.y += 0.0012;
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    globe = {
+      renderer, scene, camera, group: globeGroup,
+      reset(){ camera.position.z = 3.35; },
+      setFocusedLatLng(lat, lng){
+        const target = latLngToRotation(lat, lng);
+        globeGroup.rotation.x = target.x;
+        globeGroup.rotation.y = target.y;
+      }
+    };
+
+    function latLngToVector(lat, lng, radius){
+      const phi = (90 - lat) * Math.PI / 180;
+      const theta = (lng + 180) * Math.PI / 180;
+      return new THREE.Vector3(
+        -(radius * Math.sin(phi) * Math.cos(theta)),
+        radius * Math.cos(phi),
+        radius * Math.sin(phi) * Math.sin(theta)
+      );
+    }
+    function latLngToRotation(lat, lng){
+      return {
+        x: THREE.MathUtils.degToRad(lat * 0.55),
+        y: THREE.MathUtils.degToRad(-lng - 94)
+      };
+    }
   }
 
-  function ensureMap() {
-    if (state.map || !window.L) return state.map;
-    state.map = L.map('map', { zoomControl:false, attributionControl:false, preferCanvas:true, inertia:true }).setView([state.userLoc.lat, state.userLoc.lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(state.map);
-    state.userMarker = L.circleMarker([state.userLoc.lat, state.userLoc.lng], {
-      radius: 8,
-      color: '#8fefff',
-      weight: 2,
-      fillColor: '#00c8ff',
-      fillOpacity: 0.35
-    }).addTo(state.map).bindTooltip('You');
-    state.map.on('click', e => {
-      if (!state.currentForm || !state.currentForm.locationTarget) return;
-      state.currentForm.locationTarget.value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-      showMiniStatus('Location pinned on map');
+  function initMap(){
+    if(state.map) return state.map;
+    state.map = L.map('map', { zoomControl:false, attributionControl:false }).setView([state.currentLocation.lat, state.currentLocation.lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19 }).addTo(state.map);
+    state.markersLayer = L.layerGroup().addTo(state.map);
+    state.map.on('click', e=>{
+      state.currentLocation = { lat:e.latlng.lat, lng:e.latlng.lng, label:'Selected location' };
+      syncHudLocation();
+      refreshFocusCard();
+      if(state.radialOpen) positionRadialNodes();
     });
+    renderListings();
     return state.map;
   }
 
-  async function toggleZoom() {
-    if (state.view === 'globe') {
-      const loc = await ensureLocation(true);
-      setView('map');
-      const map = ensureMap();
-      setTimeout(() => map.setView([loc.lat, loc.lng], 15, { animate:true }), 40);
-      if (state.userMarker) state.userMarker.setLatLng([loc.lat, loc.lng]);
-      showMiniStatus('Zoomed to your location');
-      if (state.pendingAction) openForm(state.pendingAction, { requestedAfterZoom:true });
+  function initUI(){
+    el.zoomBtn.addEventListener('click', toggleZoom);
+    el.grabBtn.addEventListener('click', toggleLoad);
+    el.helperBtn.addEventListener('click', toggleHelperMode);
+    el.sendBtn.addEventListener('click', sendMessage);
+    el.addBtn.addEventListener('click', toggleRadial);
+    el.channelAdd.addEventListener('click', ()=> pushSystem('Channel creation placeholder ready.'));
+    el.panelClose.addEventListener('click', closePanel);
+    el.micBtn.addEventListener('click', toggleVoiceInput);
+    el.input.addEventListener('keydown', e=>{
+      if(e.key === 'Enter'){ e.preventDefault(); sendMessage(); }
+    });
+    setupComposerGesture();
+    document.addEventListener('click', e=>{
+      if(state.radialOpen && !e.target.closest('.radialNode') && !e.target.closest('#addBtn')) {
+        toggleRadial(false);
+      }
+    });
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos=>{
+        state.currentLocation = { lat:pos.coords.latitude, lng:pos.coords.longitude, label:'My location' };
+        state.hasGeo = true;
+        syncHudLocation();
+        refreshFocusCard();
+      }, ()=>{});
+    }
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.hidden && globeAnimator) cancelAnimationFrame(globeAnimator);
+      else if(!document.hidden && globe && !globeAnimator) buildGlobe();
+    });
+  }
+
+  function setupComposerGesture(){
+    const composer = el.composer;
+    const input = el.input;
+    if(state.composerRect){ applyComposerRect(state.composerRect); }
+    else syncChatDrawerToComposer();
+    composer.addEventListener('pointerdown', e=>{
+      if(e.button != null && e.button !== 0) return;
+      const rect = composer.getBoundingClientRect();
+      const target = e.target;
+      const nearEdge = rect.right - e.clientX < 28 && rect.bottom - e.clientY < 24;
+      const allowDrag = target === input || target === composer || target.closest('#composerTop');
+      if(!allowDrag) return;
+      composerGesture = {
+        id:e.pointerId, mode:nearEdge ? 'resize' : 'drag', startX:e.clientX, startY:e.clientY,
+        left:rect.left, top:rect.top, width:rect.width, height:rect.height, moved:false
+      };
+      composer.classList.add(nearEdge ? 'resizing' : 'dragging');
+      try{ composer.setPointerCapture(e.pointerId); }catch(err){}
+    }, true);
+    composer.addEventListener('pointermove', e=>{
+      if(!composerGesture || e.pointerId !== composerGesture.id) return;
+      const dx = e.clientX - composerGesture.startX;
+      const dy = e.clientY - composerGesture.startY;
+      if(Math.abs(dx) > 5 || Math.abs(dy) > 5) composerGesture.moved = true;
+      if(!composerGesture.moved) return;
+      e.preventDefault();
+      if(composerGesture.mode === 'resize'){
+        applyComposerRect({
+          left: composerGesture.left,
+          top: composerGesture.top,
+          width: composerGesture.width + dx,
+          height: composerGesture.height + dy
+        });
+      } else {
+        applyComposerRect({
+          left: composerGesture.left + dx,
+          top: composerGesture.top + dy,
+          width: composerGesture.width,
+          height: composerGesture.height
+        });
+      }
+    }, true);
+    function endComposerGesture(e){
+      if(!composerGesture || e.pointerId !== composerGesture.id) return;
+      const moved = composerGesture.moved;
+      composerGesture = null;
+      composer.classList.remove('dragging', 'resizing');
+      try{ composer.releasePointerCapture(e.pointerId); }catch(err){}
+      if(!moved && e.target === input) input.focus();
+      state.composerRect = getComposerRect();
+      saveJSON('astranov.composer.rect.v2', state.composerRect);
+      syncChatDrawerToComposer();
+    }
+    composer.addEventListener('pointerup', endComposerGesture, true);
+    composer.addEventListener('pointercancel', endComposerGesture, true);
+
+    let drawerPointer = null;
+    input.addEventListener('pointerdown', e=>{
+      drawerPointer = { id:e.pointerId, startY:e.clientY, base:state.drawerHeight };
+    });
+    input.addEventListener('pointermove', e=>{
+      if(!drawerPointer || e.pointerId !== drawerPointer.id) return;
+      const dy = drawerPointer.startY - e.clientY;
+      if(Math.abs(dy) < 8) return;
+      setDrawerHeight(clamp(drawerPointer.base + dy, 0, Math.min(window.innerHeight*0.42, 340)));
+    });
+    const endDrawer = e=>{
+      if(!drawerPointer || e.pointerId !== drawerPointer.id) return;
+      if(state.drawerHeight < 70) setDrawerHeight(0);
+      drawerPointer = null;
+    };
+    input.addEventListener('pointerup', endDrawer);
+    input.addEventListener('pointercancel', endDrawer);
+    window.addEventListener('resize', ()=> {
+      if(!state.composerRect) return syncChatDrawerToComposer();
+      applyComposerRect(state.composerRect);
+    });
+  }
+
+  function getComposerRect(){
+    const r = el.composer.getBoundingClientRect();
+    return { left:r.left, top:r.top, width:r.width, height:r.height };
+  }
+
+  function applyComposerRect(rect){
+    const w = clamp(rect.width || el.composer.offsetWidth, 320, Math.max(320, window.innerWidth - 190));
+    const h = clamp(rect.height || el.composer.offsetHeight, 82, Math.min(180, window.innerHeight * 0.34));
+    const left = clamp(rect.left || (window.innerWidth - w)/2, 92, window.innerWidth - w - 92);
+    const top = clamp(rect.top || (window.innerHeight - h - 10), 54, window.innerHeight - h - 12);
+    Object.assign(el.composer.style, { left:left+'px', top:top+'px', width:w+'px', height:h+'px', bottom:'auto', transform:'none' });
+    state.composerRect = { left, top, width:w, height:h };
+    syncChatDrawerToComposer();
+  }
+
+  function syncChatDrawerToComposer(){
+    const r = el.composer.getBoundingClientRect();
+    Object.assign(el.drawer.style, {
+      left: r.left + 'px',
+      width: r.width + 'px',
+      bottom: Math.max(10, window.innerHeight - r.top + 8) + 'px',
+      transform: 'none'
+    });
+    if(state.drawerHeight){ el.drawer.classList.add('open'); el.drawer.style.maxHeight = state.drawerHeight + 'px'; }
+  }
+
+  function setDrawerHeight(height){
+    state.drawerHeight = height;
+    if(height <= 0){
+      el.drawer.classList.remove('open');
+      el.drawer.style.maxHeight = '0px';
+      return;
+    }
+    el.drawer.classList.add('open');
+    el.drawer.style.maxHeight = height + 'px';
+    syncChatDrawerToComposer();
+  }
+
+  function toggleZoom(){
+    if(state.mode === 'globe') goToMap();
+    else goToGlobe();
+  }
+
+  function goToMap(){
+    initMap();
+    state.mode = 'map';
+    el.body.classList.remove('globe-view');
+    el.body.classList.add('map-view');
+    el.mapWrap.style.display = 'block';
+    el.globeWrap.style.display = 'none';
+    state.map.invalidateSize();
+    state.map.setView([state.currentLocation.lat, state.currentLocation.lng], 14, { animate:true });
+    syncAll();
+    pushSystem('Zoomed to your live area.');
+  }
+
+  function goToGlobe(){
+    state.mode = 'globe';
+    el.body.classList.remove('map-view');
+    el.body.classList.add('globe-view');
+    el.mapWrap.style.display = 'none';
+    el.globeWrap.style.display = 'block';
+    if(globe){
+      globe.reset();
+      globe.setFocusedLatLng(state.currentLocation.lat, state.currentLocation.lng);
+    }
+    toggleRadial(false);
+    syncAll();
+    pushSystem('Returned to globe view.');
+  }
+
+  function toggleLoad(){
+    state.loadState = state.loadState === 'unloaded' ? 'loaded' : 'unloaded';
+    syncAll();
+    pushSystem(state.loadState === 'loaded' ? 'Payload secured.' : 'Payload released.');
+  }
+
+  function toggleHelperMode(){
+    state.voiceMode = !state.voiceMode;
+    el.body.classList.toggle('voice-mode', state.voiceMode);
+    const line = state.voiceMode
+      ? 'Astranov Collective Intelligence switching to AI hands-free mode.'
+      : 'Astranov Collective Intelligence switching back to manual typing mode.';
+    pushAssistant(line);
+    sayBrief(line);
+  }
+
+  function sendMessage(){
+    const text = el.input.value.trim();
+    if(!text) return;
+    pushUser(text);
+    el.input.value = '';
+    if(/zoom|location|where/i.test(text)) {
+      pushAssistant('Use the radar wheel to jump between globe and your area.');
+    } else if(/product|service|driver|delivery|post/i.test(text)) {
+      pushAssistant('Use the add bubble on the right to start a listing flow around the globe or map.');
     } else {
-      setView('globe');
-      closeCard();
-      showMiniStatus('Returned to globe');
+      pushAssistant('Received. I can route, list, explore, or search from here.');
     }
   }
 
-  function getWorldCenter() {
-    if (state.view === 'globe') {
-      const r = els.globeShell.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }
-    const r = els.world.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 - 28 };
+  function pushUser(text){
+    state.chat.push({ kind:'user', text });
+    saveJSON('astranov.chat.v1', state.chat);
+    renderChat();
+  }
+  function pushAssistant(text){
+    state.chat.push({ kind:'assistant', text });
+    saveJSON('astranov.chat.v1', state.chat);
+    renderChat(true);
+  }
+  function pushSystem(text){
+    state.chat.push({ kind:'system', text });
+    saveJSON('astranov.chat.v1', state.chat);
+    renderChat(false);
   }
 
-  function buildRadial() {
-    els.addOrbit.innerHTML = '';
-    ACTIONS.forEach((a, i) => {
-      const btn = document.createElement('button');
-      btn.className = 'addNode';
-      btn.type = 'button';
-      btn.dataset.action = a.id;
-      btn.innerHTML = `<div><strong>${a.title}</strong><span>${a.hint}</span></div>`;
-      btn.addEventListener('click', e => {
+  function sayBrief(text){
+    if(!('speechSynthesis' in window)) return;
+    try{
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.04; u.pitch = 1; u.volume = 0.7;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }catch(err){}
+  }
+
+  function renderChat(open = false){
+    el.drawerInner.innerHTML = '';
+    state.chat.slice(-18).forEach(msg=>{
+      const row = document.createElement('div');
+      row.className = 'chatRow';
+      const bubble = document.createElement('div');
+      bubble.className = 'chatMsg ' + msg.kind;
+      bubble.textContent = msg.text;
+      row.appendChild(bubble);
+      el.drawerInner.appendChild(row);
+    });
+    if(open || state.chat.length <= 3) {
+      setDrawerHeight(Math.max(state.drawerHeight, 180));
+    }
+    syncChatDrawerToComposer();
+    el.drawerInner.scrollTop = el.drawerInner.scrollHeight;
+  }
+
+  function syncAll(){
+    syncHudLocation();
+    el.hudView.textContent = state.mode === 'globe' ? 'GLOBE' : 'MAP';
+    el.hudRange.textContent = state.mode === 'globe' ? 'CITY' : 'STREET';
+    el.hudLoad.textContent = state.loadState === 'loaded' ? 'LOCKED' : 'EMPTY';
+    el.grabBtn.classList.toggle('loaded', state.loadState === 'loaded');
+    el.grabBtn.classList.toggle('unloaded', state.loadState !== 'loaded');
+  }
+
+  function syncHudLocation(){
+    el.hudLat.textContent = state.currentLocation.lat.toFixed(2);
+    el.hudLon.textContent = state.currentLocation.lng.toFixed(2);
+    el.hudSignal.textContent = state.hasGeo ? '99%' : '91%';
+    el.hudBattery.textContent = state.mode === 'map' ? '88' : '82';
+    el.hudStorage.textContent = String(Math.max(12, 48 - state.records.length));
+  }
+
+  function refreshFocusCard(){
+    const near = state.records.find(r => distanceKm(state.currentLocation.lat, state.currentLocation.lng, r.lat, r.lng) < 30);
+    if(near){
+      el.focusTitle.textContent = near.title || near.label || 'Nearby signal';
+      el.focusDesc.textContent = near.description || near.remarks || 'A fresh signal is active near this area.';
+      el.focusMetaA.textContent = near.kind;
+      el.focusMetaB.textContent = (near.price ? '€ ' + near.price : near.vehicle || near.serviceKind || 'live');
+      el.focusMetaC.textContent = near.visibility || 'local';
+    } else {
+      el.focusTitle.textContent = 'Freediving Course · 2 Days';
+      el.focusDesc.textContent = 'Learn breath-hold techniques, safety drills, and sea awareness. Small group. South coast.';
+      el.focusMetaA.textContent = state.mode === 'globe' ? 'orbit signal' : state.currentLocation.label || 'live area';
+      el.focusMetaB.textContent = 'ready';
+      el.focusMetaC.textContent = state.mode === 'globe' ? 'global' : 'local';
+    }
+  }
+
+  function toggleRadial(force){
+    const next = typeof force === 'boolean' ? force : !state.radialOpen;
+    state.radialOpen = next;
+    el.radialMenu.classList.toggle('open', next);
+    positionRadialNodes();
+  }
+
+  function renderRadial(){
+    el.radialMenu.innerHTML = '';
+    radialDefs.forEach(def=>{
+      const node = document.createElement('button');
+      node.className = 'radialNode';
+      node.dataset.kind = def.key;
+      node.innerHTML = '<strong>'+def.title+'</strong><span>'+def.sub+'</span>';
+      node.addEventListener('click', e=>{
         e.stopPropagation();
-        chooseAction(a.id);
+        handleRadial(def.key);
       });
-      els.addOrbit.appendChild(btn);
+      el.radialMenu.appendChild(node);
     });
   }
 
-  function layoutRadial() {
-    const center = getWorldCenter();
-    const radius = state.view === 'globe' ? Math.min(window.innerWidth, window.innerHeight) * 0.22 : Math.min(window.innerWidth, window.innerHeight) * 0.18;
-    const nodes = [...els.addOrbit.querySelectorAll('.addNode')];
-    nodes.forEach((node, i) => {
-      const angle = -90 + (360 / nodes.length) * i;
-      const rad = angle * Math.PI / 180;
-      const x = center.x + Math.cos(rad) * radius;
-      const y = center.y + Math.sin(rad) * radius;
-      node.style.left = `${x}px`;
-      node.style.top = `${y}px`;
-    });
-  }
-
-  function toggleAddOrbit(force) {
-    state.radialOpen = force != null ? force : !state.radialOpen;
-    els.addOrbit.classList.toggle('open', state.radialOpen);
-    els.addBtn.classList.toggle('open', state.radialOpen);
-    const nodes = [...els.addOrbit.querySelectorAll('.addNode')];
-    if (state.radialOpen) {
-      layoutRadial();
-      requestAnimationFrame(() => nodes.forEach((n, i) => setTimeout(() => n.classList.add('show'), i * 18)));
-    } else {
-      nodes.forEach(n => n.classList.remove('show'));
-    }
-  }
-
-  function chooseAction(action) {
-    toggleAddOrbit(false);
-    if (state.view === 'globe' && action !== 'media') {
-      state.pendingAction = action;
-      addMessage('ai', `Astranov Collective Intelligence: zoom down to your city or listing area, then I will open the ${action} form.`);
-      showMiniStatus('Zoom in to define location');
+  function positionRadialNodes(){
+    const nodes = [...el.radialMenu.querySelectorAll('.radialNode')];
+    if(!state.radialOpen){
+      nodes.forEach(n=> n.style.opacity = 0);
       return;
     }
-    state.pendingAction = null;
-    openForm(action);
-  }
-
-  function closeCard() {
-    els.cardHost.innerHTML = '';
-    state.currentForm = null;
-  }
-
-  function getMapPointString() {
-    if (!state.map) return `${state.userLoc.lat.toFixed(6)}, ${state.userLoc.lng.toFixed(6)}`;
-    const c = state.map.getCenter();
-    return `${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`;
-  }
-
-  function formSpec(action) {
-    const common = `<label class="full">Title<input name="title" placeholder="Title" required></label>
-      <label>Description<textarea name="description" placeholder="Describe it"></textarea></label>
-      <label>Location<input name="location" placeholder="Lat, lng" value="${getMapPointString()}"></label>`;
-    switch(action) {
-      case 'product': return {
-        title: 'List product',
-        hint: 'Product, inventory, pricing, and delivery limits.',
-        fields: `${common}
-          <label>Price<input name="price" placeholder="€0.00"></label>
-          <label>Quantity<input name="quantity" placeholder="Available quantity"></label>
-          <label>Temperature<select name="temperature"><option>neutral</option><option>cold</option><option>hot</option></select></label>
-          <label>Max transport minutes<input name="transport" placeholder="30"></label>
-          <label class="full">Photo or video URL<input name="media" placeholder="https://..."></label>`
-      };
-      case 'service': return {
-        title: 'List service',
-        hint: 'Service type, booking hours, and appointment capacity.',
-        fields: `${common}
-          <label>Service type<select name="type"><option>hotel</option><option>rent-a-car</option><option>diving school</option><option>restaurant</option><option>other</option></select></label>
-          <label>Price / rate<input name="price" placeholder="€ per hour, night, day"></label>
-          <label>Bookable hours<input name="hours" placeholder="09:00-18:00"></label>
-          <label>Slots per hour<input name="slots" placeholder="2"></label>
-          <label class="full">Photo or video URL<input name="media" placeholder="https://..."></label>`
-      };
-      case 'location': return {
-        title: 'Delivery location',
-        hint: 'Where Astranov should route deliveries to you.',
-        fields: `<label>Address<input name="address" placeholder="Street, number"></label>
-          <label>Door / floor<input name="door" placeholder="Floor, bell"></label>
-          <label>Phone<input name="phone" placeholder="Phone number"></label>
-          <label class="full">Notes<textarea name="notes" placeholder="Be quiet, call first, etc."></textarea></label>
-          <label class="full">Map point<input name="location" placeholder="Lat, lng" value="${getMapPointString()}"></label>`
-      };
-      case 'driver': return {
-        title: 'Driver base',
-        hint: 'Activate delivery readiness from this base.',
-        fields: `<label>Driver name<input name="name" placeholder="Driver or team name"></label>
-          <label>Vehicle<input name="vehicle" placeholder="Scooter, car, bike"></label>
-          <label>Coverage radius km<input name="radius" placeholder="5"></label>
-          <label>Status<select name="status"><option>available</option><option>busy</option><option>offline</option></select></label>
-          <label class="full">Base point<input name="location" placeholder="Lat, lng" value="${getMapPointString()}"></label>
-          <label class="full">Notes<textarea name="notes" placeholder="Shift notes"></textarea></label>`
-      };
-      case 'media': return {
-        title: 'Post photo or video',
-        hint: 'Attach media to the current place or map area.',
-        fields: `<label>Caption<input name="title" placeholder="Caption"></label>
-          <label>Media URL<input name="media" placeholder="https://..."></label>
-          <label class="full">Description<textarea name="description" placeholder="What is happening here?"></textarea></label>
-          <label class="full">Location<input name="location" placeholder="Lat, lng" value="${getMapPointString()}"></label>`
-      };
-    }
-  }
-
-  function openForm(action, opts = {}) {
-    closeCard();
-    const spec = formSpec(action);
-    if (!spec) return;
-    const card = document.createElement('section');
-    card.className = 'card';
-    card.innerHTML = `
-      <div class="cardHead">
-        <div>
-          <div class="cardTitle">${spec.title}</div>
-        </div>
-        <button class="cardClose" aria-label="Close">✕</button>
-      </div>
-      <div class="cardHint">${spec.hint}${state.view === 'map' ? ' Tap the map to change the location field.' : ''}</div>
-      <form id="activeForm" class="formGrid">${spec.fields}</form>
-      <div class="formActions">
-        <button class="softBtn" type="button" id="useCenterBtn">Use map center</button>
-        <button class="solidBtn" type="button" id="saveBtn">Save</button>
-      </div>`;
-    els.cardHost.appendChild(card);
-    const form = card.querySelector('#activeForm');
-    const locationInput = form.querySelector('input[name="location"]');
-    state.currentForm = { action, node: card, form, locationTarget: locationInput };
-    card.querySelector('.cardClose').addEventListener('click', closeCard);
-    card.querySelector('#useCenterBtn').addEventListener('click', () => {
-      if (locationInput) locationInput.value = getMapPointString();
-      showMiniStatus('Using current map center');
+    const cx = window.innerWidth * 0.5;
+    const cy = state.mode === 'globe' ? window.innerHeight * 0.48 : window.innerHeight * 0.42;
+    const radius = Math.min(window.innerWidth < 600 ? 130 : 180, window.innerWidth * 0.22);
+    nodes.forEach((node, i)=>{
+      const angle = (-90 + i * (360 / nodes.length)) * Math.PI / 180;
+      const x = cx + Math.cos(angle) * radius - 62;
+      const y = cy + Math.sin(angle) * radius - 62;
+      node.style.left = x + 'px';
+      node.style.top = y + 'px';
     });
-    card.querySelector('#saveBtn').addEventListener('click', () => saveForm(action, form));
-    if (opts.requestedAfterZoom) showMiniStatus(`${spec.title} ready`);
+  }
+  window.addEventListener('resize', positionRadialNodes);
+
+  function handleRadial(kind){
+    state.pendingAction = kind;
+    toggleRadial(false);
+    if((kind === 'product' || kind === 'service' || kind === 'delivery' || kind === 'driver' || kind === 'media') && state.mode !== 'map'){
+      pushAssistant('Zoom down to define where you want to place this signal.');
+      goToMap();
+    }
+    openPanel(kind);
   }
 
-  function saveForm(action, form) {
-    const data = Object.fromEntries(new FormData(form).entries());
-    const listing = { action, data, id: `${action}-${Date.now()}` };
-    state.listings.push(listing);
-    if (data.location) {
-      const [lat, lng] = data.location.split(',').map(v => parseFloat(v.trim()));
-      if (Number.isFinite(lat) && Number.isFinite(lng) && state.map) {
-        const marker = L.marker([lat, lng], {
-          icon: L.divIcon({ className:'', html:'<div class="listingPin"></div>', iconSize:[16,16], iconAnchor:[8,8] })
-        }).addTo(state.map);
-        marker.bindTooltip(data.title || data.name || action);
+  function openPanel(kind){
+    const cfg = fieldSets[kind];
+    if(!cfg) return;
+    el.panelTitle.textContent = cfg.title;
+    el.listingForm.innerHTML = '';
+    cfg.fields.forEach(field=>{
+      const [name,label,type,spanOrOpts,optsMaybe] = field;
+      const span = spanOrOpts === 'full' ? 'full' : '';
+      const opts = Array.isArray(spanOrOpts) ? spanOrOpts : (Array.isArray(optsMaybe) ? optsMaybe : null);
+      const wrap = document.createElement('label');
+      if(span) wrap.classList.add(span);
+      wrap.innerHTML = '<span>'+label+'</span>';
+      let input;
+      if(type === 'textarea'){
+        input = document.createElement('textarea');
+      } else if(type === 'select'){
+        input = document.createElement('select');
+        (opts || []).forEach(opt=>{
+          const o = document.createElement('option');
+          o.textContent = opt; o.value = opt;
+          input.appendChild(o);
+        });
+      } else {
+        input = document.createElement('input');
+        input.type = type;
       }
-    }
-    addMessage('ai', `Astranov Collective Intelligence: ${action} saved${data.title ? ` for ${data.title}` : ''}.`);
-    showMiniStatus(`${action} saved`);
-    closeCard();
-  }
-
-  function sendInput() {
-    const text = els.input.value.trim();
-    if (!text) return;
-    addMessage('user', text);
-    els.input.value = '';
-    const lower = text.toLowerCase();
-    if (lower.includes('zoom')) {
-      toggleZoom();
-      return;
-    }
-    if (lower.includes('product')) {
-      chooseAction('product');
-      return;
-    }
-    if (lower.includes('service')) {
-      chooseAction('service');
-      return;
-    }
-    if (lower.includes('driver')) {
-      chooseAction('driver');
-      return;
-    }
-    if (lower.includes('delivery')) {
-      chooseAction('location');
-      return;
-    }
-    addMessage('ai', 'Astranov Collective Intelligence: command received. Use the add button for listings, the radar wheel to zoom, or tell me the next action.');
-  }
-
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = SR ? new SR() : null;
-  if (recognition) {
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    let finalText = '';
-    recognition.onstart = () => {
-      state.listening = true;
-      showMiniStatus(state.recognitionMode === 'voice' ? 'Voice typing on' : 'Hands-free listening on', 1200);
-    };
-    recognition.onresult = e => {
-      let transcript = '';
-      finalText = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        transcript += e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
-      }
-      if (state.recognitionMode === 'voice') els.input.value = transcript.trim();
-      else if (state.recognitionMode === 'handsfree') els.input.value = transcript.trim();
-    };
-    recognition.onend = () => {
-      state.listening = false;
-      if (state.recognitionMode === 'handsfree' && els.input.value.trim()) sendInput();
-      state.recognitionMode = null;
-    };
-    recognition.onerror = () => {
-      state.listening = false;
-      state.recognitionMode = null;
-      addMessage('sys', 'Voice capture was not available. You can still type manually.');
-    };
-  }
-
-  function startVoice(mode) {
-    if (!recognition) {
-      addMessage('sys', 'Speech input is not supported in this browser.');
-      return;
-    }
-    if (state.listening) {
-      recognition.stop();
-      return;
-    }
-    els.input.value = '';
-    state.recognitionMode = mode;
-    recognition.start();
-  }
-
-  function toggleHandsFree() {
-    state.handsFree = !state.handsFree;
-    if (state.handsFree) {
-      addMessage('ai', 'Astranov Collective Intelligence: switching to AI hands-free mode.');
-      startVoice('handsfree');
-    } else {
-      if (state.listening && recognition) recognition.stop();
-      addMessage('ai', 'Astranov Collective Intelligence: switching back to manual typing mode.');
-    }
-  }
-
-  function promptDragSetup() {
-    let drag = null;
-    els.input.addEventListener('pointerdown', e => {
-      drag = { id:e.pointerId, y:e.clientY, moved:false, startedAt:Date.now() };
+      input.name = name;
+      wrap.appendChild(input);
+      el.listingForm.appendChild(wrap);
     });
-    els.input.addEventListener('pointermove', e => {
-      if (!drag || drag.id !== e.pointerId) return;
-      const dy = e.clientY - drag.y;
-      if (Math.abs(dy) > 18) {
-        drag.moved = true;
-        e.preventDefault();
-        setDrawer(dy < 0);
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'submitBtn';
+    submit.textContent = kind === 'media' ? 'Publish signal' : 'Save signal';
+    el.listingForm.appendChild(submit);
+    el.listingPanel.classList.add('open');
+    el.listingForm.onsubmit = e=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(el.listingForm).entries());
+      data.kind = kind;
+      data.lat = state.currentLocation.lat;
+      data.lng = state.currentLocation.lng;
+      data.createdAt = new Date().toISOString();
+      if(!data.title && data.label) data.title = data.label;
+      if(!data.label && data.title) data.label = data.title;
+      state.records.unshift(data);
+      saveJSON('astranov.records.v1', state.records);
+      renderListings();
+      refreshFocusCard();
+      pushAssistant((cfg.title || 'Signal') + ' saved at the current location.');
+      closePanel();
+    };
+  }
+
+  function closePanel(){ el.listingPanel.classList.remove('open'); }
+
+  function renderListings(){
+    el.listingsDrawer.innerHTML = '';
+    if(state.map && state.markersLayer){
+      state.markersLayer.clearLayers();
+    }
+    state.records.slice(0,6).forEach(rec=>{
+      const card = document.createElement('div');
+      card.className = 'listCard glass';
+      card.innerHTML = `
+        <div class="listCardMedia"><span>${(rec.kind || 'signal').toUpperCase()}</span></div>
+        <div class="listCardBody">
+          <h5>${escapeHtml(rec.title || rec.label || 'Untitled signal')}</h5>
+          <p>${escapeHtml(rec.description || rec.remarks || rec.serviceKind || rec.category || 'Local Astranov listing')}</p>
+          <div class="listMeta">
+            <div class="metaChip"><strong>TYPE</strong><span>${escapeHtml(rec.kind)}</span></div>
+            <div class="metaChip"><strong>PRICE</strong><span>${escapeHtml(rec.price || rec.vehicle || rec.visibility || '—')}</span></div>
+          </div>
+        </div>`;
+      card.addEventListener('click', ()=>{
+        state.currentLocation = { lat:+rec.lat, lng:+rec.lng, label:rec.title || rec.label || 'Selected signal' };
+        syncHudLocation();
+        refreshFocusCard();
+        if(state.mode !== 'map') goToMap();
+        else state.map.flyTo([rec.lat, rec.lng], 15);
+      });
+      el.listingsDrawer.appendChild(card);
+
+      if(state.map && state.markersLayer){
+        const div = document.createElement('div');
+        div.className = 'map-marker ' + ({
+          product:'product',
+          service:'service',
+          driver:'driver',
+          delivery:'delivery',
+          media:'media'
+        }[rec.kind] || 'service');
+        const marker = L.marker([rec.lat, rec.lng], {
+          icon: L.divIcon({ className:'', html: div.outerHTML, iconSize:[16,16], iconAnchor:[8,8] })
+        }).addTo(state.markersLayer);
+        marker.bindPopup('<strong>'+escapeHtml(rec.title || rec.label || rec.kind)+'</strong><br>'+escapeHtml(rec.description || rec.remarks || rec.serviceKind || ''));
       }
     });
-    const clear = () => drag = null;
-    els.input.addEventListener('pointerup', e => {
-      if (!drag || drag.id !== e.pointerId) return;
-      if (!drag.moved) setTimeout(() => els.input.focus(), 0);
-      clear();
-    });
-    els.input.addEventListener('pointercancel', clear);
   }
 
-  els.zoomBtn.addEventListener('click', toggleZoom);
-  els.loadBtn.addEventListener('click', () => {
-    setLoadState(!state.loaded);
-    showMiniStatus(state.loaded ? 'Payload secured' : 'Grip ready');
-  });
-  els.helperBtn.addEventListener('click', toggleHandsFree);
-  els.micBtn.addEventListener('click', () => startVoice('voice'));
-  els.sendBtn.addEventListener('click', sendInput);
-  els.input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendInput(); } });
-  els.addBtn.addEventListener('click', e => { e.stopPropagation(); toggleAddOrbit(); });
-  els.channelAdd.addEventListener('click', () => {
-    const name = prompt('New channel name');
-    if (!name) return;
-    const opt = document.createElement('option');
-    opt.textContent = name;
-    els.channelSelect.appendChild(opt);
-    els.channelSelect.value = name;
-    addMessage('sys', `Channel added: ${name}`);
-  });
-  window.addEventListener('resize', () => { if (state.radialOpen) layoutRadial(); });
-  document.addEventListener('click', e => {
-    if (state.radialOpen && !e.target.closest('#addBtn') && !e.target.closest('.addNode')) toggleAddOrbit(false);
-  });
+  function escapeHtml(v){
+    return String(v || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
 
-  buildRadial();
-  promptDragSetup();
-  setView('globe');
-  setLoadState(false);
-  ensureLocation();
+  function toggleVoiceInput(){
+    if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
+      pushSystem('Voice typing is not available in this browser. Manual mode ready.');
+      return;
+    }
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!window._astranovRec){
+      window._astranovRec = new Rec();
+      window._astranovRec.lang = 'en-US';
+      window._astranovRec.interimResults = false;
+      window._astranovRec.maxAlternatives = 1;
+      window._astranovRec.onresult = e=>{
+        const text = e.results[0][0].transcript || '';
+        el.input.value = text;
+        pushSystem('Voice text captured.');
+      };
+      window._astranovRec.onerror = ()=> pushSystem('Too much noise. Use manual mode if needed.');
+      window._astranovRec.onend = ()=> el.micBtn.classList.remove('active');
+    }
+    try{
+      window._astranovRec.start();
+      el.micBtn.classList.add('active');
+      pushSystem('Voice typing listening.');
+    }catch(err){
+      pushSystem('Voice typing is already active.');
+    }
+  }
+
+  function distanceKm(aLat, aLng, bLat, bLng){
+    const R = 6371;
+    const dLat = (bLat-aLat) * Math.PI/180;
+    const dLng = (bLng-aLng) * Math.PI/180;
+    const sa = Math.sin(dLat/2)**2 + Math.cos(aLat*Math.PI/180)*Math.cos(bLat*Math.PI/180)*Math.sin(dLng/2)**2;
+    return 2 * R * Math.atan2(Math.sqrt(sa), Math.sqrt(1-sa));
+  }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 })();
 </script>
 </body>
