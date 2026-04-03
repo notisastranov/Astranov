@@ -1202,6 +1202,24 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
 .hud-arrow.active{transform:scale(1.14);background:rgba(0,200,255,0.18);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,200,255,0.18);} .hud-arrow.up{top:8px;left:50%;transform:translateX(-50%);} .hud-arrow.right{right:4px;top:50%;transform:translateY(-50%);} .hud-arrow.down{bottom:8px;left:50%;transform:translateX(-50%);} .hud-arrow.left{left:4px;top:50%;transform:translateY(-50%);} .hud-arrow.up.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.right.active{transform:translateY(-50%) scale(1.14);} .hud-arrow.down.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.left.active{transform:translateY(-50%) scale(1.14);} 
 #radar-center-toggle-compact{min-width:82px;}
 .perf-compact-ui,.radar-compact-ui{display:none !important;}
+#thumb-docks{display:none !important;}
+.wheel-core-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:56px;height:56px;border-radius:50%;border:1px solid rgba(0,200,255,0.22);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.14),rgba(4,12,22,0.94) 70%);display:flex;align-items:center;justify-content:center;z-index:6;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,0.34),0 0 18px rgba(0,200,255,0.12);transition:transform 0.16s ease,border-color 0.16s ease,box-shadow 0.16s ease,background 0.16s ease;}
+.wheel-core-btn:hover,.wheel-core-btn:active{transform:translate(-50%,-50%) scale(1.07);}
+.wheel-core-btn:focus-visible{outline:none;border-color:rgba(0,200,255,0.42);box-shadow:0 0 0 2px rgba(0,200,255,0.10),0 12px 26px rgba(0,0,0,0.36),0 0 22px rgba(0,200,255,0.18);}
+.radar-core-btn.zoom-in{border-color:rgba(0,200,255,0.26);}
+.radar-core-btn.zoom-out{border-color:rgba(255,214,0,0.28);box-shadow:0 10px 24px rgba(0,0,0,0.34),0 0 18px rgba(255,214,0,0.10);}
+.zoom-arrow{font-size:24px;line-height:1;color:#dff6ff;transform:translateY(-1px);text-shadow:0 0 10px rgba(0,200,255,0.24);}
+.radar-core-btn.zoom-out .zoom-arrow{text-shadow:0 0 10px rgba(255,214,0,0.20);}
+.perf-core-btn{border-color:rgba(0,232,122,0.22);}
+.perf-core-btn.loaded{border-color:rgba(255,68,85,0.28);box-shadow:0 10px 24px rgba(0,0,0,0.34),0 0 18px rgba(255,68,85,0.12);}
+.grip-icon{position:relative;display:block;width:24px;height:24px;}
+.grip-icon::before{content:'';position:absolute;inset:3px;border:3px solid #00e87a;border-right-color:transparent;border-radius:50%;box-shadow:0 0 12px rgba(0,232,122,0.14);}
+.grip-icon::after{content:'';position:absolute;right:3px;top:6px;width:3px;height:12px;border-radius:999px;background:#00e87a;opacity:0.85;}
+.perf-core-btn.loaded .grip-icon::before{border-color:#dbe8f5;box-shadow:none;}
+.perf-core-btn.loaded .grip-icon::after{background:#dbe8f5;}
+.grip-dot{position:absolute;left:50%;top:50%;width:7px;height:7px;border-radius:50%;background:#ff4455;transform:translate(-50%,-50%);opacity:0;box-shadow:0 0 10px rgba(255,68,85,0.48);}
+.perf-core-btn.loaded .grip-dot{opacity:1;}
+@media(max-width:700px){.wheel-core-btn{width:50px;height:50px;}.zoom-arrow{font-size:22px;}.grip-icon{width:22px;height:22px;}}
 #thumb-docks{position:fixed;inset:0;z-index:174;pointer-events:none;}
 .thumb-dock{position:fixed;top:calc(var(--thumb-track-y,92px) + var(--thumb-size,138px) + var(--joystick-gap,16px));width:var(--joystick-size,132px);display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:auto;transition:top 0.18s ease,transform 0.18s ease,opacity 0.18s ease;}
 #perf-stick-dock{left:21px;}
@@ -1370,7 +1388,7 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
   </div>
 
   <!-- PERFORMANCE MONITOR HUD (top-left) -->
-  <div id="perf-hud" class="visible" aria-label="Performance drone joystick">
+  <div id="perf-hud" class="visible" aria-label="Performance heads-up display">
     <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <radialGradient id="perfBg" cx="50%" cy="50%">
@@ -1391,6 +1409,7 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
       <text x="55" y="52" class="perf-center-label">SYSTEM</text>
       <text x="55" y="62" class="perf-center-value" id="perf-overall">OK</text>
     </svg>
+    <button class="wheel-core-btn perf-core-btn" id="perf-core-toggle" type="button" aria-label="Load payload" title="Load payload"><span class="grip-icon" aria-hidden="true"><span class="grip-dot"></span></span></button>
     <div class="hud-compact perf-compact-ui" id="perf-compact-ui">
       <button class="hud-node top" id="perf-node-signal" type="button"><span>Signal</span><strong>STBY</strong></button>
       <button class="hud-node right" id="perf-node-ram" type="button"><span>RAM</span><strong>--</strong></button>
@@ -1487,6 +1506,7 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
       <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
       <text x="54" y="93" class="compass-heading-label">HDG</text>
     </svg>
+    <button class="wheel-core-btn radar-core-btn zoom-in" id="radar-core-toggle" type="button" aria-label="Zoom in to your location" title="Zoom in to your location"><span class="zoom-arrow" aria-hidden="true">▼</span></button>
     <div class="hud-compact radar-compact-ui" id="radar-compact-ui">
       <button class="hud-arrow up" id="radar-arrow-up" type="button">▲</button>
       <button class="hud-arrow right" id="radar-arrow-right" type="button">▶</button>
@@ -1511,7 +1531,7 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
 
   </div>
 
-  <div id="thumb-docks">
+  <div id="thumb-docks" aria-hidden="true">
     <div class="thumb-dock" id="perf-stick-dock">
       <div class="thumb-telemetry" id="perf-telemetry">
         <div class="tele-chip"><span>Signal</span><strong id="perf-tele-signal">STBY</strong></div>
@@ -1950,15 +1970,13 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
 
 <!-- BOTTOM COMMAND BAR -->
 <div id="bottombar">
-  <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  <button class="mode-toggle-btn" id="voice-btn" onclick="toggleInteractionMode()" title="Switch between manual and hands-free mode" type="button">
+    <span class="mode-icon" aria-hidden="true">⌨</span>
+    <span class="mode-label">MANUAL</span>
   </button>
-  <button class="bb-btn" id="speaker-btn" onclick="toggleSpeaker()" title="Speaker OFF — text only">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-  </button>
-  <input type="text" id="cmd-input" placeholder="Talk to Astranov — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
-  <button class="bb-btn" onclick="sendCmd()" title="Send">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  <input type="text" id="cmd-input" placeholder="Tell Astranov what to do…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')handlePrimaryAction()"/>
+  <button class="shield-action-btn" id="primary-action-btn" onclick="handlePrimaryAction()" title="Astranov action shield" aria-label="Astranov action shield" type="button">
+    <span class="shield-face" aria-hidden="true"><span class="shield-plus">+</span></span>
   </button>
 </div>
 <div id="cmd-response">
@@ -9663,7 +9681,7 @@ Keep rails and ribbons transparent. Keep controls readable.
   var perf = document.getElementById('perf-hud');
   var compass = document.getElementById('compass-hud');
 
-  if(perf && compass){
+  if(false && perf && compass){
     var dualExpanded = false;
     var linked = false;
     var cameraOn = false;
@@ -10123,9 +10141,9 @@ Keep rails and ribbons transparent. Keep controls readable.
     bindVerticalPairDrag(perf); bindVerticalPairDrag(compass);
 
     var linked = false, cameraOn = false, loaded = false, radarLocalView = false;
-    var loadBtn = byId('perf-load-toggle-dock');
-    var camBtn = byId('perf-camera-toggle-dock');
-    var radarZoomBtn = byId('radar-center-toggle-dock');
+    var loadBtn = byId('perf-core-toggle') || byId('perf-load-toggle-dock');
+    var camBtn = null;
+    var radarZoomBtn = byId('radar-core-toggle') || byId('radar-center-toggle-dock');
     var perfNote = byId('perf-cam-note');
     var radarMoveNote = byId('radar-move-note');
     var radarMode = byId('radar-tele-mode');
@@ -10140,18 +10158,27 @@ Keep rails and ribbons transparent. Keep controls readable.
       if(battery) battery.textContent = linked ? (loaded ? '82%' : '91%') : '--%';
       if(ram) ram.textContent = linked ? (cameraOn ? '6.8 GB' : '3.2 GB') : '--';
       if(storage) storage.textContent = linked ? (loaded ? '118 GB' : '124 GB') : '--';
-      if(overall) overall.textContent = linked ? (cameraOn ? 'LIVE' : (loaded ? 'LOAD' : 'LINK')) : 'OK';
-      if(loadBtn){ loadBtn.textContent = loaded ? 'UNLOAD' : 'LOAD'; loadBtn.classList.toggle('active', loaded); }
-      if(camBtn){ camBtn.textContent = cameraOn ? 'CAM ON' : 'CAM OFF'; camBtn.classList.toggle('active', cameraOn); }
-      if(radarMode) radarMode.textContent = linked ? 'DRONE LINKED' : 'MAP / DRONE';
+      if(overall) overall.textContent = loaded ? 'LOAD' : (linked ? (cameraOn ? 'LIVE' : 'LINK') : 'OK');
+      if(loadBtn){
+        loadBtn.classList.toggle('loaded', loaded);
+        loadBtn.setAttribute('aria-label', loaded ? 'Unload payload' : 'Load payload');
+        loadBtn.title = loaded ? 'Unload payload' : 'Load payload';
+      }
+      if(radarMode) radarMode.textContent = linked ? 'DRONE LINKED' : 'MAP';
     }
 
     function syncRadarButton(){
       if(window.CL === 0 && radarLocalView) radarLocalView = false;
-      if(radarZoomBtn) radarZoomBtn.textContent = radarLocalView ? 'ZOOM OUT' : 'ZOOM IN';
+      if(radarZoomBtn){
+        radarZoomBtn.classList.toggle('zoom-in', !radarLocalView);
+        radarZoomBtn.classList.toggle('zoom-out', radarLocalView);
+        radarZoomBtn.innerHTML = '<span class="zoom-arrow" aria-hidden="true">' + (radarLocalView ? '▲' : '▼') + '</span>';
+        radarZoomBtn.setAttribute('aria-label', radarLocalView ? 'Zoom out to globe view' : 'Zoom in to your location');
+        radarZoomBtn.title = radarLocalView ? 'Zoom out to globe view' : 'Zoom in to your location';
+      }
       if(radarMoveNote) radarMoveNote.textContent = radarLocalView
-        ? 'Local view live. Press Zoom Out to jump back to the globe.'
-        : 'Global view ready. Press Zoom In to jump down to your location.';
+        ? 'Local view live. Press the center arrow to jump back to the globe.'
+        : 'Global view ready. Press the center arrow to jump down to your location.';
     }
 
     function refreshMyLocation(callback){
@@ -10238,9 +10265,20 @@ Keep rails and ribbons transparent. Keep controls readable.
     syncDrone();
     syncRadarButton();
 
-    if(loadBtn) loadBtn.addEventListener('click', function(ev){ ev.stopPropagation(); loaded = !loaded; if(!linked) linked = true; syncDrone(); if(perfNote) perfNote.textContent = loaded ? 'Payload armed for unload.' : 'Payload reset to load-ready state.'; if(typeof showResp === 'function') showResp(loaded ? 'Drone payload armed for unload.' : 'Drone payload state returned to load-ready.'); pulseHud(perf); });
-    if(camBtn) camBtn.addEventListener('click', function(ev){ ev.stopPropagation(); cameraOn = !cameraOn; if(!linked) linked = true; syncDrone(); if(perfNote) perfNote.textContent = cameraOn ? 'Drone camera routed toward the main screen.' : 'Drone camera feed disengaged.'; if(typeof showResp === 'function') showResp(cameraOn ? 'Drone camera routed to the main screen hook.' : 'Drone camera feed disengaged.'); pulseHud(perf); });
-    if(radarZoomBtn) radarZoomBtn.addEventListener('click', function(ev){ ev.stopPropagation(); radarZoomBtn.classList.add('active'); setTimeout(function(){ radarZoomBtn.classList.remove('active'); }, 180); zoomToggle(); });
+    if(loadBtn) loadBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      loaded = !loaded;
+      syncDrone();
+      if(perfNote) perfNote.textContent = loaded ? 'Payload secured. Center hand is now armed to unload.' : 'Grab hand opened. Payload bay is ready to load.';
+      if(typeof showResp === 'function') showResp(loaded ? 'Payload secured. Tap again to unload.' : 'Payload bay opened. Ready to load.');
+      pulseHud(perf);
+    });
+    if(radarZoomBtn) radarZoomBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      radarZoomBtn.classList.add('active');
+      setTimeout(function(){ radarZoomBtn.classList.remove('active'); }, 180);
+      zoomToggle();
+    });
 
     bindHoldButton('perf-cam-up', perf, moveCameraOnly, 'up');
     bindHoldButton('perf-cam-right', perf, moveCameraOnly, 'right');
@@ -10251,6 +10289,899 @@ Keep rails and ribbons transparent. Keep controls readable.
     bindHoldButton('radar-move-down', compass, moveDroneOrMap, 'down');
     bindHoldButton('radar-move-left', compass, moveDroneOrMap, 'left');
   }
+})();
+</script>
+
+
+<style id="apr03-v5-style">
+:root{
+  --thumb-size: clamp(148px, 15vw, 166px) !important;
+  --core-size: clamp(38px, 3.8vw, 44px);
+}
+#fab-add,#chat-toggle-btn,#speaker-btn,#iss-box{display:none !important;}
+#li{top:12px !important;right:12px !important;gap:8px !important;}
+#li .ldt{gap:0 !important;padding:0 !important;min-width:10px !important;min-height:10px !important;}
+#li .ldt span{display:none !important;}
+#li .ld2{width:8px !important;height:8px !important;}
+#perf-hud,#compass-hud{
+  width:var(--thumb-size) !important;
+  height:var(--thumb-size) !important;
+  top:var(--thumb-track-y,92px) !important;
+}
+#perf-hud #perf-svg,#compass-hud #compass-svg{width:100% !important;height:100% !important;}
+.wheel-core-btn{
+  width:var(--core-size) !important;
+  height:var(--core-size) !important;
+  min-width:var(--core-size) !important;
+  min-height:var(--core-size) !important;
+}
+.zoom-arrow{font-size:calc(var(--core-size) * 0.52) !important;}
+.grip-icon{width:calc(var(--core-size) * 0.52) !important;height:calc(var(--core-size) * 0.52) !important;}
+.grip-icon::before{inset:2px !important;border-width:2.5px !important;}
+.grip-icon::after{right:2px !important;top:5px !important;width:3px !important;height:11px !important;}
+.grip-dot{width:6px !important;height:6px !important;}
+#cmd-response{
+  left:10px !important;
+  right:10px !important;
+  bottom:72px !important;
+  border-radius:18px 18px 0 0 !important;
+}
+#cmd-response.expanded{max-height:calc(100vh - 126px) !important;}
+#chat-drag{
+  display:flex !important;
+  height:30px !important;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.01)) !important;
+  border-bottom:1px solid rgba(0,200,255,0.08);
+}
+#chat-drag::before{
+  content:'⌃';
+  width:44px;
+  height:20px;
+  border-radius:999px;
+  border:1px solid rgba(0,200,255,0.16);
+  background:rgba(5,12,22,0.54);
+  color:#dff6ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:13px;
+  line-height:1;
+  box-shadow:0 8px 18px rgba(0,0,0,0.18);
+}
+body.chat-open #chat-drag::before{content:'⌄';}
+#bottombar{
+  height:72px !important;
+  gap:10px !important;
+  padding:10px 12px !important;
+  display:grid !important;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+}
+#voice-btn.mode-toggle-btn{
+  width:auto !important;
+  min-width:144px;
+  height:48px !important;
+  padding:0 16px;
+  border-radius:16px !important;
+  border:1px solid rgba(0,200,255,0.20) !important;
+  background:rgba(5,12,22,0.92) !important;
+  color:#eaf8ff !important;
+  display:inline-flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  box-shadow:0 12px 24px rgba(0,0,0,0.24),0 0 16px rgba(0,200,255,0.10);
+}
+#voice-btn.mode-toggle-btn .mode-icon{font-size:18px;line-height:1;}
+#voice-btn.mode-toggle-btn .mode-label{font-size:12px;font-weight:800;letter-spacing:0.12em;}
+#voice-btn.mode-toggle-btn.voice-mode .mode-icon{color:#00e87a;}
+#voice-btn.mode-toggle-btn.voice-mode .mode-label{color:#00e87a;}
+#voice-btn.mode-toggle-btn.manual-mode .mode-icon{color:#dff6ff;}
+#cmd-input{
+  height:48px !important;
+  border-radius:16px !important;
+  padding:0 14px !important;
+  font-size:13px !important;
+}
+#primary-action-btn.shield-action-btn{
+  width:58px !important;
+  height:50px !important;
+  border:none !important;
+  background:transparent !important;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  padding:0 !important;
+  box-shadow:none !important;
+}
+#primary-action-btn .shield-face{
+  width:50px;
+  height:50px;
+  clip-path:polygon(50% 0%, 88% 12%, 92% 48%, 74% 88%, 50% 100%, 26% 88%, 8% 48%, 12% 12%);
+  border:1px solid rgba(0,200,255,0.26);
+  background:radial-gradient(circle at 35% 26%,rgba(255,255,255,0.22),rgba(0,200,255,0.18) 34%,rgba(5,12,22,0.96) 76%);
+  color:#f4fbff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 14px 26px rgba(0,0,0,0.30),0 0 18px rgba(0,200,255,0.16);
+  transition:transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+#primary-action-btn:hover .shield-face,#primary-action-btn:active .shield-face{transform:translateY(-1px) scale(1.03);filter:brightness(1.08);box-shadow:0 18px 32px rgba(0,0,0,0.34),0 0 22px rgba(0,200,255,0.22);}
+#primary-action-btn .shield-plus{font-size:28px;line-height:1;font-weight:800;text-shadow:0 0 10px rgba(0,200,255,0.20);transform:translateY(-1px);}
+#astranova-wrapper{right:18px !important;bottom:88px !important;}
+#astranova-svg{width:96px !important;height:150px !important;}
+#astranova-speech{max-width:210px !important;}
+@media (max-width: 860px){
+  #voice-btn.mode-toggle-btn{min-width:120px;padding:0 12px;}
+  #voice-btn.mode-toggle-btn .mode-label{font-size:11px;letter-spacing:0.08em;}
+  #primary-action-btn .shield-face{width:46px;height:46px;}
+  #primary-action-btn .shield-plus{font-size:24px;}
+}
+</style>
+
+
+<script id="apr03-v5-script">
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function showHelperSpeech(text){
+    var bubble = byId('astranova-speech');
+    if(!bubble) return;
+    bubble.textContent = text;
+    bubble.classList.add('on');
+    clearTimeout(showHelperSpeech._timer);
+    showHelperSpeech._timer = setTimeout(function(){ bubble.classList.remove('on'); }, 3200);
+  }
+
+  var oldShowResp = window.showResp;
+  window.showResp = function(msg, tone){
+    if(msg && typeof window.addAiMessage === 'function') window.addAiMessage('system-msg', 'System', msg);
+    if(tone === 'urgent' && typeof oldShowResp === 'function') oldShowResp(msg, tone);
+  };
+
+  var oldToggleVoiceInput = window.toggleVoiceInput;
+  var oldStopListening = window.stopListening;
+  function syncInteractionMode(){
+    var btn = byId('voice-btn');
+    var label = btn ? btn.querySelector('.mode-label') : null;
+    var icon = btn ? btn.querySelector('.mode-icon') : null;
+    var input = byId('cmd-input');
+    if(!btn) return;
+    var handsFree = !!window._voiceActive;
+    btn.classList.toggle('voice-mode', handsFree);
+    btn.classList.toggle('manual-mode', !handsFree);
+    if(label) label.textContent = handsFree ? 'HANDS-FREE' : 'MANUAL';
+    if(icon) icon.textContent = handsFree ? '🎙' : '⌨';
+    if(input && !handsFree && !input.value) input.placeholder = 'Tell Astranov what to do…';
+  }
+  window.stopListening = function(){ if(typeof oldStopListening === 'function') oldStopListening(); syncInteractionMode(); };
+  window.toggleInteractionMode = function(){
+    window._speakerMode = false;
+    if(window._voiceActive){
+      window.stopListening();
+      showHelperSpeech('Manual mode ready. Type your command and tap the shield.');
+      return;
+    }
+    if(typeof oldToggleVoiceInput === 'function') oldToggleVoiceInput();
+    setTimeout(syncInteractionMode, 50);
+    showHelperSpeech('Hands-free mode ready. Speak briefly. I will keep replies short.');
+  };
+  syncInteractionMode();
+
+  window.openAstranovaPrompt = function(){
+    var input = byId('cmd-input');
+    if(input && !input.value) input.placeholder = 'What do you want to do here?';
+    showHelperSpeech('What do you want to do? Type it, tap the shield, or switch to hands-free.');
+  };
+  window.openAstranova = window.openAstranovaPrompt;
+
+  window.handlePrimaryAction = function(){
+    var input = byId('cmd-input');
+    var val = input && input.value ? input.value.trim() : '';
+    if(val){
+      if(typeof window.sendCmd === 'function') window.sendCmd();
+      return;
+    }
+    if(window.CL === 1 && typeof window.openPost === 'function'){
+      showHelperSpeech('Choose what to place on this area of the map.');
+      window.openPost();
+      return;
+    }
+    window.openAstranovaPrompt();
+  };
+
+  var dragBar = byId('chat-drag');
+  if(dragBar && !dragBar.dataset.toggleBound){
+    dragBar.dataset.toggleBound = '1';
+    var down = null;
+    dragBar.addEventListener('pointerdown', function(ev){ down = {x: ev.clientX, y: ev.clientY}; });
+    dragBar.addEventListener('click', function(ev){
+      if(down && Math.abs((ev.clientY||0) - down.y) > 6) return;
+      if(typeof window.toggleChatDrawer === 'function') window.toggleChatDrawer();
+    });
+  }
+
+  var perfBtn = byId('perf-core-toggle');
+  var radarBtn = byId('radar-core-toggle');
+  if(perfBtn){ perfBtn.title = 'Load / unload'; perfBtn.setAttribute('aria-label', 'Load or unload'); }
+  if(radarBtn){ radarBtn.title = 'Zoom in or out'; }
+
+  // Remove noisy text labels from layer dots while keeping access to hidden features.
+  var layerDots = document.querySelectorAll('#li .ldt span');
+  layerDots.forEach(function(el){ el.setAttribute('aria-hidden', 'true'); });
+
+  // Make sure the helper speaks by bubble only unless user explicitly enables voice.
+  window._speakerMode = false;
+})();
+</script>
+
+
+<style id="apr03-v6-style">
+/* === APR03 V6: compact chat bar, helper-left, bubble dual-action, radial add flow === */
+#li{display:none !important;}
+#voice-btn{display:none !important;}
+#bottombar{
+  height:72px !important;
+  grid-template-columns:1fr auto !important;
+  padding-left:12px !important;
+}
+#cmd-input{padding-left:16px !important;}
+#primary-action-btn{
+  width:62px !important;
+  height:52px !important;
+  border:none !important;
+  background:transparent !important;
+  padding:0 !important;
+}
+#primary-action-btn .action-bubble{
+  position:relative;
+  width:54px;
+  height:54px;
+  border-radius:50%;
+  border:1px solid rgba(0,200,255,0.26);
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,0.24),rgba(0,200,255,0.18) 34%,rgba(5,12,22,0.96) 76%);
+  color:#f3fbff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 16px 28px rgba(0,0,0,0.32),0 0 20px rgba(0,200,255,0.16);
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+#primary-action-btn:hover .action-bubble,#primary-action-btn:active .action-bubble{
+  transform:translateY(-1px) scale(1.03);
+  filter:brightness(1.08);
+  box-shadow:0 20px 34px rgba(0,0,0,0.36),0 0 24px rgba(0,200,255,0.22);
+}
+#primary-action-btn .main-glyph{
+  font-size:22px;
+  line-height:1;
+  font-weight:800;
+  transform:translateY(-1px);
+}
+#primary-action-btn .mini-glyph{
+  position:absolute;
+  right:5px;
+  bottom:4px;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:1px solid rgba(0,200,255,0.24);
+  background:rgba(6,14,28,0.96);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1;
+  box-shadow:0 6px 14px rgba(0,0,0,0.24);
+}
+#primary-action-btn.text-ready .main-glyph{content:'';}
+#primary-action-btn.text-ready .main-glyph::before{content:'➜';}
+#primary-action-btn.text-ready .mini-glyph::before{content:'+';}
+#primary-action-btn.empty-ready .main-glyph::before{content:'+';}
+#primary-action-btn.empty-ready .mini-glyph::before{content:'➜';}
+
+#astranova-wrapper{
+  left:10px !important;
+  right:auto !important;
+  bottom:76px !important;
+  z-index:235 !important;
+}
+#astranova-svg{
+  width:86px !important;
+  height:136px !important;
+}
+#astranova-speech{
+  max-width:220px !important;
+  margin-left:4px !important;
+}
+
+#cmd-response{
+  left:10px !important;
+  right:10px !important;
+  bottom:72px !important;
+  border-radius:18px 18px 0 0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
+#cmd-response.collapsed{
+  height:30px !important;
+  max-height:30px !important;
+  min-height:30px !important;
+}
+#cmd-response.collapsed > :not(#chat-drag){display:none !important;}
+#cmd-response.expanded{
+  max-height:calc(100vh - 122px) !important;
+}
+#chat-drag{
+  display:flex !important;
+  height:30px !important;
+  min-height:30px !important;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+  background:linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.015)) !important;
+  border-bottom:1px solid rgba(0,200,255,0.08);
+}
+#chat-drag::before{
+  content:'⌃';
+  width:54px;
+  height:16px;
+  border-radius:999px;
+  border:1px solid rgba(0,200,255,0.18);
+  background:rgba(5,12,22,0.68);
+  color:#dff6ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1;
+  box-shadow:0 6px 14px rgba(0,0,0,0.16);
+}
+body.chat-open #chat-drag::before{content:'⌄';}
+
+#post-chooser{display:none !important;}
+
+#action-ring-overlay{
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:380;
+  background:rgba(3,8,16,0.22);
+  backdrop-filter:blur(6px);
+}
+#action-ring-overlay.on{display:flex;}
+.action-ring-wrap{
+  position:relative;
+  width:min(92vw,560px);
+  height:min(76vh,560px);
+  border-radius:28px;
+  pointer-events:none;
+}
+.action-ring-core{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:112px;
+  height:112px;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:1px solid rgba(0,200,255,0.26);
+  background:radial-gradient(circle at 35% 28%,rgba(255,255,255,0.18),rgba(0,200,255,0.16) 35%,rgba(5,12,22,0.94) 76%);
+  color:#f2fbff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:14px;
+  font-size:13px;
+  font-weight:700;
+  line-height:1.15;
+  letter-spacing:.03em;
+  box-shadow:0 20px 40px rgba(0,0,0,0.36),0 0 28px rgba(0,200,255,0.16);
+  pointer-events:auto;
+}
+.action-ring-close{
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  border:1px solid rgba(255,90,90,0.30);
+  background:rgba(18,8,10,0.84);
+  color:#ffdfe3;
+  font-size:22px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 14px 28px rgba(0,0,0,0.28);
+  pointer-events:auto;
+}
+.action-node{
+  --ax:0px;
+  --ay:0px;
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(calc(-50% + var(--ax)), calc(-50% + var(--ay)));
+  width:clamp(96px,18vw,126px);
+  min-height:86px;
+  padding:12px 10px;
+  border-radius:22px;
+  border:1px solid rgba(0,200,255,0.20);
+  background:linear-gradient(180deg,rgba(10,20,32,0.88),rgba(6,12,22,0.94));
+  color:#ebfaff;
+  box-shadow:0 18px 32px rgba(0,0,0,0.30),0 0 18px rgba(0,200,255,0.10);
+  cursor:pointer;
+  pointer-events:auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  text-align:center;
+  transition:transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.action-node:hover,.action-node:active{
+  transform:translate(calc(-50% + var(--ax)), calc(-50% + var(--ay))) scale(1.04);
+  box-shadow:0 22px 38px rgba(0,0,0,0.34),0 0 22px rgba(0,200,255,0.16);
+  filter:brightness(1.05);
+}
+.action-node .node-icon{font-size:24px;line-height:1;}
+.action-node .node-label{font-size:11px;font-weight:700;line-height:1.15;}
+.action-node.product{--ax:0px;--ay:-190px;}
+.action-node.service{--ax:164px;--ay:-72px;}
+.action-node.delivery{--ax:164px;--ay:92px;}
+.action-node.driver{--ax:0px;--ay:188px;}
+.action-node.media{--ax:-164px;--ay:92px;}
+.action-node.close-alt{--ax:-164px;--ay:-72px;}
+
+#flow-resume-pill{
+  position:fixed;
+  right:18px;
+  bottom:108px;
+  z-index:381;
+  display:none;
+  align-items:center;
+  gap:8px;
+  padding:8px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,90,90,0.36);
+  background:linear-gradient(180deg,rgba(50,8,12,0.94),rgba(30,6,10,0.96));
+  color:#ffe4e7;
+  box-shadow:0 16px 30px rgba(0,0,0,0.34),0 0 18px rgba(255,90,90,0.14);
+  cursor:pointer;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.03em;
+}
+#flow-resume-pill.on{display:inline-flex;}
+#flow-resume-pill .pill-line{
+  width:34px;
+  height:3px;
+  border-radius:999px;
+  background:#ff6d7a;
+  box-shadow:0 0 10px rgba(255,109,122,0.55);
+}
+
+.form-modal{
+  padding:18px !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.form-sheet{
+  position:relative !important;
+  width:min(92vw,560px) !important;
+  max-height:min(76vh,720px) !important;
+  overflow:auto !important;
+  padding-top:56px !important;
+  border-radius:24px !important;
+  background:linear-gradient(180deg,rgba(8,18,30,0.88),rgba(8,18,30,0.76)) !important;
+  border:1px solid rgba(0,200,255,0.14) !important;
+  box-shadow:0 22px 42px rgba(0,0,0,0.34),0 0 22px rgba(0,200,255,0.08) !important;
+}
+.form-sheet .floating-close{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  border:1px solid rgba(255,90,90,0.30);
+  background:rgba(20,8,10,0.88);
+  color:#ffe4e7;
+  font-size:20px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  z-index:3;
+}
+.form-sheet .floating-close:hover{filter:brightness(1.08);}
+@media (max-width: 760px){
+  .action-ring-wrap{width:min(96vw,420px);height:min(72vh,420px);}
+  .action-node.product{--ax:0px;--ay:-136px;}
+  .action-node.service{--ax:118px;--ay:-52px;}
+  .action-node.delivery{--ax:118px;--ay:70px;}
+  .action-node.driver{--ax:0px;--ay:140px;}
+  .action-node.media{--ax:-118px;--ay:70px;}
+  .action-node.close-alt{--ax:-118px;--ay:-52px;}
+  .action-node{width:92px;min-height:78px;padding:10px 8px;border-radius:18px;}
+  .action-node .node-icon{font-size:20px;}
+  .action-node .node-label{font-size:10px;}
+  .action-ring-core{width:96px;height:96px;font-size:12px;}
+}
+</style>
+
+<script id="apr03-v6-script">
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function safeCall(fn){ try{ return fn && fn(); }catch(e){} }
+  function helperBubble(text, hold){
+    var bubble = byId('astranova-speech');
+    if(!bubble) return;
+    bubble.textContent = text;
+    bubble.classList.add('on');
+    clearTimeout(helperBubble._t);
+    helperBubble._t = setTimeout(function(){ bubble.classList.remove('on'); }, hold || 3200);
+  }
+  function helperSay(text, speakToo){
+    helperBubble(text, 3400);
+    try{
+      if(typeof window.addAiMessage === 'function'){
+        window.addAiMessage('ai-msg-reply','Astranov Collective Intelligence', text);
+      }
+    }catch(e){}
+    if(speakToo && typeof window.speakAstranova === 'function'){
+      try{ window.speakAstranova(text); }catch(e){}
+    }
+  }
+
+  var resp = byId('cmd-response');
+  var drag = byId('chat-drag');
+  function syncChatState(open){
+    if(!resp) return;
+    if(open){
+      resp.style.display = 'flex';
+      resp.classList.remove('collapsed');
+      resp.classList.add('expanded');
+      document.body.classList.add('chat-open');
+    } else {
+      resp.style.display = 'flex';
+      resp.classList.remove('expanded');
+      resp.classList.add('collapsed');
+      document.body.classList.remove('chat-open');
+    }
+  }
+  var prevExpand = window.expandConversation;
+  var prevRetract = window.retractConversation || window.hideConversationDrawer;
+  window.expandConversation = function(){
+    if(typeof prevExpand === 'function') try{ prevExpand(); }catch(e){}
+    syncChatState(true);
+  };
+  window.retractConversation = function(){
+    if(typeof prevRetract === 'function') try{ prevRetract(); }catch(e){}
+    syncChatState(false);
+  };
+  window.hideConversationDrawer = window.retractConversation;
+  window.toggleChatDrawer = function(){
+    if(!resp) return;
+    syncChatState(resp.classList.contains('collapsed') || !resp.classList.contains('expanded'));
+  };
+  if(drag && !drag.dataset.v6bound){
+    drag.dataset.v6bound = '1';
+    drag.addEventListener('click', function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.toggleChatDrawer();
+    });
+  }
+  setTimeout(function(){ syncChatState(false); }, 120);
+
+  var input = byId('cmd-input');
+  var actionBtn = byId('primary-action-btn');
+  if(actionBtn){
+    actionBtn.classList.remove('shield-action-btn');
+    actionBtn.innerHTML = '<span class="action-bubble"><span class="main-glyph"></span><span class="mini-glyph"></span></span>';
+    actionBtn.title = 'Send text or add something';
+    actionBtn.setAttribute('aria-label','Send text or add something');
+  }
+  function syncActionBubble(){
+    if(!actionBtn || !input) return;
+    var hasText = !!(input.value && input.value.trim());
+    actionBtn.classList.toggle('text-ready', hasText);
+    actionBtn.classList.toggle('empty-ready', !hasText);
+  }
+  if(input){
+    input.addEventListener('input', syncActionBubble);
+    syncActionBubble();
+  }
+
+  var helperSvg = byId('astranova-svg');
+  if(helperSvg){
+    helperSvg.setAttribute('onclick','');
+    helperSvg.onclick = function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.toggleInteractionMode();
+      return false;
+    };
+  }
+
+  var oldToggleVoiceInput = window.toggleVoiceInput;
+  var oldStopListening = window.stopListening;
+  function toggleModeMessage(isHandsFree){
+    var msg = isHandsFree
+      ? 'Astranov Collective Intelligence agent switching to AI hands-free mode.'
+      : 'Astranov Collective Intelligence agent switching back to manual typing mode.';
+    helperSay(msg, true);
+  }
+  window.stopListening = function(){
+    if(typeof oldStopListening === 'function') oldStopListening();
+    toggleModeMessage(false);
+  };
+  window.toggleInteractionMode = function(){
+    window._speakerMode = false;
+    if(window._voiceActive){
+      window.stopListening();
+      return;
+    }
+    if(typeof oldToggleVoiceInput === 'function') oldToggleVoiceInput();
+    setTimeout(function(){ toggleModeMessage(true); }, 80);
+  };
+
+  // Floating action ring and resume pill
+  var state = { pendingService:false, resume:null, resumeLabel:'' };
+  function ensureFlowUi(){
+    if(!byId('flow-resume-pill')){
+      var pill = document.createElement('button');
+      pill.id = 'flow-resume-pill';
+      pill.type = 'button';
+      pill.innerHTML = '<span class="pill-line"></span><span class="pill-text">Resume add flow</span>';
+      pill.onclick = function(){
+        pill.classList.remove('on');
+        if(typeof state.resume === 'function') state.resume();
+      };
+      document.body.appendChild(pill);
+    }
+    if(!byId('action-ring-overlay')){
+      var overlay = document.createElement('div');
+      overlay.id = 'action-ring-overlay';
+      overlay.innerHTML = ''+
+        '<div class="action-ring-wrap">'+
+          '<button class="action-ring-close" type="button" aria-label="Close add flow">✕</button>'+
+          '<div class="action-ring-core">Add here</div>'+
+          '<button class="action-node product" type="button" data-action="product"><span class="node-icon">📦</span><span class="node-label">List product</span></button>'+
+          '<button class="action-node service" type="button" data-action="service"><span class="node-icon">🛎</span><span class="node-label">List service</span></button>'+
+          '<button class="action-node delivery" type="button" data-action="delivery"><span class="node-icon">📍</span><span class="node-label">My delivery location</span></button>'+
+          '<button class="action-node driver" type="button" data-action="driver"><span class="node-icon">🛵</span><span class="node-label">Driver base</span></button>'+
+          '<button class="action-node media" type="button" data-action="media"><span class="node-icon">🎥</span><span class="node-label">Post photo / video</span></button>'+
+          '<button class="action-node close-alt" type="button" data-action="close"><span class="node-icon">✕</span><span class="node-label">Close</span></button>'+
+        '</div>';
+      document.body.appendChild(overlay);
+
+      overlay.addEventListener('click', function(ev){
+        if(ev.target === overlay){ window.minimizeCurrentFlow('Add flow minimized'); }
+      });
+      overlay.querySelector('.action-ring-close').addEventListener('click', function(ev){
+        ev.stopPropagation();
+        window.closeActionRing();
+      });
+      overlay.querySelectorAll('.action-node').forEach(function(btn){
+        btn.addEventListener('click', function(ev){
+          ev.stopPropagation();
+          var action = btn.getAttribute('data-action');
+          if(action === 'close'){ window.closeActionRing(); return; }
+          if(action === 'product'){
+            window.closeActionRing();
+            if(typeof window.openShopForm === 'function') window.openShopForm();
+            var cat = byId('sf-cat'); if(cat) cat.value = 'Shop / Retail';
+            helperSay('Opening product listing form.', false);
+            return;
+          }
+          if(action === 'service'){
+            window.closeActionRing();
+            state.pendingService = true;
+            window.expandConversation();
+            if(input){
+              input.value = '';
+              input.placeholder = 'Type service kind: hotel, rent-a-car, diving, restaurant...';
+              syncActionBubble();
+              setTimeout(function(){ input.focus(); }, 30);
+            }
+            helperSay('What service would you like to add? Hotel, rent-a-car, diving school, restaurant, café, market, or something else?', false);
+            return;
+          }
+          if(action === 'delivery'){
+            window.closeActionRing();
+            if(typeof window.openDeliveryForm === 'function') window.openDeliveryForm();
+            helperSay('Opening your delivery location form.', false);
+            return;
+          }
+          if(action === 'driver'){
+            window.closeActionRing();
+            if(typeof window.activateDriverAtPoint === 'function') window.activateDriverAtPoint();
+            helperSay('Driver base activated from this point.', false);
+            return;
+          }
+          if(action === 'media'){
+            window.closeActionRing();
+            if(typeof window.openVideoPostFlow === 'function') window.openVideoPostFlow();
+            helperSay('Opening media posting flow.', false);
+            return;
+          }
+        });
+      });
+    }
+  }
+  ensureFlowUi();
+
+  function currentPick(){
+    var lat = window.MAP_PICK && Number(window.MAP_PICK.lat);
+    var lng = window.MAP_PICK && Number(window.MAP_PICK.lng);
+    if(Number.isFinite(lat) && Number.isFinite(lng)) return {lat:lat,lng:lng};
+    if(window.LM && typeof window.LM.getCenter === 'function'){
+      var c = window.LM.getCenter();
+      return {lat:c.lat,lng:c.lng};
+    }
+    if(window.LOC && Number.isFinite(Number(window.LOC.lat)) && Number.isFinite(Number(window.LOC.lng))){
+      return {lat:Number(window.LOC.lat),lng:Number(window.LOC.lng)};
+    }
+    return {lat:36.4349,lng:28.2176};
+  }
+
+  window.openActionRing = function(lat,lng){
+    ensureFlowUi();
+    var overlay = byId('action-ring-overlay');
+    if(Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))){
+      window.MAP_PICK = {lat:Number(lat), lng:Number(lng)};
+    } else {
+      window.MAP_PICK = currentPick();
+    }
+    state.resume = function(){ window.openActionRing(window.MAP_PICK.lat, window.MAP_PICK.lng); };
+    state.resumeLabel = 'Resume add flow';
+    byId('flow-resume-pill').classList.remove('on');
+    overlay.classList.add('on');
+    helperBubble('Choose what to add here.', 2200);
+  };
+  window.closeActionRing = function(){
+    var overlay = byId('action-ring-overlay');
+    if(overlay) overlay.classList.remove('on');
+    var pill = byId('flow-resume-pill'); if(pill) pill.classList.remove('on');
+    state.resume = null;
+    state.resumeLabel = '';
+  };
+  window.minimizeCurrentFlow = function(label){
+    var overlay = byId('action-ring-overlay');
+    if(overlay && overlay.classList.contains('on')){
+      overlay.classList.remove('on');
+      state.resume = function(){ window.openActionRing(window.MAP_PICK && window.MAP_PICK.lat, window.MAP_PICK && window.MAP_PICK.lng); };
+      state.resumeLabel = label || 'Resume add flow';
+    } else {
+      var activeModal = document.querySelector('.form-modal.on');
+      if(activeModal){
+        var modalId = activeModal.id;
+        activeModal.classList.remove('on');
+        state.resume = function(){ var m = byId(modalId); if(m) m.classList.add('on'); };
+        state.resumeLabel = label || 'Resume listing form';
+      }
+    }
+    var pill = byId('flow-resume-pill');
+    if(pill && state.resume){
+      var text = pill.querySelector('.pill-text');
+      if(text) text.textContent = state.resumeLabel || 'Resume flow';
+      pill.classList.add('on');
+    }
+  };
+
+  window.openPostChooser = function(lat,lng){ window.openActionRing(lat,lng); };
+  window.closePostChooser = function(){ window.closeActionRing(); };
+  window.openMapActionModal = window.openActionRing;
+  window.closeMapActionModal = window.closeActionRing;
+  window.openPost = function(){
+    var p = currentPick();
+    window.openActionRing(p.lat, p.lng);
+  };
+
+  function normalizeServiceCategory(text){
+    var t = String(text||'').toLowerCase();
+    if(/hotel|room|villa|apartment|airbnb|accommodation/.test(t)) return 'Hotel / Rooms';
+    if(/rent|car|vehicle|scooter|quad/.test(t)) return 'Rent a Car';
+    if(/div|snorkel|boat trip|excursion|sea/.test(t)) return 'Diving School / Excursions';
+    if(/supermarket|grocery|market|food market/.test(t)) return 'Supermarket / Food Market';
+    if(/restaurant|food|pizza|burger|delivery|takeaway/.test(t)) return 'Restaurant / Food';
+    if(/cafe|coffee|bar|cocktail/.test(t)) return 'Café / Bar';
+    if(/shop|retail|store|boutique/.test(t)) return 'Shop / Retail';
+    if(/boat|yacht|jet ski|rental/.test(t)) return 'Boat / Sea Rental';
+    if(/tour|activity|guide/.test(t)) return 'Activities / Tours';
+    if(/beauty|spa|health|salon/.test(t)) return 'Health / Beauty';
+    return 'Services';
+  }
+
+  var oldSendCmd = window.sendCmd;
+  window.handlePrimaryAction = function(){
+    var val = input && input.value ? input.value.trim() : '';
+    if(state.pendingService && val){
+      state.pendingService = false;
+      var category = normalizeServiceCategory(val);
+      if(typeof window.openShopForm === 'function') window.openShopForm();
+      var cat = byId('sf-cat'); if(cat) cat.value = category;
+      var desc = byId('sf-desc'); if(desc && !desc.value) desc.placeholder = 'Describe your ' + val + ' service, prices, slots, availability, and anything customers should know.';
+      helperSay('Opening the service listing form for ' + category + '.', false);
+      if(input){ input.value = ''; input.placeholder = 'Tell Astranov what to do…'; syncActionBubble(); }
+      return;
+    }
+    if(val){
+      if(typeof oldSendCmd === 'function') oldSendCmd();
+      syncActionBubble();
+      return;
+    }
+    var p = currentPick();
+    window.openActionRing(p.lat, p.lng);
+  };
+
+  // Convert helper from prompt opener to mode switcher
+  window.openAstranova = window.toggleInteractionMode;
+  window.openAstranovaPrompt = function(){ window.toggleInteractionMode(); };
+
+  // Make media flow compact
+  window.openVideoPostFlow = function(){
+    window.closeActionRing();
+    if(typeof window.openPostForm === 'function') window.openPostForm();
+    var cat = byId('pf-cat'); if(cat) cat.value = 'Event';
+    var title = byId('pf-title'); if(title && !title.value) title.value = 'Photo / video from this location';
+    var desc = byId('pf-desc'); if(desc && !desc.value) desc.value = 'Location-linked media from this point.';
+  };
+
+  // Add top-right visible X on every form and minimize on backdrop click
+  document.querySelectorAll('.form-sheet').forEach(function(sheet){
+    if(sheet.querySelector('.floating-close')) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'floating-close';
+    btn.setAttribute('aria-label','Close form');
+    btn.textContent = '✕';
+    btn.addEventListener('click', function(ev){
+      ev.preventDefault();
+      ev.stopPropagation();
+      var modal = sheet.closest('.form-modal');
+      if(modal) modal.classList.remove('on');
+      var pill = byId('flow-resume-pill'); if(pill) pill.classList.remove('on');
+      state.resume = null;
+      state.resumeLabel = '';
+    });
+    sheet.appendChild(btn);
+  });
+  document.querySelectorAll('.form-modal').forEach(function(modal){
+    if(modal.dataset.v6backdrop) return;
+    modal.dataset.v6backdrop = '1';
+    modal.addEventListener('click', function(ev){
+      if(ev.target === modal){
+        window.minimizeCurrentFlow('Resume listing form');
+      }
+    });
+  });
+
+  // Hide old chat external toggler and keep collapsed bar alive
+  var oldToggler = byId('chat-toggle-btn');
+  if(oldToggler) oldToggler.style.display = 'none';
+
+  // Keep button state updated after sends
+  if(input){
+    input.addEventListener('keyup', syncActionBubble);
+    input.addEventListener('change', syncActionBubble);
+  }
+  setTimeout(syncActionBubble, 50);
 })();
 </script>
 
