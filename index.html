@@ -12010,524 +12010,672 @@ body.chat-open #chat-drag::before{content:'⌄' !important;}
 </script>
 
 
-<style id="apr03-v9-style">
-/* === APR03 V9: final cleanup, no handle, single bubble, node-only add ring, hard zoom === */
-#chat-drag,
-#chat-toggle-btn,
-.chat-drag-handle,
-.chat-retract-bar{
+<style id="final-hard-cleanup-style">
+/* === FINAL HARD CLEANUP === */
+#left-panel,#right-panel,#fab-add,#chat-toggle-btn,#zoom-btns,#locate-btn,#globe-btn,#drone-btn,#iss-box,
+#li .ldt span,#astranova-speech,.chat-retract-bar,#chat-drag,.chat-drag-handle,#cmd-response::before,
+#perf-hud .hud-compact,#perf-hud .perf-joystick-ui,#compass-hud .radar-joystick-ui,
+#perf-hud .perf-center-label,#perf-hud .perf-center-value,#perf-hud .perf-icon,
+#topbar .tb-right .bb-btn,#topbar .tb-left .bb-btn,#topbar .tb-center .bb-btn,#topbar .tb-right button[title*="More"],
+#topbar .tb-right [data-tip="More"]{
   display:none !important;
 }
-#cmd-response.collapsed{
-  display:none !important;
-  height:0 !important;
-  max-height:0 !important;
-  min-height:0 !important;
-  overflow:hidden !important;
-  border-top:none !important;
+#bottombar{
+  position:fixed !important;left:0 !important;right:0 !important;bottom:0 !important;height:0 !important;
+  padding:0 !important;border:none !important;background:transparent !important;box-shadow:none !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;pointer-events:none !important;overflow:visible !important;
 }
-#cmd-response.expanded{
-  display:flex !important;
+#astranova-wrapper.final-helper{
+  position:fixed !important;left:14px !important;bottom:8px !important;right:auto !important;top:auto !important;
+  z-index:330 !important;display:flex !important;align-items:flex-end !important;justify-content:center !important;
+  width:92px !important;height:106px !important;pointer-events:auto !important;
 }
+#astranova-wrapper.final-helper #astranova-svg{
+  width:82px !important;height:100px !important;pointer-events:auto !important;filter:drop-shadow(0 8px 18px rgba(0,200,255,0.24)) !important;
+}
+#astranova-wrapper.final-helper .elf-wing-l,#astranova-wrapper.final-helper .elf-wing-r{opacity:.92;}
+#clean-composer-shell{
+  position:fixed;left:110px;bottom:10px;width:min(58vw,560px);min-width:340px;height:92px;z-index:329;
+  display:flex;flex-direction:column;gap:8px;padding:8px 12px 10px;border-radius:22px;
+  background:linear-gradient(180deg,rgba(7,16,30,0.18),rgba(7,16,30,0.10));
+  border:1px solid rgba(0,200,255,0.18);
+  box-shadow:0 16px 36px rgba(0,0,0,0.18), inset 0 0 18px rgba(0,200,255,0.04);
+  backdrop-filter:blur(18px) saturate(132%);-webkit-backdrop-filter:blur(18px) saturate(132%);
+  pointer-events:auto;touch-action:none;user-select:none;overflow:hidden;
+}
+#clean-composer-shell.dragging,#clean-composer-shell.resizing{
+  border-color:rgba(0,200,255,0.34);box-shadow:0 20px 42px rgba(0,0,0,0.22),0 0 18px rgba(0,200,255,0.14);
+}
+#clean-composer-shell::after{
+  content:'';position:absolute;right:7px;bottom:7px;width:16px;height:16px;pointer-events:none;
+  border-right:2px solid rgba(0,200,255,0.24);border-bottom:2px solid rgba(0,200,255,0.24);border-radius:0 0 12px 0;
+}
+#clean-composer-status{
+  position:absolute;left:14px;right:14px;top:5px;height:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  color:#8defff;font-size:10px;line-height:16px;letter-spacing:.04em;text-shadow:0 0 8px rgba(0,200,255,0.28);pointer-events:none;
+}
+#clean-composer-top,#clean-composer-bottom{display:flex;align-items:center;gap:8px;min-width:0;width:100%;}
+#clean-composer-top{margin-top:12px;}
+#clean-composer-bottom{flex:1 1 auto;}
+#clean-channel-wrap{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;}
+#clean-channel-arrow{
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  color:#8defff;font-size:12px;text-shadow:0 0 10px rgba(0,200,255,0.30);
+}
+#chat-channel-select{
+  flex:1 1 auto !important;min-width:0 !important;height:30px !important;border-radius:12px !important;
+  border:1px solid rgba(0,200,255,0.22) !important;background:rgba(0,0,0,0.04) !important;color:#9ff6ff !important;
+  box-shadow:inset 0 0 14px rgba(0,200,255,0.04) !important;padding:0 12px !important;
+  text-shadow:0 0 10px rgba(0,200,255,0.30) !important;font-size:11px !important;
+}
+#chat-channel-select option{background:#08111d !important;color:#9ff6ff !important;}
+#chat-channel-add,#voice-btn,#clean-send-btn{
+  width:34px;height:32px;border-radius:12px;border:1px solid rgba(0,200,255,0.22);background:rgba(0,0,0,0.04);
+  color:#9ff6ff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;
+  box-shadow:inset 0 0 14px rgba(0,200,255,0.04);text-shadow:0 0 10px rgba(0,200,255,0.30);
+}
+#voice-btn{font-size:15px;line-height:1;}
+#chat-channel-add{font-size:18px;line-height:1;}
+#clean-send-btn{font-size:14px;line-height:1;}
+#voice-btn:hover,#chat-channel-add:hover,#clean-send-btn:hover,#chat-channel-select:hover,#cmd-input:hover{
+  border-color:rgba(0,200,255,0.40) !important;
+}
+#voice-btn.voice-btn-active{
+  background:rgba(0,232,122,0.12) !important;border-color:rgba(0,232,122,0.44) !important;color:#baffd2 !important;
+  text-shadow:0 0 12px rgba(0,232,122,0.35) !important;
+}
+#cmd-input{
+  flex:1 1 auto !important;min-width:0 !important;height:40px !important;border-radius:14px !important;
+  border:1px solid rgba(0,200,255,0.22) !important;background:rgba(0,0,0,0.04) !important;color:#aaf9ff !important;
+  box-shadow:inset 0 0 16px rgba(0,200,255,0.04) !important;padding:0 14px !important;
+  text-shadow:0 0 10px rgba(0,200,255,0.24) !important;touch-action:none !important;user-select:none !important;
+}
+#cmd-input::placeholder{color:rgba(141,243,255,0.70) !important;text-shadow:0 0 8px rgba(0,200,255,0.24) !important;}
+#cmd-input:focus,#chat-channel-select:focus{
+  outline:none !important;border-color:rgba(0,200,255,0.44) !important;
+  box-shadow:inset 0 0 16px rgba(0,200,255,0.08),0 0 12px rgba(0,200,255,0.10) !important;
+}
+#clean-add-btn,#primary-action-btn{
+  position:fixed !important;right:14px !important;bottom:12px !important;z-index:331 !important;
+  width:68px !important;height:68px !important;display:flex !important;align-items:center !important;justify-content:center !important;
+  background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important;
+}
+#primary-action-btn .action-bubble,#primary-action-btn .shield-face{
+  width:60px !important;height:60px !important;border-radius:999px !important;
+  border:1px solid rgba(0,200,255,0.28) !important;
+  background:radial-gradient(circle at 35% 25%, rgba(0,200,255,0.28), rgba(8,18,30,0.90) 72%) !important;
+  box-shadow:0 16px 30px rgba(0,0,0,0.28), 0 0 18px rgba(0,200,255,0.14) !important;
+  color:#9ff6ff !important;display:flex !important;align-items:center !important;justify-content:center !important;
+}
+#primary-action-btn .main-glyph,#primary-action-btn .shield-plus{
+  font-size:28px !important;line-height:1 !important;font-weight:700 !important;color:#9ff6ff !important;text-shadow:0 0 12px rgba(0,200,255,0.42) !important;
+}
+#primary-action-btn .mini-glyph,#primary-action-btn .bubble-mini,#primary-action-btn .bubble-core,#primary-action-btn .inner-mini,#primary-action-btn .mini,
+#primary-action-btn .mini-glyph::before{display:none !important;content:none !important;}
 #cmd-response{
-  left:12px !important;
-  right:12px !important;
-  bottom:76px !important;
-  max-height:min(56vh,420px) !important;
+  position:fixed !important;left:110px !important;bottom:112px !important;width:min(58vw,560px) !important;right:auto !important;z-index:328 !important;
+  border-radius:18px 18px 0 0 !important;border:1px solid rgba(0,200,255,0.18) !important;
+  background:linear-gradient(180deg,rgba(7,16,30,0.30),rgba(7,16,30,0.18)) !important;
+  box-shadow:0 16px 36px rgba(0,0,0,0.18) !important;backdrop-filter:blur(18px) saturate(132%) !important;
+  -webkit-backdrop-filter:blur(18px) saturate(132%) !important;overflow:hidden !important;
+  display:none;max-height:42vh;
 }
-#primary-action-btn .mini-glyph{
-  display:none !important;
+#cmd-response.clean-open{display:flex !important;flex-direction:column !important;}
+#cmd-response.clean-collapsed{display:none !important;}
+#chat-channel-bar{display:none !important;}
+.ai-conv{padding:10px 12px !important;display:flex !important;flex-direction:column !important;gap:6px !important;overflow-y:auto !important;}
+.ai-msg.user-msg{background:rgba(0,200,255,0.10) !important;border:1px solid rgba(0,200,255,0.18) !important;color:#dffcff !important;}
+.ai-msg.ai-msg-reply,.ai-msg.system-msg{background:rgba(0,200,255,0.06) !important;border:1px solid rgba(0,200,255,0.14) !important;color:#aef5ff !important;}
+#perf-hud,#compass-hud{
+  position:fixed !important;bottom:128px !important;top:auto !important;width:154px !important;height:154px !important;
+  min-width:154px !important;min-height:154px !important;max-width:154px !important;max-height:154px !important;
+  opacity:.94 !important;z-index:250 !important;overflow:visible !important;
 }
-#primary-action-btn .action-bubble{
-  width:56px !important;
-  height:56px !important;
-  border-radius:50% !important;
+#perf-hud{left:22px !important;right:auto !important;}
+#compass-hud{right:22px !important;left:auto !important;}
+#perf-hud #perf-svg,#compass-hud #compass-svg{width:100% !important;height:100% !important;}
+.clean-hud-center{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:34px;height:34px;border-radius:999px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:12;
+  border:1px solid rgba(0,200,255,0.32);background:radial-gradient(circle at 35% 25%, rgba(0,200,255,0.30), rgba(8,18,30,0.92) 72%);
+  box-shadow:0 0 14px rgba(0,200,255,0.16), inset 0 0 12px rgba(0,200,255,0.08);
 }
-#primary-action-btn .main-glyph::before{
-  content:'+' !important;
-  font-size:26px;
-  line-height:1;
-  font-weight:800;
+.clean-hud-center:hover{border-color:rgba(0,200,255,0.48);box-shadow:0 0 18px rgba(0,200,255,0.22), inset 0 0 12px rgba(0,200,255,0.12);}
+.clean-hud-center svg{width:18px;height:18px;display:block;}
+#clean-radar-btn .icon-in{display:block;}
+#clean-radar-btn.zoomed .icon-in{display:none;}
+#clean-radar-btn .icon-out{display:none;}
+#clean-radar-btn.zoomed .icon-out{display:block;}
+#clean-grab-btn.unloaded{border-color:rgba(0,232,122,0.46);box-shadow:0 0 16px rgba(0,232,122,0.18), inset 0 0 12px rgba(0,232,122,0.10);}
+#clean-grab-btn.loaded{border-color:rgba(255,68,85,0.50);box-shadow:0 0 16px rgba(255,68,85,0.18), inset 0 0 12px rgba(255,68,85,0.10);}
+#clean-grab-btn .state-open{display:block;}
+#clean-grab-btn.loaded .state-open{display:none;}
+#clean-grab-btn .state-closed{display:none;}
+#clean-grab-btn.loaded .state-closed{display:block;}
+#clean-add-ring{
+  position:fixed;inset:0;z-index:320;display:none;pointer-events:none;background:transparent !important;
 }
-#primary-action-btn.text-ready .main-glyph::before{
-  content:'➤' !important;
-  font-size:22px;
+#clean-add-ring.on{display:block;}
+.clean-add-node{
+  position:absolute;width:118px;height:118px;border-radius:999px;pointer-events:auto;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px;text-align:center;
+  background:radial-gradient(circle at 35% 25%, rgba(0,200,255,0.24), rgba(8,18,30,0.88) 74%);
+  border:1px solid rgba(0,200,255,0.22);box-shadow:0 16px 30px rgba(0,0,0,0.28),0 0 16px rgba(0,200,255,0.12);
+  color:#e9feff;backdrop-filter:blur(12px) saturate(125%);-webkit-backdrop-filter:blur(12px) saturate(125%);
 }
-#action-ring-overlay{
-  position:fixed !important;
-  inset:36px 0 76px 0 !important;
-  display:none !important;
-  z-index:226 !important;
-  background:transparent !important;
-  backdrop-filter:none !important;
-  -webkit-backdrop-filter:none !important;
-  pointer-events:none !important;
+.clean-add-node:hover{transform:scale(1.04);border-color:rgba(0,200,255,0.42);box-shadow:0 18px 34px rgba(0,0,0,0.30),0 0 20px rgba(0,200,255,0.20);}
+.clean-add-node strong{font-size:12px;line-height:1.15;}
+.clean-add-node span{font-size:10px;line-height:1.3;color:#9eeeff;}
+.form-modal{
+  background:rgba(4,10,20,0.36) !important;backdrop-filter:blur(8px) !important;-webkit-backdrop-filter:blur(8px) !important;
 }
-#action-ring-overlay.on{
-  display:block !important;
+.form-sheet{
+  position:relative;max-height:min(78vh,760px) !important;overflow:auto !important;border-radius:18px !important;
 }
-#action-ring-overlay .action-ring-wrap{
-  position:fixed !important;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%) !important;
-  width:min(80vw,420px) !important;
-  height:min(62vh,420px) !important;
-  pointer-events:none !important;
-  background:none !important;
-  border:none !important;
-  box-shadow:none !important;
+.clean-form-close{
+  position:sticky;top:8px;float:right;z-index:5;width:38px;height:38px;border-radius:999px;border:1px solid rgba(0,200,255,0.22);
+  background:rgba(8,18,30,0.90);color:#dffcff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;line-height:1;
 }
-#action-ring-overlay .action-ring-core,
-#action-ring-overlay .action-ring-close,
-#action-ring-overlay .close-alt{
-  display:none !important;
+@media (max-width: 900px){
+  #clean-composer-shell{width:min(60vw,500px);max-width:calc(100vw - 190px);}
+  #cmd-response{width:min(60vw,500px) !important;}
 }
-#action-ring-overlay .action-node{
-  pointer-events:auto !important;
-  width:108px !important;
-  min-height:72px !important;
-  padding:12px 10px !important;
-  border-radius:22px !important;
-  border:1px solid rgba(0,200,255,0.18) !important;
-  background:linear-gradient(180deg,rgba(8,18,30,0.78),rgba(8,18,30,0.62)) !important;
-  color:#eaf8ff !important;
-  box-shadow:0 12px 26px rgba(0,0,0,0.22),0 0 16px rgba(0,200,255,0.08) !important;
-}
-#action-ring-overlay .action-node.product{--ax:0px;--ay:-145px;}
-#action-ring-overlay .action-node.service{--ax:142px;--ay:-44px;}
-#action-ring-overlay .action-node.delivery{--ax:108px;--ay:108px;}
-#action-ring-overlay .action-node.driver{--ax:-108px;--ay:108px;}
-#action-ring-overlay .action-node.media{--ax:-142px;--ay:-44px;}
-@media (max-width:700px){
-  #action-ring-overlay .action-ring-wrap{width:min(92vw,360px) !important;height:min(58vh,360px) !important;}
-  #action-ring-overlay .action-node{width:92px !important;min-height:66px !important;padding:10px 8px !important;}
-  #action-ring-overlay .action-node.product{--ax:0px;--ay:-122px;}
-  #action-ring-overlay .action-node.service{--ax:118px;--ay:-38px;}
-  #action-ring-overlay .action-node.delivery{--ax:92px;--ay:94px;}
-  #action-ring-overlay .action-node.driver{--ax:-92px;--ay:94px;}
-  #action-ring-overlay .action-node.media{--ax:-118px;--ay:-38px;}
-}
-#perf-compact-ui,
-#perf-joystick-ui,
-#radar-compact-ui,
-#radar-joystick-ui,
-#radar-stick-dock,
-#perf-stick-dock{
-  display:none !important;
+@media (max-width: 720px){
+  #astranova-wrapper.final-helper{left:8px !important;bottom:8px !important;width:78px !important;height:90px !important;}
+  #astranova-wrapper.final-helper #astranova-svg{width:70px !important;height:84px !important;}
+  #clean-composer-shell{left:86px;bottom:10px;width:calc(100vw - 162px);min-width:220px;height:88px;}
+  #cmd-response{left:86px !important;width:calc(100vw - 162px) !important;bottom:108px !important;}
+  #primary-action-btn{right:10px !important;bottom:10px !important;width:60px !important;height:60px !important;}
+  #primary-action-btn .action-bubble,#primary-action-btn .shield-face{width:54px !important;height:54px !important;}
+  #perf-hud,#compass-hud{width:138px !important;height:138px !important;bottom:118px !important;}
+  #perf-hud{left:10px !important;} #compass-hud{right:10px !important;}
+  .clean-add-node{width:104px;height:104px;}
 }
 </style>
 
-<script id="apr03-v9-script">
+
+<script id="final-hard-cleanup-script">
 (function(){
   function byId(id){ return document.getElementById(id); }
-  function removeNode(id){ var n = byId(id); if(n && n.parentNode) n.parentNode.removeChild(n); }
-  function helperBubble(text, hold){
-    var bubble = byId('astranova-speech');
-    if(!bubble) return;
-    bubble.textContent = text;
-    bubble.classList.add('on');
-    clearTimeout(helperBubble._t);
-    helperBubble._t = setTimeout(function(){ bubble.classList.remove('on'); }, hold || 2200);
-  }
+  function hideNode(id){ var el = byId(id); if(el){ el.style.display='none'; el.setAttribute('aria-hidden','true'); } }
+  function removeNode(id){ var el = byId(id); if(el && el.parentNode) el.parentNode.removeChild(el); }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
-  // Hard cleanup of old leftovers
-  ['chat-toggle-btn','fab-add','voice-btn','left-panel','right-panel','zoom-btns','locate-btn','globe-btn','drone-btn','flow-resume-pill'].forEach(removeNode);
-  var dragBar = byId('chat-drag');
-  if(dragBar) dragBar.remove();
-
-  // Bottom bar roles: helper left, chat field center, dual action bubble right
-  var bar = byId('bottombar');
-  var helper = byId('astranova-wrapper');
-  var input = byId('cmd-input');
-  var actionBtn = byId('primary-action-btn');
-  if(bar && helper && helper.parentNode !== bar){
-    bar.insertBefore(helper, bar.firstChild);
-  }
-  if(helper){
-    helper.classList.add('bottom-docked');
-    helper.style.display = 'flex';
-  }
-  var helperSvg = byId('astranova-svg');
-  if(helperSvg){
-    helperSvg.onclick = function(ev){
-      ev.preventDefault();
-      ev.stopPropagation();
-      if(typeof window.toggleInteractionMode === 'function') window.toggleInteractionMode();
-      return false;
-    };
-  }
-  if(actionBtn){
-    actionBtn.innerHTML = '<span class="action-bubble"><span class="main-glyph"></span></span>';
-    actionBtn.title = 'Send text or add something';
-    actionBtn.setAttribute('aria-label','Send text or add something');
-  }
-  function syncPrimary(){
-    if(!actionBtn || !input) return;
-    var hasText = !!(input.value && input.value.trim());
-    actionBtn.classList.toggle('text-ready', hasText);
-    actionBtn.classList.toggle('empty-ready', !hasText);
-  }
-  if(input){
-    input.addEventListener('input', syncPrimary);
-    input.addEventListener('keyup', syncPrimary);
-  }
-  syncPrimary();
-
-  // Chat drawer with no visible handle, controlled by long-press drag on the text field
-  var resp = byId('cmd-response');
-  var drawerState = {open:false,height:260,dragging:false,pointerId:null,startY:0,startHeight:0,pressTimer:null,armed:false};
-  function maxDrawerHeight(){
-    return Math.min(window.innerHeight * 0.56, 420);
-  }
-  function setDrawerHeight(h){
-    if(!resp) return;
-    var clamped = Math.max(120, Math.min(maxDrawerHeight(), h || drawerState.height || 260));
-    drawerState.height = clamped;
-    resp.style.height = clamped + 'px';
-    resp.style.maxHeight = clamped + 'px';
-  }
-  function expandChat(h){
-    if(!resp) return;
-    drawerState.open = true;
-    resp.classList.remove('collapsed');
-    resp.classList.add('expanded');
-    resp.style.display = 'flex';
-    document.body.classList.add('chat-open');
-    setDrawerHeight(h || drawerState.height || 260);
-  }
-  function collapseChat(){
-    if(!resp) return;
-    drawerState.open = false;
-    resp.classList.remove('expanded');
-    resp.classList.add('collapsed');
-    resp.style.display = 'none';
-    document.body.classList.remove('chat-open');
-  }
-  window.expandConversation = function(){ expandChat(drawerState.height || 260); };
-  window.retractConversation = collapseChat;
-  window.hideConversationDrawer = collapseChat;
-  window.toggleChatDrawer = function(){ drawerState.open ? collapseChat() : expandChat(drawerState.height || 260); };
-  collapseChat();
-
-  if(input && !input.dataset.v9drag){
-    input.dataset.v9drag = '1';
-    input.style.touchAction = 'manipulation';
-    input.addEventListener('pointerdown', function(ev){
-      drawerState.pointerId = ev.pointerId;
-      drawerState.startY = ev.clientY;
-      drawerState.startHeight = drawerState.open ? (resp ? resp.getBoundingClientRect().height : drawerState.height) : 0;
-      drawerState.dragging = false;
-      drawerState.armed = true;
-      clearTimeout(drawerState.pressTimer);
-      drawerState.pressTimer = setTimeout(function(){
-        if(drawerState.armed && drawerState.pointerId === ev.pointerId){
-          drawerState.dragging = true;
-          if(!drawerState.open) expandChat(150);
-        }
-      }, 220);
-    });
-    window.addEventListener('pointermove', function(ev){
-      if(drawerState.pointerId !== ev.pointerId || !drawerState.dragging) return;
-      ev.preventDefault();
-      var delta = drawerState.startY - ev.clientY;
-      var base = drawerState.startHeight || 0;
-      var next = base + delta;
-      if(next < 60){
-        collapseChat();
-        return;
-      }
-      expandChat(next);
-    }, {passive:false});
-    function finishDrag(ev){
-      if(drawerState.pointerId !== ev.pointerId) return;
-      clearTimeout(drawerState.pressTimer);
-      drawerState.armed = false;
-      if(drawerState.dragging){
-        var current = resp && resp.style.display !== 'none' ? resp.getBoundingClientRect().height : 0;
-        if(current < 110) collapseChat();
-        else expandChat(current);
-      }
-      drawerState.dragging = false;
-      drawerState.pointerId = null;
-    }
-    window.addEventListener('pointerup', finishDrag);
-    window.addEventListener('pointercancel', finishDrag);
-  }
-
-  // Hard zoom toggle on radar center
-  function bestLoc(){
-    var loc = window.LOC || {};
-    var lat = Number(loc.lat), lng = Number(loc.lng);
-    if(Number.isFinite(lat) && Number.isFinite(lng)) return {lat:lat,lng:lng};
-    return {lat:36.4349,lng:28.2176};
-  }
-  function refreshLoc(done){
-    if(!navigator.geolocation){ done(bestLoc()); return; }
-    navigator.geolocation.getCurrentPosition(function(pos){
-      window.LOC = {lat:pos.coords.latitude, lng:pos.coords.longitude};
-      done(bestLoc());
-    }, function(){ done(bestLoc()); }, {enableHighAccuracy:true, timeout:5000, maximumAge:15000});
-  }
-  function focusMap(loc, tries){
-    tries = tries || 0;
-    if(window.LM && typeof window.LM.invalidateSize === 'function'){
-      try{ window.LM.invalidateSize(); }catch(e){}
-    }
-    if(window.LM && typeof window.LM.setView === 'function'){
-      try{
-        if(typeof window.LM.flyTo === 'function') window.LM.flyTo([loc.lat, loc.lng], 16, {animate:true, duration:0.9});
-        else window.LM.setView([loc.lat, loc.lng], 16);
-      }catch(e){
-        try{ window.LM.setView([loc.lat, loc.lng], 16); }catch(_e){}
-      }
-      return true;
-    }
-    if(tries < 24){
-      setTimeout(function(){ focusMap(loc, tries + 1); }, 180);
-    }
-    return false;
-  }
-  function syncRadarButton(){
-    var btn = byId('radar-core-toggle');
-    if(!btn) return;
-    var local = window.CL === 1;
-    btn.classList.toggle('zoom-in', !local);
-    btn.classList.toggle('zoom-out', local);
-    btn.setAttribute('aria-label', local ? 'Zoom out to globe view' : 'Zoom in to your location');
-    btn.title = local ? 'Zoom out to globe view' : 'Zoom in to your location';
-    btn.innerHTML = '<span class="zoom-arrow" aria-hidden="true">' + (local ? '▲' : '▼') + '</span>';
-    var ro = byId('radar-zoom-state');
-    if(ro) ro.textContent = local ? 'OUT' : 'IN';
-  }
-  window.toggleRadarLocationZoom = function(){
-    if(window.CL === 1){
-      try{
-        if(typeof window.goLayer === 'function') window.goLayer(0);
-        setTimeout(function(){
-          try{
-            if(window.globeController && typeof window.globeController.resetView === 'function'){
-              window.globeController.resetView();
-            }
-          }catch(e){}
-          syncRadarButton();
-        }, 420);
-      }catch(e){}
-      helperBubble('Zooming back out to the globe.', 1400);
-      return;
-    }
-    refreshLoc(function(loc){
-      try{
-        if(typeof window.goLayer === 'function') window.goLayer(1);
-        if(typeof window.initLeaflet === 'function' && !window.LM) window.initLeaflet();
-      }catch(e){}
-      setTimeout(function(){ focusMap(loc, 0); syncRadarButton(); }, 520);
-      helperBubble('Zooming in to your location.', 1400);
-    });
-  };
-  var radarBtn = byId('radar-core-toggle');
-  if(radarBtn){
-    radarBtn.onclick = function(ev){
-      ev.preventDefault();
-      ev.stopPropagation();
-      window.toggleRadarLocationZoom();
-      return false;
-    };
-  }
-  syncRadarButton();
-
-  // Node-only add ring, no central overlay button, toggles cleanly
-  function currentPick(){
-    if(window.CL === 1 && window.LM && typeof window.LM.getCenter === 'function'){
-      try{
-        var c = window.LM.getCenter();
-        return {lat:c.lat,lng:c.lng};
-      }catch(e){}
-    }
-    return bestLoc();
-  }
-  function ensureRing(){
-    var ring = byId('action-ring-overlay');
-    if(!ring){
-      ring = document.createElement('div');
-      ring.id = 'action-ring-overlay';
-      document.body.appendChild(ring);
-    }
-    ring.innerHTML = '' +
-      '<div class="action-ring-wrap">' +
-        '<button class="action-node product" type="button" data-action="product"><span class="node-icon">📦</span><span class="node-label">List product</span></button>' +
-        '<button class="action-node service" type="button" data-action="service"><span class="node-icon">🛎</span><span class="node-label">List service</span></button>' +
-        '<button class="action-node delivery" type="button" data-action="delivery"><span class="node-icon">📍</span><span class="node-label">Delivery location</span></button>' +
-        '<button class="action-node driver" type="button" data-action="driver"><span class="node-icon">🛵</span><span class="node-label">Driver base</span></button>' +
-        '<button class="action-node media" type="button" data-action="media"><span class="node-icon">🎥</span><span class="node-label">Photo / video</span></button>' +
-      '</div>';
-    ring.querySelectorAll('.action-node').forEach(function(btn){
-      btn.addEventListener('click', function(ev){
-        ev.preventDefault();
-        ev.stopPropagation();
-        handleAddChoice(btn.getAttribute('data-action'));
-      });
-    });
-    return ring;
-  }
-  function positionRing(){
-    var ring = ensureRing();
-    var wrap = ring.querySelector('.action-ring-wrap');
-    var stage = byId('stage');
-    if(!wrap || !stage) return;
-    var r = stage.getBoundingClientRect();
-    wrap.style.left = (r.left + r.width / 2) + 'px';
-    wrap.style.top = (r.top + r.height / 2) + 'px';
-  }
-  function openRing(lat, lng){
-    if(Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))){
-      window.MAP_PICK = {lat:Number(lat), lng:Number(lng)};
-    }else{
-      window.MAP_PICK = currentPick();
-    }
-    var ring = ensureRing();
-    positionRing();
-    ring.classList.add('on');
-    helperBubble(window.CL === 0 ? 'Zoom down to define where you want to list something.' : 'Choose what you want to add here.', 2200);
-  }
-  function closeRing(){
-    var ring = byId('action-ring-overlay');
-    if(ring) ring.classList.remove('on');
-  }
-  var addState = {pendingService:false};
-  function normalizeServiceCategory(text){
-    var t = String(text||'').toLowerCase();
-    if(/hotel|room|villa|apartment|airbnb|accommodation/.test(t)) return 'Hotel / Rooms';
-    if(/rent|car|vehicle|scooter|quad/.test(t)) return 'Rent a Car';
-    if(/div|snorkel|boat trip|excursion|sea/.test(t)) return 'Diving School / Excursions';
-    if(/supermarket|grocery|market|food market/.test(t)) return 'Supermarket / Food Market';
-    if(/restaurant|food|pizza|burger|delivery|takeaway/.test(t)) return 'Restaurant / Food';
-    if(/cafe|coffee|bar|cocktail/.test(t)) return 'Café / Bar';
-    if(/shop|retail|store|boutique/.test(t)) return 'Shop / Retail';
-    if(/boat|yacht|jet ski|rental/.test(t)) return 'Boat / Sea Rental';
-    if(/tour|activity|guide/.test(t)) return 'Activities / Tours';
-    return 'Services';
-  }
-  function handleAddChoice(action){
-    if(window.CL === 0){
-      helperBubble('Zoom down on the globe first, then choose where to list it.', 2200);
-      return;
-    }
-    closeRing();
-    if(action === 'product'){
-      if(typeof window.openShopForm === 'function') window.openShopForm();
-      var cat = byId('sf-cat'); if(cat) cat.value = 'Shop / Retail';
-      helperBubble('Opening product listing.', 1400);
-      return;
-    }
-    if(action === 'service'){
-      addState.pendingService = true;
-      if(input){
-        input.value = '';
-        input.placeholder = 'Type service kind: hotel, rent-a-car, diving, restaurant...';
-        input.focus();
-        syncPrimary();
-      }
-      expandChat(Math.max(drawerState.height || 220, 220));
-      helperBubble('What service would you like to add?', 2000);
-      return;
-    }
-    if(action === 'delivery'){
-      if(typeof window.openDeliveryForm === 'function') window.openDeliveryForm();
-      helperBubble('Opening delivery location.', 1400);
-      return;
-    }
-    if(action === 'driver'){
-      if(typeof window.activateDriverAtPoint === 'function') window.activateDriverAtPoint();
-      helperBubble('Driver base activated.', 1400);
-      return;
-    }
-    if(action === 'media'){
-      if(typeof window.openPostForm === 'function') window.openPostForm();
-      var title = byId('pf-title'); if(title && !title.value) title.value = 'Photo / video from this location';
-      var desc = byId('pf-desc'); if(desc && !desc.value) desc.value = 'Location-linked media from this point.';
-      helperBubble('Opening photo / video post.', 1400);
-      return;
-    }
-  }
-
-  window.openActionRing = openRing;
-  window.closeActionRing = closeRing;
-  window.openPostChooser = openRing;
-  window.closePostChooser = closeRing;
-  window.openMapActionModal = openRing;
-  window.closeMapActionModal = closeRing;
-  window.openPost = function(){
-    var ring = ensureRing();
-    if(ring.classList.contains('on')){
-      closeRing();
-      return;
-    }
-    var p = currentPick();
-    openRing(p.lat, p.lng);
-  };
-
-  // Primary action: send text or toggle add ring
-  var oldSendCmd = window.sendCmd;
-  window.handlePrimaryAction = function(){
-    var val = input && input.value ? input.value.trim() : '';
-    if(addState.pendingService && val){
-      addState.pendingService = false;
-      var category = normalizeServiceCategory(val);
-      if(typeof window.openShopForm === 'function') window.openShopForm();
-      var cat = byId('sf-cat'); if(cat) cat.value = category;
-      var desc = byId('sf-desc');
-      if(desc && !desc.value) desc.placeholder = 'Describe your ' + val + ' service, prices, slots, availability, and anything customers should know.';
-      if(input){
-        input.value = '';
-        input.placeholder = 'Tell Astranov what to do…';
-      }
-      syncPrimary();
-      helperBubble('Opening the ' + category + ' listing form.', 1600);
-      return;
-    }
-    if(val){
-      if(typeof oldSendCmd === 'function') oldSendCmd();
-      setTimeout(syncPrimary, 40);
-      return;
-    }
-    window.openPost();
-  };
-  if(actionBtn){
-    actionBtn.onclick = function(ev){
-      ev.preventDefault();
-      ev.stopPropagation();
-      window.handlePrimaryAction();
-      return false;
-    };
-  }
-
-  // Keep helper visible and keep radar button synced after layer changes
-  var oldApplyLayer = window.applyLayer;
-  if(typeof oldApplyLayer === 'function' && !oldApplyLayer._v9wrapped){
-    window.applyLayer = function(idx){
-      oldApplyLayer(idx);
-      if(helper) helper.style.display = 'flex';
-      syncRadarButton();
-    };
-    window.applyLayer._v9wrapped = true;
-  }
-  window.addEventListener('resize', function(){
-    if(drawerState.open) setDrawerHeight(drawerState.height);
-    var ring = byId('action-ring-overlay');
-    if(ring && ring.classList.contains('on')) positionRing();
+  ['fab-add','chat-toggle-btn','left-panel','right-panel','iss-box','zoom-btns','locate-btn','globe-btn','drone-btn'].forEach(function(id){
+    var el = byId(id); if(el){ el.remove ? el.remove() : hideNode(id); }
   });
 
-  // Silence non-urgent pop-open behavior one more time
-  var prevShowResp = window.showResp;
-  window.showResp = function(msg, tone){
-    if(tone === 'urgent' && typeof prevShowResp === 'function') return prevShowResp(msg, tone);
+  var helper = byId('astranova-wrapper');
+  var helperSvg = byId('astranova-svg');
+  var helperSpeech = byId('astranova-speech');
+  var bottom = byId('bottombar');
+  var input = byId('cmd-input');
+  var resp = byId('cmd-response');
+  var channelBar = byId('chat-channel-bar');
+  var channelSelect = byId('chat-channel-select');
+  var oldChannelAdd = channelBar ? channelBar.querySelector('button') : null;
+  var primaryAction = byId('primary-action-btn');
+  var oldVoice = byId('voice-btn');
+  var oldSend = null;
+  if(bottom){ oldSend = bottom.querySelector('button[onclick*="sendCmd"]'); }
+  if(!helper || !helperSvg || !input || !resp || !channelSelect || !primaryAction){ return; }
+
+  if(helperSpeech){ helperSpeech.remove(); }
+  helper.classList.add('final-helper');
+  document.body.appendChild(helper);
+  document.body.appendChild(primaryAction);
+
+  // Build clean composer
+  var shell = byId('clean-composer-shell');
+  if(!shell){
+    shell = document.createElement('div');
+    shell.id = 'clean-composer-shell';
+    document.body.appendChild(shell);
+  }
+  shell.innerHTML = '';
+  var status = document.createElement('div');
+  status.id = 'clean-composer-status';
+  status.textContent = 'Astranov ready';
+  var top = document.createElement('div'); top.id = 'clean-composer-top';
+  var bottomLine = document.createElement('div'); bottomLine.id = 'clean-composer-bottom';
+  shell.appendChild(status); shell.appendChild(top); shell.appendChild(bottomLine);
+
+  var channelWrap = document.createElement('div');
+  channelWrap.id = 'clean-channel-wrap';
+  var arrow = document.createElement('div');
+  arrow.id = 'clean-channel-arrow';
+  arrow.textContent = '▾';
+  channelWrap.appendChild(arrow);
+  channelWrap.appendChild(channelSelect);
+  top.appendChild(channelWrap);
+
+  var channelAdd = oldChannelAdd || document.createElement('button');
+  channelAdd.id = 'chat-channel-add';
+  channelAdd.title = 'Add channel';
+  channelAdd.setAttribute('aria-label', 'Add channel');
+  if(!channelAdd.onclick && typeof window.promptNewTeam === 'function'){
+    channelAdd.onclick = function(){ window.promptNewTeam(); };
+  }
+  top.appendChild(channelAdd);
+
+  var voiceBtn = oldVoice || document.createElement('button');
+  voiceBtn.id = 'voice-btn';
+  voiceBtn.type = 'button';
+  voiceBtn.innerHTML = '🎤';
+  voiceBtn.title = 'Voice typing';
+  voiceBtn.setAttribute('aria-label','Voice typing');
+  if(!voiceBtn.onclick){ voiceBtn.onclick = function(){ if(typeof window.toggleVoiceInput==='function') window.toggleVoiceInput(); }; }
+  bottomLine.appendChild(voiceBtn);
+
+  input.placeholder = 'Tell Astranov what to do…';
+  input.removeAttribute('onfocus');
+  input.onkeydown = function(ev){
+    if(ev.key === 'Enter'){
+      ev.preventDefault();
+      if(typeof window.sendCmd === 'function') window.sendCmd();
+      expandChat(true);
+    }
+  };
+  bottomLine.appendChild(input);
+
+  var sendBtn = oldSend || document.createElement('button');
+  sendBtn.id = 'clean-send-btn';
+  sendBtn.type = 'button';
+  sendBtn.innerHTML = '➜';
+  sendBtn.title = 'Send';
+  sendBtn.setAttribute('aria-label','Send');
+  sendBtn.onclick = function(){
+    if(typeof window.sendCmd === 'function') window.sendCmd();
+    expandChat(true);
+  };
+  bottomLine.appendChild(sendBtn);
+
+  if(bottom){ bottom.innerHTML = ''; }
+
+  // clean action bubble
+  primaryAction.innerHTML = '<span class="action-bubble" aria-hidden="true"><span class="main-glyph">+</span></span>';
+  primaryAction.title = 'Add on map';
+  primaryAction.setAttribute('aria-label','Add on map');
+
+  // clean chat drawer
+  var drag = byId('chat-drag');
+  if(drag) drag.remove();
+  function syncChat(){
+    var r = shell.getBoundingClientRect();
+    resp.style.left = r.left + 'px';
+    resp.style.width = r.width + 'px';
+    resp.style.right = 'auto';
+    resp.style.bottom = Math.max(8, window.innerHeight - r.top + 8) + 'px';
+    resp.style.maxHeight = Math.max(180, Math.min(window.innerHeight * 0.46, r.top - 54)) + 'px';
+  }
+  function expandChat(force){
+    syncChat();
+    resp.classList.remove('clean-collapsed');
+    resp.classList.add('clean-open');
+    resp.style.display = 'flex';
+    var target = force === true ? Math.max(220, Math.min(window.innerHeight * 0.34, parseFloat(resp.style.maxHeight) || 320)) : (resp.getBoundingClientRect().height || 260);
+    resp.style.height = target + 'px';
+  }
+  function collapseChat(){
+    resp.classList.remove('clean-open');
+    resp.classList.add('clean-collapsed');
+    resp.style.display = 'none';
+    resp.style.height = '0px';
+  }
+  window.expandConversation = expandChat;
+  window.retractConversation = collapseChat;
+  collapseChat();
+
+  function setStatus(msg){
+    if(!msg) return;
+    status.textContent = String(msg).replace(/\s+/g,' ').trim();
+  }
+
+  // route noisy toasts into composer status instead of overlay
+  window.showResp = function(msg){
+    setStatus(msg);
+    return msg;
+  };
+
+  // helper click toggles hands-free mode
+  window.openAstranova = function(){
+    if(window._voiceActive){
+      if(typeof window.stopListening === 'function') window.stopListening();
+      setStatus('Astranov Collective Intelligence · manual typing mode');
+      try{ if(typeof window.addAiMessage === 'function') window.addAiMessage('system-msg','Astranov','Astranov Collective Intelligence: switching back to manual typing mode.'); }catch(e){}
+    } else {
+      if(typeof window.toggleVoiceInput === 'function') window.toggleVoiceInput();
+      setStatus('Astranov Collective Intelligence · AI hands-free mode');
+      try{ if(typeof window.addAiMessage === 'function') window.addAiMessage('system-msg','Astranov','Astranov Collective Intelligence: switching to AI hands-free mode.'); }catch(e){}
+    }
+  };
+  helperSvg.onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); window.openAstranova(); };
+
+  // Drag / resize composer without visible handle
+  function applyShellRect(rect){
+    var minW = Math.min(340, window.innerWidth - 170);
+    var maxW = Math.max(minW, window.innerWidth - 170);
+    var w = clamp(rect.width || shell.getBoundingClientRect().width || Math.min(560, window.innerWidth * 0.58), Math.max(220,minW), maxW);
+    var h = clamp(rect.height || shell.getBoundingClientRect().height || 92, 84, Math.max(92, window.innerHeight * 0.32));
+    var l = clamp(rect.left != null ? rect.left : shell.getBoundingClientRect().left || 110, 86, window.innerWidth - w - 86);
+    var t = clamp(rect.top != null ? rect.top : window.innerHeight - h - 10, 50, window.innerHeight - h - 10);
+    shell.style.left = l + 'px';
+    shell.style.top = t + 'px';
+    shell.style.bottom = 'auto';
+    shell.style.width = w + 'px';
+    shell.style.height = h + 'px';
+    input.style.height = Math.max(40, Math.min(58, h - 44)) + 'px';
+    syncChat();
+  }
+  applyShellRect({});
+
+  var shellGesture = null;
+  shell.addEventListener('pointerdown', function(ev){
+    if(ev.button != null && ev.button !== 0) return;
+    if(ev.target === input) return;
+    if(ev.target.closest('button,select,option')) return;
+    var r = shell.getBoundingClientRect();
+    var resizing = (r.right - ev.clientX < 22 && r.bottom - ev.clientY < 22);
+    shellGesture = {id:ev.pointerId, mode: resizing ? 'resize' : 'drag', x:ev.clientX, y:ev.clientY, rect:r, moved:false};
+    shell.classList.add(resizing ? 'resizing' : 'dragging');
+    try{ shell.setPointerCapture(ev.pointerId); }catch(e){}
+  }, true);
+  shell.addEventListener('pointermove', function(ev){
+    if(!shellGesture || ev.pointerId !== shellGesture.id) return;
+    var dx = ev.clientX - shellGesture.x, dy = ev.clientY - shellGesture.y;
+    if(Math.abs(dx) > 4 || Math.abs(dy) > 4) shellGesture.moved = true;
+    if(!shellGesture.moved) return;
+    ev.preventDefault();
+    if(shellGesture.mode === 'resize'){
+      applyShellRect({left:shellGesture.rect.left, top:shellGesture.rect.top, width:shellGesture.rect.width + dx, height:shellGesture.rect.height + dy});
+    }else{
+      applyShellRect({left:shellGesture.rect.left + dx, top:shellGesture.rect.top + dy, width:shellGesture.rect.width, height:shellGesture.rect.height});
+    }
+  }, true);
+  ['pointerup','pointercancel'].forEach(function(type){
+    shell.addEventListener(type, function(ev){
+      if(!shellGesture || ev.pointerId !== shellGesture.id) return;
+      shell.classList.remove('dragging','resizing');
+      try{ shell.releasePointerCapture(ev.pointerId); }catch(e){}
+      shellGesture = null;
+    }, true);
+  });
+
+  // Input gesture controls drawer height, no handle
+  var chatGesture = null;
+  input.addEventListener('pointerdown', function(ev){
+    if(ev.button != null && ev.button !== 0) return;
+    chatGesture = {id:ev.pointerId, startY:ev.clientY, startH: resp.classList.contains('clean-open') ? resp.getBoundingClientRect().height : 0, moved:false};
+    try{ input.setPointerCapture(ev.pointerId); }catch(e){}
+  }, true);
+  input.addEventListener('pointermove', function(ev){
+    if(!chatGesture || ev.pointerId !== chatGesture.id) return;
+    var dy = ev.clientY - chatGesture.startY;
+    if(Math.abs(dy) > 4) chatGesture.moved = true;
+    if(!chatGesture.moved) return;
+    ev.preventDefault();
+    syncChat();
+    var maxH = parseFloat(resp.style.maxHeight) || (window.innerHeight * 0.46);
+    var next = clamp(chatGesture.startH - dy, 0, maxH);
+    if(next < 24){
+      collapseChat();
+    }else{
+      resp.classList.add('clean-open');
+      resp.classList.remove('clean-collapsed');
+      resp.style.display = 'flex';
+      resp.style.height = next + 'px';
+    }
+  }, true);
+  ['pointerup','pointercancel'].forEach(function(type){
+    input.addEventListener(type, function(ev){
+      if(!chatGesture || ev.pointerId !== chatGesture.id) return;
+      var moved = chatGesture.moved;
+      chatGesture = null;
+      try{ input.releasePointerCapture(ev.pointerId); }catch(e){}
+      if(!moved){
+        setTimeout(function(){ try{ input.focus(); }catch(e){} }, 0);
+      }else if(resp.classList.contains('clean-open')){
+        if((resp.getBoundingClientRect().height || 0) < 120) collapseChat();
+      }
+    }, true);
+  });
+
+  // Clean forms with visible close X
+  function ensureClose(modalId, closeFnName){
+    var modal = byId(modalId);
+    if(!modal) return;
+    var sheet = modal.querySelector('.form-sheet');
+    if(!sheet || sheet.querySelector('.clean-form-close')) return;
+    var btn = document.createElement('button');
+    btn.className = 'clean-form-close';
+    btn.type = 'button';
+    btn.textContent = '×';
+    btn.onclick = function(){ if(typeof window[closeFnName] === 'function') window[closeFnName](); };
+    sheet.insertBefore(btn, sheet.firstChild);
+  }
+  ensureClose('post-form','closePostForm');
+  ensureClose('shop-form','closeShopForm');
+  ensureClose('delivery-form','closeDeliveryForm');
+
+  // Build radial add ring
+  var ring = byId('clean-add-ring');
+  if(!ring){
+    ring = document.createElement('div');
+    ring.id = 'clean-add-ring';
+    document.body.appendChild(ring);
+  }
+  function ringCenter(){
+    return { x: window.innerWidth / 2, y: Math.max(140, Math.min(window.innerHeight * 0.44, window.innerHeight - 260)) };
+  }
+  function precisePointReady(){
+    return window.CL === 1 && window.LM && typeof window.LM.getZoom === 'function' && window.LM.getZoom() >= 15;
+  }
+  function currentMapPoint(){
+    if(window.CL === 1 && window.LM && typeof window.LM.getCenter === 'function'){
+      var c = window.LM.getCenter();
+      window.MAP_PICK = { lat: Number(c.lat), lng: Number(c.lng) };
+      return window.MAP_PICK;
+    }
+    return null;
+  }
+  function askForZoom(reason){
+    setStatus(reason || 'Zoom down on the Earth map and center the exact place to list something.');
     try{
-      if(msg && typeof window.addAiMessage === 'function'){
-        window.addAiMessage('system-msg', 'System', msg);
+      if(typeof window.addAiMessage === 'function'){
+        window.addAiMessage('system-msg','Astranov','Zoom down on the Earth map and center the exact place where you want to list it.');
       }
     }catch(e){}
+  }
+  function closeRing(){ ring.classList.remove('on'); ring.innerHTML = ''; }
+  function openRing(){
+    closeRing();
+    var center = ringCenter(), radius = Math.min(170, Math.max(116, window.innerWidth * 0.12));
+    var items = [
+      { key:'product', label:'List product', sub:'shop, menu, market', angle:-90, action:function(){
+          if(!precisePointReady()){ askForZoom(); return; }
+          currentMapPoint();
+          if(typeof window.openShopForm === 'function') window.openShopForm();
+          var cat = byId('sf-cat'); if(cat) cat.value = 'Shop / Retail';
+          setStatus('Choose the product or shop details.');
+        } },
+      { key:'service', label:'List service', sub:'hotel, rent-a-car, diving', angle:-18, action:function(){
+          if(!precisePointReady()){ askForZoom(); return; }
+          currentMapPoint();
+          if(typeof window.openShopForm === 'function') window.openShopForm();
+          var cat = byId('sf-cat'); if(cat) cat.value = 'Services';
+          setStatus('Choose the service details.');
+        } },
+      { key:'delivery', label:'Delivery location', sub:'save my address', angle:54, action:function(){
+          if(!precisePointReady()){ askForZoom(); return; }
+          currentMapPoint();
+          if(typeof window.openDeliveryForm === 'function') window.openDeliveryForm();
+          setStatus('Set the private delivery location details.');
+        } },
+      { key:'driver', label:'Driver base', sub:'mark a delivery base', angle:126, action:function(){
+          if(!precisePointReady()){ askForZoom(); return; }
+          var p = currentMapPoint(); if(!p) return askForZoom();
+          if(typeof window.getLocalPlaces !== 'function' || typeof window.setLocalPlaces !== 'function') return;
+          var list = window.getLocalPlaces() || [];
+          list.unshift({
+            id: (typeof window.uid === 'function' ? window.uid('driver-base') : ('driver-base-' + Date.now())),
+            kind:'driver_base',
+            lat:Number(p.lat), lng:Number(p.lng), lon:Number(p.lng),
+            owner_id: window.CU ? window.CU.id : 'guest',
+            name: (window.CU && window.CU.name) ? window.CU.name : 'Driver',
+            title: ((window.CU && window.CU.name) ? window.CU.name : 'Driver') + ' base',
+            vehicle_type:'Motorcycle',
+            price_per_km:0.8,
+            created_at:new Date().toISOString()
+          });
+          window.setLocalPlaces(list.slice(0,120));
+          if(typeof window.refreshMapData === 'function') setTimeout(window.refreshMapData, 80);
+          setStatus('Driver base added to the map.');
+        } },
+      { key:'media', label:'Photo or video', sub:'post to this point', angle:198, action:function(){
+          if(!precisePointReady()){ askForZoom(); return; }
+          currentMapPoint();
+          if(typeof window.openPostForm === 'function') window.openPostForm();
+          setStatus('Attach a photo or video to the post.');
+          var media = byId('pf-media'); if(media) setTimeout(function(){ try{ media.focus(); }catch(e){} }, 120);
+        } }
+    ];
+    items.forEach(function(item){
+      var rad = item.angle * Math.PI / 180;
+      var x = center.x + Math.cos(rad) * radius;
+      var y = center.y + Math.sin(rad) * radius;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'clean-add-node';
+      btn.style.left = (x - 59) + 'px';
+      btn.style.top = (y - 59) + 'px';
+      btn.innerHTML = '<strong>' + item.label + '</strong><span>' + item.sub + '</span>';
+      btn.onclick = function(ev){ ev.preventDefault(); ev.stopPropagation(); item.action(); closeRing(); };
+      ring.appendChild(btn);
+    });
+    ring.classList.add('on');
+  }
+  primaryAction.onclick = function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    if(ring.classList.contains('on')) closeRing(); else openRing();
   };
+  window.openPost = function(){ if(ring.classList.contains('on')) closeRing(); else openRing(); };
+  window.handlePrimaryAction = window.openPost;
+
+  // Radar zoom center button
+  function ensureCenterButton(parent, id){
+    var btn = byId(id);
+    if(!btn){
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = id;
+      btn.className = 'clean-hud-center';
+      parent.appendChild(btn);
+    }
+    return btn;
+  }
+  var compass = byId('compass-hud');
+  var perf = byId('perf-hud');
+  if(compass){
+    var radarBtn = ensureCenterButton(compass, 'clean-radar-btn');
+    radarBtn.innerHTML =
+      '<svg class="icon-in" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M7 10l5-5 5 5"/></svg>' +
+      '<svg class="icon-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5"/><path d="M7 14l5 5 5-5"/></svg>';
+    function updateRadarState(){
+      var zoomed = window.CL === 1;
+      radarBtn.classList.toggle('zoomed', zoomed);
+      radarBtn.title = zoomed ? 'Zoom out to globe' : 'Zoom in to my location';
+      radarBtn.setAttribute('aria-label', radarBtn.title);
+    }
+    function waitForMap(cb, tries){
+      if(window.LM){ cb(); return; }
+      if((tries||0) <= 0){ setStatus('Map is loading…'); return; }
+      setTimeout(function(){ waitForMap(cb, (tries||0)-1); }, 220);
+    }
+    function doZoomIn(){
+      function applyLocal(){
+        waitForMap(function(){
+          try{
+            if(window.LM && window.LOC){ window.LM.setView([window.LOC.lat, window.LOC.lng], 16, {animate:true}); }
+          }catch(e){}
+          updateRadarState();
+        }, 18);
+      }
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition(function(pos){
+          window.LOC = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          if(window.CL !== 1 && typeof window.goLayer === 'function') window.goLayer(1);
+          setTimeout(applyLocal, window.CL === 1 ? 20 : 420);
+        }, function(){
+          if(window.CL !== 1 && typeof window.goLayer === 'function') window.goLayer(1);
+          setTimeout(applyLocal, window.CL === 1 ? 20 : 420);
+        }, { enableHighAccuracy:true, timeout:5000, maximumAge:60000 });
+      } else {
+        if(window.CL !== 1 && typeof window.goLayer === 'function') window.goLayer(1);
+        setTimeout(applyLocal, window.CL === 1 ? 20 : 420);
+      }
+    }
+    function doZoomOut(){
+      if(window.CL !== 0 && typeof window.goLayer === 'function') window.goLayer(0);
+      setTimeout(function(){
+        try{ if(window.globeController && typeof window.globeController.resetView === 'function') window.globeController.resetView(); }catch(e){}
+        updateRadarState();
+      }, 340);
+    }
+    radarBtn.onclick = function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      if(window.CL === 1) doZoomOut(); else doZoomIn();
+    };
+    updateRadarState();
+    setInterval(updateRadarState, 900);
+  }
+
+  // Performance load / unload center button
+  if(perf){
+    var grabBtn = ensureCenterButton(perf, 'clean-grab-btn');
+    var loaded = false;
+    try{ loaded = localStorage.getItem('astranov.grab.loaded') === '1'; }catch(e){}
+    grabBtn.innerHTML =
+      '<svg class="state-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="#00e87a" d="M15 7c-4 0-6 2.5-6 5s2 5 6 5"/></svg>' +
+      '<svg class="state-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke="#ff6677" d="M9 7c3 0 6 2.5 6 5s-3 5-6 5"/><circle cx="12" cy="12" r="2.5" fill="#ff4455" stroke="none"/></svg>';
+    function paintGrab(){
+      grabBtn.classList.toggle('loaded', loaded);
+      grabBtn.classList.toggle('unloaded', !loaded);
+      grabBtn.title = loaded ? 'Unload payload' : 'Load payload';
+      grabBtn.setAttribute('aria-label', grabBtn.title);
+    }
+    grabBtn.onclick = function(ev){
+      ev.preventDefault(); ev.stopPropagation();
+      loaded = !loaded;
+      try{ localStorage.setItem('astranov.grab.loaded', loaded ? '1' : '0'); }catch(e){}
+      paintGrab();
+      setStatus(loaded ? 'Payload loaded.' : 'Payload unloaded.');
+    };
+    paintGrab();
+  }
+
+  // Keep old automatic chatter from opening the drawer all the time
+  var addAi = window.addAiMessage;
+  if(typeof addAi === 'function'){
+    window.addAiMessage = function(cls, sender, msg){
+      var out = addAi.apply(this, arguments);
+      if(cls === 'user-msg'){
+        expandChat(true);
+      }
+      return out;
+    };
+  }
+
+  // place helper/status text inside composer, not floating speech
+  try{
+    if(typeof window.closeAstranova === 'function'){
+      window.closeAstranova = function(){ collapseChat(); setStatus('Astranov ready'); };
+    }
+  }catch(e){}
+
+  // initial sync
+  syncChat();
+  setTimeout(syncChat, 400);
+  window.addEventListener('resize', function(){ applyShellRect({ left: shell.getBoundingClientRect().left, top: shell.getBoundingClientRect().top, width: shell.getBoundingClientRect().width, height: shell.getBoundingClientRect().height }); });
 })();
 </script>
 
