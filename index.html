@@ -1079,6 +1079,83 @@ body.lt,body.lt2,body.lt3{
   .perf-stick-knob{width:64px;height:64px;}
 }
 
+
+/* ═══ PATCH: ASTRANOV RACING + DUAL THUMB HUD ═══ */
+#compass-hud,#perf-hud{
+  transition:opacity 0.25s ease,width 0.28s ease,height 0.28s ease,transform 0.28s ease,box-shadow 0.28s ease,background 0.28s ease,border-radius 0.28s ease,left 0.28s ease,right 0.28s ease,top 0.28s ease,bottom 0.28s ease;
+  overflow:hidden;
+}
+#compass-hud.visible{opacity:0.92;}
+#compass-hud.expanded,#perf-hud.expanded{
+  position:fixed;
+  top:auto !important;
+  bottom:74px !important;
+  width:min(45vw,330px);
+  height:min(50vh,430px);
+  padding:12px;
+  border-radius:28px;
+  background:linear-gradient(180deg,rgba(8,18,34,0.94),rgba(6,14,26,0.88));
+  border:1px solid rgba(0,200,255,0.20);
+  box-shadow:0 22px 60px rgba(0,0,0,0.38),0 0 28px rgba(0,200,255,0.18);
+  transform:none !important;
+  z-index:210;
+}
+#compass-hud.expanded{left:18px !important;right:auto !important;}
+#perf-hud.expanded{right:18px !important;left:auto !important;}
+#compass-hud.expanded #compass-svg,
+#perf-hud.expanded #perf-svg{height:176px;max-height:44%;width:100%;}
+body.dual-stick-active #compass-hud,
+body.dual-stick-active #perf-hud{opacity:0.98;}
+.radar-joystick-ui{display:none;flex:1;min-height:0;gap:12px;flex-direction:column;}
+#compass-hud.expanded .radar-joystick-ui{display:flex;}
+.radar-readouts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.radar-readout{padding:8px 10px;border-radius:14px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.14);display:flex;flex-direction:column;gap:4px;}
+.radar-readout span{font-size:10px;letter-spacing:0.08em;color:rgba(216,236,255,0.58);}
+.radar-readout strong{font-size:13px;color:#dff6ff;}
+.radar-stick-pad{position:relative;flex:1;min-height:180px;border-radius:26px;background:radial-gradient(circle at center,rgba(0,200,255,0.10),rgba(0,200,255,0.03) 48%,rgba(255,255,255,0.02) 70%);border:1px solid rgba(0,200,255,0.14);overflow:hidden;touch-action:none;}
+.radar-stick-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.05) 1px,transparent 1px);background-size:32px 32px;opacity:0.25;}
+.radar-stick-pad::before,.radar-stick-pad::after{content:"";position:absolute;background:rgba(0,200,255,0.18);}
+.radar-stick-pad::before{left:50%;top:12px;bottom:12px;width:1px;transform:translateX(-50%);}
+.radar-stick-pad::after{top:50%;left:12px;right:12px;height:1px;transform:translateY(-50%);}
+.radar-stick-knob{position:absolute;left:50%;top:50%;width:72px;height:72px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.92),rgba(0,200,255,0.76) 35%,rgba(0,90,160,0.78) 80%);box-shadow:0 0 24px rgba(0,200,255,0.30), inset 0 0 14px rgba(255,255,255,0.24);border:1px solid rgba(255,255,255,0.20);pointer-events:none;}
+.radar-stick-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:112px;height:38px;border-radius:999px;border:1px solid rgba(0,200,255,0.20);background:rgba(5,12,22,0.84);color:#dff6ff;font-family:var(--fhud);font-size:10px;letter-spacing:0.10em;cursor:pointer;z-index:2;}
+.radar-stick-center.active{border-color:rgba(0,232,122,0.30);color:#00e87a;box-shadow:0 0 14px rgba(0,232,122,0.16);}
+.radar-joy-status{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:11px;line-height:1.45;color:#d8ecff;}
+.racing-shell{display:flex;flex-direction:column;gap:12px;}
+.racing-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:18px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.12);}
+.racing-eyebrow{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(216,236,255,0.58);margin-bottom:4px;}
+.racing-head h3{margin:0;font-size:20px;color:#f2fbff;}
+.racing-head p{margin:6px 0 0;font-size:12px;line-height:1.45;color:#c8efff;max-width:620px;}
+.racing-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+.racing-badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#d8ecff;}
+.racing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.racing-card{padding:14px;border-radius:18px;background:rgba(0,0,0,0.18);border:1px solid rgba(0,200,255,0.10);display:flex;flex-direction:column;gap:10px;}
+.racing-card-title{font-size:13px;font-weight:700;color:#f2fbff;letter-spacing:0.03em;}
+.racing-list{display:flex;flex-direction:column;gap:8px;}
+.racing-list.compact .racing-item{padding:10px 12px;}
+.racing-item{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);}
+.racing-item strong{display:block;font-size:12px;color:#f2fbff;margin-bottom:3px;}
+.racing-item span{display:block;font-size:11px;color:#c8efff;line-height:1.45;}
+.racing-kv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.racing-kv{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:4px;}
+.racing-kv span{font-size:10px;letter-spacing:0.08em;color:rgba(216,236,255,0.58);}
+.racing-kv strong{font-size:12px;color:#f2fbff;word-break:break-word;}
+.racing-upload-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.racing-upload-btn,.racing-action-btn{height:38px;border-radius:12px;border:1px solid rgba(0,200,255,0.16);background:rgba(0,200,255,0.08);color:#dff6ff;font-family:var(--fhud);font-size:10px;letter-spacing:0.10em;cursor:pointer;display:flex;align-items:center;justify-content:center;text-transform:uppercase;}
+.racing-upload-btn:hover,.racing-action-btn:hover{border-color:rgba(0,232,122,0.30);color:#00e87a;}
+.racing-actions{display:grid;grid-template-columns:1fr;gap:8px;}
+.racing-note{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);font-size:11px;line-height:1.45;color:#d8ecff;}
+@media(max-width:900px){
+  #compass-hud.expanded,#perf-hud.expanded{width:min(47vw,320px);height:min(48vh,410px);}
+  .racing-grid{grid-template-columns:1fr;}
+}
+@media(max-width:680px){
+  #compass-hud.expanded,#perf-hud.expanded{width:calc(50vw - 14px);height:min(44vh,380px);bottom:68px !important;padding:10px;}
+  #compass-hud.expanded #compass-svg,#perf-hud.expanded #perf-svg{height:140px;max-height:40%;}
+  .perf-drone-readouts,.radar-readouts,.racing-kv-grid,.racing-upload-row{grid-template-columns:1fr;}
+  .radar-stick-knob,.perf-stick-knob{width:62px;height:62px;}
+}
+
 </style>
 </head>
 <body class="lt">
@@ -1318,6 +1395,21 @@ body.lt,body.lt2,body.lt3{
       <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
       <text x="54" y="93" class="compass-heading-label">HDG</text>
     </svg>
+
+    <div class="radar-joystick-ui" id="radar-joystick-ui">
+      <div class="radar-readouts">
+        <div class="radar-readout"><span>VIEW</span><strong id="radar-view-state">MAP</strong></div>
+        <div class="radar-readout"><span>ZOOM</span><strong id="radar-zoom-state">--</strong></div>
+        <div class="radar-readout"><span>MODE</span><strong id="radar-mode-state">SCAN</strong></div>
+      </div>
+      <div class="radar-stick-pad" id="radar-stick-pad" aria-label="Radar location joystick">
+        <div class="radar-stick-grid"></div>
+        <div class="radar-stick-knob" id="radar-stick-knob"></div>
+        <button class="radar-stick-center" id="radar-center-toggle" type="button">ZOOM TO ME</button>
+      </div>
+      <div class="radar-joy-status" id="radar-joy-status">Radar joystick follows the paired thumb view. Tap either joystick and both open together.</div>
+    </div>
+
   </div>
 
   <!-- Layer dots -->
@@ -1739,7 +1831,7 @@ body.lt,body.lt2,body.lt3{
   <div id="chat-channel-bar">
     <span id="chat-channel-label">Channel</span>
     <select id="chat-channel-select" onchange="switchChatChannel(this.value)">
-      <option value="ai" selected>🤖 Astranov C.I.</option>
+      <option value="ai" selected>🤖 Astranov Collective Intelligence</option>
       <option value="global">🌍 Global</option>
       <optgroup label="📍 Local" id="local-channels-group">
         <option value="local">📍 My Area</option>
@@ -1747,6 +1839,7 @@ body.lt,body.lt2,body.lt3{
       <optgroup label="👥 Teams" id="team-channels-group">
         <option value="team">👥 General Team</option>
       </optgroup>
+      <option value="astranov-racing">🏁 Astranov Racing</option>
       <option value="support">💬 Support & Ideas</option>
     </select>
     <button onclick="promptNewTeam()" title="Suggest new team channel" style="width:26px;height:26px;border:1px solid rgba(0,200,255,0.15);border-radius:6px;background:rgba(0,200,255,0.06);color:#00c8ff;cursor:pointer;font-size:14px;font-weight:700;line-height:1;flex-shrink:0;">+</button>
@@ -1828,6 +1921,56 @@ body.lt,body.lt2,body.lt3{
       </details>
     </div>
   </div>
+  <div id="racing-panel" style="display:none;flex:1;overflow-y:auto;padding:10px 12px;flex-direction:column;gap:10px;">
+    <div class="racing-shell">
+      <div class="racing-head">
+        <div>
+          <div class="racing-eyebrow">Astranov Internet Operating System</div>
+          <h3>Astranov Racing</h3>
+          <p>Workshop intelligence channel for connected vehicles, read-only ECU map review, diagnostics, work orders, and mechanic coordination.</p>
+        </div>
+        <div class="racing-badges">
+          <span class="racing-badge" id="racing-alert-badge">0 alerts</span>
+          <span class="racing-badge">read-only ECU dock</span>
+          <span class="racing-badge">mechanic mode</span>
+        </div>
+      </div>
+      <div class="racing-grid">
+        <section class="racing-card">
+          <div class="racing-card-title">Connected vehicle alerts</div>
+          <div id="racing-alert-list" class="racing-list"></div>
+        </section>
+        <section class="racing-card">
+          <div class="racing-card-title">ECU dock</div>
+          <div class="racing-kv-grid">
+            <div class="racing-kv"><span>VIN</span><strong id="racing-vin">—</strong></div>
+            <div class="racing-kv"><span>ECU</span><strong id="racing-ecu">—</strong></div>
+            <div class="racing-kv"><span>HW</span><strong id="racing-hw">—</strong></div>
+            <div class="racing-kv"><span>SW</span><strong id="racing-sw">—</strong></div>
+          </div>
+          <div class="racing-upload-row">
+            <label class="racing-upload-btn">Upload BIN<input type="file" id="racing-bin-input" accept=".bin,.hex,.rom,.ori" hidden></label>
+            <label class="racing-upload-btn">Upload XDF<input type="file" id="racing-xdf-input" accept=".xdf,.xml,.txt" hidden></label>
+          </div>
+          <div id="racing-upload-status" class="racing-note">No ECU files loaded yet. This channel stays read-only inside the main app.</div>
+        </section>
+        <section class="racing-card">
+          <div class="racing-card-title">Mechanic activity</div>
+          <div id="racing-activity-list" class="racing-list compact"></div>
+        </section>
+        <section class="racing-card">
+          <div class="racing-card-title">Quick actions</div>
+          <div class="racing-actions">
+            <button class="racing-action-btn" type="button" onclick="seedAstranovRacingAlert()">Simulate alert</button>
+            <button class="racing-action-btn" type="button" onclick="racingRouteCameraToMain()">Route drone camera</button>
+            <button class="racing-action-btn" type="button" onclick="racingCreateWorkOrder()">Create work order</button>
+          </div>
+          <div class="racing-note">Authorized mechanics can coordinate here, review diagnostics, and prepare handoff packages. ECU write / flash stays outside this in-app panel.</div>
+        </section>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -2598,8 +2741,7 @@ function initGadgetCycle(elId){
 
 // Initialize both gadgets
 setTimeout(function(){
-  initGadgetCycle('compass-hud');
-  // perf-hud now uses dedicated joystick behavior
+  // compass-hud + perf-hud now use the dedicated dual-thumb joystick behavior
 }, 500);
 
 function setGuestState() {
@@ -5599,6 +5741,10 @@ function sendCmd(){
     }
     return;
   }
+  if(typeof CHAT_CHANNEL !== 'undefined' && CHAT_CHANNEL === 'astranov-racing'){
+    if(typeof racingPostMessage === 'function') racingPostMessage(val, CU ? CU.name : 'You');
+    return;
+  }
   if(typeof CHAT_CHANNEL !== 'undefined' && CHAT_CHANNEL !== 'ai'){
     addAiMessage('system-msg', CHAT_CHANNEL.toUpperCase(), 'Message posted to ' + CHAT_CHANNEL + ' channel.');
     try{
@@ -5981,7 +6127,7 @@ async function ciCollectiveQuery(question, context){
   var responses = [];
   var keys = typeof getDevAIKeys === 'function' ? getDevAIKeys() : {};
   try{
-    var r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:context||'You are Astranov C.I. Be concise.',messages:[{role:'user',content:question}]})});
+    var r = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:context||'You are Astranov Collective Intelligence. Be concise.',messages:[{role:'user',content:question}]})});
     if(r.ok){ var d=await r.json(); var t=d.content?d.content.map(function(c){return c.text||'';}).filter(Boolean).join('\n'):''; if(t) responses.push({source:'Claude',text:t}); }
   }catch(e){}
   if(keys.openai){
@@ -6569,7 +6715,7 @@ Top and side rails stay transparent and non-blocking.
 Keep data visible and controls accessible without covering the globe.
 No startup version splash drawer.
 Chat drawer retracts from drag anywhere on the drawer.
-Performance gadget expands into a real joystick panel.
+Paired radar + performance gadgets expand together as dual thumb joysticks. Astranov Racing opens from the chat channel dropdown.
 
 AI RULE
 Astranov is the in-app systems operator.
@@ -6605,7 +6751,7 @@ Keep globe visible. Keep data accessible.
 Do not let decorative chrome overpower content.
 Delete startup version splash drawer.
 Chat drawer must be retractable by dragging from anywhere on the drawer, not only a header strip.
-Performance gadget expands on tap into a real joystick panel with drone link, camera toggle, telemetry, and load/unload center button.
+Radar and performance gadgets must expand together as dual thumb joysticks, one for each thumb. Radar center button toggles zoom-to-my-location in and out. Performance joystick includes drone link, camera toggle, telemetry, and center load/unload button. Add Astranov Racing as a dedicated chat channel module. Rename Astranov C.I. channel to Astranov Collective Intelligence.
 
 OWNER WORKSHOP [LOCKED]
 Provide hidden owner-only workshop inside app.
@@ -6936,17 +7082,118 @@ Keep rails and ribbons transparent. Keep controls readable.
     if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 100);
   };
 
+
+  function getAstranovRacingState(){
+    return safeJsonGet('astranov.racing.state.v1', {
+      alerts: [
+        { title:'Vehicle offline ping', body:'Demo vehicle has not reported in for 14 minutes.', time:new Date().toISOString() },
+        { title:'Battery voltage anomaly', body:'Connected unit flagged low voltage under load.', time:new Date().toISOString() }
+      ],
+      activity: [
+        { title:'Mechanic mode online', body:'Astranov Racing channel mounted inside chat drawer.' },
+        { title:'ECU dock ready', body:'BIN / XDF upload stays read-only in the in-app panel.' }
+      ],
+      ecu: { vin:'W0L0DEMOASTRANOV1', ecu:'BOSCH ME7 demo', hw:'HW-01', sw:'SW-01' }
+    });
+  }
+  function setAstranovRacingState(state){ safeJsonSet('astranov.racing.state.v1', state); }
+  function renderAstranovRacingPanel(){
+    var state = getAstranovRacingState();
+    var alertList = document.getElementById('racing-alert-list');
+    var activityList = document.getElementById('racing-activity-list');
+    var badge = document.getElementById('racing-alert-badge');
+    var vin = document.getElementById('racing-vin');
+    var ecu = document.getElementById('racing-ecu');
+    var hw = document.getElementById('racing-hw');
+    var sw = document.getElementById('racing-sw');
+    if(badge) badge.textContent = (state.alerts || []).length + ' alerts';
+    if(vin) vin.textContent = state.ecu?.vin || '—';
+    if(ecu) ecu.textContent = state.ecu?.ecu || '—';
+    if(hw) hw.textContent = state.ecu?.hw || '—';
+    if(sw) sw.textContent = state.ecu?.sw || '—';
+    if(alertList){
+      alertList.innerHTML = '';
+      (state.alerts || []).slice(0,6).forEach(function(item){
+        var div = document.createElement('div');
+        div.className = 'racing-item';
+        div.innerHTML = '<strong>' + item.title + '</strong><span>' + item.body + '</span>';
+        alertList.appendChild(div);
+      });
+    }
+    if(activityList){
+      activityList.innerHTML = '';
+      (state.activity || []).slice(0,8).forEach(function(item){
+        var div = document.createElement('div');
+        div.className = 'racing-item';
+        div.innerHTML = '<strong>' + item.title + '</strong><span>' + item.body + '</span>';
+        activityList.appendChild(div);
+      });
+    }
+  }
+  window.seedAstranovRacingAlert = function(){
+    var state = getAstranovRacingState();
+    state.alerts.unshift({ title:'New connected vehicle fault', body:'Knock / lambda / sensor mismatch alert queued for review.', time:new Date().toISOString() });
+    state.activity.unshift({ title:'Alert injected', body:'Demo fault packet added to Astranov Racing.' });
+    setAstranovRacingState(state);
+    renderAstranovRacingPanel();
+  };
+  window.racingCreateWorkOrder = function(){
+    var state = getAstranovRacingState();
+    state.activity.unshift({ title:'Work order opened', body:'Mechanic task created for diagnostic triage and ECU review.' });
+    setAstranovRacingState(state);
+    renderAstranovRacingPanel();
+  };
+  window.racingRouteCameraToMain = function(){
+    var state = getAstranovRacingState();
+    state.activity.unshift({ title:'Main screen camera hook', body:'Drone camera route flagged for the main display surface.' });
+    setAstranovRacingState(state);
+    renderAstranovRacingPanel();
+  };
+  window.racingPostMessage = function(message, author){
+    var state = getAstranovRacingState();
+    state.activity.unshift({ title:(author || 'User') + ' message', body:message });
+    setAstranovRacingState(state);
+    renderAstranovRacingPanel();
+  };
+  function initAstranovRacingPanel(){
+    renderAstranovRacingPanel();
+    ['racing-bin-input','racing-xdf-input'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el || el._astranovBound) return;
+      el._astranovBound = true;
+      el.addEventListener('change', function(){
+        var file = el.files && el.files[0];
+        if(!file) return;
+        var state = getAstranovRacingState();
+        var status = document.getElementById('racing-upload-status');
+        if(id === 'racing-bin-input'){
+          state.activity.unshift({ title:'BIN loaded', body:file.name + ' attached to the read-only ECU dock.' });
+        } else {
+          state.activity.unshift({ title:'Descriptor loaded', body:file.name + ' attached to the read-only ECU dock.' });
+        }
+        setAstranovRacingState(state);
+        renderAstranovRacingPanel();
+        if(status) status.textContent = file.name + ' received. Dock remains read-only inside Astranov.';
+      });
+    });
+  }
+
+
   /* ═══ CHAT CHANNEL SWITCHING ═══ */
   var CHAT_CHANNEL = 'ai'; // ai, global, local, team
-  var CHAT_HISTORIES = { ai:[], global:[], local:[], team:[] };
+  var CHAT_HISTORIES = { ai:[], global:[], local:[], team:[], support:[], 'astranov-racing':[] };
 
   window.switchChatChannel = function(ch){
     var conv = document.getElementById("ai-conv");
     var supportPanel = document.getElementById("support-panel");
+    var racingPanel = document.getElementById("racing-panel");
     if(conv) CHAT_HISTORIES[CHAT_CHANNEL] = conv.innerHTML;
     CHAT_CHANNEL = ch;
+    if(conv) conv.style.display = "none";
+    if(supportPanel) supportPanel.style.display = "none";
+    if(racingPanel) racingPanel.style.display = "none";
+
     if(ch === "support"){
-      if(conv) conv.style.display = "none";
       if(supportPanel) supportPanel.style.display = "flex";
       var ownerLayer = document.getElementById("owner-dev-layer");
       if(ownerLayer) ownerLayer.style.display = (CU && isOwner(CU)) ? "block" : "none";
@@ -6954,15 +7201,19 @@ Keep rails and ribbons transparent. Keep controls readable.
       renderActiveVotes(); renderAnnouncements();
       var resp = document.getElementById("cmd-response");
       if(resp){ resp.className = "expanded"; resp.style.display = "flex"; resp.style.maxHeight = "80vh"; }
+    } else if(ch === "astranov-racing"){
+      if(racingPanel) racingPanel.style.display = "flex";
+      initAstranovRacingPanel();
+      var resp = document.getElementById("cmd-response");
+      if(resp){ resp.className = "expanded"; resp.style.display = "flex"; }
     } else {
-      if(supportPanel) supportPanel.style.display = "none";
       if(conv){ conv.style.display = "flex"; conv.innerHTML = CHAT_HISTORIES[ch] || ""; }
     }
     var label = document.getElementById("chat-channel-label");
-    var labels = {ai:"AI Agent",global:"Global",local:"Local",team:"Teams",support:"Support & Ideas"};
+    var labels = {ai:"AI Agent",global:"Global",local:"Local",team:"Teams",support:"Support & Ideas","astranov-racing":"Astranov Racing"};
     if(label) label.textContent = labels[ch] || "Channel";
     if(["global","local","team"].indexOf(ch) >= 0) setChannel(ch);
-    if(conv && ch !== "support") conv.scrollTop = conv.scrollHeight;
+    if(conv && ch !== "support" && ch !== "astranov-racing") conv.scrollTop = conv.scrollHeight;
   };
 
   /* Dev channel message functions */
@@ -7520,7 +7771,7 @@ Keep rails and ribbons transparent. Keep controls readable.
       // Auto-mute after 3 violations
       var muted = getMuted();
       if(!muted.some(function(m){ return m.id === userName; })){
-        muted.push({id:userName, name:userName, until:new Date(Date.now()+24*3600000).toISOString(), by:'Astranov C.I.'});
+        muted.push({id:userName, name:userName, until:new Date(Date.now()+24*3600000).toISOString(), by:'Astranov Collective Intelligence'});
         setMuted(muted);
         addAiMessage('system-msg','System','⚠️ '+userName+' auto-muted for 24h (repeated conduct violations). Owner notified.');
         try{ if(sb) sb.from('signals').insert([{type:'auto_moderation',content:'auto-muted:'+userName,user_name:userName}]); }catch(e){}
@@ -9046,7 +9297,7 @@ Keep rails and ribbons transparent. Keep controls readable.
         lane:'public',
         provider:'auto',
         messages:[
-          { role:'system', content: context || 'You are Astranov C.I. Be concise.' },
+          { role:'system', content: context || 'You are Astranov Collective Intelligence. Be concise.' },
           { role:'user', content: question }
         ],
         metadata:{ source:'collective-intelligence' }
@@ -9260,49 +9511,19 @@ Keep rails and ribbons transparent. Keep controls readable.
     window.addEventListener('pointercancel', endDrawerDrag);
   }
 
-  /* Performance joystick: tap to expand, then operate as a real joystick */
+  /* Dual thumb joysticks: radar + performance open together and follow common view rules */
   var perf = document.getElementById('perf-hud');
-  if(perf){
-    var expanded = false;
-    var moveable = false;
-    var pressTimer = null;
-    var perfMoved = false;
+  var compass = document.getElementById('compass-hud');
 
-    function setPerfExpanded(on){
-      expanded = !!on;
-      perf.classList.add('visible');
-      perf.classList.toggle('expanded', expanded);
-      if(!expanded){
-        perf.style.width = '';
-        perf.style.height = '';
-      }
-    }
-
-    perf.addEventListener('click', function(ev){
-      if(perfMoved) return;
-      if(ev.target.closest('#perf-stick-pad,#perf-load-toggle,#perf-drone-link,#perf-camera-toggle')) return;
-      setPerfExpanded(!expanded);
-    });
-
-    perf.addEventListener('mousedown', function(){
-      pressTimer = setTimeout(function(){
-        moveable = !moveable;
-        perf.classList.toggle('moveable', moveable);
-      }, 3000);
-    });
-    perf.addEventListener('touchstart', function(){
-      pressTimer = setTimeout(function(){
-        moveable = !moveable;
-        perf.classList.toggle('moveable', moveable);
-      }, 3000);
-    }, {passive:true});
-    ['mouseup','mouseleave','touchend','touchcancel'].forEach(function(evt){
-      perf.addEventListener(evt, function(){ if(pressTimer) clearTimeout(pressTimer); });
-    });
-
+  if(perf && compass){
+    var dualExpanded = false;
     var linked = false;
     var cameraOn = false;
     var loaded = false;
+    var radarHomeZoomed = false;
+    var perfMoved = false;
+    var radarMoved = false;
+
     var pad = document.getElementById('perf-stick-pad');
     var knob = document.getElementById('perf-stick-knob');
     var status = document.getElementById('perf-joy-status');
@@ -9313,52 +9534,125 @@ Keep rails and ribbons transparent. Keep controls readable.
     var bat = document.getElementById('perf-joy-battery');
     var speed = document.getElementById('perf-joy-speed');
     var alt = document.getElementById('perf-joy-altitude');
-    var joy = {x:0,y:0,drag:false,pid:null};
+
+    var radarPad = document.getElementById('radar-stick-pad');
+    var radarKnob = document.getElementById('radar-stick-knob');
+    var radarStatus = document.getElementById('radar-joy-status');
+    var radarCenter = document.getElementById('radar-center-toggle');
+    var radarViewState = document.getElementById('radar-view-state');
+    var radarZoomState = document.getElementById('radar-zoom-state');
+    var radarModeState = document.getElementById('radar-mode-state');
+
+    var perfJoy = {x:0,y:0,drag:false,pid:null};
+    var radarJoy = {x:0,y:0,drag:false,pid:null};
+
+    function setDualExpanded(on){
+      dualExpanded = !!on;
+      document.body.classList.toggle('dual-stick-active', dualExpanded);
+      [perf, compass].forEach(function(el){
+        el.classList.add('visible');
+        el.classList.toggle('expanded', dualExpanded);
+      });
+      if(!dualExpanded){
+        perfMoved = false;
+        radarMoved = false;
+      }
+    }
+
+    function syncRadarReadout(){
+      if(radarViewState) radarViewState.textContent = (CL === 1 ? 'MAP' : 'GLOBE');
+      if(radarZoomState){
+        var z = (LM && typeof LM.getZoom === 'function') ? LM.getZoom().toFixed(1) : (window.globeController && globeController.getZoom ? globeController.getZoom().toFixed(1) : '--');
+        radarZoomState.textContent = z;
+      }
+      if(radarModeState) radarModeState.textContent = radarHomeZoomed ? 'HOME' : 'SCAN';
+    }
 
     function updateTelemetry(){
-      var mag = Math.sqrt(joy.x*joy.x + joy.y*joy.y);
+      var mag = Math.sqrt(perfJoy.x*perfJoy.x + perfJoy.y*perfJoy.y);
       var spd = linked ? Math.round(mag * 42) : 0;
-      var altitude = linked ? Math.max(0, Math.round((-joy.y + 1) * 18)) : 0;
+      var altitude = linked ? Math.max(0, Math.round((-perfJoy.y + 1) * 18)) : 0;
       var battery = linked ? Math.max(18, 100 - Math.round(mag * 28) - (cameraOn ? 6 : 0) - (loaded ? 8 : 0)) : '--';
       if(linkState) linkState.textContent = linked ? 'LINKED' : 'STANDBY';
       if(bat) bat.textContent = linked ? battery + '%' : '--%';
       if(speed) speed.textContent = spd + ' km/h';
       if(alt) alt.textContent = altitude + ' m';
     }
-    function resetKnob(){
-      joy.x = 0; joy.y = 0;
+
+    function resetPerfKnob(){
+      perfJoy.x = 0; perfJoy.y = 0;
       if(knob) knob.style.transform = 'translate(-50%,-50%)';
       updateTelemetry();
     }
-    function setStatus(msg){ if(status) status.textContent = msg; }
+
+    function resetRadarKnob(){
+      radarJoy.x = 0; radarJoy.y = 0;
+      if(radarKnob) radarKnob.style.transform = 'translate(-50%,-50%)';
+      syncRadarReadout();
+    }
+
+    function setPerfStatus(msg){ if(status) status.textContent = msg; }
+    function setRadarStatus(msg){ if(radarStatus) radarStatus.textContent = msg; }
+
+    function toggleRadarHome(){
+      if(CL !== 1 || !LM) return;
+      var home = [LOC.lat || 36.4441, LOC.lng || 28.2245];
+      if(!radarHomeZoomed){
+        LM.setView(home, Math.max(16, LM.getZoom ? LM.getZoom() : 16), { animate:true });
+      } else {
+        LM.setView(home, 13, { animate:true });
+      }
+      radarHomeZoomed = !radarHomeZoomed;
+      if(radarCenter){
+        radarCenter.textContent = radarHomeZoomed ? 'MAP VIEW' : 'ZOOM TO ME';
+        radarCenter.classList.toggle('active', radarHomeZoomed);
+      }
+      syncRadarReadout();
+      setRadarStatus(radarHomeZoomed ? 'Centered and zoomed to your location.' : 'Returned to broader map view around your location.');
+    }
 
     if(linkBtn) linkBtn.addEventListener('click', function(ev){
       ev.stopPropagation();
       linked = !linked;
       linkBtn.classList.toggle('active', linked);
       linkBtn.textContent = linked ? 'DRONE LINKED' : 'LINK DRONE';
-      setStatus(linked ? 'Drone link locked. Expand the joystick pad and drag to simulate control, payload, and camera state.' : 'Drone link released. Telemetry is back in standby.');
+      setPerfStatus(linked ? 'Drone link locked. Both thumb joysticks are now live.' : 'Drone link released. Telemetry is back in standby.');
       updateTelemetry();
     });
+
     if(camBtn) camBtn.addEventListener('click', function(ev){
       ev.stopPropagation();
       cameraOn = !cameraOn;
       camBtn.classList.toggle('active', cameraOn);
       camBtn.textContent = cameraOn ? 'CAMERA ON' : 'CAMERA OFF';
-      setStatus(cameraOn ? 'Drone camera routed to the main screen hook. Connect the live feed source when the drone backend is ready.' : 'Drone camera view disengaged from the main screen hook.');
+      setPerfStatus(cameraOn ? 'Drone camera routed to the main screen hook.' : 'Drone camera view disengaged from the main screen hook.');
       updateTelemetry();
     });
+
     if(loadBtn) loadBtn.addEventListener('click', function(ev){
       ev.stopPropagation();
       loaded = !loaded;
       loadBtn.classList.toggle('is-loaded', loaded);
       loadBtn.textContent = loaded ? 'UNLOAD' : 'LOAD';
-      setStatus(loaded ? 'Payload secured. Center button is now armed for unload.' : 'Payload released. Center button is ready to load again.');
+      setPerfStatus(loaded ? 'Payload secured. Center button is now armed for unload.' : 'Payload released. Center button is ready to load again.');
       updateTelemetry();
     });
 
+    if(radarCenter) radarCenter.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      toggleRadarHome();
+    });
+
+    [perf, compass].forEach(function(el){
+      el.addEventListener('click', function(ev){
+        if(ev.target.closest('#perf-stick-pad,#perf-load-toggle,#perf-drone-link,#perf-camera-toggle,#radar-stick-pad,#radar-center-toggle')) return;
+        if(perfMoved || radarMoved) return;
+        setDualExpanded(!dualExpanded);
+      });
+    });
+
     if(pad){
-      function moveStick(clientX, clientY){
+      function movePerfStick(clientX, clientY){
         var rect = pad.getBoundingClientRect();
         var cx = rect.left + rect.width / 2;
         var cy = rect.top + rect.height / 2;
@@ -9367,40 +9661,82 @@ Keep rails and ribbons transparent. Keep controls readable.
         var radius = Math.min(rect.width, rect.height) * 0.32;
         var dist = Math.sqrt(dx*dx + dy*dy) || 1;
         if(dist > radius){ dx = dx / dist * radius; dy = dy / dist * radius; }
-        joy.x = +(dx / radius).toFixed(2);
-        joy.y = +(dy / radius).toFixed(2);
+        perfJoy.x = +(dx / radius).toFixed(2);
+        perfJoy.y = +(dy / radius).toFixed(2);
         if(knob) knob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
         updateTelemetry();
-        setStatus(linked ? ('Joystick live · X ' + joy.x.toFixed(2) + ' · Y ' + joy.y.toFixed(2) + ' · ' + (loaded ? 'payload onboard' : 'payload clear')) : 'Link a drone first, then drag the joystick.');
+        setPerfStatus(linked ? ('Right thumb live · X ' + perfJoy.x.toFixed(2) + ' · Y ' + perfJoy.y.toFixed(2) + ' · ' + (loaded ? 'payload onboard' : 'payload clear')) : 'Link a drone first, then drag the right thumb joystick.');
       }
       pad.addEventListener('pointerdown', function(ev){
         ev.stopPropagation();
-        if(!expanded) setPerfExpanded(true);
-        joy.drag = true; joy.pid = ev.pointerId; perfMoved = false;
-        moveStick(ev.clientX, ev.clientY);
+        if(!dualExpanded) setDualExpanded(true);
+        perfJoy.drag = true; perfJoy.pid = ev.pointerId; perfMoved = false;
+        movePerfStick(ev.clientX, ev.clientY);
       });
       window.addEventListener('pointermove', function(ev){
-        if(!joy.drag || ev.pointerId !== joy.pid) return;
+        if(!perfJoy.drag || ev.pointerId !== perfJoy.pid) return;
         perfMoved = true;
-        moveStick(ev.clientX, ev.clientY);
+        movePerfStick(ev.clientX, ev.clientY);
       });
-      function endStick(ev){
-        if(!joy.drag || (ev.pointerId !== undefined && ev.pointerId !== joy.pid)) return;
-        joy.drag = false; joy.pid = null;
-        resetKnob();
+      function endPerfStick(ev){
+        if(!perfJoy.drag || (ev.pointerId !== undefined && ev.pointerId !== perfJoy.pid)) return;
+        perfJoy.drag = false; perfJoy.pid = null;
+        resetPerfKnob();
       }
-      window.addEventListener('pointerup', endStick);
-      window.addEventListener('pointercancel', endStick);
+      window.addEventListener('pointerup', endPerfStick);
+      window.addEventListener('pointercancel', endPerfStick);
+    }
+
+    if(radarPad){
+      function moveRadarStick(clientX, clientY){
+        var rect = radarPad.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = clientX - cx;
+        var dy = clientY - cy;
+        var radius = Math.min(rect.width, rect.height) * 0.32;
+        var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+        if(dist > radius){ dx = dx / dist * radius; dy = dy / dist * radius; }
+        radarJoy.x = +(dx / radius).toFixed(2);
+        radarJoy.y = +(dy / radius).toFixed(2);
+        if(radarKnob) radarKnob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+        if(CL === 1 && LM && typeof LM.panBy === 'function'){
+          LM.panBy([radarJoy.x * 18, radarJoy.y * 18], { animate:false });
+        }
+        syncRadarReadout();
+        setRadarStatus('Left thumb live · pan X ' + radarJoy.x.toFixed(2) + ' · Y ' + radarJoy.y.toFixed(2) + '. Center button toggles zoom to your location.');
+      }
+      radarPad.addEventListener('pointerdown', function(ev){
+        ev.stopPropagation();
+        if(!dualExpanded) setDualExpanded(true);
+        radarJoy.drag = true; radarJoy.pid = ev.pointerId; radarMoved = false;
+        moveRadarStick(ev.clientX, ev.clientY);
+      });
+      window.addEventListener('pointermove', function(ev){
+        if(!radarJoy.drag || ev.pointerId !== radarJoy.pid) return;
+        radarMoved = true;
+        moveRadarStick(ev.clientX, ev.clientY);
+      });
+      function endRadarStick(ev){
+        if(!radarJoy.drag || (ev.pointerId !== undefined && ev.pointerId !== radarJoy.pid)) return;
+        radarJoy.drag = false; radarJoy.pid = null;
+        resetRadarKnob();
+      }
+      window.addEventListener('pointerup', endRadarStick);
+      window.addEventListener('pointercancel', endRadarStick);
     }
 
     updateTelemetry();
-    setPerfExpanded(false);
+    syncRadarReadout();
+    setPerfStatus('Tap either joystick and both open together. Right thumb controls drone performance.');
+    setRadarStatus('Tap either joystick and both open together. Left thumb controls map scan and home zoom.');
+    setDualExpanded(false);
+    window.addEventListener('resize', function(){ applyChatHeight(window._chatHeight || defaultChatHeight); syncRadarReadout(); });
+  } else {
+    window.addEventListener('resize', function(){ applyChatHeight(window._chatHeight || defaultChatHeight); });
   }
-
-  window.addEventListener('resize', function(){
-    applyChatHeight(window._chatHeight || defaultChatHeight);
-  });
 })();
+
 </script>
 
 </body>
