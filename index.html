@@ -1159,7 +1159,7 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
 
 
 /* === USER PATCH APR 2026: fixed joystick wheels, retract toggle, single plus button === */
-:root{ --thumb-track-y: 92px; --thumb-size: 138px; }
+:root{ --thumb-track-y: 92px; --thumb-size: 138px; --joystick-size: 132px; --joystick-gap: 16px; }
 #left-panel,#right-panel{display:none !important;}
 .smenu.lmenu{left:14px !important;}
 .smenu.rmenu{right:14px !important;}
@@ -1201,7 +1201,41 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
 .hud-arrow{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;transition:transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;}
 .hud-arrow.active{transform:scale(1.14);background:rgba(0,200,255,0.18);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,200,255,0.18);} .hud-arrow.up{top:8px;left:50%;transform:translateX(-50%);} .hud-arrow.right{right:4px;top:50%;transform:translateY(-50%);} .hud-arrow.down{bottom:8px;left:50%;transform:translateX(-50%);} .hud-arrow.left{left:4px;top:50%;transform:translateY(-50%);} .hud-arrow.up.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.right.active{transform:translateY(-50%) scale(1.14);} .hud-arrow.down.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.left.active{transform:translateY(-50%) scale(1.14);} 
 #radar-center-toggle-compact{min-width:82px;}
-@media(max-width:700px){ :root{--thumb-size:124px;--thumb-track-y:84px;} #fab-add{width:56px;height:56px;font-size:30px;} .hud-node{width:48px;} .hud-node.open{width:74px;} }
+.perf-compact-ui,.radar-compact-ui{display:none !important;}
+#thumb-docks{position:fixed;inset:0;z-index:174;pointer-events:none;}
+.thumb-dock{position:fixed;top:calc(var(--thumb-track-y,92px) + var(--thumb-size,138px) + var(--joystick-gap,16px));width:var(--joystick-size,132px);display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:auto;transition:top 0.18s ease,transform 0.18s ease,opacity 0.18s ease;}
+#perf-stick-dock{left:21px;}
+#radar-stick-dock{right:21px;}
+.thumb-telemetry{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+.thumb-telemetry.single{grid-template-columns:1fr;}
+.tele-chip{min-height:36px;padding:7px 8px;border-radius:14px;border:1px solid rgba(0,200,255,0.16);background:rgba(5,12,22,0.88);box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 12px rgba(0,200,255,0.08);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;text-align:center;}
+.tele-chip span{font-size:8px;letter-spacing:0.10em;text-transform:uppercase;color:rgba(216,236,255,0.62);}
+.tele-chip strong{font-size:11px;color:#eff9ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.tele-chip.wide strong{font-size:10px;}
+.stick-dock-pad{position:relative;width:var(--joystick-size,132px);height:var(--joystick-size,132px);border-radius:30px;border:1px solid rgba(0,200,255,0.16);background:radial-gradient(circle at center,rgba(0,200,255,0.12),rgba(0,200,255,0.04) 48%,rgba(255,255,255,0.02) 74%);box-shadow:0 16px 28px rgba(0,0,0,0.26),0 0 20px rgba(0,200,255,0.10);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+.stick-dock-pad::before,.stick-dock-pad::after{content:"";position:absolute;background:rgba(0,200,255,0.14);pointer-events:none;}
+.stick-dock-pad::before{left:50%;top:14px;bottom:14px;width:1px;transform:translateX(-50%);}
+.stick-dock-pad::after{top:50%;left:14px;right:14px;height:1px;transform:translateY(-50%);}
+.stick-btn,.stick-center-btn{position:absolute;border:1px solid rgba(0,200,255,0.18);background:rgba(5,12,22,0.92);color:#eaf8ff;cursor:pointer;box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 12px rgba(0,200,255,0.08);transition:transform 0.12s ease,background 0.12s ease,box-shadow 0.12s ease,filter 0.12s ease;}
+.stick-btn{width:38px;height:38px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;}
+.stick-btn.up{top:10px;left:50%;transform:translateX(-50%);}
+.stick-btn.right{right:8px;top:50%;transform:translateY(-50%);}
+.stick-btn.down{bottom:10px;left:50%;transform:translateX(-50%);}
+.stick-btn.left{left:8px;top:50%;transform:translateY(-50%);}
+.stick-btn.active{background:rgba(0,200,255,0.20);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,200,255,0.18);filter:brightness(1.12);}
+.stick-btn.up.active{transform:translateX(-50%) scale(1.14);}
+.stick-btn.right.active{transform:translateY(-50%) scale(1.14);}
+.stick-btn.down.active{transform:translateX(-50%) scale(1.14);}
+.stick-btn.left.active{transform:translateY(-50%) scale(1.14);}
+.stick-center-btn{left:50%;top:50%;transform:translate(-50%,-50%);min-width:80px;height:38px;padding:0 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;}
+.stick-center-btn.active{background:rgba(0,200,255,0.20);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,200,255,0.18);}
+.stick-center-btn.green.active{background:rgba(0,232,122,0.18);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,232,122,0.18);}
+.stick-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:10px;letter-spacing:0.10em;text-transform:uppercase;color:rgba(216,236,255,0.55);pointer-events:none;}
+.stick-footer{width:100%;display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;}
+.stick-footer-btn{height:30px;min-width:58px;padding:0 10px;border-radius:999px;border:1px solid rgba(0,200,255,0.16);background:rgba(5,12,22,0.92);color:#eaf8ff;cursor:pointer;box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 12px rgba(0,200,255,0.08);font-size:10px;font-weight:700;letter-spacing:0.08em;}
+.stick-footer-btn.active{border-color:rgba(0,232,122,0.34);color:#00e87a;box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 16px rgba(0,232,122,0.16);}
+.stick-foot-note{width:100%;padding:8px 10px;border-radius:14px;border:1px solid rgba(0,200,255,0.14);background:rgba(5,12,22,0.78);color:#d8ecff;font-size:10px;line-height:1.35;text-align:center;box-shadow:0 10px 18px rgba(0,0,0,0.20);}
+@media(max-width:700px){ :root{--thumb-size:124px;--thumb-track-y:84px;--joystick-size:116px;--joystick-gap:12px;} #fab-add{width:56px;height:56px;font-size:30px;} .thumb-dock{gap:8px;} .stick-btn{width:34px;height:34px;font-size:16px;} .stick-center-btn{min-width:72px;height:34px;font-size:10px;} .tele-chip strong{font-size:10px;} }
 
 </style>
 </head>
@@ -1475,6 +1509,44 @@ body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
       <div class="radar-joy-status" id="radar-joy-status">Radar joystick follows the paired thumb view. Tap either joystick and both open together.</div>
     </div>
 
+  </div>
+
+  <div id="thumb-docks">
+    <div class="thumb-dock" id="perf-stick-dock">
+      <div class="thumb-telemetry" id="perf-telemetry">
+        <div class="tele-chip"><span>Signal</span><strong id="perf-tele-signal">STBY</strong></div>
+        <div class="tele-chip"><span>Battery</span><strong id="perf-tele-battery">--%</strong></div>
+        <div class="tele-chip"><span>RAM</span><strong id="perf-tele-ram">--</strong></div>
+        <div class="tele-chip"><span>Storage</span><strong id="perf-tele-storage">--</strong></div>
+      </div>
+      <div class="stick-dock-pad" id="perf-camera-pad" aria-label="Camera joystick">
+        <button class="stick-btn up" id="perf-cam-up" type="button">▲</button>
+        <button class="stick-btn right" id="perf-cam-right" type="button">▶</button>
+        <button class="stick-btn down" id="perf-cam-down" type="button">▼</button>
+        <button class="stick-btn left" id="perf-cam-left" type="button">◀</button>
+        <div class="stick-label">CAMERA</div>
+      </div>
+      <div class="stick-footer">
+        <button class="stick-footer-btn" id="perf-load-toggle-dock" type="button">LOAD</button>
+        <button class="stick-footer-btn" id="perf-camera-toggle-dock" type="button">CAM OFF</button>
+        <div class="stick-foot-note" id="perf-cam-note">Camera joystick only changes the view. The drone stays stationary.</div>
+      </div>
+    </div>
+    <div class="thumb-dock" id="radar-stick-dock">
+      <div class="thumb-telemetry single" id="radar-telemetry">
+        <div class="tele-chip wide"><span>Movement</span><strong id="radar-tele-mode">MAP / DRONE</strong></div>
+      </div>
+      <div class="stick-dock-pad" id="radar-move-pad" aria-label="Movement joystick">
+        <button class="stick-btn up" id="radar-move-up" type="button">▲</button>
+        <button class="stick-btn right" id="radar-move-right" type="button">▶</button>
+        <button class="stick-btn down" id="radar-move-down" type="button">▼</button>
+        <button class="stick-btn left" id="radar-move-left" type="button">◀</button>
+        <button class="stick-center-btn" id="radar-center-toggle-dock" type="button">ZOOM IN</button>
+      </div>
+      <div class="stick-footer">
+        <div class="stick-foot-note" id="radar-move-note">Global view ready. Press Zoom In to jump down to your location.</div>
+      </div>
+    </div>
   </div>
 
   <!-- Layer dots -->
@@ -10039,39 +10111,145 @@ Keep rails and ribbons transparent. Keep controls readable.
     });
     var root = document.documentElement;
     var trackY = parseFloat(getComputedStyle(root).getPropertyValue('--thumb-track-y')) || 92;
-    function setTrackY(y){ trackY = clamp(y, 52, window.innerHeight - 260); root.style.setProperty('--thumb-track-y', trackY + 'px'); }
+    function setTrackY(y){ trackY = clamp(y, 52, window.innerHeight - 410); root.style.setProperty('--thumb-track-y', trackY + 'px'); }
+    function pulseHud(hud){ if(!hud) return; hud.classList.add('active'); setTimeout(function(){ hud.classList.remove('active'); }, 850); }
     function bindVerticalPairDrag(hud){
       var state = null;
       hud.addEventListener('pointerdown', function(ev){ if(ev.button !== undefined && ev.button !== 0) return; if(ev.target.closest('button,input,textarea,select,a,label')) return; state = { id: ev.pointerId, startY: ev.clientY, startTrack: trackY, moved:false }; perf.classList.add('dragging'); compass.classList.add('dragging'); }, true);
       window.addEventListener('pointermove', function(ev){ if(!state || ev.pointerId !== state.id) return; var dy = ev.clientY - state.startY; if(Math.abs(dy) > 2) state.moved = true; setTrackY(state.startTrack + dy); });
-      function end(ev){ if(!state || (ev.pointerId !== undefined && ev.pointerId !== state.id)) return; perf.classList.remove('dragging'); compass.classList.remove('dragging'); if(!state.moved) hud.classList.add('active'), setTimeout(function(){ hud.classList.remove('active'); }, 850); state = null; }
+      function end(ev){ if(!state || (ev.pointerId !== undefined && ev.pointerId !== state.id)) return; perf.classList.remove('dragging'); compass.classList.remove('dragging'); if(!state.moved) pulseHud(hud); state = null; }
       window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
     }
     bindVerticalPairDrag(perf); bindVerticalPairDrag(compass);
 
-    var linked = false, cameraOn = false, loaded = false, nextZoomIn = true;
+    var linked = false, cameraOn = false, loaded = false, radarLocalView = false;
+    var loadBtn = byId('perf-load-toggle-dock');
+    var camBtn = byId('perf-camera-toggle-dock');
+    var radarZoomBtn = byId('radar-center-toggle-dock');
+    var perfNote = byId('perf-cam-note');
+    var radarMoveNote = byId('radar-move-note');
+    var radarMode = byId('radar-tele-mode');
+
     function syncDrone(){
-      var signal = document.querySelector('#perf-node-signal strong'); var battery = document.querySelector('#perf-node-battery strong'); var ram = document.querySelector('#perf-node-ram strong'); var storage = document.querySelector('#perf-node-storage strong'); var overall = byId('perf-overall'); var loadBtn = byId('perf-load-toggle-compact'); var camBtn = byId('perf-camera-toggle-compact');
+      var signal = byId('perf-tele-signal');
+      var battery = byId('perf-tele-battery');
+      var ram = byId('perf-tele-ram');
+      var storage = byId('perf-tele-storage');
+      var overall = byId('perf-overall');
       if(signal) signal.textContent = linked ? (cameraOn ? 'LIVE' : 'LINK') : 'STBY';
       if(battery) battery.textContent = linked ? (loaded ? '82%' : '91%') : '--%';
       if(ram) ram.textContent = linked ? (cameraOn ? '6.8 GB' : '3.2 GB') : '--';
       if(storage) storage.textContent = linked ? (loaded ? '118 GB' : '124 GB') : '--';
-      if(overall) overall.textContent = linked ? (loaded ? 'LOAD' : 'LIVE') : 'OK';
+      if(overall) overall.textContent = linked ? (cameraOn ? 'LIVE' : (loaded ? 'LOAD' : 'LINK')) : 'OK';
       if(loadBtn){ loadBtn.textContent = loaded ? 'UNLOAD' : 'LOAD'; loadBtn.classList.toggle('active', loaded); }
       if(camBtn){ camBtn.textContent = cameraOn ? 'CAM ON' : 'CAM OFF'; camBtn.classList.toggle('active', cameraOn); }
+      if(radarMode) radarMode.textContent = linked ? 'DRONE LINKED' : 'MAP / DRONE';
     }
-    syncDrone();
-    document.querySelectorAll('#perf-compact-ui .hud-node').forEach(function(node){ node.addEventListener('click', function(ev){ ev.stopPropagation(); document.querySelectorAll('#perf-compact-ui .hud-node').forEach(function(o){ if(o!==node) o.classList.remove('open'); }); node.classList.toggle('open'); perf.classList.add('active'); setTimeout(function(){ perf.classList.remove('active'); }, 850); }); });
-    var loadBtn = byId('perf-load-toggle-compact'); if(loadBtn) loadBtn.addEventListener('click', function(ev){ ev.stopPropagation(); loaded = !loaded; if(!linked) linked = true; syncDrone(); if(typeof showResp === 'function') showResp(loaded ? 'Drone payload armed for unload.' : 'Drone payload state returned to load-ready.'); });
-    var camBtn = byId('perf-camera-toggle-compact'); if(camBtn) camBtn.addEventListener('click', function(ev){ ev.stopPropagation(); cameraOn = !cameraOn; if(!linked) linked = true; syncDrone(); if(typeof showResp === 'function') showResp(cameraOn ? 'Drone camera routed to the main screen hook.' : 'Drone camera feed disengaged.'); });
 
-    var radarZoomBtn = byId('radar-center-toggle-compact');
-    function zoomToggle(){ if(window.CL === 1 && window.LM){ if(nextZoomIn && typeof LM.zoomIn === 'function') LM.zoomIn(); else if(!nextZoomIn && typeof LM.zoomOut === 'function') LM.zoomOut(); nextZoomIn = !nextZoomIn; if(radarZoomBtn) radarZoomBtn.textContent = nextZoomIn ? 'ZOOM +' : 'ZOOM -'; compass.classList.add('active'); setTimeout(function(){ compass.classList.remove('active'); }, 850); } else if(typeof showResp === 'function') showResp('Open the Earth map to use the radar zoom control.'); }
-    if(radarZoomBtn) radarZoomBtn.addEventListener('click', function(ev){ ev.stopPropagation(); zoomToggle(); });
-    function nudgeMap(dir){ if(window.CL !== 1 || !window.LM || typeof LM.panBy !== 'function') return; var step = 22; LM.panBy([dir==='left'?-step:dir==='right'?step:0, dir==='up'?-step:dir==='down'?step:0], {animate:false}); }
-    var activeDir = null, timer = null; function stopArrow(){ if(activeDir){ var b = byId('radar-arrow-'+activeDir); if(b) b.classList.remove('active'); } activeDir = null; if(timer){ clearInterval(timer); timer = null; } }
-    ['up','right','down','left'].forEach(function(dir){ var btn = byId('radar-arrow-'+dir); if(!btn) return; btn.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); stopArrow(); activeDir = dir; btn.classList.add('active'); nudgeMap(dir); timer = setInterval(function(){ nudgeMap(dir); }, 110); }); btn.addEventListener('pointerup', stopArrow); btn.addEventListener('pointercancel', stopArrow); btn.addEventListener('pointerleave', stopArrow); });
-    window.addEventListener('pointerup', stopArrow); window.addEventListener('pointercancel', stopArrow);
+    function syncRadarButton(){
+      if(window.CL === 0 && radarLocalView) radarLocalView = false;
+      if(radarZoomBtn) radarZoomBtn.textContent = radarLocalView ? 'ZOOM OUT' : 'ZOOM IN';
+      if(radarMoveNote) radarMoveNote.textContent = radarLocalView
+        ? 'Local view live. Press Zoom Out to jump back to the globe.'
+        : 'Global view ready. Press Zoom In to jump down to your location.';
+    }
+
+    function refreshMyLocation(callback){
+      if(!navigator.geolocation){ if(typeof callback === 'function') callback(); return; }
+      navigator.geolocation.getCurrentPosition(function(pos){
+        window.LOC = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if(typeof callback === 'function') callback();
+      }, function(){ if(typeof callback === 'function') callback(); }, { enableHighAccuracy:true, timeout:3500, maximumAge:15000 });
+    }
+
+    function ensureMapReady(callback){
+      if(window.CL !== 1){
+        if(typeof goLayer === 'function') goLayer(1);
+        setTimeout(function(){ if(typeof callback === 'function') callback(); }, 340);
+      } else if(typeof callback === 'function') callback();
+    }
+
+    function jumpToMyLocation(){
+      refreshMyLocation(function(){
+        ensureMapReady(function(){
+          if(window.LM && typeof LM.setView === 'function'){
+            LM.setView([window.LOC.lat || 36.4441, window.LOC.lng || 28.2245], 16, { animate:true });
+          }
+          radarLocalView = true;
+          syncRadarButton();
+          pulseHud(compass);
+        });
+      });
+    }
+
+    function jumpToGlobalView(){
+      radarLocalView = false;
+      syncRadarButton();
+      if(window.CL !== 0 && typeof goLayer === 'function') goLayer(0);
+      setTimeout(function(){ if(window.globeController && typeof globeController.resetView === 'function') globeController.resetView(); pulseHud(compass); }, window.CL === 0 ? 0 : 280);
+    }
+
+    function zoomToggle(){
+      if(window.CL === 0 && radarLocalView) radarLocalView = false;
+      if(radarLocalView) jumpToGlobalView();
+      else jumpToMyLocation();
+    }
+
+    function panMapBy(dir, step){
+      if(!window.LM || typeof LM.panBy !== 'function') return;
+      LM.panBy([dir==='left'?-step:dir==='right'?step:0, dir==='up'?-step:dir==='down'?step:0], { animate:false });
+    }
+
+    function moveDroneOrMap(dir){
+      ensureMapReady(function(){
+        panMapBy(dir, 34);
+        if(window.LM && typeof LM.getCenter === 'function') window._virtualDroneAnchor = LM.getCenter();
+        if(radarMoveNote) radarMoveNote.textContent = linked
+          ? 'Drone body moving ' + dir.toUpperCase() + ' with the camera riding on it.'
+          : 'Map glide ' + dir.toUpperCase() + '. Simulating whole-drone movement.';
+      });
+    }
+
+    function moveCameraOnly(dir){
+      ensureMapReady(function(){
+        panMapBy(dir, 18);
+        if(perfNote) perfNote.textContent = 'Camera panning ' + dir.toUpperCase() + '. Drone body stays stationary.';
+      });
+    }
+
+    function bindHoldButton(buttonId, hud, moveFn, dir){
+      var btn = byId(buttonId);
+      if(!btn) return;
+      var timer = null;
+      function stop(){ btn.classList.remove('active'); if(timer){ clearInterval(timer); timer = null; } }
+      btn.addEventListener('pointerdown', function(ev){
+        ev.stopPropagation();
+        stop();
+        btn.classList.add('active');
+        moveFn(dir);
+        timer = setInterval(function(){ moveFn(dir); }, 110);
+        pulseHud(hud);
+      });
+      ['pointerup','pointercancel','pointerleave'].forEach(function(evt){ btn.addEventListener(evt, stop); });
+      window.addEventListener('pointerup', stop);
+      window.addEventListener('pointercancel', stop);
+    }
+
+    syncDrone();
+    syncRadarButton();
+
+    if(loadBtn) loadBtn.addEventListener('click', function(ev){ ev.stopPropagation(); loaded = !loaded; if(!linked) linked = true; syncDrone(); if(perfNote) perfNote.textContent = loaded ? 'Payload armed for unload.' : 'Payload reset to load-ready state.'; if(typeof showResp === 'function') showResp(loaded ? 'Drone payload armed for unload.' : 'Drone payload state returned to load-ready.'); pulseHud(perf); });
+    if(camBtn) camBtn.addEventListener('click', function(ev){ ev.stopPropagation(); cameraOn = !cameraOn; if(!linked) linked = true; syncDrone(); if(perfNote) perfNote.textContent = cameraOn ? 'Drone camera routed toward the main screen.' : 'Drone camera feed disengaged.'; if(typeof showResp === 'function') showResp(cameraOn ? 'Drone camera routed to the main screen hook.' : 'Drone camera feed disengaged.'); pulseHud(perf); });
+    if(radarZoomBtn) radarZoomBtn.addEventListener('click', function(ev){ ev.stopPropagation(); radarZoomBtn.classList.add('active'); setTimeout(function(){ radarZoomBtn.classList.remove('active'); }, 180); zoomToggle(); });
+
+    bindHoldButton('perf-cam-up', perf, moveCameraOnly, 'up');
+    bindHoldButton('perf-cam-right', perf, moveCameraOnly, 'right');
+    bindHoldButton('perf-cam-down', perf, moveCameraOnly, 'down');
+    bindHoldButton('perf-cam-left', perf, moveCameraOnly, 'left');
+    bindHoldButton('radar-move-up', compass, moveDroneOrMap, 'up');
+    bindHoldButton('radar-move-right', compass, moveDroneOrMap, 'right');
+    bindHoldButton('radar-move-down', compass, moveDroneOrMap, 'down');
+    bindHoldButton('radar-move-left', compass, moveDroneOrMap, 'left');
   }
 })();
 </script>
