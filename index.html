@@ -1156,6 +1156,53 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
   .radar-stick-knob,.perf-stick-knob{width:62px;height:62px;}
 }
 
+
+
+/* === USER PATCH APR 2026: fixed joystick wheels, retract toggle, single plus button === */
+:root{ --thumb-track-y: 92px; --thumb-size: 138px; }
+#left-panel,#right-panel{display:none !important;}
+.smenu.lmenu{left:14px !important;}
+.smenu.rmenu{right:14px !important;}
+#lp{right:14px !important;top:48px !important;}
+#delivery-chat{right:18px !important;}
+#zoom-btns{display:none !important;}
+#cmd-response{left:12px !important;right:12px !important;bottom:60px !important;border-radius:20px 20px 0 0;overflow:hidden;}
+#cmd-response.expanded{max-height:calc(100vh - 112px) !important;}
+#chat-drag{display:none !important;}
+.chat-retract-bar{height:8px;flex-shrink:0;background:linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.00));}
+#chat-toggle-btn{position:fixed;left:50%;transform:translateX(-50%);z-index:231;min-width:46px;height:28px;border-radius:999px;border:1px solid rgba(0,200,255,0.18);background:rgba(5,12,22,0.92);color:#dff6ff;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 24px rgba(0,0,0,0.26),0 0 16px rgba(0,200,255,0.10);cursor:pointer;}
+#chat-toggle-btn .chat-arrow{font-size:14px;line-height:1;transition:transform 0.2s ease;}
+body.chat-open #chat-toggle-btn .chat-arrow{transform:rotate(180deg);}
+#fab-add{position:fixed;left:18px;bottom:76px;z-index:230;width:62px;height:62px;border-radius:50%;border:1px solid rgba(0,200,255,0.28);background:radial-gradient(circle at 35% 30%,rgba(255,255,255,0.22),rgba(0,200,255,0.18) 35%,rgba(5,12,22,0.96) 76%);color:#eaf8ff;font-size:34px;line-height:1;cursor:pointer;box-shadow:0 18px 34px rgba(0,0,0,0.34),0 0 22px rgba(0,200,255,0.20);display:flex;align-items:center;justify-content:center;}
+#fab-add:hover{transform:translateY(-1px) scale(1.03);box-shadow:0 22px 38px rgba(0,0,0,0.38),0 0 28px rgba(0,200,255,0.28);}
+#fab-add .fab-label{position:absolute;left:76px;top:50%;transform:translateY(-50%);white-space:nowrap;padding:8px 12px;border-radius:999px;border:1px solid rgba(0,200,255,0.16);background:rgba(5,12,22,0.90);color:#dff6ff;font-size:11px;letter-spacing:0.06em;opacity:0;pointer-events:none;transition:opacity 0.18s ease;}
+#fab-add:hover .fab-label{opacity:1;}
+#perf-hud,#compass-hud{position:fixed !important;top:var(--thumb-track-y,92px) !important;bottom:auto !important;width:var(--thumb-size,138px) !important;height:var(--thumb-size,138px) !important;z-index:175 !important;opacity:0.90 !important;overflow:visible !important;transition:top 0.18s ease, transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease !important;}
+#perf-hud{left:18px !important;right:auto !important;}
+#compass-hud{right:18px !important;left:auto !important;}
+#perf-hud.active,#compass-hud.active{transform:scale(1.08);opacity:1 !important;filter:brightness(1.18);}
+#perf-hud.dragging,#compass-hud.dragging{cursor:ns-resize;}
+#perf-hud.expanded,#compass-hud.expanded{width:var(--thumb-size,138px) !important;height:var(--thumb-size,138px) !important;padding:0 !important;border-radius:50% !important;background:none !important;border:none !important;box-shadow:none !important;bottom:auto !important;transform:none !important;}
+#perf-hud.expanded{left:18px !important;right:auto !important;}
+#compass-hud.expanded{right:18px !important;left:auto !important;}
+.perf-joystick-ui,.radar-joystick-ui{display:none !important;}
+#perf-svg,#compass-svg{width:100% !important;height:100% !important;}
+.hud-compact{position:absolute;inset:0;pointer-events:none;}
+.hud-center-btn,.hud-node,.hud-arrow,.hud-mini-cam{position:absolute;pointer-events:auto;border:1px solid rgba(0,200,255,0.18);background:rgba(5,12,22,0.86);color:#eaf8ff;cursor:pointer;box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 14px rgba(0,200,255,0.08);}
+.hud-center-btn{left:50%;top:50%;transform:translate(-50%,-50%);min-width:72px;height:34px;padding:0 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:0.08em;}
+.hud-center-btn.active{border-color:rgba(0,232,122,0.34);color:#00e87a;box-shadow:0 10px 18px rgba(0,0,0,0.22),0 0 16px rgba(0,232,122,0.16);}
+.hud-mini-cam{right:18px;bottom:24px;height:26px;min-width:48px;padding:0 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.08em;}
+.hud-mini-cam.active{border-color:rgba(0,232,122,0.34);color:#00e87a;}
+.hud-node{width:54px;min-height:40px;border-radius:16px;padding:7px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform 0.18s ease,width 0.18s ease,min-height 0.18s ease,box-shadow 0.18s ease,background 0.18s ease;}
+.hud-node span{font-size:8px;letter-spacing:0.10em;color:rgba(216,236,255,0.60);text-transform:uppercase;white-space:nowrap;}
+.hud-node strong{font-size:11px;color:#eff9ff;white-space:nowrap;max-width:70px;overflow:hidden;text-overflow:ellipsis;}
+.hud-node.open{width:84px;min-height:54px;transform:scale(1.05);background:rgba(8,18,34,0.94);box-shadow:0 14px 24px rgba(0,0,0,0.24),0 0 18px rgba(0,200,255,0.12);z-index:2;}
+.hud-node.top{top:8px;left:50%;transform:translateX(-50%);} .hud-node.right{right:0;top:50%;transform:translateY(-50%);} .hud-node.bottom{bottom:8px;left:50%;transform:translateX(-50%);} .hud-node.left{left:0;top:50%;transform:translateY(-50%);} .hud-node.top.open{transform:translateX(-50%) scale(1.05);} .hud-node.right.open{transform:translateY(-50%) scale(1.05);} .hud-node.bottom.open{transform:translateX(-50%) scale(1.05);} .hud-node.left.open{transform:translateY(-50%) scale(1.05);} 
+.hud-arrow{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;transition:transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;}
+.hud-arrow.active{transform:scale(1.14);background:rgba(0,200,255,0.18);box-shadow:0 12px 20px rgba(0,0,0,0.26),0 0 18px rgba(0,200,255,0.18);} .hud-arrow.up{top:8px;left:50%;transform:translateX(-50%);} .hud-arrow.right{right:4px;top:50%;transform:translateY(-50%);} .hud-arrow.down{bottom:8px;left:50%;transform:translateX(-50%);} .hud-arrow.left{left:4px;top:50%;transform:translateY(-50%);} .hud-arrow.up.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.right.active{transform:translateY(-50%) scale(1.14);} .hud-arrow.down.active{transform:translateX(-50%) scale(1.14);} .hud-arrow.left.active{transform:translateY(-50%) scale(1.14);} 
+#radar-center-toggle-compact{min-width:82px;}
+@media(max-width:700px){ :root{--thumb-size:124px;--thumb-track-y:84px;} #fab-add{width:56px;height:56px;font-size:30px;} .hud-node{width:48px;} .hud-node.open{width:74px;} }
+
 </style>
 </head>
 <body class="lt">
@@ -1264,6 +1311,9 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
   </button>
 </div>
 
+<button id="fab-add" type="button" onclick="openPost()" aria-label="Add or list something here">+<span class="fab-label">Add here</span></button>
+<button id="chat-toggle-btn" type="button" onclick="toggleChatDrawer()" aria-label="Retract or open chat"><span class="chat-arrow">⌃</span></button>
+
 <!-- STAGE -->
 <div id="stage">
   <canvas id="gc"></canvas>
@@ -1307,6 +1357,14 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
       <text x="55" y="52" class="perf-center-label">SYSTEM</text>
       <text x="55" y="62" class="perf-center-value" id="perf-overall">OK</text>
     </svg>
+    <div class="hud-compact perf-compact-ui" id="perf-compact-ui">
+      <button class="hud-node top" id="perf-node-signal" type="button"><span>Signal</span><strong>STBY</strong></button>
+      <button class="hud-node right" id="perf-node-ram" type="button"><span>RAM</span><strong>--</strong></button>
+      <button class="hud-node bottom" id="perf-node-battery" type="button"><span>Battery</span><strong>--%</strong></button>
+      <button class="hud-node left" id="perf-node-storage" type="button"><span>Storage</span><strong>--</strong></button>
+      <button class="hud-center-btn" id="perf-load-toggle-compact" type="button">LOAD</button>
+      <button class="hud-mini-cam" id="perf-camera-toggle-compact" type="button">CAM OFF</button>
+    </div>
     <div class="perf-joystick-ui" id="perf-joystick-ui">
       <div class="perf-drone-readouts">
         <div class="perf-readout"><span>LINK</span><strong id="perf-link-state">STANDBY</strong></div>
@@ -1395,6 +1453,13 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
       <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
       <text x="54" y="93" class="compass-heading-label">HDG</text>
     </svg>
+    <div class="hud-compact radar-compact-ui" id="radar-compact-ui">
+      <button class="hud-arrow up" id="radar-arrow-up" type="button">▲</button>
+      <button class="hud-arrow right" id="radar-arrow-right" type="button">▶</button>
+      <button class="hud-arrow down" id="radar-arrow-down" type="button">▼</button>
+      <button class="hud-arrow left" id="radar-arrow-left" type="button">◀</button>
+      <button class="hud-center-btn" id="radar-center-toggle-compact" type="button">ZOOM +</button>
+    </div>
 
     <div class="radar-joystick-ui" id="radar-joystick-ui">
       <div class="radar-readouts">
@@ -1445,7 +1510,7 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
   <!-- ASTRANOV — NORDIC WARRIOR ANGEL AI -->
   <div id="astranova-wrapper">
     <div id="astranova-speech"></div>
-    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov Nordic warrior angel AI">
+    <svg id="astranova-svg" onclick="openAstranova()" viewBox="0 0 140 240" xmlns="http://www.w3.org/2000/svg" aria-label="Astranov Viking warrior AI">
       <defs>
         <linearGradient id="elfHair" x1="0" y1="0" x2="0.8" y2="1"><stop offset="0%" stop-color="#fff8e0"/><stop offset="30%" stop-color="#f0d060"/><stop offset="70%" stop-color="#c8a030"/><stop offset="100%" stop-color="#8a6820"/></linearGradient>
         <linearGradient id="elfDress" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c0d8f0"/><stop offset="15%" stop-color="#4890c8"/><stop offset="50%" stop-color="#1a4a7a"/><stop offset="100%" stop-color="#081428"/></linearGradient>
@@ -1481,10 +1546,9 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
       <circle cx="102" cy="18" r="1" fill="#fff" opacity="0.5"><animate attributeName="opacity" values="0.5;0.1;0.5" dur="3s" repeatCount="indefinite"/></circle>
       <circle cx="60" cy="12" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.8;0;0.8" dur="2.5s" repeatCount="indefinite"/></circle>
       <circle cx="80" cy="8" r="0.8" fill="#ffd860"><animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite"/></circle>
-      <!-- Golden halo (prominent, glowing) -->
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="url(#haloGlow)" opacity="0.4"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#ffd600" stroke-width="2" opacity="0.7"/>
-      <ellipse cx="70" cy="24" rx="16" ry="5" fill="none" stroke="#fff" stroke-width="0.6" opacity="0.4"/>
+      <!-- Nordic warrior horns -->
+      <path d="M52 34 C46 26 43 18 45 10 C48 16 53 20 60 23 C56 26 53 30 52 34 Z" fill="url(#armorGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
+      <path d="M88 34 C94 26 97 18 95 10 C92 16 87 20 80 23 C84 26 87 30 88 34 Z" fill="url(#armorGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="0.8"/>
       <!-- Long flowing blonde hair (back layer) -->
       <g class="elf-hair">
         <path d="M48 48 C42 58 36 78 33 105 C35 98 40 82 46 68 C40 85 36 100 34 118 C40 106 48 88 52 74 Z" fill="url(#elfHair)" opacity="0.8"/>
@@ -1647,7 +1711,7 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
 <div id="mshop" class="smenu lmenu">
   <div class="mh">My Shop</div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
-    <label>Shop Name</label>
+    <label>Business / Service Name</label>
     <input id="sh-name" placeholder="e.g. Aegean Diving Centre"/>
   </div>
   <div class="mr" style="flex-direction:column;align-items:flex-start;">
@@ -1826,7 +1890,7 @@ body.dual-stick-active #perf-hud{opacity:0.98;}
   </button>
 </div>
 <div id="cmd-response">
-  <div class="chat-drag-handle" id="chat-drag"></div>
+  <div class="chat-retract-bar" id="chat-drag"></div>
   <!-- CHANNEL SELECTOR DROPDOWN -->
   <div id="chat-channel-bar">
     <span id="chat-channel-label">Channel</span>
@@ -5108,7 +5172,8 @@ async function acceptDelivery(id) {
 /* ── POST ── */
 function openPost() {
   if(typeof openPostChooser === 'function'){
-    openPostChooser(LOC.lat, LOC.lng);
+    var point = (window.CL === 1 && window.LM && typeof LM.getCenter === 'function') ? LM.getCenter() : window.LOC;
+    openPostChooser(point.lat, point.lng);
     return;
   }
   if (!CU) { showResp('Login to post.'); document.getElementById('am').classList.remove('h'); return; }
@@ -6445,13 +6510,16 @@ function initLeaflet(){
   LM=L.map('mc',{zoomControl:false,attributionControl:false,tap:true,tapTolerance:20,touchZoom:true,dragging:true}).setView([LOC.lat,LOC.lng],13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(LM);
 
-  /* normal click — just updates coords, no menu */
+  /* click on map — update coords and open the action chooser */
   LM.on('click',function(e){
     LOC={lat:e.latlng.lat,lng:e.latlng.lng};
-    showResp('Location: '+e.latlng.lat.toFixed(4)+'°N, '+e.latlng.lng.toFixed(4)+'°E');
+    showResp('What do you want to do here? ' + e.latlng.lat.toFixed(4)+'°N, '+e.latlng.lng.toFixed(4)+'°E');
     var pc = document.getElementById('pcoord');
     if(pc) pc.textContent=LOC.lat.toFixed(4)+'°N, '+LOC.lng.toFixed(4)+'°E';
     if(LM.getZoom()>=17) resetSubmarineGate();
+    if(!gameActive && CL === 1 && typeof openPostChooser === 'function'){
+      setTimeout(function(){ openPostChooser(e.latlng.lat, e.latlng.lng); }, 80);
+    }
   });
 
   /* RIGHT CLICK (desktop) — opens post menu */
@@ -6801,17 +6869,25 @@ Keep rails and ribbons transparent. Keep controls readable.
     </div>
 
     <div class="pc-options" id="pc-options">
-      <div class="pc-opt disabled" onclick="openPostForm()">
-        <div class="pc-opt-icon post-it">📢</div>
-        <div class="pc-opt-text"><h3>Post Something</h3><p>Share a post, announcement, offer, or signal. Choose who sees it — global, local, or your team.</p></div>
+      <div class="pc-opt disabled" onclick="openVideoPostFlow()">
+        <div class="pc-opt-icon post-it">🎥</div>
+        <div class="pc-opt-text"><h3>Post or Upload a Video</h3><p>Drop a post, offer, announcement, or location-linked video on this exact zoom-centered point.</p></div>
       </div>
       <div class="pc-opt disabled" onclick="openShopForm()">
         <div class="pc-opt-icon shop-it">🏪</div>
-        <div class="pc-opt-text"><h3>List a Shop</h3><p>Full shop listing with photo, hours, menu items, prices, availability, temperature, delivery range.</p></div>
+        <div class="pc-opt-text"><h3>List a Business or Service</h3><p>Hotel, rent a car, diving school, supermarket, food market, café, rentals, rooms, or any multi-vendor service.</p></div>
       </div>
       <div class="pc-opt disabled" onclick="openDeliveryForm()">
         <div class="pc-opt-icon addr-it">📍</div>
-        <div class="pc-opt-text"><h3>Set Delivery Location</h3><p>Save your delivery address with street, floor, doorbell, name, phone, and special remarks.</p></div>
+        <div class="pc-opt-text"><h3>Set Delivery Location</h3><p>Save your private delivery address with street, floor, doorbell, name, phone, and special remarks.</p></div>
+      </div>
+      <div class="pc-opt disabled" onclick="activateDriverAtPoint()">
+        <div class="pc-opt-icon shop-it">🛵</div>
+        <div class="pc-opt-text"><h3>Activate as Delivery Driver</h3><p>Go online from this point and let the routing engine use your current position for nearby jobs.</p></div>
+      </div>
+      <div class="pc-opt disabled" onclick="exploreSelectedArea()">
+        <div class="pc-opt-icon post-it">🧭</div>
+        <div class="pc-opt-text"><h3>Explore This Area</h3><p>Ask Astranov what exists here, what can be done here, and what services or signals are nearby.</p></div>
       </div>
     </div>
     <div class="pc-cancel" onclick="closePostChooser()">Cancel — keep browsing</div>
@@ -6860,8 +6936,8 @@ Keep rails and ribbons transparent. Keep controls readable.
 <!-- SHOP LISTING FORM -->
 <div id="shop-form" class="form-modal">
   <div class="form-sheet">
-    <div class="sheet-title">List a Shop</div>
-    <div class="sheet-sub">Create a full shop listing with operating schedule, menu, prices, and delivery range.</div>
+    <div class="sheet-title">List a Business or Service</div>
+    <div class="sheet-sub">Create a multi-vendor listing for products, appointments, rooms, rentals, activities, and services from this exact point.</div>
     <div class="pc-coords" id="sf-coords">Point: —</div>
 
     <div class="form-section">Visibility</div>
@@ -6874,11 +6950,11 @@ Keep rails and ribbons transparent. Keep controls readable.
       <div class="form-group"><label>Select team</label><select id="sf-team-select"><option value="">— Choose a team —</option></select></div>
     </div>
 
-    <div class="form-section">Shop Details</div>
+    <div class="form-section">Business Details</div>
     <div class="form-group"><label>Shop Name</label><input id="sf-name" placeholder="e.g. Aegean Diving Centre"></div>
     <div class="form-row">
       <div class="form-group"><label>Category</label>
-        <select id="sf-cat"><option>Restaurant / Food</option><option>Café / Bar</option><option>Diving / Activities</option><option>Shop / Retail</option><option>Services</option><option>Health / Beauty</option><option>Other</option></select>
+        <select id="sf-cat"><option>Hotel / Rooms</option><option>Rent a Car</option><option>Diving School / Excursions</option><option>Supermarket / Food Market</option><option>Restaurant / Food</option><option>Café / Bar</option><option>Shop / Retail</option><option>Boat / Sea Rental</option><option>Activities / Tours</option><option>Services</option><option>Health / Beauty</option><option>Other</option></select>
       </div>
       <div class="form-group"><label>Delivery Range (km)</label><input id="sf-range" type="number" min="0" step="0.5" placeholder="5"></div>
     </div>
@@ -6905,11 +6981,11 @@ Keep rails and ribbons transparent. Keep controls readable.
     <div class="menu-items-list" id="sf-menu-list">
       <!-- dynamic menu items go here -->
     </div>
-    <button class="add-menu-item-btn" onclick="addMenuItem()">+ Add Menu Item</button>
+    <button class="add-menu-item-btn" onclick="addMenuItem()">+ Add Product / Service / Slot</button>
 
     <div class="form-footer">
       <button onclick="closeShopForm()">Cancel</button>
-      <button class="primary" onclick="submitShopForm()">Create Shop Listing</button>
+      <button class="primary" onclick="submitShopForm()">Create Listing</button>
     </div>
   </div>
 </div>
@@ -9737,6 +9813,267 @@ Keep rails and ribbons transparent. Keep controls readable.
   }
 })();
 
+</script>
+
+
+<script>
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function num(v){ var n = Number(v); return Number.isFinite(n) ? n : 0; }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
+
+  var origExpand = window.expandConversation;
+  var origHide = window.hideConversationDrawer || window.retractConversation;
+  var resp = byId('cmd-response');
+  var toggleBtn = byId('chat-toggle-btn');
+  function updateChatToggle(){
+    if(!toggleBtn || !resp) return;
+    var expanded = !!(resp.classList.contains('expanded') && resp.style.display !== 'none');
+    document.body.classList.toggle('chat-open', expanded);
+    var bottom = expanded ? (60 + Math.max(0, resp.getBoundingClientRect().height) - 14) : 66;
+    toggleBtn.style.bottom = Math.max(66, bottom) + 'px';
+  }
+  function wrappedExpand(){ if(typeof origExpand === 'function') origExpand(); updateChatToggle(); }
+  function wrappedHide(){ if(typeof origHide === 'function') origHide(); updateChatToggle(); }
+  window.expandConversation = wrappedExpand;
+  window.retractConversation = wrappedHide;
+  window.hideConversationDrawer = wrappedHide;
+  window.toggleChatDrawer = function(){ if(!resp || resp.style.display === 'none' || !resp.classList.contains('expanded')) wrappedExpand(); else wrappedHide(); };
+  setTimeout(updateChatToggle, 250);
+  window.addEventListener('resize', updateChatToggle);
+  if(resp){ resp.addEventListener('pointermove', updateChatToggle); window.addEventListener('pointerup', function(){ setTimeout(updateChatToggle, 0); }); }
+
+  window.openVideoPostFlow = function(){
+    if(typeof closePostChooser === 'function') closePostChooser();
+    if(typeof openPostForm === 'function') openPostForm();
+    var cat = byId('pf-cat'); if(cat) cat.value = 'Event';
+    var title = byId('pf-title'); if(title && !title.value) title.value = 'Video from this location';
+    var desc = byId('pf-desc'); if(desc && !desc.value) desc.value = 'Location-linked video / signal from this point.';
+    if(typeof showResp === 'function') showResp('Upload a video or post it from this exact point.');
+  };
+  window.activateDriverAtPoint = async function(){
+    if(typeof closePostChooser === 'function') closePostChooser();
+    if(typeof toggleDriverMode === 'function') await toggleDriverMode();
+    if(typeof showResp === 'function') showResp('Driver mode command sent from this point.');
+  };
+  window.exploreSelectedArea = function(){
+    var point = window.MAP_PICK || (window.LM && LM.getCenter ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
+    if(typeof closePostChooser === 'function') closePostChooser();
+    wrappedExpand();
+    var input = byId('cmd-input');
+    if(input){
+      input.value = 'What can I do here around ' + Number(point.lat).toFixed(4) + ', ' + Number(point.lng).toFixed(4) + '? Show services, offers, and local signals.';
+      if(typeof sendCmd === 'function') setTimeout(function(){ sendCmd(); }, 80);
+    }
+  };
+
+  window.addMenuItem = function(){
+    window.MENU_ITEM_COUNT = (window.MENU_ITEM_COUNT || 0) + 1;
+    const i = window.MENU_ITEM_COUNT;
+    const html = `<div class="menu-item-entry" id="mi-${i}">
+      <span class="remove-menu-item" onclick="this.parentElement.remove()">✕ remove</span>
+      <div class="form-row">
+        <div class="form-group"><label>Item / Service Name</label><input data-mi="${i}" data-field="name" placeholder="e.g. Margherita Pizza"></div>
+        <div class="form-group"><label>Price €</label><input data-mi="${i}" data-field="price" type="number" min="0" step="0.01" placeholder="8.50"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Mode</label><select data-mi="${i}" data-field="mode"><option value="product">Product</option><option value="appointment">Appointment</option><option value="rental">Rental</option><option value="room">Room</option><option value="service">Service</option></select></div>
+        <div class="form-group"><label>Video / Photo Link</label><input data-mi="${i}" data-field="media_link" placeholder="https://..."></div>
+      </div>
+      <div class="form-group"><label>Item Description</label><textarea data-mi="${i}" data-field="desc" placeholder="What is included, what makes it special, and any booking notes."></textarea></div>
+      <div class="form-row3">
+        <div class="form-group"><label>Volume / Size</label><input data-mi="${i}" data-field="volume" placeholder="e.g. 500ml"></div>
+        <div class="form-group"><label>Qty Available</label><input data-mi="${i}" data-field="qty" type="number" min="0" placeholder="∞"></div>
+        <div class="form-group"><label>Slots per Hour</label><input data-mi="${i}" data-field="slots" type="number" min="0" placeholder="4"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Available Dates / Times</label><input data-mi="${i}" data-field="times" placeholder="e.g. 11:00-15:00, 18:00-22:00"></div>
+        <div class="form-group"><label>Max Transport Minutes</label><input data-mi="${i}" data-field="ttl" type="number" min="0" placeholder="30"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Production / Availability Rate</label><input data-mi="${i}" data-field="rate" placeholder="e.g. 6/hr or 2 groups/day"></div>
+        <div class="form-group"><label>Photo Upload</label><input data-mi="${i}" data-field="photo" type="file" accept="image/*"></div>
+      </div>
+      <div class="form-group"><label>Temperature</label>
+        <div class="temp-selector">
+          <div class="temp-opt" data-temp="cold" data-mi="${i}" onclick="setMenuTemp(this)">❄️ Cold</div>
+          <div class="temp-opt active" data-temp="neutral" data-mi="${i}" onclick="setMenuTemp(this)">🍽 Neutral</div>
+          <div class="temp-opt" data-temp="hot" data-mi="${i}" onclick="setMenuTemp(this)">🔥 Hot</div>
+        </div>
+      </div>
+      <div class="type-note">Hot or cold items automatically carry a €1 temperature-sensitive express charge during delivery.</div>
+    </div>`;
+    byId('sf-menu-list').insertAdjacentHTML('beforeend', html);
+  };
+
+  window.submitShopForm = async function(){
+    const vis = document.querySelector('#sf-vis .vis-opt.active')?.dataset.vis || 'global';
+    const teamId = vis === 'team' ? byId('sf-team-select').value : '';
+    const point = window.MAP_PICK || (window.LM ? LM.getCenter() : window.LOC) || {lat:0,lng:0};
+    const entryPhotoFile = byId('sf-photo')?.files[0];
+    const entryPhoto = entryPhotoFile && window.fileToDataUrl ? await window.fileToDataUrl(entryPhotoFile).catch(()=> '') : '';
+    const schedule = (typeof collectSchedule === 'function') ? collectSchedule() : {};
+    const menuItems = [];
+    document.querySelectorAll('#sf-menu-list .menu-item-entry').forEach(function(entry){
+      const read = field => entry.querySelector(`[data-field="${field}"]`);
+      const activeTemp = entry.querySelector('.temp-opt.active');
+      const photoEl = read('photo');
+      menuItems.push({
+        name: read('name')?.value?.trim() || 'Unnamed item',
+        price: num(read('price')?.value),
+        service_mode: read('mode')?.value || 'product',
+        description: read('desc')?.value?.trim() || '',
+        media_link: read('media_link')?.value?.trim() || '',
+        volume: read('volume')?.value?.trim() || '',
+        qty_available: num(read('qty')?.value),
+        slots_per_hour: num(read('slots')?.value),
+        production_rate: read('rate')?.value?.trim() || '',
+        available_times: read('times')?.value?.trim() || '',
+        max_transport_minutes: num(read('ttl')?.value),
+        temperature: activeTemp?.dataset.temp || 'neutral',
+        temperature_surcharge_eur: (activeTemp?.dataset.temp || 'neutral') === 'neutral' ? 0 : 1,
+        photo_file: photoEl?.files?.[0] || null
+      });
+    });
+    for (const item of menuItems){
+      if(item.photo_file && window.fileToDataUrl){
+        item.photo = await window.fileToDataUrl(item.photo_file).catch(()=> '');
+      } else item.photo = '';
+      delete item.photo_file;
+    }
+    const item = {
+      id: (window.uid ? uid('shop') : ('shop-'+Date.now())),
+      kind: 'shop_service',
+      name: byId('sf-name').value.trim() || 'Unnamed Shop',
+      title: byId('sf-name').value.trim() || 'Unnamed Shop',
+      category: byId('sf-cat').value,
+      description: byId('sf-desc').value.trim(),
+      phone: byId('sf-phone').value.trim(),
+      website: byId('sf-web').value.trim(),
+      delivery_range_km: num(byId('sf-range').value) || 5,
+      visibility: vis,
+      team_id: teamId,
+      schedule: schedule,
+      menu: menuItems,
+      image: entryPhoto && String(entryPhoto).startsWith('data:image') ? entryPhoto : '',
+      lat: Number(point.lat), lon: Number(point.lng), lng: Number(point.lng),
+      created_at: new Date().toISOString(), local_only: true,
+      vendor_name: (window.CU && CU.name) || 'Local vendor'
+    };
+    ['sf-name','sf-desc','sf-phone','sf-web','sf-range'].forEach(function(id){ var el = byId(id); if(el) el.value=''; });
+    if(byId('sf-photo')) byId('sf-photo').value='';
+    byId('sf-menu-list').innerHTML='';
+    window.MENU_ITEM_COUNT = 0;
+    if(typeof closeShopForm === 'function') closeShopForm();
+    var postOrVerify = window.postOrVerify || function(obj, fn){ fn(obj); };
+    postOrVerify(item, function(approvedItem){
+      var offers = (window.getLocalOffers ? getLocalOffers() : []);
+      if(window._editingShopId){ offers = offers.filter(function(o){ return o.id !== window._editingShopId; }); window._editingShopId = null; }
+      offers.unshift(approvedItem);
+      if(window.setLocalOffers) setLocalOffers(offers.slice(0,120));
+      if(window.CL !== 1 && typeof goLayer === 'function') goLayer(1);
+      if(typeof refreshMapData === 'function') setTimeout(refreshMapData, 180);
+      if(typeof loadOrbitalFeed === 'function') setTimeout(loadOrbitalFeed, 220);
+    });
+  };
+
+  var origOrderMenuItem = window.orderMenuItem;
+  window.orderMenuItem = function(shopName, menuIdx, shopLat, shopLng){
+    var allOffers = [];
+    try { allOffers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]'); } catch(e){}
+    var shop = allOffers.find(function(o){ return o.name === shopName || o.title === shopName; });
+    if(!shop || !shop.menu || !shop.menu[menuIdx]){ if(typeof showResp === 'function') showResp('Item not found.'); return; }
+    var mi = shop.menu[menuIdx];
+    var price = Number(mi.price) || 0;
+    var balance = (window.getWalletBalance ? getWalletBalance() : 0);
+    if(balance < price){ if(typeof showResp === 'function') showResp('Balance too low (€' + balance.toFixed(2) + '). Top up your wallet first.'); if(typeof openPayments === 'function') openPayments(); return; }
+    if(window.setWalletBalance) setWalletBalance(Math.max(0, balance - price));
+    if(window.addPaymentLog) addPaymentLog({ provider:'wallet-debit', amount:-price, label:mi.name + ' from ' + shopName, live:true, at:new Date().toISOString(), id:'order-' + Math.random().toString(36).slice(2,10) });
+    var thermalFee = mi.temperature && mi.temperature !== 'neutral' ? 1 : 0;
+    if(typeof showResp === 'function') showResp('✓ Ordered: ' + mi.name + ' (€' + price.toFixed(2) + ') from ' + shopName + (thermalFee ? ' · thermal delivery +€1' : '') + '. Finding driver…');
+    var addrs = []; try { addrs = JSON.parse(localStorage.getItem('astranov.delivery.addresses.v1') || '[]'); } catch(e){}
+    var clientAddr = addrs[0] || { lat: window.LOC.lat, lng: window.LOC.lng };
+    if(typeof window.routeOrderToDriver === 'function'){
+      window.routeOrderToDriver({
+        vendor_name: shopName, product_name: mi.name, vendor_lat: shopLat, vendor_lng: shopLng,
+        client_lat: clientAddr.lat || window.LOC.lat, client_lng: clientAddr.lon || clientAddr.lng || window.LOC.lng,
+        volume_liters: parseFloat(mi.volume) || 0.5,
+        temperature: mi.temperature || 'neutral',
+        max_transport_minutes: Number(mi.max_transport_minutes) || 0,
+        temperature_surcharge_eur: Number(mi.temperature_surcharge_eur || thermalFee)
+      });
+    }
+  };
+
+  window.routeOrderToDriver = async function(orderData){
+    const toast = byId('routing-toast');
+    if(toast){ toast.innerHTML = '🔄 Finding closest available driver…'; toast.classList.add('on'); }
+    const driver = typeof findClosestDriver === 'function' ? await findClosestDriver(orderData.vendor_lat || window.LOC.lat, orderData.vendor_lng || window.LOC.lng) : null;
+    if(!driver){ if(toast){ toast.innerHTML = '⚠️ No drivers available right now. Your order will be queued.'; setTimeout(() => toast.classList.remove('on'), 4000); } return null; }
+    const deliveryDist = typeof haversine === 'function' ? haversine(driver.lat, driver.lon || driver.lng || 0, orderData.client_lat || window.LOC.lat, orderData.client_lng || window.LOC.lng) : 0;
+    const totalDist = (driver.distance_km || 0) + deliveryDist;
+    const thermalFee = Number(orderData.temperature_surcharge_eur || ((orderData.temperature && orderData.temperature !== 'neutral') ? 1 : 0));
+    const basePrice = Math.max(3.00, 2.50 + totalDist * (driver.price_per_km || 0.80));
+    const price = basePrice + thermalFee;
+    const rush = Number(orderData.max_transport_minutes) > 0 && Number(orderData.max_transport_minutes) <= 30;
+    const eta = Math.round(totalDist * (rush ? 3.0 : 3.5) + (rush ? 4 : 5));
+    if(toast){ toast.innerHTML = `🚀 Driver found! <span class="rt-driver">${driver.vehicle_type || 'Driver'}</span> is <span class="rt-eta">${(driver.distance_km||0).toFixed(1)}km away</span>. Delivery fee: <span class="rt-price">€${price.toFixed(2)}</span>${thermalFee ? ' <span class="rt-eta">(includes +€'+thermalFee.toFixed(2)+' thermal fee)</span>' : ''} · ETA: <span class="rt-eta">~${eta} min</span>${rush ? ' <span class="rt-driver">FAST SOLO</span>' : ''}`; setTimeout(() => toast.classList.remove('on'), 6000); }
+    const addrs = (typeof getDeliveryAddresses === 'function') ? getDeliveryAddresses() : [];
+    const clientAddr = addrs[0] || null;
+    const areaLat = (orderData.client_lat || window.LOC.lat).toFixed(2);
+    const areaLng = (orderData.client_lng || window.LOC.lng).toFixed(2);
+    const areaName = 'Area near ' + areaLat + '°N, ' + areaLng + '°E (~' + deliveryDist.toFixed(1) + 'km)';
+    const order = { id:(window.uid ? uid('order') : ('order-'+Date.now())), vendor_name:orderData.vendor_name || 'Vendor', product_name:orderData.product_name || 'Order', driver_id:driver.user_id, driver_vehicle:driver.vehicle_type, delivery_fee:price, temperature_surcharge_eur:thermalFee, fast_solo_required:rush, eta_minutes:eta, status:'assigned', vendor_lat:orderData.vendor_lat, vendor_lng:orderData.vendor_lng, client_lat:orderData.client_lat, client_lng:orderData.client_lng, client_area_name:areaName, client_full_address:clientAddr ? [clientAddr.street, clientAddr.number].filter(Boolean).join(' ') : '', client_floor:clientAddr ? clientAddr.floor : '', client_doorbell:clientAddr ? clientAddr.doorbell : '', client_name:clientAddr ? clientAddr.name : (window.CU?.name || ''), client_phone:clientAddr ? clientAddr.phone : (window.CU?.phone || ''), client_remarks:clientAddr ? clientAddr.remarks : '', created_at:new Date().toISOString() };
+    window.ACTIVE_ORDER = order;
+    window._compassTarget = { lat: order.client_lat || window.LOC.lat, lng: order.client_lng || window.LOC.lng };
+    if(typeof openDeliveryChat === 'function') openDeliveryChat(order);
+    return order;
+  };
+
+  var perf = byId('perf-hud'), compass = byId('compass-hud');
+  if(perf && compass){
+    ['click'].forEach(function(evt){
+      perf.addEventListener(evt, function(ev){ if(!ev.target.closest('button')){ ev.stopPropagation(); ev.preventDefault(); perf.classList.add('active'); setTimeout(function(){ perf.classList.remove('active'); }, 850); } }, true);
+      compass.addEventListener(evt, function(ev){ if(!ev.target.closest('button')){ ev.stopPropagation(); ev.preventDefault(); compass.classList.add('active'); setTimeout(function(){ compass.classList.remove('active'); }, 850); } }, true);
+    });
+    var root = document.documentElement;
+    var trackY = parseFloat(getComputedStyle(root).getPropertyValue('--thumb-track-y')) || 92;
+    function setTrackY(y){ trackY = clamp(y, 52, window.innerHeight - 260); root.style.setProperty('--thumb-track-y', trackY + 'px'); }
+    function bindVerticalPairDrag(hud){
+      var state = null;
+      hud.addEventListener('pointerdown', function(ev){ if(ev.button !== undefined && ev.button !== 0) return; if(ev.target.closest('button,input,textarea,select,a,label')) return; state = { id: ev.pointerId, startY: ev.clientY, startTrack: trackY, moved:false }; perf.classList.add('dragging'); compass.classList.add('dragging'); }, true);
+      window.addEventListener('pointermove', function(ev){ if(!state || ev.pointerId !== state.id) return; var dy = ev.clientY - state.startY; if(Math.abs(dy) > 2) state.moved = true; setTrackY(state.startTrack + dy); });
+      function end(ev){ if(!state || (ev.pointerId !== undefined && ev.pointerId !== state.id)) return; perf.classList.remove('dragging'); compass.classList.remove('dragging'); if(!state.moved) hud.classList.add('active'), setTimeout(function(){ hud.classList.remove('active'); }, 850); state = null; }
+      window.addEventListener('pointerup', end); window.addEventListener('pointercancel', end);
+    }
+    bindVerticalPairDrag(perf); bindVerticalPairDrag(compass);
+
+    var linked = false, cameraOn = false, loaded = false, nextZoomIn = true;
+    function syncDrone(){
+      var signal = document.querySelector('#perf-node-signal strong'); var battery = document.querySelector('#perf-node-battery strong'); var ram = document.querySelector('#perf-node-ram strong'); var storage = document.querySelector('#perf-node-storage strong'); var overall = byId('perf-overall'); var loadBtn = byId('perf-load-toggle-compact'); var camBtn = byId('perf-camera-toggle-compact');
+      if(signal) signal.textContent = linked ? (cameraOn ? 'LIVE' : 'LINK') : 'STBY';
+      if(battery) battery.textContent = linked ? (loaded ? '82%' : '91%') : '--%';
+      if(ram) ram.textContent = linked ? (cameraOn ? '6.8 GB' : '3.2 GB') : '--';
+      if(storage) storage.textContent = linked ? (loaded ? '118 GB' : '124 GB') : '--';
+      if(overall) overall.textContent = linked ? (loaded ? 'LOAD' : 'LIVE') : 'OK';
+      if(loadBtn){ loadBtn.textContent = loaded ? 'UNLOAD' : 'LOAD'; loadBtn.classList.toggle('active', loaded); }
+      if(camBtn){ camBtn.textContent = cameraOn ? 'CAM ON' : 'CAM OFF'; camBtn.classList.toggle('active', cameraOn); }
+    }
+    syncDrone();
+    document.querySelectorAll('#perf-compact-ui .hud-node').forEach(function(node){ node.addEventListener('click', function(ev){ ev.stopPropagation(); document.querySelectorAll('#perf-compact-ui .hud-node').forEach(function(o){ if(o!==node) o.classList.remove('open'); }); node.classList.toggle('open'); perf.classList.add('active'); setTimeout(function(){ perf.classList.remove('active'); }, 850); }); });
+    var loadBtn = byId('perf-load-toggle-compact'); if(loadBtn) loadBtn.addEventListener('click', function(ev){ ev.stopPropagation(); loaded = !loaded; if(!linked) linked = true; syncDrone(); if(typeof showResp === 'function') showResp(loaded ? 'Drone payload armed for unload.' : 'Drone payload state returned to load-ready.'); });
+    var camBtn = byId('perf-camera-toggle-compact'); if(camBtn) camBtn.addEventListener('click', function(ev){ ev.stopPropagation(); cameraOn = !cameraOn; if(!linked) linked = true; syncDrone(); if(typeof showResp === 'function') showResp(cameraOn ? 'Drone camera routed to the main screen hook.' : 'Drone camera feed disengaged.'); });
+
+    var radarZoomBtn = byId('radar-center-toggle-compact');
+    function zoomToggle(){ if(window.CL === 1 && window.LM){ if(nextZoomIn && typeof LM.zoomIn === 'function') LM.zoomIn(); else if(!nextZoomIn && typeof LM.zoomOut === 'function') LM.zoomOut(); nextZoomIn = !nextZoomIn; if(radarZoomBtn) radarZoomBtn.textContent = nextZoomIn ? 'ZOOM +' : 'ZOOM -'; compass.classList.add('active'); setTimeout(function(){ compass.classList.remove('active'); }, 850); } else if(typeof showResp === 'function') showResp('Open the Earth map to use the radar zoom control.'); }
+    if(radarZoomBtn) radarZoomBtn.addEventListener('click', function(ev){ ev.stopPropagation(); zoomToggle(); });
+    function nudgeMap(dir){ if(window.CL !== 1 || !window.LM || typeof LM.panBy !== 'function') return; var step = 22; LM.panBy([dir==='left'?-step:dir==='right'?step:0, dir==='up'?-step:dir==='down'?step:0], {animate:false}); }
+    var activeDir = null, timer = null; function stopArrow(){ if(activeDir){ var b = byId('radar-arrow-'+activeDir); if(b) b.classList.remove('active'); } activeDir = null; if(timer){ clearInterval(timer); timer = null; } }
+    ['up','right','down','left'].forEach(function(dir){ var btn = byId('radar-arrow-'+dir); if(!btn) return; btn.addEventListener('pointerdown', function(ev){ ev.stopPropagation(); stopArrow(); activeDir = dir; btn.classList.add('active'); nudgeMap(dir); timer = setInterval(function(){ nudgeMap(dir); }, 110); }); btn.addEventListener('pointerup', stopArrow); btn.addEventListener('pointercancel', stopArrow); btn.addEventListener('pointerleave', stopArrow); });
+    window.addEventListener('pointerup', stopArrow); window.addEventListener('pointercancel', stopArrow);
+  }
+})();
 </script>
 
 </body>
