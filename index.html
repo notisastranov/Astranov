@@ -4,811 +4,1162 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov Internet Operating System</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 :root{
-  --bg:#031018;
-  --bg2:#071d2b;
-  --panel:rgba(6,18,29,.62);
-  --panel-2:rgba(6,18,29,.84);
-  --line:rgba(0,197,255,.22);
-  --line-strong:rgba(0,197,255,.48);
-  --blue:#00c5ff;
-  --blue-2:#8be8ff;
-  --green:#2df58f;
-  --red:#ff4f6d;
-  --text:#dcf8ff;
-  --text-dim:#7db2c4;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
-  --composer-h:78px;
-  --helper-size:92px;
-  --hud-size:116px;
+  --bg:#030913;
+  --bg2:#07101d;
+  --panel:rgba(6,16,30,.52);
+  --panel-2:rgba(8,20,38,.72);
+  --line:rgba(0,200,255,.24);
+  --line-strong:rgba(0,200,255,.52);
+  --blue:#00c8ff;
+  --blue-soft:#7be4ff;
+  --text:#d9f5ff;
+  --dim:#8eb6c9;
+  --good:#16e07a;
+  --warn:#ffd44d;
+  --bad:#ff5668;
+  --shadow:0 18px 36px rgba(0,0,0,.32), 0 0 24px rgba(0,200,255,.08);
+  --r:18px;
+  --top-h:46px;
+  --dock-h:86px;
+  --safe-b:max(env(safe-area-inset-bottom), 10px);
+  --safe-l:max(env(safe-area-inset-left), 10px);
+  --safe-r:max(env(safe-area-inset-right), 10px);
+  --hud-size:86px;
+  --helper-w:78px;
+  --composer-h:58px;
+  --font:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at top,#09304c 0%,#041521 34%,#020c13 100%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at top, #0d1830 0%, var(--bg2) 36%, var(--bg) 100%);color:var(--text);font-family:var(--font)}
 button,input,select,textarea{font:inherit}
-body{position:fixed;inset:0;user-select:none}
+.hidden{display:none !important}
+.glass{
+  background:linear-gradient(180deg, rgba(9,22,42,.62), rgba(5,15,30,.42));
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(18px) saturate(130%);
+  -webkit-backdrop-filter:blur(18px) saturate(130%);
+}
+body{position:fixed;inset:0;touch-action:manipulation}
 
-/* Spartan Script lock */
 /*
-SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v5
-MISSION: full reconstruction of index.html only.
-NO PATCHES. NO LEFTOVERS. NO DUPLICATE CONTROLS. MOBILE-FIRST FOR SMALL PORTRAIT PHONES.
-World view first. Composer text only. No floating assistant chatter outside composer.
-Real app, not demo shell. Serious helper. Responsive HUD. Hidden contextual actions only.
+SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v6
+MISSION
+Rebuild the entire Astranov index.html from zero as one coherent operational file.
+
+ABSOLUTE BUILD LAW
+Never patch.
+Never layer new systems over old systems.
+Never keep obsolete code alive under new code.
+Every structural change requires full reconstruction of the whole index.html.
+
+MOBILE-FIRST LAW
+Primary target = small phones in portrait.
+Desktop is secondary.
+Everything must remain sharp, readable, and operable on dense mobile screens.
+
+DEFAULT-SCREEN LAW
+At load only essentials may be visible:
+1. world view
+2. helper bottom-left
+3. composer bottom-center
+4. add bubble bottom-right
+5. compact radar/performance HUDs
+No always-open add flow.
+No giant center card.
+No floating status labels.
+
+ANTI-FAKE LAW
+No fake buttons.
+No fake helper.
+No decorative mascot.
+No floating tutorial chatter.
+All assistant/status text stays inside the chat drawer only.
+
+WORLD-VIEW PRIORITY LAW
+The globe/map stays dominant.
+UI must not suffocate the world surface.
+
+OUTPUT LAW
+Single fully reconstructed index.html only.
+Final filename = index.html.
 */
 
-#app{position:relative;height:100%;overflow:hidden}
 #topbar{
-  position:absolute;left:0;right:0;top:0;padding:calc(8px + var(--safe-top)) 12px 8px;z-index:30;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  background:linear-gradient(180deg,rgba(2,10,15,.72),rgba(2,10,15,.15));
+  position:fixed;left:0;right:0;top:0;height:var(--top-h);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px calc(var(--safe-r) + 8px) 8px calc(var(--safe-l) + 8px);
+  z-index:60;background:linear-gradient(180deg, rgba(4,12,24,.72), rgba(4,12,24,.18));
+  border-bottom:1px solid rgba(0,200,255,.1);backdrop-filter:blur(14px);
 }
-.brand-pill,.user-pill{
-  height:38px;border-radius:20px;padding:0 14px;display:flex;align-items:center;gap:10px;
-  background:linear-gradient(180deg,rgba(6,18,29,.82),rgba(6,18,29,.52));
-  border:1px solid var(--line);box-shadow:0 0 0 1px rgba(255,255,255,.02) inset,0 8px 26px rgba(0,0,0,.22);
-  backdrop-filter:blur(16px) saturate(125%);
-}
-.brand-pill{min-width:150px;justify-content:center}
-.brand-main{font-size:13px;font-weight:800;letter-spacing:.22em;color:var(--blue);text-shadow:0 0 16px rgba(0,197,255,.35)}
-.brand-sub{font-size:11px;color:var(--text-dim);font-weight:600}
-.user-dot{width:12px;height:12px;border-radius:50%;background:radial-gradient(circle,var(--blue-2),var(--blue));box-shadow:0 0 16px rgba(0,197,255,.45)}
-.user-pill span{font-size:14px;font-weight:700}
+.brand-wrap{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 14px var(--blue)}
+.brand-text{font-size:12px;font-weight:700;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-sub{font-size:10px;color:var(--dim)}
+.mode-pill{padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--blue-soft);background:rgba(0,200,255,.07);white-space:nowrap}
 
-#stage{position:absolute;inset:0;padding-top:88px;padding-bottom:160px}
-#world-wrap{position:absolute;inset:88px 0 154px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#globe-view,#map-view{position:absolute;inset:0}
-#map-view{display:none}
-#globe-view{
-  display:flex;align-items:center;justify-content:center;pointer-events:auto;
-  background:
-    radial-gradient(circle at 50% 42%,rgba(18,88,136,.2),transparent 35%),
-    radial-gradient(circle at 50% 120%,rgba(0,164,255,.12),transparent 30%),
-    radial-gradient(circle at 50% 50%,rgba(255,255,255,.04),transparent 70%);
+#stage{
+  position:fixed;inset:var(--top-h) 0 calc(var(--dock-h) + var(--safe-b)) 0;
+  overflow:hidden;
 }
-#stars,#hud-stars{position:absolute;inset:0;pointer-events:none}
-#stars::before,#stars::after,#hud-stars::before,#hud-stars::after{
-  content:"";position:absolute;inset:0;
-  background-image:
-    radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.4px),
-    radial-gradient(circle,rgba(139,232,255,.8) 0 1px,transparent 1.6px),
-    radial-gradient(circle,rgba(255,222,138,.55) 0 1px,transparent 1.8px);
-  background-size:180px 180px,260px 260px,320px 320px;
-  background-position:0 0,40px 80px,100px 20px;
-  opacity:.32;
-}
-#globe{
-  position:relative;width:min(92vw,650px);aspect-ratio:1/1;border-radius:50%;overflow:hidden;
-  background:
-    radial-gradient(circle at 40% 35%,rgba(255,255,255,.28),transparent 18%),
-    radial-gradient(circle at 55% 50%,rgba(0,0,0,.02),transparent 32%),
-    radial-gradient(circle at 44% 36%,rgba(255,255,255,.08),transparent 12%),
-    url('https://upload.wikimedia.org/wikipedia/commons/8/80/Equirectangular_projection_SW.jpg') center/cover;
-  box-shadow:0 0 0 2px rgba(0,197,255,.08),0 0 60px rgba(0,197,255,.18),0 40px 110px rgba(0,0,0,.48), inset -40px -30px 80px rgba(0,0,0,.38);
-  transform:translateY(12px);
-}
-#globe::before{
-  content:"";position:absolute;inset:-6%;border-radius:50%;
-  background:radial-gradient(circle,transparent 60%,rgba(0,197,255,.18) 72%,transparent 78%);
-  filter:blur(16px);opacity:.8;pointer-events:none
-}
-#globe::after{
-  content:"";position:absolute;inset:0;border-radius:50%;
-  background:linear-gradient(120deg,rgba(255,255,255,.24),transparent 22%,transparent 55%,rgba(0,0,0,.38) 78%);
-  pointer-events:none
-}
-.globe-marker{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--blue-2);box-shadow:0 0 14px rgba(0,197,255,.8)}
-.globe-marker.orange{background:#ffb454;box-shadow:0 0 14px rgba(255,180,84,.8)}
-.globe-marker.red{background:#ff6174;box-shadow:0 0 14px rgba(255,97,116,.8)}
+#globe-wrap,#map-wrap{position:absolute;inset:0}
+#globeCanvas{width:100%;height:100%;display:block}
+#map{width:100%;height:100%}
+#map-wrap{display:none}
+body.map #map-wrap{display:block}
+body.map #globe-wrap{display:none}
 
-#map{position:absolute;inset:0;background:#07131b}
-.map-fake{position:absolute;inset:0;background:
-  radial-gradient(circle at 50% 30%,rgba(0,197,255,.08),transparent 30%),
-  linear-gradient(180deg,rgba(9,27,40,.95),rgba(5,18,28,.95)),
-  repeating-linear-gradient(90deg,transparent 0 59px,rgba(0,197,255,.05) 59px 60px),
-  repeating-linear-gradient(180deg,transparent 0 59px,rgba(0,197,255,.05) 59px 60px);
+#scene-gradient{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 75%, rgba(0,200,255,.06), transparent 30%), linear-gradient(180deg, transparent 60%, rgba(3,9,19,.38));
 }
-.map-road,.map-marker{position:absolute}
-.map-road{height:2px;background:linear-gradient(90deg,transparent,rgba(115,213,255,.35),transparent);box-shadow:0 0 8px rgba(0,197,255,.2)}
-.map-marker{width:15px;height:15px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:radial-gradient(circle at 32% 32%,#fff,#5fe4ff 58%,#019fd6);box-shadow:0 0 20px rgba(0,197,255,.4)}
-.map-marker::after{content:"";position:absolute;left:4px;top:4px;width:7px;height:7px;border-radius:50%;background:#032130}
 
 .hud{
-  position:absolute;top:calc(92px + var(--safe-top));width:var(--hud-size);height:var(--hud-size);border-radius:50%;z-index:20;
-  background:radial-gradient(circle at 50% 50%,rgba(8,27,40,.9) 0 46%,rgba(6,18,29,.78) 47% 100%);
-  border:1px solid var(--line);box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 18px 32px rgba(0,0,0,.28),0 0 36px rgba(0,197,255,.1);
-  backdrop-filter:blur(12px) saturate(130%);
+  position:absolute;z-index:35;width:var(--hud-size);height:var(--hud-size);
+  border-radius:50%;display:grid;place-items:center;overflow:hidden;
 }
-#perf-hud{left:10px}
-#radar-hud{right:10px}
-.hud-ring{position:absolute;inset:7px;border-radius:50%;border:1px solid rgba(0,197,255,.18)}
-.hud-ring::before,.hud-ring::after{content:"";position:absolute;inset:10px;border-radius:50%;border:1px solid rgba(0,197,255,.1)}
-.hud-center{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:42px;height:42px;border-radius:50%;border:1px solid var(--line-strong);
-  background:radial-gradient(circle at 35% 30%,rgba(139,232,255,.18),rgba(6,18,29,.96));display:grid;place-items:center;color:var(--blue-2);cursor:pointer;
-  box-shadow:0 0 16px rgba(0,197,255,.24),inset 0 0 12px rgba(0,197,255,.08)
+#perfHud{left:calc(var(--safe-l) + 10px);top:10px}
+#radarHud{right:calc(var(--safe-r) + 10px);top:10px}
+.hud svg{width:100%;height:100%;position:absolute;inset:0}
+.hud .center-btn{
+  position:relative;z-index:2;width:36px;height:36px;border-radius:50%;
+  border:1px solid var(--line-strong);background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.26), rgba(7,19,34,.92) 72%);
+  color:var(--blue-soft);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 16px rgba(0,200,255,.14)
 }
-.hud-center:active{transform:translate(-50%,-50%) scale(.96)}
-.hud-label{position:absolute;font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--text-dim);text-transform:uppercase}
-.hud-value{position:absolute;font-size:11px;font-weight:700;color:var(--blue-2)}
-#perf-hud .hud-label:nth-of-type(1){left:18px;top:18px} #perf-hud .hud-value:nth-of-type(1){left:18px;top:31px}
-#perf-hud .hud-label:nth-of-type(2){right:16px;top:18px} #perf-hud .hud-value:nth-of-type(2){right:16px;top:31px}
-#perf-hud .hud-label:nth-of-type(3){left:18px;bottom:18px} #perf-hud .hud-value:nth-of-type(3){left:18px;bottom:6px}
-#perf-hud .hud-label:nth-of-type(4){right:16px;bottom:18px} #perf-hud .hud-value:nth-of-type(4){right:16px;bottom:6px}
-#radar-hud .radar-sweep{position:absolute;inset:10px;border-radius:50%;background:conic-gradient(from 0deg,rgba(0,197,255,.0),rgba(0,197,255,.0) 62%,rgba(0,197,255,.24) 86%,rgba(0,197,255,.0) 100%);mix-blend-mode:screen;animation:sweep 4s linear infinite}
-#radar-hud .cardinals{position:absolute;inset:0;font-size:11px;font-weight:800;color:var(--blue-2)}
-#radar-hud .cardinals span{position:absolute}
-#radar-hud .cardinals .n{left:50%;top:10px;transform:translateX(-50%)}
-#radar-hud .cardinals .e{right:12px;top:50%;transform:translateY(-50%)}
-#radar-hud .cardinals .s{left:50%;bottom:10px;transform:translateX(-50%)}
-#radar-hud .cardinals .w{left:12px;top:50%;transform:translateY(-50%)}
-#radar-caption{position:absolute;right:26px;top:calc(92px + var(--safe-top) + var(--hud-size) + 10px);z-index:21;font-size:10px;color:var(--text-dim);font-weight:700;letter-spacing:.08em}
-#perf-caption{position:absolute;left:22px;top:calc(92px + var(--safe-top) + var(--hud-size) + 10px);z-index:21;font-size:10px;color:var(--text-dim);font-weight:700;letter-spacing:.08em}
-@keyframes sweep{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.hud .center-btn svg{position:static;width:18px;height:18px}
+.hud .micro{
+  position:absolute;z-index:2;font-size:9px;color:#9edcf0;letter-spacing:.06em
+}
+.hud .micro.top{top:12px}
+.hud .micro.bottom{bottom:12px}
+.hud .micro.left{left:8px;top:50%;transform:translateY(-50%) rotate(-90deg)}
+.hud .micro.right{right:8px;top:50%;transform:translateY(-50%) rotate(90deg)}
+#perfHud .micro{display:none}
+#cargo-dot{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:8px;height:8px;border-radius:50%;background:var(--good);z-index:3;display:none;
+  box-shadow:0 0 10px currentColor;
+}
+body.cargo-loaded #cargo-dot{display:block;background:var(--bad)}
+#cargo-center-icon-open,#cargo-center-icon-closed{position:absolute;inset:0;display:grid;place-items:center}
+body.cargo-loaded #cargo-center-icon-open{display:none}
+body:not(.cargo-loaded) #cargo-center-icon-closed{display:none}
+#radar-center-icon-out{display:none}
+body.map #radar-center-icon-in{display:none}
+body.map #radar-center-icon-out{display:block}
 
-#result-card{
-  position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);z-index:18;width:min(78vw,360px);display:none;
-  background:linear-gradient(180deg,rgba(6,18,29,.88),rgba(6,18,29,.7));border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;
-  box-shadow:0 18px 42px rgba(0,0,0,.28);backdrop-filter:blur(16px) saturate(130%)
+#helper{
+  position:fixed;left:calc(var(--safe-l) + 8px);bottom:calc(var(--safe-b) + 6px);
+  width:var(--helper-w);height:92px;z-index:70;display:flex;align-items:flex-end;justify-content:center;
+  background:none;border:none;padding:0;cursor:pointer;
 }
-#result-card.show{display:block}
-.result-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-.result-title{font-size:16px;font-weight:800}
-.result-type{font-size:11px;color:var(--blue-2);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
-.result-body{font-size:14px;line-height:1.45;color:#cfefff}
-.result-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--text-dim)}
-.close-chip{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);display:grid;place-items:center;cursor:pointer}
+#helper figure{
+  margin:0;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;
+  filter:drop-shadow(0 18px 18px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(0,200,255,.16));
+}
+#helper svg{width:76px;height:90px}
+#helper:hover svg{transform:translateY(-1px)}
+#helper-status{
+  position:fixed;left:calc(var(--safe-l) + 92px);bottom:calc(var(--safe-b) + 54px);
+  max-width:min(58vw,240px);padding:10px 12px;border-radius:16px;z-index:69;display:none;
+  font-size:11px;line-height:1.35;color:var(--text)
+}
+#helper-status.on{display:block}
 
-#helper-dock{position:absolute;left:10px;bottom:calc(12px + var(--safe-bottom));z-index:26;width:var(--helper-size);height:var(--helper-size);display:grid;place-items:end center}
-#helper-btn{background:transparent;border:none;padding:0;cursor:pointer;width:var(--helper-size);height:var(--helper-size)}
-#helper-svg{width:100%;height:100%;filter:drop-shadow(0 10px 20px rgba(0,0,0,.34)) drop-shadow(0 0 22px rgba(0,197,255,.15))}
-#helper-btn:active{transform:translateY(1px) scale(.99)}
+#composer{
+  position:fixed;left:calc(var(--safe-l) + 96px);right:calc(var(--safe-r) + 86px);
+  bottom:calc(var(--safe-b) + 12px);height:var(--dock-h);z-index:68;
+  display:flex;flex-direction:column;gap:8px;padding:8px 10px 10px;border-radius:22px;
+}
+#composer-top{display:flex;align-items:center;gap:8px;min-height:28px}
+#channel-wrap{
+  flex:1;display:flex;align-items:center;gap:8px;min-width:0;padding:0 12px;height:30px;border-radius:999px;
+  border:1px solid var(--line);background:rgba(0,200,255,.05)
+}
+#channel-arrow{font-size:12px;color:var(--blue-soft);flex:0 0 auto}
+#channel-select{
+  appearance:none;border:none;background:transparent;color:var(--blue-soft);min-width:0;flex:1;outline:none;font-size:12px
+}
+#channel-add{
+  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);
+  background:rgba(0,200,255,.06);color:var(--blue-soft);cursor:pointer;font-size:18px;line-height:1
+}
+#composer-bottom{display:grid;grid-template-columns:42px 1fr 42px;gap:8px;align-items:center}
+.icon-btn{
+  width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:rgba(0,200,255,.05);
+  color:var(--blue-soft);display:grid;place-items:center;cursor:pointer
+}
+.icon-btn svg{width:18px;height:18px}
+#cmd-input{
+  height:42px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.04);
+  padding:0 14px;color:var(--text);outline:none;font-size:14px
+}
+#cmd-input::placeholder{color:#8bb9ce}
+#cmd-input:focus{border-color:var(--line-strong);box-shadow:0 0 14px rgba(0,200,255,.12)}
+#send-btn{background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.22), rgba(7,19,34,.92) 72%)}
+#send-btn.has-text{border-color:rgba(0,200,255,.48);box-shadow:0 0 16px rgba(0,200,255,.16)}
 
-#composer-shell{
-  position:absolute;left:110px;right:96px;bottom:calc(14px + var(--safe-bottom));height:var(--composer-h);z-index:28;
-  background:linear-gradient(180deg,rgba(7,21,33,.78),rgba(7,21,33,.56));border:1px solid var(--line);border-radius:24px;padding:8px 10px;
-  box-shadow:0 12px 34px rgba(0,0,0,.26),inset 0 0 22px rgba(0,197,255,.04);backdrop-filter:blur(18px) saturate(130%);
-  display:flex;flex-direction:column;gap:8px
+#drawer{
+  position:fixed;left:calc(var(--safe-l) + 96px);right:calc(var(--safe-r) + 86px);
+  bottom:calc(var(--safe-b) + 104px);max-height:min(40dvh,280px);z-index:67;
+  border-radius:20px 20px 12px 12px;display:none;flex-direction:column;overflow:hidden
 }
-#composer-top{display:flex;align-items:center;gap:8px;min-width:0}
-#channel-wrap{position:relative;display:flex;align-items:center;flex:1;min-width:0;height:30px;border-radius:14px;border:1px solid rgba(0,197,255,.18);background:rgba(255,255,255,.03);overflow:hidden}
-#channel-arrow{width:30px;display:grid;place-items:center;color:var(--blue-2);font-size:11px;pointer-events:none}
-#channel{appearance:none;-webkit-appearance:none;flex:1;background:transparent;border:none;outline:none;color:var(--blue-2);font-weight:700;padding:0 8px 0 0;font-size:13px;min-width:0}
-#channel-add{width:30px;height:30px;border:none;border-left:1px solid rgba(0,197,255,.14);background:rgba(255,255,255,.02);color:var(--blue-2);font-size:18px;cursor:pointer}
-#composer-inputrow{display:flex;align-items:center;gap:8px;flex:1}
-.icon-btn{width:38px;height:38px;flex:0 0 38px;border-radius:50%;border:1px solid rgba(0,197,255,.18);background:rgba(255,255,255,.03);color:var(--blue-2);display:grid;place-items:center;cursor:pointer}
-#text-box{flex:1;min-width:0;height:38px;border-radius:16px;border:1px solid rgba(0,197,255,.18);background:transparent;padding:0 14px;color:var(--blue-2);font-size:14px;box-shadow:inset 0 0 14px rgba(0,197,255,.04)}
-#text-box::placeholder{color:#70bfd4}
-#text-box:focus{outline:none;border-color:var(--line-strong)}
-#send-btn{width:42px;height:38px;border-radius:16px;border:1px solid rgba(0,197,255,.24);background:radial-gradient(circle at 35% 30%,rgba(139,232,255,.16),rgba(7,21,33,.94));color:var(--blue-2);display:grid;place-items:center;cursor:pointer}
+#drawer.open{display:flex}
+#drawer-messages{overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
+.msg{max-width:88%;padding:9px 12px;border-radius:16px;font-size:12px;line-height:1.4}
+.msg.user{align-self:flex-end;background:rgba(0,200,255,.12);border:1px solid rgba(0,200,255,.22)}
+.msg.ai{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.msg.system{align-self:center;background:rgba(0,200,255,.05);border:1px solid rgba(0,200,255,.15);color:var(--blue-soft);max-width:94%}
 
-#chat-drawer{
-  position:absolute;left:110px;right:96px;bottom:calc(var(--composer-h) + 20px + var(--safe-bottom));z-index:25;max-height:min(42vh,320px);display:none;
-  background:linear-gradient(180deg,rgba(6,18,29,.9),rgba(6,18,29,.74));border:1px solid var(--line);border-radius:20px 20px 10px 10px;
-  box-shadow:0 18px 34px rgba(0,0,0,.3);overflow:hidden;backdrop-filter:blur(18px) saturate(130%)
+#add-btn{
+  position:fixed;right:calc(var(--safe-r) + 12px);bottom:calc(var(--safe-b) + 12px);
+  width:64px;height:64px;border-radius:50%;z-index:69;border:1px solid rgba(0,200,255,.38);
+  background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.3), rgba(7,19,34,.92) 72%);
+  color:var(--text);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)
 }
-#chat-drawer.show{display:flex;flex-direction:column}
-#chat-log{overflow:auto;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px}
-.msg{padding:10px 12px;border-radius:16px;max-width:88%;font-size:13px;line-height:1.4}
-.msg.assistant{align-self:flex-start;background:rgba(0,197,255,.08);border:1px solid rgba(0,197,255,.14);color:#d7f8ff}
-.msg.user{align-self:flex-end;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#f0fbff}
-.msg.system{align-self:center;background:rgba(0,0,0,.14);border:1px solid rgba(0,197,255,.08);color:var(--text-dim);font-size:12px}
+#add-btn svg{width:26px;height:26px}
+body.radial-open #add-btn{box-shadow:0 0 24px rgba(0,200,255,.22), var(--shadow)}
 
-#add-bubble{
-  position:absolute;right:12px;bottom:calc(18px + var(--safe-bottom));width:76px;height:76px;border-radius:50%;z-index:29;
-  border:1px solid var(--line-strong);background:radial-gradient(circle at 35% 30%,rgba(139,232,255,.18),rgba(6,18,29,.92));
-  display:grid;place-items:center;color:var(--blue-2);font-size:32px;cursor:pointer;box-shadow:0 16px 30px rgba(0,0,0,.26),0 0 22px rgba(0,197,255,.12)
+#radial{
+  position:absolute;inset:0;pointer-events:none;z-index:40
 }
-#add-bubble:active{transform:scale(.97)}
+.radial-item{
+  position:absolute;width:88px;height:88px;border-radius:50%;pointer-events:auto;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
+  padding:10px;background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.28), rgba(7,19,34,.94) 72%);
+  border:1px solid rgba(0,200,255,.3);color:var(--text);font-size:11px;line-height:1.15;
+  box-shadow:var(--shadow);opacity:0;transform:scale(.78);transition:opacity .18s ease, transform .18s ease
+}
+.radial-item svg{width:18px;height:18px}
+body.radial-open .radial-item{opacity:1;transform:scale(1)}
 
-#radial-layer{position:absolute;inset:0;z-index:24;display:none;pointer-events:none}
-#radial-layer.show{display:block}
-.radial-option{
-  position:absolute;width:96px;height:96px;border-radius:50%;pointer-events:auto;cursor:pointer;
-  border:1px solid rgba(0,197,255,.2);background:radial-gradient(circle at 35% 30%,rgba(139,232,255,.14),rgba(6,18,29,.92));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:8px;color:#e0faff;
-  box-shadow:0 16px 30px rgba(0,0,0,.26)
+#sheet{
+  position:absolute;left:12px;right:12px;bottom:12px;z-index:45;display:none;pointer-events:none
 }
-.radial-option strong{font-size:14px;line-height:1.05}
-.radial-option span{font-size:11px;color:var(--text-dim)}
-.radial-icon{font-size:18px;color:var(--blue-2)}
+#sheet.show{display:block}
+.sheet-card{
+  pointer-events:auto;border-radius:22px;padding:14px;background:linear-gradient(180deg, rgba(8,20,38,.86), rgba(6,16,30,.9));
+  border:1px solid rgba(0,200,255,.22);box-shadow:var(--shadow)
+}
+.sheet-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.sheet-title{font-size:16px;font-weight:700}
+.sheet-sub{font-size:12px;color:var(--dim);margin-top:4px}
+.sheet-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(0,200,255,.16);background:rgba(0,200,255,.06);font-size:11px;color:var(--blue-soft)}
+.sheet-actions{display:flex;gap:8px;margin-top:14px}
+.action{
+  flex:1;height:42px;border-radius:14px;border:1px solid var(--line);cursor:pointer;
+  background:rgba(0,200,255,.06);color:var(--text)
+}
+.action.primary{background:rgba(0,200,255,.16);border-color:rgba(0,200,255,.34)}
 
-#form-sheet{
-  position:absolute;left:12px;right:12px;top:calc(88px + var(--safe-top));bottom:calc(112px + var(--safe-bottom));z-index:32;display:none;
-  background:linear-gradient(180deg,rgba(6,18,29,.94),rgba(6,18,29,.82));border:1px solid var(--line);border-radius:22px;
-  box-shadow:0 22px 44px rgba(0,0,0,.34);backdrop-filter:blur(18px) saturate(130%);overflow:hidden
+#form-modal{
+  position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.48);display:none;align-items:flex-end;justify-content:center;
+  backdrop-filter:blur(8px)
 }
-#form-sheet.show{display:flex;flex-direction:column}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 12px;border-bottom:1px solid rgba(0,197,255,.12)}
-.sheet-title{font-size:18px;font-weight:800}
-.sheet-sub{font-size:12px;color:var(--text-dim);margin-top:4px}
-.sheet-close{width:40px;height:40px;border-radius:50%;border:1px solid rgba(0,197,255,.18);background:rgba(255,255,255,.03);color:var(--text);display:grid;place-items:center;cursor:pointer;font-size:22px}
-#form-body{padding:14px;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:12px 10px}
-.field{display:flex;flex-direction:column;gap:6px}
-.field.full{grid-column:1/-1}
-.field label{font-size:12px;color:var(--text-dim);font-weight:700;letter-spacing:.04em}
-.field input,.field select,.field textarea{
-  width:100%;border-radius:14px;border:1px solid rgba(0,197,255,.16);background:rgba(255,255,255,.03);padding:12px 12px;color:var(--text);outline:none
+#form-modal.open{display:flex}
+#form-card{
+  width:min(100%,560px);max-height:min(80dvh,720px);border-radius:24px 24px 0 0;padding:14px 14px calc(var(--safe-b) + 14px);
+  overflow:auto
 }
-.field textarea{min-height:92px;resize:vertical}
-#form-actions{display:flex;gap:10px;padding:14px;border-top:1px solid rgba(0,197,255,.12)}
-.primary-btn,.ghost-btn{height:44px;border-radius:16px;padding:0 16px;font-weight:800;cursor:pointer}
-.primary-btn{flex:1;border:1px solid rgba(0,197,255,.26);background:radial-gradient(circle at 35% 30%,rgba(139,232,255,.14),rgba(7,21,33,.94));color:var(--blue-2)}
-.ghost-btn{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:var(--text)}
+.form-top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;padding-bottom:10px;background:linear-gradient(180deg, rgba(8,20,38,.98), rgba(8,20,38,.9))}
+.form-title{font-size:18px;font-weight:700}
+#form-close{
+  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;font-size:24px;line-height:1
+}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-field{display:flex;flex-direction:column;gap:6px}
+.form-field.full{grid-column:1 / -1}
+.form-label{font-size:11px;color:var(--blue-soft)}
+.form-input,.form-select,.form-textarea{
+  width:100%;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);outline:none;padding:12px
+}
+.form-textarea{min-height:92px;resize:vertical}
+.form-footer{display:flex;gap:10px;margin-top:14px}
+.form-footer .action{height:46px}
 
-#listings-strip{
-  position:absolute;left:10px;right:10px;top:calc(88px + var(--safe-top) + 10px);z-index:19;display:flex;gap:10px;overflow:auto;padding-bottom:6px;scrollbar-width:none
+.map-marker{
+  width:16px;height:16px;border-radius:50%;border:2px solid #fff;background:var(--blue);
+  box-shadow:0 0 12px rgba(0,200,255,.65)
 }
-#listings-strip:empty{display:none}
-.listing-chip{
-  min-width:170px;max-width:220px;background:linear-gradient(180deg,rgba(6,18,29,.76),rgba(6,18,29,.58));border:1px solid rgba(0,197,255,.16);border-radius:18px;padding:12px;box-shadow:0 12px 22px rgba(0,0,0,.22);backdrop-filter:blur(16px)
-}
-.listing-chip h4{margin:0 0 4px;font-size:15px}
-.listing-chip p{margin:0;font-size:12px;color:var(--text-dim);line-height:1.35}
-.listing-chip .price{display:block;margin-top:8px;color:var(--blue-2);font-weight:800}
+.map-marker.driver{background:#ff9b2f}
+.map-marker.delivery{background:#7ae4ff}
+.map-marker.product{background:#00c8ff}
+.map-marker.service{background:#8d5bff}
 
-.hidden{display:none !important}
+.leaflet-control-attribution,.leaflet-control-container .leaflet-top,.leaflet-control-zoom{display:none !important}
+.leaflet-container{background:#07101d}
 
 @media (max-width:420px){
-  :root{--helper-size:84px;--hud-size:104px}
-  .brand-main{font-size:11px}
-  .user-pill span{font-size:13px}
-  #composer-shell{left:96px;right:88px}
-  #chat-drawer{left:96px;right:88px}
-  #result-card{width:min(84vw,340px)}
-  .radial-option{width:88px;height:88px}
+  :root{--hud-size:78px;--helper-w:74px}
+  #composer{left:calc(var(--safe-l) + 84px);right:calc(var(--safe-r) + 78px)}
+  #drawer{left:calc(var(--safe-l) + 84px);right:calc(var(--safe-r) + 78px)}
+  .radial-item{width:78px;height:78px;font-size:10px}
+  .form-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="topbar">
-    <div class="brand-pill">
-      <div class="brand-main">ASTRANOV</div>
-      <div class="brand-sub">v1</div>
-    </div>
-    <div class="user-pill"><div class="user-dot"></div><span>Guest</span></div>
-  </div>
-
-  <div id="stage">
-    <div id="world-wrap">
-      <div id="stars"></div>
-      <div id="globe-view">
-        <div id="globe">
-          <div class="globe-marker" style="left:58%;top:48%"></div>
-          <div class="globe-marker orange" style="left:64%;top:56%"></div>
-          <div class="globe-marker" style="left:43%;top:44%"></div>
-          <div class="globe-marker red" style="left:37%;top:53%"></div>
-          <div class="globe-marker orange" style="left:71%;top:39%"></div>
-        </div>
-      </div>
-      <div id="map-view">
-        <div id="map" class="map-fake">
-          <div class="map-road" style="left:6%;top:38%;width:58%;transform:rotate(18deg)"></div>
-          <div class="map-road" style="left:30%;top:56%;width:48%;transform:rotate(-12deg)"></div>
-          <div class="map-road" style="left:18%;top:18%;width:36%;transform:rotate(-4deg)"></div>
-          <div class="map-road" style="left:54%;top:22%;width:28%;transform:rotate(24deg)"></div>
-          <div class="map-marker" id="map-focus" style="left:52%;top:46%"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="listings-strip"></div>
-
-    <div id="perf-hud" class="hud">
-      <div class="hud-ring"></div>
-      <div class="hud-label">Signal</div><div class="hud-value" id="perf-signal">84%</div>
-      <div class="hud-label">Battery</div><div class="hud-value" id="perf-battery">81%</div>
-      <div class="hud-label">Storage</div><div class="hud-value" id="perf-storage">64GB</div>
-      <div class="hud-label">Load</div><div class="hud-value" id="perf-state">Open</div>
-      <button class="hud-center" id="load-toggle" aria-label="Load or unload">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <path id="claw-shape" d="M7 7c0 0-2 2-2 5s2 5 5 5h4c3 0 5-2 5-5 0-2-1-4-2-5"></path>
-          <circle id="claw-dot" cx="12" cy="12" r="0" fill="currentColor"></circle>
-        </svg>
-      </button>
-    </div>
-    <div id="perf-caption">Performance</div>
-
-    <div id="radar-hud" class="hud">
-      <div class="hud-ring"></div>
-      <div class="radar-sweep"></div>
-      <div class="cardinals"><span class="n">N</span><span class="e">E</span><span class="s">S</span><span class="w">W</span></div>
-      <button class="hud-center" id="zoom-toggle" aria-label="Zoom to location or globe">
-        <svg id="zoom-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 6v12"></path><path d="M7 11l5-5 5 5"></path>
-        </svg>
-      </button>
-    </div>
-    <div id="radar-caption">Radar</div>
-
-    <div id="result-card">
-      <div class="result-head">
-        <div>
-          <div class="result-type" id="result-type">Product</div>
-          <div class="result-title" id="result-title">Listing ready</div>
-        </div>
-        <button class="close-chip" id="close-result">×</button>
-      </div>
-      <div class="result-body" id="result-body"></div>
-      <div class="result-meta" id="result-meta"></div>
-    </div>
-
-    <div id="radial-layer"></div>
-
-    <div id="form-sheet">
-      <div class="sheet-head">
-        <div>
-          <div class="sheet-title" id="sheet-title">Create listing</div>
-          <div class="sheet-sub" id="sheet-sub">Use current focus location or map center.</div>
-        </div>
-        <button class="sheet-close" id="close-sheet">×</button>
-      </div>
-      <div id="form-body"></div>
-      <div id="form-actions">
-        <button class="ghost-btn" id="cancel-sheet">Cancel</button>
-        <button class="primary-btn" id="save-sheet">Save listing</button>
-      </div>
+<div id="topbar">
+  <div class="brand-wrap">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-text">Astranov Internet Operating System</div>
+      <div class="brand-sub">planet-first marketplace</div>
     </div>
   </div>
+  <div class="mode-pill" id="modePill">Globe</div>
+</div>
 
-  <div id="chat-drawer"><div id="chat-log"></div></div>
+<div id="stage">
+  <div id="globe-wrap">
+    <canvas id="globeCanvas"></canvas>
+  </div>
+  <div id="map-wrap">
+    <div id="map"></div>
+  </div>
+  <div id="scene-gradient"></div>
 
-  <div id="helper-dock">
-    <button id="helper-btn" aria-label="Astranov Collective Intelligence">
-      <svg id="helper-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="wingG" x1="0" x2="1">
-            <stop offset="0" stop-color="#1d3a4a"/>
-            <stop offset="1" stop-color="#8be8ff"/>
-          </linearGradient>
-          <linearGradient id="bodyG" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stop-color="#0f3448"/>
-            <stop offset="1" stop-color="#0a1822"/>
-          </linearGradient>
-        </defs>
-        <path d="M20 74c8-16 18-24 30-26-6 6-10 14-12 24-6 1-12 1-18 2z" fill="url(#wingG)" opacity=".9"/>
-        <path d="M100 74c-8-16-18-24-30-26 6 6 10 14 12 24 6 1 12 1 18 2z" fill="url(#wingG)" opacity=".9"/>
-        <path d="M36 38l10-12 12 9-10 8z" fill="#243948"/>
-        <path d="M84 38l-10-12-12 9 10 8z" fill="#243948"/>
-        <path d="M60 18c16 0 29 11 29 26 0 11-7 20-17 24v10H48V68C38 64 31 55 31 44c0-15 13-26 29-26z" fill="url(#bodyG)" stroke="#8be8ff" stroke-opacity=".24"/>
-        <path d="M47 27l-10 10 8 7" fill="none" stroke="#9defff" stroke-width="3.2" stroke-linecap="round"/>
-        <path d="M73 27l10 10-8 7" fill="none" stroke="#9defff" stroke-width="3.2" stroke-linecap="round"/>
-        <ellipse cx="60" cy="46" rx="18" ry="16" fill="#f1d2b5"/>
-        <circle cx="53" cy="45" r="2.3" fill="#06131b"/>
-        <circle cx="67" cy="45" r="2.3" fill="#06131b"/>
-        <path d="M54 53c2 2 10 2 12 0" fill="none" stroke="#6a3c38" stroke-width="2" stroke-linecap="round"/>
-        <path d="M46 39c2-3 6-5 14-5 9 0 13 2 15 5" fill="none" stroke="#e5f7ff" stroke-opacity=".4"/>
-        <path d="M42 70h36l8 24H34z" fill="url(#bodyG)" stroke="#8be8ff" stroke-opacity=".22"/>
-        <path d="M57 72l-6 14 8 7 10-10-4-10z" fill="#8be8ff" opacity=".2"/>
-        <path d="M60 67l18 5-12 6z" fill="none" stroke="#d7f8ff" stroke-width="3" stroke-linejoin="round"/>
-      </svg>
+  <div id="perfHud" class="hud glass" aria-label="Performance">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,200,255,.18)" stroke-width="2"/>
+      <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(0,200,255,.08)" stroke-width="10" stroke-dasharray="44 12 28 12 34 12 26 16"/>
+      <path d="M50 8 A42 42 0 0 1 89 38" fill="none" stroke="rgba(22,224,122,.72)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M92 50 A42 42 0 0 1 62 89" fill="none" stroke="rgba(255,212,77,.72)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M38 89 A42 42 0 0 1 8 50" fill="none" stroke="rgba(0,200,255,.72)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M11 38 A42 42 0 0 1 50 8" fill="none" stroke="rgba(141,91,255,.72)" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <button class="center-btn" id="cargoBtn" title="Load / unload">
+      <span id="cargo-dot"></span>
+      <span id="cargo-center-icon-open" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6c-2 0-4 1-5 3v6c1 2 3 3 5 3"/><path d="M15 6c2 0 3 1 3 3v6c0 2-1 3-3 3"/></svg>
+      </span>
+      <span id="cargo-center-icon-closed" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 9c0-2 2-3 4-3s4 1 4 3v6c0 2-2 3-4 3s-4-1-4-3V9z"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
+      </span>
     </button>
   </div>
 
-  <div id="composer-shell">
-    <div id="composer-top">
-      <div id="channel-wrap">
-        <div id="channel-arrow">▾</div>
-        <select id="channel">
-          <option>Astranov Collective Intelligence</option>
-          <option>Marketplace</option>
-          <option>Planet Operations</option>
-          <option>Astranov Racing</option>
-        </select>
-        <button id="channel-add" aria-label="Add channel">+</button>
-      </div>
-    </div>
-    <div id="composer-inputrow">
-      <button class="icon-btn" id="mic-btn" aria-label="Voice typing">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><path d="M12 17v4"></path><path d="M8 21h8"></path></svg>
-      </button>
-      <input id="text-box" type="text" placeholder='Tell Astranov what to do…' />
-      <button id="send-btn" aria-label="Send">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
-      </button>
-    </div>
+  <div id="radarHud" class="hud glass" aria-label="Radar">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,200,255,.18)" stroke-width="2"/>
+      <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,200,255,.12)" stroke-width="1.5"/>
+      <circle cx="50" cy="50" r="18" fill="none" stroke="rgba(0,200,255,.08)" stroke-width="1.5"/>
+      <path d="M50 8 L50 92 M8 50 L92 50" stroke="rgba(0,200,255,.08)" stroke-width="1"/>
+      <path d="M50 50 L78 32" stroke="rgba(0,200,255,.5)" stroke-width="2.4" stroke-linecap="round"/>
+    </svg>
+    <button class="center-btn" id="radarBtn" title="Zoom to my location / globe">
+      <span id="radar-center-icon-in" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/></svg>
+      </span>
+      <span id="radar-center-icon-out" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20V8"/><path d="M7 13l5-5 5 5"/></svg>
+      </span>
+    </button>
   </div>
 
-  <button id="add-bubble" aria-label="Add something">+</button>
+  <div id="radial"></div>
+
+  <div id="sheet">
+    <div class="sheet-card">
+      <div class="sheet-top">
+        <div>
+          <div class="sheet-title" id="sheetTitle">Listing</div>
+          <div class="sheet-sub" id="sheetSub">Details</div>
+          <div class="sheet-meta" id="sheetMeta"></div>
+        </div>
+        <button class="icon-btn" id="sheetClose" title="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <div class="sheet-actions">
+        <button class="action primary" id="sheetAction">Open</button>
+        <button class="action" id="sheetSecondary">Route</button>
+      </div>
+    </div>
+  </div>
 </div>
 
+<button id="helper" aria-label="Astranov Collective Intelligence">
+  <figure>
+    <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#a9f2ff" stop-opacity=".9"/>
+          <stop offset="100%" stop-color="#00c8ff" stop-opacity=".18"/>
+        </linearGradient>
+        <linearGradient id="armor" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#183550"/>
+          <stop offset="100%" stop-color="#07111d"/>
+        </linearGradient>
+      </defs>
+      <path d="M18 70c-9 0-15-9-12-18 5-14 22-22 35-27-4 8-4 19 0 28-8 8-14 17-23 17z" fill="url(#wing)" stroke="rgba(180,240,255,.45)" stroke-width="1.4"/>
+      <path d="M102 70c9 0 15-9 12-18-5-14-22-22-35-27 4 8 4 19 0 28 8 8 14 17 23 17z" fill="url(#wing)" stroke="rgba(180,240,255,.45)" stroke-width="1.4"/>
+      <path d="M60 18c10 0 20 7 24 18v9c0 17-11 30-24 30S36 62 36 45v-9c4-11 14-18 24-18z" fill="url(#armor)" stroke="#62dfff" stroke-width="2"/>
+      <path d="M47 16c-6-10-17-16-30-15 11 3 19 11 23 20" fill="none" stroke="#8ff1ff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M73 16c6-10 17-16 30-15-11 3-19 11-23 20" fill="none" stroke="#8ff1ff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M38 46c0-17 10-28 22-28s22 11 22 28" fill="none" stroke="#9aefff" stroke-width="2" opacity=".7"/>
+      <path d="M46 88c8 5 20 5 28 0l8 28H38l8-28z" fill="url(#armor)" stroke="#62dfff" stroke-width="2"/>
+      <path d="M58 76l-8 44" stroke="#9aefff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M62 76l8 44" stroke="#9aefff" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="52" cy="47" r="3" fill="#9ff7ff"/>
+      <circle cx="68" cy="47" r="3" fill="#9ff7ff"/>
+      <path d="M53 58c4 3 10 3 14 0" fill="none" stroke="#9ff7ff" stroke-width="2" stroke-linecap="round"/>
+      <path d="M90 74l9 46" stroke="#9ff7ff" stroke-width="4" stroke-linecap="round"/>
+      <path d="M84 74l12 0 8 8-22 0z" fill="#0d2033" stroke="#62dfff" stroke-width="2"/>
+      <path d="M90 118l18 0" stroke="#9ff7ff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M95 112l13 0" stroke="#9ff7ff" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </figure>
+</button>
+<div id="helper-status" class="glass"></div>
+
+<div id="drawer" class="glass">
+  <div id="drawer-messages"></div>
+</div>
+
+<div id="composer" class="glass">
+  <div id="composer-top">
+    <div id="channel-wrap">
+      <div id="channel-arrow">▾</div>
+      <select id="channel-select" aria-label="Channel">
+        <option value="ai">Astranov Collective Intelligence</option>
+        <option value="global">Global</option>
+        <option value="local">My Area</option>
+        <option value="team">General Team</option>
+        <option value="astranov-racing">Astranov Racing</option>
+        <option value="support">Support & Ideas</option>
+        <option value="marketplace">Marketplace</option>
+      </select>
+    </div>
+    <button id="channel-add" title="Suggest channel">+</button>
+  </div>
+  <div id="composer-bottom">
+    <button class="icon-btn" id="mic-btn" title="Voice typing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
+    </button>
+    <input id="cmd-input" type="text" autocomplete="off" placeholder="Tell Astranov what to do…" />
+    <button class="icon-btn" id="send-btn" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9 22 2Z"/></svg>
+    </button>
+  </div>
+</div>
+
+<button id="add-btn" aria-label="Add something">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+</button>
+
+<div id="form-modal">
+  <div id="form-card" class="glass">
+    <div class="form-top">
+      <div class="form-title" id="form-title">Create listing</div>
+      <button id="form-close">×</button>
+    </div>
+    <form id="listing-form">
+      <div class="form-grid" id="form-grid"></div>
+      <div class="form-footer">
+        <button type="button" class="action" id="form-cancel">Cancel</button>
+        <button type="submit" class="action primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<textarea id="spartan-script" class="hidden">
+SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v6
+MISSION
+Rebuild the entire Astranov index.html from zero as one coherent operational file.
+
+LOCKS
+- mobile first for small phones in portrait
+- no patches, no ghost controls, no duplicate buttons
+- default screen clean
+- no floating chatter outside composer
+- globe/map dominant
+- helper serious, not decorative
+- add flow hidden until requested
+- no giant blocking overlay
+- all status text inside chat drawer only
+- final output = one full index.html
+</textarea>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (() => {
-  const app = document.getElementById('app');
-  const textBox = document.getElementById('text-box');
-  const sendBtn = document.getElementById('send-btn');
-  const micBtn = document.getElementById('mic-btn');
-  const helperBtn = document.getElementById('helper-btn');
-  const addBubble = document.getElementById('add-bubble');
-  const radialLayer = document.getElementById('radial-layer');
-  const chatDrawer = document.getElementById('chat-drawer');
-  const chatLog = document.getElementById('chat-log');
-  const zoomToggle = document.getElementById('zoom-toggle');
-  const zoomIcon = document.getElementById('zoom-icon');
-  const loadToggle = document.getElementById('load-toggle');
-  const clawShape = document.getElementById('claw-shape');
-  const clawDot = document.getElementById('claw-dot');
-  const perfState = document.getElementById('perf-state');
-  const globeView = document.getElementById('globe-view');
-  const mapView = document.getElementById('map-view');
-  const mapFocus = document.getElementById('map-focus');
-  const formSheet = document.getElementById('form-sheet');
-  const formBody = document.getElementById('form-body');
-  const sheetTitle = document.getElementById('sheet-title');
-  const sheetSub = document.getElementById('sheet-sub');
-  const closeSheet = document.getElementById('close-sheet');
-  const cancelSheet = document.getElementById('cancel-sheet');
-  const saveSheet = document.getElementById('save-sheet');
-  const resultCard = document.getElementById('result-card');
-  const closeResult = document.getElementById('close-result');
-  const resultType = document.getElementById('result-type');
-  const resultTitle = document.getElementById('result-title');
-  const resultBody = document.getElementById('result-body');
-  const resultMeta = document.getElementById('result-meta');
-  const listingsStrip = document.getElementById('listings-strip');
-  const channelAdd = document.getElementById('channel-add');
-  const channel = document.getElementById('channel');
+  const $ = s => document.querySelector(s);
+  const stage = $('#stage');
+  const drawer = $('#drawer');
+  const drawerMessages = $('#drawer-messages');
+  const input = $('#cmd-input');
+  const sendBtn = $('#send-btn');
+  const addBtn = $('#add-btn');
+  const helper = $('#helper');
+  const helperStatus = $('#helper-status');
+  const modePill = $('#modePill');
+  const radial = $('#radial');
+  const formModal = $('#form-modal');
+  const formGrid = $('#form-grid');
+  const formTitle = $('#form-title');
+  const formClose = $('#form-close');
+  const listingForm = $('#listing-form');
+  const micBtn = $('#mic-btn');
+  const channelSelect = $('#channel-select');
+  const sheet = $('#sheet');
+  const sheetClose = $('#sheetClose');
+  const sheetTitle = $('#sheetTitle');
+  const sheetSub = $('#sheetSub');
+  const sheetMeta = $('#sheetMeta');
+  const radarBtn = $('#radarBtn');
+  const cargoBtn = $('#cargoBtn');
 
   const state = {
-    mode: 'globe',
-    handsFree: false,
-    loadState: 'open',
+    view: 'globe',
+    cargoLoaded: false,
+    drawerOpen: false,
     radialOpen: false,
-    formType: null,
-    currentCenter: { lat: 36.4346, lng: 28.2176, label: 'Rhodes' },
-    chatOpen: false,
-    listings: JSON.parse(localStorage.getItem('astranov.listings.v1') || '[]')
+    handsFree: false,
+    pendingType: null,
+    userLocation: { lat: 36.4349, lng: 28.2176, label: 'Rhodes' },
+    mapReady: false,
+    currentChannel: 'ai',
+    listings: [],
+    markers: [],
+    remote: { shops: [], drivers: [], products: [], news: [] }
   };
 
-  const radialConfig = [
-    { key: 'product', icon: '▣', title: 'Product', sub: 'shop item' },
-    { key: 'service', icon: '◌', title: 'Service', sub: 'hotel, tour' },
-    { key: 'delivery', icon: '⌖', title: 'Delivery', sub: 'my location' },
-    { key: 'driver', icon: '◈', title: 'Driver', sub: 'base location' },
-    { key: 'media', icon: '▤', title: 'Media', sub: 'photo or video' }
+  const API = {
+    shops: '/api/shops_list.php',
+    products: '/api/products_list.php',
+    drivers: '/api/drivers_state.php',
+    news: '/api/news_top.php',
+    users: '/api/users_list.php'
+  };
+
+  const STORAGE_KEY = 'astranov.mobile.listings.v2';
+  let map, globe, globeScene, globeCamera, globeRenderer, globeSignals = [];
+  let recognition = null;
+  let addOrigin = null;
+  let selectedListing = null;
+
+  function appendMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = 'msg ' + role;
+    div.textContent = text;
+    drawerMessages.appendChild(div);
+    drawerMessages.scrollTop = drawerMessages.scrollHeight;
+    if(role !== 'user') openDrawer();
+  }
+
+  function openDrawer(){ state.drawerOpen = true; drawer.classList.add('open'); }
+  function closeDrawer(){ state.drawerOpen = false; drawer.classList.remove('open'); }
+
+  function showHelperStatus(text){
+    helperStatus.textContent = text;
+    helperStatus.classList.add('on');
+    clearTimeout(showHelperStatus.t);
+    showHelperStatus.t = setTimeout(()=>helperStatus.classList.remove('on'), 2200);
+  }
+
+  function updateModeUI(){
+    document.body.classList.toggle('map', state.view === 'map');
+    document.body.classList.toggle('cargo-loaded', state.cargoLoaded);
+    document.body.classList.toggle('radial-open', state.radialOpen);
+    modePill.textContent = state.view === 'map' ? 'Map' : 'Globe';
+    sendBtn.classList.toggle('has-text', !!input.value.trim());
+  }
+
+  function saveLocalListings(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.listings.filter(x => x.source !== 'remote')));
+  }
+
+  function loadLocalListings(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      state.listings = Array.isArray(arr) ? arr : [];
+    }catch(e){ state.listings = []; }
+  }
+
+  function normalizeLatLng(v1, v2){
+    const lat = parseFloat(v1); const lng = parseFloat(v2);
+    if(Number.isFinite(lat) && Number.isFinite(lng)) return {lat, lng};
+    return null;
+  }
+
+  function normalizeShop(item){
+    const ll = normalizeLatLng(item.lat ?? item.latitude, item.lon ?? item.lng ?? item.longitude);
+    if(!ll) return null;
+    return {
+      id: 'shop-' + (item.id ?? Math.random().toString(36).slice(2)),
+      type: item.category === 'hotel' ? 'service' : (item.category || 'service'),
+      title: item.name || item.title || 'Listing',
+      category: item.category || 'service',
+      description: item.description || '',
+      price: item.price || '',
+      lat: ll.lat, lng: ll.lng,
+      phone: item.phone || '',
+      website: item.website || '',
+      source: 'remote'
+    };
+  }
+
+  function normalizeDriver(item){
+    const ll = normalizeLatLng(item.lat ?? item.last_lat ?? item.latitude, item.lng ?? item.lon ?? item.last_lng ?? item.longitude);
+    if(!ll) return null;
+    return {
+      id: 'driver-' + (item.id ?? Math.random().toString(36).slice(2)),
+      type: 'driver',
+      title: item.name || item.username || 'Driver',
+      category: 'driver',
+      description: item.status || 'Available for deliveries',
+      price: '',
+      lat: ll.lat, lng: ll.lng,
+      source: 'remote'
+    };
+  }
+
+  async function fetchJson(url){
+    try{
+      const res = await fetch(url, { credentials:'same-origin' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    }catch(e){ return []; }
+  }
+
+  async function loadRemoteData(){
+    const [shops, products, drivers, news] = await Promise.all([
+      fetchJson(API.shops), fetchJson(API.products), fetchJson(API.drivers), fetchJson(API.news)
+    ]);
+    state.remote.shops = Array.isArray(shops) ? shops.map(normalizeShop).filter(Boolean) : [];
+    state.remote.drivers = Array.isArray(drivers) ? drivers.map(normalizeDriver).filter(Boolean) : [];
+    state.remote.products = Array.isArray(products) ? products : [];
+    state.remote.news = Array.isArray(news) ? news : [];
+    const locals = state.listings.filter(x => x.source !== 'remote');
+    state.listings = [...state.remote.shops, ...state.remote.drivers, ...locals];
+    renderMapMarkers();
+    buildGlobeSignals();
+  }
+
+  function renderMapMarkers(){
+    if(!state.mapReady || !map) return;
+    state.markers.forEach(m => map.removeLayer(m));
+    state.markers = [];
+    state.listings.forEach(item => {
+      if(!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
+      const el = document.createElement('div');
+      el.className = 'map-marker ' + (item.type === 'driver' ? 'driver' : item.type);
+      const icon = L.divIcon({ className:'', html: el.outerHTML, iconSize:[16,16], iconAnchor:[8,8] });
+      const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
+      marker.on('click', () => showListing(item));
+      state.markers.push(marker);
+    });
+  }
+
+  function showListing(item){
+    selectedListing = item;
+    sheetTitle.textContent = item.title;
+    sheetSub.textContent = item.description || (item.type === 'driver' ? 'Driver base' : item.category || item.type);
+    sheetMeta.innerHTML = '';
+    [['Type', item.type], ['Price', item.price || '—'], ['Area', item.lat.toFixed(4)+', '+item.lng.toFixed(4)]].forEach(([k,v]) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = k + ': ' + v;
+      sheetMeta.appendChild(chip);
+    });
+    $('#sheetAction').textContent = item.type === 'driver' ? 'Use driver' : 'Open';
+    $('#sheetSecondary').textContent = 'Route';
+    sheet.classList.add('show');
+  }
+
+  function hideListing(){
+    sheet.classList.remove('show');
+    selectedListing = null;
+  }
+
+  sheetClose.addEventListener('click', hideListing);
+  $('#sheetAction').addEventListener('click', () => {
+    if(!selectedListing) return;
+    appendMessage('ai', `${selectedListing.title} selected on ${channelSelect.options[channelSelect.selectedIndex].text}.`);
+  });
+  $('#sheetSecondary').addEventListener('click', () => {
+    if(!selectedListing) return;
+    if(state.view !== 'map') toggleMapView(true);
+    if(state.mapReady) map.flyTo([selectedListing.lat, selectedListing.lng], 16, { duration: .8 });
+    appendMessage('system', `Routing focus moved to ${selectedListing.title}.`);
+  });
+
+  function buildGlobe(){
+    const canvas = $('#globeCanvas');
+    globeRenderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, powerPreference:'high-performance' });
+    globeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    globeScene = new THREE.Scene();
+    globeCamera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    globeCamera.position.set(0,0,3.5);
+
+    const amb = new THREE.AmbientLight(0x356b9c, 1.2);
+    globeScene.add(amb);
+    const dir = new THREE.DirectionalLight(0xaedfff, 1.8);
+    dir.position.set(4,3,5);
+    globeScene.add(dir);
+
+    const stars = new THREE.BufferGeometry();
+    const count = 1600;
+    const pos = new Float32Array(count * 3);
+    for(let i=0;i<count;i++){
+      pos[i*3] = (Math.random()-.5) * 22;
+      pos[i*3+1] = (Math.random()-.5) * 18;
+      pos[i*3+2] = (Math.random()-.5) * 22;
+    }
+    stars.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    globeScene.add(new THREE.Points(stars, new THREE.PointsMaterial({ color:0xb8e8ff, size:.03, transparent:true, opacity:.7 })));
+
+    const earth = new THREE.Group();
+    globe = earth;
+    const sphere = new THREE.Mesh(
+      new THREE.SphereGeometry(1.05, 64, 64),
+      new THREE.MeshStandardMaterial({ color:0x183d72, metalness:.08, roughness:.74 })
+    );
+    earth.add(sphere);
+
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(1.12, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x2dd4ff, transparent:true, opacity:.08 })
+    );
+    earth.add(glow);
+
+    const grid = new THREE.Group();
+    const lineMaterial = new THREE.LineBasicMaterial({ color:0x7fdfff, transparent:true, opacity:.14 });
+    for(let lat=-60; lat<=60; lat+=20){
+      const pts = [];
+      for(let lon=0; lon<=360; lon+=10){
+        const p = latLonToVector(lat, lon, 1.055);
+        pts.push(p);
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      grid.add(new THREE.Line(geo, lineMaterial));
+    }
+    for(let lon=0; lon<180; lon+=20){
+      const pts = [];
+      for(let lat=-90; lat<=90; lat+=4){
+        const p = latLonToVector(lat, lon, 1.055);
+        pts.push(p);
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      grid.add(new THREE.Line(geo, lineMaterial));
+    }
+    earth.add(grid);
+    globeScene.add(earth);
+
+    function onResize(){
+      const r = $('#globe-wrap').getBoundingClientRect();
+      globeRenderer.setSize(r.width, r.height, false);
+      globeCamera.aspect = r.width / Math.max(1, r.height);
+      globeCamera.updateProjectionMatrix();
+    }
+    onResize();
+    window.addEventListener('resize', onResize);
+
+    function loop(){
+      requestAnimationFrame(loop);
+      earth.rotation.y += 0.0018;
+      globeSignals.forEach((s, i) => { s.scale.setScalar(1 + Math.sin(performance.now() * .002 + i) * .08); });
+      globeRenderer.render(globeScene, globeCamera);
+    }
+    loop();
+  }
+
+  function latLonToVector(lat, lon, radius){
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lon + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -(radius * Math.sin(phi) * Math.cos(theta)),
+      radius * Math.cos(phi),
+      radius * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function buildGlobeSignals(){
+    if(!globeScene || !globe) return;
+    globeSignals.forEach(s => globe.remove(s));
+    globeSignals = [];
+    state.listings.slice(0,18).forEach((item, index) => {
+      const p = latLonToVector(item.lat, item.lng, 1.13);
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(item.type === 'driver' ? .018 : .022, 12, 12),
+        new THREE.MeshBasicMaterial({ color: item.type === 'driver' ? 0xff9b2f : 0x00c8ff })
+      );
+      m.position.copy(p);
+      globe.add(m);
+      globeSignals.push(m);
+    });
+  }
+
+  function initMap(){
+    if(state.mapReady) return;
+    map = L.map('map', { zoomControl:false, attributionControl:false, tap:true, tapTolerance:18 }).setView([state.userLocation.lat, state.userLocation.lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+    map.on('click', (e) => {
+      if(state.pendingType){
+        openForm(state.pendingType, { lat:e.latlng.lat, lng:e.latlng.lng });
+        state.pendingType = null;
+        closeRadial();
+      }
+    });
+    state.mapReady = true;
+    renderMapMarkers();
+  }
+
+  function toggleMapView(forceToMap){
+    const goMap = forceToMap === true ? true : state.view !== 'map';
+    if(goMap){
+      initMap();
+      state.view = 'map';
+      updateModeUI();
+      map.invalidateSize();
+      map.flyTo([state.userLocation.lat, state.userLocation.lng], 14, { duration:.8 });
+      appendMessage('system', 'Zoomed to your location. Tap the map to work locally.');
+    } else {
+      state.view = 'globe';
+      updateModeUI();
+      appendMessage('system', 'Returned to globe view.');
+    }
+  }
+
+  async function ensureLocation(){
+    if(navigator.geolocation){
+      return new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(pos => {
+          state.userLocation = { lat:pos.coords.latitude, lng:pos.coords.longitude, label:'My location' };
+          resolve(state.userLocation);
+        }, () => resolve(state.userLocation), { enableHighAccuracy:true, timeout:4500, maximumAge:60000 });
+      });
+    }
+    return state.userLocation;
+  }
+
+  radarBtn.addEventListener('click', async () => {
+    await ensureLocation();
+    toggleMapView();
+  });
+
+  cargoBtn.addEventListener('click', () => {
+    state.cargoLoaded = !state.cargoLoaded;
+    updateModeUI();
+    appendMessage('system', state.cargoLoaded ? 'Cargo locked. Ready to unload.' : 'Cargo open. Ready to load.');
+  });
+
+  helper.addEventListener('click', () => {
+    state.handsFree = !state.handsFree;
+    const txt = state.handsFree ? 'Astranov Collective Intelligence in hands-free mode.' : 'Astranov Collective Intelligence back to manual typing mode.';
+    showHelperStatus(txt);
+    appendMessage('system', txt);
+  });
+
+  channelSelect.addEventListener('change', () => {
+    appendMessage('system', 'Channel switched to ' + channelSelect.options[channelSelect.selectedIndex].text + '.');
+  });
+
+  $('#channel-add').addEventListener('click', () => {
+    appendMessage('system', 'Use Support & Ideas or Team to propose a new channel.');
+  });
+
+  function updateAddOrigin(){
+    const rect = stage.getBoundingClientRect();
+    addOrigin = { x: rect.width * .5, y: rect.height * .46 };
+    if(state.view === 'map' && map){
+      const c = map.latLngToContainerPoint(map.getCenter());
+      addOrigin = { x: c.x, y: c.y };
+    }
+  }
+
+  const radialActions = [
+    ['product', 'List product', 'Sell an item'],
+    ['service', 'List service', 'Offer a service'],
+    ['delivery', 'Delivery spot', 'Receive orders here'],
+    ['driver', 'Driver base', 'Start delivery mode'],
+    ['media', 'Photo / video', 'Post media here']
   ];
 
-  const fieldSets = {
-    product: [
-      ['name','Product name','text','full'],['category','Category','text'],['price','Price (€)','number'],['quantity','Quantity','number'],['description','Description','textarea','full'],['photo','Photo or video URL','url','full'],['temperature','Temperature','select','',['Cold','Hot','Neutral']],['maxMinutes','Max transport minutes','number'],['locationLabel','Location label','text','full']
-    ],
-    service: [
-      ['name','Service name','text','full'],['serviceType','Service type','select','',['Hotel','Rent-a-car','Restaurant','Diving school','Tour','Other']],['price','Base price (€)','number'],['hours','Hours','text'],['description','Description','textarea','full'],['photo','Photo or video URL','url','full'],['locationLabel','Location label','text','full']
-    ],
-    delivery: [
-      ['name','Delivery point name','text','full'],['street','Street','text'],['number','Number','text'],['floor','Floor','text'],['doorbell','Doorbell name','text'],['phone','Phone','tel'],['notes','Notes','textarea','full'],['locationLabel','Location label','text','full']
-    ],
-    driver: [
-      ['name','Driver base name','text','full'],['phone','Phone','tel'],['vehicle','Vehicle','text'],['rangeKm','Range (km)','number'],['hours','Hours','text'],['notes','Notes','textarea','full'],['locationLabel','Location label','text','full']
-    ],
-    media: [
-      ['name','Post title','text','full'],['mediaType','Media type','select','',['Photo','Video']],['mediaUrl','Media URL','url','full'],['caption','Caption','textarea','full'],['locationLabel','Location label','text','full']
-    ]
-  };
-
-  function saveListings(){
-    localStorage.setItem('astranov.listings.v1', JSON.stringify(state.listings));
-  }
-
-  function addMessage(text, who='assistant'){
-    const div = document.createElement('div');
-    div.className = `msg ${who}`;
-    div.textContent = text;
-    chatLog.appendChild(div);
-    chatLog.scrollTop = chatLog.scrollHeight;
-    openChat();
-  }
-
-  function openChat(){
-    state.chatOpen = true;
-    chatDrawer.classList.add('show');
-  }
-  function closeChat(){
-    state.chatOpen = false;
-    chatDrawer.classList.remove('show');
-  }
-
-  function applyLoadState(){
-    if(state.loadState === 'open'){
-      perfState.textContent = 'Open';
-      clawShape.setAttribute('d','M7 7c0 0-2 2-2 5s2 5 5 5h4c3 0 5-2 5-5 0-2-1-4-2-5');
-      clawDot.setAttribute('r','0');
-      loadToggle.style.borderColor = 'rgba(45,245,143,.5)';
-      loadToggle.style.boxShadow = '0 0 16px rgba(45,245,143,.24), inset 0 0 12px rgba(45,245,143,.08)';
-    } else {
-      perfState.textContent = 'Loaded';
-      clawShape.setAttribute('d','M7 8c1 4 3 7 5 8h0c2 0 4-1 5-3 1-1 2-3 2-5');
-      clawDot.setAttribute('r','2.6');
-      loadToggle.style.borderColor = 'rgba(255,79,109,.54)';
-      loadToggle.style.boxShadow = '0 0 16px rgba(255,79,109,.26), inset 0 0 12px rgba(255,79,109,.08)';
-    }
-  }
-
-  function applyMode(){
-    const isMap = state.mode === 'map';
-    globeView.style.display = isMap ? 'none' : 'flex';
-    mapView.style.display = isMap ? 'block' : 'none';
-    zoomIcon.innerHTML = isMap
-      ? '<path d="M12 18V6"></path><path d="M7 13l5 5 5-5"></path>'
-      : '<path d="M12 6v12"></path><path d="M7 11l5-5 5 5"></path>';
-  }
-
-  function setMapFocus(lat, lng){
-    state.currentCenter.lat = lat;
-    state.currentCenter.lng = lng;
-    const x = ((lng + 180) / 360) * 100;
-    const y = ((90 - lat) / 180) * 100;
-    mapFocus.style.left = `${Math.max(8, Math.min(92, x))}%`;
-    mapFocus.style.top = `${Math.max(8, Math.min(92, y))}%`;
-  }
-
-  function goToUserLocation(){
-    if(navigator.geolocation){
-      navigator.geolocation.getCurrentPosition(pos => {
-        state.currentCenter = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'My location' };
-        setMapFocus(pos.coords.latitude, pos.coords.longitude);
-        state.mode = 'map';
-        applyMode();
-        addMessage('Zoomed to your location on the city map.');
-      }, () => {
-        state.mode = 'map';
-        applyMode();
-        setMapFocus(state.currentCenter.lat, state.currentCenter.lng);
-        addMessage('Location permission was unavailable, so I zoomed to the saved focus location.');
-      }, { enableHighAccuracy: true, timeout: 6000, maximumAge: 120000 });
-    } else {
-      state.mode = 'map';
-      applyMode();
-      addMessage('Your browser does not expose live geolocation here, so I used the saved focus location.');
-    }
-  }
-
-  function toggleZoom(){
-    if(state.mode === 'globe') goToUserLocation();
-    else {
-      state.mode = 'globe';
-      applyMode();
-      addMessage('Returned to global view.');
-    }
-  }
-
-  function placeRadial(){
-    radialLayer.innerHTML = '';
-    const rect = app.getBoundingClientRect();
-    const cx = rect.width * 0.5;
-    const cy = rect.height * 0.47;
-    const radius = Math.min(rect.width * 0.24, 130);
-    radialConfig.forEach((item, i) => {
-      const angle = (-90 + i * 72) * Math.PI / 180;
-      const x = cx + Math.cos(angle) * radius - 48;
-      const y = cy + Math.sin(angle) * radius - 48;
-      const el = document.createElement('button');
-      el.className = 'radial-option';
-      el.style.left = `${x}px`;
-      el.style.top = `${y}px`;
-      el.innerHTML = `<div class="radial-icon">${item.icon}</div><strong>${item.title}</strong><span>${item.sub}</span>`;
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openForm(item.key);
-        toggleRadial(false);
-      });
-      radialLayer.appendChild(el);
+  function buildRadial(){
+    radial.innerHTML = '';
+    radialActions.forEach(([type, title, sub], i) => {
+      const btn = document.createElement('button');
+      btn.className = 'radial-item';
+      btn.type = 'button';
+      btn.dataset.type = type;
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          ${type==='product' ? '<path d="M4 7h16M7 7V5h10v2M6 7l1 11h10l1-11"/>' :
+            type==='service' ? '<path d="M8 4h8l1 4-5 5-5-5 1-4z"/><circle cx="12" cy="12" r="1.5"/>' :
+            type==='delivery' ? '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>' :
+            type==='driver' ? '<path d="M3 15h18"/><path d="M6 15l1.5-6h9L18 15"/><circle cx="8" cy="17.5" r="1.5"/><circle cx="16" cy="17.5" r="1.5"/>' :
+            '<rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M20 15l-4-4-4 4-2-2-4 4"/>'}
+        </svg>
+        <strong>${title}</strong><span>${sub}</span>`;
+      btn.addEventListener('click', () => chooseAddAction(type));
+      radial.appendChild(btn);
     });
   }
 
-  function toggleRadial(force){
-    const next = typeof force === 'boolean' ? force : !state.radialOpen;
-    state.radialOpen = next;
-    radialLayer.classList.toggle('show', next);
-    if(next) placeRadial();
-    else radialLayer.innerHTML = '';
-  }
-
-  function openForm(type){
-    state.formType = type;
-    formBody.innerHTML = '';
-    sheetTitle.textContent = `Create ${type}`;
-    sheetSub.textContent = state.mode === 'globe'
-      ? 'You are in global view. Save now or zoom down later to refine the place.'
-      : 'Using the current map focus as the place for this listing.';
-
-    (fieldSets[type] || []).forEach(([name,label,kind,size,options]) => {
-      const wrap = document.createElement('div');
-      wrap.className = `field ${size === 'full' ? 'full' : ''}`;
-      const lab = document.createElement('label');
-      lab.textContent = label;
-      let input;
-      if(kind === 'textarea'){
-        input = document.createElement('textarea');
-      } else if(kind === 'select'){
-        input = document.createElement('select');
-        options.forEach(op => {
-          const opt = document.createElement('option');
-          opt.value = op; opt.textContent = op;
-          input.appendChild(opt);
-        });
-      } else {
-        input = document.createElement('input');
-        input.type = kind;
-      }
-      input.name = name;
-      if(name === 'locationLabel') input.value = state.currentCenter.label || 'Current focus';
-      wrap.appendChild(lab);
-      wrap.appendChild(input);
-      formBody.appendChild(wrap);
-    });
-    formSheet.classList.add('show');
-  }
-
-  function closeForm(){
-    formSheet.classList.remove('show');
-    state.formType = null;
-  }
-
-  function gatherForm(){
-    const data = { type: state.formType, lat: state.currentCenter.lat, lng: state.currentCenter.lng, channel: channel.value };
-    formBody.querySelectorAll('[name]').forEach(el => data[el.name] = el.value);
-    data.createdAt = new Date().toISOString();
-    data.id = Date.now().toString(36);
-    return data;
-  }
-
-  function showResult(item){
-    resultType.textContent = item.type.toUpperCase();
-    resultTitle.textContent = item.name || item.serviceType || 'Listing saved';
-    const bits = [];
-    if(item.description) bits.push(item.description);
-    if(item.caption) bits.push(item.caption);
-    if(item.hours) bits.push(`Hours: ${item.hours}`);
-    if(item.locationLabel) bits.push(`Location: ${item.locationLabel}`);
-    resultBody.textContent = bits.join(' · ') || 'Ready in Astranov.';
-    const meta = [];
-    if(item.price) meta.push(`€${item.price}`);
-    if(item.quantity) meta.push(`Qty ${item.quantity}`);
-    if(item.rangeKm) meta.push(`${item.rangeKm} km`);
-    if(item.temperature) meta.push(item.temperature);
-    if(item.vehicle) meta.push(item.vehicle);
-    resultMeta.innerHTML = meta.map(m => `<span>${m}</span>`).join('');
-    resultCard.classList.add('show');
-  }
-
-  function renderListings(){
-    listingsStrip.innerHTML = '';
-    state.listings.slice(-5).reverse().forEach(item => {
-      const chip = document.createElement('button');
-      chip.className = 'listing-chip';
-      chip.innerHTML = `<h4>${item.name || item.serviceType || item.type}</h4><p>${item.locationLabel || 'Current focus'} · ${item.channel || 'Marketplace'}</p>${item.price ? `<span class="price">€${item.price}</span>` : ''}`;
-      chip.addEventListener('click', () => showResult(item));
-      listingsStrip.appendChild(chip);
+  function positionRadial(){
+    updateAddOrigin();
+    const rect = stage.getBoundingClientRect();
+    const r = Math.min(rect.width, rect.height) < 520 ? 108 : 126;
+    [...radial.children].forEach((el, i) => {
+      const angle = (-90 + i * (360 / radial.children.length)) * Math.PI / 180;
+      const x = addOrigin.x + Math.cos(angle) * r - el.offsetWidth / 2;
+      const y = addOrigin.y + Math.sin(angle) * r - el.offsetHeight / 2;
+      el.style.left = Math.max(10, Math.min(rect.width - el.offsetWidth - 10, x)) + 'px';
+      el.style.top = Math.max(10, Math.min(rect.height - el.offsetHeight - 10, y)) + 'px';
     });
   }
 
-  function saveCurrentForm(){
-    const item = gatherForm();
-    state.listings.push(item);
-    saveListings();
-    renderListings();
-    closeForm();
-    showResult(item);
-    addMessage(`${item.type} saved in ${item.channel}.`, 'system');
+  function openRadial(){
+    state.radialOpen = true;
+    updateModeUI();
+    buildRadial();
+    requestAnimationFrame(positionRadial);
   }
 
-  function sendInput(){
-    const text = textBox.value.trim();
-    if(!text){
-      toggleRadial();
+  function closeRadial(){
+    state.radialOpen = false;
+    radial.innerHTML = '';
+    updateModeUI();
+  }
+
+  addBtn.addEventListener('click', () => state.radialOpen ? closeRadial() : openRadial());
+  stage.addEventListener('click', (e) => {
+    if(state.radialOpen && !e.target.closest('.radial-item') && !e.target.closest('#add-btn')) closeRadial();
+  });
+
+  function chooseAddAction(type){
+    hideListing();
+    if(state.view === 'globe'){
+      state.pendingType = type;
+      appendMessage('ai', `Zooming to your area. Tap the map where you want to ${type === 'delivery' ? 'set your delivery location' : type === 'driver' ? 'set your driver base' : 'list this'}.`);
+      ensureLocation().then(() => toggleMapView(true));
       return;
     }
-    addMessage(text, 'user');
-    textBox.value = '';
-    const reply = routeText(text);
-    if(reply) addMessage(reply, 'assistant');
+    const center = map ? map.getCenter() : { lat:state.userLocation.lat, lng:state.userLocation.lng };
+    openForm(type, { lat:center.lat, lng:center.lng });
+    closeRadial();
   }
 
-  function routeText(text){
-    const t = text.toLowerCase();
-    if(t.includes('zoom')) { toggleZoom(); return ''; }
-    if(t.includes('product')) { openForm('product'); return 'Opening the product listing form.'; }
-    if(t.includes('service')) { openForm('service'); return 'Opening the service listing form.'; }
-    if(t.includes('driver')) { openForm('driver'); return 'Opening the driver base form.'; }
-    if(t.includes('delivery')) { openForm('delivery'); return 'Opening the delivery location form.'; }
-    if(t.includes('show') || t.includes('listing')) {
-      renderListings();
-      return state.listings.length ? 'I brought your latest listings to the strip above the world view.' : 'No saved listings yet. Use the add bubble to create the first one.';
+  function field(label, name, type='text', full=false, placeholder=''){
+    return `<label class="form-field ${full?'full':''}">
+      <span class="form-label">${label}</span>
+      <input class="form-input" name="${name}" type="${type}" placeholder="${placeholder}">
+    </label>`;
+  }
+  function selectField(label, name, options, full=false){
+    return `<label class="form-field ${full?'full':''}">
+      <span class="form-label">${label}</span>
+      <select class="form-select" name="${name}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
+    </label>`;
+  }
+  function textareaField(label, name, full=true, placeholder=''){
+    return `<label class="form-field ${full?'full':''}">
+      <span class="form-label">${label}</span>
+      <textarea class="form-textarea" name="${name}" placeholder="${placeholder}"></textarea>
+    </label>`;
+  }
+
+  function openForm(type, loc){
+    formGrid.innerHTML = '';
+    formTitle.textContent = {
+      product:'List product',
+      service:'List service',
+      delivery:'My delivery location',
+      driver:'Driver base',
+      media:'Post photo or video'
+    }[type] || 'Create listing';
+
+    const common = `
+      ${field('Title','title','text',true, type==='product' ? 'Pizza Margherita' : type==='service' ? 'Hotel' : 'Name')}
+      ${field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6)))}
+      ${field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6)))}
+      ${textareaField('Description','description',true,'Describe what people will get')}
+    `;
+
+    if(type === 'product'){
+      formGrid.innerHTML = common +
+        selectField('Category','category',['food','market','coffee','retail','rental']) +
+        field('Price (€)','price','number',false,'9.90') +
+        field('Quantity','quantity','number',false,'12') +
+        field('Volume / size','volume','text',false,'500ml') +
+        selectField('Temperature','temperature',['neutral','cold','hot']) +
+        field('Max transport minutes','transport','number',false,'30') +
+        field('Media URL','media','text',true,'https://...');
+    } else if(type === 'service'){
+      formGrid.innerHTML = common +
+        selectField('Service type','category',['hotel','rent-a-car','diving','restaurant','repair','delivery']) +
+        field('Price from (€)','price','number',false,'30') +
+        field('Bookable slots per hour','slots','number',false,'4') +
+        field('Phone','phone','text',false,'+30') +
+        field('Website','website','text',true,'https://...');
+    } else if(type === 'delivery'){
+      formGrid.innerHTML =
+        field('Doorbell name','title','text',true,'My place') +
+        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
+        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
+        field('Street','street','text',false,'Street') +
+        field('Number','number','text',false,'12') +
+        field('Floor','floor','text',false,'2') +
+        field('Phone','phone','text',false,'+30') +
+        textareaField('Remarks','description',true,'Be quiet, leave at the door...');
+    } else if(type === 'driver'){
+      formGrid.innerHTML =
+        field('Base name','title','text',true,'Driver base') +
+        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
+        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
+        field('Vehicle','vehicle','text',false,'Motorbike') +
+        field('Range (km)','range','number',false,'8') +
+        field('Phone','phone','text',false,'+30') +
+        textareaField('Availability','description',true,'Available now');
+    } else {
+      formGrid.innerHTML =
+        field('Title','title','text',true,'Photo or video post') +
+        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
+        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
+        field('Media URL','media','text',true,'https://...') +
+        textareaField('Caption','description',true,'What is this post about?');
     }
-    return 'Use the add bubble to create something, or tell me product, service, driver, delivery, or zoom.';
+
+    listingForm.dataset.type = type;
+    formModal.classList.add('open');
   }
 
-  function toggleHandsFree(){
-    state.handsFree = !state.handsFree;
-    addMessage(state.handsFree
-      ? 'Astranov Collective Intelligence switched to AI hands-free mode.'
-      : 'Switched back to manual typing mode.');
-  }
+  function closeForm(){ formModal.classList.remove('open'); }
+  formClose.addEventListener('click', closeForm);
+  $('#form-cancel').addEventListener('click', closeForm);
 
-  function startVoiceTyping(){
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR){
-      addMessage('Voice typing is not available in this browser. Use the keyboard mode.', 'system');
-      return;
-    }
-    const rec = new SR();
-    rec.lang = 'en-US';
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (e) => {
-      const txt = e.results[0][0].transcript;
-      textBox.value = txt;
-      addMessage('Voice typed into the composer.', 'system');
+  listingForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(listingForm);
+    const type = listingForm.dataset.type;
+    const item = {
+      id: Date.now().toString(36),
+      type,
+      title: (fd.get('title') || '').trim() || type,
+      category: (fd.get('category') || type).trim(),
+      description: (fd.get('description') || '').trim(),
+      price: (fd.get('price') || '').toString(),
+      lat: parseFloat(fd.get('lat')),
+      lng: parseFloat(fd.get('lng')),
+      transport: fd.get('transport') || '',
+      quantity: fd.get('quantity') || '',
+      volume: fd.get('volume') || '',
+      temperature: fd.get('temperature') || '',
+      vehicle: fd.get('vehicle') || '',
+      range: fd.get('range') || '',
+      phone: fd.get('phone') || '',
+      website: fd.get('website') || '',
+      street: fd.get('street') || '',
+      number: fd.get('number') || '',
+      floor: fd.get('floor') || '',
+      media: fd.get('media') || '',
+      source: 'local'
     };
-    rec.onerror = () => addMessage('There was too much noise or the browser stopped voice input.', 'system');
-    rec.start();
-  }
-
-  let dragState = null;
-  function onInputPointerDown(e){
-    dragState = { y: e.clientY, open: state.chatOpen, moved: false };
-  }
-  function onInputPointerMove(e){
-    if(!dragState) return;
-    if(Math.abs(e.clientY - dragState.y) > 16) dragState.moved = true;
-  }
-  function onInputPointerUp(e){
-    if(!dragState) return;
-    const delta = e.clientY - dragState.y;
-    if(dragState.moved){
-      if(delta < -16) openChat();
-      if(delta > 16) closeChat();
-    } else {
-      textBox.focus();
+    if(!Number.isFinite(item.lat) || !Number.isFinite(item.lng)){
+      appendMessage('system', 'Valid map coordinates are required.');
+      return;
     }
-    dragState = null;
+    state.listings = state.listings.filter(x => !(x.source === 'local' && x.id === item.id)).concat(item);
+    saveLocalListings();
+    renderMapMarkers();
+    buildGlobeSignals();
+    closeForm();
+    closeRadial();
+    showListing(item);
+    appendMessage('ai', `${item.title} saved locally and is now visible on the map.`);
+  });
+
+  function sendCommand(){
+    const text = input.value.trim();
+    if(!text) return;
+    appendMessage('user', text);
+    input.value = '';
+    updateModeUI();
+
+    const lower = text.toLowerCase();
+    if(lower.includes('zoom') || lower.includes('location') || lower.includes('my place')){
+      ensureLocation().then(() => toggleMapView(true));
+      return;
+    }
+    if(lower.includes('product')){ chooseAddAction('product'); return; }
+    if(lower.includes('service') || lower.includes('hotel') || lower.includes('rent') || lower.includes('restaurant')){ chooseAddAction('service'); return; }
+    if(lower.includes('delivery')){ chooseAddAction('delivery'); return; }
+    if(lower.includes('driver')){ chooseAddAction('driver'); return; }
+    if(lower.includes('video') || lower.includes('photo') || lower.includes('media')){ chooseAddAction('media'); return; }
+
+    appendMessage('ai', 'I can zoom to your area, open the add flow, or help you list a product, service, delivery location, or driver base.');
   }
 
-  sendBtn.addEventListener('click', sendInput);
-  textBox.addEventListener('keydown', e => { if(e.key === 'Enter') sendInput(); });
-  addBubble.addEventListener('click', () => {
-    if(textBox.value.trim()) sendInput();
-    else toggleRadial();
-  });
-  helperBtn.addEventListener('click', toggleHandsFree);
-  micBtn.addEventListener('click', startVoiceTyping);
-  zoomToggle.addEventListener('click', toggleZoom);
-  loadToggle.addEventListener('click', () => {
-    state.loadState = state.loadState === 'open' ? 'loaded' : 'open';
-    applyLoadState();
-    addMessage(state.loadState === 'open' ? 'Grip opened and ready to load.' : 'Grip closed and cargo locked.', 'system');
-  });
-  closeSheet.addEventListener('click', closeForm);
-  cancelSheet.addEventListener('click', closeForm);
-  saveSheet.addEventListener('click', saveCurrentForm);
-  closeResult.addEventListener('click', () => resultCard.classList.remove('show'));
-  channelAdd.addEventListener('click', () => addMessage('Channel creation is reserved for the full backend workflow.', 'system'));
-  radialLayer.addEventListener('click', (e) => { if(e.target === radialLayer) toggleRadial(false); });
-  app.addEventListener('click', (e) => {
-    if(state.radialOpen && !radialLayer.contains(e.target) && e.target !== addBubble) toggleRadial(false);
-  });
-  document.getElementById('map').addEventListener('click', (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    const lat = 90 - y * 180;
-    const lng = x * 360 - 180;
-    state.currentCenter = { lat, lng, label: 'Selected map point' };
-    setMapFocus(lat, lng);
-    addMessage('Map focus updated. Use the add flow to attach something here.', 'system');
-  });
-  textBox.addEventListener('pointerdown', onInputPointerDown);
-  textBox.addEventListener('pointermove', onInputPointerMove);
-  textBox.addEventListener('pointerup', onInputPointerUp);
-  textBox.addEventListener('pointercancel', () => dragState = null);
+  sendBtn.addEventListener('click', sendCommand);
+  input.addEventListener('keydown', e => { if(e.key === 'Enter') sendCommand(); });
+  input.addEventListener('input', updateModeUI);
 
-  applyMode();
-  applyLoadState();
-  renderListings();
-  addMessage('Astranov is ready. Use the add bubble for listings, or tell me product, service, driver, delivery, or zoom.', 'assistant');
+  let dragInfo = null;
+  input.addEventListener('pointerdown', e => {
+    dragInfo = { y:e.clientY, open:state.drawerOpen, moved:false, id:e.pointerId };
+    try{ input.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  input.addEventListener('pointermove', e => {
+    if(!dragInfo || e.pointerId !== dragInfo.id) return;
+    const dy = e.clientY - dragInfo.y;
+    if(Math.abs(dy) > 18) dragInfo.moved = true;
+    if(dy < -22){ openDrawer(); dragInfo = null; }
+    if(dy > 22){ closeDrawer(); dragInfo = null; }
+  });
+  input.addEventListener('pointerup', e => {
+    if(dragInfo && e.pointerId === dragInfo.id && !dragInfo.moved) input.focus();
+    dragInfo = null;
+  });
+
+  function initVoice(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR) return;
+    recognition = new SR();
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+    recognition.onresult = ev => {
+      let txt = '';
+      for(let i=ev.resultIndex; i<ev.results.length; i++) txt += ev.results[i][0].transcript;
+      input.value = txt.trim();
+      updateModeUI();
+    };
+    recognition.onend = () => micBtn.classList.remove('has-text');
+  }
+  micBtn.addEventListener('click', () => {
+    if(!recognition){
+      initVoice();
+      if(!recognition){ appendMessage('system', 'Voice typing is not available in this browser.'); return; }
+    }
+    try{
+      recognition.start();
+      appendMessage('system', 'Voice typing active. Speak now.');
+    }catch(e){}
+  });
+
+  function bootMessages(){
+    appendMessage('ai', 'Astranov Collective Intelligence online. The world is clear. Use the add bubble only when you want to create something.');
+    closeDrawer();
+  }
+
+  window.addEventListener('resize', () => {
+    positionRadial();
+    if(map) map.invalidateSize();
+  });
+
+  buildGlobe();
+  loadLocalListings();
+  updateModeUI();
+  bootMessages();
+  loadRemoteData();
 })();
 </script>
 </body>
