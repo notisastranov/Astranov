@@ -838,6 +838,60 @@ body.lt,body.lt2,body.lt3{
 .temp-opt[data-temp=cold].active{background:rgba(0,150,255,0.14);color:#5ca0ff;border-color:rgba(0,150,255,0.30);}
 .temp-opt[data-temp=hot].active{background:rgba(255,80,50,0.14);color:#ff6644;border-color:rgba(255,80,50,0.30);}
 .temp-opt[data-temp=neutral].active{background:rgba(255,255,255,0.08);color:#e6eef6;border-color:rgba(255,255,255,0.20);}
+.racing-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.racing-card{border:1px solid rgba(0,200,255,0.14);border-radius:14px;background:rgba(0,0,0,0.18);padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02);}
+.racing-card-title{font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#eaf8ff;margin-bottom:8px;}
+.racing-stack{display:flex;flex-direction:column;gap:8px;}
+.racing-note{margin-top:8px;padding:10px;border:1px solid rgba(0,200,255,0.10);border-radius:10px;background:rgba(0,200,255,0.04);font-size:11px;line-height:1.5;color:#bfdcf6;}
+.racing-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(0,200,255,0.18);background:rgba(0,200,255,0.08);font-size:10px;color:#d8ecff;text-transform:uppercase;letter-spacing:0.08em;}
+.racing-chip.danger{border-color:rgba(255,68,85,0.22);background:rgba(255,68,85,0.08);color:#ff8da0;}
+.racing-chip.ok{border-color:rgba(0,232,122,0.22);background:rgba(0,232,122,0.08);color:#72e3a6;}
+.racing-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.racing-field{display:flex;flex-direction:column;gap:4px;}
+.racing-field label{font-size:10px;color:#7fb2d8;}
+.racing-field input,.racing-field textarea{background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.14);border-radius:10px;color:#eaf8ff;padding:8px 10px;font-size:11px;outline:none;}
+.racing-alert-item,.racing-activity-item{border:1px solid rgba(0,200,255,0.10);border-radius:12px;padding:10px;background:rgba(255,255,255,0.02);}
+.racing-alert-top{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px;}
+.racing-alert-title{font-size:12px;font-weight:700;color:#f3fbff;}
+.racing-severity{font-size:10px;padding:4px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:0.08em;}
+.racing-severity.high{background:rgba(255,68,85,0.12);color:#ff8da0;border:1px solid rgba(255,68,85,0.16);}
+.racing-severity.medium{background:rgba(255,214,0,0.12);color:#ffd600;border:1px solid rgba(255,214,0,0.16);}
+.racing-severity.low{background:rgba(0,232,122,0.12);color:#6ce5a2;border:1px solid rgba(0,232,122,0.16);}
+.joystick-hud{position:absolute;top:38px;z-index:65;width:138px;opacity:0.20;transition:opacity .25s,transform .25s;}
+.joystick-hud:hover,.joystick-hud.active,.joystick-hud.has-critical{opacity:0.98;}
+.joystick-hud-left{left:48px;}
+.joystick-hud-right{right:14px;}
+.joy-shell{border:1px solid rgba(0,200,255,0.16);border-radius:18px;background:linear-gradient(180deg,rgba(4,10,20,0.70),rgba(4,10,20,0.42));backdrop-filter:blur(14px);padding:8px;box-shadow:0 0 24px rgba(0,200,255,0.10);}
+.joy-topline,.joy-footer,.joy-stats,.joy-actions{display:flex;justify-content:space-between;gap:6px;align-items:center;}
+.joy-topline,.joy-footer,.joy-stats{font-family:var(--fhud);font-size:8px;letter-spacing:0.10em;color:#9dc5e5;text-transform:uppercase;}
+.joy-topline{margin-bottom:6px;}
+.joy-footer{margin-top:6px;}
+.joy-stats{margin-top:6px;flex-wrap:wrap;}
+.joy-actions{margin-top:6px;}
+.joy-mini-btn{flex:1;height:24px;border:1px solid rgba(0,200,255,0.18);border-radius:8px;background:rgba(0,200,255,0.08);color:#d8ecff;font-size:10px;cursor:pointer;}
+.joy-pad{position:relative;width:120px;height:120px;margin:0 auto;border-radius:50%;border:1px solid rgba(0,200,255,0.16);background:radial-gradient(circle at 50% 32%,rgba(0,200,255,0.10),rgba(3,8,16,0.12) 42%,rgba(0,0,0,0.42) 100%);overflow:hidden;}
+.drone-pad{background:radial-gradient(circle at 50% 32%,rgba(255,153,0,0.12),rgba(3,8,16,0.12) 42%,rgba(0,0,0,0.42) 100%);}
+.joy-ring{position:absolute;inset:50%;border-radius:50%;transform:translate(-50%,-50%);border:1px solid rgba(0,200,255,0.10);}
+.joy-ring-1{width:92px;height:92px;}
+.joy-ring-2{width:58px;height:58px;}
+.joy-grid{position:absolute;background:rgba(0,200,255,0.08);}
+.joy-grid-v{width:1px;height:100%;left:50%;top:0;transform:translateX(-50%);}
+.joy-grid-h{height:1px;width:100%;top:50%;left:0;transform:translateY(-50%);}
+.joy-knob{position:absolute;left:50%;top:50%;width:28px;height:28px;border-radius:50%;transform:translate(-50%,-50%);background:radial-gradient(circle at 35% 35%,#effbff,#55dfff 58%,#0c4664 100%);box-shadow:0 0 16px rgba(0,200,255,0.30);border:1px solid rgba(255,255,255,0.18);touch-action:none;cursor:grab;}
+.joy-center-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:44px;height:44px;padding:0 10px;border-radius:999px;border:1px solid rgba(0,200,255,0.18);background:rgba(3,8,16,0.76);color:#effbff;font-family:var(--fhud);font-size:9px;letter-spacing:0.08em;cursor:pointer;box-shadow:0 0 16px rgba(0,200,255,0.12);}
+.joy-scan{position:absolute;left:50%;top:50%;width:120px;height:120px;transform:translate(-50%,-50%);background:conic-gradient(from 0deg,rgba(0,200,255,0.24),rgba(0,200,255,0.02) 28%,rgba(0,200,255,0) 62%);border-radius:50%;animation:joySweep 3.6s linear infinite;mix-blend-mode:screen;}
+@keyframes joySweep{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
+.joy-targets{position:absolute;inset:0;}
+.joy-target{position:absolute;width:6px;height:6px;border-radius:50%;background:#00e87a;box-shadow:0 0 12px rgba(0,232,122,0.5);}
+#drone-camera-overlay{display:none;position:absolute;inset:84px 64px 84px 64px;z-index:67;border:1px solid rgba(0,200,255,0.18);border-radius:18px;background:rgba(2,6,14,0.84);backdrop-filter:blur(10px);overflow:hidden;box-shadow:0 0 28px rgba(0,200,255,0.14);}
+#drone-camera-overlay.on{display:block;}
+.drone-cam-bar{height:36px;display:flex;justify-content:space-between;align-items:center;padding:0 12px;border-bottom:1px solid rgba(0,200,255,0.10);font-size:10px;color:#eaf8ff;text-transform:uppercase;letter-spacing:0.08em;}
+.drone-cam-bar button{width:24px;height:24px;border-radius:8px;border:1px solid rgba(0,200,255,0.18);background:rgba(0,200,255,0.08);color:#d8ecff;cursor:pointer;}
+#drone-camera-video,#drone-camera-fallback{position:absolute;left:0;right:0;top:36px;bottom:0;width:100%;height:calc(100% - 36px);}
+#drone-camera-video{object-fit:cover;background:#000;}
+#drone-camera-fallback{display:flex;align-items:center;justify-content:center;color:#9dc5e5;font-size:12px;padding:20px;text-align:center;background:radial-gradient(circle at 50% 20%,rgba(0,200,255,0.12),rgba(0,0,0,0) 40%),linear-gradient(180deg,rgba(0,0,0,0.32),rgba(0,0,0,0.56));}
+@media (max-width:900px){.racing-grid,.racing-row{grid-template-columns:1fr;}#drone-camera-overlay{inset:92px 14px 84px 14px;}.joystick-hud{width:126px;}.joy-pad{width:108px;height:108px;}}
+
 
 /* ═══ COMPASS RADAR HUD (top-right, inside panels) ═══ */
 #compass-hud{
@@ -1078,7 +1132,7 @@ body.lt,body.lt2,body.lt3{
       <div id="auth-role-row" style="display:none;">
         <select class="asel" id="ar">
           <option value="user">User (Consumer)</option>
-          <option value="admin">Admin (Driver / Shop Owner / Support)</option>
+          <option value="admin">Admin (Driver / Shop Owner / Support / Mechanic)</option>
         </select>
       </div>
       <div id="auth-helper"></div>
@@ -1178,153 +1232,58 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
-  <!-- PERFORMANCE MONITOR (top-left) -->
-  <div id="perf-hud">
-    <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"/><stop offset="100%" stop-color="rgba(3,8,16,0.35)"/></radialGradient>
-      </defs>
-      <!-- Background -->
-      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
-      <!-- 6 sections of 60° each — pie wedges from center -->
-      <!-- Section 0: CPU (top, 330°-30°) -->
-      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"/>
-      <!-- Section 1: MAP (60°, 30°-90°) -->
-      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"/>
-      <!-- Section 2: RAM (120°, 90°-150°) -->
-      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"/>
-      <!-- Section 3: STORAGE (180°, 150°-210°) -->
-      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"/>
-      <!-- Section 4: BATTERY (240°, 210°-270°) -->
-      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"/>
-      <!-- Section 5: NETWORK (300°, 270°-330°) -->
-      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"/>
-      <!-- Divider lines -->
-      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"/>
-      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"/>
-      <!-- Inner circle -->
-      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <!-- Section labels (around the edge) -->
-      <text x="78" y="20" class="perf-label">CPU</text>
-      <text x="106" y="50" class="perf-label">MAP</text>
-      <text x="106" y="76" class="perf-label">RAM</text>
-      <text x="78" y="106" class="perf-label">STO</text>
-      <text x="42" y="106" class="perf-label">BAT</text>
-      <text x="16" y="50" class="perf-label">NET</text>
-      <!-- Section values (updated by JS) -->
-      <text id="pv0" x="78" y="28" class="perf-value good">—</text>
-      <text id="pv1" x="100" y="56" class="perf-value good">—</text>
-      <text id="pv2" x="100" y="82" class="perf-value good">—</text>
-      <text id="pv3" x="78" y="100" class="perf-value good">—</text>
-      <text id="pv4" x="42" y="100" class="perf-value good">—</text>
-      <text id="pv5" x="22" y="56" class="perf-value good">—</text>
-      <!-- Network sub-labels -->
-      <text id="pv5-tx" x="16" y="62" class="perf-center-label">TX —</text>
-      <text id="pv5-rx" x="16" y="68" class="perf-center-label">RX —</text>
-      <!-- Center label -->
-      <text x="60" y="58" class="perf-center-label">PERF</text>
-      <text id="perf-overall" x="60" y="66" style="fill:#00e87a;font-size:7px;text-anchor:middle;font-family:var(--font);font-weight:700;">OK</text>
-    </svg>
+  <!-- RADAR JOYSTICK HUD (top-right) -->
+  <div id="compass-hud" class="joystick-hud joystick-hud-right">
+    <div class="joy-shell">
+      <div class="joy-topline"><span>RADAR</span><span id="radar-zoom-readout">MAP</span></div>
+      <div class="joy-pad" id="radar-joy-pad">
+        <div class="joy-ring joy-ring-1"></div>
+        <div class="joy-ring joy-ring-2"></div>
+        <div class="joy-grid joy-grid-v"></div>
+        <div class="joy-grid joy-grid-h"></div>
+        <div class="joy-scan"></div>
+        <div class="joy-targets" id="radar-joy-targets"></div>
+        <button id="radar-center-btn" class="joy-center-btn" onclick="toggleRadarLocateZoom()" title="Zoom to my location and toggle zoom depth">⌖</button>
+        <div class="joy-knob" id="radar-joy-knob"></div>
+      </div>
+      <div class="joy-footer"><span id="radar-joy-label">Tap center to locate and zoom</span><span id="radar-joy-meta">Map pan</span></div>
+    </div>
   </div>
 
-  <!-- PERFORMANCE MONITOR HUD (top-left) -->
-  <div id="perf-hud">
-    <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(3,8,16,0.15)"/>
-          <stop offset="80%" stop-color="rgba(3,8,16,0.08)"/>
-          <stop offset="100%" stop-color="rgba(3,8,16,0)"/>
-        </radialGradient>
-      </defs>
-      <!-- Background -->
-      <circle cx="55" cy="55" r="52" fill="url(#perfBg)" stroke="rgba(0,200,255,0.15)" stroke-width="1"/>
-      <!-- Inner ring -->
-      <circle cx="55" cy="55" r="32" fill="none" stroke="rgba(0,200,255,0.08)" stroke-width="0.5"/>
-      <!-- 6 performance arc sections (each 55° with 5° gap) -->
-      <!-- Section arcs drawn by JS with correct colors -->
-      <g id="perf-arcs"></g>
-      <!-- Section labels and values (positioned by JS) -->
-      <g id="perf-labels"></g>
-      <!-- Center readout -->
-      <text x="55" y="52" class="perf-center-label">SYSTEM</text>
-      <text x="55" y="62" class="perf-center-value" id="perf-overall">OK</text>
-    </svg>
+  <!-- DRONE PERFORMANCE JOYSTICK (top-left) -->
+  <div id="perf-hud" class="joystick-hud joystick-hud-left">
+    <div class="joy-shell">
+      <div class="joy-topline"><span>DRONE</span><span id="drone-link-state">OFFLINE</span></div>
+      <div class="joy-pad drone-pad" id="drone-joy-pad">
+        <div class="joy-ring joy-ring-1"></div>
+        <div class="joy-ring joy-ring-2"></div>
+        <div class="joy-grid joy-grid-v"></div>
+        <div class="joy-grid joy-grid-h"></div>
+        <div class="joy-knob" id="drone-joy-knob"></div>
+        <button id="drone-load-btn" class="joy-center-btn" onclick="toggleDroneLoad()" title="Load or unload drone payload">LOAD</button>
+      </div>
+      <div class="joy-stats">
+        <span id="drone-stat-battery">BAT —</span>
+        <span id="drone-stat-speed">SPD —</span>
+        <span id="drone-stat-alt">ALT —</span>
+      </div>
+      <div class="joy-actions">
+        <button class="joy-mini-btn" onclick="toggleDroneCamera()">CAM</button>
+        <button class="joy-mini-btn" onclick="toggleDroneLink()">LINK</button>
+      </div>
+    </div>
   </div>
 
-  <!-- COMPASS RADAR HUD (top-right) -->
-  <div id="compass-hud">
-    <svg id="compass-svg" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="radarSweepGrad" cx="50%" cy="50%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0)" />
-          <stop offset="50%" stop-color="rgba(0,200,255,0.05)" />
-          <stop offset="100%" stop-color="rgba(0,200,255,0.25)" />
-        </radialGradient>
-        <!-- Front quarter bright, back dark -->
-        <radialGradient id="radarBg" cx="50%" cy="30%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0.08)" />
-          <stop offset="40%" stop-color="rgba(3,12,24,0.15)" />
-          <stop offset="100%" stop-color="rgba(2,6,14,0.4)" />
-        </radialGradient>
-        <!-- Dark overlay for back 3/4 -->
-        <linearGradient id="radarDark" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-          <stop offset="35%" stop-color="rgba(0,0,0,0)" />
-          <stop offset="100%" stop-color="rgba(0,0,0,0.35)" />
-        </linearGradient>
-        <!-- Bright front glow -->
-        <radialGradient id="frontGlow" cx="50%" cy="20%">
-          <stop offset="0%" stop-color="rgba(0,200,255,0.12)" />
-          <stop offset="50%" stop-color="rgba(0,200,255,0.03)" />
-          <stop offset="100%" stop-color="rgba(0,200,255,0)" />
-        </radialGradient>
-      </defs>
-      <!-- Dark background -->
-      <circle cx="54" cy="54" r="52" fill="url(#radarBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1.5"/>
-      <!-- Back 3/4 darkening -->
-      <circle cx="54" cy="54" r="51" fill="url(#radarDark)"/>
-      <!-- Front quarter brightness -->
-      <ellipse cx="54" cy="28" rx="40" ry="28" fill="url(#frontGlow)"/>
-      <!-- Distance rings (periscope style) -->
-      <circle cx="54" cy="54" r="48" class="compass-ring"/>
-      <circle cx="54" cy="54" r="36" class="compass-ring-outer"/>
-      <circle cx="54" cy="54" r="24" class="compass-ring-outer"/>
-      <circle cx="54" cy="54" r="12" class="compass-ring-outer"/>
-      <!-- Distance labels -->
-      <text x="54" y="19" class="dist-label">5km</text>
-      <text x="54" y="31" class="dist-label">3km</text>
-      <text x="54" y="43" class="dist-label">1km</text>
-      <!-- Fixed forward indicator (always points up = user's facing direction) -->
-      <polygon points="54,4 51,10 57,10" fill="#00c8ff" opacity="0.7"/>
-      <!-- Compass bezel group (ROTATES with heading — ticks, cardinals, mils all rotate) -->
-      <g id="compass-needle-group">
-        <!-- Ticks generated by JS -->
-        <g id="compass-ticks"></g>
-        <!-- Mil markings -->
-        <g id="compass-mils"></g>
-      </g>
-      <!-- Radar sweep -->
-      <path class="radar-sweep" d="M54,54 L54,6 A48,48 0 0,1 96,30 Z" opacity="0.6"/>
-      <!-- Radar blips (populated by JS) -->
-      <g id="radar-blips"></g>
-      <!-- Route indicator line (populated by JS) -->
-      <line id="route-indicator" class="route-line" x1="54" y1="54" x2="54" y2="6"/>
-      <circle id="waypoint-indicator" class="waypoint-dot" cx="54" cy="8" r="3"/>
-      <!-- (Bezel rotation handles compass heading — no static needle) -->
-      <!-- Center dot -->
-      <circle cx="54" cy="54" r="2.5" class="compass-center"/>
-      <circle cx="54" cy="54" r="1" fill="#fff" opacity="0.6"/>
-      <!-- Heading readout -->
-      <rect x="36" y="95" width="36" height="12" rx="3" fill="rgba(3,8,16,0.6)" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
-      <text id="compass-heading" x="54" y="104" class="compass-heading">000°</text>
-      <text x="54" y="93" class="compass-heading-label">HDG</text>
-    </svg>
+  <div id="drone-camera-overlay">
+    <div class="drone-cam-bar">
+      <span>Drone camera</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span id="drone-camera-state">offline</span>
+        <button onclick="toggleDroneCamera()">×</button>
+      </div>
+    </div>
+    <video id="drone-camera-video" autoplay muted playsinline></video>
+    <div id="drone-camera-fallback">Drone camera feed will appear here when a linked drone camera is available.</div>
   </div>
 
   <!-- Layer dots -->
@@ -1755,6 +1714,7 @@ body.lt,body.lt2,body.lt3{
         <option value="team">👥 General Team</option>
       </optgroup>
       <option value="support">💬 Support & Ideas</option>
+      <option value="astranov-racing">🏁 Astranov Racing</option>
     </select>
     <button onclick="promptNewTeam()" title="Suggest new team channel" style="width:26px;height:26px;border:1px solid rgba(0,200,255,0.15);border-radius:6px;background:rgba(0,200,255,0.06);color:#00c8ff;cursor:pointer;font-size:14px;font-weight:700;line-height:1;flex-shrink:0;">+</button>
   </div>
@@ -1834,6 +1794,71 @@ body.lt,body.lt2,body.lt3{
         </div>
       </details>
     </div>
+  
+  <div id="racing-panel" style="display:none;flex:1;overflow-y:auto;padding:10px 12px;flex-direction:column;gap:10px;background:linear-gradient(180deg,rgba(4,10,20,0.52),rgba(4,10,20,0.22));">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
+      <div>
+        <div style="font-size:10px;color:#7fb2d8;letter-spacing:0.14em;text-transform:uppercase;">Specialty channel</div>
+        <div style="font-size:16px;font-weight:700;color:#eaf8ff;">🏁 Astranov Racing</div>
+        <div style="font-size:11px;color:#8fb6d4;">Connected vehicles, read-only ECU intelligence, mechanic workflow, relay-backed AI analyst.</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <span id="racing-alert-chip" class="racing-chip danger">0 live alerts</span>
+        <span id="racing-ai-chip" class="racing-chip">AI relay checking…</span>
+        <span id="racing-role-chip" class="racing-chip">Role: guest</span>
+      </div>
+    </div>
+
+    <div class="racing-grid">
+      <div class="racing-card">
+        <div class="racing-card-title">Vehicle watch</div>
+        <div id="racing-alerts" class="racing-stack"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="owner-console-btn" onclick="racingSeedDemo()">Demo alerts</button>
+          <button class="owner-console-btn" onclick="racingClearAlerts()">Clear</button>
+        </div>
+      </div>
+
+      <div class="racing-card">
+        <div class="racing-card-title">Read-only ECU dock</div>
+        <div class="racing-row">
+          <div class="racing-field"><label>BIN / dump</label><input id="racing-bin" type="file" accept=".bin,.hex,.rom,.ori,application/octet-stream"></div>
+          <div class="racing-field"><label>Descriptor / XDF / notes</label><input id="racing-xdf" type="file" accept=".xdf,.json,.txt,.xml"></div>
+        </div>
+        <div class="racing-row">
+          <div class="racing-field"><label>VIN</label><input id="racing-vin" placeholder="Vehicle VIN"></div>
+          <div class="racing-field"><label>ECU family</label><input id="racing-ecu-family" placeholder="Bosch / Denso / Marelli…"></div>
+        </div>
+        <div class="racing-row">
+          <div class="racing-field"><label>HW ID</label><input id="racing-hw" placeholder="Hardware ID"></div>
+          <div class="racing-field"><label>SW ID / CAL ID</label><input id="racing-sw" placeholder="Software or calibration ID"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="owner-console-btn primary" onclick="racingAnalyzeUpload()">Analyze upload</button>
+          <button class="owner-console-btn" onclick="racingBuildHandoff()">Build handoff</button>
+        </div>
+        <div id="racing-upload-summary" class="racing-note">No file analyzed yet.</div>
+      </div>
+    </div>
+
+    <div class="racing-grid">
+      <div class="racing-card">
+        <div class="racing-card-title">AI mechanic analyst</div>
+        <textarea id="racing-ai-prompt" class="owner-console-input owner-console-textarea" style="min-height:86px;" placeholder="Explain the fault, inspection path, and read-only map interpretation.">Explain the connected vehicle problem, estimate the top inspection path, interpret the uploaded ECU data in read-only mode, and prepare a safe external-tool handoff summary.</textarea>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+          <button class="owner-console-btn primary" onclick="racingAskAi()">Ask AI</button>
+          <button class="owner-console-btn" onclick="testAstranovRelay()">Test relay</button>
+        </div>
+        <div id="racing-ai-output" class="racing-note">Waiting for analysis request.</div>
+      </div>
+
+      <div class="racing-card">
+        <div class="racing-card-title">Authorized mechanic bay</div>
+        <div class="racing-note">Owner and authorized mechanics may annotate, compare, export handoff packets, and coordinate repairs here. ECU writing, flashing, remapping, checksum correction, and unlocking remain outside Astranov.</div>
+        <div id="racing-mechanic-gate" class="racing-note">Mechanic tools locked until an owner or authorized mechanic is active.</div>
+        <div id="racing-activity" class="racing-stack" style="margin-top:8px;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1893,11 +1918,12 @@ function getUserRole(user){
 }
 function canPostDirectly(user){
   const role = getUserRole(user);
-  return role === 'owner' || role === 'admin';
+  return role === 'owner' || role === 'admin' || role === 'authorized-mechanic';
 }
 function getRoleLabel(role){
   if(role === 'owner') return 'Owner';
   if(role === 'admin') return 'Admin';
+  if(role === 'authorized-mechanic') return 'Authorized Mechanic';
   if(role === 'user') return 'User';
   return 'Guest';
 }
@@ -5366,11 +5392,15 @@ function openShopDetail(shopName, lat, lng) {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
           '<div><div style="font-size:13px;font-weight:600;color:#f2fbff;">' + tempIcon + ' ' + escapeHtml(mi.name) + '</div>' +
           '<div style="font-size:10px;color:var(--text-dim);margin-top:2px;">' +
+            ((mi.kind || 'product').toUpperCase() + ' · ') +
             (mi.volume ? mi.volume + ' · ' : '') +
-            (mi.qty_available ? mi.qty_available + ' available · ' : '') +
+            ((mi.qty_available || mi.qty_available === 0) ? mi.qty_available + ' available · ' : '') +
             (mi.production_rate ? mi.production_rate : '') +
           '</div>' +
+          (mi.availability_note ? '<div style="font-size:9px;color:#9fd3ff;">📦 ' + escapeHtml(mi.availability_note) + '</div>' : '') +
+          (mi.duration ? '<div style="font-size:9px;color:#9fd3ff;">⏱ ' + escapeHtml(mi.duration) + '</div>' : '') +
           (mi.available_times ? '<div style="font-size:9px;color:var(--text-dim);">⏰ ' + escapeHtml(mi.available_times) + '</div>' : '') +
+          (mi.youtube ? '<div style="font-size:9px;color:#7cc6ff;">▶ ' + escapeHtml(mi.youtube) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;">' +
             '<div style="font-size:14px;font-weight:700;color:#00c8ff;">€' + (Number(mi.price)||0).toFixed(2) + '</div>' +
@@ -6564,47 +6594,77 @@ function runGame(type) {
 }
 </script>
 <!--
-SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V2
+SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V3.4
 Creator & Founder: Graduate Candidate Captain Notis Astranov, 2026
-Architecture: Spartan Script V2 | Single Source of Record
+Architecture: Spartan Script V3.4 | Single Source of Record
 
-MISSION: Internet operating system with AI-first control.
-NAME: Astranov Internet Operating System. No Astranov naming anywhere.
-STACK: Single HTML | Supabase | Leaflet | Three.js | astranov.eu
+MISSION
+Astranov Internet Operating System.
+Map-first planetary operating system with integrated marketplace, delivery, AI, owner workshop, and specialty channels.
+Astranov Racing is a protected specialty channel inside the main chat dropdown.
+
+STACK
+Single HTML | Supabase | Leaflet | Three.js | Relay AI | astranov.eu
 
 OWNER RULE
-Only Notis Astranov (notisastranov@gmail.com / +306971930225) is owner.
-Owner workshop is visible only when owner is logged in.
+Only Notis Astranov is owner.
+Owner workshop visible only when owner is logged in.
 
-WORKSHOP RULE
-Inside the app, owner can open a hidden workshop, talk to the build bridge,
-export the live index.html, and send the current index.html to GitHub.
+AI / RELAY RULE
+All in-app AI routes through relay-first logic inside the app.
+Public lane = Astranov chat.
+Owner lane = owner workshop / code console.
+Send both x-owner-token and Authorization header when a relay token exists.
+If relay is offline, fall back to local intelligence and show status clearly.
 
-UI RULE
-Top and side rails stay transparent and non-blocking.
-Keep data visible and controls accessible without covering the globe.
+CHANNEL RULE
+Main chat dropdown includes:
+- AI
+- Global
+- Local
+- Teams
+- Support & Ideas
+- Astranov Racing
+Astranov Racing opens inside the same chat workspace, not the public ribbon.
 
-AI RULE
-Astranov is the in-app systems operator.
-Owner workshop tries same-origin /api/owner_workshop.php first, then local fallback.
+ASTRANOV RACING RULE
+Job:
+- connected vehicle alerts
+- VIN / ECU identity
+- read-only ECU upload dock
+- diagnostics interpretation
+- work-order / audit / handoff flow
+- authorized mechanic access
+No ECU write / flash / remap inside Astranov.
 
-GITHUB RULE
-Owner GitHub send uses repo settings + token supplied by owner.
-Push current index.html through GitHub Contents API.
+VENDOR RULE
+Vendor UI must support products and services with:
+photo, YouTube URL, price, volume/size, quantity, production rate, availability note, available times, duration, temperature, code/SKU.
+Shop listings store operating schedule and delivery range.
+
+HUD RULE
+Replace radar and performance wheels with joystick-style HUD controls.
+Radar joystick = map pan + center single-button zoom-to-my-location toggle.
+Drone joystick = drone status, load/unload center button, camera toggle to main screen.
+
+DESIGN RULE
+Transparent glass rails.
+Electric blue / black HUD.
+Controls visible without burying the globe or map.
 -->
 
 <!-- Embedded Spartan Script V2 -->
-<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V2
+<textarea id="spartan-script" style="display:none;"># SPARTAN SCRIPT — ASTRANOV INTERNET OPERATING SYSTEM · V3.4
 # Single Source of Record
 # Creator: Graduate Candidate Captain Notis Astranov
-# Updated: 2026-03-30
+# Updated: 2026-04-02
 
 MISSION
-Astranov Internet Operating System. AI-first control interface.
-No Astranov naming anywhere.
+Astranov Internet Operating System.
+Map-first planetary operating system with integrated marketplace, delivery, relay AI, owner workshop, and specialty channels.
 
 STACK [LOCKED]
-Single HTML | Supabase | Leaflet | Three.js | astranov.eu
+Single HTML | Supabase | Leaflet | Three.js | Relay AI | astranov.eu
 
 OWNER [LOCKED]
 Owner only = Notis Astranov
@@ -6612,32 +6672,50 @@ Email = notisastranov@gmail.com
 Phone = +306971930225 / 6971930225
 Owner workshop visible only when owner is logged in.
 
-UI [LOCKED]
-Top bar, bottom bar, left rail, right rail = transparent glass, non-blocking.
-Keep globe visible. Keep data accessible.
-Do not let decorative chrome overpower content.
+AI / RELAY [LOCKED]
+Astranov public chat + owner workshop both route through relay-first logic.
+Public lane = Astranov chat.
+Owner lane = owner workshop.
+When relay token exists, send x-owner-token and Authorization header.
+If relay fails, show status and fall back to local intelligence instead of dead silence.
 
-OWNER WORKSHOP [LOCKED]
-Provide hidden owner-only workshop inside app.
-Functions: owner chat bridge, export current index.html, save GitHub repo settings,
-send current index.html to GitHub, summarize live app state.
-Try /api/owner_workshop.php first. If unavailable, explain local fallback options.
+CHANNELS [LOCKED]
+Chat dropdown contains AI, Global, Local, Teams, Support & Ideas, Astranov Racing.
+Astranov Racing opens in the same chat workspace and stays off the public ribbon.
 
-GITHUB [LOCKED]
-Send current live DOM index.html to GitHub via Contents API when owner config exists.
-Use owner-supplied repo owner, repo, branch, path, token.
-Never expose workshop to non-owner accounts.
+ASTRANOV RACING [LOCKED]
+Purpose = connected vehicle intelligence.
+Show alerts, VIN, ECU family, HW ID, SW ID, CAL ID, read-only ECU upload dock, diagnostics interpretation, work orders, audit trail, AI analyst, export handoff.
+Authorized mechanics may use mechanic mode.
+No ECU write, flash, remap, checksum correction, or unlock inside Astranov.
 
-AI ASSISTANT
-Astranov = in-app systems operator for the Internet Operating System.
-Warm, direct, same-language replies. Help run UI, content, routing, and marketplace actions.
+VENDOR MENU [LOCKED]
+Shop/service menu supports:
+type product/service
+photo
+YouTube URL
+price EUR
+volume/size
+quantity
+production rate
+availability note
+available times
+duration
+temperature
+code/SKU
+delivery range
+operating schedule
 
-LAYERS
-Globe = primary start point. Map = local work surface.
+HUD [LOCKED]
+Radar wheel becomes joystick.
+Center button toggles zoom to my location in/out.
+Performance wheel becomes drone joystick.
+Show drone battery/speed/altitude when linked.
+Center button toggles load/unload.
+Camera toggle can put drone camera on main screen.
 
 DESIGN
-Electric blue / black / transparent.
-Keep rails and ribbons transparent. Keep controls readable.
+Transparent glass rails, electric blue/black HUD, non-blocking controls, readable overlays.
 </textarea>
 
 <!-- POST CHOOSER (map right-click / long-press) -->
@@ -6950,11 +7028,16 @@ Keep rails and ribbons transparent. Keep controls readable.
   var CHAT_CHANNEL = 'ai'; // ai, global, local, team
   var CHAT_HISTORIES = { ai:[], global:[], local:[], team:[] };
 
+  
   window.switchChatChannel = function(ch){
     var conv = document.getElementById("ai-conv");
     var supportPanel = document.getElementById("support-panel");
+    var racingPanel = document.getElementById("racing-panel");
     if(conv) CHAT_HISTORIES[CHAT_CHANNEL] = conv.innerHTML;
     CHAT_CHANNEL = ch;
+    if(supportPanel) supportPanel.style.display = "none";
+    if(racingPanel) racingPanel.style.display = "none";
+
     if(ch === "support"){
       if(conv) conv.style.display = "none";
       if(supportPanel) supportPanel.style.display = "flex";
@@ -6964,15 +7047,21 @@ Keep rails and ribbons transparent. Keep controls readable.
       renderActiveVotes(); renderAnnouncements();
       var resp = document.getElementById("cmd-response");
       if(resp){ resp.className = "expanded"; resp.style.display = "flex"; resp.style.maxHeight = "80vh"; }
+    } else if(ch === "astranov-racing"){
+      if(conv) conv.style.display = "none";
+      if(racingPanel) racingPanel.style.display = "flex";
+      var resp = document.getElementById("cmd-response");
+      if(resp){ resp.className = "expanded"; resp.style.display = "flex"; resp.style.maxHeight = "80vh"; }
+      try{ updateRacingUi(); }catch(e){}
     } else {
-      if(supportPanel) supportPanel.style.display = "none";
       if(conv){ conv.style.display = "flex"; conv.innerHTML = CHAT_HISTORIES[ch] || ""; }
     }
+
     var label = document.getElementById("chat-channel-label");
-    var labels = {ai:"AI Agent",global:"Global",local:"Local",team:"Teams",support:"Support & Ideas"};
+    var labels = {ai:"AI Agent",global:"Global",local:"Local",team:"Teams",support:"Support & Ideas","astranov-racing":"Astranov Racing"};
     if(label) label.textContent = labels[ch] || "Channel";
     if(["global","local","team"].indexOf(ch) >= 0) setChannel(ch);
-    if(conv && ch !== "support") conv.scrollTop = conv.scrollHeight;
+    if(conv && ch !== "support" && ch !== "astranov-racing") conv.scrollTop = conv.scrollHeight;
   };
 
   /* Dev channel message functions */
@@ -7933,13 +8022,22 @@ Keep rails and ribbons transparent. Keep controls readable.
         <div class="form-group"><label>Price €</label><input data-mi="${i}" data-field="price" type="number" min="0" step="0.01" placeholder="8.50"></div>
       </div>
       <div class="form-row3">
+        <div class="form-group"><label>Type</label><select data-mi="${i}" data-field="kind"><option value="product">Product</option><option value="service">Service</option></select></div>
         <div class="form-group"><label>Volume/Size</label><input data-mi="${i}" data-field="volume" placeholder="e.g. 500ml"></div>
         <div class="form-group"><label>Qty Available</label><input data-mi="${i}" data-field="qty" type="number" min="0" placeholder="∞"></div>
+      </div>
+      <div class="form-row3">
         <div class="form-group"><label>Production Rate</label><input data-mi="${i}" data-field="rate" placeholder="e.g. 6/hr"></div>
+        <div class="form-group"><label>Availability note</label><input data-mi="${i}" data-field="availability" placeholder="Made to order / In stock"></div>
+        <div class="form-group"><label>Duration</label><input data-mi="${i}" data-field="duration" placeholder="e.g. 45 min"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Available Times</label><input data-mi="${i}" data-field="times" placeholder="e.g. 11:00-15:00, 18:00-22:00"></div>
+        <div class="form-group"><label>YouTube URL</label><input data-mi="${i}" data-field="youtube" placeholder="https://youtu.be/..."></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Photo</label><input data-mi="${i}" data-field="photo" type="file" accept="image/*"></div>
+        <div class="form-group"><label>Product/Service code</label><input data-mi="${i}" data-field="code" placeholder="SKU / service code"></div>
       </div>
       <div class="form-group"><label>Temperature</label>
         <div class="temp-selector">
@@ -7981,20 +8079,30 @@ Keep rails and ribbons transparent. Keep controls readable.
       const mi = entry.id.replace('mi-','');
       const nameEl = entry.querySelector(`[data-field="name"]`);
       const priceEl = entry.querySelector(`[data-field="price"]`);
+      const kindEl = entry.querySelector(`[data-field="kind"]`);
       const volumeEl = entry.querySelector(`[data-field="volume"]`);
       const qtyEl = entry.querySelector(`[data-field="qty"]`);
       const rateEl = entry.querySelector(`[data-field="rate"]`);
+      const availabilityEl = entry.querySelector(`[data-field="availability"]`);
+      const durationEl = entry.querySelector(`[data-field="duration"]`);
       const timesEl = entry.querySelector(`[data-field="times"]`);
+      const youtubeEl = entry.querySelector(`[data-field="youtube"]`);
       const photoEl = entry.querySelector(`[data-field="photo"]`);
+      const codeEl = entry.querySelector(`[data-field="code"]`);
       const activeTemp = entry.querySelector('.temp-opt.active');
       const photoData = photoEl?.files[0] ? await fileToDataUrl(photoEl.files[0]).catch(()=>'') : '';
       items.push({
         name: nameEl?.value?.trim() || 'Unnamed item',
+        kind: kindEl?.value || 'product',
         price: num(priceEl?.value),
         volume: volumeEl?.value?.trim() || '',
         qty_available: num(qtyEl?.value),
         production_rate: rateEl?.value?.trim() || '',
+        availability_note: availabilityEl?.value?.trim() || '',
+        duration: durationEl?.value?.trim() || '',
         available_times: timesEl?.value?.trim() || '',
+        youtube: youtubeEl?.value?.trim() || '',
+        code: codeEl?.value?.trim() || '',
         temperature: activeTemp?.dataset.temp || 'neutral',
         photo: photoData
       });
@@ -8883,7 +8991,7 @@ Keep rails and ribbons transparent. Keep controls readable.
   var RELAY_CFG_KEY = 'astranov.ai.relay.v1';
   var RELAY_DEFAULTS = {
   backendUrl:'https://kzlabcrlrpbnfiiyrjvl.supabase.co/functions/v1/ai-router',
-  ownerToken:'ort=091283poqiwelkfalksn.zvlkjhsrioq2',
+  ownerToken:'',
   publicProvider:'auto'
 };
 
@@ -8909,6 +9017,7 @@ Keep rails and ribbons transparent. Keep controls readable.
     localStorage.setItem(RELAY_CFG_KEY, JSON.stringify(cfg));
     try{ ownerConsoleAddMessage('system','AI relay settings saved locally for this browser.'); }catch(e){}
     try{ devAddMsg('system','AI relay settings saved locally for this browser.'); }catch(e){}
+    try{ if(typeof updateRacingRelayChip === 'function') updateRacingRelayChip('saved'); }catch(e){}
   };
 
   window.hydrateDevAIKeys = function(){
@@ -8972,9 +9081,13 @@ Keep rails and ribbons transparent. Keep controls readable.
     options = options || {};
     var cfg = relayCfg();
     var headers = { 'Content-Type':'application/json' };
-    if(payload.lane === 'owner' && cfg.ownerToken){
-      headers['x-owner-token'] = cfg.ownerToken;
+    var relayToken = (cfg.ownerToken || '').trim();
+    if(relayToken){
+      headers['x-owner-token'] = relayToken;
+      headers['Authorization'] = /^Bearer\s/i.test(relayToken) ? relayToken : ('Bearer ' + relayToken);
     }
+    headers['x-public-provider'] = (cfg.publicProvider || 'auto');
+    headers['x-astranov-source'] = ((payload && payload.metadata && payload.metadata.source) || 'astranov-app');
     var res = await fetch(getRelayEndpoint(), {
       method:'POST',
       headers:headers,
@@ -9173,5 +9286,360 @@ Keep rails and ribbons transparent. Keep controls readable.
 })();
 </script>
 
+
+<script>
+(function(){
+  window.RACING_ALERTS_KEY = 'astranov.racing.alerts.v1';
+  window.RACING_ACTIVITY_KEY = 'astranov.racing.activity.v1';
+  window.DRONE_LINK_KEY = 'astranov.drone.link.v1';
+  window._droneCameraStream = null;
+
+  function rGet(key, fallback){
+    try{
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){ return fallback; }
+  }
+  function rSet(key, value){
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){}
+  }
+  function rNow(){ return new Date().toISOString(); }
+  function racingAuthorized(){
+    try{
+      if(window.CU && typeof getUserRole === 'function'){
+        var role = getUserRole(CU);
+        return role === 'owner' || role === 'admin' || role === 'authorized-mechanic';
+      }
+    }catch(e){}
+    return false;
+  }
+  window.racingLog = function(msg){
+    var items = rGet(RACING_ACTIVITY_KEY, []);
+    items.unshift({ text:String(msg || ''), at:rNow() });
+    rSet(RACING_ACTIVITY_KEY, items.slice(0, 24));
+    try{ updateRacingUi(); }catch(e){}
+  };
+  window.racingSeedDemo = function(){
+    var alerts = [
+      { vin:'W0L0TGF35Y0000001', title:'Misfire trend on cylinder 2', severity:'high', ecu:'Bosch ME7.6', code:'P0302', hint:'Check coil, plug, injector pulse and fuel trim drift.', at:rNow() },
+      { vin:'JH2SC59057M000001', title:'Boost control oscillation', severity:'medium', ecu:'Denso', code:'P0234', hint:'Inspect vacuum, duty cycle, wastegate and MAP plausibility.', at:rNow() }
+    ];
+    rSet(RACING_ALERTS_KEY, alerts);
+    racingLog('Demo Racing alerts loaded.');
+    updateRacingUi();
+  };
+  window.racingClearAlerts = function(){
+    rSet(RACING_ALERTS_KEY, []);
+    racingLog('Racing alerts cleared.');
+    updateRacingUi();
+  };
+  window.updateRacingRelayChip = function(state){
+    var chip = document.getElementById('racing-ai-chip');
+    if(!chip) return;
+    if(state === 'ok'){ chip.textContent = 'AI relay ready'; chip.className = 'racing-chip ok'; }
+    else if(state === 'saved'){ chip.textContent = 'AI relay saved'; chip.className = 'racing-chip'; }
+    else if(state === 'offline'){ chip.textContent = 'AI relay offline'; chip.className = 'racing-chip danger'; }
+    else { chip.textContent = 'AI relay checking…'; chip.className = 'racing-chip'; }
+  };
+  window.testAstranovRelay = async function(){
+    updateRacingRelayChip('checking');
+    try{
+      if(typeof callRelay !== 'function') throw new Error('Relay bridge is not loaded.');
+      var data = await callRelay({ lane:'public', provider:((typeof relayCfg === 'function' ? relayCfg().publicProvider : 'auto') || 'auto'), messages:[{ role:'user', content:'Reply with the single word READY.' }], metadata:{ source:'racing-relay-test' } });
+      var text = (data && (data.text || data.reply || data.raw || '')) || '';
+      if(!text) throw new Error('No relay text returned.');
+      updateRacingRelayChip('ok');
+      racingLog('Relay test passed: ' + String(text).slice(0,60));
+      return true;
+    }catch(e){
+      updateRacingRelayChip('offline');
+      racingLog('Relay test failed: ' + e.message);
+      return false;
+    }
+  };
+  window.updateRacingUi = function(){
+    var panel = document.getElementById('racing-panel');
+    if(!panel) return;
+    var alerts = rGet(RACING_ALERTS_KEY, []);
+    var activity = rGet(RACING_ACTIVITY_KEY, []);
+    var alertBox = document.getElementById('racing-alerts');
+    var activityBox = document.getElementById('racing-activity');
+    var chip = document.getElementById('racing-alert-chip');
+    var roleChip = document.getElementById('racing-role-chip');
+    var gate = document.getElementById('racing-mechanic-gate');
+    if(chip){
+      chip.textContent = alerts.length + ' live alert' + (alerts.length === 1 ? '' : 's');
+      chip.className = 'racing-chip ' + (alerts.some(function(a){ return a.severity === 'high'; }) ? 'danger' : (alerts.length ? '' : 'ok'));
+    }
+    if(roleChip){
+      var role = (window.CU && typeof getUserRole === 'function') ? getUserRole(CU) : 'guest';
+      roleChip.textContent = 'Role: ' + role;
+    }
+    if(gate){
+      gate.textContent = racingAuthorized() ? 'Mechanic tools unlocked for this account.' : 'Mechanic tools visible in read-only mode until an owner or authorized mechanic logs in.';
+    }
+    if(alertBox){
+      alertBox.innerHTML = alerts.length ? alerts.map(function(a){
+        return '<div class="racing-alert-item">' +
+          '<div class="racing-alert-top"><div class="racing-alert-title">' + a.title + '</div><span class="racing-severity ' + (a.severity || 'low') + '">' + (a.severity || 'low') + '</span></div>' +
+          '<div style="font-size:11px;color:#d8ecff;">' + (a.code || 'No DTC') + ' · ' + (a.ecu || 'Unknown ECU') + '</div>' +
+          '<div style="font-size:10px;color:#8fb6d4;margin-top:4px;">VIN ' + (a.vin || '—') + '</div>' +
+          '<div style="font-size:11px;color:#bfdcf6;margin-top:6px;line-height:1.45;">' + (a.hint || '') + '</div>' +
+        '</div>';
+      }).join('') : '<div class="racing-note">No connected vehicle alerts yet.</div>';
+    }
+    if(activityBox){
+      activityBox.innerHTML = activity.length ? activity.map(function(a){
+        var t = new Date(a.at || Date.now());
+        return '<div class="racing-activity-item"><div style="font-size:11px;color:#eaf8ff;">' + a.text + '</div><div style="font-size:10px;color:#7fb2d8;margin-top:4px;">' + t.toLocaleString() + '</div></div>';
+      }).join('') : '<div class="racing-note">Activity log is quiet.</div>';
+    }
+  };
+  window.racingAnalyzeUpload = async function(){
+    var bin = document.getElementById('racing-bin');
+    var xdf = document.getElementById('racing-xdf');
+    var summary = document.getElementById('racing-upload-summary');
+    var binFile = bin && bin.files && bin.files[0];
+    var xdfFile = xdf && xdf.files && xdf.files[0];
+    if(!binFile && !xdfFile){
+      summary.textContent = 'Attach at least one ECU-related file first.';
+      return;
+    }
+    var parts = [];
+    if(binFile) parts.push('BIN ' + binFile.name + ' · ' + Math.round(binFile.size/1024) + ' KB');
+    if(xdfFile) parts.push('Descriptor ' + xdfFile.name + ' · ' + Math.round(xdfFile.size/1024) + ' KB');
+    parts.push('VIN ' + ((document.getElementById('racing-vin')||{}).value || '—'));
+    parts.push('ECU ' + ((document.getElementById('racing-ecu-family')||{}).value || '—'));
+    parts.push('HW ' + ((document.getElementById('racing-hw')||{}).value || '—'));
+    parts.push('SW/CAL ' + ((document.getElementById('racing-sw')||{}).value || '—'));
+    summary.textContent = 'Read-only dock ready. ' + parts.join(' · ');
+    racingLog('ECU upload dock updated for ' + (binFile ? binFile.name : (xdfFile ? xdfFile.name : 'manual entry')) + '.');
+  };
+  window.racingBuildHandoff = function(){
+    var vin = ((document.getElementById('racing-vin')||{}).value || 'Unknown VIN').trim();
+    var ecu = ((document.getElementById('racing-ecu-family')||{}).value || 'Unknown ECU').trim();
+    var hw = ((document.getElementById('racing-hw')||{}).value || '—').trim();
+    var sw = ((document.getElementById('racing-sw')||{}).value || '—').trim();
+    var summary = 'HANDOFF PACKET\nVIN: ' + vin + '\nECU: ' + ecu + '\nHW: ' + hw + '\nSW/CAL: ' + sw + '\nMode: Read-only interpretation inside Astranov. Writing/flashing external only.';
+    var out = document.getElementById('racing-ai-output');
+    if(out) out.textContent = summary;
+    racingLog('External-tool handoff packet prepared for ' + vin + '.');
+  };
+  window.racingAskAi = async function(){
+    var out = document.getElementById('racing-ai-output');
+    var prompt = ((document.getElementById('racing-ai-prompt')||{}).value || '').trim();
+    if(!prompt){ out.textContent = 'Enter a Racing analysis prompt first.'; return; }
+    out.textContent = 'Thinking through the Racing relay…';
+    var vin = ((document.getElementById('racing-vin')||{}).value || '').trim();
+    var ecu = ((document.getElementById('racing-ecu-family')||{}).value || '').trim();
+    var sw = ((document.getElementById('racing-sw')||{}).value || '').trim();
+    var context = 'Astranov Racing channel. Read-only ECU analysis only. No write or flash. VIN: ' + vin + '. ECU: ' + ecu + '. SW/CAL: ' + sw + '.';
+    try{
+      if(typeof callRelay !== 'function') throw new Error('Relay bridge unavailable.');
+      var data = await callRelay({
+        lane: racingAuthorized() ? 'owner' : 'public',
+        provider: ((typeof relayCfg === 'function' ? relayCfg().publicProvider : 'auto') || 'auto'),
+        messages: [
+          { role:'system', content:'You are Astranov Racing, a vehicle diagnostics analyst inside the Astranov Internet Operating System. Stay in read-only mode. Provide inspection steps, interpretation clues, and safe external handoff notes. Keep it concise and practical.' },
+          { role:'user', content: context + '\n\n' + prompt }
+        ],
+        metadata:{ source:'astranov-racing-panel' }
+      });
+      var reply = (data && (data.text || data.reply || data.raw)) || 'No reply.';
+      out.textContent = String(reply);
+      updateRacingRelayChip('ok');
+      racingLog('Racing AI analysis completed.');
+    }catch(e){
+      out.textContent = 'Relay unavailable right now. ' + e.message;
+      updateRacingRelayChip('offline');
+      racingLog('Racing AI analysis failed: ' + e.message);
+    }
+  };
+
+  function attachJoystick(padId, knobId, onMove){
+    var pad = document.getElementById(padId);
+    var knob = document.getElementById(knobId);
+    if(!pad || !knob) return;
+    var active = false;
+    var maxR = 34;
+    function move(clientX, clientY){
+      var rect = pad.getBoundingClientRect();
+      var cx = rect.left + rect.width/2;
+      var cy = rect.top + rect.height/2;
+      var dx = clientX - cx;
+      var dy = clientY - cy;
+      var d = Math.sqrt(dx*dx + dy*dy) || 1;
+      if(d > maxR){ dx = dx / d * maxR; dy = dy / d * maxR; }
+      knob.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))';
+      if(typeof onMove === 'function') onMove(dx/maxR, dy/maxR);
+    }
+    function reset(){
+      active = false;
+      knob.style.transform = 'translate(-50%,-50%)';
+      if(typeof onMove === 'function') onMove(0,0,true);
+    }
+    function point(e){
+      if(e.touches && e.touches[0]) return e.touches[0];
+      return e;
+    }
+    pad.addEventListener('pointerdown', function(e){ active = true; move(e.clientX, e.clientY); });
+    window.addEventListener('pointermove', function(e){ if(active) move(e.clientX, e.clientY); });
+    window.addEventListener('pointerup', reset);
+    pad.addEventListener('touchstart', function(e){ var p = point(e); active = true; move(p.clientX, p.clientY); }, {passive:true});
+    window.addEventListener('touchmove', function(e){ if(active){ var p = point(e); move(p.clientX, p.clientY); } }, {passive:true});
+    window.addEventListener('touchend', reset, {passive:true});
+  }
+
+  window.toggleRadarLocateZoom = function(){
+    var readout = document.getElementById('radar-zoom-readout');
+    if(typeof goLayer === 'function' && window.CL !== 1) goLayer(1);
+    if(typeof locateMe === 'function') locateMe();
+    setTimeout(function(){
+      try{
+        if(window.LM && window.LOC){
+          var targetZoom = LM.getZoom() >= 15 ? 12 : 16;
+          LM.flyTo([LOC.lat, LOC.lng], targetZoom);
+          if(readout) readout.textContent = targetZoom >= 15 ? 'LOC+' : 'LOC−';
+        }
+      }catch(e){}
+    }, 120);
+  };
+
+  var radarPanTimer = null;
+  attachJoystick('radar-joy-pad','radar-joy-knob', function(nx, ny, reset){
+    var meta = document.getElementById('radar-joy-meta');
+    if(meta) meta.textContent = reset ? 'Map pan' : ('PAN ' + (Math.abs(nx)>Math.abs(ny) ? (nx>0?'E':'W') : (ny>0?'S':'N')));
+    if(reset || !window.LM || window.CL !== 1) return;
+    if(radarPanTimer) cancelAnimationFrame(radarPanTimer);
+    radarPanTimer = requestAnimationFrame(function(){
+      try{ LM.panBy([nx * 40, ny * 40], {animate:false}); }catch(e){}
+    });
+  });
+
+  function updateRadarTargets(){
+    var box = document.getElementById('radar-joy-targets');
+    if(!box) return;
+    box.innerHTML = '';
+    var offers = [];
+    try{ offers = JSON.parse(localStorage.getItem('astranov.local.offers.v333') || '[]'); }catch(e){}
+    offers.slice(0,6).forEach(function(item, idx){
+      var el = document.createElement('div');
+      el.className = 'joy-target';
+      el.style.left = (16 + (idx%3)*34 + Math.random()*8) + 'px';
+      el.style.top = (18 + Math.floor(idx/3)*34 + Math.random()*8) + 'px';
+      box.appendChild(el);
+    });
+  }
+
+  function droneLinkState(){
+    var data = rGet(DRONE_LINK_KEY, { linked:false, payloadLoaded:false, battery:84, speed:0, altitude:0, camera:false });
+    var linked = (!!data.linked) || (!!window.driverOnline && (document.getElementById('dr-veh')||{}).value === 'Drone') || (window.gameActive && window.gameType === 'drone');
+    data.linked = linked;
+    return data;
+  }
+  function saveDroneLink(data){ rSet(DRONE_LINK_KEY, data); updateDroneUi(); }
+
+  window.toggleDroneLink = function(){
+    var data = droneLinkState();
+    data.linked = !data.linked;
+    if(data.linked){
+      data.battery = data.battery || 92;
+      data.speed = data.speed || 0;
+      data.altitude = data.altitude || 0;
+      racingLog('Drone link engaged.');
+    }else{
+      data.camera = false;
+      racingLog('Drone link disengaged.');
+      try{ toggleDroneCamera(false); }catch(e){}
+    }
+    saveDroneLink(data);
+  };
+  window.toggleDroneLoad = function(){
+    var data = droneLinkState();
+    data.payloadLoaded = !data.payloadLoaded;
+    racingLog(data.payloadLoaded ? 'Drone payload loaded.' : 'Drone payload unloaded.');
+    saveDroneLink(data);
+  };
+  window.toggleDroneCamera = async function(force){
+    var overlay = document.getElementById('drone-camera-overlay');
+    var video = document.getElementById('drone-camera-video');
+    var fallback = document.getElementById('drone-camera-fallback');
+    var state = document.getElementById('drone-camera-state');
+    var data = droneLinkState();
+    if(typeof force === 'boolean') data.camera = force; else data.camera = !data.camera;
+    if(!data.linked) data.camera = false;
+    saveDroneLink(data);
+    if(!overlay || !video || !fallback) return;
+    if(!data.camera){
+      overlay.classList.remove('on');
+      if(window._droneCameraStream){ try{ window._droneCameraStream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} }
+      window._droneCameraStream = null;
+      video.srcObject = null;
+      fallback.style.display = 'flex';
+      if(state) state.textContent = 'offline';
+      return;
+    }
+    overlay.classList.add('on');
+    fallback.style.display = 'flex';
+    if(state) state.textContent = 'starting';
+    try{
+      if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+        window._droneCameraStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false });
+        video.srcObject = window._droneCameraStream;
+        fallback.style.display = 'none';
+        if(state) state.textContent = 'live';
+      }else{
+        if(state) state.textContent = 'simulated';
+      }
+    }catch(e){
+      if(state) state.textContent = 'simulated';
+    }
+  };
+
+  attachJoystick('drone-joy-pad','drone-joy-knob', function(nx, ny, reset){
+    var data = droneLinkState();
+    if(!data.linked) return;
+    if(reset){
+      data.speed = Math.max(0, Math.round((data.speed || 0) * 0.65));
+    }else{
+      data.speed = Math.max(0, Math.min(45, Math.round(Math.abs(ny) * 42)));
+      data.altitude = Math.max(0, Math.min(120, Math.round((0.5 - ny) * 48 + Math.abs(nx) * 12)));
+      data.battery = Math.max(4, (data.battery || 90) - 0.08);
+    }
+    saveDroneLink(data);
+  });
+
+  window.updateDroneUi = function(){
+    var data = droneLinkState();
+    var st = document.getElementById('drone-link-state');
+    var b = document.getElementById('drone-stat-battery');
+    var s = document.getElementById('drone-stat-speed');
+    var a = document.getElementById('drone-stat-alt');
+    var btn = document.getElementById('drone-load-btn');
+    var hud = document.getElementById('perf-hud');
+    if(st) st.textContent = data.linked ? 'LINKED' : 'OFFLINE';
+    if(b) b.textContent = 'BAT ' + Math.round(data.battery || 0) + '%';
+    if(s) s.textContent = 'SPD ' + Math.round(data.speed || 0) + 'km';
+    if(a) a.textContent = 'ALT ' + Math.round(data.altitude || 0) + 'm';
+    if(btn) btn.textContent = data.payloadLoaded ? 'UNLOAD' : 'LOAD';
+    if(hud) hud.classList.toggle('has-critical', !!data.linked && Number(data.battery || 0) < 20);
+    var camState = document.getElementById('drone-camera-state');
+    if(camState && !data.camera && !data.linked) camState.textContent = 'offline';
+  };
+
+  setInterval(function(){
+    updateRadarTargets();
+    updateDroneUi();
+    updateRacingUi();
+  }, 2500);
+
+  document.addEventListener('DOMContentLoaded', function(){
+    updateRadarTargets();
+    updateDroneUi();
+    updateRacingUi();
+    setTimeout(testAstranovRelay, 1200);
+  });
+})();
+</script>
 </body>
 </html>
