@@ -2,945 +2,684 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Astranov Internet Operating System</title>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <style>
 :root{
-  --bg:#030712;
-  --panel:rgba(5,15,28,.38);
-  --panel-strong:rgba(5,15,28,.72);
-  --line:rgba(0,196,255,.22);
-  --line-strong:rgba(0,196,255,.48);
-  --cyan:#2dd9ff;
-  --cyan-soft:#8feeff;
-  --text:#d8f6ff;
-  --text-dim:#6ea1b3;
-  --good:#28d17c;
-  --warn:#ffd34f;
-  --bad:#ff4f65;
-  --shadow:0 20px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.04);
-  --radius:20px;
-  --vh:1vh;
-  --helper-size:clamp(60px,13vw,78px);
-  --hud-size:clamp(84px,22vw,112px);
-  --bubble-size:clamp(54px,14vw,66px);
-  --composer-w:min(68vw,520px);
-  --composer-h:86px;
-  --safe-bottom:max(env(safe-area-inset-bottom),10px);
+  --bg:#030913;
+  --panel:rgba(8,16,28,.44);
+  --panel-strong:rgba(8,16,28,.72);
+  --line:rgba(84,199,255,.30);
+  --line-strong:rgba(84,199,255,.55);
+  --text:#d8f3ff;
+  --muted:#84a9bf;
+  --blue:#33cfff;
+  --blue-soft:rgba(51,207,255,.12);
+  --green:#26e27c;
+  --red:#ff5a6d;
+  --shadow:0 16px 40px rgba(0,0,0,.35);
+  --safe-bottom: max(12px, env(safe-area-inset-bottom));
+  --safe-top: max(12px, env(safe-area-inset-top));
+  --hud-size: clamp(84px, 22vw, 112px);
+  --helper-size: clamp(56px, 16vw, 72px);
+  --composer-width:min(60vw, 560px);
+  --composer-height:60px;
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 8%, #0d2340 0%, #06111e 32%, #030712 70%, #01040b 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 22%, #10263d 0%, #07111b 38%, #02060c 100%);color:var(--text);font-family:var(--font)}
 button,input,select,textarea{font:inherit}
-button{border:none;background:none;color:inherit}
-#app{position:relative;width:100%;height:100%;overflow:hidden}
+button{cursor:pointer}
+#app{position:fixed;inset:0;overflow:hidden}
+#world{position:absolute;inset:0}
+#map{position:absolute;inset:0;display:none;z-index:2}
+#globe{position:absolute;inset:0;z-index:1;display:block}
 #stars{position:absolute;inset:0;background:
- radial-gradient(circle at 15% 18%, rgba(255,255,255,.9) 0 1px, transparent 1.4px),
- radial-gradient(circle at 77% 24%, rgba(255,255,255,.75) 0 1px, transparent 1.3px),
- radial-gradient(circle at 52% 8%, rgba(255,255,255,.85) 0 1px, transparent 1.2px),
- radial-gradient(circle at 12% 62%, rgba(255,255,255,.7) 0 1px, transparent 1.3px),
- radial-gradient(circle at 86% 68%, rgba(255,255,255,.9) 0 1px, transparent 1.3px),
- radial-gradient(circle at 35% 83%, rgba(255,255,255,.7) 0 1px, transparent 1.2px),
- radial-gradient(circle at 62% 43%, rgba(255,255,255,.7) 0 1px, transparent 1.2px),
- radial-gradient(circle at 92% 38%, rgba(255,255,255,.65) 0 1px, transparent 1.3px),
- radial-gradient(circle at 5% 91%, rgba(255,255,255,.75) 0 1px, transparent 1.2px),
- radial-gradient(circle at 46% 58%, rgba(255,255,255,.55) 0 1px, transparent 1.3px);
- opacity:.7;pointer-events:none}
-#nebula{position:absolute;inset:-15%;background:
- radial-gradient(circle at 18% 28%, rgba(45,217,255,.16), transparent 28%),
- radial-gradient(circle at 82% 24%, rgba(81,102,255,.18), transparent 30%),
- radial-gradient(circle at 68% 78%, rgba(45,217,255,.14), transparent 22%),
- radial-gradient(circle at 28% 72%, rgba(0,96,255,.12), transparent 28%);
- filter:blur(30px);opacity:.9;pointer-events:none}
-#topbar{position:absolute;top:0;left:0;right:0;height:44px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;z-index:12;background:linear-gradient(180deg, rgba(3,10,20,.58), rgba(3,10,20,.1));backdrop-filter:blur(14px)}
-.brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--cyan);text-shadow:0 0 14px rgba(45,217,255,.36);white-space:nowrap;max-width:72vw;overflow:hidden;text-overflow:ellipsis}
-.top-pill{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,.18);border:1px solid var(--line);font-size:10px;color:var(--cyan-soft)}
-.top-dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 10px rgba(40,209,124,.55)}
-#sceneWrap,#mapWrap{position:absolute;left:0;right:0;top:44px;bottom:140px}
-#sceneWrap{z-index:1}
-#globeCanvas{width:100%;height:100%;display:block}
-#signalLayer{position:absolute;inset:44px 0 140px;z-index:7;pointer-events:none}
-.signal{position:absolute;min-width:72px;max-width:124px;padding:7px 10px 8px;border-radius:18px;background:linear-gradient(180deg, rgba(6,18,34,.92), rgba(6,18,34,.76));border:1px solid rgba(45,217,255,.24);box-shadow:0 16px 28px rgba(0,0,0,.28), 0 0 18px rgba(45,217,255,.08);backdrop-filter:blur(10px);pointer-events:auto;cursor:pointer;transform:translate(-50%,-50%);transition:transform .18s ease, opacity .18s ease;}
-.signal:hover{transform:translate(-50%,-50%) scale(1.04)}
-.signal::before{content:"";position:absolute;left:50%;bottom:100%;width:2px;height:22px;background:linear-gradient(180deg, rgba(45,217,255,.66), rgba(45,217,255,0));transform:translateX(-50%)}
-.signal .type{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-soft);opacity:.85}
-.signal .title{margin-top:2px;font-size:11px;font-weight:700;line-height:1.2;color:var(--text)}
-.signal.news{border-color:rgba(45,217,255,.34)}
-.signal.service{border-color:rgba(40,209,124,.32)}
-.signal.driver{border-color:rgba(255,211,79,.34)}
-.signal.delivery{border-color:rgba(255,79,101,.34)}
-#mapWrap{display:none;z-index:2}
-#map{width:100%;height:100%}
-.leaflet-container{background:#07111e}
-.leaflet-tile{filter:brightness(.75) saturate(.72) hue-rotate(182deg)}
-.hud{position:absolute;width:var(--hud-size);height:var(--hud-size);border-radius:50%;z-index:9;background:radial-gradient(circle at 50% 50%, rgba(10,22,38,.4), rgba(2,8,18,.88) 74%);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
-.hud::before{content:"";position:absolute;inset:7px;border-radius:50%;border:1px solid rgba(45,217,255,.18)}
-#perfHud{top:54px;left:8px}
-#radarHud{top:54px;right:8px}
-.hud-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:clamp(28px,8vw,36px);height:clamp(28px,8vw,36px);border-radius:50%;background:radial-gradient(circle at 35% 30%, rgba(45,217,255,.35), rgba(5,15,28,.95) 72%);border:1px solid rgba(45,217,255,.36);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(45,217,255,.18);cursor:pointer;z-index:2}
-.hud-label{position:absolute;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(143,238,255,.8)}
-#perfHud .hud-label.top{top:12px;left:50%;transform:translateX(-50%)}
-#perfHud .hud-label.bottom{bottom:12px;left:50%;transform:translateX(-50%)}
-#perfHud .hud-label.left{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg)}
-#perfHud .hud-label.right{right:2px;top:50%;transform:translateY(-50%) rotate(90deg)}
-#radarHud .hud-label.top{top:12px;left:50%;transform:translateX(-50%)}
-#radarHud .hud-label.bottom{bottom:12px;left:50%;transform:translateX(-50%)}
-#radarHud .hud-label.left{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg)}
-#radarHud .hud-label.right{right:2px;top:50%;transform:translateY(-50%) rotate(90deg)}
-.hud-ring{position:absolute;inset:13px;border-radius:50%;border:1px dashed rgba(45,217,255,.15)}
-#perfHud .stat{position:absolute;font-size:10px;font-weight:700;color:var(--cyan-soft)}
-#perfHud .stat.s1{top:28px;left:50%;transform:translateX(-50%)}
-#perfHud .stat.s2{bottom:28px;left:50%;transform:translateX(-50%)}
-#perfHud .stat.s3{top:50%;left:16px;transform:translateY(-50%)}
-#perfHud .stat.s4{top:50%;right:16px;transform:translateY(-50%)}
-#perfHud.loaded .hud-center{border-color:rgba(255,79,101,.45);box-shadow:0 0 18px rgba(255,79,101,.24)}
-#perfHud.unloaded .hud-center{border-color:rgba(40,209,124,.45);box-shadow:0 0 18px rgba(40,209,124,.24)}
-.hud-btn-icon{width:18px;height:18px;display:block}
-#helper{position:absolute;left:10px;bottom:calc(var(--safe-bottom) + 8px);width:var(--helper-size);height:var(--helper-size);border-radius:50%;z-index:14;background:radial-gradient(circle at 35% 20%, rgba(65,96,255,.24), rgba(5,15,28,.92) 70%);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(14px)}
-#helper svg{width:78%;height:78%;filter:drop-shadow(0 0 12px rgba(45,217,255,.26))}
-#helper.active{border-color:rgba(45,217,255,.55);box-shadow:0 0 18px rgba(45,217,255,.24), var(--shadow)}
-#composer{position:absolute;left:50%;bottom:calc(var(--safe-bottom) + 8px);transform:translateX(-50%);width:var(--composer-w);max-width:calc(100vw - 150px);min-width:240px;height:var(--composer-h);border-radius:22px;z-index:13;padding:8px 10px;background:linear-gradient(180deg, rgba(5,15,28,.52), rgba(5,15,28,.28));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:8px}
-#composerTop,#composerBottom{display:flex;align-items:center;gap:8px}
-#micBtn,#channelAdd,#sendBtn{width:36px;height:36px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.16);border:1px solid var(--line);color:var(--cyan-soft);flex:0 0 auto;cursor:pointer}
-#micBtn.active{border-color:rgba(40,209,124,.46);color:var(--good);box-shadow:0 0 14px rgba(40,209,124,.18)}
-#channelWrap{position:relative;display:flex;align-items:center;flex:1 1 auto;min-width:0;height:34px;border-radius:14px;background:rgba(0,0,0,.14);border:1px solid var(--line);overflow:hidden}
-#channelArrow{width:24px;flex:0 0 24px;display:flex;align-items:center;justify-content:center;color:var(--cyan-soft);font-size:11px}
-#channelSelect{flex:1 1 auto;height:100%;border:none;background:transparent;color:var(--cyan-soft);padding:0 10px 0 0;outline:none;font-size:12px;appearance:none}
-#channelSelect option{background:#07111e;color:var(--cyan-soft)}
-#commandInput{flex:1 1 auto;height:36px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.14);color:var(--text);padding:0 14px;outline:none;min-width:0}
-#commandInput::placeholder{color:rgba(143,238,255,.56)}
-#sendBtn svg,#micBtn svg,#channelAdd svg{width:18px;height:18px}
-#addBubble{position:absolute;right:10px;bottom:calc(var(--safe-bottom) + 8px);width:var(--bubble-size);height:var(--bubble-size);border-radius:50%;z-index:14;background:radial-gradient(circle at 35% 20%, rgba(45,217,255,.38), rgba(5,15,28,.94) 72%);border:1px solid rgba(45,217,255,.36);box-shadow:var(--shadow), 0 0 20px rgba(45,217,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer}
-#addBubble svg{width:26px;height:26px}
-#drawer{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-bottom) + 102px);width:var(--composer-w);max-width:calc(100vw - 150px);min-width:240px;height:0;opacity:0;z-index:11;overflow:hidden;border-radius:22px;background:linear-gradient(180deg, rgba(5,15,28,.78), rgba(5,15,28,.56));border:1px solid transparent;box-shadow:none;backdrop-filter:blur(14px);transition:height .18s ease, opacity .18s ease, border-color .18s ease, box-shadow .18s ease}
-#drawer.open{height:min(28vh,220px);opacity:1;border-color:var(--line);box-shadow:var(--shadow)}
-#drawerLog{height:100%;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
-.msg{align-self:flex-start;max-width:90%;padding:9px 11px;border-radius:16px;background:rgba(0,0,0,.16);border:1px solid rgba(45,217,255,.1);font-size:12px;line-height:1.35;color:var(--text)}
-.msg.user{align-self:flex-end;background:rgba(45,217,255,.12);color:#eaffff}
-#card{position:absolute;left:50%;top:92px;transform:translateX(-50%);width:min(84vw,320px);max-height:34vh;border-radius:22px;z-index:10;padding:12px 12px 14px;background:linear-gradient(180deg, rgba(5,15,28,.82), rgba(5,15,28,.62));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px);display:none}
-#card.open{display:block}
-#cardHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-#cardType{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan-soft)}
-#cardTitle{margin-top:2px;font-size:16px;font-weight:800;line-height:1.12;color:var(--text)}
-#cardClose{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.18);border:1px solid var(--line);cursor:pointer;flex:0 0 auto}
-#cardBody{margin-top:10px;font-size:12px;line-height:1.45;color:#cdefff;max-height:18vh;overflow:auto}
-#cardMeta{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
-.metaPill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.16);border:1px solid rgba(45,217,255,.12);font-size:10px;color:var(--cyan-soft)}
-#radial{position:absolute;inset:0;z-index:8;pointer-events:none}
-.radialAction{position:absolute;width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(circle at 35% 20%, rgba(45,217,255,.3), rgba(5,15,28,.92) 72%);border:1px solid rgba(45,217,255,.28);box-shadow:var(--shadow);backdrop-filter:blur(12px);pointer-events:auto;cursor:pointer;opacity:0;transform:translate(-50%,-50%) scale(.7);transition:opacity .18s ease, transform .18s ease}
-.radialAction.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.radialAction strong{font-size:11px;line-height:1.1;text-align:center;color:var(--text)}
-.radialAction span{font-size:9px;line-height:1.15;text-align:center;color:var(--cyan-soft)}
-#sheetBackdrop{position:absolute;inset:0;z-index:15;background:rgba(0,0,0,.24);backdrop-filter:blur(8px);display:none}
-#sheetBackdrop.open{display:block}
-#sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,420px);max-height:min(80vh,620px);border-radius:24px;background:linear-gradient(180deg, rgba(5,15,28,.94), rgba(5,15,28,.82));border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;overflow:auto}
-#sheetHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}
-#sheetTitle{font-size:18px;font-weight:800;color:var(--text)}
-#sheetClose{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:rgba(0,0,0,.16);cursor:pointer}
-#sheetForm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-#sheetForm .full{grid-column:1 / -1}
-#sheetForm label{display:grid;gap:6px;font-size:11px;color:var(--cyan-soft)}
-#sheetForm input,#sheetForm select,#sheetForm textarea{width:100%;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--text);padding:11px 12px;outline:none}
-#sheetForm textarea{min-height:92px;resize:vertical}
-#sheetActions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
-.sheetBtn{padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.16);cursor:pointer;color:var(--cyan-soft)}
-.sheetBtn.primary{background:rgba(45,217,255,.16);border-color:rgba(45,217,255,.34);color:var(--text)}
-#toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:16;padding:10px 14px;border-radius:16px;background:rgba(5,15,28,.88);border:1px solid rgba(45,217,255,.24);box-shadow:var(--shadow);color:var(--text);font-size:12px;opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-#hint{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:8;padding:10px 14px;border-radius:999px;background:rgba(5,15,28,.48);border:1px solid rgba(45,217,255,.18);backdrop-filter:blur(14px);font-size:11px;color:var(--cyan-soft);pointer-events:none}
-.hidden{display:none!important}
-@media (max-width: 520px){
-  #topbar{height:40px}
-  #sceneWrap,#mapWrap{top:40px;bottom:132px}
-  #signalLayer{inset:40px 0 132px}
-  .signal{min-width:64px;max-width:112px;padding:6px 9px 7px}
-  .signal .title{font-size:10px}
-  #perfHud{left:6px;top:48px}
-  #radarHud{right:6px;top:48px}
-  #composer{max-width:calc(100vw - 132px);min-width:200px;height:82px;padding:7px 8px}
-  #drawer{max-width:calc(100vw - 132px);min-width:200px;bottom:calc(var(--safe-bottom) + 96px)}
-  #helper{left:8px}
-  #addBubble{right:8px}
-  .radialAction{width:78px;height:78px}
-  .radialAction strong{font-size:10px}
+  radial-gradient(circle at 18% 22%, rgba(255,255,255,.9) 0 1px, transparent 1.6px),
+  radial-gradient(circle at 72% 14%, rgba(255,255,255,.75) 0 1px, transparent 1.4px),
+  radial-gradient(circle at 82% 62%, rgba(255,255,255,.85) 0 1px, transparent 1.8px),
+  radial-gradient(circle at 28% 78%, rgba(255,255,255,.7) 0 1px, transparent 1.3px),
+  radial-gradient(circle at 58% 86%, rgba(255,255,255,.8) 0 1px, transparent 1.6px),
+  radial-gradient(circle at 44% 10%, rgba(255,255,255,.4) 0 1px, transparent 1.2px),
+  radial-gradient(circle at 9% 65%, rgba(255,255,255,.45) 0 1px, transparent 1.2px),
+  radial-gradient(circle at 94% 36%, rgba(255,255,255,.45) 0 1px, transparent 1.2px);
+  opacity:.85;pointer-events:none;z-index:0}
+#topPill{position:fixed;top:calc(var(--safe-top) + 8px);left:50%;transform:translateX(-50%);z-index:9;padding:7px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(5,12,22,.36);backdrop-filter:blur(12px);box-shadow:var(--shadow);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#b7ebff}
+#statusTiny{font-size:10px;color:var(--muted);margin-left:8px;letter-spacing:.04em;text-transform:none}
+.hud{position:fixed;top:calc(var(--safe-top) + 54px);width:var(--hud-size);height:var(--hud-size);z-index:10;pointer-events:auto}
+.hud.left{left:10px}.hud.right{right:10px}
+.hud .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(51,207,255,.28);background:radial-gradient(circle at 30% 20%, rgba(51,207,255,.15), rgba(8,14,24,.74) 58%, rgba(3,8,14,.9) 100%);backdrop-filter:blur(10px);box-shadow:inset 0 0 24px rgba(51,207,255,.08), 0 16px 30px rgba(0,0,0,.28)}
+.hud canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%}
+.hud .centerBtn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:34%;height:34%;border-radius:50%;border:1px solid var(--line-strong);background:radial-gradient(circle at 30% 24%, rgba(51,207,255,.22), rgba(10,18,30,.95) 70%);display:grid;place-items:center;color:#e3f8ff;box-shadow:inset 0 0 14px rgba(51,207,255,.12), 0 0 20px rgba(51,207,255,.12)}
+.hud .centerBtn svg{width:50%;height:50%;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hudLabel{position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;display:none}
+#signalsLayer{position:absolute;inset:0;z-index:3;pointer-events:none}
+#detailSheet{position:fixed;left:10px;right:10px;bottom:calc(var(--safe-bottom) + 86px);z-index:12;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg, rgba(8,16,28,.86), rgba(8,16,28,.74));backdrop-filter:blur(18px);box-shadow:var(--shadow);padding:14px 14px 16px;display:none;max-height:min(42vh, 320px);overflow:auto}
+#detailSheet.show{display:block}
+#detailTitle{font-size:16px;font-weight:700;margin:0 0 4px}
+#detailMeta{font-size:12px;color:var(--muted);margin-bottom:10px}
+#detailBody{font-size:14px;line-height:1.45;color:#d9f6ff;margin-bottom:12px}
+#detailActions{display:flex;gap:8px;flex-wrap:wrap}
+.sheetBtn{border:1px solid var(--line);background:var(--blue-soft);color:#dff8ff;border-radius:14px;padding:10px 14px;min-height:44px}
+.sheetBtn.primary{border-color:rgba(38,226,124,.35);background:rgba(38,226,124,.12);color:#dfffe9}
+#bottomDock{position:fixed;left:8px;right:8px;bottom:calc(var(--safe-bottom) + 8px);z-index:20;pointer-events:none}
+#helperBtn,#addBtn,#composer{pointer-events:auto}
+#helperBtn{position:absolute;left:0;bottom:0;width:var(--helper-size);height:var(--helper-size);border-radius:20px;border:1px solid var(--line);background:linear-gradient(180deg, rgba(8,16,28,.86), rgba(8,16,28,.66));backdrop-filter:blur(14px);box-shadow:var(--shadow);display:grid;place-items:center;padding:4px}
+#helperBtn svg{width:100%;height:100%}
+#addBtn{position:absolute;right:0;bottom:0;width:60px;height:60px;border-radius:50%;border:1px solid var(--line-strong);background:radial-gradient(circle at 30% 24%, rgba(51,207,255,.22), rgba(8,16,28,.96) 68%);box-shadow:var(--shadow), inset 0 0 14px rgba(51,207,255,.10);display:grid;place-items:center;color:#e9fbff}
+#addBtn svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
+#composer{position:absolute;left:calc(var(--helper-size) + 10px);right:70px;bottom:0;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg, rgba(8,16,28,.54), rgba(8,16,28,.42));backdrop-filter:blur(18px);box-shadow:var(--shadow);overflow:hidden}
+#drawer{max-height:0;overflow:auto;transition:max-height .2s ease;padding:0 12px}
+#composer.open #drawer{max-height:min(34vh, 240px);padding-top:12px;padding-bottom:8px;border-bottom:1px solid rgba(51,207,255,.12)}
+.msg{padding:10px 12px;border-radius:16px;margin:0 0 8px;font-size:13px;line-height:1.38}
+.msg.user{background:rgba(51,207,255,.10);border:1px solid rgba(51,207,255,.16);margin-left:28px}
+.msg.ai{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);margin-right:28px}
+#bar{display:flex;align-items:center;gap:8px;padding:10px}
+#micBtn,#sendBtn,#channelAdd{width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:rgba(7,14,24,.52);color:#ecfbff;display:grid;place-items:center;flex:0 0 auto}
+#micBtn.active{border-color:rgba(38,226,124,.4);background:rgba(38,226,124,.12);color:#dffff0}
+#sendBtn svg,#micBtn svg,#channelAdd svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+#inputWrap{display:flex;align-items:center;gap:8px;flex:1;min-width:0;border:1px solid rgba(51,207,255,.18);border-radius:16px;background:rgba(4,10,18,.22);padding:0 10px}
+#channelWrap{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 148px}
+#channelArrow{color:#a4dfff;font-size:12px;line-height:1;flex:0 0 auto}
+#channelSelect{appearance:none;background:transparent;border:none;color:#c7f4ff;height:42px;min-width:0;flex:1;font-size:12px;outline:none}
+#textInput{flex:1;min-width:0;height:42px;background:transparent;border:none;color:#eaffff;outline:none;font-size:14px}
+#textInput::placeholder{color:#7ca2bb}
+#radial{position:fixed;inset:0;z-index:18;pointer-events:none}
+.radialOption{position:absolute;width:88px;height:88px;border-radius:50%;border:1px solid var(--line);background:radial-gradient(circle at 30% 24%, rgba(51,207,255,.22), rgba(8,16,28,.92) 68%);box-shadow:var(--shadow);display:none;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:10px;color:#e6fbff;font-size:11px;line-height:1.2;pointer-events:auto}
+.radialOption.show{display:flex}
+.radialOption strong{font-size:12px;display:block;margin-bottom:3px}
+#formModal{position:fixed;inset:0;z-index:30;background:rgba(2,6,10,.42);backdrop-filter:blur(8px);display:none;align-items:flex-end}
+#formModal.show{display:flex}
+#formSheet{width:100%;max-height:88vh;border-top-left-radius:28px;border-top-right-radius:28px;background:linear-gradient(180deg, rgba(8,16,28,.95), rgba(8,16,28,.88));border-top:1px solid var(--line);box-shadow:var(--shadow);padding:14px 14px 18px;overflow:auto}
+#formHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#formHeader h2{margin:0;font-size:18px}
+#closeForm{width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:var(--blue-soft);color:#effcff;font-size:26px;line-height:1}
+.formGrid{display:grid;gap:10px}
+.formGrid.two{grid-template-columns:1fr 1fr}
+label{display:grid;gap:6px;font-size:12px;color:#b2ddef}
+input,select,textarea{width:100%;min-height:44px;border-radius:14px;border:1px solid rgba(51,207,255,.18);background:rgba(255,255,255,.04);color:#ecfcff;padding:10px 12px;outline:none}
+textarea{min-height:88px;resize:vertical}
+#saveListing{margin-top:12px;width:100%;min-height:48px;border-radius:16px;border:1px solid rgba(38,226,124,.35);background:rgba(38,226,124,.14);color:#eaffef;font-weight:700}
+#mapTapPill{position:fixed;left:50%;top:calc(var(--safe-top) + 48px);transform:translateX(-50%);z-index:11;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(8,16,28,.68);backdrop-filter:blur(12px);font-size:12px;color:#dbf7ff;display:none}
+#mapTapPill.show{display:block}
+.leaflet-control-attribution,.leaflet-control-zoom{display:none !important}
+.listing-dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 14px rgba(0,0,0,.25)}
+@media (max-width:420px){
+  :root{--helper-size:58px;--hud-size:88px}
+  #channelWrap{flex-basis:126px}
+  #composer{left:68px;right:66px}
+  #bar{gap:6px;padding:8px}
+  #micBtn,#sendBtn,#channelAdd{width:40px;height:40px}
 }
 </style>
 </head>
 <body>
 <div id="app">
-  <div id="stars"></div>
-  <div id="nebula"></div>
-  <div id="topbar">
-    <div class="brand">ASTRANOV INTERNET OPERATING SYSTEM</div>
-    <div class="top-pill"><span class="top-dot"></span><span id="modeText">MANUAL</span></div>
-  </div>
+  <div id="world">
+    <div id="stars"></div>
+    <canvas id="globe"></canvas>
+    <div id="map"></div>
+    <canvas id="signalsLayer"></canvas>
+    <div id="topPill">Astranov <span id="statusTiny">world online</span></div>
+    <div id="mapTapPill">Tap the map to place your listing</div>
 
-  <div id="sceneWrap"><canvas id="globeCanvas"></canvas></div>
-  <div id="mapWrap"><div id="map"></div></div>
-  <div id="signalLayer"></div>
-
-  <div id="perfHud" class="hud unloaded">
-    <div class="hud-ring"></div>
-    <div class="hud-label top">Signal</div>
-    <div class="hud-label bottom">Battery</div>
-    <div class="hud-label left">Storage</div>
-    <div class="hud-label right">RAM</div>
-    <div class="stat s1" id="statSignal">84</div>
-    <div class="stat s2" id="statBattery">96</div>
-    <div class="stat s3" id="statStorage">44</div>
-    <div class="stat s4" id="statRam">68</div>
-    <button class="hud-center" id="grabBtn" aria-label="Load unload">
-      <svg class="hud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <path id="grabPath" d="M16.8 6.4c-2.8-2-7.6-1.2-10 1.9-2.8 3.7-1.6 8.3 2.7 10.1 3.1 1.3 6 .4 7.9-1.3"/>
-        <circle id="grabDot" cx="15.7" cy="12.2" r="0" fill="#ff4f65" stroke="none"/>
-      </svg>
-    </button>
-  </div>
-
-  <div id="radarHud" class="hud">
-    <div class="hud-ring"></div>
-    <div class="hud-label top">North</div>
-    <div class="hud-label bottom">Scan</div>
-    <div class="hud-label left">Range</div>
-    <div class="hud-label right">Mode</div>
-    <button class="hud-center" id="zoomBtn" aria-label="Zoom toggle">
-      <svg id="zoomIcon" class="hud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-        <path id="zoomGlyph" d="M12 6v12M6 12l6-6 6 6"/>
-      </svg>
-    </button>
-  </div>
-
-  <button id="helper" aria-label="Astranov helper" title="Astranov Collective Intelligence">
-    <svg viewBox="0 0 64 64" fill="none" stroke="var(--cyan-soft)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M22 16l-7-7 3-2 10 6" />
-      <path d="M42 16l7-7-3-2-10 6" />
-      <path d="M14 30c3-6 10-10 18-10s15 4 18 10" />
-      <path d="M21 39c3 7 7 12 11 12s8-5 11-12" />
-      <path d="M18 27l-7 6 8 1" />
-      <path d="M46 27l7 6-8 1" />
-      <circle cx="26" cy="31" r="1.5" fill="var(--cyan-soft)" stroke="none"/>
-      <circle cx="38" cy="31" r="1.5" fill="var(--cyan-soft)" stroke="none"/>
-      <path d="M27 38c2 1.5 8 1.5 10 0" />
-      <path d="M22 18c2-4 6-6 10-6s8 2 10 6" />
-      <path d="M15 45c5 3 10 5 17 5s12-2 17-5" opacity=".85"/>
-    </svg>
-  </button>
-
-  <div id="drawer"><div id="drawerLog"></div></div>
-
-  <div id="composer">
-    <div id="composerTop">
-      <button id="micBtn" aria-label="Voice typing">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16a4 4 0 0 0 4-4V8a4 4 0 1 0-8 0v4a4 4 0 0 0 4 4Z"/><path d="M5 12a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
-      </button>
-      <div id="channelWrap">
-        <div id="channelArrow">▾</div>
-        <select id="channelSelect" aria-label="Channel selector">
-          <option>Astranov Collective Intelligence</option>
-          <option>Marketplace</option>
-          <option>Planet Operations</option>
-          <option>Astranov Racing</option>
-        </select>
-      </div>
-      <button id="channelAdd" aria-label="Add channel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    <div class="hud left" id="perfHud">
+      <div class="ring"></div>
+      <canvas id="perfCanvas"></canvas>
+      <button class="centerBtn" id="gripBtn" aria-label="Load or unload">
+        <svg viewBox="0 0 24 24" id="gripOpen"><path d="M16 7c-1.5 0-3 1.2-3 3v7"></path><path d="M9 8c-1.2.5-2 1.7-2 3v4c0 2.2 1.8 4 4 4h1"></path></svg>
+        <svg viewBox="0 0 24 24" id="gripClosed" style="display:none"><path d="M8 8v5c0 2.8 2.2 5 5 5h2"></path><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"></circle></svg>
       </button>
     </div>
-    <div id="composerBottom">
-      <input id="commandInput" type="text" placeholder="Tell Astranov what to do" />
-      <button id="sendBtn" aria-label="Send">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 15-7-4 7 4 7-15-7Z"/><path d="M15 12H4"/></svg>
+
+    <div class="hud right" id="radarHud">
+      <div class="ring"></div>
+      <canvas id="radarCanvas"></canvas>
+      <button class="centerBtn" id="zoomBtn" aria-label="Zoom to location or globe">
+        <svg viewBox="0 0 24 24" id="zoomInIcon"><path d="M12 17V7"></path><path d="M8 11l4-4 4 4"></path></svg>
+        <svg viewBox="0 0 24 24" id="zoomOutIcon" style="display:none"><path d="M12 7v10"></path><path d="M8 13l4 4 4-4"></path></svg>
       </button>
     </div>
-  </div>
 
-  <button id="addBubble" aria-label="Add action">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-  </button>
-
-  <div id="card">
-    <div id="cardHeader">
-      <div>
-        <div id="cardType"></div>
-        <div id="cardTitle"></div>
-      </div>
-      <button id="cardClose" aria-label="Close">✕</button>
+    <div id="detailSheet">
+      <h3 id="detailTitle"></h3>
+      <div id="detailMeta"></div>
+      <div id="detailBody"></div>
+      <div id="detailActions"></div>
     </div>
-    <div id="cardBody"></div>
-    <div id="cardMeta"></div>
   </div>
 
   <div id="radial"></div>
 
-  <div id="sheetBackdrop">
-    <div id="sheet">
-      <div id="sheetHeader">
-        <div id="sheetTitle">Create listing</div>
-        <button id="sheetClose" aria-label="Close">✕</button>
+  <div id="formModal">
+    <div id="formSheet">
+      <div id="formHeader">
+        <h2 id="formTitle">Create listing</h2>
+        <button id="closeForm" aria-label="Close">×</button>
       </div>
-      <form id="sheetForm"></form>
-      <div id="sheetActions">
-        <button class="sheetBtn" type="button" id="sheetCancel">Cancel</button>
-        <button class="sheetBtn primary" type="button" id="sheetSave">Save</button>
-      </div>
+      <form id="listingForm">
+        <div id="formFields" class="formGrid"></div>
+        <button type="submit" id="saveListing">Save listing</button>
+      </form>
     </div>
   </div>
 
-  <div id="hint">Tap the add bubble to list something. Tap the radar to jump between globe and map.</div>
-  <div id="toast"></div>
+  <div id="bottomDock">
+    <button id="helperBtn" aria-label="Astranov helper">
+      <svg viewBox="0 0 88 88">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="1">
+            <stop offset="0%" stop-color="#9beaff" stop-opacity=".9"/>
+            <stop offset="100%" stop-color="#33cfff" stop-opacity=".95"/>
+          </linearGradient>
+        </defs>
+        <path d="M16 52c5-7 11-12 16-15-4-7-2-15 6-20 1 6 4 9 6 10 2-1 5-4 6-10 8 5 10 13 6 20 6 3 11 8 16 15-8-2-13-5-17-9v17c0 4-3 8-7 8h-10c-4 0-7-4-7-8V43c-4 4-9 7-17 9Z" fill="none" stroke="url(#g1)" stroke-width="3.2" stroke-linejoin="round"/>
+        <path d="M30 30 22 18M58 30l8-12" stroke="url(#g1)" stroke-width="4" stroke-linecap="round"/>
+        <path d="M43 22 61 6M45 22 27 6" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M63 54 74 32" stroke="url(#g1)" stroke-width="4" stroke-linecap="round"/>
+        <path d="M72 35 78 28" stroke="url(#g1)" stroke-width="3.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div id="composer">
+      <div id="drawer"></div>
+      <div id="bar">
+        <button id="micBtn" aria-label="Voice typing">
+          <svg viewBox="0 0 24 24"><path d="M12 4a3 3 0 0 1 3 3v4a3 3 0 1 1-6 0V7a3 3 0 0 1 3-3Z"></path><path d="M6 10a6 6 0 0 0 12 0"></path><path d="M12 16v4"></path><path d="M9 20h6"></path></svg>
+        </button>
+        <div id="inputWrap">
+          <div id="channelWrap">
+            <span id="channelArrow">▾</span>
+            <select id="channelSelect" aria-label="Channel">
+              <option>Astranov Collective Intelligence</option>
+              <option>Marketplace</option>
+              <option>Planet Operations</option>
+              <option>Astranov Racing</option>
+            </select>
+            <button id="channelAdd" type="button" aria-label="Add channel">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+            </button>
+          </div>
+          <input id="textInput" placeholder="Tell Astranov what to do" />
+        </div>
+        <button id="sendBtn" aria-label="Send">
+          <svg viewBox="0 0 24 24"><path d="m4 12 15-7-4 14-3-5-8-2Z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <button id="addBtn" aria-label="Add listing or action">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+    </button>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (() => {
-  const state = {
-    mode: 'manual',
-    view: 'globe',
-    loaded: false,
-    addOpen: false,
-    drawerOpen: false,
-    selectedSignal: null,
-    mapReady: false,
-    geo: { lat: 36.4348, lng: 28.2176 },
-    signals: [],
-    radial: [],
-    lastSheetType: null,
-  };
+  const $ = s => document.querySelector(s)
+  const globe = $('#globe')
+  const globeCtx = globe.getContext('2d')
+  const signalsCanvas = $('#signalsLayer')
+  const signalsCtx = signalsCanvas.getContext('2d')
+  const radarCanvas = $('#radarCanvas')
+  const radarCtx = radarCanvas.getContext('2d')
+  const perfCanvas = $('#perfCanvas')
+  const perfCtx = perfCanvas.getContext('2d')
+  const mapEl = $('#map')
+  const drawer = $('#drawer')
+  const composer = $('#composer')
+  const textInput = $('#textInput')
+  const statusTiny = $('#statusTiny')
+  const zoomBtn = $('#zoomBtn')
+  const zoomInIcon = $('#zoomInIcon')
+  const zoomOutIcon = $('#zoomOutIcon')
+  const gripBtn = $('#gripBtn')
+  const gripOpen = $('#gripOpen')
+  const gripClosed = $('#gripClosed')
+  const addBtn = $('#addBtn')
+  const helperBtn = $('#helperBtn')
+  const radial = $('#radial')
+  const formModal = $('#formModal')
+  const formFields = $('#formFields')
+  const formTitle = $('#formTitle')
+  const listingForm = $('#listingForm')
+  const detailSheet = $('#detailSheet')
+  const detailTitle = $('#detailTitle')
+  const detailMeta = $('#detailMeta')
+  const detailBody = $('#detailBody')
+  const detailActions = $('#detailActions')
+  const mapTapPill = $('#mapTapPill')
+  const micBtn = $('#micBtn')
+  const sendBtn = $('#sendBtn')
+  const channelAdd = $('#channelAdd')
+  let map, markersLayer
+  let view = 'globe'
+  let rotation = 0
+  let pendingType = null
+  let currentFormType = null
+  let currentCoords = null
+  let radialOpen = false
+  let drawerHeight = 0
+  let gripLoaded = false
+  let userLocation = null
+  let recognition = null
+  let markers = []
+  const LS_KEY = 'astranov.recovery.listings.v1'
+  const MSG_KEY = 'astranov.recovery.messages.v1'
+  const seeded = [
+    {id:'s1',type:'service',category:'diving',title:'Blue Reef Diving',description:'Daily dives, training, equipment and boat pickup.',price:'From €55',lat:36.446,lng:28.227,temp:'neutral'},
+    {id:'s2',type:'product',category:'coffee',title:'Harbor Coffee',description:'Coffee, sandwiches and delivery-ready breakfast packs.',price:'From €3.50',lat:36.444,lng:28.219,temp:'hot',maxTransport:'30'},
+    {id:'s3',type:'service',category:'rent a car',title:'Island Wheels',description:'Small cars, scooters and airport pickup.',price:'From €29/day',lat:36.434,lng:28.214,temp:'neutral'},
+    {id:'s4',type:'driver',category:'driver base',title:'North Hub Driver Base',description:'Fast rider coverage across the center and harbor.',price:'Driver base',lat:36.439,lng:28.233,temp:'neutral'}
+  ]
+  let listings = loadListings()
+  let messages = loadMessages()
 
-  const els = {
-    modeText: document.getElementById('modeText'),
-    sceneWrap: document.getElementById('sceneWrap'),
-    mapWrap: document.getElementById('mapWrap'),
-    signalLayer: document.getElementById('signalLayer'),
-    zoomBtn: document.getElementById('zoomBtn'),
-    zoomGlyph: document.getElementById('zoomGlyph'),
-    perfHud: document.getElementById('perfHud'),
-    grabBtn: document.getElementById('grabBtn'),
-    grabPath: document.getElementById('grabPath'),
-    grabDot: document.getElementById('grabDot'),
-    helper: document.getElementById('helper'),
-    drawer: document.getElementById('drawer'),
-    drawerLog: document.getElementById('drawerLog'),
-    composer: document.getElementById('composer'),
-    commandInput: document.getElementById('commandInput'),
-    sendBtn: document.getElementById('sendBtn'),
-    micBtn: document.getElementById('micBtn'),
-    channelSelect: document.getElementById('channelSelect'),
-    channelAdd: document.getElementById('channelAdd'),
-    addBubble: document.getElementById('addBubble'),
-    card: document.getElementById('card'),
-    cardType: document.getElementById('cardType'),
-    cardTitle: document.getElementById('cardTitle'),
-    cardBody: document.getElementById('cardBody'),
-    cardMeta: document.getElementById('cardMeta'),
-    cardClose: document.getElementById('cardClose'),
-    radial: document.getElementById('radial'),
-    sheetBackdrop: document.getElementById('sheetBackdrop'),
-    sheetTitle: document.getElementById('sheetTitle'),
-    sheetForm: document.getElementById('sheetForm'),
-    sheetClose: document.getElementById('sheetClose'),
-    sheetCancel: document.getElementById('sheetCancel'),
-    sheetSave: document.getElementById('sheetSave'),
-    toast: document.getElementById('toast'),
-    hint: document.getElementById('hint'),
-    statSignal: document.getElementById('statSignal'),
-    statBattery: document.getElementById('statBattery'),
-    statStorage: document.getElementById('statStorage'),
-    statRam: document.getElementById('statRam'),
-  };
+  function loadListings(){
+    try{ const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]'); return [...seeded, ...local] }catch(e){ return [...seeded] }
+  }
+  function saveLocalListings(){
+    const locals = listings.filter(x => !String(x.id).startsWith('s'))
+    localStorage.setItem(LS_KEY, JSON.stringify(locals))
+  }
+  function loadMessages(){
+    try{ return JSON.parse(localStorage.getItem(MSG_KEY) || '[]') }catch(e){ return [] }
+  }
+  function saveMessages(){ localStorage.setItem(MSG_KEY, JSON.stringify(messages.slice(-40))) }
+  function pushMessage(role, text){
+    messages.push({role, text})
+    saveMessages()
+    renderMessages()
+    openDrawer(Math.min(220, Math.max(120, drawer.scrollHeight + 8)))
+  }
+  function renderMessages(){
+    drawer.innerHTML = messages.map(m => `<div class="msg ${m.role}">${escapeHtml(m.text)}</div>`).join('')
+    drawer.scrollTop = drawer.scrollHeight
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
+  function openDrawer(h=170){ drawerHeight = Math.max(100, Math.min(h, Math.min(window.innerHeight*0.34, 240))); composer.classList.add('open'); drawer.style.maxHeight = drawerHeight + 'px' }
+  function closeDrawer(){ drawerHeight = 0; composer.classList.remove('open'); drawer.style.maxHeight = '0px' }
 
-  // --- Drawer / messaging ---
-  function addMessage(text, who='system') {
-    const msg = document.createElement('div');
-    msg.className = 'msg' + (who === 'user' ? ' user' : '');
-    msg.textContent = text;
-    els.drawerLog.appendChild(msg);
-    els.drawerLog.scrollTop = els.drawerLog.scrollHeight;
-  }
-  function setDrawer(open) {
-    state.drawerOpen = open;
-    els.drawer.classList.toggle('open', open);
-  }
-  function toast(text, ms=2000) {
-    els.toast.textContent = text;
-    els.toast.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => els.toast.classList.remove('show'), ms);
-  }
-  addMessage('Astranov Collective Intelligence online. Globe live. Signals will rise here.', 'system');
-
-  // --- Helper / mode ---
-  function setMode(mode) {
-    state.mode = mode;
-    els.modeText.textContent = mode === 'handsfree' ? 'HANDS-FREE' : 'MANUAL';
-    els.helper.classList.toggle('active', mode === 'handsfree');
-    addMessage(mode === 'handsfree' ? 'Astranov switched to AI hands-free mode.' : 'Astranov switched back to manual typing mode.', 'system');
-    setDrawer(true);
-  }
-  els.helper.addEventListener('click', () => setMode(state.mode === 'manual' ? 'handsfree' : 'manual'));
-
-  // --- Voice typing ---
-  let recognition = null;
-  if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    recognition.lang = navigator.language || 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onstart = () => els.micBtn.classList.add('active');
-    recognition.onend = () => els.micBtn.classList.remove('active');
-    recognition.onresult = (ev) => {
-      const text = ev.results[0][0].transcript;
-      els.commandInput.value = text;
-      addMessage(text, 'user');
-      addMessage('Voice captured. Tap send or use the add bubble if you want to create something.', 'system');
-      setDrawer(true);
-    };
-  }
-  els.micBtn.addEventListener('click', () => {
-    if (!recognition) {
-      toast('Voice typing is not supported in this browser.');
-      return;
+  function sizeCanvases(){
+    for(const c of [globe, signalsCanvas]){
+      c.width = innerWidth * devicePixelRatio
+      c.height = innerHeight * devicePixelRatio
+      c.style.width = innerWidth + 'px'
+      c.style.height = innerHeight + 'px'
+      c.getContext('2d').setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)
     }
-    recognition.start();
-  });
-
-  // --- Drawer gesture from input only ---
-  let dragStartY = null;
-  els.commandInput.addEventListener('pointerdown', e => { dragStartY = e.clientY; });
-  els.commandInput.addEventListener('pointerup', e => {
-    if (dragStartY == null) return;
-    const dy = e.clientY - dragStartY;
-    if (dy < -18) setDrawer(true);
-    if (dy > 18) setDrawer(false);
-    dragStartY = null;
-  });
-
-  // --- Three globe ---
-  const canvas = document.getElementById('globeCanvas');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
-  camera.position.set(0, 0.4, 5.8);
-
-  const globeGroup = new THREE.Group();
-  scene.add(globeGroup);
-
-  const ambient = new THREE.AmbientLight(0xbbe8ff, 1.0);
-  scene.add(ambient);
-  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
-  sun.position.set(4, 2, 4);
-  scene.add(sun);
-  const rim = new THREE.DirectionalLight(0x4ab6ff, 1.1);
-  rim.position.set(-4, -1, -3);
-  scene.add(rim);
-
-  const loader = new THREE.TextureLoader();
-  const earthTexture = loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
-  const earthBump = loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
-  const earthSpec = loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
-  const sphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.58, 64, 64),
-    new THREE.MeshPhongMaterial({ map: earthTexture, bumpMap: earthBump, bumpScale: 0.04, specularMap: earthSpec, specular: new THREE.Color(0x335577), shininess: 18 })
-  );
-  globeGroup.add(sphere);
-  const clouds = new THREE.Mesh(
-    new THREE.SphereGeometry(1.612, 48, 48),
-    new THREE.MeshPhongMaterial({ transparent: true, opacity: 0.14, color: 0xdff8ff })
-  );
-  globeGroup.add(clouds);
-  const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.73, 48, 48),
-    new THREE.ShaderMaterial({
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.BackSide,
-      uniforms: { glowColor: { value: new THREE.Color(0x39d9ff) } },
-      vertexShader: 'varying vec3 vNormal; void main(){ vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);} ',
-      fragmentShader: 'uniform vec3 glowColor; varying vec3 vNormal; void main(){ float intensity = pow(0.7 - dot(vNormal, vec3(0.0,0.0,1.0)), 2.2); gl_FragColor = vec4(glowColor, intensity * 0.7); }'
-    })
-  );
-  globeGroup.add(atmosphere);
-
-  const starGeo = new THREE.BufferGeometry();
-  const stars = [];
-  for (let i = 0; i < 1800; i++) {
-    const r = 14 + Math.random() * 28;
-    const a = Math.random() * Math.PI * 2;
-    const b = Math.acos(2 * Math.random() - 1);
-    stars.push(r * Math.sin(b) * Math.cos(a), r * Math.sin(b) * Math.sin(a), r * Math.cos(b));
-  }
-  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
-  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.8 })));
-
-  function resizeRenderer() {
-    const w = els.sceneWrap.clientWidth;
-    const h = els.sceneWrap.clientHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  resizeRenderer();
-  window.addEventListener('resize', resizeRenderer);
-
-  // --- Map ---
-  const map = L.map('map', { zoomControl: false, attributionControl: false, preferCanvas: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-  const mapMarkers = L.layerGroup().addTo(map);
-  map.setView([state.geo.lat, state.geo.lng], 13);
-  state.mapReady = true;
-
-  function requestGeo() {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(pos => {
-      state.geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      if (state.view === 'map') map.setView([state.geo.lat, state.geo.lng], 14, { animate: true });
-    }, () => {}, { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 });
-  }
-  requestGeo();
-
-  // --- Signals ---
-  const localSignalsKey = 'astranov.local.signals.v1';
-  function loadLocalSignals() {
-    try { return JSON.parse(localStorage.getItem(localSignalsKey) || '[]'); } catch { return []; }
-  }
-  function saveLocalSignals() {
-    localStorage.setItem(localSignalsKey, JSON.stringify(state.signals.filter(s => s.local)));
-  }
-  function latLngToVector3(lat, lng, r = 1.72) {
-    const phi = (90 - lat) * Math.PI / 180;
-    const theta = (lng + 180) * Math.PI / 180;
-    return new THREE.Vector3(
-      -(r * Math.sin(phi) * Math.cos(theta)),
-      r * Math.cos(phi),
-      r * Math.sin(phi) * Math.sin(theta)
-    );
-  }
-  function projectSignal(signal) {
-    const v = latLngToVector3(signal.lat, signal.lng, 1.72).applyMatrix4(globeGroup.matrixWorld);
-    const projected = v.clone().project(camera);
-    return {
-      x: (projected.x * 0.5 + 0.5) * els.sceneWrap.clientWidth,
-      y: (-projected.y * 0.5 + 0.5) * els.sceneWrap.clientHeight,
-      visible: projected.z < 1 && v.z > -0.55
-    };
-  }
-  function renderSignals() {
-    els.signalLayer.innerHTML = '';
-    if (state.view !== 'globe') return;
-    const frontSignals = state.signals
-      .map(sig => ({ sig, pos: projectSignal(sig) }))
-      .filter(it => it.pos.visible)
-      .sort((a, b) => a.pos.y - b.pos.y)
-      .slice(0, 10);
-    for (const item of frontSignals) {
-      const node = document.createElement('button');
-      node.className = `signal ${item.sig.kind}`;
-      node.style.left = item.pos.x + 'px';
-      node.style.top = item.pos.y + 'px';
-      node.innerHTML = `<div class="type">${item.sig.kind}</div><div class="title">${item.sig.title}</div>`;
-      node.addEventListener('click', () => openCard(item.sig));
-      els.signalLayer.appendChild(node);
+    for(const c of [radarCanvas, perfCanvas]){
+      const r = c.getBoundingClientRect()
+      c.width = r.width * devicePixelRatio
+      c.height = r.height * devicePixelRatio
+      c.getContext('2d').setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)
     }
+    renderHud()
   }
-  function mergeSignal(signal) {
-    const id = signal.id || `${signal.kind}-${signal.title}-${signal.lat}-${signal.lng}`;
-    if (state.signals.some(s => s.id === id)) return;
-    state.signals.push({ ...signal, id });
-    refreshMapMarkers();
-  }
-  function refreshMapMarkers() {
-    mapMarkers.clearLayers();
-    state.signals.forEach(sig => {
-      const color = sig.kind === 'service' ? '#28d17c' : sig.kind === 'news' ? '#2dd9ff' : sig.kind === 'driver' ? '#ffd34f' : '#ff4f65';
-      const icon = L.divIcon({ className: '', html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 10px ${color}"></div>`, iconSize: [14,14] });
-      const m = L.marker([sig.lat, sig.lng], { icon }).addTo(mapMarkers);
-      m.on('click', () => openCard(sig));
-    });
-  }
-  function openCard(sig) {
-    state.selectedSignal = sig;
-    els.cardType.textContent = sig.kind;
-    els.cardTitle.textContent = sig.title;
-    els.cardBody.textContent = sig.body || sig.description || 'Ready for action.';
-    els.cardMeta.innerHTML = '';
-    const meta = [];
-    if (sig.price) meta.push(`€${sig.price}`);
-    if (sig.category) meta.push(sig.category);
-    if (sig.channel) meta.push(sig.channel);
-    if (sig.temperature) meta.push(sig.temperature);
-    if (sig.kind === 'driver') meta.push('Driver base');
-    if (sig.kind === 'delivery') meta.push('Delivery point');
-    meta.forEach(text => {
-      const pill = document.createElement('div');
-      pill.className = 'metaPill';
-      pill.textContent = text;
-      els.cardMeta.appendChild(pill);
-    });
-    els.card.classList.add('open');
-  }
-  function closeCard() { els.card.classList.remove('open'); state.selectedSignal = null; }
-  els.cardClose.addEventListener('click', closeCard);
 
-  // Seed from local signals
-  loadLocalSignals().forEach(mergeSignal);
-
-  // Live feeds if available
-  async function tryJson(url) {
-    try {
-      const res = await fetch(url, { credentials: 'same-origin' });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch { return null; }
+  function renderHud(){
+    renderRadar()
+    renderPerf()
   }
-  async function loadFeeds() {
-    const [newsLocal, shopsLocal, productsLocal, driversLocal] = await Promise.all([
-      tryJson('/api/news_top.php'),
-      tryJson('/api/shops_list.php'),
-      tryJson('/api/products_list.php'),
-      tryJson('/api/drivers_state.php'),
-    ]);
-
-    const news = Array.isArray(newsLocal) ? newsLocal : null;
-    if (news && news.length) {
-      news.slice(0, 6).forEach((n, i) => mergeSignal({
-        kind: 'news',
-        title: n.title || 'Planet news',
-        body: n.summary || n.body || 'Live planetary signal',
-        lat: Number(n.lat) || [35, 40, 25, 48, -10, 12][i % 6],
-        lng: Number(n.lng) || [23, -74, 121, 2, 144, 32][i % 6],
-        channel: 'Planet Operations'
-      }));
-    } else {
-      try {
-        const sf = await tryJson('https://api.spaceflightnewsapi.net/v4/articles/?limit=6');
-        if (sf && Array.isArray(sf.results)) {
-          sf.results.forEach((n, i) => mergeSignal({
-            kind: 'news',
-            title: n.title.slice(0, 40),
-            body: n.summary?.slice(0, 160) || 'Live news signal',
-            lat: [29, 41, -12, 52, 7, 18][i % 6],
-            lng: [-95, 13, 130, -3, 77, 31][i % 6],
-            channel: 'Planet Operations'
-          }));
-        }
-      } catch {}
-    }
-
-    const shops = Array.isArray(shopsLocal) ? shopsLocal : [];
-    shops.slice(0, 5).forEach((s, i) => mergeSignal({
-      kind: 'service',
-      title: s.name || s.shop_name || 'Marketplace signal',
-      body: s.description || 'Service available here',
-      lat: Number(s.lat || s.latitude) || state.geo.lat + (i * 0.02),
-      lng: Number(s.lng || s.longitude) || state.geo.lng + (i * 0.03),
-      channel: 'Marketplace',
-      price: s.price || '',
-      category: s.category || 'service'
-    }));
-
-    const products = Array.isArray(productsLocal) ? productsLocal : [];
-    products.slice(0, 5).forEach((p, i) => mergeSignal({
-      kind: 'service',
-      title: p.name || p.title || 'Product signal',
-      body: p.description || 'Product available here',
-      lat: Number(p.lat || p.latitude) || state.geo.lat - (i * 0.018),
-      lng: Number(p.lng || p.longitude) || state.geo.lng + (i * 0.018),
-      channel: 'Marketplace',
-      price: p.price || '',
-      category: p.category || 'product',
-      temperature: p.temperature || ''
-    }));
-
-    const drivers = Array.isArray(driversLocal) ? driversLocal : [];
-    drivers.slice(0, 5).forEach((d, i) => mergeSignal({
-      kind: 'driver',
-      title: d.name || d.driver_name || 'Driver ready',
-      body: d.status || 'Available for delivery',
-      lat: Number(d.lat || d.latitude) || state.geo.lat + 0.01 * i,
-      lng: Number(d.lng || d.longitude) || state.geo.lng - 0.015 * i,
-      channel: 'Marketplace'
-    }));
-
-    refreshMapMarkers();
+  function renderRadar(){
+    const r = radarCanvas.getBoundingClientRect(); const w = r.width, h = r.height, cx=w/2, cy=h/2
+    radarCtx.clearRect(0,0,w,h)
+    radarCtx.strokeStyle = 'rgba(51,207,255,.22)'; radarCtx.lineWidth = 1
+    for(let i=1;i<=3;i++){ radarCtx.beginPath(); radarCtx.arc(cx,cy,(w*.5)*(i/3)-6,0,Math.PI*2); radarCtx.stroke() }
+    radarCtx.beginPath(); radarCtx.moveTo(cx,10); radarCtx.lineTo(cx,h-10); radarCtx.moveTo(10,cy); radarCtx.lineTo(w-10,cy); radarCtx.stroke()
+    radarCtx.strokeStyle = 'rgba(51,207,255,.38)'; radarCtx.beginPath(); radarCtx.arc(cx,cy,w*.18,0,Math.PI*2); radarCtx.stroke()
   }
-  loadFeeds();
-
-  // --- Globe animation ---
-  let lastTs = performance.now();
-  function animate(ts) {
-    requestAnimationFrame(animate);
-    const dt = Math.min(0.033, (ts - lastTs) / 1000);
-    lastTs = ts;
-    if (state.view === 'globe') {
-      globeGroup.rotation.y += dt * 0.14;
-      clouds.rotation.y += dt * 0.18;
-    }
-    renderer.render(scene, camera);
-    renderSignals();
-  }
-  animate(performance.now());
-
-  // --- View switching ---
-  function setView(view) {
-    state.view = view;
-    els.sceneWrap.style.display = view === 'globe' ? 'block' : 'none';
-    els.signalLayer.style.display = view === 'globe' ? 'block' : 'none';
-    els.mapWrap.style.display = view === 'map' ? 'block' : 'none';
-    els.zoomGlyph.setAttribute('d', view === 'globe' ? 'M12 6v12M6 12l6-6 6 6' : 'M12 18V6M6 12l6 6 6-6');
-    if (view === 'map') {
-      map.invalidateSize();
-      map.setView([state.geo.lat, state.geo.lng], 14, { animate: true });
-      closeCard();
-    }
-    closeRadial();
-    renderSignals();
-  }
-  els.zoomBtn.addEventListener('click', () => {
-    if (state.view === 'globe') {
-      requestGeo();
-      setView('map');
-      toast('Zoomed to your location.');
-    } else {
-      setView('globe');
-      toast('Returned to globe view.');
-    }
-  });
-
-  // --- Load/unload ---
-  function syncGrab() {
-    els.perfHud.classList.toggle('loaded', state.loaded);
-    els.perfHud.classList.toggle('unloaded', !state.loaded);
-    if (state.loaded) {
-      els.grabPath.setAttribute('d', 'M9.2 7.8c2.2-1.3 5.9-.9 7.7 1.7 1.8 2.4 1.1 5.5-1.2 7.1-1.4.9-3.1 1.2-4.8.9-1.7-.3-3.1-1.1-4.1-2.3');
-      els.grabDot.setAttribute('r', '2.1');
-    } else {
-      els.grabPath.setAttribute('d', 'M16.8 6.4c-2.8-2-7.6-1.2-10 1.9-2.8 3.7-1.6 8.3 2.7 10.1 3.1 1.3 6 .4 7.9-1.3');
-      els.grabDot.setAttribute('r', '0');
-    }
-  }
-  syncGrab();
-  els.grabBtn.addEventListener('click', () => {
-    state.loaded = !state.loaded;
-    syncGrab();
-    toast(state.loaded ? 'Loaded.' : 'Unloaded.');
-  });
-
-  // --- Add radial ---
-  const radialDefs = [
-    { key:'product', title:'List product', sub:'Sell a product' },
-    { key:'service', title:'List service', sub:'Offer a service' },
-    { key:'delivery', title:'Delivery spot', sub:'Receive orders here' },
-    { key:'driver', title:'Driver base', sub:'Activate driver zone' },
-    { key:'media', title:'Post media', sub:'Photo or video signal' },
-  ];
-  function buildRadial() {
-    els.radial.innerHTML = '';
-    state.radial = radialDefs.map(def => {
-      const node = document.createElement('button');
-      node.className = 'radialAction';
-      node.innerHTML = `<strong>${def.title}</strong><span>${def.sub}</span>`;
-      node.addEventListener('click', () => openSheet(def.key));
-      els.radial.appendChild(node);
-      return { def, node };
-    });
-  }
-  buildRadial();
-  function positionRadial() {
-    const cx = window.innerWidth * 0.5;
-    const cy = state.view === 'globe' ? (44 + els.sceneWrap.clientHeight * 0.5) : (44 + els.mapWrap.clientHeight * 0.5);
-    const radius = Math.min(120, window.innerWidth * 0.26);
-    state.radial.forEach((it, idx) => {
-      const angle = (-90 + idx * 72) * Math.PI / 180;
-      it.node.style.left = (cx + Math.cos(angle) * radius) + 'px';
-      it.node.style.top = (cy + Math.sin(angle) * radius) + 'px';
-    });
-  }
-  function openRadial() {
-    state.addOpen = true;
-    positionRadial();
-    state.radial.forEach((it, i) => setTimeout(() => it.node.classList.add('show'), i * 16));
-  }
-  function closeRadial() {
-    state.addOpen = false;
-    state.radial.forEach(it => it.node.classList.remove('show'));
-  }
-  els.addBubble.addEventListener('click', () => state.addOpen ? closeRadial() : openRadial());
-  window.addEventListener('resize', positionRadial);
-
-  // --- Sheets / listing creation ---
-  const sheetTemplates = {
-    product: [
-      ['Title', 'text', 'title', 'full'],
-      ['Price €', 'number', 'price', ''],
-      ['Category', 'text', 'category', ''],
-      ['Temperature', 'select', 'temperature', '', ['neutral','cold','hot']],
-      ['Description', 'textarea', 'description', 'full'],
-      ['Photo or video URL', 'url', 'media', 'full'],
-    ],
-    service: [
-      ['Service name', 'text', 'title', 'full'],
-      ['Category', 'select', 'category', '', ['hotel','rent-a-car','diving','restaurant','other']],
-      ['Price €', 'number', 'price', ''],
-      ['Appointment slots / hour', 'number', 'slots', ''],
-      ['Description', 'textarea', 'description', 'full'],
-      ['Photo or video URL', 'url', 'media', 'full'],
-    ],
-    delivery: [
-      ['Label', 'text', 'title', 'full'],
-      ['Street', 'text', 'street', ''],
-      ['Number', 'text', 'number', ''],
-      ['Floor', 'text', 'floor', ''],
-      ['Doorbell name', 'text', 'doorbell', ''],
-      ['Phone', 'text', 'phone', ''],
-      ['Remarks', 'textarea', 'description', 'full'],
-    ],
-    driver: [
-      ['Driver base name', 'text', 'title', 'full'],
-      ['Vehicle', 'text', 'vehicle', ''],
-      ['Phone', 'text', 'phone', ''],
-      ['Available now', 'select', 'available', '', ['yes','no']],
-      ['Notes', 'textarea', 'description', 'full'],
-    ],
-    media: [
-      ['Title', 'text', 'title', 'full'],
-      ['Media URL', 'url', 'media', 'full'],
-      ['Description', 'textarea', 'description', 'full'],
+  function renderPerf(){
+    const r = perfCanvas.getBoundingClientRect(); const w = r.width, h = r.height, cx=w/2, cy=h/2
+    perfCtx.clearRect(0,0,w,h)
+    const arcs = [
+      {from:Math.PI*.12,to:Math.PI*.72,color:'rgba(38,226,124,.68)'},
+      {from:Math.PI*.82,to:Math.PI*1.42,color:'rgba(51,207,255,.68)'},
+      {from:Math.PI*1.52,to:Math.PI*1.92,color:'rgba(255,90,109,.64)'}
     ]
-  };
-  function currentLatLng() {
-    if (state.view === 'map') {
-      const c = map.getCenter();
-      return { lat: c.lat, lng: c.lng };
-    }
-    return { ...state.geo };
+    perfCtx.lineWidth = 5
+    arcs.forEach(a=>{ perfCtx.strokeStyle=a.color; perfCtx.beginPath(); perfCtx.arc(cx,cy,w*.34,a.from,a.to); perfCtx.stroke() })
+    perfCtx.strokeStyle = 'rgba(51,207,255,.16)'; perfCtx.lineWidth=1.2; perfCtx.beginPath(); perfCtx.arc(cx,cy,w*.24,0,Math.PI*2); perfCtx.stroke()
   }
-  function openSheet(kind) {
-    closeRadial();
-    state.lastSheetType = kind;
-    els.sheetTitle.textContent = kind === 'product' ? 'List product' : kind === 'service' ? 'List service' : kind === 'delivery' ? 'Set delivery location' : kind === 'driver' ? 'Activate driver base' : 'Post media';
-    els.sheetForm.innerHTML = '';
-    const template = sheetTemplates[kind];
-    template.forEach(field => {
-      const [label, type, name, full, options] = field;
-      const wrap = document.createElement('label');
-      if (full) wrap.classList.add(full);
-      wrap.innerHTML = `<span>${label}</span>`;
-      let input;
-      if (type === 'textarea') {
-        input = document.createElement('textarea');
-      } else if (type === 'select') {
-        input = document.createElement('select');
-        options.forEach(opt => {
-          const o = document.createElement('option');
-          o.value = opt; o.textContent = opt; input.appendChild(o);
-        });
-      } else {
-        input = document.createElement('input');
-        input.type = type;
+
+  function normalizeType(type){
+    return ({'photo/video':'media','delivery location':'delivery','driver base':'driver'})[type] || type
+  }
+  function categoryColor(item){
+    const t = item.type
+    if(t==='driver') return '#ff9d3f'
+    if(t==='delivery') return '#9a7cff'
+    if(t==='service') return '#39d89a'
+    if(t==='media') return '#ff5a6d'
+    return '#33cfff'
+  }
+  function mergedSignals(){
+    return listings.slice(0,24)
+  }
+  function ensureMap(){
+    if(map) return
+    map = L.map('map', {zoomControl:false, attributionControl:false}).setView([36.434,28.217], 13)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19}).addTo(map)
+    markersLayer = L.layerGroup().addTo(map)
+    map.on('click', e => {
+      if(pendingType){
+        currentCoords = {lat:e.latlng.lat, lng:e.latlng.lng}
+        mapTapPill.classList.remove('show')
+        openForm(pendingType, currentCoords)
       }
-      input.name = name;
-      wrap.appendChild(input);
-      els.sheetForm.appendChild(wrap);
-    });
-    els.sheetBackdrop.classList.add('open');
+    })
+    renderMarkers()
   }
-  function closeSheet() { els.sheetBackdrop.classList.remove('open'); }
-  els.sheetClose.addEventListener('click', closeSheet);
-  els.sheetCancel.addEventListener('click', closeSheet);
-  els.sheetBackdrop.addEventListener('click', e => { if (e.target === els.sheetBackdrop) closeSheet(); });
-  els.sheetSave.addEventListener('click', () => {
-    const fd = new FormData(els.sheetForm);
-    const data = Object.fromEntries(fd.entries());
-    if (!data.title && state.lastSheetType !== 'delivery') { toast('Add a title first.'); return; }
-    const coords = currentLatLng();
-    const signal = {
-      kind: state.lastSheetType === 'product' || state.lastSheetType === 'service' || state.lastSheetType === 'media' ? 'service' : state.lastSheetType,
-      title: data.title || 'Delivery location',
-      body: data.description || 'New Astranov signal ready.',
-      lat: coords.lat,
-      lng: coords.lng,
-      price: data.price || '',
-      category: data.category || state.lastSheetType,
-      temperature: data.temperature || '',
-      channel: els.channelSelect.value,
-      local: true,
-      extra: data,
-    };
-    mergeSignal(signal);
-    saveLocalSignals();
-    refreshMapMarkers();
-    closeSheet();
-    openCard(signal);
-    toast('Signal added to the planet.');
-  });
-
-  // --- Basic send / task logic ---
-  function handleCommand(text) {
-    const q = text.trim();
-    if (!q) return;
-    addMessage(q, 'user');
-    const lower = q.toLowerCase();
-    let reply = 'Astranov is ready.';
-    if (lower.includes('zoom')) {
-      els.zoomBtn.click();
-      reply = state.view === 'map' ? 'Moving back to the globe.' : 'Zooming down to your location.';
-    } else if (lower.includes('product')) {
-      openSheet('product');
-      reply = 'Product listing sheet opened.';
-    } else if (lower.includes('service')) {
-      openSheet('service');
-      reply = 'Service listing sheet opened.';
-    } else if (lower.includes('driver')) {
-      openSheet('driver');
-      reply = 'Driver base sheet opened.';
-    } else if (lower.includes('delivery')) {
-      openSheet('delivery');
-      reply = 'Delivery location sheet opened.';
-    } else if (lower.includes('news')) {
-      reply = 'Planet news signals are active on the globe.';
-      setView('globe');
-    } else if (lower.includes('map')) {
-      setView('map');
-      reply = 'City map is open.';
-    } else if (lower.includes('globe') || lower.includes('earth')) {
-      setView('globe');
-      reply = 'Returning to the globe.';
-    } else if (lower.includes('help')) {
-      reply = 'Use the radar to jump between globe and map. Use the add bubble to list products, services, delivery locations, driver bases, or media.';
+  function renderMarkers(){
+    if(!markersLayer) return
+    markersLayer.clearLayers(); markers=[]
+    listings.forEach(item => {
+      if(!(item.lat && item.lng)) return
+      const div = L.divIcon({className:'', html:`<div class="listing-dot" style="background:${categoryColor(item)}"></div>`, iconSize:[14,14], iconAnchor:[7,7]})
+      const marker = L.marker([item.lat, item.lng], {icon:div}).addTo(markersLayer)
+      marker.on('click', () => showDetail(item))
+      markers.push(marker)
+    })
+  }
+  function showMap(center){
+    view='map'; mapEl.style.display='block'; globe.style.display='none'; signalsCanvas.style.display='none'; statusTiny.textContent='city map online'; zoomInIcon.style.display='none'; zoomOutIcon.style.display='block'; ensureMap(); setTimeout(()=>map.invalidateSize(),60)
+    if(center) map.setView(center, 15, {animate:true})
+  }
+  function showGlobe(){
+    view='globe'; mapEl.style.display='none'; globe.style.display='block'; signalsCanvas.style.display='block'; statusTiny.textContent='world online'; zoomInIcon.style.display='block'; zoomOutIcon.style.display='none'; pendingType = null; mapTapPill.classList.remove('show')
+  }
+  async function locateUser(){
+    if(userLocation) return userLocation
+    try{
+      userLocation = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(pos => resolve([pos.coords.latitude, pos.coords.longitude]), reject, {enableHighAccuracy:true, timeout:5000, maximumAge:60000}))
+    }catch(e){ userLocation = [36.434, 28.217] }
+    return userLocation
+  }
+  async function toggleZoom(){
+    if(view==='globe'){
+      const center = await locateUser()
+      showMap(center)
+      pushMessage('ai', 'Zoomed to your area. Tap the map to inspect or place a listing.')
+    }else{
+      showGlobe()
+      pushMessage('ai', 'Returned to global view.')
     }
-    addMessage(reply, 'system');
-    setDrawer(true);
   }
-  els.sendBtn.addEventListener('click', () => {
-    const text = els.commandInput.value.trim();
-    handleCommand(text);
-    els.commandInput.value = '';
-  });
-  els.commandInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); els.sendBtn.click(); }
-  });
-  els.channelAdd.addEventListener('click', () => {
-    const name = prompt('New channel name');
-    if (!name) return;
-    const opt = document.createElement('option');
-    opt.textContent = name;
-    els.channelSelect.appendChild(opt);
-    els.channelSelect.value = name;
-    addMessage(`Channel “${name}” added.`, 'system');
-    setDrawer(true);
-  });
+  function toggleGrip(){
+    gripLoaded = !gripLoaded
+    gripOpen.style.display = gripLoaded ? 'none' : 'block'
+    gripClosed.style.display = gripLoaded ? 'block' : 'none'
+    gripBtn.style.borderColor = gripLoaded ? 'rgba(255,90,109,.58)' : 'rgba(38,226,124,.40)'
+    pushMessage('ai', gripLoaded ? 'Load engaged.' : 'Unload ready.')
+  }
 
-  // --- Initial state ---
-  setDrawer(false);
-  closeSheet();
-  closeCard();
-  closeRadial();
-  setTimeout(() => els.hint.classList.add('hidden'), 4200);
-})();
+  function showDetail(item){
+    detailTitle.textContent = item.title || 'Astranov item'
+    detailMeta.textContent = [item.type, item.category, item.price].filter(Boolean).join(' • ')
+    detailBody.textContent = item.description || 'No details yet.'
+    detailActions.innerHTML = ''
+    const actions = [
+      {label:'Route here', primary:true, onClick: async() => { showMap(await locateUser()); if(item.lat && item.lng) map.flyTo([item.lat,item.lng],16,{animate:true}) }},
+      {label:item.type==='product'?'Order':'Open', primary:false, onClick:() => pushMessage('ai', `${item.title} is ready. Continue through Astranov chat or contact the seller.`)}
+    ]
+    actions.forEach(a => {
+      const b=document.createElement('button'); b.className='sheetBtn'+(a.primary?' primary':''); b.textContent=a.label; b.onclick=a.onClick; detailActions.appendChild(b)
+    })
+    detailSheet.classList.add('show')
+  }
+  function hideDetail(){ detailSheet.classList.remove('show') }
+
+  function makeRadialOption(type, label, sub){
+    const btn = document.createElement('button')
+    btn.className='radialOption'
+    btn.innerHTML = `<strong>${label}</strong><span>${sub}</span>`
+    btn.addEventListener('click', async e => {
+      e.stopPropagation()
+      radialOpen = false; layoutRadial()
+      pendingType = type
+      hideDetail()
+      const center = await locateUser()
+      showMap(center)
+      mapTapPill.classList.add('show')
+      pushMessage('ai', `Tap the map to place your ${label.toLowerCase()}.`)
+    })
+    radial.appendChild(btn)
+    return btn
+  }
+  const radialButtons = [
+    makeRadialOption('product','Product','Menu item or goods'),
+    makeRadialOption('service','Service','Hotel, rent-a-car, diving'),
+    makeRadialOption('delivery','Delivery spot','Receive offers here'),
+    makeRadialOption('driver','Driver base','Activate coverage zone'),
+    makeRadialOption('media','Photo / video','Post a visual signal')
+  ]
+  function layoutRadial(){
+    const anchor = addBtn.getBoundingClientRect();
+    const cx = anchor.left + anchor.width/2; const cy = anchor.top + anchor.height/2
+    const radius = Math.min(132, innerWidth * 0.28)
+    radialButtons.forEach((btn,i) => {
+      if(!radialOpen){ btn.classList.remove('show'); return }
+      const angle = (-155 + i*35) * Math.PI/180
+      const x = cx + Math.cos(angle) * radius - 44
+      const y = cy + Math.sin(angle) * radius - 44
+      btn.style.left = Math.max(10, Math.min(innerWidth-98, x)) + 'px'
+      btn.style.top = Math.max(60, Math.min(innerHeight-160, y)) + 'px'
+      btn.classList.add('show')
+    })
+  }
+  function closeRadial(){ radialOpen=false; layoutRadial() }
+  addBtn.addEventListener('click', e => { e.stopPropagation(); radialOpen=!radialOpen; layoutRadial(); hideDetail() })
+  radial.addEventListener('click', e => { if(e.target===radial) closeRadial() })
+  document.addEventListener('click', e => { if(!e.target.closest('#addBtn') && !e.target.closest('.radialOption')) closeRadial() })
+  window.addEventListener('resize', layoutRadial)
+
+  function openForm(type, coords){
+    currentFormType = type
+    currentCoords = coords
+    formTitle.textContent = ({product:'List product',service:'List service',delivery:'Delivery location',driver:'Driver base',media:'Photo / video'})[type]
+    formFields.innerHTML = ''
+    const f = []
+    const addField = (label, name, kind='input', attrs='') => f.push({label,name,kind,attrs})
+    addField('Title', 'title')
+    if(type==='service') addField('Service type', 'category', 'select', '<option>Hotel</option><option>Rent a car</option><option>Diving school</option><option>Restaurant</option><option>Other service</option>')
+    if(type==='product') addField('Category', 'category', 'select', '<option>Food</option><option>Coffee</option><option>Grocery</option><option>Product</option>')
+    if(type==='driver') addField('Coverage radius (km)', 'radius')
+    if(type==='delivery') { addField('Street', 'street'); addField('Number', 'number'); addField('Floor', 'floor'); addField('Doorbell', 'doorbell') }
+    addField('Price / note', 'price')
+    addField('Description', 'description', 'textarea')
+    if(type==='product'){ addField('Quantity', 'quantity'); addField('Temperature', 'temp', 'select', '<option>cold</option><option>hot</option><option>neutral</option>'); addField('Max transport minutes', 'maxTransport') }
+    if(type==='service'){ addField('Appointment slots / hour', 'slots'); addField('Bookable hours', 'bookHours') }
+    if(type==='media'){ addField('Media URL', 'mediaUrl'); addField('Caption', 'description', 'textarea') }
+    addField('Photo / video link', 'photoUrl')
+    f.forEach((field, idx) => {
+      const wrap = document.createElement('label')
+      wrap.innerHTML = `<span>${field.label}</span>`
+      let node
+      if(field.kind==='textarea'){ node = document.createElement('textarea') }
+      else if(field.kind==='select'){ node = document.createElement('select'); node.innerHTML = field.attrs }
+      else { node = document.createElement('input'); node.type='text' }
+      node.name = field.name
+      wrap.appendChild(node)
+      formFields.appendChild(wrap)
+    })
+    formModal.classList.add('show')
+  }
+  function closeForm(){ formModal.classList.remove('show'); currentFormType = null; pendingType = null; mapTapPill.classList.remove('show') }
+  $('#closeForm').addEventListener('click', closeForm)
+  formModal.addEventListener('click', e => { if(e.target===formModal) closeForm() })
+  listingForm.addEventListener('submit', e => {
+    e.preventDefault()
+    const fd = new FormData(listingForm)
+    const data = Object.fromEntries(fd.entries())
+    const id = 'l' + Date.now().toString(36)
+    const item = { id, type:currentFormType, ...data, lat: currentCoords?.lat, lng: currentCoords?.lng, createdAt: Date.now() }
+    listings.unshift(item)
+    saveLocalListings(); renderMarkers(); closeForm(); showDetail(item)
+    pushMessage('ai', `${item.title || 'Listing'} saved and placed on Astranov.`)
+  })
+
+  sendBtn.addEventListener('click', handleSend)
+  textInput.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); handleSend() } })
+  function handleSend(){
+    const text = textInput.value.trim(); if(!text) return
+    pushMessage('user', text)
+    const lower = text.toLowerCase()
+    if(lower.includes('zoom')) toggleZoom()
+    else if(lower.includes('product') || lower.includes('service') || lower.includes('delivery') || lower.includes('driver')) { radialOpen = true; layoutRadial(); pushMessage('ai', 'Choose what to place, then tap the map.') }
+    else if(lower.includes('globe')) { showGlobe() }
+    else { pushMessage('ai', 'Use Add to place a product, service, delivery location or driver base. Use the radar to jump between globe and map.') }
+    textInput.value = ''
+  }
+
+  helperBtn.addEventListener('click', () => {
+    openDrawer(180)
+    pushMessage('ai', 'Astranov Collective Intelligence ready. Use Add to place services and goods. Use the radar to jump to your area.')
+  })
+  channelAdd.addEventListener('click', () => {
+    const name = prompt('New channel name')
+    if(!name) return
+    const option = document.createElement('option'); option.textContent = name; $('#channelSelect').appendChild(option); $('#channelSelect').value = name
+    pushMessage('ai', `${name} added.`)
+  })
+
+  zoomBtn.addEventListener('click', toggleZoom)
+  gripBtn.addEventListener('click', toggleGrip)
+  detailSheet.addEventListener('click', e => { if(e.target===detailSheet) hideDetail() })
+
+  function setupVoice(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if(!SR) return
+    recognition = new SR(); recognition.lang = 'en-US'; recognition.interimResults = true; recognition.maxAlternatives = 1
+    let finalText=''
+    recognition.onstart = () => micBtn.classList.add('active')
+    recognition.onresult = e => {
+      let text=''
+      for(let i=e.resultIndex;i<e.results.length;i++) text += e.results[i][0].transcript
+      textInput.value = text
+      if(e.results[e.results.length-1].isFinal) finalText = text
+    }
+    recognition.onend = () => { micBtn.classList.remove('active'); if(finalText){ textInput.value = finalText; finalText=''; } }
+    micBtn.addEventListener('click', () => {
+      if(micBtn.classList.contains('active')) recognition.stop(); else recognition.start()
+    })
+  }
+
+  function wireDrawerGesture(){
+    let startY = 0, active = false, startedAt = 0
+    const target = $('#inputWrap')
+    target.addEventListener('pointerdown', e => { active = true; startY = e.clientY; startedAt = Date.now() })
+    target.addEventListener('pointermove', e => {
+      if(!active) return
+      const dy = startY - e.clientY
+      if(Math.abs(dy) < 18) return
+      if(dy > 0) openDrawer(Math.min(240, 120 + dy))
+      else if(dy < -24) closeDrawer()
+    })
+    const end = () => { active = false }
+    target.addEventListener('pointerup', end)
+    target.addEventListener('pointercancel', end)
+  }
+
+  async function fetchOptionalFeeds(){
+    const endpoints = [
+      ['/api/shops_list.php','service'],
+      ['/api/products_list.php','product'],
+      ['/api/drivers_state.php','driver'],
+      ['/api/news_top.php','media']
+    ]
+    for(const [url, type] of endpoints){
+      try{
+        const res = await fetch(url, {cache:'no-store'})
+        if(!res.ok) continue
+        const data = await res.json()
+        if(!Array.isArray(data)) continue
+        data.slice(0,8).forEach((row, idx) => {
+          const lat = parseFloat(row.lat ?? row.latitude ?? row.last_lat)
+          const lng = parseFloat(row.lng ?? row.longitude ?? row.last_lng)
+          if(!Number.isFinite(lat) || !Number.isFinite(lng)) return
+          listings.push({
+            id:`api-${type}-${idx}-${Date.now()}`,
+            type,
+            category: row.category || row.kind || type,
+            title: row.name || row.title || row.shop_name || row.user_name || `${type} signal`,
+            description: row.description || row.summary || row.snippet || '',
+            price: row.price || row.status || '',
+            lat,lng,
+            temp: row.temp || row.temperature || 'neutral'
+          })
+        })
+      }catch(e){}
+    }
+    renderMarkers()
+  }
+
+  function animate(){
+    const t = performance.now() * 0.001
+    drawEarth(t)
+    requestAnimationFrame(animate)
+  }
+  function drawEarth(t){
+    const w = innerWidth, h = innerHeight
+    globeCtx.clearRect(0,0,w,h); signalsCtx.clearRect(0,0,w,h)
+    const cx = w/2, cy = h*0.42, r = Math.min(w*0.34, h*0.24)
+    rotation = (t * 0.18) % (Math.PI*2)
+    globeCtx.save()
+    globeCtx.translate(cx, cy)
+    const g = globeCtx.createRadialGradient(-r*0.28,-r*0.34, r*0.16, 0,0,r)
+    g.addColorStop(0,'rgba(32,133,255,.88)'); g.addColorStop(.45,'rgba(19,80,160,.95)'); g.addColorStop(1,'rgba(6,18,42,1)')
+    globeCtx.fillStyle = g; globeCtx.beginPath(); globeCtx.arc(0,0,r,0,Math.PI*2); globeCtx.fill()
+    globeCtx.strokeStyle='rgba(124,222,255,.18)'; globeCtx.lineWidth=1
+    for(let i=-2;i<=2;i++){
+      globeCtx.beginPath(); globeCtx.ellipse(0,0,r*Math.cos(i*.26),r,0,0,Math.PI*2); globeCtx.stroke()
+      globeCtx.beginPath(); globeCtx.ellipse(0,0,r,r*Math.cos(i*.26),0,0,Math.PI*2); globeCtx.stroke()
+    }
+    drawContinents(globeCtx, r, rotation)
+    const atmo = globeCtx.createRadialGradient(0,0,r*.75,0,0,r*1.2)
+    atmo.addColorStop(0,'rgba(51,207,255,0)'); atmo.addColorStop(.8,'rgba(51,207,255,.12)'); atmo.addColorStop(1,'rgba(51,207,255,.01)')
+    globeCtx.fillStyle = atmo; globeCtx.beginPath(); globeCtx.arc(0,0,r*1.18,0,Math.PI*2); globeCtx.fill()
+    globeCtx.restore()
+
+    const sigs = mergedSignals()
+    sigs.forEach((item, idx) => {
+      const lat = ((parseFloat(item.lat)||0) * Math.PI/180)
+      const lng = ((parseFloat(item.lng)||0) * Math.PI/180) + rotation
+      const x3 = Math.cos(lat) * Math.sin(lng)
+      const y3 = Math.sin(lat)
+      const z3 = Math.cos(lat) * Math.cos(lng)
+      if(z3 < -0.15) return
+      const x = cx + x3 * r
+      const y = cy - y3 * r
+      const lift = 12 + ((idx % 4) * 8) + (Math.sin(t*2 + idx) + 1) * 6
+      signalsCtx.strokeStyle = categoryColor(item)
+      signalsCtx.lineWidth = 1.4
+      signalsCtx.beginPath(); signalsCtx.moveTo(x,y); signalsCtx.lineTo(x, y - lift); signalsCtx.stroke()
+      signalsCtx.fillStyle = categoryColor(item)
+      signalsCtx.beginPath(); signalsCtx.arc(x, y - lift, 3.3 + (Math.sin(t*3 + idx)+1)*.8, 0, Math.PI*2); signalsCtx.fill()
+      signalsCtx.fillStyle = 'rgba(255,255,255,.75)'; signalsCtx.beginPath(); signalsCtx.arc(x,y,1.6,0,Math.PI*2); signalsCtx.fill()
+    })
+  }
+  function drawContinents(ctx, r, rot){
+    ctx.save(); ctx.rotate(rot*.25)
+    ctx.fillStyle = 'rgba(46,186,120,.36)'
+    blob(ctx, -r*0.26,-r*0.02, r*0.28, r*0.22)
+    blob(ctx, r*0.14, -r*0.12, r*0.24, r*0.18)
+    blob(ctx, r*0.02, r*0.18, r*0.20, r*0.14)
+    ctx.fillStyle = 'rgba(78,220,160,.18)'
+    blob(ctx, -r*0.14,-r*0.24, r*0.12, r*0.08)
+    ctx.restore()
+  }
+  function blob(ctx,x,y,rx,ry){
+    ctx.beginPath(); ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill()
+  }
+
+  function boot(){
+    sizeCanvases(); renderMessages(); closeDrawer(); showGlobe(); setupVoice(); wireDrawerGesture(); animate(); fetchOptionalFeeds(); renderMarkers()
+    window.addEventListener('resize', sizeCanvases)
+  }
+  boot()
+})()
 </script>
 </body>
 </html>
