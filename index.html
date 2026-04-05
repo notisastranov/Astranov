@@ -4,1162 +4,942 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov Internet Operating System</title>
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
-  --bg:#030913;
-  --bg2:#07101d;
-  --panel:rgba(6,16,30,.52);
-  --panel-2:rgba(8,20,38,.72);
-  --line:rgba(0,200,255,.24);
-  --line-strong:rgba(0,200,255,.52);
-  --blue:#00c8ff;
-  --blue-soft:#7be4ff;
-  --text:#d9f5ff;
-  --dim:#8eb6c9;
-  --good:#16e07a;
-  --warn:#ffd44d;
-  --bad:#ff5668;
-  --shadow:0 18px 36px rgba(0,0,0,.32), 0 0 24px rgba(0,200,255,.08);
-  --r:18px;
-  --top-h:46px;
-  --dock-h:86px;
-  --safe-b:max(env(safe-area-inset-bottom), 10px);
-  --safe-l:max(env(safe-area-inset-left), 10px);
-  --safe-r:max(env(safe-area-inset-right), 10px);
-  --hud-size:86px;
-  --helper-w:78px;
-  --composer-h:58px;
-  --font:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --bg:#030712;
+  --panel:rgba(5,15,28,.38);
+  --panel-strong:rgba(5,15,28,.72);
+  --line:rgba(0,196,255,.22);
+  --line-strong:rgba(0,196,255,.48);
+  --cyan:#2dd9ff;
+  --cyan-soft:#8feeff;
+  --text:#d8f6ff;
+  --text-dim:#6ea1b3;
+  --good:#28d17c;
+  --warn:#ffd34f;
+  --bad:#ff4f65;
+  --shadow:0 20px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.04);
+  --radius:20px;
+  --vh:1vh;
+  --helper-size:clamp(60px,13vw,78px);
+  --hud-size:clamp(84px,22vw,112px);
+  --bubble-size:clamp(54px,14vw,66px);
+  --composer-w:min(68vw,520px);
+  --composer-h:86px;
+  --safe-bottom:max(env(safe-area-inset-bottom),10px);
 }
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at top, #0d1830 0%, var(--bg2) 36%, var(--bg) 100%);color:var(--text);font-family:var(--font)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 8%, #0d2340 0%, #06111e 32%, #030712 70%, #01040b 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
 button,input,select,textarea{font:inherit}
-.hidden{display:none !important}
-.glass{
-  background:linear-gradient(180deg, rgba(9,22,42,.62), rgba(5,15,30,.42));
-  border:1px solid var(--line);
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(18px) saturate(130%);
-  -webkit-backdrop-filter:blur(18px) saturate(130%);
-}
-body{position:fixed;inset:0;touch-action:manipulation}
-
-/*
-SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v6
-MISSION
-Rebuild the entire Astranov index.html from zero as one coherent operational file.
-
-ABSOLUTE BUILD LAW
-Never patch.
-Never layer new systems over old systems.
-Never keep obsolete code alive under new code.
-Every structural change requires full reconstruction of the whole index.html.
-
-MOBILE-FIRST LAW
-Primary target = small phones in portrait.
-Desktop is secondary.
-Everything must remain sharp, readable, and operable on dense mobile screens.
-
-DEFAULT-SCREEN LAW
-At load only essentials may be visible:
-1. world view
-2. helper bottom-left
-3. composer bottom-center
-4. add bubble bottom-right
-5. compact radar/performance HUDs
-No always-open add flow.
-No giant center card.
-No floating status labels.
-
-ANTI-FAKE LAW
-No fake buttons.
-No fake helper.
-No decorative mascot.
-No floating tutorial chatter.
-All assistant/status text stays inside the chat drawer only.
-
-WORLD-VIEW PRIORITY LAW
-The globe/map stays dominant.
-UI must not suffocate the world surface.
-
-OUTPUT LAW
-Single fully reconstructed index.html only.
-Final filename = index.html.
-*/
-
-#topbar{
-  position:fixed;left:0;right:0;top:0;height:var(--top-h);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:8px calc(var(--safe-r) + 8px) 8px calc(var(--safe-l) + 8px);
-  z-index:60;background:linear-gradient(180deg, rgba(4,12,24,.72), rgba(4,12,24,.18));
-  border-bottom:1px solid rgba(0,200,255,.1);backdrop-filter:blur(14px);
-}
-.brand-wrap{display:flex;align-items:center;gap:10px;min-width:0}
-.brand-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 14px var(--blue)}
-.brand-text{font-size:12px;font-weight:700;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand-sub{font-size:10px;color:var(--dim)}
-.mode-pill{padding:7px 12px;border-radius:999px;border:1px solid var(--line);font-size:11px;color:var(--blue-soft);background:rgba(0,200,255,.07);white-space:nowrap}
-
-#stage{
-  position:fixed;inset:var(--top-h) 0 calc(var(--dock-h) + var(--safe-b)) 0;
-  overflow:hidden;
-}
-#globe-wrap,#map-wrap{position:absolute;inset:0}
+button{border:none;background:none;color:inherit}
+#app{position:relative;width:100%;height:100%;overflow:hidden}
+#stars{position:absolute;inset:0;background:
+ radial-gradient(circle at 15% 18%, rgba(255,255,255,.9) 0 1px, transparent 1.4px),
+ radial-gradient(circle at 77% 24%, rgba(255,255,255,.75) 0 1px, transparent 1.3px),
+ radial-gradient(circle at 52% 8%, rgba(255,255,255,.85) 0 1px, transparent 1.2px),
+ radial-gradient(circle at 12% 62%, rgba(255,255,255,.7) 0 1px, transparent 1.3px),
+ radial-gradient(circle at 86% 68%, rgba(255,255,255,.9) 0 1px, transparent 1.3px),
+ radial-gradient(circle at 35% 83%, rgba(255,255,255,.7) 0 1px, transparent 1.2px),
+ radial-gradient(circle at 62% 43%, rgba(255,255,255,.7) 0 1px, transparent 1.2px),
+ radial-gradient(circle at 92% 38%, rgba(255,255,255,.65) 0 1px, transparent 1.3px),
+ radial-gradient(circle at 5% 91%, rgba(255,255,255,.75) 0 1px, transparent 1.2px),
+ radial-gradient(circle at 46% 58%, rgba(255,255,255,.55) 0 1px, transparent 1.3px);
+ opacity:.7;pointer-events:none}
+#nebula{position:absolute;inset:-15%;background:
+ radial-gradient(circle at 18% 28%, rgba(45,217,255,.16), transparent 28%),
+ radial-gradient(circle at 82% 24%, rgba(81,102,255,.18), transparent 30%),
+ radial-gradient(circle at 68% 78%, rgba(45,217,255,.14), transparent 22%),
+ radial-gradient(circle at 28% 72%, rgba(0,96,255,.12), transparent 28%);
+ filter:blur(30px);opacity:.9;pointer-events:none}
+#topbar{position:absolute;top:0;left:0;right:0;height:44px;padding:0 10px;display:flex;align-items:center;justify-content:space-between;z-index:12;background:linear-gradient(180deg, rgba(3,10,20,.58), rgba(3,10,20,.1));backdrop-filter:blur(14px)}
+.brand{font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--cyan);text-shadow:0 0 14px rgba(45,217,255,.36);white-space:nowrap;max-width:72vw;overflow:hidden;text-overflow:ellipsis}
+.top-pill{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:999px;background:rgba(0,0,0,.18);border:1px solid var(--line);font-size:10px;color:var(--cyan-soft)}
+.top-dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 10px rgba(40,209,124,.55)}
+#sceneWrap,#mapWrap{position:absolute;left:0;right:0;top:44px;bottom:140px}
+#sceneWrap{z-index:1}
 #globeCanvas{width:100%;height:100%;display:block}
+#signalLayer{position:absolute;inset:44px 0 140px;z-index:7;pointer-events:none}
+.signal{position:absolute;min-width:72px;max-width:124px;padding:7px 10px 8px;border-radius:18px;background:linear-gradient(180deg, rgba(6,18,34,.92), rgba(6,18,34,.76));border:1px solid rgba(45,217,255,.24);box-shadow:0 16px 28px rgba(0,0,0,.28), 0 0 18px rgba(45,217,255,.08);backdrop-filter:blur(10px);pointer-events:auto;cursor:pointer;transform:translate(-50%,-50%);transition:transform .18s ease, opacity .18s ease;}
+.signal:hover{transform:translate(-50%,-50%) scale(1.04)}
+.signal::before{content:"";position:absolute;left:50%;bottom:100%;width:2px;height:22px;background:linear-gradient(180deg, rgba(45,217,255,.66), rgba(45,217,255,0));transform:translateX(-50%)}
+.signal .type{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--cyan-soft);opacity:.85}
+.signal .title{margin-top:2px;font-size:11px;font-weight:700;line-height:1.2;color:var(--text)}
+.signal.news{border-color:rgba(45,217,255,.34)}
+.signal.service{border-color:rgba(40,209,124,.32)}
+.signal.driver{border-color:rgba(255,211,79,.34)}
+.signal.delivery{border-color:rgba(255,79,101,.34)}
+#mapWrap{display:none;z-index:2}
 #map{width:100%;height:100%}
-#map-wrap{display:none}
-body.map #map-wrap{display:block}
-body.map #globe-wrap{display:none}
-
-#scene-gradient{
-  position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(circle at 50% 75%, rgba(0,200,255,.06), transparent 30%), linear-gradient(180deg, transparent 60%, rgba(3,9,19,.38));
-}
-
-.hud{
-  position:absolute;z-index:35;width:var(--hud-size);height:var(--hud-size);
-  border-radius:50%;display:grid;place-items:center;overflow:hidden;
-}
-#perfHud{left:calc(var(--safe-l) + 10px);top:10px}
-#radarHud{right:calc(var(--safe-r) + 10px);top:10px}
-.hud svg{width:100%;height:100%;position:absolute;inset:0}
-.hud .center-btn{
-  position:relative;z-index:2;width:36px;height:36px;border-radius:50%;
-  border:1px solid var(--line-strong);background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.26), rgba(7,19,34,.92) 72%);
-  color:var(--blue-soft);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 16px rgba(0,200,255,.14)
-}
-.hud .center-btn svg{position:static;width:18px;height:18px}
-.hud .micro{
-  position:absolute;z-index:2;font-size:9px;color:#9edcf0;letter-spacing:.06em
-}
-.hud .micro.top{top:12px}
-.hud .micro.bottom{bottom:12px}
-.hud .micro.left{left:8px;top:50%;transform:translateY(-50%) rotate(-90deg)}
-.hud .micro.right{right:8px;top:50%;transform:translateY(-50%) rotate(90deg)}
-#perfHud .micro{display:none}
-#cargo-dot{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:8px;height:8px;border-radius:50%;background:var(--good);z-index:3;display:none;
-  box-shadow:0 0 10px currentColor;
-}
-body.cargo-loaded #cargo-dot{display:block;background:var(--bad)}
-#cargo-center-icon-open,#cargo-center-icon-closed{position:absolute;inset:0;display:grid;place-items:center}
-body.cargo-loaded #cargo-center-icon-open{display:none}
-body:not(.cargo-loaded) #cargo-center-icon-closed{display:none}
-#radar-center-icon-out{display:none}
-body.map #radar-center-icon-in{display:none}
-body.map #radar-center-icon-out{display:block}
-
-#helper{
-  position:fixed;left:calc(var(--safe-l) + 8px);bottom:calc(var(--safe-b) + 6px);
-  width:var(--helper-w);height:92px;z-index:70;display:flex;align-items:flex-end;justify-content:center;
-  background:none;border:none;padding:0;cursor:pointer;
-}
-#helper figure{
-  margin:0;width:100%;height:100%;display:flex;align-items:flex-end;justify-content:center;
-  filter:drop-shadow(0 18px 18px rgba(0,0,0,.3)) drop-shadow(0 0 16px rgba(0,200,255,.16));
-}
-#helper svg{width:76px;height:90px}
-#helper:hover svg{transform:translateY(-1px)}
-#helper-status{
-  position:fixed;left:calc(var(--safe-l) + 92px);bottom:calc(var(--safe-b) + 54px);
-  max-width:min(58vw,240px);padding:10px 12px;border-radius:16px;z-index:69;display:none;
-  font-size:11px;line-height:1.35;color:var(--text)
-}
-#helper-status.on{display:block}
-
-#composer{
-  position:fixed;left:calc(var(--safe-l) + 96px);right:calc(var(--safe-r) + 86px);
-  bottom:calc(var(--safe-b) + 12px);height:var(--dock-h);z-index:68;
-  display:flex;flex-direction:column;gap:8px;padding:8px 10px 10px;border-radius:22px;
-}
-#composer-top{display:flex;align-items:center;gap:8px;min-height:28px}
-#channel-wrap{
-  flex:1;display:flex;align-items:center;gap:8px;min-width:0;padding:0 12px;height:30px;border-radius:999px;
-  border:1px solid var(--line);background:rgba(0,200,255,.05)
-}
-#channel-arrow{font-size:12px;color:var(--blue-soft);flex:0 0 auto}
-#channel-select{
-  appearance:none;border:none;background:transparent;color:var(--blue-soft);min-width:0;flex:1;outline:none;font-size:12px
-}
-#channel-add{
-  width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);
-  background:rgba(0,200,255,.06);color:var(--blue-soft);cursor:pointer;font-size:18px;line-height:1
-}
-#composer-bottom{display:grid;grid-template-columns:42px 1fr 42px;gap:8px;align-items:center}
-.icon-btn{
-  width:42px;height:42px;border-radius:14px;border:1px solid var(--line);background:rgba(0,200,255,.05);
-  color:var(--blue-soft);display:grid;place-items:center;cursor:pointer
-}
-.icon-btn svg{width:18px;height:18px}
-#cmd-input{
-  height:42px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.04);
-  padding:0 14px;color:var(--text);outline:none;font-size:14px
-}
-#cmd-input::placeholder{color:#8bb9ce}
-#cmd-input:focus{border-color:var(--line-strong);box-shadow:0 0 14px rgba(0,200,255,.12)}
-#send-btn{background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.22), rgba(7,19,34,.92) 72%)}
-#send-btn.has-text{border-color:rgba(0,200,255,.48);box-shadow:0 0 16px rgba(0,200,255,.16)}
-
-#drawer{
-  position:fixed;left:calc(var(--safe-l) + 96px);right:calc(var(--safe-r) + 86px);
-  bottom:calc(var(--safe-b) + 104px);max-height:min(40dvh,280px);z-index:67;
-  border-radius:20px 20px 12px 12px;display:none;flex-direction:column;overflow:hidden
-}
-#drawer.open{display:flex}
-#drawer-messages{overflow:auto;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
-.msg{max-width:88%;padding:9px 12px;border-radius:16px;font-size:12px;line-height:1.4}
-.msg.user{align-self:flex-end;background:rgba(0,200,255,.12);border:1px solid rgba(0,200,255,.22)}
-.msg.ai{align-self:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
-.msg.system{align-self:center;background:rgba(0,200,255,.05);border:1px solid rgba(0,200,255,.15);color:var(--blue-soft);max-width:94%}
-
-#add-btn{
-  position:fixed;right:calc(var(--safe-r) + 12px);bottom:calc(var(--safe-b) + 12px);
-  width:64px;height:64px;border-radius:50%;z-index:69;border:1px solid rgba(0,200,255,.38);
-  background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.3), rgba(7,19,34,.92) 72%);
-  color:var(--text);display:grid;place-items:center;cursor:pointer;box-shadow:var(--shadow)
-}
-#add-btn svg{width:26px;height:26px}
-body.radial-open #add-btn{box-shadow:0 0 24px rgba(0,200,255,.22), var(--shadow)}
-
-#radial{
-  position:absolute;inset:0;pointer-events:none;z-index:40
-}
-.radial-item{
-  position:absolute;width:88px;height:88px;border-radius:50%;pointer-events:auto;cursor:pointer;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
-  padding:10px;background:radial-gradient(circle at 35% 30%, rgba(0,200,255,.28), rgba(7,19,34,.94) 72%);
-  border:1px solid rgba(0,200,255,.3);color:var(--text);font-size:11px;line-height:1.15;
-  box-shadow:var(--shadow);opacity:0;transform:scale(.78);transition:opacity .18s ease, transform .18s ease
-}
-.radial-item svg{width:18px;height:18px}
-body.radial-open .radial-item{opacity:1;transform:scale(1)}
-
-#sheet{
-  position:absolute;left:12px;right:12px;bottom:12px;z-index:45;display:none;pointer-events:none
-}
-#sheet.show{display:block}
-.sheet-card{
-  pointer-events:auto;border-radius:22px;padding:14px;background:linear-gradient(180deg, rgba(8,20,38,.86), rgba(6,16,30,.9));
-  border:1px solid rgba(0,200,255,.22);box-shadow:var(--shadow)
-}
-.sheet-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.sheet-title{font-size:16px;font-weight:700}
-.sheet-sub{font-size:12px;color:var(--dim);margin-top:4px}
-.sheet-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(0,200,255,.16);background:rgba(0,200,255,.06);font-size:11px;color:var(--blue-soft)}
-.sheet-actions{display:flex;gap:8px;margin-top:14px}
-.action{
-  flex:1;height:42px;border-radius:14px;border:1px solid var(--line);cursor:pointer;
-  background:rgba(0,200,255,.06);color:var(--text)
-}
-.action.primary{background:rgba(0,200,255,.16);border-color:rgba(0,200,255,.34)}
-
-#form-modal{
-  position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.48);display:none;align-items:flex-end;justify-content:center;
-  backdrop-filter:blur(8px)
-}
-#form-modal.open{display:flex}
-#form-card{
-  width:min(100%,560px);max-height:min(80dvh,720px);border-radius:24px 24px 0 0;padding:14px 14px calc(var(--safe-b) + 14px);
-  overflow:auto
-}
-.form-top{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;padding-bottom:10px;background:linear-gradient(180deg, rgba(8,20,38,.98), rgba(8,20,38,.9))}
-.form-title{font-size:18px;font-weight:700}
-#form-close{
-  width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--text);cursor:pointer;font-size:24px;line-height:1
-}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-field{display:flex;flex-direction:column;gap:6px}
-.form-field.full{grid-column:1 / -1}
-.form-label{font-size:11px;color:var(--blue-soft)}
-.form-input,.form-select,.form-textarea{
-  width:100%;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);outline:none;padding:12px
-}
-.form-textarea{min-height:92px;resize:vertical}
-.form-footer{display:flex;gap:10px;margin-top:14px}
-.form-footer .action{height:46px}
-
-.map-marker{
-  width:16px;height:16px;border-radius:50%;border:2px solid #fff;background:var(--blue);
-  box-shadow:0 0 12px rgba(0,200,255,.65)
-}
-.map-marker.driver{background:#ff9b2f}
-.map-marker.delivery{background:#7ae4ff}
-.map-marker.product{background:#00c8ff}
-.map-marker.service{background:#8d5bff}
-
-.leaflet-control-attribution,.leaflet-control-container .leaflet-top,.leaflet-control-zoom{display:none !important}
-.leaflet-container{background:#07101d}
-
-@media (max-width:420px){
-  :root{--hud-size:78px;--helper-w:74px}
-  #composer{left:calc(var(--safe-l) + 84px);right:calc(var(--safe-r) + 78px)}
-  #drawer{left:calc(var(--safe-l) + 84px);right:calc(var(--safe-r) + 78px)}
-  .radial-item{width:78px;height:78px;font-size:10px}
-  .form-grid{grid-template-columns:1fr}
+.leaflet-container{background:#07111e}
+.leaflet-tile{filter:brightness(.75) saturate(.72) hue-rotate(182deg)}
+.hud{position:absolute;width:var(--hud-size);height:var(--hud-size);border-radius:50%;z-index:9;background:radial-gradient(circle at 50% 50%, rgba(10,22,38,.4), rgba(2,8,18,.88) 74%);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(12px)}
+.hud::before{content:"";position:absolute;inset:7px;border-radius:50%;border:1px solid rgba(45,217,255,.18)}
+#perfHud{top:54px;left:8px}
+#radarHud{top:54px;right:8px}
+.hud-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:clamp(28px,8vw,36px);height:clamp(28px,8vw,36px);border-radius:50%;background:radial-gradient(circle at 35% 30%, rgba(45,217,255,.35), rgba(5,15,28,.95) 72%);border:1px solid rgba(45,217,255,.36);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(45,217,255,.18);cursor:pointer;z-index:2}
+.hud-label{position:absolute;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:rgba(143,238,255,.8)}
+#perfHud .hud-label.top{top:12px;left:50%;transform:translateX(-50%)}
+#perfHud .hud-label.bottom{bottom:12px;left:50%;transform:translateX(-50%)}
+#perfHud .hud-label.left{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg)}
+#perfHud .hud-label.right{right:2px;top:50%;transform:translateY(-50%) rotate(90deg)}
+#radarHud .hud-label.top{top:12px;left:50%;transform:translateX(-50%)}
+#radarHud .hud-label.bottom{bottom:12px;left:50%;transform:translateX(-50%)}
+#radarHud .hud-label.left{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg)}
+#radarHud .hud-label.right{right:2px;top:50%;transform:translateY(-50%) rotate(90deg)}
+.hud-ring{position:absolute;inset:13px;border-radius:50%;border:1px dashed rgba(45,217,255,.15)}
+#perfHud .stat{position:absolute;font-size:10px;font-weight:700;color:var(--cyan-soft)}
+#perfHud .stat.s1{top:28px;left:50%;transform:translateX(-50%)}
+#perfHud .stat.s2{bottom:28px;left:50%;transform:translateX(-50%)}
+#perfHud .stat.s3{top:50%;left:16px;transform:translateY(-50%)}
+#perfHud .stat.s4{top:50%;right:16px;transform:translateY(-50%)}
+#perfHud.loaded .hud-center{border-color:rgba(255,79,101,.45);box-shadow:0 0 18px rgba(255,79,101,.24)}
+#perfHud.unloaded .hud-center{border-color:rgba(40,209,124,.45);box-shadow:0 0 18px rgba(40,209,124,.24)}
+.hud-btn-icon{width:18px;height:18px;display:block}
+#helper{position:absolute;left:10px;bottom:calc(var(--safe-bottom) + 8px);width:var(--helper-size);height:var(--helper-size);border-radius:50%;z-index:14;background:radial-gradient(circle at 35% 20%, rgba(65,96,255,.24), rgba(5,15,28,.92) 70%);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(14px)}
+#helper svg{width:78%;height:78%;filter:drop-shadow(0 0 12px rgba(45,217,255,.26))}
+#helper.active{border-color:rgba(45,217,255,.55);box-shadow:0 0 18px rgba(45,217,255,.24), var(--shadow)}
+#composer{position:absolute;left:50%;bottom:calc(var(--safe-bottom) + 8px);transform:translateX(-50%);width:var(--composer-w);max-width:calc(100vw - 150px);min-width:240px;height:var(--composer-h);border-radius:22px;z-index:13;padding:8px 10px;background:linear-gradient(180deg, rgba(5,15,28,.52), rgba(5,15,28,.28));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(16px);display:flex;flex-direction:column;gap:8px}
+#composerTop,#composerBottom{display:flex;align-items:center;gap:8px}
+#micBtn,#channelAdd,#sendBtn{width:36px;height:36px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.16);border:1px solid var(--line);color:var(--cyan-soft);flex:0 0 auto;cursor:pointer}
+#micBtn.active{border-color:rgba(40,209,124,.46);color:var(--good);box-shadow:0 0 14px rgba(40,209,124,.18)}
+#channelWrap{position:relative;display:flex;align-items:center;flex:1 1 auto;min-width:0;height:34px;border-radius:14px;background:rgba(0,0,0,.14);border:1px solid var(--line);overflow:hidden}
+#channelArrow{width:24px;flex:0 0 24px;display:flex;align-items:center;justify-content:center;color:var(--cyan-soft);font-size:11px}
+#channelSelect{flex:1 1 auto;height:100%;border:none;background:transparent;color:var(--cyan-soft);padding:0 10px 0 0;outline:none;font-size:12px;appearance:none}
+#channelSelect option{background:#07111e;color:var(--cyan-soft)}
+#commandInput{flex:1 1 auto;height:36px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.14);color:var(--text);padding:0 14px;outline:none;min-width:0}
+#commandInput::placeholder{color:rgba(143,238,255,.56)}
+#sendBtn svg,#micBtn svg,#channelAdd svg{width:18px;height:18px}
+#addBubble{position:absolute;right:10px;bottom:calc(var(--safe-bottom) + 8px);width:var(--bubble-size);height:var(--bubble-size);border-radius:50%;z-index:14;background:radial-gradient(circle at 35% 20%, rgba(45,217,255,.38), rgba(5,15,28,.94) 72%);border:1px solid rgba(45,217,255,.36);box-shadow:var(--shadow), 0 0 20px rgba(45,217,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer}
+#addBubble svg{width:26px;height:26px}
+#drawer{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-bottom) + 102px);width:var(--composer-w);max-width:calc(100vw - 150px);min-width:240px;height:0;opacity:0;z-index:11;overflow:hidden;border-radius:22px;background:linear-gradient(180deg, rgba(5,15,28,.78), rgba(5,15,28,.56));border:1px solid transparent;box-shadow:none;backdrop-filter:blur(14px);transition:height .18s ease, opacity .18s ease, border-color .18s ease, box-shadow .18s ease}
+#drawer.open{height:min(28vh,220px);opacity:1;border-color:var(--line);box-shadow:var(--shadow)}
+#drawerLog{height:100%;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.msg{align-self:flex-start;max-width:90%;padding:9px 11px;border-radius:16px;background:rgba(0,0,0,.16);border:1px solid rgba(45,217,255,.1);font-size:12px;line-height:1.35;color:var(--text)}
+.msg.user{align-self:flex-end;background:rgba(45,217,255,.12);color:#eaffff}
+#card{position:absolute;left:50%;top:92px;transform:translateX(-50%);width:min(84vw,320px);max-height:34vh;border-radius:22px;z-index:10;padding:12px 12px 14px;background:linear-gradient(180deg, rgba(5,15,28,.82), rgba(5,15,28,.62));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(14px);display:none}
+#card.open{display:block}
+#cardHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+#cardType{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan-soft)}
+#cardTitle{margin-top:2px;font-size:16px;font-weight:800;line-height:1.12;color:var(--text)}
+#cardClose{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.18);border:1px solid var(--line);cursor:pointer;flex:0 0 auto}
+#cardBody{margin-top:10px;font-size:12px;line-height:1.45;color:#cdefff;max-height:18vh;overflow:auto}
+#cardMeta{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.metaPill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.16);border:1px solid rgba(45,217,255,.12);font-size:10px;color:var(--cyan-soft)}
+#radial{position:absolute;inset:0;z-index:8;pointer-events:none}
+.radialAction{position:absolute;width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:radial-gradient(circle at 35% 20%, rgba(45,217,255,.3), rgba(5,15,28,.92) 72%);border:1px solid rgba(45,217,255,.28);box-shadow:var(--shadow);backdrop-filter:blur(12px);pointer-events:auto;cursor:pointer;opacity:0;transform:translate(-50%,-50%) scale(.7);transition:opacity .18s ease, transform .18s ease}
+.radialAction.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.radialAction strong{font-size:11px;line-height:1.1;text-align:center;color:var(--text)}
+.radialAction span{font-size:9px;line-height:1.15;text-align:center;color:var(--cyan-soft)}
+#sheetBackdrop{position:absolute;inset:0;z-index:15;background:rgba(0,0,0,.24);backdrop-filter:blur(8px);display:none}
+#sheetBackdrop.open{display:block}
+#sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,420px);max-height:min(80vh,620px);border-radius:24px;background:linear-gradient(180deg, rgba(5,15,28,.94), rgba(5,15,28,.82));border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;overflow:auto}
+#sheetHeader{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#sheetTitle{font-size:18px;font-weight:800;color:var(--text)}
+#sheetClose{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:rgba(0,0,0,.16);cursor:pointer}
+#sheetForm{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+#sheetForm .full{grid-column:1 / -1}
+#sheetForm label{display:grid;gap:6px;font-size:11px;color:var(--cyan-soft)}
+#sheetForm input,#sheetForm select,#sheetForm textarea{width:100%;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.18);color:var(--text);padding:11px 12px;outline:none}
+#sheetForm textarea{min-height:92px;resize:vertical}
+#sheetActions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.sheetBtn{padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.16);cursor:pointer;color:var(--cyan-soft)}
+.sheetBtn.primary{background:rgba(45,217,255,.16);border-color:rgba(45,217,255,.34);color:var(--text)}
+#toast{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:16;padding:10px 14px;border-radius:16px;background:rgba(5,15,28,.88);border:1px solid rgba(45,217,255,.24);box-shadow:var(--shadow);color:var(--text);font-size:12px;opacity:0;pointer-events:none;transition:opacity .18s ease, transform .18s ease}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#hint{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:8;padding:10px 14px;border-radius:999px;background:rgba(5,15,28,.48);border:1px solid rgba(45,217,255,.18);backdrop-filter:blur(14px);font-size:11px;color:var(--cyan-soft);pointer-events:none}
+.hidden{display:none!important}
+@media (max-width: 520px){
+  #topbar{height:40px}
+  #sceneWrap,#mapWrap{top:40px;bottom:132px}
+  #signalLayer{inset:40px 0 132px}
+  .signal{min-width:64px;max-width:112px;padding:6px 9px 7px}
+  .signal .title{font-size:10px}
+  #perfHud{left:6px;top:48px}
+  #radarHud{right:6px;top:48px}
+  #composer{max-width:calc(100vw - 132px);min-width:200px;height:82px;padding:7px 8px}
+  #drawer{max-width:calc(100vw - 132px);min-width:200px;bottom:calc(var(--safe-bottom) + 96px)}
+  #helper{left:8px}
+  #addBubble{right:8px}
+  .radialAction{width:78px;height:78px}
+  .radialAction strong{font-size:10px}
 }
 </style>
 </head>
 <body>
-<div id="topbar">
-  <div class="brand-wrap">
-    <div class="brand-dot"></div>
-    <div>
-      <div class="brand-text">Astranov Internet Operating System</div>
-      <div class="brand-sub">planet-first marketplace</div>
+<div id="app">
+  <div id="stars"></div>
+  <div id="nebula"></div>
+  <div id="topbar">
+    <div class="brand">ASTRANOV INTERNET OPERATING SYSTEM</div>
+    <div class="top-pill"><span class="top-dot"></span><span id="modeText">MANUAL</span></div>
+  </div>
+
+  <div id="sceneWrap"><canvas id="globeCanvas"></canvas></div>
+  <div id="mapWrap"><div id="map"></div></div>
+  <div id="signalLayer"></div>
+
+  <div id="perfHud" class="hud unloaded">
+    <div class="hud-ring"></div>
+    <div class="hud-label top">Signal</div>
+    <div class="hud-label bottom">Battery</div>
+    <div class="hud-label left">Storage</div>
+    <div class="hud-label right">RAM</div>
+    <div class="stat s1" id="statSignal">84</div>
+    <div class="stat s2" id="statBattery">96</div>
+    <div class="stat s3" id="statStorage">44</div>
+    <div class="stat s4" id="statRam">68</div>
+    <button class="hud-center" id="grabBtn" aria-label="Load unload">
+      <svg class="hud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path id="grabPath" d="M16.8 6.4c-2.8-2-7.6-1.2-10 1.9-2.8 3.7-1.6 8.3 2.7 10.1 3.1 1.3 6 .4 7.9-1.3"/>
+        <circle id="grabDot" cx="15.7" cy="12.2" r="0" fill="#ff4f65" stroke="none"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="radarHud" class="hud">
+    <div class="hud-ring"></div>
+    <div class="hud-label top">North</div>
+    <div class="hud-label bottom">Scan</div>
+    <div class="hud-label left">Range</div>
+    <div class="hud-label right">Mode</div>
+    <button class="hud-center" id="zoomBtn" aria-label="Zoom toggle">
+      <svg id="zoomIcon" class="hud-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path id="zoomGlyph" d="M12 6v12M6 12l6-6 6 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <button id="helper" aria-label="Astranov helper" title="Astranov Collective Intelligence">
+    <svg viewBox="0 0 64 64" fill="none" stroke="var(--cyan-soft)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 16l-7-7 3-2 10 6" />
+      <path d="M42 16l7-7-3-2-10 6" />
+      <path d="M14 30c3-6 10-10 18-10s15 4 18 10" />
+      <path d="M21 39c3 7 7 12 11 12s8-5 11-12" />
+      <path d="M18 27l-7 6 8 1" />
+      <path d="M46 27l7 6-8 1" />
+      <circle cx="26" cy="31" r="1.5" fill="var(--cyan-soft)" stroke="none"/>
+      <circle cx="38" cy="31" r="1.5" fill="var(--cyan-soft)" stroke="none"/>
+      <path d="M27 38c2 1.5 8 1.5 10 0" />
+      <path d="M22 18c2-4 6-6 10-6s8 2 10 6" />
+      <path d="M15 45c5 3 10 5 17 5s12-2 17-5" opacity=".85"/>
+    </svg>
+  </button>
+
+  <div id="drawer"><div id="drawerLog"></div></div>
+
+  <div id="composer">
+    <div id="composerTop">
+      <button id="micBtn" aria-label="Voice typing">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16a4 4 0 0 0 4-4V8a4 4 0 1 0-8 0v4a4 4 0 0 0 4 4Z"/><path d="M5 12a7 7 0 0 0 14 0"/><path d="M12 19v3"/></svg>
+      </button>
+      <div id="channelWrap">
+        <div id="channelArrow">▾</div>
+        <select id="channelSelect" aria-label="Channel selector">
+          <option>Astranov Collective Intelligence</option>
+          <option>Marketplace</option>
+          <option>Planet Operations</option>
+          <option>Astranov Racing</option>
+        </select>
+      </div>
+      <button id="channelAdd" aria-label="Add channel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+    <div id="composerBottom">
+      <input id="commandInput" type="text" placeholder="Tell Astranov what to do" />
+      <button id="sendBtn" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12 15-7-4 7 4 7-15-7Z"/><path d="M15 12H4"/></svg>
+      </button>
     </div>
   </div>
-  <div class="mode-pill" id="modePill">Globe</div>
-</div>
 
-<div id="stage">
-  <div id="globe-wrap">
-    <canvas id="globeCanvas"></canvas>
-  </div>
-  <div id="map-wrap">
-    <div id="map"></div>
-  </div>
-  <div id="scene-gradient"></div>
+  <button id="addBubble" aria-label="Add action">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
 
-  <div id="perfHud" class="hud glass" aria-label="Performance">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,200,255,.18)" stroke-width="2"/>
-      <circle cx="50" cy="50" r="34" fill="none" stroke="rgba(0,200,255,.08)" stroke-width="10" stroke-dasharray="44 12 28 12 34 12 26 16"/>
-      <path d="M50 8 A42 42 0 0 1 89 38" fill="none" stroke="rgba(22,224,122,.72)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M92 50 A42 42 0 0 1 62 89" fill="none" stroke="rgba(255,212,77,.72)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M38 89 A42 42 0 0 1 8 50" fill="none" stroke="rgba(0,200,255,.72)" stroke-width="4" stroke-linecap="round"/>
-      <path d="M11 38 A42 42 0 0 1 50 8" fill="none" stroke="rgba(141,91,255,.72)" stroke-width="4" stroke-linecap="round"/>
-    </svg>
-    <button class="center-btn" id="cargoBtn" title="Load / unload">
-      <span id="cargo-dot"></span>
-      <span id="cargo-center-icon-open" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6c-2 0-4 1-5 3v6c1 2 3 3 5 3"/><path d="M15 6c2 0 3 1 3 3v6c0 2-1 3-3 3"/></svg>
-      </span>
-      <span id="cargo-center-icon-closed" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 9c0-2 2-3 4-3s4 1 4 3v6c0 2-2 3-4 3s-4-1-4-3V9z"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
-      </span>
-    </button>
-  </div>
-
-  <div id="radarHud" class="hud glass" aria-label="Radar">
-    <svg viewBox="0 0 100 100" aria-hidden="true">
-      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0,200,255,.18)" stroke-width="2"/>
-      <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,200,255,.12)" stroke-width="1.5"/>
-      <circle cx="50" cy="50" r="18" fill="none" stroke="rgba(0,200,255,.08)" stroke-width="1.5"/>
-      <path d="M50 8 L50 92 M8 50 L92 50" stroke="rgba(0,200,255,.08)" stroke-width="1"/>
-      <path d="M50 50 L78 32" stroke="rgba(0,200,255,.5)" stroke-width="2.4" stroke-linecap="round"/>
-    </svg>
-    <button class="center-btn" id="radarBtn" title="Zoom to my location / globe">
-      <span id="radar-center-icon-in" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/></svg>
-      </span>
-      <span id="radar-center-icon-out" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 20V8"/><path d="M7 13l5-5 5 5"/></svg>
-      </span>
-    </button>
+  <div id="card">
+    <div id="cardHeader">
+      <div>
+        <div id="cardType"></div>
+        <div id="cardTitle"></div>
+      </div>
+      <button id="cardClose" aria-label="Close">✕</button>
+    </div>
+    <div id="cardBody"></div>
+    <div id="cardMeta"></div>
   </div>
 
   <div id="radial"></div>
 
-  <div id="sheet">
-    <div class="sheet-card">
-      <div class="sheet-top">
-        <div>
-          <div class="sheet-title" id="sheetTitle">Listing</div>
-          <div class="sheet-sub" id="sheetSub">Details</div>
-          <div class="sheet-meta" id="sheetMeta"></div>
-        </div>
-        <button class="icon-btn" id="sheetClose" title="Close">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
-        </button>
+  <div id="sheetBackdrop">
+    <div id="sheet">
+      <div id="sheetHeader">
+        <div id="sheetTitle">Create listing</div>
+        <button id="sheetClose" aria-label="Close">✕</button>
       </div>
-      <div class="sheet-actions">
-        <button class="action primary" id="sheetAction">Open</button>
-        <button class="action" id="sheetSecondary">Route</button>
+      <form id="sheetForm"></form>
+      <div id="sheetActions">
+        <button class="sheetBtn" type="button" id="sheetCancel">Cancel</button>
+        <button class="sheetBtn primary" type="button" id="sheetSave">Save</button>
       </div>
     </div>
   </div>
+
+  <div id="hint">Tap the add bubble to list something. Tap the radar to jump between globe and map.</div>
+  <div id="toast"></div>
 </div>
 
-<button id="helper" aria-label="Astranov Collective Intelligence">
-  <figure>
-    <svg viewBox="0 0 120 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#a9f2ff" stop-opacity=".9"/>
-          <stop offset="100%" stop-color="#00c8ff" stop-opacity=".18"/>
-        </linearGradient>
-        <linearGradient id="armor" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#183550"/>
-          <stop offset="100%" stop-color="#07111d"/>
-        </linearGradient>
-      </defs>
-      <path d="M18 70c-9 0-15-9-12-18 5-14 22-22 35-27-4 8-4 19 0 28-8 8-14 17-23 17z" fill="url(#wing)" stroke="rgba(180,240,255,.45)" stroke-width="1.4"/>
-      <path d="M102 70c9 0 15-9 12-18-5-14-22-22-35-27 4 8 4 19 0 28 8 8 14 17 23 17z" fill="url(#wing)" stroke="rgba(180,240,255,.45)" stroke-width="1.4"/>
-      <path d="M60 18c10 0 20 7 24 18v9c0 17-11 30-24 30S36 62 36 45v-9c4-11 14-18 24-18z" fill="url(#armor)" stroke="#62dfff" stroke-width="2"/>
-      <path d="M47 16c-6-10-17-16-30-15 11 3 19 11 23 20" fill="none" stroke="#8ff1ff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M73 16c6-10 17-16 30-15-11 3-19 11-23 20" fill="none" stroke="#8ff1ff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M38 46c0-17 10-28 22-28s22 11 22 28" fill="none" stroke="#9aefff" stroke-width="2" opacity=".7"/>
-      <path d="M46 88c8 5 20 5 28 0l8 28H38l8-28z" fill="url(#armor)" stroke="#62dfff" stroke-width="2"/>
-      <path d="M58 76l-8 44" stroke="#9aefff" stroke-width="3" stroke-linecap="round"/>
-      <path d="M62 76l8 44" stroke="#9aefff" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="52" cy="47" r="3" fill="#9ff7ff"/>
-      <circle cx="68" cy="47" r="3" fill="#9ff7ff"/>
-      <path d="M53 58c4 3 10 3 14 0" fill="none" stroke="#9ff7ff" stroke-width="2" stroke-linecap="round"/>
-      <path d="M90 74l9 46" stroke="#9ff7ff" stroke-width="4" stroke-linecap="round"/>
-      <path d="M84 74l12 0 8 8-22 0z" fill="#0d2033" stroke="#62dfff" stroke-width="2"/>
-      <path d="M90 118l18 0" stroke="#9ff7ff" stroke-width="3" stroke-linecap="round"/>
-      <path d="M95 112l13 0" stroke="#9ff7ff" stroke-width="2" stroke-linecap="round"/>
-    </svg>
-  </figure>
-</button>
-<div id="helper-status" class="glass"></div>
-
-<div id="drawer" class="glass">
-  <div id="drawer-messages"></div>
-</div>
-
-<div id="composer" class="glass">
-  <div id="composer-top">
-    <div id="channel-wrap">
-      <div id="channel-arrow">▾</div>
-      <select id="channel-select" aria-label="Channel">
-        <option value="ai">Astranov Collective Intelligence</option>
-        <option value="global">Global</option>
-        <option value="local">My Area</option>
-        <option value="team">General Team</option>
-        <option value="astranov-racing">Astranov Racing</option>
-        <option value="support">Support & Ideas</option>
-        <option value="marketplace">Marketplace</option>
-      </select>
-    </div>
-    <button id="channel-add" title="Suggest channel">+</button>
-  </div>
-  <div id="composer-bottom">
-    <button class="icon-btn" id="mic-btn" title="Voice typing">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
-    </button>
-    <input id="cmd-input" type="text" autocomplete="off" placeholder="Tell Astranov what to do…" />
-    <button class="icon-btn" id="send-btn" title="Send">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9 22 2Z"/></svg>
-    </button>
-  </div>
-</div>
-
-<button id="add-btn" aria-label="Add something">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-</button>
-
-<div id="form-modal">
-  <div id="form-card" class="glass">
-    <div class="form-top">
-      <div class="form-title" id="form-title">Create listing</div>
-      <button id="form-close">×</button>
-    </div>
-    <form id="listing-form">
-      <div class="form-grid" id="form-grid"></div>
-      <div class="form-footer">
-        <button type="button" class="action" id="form-cancel">Cancel</button>
-        <button type="submit" class="action primary">Save</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<textarea id="spartan-script" class="hidden">
-SPARTAN SCRIPT — ASTRANOV RECONSTRUCTION LOCK v6
-MISSION
-Rebuild the entire Astranov index.html from zero as one coherent operational file.
-
-LOCKS
-- mobile first for small phones in portrait
-- no patches, no ghost controls, no duplicate buttons
-- default screen clean
-- no floating chatter outside composer
-- globe/map dominant
-- helper serious, not decorative
-- add flow hidden until requested
-- no giant blocking overlay
-- all status text inside chat drawer only
-- final output = one full index.html
-</textarea>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (() => {
-  const $ = s => document.querySelector(s);
-  const stage = $('#stage');
-  const drawer = $('#drawer');
-  const drawerMessages = $('#drawer-messages');
-  const input = $('#cmd-input');
-  const sendBtn = $('#send-btn');
-  const addBtn = $('#add-btn');
-  const helper = $('#helper');
-  const helperStatus = $('#helper-status');
-  const modePill = $('#modePill');
-  const radial = $('#radial');
-  const formModal = $('#form-modal');
-  const formGrid = $('#form-grid');
-  const formTitle = $('#form-title');
-  const formClose = $('#form-close');
-  const listingForm = $('#listing-form');
-  const micBtn = $('#mic-btn');
-  const channelSelect = $('#channel-select');
-  const sheet = $('#sheet');
-  const sheetClose = $('#sheetClose');
-  const sheetTitle = $('#sheetTitle');
-  const sheetSub = $('#sheetSub');
-  const sheetMeta = $('#sheetMeta');
-  const radarBtn = $('#radarBtn');
-  const cargoBtn = $('#cargoBtn');
-
   const state = {
+    mode: 'manual',
     view: 'globe',
-    cargoLoaded: false,
+    loaded: false,
+    addOpen: false,
     drawerOpen: false,
-    radialOpen: false,
-    handsFree: false,
-    pendingType: null,
-    userLocation: { lat: 36.4349, lng: 28.2176, label: 'Rhodes' },
+    selectedSignal: null,
     mapReady: false,
-    currentChannel: 'ai',
-    listings: [],
-    markers: [],
-    remote: { shops: [], drivers: [], products: [], news: [] }
+    geo: { lat: 36.4348, lng: 28.2176 },
+    signals: [],
+    radial: [],
+    lastSheetType: null,
   };
 
-  const API = {
-    shops: '/api/shops_list.php',
-    products: '/api/products_list.php',
-    drivers: '/api/drivers_state.php',
-    news: '/api/news_top.php',
-    users: '/api/users_list.php'
+  const els = {
+    modeText: document.getElementById('modeText'),
+    sceneWrap: document.getElementById('sceneWrap'),
+    mapWrap: document.getElementById('mapWrap'),
+    signalLayer: document.getElementById('signalLayer'),
+    zoomBtn: document.getElementById('zoomBtn'),
+    zoomGlyph: document.getElementById('zoomGlyph'),
+    perfHud: document.getElementById('perfHud'),
+    grabBtn: document.getElementById('grabBtn'),
+    grabPath: document.getElementById('grabPath'),
+    grabDot: document.getElementById('grabDot'),
+    helper: document.getElementById('helper'),
+    drawer: document.getElementById('drawer'),
+    drawerLog: document.getElementById('drawerLog'),
+    composer: document.getElementById('composer'),
+    commandInput: document.getElementById('commandInput'),
+    sendBtn: document.getElementById('sendBtn'),
+    micBtn: document.getElementById('micBtn'),
+    channelSelect: document.getElementById('channelSelect'),
+    channelAdd: document.getElementById('channelAdd'),
+    addBubble: document.getElementById('addBubble'),
+    card: document.getElementById('card'),
+    cardType: document.getElementById('cardType'),
+    cardTitle: document.getElementById('cardTitle'),
+    cardBody: document.getElementById('cardBody'),
+    cardMeta: document.getElementById('cardMeta'),
+    cardClose: document.getElementById('cardClose'),
+    radial: document.getElementById('radial'),
+    sheetBackdrop: document.getElementById('sheetBackdrop'),
+    sheetTitle: document.getElementById('sheetTitle'),
+    sheetForm: document.getElementById('sheetForm'),
+    sheetClose: document.getElementById('sheetClose'),
+    sheetCancel: document.getElementById('sheetCancel'),
+    sheetSave: document.getElementById('sheetSave'),
+    toast: document.getElementById('toast'),
+    hint: document.getElementById('hint'),
+    statSignal: document.getElementById('statSignal'),
+    statBattery: document.getElementById('statBattery'),
+    statStorage: document.getElementById('statStorage'),
+    statRam: document.getElementById('statRam'),
   };
 
-  const STORAGE_KEY = 'astranov.mobile.listings.v2';
-  let map, globe, globeScene, globeCamera, globeRenderer, globeSignals = [];
+  // --- Drawer / messaging ---
+  function addMessage(text, who='system') {
+    const msg = document.createElement('div');
+    msg.className = 'msg' + (who === 'user' ? ' user' : '');
+    msg.textContent = text;
+    els.drawerLog.appendChild(msg);
+    els.drawerLog.scrollTop = els.drawerLog.scrollHeight;
+  }
+  function setDrawer(open) {
+    state.drawerOpen = open;
+    els.drawer.classList.toggle('open', open);
+  }
+  function toast(text, ms=2000) {
+    els.toast.textContent = text;
+    els.toast.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => els.toast.classList.remove('show'), ms);
+  }
+  addMessage('Astranov Collective Intelligence online. Globe live. Signals will rise here.', 'system');
+
+  // --- Helper / mode ---
+  function setMode(mode) {
+    state.mode = mode;
+    els.modeText.textContent = mode === 'handsfree' ? 'HANDS-FREE' : 'MANUAL';
+    els.helper.classList.toggle('active', mode === 'handsfree');
+    addMessage(mode === 'handsfree' ? 'Astranov switched to AI hands-free mode.' : 'Astranov switched back to manual typing mode.', 'system');
+    setDrawer(true);
+  }
+  els.helper.addEventListener('click', () => setMode(state.mode === 'manual' ? 'handsfree' : 'manual'));
+
+  // --- Voice typing ---
   let recognition = null;
-  let addOrigin = null;
-  let selectedListing = null;
-
-  function appendMessage(role, text) {
-    const div = document.createElement('div');
-    div.className = 'msg ' + role;
-    div.textContent = text;
-    drawerMessages.appendChild(div);
-    drawerMessages.scrollTop = drawerMessages.scrollHeight;
-    if(role !== 'user') openDrawer();
-  }
-
-  function openDrawer(){ state.drawerOpen = true; drawer.classList.add('open'); }
-  function closeDrawer(){ state.drawerOpen = false; drawer.classList.remove('open'); }
-
-  function showHelperStatus(text){
-    helperStatus.textContent = text;
-    helperStatus.classList.add('on');
-    clearTimeout(showHelperStatus.t);
-    showHelperStatus.t = setTimeout(()=>helperStatus.classList.remove('on'), 2200);
-  }
-
-  function updateModeUI(){
-    document.body.classList.toggle('map', state.view === 'map');
-    document.body.classList.toggle('cargo-loaded', state.cargoLoaded);
-    document.body.classList.toggle('radial-open', state.radialOpen);
-    modePill.textContent = state.view === 'map' ? 'Map' : 'Globe';
-    sendBtn.classList.toggle('has-text', !!input.value.trim());
-  }
-
-  function saveLocalListings(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.listings.filter(x => x.source !== 'remote')));
-  }
-
-  function loadLocalListings(){
-    try{
-      const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      state.listings = Array.isArray(arr) ? arr : [];
-    }catch(e){ state.listings = []; }
-  }
-
-  function normalizeLatLng(v1, v2){
-    const lat = parseFloat(v1); const lng = parseFloat(v2);
-    if(Number.isFinite(lat) && Number.isFinite(lng)) return {lat, lng};
-    return null;
-  }
-
-  function normalizeShop(item){
-    const ll = normalizeLatLng(item.lat ?? item.latitude, item.lon ?? item.lng ?? item.longitude);
-    if(!ll) return null;
-    return {
-      id: 'shop-' + (item.id ?? Math.random().toString(36).slice(2)),
-      type: item.category === 'hotel' ? 'service' : (item.category || 'service'),
-      title: item.name || item.title || 'Listing',
-      category: item.category || 'service',
-      description: item.description || '',
-      price: item.price || '',
-      lat: ll.lat, lng: ll.lng,
-      phone: item.phone || '',
-      website: item.website || '',
-      source: 'remote'
-    };
-  }
-
-  function normalizeDriver(item){
-    const ll = normalizeLatLng(item.lat ?? item.last_lat ?? item.latitude, item.lng ?? item.lon ?? item.last_lng ?? item.longitude);
-    if(!ll) return null;
-    return {
-      id: 'driver-' + (item.id ?? Math.random().toString(36).slice(2)),
-      type: 'driver',
-      title: item.name || item.username || 'Driver',
-      category: 'driver',
-      description: item.status || 'Available for deliveries',
-      price: '',
-      lat: ll.lat, lng: ll.lng,
-      source: 'remote'
-    };
-  }
-
-  async function fetchJson(url){
-    try{
-      const res = await fetch(url, { credentials:'same-origin' });
-      if(!res.ok) throw new Error('HTTP ' + res.status);
-      return await res.json();
-    }catch(e){ return []; }
-  }
-
-  async function loadRemoteData(){
-    const [shops, products, drivers, news] = await Promise.all([
-      fetchJson(API.shops), fetchJson(API.products), fetchJson(API.drivers), fetchJson(API.news)
-    ]);
-    state.remote.shops = Array.isArray(shops) ? shops.map(normalizeShop).filter(Boolean) : [];
-    state.remote.drivers = Array.isArray(drivers) ? drivers.map(normalizeDriver).filter(Boolean) : [];
-    state.remote.products = Array.isArray(products) ? products : [];
-    state.remote.news = Array.isArray(news) ? news : [];
-    const locals = state.listings.filter(x => x.source !== 'remote');
-    state.listings = [...state.remote.shops, ...state.remote.drivers, ...locals];
-    renderMapMarkers();
-    buildGlobeSignals();
-  }
-
-  function renderMapMarkers(){
-    if(!state.mapReady || !map) return;
-    state.markers.forEach(m => map.removeLayer(m));
-    state.markers = [];
-    state.listings.forEach(item => {
-      if(!Number.isFinite(item.lat) || !Number.isFinite(item.lng)) return;
-      const el = document.createElement('div');
-      el.className = 'map-marker ' + (item.type === 'driver' ? 'driver' : item.type);
-      const icon = L.divIcon({ className:'', html: el.outerHTML, iconSize:[16,16], iconAnchor:[8,8] });
-      const marker = L.marker([item.lat, item.lng], { icon }).addTo(map);
-      marker.on('click', () => showListing(item));
-      state.markers.push(marker);
-    });
-  }
-
-  function showListing(item){
-    selectedListing = item;
-    sheetTitle.textContent = item.title;
-    sheetSub.textContent = item.description || (item.type === 'driver' ? 'Driver base' : item.category || item.type);
-    sheetMeta.innerHTML = '';
-    [['Type', item.type], ['Price', item.price || '—'], ['Area', item.lat.toFixed(4)+', '+item.lng.toFixed(4)]].forEach(([k,v]) => {
-      const chip = document.createElement('div');
-      chip.className = 'chip';
-      chip.textContent = k + ': ' + v;
-      sheetMeta.appendChild(chip);
-    });
-    $('#sheetAction').textContent = item.type === 'driver' ? 'Use driver' : 'Open';
-    $('#sheetSecondary').textContent = 'Route';
-    sheet.classList.add('show');
-  }
-
-  function hideListing(){
-    sheet.classList.remove('show');
-    selectedListing = null;
-  }
-
-  sheetClose.addEventListener('click', hideListing);
-  $('#sheetAction').addEventListener('click', () => {
-    if(!selectedListing) return;
-    appendMessage('ai', `${selectedListing.title} selected on ${channelSelect.options[channelSelect.selectedIndex].text}.`);
-  });
-  $('#sheetSecondary').addEventListener('click', () => {
-    if(!selectedListing) return;
-    if(state.view !== 'map') toggleMapView(true);
-    if(state.mapReady) map.flyTo([selectedListing.lat, selectedListing.lng], 16, { duration: .8 });
-    appendMessage('system', `Routing focus moved to ${selectedListing.title}.`);
-  });
-
-  function buildGlobe(){
-    const canvas = $('#globeCanvas');
-    globeRenderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true, powerPreference:'high-performance' });
-    globeRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    globeScene = new THREE.Scene();
-    globeCamera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
-    globeCamera.position.set(0,0,3.5);
-
-    const amb = new THREE.AmbientLight(0x356b9c, 1.2);
-    globeScene.add(amb);
-    const dir = new THREE.DirectionalLight(0xaedfff, 1.8);
-    dir.position.set(4,3,5);
-    globeScene.add(dir);
-
-    const stars = new THREE.BufferGeometry();
-    const count = 1600;
-    const pos = new Float32Array(count * 3);
-    for(let i=0;i<count;i++){
-      pos[i*3] = (Math.random()-.5) * 22;
-      pos[i*3+1] = (Math.random()-.5) * 18;
-      pos[i*3+2] = (Math.random()-.5) * 22;
-    }
-    stars.setAttribute('position', new THREE.BufferAttribute(pos,3));
-    globeScene.add(new THREE.Points(stars, new THREE.PointsMaterial({ color:0xb8e8ff, size:.03, transparent:true, opacity:.7 })));
-
-    const earth = new THREE.Group();
-    globe = earth;
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1.05, 64, 64),
-      new THREE.MeshStandardMaterial({ color:0x183d72, metalness:.08, roughness:.74 })
-    );
-    earth.add(sphere);
-
-    const glow = new THREE.Mesh(
-      new THREE.SphereGeometry(1.12, 48, 48),
-      new THREE.MeshBasicMaterial({ color:0x2dd4ff, transparent:true, opacity:.08 })
-    );
-    earth.add(glow);
-
-    const grid = new THREE.Group();
-    const lineMaterial = new THREE.LineBasicMaterial({ color:0x7fdfff, transparent:true, opacity:.14 });
-    for(let lat=-60; lat<=60; lat+=20){
-      const pts = [];
-      for(let lon=0; lon<=360; lon+=10){
-        const p = latLonToVector(lat, lon, 1.055);
-        pts.push(p);
-      }
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      grid.add(new THREE.Line(geo, lineMaterial));
-    }
-    for(let lon=0; lon<180; lon+=20){
-      const pts = [];
-      for(let lat=-90; lat<=90; lat+=4){
-        const p = latLonToVector(lat, lon, 1.055);
-        pts.push(p);
-      }
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      grid.add(new THREE.Line(geo, lineMaterial));
-    }
-    earth.add(grid);
-    globeScene.add(earth);
-
-    function onResize(){
-      const r = $('#globe-wrap').getBoundingClientRect();
-      globeRenderer.setSize(r.width, r.height, false);
-      globeCamera.aspect = r.width / Math.max(1, r.height);
-      globeCamera.updateProjectionMatrix();
-    }
-    onResize();
-    window.addEventListener('resize', onResize);
-
-    function loop(){
-      requestAnimationFrame(loop);
-      earth.rotation.y += 0.0018;
-      globeSignals.forEach((s, i) => { s.scale.setScalar(1 + Math.sin(performance.now() * .002 + i) * .08); });
-      globeRenderer.render(globeScene, globeCamera);
-    }
-    loop();
-  }
-
-  function latLonToVector(lat, lon, radius){
-    const phi = (90 - lat) * Math.PI / 180;
-    const theta = (lon + 180) * Math.PI / 180;
-    return new THREE.Vector3(
-      -(radius * Math.sin(phi) * Math.cos(theta)),
-      radius * Math.cos(phi),
-      radius * Math.sin(phi) * Math.sin(theta)
-    );
-  }
-
-  function buildGlobeSignals(){
-    if(!globeScene || !globe) return;
-    globeSignals.forEach(s => globe.remove(s));
-    globeSignals = [];
-    state.listings.slice(0,18).forEach((item, index) => {
-      const p = latLonToVector(item.lat, item.lng, 1.13);
-      const m = new THREE.Mesh(
-        new THREE.SphereGeometry(item.type === 'driver' ? .018 : .022, 12, 12),
-        new THREE.MeshBasicMaterial({ color: item.type === 'driver' ? 0xff9b2f : 0x00c8ff })
-      );
-      m.position.copy(p);
-      globe.add(m);
-      globeSignals.push(m);
-    });
-  }
-
-  function initMap(){
-    if(state.mapReady) return;
-    map = L.map('map', { zoomControl:false, attributionControl:false, tap:true, tapTolerance:18 }).setView([state.userLocation.lat, state.userLocation.lng], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
-    map.on('click', (e) => {
-      if(state.pendingType){
-        openForm(state.pendingType, { lat:e.latlng.lat, lng:e.latlng.lng });
-        state.pendingType = null;
-        closeRadial();
-      }
-    });
-    state.mapReady = true;
-    renderMapMarkers();
-  }
-
-  function toggleMapView(forceToMap){
-    const goMap = forceToMap === true ? true : state.view !== 'map';
-    if(goMap){
-      initMap();
-      state.view = 'map';
-      updateModeUI();
-      map.invalidateSize();
-      map.flyTo([state.userLocation.lat, state.userLocation.lng], 14, { duration:.8 });
-      appendMessage('system', 'Zoomed to your location. Tap the map to work locally.');
-    } else {
-      state.view = 'globe';
-      updateModeUI();
-      appendMessage('system', 'Returned to globe view.');
-    }
-  }
-
-  async function ensureLocation(){
-    if(navigator.geolocation){
-      return new Promise(resolve => {
-        navigator.geolocation.getCurrentPosition(pos => {
-          state.userLocation = { lat:pos.coords.latitude, lng:pos.coords.longitude, label:'My location' };
-          resolve(state.userLocation);
-        }, () => resolve(state.userLocation), { enableHighAccuracy:true, timeout:4500, maximumAge:60000 });
-      });
-    }
-    return state.userLocation;
-  }
-
-  radarBtn.addEventListener('click', async () => {
-    await ensureLocation();
-    toggleMapView();
-  });
-
-  cargoBtn.addEventListener('click', () => {
-    state.cargoLoaded = !state.cargoLoaded;
-    updateModeUI();
-    appendMessage('system', state.cargoLoaded ? 'Cargo locked. Ready to unload.' : 'Cargo open. Ready to load.');
-  });
-
-  helper.addEventListener('click', () => {
-    state.handsFree = !state.handsFree;
-    const txt = state.handsFree ? 'Astranov Collective Intelligence in hands-free mode.' : 'Astranov Collective Intelligence back to manual typing mode.';
-    showHelperStatus(txt);
-    appendMessage('system', txt);
-  });
-
-  channelSelect.addEventListener('change', () => {
-    appendMessage('system', 'Channel switched to ' + channelSelect.options[channelSelect.selectedIndex].text + '.');
-  });
-
-  $('#channel-add').addEventListener('click', () => {
-    appendMessage('system', 'Use Support & Ideas or Team to propose a new channel.');
-  });
-
-  function updateAddOrigin(){
-    const rect = stage.getBoundingClientRect();
-    addOrigin = { x: rect.width * .5, y: rect.height * .46 };
-    if(state.view === 'map' && map){
-      const c = map.latLngToContainerPoint(map.getCenter());
-      addOrigin = { x: c.x, y: c.y };
-    }
-  }
-
-  const radialActions = [
-    ['product', 'List product', 'Sell an item'],
-    ['service', 'List service', 'Offer a service'],
-    ['delivery', 'Delivery spot', 'Receive orders here'],
-    ['driver', 'Driver base', 'Start delivery mode'],
-    ['media', 'Photo / video', 'Post media here']
-  ];
-
-  function buildRadial(){
-    radial.innerHTML = '';
-    radialActions.forEach(([type, title, sub], i) => {
-      const btn = document.createElement('button');
-      btn.className = 'radial-item';
-      btn.type = 'button';
-      btn.dataset.type = type;
-      btn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          ${type==='product' ? '<path d="M4 7h16M7 7V5h10v2M6 7l1 11h10l1-11"/>' :
-            type==='service' ? '<path d="M8 4h8l1 4-5 5-5-5 1-4z"/><circle cx="12" cy="12" r="1.5"/>' :
-            type==='delivery' ? '<path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>' :
-            type==='driver' ? '<path d="M3 15h18"/><path d="M6 15l1.5-6h9L18 15"/><circle cx="8" cy="17.5" r="1.5"/><circle cx="16" cy="17.5" r="1.5"/>' :
-            '<rect x="4" y="6" width="16" height="12" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M20 15l-4-4-4 4-2-2-4 4"/>'}
-        </svg>
-        <strong>${title}</strong><span>${sub}</span>`;
-      btn.addEventListener('click', () => chooseAddAction(type));
-      radial.appendChild(btn);
-    });
-  }
-
-  function positionRadial(){
-    updateAddOrigin();
-    const rect = stage.getBoundingClientRect();
-    const r = Math.min(rect.width, rect.height) < 520 ? 108 : 126;
-    [...radial.children].forEach((el, i) => {
-      const angle = (-90 + i * (360 / radial.children.length)) * Math.PI / 180;
-      const x = addOrigin.x + Math.cos(angle) * r - el.offsetWidth / 2;
-      const y = addOrigin.y + Math.sin(angle) * r - el.offsetHeight / 2;
-      el.style.left = Math.max(10, Math.min(rect.width - el.offsetWidth - 10, x)) + 'px';
-      el.style.top = Math.max(10, Math.min(rect.height - el.offsetHeight - 10, y)) + 'px';
-    });
-  }
-
-  function openRadial(){
-    state.radialOpen = true;
-    updateModeUI();
-    buildRadial();
-    requestAnimationFrame(positionRadial);
-  }
-
-  function closeRadial(){
-    state.radialOpen = false;
-    radial.innerHTML = '';
-    updateModeUI();
-  }
-
-  addBtn.addEventListener('click', () => state.radialOpen ? closeRadial() : openRadial());
-  stage.addEventListener('click', (e) => {
-    if(state.radialOpen && !e.target.closest('.radial-item') && !e.target.closest('#add-btn')) closeRadial();
-  });
-
-  function chooseAddAction(type){
-    hideListing();
-    if(state.view === 'globe'){
-      state.pendingType = type;
-      appendMessage('ai', `Zooming to your area. Tap the map where you want to ${type === 'delivery' ? 'set your delivery location' : type === 'driver' ? 'set your driver base' : 'list this'}.`);
-      ensureLocation().then(() => toggleMapView(true));
-      return;
-    }
-    const center = map ? map.getCenter() : { lat:state.userLocation.lat, lng:state.userLocation.lng };
-    openForm(type, { lat:center.lat, lng:center.lng });
-    closeRadial();
-  }
-
-  function field(label, name, type='text', full=false, placeholder=''){
-    return `<label class="form-field ${full?'full':''}">
-      <span class="form-label">${label}</span>
-      <input class="form-input" name="${name}" type="${type}" placeholder="${placeholder}">
-    </label>`;
-  }
-  function selectField(label, name, options, full=false){
-    return `<label class="form-field ${full?'full':''}">
-      <span class="form-label">${label}</span>
-      <select class="form-select" name="${name}">${options.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>
-    </label>`;
-  }
-  function textareaField(label, name, full=true, placeholder=''){
-    return `<label class="form-field ${full?'full':''}">
-      <span class="form-label">${label}</span>
-      <textarea class="form-textarea" name="${name}" placeholder="${placeholder}"></textarea>
-    </label>`;
-  }
-
-  function openForm(type, loc){
-    formGrid.innerHTML = '';
-    formTitle.textContent = {
-      product:'List product',
-      service:'List service',
-      delivery:'My delivery location',
-      driver:'Driver base',
-      media:'Post photo or video'
-    }[type] || 'Create listing';
-
-    const common = `
-      ${field('Title','title','text',true, type==='product' ? 'Pizza Margherita' : type==='service' ? 'Hotel' : 'Name')}
-      ${field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6)))}
-      ${field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6)))}
-      ${textareaField('Description','description',true,'Describe what people will get')}
-    `;
-
-    if(type === 'product'){
-      formGrid.innerHTML = common +
-        selectField('Category','category',['food','market','coffee','retail','rental']) +
-        field('Price (€)','price','number',false,'9.90') +
-        field('Quantity','quantity','number',false,'12') +
-        field('Volume / size','volume','text',false,'500ml') +
-        selectField('Temperature','temperature',['neutral','cold','hot']) +
-        field('Max transport minutes','transport','number',false,'30') +
-        field('Media URL','media','text',true,'https://...');
-    } else if(type === 'service'){
-      formGrid.innerHTML = common +
-        selectField('Service type','category',['hotel','rent-a-car','diving','restaurant','repair','delivery']) +
-        field('Price from (€)','price','number',false,'30') +
-        field('Bookable slots per hour','slots','number',false,'4') +
-        field('Phone','phone','text',false,'+30') +
-        field('Website','website','text',true,'https://...');
-    } else if(type === 'delivery'){
-      formGrid.innerHTML =
-        field('Doorbell name','title','text',true,'My place') +
-        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
-        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
-        field('Street','street','text',false,'Street') +
-        field('Number','number','text',false,'12') +
-        field('Floor','floor','text',false,'2') +
-        field('Phone','phone','text',false,'+30') +
-        textareaField('Remarks','description',true,'Be quiet, leave at the door...');
-    } else if(type === 'driver'){
-      formGrid.innerHTML =
-        field('Base name','title','text',true,'Driver base') +
-        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
-        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
-        field('Vehicle','vehicle','text',false,'Motorbike') +
-        field('Range (km)','range','number',false,'8') +
-        field('Phone','phone','text',false,'+30') +
-        textareaField('Availability','description',true,'Available now');
-    } else {
-      formGrid.innerHTML =
-        field('Title','title','text',true,'Photo or video post') +
-        field('Latitude','lat','text',false,String((loc?.lat ?? state.userLocation.lat).toFixed(6))) +
-        field('Longitude','lng','text',false,String((loc?.lng ?? state.userLocation.lng).toFixed(6))) +
-        field('Media URL','media','text',true,'https://...') +
-        textareaField('Caption','description',true,'What is this post about?');
-    }
-
-    listingForm.dataset.type = type;
-    formModal.classList.add('open');
-  }
-
-  function closeForm(){ formModal.classList.remove('open'); }
-  formClose.addEventListener('click', closeForm);
-  $('#form-cancel').addEventListener('click', closeForm);
-
-  listingForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const fd = new FormData(listingForm);
-    const type = listingForm.dataset.type;
-    const item = {
-      id: Date.now().toString(36),
-      type,
-      title: (fd.get('title') || '').trim() || type,
-      category: (fd.get('category') || type).trim(),
-      description: (fd.get('description') || '').trim(),
-      price: (fd.get('price') || '').toString(),
-      lat: parseFloat(fd.get('lat')),
-      lng: parseFloat(fd.get('lng')),
-      transport: fd.get('transport') || '',
-      quantity: fd.get('quantity') || '',
-      volume: fd.get('volume') || '',
-      temperature: fd.get('temperature') || '',
-      vehicle: fd.get('vehicle') || '',
-      range: fd.get('range') || '',
-      phone: fd.get('phone') || '',
-      website: fd.get('website') || '',
-      street: fd.get('street') || '',
-      number: fd.get('number') || '',
-      floor: fd.get('floor') || '',
-      media: fd.get('media') || '',
-      source: 'local'
-    };
-    if(!Number.isFinite(item.lat) || !Number.isFinite(item.lng)){
-      appendMessage('system', 'Valid map coordinates are required.');
-      return;
-    }
-    state.listings = state.listings.filter(x => !(x.source === 'local' && x.id === item.id)).concat(item);
-    saveLocalListings();
-    renderMapMarkers();
-    buildGlobeSignals();
-    closeForm();
-    closeRadial();
-    showListing(item);
-    appendMessage('ai', `${item.title} saved locally and is now visible on the map.`);
-  });
-
-  function sendCommand(){
-    const text = input.value.trim();
-    if(!text) return;
-    appendMessage('user', text);
-    input.value = '';
-    updateModeUI();
-
-    const lower = text.toLowerCase();
-    if(lower.includes('zoom') || lower.includes('location') || lower.includes('my place')){
-      ensureLocation().then(() => toggleMapView(true));
-      return;
-    }
-    if(lower.includes('product')){ chooseAddAction('product'); return; }
-    if(lower.includes('service') || lower.includes('hotel') || lower.includes('rent') || lower.includes('restaurant')){ chooseAddAction('service'); return; }
-    if(lower.includes('delivery')){ chooseAddAction('delivery'); return; }
-    if(lower.includes('driver')){ chooseAddAction('driver'); return; }
-    if(lower.includes('video') || lower.includes('photo') || lower.includes('media')){ chooseAddAction('media'); return; }
-
-    appendMessage('ai', 'I can zoom to your area, open the add flow, or help you list a product, service, delivery location, or driver base.');
-  }
-
-  sendBtn.addEventListener('click', sendCommand);
-  input.addEventListener('keydown', e => { if(e.key === 'Enter') sendCommand(); });
-  input.addEventListener('input', updateModeUI);
-
-  let dragInfo = null;
-  input.addEventListener('pointerdown', e => {
-    dragInfo = { y:e.clientY, open:state.drawerOpen, moved:false, id:e.pointerId };
-    try{ input.setPointerCapture(e.pointerId); }catch(err){}
-  });
-  input.addEventListener('pointermove', e => {
-    if(!dragInfo || e.pointerId !== dragInfo.id) return;
-    const dy = e.clientY - dragInfo.y;
-    if(Math.abs(dy) > 18) dragInfo.moved = true;
-    if(dy < -22){ openDrawer(); dragInfo = null; }
-    if(dy > 22){ closeDrawer(); dragInfo = null; }
-  });
-  input.addEventListener('pointerup', e => {
-    if(dragInfo && e.pointerId === dragInfo.id && !dragInfo.moved) input.focus();
-    dragInfo = null;
-  });
-
-  function initVoice(){
+  if (window.SpeechRecognition || window.webkitSpeechRecognition) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if(!SR) return;
     recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.onresult = ev => {
-      let txt = '';
-      for(let i=ev.resultIndex; i<ev.results.length; i++) txt += ev.results[i][0].transcript;
-      input.value = txt.trim();
-      updateModeUI();
+    recognition.lang = navigator.language || 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => els.micBtn.classList.add('active');
+    recognition.onend = () => els.micBtn.classList.remove('active');
+    recognition.onresult = (ev) => {
+      const text = ev.results[0][0].transcript;
+      els.commandInput.value = text;
+      addMessage(text, 'user');
+      addMessage('Voice captured. Tap send or use the add bubble if you want to create something.', 'system');
+      setDrawer(true);
     };
-    recognition.onend = () => micBtn.classList.remove('has-text');
   }
-  micBtn.addEventListener('click', () => {
-    if(!recognition){
-      initVoice();
-      if(!recognition){ appendMessage('system', 'Voice typing is not available in this browser.'); return; }
+  els.micBtn.addEventListener('click', () => {
+    if (!recognition) {
+      toast('Voice typing is not supported in this browser.');
+      return;
     }
-    try{
-      recognition.start();
-      appendMessage('system', 'Voice typing active. Speak now.');
-    }catch(e){}
+    recognition.start();
   });
 
-  function bootMessages(){
-    appendMessage('ai', 'Astranov Collective Intelligence online. The world is clear. Use the add bubble only when you want to create something.');
-    closeDrawer();
+  // --- Drawer gesture from input only ---
+  let dragStartY = null;
+  els.commandInput.addEventListener('pointerdown', e => { dragStartY = e.clientY; });
+  els.commandInput.addEventListener('pointerup', e => {
+    if (dragStartY == null) return;
+    const dy = e.clientY - dragStartY;
+    if (dy < -18) setDrawer(true);
+    if (dy > 18) setDrawer(false);
+    dragStartY = null;
+  });
+
+  // --- Three globe ---
+  const canvas = document.getElementById('globeCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+  camera.position.set(0, 0.4, 5.8);
+
+  const globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  const ambient = new THREE.AmbientLight(0xbbe8ff, 1.0);
+  scene.add(ambient);
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  sun.position.set(4, 2, 4);
+  scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x4ab6ff, 1.1);
+  rim.position.set(-4, -1, -3);
+  scene.add(rim);
+
+  const loader = new THREE.TextureLoader();
+  const earthTexture = loader.load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+  const earthBump = loader.load('https://threejs.org/examples/textures/planets/earth_normal_2048.jpg');
+  const earthSpec = loader.load('https://threejs.org/examples/textures/planets/earth_specular_2048.jpg');
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.58, 64, 64),
+    new THREE.MeshPhongMaterial({ map: earthTexture, bumpMap: earthBump, bumpScale: 0.04, specularMap: earthSpec, specular: new THREE.Color(0x335577), shininess: 18 })
+  );
+  globeGroup.add(sphere);
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(1.612, 48, 48),
+    new THREE.MeshPhongMaterial({ transparent: true, opacity: 0.14, color: 0xdff8ff })
+  );
+  globeGroup.add(clouds);
+  const atmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.73, 48, 48),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      uniforms: { glowColor: { value: new THREE.Color(0x39d9ff) } },
+      vertexShader: 'varying vec3 vNormal; void main(){ vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);} ',
+      fragmentShader: 'uniform vec3 glowColor; varying vec3 vNormal; void main(){ float intensity = pow(0.7 - dot(vNormal, vec3(0.0,0.0,1.0)), 2.2); gl_FragColor = vec4(glowColor, intensity * 0.7); }'
+    })
+  );
+  globeGroup.add(atmosphere);
+
+  const starGeo = new THREE.BufferGeometry();
+  const stars = [];
+  for (let i = 0; i < 1800; i++) {
+    const r = 14 + Math.random() * 28;
+    const a = Math.random() * Math.PI * 2;
+    const b = Math.acos(2 * Math.random() - 1);
+    stars.push(r * Math.sin(b) * Math.cos(a), r * Math.sin(b) * Math.sin(a), r * Math.cos(b));
   }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(stars, 3));
+  scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.8 })));
 
-  window.addEventListener('resize', () => {
-    positionRadial();
-    if(map) map.invalidateSize();
+  function resizeRenderer() {
+    const w = els.sceneWrap.clientWidth;
+    const h = els.sceneWrap.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resizeRenderer();
+  window.addEventListener('resize', resizeRenderer);
+
+  // --- Map ---
+  const map = L.map('map', { zoomControl: false, attributionControl: false, preferCanvas: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+  const mapMarkers = L.layerGroup().addTo(map);
+  map.setView([state.geo.lat, state.geo.lng], 13);
+  state.mapReady = true;
+
+  function requestGeo() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+      state.geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      if (state.view === 'map') map.setView([state.geo.lat, state.geo.lng], 14, { animate: true });
+    }, () => {}, { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 });
+  }
+  requestGeo();
+
+  // --- Signals ---
+  const localSignalsKey = 'astranov.local.signals.v1';
+  function loadLocalSignals() {
+    try { return JSON.parse(localStorage.getItem(localSignalsKey) || '[]'); } catch { return []; }
+  }
+  function saveLocalSignals() {
+    localStorage.setItem(localSignalsKey, JSON.stringify(state.signals.filter(s => s.local)));
+  }
+  function latLngToVector3(lat, lng, r = 1.72) {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (lng + 180) * Math.PI / 180;
+    return new THREE.Vector3(
+      -(r * Math.sin(phi) * Math.cos(theta)),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+  function projectSignal(signal) {
+    const v = latLngToVector3(signal.lat, signal.lng, 1.72).applyMatrix4(globeGroup.matrixWorld);
+    const projected = v.clone().project(camera);
+    return {
+      x: (projected.x * 0.5 + 0.5) * els.sceneWrap.clientWidth,
+      y: (-projected.y * 0.5 + 0.5) * els.sceneWrap.clientHeight,
+      visible: projected.z < 1 && v.z > -0.55
+    };
+  }
+  function renderSignals() {
+    els.signalLayer.innerHTML = '';
+    if (state.view !== 'globe') return;
+    const frontSignals = state.signals
+      .map(sig => ({ sig, pos: projectSignal(sig) }))
+      .filter(it => it.pos.visible)
+      .sort((a, b) => a.pos.y - b.pos.y)
+      .slice(0, 10);
+    for (const item of frontSignals) {
+      const node = document.createElement('button');
+      node.className = `signal ${item.sig.kind}`;
+      node.style.left = item.pos.x + 'px';
+      node.style.top = item.pos.y + 'px';
+      node.innerHTML = `<div class="type">${item.sig.kind}</div><div class="title">${item.sig.title}</div>`;
+      node.addEventListener('click', () => openCard(item.sig));
+      els.signalLayer.appendChild(node);
+    }
+  }
+  function mergeSignal(signal) {
+    const id = signal.id || `${signal.kind}-${signal.title}-${signal.lat}-${signal.lng}`;
+    if (state.signals.some(s => s.id === id)) return;
+    state.signals.push({ ...signal, id });
+    refreshMapMarkers();
+  }
+  function refreshMapMarkers() {
+    mapMarkers.clearLayers();
+    state.signals.forEach(sig => {
+      const color = sig.kind === 'service' ? '#28d17c' : sig.kind === 'news' ? '#2dd9ff' : sig.kind === 'driver' ? '#ffd34f' : '#ff4f65';
+      const icon = L.divIcon({ className: '', html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 0 10px ${color}"></div>`, iconSize: [14,14] });
+      const m = L.marker([sig.lat, sig.lng], { icon }).addTo(mapMarkers);
+      m.on('click', () => openCard(sig));
+    });
+  }
+  function openCard(sig) {
+    state.selectedSignal = sig;
+    els.cardType.textContent = sig.kind;
+    els.cardTitle.textContent = sig.title;
+    els.cardBody.textContent = sig.body || sig.description || 'Ready for action.';
+    els.cardMeta.innerHTML = '';
+    const meta = [];
+    if (sig.price) meta.push(`€${sig.price}`);
+    if (sig.category) meta.push(sig.category);
+    if (sig.channel) meta.push(sig.channel);
+    if (sig.temperature) meta.push(sig.temperature);
+    if (sig.kind === 'driver') meta.push('Driver base');
+    if (sig.kind === 'delivery') meta.push('Delivery point');
+    meta.forEach(text => {
+      const pill = document.createElement('div');
+      pill.className = 'metaPill';
+      pill.textContent = text;
+      els.cardMeta.appendChild(pill);
+    });
+    els.card.classList.add('open');
+  }
+  function closeCard() { els.card.classList.remove('open'); state.selectedSignal = null; }
+  els.cardClose.addEventListener('click', closeCard);
+
+  // Seed from local signals
+  loadLocalSignals().forEach(mergeSignal);
+
+  // Live feeds if available
+  async function tryJson(url) {
+    try {
+      const res = await fetch(url, { credentials: 'same-origin' });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch { return null; }
+  }
+  async function loadFeeds() {
+    const [newsLocal, shopsLocal, productsLocal, driversLocal] = await Promise.all([
+      tryJson('/api/news_top.php'),
+      tryJson('/api/shops_list.php'),
+      tryJson('/api/products_list.php'),
+      tryJson('/api/drivers_state.php'),
+    ]);
+
+    const news = Array.isArray(newsLocal) ? newsLocal : null;
+    if (news && news.length) {
+      news.slice(0, 6).forEach((n, i) => mergeSignal({
+        kind: 'news',
+        title: n.title || 'Planet news',
+        body: n.summary || n.body || 'Live planetary signal',
+        lat: Number(n.lat) || [35, 40, 25, 48, -10, 12][i % 6],
+        lng: Number(n.lng) || [23, -74, 121, 2, 144, 32][i % 6],
+        channel: 'Planet Operations'
+      }));
+    } else {
+      try {
+        const sf = await tryJson('https://api.spaceflightnewsapi.net/v4/articles/?limit=6');
+        if (sf && Array.isArray(sf.results)) {
+          sf.results.forEach((n, i) => mergeSignal({
+            kind: 'news',
+            title: n.title.slice(0, 40),
+            body: n.summary?.slice(0, 160) || 'Live news signal',
+            lat: [29, 41, -12, 52, 7, 18][i % 6],
+            lng: [-95, 13, 130, -3, 77, 31][i % 6],
+            channel: 'Planet Operations'
+          }));
+        }
+      } catch {}
+    }
+
+    const shops = Array.isArray(shopsLocal) ? shopsLocal : [];
+    shops.slice(0, 5).forEach((s, i) => mergeSignal({
+      kind: 'service',
+      title: s.name || s.shop_name || 'Marketplace signal',
+      body: s.description || 'Service available here',
+      lat: Number(s.lat || s.latitude) || state.geo.lat + (i * 0.02),
+      lng: Number(s.lng || s.longitude) || state.geo.lng + (i * 0.03),
+      channel: 'Marketplace',
+      price: s.price || '',
+      category: s.category || 'service'
+    }));
+
+    const products = Array.isArray(productsLocal) ? productsLocal : [];
+    products.slice(0, 5).forEach((p, i) => mergeSignal({
+      kind: 'service',
+      title: p.name || p.title || 'Product signal',
+      body: p.description || 'Product available here',
+      lat: Number(p.lat || p.latitude) || state.geo.lat - (i * 0.018),
+      lng: Number(p.lng || p.longitude) || state.geo.lng + (i * 0.018),
+      channel: 'Marketplace',
+      price: p.price || '',
+      category: p.category || 'product',
+      temperature: p.temperature || ''
+    }));
+
+    const drivers = Array.isArray(driversLocal) ? driversLocal : [];
+    drivers.slice(0, 5).forEach((d, i) => mergeSignal({
+      kind: 'driver',
+      title: d.name || d.driver_name || 'Driver ready',
+      body: d.status || 'Available for delivery',
+      lat: Number(d.lat || d.latitude) || state.geo.lat + 0.01 * i,
+      lng: Number(d.lng || d.longitude) || state.geo.lng - 0.015 * i,
+      channel: 'Marketplace'
+    }));
+
+    refreshMapMarkers();
+  }
+  loadFeeds();
+
+  // --- Globe animation ---
+  let lastTs = performance.now();
+  function animate(ts) {
+    requestAnimationFrame(animate);
+    const dt = Math.min(0.033, (ts - lastTs) / 1000);
+    lastTs = ts;
+    if (state.view === 'globe') {
+      globeGroup.rotation.y += dt * 0.14;
+      clouds.rotation.y += dt * 0.18;
+    }
+    renderer.render(scene, camera);
+    renderSignals();
+  }
+  animate(performance.now());
+
+  // --- View switching ---
+  function setView(view) {
+    state.view = view;
+    els.sceneWrap.style.display = view === 'globe' ? 'block' : 'none';
+    els.signalLayer.style.display = view === 'globe' ? 'block' : 'none';
+    els.mapWrap.style.display = view === 'map' ? 'block' : 'none';
+    els.zoomGlyph.setAttribute('d', view === 'globe' ? 'M12 6v12M6 12l6-6 6 6' : 'M12 18V6M6 12l6 6 6-6');
+    if (view === 'map') {
+      map.invalidateSize();
+      map.setView([state.geo.lat, state.geo.lng], 14, { animate: true });
+      closeCard();
+    }
+    closeRadial();
+    renderSignals();
+  }
+  els.zoomBtn.addEventListener('click', () => {
+    if (state.view === 'globe') {
+      requestGeo();
+      setView('map');
+      toast('Zoomed to your location.');
+    } else {
+      setView('globe');
+      toast('Returned to globe view.');
+    }
   });
 
-  buildGlobe();
-  loadLocalListings();
-  updateModeUI();
-  bootMessages();
-  loadRemoteData();
+  // --- Load/unload ---
+  function syncGrab() {
+    els.perfHud.classList.toggle('loaded', state.loaded);
+    els.perfHud.classList.toggle('unloaded', !state.loaded);
+    if (state.loaded) {
+      els.grabPath.setAttribute('d', 'M9.2 7.8c2.2-1.3 5.9-.9 7.7 1.7 1.8 2.4 1.1 5.5-1.2 7.1-1.4.9-3.1 1.2-4.8.9-1.7-.3-3.1-1.1-4.1-2.3');
+      els.grabDot.setAttribute('r', '2.1');
+    } else {
+      els.grabPath.setAttribute('d', 'M16.8 6.4c-2.8-2-7.6-1.2-10 1.9-2.8 3.7-1.6 8.3 2.7 10.1 3.1 1.3 6 .4 7.9-1.3');
+      els.grabDot.setAttribute('r', '0');
+    }
+  }
+  syncGrab();
+  els.grabBtn.addEventListener('click', () => {
+    state.loaded = !state.loaded;
+    syncGrab();
+    toast(state.loaded ? 'Loaded.' : 'Unloaded.');
+  });
+
+  // --- Add radial ---
+  const radialDefs = [
+    { key:'product', title:'List product', sub:'Sell a product' },
+    { key:'service', title:'List service', sub:'Offer a service' },
+    { key:'delivery', title:'Delivery spot', sub:'Receive orders here' },
+    { key:'driver', title:'Driver base', sub:'Activate driver zone' },
+    { key:'media', title:'Post media', sub:'Photo or video signal' },
+  ];
+  function buildRadial() {
+    els.radial.innerHTML = '';
+    state.radial = radialDefs.map(def => {
+      const node = document.createElement('button');
+      node.className = 'radialAction';
+      node.innerHTML = `<strong>${def.title}</strong><span>${def.sub}</span>`;
+      node.addEventListener('click', () => openSheet(def.key));
+      els.radial.appendChild(node);
+      return { def, node };
+    });
+  }
+  buildRadial();
+  function positionRadial() {
+    const cx = window.innerWidth * 0.5;
+    const cy = state.view === 'globe' ? (44 + els.sceneWrap.clientHeight * 0.5) : (44 + els.mapWrap.clientHeight * 0.5);
+    const radius = Math.min(120, window.innerWidth * 0.26);
+    state.radial.forEach((it, idx) => {
+      const angle = (-90 + idx * 72) * Math.PI / 180;
+      it.node.style.left = (cx + Math.cos(angle) * radius) + 'px';
+      it.node.style.top = (cy + Math.sin(angle) * radius) + 'px';
+    });
+  }
+  function openRadial() {
+    state.addOpen = true;
+    positionRadial();
+    state.radial.forEach((it, i) => setTimeout(() => it.node.classList.add('show'), i * 16));
+  }
+  function closeRadial() {
+    state.addOpen = false;
+    state.radial.forEach(it => it.node.classList.remove('show'));
+  }
+  els.addBubble.addEventListener('click', () => state.addOpen ? closeRadial() : openRadial());
+  window.addEventListener('resize', positionRadial);
+
+  // --- Sheets / listing creation ---
+  const sheetTemplates = {
+    product: [
+      ['Title', 'text', 'title', 'full'],
+      ['Price €', 'number', 'price', ''],
+      ['Category', 'text', 'category', ''],
+      ['Temperature', 'select', 'temperature', '', ['neutral','cold','hot']],
+      ['Description', 'textarea', 'description', 'full'],
+      ['Photo or video URL', 'url', 'media', 'full'],
+    ],
+    service: [
+      ['Service name', 'text', 'title', 'full'],
+      ['Category', 'select', 'category', '', ['hotel','rent-a-car','diving','restaurant','other']],
+      ['Price €', 'number', 'price', ''],
+      ['Appointment slots / hour', 'number', 'slots', ''],
+      ['Description', 'textarea', 'description', 'full'],
+      ['Photo or video URL', 'url', 'media', 'full'],
+    ],
+    delivery: [
+      ['Label', 'text', 'title', 'full'],
+      ['Street', 'text', 'street', ''],
+      ['Number', 'text', 'number', ''],
+      ['Floor', 'text', 'floor', ''],
+      ['Doorbell name', 'text', 'doorbell', ''],
+      ['Phone', 'text', 'phone', ''],
+      ['Remarks', 'textarea', 'description', 'full'],
+    ],
+    driver: [
+      ['Driver base name', 'text', 'title', 'full'],
+      ['Vehicle', 'text', 'vehicle', ''],
+      ['Phone', 'text', 'phone', ''],
+      ['Available now', 'select', 'available', '', ['yes','no']],
+      ['Notes', 'textarea', 'description', 'full'],
+    ],
+    media: [
+      ['Title', 'text', 'title', 'full'],
+      ['Media URL', 'url', 'media', 'full'],
+      ['Description', 'textarea', 'description', 'full'],
+    ]
+  };
+  function currentLatLng() {
+    if (state.view === 'map') {
+      const c = map.getCenter();
+      return { lat: c.lat, lng: c.lng };
+    }
+    return { ...state.geo };
+  }
+  function openSheet(kind) {
+    closeRadial();
+    state.lastSheetType = kind;
+    els.sheetTitle.textContent = kind === 'product' ? 'List product' : kind === 'service' ? 'List service' : kind === 'delivery' ? 'Set delivery location' : kind === 'driver' ? 'Activate driver base' : 'Post media';
+    els.sheetForm.innerHTML = '';
+    const template = sheetTemplates[kind];
+    template.forEach(field => {
+      const [label, type, name, full, options] = field;
+      const wrap = document.createElement('label');
+      if (full) wrap.classList.add(full);
+      wrap.innerHTML = `<span>${label}</span>`;
+      let input;
+      if (type === 'textarea') {
+        input = document.createElement('textarea');
+      } else if (type === 'select') {
+        input = document.createElement('select');
+        options.forEach(opt => {
+          const o = document.createElement('option');
+          o.value = opt; o.textContent = opt; input.appendChild(o);
+        });
+      } else {
+        input = document.createElement('input');
+        input.type = type;
+      }
+      input.name = name;
+      wrap.appendChild(input);
+      els.sheetForm.appendChild(wrap);
+    });
+    els.sheetBackdrop.classList.add('open');
+  }
+  function closeSheet() { els.sheetBackdrop.classList.remove('open'); }
+  els.sheetClose.addEventListener('click', closeSheet);
+  els.sheetCancel.addEventListener('click', closeSheet);
+  els.sheetBackdrop.addEventListener('click', e => { if (e.target === els.sheetBackdrop) closeSheet(); });
+  els.sheetSave.addEventListener('click', () => {
+    const fd = new FormData(els.sheetForm);
+    const data = Object.fromEntries(fd.entries());
+    if (!data.title && state.lastSheetType !== 'delivery') { toast('Add a title first.'); return; }
+    const coords = currentLatLng();
+    const signal = {
+      kind: state.lastSheetType === 'product' || state.lastSheetType === 'service' || state.lastSheetType === 'media' ? 'service' : state.lastSheetType,
+      title: data.title || 'Delivery location',
+      body: data.description || 'New Astranov signal ready.',
+      lat: coords.lat,
+      lng: coords.lng,
+      price: data.price || '',
+      category: data.category || state.lastSheetType,
+      temperature: data.temperature || '',
+      channel: els.channelSelect.value,
+      local: true,
+      extra: data,
+    };
+    mergeSignal(signal);
+    saveLocalSignals();
+    refreshMapMarkers();
+    closeSheet();
+    openCard(signal);
+    toast('Signal added to the planet.');
+  });
+
+  // --- Basic send / task logic ---
+  function handleCommand(text) {
+    const q = text.trim();
+    if (!q) return;
+    addMessage(q, 'user');
+    const lower = q.toLowerCase();
+    let reply = 'Astranov is ready.';
+    if (lower.includes('zoom')) {
+      els.zoomBtn.click();
+      reply = state.view === 'map' ? 'Moving back to the globe.' : 'Zooming down to your location.';
+    } else if (lower.includes('product')) {
+      openSheet('product');
+      reply = 'Product listing sheet opened.';
+    } else if (lower.includes('service')) {
+      openSheet('service');
+      reply = 'Service listing sheet opened.';
+    } else if (lower.includes('driver')) {
+      openSheet('driver');
+      reply = 'Driver base sheet opened.';
+    } else if (lower.includes('delivery')) {
+      openSheet('delivery');
+      reply = 'Delivery location sheet opened.';
+    } else if (lower.includes('news')) {
+      reply = 'Planet news signals are active on the globe.';
+      setView('globe');
+    } else if (lower.includes('map')) {
+      setView('map');
+      reply = 'City map is open.';
+    } else if (lower.includes('globe') || lower.includes('earth')) {
+      setView('globe');
+      reply = 'Returning to the globe.';
+    } else if (lower.includes('help')) {
+      reply = 'Use the radar to jump between globe and map. Use the add bubble to list products, services, delivery locations, driver bases, or media.';
+    }
+    addMessage(reply, 'system');
+    setDrawer(true);
+  }
+  els.sendBtn.addEventListener('click', () => {
+    const text = els.commandInput.value.trim();
+    handleCommand(text);
+    els.commandInput.value = '';
+  });
+  els.commandInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); els.sendBtn.click(); }
+  });
+  els.channelAdd.addEventListener('click', () => {
+    const name = prompt('New channel name');
+    if (!name) return;
+    const opt = document.createElement('option');
+    opt.textContent = name;
+    els.channelSelect.appendChild(opt);
+    els.channelSelect.value = name;
+    addMessage(`Channel “${name}” added.`, 'system');
+    setDrawer(true);
+  });
+
+  // --- Initial state ---
+  setDrawer(false);
+  closeSheet();
+  closeCard();
+  closeRadial();
+  setTimeout(() => els.hint.classList.add('hidden'), 4200);
 })();
 </script>
 </body>
