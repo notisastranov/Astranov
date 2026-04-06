@@ -214,32 +214,38 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 
 /* BOTTOM BAR */
 #bottombar{
-  position:fixed;bottom:0;left:0;right:0;height:60px;
-  display:flex;align-items:center;gap:6px;
-  padding:0 10px;
-  background:rgba(3,8,16,0.40);border-top:1px solid rgba(0,200,255,0.08);
-  z-index:200;backdrop-filter:blur(12px);
+  position:fixed;bottom:0;left:0;right:0;height:64px;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;
+  background:linear-gradient(180deg,rgba(8,18,30,0.44),rgba(8,18,30,0.28));border-top:1px solid rgba(0,200,255,0.10);
+  z-index:200;backdrop-filter:blur(16px);
 }
+#bottombar.drawer-open{border-top-color:rgba(0,200,255,0.18);box-shadow:0 -10px 30px rgba(0,0,0,0.18);}
 .bb-btn{width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:transparent;border:1px solid var(--lb);border-radius:3px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;}
 .bb-btn:hover,.bb-btn.on{color:var(--la);border-color:var(--la);background:var(--la2);}
 .bb-btn svg{width:14px;height:14px;}
-#cmd-input{flex:1;height:36px;background:var(--la2);border:1px solid var(--lb);border-radius:3px;color:var(--text);font-family:var(--font);font-size:12px;padding:0 10px;outline:none;}
+#cmd-input{flex:1;height:42px;background:rgba(255,255,255,0.07);border:1px solid rgba(0,200,255,0.16);border-radius:14px;color:var(--text);font-family:var(--font);font-size:13px;padding:0 14px;outline:none;}
 #cmd-input:focus{border-color:var(--la);}
 #cmd-input::placeholder{color:var(--text-dim);}
-#cmd-response{position:fixed;bottom:60px;left:0;right:0;background:rgba(3,8,16,0.92);border-top:1px solid rgba(0,200,255,0.18);z-index:199;display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(14px);transition:max-height 0.25s ease;max-height:66vh;}
-#cmd-response.toast{display:block;padding:9px 14px;font-size:12px;color:var(--text);max-height:48px;}
-#cmd-response.expanded{display:flex;padding:0;max-height:66vh;}
+#cmd-response{position:fixed;left:0;right:0;bottom:64px;height:0;background:linear-gradient(180deg,rgba(8,18,30,0.92),rgba(8,18,30,0.82));border-top:1px solid rgba(0,200,255,0.14);z-index:199;display:flex;flex-direction:column;overflow:hidden;backdrop-filter:blur(16px);transition:height 0.22s ease,border-color 0.22s ease;pointer-events:none;border-top-left-radius:18px;border-top-right-radius:18px;}
+#cmd-response.toast{display:flex;padding:0;font-size:12px;color:var(--text);height:96px;pointer-events:auto;}
+#cmd-response.expanded{display:flex;padding:0;pointer-events:auto;}
 /* Drag handle */
-.chat-drag-handle{width:100%;height:20px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:none;user-select:none;}
+.chat-drag-handle{width:100%;height:18px;cursor:ns-resize;display:flex;align-items:center;justify-content:center;flex-shrink:0;touch-action:none;user-select:none;background:transparent;}
 .chat-drag-handle::after{content:'';width:40px;height:4px;border-radius:2px;background:rgba(0,200,255,0.3);}
 .chat-drag-handle:hover::after,.chat-drag-handle:active::after{background:rgba(0,200,255,0.6);}
-.ai-conv{flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;}
-.ai-msg{max-width:85%;padding:8px 12px;border-radius:12px;font-size:12px;line-height:1.45;word-break:break-word;animation:ai-fade 0.25s ease-out;}
-.ai-msg.user-msg{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.20);color:#d8f0ff;}
-.ai-msg.ai-msg-reply{align-self:flex-start;background:rgba(0,232,122,0.08);border:1px solid rgba(0,232,122,0.16);color:#c8f0d4;}
-.ai-msg.system-msg{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.12);color:#e8c840;font-size:11px;max-width:90%;text-align:center;}
+.ai-conv{flex:1;overflow-y:auto;padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.03));}
+.ai-msg{max-width:88%;padding:10px 12px;border-radius:16px;font-size:12px;line-height:1.45;word-break:break-word;animation:ai-fade 0.25s ease-out;box-shadow:0 8px 20px rgba(0,0,0,0.12);}
+.ai-msg.user-msg{align-self:flex-end;background:rgba(0,200,255,0.12);border:1px solid rgba(0,200,255,0.20);color:#d8f0ff;border-bottom-right-radius:6px;}
+.ai-msg.ai-msg-reply{align-self:flex-start;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:#e7f3ff;border-bottom-left-radius:6px;}
+.ai-msg.system-msg{align-self:center;background:rgba(255,214,0,0.08);border:1px solid rgba(255,214,0,0.12);color:#e8c840;font-size:11px;max-width:92%;text-align:center;}
 .ai-msg .ai-sender{font-size:9px;font-weight:600;margin-bottom:2px;opacity:0.6;}
 @keyframes ai-fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.ai-msg .ai-body{display:block;}
+.ai-msg img.ai-inline-image{display:block;width:100%;max-width:220px;border-radius:12px;margin-top:8px;border:1px solid rgba(255,255,255,0.12);}
+.ai-rich-card{display:block;margin-top:8px;padding:10px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);}
+.ai-rich-card .card-title{font-size:12px;font-weight:700;color:#f3fbff;margin-bottom:4px;}
+.ai-rich-card .card-meta{font-size:10px;color:var(--text-dim);margin-top:6px;}
 .ai-typing{align-self:flex-start;color:var(--text-dim);font-size:11px;padding:4px 12px;}
 .ai-typing::after{content:'...';animation:dots 1.2s steps(4,end) infinite;}
 @keyframes dots{0%,20%{content:'.';}40%{content:'..';}60%,100%{content:'...';}}
@@ -1188,60 +1194,6 @@ body.lt,body.lt2,body.lt3{
     <input id="sbi" placeholder="Search shops, services, diving, food…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')doSearch()"/>
   </div>
 
-  <!-- PERFORMANCE MONITOR (top-left) -->
-  <div id="perf-hud">
-    <svg id="perf-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <radialGradient id="perfBg" cx="50%" cy="50%"><stop offset="0%" stop-color="rgba(3,8,16,0.15)"/><stop offset="100%" stop-color="rgba(3,8,16,0.35)"/></radialGradient>
-      </defs>
-      <!-- Background -->
-      <circle cx="60" cy="60" r="56" fill="url(#perfBg)" stroke="rgba(0,200,255,0.2)" stroke-width="1"/>
-      <!-- 6 sections of 60° each — pie wedges from center -->
-      <!-- Section 0: CPU (top, 330°-30°) -->
-      <path id="perf-s0" class="perf-section good" d="M60,60 L60,4 A56,56 0 0,1 108.5,32 Z"/>
-      <!-- Section 1: MAP (60°, 30°-90°) -->
-      <path id="perf-s1" class="perf-section good" d="M60,60 L108.5,32 A56,56 0 0,1 116,60 Z"/>
-      <!-- Section 2: RAM (120°, 90°-150°) -->
-      <path id="perf-s2" class="perf-section good" d="M60,60 L116,60 A56,56 0 0,1 108.5,88 Z"/>
-      <!-- Section 3: STORAGE (180°, 150°-210°) -->
-      <path id="perf-s3" class="perf-section good" d="M60,60 L108.5,88 A56,56 0 0,1 60,116 Z"/>
-      <!-- Section 4: BATTERY (240°, 210°-270°) -->
-      <path id="perf-s4" class="perf-section good" d="M60,60 L60,116 A56,56 0 0,1 11.5,88 Z"/>
-      <!-- Section 5: NETWORK (300°, 270°-330°) -->
-      <path id="perf-s5" class="perf-section good" d="M60,60 L11.5,88 A56,56 0 0,1 11.5,32 Z"/>
-      <!-- Divider lines -->
-      <line x1="60" y1="60" x2="60" y2="4" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="32" class="perf-divider"/>
-      <line x1="60" y1="60" x2="116" y2="60" class="perf-divider"/>
-      <line x1="60" y1="60" x2="108.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="60" y2="116" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="88" class="perf-divider"/>
-      <line x1="60" y1="60" x2="11.5" y2="32" class="perf-divider"/>
-      <!-- Inner circle -->
-      <circle cx="60" cy="60" r="18" fill="rgba(3,8,16,0.5)" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
-      <!-- Section labels (around the edge) -->
-      <text x="78" y="20" class="perf-label">CPU</text>
-      <text x="106" y="50" class="perf-label">MAP</text>
-      <text x="106" y="76" class="perf-label">RAM</text>
-      <text x="78" y="106" class="perf-label">STO</text>
-      <text x="42" y="106" class="perf-label">BAT</text>
-      <text x="16" y="50" class="perf-label">NET</text>
-      <!-- Section values (updated by JS) -->
-      <text id="pv0" x="78" y="28" class="perf-value good">—</text>
-      <text id="pv1" x="100" y="56" class="perf-value good">—</text>
-      <text id="pv2" x="100" y="82" class="perf-value good">—</text>
-      <text id="pv3" x="78" y="100" class="perf-value good">—</text>
-      <text id="pv4" x="42" y="100" class="perf-value good">—</text>
-      <text id="pv5" x="22" y="56" class="perf-value good">—</text>
-      <!-- Network sub-labels -->
-      <text id="pv5-tx" x="16" y="62" class="perf-center-label">TX —</text>
-      <text id="pv5-rx" x="16" y="68" class="perf-center-label">RX —</text>
-      <!-- Center label -->
-      <text x="60" y="58" class="perf-center-label">PERF</text>
-      <text id="perf-overall" x="60" y="66" style="fill:#00e87a;font-size:7px;text-anchor:middle;font-family:var(--font);font-weight:700;">OK</text>
-    </svg>
-  </div>
-
   <!-- PERFORMANCE MONITOR HUD (top-left) -->
   <div id="perf-hud">
     <svg id="perf-svg" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
@@ -1742,33 +1694,13 @@ body.lt,body.lt2,body.lt3{
   <button class="bb-btn" id="voice-btn" onclick="toggleVoiceInput()" title="Voice — hands free">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
   </button>
-  <button class="bb-btn" id="speaker-btn" onclick="toggleSpeaker()" title="Speaker OFF — text only">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
-  </button>
-  <input type="text" id="cmd-input" placeholder="Talk to Astranov — search, order, find, ask…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
+  <input type="text" id="cmd-input" placeholder="Search, message, open signals, reserve, coordinate…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')sendCmd()" onfocus="expandConversation()"/>
   <button class="bb-btn" onclick="sendCmd()" title="Send">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>
 </div>
 <div id="cmd-response">
   <div class="chat-drag-handle" id="chat-drag"></div>
-  <!-- CHANNEL SELECTOR DROPDOWN -->
-  <div id="chat-channel-bar">
-    <span id="chat-channel-label">Channel</span>
-    <select id="chat-channel-select" onchange="switchChatChannel(this.value)">
-      <option value="ai" selected>🤖 Astranov C.I.</option>
-      <option value="global">🌍 Global</option>
-      <optgroup label="📍 Local" id="local-channels-group">
-        <option value="local">📍 My Area</option>
-      </optgroup>
-      <optgroup label="👥 Teams" id="team-channels-group">
-        <option value="team">👥 General Team</option>
-      </optgroup>
-      <option value="support">💬 Support & Ideas</option>
-      <option value="astranov-racing">🏁 Astranov Racing • 3 alerts</option>
-    </select>
-    <button onclick="promptNewTeam()" title="Suggest new team channel" style="width:26px;height:26px;border:1px solid rgba(0,200,255,0.15);border-radius:6px;background:rgba(0,200,255,0.06);color:#00c8ff;cursor:pointer;font-size:14px;font-weight:700;line-height:1;flex-shrink:0;">+</button>
-  </div>
   <!-- REGULAR CHAT -->
   <div class="ai-conv" id="ai-conv"></div>
   <!-- DEV TOOLS (shown only when developer channel active) -->
@@ -4442,6 +4374,7 @@ async function loadBalance() {
   }
   loadOrbitalFeed();
   loadDemoData();
+  initConversationDrawer();
   // Start AI assistant after a brief delay
   setTimeout(initAstranovStartup, 2500);
 })();
@@ -4467,9 +4400,7 @@ function initAstranovStartup(){
 function startAstranovGreeting(micAvailable){
   // Open conversation panel
   var resp = document.getElementById('cmd-response');
-  resp.className = 'expanded';
-  resp.style.display = 'flex';
-  resp.style.maxHeight = _chatHeight + 'px';
+  expandConversation(260);
 
   // Bounce the character to draw attention
   bounceAstranova();
@@ -5064,32 +4995,19 @@ const astranovaLines = [
 ];
 
 function openAstranova() {
-  // NO MODAL — activate bottom command bar in hands-free mode
+  expandConversation(220);
   var input = document.getElementById('cmd-input');
-  var bar = document.getElementById('bottombar');
-  var resp = document.getElementById('cmd-response');
-  // Expand conversation panel
-  resp.className = 'expanded';
-  resp.style.display = 'flex';
-  // Focus input
-  input.focus();
-  // Focus input — user clicks mic manually for voice
-  input.placeholder = 'Ask Astranov anything — type or tap 🎤 for voice…';
-  // Add greeting if conversation is empty (text only, NO auto-speak)
+  if(input){ input.focus(); input.placeholder = 'Search, message, open signals, reserve, coordinate…'; }
   var conv = document.getElementById('ai-conv');
   if(conv && !conv.children.length){
-    addAiMessage('ai-msg-reply', 'Astranov', '\u0417\u0434\u0440\u0430\u0432\u0441\u0442\u0432\u0443\u0439\u0442\u0435 (zdravstvuyte), \u0434\u0440\u0443\u0433! I am Astranov, your personal delivery commissar. Need food? Supplies? I find best deal for the people. Tap \ud83c\udf99 to speak, or type below. \u0412\u043F\u0435\u0440\u0451\u0434, let us begin!');
+    addAiMessage('ai-msg-reply', 'Astranov', 'Astranov is ready. Search, open a signal, coordinate a reservation, or start a team conversation here.');
   }
 }
 
 function closeAstranova() {
-  // Collapse conversation
-  var resp = document.getElementById('cmd-response');
-  resp.style.display = 'none';
-  resp.className = '';
+  collapseConversation();
   var input = document.getElementById('cmd-input');
-  input.placeholder = 'Talk to Astranov — search, order, find, ask…';
-  // Stop voice if active
+  if(input) input.placeholder = 'Search, message, open signals, reserve, coordinate…';
   if(window._voiceRecog){
     try{ window._voiceRecog.stop(); }catch(e){}
     window._voiceActive = false;
@@ -5895,16 +5813,89 @@ function localAstranovaResponse(msg){
   return isGreek ? '\u0394\u03BF\u03BA\u03AF\u03BC\u03B1\u03C3\u03B5 \u03BD\u03B1 \u03C1\u03C9\u03C4\u03AE\u03C3\u03B5\u03B9\u03C2 \u03B3\u03B9\u03B1 pizza, \u03BC\u03C0\u03AF\u03C1\u03B1, \u03BA\u03B1\u03C6\u03AD, \u03AE \u03C4\u03B9\u03BC\u03AD\u03C2 \u03C0\u03B1\u03C1\u03AC\u03B4\u03BF\u03C3\u03B7\u03C2!' : 'Try asking about pizza, beer, coffee, diving, or delivery prices' + nameGreet + '. I work best with specific requests!';
 }
 
-function addAiMessage(cssClass, sender, text){
+function addAiMessage(cssClass, sender, text, opts){
   var conv = document.getElementById('ai-conv');
   if(!conv) return;
   var div = document.createElement('div');
   div.className = 'ai-msg ' + cssClass;
-  div.innerHTML = '<div class="ai-sender">' + sender + '</div>' + text.replace(/\n/g,'<br>');
+  var body = '';
+  if(opts && opts.html){ body = opts.html; }
+  else { body = String(text||'').replace(/
+/g,'<br>'); }
+  div.innerHTML = '<div class="ai-sender">' + (sender||'') + '</div><div class="ai-body">' + body + '</div>';
   conv.appendChild(div);
   conv.scrollTop = conv.scrollHeight;
-  // Play zoop for AI and system messages (NOT for user messages)
   if(cssClass !== 'user-msg') playZoop();
+}
+function addRichSignalMessage(sender, payload){
+  payload = payload || {};
+  var html = '<div class="ai-rich-card">';
+  if(payload.title) html += '<div class="card-title">' + payload.title + '</div>';
+  if(payload.text) html += '<div>' + String(payload.text).replace(/
+/g,'<br>') + '</div>';
+  if(payload.image) html += '<img class="ai-inline-image" src="' + payload.image + '" alt="">';
+  if(payload.meta) html += '<div class="card-meta">' + payload.meta + '</div>';
+  html += '</div>';
+  addAiMessage('ai-msg-reply', sender || 'Astranov', '', {html: html});
+}
+
+
+var CHAT_CHANNEL = 'ai';
+var CHAT_HISTORIES = { ai:'', global:'', local:'', team:'', support:'', 'astranov-racing':'' };
+var _chatMinHeight = 0;
+var _chatDefaultHeight = Math.round(window.innerHeight * 0.34);
+var _chatMaxHeight = Math.round(window.innerHeight * 0.66);
+var _chatHeight = 0;
+var _chatDrag = null;
+function clampChatHeight(h){ return Math.max(_chatMinHeight, Math.min(_chatMaxHeight, Math.round(h || 0))); }
+function applyConversationHeight(h){
+  var resp = document.getElementById('cmd-response');
+  var bar = document.getElementById('bottombar');
+  if(!resp || !bar) return;
+  _chatHeight = clampChatHeight(h);
+  resp.style.height = _chatHeight + 'px';
+  resp.style.display = 'flex';
+  if(_chatHeight <= 0){
+    resp.className = '';
+    resp.style.pointerEvents = 'none';
+    bar.classList.remove('drawer-open');
+  } else {
+    resp.className = 'expanded';
+    resp.style.pointerEvents = 'auto';
+    bar.classList.add('drawer-open');
+  }
+}
+function expandConversation(h){ applyConversationHeight(h == null ? _chatDefaultHeight : h); }
+function collapseConversation(){ applyConversationHeight(0); }
+function initConversationDrawer(){
+  _chatDefaultHeight = Math.round(window.innerHeight * 0.34);
+  _chatMaxHeight = Math.round(window.innerHeight * 0.66);
+  applyConversationHeight(_chatHeight || 0);
+  var handle = document.getElementById('chat-drag');
+  if(!handle || handle.dataset.bound === '1') return;
+  handle.dataset.bound = '1';
+  var startY = 0, startH = 0;
+  function move(clientY){
+    if(!_chatDrag) return;
+    var delta = startY - clientY;
+    applyConversationHeight(startH + delta);
+  }
+  function end(){
+    if(!_chatDrag) return;
+    _chatDrag = null;
+    if(_chatHeight < 90) collapseConversation();
+  }
+  handle.addEventListener('pointerdown', function(e){
+    _chatDrag = true; startY = e.clientY; startH = _chatHeight || _chatDefaultHeight; handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', function(e){ move(e.clientY); });
+  handle.addEventListener('pointerup', function(){ end(); });
+  handle.addEventListener('pointercancel', function(){ end(); });
+  window.addEventListener('resize', function(){
+    _chatDefaultHeight = Math.round(window.innerHeight * 0.34);
+    _chatMaxHeight = Math.round(window.innerHeight * 0.66);
+    if(_chatHeight > _chatMaxHeight) applyConversationHeight(_chatMaxHeight);
+  });
 }
 
 /* ═══ VOICE & C.I. (COLLECTIVE INTELLIGENCE) ENGINE ═══ */
@@ -5920,12 +5911,7 @@ var _lastSpeechTime = 0;
 var _speechQueue = [];
 var _isSpeaking = false;
 
-function toggleSpeaker(){
-  _speakerMode = !_speakerMode;
-  var btn = document.getElementById('speaker-btn');
-  if(btn){ btn.classList.toggle('on', _speakerMode); btn.title = _speakerMode ? 'Speaker ON' : 'Speaker OFF'; }
-  showResp(_speakerMode ? 'Speaker ON' : 'Speaker OFF — text only');
-}
+function toggleSpeaker(){ return; }
 
 function speakAstranova(text){
   if(!_speakerMode || !text || !window.speechSynthesis || _voiceActive) return;
@@ -6003,7 +5989,7 @@ function stopListening(){
   var vb = document.getElementById('voice-btn'), bar = document.getElementById('bottombar'), input = document.getElementById('cmd-input');
   if(vb) vb.classList.remove('voice-btn-active');
   if(bar) bar.classList.remove('voice-active');
-  if(input) input.placeholder = 'Talk to Astranov...';
+  if(input) input.placeholder = 'Search, message, open signals, reserve, coordinate…';
 }
 
 /* ═══ ASTRANOV C.I. — COLLECTIVE INTELLIGENCE ═══ */
@@ -6047,14 +6033,14 @@ function showResp(msg, tone='default'){
   var resp = document.getElementById('cmd-response');
   if(resp && !resp.classList.contains('expanded')){
     resp.className = 'toast';
-    resp.style.display = 'block';
+    resp.style.display = 'flex';
+    resp.style.pointerEvents = 'auto';
     var conv = document.getElementById('ai-conv');
     if(conv) conv.scrollTop = conv.scrollHeight;
     if(showResp._timer) clearTimeout(showResp._timer);
     showResp._timer = setTimeout(function(){
       if(!resp.classList.contains('expanded')){
-        resp.style.display = 'none';
-        resp.className = '';
+        collapseConversation();
       }
     }, 3500);
   }
@@ -7026,12 +7012,12 @@ SPARTAN MERGE NOTE
       if(CU && isOwner(CU)){ hydrateDevAIKeys(); hydrateOwnerGithubCfg(); renderApprovalQueue(); }
       renderActiveVotes(); renderAnnouncements();
       var resp = document.getElementById("cmd-response");
-      if(resp){ resp.className = "expanded"; resp.style.display = "flex"; resp.style.maxHeight = "80vh"; }
+      if(resp){ expandConversation(_chatMaxHeight); }
     } else if(ch === "astranov-racing"){
       if(racingPanel) racingPanel.style.display = "flex";
       ensureRacingModuleMounted();
       var resp2 = document.getElementById("cmd-response");
-      if(resp2){ resp2.className = "expanded"; resp2.style.display = "flex"; resp2.style.maxHeight = "85vh"; }
+      if(resp2){ expandConversation(_chatMaxHeight); }
     } else {
       if(conv){ conv.style.display = "flex"; conv.innerHTML = CHAT_HISTORIES[ch] || ""; }
     }
