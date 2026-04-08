@@ -1,4 +1,4 @@
-project_id = "YOUR_PROJECT_REF"
+project_id = "kzlabcrlrpbnfiiyrjvl"
 
 [functions.ai-router]
 verify_jwt = false

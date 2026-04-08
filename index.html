@@ -1864,6 +1864,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     (() => {
@@ -1927,6 +1928,21 @@
         sync: "core shell"
       };
 
+      const SUPABASE_URL = typeof window.ASTRANOV_SUPABASE_URL === "string" && window.ASTRANOV_SUPABASE_URL.trim()
+        ? window.ASTRANOV_SUPABASE_URL.trim()
+        : "https://kzlabcrlrpbnfiiyrjvl.supabase.co";
+      const SUPABASE_ANON_KEY = typeof window.ASTRANOV_SUPABASE_ANON_KEY === "string" && window.ASTRANOV_SUPABASE_ANON_KEY.trim()
+        ? window.ASTRANOV_SUPABASE_ANON_KEY.trim()
+        : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg";
+      const supabaseClient = window.supabase && SUPABASE_URL && SUPABASE_ANON_KEY
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        })
+        : null;
       const AI_ENDPOINT = typeof window.ASTRANOV_AI_ENDPOINT === "string" ? window.ASTRANOV_AI_ENDPOINT.trim() : "";
       const STRIPE_PAYMENT_LINK = typeof window.ASTRANOV_STRIPE_PAYMENT_LINK === "string" ? window.ASTRANOV_STRIPE_PAYMENT_LINK.trim() : "";
       const PAYPAL_CHECKOUT_URL = typeof window.ASTRANOV_PAYPAL_CHECKOUT_URL === "string" ? window.ASTRANOV_PAYPAL_CHECKOUT_URL.trim() : "";
@@ -2392,6 +2408,14 @@
         pinchStart: 0,
         pinchZoomStart: 0,
         performancePeak: 42,
+        db: {
+          connected: false,
+          schemaReady: false,
+          signalCount: 0,
+          source: supabaseClient ? "supabase handshake pending" : "local shell fallback",
+          lastSync: "pending",
+          error: ""
+        },
         screen: {
           name: "portrait",
           orientation: window.innerWidth > window.innerHeight ? "landscape" : "portrait",
@@ -2955,7 +2979,347 @@
         }
         updatePreview();
         renderMessages();
+        if (appState.db.schemaReady) fetchMarketSnapshot();
+        updateTopHud();
         if (appState.openPanel === "user") setPanel("user");
+      }
+
+      function setDatabaseStatus({
+        connected = appState.db.connected,
+        schemaReady = appState.db.schemaReady,
+        signalCount = appState.db.signalCount,
+        source = appState.db.source,
+        lastSync = appState.db.lastSync,
+        error = appState.db.error
+      } = {}) {
+        appState.db.connected = !!connected;
+        appState.db.schemaReady = !!schemaReady;
+        appState.db.signalCount = Math.max(0, Math.round(signalCount || 0));
+        appState.db.source = source || appState.db.source;
+        appState.db.lastSync = lastSync || appState.db.lastSync;
+        appState.db.error = error || "";
+        APP_INFO.sync = appState.db.schemaReady
+          ? `supabase live / ${appState.db.signalCount} signals`
+          : appState.db.connected
+            ? "supabase pending"
+            : "local fallback";
+        APP_INFO.build = appState.db.schemaReady
+          ? "database connected"
+          : appState.db.connected
+            ? "schema pending"
+            : "planetary signal shell";
+      }
+
+      function normalizeJsonArray(value) {
+        if (Array.isArray(value)) return value;
+        if (typeof value === "string" && value.trim()) {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [];
+          } catch (_error) {
+            return [];
+          }
+        }
+        return [];
+      }
+
+      function normalizeTextArray(value) {
+        return normalizeJsonArray(value)
+          .map((entry) => String(entry || "").trim())
+          .filter(Boolean);
+      }
+
+      function normalizeMetricArray(value) {
+        return normalizeJsonArray(value)
+          .map((entry) => ({
+            label: String(entry?.label || "").trim(),
+            value: String(entry?.value || "").trim()
+          }))
+          .filter((entry) => entry.label && entry.value)
+          .slice(0, 6);
+      }
+
+      function normalizeCatalog(value) {
+        return normalizeJsonArray(value)
+          .map((entry) => ({
+            id: String(entry?.id || "").trim(),
+            title: String(entry?.title || "").trim(),
+            price: Number(entry?.priceEur ?? entry?.price ?? 0) || 0,
+            volumeLiters: Number(entry?.volumeLiters ?? 0) || 0,
+            weightKg: Number(entry?.weightKg ?? 0) || 0,
+            temperatureState: String(entry?.temperatureState || "ambient").trim() || "ambient",
+            capacityPerHour: Number(entry?.capacityPerHour ?? 0) || 0,
+            priority: !!entry?.priority,
+            offeringType: String(entry?.offeringType || "product").trim() || "product",
+            previewVideo: String(entry?.previewVideo || "").trim(),
+            tags: normalizeTextArray(entry?.tags)
+          }))
+          .filter((entry) => entry.title);
+      }
+
+      async function callDatabaseRpc(name, args = {}) {
+        if (!supabaseClient) return { data: null, error: new Error("Supabase client unavailable") };
+        try {
+          return await supabaseClient.rpc(name, args);
+        } catch (error) {
+          return { data: null, error };
+        }
+      }
+
+      function databaseSignalFromRow(row) {
+        if (!row?.id) return null;
+        const catalog = normalizeCatalog(row.catalog);
+        const products = normalizeTextArray(row.products);
+        const metrics = normalizeMetricArray(row.metrics);
+        const type = row.signal_kind === "presence" || row.signal_kind === "cloud" ? row.signal_kind : "anchor";
+        const capacityPerHour = Number(row.live_capacity_per_hour ?? row.capacity_per_hour ?? 0) || 0;
+        return {
+          id: String(row.id),
+          type,
+          title: String(row.title || "Signal"),
+          summary: String(row.summary || `${row.title || "Signal"} live signal`),
+          capability: String(row.capability || (type === "presence" ? "dispatch trace" : "signal hook")),
+          actionLabel: String(row.action_label || "Open Signal"),
+          armedLabel: String(row.armed_label || "Signal Active"),
+          region: String(row.region_label || "Astranov"),
+          lat: Number(row.latitude ?? 0) || 0,
+          lng: Number(row.longitude ?? 0) || 0,
+          alt: Number(row.signal_altitude ?? (type === "cloud" ? 0.46 : type === "presence" ? 0.21 : 0.16)) || 0.16,
+          zoom: Number(row.signal_zoom ?? 1) || 1,
+          previewVideo: String(row.preview_video_url || catalog.find((entry) => entry.previewVideo)?.previewVideo || "").trim(),
+          products: products.length ? products : catalog.map((entry) => entry.title).filter(Boolean),
+          catalog,
+          tags: [...new Set([
+            ...normalizeTextArray(row.tags),
+            type,
+            ...(products.length ? ["products"] : [])
+          ])],
+          metrics: metrics.length ? metrics : [
+            { label: "capacity", value: `${capacityPerHour || 0}/h` },
+            { label: "state", value: "live" }
+          ],
+          demo: !!row.is_demo,
+          capacityPerHour,
+          dbSynced: true
+        };
+      }
+
+      function applyDatabaseSignalFeed(rows) {
+        const remoteSignals = (Array.isArray(rows) ? rows : [])
+          .map(databaseSignalFromRow)
+          .filter(Boolean);
+        const remoteIds = new Set(remoteSignals.map((signal) => signal.id));
+
+        [...signalStates.values()]
+          .filter((state) => state.signal.dbSynced && !remoteIds.has(state.signal.id))
+          .forEach((state) => removeSignal(state.signal.id));
+
+        remoteSignals.forEach((signal) => {
+          if (signalStates.has(signal.id)) removeSignal(signal.id);
+          createSignalState(signal);
+        });
+
+        setDatabaseStatus({
+          connected: true,
+          schemaReady: true,
+          signalCount: remoteSignals.length,
+          source: `${remoteSignals.length} signal rows`,
+          lastSync: new Date().toISOString(),
+          error: ""
+        });
+        updatePreview();
+        return remoteSignals;
+      }
+
+      function applyMarketSnapshot(snapshot) {
+        if (!snapshot || typeof snapshot !== "object") return null;
+        const ownerFee = Number(snapshot.ownerFee30d);
+        const transactions = Number(snapshot.transactions30d);
+        const activeOrders = Number(snapshot.ordersActive);
+        const vendors = Number(snapshot.vendorsLive);
+        const offerings = Number(snapshot.offeringsLive);
+
+        if (Number.isFinite(ownerFee)) WALLET_INFO.balance = formatEuro(ownerFee);
+        if (Number.isFinite(activeOrders)) WALLET_INFO.pending = `${activeOrders} active orders`;
+        if (Number.isFinite(transactions)) WALLET_INFO.ledger = `${transactions} tx / 30d`;
+        if (Number.isFinite(vendors) && Number.isFinite(offerings)) {
+          WALLET_INFO.economics = `${vendors} vendors / ${offerings} offers`;
+        }
+
+        setDatabaseStatus({
+          connected: true,
+          schemaReady: appState.db.schemaReady,
+          signalCount: appState.db.signalCount,
+          source: WALLET_INFO.economics,
+          lastSync: snapshot.lastSync ? new Date(snapshot.lastSync).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : appState.db.lastSync,
+          error: appState.db.error
+        });
+        updateTopHud();
+        return snapshot;
+      }
+
+      async function fetchDatabaseSignals() {
+        if (!supabaseClient) {
+          setDatabaseStatus({
+            connected: false,
+            schemaReady: false,
+            signalCount: 0,
+            source: "local shell fallback",
+            error: ""
+          });
+          return null;
+        }
+        const { data, error } = await callDatabaseRpc("public_signal_feed", { p_include_demo: true });
+        if (error) {
+          const message = String(error?.message || error || "Supabase signal feed unavailable");
+          const reachable = !/failed to fetch|networkerror|load failed/i.test(message);
+          setDatabaseStatus({
+            connected: reachable,
+            schemaReady: false,
+            signalCount: 0,
+            source: reachable ? "supabase schema pending" : "supabase offline",
+            error: message
+          });
+          return null;
+        }
+        return applyDatabaseSignalFeed(data);
+      }
+
+      async function fetchMarketSnapshot() {
+        if (!supabaseClient) return null;
+        const { data, error } = await callDatabaseRpc("market_snapshot", { p_include_demo: appState.demoMode });
+        if (error) return null;
+        const snapshot = Array.isArray(data) ? data[0] : data;
+        return applyMarketSnapshot(snapshot);
+      }
+
+      async function bootstrapDatabase() {
+        if (!supabaseClient) {
+          setDatabaseStatus({
+            connected: false,
+            schemaReady: false,
+            signalCount: 0,
+            source: "local shell fallback",
+            error: ""
+          });
+          updateTopHud();
+          return false;
+        }
+
+        const remoteSignals = await fetchDatabaseSignals();
+        if (!remoteSignals) {
+          pushMessage("system", "Supabase is reachable, but the Astranov market schema is not live on this project yet. Run the repo migrations so listings, orders, and wallet flow can sync for real.", {
+            title: "Database",
+            pill: "pending",
+            summary: "Supabase schema pending",
+            expand: false,
+            demo: false
+          });
+          query.placeholder = "Supabase schema pending";
+          updateTopHud();
+          return false;
+        }
+
+        await fetchMarketSnapshot();
+        pushMessage("system", `Supabase is live. ${remoteSignals.length} signal records loaded from the database.`, {
+          title: "Database",
+          pill: "live",
+          summary: `${remoteSignals.length} signal records synced`,
+          expand: false,
+          demo: false
+        });
+        query.placeholder = defaultQueryPlaceholder();
+        updateTopHud();
+        return true;
+      }
+
+      async function persistListingToDatabase(signal, mode) {
+        if (!supabaseClient || !appState.db.schemaReady) return null;
+        const leadItem = signal.catalog?.[0] || {};
+        const payload = {
+          kind: signal.type,
+          mode,
+          title: signal.title,
+          summary: signal.summary,
+          capability: signal.capability,
+          actionLabel: signal.actionLabel,
+          armedLabel: signal.armedLabel,
+          region: signal.region,
+          lat: signal.lat,
+          lng: signal.lng,
+          alt: signal.alt,
+          zoom: signal.zoom,
+          previewVideo: signal.previewVideo || "",
+          tags: signal.tags || [],
+          metrics: signal.metrics || [],
+          catalog: signal.catalog || [],
+          capacityPerHour: leadItem.capacityPerHour || signal.capacityPerHour || 24,
+          liveCapacityPerHour: leadItem.capacityPerHour || signal.capacityPerHour || 24,
+          acceptsPriority: true,
+          priceEur: leadItem.price || 0,
+          weightKg: leadItem.weightKg || 0,
+          volumeLiters: leadItem.volumeLiters || 0,
+          temperatureState: leadItem.temperatureState || "ambient",
+          priority: !!leadItem.priority,
+          demo: false
+        };
+        const { data, error } = await callDatabaseRpc("create_public_listing", { p_payload: payload });
+        if (error) throw error;
+        const remoteSignal = databaseSignalFromRow(Array.isArray(data) ? data[0] : data);
+        if (!remoteSignal) return null;
+        if (signalStates.has(signal.id)) removeSignal(signal.id);
+        if (signalStates.has(remoteSignal.id)) removeSignal(remoteSignal.id);
+        createSignalState(remoteSignal);
+        persistCustomSignals();
+        updatePreview();
+        await fetchMarketSnapshot();
+        return remoteSignal;
+      }
+
+      async function persistOrderToDatabase(order) {
+        if (!supabaseClient || !appState.db.schemaReady) return null;
+        const payload = {
+          vendorSlug: order.signalId,
+          offeringSlug: order.offeringId || "",
+          itemTitle: order.itemTitle,
+          distanceKm: order.quote.distanceKm,
+          weatherCode: order.weatherCode || weatherMode(),
+          weightKg: order.weightKg || 0,
+          volumeLiters: order.volumeLiters || 0,
+          isPriority: !!order.priority,
+          itemSubtotalEur: order.quote.subtotal,
+          requestedAt: order.requestedAt || new Date().toISOString(),
+          isDemo: !!order.demo
+        };
+        const { data, error } = await callDatabaseRpc("create_public_order", { p_payload: payload });
+        if (error) throw error;
+        const stored = Array.isArray(data) ? data[0] : data;
+        if (!stored || typeof stored !== "object") return null;
+        const nextOrder = {
+          ...order,
+          id: stored.id || order.id,
+          status: stored.status || order.status,
+          capacityPerHour: Number(stored.capacityPerHour ?? order.capacityPerHour) || order.capacityPerHour,
+          priority: typeof stored.priority === "boolean" ? stored.priority : order.priority,
+          demo: typeof stored.demo === "boolean" ? stored.demo : order.demo,
+          quote: {
+            ...order.quote,
+            distanceKm: Number(stored.quote?.distanceKm ?? order.quote.distanceKm) || order.quote.distanceKm,
+            distanceCharge: Number(stored.quote?.distanceCharge ?? order.quote.distanceCharge) || order.quote.distanceCharge,
+            timeCharge: Number(stored.quote?.timeCharge ?? order.quote.timeCharge) || order.quote.timeCharge,
+            weatherCharge: Number(stored.quote?.weatherCharge ?? order.quote.weatherCharge) || order.quote.weatherCharge,
+            loadCharge: Number(stored.quote?.loadCharge ?? order.quote.loadCharge) || order.quote.loadCharge,
+            priorityCharge: Number(stored.quote?.priorityCharge ?? order.quote.priorityCharge) || order.quote.priorityCharge,
+            deliveryBase: Number(stored.quote?.deliveryBase ?? order.quote.deliveryBase) || order.quote.deliveryBase,
+            subtotal: Number(stored.quote?.subtotal ?? order.quote.subtotal) || order.quote.subtotal,
+            serviceSubtotal: Number(stored.quote?.serviceSubtotal ?? order.quote.serviceSubtotal) || order.quote.serviceSubtotal,
+            ownerFee: Number(stored.quote?.ownerFee ?? order.quote.ownerFee) || order.quote.ownerFee,
+            total: Number(stored.quote?.total ?? order.quote.total) || order.quote.total
+          }
+        };
+        appState.orders = appState.orders.map((entry) => entry.signalId === order.signalId ? nextOrder : entry);
+        await fetchMarketSnapshot();
+        return nextOrder;
       }
 
       function pickCatalogItem(signal, rawQuery = "") {
@@ -2976,22 +3340,30 @@
         const userCoords = activeUserCoords();
         const distanceKm = userCoords ? haversineKm(signal.lat, signal.lng, userCoords.lat, userCoords.lng) : 2.8;
         const priority = !!item?.priority || /priority|instant|hot|fast|urgent/.test(rawQuery.toLowerCase());
+        const requestedAt = new Date();
+        const weatherCode = weatherMode();
         const quote = calculateDeliveryQuote({
           distanceKm,
           weightKg: item?.weightKg || 0,
           volumeLiters: item?.volumeLiters || 0,
           priority,
           subtotal: item?.price || (intent === "assign" ? 0 : 12),
-          weather: weatherMode()
+          requestedAt,
+          weather: weatherCode
         });
         return {
           id: `ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           signalId: signal.id,
           title: signal.title,
           itemTitle: item?.title || (intent === "assign" ? "Driver dispatch" : signal.capability),
+          offeringId: item?.id || "",
           status: intent === "assign" ? "driver assigned" : "routing",
           quote,
           capacityPerHour: item?.capacityPerHour || signal.capacityPerHour || 18,
+          weightKg: item?.weightKg || 0,
+          volumeLiters: item?.volumeLiters || 0,
+          weatherCode,
+          requestedAt: requestedAt.toISOString(),
           priority,
           demo: !!signal.demo,
           active: true
@@ -3030,6 +3402,37 @@
             { label: "distance", value: `${order.quote.distanceKm} km` }
           ],
           summary: `${order.title} ${order.status}`
+        });
+        persistOrderToDatabase(order).then((storedOrder) => {
+          if (!storedOrder) return;
+          pushMessage("system", `${storedOrder.itemTitle} was saved to Supabase and is now part of the live order ledger.`, {
+            title: "Database",
+            pill: "order live",
+            signalId: storedOrder.signalId,
+            signalName: storedOrder.title,
+            status: storedOrder.status,
+            summary: `${storedOrder.title} stored`,
+            metrics: [
+              { label: "total", value: formatEuro(storedOrder.quote.total) },
+              { label: "owner fee", value: formatEuro(storedOrder.quote.ownerFee) },
+              { label: "distance", value: `${storedOrder.quote.distanceKm} km` }
+            ],
+            demo: storedOrder.demo,
+            active: true,
+            expand: false
+          });
+        }).catch((error) => {
+          console.warn("Astranov order sync unavailable", error);
+          pushMessage("system", "Order routing stayed local because the database write did not complete.", {
+            title: "Database",
+            pill: "local only",
+            signalId: order.signalId,
+            signalName: order.title,
+            status: "local",
+            summary: `${order.title} local fallback`,
+            demo: order.demo,
+            expand: false
+          });
         });
         return order;
       }
@@ -3964,6 +4367,33 @@
           demo: false
         });
         query.placeholder = `${seedSignal.title} placed on the map`;
+        persistListingToDatabase(seedSignal, mode).then((remoteSignal) => {
+          if (!remoteSignal) return;
+          pushMessage("system", `${remoteSignal.title} was saved to Supabase and is now in the live signal feed.`, {
+            title: "Database",
+            pill: "listing live",
+            signalId: remoteSignal.id,
+            signalName: remoteSignal.title,
+            status: "live",
+            summary: `${remoteSignal.title} synced`,
+            metrics: remoteSignal.metrics.slice(0, 4),
+            demo: false,
+            expand: false
+          });
+          query.placeholder = `${remoteSignal.title} saved to database`;
+        }).catch((error) => {
+          console.warn("Astranov listing sync unavailable", error);
+          pushMessage("system", "Listing stayed local because the database write did not complete.", {
+            title: "Database",
+            pill: "local only",
+            signalId: seedSignal.id,
+            signalName: seedSignal.title,
+            status: "local",
+            summary: `${seedSignal.title} local fallback`,
+            demo: false,
+            expand: false
+          });
+        });
       }
 
       function setActiveSignal(id, holdFocus) {
@@ -4533,6 +4963,7 @@
       }
 
       SIGNALS.forEach(createSignalState);
+      bootstrapDatabase();
       let longPressTimer = null;
       let recognition = null;
       let listening = false;
