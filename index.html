@@ -1946,7 +1946,11 @@
       const AI_ENDPOINT = typeof window.ASTRANOV_AI_ENDPOINT === "string" ? window.ASTRANOV_AI_ENDPOINT.trim() : "";
       const STRIPE_PAYMENT_LINK = typeof window.ASTRANOV_STRIPE_PAYMENT_LINK === "string" ? window.ASTRANOV_STRIPE_PAYMENT_LINK.trim() : "";
       const PAYPAL_CHECKOUT_URL = typeof window.ASTRANOV_PAYPAL_CHECKOUT_URL === "string" ? window.ASTRANOV_PAYPAL_CHECKOUT_URL.trim() : "";
+      const PAYPAL_FUNCTION_URL = typeof window.ASTRANOV_PAYPAL_FUNCTION_URL === "string" && window.ASTRANOV_PAYPAL_FUNCTION_URL.trim()
+        ? window.ASTRANOV_PAYPAL_FUNCTION_URL.trim()
+        : (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/paypal-checkout` : "");
       const REVOLUT_CHECKOUT_URL = typeof window.ASTRANOV_REVOLUT_CHECKOUT_URL === "string" ? window.ASTRANOV_REVOLUT_CHECKOUT_URL.trim() : "";
+      const PAYPAL_DEFAULT_TOPUP_EUR = Number(window.ASTRANOV_PAYPAL_TOPUP_EUR) > 0 ? Number(window.ASTRANOV_PAYPAL_TOPUP_EUR) : 20;
       const CUSTOM_SIGNALS_KEY = "astranov.customSignals.v1";
       const DEMO_MODE_KEY = "astranov.demoMode.v1";
       const CHAT_HISTORY_KEY = "astranov.chat.v1";
@@ -3193,6 +3197,203 @@
         return applyMarketSnapshot(snapshot);
       }
 
+      function paypalAvailable() {
+        return !!(PAYPAL_FUNCTION_URL || PAYPAL_CHECKOUT_URL);
+      }
+
+      function activePayableOrder() {
+        return [...appState.orders].reverse().find((order) => order.active) || null;
+      }
+
+      function looksLikeUuid(value) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || "").trim());
+      }
+
+      function cleanPayPalQueryParams() {
+        const url = new URL(window.location.href);
+        ["paypal_status", "token", "PayerID", "payerId"].forEach((key) => url.searchParams.delete(key));
+        const next = `${url.pathname}${url.search}${url.hash}`;
+        window.history.replaceState({}, "", next || "/");
+      }
+
+      function paypalReturnUrls() {
+        const base = new URL(window.location.href);
+        ["paypal_status", "token", "PayerID", "payerId"].forEach((key) => base.searchParams.delete(key));
+        const success = new URL(base.toString());
+        const cancel = new URL(base.toString());
+        success.searchParams.set("paypal_status", "success");
+        cancel.searchParams.set("paypal_status", "cancel");
+        return {
+          returnUrl: success.toString(),
+          cancelUrl: cancel.toString()
+        };
+      }
+
+      async function beginPayPalCheckout(source = "wallet") {
+        const liveOrder = activePayableOrder();
+        const payingOrder = source !== "wallet-topup" && liveOrder && looksLikeUuid(liveOrder.id) ? liveOrder : null;
+        if (liveOrder && !payingOrder && source !== "wallet-topup") {
+          pushMessage("system", "That order is still syncing to the database. Give it a moment, then open PayPal again so the captured payment can be tied to the correct order.", {
+            title: "PayPal",
+            pill: "syncing",
+            summary: "Order syncing before payment",
+            expand: false,
+            demo: liveOrder.demo
+          });
+          query.placeholder = "Order syncing before PayPal payment";
+          return false;
+        }
+
+        if (PAYPAL_CHECKOUT_URL && !PAYPAL_FUNCTION_URL) {
+          window.open(PAYPAL_CHECKOUT_URL, "_blank", "noopener");
+          query.placeholder = "PayPal checkout opened";
+          return true;
+        }
+
+        if (!PAYPAL_FUNCTION_URL) {
+          query.placeholder = "Add window.ASTRANOV_PAYPAL_FUNCTION_URL";
+          return false;
+        }
+
+        const { returnUrl, cancelUrl } = paypalReturnUrls();
+        const amount = payingOrder ? payingOrder.quote.total : PAYPAL_DEFAULT_TOPUP_EUR;
+        const body = {
+          action: "create",
+          kind: payingOrder ? "purchase" : "top_up",
+          amount,
+          currency: "EUR",
+          description: payingOrder
+            ? `${payingOrder.itemTitle} / ${payingOrder.title}`
+            : "Astranov wallet top up",
+          orderId: payingOrder ? payingOrder.id : "",
+          reference: payingOrder ? payingOrder.signalId : `wallet-topup-${Date.now()}`,
+          signalId: payingOrder ? payingOrder.signalId : "",
+          returnUrl,
+          cancelUrl
+        };
+
+        try {
+          query.placeholder = payingOrder ? "Opening PayPal for active order..." : "Opening PayPal top up...";
+          const response = await fetch(PAYPAL_FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+          });
+          const data = await response.json();
+          if (!response.ok || !data?.approveUrl) {
+            throw new Error(data?.error || "PayPal checkout could not be created");
+          }
+
+          pushMessage("system", payingOrder
+            ? `PayPal is opening for ${payingOrder.itemTitle}. After approval, Astranov will return here and capture the payment.`
+            : `PayPal is opening for a ${formatEuro(amount)} wallet top up. After approval, Astranov will return here and capture it.`, {
+              title: "PayPal",
+              pill: payingOrder ? formatEuro(payingOrder.quote.total) : formatEuro(amount),
+              signalId: payingOrder?.signalId || "",
+              signalName: payingOrder?.title || "Wallet",
+              status: "approval",
+              summary: payingOrder ? `${payingOrder.title} approval` : "Wallet top up approval",
+              demo: payingOrder ? payingOrder.demo : false,
+              expand: false
+            });
+          window.location.assign(data.approveUrl);
+          return true;
+        } catch (error) {
+          console.warn("Astranov PayPal create unavailable", error);
+          pushMessage("system", "PayPal checkout could not be started from the live function. The credentials stay local and the shell is ready, but the deployed function must be available too.", {
+            title: "PayPal",
+            pill: "unavailable",
+            summary: "PayPal create failed",
+            expand: false,
+            demo: false
+          });
+          query.placeholder = "PayPal function unavailable";
+          return false;
+        }
+      }
+
+      async function handlePayPalReturn() {
+        const url = new URL(window.location.href);
+        const status = url.searchParams.get("paypal_status");
+        const token = url.searchParams.get("token");
+        if (!status) return;
+
+        if (status === "cancel") {
+          pushMessage("system", "PayPal approval was cancelled, so Astranov kept the order or wallet action in standby.", {
+            title: "PayPal",
+            pill: "cancelled",
+            summary: "PayPal approval cancelled",
+            expand: false,
+            demo: false
+          });
+          query.placeholder = "PayPal approval cancelled";
+          cleanPayPalQueryParams();
+          return;
+        }
+
+        if (status !== "success" || !token || !PAYPAL_FUNCTION_URL) {
+          cleanPayPalQueryParams();
+          return;
+        }
+
+        try {
+          query.placeholder = "Capturing PayPal payment...";
+          const response = await fetch(PAYPAL_FUNCTION_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: "capture",
+              orderId: token
+            })
+          });
+          const data = await response.json();
+          if (!response.ok || !data?.ok) {
+            throw new Error(data?.error || "PayPal capture failed");
+          }
+
+          if (data.kind === "purchase" && looksLikeUuid(data.reference)) {
+            const order = appState.orders.find((entry) => entry.id === data.reference);
+            if (order) {
+              order.status = "paid";
+              order.active = true;
+            }
+          }
+
+          if (data.sync?.kind === "top_up" && data.sync?.db) {
+            WALLET_INFO.pending = "top up captured";
+          }
+
+          pushMessage("system", data.kind === "purchase"
+            ? `PayPal captured ${formatEuro(data.amount)} and Astranov bound the capture to the active order ledger.`
+            : `PayPal captured ${formatEuro(data.amount)} for wallet top up. The 3% owner fee logic was applied on the credit transaction.`, {
+              title: "PayPal",
+              pill: "captured",
+              summary: data.kind === "purchase" ? "Order payment captured" : "Wallet top up captured",
+              demo: false,
+              expand: false,
+              metrics: [
+                { label: "amount", value: formatEuro(data.amount) },
+                { label: "capture", value: String(data.captureId || "live").slice(0, 10) },
+                { label: "db", value: data.sync?.synced ? "synced" : "capture only" }
+              ]
+            });
+          query.placeholder = data.kind === "purchase" ? "PayPal order payment captured" : "PayPal wallet top up captured";
+          if (appState.db.schemaReady) await fetchMarketSnapshot();
+        } catch (error) {
+          console.warn("Astranov PayPal capture unavailable", error);
+          pushMessage("system", "PayPal approved the order, but Astranov could not finish capture from the live function yet.", {
+            title: "PayPal",
+            pill: "capture failed",
+            summary: "PayPal capture failed",
+            expand: false,
+            demo: false
+          });
+          query.placeholder = "PayPal capture failed";
+        } finally {
+          cleanPayPalQueryParams();
+        }
+      }
+
       async function bootstrapDatabase() {
         if (!supabaseClient) {
           setDatabaseStatus({
@@ -3571,7 +3772,7 @@
             metricTile("ledger", WALLET_INFO.ledger),
             metricTile("economics", `owner fee ${Math.round(DELIVERY_RULES.platformFeeRate * 100)}%`),
             metricTile("card", STRIPE_PAYMENT_LINK ? "checkout ready" : "setup needed"),
-            metricTile("paypal", PAYPAL_CHECKOUT_URL ? "checkout ready" : "setup needed"),
+            metricTile("paypal", paypalAvailable() ? "capture flow ready" : "setup needed"),
             metricTile("revolut", REVOLUT_CHECKOUT_URL ? "checkout ready" : "setup needed")
           ].join("");
           actions = `
@@ -3681,12 +3882,7 @@
               return;
             }
             if (action === "paypal") {
-              if (PAYPAL_CHECKOUT_URL) {
-                window.open(PAYPAL_CHECKOUT_URL, "_blank", "noopener");
-                query.placeholder = "PayPal checkout opened";
-              } else {
-                query.placeholder = "Add window.ASTRANOV_PAYPAL_CHECKOUT_URL";
-              }
+              beginPayPalCheckout();
               setPanel(null);
               return;
             }
@@ -4837,10 +5033,10 @@
             query.placeholder = data.message || "Card checkout opened";
             return true;
           }
-          if (data?.payment === "paypal" && PAYPAL_CHECKOUT_URL) {
-            window.open(PAYPAL_CHECKOUT_URL, "_blank", "noopener");
-            query.placeholder = data.message || "PayPal checkout opened";
-            return true;
+          if (data?.payment === "paypal" && paypalAvailable()) {
+            const launched = await beginPayPalCheckout();
+            if (launched && data.message) query.placeholder = data.message;
+            return launched;
           }
           if (data?.signalId && signalStates.has(data.signalId)) {
             const state = signalStates.get(data.signalId);
@@ -4963,7 +5159,7 @@
       }
 
       SIGNALS.forEach(createSignalState);
-      bootstrapDatabase();
+      bootstrapDatabase().finally(() => handlePayPalReturn());
       let longPressTimer = null;
       let recognition = null;
       let listening = false;
