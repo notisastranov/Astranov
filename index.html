@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Astranov Signal Operating System</title>
+    <title>Astranov Planet</title>
   <style>
     @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
@@ -28,7 +28,7 @@
       --safe-right: max(14px, env(safe-area-inset-right));
       --safe-bottom: max(14px, env(safe-area-inset-bottom));
       --safe-left: max(14px, env(safe-area-inset-left));
-      --wheel-size: clamp(152px, 38vw, 190px);
+      --wheel-size: clamp(170px, 42vw, 210px);
       --top-bar-height: 52px;
     }
 
@@ -206,9 +206,9 @@
 
     .top-btn-title {
       font-family: var(--font-tech);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.02em;
       color: #e9fbff;
     }
 
@@ -366,15 +366,15 @@
       width: var(--wheel-size);
       height: var(--wheel-size);
       display: block;
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       border-radius: 50%;
       overflow: hidden;
       pointer-events: auto;
-      background: linear-gradient(180deg, rgba(15, 21, 30, 0.92), rgba(8, 13, 20, 0.88));
+      background: linear-gradient(180deg, rgba(16, 22, 30, 0.9), rgba(10, 15, 22, 0.86));
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-        0 10px 24px rgba(0, 0, 0, 0.26);
-      backdrop-filter: blur(14px);
+        0 18px 42px rgba(0, 0, 0, 0.32),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(12px);
       transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
     }
 
@@ -392,11 +392,11 @@
     }
 
     .hud-wheel[data-active="true"] {
-      border-color: rgba(22, 217, 255, 0.32);
+      border-color: rgba(22, 217, 255, 0.22);
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-        0 0 18px rgba(22, 217, 255, 0.06),
-        0 14px 32px rgba(0, 0, 0, 0.3);
+        0 20px 44px rgba(0, 0, 0, 0.34),
+        0 0 16px rgba(22, 217, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
     }
 
     .hud-wheel.dragging,
@@ -410,9 +410,7 @@
 
     .wheel-content {
       position: absolute;
-      inset: 2px;
-      transform: scale(var(--wheel-scale));
-      transform-origin: center center;
+      inset: 0;
     }
 
     .wheel-svg {
@@ -425,60 +423,69 @@
 
     .wheel-meta {
       position: absolute;
-      bottom: 6px;
+      bottom: 8px;
       width: 100%;
-      padding: 0 8px;
+      padding: 0 12px;
       color: var(--muted);
-      font-size: 7.2px;
-      letter-spacing: 0.06em;
+      font-size: 7.6px;
+      letter-spacing: 0.02em;
       text-align: center;
       text-transform: none;
       white-space: normal;
-      line-height: 1.15;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
     }
 
     .wheel-stat {
       position: absolute;
-      color: #dffaff;
-      font-size: 7px;
+      z-index: 2;
+      color: #e7f5ff;
+      font-size: 7.8px;
       font-weight: 600;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.03em;
       line-height: 1.15;
       text-transform: none;
       text-align: center;
       white-space: normal;
-      max-width: 42px;
-      text-shadow: 0 0 8px rgba(22, 217, 255, 0.12);
+      max-width: 56px;
+    }
+
+    .perf-wheel .wheel-stat {
+      padding: 4px 6px;
+      border-radius: 10px;
+      background: rgba(7, 13, 19, 0.34);
+      backdrop-filter: blur(4px);
     }
 
     .wheel-stat small {
       display: block;
       margin-top: 2px;
       color: var(--muted);
-      font-size: 6.5px;
-      letter-spacing: 0.04em;
+      font-size: 6.7px;
+      letter-spacing: 0.02em;
+      overflow-wrap: anywhere;
     }
 
     .wheel-stat.north {
-      top: 10px;
+      top: 12px;
       left: 50%;
       transform: translateX(-50%);
     }
 
     .wheel-stat.west {
-      top: 36px;
-      left: 7px;
+      top: 34px;
+      left: 14px;
       text-align: left;
     }
 
     .wheel-stat.east {
-      top: 36px;
-      right: 7px;
+      top: 34px;
+      right: 14px;
       text-align: right;
     }
 
     .wheel-stat.south {
-      bottom: 21px;
+      bottom: 26px;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -488,18 +495,20 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 54px;
-      height: 54px;
+      width: 60px;
+      height: 60px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 2px;
       transform: translate(-50%, -50%);
-      border: 1px solid rgba(22, 217, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 50%;
-      background: rgba(9, 16, 24, 0.96);
-      box-shadow: inset 0 0 10px rgba(22, 217, 255, 0.06);
+      background: rgba(9, 15, 21, 0.96);
+      box-shadow:
+        0 10px 18px rgba(0, 0, 0, 0.18),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
       color: #eefcff;
       cursor: pointer;
     }
@@ -509,20 +518,20 @@
     }
 
     .radar-wheel .wheel-center-btn {
-      width: 44px;
-      height: 44px;
+      width: 52px;
+      height: 52px;
     }
 
     .wheel-center-icon {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       display: grid;
       place-items: center;
     }
 
     .wheel-center-icon svg {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.8;
@@ -531,26 +540,28 @@
     }
 
     .wheel-center-value {
-      font-size: 9px;
+      font-size: 9.6px;
       color: var(--muted);
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
     }
 
     .perf-wheel .wheel-center-btn.active {
-      border-color: rgba(77, 242, 200, 0.28);
-      box-shadow: inset 0 0 14px rgba(77, 242, 200, 0.12);
+      border-color: rgba(77, 242, 200, 0.24);
+      box-shadow:
+        0 10px 24px rgba(0, 0, 0, 0.24),
+        inset 0 0 0 1px rgba(77, 242, 200, 0.08);
     }
 
     .wheel-resize-grip {
       position: absolute;
-      right: 8px;
-      bottom: 8px;
-      width: 20px;
-      height: 20px;
-      border: 1px solid rgba(22, 217, 255, 0.14);
+      right: 10px;
+      bottom: 10px;
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 50%;
       background: rgba(10, 18, 26, 0.92);
-      box-shadow: 0 0 10px rgba(22, 217, 255, 0.08);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.12);
       cursor: nwse-resize;
     }
 
@@ -587,9 +598,9 @@
     }
 
     .radar-compass {
-      fill: #8daac0;
-      font-size: 5.2px;
-      letter-spacing: 0.04em;
+      fill: rgba(222, 235, 245, 0.68);
+      font-size: 5.5px;
+      letter-spacing: 0.03em;
       text-transform: none;
     }
 
@@ -667,34 +678,41 @@
 
     #addBtn {
       position: absolute;
-      top: -16px;
-      right: -6px;
-      width: 36px;
-      min-width: 36px;
-      height: 36px;
+      top: -34px;
+      right: -2px;
+      width: 52px;
+      min-width: 52px;
+      height: 52px;
       padding: 0;
-      border: 1px solid rgba(22, 217, 255, 0.16);
-      border-radius: 50%;
-      background: rgba(16, 23, 32, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      background: rgba(12, 19, 27, 0.96);
       color: #ebf6ff;
-      font-size: 22px;
+      font-size: 28px;
       font-weight: 400;
       line-height: 1;
       display: grid;
       place-items: center;
       cursor: pointer;
+      box-shadow: 0 14px 28px rgba(0, 0, 0, 0.26);
     }
 
     #addCycle {
-      position: absolute;
-      right: calc(var(--safe-right) + 14px);
-      bottom: calc(var(--safe-bottom) + 48px);
-      width: 1px;
-      height: 1px;
+      position: fixed;
+      inset: 0;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.18s ease;
       z-index: 14;
+    }
+
+    #addCycle::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(8, 16, 24, 0.16), transparent 28%);
+      opacity: 0;
+      transition: opacity 0.18s ease;
     }
 
     #addCycle[data-open="true"] {
@@ -702,31 +720,35 @@
       pointer-events: auto;
     }
 
+    #addCycle[data-open="true"]::before {
+      opacity: 1;
+    }
+
     .add-cycle-btn {
       --add-x: 0px;
       --add-y: 0px;
-      --add-scale: 0.8;
+      --add-scale: 0.84;
       position: absolute;
-      right: 0;
-      bottom: 0;
-      width: 42px;
-      height: 42px;
+      left: 50%;
+      top: 50%;
+      width: 58px;
+      height: 58px;
       display: grid;
       place-items: center;
-      border-radius: 50%;
-      border: 1px solid rgba(22, 217, 255, 0.14);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(10, 16, 24, 0.96);
       color: #e9faff;
-      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
       cursor: pointer;
       opacity: 0;
-      transform: translate(var(--add-x), var(--add-y)) scale(var(--add-scale));
+      transform: translate(-50%, -50%) translate(var(--add-x), var(--add-y)) scale(var(--add-scale));
       transition: transform 0.18s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, opacity 0.18s ease;
     }
 
     .add-cycle-btn svg {
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.8;
@@ -736,10 +758,10 @@
 
     .add-cycle-btn[data-active="true"],
     .add-cycle-btn:hover {
-      border-color: rgba(22, 217, 255, 0.34);
-      background: rgba(15, 35, 52, 0.94);
+      border-color: rgba(22, 217, 255, 0.28);
+      background: rgba(14, 30, 42, 0.96);
       box-shadow: 0 0 14px rgba(22, 217, 255, 0.14), 0 14px 24px rgba(0, 0, 0, 0.32);
-      transform: translate(var(--add-x), calc(var(--add-y) - 2px)) scale(var(--add-scale));
+      transform: translate(-50%, -50%) translate(var(--add-x), calc(var(--add-y) - 2px)) scale(var(--add-scale));
     }
 
     #addCycle[data-open="true"] .add-cycle-btn {
@@ -747,20 +769,20 @@
     }
 
     #addCycle[data-open="true"] .add-cycle-btn:nth-child(1) {
-      --add-x: -8px;
-      --add-y: -58px;
+      --add-x: 0px;
+      --add-y: -102px;
       --add-scale: 1;
     }
 
     #addCycle[data-open="true"] .add-cycle-btn:nth-child(2) {
-      --add-x: -48px;
-      --add-y: -98px;
+      --add-x: -88px;
+      --add-y: 34px;
       --add-scale: 1;
     }
 
     #addCycle[data-open="true"] .add-cycle-btn:nth-child(3) {
-      --add-x: -102px;
-      --add-y: -112px;
+      --add-x: 88px;
+      --add-y: 34px;
       --add-scale: 1;
     }
 
@@ -898,6 +920,8 @@
       line-height: 1;
       letter-spacing: 0.04em;
       white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
     .popup-kind svg,
@@ -928,7 +952,7 @@
       margin: 0;
       color: #eefcff;
       font-size: 17px;
-      line-height: 1.12;
+      line-height: 1.18;
       letter-spacing: 0.01em;
       overflow-wrap: anywhere;
     }
@@ -936,8 +960,8 @@
     .popup-summary {
       margin: 0;
       color: #c6d4e2;
-      font-size: 12px;
-      line-height: 1.5;
+      font-size: 12.4px;
+      line-height: 1.52;
       overflow-wrap: anywhere;
     }
 
@@ -974,7 +998,7 @@
 
     .popup-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -1057,6 +1081,10 @@
       .signal-popup {
         width: min(340px, 32vw);
       }
+
+      .popup-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 560px) {
@@ -1079,7 +1107,7 @@
 
     @media (max-height: 760px) {
       :root {
-        --wheel-size: 136px;
+        --wheel-size: 152px;
         --top-bar-height: 48px;
       }
 
@@ -1141,7 +1169,7 @@
         </button>
         <button class="top-btn system" id="systemButton" type="button" aria-label="Open Astranov system status">
           <span class="top-btn-stack">
-            <span class="top-btn-title">ASTRANOV IOS</span>
+            <span class="top-btn-title">Astranov Planet</span>
             <span class="top-btn-sub" id="systemVersionBadge">v3.7.2 / v3.8.0</span>
           </span>
         </button>
@@ -1207,22 +1235,24 @@
               </filter>
             </defs>
             <g id="radarGrid">
-              <line x1="60" y1="10" x2="60" y2="110" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
-              <line x1="10" y1="60" x2="110" y2="60" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
+              <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(22,217,255,0.09)" stroke-width="1"></circle>
+              <circle cx="60" cy="60" r="28" fill="none" stroke="rgba(22,217,255,0.06)" stroke-width="1"></circle>
+              <line x1="60" y1="12" x2="60" y2="108" stroke="rgba(22,217,255,0.08)" stroke-width="1"></line>
+              <line x1="12" y1="60" x2="108" y2="60" stroke="rgba(22,217,255,0.08)" stroke-width="1"></line>
             </g>
             <g id="radarPips"></g>
-            <path id="radarSweepCone" d="M60 60 L56 13 A47 47 0 0 1 64 13 Z" fill="#16d9ff" fill-opacity="0.14" filter="url(#wheelGlow)"></path>
-            <line id="radarSweep" x1="60" y1="60" x2="60" y2="12" stroke="#16d9ff" stroke-width="2.3" stroke-linecap="round" filter="url(#wheelGlow)"></line>
+            <path id="radarSweepCone" d="M60 60 L57 14 A46 46 0 0 1 63 14 Z" fill="#16d9ff" fill-opacity="0.11" filter="url(#wheelGlow)"></path>
+            <line id="radarSweep" x1="60" y1="60" x2="60" y2="14" stroke="#16d9ff" stroke-width="2" stroke-linecap="round" filter="url(#wheelGlow)"></line>
             <text class="radar-compass" id="radarNorth" x="60" y="13" text-anchor="middle">SUN</text>
-            <text class="radar-compass" id="radarEast" x="107" y="63" text-anchor="middle">+</text>
+            <text class="radar-compass" id="radarEast" x="107" y="63" text-anchor="middle">ZEN</text>
             <text class="radar-compass" id="radarSouth" x="60" y="112" text-anchor="middle">GAL</text>
-            <text class="radar-compass" id="radarWest" x="13" y="63" text-anchor="middle">+</text>
+            <text class="radar-compass" id="radarWest" x="13" y="63" text-anchor="middle">ORB</text>
           </svg>
-          <button class="wheel-center-btn" id="radarFetchBtn" type="button">
-            <span class="wheel-center-icon" id="radarFetchIcon" aria-hidden="true"></span>
-            <span class="wheel-center-value" id="radarFetchValue">0</span>
+          <button class="wheel-center-btn" id="radarCenterBtn" type="button">
+            <span class="wheel-center-icon" id="radarCenterIcon" aria-hidden="true"></span>
+            <span class="wheel-center-value" id="radarCenterValue">GPS</span>
           </button>
-          <span class="wheel-meta" id="radarMeta">signal radar</span>
+          <span class="wheel-meta" id="radarMeta">locate and zoom</span>
         </div>
         <button class="wheel-resize-grip" id="radarResizeGrip" type="button" aria-label="Resize HUD wheels"></button>
       </div>
@@ -1237,7 +1267,7 @@
           </svg>
         </button>
         <div id="composerField">
-          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading signal routing..." aria-label="AI signal command rail" />
+          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading AI routing..." aria-label="AI signal command rail" />
           <button id="addBtn" type="button" aria-label="Add shop, service, or video">+</button>
         </div>
         <button class="composer-btn" id="sendBtn" type="submit" aria-label="Execute command">
@@ -1288,9 +1318,9 @@
       const radarSweepCone = $("radarSweepCone");
       const radarSweep = $("radarSweep");
       const radarMeta = $("radarMeta");
-      const radarFetchBtn = $("radarFetchBtn");
-      const radarFetchIcon = $("radarFetchIcon");
-      const radarFetchValue = $("radarFetchValue");
+      const radarCenterBtn = $("radarCenterBtn");
+      const radarCenterIcon = $("radarCenterIcon");
+      const radarCenterValue = $("radarCenterValue");
       const radarResizeGrip = $("radarResizeGrip");
       const radarNorth = $("radarNorth");
       const radarEast = $("radarEast");
@@ -1299,12 +1329,17 @@
       const addCycleButtons = [...document.querySelectorAll("[data-add-kind]")];
 
       const APP_INFO = {
-        name: "Astranov IOS",
+        name: "Astranov Planet",
         currentVersion: "3.7.2",
         latestVersion: "3.8.0",
         build: "planetary signal shell",
         sync: "core shell"
       };
+
+      const AI_ENDPOINT = typeof window.ASTRANOV_AI_ENDPOINT === "string" ? window.ASTRANOV_AI_ENDPOINT.trim() : "";
+      const STRIPE_PAYMENT_LINK = typeof window.ASTRANOV_STRIPE_PAYMENT_LINK === "string" ? window.ASTRANOV_STRIPE_PAYMENT_LINK.trim() : "";
+      const PAYPAL_CHECKOUT_URL = typeof window.ASTRANOV_PAYPAL_CHECKOUT_URL === "string" ? window.ASTRANOV_PAYPAL_CHECKOUT_URL.trim() : "";
+      const CUSTOM_SIGNALS_KEY = "astranov.customSignals.v1";
 
       const USER_INFO = {
         name: "Astranov Operator",
@@ -1561,6 +1596,17 @@
         }
       ];
 
+      try {
+        const storedSignals = JSON.parse(window.localStorage.getItem(CUSTOM_SIGNALS_KEY) || "[]");
+        if (Array.isArray(storedSignals)) {
+          storedSignals
+            .filter((signal) => signal && signal.id && Number.isFinite(signal.lat) && Number.isFinite(signal.lng))
+            .forEach((signal) => SIGNALS.push(signal));
+        }
+      } catch (error) {
+        console.warn("Astranov listings cache unavailable", error);
+      }
+
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
       const damp = (value, target, ease) => value + (target - value) * ease;
       const dampAngle = (value, target, ease) => {
@@ -1587,12 +1633,12 @@
         addMode: null,
         addCycleOpen: false,
         addCycleIndex: 0,
+        userSignalId: "user-location",
         zoomed: false,
         zoomLevel: 0,
         zoomTarget: 0,
         dragging: false,
         dragMoved: false,
-        longPressTriggered: false,
         pointerStartX: 0,
         pointerStartY: 0,
         lastPointerX: 0,
@@ -1600,12 +1646,13 @@
         holdUntil: 0,
         lastCycle: performance.now(),
         radarAngle: 0,
+        searchBusy: false,
         pinchStart: 0,
         pinchZoomStart: 0,
         performancePeak: 42,
         hud: {
           top: 0,
-          size: Math.min(188, Math.max(152, window.innerWidth * 0.38)),
+          size: Math.min(208, Math.max(170, window.innerWidth * 0.42)),
           mode: null,
           pointerId: null,
           startX: 0,
@@ -1688,30 +1735,6 @@
       );
       scene.add(stars, brightStars);
 
-      const satelliteGroup = new THREE.Group();
-      scene.add(satelliteGroup);
-      const satellites = Array.from({ length: 6 }, (_, index) => {
-        const shell = new THREE.Group();
-        const body = new THREE.Mesh(
-          new THREE.BoxGeometry(0.05, 0.05, 0.09),
-          new THREE.MeshStandardMaterial({ color: 0xd6e4f1, metalness: 0.28, roughness: 0.5 })
-        );
-        const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x547fa8, metalness: 0.18, roughness: 0.54 });
-        const panelLeft = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.004), panelMaterial);
-        const panelRight = panelLeft.clone();
-        panelLeft.position.x = -0.095;
-        panelRight.position.x = 0.095;
-        shell.add(body, panelLeft, panelRight);
-        satelliteGroup.add(shell);
-        return {
-          mesh: shell,
-          radius: earthRadius + 0.8 + index * 0.07,
-          speed: 0.14 + index * 0.028,
-          phase: index * 1.08,
-          tilt: -0.92 + index * 0.28
-        };
-      });
-
       const earthMaterial = new THREE.MeshPhongMaterial({
         color: 0xffffff,
         shininess: 11,
@@ -1725,14 +1748,7 @@
         new THREE.SphereGeometry(earthRadius + 0.012, 96, 96),
         new THREE.MeshBasicMaterial({ color: 0x3a5575, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false })
       );
-      const cloudShellMaterial = new THREE.MeshPhongMaterial({
-        color: 0xd7f8ff,
-        transparent: true,
-        opacity: 0.12,
-        depthWrite: false
-      });
-      const cloudShell = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.048, 72, 72), cloudShellMaterial);
-      globeGroup.add(earth, nightShell, cloudShell);
+      globeGroup.add(earth, nightShell);
 
       const textureLoader = new THREE.TextureLoader();
       const loadTexture = (url) => new Promise((resolve) => {
@@ -1743,9 +1759,8 @@
         loadTexture("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg"),
         loadTexture("https://threejs.org/examples/textures/planets/earth_normal_2048.jpg"),
         loadTexture("https://threejs.org/examples/textures/planets/earth_specular_2048.jpg"),
-        loadTexture("https://threejs.org/examples/textures/planets/earth_lights_2048.png"),
-        loadTexture("https://threejs.org/examples/textures/planets/earth_clouds_1024.png")
-      ]).then(([day, normal, specular, lights, clouds]) => {
+        loadTexture("https://threejs.org/examples/textures/planets/earth_lights_2048.png")
+      ]).then(([day, normal, specular, lights]) => {
         if (day) {
           earthMaterial.map = day;
           appState.texturesReady = true;
@@ -1753,15 +1768,9 @@
         if (normal) earthMaterial.normalMap = normal;
         if (specular) earthMaterial.specularMap = specular;
         if (lights) nightShell.material.map = lights;
-        if (clouds) {
-          cloudShellMaterial.alphaMap = clouds;
-          cloudShellMaterial.map = clouds;
-          cloudShellMaterial.opacity = 0.24;
-        }
         earthMaterial.needsUpdate = true;
         nightShell.material.needsUpdate = true;
-        cloudShellMaterial.needsUpdate = true;
-        query.placeholder = "Find signals, products, drivers, orders";
+        query.placeholder = defaultQueryPlaceholder();
       });
 
       function latLngToVector3(lat, lng, radius) {
@@ -1813,6 +1822,63 @@
         return { x: cx + dx * scale, y: cy + dy * scale };
       }
 
+      function worldViewBasis() {
+        const viewer = camera.position.clone().normalize();
+        const upHint = camera.up.clone().normalize();
+        const right = new THREE.Vector3().crossVectors(upHint, viewer);
+        if (right.lengthSq() < 1e-5) right.set(1, 0, 0);
+        right.normalize();
+        const up = new THREE.Vector3().crossVectors(viewer, right).normalize();
+        return { viewer, right, up };
+      }
+
+      function signalFacingFromBasis(state, basis) {
+        const normal = worldNormal(state.local);
+        return clamp((normal.dot(basis.viewer) + 1) * 0.5, 0, 1);
+      }
+
+      function signalDirectionFromBasis(state, basis) {
+        const normal = worldNormal(state.local);
+        const dx = normal.dot(basis.right);
+        const dy = -normal.dot(basis.up);
+        const length = Math.hypot(dx, dy);
+        if (length < 0.001) return { x: 0, y: -1 };
+        return { x: dx / length, y: dy / length };
+      }
+
+      function globeScreenRadius(center = globeCenterScreen()) {
+        const samples = [
+          new THREE.Vector3(earthRadius, 0, 0),
+          new THREE.Vector3(-earthRadius, 0, 0),
+          new THREE.Vector3(0, earthRadius, 0),
+          new THREE.Vector3(0, -earthRadius, 0),
+          new THREE.Vector3(0, 0, earthRadius),
+          new THREE.Vector3(0, 0, -earthRadius)
+        ];
+        return samples.reduce((radius, sample) => {
+          const point = screenPoint(sample.clone().applyMatrix4(globeGroup.matrixWorld));
+          return Math.max(radius, Math.hypot(point.x - center.x, point.y - center.y));
+        }, Math.min(appState.width, appState.height) * 0.22);
+      }
+
+      function overlaySourcePoint(state, center, basis, radius) {
+        const source = screenPoint(state.world);
+        if (frontFacing(state)) return source;
+        const dir = signalDirectionFromBasis(state, basis);
+        return {
+          x: center.x + dir.x * radius * 0.94,
+          y: center.y + dir.y * radius * 0.94,
+          z: source.z
+        };
+      }
+
+      function aimGlobeAtState(state) {
+        const coords = vectorToLatLng(state.local);
+        const desiredTilt = Math.atan2(CAMERA_BASE.y, CAMERA_BASE.z);
+        targetRotation.x = clamp(THREE.MathUtils.degToRad(coords.lat) - desiredTilt, -0.76, 0.76);
+        targetRotation.y = THREE.MathUtils.degToRad(-90 - coords.lng);
+      }
+
       function rotationForSignal(state) {
         const target = state.local.clone().normalize();
         const lon = Math.atan2(target.z, -target.x);
@@ -1854,6 +1920,7 @@
           refresh: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7"></path><path d="M21 12a9 9 0 0 1-15 6.7"></path><path d="M18 3v4h-4"></path><path d="M6 21v-4h4"></path></svg>',
           transactions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M5 12h10"></path><path d="M5 17h14"></path><path d="M17 10l2 2-2 2"></path></svg>',
           payments: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg>',
+          paypal: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h5.3a4.7 4.7 0 0 1 0 9.4H10l-1 5H5.5L8 5z"></path><path d="M12 9h2.4a3.6 3.6 0 0 1 0 7.2H12.8"></path></svg>',
           inspect: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>',
           drone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M12 16v4"></path><path d="M4 12h4"></path><path d="M16 12h4"></path><circle cx="12" cy="4" r="2"></circle><circle cx="12" cy="20" r="2"></circle><circle cx="4" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle></svg>',
           target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M2 12h4"></path><path d="M18 12h4"></path></svg>',
@@ -1862,9 +1929,7 @@
           cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 18 8v8l-6 4-6-4V8z"></path><path d="M12 4v16"></path><path d="M6 8h12"></path><path d="M6 16h12"></path></svg>',
           order: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h14l-1.5 7H8z"></path><path d="M6 7 5 4H2"></path><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle></svg>',
           play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6l10 6-10 6z"></path></svg>',
-          route: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="6" r="2"></circle><path d="M8 18c4-1 8-4 10-10"></path></svg>',
-          triangleDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17 6 9h12z"></path></svg>',
-          triangleUp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7l6 8H6z"></path></svg>'
+          route: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="6" r="2"></circle><path d="M8 18c4-1 8-4 10-10"></path></svg>'
         };
         return icons[name] || icons.target;
       }
@@ -1961,12 +2026,15 @@
             metricTile("balance", WALLET_INFO.balance),
             metricTile("pending", WALLET_INFO.pending),
             metricTile("ledger", WALLET_INFO.ledger),
-            metricTile("economics", WALLET_INFO.economics)
+            metricTile("economics", WALLET_INFO.economics),
+            metricTile("card", STRIPE_PAYMENT_LINK ? "checkout ready" : "setup needed"),
+            metricTile("paypal", PAYPAL_CHECKOUT_URL ? "checkout ready" : "setup needed")
           ].join("");
           actions = `
             <div class="top-panel-actions">
               ${panelActionMarkup("transactions", "Transactions", "transactions")}
-              ${panelActionMarkup("payments", "Payments", "payments")}
+              ${panelActionMarkup("card", "Card checkout", "payments")}
+              ${panelActionMarkup("paypal", "PayPal checkout", "paypal")}
             </div>
           `;
         }
@@ -2051,8 +2119,23 @@
               setPanel(null);
               return;
             }
-            if (action === "payments") {
-              query.placeholder = "Payments ready";
+            if (action === "card") {
+              if (STRIPE_PAYMENT_LINK) {
+                window.open(STRIPE_PAYMENT_LINK, "_blank", "noopener");
+                query.placeholder = "Card checkout opened";
+              } else {
+                query.placeholder = "Add window.ASTRANOV_STRIPE_PAYMENT_LINK";
+              }
+              setPanel(null);
+              return;
+            }
+            if (action === "paypal") {
+              if (PAYPAL_CHECKOUT_URL) {
+                window.open(PAYPAL_CHECKOUT_URL, "_blank", "noopener");
+                query.placeholder = "PayPal checkout opened";
+              } else {
+                query.placeholder = "Add window.ASTRANOV_PAYPAL_CHECKOUT_URL";
+              }
               setPanel(null);
               return;
             }
@@ -2082,7 +2165,7 @@
         if (walletIcon) walletIcon.innerHTML = iconMarkup("wallet");
         walletButton.setAttribute("title", WALLET_INFO.balance);
         walletButton.setAttribute("aria-label", `Open wallet and economics, balance ${WALLET_INFO.balance}`);
-        if (radarFetchIcon) radarFetchIcon.innerHTML = iconMarkup("target");
+        if (radarCenterIcon) radarCenterIcon.innerHTML = iconMarkup("target");
       }
 
       function setAddCycleOpen(open) {
@@ -2097,16 +2180,97 @@
       function setAddMode(kind) {
         appState.addMode = kind;
         query.placeholder = kind === "video"
-          ? "Tap Earth to post video"
+          ? "Tap Earth to place video listing"
           : kind === "service"
-            ? "Tap Earth to place service"
-            : "Tap Earth to place shop";
+            ? "Tap Earth to place service listing"
+            : "Tap Earth to place shop listing";
         setAddCycleOpen(false);
       }
 
       function setZoom(level) {
         appState.zoomTarget = clamp(level, 0, 1.34);
         appState.zoomed = appState.zoomTarget > 0.08;
+      }
+
+      function persistCustomSignals() {
+        try {
+          const customSignals = [...signalStates.values()]
+            .map((state) => state.signal)
+            .filter((signal) => signal.customListing)
+            .map((signal) => ({
+              id: signal.id,
+              type: signal.type,
+              title: signal.title,
+              summary: signal.summary,
+              capability: signal.capability,
+              actionLabel: signal.actionLabel,
+              armedLabel: signal.armedLabel,
+              region: signal.region,
+              lat: signal.lat,
+              lng: signal.lng,
+              alt: signal.alt,
+              zoom: signal.zoom,
+              previewVideo: signal.previewVideo || "",
+              products: signal.products || [],
+              tags: signal.tags || [],
+              metrics: signal.metrics || [],
+              customListing: true
+            }));
+          window.localStorage.setItem(CUSTOM_SIGNALS_KEY, JSON.stringify(customSignals));
+        } catch (error) {
+          console.warn("Astranov listings cache write failed", error);
+        }
+      }
+
+      function buildUserSignal(latitude, longitude) {
+        return {
+          id: appState.userSignalId,
+          type: "anchor",
+          title: "Your Position",
+          summary: "Live operator location shell ready for local zoom, nearby discovery, and order routing.",
+          capability: "local reveal",
+          actionLabel: "Open Local Area",
+          armedLabel: "Local Area Live",
+          region: `${Math.abs(latitude).toFixed(2)}${latitude >= 0 ? "N" : "S"} / ${Math.abs(longitude).toFixed(2)}${longitude >= 0 ? "E" : "W"}`,
+          lat: latitude,
+          lng: longitude,
+          alt: 0.15,
+          zoom: 1.08,
+          tags: ["user", "local", "position", "anchor"],
+          metrics: [
+            { label: "state", value: "live locate" },
+            { label: "reach", value: "nearby" },
+            { label: "mode", value: "operator shell" }
+          ]
+        };
+      }
+
+      function centerOnUserLocation() {
+        if (!navigator.geolocation) {
+          query.placeholder = "Geolocation is not available on this device";
+          flashNoMatch();
+          return;
+        }
+        query.placeholder = "Finding your location...";
+        navigator.geolocation.getCurrentPosition((position) => {
+          const signal = buildUserSignal(position.coords.latitude, position.coords.longitude);
+          if (signalStates.has(signal.id)) removeSignal(signal.id);
+          createSignalState(signal);
+          const state = signalStates.get(signal.id);
+          if (!state) return;
+          setActiveSignal(signal.id, true);
+          aimGlobeAtState(state);
+          setZoom(1.08);
+          query.placeholder = "Zoomed to your location";
+          appState.holdUntil = performance.now() + 6800;
+        }, () => {
+          query.placeholder = "Location permission is needed to zoom to you";
+          flashNoMatch();
+        }, { enableHighAccuracy: true, maximumAge: 120000, timeout: 10000 });
+      }
+
+      function defaultQueryPlaceholder() {
+        return AI_ENDPOINT ? "Ask AI for signals or orders" : "Find signals, products, drivers";
       }
 
       function focusableSignalState() {
@@ -2133,8 +2297,8 @@
       function applyHudLayout() {
         const topRect = topBar.getBoundingClientRect();
         const composerRect = composer.getBoundingClientRect();
-        const maxSize = Math.min(228, appState.width * 0.46, appState.height * 0.3);
-        appState.hud.size = clamp(appState.hud.size, 136, maxSize);
+        const maxSize = Math.min(248, appState.width * 0.48, appState.height * 0.34);
+        appState.hud.size = clamp(appState.hud.size, 152, maxSize);
         const minTop = topRect.bottom + 14;
         const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - 18);
         appState.hud.top = clamp(appState.hud.top || (minTop + 18), minTop, maxTop);
@@ -2143,7 +2307,6 @@
           wheel.style.top = `${appState.hud.top}px`;
           wheel.style.width = `${appState.hud.size}px`;
           wheel.style.height = `${appState.hud.size}px`;
-          wheel.style.setProperty("--wheel-scale", (appState.hud.size / 120).toFixed(3));
         });
       }
 
@@ -2159,10 +2322,10 @@
         perfCpuValue.textContent = appState.device.cpu;
         perfRamValue.textContent = appState.device.ram;
         perfTempValue.textContent = appState.device.thermal;
-        perfMeta.textContent = `${appState.device.storage} / ${appState.device.battery}`;
-        perfCenterIcon.innerHTML = iconMarkup(appState.zoomTarget > 0.08 ? "triangleUp" : "triangleDown");
-        perfCenterBtn.setAttribute("aria-label", appState.zoomTarget > 0.08 ? "Zoom out to world view" : "Zoom down to Earth");
-        perfCenterBtn.setAttribute("title", appState.zoomTarget > 0.08 ? "Zoom out to world view" : "Zoom down to Earth");
+        perfMeta.textContent = `${appState.device.storage} / ${appState.device.battery} / ${appState.device.network}`;
+        perfCenterIcon.innerHTML = iconMarkup("inspect");
+        perfCenterBtn.setAttribute("aria-label", "Inspect device performance");
+        perfCenterBtn.setAttribute("title", "Inspect device performance");
         perfCenterValue.textContent = `${Math.round(appState.performancePeak)}%`;
         perfCenterBtn.classList.toggle("active", appState.performancePeak > 80);
 
@@ -2171,53 +2334,50 @@
       }
 
       function updateRadarHud(now) {
-        appState.radarAngle = (appState.radarAngle + 0.03) % (Math.PI * 2);
+        const basis = worldViewBasis();
+        appState.radarAngle = (appState.radarAngle + 0.025) % (Math.PI * 2);
         const sweepRotation = `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`;
         radarSweep.setAttribute("transform", sweepRotation);
         radarSweepCone.setAttribute("transform", sweepRotation);
         const pips = [
           `<circle cx="60" cy="60" r="2.1" fill="#d9fbff" fill-opacity="0.82"></circle>`
         ];
-        let visibleCount = 0;
+        let signalCount = 0;
         signalStates.forEach((state) => {
-          if (!frontFacing(state)) return;
-          visibleCount += 1;
-          const relative = state.world.clone().normalize();
-          const dx = clamp(relative.x * 1.08, -1, 1);
-          const dy = clamp(-relative.y * 1.08, -1, 1);
-          const angleFromCenter = Math.atan2(dy, dx);
-          const spread = 22 + Math.min(1, Math.hypot(dx, dy)) * 20 + clamp(1 - state.depth, 0, 1) * 10 + (state.signal.type === "cloud" ? 7 : state.signal.type === "presence" ? 4 : 0);
-          const driftX = Math.cos(now * 0.0014 + state.pulsePhase * 1.7) * (state.signal.type === "presence" ? 1.9 : 0.8);
-          const driftY = Math.sin(now * 0.0011 + state.pulsePhase * 1.4) * (state.signal.type === "presence" ? 1.9 : 0.8);
-          const x = clamp(60 + Math.cos(angleFromCenter) * spread + driftX, 12, 108);
-          const y = clamp(60 + Math.sin(angleFromCenter) * spread + driftY, 12, 108);
-          const angle = Math.atan2(y - 60, x - 60);
-          const sweepDelta = Math.abs(wrapAngle(angle - (appState.radarAngle - Math.PI / 2)));
+          signalCount += 1;
+          const normal = worldNormal(state.local);
+          const azimuth = Math.atan2(-normal.dot(basis.up), normal.dot(basis.right));
+          const separation = Math.acos(clamp(normal.dot(basis.viewer), -1, 1));
+          const radial = 8 + ((separation / Math.PI) * 38);
+          const driftX = Math.cos(now * 0.0014 + state.pulsePhase * 1.7) * (state.signal.type === "presence" ? 1.2 : 0.5);
+          const driftY = Math.sin(now * 0.0011 + state.pulsePhase * 1.4) * (state.signal.type === "presence" ? 1.2 : 0.5);
+          const x = clamp(60 + Math.cos(azimuth) * radial + driftX, 12, 108);
+          const y = clamp(60 + Math.sin(azimuth) * radial + driftY, 12, 108);
+          const sweepDelta = Math.abs(wrapAngle(azimuth - (appState.radarAngle - Math.PI / 2)));
           const sweepEcho = clamp(1 - sweepDelta / 0.42, 0, 1);
           const active = state.signal.id === appState.activeId;
-          const radius = active ? 4.8 : state.signal.type === "cloud" ? 3.5 : 2.8 + sweepEcho * 1.8;
+          const radius = active ? 4.2 : state.signal.type === "cloud" ? 3.2 : 2.5 + sweepEcho * 1.3;
           const accent = "#16d9ff";
 
-          if (sweepEcho > 0.02) {
-            pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius + 4.6 + sweepEcho * 4.8).toFixed(2)}" fill="none" stroke="${accent}" stroke-opacity="${(0.12 + sweepEcho * 0.36).toFixed(2)}" stroke-width="1.15"></circle>`);
-          }
           if (state.signal.type === "presence") {
-            pips.push(`<line x1="${(x - dx * 7).toFixed(2)}" y1="${(y - dy * 7).toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${accent}" stroke-opacity="${(0.24 + sweepEcho * 0.32).toFixed(2)}" stroke-width="1.2" stroke-linecap="round"></line>`);
+            pips.push(`<line x1="${(x - Math.cos(azimuth) * 5.5).toFixed(2)}" y1="${(y - Math.sin(azimuth) * 5.5).toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${accent}" stroke-opacity="${(0.22 + sweepEcho * 0.32).toFixed(2)}" stroke-width="1.1" stroke-linecap="round"></line>`);
           }
           pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${accent}" fill-opacity="${active ? "1" : (0.46 + sweepEcho * 0.42).toFixed(2)}"></circle>`);
           pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius * 0.42).toFixed(2)}" fill="#effcff" fill-opacity="${active ? "0.92" : "0.54"}"></circle>`);
         });
         radarPips.innerHTML = pips.join("");
-        radarMeta.textContent = appState.zoomTarget > 0.08 ? "earth track" : "celestial";
-        radarFetchValue.textContent = `${visibleCount}`.padStart(2, "0");
-        radarFetchBtn.setAttribute("aria-label", visibleCount ? "Fetch nearest visible signal" : "Cycle signals");
-        radarFetchBtn.setAttribute("title", visibleCount ? "Fetch nearest visible signal" : "Cycle signals");
+        const userFocused = appState.activeId === appState.userSignalId && appState.zoomTarget > 0.32;
+        radarMeta.textContent = appState.zoomTarget > 0.08 ? "earth compass" : "stellar compass";
+        radarCenterValue.textContent = userFocused ? "OUT" : "GPS";
+        radarCenterBtn.setAttribute("aria-label", userFocused ? "Return to orbit view" : "Locate and zoom to your position");
+        radarCenterBtn.setAttribute("title", userFocused ? "Return to orbit view" : "Locate and zoom to your position");
         radarNorth.textContent = appState.zoomTarget > 0.08 ? "N" : "SUN";
-        radarEast.textContent = appState.zoomTarget > 0.08 ? "E" : "+";
+        radarEast.textContent = appState.zoomTarget > 0.08 ? "E" : "ZEN";
         radarSouth.textContent = appState.zoomTarget > 0.08 ? "S" : "GAL";
-        radarWest.textContent = appState.zoomTarget > 0.08 ? "W" : "+";
-        radarGrid.style.opacity = appState.zoomTarget > 0.08 ? "1" : "0";
+        radarWest.textContent = appState.zoomTarget > 0.08 ? "W" : "ORB";
+        radarGrid.style.opacity = appState.zoomTarget > 0.08 ? "1" : "0.72";
         radarWheel.dataset.active = "true";
+        radarWheel.dataset.count = `${signalCount}`;
       }
 
       function refreshDeviceTelemetry() {
@@ -2227,12 +2387,14 @@
         appState.device.cpu = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}c` : "cpu hook";
         appState.device.ram = navigator.deviceMemory ? `${navigator.deviceMemory}gb` : "ram hook";
         appState.device.network = navigator.connection?.effectiveType ? `${navigator.connection.effectiveType} net` : "network hook";
-        appState.device.thermal = "web estimate";
+        appState.device.thermal = "sensor hook";
 
         if (navigator.storage?.estimate) {
           navigator.storage.estimate().then((estimate) => {
             if (!estimate.quota) return;
-            appState.device.storage = `${Math.round(estimate.quota / 1073741824)}gb store`;
+            const quotaGb = Math.max(1, Math.round(estimate.quota / 1073741824));
+            const usedGb = Math.max(0, Math.round((estimate.usage || 0) / 1073741824));
+            appState.device.storage = `${usedGb}/${quotaGb}gb`;
           }).catch(() => {
             appState.device.storage = "storage hook";
           });
@@ -2322,20 +2484,20 @@
 
       function addAnchorVisual(state) {
         const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.016, 0.016, 0.2, 10),
-          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.74, depthWrite: false })
+          new THREE.CylinderGeometry(0.009, 0.009, 0.14, 10),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.68, depthWrite: false })
         );
-        pole.position.y = 0.09;
+        pole.position.y = 0.065;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.056, 18, 18),
-          new THREE.MeshBasicMaterial({ color: 0xcffcff, transparent: true, opacity: 0.98, depthWrite: false })
+          new THREE.SphereGeometry(0.028, 18, 18),
+          new THREE.MeshBasicMaterial({ color: 0xcffcff, transparent: true, opacity: 0.96, depthWrite: false })
         );
-        core.position.y = 0.18;
+        core.position.y = 0.125;
         const shell = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.04, 0),
-          new THREE.MeshBasicMaterial({ color: 0x8ef3ff, transparent: true, opacity: 0.78, depthWrite: false })
+          new THREE.OctahedronGeometry(0.018, 0),
+          new THREE.MeshBasicMaterial({ color: 0x8ef3ff, transparent: true, opacity: 0.52, depthWrite: false })
         );
-        shell.position.y = 0.18;
+        shell.position.y = 0.125;
         state.group.add(pole, shell, core);
         state.core = core;
         state.pole = pole;
@@ -2344,20 +2506,20 @@
 
       function addPresenceVisual(state) {
         const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.013, 0.013, 0.18, 8),
-          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.62, depthWrite: false })
+          new THREE.CylinderGeometry(0.008, 0.008, 0.12, 8),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.56, depthWrite: false })
         );
-        pole.position.y = 0.09;
+        pole.position.y = 0.062;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.058, 18, 18),
+          new THREE.SphereGeometry(0.026, 18, 18),
           new THREE.MeshBasicMaterial({ color: 0xe1fdff, transparent: true, opacity: 1, depthWrite: false })
         );
-        core.position.y = 0.22;
+        core.position.y = 0.14;
         const shell = new THREE.Mesh(
-          new THREE.ConeGeometry(0.036, 0.08, 6),
-          new THREE.MeshBasicMaterial({ color: 0x9ef8ff, transparent: true, opacity: 0.76, depthWrite: false })
+          new THREE.ConeGeometry(0.018, 0.05, 6),
+          new THREE.MeshBasicMaterial({ color: 0x9ef8ff, transparent: true, opacity: 0.64, depthWrite: false })
         );
-        shell.position.y = 0.28;
+        shell.position.y = 0.185;
         state.group.add(pole, shell, core);
         state.core = core;
         state.pole = pole;
@@ -2380,28 +2542,28 @@
 
       function addCloudVisual(state) {
         const latticePoints = [
-          0.00, 0.12, -0.16,   0.16, 0.22, 0.00,
-          0.16, 0.22, 0.00,    0.00, 0.32, 0.16,
-          0.00, 0.32, 0.16,   -0.16, 0.22, 0.00,
-         -0.16, 0.22, 0.00,    0.00, 0.12, -0.16,
-         -0.16, 0.22, 0.00,    0.16, 0.22, 0.00,
-          0.00, 0.12, -0.16,   0.00, 0.32, 0.16
+          0.00, 0.08, -0.10,   0.10, 0.16, 0.00,
+          0.10, 0.16, 0.00,    0.00, 0.22, 0.10,
+          0.00, 0.22, 0.10,   -0.10, 0.16, 0.00,
+         -0.10, 0.16, 0.00,    0.00, 0.08, -0.10,
+         -0.10, 0.16, 0.00,    0.10, 0.16, 0.00,
+          0.00, 0.08, -0.10,   0.00, 0.22, 0.10
         ];
         const lattice = new THREE.LineSegments(
           new THREE.BufferGeometry(),
-          new THREE.LineBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.68, depthWrite: false })
+          new THREE.LineBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.62, depthWrite: false })
         );
         lattice.geometry.setAttribute("position", new THREE.Float32BufferAttribute(latticePoints, 3));
         const shell = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.065, 0),
-          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.58, depthWrite: false })
+          new THREE.OctahedronGeometry(0.03, 0),
+          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.42, depthWrite: false })
         );
-        shell.position.y = 0.22;
+        shell.position.y = 0.16;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.052, 18, 18),
+          new THREE.SphereGeometry(0.024, 18, 18),
           new THREE.MeshBasicMaterial({ color: 0xcdf8ff, transparent: true, opacity: 1, depthWrite: false })
         );
-        core.position.y = 0.22;
+        core.position.y = 0.16;
         state.group.add(shell, lattice, core);
         state.core = core;
         state.shell = shell;
@@ -2428,8 +2590,8 @@
         if (signal.type === "presence") addPresenceVisual(state);
         if (signal.type === "cloud") addCloudVisual(state);
 
-        const hit = new THREE.Mesh(new THREE.SphereGeometry(signal.type === "cloud" ? 0.28 : 0.22, 12, 12), new THREE.MeshBasicMaterial({ visible: false }));
-        hit.position.y = signal.type === "cloud" ? 0.22 : signal.type === "presence" ? 0.2 : 0.16;
+        const hit = new THREE.Mesh(new THREE.SphereGeometry(signal.type === "cloud" ? 0.18 : 0.15, 12, 12), new THREE.MeshBasicMaterial({ visible: false }));
+        hit.position.y = signal.type === "cloud" ? 0.16 : signal.type === "presence" ? 0.14 : 0.12;
         hit.userData.signalId = signal.id;
         state.group.add(hit);
         state.hit = hit;
@@ -2454,31 +2616,31 @@
       }
 
       function spawnSeed(localPoint) {
-        if (appState.seedId && signalStates.has(appState.seedId)) removeSignal(appState.seedId);
         const coords = vectorToLatLng(localPoint);
         const mode = appState.addMode || "shop";
+        const typedTitle = query.value.trim();
         const seedProfile = mode === "video"
           ? {
-            title: "Video Post Seed",
-            summary: "Fresh location-bound video post ready for preview, captioning, and local distribution.",
-            capability: "video post",
-            actionLabel: "Post Video",
-            armedLabel: "Video Live",
+            title: typedTitle || "Video Listing",
+            summary: "Location-bound video listing ready for preview, captioning, and local discovery.",
+            capability: "video listing",
+            actionLabel: "Open Video Listing",
+            armedLabel: "Video Listing Live",
             tags: ["video", "post", "creator", "anchor"],
             metrics: [
-              { label: "state", value: "clip ready" },
+              { label: "state", value: "draft ready" },
               { label: "reach", value: "local feed" },
-              { label: "shell", value: "previewable" }
+              { label: "shell", value: "preview live" }
             ],
             previewVideo: "https://www.w3schools.com/html/mov_bbb.mp4"
           }
           : mode === "service"
             ? {
-              title: "Service Seed",
-              summary: "New service signal ready for pricing, schedule, and dispatch hooks from this exact place.",
-              capability: "service shell",
-              actionLabel: "Add Service",
-              armedLabel: "Service Live",
+              title: typedTitle || "Service Listing",
+              summary: "New service listing ready for pricing, schedule, and dispatch hooks from this exact place.",
+              capability: "service listing",
+              actionLabel: "Open Service Listing",
+              armedLabel: "Service Listing Live",
               tags: ["service", "booking", "local", "anchor"],
               metrics: [
                 { label: "state", value: "service draft" },
@@ -2487,11 +2649,11 @@
               ]
             }
             : {
-              title: "Shop Seed",
-              summary: "New shop signal pinned to this Earth point, ready for products, pricing, and local orders.",
-              capability: "shop shell",
-              actionLabel: "Add Shop",
-              armedLabel: "Shop Live",
+              title: typedTitle || "Shop Listing",
+              summary: "New shop listing pinned to this Earth point, ready for products, pricing, and local orders.",
+              capability: "shop listing",
+              actionLabel: "Open Shop Listing",
+              armedLabel: "Shop Listing Live",
               tags: ["shop", "products", "order", "anchor"],
               metrics: [
                 { label: "state", value: "shop draft" },
@@ -2500,7 +2662,7 @@
               ]
             };
         const seedSignal = {
-          id: `seed-${Date.now()}`,
+          id: `listing-${Date.now()}`,
           type: "anchor",
           title: seedProfile.title,
           summary: seedProfile.summary,
@@ -2513,16 +2675,20 @@
           alt: 0.15,
           zoom: 1,
           previewVideo: seedProfile.previewVideo,
+          products: mode === "shop" ? ["new product", "pricing ready", "delivery hook"] : [],
           tags: ["seed", "origin", "signal", "anchor", ...seedProfile.tags],
           metrics: seedProfile.metrics,
-          transient: true,
-          bornAt: performance.now()
+          bornAt: performance.now(),
+          customListing: true
         };
         appState.seedId = seedSignal.id;
         createSignalState(seedSignal);
         setActiveSignal(seedSignal.id, true);
+        persistCustomSignals();
         appState.addMode = null;
         setZoom(1.02);
+        query.value = "";
+        updatePreview();
         query.placeholder = `${seedSignal.title} placed on the map`;
       }
 
@@ -2535,6 +2701,7 @@
         const state = signalStates.get(id);
         state.activatedAt = performance.now();
         if (holdFocus) {
+          aimGlobeAtState(state);
           setZoom(Math.max(appState.zoomTarget, clamp((state.signal.zoom || 0.82) + 0.08, 0.54, 1.08)));
         }
       }
@@ -2548,7 +2715,7 @@
       function frontFacing(state) {
         const normal = worldNormal(state.local);
         const toCamera = camera.position.clone().sub(state.world).normalize();
-        return normal.dot(toCamera) > 0.1;
+        return normal.dot(toCamera) > 0.04;
       }
 
       function syncSignalState(state, now) {
@@ -2576,20 +2743,20 @@
         const highlight = state.signal.id === appState.activeId ? 1 : state.signal.id === appState.previewId ? 0.72 : appState.ambientIds.includes(state.signal.id) ? 0.4 : 0.16;
 
         if (state.pole) {
-          state.pole.scale.y = 1 + pulse * 0.08 + highlight * 0.14;
-          state.pole.material.opacity = 0.38 + highlight * 0.4;
+          state.pole.scale.y = 1 + pulse * 0.04 + highlight * 0.08;
+          state.pole.material.opacity = 0.3 + highlight * 0.34;
         }
         if (state.shell) {
-          state.shell.scale.setScalar(1 + pulse * 0.08 + highlight * 0.18);
-          state.shell.material.opacity = 0.44 + highlight * 0.42;
+          state.shell.scale.setScalar(1 + pulse * 0.04 + highlight * 0.1);
+          state.shell.material.opacity = 0.26 + highlight * 0.28;
         }
         if (state.core) {
-          state.core.scale.setScalar(1 + highlight * 0.18 + pulse * 0.08);
-          state.core.material.opacity = 0.72 + highlight * 0.28;
+          state.core.scale.setScalar(1 + highlight * 0.1 + pulse * 0.04);
+          state.core.material.opacity = 0.74 + highlight * 0.18;
         }
         if (state.lattice) {
           state.lattice.rotation.y += 0.008;
-          state.lattice.material.opacity = 0.38 + highlight * 0.48;
+          state.lattice.material.opacity = 0.24 + highlight * 0.34;
         }
         if (state.trailLine) {
           state.trailHistory.unshift(local.clone());
@@ -2623,28 +2790,50 @@
 
       function renderOverlay(time) {
         const center = globeCenterScreen();
+        const basis = worldViewBasis();
+        const globeRadius = globeScreenRadius(center);
         const parts = [];
-        const placed = [];
+        const wheelRects = [perfWheel, radarWheel].map((wheel) => {
+          const rect = wheel.getBoundingClientRect();
+          return {
+            x: rect.left - 8,
+            y: rect.top - 8,
+            w: rect.width + 16,
+            h: rect.height + 16
+          };
+        });
+        const placed = [...wheelRects];
         const ambientLimit = appState.zoomed ? 1 : AMBIENT_COUNT;
         const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
         const candidates = [];
 
         signalStates.forEach((state) => {
           const visible = frontFacing(state);
-          const targetShow = !visible
-            ? 0
-            : state.signal.id === appState.activeId
+          const isActive = state.signal.id === appState.activeId;
+          const isPreview = state.signal.id === appState.previewId;
+          const isSearch = appState.searchIds.includes(state.signal.id);
+          const targetShow = visible
+            ? isActive
               ? 1
-              : state.signal.id === appState.previewId
-                ? 0.84
-                : appState.ambientIds.includes(state.signal.id)
-                  ? (ambientLimit > 1 ? 0.38 : 0.26)
+              : isPreview
+                ? 0.86
+                : isSearch
+                  ? 0.54
+                  : appState.ambientIds.includes(state.signal.id)
+                    ? (ambientLimit > 1 ? 0.38 : 0.26)
+                    : 0
+            : isActive
+              ? 0.72
+              : isPreview
+                ? 0.48
+                : isSearch
+                  ? 0.34
                   : 0;
           state.show = damp(state.show, targetShow, state.signal.id === appState.activeId ? 0.16 : 0.11);
           if (state.show > 0.03) {
             candidates.push({
               state,
-              priority: state.signal.id === appState.activeId ? 3 : state.signal.id === appState.previewId ? 2 : 1
+              priority: isActive ? 3 : isPreview || isSearch ? 2 : 1
             });
           } else {
             state.popup.style.opacity = "0";
@@ -2654,9 +2843,9 @@
 
         candidates.sort((a, b) => b.priority - a.priority || b.state.show - a.state.show);
         candidates.forEach(({ state, priority }) => {
-          const source = screenPoint(state.world);
-          const dir = directionFromGlobe(source, center);
-          const visibility = clamp((1 - state.depth) * 0.5, 0, 1);
+          const source = overlaySourcePoint(state, center, basis, globeRadius);
+          const dir = signalDirectionFromBasis(state, basis);
+          const facing = signalFacingFromBasis(state, basis);
           const popupWidth = Math.min(appState.width * 0.84, appState.width < 560 ? 308 : 336);
           const popupHeight = 202
             + (state.signal.type === "cloud" ? 16 : 0)
@@ -2664,10 +2853,10 @@
             + (state.signal.products?.length ? 34 : 0);
           const sourceDistance = Math.hypot(source.x - center.x, source.y - center.y);
           const centerAvoid = clamp(1 - (sourceDistance / (Math.min(appState.width, appState.height) * 0.24)), 0, 1);
-          const lift = POPUP_LIFT + visibility * 24 + centerAvoid * 152 + (appState.zoomed ? 74 : 12) + (state.signal.type === "cloud" ? 18 : state.signal.type === "presence" ? 8 : 0);
+          const lift = POPUP_LIFT + facing * 36 + centerAvoid * 152 + (appState.zoomed ? 74 : 12) + (state.signal.type === "cloud" ? 18 : state.signal.type === "presence" ? 8 : 0);
           const target = {
             x: source.x + dir.x * lift,
-            y: source.y + dir.y * (lift * 0.78) - visibility * 18 - centerAvoid * 8
+            y: source.y + dir.y * (lift * 0.78) - facing * 18 - centerAvoid * 8
           };
           const eased = easeOut(state.show);
           const popupCenter = {
@@ -2676,7 +2865,7 @@
           };
 
           const sidePad = appState.width < 560 ? 10 : 16;
-          const topClamp = appState.height < 760 ? 152 : 168;
+          const topClamp = Math.max(appState.height < 760 ? 152 : 168, appState.hud.top + appState.hud.size + 10);
           const bottomClamp = appState.height < 760 ? 98 : 110;
           let left = clamp(popupCenter.x - popupWidth * 0.5, sidePad, appState.width - popupWidth - sidePad);
           let top = clamp(popupCenter.y - popupHeight * 0.5, topClamp, appState.height - popupHeight - bottomClamp);
@@ -2708,7 +2897,7 @@
           const tip = rectEdgePoint(cardCenter.x, cardCenter.y, popupWidth * 0.5, popupHeight * 0.5, source.x, source.y);
           const birth = clamp(1 - (performance.now() - state.activatedAt) / 1100, 0, 1);
           const widthBoost = birth * 1.8;
-          const scale = 0.72 + eased * 0.24 + visibility * 0.1;
+          const scale = 0.68 + eased * 0.24 + facing * 0.18;
 
           state.popup.dataset.state = priority === 1 ? "ghost" : "live";
           state.popup.style.left = `${left}px`;
@@ -2720,10 +2909,9 @@
           parts.push(`
             <g opacity="${(0.2 + state.show * 0.8).toFixed(2)}">
               <line x1="${source.x.toFixed(2)}" y1="${source.y.toFixed(2)}" x2="${tip.x.toFixed(2)}" y2="${tip.y.toFixed(2)}"
-                stroke="#16d9ff" stroke-opacity="0.28" stroke-width="${(6 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
+                stroke="#16d9ff" stroke-opacity="0.22" stroke-width="${(5.4 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
               <line x1="${source.x.toFixed(2)}" y1="${source.y.toFixed(2)}" x2="${tip.x.toFixed(2)}" y2="${tip.y.toFixed(2)}"
-                stroke="#16d9ff" stroke-opacity="${(0.9 + state.show * 0.1).toFixed(2)}" stroke-width="${(2.8 + widthBoost * 0.5).toFixed(2)}" stroke-linecap="round"/>
-              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(3.2 + state.show * 0.7).toFixed(2)}" fill="#16d9ff" fill-opacity="${(0.82 + state.show * 0.12).toFixed(2)}"/>
+                stroke="#16d9ff" stroke-opacity="${(0.94 + state.show * 0.06).toFixed(2)}" stroke-width="${(2.4 + widthBoost * 0.44).toFixed(2)}" stroke-linecap="round"/>
             </g>
           `);
         });
@@ -2833,27 +3021,98 @@
       }
 
       function cycleSignal() {
-        const ids = [...signalStates.keys()].filter((id) => id !== appState.seedId);
+        const ids = [...signalStates.keys()];
         if (!ids.length) return;
         const current = appState.activeId ? ids.indexOf(appState.activeId) : -1;
         setActiveSignal(ids[(current + 1 + ids.length) % ids.length], false);
       }
 
-      function submitQuery() {
+      async function runAiCommand(value) {
+        if (!AI_ENDPOINT) return false;
+        try {
+          const response = await fetch(AI_ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: value,
+              signals: [...signalStates.values()].map((state) => ({
+                id: state.signal.id,
+                type: state.signal.type,
+                title: state.signal.title,
+                capability: state.signal.capability,
+                region: state.signal.region,
+                summary: state.signal.summary,
+                products: state.signal.products || [],
+                tags: state.signal.tags || [],
+                metrics: state.signal.metrics || []
+              }))
+            })
+          });
+          if (!response.ok) return false;
+          const data = await response.json();
+          if (data?.addMode && /^(shop|service|video)$/.test(data.addMode)) {
+            setPanel(null);
+            setAddMode(data.addMode);
+            setAddCycleOpen(true);
+            if (data.message) query.placeholder = data.message;
+            return true;
+          }
+          if (data?.checkoutUrl) {
+            window.open(data.checkoutUrl, "_blank", "noopener");
+            query.placeholder = data.message || "Checkout opened";
+            return true;
+          }
+          if (data?.payment === "card" && STRIPE_PAYMENT_LINK) {
+            window.open(STRIPE_PAYMENT_LINK, "_blank", "noopener");
+            query.placeholder = data.message || "Card checkout opened";
+            return true;
+          }
+          if (data?.payment === "paypal" && PAYPAL_CHECKOUT_URL) {
+            window.open(PAYPAL_CHECKOUT_URL, "_blank", "noopener");
+            query.placeholder = data.message || "PayPal checkout opened";
+            return true;
+          }
+          if (data?.signalId && signalStates.has(data.signalId)) {
+            const state = signalStates.get(data.signalId);
+            setActiveSignal(data.signalId, true);
+            setZoom(clamp(Number.isFinite(data.zoom) ? data.zoom : (data.intent === "track" ? 0.92 : 1.02), 0, 1.2));
+            if (state && (data.intent === "order" || data.intent === "assign")) {
+              state.armed = true;
+              state.popup.classList.add("armed");
+              refreshPopupActionButton(state);
+            }
+            query.placeholder = data.message || `AI routed ${state?.signal.title || "signal"}`;
+            return true;
+          }
+        } catch (error) {
+          console.warn("Astranov AI route unavailable", error);
+        }
+        return false;
+      }
+
+      async function submitQuery() {
         const value = query.value.trim();
         if (!value) {
           cycleSignal();
+          return;
+        }
+        if (appState.searchBusy) return;
+        appState.searchBusy = true;
+        if (await runAiCommand(value)) {
+          appState.searchBusy = false;
           return;
         }
         const analysis = analyzeCommand(value);
         if (analysis.intent === "add") {
           setPanel(null);
           setAddCycleOpen(true);
+          appState.searchBusy = false;
           return;
         }
         const ranked = rankSignals(value);
         if (!ranked.length) {
           flashNoMatch();
+          appState.searchBusy = false;
           return;
         }
         const picked = ranked.find((entry) => {
@@ -2876,12 +3135,13 @@
         }
 
         query.placeholder = analysis.intent === "order"
-          ? `AI routed ${state.signal.title} for ordering`
+          ? `${AI_ENDPOINT ? "AI routed" : "Local AI routed"} ${state.signal.title} for ordering`
           : analysis.intent === "assign"
-            ? `AI assigned ${state.signal.title}`
+            ? `${AI_ENDPOINT ? "AI assigned" : "Local AI assigned"} ${state.signal.title}`
           : analysis.intent === "track"
-            ? `AI locked ${state.signal.title} for tracking`
-            : `AI found ${state.signal.title}`;
+            ? `${AI_ENDPOINT ? "AI locked" : "Local AI locked"} ${state.signal.title} for tracking`
+            : `${AI_ENDPOINT ? "AI found" : "Local AI found"} ${state.signal.title}`;
+        appState.searchBusy = false;
       }
 
       SIGNALS.forEach(createSignalState);
@@ -2920,15 +3180,6 @@
         pointer.x = (x / appState.width) * 2 - 1;
         pointer.y = -(y / appState.height) * 2 + 1;
         raycaster.setFromCamera(pointer, camera);
-      }
-
-      function triggerSeedAt(clientX, clientY) {
-        setPointerFromClient(clientX, clientY);
-        const earthHit = raycaster.intersectObject(earth, false)[0];
-        if (!earthHit) return;
-        const inverse = new THREE.Matrix4().copy(globeGroup.matrixWorld).invert();
-        spawnSeed(earthHit.point.clone().applyMatrix4(inverse));
-        appState.longPressTriggered = true;
       }
 
       function beginHudMotion(mode, event) {
@@ -2976,30 +3227,14 @@
         submitQuery();
       });
 
-      function zoomToLocation(step = 1) {
-        const focus = ensureFocusSignal();
-        if (!focus) {
-          setZoom(0);
-          return;
-        }
-        if (step < 0) {
-          setZoom(Math.max(0, appState.zoomTarget - 0.28));
-        } else if (appState.zoomTarget < 0.18) {
-          setZoom(clamp((focus.signal.zoom || 0.82) + 0.08, 0.56, 1.02));
-        } else if (appState.zoomTarget < 1.02) {
-          setZoom(Math.min(1.34, appState.zoomTarget + 0.26));
-        } else {
-          setZoom(0);
-        }
-        query.placeholder = appState.zoomTarget > 0.08
-          ? `Zoom ${Math.round(appState.zoomTarget * 100)}% on ${focus.signal.title}`
-          : "World view restored";
-        appState.holdUntil = performance.now() + 6400;
-      }
-
       userButton.addEventListener("click", (event) => {
         event.stopPropagation();
         togglePanel("user");
+        if (navigator.permissions?.query) {
+          navigator.permissions.query({ name: "geolocation" }).then((result) => {
+            if (result.state === "granted") centerOnUserLocation();
+          }).catch(() => {});
+        }
       });
 
       systemButton.addEventListener("click", (event) => {
@@ -3020,18 +3255,17 @@
 
       perfCenterBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        zoomToLocation(appState.zoomTarget > 0.08 ? -1 : 1);
+        togglePanel("performance");
       });
 
-      radarFetchBtn.addEventListener("click", (event) => {
+      radarCenterBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        const target = focusableSignalState();
-        if (target) {
-          setActiveSignal(target.signal.id, true);
-          query.placeholder = `Tracking ${target.signal.title}`;
-        } else {
-          cycleSignal();
+        if (appState.activeId === appState.userSignalId && appState.zoomTarget > 0.32) {
+          setZoom(0);
+          query.placeholder = "World view restored";
+          return;
         }
+        centerOnUserLocation();
       });
 
       addCycleButtons.forEach((button) => {
@@ -3054,7 +3288,7 @@
 
       document.addEventListener("pointerdown", (event) => {
         const target = event.target;
-        if (addCycle.contains(target) || addBtn.contains(target)) return;
+        if (target.closest?.(".add-cycle-btn") || addBtn.contains(target)) return;
         if (topPanel.contains(target) || userButton.contains(target) || systemButton.contains(target) || walletButton.contains(target)) return;
         setAddCycleOpen(false);
         setPanel(null);
@@ -3079,7 +3313,7 @@
           listening = false;
           voiceBtn.dataset.active = "false";
           if (appState.texturesReady) {
-            query.placeholder = "Find signals, products, drivers, orders";
+            query.placeholder = defaultQueryPlaceholder();
           }
         };
       }
@@ -3119,14 +3353,9 @@
         if (activePointers.size > 1) return;
         appState.dragging = true;
         appState.dragMoved = false;
-        appState.longPressTriggered = false;
         appState.pointerStartX = appState.lastPointerX = event.clientX;
         appState.pointerStartY = appState.lastPointerY = event.clientY;
         window.clearTimeout(longPressTimer);
-        longPressTimer = window.setTimeout(() => {
-          if (!appState.dragging || appState.dragMoved) return;
-          triggerSeedAt(appState.lastPointerX, appState.lastPointerY);
-        }, 460);
       });
 
       window.addEventListener("pointermove", (event) => {
@@ -3184,7 +3413,7 @@
         if (!appState.dragging) return;
         appState.dragging = false;
         window.clearTimeout(longPressTimer);
-        if (appState.longPressTriggered || appState.dragMoved) return;
+        if (appState.dragMoved) return;
 
         setPointerFromClient(event.clientX, event.clientY);
         const signalHit = raycaster.intersectObjects(interactive, false)[0];
@@ -3194,6 +3423,11 @@
         }
 
         const earthHit = raycaster.intersectObject(earth, false)[0];
+        if (earthHit && appState.addMode) {
+          const inverse = new THREE.Matrix4().copy(globeGroup.matrixWorld).invert();
+          spawnSeed(earthHit.point.clone().applyMatrix4(inverse));
+          return;
+        }
         if (earthHit && appState.activeId) {
           clearActiveSignal();
           return;
@@ -3220,7 +3454,7 @@
         globeGroup.rotation.y = rotation.y;
 
         appState.zoomLevel = damp(appState.zoomLevel, appState.zoomTarget, 0.08);
-        const zoomDepth = focusState ? appState.zoomLevel : 0;
+        const zoomDepth = appState.zoomLevel;
         targetCamera.z = CAMERA_BASE.z - zoomDepth * 2.04;
         targetCamera.y = CAMERA_BASE.y - zoomDepth * 0.12;
         targetCamera.fov = CAMERA_BASE.fov - zoomDepth * 12.4;
@@ -3234,24 +3468,12 @@
 
         earth.rotation.y = 0;
         nightShell.rotation.y = 0;
-        cloudShell.rotation.y += 0.00008;
         stars.rotation.y += 0.00003;
         brightStars.rotation.y -= 0.000018;
-        satellites.forEach((satellite) => {
-          const orbit = now * 0.00015 * satellite.speed + satellite.phase;
-          satellite.mesh.position.set(
-            Math.cos(orbit) * satellite.radius,
-            Math.sin(orbit * 1.1 + satellite.tilt) * 0.22 + Math.sin(satellite.tilt) * 0.3,
-            Math.sin(orbit) * satellite.radius
-          );
-          satellite.mesh.rotation.y = orbit + Math.PI * 0.5;
-          satellite.mesh.rotation.z = satellite.tilt;
-        });
 
         appState.device.load = clamp(Math.round(32 + (focusState ? 12 : 0) + (appState.dragging ? 18 : 0) + appState.ambientIds.length * 4 + Math.abs(Math.sin(now * 0.0014)) * 10), 18, 96);
 
         nightShell.material.opacity = damp(nightShell.material.opacity, 0.24, 0.05);
-        cloudShellMaterial.opacity = damp(cloudShellMaterial.opacity, appState.texturesReady ? 0.12 : 0.08, 0.05);
 
         signalStates.forEach((state) => syncSignalState(state, now));
         updateAmbientSignals();
