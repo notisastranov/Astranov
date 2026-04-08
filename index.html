@@ -30,6 +30,7 @@
       --safe-left: max(14px, env(safe-area-inset-left));
       --wheel-size: clamp(170px, 42vw, 210px);
       --top-bar-height: 52px;
+      --top-edge-btn-size: 48px;
     }
 
     * {
@@ -110,9 +111,8 @@
       top: var(--safe-top);
       left: var(--safe-left);
       right: var(--safe-right);
-      display: grid;
-      grid-template-columns: 48px minmax(0, 1fr) 48px;
-      gap: 10px;
+      display: flex;
+      gap: clamp(5px, 2vw, 10px);
       align-items: center;
       pointer-events: auto;
       z-index: 14;
@@ -153,13 +153,17 @@
 
     .top-btn.avatar,
     .top-btn.wallet {
+      flex: 0 0 var(--top-edge-btn-size);
       padding: 0;
-      width: 48px;
+      width: var(--top-edge-btn-size);
+      min-height: var(--top-edge-btn-size);
     }
 
     .top-btn.system {
+      flex: 1 1 auto;
       justify-content: center;
       padding: 8px 14px;
+      max-width: 100%;
     }
 
     .top-btn-icon {
@@ -198,6 +202,7 @@
 
     .top-btn-stack {
       min-width: 0;
+      width: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -210,6 +215,9 @@
       font-weight: 600;
       letter-spacing: 0.02em;
       color: #e9fbff;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      text-align: center;
     }
 
     .top-btn-sub {
@@ -220,6 +228,7 @@
       text-align: center;
       line-height: 1.1;
       overflow-wrap: anywhere;
+      max-width: 100%;
     }
 
     #topPanel {
@@ -361,7 +370,20 @@
     }
 
     .hud-wheel {
-      --wheel-scale: 1;
+      --hud-center-size: 60px;
+      --hud-radar-center-size: 52px;
+      --hud-center-icon-size: 20px;
+      --hud-center-value-size: 9.6px;
+      --hud-stat-font: 7.8px;
+      --hud-stat-sub-font: 6.7px;
+      --hud-stat-width: 56px;
+      --hud-meta-font: 7.6px;
+      --hud-meta-bottom: 8px;
+      --hud-north-top: 12px;
+      --hud-side-top: 34px;
+      --hud-side-inset: 14px;
+      --hud-south-bottom: 26px;
+      --hud-grip-size: 22px;
       position: absolute;
       width: var(--wheel-size);
       height: var(--wheel-size);
@@ -423,11 +445,11 @@
 
     .wheel-meta {
       position: absolute;
-      bottom: 8px;
+      bottom: var(--hud-meta-bottom);
       width: 100%;
       padding: 0 12px;
       color: var(--muted);
-      font-size: 7.6px;
+      font-size: var(--hud-meta-font);
       letter-spacing: 0.02em;
       text-align: center;
       text-transform: none;
@@ -440,14 +462,14 @@
       position: absolute;
       z-index: 2;
       color: #e7f5ff;
-      font-size: 7.8px;
+      font-size: var(--hud-stat-font);
       font-weight: 600;
       letter-spacing: 0.03em;
       line-height: 1.15;
       text-transform: none;
       text-align: center;
       white-space: normal;
-      max-width: 56px;
+      max-width: var(--hud-stat-width);
     }
 
     .perf-wheel .wheel-stat {
@@ -461,31 +483,31 @@
       display: block;
       margin-top: 2px;
       color: var(--muted);
-      font-size: 6.7px;
+      font-size: var(--hud-stat-sub-font);
       letter-spacing: 0.02em;
       overflow-wrap: anywhere;
     }
 
     .wheel-stat.north {
-      top: 12px;
+      top: var(--hud-north-top);
       left: 50%;
       transform: translateX(-50%);
     }
 
     .wheel-stat.west {
-      top: 34px;
-      left: 14px;
+      top: var(--hud-side-top);
+      left: var(--hud-side-inset);
       text-align: left;
     }
 
     .wheel-stat.east {
-      top: 34px;
-      right: 14px;
+      top: var(--hud-side-top);
+      right: var(--hud-side-inset);
       text-align: right;
     }
 
     .wheel-stat.south {
-      bottom: 26px;
+      bottom: var(--hud-south-bottom);
       left: 50%;
       transform: translateX(-50%);
     }
@@ -495,8 +517,8 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 60px;
-      height: 60px;
+      width: var(--hud-center-size);
+      height: var(--hud-center-size);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -518,20 +540,20 @@
     }
 
     .radar-wheel .wheel-center-btn {
-      width: 52px;
-      height: 52px;
+      width: var(--hud-radar-center-size);
+      height: var(--hud-radar-center-size);
     }
 
     .wheel-center-icon {
-      width: 20px;
-      height: 20px;
+      width: var(--hud-center-icon-size);
+      height: var(--hud-center-icon-size);
       display: grid;
       place-items: center;
     }
 
     .wheel-center-icon svg {
-      width: 20px;
-      height: 20px;
+      width: var(--hud-center-icon-size);
+      height: var(--hud-center-icon-size);
       stroke: currentColor;
       fill: none;
       stroke-width: 1.8;
@@ -540,7 +562,7 @@
     }
 
     .wheel-center-value {
-      font-size: 9.6px;
+      font-size: var(--hud-center-value-size);
       color: var(--muted);
       letter-spacing: 0.02em;
     }
@@ -554,10 +576,10 @@
 
     .wheel-resize-grip {
       position: absolute;
-      right: 10px;
-      bottom: 10px;
-      width: 22px;
-      height: 22px;
+      right: max(8px, calc(var(--hud-grip-size) * 0.45));
+      bottom: max(8px, calc(var(--hud-grip-size) * 0.45));
+      width: var(--hud-grip-size);
+      height: var(--hud-grip-size);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 50%;
       background: rgba(10, 18, 26, 0.92);
@@ -574,18 +596,18 @@
     }
 
     .wheel-resize-grip::before {
-      left: 5px;
-      top: 9px;
-      width: 8px;
+      left: 22%;
+      top: 42%;
+      width: 40%;
       height: 2px;
       transform: rotate(-38deg);
     }
 
     .wheel-resize-grip::after {
-      left: 8px;
-      top: 5px;
+      left: 41%;
+      top: 22%;
       width: 2px;
-      height: 8px;
+      height: 40%;
       transform: rotate(-38deg);
     }
 
@@ -1105,6 +1127,214 @@
       }
     }
 
+    @media (max-width: 360px) {
+      :root {
+        --top-bar-height: 44px;
+        --top-edge-btn-size: 40px;
+      }
+
+      .top-btn {
+        padding: 0 8px;
+        border-radius: 14px;
+      }
+
+      .top-btn.system {
+        padding: 6px 8px;
+      }
+
+      .top-btn-icon,
+      .avatar-photo {
+        width: 22px;
+        height: 22px;
+      }
+
+      .top-btn-title {
+        font-size: 9px;
+      }
+
+      .top-btn-sub {
+        font-size: 8px;
+        line-height: 1;
+      }
+
+      #composer {
+        min-height: 60px;
+        gap: 6px;
+        padding: 8px 6px 6px;
+        border-radius: 20px;
+      }
+
+      #composerField {
+        padding-top: 18px;
+      }
+
+      .composer-btn,
+      #query {
+        height: 42px;
+      }
+
+      .composer-btn {
+        width: 42px;
+        border-radius: 14px;
+      }
+
+      #query {
+        padding: 0 12px;
+        font-size: 14px;
+      }
+
+      #addBtn {
+        top: -28px;
+        right: 0;
+        width: 46px;
+        min-width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        font-size: 26px;
+      }
+
+      .signal-popup {
+        width: min(92vw, 236px);
+        min-width: min(86vw, 210px);
+        border-radius: 18px;
+      }
+
+      .popup-shell {
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .popup-title {
+        font-size: 15px;
+      }
+
+      .popup-summary {
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      .metric {
+        padding: 7px 8px 6px;
+        border-radius: 12px;
+      }
+
+      .metric-label {
+        font-size: 7px;
+      }
+
+      .metric-value {
+        font-size: 10px;
+      }
+
+      .popup-action {
+        width: 36px;
+        height: 36px;
+      }
+
+      .add-cycle-btn {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+      }
+
+      #addCycle[data-open="true"] .add-cycle-btn:nth-child(1) {
+        --add-y: -90px;
+      }
+
+      #addCycle[data-open="true"] .add-cycle-btn:nth-child(2) {
+        --add-x: -78px;
+        --add-y: 26px;
+      }
+
+      #addCycle[data-open="true"] .add-cycle-btn:nth-child(3) {
+        --add-x: 78px;
+        --add-y: 26px;
+      }
+    }
+
+    @media (max-width: 280px) {
+      :root {
+        --safe-top: max(10px, env(safe-area-inset-top));
+        --safe-right: max(8px, env(safe-area-inset-right));
+        --safe-bottom: max(10px, env(safe-area-inset-bottom));
+        --safe-left: max(8px, env(safe-area-inset-left));
+        --top-bar-height: 36px;
+        --top-edge-btn-size: 32px;
+      }
+
+      #topBar {
+        gap: 4px;
+      }
+
+      .top-btn {
+        padding: 0 4px;
+        border-radius: 10px;
+      }
+
+      .top-btn.system {
+        padding: 4px 4px;
+      }
+
+      .top-btn-title {
+        font-size: 7px;
+      }
+
+      .top-btn-sub {
+        font-size: 6px;
+        margin-top: 1px;
+      }
+
+      .top-btn-icon,
+      .avatar-photo {
+        width: 18px;
+        height: 18px;
+      }
+
+      #query {
+        font-size: 12px;
+        padding: 0 10px;
+      }
+
+      .wheel-meta {
+        display: none;
+      }
+
+      .wheel-stat {
+        padding: 2px 4px;
+        border-radius: 8px;
+      }
+
+      .popup-shell {
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .popup-media {
+        max-height: 88px;
+      }
+
+      .popup-summary {
+        font-size: 10.2px;
+        line-height: 1.4;
+      }
+
+      .popup-kind,
+      .popup-capability,
+      .popup-region {
+        font-size: 9px;
+        padding: 4px 7px;
+      }
+
+      .metric-value {
+        font-size: 9.5px;
+      }
+
+      .signal-popup {
+        width: min(94vw, 206px);
+        min-width: min(90vw, 186px);
+      }
+    }
+
     @media (max-height: 760px) {
       :root {
         --wheel-size: 152px;
@@ -1613,6 +1843,8 @@
         const delta = ((target - value + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
         return value + delta * ease;
       };
+      const isFiniteNumber = (value) => Number.isFinite(value);
+      const areFiniteNumbers = (...values) => values.every((value) => Number.isFinite(value));
       const easeOut = (value) => 1 - Math.pow(1 - clamp(value, 0, 1), 3);
       const wrapAngle = (value) => ((value + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
       const typeHex = (type) => type === "anchor" ? "#4df2c8" : type === "presence" ? "#b4f9ff" : "#41c6ff";
@@ -1797,6 +2029,13 @@
 
       function screenPoint(worldVector) {
         const projected = worldVector.clone().project(camera);
+        if (!areFiniteNumbers(projected.x, projected.y, projected.z)) {
+          return {
+            x: appState.width * 0.5,
+            y: appState.height * 0.5,
+            z: 1
+          };
+        }
         return {
           x: (projected.x * 0.5 + 0.5) * appState.width,
           y: (-projected.y * 0.5 + 0.5) * appState.height,
@@ -1816,10 +2055,22 @@
       }
 
       function rectEdgePoint(cx, cy, hw, hh, tx, ty) {
+        if (!areFiniteNumbers(cx, cy, hw, hh, tx, ty) || hw <= 0 || hh <= 0) {
+          return { x: areFiniteNumbers(cx) ? cx : 0, y: areFiniteNumbers(cy) ? cy : 0 };
+        }
         const dx = tx - cx;
         const dy = ty - cy;
         const scale = 1 / Math.max(Math.abs(dx) / hw || 0, Math.abs(dy) / hh || 0, 1);
         return { x: cx + dx * scale, y: cy + dy * scale };
+      }
+
+      function viewportProfile() {
+        return {
+          micro: appState.width <= 280,
+          narrow: appState.width <= 340,
+          compact: appState.width <= 420,
+          short: appState.height <= 700
+        };
       }
 
       function worldViewBasis() {
@@ -2270,7 +2521,11 @@
       }
 
       function defaultQueryPlaceholder() {
-        return AI_ENDPOINT ? "Ask AI for signals or orders" : "Find signals, products, drivers";
+        const profile = viewportProfile();
+        if (AI_ENDPOINT) {
+          return profile.micro ? "Ask AI" : profile.narrow ? "Ask AI for signals" : "Ask AI for signals or orders";
+        }
+        return profile.micro ? "Search or order" : profile.narrow ? "Find or order" : "Find signals, products, drivers";
       }
 
       function focusableSignalState() {
@@ -2295,18 +2550,55 @@
       }
 
       function applyHudLayout() {
+        const profile = viewportProfile();
         const topRect = topBar.getBoundingClientRect();
         const composerRect = composer.getBoundingClientRect();
-        const maxSize = Math.min(248, appState.width * 0.48, appState.height * 0.34);
-        appState.hud.size = clamp(appState.hud.size, 152, maxSize);
-        const minTop = topRect.bottom + 14;
-        const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - 18);
-        appState.hud.top = clamp(appState.hud.top || (minTop + 18), minTop, maxTop);
+        const minSize = profile.micro ? 72 : profile.narrow ? 96 : profile.compact ? 112 : 132;
+        const maxSize = profile.micro
+          ? Math.min(80, appState.width * 0.31, appState.height * 0.15)
+          : profile.narrow
+            ? Math.min(132, appState.width * 0.43, appState.height * 0.22)
+            : profile.compact
+              ? Math.min(164, appState.width * 0.45, appState.height * 0.26)
+              : Math.min(248, appState.width * 0.48, appState.height * 0.34);
+        const defaultSize = clamp(maxSize, minSize, maxSize);
+        appState.hud.size = clamp(appState.hud.size || defaultSize, minSize, maxSize);
+        const minTop = topRect.bottom + (profile.micro ? 8 : profile.narrow ? 10 : 14);
+        const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - (profile.micro ? 8 : 18));
+        appState.hud.top = clamp(appState.hud.top || (minTop + (profile.micro ? 8 : 18)), minTop, maxTop);
+
+        const centerSize = Math.round(appState.hud.size * (profile.micro ? 0.34 : profile.narrow ? 0.35 : 0.36));
+        const radarCenterSize = Math.round(centerSize * 0.88);
+        const centerIconSize = Math.max(profile.micro ? 12 : 14, Math.round(centerSize * 0.34));
+        const centerValueSize = Math.max(profile.micro ? 7.2 : 8.2, +(appState.hud.size * (profile.micro ? 0.076 : 0.082)).toFixed(2));
+        const statFont = Math.max(profile.micro ? 5.6 : profile.narrow ? 6.1 : 6.8, +(appState.hud.size * (profile.micro ? 0.062 : 0.055)).toFixed(2));
+        const subFont = Math.max(profile.micro ? 4.9 : 5.4, +(statFont * 0.84).toFixed(2));
+        const statWidth = Math.max(profile.micro ? 32 : 38, Math.round(appState.hud.size * (profile.micro ? 0.34 : 0.38)));
+        const metaFont = Math.max(profile.micro ? 5.2 : 6, +(appState.hud.size * (profile.micro ? 0.048 : 0.052)).toFixed(2));
+        const northTop = Math.round(appState.hud.size * (profile.micro ? 0.08 : 0.1));
+        const sideTop = Math.round(appState.hud.size * (profile.micro ? 0.28 : 0.29));
+        const sideInset = Math.round(appState.hud.size * (profile.micro ? 0.08 : 0.1));
+        const southBottom = Math.round(appState.hud.size * (profile.micro ? 0.17 : 0.2));
+        const gripSize = Math.max(profile.micro ? 16 : 18, Math.round(appState.hud.size * 0.14));
 
         [perfWheel, radarWheel].forEach((wheel) => {
           wheel.style.top = `${appState.hud.top}px`;
           wheel.style.width = `${appState.hud.size}px`;
           wheel.style.height = `${appState.hud.size}px`;
+          wheel.style.setProperty("--hud-center-size", `${centerSize}px`);
+          wheel.style.setProperty("--hud-radar-center-size", `${radarCenterSize}px`);
+          wheel.style.setProperty("--hud-center-icon-size", `${centerIconSize}px`);
+          wheel.style.setProperty("--hud-center-value-size", `${centerValueSize}px`);
+          wheel.style.setProperty("--hud-stat-font", `${statFont}px`);
+          wheel.style.setProperty("--hud-stat-sub-font", `${subFont}px`);
+          wheel.style.setProperty("--hud-stat-width", `${statWidth}px`);
+          wheel.style.setProperty("--hud-meta-font", `${metaFont}px`);
+          wheel.style.setProperty("--hud-meta-bottom", `${profile.micro ? 5 : 8}px`);
+          wheel.style.setProperty("--hud-north-top", `${northTop}px`);
+          wheel.style.setProperty("--hud-side-top", `${sideTop}px`);
+          wheel.style.setProperty("--hud-side-inset", `${sideInset}px`);
+          wheel.style.setProperty("--hud-south-bottom", `${southBottom}px`);
+          wheel.style.setProperty("--hud-grip-size", `${gripSize}px`);
         });
       }
 
@@ -2335,6 +2627,7 @@
 
       function updateRadarHud(now) {
         const basis = worldViewBasis();
+        const profile = viewportProfile();
         appState.radarAngle = (appState.radarAngle + 0.025) % (Math.PI * 2);
         const sweepRotation = `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`;
         radarSweep.setAttribute("transform", sweepRotation);
@@ -2348,11 +2641,12 @@
           const normal = worldNormal(state.local);
           const azimuth = Math.atan2(-normal.dot(basis.up), normal.dot(basis.right));
           const separation = Math.acos(clamp(normal.dot(basis.viewer), -1, 1));
-          const radial = 8 + ((separation / Math.PI) * 38);
+          const radial = 8 + ((separation / Math.PI) * (profile.micro ? 33 : 38));
           const driftX = Math.cos(now * 0.0014 + state.pulsePhase * 1.7) * (state.signal.type === "presence" ? 1.2 : 0.5);
           const driftY = Math.sin(now * 0.0011 + state.pulsePhase * 1.4) * (state.signal.type === "presence" ? 1.2 : 0.5);
           const x = clamp(60 + Math.cos(azimuth) * radial + driftX, 12, 108);
           const y = clamp(60 + Math.sin(azimuth) * radial + driftY, 12, 108);
+          if (!areFiniteNumbers(x, y, azimuth, radial, driftX, driftY)) return;
           const sweepDelta = Math.abs(wrapAngle(azimuth - (appState.radarAngle - Math.PI / 2)));
           const sweepEcho = clamp(1 - sweepDelta / 0.42, 0, 1);
           const active = state.signal.id === appState.activeId;
@@ -2789,6 +3083,7 @@
       }
 
       function renderOverlay(time) {
+        const profile = viewportProfile();
         const center = globeCenterScreen();
         const basis = worldViewBasis();
         const globeRadius = globeScreenRadius(center);
@@ -2846,31 +3141,45 @@
           const source = overlaySourcePoint(state, center, basis, globeRadius);
           const dir = signalDirectionFromBasis(state, basis);
           const facing = signalFacingFromBasis(state, basis);
-          const popupWidth = Math.min(appState.width * 0.84, appState.width < 560 ? 308 : 336);
-          const popupHeight = 202
+          if (!areFiniteNumbers(source.x, source.y, dir.x, dir.y, facing)) {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+            return;
+          }
+          const popupWidth = profile.micro
+            ? Math.min(appState.width - 16, 206)
+            : profile.narrow
+              ? Math.min(appState.width * 0.9, 248)
+              : Math.min(appState.width * 0.84, appState.width < 560 ? 308 : 336);
+          const popupHeight = (profile.micro ? 154 : profile.narrow ? 184 : 202)
             + (state.signal.type === "cloud" ? 16 : 0)
-            + (state.signal.previewVideo ? 92 : 0)
+            + (state.signal.previewVideo ? (profile.micro ? 64 : profile.narrow ? 78 : 92) : 0)
             + (state.signal.products?.length ? 34 : 0);
           const sourceDistance = Math.hypot(source.x - center.x, source.y - center.y);
           const centerAvoid = clamp(1 - (sourceDistance / (Math.min(appState.width, appState.height) * 0.24)), 0, 1);
-          const lift = POPUP_LIFT + facing * 36 + centerAvoid * 152 + (appState.zoomed ? 74 : 12) + (state.signal.type === "cloud" ? 18 : state.signal.type === "presence" ? 8 : 0);
+          const lift = (profile.micro ? POPUP_LIFT - 34 : profile.narrow ? POPUP_LIFT - 18 : POPUP_LIFT) + facing * 36 + centerAvoid * 152 + (appState.zoomed ? 74 : 12) + (state.signal.type === "cloud" ? 18 : state.signal.type === "presence" ? 8 : 0);
           const target = {
             x: source.x + dir.x * lift,
             y: source.y + dir.y * (lift * 0.78) - facing * 18 - centerAvoid * 8
           };
+          if (!areFiniteNumbers(target.x, target.y)) {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+            return;
+          }
           const eased = easeOut(state.show);
           const popupCenter = {
             x: THREE.MathUtils.lerp(source.x, target.x, eased),
             y: THREE.MathUtils.lerp(source.y, target.y, eased)
           };
 
-          const sidePad = appState.width < 560 ? 10 : 16;
-          const topClamp = Math.max(appState.height < 760 ? 152 : 168, appState.hud.top + appState.hud.size + 10);
-          const bottomClamp = appState.height < 760 ? 98 : 110;
+          const sidePad = profile.micro ? 8 : appState.width < 560 ? 10 : 16;
+          const topClamp = Math.max(profile.micro ? 108 : appState.height < 760 ? 152 : 168, appState.hud.top + appState.hud.size + (profile.micro ? 6 : 10));
+          const bottomClamp = profile.micro ? 76 : appState.height < 760 ? 98 : 110;
           let left = clamp(popupCenter.x - popupWidth * 0.5, sidePad, appState.width - popupWidth - sidePad);
           let top = clamp(popupCenter.y - popupHeight * 0.5, topClamp, appState.height - popupHeight - bottomClamp);
           const perpendicular = { x: -dir.y, y: dir.x };
-          const shiftStep = appState.width < 560 ? 46 : 58;
+          const shiftStep = profile.micro ? 30 : appState.width < 560 ? 46 : 58;
           let rect = { x: left, y: top, w: popupWidth, h: popupHeight };
           let attempt = 0;
           while (placed.some((entry) => overlaps(rect, entry)) && attempt < 6) {
@@ -2895,9 +3204,14 @@
 
           const cardCenter = { x: left + popupWidth * 0.5, y: top + popupHeight * 0.5 };
           const tip = rectEdgePoint(cardCenter.x, cardCenter.y, popupWidth * 0.5, popupHeight * 0.5, source.x, source.y);
+          if (!areFiniteNumbers(tip.x, tip.y, left, top)) {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+            return;
+          }
           const birth = clamp(1 - (performance.now() - state.activatedAt) / 1100, 0, 1);
           const widthBoost = birth * 1.8;
-          const scale = 0.68 + eased * 0.24 + facing * 0.18;
+          const scale = (profile.micro ? 0.76 : 0.68) + eased * 0.22 + facing * 0.16;
 
           state.popup.dataset.state = priority === 1 ? "ghost" : "live";
           state.popup.style.left = `${left}px`;
@@ -3157,6 +3471,9 @@
         camera.updateProjectionMatrix();
         refreshDeviceTelemetry();
         applyHudLayout();
+        if (!query.value.trim() && !listening && !appState.addMode) {
+          query.placeholder = defaultQueryPlaceholder();
+        }
       }
 
       function pruneSeeds(now) {
