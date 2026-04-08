@@ -28,7 +28,7 @@
       --safe-right: max(14px, env(safe-area-inset-right));
       --safe-bottom: max(14px, env(safe-area-inset-bottom));
       --safe-left: max(14px, env(safe-area-inset-left));
-      --wheel-size: clamp(136px, 32vw, 168px);
+      --wheel-size: clamp(152px, 38vw, 190px);
       --top-bar-height: 52px;
     }
 
@@ -120,7 +120,7 @@
 
     .top-btn {
       min-width: 0;
-      height: var(--top-bar-height);
+      min-height: var(--top-bar-height);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -128,12 +128,9 @@
       padding: 0 12px;
       border: 1px solid rgba(22, 217, 255, 0.16);
       border-radius: 16px;
-      background:
-        linear-gradient(180deg, rgba(17, 24, 33, 0.9), rgba(11, 17, 24, 0.7)),
-        radial-gradient(circle at 50% 0%, rgba(22, 217, 255, 0.1), transparent 54%);
+      background: linear-gradient(180deg, rgba(18, 24, 33, 0.88), rgba(12, 17, 24, 0.74));
       box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.24),
-        0 0 16px rgba(22, 217, 255, 0.06),
+        0 10px 24px rgba(0, 0, 0, 0.2),
         inset 0 0 0 1px rgba(255, 255, 255, 0.02);
       color: var(--text);
       backdrop-filter: blur(14px);
@@ -162,7 +159,7 @@
 
     .top-btn.system {
       justify-content: center;
-      padding: 0 14px;
+      padding: 8px 14px;
     }
 
     .top-btn-icon {
@@ -174,8 +171,16 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       background: rgba(255, 255, 255, 0.06);
       color: #ecf3fb;
-      font-size: 12px;
-      font-weight: 600;
+    }
+
+    .top-btn-icon svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .avatar-photo {
@@ -211,7 +216,10 @@
       margin-top: 3px;
       font-size: 10px;
       color: var(--muted);
-      white-space: nowrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
     }
 
     #topPanel {
@@ -280,6 +288,7 @@
     .top-panel-sub {
       font-size: 11px;
       color: var(--muted);
+      overflow-wrap: anywhere;
     }
 
     .top-panel-grid {
@@ -310,26 +319,45 @@
       color: #eefcff;
       font-size: 12px;
       line-height: 1.2;
+      overflow-wrap: anywhere;
     }
 
     .top-panel-actions {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .top-panel-btn {
-      flex: 1;
-      padding: 11px 12px;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
       border: 1px solid rgba(22, 217, 255, 0.16);
-      border-radius: 13px;
-      background: rgba(22, 217, 255, 0.08);
+      border-radius: 50%;
+      background: rgba(15, 22, 31, 0.92);
       color: #f0fcff;
-      font-family: var(--font-tech);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
       cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .top-panel-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .top-panel-btn:hover,
+    .top-panel-btn:focus-visible {
+      border-color: rgba(22, 217, 255, 0.3);
+      background: rgba(15, 31, 44, 0.96);
+      box-shadow: 0 0 16px rgba(22, 217, 255, 0.12);
+      transform: translateY(-1px);
     }
 
     .hud-wheel {
@@ -342,13 +370,10 @@
       border-radius: 50%;
       overflow: hidden;
       pointer-events: auto;
-      background:
-        radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.06), rgba(22, 217, 255, 0.03) 44%, transparent 68%),
-        linear-gradient(180deg, rgba(17, 24, 33, 0.9), rgba(11, 17, 24, 0.78));
+      background: linear-gradient(180deg, rgba(15, 21, 30, 0.92), rgba(8, 13, 20, 0.88));
       box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-        0 0 18px rgba(22, 217, 255, 0.06),
-        0 16px 34px rgba(0, 0, 0, 0.26);
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 10px 24px rgba(0, 0, 0, 0.26);
       backdrop-filter: blur(14px);
       transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
     }
@@ -363,27 +388,15 @@
 
     .hud-wheel::before,
     .hud-wheel::after {
-      content: "";
-      position: absolute;
-      border-radius: 50%;
-    }
-
-    .hud-wheel::before {
-      inset: 10px;
-      border: 1px solid rgba(22, 217, 255, 0.16);
-    }
-
-    .hud-wheel::after {
-      inset: 19px;
-      border: 1px solid rgba(22, 217, 255, 0.08);
+      display: none;
     }
 
     .hud-wheel[data-active="true"] {
       border-color: rgba(22, 217, 255, 0.32);
       box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-        0 0 20px rgba(22, 217, 255, 0.1),
-        0 18px 36px rgba(0, 0, 0, 0.32);
+        0 0 18px rgba(22, 217, 255, 0.06),
+        0 14px 32px rgba(0, 0, 0, 0.3);
     }
 
     .hud-wheel.dragging,
@@ -397,12 +410,9 @@
 
     .wheel-content {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 120px;
-      height: 120px;
-      transform: translate(-50%, -50%) scale(var(--wheel-scale));
-      transform-origin: center;
+      inset: 2px;
+      transform: scale(var(--wheel-scale));
+      transform-origin: center center;
     }
 
     .wheel-svg {
@@ -415,15 +425,16 @@
 
     .wheel-meta {
       position: absolute;
-      bottom: 8px;
+      bottom: 6px;
       width: 100%;
-      padding: 0 12px;
+      padding: 0 8px;
       color: var(--muted);
-      font-size: 8px;
-      letter-spacing: 0.08em;
+      font-size: 7.2px;
+      letter-spacing: 0.06em;
       text-align: center;
       text-transform: none;
-      white-space: nowrap;
+      white-space: normal;
+      line-height: 1.15;
     }
 
     .wheel-stat {
@@ -435,38 +446,39 @@
       line-height: 1.15;
       text-transform: none;
       text-align: center;
-      white-space: nowrap;
-      text-shadow: 0 0 10px rgba(22, 217, 255, 0.26);
+      white-space: normal;
+      max-width: 42px;
+      text-shadow: 0 0 8px rgba(22, 217, 255, 0.12);
     }
 
     .wheel-stat small {
       display: block;
       margin-top: 2px;
       color: var(--muted);
-      font-size: 7px;
-      letter-spacing: 0.08em;
+      font-size: 6.5px;
+      letter-spacing: 0.04em;
     }
 
     .wheel-stat.north {
-      top: 15px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%);
     }
 
     .wheel-stat.west {
-      top: 44px;
-      left: 8px;
+      top: 36px;
+      left: 7px;
       text-align: left;
     }
 
     .wheel-stat.east {
-      top: 44px;
-      right: 8px;
+      top: 36px;
+      right: 7px;
       text-align: right;
     }
 
     .wheel-stat.south {
-      bottom: 26px;
+      bottom: 21px;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -476,20 +488,18 @@
       position: absolute;
       left: 50%;
       top: 50%;
-      width: 48px;
-      height: 48px;
+      width: 54px;
+      height: 54px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1px;
+      gap: 2px;
       transform: translate(-50%, -50%);
-      border: 1px solid rgba(22, 217, 255, 0.26);
+      border: 1px solid rgba(22, 217, 255, 0.18);
       border-radius: 50%;
-      background: rgba(4, 18, 31, 0.9);
-      box-shadow:
-        inset 0 0 18px rgba(22, 217, 255, 0.1),
-        0 0 18px rgba(22, 217, 255, 0.16);
+      background: rgba(9, 16, 24, 0.96);
+      box-shadow: inset 0 0 10px rgba(22, 217, 255, 0.06);
       color: #eefcff;
       cursor: pointer;
     }
@@ -498,11 +508,26 @@
       transform: translate(-50%, -50%) scale(0.96);
     }
 
-    .wheel-center-label {
-      font-size: 8px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: none;
+    .radar-wheel .wheel-center-btn {
+      width: 44px;
+      height: 44px;
+    }
+
+    .wheel-center-icon {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+    }
+
+    .wheel-center-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .wheel-center-value {
@@ -513,21 +538,19 @@
 
     .perf-wheel .wheel-center-btn.active {
       border-color: rgba(77, 242, 200, 0.28);
-      box-shadow:
-        inset 0 0 18px rgba(77, 242, 200, 0.1),
-        0 0 20px rgba(77, 242, 200, 0.16);
+      box-shadow: inset 0 0 14px rgba(77, 242, 200, 0.12);
     }
 
     .wheel-resize-grip {
       position: absolute;
-      right: 10px;
-      bottom: 10px;
-      width: 24px;
-      height: 24px;
-      border: 1px solid rgba(22, 217, 255, 0.16);
+      right: 8px;
+      bottom: 8px;
+      width: 20px;
+      height: 20px;
+      border: 1px solid rgba(22, 217, 255, 0.14);
       border-radius: 50%;
-      background: rgba(10, 18, 26, 0.86);
-      box-shadow: 0 0 14px rgba(22, 217, 255, 0.12);
+      background: rgba(10, 18, 26, 0.92);
+      box-shadow: 0 0 10px rgba(22, 217, 255, 0.08);
       cursor: nwse-resize;
     }
 
@@ -540,18 +563,18 @@
     }
 
     .wheel-resize-grip::before {
-      left: 7px;
-      top: 11px;
-      width: 10px;
+      left: 5px;
+      top: 9px;
+      width: 8px;
       height: 2px;
       transform: rotate(-38deg);
     }
 
     .wheel-resize-grip::after {
-      left: 10px;
-      top: 7px;
+      left: 8px;
+      top: 5px;
       width: 2px;
-      height: 10px;
+      height: 8px;
       transform: rotate(-38deg);
     }
 
@@ -559,9 +582,13 @@
       transform-origin: 60px 60px;
     }
 
+    #radarSweepCone {
+      transform-origin: 60px 60px;
+    }
+
     .radar-compass {
       fill: #8daac0;
-      font-size: 6px;
+      font-size: 5.2px;
       letter-spacing: 0.04em;
       text-transform: none;
     }
@@ -593,7 +620,7 @@
       position: relative;
       flex: 1;
       min-width: 0;
-      padding-top: 18px;
+      padding-top: 22px;
     }
 
     .composer-btn {
@@ -640,23 +667,101 @@
 
     #addBtn {
       position: absolute;
-      top: -2px;
-      right: 8px;
-      min-width: 56px;
-      height: 30px;
-      padding: 0 12px;
-      border: 1px solid rgba(22, 217, 255, 0.14);
-      border-radius: 999px;
-      background: rgba(22, 217, 255, 0.08);
+      top: -16px;
+      right: -6px;
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
+      padding: 0;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 50%;
+      background: rgba(16, 23, 32, 0.96);
       color: #ebf6ff;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
+      font-size: 22px;
+      font-weight: 400;
       line-height: 1;
       display: grid;
       place-items: center;
       cursor: pointer;
-      text-transform: uppercase;
+    }
+
+    #addCycle {
+      position: absolute;
+      right: calc(var(--safe-right) + 14px);
+      bottom: calc(var(--safe-bottom) + 48px);
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 14;
+    }
+
+    #addCycle[data-open="true"] {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .add-cycle-btn {
+      --add-x: 0px;
+      --add-y: 0px;
+      --add-scale: 0.8;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(22, 217, 255, 0.14);
+      background: rgba(10, 16, 24, 0.96);
+      color: #e9faff;
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+      opacity: 0;
+      transform: translate(var(--add-x), var(--add-y)) scale(var(--add-scale));
+      transition: transform 0.18s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, opacity 0.18s ease;
+    }
+
+    .add-cycle-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .add-cycle-btn[data-active="true"],
+    .add-cycle-btn:hover {
+      border-color: rgba(22, 217, 255, 0.34);
+      background: rgba(15, 35, 52, 0.94);
+      box-shadow: 0 0 14px rgba(22, 217, 255, 0.14), 0 14px 24px rgba(0, 0, 0, 0.32);
+      transform: translate(var(--add-x), calc(var(--add-y) - 2px)) scale(var(--add-scale));
+    }
+
+    #addCycle[data-open="true"] .add-cycle-btn {
+      opacity: 1;
+    }
+
+    #addCycle[data-open="true"] .add-cycle-btn:nth-child(1) {
+      --add-x: -8px;
+      --add-y: -58px;
+      --add-scale: 1;
+    }
+
+    #addCycle[data-open="true"] .add-cycle-btn:nth-child(2) {
+      --add-x: -48px;
+      --add-y: -98px;
+      --add-scale: 1;
+    }
+
+    #addCycle[data-open="true"] .add-cycle-btn:nth-child(3) {
+      --add-x: -102px;
+      --add-y: -112px;
+      --add-scale: 1;
     }
 
     #query::placeholder {
@@ -677,19 +782,17 @@
     }
     .signal-popup {
       position: absolute;
-      width: min(84vw, 340px);
+      width: min(86vw, 352px);
       min-width: min(78vw, 236px);
       border: 1px solid rgba(22, 217, 255, 0.14);
       border-radius: 22px;
       overflow: hidden;
-      background:
-        linear-gradient(180deg, rgba(18, 24, 33, 0.96), rgba(11, 16, 23, 0.88)),
-        radial-gradient(circle at 16% -10%, rgba(22, 217, 255, 0.08), transparent 46%);
+      background: linear-gradient(180deg, rgba(10, 14, 20, 0.98), rgba(13, 18, 25, 0.96));
       box-shadow:
-        0 22px 46px rgba(0, 0, 0, 0.32),
-        0 0 16px rgba(22, 217, 255, 0.08),
+        0 24px 52px rgba(0, 0, 0, 0.42),
+        0 0 14px rgba(22, 217, 255, 0.05),
         inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-      backdrop-filter: blur(18px);
+      backdrop-filter: blur(24px);
       opacity: 0;
       transform: scale(0.72);
       pointer-events: none;
@@ -711,13 +814,7 @@
     }
 
     .signal-popup::after {
-      width: 58%;
-      aspect-ratio: 1;
-      right: -12%;
-      bottom: -42%;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--popup-glow), transparent 72%);
-      filter: blur(20px);
+      display: none;
     }
 
     .signal-popup.anchor {
@@ -733,9 +830,7 @@
     .signal-popup.cloud {
       --popup-accent: var(--cloud);
       --popup-glow: rgba(65, 198, 255, 0.24);
-      background:
-        linear-gradient(180deg, rgba(18, 24, 33, 0.96), rgba(11, 16, 23, 0.88)),
-        radial-gradient(circle at 78% 0%, rgba(65, 198, 255, 0.1), transparent 34%);
+      background: linear-gradient(180deg, rgba(10, 14, 20, 0.98), rgba(13, 18, 25, 0.96));
     }
 
     .signal-popup[data-state="ghost"] {
@@ -758,24 +853,11 @@
     }
 
     .popup-shell::before {
-      content: "";
-      position: absolute;
-      left: 16px;
-      right: 16px;
-      top: 0;
-      height: 2px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, transparent, var(--popup-accent), transparent);
-      box-shadow: 0 0 18px var(--popup-glow);
+      display: none;
     }
 
     .popup-shell::after {
-      content: "";
-      position: absolute;
-      inset: 12px;
-      border-radius: 18px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      pointer-events: none;
+      display: none;
     }
 
     .signal-popup.presence .popup-shell::after {
@@ -792,6 +874,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      flex-wrap: wrap;
     }
 
     .popup-kind,
@@ -814,7 +897,20 @@
       font-size: 10px;
       line-height: 1;
       letter-spacing: 0.04em;
-      white-space: nowrap;
+      white-space: normal;
+    }
+
+    .popup-kind svg,
+    .popup-capability svg,
+    .popup-region svg {
+      width: 12px;
+      height: 12px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: 0 0 auto;
     }
 
     .popup-kind {
@@ -823,9 +919,7 @@
     }
 
     .popup-capability {
-      max-width: 52%;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      max-width: 100%;
       background: var(--popup-glow);
       color: var(--popup-accent);
     }
@@ -834,8 +928,9 @@
       margin: 0;
       color: #eefcff;
       font-size: 17px;
-      line-height: 1.04;
+      line-height: 1.12;
       letter-spacing: 0.01em;
+      overflow-wrap: anywhere;
     }
 
     .popup-summary {
@@ -843,6 +938,7 @@
       color: #c6d4e2;
       font-size: 12px;
       line-height: 1.5;
+      overflow-wrap: anywhere;
     }
 
     .popup-media {
@@ -912,20 +1008,33 @@
     }
 
     .popup-action {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      padding: 0;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 14px;
-      padding: 11px 13px;
-      background:
-        radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.06), transparent 72%),
-        var(--popup-glow);
+      border-radius: 50%;
+      background: rgba(12, 19, 27, 0.94);
       color: #f2fdff;
       cursor: pointer;
-      font-family: var(--font-tech);
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.13em;
-      text-transform: uppercase;
       transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .popup-action svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .popup-action[data-armed="true"] {
+      border-color: rgba(22, 217, 255, 0.34);
+      background: rgba(14, 34, 48, 0.96);
+      box-shadow: 0 0 18px rgba(22, 217, 255, 0.16);
     }
 
     .popup-action:active {
@@ -970,7 +1079,7 @@
 
     @media (max-height: 760px) {
       :root {
-        --wheel-size: 124px;
+        --wheel-size: 136px;
         --top-bar-height: 48px;
       }
 
@@ -1005,6 +1114,18 @@
         box-shadow: 0 0 0 8px rgba(22, 217, 255, 0), 0 0 30px rgba(22, 217, 255, 0.28);
       }
     }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   </style>
 </head>
 <body>
@@ -1025,11 +1146,34 @@
           </span>
         </button>
         <button class="top-btn wallet" id="walletButton" type="button" aria-label="Open wallet and economics">
-          <span class="top-btn-icon">€</span>
+          <span class="top-btn-icon" aria-hidden="true"></span>
         </button>
       </div>
 
       <div id="topPanel" data-open="false" data-position="center"></div>
+      <div id="addCycle" data-open="false" aria-hidden="true">
+        <button class="add-cycle-btn" type="button" data-add-kind="shop" aria-label="Add shop">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 10h16"></path>
+            <path d="M6 10l1-4h10l1 4"></path>
+            <path d="M7 10v8h10v-8"></path>
+            <path d="M10 18v-4h4v4"></path>
+          </svg>
+        </button>
+        <button class="add-cycle-btn" type="button" data-add-kind="service" aria-label="Add service">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14.5 6.5a4 4 0 1 0-5 5l-4 4 3 3 4-4a4 4 0 0 0 5-5z"></path>
+            <path d="M15 9l3-3"></path>
+          </svg>
+        </button>
+        <button class="add-cycle-btn" type="button" data-add-kind="video" aria-label="Post video">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="4" y="6" width="12" height="12" rx="2"></rect>
+            <path d="M11 10l4 2-4 2z"></path>
+            <path d="M16 10l4-2v8l-4-2"></path>
+          </svg>
+        </button>
+      </div>
 
       <div class="hud-wheel left perf-wheel" id="perfWheel" data-active="true" data-wheel="perf" aria-label="Device performance wheel">
         <div class="wheel-content">
@@ -1039,17 +1183,14 @@
                 <feGaussianBlur stdDeviation="2.4"></feGaussianBlur>
               </filter>
             </defs>
-            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
-            <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(22,217,255,0.18)" stroke-width="1" stroke-dasharray="2.8 4.8"></circle>
             <path id="perfLoadArc" d="" fill="none" stroke="#4df2c8" stroke-width="3.2" stroke-linecap="round" filter="url(#perfGlow)"></path>
-            <circle cx="60" cy="60" r="26" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
           </svg>
           <span class="wheel-stat north" id="perfDevice">PHONE<small id="perfPlatform">web shell</small></span>
           <span class="wheel-stat west" id="perfCpu">CPU<small id="perfCpuValue">--</small></span>
           <span class="wheel-stat east" id="perfRam">RAM<small id="perfRamValue">--</small></span>
           <span class="wheel-stat south" id="perfThermal">TEMP<small id="perfTempValue">hook</small></span>
           <button class="wheel-center-btn" id="perfCenterBtn" type="button">
-            <span class="wheel-center-label" id="perfCenterLabel">MAX</span>
+            <span class="wheel-center-icon" id="perfCenterIcon" aria-hidden="true"></span>
             <span class="wheel-center-value" id="perfCenterValue">0%</span>
           </button>
           <span class="wheel-meta" id="perfMeta">device performance</span>
@@ -1065,23 +1206,21 @@
                 <feGaussianBlur stdDeviation="2.4"></feGaussianBlur>
               </filter>
             </defs>
-            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
-            <circle cx="60" cy="60" r="38" fill="none" stroke="rgba(22,217,255,0.18)" stroke-width="1"></circle>
-            <circle cx="60" cy="60" r="26" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1" stroke-dasharray="2.6 4.4"></circle>
             <g id="radarGrid">
               <line x1="60" y1="10" x2="60" y2="110" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
               <line x1="10" y1="60" x2="110" y2="60" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
             </g>
             <g id="radarPips"></g>
-            <line id="radarSweep" x1="60" y1="60" x2="60" y2="14" stroke="#16d9ff" stroke-width="1.8" stroke-linecap="round" filter="url(#wheelGlow)"></line>
-            <text class="radar-compass" x="60" y="13" text-anchor="middle">N</text>
-            <text class="radar-compass" x="107" y="63" text-anchor="middle">E</text>
-            <text class="radar-compass" x="60" y="112" text-anchor="middle">S</text>
-            <text class="radar-compass" x="13" y="63" text-anchor="middle">W</text>
+            <path id="radarSweepCone" d="M60 60 L56 13 A47 47 0 0 1 64 13 Z" fill="#16d9ff" fill-opacity="0.14" filter="url(#wheelGlow)"></path>
+            <line id="radarSweep" x1="60" y1="60" x2="60" y2="12" stroke="#16d9ff" stroke-width="2.3" stroke-linecap="round" filter="url(#wheelGlow)"></line>
+            <text class="radar-compass" id="radarNorth" x="60" y="13" text-anchor="middle">SUN</text>
+            <text class="radar-compass" id="radarEast" x="107" y="63" text-anchor="middle">+</text>
+            <text class="radar-compass" id="radarSouth" x="60" y="112" text-anchor="middle">GAL</text>
+            <text class="radar-compass" id="radarWest" x="13" y="63" text-anchor="middle">+</text>
           </svg>
           <button class="wheel-center-btn" id="radarFetchBtn" type="button">
-            <span class="wheel-center-label">Zoom</span>
-            <span class="wheel-center-value" id="radarFetchValue">World</span>
+            <span class="wheel-center-icon" id="radarFetchIcon" aria-hidden="true"></span>
+            <span class="wheel-center-value" id="radarFetchValue">0</span>
           </button>
           <span class="wheel-meta" id="radarMeta">signal radar</span>
         </div>
@@ -1098,8 +1237,8 @@
           </svg>
         </button>
         <div id="composerField">
-          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading AI signal routing..." aria-label="AI signal command rail" />
-          <button id="addBtn" type="button" aria-label="Add shop, service, or video">Add</button>
+          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading signal routing..." aria-label="AI signal command rail" />
+          <button id="addBtn" type="button" aria-label="Add shop, service, or video">+</button>
         </div>
         <button class="composer-btn" id="sendBtn" type="submit" aria-label="Execute command">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1123,6 +1262,7 @@
       const composer = $("composer");
       const query = $("query");
       const addBtn = $("addBtn");
+      const addCycle = $("addCycle");
       const voiceBtn = $("voiceBtn");
       const sendBtn = $("sendBtn");
       const topPanel = $("topPanel");
@@ -1139,16 +1279,24 @@
       const perfRamValue = $("perfRamValue");
       const perfTempValue = $("perfTempValue");
       const perfCenterBtn = $("perfCenterBtn");
-      const perfCenterLabel = $("perfCenterLabel");
+      const perfCenterIcon = $("perfCenterIcon");
       const perfCenterValue = $("perfCenterValue");
       const perfResizeGrip = $("perfResizeGrip");
       const radarWheel = $("radarWheel");
       const radarPips = $("radarPips");
+      const radarGrid = $("radarGrid");
+      const radarSweepCone = $("radarSweepCone");
       const radarSweep = $("radarSweep");
       const radarMeta = $("radarMeta");
       const radarFetchBtn = $("radarFetchBtn");
+      const radarFetchIcon = $("radarFetchIcon");
       const radarFetchValue = $("radarFetchValue");
       const radarResizeGrip = $("radarResizeGrip");
+      const radarNorth = $("radarNorth");
+      const radarEast = $("radarEast");
+      const radarSouth = $("radarSouth");
+      const radarWest = $("radarWest");
+      const addCycleButtons = [...document.querySelectorAll("[data-add-kind]")];
 
       const APP_INFO = {
         name: "Astranov IOS",
@@ -1177,7 +1325,6 @@
       const EARTH_SPIN = 0.00034;
       const POPUP_LIFT = 148;
       const AMBIENT_COUNT = 3;
-      const PULSE_SPEED = 0.56;
 
       const SIGNALS = [
         {
@@ -1438,6 +1585,8 @@
         texturesReady: false,
         openPanel: null,
         addMode: null,
+        addCycleOpen: false,
+        addCycleIndex: 0,
         zoomed: false,
         zoomLevel: 0,
         zoomTarget: 0,
@@ -1456,7 +1605,7 @@
         performancePeak: 42,
         hud: {
           top: 0,
-          size: Math.min(170, Math.max(138, window.innerWidth * 0.34)),
+          size: Math.min(188, Math.max(152, window.innerWidth * 0.38)),
           mode: null,
           pointerId: null,
           startX: 0,
@@ -1612,7 +1761,7 @@
         earthMaterial.needsUpdate = true;
         nightShell.material.needsUpdate = true;
         cloudShellMaterial.needsUpdate = true;
-        query.placeholder = "Ask AI to find signals, products, drivers, or orders...";
+        query.placeholder = "Find signals, products, drivers, orders";
       });
 
       function latLngToVector3(lat, lng, radius) {
@@ -1664,14 +1813,6 @@
         return { x: cx + dx * scale, y: cy + dy * scale };
       }
 
-      function cubicPoint(t, p0, p1, p2, p3) {
-        const inv = 1 - t;
-        return {
-          x: inv * inv * inv * p0.x + 3 * inv * inv * t * p1.x + 3 * inv * t * t * p2.x + t * t * t * p3.x,
-          y: inv * inv * inv * p0.y + 3 * inv * inv * t * p1.y + 3 * inv * t * t * p2.y + t * t * t * p3.y
-        };
-      }
-
       function rotationForSignal(state) {
         const target = state.local.clone().normalize();
         const lon = Math.atan2(target.z, -target.x);
@@ -1701,6 +1842,52 @@
         `;
       }
 
+      function iconMarkup(name) {
+        const icons = {
+          wallet: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a2 2 0 0 1 2 2v2"></path><path d="M4 9h16a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path><path d="M15.5 14h4"></path></svg>',
+          login: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7V5a3 3 0 0 0-6 0v14a3 3 0 0 0 6 0v-2"></path><path d="M11 12h10"></path><path d="M18 8l4 4-4 4"></path></svg>',
+          profile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"></circle><path d="M5 19a7 7 0 0 1 14 0"></path></svg>',
+          settings: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h8"></path><path d="M16 7h4"></path><circle cx="14" cy="7" r="2"></circle><path d="M4 17h4"></path><path d="M12 17h8"></path><circle cx="10" cy="17" r="2"></circle></svg>',
+          orders: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7h11"></path><path d="M8 12h11"></path><path d="M8 17h11"></path><path d="m4 7 1.5 1.5L7.5 6"></path><path d="m4 12 1.5 1.5L7.5 11"></path><path d="m4 17 1.5 1.5L7.5 16"></path></svg>',
+          alerts: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5"></path><path d="M4 16h16"></path><path d="M10 19a2 2 0 0 0 4 0"></path></svg>',
+          reload: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0 2 5.5"></path><path d="M20 4v7h-7"></path></svg>',
+          refresh: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7"></path><path d="M21 12a9 9 0 0 1-15 6.7"></path><path d="M18 3v4h-4"></path><path d="M6 21v-4h4"></path></svg>',
+          transactions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M5 12h10"></path><path d="M5 17h14"></path><path d="M17 10l2 2-2 2"></path></svg>',
+          payments: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg>',
+          inspect: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>',
+          drone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M12 16v4"></path><path d="M4 12h4"></path><path d="M16 12h4"></path><circle cx="12" cy="4" r="2"></circle><circle cx="12" cy="20" r="2"></circle><circle cx="4" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle></svg>',
+          target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M2 12h4"></path><path d="M18 12h4"></path></svg>',
+          anchor: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11z"></path><circle cx="12" cy="10" r="2"></circle></svg>',
+          presence: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="2.5"></circle><path d="M4 18c1.2-2.5 3-4 5.5-4"></path><path d="M12 12l4-4"></path><path d="M14 8h6v6"></path></svg>',
+          cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 18 8v8l-6 4-6-4V8z"></path><path d="M12 4v16"></path><path d="M6 8h12"></path><path d="M6 16h12"></path></svg>',
+          order: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h14l-1.5 7H8z"></path><path d="M6 7 5 4H2"></path><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle></svg>',
+          play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6l10 6-10 6z"></path></svg>',
+          route: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="6" r="2"></circle><path d="M8 18c4-1 8-4 10-10"></path></svg>',
+          triangleDown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17 6 9h12z"></path></svg>',
+          triangleUp: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7l6 8H6z"></path></svg>'
+        };
+        return icons[name] || icons.target;
+      }
+
+      function panelActionMarkup(action, label, icon) {
+        return `<button class="top-panel-btn" type="button" data-panel-action="${action}" aria-label="${label}" title="${label}">${iconMarkup(icon)}<span class="sr-only">${label}</span></button>`;
+      }
+
+      function signalKindIcon(type) {
+        return type === "anchor" ? "anchor" : type === "presence" ? "presence" : "cloud";
+      }
+
+      function actionIconForSignal(signal) {
+        if (signal.previewVideo) return "play";
+        if (signal.type === "presence" || signal.tags.includes("driver")) return "route";
+        return "order";
+      }
+
+      function popupActionMarkup(signal, armed) {
+        const label = armed ? signal.armedLabel : signal.actionLabel;
+        return `${iconMarkup(armed ? "target" : actionIconForSignal(signal))}<span class="sr-only">${label}</span>`;
+      }
+
       function setPanel(kind) {
         if (!kind) {
           appState.openPanel = null;
@@ -1712,6 +1899,7 @@
           return;
         }
 
+        setAddCycleOpen(false);
         appState.openPanel = kind;
         userButton.dataset.open = kind === "user" ? "true" : "false";
         systemButton.dataset.open = kind === "system" ? "true" : "false";
@@ -1738,9 +1926,11 @@
           ].join("");
           actions = `
             <div class="top-panel-actions">
-              <button class="top-panel-btn" type="button" data-panel-action="login">Login</button>
-              <button class="top-panel-btn" type="button" data-panel-action="orders">Orders</button>
-              <button class="top-panel-btn" type="button" data-panel-action="alerts">Alerts</button>
+              ${panelActionMarkup("login", "Login", "login")}
+              ${panelActionMarkup("profile", "Profile", "profile")}
+              ${panelActionMarkup("settings", "Settings", "settings")}
+              ${panelActionMarkup("orders", "Orders", "orders")}
+              ${panelActionMarkup("alerts", "Alerts", "alerts")}
             </div>
           `;
         }
@@ -1757,8 +1947,8 @@
           ].join("");
           actions = `
             <div class="top-panel-actions">
-              <button class="top-panel-btn" type="button" data-panel-action="reload">Force Update</button>
-              <button class="top-panel-btn" type="button" data-panel-action="refresh">Refresh World</button>
+              ${panelActionMarkup("reload", "Force update", "reload")}
+              ${panelActionMarkup("refresh", "Refresh world", "refresh")}
             </div>
           `;
         }
@@ -1775,27 +1965,8 @@
           ].join("");
           actions = `
             <div class="top-panel-actions">
-              <button class="top-panel-btn" type="button" data-panel-action="transactions">Transactions</button>
-              <button class="top-panel-btn" type="button" data-panel-action="payments">Payments</button>
-            </div>
-          `;
-        }
-
-        if (kind === "add") {
-          position = "center";
-          title = "Add To Map";
-          sub = "tap the Earth after choosing a type";
-          grid = [
-            metricTile("shop", "add a store signal"),
-            metricTile("service", "add a service signal"),
-            metricTile("video", "post a location video"),
-            metricTile("flow", "emits a new local card")
-          ].join("");
-          actions = `
-            <div class="top-panel-actions">
-              <button class="top-panel-btn" type="button" data-panel-action="add:shop">Shop</button>
-              <button class="top-panel-btn" type="button" data-panel-action="add:service">Service</button>
-              <button class="top-panel-btn" type="button" data-panel-action="add:video">Video</button>
+              ${panelActionMarkup("transactions", "Transactions", "transactions")}
+              ${panelActionMarkup("payments", "Payments", "payments")}
             </div>
           `;
         }
@@ -1815,8 +1986,8 @@
           ].join("");
           actions = `
             <div class="top-panel-actions">
-              <button class="top-panel-btn" type="button" data-panel-action="investigate">Inspect</button>
-              <button class="top-panel-btn" type="button" data-panel-action="drone">Drone Load</button>
+              ${panelActionMarkup("investigate", "Inspect performance", "inspect")}
+              ${panelActionMarkup("drone", "Drone load", "drone")}
             </div>
           `;
         }
@@ -1845,33 +2016,43 @@
               return;
             }
             if (action === "refresh") {
-              query.placeholder = "World refreshed. Ask AI to find signals, products, or drivers.";
+              query.placeholder = "World refreshed";
               appState.lastCycle = performance.now();
               setPanel(null);
               return;
             }
             if (action === "login") {
-              query.placeholder = "User login shell ready";
+              query.placeholder = "User login ready";
+              setPanel(null);
+              return;
+            }
+            if (action === "profile") {
+              query.placeholder = "Profile view ready";
+              setPanel(null);
+              return;
+            }
+            if (action === "settings") {
+              query.placeholder = "Settings ready";
               setPanel(null);
               return;
             }
             if (action === "orders") {
-              query.placeholder = "Orders stay linked to the communication drawer";
+              query.placeholder = "Orders stay linked";
               setPanel(null);
               return;
             }
             if (action === "alerts") {
-              query.placeholder = "Alerts shell ready";
+              query.placeholder = "Alerts ready";
               setPanel(null);
               return;
             }
             if (action === "transactions") {
-              query.placeholder = "Wallet ledger ready for transaction review";
+              query.placeholder = "Wallet ledger ready";
               setPanel(null);
               return;
             }
             if (action === "payments") {
-              query.placeholder = "Payments shell ready";
+              query.placeholder = "Payments ready";
               setPanel(null);
               return;
             }
@@ -1883,12 +2064,6 @@
             if (action === "drone") {
               setActiveSignal("atlas-drone", true);
               setZoom(0.98);
-              setPanel(null);
-              return;
-            }
-            if (action.startsWith("add:")) {
-              appState.addMode = action.split(":")[1];
-              query.placeholder = `Tap the Earth to add a ${appState.addMode} signal`;
               setPanel(null);
               return;
             }
@@ -1904,7 +2079,29 @@
       function updateTopHud() {
         systemVersionBadge.textContent = `v${APP_INFO.currentVersion} / v${APP_INFO.latestVersion}`;
         const walletIcon = walletButton.querySelector(".top-btn-icon");
-        if (walletIcon) walletIcon.textContent = "EUR";
+        if (walletIcon) walletIcon.innerHTML = iconMarkup("wallet");
+        walletButton.setAttribute("title", WALLET_INFO.balance);
+        walletButton.setAttribute("aria-label", `Open wallet and economics, balance ${WALLET_INFO.balance}`);
+        if (radarFetchIcon) radarFetchIcon.innerHTML = iconMarkup("target");
+      }
+
+      function setAddCycleOpen(open) {
+        appState.addCycleOpen = open;
+        addCycle.dataset.open = open ? "true" : "false";
+        addCycle.setAttribute("aria-hidden", open ? "false" : "true");
+        addCycleButtons.forEach((button) => {
+          button.dataset.active = open && button.dataset.addKind === appState.addMode ? "true" : "false";
+        });
+      }
+
+      function setAddMode(kind) {
+        appState.addMode = kind;
+        query.placeholder = kind === "video"
+          ? "Tap Earth to post video"
+          : kind === "service"
+            ? "Tap Earth to place service"
+            : "Tap Earth to place shop";
+        setAddCycleOpen(false);
       }
 
       function setZoom(level) {
@@ -1936,8 +2133,8 @@
       function applyHudLayout() {
         const topRect = topBar.getBoundingClientRect();
         const composerRect = composer.getBoundingClientRect();
-        const maxSize = Math.min(212, appState.width * 0.42, appState.height * 0.28);
-        appState.hud.size = clamp(appState.hud.size, 126, maxSize);
+        const maxSize = Math.min(228, appState.width * 0.46, appState.height * 0.3);
+        appState.hud.size = clamp(appState.hud.size, 136, maxSize);
         const minTop = topRect.bottom + 14;
         const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - 18);
         appState.hud.top = clamp(appState.hud.top || (minTop + 18), minTop, maxTop);
@@ -1963,7 +2160,9 @@
         perfRamValue.textContent = appState.device.ram;
         perfTempValue.textContent = appState.device.thermal;
         perfMeta.textContent = `${appState.device.storage} / ${appState.device.battery}`;
-        perfCenterLabel.textContent = "MAX";
+        perfCenterIcon.innerHTML = iconMarkup(appState.zoomTarget > 0.08 ? "triangleUp" : "triangleDown");
+        perfCenterBtn.setAttribute("aria-label", appState.zoomTarget > 0.08 ? "Zoom out to world view" : "Zoom down to Earth");
+        perfCenterBtn.setAttribute("title", appState.zoomTarget > 0.08 ? "Zoom out to world view" : "Zoom down to Earth");
         perfCenterValue.textContent = `${Math.round(appState.performancePeak)}%`;
         perfCenterBtn.classList.toggle("active", appState.performancePeak > 80);
 
@@ -1973,8 +2172,9 @@
 
       function updateRadarHud(now) {
         appState.radarAngle = (appState.radarAngle + 0.03) % (Math.PI * 2);
-        radarSweep.setAttribute("transform", `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`);
-        const center = globeCenterScreen();
+        const sweepRotation = `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`;
+        radarSweep.setAttribute("transform", sweepRotation);
+        radarSweepCone.setAttribute("transform", sweepRotation);
         const pips = [
           `<circle cx="60" cy="60" r="2.1" fill="#d9fbff" fill-opacity="0.82"></circle>`
         ];
@@ -1982,32 +2182,41 @@
         signalStates.forEach((state) => {
           if (!frontFacing(state)) return;
           visibleCount += 1;
-          const point = screenPoint(state.world);
-          const dx = clamp((point.x - center.x) / (appState.width * 0.24), -1, 1);
-          const dy = clamp((point.y - center.y) / (appState.height * 0.24), -1, 1);
+          const relative = state.world.clone().normalize();
+          const dx = clamp(relative.x * 1.08, -1, 1);
+          const dy = clamp(-relative.y * 1.08, -1, 1);
+          const angleFromCenter = Math.atan2(dy, dx);
+          const spread = 22 + Math.min(1, Math.hypot(dx, dy)) * 20 + clamp(1 - state.depth, 0, 1) * 10 + (state.signal.type === "cloud" ? 7 : state.signal.type === "presence" ? 4 : 0);
           const driftX = Math.cos(now * 0.0014 + state.pulsePhase * 1.7) * (state.signal.type === "presence" ? 1.9 : 0.8);
           const driftY = Math.sin(now * 0.0011 + state.pulsePhase * 1.4) * (state.signal.type === "presence" ? 1.9 : 0.8);
-          const x = clamp(60 + dx * 24 + driftX, 12, 108);
-          const y = clamp(60 + dy * 24 + driftY, 12, 108);
+          const x = clamp(60 + Math.cos(angleFromCenter) * spread + driftX, 12, 108);
+          const y = clamp(60 + Math.sin(angleFromCenter) * spread + driftY, 12, 108);
           const angle = Math.atan2(y - 60, x - 60);
           const sweepDelta = Math.abs(wrapAngle(angle - (appState.radarAngle - Math.PI / 2)));
           const sweepEcho = clamp(1 - sweepDelta / 0.42, 0, 1);
           const active = state.signal.id === appState.activeId;
-          const radius = active ? 4.2 : state.signal.type === "cloud" ? 3 : 2.2 + sweepEcho * 1.6;
-          const accent = typeHex(state.signal.type);
+          const radius = active ? 4.8 : state.signal.type === "cloud" ? 3.5 : 2.8 + sweepEcho * 1.8;
+          const accent = "#16d9ff";
 
-          if (sweepEcho > 0.04) {
-            pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius + 4 + sweepEcho * 4.5).toFixed(2)}" fill="none" stroke="${accent}" stroke-opacity="${(0.08 + sweepEcho * 0.34).toFixed(2)}" stroke-width="1"></circle>`);
+          if (sweepEcho > 0.02) {
+            pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius + 4.6 + sweepEcho * 4.8).toFixed(2)}" fill="none" stroke="${accent}" stroke-opacity="${(0.12 + sweepEcho * 0.36).toFixed(2)}" stroke-width="1.15"></circle>`);
           }
           if (state.signal.type === "presence") {
-            pips.push(`<line x1="${(x - dx * 5).toFixed(2)}" y1="${(y - dy * 5).toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${accent}" stroke-opacity="${(0.2 + sweepEcho * 0.3).toFixed(2)}" stroke-width="1.1" stroke-linecap="round"></line>`);
+            pips.push(`<line x1="${(x - dx * 7).toFixed(2)}" y1="${(y - dy * 7).toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${accent}" stroke-opacity="${(0.24 + sweepEcho * 0.32).toFixed(2)}" stroke-width="1.2" stroke-linecap="round"></line>`);
           }
           pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${accent}" fill-opacity="${active ? "1" : (0.46 + sweepEcho * 0.42).toFixed(2)}"></circle>`);
           pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius * 0.42).toFixed(2)}" fill="#effcff" fill-opacity="${active ? "0.92" : "0.54"}"></circle>`);
         });
         radarPips.innerHTML = pips.join("");
-        radarMeta.textContent = visibleCount ? `${visibleCount} live around view` : "scanning";
-        radarFetchValue.textContent = appState.zoomTarget > 0.08 ? `${Math.round(appState.zoomTarget * 100)}%` : "World";
+        radarMeta.textContent = appState.zoomTarget > 0.08 ? "earth track" : "celestial";
+        radarFetchValue.textContent = `${visibleCount}`.padStart(2, "0");
+        radarFetchBtn.setAttribute("aria-label", visibleCount ? "Fetch nearest visible signal" : "Cycle signals");
+        radarFetchBtn.setAttribute("title", visibleCount ? "Fetch nearest visible signal" : "Cycle signals");
+        radarNorth.textContent = appState.zoomTarget > 0.08 ? "N" : "SUN";
+        radarEast.textContent = appState.zoomTarget > 0.08 ? "E" : "+";
+        radarSouth.textContent = appState.zoomTarget > 0.08 ? "S" : "GAL";
+        radarWest.textContent = appState.zoomTarget > 0.08 ? "W" : "+";
+        radarGrid.style.opacity = appState.zoomTarget > 0.08 ? "1" : "0";
         radarWheel.dataset.active = "true";
       }
 
@@ -2059,7 +2268,7 @@
         return `
           <div class="popup-shell">
             <div class="popup-head">
-              <span class="popup-kind">${signal.type}</span>
+              <span class="popup-kind">${iconMarkup(signalKindIcon(signal.type))}${signal.type}</span>
               <span class="popup-capability">${signal.capability}</span>
             </div>
             ${media}
@@ -2071,10 +2280,20 @@
             <div class="popup-grid">${metrics}</div>
             <div class="popup-foot">
               <span class="popup-region">${signal.region}</span>
-              <button class="popup-action" type="button">${signal.actionLabel}</button>
+              <button class="popup-action" type="button" aria-label="${signal.actionLabel}" title="${signal.actionLabel}" data-armed="false">${popupActionMarkup(signal, false)}</button>
             </div>
           </div>
         `;
+      }
+
+      function refreshPopupActionButton(state) {
+        const button = state.popup.querySelector(".popup-action");
+        if (!button) return;
+        const label = state.armed ? state.signal.armedLabel : state.signal.actionLabel;
+        button.dataset.armed = state.armed ? "true" : "false";
+        button.setAttribute("aria-label", label);
+        button.setAttribute("title", label);
+        button.innerHTML = popupActionMarkup(state.signal, state.armed);
       }
 
       function createPopup(signal) {
@@ -2093,7 +2312,7 @@
           const state = signalStates.get(signal.id);
           if (!state) return;
           state.armed = !state.armed;
-          actionButton.textContent = state.armed ? signal.armedLabel : signal.actionLabel;
+          refreshPopupActionButton(state);
           popup.classList.toggle("armed", state.armed);
           setActiveSignal(signal.id, true);
         });
@@ -2102,58 +2321,47 @@
       }
 
       function addAnchorVisual(state) {
-        const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(0.13, 0.01, 10, 44),
-          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.78, depthWrite: false })
+        const pole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.016, 0.016, 0.2, 10),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.74, depthWrite: false })
         );
-        ring.rotation.x = Math.PI / 2;
-        const shaft = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.012, 0.012, 0.18, 10),
-          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.52, depthWrite: false })
-        );
-        shaft.position.y = 0.09;
+        pole.position.y = 0.09;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.045, 18, 18),
-          new THREE.MeshBasicMaterial({ color: 0xbefee9, transparent: true, opacity: 1, depthWrite: false })
+          new THREE.SphereGeometry(0.056, 18, 18),
+          new THREE.MeshBasicMaterial({ color: 0xcffcff, transparent: true, opacity: 0.98, depthWrite: false })
         );
         core.position.y = 0.18;
-        const wave = new THREE.Mesh(
-          new THREE.RingGeometry(0.15, 0.24, 40),
-          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false })
+        const shell = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.04, 0),
+          new THREE.MeshBasicMaterial({ color: 0x8ef3ff, transparent: true, opacity: 0.78, depthWrite: false })
         );
-        wave.rotation.x = -Math.PI / 2;
-        state.group.add(wave, ring, shaft, core);
+        shell.position.y = 0.18;
+        state.group.add(pole, shell, core);
         state.core = core;
-        state.ring = ring;
-        state.wave = wave;
+        state.pole = pole;
+        state.shell = shell;
       }
 
       function addPresenceVisual(state) {
-        const base = new THREE.Mesh(
-          new THREE.TorusGeometry(0.11, 0.009, 10, 36),
-          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.5, depthWrite: false })
+        const pole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.013, 0.013, 0.18, 8),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.62, depthWrite: false })
         );
-        base.rotation.x = Math.PI / 2;
-        const shaft = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.009, 0.009, 0.16, 8),
-          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.28, depthWrite: false })
-        );
-        shaft.position.y = 0.08;
+        pole.position.y = 0.09;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.05, 18, 18),
+          new THREE.SphereGeometry(0.058, 18, 18),
           new THREE.MeshBasicMaterial({ color: 0xe1fdff, transparent: true, opacity: 1, depthWrite: false })
         );
-        core.position.y = 0.2;
-        const halo = new THREE.Mesh(
-          new THREE.RingGeometry(0.08, 0.125, 32),
-          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })
+        core.position.y = 0.22;
+        const shell = new THREE.Mesh(
+          new THREE.ConeGeometry(0.036, 0.08, 6),
+          new THREE.MeshBasicMaterial({ color: 0x9ef8ff, transparent: true, opacity: 0.76, depthWrite: false })
         );
-        halo.rotation.x = -Math.PI / 2;
-        halo.position.y = 0.02;
-        state.group.add(base, shaft, halo, core);
+        shell.position.y = 0.28;
+        state.group.add(pole, shell, core);
         state.core = core;
-        state.ring = base;
-        state.wave = halo;
+        state.pole = pole;
+        state.shell = shell;
 
         const trailCount = 16;
         const trailPositions = new Float32Array(trailCount * 3);
@@ -2172,43 +2380,31 @@
 
       function addCloudVisual(state) {
         const latticePoints = [
-          -0.16, 0.22, -0.16,  0.16, 0.22, -0.16,
-          -0.16, 0.22, 0.00,   0.16, 0.22, 0.00,
-          -0.16, 0.22, 0.16,   0.16, 0.22, 0.16,
-          -0.16, 0.22, -0.16, -0.16, 0.22, 0.16,
-           0.00, 0.22, -0.16,  0.00, 0.22, 0.16,
-           0.16, 0.22, -0.16,  0.16, 0.22, 0.16,
-          -0.12, 0.14, -0.12, -0.12, 0.30, -0.12,
-           0.12, 0.14, -0.12,  0.12, 0.30, -0.12,
-          -0.12, 0.14, 0.12,  -0.12, 0.30, 0.12,
-           0.12, 0.14, 0.12,   0.12, 0.30, 0.12
+          0.00, 0.12, -0.16,   0.16, 0.22, 0.00,
+          0.16, 0.22, 0.00,    0.00, 0.32, 0.16,
+          0.00, 0.32, 0.16,   -0.16, 0.22, 0.00,
+         -0.16, 0.22, 0.00,    0.00, 0.12, -0.16,
+         -0.16, 0.22, 0.00,    0.16, 0.22, 0.00,
+          0.00, 0.12, -0.16,   0.00, 0.32, 0.16
         ];
         const lattice = new THREE.LineSegments(
           new THREE.BufferGeometry(),
-          new THREE.LineBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.48, depthWrite: false })
+          new THREE.LineBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.68, depthWrite: false })
         );
         lattice.geometry.setAttribute("position", new THREE.Float32BufferAttribute(latticePoints, 3));
-        const lower = new THREE.Mesh(
-          new THREE.RingGeometry(0.12, 0.18, 36),
-          new THREE.MeshBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })
+        const shell = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.065, 0),
+          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.58, depthWrite: false })
         );
-        lower.rotation.x = -Math.PI / 2;
-        lower.position.y = 0.08;
-        const upper = new THREE.Mesh(
-          new THREE.RingGeometry(0.1, 0.14, 28),
-          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false })
-        );
-        upper.rotation.x = -Math.PI / 2;
-        upper.position.y = 0.28;
+        shell.position.y = 0.22;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.045, 18, 18),
+          new THREE.SphereGeometry(0.052, 18, 18),
           new THREE.MeshBasicMaterial({ color: 0xcdf8ff, transparent: true, opacity: 1, depthWrite: false })
         );
         core.position.y = 0.22;
-        state.group.add(lower, upper, lattice, core);
+        state.group.add(shell, lattice, core);
         state.core = core;
-        state.ring = lower;
-        state.wave = upper;
+        state.shell = shell;
         state.lattice = lattice;
       }
 
@@ -2379,22 +2575,21 @@
         const pulse = 0.5 + 0.5 * Math.sin(now * 0.004 + state.pulsePhase);
         const highlight = state.signal.id === appState.activeId ? 1 : state.signal.id === appState.previewId ? 0.72 : appState.ambientIds.includes(state.signal.id) ? 0.4 : 0.16;
 
-        if (state.ring) {
-          const baseScale = signal.type === "cloud" ? 1.08 : 1;
-          state.ring.scale.setScalar(baseScale + pulse * 0.06 + highlight * 0.08);
-          state.ring.material.opacity = 0.22 + highlight * 0.46;
+        if (state.pole) {
+          state.pole.scale.y = 1 + pulse * 0.08 + highlight * 0.14;
+          state.pole.material.opacity = 0.38 + highlight * 0.4;
         }
-        if (state.wave) {
-          state.wave.scale.setScalar(1 + pulse * 0.36 + highlight * 0.22);
-          state.wave.material.opacity = signal.type === "cloud" ? 0.12 + highlight * 0.22 : 0.1 + highlight * 0.28;
+        if (state.shell) {
+          state.shell.scale.setScalar(1 + pulse * 0.08 + highlight * 0.18);
+          state.shell.material.opacity = 0.44 + highlight * 0.42;
         }
         if (state.core) {
           state.core.scale.setScalar(1 + highlight * 0.18 + pulse * 0.08);
           state.core.material.opacity = 0.72 + highlight * 0.28;
         }
         if (state.lattice) {
-          state.lattice.rotation.y += 0.012;
-          state.lattice.material.opacity = 0.46 + highlight * 0.42;
+          state.lattice.rotation.y += 0.008;
+          state.lattice.material.opacity = 0.38 + highlight * 0.48;
         }
         if (state.trailLine) {
           state.trailHistory.unshift(local.clone());
@@ -2511,35 +2706,24 @@
 
           const cardCenter = { x: left + popupWidth * 0.5, y: top + popupHeight * 0.5 };
           const tip = rectEdgePoint(cardCenter.x, cardCenter.y, popupWidth * 0.5, popupHeight * 0.5, source.x, source.y);
-          const pull = 42 + state.show * 66;
-          const c1 = { x: source.x + dir.x * pull, y: source.y + dir.y * pull };
-          const c2 = { x: tip.x - dir.x * pull * 0.62, y: tip.y - dir.y * pull * 0.62 };
-          const pulseA = cubicPoint((time * 0.00042 * PULSE_SPEED + state.pulsePhase * 0.07) % 1, source, c1, c2, tip);
-          const pulseB = cubicPoint((time * 0.00042 * PULSE_SPEED + 0.36 + state.pulsePhase * 0.05) % 1, source, c1, c2, tip);
-          const accent = typeHex(state.signal.type);
           const birth = clamp(1 - (performance.now() - state.activatedAt) / 1100, 0, 1);
-          const widthBoost = birth * 2.4;
+          const widthBoost = birth * 1.8;
           const scale = 0.72 + eased * 0.24 + visibility * 0.1;
 
           state.popup.dataset.state = priority === 1 ? "ghost" : "live";
           state.popup.style.left = `${left}px`;
           state.popup.style.top = `${top}px`;
-          state.popup.style.opacity = `${0.12 + state.show * 0.92}`;
+          state.popup.style.opacity = `${0.3 + state.show * 0.7}`;
           state.popup.style.transform = `scale(${scale})`;
           state.popup.style.pointerEvents = priority > 1 || state.show > 0.64 ? "auto" : "none";
 
           parts.push(`
             <g opacity="${(0.2 + state.show * 0.8).toFixed(2)}">
-              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
-                fill="none" stroke="${accent}" stroke-opacity="0.22" stroke-width="${(5.8 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
-              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
-                fill="none" stroke="#16d9ff" stroke-opacity="${(0.82 + state.show * 0.18).toFixed(2)}" stroke-width="${(3.4 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
-              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
-                fill="none" stroke="#eafcff" stroke-opacity="0.42" stroke-width="${(1.18 + widthBoost * 0.18).toFixed(2)}" stroke-linecap="round"/>
-              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(5.6 + state.show * 1.6).toFixed(2)}" fill="#16d9ff" fill-opacity="${(0.64 + state.show * 0.24).toFixed(2)}" filter="url(#connectorGlow)"/>
-              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(2.4 + state.show * 0.7).toFixed(2)}" fill="${accent}" fill-opacity="1"/>
-              <circle cx="${pulseA.x.toFixed(2)}" cy="${pulseA.y.toFixed(2)}" r="${(2.4 + state.show).toFixed(2)}" fill="#d7fbff" fill-opacity="${(0.46 + state.show * 0.4).toFixed(2)}" filter="url(#pulseGlow)"/>
-              <circle cx="${pulseB.x.toFixed(2)}" cy="${pulseB.y.toFixed(2)}" r="${(1.9 + state.show * 0.8).toFixed(2)}" fill="#7fe6ff" fill-opacity="${(0.34 + state.show * 0.34).toFixed(2)}" filter="url(#pulseGlow)"/>
+              <line x1="${source.x.toFixed(2)}" y1="${source.y.toFixed(2)}" x2="${tip.x.toFixed(2)}" y2="${tip.y.toFixed(2)}"
+                stroke="#16d9ff" stroke-opacity="0.28" stroke-width="${(6 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
+              <line x1="${source.x.toFixed(2)}" y1="${source.y.toFixed(2)}" x2="${tip.x.toFixed(2)}" y2="${tip.y.toFixed(2)}"
+                stroke="#16d9ff" stroke-opacity="${(0.9 + state.show * 0.1).toFixed(2)}" stroke-width="${(2.8 + widthBoost * 0.5).toFixed(2)}" stroke-linecap="round"/>
+              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(3.2 + state.show * 0.7).toFixed(2)}" fill="#16d9ff" fill-opacity="${(0.82 + state.show * 0.12).toFixed(2)}"/>
             </g>
           `);
         });
@@ -2554,9 +2738,6 @@
                 <feMergeNode in="blur1"></feMergeNode>
                 <feMergeNode in="SourceGraphic"></feMergeNode>
               </feMerge>
-            </filter>
-            <filter id="pulseGlow" x="-80%" y="-80%" width="260%" height="260%">
-              <feGaussianBlur stdDeviation="6"></feGaussianBlur>
             </filter>
           </defs>
           ${parts.join("")}
@@ -2666,7 +2847,8 @@
         }
         const analysis = analyzeCommand(value);
         if (analysis.intent === "add") {
-          setPanel("add");
+          setPanel(null);
+          setAddCycleOpen(true);
           return;
         }
         const ranked = rankSignals(value);
@@ -2686,16 +2868,11 @@
         if (analysis.intent === "order") {
           state.armed = true;
           state.popup.classList.add("armed");
-          const button = state.popup.querySelector(".popup-action");
-          if (button) button.textContent = "AI Route Live";
+          refreshPopupActionButton(state);
         } else if (analysis.intent === "assign") {
           state.armed = true;
           state.popup.classList.add("armed");
-          const button = state.popup.querySelector(".popup-action");
-          if (button) button.textContent = "Driver Assigned";
-        } else if (analysis.intent === "track") {
-          const button = state.popup.querySelector(".popup-action");
-          if (button) button.textContent = "Track Live";
+          refreshPopupActionButton(state);
         }
 
         query.placeholder = analysis.intent === "order"
@@ -2837,17 +3014,31 @@
 
       addBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        togglePanel("add");
+        setPanel(null);
+        setAddCycleOpen(!appState.addCycleOpen);
       });
 
       perfCenterBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        togglePanel("performance");
+        zoomToLocation(appState.zoomTarget > 0.08 ? -1 : 1);
       });
 
       radarFetchBtn.addEventListener("click", (event) => {
         event.stopPropagation();
-        zoomToLocation();
+        const target = focusableSignalState();
+        if (target) {
+          setActiveSignal(target.signal.id, true);
+          query.placeholder = `Tracking ${target.signal.title}`;
+        } else {
+          cycleSignal();
+        }
+      });
+
+      addCycleButtons.forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.stopPropagation();
+          setAddMode(button.dataset.addKind);
+        });
       });
 
       [perfWheel, radarWheel].forEach((wheel) => {
@@ -2863,7 +3054,9 @@
 
       document.addEventListener("pointerdown", (event) => {
         const target = event.target;
+        if (addCycle.contains(target) || addBtn.contains(target)) return;
         if (topPanel.contains(target) || userButton.contains(target) || systemButton.contains(target) || walletButton.contains(target)) return;
+        setAddCycleOpen(false);
         setPanel(null);
       });
 
@@ -2886,7 +3079,7 @@
           listening = false;
           voiceBtn.dataset.active = "false";
           if (appState.texturesReady) {
-            query.placeholder = "Ask AI to find signals, products, drivers, or orders...";
+            query.placeholder = "Find signals, products, drivers, orders";
           }
         };
       }
@@ -2902,7 +3095,7 @@
         }
         listening = true;
         voiceBtn.dataset.active = "true";
-        query.placeholder = "Listening for a signal...";
+        query.placeholder = "Listening...";
         recognition.start();
       });
 
