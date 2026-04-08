@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Astranov Planet</title>
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
     :root {
       --bg-0: #02050b;
       --bg-1: #07111a;
@@ -22,8 +20,8 @@
       --cloud: #41c6ff;
       --text: #edf2f7;
       --muted: #97a9bb;
-      --font-ui: "Inter", system-ui, sans-serif;
-      --font-tech: "Inter", system-ui, sans-serif;
+      --font-ui: "Segoe UI", "SF Pro Text", system-ui, sans-serif;
+      --font-tech: "Segoe UI", "SF Pro Display", system-ui, sans-serif;
       --safe-top: max(14px, env(safe-area-inset-top));
       --safe-right: max(14px, env(safe-area-inset-right));
       --safe-bottom: max(14px, env(safe-area-inset-bottom));
@@ -31,6 +29,8 @@
       --wheel-size: clamp(170px, 42vw, 210px);
       --top-bar-height: 52px;
       --top-edge-btn-size: 48px;
+      --comm-collapsed-height: 48px;
+      --comm-max-height: min(62vh, 480px);
     }
 
     * {
@@ -41,6 +41,7 @@
     html,
     body {
       width: 100%;
+      max-width: 100vw;
       height: 100%;
       margin: 0;
       overflow: hidden;
@@ -111,7 +112,8 @@
       top: var(--safe-top);
       left: var(--safe-left);
       right: var(--safe-right);
-      display: flex;
+      display: grid;
+      grid-template-columns: var(--top-edge-btn-size) minmax(0, 1fr) var(--top-edge-btn-size);
       gap: clamp(5px, 2vw, 10px);
       align-items: center;
       pointer-events: auto;
@@ -159,11 +161,23 @@
       min-height: var(--top-edge-btn-size);
     }
 
+    .top-btn.avatar {
+      grid-column: 1;
+      justify-self: start;
+    }
+
     .top-btn.system {
-      flex: 1 1 auto;
+      grid-column: 2;
+      min-width: 0;
       justify-content: center;
       padding: 8px 14px;
       max-width: 100%;
+      overflow: hidden;
+    }
+
+    .top-btn.wallet {
+      grid-column: 3;
+      justify-self: end;
     }
 
     .top-btn-icon {
@@ -207,6 +221,7 @@
       flex-direction: column;
       align-items: center;
       line-height: 1.05;
+      overflow: hidden;
     }
 
     .top-btn-title {
@@ -263,6 +278,270 @@
 
     #topPanel[data-position="right"] {
       right: var(--safe-right);
+    }
+
+    #commDrawer {
+      position: absolute;
+      left: var(--safe-left);
+      right: var(--safe-right);
+      height: var(--comm-collapsed-height);
+      border: 1px solid rgba(22, 217, 255, 0.14);
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(17, 24, 33, 0.94), rgba(10, 15, 23, 0.86)),
+        radial-gradient(circle at 50% 0%, rgba(22, 217, 255, 0.06), transparent 54%);
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.26),
+        0 0 16px rgba(22, 217, 255, 0.06);
+      backdrop-filter: blur(18px);
+      pointer-events: auto;
+      overflow: hidden;
+      z-index: 13;
+      transition: height 0.18s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.18s ease;
+    }
+
+    #commDrawer[data-expanded="true"] {
+      border-color: rgba(22, 217, 255, 0.22);
+      box-shadow:
+        0 28px 52px rgba(0, 0, 0, 0.32),
+        0 0 24px rgba(22, 217, 255, 0.1);
+    }
+
+    #commHandle {
+      width: 100%;
+      height: var(--comm-collapsed-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 14px;
+      border: 0;
+      background: transparent;
+      color: #edf7ff;
+      cursor: pointer;
+    }
+
+    .comm-handle-main {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .comm-handle-grip {
+      width: 34px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(236, 247, 255, 0.36);
+      box-shadow: 0 0 10px rgba(22, 217, 255, 0.16);
+      flex: 0 0 auto;
+    }
+
+    .comm-handle-label {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #commHandleTitle {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: #eef7ff;
+      text-align: left;
+    }
+
+    #commHandleMeta {
+      font-size: 10px;
+      color: var(--muted);
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 44vw;
+    }
+
+    #commHandleCount {
+      min-width: 28px;
+      height: 28px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #eaf7ff;
+      font-size: 11px;
+      font-weight: 600;
+      flex: 0 0 auto;
+    }
+
+    #commShell {
+      position: absolute;
+      inset: var(--comm-collapsed-height) 0 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.16s ease;
+    }
+
+    #commDrawer[data-expanded="true"] #commShell {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #commFeed {
+      flex: 1;
+      min-height: 0;
+      padding: 8px 12px 14px;
+      overflow-y: auto;
+      display: grid;
+      align-content: start;
+      gap: 10px;
+    }
+
+    .comm-empty {
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .comm-message {
+      display: flex;
+      gap: 8px;
+    }
+
+    .comm-message.user {
+      justify-content: flex-end;
+    }
+
+    .comm-message.system,
+    .comm-message.order {
+      justify-content: flex-start;
+    }
+
+    .comm-bubble {
+      width: min(100%, 420px);
+      padding: 12px 13px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .comm-message.user .comm-bubble {
+      background: linear-gradient(180deg, rgba(25, 80, 110, 0.9), rgba(14, 39, 55, 0.88));
+      border-color: rgba(22, 217, 255, 0.22);
+    }
+
+    .comm-message.order .comm-bubble {
+      background: linear-gradient(180deg, rgba(15, 31, 44, 0.96), rgba(10, 18, 28, 0.94));
+      border-color: rgba(22, 217, 255, 0.18);
+    }
+
+    .comm-bubble-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .comm-bubble-heading {
+      min-width: 0;
+      color: #eef8ff;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      overflow-wrap: anywhere;
+    }
+
+    .comm-bubble-pill {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(22, 217, 255, 0.12);
+      color: #b9f5ff;
+      font-size: 10px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .comm-bubble-copy {
+      color: #d1deea;
+      font-size: 12.4px;
+      line-height: 1.48;
+      overflow-wrap: anywhere;
+    }
+
+    .comm-order-tile {
+      margin-top: 10px;
+      width: 100%;
+      display: grid;
+      gap: 8px;
+      padding: 10px 11px;
+      border-radius: 16px;
+      border: 1px solid rgba(22, 217, 255, 0.18);
+      background: rgba(6, 14, 22, 0.72);
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .comm-order-tile.active {
+      box-shadow: 0 0 22px rgba(22, 217, 255, 0.14);
+    }
+
+    .comm-order-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .comm-order-name {
+      min-width: 0;
+      color: #eefbff;
+      font-size: 12px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+
+    .comm-order-status {
+      color: #9ff6ff;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .comm-order-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .comm-order-metric {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .comm-order-label {
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.04em;
+    }
+
+    .comm-order-value {
+      color: #eaf8ff;
+      font-size: 11px;
+      overflow-wrap: anywhere;
     }
 
     .top-panel-shell {
@@ -632,8 +911,9 @@
       right: var(--safe-right);
       bottom: var(--safe-bottom);
       min-height: 72px;
-      display: flex;
-      align-items: center;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 48px;
+      align-items: flex-end;
       gap: 8px;
       padding: 10px 8px 8px;
       border: 1px solid rgba(22, 217, 255, 0.16);
@@ -653,7 +933,7 @@
       position: relative;
       flex: 1;
       min-width: 0;
-      padding-top: 22px;
+      padding-top: 24px;
     }
 
     .composer-btn {
@@ -686,8 +966,9 @@
     #query {
       flex: 1;
       width: 100%;
-      height: 50px;
-      padding: 0 16px;
+      min-height: 52px;
+      max-height: min(28vh, 220px);
+      padding: 14px 16px;
       border: 1px solid rgba(22, 217, 255, 0.12);
       border-radius: 17px;
       outline: none;
@@ -695,6 +976,9 @@
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
       color: var(--text);
       font-size: 16px;
+      line-height: 1.4;
+      resize: none;
+      overflow-y: hidden;
       transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
     }
 
@@ -887,6 +1171,11 @@
         0 28px 60px rgba(0, 0, 0, 0.44),
         0 0 34px rgba(22, 217, 255, 0.2),
         inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .signal-popup.active-order .popup-title {
+      color: #9ff6ff;
+      text-shadow: 0 0 12px rgba(22, 217, 255, 0.22);
     }
 
     .popup-shell {
@@ -1100,6 +1389,13 @@
         transform: translateX(-50%);
       }
 
+      #commDrawer {
+        left: 50%;
+        right: auto;
+        width: min(760px, calc(100vw - 32px));
+        transform: translateX(-50%);
+      }
+
       .signal-popup {
         width: min(340px, 32vw);
       }
@@ -1162,15 +1458,11 @@
         gap: 6px;
         padding: 8px 6px 6px;
         border-radius: 20px;
+        grid-template-columns: 42px minmax(0, 1fr) 42px;
       }
 
       #composerField {
         padding-top: 18px;
-      }
-
-      .composer-btn,
-      #query {
-        height: 42px;
       }
 
       .composer-btn {
@@ -1179,7 +1471,8 @@
       }
 
       #query {
-        padding: 0 12px;
+        min-height: 42px;
+        padding: 10px 12px;
         font-size: 14px;
       }
 
@@ -1197,6 +1490,15 @@
         width: min(92vw, 236px);
         min-width: min(86vw, 210px);
         border-radius: 18px;
+      }
+
+      #commHandleMeta {
+        max-width: 34vw;
+      }
+
+      .comm-bubble,
+      .comm-order-tile {
+        width: min(100%, 100%);
       }
 
       .popup-shell {
@@ -1292,7 +1594,7 @@
 
       #query {
         font-size: 12px;
-        padding: 0 10px;
+        padding: 8px 10px;
       }
 
       .wheel-meta {
@@ -1333,6 +1635,18 @@
         width: min(94vw, 206px);
         min-width: min(90vw, 186px);
       }
+
+      #commHandle {
+        padding: 0 10px;
+      }
+
+      #commHandleTitle {
+        font-size: 10px;
+      }
+
+      #commHandleMeta {
+        font-size: 8px;
+      }
     }
 
     @media (max-height: 760px) {
@@ -1355,7 +1669,32 @@
 
       .composer-btn,
       #query {
-        height: 44px;
+        min-height: 44px;
+      }
+    }
+
+    @media (orientation: landscape) and (max-height: 540px) {
+      :root {
+        --top-bar-height: 40px;
+        --top-edge-btn-size: 38px;
+      }
+
+      #topBar {
+        gap: 6px;
+      }
+
+      #composer {
+        left: 50%;
+        right: auto;
+        width: min(620px, calc(100vw - 32px));
+        transform: translateX(-50%);
+      }
+
+      #commDrawer {
+        left: 50%;
+        right: auto;
+        width: min(620px, calc(100vw - 32px));
+        transform: translateX(-50%);
       }
     }
 
@@ -1409,6 +1748,21 @@
       </div>
 
       <div id="topPanel" data-open="false" data-position="center"></div>
+      <div id="commDrawer" data-open="false" data-expanded="false" aria-label="Communication drawer">
+        <button id="commHandle" type="button" aria-label="Expand communication drawer">
+          <span class="comm-handle-main">
+            <span class="comm-handle-grip" aria-hidden="true"></span>
+            <span class="comm-handle-label">
+              <span id="commHandleTitle">Signal feed</span>
+              <span id="commHandleMeta">AI routing quiet</span>
+            </span>
+          </span>
+          <span id="commHandleCount">0</span>
+        </button>
+        <div id="commShell">
+          <div id="commFeed" role="log" aria-live="polite"></div>
+        </div>
+      </div>
       <div id="addCycle" data-open="false" aria-hidden="true">
         <button class="add-cycle-btn" type="button" data-add-kind="shop" aria-label="Add shop">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1497,7 +1851,7 @@
           </svg>
         </button>
         <div id="composerField">
-          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading AI routing..." aria-label="AI signal command rail" />
+          <textarea id="query" rows="1" autocapitalize="sentences" spellcheck="false" placeholder="Loading AI routing..." aria-label="AI signal command rail"></textarea>
           <button id="addBtn" type="button" aria-label="Add shop, service, or video">+</button>
         </div>
         <button class="composer-btn" id="sendBtn" type="submit" aria-label="Execute command">
@@ -1520,9 +1874,16 @@
       const signalLayer = $("signalLayer");
       const topBar = $("topBar");
       const composer = $("composer");
+      const composerField = $("composerField");
       const query = $("query");
       const addBtn = $("addBtn");
       const addCycle = $("addCycle");
+      const commDrawer = $("commDrawer");
+      const commHandle = $("commHandle");
+      const commHandleTitle = $("commHandleTitle");
+      const commHandleMeta = $("commHandleMeta");
+      const commHandleCount = $("commHandleCount");
+      const commFeed = $("commFeed");
       const voiceBtn = $("voiceBtn");
       const sendBtn = $("sendBtn");
       const topPanel = $("topPanel");
@@ -1569,7 +1930,22 @@
       const AI_ENDPOINT = typeof window.ASTRANOV_AI_ENDPOINT === "string" ? window.ASTRANOV_AI_ENDPOINT.trim() : "";
       const STRIPE_PAYMENT_LINK = typeof window.ASTRANOV_STRIPE_PAYMENT_LINK === "string" ? window.ASTRANOV_STRIPE_PAYMENT_LINK.trim() : "";
       const PAYPAL_CHECKOUT_URL = typeof window.ASTRANOV_PAYPAL_CHECKOUT_URL === "string" ? window.ASTRANOV_PAYPAL_CHECKOUT_URL.trim() : "";
+      const REVOLUT_CHECKOUT_URL = typeof window.ASTRANOV_REVOLUT_CHECKOUT_URL === "string" ? window.ASTRANOV_REVOLUT_CHECKOUT_URL.trim() : "";
       const CUSTOM_SIGNALS_KEY = "astranov.customSignals.v1";
+      const DEMO_MODE_KEY = "astranov.demoMode.v1";
+      const CHAT_HISTORY_KEY = "astranov.chat.v1";
+      const DRAWER_HEIGHT_KEY = "astranov.drawerHeight.v1";
+
+      const DELIVERY_RULES = {
+        platformFeeRate: 0.03,
+        perKm: 1,
+        offHoursSurcharge: 1,
+        weatherSurcharge: 1,
+        prioritySurcharge: 1,
+        extraBandSize: 13,
+        extraBandCharge: 1,
+        minimumDelivery: 3
+      };
 
       const USER_INFO = {
         name: "Astranov Operator",
@@ -1826,15 +2202,148 @@
         }
       ];
 
+      SIGNALS.push(
+        {
+          id: "attica-bread-lab",
+          type: "anchor",
+          title: "Attica Bread Lab",
+          summary: "Neighborhood bakery signal with early-morning ovens, hot-priority products, and short-loop delivery capacity.",
+          capability: "priority bakery",
+          actionLabel: "Order Bakery",
+          armedLabel: "Bakery Routed",
+          region: "Athens West",
+          lat: 37.989,
+          lng: 23.706,
+          alt: 0.16,
+          zoom: 1,
+          products: ["sourdough", "spinach pie", "hot coffee"],
+          tags: ["bakery", "bread", "coffee", "priority", "hot", "order", "shop"],
+          metrics: [
+            { label: "oven", value: "hot lane" },
+            { label: "window", value: "18 min" },
+            { label: "mode", value: "priority" }
+          ]
+        },
+        {
+          id: "night-pharmacy",
+          type: "anchor",
+          title: "Night Pharmacy",
+          summary: "After-hours pharmacy anchor ready for urgent product routing, late-night surcharges, and instant dispatch.",
+          capability: "urgent order",
+          actionLabel: "Route Pharmacy",
+          armedLabel: "Urgent Route Live",
+          region: "Athens North",
+          lat: 38.004,
+          lng: 23.748,
+          alt: 0.16,
+          zoom: 1,
+          products: ["pain relief", "cold packs", "thermometer"],
+          tags: ["pharmacy", "night", "urgent", "order", "delivery", "shop"],
+          metrics: [
+            { label: "state", value: "late shift" },
+            { label: "window", value: "14 min" },
+            { label: "mode", value: "urgent" }
+          ]
+        },
+        {
+          id: "rider-echo",
+          type: "presence",
+          title: "Rider Echo",
+          summary: "Live scooter courier ready for dense city dispatch, hot-priority handoff, and weather-aware routing.",
+          capability: "rapid dispatch",
+          actionLabel: "Assign Rider",
+          armedLabel: "Rider Assigned",
+          region: "Athens Inner Ring",
+          lat: 37.982,
+          lng: 23.736,
+          alt: 0.21,
+          zoom: 0.92,
+          movement: { latAmp: 0.16, lngAmp: 0.52, speed: 1.52, phase: 0.9 },
+          tags: ["driver", "rider", "courier", "delivery", "presence", "assign"],
+          metrics: [
+            { label: "eta", value: "05 min" },
+            { label: "vehicle", value: "scooter" },
+            { label: "state", value: "ready" }
+          ]
+        }
+      );
+
+      const SIGNAL_CATALOG = {
+        "harbor-fresh-market": [
+          { id: "citrus-box", title: "Citrus Box", price: 11.5, volumeLiters: 9, weightKg: 6, temperatureState: "ambient", capacityPerHour: 22 },
+          { id: "feta-pack", title: "Feta Pack", price: 6.4, volumeLiters: 2, weightKg: 1.6, temperatureState: "cold", capacityPerHour: 40 },
+          { id: "olive-oil", title: "Olive Oil", price: 14.2, volumeLiters: 3, weightKg: 2.8, temperatureState: "ambient", capacityPerHour: 16 }
+        ],
+        "marina-kitchen": [
+          { id: "harbor-pasta", title: "Harbor Pasta", price: 13.5, volumeLiters: 2, weightKg: 0.8, temperatureState: "hot", priority: true, capacityPerHour: 30 },
+          { id: "cold-brew", title: "Cold Brew", price: 4.8, volumeLiters: 1, weightKg: 0.4, temperatureState: "cold", capacityPerHour: 60 }
+        ],
+        "attica-bread-lab": [
+          { id: "hot-coffee", title: "Hot Coffee", price: 3.2, volumeLiters: 1, weightKg: 0.3, temperatureState: "hot", priority: true, capacityPerHour: 90 },
+          { id: "spinach-pie", title: "Spinach Pie", price: 5.4, volumeLiters: 1, weightKg: 0.35, temperatureState: "hot", priority: true, capacityPerHour: 48 }
+        ],
+        "night-pharmacy": [
+          { id: "pain-relief", title: "Pain Relief", price: 7.2, volumeLiters: 0.5, weightKg: 0.12, temperatureState: "ambient", capacityPerHour: 120 },
+          { id: "cold-pack", title: "Cold Pack", price: 4.1, volumeLiters: 1, weightKg: 0.4, temperatureState: "cold", capacityPerHour: 80 }
+        ],
+        "blue-harbor-rooms": [
+          { id: "sea-room", title: "Sea Room Night", price: 76, volumeLiters: 0, weightKg: 0, temperatureState: "ambient", capacityPerHour: 5 }
+        ],
+        "atelier-dive": [
+          { id: "reef-session", title: "Reef Session", price: 38, volumeLiters: 0, weightKg: 0, temperatureState: "ambient", capacityPerHour: 12 }
+        ]
+      };
+
+      const DEMO_SCENARIOS = [
+        { id: "demo-bakery-run", title: "Bakery rush", signalId: "attica-bread-lab", query: "Order two hot coffees and assign the nearest rider" },
+        { id: "demo-night-pharmacy", title: "Night pharmacy", signalId: "night-pharmacy", query: "Get pain relief to my location fast" },
+        { id: "demo-market-run", title: "Market basket", signalId: "harbor-fresh-market", query: "Order products and dispatch a driver" }
+      ];
+
+      SIGNALS.forEach((signal) => {
+        signal.demo = signal.demo !== false;
+        signal.catalog = SIGNAL_CATALOG[signal.id] || signal.catalog || [];
+      });
+
       try {
         const storedSignals = JSON.parse(window.localStorage.getItem(CUSTOM_SIGNALS_KEY) || "[]");
         if (Array.isArray(storedSignals)) {
           storedSignals
             .filter((signal) => signal && signal.id && Number.isFinite(signal.lat) && Number.isFinite(signal.lng))
-            .forEach((signal) => SIGNALS.push(signal));
+            .forEach((signal) => {
+              signal.demo = false;
+              signal.catalog = signal.catalog || [];
+              SIGNALS.push(signal);
+            });
         }
       } catch (error) {
         console.warn("Astranov listings cache unavailable", error);
+      }
+
+      let initialDemoMode = true;
+      try {
+        const storedDemoMode = window.localStorage.getItem(DEMO_MODE_KEY);
+        if (storedDemoMode !== null) initialDemoMode = storedDemoMode === "true";
+      } catch (error) {
+        console.warn("Astranov demo mode cache unavailable", error);
+      }
+
+      let initialDrawerHeight = 248;
+      try {
+        const storedDrawerHeight = Number(window.localStorage.getItem(DRAWER_HEIGHT_KEY) || "");
+        if (Number.isFinite(storedDrawerHeight)) initialDrawerHeight = storedDrawerHeight;
+      } catch (error) {
+        console.warn("Astranov drawer cache unavailable", error);
+      }
+
+      let initialMessages = [];
+      try {
+        const storedMessages = JSON.parse(window.localStorage.getItem(CHAT_HISTORY_KEY) || "[]");
+        if (Array.isArray(storedMessages)) {
+          initialMessages = storedMessages.filter((entry) => entry && entry.id && entry.role).slice(-36);
+        }
+      } catch (error) {
+        console.warn("Astranov message cache unavailable", error);
       }
 
       const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -1862,6 +2371,7 @@
         seedId: null,
         texturesReady: false,
         openPanel: null,
+        demoMode: initialDemoMode,
         addMode: null,
         addCycleOpen: false,
         addCycleIndex: 0,
@@ -1882,6 +2392,22 @@
         pinchStart: 0,
         pinchZoomStart: 0,
         performancePeak: 42,
+        screen: {
+          name: "portrait",
+          orientation: window.innerWidth > window.innerHeight ? "landscape" : "portrait",
+          renderScale: 1.25
+        },
+        drawer: {
+          expanded: false,
+          height: initialDrawerHeight,
+          minHeight: 48,
+          maxHeight: 320,
+          pointerId: null,
+          startHeight: 0,
+          startY: 0
+        },
+        messages: initialMessages,
+        orders: [],
         hud: {
           top: 0,
           size: Math.min(208, Math.max(170, window.innerWidth * 0.42)),
@@ -1916,7 +2442,7 @@
       const activePointers = new Map();
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(viewportProfile().renderScale);
       sceneEl.appendChild(renderer.domElement);
 
       const scene = new THREE.Scene();
@@ -2064,15 +2590,6 @@
         return { x: cx + dx * scale, y: cy + dy * scale };
       }
 
-      function viewportProfile() {
-        return {
-          micro: appState.width <= 280,
-          narrow: appState.width <= 340,
-          compact: appState.width <= 420,
-          short: appState.height <= 700
-        };
-      }
-
       function worldViewBasis() {
         const viewer = camera.position.clone().normalize();
         const upHint = camera.up.clone().normalize();
@@ -2150,6 +2667,373 @@
         return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function roundMoney(value) {
+        return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+      }
+
+      function formatEuro(value) {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: "EUR",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(roundMoney(value));
+      }
+
+      function signalVisible(signal) {
+        if (!signal) return false;
+        if (signal.id === appState.userSignalId) return true;
+        return appState.demoMode || !signal.demo;
+      }
+
+      function weatherMode() {
+        const explicit = typeof window.ASTRANOV_WEATHER_MODE === "string" ? window.ASTRANOV_WEATHER_MODE.trim().toLowerCase() : "";
+        if (explicit) return explicit;
+        return "clear";
+      }
+
+      function isNightWindow(date = new Date()) {
+        const hour = date.getHours();
+        return hour >= 21 || hour < 9;
+      }
+
+      function haversineKm(lat1, lng1, lat2, lng2) {
+        const toRad = (value) => value * (Math.PI / 180);
+        const dLat = toRad(lat2 - lat1);
+        const dLng = toRad(lng2 - lng1);
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2)
+          + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+
+      function calculateOwnerFee(amount) {
+        return roundMoney(Math.max(0, amount) * DELIVERY_RULES.platformFeeRate);
+      }
+
+      function calculateDeliveryQuote({
+        distanceKm = 0,
+        weightKg = 0,
+        volumeLiters = 0,
+        priority = false,
+        subtotal = 0,
+        requestedAt = new Date(),
+        weather = weatherMode()
+      } = {}) {
+        const normalizedDistance = Math.max(0, distanceKm);
+        const distanceCharge = roundMoney(normalizedDistance * DELIVERY_RULES.perKm);
+        const timeCharge = isNightWindow(requestedAt) ? DELIVERY_RULES.offHoursSurcharge : 0;
+        const weatherCharge = /bad_weather|cold_rain|extreme_heat|storm|snow|heavy_rain/.test(weather) ? DELIVERY_RULES.weatherSurcharge : 0;
+        const loadBasis = Math.max(weightKg || 0, volumeLiters || 0);
+        const extraBands = Math.max(0, Math.ceil(Math.max(0, loadBasis - DELIVERY_RULES.extraBandSize) / DELIVERY_RULES.extraBandSize));
+        const loadCharge = extraBands * DELIVERY_RULES.extraBandCharge;
+        const priorityCharge = priority ? DELIVERY_RULES.prioritySurcharge : 0;
+        const deliveryBase = Math.max(
+          DELIVERY_RULES.minimumDelivery,
+          roundMoney(distanceCharge + timeCharge + weatherCharge + loadCharge + priorityCharge)
+        );
+        const serviceSubtotal = roundMoney(Math.max(0, subtotal) + deliveryBase);
+        const ownerFee = calculateOwnerFee(serviceSubtotal);
+        return {
+          distanceKm: roundMoney(normalizedDistance),
+          distanceCharge,
+          timeCharge,
+          weatherCharge,
+          loadCharge,
+          priorityCharge,
+          extraBands,
+          deliveryBase,
+          subtotal: roundMoney(Math.max(0, subtotal)),
+          serviceSubtotal,
+          ownerFee,
+          total: roundMoney(serviceSubtotal + ownerFee)
+        };
+      }
+
+      function viewportProfile() {
+        const shortest = Math.min(appState.width, appState.height);
+        const longest = Math.max(appState.width, appState.height);
+        const orientation = appState.width > appState.height ? "landscape" : "portrait";
+        const micro = shortest <= 280 || appState.width <= 280;
+        const narrow = shortest <= 360 || appState.width <= 340;
+        const compact = shortest <= 430;
+        const short = appState.height <= 700;
+        const desktop = appState.width >= 1180;
+        const tablet = shortest >= 600 && longest >= 860;
+        const renderScale = desktop
+          ? Math.min(window.devicePixelRatio || 1, 1.9)
+          : tablet
+            ? Math.min(window.devicePixelRatio || 1, 1.55)
+            : micro
+              ? Math.min(window.devicePixelRatio || 1, 1.05)
+              : narrow
+                ? Math.min(window.devicePixelRatio || 1, 1.15)
+                : compact
+                  ? Math.min(window.devicePixelRatio || 1, 1.3)
+                  : Math.min(window.devicePixelRatio || 1, 1.45);
+        return {
+          micro,
+          narrow,
+          compact,
+          short,
+          desktop,
+          tablet,
+          landscape: orientation === "landscape",
+          orientation,
+          renderScale
+        };
+      }
+
+      function persistMessages() {
+        try {
+          window.localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(appState.messages.slice(-36)));
+        } catch (error) {
+          console.warn("Astranov message cache write failed", error);
+        }
+      }
+
+      function persistDrawerHeight() {
+        try {
+          window.localStorage.setItem(DRAWER_HEIGHT_KEY, String(Math.round(appState.drawer.height)));
+        } catch (error) {
+          console.warn("Astranov drawer cache write failed", error);
+        }
+      }
+
+      function defaultDrawerMessage() {
+        return appState.demoMode
+          ? "Demo mode is on. Ask for products, deliveries, drivers, or add a listing."
+          : "Demo mode is off. Only real listings and your own entries stay visible.";
+      }
+
+      function setDrawerExpanded(expanded) {
+        appState.drawer.expanded = !!expanded;
+        commDrawer.dataset.expanded = expanded ? "true" : "false";
+        commDrawer.dataset.open = expanded ? "true" : "false";
+        applyDrawerLayout();
+      }
+
+      function applyDrawerLayout() {
+        const profile = viewportProfile();
+        const composerRect = composer.getBoundingClientRect();
+        const topRect = topBar.getBoundingClientRect();
+        const bottomOffset = Math.max(12, window.innerHeight - composerRect.top + 10);
+        const maxHeight = Math.max(180, Math.min(Math.round(window.innerHeight * (profile.landscape ? 0.68 : 0.62)), Math.round(window.innerHeight - topRect.bottom - appState.hud.size - 40)));
+        appState.drawer.minHeight = 48;
+        appState.drawer.maxHeight = Math.max(appState.drawer.minHeight + 64, maxHeight);
+        appState.drawer.height = clamp(appState.drawer.height || Math.min(248, maxHeight), 132, appState.drawer.maxHeight);
+        commDrawer.style.bottom = `${bottomOffset}px`;
+        commDrawer.style.height = `${appState.drawer.expanded ? appState.drawer.height : appState.drawer.minHeight}px`;
+      }
+
+      function autoSizeQuery() {
+        query.style.height = "auto";
+        const maxHeight = Math.min(window.innerHeight * 0.28, 220);
+        query.style.height = `${Math.min(query.scrollHeight, maxHeight)}px`;
+        query.style.overflowY = query.scrollHeight > maxHeight ? "auto" : "hidden";
+        applyDrawerLayout();
+      }
+
+      function drawerMetaLine() {
+        const activeOrder = appState.orders.find((order) => order.active);
+        if (activeOrder) return `${activeOrder.title} active`;
+        const last = appState.messages[appState.messages.length - 1];
+        return last?.summary || defaultDrawerMessage();
+      }
+
+      function updateDrawerHandle() {
+        const activeCount = appState.orders.filter((order) => order.active).length;
+        commHandleTitle.textContent = activeCount ? "Live orders" : "Signal feed";
+        commHandleMeta.textContent = drawerMetaLine();
+        commHandleCount.textContent = String(activeCount || appState.messages.length || 0);
+      }
+
+      function renderMessages() {
+        if (!appState.messages.length) {
+          commFeed.innerHTML = `<div class="comm-empty">${escapeHtml(defaultDrawerMessage())}</div>`;
+          updateDrawerHandle();
+          return;
+        }
+
+        commFeed.innerHTML = appState.messages.map((message) => {
+          const title = message.title
+            ? `<div class="comm-bubble-title"><span class="comm-bubble-heading">${escapeHtml(message.title)}</span>${message.pill ? `<span class="comm-bubble-pill">${escapeHtml(message.pill)}</span>` : ""}</div>`
+            : "";
+          const tile = message.signalId
+            ? `
+              <button class="comm-order-tile ${message.active ? "active" : ""}" type="button" data-jump-signal="${escapeHtml(message.signalId)}">
+                <div class="comm-order-head">
+                  <span class="comm-order-name">${escapeHtml(message.signalName || message.title || "Signal")}</span>
+                  <span class="comm-order-status">${escapeHtml(message.status || "jump back")}</span>
+                </div>
+                <div class="comm-order-grid">
+                  ${(message.metrics || []).map((metric) => `
+                    <div class="comm-order-metric">
+                      <span class="comm-order-label">${escapeHtml(metric.label)}</span>
+                      <span class="comm-order-value">${escapeHtml(metric.value)}</span>
+                    </div>
+                  `).join("")}
+                </div>
+              </button>
+            `
+            : "";
+          return `
+            <div class="comm-message ${escapeHtml(message.role)}">
+              <div class="comm-bubble">
+                ${title}
+                <div class="comm-bubble-copy">${escapeHtml(message.body)}</div>
+                ${tile}
+              </div>
+            </div>
+          `;
+        }).join("");
+        updateDrawerHandle();
+        commFeed.scrollTop = commFeed.scrollHeight;
+      }
+
+      function pushMessage(role, body, options = {}) {
+        const message = {
+          id: options.id || `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          role,
+          body,
+          title: options.title || "",
+          pill: options.pill || "",
+          signalId: options.signalId || "",
+          signalName: options.signalName || "",
+          status: options.status || "",
+          summary: options.summary || body,
+          metrics: options.metrics || [],
+          active: !!options.active,
+          demo: options.demo !== false
+        };
+        appState.messages = [...appState.messages.slice(-35), message];
+        persistMessages();
+        renderMessages();
+        if (options.expand !== false) setDrawerExpanded(true);
+        return message;
+      }
+
+      function removeDemoMessagesAndOrders() {
+        appState.orders = appState.orders.filter((order) => !order.demo);
+        appState.messages = appState.messages.filter((message) => !message.demo);
+        signalStates.forEach((state) => {
+          if (state.signal.demo) {
+            state.orderActive = false;
+            state.armed = false;
+            refreshPopupActionButton(state);
+            state.popup.classList.remove("armed", "active-order");
+          }
+        });
+        persistMessages();
+      }
+
+      function toggleDemoMode() {
+        appState.demoMode = !appState.demoMode;
+        try {
+          window.localStorage.setItem(DEMO_MODE_KEY, String(appState.demoMode));
+        } catch (error) {
+          console.warn("Astranov demo mode cache write failed", error);
+        }
+        if (!appState.demoMode) {
+          removeDemoMessagesAndOrders();
+          if (appState.activeId && !signalVisible(signalStates.get(appState.activeId)?.signal)) clearActiveSignal();
+        } else if (!appState.messages.length) {
+          pushMessage("system", "Demo listings are back on. You can route bakery, pharmacy, grocery, and driver scenarios again.", {
+            title: "Demo mode",
+            pill: "on",
+            demo: true
+          });
+        }
+        updatePreview();
+        renderMessages();
+        if (appState.openPanel === "user") setPanel("user");
+      }
+
+      function pickCatalogItem(signal, rawQuery = "") {
+        if (!signal?.catalog?.length) return null;
+        const lowered = rawQuery.toLowerCase();
+        return signal.catalog.find((item) => lowered.includes(item.title.toLowerCase())) || signal.catalog[0];
+      }
+
+      function activeUserCoords() {
+        const userState = signalStates.get(appState.userSignalId);
+        if (!userState) return null;
+        return { lat: userState.signal.lat, lng: userState.signal.lng };
+      }
+
+      function createOrderFromSignal(state, rawQuery = "", intent = "order") {
+        const signal = state.signal;
+        const item = pickCatalogItem(signal, rawQuery);
+        const userCoords = activeUserCoords();
+        const distanceKm = userCoords ? haversineKm(signal.lat, signal.lng, userCoords.lat, userCoords.lng) : 2.8;
+        const priority = !!item?.priority || /priority|instant|hot|fast|urgent/.test(rawQuery.toLowerCase());
+        const quote = calculateDeliveryQuote({
+          distanceKm,
+          weightKg: item?.weightKg || 0,
+          volumeLiters: item?.volumeLiters || 0,
+          priority,
+          subtotal: item?.price || (intent === "assign" ? 0 : 12),
+          weather: weatherMode()
+        });
+        return {
+          id: `ord-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          signalId: signal.id,
+          title: signal.title,
+          itemTitle: item?.title || (intent === "assign" ? "Driver dispatch" : signal.capability),
+          status: intent === "assign" ? "driver assigned" : "routing",
+          quote,
+          capacityPerHour: item?.capacityPerHour || signal.capacityPerHour || 18,
+          priority,
+          demo: !!signal.demo,
+          active: true
+        };
+      }
+
+      function activateOrderState(order) {
+        appState.orders = [
+          ...appState.orders.filter((entry) => entry.id !== order.id && entry.signalId !== order.signalId),
+          order
+        ].slice(-8);
+        const state = signalStates.get(order.signalId);
+        if (state) {
+          state.armed = true;
+          state.orderActive = true;
+          refreshPopupActionButton(state);
+          state.popup.classList.add("armed", "active-order");
+        }
+        return order;
+      }
+
+      function routeSignalAction(state, rawQuery = "", intent = "order") {
+        const order = activateOrderState(createOrderFromSignal(state, rawQuery, intent));
+        pushMessage("order", `${order.itemTitle} is now linked to ${order.title}. The drawer stays active so you can jump back to the place on the globe at any moment.`, {
+          title: intent === "assign" ? "Dispatch active" : "Order active",
+          pill: formatEuro(order.quote.total),
+          signalId: order.signalId,
+          signalName: order.title,
+          status: order.status,
+          demo: order.demo,
+          active: true,
+          metrics: [
+            { label: "delivery", value: formatEuro(order.quote.deliveryBase) },
+            { label: "owner fee", value: formatEuro(order.quote.ownerFee) },
+            { label: "capacity", value: `${order.capacityPerHour}/h` },
+            { label: "distance", value: `${order.quote.distanceKm} km` }
+          ],
+          summary: `${order.title} ${order.status}`
+        });
+        return order;
+      }
+
       function metricTile(label, value) {
         return `
           <div class="top-panel-metric">
@@ -2172,15 +3056,19 @@
           transactions: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M5 12h10"></path><path d="M5 17h14"></path><path d="M17 10l2 2-2 2"></path></svg>',
           payments: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg>',
           paypal: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h5.3a4.7 4.7 0 0 1 0 9.4H10l-1 5H5.5L8 5z"></path><path d="M12 9h2.4a3.6 3.6 0 0 1 0 7.2H12.8"></path></svg>',
+          revolut: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h8.2a3.8 3.8 0 1 1 0 7.6H10"></path><path d="M6 7v10"></path><path d="M10 14l5 3"></path></svg>',
           inspect: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"></path><circle cx="12" cy="12" r="2.5"></circle></svg>',
           drone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><path d="M12 4v4"></path><path d="M12 16v4"></path><path d="M4 12h4"></path><path d="M16 12h4"></path><circle cx="12" cy="4" r="2"></circle><circle cx="12" cy="20" r="2"></circle><circle cx="4" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle></svg>',
           target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v4"></path><path d="M12 18v4"></path><path d="M2 12h4"></path><path d="M18 12h4"></path></svg>',
+          locate: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3"></path><path d="M12 18v3"></path><path d="M3 12h3"></path><path d="M18 12h3"></path><circle cx="12" cy="12" r="4"></circle></svg>',
           anchor: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11z"></path><circle cx="12" cy="10" r="2"></circle></svg>',
           presence: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="2.5"></circle><path d="M4 18c1.2-2.5 3-4 5.5-4"></path><path d="M12 12l4-4"></path><path d="M14 8h6v6"></path></svg>',
           cloud: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 18 8v8l-6 4-6-4V8z"></path><path d="M12 4v16"></path><path d="M6 8h12"></path><path d="M6 16h12"></path></svg>',
           order: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h14l-1.5 7H8z"></path><path d="M6 7 5 4H2"></path><circle cx="9" cy="19" r="1.5"></circle><circle cx="17" cy="19" r="1.5"></circle></svg>',
           play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6l10 6-10 6z"></path></svg>',
-          route: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="6" r="2"></circle><path d="M8 18c4-1 8-4 10-10"></path></svg>'
+          route: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="6" r="2"></circle><path d="M8 18c4-1 8-4 10-10"></path></svg>',
+          demoOn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2z"></path></svg>',
+          demoOff: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.2 4.8L19 10l-4.8 2.2L12 17l-2.2-4.8L5 10l4.8-2.2z"></path><path d="M4 20 20 4"></path></svg>'
         };
         return icons[name] || icons.target;
       }
@@ -2237,8 +3125,8 @@
             metricTile("locale", USER_INFO.locale),
             metricTile("profile", USER_INFO.profile),
             metricTile("settings", USER_INFO.settings),
-            metricTile("orders", "active jump-back hooks"),
-            metricTile("alerts", "notification drawer ready")
+            metricTile("orders", `${appState.orders.filter((order) => order.active).length} active jump-back hooks`),
+            metricTile("demo", appState.demoMode ? "demo listings on" : "real listings only")
           ].join("");
           actions = `
             <div class="top-panel-actions">
@@ -2247,6 +3135,7 @@
               ${panelActionMarkup("settings", "Settings", "settings")}
               ${panelActionMarkup("orders", "Orders", "orders")}
               ${panelActionMarkup("alerts", "Alerts", "alerts")}
+              ${panelActionMarkup("demo", appState.demoMode ? "Disable demo mode" : "Enable demo mode", appState.demoMode ? "demoOn" : "demoOff")}
             </div>
           `;
         }
@@ -2277,15 +3166,17 @@
             metricTile("balance", WALLET_INFO.balance),
             metricTile("pending", WALLET_INFO.pending),
             metricTile("ledger", WALLET_INFO.ledger),
-            metricTile("economics", WALLET_INFO.economics),
+            metricTile("economics", `owner fee ${Math.round(DELIVERY_RULES.platformFeeRate * 100)}%`),
             metricTile("card", STRIPE_PAYMENT_LINK ? "checkout ready" : "setup needed"),
-            metricTile("paypal", PAYPAL_CHECKOUT_URL ? "checkout ready" : "setup needed")
+            metricTile("paypal", PAYPAL_CHECKOUT_URL ? "checkout ready" : "setup needed"),
+            metricTile("revolut", REVOLUT_CHECKOUT_URL ? "checkout ready" : "setup needed")
           ].join("");
           actions = `
             <div class="top-panel-actions">
               ${panelActionMarkup("transactions", "Transactions", "transactions")}
               ${panelActionMarkup("card", "Card checkout", "payments")}
               ${panelActionMarkup("paypal", "PayPal checkout", "paypal")}
+              ${panelActionMarkup("revolut", "Revolut checkout", "revolut")}
             </div>
           `;
         }
@@ -2365,6 +3256,12 @@
               setPanel(null);
               return;
             }
+            if (action === "demo") {
+              toggleDemoMode();
+              query.placeholder = appState.demoMode ? "Demo listings visible" : "Demo listings hidden";
+              setPanel("user");
+              return;
+            }
             if (action === "transactions") {
               query.placeholder = "Wallet ledger ready";
               setPanel(null);
@@ -2390,6 +3287,16 @@
               setPanel(null);
               return;
             }
+            if (action === "revolut") {
+              if (REVOLUT_CHECKOUT_URL) {
+                window.open(REVOLUT_CHECKOUT_URL, "_blank", "noopener");
+                query.placeholder = "Revolut checkout opened";
+              } else {
+                query.placeholder = "Add window.ASTRANOV_REVOLUT_CHECKOUT_URL";
+              }
+              setPanel(null);
+              return;
+            }
             if (action === "investigate") {
               query.placeholder = `Peak load ${Math.round(appState.performancePeak)}% / ${appState.device.cpu} / ${appState.device.ram}`;
               setPanel(null);
@@ -2411,12 +3318,17 @@
       }
 
       function updateTopHud() {
-        systemVersionBadge.textContent = `v${APP_INFO.currentVersion} / v${APP_INFO.latestVersion}`;
+        const profile = viewportProfile();
+        const titleNode = systemButton.querySelector(".top-btn-title");
+        if (titleNode) titleNode.textContent = profile.micro ? "Astranov" : APP_INFO.name;
+        systemVersionBadge.textContent = profile.micro
+          ? `${APP_INFO.currentVersion} / ${APP_INFO.latestVersion}`
+          : `v${APP_INFO.currentVersion} / v${APP_INFO.latestVersion}`;
         const walletIcon = walletButton.querySelector(".top-btn-icon");
         if (walletIcon) walletIcon.innerHTML = iconMarkup("wallet");
         walletButton.setAttribute("title", WALLET_INFO.balance);
         walletButton.setAttribute("aria-label", `Open wallet and economics, balance ${WALLET_INFO.balance}`);
-        if (radarCenterIcon) radarCenterIcon.innerHTML = iconMarkup("target");
+        if (radarCenterIcon) radarCenterIcon.innerHTML = iconMarkup("locate");
       }
 
       function setAddCycleOpen(open) {
@@ -2463,9 +3375,11 @@
               zoom: signal.zoom,
               previewVideo: signal.previewVideo || "",
               products: signal.products || [],
+              catalog: signal.catalog || [],
               tags: signal.tags || [],
               metrics: signal.metrics || [],
-              customListing: true
+              customListing: true,
+              demo: false
             }));
           window.localStorage.setItem(CUSTOM_SIGNALS_KEY, JSON.stringify(customSignals));
         } catch (error) {
@@ -2487,6 +3401,8 @@
           lng: longitude,
           alt: 0.15,
           zoom: 1.08,
+          demo: false,
+          catalog: [],
           tags: ["user", "local", "position", "anchor"],
           metrics: [
             { label: "state", value: "live locate" },
@@ -2497,6 +3413,12 @@
       }
 
       function centerOnUserLocation() {
+        const existingUserSignal = signalStates.get(appState.userSignalId);
+        if (existingUserSignal) {
+          setActiveSignal(appState.userSignalId, true);
+          aimGlobeAtState(existingUserSignal);
+          setZoom(1.08);
+        }
         if (!navigator.geolocation) {
           query.placeholder = "Geolocation is not available on this device";
           flashNoMatch();
@@ -2512,6 +3434,20 @@
           setActiveSignal(signal.id, true);
           aimGlobeAtState(state);
           setZoom(1.08);
+          pushMessage("system", "Your live position is now attached to the globe so nearby listings, routing, and delivery pricing can use a real origin.", {
+            title: "Local reveal",
+            pill: "live",
+            signalId: signal.id,
+            signalName: signal.title,
+            status: "locked",
+            summary: "User location locked",
+            metrics: [
+              { label: "lat", value: position.coords.latitude.toFixed(3) },
+              { label: "lng", value: position.coords.longitude.toFixed(3) },
+              { label: "mode", value: "nearby routing" }
+            ],
+            demo: false
+          });
           query.placeholder = "Zoomed to your location";
           appState.holdUntil = performance.now() + 6800;
         }, () => {
@@ -2529,11 +3465,11 @@
       }
 
       function focusableSignalState() {
-        if (appState.activeId && signalStates.has(appState.activeId)) return signalStates.get(appState.activeId);
-        if (appState.previewId && signalStates.has(appState.previewId)) return signalStates.get(appState.previewId);
+        if (appState.activeId && signalStates.has(appState.activeId) && signalVisible(signalStates.get(appState.activeId)?.signal)) return signalStates.get(appState.activeId);
+        if (appState.previewId && signalStates.has(appState.previewId) && signalVisible(signalStates.get(appState.previewId)?.signal)) return signalStates.get(appState.previewId);
         const center = globeCenterScreen();
         const nearest = [...signalStates.values()]
-          .filter((state) => frontFacing(state))
+          .filter((state) => signalVisible(state.signal) && frontFacing(state))
           .map((state) => {
             const point = screenPoint(state.world);
             return { state, score: Math.hypot(point.x - center.x, point.y - center.y) };
@@ -2553,21 +3489,25 @@
         const profile = viewportProfile();
         const topRect = topBar.getBoundingClientRect();
         const composerRect = composer.getBoundingClientRect();
-        const minSize = profile.micro ? 72 : profile.narrow ? 96 : profile.compact ? 112 : 132;
+        document.body.dataset.orientation = profile.orientation;
+        document.body.dataset.screen = profile.micro ? "micro" : profile.narrow ? "narrow" : profile.compact ? "compact" : profile.desktop ? "desktop" : "standard";
+        const minSize = profile.micro ? 68 : profile.narrow ? 88 : profile.compact ? 106 : profile.landscape ? 118 : 132;
         const maxSize = profile.micro
-          ? Math.min(80, appState.width * 0.31, appState.height * 0.15)
+          ? Math.min(86, appState.width * 0.28, appState.height * 0.19)
           : profile.narrow
-            ? Math.min(132, appState.width * 0.43, appState.height * 0.22)
+            ? Math.min(124, appState.width * 0.34, appState.height * 0.24)
             : profile.compact
-              ? Math.min(164, appState.width * 0.45, appState.height * 0.26)
-              : Math.min(248, appState.width * 0.48, appState.height * 0.34);
+              ? Math.min(154, appState.width * 0.34, appState.height * 0.26)
+              : profile.landscape
+                ? Math.min(160, appState.width * 0.22, appState.height * 0.32)
+                : Math.min(236, appState.width * 0.34, appState.height * 0.31);
         const defaultSize = clamp(maxSize, minSize, maxSize);
         appState.hud.size = clamp(appState.hud.size || defaultSize, minSize, maxSize);
-        const minTop = topRect.bottom + (profile.micro ? 8 : profile.narrow ? 10 : 14);
-        const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - (profile.micro ? 8 : 18));
-        appState.hud.top = clamp(appState.hud.top || (minTop + (profile.micro ? 8 : 18)), minTop, maxTop);
+        const minTop = topRect.bottom + (profile.micro ? 6 : profile.landscape ? 8 : profile.narrow ? 10 : 14);
+        const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - (profile.micro ? 8 : profile.landscape ? 10 : 18));
+        appState.hud.top = clamp(appState.hud.top || (minTop + (profile.micro ? 6 : profile.landscape ? 8 : 18)), minTop, maxTop);
 
-        const centerSize = Math.round(appState.hud.size * (profile.micro ? 0.34 : profile.narrow ? 0.35 : 0.36));
+        const centerSize = Math.round(appState.hud.size * (profile.micro ? 0.36 : profile.narrow ? 0.37 : 0.38));
         const radarCenterSize = Math.round(centerSize * 0.88);
         const centerIconSize = Math.max(profile.micro ? 12 : 14, Math.round(centerSize * 0.34));
         const centerValueSize = Math.max(profile.micro ? 7.2 : 8.2, +(appState.hud.size * (profile.micro ? 0.076 : 0.082)).toFixed(2));
@@ -2628,7 +3568,7 @@
       function updateRadarHud(now) {
         const basis = worldViewBasis();
         const profile = viewportProfile();
-        appState.radarAngle = (appState.radarAngle + 0.025) % (Math.PI * 2);
+        appState.radarAngle = (appState.radarAngle + (profile.landscape ? 0.018 : 0.022)) % (Math.PI * 2);
         const sweepRotation = `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`;
         radarSweep.setAttribute("transform", sweepRotation);
         radarSweepCone.setAttribute("transform", sweepRotation);
@@ -2637,6 +3577,7 @@
         ];
         let signalCount = 0;
         signalStates.forEach((state) => {
+          if (!signalVisible(state.signal)) return;
           signalCount += 1;
           const normal = worldNormal(state.local);
           const azimuth = Math.atan2(-normal.dot(basis.up), normal.dot(basis.right));
@@ -2767,9 +3708,31 @@
           event.stopPropagation();
           const state = signalStates.get(signal.id);
           if (!state) return;
-          state.armed = !state.armed;
+          if (state.orderActive) {
+            state.orderActive = false;
+            state.armed = false;
+            appState.orders = appState.orders.map((order) => order.signalId === signal.id ? { ...order, active: false, status: "closed" } : order);
+            pushMessage("system", `${signal.title} is still on the globe, but the active route was closed from the signal tile.`, {
+              title: "Route closed",
+              pill: "standby",
+              signalId: signal.id,
+              signalName: signal.title,
+              status: "standby",
+              summary: `${signal.title} standby`,
+              metrics: [
+                { label: "signal", value: signal.capability },
+                { label: "state", value: "standby" }
+              ],
+              demo: !!signal.demo
+            });
+          } else {
+            routeSignalAction(state, signal.title, signal.tags.includes("driver") || signal.type === "presence" ? "assign" : "order");
+          }
+          persistMessages();
+          renderMessages();
           refreshPopupActionButton(state);
           popup.classList.toggle("armed", state.armed);
+          popup.classList.toggle("active-order", !!state.orderActive);
           setActiveSignal(signal.id, true);
         });
         signalLayer.appendChild(popup);
@@ -2778,42 +3741,36 @@
 
       function addAnchorVisual(state) {
         const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.009, 0.009, 0.14, 10),
-          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.68, depthWrite: false })
+          new THREE.CylinderGeometry(0.004, 0.004, 0.08, 8),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.72, depthWrite: false })
         );
-        pole.position.y = 0.065;
+        pole.position.y = 0.04;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.028, 18, 18),
+          new THREE.SphereGeometry(0.014, 14, 14),
           new THREE.MeshBasicMaterial({ color: 0xcffcff, transparent: true, opacity: 0.96, depthWrite: false })
         );
-        core.position.y = 0.125;
-        const shell = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.018, 0),
-          new THREE.MeshBasicMaterial({ color: 0x8ef3ff, transparent: true, opacity: 0.52, depthWrite: false })
-        );
-        shell.position.y = 0.125;
-        state.group.add(pole, shell, core);
+        core.position.y = 0.085;
+        state.group.add(pole, core);
         state.core = core;
         state.pole = pole;
-        state.shell = shell;
       }
 
       function addPresenceVisual(state) {
         const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.008, 0.008, 0.12, 8),
-          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.56, depthWrite: false })
+          new THREE.CylinderGeometry(0.004, 0.004, 0.074, 8),
+          new THREE.MeshBasicMaterial({ color: 0x16d9ff, transparent: true, opacity: 0.6, depthWrite: false })
         );
-        pole.position.y = 0.062;
+        pole.position.y = 0.036;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.026, 18, 18),
+          new THREE.SphereGeometry(0.015, 14, 14),
           new THREE.MeshBasicMaterial({ color: 0xe1fdff, transparent: true, opacity: 1, depthWrite: false })
         );
-        core.position.y = 0.14;
+        core.position.y = 0.086;
         const shell = new THREE.Mesh(
-          new THREE.ConeGeometry(0.018, 0.05, 6),
-          new THREE.MeshBasicMaterial({ color: 0x9ef8ff, transparent: true, opacity: 0.64, depthWrite: false })
+          new THREE.ConeGeometry(0.011, 0.026, 5),
+          new THREE.MeshBasicMaterial({ color: 0x9ef8ff, transparent: true, opacity: 0.7, depthWrite: false })
         );
-        shell.position.y = 0.185;
+        shell.position.y = 0.11;
         state.group.add(pole, shell, core);
         state.core = core;
         state.pole = pole;
@@ -2849,15 +3806,15 @@
         );
         lattice.geometry.setAttribute("position", new THREE.Float32BufferAttribute(latticePoints, 3));
         const shell = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.03, 0),
-          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.42, depthWrite: false })
+          new THREE.OctahedronGeometry(0.02, 0),
+          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.34, depthWrite: false })
         );
-        shell.position.y = 0.16;
+        shell.position.y = 0.13;
         const core = new THREE.Mesh(
-          new THREE.SphereGeometry(0.024, 18, 18),
+          new THREE.SphereGeometry(0.012, 14, 14),
           new THREE.MeshBasicMaterial({ color: 0xcdf8ff, transparent: true, opacity: 1, depthWrite: false })
         );
-        core.position.y = 0.16;
+        core.position.y = 0.13;
         state.group.add(shell, lattice, core);
         state.core = core;
         state.shell = shell;
@@ -2877,15 +3834,16 @@
           show: 0,
           armed: false,
           pulsePhase: Math.random() * Math.PI * 2,
-          activatedAt: performance.now()
+          activatedAt: performance.now(),
+          orderActive: false
         };
 
         if (signal.type === "anchor") addAnchorVisual(state);
         if (signal.type === "presence") addPresenceVisual(state);
         if (signal.type === "cloud") addCloudVisual(state);
 
-        const hit = new THREE.Mesh(new THREE.SphereGeometry(signal.type === "cloud" ? 0.18 : 0.15, 12, 12), new THREE.MeshBasicMaterial({ visible: false }));
-        hit.position.y = signal.type === "cloud" ? 0.16 : signal.type === "presence" ? 0.14 : 0.12;
+        const hit = new THREE.Mesh(new THREE.SphereGeometry(signal.type === "cloud" ? 0.12 : 0.1, 10, 10), new THREE.MeshBasicMaterial({ visible: false }));
+        hit.position.y = signal.type === "cloud" ? 0.13 : signal.type === "presence" ? 0.11 : 0.09;
         hit.userData.signalId = signal.id;
         state.group.add(hit);
         state.hit = hit;
@@ -2893,6 +3851,7 @@
         markerGroup.add(state.group);
         interactive.push(hit);
         signalStates.set(signal.id, state);
+        state.group.visible = signalVisible(signal);
         return state;
       }
 
@@ -2907,6 +3866,7 @@
         signalStates.delete(id);
         if (appState.activeId === id) appState.activeId = null;
         if (appState.previewId === id) appState.previewId = null;
+        appState.orders = appState.orders.filter((order) => order.signalId !== id);
       }
 
       function spawnSeed(localPoint) {
@@ -2923,6 +3883,7 @@
             tags: ["video", "post", "creator", "anchor"],
             metrics: [
               { label: "state", value: "draft ready" },
+              { label: "capacity", value: "12/h publish" },
               { label: "reach", value: "local feed" },
               { label: "shell", value: "preview live" }
             ],
@@ -2938,6 +3899,7 @@
               tags: ["service", "booking", "local", "anchor"],
               metrics: [
                 { label: "state", value: "service draft" },
+                { label: "capacity", value: "30/h" },
                 { label: "reach", value: "nearby users" },
                 { label: "shell", value: "bookable" }
               ]
@@ -2951,6 +3913,7 @@
               tags: ["shop", "products", "order", "anchor"],
               metrics: [
                 { label: "state", value: "shop draft" },
+                { label: "capacity", value: "24/h" },
                 { label: "reach", value: "walk-in zone" },
                 { label: "shell", value: "orderable" }
               ]
@@ -2970,10 +3933,16 @@
           zoom: 1,
           previewVideo: seedProfile.previewVideo,
           products: mode === "shop" ? ["new product", "pricing ready", "delivery hook"] : [],
+          catalog: mode === "shop"
+            ? [{ id: `item-${Date.now()}`, title: "New Product", price: 9, volumeLiters: 4, weightKg: 2, temperatureState: "ambient", capacityPerHour: 24 }]
+            : mode === "service"
+              ? [{ id: `svc-${Date.now()}`, title: "New Service", price: 18, volumeLiters: 0, weightKg: 0, temperatureState: "ambient", capacityPerHour: 30 }]
+              : [],
           tags: ["seed", "origin", "signal", "anchor", ...seedProfile.tags],
           metrics: seedProfile.metrics,
           bornAt: performance.now(),
-          customListing: true
+          customListing: true,
+          demo: false
         };
         appState.seedId = seedSignal.id;
         createSignalState(seedSignal);
@@ -2983,11 +3952,22 @@
         setZoom(1.02);
         query.value = "";
         updatePreview();
+        autoSizeQuery();
+        pushMessage("system", `${seedSignal.title} is now live on the globe with starter pricing, delivery hooks, and capacity metadata.`, {
+          title: "Listing added",
+          pill: mode,
+          signalId: seedSignal.id,
+          signalName: seedSignal.title,
+          status: "live",
+          summary: `${seedSignal.title} placed`,
+          metrics: seedSignal.metrics.slice(0, 4),
+          demo: false
+        });
         query.placeholder = `${seedSignal.title} placed on the map`;
       }
 
       function setActiveSignal(id, holdFocus) {
-        if (!signalStates.has(id)) return;
+        if (!signalStates.has(id) || !signalVisible(signalStates.get(id)?.signal)) return;
         appState.activeId = id;
         appState.previewId = null;
         appState.lastCycle = performance.now();
@@ -3014,6 +3994,15 @@
 
       function syncSignalState(state, now) {
         const signal = state.signal;
+        const visibleSignal = signalVisible(signal);
+        state.group.visible = visibleSignal;
+        state.hit.visible = visibleSignal;
+        if (state.trailLine) state.trailLine.visible = visibleSignal;
+        if (!visibleSignal) {
+          state.popup.style.opacity = "0";
+          state.popup.style.pointerEvents = "none";
+          return;
+        }
         let lat = state.baseLat;
         let lng = state.baseLng;
         let altitude = earthRadius + signal.alt;
@@ -3034,7 +4023,16 @@
         state.depth = screenPoint(state.world).z;
 
         const pulse = 0.5 + 0.5 * Math.sin(now * 0.004 + state.pulsePhase);
-        const highlight = state.signal.id === appState.activeId ? 1 : state.signal.id === appState.previewId ? 0.72 : appState.ambientIds.includes(state.signal.id) ? 0.4 : 0.16;
+        const highlight = state.signal.id === appState.activeId
+          ? 1
+          : state.orderActive
+            ? 0.88
+            : state.signal.id === appState.previewId
+              ? 0.72
+              : appState.ambientIds.includes(state.signal.id)
+                ? 0.4
+                : 0.16;
+        state.popup.classList.toggle("active-order", !!state.orderActive);
 
         if (state.pole) {
           state.pole.scale.y = 1 + pulse * 0.04 + highlight * 0.08;
@@ -3071,6 +4069,7 @@
         const candidates = [];
         const ambientLimit = appState.zoomed ? 1 : AMBIENT_COUNT;
         signalStates.forEach((state) => {
+          if (!signalVisible(state.signal)) return;
           if (state.signal.id === appState.activeId || state.signal.id === appState.previewId || appState.searchIds.includes(state.signal.id)) return;
           if (!frontFacing(state)) return;
           const point = screenPoint(state.world);
@@ -3103,13 +4102,21 @@
         const candidates = [];
 
         signalStates.forEach((state) => {
+          if (!signalVisible(state.signal)) {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+            return;
+          }
           const visible = frontFacing(state);
           const isActive = state.signal.id === appState.activeId;
+          const isOrder = state.orderActive;
           const isPreview = state.signal.id === appState.previewId;
           const isSearch = appState.searchIds.includes(state.signal.id);
           const targetShow = visible
             ? isActive
               ? 1
+              : isOrder
+                ? 0.92
               : isPreview
                 ? 0.86
                 : isSearch
@@ -3119,6 +4126,8 @@
                     : 0
             : isActive
               ? 0.72
+              : isOrder
+                ? 0.68
               : isPreview
                 ? 0.48
                 : isSearch
@@ -3290,7 +4299,7 @@
         const analysis = analyzeCommand(value);
         const terms = analysis.terms;
         if (!terms.length) return [];
-        return [...signalStates.values()].map((state) => {
+        return [...signalStates.values()].filter((state) => signalVisible(state.signal)).map((state) => {
           const metricText = state.signal.metrics.map((metric) => `${metric.label} ${metric.value}`).join(" ");
           const productText = state.signal.products ? state.signal.products.join(" ") : "";
           const haystack = `${state.signal.title} ${state.signal.summary} ${state.signal.capability} ${state.signal.region} ${metricText} ${productText} ${state.signal.tags.join(" ")} ${state.signal.type}`.toLowerCase();
@@ -3335,7 +4344,7 @@
       }
 
       function cycleSignal() {
-        const ids = [...signalStates.keys()];
+        const ids = [...signalStates.values()].filter((state) => signalVisible(state.signal)).map((state) => state.signal.id);
         if (!ids.length) return;
         const current = appState.activeId ? ids.indexOf(appState.activeId) : -1;
         setActiveSignal(ids[(current + 1 + ids.length) % ids.length], false);
@@ -3348,8 +4357,15 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              lane: "public",
+              message: value,
+              history: appState.messages.slice(-8).map((entry) => ({
+                role: entry.role === "user" ? "user" : "assistant",
+                content: entry.body
+              })),
+              publicProvider: "auto",
               query: value,
-              signals: [...signalStates.values()].map((state) => ({
+              signals: [...signalStates.values()].filter((state) => signalVisible(state.signal)).map((state) => ({
                 id: state.signal.id,
                 type: state.signal.type,
                 title: state.signal.title,
@@ -3368,11 +4384,21 @@
             setPanel(null);
             setAddMode(data.addMode);
             setAddCycleOpen(true);
+            pushMessage("system", data.message || "Choose what to add in the center of the globe and then tap Earth to place it.", {
+              title: "Add flow",
+              pill: data.addMode,
+              summary: `Add ${data.addMode}`
+            });
             if (data.message) query.placeholder = data.message;
             return true;
           }
           if (data?.checkoutUrl) {
             window.open(data.checkoutUrl, "_blank", "noopener");
+            pushMessage("system", data.message || "Checkout opened in a new tab.", {
+              title: "Payments",
+              pill: "checkout",
+              summary: "Checkout opened"
+            });
             query.placeholder = data.message || "Checkout opened";
             return true;
           }
@@ -3391,11 +4417,29 @@
             setActiveSignal(data.signalId, true);
             setZoom(clamp(Number.isFinite(data.zoom) ? data.zoom : (data.intent === "track" ? 0.92 : 1.02), 0, 1.2));
             if (state && (data.intent === "order" || data.intent === "assign")) {
-              state.armed = true;
-              state.popup.classList.add("armed");
-              refreshPopupActionButton(state);
+              routeSignalAction(state, value, data.intent);
+            } else if (state) {
+              pushMessage("system", data.message || `${state.signal.title} is now the focused signal on the globe.`, {
+                title: data.intent === "track" ? "Tracking" : "Signal found",
+                pill: state.signal.type,
+                signalId: state.signal.id,
+                signalName: state.signal.title,
+                status: data.intent === "track" ? "live" : "focused",
+                summary: `${state.signal.title} focused`,
+                metrics: state.signal.metrics.slice(0, 4),
+                demo: !!state.signal.demo
+              });
             }
             query.placeholder = data.message || `AI routed ${state?.signal.title || "signal"}`;
+            return true;
+          }
+          if (data?.text) {
+            pushMessage("system", data.text, {
+              title: "AI",
+              pill: data.provider || "live",
+              summary: data.text.slice(0, 80)
+            });
+            query.placeholder = "AI answered in the communication drawer";
             return true;
           }
         } catch (error) {
@@ -3410,6 +4454,16 @@
           cycleSignal();
           return;
         }
+        pushMessage("user", value, {
+          title: "You",
+          pill: listening ? "voice" : "command",
+          summary: value,
+          expand: true,
+          demo: false
+        });
+        query.value = "";
+        updatePreview();
+        autoSizeQuery();
         if (appState.searchBusy) return;
         appState.searchBusy = true;
         if (await runAiCommand(value)) {
@@ -3420,12 +4474,23 @@
         if (analysis.intent === "add") {
           setPanel(null);
           setAddCycleOpen(true);
+          pushMessage("system", "Choose shop, service, or video from the add ring, then tap the Earth to place the new signal exactly where it belongs.", {
+            title: "Add signal",
+            pill: "ready",
+            summary: "Add flow ready"
+          });
           appState.searchBusy = false;
           return;
         }
         const ranked = rankSignals(value);
         if (!ranked.length) {
           flashNoMatch();
+          pushMessage("system", "No visible live signal matched that command. Try a nearby product, service, driver, or turn demo mode back on from the user menu.", {
+            title: "No match",
+            pill: "retry",
+            summary: "No signal match",
+            demo: false
+          });
           appState.searchBusy = false;
           return;
         }
@@ -3439,13 +4504,22 @@
         if (!state) return;
 
         if (analysis.intent === "order") {
-          state.armed = true;
-          state.popup.classList.add("armed");
-          refreshPopupActionButton(state);
+          routeSignalAction(state, value, "order");
         } else if (analysis.intent === "assign") {
-          state.armed = true;
-          state.popup.classList.add("armed");
-          refreshPopupActionButton(state);
+          routeSignalAction(state, value, "assign");
+        } else {
+          pushMessage("system", analysis.intent === "track"
+            ? `${state.signal.title} is now pinned in the communication drawer, and the globe will keep that location easy to jump back into.`
+            : `${state.signal.title} is focused. You can order, track, or assign directly from the emitted tile now.`, {
+              title: analysis.intent === "track" ? "Tracking ready" : "Signal ready",
+              pill: state.signal.type,
+              signalId: state.signal.id,
+              signalName: state.signal.title,
+              status: analysis.intent === "track" ? "live" : "focused",
+              summary: `${state.signal.title} ready`,
+              metrics: state.signal.metrics.slice(0, 4),
+              demo: !!state.signal.demo
+            });
         }
 
         query.placeholder = analysis.intent === "order"
@@ -3466,11 +4540,20 @@
       function resize() {
         appState.width = window.innerWidth;
         appState.height = window.innerHeight;
+        const profile = viewportProfile();
+        appState.screen.name = profile.micro ? "micro" : profile.narrow ? "narrow" : profile.compact ? "compact" : profile.desktop ? "desktop" : "standard";
+        appState.screen.orientation = profile.orientation;
+        appState.screen.renderScale = profile.renderScale;
+        USER_INFO.mode = `${profile.orientation} ${profile.micro ? "micro" : profile.narrow ? "narrow" : profile.compact ? "compact" : profile.desktop ? "desktop" : "adaptive"} shell`;
+        renderer.setPixelRatio(profile.renderScale);
         renderer.setSize(appState.width, appState.height);
         camera.aspect = appState.width / appState.height;
         camera.updateProjectionMatrix();
         refreshDeviceTelemetry();
+        updateTopHud();
         applyHudLayout();
+        applyDrawerLayout();
+        autoSizeQuery();
         if (!query.value.trim() && !listening && !appState.addMode) {
           query.placeholder = defaultQueryPlaceholder();
         }
@@ -3521,6 +4604,22 @@
         radarWheel.classList.remove("dragging", "resizing");
       }
 
+      function beginDrawerMotion(event) {
+        appState.drawer.pointerId = event.pointerId;
+        appState.drawer.startY = event.clientY;
+        appState.drawer.startHeight = appState.drawer.expanded ? appState.drawer.height : appState.drawer.minHeight;
+        appState.drawer.moved = false;
+        event.preventDefault();
+      }
+
+      function endDrawerMotion() {
+        if (appState.drawer.pointerId === null) return;
+        const expanded = appState.drawer.height > (appState.drawer.minHeight + 52);
+        appState.drawer.pointerId = null;
+        setDrawerExpanded(expanded);
+        persistDrawerHeight();
+      }
+
       function adjustZoom(delta) {
         ensureFocusSignal();
         setZoom(appState.zoomTarget + delta);
@@ -3531,12 +4630,47 @@
         appState.holdUntil = performance.now() + 6400;
       }
 
-      query.addEventListener("input", updatePreview);
+      if (!appState.messages.length) {
+        pushMessage("system", defaultDrawerMessage(), {
+          title: "Astranov ready",
+          pill: appState.demoMode ? "demo" : "live",
+          summary: defaultDrawerMessage(),
+          expand: false,
+          demo: appState.demoMode
+        });
+      } else {
+        renderMessages();
+      }
+      setDrawerExpanded(false);
+
+      query.addEventListener("input", () => {
+        updatePreview();
+        autoSizeQuery();
+        if (query.value.trim()) setDrawerExpanded(true);
+      });
+      query.addEventListener("focus", () => setDrawerExpanded(true));
       query.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+        if (event.key === "Enter" && !event.shiftKey) {
           event.preventDefault();
           submitQuery();
         }
+      });
+
+      commHandle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (appState.drawer.moved) return;
+        setDrawerExpanded(!appState.drawer.expanded);
+      });
+
+      commHandle.addEventListener("pointerdown", beginDrawerMotion);
+
+      commFeed.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-jump-signal]");
+        if (!button) return;
+        const signalId = button.getAttribute("data-jump-signal");
+        if (!signalId || !signalStates.has(signalId)) return;
+        setActiveSignal(signalId, true);
+        setZoom(Math.max(appState.zoomTarget, 1.02));
       });
 
       document.getElementById("composer").addEventListener("submit", (event) => {
@@ -3547,11 +4681,7 @@
       userButton.addEventListener("click", (event) => {
         event.stopPropagation();
         togglePanel("user");
-        if (navigator.permissions?.query) {
-          navigator.permissions.query({ name: "geolocation" }).then((result) => {
-            if (result.state === "granted") centerOnUserLocation();
-          }).catch(() => {});
-        }
+        centerOnUserLocation();
       });
 
       systemButton.addEventListener("click", (event) => {
@@ -3606,6 +4736,7 @@
       document.addEventListener("pointerdown", (event) => {
         const target = event.target;
         if (target.closest?.(".add-cycle-btn") || addBtn.contains(target)) return;
+        if (commDrawer.contains(target)) return;
         if (topPanel.contains(target) || userButton.contains(target) || systemButton.contains(target) || walletButton.contains(target)) return;
         setAddCycleOpen(false);
         setPanel(null);
@@ -3624,6 +4755,8 @@
           }
           query.value = text.trim();
           updatePreview();
+          autoSizeQuery();
+          setDrawerExpanded(true);
           if (event.results[event.results.length - 1].isFinal) submitQuery();
         };
         recognition.onend = () => {
@@ -3647,6 +4780,7 @@
         listening = true;
         voiceBtn.dataset.active = "true";
         query.placeholder = "Listening...";
+        setDrawerExpanded(true);
         recognition.start();
       });
 
@@ -3678,6 +4812,18 @@
       window.addEventListener("pointermove", (event) => {
         if (activePointers.has(event.pointerId)) {
           activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+        if (appState.drawer.pointerId === event.pointerId) {
+          const delta = appState.drawer.startY - event.clientY;
+          if (Math.abs(delta) > 3) appState.drawer.moved = true;
+          if (!appState.drawer.expanded && delta > 8) appState.drawer.expanded = true;
+          if (appState.drawer.expanded) {
+            appState.drawer.height = clamp(appState.drawer.startHeight + delta, 132, appState.drawer.maxHeight);
+            commDrawer.dataset.expanded = "true";
+            commDrawer.dataset.open = "true";
+            applyDrawerLayout();
+          }
+          return;
         }
         if (appState.hud.mode && appState.hud.pointerId === event.pointerId) {
           if (appState.hud.mode === "drag") {
@@ -3720,6 +4866,10 @@
 
       const endPointer = (event) => {
         activePointers.delete(event.pointerId);
+        if (appState.drawer.pointerId === event.pointerId) {
+          endDrawerMotion();
+          return;
+        }
         if (appState.hud.mode && appState.hud.pointerId === event.pointerId) {
           endHudMotion();
           return;

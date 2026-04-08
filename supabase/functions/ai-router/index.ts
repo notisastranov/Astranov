@@ -11,6 +11,7 @@ type ChatMsg = { role?: string; content?: string }
 type RequestBody = {
   lane?: 'owner' | 'public'
   message?: string
+  query?: string
   history?: ChatMsg[]
   publicProvider?: 'auto' | 'gemini' | 'xai'
   ownerToken?: string
@@ -231,7 +232,7 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as RequestBody
     const lane = body?.lane === 'owner' ? 'owner' : 'public'
-    const message = safeText(body?.message, 12000)
+    const message = safeText(body?.message || body?.query, 12000)
     const history = normalizeHistory(body?.history)
 
     if (!message) return json({ ok: false, error: 'Missing message' }, 400)
