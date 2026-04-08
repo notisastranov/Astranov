@@ -2,712 +2,3079 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Astranov Internet Operating System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Astranov Signal Operating System</title>
   <style>
-    :root{
-      --bg:#020812;
-      --bg2:#061523;
-      --panel:rgba(6,18,32,.26);
-      --panel-2:rgba(9,24,40,.52);
-      --line:#00c8ff;
-      --line-soft:rgba(0,200,255,.22);
-      --text:#d8efff;
-      --dim:#7fa0bf;
-      --green:#00e87a;
-      --orange:#ff9d2e;
-      --red:#ff5e7a;
-      --shadow:0 0 28px rgba(0,200,255,.16);
-      --font:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 50% 30%, #0a1b31 0%, #05101d 45%, #020812 100%);font-family:var(--font);color:var(--text)}
-    #app{position:fixed;inset:0;overflow:hidden}
-    #scene{position:absolute;inset:0}
-    #hudOverlay{position:absolute;inset:0;pointer-events:none}
-    #signalLayer{position:absolute;inset:0;pointer-events:none}
-    #connectorSvg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
-    #topGlass{
-      position:absolute;left:0;right:0;top:0;height:72px;pointer-events:none;
-      background:linear-gradient(180deg, rgba(2,10,18,.56), rgba(2,10,18,0));
-    }
-    #brand{
-      position:absolute;top:14px;left:50%;transform:translateX(-50%);
-      padding:10px 16px;border:1px solid rgba(0,200,255,.15);border-radius:999px;
-      background:rgba(4,14,26,.18);backdrop-filter:blur(12px);
-      box-shadow:var(--shadow);pointer-events:none;
-      text-align:center;
-    }
-    #brand .name{font-size:12px;letter-spacing:.24em;color:#00baff;text-shadow:0 0 14px rgba(0,186,255,.55);font-weight:700}
-    #brand .sub{font-size:10px;color:var(--dim);margin-top:2px}
-
-    #bottomBar{
-      position:absolute;left:10px;right:10px;bottom:10px;height:58px;display:flex;gap:8px;align-items:center;
-      padding:8px;border-radius:20px;background:linear-gradient(180deg, rgba(7,18,32,.68), rgba(7,18,32,.42));
-      border:1px solid rgba(0,200,255,.14);backdrop-filter:blur(18px);box-shadow:0 18px 48px rgba(0,0,0,.28), 0 0 22px rgba(0,200,255,.08);
-      z-index:60;
-    }
-    .barBtn{
-      width:42px;height:42px;border-radius:14px;border:1px solid rgba(0,200,255,.14);background:rgba(255,255,255,.04);
-      display:flex;align-items:center;justify-content:center;color:#bde7ff;cursor:pointer;flex:0 0 auto;
-      transition:.18s transform,.18s border-color,.18s background,.18s box-shadow;
-    }
-    .barBtn:active{transform:scale(.96)}
-    .barBtn:hover{border-color:rgba(0,200,255,.36);background:rgba(0,200,255,.08);box-shadow:0 0 16px rgba(0,200,255,.12)}
-    #searchWrap{position:relative;flex:1;display:flex;align-items:center;height:42px}
-    #query{
-      width:100%;height:100%;padding:0 16px;border-radius:14px;border:1px solid rgba(0,200,255,.15);background:rgba(255,255,255,.05);
-      color:var(--text);font-size:15px;outline:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
-    }
-    #query::placeholder{color:#88a6c2}
-
-    .wheel{
-      position:absolute;top:88px;width:104px;height:104px;border-radius:50%;pointer-events:auto;
-      background:radial-gradient(circle at 50% 50%, rgba(0,200,255,.12), rgba(0,200,255,.03) 48%, rgba(0,0,0,.08) 68%, rgba(0,0,0,0) 72%);
-      border:1px solid rgba(0,200,255,.15);backdrop-filter:blur(10px);box-shadow:0 0 22px rgba(0,200,255,.12);
-      display:flex;align-items:center;justify-content:center;
-    }
-    #perfWheel{left:10px}
-    #navWheel{right:10px}
-    .wheel svg{position:absolute;inset:0;width:100%;height:100%}
-    .wheel .ringText{position:absolute;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
-    .wheelCenter{
-      width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,200,255,.24);background:rgba(4,18,32,.75);
-      color:#dff6ff;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;font-weight:700;line-height:1.05;
-      box-shadow:0 0 18px rgba(0,200,255,.18), inset 0 0 16px rgba(0,200,255,.08);cursor:pointer;padding:6px;
-    }
-    .wheelMeta{
-      position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--dim);white-space:nowrap;
+    :root {
+      --bg-0: #02050b;
+      --bg-1: #07111a;
+      --bg-2: #12273e;
+      --surface: rgba(10, 16, 24, 0.76);
+      --surface-strong: rgba(11, 18, 28, 0.9);
+      --border: rgba(28, 216, 255, 0.14);
+      --electric: #16d9ff;
+      --electric-strong: #9ff6ff;
+      --electric-soft: rgba(22, 217, 255, 0.1);
+      --anchor: #4df2c8;
+      --presence: #b4f9ff;
+      --cloud: #41c6ff;
+      --text: #edf2f7;
+      --muted: #97a9bb;
+      --font-ui: "Inter", system-ui, sans-serif;
+      --font-tech: "Inter", system-ui, sans-serif;
+      --safe-top: max(14px, env(safe-area-inset-top));
+      --safe-right: max(14px, env(safe-area-inset-right));
+      --safe-bottom: max(14px, env(safe-area-inset-bottom));
+      --safe-left: max(14px, env(safe-area-inset-left));
+      --wheel-size: clamp(136px, 32vw, 168px);
+      --top-bar-height: 52px;
     }
 
-    .card{
-      position:absolute;min-width:220px;max-width:min(76vw, 300px);pointer-events:auto;
-      background:linear-gradient(180deg, rgba(9,22,38,.92), rgba(6,16,30,.82));
-      border:1px solid rgba(0,200,255,.22);border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.32), 0 0 18px rgba(0,200,255,.12);
-      overflow:hidden;backdrop-filter:blur(18px);transform-origin:50% 50%;
-      animation:cardIn .42s cubic-bezier(.2,.9,.2,1);
-    }
-    @keyframes cardIn{from{opacity:0;transform:translateY(10px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}
-    .cardHero{height:76px;background:
-      radial-gradient(circle at 80% 20%, rgba(0,200,255,.28), transparent 30%),
-      linear-gradient(135deg, rgba(0,200,255,.18), rgba(4,12,22,.8));position:relative}
-    .chip{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:999px;border:1px solid rgba(0,200,255,.16);background:rgba(255,255,255,.06);font-size:10px;color:#d8f4ff;letter-spacing:.08em;text-transform:uppercase}
-    .chip.cloud{color:#ffd38a;border-color:rgba(255,173,46,.28);background:rgba(255,157,46,.1)}
-    .chip.anchored{color:#8ff3c2;border-color:rgba(0,232,122,.24);background:rgba(0,232,122,.1)}
-    .cardBody{padding:12px}
-    .cardTitle{font-size:15px;font-weight:700;line-height:1.2}
-    .cardSummary{font-size:12px;color:#b9d2e8;line-height:1.45;margin-top:6px}
-    .cardMeta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .metaPill{padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);font-size:10px;color:var(--dim)}
-    .cardActions{display:flex;gap:8px;margin-top:12px}
-    .cardBtn{
-      flex:1;border:1px solid rgba(0,200,255,.18);border-radius:12px;padding:10px 12px;background:rgba(0,200,255,.08);color:#e9fbff;
-      cursor:pointer;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-    }
-    .cardBtn.secondary{background:rgba(255,255,255,.04);color:#cfe6f8}
-
-    #toastStack{position:absolute;left:50%;top:82px;transform:translateX(-50%);width:min(90vw, 420px);display:flex;flex-direction:column;gap:8px;z-index:62;pointer-events:none}
-    .toast{
-      padding:12px 14px;border-radius:16px;background:linear-gradient(180deg, rgba(8,20,35,.92), rgba(7,17,30,.78));border:1px solid rgba(0,200,255,.18);
-      box-shadow:0 18px 40px rgba(0,0,0,.22);backdrop-filter:blur(16px);font-size:12px;line-height:1.45;color:#dff7ff;
-      animation:toastIn .35s ease-out;
-    }
-    @keyframes toastIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
-    .toastTitle{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#00c8ff;margin-bottom:2px}
-
-    .hint{
-      position:absolute;left:50%;bottom:82px;transform:translateX(-50%);padding:8px 12px;border-radius:14px;
-      background:rgba(7,17,30,.56);border:1px solid rgba(0,200,255,.12);font-size:12px;color:#bdd8ef;backdrop-filter:blur(12px);pointer-events:none;z-index:55;
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .pinDot{
-      position:absolute;width:10px;height:10px;border-radius:50%;background:#00c8ff;box-shadow:0 0 12px #00c8ff,0 0 26px rgba(0,200,255,.5);pointer-events:none;transform:translate(-50%,-50%);
-    }
-    .pinDot.cloud{background:#ffb14f;box-shadow:0 0 12px #ffb14f,0 0 26px rgba(255,177,79,.5)}
-
-    #searchPanel{
-      position:absolute;left:12px;right:12px;bottom:78px;display:none;z-index:58;
-      background:linear-gradient(180deg, rgba(7,17,30,.88), rgba(7,17,30,.68));
-      border:1px solid rgba(0,200,255,.14);border-radius:18px;padding:8px;backdrop-filter:blur(18px);
-      box-shadow:0 18px 44px rgba(0,0,0,.28);
-    }
-    .result{padding:10px 12px;border-radius:14px;cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;gap:10px;align-items:center}
-    .result:hover{background:rgba(0,200,255,.08);border-color:rgba(0,200,255,.16)}
-    .resultTitle{font-size:13px;font-weight:700}
-    .resultSub{font-size:11px;color:var(--dim);margin-top:2px}
-    .resultTag{padding:5px 8px;border-radius:999px;border:1px solid rgba(0,200,255,.14);font-size:10px;color:#d2f3ff;white-space:nowrap}
-
-    #voiceBadge{
-      position:absolute;left:18px;bottom:76px;padding:8px 10px;border-radius:12px;border:1px solid rgba(0,232,122,.24);
-      background:rgba(0,232,122,.1);font-size:11px;color:#8ff3c2;display:none;z-index:56;
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: var(--font-ui);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 14%, rgba(20, 39, 58, 0.14), transparent 30%),
+        radial-gradient(circle at 18% 16%, rgba(255, 255, 255, 0.03), transparent 18%),
+        linear-gradient(180deg, #05101a 0%, #02060c 64%, #010206 100%);
     }
 
-    @media (min-width:900px){
-      #bottomBar{left:50%;right:auto;transform:translateX(-50%);width:min(740px, calc(100vw - 20px))}
-      #searchPanel{left:50%;right:auto;transform:translateX(-50%);width:min(740px, calc(100vw - 24px))}
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    body::before {
+      background: radial-gradient(circle at 50% 55%, rgba(255, 255, 255, 0.028), transparent 60%);
+      opacity: 0.22;
+    }
+
+    body::after {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 18%);
+      opacity: 0.16;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    #app,
+    #scene,
+    #overlay,
+    #connectorSvg,
+    #signalLayer {
+      position: fixed;
+      inset: 0;
+    }
+
+    #scene canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #connectorSvg {
+      z-index: 6;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    #signalLayer {
+      z-index: 7;
+      pointer-events: none;
+    }
+
+    #overlay {
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    #topBar {
+      position: absolute;
+      top: var(--safe-top);
+      left: var(--safe-left);
+      right: var(--safe-right);
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 48px;
+      gap: 10px;
+      align-items: center;
+      pointer-events: auto;
+      z-index: 14;
+    }
+
+    .top-btn {
+      min-width: 0;
+      height: var(--top-bar-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 16px;
+      background:
+        linear-gradient(180deg, rgba(17, 24, 33, 0.9), rgba(11, 17, 24, 0.7)),
+        radial-gradient(circle at 50% 0%, rgba(22, 217, 255, 0.1), transparent 54%);
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.24),
+        0 0 16px rgba(22, 217, 255, 0.06),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      backdrop-filter: blur(14px);
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .top-btn:active {
+      transform: scale(0.97);
+    }
+
+    .top-btn:hover,
+    .top-btn[data-open="true"] {
+      border-color: rgba(22, 217, 255, 0.3);
+      box-shadow:
+        0 16px 36px rgba(0, 0, 0, 0.34),
+        0 0 28px rgba(22, 217, 255, 0.14),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .top-btn.avatar,
+    .top-btn.wallet {
+      padding: 0;
+      width: 48px;
+    }
+
+    .top-btn.system {
+      justify-content: center;
+      padding: 0 14px;
+    }
+
+    .top-btn-icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+      color: #ecf3fb;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .avatar-photo {
+      width: 28px;
+      height: 28px;
+      display: block;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        radial-gradient(circle at 50% 34%, #f9ddc5 0 24%, transparent 25%),
+        radial-gradient(circle at 50% 78%, #cda185 0 28%, transparent 29%),
+        linear-gradient(180deg, #6f7f91 0%, #243342 100%);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    .top-btn-stack {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.05;
+    }
+
+    .top-btn-title {
+      font-family: var(--font-tech);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #e9fbff;
+    }
+
+    .top-btn-sub {
+      margin-top: 3px;
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    #topPanel {
+      position: absolute;
+      top: calc(var(--safe-top) + var(--top-bar-height) + 10px);
+      width: min(86vw, 340px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px) scale(0.98);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 15;
+    }
+
+    #topPanel[data-open="true"] {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    #topPanel[data-position="left"] {
+      left: var(--safe-left);
+    }
+
+    #topPanel[data-position="center"] {
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px) scale(0.98);
+    }
+
+    #topPanel[data-open="true"][data-position="center"] {
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    #topPanel[data-position="right"] {
+      right: var(--safe-right);
+    }
+
+    .top-panel-shell {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(18, 25, 34, 0.94), rgba(11, 17, 24, 0.86)),
+        radial-gradient(circle at 50% 0%, rgba(22, 217, 255, 0.08), transparent 58%);
+      box-shadow:
+        0 24px 56px rgba(0, 0, 0, 0.4),
+        0 0 28px rgba(22, 217, 255, 0.1);
+      backdrop-filter: blur(16px);
+    }
+
+    .top-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .top-panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #ebfbff;
+    }
+
+    .top-panel-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .top-panel-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .top-panel-metric {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .top-panel-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 8px;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    .top-panel-value {
+      display: block;
+      color: #eefcff;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .top-panel-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .top-panel-btn {
+      flex: 1;
+      padding: 11px 12px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 13px;
+      background: rgba(22, 217, 255, 0.08);
+      color: #f0fcff;
+      font-family: var(--font-tech);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    .hud-wheel {
+      --wheel-scale: 1;
+      position: absolute;
+      width: var(--wheel-size);
+      height: var(--wheel-size);
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      overflow: hidden;
+      pointer-events: auto;
+      background:
+        radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.06), rgba(22, 217, 255, 0.03) 44%, transparent 68%),
+        linear-gradient(180deg, rgba(17, 24, 33, 0.9), rgba(11, 17, 24, 0.78));
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 18px rgba(22, 217, 255, 0.06),
+        0 16px 34px rgba(0, 0, 0, 0.26);
+      backdrop-filter: blur(14px);
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .hud-wheel.left {
+      left: var(--safe-left);
+    }
+
+    .hud-wheel.right {
+      right: var(--safe-right);
+    }
+
+    .hud-wheel::before,
+    .hud-wheel::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+    }
+
+    .hud-wheel::before {
+      inset: 10px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+    }
+
+    .hud-wheel::after {
+      inset: 19px;
+      border: 1px solid rgba(22, 217, 255, 0.08);
+    }
+
+    .hud-wheel[data-active="true"] {
+      border-color: rgba(22, 217, 255, 0.32);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+        0 0 20px rgba(22, 217, 255, 0.1),
+        0 18px 36px rgba(0, 0, 0, 0.32);
+    }
+
+    .hud-wheel.dragging,
+    .hud-wheel.resizing {
+      border-color: rgba(22, 217, 255, 0.42);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 0 26px rgba(22, 217, 255, 0.14),
+        0 20px 40px rgba(0, 0, 0, 0.36);
+    }
+
+    .wheel-content {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 120px;
+      height: 120px;
+      transform: translate(-50%, -50%) scale(var(--wheel-scale));
+      transform-origin: center;
+    }
+
+    .wheel-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    .wheel-meta {
+      position: absolute;
+      bottom: 8px;
+      width: 100%;
+      padding: 0 12px;
+      color: var(--muted);
+      font-size: 8px;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: none;
+      white-space: nowrap;
+    }
+
+    .wheel-stat {
+      position: absolute;
+      color: #dffaff;
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      line-height: 1.15;
+      text-transform: none;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow: 0 0 10px rgba(22, 217, 255, 0.26);
+    }
+
+    .wheel-stat small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 7px;
+      letter-spacing: 0.08em;
+    }
+
+    .wheel-stat.north {
+      top: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .wheel-stat.west {
+      top: 44px;
+      left: 8px;
+      text-align: left;
+    }
+
+    .wheel-stat.east {
+      top: 44px;
+      right: 8px;
+      text-align: right;
+    }
+
+    .wheel-stat.south {
+      bottom: 26px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .wheel-center-btn {
+      z-index: 2;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(22, 217, 255, 0.26);
+      border-radius: 50%;
+      background: rgba(4, 18, 31, 0.9);
+      box-shadow:
+        inset 0 0 18px rgba(22, 217, 255, 0.1),
+        0 0 18px rgba(22, 217, 255, 0.16);
+      color: #eefcff;
+      cursor: pointer;
+    }
+
+    .wheel-center-btn:active {
+      transform: translate(-50%, -50%) scale(0.96);
+    }
+
+    .wheel-center-label {
+      font-size: 8px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    .wheel-center-value {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .perf-wheel .wheel-center-btn.active {
+      border-color: rgba(77, 242, 200, 0.28);
+      box-shadow:
+        inset 0 0 18px rgba(77, 242, 200, 0.1),
+        0 0 20px rgba(77, 242, 200, 0.16);
+    }
+
+    .wheel-resize-grip {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      width: 24px;
+      height: 24px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 50%;
+      background: rgba(10, 18, 26, 0.86);
+      box-shadow: 0 0 14px rgba(22, 217, 255, 0.12);
+      cursor: nwse-resize;
+    }
+
+    .wheel-resize-grip::before,
+    .wheel-resize-grip::after {
+      content: "";
+      position: absolute;
+      background: rgba(234, 252, 255, 0.72);
+      border-radius: 999px;
+    }
+
+    .wheel-resize-grip::before {
+      left: 7px;
+      top: 11px;
+      width: 10px;
+      height: 2px;
+      transform: rotate(-38deg);
+    }
+
+    .wheel-resize-grip::after {
+      left: 10px;
+      top: 7px;
+      width: 2px;
+      height: 10px;
+      transform: rotate(-38deg);
+    }
+
+    #radarSweep {
+      transform-origin: 60px 60px;
+    }
+
+    .radar-compass {
+      fill: #8daac0;
+      font-size: 6px;
+      letter-spacing: 0.04em;
+      text-transform: none;
+    }
+
+    #composer {
+      position: absolute;
+      left: var(--safe-left);
+      right: var(--safe-right);
+      bottom: var(--safe-bottom);
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 8px 8px;
+      border: 1px solid rgba(22, 217, 255, 0.16);
+      border-radius: 24px;
+      background:
+        linear-gradient(180deg, rgba(18, 25, 34, 0.92), rgba(11, 17, 24, 0.8)),
+        radial-gradient(circle at 50% -18%, rgba(22, 217, 255, 0.08), transparent 46%);
+      box-shadow:
+        0 20px 44px rgba(0, 0, 0, 0.28),
+        0 0 18px rgba(22, 217, 255, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(16px);
+      pointer-events: auto;
+    }
+
+    #composerField {
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      padding-top: 18px;
+    }
+
+    .composer-btn {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(22, 217, 255, 0.14);
+      border-radius: 17px;
+      background: rgba(255, 255, 255, 0.045);
+      color: #ddeaf8;
+      cursor: pointer;
+      transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .composer-btn:active {
+      transform: scale(0.96);
+    }
+
+    .composer-btn[data-active="true"] {
+      border-color: rgba(22, 217, 255, 0.38);
+      background:
+        radial-gradient(circle at 50% 35%, rgba(22, 217, 255, 0.26), rgba(22, 217, 255, 0.08) 65%),
+        rgba(22, 217, 255, 0.08);
+      box-shadow: 0 0 24px rgba(22, 217, 255, 0.2);
+      animation: listenPulse 1.5s ease-in-out infinite;
+    }
+
+    #query {
+      flex: 1;
+      width: 100%;
+      height: 50px;
+      padding: 0 16px;
+      border: 1px solid rgba(22, 217, 255, 0.12);
+      border-radius: 17px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.045);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      color: var(--text);
+      font-size: 16px;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    }
+
+    #addBtn {
+      position: absolute;
+      top: -2px;
+      right: 8px;
+      min-width: 56px;
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid rgba(22, 217, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(22, 217, 255, 0.08);
+      color: #ebf6ff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      line-height: 1;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    #query::placeholder {
+      color: #7e9bb0;
+    }
+
+    #query:focus {
+      border-color: rgba(22, 217, 255, 0.34);
+      box-shadow:
+        0 0 0 1px rgba(22, 217, 255, 0.12),
+        0 0 18px rgba(22, 217, 255, 0.08);
+    }
+
+    #query.no-match {
+      border-color: rgba(255, 116, 156, 0.38);
+      box-shadow: 0 0 0 1px rgba(255, 116, 156, 0.14);
+      transform: translateX(-2px);
+    }
+    .signal-popup {
+      position: absolute;
+      width: min(84vw, 340px);
+      min-width: min(78vw, 236px);
+      border: 1px solid rgba(22, 217, 255, 0.14);
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(18, 24, 33, 0.96), rgba(11, 16, 23, 0.88)),
+        radial-gradient(circle at 16% -10%, rgba(22, 217, 255, 0.08), transparent 46%);
+      box-shadow:
+        0 22px 46px rgba(0, 0, 0, 0.32),
+        0 0 16px rgba(22, 217, 255, 0.08),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+      backdrop-filter: blur(18px);
+      opacity: 0;
+      transform: scale(0.72);
+      pointer-events: none;
+      will-change: left, top, opacity, transform;
+    }
+
+    .signal-popup::before,
+    .signal-popup::after {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .signal-popup::before {
+      inset: 0;
+      background:
+        linear-gradient(140deg, transparent 0%, rgba(255, 255, 255, 0.04) 22%, transparent 46%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 28%);
+    }
+
+    .signal-popup::after {
+      width: 58%;
+      aspect-ratio: 1;
+      right: -12%;
+      bottom: -42%;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--popup-glow), transparent 72%);
+      filter: blur(20px);
+    }
+
+    .signal-popup.anchor {
+      --popup-accent: var(--anchor);
+      --popup-glow: rgba(77, 242, 200, 0.22);
+    }
+
+    .signal-popup.presence {
+      --popup-accent: var(--presence);
+      --popup-glow: rgba(180, 249, 255, 0.22);
+    }
+
+    .signal-popup.cloud {
+      --popup-accent: var(--cloud);
+      --popup-glow: rgba(65, 198, 255, 0.24);
+      background:
+        linear-gradient(180deg, rgba(18, 24, 33, 0.96), rgba(11, 16, 23, 0.88)),
+        radial-gradient(circle at 78% 0%, rgba(65, 198, 255, 0.1), transparent 34%);
+    }
+
+    .signal-popup[data-state="ghost"] {
+      filter: saturate(0.86);
+    }
+
+    .signal-popup.armed {
+      border-color: rgba(22, 217, 255, 0.32);
+      box-shadow:
+        0 28px 60px rgba(0, 0, 0, 0.44),
+        0 0 34px rgba(22, 217, 255, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    }
+
+    .popup-shell {
+      position: relative;
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .popup-shell::before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      top: 0;
+      height: 2px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, var(--popup-accent), transparent);
+      box-shadow: 0 0 18px var(--popup-glow);
+    }
+
+    .popup-shell::after {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      pointer-events: none;
+    }
+
+    .signal-popup.presence .popup-shell::after {
+      border-color: rgba(180, 249, 255, 0.08);
+    }
+
+    .signal-popup.cloud .popup-shell::after {
+      border-color: rgba(65, 198, 255, 0.1);
+    }
+
+    .popup-head,
+    .popup-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .popup-kind,
+    .popup-capability,
+    .popup-region,
+    .metric-label {
+      font-family: var(--font-tech);
+    }
+
+    .popup-kind,
+    .popup-capability,
+    .popup-region {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 5px 9px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      font-size: 10px;
+      line-height: 1;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .popup-kind {
+      background: rgba(255, 255, 255, 0.05);
+      color: #effbff;
+    }
+
+    .popup-capability {
+      max-width: 52%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: var(--popup-glow);
+      color: var(--popup-accent);
+    }
+
+    .popup-title {
+      margin: 0;
+      color: #eefcff;
+      font-size: 17px;
+      line-height: 1.04;
+      letter-spacing: 0.01em;
+    }
+
+    .popup-summary {
+      margin: 0;
+      color: #c6d4e2;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .popup-media {
+      margin-top: -2px;
+      overflow: hidden;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.03);
+      aspect-ratio: 16 / 9;
+    }
+
+    .popup-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .popup-products {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .popup-product {
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #e7f3fd;
+      font-size: 11px;
+    }
+
+    .popup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 9px 10px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .metric-label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 8.5px;
+      letter-spacing: 0.16em;
+    }
+
+    .metric-value {
+      display: block;
+      color: #ebfbff;
+      font-size: 11px;
+      line-height: 1.15;
+      word-break: break-word;
+    }
+
+    .popup-region {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+    }
+
+    .popup-action {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 11px 13px;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.06), transparent 72%),
+        var(--popup-glow);
+      color: #f2fdff;
+      cursor: pointer;
+      font-family: var(--font-tech);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    }
+
+    .popup-action:active {
+      transform: scale(0.97);
+    }
+
+    .popup-action:hover {
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 0 22px var(--popup-glow);
+    }
+
+    @media (min-width: 900px) {
+      #composer {
+        left: 50%;
+        right: auto;
+        width: min(760px, calc(100vw - 32px));
+        transform: translateX(-50%);
+      }
+
+      .signal-popup {
+        width: min(340px, 32vw);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .top-btn-sub {
+        font-size: 9px;
+      }
+
+      .signal-popup {
+        width: min(86vw, 308px);
+      }
+
+      .popup-title {
+        font-size: 16px;
+      }
+
+      .popup-grid {
+        gap: 6px;
+      }
+    }
+
+    @media (max-height: 760px) {
+      :root {
+        --wheel-size: 124px;
+        --top-bar-height: 48px;
+      }
+
+      .wheel-meta {
+        font-size: 8px;
+      }
+
+       .top-btn-title {
+        font-size: 9px;
+      }
+
+      #composer {
+        min-height: 66px;
+      }
+
+      .composer-btn,
+      #query {
+        height: 44px;
+      }
+    }
+
+    @keyframes hudSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes listenPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(22, 217, 255, 0.08), 0 0 22px rgba(22, 217, 255, 0.18);
+      }
+      50% {
+        box-shadow: 0 0 0 8px rgba(22, 217, 255, 0), 0 0 30px rgba(22, 217, 255, 0.28);
+      }
     }
   </style>
 </head>
 <body>
-<div id="app">
-  <div id="scene"></div>
-  <div id="hudOverlay">
-    <svg id="connectorSvg"></svg>
-    <div id="signalLayer"></div>
-    <div id="topGlass"></div>
-    <div id="brand">
-      <div class="name">ASTRANOV</div>
-      <div class="sub">Internet Operating System • World-first signal search</div>
-    </div>
+  <div id="app">
+    <div id="scene"></div>
+    <svg id="connectorSvg" aria-hidden="true"></svg>
+    <div id="signalLayer" aria-hidden="true"></div>
 
-    <div id="perfWheel" class="wheel">
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,200,255,.12)" stroke-width="1"/>
-        <circle cx="50" cy="50" r="33" fill="none" stroke="rgba(0,200,255,.16)" stroke-width="1" stroke-dasharray="3 5"/>
-        <path d="M50 10 A40 40 0 0 1 90 50" fill="none" stroke="rgba(0,232,122,.56)" stroke-width="3"/>
-        <path d="M90 50 A40 40 0 0 1 72 84" fill="none" stroke="rgba(255,157,46,.56)" stroke-width="3"/>
-        <path d="M72 84 A40 40 0 0 1 28 84" fill="none" stroke="rgba(255,94,122,.46)" stroke-width="3"/>
-        <path d="M28 84 A40 40 0 0 1 10 50" fill="none" stroke="rgba(0,200,255,.46)" stroke-width="3"/>
-      </svg>
-      <div class="wheelCenter" id="droneButton">LOAD<br>OUT</div>
-      <div class="wheelMeta" id="perfMeta">device mode</div>
-    </div>
-
-    <div id="navWheel" class="wheel">
-      <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0,200,255,.12)" stroke-width="1"/>
-        <circle cx="50" cy="50" r="33" fill="none" stroke="rgba(0,200,255,.16)" stroke-width="1"/>
-        <line x1="50" y1="12" x2="50" y2="88" stroke="rgba(0,200,255,.18)" stroke-width="1"/>
-        <line x1="12" y1="50" x2="88" y2="50" stroke="rgba(0,200,255,.18)" stroke-width="1"/>
-        <circle cx="50" cy="50" r="10" fill="rgba(0,200,255,.07)" stroke="rgba(0,200,255,.16)"/>
-      </svg>
-      <div class="wheelCenter" id="homeButton">ZOOM<br>ME</div>
-      <div class="wheelMeta">my location / globe</div>
-    </div>
-
-    <div id="toastStack"></div>
-    <div class="hint">Search businesses, channels, teams, booking signals, or floating cloud nodes.</div>
-    <div id="voiceBadge">Hands-free mode listening…</div>
-
-    <div id="searchPanel"></div>
-
-    <div id="bottomBar">
-      <button class="barBtn" id="voiceBtn" aria-label="Hands-free mode">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-      </button>
-      <div id="searchWrap">
-        <input id="query" type="text" placeholder="Search the planet: hotels, pizza, Astranov Racing, development team, booking cloud…" />
+    <div id="overlay">
+      <div id="topBar">
+        <button class="top-btn avatar" id="userButton" type="button" aria-label="Open user details">
+          <span class="avatar-photo" aria-hidden="true"></span>
+        </button>
+        <button class="top-btn system" id="systemButton" type="button" aria-label="Open Astranov system status">
+          <span class="top-btn-stack">
+            <span class="top-btn-title">ASTRANOV IOS</span>
+            <span class="top-btn-sub" id="systemVersionBadge">v3.7.2 / v3.8.0</span>
+          </span>
+        </button>
+        <button class="top-btn wallet" id="walletButton" type="button" aria-label="Open wallet and economics">
+          <span class="top-btn-icon">€</span>
+        </button>
       </div>
-      <button class="barBtn" id="sendBtn" aria-label="Send search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+
+      <div id="topPanel" data-open="false" data-position="center"></div>
+
+      <div class="hud-wheel left perf-wheel" id="perfWheel" data-active="true" data-wheel="perf" aria-label="Device performance wheel">
+        <div class="wheel-content">
+          <svg class="wheel-svg" viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <filter id="perfGlow" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="2.4"></feGaussianBlur>
+              </filter>
+            </defs>
+            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
+            <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(22,217,255,0.18)" stroke-width="1" stroke-dasharray="2.8 4.8"></circle>
+            <path id="perfLoadArc" d="" fill="none" stroke="#4df2c8" stroke-width="3.2" stroke-linecap="round" filter="url(#perfGlow)"></path>
+            <circle cx="60" cy="60" r="26" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
+          </svg>
+          <span class="wheel-stat north" id="perfDevice">PHONE<small id="perfPlatform">web shell</small></span>
+          <span class="wheel-stat west" id="perfCpu">CPU<small id="perfCpuValue">--</small></span>
+          <span class="wheel-stat east" id="perfRam">RAM<small id="perfRamValue">--</small></span>
+          <span class="wheel-stat south" id="perfThermal">TEMP<small id="perfTempValue">hook</small></span>
+          <button class="wheel-center-btn" id="perfCenterBtn" type="button">
+            <span class="wheel-center-label" id="perfCenterLabel">MAX</span>
+            <span class="wheel-center-value" id="perfCenterValue">0%</span>
+          </button>
+          <span class="wheel-meta" id="perfMeta">device performance</span>
+        </div>
+        <button class="wheel-resize-grip" id="perfResizeGrip" type="button" aria-label="Resize HUD wheels"></button>
+      </div>
+
+      <div class="hud-wheel right radar-wheel" id="radarWheel" data-active="true" data-wheel="radar" aria-label="Radar wheel">
+        <div class="wheel-content">
+          <svg class="wheel-svg" viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <filter id="wheelGlow" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="2.4"></feGaussianBlur>
+              </filter>
+            </defs>
+            <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1"></circle>
+            <circle cx="60" cy="60" r="38" fill="none" stroke="rgba(22,217,255,0.18)" stroke-width="1"></circle>
+            <circle cx="60" cy="60" r="26" fill="none" stroke="rgba(22,217,255,0.12)" stroke-width="1" stroke-dasharray="2.6 4.4"></circle>
+            <g id="radarGrid">
+              <line x1="60" y1="10" x2="60" y2="110" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
+              <line x1="10" y1="60" x2="110" y2="60" stroke="rgba(22,217,255,0.09)" stroke-width="1"></line>
+            </g>
+            <g id="radarPips"></g>
+            <line id="radarSweep" x1="60" y1="60" x2="60" y2="14" stroke="#16d9ff" stroke-width="1.8" stroke-linecap="round" filter="url(#wheelGlow)"></line>
+            <text class="radar-compass" x="60" y="13" text-anchor="middle">N</text>
+            <text class="radar-compass" x="107" y="63" text-anchor="middle">E</text>
+            <text class="radar-compass" x="60" y="112" text-anchor="middle">S</text>
+            <text class="radar-compass" x="13" y="63" text-anchor="middle">W</text>
+          </svg>
+          <button class="wheel-center-btn" id="radarFetchBtn" type="button">
+            <span class="wheel-center-label">Zoom</span>
+            <span class="wheel-center-value" id="radarFetchValue">World</span>
+          </button>
+          <span class="wheel-meta" id="radarMeta">signal radar</span>
+        </div>
+        <button class="wheel-resize-grip" id="radarResizeGrip" type="button" aria-label="Resize HUD wheels"></button>
+      </div>
+
+      <form id="composer" autocomplete="off">
+        <button class="composer-btn" id="voiceBtn" type="button" aria-label="Hands-free command">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <path d="M12 19v3"></path>
+            <path d="M8 22h8"></path>
+          </svg>
+        </button>
+        <div id="composerField">
+          <input id="query" type="text" autocapitalize="off" spellcheck="false" placeholder="Loading AI signal routing..." aria-label="AI signal command rail" />
+          <button id="addBtn" type="button" aria-label="Add shop, service, or video">Add</button>
+        </div>
+        <button class="composer-btn" id="sendBtn" type="submit" aria-label="Execute command">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2L11 13"></path>
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+          </svg>
+        </button>
+      </form>
     </div>
   </div>
-</div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(() => {
-  const sceneEl = document.getElementById('scene');
-  const connectorSvg = document.getElementById('connectorSvg');
-  const signalLayer = document.getElementById('signalLayer');
-  const searchInput = document.getElementById('query');
-  const searchPanel = document.getElementById('searchPanel');
-  const toastStack = document.getElementById('toastStack');
-  const perfMeta = document.getElementById('perfMeta');
-  const droneButton = document.getElementById('droneButton');
-  const homeButton = document.getElementById('homeButton');
-  const voiceBadge = document.getElementById('voiceBadge');
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (() => {
+      "use strict";
+      const $ = (id) => document.getElementById(id);
+      const sceneEl = $("scene");
+      const connectorSvg = $("connectorSvg");
+      const signalLayer = $("signalLayer");
+      const topBar = $("topBar");
+      const composer = $("composer");
+      const query = $("query");
+      const addBtn = $("addBtn");
+      const voiceBtn = $("voiceBtn");
+      const sendBtn = $("sendBtn");
+      const topPanel = $("topPanel");
+      const userButton = $("userButton");
+      const systemButton = $("systemButton");
+      const walletButton = $("walletButton");
+      const systemVersionBadge = $("systemVersionBadge");
+      const perfWheel = $("perfWheel");
+      const perfLoadArc = $("perfLoadArc");
+      const perfDevice = $("perfDevice");
+      const perfMeta = $("perfMeta");
+      const perfPlatform = $("perfPlatform");
+      const perfCpuValue = $("perfCpuValue");
+      const perfRamValue = $("perfRamValue");
+      const perfTempValue = $("perfTempValue");
+      const perfCenterBtn = $("perfCenterBtn");
+      const perfCenterLabel = $("perfCenterLabel");
+      const perfCenterValue = $("perfCenterValue");
+      const perfResizeGrip = $("perfResizeGrip");
+      const radarWheel = $("radarWheel");
+      const radarPips = $("radarPips");
+      const radarSweep = $("radarSweep");
+      const radarMeta = $("radarMeta");
+      const radarFetchBtn = $("radarFetchBtn");
+      const radarFetchValue = $("radarFetchValue");
+      const radarResizeGrip = $("radarResizeGrip");
 
-  let width = window.innerWidth;
-  let height = window.innerHeight;
-  let pointer = {x:0,y:0};
-  let activeSignalId = null;
-  let hoveredSignalId = null;
-  let droneMode = false;
-  let showLocalTarget = true;
-  let toastCounter = 0;
+      const APP_INFO = {
+        name: "Astranov IOS",
+        currentVersion: "3.7.2",
+        latestVersion: "3.8.0",
+        build: "planetary signal shell",
+        sync: "core shell"
+      };
 
-  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(width, height);
-  sceneEl.appendChild(renderer.domElement);
+      const USER_INFO = {
+        name: "Astranov Operator",
+        mode: "portrait mobile",
+        locale: Intl.DateTimeFormat().resolvedOptions().timeZone || "local shell",
+        profile: "signal routing",
+        settings: "voice, motion, emitted cards"
+      };
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(42, width/height, 0.1, 1000);
-  camera.position.set(0, 0.45, 8.8);
+      const WALLET_INFO = {
+        balance: "EUR 12,480",
+        pending: "EUR 2,160",
+        ledger: "48 tx / 30d",
+        economics: "regional flow stable"
+      };
 
-  const earthGroup = new THREE.Group();
-  scene.add(earthGroup);
-  const starGroup = new THREE.Group();
-  scene.add(starGroup);
+      const CAMERA_BASE = { z: 7.18, y: 0.18, fov: 33 };
+      const EARTH_SPIN = 0.00034;
+      const POPUP_LIFT = 148;
+      const AMBIENT_COUNT = 3;
+      const PULSE_SPEED = 0.56;
 
-  const ambient = new THREE.AmbientLight(0x88bfff, 0.82);
-  scene.add(ambient);
-  const keyLight = new THREE.DirectionalLight(0x9fd9ff, 1.15);
-  keyLight.position.set(5, 3, 7);
-  scene.add(keyLight);
-  const rimLight = new THREE.PointLight(0x00c8ff, 0.95, 30, 2);
-  rimLight.position.set(-8, -2, 5);
-  scene.add(rimLight);
+      const SIGNALS = [
+        {
+          id: "blue-harbor-rooms",
+          type: "anchor",
+          title: "Blue Harbor Rooms",
+          summary: "Cliffside stay anchor with live room state and a booking hook emitted straight from the harbor edge.",
+          capability: "booking hook",
+          actionLabel: "Prime Stay Hook",
+          armedLabel: "Stay Hook Live",
+          region: "Rhodes Harbor",
+          lat: 36.443,
+          lng: 28.227,
+          alt: 0.16,
+          zoom: 1,
+          previewVideo: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+          tags: ["hotel", "stay", "harbor", "booking", "rhodes"],
+          metrics: [
+            { label: "state", value: "6 rooms open" },
+            { label: "window", value: "check-in 14:00" },
+            { label: "mode", value: "bookable shell" }
+          ]
+        },
+        {
+          id: "marina-kitchen",
+          type: "anchor",
+          title: "Marina Kitchen",
+          summary: "Dockside dining anchor with table timing, menu slots, and a clean reservation hook rather than a full booking maze.",
+          capability: "table hook",
+          actionLabel: "Prime Table Hook",
+          armedLabel: "Table Hook Live",
+          region: "Piraeus Waterfront",
+          lat: 37.938,
+          lng: 23.640,
+          alt: 0.16,
+          zoom: 1,
+          products: ["grilled octopus", "harbor pasta", "cold brew"],
+          tags: ["restaurant", "table", "food", "waterfront", "greece", "menu", "products"],
+          metrics: [
+            { label: "flow", value: "18:40 next slot" },
+            { label: "party", value: "2-6 covers" },
+            { label: "shell", value: "menu hook live" }
+          ]
+        },
+        {
+          id: "atelier-dive",
+          type: "anchor",
+          title: "Aegean Dive Atelier",
+          summary: "Reef access anchor with lesson timing, gear stock, and a dispatchable local action shell.",
+          capability: "session hook",
+          actionLabel: "Prime Dive Hook",
+          armedLabel: "Dive Hook Live",
+          region: "Kos South",
+          lat: 36.856,
+          lng: 27.301,
+          alt: 0.16,
+          zoom: 1,
+          previewVideo: "https://www.w3schools.com/html/mov_bbb.mp4",
+          tags: ["dive", "activity", "reef", "gear", "session", "service"],
+          metrics: [
+            { label: "crew", value: "3 guides ready" },
+            { label: "sea", value: "flat window" },
+            { label: "shell", value: "bookable" }
+          ]
+        },
+        {
+          id: "harbor-fresh-market",
+          type: "anchor",
+          title: "Harbor Fresh Market",
+          summary: "Neighborhood grocery anchor with live product stock, delivery windows, and one-tap ordering hooks.",
+          capability: "product order",
+          actionLabel: "Order Products",
+          armedLabel: "Basket Routed",
+          region: "Athens Center",
+          lat: 37.979,
+          lng: 23.728,
+          alt: 0.16,
+          zoom: 1,
+          products: ["olive oil", "citrus box", "feta pack", "sparkling water"],
+          previewVideo: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+          tags: ["market", "products", "grocery", "delivery", "order", "shop"],
+          metrics: [
+            { label: "stock", value: "42 items" },
+            { label: "window", value: "25 min" },
+            { label: "mode", value: "orderable" }
+          ]
+        },
+        {
+          id: "reef-reel-post",
+          type: "anchor",
+          title: "Reef Reel Post",
+          summary: "Location-bound media post signal with short-form video preview emitted from the coast instead of hidden in a separate feed.",
+          capability: "video post",
+          actionLabel: "Open Reel",
+          armedLabel: "Reel Live",
+          region: "Lindos Coast",
+          lat: 36.091,
+          lng: 28.085,
+          alt: 0.17,
+          zoom: 0.96,
+          previewVideo: "https://www.w3schools.com/html/mov_bbb.mp4",
+          tags: ["video", "post", "creator", "media", "anchor"],
+          metrics: [
+            { label: "clips", value: "3 live" },
+            { label: "reach", value: "2.1k" },
+            { label: "mode", value: "watchable" }
+          ]
+        },
+        {
+          id: "tender-04",
+          type: "presence",
+          title: "Tender 04",
+          summary: "Live harbor vessel presence emitting route state, arrival timing, and pickup readiness as a moving signal.",
+          capability: "route trace",
+          actionLabel: "Track Presence",
+          armedLabel: "Presence Locked",
+          region: "Aegean Transit",
+          lat: 36.332,
+          lng: 27.982,
+          alt: 0.21,
+          zoom: 0.92,
+          movement: { latAmp: 0.36, lngAmp: 1.18, speed: 1.1, phase: 0.8 },
+          tags: ["boat", "vessel", "pickup", "presence", "route"],
+          metrics: [
+            { label: "eta", value: "09 min" },
+            { label: "heading", value: "harbor in" },
+            { label: "state", value: "live track" }
+          ]
+        },
+        {
+          id: "courier-mira",
+          type: "presence",
+          title: "Courier Mira",
+          summary: "Urban runner presence showing active movement, parcel readiness, and local handoff timing without leaving the globe stage.",
+          capability: "dispatch trace",
+          actionLabel: "Track Courier",
+          armedLabel: "Courier Locked",
+          region: "Barcelona Core",
+          lat: 41.388,
+          lng: 2.181,
+          alt: 0.21,
+          zoom: 0.9,
+          movement: { latAmp: 0.22, lngAmp: 0.88, speed: 1.4, phase: 2.4 },
+          tags: ["courier", "delivery", "runner", "presence", "dispatch"],
+          metrics: [
+            { label: "load", value: "3 drops" },
+            { label: "eta", value: "14 min" },
+            { label: "state", value: "moving" }
+          ]
+        },
+        {
+          id: "driver-niko",
+          type: "presence",
+          title: "Driver Niko",
+          summary: "Local driver signal ready for AI dispatch assignment, pickup routing, and last-mile ordering tasks.",
+          capability: "driver dispatch",
+          actionLabel: "Assign Driver",
+          armedLabel: "Driver Assigned",
+          region: "Athens Loop",
+          lat: 37.971,
+          lng: 23.743,
+          alt: 0.21,
+          zoom: 0.92,
+          movement: { latAmp: 0.18, lngAmp: 0.64, speed: 1.28, phase: 1.6 },
+          tags: ["driver", "vehicle", "courier", "assign", "delivery", "presence"],
+          metrics: [
+            { label: "eta", value: "07 min" },
+            { label: "vehicle", value: "van 2" },
+            { label: "state", value: "assignable" }
+          ]
+        },
+        {
+          id: "atlas-drone",
+          type: "presence",
+          title: "Atlas Drone",
+          summary: "Survey drone presence with live path drift, battery state, and a precision action hook tied to its exact motion.",
+          capability: "flight trace",
+          actionLabel: "Track Drone",
+          armedLabel: "Drone Locked",
+          region: "Dubai Marina",
+          lat: 25.083,
+          lng: 55.143,
+          alt: 0.24,
+          zoom: 0.88,
+          movement: { latAmp: 0.26, lngAmp: 1.06, speed: 1.25, phase: 4.2 },
+          tags: ["drone", "survey", "flight", "presence", "live"],
+          metrics: [
+            { label: "battery", value: "71%" },
+            { label: "load", value: "62%" },
+            { label: "state", value: "airborne" }
+          ]
+        },
+        {
+          id: "booking-fabric",
+          type: "cloud",
+          title: "Booking Fabric",
+          summary: "Structured regional cloud linking stays, tables, and local reservations as one electric mesh rather than a weather blob.",
+          capability: "regional mesh",
+          actionLabel: "Open Mesh Hook",
+          armedLabel: "Mesh Locked",
+          region: "Eastern Mediterranean",
+          lat: 35.96,
+          lng: 22.8,
+          alt: 0.46,
+          zoom: 0.72,
+          movement: { latAmp: 0.14, lngAmp: 0.42, speed: 0.5, phase: 1.1 },
+          tags: ["cloud", "fabric", "booking", "mesh", "regional"],
+          metrics: [
+            { label: "anchors", value: "148 linked" },
+            { label: "traffic", value: "steady" },
+            { label: "state", value: "artificial" }
+          ]
+        },
+        {
+          id: "relay-cloud",
+          type: "cloud",
+          title: "Relay Cloud",
+          summary: "Electric support mesh binding live presences, support loops, and vendor callbacks into one operational region.",
+          capability: "support mesh",
+          actionLabel: "Open Relay Hook",
+          armedLabel: "Relay Locked",
+          region: "North Atlantic Rim",
+          lat: 47.8,
+          lng: -19.3,
+          alt: 0.5,
+          zoom: 0.68,
+          movement: { latAmp: 0.18, lngAmp: 0.5, speed: 0.44, phase: 3.6 },
+          tags: ["cloud", "relay", "support", "presence", "regional"],
+          metrics: [
+            { label: "loops", value: "26 live" },
+            { label: "load", value: "moderate" },
+            { label: "state", value: "structured" }
+          ]
+        }
+      ];
 
-  const globeRadius = 2.45;
+      const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+      const damp = (value, target, ease) => value + (target - value) * ease;
+      const dampAngle = (value, target, ease) => {
+        const delta = ((target - value + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+        return value + delta * ease;
+      };
+      const easeOut = (value) => 1 - Math.pow(1 - clamp(value, 0, 1), 3);
+      const wrapAngle = (value) => ((value + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      const typeHex = (type) => type === "anchor" ? "#4df2c8" : type === "presence" ? "#b4f9ff" : "#41c6ff";
+      const earthRadius = 2.12;
+      const yAxis = new THREE.Vector3(0, 1, 0);
+      const zero = new THREE.Vector3(0, 0, 0);
 
-  function makeEarthTexture(){
-    const c = document.createElement('canvas');
-    c.width = 2048; c.height = 1024;
-    const x = c.getContext('2d');
-    const g = x.createLinearGradient(0,0,0,c.height);
-    g.addColorStop(0,'#1a5588');
-    g.addColorStop(.35,'#1e6da0');
-    g.addColorStop(.72,'#15466e');
-    g.addColorStop(1,'#0b2742');
-    x.fillStyle = g; x.fillRect(0,0,c.width,c.height);
+      const appState = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        activeId: null,
+        previewId: null,
+        ambientIds: [],
+        searchIds: [],
+        seedId: null,
+        texturesReady: false,
+        openPanel: null,
+        addMode: null,
+        zoomed: false,
+        zoomLevel: 0,
+        zoomTarget: 0,
+        dragging: false,
+        dragMoved: false,
+        longPressTriggered: false,
+        pointerStartX: 0,
+        pointerStartY: 0,
+        lastPointerX: 0,
+        lastPointerY: 0,
+        holdUntil: 0,
+        lastCycle: performance.now(),
+        radarAngle: 0,
+        pinchStart: 0,
+        pinchZoomStart: 0,
+        performancePeak: 42,
+        hud: {
+          top: 0,
+          size: Math.min(170, Math.max(138, window.innerWidth * 0.34)),
+          mode: null,
+          pointerId: null,
+          startX: 0,
+          startY: 0,
+          startTop: 0,
+          startSize: 0
+        },
+        device: {
+          platform: "web shell",
+          cpu: "probing",
+          ram: "probing",
+          storage: "probing",
+          thermal: "sensor hook",
+          battery: "power hook",
+          network: "network hook",
+          load: 42
+        }
+      };
 
-    // oceans bands
-    for(let i=0;i<20;i++){
-      x.fillStyle = `rgba(255,255,255,${0.015 + Math.random()*0.02})`;
-      x.fillRect(0, Math.random()*c.height, c.width, 12 + Math.random()*36);
-    }
+      const rotation = { x: 0.22, y: -2.08 };
+      const targetRotation = { x: 0.22, y: -2.08 };
+      const cameraState = { z: CAMERA_BASE.z, y: CAMERA_BASE.y, fov: CAMERA_BASE.fov };
+      const targetCamera = { ...CAMERA_BASE };
 
-    function blob(cx,cy,rx,ry,rot,pts,color){
-      x.save(); x.translate(cx,cy); x.rotate(rot); x.beginPath();
-      for(let i=0;i<pts;i++){
-        const a = (i/pts)*Math.PI*2;
-        const rr = 0.82 + Math.random()*0.38;
-        const px = Math.cos(a)*rx*rr;
-        const py = Math.sin(a)*ry*rr;
-        if(i===0) x.moveTo(px,py); else x.lineTo(px,py);
+      const pointer = new THREE.Vector2();
+      const raycaster = new THREE.Raycaster();
+      const interactive = [];
+      const signalStates = new Map();
+      const activePointers = new Map();
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      sceneEl.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(CAMERA_BASE.fov, appState.width / appState.height, 0.1, 100);
+      camera.position.set(0, cameraState.y, cameraState.z);
+
+      const ambientLight = new THREE.AmbientLight(0x92caff, 0.6);
+      const keyLight = new THREE.DirectionalLight(0xffffff, 1.02);
+      keyLight.position.set(4.2, 2.8, 6.4);
+      const rimLight = new THREE.DirectionalLight(0x26b5ff, 0.42);
+      rimLight.position.set(-5.8, -1.8, -4.6);
+      scene.add(ambientLight, keyLight, rimLight);
+
+      const globeGroup = new THREE.Group();
+      const markerGroup = new THREE.Group();
+      globeGroup.add(markerGroup);
+      scene.add(globeGroup);
+
+      const starsGeometry = new THREE.BufferGeometry();
+      const starPositions = new Float32Array(1400 * 3);
+      const starColors = new Float32Array(1400 * 3);
+      for (let i = 0; i < starPositions.length; i += 3) {
+        const radius = 18 + Math.random() * 24;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos((Math.random() * 2) - 1);
+        starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
+        starPositions[i + 1] = radius * Math.cos(phi);
+        starPositions[i + 2] = radius * Math.sin(phi) * Math.sin(theta);
+        const tone = Math.random();
+        const color = tone < 0.12
+          ? new THREE.Color(0xb9d3ff)
+          : tone < 0.28
+            ? new THREE.Color(0xfff0cf)
+            : new THREE.Color(0xf8fbff);
+        starColors[i] = color.r;
+        starColors[i + 1] = color.g;
+        starColors[i + 2] = color.b;
       }
-      x.closePath(); x.fillStyle=color; x.fill(); x.restore();
-    }
+      starsGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+      starsGeometry.setAttribute("color", new THREE.BufferAttribute(starColors, 3));
+      const stars = new THREE.Points(
+        starsGeometry,
+        new THREE.PointsMaterial({ size: 0.046, transparent: true, opacity: 0.78, depthWrite: false, vertexColors: true })
+      );
+      const brightStars = new THREE.Points(
+        starsGeometry.clone(),
+        new THREE.PointsMaterial({ size: 0.082, transparent: true, opacity: 0.16, depthWrite: false, vertexColors: true })
+      );
+      scene.add(stars, brightStars);
 
-    const land = '#66a05a';
-    const land2 = '#4f8649';
-    blob(370,330,160,115,-0.3,22,land);   // N America-ish
-    blob(520,520,90,150,-0.12,20,land2);   // S America-ish
-    blob(1020,290,120,88,0.12,20,land);    // Europe-ish
-    blob(1130,430,160,210,0.06,26,land2);  // Africa-ish
-    blob(1420,330,270,155,-0.03,28,land);  // Asia-ish
-    blob(1640,720,98,64,0.2,16,land2);     // Australia-ish
-    blob(930,860,420,52,0,18,'#e7eef5');   // Antarctica-ish
+      const satelliteGroup = new THREE.Group();
+      scene.add(satelliteGroup);
+      const satellites = Array.from({ length: 6 }, (_, index) => {
+        const shell = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 0.05, 0.09),
+          new THREE.MeshStandardMaterial({ color: 0xd6e4f1, metalness: 0.28, roughness: 0.5 })
+        );
+        const panelMaterial = new THREE.MeshStandardMaterial({ color: 0x547fa8, metalness: 0.18, roughness: 0.54 });
+        const panelLeft = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.004), panelMaterial);
+        const panelRight = panelLeft.clone();
+        panelLeft.position.x = -0.095;
+        panelRight.position.x = 0.095;
+        shell.add(body, panelLeft, panelRight);
+        satelliteGroup.add(shell);
+        return {
+          mesh: shell,
+          radius: earthRadius + 0.8 + index * 0.07,
+          speed: 0.14 + index * 0.028,
+          phase: index * 1.08,
+          tilt: -0.92 + index * 0.28
+        };
+      });
 
-    // clouds
-    for(let i=0;i<70;i++){
-      x.beginPath();
-      x.fillStyle = `rgba(255,255,255,${0.015 + Math.random()*0.05})`;
-      x.ellipse(Math.random()*c.width, Math.random()*c.height, 20+Math.random()*90, 8+Math.random()*24, Math.random()*Math.PI, 0, Math.PI*2);
-      x.fill();
-    }
-    return new THREE.CanvasTexture(c);
-  }
+      const earthMaterial = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        shininess: 11,
+        transparent: true,
+        opacity: 1
+      });
+      earthMaterial.specular = new THREE.Color(0x1c2a3d);
 
-  const earthMaterial = new THREE.MeshStandardMaterial({
-    map: makeEarthTexture(),
-    roughness: 0.82,
-    metalness: 0.04,
-    emissive: new THREE.Color('#05243a'),
-    emissiveIntensity: 0.42
-  });
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(globeRadius, 96, 96), earthMaterial);
-  earthGroup.add(earth);
+      const earth = new THREE.Mesh(new THREE.SphereGeometry(earthRadius, 96, 96), earthMaterial);
+      const nightShell = new THREE.Mesh(
+        new THREE.SphereGeometry(earthRadius + 0.012, 96, 96),
+        new THREE.MeshBasicMaterial({ color: 0x3a5575, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false })
+      );
+      const cloudShellMaterial = new THREE.MeshPhongMaterial({
+        color: 0xd7f8ff,
+        transparent: true,
+        opacity: 0.12,
+        depthWrite: false
+      });
+      const cloudShell = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.048, 72, 72), cloudShellMaterial);
+      globeGroup.add(earth, nightShell, cloudShell);
 
-  const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(globeRadius*1.05, 64, 64),
-    new THREE.MeshBasicMaterial({color:0x00c8ff, transparent:true, opacity:0.12})
-  );
-  earthGroup.add(atmosphere);
+      const textureLoader = new THREE.TextureLoader();
+      const loadTexture = (url) => new Promise((resolve) => {
+        textureLoader.load(url, resolve, undefined, () => resolve(null));
+      });
 
-  const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(globeRadius*1.18, 64, 64),
-    new THREE.ShaderMaterial({
-      transparent:true,
-      blending:THREE.AdditiveBlending,
-      side:THREE.BackSide,
-      uniforms:{c:{value:0.3}, p:{value:2.8}, glowColor:{value:new THREE.Color(0x00c8ff)}, viewVector:{value:camera.position}},
-      vertexShader:`uniform vec3 viewVector; uniform float c; uniform float p; varying float intensity; void main(){ vec3 vNormal = normalize(normalMatrix * normal); vec3 vNormel = normalize(normalMatrix * viewVector); intensity = pow(c - dot(vNormal, vNormel), p); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-      fragmentShader:`uniform vec3 glowColor; varying float intensity; void main(){ gl_FragColor = vec4(glowColor * intensity, intensity * 0.48); }`
-    })
-  );
-  earthGroup.add(glow);
+      Promise.all([
+        loadTexture("https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg"),
+        loadTexture("https://threejs.org/examples/textures/planets/earth_normal_2048.jpg"),
+        loadTexture("https://threejs.org/examples/textures/planets/earth_specular_2048.jpg"),
+        loadTexture("https://threejs.org/examples/textures/planets/earth_lights_2048.png"),
+        loadTexture("https://threejs.org/examples/textures/planets/earth_clouds_1024.png")
+      ]).then(([day, normal, specular, lights, clouds]) => {
+        if (day) {
+          earthMaterial.map = day;
+          appState.texturesReady = true;
+        }
+        if (normal) earthMaterial.normalMap = normal;
+        if (specular) earthMaterial.specularMap = specular;
+        if (lights) nightShell.material.map = lights;
+        if (clouds) {
+          cloudShellMaterial.alphaMap = clouds;
+          cloudShellMaterial.map = clouds;
+          cloudShellMaterial.opacity = 0.24;
+        }
+        earthMaterial.needsUpdate = true;
+        nightShell.material.needsUpdate = true;
+        cloudShellMaterial.needsUpdate = true;
+        query.placeholder = "Ask AI to find signals, products, drivers, or orders...";
+      });
 
-  // stars
-  const starGeo = new THREE.BufferGeometry();
-  const starCount = 2000;
-  const positions = new Float32Array(starCount * 3);
-  for(let i=0;i<starCount;i++){
-    const r = 35 + Math.random()*130;
-    const theta = Math.random()*Math.PI*2;
-    const phi = Math.acos((Math.random()*2)-1);
-    positions[i*3+0] = r * Math.sin(phi)*Math.cos(theta);
-    positions[i*3+1] = r * Math.cos(phi);
-    positions[i*3+2] = r * Math.sin(phi)*Math.sin(theta);
-  }
-  starGeo.setAttribute('position', new THREE.BufferAttribute(positions,3));
-  const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color:0xb7dfff, size:0.15, transparent:true, opacity:.95}));
-  starGroup.add(stars);
-
-  function latLngToVector3(lat, lng, radius){
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = (lng + 180) * (Math.PI / 180);
-    return new THREE.Vector3(
-      -(radius * Math.sin(phi) * Math.cos(theta)),
-       radius * Math.cos(phi),
-       radius * Math.sin(phi) * Math.sin(theta)
-    );
-  }
-
-  const signals = [
-    {id:'s1', title:'Blue Harbor Rooms', summary:'Anchored booking signal for a sea-view hotel. Tap to open booking fields and availability.', kind:'booking', mode:'anchored', category:'hotel', visibility:'global', lat:36.4431, lng:28.2278, action:'Book now'},
-    {id:'s2', title:'Rhodes Marina Bites', summary:'Food ordering signal with delivery routing capability and menu flow.', kind:'shop', mode:'anchored', category:'food', visibility:'local', lat:36.4519, lng:28.2272, action:'Order'},
-    {id:'s3', title:'Astranov Racing', summary:'Floating cloud channel for vehicle diagnostics, racing alerts, and ECU interpretation workspace.', kind:'channel', mode:'cloud', category:'racing', visibility:'global', lat:38.1, lng:23.72, altitude:0.72, action:'Open channel'},
-    {id:'s4', title:'Development Team', summary:'Cloud workspace for Astranov build coordination, issue triage, and launch planning.', kind:'channel', mode:'cloud', category:'team', visibility:'team', lat:35.3387, lng:25.1442, altitude:0.62, action:'Join chat'},
-    {id:'s5', title:'Booking Engine', summary:'Service cloud businesses can attach for time slots, reservations, dynamic fields, and customer flows.', kind:'service', mode:'cloud', category:'booking', visibility:'global', lat:41.9028, lng:12.4964, altitude:0.9, action:'Attach module'},
-    {id:'s6', title:'Aegean Dive School', summary:'Anchored activity signal with lessons, timed slots, and real location routing.', kind:'activity', mode:'anchored', category:'diving', visibility:'global', lat:36.4344, lng:28.2167, action:'Reserve slot'},
-    {id:'s7', title:'Global Support Cloud', summary:'Floating support signal for ideas, bug reports, and community guidance.', kind:'channel', mode:'cloud', category:'support', visibility:'global', lat:48.8566, lng:2.3522, altitude:1.05, action:'Open support'},
-    {id:'s8', title:'YouTube Harbor Post', summary:'Media signal linked to a real marina location. Content floats from the exact spot it belongs to.', kind:'media', mode:'anchored', category:'media', visibility:'global', lat:37.9838, lng:23.7275, action:'View post'}
-  ];
-
-  const signalState = new Map();
-  signals.forEach(sig => {
-    const anchor = latLngToVector3(sig.lat, sig.lng, globeRadius + (sig.mode==='cloud' ? (sig.altitude || .65) : .06));
-    const pulse = new THREE.Mesh(
-      new THREE.SphereGeometry(sig.mode==='cloud' ? .055 : .042, 12, 12),
-      new THREE.MeshBasicMaterial({color:sig.mode==='cloud'?0xffb14f:0x00c8ff, transparent:true, opacity:.95})
-    );
-    pulse.position.copy(anchor);
-    earthGroup.add(pulse);
-
-    const halo = new THREE.Mesh(
-      new THREE.SphereGeometry(sig.mode==='cloud' ? .11 : .082, 12, 12),
-      new THREE.MeshBasicMaterial({color:sig.mode==='cloud'?0xffb14f:0x00c8ff, transparent:true, opacity:.14})
-    );
-    halo.position.copy(anchor);
-    earthGroup.add(halo);
-
-    const dom = document.createElement('div');
-    dom.className = 'card';
-    dom.style.display = 'none';
-    dom.innerHTML = `
-      <div class="cardHero">
-        <div class="chip ${sig.mode}">${sig.mode === 'cloud' ? 'cloud signal' : 'anchored signal'}</div>
-      </div>
-      <div class="cardBody">
-        <div class="cardTitle"></div>
-        <div class="cardSummary"></div>
-        <div class="cardMeta"></div>
-        <div class="cardActions">
-          <button class="cardBtn actionBtn"></button>
-          <button class="cardBtn secondary">Notify me</button>
-        </div>
-      </div>`;
-    dom.querySelector('.cardTitle').textContent = sig.title;
-    dom.querySelector('.cardSummary').textContent = sig.summary;
-    dom.querySelector('.actionBtn').textContent = sig.action || 'Open';
-    const meta = dom.querySelector('.cardMeta');
-    [sig.category, sig.visibility, sig.kind].forEach(v => {
-      const m = document.createElement('div'); m.className='metaPill'; m.textContent=v; meta.appendChild(m);
-    });
-    dom.querySelector('.actionBtn').onclick = () => pushToast(sig.title, sig.action + ' flow would open here.');
-    dom.querySelector('.secondary').onclick = () => pushToast('Notification armed', 'You will be notified about changes on ' + sig.title + '.');
-    signalLayer.appendChild(dom);
-
-    const dot = document.createElement('div');
-    dot.className = 'pinDot ' + (sig.mode==='cloud' ? 'cloud' : '');
-    dot.style.display = 'none';
-    signalLayer.appendChild(dot);
-
-    signalState.set(sig.id, {
-      sig, anchor, pulse, halo, dom, dot,
-      orbitOffset: Math.random() * Math.PI * 2,
-      phase: Math.random() * 1000,
-      visible:false
-    });
-
-    dom.addEventListener('pointerenter', () => hoveredSignalId = sig.id);
-    dom.addEventListener('pointerleave', () => hoveredSignalId = null);
-  });
-
-  function frontFacing(vector){
-    const world = vector.clone().applyMatrix4(earthGroup.matrixWorld);
-    const camDir = camera.position.clone().sub(world).normalize();
-    const normal = vector.clone().normalize().applyQuaternion(earthGroup.quaternion);
-    return normal.dot(camDir) > 0.18;
-  }
-
-  function project(worldVector){
-    const v = worldVector.clone().applyMatrix4(earthGroup.matrixWorld).project(camera);
-    return {
-      x:(v.x * 0.5 + 0.5) * width,
-      y:(-v.y * 0.5 + 0.5) * height,
-      z:v.z
-    };
-  }
-
-  function signalCardPosition(screen, state){
-    const isLeft = screen.x < width * .5;
-    const dx = isLeft ? 42 : -262;
-    const dy = state.sig.mode === 'cloud' ? -54 : -28;
-    return {x:screen.x + dx, y:screen.y + dy};
-  }
-
-  function updateSignalUI(t){
-    connectorSvg.innerHTML = '';
-    signalState.forEach((state, id) => {
-      const sig = state.sig;
-      let anchor = latLngToVector3(sig.lat, sig.lng, globeRadius + (sig.mode==='cloud' ? (sig.altitude || .7) : .06));
-      if(sig.mode === 'cloud'){
-        const bob = Math.sin(t*0.0017 + state.phase)*0.08;
-        const swirl = Math.sin(t*0.001 + state.orbitOffset) * 0.02;
-        anchor = latLngToVector3(sig.lat + swirl*22, sig.lng + swirl*50, globeRadius + (sig.altitude || .7) + bob);
+      function latLngToVector3(lat, lng, radius) {
+        const phi = (90 - lat) * (Math.PI / 180);
+        const theta = (lng + 180) * (Math.PI / 180);
+        return new THREE.Vector3(
+          -(radius * Math.sin(phi) * Math.cos(theta)),
+          radius * Math.cos(phi),
+          radius * Math.sin(phi) * Math.sin(theta)
+        );
       }
-      state.anchor.copy(anchor);
-      state.pulse.position.copy(anchor);
-      state.halo.position.copy(anchor);
 
-      const facing = frontFacing(anchor);
-      const pulseScale = 1 + Math.sin(t*0.004 + state.phase) * 0.22;
-      state.pulse.scale.setScalar(pulseScale);
-      state.halo.scale.setScalar(1.2 + Math.sin(t*0.0025 + state.phase)*0.2);
-      state.pulse.material.opacity = sig.mode === 'cloud' ? 0.86 : 0.95;
-      state.halo.material.opacity = facing ? 0.18 : 0.03;
-
-      const isActive = activeSignalId === id || hoveredSignalId === id;
-      const shouldShow = facing && (isActive || activeSignalId === null && id === 's3');
-      state.visible = shouldShow;
-      if(!shouldShow){
-        state.dom.style.display = 'none';
-        state.dot.style.display = 'none';
-        return;
+      function vectorToLatLng(vector) {
+        const normal = vector.clone().normalize();
+        return {
+          lat: THREE.MathUtils.radToDeg(Math.asin(normal.y)),
+          lng: THREE.MathUtils.radToDeg(Math.atan2(normal.z, -normal.x)) - 90
+        };
       }
-      const screen = project(anchor);
-      const cardPos = signalCardPosition(screen, state);
-      const depthScale = THREE.MathUtils.clamp(1.16 - screen.z*0.12, .82, 1.12);
-      state.dom.style.display = 'block';
-      state.dot.style.display = 'block';
-      state.dot.style.left = screen.x + 'px';
-      state.dot.style.top = screen.y + 'px';
-      state.dom.style.left = Math.max(12, Math.min(width - 320, cardPos.x)) + 'px';
-      state.dom.style.top = Math.max(80, Math.min(height - 230, cardPos.y)) + 'px';
-      state.dom.style.transform = `scale(${depthScale})`;
 
-      const cardRect = {x:parseFloat(state.dom.style.left), y:parseFloat(state.dom.style.top), w:state.dom.offsetWidth || 260, h:state.dom.offsetHeight || 180};
-      const targetX = cardRect.x + (screen.x < width*.5 ? 0 : cardRect.w);
-      const targetY = cardRect.y + cardRect.h * .45;
-      const lineColor = sig.mode === 'cloud' ? '#ffb14f' : '#00c8ff';
-      connectorSvg.insertAdjacentHTML('beforeend', `
-        <defs>
-          <linearGradient id="grad-${id}" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="${lineColor}" stop-opacity="1"/>
-            <stop offset="100%" stop-color="${lineColor}" stop-opacity=".12"/>
-          </linearGradient>
-        </defs>
-        <path d="M ${screen.x} ${screen.y} C ${(screen.x+targetX)/2} ${screen.y-20}, ${(screen.x+targetX)/2} ${targetY+20}, ${targetX} ${targetY}" stroke="url(#grad-${id})" stroke-width="2.4" fill="none" stroke-linecap="round" filter="url(#f-${id})" />
-        <circle cx="${screen.x}" cy="${screen.y}" r="5.5" fill="${lineColor}" fill-opacity=".95" />
-      `);
-    });
-  }
+      function worldNormal(localVector) {
+        return localVector.clone().normalize().applyQuaternion(globeGroup.quaternion);
+      }
 
-  function openSignal(sig){
-    activeSignalId = sig.id;
-    focusSignal(sig);
-    pushToast(sig.title, sig.summary);
-    searchPanel.style.display = 'none';
-  }
+      function screenPoint(worldVector) {
+        const projected = worldVector.clone().project(camera);
+        return {
+          x: (projected.x * 0.5 + 0.5) * appState.width,
+          y: (-projected.y * 0.5 + 0.5) * appState.height,
+          z: projected.z
+        };
+      }
 
-  function focusSignal(sig){
-    const target = latLngToVector3(sig.lat, sig.lng, globeRadius).normalize();
-    const lon = Math.atan2(target.z, -target.x);
-    const lat = Math.asin(target.y);
-    targetRotation.y = -(lon - Math.PI / 2);
-    targetRotation.x = lat * 0.28;
-  }
+      function globeCenterScreen() {
+        return screenPoint(zero.clone().applyMatrix4(globeGroup.matrixWorld));
+      }
 
-  function scoreSignal(sig, q){
-    const hay = `${sig.title} ${sig.summary} ${sig.kind} ${sig.category} ${sig.visibility} ${sig.mode}`.toLowerCase();
-    const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
-    let score = 0;
-    terms.forEach(term => {
-      if(sig.title.toLowerCase().includes(term)) score += 8;
-      if(sig.category.toLowerCase().includes(term)) score += 5;
-      if(hay.includes(term)) score += 2;
-    });
-    if(q.toLowerCase().includes('team') && sig.category === 'team') score += 5;
-    if(q.toLowerCase().includes('booking') && (sig.kind==='booking' || sig.category==='booking')) score += 6;
-    if(q.toLowerCase().includes('racing') && sig.category==='racing') score += 8;
-    return score;
-  }
+      function directionFromGlobe(point, center) {
+        const dx = point.x - center.x;
+        const dy = point.y - center.y;
+        const length = Math.hypot(dx, dy);
+        return length < 1 ? { x: point.x < appState.width * 0.5 ? -0.92 : 0.92, y: -0.18 } : { x: dx / length, y: dy / length };
+      }
 
-  function renderResults(query){
-    const q = query.trim();
-    if(!q){ searchPanel.style.display = 'none'; return; }
-    const results = [...signals]
-      .map(sig => ({sig, score:scoreSignal(sig, q)}))
-      .filter(x => x.score > 0)
-      .sort((a,b) => b.score - a.score)
-      .slice(0,6);
-    if(!results.length){
-      searchPanel.style.display = 'block';
-      searchPanel.innerHTML = `<div class="result"><div><div class="resultTitle">No matching signal</div><div class="resultSub">Try terms like “hotel”, “booking”, “racing”, “support”, or “development team”.</div></div></div>`;
-      return;
-    }
-    searchPanel.style.display = 'block';
-    searchPanel.innerHTML = '';
-    results.forEach(({sig}) => {
-      const row = document.createElement('div');
-      row.className = 'result';
-      row.innerHTML = `<div><div class="resultTitle">${sig.title}</div><div class="resultSub">${sig.summary}</div></div><div class="resultTag">${sig.mode}</div>`;
-      row.onclick = () => openSignal(sig);
-      searchPanel.appendChild(row);
-    });
-  }
+      function rectEdgePoint(cx, cy, hw, hh, tx, ty) {
+        const dx = tx - cx;
+        const dy = ty - cy;
+        const scale = 1 / Math.max(Math.abs(dx) / hw || 0, Math.abs(dy) / hh || 0, 1);
+        return { x: cx + dx * scale, y: cy + dy * scale };
+      }
 
-  function submitQuery(){
-    const q = searchInput.value.trim();
-    if(!q) return;
-    const best = [...signals].map(sig => ({sig, score:scoreSignal(sig,q)})).sort((a,b)=>b.score-a.score)[0];
-    if(best && best.score > 0){ openSignal(best.sig); }
-    else pushToast('No match yet', 'This demo index is wired for signals, clouds, and anchored business nodes.');
-  }
+      function cubicPoint(t, p0, p1, p2, p3) {
+        const inv = 1 - t;
+        return {
+          x: inv * inv * inv * p0.x + 3 * inv * inv * t * p1.x + 3 * inv * t * t * p2.x + t * t * t * p3.x,
+          y: inv * inv * inv * p0.y + 3 * inv * inv * t * p1.y + 3 * inv * t * t * p2.y + t * t * t * p3.y
+        };
+      }
 
-  function pushToast(title, body){
-    const id = 't' + (++toastCounter);
-    const node = document.createElement('div');
-    node.className = 'toast';
-    node.innerHTML = `<div class="toastTitle">${title}</div>${body}`;
-    toastStack.prepend(node);
-    setTimeout(() => {
-      node.style.transition = 'opacity .3s ease, transform .3s ease';
-      node.style.opacity = '0';
-      node.style.transform = 'translateY(-8px)';
-      setTimeout(() => node.remove(), 320);
-    }, 3400);
-  }
+      function rotationForSignal(state) {
+        const target = state.local.clone().normalize();
+        const lon = Math.atan2(target.z, -target.x);
+        const lat = Math.asin(target.y);
+        return { x: clamp(lat * 0.5, -0.72, 0.72), y: -(lon - Math.PI / 2) };
+      }
 
-  // Search wiring
-  searchInput.addEventListener('input', e => renderResults(e.target.value));
-  searchInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') submitQuery();
-  });
-  document.getElementById('sendBtn').addEventListener('click', submitQuery);
+      function arcPath(cx, cy, radius, startAngle, endAngle) {
+        const start = {
+          x: cx + radius * Math.cos(startAngle),
+          y: cy + radius * Math.sin(startAngle)
+        };
+        const end = {
+          x: cx + radius * Math.cos(endAngle),
+          y: cy + radius * Math.sin(endAngle)
+        };
+        const largeArc = endAngle - startAngle <= Math.PI ? 0 : 1;
+        return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+      }
 
-  // Voice button
-  const voiceBtn = document.getElementById('voiceBtn');
-  let recognition = null, listening = false;
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(SR){
-    recognition = new SR();
-    recognition.lang = 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognition.onresult = (ev) => {
-      let text = '';
-      for(let i=ev.resultIndex;i<ev.results.length;i++) text += ev.results[i][0].transcript + ' ';
-      searchInput.value = text.trim();
-      renderResults(searchInput.value);
-      if(ev.results[ev.results.length-1].isFinal) submitQuery();
-    };
-    recognition.onend = () => { listening = false; voiceBadge.style.display='none'; };
-  }
-  voiceBtn.addEventListener('click', () => {
-    if(!recognition){ pushToast('Hands-free unavailable', 'Speech recognition is not supported in this browser.'); return; }
-    if(listening){ recognition.stop(); listening = false; voiceBadge.style.display='none'; }
-    else { recognition.start(); listening = true; voiceBadge.style.display='block'; }
-  });
+      function metricTile(label, value) {
+        return `
+          <div class="top-panel-metric">
+            <span class="top-panel-label">${label}</span>
+            <span class="top-panel-value">${value}</span>
+          </div>
+        `;
+      }
 
-  // Wheel buttons
-  droneButton.addEventListener('click', () => {
-    droneMode = !droneMode;
-    droneButton.innerHTML = droneMode ? 'UNLOAD' : 'LOAD<br>OUT';
-    perfMeta.textContent = droneMode ? 'drone mode' : 'device mode';
-    pushToast(droneMode ? 'Drone control mode' : 'Device mode', droneMode ? 'Performance wheel is now reserved for drone characteristics and load/unload control.' : 'Performance wheel returned to device mode.');
-  });
+      function setPanel(kind) {
+        if (!kind) {
+          appState.openPanel = null;
+          topPanel.dataset.open = "false";
+          userButton.dataset.open = "false";
+          systemButton.dataset.open = "false";
+          walletButton.dataset.open = "false";
+          perfWheel.dataset.active = "true";
+          return;
+        }
 
-  document.getElementById('homeButton').addEventListener('click', () => {
-    showLocalTarget = !showLocalTarget;
-    if(showLocalTarget){
-      homeButton.innerHTML = 'GLOBE';
-      activeSignalId = 's1';
-      focusSignal(signals.find(s => s.id === 's1'));
-      pushToast('Zoom to me', 'Camera moved toward your local operational zone.');
-    } else {
-      homeButton.innerHTML = 'ZOOM<br>ME';
-      activeSignalId = 's3';
-      targetRotation.x = 0.12;
-      targetRotation.y += Math.PI * 0.4;
-      pushToast('Global view', 'Camera eased back into world scanning mode.');
-    }
-  });
+        appState.openPanel = kind;
+        userButton.dataset.open = kind === "user" ? "true" : "false";
+        systemButton.dataset.open = kind === "system" ? "true" : "false";
+        walletButton.dataset.open = kind === "wallet" ? "true" : "false";
+        perfWheel.dataset.active = "true";
 
-  // Globe interaction
-  const raycaster = new THREE.Raycaster();
-  const ndc = new THREE.Vector2();
-  let dragging = false, lastX=0, lastY=0;
-  const currentRotation = {x:0.16, y:0.45};
-  const targetRotation = {x:0.16, y:0.45};
+        let position = "center";
+        let title = "";
+        let sub = "";
+        let grid = "";
+        let actions = "";
 
-  renderer.domElement.addEventListener('pointerdown', e => { dragging = true; lastX=e.clientX; lastY=e.clientY; });
-  window.addEventListener('pointerup', () => dragging = false);
-  window.addEventListener('pointermove', e => {
-    pointer.x = e.clientX; pointer.y = e.clientY;
-    if(!dragging) return;
-    const dx = e.clientX - lastX;
-    const dy = e.clientY - lastY;
-    targetRotation.y += dx * 0.006;
-    targetRotation.x += dy * 0.0032;
-    targetRotation.x = Math.max(-0.72, Math.min(0.72, targetRotation.x));
-    lastX = e.clientX; lastY = e.clientY;
-  });
+        if (kind === "user") {
+          position = "left";
+          title = USER_INFO.name;
+          sub = "login / profile / settings / alerts";
+          grid = [
+            metricTile("mode", USER_INFO.mode),
+            metricTile("locale", USER_INFO.locale),
+            metricTile("profile", USER_INFO.profile),
+            metricTile("settings", USER_INFO.settings),
+            metricTile("orders", "active jump-back hooks"),
+            metricTile("alerts", "notification drawer ready")
+          ].join("");
+          actions = `
+            <div class="top-panel-actions">
+              <button class="top-panel-btn" type="button" data-panel-action="login">Login</button>
+              <button class="top-panel-btn" type="button" data-panel-action="orders">Orders</button>
+              <button class="top-panel-btn" type="button" data-panel-action="alerts">Alerts</button>
+            </div>
+          `;
+        }
 
-  renderer.domElement.addEventListener('click', (e) => {
-    if(dragging) return;
-    ndc.x = (e.clientX / width) * 2 - 1;
-    ndc.y = -(e.clientY / height) * 2 + 1;
-    raycaster.setFromCamera(ndc, camera);
-    const hit = raycaster.intersectObject(earth)[0];
-    if(hit){
-      pushToast('Signal creation point', 'Map click detected on the globe. This is where a new anchored business, post, or booking signal would be created.');
-      searchPanel.style.display = 'none';
-    }
-  });
+        if (kind === "system") {
+          position = "center";
+          title = APP_INFO.name;
+          sub = "version and force update";
+          grid = [
+            metricTile("current", APP_INFO.currentVersion),
+            metricTile("latest", APP_INFO.latestVersion),
+            metricTile("build", APP_INFO.build),
+            metricTile("sync", APP_INFO.sync)
+          ].join("");
+          actions = `
+            <div class="top-panel-actions">
+              <button class="top-panel-btn" type="button" data-panel-action="reload">Force Update</button>
+              <button class="top-panel-btn" type="button" data-panel-action="refresh">Refresh World</button>
+            </div>
+          `;
+        }
 
-  // demo notifications
-  setTimeout(() => pushToast('Global posting system', 'Signals can be anchored to real locations or float as cloud channels above the planet.'), 900);
-  setTimeout(() => pushToast('Booking engine cloud', 'Businesses can attach the booking engine as a capability instead of living in giant menus.'), 2800);
-  setInterval(() => {
-    const pool = [
-      ['Trending nearby', 'Rhodes Marina Bites is pulsing near your active region.'],
-      ['Team cloud ping', 'Development Team cloud has new activity and can be opened from the planet.'],
-      ['Booking event', 'Blue Harbor Rooms pushed a new reservation slot update.']
-    ];
-    const pick = pool[Math.floor(Math.random()*pool.length)];
-    pushToast(pick[0], pick[1]);
-  }, 14000);
+        if (kind === "wallet") {
+          position = "right";
+          title = "Balance";
+          sub = "wallet / accounting / economics";
+          grid = [
+            metricTile("balance", WALLET_INFO.balance),
+            metricTile("pending", WALLET_INFO.pending),
+            metricTile("ledger", WALLET_INFO.ledger),
+            metricTile("economics", WALLET_INFO.economics)
+          ].join("");
+          actions = `
+            <div class="top-panel-actions">
+              <button class="top-panel-btn" type="button" data-panel-action="transactions">Transactions</button>
+              <button class="top-panel-btn" type="button" data-panel-action="payments">Payments</button>
+            </div>
+          `;
+        }
 
-  function resize(){
-    width = window.innerWidth; height = window.innerHeight;
-    camera.aspect = width/height; camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
-  }
-  window.addEventListener('resize', resize);
+        if (kind === "add") {
+          position = "center";
+          title = "Add To Map";
+          sub = "tap the Earth after choosing a type";
+          grid = [
+            metricTile("shop", "add a store signal"),
+            metricTile("service", "add a service signal"),
+            metricTile("video", "post a location video"),
+            metricTile("flow", "emits a new local card")
+          ].join("");
+          actions = `
+            <div class="top-panel-actions">
+              <button class="top-panel-btn" type="button" data-panel-action="add:shop">Shop</button>
+              <button class="top-panel-btn" type="button" data-panel-action="add:service">Service</button>
+              <button class="top-panel-btn" type="button" data-panel-action="add:video">Video</button>
+            </div>
+          `;
+        }
 
-  function animate(t){
-    requestAnimationFrame(animate);
-    starGroup.rotation.y += 0.00018;
-    earth.rotation.y += 0.00125;
-    currentRotation.x += (targetRotation.x - currentRotation.x) * 0.06;
-    currentRotation.y += (targetRotation.y - currentRotation.y) * 0.06;
-    earthGroup.rotation.x = currentRotation.x;
-    earthGroup.rotation.y = currentRotation.y;
-    updateSignalUI(t);
-    renderer.render(scene, camera);
-  }
+        if (kind === "performance") {
+          position = "left";
+          title = "Performance";
+          sub = "device telemetry / investigate";
+          grid = [
+            metricTile("cpu", appState.device.cpu),
+            metricTile("ram", appState.device.ram),
+            metricTile("storage", appState.device.storage),
+            metricTile("battery", appState.device.battery),
+            metricTile("network", appState.device.network),
+            metricTile("thermal", appState.device.thermal),
+            metricTile("peak", `${Math.round(appState.performancePeak)}%`)
+          ].join("");
+          actions = `
+            <div class="top-panel-actions">
+              <button class="top-panel-btn" type="button" data-panel-action="investigate">Inspect</button>
+              <button class="top-panel-btn" type="button" data-panel-action="drone">Drone Load</button>
+            </div>
+          `;
+        }
 
-  activeSignalId = 's3';
-  focusSignal(signals.find(s => s.id === 's3'));
-  animate(0);
-})();
-</script>
+        topPanel.dataset.position = position;
+        topPanel.innerHTML = `
+          <div class="top-panel-shell">
+            <div class="top-panel-head">
+              <div>
+                <div class="top-panel-title">${title}</div>
+                <div class="top-panel-sub">${sub}</div>
+              </div>
+            </div>
+            <div class="top-panel-grid">${grid}</div>
+            ${actions}
+          </div>
+        `;
+        topPanel.dataset.open = "true";
+
+        topPanel.querySelectorAll("[data-panel-action]").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const action = button.dataset.panelAction;
+            if (action === "reload") {
+              window.location.reload();
+              return;
+            }
+            if (action === "refresh") {
+              query.placeholder = "World refreshed. Ask AI to find signals, products, or drivers.";
+              appState.lastCycle = performance.now();
+              setPanel(null);
+              return;
+            }
+            if (action === "login") {
+              query.placeholder = "User login shell ready";
+              setPanel(null);
+              return;
+            }
+            if (action === "orders") {
+              query.placeholder = "Orders stay linked to the communication drawer";
+              setPanel(null);
+              return;
+            }
+            if (action === "alerts") {
+              query.placeholder = "Alerts shell ready";
+              setPanel(null);
+              return;
+            }
+            if (action === "transactions") {
+              query.placeholder = "Wallet ledger ready for transaction review";
+              setPanel(null);
+              return;
+            }
+            if (action === "payments") {
+              query.placeholder = "Payments shell ready";
+              setPanel(null);
+              return;
+            }
+            if (action === "investigate") {
+              query.placeholder = `Peak load ${Math.round(appState.performancePeak)}% / ${appState.device.cpu} / ${appState.device.ram}`;
+              setPanel(null);
+              return;
+            }
+            if (action === "drone") {
+              setActiveSignal("atlas-drone", true);
+              setZoom(0.98);
+              setPanel(null);
+              return;
+            }
+            if (action.startsWith("add:")) {
+              appState.addMode = action.split(":")[1];
+              query.placeholder = `Tap the Earth to add a ${appState.addMode} signal`;
+              setPanel(null);
+              return;
+            }
+            setPanel(null);
+          });
+        });
+      }
+
+      function togglePanel(kind) {
+        setPanel(appState.openPanel === kind ? null : kind);
+      }
+
+      function updateTopHud() {
+        systemVersionBadge.textContent = `v${APP_INFO.currentVersion} / v${APP_INFO.latestVersion}`;
+        const walletIcon = walletButton.querySelector(".top-btn-icon");
+        if (walletIcon) walletIcon.textContent = "EUR";
+      }
+
+      function setZoom(level) {
+        appState.zoomTarget = clamp(level, 0, 1.34);
+        appState.zoomed = appState.zoomTarget > 0.08;
+      }
+
+      function focusableSignalState() {
+        if (appState.activeId && signalStates.has(appState.activeId)) return signalStates.get(appState.activeId);
+        if (appState.previewId && signalStates.has(appState.previewId)) return signalStates.get(appState.previewId);
+        const center = globeCenterScreen();
+        const nearest = [...signalStates.values()]
+          .filter((state) => frontFacing(state))
+          .map((state) => {
+            const point = screenPoint(state.world);
+            return { state, score: Math.hypot(point.x - center.x, point.y - center.y) };
+          })
+          .sort((a, b) => a.score - b.score)[0];
+        return nearest ? nearest.state : null;
+      }
+
+      function ensureFocusSignal() {
+        const state = focusableSignalState();
+        if (!state) return null;
+        if (appState.activeId !== state.signal.id) setActiveSignal(state.signal.id, false);
+        return signalStates.get(state.signal.id);
+      }
+
+      function applyHudLayout() {
+        const topRect = topBar.getBoundingClientRect();
+        const composerRect = composer.getBoundingClientRect();
+        const maxSize = Math.min(212, appState.width * 0.42, appState.height * 0.28);
+        appState.hud.size = clamp(appState.hud.size, 126, maxSize);
+        const minTop = topRect.bottom + 14;
+        const maxTop = Math.max(minTop, composerRect.top - appState.hud.size - 18);
+        appState.hud.top = clamp(appState.hud.top || (minTop + 18), minTop, maxTop);
+
+        [perfWheel, radarWheel].forEach((wheel) => {
+          wheel.style.top = `${appState.hud.top}px`;
+          wheel.style.width = `${appState.hud.size}px`;
+          wheel.style.height = `${appState.hud.size}px`;
+          wheel.style.setProperty("--wheel-scale", (appState.hud.size / 120).toFixed(3));
+        });
+      }
+
+      function updatePerformanceHud(now) {
+        const selected = appState.activeId ? signalStates.get(appState.activeId) : null;
+        const droneLoad = parseInt(signalStates.get("atlas-drone")?.signal.metrics.find((metric) => metric.label === "load")?.value || "0", 10) || 0;
+        const focusLoad = parseInt(selected?.signal.metrics.find((metric) => metric.label === "load")?.value || `${appState.device.load}%`, 10) || appState.device.load;
+        const peakLoad = Math.max(appState.device.load, focusLoad, droneLoad);
+        appState.performancePeak = Math.max(peakLoad, damp(appState.performancePeak, peakLoad, 0.08));
+
+        perfDevice.firstChild.textContent = appState.device.platform.includes("phone") ? "PHONE" : "DEVICE";
+        perfPlatform.textContent = appState.device.platform;
+        perfCpuValue.textContent = appState.device.cpu;
+        perfRamValue.textContent = appState.device.ram;
+        perfTempValue.textContent = appState.device.thermal;
+        perfMeta.textContent = `${appState.device.storage} / ${appState.device.battery}`;
+        perfCenterLabel.textContent = "MAX";
+        perfCenterValue.textContent = `${Math.round(appState.performancePeak)}%`;
+        perfCenterBtn.classList.toggle("active", appState.performancePeak > 80);
+
+        const endAngle = (-Math.PI / 2) + ((appState.performancePeak / 100) * Math.PI * 1.7);
+        perfLoadArc.setAttribute("d", arcPath(60, 60, 33, -Math.PI / 2, endAngle));
+      }
+
+      function updateRadarHud(now) {
+        appState.radarAngle = (appState.radarAngle + 0.03) % (Math.PI * 2);
+        radarSweep.setAttribute("transform", `rotate(${THREE.MathUtils.radToDeg(appState.radarAngle).toFixed(2)} 60 60)`);
+        const center = globeCenterScreen();
+        const pips = [
+          `<circle cx="60" cy="60" r="2.1" fill="#d9fbff" fill-opacity="0.82"></circle>`
+        ];
+        let visibleCount = 0;
+        signalStates.forEach((state) => {
+          if (!frontFacing(state)) return;
+          visibleCount += 1;
+          const point = screenPoint(state.world);
+          const dx = clamp((point.x - center.x) / (appState.width * 0.24), -1, 1);
+          const dy = clamp((point.y - center.y) / (appState.height * 0.24), -1, 1);
+          const driftX = Math.cos(now * 0.0014 + state.pulsePhase * 1.7) * (state.signal.type === "presence" ? 1.9 : 0.8);
+          const driftY = Math.sin(now * 0.0011 + state.pulsePhase * 1.4) * (state.signal.type === "presence" ? 1.9 : 0.8);
+          const x = clamp(60 + dx * 24 + driftX, 12, 108);
+          const y = clamp(60 + dy * 24 + driftY, 12, 108);
+          const angle = Math.atan2(y - 60, x - 60);
+          const sweepDelta = Math.abs(wrapAngle(angle - (appState.radarAngle - Math.PI / 2)));
+          const sweepEcho = clamp(1 - sweepDelta / 0.42, 0, 1);
+          const active = state.signal.id === appState.activeId;
+          const radius = active ? 4.2 : state.signal.type === "cloud" ? 3 : 2.2 + sweepEcho * 1.6;
+          const accent = typeHex(state.signal.type);
+
+          if (sweepEcho > 0.04) {
+            pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius + 4 + sweepEcho * 4.5).toFixed(2)}" fill="none" stroke="${accent}" stroke-opacity="${(0.08 + sweepEcho * 0.34).toFixed(2)}" stroke-width="1"></circle>`);
+          }
+          if (state.signal.type === "presence") {
+            pips.push(`<line x1="${(x - dx * 5).toFixed(2)}" y1="${(y - dy * 5).toFixed(2)}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}" stroke="${accent}" stroke-opacity="${(0.2 + sweepEcho * 0.3).toFixed(2)}" stroke-width="1.1" stroke-linecap="round"></line>`);
+          }
+          pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${accent}" fill-opacity="${active ? "1" : (0.46 + sweepEcho * 0.42).toFixed(2)}"></circle>`);
+          pips.push(`<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${(radius * 0.42).toFixed(2)}" fill="#effcff" fill-opacity="${active ? "0.92" : "0.54"}"></circle>`);
+        });
+        radarPips.innerHTML = pips.join("");
+        radarMeta.textContent = visibleCount ? `${visibleCount} live around view` : "scanning";
+        radarFetchValue.textContent = appState.zoomTarget > 0.08 ? `${Math.round(appState.zoomTarget * 100)}%` : "World";
+        radarWheel.dataset.active = "true";
+      }
+
+      function refreshDeviceTelemetry() {
+        const platformSource = navigator.userAgentData?.platform || navigator.platform || "web shell";
+        const isPhone = /iphone|android|mobile/i.test(navigator.userAgent) || Math.min(window.innerWidth, window.innerHeight) < 720;
+        appState.device.platform = isPhone ? "phone shell" : platformSource.toLowerCase();
+        appState.device.cpu = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency}c` : "cpu hook";
+        appState.device.ram = navigator.deviceMemory ? `${navigator.deviceMemory}gb` : "ram hook";
+        appState.device.network = navigator.connection?.effectiveType ? `${navigator.connection.effectiveType} net` : "network hook";
+        appState.device.thermal = "web estimate";
+
+        if (navigator.storage?.estimate) {
+          navigator.storage.estimate().then((estimate) => {
+            if (!estimate.quota) return;
+            appState.device.storage = `${Math.round(estimate.quota / 1073741824)}gb store`;
+          }).catch(() => {
+            appState.device.storage = "storage hook";
+          });
+        } else {
+          appState.device.storage = "storage hook";
+        }
+
+        if (navigator.getBattery) {
+          navigator.getBattery().then((battery) => {
+            appState.device.battery = `${Math.round(battery.level * 100)}% pwr`;
+          }).catch(() => {
+            appState.device.battery = "power hook";
+          });
+        }
+      }
+      function popupMarkup(signal) {
+        const metrics = signal.metrics.map((metric) => `
+          <div class="metric">
+            <span class="metric-label">${metric.label}</span>
+            <span class="metric-value">${metric.value}</span>
+          </div>
+        `).join("");
+        const media = signal.previewVideo ? `
+          <div class="popup-media">
+            <video class="popup-video" src="${signal.previewVideo}" muted loop autoplay playsinline preload="metadata"></video>
+          </div>
+        ` : "";
+        const products = signal.products?.length ? `
+          <div class="popup-products">
+            ${signal.products.map((product) => `<span class="popup-product">${product}</span>`).join("")}
+          </div>
+        ` : "";
+        return `
+          <div class="popup-shell">
+            <div class="popup-head">
+              <span class="popup-kind">${signal.type}</span>
+              <span class="popup-capability">${signal.capability}</span>
+            </div>
+            ${media}
+            <div class="popup-copy">
+              <h2 class="popup-title">${signal.title}</h2>
+              <p class="popup-summary">${signal.summary}</p>
+            </div>
+            ${products}
+            <div class="popup-grid">${metrics}</div>
+            <div class="popup-foot">
+              <span class="popup-region">${signal.region}</span>
+              <button class="popup-action" type="button">${signal.actionLabel}</button>
+            </div>
+          </div>
+        `;
+      }
+
+      function createPopup(signal) {
+        const popup = document.createElement("article");
+        popup.className = `signal-popup ${signal.type}`;
+        popup.dataset.signalId = signal.id;
+        popup.innerHTML = popupMarkup(signal);
+        popup.addEventListener("pointerdown", (event) => event.stopPropagation());
+        popup.addEventListener("click", (event) => {
+          event.stopPropagation();
+          setActiveSignal(signal.id, true);
+        });
+        const actionButton = popup.querySelector(".popup-action");
+        actionButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const state = signalStates.get(signal.id);
+          if (!state) return;
+          state.armed = !state.armed;
+          actionButton.textContent = state.armed ? signal.armedLabel : signal.actionLabel;
+          popup.classList.toggle("armed", state.armed);
+          setActiveSignal(signal.id, true);
+        });
+        signalLayer.appendChild(popup);
+        return popup;
+      }
+
+      function addAnchorVisual(state) {
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(0.13, 0.01, 10, 44),
+          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.78, depthWrite: false })
+        );
+        ring.rotation.x = Math.PI / 2;
+        const shaft = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.012, 0.012, 0.18, 10),
+          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.52, depthWrite: false })
+        );
+        shaft.position.y = 0.09;
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.045, 18, 18),
+          new THREE.MeshBasicMaterial({ color: 0xbefee9, transparent: true, opacity: 1, depthWrite: false })
+        );
+        core.position.y = 0.18;
+        const wave = new THREE.Mesh(
+          new THREE.RingGeometry(0.15, 0.24, 40),
+          new THREE.MeshBasicMaterial({ color: 0x4df2c8, transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false })
+        );
+        wave.rotation.x = -Math.PI / 2;
+        state.group.add(wave, ring, shaft, core);
+        state.core = core;
+        state.ring = ring;
+        state.wave = wave;
+      }
+
+      function addPresenceVisual(state) {
+        const base = new THREE.Mesh(
+          new THREE.TorusGeometry(0.11, 0.009, 10, 36),
+          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.5, depthWrite: false })
+        );
+        base.rotation.x = Math.PI / 2;
+        const shaft = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.009, 0.009, 0.16, 8),
+          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.28, depthWrite: false })
+        );
+        shaft.position.y = 0.08;
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.05, 18, 18),
+          new THREE.MeshBasicMaterial({ color: 0xe1fdff, transparent: true, opacity: 1, depthWrite: false })
+        );
+        core.position.y = 0.2;
+        const halo = new THREE.Mesh(
+          new THREE.RingGeometry(0.08, 0.125, 32),
+          new THREE.MeshBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })
+        );
+        halo.rotation.x = -Math.PI / 2;
+        halo.position.y = 0.02;
+        state.group.add(base, shaft, halo, core);
+        state.core = core;
+        state.ring = base;
+        state.wave = halo;
+
+        const trailCount = 16;
+        const trailPositions = new Float32Array(trailCount * 3);
+        const trailGeometry = new THREE.BufferGeometry();
+        trailGeometry.setAttribute("position", new THREE.BufferAttribute(trailPositions, 3));
+        const trailLine = new THREE.Line(
+          trailGeometry,
+          new THREE.LineBasicMaterial({ color: 0xb4f9ff, transparent: true, opacity: 0.54, depthWrite: false })
+        );
+        markerGroup.add(trailLine);
+        state.trailGeometry = trailGeometry;
+        state.trailLine = trailLine;
+        state.trailPositions = trailPositions;
+        state.trailHistory = Array.from({ length: trailCount }, () => latLngToVector3(state.baseLat, state.baseLng, earthRadius + state.signal.alt));
+      }
+
+      function addCloudVisual(state) {
+        const latticePoints = [
+          -0.16, 0.22, -0.16,  0.16, 0.22, -0.16,
+          -0.16, 0.22, 0.00,   0.16, 0.22, 0.00,
+          -0.16, 0.22, 0.16,   0.16, 0.22, 0.16,
+          -0.16, 0.22, -0.16, -0.16, 0.22, 0.16,
+           0.00, 0.22, -0.16,  0.00, 0.22, 0.16,
+           0.16, 0.22, -0.16,  0.16, 0.22, 0.16,
+          -0.12, 0.14, -0.12, -0.12, 0.30, -0.12,
+           0.12, 0.14, -0.12,  0.12, 0.30, -0.12,
+          -0.12, 0.14, 0.12,  -0.12, 0.30, 0.12,
+           0.12, 0.14, 0.12,   0.12, 0.30, 0.12
+        ];
+        const lattice = new THREE.LineSegments(
+          new THREE.BufferGeometry(),
+          new THREE.LineBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.48, depthWrite: false })
+        );
+        lattice.geometry.setAttribute("position", new THREE.Float32BufferAttribute(latticePoints, 3));
+        const lower = new THREE.Mesh(
+          new THREE.RingGeometry(0.12, 0.18, 36),
+          new THREE.MeshBasicMaterial({ color: 0x41c6ff, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })
+        );
+        lower.rotation.x = -Math.PI / 2;
+        lower.position.y = 0.08;
+        const upper = new THREE.Mesh(
+          new THREE.RingGeometry(0.1, 0.14, 28),
+          new THREE.MeshBasicMaterial({ color: 0xa2ecff, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false })
+        );
+        upper.rotation.x = -Math.PI / 2;
+        upper.position.y = 0.28;
+        const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.045, 18, 18),
+          new THREE.MeshBasicMaterial({ color: 0xcdf8ff, transparent: true, opacity: 1, depthWrite: false })
+        );
+        core.position.y = 0.22;
+        state.group.add(lower, upper, lattice, core);
+        state.core = core;
+        state.ring = lower;
+        state.wave = upper;
+        state.lattice = lattice;
+      }
+
+      function createSignalState(signal) {
+        const state = {
+          signal,
+          popup: createPopup(signal),
+          group: new THREE.Group(),
+          baseLat: signal.lat,
+          baseLng: signal.lng,
+          local: latLngToVector3(signal.lat, signal.lng, earthRadius + signal.alt),
+          world: new THREE.Vector3(),
+          depth: 1,
+          show: 0,
+          armed: false,
+          pulsePhase: Math.random() * Math.PI * 2,
+          activatedAt: performance.now()
+        };
+
+        if (signal.type === "anchor") addAnchorVisual(state);
+        if (signal.type === "presence") addPresenceVisual(state);
+        if (signal.type === "cloud") addCloudVisual(state);
+
+        const hit = new THREE.Mesh(new THREE.SphereGeometry(signal.type === "cloud" ? 0.28 : 0.22, 12, 12), new THREE.MeshBasicMaterial({ visible: false }));
+        hit.position.y = signal.type === "cloud" ? 0.22 : signal.type === "presence" ? 0.2 : 0.16;
+        hit.userData.signalId = signal.id;
+        state.group.add(hit);
+        state.hit = hit;
+
+        markerGroup.add(state.group);
+        interactive.push(hit);
+        signalStates.set(signal.id, state);
+        return state;
+      }
+
+      function removeSignal(id) {
+        const state = signalStates.get(id);
+        if (!state) return;
+        markerGroup.remove(state.group);
+        if (state.trailLine) markerGroup.remove(state.trailLine);
+        if (state.popup.parentNode) state.popup.parentNode.removeChild(state.popup);
+        const hitIndex = interactive.indexOf(state.hit);
+        if (hitIndex >= 0) interactive.splice(hitIndex, 1);
+        signalStates.delete(id);
+        if (appState.activeId === id) appState.activeId = null;
+        if (appState.previewId === id) appState.previewId = null;
+      }
+
+      function spawnSeed(localPoint) {
+        if (appState.seedId && signalStates.has(appState.seedId)) removeSignal(appState.seedId);
+        const coords = vectorToLatLng(localPoint);
+        const mode = appState.addMode || "shop";
+        const seedProfile = mode === "video"
+          ? {
+            title: "Video Post Seed",
+            summary: "Fresh location-bound video post ready for preview, captioning, and local distribution.",
+            capability: "video post",
+            actionLabel: "Post Video",
+            armedLabel: "Video Live",
+            tags: ["video", "post", "creator", "anchor"],
+            metrics: [
+              { label: "state", value: "clip ready" },
+              { label: "reach", value: "local feed" },
+              { label: "shell", value: "previewable" }
+            ],
+            previewVideo: "https://www.w3schools.com/html/mov_bbb.mp4"
+          }
+          : mode === "service"
+            ? {
+              title: "Service Seed",
+              summary: "New service signal ready for pricing, schedule, and dispatch hooks from this exact place.",
+              capability: "service shell",
+              actionLabel: "Add Service",
+              armedLabel: "Service Live",
+              tags: ["service", "booking", "local", "anchor"],
+              metrics: [
+                { label: "state", value: "service draft" },
+                { label: "reach", value: "nearby users" },
+                { label: "shell", value: "bookable" }
+              ]
+            }
+            : {
+              title: "Shop Seed",
+              summary: "New shop signal pinned to this Earth point, ready for products, pricing, and local orders.",
+              capability: "shop shell",
+              actionLabel: "Add Shop",
+              armedLabel: "Shop Live",
+              tags: ["shop", "products", "order", "anchor"],
+              metrics: [
+                { label: "state", value: "shop draft" },
+                { label: "reach", value: "walk-in zone" },
+                { label: "shell", value: "orderable" }
+              ]
+            };
+        const seedSignal = {
+          id: `seed-${Date.now()}`,
+          type: "anchor",
+          title: seedProfile.title,
+          summary: seedProfile.summary,
+          capability: seedProfile.capability,
+          actionLabel: seedProfile.actionLabel,
+          armedLabel: seedProfile.armedLabel,
+          region: `${Math.abs(coords.lat).toFixed(2)}${coords.lat >= 0 ? "N" : "S"} / ${Math.abs(coords.lng).toFixed(2)}${coords.lng >= 0 ? "E" : "W"}`,
+          lat: coords.lat,
+          lng: coords.lng,
+          alt: 0.15,
+          zoom: 1,
+          previewVideo: seedProfile.previewVideo,
+          tags: ["seed", "origin", "signal", "anchor", ...seedProfile.tags],
+          metrics: seedProfile.metrics,
+          transient: true,
+          bornAt: performance.now()
+        };
+        appState.seedId = seedSignal.id;
+        createSignalState(seedSignal);
+        setActiveSignal(seedSignal.id, true);
+        appState.addMode = null;
+        setZoom(1.02);
+        query.placeholder = `${seedSignal.title} placed on the map`;
+      }
+
+      function setActiveSignal(id, holdFocus) {
+        if (!signalStates.has(id)) return;
+        appState.activeId = id;
+        appState.previewId = null;
+        appState.lastCycle = performance.now();
+        if (holdFocus) appState.holdUntil = performance.now() + 6400;
+        const state = signalStates.get(id);
+        state.activatedAt = performance.now();
+        if (holdFocus) {
+          setZoom(Math.max(appState.zoomTarget, clamp((state.signal.zoom || 0.82) + 0.08, 0.54, 1.08)));
+        }
+      }
+
+      function clearActiveSignal() {
+        appState.activeId = null;
+        setZoom(0);
+        if (!query.value.trim()) appState.previewId = null;
+      }
+
+      function frontFacing(state) {
+        const normal = worldNormal(state.local);
+        const toCamera = camera.position.clone().sub(state.world).normalize();
+        return normal.dot(toCamera) > 0.1;
+      }
+
+      function syncSignalState(state, now) {
+        const signal = state.signal;
+        let lat = state.baseLat;
+        let lng = state.baseLng;
+        let altitude = earthRadius + signal.alt;
+
+        if (signal.movement) {
+          const phase = now * 0.00012 * signal.movement.speed + signal.movement.phase;
+          lat += Math.sin(phase) * signal.movement.latAmp;
+          lng += Math.cos(phase) * signal.movement.lngAmp;
+          altitude += signal.type === "cloud" ? Math.sin(phase * 1.1) * 0.04 : Math.sin(phase * 1.5) * 0.02;
+        }
+
+        const local = latLngToVector3(lat, lng, altitude);
+        const normal = local.clone().normalize();
+        state.local.copy(local);
+        state.group.position.copy(local);
+        state.group.quaternion.setFromUnitVectors(yAxis, normal);
+        state.world.copy(local.clone().applyMatrix4(globeGroup.matrixWorld));
+        state.depth = screenPoint(state.world).z;
+
+        const pulse = 0.5 + 0.5 * Math.sin(now * 0.004 + state.pulsePhase);
+        const highlight = state.signal.id === appState.activeId ? 1 : state.signal.id === appState.previewId ? 0.72 : appState.ambientIds.includes(state.signal.id) ? 0.4 : 0.16;
+
+        if (state.ring) {
+          const baseScale = signal.type === "cloud" ? 1.08 : 1;
+          state.ring.scale.setScalar(baseScale + pulse * 0.06 + highlight * 0.08);
+          state.ring.material.opacity = 0.22 + highlight * 0.46;
+        }
+        if (state.wave) {
+          state.wave.scale.setScalar(1 + pulse * 0.36 + highlight * 0.22);
+          state.wave.material.opacity = signal.type === "cloud" ? 0.12 + highlight * 0.22 : 0.1 + highlight * 0.28;
+        }
+        if (state.core) {
+          state.core.scale.setScalar(1 + highlight * 0.18 + pulse * 0.08);
+          state.core.material.opacity = 0.72 + highlight * 0.28;
+        }
+        if (state.lattice) {
+          state.lattice.rotation.y += 0.012;
+          state.lattice.material.opacity = 0.46 + highlight * 0.42;
+        }
+        if (state.trailLine) {
+          state.trailHistory.unshift(local.clone());
+          state.trailHistory = state.trailHistory.slice(0, state.trailPositions.length / 3);
+          for (let i = 0; i < state.trailPositions.length / 3; i += 1) {
+            const point = state.trailHistory[i] || state.trailHistory[state.trailHistory.length - 1];
+            state.trailPositions[i * 3] = point.x;
+            state.trailPositions[i * 3 + 1] = point.y;
+            state.trailPositions[i * 3 + 2] = point.z;
+          }
+          state.trailGeometry.attributes.position.needsUpdate = true;
+          state.trailLine.material.opacity = 0.16 + highlight * 0.54;
+        }
+      }
+
+      function updateAmbientSignals() {
+        const center = globeCenterScreen();
+        const candidates = [];
+        const ambientLimit = appState.zoomed ? 1 : AMBIENT_COUNT;
+        signalStates.forEach((state) => {
+          if (state.signal.id === appState.activeId || state.signal.id === appState.previewId || appState.searchIds.includes(state.signal.id)) return;
+          if (!frontFacing(state)) return;
+          const point = screenPoint(state.world);
+          const distance = Math.hypot(point.x - center.x, point.y - center.y);
+          const weight = state.signal.type === "cloud" ? 0.16 : state.signal.type === "presence" ? 0.12 : 0.08;
+          candidates.push({ id: state.signal.id, score: (1 / (distance + 1)) + weight });
+        });
+        candidates.sort((a, b) => b.score - a.score);
+        appState.ambientIds = candidates.slice(0, ambientLimit).map((entry) => entry.id);
+      }
+
+      function renderOverlay(time) {
+        const center = globeCenterScreen();
+        const parts = [];
+        const placed = [];
+        const ambientLimit = appState.zoomed ? 1 : AMBIENT_COUNT;
+        const overlaps = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+        const candidates = [];
+
+        signalStates.forEach((state) => {
+          const visible = frontFacing(state);
+          const targetShow = !visible
+            ? 0
+            : state.signal.id === appState.activeId
+              ? 1
+              : state.signal.id === appState.previewId
+                ? 0.84
+                : appState.ambientIds.includes(state.signal.id)
+                  ? (ambientLimit > 1 ? 0.38 : 0.26)
+                  : 0;
+          state.show = damp(state.show, targetShow, state.signal.id === appState.activeId ? 0.16 : 0.11);
+          if (state.show > 0.03) {
+            candidates.push({
+              state,
+              priority: state.signal.id === appState.activeId ? 3 : state.signal.id === appState.previewId ? 2 : 1
+            });
+          } else {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+          }
+        });
+
+        candidates.sort((a, b) => b.priority - a.priority || b.state.show - a.state.show);
+        candidates.forEach(({ state, priority }) => {
+          const source = screenPoint(state.world);
+          const dir = directionFromGlobe(source, center);
+          const visibility = clamp((1 - state.depth) * 0.5, 0, 1);
+          const popupWidth = Math.min(appState.width * 0.84, appState.width < 560 ? 308 : 336);
+          const popupHeight = 202
+            + (state.signal.type === "cloud" ? 16 : 0)
+            + (state.signal.previewVideo ? 92 : 0)
+            + (state.signal.products?.length ? 34 : 0);
+          const sourceDistance = Math.hypot(source.x - center.x, source.y - center.y);
+          const centerAvoid = clamp(1 - (sourceDistance / (Math.min(appState.width, appState.height) * 0.24)), 0, 1);
+          const lift = POPUP_LIFT + visibility * 24 + centerAvoid * 152 + (appState.zoomed ? 74 : 12) + (state.signal.type === "cloud" ? 18 : state.signal.type === "presence" ? 8 : 0);
+          const target = {
+            x: source.x + dir.x * lift,
+            y: source.y + dir.y * (lift * 0.78) - visibility * 18 - centerAvoid * 8
+          };
+          const eased = easeOut(state.show);
+          const popupCenter = {
+            x: THREE.MathUtils.lerp(source.x, target.x, eased),
+            y: THREE.MathUtils.lerp(source.y, target.y, eased)
+          };
+
+          const sidePad = appState.width < 560 ? 10 : 16;
+          const topClamp = appState.height < 760 ? 152 : 168;
+          const bottomClamp = appState.height < 760 ? 98 : 110;
+          let left = clamp(popupCenter.x - popupWidth * 0.5, sidePad, appState.width - popupWidth - sidePad);
+          let top = clamp(popupCenter.y - popupHeight * 0.5, topClamp, appState.height - popupHeight - bottomClamp);
+          const perpendicular = { x: -dir.y, y: dir.x };
+          const shiftStep = appState.width < 560 ? 46 : 58;
+          let rect = { x: left, y: top, w: popupWidth, h: popupHeight };
+          let attempt = 0;
+          while (placed.some((entry) => overlaps(rect, entry)) && attempt < 6) {
+            const sign = attempt % 2 === 0 ? 1 : -1;
+            left = clamp(left + perpendicular.x * shiftStep * sign, sidePad, appState.width - popupWidth - sidePad);
+            top = clamp(top + perpendicular.y * shiftStep * sign + sign * 10, topClamp, appState.height - popupHeight - bottomClamp);
+            rect = { x: left, y: top, w: popupWidth, h: popupHeight };
+            attempt += 1;
+          }
+          const centerSafeRadius = appState.zoomed ? Math.min(appState.width, appState.height) * 0.34 : Math.min(appState.width, appState.height) * 0.24;
+          if (Math.hypot((left + popupWidth * 0.5) - center.x, (top + popupHeight * 0.5) - center.y) < centerSafeRadius) {
+            left = clamp(left + dir.x * centerSafeRadius * 0.88, sidePad, appState.width - popupWidth - sidePad);
+            top = clamp(top + dir.y * centerSafeRadius * 0.66, topClamp, appState.height - popupHeight - bottomClamp);
+            rect = { x: left, y: top, w: popupWidth, h: popupHeight };
+          }
+          if (priority < 3 && placed.some((entry) => overlaps(rect, entry))) {
+            state.popup.style.opacity = "0";
+            state.popup.style.pointerEvents = "none";
+            return;
+          }
+          placed.push(rect);
+
+          const cardCenter = { x: left + popupWidth * 0.5, y: top + popupHeight * 0.5 };
+          const tip = rectEdgePoint(cardCenter.x, cardCenter.y, popupWidth * 0.5, popupHeight * 0.5, source.x, source.y);
+          const pull = 42 + state.show * 66;
+          const c1 = { x: source.x + dir.x * pull, y: source.y + dir.y * pull };
+          const c2 = { x: tip.x - dir.x * pull * 0.62, y: tip.y - dir.y * pull * 0.62 };
+          const pulseA = cubicPoint((time * 0.00042 * PULSE_SPEED + state.pulsePhase * 0.07) % 1, source, c1, c2, tip);
+          const pulseB = cubicPoint((time * 0.00042 * PULSE_SPEED + 0.36 + state.pulsePhase * 0.05) % 1, source, c1, c2, tip);
+          const accent = typeHex(state.signal.type);
+          const birth = clamp(1 - (performance.now() - state.activatedAt) / 1100, 0, 1);
+          const widthBoost = birth * 2.4;
+          const scale = 0.72 + eased * 0.24 + visibility * 0.1;
+
+          state.popup.dataset.state = priority === 1 ? "ghost" : "live";
+          state.popup.style.left = `${left}px`;
+          state.popup.style.top = `${top}px`;
+          state.popup.style.opacity = `${0.12 + state.show * 0.92}`;
+          state.popup.style.transform = `scale(${scale})`;
+          state.popup.style.pointerEvents = priority > 1 || state.show > 0.64 ? "auto" : "none";
+
+          parts.push(`
+            <g opacity="${(0.2 + state.show * 0.8).toFixed(2)}">
+              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
+                fill="none" stroke="${accent}" stroke-opacity="0.22" stroke-width="${(5.8 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
+              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
+                fill="none" stroke="#16d9ff" stroke-opacity="${(0.82 + state.show * 0.18).toFixed(2)}" stroke-width="${(3.4 + widthBoost).toFixed(2)}" stroke-linecap="round" filter="url(#connectorGlow)"/>
+              <path d="M ${source.x.toFixed(2)} ${source.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)}, ${c2.x.toFixed(2)} ${c2.y.toFixed(2)}, ${tip.x.toFixed(2)} ${tip.y.toFixed(2)}"
+                fill="none" stroke="#eafcff" stroke-opacity="0.42" stroke-width="${(1.18 + widthBoost * 0.18).toFixed(2)}" stroke-linecap="round"/>
+              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(5.6 + state.show * 1.6).toFixed(2)}" fill="#16d9ff" fill-opacity="${(0.64 + state.show * 0.24).toFixed(2)}" filter="url(#connectorGlow)"/>
+              <circle cx="${source.x.toFixed(2)}" cy="${source.y.toFixed(2)}" r="${(2.4 + state.show * 0.7).toFixed(2)}" fill="${accent}" fill-opacity="1"/>
+              <circle cx="${pulseA.x.toFixed(2)}" cy="${pulseA.y.toFixed(2)}" r="${(2.4 + state.show).toFixed(2)}" fill="#d7fbff" fill-opacity="${(0.46 + state.show * 0.4).toFixed(2)}" filter="url(#pulseGlow)"/>
+              <circle cx="${pulseB.x.toFixed(2)}" cy="${pulseB.y.toFixed(2)}" r="${(1.9 + state.show * 0.8).toFixed(2)}" fill="#7fe6ff" fill-opacity="${(0.34 + state.show * 0.34).toFixed(2)}" filter="url(#pulseGlow)"/>
+            </g>
+          `);
+        });
+
+        connectorSvg.innerHTML = `
+          <defs>
+            <filter id="connectorGlow" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="2.8" result="blur1"></feGaussianBlur>
+              <feGaussianBlur stdDeviation="8" result="blur2"></feGaussianBlur>
+              <feMerge>
+                <feMergeNode in="blur2"></feMergeNode>
+                <feMergeNode in="blur1"></feMergeNode>
+                <feMergeNode in="SourceGraphic"></feMergeNode>
+              </feMerge>
+            </filter>
+            <filter id="pulseGlow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="6"></feGaussianBlur>
+            </filter>
+          </defs>
+          ${parts.join("")}
+        `;
+      }
+
+      function analyzeCommand(value) {
+        const lowered = value.toLowerCase().trim();
+        const baseTerms = lowered.split(/\s+/).filter(Boolean);
+        const hints = [];
+        let intent = "find";
+        let preferredType = null;
+
+        if (/(add|post|publish|list|create|open shop|new service)/.test(lowered)) {
+          intent = "add";
+          hints.push("shop", "service", "video");
+        } else if (/(assign|driver|courier|dispatch driver)/.test(lowered)) {
+          intent = "assign";
+          hints.push("driver", "courier", "dispatch");
+        } else if (/(order|book|reserve|buy|get|send|deliver|pay)/.test(lowered)) {
+          intent = "order";
+          hints.push("booking", "hook", "table", "stay", "menu", "dispatch", "products");
+        } else if (/(track|follow|locate|where|watch)/.test(lowered)) {
+          intent = "track";
+          hints.push("route", "trace", "live");
+        } else if (/(open|show|find|bring)/.test(lowered)) {
+          hints.push("signal", "local");
+        }
+
+        if (/(driver|courier|vehicle|van)/.test(lowered)) {
+          preferredType = "presence";
+          hints.push("driver", "assign");
+        } else if (/(drone|courier|vessel|boat|runner|presence|flight)/.test(lowered)) {
+          preferredType = "presence";
+          hints.push("presence");
+        } else if (/(cloud|mesh|fabric|relay|regional|network)/.test(lowered)) {
+          preferredType = "cloud";
+          hints.push("cloud");
+        } else if (/(hotel|room|stay|restaurant|table|booking|business|menu|event|anchor|shop|service|product|video)/.test(lowered)) {
+          preferredType = "anchor";
+          hints.push("anchor");
+        }
+
+        return { intent, preferredType, terms: [...new Set([...baseTerms, ...hints])] };
+      }
+
+      function rankSignals(value) {
+        const analysis = analyzeCommand(value);
+        const terms = analysis.terms;
+        if (!terms.length) return [];
+        return [...signalStates.values()].map((state) => {
+          const metricText = state.signal.metrics.map((metric) => `${metric.label} ${metric.value}`).join(" ");
+          const productText = state.signal.products ? state.signal.products.join(" ") : "";
+          const haystack = `${state.signal.title} ${state.signal.summary} ${state.signal.capability} ${state.signal.region} ${metricText} ${productText} ${state.signal.tags.join(" ")} ${state.signal.type}`.toLowerCase();
+          let score = 0;
+          terms.forEach((term) => {
+            if (state.signal.title.toLowerCase().includes(term)) score += 10;
+            if (state.signal.capability.toLowerCase().includes(term)) score += 8;
+            if (state.signal.region.toLowerCase().includes(term)) score += 6;
+            if (state.signal.products?.some((product) => product.toLowerCase().includes(term))) score += 9;
+            if (state.signal.tags.some((tag) => tag.includes(term))) score += 5;
+            if (state.signal.type.includes(term)) score += 4;
+            if (haystack.includes(term)) score += 2;
+          });
+          if (analysis.preferredType && state.signal.type === analysis.preferredType) score += 7;
+          if (analysis.intent === "order" && state.signal.type === "anchor") score += 5;
+          if (analysis.intent === "track" && state.signal.type === "presence") score += 5;
+          if (analysis.intent === "assign" && state.signal.tags.includes("driver")) score += 12;
+          return { id: state.signal.id, score };
+        }).filter((entry) => entry.score > 0).sort((a, b) => b.score - a.score);
+      }
+
+      function flashNoMatch() {
+        query.classList.add("no-match");
+        window.setTimeout(() => query.classList.remove("no-match"), 220);
+      }
+
+      function updatePreview() {
+        const value = query.value.trim();
+        if (!value) {
+          appState.previewId = null;
+          appState.searchIds = [];
+          query.classList.remove("no-match");
+          return;
+        }
+        const ranked = rankSignals(value);
+        appState.searchIds = ranked.slice(0, 5).map((entry) => entry.id);
+        const visible = ranked.find((entry) => {
+          const candidate = signalStates.get(entry.id);
+          return candidate && frontFacing(candidate);
+        });
+        appState.previewId = visible ? visible.id : ranked[0] ? ranked[0].id : null;
+      }
+
+      function cycleSignal() {
+        const ids = [...signalStates.keys()].filter((id) => id !== appState.seedId);
+        if (!ids.length) return;
+        const current = appState.activeId ? ids.indexOf(appState.activeId) : -1;
+        setActiveSignal(ids[(current + 1 + ids.length) % ids.length], false);
+      }
+
+      function submitQuery() {
+        const value = query.value.trim();
+        if (!value) {
+          cycleSignal();
+          return;
+        }
+        const analysis = analyzeCommand(value);
+        if (analysis.intent === "add") {
+          setPanel("add");
+          return;
+        }
+        const ranked = rankSignals(value);
+        if (!ranked.length) {
+          flashNoMatch();
+          return;
+        }
+        const picked = ranked.find((entry) => {
+          const candidate = signalStates.get(entry.id);
+          return candidate && frontFacing(candidate);
+        }) || ranked[0];
+        const state = signalStates.get(picked.id);
+        setActiveSignal(picked.id, true);
+        setZoom(analysis.intent === "order" || analysis.intent === "assign" ? 1.02 : 0.78);
+        if (!state) return;
+
+        if (analysis.intent === "order") {
+          state.armed = true;
+          state.popup.classList.add("armed");
+          const button = state.popup.querySelector(".popup-action");
+          if (button) button.textContent = "AI Route Live";
+        } else if (analysis.intent === "assign") {
+          state.armed = true;
+          state.popup.classList.add("armed");
+          const button = state.popup.querySelector(".popup-action");
+          if (button) button.textContent = "Driver Assigned";
+        } else if (analysis.intent === "track") {
+          const button = state.popup.querySelector(".popup-action");
+          if (button) button.textContent = "Track Live";
+        }
+
+        query.placeholder = analysis.intent === "order"
+          ? `AI routed ${state.signal.title} for ordering`
+          : analysis.intent === "assign"
+            ? `AI assigned ${state.signal.title}`
+          : analysis.intent === "track"
+            ? `AI locked ${state.signal.title} for tracking`
+            : `AI found ${state.signal.title}`;
+      }
+
+      SIGNALS.forEach(createSignalState);
+      let longPressTimer = null;
+      let recognition = null;
+      let listening = false;
+
+      function resize() {
+        appState.width = window.innerWidth;
+        appState.height = window.innerHeight;
+        renderer.setSize(appState.width, appState.height);
+        camera.aspect = appState.width / appState.height;
+        camera.updateProjectionMatrix();
+        refreshDeviceTelemetry();
+        applyHudLayout();
+      }
+
+      function pruneSeeds(now) {
+        signalStates.forEach((state) => {
+          if (state.signal.transient && now - state.signal.bornAt > 18000) {
+            removeSignal(state.signal.id);
+            if (appState.seedId === state.signal.id) appState.seedId = null;
+          }
+        });
+      }
+
+      function autoCycle(now) {
+        if (query.value.trim() || now < appState.holdUntil || appState.activeId) return;
+        if (now - appState.lastCycle > 5200) {
+          cycleSignal();
+          appState.lastCycle = now;
+        }
+      }
+
+      function setPointerFromClient(x, y) {
+        pointer.x = (x / appState.width) * 2 - 1;
+        pointer.y = -(y / appState.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+      }
+
+      function triggerSeedAt(clientX, clientY) {
+        setPointerFromClient(clientX, clientY);
+        const earthHit = raycaster.intersectObject(earth, false)[0];
+        if (!earthHit) return;
+        const inverse = new THREE.Matrix4().copy(globeGroup.matrixWorld).invert();
+        spawnSeed(earthHit.point.clone().applyMatrix4(inverse));
+        appState.longPressTriggered = true;
+      }
+
+      function beginHudMotion(mode, event) {
+        appState.hud.mode = mode;
+        appState.hud.pointerId = event.pointerId;
+        appState.hud.startX = event.clientX;
+        appState.hud.startY = event.clientY;
+        appState.hud.startTop = appState.hud.top;
+        appState.hud.startSize = appState.hud.size;
+        perfWheel.classList.toggle("dragging", mode === "drag");
+        radarWheel.classList.toggle("dragging", mode === "drag");
+        perfWheel.classList.toggle("resizing", mode === "resize");
+        radarWheel.classList.toggle("resizing", mode === "resize");
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      function endHudMotion() {
+        appState.hud.mode = null;
+        appState.hud.pointerId = null;
+        perfWheel.classList.remove("dragging", "resizing");
+        radarWheel.classList.remove("dragging", "resizing");
+      }
+
+      function adjustZoom(delta) {
+        ensureFocusSignal();
+        setZoom(appState.zoomTarget + delta);
+        const focus = focusableSignalState();
+        query.placeholder = appState.zoomTarget > 0.08 && focus
+          ? `Zoom ${Math.round(appState.zoomTarget * 100)}% on ${focus.signal.title}`
+          : "World view restored";
+        appState.holdUntil = performance.now() + 6400;
+      }
+
+      query.addEventListener("input", updatePreview);
+      query.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          submitQuery();
+        }
+      });
+
+      document.getElementById("composer").addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitQuery();
+      });
+
+      function zoomToLocation(step = 1) {
+        const focus = ensureFocusSignal();
+        if (!focus) {
+          setZoom(0);
+          return;
+        }
+        if (step < 0) {
+          setZoom(Math.max(0, appState.zoomTarget - 0.28));
+        } else if (appState.zoomTarget < 0.18) {
+          setZoom(clamp((focus.signal.zoom || 0.82) + 0.08, 0.56, 1.02));
+        } else if (appState.zoomTarget < 1.02) {
+          setZoom(Math.min(1.34, appState.zoomTarget + 0.26));
+        } else {
+          setZoom(0);
+        }
+        query.placeholder = appState.zoomTarget > 0.08
+          ? `Zoom ${Math.round(appState.zoomTarget * 100)}% on ${focus.signal.title}`
+          : "World view restored";
+        appState.holdUntil = performance.now() + 6400;
+      }
+
+      userButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePanel("user");
+      });
+
+      systemButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePanel("system");
+      });
+
+      walletButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePanel("wallet");
+      });
+
+      addBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePanel("add");
+      });
+
+      perfCenterBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        togglePanel("performance");
+      });
+
+      radarFetchBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        zoomToLocation();
+      });
+
+      [perfWheel, radarWheel].forEach((wheel) => {
+        wheel.addEventListener("pointerdown", (event) => {
+          if (event.target.closest(".wheel-center-btn, .wheel-resize-grip")) return;
+          beginHudMotion("drag", event);
+        });
+      });
+
+      [perfResizeGrip, radarResizeGrip].forEach((grip) => {
+        grip.addEventListener("pointerdown", (event) => beginHudMotion("resize", event));
+      });
+
+      document.addEventListener("pointerdown", (event) => {
+        const target = event.target;
+        if (topPanel.contains(target) || userButton.contains(target) || systemButton.contains(target) || walletButton.contains(target)) return;
+        setPanel(null);
+      });
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.interimResults = true;
+        recognition.continuous = false;
+        recognition.onresult = (event) => {
+          let text = "";
+          for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            text += `${event.results[index][0].transcript} `;
+          }
+          query.value = text.trim();
+          updatePreview();
+          if (event.results[event.results.length - 1].isFinal) submitQuery();
+        };
+        recognition.onend = () => {
+          listening = false;
+          voiceBtn.dataset.active = "false";
+          if (appState.texturesReady) {
+            query.placeholder = "Ask AI to find signals, products, drivers, or orders...";
+          }
+        };
+      }
+
+      voiceBtn.addEventListener("click", () => {
+        if (!recognition) {
+          flashNoMatch();
+          return;
+        }
+        if (listening) {
+          recognition.stop();
+          return;
+        }
+        listening = true;
+        voiceBtn.dataset.active = "true";
+        query.placeholder = "Listening for a signal...";
+        recognition.start();
+      });
+
+      renderer.domElement.style.touchAction = "none";
+      renderer.domElement.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        adjustZoom(event.deltaY < 0 ? 0.12 : -0.12);
+      }, { passive: false });
+
+      renderer.domElement.addEventListener("pointerdown", (event) => {
+        activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (activePointers.size === 2) {
+          const points = [...activePointers.values()];
+          appState.dragging = false;
+          window.clearTimeout(longPressTimer);
+          appState.pinchStart = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+          appState.pinchZoomStart = appState.zoomTarget;
+          ensureFocusSignal();
+          return;
+        }
+        if (activePointers.size > 1) return;
+        appState.dragging = true;
+        appState.dragMoved = false;
+        appState.longPressTriggered = false;
+        appState.pointerStartX = appState.lastPointerX = event.clientX;
+        appState.pointerStartY = appState.lastPointerY = event.clientY;
+        window.clearTimeout(longPressTimer);
+        longPressTimer = window.setTimeout(() => {
+          if (!appState.dragging || appState.dragMoved) return;
+          triggerSeedAt(appState.lastPointerX, appState.lastPointerY);
+        }, 460);
+      });
+
+      window.addEventListener("pointermove", (event) => {
+        if (activePointers.has(event.pointerId)) {
+          activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        }
+        if (appState.hud.mode && appState.hud.pointerId === event.pointerId) {
+          if (appState.hud.mode === "drag") {
+            appState.hud.top = appState.hud.startTop + (event.clientY - appState.hud.startY);
+          } else {
+            const delta = ((event.clientX - appState.hud.startX) * 0.4) + ((event.clientY - appState.hud.startY) * 0.7);
+            appState.hud.size = appState.hud.startSize + delta;
+          }
+          applyHudLayout();
+          return;
+        }
+        if (activePointers.size === 2 && activePointers.has(event.pointerId)) {
+          const points = [...activePointers.values()];
+          const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+          if (!appState.pinchStart) {
+            appState.pinchStart = distance;
+            appState.pinchZoomStart = appState.zoomTarget;
+          }
+          setZoom(appState.pinchZoomStart + ((distance - appState.pinchStart) / Math.min(appState.width, appState.height)) * 2.1);
+          const focus = focusableSignalState();
+          query.placeholder = appState.zoomTarget > 0.08 && focus
+            ? `Zoom ${Math.round(appState.zoomTarget * 100)}% on ${focus.signal.title}`
+            : "World view restored";
+          appState.holdUntil = performance.now() + 6400;
+          return;
+        }
+        if (!appState.dragging) return;
+        const dx = event.clientX - appState.lastPointerX;
+        const dy = event.clientY - appState.lastPointerY;
+        if (Math.hypot(event.clientX - appState.pointerStartX, event.clientY - appState.pointerStartY) > 6) {
+          appState.dragMoved = true;
+          window.clearTimeout(longPressTimer);
+        }
+        targetRotation.y += dx * 0.006;
+        targetRotation.x = clamp(targetRotation.x + dy * 0.0032, -0.76, 0.76);
+        appState.lastPointerX = event.clientX;
+        appState.lastPointerY = event.clientY;
+        appState.holdUntil = performance.now() + 6800;
+      });
+
+      const endPointer = (event) => {
+        activePointers.delete(event.pointerId);
+        if (appState.hud.mode && appState.hud.pointerId === event.pointerId) {
+          endHudMotion();
+          return;
+        }
+        if (activePointers.size < 2) {
+          appState.pinchStart = 0;
+        }
+        if (!appState.dragging) return;
+        appState.dragging = false;
+        window.clearTimeout(longPressTimer);
+        if (appState.longPressTriggered || appState.dragMoved) return;
+
+        setPointerFromClient(event.clientX, event.clientY);
+        const signalHit = raycaster.intersectObjects(interactive, false)[0];
+        if (signalHit && signalHit.object.userData.signalId) {
+          setActiveSignal(signalHit.object.userData.signalId, true);
+          return;
+        }
+
+        const earthHit = raycaster.intersectObject(earth, false)[0];
+        if (earthHit && appState.activeId) {
+          clearActiveSignal();
+          return;
+        }
+        if (!earthHit) clearActiveSignal();
+      };
+
+      window.addEventListener("pointerup", endPointer);
+      window.addEventListener("pointercancel", endPointer);
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+        pruneSeeds(now);
+        autoCycle(now);
+
+        const focusState = signalStates.get(appState.activeId || appState.previewId);
+        if (!appState.dragging && activePointers.size < 2) {
+          targetRotation.y += EARTH_SPIN;
+        }
+
+        rotation.x = damp(rotation.x, targetRotation.x, 0.08);
+        rotation.y = dampAngle(rotation.y, targetRotation.y, 0.08);
+        globeGroup.rotation.x = rotation.x;
+        globeGroup.rotation.y = rotation.y;
+
+        appState.zoomLevel = damp(appState.zoomLevel, appState.zoomTarget, 0.08);
+        const zoomDepth = focusState ? appState.zoomLevel : 0;
+        targetCamera.z = CAMERA_BASE.z - zoomDepth * 2.04;
+        targetCamera.y = CAMERA_BASE.y - zoomDepth * 0.12;
+        targetCamera.fov = CAMERA_BASE.fov - zoomDepth * 12.4;
+        cameraState.z = damp(cameraState.z, targetCamera.z, 0.06);
+        cameraState.y = damp(cameraState.y, targetCamera.y, 0.06);
+        cameraState.fov = damp(cameraState.fov, targetCamera.fov, 0.06);
+        camera.position.set(0, cameraState.y, cameraState.z);
+        camera.fov = cameraState.fov;
+        camera.updateProjectionMatrix();
+        globeGroup.updateMatrixWorld();
+
+        earth.rotation.y = 0;
+        nightShell.rotation.y = 0;
+        cloudShell.rotation.y += 0.00008;
+        stars.rotation.y += 0.00003;
+        brightStars.rotation.y -= 0.000018;
+        satellites.forEach((satellite) => {
+          const orbit = now * 0.00015 * satellite.speed + satellite.phase;
+          satellite.mesh.position.set(
+            Math.cos(orbit) * satellite.radius,
+            Math.sin(orbit * 1.1 + satellite.tilt) * 0.22 + Math.sin(satellite.tilt) * 0.3,
+            Math.sin(orbit) * satellite.radius
+          );
+          satellite.mesh.rotation.y = orbit + Math.PI * 0.5;
+          satellite.mesh.rotation.z = satellite.tilt;
+        });
+
+        appState.device.load = clamp(Math.round(32 + (focusState ? 12 : 0) + (appState.dragging ? 18 : 0) + appState.ambientIds.length * 4 + Math.abs(Math.sin(now * 0.0014)) * 10), 18, 96);
+
+        nightShell.material.opacity = damp(nightShell.material.opacity, 0.24, 0.05);
+        cloudShellMaterial.opacity = damp(cloudShellMaterial.opacity, appState.texturesReady ? 0.12 : 0.08, 0.05);
+
+        signalStates.forEach((state) => syncSignalState(state, now));
+        updateAmbientSignals();
+        renderOverlay(now);
+        updatePerformanceHud(now);
+        updateRadarHud(now);
+
+        renderer.render(scene, camera);
+      }
+
+      refreshDeviceTelemetry();
+      updateTopHud();
+      resize();
+      window.addEventListener("resize", resize);
+      animate(0);
+    })();
+  </script>
 </body>
 </html>
