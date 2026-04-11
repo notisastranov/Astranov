@@ -22,69 +22,37 @@
   </style>
 </head>
 <body>
-  <!-- SPARTAN SCRIPT -->
-  <!-- 
-  SPARTAN SCRIPT
-  ASTRANOV
-  MOBILE-FIRST PORTRAIT-FIRST REAL WORLD GLOBE-FIRST MAP-SECOND
-  Humanoid flying robot AI helper with glowing blue thrusters and wireless signals
-  All UI glowing blue emerging from black space with starry details
-  Panels hidden at launch and appear only when needed
-  Bottom AI command bar and Add button for commerce and game actions
-  Supabase connected
-  The Spartan script can be overridden only by the owner (Notis Astranov). The owner has overridden it right now.
-  -->
 
   <canvas id="globe"></canvas>
 
-  <!-- Top Strip -->
-  <div id="top-strip">ASTRANOV <span style="color:#0af">v1.0.1</span></div>
+  <div id="top-strip">ASTRANOV <span style="color:#0af">v1.0.2</span></div>
 
-  <!-- AI Bar -->
   <div id="ai-bar">
     <input id="ai-input" type="text" placeholder="Command the robot or post a signal...">
     <button id="send-btn" style="background:var(--electric);color:#000;border:none;padding:10px 22px;border-radius:6px;font-weight:bold;">SEND</button>
   </div>
 
-  <!-- Add Button -->
   <button id="add-btn">+</button>
 
-  <!-- Radar -->
   <div id="radar"><canvas id="radar-canvas" width="68" height="68"></canvas></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script>
-    // FIXED Supabase initialization
     const SUPABASE_URL = "https://kzlabcrlrpbnfiiyrjvl.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Owner password (hidden at runtime only)
-    let isOwner = false;
-    const OWNER_PASSWORD = "3+E";
-    function checkOwnerPassword(input) {
-      if (input === OWNER_PASSWORD) {
-        isOwner = true;
-        console.log("%cOwner (Notis Astranov) authenticated — full control granted.", "color:#16d9ff");
-        return true;
-      }
-      return false;
-    }
-
-    // Three.js Globe + Glowing Blue Humanoid Flying Robot
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 2000);
     const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('globe'), antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Earth
     const earth = new THREE.Mesh(new THREE.SphereGeometry(5, 64, 64), new THREE.MeshPhongMaterial({ map: new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg'), shininess: 2 }));
     scene.add(earth);
     scene.add(new THREE.Mesh(new THREE.SphereGeometry(5.2, 64, 64), new THREE.MeshBasicMaterial({ color: 0x2288ff, transparent: true, opacity: 0.18, side: THREE.BackSide })));
 
-    // Stars
     const starsGeo = new THREE.BufferGeometry();
     const verts = [];
     for(let i=0; i<15000; i++) verts.push(THREE.MathUtils.randFloatSpread(2000), THREE.MathUtils.randFloatSpread(2000), THREE.MathUtils.randFloatSpread(2000));
@@ -95,48 +63,31 @@
     scene.add(new THREE.AmbientLight(0x404060, 0.7));
     const sunLight = new THREE.DirectionalLight(0xffffff, 1.2); sunLight.position.set(12,10,18); scene.add(sunLight);
 
-    // Humanoid flying robot with glowing blue thrusters (full model)
     const robotGroup = new THREE.Group(); scene.add(robotGroup);
-    // Torso
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.5, 0.55), new THREE.MeshPhongMaterial({color:0xcccccc, emissive:0x112233, shininess:80}));
-    torso.position.y = 1.3; robotGroup.add(torso);
-    // Head
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.48, 32, 32), new THREE.MeshPhongMaterial({color:0xaaaaaa, emissive:0x334455}));
-    head.position.y = 2.55; robotGroup.add(head);
-    // Arms
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.85,1.5,0.55), new THREE.MeshPhongMaterial({color:0xcccccc, emissive:0x112233, shininess:80})); torso.position.y = 1.3; robotGroup.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.48,32,32), new THREE.MeshPhongMaterial({color:0xaaaaaa, emissive:0x334455})); head.position.y = 2.55; robotGroup.add(head);
     const armMat = new THREE.MeshPhongMaterial({color:0xbbbbbb, shininess:60});
-    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.2, 0.32), armMat); leftArm.position.set(-0.75, 1.45, 0); robotGroup.add(leftArm);
+    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.32,1.2,0.32), armMat); leftArm.position.set(-0.75,1.45,0); robotGroup.add(leftArm);
     const rightArm = leftArm.clone(); rightArm.position.x = 0.75; robotGroup.add(rightArm);
-    // Legs
-    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.25, 0.38), armMat); leftLeg.position.set(-0.38, 0.35, 0); robotGroup.add(leftLeg);
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.38,1.25,0.38), armMat); leftLeg.position.set(-0.38,0.35,0); robotGroup.add(leftLeg);
     const rightLeg = leftLeg.clone(); rightLeg.position.x = 0.38; robotGroup.add(rightLeg);
-    // Silver Wings with Gold trim
     const wingMat = new THREE.MeshPhongMaterial({color:0xdddddd, emissive:0x6688aa, shininess:100});
-    const leftWing = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.25), wingMat);
-    leftWing.rotation.set(0, 0.7, -0.85); leftWing.position.set(-1.0, 2.2, -0.3); robotGroup.add(leftWing);
-    const rightWing = leftWing.clone(); rightWing.rotation.set(0, -0.7, 0.85); rightWing.position.x = 1.0; robotGroup.add(rightWing);
+    const leftWing = new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.25), wingMat); leftWing.rotation.set(0,0.7,-0.85); leftWing.position.set(-1,2.2,-0.3); robotGroup.add(leftWing);
+    const rightWing = leftWing.clone(); rightWing.rotation.set(0,-0.7,0.85); rightWing.position.x = 1; robotGroup.add(rightWing);
     const goldMat = new THREE.MeshPhongMaterial({color:0xffdd44, emissive:0x664400});
-    const goldL = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.1, 0.1), goldMat); goldL.position.copy(leftWing.position); goldL.rotation.copy(leftWing.rotation); robotGroup.add(goldL);
+    const goldL = new THREE.Mesh(new THREE.BoxGeometry(2.5,0.1,0.1), goldMat); goldL.position.copy(leftWing.position); goldL.rotation.copy(leftWing.rotation); robotGroup.add(goldL);
     const goldR = goldL.clone(); goldR.position.x *= -1; goldR.rotation.y *= -1; robotGroup.add(goldR);
-    // Blue Thrusters
     const thrustMat = new THREE.MeshBasicMaterial({color:0x00ddff});
-    const leftThrust = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 0.7, 16), thrustMat); leftThrust.rotation.x = Math.PI/2; leftThrust.position.set(-0.45, 0.25, 0.4); robotGroup.add(leftThrust);
+    const leftThrust = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.2,0.7,16), thrustMat); leftThrust.rotation.x = Math.PI/2; leftThrust.position.set(-0.45,0.25,0.4); robotGroup.add(leftThrust);
     const rightThrust = leftThrust.clone(); rightThrust.position.x *= -1; robotGroup.add(rightThrust);
-    // Thruster particles
     const particles = [];
-    const pGeo = new THREE.SphereGeometry(0.07, 8, 8);
-    for(let i = 0; i < 120; i++){
-      const pMat = new THREE.MeshBasicMaterial({color:0x00ffff, transparent:true});
-      const p = new THREE.Mesh(pGeo, pMat);
-      p.userData = {life:0, vx:0, vy:0, vz:0}; p.visible = false;
-      robotGroup.add(p); particles.push(p);
-    }
-    // Antennas
-    const antMat = new THREE.MeshPhongMaterial({color:0x00ffff, emissive:0x00aaff});
-    const ant1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8), antMat); ant1.position.set(0.35, 2.9, 0); ant1.rotation.z = 0.45; robotGroup.add(ant1);
+    const pGeo = new THREE.SphereGeometry(0.07,8,8);
+    for(let i=0;i<120;i++){ const pMat = new THREE.MeshBasicMaterial({color:0x00ffff,transparent:true}); const p = new THREE.Mesh(pGeo,pMat); p.userData={life:0,vx:0,vy:0,vz:0}; p.visible=false; robotGroup.add(p); particles.push(p); }
+    const antMat = new THREE.MeshPhongMaterial({color:0x00ffff,emissive:0x00aaff});
+    const ant1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.8,8),antMat); ant1.position.set(0.35,2.9,0); ant1.rotation.z = 0.45; robotGroup.add(ant1);
     const ant2 = ant1.clone(); ant2.position.x = -0.35; ant2.rotation.z = -0.45; robotGroup.add(ant2);
 
-    robotGroup.position.set(8, 5, 2);
+    robotGroup.position.set(8,5,2);
     robotGroup.scale.setScalar(0.55);
 
     let time = 0;
@@ -157,13 +108,11 @@
     }
     animate();
 
-    // Show panels on first interaction
     function showPanels() {
-      document.querySelectorAll('#top-strip, #ai-bar, #add-btn, #radar').forEach(el => el.classList.add('visible'));
+      document.querySelectorAll('#top-strip,#ai-bar,#add-btn,#radar').forEach(el => el.classList.add('visible'));
     }
     document.addEventListener('click', showPanels, {once:true});
 
-    // Radar sweep
     const rctx = document.getElementById('radar-canvas').getContext('2d');
     let rAngle = 0;
     function drawRadar() {
@@ -177,7 +126,7 @@
     }
     drawRadar();
 
-    console.log("%cASTRANOV — Spartan script active with glowing blue flying robot and wireless signals.", "color:#16d9ff; font-size:15px");
+    console.log("%cASTRANOV v1.0.2 — globe + robot live", "color:#16d9ff; font-size:15px");
   </script>
 </body>
 </html>
