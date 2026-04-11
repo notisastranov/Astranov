@@ -1,7 +1,0 @@
-project_id = "kzlabcrlrpbnfiiyrjvl"
-
-[functions.ai-router]
-verify_jwt = false
-
-[functions.paypal-checkout]
-verify_jwt = false
