@@ -1,0 +1,8 @@
+{
+  "name": "Astranov",
+  "description": "Internet Operating System with real Earth view, interactive map, and local signals via HUD interface.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": []
+}

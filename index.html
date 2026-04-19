@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ASTRANOV iOS</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            },
+            colors: {
+              space: '#02040a',
+              hud: {
+                blue: '#00c8ff',
+                dark: '#050b14',
+                border: 'rgba(0, 200, 255, 0.2)'
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Three.js + Globe.gl -->
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/globe.gl@2.32.1/dist/globe.gl.min.js"></script>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #02040a;
+            color: #fff;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Leaflet Dark Overrides */
+        .leaflet-container { background: transparent !important; }
+        .leaflet-control-attribution { display: none !important; }
+        
+        /* Composer Styles */
+        #composer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(5, 11, 20, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(0, 200, 255, 0.2);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: height 0.05s linear; /* Default for pure dragging */
+            will-change: height;
+            box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        #composer.animating {
+            transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #composer-handle {
+            height: 24px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            flex-shrink: 0;
+        }
+
+        #composer-handle:active {
+            cursor: grabbing;
+        }
+
+        .handle-bar {
+            width: 40px;
+            height: 4px;
+            border-radius: 2px;
+            background-color: rgba(255,255,255,0.2);
+            transition: background-color 0.2s;
+        }
+        #composer-handle:hover .handle-bar {
+            background-color: rgba(0, 200, 255, 0.5);
+        }
+
+        /* Message feed inside Composer */
+        #chat-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 80px; /* Space for input */
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            overscroll-behavior: contain;
+        }
+        
+        #composer.expanded #chat-feed {
+            display: flex;
+        }
+
+        /* Custom Scrollbar for Chat */
+        #chat-feed::-webkit-scrollbar { width: 4px; }
+        #chat-feed::-webkit-scrollbar-thumb { background: rgba(0, 200, 255, 0.3); border-radius: 2px; }
+
+        .lucide { width: 1.25em; height: 1.25em; }
+
+        /* Scanning Line */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.5), transparent);
+            animation: scan 4s linear infinite;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        /* Modals */
+        .modal {
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Map Crosshairs */
+        #map-crosshairs {
+             pointer-events: none;
+             position: absolute;
+             top: 50%;
+             left: 50%;
+             transform: translate(-50%, -50%);
+             z-index: 1000;
+             display: none;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-white selection:bg-hud-blue selection:text-space">
+
+    <!-- Top Status Bar -->
+    <div class="fixed top-0 inset-x-0 h-14 z-50 flex justify-between items-center px-4 md:px-8 bg-gradient-to-b from-space to-transparent pointer-events-none">
+        <div class="flex items-center gap-3">
+            <i data-lucide="globe" class="text-hud-blue w-5 h-5 drop-shadow-[0_0_8px_rgba(0,200,255,0.8)]"></i>
+            <span class="font-mono tracking-widest font-semibold text-sm drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">ASTRANOV</span>
+        </div>
+        <div class="flex items-center gap-4 text-[10px] md:text-xs font-mono text-gray-400">
+            <span class="hidden sm:inline-block">SYS: <span class="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]">ONLINE</span></span>
+            <span id="coord-display">LAT <span id="disp-lat" class="text-white">--.----</span> | LNG <span id="disp-lng" class="text-white">--.----</span></span>
+            <div id="btn-back-globe" class="hidden pointer-events-auto px-2 py-1 md:px-3 md:py-1.5 rounded bg-hud-blue/10 text-hud-blue border border-hud-blue/30 cursor-pointer hover:bg-hud-blue/20 transition-all active:scale-95 flex items-center gap-1 md:gap-2" onclick="returnToGlobe()">
+                <i data-lucide="arrow-left" class="w-3 h-3 md:w-4 md:h-4"></i> MACRO
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Line -->
+    <div class="scan-line"></div>
+
+    <!-- Map Container -->
+    <div id="map-container" class="absolute inset-0 z-10 opacity-0 pointer-events-none transition-opacity duration-1000 bg-space">
+        <div id="map" class="w-full h-full"></div>
+        <div id="map-crosshairs">
+            <i data-lucide="target" class="text-hud-blue opacity-30 w-8 h-8 md:w-12 md:h-12 animate-pulse"></i>
+        </div>
+    </div>
+
+    <!-- Globe Container -->
+    <div id="globe-container" class="absolute inset-0 z-0 bg-space"></div>
+
+    <!-- Context Menu -->
+    <div id="context-menu" class="hidden absolute z-50 bg-hud-dark/95 backdrop-blur-xl border border-hud-blue/30 text-blue-50 rounded-xl shadow-[0_0_30px_rgba(0,180,255,0.15)] overflow-hidden min-w-[200px] md:min-w-[220px] transform -translate-x-1/2 -translate-y-[calc(100%+15px)] pointer-events-auto origin-bottom transition-all duration-200">
+        <div class="px-4 py-2 bg-hud-blue/10 border-b border-hud-blue/20 flex justify-between items-center text-[10px] font-mono tracking-wider text-hud-blue">
+            <span>TARGET ACQUIRED</span>
+            <button onclick="closeContextMenu()" class="text-hud-blue hover:text-white p-1 -mr-2"><i data-lucide="x" class="w-3 h-3"></i></button>
+        </div>
+        <div class="p-1">
+            <button onclick="openModal('signal-modal')" class="w-full text-left px-3 py-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-3 text-[13px]">
+                <i data-lucide="radio" class="text-hud-blue w-3.5 h-3.5"></i> Create Post
+            </button>
+            <button onclick="openModal('shop-modal')" class="w-full text-left px-3 py-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-3 text-[13px]">
+                <i data-lucide="store" class="text-hud-blue w-3.5 h-3.5"></i> List Service / Shop
+            </button>
+            <button onclick="openModal('nav-modal')" class="w-full text-left px-3 py-2 hover:bg-white/5 rounded-lg transition-colors flex items-center gap-3 text-[13px]">
+                <i data-lucide="map-pin" class="text-hud-blue w-3.5 h-3.5"></i> Set Delivery Target
+            </button>
+            <button onclick="askAI()" class="w-full text-left px-3 py-2 hover:bg-hud-blue/10 rounded-lg transition-colors flex items-center gap-3 text-[13px] text-hud-blue border-t border-hud-blue/10 mt-1 font-medium">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Analyze via AI
+            </button>
+        </div>
+        <!-- Arrow pointing down -->
+        <div class="absolute -bottom-[8px] left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-hud-blue/30 drop-shadow-[0_4px_4px_rgba(0,180,255,0.5)]"></div>
+    </div>
+
+    <!-- Modals (Forms) -->
+    <div id="overlay" class="modal fixed inset-0 z-[100] bg-space/80 backdrop-blur-[2px] flex items-center justify-center p-4">
+        
+        <!-- Signal / Post Modal -->
+        <div id="signal-modal" class="modal hidden w-full max-w-sm bg-hud-dark border border-hud-blue/40 shadow-[0_0_50px_rgba(0,200,255,0.1)] rounded-2xl overflow-hidden relative flex flex-col">
+            <div class="absolute top-0 right-0 p-3 z-10">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/5"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-5 border-b border-white/5 bg-gradient-to-r from-hud-blue/10 to-transparent">
+                <h3 class="font-mono tracking-wide text-hud-blue flex items-center gap-2 text-sm">
+                    <i data-lucide="radio" class="w-4 h-4"></i> TRANSMIT SIGNAL
+                </h3>
+            </div>
+            <div class="p-5 flex flex-col gap-4">
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">VISIBILITY</label>
+                    <div class="relative">
+                        <select class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-hud-blue/50 appearance-none text-white">
+                            <option>Global (Public)</option>
+                            <option selected>Local Area (5km)</option>
+                            <option>Encrypted (Team)</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">MESSAGE PAYLOAD</label>
+                    <textarea class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-hud-blue/50 resize-none h-24 placeholder-gray-600 transition-colors" placeholder="Type your broadcast..."></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end shrink-0">
+                <button class="bg-hud-blue text-space font-semibold px-6 py-2 rounded-lg hover:bg-white transition-colors text-sm" onclick="submitModal('signal')">TRANSMIT</button>
+            </div>
+        </div>
+
+        <!-- Shop Modal -->
+        <div id="shop-modal" class="modal hidden w-full max-w-sm bg-hud-dark border border-teal-500/40 shadow-[0_0_50px_rgba(20,184,166,0.1)] rounded-2xl overflow-hidden relative flex flex-col">
+            <div class="absolute top-0 right-0 p-3 z-10">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/5"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-5 border-b border-white/5 bg-gradient-to-r from-teal-500/10 to-transparent">
+                <h3 class="font-mono tracking-wide text-teal-400 flex items-center gap-2 text-sm">
+                    <i data-lucide="store" class="w-4 h-4"></i> ESTABLISH COMM NODE
+                </h3>
+            </div>
+            <div class="p-5 overflow-y-auto max-h-[60vh] flex flex-col gap-4 hide-scrollbar">
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">ENTERPRISE DESIGNATION</label>
+                    <input type="text" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-teal-500/50 transition-colors" placeholder="Neo-Tokyo Tech Supplies">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">OPEN</label>
+                        <input type="time" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-teal-500/50 transition-colors text-gray-300" value="08:00">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">CLOSE</label>
+                        <input type="time" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-teal-500/50 transition-colors text-gray-300" value="22:00">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">CATALOG / MENU</label>
+                    <textarea class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-teal-500/50 resize-none h-20 placeholder-gray-600 transition-colors" placeholder="- Quantum drives&#10;- Synthesized rations&#10;- Cyberware repair"></textarea>
+                </div>
+                <div class="border border-dashed border-white/20 rounded-lg py-4 flex items-center justify-center flex-col text-gray-500 cursor-pointer hover:border-teal-500/50 hover:text-teal-400 transition-colors bg-white/5">
+                    <i data-lucide="camera" class="w-5 h-5 mb-2"></i>
+                    <span class="text-[10px] font-mono tracking-widest">UPLOAD OPTICS</span>
+                </div>
+            </div>
+            <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end shrink-0">
+                <button class="bg-teal-500 text-space font-semibold px-6 py-2 rounded-lg hover:bg-white transition-colors text-sm" onclick="submitModal('shop')">INITIALIZE LISTING</button>
+            </div>
+        </div>
+
+        <!-- Nav Modal (Delivery) -->
+        <div id="nav-modal" class="modal hidden w-full max-w-sm bg-hud-dark border border-orange-500/40 shadow-[0_0_50px_rgba(249,115,22,0.1)] rounded-2xl overflow-hidden relative flex flex-col">
+            <div class="absolute top-0 right-0 p-3 z-10">
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/5"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <div class="p-5 border-b border-white/5 bg-gradient-to-r from-orange-500/10 to-transparent">
+                <h3 class="font-mono tracking-wide text-orange-400 flex items-center gap-2 text-sm">
+                    <i data-lucide="map-pin" class="w-4 h-4"></i> LOGISTICS DESTINATION
+                </h3>
+            </div>
+            <div class="p-5 flex flex-col gap-4">
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">LOCAL ADDRESS</label>
+                    <input type="text" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-orange-500/50 transition-colors" placeholder="Sector 7G, Level B4...">
+                </div>
+                <div>
+                    <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">ROUTING NOTES</label>
+                    <textarea class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-orange-500/50 resize-none h-20 placeholder-gray-600 transition-colors" placeholder="Leave at external airlock. Code: 0451."></textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end shrink-0">
+                <button class="bg-orange-500 text-space font-semibold px-6 py-2 rounded-lg hover:bg-orange-400 transition-colors text-sm" onclick="submitModal('delivery')">CONFIRM VECTOR</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bottom Composer -->
+    <div id="composer">
+        <!-- Drag Handle -->
+        <div id="composer-handle" class="group">
+            <div class="handle-bar group-hover:bg-hud-blue/70"></div>
+        </div>
+        
+        <!-- Chat Feed -->
+        <div id="chat-feed" class="flex-col">
+            <div class="text-center text-[10px] font-mono tracking-widest text-gray-500 mb-2">NEURAL LINK ACTIVE</div>
+            
+            <!-- AI Msg -->
+            <div class="flex items-start gap-3 w-[90%] md:w-5/6">
+                <div class="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-hud-blue/10 flex items-center justify-center shrink-0 border border-hud-blue/30 text-hud-blue shadow-[0_0_10px_rgba(0,200,255,0.1)]">
+                    <i data-lucide="cpu" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>
+                </div>
+                <div class="bg-gradient-to-br from-white/10 to-transparent rounded-r-xl rounded-bl-xl p-3 border border-white/10 text-sm shadow-lg backdrop-blur-md">
+                    <p class="leading-relaxed text-gray-200">System initialized. I am your interface intelligence. Select a node or transmit a global command.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area (Fixed position inside composer block so it sits at bottom naturally) -->
+        <div class="absolute bottom-0 left-0 right-0 flex-shrink-0 flex items-center gap-2 px-3 pb-4 pt-2 h-[60px] box-border z-10 w-full max-w-3xl mx-auto bg-gradient-to-t from-[#050b14] via-[#050b14] to-transparent">
+            <button class="w-10 h-10 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-hud-blue hover:bg-hud-blue/10 transition-colors active:scale-95 border border-transparent hover:border-hud-blue/30">
+                <i data-lucide="mic" class="w-4 h-4"></i>
+            </button>
+            <div class="flex-1 relative flex items-center">
+                <input type="text" id="chat-input" class="w-full bg-black/60 border border-white/10 hover:border-white/20 rounded-full pl-4 pr-[2.5rem] py-2.5 text-sm outline-none focus:border-hud-blue/50 text-white placeholder-gray-500 transition-colors shadow-inner" placeholder="Analyze Earth, search, or command...">
+                <button id="btn-send" class="absolute right-1 w-8 h-8 rounded-full bg-hud-blue text-space flex items-center justify-center hover:bg-white transition-colors active:scale-95 shadow-[0_0_10px_rgba(0,200,255,0.4)]">
+                    <i data-lucide="send" class="w-3.5 h-3.5 translate-x-[1px]"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Environment variables / state
+        let currentTarget = null; 
+        let mode = 'globe'; 
+
+        // DOM elements
+        const globeContainer = document.getElementById('globe-container');
+        const mapContainer = document.getElementById('map-container');
+        const contextMenu = document.getElementById('context-menu');
+        const backBtn = document.getElementById('btn-back-globe');
+        const coordDispLat = document.getElementById('disp-lat');
+        const coordDispLng = document.getElementById('disp-lng');
+        const cmLat = document.getElementById('cm-lat');
+        const cmLng = document.getElementById('cm-lng');
+        const mapCrosshairs = document.getElementById('map-crosshairs');
+        const overlay = document.getElementById('overlay');
+
+        // Check if device is mobile
+        const isMobile = window.innerWidth <= 768;
+
+        // --- GLOBE SYSTEM ---
+        const initGlobe = () => {
+            const world = Globe()
+                (globeContainer)
+                .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+                .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+                .backgroundImageUrl('https://unpkg.com/three-globe/example/img/night-sky.png')
+                .pointOfView({ altitude: isMobile ? 3.2 : 2.5 })
+                .showAtmosphere(true)
+                .atmosphereColor('#00c8ff')
+                .atmosphereAltitude(0.15)
+                .onGlobeClick(handleGlobeClick)
+                .onGlobeRightClick(handleGlobeClick);
+
+            world.controls().autoRotate = true;
+            world.controls().autoRotateSpeed = 0.3;
+            world.controls().enableDamping = true;
+
+            // Generate contextual nodes
+            const N = 30;
+            const nodes = [...Array(N).keys()].map(() => ({
+                lat: (Math.random() - 0.5) * 160, // Keep them away from extreme poles
+                lng: (Math.random() - 0.5) * 360,
+                type: Math.random() > 0.5 ? 'signal' : (Math.random() > 0.5 ? 'shop' : 'logistics'),
+                status: 'active'
+            }));
+
+            world.htmlElementsData(nodes)
+                 .htmlElement(d => {
+                     const el = document.createElement('div');
+                     
+                     let colorClass = 'hud-blue';
+                     let shadowColor = 'rgba(0,200,255,0.5)';
+                     let label = 'Signal';
+                     
+                     if (d.type === 'shop') {
+                         colorClass = 'teal-400';
+                         shadowColor = 'rgba(45,212,191,0.5)';
+                         label = 'Merchant';
+                     } else if (d.type === 'logistics') {
+                         colorClass = 'orange-400';
+                         shadowColor = 'rgba(251,146,60,0.5)';
+                         label = 'Logistics';
+                     }
+                     
+                     el.innerHTML = \`
+                        <div class="px-2 py-[2px] md:px-2 md:py-1 text-[10px] md:text-xs rounded border border-\${colorClass}/40 bg-black/60 backdrop-blur-md text-\${colorClass} shadow-[0_0_15px_\${shadowColor}] whitespace-nowrap cursor-pointer hover:bg-white/10 hover:border-white/50 transition-all font-mono pointer-events-auto transform translate-x-[-50%] translate-y-[-50%]">
+                            <span class="w-1.5 h-1.5 inline-block bg-\${colorClass} rounded-full mr-1 mb-px animate-pulse"></span>
+                            \${label}
+                        </div>\`;
+                     
+                     el.onclick = (e) => {
+                         e.stopPropagation();
+                         handleGlobeClick({lat: d.lat, lng: d.lng}, e);
+                     };
+                     return el;
+                 });
+
+            world.scene().background = null; 
+
+            // Live coord tracking tracking
+            world.controls().addEventListener('change', () => {
+                if(mode === 'globe') {
+                   const { lat, lng } = world.pointOfView();
+                   if(lat !== undefined) {
+                       coordDispLat.textContent = lat.toFixed(4);
+                       coordDispLng.textContent = lng.toFixed(4);
+                   }
+                }
+            });
+
+            return world;
+        };
+
+        const globe = initGlobe();
+
+        window.addEventListener('resize', () => {
+            globe.width(window.innerWidth).height(window.innerHeight);
+        });
+
+        // --- MAP SYSTEM ---
+        const map = L.map('map', { 
+            zoomControl: false,
+            attributionControl: false
+        }).setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        map.on('move', () => {
+            if(mode === 'map') {
+                const center = map.getCenter();
+                coordDispLat.textContent = center.lat.toFixed(4);
+                coordDispLng.textContent = center.lng.toFixed(4);
+            }
+        });
+
+        map.on('click', (e) => {
+            const { lat, lng } = e.latlng;
+            showContextMenu(lat, lng, e.originalEvent.clientX, e.originalEvent.clientY);
+        });
+
+        map.on('dragstart', () => {
+           contextMenu.classList.add('hidden');
+        });
+        
+        globe.controls().addEventListener('start', () => {
+           contextMenu.classList.add('hidden');
+        });
+
+        // --- TRANSITIONS ---
+
+        function handleGlobeClick({lat, lng}, event) {
+            closeContextMenu();
+            globe.controls().autoRotate = false;
+            
+            // Phase 1: Zoom to coordinate on Globe
+            globe.pointOfView({ lat, lng, altitude: 0.05 }, 1200);
+            
+            // Phase 2: Switch context to flat map
+            setTimeout(() => {
+                mode = 'map';
+                mapContainer.classList.remove('opacity-0', 'pointer-events-none');
+                mapContainer.classList.add('pointer-events-auto');
+                map.invalidateSize();
+                map.setView([lat, lng], 13, { animate: false });
+                
+                backBtn.classList.remove('hidden');
+                mapCrosshairs.style.display = 'block';
+
+                // Automatically pop action menu
+                setTimeout(() => {
+                   showContextMenu(lat, lng, window.innerWidth/2, window.innerHeight/2);
+                }, 300);
+
+            }, 1000);
+        }
+
+        window.returnToGlobe = () => {
+            closeContextMenu();
+            mode = 'globe';
+            mapContainer.classList.add('opacity-0', 'pointer-events-none');
+            mapContainer.classList.remove('pointer-events-auto');
+            backBtn.classList.add('hidden');
+            mapCrosshairs.style.display = 'none';
+
+            // Phase 1: Zoom back out
+            const pov = globe.pointOfView();
+            globe.pointOfView({ lat: pov.lat, lng: pov.lng, altitude: isMobile ? 3.2 : 2.5 }, 1500);
+            setTimeout(() => { globe.controls().autoRotate = true; }, 1500);
+        };
+
+        function showContextMenu(lat, lng, clientX, clientY) {
+            currentTarget = {lat, lng};
+            cmLat.textContent = lat.toFixed(4);
+            cmLng.textContent = lng.toFixed(4);
+            
+            // Ensure menu fits on screen
+            const menuWidth = isMobile ? 200 : 220; 
+            const menuHeight = 250;
+            const padding = 20;
+            
+            let x = clientX;
+            let y = clientY - 20;
+
+            if (x < menuWidth/2 + padding) x = menuWidth/2 + padding;
+            if (x > window.innerWidth - menuWidth/2 - padding) x = window.innerWidth - menuWidth/2 - padding;
+            if (y < menuHeight + padding) y = menuHeight + padding + 60;
+
+            contextMenu.style.left = x + 'px';
+            contextMenu.style.top = y + 'px';
+            contextMenu.classList.remove('hidden');
+        }
+
+        window.closeContextMenu = () => {
+            contextMenu.classList.add('hidden');
+        };
+
+        // --- MODAL SYSTEM ---
+        let activeModalId = null;
+
+        window.openModal = (id) => {
+            closeContextMenu();
+            // Hide any currently active modales
+            document.querySelectorAll('.modal:not(#overlay)').forEach(m => {
+                if(!m.classList.contains('hidden')) {
+                  m.classList.remove('active');
+                  setTimeout(() => m.classList.add('hidden'), 300);
+                }
+            });
+            
+            activeModalId = id;
+            const modal = document.getElementById(id);
+            modal.classList.remove('hidden');
+            overlay.classList.add('active');
+            requestAnimationFrame(() => modal.classList.add('active'));
+        };
+
+        window.closeModal = () => {
+            overlay.classList.remove('active');
+            if(activeModalId) {
+                const modal = document.getElementById(activeModalId);
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    activeModalId = null;
+                }, 300);
+            }
+        };
+
+        window.submitModal = (type) => {
+            if(currentTarget) {
+                closeModal();
+                
+                let label = "signal";
+                let color = '#00C8FF';
+                if(type === 'shop') { label = 'merchant node'; color = '#2dd4bf'; }
+                if(type === 'delivery') { label = 'logistics target'; color = '#f97316'; }
+
+                addChatMessage("Vector confirmed.", true);
+                openComposer();
+                
+                setTimeout(() => {
+                    addChatMessage(\`Publishing \${label} at [\${currentTarget.lat.toFixed(4)}°, \${currentTarget.lng.toFixed(4)}°]. Synchronizing with global layer...\`, false);
+                }, 400);
+                
+                if(mode === 'map') {
+                    const markerHtml = \`<div class="w-3.5 h-3.5 rounded-full border-2 border-[white] shadow-[0_0_12px_\${color}]" style="background:\${color}"></div>\`;
+                    const customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [14,14], iconAnchor: [7,7] });
+                    L.marker([currentTarget.lat, currentTarget.lng], {icon: customIcon}).addTo(map);
+                }
+            }
+        };
+
+        overlay.addEventListener('click', (e) => {
+            if(e.target === overlay) closeModal();
+        });
+
+        // --- COMPOSER ENGINE ---
+        const composer = document.getElementById('composer');
+        const handle = document.getElementById('composer-handle');
+        const chatFeed = document.getElementById('chat-feed');
+        const chatInput = document.getElementById('chat-input');
+        const btnSend = document.getElementById('btn-send');
+
+        const MIN_HEIGHT = 70;
+        let MAX_HEIGHT = window.innerHeight * 0.66;
+        let isDragging = false;
+        let startY, startHeight;
+
+        window.addEventListener('resize', () => { MAX_HEIGHT = window.innerHeight * 0.66; });
+
+        function setComposerHeight(px, animate = false) {
+            if (animate) composer.classList.add('animating');
+            else composer.classList.remove('animating');
+            
+            let h = Math.max(MIN_HEIGHT, Math.min(px, MAX_HEIGHT));
+            composer.style.height = h + 'px';
+            
+            if (h > MIN_HEIGHT + 20) composer.classList.add('expanded');
+            else composer.classList.remove('expanded');
+
+            if (animate) setTimeout(() => composer.classList.remove('animating'), 300);
+        }
+
+        window.openComposer = () => setComposerHeight(MAX_HEIGHT * 0.8, true);
+
+        function onDragStart(e) {
+            isDragging = true;
+            startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            startHeight = composer.offsetHeight;
+            composer.classList.remove('animating');
+            
+            // Critical for iOS Safari prevention of body scrolling while sliding drawer
+            if(e.type.includes('touch')) { document.body.style.overflow = 'hidden'; }
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            // Prevent default zooming/scrolling
+            if (e.cancelable) e.preventDefault(); 
+            const y = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            const dy = startY - y;
+            setComposerHeight(startHeight + dy);
+        }
+
+        function onDragEnd(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            document.body.style.overflow = '';
+            
+            // Snap to states
+            if (composer.offsetHeight > MIN_HEIGHT + (MAX_HEIGHT * 0.15)) {
+                setComposerHeight(MAX_HEIGHT, true); 
+            } else {
+                setComposerHeight(MIN_HEIGHT, true); 
+            }
+        }
+
+        handle.addEventListener('mousedown', onDragStart);
+        handle.addEventListener('touchstart', onDragStart, {passive: false});
+        document.addEventListener('mousemove', onDragMove, {passive: false});
+        document.addEventListener('touchmove', onDragMove, {passive: false});
+        document.addEventListener('mouseup', onDragEnd);
+        document.addEventListener('touchend', onDragEnd);
+
+        // Prevent dragging the composer from closing it if interaction is in the feed
+        chatFeed.addEventListener('touchstart', (e) => e.stopPropagation(), {passive: true});
+        chatFeed.addEventListener('touchmove', (e) => e.stopPropagation(), {passive: true});
+
+        // --- MESSAGING ---
+        function addChatMessage(text, isUser = true) {
+            const wrapper = document.createElement('div');
+            wrapper.className = \`flex items-start gap-3 w-[90%] md:w-5/6 \${isUser ? 'self-end flex-row-reverse' : ''}\`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = \`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center shrink-0 border shadow-lg
+                \${isUser ? 'bg-white/10 border-white/20 text-gray-300' : 'bg-hud-blue/10 border-hud-blue/30 text-hud-blue'}\`;
+            avatar.innerHTML = \`<i data-lucide="\${isUser ? 'user' : 'cpu'}" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>\`;
+
+            const bubble = document.createElement('div');
+            bubble.className = \`p-3 rounded-xl border text-[13px] md:text-sm shadow-lg leading-relaxed backdrop-blur-md
+                \${isUser ? 'bg-gradient-to-bl from-white/10 to-transparent border-white/10 rounded-tr-none text-gray-100' : 'bg-gradient-to-br from-white/5 to-transparent border-white/5 rounded-tl-none text-gray-300'}\`;
+            bubble.innerHTML = \`<p>\${text}</p>\`;
+
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubble);
+            chatFeed.appendChild(wrapper);
+            lucide.createIcons();
+            
+            // Smooth scroll to bottom
+            setTimeout(()=> { chatFeed.scrollTo({ top: chatFeed.scrollHeight, behavior: 'smooth' }); }, 10);
+        }
+
+        function handleSend() {
+            const txt = chatInput.value.trim();
+            if(!txt) return;
+            
+            if(!composer.classList.contains('expanded')) openComposer();
+
+            addChatMessage(txt, true);
+            chatInput.value = '';
+            chatInput.blur(); // Dismiss mobile keyboard
+
+            let response = \`Command unrecognized. Please establish coordinates or specify vector.\`;
+            const lowerTxt = txt.toLowerCase();
+            
+            if (lowerTxt.includes("hello") || lowerTxt.includes("hi")) {
+                 response = \`Greetings. The Astranov network is online. How shall we proceed?\`;
+            } else if (lowerTxt.includes("analyze") || lowerTxt.includes("scan")) {
+                 response = \`Scanning immediate sector parameters... Signal density normal.\`;
+            } else if (lowerTxt.includes("weather") || lowerTxt.includes("status")) {
+                 response = \`Orbital feeds indicate clear planetary conditions. Local infrastructure optimal.\`;
+            }
+
+            setTimeout(() => addChatMessage(response, false), 800 + Math.random() * 500);
+        }
+
+        btnSend.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                handleSend();
+            }
+        });
+
+        // Expand drawer smoothly when focused on mobile
+        chatInput.addEventListener('focus', () => {
+             if(isMobile && !composer.classList.contains('expanded')) {
+                 setComposerHeight(MAX_HEIGHT * 0.8, true);
+             }
+        });
+
+        window.askAI = () => {
+            closeContextMenu();
+            openComposer();
+            if (currentTarget) {
+                addChatMessage(\`Analyze region [\${currentTarget.lat.toFixed(4)}, \${currentTarget.lng.toFixed(4)}]\`, true);
+                setTimeout(() => {
+                    addChatMessage(\`Executing deep scan block on specified coordinates. Extracting population density, merchant registry, and recent public signals... Output rendering onto your HUD now.\`, false);
+                }, 1200);
+            }
+        };
+
+    </script>
+</body>
+</html>
