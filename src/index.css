@@ -1,1 +1,96 @@
 @import "tailwindcss";
+
+@theme {
+  --font-orbitron: "Orbitron", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-hud-blue: #00f2ff;
+  --color-hud-dark: #0a0b0d;
+  --color-space: #050505;
+}
+
+@layer base {
+  body {
+    @apply bg-space text-white font-sans overflow-hidden antialiased;
+    background-image: 
+      radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 80%),
+      linear-gradient(rgba(0, 242, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 242, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
+
+  .night-mode {
+    --color-hud-dark: #000000;
+    --color-space: #000000;
+  }
+}
+
+@layer components {
+  .hud-border {
+    @apply border border-hud-blue/30 shadow-[0_0_15px_rgba(0,242,255,0.1)];
+  }
+
+  .hud-glass {
+    @apply bg-black/40 backdrop-blur-md border border-white/10;
+  }
+
+  .hud-button {
+    @apply px-4 py-2 font-orbitron font-bold text-xs tracking-widest transition-all
+           bg-hud-blue/10 border border-hud-blue/40 text-hud-blue
+           hover:bg-hud-blue hover:text-space hover:shadow-[0_0_20px_#00f2ff];
+  }
+
+  /* Custom scrollbar */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .modal {
+    @apply fixed inset-0 z-[100] flex items-center justify-center p-4 opacity-0 scale-95 pointer-events-none transition-all duration-300;
+  }
+
+  .modal.active {
+    @apply opacity-100 scale-100 pointer-events-auto;
+  }
+
+  #overlay {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] opacity-0 pointer-events-none transition-opacity duration-300;
+  }
+
+  #overlay.active {
+    @apply opacity-100 pointer-events-auto;
+  }
+}
+
+/* Leaflet Overrides */
+.leaflet-container {
+    background: #000 !important;
+}
+
+.astranov-popup .leaflet-popup-content-wrapper {
+    @apply bg-black/80 backdrop-blur-md border border-hud-blue/40 rounded-none shadow-[0_0_20px_rgba(0,242,255,0.3)];
+    padding: 0;
+}
+
+.astranov-popup .leaflet-popup-tip {
+    @apply bg-hud-blue/40;
+}
+
+.astranov-popup .leaflet-popup-content {
+    margin: 12px;
+}
+
+@keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+}
+
+.scanline::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 242, 255, 0.05) 50%, transparent 100%);
+    animation: scanline 8s linear infinite;
+}

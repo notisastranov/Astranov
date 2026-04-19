@@ -1,30 +1,35 @@
-import { GoogleGenAI, ThinkingLevel, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
-let chatSession = null;
-let aiClient = null;
+let aiClient: GoogleGenAI | null = null;
 
 export const initGenAI = () => {
-    let apiKey = "";
-    try {
-        apiKey = process.env.GEMINI_IN_APP_KEY || process.env.GEMINI_API_KEY;
-    } catch(e) {}
-
+    const apiKey = process.env.GEMINI_API_KEY;
     if (apiKey) {
         aiClient = new GoogleGenAI({ apiKey });
     }
     return !!aiClient;
 };
 
-export const getClient = () => aiClient;
-
-export const getSession = (modelName, config) => {
-    if (!aiClient) return null;
-    if (!chatSession || chatSession.model !== modelName) {
-        chatSession = aiClient.chats.create({
-            model: modelName,
-            config: config
-        });
-        chatSession.model = modelName;
+export const sendMessage = async (message: string, history: { role: string, parts: { text: string }[] }[] = []) => {
+    if (!aiClient) {
+        initGenAI();
+        if (!aiClient) throw new Error("AI Client not initialized. GEMINI_API_KEY missing.");
     }
-    return chatSession;
+
+    try {
+        const result = await aiClient.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: [...history, { role: "user", parts: [{ text: message }] }],
+            config: {
+                systemInstruction: "You are Astranov OS, an advanced orbital logistics and distribution neural link. Your tone is technical, cold, yet efficient. Use terms like 'Neural Link Established', 'Vector Confirmed', 'Orbital GPS Lock'. Avoid standard assistant pleasantries. Be concise.",
+                temperature: 0.7,
+                topP: 0.95
+            }
+        });
+        
+        return result.text;
+    } catch (error) {
+        console.error("Gemini Error:", error);
+        return "ERROR: Neural Link Interrupted. Vector data corrupted.";
+    }
 };
