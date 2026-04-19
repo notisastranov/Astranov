@@ -222,9 +222,18 @@
         .compass-n { position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 8px; color: #fb923c; font-weight: bold; z-index: 10; font-family: 'Courier New', monospace; text-shadow: 0 0 5px rgba(251,146,60,0.8); }
         .compass-s { position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 8px; color: rgba(0, 242, 255, 0.5); z-index: 10; font-family: 'Courier New', monospace; }
         .compass-e { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 8px; color: rgba(0, 242, 255, 0.5); z-index: 10; font-family: 'Courier New', monospace; }
-        .compass-w { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); font-size: 8px; color: rgba(0, 242, 255, 0.5); z-index: 10; font-family: 'Courier New', monospace; }
-        
-        /* Night Mode / Energy Saver */
+        .glow-line {
+            filter: drop-shadow(0 0 4px #00f2ff) drop-shadow(0 0 8px #00f2ff);
+            stroke-dasharray: 2, 8;
+            animation: dash-glow 20s linear infinite;
+        }
+        @keyframes dash-glow {
+            from { stroke-dashoffset: 200; }
+            to { stroke-dashoffset: 0; }
+        }
+        .driver-marker-wrapper {
+            transition: all 0.1s linear;
+        }
         body.night-mode {
             background: #000;
         }
@@ -263,9 +272,18 @@
 
     <!-- Top Status Bar -->
     <div class="fixed top-0 inset-x-0 h-14 z-50 flex justify-between items-center px-4 md:px-8 bg-gradient-to-b from-space to-transparent pointer-events-none">
-        <div class="flex items-center gap-3">
-            <i data-lucide="globe" class="text-hud-blue w-6 h-6 drop-shadow-[0_0_12px_rgba(0,200,255,1)]"></i>
-            <span class="font-orbitron tracking-[0.2em] font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-hud-blue to-[#0088ff] drop-shadow-[0_0_10px_rgba(0,242,255,0.8)]">ASTRANOV</span>
+        <div class="flex flex-col pointer-events-auto">
+            <div class="flex items-center gap-2 cursor-pointer group" onclick="openUserMenu()">
+                <i data-lucide="globe" class="text-hud-blue w-5 h-5 drop-shadow-[0_0_12px_rgba(0,242,255,1)]"></i>
+                <span class="font-orbitron tracking-[0.2em] font-black text-lg text-transparent bg-clip-text bg-gradient-to-r from-hud-blue to-[#0088ff] drop-shadow-[0_0_10px_rgba(0,242,255,0.8)]">ASTRANOV</span>
+            </div>
+            <!-- User Photo and Profile -->
+            <div class="flex items-center gap-2 mt-1 pl-1 cursor-pointer hover:opacity-80 transition-opacity" onclick="openUserMenu()">
+                <div class="w-6 h-6 rounded-full border border-hud-blue/50 overflow-hidden shadow-[0_0_10px_rgba(0,242,255,0.3)]">
+                    <img id="user-photo" src="https://picsum.photos/seed/astranov-user/100/100" alt="User" class="w-full h-full object-cover">
+                </div>
+                <span id="user-name-display" class="text-[9px] font-mono text-hud-blue uppercase tracking-tighter">OPERATOR NOTIS</span>
+            </div>
         </div>
         <div class="flex items-center gap-4 text-[10px] md:text-xs font-mono text-gray-400 pointer-events-none">
             <span class="hidden sm:inline-block">SYS: <span class="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.8)]">ONLINE</span></span>
@@ -287,50 +305,61 @@
     </div>
 
     <!-- HUD Radar Widget -->
-    <div id="hud-widget" class="fixed top-20 right-4 md:top-24 md:right-8 z-50 pointer-events-none flex flex-col items-center justify-center">
+    <div id="hud-widget" class="fixed top-20 right-4 md:top-24 md:right-8 z-50 pointer-events-none flex flex-col items-center justify-center scale-90 md:scale-100">
 
         <!-- Top Pointer Triangle -->
         <div class="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-solid border-transparent border-t-red-500 mb-1 drop-shadow-[0_0_5px_rgba(239,68,68,0.8)] z-50"></div>
 
-        <div class="relative w-36 h-36 md:w-48 md:h-48 bg-hud-dark/80 backdrop-blur-[20px] rounded-full border border-hud-blue/20 flex items-center justify-center overflow-hidden pointer-events-auto group cursor-pointer" onclick="locateUser()">
+        <div class="relative w-32 h-32 md:w-40 md:h-40 bg-hud-dark/80 backdrop-blur-[20px] rounded-full border border-hud-blue/20 flex items-center justify-center overflow-hidden pointer-events-auto group cursor-pointer" onclick="locateUser()">
             
             <!-- BEZEL 1: Compass (Outer) -->
             <div id="device-compass-bezel" class="absolute inset-1 rounded-full border border-hud-blue/30 transition-transform duration-100 ease-linear z-10 font-orbitron">
                 <!-- N S E W -->
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue z-20 drop-shadow-[0_0_5px_rgba(0,242,255,0.8)]">N</div>
-                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20">S</div>
-                <div class="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20">E</div>
-                <div class="absolute left-1 top-1/2 -translate-y-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20">W</div>
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue z-20 drop-shadow-[0_0_5px_rgba(0,242,255,0.8)] uppercase">N</div>
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20 uppercase">S</div>
+                <div class="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20 uppercase">E</div>
+                <div class="absolute left-1 top-1/2 -translate-y-1/2 text-[9px] md:text-[10px] font-bold text-hud-blue/50 z-20 uppercase">W</div>
+                
                 <!-- Generated Ticks -->
                 <div id="compass-ticks" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+
+            <!-- BEZEL 2: Celestial Layer (Outer Edge but separate from Compass orientation) -->
+            <div id="celestial-bezel" class="absolute inset-0 z-20 pointer-events-none">
+                <div id="sun-icon-container" class="absolute top-1/2 left-1/2 w-4 h-4 md:w-5 md:h-5 bg-yellow-400 rounded-full shadow-[0_0_12px_rgba(250,204,21,1)] flex items-center justify-center transition-transform duration-1000 ease-linear">
+                    <i data-lucide="sun" class="w-2.5 h-2.5 text-yellow-900"></i>
+                </div>
+                <div id="moon-icon-container" class="absolute top-1/2 left-1/2 w-4 h-4 md:w-5 md:h-5 bg-slate-200 rounded-full shadow-[0_0_12px_rgba(226,232,240,1)] flex items-center justify-center transition-transform duration-1000 ease-linear">
+                    <i data-lucide="moon" class="w-2.5 h-2.5 text-slate-800"></i>
+                </div>
             </div>
 
             <div class="radar-sweep group-hover:opacity-60 transition-opacity z-0" id="radar-sweep"></div>
             <div class="absolute inset-x-0 top-1/2 h-[1px] bg-hud-blue/20 z-0"></div>
             <div class="absolute inset-y-0 left-1/2 w-[1px] bg-hud-blue/20 z-0"></div>
 
-            <!-- Celestial Ring with Clock Indexes -->
-            <div id="celestial-ring" class="absolute inset-[25%] md:inset-[28%] rounded-full border border-dashed border-white/20 z-10 transition-transform duration-1000 ease-linear flex items-center justify-center">
-                <div id="clock-indexes" class="absolute inset-0 pointer-events-none opacity-50"></div>
-                
-                <div id="sun-icon-container" class="absolute -top-[5px] left-1/2 transform -translate-x-1/2 w-3 h-3 md:w-3.5 md:h-3.5 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.8)] flex items-center justify-center transition-transform duration-1000 ease-linear">
-                    <i data-lucide="sun" class="w-2 h-2 text-yellow-900"></i>
-                </div>
-                <div id="moon-icon-container" class="absolute -bottom-[5px] left-1/2 transform -translate-x-1/2 w-3 h-3 md:w-3.5 md:h-3.5 bg-slate-200 rounded-full shadow-[0_0_8px_rgba(226,232,240,0.8)] flex items-center justify-center transition-transform duration-1000 ease-linear">
-                    <i data-lucide="moon" class="w-2 h-2 text-slate-800"></i>
-                </div>
-            </div>
-
             <!-- Central Button / Radar core -->
             <div class="relative z-20 w-8 h-8 md:w-10 md:h-10 rounded-full bg-space border border-hud-blue/50 flex items-center justify-center shadow-[0_0_10px_rgba(0,242,255,0.3)] group-hover:scale-110 group-hover:bg-hud-blue/20 transition-all">
                 <i data-lucide="crosshair" class="w-4 h-4 md:w-5 md:h-5 text-hud-blue drop-shadow-[0_0_5px_rgba(0,242,255,0.8)]"></i>
             </div>
             
-            <!-- Clock inside -->
-            <div id="hud-clock" class="absolute bottom-[18%] left-1/2 transform -translate-x-1/2 font-mono text-[7px] md:text-[8px] text-hud-blue drop-shadow-[0_0_3px_rgba(0,242,255,0.8)] tracking-widest z-30 bg-space/90 px-1 py-0.5 rounded backdrop-blur-md border border-hud-blue/40 font-bold whitespace-nowrap">
-                00:00:00 UTC
+            <!-- Dual Clock inside -->
+            <div id="hud-clocks-container" class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center gap-1 z-30 pt-10">
+                <div id="hud-clock-utc" class="font-mono text-[7px] md:text-[8px] text-hud-blue drop-shadow-[0_0_3px_rgba(0,242,255,0.8)] tracking-widest bg-space/90 px-1 py-0.5 rounded backdrop-blur-md border border-hud-blue/40 font-bold whitespace-nowrap">
+                    00:00:00 UTC
+                </div>
+                <div id="hud-clock-local" class="font-mono text-[7px] md:text-[8px] text-emerald-400 drop-shadow-[0_0_3px_rgba(52,211,153,0.8)] tracking-widest bg-space/90 px-1 py-0.5 rounded backdrop-blur-md border border-emerald-500/40 font-bold whitespace-nowrap">
+                    00:00:00 LOC
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Final Footer Copyright -->
+    <div class="fixed bottom-2 left-4 z-[999] pointer-events-none opacity-40 select-none">
+        <span class="font-mono text-[7px] md:text-[8px] text-hud-blue tracking-widest uppercase">
+            &copy; 2026 NOTIS ASTRANOV - ASTRANOV BANK NEURAL LINK. PROTECTED BY ORBITAL LAW.
+        </span>
     </div>
 
     <!-- Scan Line -->
@@ -446,27 +475,100 @@
         </div>
 
         <!-- Nav Modal (Delivery) -->
-        <div id="nav-modal" class="modal hidden w-full max-w-sm bg-hud-dark backdrop-blur-[20px] border border-orange-500/20 shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden relative flex flex-col">
+        <div id="nav-modal" class="modal hidden w-full max-w-sm bg-hud-dark backdrop-blur-[20px] border border-hud-blue/20 shadow-[0_10px_40px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden relative flex flex-col">
             <div class="absolute top-0 right-0 p-3 z-10">
                 <button onclick="closeModal()" class="text-gray-400 hover:text-white p-2 rounded-full hover:bg-white/5"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <div class="p-5 border-b border-white/5 bg-gradient-to-r from-orange-500/10 to-transparent">
-                <h3 class="font-mono tracking-wide text-orange-400 flex items-center gap-2 text-sm">
+            <div class="p-5 border-b border-white/5 bg-gradient-to-r from-hud-blue/10 to-transparent">
+                <h3 class="font-mono tracking-wide text-hud-blue flex items-center gap-2 text-sm uppercase">
                     <i data-lucide="map-pin" class="w-4 h-4"></i> LOGISTICS DESTINATION
                 </h3>
             </div>
             <div class="p-5 flex flex-col gap-4">
                 <div>
                     <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">LOCAL ADDRESS</label>
-                    <input type="text" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-orange-500/50 transition-colors" placeholder="Sector 7G, Level B4...">
+                    <input type="text" id="delivery-address" class="w-full bg-black/50 border border-white/10 rounded-lg p-2.5 text-sm outline-none focus:border-hud-blue/50 transition-colors" placeholder="Sector 7G, Level B4...">
                 </div>
                 <div>
                     <label class="text-[10px] font-mono text-gray-500 mb-1.5 block">ROUTING NOTES</label>
-                    <textarea class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-orange-500/50 resize-none h-20 placeholder-gray-600 transition-colors" placeholder="Leave at external airlock. Code: 0451."></textarea>
+                    <textarea id="delivery-notes" class="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-sm outline-none focus:border-hud-blue/50 resize-none h-20 placeholder-gray-600 transition-colors" placeholder="Leave at external airlock. Code: 0451."></textarea>
                 </div>
             </div>
             <div class="p-4 bg-black/40 border-t border-white/5 flex justify-end shrink-0">
-                <button class="bg-orange-500 text-space font-semibold px-6 py-2 rounded-lg hover:bg-orange-400 transition-colors text-sm" onclick="submitModal('delivery')">CONFIRM VECTOR</button>
+                <button class="bg-hud-blue text-space font-semibold px-6 py-2 rounded-lg hover:bg-white transition-colors text-sm uppercase tracking-widest" onclick="submitModal('delivery')">CONFIRM VECTOR</button>
+            </div>
+        </div>
+
+        <!-- User Profile Modal -->
+        <div id="user-menu-modal" class="modal hidden w-full max-w-sm bg-black/90 backdrop-blur-[40px] border border-hud-blue/20 shadow-[0_20px_60px_rgba(0,0,0,0.7)] rounded-2xl overflow-hidden relative flex flex-col z-[100] pointer-events-auto">
+            <div class="p-6 border-b border-white/5 bg-gradient-to-br from-hud-blue/10 to-transparent">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-16 h-16 rounded-full border-2 border-hud-blue shadow-[0_0_20px_rgba(0,242,255,0.4)] overflow-hidden">
+                        <img src="https://picsum.photos/seed/astranov-user/200/200" alt="Profile" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h2 class="font-orbitron font-bold text-xl text-white tracking-widest">NOTIS ASTRANOV</h2>
+                        <span class="text-xs font-mono text-hud-blue tracking-tighter opacity-70">SATELLITE COMMANDER</span>
+                    </div>
+                </div>
+                <div class="bg-black/40 rounded-xl p-3 border border-white/5 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="wallet" class="w-4 h-4 text-gray-400"></i>
+                        <span class="text-xs font-mono text-gray-400">CREDITS</span>
+                    </div>
+                    <span class="font-orbitron font-bold text-emerald-400">1,024 ASTR</span>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-6 overflow-y-auto hide-scrollbar max-h-[60vh]">
+                <div class="space-y-4">
+                    <h3 class="text-[10px] font-mono text-gray-500 tracking-[.2em] mb-2 uppercase">Neural Link Profiles</h3>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="user" class="w-4 h-4 text-emerald-400"></i>
+                            <span class="text-sm font-medium text-gray-200">CLIENT</span>
+                        </div>
+                        <input type="checkbox" id="role-client" checked class="w-4 h-4 accent-hud-blue">
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="truck" class="w-4 h-4 text-hud-blue"></i>
+                            <span class="text-sm font-medium text-gray-200">DELIVERY DRIVER</span>
+                        </div>
+                        <input type="checkbox" id="role-driver" onchange="toggleDriverDetails()" class="w-4 h-4 accent-hud-blue">
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="store" class="w-4 h-4 text-purple-400"></i>
+                            <span class="text-sm font-medium text-gray-200">VENDOR</span>
+                        </div>
+                        <input type="checkbox" id="role-vendor" onchange="toggleVendorDetails()" class="w-4 h-4 accent-hud-blue">
+                    </div>
+                </div>
+
+                <div id="driver-config" class="hidden space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    <h4 class="text-[9px] font-mono text-hud-blue uppercase">Driver Authorization</h4>
+                    <input type="text" id="driver-id" class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-hud-blue/50" placeholder="Driver Callsign">
+                    <input type="text" id="driver-plate" class="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-hud-blue/50" placeholder="Orbital Registry ID">
+                </div>
+
+                <div id="vendor-config" class="hidden space-y-3 bg-white/5 p-4 rounded-xl border border-white/5">
+                    <h4 class="text-[9px] font-mono text-purple-400 uppercase">Vendor Data Sync</h4>
+                    <button class="w-full bg-purple-500/20 text-purple-300 border border-purple-500/40 rounded-lg py-2 text-xs font-bold font-orbitron hover:bg-purple-500/30 transition-all flex items-center justify-center gap-2" onclick="connectGoogleSheets()">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> SYNC GOOGLE SHEETS
+                    </button>
+                    <p class="text-[9px] text-gray-500 italic">Accepts: Optics, Valuation, Volume (L), Thermal Limits, Shell Life.</p>
+                </div>
+            </div>
+
+            <div class="p-4 bg-black/40 border-t border-white/5">
+                 <button class="w-full bg-hud-blue text-space font-bold py-3 rounded-xl hover:bg-white transition-all uppercase tracking-widest text-xs" onclick="closeModal('user-menu-modal')">INITIALIZE SYNC</button>
+                 <div class="text-[8px] text-gray-600 font-mono text-center mt-3 tracking-widest uppercase">
+                    &copy; 2026 Notis Astranov - Astranov Bank Distribution Neural Link. ALL RIGHTS RESERVED.
+                 </div>
             </div>
         </div>
 
@@ -805,22 +907,34 @@
             if(currentTarget) {
                 closeModal();
                 
-                let label = "signal";
-                let color = '#00f2ff';
-                if(type === 'shop') { label = 'merchant node'; color = '#2dd4bf'; }
-                if(type === 'delivery') { label = 'logistics target'; color = '#f97316'; }
-
-                addChatMessage("Vector confirmed.", true);
-                openComposer();
-                
-                setTimeout(() => {
-                    addChatMessage(`Publishing ${label} at [${currentTarget.lat.toFixed(4)}°, ${currentTarget.lng.toFixed(4)}°]. Synchronizing with global layer...`, false);
-                }, 400);
-                
-                if(mode === 'map') {
-                    const markerHtml = `<div class="w-3.5 h-3.5 rounded-full border-2 border-[white] shadow-[0_0_12px_${color}]" style="background:${color}"></div>`;
-                    const customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [14,14], iconAnchor: [7,7] });
-                    L.marker([currentTarget.lat, currentTarget.lng], {icon: customIcon}).addTo(map);
+                if(type === 'delivery') {
+                    addChatMessage("RETRIEVAL PROTOCOL INITIALIZED. ASSIGNING NEAREST UNIT...", false);
+                    
+                    // Simulate a driver starting from a nearby position
+                    const driverLat = currentTarget.lat + (Math.random() * 0.01 - 0.005);
+                    const driverLng = currentTarget.lng + (Math.random() * 0.01 - 0.005);
+                    const vendorPos = [currentTarget.lat, currentTarget.lng];
+                    const clientPos = [currentTarget.lat + 0.004, currentTarget.lng - 0.003]; 
+                    
+                    AstranovOS.visualizeTransaction(vendorPos, clientPos, [driverLat, driverLng]);
+                } else {
+                    let label = "signal";
+                    let color = '#00f2ff';
+                    if(type === 'shop') { label = 'merchant node'; color = '#2dd4bf'; }
+                    
+                    addChatMessage("Vector confirmed.", true);
+                    openComposer();
+                    
+                    setTimeout(() => {
+                        addChatMessage(`Publishing ${label.toUpperCase()} at [${currentTarget.lat.toFixed(4)}°, ${currentTarget.lng.toFixed(4)}°]. Synchronizing with global layer...`, false);
+                    }, 400);
+                    
+                    if(mode === 'map') {
+                        const markerHtml = `<div class="w-4 h-4 rounded-full border-2 border-[white] shadow-[0_0_15px_${color}] flex items-center justify-center animate-pulse" style="background:${color}44"><i data-lucide="${type === 'signal' ? 'radio' : 'store'}" class="w-2 h-2 text-white"></i></div>`;
+                        const customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [16,16], iconAnchor: [8,8] });
+                        L.marker([currentTarget.lat, currentTarget.lng], {icon: customIcon}).addTo(map);
+                        lucide.createIcons();
+                    }
                 }
             }
         };
@@ -1177,9 +1291,9 @@
             for(let i=0; i<360; i+=15) {
                 if(i % 90 === 0) continue;
                 const tick = document.createElement('div');
-                tick.className = 'absolute top-0 bottom-0 left-1/2 w-0 flex justify-center border-orange-500/30';
+                tick.className = 'absolute top-0 bottom-0 left-1/2 w-0 flex justify-center border-hud-blue/30';
                 tick.style.transform = `translateX(-50%) rotate(${i}deg)`;
-                tick.innerHTML = `<div class="h-1 w-[1px] bg-orange-500/50 mt-1"></div>`;
+                tick.innerHTML = `<div class="h-1 w-[1px] bg-hud-blue/50 mt-1"></div>`;
                 compassTicks.appendChild(tick);
             }
         }
@@ -1202,29 +1316,203 @@
 
         function updateClock() {
             const now = new Date();
-            const timeString = now.toISOString().substring(11, 19);
-            const clockEl = document.getElementById('hud-clock');
-            if (clockEl) clockEl.textContent = timeString + " UTC";
+            
+            // UTC DISPLAY
+            const utcTimeStr = now.getUTCHours().toString().padStart(2, '0') + ":" + 
+                               now.getUTCMinutes().toString().padStart(2, '0') + ":" + 
+                               now.getUTCSeconds().toString().padStart(2, '0') + " UTC";
+            
+            // LOCAL DISPLAY
+            const localTimeStr = now.getHours().toString().padStart(2, '0') + ":" + 
+                                 now.getMinutes().toString().padStart(2, '0') + ":" + 
+                                 now.getSeconds().toString().padStart(2, '0') + " LOC";
 
-            // UTC Hour & Celestial Rotation (24 hours)
-            const utcHours = now.getUTCHours();
-            const utcMins = now.getUTCMinutes();
-            const utcSecs = now.getUTCSeconds();
-            const totalSeconds = (utcHours * 3600) + (utcMins * 60) + utcSecs;
-            const rotation = ((totalSeconds / 86400) * 360) + 180; // Sun at bottom at UTC0 (so it needs +180 to be at top at UTC12)
+            const utcEl = document.getElementById('hud-clock-utc');
+            const locEl = document.getElementById('hud-clock-local');
+            if (utcEl) utcEl.innerText = utcTimeStr;
+            if (locEl) locEl.innerText = localTimeStr;
 
-            const ring = document.getElementById('celestial-ring');
-            if (ring) {
-                ring.style.transform = `rotate(${rotation}deg)`;
-                
-                const sunIcon = document.getElementById('sun-icon-container');
-                const moonIcon = document.getElementById('moon-icon-container');
-                if (sunIcon) sunIcon.style.transform = `translate(-50%, 0) rotate(${-rotation}deg)`;
-                if (moonIcon) moonIcon.style.transform = `translate(-50%, 0) rotate(${-rotation}deg)`;
+            // UTC Celestial Rotation (24 hours) - Sun at top at 12:00 UTC
+            const utcTimeTotalSeconds = (now.getUTCHours() * 3600) + (now.getUTCMinutes() * 60) + now.getUTCSeconds();
+            const rotation = ((utcTimeTotalSeconds / 86400) * 360) + 180; 
+
+            const sunIcon = document.getElementById('sun-icon-container');
+            const moonIcon = document.getElementById('moon-icon-container');
+            
+            // Radius for rotation on outer bezel
+            const radius = window.innerWidth <= 768 ? 62 : 82;
+
+            if (sunIcon) {
+                sunIcon.style.transform = `translate(-50%, -50%) rotate(${rotation}deg) translateY(-${radius}px) rotate(${-rotation}deg)`;
+            }
+            if (moonIcon) {
+                const moonRot = rotation + 180;
+                moonIcon.style.transform = `translate(-50%, -50%) rotate(${moonRot}deg) translateY(-${radius}px) rotate(${-moonRot}deg)`;
             }
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        // --- ASTRANOV OS BUSINESS LOGIC ---
+        window.AstranovOS = {
+             config: {
+                 owner: "NOTIS ASTRANOV",
+                 feeRate: 0.03, // 3%
+                 currency: "ASTR"
+             },
+
+             calculateDelivery: (km, weightKg = 0, volumeL = 0, weather = 'fair', isHoliday = false) => {
+                 const hour = new Date().getHours();
+                 let base = km * 1; // 1 Coin / KM
+                 let surcharges = 0;
+
+                 // Product bulkiness penalty
+                 if (weightKg > 13 || volumeL > 13) surcharges += 1;
+                 
+                 // Night shift penalty (9PM - 9AM)
+                 if (hour >= 21 || hour < 9) surcharges += 1;
+                 
+                 // Environmental penalty
+                 if (weather === 'bad' || weather === 'storm') surcharges += 1;
+                 
+                 // Holiday penalty
+                 if (isHoliday) surcharges += 1;
+                 
+                 // Peak hour penalty (07-09, 17-19)
+                 if ((hour >= 7 && hour <= 9) || (hour >= 17 && hour <= 19)) surcharges += 1;
+
+                 const total = base + surcharges;
+                 const appFee = total * AstranovOS.config.feeRate;
+                 const driverNet = total - appFee;
+
+                 return {
+                     total,
+                     surcharges,
+                     appFee,
+                     driverNet,
+                     summary: `BASE: ${base} | SURCHARGE: ${surcharges} | TOTAL: ${total.toFixed(2)} ${AstranovOS.config.currency}`
+                 };
+             },
+
+             // Maps Visualization for Transactions (Now with real OSRM routing)
+             visualizeTransaction: async (vendorLatLng, clientLatLng, driverLatLng) => {
+                 if (!map) return;
+                 
+                 addChatMessage("SEARCHING FOR OPTIMAL LOGISTICS CHANNEL...", false);
+                 
+                 // Straight glowing blue line for intention (Client to Vendor)
+                 const intentionLine = L.polyline([vendorLatLng, clientLatLng], {
+                     color: '#00f2ff',
+                     weight: 2,
+                     opacity: 1,
+                     className: 'glow-line',
+                     interactive: false
+                 }).addTo(map);
+
+                 // Driver Triangle
+                 const driverIcon = L.divIcon({
+                     html: `<div id="active-driver-triangle" class="w-0 h-0 border-l-[8px] border-r-[8px] border-b-[14px] border-solid border-transparent border-b-emerald-400 drop-shadow-[0_0_12px_#10b981] transition-all"></div>`,
+                     className: 'driver-marker-wrapper',
+                     iconSize: [16, 14]
+                 });
+                 const marker = L.marker(driverLatLng, {icon: driverIcon}).addTo(map);
+
+                 try {
+                    // Fetch real OSRM routing data
+                    const url = `https://router.project-osrm.org/route/v1/driving/${driverLatLng[1]},${driverLatLng[0]};${vendorLatLng[1]},${vendorLatLng[0]}?overview=full&geometries=geojson`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    
+                    if (!data.routes || data.routes.length === 0) {
+                        throw new Error("No route found");
+                    }
+
+                    const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    
+                    addChatMessage(`ORBITAL ROUTE ACQUIRED. DISTANCE: ${(data.routes[0].distance / 1000).toFixed(2)} KM. AVOIDING RESTRICTED ZONES.`, false);
+                    
+                    const drawRoute = L.polyline(routeCoords, {
+                        color: '#10b981',
+                        weight: 1,
+                        opacity: 0.3,
+                        dashArray: '5, 5'
+                    }).addTo(map);
+
+                    // Animation variables
+                    let step = 0;
+                    const segments = routeCoords.length;
+
+                    const moveInterval = setInterval(() => {
+                        if (step >= segments) {
+                            clearInterval(moveInterval);
+                            addChatMessage("ASTRANOV UNIT REACHED VENDOR. SECURING PAYLOAD.", false);
+                            return;
+                        }
+                        
+                        marker.setLatLng(routeCoords[step]);
+                        
+                        if (step < segments - 1) {
+                            const p1 = routeCoords[step];
+                            const p2 = routeCoords[step+1];
+                            const angle = Math.atan2(p2[1]-p1[1], p2[0]-p1[0]) * 180 / Math.PI;
+                            const triangle = document.getElementById('active-driver-triangle');
+                            if(triangle) triangle.style.transform = `rotate(${angle + 90}deg)`;
+                        }
+                        step++;
+                    }, 100);
+
+                    return { intentionLine, marker, drawRoute };
+
+                 } catch(err) {
+                    console.error("Routing error:", err);
+                    addChatMessage("Routing CPU Error. Falling back to linear trajectory...", false);
+                    // Fallback to straight line simulation if API fails
+                    const fallbackPath = [];
+                    for(let i=0; i<=100; i++){
+                        const r = i/100;
+                        fallbackPath.push([
+                            driverLatLng[0] + (vendorLatLng[0]-driverLatLng[0])*r,
+                            driverLatLng[1] + (vendorLatLng[1]-driverLatLng[1])*r
+                        ]);
+                    }
+                    let step = 0;
+                    const interval = setInterval(() => {
+                        if(step >= fallbackPath.length){ clearInterval(interval); return; }
+                        marker.setLatLng(fallbackPath[step]);
+                        step++;
+                    }, 50);
+                 }
+             }
+        };
+
+        window.openUserMenu = () => openModal('user-menu-modal');
+
+        window.toggleDriverDetails = () => {
+             const div = document.getElementById('driver-config');
+             const isChecked = document.getElementById('role-driver').checked;
+             div.classList.toggle('hidden', !isChecked);
+             if (isChecked) {
+                 addChatMessage("Accessing Driver Authorization Protocols...", false);
+             }
+        };
+
+        window.toggleVendorDetails = () => {
+             const div = document.getElementById('vendor-config');
+             const isChecked = document.getElementById('role-vendor').checked;
+             div.classList.toggle('hidden', !isChecked);
+             if (isChecked) {
+                 addChatMessage("Opening Vendor Data Stream. Sync required.", false);
+             }
+        };
+
+        window.connectGoogleSheets = () => {
+             addChatMessage("LINKING TO SATELLITE DISTRIBUTION HUB...", false);
+             setTimeout(() => {
+                 // Template URL provided in the request context
+                 window.open("https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit?usp=sharing", "_blank");
+                 addChatMessage("Google Sheets Template Synchronized. Ready for Optics, Valuation, and Thermal telemetry data.", false);
+             }, 1000);
+        };
 
         // Hardware Device Orientation Compass
         if (window.DeviceOrientationEvent) {
