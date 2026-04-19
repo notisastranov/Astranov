@@ -65,6 +65,20 @@
         /* Leaflet Dark Overrides */
         .leaflet-container { background: transparent !important; }
         .leaflet-control-attribution { display: none !important; }
+        .astranov-popup .leaflet-popup-content-wrapper {
+            background: rgba(10, 20, 35, 0.8) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(0, 242, 255, 0.3) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+        }
+        .astranov-popup .leaflet-popup-tip {
+            background: rgba(10, 20, 35, 0.9) !important;
+        }
+        .astranov-popup .leaflet-popup-content {
+            margin: 12px !important;
+        }
         
         /* Composer Styles */
         #composer {
@@ -663,6 +677,7 @@
         }
 
         window.openComposer = () => setComposerHeight(MAX_HEIGHT * 0.8, true);
+        window.closeComposer = () => setComposerHeight(MIN_HEIGHT, true);
 
         function onDragStart(e) {
             isDragging = true;
@@ -731,7 +746,7 @@
             setTimeout(()=> { chatFeed.scrollTo({ top: chatFeed.scrollHeight, behavior: 'smooth' }); }, 10);
         }
 
-        function handleSend() {
+        async function handleSend() {
             const txt = chatInput.value.trim();
             if(!txt) return;
             
@@ -741,18 +756,77 @@
             chatInput.value = '';
             chatInput.blur(); // Dismiss mobile keyboard
 
-            let response = `Command unrecognized. Please establish coordinates or specify vector.`;
             const lowerTxt = txt.toLowerCase();
             
-            if (lowerTxt.includes("hello") || lowerTxt.includes("hi")) {
-                 response = `Greetings. The Astranov network is online. How shall we proceed?`;
-            } else if (lowerTxt.includes("analyze") || lowerTxt.includes("scan")) {
-                 response = `Scanning immediate sector parameters... Signal density normal.`;
+            if (lowerTxt === "hello" || lowerTxt === "hi") {
+                 setTimeout(() => addChatMessage(`Greetings. The Astranov network is online. How shall we proceed?`, false), 600);
+                 return;
             } else if (lowerTxt.includes("weather") || lowerTxt.includes("status")) {
-                 response = `Orbital feeds indicate clear planetary conditions. Local infrastructure optimal.`;
+                 setTimeout(() => addChatMessage(`Orbital feeds indicate clear planetary conditions. Local infrastructure optimal.`, false), 600);
+                 return;
             }
 
-            setTimeout(() => addChatMessage(response, false), 800 + Math.random() * 500);
+            // Real AI Search Simulation via Nominatim (OpenStreetMap Search)
+            addChatMessage(`Initiating global orbital scan for "${txt}"...`, false);
+            
+            try {
+                // If we are currently looking at the map, we construct a viewbox to gently bias the search
+                let viewboxParam = '';
+                if (mode === 'map') {
+                    const bounds = map.getBounds();
+                    viewboxParam = `&viewbox=${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()},${bounds.getSouth()}`;
+                }
+
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(txt)}${viewboxParam}&limit=5`);
+                const data = await res.json();
+
+                if (data && data.length > 0) {
+                    const target = data[0];
+                    const lat = parseFloat(target.lat);
+                    const lng = parseFloat(target.lon);
+                    const displayName = target.display_name.split(',')[0];
+
+                    setTimeout(() => {
+                        addChatMessage(`Target acquired: ${displayName}. Relocating coordinates to [${lat.toFixed(4)}°, ${lng.toFixed(4)}°].`, false);
+                        
+                        setTimeout(() => {
+                            closeComposer();
+                            if (mode === 'globe') {
+                                handleGlobeClick({lat, lng});
+                            } else {
+                                // Already in map mode
+                                map.flyTo([lat, lng], 13, { duration: 1.5 });
+                                setTimeout(() => {
+                                    showContextMenu(lat, lng, window.innerWidth/2, window.innerHeight/2);
+                                }, 1500);
+                            }
+                            
+                            // Let the map settle then drop a marker
+                            setTimeout(() => {
+                                const markerHtml = `<div class="w-4 h-4 rounded-full border-2 border-[white] shadow-[0_0_15px_#00f2ff] animate-pulse" style="background:#00f2ff"></div>`;
+                                const customIcon = L.divIcon({ html: markerHtml, className: '', iconSize: [16,16], iconAnchor: [8,8] });
+                                const m = L.marker([lat, lng], {icon: customIcon}).addTo(map);
+                                
+                                m.bindPopup(`<div class="font-mono text-xs text-hud-blue pb-1 text-center font-bold tracking-widest">${displayName.toUpperCase()}</div><div class="text-[10px] text-gray-400 text-center leading-tight mt-1 max-w-[150px] mx-auto">${target.display_name}</div>`, {
+                                    className: 'astranov-popup',
+                                    closeButton: false
+                                }).openPopup();
+
+                            }, mode === 'globe' ? 1200 : 1600);
+
+                        }, 1500);
+                    }, 500);
+
+                } else {
+                    setTimeout(() => {
+                        addChatMessage(`Scan complete. No matches found for "${txt}". Consider broadening search parameters.`, false);
+                    }, 500);
+                }
+            } catch (err) {
+                setTimeout(() => {
+                    addChatMessage(`System Error: External database connection failed.`, false);
+                }, 500);
+            }
         }
 
         btnSend.addEventListener('click', handleSend);
