@@ -1,15 +1,767 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Astranov OS</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ASTRANOV</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --astr-blue: #00f2ff;
+            --astr-blue-glow: rgba(0, 242, 255, 0.5);
+            --astr-bg: #000205;
+            --astr-glass: rgba(0, 10, 20, 0.85);
+            --astr-border: rgba(0, 242, 255, 0.2);
+            --font-main: 'Orbitron', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--astr-bg);
+            color: white;
+            font-family: var(--font-main);
+            overflow: hidden;
+            position: fixed;
+        }
+
+        #kernel-viewport {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        #globe-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #map-viewport {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease-in-out;
+            background: #000;
+        }
+
+        #map-viewport.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* HUD LAYERS */
+        .hud-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* COMPASS INSTRUMENT */
+        #compass-instrument {
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            pointer-events: auto;
+            cursor: grab;
+            touch-action: none;
+            left: 50%;
+            top: 40%;
+            transform: translate(-50%, -50%) scale(1);
+            user-select: none;
+            z-index: 50;
+        }
+
+        #compass-instrument:active { cursor: grabbing; }
+
+        .compass-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid var(--astr-border);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+            background: radial-gradient(circle, transparent 60%, rgba(0, 242, 255, 0.02) 100%);
+        }
+
+        .compass-bezel {
+            position: absolute;
+            inset: -15px;
+            border-radius: 50%;
+            border: 1px dashed rgba(0, 242, 255, 0.1);
+        }
+
+        .cardinal {
+            position: absolute;
+            font-size: 10px;
+            color: var(--astr-blue);
+            opacity: 0.4;
+            font-family: var(--font-mono);
+        }
+        .card-n { top: -25px; left: 50%; transform: translateX(-50%); }
+        .card-s { bottom: -25px; left: 50%; transform: translateX(-50%); }
+        .card-e { right: -30px; top: 50%; transform: translateY(-50%); }
+        .card-w { left: -30px; top: 50%; transform: translateY(-50%); }
+
+        .compass-center {
+            position: absolute;
+            inset: 60px;
+            border-radius: 50%;
+            background: var(--astr-glass);
+            border: 1px solid var(--astr-blue);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 30px var(--astr-blue-glow), 0 0 20px var(--astr-blue-glow);
+            backdrop-filter: blur(10px);
+            transition: inset 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .compass-center.minimized { inset: 100px; }
+
+        .compass-logo {
+            font-weight: 700;
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .vector-search-indicator {
+            font-family: var(--font-mono);
+            font-size: 8px;
+            color: var(--astr-blue);
+            text-shadow: 0 0 5px var(--astr-blue);
+            margin-bottom: 4px;
+        }
+
+        .compass-controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .comp-btn {
+            background: none;
+            border: none;
+            color: var(--astr-blue);
+            padding: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .comp-btn svg { width: 16px; height: 16px; filter: drop-shadow(0 0 5px var(--astr-blue)); }
+
+        .clock-ring {
+            position: absolute;
+            inset: -40px;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        .sun-moon-tracker {
+            position: absolute;
+            inset: 0;
+            transition: transform 1s linear;
+        }
+
+        .celestial-body {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .sun-icon { top: -60px; color: #ffae00; filter: drop-shadow(0 0 10px #ffae00); }
+        .moon-icon { bottom: -60px; color: #6e8efb; filter: drop-shadow(0 0 10px #6e8efb); }
+
+        .time-display {
+            position: absolute;
+            bottom: -80px;
+            width: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--astr-blue);
+            letter-spacing: 1px;
+            background: rgba(0,0,0,0.5);
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        /* BOTTOM BAR */
+        #bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 20px calc(20px + var(--safe-bottom));
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        .bar-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--astr-glass);
+            border: 1px solid var(--astr-border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 70px;
+        }
+
+        .bar-container.expanded {
+            max-height: 80vh;
+        }
+
+        .bar-input-wrap {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        #main-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: white;
+            font-family: var(--font-main);
+            font-size: 14px;
+            outline: none;
+            letter-spacing: 1px;
+        }
+
+        #main-input::placeholder { color: rgba(255,255,255,0.3); font-size: 12px; }
+
+        .bar-actions { display: flex; gap: 8px; }
+        .bar-btn {
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid var(--astr-border);
+            color: var(--astr-blue);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pill-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .bar-container.expanded .pill-content {
+            display: block;
+            opacity: 1;
+        }
+
+        /* MODULE UI COMPONENTS */
+        .pillar-nav {
+            display: flex;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .pillar-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .pillar-tab.active { color: var(--astr-blue); background: rgba(0, 242, 255, 0.05); font-weight: bold; }
+
+        .data-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .social-video-card {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        /* SCROLLBARS */
+        .pill-content::-webkit-scrollbar { width: 4px; }
+        .pill-content::-webkit-scrollbar-thumb { background: var(--astr-blue); border-radius: 2px; }
+
+        /* VENDOR LIST */
+        .item-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .price-tag { color: var(--astr-blue); font-family: var(--font-mono); font-weight: bold; }
+
+        /* LEAFLET CUSTOMS */
+        .leaflet-container { background: #000 !important; }
+        .leaflet-tile { filter: brightness(0.6) contrast(1.2) grayscale(1) invert(0.9) hue-rotate(180deg) !important; }
+
+        .driver-marker {
+            width: 24px;
+            height: 24px;
+            background: var(--astr-blue);
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            box-shadow: 0 0 10px var(--astr-blue);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="kernel-viewport">
+        <canvas id="globe-canvas"></canvas>
+    </div>
+
+    <div id="map-viewport"></div>
+
+    <div class="hud-overlay">
+        <!-- COMPASS INSTRUMENT -->
+        <div id="compass-instrument">
+            <div class="compass-bezel"></div>
+            <div class="compass-ring"></div>
+            <div class="cardinal card-n">NORTH</div>
+            <div class="cardinal card-s">SOUTH</div>
+            <div class="cardinal card-e">EAST</div>
+            <div class="cardinal card-w">WEST</div>
+            
+            <div class="sun-moon-tracker" id="celestial-tracker">
+                <div class="celestial-body sun-icon" data-lucide="sun"></div>
+                <div class="celestial-body moon-icon" data-lucide="moon"></div>
+            </div>
+
+            <div class="compass-center" id="compass-core">
+                <div class="compass-logo">ASTRANOV</div>
+                <div class="vector-search-indicator" id="vector-status">READY</div>
+                <div class="compass-controls">
+                    <button class="comp-btn" id="btn-zoom-in" title="Zoom In"><i data-lucide="plus"></i></button>
+                    <button class="comp-btn" id="btn-locate" title="Locate Me"><i data-lucide="crosshair"></i></button>
+                    <button class="comp-btn" id="btn-zoom-out" title="Zoom Out"><i data-lucide="minus"></i></button>
+                    <button class="comp-btn" id="btn-vector" title="Vector Search"><i data-lucide="brain"></i></button>
+                    <button class="comp-btn" id="btn-resize" title="Resize HUD"><i data-lucide="maximize"></i></button>
+                </div>
+            </div>
+
+            <div class="time-display">
+                <span id="utc-clock">00:00:00 UTC</span><br>
+                <span id="loc-clock">00:00:00 LOC</span>
+            </div>
+        </div>
+
+        <!-- BOTTOM COMMAND BAR -->
+        <div id="bottom-bar">
+            <div class="bar-container" id="bar-shell">
+                <div class="pillar-nav">
+                    <div class="pillar-tab active" data-pillar="ai">RESEARCH</div>
+                    <div class="pillar-tab" data-pillar="market">MARKET</div>
+                    <div class="pillar-tab" data-pillar="social">SOCIAL</div>
+                </div>
+
+                <div class="pill-content" id="pill-content-box">
+                    <!-- Dynamic content loads here -->
+                </div>
+
+                <div class="bar-input-wrap">
+                    <i data-lucide="search" style="color: var(--astr-blue); width: 18px;"></i>
+                    <input type="text" id="main-input" placeholder="Search internet, market, or people...">
+                    <div class="bar-actions">
+                        <button class="bar-btn" id="btn-voice"><i data-lucide="mic"></i></button>
+                        <button class="bar-btn" id="btn-send"><i data-lucide="arrow-up"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * ASTRANOV KERNEL
+         * Governed by Astranov Law
+         */
+        const Astranov = {
+            config: {
+                version: "2.0.0",
+                isMobile: /iPhone|iPad|iPod|Android/i.test(navigator.userAgent),
+                supabaseUrl: null, // Ready for connection
+                registry: {}
+            },
+            
+            state: {
+                zoom: 1, // 1: Space, 10: Earth
+                view: 'globe', // 'globe' | 'map'
+                location: { lat: 20, lng: 0 },
+                activePillar: 'ai',
+                isDrifting: true,
+                simulatedDrivers: []
+            },
+
+            eventBus: {
+                listeners: {},
+                on(event, cb) { if(!this.listeners[event]) this.listeners[event] = []; this.listeners[event].push(cb); },
+                emit(event, data) { if(this.listeners[event]) this.listeners[event].forEach(cb => cb(data)); }
+            },
+
+            boot() {
+                console.log("ASTRANOV: Initiating Boot Kernel...");
+                lucide.createIcons();
+                this.initState();
+                this.initGlobe();
+                this.initCompass();
+                this.initBottomBar();
+                this.registerDormantModules();
+                this.startLifecycle();
+                
+                // Mandatory Initial State
+                this.eventBus.emit('boot_complete');
+            },
+
+            initState() {
+                // Reactive sync helper
+                this.state = new Proxy(this.state, {
+                    set: (target, key, value) => {
+                        target[key] = value;
+                        this.eventBus.emit(`state_changed:${key}`, value);
+                        return true;
+                    }
+                });
+            },
+
+            initGlobe() {
+                const canvas = document.getElementById('globe-canvas');
+                const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 250;
+
+                // Atmospheric Glow
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+                scene.add(ambientLight);
+
+                const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                sunLight.position.set(5, 3, 5);
+                scene.add(sunLight);
+
+                // Planet Earth
+                const geo = new THREE.SphereGeometry(100, 64, 64);
+                const mat = new THREE.MeshPhongMaterial({
+                    color: 0x112244,
+                    emissive: 0x001122,
+                    specular: 0x333333,
+                    shininess: 5,
+                    map: null // Would load hi-res texture if connected, currently navy-space shader style
+                });
+                const earth = new THREE.Mesh(geo, mat);
+                scene.add(earth);
+
+                // Starfield
+                const starGeo = new THREE.BufferGeometry();
+                const starPos = [];
+                for(let i=0; i<5000; i++) {
+                    starPos.push((Math.random()-0.5)*2000, (Math.random()-0.5)*2000, (Math.random()-0.5)*2000);
+                }
+                starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+                const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7 });
+                const stars = new THREE.Points(starGeo, starMat);
+                scene.add(stars);
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    if(this.state.isDrifting) earth.rotation.y += 0.0005;
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                window.addEventListener('resize', () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                this.config.registry.globe = { scene, camera, earth };
+            },
+
+            initCompass() {
+                const compass = document.getElementById('compass-instrument');
+                const tracker = document.getElementById('celestial-tracker');
+                let isDragging = false;
+                let startPos = { x: 0, y: 0 };
+                let currentPos = { x: window.innerWidth/2, y: window.innerHeight*0.4 };
+
+                const updateClocks = () => {
+                    const now = new Date();
+                    document.getElementById('utc-clock').textContent = now.toISOString().split('T')[1].split('.')[0] + " UTC";
+                    document.getElementById('loc-clock').textContent = now.toLocaleTimeString() + " LOC";
+                    
+                    const seconds = now.getUTCHours() * 3600 + now.getUTCMinutes() * 60 + now.getUTCSeconds();
+                    const rotation = (seconds / 86400) * 360;
+                    tracker.style.transform = `rotate(${rotation}deg)`;
+                };
+                setInterval(updateClocks, 1000);
+                updateClocks();
+
+                // Draggable logic
+                compass.addEventListener('mousedown', (e) => { isDragging = true; startPos = { x: e.clientX, y: e.clientY }; });
+                document.addEventListener('mousemove', (e) => {
+                    if(!isDragging) return;
+                    const deltaX = e.clientX - startPos.x;
+                    const deltaY = e.clientY - startPos.y;
+                    currentPos.x += deltaX;
+                    currentPos.y += deltaY;
+                    compass.style.left = currentPos.x + 'px';
+                    compass.style.top = currentPos.y + 'px';
+                    startPos = { x: e.clientX, y: e.clientY };
+                });
+                document.addEventListener('mouseup', () => isDragging = false);
+
+                // Touch support
+                compass.addEventListener('touchstart', (e) => { isDragging = true; startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; });
+                document.addEventListener('touchmove', (e) => {
+                    if(!isDragging) return;
+                    const deltaX = e.touches[0].clientX - startPos.x;
+                    const deltaY = e.touches[0].clientY - startPos.y;
+                    currentPos.x += deltaX;
+                    currentPos.y += deltaY;
+                    compass.style.left = currentPos.x + 'px';
+                    compass.style.top = currentPos.y + 'px';
+                    startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                });
+                document.addEventListener('touchend', () => isDragging = false);
+
+                // Zoom Logic
+                document.getElementById('btn-zoom-in').onclick = () => this.zoom(1);
+                document.getElementById('btn-zoom-out').onclick = () => this.zoom(-1);
+                document.getElementById('btn-locate').onclick = () => this.locate();
+
+                // Vector Search Intent
+                document.getElementById('btn-vector').onclick = () => {
+                    const status = document.getElementById('vector-status');
+                    status.textContent = "SEARCHING...";
+                    status.classList.add('animate-pulse');
+                    setTimeout(() => {
+                        status.textContent = "READY";
+                        status.classList.remove('animate-pulse');
+                        this.eventBus.emit('command_search', 'vector_intent');
+                    }, 2000);
+                };
+
+                // Resize logic
+                document.getElementById('btn-resize').onclick = () => {
+                    const core = document.getElementById('compass-core');
+                    core.classList.toggle('minimized');
+                };
+            },
+
+            initBottomBar() {
+                const shell = document.getElementById('bar-shell');
+                const input = document.getElementById('main-input');
+                const tabs = document.querySelectorAll('.pillar-tab');
+
+                input.onfocus = () => shell.classList.add('expanded');
+                
+                tabs.forEach(tab => {
+                    tab.onclick = () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this.state.activePillar = tab.dataset.pillar;
+                        this.renderPillar();
+                    };
+                });
+
+                // Close on background tap? No, use intent.
+                this.renderPillar();
+            },
+
+            registerDormantModules() {
+                this.modules = {
+                    ai: {
+                        render: () => `
+                            <div class="data-card">
+                                <div style="color:var(--astr-blue); font-size:10px; margin-bottom:10px;">AI RESEARCH KERNEL [ACTIVE]</div>
+                                <div style="font-size:12px; line-height:1.6; opacity:0.8;">
+                                    Connected to global research intent. Search for multi-vector data across markets, code bases, and scientific archives.
+                                </div>
+                            </div>
+                            <div class="data-card">
+                                <span style="font-size:10px; opacity:0.5;">LAST RETRIEVAL</span><br>
+                                <span style="font-size:11px;">"Supabase Edge Function Deployment Rules"</span>
+                            </div>
+                        `
+                    },
+                    market: {
+                        render: () => {
+                            const drivers = 12;
+                            const vendors = 4;
+                            return `
+                                <div class="data-card">
+                                    <div class="item-row">
+                                        <span style="font-size:11px; font-weight:bold;">ESTIMATED DELIVERY POOL</span>
+                                        <span class="price-tag">${drivers} UNITS</span>
+                                    </div>
+                                    <div style="font-size:10px; opacity:0.6;">Active network coverage: 82%</div>
+                                </div>
+                                <div class="data-card">
+                                    <div class="item-row">
+                                        <span>PLASMA_CELL (Grade A)</span>
+                                        <span class="price-tag">142.50 ASTR</span>
+                                    </div>
+                                    <div class="item-row">
+                                        <span style="font-size:10px">Vendor: ELECTRONICS_HUB</span>
+                                        <button style="background:var(--astr-blue); color:black; border:none; border-radius:4px; font-size:9px; padding:2px 8px;">ORDER</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    },
+                    social: {
+                        render: () => `
+                            <div class="social-video-card">
+                                <img src="https://picsum.photos/seed/truck/400/225" style="width:100%; height:100%; object-fit:cover; opacity:0.6;">
+                                <div style="position:absolute; bottom:10px; left:10px; font-size:10px;">@LOGISTICS_PRO / Real-time transit vlog</div>
+                            </div>
+                            <div class="data-card">
+                                <div style="font-size:11px;">Trending in your sector: #EfficiencyGains</div>
+                            </div>
+                        `
+                    }
+                };
+            },
+
+            renderPillar() {
+                const box = document.getElementById('pill-content-box');
+                const pillar = this.modules[this.state.activePillar];
+                if(pillar) {
+                    box.innerHTML = pillar.render();
+                }
+            },
+
+            zoom(delta) {
+                const globe = this.config.registry.globe;
+                const cam = globe.camera;
+                
+                if(delta > 0 && this.state.view === 'globe') {
+                    // Moving closer to earth
+                    cam.position.z -= 40;
+                    if(cam.position.z < 120) {
+                        this.transitionToMap();
+                    }
+                } else if(delta < 0 && this.state.view === 'map') {
+                    this.transitionToGlobe();
+                } else if(delta < 0 && this.state.view === 'globe') {
+                    cam.position.z = Math.min(600, cam.position.z + 40);
+                }
+            },
+
+            transitionToMap() {
+                this.state.view = 'map';
+                this.state.isDrifting = false;
+                document.getElementById('map-viewport').classList.add('active');
+                
+                if(!this.map) {
+                    this.map = L.map('map-viewport', { 
+                        attributionControl: false, 
+                        zoomControl: false 
+                    }).setView([this.state.location.lat, this.state.location.lng], 13);
+                    
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                        maxZoom: 20
+                    }).addTo(this.map);
+                } else {
+                    this.map.invalidateSize();
+                }
+            },
+
+            transitionToGlobe() {
+                this.state.view = 'globe';
+                this.state.isDrifting = true;
+                const globe = this.config.registry.globe;
+                globe.camera.position.z = 150;
+                document.getElementById('map-viewport').classList.remove('active');
+            },
+
+            locate() {
+                if(navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(pos => {
+                        this.state.location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        if(this.state.view === 'map') {
+                            this.map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+                        } else {
+                            this.zoom(1);
+                            this.zoom(1);
+                            this.transitionToMap();
+                        }
+                    });
+                }
+            },
+
+            startLifecycle() {
+                // Background maintenance
+                setInterval(() => {
+                    if(this.state.view === 'map') {
+                        this.syncMarketDynamics();
+                    }
+                }, 5000);
+            },
+
+            syncMarketDynamics() {
+                // Truthful Implementation: Mock data simulating real pricing engine behavior
+                const base = 100;
+                const dynamic = base + (Math.random() * 20);
+                console.log(`Market Engine: Recalculating Dynamic Price... [${dynamic.toFixed(2)} ASTR]`);
+            }
+        };
+
+        // KERNEL ENTRY
+        window.addEventListener('load', () => Astranov.boot());
+
+    </script>
+</body>
 </html>

@@ -1,6 +1,6 @@
 {
   "name": "Astranov",
-  "description": "Internet Operating System with real Earth view, interactive map, and local signals via HUD interface.",
+  "description": "A delivery and social network app featuring an interactive map, real-time logistics, and simplified messaging.",
   "requestFramePermissions": [
     "geolocation"
   ],
