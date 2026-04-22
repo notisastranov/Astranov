@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Astranov</title>
+  <style>
+    :root {
+      --bg: #03111f;
+      --bg2: #061d35;
+      --blue: #50c3ff;
+      --blue-soft: rgba(80,195,255,0.22);
+      --cyan: #9be7ff;
+      --ink: #eaf7ff;
+      --muted: rgba(234,247,255,0.72);
+      --panel: rgba(6, 22, 38, 0.72);
+      --panel-strong: rgba(8, 27, 47, 0.88);
+      --line: rgba(125, 208, 255, 0.55);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 10%, #0b2a4d 0%, #061627 30%, #03101d 65%, #020b13 100%);
+      color: var(--ink);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    #spaceCanvas,
+    #earthCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+
+    #spaceCanvas { z-index: 0; }
+
+    .brand {
+      position: absolute;
+      top: max(12px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #d7f4ff;
+      text-shadow: 0 0 18px rgba(80,195,255,0.34);
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: rgba(215,244,255,0.76);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    #globeView, #mapView {
+      position: absolute;
+      inset: 0;
+    }
+
+    #globeView {
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 82px 18px 32px;
+    }
+
+    .earth-wrap {
+      position: relative;
+      width: min(86vw, 420px);
+      aspect-ratio: 1;
+      margin-bottom: 18px;
+      cursor: pointer;
+      filter: drop-shadow(0 0 26px rgba(80, 195, 255, 0.20));
+    }
+
+    .earth-glow {
+      position: absolute;
+      inset: -11%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(130,227,255,0.06) 0%, rgba(82,190,255,0.13) 38%, rgba(67,149,255,0.02) 64%, transparent 76%);
+    }
+
+    #earthCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .tap-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 4%;
+      transform: translateX(-50%);
+      z-index: 3;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(7, 25, 43, 0.72);
+      border: 1px solid rgba(135, 214, 255, 0.35);
+      color: #e8fbff;
+      font-size: 13px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+    }
+
+    .live-chip {
+      position: absolute;
+      z-index: 4;
+      padding: 8px 12px;
+      border: 1px solid rgba(150, 224, 255, 0.35);
+      border-radius: 999px;
+      background: rgba(8, 25, 44, 0.68);
+      color: #e7faff;
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease;
+    }
+
+    .live-chip:hover,
+    .live-chip:active { transform: scale(1.03); background: rgba(12, 35, 60, 0.86); }
+
+    #voicePrompt {
+      position: absolute;
+      left: 50%;
+      top: 58%;
+      transform: translate(-50%, -50%);
+      z-index: 6;
+      width: min(92vw, 460px);
+      padding: 18px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(8,27,47,0.90), rgba(6,20,35,0.84));
+      border: 1px solid rgba(138, 221, 255, 0.28);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    #voicePrompt h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    #voicePrompt p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .prompt-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn, .ghost-btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      background: linear-gradient(180deg, #67d2ff, #23a8f1);
+      color: #042037;
+      font-weight: 800;
+    }
+
+    .ghost-btn {
+      background: rgba(255,255,255,0.07);
+      color: #dff8ff;
+      border: 1px solid rgba(160,225,255,0.22);
+    }
+
+    #statusWhisper {
+      position: absolute;
+      left: 50%;
+      bottom: 100px;
+      transform: translateX(-50%);
+      z-index: 6;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(6, 21, 37, 0.7);
+      border: 1px solid rgba(132, 216, 255, 0.26);
+      backdrop-filter: blur(12px);
+      font-size: 13px;
+      color: #dff8ff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 220ms ease;
+    }
+
+    #statusWhisper.show { opacity: 1; }
+
+    #fallbackBar {
+      position: absolute;
+      left: 50%;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      z-index: 7;
+      width: min(94vw, 560px);
+      padding: 10px;
+      border-radius: 24px;
+      background: rgba(8, 28, 48, 0.82);
+      border: 1px solid rgba(149, 223, 255, 0.28);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      display: none;
+      gap: 10px;
+      align-items: center;
+    }
+
+    #fallbackInput {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      background: rgba(255,255,255,0.06);
+      color: var(--ink);
+      padding: 14px 16px;
+      border-radius: 16px;
+      outline: none;
+    }
+
+    #mapView {
+      z-index: 9;
+      display: none;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(62, 182, 255, 0.14), transparent 35%),
+        linear-gradient(180deg, rgba(8, 25, 42, 0.88), rgba(4, 15, 27, 0.97));
+    }
+
+    .map-sky {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(94, 195, 255, 0.18), transparent 25%),
+        radial-gradient(circle at 80% 15%, rgba(94, 195, 255, 0.12), transparent 20%),
+        linear-gradient(180deg, rgba(4, 20, 38, 0.95), rgba(4, 15, 27, 0.98));
+    }
+
+    .map-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(111, 197, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(111, 197, 255, 0.06) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.9) 18%, rgba(255,255,255,1) 100%);
+    }
+
+    .roads {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, transparent 0 46%, rgba(255,255,255,0.06) 46% 49%, transparent 49% 100%),
+        linear-gradient(25deg, transparent 0 44%, rgba(255,255,255,0.05) 44% 47%, transparent 47% 100%),
+        linear-gradient(90deg, transparent 0 66%, rgba(255,255,255,0.05) 66% 68%, transparent 68% 100%);
+      opacity: 0.55;
+    }
+
+    .map-topbar {
+      position: absolute;
+      left: 50%;
+      top: max(12px, env(safe-area-inset-top));
+      transform: translateX(-50%);
+      z-index: 12;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(153, 226, 255, 0.28);
+      background: rgba(8, 25, 43, 0.72);
+      color: var(--ink);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    #mapObjects {
+      position: absolute;
+      inset: 0;
+      z-index: 11;
+    }
+
+    .obj, .float-note {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+      background: rgba(6, 25, 44, 0.80);
+      border: 1px solid rgba(151, 228, 255, 0.35);
+      color: var(--ink);
+      padding: 10px 12px;
+      font-size: 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .obj.role-vendor { box-shadow: 0 0 0 1px rgba(110,220,255,0.15), var(--shadow); }
+    .obj.role-driver { box-shadow: 0 0 0 1px rgba(120,255,190,0.18), var(--shadow); }
+    .obj.role-client { box-shadow: 0 0 0 1px rgba(255,209,117,0.18), var(--shadow); }
+
+    #geometryLayer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      overflow: visible;
+    }
+
+    .glow-line, .glow-shape {
+      fill: rgba(58, 176, 255, 0.14);
+      stroke: rgba(113, 212, 255, 0.9);
+      stroke-width: 2.2;
+      filter: drop-shadow(0 0 10px rgba(80,195,255,0.28));
+      cursor: pointer;
+    }
+
+    .float-note {
+      background: rgba(14, 50, 75, 0.82);
+      color: #dff8ff;
+      font-weight: 700;
+      pointer-events: none;
+    }
+
+    #contextCard {
+      position: absolute;
+      z-index: 13;
+      width: min(84vw, 320px);
+      padding: 14px;
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(10, 31, 54, 0.96), rgba(8, 23, 39, 0.94));
+      border: 1px solid rgba(150, 224, 255, 0.26);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      display: none;
+    }
+
+    #contextCard h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    #contextCard p, #contextCard label {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .card-actions, .feedback-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .mini-btn {
+      border: 1px solid rgba(152, 228, 255, 0.25);
+      background: rgba(255,255,255,0.06);
+      color: var(--ink);
+      border-radius: 14px;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+
+    .field, .slider-row {
+      margin-top: 10px;
+    }
+
+    .field input[type="text"], .field textarea {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.08);
+      color: var(--ink);
+      padding: 10px 12px;
+      resize: vertical;
+      min-height: 44px;
+    }
+
+    .slider-row input[type="range"] {
+      width: 100%;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (min-width: 900px) {
+      .earth-wrap { width: min(54vh, 460px); }
+      #voicePrompt { top: 54%; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <canvas id="spaceCanvas"></canvas>
+
+  <div class="brand">
+    <h1>Astranov</h1>
+    <p>world-first • voice-first • map-native</p>
+  </div>
+
+  <div id="globeView">
+    <div class="earth-wrap" id="earthWrap" aria-label="Enter local map" role="button" tabindex="0">
+      <div class="earth-glow"></div>
+      <canvas id="earthCanvas"></canvas>
+      <div class="tap-hint">Tap Earth to enter your local world</div>
+    </div>
+
+    <button class="live-chip" style="left:12%; top:33%;" data-chip="market">Nearby market pulse</button>
+    <button class="live-chip" style="right:10%; top:31%;" data-chip="social">Social circles nearby</button>
+    <button class="live-chip" style="left:14%; bottom:20%;" data-chip="driver">Drivers awake in your zone</button>
+    <button class="live-chip" style="right:12%; bottom:18%;" data-chip="research">Ask the world anything</button>
+  </div>
+
+  <div id="voicePrompt">
+    <h2>Start naturally</h2>
+    <p>Astranov works voice-first. Let it use location and microphone, then speak to it. Typing stays hidden unless you ask for it or voice fails.</p>
+    <div class="prompt-actions">
+      <button id="startNatural" class="primary-btn">Start voice and location</button>
+      <button id="exploreQuietly" class="ghost-btn">Explore quietly</button>
+      <button id="manualTrigger" class="ghost-btn">I want the keyboard</button>
+    </div>
+  </div>
+
+  <div id="statusWhisper"></div>
+
+  <div id="fallbackBar">
+    <input id="fallbackInput" type="text" placeholder="Type only if voice is unavailable or unwanted" />
+    <button id="sendFallback" class="primary-btn">Send</button>
+  </div>
+
+  <div id="mapView" aria-hidden="true">
+    <div class="map-sky"></div>
+    <div class="map-grid"></div>
+    <div class="roads"></div>
+
+    <div class="map-topbar">
+      <button class="pill" id="backToGlobe">Return to Earth</button>
+      <button class="pill" id="toggleVoice">Voice status</button>
+      <button class="pill" id="askKeyboard">Keyboard fallback</button>
+    </div>
+
+    <svg id="geometryLayer" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <line id="routeLine" class="glow-line" x1="22" y1="58" x2="72" y2="50"></line>
+      <polygon id="taskTriangle" class="glow-shape" points="22,58 48,32 72,50"></polygon>
+      <circle id="socialCircle" class="glow-shape" cx="72" cy="28" r="11"></circle>
+      <polygon id="teamPolygon" class="glow-shape" points="58,68 68,60 80,64 84,76 72,84 60,80"></polygon>
+    </svg>
+
+    <div id="mapObjects">
+      <button class="obj role-vendor" style="left:22%; top:58%;" data-type="vendor" data-name="Blue Harbor Shop">Vendor • Blue Harbor</button>
+      <button class="obj role-driver" style="left:48%; top:32%;" data-type="driver" data-name="Driver • Marina">Driver • Marina</button>
+      <button class="obj role-client" style="left:72%; top:50%;" data-type="client" data-name="Client • Seafront Home">Client • Seafront</button>
+      <button class="obj" style="left:72%; top:28%;" data-type="circle" data-name="Social Circle • Night Walkers">Social Circle</button>
+      <button class="obj" style="left:70%; top:72%;" data-type="system" data-name="Conditions • Live Balancing">Conditions</button>
+    </div>
+
+    <div class="float-note" id="linePriceNote" style="left:47%; top:53%;">€8 • 8 Astran</div>
+    <div class="float-note" id="triangleNote" style="left:47%; top:46%;">3-party task</div>
+    <div class="float-note" id="polygonNote" style="left:72%; top:74%;">Hot hour team load</div>
+
+    <div id="contextCard"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ===== Config =====
+  const CONFIG = {
+    platformFeeRate: 0.03,
+    nightStart: 21,
+    nightEnd: 9,
+    maxPerDriver: 33,
+    incrementUnit: 13,
+    defaultDistanceKm: 8,
+    brand: 'Astranov'
+  };
+
+  // ===== State Store =====
+  const state = {
+    view: 'globe',
+    voice: { supported: false, started: false, failed: false, transcript: '' },
+    permissions: { mic: false, geo: false },
+    user: { roleSet: ['client', 'vendor', 'driver'], lat: null, lng: null },
+    conditions: {
+      hour: 22,
+      badWeather: true,
+      load: 21,
+      driverScarcity: 0.7,
+      demandPressure: 0.75
+    },
+    feedback: JSON.parse(localStorage.getItem('astranovFeedback') || '[]'),
+    activeContext: null
+  };
+
+  // ===== Event Bus =====
+  const bus = {
+    emit(name, detail) { window.dispatchEvent(new CustomEvent(name, { detail })); },
+    on(name, fn) { window.addEventListener(name, fn); }
+  };
+
+  // ===== Utilities =====
+  const $ = (s, root = document) => root.querySelector(s);
+  const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+
+  function showWhisper(text, ms = 2200) {
+    const el = $('#statusWhisper');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(showWhisper._t);
+    showWhisper._t = setTimeout(() => el.classList.remove('show'), ms);
+  }
+
+  function persistFeedback(entry) {
+    state.feedback.push({ ...entry, ts: Date.now() });
+    localStorage.setItem('astranovFeedback', JSON.stringify(state.feedback.slice(-120)));
+  }
+
+  function isNight(hour) {
+    return hour >= CONFIG.nightStart || hour < CONFIG.nightEnd;
+  }
+
+  function calculateDeliveryQuote(distanceKm, conditions) {
+    let total = distanceKm;
+    const extras = [];
+    if (isNight(conditions.hour)) { total += 1; extras.push('night'); }
+    if (conditions.badWeather) { total += 1; extras.push('weather'); }
+    if (conditions.load > CONFIG.incrementUnit) {
+      total += 1;
+      extras.push('load>13');
+      const extraBands = Math.floor((Math.min(conditions.load, CONFIG.maxPerDriver) - CONFIG.incrementUnit - 0.001) / CONFIG.incrementUnit);
+      if (extraBands > 0) {
+        total += extraBands;
+        extras.push(`+${extraBands} load bands`);
+      }
+    }
+    const driversNeeded = Math.ceil(Math.max(1, conditions.load) / CONFIG.maxPerDriver);
+    const scarcityLift = 1 + (conditions.driverScarcity * 0.35);
+    const demandLift = 1 + (conditions.demandPressure * 0.20);
+    const balancedTotal = +(total * scarcityLift * demandLift).toFixed(2);
+    const platformFee = +(balancedTotal * CONFIG.platformFeeRate).toFixed(2);
+    return {
+      baseKm: distanceKm,
+      total: balancedTotal,
+      astran: balancedTotal,
+      platformFee,
+      driversNeeded,
+      extras,
+      scarcityLift,
+      demandLift
+    };
+  }
+
+  function updateEconomicGeometry() {
+    const quote = calculateDeliveryQuote(CONFIG.defaultDistanceKm, state.conditions);
+    $('#linePriceNote').textContent = `€${quote.total} • ${quote.astran} Astran`;
+    $('#triangleNote').textContent = `${quote.driversNeeded === 1 ? '3-party task' : quote.driversNeeded + ' drivers'} • ${quote.extras.join(', ') || 'base route'}`;
+    $('#polygonNote').textContent = state.conditions.driverScarcity > 0.55 ? 'Driver scarcity rising' : 'Balanced work field';
+  }
+
+  // ===== Globe Module =====
+  function setupSpaceAndEarth() {
+    const spaceCanvas = $('#spaceCanvas');
+    const earthCanvas = $('#earthCanvas');
+    const spaceCtx = spaceCanvas.getContext('2d');
+    const earthCtx = earthCanvas.getContext('2d');
+    const stars = [];
+    const orbiters = [];
+    let earthRotation = 0;
+
+    function resize() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      [spaceCanvas, earthCanvas].forEach(canvas => {
+        canvas.width = Math.floor(canvas.clientWidth * dpr);
+        canvas.height = Math.floor(canvas.clientHeight * dpr);
+      });
+      spaceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      earthCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      createStars();
+      createOrbiters();
+    }
+
+    function createStars() {
+      stars.length = 0;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const count = Math.floor((w * h) / 9000);
+      for (let i = 0; i < count; i += 1) {
+        stars.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.8 + 0.3, a: Math.random() * 0.8 + 0.2 });
+      }
+    }
+
+    function createOrbiters() {
+      orbiters.length = 0;
+      const rect = $('#earthWrap').getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      for (let i = 0; i < 4; i += 1) {
+        orbiters.push({
+          radius: rect.width * (0.62 + i * 0.06),
+          angle: Math.random() * Math.PI * 2,
+          speed: 0.0015 + i * 0.0005,
+          size: 4 + i,
+          cx, cy
+        });
+      }
+    }
+
+    function drawSpace() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      spaceCtx.clearRect(0, 0, w, h);
+      const grad = spaceCtx.createRadialGradient(w * 0.5, h * 0.15, 0, w * 0.5, h * 0.15, h * 0.9);
+      grad.addColorStop(0, 'rgba(25,86,140,0.24)');
+      grad.addColorStop(0.35, 'rgba(10,39,67,0.16)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      spaceCtx.fillStyle = grad;
+      spaceCtx.fillRect(0, 0, w, h);
+      stars.forEach(s => {
+        spaceCtx.beginPath();
+        spaceCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        spaceCtx.fillStyle = `rgba(205,240,255,${s.a})`;
+        spaceCtx.fill();
+      });
+      orbiters.forEach((o, idx) => {
+        o.angle += o.speed;
+        const x = o.cx + Math.cos(o.angle) * o.radius;
+        const y = o.cy + Math.sin(o.angle) * o.radius * 0.42;
+        spaceCtx.beginPath();
+        spaceCtx.arc(x, y, o.size, 0, Math.PI * 2);
+        spaceCtx.fillStyle = idx % 2 ? 'rgba(126, 214, 255, 0.9)' : 'rgba(111, 255, 198, 0.88)';
+        spaceCtx.fill();
+        spaceCtx.beginPath();
+        spaceCtx.arc(x, y, o.size * 2.3, 0, Math.PI * 2);
+        spaceCtx.strokeStyle = 'rgba(122,211,255,0.16)';
+        spaceCtx.stroke();
+      });
+    }
+
+    function drawEarth() {
+      const rect = earthCanvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      earthCtx.clearRect(0, 0, w, h);
+      const r = Math.min(w, h) / 2;
+      const cx = w / 2;
+      const cy = h / 2;
+
+      const ocean = earthCtx.createRadialGradient(cx - r * 0.28, cy - r * 0.32, r * 0.12, cx, cy, r * 1.05);
+      ocean.addColorStop(0, '#5ecfff');
+      ocean.addColorStop(0.34, '#1e78b8');
+      ocean.addColorStop(0.72, '#0b3b6f');
+      ocean.addColorStop(1, '#04162c');
+      earthCtx.beginPath();
+      earthCtx.arc(cx, cy, r, 0, Math.PI * 2);
+      earthCtx.fillStyle = ocean;
+      earthCtx.fill();
+
+      earthCtx.save();
+      earthCtx.beginPath();
+      earthCtx.arc(cx, cy, r, 0, Math.PI * 2);
+      earthCtx.clip();
+
+      earthCtx.globalAlpha = 0.8;
+      for (let i = 0; i < 6; i += 1) {
+        const x = cx - r * 0.65 + (((earthRotation * 55) + i * 80) % (r * 2.5));
+        const y = cy - r * 0.55 + (i % 3) * r * 0.36;
+        earthCtx.fillStyle = i % 2 ? 'rgba(86,213,180,0.80)' : 'rgba(107,234,162,0.76)';
+        earthCtx.beginPath();
+        earthCtx.ellipse(x, y, r * 0.30, r * 0.12, -0.4, 0, Math.PI * 2);
+        earthCtx.fill();
+        earthCtx.beginPath();
+        earthCtx.ellipse(x + r * 0.11, y + r * 0.06, r * 0.14, r * 0.08, 0.3, 0, Math.PI * 2);
+        earthCtx.fill();
+      }
+
+      earthCtx.globalAlpha = 0.12;
+      for (let y = -r; y <= r; y += r / 6) {
+        earthCtx.beginPath();
+        earthCtx.moveTo(cx - r, cy + y);
+        earthCtx.lineTo(cx + r, cy + y);
+        earthCtx.strokeStyle = '#cff7ff';
+        earthCtx.stroke();
+      }
+      earthCtx.restore();
+
+      earthCtx.beginPath();
+      earthCtx.arc(cx, cy, r, 0, Math.PI * 2);
+      earthCtx.lineWidth = 1.5;
+      earthCtx.strokeStyle = 'rgba(171,232,255,0.65)';
+      earthCtx.stroke();
+
+      const atmosphere = earthCtx.createRadialGradient(cx, cy, r * 0.82, cx, cy, r * 1.22);
+      atmosphere.addColorStop(0, 'rgba(124,230,255,0)');
+      atmosphere.addColorStop(0.7, 'rgba(108,220,255,0.10)');
+      atmosphere.addColorStop(1, 'rgba(91,200,255,0.22)');
+      earthCtx.beginPath();
+      earthCtx.arc(cx, cy, r * 1.09, 0, Math.PI * 2);
+      earthCtx.fillStyle = atmosphere;
+      earthCtx.fill();
+
+      earthRotation += 0.0032;
+    }
+
+    function tick() {
+      drawSpace();
+      drawEarth();
+      requestAnimationFrame(tick);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    tick();
+  }
+
+  // ===== Voice Module =====
+  async function startNaturalMode() {
+    const chunks = [];
+    try {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            state.permissions.geo = true;
+            state.user.lat = pos.coords.latitude;
+            state.user.lng = pos.coords.longitude;
+            showWhisper('Location connected');
+          },
+          () => showWhisper('Location denied or unavailable')
+        );
+      }
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.permissions.mic = true;
+        state.voice.started = true;
+        showWhisper('Microphone ready. Speak naturally.');
+      } else {
+        state.voice.failed = true;
+        $('#fallbackBar').style.display = 'flex';
+        showWhisper('Voice unsupported. Keyboard opened.');
+      }
+
+      if ('webkitSpeechRecognition' in window) {
+        state.voice.supported = true;
+        const rec = new webkitSpeechRecognition();
+        rec.continuous = false;
+        rec.interimResults = false;
+        rec.lang = 'en-US';
+        rec.onresult = (ev) => {
+          const transcript = ev.results?.[0]?.[0]?.transcript || '';
+          state.voice.transcript = transcript;
+          showWhisper(`Heard: ${transcript}`);
+          persistFeedback({ kind: 'voice', text: transcript, source: 'speech' });
+        };
+        rec.onerror = () => {
+          state.voice.failed = true;
+          $('#fallbackBar').style.display = 'flex';
+          showWhisper('Voice fell back to keyboard.');
+        };
+        rec.start();
+      }
+    } catch (err) {
+      state.voice.failed = true;
+      $('#fallbackBar').style.display = 'flex';
+      showWhisper('Voice permission failed. Keyboard opened.');
+    }
+
+    $('#voicePrompt').classList.add('hidden');
+  }
+
+  // ===== Map Module =====
+  function enterMap(context = 'earth') {
+    state.view = 'map';
+    $('#mapView').style.display = 'block';
+    $('#mapView').setAttribute('aria-hidden', 'false');
+    $('#globeView').style.display = 'none';
+    $('#voicePrompt').classList.add('hidden');
+    showWhisper(context === 'earth' ? 'Local world opened' : `${context} opened in local world`);
+  }
+
+  function returnToGlobe() {
+    state.view = 'globe';
+    $('#mapView').style.display = 'none';
+    $('#mapView').setAttribute('aria-hidden', 'true');
+    $('#globeView').style.display = 'flex';
+    $('#contextCard').style.display = 'none';
+    showWhisper('Back to Earth');
+  }
+
+  function positionCard(x, y, html) {
+    const card = $('#contextCard');
+    card.innerHTML = html;
+    card.style.display = 'block';
+    const pad = 12;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const width = Math.min(320, vw - 24);
+    card.style.width = width + 'px';
+    card.style.left = clamp(x, pad, vw - width - pad) + 'px';
+    card.style.top = clamp(y, 90, vh - 280) + 'px';
+  }
+
+  function openContextForObject(target) {
+    const rect = target.getBoundingClientRect();
+    const x = rect.left + 14;
+    const y = rect.top + 12;
+    const type = target.dataset.type;
+    const name = target.dataset.name;
+
+    if (type === 'vendor') {
+      positionCard(x, y, `
+        <h3>${name}</h3>
+        <p>Manage this shop from the map itself. Menu, availability, prep load, and pricing belong here, not in giant menus.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="toggle-vendor">Toggle open / closed</button>
+          <button class="mini-btn" data-action="upload-sheets">Google Sheets sync</button>
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+    } else if (type === 'driver') {
+      positionCard(x, y, `
+        <h3>${name}</h3>
+        <p>Driver tile. Toggle work mode, inspect scarcity incentives, and accept line, triangle, or polygon tasks from the map.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="toggle-driver">Toggle available</button>
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+    } else if (type === 'client') {
+      positionCard(x, y, `
+        <h3>${name}</h3>
+        <p>Client delivery point. Edit destination notes, receive routes, and keep conversation attached to the place itself.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="edit-client">Edit delivery notes</button>
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+    } else if (type === 'circle') {
+      positionCard(x, y, `
+        <h3>${name}</h3>
+        <p>Social Circle. Tap the circle, enter the chat, adjust radius and visibility, and let it disappear again when you zoom away.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="open-circle">Open circle chat</button>
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+    } else if (type === 'system') {
+      positionCard(x, y, `
+        <h3>${name}</h3>
+        <p>Live balancing controls. Adjust conditions and watch route price geometry react instantly.</p>
+        <div class="slider-row">
+          <label>Hour: <span id="hourValue">${state.conditions.hour}</span></label>
+          <input id="hourSlider" type="range" min="0" max="23" value="${state.conditions.hour}" />
+        </div>
+        <div class="slider-row">
+          <label>Load: <span id="loadValue">${state.conditions.load}</span> kg/L</label>
+          <input id="loadSlider" type="range" min="1" max="60" value="${state.conditions.load}" />
+        </div>
+        <div class="slider-row">
+          <label>Driver scarcity: <span id="scarcityValue">${state.conditions.driverScarcity.toFixed(2)}</span></label>
+          <input id="scarcitySlider" type="range" min="0" max="1" step="0.01" value="${state.conditions.driverScarcity}" />
+        </div>
+        <div class="card-actions">
+          <button class="mini-btn" id="toggleWeather">Weather: ${state.conditions.badWeather ? 'bad' : 'clear'}</button>
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+      bindSystemControls();
+    }
+
+    bindGenericCardActions();
+  }
+
+  function bindGenericCardActions() {
+    $$('#contextCard [data-action="feedback"]').forEach(btn => {
+      btn.onclick = () => {
+        const card = $('#contextCard');
+        const extra = document.createElement('div');
+        extra.className = 'field';
+        extra.innerHTML = `
+          <label>Tell Astranov what should improve here</label>
+          <textarea id="feedbackInput" placeholder="Repeated user pain and repeated user needs feed the law."></textarea>
+          <div class="feedback-row">
+            <button class="mini-btn" id="saveFeedback">Save local feedback</button>
+          </div>
+        `;
+        card.appendChild(extra);
+        $('#saveFeedback').onclick = () => {
+          const value = $('#feedbackInput').value.trim();
+          if (!value) return;
+          persistFeedback({ kind: 'feedback', text: value, context: state.activeContext || 'map-object' });
+          showWhisper('Feedback stored for the triangle loop');
+          $('#feedbackInput').value = '';
+        };
+      };
+    });
+  }
+
+  function bindSystemControls() {
+    $('#hourSlider').oninput = (e) => {
+      state.conditions.hour = +e.target.value;
+      $('#hourValue').textContent = state.conditions.hour;
+      updateEconomicGeometry();
+    };
+    $('#loadSlider').oninput = (e) => {
+      state.conditions.load = +e.target.value;
+      $('#loadValue').textContent = state.conditions.load;
+      updateEconomicGeometry();
+    };
+    $('#scarcitySlider').oninput = (e) => {
+      state.conditions.driverScarcity = +e.target.value;
+      $('#scarcityValue').textContent = state.conditions.driverScarcity.toFixed(2);
+      updateEconomicGeometry();
+    };
+    $('#toggleWeather').onclick = () => {
+      state.conditions.badWeather = !state.conditions.badWeather;
+      $('#toggleWeather').textContent = 'Weather: ' + (state.conditions.badWeather ? 'bad' : 'clear');
+      updateEconomicGeometry();
+    };
+  }
+
+  function openGeometryContext(type, x, y) {
+    state.activeContext = type;
+    if (type === 'line') {
+      const quote = calculateDeliveryQuote(CONFIG.defaultDistanceKm, state.conditions);
+      positionCard(x, y, `
+        <h3>Route line</h3>
+        <p>Direct transaction geometry. Price glows on the line itself so the route explains its own economics.</p>
+        <p>€${quote.total} total • platform fee €${quote.platformFee} • ${quote.driversNeeded} driver</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+      bindGenericCardActions();
+    }
+    if (type === 'triangle') {
+      positionCard(x, y, `
+        <h3>Triangle task</h3>
+        <p>Three-party geometry connecting vendor, driver, and client. Open context from the shape, not from a giant list.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+      bindGenericCardActions();
+    }
+    if (type === 'circle') {
+      positionCard(x, y, `
+        <h3>Social Circle</h3>
+        <p>Group visibility, overlap, chat, and preferences belong to the circle itself.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+      bindGenericCardActions();
+    }
+    if (type === 'polygon') {
+      positionCard(x, y, `
+        <h3>Group polygon</h3>
+        <p>Large live collaboration area. Task load, group motion, and shared chat belong inside the polygon.</p>
+        <div class="card-actions">
+          <button class="mini-btn" data-action="feedback">Add feedback</button>
+        </div>
+      `);
+      bindGenericCardActions();
+    }
+  }
+
+  // ===== Boot =====
+  function bindUI() {
+    $('#startNatural').onclick = startNaturalMode;
+    $('#exploreQuietly').onclick = () => {
+      $('#voicePrompt').classList.add('hidden');
+      showWhisper('Explore first. Voice can start later.');
+    };
+    $('#manualTrigger').onclick = () => {
+      $('#fallbackBar').style.display = 'flex';
+      $('#voicePrompt').classList.add('hidden');
+      showWhisper('Keyboard shown by request');
+    };
+
+    $('#earthWrap').onclick = () => enterMap('earth');
+    $('#earthWrap').onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') enterMap('earth'); };
+
+    $$('.live-chip').forEach(chip => {
+      chip.onclick = () => {
+        const kind = chip.dataset.chip;
+        if (kind === 'research') showWhisper('Voice-first research lives here. Ask the world.');
+        else enterMap(kind);
+      };
+    });
+
+    $('#backToGlobe').onclick = returnToGlobe;
+    $('#askKeyboard').onclick = () => {
+      $('#fallbackBar').style.display = 'flex';
+      showWhisper('Keyboard fallback opened');
+    };
+    $('#toggleVoice').onclick = () => showWhisper(state.permissions.mic ? 'Microphone ready' : 'Microphone not ready');
+
+    $('#sendFallback').onclick = () => {
+      const value = $('#fallbackInput').value.trim();
+      if (!value) return;
+      persistFeedback({ kind: 'manual-input', text: value, source: 'fallback' });
+      showWhisper(`Manual input received: ${value.slice(0, 48)}`);
+      $('#fallbackInput').value = '';
+    };
+
+    $$('.obj').forEach(obj => {
+      obj.onclick = () => {
+        state.activeContext = obj.dataset.type;
+        openContextForObject(obj);
+      };
+    });
+
+    $('#routeLine').onclick = (e) => openGeometryContext('line', e.clientX + 6, e.clientY + 6);
+    $('#taskTriangle').onclick = (e) => openGeometryContext('triangle', e.clientX + 6, e.clientY + 6);
+    $('#socialCircle').onclick = (e) => openGeometryContext('circle', e.clientX + 6, e.clientY + 6);
+    $('#teamPolygon').onclick = (e) => openGeometryContext('polygon', e.clientX + 6, e.clientY + 6);
+
+    document.addEventListener('click', (e) => {
+      const card = $('#contextCard');
+      if (!card.contains(e.target) && !e.target.classList.contains('obj') && e.target.id !== 'routeLine' && e.target.id !== 'taskTriangle' && e.target.id !== 'socialCircle' && e.target.id !== 'teamPolygon') {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function boot() {
+    setupSpaceAndEarth();
+    bindUI();
+    updateEconomicGeometry();
+    showWhisper('Astranov ready');
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
