@@ -1,8 +1,0 @@
-{
-  "name": "Astranov",
-  "description": "A delivery and social network app featuring an interactive map, real-time logistics, and simplified messaging.",
-  "requestFramePermissions": [
-    "geolocation"
-  ],
-  "majorCapabilities": []
-}
