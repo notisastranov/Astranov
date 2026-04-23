@@ -1,105 +1,628 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <link rel="preconnect" href="https://unpkg.com">
 <link rel="preconnect" href="https://tile.openstreetmap.org">
-<link rel="preconnect" href="https://router.project-osrm.org">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-  :root{
-    --text:#eaf7ff;--muted:#91b8d4;--good:#4ef2b4;
-    --glass:rgba(6,20,38,.58);--glassStrong:rgba(7,18,34,.82);--shadow:0 10px 38px rgba(0,0,0,.38);
-  }
-  *{box-sizing:border-box} html,body{margin:0;height:100%;overflow:hidden;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--text);
-    background:radial-gradient(circle at 50% 20%, #10386a 0%, #05111f 28%, #03070f 60%, #02050a 100%)}
-  #app{position:relative;height:100%;width:100%;overflow:hidden}
-  #stars{position:absolute;inset:0;width:100%;height:100%;display:block}
-  #spaceGlow{position:absolute;inset:-12%;background:radial-gradient(circle at 26% 22%, rgba(56,153,255,.15), transparent 28%),radial-gradient(circle at 74% 18%, rgba(105,225,255,.12), transparent 18%),radial-gradient(circle at 55% 78%, rgba(91,150,255,.12), transparent 22%);pointer-events:none;filter:blur(20px)}
-  .brand{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;z-index:9;text-align:center;pointer-events:none}
-  .brand .title{font-weight:800;letter-spacing:.22em;text-transform:uppercase;font-size:13px;color:#fff;text-shadow:0 0 16px rgba(76,200,255,.46)}
-  .brand .sub{font-size:11px;color:var(--muted)}
-  #modeHint{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:9;max-width:min(90vw,520px);padding:11px 14px;border-radius:999px;background:rgba(9,25,45,.64);backdrop-filter:blur(16px);border:1px solid rgba(118,220,255,.24);font-size:12px;color:#d9f5ff;box-shadow:var(--shadow);transition:opacity .4s ease}
-  #orbitScene{position:absolute;inset:0;display:grid;place-items:center;z-index:2;transition:transform .7s ease, opacity .55s ease}
-  #orbitScene.hidden{opacity:0;transform:scale(1.08);pointer-events:none}
-  .earth-wrap{position:relative;width:min(72vw,430px);height:min(72vw,430px);display:grid;place-items:center}
-  .earth-glow{position:absolute;inset:-10%;border-radius:50%;background:radial-gradient(circle, rgba(73,176,255,.06) 0 40%, rgba(73,176,255,.13) 48%, rgba(73,176,255,.08) 55%, transparent 70%);filter:blur(20px);animation:pulse 7s ease-in-out infinite}
-  .earth{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 28% 30%, rgba(255,255,255,.55), transparent 18%),url('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg') center/cover no-repeat;box-shadow:inset -26px -26px 70px rgba(0,0,0,.52),inset 18px 18px 45px rgba(255,255,255,.12),0 0 0 1px rgba(255,255,255,.07),0 0 26px rgba(76,200,255,.35),0 0 70px rgba(76,200,255,.18);cursor:pointer;transform:translateZ(0);animation:earthTurn 50s linear infinite}
-  .earth::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 65% 35%, rgba(255,255,255,.18), transparent 18%),radial-gradient(circle at 50% 50%, transparent 60%, rgba(0,0,0,.45) 95%);pointer-events:none}
-  .earth-ring{position:absolute;inset:-14%;border-radius:50%;border:1px solid rgba(146,231,255,.14);box-shadow:0 0 0 1px rgba(76,200,255,.06) inset}
-  .stationOrbit{position:absolute;inset:-12%;animation:orbit 18s linear infinite;pointer-events:none}
-  .station{position:absolute;left:50%;top:0;transform:translate(-50%,-50%);width:40px;height:16px;border-radius:18px;background:linear-gradient(90deg,#7bf0ff,#1ca7ff);box-shadow:0 0 22px rgba(76,200,255,.55)}
-  .station::before,.station::after{content:"";position:absolute;top:50%;width:18px;height:3px;background:#aef4ff;transform:translateY(-50%);border-radius:999px;opacity:.92}
-  .station::before{left:-12px}.station::after{right:-12px}
-  #orbitalLayer{position:absolute;inset:0}.orbital-dot{position:absolute;width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #fff, #54d2ff 38%, #2f72ff 90%);box-shadow:0 0 14px rgba(76,200,255,.75);cursor:pointer}
-  .dot-card{position:absolute;min-width:112px;max-width:150px;padding:10px 12px;border-radius:16px;background:rgba(7,18,34,.78);backdrop-filter:blur(14px);box-shadow:var(--shadow);border:1px solid rgba(124,222,255,.22);font-size:12px;line-height:1.25;cursor:pointer}.dot-card b{display:block;color:white;margin-bottom:2px}.dot-card small{color:var(--muted)}
-  #mapStage{position:absolute;inset:0;z-index:3;opacity:0;pointer-events:none;transform:scale(1.02);transition:opacity .55s ease, transform .55s ease}#mapStage.active{opacity:1;pointer-events:auto;transform:scale(1)}
-  #map{position:absolute;inset:0}.mapMask{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% -8%, rgba(75,194,255,.13), transparent 25%),linear-gradient(to bottom, rgba(4,10,18,.16), transparent 26%, transparent 70%, rgba(4,10,18,.12));z-index:401}
-  #backToEarth,#voicePulse{position:absolute;top:14px;z-index:500;padding:11px 14px;border-radius:999px;background:var(--glass);backdrop-filter:blur(16px);border:1px solid rgba(124,222,255,.22);box-shadow:var(--shadow);font-size:13px;color:var(--text)}
-  #backToEarth{left:14px;font-weight:700} #voicePulse{right:14px;display:flex;align-items:center;gap:8px}
-  #voicePulse .dot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 12px rgba(78,242,180,.7);animation:pulse 1.6s ease-in-out infinite}
-  #assistantWave{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:500;max-width:min(90vw,520px);padding:12px 16px;border-radius:18px;background:var(--glassStrong);border:1px solid rgba(124,222,255,.2);backdrop-filter:blur(14px);box-shadow:var(--shadow);font-size:13px;color:#e9f7ff;display:none}#assistantWave.show{display:block}
-  #manualDock{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(110%);width:min(92vw,560px);padding:12px;border-radius:22px;background:rgba(7,18,34,.88);border:1px solid rgba(124,222,255,.24);backdrop-filter:blur(16px);box-shadow:var(--shadow);z-index:600;transition:transform .35s ease}#manualDock.open{transform:translateX(-50%) translateY(0)}
-  #manualDock .row{display:flex;gap:10px}#manualInput{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(124,222,255,.16);color:white;border-radius:16px;padding:14px 16px;font-size:15px;outline:none}
-  #manualSend,#manualClose{border:none;background:linear-gradient(180deg,#53d5ff,#1e9cff);color:#001b2f;font-weight:800;border-radius:16px;padding:0 16px;font-size:14px;min-width:82px}#manualClose{background:rgba(255,255,255,.07);color:#dff6ff;border:1px solid rgba(124,222,255,.16)}
-  #manualHint{font-size:12px;color:var(--muted);padding-top:8px}.statusChip{position:absolute;bottom:66px;right:14px;z-index:500;padding:10px 12px;border-radius:999px;background:var(--glass);border:1px solid rgba(124,222,255,.18);backdrop-filter:blur(14px);box-shadow:var(--shadow);font-size:12px;color:#dff6ff}
-  .leaflet-container{background:#020814}.leaflet-control-attribution{display:none}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:rgba(7,18,34,.94);color:var(--text);border:1px solid rgba(124,222,255,.2);box-shadow:var(--shadow)}.leaflet-popup-content{margin:0}
-  .world-card{padding:12px 12px 10px;min-width:220px}.world-card h4{margin:0 0 4px;font-size:14px}.world-card p{margin:0 0 8px;font-size:12px;color:var(--muted);line-height:1.35}.world-card .metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}.world-card .metric{padding:8px;border-radius:14px;background:rgba(255,255,255,.04);font-size:12px}.world-card .metric b{display:block;color:white;font-size:13px}.world-card .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-  .world-card button{border:none;border-radius:14px;padding:9px 11px;font-weight:700;font-size:12px;cursor:pointer;background:linear-gradient(180deg,#5edcff,#249fff);color:#032037}.world-card button.secondary{background:rgba(255,255,255,.06);color:#dff6ff;border:1px solid rgba(124,222,255,.18)}
-  .price-label{background:rgba(7,18,34,.84);color:#fff;border:1px solid rgba(124,222,255,.26);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800;box-shadow:0 0 22px rgba(76,200,255,.26);white-space:nowrap}
-  .shape-label{background:rgba(10,26,46,.84);color:#dff6ff;border:1px solid rgba(124,222,255,.22);border-radius:16px;padding:8px 10px;font-size:12px;font-weight:700;box-shadow:var(--shadow);white-space:nowrap}
-  @keyframes earthTurn { from{background-position:0 0, center 0} to{background-position:0 0, -1024px 0} }
-  @keyframes orbit { from{transform:rotate(0)} to{transform:rotate(360deg)} }
-  @keyframes pulse { 0%,100%{transform:scale(1);opacity:.78} 50%{transform:scale(1.06);opacity:1} }
-  @media (max-width:560px){.earth-wrap{width:min(82vw,360px);height:min(82vw,360px)}.brand .title{font-size:12px}.brand .sub{font-size:10px}#voicePulse,#backToEarth{font-size:12px;padding:10px 12px}}
+:root{
+  --bg:#040b1a;
+  --panel:rgba(8,20,46,.62);
+  --line:rgba(126,217,255,.22);
+  --text:#ecfaff;
+  --muted:#abd8ef;
+  --blue:#69d7ff;
+  --cyan:#a8f1ff;
+  --green:#75ffbe;
+  --pink:#ff9fd0;
+  --violet:#b7a5ff;
+  --amber:#ffd26d;
+  --shadow:0 14px 46px rgba(0,0,0,.34);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;overflow:hidden}
+button,input,textarea{font:inherit}
+#app{position:relative;width:100%;height:100%;overflow:hidden;background:
+  radial-gradient(circle at 50% -10%, rgba(95,173,255,.24), transparent 36%),
+  radial-gradient(circle at 85% 10%, rgba(0,175,255,.12), transparent 25%),
+  radial-gradient(circle at 12% 20%, rgba(0,102,255,.10), transparent 28%),
+  linear-gradient(180deg, #061226 0%, #030816 54%, #020611 100%);
+}
+#globeScene{position:absolute;inset:0;z-index:1}
+#globeCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#skyTwinkle{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.9;
+  background:
+   radial-gradient(circle at 7% 12%, rgba(255,255,255,.95) 0 1px, transparent 1.7px),
+   radial-gradient(circle at 19% 24%, rgba(255,255,255,.7) 0 1px, transparent 1.5px),
+   radial-gradient(circle at 28% 8%, rgba(255,255,255,.92) 0 1px, transparent 1.7px),
+   radial-gradient(circle at 37% 17%, rgba(255,255,255,.82) 0 1px, transparent 1.5px),
+   radial-gradient(circle at 46% 9%, rgba(255,255,255,.95) 0 1px, transparent 1.8px),
+   radial-gradient(circle at 56% 14%, rgba(255,255,255,.7) 0 1px, transparent 1.4px),
+   radial-gradient(circle at 66% 7%, rgba(255,255,255,.9) 0 1px, transparent 1.7px),
+   radial-gradient(circle at 74% 18%, rgba(255,255,255,.8) 0 1px, transparent 1.6px),
+   radial-gradient(circle at 83% 10%, rgba(255,255,255,.95) 0 1px, transparent 1.8px),
+   radial-gradient(circle at 92% 25%, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+   radial-gradient(circle at 13% 62%, rgba(255,255,255,.7) 0 1px, transparent 1.4px),
+   radial-gradient(circle at 24% 79%, rgba(255,255,255,.9) 0 1px, transparent 1.6px),
+   radial-gradient(circle at 42% 74%, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+   radial-gradient(circle at 61% 69%, rgba(255,255,255,.95) 0 1px, transparent 1.7px),
+   radial-gradient(circle at 77% 78%, rgba(255,255,255,.7) 0 1px, transparent 1.4px),
+   radial-gradient(circle at 89% 67%, rgba(255,255,255,.92) 0 1px, transparent 1.7px);
+  animation: twinkle 5s ease-in-out infinite alternate;
+}
+@keyframes twinkle{from{opacity:.8}to{opacity:1}}
+.badge{position:absolute;z-index:8;padding:10px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--line);backdrop-filter: blur(10px);box-shadow:var(--shadow);font-size:13px;line-height:1.1}
+#brand{top:max(14px, env(safe-area-inset-top));left:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+#brand b{color:var(--blue)}
+#status{top:max(14px, env(safe-area-inset-top));right:14px;max-width:min(64vw,420px);text-align:right}
+#status .tiny{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+#whisper{position:absolute;left:50%;bottom:max(14px, env(safe-area-inset-bottom));transform:translateX(-50%);z-index:8;width:min(92vw,560px);padding:12px 16px;border-radius:18px;background:rgba(8,20,46,.46);border:1px solid var(--line);backdrop-filter: blur(12px);box-shadow:var(--shadow);text-align:center;line-height:1.35;font-size:14px;transition:opacity .55s ease, transform .55s ease}
+#whisper.fade{opacity:0;transform:translate(-50%, 18px);pointer-events:none}
+#mapView{position:absolute;inset:0;z-index:10;opacity:0;pointer-events:none;transition:opacity .45s ease}
+#mapView.visible{opacity:1;pointer-events:auto}
+#mapBackdrop{position:absolute;inset:0;background:linear-gradient(180deg, rgba(2,8,20,.08), rgba(2,8,20,.54));z-index:0}
+#map{position:absolute;inset:0;z-index:1}
+.mapShell{position:absolute;inset:0;z-index:2;pointer-events:none}
+.mapTop{position:absolute;top:max(12px, env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;justify-content:space-between;width:min(92vw,650px);pointer-events:none}
+.chip{pointer-events:auto;padding:10px 14px;border-radius:999px;background:var(--panel);border:1px solid var(--line);backdrop-filter: blur(10px);box-shadow:var(--shadow);font-size:13px;line-height:1;color:var(--text)}
+.chip.button{cursor:pointer;user-select:none}
+.chip.button:active{transform:scale(.98)}
+#contextBubble{position:absolute;z-index:1001;display:none;min-width:220px;max-width:min(86vw,340px);transform:translate(-50%, calc(-100% - 14px));background:rgba(8,20,46,.92);border:1px solid rgba(126,217,255,.28);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);backdrop-filter: blur(14px);pointer-events:auto}
+#contextBubble.visible{display:block}
+#contextBubble .title{font-weight:700;margin-bottom:6px}
+#contextBubble .sub{font-size:13px;color:var(--muted);line-height:1.38}
+#contextBubble .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#contextBubble .tag{padding:6px 10px;border-radius:999px;background:rgba(105,215,255,.12);border:1px solid rgba(105,215,255,.22);font-size:12px}
+#assistantOverlay{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;z-index:20;background:rgba(0,6,15,.22)}
+#assistantOverlay.visible{display:flex}
+.assistantSheet{width:min(92vw,560px);margin-bottom:max(16px, env(safe-area-inset-bottom));padding:14px;border-radius:22px;background:rgba(8,20,46,.92);border:1px solid var(--line);backdrop-filter: blur(18px);box-shadow:var(--shadow)}
+.assistantHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.assistantActions{display:flex;gap:8px;flex-wrap:wrap}
+.action{border:1px solid var(--line);background:rgba(105,215,255,.1);color:var(--text);padding:10px 12px;border-radius:999px;cursor:pointer}
+.action.primary{background:rgba(105,215,255,.18)}
+#assistantText{width:100%;min-height:112px;resize:none;border:none;outline:none;border-radius:16px;padding:14px;background:rgba(255,255,255,.05);color:var(--text);line-height:1.4}
+.note{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.35}
+.routeLabel,.priceLabel,.shapeLabel{font-size:12px;font-weight:700;border-radius:999px;padding:6px 10px;white-space:nowrap}
+.routeLabel{background:rgba(10,26,56,.78);color:#ebf9ff;border:1px solid rgba(126,217,255,.28);box-shadow:var(--shadow)}
+.priceLabel{background:#8fe7ff;color:#06243d;border:1px solid rgba(255,255,255,.65);box-shadow:0 10px 24px rgba(105,215,255,.34)}
+.shapeLabel{background:rgba(10,26,56,.88);color:#eef9ff;border:1px solid rgba(126,217,255,.24);box-shadow:var(--shadow)}
+.tile{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:999px;background:rgba(8,20,46,.78);border:1px solid rgba(126,217,255,.24);color:#f3fbff;box-shadow:var(--shadow)}
+.tile .dot{width:9px;height:9px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.tile.vendor .dot{color:var(--green);background:var(--green)}
+.tile.driver .dot{color:var(--amber);background:var(--amber)}
+.tile.client .dot{color:var(--pink);background:var(--pink)}
+.tile.circle .dot{color:var(--violet);background:var(--violet)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:rgba(8,20,46,.94);color:var(--text);border:1px solid rgba(126,217,255,.22);box-shadow:var(--shadow)}
+.leaflet-control-attribution{display:none}
+.hidden{display:none!important}
+@media (max-width:640px){#status{max-width:68vw;font-size:12px}#whisper{font-size:13px}}
 </style>
 </head>
 <body>
 <div id="app">
-  <canvas id="stars"></canvas>
-  <div id="spaceGlow"></div>
-  <div class="brand"><div class="title">Astranov</div><div class="sub">Earth-first world interface</div></div>
-  <div id="orbitScene"><div class="earth-wrap"><div class="earth-glow"></div><div class="earth-ring"></div><div class="stationOrbit"><div class="station"></div></div><div id="orbitalLayer"></div><div class="earth" id="earth" title="Enter your map"></div></div></div>
-  <div id="modeHint">Tap Earth to enter your world. Voice starts first. Hold anywhere to type only if needed.</div>
-  <div id="mapStage"><div id="map"></div><div class="mapMask"></div><button id="backToEarth">Earth</button><div id="voicePulse"><span class="dot"></span><span id="voiceStatus">voice-first</span></div><div id="assistantWave"></div><div class="statusChip" id="statusChip">client • vendor • driver • circles</div></div>
-  <div id="manualDock" aria-hidden="true"><div class="row"><input id="manualInput" type="text" placeholder="Type only if voice is unavailable or you prefer manual input" /><button id="manualSend">Send</button><button id="manualClose">Hide</button></div><div id="manualHint">Manual input is fallback. Astranov stores interaction signals locally until your live backend is connected.</div></div>
+  <div id="globeScene"><canvas id="globeCanvas"></canvas></div>
+  <div id="skyTwinkle"></div>
+  <div id="brand" class="badge"><b>Astranov</b> beta</div>
+  <div id="status" class="badge">Earth first. Voice first.<span class="tiny" id="statusTiny">Tap the Earth to enter your place. Long-press anywhere for manual fallback.</span></div>
+  <div id="whisper">The world is the interface. Tap the Earth or a glowing pulse to enter a real local view.</div>
+
+  <div id="mapView">
+    <div id="mapBackdrop"></div>
+    <div id="map"></div>
+    <div class="mapShell">
+      <div class="mapTop">
+        <div class="chip button" id="backToEarth">Back to Earth</div>
+        <div class="chip" id="zoneLabel">Local map</div>
+        <div class="chip button" id="openAssistant">Talk / Type</div>
+      </div>
+      <div id="contextBubble"></div>
+    </div>
+  </div>
+
+  <div id="assistantOverlay">
+    <div class="assistantSheet">
+      <div class="assistantHead">
+        <strong>Astranov assistant</strong>
+        <div class="assistantActions">
+          <button class="action" id="closeAssistant">Close</button>
+          <button class="action" id="tryVoice">Try voice</button>
+          <button class="action primary" id="saveFeedback">Save feedback</button>
+        </div>
+      </div>
+      <textarea id="assistantText" placeholder="Manual fallback only. Tell Astranov what hurts, what should evolve, or what you need right now."></textarea>
+      <div class="note">Feedback stays local in this beta until a live backend channel is connected. Repeated user reality feeds the triangle loop: law, implementation, user data.</div>
+    </div>
+  </div>
 </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (() => {
-  const state = {mode:'earth',user:{lat:36.4344,lng:28.2176,role:['client','vendor','driver'],name:'You'},weatherBad:false,scarcity:0.35,manualVisible:false,mapReady:false,map:null,layers:{},speech:{recognition:null,supported:false,active:false},data:{interactions:JSON.parse(localStorage.getItem('astranov_user_data')||'[]')}};
-  const els = {stars:document.getElementById('stars'),orbitScene:document.getElementById('orbitScene'),mapStage:document.getElementById('mapStage'),earth:document.getElementById('earth'),orbitalLayer:document.getElementById('orbitalLayer'),modeHint:document.getElementById('modeHint'),backToEarth:document.getElementById('backToEarth'),voicePulse:document.getElementById('voicePulse'),voiceStatus:document.getElementById('voiceStatus'),assistantWave:document.getElementById('assistantWave'),manualDock:document.getElementById('manualDock'),manualInput:document.getElementById('manualInput'),manualSend:document.getElementById('manualSend'),manualClose:document.getElementById('manualClose'),statusChip:document.getElementById('statusChip')};
-  const worldSeeds = [
-    {title:'Blue Harbor Shop',top:'18%',left:'68%',copy:'Tap to open your shop tile on the map.',target:'vendor'},
-    {title:'Driver lane',top:'70%',left:'66%',copy:'Tap to follow a live route and driver economics.',target:'driver'},
-    {title:'Social Circle',top:'61%',left:'23%',copy:'Tap to open a living circle on the map.',target:'circle'},
-    {title:'Client drop',top:'27%',left:'20%',copy:'Tap to enter your delivery view.',target:'client'}
-  ];
-  function saveFeedback(type,payload={}){state.data.interactions.push({type,payload,ts:Date.now()});state.data.interactions=state.data.interactions.slice(-500);localStorage.setItem('astranov_user_data',JSON.stringify(state.data.interactions));}
-  function speak(text,keepVisible=false){els.assistantWave.textContent=text;els.assistantWave.classList.add('show');if(!keepVisible){clearTimeout(speak._t);speak._t=setTimeout(()=>els.assistantWave.classList.remove('show'),4200)}if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(text);u.rate=1;u.pitch=1.02;u.volume=.9;window.speechSynthesis.cancel();window.speechSynthesis.speak(u)}}
-  function showManualInput(show=true){state.manualVisible=show;els.manualDock.classList.toggle('open',show);if(show)setTimeout(()=>els.manualInput.focus(),180)}
-  function setupStars(){const canvas=els.stars,ctx=canvas.getContext('2d');const resize=()=>{canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);draw()};function draw(){ctx.clearRect(0,0,innerWidth,innerHeight);for(let i=0;i<180;i++){const x=Math.random()*innerWidth,y=Math.random()*innerHeight,r=Math.random()*1.8+.2,a=Math.random()*.9+.1;ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}for(let i=0;i<24;i++){const x=Math.random()*innerWidth,y=Math.random()*innerHeight,g=ctx.createRadialGradient(x,y,0,x,y,90);g.addColorStop(0,'rgba(76,200,255,.12)');g.addColorStop(1,'rgba(76,200,255,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,90,0,Math.PI*2);ctx.fill()}}addEventListener('resize',resize);resize()}
-  function buildOrbitScene(){worldSeeds.forEach(seed=>{const dot=document.createElement('div');dot.className='orbital-dot';dot.style.top=seed.top;dot.style.left=seed.left;const card=document.createElement('div');card.className='dot-card';card.style.top=`calc(${seed.top} + 10px)`;card.style.left=`calc(${seed.left} + 12px)`;card.innerHTML=`<b>${seed.title}</b><small>${seed.copy}</small>`;const open=()=>enterMap(seed.target);dot.addEventListener('click',open);card.addEventListener('click',open);els.orbitalLayer.append(dot,card)})}
-  function requestLocation(){if(!navigator.geolocation)return;navigator.geolocation.getCurrentPosition(pos=>{state.user.lat=pos.coords.latitude;state.user.lng=pos.coords.longitude;saveFeedback('geolocated',{lat:state.user.lat,lng:state.user.lng});if(state.mapReady)centerOnUser()},err=>saveFeedback('geolocation_denied',{code:err.code}),{enableHighAccuracy:true,maximumAge:15000,timeout:7000})}
-  function setupVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){state.speech.supported=false;els.voiceStatus.textContent='manual fallback';return}state.speech.supported=true;const rec=new SR();rec.lang='en-US';rec.interimResults=false;rec.continuous=false;rec.onstart=()=>{state.speech.active=true;els.voiceStatus.textContent='listening';saveFeedback('voice_start')};rec.onend=()=>{state.speech.active=false;els.voiceStatus.textContent='voice-first'};rec.onerror=e=>{els.voiceStatus.textContent='manual fallback';saveFeedback('voice_error',{error:e.error})};rec.onresult=e=>{const text=e.results[0][0].transcript.trim();saveFeedback('voice_message',{text});handleIntent(text)};state.speech.recognition=rec}
-  function tryVoiceStart(){if(!state.speech.supported||!state.speech.recognition||state.speech.active)return;try{state.speech.recognition.start()}catch(e){}}
-  function buildMap(){if(state.mapReady)return;const map=L.map('map',{zoomControl:false,attributionControl:false,preferCanvas:true}).setView([state.user.lat,state.user.lng],13);state.map=map;const light=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});const dark=L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19});light.addTo(map);state.layers.baseLight=light;state.layers.baseDark=dark;state.layers.user=L.circleMarker([state.user.lat,state.user.lng],{radius:11,weight:2,color:'#baf5ff',fillColor:'#35b8ff',fillOpacity:.95}).addTo(map);const vendorLatLng=[state.user.lat+.012,state.user.lng+.009],driverLatLng=[state.user.lat-.011,state.user.lng-.006],circleCenter=[state.user.lat+.004,state.user.lng-.016],thirdStop=[state.user.lat+.014,state.user.lng-.004];state.layers.vendor=L.circleMarker(vendorLatLng,{radius:10,weight:2,color:'#d2faff',fillColor:'#00d7ff',fillOpacity:.92}).addTo(map);state.layers.driver=L.circleMarker(driverLatLng,{radius:10,weight:2,color:'#cbfff0',fillColor:'#25d9a7',fillOpacity:.92}).addTo(map);state.layers.circle=L.circle(circleCenter,{radius:680,weight:2,color:'#62c6ff',fillColor:'#299cff',fillOpacity:.13}).addTo(map);state.layers.triangle=L.polygon([vendorLatLng,driverLatLng,thirdStop],{color:'#ffd166',weight:2,fillColor:'#f9c74f',fillOpacity:.09}).addTo(map);state.layers.group=L.polygon([[state.user.lat+.008,state.user.lng+.018],[state.user.lat+.018,state.user.lng+.022],[state.user.lat+.02,state.user.lng+.005],[state.user.lat+.01,state.user.lng-.002],[state.user.lat+.003,state.user.lng+.007]],{color:'#8f9eff',weight:2,fillColor:'#6d7cff',fillOpacity:.08}).addTo(map);attachMapObjectEvents();drawGeometryLabels();buildRoute();state.mapReady=true}
-  function attachMapObjectEvents(){const vendor=()=>renderWorldCard({title:'Blue Harbor Shop',desc:'Vendor tile. Edit menu, availability, prep load, and live offers here on the map.',metrics:[['Role','vendor'],['Menu source','Sheets or app'],['Availability','on'],['Load','balanced']],actions:['Open menu','Toggle shop','Harvest feedback']});const driver=()=>renderWorldCard({title:'Driver lane',desc:'Driver tile. Earnings respond to scarcity, hour load, and route geometry.',metrics:[['Role','driver'],['Availability','on'],['Scarcity boost',`${Math.round(state.scarcity*100)}%`],['Load cap','33 kg/L']],actions:['Toggle work','View route','Harvest feedback']});const user=()=>renderWorldCard({title:'Your live position',desc:'Client anchor. Tap objects to manage the world through the world.',metrics:[['Roles','client / vendor / driver'],['Voice','first'],['Manual','fallback'],['Data','local harvest']],actions:['Manual input','Harvest feedback','Zoom home']});const circle=()=>renderWorldCard({title:'Social Circle',desc:'A live map circle for teams, friends, work, or games. Zoom out and it recedes.',metrics:[['Type','circle'],['Visibility','contextual'],['Chat','geometry-bound'],['Discovery','map-native']],actions:['Open circle chat','Adjust circle','Harvest feedback']});const triangle=()=>renderWorldCard({title:'Triangle task',desc:'Three-party relation. Task data belongs inside the shape, not in a menu forest.',metrics:[['Type','triangle'],['Parties','3'],['Dispatch','assisted'],['State','active']],actions:['Open task chat','Adjust triangle','Harvest feedback']});const group=()=>renderWorldCard({title:'Moving group polygon',desc:'Large collaborations become polygons. Tap the shape to enter the shared context.',metrics:[['Type','polygon'],['Parties','5+'],['Chat','shared'],['State','live']],actions:['Open group chat','Adjust group','Harvest feedback']});state.layers.vendor.on('click',e=>L.popup().setLatLng(e.latlng).setContent(vendor()).openOn(state.map));state.layers.driver.on('click',e=>L.popup().setLatLng(e.latlng).setContent(driver()).openOn(state.map));state.layers.user.on('click',e=>L.popup().setLatLng(e.latlng).setContent(user()).openOn(state.map));state.layers.circle.on('click',e=>L.popup().setLatLng(e.latlng).setContent(circle()).openOn(state.map));state.layers.triangle.on('click',e=>L.popup().setLatLng(e.latlng).setContent(triangle()).openOn(state.map));state.layers.group.on('click',e=>L.popup().setLatLng(e.latlng).setContent(group()).openOn(state.map));state.map.on('popupopen',wirePopupActions)}
-  function renderWorldCard({title,desc,metrics,actions}){return `<div class="world-card"><h4>${title}</h4><p>${desc}</p><div class="metrics">${metrics.map(([k,v])=>`<div class="metric"><span>${k}</span><b>${v}</b></div>`).join('')}</div><div class="actions">${actions.map(name=>{const s=/Harvest|Zoom home|Adjust/.test(name)?'secondary':'';return `<button class="${s}" data-act="${name}">${name}</button>`}).join('')}</div></div>`}
-  function wirePopupActions(){document.querySelectorAll('.world-card button').forEach(btn=>{btn.onclick=()=>{const act=btn.dataset.act;saveFeedback('popup_action',{act});if(act==='Manual input')showManualInput(true);else if(act==='Zoom home')centerOnUser();else speak(act,false)}})}
-  function centerOnUser(){if(state.map)state.map.flyTo([state.user.lat,state.user.lng],14,{duration:.9})}
-  function computeDeliveryQuote(km,extras={}){let price=km;const reasons=[`€${km.toFixed(2)} for ${km.toFixed(2)} km`];if(extras.night){price+=1;reasons.push('+ €1 night')}if(extras.badWeather){price+=1;reasons.push('+ €1 weather')}const load=extras.loadKg||0;if(load>13){price+=1;reasons.push('+ €1 load>13');const bands=Math.floor(Math.max(0,Math.min(load,33)-13)/13);if(bands>0){price+=bands;reasons.push(`+ €${bands} extra volume`)}}const scarcityBoost=1+(state.scarcity*.25);price*=scarcityBoost;reasons.push(`× ${scarcityBoost.toFixed(2)} scarcity balance`);const platformFee=price*.03;return {customer:+price.toFixed(2),driverShare:+(price-platformFee).toFixed(2),platformFee:+platformFee.toFixed(2),reasons}}
-  async function buildRoute(){const a=[state.user.lng,state.user.lat],b=[state.layers.vendor.getLatLng().lng,state.layers.vendor.getLatLng().lat];let km=haversine([a[1],a[0]],[b[1],b[0]]),coords=[[a[1],a[0]],[b[1],b[0]]],liveRoute=false;try{const url=`https://router.project-osrm.org/route/v1/driving/${a[0]},${a[1]};${b[0]},${b[1]}?overview=full&geometries=geojson`;const res=await fetch(url);const json=await res.json();if(json.routes&&json.routes[0]){coords=json.routes[0].geometry.coordinates.map(([lng,lat])=>[lat,lng]);km=json.routes[0].distance/1000;liveRoute=true}}catch(e){}state.layers.route=L.polyline(coords,{color:'#3ec3ff',weight:5,opacity:.92}).addTo(state.map);const h=new Date().getHours(),quote=computeDeliveryQuote(+km.toFixed(2),{night:(h>=21||h<9),badWeather:state.weatherBad,loadKg:19}),mid=coords[Math.floor(coords.length/2)];state.layers.priceLabel=L.marker(mid,{interactive:true,icon:L.divIcon({className:'',html:`<div class="price-label">${liveRoute?'Route':'Estimate'} €${quote.customer}</div>`})}).addTo(state.map);state.layers.priceLabel.on('click',()=>{L.popup().setLatLng(mid).setContent(`<div class="world-card"><h4>${liveRoute?'Live route quote':'Estimated route quote'}</h4><p>${liveRoute?'OSRM live route distance.':'Fallback distance estimate until live routing responds.'}</p><div class="metrics"><div class="metric"><span>Customer</span><b>€${quote.customer}</b></div><div class="metric"><span>Driver</span><b>€${quote.driverShare}</b></div><div class="metric"><span>Platform</span><b>€${quote.platformFee}</b></div><div class="metric"><span>Distance</span><b>${km.toFixed(2)} km</b></div></div><p>${quote.reasons.join(' • ')}</p><div class="actions"><button data-act="Harvest feedback" class="secondary">Harvest feedback</button></div></div>`).openOn(state.map)});state.map.on('popupopen',wirePopupActions)}
-  function drawGeometryLabels(){state.layers.triangleLabel=L.marker(state.layers.triangle.getBounds().getCenter(),{icon:L.divIcon({className:'',html:`<div class="shape-label">Triangle task • 3 stops</div>`})}).addTo(state.map);state.layers.groupLabel=L.marker(state.layers.group.getBounds().getCenter(),{icon:L.divIcon({className:'',html:`<div class="shape-label">Polygon group • live chat</div>`})}).addTo(state.map);state.layers.circleLabel=L.marker(state.layers.circle.getBounds().getCenter(),{icon:L.divIcon({className:'',html:`<div class="shape-label">Social Circle</div>`})}).addTo(state.map)}
-  function haversine(a,b){const R=6371,toRad=d=>d*Math.PI/180,dLat=toRad(b[0]-a[0]),dLng=toRad(b[1]-a[1]),lat1=toRad(a[0]),lat2=toRad(b[0]);const s=Math.sin(dLat/2)**2+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;return 2*R*Math.atan2(Math.sqrt(s),Math.sqrt(1-s))}
-  function enterMap(focus='user'){state.mode='map';els.orbitScene.classList.add('hidden');els.mapStage.classList.add('active');els.modeHint.style.opacity='0';buildMap();centerOnUser();if(focus==='vendor')state.map.flyTo(state.layers.vendor.getLatLng(),15,{duration:.8});if(focus==='driver')state.map.flyTo(state.layers.driver.getLatLng(),15,{duration:.8});if(focus==='circle')state.map.flyTo(state.layers.circle.getBounds().getCenter(),14,{duration:.8});setTimeout(()=>{speak('Welcome to your live map. Tap any line, tile, circle, triangle, or polygon to work inside the world.',false);tryVoiceStart()},280);saveFeedback('enter_map',{focus})}
-  function backToEarth(){state.mode='earth';els.mapStage.classList.remove('active');els.orbitScene.classList.remove('hidden');els.modeHint.style.opacity='1';saveFeedback('back_to_earth')}
-  function handleIntent(text){const t=text.toLowerCase();if(t.includes('type')||t.includes('keyboard')){showManualInput(true);speak('Manual input opened.',false);return}if(t.includes('map')||t.includes('earth')||t.includes('shop')||t.includes('driver')||t.includes('circle')){enterMap(t.includes('shop')?'vendor':t.includes('driver')?'driver':t.includes('circle')?'circle':'user');return}if(t.includes('dark')){if(state.mapReady){if(state.map.hasLayer(state.layers.baseLight))state.map.removeLayer(state.layers.baseLight);state.layers.baseDark.addTo(state.map);speak('Dark map on.',false)}return}if(t.includes('city')||t.includes('light')){if(state.mapReady){if(state.map.hasLayer(state.layers.baseDark))state.map.removeLayer(state.layers.baseDark);state.layers.baseLight.addTo(state.map);speak('City map on.',false)}return}speak(`I heard: ${text}`,false)}
-  function boot(){setupStars();buildOrbitScene();requestLocation();setupVoice();speak('Welcome to Astranov. Tap Earth to enter your world. Voice is first. Hold anywhere to type only if needed.',true);els.earth.addEventListener('click',()=>enterMap('user'));els.backToEarth.addEventListener('click',backToEarth);els.manualSend.addEventListener('click',()=>{const v=els.manualInput.value.trim();if(!v)return;saveFeedback('manual_message',{text:v});handleIntent(v);els.manualInput.value=''});els.manualClose.addEventListener('click',()=>showManualInput(false));document.addEventListener('pointerdown',()=>{if(state.mode==='earth'||state.mode==='map')tryVoiceStart();clearTimeout(document._holdTimer);document._holdTimer=setTimeout(()=>showManualInput(true),700)},{passive:true});document.addEventListener('pointerup',()=>clearTimeout(document._holdTimer),{passive:true});document.addEventListener('pointercancel',()=>clearTimeout(document._holdTimer),{passive:true});document.addEventListener('visibilitychange',()=>{saveFeedback('visibility',{hidden:document.hidden});if(document.hidden&&'speechSynthesis'in window)speechSynthesis.cancel()});els.voicePulse.addEventListener('click',tryVoiceStart)}
-  boot();
+  const state = {
+    scene: null, camera: null, renderer: null, earth: null, clouds: null, glow: null, raycaster: null, mouse: null,
+    map: null, mapReady: false, currentLatLng: { lat: 37.9838, lng: 23.7275 },
+    pulseMarkers: [], routeLayers: [], objectLayers: [],
+    feedbackKey: 'astranov_beta_feedback_v3',
+    longPressTimer: null, canSpeak: 'speechSynthesis' in window, canListen: false, recognition: null,
+    earthInteractive: false, enteredMap: false
+  };
+
+  const ui = {
+    whisper: document.getElementById('whisper'),
+    statusTiny: document.getElementById('statusTiny'),
+    mapView: document.getElementById('mapView'),
+    zoneLabel: document.getElementById('zoneLabel'),
+    contextBubble: document.getElementById('contextBubble'),
+    assistantOverlay: document.getElementById('assistantOverlay'),
+    assistantText: document.getElementById('assistantText')
+  };
+
+  const THREE_URLS = {
+    earth: [
+      'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg'
+    ],
+    clouds: [
+      'https://threejs.org/examples/textures/planets/earth_clouds_1024.png',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png'
+    ],
+    stars: [
+      'https://threejs.org/examples/textures/galaxy_starfield.png',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/galaxy_starfield.png'
+    ]
+  };
+
+  function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+  function toRad(d){ return d * Math.PI / 180; }
+  function toDeg(r){ return r * 180 / Math.PI; }
+  function kmDistance(a,b){
+    const R = 6371;
+    const dLat = toRad(b.lat-a.lat), dLng = toRad(b.lng-a.lng);
+    const s1=Math.sin(dLat/2), s2=Math.sin(dLng/2);
+    const q = s1*s1 + Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*s2*s2;
+    return R*2*Math.atan2(Math.sqrt(q), Math.sqrt(1-q));
+  }
+  function quoteDelivery({km, night=false, badWeather=false, load=0}){
+    let total = km;
+    if(night) total += 1;
+    if(badWeather) total += 1;
+    if(load > 13) total += 1;
+    const extraBands = Math.max(0, Math.ceil(Math.max(0, load - 13) / 13) - 1);
+    total += extraBands;
+    return { euro: +(Math.round(total * 100) / 100).toFixed(2), astran: +(Math.round(total * 100) / 100).toFixed(2), multiDriver: load > 33 };
+  }
+  function dynamicPressure({driverScarcity=0.5, vendorLoad=0.4}){
+    const scarcityBoost = 1 + clamp((driverScarcity - 0.5) * 1.2, -0.25, 0.75);
+    const vendorBoost = 1 + clamp((vendorLoad - 0.5) * 0.8, -0.18, 0.45);
+    return {
+      driverMultiplier: Number(scarcityBoost.toFixed(2)),
+      customerMultiplier: Number((scarcityBoost * vendorBoost).toFixed(2)),
+      vendorMultiplier: Number(vendorBoost.toFixed(2))
+    };
+  }
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function loadTexture(urls){
+    const loader = new THREE.TextureLoader();
+    for (const url of urls){
+      try{
+        const tex = await new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+        tex.colorSpace = THREE.SRGBColorSpace;
+        return tex;
+      }catch(e){}
+    }
+    return null;
+  }
+
+  function createSoftFallbackEarthTexture(){
+    const c = document.createElement('canvas'); c.width = 2048; c.height = 1024;
+    const x = c.getContext('2d');
+    const grad = x.createLinearGradient(0,0,0,c.height);
+    grad.addColorStop(0,'#0a3872'); grad.addColorStop(.45,'#1a6ca8'); grad.addColorStop(1,'#07274c');
+    x.fillStyle = grad; x.fillRect(0,0,c.width,c.height);
+    const land = ['#6dd992','#41b86d','#83e0b1'];
+    function blob(cx,cy,rx,ry,rot,color){
+      x.save(); x.translate(cx,cy); x.rotate(rot); x.fillStyle=color; x.beginPath();
+      x.moveTo(-rx*.8,0);
+      for(let i=0;i<7;i++) x.bezierCurveTo(-rx+Math.random()*40, -ry+Math.random()*80, rx-Math.random()*50, -ry+Math.random()*80, rx*Math.cos((i+1)/7*Math.PI*2), ry*Math.sin((i+1)/7*Math.PI*2));
+      x.closePath(); x.fill(); x.restore();
+    }
+    const blobs = [
+      [370,360,170,120,.2,land[0]],[560,310,140,95,-.5,land[1]],[790,470,210,130,.3,land[2]],
+      [1110,300,220,110,-.1,land[0]],[1440,520,190,120,.4,land[1]],[1710,360,160,100,-.3,land[2]]
+    ];
+    blobs.forEach(b=>blob(...b));
+    x.fillStyle = 'rgba(255,255,255,.12)';
+    for(let i=0;i<120;i++) x.fillRect(Math.random()*c.width, Math.random()*c.height, 60+Math.random()*180, 8+Math.random()*18);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return tex;
+  }
+
+  function latLngToVector3(lat, lng, radius){
+    const phi = toRad(90 - lat);
+    const theta = toRad(lng + 180);
+    return new THREE.Vector3(
+      -radius * Math.sin(phi) * Math.cos(theta),
+       radius * Math.cos(phi),
+       radius * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function intersectionToLatLng(point){
+    const p = point.clone().normalize();
+    const lat = 90 - toDeg(Math.acos(p.y));
+    const lng = toDeg(Math.atan2(p.z, -p.x)) - 180;
+    return { lat: clamp(lat, -85, 85), lng: (((lng + 540) % 360) - 180) };
+  }
+
+  async function initGlobe(){
+    const container = document.getElementById('globeScene');
+    const canvas = document.getElementById('globeCanvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0.2, 7.6);
+    scene.add(camera);
+
+    const ambient = new THREE.AmbientLight(0x8fd2ff, 1.4); scene.add(ambient);
+    const sun = new THREE.DirectionalLight(0xffffff, 1.55); sun.position.set(6,2.4,8); scene.add(sun);
+    const rim = new THREE.DirectionalLight(0x4abfff, 0.7); rim.position.set(-7,-2,-5); scene.add(rim);
+
+    const earthTexture = await loadTexture(THREE_URLS.earth) || createSoftFallbackEarthTexture();
+    const cloudsTexture = await loadTexture(THREE_URLS.clouds);
+
+    const earthGeo = new THREE.SphereGeometry(2.3, 96, 96);
+    const earthMat = new THREE.MeshStandardMaterial({ map: earthTexture, roughness: 1, metalness: 0, emissive: new THREE.Color('#0b2b45'), emissiveIntensity: .12 });
+    const earth = new THREE.Mesh(earthGeo, earthMat);
+    scene.add(earth);
+
+    const atmosphereGeo = new THREE.SphereGeometry(2.46, 96, 96);
+    const atmosphereMat = new THREE.ShaderMaterial({
+      transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+      uniforms:{ glowColor:{ value:new THREE.Color('#6ed9ff') } },
+      vertexShader:`varying vec3 vNormal; void main(){ vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader:`uniform vec3 glowColor; varying vec3 vNormal; void main(){ float intensity = pow(0.64 - dot(vNormal, vec3(0.0,0.0,1.0)), 3.0); gl_FragColor = vec4(glowColor, intensity * 0.9); }`
+    });
+    const glow = new THREE.Mesh(atmosphereGeo, atmosphereMat); scene.add(glow);
+
+    let clouds = null;
+    if(cloudsTexture){
+      const cloudMat = new THREE.MeshLambertMaterial({ map: cloudsTexture, transparent:true, opacity:0.42, depthWrite:false });
+      clouds = new THREE.Mesh(new THREE.SphereGeometry(2.34, 96, 96), cloudMat);
+      scene.add(clouds);
+    }
+
+    // deep star shell
+    const starTex = await loadTexture(THREE_URLS.stars);
+    if(starTex){
+      const starGeo = new THREE.SphereGeometry(50, 48, 48);
+      const starMat = new THREE.MeshBasicMaterial({ map: starTex, side:THREE.BackSide, opacity:.85, transparent:true });
+      scene.add(new THREE.Mesh(starGeo, starMat));
+    }
+
+    // orbiting stations for life and scale
+    const stations = new THREE.Group();
+    const stationMaterial = new THREE.MeshBasicMaterial({ color:0xc6f3ff });
+    for(let i=0;i<3;i++){
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.BoxGeometry(.14,.06,.06), stationMaterial.clone());
+      const wingL = new THREE.Mesh(new THREE.BoxGeometry(.22,.02,.08), new THREE.MeshBasicMaterial({ color:0x6fd8ff })); wingL.position.x = -.17;
+      const wingR = wingL.clone(); wingR.position.x = .17;
+      g.add(body, wingL, wingR);
+      g.userData = { radius: 3 + i*.45, speed: .0018 + i*.00035, phase: i * 2.2 };
+      stations.add(g);
+    }
+    scene.add(stations);
+
+    // pulses on Earth to hint real interaction
+    const pulseGroup = new THREE.Group();
+    const samplePoints = [
+      { lat: 37.9838, lng: 23.7275, label:'Athens pulse' },
+      { lat: 40.4168, lng: -3.7038, label:'Madrid pulse' },
+      { lat: 51.5072, lng: -0.1276, label:'London pulse' },
+      { lat: 25.2048, lng: 55.2708, label:'Dubai pulse' }
+    ];
+    samplePoints.forEach((p, idx) => {
+      const spriteMat = new THREE.SpriteMaterial({ color: idx % 2 ? 0x95e8ff : 0x7fffd0, transparent:true, opacity:.95 });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.scale.set(.18,.18,.18);
+      const pos = latLngToVector3(p.lat, p.lng, 2.42);
+      sprite.position.copy(pos);
+      sprite.userData = { kind:'pulse', ...p };
+      pulseGroup.add(sprite);
+      state.pulseMarkers.push(sprite);
+    });
+    scene.add(pulseGroup);
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    state.scene = scene; state.camera = camera; state.renderer = renderer;
+    state.earth = earth; state.clouds = clouds; state.glow = glow; state.raycaster = raycaster; state.mouse = mouse; state.earthInteractive = true;
+
+    function render(t){
+      const time = t || 0;
+      earth.rotation.y += 0.00135;
+      if(clouds) clouds.rotation.y += 0.0017;
+      pulseGroup.children.forEach((s, i) => {
+        const k = 1 + Math.sin(time * 0.003 + i) * 0.18;
+        s.scale.set(.18*k,.18*k,.18*k);
+        s.material.opacity = .75 + Math.sin(time * 0.004 + i) * .2;
+      });
+      stations.children.forEach((g, i) => {
+        const a = time * g.userData.speed + g.userData.phase;
+        g.position.set(Math.cos(a) * g.userData.radius, Math.sin(a*.7)*.45, Math.sin(a) * g.userData.radius);
+        g.lookAt(earth.position);
+      });
+      renderer.render(scene, camera);
+      requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
+
+    function onResize(){
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+
+    canvas.addEventListener('pointerdown', onGlobePointerDown);
+    canvas.addEventListener('pointerup', clearLongPress);
+    canvas.addEventListener('pointerleave', clearLongPress);
+  }
+
+  function globePick(clientX, clientY){
+    const rect = document.getElementById('globeCanvas').getBoundingClientRect();
+    state.mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    state.mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    state.raycaster.setFromCamera(state.mouse, state.camera);
+    const hits = state.raycaster.intersectObjects([state.earth, ...state.pulseMarkers], true);
+    return hits[0] || null;
+  }
+
+  function clearLongPress(){
+    if(state.longPressTimer){ clearTimeout(state.longPressTimer); state.longPressTimer = null; }
+  }
+
+  async function onGlobePointerDown(e){
+    clearLongPress();
+    state.longPressTimer = setTimeout(() => {
+      openAssistant('Manual fallback opened from Earth view.');
+    }, 520);
+
+    const hit = globePick(e.clientX, e.clientY);
+    if(!hit) return;
+    clearLongPress();
+
+    await primeNaturalMode();
+    let latLng;
+    if(hit.object.userData && hit.object.userData.kind === 'pulse'){
+      latLng = { lat: hit.object.userData.lat, lng: hit.object.userData.lng };
+    } else {
+      latLng = intersectionToLatLng(hit.point);
+    }
+    state.currentLatLng = latLng;
+    ui.statusTiny.textContent = `${latLng.lat.toFixed(3)}, ${latLng.lng.toFixed(3)} · opening local view`;
+    enterMap(latLng);
+  }
+
+  async function primeNaturalMode(){
+    // speech output
+    if(state.canSpeak){
+      try{
+        const utter = new SpeechSynthesisUtterance('Astranov is awake. Opening your local world.');
+        utter.rate = 1; utter.pitch = 1.03; utter.volume = .8;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      }catch(e){}
+    }
+    // geolocation
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(pos => {
+        state.currentLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      }, () => {}, { enableHighAccuracy:true, timeout:4500, maximumAge:120000 });
+    }
+    // speech recognition if available
+    tryStartRecognition();
+  }
+
+  function tryStartRecognition(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR) return;
+    state.canListen = true;
+    try{
+      if(!state.recognition){
+        const rec = new SR();
+        rec.continuous = false; rec.interimResults = false; rec.lang = navigator.language || 'en-US';
+        rec.onresult = ev => {
+          const text = ev.results?.[0]?.[0]?.transcript?.trim();
+          if(text){ ui.assistantText.value = text; openAssistant('Captured voice.'); }
+        };
+        rec.onerror = () => { ui.statusTiny.textContent = 'Voice available only after permission or supported gesture.'; };
+        state.recognition = rec;
+      }
+      state.recognition.start();
+      ui.statusTiny.textContent = 'Listening... if your browser allows it.';
+    }catch(e){ /* gesture / permission limitations are normal */ }
+  }
+
+  function fadeWhisper(){ setTimeout(() => ui.whisper.classList.add('fade'), 2600); }
+
+  function ensureMap(){
+    if(state.mapReady) return;
+    const map = L.map('map', { zoomControl:false, preferCanvas:true }).setView([state.currentLatLng.lat, state.currentLatLng.lng], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19, attribution:'' }).addTo(map);
+    state.map = map; state.mapReady = true;
+    map.on('click', onMapClick);
+    map.on('movestart', hideContextBubble);
+    map.on('zoomstart', hideContextBubble);
+  }
+
+  async function enterMap(latLng){
+    state.enteredMap = true;
+    ensureMap();
+    ui.zoneLabel.textContent = `${latLng.lat.toFixed(3)}, ${latLng.lng.toFixed(3)}`;
+    ui.mapView.classList.add('visible');
+    state.map.setView([latLng.lat, latLng.lng], 13, { animate:true });
+    await sleep(40);
+    state.map.invalidateSize();
+    buildLocalWorld(latLng);
+    fadeWhisper();
+  }
+
+  function backToEarth(){
+    ui.mapView.classList.remove('visible');
+    hideContextBubble();
+    if(state.canSpeak){
+      try{
+        const utter = new SpeechSynthesisUtterance('Back to Earth.');
+        utter.rate = 1.02; utter.volume = .65;
+        window.speechSynthesis.cancel(); window.speechSynthesis.speak(utter);
+      }catch(e){}
+    }
+  }
+
+  function buildLocalWorld(center){
+    const map = state.map;
+    // Clear old layers
+    state.objectLayers.forEach(l => map.removeLayer(l));
+    state.routeLayers.forEach(l => map.removeLayer(l));
+    state.objectLayers = []; state.routeLayers = [];
+
+    const offset = (dLat, dLng) => ({ lat: center.lat + dLat, lng: center.lng + dLng });
+    const vendor = offset(0.004, -0.006);
+    const driver = offset(-0.003, 0.008);
+    const client = offset(0.001, 0.014);
+    const circleCenter = offset(0.007, 0.004);
+    const triA = offset(0.006, -0.015), triB = offset(-0.002, -0.005), triC = offset(0.004, 0.002);
+    const poly = [offset(-0.008,-0.012), offset(-0.012,0.002), offset(-0.004,0.014), offset(0.006,0.017), offset(0.011,0.001), offset(0.004,-0.014)];
+
+    const vendorMarker = makeTileMarker(vendor, 'vendor', 'Blue Harbor Shop', 'Vendor tile · tap to edit menu, hours, and demand.');
+    const driverMarker = makeTileMarker(driver, 'driver', 'Aster Driver', 'Driver tile · tap for route, load, and availability.');
+    const clientMarker = makeTileMarker(client, 'client', 'Client destination', 'Client tile · tap for notes, bell name, and quiet delivery.');
+    const circle = L.circle([circleCenter.lat, circleCenter.lng], {
+      radius: 520, color:'#b39cff', weight:2, opacity:.95, fillColor:'#b39cff', fillOpacity:.10
+    }).addTo(map).on('click', e => showContext(e.latlng, 'Social Circle', 'Circle chat, preferences, team visibility, and interference alerts.', ['social', 'circle', 'chat']));
+    bindTooltip(circle, '<span class="shapeLabel">Social Circle</span>');
+
+    const triangle = L.polygon([[triA.lat,triA.lng],[triB.lat,triB.lng],[triC.lat,triC.lng]], {
+      color:'#69d7ff', weight:2, opacity:.95, fillColor:'#69d7ff', fillOpacity:.10
+    }).addTo(map).on('click', e => showContext(e.latlng, 'Triangle task', 'Three-party collaboration. Tap to open shared chat, price, and role preferences.', ['triangle', 'task']));
+    bindTooltip(triangle, '<span class="shapeLabel">Triangle task</span>');
+
+    const polygon = L.polygon(poly.map(p => [p.lat, p.lng]), {
+      color:'#75ffbe', weight:2, opacity:.92, fillColor:'#75ffbe', fillOpacity:.08
+    }).addTo(map).on('click', e => showContext(e.latlng, 'Polygon group', 'Moving collaboration group. Tap for group chat, task load, and visibility.', ['polygon', 'group']));
+    bindTooltip(polygon, '<span class="shapeLabel">Polygon group</span>');
+
+    state.objectLayers.push(vendorMarker, driverMarker, clientMarker, circle, triangle, polygon);
+    buildRoute(vendor, client, { load: 18, night: false, badWeather: false });
+  }
+
+  function bindTooltip(layer, html){
+    layer.bindTooltip(html, { permanent:true, direction:'center', className:'no-class', opacity:1 });
+  }
+
+  function makeTileMarker(latLng, kind, title, subtitle){
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="tile ${kind}"><span class="dot"></span><span>${title}</span></div>`,
+      iconSize:[170,38], iconAnchor:[85,19]
+    });
+    const marker = L.marker([latLng.lat, latLng.lng], { icon }).addTo(state.map);
+    marker.on('click', e => showContext(e.latlng, title, subtitle, [kind, 'tile']));
+    state.objectLayers.push(marker);
+    return marker;
+  }
+
+  async function buildRoute(from, to, opts){
+    const km = kmDistance(from, to);
+    const quote = quoteDelivery({ km, night: opts.night, badWeather: opts.badWeather, load: opts.load });
+    const pressure = dynamicPressure({ driverScarcity:0.68, vendorLoad:0.56 });
+
+    let coords = null;
+    try{
+      const url = `https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson`;
+      const res = await fetch(url, { mode:'cors' });
+      const json = await res.json();
+      coords = json?.routes?.[0]?.geometry?.coordinates?.map(([lng,lat]) => [lat,lng]) || null;
+    }catch(e){}
+    if(!coords) coords = [[from.lat, from.lng], [to.lat, to.lng]];
+
+    const polyline = L.polyline(coords, { color:'#8fe7ff', weight:4, opacity:.95 }).addTo(state.map)
+      .on('click', e => showContext(e.latlng, 'Delivery line', `Quote €${quote.euro} · ${quote.astran} Astran · driver x${pressure.driverMultiplier}`, ['route', 'delivery']));
+    state.routeLayers.push(polyline);
+
+    const mid = coords[Math.floor(coords.length/2)];
+    const priceIcon = L.divIcon({ className:'', html:`<div class="priceLabel">€${quote.euro} · ${quote.astran} A</div>`, iconSize:[90,28], iconAnchor:[45,14] });
+    const priceMarker = L.marker(mid, { icon:priceIcon }).addTo(state.map).on('click', e => showContext(e.latlng, 'Delivery quote', `Base €${km.toFixed(1)}km + conditions. Driver x${pressure.driverMultiplier} · customer x${pressure.customerMultiplier}`, ['quote', 'pricing']));
+    state.routeLayers.push(priceMarker);
+  }
+
+  function showContext(latlng, title, subtitle, tags=[]){
+    const bubble = ui.contextBubble;
+    bubble.innerHTML = `<div class="title">${title}</div><div class="sub">${subtitle}</div><div class="row">${tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>`;
+    const point = state.map.latLngToContainerPoint(latlng);
+    bubble.style.left = `${point.x}px`;
+    bubble.style.top = `${point.y}px`;
+    bubble.classList.add('visible');
+  }
+
+  function hideContextBubble(){ ui.contextBubble.classList.remove('visible'); }
+
+  function onMapClick(e){
+    clearLongPress();
+    state.longPressTimer = setTimeout(() => openAssistant('Manual fallback opened from map view.'), 520);
+    setTimeout(clearLongPress, 560);
+  }
+
+  function openAssistant(prefill=''){
+    ui.assistantOverlay.classList.add('visible');
+    if(prefill && !ui.assistantText.value) ui.assistantText.value = prefill + '\n';
+    ui.assistantText.focus();
+  }
+  function closeAssistant(){ ui.assistantOverlay.classList.remove('visible'); }
+
+  function saveFeedback(){
+    const text = ui.assistantText.value.trim();
+    if(!text) return;
+    const existing = JSON.parse(localStorage.getItem(state.feedbackKey) || '[]');
+    existing.push({ text, ts: new Date().toISOString(), at: state.currentLatLng, map: state.enteredMap });
+    localStorage.setItem(state.feedbackKey, JSON.stringify(existing));
+    ui.assistantText.value = '';
+    closeAssistant();
+    ui.statusTiny.textContent = `Saved locally · ${existing.length} feedback item${existing.length===1?'':'s'}`;
+  }
+
+  // wire controls
+  document.getElementById('backToEarth').addEventListener('click', backToEarth);
+  document.getElementById('openAssistant').addEventListener('click', () => openAssistant(''));
+  document.getElementById('closeAssistant').addEventListener('click', closeAssistant);
+  document.getElementById('saveFeedback').addEventListener('click', saveFeedback);
+  document.getElementById('tryVoice').addEventListener('click', tryStartRecognition);
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Escape') closeAssistant();
+  });
+  document.addEventListener('pointerdown', e => {
+    if(ui.assistantOverlay.classList.contains('visible')) return;
+    if(state.enteredMap && e.target.closest('.leaflet-container')) return;
+    clearLongPress();
+    state.longPressTimer = setTimeout(() => openAssistant('Manual fallback opened from long press.'), 560);
+  });
+  document.addEventListener('pointerup', clearLongPress);
+  document.addEventListener('pointercancel', clearLongPress);
+
+  fadeWhisper();
+  initGlobe();
 })();
 </script>
 </body>
