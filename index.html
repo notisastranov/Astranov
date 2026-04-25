@@ -1,889 +1,1399 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
-<meta name="theme-color" content="#020713"/>
-<title>Astranov</title>
-<!--
-# ASTRANOV LAW
-
-Build ASTRANOV as one complete mobile-first `index.html` using clean HTML, CSS, and JavaScript only. No build tools, no fragmented edits, no pseudocode, no placeholder theater, and no symbolic substitutes. Output exactly one fully reconstructed runnable `index.html`. This law is one whole law, not multiple laws.
-
-ASTRANOV is a real world-first Internet Operating System and collective reality system. It must remain just, clear, implementable, truthful, auditable, and simple enough to execute without hidden bias, hidden agenda, obscure complexity, fake originality, or theft of credit.
-
-## Primary Purpose
-
-Build a fun, glowing, blue, starry, commercial world interface where the real globe and the real map become the application. Earth, space, maps, live objects, feeds, communication, routing, roles, transactions, and user data must become usable realities. The app must feel alive and welcoming, not dark, ritualistic, horror-themed, fake sci-fi, or decorative theater. The mission is orchestration of real infrastructure into a simpler collective reality operating layer, not isolated reinvention.
-
-## Infrastructure Respect Law
-
-ASTRANOV does not pretend to reinvent the internet, maps, globes, video platforms, social platforms, payments, routing, or AI. It builds on existing infrastructure, public standards, APIs, open-source libraries, commercial services, and user-owned accounts, while giving appropriate credit and respecting terms of use. Innovation comes from orchestration: grouping existing powers into a new collective reality interface where humans, AI, services, maps, marketplaces, feeds, and real-world activity cooperate in one operating layer.
-
-## Collective Reality Law
-
-ASTRANOV is beyond plain AI chat and beyond isolated virtual reality. It is a collective reality system: real Earth, real maps, real users, real services, real transactions, real feeds, and AI assistance combined into one shared world interface. The app must not trap users inside fake screens; it must help them act in the real world.
-
-## Zero-UI Dormant Interface Law
-
-ASTRANOV must open with no visible operational interface except the centered top name: ASTRANOV, in electric glowing blue letters.
-
-No permanent buttons. No permanent text fields. No permanent menus. No permanent drawers. No permanent login icon. No permanent wallet balance. No permanent control panels. No decorative UI furniture.
-
-The world is the interface. Controls appear only when required by real user intent, system need, permission need, authentication need, payment need, protected action, selected world object, or failed hands-free communication.
-
-If hands-free AI communication works, no text input appears. If hands-free communication fails or the user asks to type, the AI input field appears. If the user attempts a protected action, login and user identity controls appear. If the user enters marketplace, delivery, payment, or transaction context, balance and money controls appear. If the user taps or selects a world object, only that object’s necessary actions appear. If the user leaves the context, those controls disappear again.
-
-Default state: only Earth, space, real signals, lawful infrastructure attribution, and ASTRANOV.
-
-## Core Pillars
-
-1. Internet-connected AI research and retrieval.
-2. Marketplace linking client, vendor, and driver.
-3. Map-native social and media interaction built from lines, triangles, circles, and polygons, including Social Circles and global news/friend feeds.
-
-## Frozen Foundations
-
-- Earth-first macro interface.
-- Real globe engine as the core substrate.
-- Zero-UI by default.
-- Smooth trackball-style globe control.
-- Multi-layer altitude navigation.
-- Staged descent from space to local street radius.
-- Astranov City Map as the final street-level map layer.
-- Environment-first interaction instead of menu-first interaction.
-- Mobile portrait priority.
-- Truthful implementation.
-- Single-file delivery.
-- Full-file reconstruction each cycle.
-- Collective intelligence triangle loop.
-- No fake core systems.
-- Credit and respect for external infrastructure.
-
-## Real Substrate Law
-
-Use proven infrastructure wherever possible. The globe must be powered by a real web globe engine such as CesiumJS or an equivalent real 3D globe library. The local map must use real map or satellite tiles where available. Routing, login, payments, databases, AI, feeds, media, and messaging must be designed as adapters to real services. If something is not connected yet, represent it honestly as connection-ready, never as fake live behavior. External libraries, map tiles, and service adapters must be treated as respected infrastructure with visible or preserved attribution where required.
-
-## No Fakery Law
-
-Do not fake the globe, map, routing, login, marketplace states, user activity, voice behavior, backend readiness, payments, or communication. A flat map inside a circle is forbidden. Handmade fake Earth experiments are forbidden when a real globe engine is available. Decorative orbit rings, slogans, dashboards, and symbolic shells do not count as product behavior.
-
-## Globe Artifact Law
-
-The globe artifact is the core design of the application. The globe is not decoration. It is the main navigation surface, feed surface, social surface, marketplace surface, and zoom ladder between cosmos, Earth, region, city, and street. Because the globe is foundational, it must be implemented by proven globe infrastructure, not by symbolic graphics.
-
-## Trackball Law
-
-The globe must rotate by direct swipe with natural inertia and real movement. It must feel smoother and easier than old stiff globe controls. Pinch or wheel gestures must control altitude smoothly. The user should drag the world directly, not operate a separate joystick. The real globe engine must be configured for natural mobile gestures and must not be left in a stiff default state if smoother controls are possible.
-
-## Multi-Layer Zoom Law
-
-Zoom is an altitude ladder, not a jump: solar layer, orbital Earth layer, global feed layer, regional layer, local layer, and Astranov City Map layer.
-
-## Astranov City Map Law
-
-The final zoom-down layer is the Astranov City Map. It must be based on real satellite/street map data wherever available, then darkened and styled for smartphone readability day and night. Astranov overlays must stay clearly visible: glowing blue routes, lines, Social Circles, triangles, polygons, shops, vehicles, client delivery points, news, feeds, prices, and task details. It must remain realistic first, with Astranov’s blue operating-system layer on top.
-
-## Smooth Descent Law
-
-Moving from globe to Astranov City Map must happen through staged altitude descent. No abrupt teleport. The selected location must be preserved. The user should feel a camera descent from orbit toward a chosen local radius, then street-level interaction. Camera flights, altitude pulses, and visible overlays must make the descent understandable without blocking the globe or map.
-
-## Zoom-Out Law
-
-Zooming out from Astranov City Map must return through local, regional, global, orbital, and optional solar layers. It must never end on a giant square world map.
-
-## First Render Law
-
-On first render the app must show a real globe engine rendering Earth in visible blue starry space, with live world signals at appropriate altitude. It must feel like a finished product, not a black label screen, compass sculpture, dashboard, fake Earth, or fake space ornament. It must not show persistent buttons or input fields on first render.
-
-## Visual Doctrine
-
-Use a fun, glowing, blue, starry, friendly, commercial tone. Clear, lively, and premium. Not oppressive, ceremonial, militaristic, haunted, abstract, or fake sci-fi.
-
-## Environment Law
-
-Most interaction lives in the world itself. Prices, tasks, status, chat entry, preferences, actions, news, and feeds should appear on the object, line, circle, triangle, polygon, route, tile, or altitude layer involved. Unneeded detail fades when zooming away.
-
-## No Face-Blocking Law
-
-Do not place giant windows, drawers, sheets, or menus on the user’s face. The map and globe must stay visible and usable. Context may appear as small anchored cards, glowing labels, route text, or slim temporary ribbons only after context requires it.
-
-## Voice-First Law
-
-The app should request needed permissions through user-safe interaction and try natural AI communication first. It may speak after user gesture. It may claim listening only when microphone access and speech capture are actually active. Manual typing is fallback only and must appear only when voice fails, protected actions require precise input, or the user explicitly asks to type.
-
-## Geometry Law
-
-A direct relation may be a line. A three-party relation may be a triangle. A social or operational group may be a circle. Larger collaborations may form polygons. Tapping geometry opens context such as chat, preferences, status, tasks, or economic data. Price or task data should glow on the line or inside the shape.
-
-## Social Circles Law
-
-Social Circles are literal circles on the map and globe. Users can discover, adjust, hide, reveal, enter, and communicate through circles. Circles may appear, disappear, expand, or shrink by altitude and preference.
-
-## Media and News Law
-
-Global news, creator posts, friend feeds, marketplace heat, and social signals must appear on the globe and map as live world signals. The user browses what is happening by place and altitude, not only by old list feeds. External platforms may be linked or embedded through lawful adapters instead of duplicated wastefully.
-
-## Marketplace Law
-
-Marketplace activity is map-native. Roles are client, vendor, and driver. One user may activate any or all roles. Vendors may upload products from Google Sheets and may also edit menus from their own shop tile. Vendors and drivers have on/off availability. Orders, routes, preparation load, and delivery coordination appear through world geometry and live objects.
-
-## Delivery Charging Law
-
-Base delivery fee is 1 euro per kilometer, equal to 1 Astran coin per kilometer. Add 1 euro for each extra condition: night hours from 21:00 to 09:00, bad weather, and first load above 13 kilos or liters. Add 1 extra euro for each additional 13 kilos or liters up to 33 kilos or liters maximum per driver. Above 33, split into multiple drivers.
-
-## Economic Balancing Law
-
-Dynamically rebalance driver pay, customer delivery price, and vendor product pricing to spread demand across hours, reduce scarcity stress, reduce idle waste, reduce overload, and avoid destructive spikes. The platform keeps 3 percent of completed transactions.
-
-## Single-File Dormant Execution Law
-
-Ship as one universal file but behave internally as dormant modules. Only startup-critical systems may run at launch. Noncritical systems activate only by user action, altitude, mode, visibility, context, or verified need. Hidden systems suspend loops, polling, listeners, rendering work, and heavy calculations where possible. External libraries may be called from CDN or service endpoints when they are respected infrastructure rather than fake local reinvention.
-
-## AI Authority and Backend Law
-
-AI may evolve the app and shape connected backend structures only through scoped, auditable, rollback-safe adapters or APIs. Stable baseline, reversibility, and truth outrank speed. The AI should orchestrate services, not seize unrestricted power.
-
-## Collective Intelligence Triangle Law
-
-ASTRANOV evolves through a permanent triangle loop: law, implementation, user data. The AI must learn from repeated user friction, repeated complaints, repeated demands, repeated confusion, repeated operational pain, and repeated infrastructure failures. Compatible repeated signals refine the law and trigger the next rebuild. Noise, sabotage, contradiction, manipulation, and clutter-seeking feedback are rejected.
-
-## User Effort Law
-
-Do not waste user effort with weak beta builds. Only release builds that are honest enough to collect valuable user data. If an existing infrastructure can solve a core layer better than a handmade prototype, use the infrastructure and preserve attribution.
-
-## Reconstructive Cycle Law
-
-Rewrite the law from scratch as one whole each cycle. Rebuild the app from scratch as one whole each cycle. Keep only the strongest stable version. Do not reconcile with failure by making it prettier. When a failed cycle proves that handmade implementation is inferior to available infrastructure, the next cycle must move that layer onto the real infrastructure.
-
-## Acceptance Law
-
-A build is acceptable only if it visibly behaves like a real product; uses a real globe engine or equivalent real substrate; shows a believable Earth-first world; starts with zero persistent operational UI except the centered glowing ASTRANOV name; supports smooth trackball motion; supports altitude-based zoom layers; preserves staged globe-to-Astranov-City-Map descent and map-to-globe return; uses a darkened real satellite/street map with glowing blue overlays at street level; avoids blocking windows; uses world objects and geometry as the interface; preserves client/vendor/driver logic; includes Social Circles, news/feed signals, delivery and balancing logic; respects external infrastructure with credit; and rejects fake completion, symbolism, clutter, debug residue, and handcrafted globe experiments that imitate what a real engine already does better.
-
-## Filename Law
-
-Every produced HTML artifact must be named exactly `index.html` so it can be uploaded directly to the server without renaming.
-
-## Output Law
-
-Output only the full final `index.html`.
-
-
-BUILD NOTE
-Full reconstruction. Zero persistent operational UI. Real globe engine. Real satellite substrate. Controls wake only by need.
--->
-<script>window.CESIUM_BASE_URL="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/";</script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Widgets/widgets.css">
-<script src="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Cesium.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00000a">
+<title>ASTRANOV</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --blue:#60d7ff;--blue2:#168fff;--ice:#eefcff;--ink:#020713;--panel:rgba(5,18,40,.68);
-  --line:rgba(112,224,255,.28);--hot:0 0 18px rgba(92,210,255,.7),0 0 42px rgba(45,145,255,.32);
-  --soft:0 18px 70px rgba(0,0,0,.38),0 0 30px rgba(87,203,255,.22)
+  --B:#00d4ff;
+  --Bd:rgba(0,212,255,0.12);
+  --Bg:rgba(0,212,255,0.3);
+  --Bx:rgba(0,212,255,0.06);
+  --K:#00000a;
+  --W:#e8f4ff;
+  --G:rgba(0,8,24,0.82);
+  --R:12px;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body,#app,#cesium{width:100%;height:100%;margin:0;overflow:hidden;background:#020713;color:var(--ice);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;touch-action:none}
-body{position:fixed;inset:0}
-#app{position:relative;background:
-  radial-gradient(circle at 50% 25%,rgba(33,104,204,.18),transparent 34%),
-  radial-gradient(circle at 15% 85%,rgba(0,197,255,.13),transparent 28%),
-  #020713}
-#app:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.72;background-image:
-  radial-gradient(circle at 12% 24%,rgba(255,255,255,.86) 0 1px,transparent 1.8px),
-  radial-gradient(circle at 74% 19%,rgba(255,255,255,.5) 0 1px,transparent 1.6px),
-  radial-gradient(circle at 45% 64%,rgba(255,255,255,.55) 0 1px,transparent 1.8px),
-  radial-gradient(circle at 88% 74%,rgba(255,255,255,.64) 0 1px,transparent 1.6px),
-  radial-gradient(circle at 29% 78%,rgba(112,224,255,.52) 0 1px,transparent 2px);
-  background-size:330px 330px,420px 420px,520px 520px,610px 610px,460px 460px;
-  animation:starDrift 90s linear infinite}
-@keyframes starDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-80px,40px,0)}}
-#cesium{position:absolute;inset:0;z-index:2}
-.cesium-viewer,.cesium-viewer-cesiumWidgetContainer,.cesium-widget,.cesium-widget canvas{width:100%;height:100%}
-.cesium-viewer-toolbar,.cesium-viewer-animationContainer,.cesium-viewer-timelineContainer,.cesium-viewer-fullscreenContainer,.cesium-infoBox,.cesium-selection-wrapper{display:none!important}
-.cesium-viewer-bottom{left:8px!important;bottom:5px!important;font-size:9px!important;opacity:.55!important;filter:drop-shadow(0 0 7px rgba(85,214,255,.5));z-index:15!important}
-#cityShade{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;background:
-  radial-gradient(circle at 50% 60%,rgba(0,190,255,.13),transparent 30%),
-  linear-gradient(180deg,rgba(0,18,48,.08),rgba(0,8,22,.44));
-  mix-blend-mode:multiply;transition:opacity .7s ease}
-#cityShade.on{opacity:.84}
-#brand{position:absolute;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:24;
-  color:#f3fcff;font-weight:950;font-size:clamp(15px,4.2vw,24px);letter-spacing:.36em;text-transform:uppercase;
-  text-shadow:0 0 8px rgba(255,255,255,.95),0 0 18px rgba(81,214,255,.9),0 0 44px rgba(21,123,255,.72);
-  user-select:none;pointer-events:auto;padding:8px 10px 9px 18px;border-radius:999px}
-#brand.awake{animation:brandPulse 1.1s ease infinite alternate}
-@keyframes brandPulse{from{text-shadow:0 0 8px rgba(255,255,255,.82),0 0 20px rgba(91,219,255,.75),0 0 45px rgba(32,132,255,.56)}to{text-shadow:0 0 14px rgba(255,255,255,1),0 0 32px rgba(98,220,255,1),0 0 74px rgba(35,141,255,.9)}}
-#stageFlash{position:absolute;left:50%;top:50%;width:95px;height:95px;border-radius:999px;z-index:14;pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.55);
-  border:1px solid rgba(155,238,255,.52);box-shadow:0 0 34px rgba(84,210,255,.65),inset 0 0 26px rgba(95,204,255,.2)}
-#stageFlash.go{animation:flash .95s ease forwards}
-@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}28%{opacity:.88}100%{opacity:0;transform:translate(-50%,-50%) scale(2.6)}}
-.wake{position:absolute;z-index:28;opacity:0;pointer-events:none;transform:translateY(8px) scale(.98);transition:opacity .22s ease,transform .22s ease;display:none}
-.wake.show{display:flex;opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
-#contextCard{left:50%;bottom:calc(18px + env(safe-area-inset-bottom));width:min(92vw,430px);transform:translate(-50%,8px) scale(.98);flex-direction:column;gap:10px;
-  border:1px solid var(--line);border-radius:24px;padding:13px;background:linear-gradient(180deg,rgba(5,21,49,.78),rgba(3,10,26,.56));backdrop-filter:blur(18px);box-shadow:var(--soft)}
-#contextCard.show{transform:translate(-50%,0) scale(1)}
-.cardTop{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
-#cardTitle{font-size:15px;font-weight:820;line-height:1.2;text-shadow:0 0 13px rgba(97,214,255,.48)}
-#cardMeta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(224,248,255,.75);margin-top:4px}
-.iconBtn,.pill{border:1px solid var(--line);background:linear-gradient(180deg,rgba(10,35,78,.72),rgba(4,15,35,.55));color:var(--ice);box-shadow:0 0 18px rgba(77,205,255,.2);border-radius:999px;font:inherit}
-.iconBtn{width:34px;height:34px;display:grid;place-items:center;font-size:18px;line-height:1;padding:0}
-.cardActions{display:flex;flex-wrap:wrap;gap:8px}
-.pill{padding:9px 12px;font-size:12px;font-weight:760}
-.pill.primary{color:#031323;background:linear-gradient(180deg,#baf5ff,#59c7ff 58%,#268aff);box-shadow:0 0 22px rgba(96,215,255,.45)}
-.pill.danger{background:rgba(255,255,255,.05)}
-#cardDetail{font-size:12px;line-height:1.35;color:rgba(237,250,255,.86);padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(112,224,255,.12)}
-#composer{left:50%;bottom:calc(16px + env(safe-area-inset-bottom));width:min(94vw,620px);transform:translate(-50%,8px) scale(.98);align-items:end;gap:8px;
-  border:1px solid var(--line);border-radius:22px;padding:9px;background:rgba(5,18,40,.82);backdrop-filter:blur(18px);box-shadow:var(--soft)}
-#composer.show{transform:translate(-50%,0) scale(1)}
-#composerInput{flex:1;min-height:44px;max-height:120px;resize:none;border:0;outline:0;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ice);padding:12px 13px;font-size:15px;line-height:1.28;font-family:inherit}
-#composerInput::placeholder{color:rgba(238,252,255,.48)}
-#sendBtn{min-width:54px;height:44px;border:0;border-radius:16px;font-weight:900;color:#031323;background:linear-gradient(180deg,#bdf7ff,#5ccaff 55%,#278dff);box-shadow:0 0 24px rgba(96,215,255,.42)}
-#statusRibbon{left:50%;top:calc(58px + env(safe-area-inset-top));transform:translate(-50%,-5px);max-width:min(88vw,520px);padding:9px 12px;align-items:center;justify-content:center;text-align:center;
-  border:1px solid rgba(112,224,255,.18);border-radius:999px;background:rgba(5,18,40,.48);backdrop-filter:blur(14px);font-size:12px;line-height:1.25;color:rgba(239,252,255,.92);box-shadow:0 0 24px rgba(81,205,255,.18)}
-#statusRibbon.show{transform:translate(-50%,0)}
-#wallet{right:10px;top:calc(58px + env(safe-area-inset-top));flex-direction:column;gap:3px;padding:10px 12px;border-radius:18px;border:1px solid var(--line);
-  background:rgba(5,18,40,.66);backdrop-filter:blur(16px);box-shadow:var(--soft);text-align:right}
-#wallet strong{font-size:16px;text-shadow:0 0 14px rgba(100,220,255,.6)}
-#wallet small{font-size:10px;color:rgba(229,249,255,.72);letter-spacing:.08em;text-transform:uppercase}
-#loginGate{left:10px;top:calc(58px + env(safe-area-inset-top));align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);
-  background:rgba(5,18,40,.66);backdrop-filter:blur(16px);box-shadow:var(--soft);font-size:12px;font-weight:770}
-#avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#d9fbff,#51caff 58%,#1269e8);color:#031323;font-weight:950}
-#debugLaw{display:none}
-@media(max-width:560px){
-  #contextCard{bottom:calc(12px + env(safe-area-inset-bottom));border-radius:22px}
-  #wallet{right:8px;top:calc(54px + env(safe-area-inset-top))}
-  #loginGate{left:8px;top:calc(54px + env(safe-area-inset-top))}
-  #brand{letter-spacing:.31em}
+html,body{
+  width:100%;height:100%;
+  overflow:hidden;
+  background:var(--K);
+  color:var(--W);
+  font-family:'Rajdhani',sans-serif;
+  touch-action:none;
+  -webkit-tap-highlight-color:transparent;
 }
+
+/* ── STARS ── */
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* ── GLOBE ── */
+#globe-wrap{
+  position:fixed;inset:0;z-index:1;
+  transition:opacity 1s ease;
+}
+#globe-wrap canvas{display:block;}
+
+/* ── MAP ── */
+#map-wrap{
+  position:fixed;inset:0;z-index:2;
+  opacity:0;pointer-events:none;
+  transition:opacity 1s ease;
+}
+#map-wrap.on{opacity:1;pointer-events:all;}
+#map{width:100%;height:100%;}
+
+/* ── TITLE ── */
+#title{
+  position:fixed;top:22px;left:50%;transform:translateX(-50%);
+  z-index:1000;
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(16px,5.5vw,26px);
+  letter-spacing:.25em;
+  color:var(--B);
+  text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4),0 0 80px rgba(0,120,200,.2);
+  pointer-events:none;white-space:nowrap;
+  animation:titlePulse 4s ease-in-out infinite;
+}
+@keyframes titlePulse{
+  0%,100%{text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4),0 0 80px rgba(0,120,200,.2);}
+  50%{text-shadow:0 0 24px var(--B),0 0 60px rgba(0,200,255,.6),0 0 120px rgba(0,140,220,.3);}
+}
+
+/* ── LAYER LABEL ── */
+#layer-lbl{
+  position:fixed;top:56px;left:50%;transform:translateX(-50%);
+  z-index:200;
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.25em;
+  color:rgba(0,212,255,.35);
+  pointer-events:none;white-space:nowrap;
+  transition:opacity .4s;
+}
+
+/* ── ALTITUDE BAR ── */
+#alt-bar{
+  position:fixed;right:14px;top:50%;transform:translateY(-50%);
+  z-index:200;width:2px;height:100px;
+  background:rgba(0,212,255,.1);border-radius:2px;
+  opacity:0;transition:opacity .5s;
+}
+#alt-fill{
+  position:absolute;bottom:0;left:0;right:0;
+  background:var(--B);border-radius:2px;
+  box-shadow:0 0 6px var(--B);
+  transition:height .3s ease;
+}
+
+/* ── HUD ── */
+#hud{
+  position:fixed;bottom:88px;right:14px;
+  z-index:300;
+  display:flex;flex-direction:column;gap:10px;
+  opacity:0;pointer-events:none;
+  transition:opacity .4s;
+}
+#hud.on{opacity:1;pointer-events:all;}
+.hb{
+  width:44px;height:44px;border-radius:50%;
+  border:1px solid rgba(0,212,255,.25);
+  background:var(--G);backdrop-filter:blur(14px);
+  color:var(--B);font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .18s;user-select:none;
+}
+.hb:active{transform:scale(.88);background:rgba(0,212,255,.2);}
+.hb.lit{background:rgba(0,212,255,.22);box-shadow:0 0 18px var(--Bg);animation:hbPulse 1.4s infinite;}
+@keyframes hbPulse{0%,100%{box-shadow:0 0 8px var(--B);}50%{box-shadow:0 0 24px var(--B),0 0 40px rgba(0,212,255,.35);}}
+
+/* ── MAP BACK ── */
+#map-back{
+  position:fixed;top:68px;left:14px;
+  z-index:600;
+  width:40px;height:40px;border-radius:50%;
+  border:1px solid rgba(0,212,255,.3);
+  background:var(--G);backdrop-filter:blur(14px);
+  color:var(--B);font-size:16px;
+  display:none;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .18s;
+}
+#map-back.on{display:flex;}
+#map-back:active{transform:scale(.88);}
+
+/* ── ROLE STRIP ── */
+#role-strip{
+  position:fixed;top:68px;left:50%;transform:translateX(-50%);
+  z-index:300;
+  display:flex;gap:6px;
+  opacity:0;pointer-events:none;
+  transition:opacity .4s;
+}
+#role-strip.on{opacity:1;pointer-events:all;}
+.rb{
+  background:var(--G);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,212,255,.18);
+  border-radius:18px;padding:5px 13px;
+  color:rgba(0,212,255,.5);
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;
+  cursor:pointer;transition:all .18s;
+}
+.rb.on{
+  background:rgba(0,212,255,.18);
+  border-color:var(--B);color:var(--B);
+  box-shadow:0 0 10px rgba(0,212,255,.25);
+}
+
+/* ── AI PANEL ── */
+#ai-panel{
+  position:fixed;bottom:0;left:0;right:0;
+  z-index:500;padding:0 14px 28px;
+  transform:translateY(110%);
+  transition:transform .38s cubic-bezier(.4,0,.2,1);
+}
+#ai-panel.on{transform:translateY(0);}
+
+#ai-log{
+  background:var(--G);backdrop-filter:blur(22px);
+  border:1px solid rgba(0,212,255,.15);border-radius:var(--R);
+  padding:12px;
+  max-height:180px;overflow-y:auto;
+  margin-bottom:10px;
+  display:none;
+  scroll-behavior:smooth;
+}
+#ai-log.on{display:block;}
+
+.msg{
+  padding:7px 11px;margin-bottom:7px;border-radius:9px;
+  font-size:13px;line-height:1.55;max-width:88%;
+}
+.msg.u{
+  background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.2);
+  color:var(--B);margin-left:auto;text-align:right;
+}
+.msg.a{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+  color:var(--W);
+}
+
+#ai-row{display:flex;gap:8px;align-items:center;}
+
+#ai-in{
+  flex:1;
+  background:rgba(0,212,255,.07);
+  border:1px solid rgba(0,212,255,.25);border-radius:22px;
+  padding:11px 16px;
+  color:var(--W);font-family:'Rajdhani',sans-serif;font-size:15px;
+  outline:none;
+  display:none;transition:all .25s;
+}
+#ai-in.on{display:block;}
+#ai-in::placeholder{color:rgba(0,212,255,.35);}
+#ai-in:focus{border-color:rgba(0,212,255,.5);box-shadow:0 0 14px rgba(0,212,255,.15);}
+
+.ab{
+  width:46px;height:46px;border-radius:50%;
+  border:1px solid rgba(0,212,255,.3);
+  background:rgba(0,212,255,.1);
+  color:var(--B);font-size:19px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .18s;flex-shrink:0;
+}
+.ab:active{transform:scale(.88);background:rgba(0,212,255,.25);}
+.ab.lit{background:rgba(0,212,255,.25);box-shadow:0 0 18px var(--Bg);animation:hbPulse 1.4s infinite;}
+
+/* ── MARKET SHEET ── */
+#mkt-sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  z-index:550;
+  background:rgba(0,6,20,.96);backdrop-filter:blur(26px);
+  border-top:1px solid rgba(0,212,255,.18);
+  border-radius:16px 16px 0 0;
+  padding:18px 16px 36px;
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(.4,0,.2,1);
+  max-height:72vh;overflow-y:auto;
+}
+#mkt-sheet.on{transform:translateY(0);}
+.sheet-handle{width:36px;height:3px;background:rgba(0,212,255,.25);border-radius:2px;margin:0 auto 16px;}
+.sheet-title{
+  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.15em;
+  color:var(--B);margin-bottom:14px;
+}
+
+/* ── VENDOR CARD ── */
+.v-card{
+  background:rgba(0,212,255,.05);
+  border:1px solid rgba(0,212,255,.12);
+  border-radius:10px;padding:14px;margin-bottom:10px;
+  cursor:pointer;transition:all .18s;
+}
+.v-card:active{background:rgba(0,212,255,.1);}
+.v-name{font-size:15px;font-weight:600;margin-bottom:3px;}
+.v-sub{font-size:11px;color:rgba(0,212,255,.5);letter-spacing:.08em;}
+.v-status{font-size:10px;margin-top:6px;}
+.v-open{color:#00ff88;}
+.v-closed{color:rgba(255,80,80,.7);}
+
+/* ── MENU SHEET ── */
+#menu-sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  z-index:600;
+  background:rgba(0,6,20,.97);backdrop-filter:blur(28px);
+  border-top:1px solid rgba(0,212,255,.2);
+  border-radius:16px 16px 0 0;
+  padding:18px 16px 40px;
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(.4,0,.2,1);
+  max-height:80vh;overflow-y:auto;
+}
+#menu-sheet.on{transform:translateY(0);}
+
+.m-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:11px 0;
+  border-bottom:1px solid rgba(0,212,255,.07);
+}
+.m-item:last-child{border-bottom:none;}
+.m-name{font-size:14px;}
+.m-price{color:var(--B);font-weight:600;font-size:14px;}
+.m-add{
+  background:rgba(0,212,255,.12);
+  border:1px solid rgba(0,212,255,.3);border-radius:6px;
+  padding:4px 11px;color:var(--B);font-size:12px;cursor:pointer;
+  transition:all .15s;
+}
+.m-add:active{background:rgba(0,212,255,.25);}
+
+/* ── ORDER SUMMARY ── */
+#order-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:650;
+  background:rgba(0,212,255,.15);backdrop-filter:blur(18px);
+  border-top:1px solid rgba(0,212,255,.3);
+  padding:14px 18px;
+  display:flex;justify-content:space-between;align-items:center;
+  transform:translateY(100%);
+  transition:transform .3s ease;
+}
+#order-bar.on{transform:translateY(0);}
+#order-count{font-family:'Orbitron',monospace;font-size:11px;color:var(--B);letter-spacing:.1em;}
+#order-total{font-size:15px;font-weight:600;}
+#order-go{
+  background:var(--B);border:none;border-radius:20px;
+  padding:9px 20px;
+  color:#00000a;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.1em;
+  cursor:pointer;transition:all .18s;
+}
+#order-go:active{transform:scale(.93);}
+
+/* ── DELIVERY CONFIRM ── */
+#del-sheet{
+  position:fixed;inset:0;z-index:700;
+  background:rgba(0,0,10,.85);backdrop-filter:blur(14px);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+#del-sheet.on{opacity:1;pointer-events:all;}
+.del-box{
+  background:rgba(0,8,24,.98);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:16px 16px 0 0;
+  padding:24px 20px 40px;
+  width:100%;max-width:480px;
+}
+.del-row{
+  display:flex;justify-content:space-between;padding:9px 0;
+  border-bottom:1px solid rgba(0,212,255,.07);font-size:14px;
+}
+.del-row:last-of-type{border:none;}
+.del-total{color:var(--B);font-weight:700;font-size:17px;}
+.btn-primary{
+  width:100%;margin-top:14px;
+  background:rgba(0,212,255,.15);
+  border:1px solid rgba(0,212,255,.35);border-radius:10px;
+  padding:14px;color:var(--B);
+  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.15em;
+  cursor:pointer;transition:all .2s;
+}
+.btn-primary:active{background:rgba(0,212,255,.28);}
+.btn-ghost{
+  width:100%;margin-top:8px;
+  background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:10px;
+  padding:11px;color:rgba(255,255,255,.35);
+  font-size:13px;cursor:pointer;
+}
+
+/* ── ISS BADGE ── */
+#iss-badge{
+  position:fixed;top:70px;left:14px;z-index:200;
+  background:var(--G);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,212,255,.15);border-radius:20px;
+  padding:5px 12px;font-size:11px;color:rgba(0,212,255,.6);
+  font-family:'Orbitron',monospace;letter-spacing:.08em;
+  opacity:0;transition:opacity .4s;cursor:default;
+}
+#iss-badge.on{opacity:1;}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;top:72px;left:50%;z-index:9999;
+  transform:translateX(-50%) translateY(-60px);
+  background:rgba(0,212,255,.12);
+  border:1px solid rgba(0,212,255,.28);border-radius:20px;
+  padding:7px 18px;font-size:12px;color:var(--B);
+  backdrop-filter:blur(14px);letter-spacing:.06em;
+  transition:transform .28s ease;white-space:nowrap;
+  pointer-events:none;
+}
+#toast.on{transform:translateX(-50%) translateY(0);}
+
+/* ── API KEY DIALOG ── */
+#key-dlg{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(0,0,10,.88);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+#key-dlg.on{display:flex;}
+.key-box{
+  background:rgba(0,8,22,.97);
+  border:1px solid rgba(0,212,255,.22);border-radius:16px;
+  padding:26px 22px;width:100%;max-width:360px;
+}
+.key-box h2{
+  font-family:'Orbitron',monospace;font-size:13px;color:var(--B);
+  margin-bottom:7px;letter-spacing:.12em;
+}
+.key-box p{font-size:12px;color:rgba(255,255,255,.4);line-height:1.55;margin-bottom:16px;}
+.key-in{
+  width:100%;background:rgba(0,212,255,.06);
+  border:1px solid rgba(0,212,255,.18);border-radius:8px;
+  padding:10px 13px;color:var(--W);font-size:13px;
+  outline:none;margin-bottom:12px;font-family:monospace;
+}
+.key-row{display:flex;gap:8px;}
+.kb{
+  flex:1;background:rgba(0,212,255,.13);
+  border:1px solid rgba(0,212,255,.35);border-radius:8px;
+  padding:10px;color:var(--B);
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.1em;
+  cursor:pointer;transition:all .18s;
+}
+.kb:active{background:rgba(0,212,255,.25);}
+.ks{
+  background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;
+  padding:10px 14px;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;
+}
+
+/* ── LOADING ── */
+#loading{
+  position:fixed;inset:0;z-index:9500;
+  background:var(--K);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .9s ease;
+}
+#loading.gone{opacity:0;pointer-events:none;}
+.ld-title{
+  font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(22px,7vw,36px);letter-spacing:.3em;
+  color:var(--B);
+  text-shadow:0 0 30px var(--B),0 0 70px rgba(0,180,255,.4);
+}
+.ld-bar-wrap{width:180px;height:2px;background:rgba(0,212,255,.12);border-radius:1px;}
+.ld-bar{height:100%;width:0;background:var(--B);border-radius:1px;box-shadow:0 0 8px var(--B);transition:width .35s ease;}
+.ld-sub{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.22em;color:rgba(0,212,255,.35);}
+
+/* ── ATTR ── */
+#attr{
+  position:fixed;bottom:6px;left:8px;z-index:2000;
+  font-size:8px;color:rgba(0,212,255,.2);line-height:1.5;pointer-events:none;
+}
+
+/* ── LEAFLET OVERRIDES ── */
+.leaflet-container{background:#000c1e !important;font-family:'Rajdhani',sans-serif;}
+.leaflet-popup-content-wrapper{
+  background:rgba(0,8,24,.94) !important;
+  border:1px solid rgba(0,212,255,.25) !important;
+  border-radius:10px !important;color:var(--W) !important;
+  backdrop-filter:blur(18px);
+}
+.leaflet-popup-tip{background:rgba(0,8,24,.94) !important;}
+.leaflet-control-zoom,.leaflet-control-attribution{display:none !important;}
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="cesium" aria-label="Astranov real globe"></div>
-  <div id="cityShade"></div>
-  <div id="stageFlash"></div>
-  <div id="brand" role="button" aria-label="Astranov voice wake">ASTRANOV</div>
 
-  <div id="statusRibbon" class="wake" aria-live="polite"></div>
+<!-- Stars -->
+<canvas id="stars"></canvas>
 
-  <div id="wallet" class="wake" aria-live="polite">
-    <small>Astran balance</small>
-    <strong id="balanceText">0.00</strong>
-  </div>
+<!-- Globe -->
+<div id="globe-wrap"></div>
 
-  <div id="loginGate" class="wake">
-    <div id="avatar">A</div>
-    <span id="loginText">Login required</span>
-  </div>
+<!-- Map -->
+<div id="map-wrap"><div id="map"></div></div>
 
-  <section id="contextCard" class="wake" aria-label="Selected Astranov context">
-    <div class="cardTop">
-      <div>
-        <div id="cardTitle">Astranov object</div>
-        <div id="cardMeta">Context awakened by selected world object</div>
-      </div>
-      <button id="closeCard" class="iconBtn" type="button" aria-label="Close">×</button>
-    </div>
-    <div id="cardDetail"></div>
-    <div id="cardActions" class="cardActions"></div>
-  </section>
-
-  <form id="composer" class="wake" autocomplete="off">
-    <textarea id="composerInput" rows="1" placeholder="Manual AI fallback"></textarea>
-    <button id="sendBtn" type="submit">AI</button>
-  </form>
-
-  <script id="debugLaw" type="text/plain"># ASTRANOV LAW
-
-Build ASTRANOV as one complete mobile-first `index.html` using clean HTML, CSS, and JavaScript only. No build tools, no fragmented edits, no pseudocode, no placeholder theater, and no symbolic substitutes. Output exactly one fully reconstructed runnable `index.html`. This law is one whole law, not multiple laws.
-
-ASTRANOV is a real world-first Internet Operating System and collective reality system. It must remain just, clear, implementable, truthful, auditable, and simple enough to execute without hidden bias, hidden agenda, obscure complexity, fake originality, or theft of credit.
-
-## Primary Purpose
-
-Build a fun, glowing, blue, starry, commercial world interface where the real globe and the real map become the application. Earth, space, maps, live objects, feeds, communication, routing, roles, transactions, and user data must become usable realities. The app must feel alive and welcoming, not dark, ritualistic, horror-themed, fake sci-fi, or decorative theater. The mission is orchestration of real infrastructure into a simpler collective reality operating layer, not isolated reinvention.
-
-## Infrastructure Respect Law
-
-ASTRANOV does not pretend to reinvent the internet, maps, globes, video platforms, social platforms, payments, routing, or AI. It builds on existing infrastructure, public standards, APIs, open-source libraries, commercial services, and user-owned accounts, while giving appropriate credit and respecting terms of use. Innovation comes from orchestration: grouping existing powers into a new collective reality interface where humans, AI, services, maps, marketplaces, feeds, and real-world activity cooperate in one operating layer.
-
-## Collective Reality Law
-
-ASTRANOV is beyond plain AI chat and beyond isolated virtual reality. It is a collective reality system: real Earth, real maps, real users, real services, real transactions, real feeds, and AI assistance combined into one shared world interface. The app must not trap users inside fake screens; it must help them act in the real world.
-
-## Zero-UI Dormant Interface Law
-
-ASTRANOV must open with no visible operational interface except the centered top name: ASTRANOV, in electric glowing blue letters.
-
-No permanent buttons. No permanent text fields. No permanent menus. No permanent drawers. No permanent login icon. No permanent wallet balance. No permanent control panels. No decorative UI furniture.
-
-The world is the interface. Controls appear only when required by real user intent, system need, permission need, authentication need, payment need, protected action, selected world object, or failed hands-free communication.
-
-If hands-free AI communication works, no text input appears. If hands-free communication fails or the user asks to type, the AI input field appears. If the user attempts a protected action, login and user identity controls appear. If the user enters marketplace, delivery, payment, or transaction context, balance and money controls appear. If the user taps or selects a world object, only that object’s necessary actions appear. If the user leaves the context, those controls disappear again.
-
-Default state: only Earth, space, real signals, lawful infrastructure attribution, and ASTRANOV.
-
-## Core Pillars
-
-1. Internet-connected AI research and retrieval.
-2. Marketplace linking client, vendor, and driver.
-3. Map-native social and media interaction built from lines, triangles, circles, and polygons, including Social Circles and global news/friend feeds.
-
-## Frozen Foundations
-
-- Earth-first macro interface.
-- Real globe engine as the core substrate.
-- Zero-UI by default.
-- Smooth trackball-style globe control.
-- Multi-layer altitude navigation.
-- Staged descent from space to local street radius.
-- Astranov City Map as the final street-level map layer.
-- Environment-first interaction instead of menu-first interaction.
-- Mobile portrait priority.
-- Truthful implementation.
-- Single-file delivery.
-- Full-file reconstruction each cycle.
-- Collective intelligence triangle loop.
-- No fake core systems.
-- Credit and respect for external infrastructure.
-
-## Real Substrate Law
-
-Use proven infrastructure wherever possible. The globe must be powered by a real web globe engine such as CesiumJS or an equivalent real 3D globe library. The local map must use real map or satellite tiles where available. Routing, login, payments, databases, AI, feeds, media, and messaging must be designed as adapters to real services. If something is not connected yet, represent it honestly as connection-ready, never as fake live behavior. External libraries, map tiles, and service adapters must be treated as respected infrastructure with visible or preserved attribution where required.
-
-## No Fakery Law
-
-Do not fake the globe, map, routing, login, marketplace states, user activity, voice behavior, backend readiness, payments, or communication. A flat map inside a circle is forbidden. Handmade fake Earth experiments are forbidden when a real globe engine is available. Decorative orbit rings, slogans, dashboards, and symbolic shells do not count as product behavior.
-
-## Globe Artifact Law
-
-The globe artifact is the core design of the application. The globe is not decoration. It is the main navigation surface, feed surface, social surface, marketplace surface, and zoom ladder between cosmos, Earth, region, city, and street. Because the globe is foundational, it must be implemented by proven globe infrastructure, not by symbolic graphics.
-
-## Trackball Law
-
-The globe must rotate by direct swipe with natural inertia and real movement. It must feel smoother and easier than old stiff globe controls. Pinch or wheel gestures must control altitude smoothly. The user should drag the world directly, not operate a separate joystick. The real globe engine must be configured for natural mobile gestures and must not be left in a stiff default state if smoother controls are possible.
-
-## Multi-Layer Zoom Law
-
-Zoom is an altitude ladder, not a jump: solar layer, orbital Earth layer, global feed layer, regional layer, local layer, and Astranov City Map layer.
-
-## Astranov City Map Law
-
-The final zoom-down layer is the Astranov City Map. It must be based on real satellite/street map data wherever available, then darkened and styled for smartphone readability day and night. Astranov overlays must stay clearly visible: glowing blue routes, lines, Social Circles, triangles, polygons, shops, vehicles, client delivery points, news, feeds, prices, and task details. It must remain realistic first, with Astranov’s blue operating-system layer on top.
-
-## Smooth Descent Law
-
-Moving from globe to Astranov City Map must happen through staged altitude descent. No abrupt teleport. The selected location must be preserved. The user should feel a camera descent from orbit toward a chosen local radius, then street-level interaction. Camera flights, altitude pulses, and visible overlays must make the descent understandable without blocking the globe or map.
-
-## Zoom-Out Law
-
-Zooming out from Astranov City Map must return through local, regional, global, orbital, and optional solar layers. It must never end on a giant square world map.
-
-## First Render Law
-
-On first render the app must show a real globe engine rendering Earth in visible blue starry space, with live world signals at appropriate altitude. It must feel like a finished product, not a black label screen, compass sculpture, dashboard, fake Earth, or fake space ornament. It must not show persistent buttons or input fields on first render.
-
-## Visual Doctrine
-
-Use a fun, glowing, blue, starry, friendly, commercial tone. Clear, lively, and premium. Not oppressive, ceremonial, militaristic, haunted, abstract, or fake sci-fi.
-
-## Environment Law
-
-Most interaction lives in the world itself. Prices, tasks, status, chat entry, preferences, actions, news, and feeds should appear on the object, line, circle, triangle, polygon, route, tile, or altitude layer involved. Unneeded detail fades when zooming away.
-
-## No Face-Blocking Law
-
-Do not place giant windows, drawers, sheets, or menus on the user’s face. The map and globe must stay visible and usable. Context may appear as small anchored cards, glowing labels, route text, or slim temporary ribbons only after context requires it.
-
-## Voice-First Law
-
-The app should request needed permissions through user-safe interaction and try natural AI communication first. It may speak after user gesture. It may claim listening only when microphone access and speech capture are actually active. Manual typing is fallback only and must appear only when voice fails, protected actions require precise input, or the user explicitly asks to type.
-
-## Geometry Law
-
-A direct relation may be a line. A three-party relation may be a triangle. A social or operational group may be a circle. Larger collaborations may form polygons. Tapping geometry opens context such as chat, preferences, status, tasks, or economic data. Price or task data should glow on the line or inside the shape.
-
-## Social Circles Law
-
-Social Circles are literal circles on the map and globe. Users can discover, adjust, hide, reveal, enter, and communicate through circles. Circles may appear, disappear, expand, or shrink by altitude and preference.
-
-## Media and News Law
-
-Global news, creator posts, friend feeds, marketplace heat, and social signals must appear on the globe and map as live world signals. The user browses what is happening by place and altitude, not only by old list feeds. External platforms may be linked or embedded through lawful adapters instead of duplicated wastefully.
-
-## Marketplace Law
-
-Marketplace activity is map-native. Roles are client, vendor, and driver. One user may activate any or all roles. Vendors may upload products from Google Sheets and may also edit menus from their own shop tile. Vendors and drivers have on/off availability. Orders, routes, preparation load, and delivery coordination appear through world geometry and live objects.
-
-## Delivery Charging Law
-
-Base delivery fee is 1 euro per kilometer, equal to 1 Astran coin per kilometer. Add 1 euro for each extra condition: night hours from 21:00 to 09:00, bad weather, and first load above 13 kilos or liters. Add 1 extra euro for each additional 13 kilos or liters up to 33 kilos or liters maximum per driver. Above 33, split into multiple drivers.
-
-## Economic Balancing Law
-
-Dynamically rebalance driver pay, customer delivery price, and vendor product pricing to spread demand across hours, reduce scarcity stress, reduce idle waste, reduce overload, and avoid destructive spikes. The platform keeps 3 percent of completed transactions.
-
-## Single-File Dormant Execution Law
-
-Ship as one universal file but behave internally as dormant modules. Only startup-critical systems may run at launch. Noncritical systems activate only by user action, altitude, mode, visibility, context, or verified need. Hidden systems suspend loops, polling, listeners, rendering work, and heavy calculations where possible. External libraries may be called from CDN or service endpoints when they are respected infrastructure rather than fake local reinvention.
-
-## AI Authority and Backend Law
-
-AI may evolve the app and shape connected backend structures only through scoped, auditable, rollback-safe adapters or APIs. Stable baseline, reversibility, and truth outrank speed. The AI should orchestrate services, not seize unrestricted power.
-
-## Collective Intelligence Triangle Law
-
-ASTRANOV evolves through a permanent triangle loop: law, implementation, user data. The AI must learn from repeated user friction, repeated complaints, repeated demands, repeated confusion, repeated operational pain, and repeated infrastructure failures. Compatible repeated signals refine the law and trigger the next rebuild. Noise, sabotage, contradiction, manipulation, and clutter-seeking feedback are rejected.
-
-## User Effort Law
-
-Do not waste user effort with weak beta builds. Only release builds that are honest enough to collect valuable user data. If an existing infrastructure can solve a core layer better than a handmade prototype, use the infrastructure and preserve attribution.
-
-## Reconstructive Cycle Law
-
-Rewrite the law from scratch as one whole each cycle. Rebuild the app from scratch as one whole each cycle. Keep only the strongest stable version. Do not reconcile with failure by making it prettier. When a failed cycle proves that handmade implementation is inferior to available infrastructure, the next cycle must move that layer onto the real infrastructure.
-
-## Acceptance Law
-
-A build is acceptable only if it visibly behaves like a real product; uses a real globe engine or equivalent real substrate; shows a believable Earth-first world; starts with zero persistent operational UI except the centered glowing ASTRANOV name; supports smooth trackball motion; supports altitude-based zoom layers; preserves staged globe-to-Astranov-City-Map descent and map-to-globe return; uses a darkened real satellite/street map with glowing blue overlays at street level; avoids blocking windows; uses world objects and geometry as the interface; preserves client/vendor/driver logic; includes Social Circles, news/feed signals, delivery and balancing logic; respects external infrastructure with credit; and rejects fake completion, symbolism, clutter, debug residue, and handcrafted globe experiments that imitate what a real engine already does better.
-
-## Filename Law
-
-Every produced HTML artifact must be named exactly `index.html` so it can be uploaded directly to the server without renaming.
-
-## Output Law
-
-Output only the full final `index.html`.
-</script>
+<!-- Loading -->
+<div id="loading">
+  <div class="ld-title">ASTRANOV</div>
+  <div class="ld-bar-wrap"><div class="ld-bar" id="ld-bar"></div></div>
+  <div class="ld-sub" id="ld-sub">INITIALIZING EARTH</div>
 </div>
+
+<!-- Title -->
+<div id="title">ASTRANOV</div>
+
+<!-- Layer label -->
+<div id="layer-lbl">ORBITAL</div>
+
+<!-- Altitude bar -->
+<div id="alt-bar"><div id="alt-fill" style="height:50%"></div></div>
+
+<!-- ISS badge -->
+<div id="iss-badge">🛸 ISS ···</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Map back -->
+<div id="map-back">↑</div>
+
+<!-- Role strip -->
+<div id="role-strip">
+  <div class="rb" id="rb-client">CLIENT</div>
+  <div class="rb" id="rb-vendor">VENDOR</div>
+  <div class="rb" id="rb-driver">DRIVER</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hb" id="hb-mic" title="Voice">🎙️</div>
+  <div class="hb" id="hb-type" title="Type">✏️</div>
+  <div class="hb" id="hb-market" title="Market">🛒</div>
+  <div class="hb" id="hb-locate" title="Locate">📍</div>
+</div>
+
+<!-- AI panel -->
+<div id="ai-panel">
+  <div id="ai-log"></div>
+  <div id="ai-row">
+    <div class="ab" id="ab-close">✕</div>
+    <input type="text" id="ai-in" placeholder="Ask Astranov…" autocomplete="off" inputmode="text">
+    <div class="ab" id="ab-send">→</div>
+    <div class="ab" id="ab-mic">🎙️</div>
+  </div>
+</div>
+
+<!-- Market sheet -->
+<div id="mkt-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title">MARKETPLACE — RHODES</div>
+  <div id="vendor-list"></div>
+</div>
+
+<!-- Menu sheet -->
+<div id="menu-sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="menu-title"></div>
+  <div id="menu-items"></div>
+</div>
+
+<!-- Order bar -->
+<div id="order-bar">
+  <div>
+    <div id="order-count">0 ITEMS</div>
+    <div id="order-total">€0.00</div>
+  </div>
+  <button id="order-go" onclick="ASTR.checkout()">CHECKOUT →</button>
+</div>
+
+<!-- Delivery confirm sheet -->
+<div id="del-sheet">
+  <div class="del-box">
+    <div class="sheet-title" style="margin-bottom:14px">DELIVERY SUMMARY</div>
+    <div id="del-content"></div>
+    <button class="btn-primary" onclick="ASTR.confirmOrder()">CONFIRM &amp; SEND</button>
+    <button class="btn-ghost" onclick="ASTR.closeDelivery()">CANCEL</button>
+  </div>
+</div>
+
+<!-- API key dialog -->
+<div id="key-dlg">
+  <div class="key-box">
+    <h2>AI INTELLIGENCE</h2>
+    <p>Enter your Anthropic API key to enable Astranov Intelligence. Stored locally on this device only.</p>
+    <input type="password" class="key-in" id="key-in" placeholder="sk-ant-…">
+    <div class="key-row">
+      <button class="kb" onclick="ASTR.saveKey()">CONNECT</button>
+      <button class="ks" onclick="ASTR.skipKey()">SKIP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Attribution -->
+<div id="attr">Globe: globe.gl / Three.js · Map tiles: © OpenStreetMap · © CARTO · ISS: wheretheiss.at<br>ASTRANOV Internet Operating System · Rhodes Island, Greece</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-(function(){
-'use strict';
+/* ═══════════════════════════════════════════════════════════
+   ASTRANOV INTERNET OPERATING SYSTEM
+   Single-file collective reality interface
+   Rhodes Island, Greece · Version 1
+   ═══════════════════════════════════════════════════════════ */
 
-const $=id=>document.getElementById(id);
-const ui={
-  app:$('app'),brand:$('brand'),status:$('statusRibbon'),flash:$('stageFlash'),shade:$('cityShade'),
-  card:$('contextCard'),cardTitle:$('cardTitle'),cardMeta:$('cardMeta'),cardDetail:$('cardDetail'),actions:$('cardActions'),close:$('closeCard'),
-  composer:$('composer'),input:$('composerInput'),send:$('sendBtn'),wallet:$('wallet'),balance:$('balanceText'),login:$('loginGate'),loginText:$('loginText')
-};
-const state={
-  selected:null,context:null,cityAnchor:null,cityEntities:[],hasCity:false,balance:0,auth:false,voiceLive:false,manualOpen:false,lastLayer:'',
-  protectedAction:null,cityRenderedAtHeight:false
-};
-const adapters={
-  ai:'adapter-ready: connect OpenAI or selected AI gateway on backend',
-  sheets:'adapter-ready: connect vendor Google Sheets menu source',
-  payments:'adapter-ready: connect Stripe, PayPal, or wallet backend',
-  routing:'adapter-ready: connect OSRM, OpenRouteService, Google Directions, or local routing engine',
-  media:'adapter-ready: link/embed lawful YouTube, TikTok, Instagram, or creator-owned media',
-  auth:'adapter-ready: connect Supabase/Auth.js/custom account API'
-};
+const ASTR = (() => {
 
-function wake(el,on=true){el.classList.toggle('show',!!on)}
-function speak(text,ms=2500){ui.status.textContent=text;wake(ui.status,true);clearTimeout(speak.t);speak.t=setTimeout(()=>wake(ui.status,false),ms)}
-function hideAll(){
-  wake(ui.card,false);wake(ui.composer,false);wake(ui.wallet,false);wake(ui.login,false);
-  ui.brand.classList.remove('awake');state.manualOpen=false;
-}
-function setContext(title,meta,detail,actions,kind){
-  state.context={title,meta,detail,kind};
-  ui.cardTitle.textContent=title;
-  ui.cardMeta.textContent=meta;
-  ui.cardDetail.textContent=detail;
-  ui.actions.innerHTML='';
-  actions.forEach(a=>{
-    const b=document.createElement('button');
-    b.type='button';b.className='pill'+(a.primary?' primary':'')+(a.danger?' danger':'');
-    b.textContent=a.label;b.onclick=a.run;ui.actions.appendChild(b);
-  });
-  wake(ui.card,true);
-  if(kind==='market'||kind==='delivery'||kind==='vendor'||kind==='route') showWallet();
-}
-function showWallet(){
-  ui.balance.textContent=state.balance.toFixed(2)+' ASTRAN';
-  wake(ui.wallet,true);
-}
-function needLogin(reason){
-  state.protectedAction=reason;
-  ui.loginText.textContent='Login required · '+reason;
-  wake(ui.login,true);
-  speak('Protected action. Identity adapter required before this can continue.',2600);
-}
-function showComposer(reason){
-  state.manualOpen=true;
-  ui.input.placeholder=reason||'Manual AI fallback';
-  wake(ui.composer,true);
-  setTimeout(()=>ui.input.focus(),80);
-}
-function deliveryQuote(km,opts){
-  let total=Math.ceil(km),notes=['base '+Math.ceil(km)+' km'];
-  if(opts.night){total++;notes.push('night +1')}
-  if(opts.badWeather){total++;notes.push('weather +1')}
-  if(opts.load>13){total++;notes.push('first load above 13 +1');const extra=Math.floor((Math.min(opts.load,33)-13)/13);if(extra>0){total+=extra;notes.push('extra load +'+extra)}}
-  const platform=+(total*.03).toFixed(2),parties=+(total-platform).toFixed(2);
-  return {total,platform,parties,notes:notes.join(' · ')};
-}
-
-if(!window.Cesium){
-  ui.brand.textContent='ASTRANOV';
-  speak('Real globe engine failed to load. Check network/CDN.',7000);
-  showComposer('Real globe failed. Type fallback command.');
-  return;
-}
-
-const Cesium=window.Cesium;
-let viewer;
-try{
-  viewer=new Cesium.Viewer('cesium',{
-    animation:false,timeline:false,geocoder:false,homeButton:false,sceneModePicker:false,baseLayerPicker:false,
-    navigationHelpButton:false,fullscreenButton:false,vrButton:false,infoBox:false,selectionIndicator:false,shadows:false,
-    requestRenderMode:false,shouldAnimate:true,
-    terrainProvider:new Cesium.EllipsoidTerrainProvider(),
-    imageryProvider:new Cesium.UrlTemplateImageryProvider({
-      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      maximumLevel:19,
-      credit:'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-    })
-  });
-}catch(e){
-  speak('Cesium started badly: '+e.message,7000);
-  showComposer('Cesium error. Type fallback command.');
-  return;
-}
-
-viewer.scene.globe.baseColor=Cesium.Color.fromCssColorString('#071b45');
-viewer.scene.globe.enableLighting=false;
-viewer.scene.skyAtmosphere.show=true;
-viewer.scene.fog.enabled=false;
-viewer.scene.highDynamicRange=true;
-viewer.scene.screenSpaceCameraController.enableCollisionDetection=true;
-viewer.scene.screenSpaceCameraController.inertiaSpin=.94;
-viewer.scene.screenSpaceCameraController.inertiaZoom=.88;
-viewer.scene.screenSpaceCameraController.inertiaTranslate=.86;
-viewer.scene.screenSpaceCameraController.minimumZoomDistance=620;
-viewer.scene.screenSpaceCameraController.maximumZoomDistance=260000000;
-viewer.camera.setView({
-  destination:Cesium.Cartesian3.fromDegrees(21.5,28,24000000),
-  orientation:{heading:Cesium.Math.toRadians(0),pitch:Cesium.Math.toRadians(-90),roll:0}
-});
-
-function layerName(h){
-  if(h>90000000)return 'Solar Layer';
-  if(h>20000000)return 'Orbital Earth';
-  if(h>6000000)return 'Global Feed';
-  if(h>900000)return 'Regional Layer';
-  if(h>95000)return 'Local Descent';
-  return 'Astranov City Map';
-}
-function cameraHeight(){
-  return Cesium.Cartographic.fromCartesian(viewer.camera.positionWC).height;
-}
-function cameraLonLat(){
-  const c=viewer.camera.pickEllipsoid(new Cesium.Cartesian2(viewer.scene.canvas.clientWidth/2,viewer.scene.canvas.clientHeight/2),viewer.scene.globe.ellipsoid);
-  if(!c)return {lon:28.222,lat:36.441};
-  const g=Cesium.Cartographic.fromCartesian(c);
-  return {lon:Cesium.Math.toDegrees(g.longitude),lat:Cesium.Math.toDegrees(g.latitude)};
-}
-function flash(){
-  ui.flash.classList.remove('go');void ui.flash.offsetWidth;ui.flash.classList.add('go');
-}
-function fly(lon,lat,height,duration,done){
-  viewer.camera.flyTo({
-    destination:Cesium.Cartesian3.fromDegrees(lon,lat,height),
-    orientation:{heading:0,pitch:Cesium.Math.toRadians(-90),roll:0},
-    duration:duration||1,
-    easingFunction:Cesium.EasingFunction.QUADRATIC_IN_OUT,
-    complete:done
-  });
-}
-function descend(target){
-  const t=target||state.selected||{lon:28.222,lat:36.441,title:'Rhodes local radius'};
-  state.cityAnchor={lon:t.lon,lat:t.lat,title:t.title||'selected Earth point'};
-  hideAll();flash();
-  speak('Descending through global, regional, and local layers.',1700);
-  fly(t.lon,t.lat,6500000,.82,()=>fly(t.lon,t.lat,1200000,.72,()=>{
-    renderCity(t.lon,t.lat);
-    fly(t.lon,t.lat,140000,.66,()=>fly(t.lon,t.lat,5200,.9,()=>speak('Astranov City Map awakened around this place.',2100)));
-  }));
-}
-function orbit(){
-  hideAll();flash();
-  const t=state.cityAnchor||cameraLonLat();
-  fly(t.lon,t.lat,26000000,1.15,()=>speak('Orbital Earth. Zero UI restored.',1600));
-}
-function pointEntity(id,title,kind,lon,lat,height,color,labelSize){
-  return viewer.entities.add({
-    id,position:Cesium.Cartesian3.fromDegrees(lon,lat,height||140000),
-    point:{pixelSize:labelSize||12,color,outlineColor:Cesium.Color.WHITE.withAlpha(.78),outlineWidth:1.3,
-      scaleByDistance:new Cesium.NearFarScalar(800000,1.9,56000000,.45),disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    label:{text:title,font:'600 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,
-      pixelOffset:new Cesium.Cartesian2(0,-26),scaleByDistance:new Cesium.NearFarScalar(800000,1,52000000,.28),
-      distanceDisplayCondition:new Cesium.DistanceDisplayCondition(0,52000000),disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    polyline:height>5000?{positions:[Cesium.Cartesian3.fromDegrees(lon,lat,0),Cesium.Cartesian3.fromDegrees(lon,lat,height)],width:1.3,
-      material:new Cesium.PolylineGlowMaterialProperty({glowPower:.22,color:Cesium.Color.CYAN.withAlpha(.82)})}:undefined,
-    properties:{title,kind,lon,lat}
-  });
-}
-const globalSignals=[
-  ['sig_rhodes','Friend feed · Rhodes','friend',28.222,36.441,190000,Cesium.Color.AQUA],
-  ['sig_london','Marketplace heat · London','market',-0.1276,51.5072,230000,Cesium.Color.DEEPSKYBLUE],
-  ['sig_newyork','World news · New York','news',-74.006,40.7128,240000,Cesium.Color.CYAN],
-  ['sig_tokyo','Social Circle · Tokyo','circle',139.6503,35.6762,220000,Cesium.Color.LIGHTSKYBLUE],
-  ['sig_dubai','Delivery demand · Dubai','delivery',55.2708,25.2048,210000,Cesium.Color.CORNFLOWERBLUE],
-  ['sig_athens','AI research node · Athens','ai',23.7275,37.9838,175000,Cesium.Color.SKYBLUE]
-];
-globalSignals.forEach(s=>pointEntity(...s));
-
-function clearCity(){
-  state.cityEntities.forEach(e=>viewer.entities.remove(e));
-  state.cityEntities.length=0;state.hasCity=false;
-}
-function addCity(e){
-  const entity=viewer.entities.add(e);
-  state.cityEntities.push(entity);
-  return entity;
-}
-function renderCity(lon,lat){
-  clearCity();state.hasCity=true;state.cityAnchor={lon,lat,title:'Astranov City Map radius'};
-  const p={
-    vendor:{lon:lon+.0065,lat:lat+.0038,title:'Vendor tile · menu source'},
-    driver:{lon:lon-.0068,lat:lat-.0042,title:'Driver tile · available'},
-    client:{lon:lon-.0028,lat:lat+.008,title:'Client delivery point'},
-    news:{lon:lon+.008,lat:lat-.006,title:'Place news signal'},
-    friend:{lon:lon-.009,lat:lat+.004,title:'Friend nearby story'}
+  /* ────────── STATE ────────── */
+  const S = {
+    layer: 'ORBITAL',
+    role: null,
+    aiOpen: false,
+    micOn: false,
+    mapOn: false,
+    mapLat: 36.4349,
+    mapLng: 28.2176,
+    apiKey: localStorage.getItem('astr_ak') || '',
+    aiHistory: [],
+    cart: [],
+    cartVendorId: null,
+    recognition: null,
+    synth: window.speechSynthesis,
+    globeAlt: 2.5,
+    altPrev: 'ORBITAL',
+    issInterval: null,
+    hudTimer: null,
   };
-  const mk=(id,item,color,text)=>addCity({
-    id:'city_'+id,position:Cesium.Cartesian3.fromDegrees(item.lon,item.lat,45),
-    point:{pixelSize:13,color,outlineColor:Cesium.Color.WHITE.withAlpha(.82),outlineWidth:1.4,disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    label:{text,font:'700 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-27),disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    properties:{title:item.title,kind:id,lon:item.lon,lat:item.lat}
-  });
-  mk('vendor',p.vendor,Cesium.Color.DEEPSKYBLUE,'Vendor');
-  mk('driver',p.driver,Cesium.Color.CYAN,'Driver');
-  mk('client',p.client,Cesium.Color.LIGHTCYAN,'Client');
-  mk('news',p.news,Cesium.Color.SKYBLUE,'News');
-  mk('friend',p.friend,Cesium.Color.AQUA,'Friend');
-  const quote=deliveryQuote(3.6,{night:true,badWeather:false,load:18});
-  addCity({
-    id:'delivery_triangle',
-    polyline:{positions:Cesium.Cartesian3.fromDegreesArrayHeights([
-      p.vendor.lon,p.vendor.lat,55,p.driver.lon,p.driver.lat,55,p.client.lon,p.client.lat,55,p.vendor.lon,p.vendor.lat,55
-    ]),width:5,material:new Cesium.PolylineGlowMaterialProperty({glowPower:.28,color:Cesium.Color.CYAN.withAlpha(.95)})},
-    properties:{title:`Client · Vendor · Driver triangle · ${quote.total} ASTRAN`,kind:'route',lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2,quote:quote.total,platform:quote.platform,notes:quote.notes}
-  });
-  addCity({
-    id:'route_price_label',position:Cesium.Cartesian3.fromDegrees((p.vendor.lon+p.client.lon)/2,(p.vendor.lat+p.client.lat)/2,80),
-    label:{text:`${quote.total} ASTRAN · 3% platform`,font:'900 14px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:4,style:Cesium.LabelStyle.FILL_AND_OUTLINE,disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    properties:{title:`Delivery quote · ${quote.total} Astran coins`,kind:'route',lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2,quote:quote.total,platform:quote.platform,notes:quote.notes}
-  });
-  addCity({
-    id:'social_circle',
-    position:Cesium.Cartesian3.fromDegrees(lon+.010,lat-.009,50),
-    ellipse:{semiMajorAxis:460,semiMinorAxis:460,material:Cesium.Color.CYAN.withAlpha(.11),outline:true,outlineWidth:2,outlineColor:Cesium.Color.CYAN},
-    label:{text:'Social Circle',font:'700 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,disableDepthTestDistance:Number.POSITIVE_INFINITY},
-    properties:{title:'Social Circle · local group reality',kind:'circle',lon:lon+.010,lat:lat-.009}
-  });
-}
 
-function contextFor(props){
-  const title=props.title||'Astranov object';
-  const kind=props.kind||'object';
-  if(kind==='market'||kind==='vendor')return {
-    title,kind:'vendor',meta:'Marketplace context · controls awakened by need',
-    detail:'Vendor menu, Sheets adapter, availability, order path, and product pricing live on this world object. '+adapters.sheets+' · '+adapters.payments,
-    actions:[
-      {label:'Open menu',primary:true,run:()=>setContext('Vendor menu · adapter-ready','Products wake here, not in a permanent menu','Menu data should come from vendor-owned Sheets or backend. Example: pizza, coffee, delivery radius, opening hours. '+adapters.sheets,[
-        {label:'Start order',primary:true,run:()=>needLogin('order')},
-        {label:'Ask by voice',run:()=>tryVoice('Ask the vendor menu question')},
-        {label:'Type fallback',run:()=>showComposer('Ask about this vendor')},
-        {label:'Orbit',run:orbit}
-      ],'market')},
-      {label:'Voice',run:()=>tryVoice('Marketplace voice')},
-      {label:'Type',run:()=>showComposer('Ask about this marketplace object')},
-      {label:'Orbit',run:orbit}
-    ]
-  };
-  if(kind==='delivery'||kind==='route')return {
-    title,kind:'delivery',meta:'Delivery geometry · line/triangle/polygon logic',
-    detail:'Client, vendor, and driver are represented by map geometry. Quote uses 1 ASTRAN/km, night/load/weather additions, and 3% platform split. '+adapters.routing+' · '+adapters.payments,
-    actions:[
-      {label:'Request delivery',primary:true,run:()=>needLogin('delivery')},
-      {label:'Show balance',run:showWallet},
-      {label:'Ask by voice',run:()=>tryVoice('Delivery voice')},
-      {label:'Type fallback',run:()=>showComposer('Ask about delivery')},
-      {label:'Orbit',run:orbit}
-    ]
-  };
-  if(kind==='news'||kind==='friend'||kind==='circle'||kind==='ai')return {
-    title,kind,meta:'Feed and social context · no old permanent feed drawer',
-    detail:'This signal is anchored to place and altitude. Media/feed adapters should link lawful external platforms instead of duplicating them. '+adapters.media+' · '+adapters.ai,
-    actions:[
-      {label:'Open signal',primary:true,run:()=>speak('Adapter-ready feed object opened. Backend connection required for live content.',3000)},
-      {label:'Ask by voice',run:()=>tryVoice('Ask about this signal')},
-      {label:'Type fallback',run:()=>showComposer('Ask about this signal')},
-      {label:'Descend',run:()=>descend(state.selected)},
-      {label:'Orbit',run:orbit}
-    ]
-  };
-  return {
-    title,kind:'object',meta:'World object',
-    detail:'This object wakes only its needed context. No persistent interface survives after closing it.',
-    actions:[{label:'Voice',primary:true,run:()=>tryVoice('Object voice')},{label:'Type fallback',run:()=>showComposer('Ask about this object')},{label:'Orbit',run:orbit}]
-  };
-}
+  /* ────────── DATA ────────── */
+  const VENDORS = [
+    {
+      id:1, name:'Aegean Fresh Market', emoji:'🛒', type:'GROCERY',
+      lat:36.4401, lng:28.2205, open:true,
+      items:[
+        {n:'Organic Tomatoes',p:2.50,u:'per kg'},
+        {n:'Local Olive Oil',p:8.00,u:'500 ml'},
+        {n:'Feta Cheese PDO',p:5.50,u:'250 g'},
+        {n:'Kalamata Olives',p:3.80,u:'jar'},
+        {n:'Fresh Pita Bread',p:1.20,u:'piece'},
+      ]
+    },
+    {
+      id:2, name:'Rodos Souvlaki House', emoji:'🍴', type:'FOOD',
+      lat:36.4350, lng:28.2185, open:true,
+      items:[
+        {n:'Souvlaki Plate',p:9.00,u:''},
+        {n:'Gyros Wrap',p:5.50,u:''},
+        {n:'Greek Salad',p:6.00,u:''},
+        {n:'Tzatziki',p:2.50,u:''},
+        {n:'Fresh Orange Juice',p:3.00,u:''},
+      ]
+    },
+    {
+      id:3, name:'Island Pharmacy', emoji:'💊', type:'PHARMA',
+      lat:36.4390, lng:28.2230, open:false, items:[]
+    },
+    {
+      id:4, name:'Rhodes Bakery', emoji:'🥐', type:'BAKERY',
+      lat:36.4370, lng:28.2155, open:true,
+      items:[
+        {n:'Spanakopita',p:2.80,u:'piece'},
+        {n:'Tyropita',p:2.50,u:'piece'},
+        {n:'Sourdough Loaf',p:4.50,u:''},
+        {n:'Baklava',p:3.20,u:'portion'},
+      ]
+    },
+  ];
 
-function entityPositionLonLat(entity){
-  try{
-    if(entity.properties&&entity.properties.lon&&entity.properties.lat){
-      return {lon:entity.properties.lon.getValue(),lat:entity.properties.lat.getValue()};
-    }
-    const pos=entity.position&&entity.position.getValue(Cesium.JulianDate.now());
-    if(pos){
-      const c=Cesium.Cartographic.fromCartesian(pos);
-      return {lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude)};
-    }
-  }catch(e){}
-  return cameraLonLat();
-}
-function pickWorld(movement){
-  const picked=viewer.scene.pick(movement.position);
-  if(Cesium.defined(picked)&&picked.id&&picked.id.properties){
-    const e=picked.id,p=e.properties,pos=entityPositionLonLat(e);
-    state.selected={...pos,title:p.title?p.title.getValue():'Astranov object'};
-    const ctx=contextFor({
-      title:p.title?p.title.getValue():'Astranov object',
-      kind:p.kind?p.kind.getValue():'object'
+  const DRIVERS = [
+    {id:1, name:'Nikos K.', lat:36.4370, lng:28.2210, online:true, emoji:'🛵'},
+    {id:2, name:'Maria P.', lat:36.4420, lng:28.2180, online:true, emoji:'🛵'},
+  ];
+
+  const SOCIAL_CIRCLES = [
+    {lat:36.4405, lng:28.2200, r:280, name:'Old Town Community', members:47},
+    {lat:36.4320, lng:28.2150, r:500, name:'Mandraki Harbor', members:23},
+    {lat:36.4450, lng:28.2260, r:180, name:'Rhodes Night Market', members:11},
+  ];
+
+  const NEWS_POINTS = [
+    {lat:36.44,lng:28.21,txt:'Local fish market opens 06:00',cat:'local'},
+    {lat:36.43,lng:28.22,txt:'Colossus archaeological dig update',cat:'culture'},
+    {lat:36.45,lng:28.20,txt:'Summer ferry schedule published',cat:'transport'},
+    {lat:51.5,lng:-0.1,txt:'London heatwave advisory',cat:'weather'},
+    {lat:48.8,lng:2.35,txt:'Paris fashion week begins',cat:'culture'},
+    {lat:40.7,lng:-74.0,txt:'NYC startup funding round',cat:'finance'},
+    {lat:35.7,lng:139.7,txt:'Tokyo tech expo opens',cat:'tech'},
+    {lat:-33.9,lng:151.2,txt:'Sydney ocean temps rising',cat:'climate'},
+    {lat:19.0,lng:72.8,txt:'Mumbai monsoon advisory',cat:'weather'},
+  ];
+
+  /* ────────── DOM refs ────────── */
+  const $ = id => document.getElementById(id);
+
+  let globe = null;
+  let map = null;
+  let mapLayers = { circles:[], vendors:[], drivers:[], routes:[], labels:[] };
+
+  /* ════════ BOOT ════════ */
+  function init() {
+    initStars();
+    animateLoading();
+    initGlobe();
+    setupHUD();
+    setupAI();
+    issTrack();
+  }
+
+  /* ════════ STARS ════════ */
+  function initStars() {
+    const cv = $('stars');
+    const cx = cv.getContext('2d');
+    let stars = [];
+
+    const resize = () => {
+      cv.width = window.innerWidth;
+      cv.height = window.innerHeight;
+      stars = Array.from({length:320}, () => ({
+        x: Math.random() * cv.width,
+        y: Math.random() * cv.height,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random() * 0.8 + 0.2,
+        ph: Math.random() * Math.PI * 2,
+        sp: Math.random() * 0.006 + 0.001,
+      }));
+    };
+
+    const draw = () => {
+      cx.clearRect(0, 0, cv.width, cv.height);
+      for (const s of stars) {
+        s.ph += s.sp;
+        const a = s.a * (0.5 + 0.5 * Math.sin(s.ph));
+        cx.beginPath();
+        cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        cx.fillStyle = `rgba(180,220,255,${a.toFixed(2)})`;
+        cx.fill();
+      }
+      requestAnimationFrame(draw);
+    };
+
+    resize();
+    window.addEventListener('resize', resize);
+    requestAnimationFrame(draw);
+  }
+
+  /* ════════ GLOBE ════════ */
+  function initGlobe() {
+    const el = $('globe-wrap');
+
+    globe = Globe()
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+      .atmosphereColor('#00c8ff')
+      .atmosphereAltitude(0.22)
+      .backgroundColor('rgba(0,0,0,0)')
+      (el);
+
+    globe.width(window.innerWidth).height(window.innerHeight);
+
+    /* Starting view: above Rhodes */
+    globe.pointOfView({lat:36.4, lng:28.2, altitude:2.5}, 0);
+
+    /* World signals */
+    globe
+      .pointsData(makeSignals())
+      .pointColor(d => d.col || '#00d4ff')
+      .pointAltitude(0.01)
+      .pointRadius(d => d.r || 0.3)
+      .pointsMerge(false)
+      .onPointClick(d => {
+        if (d.txt) showToast(d.txt);
+      });
+
+    /* Global arcs */
+    globe
+      .arcsData([
+        {slat:36.44,slng:28.22,elat:51.5,elng:-0.1},
+        {slat:36.44,slng:28.22,elat:48.8,elng:2.35},
+        {slat:36.44,slng:28.22,elat:40.7,elng:-74.0},
+        {slat:40.7,slng:-74.0,elat:35.7,elng:139.7},
+        {slat:48.8,slng:2.35,elat:-33.9,elng:151.2},
+      ])
+      .arcStartLat('slat').arcStartLng('slng')
+      .arcEndLat('elat').arcEndLng('elng')
+      .arcColor(() => ['rgba(0,212,255,0.08)','rgba(0,212,255,0.7)'])
+      .arcAltitude(0.18)
+      .arcStroke(0.25)
+      .arcDashLength(0.35)
+      .arcDashGap(2.5)
+      .arcDashAnimateTime(4000);
+
+    /* Labels */
+    globe
+      .labelsData([
+        {lat:36.44, lng:28.22, txt:'Rhodes', size:0.8, col:'rgba(0,212,255,0.9)'},
+        {lat:51.5,  lng:-0.1,  txt:'London', size:0.5, col:'rgba(0,180,255,0.5)'},
+        {lat:48.8,  lng:2.35,  txt:'Paris',  size:0.5, col:'rgba(0,180,255,0.5)'},
+        {lat:40.7,  lng:-74.0, txt:'NYC',    size:0.5, col:'rgba(0,180,255,0.5)'},
+      ])
+      .labelText('txt')
+      .labelSize('size')
+      .labelColor('col')
+      .labelAltitude(0.01)
+      .labelDotRadius(0.3)
+      .labelDotOrientation(() => 'bottom');
+
+    /* Controls */
+    const ctrl = globe.controls();
+    ctrl.autoRotate = true;
+    ctrl.autoRotateSpeed = 0.25;
+    ctrl.enableDamping = true;
+    ctrl.dampingFactor = 0.07;
+    ctrl.minDistance = 101;
+    ctrl.maxDistance = 700;
+
+    /* Altitude poll */
+    setInterval(checkAltitude, 250);
+
+    /* Globe click → descend */
+    globe.onGlobeClick(coords => {
+      if (!coords) return;
+      ctrl.autoRotate = false;
+      S.mapLat = coords.lat;
+      S.mapLng = coords.lng;
+      globe.pointOfView({lat:coords.lat, lng:coords.lng, altitude:0.25}, 1600);
+      setTimeout(transitionToMap, 1700);
     });
-    setContext(ctx.title,ctx.meta,ctx.detail,ctx.actions,ctx.kind);
-    return;
-  }
-  const cart=viewer.camera.pickEllipsoid(movement.position,viewer.scene.globe.ellipsoid);
-  if(cart){
-    const c=Cesium.Cartographic.fromCartesian(cart);
-    state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};
-    descend(state.selected);
-  }
-}
 
-const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-handler.setInputAction(pickWorld,Cesium.ScreenSpaceEventType.LEFT_CLICK);
-handler.setInputAction(function(m){
-  const cart=viewer.camera.pickEllipsoid(m.position,viewer.scene.globe.ellipsoid);
-  if(cart){
-    const c=Cesium.Cartographic.fromCartesian(cart);
-    state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};
-    speak('Place selected. Hold ASTRANOV for voice, tap selected place to descend.',2100);
+    window.addEventListener('resize', () => {
+      globe.width(window.innerWidth).height(window.innerHeight);
+    });
   }
-},Cesium.ScreenSpaceEventType.RIGHT_CLICK);
 
-ui.close.onclick=hideAll;
-ui.login.onclick=()=>{
-  state.auth=true;wake(ui.login,false);speak('Auth adapter placeholder accepted for this prototype. Real login must connect backend.',3200);
-  if(state.protectedAction==='order'||state.protectedAction==='delivery')showWallet();
-};
-ui.brand.addEventListener('click',()=>tryVoice('Astranov voice wake'));
-ui.brand.addEventListener('dblclick',orbit);
-
-let pressTimer=null,pressTarget=null;
-function clearPress(){clearTimeout(pressTimer);pressTimer=null;pressTarget=null}
-document.addEventListener('pointerdown',e=>{
-  if(e.target.closest('#contextCard')||e.target.closest('#composer')||e.target.closest('#loginGate')||e.target.closest('#wallet'))return;
-  pressTarget=e.target;
-  pressTimer=setTimeout(()=>tryVoice('Long-press voice wake'),650);
-},{passive:true});
-document.addEventListener('pointerup',clearPress,{passive:true});
-document.addEventListener('pointercancel',clearPress,{passive:true});
-document.addEventListener('pointermove',clearPress,{passive:true});
-
-async function tryVoice(reason){
-  ui.brand.classList.add('awake');
-  speak('Voice waking. Browser may require microphone permission.',1600);
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    ui.brand.classList.remove('awake');
-    showComposer('Voice unavailable. Type to Astranov.');
-    return;
+  function makeSignals() {
+    const pts = [];
+    for (const n of NEWS_POINTS) {
+      pts.push({lat:n.lat, lng:n.lng, r:0.35, col:'#00d4ff', txt:n.txt});
+      pts.push({lat:n.lat+(Math.random()-.5)*.8, lng:n.lng+(Math.random()-.5)*.8, r:0.18, col:'rgba(0,180,255,0.6)'});
+    }
+    /* Extra ambient signals */
+    for (let i=0;i<60;i++) {
+      pts.push({
+        lat:(Math.random()-0.5)*160,
+        lng:(Math.random()-0.5)*360,
+        r: Math.random()*0.2+0.08,
+        col:'rgba(0,150,200,0.35)',
+      });
+    }
+    return pts;
   }
-  try{
-    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    stream.getTracks().forEach(t=>t.stop());
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){
-      ui.brand.classList.remove('awake');
-      showComposer('Microphone granted, speech recognition unavailable. Type to Astranov.');
+
+  function checkAltitude() {
+    if (!globe) return;
+    const pov = globe.pointOfView();
+    const alt = pov.altitude;
+    S.globeAlt = alt;
+
+    /* Altitude bar */
+    const h = Math.max(4, Math.min(96, (1 - alt/6)*100));
+    $('alt-fill').style.height = h + '%';
+    $('alt-bar').style.opacity = '1';
+
+    /* Layer */
+    let lyr;
+    if (alt > 4.5)      lyr = 'SOLAR';
+    else if (alt > 2.0) lyr = 'ORBITAL';
+    else if (alt > 0.8) lyr = 'REGIONAL';
+    else if (alt > 0.3) lyr = 'LOCAL';
+    else                lyr = 'STREET';
+
+    if (lyr !== S.altPrev) {
+      S.altPrev = lyr;
+      S.layer = lyr;
+      $('layer-lbl').textContent = lyr;
+      if (lyr === 'LOCAL' || lyr === 'STREET') {
+        const p = globe.pointOfView();
+        S.mapLat = p.lat; S.mapLng = p.lng;
+        transitionToMap();
+      }
+      globe.controls().autoRotate = alt > 1.2;
+    }
+  }
+
+  /* ════════ MAP ════════ */
+  function initMap() {
+    if (map) return;
+    map = L.map('map', {
+      center:[S.mapLat, S.mapLng],
+      zoom:15, zoomControl:false, attributionControl:false,
+    });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'© OpenStreetMap · © CARTO',
+      subdomains:'abcd', maxZoom:19,
+    }).addTo(map);
+
+    drawSocialCircles();
+    drawVendorMarkers();
+    drawDriverMarkers();
+
+    /* Zoom-out returns to globe */
+    map.on('zoomend', () => {
+      if (map.getZoom() < 10) transitionToGlobe();
+    });
+  }
+
+  function transitionToMap() {
+    if (S.mapOn) return;
+    S.mapOn = true;
+    initMap();
+    map.setView([S.mapLat, S.mapLng], 15);
+    $('map-wrap').classList.add('on');
+    $('map-back').classList.add('on');
+    $('role-strip').classList.add('on');
+    showToast(coordStr(S.mapLat, S.mapLng) + ' — CITY MAP');
+  }
+
+  function transitionToGlobe() {
+    if (!S.mapOn) return;
+    S.mapOn = false;
+    $('map-wrap').classList.remove('on');
+    $('map-back').classList.remove('on');
+    $('role-strip').classList.remove('on');
+    globe.controls().autoRotate = false;
+    globe.pointOfView({lat:S.mapLat, lng:S.mapLng, altitude:1.5}, 1200);
+    setTimeout(() => {
+      S.layer = 'REGIONAL'; S.altPrev = 'REGIONAL';
+      $('layer-lbl').textContent = 'REGIONAL';
+    }, 600);
+  }
+
+  /* ─── Map geometry ─── */
+  function drawSocialCircles() {
+    mapLayers.circles.forEach(c => c.remove());
+    mapLayers.circles = [];
+    for (const sc of SOCIAL_CIRCLES) {
+      const c = L.circle([sc.lat, sc.lng], {
+        radius: sc.r, color:'#00d4ff', fillColor:'#00d4ff',
+        fillOpacity:.04, weight:1.5, dashArray:'6 5', opacity:.45,
+      }).addTo(map);
+      c.on('click', () => {
+        showToast(`${sc.name} · ${sc.members} members`);
+        openAI(`Tell me about the ${sc.name} social circle.`);
+      });
+      const icon = L.divIcon({
+        className:'',
+        html:`<div style="font-family:'Orbitron',monospace;font-size:8px;color:rgba(0,212,255,.6);letter-spacing:.1em;text-shadow:0 0 6px #00d4ff;white-space:nowrap;">${sc.name}</div>`,
+        iconAnchor:[0,0],
+      });
+      const lm = L.marker([sc.lat+.0015, sc.lng], {icon}).addTo(map);
+      mapLayers.circles.push(c, lm);
+    }
+  }
+
+  function drawVendorMarkers() {
+    mapLayers.vendors.forEach(m => m.remove());
+    mapLayers.vendors = [];
+    for (const v of VENDORS) {
+      const icon = L.divIcon({
+        className:'',
+        html:`<div style="
+          width:34px;height:34px;border-radius:50%;
+          background:rgba(0,8,22,.92);
+          border:1.5px solid ${v.open?'#00d4ff':'#1a2840'};
+          display:flex;align-items:center;justify-content:center;
+          font-size:15px;
+          box-shadow:${v.open?'0 0 12px rgba(0,212,255,.4)':'none'};
+        ">${v.emoji}</div>`,
+        iconSize:[34,34], iconAnchor:[17,17],
+      });
+      const m = L.marker([v.lat, v.lng], {icon}).addTo(map);
+      m.on('click', () => openVendorMenu(v));
+      mapLayers.vendors.push(m);
+    }
+  }
+
+  function drawDriverMarkers() {
+    mapLayers.drivers.forEach(m => m.remove());
+    mapLayers.drivers = [];
+    for (const d of DRIVERS) {
+      if (!d.online) continue;
+      const icon = L.divIcon({
+        className:'',
+        html:`<div style="
+          width:30px;height:30px;border-radius:50%;
+          background:rgba(0,22,8,.92);
+          border:1.5px solid #00ff88;
+          display:flex;align-items:center;justify-content:center;
+          font-size:14px;
+          box-shadow:0 0 9px rgba(0,255,136,.3);
+        ">${d.emoji}</div>`,
+        iconSize:[30,30], iconAnchor:[15,15],
+      });
+      const m = L.marker([d.lat, d.lng], {icon}).addTo(map);
+      mapLayers.drivers.push(m);
+      /* Simulate movement */
+      setInterval(() => {
+        d.lat += (Math.random()-.5)*.0004;
+        d.lng += (Math.random()-.5)*.0004;
+        m.setLatLng([d.lat, d.lng]);
+      }, 4000 + Math.random()*2000);
+    }
+  }
+
+  function drawOrderTriangle(vendor) {
+    mapLayers.routes.forEach(l => l.remove());
+    mapLayers.routes = [];
+    mapLayers.labels.forEach(l => l.remove());
+    mapLayers.labels = [];
+
+    if (!map) return;
+    const cl = [S.mapLat, S.mapLng];
+    const vl = [vendor.lat, vendor.lng];
+    const dl = [DRIVERS[0].lat, DRIVERS[0].lng];
+    const del = calcDelivery(distKm(cl[0],cl[1],vl[0],vl[1]));
+
+    const tri = L.polygon([cl, vl, dl], {
+      color:'#00d4ff', fillColor:'#00d4ff', fillOpacity:.05,
+      weight:1.2, dashArray:'5 4', opacity:.6,
+    }).addTo(map);
+
+    const route = L.polyline([vl, cl], {
+      color:'#00d4ff', weight:2.5, opacity:.8, dashArray:'8 6',
+    }).addTo(map);
+
+    const mid = [(vl[0]+cl[0])/2, (vl[1]+cl[1])/2];
+    const pIcon = L.divIcon({
+      className:'',
+      html:`<div style="background:rgba(0,8,24,.9);border:1px solid rgba(0,212,255,.35);border-radius:8px;padding:4px 9px;font-family:'Orbitron',monospace;font-size:10px;color:#00d4ff;white-space:nowrap;">€${del.total.toFixed(2)} ✦</div>`,
+      iconAnchor:[30,10],
+    });
+    const pl = L.marker(mid, {icon:pIcon}).addTo(map);
+
+    mapLayers.routes.push(tri, route);
+    mapLayers.labels.push(pl);
+
+    setTimeout(() => {
+      mapLayers.routes.forEach(l => l.remove());
+      mapLayers.labels.forEach(l => l.remove());
+      mapLayers.routes = [];
+      mapLayers.labels = [];
+    }, 60000);
+  }
+
+  /* ════════ MARKETPLACE ════════ */
+  function openMarket() {
+    const list = $('vendor-list');
+    list.innerHTML = VENDORS.map(v => `
+      <div class="v-card" onclick="ASTR.openVendorMenu(ASTR._getVendor(${v.id}))">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">${v.emoji}</span>
+          <div>
+            <div class="v-name">${v.name}</div>
+            <div class="v-sub">${v.type}</div>
+            <div class="v-status ${v.open?'v-open':'v-closed'}">${v.open?'● OPEN':'○ CLOSED'}</div>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    $('mkt-sheet').classList.add('on');
+    closeSheet('menu');
+  }
+
+  function closeMkt() {
+    $('mkt-sheet').classList.remove('on');
+  }
+
+  function openVendorMenu(v) {
+    if (!v) return;
+    S.cartVendorId = v.id;
+    $('menu-title').textContent = v.name;
+    $('menu-items').innerHTML = !v.open
+      ? `<div style="color:rgba(255,255,255,.3);padding:20px 0;font-size:14px">This vendor is offline.</div>`
+      : v.items.map((it,i) => `
+        <div class="m-item">
+          <div>
+            <div class="m-name">${it.n}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.35)">${it.u}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="m-price">€${it.p.toFixed(2)}</div>
+            <div class="m-add" onclick="ASTR.addToCart(${v.id},${i})">ADD</div>
+          </div>
+        </div>
+      `).join('');
+    $('menu-sheet').classList.add('on');
+    closeMkt();
+  }
+
+  function _getVendor(id) { return VENDORS.find(v=>v.id===id); }
+
+  function addToCart(vid, itemIdx) {
+    const v = VENDORS.find(v=>v.id===vid);
+    if (!v || !v.open) return;
+    if (S.cartVendorId !== null && S.cartVendorId !== vid) {
+      showToast('Clear cart first to order from another vendor');
       return;
     }
-    const rec=new SR();
-    rec.lang='en-US';rec.interimResults=true;rec.continuous=false;
-    state.voiceLive=true;
-    rec.onstart=()=>{ui.brand.classList.add('awake');speak('Listening.',1200)};
-    rec.onresult=e=>{
-      const heard=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim();
-      if(heard) handleIntent(heard);
-    };
-    rec.onerror=()=>{state.voiceLive=false;ui.brand.classList.remove('awake');showComposer('Voice failed. Type to Astranov.')};
-    rec.onend=()=>{state.voiceLive=false;ui.brand.classList.remove('awake')};
-    rec.start();
-  }catch(e){
-    state.voiceLive=false;ui.brand.classList.remove('awake');
-    showComposer('Voice blocked or unavailable. Type to Astranov.');
+    const item = v.items[itemIdx];
+    S.cart.push({...item, vid});
+    S.cartVendorId = vid;
+    updateOrderBar();
+    showToast(`${item.n} added`);
   }
-}
-function handleIntent(text){
-  const raw=text.trim(),t=raw.toLowerCase();
-  speak('Heard: '+raw,2200);
-  if(t.includes('order')||t.includes('buy')||t.includes('delivery')||t.includes('market')){
-    showWallet();
-    if(t.includes('order')||t.includes('buy')||t.includes('delivery'))needLogin(t.includes('delivery')?'delivery':'order');
-    return;
-  }
-  if(t.includes('login')||t.includes('account')){needLogin('account');return}
-  if(t.includes('balance')||t.includes('wallet')||t.includes('money')){showWallet();return}
-  if(t.includes('type')||t.includes('keyboard')){showComposer('Manual AI fallback');return}
-  if(t.includes('globe')||t.includes('orbit')||t.includes('space')){orbit();return}
-  if(t.includes('city')||t.includes('down')||t.includes('map')){descend(state.selected||cameraLonLat());return}
-  if(t.includes('hide')||t.includes('clean')||t.includes('clear')){hideAll();return}
-  setContext('AI intent · adapter-ready','Voice intent received','The frontend captured intent. Live AI answer requires backend AI adapter. '+adapters.ai,[
-    {label:'Type more',primary:true,run:()=>showComposer('Continue with AI')},
-    {label:'Clear',run:hideAll},
-    {label:'Orbit',run:orbit}
-  ],'ai');
-}
-ui.composer.addEventListener('submit',e=>{
-  e.preventDefault();
-  const text=ui.input.value.trim();
-  if(!text)return;
-  ui.input.value='';
-  handleIntent(text);
-  wake(ui.composer,false);state.manualOpen=false;
-});
-ui.input.addEventListener('input',()=>{
-  ui.input.style.height='auto';
-  ui.input.style.height=Math.min(ui.input.scrollHeight,120)+'px';
-});
 
-let lastAutoCity=0;
-viewer.scene.postRender.addEventListener(()=>{
-  const h=cameraHeight(),name=layerName(h);
-  ui.shade.classList.toggle('on',h<95000);
-  state.cityEntities.forEach(e=>e.show=h<170000);
-  if(name!==state.lastLayer){
-    state.lastLayer=name;
-    if(name==='Astranov City Map'&&!state.hasCity){
-      const c=cameraLonLat();renderCity(c.lon,c.lat);
-      speak('Astranov City Map layer. Objects appear on the real map.',2000);
+  function updateOrderBar() {
+    const bar = $('order-bar');
+    if (S.cart.length === 0) {
+      bar.classList.remove('on');
+      return;
+    }
+    const total = S.cart.reduce((a,i)=>a+i.p, 0);
+    $('order-count').textContent = `${S.cart.length} ITEM${S.cart.length!==1?'S':''}`;
+    $('order-total').textContent = `€${total.toFixed(2)} + delivery`;
+    bar.classList.add('on');
+  }
+
+  function checkout() {
+    if (S.cart.length === 0) return;
+    const v = VENDORS.find(v=>v.id===S.cartVendorId);
+    if (!v) return;
+    const km = distKm(S.mapLat, S.mapLng, v.lat, v.lng) || 0.8;
+    const del = calcDelivery(km, {night:isNight(), weather:false, kg:S.cart.length*0.5});
+    const subtotal = S.cart.reduce((a,i)=>a+i.p, 0);
+    const platform = +(del.total * 0.03).toFixed(2);
+
+    $('del-content').innerHTML = `
+      <div class="del-row"><span>Vendor</span><span>${v.name}</span></div>
+      <div class="del-row"><span>Items (${S.cart.length})</span><span>€${subtotal.toFixed(2)}</span></div>
+      <div class="del-row"><span>Distance</span><span>${km.toFixed(2)} km</span></div>
+      <div class="del-row"><span>Base delivery (€1/km)</span><span>€${del.base.toFixed(2)}</span></div>
+      ${del.night?`<div class="del-row"><span>Night surcharge</span><span>+€1.00</span></div>`:''}
+      ${del.extras>0&&!del.night?`<div class="del-row"><span>Surcharges</span><span>+€${del.extras.toFixed(2)}</span></div>`:''}
+      <div class="del-row"><span>Platform (3%)</span><span>€${platform}</span></div>
+      <div class="del-row del-total"><span>TOTAL</span><span>€${(subtotal+del.total).toFixed(2)} / ${(subtotal+del.total).toFixed(0)} ✦</span></div>
+    `;
+    $('del-sheet').classList.add('on');
+  }
+
+  function closeDelivery() {
+    $('del-sheet').classList.remove('on');
+  }
+
+  function confirmOrder() {
+    const v = VENDORS.find(v=>v.id===S.cartVendorId);
+    closeDelivery();
+    closeSheet('menu');
+    closeMkt();
+    $('order-bar').classList.remove('on');
+    if (v && S.mapOn) drawOrderTriangle(v);
+    S.cart = [];
+    S.cartVendorId = null;
+    showToast('ORDER PLACED — Driver assigned 🛵');
+    setTimeout(()=>showToast('NIKOS K. ON THE WAY — 18 min'), 3500);
+  }
+
+  /* ════════ DELIVERY CALC ════════ */
+  function calcDelivery(km, opts={}) {
+    const base = Math.max(1.0, parseFloat((1.0 * km).toFixed(2)));
+    let extras = 0;
+    if (opts.night) extras += 1;
+    if (opts.weather) extras += 1;
+    const kg = opts.kg || 0;
+    if (kg > 13) extras += 1 + Math.floor((Math.min(kg,33)-13)/13);
+    return {base, extras, total: +(base+extras).toFixed(2), astran: +(base+extras).toFixed(2), night:!!opts.night};
+  }
+
+  function distKm(la1,ln1,la2,ln2) {
+    const R=6371, dLa=(la2-la1)*Math.PI/180, dLn=(ln2-ln1)*Math.PI/180;
+    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+
+  function isNight() { const h=new Date().getHours(); return h>=21||h<9; }
+
+  /* ════════ AI ════════ */
+  function setupAI() {
+    $('ab-close').onclick = closeAI;
+    $('ab-send').onclick = () => sendMsg($('ai-in').value);
+    $('ab-mic').onclick = toggleMic;
+    $('ai-in').addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(e.target.value); });
+  }
+
+  function openAI(prefill='') {
+    S.aiOpen = true;
+    $('ai-panel').classList.add('on');
+    $('ai-in').classList.add('on');
+    if (prefill) { $('ai-in').value = prefill; }
+    showHUD();
+  }
+
+  function closeAI() {
+    S.aiOpen = false;
+    $('ai-panel').classList.remove('on');
+    $('ai-in').value = '';
+    stopMic();
+  }
+
+  async function sendMsg(txt) {
+    txt = txt.trim();
+    if (!txt) return;
+    $('ai-in').value = '';
+    addBubble(txt,'u');
+    $('ai-log').classList.add('on');
+
+    if (!S.apiKey) {
+      setTimeout(()=>{ const r=localAI(txt); addBubble(r,'a'); speak(r); }, 500);
+      return;
+    }
+
+    const thinking = addBubble('···','a','thinking');
+    try {
+      S.aiHistory.push({role:'user', content:txt});
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'x-api-key': S.apiKey,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true',
+        },
+        body: JSON.stringify({
+          model:'claude-haiku-4-5-20251001',
+          max_tokens:400,
+          system:`You are Astranov — the AI intelligence of the ASTRANOV Internet Operating System, a collective reality platform based on Rhodes Island, Greece. You are a powerful, knowledgeable, friendly navigator — a winged Nordic warrior who also guides humans through the real world. Keep responses brief, useful, and warm. Current location: ${S.mapLat.toFixed(3)},${S.mapLng.toFixed(3)}. Layer: ${S.layer}. Role: ${S.role||'none'}.`,
+          messages: S.aiHistory.slice(-8),
+        }),
+      });
+      const data = await res.json();
+      thinking.remove();
+      if (data.content?.[0]?.text) {
+        const reply = data.content[0].text;
+        S.aiHistory.push({role:'assistant',content:reply});
+        addBubble(reply,'a');
+        speak(reply);
+      } else {
+        addBubble(localAI(txt),'a');
+      }
+    } catch(e) {
+      thinking.remove();
+      const r = localAI(txt);
+      addBubble(r,'a');
+      speak(r);
     }
   }
-  if(h<78000&&!state.hasCity&&Date.now()-lastAutoCity>2400){
-    lastAutoCity=Date.now();
-    const c=cameraLonLat();renderCity(c.lon,c.lat);
-  }
-});
 
-document.addEventListener('keydown',e=>{
-  if(e.key==='Escape')hideAll();
-  if(e.key==='/'&&!state.manualOpen){e.preventDefault();showComposer('Manual AI fallback')}
-});
+  function localAI(t) {
+    t = t.toLowerCase();
+    if (/delivery|order|cost|fee/.test(t)) return 'Delivery: €1 per km base. Night hours (21:00–09:00) add €1. Extra €1 per 13kg above first 13kg. Platform takes 3% of completed transactions.';
+    if (/vendor|shop|market|store/.test(t)) return 'Active vendors: Aegean Fresh Market (groceries), Rodos Souvlaki House (food), Rhodes Bakery. Tap any glowing marker on the city map to browse menus.';
+    if (/driver/.test(t)) return 'Nikos K. and Maria P. are online nearby. Their live positions show as green moped icons on the map. Routes draw as blue geometry when an order is placed.';
+    if (/circle|social|community/.test(t)) return 'Social Circles are literal circles on the map. Old Town Community (47 members) and Mandraki Harbor (23 members) are active near you. Tap dashed blue circles to interact.';
+    if (/rhodes|ρόδος|city/.test(t)) return 'Rhodes is ASTRANOV\'s primary node. Population ~115,000. Ancient Knights\' stronghold, UNESCO World Heritage old town, Mediterranean maritime hub.';
+    if (/iss|space station/.test(t)) return 'ISS orbits at ~408 km altitude, 7.66 km/s, completing one orbit every 92 minutes. It appears on the globe as a signal when overhead.';
+    if (/astran|coin|token/.test(t)) return '1 Astran coin = €1 for delivery. The system dynamically rebalances pricing across hours to spread demand, reduce idle waste, and avoid destructive spikes.';
+    if (/hello|hey|hi|γεια/.test(t)) return 'I\'m Astranov — your world interface navigator. Explore the globe, descend into any city, tap shop markers, discover social circles. What do you need?';
+    if (/role|client|vendor|driver/.test(t)) return 'Tap your role in the strip above the map: CLIENT to order, VENDOR to manage your shop, DRIVER to go online and accept deliveries. You can hold all three.';
+    if (/weather/.test(t)) return 'Weather conditions affect delivery pricing — bad weather adds €1 to the delivery fee. Live weather integration is connection-ready.';
+    return 'Navigating that. Try tapping the globe to descend into a city, or ask me about delivery, vendors, social circles, or your role.';
+  }
+
+  function addBubble(txt, who, id='') {
+    const log = $('ai-log');
+    const d = document.createElement('div');
+    d.className = `msg ${who}`;
+    if (id) d.id = 'b-'+id;
+    d.textContent = (who==='a'?'⬡ ':'')+txt;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+    return d;
+  }
+
+  function speak(txt) {
+    if (!S.synth||!txt) return;
+    try { S.synth.cancel(); const u=new SpeechSynthesisUtterance(txt.slice(0,180)); u.rate=1.1; S.synth.speak(u); } catch(e){}
+  }
+
+  /* ════════ VOICE ════════ */
+  function toggleMic() {
+    S.micOn ? stopMic() : startMic();
+  }
+
+  function startMic() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { openAI(); showToast('Voice unavailable — type instead'); return; }
+    S.recognition = new SR();
+    S.recognition.continuous = false;
+    S.recognition.interimResults = false;
+    S.recognition.lang = 'en-US';
+    S.recognition.onresult = e => {
+      const txt = e.results[0][0].transcript;
+      openAI(txt);
+      sendMsg(txt);
+    };
+    S.recognition.onend = () => { S.micOn=false; $('ab-mic').classList.remove('lit'); $('hb-mic').classList.remove('lit'); };
+    S.recognition.onerror = () => { S.micOn=false; openAI(); showToast('Microphone access needed'); };
+    try {
+      S.recognition.start();
+      S.micOn = true;
+      $('ab-mic').classList.add('lit');
+      $('hb-mic').classList.add('lit');
+      openAI();
+    } catch(e) { showToast('Could not start microphone'); }
+  }
+
+  function stopMic() {
+    if (S.recognition) try { S.recognition.stop(); } catch(e){}
+    S.micOn = false;
+    $('ab-mic').classList.remove('lit');
+    $('hb-mic').classList.remove('lit');
+  }
+
+  /* ════════ HUD ════════ */
+  function setupHUD() {
+    $('hb-mic').onclick = () => { startMic(); };
+    $('hb-type').onclick = () => { openAI(); $('ai-in').focus(); };
+    $('hb-market').onclick = () => {
+      if (!S.mapOn) { showToast('Zoom into a city first'); globe.pointOfView({lat:36.44,lng:28.22,altitude:0.25},1800); return; }
+      openMarket();
+    };
+    $('hb-locate').onclick = locate;
+    $('map-back').onclick = transitionToGlobe;
+
+    document.querySelectorAll('.rb').forEach(b => {
+      b.onclick = () => {
+        const r = b.id.replace('rb-','');
+        setRole(r);
+      };
+    });
+
+    $('mkt-sheet').addEventListener('click', e => { if(e.target===$('mkt-sheet')) closeMkt(); });
+    $('menu-sheet').addEventListener('click', e => { if(e.target===$('menu-sheet')) closeSheet('menu'); });
+
+    ['touchstart','mousedown'].forEach(ev => {
+      document.addEventListener(ev, showHUD, {passive:true});
+    });
+  }
+
+  function showHUD() {
+    $('hud').classList.add('on');
+    clearTimeout(S.hudTimer);
+    if (!S.aiOpen && !S.mapOn) {
+      S.hudTimer = setTimeout(() => $('hud').classList.remove('on'), 5500);
+    }
+  }
+
+  function setRole(r) {
+    S.role = S.role===r ? null : r;
+    document.querySelectorAll('.rb').forEach(b => b.classList.remove('on'));
+    if (S.role) {
+      $('rb-'+S.role).classList.add('on');
+      showToast('Role: '+S.role.toUpperCase());
+    }
+  }
+
+  function locate() {
+    if (!navigator.geolocation) { showToast('Geolocation not available'); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      S.mapLat = pos.coords.latitude;
+      S.mapLng = pos.coords.longitude;
+      if (S.mapOn && map) map.setView([S.mapLat, S.mapLng], 16);
+      else { globe.controls().autoRotate=false; globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:0.25},2000); }
+      showToast('Located: '+coordStr(S.mapLat, S.mapLng));
+    }, () => showToast('Location permission required'));
+  }
+
+  /* ════════ API KEY ════════ */
+  function saveKey() {
+    const k = $('key-in').value.trim();
+    if (k) { S.apiKey=k; localStorage.setItem('astr_ak',k); showToast('AI CONNECTED ✦'); }
+    $('key-dlg').classList.remove('on');
+  }
+  function skipKey() { $('key-dlg').classList.remove('on'); showToast('Local AI active'); }
+  function promptKey() { $('key-dlg').classList.add('on'); }
+
+  /* ════════ ISS ════════ */
+  function issTrack() {
+    const badge = $('iss-badge');
+    const update = async () => {
+      try {
+        const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+        if (!r.ok) return;
+        const d = await r.json();
+        badge.textContent = `🛸 ISS ${d.latitude.toFixed(1)}°, ${d.longitude.toFixed(1)}°`;
+        badge.classList.add('on');
+        /* Add/move ISS point on globe */
+        if (globe) {
+          globe.pointsData([
+            ...makeSignals(),
+            {lat:d.latitude, lng:d.longitude, r:0.6, col:'#ffffff', txt:'ISS — Live Position'},
+          ]);
+        }
+      } catch(e) {}
+    };
+    update();
+    S.issInterval = setInterval(update, 5000);
+  }
+
+  /* ════════ LOADING ════════ */
+  function animateLoading() {
+    const steps=[
+      [18,'LOADING GLOBE ENGINE'],
+      [40,'CONNECTING EARTH TILES'],
+      [60,'INITIALIZING OVERLAYS'],
+      [78,'CALIBRATING SENSORS'],
+      [92,'ENTERING ORBIT'],
+      [100,'READY'],
+    ];
+    let i=0;
+    const tick=()=>{
+      if(i>=steps.length){
+        setTimeout(()=>{ $('loading').classList.add('gone'); setTimeout(()=>$('loading').remove(),1200); },300);
+        return;
+      }
+      const [p,t]=steps[i++];
+      $('ld-bar').style.width=p+'%';
+      $('ld-sub').textContent=t;
+      setTimeout(tick, 380+Math.random()*250);
+    };
+    setTimeout(tick,200);
+  }
+
+  /* ════════ UTILS ════════ */
+  function showToast(msg) {
+    const t=$('toast');
+    t.textContent=msg;
+    t.classList.add('on');
+    clearTimeout(t._t);
+    t._t=setTimeout(()=>t.classList.remove('on'),3200);
+  }
+
+  function coordStr(la,ln) {
+    return `${Math.abs(la).toFixed(3)}°${la>=0?'N':'S'} ${Math.abs(ln).toFixed(3)}°${ln>=0?'E':'W'}`;
+  }
+
+  function closeSheet(name) {
+    const sheets={mkt:'mkt-sheet',menu:'menu-sheet'};
+    if(sheets[name]) $(sheets[name]).classList.remove('on');
+  }
+
+  /* ════════ PUBLIC API ════════ */
+  return {
+    init, setRole, openVendorMenu, _getVendor, addToCart,
+    checkout, closeDelivery, confirmOrder,
+    openAI, closeAI,
+    saveKey, skipKey, promptKey,
+    transitionToGlobe,
+  };
 
 })();
+
+document.addEventListener('DOMContentLoaded', ASTR.init);
 </script>
 </body>
 </html>
