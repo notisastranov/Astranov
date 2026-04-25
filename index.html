@@ -1,40 +1,590 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
-<title>Astranov</title>
-<script>window.CESIUM_BASE_URL="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/";</script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Widgets/widgets.css">
-<script src="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Cesium.js"></script>
-<style>
-:root{--blue:#5ecbff;--text:#effbff;--border:rgba(128,225,255,.25);--glow:0 0 22px rgba(94,203,255,.38)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body,#app,#cesium{width:100%;height:100%;margin:0;overflow:hidden;background:#020713;color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}#cesium{position:absolute;inset:0}.cesium-viewer-bottom{font-size:10px;opacity:.65}#cityShade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,22,52,.05),rgba(0,8,20,.08));mix-blend-mode:multiply;opacity:0;transition:opacity .7s ease;z-index:5}#cityShade.on{opacity:.72}
-#top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:8px;z-index:20;pointer-events:none}.chip,.btn{pointer-events:auto;border:1px solid var(--border);background:linear-gradient(180deg,rgba(7,24,55,.72),rgba(6,16,35,.43));box-shadow:var(--glow);backdrop-filter:blur(14px);color:var(--text);border-radius:999px;padding:10px 13px;font-size:12px;letter-spacing:.09em;text-transform:uppercase}#brand{font-weight:900;letter-spacing:.22em}#alt{font-size:11px;color:#e1f7ff}
-#bottom{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:9px;max-width:min(95vw,780px);border:1px solid var(--border);border-radius:999px;padding:9px 12px;background:linear-gradient(180deg,rgba(7,24,55,.75),rgba(6,16,35,.52));box-shadow:var(--glow);backdrop-filter:blur(16px)}#orb{width:17px;height:17px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle,#c9fbff 0%,#63d9ff 46%,rgba(99,217,255,.12) 78%);box-shadow:0 0 16px rgba(99,217,255,.9)}#hint{font-size:12px;line-height:1.2;min-width:0;color:#eaf9ff}#controls{display:flex;gap:7px;flex:0 0 auto}.btn{padding:8px 11px;letter-spacing:0;text-transform:none}
-#ribbon{position:absolute;left:10px;right:10px;bottom:68px;z-index:22;display:none;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:18px;padding:10px 12px;background:linear-gradient(180deg,rgba(7,24,55,.84),rgba(6,16,35,.58));box-shadow:var(--glow);backdrop-filter:blur(14px)}#ribbon.show{display:flex}#ribbonText{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}#ribbonBtns{display:flex;gap:7px}
-#manual{position:absolute;left:10px;right:10px;bottom:12px;z-index:30;display:none;gap:8px;border:1px solid var(--border);border-radius:18px;padding:9px;background:rgba(7,22,49,.92);box-shadow:var(--glow);backdrop-filter:blur(15px)}#manual.show{display:flex}#manual input{flex:1;border:none;outline:none;border-radius:12px;background:rgba(255,255,255,.07);color:var(--text);font-size:15px;padding:12px}#manual button{border:none;border-radius:12px;padding:0 16px;font-weight:800;color:#061227;background:linear-gradient(180deg,#95efff,#55a7ff)}#stageFlash{position:absolute;left:50%;top:50%;width:90px;height:90px;border-radius:50%;z-index:18;pointer-events:none;transform:translate(-50%,-50%) scale(.6);opacity:0;border:1px solid rgba(155,239,255,.46);box-shadow:0 0 28px rgba(95,204,255,.58),inset 0 0 22px rgba(95,204,255,.18)}#stageFlash.go{animation:flash .9s ease forwards}@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}30%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(2.2)}}@media(max-width:560px){#bottom{max-width:96vw}#hint{font-size:11.5px}.chip{padding:9px 11px}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>ASTRANOV</title>
+
+  <script>window.CESIUM_BASE_URL = "https://cdn.jsdelivr.net/npm/cesium@1.124.0/Build/Cesium/";</script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.124.0/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cdn.jsdelivr.net/npm/cesium@1.124.0/Build/Cesium/Cesium.js"></script>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <style>
+    :root {
+      --bg: #020914;
+      --blue: #59c6ff;
+      --blue-soft: rgba(89,198,255,.25);
+      --text: #ebf9ff;
+      --panel: rgba(8,22,47,.74);
+      --panel-border: rgba(132,224,255,.35);
+      --glow: 0 0 22px rgba(89,198,255,.5);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body, #app, #globe, #cityMap {
+      width: 100%; height: 100%; margin: 0; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    }
+    #app { position: relative; }
+    #globe, #cityMap { position: absolute; inset: 0; }
+
+    #cityMap {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .45s ease;
+      filter: saturate(1.1) brightness(.66) contrast(1.08) hue-rotate(-10deg);
+      z-index: 6;
+    }
+    #cityMap.active { opacity: 1; pointer-events: auto; }
+    #cityVignette {
+      position: absolute; inset: 0; pointer-events: none; z-index: 7;
+      background: radial-gradient(circle at 50% 55%, rgba(0,0,0,0) 0%, rgba(0,9,24,.12) 50%, rgba(0,6,16,.45) 100%);
+      opacity: 0; transition: opacity .45s ease;
+    }
+    #cityVignette.active { opacity: 1; }
+
+    #brand {
+      position: absolute;
+      top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 20;
+      font-size: clamp(20px, 6vw, 34px);
+      font-weight: 900;
+      letter-spacing: .32em;
+      color: #a6ebff;
+      text-transform: uppercase;
+      text-shadow: 0 0 8px rgba(120,221,255,.85), 0 0 20px rgba(73,183,255,.75), 0 0 38px rgba(73,183,255,.45);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .card {
+      position: absolute;
+      left: 10px; right: 10px;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 10px 12px;
+      background: var(--panel);
+      box-shadow: var(--glow);
+      backdrop-filter: blur(12px);
+      z-index: 30;
+      display: none;
+    }
+    .card.show { display: block; }
+
+    #status { top: 64px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+
+    #context {
+      bottom: 14px;
+      display: none;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #context.show { display: flex; }
+
+    .title { font-size: 14px; font-weight: 700; max-width: 60%; line-height: 1.2; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(17,41,78,.84), rgba(7,19,42,.84));
+      box-shadow: inset 0 0 0 1px rgba(117,211,255,.17);
+      font-size: 12px;
+    }
+
+    #manual {
+      bottom: 14px;
+      display: none;
+      gap: 8px;
+      align-items: center;
+    }
+    #manual.show { display: flex; }
+    #manualInput {
+      flex: 1;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 11px;
+      font-size: 15px;
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      outline: none;
+    }
+
+    .pulse {
+      position: absolute;
+      width: 88px; height: 88px; border-radius: 50%;
+      border: 1px solid rgba(126,223,255,.7);
+      box-shadow: 0 0 28px rgba(80,195,255,.6), inset 0 0 14px rgba(80,195,255,.35);
+      transform: translate(-50%, -50%) scale(.5);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 15;
+    }
+    .pulse.go { animation: pulse .9s ease; }
+    @keyframes pulse {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+      25% { opacity: .95; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(2.3); }
+    }
+
+    .leaflet-control-container { filter: brightness(.85) contrast(1.1); }
+    .astro-label {
+      color: #dff8ff;
+      text-shadow: 0 0 8px rgba(99,205,255,.9);
+      font-weight: 700;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+  </style>
 </head>
 <body>
-<div id="app"><div id="cesium"></div><div id="cityShade"></div><div id="stageFlash"></div><div id="top"><div class="chip" id="brand">Astranov</div><div class="chip" id="alt">Real Globe Engine</div></div><div id="ribbon"><div id="ribbonText"></div><div id="ribbonBtns"><button class="btn" id="openBtn">Open</button><button class="btn" id="chatBtn">Chat</button><button class="btn" id="closeBtn">Close</button></div></div><div id="bottom"><div id="orb"></div><div id="hint">Cesium real Earth. Swipe to trackball the globe. Pinch or wheel to change altitude. Tap signals or descend to Astranov City Map.</div><div id="controls"><button class="btn" id="voiceBtn">Voice</button><button class="btn" id="globeBtn">Globe</button></div></div><div id="manual"><input id="manualText" placeholder="Manual fallback only"/><button id="manualSend">Send</button></div></div>
-<script>
-(function(){const el=id=>document.getElementById(id);const ui={alt:el('alt'),hint:el('hint'),cityShade:el('cityShade'),flash:el('stageFlash'),ribbon:el('ribbon'),ribbonText:el('ribbonText'),openBtn:el('openBtn'),chatBtn:el('chatBtn'),closeBtn:el('closeBtn'),voiceBtn:el('voiceBtn'),globeBtn:el('globeBtn'),manual:el('manual'),manualText:el('manualText'),manualSend:el('manualSend')};const state={selected:{lon:28.222,lat:36.441,title:'Rhodes local radius'},context:null,cityEntities:[]};
-if(!window.Cesium){ui.alt.textContent='Cesium failed to load';ui.hint.textContent='Real globe engine could not load. Check network/CDN.';return}
-const viewer=new Cesium.Viewer('cesium',{animation:false,timeline:false,geocoder:false,homeButton:false,sceneModePicker:false,baseLayerPicker:false,navigationHelpButton:false,fullscreenButton:false,vrButton:false,infoBox:false,selectionIndicator:false,shadows:false,shouldAnimate:true,imageryProvider:new Cesium.UrlTemplateImageryProvider({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',credit:'Imagery © Esri'}),terrainProvider:new Cesium.EllipsoidTerrainProvider()});
-viewer.scene.globe.enableLighting=true;viewer.scene.skyAtmosphere.show=true;viewer.scene.screenSpaceCameraController.inertiaSpin=.92;viewer.scene.screenSpaceCameraController.inertiaZoom=.86;viewer.scene.screenSpaceCameraController.inertiaTranslate=.82;viewer.scene.screenSpaceCameraController.minimumZoomDistance=650;viewer.scene.screenSpaceCameraController.maximumZoomDistance=260000000;viewer.camera.setView({destination:Cesium.Cartesian3.fromDegrees(22,22,26000000),orientation:{heading:0,pitch:-Cesium.Math.PI_OVER_TWO,roll:0}});
-const signals=[['sig_news_ny','news','World news · New York',-74.006,40.7128,220000,Cesium.Color.CYAN],['sig_friend_rhodes','friend','Friend feed · Rhodes',28.222,36.441,180000,Cesium.Color.AQUA],['sig_market_london','market','Marketplace heat · London',-0.1276,51.5072,200000,Cesium.Color.DEEPSKYBLUE],['sig_circle_tokyo','circle','Social Circle · Tokyo',139.6503,35.6762,230000,Cesium.Color.LIGHTSKYBLUE],['sig_news_paris','news','Global brief · Paris',2.3522,48.8566,190000,Cesium.Color.SKYBLUE],['sig_delivery_dubai','delivery','Delivery demand · Dubai',55.2708,25.2048,210000,Cesium.Color.CORNFLOWERBLUE]];
-signals.forEach(s=>viewer.entities.add({id:s[0],position:Cesium.Cartesian3.fromDegrees(s[3],s[4],s[5]),point:{pixelSize:11,color:s[6],outlineColor:Cesium.Color.WHITE.withAlpha(.8),outlineWidth:1.2,scaleByDistance:new Cesium.NearFarScalar(1e6,1.6,5e7,.55)},label:{text:s[2],font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-26),scaleByDistance:new Cesium.NearFarScalar(1e6,1,4e7,.35),distanceDisplayCondition:new Cesium.DistanceDisplayCondition(0,45000000)},polyline:{positions:[Cesium.Cartesian3.fromDegrees(s[3],s[4],0),Cesium.Cartesian3.fromDegrees(s[3],s[4],s[5])],width:1.5,material:Cesium.Color.CYAN.withAlpha(.65)},properties:{id:s[0],type:s[1],title:s[2],lon:s[3],lat:s[4]}}));
-function h(){return Cesium.Cartographic.fromCartesian(viewer.camera.position).height}function layer(x){if(x>9e7)return['Solar Layer','Solar view. Earth in context. Zoom in to return to Earth.'];if(x>2e7)return['Orbital Earth','Trackball the real globe. Signals are anchored to real places.'];if(x>6e6)return['Global Feed','Global news, friends, social signals, and market heat.'];if(x>9e5)return['Regional Layer','Cities, larger Social Circles, teams, and demand zones.'];if(x>9e4)return['Local Descent','Local objects are waking up. Continue down to city radius.'];return['Astranov City Map','Dark real satellite map with glowing Astranov overlays.']}
-viewer.scene.postRender.addEventListener(()=>{const a=h(),l=layer(a);ui.alt.textContent=l[0];ui.hint.textContent=l[1];ui.cityShade.classList.toggle('on',a<90000);state.cityEntities.forEach(e=>e.show=a<150000)});
-function flash(){ui.flash.classList.remove('go');void ui.flash.offsetWidth;ui.flash.classList.add('go')}function fly(lon,lat,height,dur,done){viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(lon,lat,height),orientation:{heading:0,pitch:-Cesium.Math.PI_OVER_TWO,roll:0},duration:dur||1,easingFunction:Cesium.EasingFunction.QUADRATIC_IN_OUT,complete:done})}
-function descent(t){t=t||state.selected;flash();fly(t.lon,t.lat,6500000,.9,()=>fly(t.lon,t.lat,1200000,.85,()=>{renderCity(t.lon,t.lat);fly(t.lon,t.lat,120000,.75,()=>fly(t.lon,t.lat,3800,.85))}))}function globe(){hideRibbon();fly(state.selected.lon,state.selected.lat,26000000,1.25)}
-function q(km,o){let total=Math.ceil(km);if(o.night)total++;if(o.badWeather)total++;if(o.load>13){total++;total+=Math.floor((Math.min(o.load,33)-13)/13)}return{total,platform:+(total*.03).toFixed(2),parties:+(total*.97).toFixed(2)}}function clearCity(){state.cityEntities.forEach(e=>viewer.entities.remove(e));state.cityEntities=[]}function add(e){const x=viewer.entities.add(e);state.cityEntities.push(x);return x}
-function renderCity(lon,lat){clearCity();const p={vendor:{lon:lon+.006,lat:lat+.004},driver:{lon:lon-.007,lat:lat-.004},client:{lon:lon-.003,lat:lat+.008},news:{lon:lon+.008,lat:lat-.006},friend:{lon:lon-.009,lat:lat+.004}};const mk=(txt,color)=>({point:{pixelSize:12,color,outlineColor:Cesium.Color.WHITE.withAlpha(.75),outlineWidth:1.2},label:{text:txt,font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-24)}});[['vendor','Vendor tile · menu and Google Sheets adapter',Cesium.Color.DEEPSKYBLUE],['driver','Driver tile · available · 26 kg/L',Cesium.Color.CYAN],['client','Client delivery point · preferences on tile',Cesium.Color.LIGHTCYAN],['news','News signal · place feed',Cesium.Color.SKYBLUE],['friend','Friend feed · nearby story',Cesium.Color.AQUA]].forEach(r=>{const pt=p[r[0]];add({id:'city_'+r[0],position:Cesium.Cartesian3.fromDegrees(pt.lon,pt.lat,35),...mk(r[0],r[2]),properties:{title:r[1],type:r[0]}})});const qq=q(3.6,{night:true,badWeather:false,load:18}),m={lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2};add({id:'route_line',polyline:{positions:Cesium.Cartesian3.fromDegreesArrayHeights([p.vendor.lon,p.vendor.lat,35,p.client.lon,p.client.lat,35]),width:5,material:Cesium.Color.CYAN.withAlpha(.9),clampToGround:false},properties:{title:`Route line · ${qq.total} Astran coins · 3% platform split`,type:'route'}});add({id:'route_price',position:Cesium.Cartesian3.fromDegrees(m.lon,m.lat,60),label:{text:`${qq.total} ASTRAN`,font:'bold 15px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:4,style:Cesium.LabelStyle.FILL_AND_OUTLINE},properties:{title:`Delivery quote ${qq.total} Astran coins. Platform ${qq.platform}`,type:'route'}});add({id:'social_circle',position:Cesium.Cartesian3.fromDegrees(lon+.009,lat-.009,40),ellipse:{semiMajorAxis:420,semiMinorAxis:420,material:Cesium.Color.CYAN.withAlpha(.10),outline:true,outlineColor:Cesium.Color.CYAN},label:{text:'Social Circle',font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE},properties:{title:'Social Circle · open group chat and preferences',type:'circle'}})}
-function show(t,type){state.context=type;ui.ribbonText.textContent=t;ui.ribbon.classList.add('show')}function hideRibbon(){ui.ribbon.classList.remove('show')}
-const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);handler.setInputAction(m=>{const picked=viewer.scene.pick(m.position);if(Cesium.defined(picked)&&picked.id&&picked.id.properties){const p=picked.id.properties,title=p.title?p.title.getValue():'Astranov object',type=p.type?p.type.getValue():'object';if(p.lon&&p.lat)state.selected={lon:p.lon.getValue(),lat:p.lat.getValue(),title};else if(picked.id.position){const c=Cesium.Cartographic.fromCartesian(picked.id.position.getValue(Cesium.JulianDate.now()));state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title}}show(title+' · context lives here',type);return}const cart=viewer.camera.pickEllipsoid(m.position,viewer.scene.globe.ellipsoid);if(cart){const c=Cesium.Cartographic.fromCartesian(cart);state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};descent(state.selected)}},Cesium.ScreenSpaceEventType.LEFT_CLICK);
-ui.openBtn.onclick=()=>descent(state.selected);ui.chatBtn.onclick=()=>ui.alt.textContent='Chat · '+(state.context||'object');ui.closeBtn.onclick=hideRibbon;ui.globeBtn.onclick=globe;ui.voiceBtn.onclick=async()=>{try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(SR){const r=new SR();r.lang='en-US';r.interimResults=true;r.onstart=()=>ui.alt.textContent='Listening live';r.onresult=e=>{const t=Array.from(e.results).map(x=>x[0].transcript).join(' ');if(t)ui.alt.textContent='Heard · '+t};r.onerror=()=>ui.alt.textContent='Voice unavailable';r.start()}else ui.alt.textContent='Mic granted · speech unavailable'}catch(e){ui.alt.textContent='Voice blocked · long press for manual'}};let hold=null;addEventListener('pointerdown',e=>{if(e.target.closest('#manual')||e.target.closest('#ribbon')||e.target.closest('.btn'))return;hold=setTimeout(()=>{ui.manual.classList.add('show');ui.manualText.focus()},720)});['pointerup','pointermove','pointercancel'].forEach(ev=>addEventListener(ev,()=>clearTimeout(hold)));ui.manualSend.onclick=()=>{const v=ui.manualText.value.trim();if(!v)return;ui.alt.textContent='Manual · '+v;ui.manualText.value='';ui.manual.classList.remove('show')};
-})();
-</script>
+  <div id="app">
+    <div id="globe"></div>
+    <div id="cityMap" aria-label="Astranov City Map"></div>
+    <div id="cityVignette"></div>
+
+    <div id="brand">ASTRANOV</div>
+
+    <div id="status" class="card"></div>
+
+    <div id="context" class="card" role="group" aria-label="Object context actions">
+      <div id="contextTitle" class="title"></div>
+      <div class="actions">
+        <button id="contextPrimary" class="btn" type="button">Open</button>
+        <button id="contextVoice" class="btn" type="button">Voice</button>
+        <button id="contextClose" class="btn" type="button">Close</button>
+      </div>
+    </div>
+
+    <div id="manual" class="card" aria-label="Manual fallback input">
+      <input id="manualInput" type="text" autocomplete="off" placeholder="Type only when voice is unavailable" />
+      <button id="manualSend" class="btn" type="button">Send</button>
+      <button id="manualHide" class="btn" type="button">Hide</button>
+    </div>
+
+    <div id="pulse" class="pulse"></div>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const ui = {
+        status: $("status"),
+        context: $("context"),
+        contextTitle: $("contextTitle"),
+        contextPrimary: $("contextPrimary"),
+        contextVoice: $("contextVoice"),
+        contextClose: $("contextClose"),
+        manual: $("manual"),
+        manualInput: $("manualInput"),
+        manualSend: $("manualSend"),
+        manualHide: $("manualHide"),
+        cityMap: $("cityMap"),
+        cityVignette: $("cityVignette"),
+        pulse: $("pulse")
+      };
+
+      const state = {
+        selected: { lon: -73.9857, lat: 40.7484, title: "Earth point" },
+        context: null,
+        city: { active: false, map: null, layers: [] },
+        speech: null,
+        demandMultiplier: 1
+      };
+
+      const adapters = {
+        ai: "Connection-ready adapter: OpenAI/compatible endpoint",
+        auth: "Connection-ready adapter: OAuth (Google/Apple/etc.)",
+        payments: "Connection-ready adapter: Stripe/Adyen or local PSP",
+        routing: "Connection-ready adapter: OSRM/Mapbox/Google Routes",
+        feeds: "Connection-ready adapter: platform APIs + RSS + webhooks"
+      };
+
+      if (!window.Cesium) {
+        showStatus("Globe engine unavailable. Check network access to Cesium CDN.", true);
+        return;
+      }
+
+      const viewer = new Cesium.Viewer("globe", {
+        animation: false,
+        timeline: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+        selectionIndicator: false,
+        infoBox: false,
+        shouldAnimate: true,
+        terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+        imageryProvider: new Cesium.UrlTemplateImageryProvider({
+          url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          credit: "Imagery © Esri"
+        })
+      });
+
+      viewer.scene.backgroundColor = Cesium.Color.fromCssColorString("#020914");
+      viewer.scene.globe.enableLighting = true;
+      viewer.scene.skyAtmosphere.show = true;
+      viewer.scene.screenSpaceCameraController.inertiaSpin = 0.94;
+      viewer.scene.screenSpaceCameraController.inertiaTranslate = 0.88;
+      viewer.scene.screenSpaceCameraController.inertiaZoom = 0.86;
+      viewer.scene.screenSpaceCameraController.minimumZoomDistance = 800;
+      viewer.scene.screenSpaceCameraController.maximumZoomDistance = 210000000;
+
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(-20, 20, 24000000),
+        orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 }
+      });
+
+      const globalSignals = [
+        { id: "news_la", type: "news", title: "Global news pulse · Los Angeles", lon: -118.2437, lat: 34.0522, h: 230000, color: Cesium.Color.CYAN },
+        { id: "circle_lagos", type: "social_circle", title: "Social Circle · Lagos", lon: 3.3792, lat: 6.5244, h: 220000, color: Cesium.Color.LIGHTSKYBLUE },
+        { id: "market_berlin", type: "market", title: "Marketplace heat · Berlin", lon: 13.4050, lat: 52.5200, h: 210000, color: Cesium.Color.DEEPSKYBLUE },
+        { id: "friend_singapore", type: "friend", title: "Friend feed · Singapore", lon: 103.8198, lat: 1.3521, h: 215000, color: Cesium.Color.AQUA },
+        { id: "driver_sao", type: "driver", title: "Driver demand · São Paulo", lon: -46.6333, lat: -23.5505, h: 225000, color: Cesium.Color.CORNFLOWERBLUE }
+      ];
+
+      globalSignals.forEach((s) => {
+        viewer.entities.add({
+          id: s.id,
+          position: Cesium.Cartesian3.fromDegrees(s.lon, s.lat, s.h),
+          point: {
+            pixelSize: 10,
+            color: s.color,
+            outlineColor: Cesium.Color.WHITE.withAlpha(0.85),
+            outlineWidth: 1.2,
+            scaleByDistance: new Cesium.NearFarScalar(1e6, 1.5, 5e7, 0.45)
+          },
+          label: {
+            text: s.title,
+            font: "13px Inter, system-ui",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.DEEPSKYBLUE,
+            outlineWidth: 3,
+            style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+            pixelOffset: new Cesium.Cartesian2(0, -23),
+            scaleByDistance: new Cesium.NearFarScalar(1e6, 1, 5e7, 0.35),
+            distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 50000000)
+          },
+          polyline: {
+            positions: [
+              Cesium.Cartesian3.fromDegrees(s.lon, s.lat, 0),
+              Cesium.Cartesian3.fromDegrees(s.lon, s.lat, s.h)
+            ],
+            width: 1.5,
+            material: Cesium.Color.CYAN.withAlpha(0.6)
+          },
+          properties: {
+            type: s.type,
+            title: s.title,
+            lon: s.lon,
+            lat: s.lat
+          }
+        });
+      });
+
+      function altitude() {
+        return Cesium.Cartographic.fromCartesian(viewer.camera.position).height;
+      }
+
+      function altitudeLayer(h) {
+        if (h > 9e7) return "Solar layer";
+        if (h > 2e7) return "Orbital Earth";
+        if (h > 6e6) return "Global feed";
+        if (h > 1e6) return "Regional layer";
+        if (h > 9e4) return "Local layer";
+        return "Astranov City Map layer";
+      }
+
+      viewer.scene.postRender.addEventListener(() => {
+        const h = altitude();
+        if (!state.city.active && h < 100000) {
+          showStatus("City map available for selected point. Tap a signal or Earth location.");
+        }
+      });
+
+      function flashAtScreenCenter() {
+        ui.pulse.classList.remove("go");
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2;
+        ui.pulse.style.left = x + "px";
+        ui.pulse.style.top = y + "px";
+        void ui.pulse.offsetWidth;
+        ui.pulse.classList.add("go");
+      }
+
+      function flyTo(lon, lat, h, duration = 0.9, done) {
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(lon, lat, h),
+          orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+          duration,
+          easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+          complete: done
+        });
+      }
+
+      function stagedDescent(target = state.selected) {
+        hideContext();
+        flashAtScreenCenter();
+        showStatus(`Descent: ${target.title} · ${altitudeLayer(altitude())} → City Map`);
+        flyTo(target.lon, target.lat, 7000000, 0.9, () => {
+          flyTo(target.lon, target.lat, 1700000, 0.85, () => {
+            flyTo(target.lon, target.lat, 230000, 0.85, () => {
+              flyTo(target.lon, target.lat, 15000, 0.8, () => {
+                openCityMap(target.lat, target.lon);
+              });
+            });
+          });
+        });
+      }
+
+      function returnToGlobe() {
+        closeCityMap();
+        const t = state.selected;
+        flyTo(t.lon, t.lat, 1800000, 0.9, () => {
+          flyTo(t.lon, t.lat, 9000000, 1.0, () => {
+            flyTo(t.lon, t.lat, 24000000, 1.1);
+          });
+        });
+        showStatus("Returned to orbital Earth layer.");
+      }
+
+      function deliveryQuote(km, opts) {
+        const distanceFee = Math.ceil(km);
+        let extras = 0;
+        if (opts.night) extras += 1;
+        if (opts.badWeather) extras += 1;
+        if (opts.loadKgL > 13) {
+          extras += 1;
+          extras += Math.floor((Math.min(opts.loadKgL, 33) - 13) / 13);
+        }
+        const total = distanceFee + extras;
+        const platform = +(total * 0.03).toFixed(2);
+        const payout = +(total - platform).toFixed(2);
+        return { total, platform, payout };
+      }
+
+      function dynamicBalancer(basePrice, demandIndex, supplyIndex) {
+        const pressure = Math.max(0.75, Math.min(1.35, 1 + (demandIndex - supplyIndex) * 0.14));
+        const customerPrice = +(basePrice * pressure).toFixed(2);
+        const driverPay = +(customerPrice * 0.97 * (0.72 + (pressure - 1) * 0.25)).toFixed(2);
+        const vendorWeight = +(1 - Math.min(0.18, Math.max(-0.12, (pressure - 1) * 0.35))).toFixed(2);
+        return { pressure, customerPrice, driverPay, vendorWeight };
+      }
+
+      function openCityMap(lat, lon) {
+        state.city.active = true;
+        ui.cityMap.classList.add("active");
+        ui.cityVignette.classList.add("active");
+
+        if (!state.city.map) {
+          state.city.map = L.map("cityMap", { zoomControl: false, attributionControl: true }).setView([lat, lon], 15);
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 20,
+            attribution: "© OpenStreetMap contributors"
+          }).addTo(state.city.map);
+        } else {
+          state.city.map.setView([lat, lon], 15);
+        }
+
+        state.city.layers.forEach((layer) => state.city.map.removeLayer(layer));
+        state.city.layers = [];
+
+        const vendor = [lat + 0.0046, lon + 0.0054];
+        const driver = [lat - 0.0037, lon - 0.0045];
+        const client = [lat + 0.0075, lon - 0.0022];
+        const friend = [lat + 0.0012, lon + 0.0093];
+
+        const nightNow = (() => { const h = new Date().getHours(); return h >= 21 || h < 9; })();
+        const quote = deliveryQuote(3.8, { night: nightNow, badWeather: false, loadKgL: 18 });
+        const rebalance = dynamicBalancer(quote.total, 1.12, 0.91);
+
+        const route = L.polyline([vendor, client], {
+          color: "#62d2ff",
+          weight: 6,
+          opacity: 0.88
+        }).bindPopup(`Route: ${quote.total} Astran | platform 3% (${quote.platform})`).addTo(state.city.map);
+
+        const socialCircle = L.circle([lat - 0.0068, lon + 0.0064], {
+          radius: 360,
+          color: "#65d6ff",
+          weight: 2,
+          fillColor: "#36bfff",
+          fillOpacity: 0.13
+        }).bindPopup("Social Circle: tap to enter contextual chat and local feed.").addTo(state.city.map);
+
+        const relationTriangle = L.polygon([vendor, driver, client], {
+          color: "#78deff",
+          weight: 2,
+          fillColor: "#43b8ff",
+          fillOpacity: 0.09
+        }).bindPopup("Client-Vendor-Driver triangle: live role collaboration.").addTo(state.city.map);
+
+        const vendorMarker = marker(vendor, "Vendor · menu + Sheets adapter", "market");
+        const driverMarker = marker(driver, "Driver · ON · max 33 kg/L", "driver");
+        const clientMarker = marker(client, "Client drop point · task context", "client");
+        const friendMarker = marker(friend, "Friend feed node · place thread", "friend");
+
+        [route, socialCircle, relationTriangle, vendorMarker, driverMarker, clientMarker, friendMarker].forEach((l) => state.city.layers.push(l));
+
+        showContext(
+          `City layer active · ${quote.total} Astran`,
+          "Return",
+          returnToGlobe,
+          () => beginVoiceFlow("city")
+        );
+
+        showStatus(
+          `Astranov City Map live. Price ${rebalance.customerPrice} | Driver ${rebalance.driverPay} | Vendor factor ${rebalance.vendorWeight}`
+        );
+
+        function marker(point, label, type) {
+          const m = L.circleMarker(point, {
+            radius: 8,
+            color: "#d5f5ff",
+            weight: 1,
+            fillColor: "#3bc1ff",
+            fillOpacity: 0.95
+          }).addTo(state.city.map);
+          m.bindTooltip(`<span class=\"astro-label\">${label}</span>`, { permanent: true, direction: "top", offset: [0, -9] });
+          m.on("click", () => {
+            state.context = type;
+            showContext(label, type === "market" ? "Open" : "Act", () => {
+              showStatus(`${type} action adapter ready. ${adapters[type === "market" ? "payments" : "routing"] || adapters.ai}`);
+            }, () => beginVoiceFlow(type));
+          });
+          return m;
+        }
+      }
+
+      function closeCityMap() {
+        state.city.active = false;
+        ui.cityMap.classList.remove("active");
+        ui.cityVignette.classList.remove("active");
+        hideContext();
+      }
+
+      function showStatus(text, persistent = false) {
+        ui.status.textContent = text;
+        ui.status.classList.add("show");
+        if (!persistent) {
+          clearTimeout(showStatus.timer);
+          showStatus.timer = setTimeout(() => ui.status.classList.remove("show"), 3500);
+        }
+      }
+
+      function showContext(title, primaryLabel, onPrimary, onVoice) {
+        ui.contextTitle.textContent = title;
+        ui.contextPrimary.textContent = primaryLabel;
+        ui.context.classList.add("show");
+        ui.contextPrimary.onclick = onPrimary;
+        ui.contextVoice.onclick = onVoice;
+      }
+
+      function hideContext() {
+        ui.context.classList.remove("show");
+        ui.contextPrimary.onclick = null;
+        ui.contextVoice.onclick = null;
+      }
+
+      function showManual(reason) {
+        ui.manual.classList.add("show");
+        ui.manualInput.focus();
+        showStatus(`Manual fallback: ${reason}`);
+      }
+
+      function hideManual() {
+        ui.manual.classList.remove("show");
+      }
+
+      async function beginVoiceFlow(scope) {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => s.getTracks().forEach((t) => t.stop()));
+          const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SR) {
+            showManual("speech recognition not supported in this browser");
+            return;
+          }
+          if (state.speech) {
+            state.speech.stop();
+          }
+          const rec = new SR();
+          state.speech = rec;
+          rec.lang = "en-US";
+          rec.interimResults = true;
+          rec.maxAlternatives = 1;
+          rec.onstart = () => showStatus(`Listening (${scope})…`);
+          rec.onresult = (ev) => {
+            const text = Array.from(ev.results).map((r) => r[0].transcript).join(" ").trim();
+            if (text) showStatus(`Heard: ${text}`);
+          };
+          rec.onerror = () => showManual("voice capture failed");
+          rec.onend = () => { if (ui.manual.classList.contains("show")) return; showStatus("Voice session ended."); };
+          rec.start();
+        } catch {
+          showManual("microphone permission denied");
+        }
+      }
+
+      ui.manualSend.onclick = () => {
+        const text = ui.manualInput.value.trim();
+        if (!text) return;
+        ui.manualInput.value = "";
+        hideManual();
+        showStatus(`Manual input: ${text}`);
+      };
+      ui.manualHide.onclick = hideManual;
+      ui.contextClose.onclick = hideContext;
+
+      const pickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      pickHandler.setInputAction((evt) => {
+        const picked = viewer.scene.pick(evt.position);
+        if (Cesium.defined(picked) && picked.id && picked.id.properties) {
+          const p = picked.id.properties;
+          const title = p.title ? p.title.getValue() : "World object";
+          const type = p.type ? p.type.getValue() : "object";
+          const lon = p.lon ? p.lon.getValue() : null;
+          const lat = p.lat ? p.lat.getValue() : null;
+          if (typeof lon === "number" && typeof lat === "number") {
+            state.selected = { lon, lat, title };
+          }
+          state.context = type;
+          showContext(title, "Descend", () => stagedDescent(state.selected), () => beginVoiceFlow(type));
+          showStatus(`${title} selected · ${altitudeLayer(altitude())}`);
+          return;
+        }
+
+        const cart = viewer.camera.pickEllipsoid(evt.position, viewer.scene.globe.ellipsoid);
+        if (cart) {
+          const c = Cesium.Cartographic.fromCartesian(cart);
+          const lon = Cesium.Math.toDegrees(c.longitude);
+          const lat = Cesium.Math.toDegrees(c.latitude);
+          state.selected = { lon, lat, title: "Selected Earth point" };
+          stagedDescent(state.selected);
+        }
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+      let pressTimer = null;
+      const down = (e) => {
+        if (e.target.closest("#context") || e.target.closest("#manual")) return;
+        clearTimeout(pressTimer);
+        pressTimer = setTimeout(() => beginVoiceFlow(state.context || "global"), 700);
+      };
+      const clearPress = () => clearTimeout(pressTimer);
+      window.addEventListener("pointerdown", down, { passive: true });
+      window.addEventListener("pointerup", clearPress, { passive: true });
+      window.addEventListener("pointermove", clearPress, { passive: true });
+      window.addEventListener("pointercancel", clearPress, { passive: true });
+
+      showStatus("ASTRANOV ready: real globe + infrastructure adapters with lawful attribution.");
+    })();
+  </script>
 </body>
 </html>
