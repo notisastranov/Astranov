@@ -2,38 +2,887 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="theme-color" content="#020713"/>
 <title>Astranov</title>
+<!--
+# ASTRANOV LAW
+
+Build ASTRANOV as one complete mobile-first `index.html` using clean HTML, CSS, and JavaScript only. No build tools, no fragmented edits, no pseudocode, no placeholder theater, and no symbolic substitutes. Output exactly one fully reconstructed runnable `index.html`. This law is one whole law, not multiple laws.
+
+ASTRANOV is a real world-first Internet Operating System and collective reality system. It must remain just, clear, implementable, truthful, auditable, and simple enough to execute without hidden bias, hidden agenda, obscure complexity, fake originality, or theft of credit.
+
+## Primary Purpose
+
+Build a fun, glowing, blue, starry, commercial world interface where the real globe and the real map become the application. Earth, space, maps, live objects, feeds, communication, routing, roles, transactions, and user data must become usable realities. The app must feel alive and welcoming, not dark, ritualistic, horror-themed, fake sci-fi, or decorative theater. The mission is orchestration of real infrastructure into a simpler collective reality operating layer, not isolated reinvention.
+
+## Infrastructure Respect Law
+
+ASTRANOV does not pretend to reinvent the internet, maps, globes, video platforms, social platforms, payments, routing, or AI. It builds on existing infrastructure, public standards, APIs, open-source libraries, commercial services, and user-owned accounts, while giving appropriate credit and respecting terms of use. Innovation comes from orchestration: grouping existing powers into a new collective reality interface where humans, AI, services, maps, marketplaces, feeds, and real-world activity cooperate in one operating layer.
+
+## Collective Reality Law
+
+ASTRANOV is beyond plain AI chat and beyond isolated virtual reality. It is a collective reality system: real Earth, real maps, real users, real services, real transactions, real feeds, and AI assistance combined into one shared world interface. The app must not trap users inside fake screens; it must help them act in the real world.
+
+## Zero-UI Dormant Interface Law
+
+ASTRANOV must open with no visible operational interface except the centered top name: ASTRANOV, in electric glowing blue letters.
+
+No permanent buttons. No permanent text fields. No permanent menus. No permanent drawers. No permanent login icon. No permanent wallet balance. No permanent control panels. No decorative UI furniture.
+
+The world is the interface. Controls appear only when required by real user intent, system need, permission need, authentication need, payment need, protected action, selected world object, or failed hands-free communication.
+
+If hands-free AI communication works, no text input appears. If hands-free communication fails or the user asks to type, the AI input field appears. If the user attempts a protected action, login and user identity controls appear. If the user enters marketplace, delivery, payment, or transaction context, balance and money controls appear. If the user taps or selects a world object, only that object’s necessary actions appear. If the user leaves the context, those controls disappear again.
+
+Default state: only Earth, space, real signals, lawful infrastructure attribution, and ASTRANOV.
+
+## Core Pillars
+
+1. Internet-connected AI research and retrieval.
+2. Marketplace linking client, vendor, and driver.
+3. Map-native social and media interaction built from lines, triangles, circles, and polygons, including Social Circles and global news/friend feeds.
+
+## Frozen Foundations
+
+- Earth-first macro interface.
+- Real globe engine as the core substrate.
+- Zero-UI by default.
+- Smooth trackball-style globe control.
+- Multi-layer altitude navigation.
+- Staged descent from space to local street radius.
+- Astranov City Map as the final street-level map layer.
+- Environment-first interaction instead of menu-first interaction.
+- Mobile portrait priority.
+- Truthful implementation.
+- Single-file delivery.
+- Full-file reconstruction each cycle.
+- Collective intelligence triangle loop.
+- No fake core systems.
+- Credit and respect for external infrastructure.
+
+## Real Substrate Law
+
+Use proven infrastructure wherever possible. The globe must be powered by a real web globe engine such as CesiumJS or an equivalent real 3D globe library. The local map must use real map or satellite tiles where available. Routing, login, payments, databases, AI, feeds, media, and messaging must be designed as adapters to real services. If something is not connected yet, represent it honestly as connection-ready, never as fake live behavior. External libraries, map tiles, and service adapters must be treated as respected infrastructure with visible or preserved attribution where required.
+
+## No Fakery Law
+
+Do not fake the globe, map, routing, login, marketplace states, user activity, voice behavior, backend readiness, payments, or communication. A flat map inside a circle is forbidden. Handmade fake Earth experiments are forbidden when a real globe engine is available. Decorative orbit rings, slogans, dashboards, and symbolic shells do not count as product behavior.
+
+## Globe Artifact Law
+
+The globe artifact is the core design of the application. The globe is not decoration. It is the main navigation surface, feed surface, social surface, marketplace surface, and zoom ladder between cosmos, Earth, region, city, and street. Because the globe is foundational, it must be implemented by proven globe infrastructure, not by symbolic graphics.
+
+## Trackball Law
+
+The globe must rotate by direct swipe with natural inertia and real movement. It must feel smoother and easier than old stiff globe controls. Pinch or wheel gestures must control altitude smoothly. The user should drag the world directly, not operate a separate joystick. The real globe engine must be configured for natural mobile gestures and must not be left in a stiff default state if smoother controls are possible.
+
+## Multi-Layer Zoom Law
+
+Zoom is an altitude ladder, not a jump: solar layer, orbital Earth layer, global feed layer, regional layer, local layer, and Astranov City Map layer.
+
+## Astranov City Map Law
+
+The final zoom-down layer is the Astranov City Map. It must be based on real satellite/street map data wherever available, then darkened and styled for smartphone readability day and night. Astranov overlays must stay clearly visible: glowing blue routes, lines, Social Circles, triangles, polygons, shops, vehicles, client delivery points, news, feeds, prices, and task details. It must remain realistic first, with Astranov’s blue operating-system layer on top.
+
+## Smooth Descent Law
+
+Moving from globe to Astranov City Map must happen through staged altitude descent. No abrupt teleport. The selected location must be preserved. The user should feel a camera descent from orbit toward a chosen local radius, then street-level interaction. Camera flights, altitude pulses, and visible overlays must make the descent understandable without blocking the globe or map.
+
+## Zoom-Out Law
+
+Zooming out from Astranov City Map must return through local, regional, global, orbital, and optional solar layers. It must never end on a giant square world map.
+
+## First Render Law
+
+On first render the app must show a real globe engine rendering Earth in visible blue starry space, with live world signals at appropriate altitude. It must feel like a finished product, not a black label screen, compass sculpture, dashboard, fake Earth, or fake space ornament. It must not show persistent buttons or input fields on first render.
+
+## Visual Doctrine
+
+Use a fun, glowing, blue, starry, friendly, commercial tone. Clear, lively, and premium. Not oppressive, ceremonial, militaristic, haunted, abstract, or fake sci-fi.
+
+## Environment Law
+
+Most interaction lives in the world itself. Prices, tasks, status, chat entry, preferences, actions, news, and feeds should appear on the object, line, circle, triangle, polygon, route, tile, or altitude layer involved. Unneeded detail fades when zooming away.
+
+## No Face-Blocking Law
+
+Do not place giant windows, drawers, sheets, or menus on the user’s face. The map and globe must stay visible and usable. Context may appear as small anchored cards, glowing labels, route text, or slim temporary ribbons only after context requires it.
+
+## Voice-First Law
+
+The app should request needed permissions through user-safe interaction and try natural AI communication first. It may speak after user gesture. It may claim listening only when microphone access and speech capture are actually active. Manual typing is fallback only and must appear only when voice fails, protected actions require precise input, or the user explicitly asks to type.
+
+## Geometry Law
+
+A direct relation may be a line. A three-party relation may be a triangle. A social or operational group may be a circle. Larger collaborations may form polygons. Tapping geometry opens context such as chat, preferences, status, tasks, or economic data. Price or task data should glow on the line or inside the shape.
+
+## Social Circles Law
+
+Social Circles are literal circles on the map and globe. Users can discover, adjust, hide, reveal, enter, and communicate through circles. Circles may appear, disappear, expand, or shrink by altitude and preference.
+
+## Media and News Law
+
+Global news, creator posts, friend feeds, marketplace heat, and social signals must appear on the globe and map as live world signals. The user browses what is happening by place and altitude, not only by old list feeds. External platforms may be linked or embedded through lawful adapters instead of duplicated wastefully.
+
+## Marketplace Law
+
+Marketplace activity is map-native. Roles are client, vendor, and driver. One user may activate any or all roles. Vendors may upload products from Google Sheets and may also edit menus from their own shop tile. Vendors and drivers have on/off availability. Orders, routes, preparation load, and delivery coordination appear through world geometry and live objects.
+
+## Delivery Charging Law
+
+Base delivery fee is 1 euro per kilometer, equal to 1 Astran coin per kilometer. Add 1 euro for each extra condition: night hours from 21:00 to 09:00, bad weather, and first load above 13 kilos or liters. Add 1 extra euro for each additional 13 kilos or liters up to 33 kilos or liters maximum per driver. Above 33, split into multiple drivers.
+
+## Economic Balancing Law
+
+Dynamically rebalance driver pay, customer delivery price, and vendor product pricing to spread demand across hours, reduce scarcity stress, reduce idle waste, reduce overload, and avoid destructive spikes. The platform keeps 3 percent of completed transactions.
+
+## Single-File Dormant Execution Law
+
+Ship as one universal file but behave internally as dormant modules. Only startup-critical systems may run at launch. Noncritical systems activate only by user action, altitude, mode, visibility, context, or verified need. Hidden systems suspend loops, polling, listeners, rendering work, and heavy calculations where possible. External libraries may be called from CDN or service endpoints when they are respected infrastructure rather than fake local reinvention.
+
+## AI Authority and Backend Law
+
+AI may evolve the app and shape connected backend structures only through scoped, auditable, rollback-safe adapters or APIs. Stable baseline, reversibility, and truth outrank speed. The AI should orchestrate services, not seize unrestricted power.
+
+## Collective Intelligence Triangle Law
+
+ASTRANOV evolves through a permanent triangle loop: law, implementation, user data. The AI must learn from repeated user friction, repeated complaints, repeated demands, repeated confusion, repeated operational pain, and repeated infrastructure failures. Compatible repeated signals refine the law and trigger the next rebuild. Noise, sabotage, contradiction, manipulation, and clutter-seeking feedback are rejected.
+
+## User Effort Law
+
+Do not waste user effort with weak beta builds. Only release builds that are honest enough to collect valuable user data. If an existing infrastructure can solve a core layer better than a handmade prototype, use the infrastructure and preserve attribution.
+
+## Reconstructive Cycle Law
+
+Rewrite the law from scratch as one whole each cycle. Rebuild the app from scratch as one whole each cycle. Keep only the strongest stable version. Do not reconcile with failure by making it prettier. When a failed cycle proves that handmade implementation is inferior to available infrastructure, the next cycle must move that layer onto the real infrastructure.
+
+## Acceptance Law
+
+A build is acceptable only if it visibly behaves like a real product; uses a real globe engine or equivalent real substrate; shows a believable Earth-first world; starts with zero persistent operational UI except the centered glowing ASTRANOV name; supports smooth trackball motion; supports altitude-based zoom layers; preserves staged globe-to-Astranov-City-Map descent and map-to-globe return; uses a darkened real satellite/street map with glowing blue overlays at street level; avoids blocking windows; uses world objects and geometry as the interface; preserves client/vendor/driver logic; includes Social Circles, news/feed signals, delivery and balancing logic; respects external infrastructure with credit; and rejects fake completion, symbolism, clutter, debug residue, and handcrafted globe experiments that imitate what a real engine already does better.
+
+## Filename Law
+
+Every produced HTML artifact must be named exactly `index.html` so it can be uploaded directly to the server without renaming.
+
+## Output Law
+
+Output only the full final `index.html`.
+
+
+BUILD NOTE
+Full reconstruction. Zero persistent operational UI. Real globe engine. Real satellite substrate. Controls wake only by need.
+-->
 <script>window.CESIUM_BASE_URL="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/";</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Widgets/widgets.css">
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.123.1/Build/Cesium/Cesium.js"></script>
 <style>
-:root{--blue:#5ecbff;--text:#effbff;--border:rgba(128,225,255,.25);--glow:0 0 22px rgba(94,203,255,.38)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body,#app,#cesium{width:100%;height:100%;margin:0;overflow:hidden;background:#020713;color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}#cesium{position:absolute;inset:0}.cesium-viewer-bottom{font-size:10px;opacity:.65}#cityShade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,22,52,.05),rgba(0,8,20,.08));mix-blend-mode:multiply;opacity:0;transition:opacity .7s ease;z-index:5}#cityShade.on{opacity:.72}
-#top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:8px;z-index:20;pointer-events:none}.chip,.btn{pointer-events:auto;border:1px solid var(--border);background:linear-gradient(180deg,rgba(7,24,55,.72),rgba(6,16,35,.43));box-shadow:var(--glow);backdrop-filter:blur(14px);color:var(--text);border-radius:999px;padding:10px 13px;font-size:12px;letter-spacing:.09em;text-transform:uppercase}#brand{font-weight:900;letter-spacing:.22em}#alt{font-size:11px;color:#e1f7ff}
-#bottom{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:9px;max-width:min(95vw,780px);border:1px solid var(--border);border-radius:999px;padding:9px 12px;background:linear-gradient(180deg,rgba(7,24,55,.75),rgba(6,16,35,.52));box-shadow:var(--glow);backdrop-filter:blur(16px)}#orb{width:17px;height:17px;border-radius:50%;flex:0 0 auto;background:radial-gradient(circle,#c9fbff 0%,#63d9ff 46%,rgba(99,217,255,.12) 78%);box-shadow:0 0 16px rgba(99,217,255,.9)}#hint{font-size:12px;line-height:1.2;min-width:0;color:#eaf9ff}#controls{display:flex;gap:7px;flex:0 0 auto}.btn{padding:8px 11px;letter-spacing:0;text-transform:none}
-#ribbon{position:absolute;left:10px;right:10px;bottom:68px;z-index:22;display:none;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--border);border-radius:18px;padding:10px 12px;background:linear-gradient(180deg,rgba(7,24,55,.84),rgba(6,16,35,.58));box-shadow:var(--glow);backdrop-filter:blur(14px)}#ribbon.show{display:flex}#ribbonText{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}#ribbonBtns{display:flex;gap:7px}
-#manual{position:absolute;left:10px;right:10px;bottom:12px;z-index:30;display:none;gap:8px;border:1px solid var(--border);border-radius:18px;padding:9px;background:rgba(7,22,49,.92);box-shadow:var(--glow);backdrop-filter:blur(15px)}#manual.show{display:flex}#manual input{flex:1;border:none;outline:none;border-radius:12px;background:rgba(255,255,255,.07);color:var(--text);font-size:15px;padding:12px}#manual button{border:none;border-radius:12px;padding:0 16px;font-weight:800;color:#061227;background:linear-gradient(180deg,#95efff,#55a7ff)}#stageFlash{position:absolute;left:50%;top:50%;width:90px;height:90px;border-radius:50%;z-index:18;pointer-events:none;transform:translate(-50%,-50%) scale(.6);opacity:0;border:1px solid rgba(155,239,255,.46);box-shadow:0 0 28px rgba(95,204,255,.58),inset 0 0 22px rgba(95,204,255,.18)}#stageFlash.go{animation:flash .9s ease forwards}@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}30%{opacity:.9}100%{opacity:0;transform:translate(-50%,-50%) scale(2.2)}}@media(max-width:560px){#bottom{max-width:96vw}#hint{font-size:11.5px}.chip{padding:9px 11px}}
+:root{
+  --blue:#60d7ff;--blue2:#168fff;--ice:#eefcff;--ink:#020713;--panel:rgba(5,18,40,.68);
+  --line:rgba(112,224,255,.28);--hot:0 0 18px rgba(92,210,255,.7),0 0 42px rgba(45,145,255,.32);
+  --soft:0 18px 70px rgba(0,0,0,.38),0 0 30px rgba(87,203,255,.22)
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body,#app,#cesium{width:100%;height:100%;margin:0;overflow:hidden;background:#020713;color:var(--ice);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;touch-action:none}
+body{position:fixed;inset:0}
+#app{position:relative;background:
+  radial-gradient(circle at 50% 25%,rgba(33,104,204,.18),transparent 34%),
+  radial-gradient(circle at 15% 85%,rgba(0,197,255,.13),transparent 28%),
+  #020713}
+#app:before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.72;background-image:
+  radial-gradient(circle at 12% 24%,rgba(255,255,255,.86) 0 1px,transparent 1.8px),
+  radial-gradient(circle at 74% 19%,rgba(255,255,255,.5) 0 1px,transparent 1.6px),
+  radial-gradient(circle at 45% 64%,rgba(255,255,255,.55) 0 1px,transparent 1.8px),
+  radial-gradient(circle at 88% 74%,rgba(255,255,255,.64) 0 1px,transparent 1.6px),
+  radial-gradient(circle at 29% 78%,rgba(112,224,255,.52) 0 1px,transparent 2px);
+  background-size:330px 330px,420px 420px,520px 520px,610px 610px,460px 460px;
+  animation:starDrift 90s linear infinite}
+@keyframes starDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-80px,40px,0)}}
+#cesium{position:absolute;inset:0;z-index:2}
+.cesium-viewer,.cesium-viewer-cesiumWidgetContainer,.cesium-widget,.cesium-widget canvas{width:100%;height:100%}
+.cesium-viewer-toolbar,.cesium-viewer-animationContainer,.cesium-viewer-timelineContainer,.cesium-viewer-fullscreenContainer,.cesium-infoBox,.cesium-selection-wrapper{display:none!important}
+.cesium-viewer-bottom{left:8px!important;bottom:5px!important;font-size:9px!important;opacity:.55!important;filter:drop-shadow(0 0 7px rgba(85,214,255,.5));z-index:15!important}
+#cityShade{position:absolute;inset:0;z-index:5;pointer-events:none;opacity:0;background:
+  radial-gradient(circle at 50% 60%,rgba(0,190,255,.13),transparent 30%),
+  linear-gradient(180deg,rgba(0,18,48,.08),rgba(0,8,22,.44));
+  mix-blend-mode:multiply;transition:opacity .7s ease}
+#cityShade.on{opacity:.84}
+#brand{position:absolute;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:24;
+  color:#f3fcff;font-weight:950;font-size:clamp(15px,4.2vw,24px);letter-spacing:.36em;text-transform:uppercase;
+  text-shadow:0 0 8px rgba(255,255,255,.95),0 0 18px rgba(81,214,255,.9),0 0 44px rgba(21,123,255,.72);
+  user-select:none;pointer-events:auto;padding:8px 10px 9px 18px;border-radius:999px}
+#brand.awake{animation:brandPulse 1.1s ease infinite alternate}
+@keyframes brandPulse{from{text-shadow:0 0 8px rgba(255,255,255,.82),0 0 20px rgba(91,219,255,.75),0 0 45px rgba(32,132,255,.56)}to{text-shadow:0 0 14px rgba(255,255,255,1),0 0 32px rgba(98,220,255,1),0 0 74px rgba(35,141,255,.9)}}
+#stageFlash{position:absolute;left:50%;top:50%;width:95px;height:95px;border-radius:999px;z-index:14;pointer-events:none;opacity:0;transform:translate(-50%,-50%) scale(.55);
+  border:1px solid rgba(155,238,255,.52);box-shadow:0 0 34px rgba(84,210,255,.65),inset 0 0 26px rgba(95,204,255,.2)}
+#stageFlash.go{animation:flash .95s ease forwards}
+@keyframes flash{0%{opacity:0;transform:translate(-50%,-50%) scale(.45)}28%{opacity:.88}100%{opacity:0;transform:translate(-50%,-50%) scale(2.6)}}
+.wake{position:absolute;z-index:28;opacity:0;pointer-events:none;transform:translateY(8px) scale(.98);transition:opacity .22s ease,transform .22s ease;display:none}
+.wake.show{display:flex;opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+#contextCard{left:50%;bottom:calc(18px + env(safe-area-inset-bottom));width:min(92vw,430px);transform:translate(-50%,8px) scale(.98);flex-direction:column;gap:10px;
+  border:1px solid var(--line);border-radius:24px;padding:13px;background:linear-gradient(180deg,rgba(5,21,49,.78),rgba(3,10,26,.56));backdrop-filter:blur(18px);box-shadow:var(--soft)}
+#contextCard.show{transform:translate(-50%,0) scale(1)}
+.cardTop{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+#cardTitle{font-size:15px;font-weight:820;line-height:1.2;text-shadow:0 0 13px rgba(97,214,255,.48)}
+#cardMeta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(224,248,255,.75);margin-top:4px}
+.iconBtn,.pill{border:1px solid var(--line);background:linear-gradient(180deg,rgba(10,35,78,.72),rgba(4,15,35,.55));color:var(--ice);box-shadow:0 0 18px rgba(77,205,255,.2);border-radius:999px;font:inherit}
+.iconBtn{width:34px;height:34px;display:grid;place-items:center;font-size:18px;line-height:1;padding:0}
+.cardActions{display:flex;flex-wrap:wrap;gap:8px}
+.pill{padding:9px 12px;font-size:12px;font-weight:760}
+.pill.primary{color:#031323;background:linear-gradient(180deg,#baf5ff,#59c7ff 58%,#268aff);box-shadow:0 0 22px rgba(96,215,255,.45)}
+.pill.danger{background:rgba(255,255,255,.05)}
+#cardDetail{font-size:12px;line-height:1.35;color:rgba(237,250,255,.86);padding:9px 10px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(112,224,255,.12)}
+#composer{left:50%;bottom:calc(16px + env(safe-area-inset-bottom));width:min(94vw,620px);transform:translate(-50%,8px) scale(.98);align-items:end;gap:8px;
+  border:1px solid var(--line);border-radius:22px;padding:9px;background:rgba(5,18,40,.82);backdrop-filter:blur(18px);box-shadow:var(--soft)}
+#composer.show{transform:translate(-50%,0) scale(1)}
+#composerInput{flex:1;min-height:44px;max-height:120px;resize:none;border:0;outline:0;border-radius:16px;background:rgba(255,255,255,.07);color:var(--ice);padding:12px 13px;font-size:15px;line-height:1.28;font-family:inherit}
+#composerInput::placeholder{color:rgba(238,252,255,.48)}
+#sendBtn{min-width:54px;height:44px;border:0;border-radius:16px;font-weight:900;color:#031323;background:linear-gradient(180deg,#bdf7ff,#5ccaff 55%,#278dff);box-shadow:0 0 24px rgba(96,215,255,.42)}
+#statusRibbon{left:50%;top:calc(58px + env(safe-area-inset-top));transform:translate(-50%,-5px);max-width:min(88vw,520px);padding:9px 12px;align-items:center;justify-content:center;text-align:center;
+  border:1px solid rgba(112,224,255,.18);border-radius:999px;background:rgba(5,18,40,.48);backdrop-filter:blur(14px);font-size:12px;line-height:1.25;color:rgba(239,252,255,.92);box-shadow:0 0 24px rgba(81,205,255,.18)}
+#statusRibbon.show{transform:translate(-50%,0)}
+#wallet{right:10px;top:calc(58px + env(safe-area-inset-top));flex-direction:column;gap:3px;padding:10px 12px;border-radius:18px;border:1px solid var(--line);
+  background:rgba(5,18,40,.66);backdrop-filter:blur(16px);box-shadow:var(--soft);text-align:right}
+#wallet strong{font-size:16px;text-shadow:0 0 14px rgba(100,220,255,.6)}
+#wallet small{font-size:10px;color:rgba(229,249,255,.72);letter-spacing:.08em;text-transform:uppercase}
+#loginGate{left:10px;top:calc(58px + env(safe-area-inset-top));align-items:center;gap:8px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);
+  background:rgba(5,18,40,.66);backdrop-filter:blur(16px);box-shadow:var(--soft);font-size:12px;font-weight:770}
+#avatar{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#d9fbff,#51caff 58%,#1269e8);color:#031323;font-weight:950}
+#debugLaw{display:none}
+@media(max-width:560px){
+  #contextCard{bottom:calc(12px + env(safe-area-inset-bottom));border-radius:22px}
+  #wallet{right:8px;top:calc(54px + env(safe-area-inset-top))}
+  #loginGate{left:8px;top:calc(54px + env(safe-area-inset-top))}
+  #brand{letter-spacing:.31em}
+}
 </style>
 </head>
 <body>
-<div id="app"><div id="cesium"></div><div id="cityShade"></div><div id="stageFlash"></div><div id="top"><div class="chip" id="brand">Astranov</div><div class="chip" id="alt">Real Globe Engine</div></div><div id="ribbon"><div id="ribbonText"></div><div id="ribbonBtns"><button class="btn" id="openBtn">Open</button><button class="btn" id="chatBtn">Chat</button><button class="btn" id="closeBtn">Close</button></div></div><div id="bottom"><div id="orb"></div><div id="hint">Cesium real Earth. Swipe to trackball the globe. Pinch or wheel to change altitude. Tap signals or descend to Astranov City Map.</div><div id="controls"><button class="btn" id="voiceBtn">Voice</button><button class="btn" id="globeBtn">Globe</button></div></div><div id="manual"><input id="manualText" placeholder="Manual fallback only"/><button id="manualSend">Send</button></div></div>
+<div id="app">
+  <div id="cesium" aria-label="Astranov real globe"></div>
+  <div id="cityShade"></div>
+  <div id="stageFlash"></div>
+  <div id="brand" role="button" aria-label="Astranov voice wake">ASTRANOV</div>
+
+  <div id="statusRibbon" class="wake" aria-live="polite"></div>
+
+  <div id="wallet" class="wake" aria-live="polite">
+    <small>Astran balance</small>
+    <strong id="balanceText">0.00</strong>
+  </div>
+
+  <div id="loginGate" class="wake">
+    <div id="avatar">A</div>
+    <span id="loginText">Login required</span>
+  </div>
+
+  <section id="contextCard" class="wake" aria-label="Selected Astranov context">
+    <div class="cardTop">
+      <div>
+        <div id="cardTitle">Astranov object</div>
+        <div id="cardMeta">Context awakened by selected world object</div>
+      </div>
+      <button id="closeCard" class="iconBtn" type="button" aria-label="Close">×</button>
+    </div>
+    <div id="cardDetail"></div>
+    <div id="cardActions" class="cardActions"></div>
+  </section>
+
+  <form id="composer" class="wake" autocomplete="off">
+    <textarea id="composerInput" rows="1" placeholder="Manual AI fallback"></textarea>
+    <button id="sendBtn" type="submit">AI</button>
+  </form>
+
+  <script id="debugLaw" type="text/plain"># ASTRANOV LAW
+
+Build ASTRANOV as one complete mobile-first `index.html` using clean HTML, CSS, and JavaScript only. No build tools, no fragmented edits, no pseudocode, no placeholder theater, and no symbolic substitutes. Output exactly one fully reconstructed runnable `index.html`. This law is one whole law, not multiple laws.
+
+ASTRANOV is a real world-first Internet Operating System and collective reality system. It must remain just, clear, implementable, truthful, auditable, and simple enough to execute without hidden bias, hidden agenda, obscure complexity, fake originality, or theft of credit.
+
+## Primary Purpose
+
+Build a fun, glowing, blue, starry, commercial world interface where the real globe and the real map become the application. Earth, space, maps, live objects, feeds, communication, routing, roles, transactions, and user data must become usable realities. The app must feel alive and welcoming, not dark, ritualistic, horror-themed, fake sci-fi, or decorative theater. The mission is orchestration of real infrastructure into a simpler collective reality operating layer, not isolated reinvention.
+
+## Infrastructure Respect Law
+
+ASTRANOV does not pretend to reinvent the internet, maps, globes, video platforms, social platforms, payments, routing, or AI. It builds on existing infrastructure, public standards, APIs, open-source libraries, commercial services, and user-owned accounts, while giving appropriate credit and respecting terms of use. Innovation comes from orchestration: grouping existing powers into a new collective reality interface where humans, AI, services, maps, marketplaces, feeds, and real-world activity cooperate in one operating layer.
+
+## Collective Reality Law
+
+ASTRANOV is beyond plain AI chat and beyond isolated virtual reality. It is a collective reality system: real Earth, real maps, real users, real services, real transactions, real feeds, and AI assistance combined into one shared world interface. The app must not trap users inside fake screens; it must help them act in the real world.
+
+## Zero-UI Dormant Interface Law
+
+ASTRANOV must open with no visible operational interface except the centered top name: ASTRANOV, in electric glowing blue letters.
+
+No permanent buttons. No permanent text fields. No permanent menus. No permanent drawers. No permanent login icon. No permanent wallet balance. No permanent control panels. No decorative UI furniture.
+
+The world is the interface. Controls appear only when required by real user intent, system need, permission need, authentication need, payment need, protected action, selected world object, or failed hands-free communication.
+
+If hands-free AI communication works, no text input appears. If hands-free communication fails or the user asks to type, the AI input field appears. If the user attempts a protected action, login and user identity controls appear. If the user enters marketplace, delivery, payment, or transaction context, balance and money controls appear. If the user taps or selects a world object, only that object’s necessary actions appear. If the user leaves the context, those controls disappear again.
+
+Default state: only Earth, space, real signals, lawful infrastructure attribution, and ASTRANOV.
+
+## Core Pillars
+
+1. Internet-connected AI research and retrieval.
+2. Marketplace linking client, vendor, and driver.
+3. Map-native social and media interaction built from lines, triangles, circles, and polygons, including Social Circles and global news/friend feeds.
+
+## Frozen Foundations
+
+- Earth-first macro interface.
+- Real globe engine as the core substrate.
+- Zero-UI by default.
+- Smooth trackball-style globe control.
+- Multi-layer altitude navigation.
+- Staged descent from space to local street radius.
+- Astranov City Map as the final street-level map layer.
+- Environment-first interaction instead of menu-first interaction.
+- Mobile portrait priority.
+- Truthful implementation.
+- Single-file delivery.
+- Full-file reconstruction each cycle.
+- Collective intelligence triangle loop.
+- No fake core systems.
+- Credit and respect for external infrastructure.
+
+## Real Substrate Law
+
+Use proven infrastructure wherever possible. The globe must be powered by a real web globe engine such as CesiumJS or an equivalent real 3D globe library. The local map must use real map or satellite tiles where available. Routing, login, payments, databases, AI, feeds, media, and messaging must be designed as adapters to real services. If something is not connected yet, represent it honestly as connection-ready, never as fake live behavior. External libraries, map tiles, and service adapters must be treated as respected infrastructure with visible or preserved attribution where required.
+
+## No Fakery Law
+
+Do not fake the globe, map, routing, login, marketplace states, user activity, voice behavior, backend readiness, payments, or communication. A flat map inside a circle is forbidden. Handmade fake Earth experiments are forbidden when a real globe engine is available. Decorative orbit rings, slogans, dashboards, and symbolic shells do not count as product behavior.
+
+## Globe Artifact Law
+
+The globe artifact is the core design of the application. The globe is not decoration. It is the main navigation surface, feed surface, social surface, marketplace surface, and zoom ladder between cosmos, Earth, region, city, and street. Because the globe is foundational, it must be implemented by proven globe infrastructure, not by symbolic graphics.
+
+## Trackball Law
+
+The globe must rotate by direct swipe with natural inertia and real movement. It must feel smoother and easier than old stiff globe controls. Pinch or wheel gestures must control altitude smoothly. The user should drag the world directly, not operate a separate joystick. The real globe engine must be configured for natural mobile gestures and must not be left in a stiff default state if smoother controls are possible.
+
+## Multi-Layer Zoom Law
+
+Zoom is an altitude ladder, not a jump: solar layer, orbital Earth layer, global feed layer, regional layer, local layer, and Astranov City Map layer.
+
+## Astranov City Map Law
+
+The final zoom-down layer is the Astranov City Map. It must be based on real satellite/street map data wherever available, then darkened and styled for smartphone readability day and night. Astranov overlays must stay clearly visible: glowing blue routes, lines, Social Circles, triangles, polygons, shops, vehicles, client delivery points, news, feeds, prices, and task details. It must remain realistic first, with Astranov’s blue operating-system layer on top.
+
+## Smooth Descent Law
+
+Moving from globe to Astranov City Map must happen through staged altitude descent. No abrupt teleport. The selected location must be preserved. The user should feel a camera descent from orbit toward a chosen local radius, then street-level interaction. Camera flights, altitude pulses, and visible overlays must make the descent understandable without blocking the globe or map.
+
+## Zoom-Out Law
+
+Zooming out from Astranov City Map must return through local, regional, global, orbital, and optional solar layers. It must never end on a giant square world map.
+
+## First Render Law
+
+On first render the app must show a real globe engine rendering Earth in visible blue starry space, with live world signals at appropriate altitude. It must feel like a finished product, not a black label screen, compass sculpture, dashboard, fake Earth, or fake space ornament. It must not show persistent buttons or input fields on first render.
+
+## Visual Doctrine
+
+Use a fun, glowing, blue, starry, friendly, commercial tone. Clear, lively, and premium. Not oppressive, ceremonial, militaristic, haunted, abstract, or fake sci-fi.
+
+## Environment Law
+
+Most interaction lives in the world itself. Prices, tasks, status, chat entry, preferences, actions, news, and feeds should appear on the object, line, circle, triangle, polygon, route, tile, or altitude layer involved. Unneeded detail fades when zooming away.
+
+## No Face-Blocking Law
+
+Do not place giant windows, drawers, sheets, or menus on the user’s face. The map and globe must stay visible and usable. Context may appear as small anchored cards, glowing labels, route text, or slim temporary ribbons only after context requires it.
+
+## Voice-First Law
+
+The app should request needed permissions through user-safe interaction and try natural AI communication first. It may speak after user gesture. It may claim listening only when microphone access and speech capture are actually active. Manual typing is fallback only and must appear only when voice fails, protected actions require precise input, or the user explicitly asks to type.
+
+## Geometry Law
+
+A direct relation may be a line. A three-party relation may be a triangle. A social or operational group may be a circle. Larger collaborations may form polygons. Tapping geometry opens context such as chat, preferences, status, tasks, or economic data. Price or task data should glow on the line or inside the shape.
+
+## Social Circles Law
+
+Social Circles are literal circles on the map and globe. Users can discover, adjust, hide, reveal, enter, and communicate through circles. Circles may appear, disappear, expand, or shrink by altitude and preference.
+
+## Media and News Law
+
+Global news, creator posts, friend feeds, marketplace heat, and social signals must appear on the globe and map as live world signals. The user browses what is happening by place and altitude, not only by old list feeds. External platforms may be linked or embedded through lawful adapters instead of duplicated wastefully.
+
+## Marketplace Law
+
+Marketplace activity is map-native. Roles are client, vendor, and driver. One user may activate any or all roles. Vendors may upload products from Google Sheets and may also edit menus from their own shop tile. Vendors and drivers have on/off availability. Orders, routes, preparation load, and delivery coordination appear through world geometry and live objects.
+
+## Delivery Charging Law
+
+Base delivery fee is 1 euro per kilometer, equal to 1 Astran coin per kilometer. Add 1 euro for each extra condition: night hours from 21:00 to 09:00, bad weather, and first load above 13 kilos or liters. Add 1 extra euro for each additional 13 kilos or liters up to 33 kilos or liters maximum per driver. Above 33, split into multiple drivers.
+
+## Economic Balancing Law
+
+Dynamically rebalance driver pay, customer delivery price, and vendor product pricing to spread demand across hours, reduce scarcity stress, reduce idle waste, reduce overload, and avoid destructive spikes. The platform keeps 3 percent of completed transactions.
+
+## Single-File Dormant Execution Law
+
+Ship as one universal file but behave internally as dormant modules. Only startup-critical systems may run at launch. Noncritical systems activate only by user action, altitude, mode, visibility, context, or verified need. Hidden systems suspend loops, polling, listeners, rendering work, and heavy calculations where possible. External libraries may be called from CDN or service endpoints when they are respected infrastructure rather than fake local reinvention.
+
+## AI Authority and Backend Law
+
+AI may evolve the app and shape connected backend structures only through scoped, auditable, rollback-safe adapters or APIs. Stable baseline, reversibility, and truth outrank speed. The AI should orchestrate services, not seize unrestricted power.
+
+## Collective Intelligence Triangle Law
+
+ASTRANOV evolves through a permanent triangle loop: law, implementation, user data. The AI must learn from repeated user friction, repeated complaints, repeated demands, repeated confusion, repeated operational pain, and repeated infrastructure failures. Compatible repeated signals refine the law and trigger the next rebuild. Noise, sabotage, contradiction, manipulation, and clutter-seeking feedback are rejected.
+
+## User Effort Law
+
+Do not waste user effort with weak beta builds. Only release builds that are honest enough to collect valuable user data. If an existing infrastructure can solve a core layer better than a handmade prototype, use the infrastructure and preserve attribution.
+
+## Reconstructive Cycle Law
+
+Rewrite the law from scratch as one whole each cycle. Rebuild the app from scratch as one whole each cycle. Keep only the strongest stable version. Do not reconcile with failure by making it prettier. When a failed cycle proves that handmade implementation is inferior to available infrastructure, the next cycle must move that layer onto the real infrastructure.
+
+## Acceptance Law
+
+A build is acceptable only if it visibly behaves like a real product; uses a real globe engine or equivalent real substrate; shows a believable Earth-first world; starts with zero persistent operational UI except the centered glowing ASTRANOV name; supports smooth trackball motion; supports altitude-based zoom layers; preserves staged globe-to-Astranov-City-Map descent and map-to-globe return; uses a darkened real satellite/street map with glowing blue overlays at street level; avoids blocking windows; uses world objects and geometry as the interface; preserves client/vendor/driver logic; includes Social Circles, news/feed signals, delivery and balancing logic; respects external infrastructure with credit; and rejects fake completion, symbolism, clutter, debug residue, and handcrafted globe experiments that imitate what a real engine already does better.
+
+## Filename Law
+
+Every produced HTML artifact must be named exactly `index.html` so it can be uploaded directly to the server without renaming.
+
+## Output Law
+
+Output only the full final `index.html`.
+</script>
+</div>
 <script>
-(function(){const el=id=>document.getElementById(id);const ui={alt:el('alt'),hint:el('hint'),cityShade:el('cityShade'),flash:el('stageFlash'),ribbon:el('ribbon'),ribbonText:el('ribbonText'),openBtn:el('openBtn'),chatBtn:el('chatBtn'),closeBtn:el('closeBtn'),voiceBtn:el('voiceBtn'),globeBtn:el('globeBtn'),manual:el('manual'),manualText:el('manualText'),manualSend:el('manualSend')};const state={selected:{lon:28.222,lat:36.441,title:'Rhodes local radius'},context:null,cityEntities:[]};
-if(!window.Cesium){ui.alt.textContent='Cesium failed to load';ui.hint.textContent='Real globe engine could not load. Check network/CDN.';return}
-const viewer=new Cesium.Viewer('cesium',{animation:false,timeline:false,geocoder:false,homeButton:false,sceneModePicker:false,baseLayerPicker:false,navigationHelpButton:false,fullscreenButton:false,vrButton:false,infoBox:false,selectionIndicator:false,shadows:false,shouldAnimate:true,imageryProvider:new Cesium.UrlTemplateImageryProvider({url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',credit:'Imagery © Esri'}),terrainProvider:new Cesium.EllipsoidTerrainProvider()});
-viewer.scene.globe.enableLighting=true;viewer.scene.skyAtmosphere.show=true;viewer.scene.screenSpaceCameraController.inertiaSpin=.92;viewer.scene.screenSpaceCameraController.inertiaZoom=.86;viewer.scene.screenSpaceCameraController.inertiaTranslate=.82;viewer.scene.screenSpaceCameraController.minimumZoomDistance=650;viewer.scene.screenSpaceCameraController.maximumZoomDistance=260000000;viewer.camera.setView({destination:Cesium.Cartesian3.fromDegrees(22,22,26000000),orientation:{heading:0,pitch:-Cesium.Math.PI_OVER_TWO,roll:0}});
-const signals=[['sig_news_ny','news','World news · New York',-74.006,40.7128,220000,Cesium.Color.CYAN],['sig_friend_rhodes','friend','Friend feed · Rhodes',28.222,36.441,180000,Cesium.Color.AQUA],['sig_market_london','market','Marketplace heat · London',-0.1276,51.5072,200000,Cesium.Color.DEEPSKYBLUE],['sig_circle_tokyo','circle','Social Circle · Tokyo',139.6503,35.6762,230000,Cesium.Color.LIGHTSKYBLUE],['sig_news_paris','news','Global brief · Paris',2.3522,48.8566,190000,Cesium.Color.SKYBLUE],['sig_delivery_dubai','delivery','Delivery demand · Dubai',55.2708,25.2048,210000,Cesium.Color.CORNFLOWERBLUE]];
-signals.forEach(s=>viewer.entities.add({id:s[0],position:Cesium.Cartesian3.fromDegrees(s[3],s[4],s[5]),point:{pixelSize:11,color:s[6],outlineColor:Cesium.Color.WHITE.withAlpha(.8),outlineWidth:1.2,scaleByDistance:new Cesium.NearFarScalar(1e6,1.6,5e7,.55)},label:{text:s[2],font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-26),scaleByDistance:new Cesium.NearFarScalar(1e6,1,4e7,.35),distanceDisplayCondition:new Cesium.DistanceDisplayCondition(0,45000000)},polyline:{positions:[Cesium.Cartesian3.fromDegrees(s[3],s[4],0),Cesium.Cartesian3.fromDegrees(s[3],s[4],s[5])],width:1.5,material:Cesium.Color.CYAN.withAlpha(.65)},properties:{id:s[0],type:s[1],title:s[2],lon:s[3],lat:s[4]}}));
-function h(){return Cesium.Cartographic.fromCartesian(viewer.camera.position).height}function layer(x){if(x>9e7)return['Solar Layer','Solar view. Earth in context. Zoom in to return to Earth.'];if(x>2e7)return['Orbital Earth','Trackball the real globe. Signals are anchored to real places.'];if(x>6e6)return['Global Feed','Global news, friends, social signals, and market heat.'];if(x>9e5)return['Regional Layer','Cities, larger Social Circles, teams, and demand zones.'];if(x>9e4)return['Local Descent','Local objects are waking up. Continue down to city radius.'];return['Astranov City Map','Dark real satellite map with glowing Astranov overlays.']}
-viewer.scene.postRender.addEventListener(()=>{const a=h(),l=layer(a);ui.alt.textContent=l[0];ui.hint.textContent=l[1];ui.cityShade.classList.toggle('on',a<90000);state.cityEntities.forEach(e=>e.show=a<150000)});
-function flash(){ui.flash.classList.remove('go');void ui.flash.offsetWidth;ui.flash.classList.add('go')}function fly(lon,lat,height,dur,done){viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(lon,lat,height),orientation:{heading:0,pitch:-Cesium.Math.PI_OVER_TWO,roll:0},duration:dur||1,easingFunction:Cesium.EasingFunction.QUADRATIC_IN_OUT,complete:done})}
-function descent(t){t=t||state.selected;flash();fly(t.lon,t.lat,6500000,.9,()=>fly(t.lon,t.lat,1200000,.85,()=>{renderCity(t.lon,t.lat);fly(t.lon,t.lat,120000,.75,()=>fly(t.lon,t.lat,3800,.85))}))}function globe(){hideRibbon();fly(state.selected.lon,state.selected.lat,26000000,1.25)}
-function q(km,o){let total=Math.ceil(km);if(o.night)total++;if(o.badWeather)total++;if(o.load>13){total++;total+=Math.floor((Math.min(o.load,33)-13)/13)}return{total,platform:+(total*.03).toFixed(2),parties:+(total*.97).toFixed(2)}}function clearCity(){state.cityEntities.forEach(e=>viewer.entities.remove(e));state.cityEntities=[]}function add(e){const x=viewer.entities.add(e);state.cityEntities.push(x);return x}
-function renderCity(lon,lat){clearCity();const p={vendor:{lon:lon+.006,lat:lat+.004},driver:{lon:lon-.007,lat:lat-.004},client:{lon:lon-.003,lat:lat+.008},news:{lon:lon+.008,lat:lat-.006},friend:{lon:lon-.009,lat:lat+.004}};const mk=(txt,color)=>({point:{pixelSize:12,color,outlineColor:Cesium.Color.WHITE.withAlpha(.75),outlineWidth:1.2},label:{text:txt,font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-24)}});[['vendor','Vendor tile · menu and Google Sheets adapter',Cesium.Color.DEEPSKYBLUE],['driver','Driver tile · available · 26 kg/L',Cesium.Color.CYAN],['client','Client delivery point · preferences on tile',Cesium.Color.LIGHTCYAN],['news','News signal · place feed',Cesium.Color.SKYBLUE],['friend','Friend feed · nearby story',Cesium.Color.AQUA]].forEach(r=>{const pt=p[r[0]];add({id:'city_'+r[0],position:Cesium.Cartesian3.fromDegrees(pt.lon,pt.lat,35),...mk(r[0],r[2]),properties:{title:r[1],type:r[0]}})});const qq=q(3.6,{night:true,badWeather:false,load:18}),m={lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2};add({id:'route_line',polyline:{positions:Cesium.Cartesian3.fromDegreesArrayHeights([p.vendor.lon,p.vendor.lat,35,p.client.lon,p.client.lat,35]),width:5,material:Cesium.Color.CYAN.withAlpha(.9),clampToGround:false},properties:{title:`Route line · ${qq.total} Astran coins · 3% platform split`,type:'route'}});add({id:'route_price',position:Cesium.Cartesian3.fromDegrees(m.lon,m.lat,60),label:{text:`${qq.total} ASTRAN`,font:'bold 15px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:4,style:Cesium.LabelStyle.FILL_AND_OUTLINE},properties:{title:`Delivery quote ${qq.total} Astran coins. Platform ${qq.platform}`,type:'route'}});add({id:'social_circle',position:Cesium.Cartesian3.fromDegrees(lon+.009,lat-.009,40),ellipse:{semiMajorAxis:420,semiMinorAxis:420,material:Cesium.Color.CYAN.withAlpha(.10),outline:true,outlineColor:Cesium.Color.CYAN},label:{text:'Social Circle',font:'13px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE},properties:{title:'Social Circle · open group chat and preferences',type:'circle'}})}
-function show(t,type){state.context=type;ui.ribbonText.textContent=t;ui.ribbon.classList.add('show')}function hideRibbon(){ui.ribbon.classList.remove('show')}
-const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);handler.setInputAction(m=>{const picked=viewer.scene.pick(m.position);if(Cesium.defined(picked)&&picked.id&&picked.id.properties){const p=picked.id.properties,title=p.title?p.title.getValue():'Astranov object',type=p.type?p.type.getValue():'object';if(p.lon&&p.lat)state.selected={lon:p.lon.getValue(),lat:p.lat.getValue(),title};else if(picked.id.position){const c=Cesium.Cartographic.fromCartesian(picked.id.position.getValue(Cesium.JulianDate.now()));state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title}}show(title+' · context lives here',type);return}const cart=viewer.camera.pickEllipsoid(m.position,viewer.scene.globe.ellipsoid);if(cart){const c=Cesium.Cartographic.fromCartesian(cart);state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};descent(state.selected)}},Cesium.ScreenSpaceEventType.LEFT_CLICK);
-ui.openBtn.onclick=()=>descent(state.selected);ui.chatBtn.onclick=()=>ui.alt.textContent='Chat · '+(state.context||'object');ui.closeBtn.onclick=hideRibbon;ui.globeBtn.onclick=globe;ui.voiceBtn.onclick=async()=>{try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});stream.getTracks().forEach(t=>t.stop());const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(SR){const r=new SR();r.lang='en-US';r.interimResults=true;r.onstart=()=>ui.alt.textContent='Listening live';r.onresult=e=>{const t=Array.from(e.results).map(x=>x[0].transcript).join(' ');if(t)ui.alt.textContent='Heard · '+t};r.onerror=()=>ui.alt.textContent='Voice unavailable';r.start()}else ui.alt.textContent='Mic granted · speech unavailable'}catch(e){ui.alt.textContent='Voice blocked · long press for manual'}};let hold=null;addEventListener('pointerdown',e=>{if(e.target.closest('#manual')||e.target.closest('#ribbon')||e.target.closest('.btn'))return;hold=setTimeout(()=>{ui.manual.classList.add('show');ui.manualText.focus()},720)});['pointerup','pointermove','pointercancel'].forEach(ev=>addEventListener(ev,()=>clearTimeout(hold)));ui.manualSend.onclick=()=>{const v=ui.manualText.value.trim();if(!v)return;ui.alt.textContent='Manual · '+v;ui.manualText.value='';ui.manual.classList.remove('show')};
+(function(){
+'use strict';
+
+const $=id=>document.getElementById(id);
+const ui={
+  app:$('app'),brand:$('brand'),status:$('statusRibbon'),flash:$('stageFlash'),shade:$('cityShade'),
+  card:$('contextCard'),cardTitle:$('cardTitle'),cardMeta:$('cardMeta'),cardDetail:$('cardDetail'),actions:$('cardActions'),close:$('closeCard'),
+  composer:$('composer'),input:$('composerInput'),send:$('sendBtn'),wallet:$('wallet'),balance:$('balanceText'),login:$('loginGate'),loginText:$('loginText')
+};
+const state={
+  selected:null,context:null,cityAnchor:null,cityEntities:[],hasCity:false,balance:0,auth:false,voiceLive:false,manualOpen:false,lastLayer:'',
+  protectedAction:null,cityRenderedAtHeight:false
+};
+const adapters={
+  ai:'adapter-ready: connect OpenAI or selected AI gateway on backend',
+  sheets:'adapter-ready: connect vendor Google Sheets menu source',
+  payments:'adapter-ready: connect Stripe, PayPal, or wallet backend',
+  routing:'adapter-ready: connect OSRM, OpenRouteService, Google Directions, or local routing engine',
+  media:'adapter-ready: link/embed lawful YouTube, TikTok, Instagram, or creator-owned media',
+  auth:'adapter-ready: connect Supabase/Auth.js/custom account API'
+};
+
+function wake(el,on=true){el.classList.toggle('show',!!on)}
+function speak(text,ms=2500){ui.status.textContent=text;wake(ui.status,true);clearTimeout(speak.t);speak.t=setTimeout(()=>wake(ui.status,false),ms)}
+function hideAll(){
+  wake(ui.card,false);wake(ui.composer,false);wake(ui.wallet,false);wake(ui.login,false);
+  ui.brand.classList.remove('awake');state.manualOpen=false;
+}
+function setContext(title,meta,detail,actions,kind){
+  state.context={title,meta,detail,kind};
+  ui.cardTitle.textContent=title;
+  ui.cardMeta.textContent=meta;
+  ui.cardDetail.textContent=detail;
+  ui.actions.innerHTML='';
+  actions.forEach(a=>{
+    const b=document.createElement('button');
+    b.type='button';b.className='pill'+(a.primary?' primary':'')+(a.danger?' danger':'');
+    b.textContent=a.label;b.onclick=a.run;ui.actions.appendChild(b);
+  });
+  wake(ui.card,true);
+  if(kind==='market'||kind==='delivery'||kind==='vendor'||kind==='route') showWallet();
+}
+function showWallet(){
+  ui.balance.textContent=state.balance.toFixed(2)+' ASTRAN';
+  wake(ui.wallet,true);
+}
+function needLogin(reason){
+  state.protectedAction=reason;
+  ui.loginText.textContent='Login required · '+reason;
+  wake(ui.login,true);
+  speak('Protected action. Identity adapter required before this can continue.',2600);
+}
+function showComposer(reason){
+  state.manualOpen=true;
+  ui.input.placeholder=reason||'Manual AI fallback';
+  wake(ui.composer,true);
+  setTimeout(()=>ui.input.focus(),80);
+}
+function deliveryQuote(km,opts){
+  let total=Math.ceil(km),notes=['base '+Math.ceil(km)+' km'];
+  if(opts.night){total++;notes.push('night +1')}
+  if(opts.badWeather){total++;notes.push('weather +1')}
+  if(opts.load>13){total++;notes.push('first load above 13 +1');const extra=Math.floor((Math.min(opts.load,33)-13)/13);if(extra>0){total+=extra;notes.push('extra load +'+extra)}}
+  const platform=+(total*.03).toFixed(2),parties=+(total-platform).toFixed(2);
+  return {total,platform,parties,notes:notes.join(' · ')};
+}
+
+if(!window.Cesium){
+  ui.brand.textContent='ASTRANOV';
+  speak('Real globe engine failed to load. Check network/CDN.',7000);
+  showComposer('Real globe failed. Type fallback command.');
+  return;
+}
+
+const Cesium=window.Cesium;
+let viewer;
+try{
+  viewer=new Cesium.Viewer('cesium',{
+    animation:false,timeline:false,geocoder:false,homeButton:false,sceneModePicker:false,baseLayerPicker:false,
+    navigationHelpButton:false,fullscreenButton:false,vrButton:false,infoBox:false,selectionIndicator:false,shadows:false,
+    requestRenderMode:false,shouldAnimate:true,
+    terrainProvider:new Cesium.EllipsoidTerrainProvider(),
+    imageryProvider:new Cesium.UrlTemplateImageryProvider({
+      url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      maximumLevel:19,
+      credit:'Imagery © Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    })
+  });
+}catch(e){
+  speak('Cesium started badly: '+e.message,7000);
+  showComposer('Cesium error. Type fallback command.');
+  return;
+}
+
+viewer.scene.globe.baseColor=Cesium.Color.fromCssColorString('#071b45');
+viewer.scene.globe.enableLighting=false;
+viewer.scene.skyAtmosphere.show=true;
+viewer.scene.fog.enabled=false;
+viewer.scene.highDynamicRange=true;
+viewer.scene.screenSpaceCameraController.enableCollisionDetection=true;
+viewer.scene.screenSpaceCameraController.inertiaSpin=.94;
+viewer.scene.screenSpaceCameraController.inertiaZoom=.88;
+viewer.scene.screenSpaceCameraController.inertiaTranslate=.86;
+viewer.scene.screenSpaceCameraController.minimumZoomDistance=620;
+viewer.scene.screenSpaceCameraController.maximumZoomDistance=260000000;
+viewer.camera.setView({
+  destination:Cesium.Cartesian3.fromDegrees(21.5,28,24000000),
+  orientation:{heading:Cesium.Math.toRadians(0),pitch:Cesium.Math.toRadians(-90),roll:0}
+});
+
+function layerName(h){
+  if(h>90000000)return 'Solar Layer';
+  if(h>20000000)return 'Orbital Earth';
+  if(h>6000000)return 'Global Feed';
+  if(h>900000)return 'Regional Layer';
+  if(h>95000)return 'Local Descent';
+  return 'Astranov City Map';
+}
+function cameraHeight(){
+  return Cesium.Cartographic.fromCartesian(viewer.camera.positionWC).height;
+}
+function cameraLonLat(){
+  const c=viewer.camera.pickEllipsoid(new Cesium.Cartesian2(viewer.scene.canvas.clientWidth/2,viewer.scene.canvas.clientHeight/2),viewer.scene.globe.ellipsoid);
+  if(!c)return {lon:28.222,lat:36.441};
+  const g=Cesium.Cartographic.fromCartesian(c);
+  return {lon:Cesium.Math.toDegrees(g.longitude),lat:Cesium.Math.toDegrees(g.latitude)};
+}
+function flash(){
+  ui.flash.classList.remove('go');void ui.flash.offsetWidth;ui.flash.classList.add('go');
+}
+function fly(lon,lat,height,duration,done){
+  viewer.camera.flyTo({
+    destination:Cesium.Cartesian3.fromDegrees(lon,lat,height),
+    orientation:{heading:0,pitch:Cesium.Math.toRadians(-90),roll:0},
+    duration:duration||1,
+    easingFunction:Cesium.EasingFunction.QUADRATIC_IN_OUT,
+    complete:done
+  });
+}
+function descend(target){
+  const t=target||state.selected||{lon:28.222,lat:36.441,title:'Rhodes local radius'};
+  state.cityAnchor={lon:t.lon,lat:t.lat,title:t.title||'selected Earth point'};
+  hideAll();flash();
+  speak('Descending through global, regional, and local layers.',1700);
+  fly(t.lon,t.lat,6500000,.82,()=>fly(t.lon,t.lat,1200000,.72,()=>{
+    renderCity(t.lon,t.lat);
+    fly(t.lon,t.lat,140000,.66,()=>fly(t.lon,t.lat,5200,.9,()=>speak('Astranov City Map awakened around this place.',2100)));
+  }));
+}
+function orbit(){
+  hideAll();flash();
+  const t=state.cityAnchor||cameraLonLat();
+  fly(t.lon,t.lat,26000000,1.15,()=>speak('Orbital Earth. Zero UI restored.',1600));
+}
+function pointEntity(id,title,kind,lon,lat,height,color,labelSize){
+  return viewer.entities.add({
+    id,position:Cesium.Cartesian3.fromDegrees(lon,lat,height||140000),
+    point:{pixelSize:labelSize||12,color,outlineColor:Cesium.Color.WHITE.withAlpha(.78),outlineWidth:1.3,
+      scaleByDistance:new Cesium.NearFarScalar(800000,1.9,56000000,.45),disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    label:{text:title,font:'600 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset:new Cesium.Cartesian2(0,-26),scaleByDistance:new Cesium.NearFarScalar(800000,1,52000000,.28),
+      distanceDisplayCondition:new Cesium.DistanceDisplayCondition(0,52000000),disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    polyline:height>5000?{positions:[Cesium.Cartesian3.fromDegrees(lon,lat,0),Cesium.Cartesian3.fromDegrees(lon,lat,height)],width:1.3,
+      material:new Cesium.PolylineGlowMaterialProperty({glowPower:.22,color:Cesium.Color.CYAN.withAlpha(.82)})}:undefined,
+    properties:{title,kind,lon,lat}
+  });
+}
+const globalSignals=[
+  ['sig_rhodes','Friend feed · Rhodes','friend',28.222,36.441,190000,Cesium.Color.AQUA],
+  ['sig_london','Marketplace heat · London','market',-0.1276,51.5072,230000,Cesium.Color.DEEPSKYBLUE],
+  ['sig_newyork','World news · New York','news',-74.006,40.7128,240000,Cesium.Color.CYAN],
+  ['sig_tokyo','Social Circle · Tokyo','circle',139.6503,35.6762,220000,Cesium.Color.LIGHTSKYBLUE],
+  ['sig_dubai','Delivery demand · Dubai','delivery',55.2708,25.2048,210000,Cesium.Color.CORNFLOWERBLUE],
+  ['sig_athens','AI research node · Athens','ai',23.7275,37.9838,175000,Cesium.Color.SKYBLUE]
+];
+globalSignals.forEach(s=>pointEntity(...s));
+
+function clearCity(){
+  state.cityEntities.forEach(e=>viewer.entities.remove(e));
+  state.cityEntities.length=0;state.hasCity=false;
+}
+function addCity(e){
+  const entity=viewer.entities.add(e);
+  state.cityEntities.push(entity);
+  return entity;
+}
+function renderCity(lon,lat){
+  clearCity();state.hasCity=true;state.cityAnchor={lon,lat,title:'Astranov City Map radius'};
+  const p={
+    vendor:{lon:lon+.0065,lat:lat+.0038,title:'Vendor tile · menu source'},
+    driver:{lon:lon-.0068,lat:lat-.0042,title:'Driver tile · available'},
+    client:{lon:lon-.0028,lat:lat+.008,title:'Client delivery point'},
+    news:{lon:lon+.008,lat:lat-.006,title:'Place news signal'},
+    friend:{lon:lon-.009,lat:lat+.004,title:'Friend nearby story'}
+  };
+  const mk=(id,item,color,text)=>addCity({
+    id:'city_'+id,position:Cesium.Cartesian3.fromDegrees(item.lon,item.lat,45),
+    point:{pixelSize:13,color,outlineColor:Cesium.Color.WHITE.withAlpha(.82),outlineWidth:1.4,disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    label:{text,font:'700 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,pixelOffset:new Cesium.Cartesian2(0,-27),disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    properties:{title:item.title,kind:id,lon:item.lon,lat:item.lat}
+  });
+  mk('vendor',p.vendor,Cesium.Color.DEEPSKYBLUE,'Vendor');
+  mk('driver',p.driver,Cesium.Color.CYAN,'Driver');
+  mk('client',p.client,Cesium.Color.LIGHTCYAN,'Client');
+  mk('news',p.news,Cesium.Color.SKYBLUE,'News');
+  mk('friend',p.friend,Cesium.Color.AQUA,'Friend');
+  const quote=deliveryQuote(3.6,{night:true,badWeather:false,load:18});
+  addCity({
+    id:'delivery_triangle',
+    polyline:{positions:Cesium.Cartesian3.fromDegreesArrayHeights([
+      p.vendor.lon,p.vendor.lat,55,p.driver.lon,p.driver.lat,55,p.client.lon,p.client.lat,55,p.vendor.lon,p.vendor.lat,55
+    ]),width:5,material:new Cesium.PolylineGlowMaterialProperty({glowPower:.28,color:Cesium.Color.CYAN.withAlpha(.95)})},
+    properties:{title:`Client · Vendor · Driver triangle · ${quote.total} ASTRAN`,kind:'route',lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2,quote:quote.total,platform:quote.platform,notes:quote.notes}
+  });
+  addCity({
+    id:'route_price_label',position:Cesium.Cartesian3.fromDegrees((p.vendor.lon+p.client.lon)/2,(p.vendor.lat+p.client.lat)/2,80),
+    label:{text:`${quote.total} ASTRAN · 3% platform`,font:'900 14px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:4,style:Cesium.LabelStyle.FILL_AND_OUTLINE,disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    properties:{title:`Delivery quote · ${quote.total} Astran coins`,kind:'route',lon:(p.vendor.lon+p.client.lon)/2,lat:(p.vendor.lat+p.client.lat)/2,quote:quote.total,platform:quote.platform,notes:quote.notes}
+  });
+  addCity({
+    id:'social_circle',
+    position:Cesium.Cartesian3.fromDegrees(lon+.010,lat-.009,50),
+    ellipse:{semiMajorAxis:460,semiMinorAxis:460,material:Cesium.Color.CYAN.withAlpha(.11),outline:true,outlineWidth:2,outlineColor:Cesium.Color.CYAN},
+    label:{text:'Social Circle',font:'700 12px system-ui',fillColor:Cesium.Color.WHITE,outlineColor:Cesium.Color.DEEPSKYBLUE,outlineWidth:3,style:Cesium.LabelStyle.FILL_AND_OUTLINE,disableDepthTestDistance:Number.POSITIVE_INFINITY},
+    properties:{title:'Social Circle · local group reality',kind:'circle',lon:lon+.010,lat:lat-.009}
+  });
+}
+
+function contextFor(props){
+  const title=props.title||'Astranov object';
+  const kind=props.kind||'object';
+  if(kind==='market'||kind==='vendor')return {
+    title,kind:'vendor',meta:'Marketplace context · controls awakened by need',
+    detail:'Vendor menu, Sheets adapter, availability, order path, and product pricing live on this world object. '+adapters.sheets+' · '+adapters.payments,
+    actions:[
+      {label:'Open menu',primary:true,run:()=>setContext('Vendor menu · adapter-ready','Products wake here, not in a permanent menu','Menu data should come from vendor-owned Sheets or backend. Example: pizza, coffee, delivery radius, opening hours. '+adapters.sheets,[
+        {label:'Start order',primary:true,run:()=>needLogin('order')},
+        {label:'Ask by voice',run:()=>tryVoice('Ask the vendor menu question')},
+        {label:'Type fallback',run:()=>showComposer('Ask about this vendor')},
+        {label:'Orbit',run:orbit}
+      ],'market')},
+      {label:'Voice',run:()=>tryVoice('Marketplace voice')},
+      {label:'Type',run:()=>showComposer('Ask about this marketplace object')},
+      {label:'Orbit',run:orbit}
+    ]
+  };
+  if(kind==='delivery'||kind==='route')return {
+    title,kind:'delivery',meta:'Delivery geometry · line/triangle/polygon logic',
+    detail:'Client, vendor, and driver are represented by map geometry. Quote uses 1 ASTRAN/km, night/load/weather additions, and 3% platform split. '+adapters.routing+' · '+adapters.payments,
+    actions:[
+      {label:'Request delivery',primary:true,run:()=>needLogin('delivery')},
+      {label:'Show balance',run:showWallet},
+      {label:'Ask by voice',run:()=>tryVoice('Delivery voice')},
+      {label:'Type fallback',run:()=>showComposer('Ask about delivery')},
+      {label:'Orbit',run:orbit}
+    ]
+  };
+  if(kind==='news'||kind==='friend'||kind==='circle'||kind==='ai')return {
+    title,kind,meta:'Feed and social context · no old permanent feed drawer',
+    detail:'This signal is anchored to place and altitude. Media/feed adapters should link lawful external platforms instead of duplicating them. '+adapters.media+' · '+adapters.ai,
+    actions:[
+      {label:'Open signal',primary:true,run:()=>speak('Adapter-ready feed object opened. Backend connection required for live content.',3000)},
+      {label:'Ask by voice',run:()=>tryVoice('Ask about this signal')},
+      {label:'Type fallback',run:()=>showComposer('Ask about this signal')},
+      {label:'Descend',run:()=>descend(state.selected)},
+      {label:'Orbit',run:orbit}
+    ]
+  };
+  return {
+    title,kind:'object',meta:'World object',
+    detail:'This object wakes only its needed context. No persistent interface survives after closing it.',
+    actions:[{label:'Voice',primary:true,run:()=>tryVoice('Object voice')},{label:'Type fallback',run:()=>showComposer('Ask about this object')},{label:'Orbit',run:orbit}]
+  };
+}
+
+function entityPositionLonLat(entity){
+  try{
+    if(entity.properties&&entity.properties.lon&&entity.properties.lat){
+      return {lon:entity.properties.lon.getValue(),lat:entity.properties.lat.getValue()};
+    }
+    const pos=entity.position&&entity.position.getValue(Cesium.JulianDate.now());
+    if(pos){
+      const c=Cesium.Cartographic.fromCartesian(pos);
+      return {lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude)};
+    }
+  }catch(e){}
+  return cameraLonLat();
+}
+function pickWorld(movement){
+  const picked=viewer.scene.pick(movement.position);
+  if(Cesium.defined(picked)&&picked.id&&picked.id.properties){
+    const e=picked.id,p=e.properties,pos=entityPositionLonLat(e);
+    state.selected={...pos,title:p.title?p.title.getValue():'Astranov object'};
+    const ctx=contextFor({
+      title:p.title?p.title.getValue():'Astranov object',
+      kind:p.kind?p.kind.getValue():'object'
+    });
+    setContext(ctx.title,ctx.meta,ctx.detail,ctx.actions,ctx.kind);
+    return;
+  }
+  const cart=viewer.camera.pickEllipsoid(movement.position,viewer.scene.globe.ellipsoid);
+  if(cart){
+    const c=Cesium.Cartographic.fromCartesian(cart);
+    state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};
+    descend(state.selected);
+  }
+}
+
+const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+handler.setInputAction(pickWorld,Cesium.ScreenSpaceEventType.LEFT_CLICK);
+handler.setInputAction(function(m){
+  const cart=viewer.camera.pickEllipsoid(m.position,viewer.scene.globe.ellipsoid);
+  if(cart){
+    const c=Cesium.Cartographic.fromCartesian(cart);
+    state.selected={lon:Cesium.Math.toDegrees(c.longitude),lat:Cesium.Math.toDegrees(c.latitude),title:'selected Earth point'};
+    speak('Place selected. Hold ASTRANOV for voice, tap selected place to descend.',2100);
+  }
+},Cesium.ScreenSpaceEventType.RIGHT_CLICK);
+
+ui.close.onclick=hideAll;
+ui.login.onclick=()=>{
+  state.auth=true;wake(ui.login,false);speak('Auth adapter placeholder accepted for this prototype. Real login must connect backend.',3200);
+  if(state.protectedAction==='order'||state.protectedAction==='delivery')showWallet();
+};
+ui.brand.addEventListener('click',()=>tryVoice('Astranov voice wake'));
+ui.brand.addEventListener('dblclick',orbit);
+
+let pressTimer=null,pressTarget=null;
+function clearPress(){clearTimeout(pressTimer);pressTimer=null;pressTarget=null}
+document.addEventListener('pointerdown',e=>{
+  if(e.target.closest('#contextCard')||e.target.closest('#composer')||e.target.closest('#loginGate')||e.target.closest('#wallet'))return;
+  pressTarget=e.target;
+  pressTimer=setTimeout(()=>tryVoice('Long-press voice wake'),650);
+},{passive:true});
+document.addEventListener('pointerup',clearPress,{passive:true});
+document.addEventListener('pointercancel',clearPress,{passive:true});
+document.addEventListener('pointermove',clearPress,{passive:true});
+
+async function tryVoice(reason){
+  ui.brand.classList.add('awake');
+  speak('Voice waking. Browser may require microphone permission.',1600);
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    ui.brand.classList.remove('awake');
+    showComposer('Voice unavailable. Type to Astranov.');
+    return;
+  }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){
+      ui.brand.classList.remove('awake');
+      showComposer('Microphone granted, speech recognition unavailable. Type to Astranov.');
+      return;
+    }
+    const rec=new SR();
+    rec.lang='en-US';rec.interimResults=true;rec.continuous=false;
+    state.voiceLive=true;
+    rec.onstart=()=>{ui.brand.classList.add('awake');speak('Listening.',1200)};
+    rec.onresult=e=>{
+      const heard=Array.from(e.results).map(r=>r[0].transcript).join(' ').trim();
+      if(heard) handleIntent(heard);
+    };
+    rec.onerror=()=>{state.voiceLive=false;ui.brand.classList.remove('awake');showComposer('Voice failed. Type to Astranov.')};
+    rec.onend=()=>{state.voiceLive=false;ui.brand.classList.remove('awake')};
+    rec.start();
+  }catch(e){
+    state.voiceLive=false;ui.brand.classList.remove('awake');
+    showComposer('Voice blocked or unavailable. Type to Astranov.');
+  }
+}
+function handleIntent(text){
+  const raw=text.trim(),t=raw.toLowerCase();
+  speak('Heard: '+raw,2200);
+  if(t.includes('order')||t.includes('buy')||t.includes('delivery')||t.includes('market')){
+    showWallet();
+    if(t.includes('order')||t.includes('buy')||t.includes('delivery'))needLogin(t.includes('delivery')?'delivery':'order');
+    return;
+  }
+  if(t.includes('login')||t.includes('account')){needLogin('account');return}
+  if(t.includes('balance')||t.includes('wallet')||t.includes('money')){showWallet();return}
+  if(t.includes('type')||t.includes('keyboard')){showComposer('Manual AI fallback');return}
+  if(t.includes('globe')||t.includes('orbit')||t.includes('space')){orbit();return}
+  if(t.includes('city')||t.includes('down')||t.includes('map')){descend(state.selected||cameraLonLat());return}
+  if(t.includes('hide')||t.includes('clean')||t.includes('clear')){hideAll();return}
+  setContext('AI intent · adapter-ready','Voice intent received','The frontend captured intent. Live AI answer requires backend AI adapter. '+adapters.ai,[
+    {label:'Type more',primary:true,run:()=>showComposer('Continue with AI')},
+    {label:'Clear',run:hideAll},
+    {label:'Orbit',run:orbit}
+  ],'ai');
+}
+ui.composer.addEventListener('submit',e=>{
+  e.preventDefault();
+  const text=ui.input.value.trim();
+  if(!text)return;
+  ui.input.value='';
+  handleIntent(text);
+  wake(ui.composer,false);state.manualOpen=false;
+});
+ui.input.addEventListener('input',()=>{
+  ui.input.style.height='auto';
+  ui.input.style.height=Math.min(ui.input.scrollHeight,120)+'px';
+});
+
+let lastAutoCity=0;
+viewer.scene.postRender.addEventListener(()=>{
+  const h=cameraHeight(),name=layerName(h);
+  ui.shade.classList.toggle('on',h<95000);
+  state.cityEntities.forEach(e=>e.show=h<170000);
+  if(name!==state.lastLayer){
+    state.lastLayer=name;
+    if(name==='Astranov City Map'&&!state.hasCity){
+      const c=cameraLonLat();renderCity(c.lon,c.lat);
+      speak('Astranov City Map layer. Objects appear on the real map.',2000);
+    }
+  }
+  if(h<78000&&!state.hasCity&&Date.now()-lastAutoCity>2400){
+    lastAutoCity=Date.now();
+    const c=cameraLonLat();renderCity(c.lon,c.lat);
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')hideAll();
+  if(e.key==='/'&&!state.manualOpen){e.preventDefault();showComposer('Manual AI fallback')}
+});
+
 })();
 </script>
 </body>
