@@ -2,1398 +2,1131 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#00000a">
 <title>ASTRANOV</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --B:#00d4ff;
-  --Bd:rgba(0,212,255,0.12);
-  --Bg:rgba(0,212,255,0.3);
-  --Bx:rgba(0,212,255,0.06);
-  --K:#00000a;
-  --W:#e8f4ff;
-  --G:rgba(0,8,24,0.82);
-  --R:12px;
-}
-html,body{
-  width:100%;height:100%;
-  overflow:hidden;
-  background:var(--K);
-  color:var(--W);
-  font-family:'Rajdhani',sans-serif;
-  touch-action:none;
-  -webkit-tap-highlight-color:transparent;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--B:#00d4ff;--Bd:rgba(0,212,255,.15);--G:rgba(0,8,24,.9);--K:#00000a;--W:#e8f4ff;--amber:#ffc800}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--K);color:var(--W);font-family:'Rajdhani',sans-serif;touch-action:none;-webkit-tap-highlight-color:transparent}
+#stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#globe-wrap{position:fixed;inset:0;z-index:1}
+#globe-wrap canvas{display:block}
+#map-wrap{position:fixed;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .9s}
+#map-wrap.on{opacity:1;pointer-events:all}
+#map{width:100%;height:100%}
 
-/* ── STARS ── */
-#stars{position:fixed;inset:0;z-index:0;pointer-events:none;}
+/* DEMO BAR — zone: very top strip */
+#demo-bar{position:fixed;top:0;left:0;right:0;z-index:2000;height:22px;background:rgba(255,160,0,.1);border-bottom:1px solid rgba(255,160,0,.2);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:space-between;padding:0 12px}
+#demo-bar.on{display:flex}
+#demo-bar span{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.2em;color:rgba(255,180,0,.7)}
+#demo-dismiss{font-family:'Orbitron',monospace;font-size:7px;color:rgba(255,180,0,.4);cursor:pointer;border:1px solid rgba(255,180,0,.2);border-radius:8px;padding:1px 7px}
 
-/* ── GLOBE ── */
-#globe-wrap{
-  position:fixed;inset:0;z-index:1;
-  transition:opacity 1s ease;
-}
-#globe-wrap canvas{display:block;}
+/* TITLE — zone: top-center */
+#title{position:fixed;top:28px;left:50%;transform:translateX(-50%);z-index:1000;font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(13px,4.8vw,22px);letter-spacing:.28em;color:var(--B);pointer-events:none;white-space:nowrap;text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.3);animation:tp 4s ease-in-out infinite}
+#title.demo{top:30px}
+@keyframes tp{0%,100%{text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.3)}50%{text-shadow:0 0 26px var(--B),0 0 60px rgba(0,200,255,.5)}}
+#layer-lbl{position:fixed;top:51px;left:50%;transform:translateX(-50%);z-index:200;font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.22em;color:rgba(0,212,255,.3);pointer-events:none;white-space:nowrap}
+#layer-lbl.demo{top:53px}
 
-/* ── MAP ── */
-#map-wrap{
-  position:fixed;inset:0;z-index:2;
-  opacity:0;pointer-events:none;
-  transition:opacity 1s ease;
-}
-#map-wrap.on{opacity:1;pointer-events:all;}
-#map{width:100%;height:100%;}
+/* TOP-LEFT — map back */
+#map-back{position:fixed;top:28px;left:12px;z-index:600;width:36px;height:36px;border-radius:50%;border:1px solid var(--Bd);background:var(--G);backdrop-filter:blur(14px);color:var(--B);font-size:14px;display:none;align-items:center;justify-content:center;cursor:pointer}
+#map-back.on{display:flex}
 
-/* ── TITLE ── */
-#title{
-  position:fixed;top:22px;left:50%;transform:translateX(-50%);
-  z-index:1000;
-  font-family:'Orbitron',monospace;font-weight:900;
-  font-size:clamp(16px,5.5vw,26px);
-  letter-spacing:.25em;
-  color:var(--B);
-  text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4),0 0 80px rgba(0,120,200,.2);
-  pointer-events:none;white-space:nowrap;
-  animation:titlePulse 4s ease-in-out infinite;
-}
-@keyframes titlePulse{
-  0%,100%{text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4),0 0 80px rgba(0,120,200,.2);}
-  50%{text-shadow:0 0 24px var(--B),0 0 60px rgba(0,200,255,.6),0 0 120px rgba(0,140,220,.3);}
-}
+/* TOP-RIGHT — ISS badge */
+#iss{position:fixed;top:28px;right:12px;z-index:200;background:var(--G);backdrop-filter:blur(12px);border:1px solid var(--Bd);border-radius:16px;padding:4px 9px;font-size:8px;color:rgba(0,212,255,.5);font-family:'Orbitron',monospace;letter-spacing:.06em;opacity:0;transition:opacity .4s;white-space:nowrap;cursor:pointer}
+#iss.on{opacity:1}
 
-/* ── LAYER LABEL ── */
-#layer-lbl{
-  position:fixed;top:56px;left:50%;transform:translateX(-50%);
-  z-index:200;
-  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.25em;
-  color:rgba(0,212,255,.35);
-  pointer-events:none;white-space:nowrap;
-  transition:opacity .4s;
-}
+/* MIDDLE-RIGHT — altitude bar */
+#alt-bar{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:200;width:2px;height:88px;background:rgba(0,212,255,.08);border-radius:2px}
+#alt-fill{position:absolute;bottom:0;left:0;right:0;background:var(--B);border-radius:2px;box-shadow:0 0 5px var(--B);transition:height .22s}
 
-/* ── ALTITUDE BAR ── */
-#alt-bar{
-  position:fixed;right:14px;top:50%;transform:translateY(-50%);
-  z-index:200;width:2px;height:100px;
-  background:rgba(0,212,255,.1);border-radius:2px;
-  opacity:0;transition:opacity .5s;
-}
-#alt-fill{
-  position:absolute;bottom:0;left:0;right:0;
-  background:var(--B);border-radius:2px;
-  box-shadow:0 0 6px var(--B);
-  transition:height .3s ease;
-}
+/* BOTTOM-RIGHT — role strip + HUD stacked */
+#role-strip{position:fixed;bottom:216px;right:12px;z-index:300;display:flex;flex-direction:column;gap:4px;opacity:0;pointer-events:none;transition:opacity .3s}
+#role-strip.on{opacity:1;pointer-events:all}
+.rb{background:var(--G);backdrop-filter:blur(12px);border:1px solid rgba(0,212,255,.15);border-radius:14px;padding:3px 9px;color:rgba(0,212,255,.4);font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.1em;cursor:pointer;transition:all .18s;white-space:nowrap;text-align:center}
+.rb.on{background:rgba(0,212,255,.15);border-color:var(--B);color:var(--B)}
+#hud{position:fixed;bottom:22px;right:12px;z-index:300;display:flex;flex-direction:column;gap:7px;opacity:0;pointer-events:none;transition:opacity .3s}
+#hud.on{opacity:1;pointer-events:all}
+.hb{width:40px;height:40px;border-radius:50%;border:1px solid rgba(0,212,255,.2);background:var(--G);backdrop-filter:blur(14px);color:var(--B);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative}
+.hb:active{transform:scale(.87);background:rgba(0,212,255,.18)}
+.hb.lit{background:rgba(0,212,255,.18);box-shadow:0 0 14px rgba(0,212,255,.4)}
+.hb-tip{position:absolute;right:46px;background:var(--G);border:1px solid var(--Bd);border-radius:6px;padding:3px 8px;font-family:'Orbitron',monospace;font-size:7px;color:var(--B);white-space:nowrap;letter-spacing:.08em;opacity:0;pointer-events:none;transition:opacity .2s}
+.hb:hover .hb-tip{opacity:1}
 
-/* ── HUD ── */
-#hud{
-  position:fixed;bottom:88px;right:14px;
-  z-index:300;
-  display:flex;flex-direction:column;gap:10px;
-  opacity:0;pointer-events:none;
-  transition:opacity .4s;
-}
-#hud.on{opacity:1;pointer-events:all;}
-.hb{
-  width:44px;height:44px;border-radius:50%;
-  border:1px solid rgba(0,212,255,.25);
-  background:var(--G);backdrop-filter:blur(14px);
-  color:var(--B);font-size:18px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .18s;user-select:none;
-}
-.hb:active{transform:scale(.88);background:rgba(0,212,255,.2);}
-.hb.lit{background:rgba(0,212,255,.22);box-shadow:0 0 18px var(--Bg);animation:hbPulse 1.4s infinite;}
-@keyframes hbPulse{0%,100%{box-shadow:0 0 8px var(--B);}50%{box-shadow:0 0 24px var(--B),0 0 40px rgba(0,212,255,.35);}}
+/* BOTTOM-LEFT — owner builder */
+#builder-btn{position:fixed;bottom:22px;left:12px;z-index:300;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,200,0,.3);background:rgba(255,200,0,.08);backdrop-filter:blur(14px);color:var(--amber);font-size:16px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 0 12px rgba(255,200,0,.15)}
+#builder-btn.on{display:flex}
 
-/* ── MAP BACK ── */
-#map-back{
-  position:fixed;top:68px;left:14px;
-  z-index:600;
-  width:40px;height:40px;border-radius:50%;
-  border:1px solid rgba(0,212,255,.3);
-  background:var(--G);backdrop-filter:blur(14px);
-  color:var(--B);font-size:16px;
-  display:none;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .18s;
-}
-#map-back.on{display:flex;}
-#map-back:active{transform:scale(.88);}
+/* SOUND indicator */
+#sound-btn{position:fixed;bottom:70px;left:12px;z-index:300;width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,212,255,.15);background:var(--G);backdrop-filter:blur(14px);color:rgba(0,212,255,.5);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+#sound-btn.on{color:var(--B);border-color:var(--B)}
 
-/* ── ROLE STRIP ── */
-#role-strip{
-  position:fixed;top:68px;left:50%;transform:translateX(-50%);
-  z-index:300;
-  display:flex;gap:6px;
-  opacity:0;pointer-events:none;
-  transition:opacity .4s;
-}
-#role-strip.on{opacity:1;pointer-events:all;}
-.rb{
-  background:var(--G);backdrop-filter:blur(12px);
-  border:1px solid rgba(0,212,255,.18);
-  border-radius:18px;padding:5px 13px;
-  color:rgba(0,212,255,.5);
-  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;
-  cursor:pointer;transition:all .18s;
-}
-.rb.on{
-  background:rgba(0,212,255,.18);
-  border-color:var(--B);color:var(--B);
-  box-shadow:0 0 10px rgba(0,212,255,.25);
-}
+/* SEARCH BAR — slides down from top when active */
+#search-bar{position:fixed;top:70px;left:12px;right:55px;z-index:500;display:flex;gap:6px;transform:translateY(-120%);transition:transform .3s;opacity:0;pointer-events:none}
+#search-bar.on{transform:translateY(0);opacity:1;pointer-events:all}
+#search-in{flex:1;background:rgba(0,8,24,.95);border:1px solid rgba(0,212,255,.3);border-radius:22px;padding:9px 15px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:14px;outline:none}
+#search-in::placeholder{color:rgba(0,212,255,.3)}
+#search-go{width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.1);color:var(--B);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+#search-results{position:fixed;top:115px;left:12px;right:12px;z-index:490;background:rgba(0,6,20,.97);border:1px solid rgba(0,212,255,.15);border-radius:10px;max-height:200px;overflow-y:auto;display:none}
+#search-results.on{display:block}
+.sr-item{padding:10px 13px;border-bottom:1px solid rgba(0,212,255,.07);cursor:pointer;font-size:13px}
+.sr-item:last-child{border:none}
+.sr-item:active{background:rgba(0,212,255,.08)}
+.sr-cat{font-family:'Orbitron',monospace;font-size:7px;color:rgba(0,212,255,.4);letter-spacing:.1em;margin-bottom:2px}
 
-/* ── AI PANEL ── */
-#ai-panel{
-  position:fixed;bottom:0;left:0;right:0;
-  z-index:500;padding:0 14px 28px;
-  transform:translateY(110%);
-  transition:transform .38s cubic-bezier(.4,0,.2,1);
-}
-#ai-panel.on{transform:translateY(0);}
+/* AI PANEL */
+#ai-panel{position:fixed;bottom:0;left:0;right:0;z-index:500;padding:0 12px 24px;transform:translateY(110%);transition:transform .35s cubic-bezier(.4,0,.2,1)}
+#ai-panel.on{transform:translateY(0)}
+#ai-log{background:var(--G);backdrop-filter:blur(22px);border:1px solid rgba(0,212,255,.12);border-radius:12px;padding:10px;max-height:160px;overflow-y:auto;margin-bottom:8px;display:none;scroll-behavior:smooth}
+#ai-log.on{display:block}
+.msg{padding:6px 10px;margin-bottom:5px;border-radius:8px;font-size:13px;line-height:1.5;max-width:88%}
+.msg.u{background:rgba(0,212,255,.11);border:1px solid rgba(0,212,255,.2);color:var(--B);margin-left:auto;text-align:right}
+.msg.a{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:var(--W)}
+.msg.prov{font-family:'Orbitron',monospace;font-size:7px;color:rgba(0,212,255,.3);letter-spacing:.08em;text-align:right;padding:0 10px 4px;background:none;border:none}
+#ai-row{display:flex;gap:6px;align-items:center}
+#ai-in{flex:1;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.22);border-radius:22px;padding:10px 14px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:14px;outline:none;display:none}
+#ai-in.on{display:block}
+#ai-in::placeholder{color:rgba(0,212,255,.3)}
+.ab{width:40px;height:40px;border-radius:50%;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.08);color:var(--B);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ab:active{transform:scale(.88)}
+.ab.lit{background:rgba(0,212,255,.2);box-shadow:0 0 14px rgba(0,212,255,.4)}
 
-#ai-log{
-  background:var(--G);backdrop-filter:blur(22px);
-  border:1px solid rgba(0,212,255,.15);border-radius:var(--R);
-  padding:12px;
-  max-height:180px;overflow-y:auto;
-  margin-bottom:10px;
-  display:none;
-  scroll-behavior:smooth;
-}
-#ai-log.on{display:block;}
+/* SHEETS — slide up from bottom, one at a time */
+.sheet{position:fixed;bottom:0;left:0;right:0;z-index:550;background:rgba(0,6,20,.97);backdrop-filter:blur(26px);border-top:1px solid rgba(0,212,255,.15);border-radius:16px 16px 0 0;padding:16px 14px 36px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:78vh;overflow-y:auto}
+.sheet.on{transform:translateY(0)}
+.handle{width:34px;height:3px;background:rgba(0,212,255,.2);border-radius:2px;margin:0 auto 14px}
+.sh-title{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.15em;color:var(--B);margin-bottom:12px}
 
-.msg{
-  padding:7px 11px;margin-bottom:7px;border-radius:9px;
-  font-size:13px;line-height:1.55;max-width:88%;
-}
-.msg.u{
-  background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.2);
-  color:var(--B);margin-left:auto;text-align:right;
-}
-.msg.a{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
-  color:var(--W);
-}
+/* VENDOR / MENU */
+.v-card{background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:9px;padding:12px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.v-card:active{background:rgba(0,212,255,.1)}
+.v-em{font-size:22px;flex-shrink:0}
+.v-name{font-size:14px;font-weight:600}
+.v-sub{font-size:9px;color:rgba(0,212,255,.45);letter-spacing:.07em}
+.v-status{font-size:9px;margin-top:3px}
+.open{color:#00ff88}.closed{color:rgba(255,80,80,.6)}
+.m-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(0,212,255,.06)}
+.m-item:last-child{border:none}
+.m-price{color:var(--B);font-weight:600;font-size:13px}
+.m-add{background:rgba(0,212,255,.09);border:1px solid rgba(0,212,255,.25);border-radius:6px;padding:3px 9px;color:var(--B);font-size:11px;cursor:pointer}
 
-#ai-row{display:flex;gap:8px;align-items:center;}
+/* ORDER BAR */
+#order-bar{position:fixed;bottom:0;left:0;right:0;z-index:650;background:rgba(0,212,255,.12);backdrop-filter:blur(18px);border-top:1px solid rgba(0,212,255,.25);padding:11px 15px;display:flex;justify-content:space-between;align-items:center;transform:translateY(100%);transition:transform .28s}
+#order-bar.on{transform:translateY(0)}
+#order-go{background:var(--B);border:none;border-radius:18px;padding:8px 17px;color:#00000a;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;cursor:pointer}
 
-#ai-in{
-  flex:1;
-  background:rgba(0,212,255,.07);
-  border:1px solid rgba(0,212,255,.25);border-radius:22px;
-  padding:11px 16px;
-  color:var(--W);font-family:'Rajdhani',sans-serif;font-size:15px;
-  outline:none;
-  display:none;transition:all .25s;
-}
-#ai-in.on{display:block;}
-#ai-in::placeholder{color:rgba(0,212,255,.35);}
-#ai-in:focus{border-color:rgba(0,212,255,.5);box-shadow:0 0 14px rgba(0,212,255,.15);}
+/* DELIVERY CONFIRM */
+#del-sheet{position:fixed;inset:0;z-index:800;background:rgba(0,0,10,.87);backdrop-filter:blur(14px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s}
+#del-sheet.on{opacity:1;pointer-events:all}
+.del-box{background:rgba(0,8,24,.98);border:1px solid rgba(0,212,255,.18);border-radius:16px 16px 0 0;padding:20px 17px 38px;width:100%;max-width:480px}
+.del-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(0,212,255,.06);font-size:12px}
+.del-row:last-of-type{border:none}
+.del-total{color:var(--B);font-weight:700;font-size:15px}
 
-.ab{
-  width:46px;height:46px;border-radius:50%;
-  border:1px solid rgba(0,212,255,.3);
-  background:rgba(0,212,255,.1);
-  color:var(--B);font-size:19px;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;transition:all .18s;flex-shrink:0;
-}
-.ab:active{transform:scale(.88);background:rgba(0,212,255,.25);}
-.ab.lit{background:rgba(0,212,255,.25);box-shadow:0 0 18px var(--Bg);animation:hbPulse 1.4s infinite;}
+/* USER MENU */
+#user-menu{position:fixed;bottom:0;left:0;right:0;z-index:700;background:rgba(0,6,20,.98);backdrop-filter:blur(28px);border-top:1px solid rgba(0,212,255,.17);border-radius:16px 16px 0 0;padding:16px 14px 38px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:82vh;overflow-y:auto}
+#user-menu.on{transform:translateY(0)}
+.um-hdr{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.um-av{width:46px;height:46px;border-radius:50%;border:2px solid var(--B);background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 14px rgba(0,212,255,.3);cursor:pointer}
+.um-name{font-size:15px;font-weight:600}
+.um-bal{font-family:'Orbitron',monospace;font-size:9px;color:var(--B);letter-spacing:.07em}
+.role-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(0,212,255,.06)}
+.role-lbl{font-size:13px;font-weight:600}
+.role-sub{font-size:10px;color:rgba(255,255,255,.32)}
+.toggle{width:42px;height:22px;border-radius:11px;border:1px solid rgba(0,212,255,.22);background:rgba(0,212,255,.06);position:relative;cursor:pointer;transition:all .2s;flex-shrink:0}
+.toggle.on{background:rgba(0,212,255,.22);border-color:var(--B)}
+.knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:rgba(0,212,255,.4);transition:all .2s}
+.toggle.on .knob{left:22px;background:var(--B);box-shadow:0 0 7px var(--B)}
+.incog{text-align:center;padding:8px;margin-top:8px;background:rgba(255,255,255,.03);border-radius:7px;font-size:10px;color:rgba(255,255,255,.26);font-family:'Orbitron',monospace;letter-spacing:.05em}
+.incog.on{background:rgba(140,80,255,.08);color:rgba(170,100,255,.55);border:1px solid rgba(140,80,255,.2)}
+.sect{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.16em;color:rgba(0,212,255,.38);margin:12px 0 7px;padding-top:12px;border-top:1px solid rgba(0,212,255,.06)}
+.topup-row{display:flex;gap:5px;margin-bottom:8px}
+.topup-btn{flex:1;padding:7px 3px;border-radius:6px;text-align:center;cursor:pointer;border:1px solid rgba(0,212,255,.14);background:rgba(0,212,255,.04);font-family:'Orbitron',monospace;font-size:9px;color:var(--B)}
+.topup-btn:active{background:rgba(0,212,255,.18)}
+.setup-panel{background:rgba(0,12,28,.9);border:1px solid rgba(0,212,255,.1);border-radius:9px;padding:12px;margin-top:8px;display:none}
+.setup-panel.on{display:block}
+.fx{width:100%;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.16);border-radius:7px;padding:9px 12px;color:var(--W);font-size:13px;outline:none;margin-bottom:8px;font-family:'Rajdhani',sans-serif}
+.fx::placeholder{color:rgba(255,255,255,.2)}
+.btn-b{width:100%;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);border-radius:8px;padding:10px;color:var(--B);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;cursor:pointer;margin-bottom:6px}
+.btn-ghost{width:100%;background:transparent;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:9px;color:rgba(255,255,255,.25);font-size:12px;cursor:pointer}
 
-/* ── MARKET SHEET ── */
-#mkt-sheet{
-  position:fixed;bottom:0;left:0;right:0;
-  z-index:550;
-  background:rgba(0,6,20,.96);backdrop-filter:blur(26px);
-  border-top:1px solid rgba(0,212,255,.18);
-  border-radius:16px 16px 0 0;
-  padding:18px 16px 36px;
-  transform:translateY(100%);
-  transition:transform .38s cubic-bezier(.4,0,.2,1);
-  max-height:72vh;overflow-y:auto;
-}
-#mkt-sheet.on{transform:translateY(0);}
-.sheet-handle{width:36px;height:3px;background:rgba(0,212,255,.25);border-radius:2px;margin:0 auto 16px;}
-.sheet-title{
-  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.15em;
-  color:var(--B);margin-bottom:14px;
-}
+/* AUTH */
+#auth-sheet{position:fixed;inset:0;z-index:4000;background:rgba(0,0,10,.92);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:18px}
+#auth-sheet.on{display:flex}
+.auth-box{background:rgba(0,8,22,.98);border:1px solid rgba(0,212,255,.2);border-radius:15px;padding:26px 20px;width:100%;max-width:360px}
+.auth-box h2{font-family:'Orbitron',monospace;font-size:12px;color:var(--B);letter-spacing:.14em;margin-bottom:5px}
+.auth-box p{font-size:11px;color:rgba(255,255,255,.3);line-height:1.55;margin-bottom:16px}
+#auth-tabs{display:flex;gap:6px;margin-bottom:15px}
+.auth-tab{flex:1;padding:7px;border-radius:6px;text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.1em;border:1px solid rgba(0,212,255,.12);color:rgba(0,212,255,.38);transition:all .18s}
+.auth-tab.on{background:rgba(0,212,255,.14);border-color:var(--B);color:var(--B)}
 
-/* ── VENDOR CARD ── */
-.v-card{
-  background:rgba(0,212,255,.05);
-  border:1px solid rgba(0,212,255,.12);
-  border-radius:10px;padding:14px;margin-bottom:10px;
-  cursor:pointer;transition:all .18s;
-}
-.v-card:active{background:rgba(0,212,255,.1);}
-.v-name{font-size:15px;font-weight:600;margin-bottom:3px;}
-.v-sub{font-size:11px;color:rgba(0,212,255,.5);letter-spacing:.08em;}
-.v-status{font-size:10px;margin-top:6px;}
-.v-open{color:#00ff88;}
-.v-closed{color:rgba(255,80,80,.7);}
+/* VIDEO SHEET */
+#video-sheet .yt-frame{width:100%;aspect-ratio:16/9;border-radius:9px;border:none;margin-top:8px}
+.platform-row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.plat-btn{padding:6px 12px;border-radius:14px;border:1px solid rgba(0,212,255,.15);background:rgba(0,212,255,.05);color:rgba(0,212,255,.6);font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.08em;cursor:pointer;transition:all .18s}
+.plat-btn.on{background:rgba(0,212,255,.15);border-color:var(--B);color:var(--B)}
 
-/* ── MENU SHEET ── */
-#menu-sheet{
-  position:fixed;bottom:0;left:0;right:0;
-  z-index:600;
-  background:rgba(0,6,20,.97);backdrop-filter:blur(28px);
-  border-top:1px solid rgba(0,212,255,.2);
-  border-radius:16px 16px 0 0;
-  padding:18px 16px 40px;
-  transform:translateY(100%);
-  transition:transform .38s cubic-bezier(.4,0,.2,1);
-  max-height:80vh;overflow-y:auto;
-}
-#menu-sheet.on{transform:translateY(0);}
+/* MSG PANEL */
+#msg-panel{position:fixed;bottom:0;left:0;right:0;z-index:720;background:rgba(0,6,20,.98);backdrop-filter:blur(26px);border-top:1px solid rgba(0,212,255,.15);border-radius:16px 16px 0 0;padding:14px 13px 30px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:60vh;display:flex;flex-direction:column}
+#msg-panel.on{transform:translateY(0)}
+#msg-log{flex:1;overflow-y:auto;margin-bottom:8px;display:flex;flex-direction:column;gap:5px;min-height:80px}
+.msg-row{display:flex;gap:6px;align-items:center}
+#msg-txt{flex:1;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:20px;padding:8px 13px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:13px;outline:none}
+#msg-go{width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,212,255,.28);background:rgba(0,212,255,.1);color:var(--B);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
-.m-item{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:11px 0;
-  border-bottom:1px solid rgba(0,212,255,.07);
-}
-.m-item:last-child{border-bottom:none;}
-.m-name{font-size:14px;}
-.m-price{color:var(--B);font-weight:600;font-size:14px;}
-.m-add{
-  background:rgba(0,212,255,.12);
-  border:1px solid rgba(0,212,255,.3);border-radius:6px;
-  padding:4px 11px;color:var(--B);font-size:12px;cursor:pointer;
-  transition:all .15s;
-}
-.m-add:active{background:rgba(0,212,255,.25);}
+/* BUILDER PANEL */
+#builder-panel{position:fixed;inset:0;z-index:6000;background:rgba(0,0,8,.96);backdrop-filter:blur(20px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1)}
+#builder-panel.on{transform:translateY(0)}
+#builder-hdr{padding:16px 14px 10px;border-bottom:1px solid rgba(255,200,0,.13);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+#builder-log{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.bl{padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.55;max-width:92%}
+.bl.u{background:rgba(255,200,0,.09);border:1px solid rgba(255,200,0,.18);color:var(--amber);margin-left:auto;text-align:right}
+.bl.a{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:var(--W)}
+.bl.sys{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.12);color:rgba(0,212,255,.65);font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.07em;text-align:center;max-width:100%}
+#builder-row{padding:10px 14px 28px;border-top:1px solid rgba(255,200,0,.1);display:flex;gap:7px;align-items:flex-end;flex-shrink:0}
+#builder-in{flex:1;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.18);border-radius:11px;padding:10px 13px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;resize:none;min-height:40px;max-height:110px}
+#builder-in::placeholder{color:rgba(255,200,0,.22)}
+#builder-send{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,200,0,.28);background:rgba(255,200,0,.1);color:var(--amber);font-size:17px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 
-/* ── ORDER SUMMARY ── */
-#order-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:650;
-  background:rgba(0,212,255,.15);backdrop-filter:blur(18px);
-  border-top:1px solid rgba(0,212,255,.3);
-  padding:14px 18px;
-  display:flex;justify-content:space-between;align-items:center;
-  transform:translateY(100%);
-  transition:transform .3s ease;
-}
-#order-bar.on{transform:translateY(0);}
-#order-count{font-family:'Orbitron',monospace;font-size:11px;color:var(--B);letter-spacing:.1em;}
-#order-total{font-size:15px;font-weight:600;}
-#order-go{
-  background:var(--B);border:none;border-radius:20px;
-  padding:9px 20px;
-  color:#00000a;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.1em;
-  cursor:pointer;transition:all .18s;
-}
-#order-go:active{transform:scale(.93);}
+/* WELCOME INVITE */
+#welcome{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(120px);z-index:3000;width:calc(100% - 24px);max-width:370px;background:rgba(0,8,24,.97);backdrop-filter:blur(22px);border:1px solid rgba(0,212,255,.2);border-radius:15px;padding:16px 16px 14px;transition:transform .5s cubic-bezier(.4,0,.2,1);pointer-events:none}
+#welcome.on{transform:translateX(-50%) translateY(0);pointer-events:all}
+.wi-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--B);letter-spacing:.13em;margin-bottom:5px}
+.wi-sub{font-size:11px;color:rgba(255,255,255,.35);line-height:1.55;margin-bottom:12px}
+.wi-row{display:flex;gap:7px}
+.wi-join{flex:1;padding:9px;border-radius:8px;text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.1em;border:1px solid rgba(0,212,255,.28);background:rgba(0,212,255,.1);color:var(--B)}
+.wi-skip{flex:1;padding:9px;border-radius:8px;text-align:center;cursor:pointer;font-size:11px;border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.25)}
 
-/* ── DELIVERY CONFIRM ── */
-#del-sheet{
-  position:fixed;inset:0;z-index:700;
-  background:rgba(0,0,10,.85);backdrop-filter:blur(14px);
-  display:flex;align-items:flex-end;justify-content:center;
-  opacity:0;pointer-events:none;
-  transition:opacity .3s;
-}
-#del-sheet.on{opacity:1;pointer-events:all;}
-.del-box{
-  background:rgba(0,8,24,.98);
-  border:1px solid rgba(0,212,255,.2);
-  border-radius:16px 16px 0 0;
-  padding:24px 20px 40px;
-  width:100%;max-width:480px;
-}
-.del-row{
-  display:flex;justify-content:space-between;padding:9px 0;
-  border-bottom:1px solid rgba(0,212,255,.07);font-size:14px;
-}
-.del-row:last-of-type{border:none;}
-.del-total{color:var(--B);font-weight:700;font-size:17px;}
-.btn-primary{
-  width:100%;margin-top:14px;
-  background:rgba(0,212,255,.15);
-  border:1px solid rgba(0,212,255,.35);border-radius:10px;
-  padding:14px;color:var(--B);
-  font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.15em;
-  cursor:pointer;transition:all .2s;
-}
-.btn-primary:active{background:rgba(0,212,255,.28);}
-.btn-ghost{
-  width:100%;margin-top:8px;
-  background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:10px;
-  padding:11px;color:rgba(255,255,255,.35);
-  font-size:13px;cursor:pointer;
-}
+/* TOAST */
+#toast{position:fixed;top:72px;left:50%;z-index:9999;transform:translateX(-50%) translateY(-60px);background:rgba(0,212,255,.09);border:1px solid rgba(0,212,255,.24);border-radius:18px;padding:5px 14px;font-size:10px;color:var(--B);backdrop-filter:blur(14px);letter-spacing:.06em;transition:transform .25s;white-space:nowrap;pointer-events:none;font-family:'Orbitron',monospace}
+#toast.on{transform:translateX(-50%) translateY(0)}
 
-/* ── ISS BADGE ── */
-#iss-badge{
-  position:fixed;top:70px;left:14px;z-index:200;
-  background:var(--G);backdrop-filter:blur(12px);
-  border:1px solid rgba(0,212,255,.15);border-radius:20px;
-  padding:5px 12px;font-size:11px;color:rgba(0,212,255,.6);
-  font-family:'Orbitron',monospace;letter-spacing:.08em;
-  opacity:0;transition:opacity .4s;cursor:default;
-}
-#iss-badge.on{opacity:1;}
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:9500;background:var(--K);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .9s}
+#loading.gone{opacity:0;pointer-events:none}
+.ld-t{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(22px,7vw,36px);letter-spacing:.3em;color:var(--B);text-shadow:0 0 28px var(--B)}
+.ld-bw{width:180px;height:2px;background:rgba(0,212,255,.1);border-radius:1px}
+.ld-b{height:100%;width:0;background:var(--B);border-radius:1px;box-shadow:0 0 7px var(--B);transition:width .3s}
+.ld-s{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.2em;color:rgba(0,212,255,.28)}
 
-/* ── TOAST ── */
-#toast{
-  position:fixed;top:72px;left:50%;z-index:9999;
-  transform:translateX(-50%) translateY(-60px);
-  background:rgba(0,212,255,.12);
-  border:1px solid rgba(0,212,255,.28);border-radius:20px;
-  padding:7px 18px;font-size:12px;color:var(--B);
-  backdrop-filter:blur(14px);letter-spacing:.06em;
-  transition:transform .28s ease;white-space:nowrap;
-  pointer-events:none;
-}
-#toast.on{transform:translateX(-50%) translateY(0);}
+/* ATTR */
+#attr{position:fixed;bottom:4px;left:7px;z-index:2000;font-size:7px;color:rgba(0,212,255,.16);line-height:1.5;pointer-events:none}
 
-/* ── API KEY DIALOG ── */
-#key-dlg{
-  position:fixed;inset:0;z-index:8000;
-  background:rgba(0,0,10,.88);backdrop-filter:blur(14px);
-  display:none;align-items:center;justify-content:center;
-  padding:20px;
-}
-#key-dlg.on{display:flex;}
-.key-box{
-  background:rgba(0,8,22,.97);
-  border:1px solid rgba(0,212,255,.22);border-radius:16px;
-  padding:26px 22px;width:100%;max-width:360px;
-}
-.key-box h2{
-  font-family:'Orbitron',monospace;font-size:13px;color:var(--B);
-  margin-bottom:7px;letter-spacing:.12em;
-}
-.key-box p{font-size:12px;color:rgba(255,255,255,.4);line-height:1.55;margin-bottom:16px;}
-.key-in{
-  width:100%;background:rgba(0,212,255,.06);
-  border:1px solid rgba(0,212,255,.18);border-radius:8px;
-  padding:10px 13px;color:var(--W);font-size:13px;
-  outline:none;margin-bottom:12px;font-family:monospace;
-}
-.key-row{display:flex;gap:8px;}
-.kb{
-  flex:1;background:rgba(0,212,255,.13);
-  border:1px solid rgba(0,212,255,.35);border-radius:8px;
-  padding:10px;color:var(--B);
-  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.1em;
-  cursor:pointer;transition:all .18s;
-}
-.kb:active{background:rgba(0,212,255,.25);}
-.ks{
-  background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:8px;
-  padding:10px 14px;color:rgba(255,255,255,.3);font-size:12px;cursor:pointer;
-}
+/* LEAFLET */
+.leaflet-container{background:#000c1e !important;font-family:'Rajdhani',sans-serif}
+.leaflet-popup-content-wrapper{background:rgba(0,8,24,.95) !important;border:1px solid rgba(0,212,255,.22) !important;border-radius:10px !important;color:var(--W) !important;backdrop-filter:blur(18px)}
+.leaflet-popup-tip{background:rgba(0,8,24,.95) !important}
+.leaflet-control-zoom,.leaflet-control-attribution{display:none !important}
 
-/* ── LOADING ── */
-#loading{
-  position:fixed;inset:0;z-index:9500;
-  background:var(--K);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
-  transition:opacity .9s ease;
-}
-#loading.gone{opacity:0;pointer-events:none;}
-.ld-title{
-  font-family:'Orbitron',monospace;font-weight:900;
-  font-size:clamp(22px,7vw,36px);letter-spacing:.3em;
-  color:var(--B);
-  text-shadow:0 0 30px var(--B),0 0 70px rgba(0,180,255,.4);
-}
-.ld-bar-wrap{width:180px;height:2px;background:rgba(0,212,255,.12);border-radius:1px;}
-.ld-bar{height:100%;width:0;background:var(--B);border-radius:1px;box-shadow:0 0 8px var(--B);transition:width .35s ease;}
-.ld-sub{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.22em;color:rgba(0,212,255,.35);}
-
-/* ── ATTR ── */
-#attr{
-  position:fixed;bottom:6px;left:8px;z-index:2000;
-  font-size:8px;color:rgba(0,212,255,.2);line-height:1.5;pointer-events:none;
-}
-
-/* ── LEAFLET OVERRIDES ── */
-.leaflet-container{background:#000c1e !important;font-family:'Rajdhani',sans-serif;}
-.leaflet-popup-content-wrapper{
-  background:rgba(0,8,24,.94) !important;
-  border:1px solid rgba(0,212,255,.25) !important;
-  border-radius:10px !important;color:var(--W) !important;
-  backdrop-filter:blur(18px);
-}
-.leaflet-popup-tip{background:rgba(0,8,24,.94) !important;}
-.leaflet-control-zoom,.leaflet-control-attribution{display:none !important;}
+/* DEMO markers */
+.demo-pulse{animation:demop 1.8s ease-in-out infinite}
+@keyframes demop{0%,100%{box-shadow:0 0 8px rgba(255,180,0,.5)}50%{box-shadow:0 0 22px rgba(255,180,0,.8),0 0 40px rgba(255,180,0,.3)}}
 </style>
 </head>
 <body>
 
-<!-- Stars -->
 <canvas id="stars"></canvas>
-
-<!-- Globe -->
 <div id="globe-wrap"></div>
-
-<!-- Map -->
 <div id="map-wrap"><div id="map"></div></div>
 
-<!-- Loading -->
 <div id="loading">
-  <div class="ld-title">ASTRANOV</div>
-  <div class="ld-bar-wrap"><div class="ld-bar" id="ld-bar"></div></div>
-  <div class="ld-sub" id="ld-sub">INITIALIZING EARTH</div>
+  <div class="ld-t">ASTRANOV</div>
+  <div class="ld-bw"><div class="ld-b" id="ld-b"></div></div>
+  <div class="ld-s" id="ld-s">INITIALIZING</div>
 </div>
 
-<!-- Title -->
-<div id="title">ASTRANOV</div>
+<!-- DEMO BAR -->
+<div id="demo-bar">
+  <span>⬡ DEMO MODE — LIVE SIMULATION</span>
+  <div id="demo-dismiss" onclick="A.stopDemo()">SIGN IN TO CONTINUE ›</div>
+</div>
 
-<!-- Layer label -->
+<!-- TITLE ZONE -->
+<div id="title">ASTRANOV</div>
 <div id="layer-lbl">ORBITAL</div>
 
-<!-- Altitude bar -->
+<!-- TOP-LEFT -->
+<div id="map-back" onclick="A.toGlobe()">↑</div>
+
+<!-- TOP-RIGHT -->
+<div id="iss" onclick="A.showToast('ISS altitude: 408 km · Speed: 27,600 km/h · Orbit: 92 min')">🛸 ISS ···</div>
+
+<!-- MIDDLE-RIGHT -->
 <div id="alt-bar"><div id="alt-fill" style="height:50%"></div></div>
 
-<!-- ISS badge -->
-<div id="iss-badge">🛸 ISS ···</div>
-
-<!-- Toast -->
-<div id="toast"></div>
-
-<!-- Map back -->
-<div id="map-back">↑</div>
-
-<!-- Role strip -->
+<!-- ROLE STRIP -->
 <div id="role-strip">
   <div class="rb" id="rb-client">CLIENT</div>
   <div class="rb" id="rb-vendor">VENDOR</div>
   <div class="rb" id="rb-driver">DRIVER</div>
 </div>
 
-<!-- HUD -->
+<!-- HUD — BOTTOM RIGHT -->
 <div id="hud">
-  <div class="hb" id="hb-mic" title="Voice">🎙️</div>
-  <div class="hb" id="hb-type" title="Type">✏️</div>
-  <div class="hb" id="hb-market" title="Market">🛒</div>
-  <div class="hb" id="hb-locate" title="Locate">📍</div>
+  <div class="hb" id="hb-mic" onclick="A.startMic()"><span>🎙</span><div class="hb-tip">VOICE</div></div>
+  <div class="hb" id="hb-search" onclick="A.toggleSearch()"><span>🔍</span><div class="hb-tip">SEARCH</div></div>
+  <div class="hb" id="hb-mkt" onclick="A.openMkt()"><span>🛒</span><div class="hb-tip">MARKET</div></div>
+  <div class="hb" id="hb-video" onclick="A.openVideo()"><span>▶</span><div class="hb-tip">VIDEO</div></div>
+  <div class="hb" id="hb-ai" onclick="A.openAI()"><span>◈</span><div class="hb-tip">AI</div></div>
+  <div class="hb" id="hb-loc" onclick="A.locate()"><span>◎</span><div class="hb-tip">LOCATE</div></div>
+  <div class="hb" id="hb-user" onclick="A.userTap()"><span>⬡</span><div class="hb-tip">IDENTITY</div></div>
 </div>
 
-<!-- AI panel -->
+<!-- SOUND + BUILDER — BOTTOM LEFT -->
+<div id="sound-btn" onclick="A.toggleSound()">♪</div>
+<div id="builder-btn" onclick="A.openBuilder()">⚙</div>
+
+<!-- SEARCH -->
+<div id="search-bar">
+  <input type="text" id="search-in" placeholder="Search the world…" autocomplete="off" inputmode="search">
+  <div id="search-go" onclick="A.doSearch()">›</div>
+</div>
+<div id="search-results"></div>
+
+<!-- AI PANEL -->
 <div id="ai-panel">
   <div id="ai-log"></div>
   <div id="ai-row">
-    <div class="ab" id="ab-close">✕</div>
+    <div class="ab" onclick="A.closeAI()">✕</div>
     <input type="text" id="ai-in" placeholder="Ask Astranov…" autocomplete="off" inputmode="text">
-    <div class="ab" id="ab-send">→</div>
-    <div class="ab" id="ab-mic">🎙️</div>
+    <div class="ab" onclick="A.sendAI($('ai-in').value)">›</div>
+    <div class="ab" id="ab-mic" onclick="A.startMic()">🎙</div>
   </div>
 </div>
 
-<!-- Market sheet -->
-<div id="mkt-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">MARKETPLACE — RHODES</div>
+<!-- MARKET SHEET -->
+<div class="sheet" id="mkt-sheet">
+  <div class="handle"></div>
+  <div class="sh-title">MARKETPLACE — RHODES</div>
   <div id="vendor-list"></div>
 </div>
 
-<!-- Menu sheet -->
-<div id="menu-sheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title" id="menu-title"></div>
+<!-- MENU SHEET -->
+<div class="sheet" id="menu-sheet">
+  <div class="handle"></div>
+  <div class="sh-title" id="menu-title"></div>
   <div id="menu-items"></div>
 </div>
 
-<!-- Order bar -->
-<div id="order-bar">
-  <div>
-    <div id="order-count">0 ITEMS</div>
-    <div id="order-total">€0.00</div>
+<!-- VIDEO SHEET -->
+<div class="sheet" id="video-sheet">
+  <div class="handle"></div>
+  <div class="sh-title">PIN VIDEO TO MAP</div>
+  <div class="platform-row">
+    <div class="plat-btn on" id="plat-yt"   onclick="A.selPlat('yt')">▶ YouTube</div>
+    <div class="plat-btn"    id="plat-vm"   onclick="A.selPlat('vm')">▷ Vimeo</div>
+    <div class="plat-btn"    id="plat-tt"   onclick="A.selPlat('tt')">♪ TikTok</div>
+    <div class="plat-btn"    id="plat-ig"   onclick="A.selPlat('ig')">◈ Instagram</div>
+    <div class="plat-btn"    id="plat-own"  onclick="A.selPlat('own')">⬆ Upload</div>
   </div>
-  <button id="order-go" onclick="ASTR.checkout()">CHECKOUT →</button>
+  <input type="text" class="fx" id="video-url" placeholder="Paste URL here…">
+  <input type="text" class="fx" id="video-cap" placeholder="Caption (optional)">
+  <div id="video-preview"></div>
+  <button class="btn-b" onclick="A.pinVideo()">◎ PIN TO MY LOCATION</button>
+  <button class="btn-ghost" onclick="A.closeVideo()">Cancel</button>
 </div>
 
-<!-- Delivery confirm sheet -->
-<div id="del-sheet">
-  <div class="del-box">
-    <div class="sheet-title" style="margin-bottom:14px">DELIVERY SUMMARY</div>
-    <div id="del-content"></div>
-    <button class="btn-primary" onclick="ASTR.confirmOrder()">CONFIRM &amp; SEND</button>
-    <button class="btn-ghost" onclick="ASTR.closeDelivery()">CANCEL</button>
-  </div>
-</div>
-
-<!-- API key dialog -->
-<div id="key-dlg">
-  <div class="key-box">
-    <h2>AI INTELLIGENCE</h2>
-    <p>Enter your Anthropic API key to enable Astranov Intelligence. Stored locally on this device only.</p>
-    <input type="password" class="key-in" id="key-in" placeholder="sk-ant-…">
-    <div class="key-row">
-      <button class="kb" onclick="ASTR.saveKey()">CONNECT</button>
-      <button class="ks" onclick="ASTR.skipKey()">SKIP</button>
+<!-- USER MENU -->
+<div id="user-menu">
+  <div class="handle"></div>
+  <div class="um-hdr">
+    <div class="um-av" id="um-av">⬡</div>
+    <div>
+      <div class="um-name" id="um-name">Guest</div>
+      <div class="um-bal" id="um-bal">✦ 0.00 ASTRAN</div>
     </div>
   </div>
+  <div class="role-row">
+    <div><div class="role-lbl">CLIENT</div><div class="role-sub">Browse and order from vendors</div></div>
+    <div class="toggle on" id="tog-client" onclick="A.toggleRole('client')"><div class="knob"></div></div>
+  </div>
+  <div class="role-row">
+    <div><div class="role-lbl">VENDOR</div><div class="role-sub">Sell via Google Sheets catalog</div></div>
+    <div class="toggle" id="tog-vendor" onclick="A.toggleRole('vendor')"><div class="knob"></div></div>
+  </div>
+  <div class="setup-panel" id="vendor-setup">
+    <input type="text" class="fx" id="v-name" placeholder="Business name">
+    <input type="text" class="fx" id="v-cat"  placeholder="Category">
+    <input type="text" class="fx" id="v-hrs"  placeholder="Hours e.g. 09:00–22:00">
+    <input type="text" class="fx" id="v-sheet" placeholder="Google Sheets public CSV URL">
+    <button class="btn-b" onclick="A.saveVendor()">SAVE VENDOR</button>
+    <div style="font-size:9px;color:rgba(255,255,255,.2);line-height:1.6">Columns: name · photo_url · price · weight_kg · volume_l · life_exp_h · delivery_window_h · available</div>
+  </div>
+  <div class="role-row">
+    <div><div class="role-lbl">DRIVER</div><div class="role-sub">Earn ≥ €33/h guaranteed</div></div>
+    <div class="toggle" id="tog-driver" onclick="A.toggleRole('driver')"><div class="knob"></div></div>
+  </div>
+  <div class="setup-panel" id="driver-setup">
+    <input type="text" class="fx" id="d-veh" placeholder="Vehicle (moped / bicycle / car)">
+    <input type="text" class="fx" id="d-cap" placeholder="Max capacity kg (default 13)">
+    <input type="text" class="fx" id="d-hrs" placeholder="Preferred hours">
+    <button class="btn-b" onclick="A.saveDriver()">SAVE DRIVER PROFILE</button>
+  </div>
+  <div class="incog" id="incog-badge">● VISIBLE ON MAP</div>
+  <div class="sect">ASTRAN WALLET</div>
+  <div class="topup-row">
+    <div class="topup-btn" onclick="A.topup(5)">+5 ✦</div>
+    <div class="topup-btn" onclick="A.topup(10)">+10 ✦</div>
+    <div class="topup-btn" onclick="A.topup(20)">+20 ✦</div>
+    <div class="topup-btn" onclick="A.topup(50)">+50 ✦</div>
+  </div>
+  <div style="font-size:9px;color:rgba(255,255,255,.18);line-height:1.5">1 Astran = €1 · Platform 3% · Drivers: €33/h floor guaranteed</div>
+  <button class="btn-ghost" onclick="A.closeUserMenu()" style="margin-top:14px">CLOSE</button>
+  <button class="btn-ghost" onclick="A.signOut()" style="margin-top:6px;color:rgba(255,60,60,.35)">SIGN OUT</button>
 </div>
 
-<!-- Attribution -->
-<div id="attr">Globe: globe.gl / Three.js · Map tiles: © OpenStreetMap · © CARTO · ISS: wheretheiss.at<br>ASTRANOV Internet Operating System · Rhodes Island, Greece</div>
+<!-- ORDER BAR -->
+<div id="order-bar">
+  <div>
+    <div id="order-count" style="font-family:'Orbitron',monospace;font-size:9px;color:var(--B)">0 ITEMS</div>
+    <div id="order-total" style="font-size:13px;font-weight:600">€0.00</div>
+  </div>
+  <button id="order-go" onclick="A.checkout()">CHECKOUT ›</button>
+</div>
 
-<!-- Scripts -->
+<!-- DELIVERY CONFIRM -->
+<div id="del-sheet">
+  <div class="del-box">
+    <div class="sh-title" style="margin-bottom:11px">DELIVERY SUMMARY</div>
+    <div id="del-content"></div>
+    <button class="btn-b" onclick="A.confirmOrder()">CONFIRM &amp; SEND ORDER</button>
+    <button class="btn-ghost" onclick="A.closeDelivery()" style="margin-top:6px">Cancel</button>
+  </div>
+</div>
+
+<!-- MSG PANEL -->
+<div id="msg-panel">
+  <div class="handle"></div>
+  <div class="sh-title" id="msg-title">THREAD</div>
+  <div id="msg-log"></div>
+  <div class="msg-row">
+    <input type="text" id="msg-txt" placeholder="Message…" autocomplete="off">
+    <div id="msg-go" onclick="A.sendMsg()">›</div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div id="auth-sheet">
+  <div class="auth-box">
+    <h2>ASTRANOV IDENTITY</h2>
+    <p>Sign in to place orders, activate vendor or driver roles, join Social Circles, and pin media to the globe.</p>
+    <div id="auth-tabs">
+      <div class="auth-tab on" id="tab-in" onclick="A.authTab('in')">SIGN IN</div>
+      <div class="auth-tab"    id="tab-up" onclick="A.authTab('up')">SIGN UP</div>
+    </div>
+    <input type="email"    class="fx" id="auth-email" placeholder="Email">
+    <input type="password" class="fx" id="auth-pw"    placeholder="Password">
+    <button class="btn-b"    id="auth-btn" onclick="A.authSubmit()">ENTER</button>
+    <button class="btn-ghost" onclick="A.closeAuth()">Continue without account</button>
+  </div>
+</div>
+
+<!-- WELCOME INVITE -->
+<div id="welcome">
+  <div class="wi-title">JOIN ASTRANOV</div>
+  <div class="wi-sub">You have been exploring the world. Sign in to order, drive, sell, join Social Circles, and pin media to the globe.</div>
+  <div class="wi-row">
+    <div class="wi-join" onclick="A.openAuth();A.dismissWelcome()">SIGN IN · JOIN</div>
+    <div class="wi-skip" onclick="A.dismissWelcome()">Keep exploring</div>
+  </div>
+</div>
+
+<!-- BUILDER PANEL -->
+<div id="builder-panel">
+  <div id="builder-hdr">
+    <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--amber);letter-spacing:.16em">⚙ ASTRANOV BUILDER</div>
+    <div style="color:rgba(255,255,255,.3);font-size:19px;cursor:pointer" onclick="A.closeBuilder()">✕</div>
+  </div>
+  <div id="builder-log">
+    <div class="bl sys">OWNER MODE · Changes apply to all users · Describe what to build, change, or fix</div>
+  </div>
+  <div id="builder-row">
+    <textarea id="builder-in" placeholder="Describe a change, add a vendor, update config, request a code patch…" rows="1"></textarea>
+    <div id="builder-send" onclick="A.builderSend()">›</div>
+  </div>
+</div>
+
+<div id="attr">Globe: globe.gl · Map: © OpenStreetMap · © CARTO · ISS: wheretheiss.at · ASTRANOV IOS v1.3 · © Notis Astranov · Rhodes</div>
+<div id="toast"></div>
+
 <script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-/* ═══════════════════════════════════════════════════════════
-   ASTRANOV INTERNET OPERATING SYSTEM
-   Single-file collective reality interface
-   Rhodes Island, Greece · Version 1
-   ═══════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ASTRANOV IOS v1.3 · Owner: Notis Astranov · Rhodes · 2026-04-26
+   AI: ai-router Edge Function (Gemini→Groq→OpenAI→Grok→Local)
+   ═══════════════════════════════════════════════════════════════ */
+const A=(()=>{
+const SB_URL='https://kzlabcrlrpbnfiiyrjvl.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
+const AI_URL=SB_URL+'/functions/v1/ai-router';
 
-const ASTR = (() => {
+const S={
+  sb:null,user:null,profile:null,globe:null,map:null,mapOn:false,
+  layer:'ORBITAL',altPrev:'ORBITAL',mapLat:36.4349,mapLng:28.2176,
+  cart:[],cartVid:null,aiHistory:[],builderHistory:[],
+  micOn:false,aiOpen:false,searchOpen:false,msgCtx:null,msgSub:null,
+  userMarker:null,hudTimer:null,welcomeTimer:null,demoTimer:null,
+  authMode:'in',roles:{client:true,vendor:false,driver:false},
+  isOwner:false,demoRunning:false,soundOn:false,audioCtx:null,
+  selectedPlat:'yt',demoIntervals:[],globeSigs:[],
+};
 
-  /* ────────── STATE ────────── */
-  const S = {
-    layer: 'ORBITAL',
-    role: null,
-    aiOpen: false,
-    micOn: false,
-    mapOn: false,
-    mapLat: 36.4349,
-    mapLng: 28.2176,
-    apiKey: localStorage.getItem('astr_ak') || '',
-    aiHistory: [],
-    cart: [],
-    cartVendorId: null,
-    recognition: null,
-    synth: window.speechSynthesis,
-    globeAlt: 2.5,
-    altPrev: 'ORBITAL',
-    issInterval: null,
-    hudTimer: null,
+const VSEED=[
+  {id:'v1',business_name:'Aegean Fresh Market',category:'GROCERY',lat:36.4401,lng:28.2205,is_open:true,emoji:'🛒',items:[{n:'Tomatoes',p:2.5},{n:'Olive Oil',p:8},{n:'Feta PDO',p:5.5},{n:'Olives',p:3.8},{n:'Pita',p:1.2}]},
+  {id:'v2',business_name:'Rodos Souvlaki House',category:'FOOD',lat:36.435,lng:28.2185,is_open:true,emoji:'🍴',items:[{n:'Souvlaki Plate',p:9},{n:'Gyros Wrap',p:5.5},{n:'Greek Salad',p:6},{n:'Tzatziki',p:2.5}]},
+  {id:'v3',business_name:'Rhodes Bakery',category:'BAKERY',lat:36.437,lng:28.2155,is_open:true,emoji:'🥐',items:[{n:'Spanakopita',p:2.8},{n:'Sourdough',p:4.5},{n:'Baklava',p:3.2}]},
+  {id:'v4',business_name:'Island Pharmacy',category:'PHARMA',lat:36.439,lng:28.223,is_open:false,emoji:'💊',items:[]},
+];
+const CIRCLES_SEED=[
+  {id:'sc1',name:'Old Town Community',lat:36.4401,lng:28.22,radius_m:280,member_count:47},
+  {id:'sc2',name:'Mandraki Harbor',lat:36.432,lng:28.215,radius_m:500,member_count:23},
+  {id:'sc3',name:'Rhodes Night Market',lat:36.445,lng:28.226,radius_m:180,member_count:11},
+];
+const DEMO_DRIVERS=[
+  {id:'dd1',name:'Nikos K.',lat:36.4390,lng:28.2210,color:'#ffc800',path:[[36.439,28.221],[36.441,28.223],[36.443,28.225],[36.444,28.222],[36.442,28.219],[36.440,28.217],[36.439,28.221]]},
+  {id:'dd2',name:'Maria P.',lat:36.4350,lng:28.2160,color:'#ffc800',path:[[36.435,28.216],[36.437,28.214],[36.439,28.212],[36.438,28.210],[36.436,28.212],[36.434,28.214],[36.435,28.216]]},
+  {id:'dd3',name:'Alexis T.',lat:36.4420,lng:28.2230,color:'#ffc800',path:[[36.442,28.223],[36.444,28.221],[36.446,28.219],[36.444,28.217],[36.442,28.219],[36.440,28.221],[36.442,28.223]]},
+];
+let vendors=VSEED,circles=CIRCLES_SEED;
+let ML={circles:[],vendors:[],drivers:[],routes:[],media:[],demoMarkers:[]};
+const $=id=>document.getElementById(id);
+
+/* ════ BOOT ════ */
+async function init(){
+  initStars();animateLoading();initSB();initGlobe();setupHUD();setupAI();setupMsg();setupBuilder();issTrack();
+}
+
+/* ════ SUPABASE ════ */
+function initSB(){
+  try{
+    S.sb=supabase.createClient(SB_URL,SB_KEY);
+    S.sb.auth.onAuthStateChange(async(ev,sess)=>{
+      const wasGuest=!S.user;
+      S.user=sess?.user||null;
+      if(S.user){
+        if(wasGuest)stopDemo();
+        await loadProfile();updateHUD();
+        if(S.mapOn)placeUserMarker();
+      }else{S.profile=null;updateHUD();}
+    });
+    S.sb.auth.getSession().then(({data:{session:sess}})=>{
+      S.user=sess?.user||null;
+      if(S.user)loadProfile().then(()=>{updateHUD();});
+      else startDemoMode();
+    });
+    loadVendors();loadCircles();
+  }catch(e){console.warn('SB:',e);startDemoMode();}
+}
+
+async function loadProfile(){
+  if(!S.sb||!S.user)return;
+  const{data}=await S.sb.from('users').select('*').eq('id',S.user.id).single();
+  if(data){S.profile=data;S.roles={client:!!data.role_client,vendor:!!data.role_vendor,driver:!!data.role_driver};S.isOwner=!!data.is_owner;$('builder-btn').classList.toggle('on',S.isOwner);cancelWelcomeTimer();}
+}
+async function saveProfile(p){if(!S.sb||!S.user)return;await S.sb.from('users').upsert({id:S.user.id,...p});await loadProfile();updateHUD();}
+async function loadVendors(){if(!S.sb)return;const{data}=await S.sb.from('vendors').select('*');if(data&&data.length)vendors=data;}
+async function loadCircles(){if(!S.sb)return;const{data}=await S.sb.from('social_circles').select('*').eq('is_public',true);if(data&&data.length)circles=data;}
+
+function updateHUD(){
+  const nm=S.profile?.display_name||S.user?.email?.split('@')[0]||'Guest';
+  const bl=S.profile?.wallet_astran||0;
+  $('um-av').textContent=nm[0]?.toUpperCase()||'⬡';
+  $('um-name').textContent=nm;
+  $('um-bal').textContent=`✦ ${parseFloat(bl).toFixed(2)} ASTRAN`;
+  syncToggles();updateIncog();
+}
+
+/* ════ AUTH ════ */
+function authTab(m){S.authMode=m;$('tab-in').classList.toggle('on',m==='in');$('tab-up').classList.toggle('on',m==='up');$('auth-btn').textContent=m==='in'?'SIGN IN':'CREATE ACCOUNT';}
+async function authSubmit(){
+  const email=$('auth-email').value.trim(),pw=$('auth-pw').value;
+  if(!email||!pw){showToast('Enter email and password');return;}
+  $('auth-btn').textContent='···';
+  let err;
+  if(S.authMode==='in'){({error:err}=await S.sb.auth.signInWithPassword({email,password:pw}));}
+  else{({error:err}=await S.sb.auth.signUp({email,password:pw}));}
+  $('auth-btn').textContent=S.authMode==='in'?'SIGN IN':'CREATE ACCOUNT';
+  if(err){showToast(err.message);return;}
+  closeAuth();showToast(S.authMode==='in'?'WELCOME BACK ✦':'ACCOUNT CREATED ✦');
+}
+function closeAuth(){$('auth-sheet').classList.remove('on');}
+function openAuth(){$('auth-sheet').classList.add('on');}
+async function signOut(){if(S.sb)await S.sb.auth.signOut();S.user=null;S.profile=null;closeUserMenu();showToast('SIGNED OUT');startDemoMode();}
+
+/* ════ ROLES ════ */
+function toggleRole(r){
+  if(!S.user){openAuth();return;}
+  S.roles[r]=!S.roles[r];
+  const allOff=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;
+  syncToggles();updateIncog();
+  $('vendor-setup').classList.toggle('on',S.roles.vendor);
+  $('driver-setup').classList.toggle('on',S.roles.driver);
+  saveProfile({role_client:S.roles.client,role_vendor:S.roles.vendor,role_driver:S.roles.driver,incognito:allOff});
+  if(S.mapOn)placeUserMarker();
+  showToast(allOff?'👁 INCOGNITO MODE':`${r.toUpperCase()} ${S.roles[r]?'ON':'OFF'}`);
+}
+function syncToggles(){['client','vendor','driver'].forEach(r=>{$(`tog-${r}`)?.classList.toggle('on',!!S.roles[r]);$(`rb-${r}`)?.classList.toggle('on',!!S.roles[r]);});}
+function updateIncog(){const all=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;const b=$('incog-badge');b.textContent=all?'👁 INCOGNITO — invisible on map':'● VISIBLE ON MAP';b.classList.toggle('on',all);}
+
+async function saveVendor(){
+  if(!S.sb||!S.user)return;
+  const bn=$('v-name').value.trim();if(!bn){showToast('Enter business name');return;}
+  await S.sb.from('vendors').upsert({user_id:S.user.id,business_name:bn,category:$('v-cat').value.trim(),sheets_url:$('v-sheet').value.trim(),availability:{hours:$('v-hrs').value.trim()},lat:S.mapLat,lng:S.mapLng,is_open:true});
+  showToast('VENDOR SAVED ✦');
+}
+async function saveDriver(){
+  if(!S.sb||!S.user)return;
+  await S.sb.from('drivers').upsert({user_id:S.user.id,vehicle_type:$('d-veh').value.trim()||'moped',max_kg:parseFloat($('d-cap').value)||13,availability:{hours:$('d-hrs').value.trim()},lat:S.mapLat,lng:S.mapLng,is_online:true});
+  showToast('DRIVER PROFILE SAVED ✦');
+}
+async function topup(amt){
+  if(!S.user){openAuth();return;}
+  if(S.sb){await S.sb.from('wallet_transactions').insert({user_id:S.user.id,type:'topup',amount_astran:amt,note:'Demo top-up'});await loadProfile();updateHUD();}
+  showToast(`+${amt} ✦ CREDITED`);
+}
+
+/* ════ STARS ════ */
+function initStars(){
+  const cv=$('stars'),cx=cv.getContext('2d');let st=[];
+  const rsz=()=>{cv.width=innerWidth;cv.height=innerHeight;
+    st=Array.from({length:350},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.3+0.2,a:Math.random()*.7+0.2,ph:Math.random()*Math.PI*2,sp:Math.random()*.004+.001}));
   };
+  const draw=()=>{cx.clearRect(0,0,cv.width,cv.height);for(const s of st){s.ph+=s.sp;const a=s.a*(0.5+0.5*Math.sin(s.ph));cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(180,220,255,${a.toFixed(2)})`;cx.fill();}requestAnimationFrame(draw);};
+  rsz();addEventListener('resize',rsz);requestAnimationFrame(draw);
+}
 
-  /* ────────── DATA ────────── */
-  const VENDORS = [
-    {
-      id:1, name:'Aegean Fresh Market', emoji:'🛒', type:'GROCERY',
-      lat:36.4401, lng:28.2205, open:true,
-      items:[
-        {n:'Organic Tomatoes',p:2.50,u:'per kg'},
-        {n:'Local Olive Oil',p:8.00,u:'500 ml'},
-        {n:'Feta Cheese PDO',p:5.50,u:'250 g'},
-        {n:'Kalamata Olives',p:3.80,u:'jar'},
-        {n:'Fresh Pita Bread',p:1.20,u:'piece'},
-      ]
-    },
-    {
-      id:2, name:'Rodos Souvlaki House', emoji:'🍴', type:'FOOD',
-      lat:36.4350, lng:28.2185, open:true,
-      items:[
-        {n:'Souvlaki Plate',p:9.00,u:''},
-        {n:'Gyros Wrap',p:5.50,u:''},
-        {n:'Greek Salad',p:6.00,u:''},
-        {n:'Tzatziki',p:2.50,u:''},
-        {n:'Fresh Orange Juice',p:3.00,u:''},
-      ]
-    },
-    {
-      id:3, name:'Island Pharmacy', emoji:'💊', type:'PHARMA',
-      lat:36.4390, lng:28.2230, open:false, items:[]
-    },
-    {
-      id:4, name:'Rhodes Bakery', emoji:'🥐', type:'BAKERY',
-      lat:36.4370, lng:28.2155, open:true,
-      items:[
-        {n:'Spanakopita',p:2.80,u:'piece'},
-        {n:'Tyropita',p:2.50,u:'piece'},
-        {n:'Sourdough Loaf',p:4.50,u:''},
-        {n:'Baklava',p:3.20,u:'portion'},
-      ]
-    },
-  ];
+/* ════ CELESTIAL MATH ════ */
+function sunPosition(date){
+  const D=date/86400000-10957.5,g=(357.529+0.98560028*D)*Math.PI/180,q=280.459+0.98564736*D,L=(q+1.915*Math.sin(g)+0.02*Math.sin(2*g))*Math.PI/180,e=23.439*Math.PI/180;
+  const sinL=Math.sin(L),cosL=Math.cos(L),ra=Math.atan2(Math.cos(e)*sinL,cosL)*180/Math.PI,dec=Math.asin(Math.sin(e)*sinL)*180/Math.PI;
+  return{lat:dec,lng:(ra-date/240000%360+360)%360-180};
+}
+function moonPosition(date){
+  const D=date/86400000-10957.5,L=(218.316+13.176396*D)*Math.PI/180,M=(134.963+13.064993*D)*Math.PI/180,F=(93.272+13.229350*D)*Math.PI/180;
+  const lon=L+6.289*Math.sin(M)*Math.PI/180,lat=5.128*Math.sin(F)*Math.PI/180;
+  return{lat:lat*180/Math.PI,lng:(lon*180/Math.PI-date/240000%360+360)%360-180};
+}
 
-  const DRIVERS = [
-    {id:1, name:'Nikos K.', lat:36.4370, lng:28.2210, online:true, emoji:'🛵'},
-    {id:2, name:'Maria P.', lat:36.4420, lng:28.2180, online:true, emoji:'🛵'},
-  ];
+/* ════ GLOBE ════ */
+function initGlobe(){
+  const el=$('globe-wrap');
+  S.globe=Globe()
+    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
+    .atmosphereColor('#00c8ff').atmosphereAltitude(0.22)
+    .backgroundColor('rgba(0,0,0,0)')(el);
+  S.globe.width(innerWidth).height(innerHeight);
+  S.globe.pointOfView({lat:36.4,lng:28.2,altitude:2.5},0);
 
-  const SOCIAL_CIRCLES = [
-    {lat:36.4405, lng:28.2200, r:280, name:'Old Town Community', members:47},
-    {lat:36.4320, lng:28.2150, r:500, name:'Mandraki Harbor', members:23},
-    {lat:36.4450, lng:28.2260, r:180, name:'Rhodes Night Market', members:11},
-  ];
+  const now=Date.now();const sun=sunPosition(now);const moon=moonPosition(now);
+  S.globeSigs=mkSigs();
+  S.globe.pointsData([...S.globeSigs,
+    {lat:sun.lat,lng:sun.lng,r:.8,col:'#ffe000',txt:'☀ Sun — Live Position'},
+    {lat:moon.lat,lng:moon.lng,r:.5,col:'#c8d8ff',txt:'☽ Moon — Live Position'},
+  ]).pointColor(d=>d.col||'#00d4ff').pointAltitude(0.01).pointRadius(d=>d.r||0.3)
+    .onPointClick(d=>{if(d.txt)showToast(d.txt);});
 
-  const NEWS_POINTS = [
-    {lat:36.44,lng:28.21,txt:'Local fish market opens 06:00',cat:'local'},
-    {lat:36.43,lng:28.22,txt:'Colossus archaeological dig update',cat:'culture'},
-    {lat:36.45,lng:28.20,txt:'Summer ferry schedule published',cat:'transport'},
-    {lat:51.5,lng:-0.1,txt:'London heatwave advisory',cat:'weather'},
-    {lat:48.8,lng:2.35,txt:'Paris fashion week begins',cat:'culture'},
-    {lat:40.7,lng:-74.0,txt:'NYC startup funding round',cat:'finance'},
-    {lat:35.7,lng:139.7,txt:'Tokyo tech expo opens',cat:'tech'},
-    {lat:-33.9,lng:151.2,txt:'Sydney ocean temps rising',cat:'climate'},
-    {lat:19.0,lng:72.8,txt:'Mumbai monsoon advisory',cat:'weather'},
-  ];
+  S.globe.arcsData([{slat:36.44,slng:28.22,elat:51.5,elng:-0.1},{slat:36.44,slng:28.22,elat:48.8,elng:2.35},{slat:36.44,slng:28.22,elat:40.7,elng:-74},{slat:40.7,slng:-74,elat:35.7,elng:139.7}])
+    .arcStartLat('slat').arcStartLng('slng').arcEndLat('elat').arcEndLng('elng')
+    .arcColor(()=>['rgba(0,212,255,0.04)','rgba(0,212,255,0.55)'])
+    .arcAltitude(0.18).arcStroke(0.2).arcDashLength(0.35).arcDashGap(2.5).arcDashAnimateTime(4500);
 
-  /* ────────── DOM refs ────────── */
-  const $ = id => document.getElementById(id);
+  S.globe.labelsData([{lat:36.44,lng:28.22,txt:'Rhodes',size:.8,col:'rgba(0,212,255,.9)'}])
+    .labelText('txt').labelSize('size').labelColor('col').labelAltitude(0.01).labelDotRadius(0.3);
 
-  let globe = null;
-  let map = null;
-  let mapLayers = { circles:[], vendors:[], drivers:[], routes:[], labels:[] };
+  const ctrl=S.globe.controls();
+  ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.2;ctrl.enableDamping=true;ctrl.dampingFactor=0.07;ctrl.minDistance=101;ctrl.maxDistance=700;
+  setInterval(checkAlt,220);
+  setInterval(()=>{const now=Date.now();const sun=sunPosition(now);const moon=moonPosition(now);const iss_pos=S._issPos||{lat:0,lng:0};S.globe.pointsData([...S.globeSigs,{lat:sun.lat,lng:sun.lng,r:.8,col:'#ffe000',txt:'☀ Sun'},{lat:moon.lat,lng:moon.lng,r:.5,col:'#c8d8ff',txt:'☽ Moon'},{lat:iss_pos.lat,lng:iss_pos.lng,r:.6,col:'#ffffff',txt:'🛸 ISS — Live'}]);},10000);
+  S.globe.onGlobeClick(c=>{if(!c)return;ctrl.autoRotate=false;S.mapLat=c.lat;S.mapLng=c.lng;S.globe.pointOfView({lat:c.lat,lng:c.lng,altitude:0.2},1700);setTimeout(toMap,1800);});
+  addEventListener('resize',()=>S.globe.width(innerWidth).height(innerHeight));
+}
 
-  /* ════════ BOOT ════════ */
-  function init() {
-    initStars();
-    animateLoading();
-    initGlobe();
-    setupHUD();
-    setupAI();
-    issTrack();
+function mkSigs(){
+  const p=[{lat:36.44,lng:28.22,r:.4,col:'#00d4ff',txt:'Rhodes — ASTRANOV HQ'},{lat:51.5,lng:-0.1,r:.28,col:'rgba(0,180,255,.65)',txt:'London'},{lat:48.8,lng:2.35,r:.28,col:'rgba(0,180,255,.65)',txt:'Paris'},{lat:40.7,lng:-74,r:.28,col:'rgba(0,180,255,.65)',txt:'New York'},{lat:35.7,lng:139.7,r:.25,col:'rgba(0,180,255,.6)',txt:'Tokyo'},{lat:19,lng:72.8,r:.22,col:'rgba(0,180,255,.5)',txt:'Mumbai'}];
+  for(let i=0;i<60;i++)p.push({lat:(Math.random()-.5)*160,lng:(Math.random()-.5)*360,r:Math.random()*.14+.05,col:'rgba(0,130,180,.25)'});
+  return p;
+}
+
+function checkAlt(){
+  if(!S.globe)return;
+  const alt=S.globe.pointOfView().altitude;
+  $('alt-fill').style.height=Math.max(4,Math.min(96,(1-alt/6)*100))+'%';
+  let lyr=alt>4.5?'SOLAR':alt>2?'ORBITAL':alt>0.8?'REGIONAL':alt>0.3?'LOCAL':'STREET';
+  if(lyr!==S.altPrev){
+    S.altPrev=lyr;S.layer=lyr;$('layer-lbl').textContent=lyr;
+    if((lyr==='LOCAL'||lyr==='STREET')&&!S.mapOn){const p=S.globe.pointOfView();S.mapLat=p.lat;S.mapLng=p.lng;toMap();}
+    S.globe.controls().autoRotate=alt>1.2;
+    updateSound(lyr);
   }
+}
 
-  /* ════════ STARS ════════ */
-  function initStars() {
-    const cv = $('stars');
-    const cx = cv.getContext('2d');
-    let stars = [];
+/* ════ MAP ════ */
+function initMap(){
+  if(S.map)return;
+  S.map=L.map('map',{center:[S.mapLat,S.mapLng],zoom:15,zoomControl:false,attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(S.map);
+  drawCircles();drawVendors();drawDrivers();
+  S.map.on('zoomend',()=>{if(S.map.getZoom()<10)toGlobe();});
+}
+function toMap(){
+  if(S.mapOn)return;S.mapOn=true;initMap();
+  S.map.setView([S.mapLat,S.mapLng],15);
+  $('map-wrap').classList.add('on');$('map-back').classList.add('on');$('role-strip').classList.add('on');
+  showHUD();placeUserMarker();
+  if(S.demoRunning)startDemoOnMap();
+  showToast(cStr(S.mapLat,S.mapLng)+' — CITY MAP');
+}
+function toGlobe(){
+  if(!S.mapOn)return;S.mapOn=false;
+  $('map-wrap').classList.remove('on');$('map-back').classList.remove('on');$('role-strip').classList.remove('on');
+  S.globe.controls().autoRotate=false;
+  S.globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:1.4},1100);
+  $('layer-lbl').textContent='REGIONAL';S.layer='REGIONAL';S.altPrev='REGIONAL';
+  updateSound('REGIONAL');
+}
 
-    const resize = () => {
-      cv.width = window.innerWidth;
-      cv.height = window.innerHeight;
-      stars = Array.from({length:320}, () => ({
-        x: Math.random() * cv.width,
-        y: Math.random() * cv.height,
-        r: Math.random() * 1.4 + 0.2,
-        a: Math.random() * 0.8 + 0.2,
-        ph: Math.random() * Math.PI * 2,
-        sp: Math.random() * 0.006 + 0.001,
-      }));
-    };
+function placeUserMarker(){
+  if(!S.map||!S.user)return;
+  const allOff=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;
+  if(S.userMarker){S.userMarker.remove();S.userMarker=null;}
+  if(allOff)return;
+  const nm=S.profile?.display_name||S.user?.email?.split('@')[0]||'Me';
+  const icon=L.divIcon({className:'',html:`<div onclick="A.openUserMenu()" style="width:40px;height:40px;border-radius:50%;background:rgba(0,8,24,.92);border:2px solid #00d4ff;display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;box-shadow:0 0 16px rgba(0,212,255,.5)">${nm[0].toUpperCase()}</div>`,iconSize:[40,40],iconAnchor:[20,20]});
+  S.userMarker=L.marker([S.profile?.lat||S.mapLat,S.profile?.lng||S.mapLng],{icon}).addTo(S.map);
+}
 
-    const draw = () => {
-      cx.clearRect(0, 0, cv.width, cv.height);
-      for (const s of stars) {
-        s.ph += s.sp;
-        const a = s.a * (0.5 + 0.5 * Math.sin(s.ph));
-        cx.beginPath();
-        cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        cx.fillStyle = `rgba(180,220,255,${a.toFixed(2)})`;
-        cx.fill();
-      }
-      requestAnimationFrame(draw);
-    };
-
-    resize();
-    window.addEventListener('resize', resize);
-    requestAnimationFrame(draw);
+function drawCircles(){
+  ML.circles.forEach(l=>l.remove());ML.circles=[];
+  for(const sc of circles){
+    const c=L.circle([sc.lat,sc.lng],{radius:sc.radius_m,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:1.3,dashArray:'6 5',opacity:.4}).addTo(S.map);
+    c.on('click',()=>openThread('circle',sc.id,sc.name+' · '+sc.member_count+' members'));
+    const li=L.divIcon({className:'',html:`<div style="font-family:'Orbitron',monospace;font-size:7px;color:rgba(0,212,255,.5);letter-spacing:.1em;text-shadow:0 0 5px #00d4ff;white-space:nowrap">${sc.name}</div>`,iconAnchor:[0,0]});
+    ML.circles.push(c,L.marker([sc.lat+.0013,sc.lng],{icon:li}).addTo(S.map));
   }
+}
 
-  /* ════════ GLOBE ════════ */
-  function initGlobe() {
-    const el = $('globe-wrap');
+function drawVendors(){
+  ML.vendors.forEach(l=>l.remove());ML.vendors=[];
+  for(const v of vendors){
+    const op=v.is_open!==false;
+    const icon=L.divIcon({className:'',html:`<div style="width:34px;height:34px;border-radius:50%;background:rgba(0,8,22,.92);border:1.5px solid ${op?'#00d4ff':'#1a2840'};display:flex;align-items:center;justify-content:center;font-size:14px;${op?'box-shadow:0 0 10px rgba(0,212,255,.3)':''};cursor:pointer">${v.emoji||'🏪'}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+    const m=L.marker([v.lat||36.44,v.lng||28.22],{icon}).addTo(S.map);
+    m.on('click',()=>openVendorMenu(v));ML.vendors.push(m);
+  }
+}
 
-    globe = Globe()
-      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
-      .atmosphereColor('#00c8ff')
-      .atmosphereAltitude(0.22)
-      .backgroundColor('rgba(0,0,0,0)')
-      (el);
+function drawDrivers(){
+  ML.drivers.forEach(l=>l.remove());ML.drivers=[];
+  const mock=[{lat:36.437,lng:28.221},{lat:36.442,lng:28.218}];
+  for(const d of mock){
+    const icon=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:rgba(0,22,8,.92);border:1.5px solid #00ff88;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 8px rgba(0,255,136,.25)">🛵</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    const m=L.marker([d.lat,d.lng],{icon}).addTo(S.map);ML.drivers.push(m);
+    setInterval(()=>{d.lat+=(Math.random()-.5)*.0003;d.lng+=(Math.random()-.5)*.0003;m.setLatLng([d.lat,d.lng]);},3500+Math.random()*2000);
+  }
+}
 
-    globe.width(window.innerWidth).height(window.innerHeight);
+function drawOrderTriangle(v){
+  ML.routes.forEach(l=>l.remove());ML.routes=[];
+  const cl=[S.mapLat,S.mapLng],vl=[v.lat||36.44,v.lng||28.22],dl=[36.437,28.221];
+  const km=distKm(cl[0],cl[1],vl[0],vl[1])||0.7,del=calcDel(km,{night:isNight()});
+  const tri=L.polygon([cl,vl,dl],{color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:1.2,dashArray:'5 4',opacity:.55}).addTo(S.map);
+  const rt=L.polyline([vl,cl],{color:'#00d4ff',weight:2.2,opacity:.72,dashArray:'8 6'}).addTo(S.map);
+  const mid=[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
+  const pi=L.divIcon({className:'',html:`<div onclick="A.openThread('order',null,'Delivery Thread')" style="background:rgba(0,8,24,.92);border:1px solid rgba(0,212,255,.3);border-radius:7px;padding:3px 8px;font-family:'Orbitron',monospace;font-size:9px;color:#00d4ff;white-space:nowrap;cursor:pointer">€${del.total.toFixed(2)} ✦ — CHAT</div>`,iconAnchor:[35,10]});
+  ML.routes.push(tri,rt,L.marker(mid,{icon:pi}).addTo(S.map));
+  setTimeout(()=>{ML.routes.forEach(l=>l.remove());ML.routes=[];},90000);
+}
 
-    /* Starting view: above Rhodes */
-    globe.pointOfView({lat:36.4, lng:28.2, altitude:2.5}, 0);
+/* ════ DEMO MODE ════ */
+function startDemoMode(){
+  if(S.user||S.demoRunning)return;
+  S.demoRunning=true;
+  $('demo-bar').classList.add('on');
+  $('title').classList.add('demo');$('layer-lbl').classList.add('demo');
+  // 33 second welcome timer
+  S.welcomeTimer=setTimeout(()=>{if(!S.user)$('welcome').classList.add('on');},33000);
+  // Auto-descend to Rhodes after 5s
+  S.demoTimer=setTimeout(()=>{
+    if(!S.user&&S.globe){
+      S.globe.controls().autoRotate=false;
+      S.globe.pointOfView({lat:36.44,lng:28.22,altitude:0.2},3000);
+      setTimeout(()=>{if(!S.user)toMap();},3200);
+    }
+  },5000);
+}
 
-    /* World signals */
-    globe
-      .pointsData(makeSignals())
-      .pointColor(d => d.col || '#00d4ff')
-      .pointAltitude(0.01)
-      .pointRadius(d => d.r || 0.3)
-      .pointsMerge(false)
-      .onPointClick(d => {
-        if (d.txt) showToast(d.txt);
-      });
-
-    /* Global arcs */
-    globe
-      .arcsData([
-        {slat:36.44,slng:28.22,elat:51.5,elng:-0.1},
-        {slat:36.44,slng:28.22,elat:48.8,elng:2.35},
-        {slat:36.44,slng:28.22,elat:40.7,elng:-74.0},
-        {slat:40.7,slng:-74.0,elat:35.7,elng:139.7},
-        {slat:48.8,slng:2.35,elat:-33.9,elng:151.2},
-      ])
-      .arcStartLat('slat').arcStartLng('slng')
-      .arcEndLat('elat').arcEndLng('elng')
-      .arcColor(() => ['rgba(0,212,255,0.08)','rgba(0,212,255,0.7)'])
-      .arcAltitude(0.18)
-      .arcStroke(0.25)
-      .arcDashLength(0.35)
-      .arcDashGap(2.5)
-      .arcDashAnimateTime(4000);
-
-    /* Labels */
-    globe
-      .labelsData([
-        {lat:36.44, lng:28.22, txt:'Rhodes', size:0.8, col:'rgba(0,212,255,0.9)'},
-        {lat:51.5,  lng:-0.1,  txt:'London', size:0.5, col:'rgba(0,180,255,0.5)'},
-        {lat:48.8,  lng:2.35,  txt:'Paris',  size:0.5, col:'rgba(0,180,255,0.5)'},
-        {lat:40.7,  lng:-74.0, txt:'NYC',    size:0.5, col:'rgba(0,180,255,0.5)'},
-      ])
-      .labelText('txt')
-      .labelSize('size')
-      .labelColor('col')
-      .labelAltitude(0.01)
-      .labelDotRadius(0.3)
-      .labelDotOrientation(() => 'bottom');
-
-    /* Controls */
-    const ctrl = globe.controls();
-    ctrl.autoRotate = true;
-    ctrl.autoRotateSpeed = 0.25;
-    ctrl.enableDamping = true;
-    ctrl.dampingFactor = 0.07;
-    ctrl.minDistance = 101;
-    ctrl.maxDistance = 700;
-
-    /* Altitude poll */
-    setInterval(checkAltitude, 250);
-
-    /* Globe click → descend */
-    globe.onGlobeClick(coords => {
-      if (!coords) return;
-      ctrl.autoRotate = false;
-      S.mapLat = coords.lat;
-      S.mapLng = coords.lng;
-      globe.pointOfView({lat:coords.lat, lng:coords.lng, altitude:0.25}, 1600);
-      setTimeout(transitionToMap, 1700);
+function startDemoOnMap(){
+  if(!S.map||S.user)return;
+  let driverMarkers=[];
+  let pathIdxs=DEMO_DRIVERS.map(()=>0);
+  // Draw demo drivers with amber color
+  DEMO_DRIVERS.forEach((d,i)=>{
+    const icon=L.divIcon({className:'demo-pulse',html:`<div style="width:30px;height:30px;border-radius:50%;background:rgba(40,20,0,.92);border:2px solid #ffc800;display:flex;align-items:center;justify-content:center;font-size:12px">🛵</div>`,iconSize:[30,30],iconAnchor:[15,15]});
+    const m=L.marker([d.lat,d.lng],{icon}).addTo(S.map);
+    const lbl=L.divIcon({className:'',html:`<div style="font-family:'Orbitron',monospace;font-size:7px;color:rgba(255,200,0,.7);white-space:nowrap;letter-spacing:.05em">${d.name} DEMO</div>`,iconAnchor:[0,-6]});
+    L.marker([d.lat,d.lng],{icon:lbl}).addTo(S.map);
+    driverMarkers.push(m);ML.demoMarkers.push(m);
+  });
+  // Route them along paths
+  const moveId=setInterval(()=>{
+    if(S.user){clearInterval(moveId);return;}
+    DEMO_DRIVERS.forEach((d,i)=>{
+      pathIdxs[i]=(pathIdxs[i]+1)%d.path.length;
+      const pos=d.path[pathIdxs[i]];
+      driverMarkers[i].setLatLng(pos);
     });
-
-    window.addEventListener('resize', () => {
-      globe.width(window.innerWidth).height(window.innerHeight);
-    });
-  }
-
-  function makeSignals() {
-    const pts = [];
-    for (const n of NEWS_POINTS) {
-      pts.push({lat:n.lat, lng:n.lng, r:0.35, col:'#00d4ff', txt:n.txt});
-      pts.push({lat:n.lat+(Math.random()-.5)*.8, lng:n.lng+(Math.random()-.5)*.8, r:0.18, col:'rgba(0,180,255,0.6)'});
+  },2200);
+  S.demoIntervals.push(moveId);
+  // Demo order triangle after 4s
+  setTimeout(()=>{
+    if(!S.user&&S.map){
+      const cl=[36.4380,28.2195],vl=[36.4401,28.2205],dl=[DEMO_DRIVERS[0].lat,DEMO_DRIVERS[0].lng];
+      const tri=L.polygon([cl,vl,dl],{color:'#ffc800',fillColor:'#ffc800',fillOpacity:.05,weight:1.2,dashArray:'5 4',opacity:.6}).addTo(S.map);
+      const rt=L.polyline([vl,cl],{color:'#ffc800',weight:2,opacity:.7,dashArray:'8 6'}).addTo(S.map);
+      const lbl=L.divIcon({className:'',html:`<div style="background:rgba(30,15,0,.9);border:1px solid rgba(255,200,0,.3);border-radius:7px;padding:3px 8px;font-family:'Orbitron',monospace;font-size:8px;color:#ffc800;white-space:nowrap">DEMO ORDER · €9.70 ✦</div>`,iconAnchor:[40,10]});
+      const lm=L.marker([(cl[0]+vl[0])/2,(cl[1]+vl[1])/2],{icon:lbl}).addTo(S.map);
+      ML.demoMarkers.push(tri,rt,lm);
     }
-    /* Extra ambient signals */
-    for (let i=0;i<60;i++) {
-      pts.push({
-        lat:(Math.random()-0.5)*160,
-        lng:(Math.random()-0.5)*360,
-        r: Math.random()*0.2+0.08,
-        col:'rgba(0,150,200,0.35)',
-      });
+  },4000);
+  // Demo social circle message
+  setTimeout(()=>{
+    if(!S.user)showToast('⬡ Old Town Community: "Ferry from Piraeus in 2h"');
+  },9000);
+  setTimeout(()=>{
+    if(!S.user)showToast('🛵 Nikos K. earned €33.20 this hour ✦');
+  },14000);
+}
+
+function stopDemo(){
+  S.demoRunning=false;
+  $('demo-bar').classList.remove('on');
+  $('title').classList.remove('demo');$('layer-lbl').classList.remove('demo');
+  $('welcome').classList.remove('on');
+  clearTimeout(S.welcomeTimer);clearTimeout(S.demoTimer);
+  S.demoIntervals.forEach(id=>clearInterval(id));S.demoIntervals=[];
+  ML.demoMarkers.forEach(l=>{try{l.remove();}catch(e){}});ML.demoMarkers=[];
+}
+function dismissWelcome(){$('welcome').classList.remove('on');}
+function cancelWelcomeTimer(){clearTimeout(S.welcomeTimer);$('welcome').classList.remove('on');}
+
+/* ════ MARKETPLACE ════ */
+function openMkt(){
+  if(!S.mapOn){showToast('Zoom into a city first');S.globe.controls().autoRotate=false;S.globe.pointOfView({lat:36.44,lng:28.22,altitude:0.2},1800);return;}
+  $('vendor-list').innerHTML=vendors.map(v=>`<div class="v-card" onclick="A.openVendorMenu(A._vById('${v.id||v.business_name}'))"><div class="v-em">${v.emoji||'🏪'}</div><div><div class="v-name">${v.business_name||v.name}</div><div class="v-sub">${v.category||''}</div><div class="v-status ${v.is_open!==false?'open':'closed'}">${v.is_open!==false?'● OPEN':'○ CLOSED'}</div></div></div>`).join('');
+  showSheet('mkt-sheet');
+}
+function _vById(id){return vendors.find(v=>v.id===id||v.business_name===id);}
+function openVendorMenu(v){
+  if(!v)return;S.cartVid=v.id||v.business_name;$('menu-title').textContent=v.business_name||v.name;
+  const items=v.items||[];
+  $('menu-items').innerHTML=v.is_open===false?`<div style="color:rgba(255,255,255,.28);padding:16px 0">Vendor offline.</div>`:items.map((it,i)=>`<div class="m-item"><div class="m-name" style="font-size:13px">${it.n||it.name}</div><div style="display:flex;align-items:center;gap:8px"><div class="m-price">€${parseFloat(it.p||it.price_eur||0).toFixed(2)}</div><div class="m-add" onclick="A.addCart('${v.id||v.business_name}',${i})">ADD</div></div></div>`).join('');
+  showSheet('menu-sheet');
+}
+function addCart(vid,idx){
+  const v=vendors.find(v=>v.id===vid||v.business_name===vid);
+  if(!v||v.is_open===false)return;
+  if(S.cartVid&&S.cartVid!==vid){showToast('Clear cart to order from another vendor');return;}
+  const it=v.items[idx];S.cart.push({...it,vid});S.cartVid=vid;
+  updateOrderBar();showToast(`${it.n||it.name} added`);
+}
+function updateOrderBar(){
+  if(!S.cart.length){$('order-bar').classList.remove('on');return;}
+  const tot=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0);
+  $('order-count').textContent=`${S.cart.length} ITEM${S.cart.length!==1?'S':''}`;
+  $('order-total').textContent=`€${tot.toFixed(2)} + delivery`;
+  $('order-bar').classList.add('on');
+}
+function checkout(){
+  if(!S.cart.length)return;
+  const v=vendors.find(v=>v.id===S.cartVid||v.business_name===S.cartVid);if(!v)return;
+  const km=distKm(S.mapLat,S.mapLng,v.lat||36.44,v.lng||28.22)||0.7,del=calcDel(km,{night:isNight()});
+  const sub=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0),plat=+(del.total*.03).toFixed(2);
+  $('del-content').innerHTML=`<div class="del-row"><span>Vendor</span><span>${v.business_name||v.name}</span></div><div class="del-row"><span>Items (${S.cart.length})</span><span>€${sub.toFixed(2)}</span></div><div class="del-row"><span>Distance</span><span>${km.toFixed(2)} km</span></div><div class="del-row"><span>Delivery (€1/km)</span><span>€${del.base.toFixed(2)}</span></div>${del.night?'<div class="del-row"><span>Night +€1</span><span>✓</span></div>':''}<div class="del-row"><span>Platform 3%</span><span>€${plat}</span></div><div class="del-row del-total"><span>TOTAL</span><span>€${(sub+del.total).toFixed(2)} / ${(sub+del.total).toFixed(0)} ✦</span></div>`;
+  $('del-sheet').classList.add('on');
+}
+function closeDelivery(){$('del-sheet').classList.remove('on');}
+async function confirmOrder(){
+  const v=vendors.find(v=>v.id===S.cartVid||v.business_name===S.cartVid);
+  closeDelivery();['menu-sheet','mkt-sheet'].forEach(id=>hideSheet(id));$('order-bar').classList.remove('on');
+  if(v&&S.mapOn)drawOrderTriangle(v);
+  if(S.sb&&S.user){
+    const km=distKm(S.mapLat,S.mapLng,v?.lat||36.44,v?.lng||28.22)||0.7,del=calcDel(km,{night:isNight()});
+    const sub=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0);
+    await S.sb.from('orders').insert({client_id:S.user.id,vendor_id:v?.id,items:JSON.stringify(S.cart),subtotal:sub,delivery_km:km,delivery_fee:del.base,night_surcharge:del.night?1:0,platform_fee:+(del.total*.03).toFixed(2),driver_pay:+(del.total*.97*.97).toFixed(2),total_eur:+(sub+del.total).toFixed(2),total_astran:+(sub+del.total).toFixed(2),client_lat:S.mapLat,client_lng:S.mapLng,vendor_lat:v?.lat||36.44,vendor_lng:v?.lng||28.22,status:'pending'});
+  }
+  S.cart=[];S.cartVid=null;
+  showToast('ORDER PLACED — Driver assigned 🛵');
+  setTimeout(()=>showToast('NIKOS K. ON THE WAY — 18 min'),3500);
+}
+
+/* ════ VIDEO ════ */
+function openVideo(){if(!S.mapOn){showToast('Zoom into a city first');return;}showSheet('video-sheet');}
+function closeVideo(){hideSheet('video-sheet');$('video-preview').innerHTML='';}
+function selPlat(p){
+  S.selectedPlat=p;
+  ['yt','vm','tt','ig','own'].forEach(id=>$('plat-'+id)?.classList.remove('on'));
+  $('plat-'+p)?.classList.add('on');
+  const ph={yt:'YouTube URL',vm:'Vimeo URL',tt:'TikTok URL',ig:'Instagram URL',own:'Video file URL or upload'};
+  $('video-url').placeholder=ph[p]||'URL';
+}
+function ytId(u){const m=u.match(/(?:v=|youtu\.be\/|embed\/)([^&?\s]{11})/);return m?m[1]:null;}
+async function pinVideo(){
+  const url=$('video-url').value.trim(),cap=$('video-cap').value.trim();
+  if(!S.user){openAuth();return;}
+  const id=ytId(url);
+  if(id){$('video-preview').innerHTML=`<iframe style="width:100%;aspect-ratio:16/9;border-radius:9px;border:none;margin-top:8px" src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;}
+  if(S.sb){const{data}=await S.sb.from('media_posts').insert({user_id:S.user.id,post_type:S.selectedPlat,media_url:url,caption:cap,lat:S.mapLat,lng:S.mapLng}).select();if(data?.[0])addVideoPin(data[0]);}
+  closeVideo();showToast('VIDEO PINNED ✦');
+  // Also glow on globe
+  S.globeSigs.push({lat:S.mapLat,lng:S.mapLng,r:.45,col:'rgba(255,60,60,.8)',txt:cap||'Video post'});
+}
+function addVideoPin(p){
+  if(!S.map)return;
+  const icon=L.divIcon({className:'',html:`<div style="width:26px;height:26px;border-radius:6px;background:rgba(200,20,20,.15);border:1px solid rgba(255,60,60,.4);display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer">▶</div>`,iconSize:[26,26],iconAnchor:[13,13]});
+  L.marker([p.lat,p.lng],{icon}).addTo(S.map).on('click',()=>{
+    $('video-url').value=p.media_url||'';$('video-cap').value=p.caption||'';
+    if(p.media_url){const id=ytId(p.media_url);if(id)$('video-preview').innerHTML=`<iframe style="width:100%;aspect-ratio:16/9;border-radius:9px;border:none;margin-top:8px" src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;}
+    showSheet('video-sheet');
+  });
+}
+
+/* ════ MESSAGING ════ */
+function setupMsg(){$('msg-txt').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});}
+function openThread(type,id,label){
+  if(!S.user){openAuth();return;}
+  S.msgCtx={type,id};$('msg-title').textContent=label||'THREAD';$('msg-log').innerHTML='';$('msg-panel').classList.add('on');
+  loadThreadMsgs(type,id);
+  if(S.msgSub)S.sb?.removeChannel(S.msgSub);
+  if(S.sb&&id){S.msgSub=S.sb.channel(`t-${type}-${id}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>renderMsg(p.new)).subscribe();}
+}
+async function loadThreadMsgs(type,id){
+  if(!S.sb||!id)return;
+  const col=type==='order'?'order_id':type==='circle'?'circle_id':'news_pin_id';
+  const{data}=await S.sb.from('messages').select('*').eq(col,id).order('created_at',{ascending:true}).limit(50);
+  if(data)data.forEach(renderMsg);
+}
+function renderMsg(msg){
+  const log=$('msg-log'),isMe=msg.sender_id===S.user?.id;
+  const d=document.createElement('div');d.className=`msg ${isMe?'u':'a'}`;
+  d.textContent=(isMe?'':'⬡ ')+(msg.body||'');
+  log.appendChild(d);log.scrollTop=log.scrollHeight;
+}
+async function sendMsg(){
+  const body=$('msg-txt').value.trim();if(!body||!S.user)return;$('msg-txt').value='';
+  if(!S.sb||!S.msgCtx){renderMsg({body,sender_id:S.user?.id});return;}
+  const col=S.msgCtx.type==='order'?'order_id':S.msgCtx.type==='circle'?'circle_id':'news_pin_id';
+  await S.sb.from('messages').insert({sender_id:S.user.id,[col]:S.msgCtx.id,body});
+}
+
+/* ════ SEARCH ════ */
+function toggleSearch(){S.searchOpen=!S.searchOpen;$('search-bar').classList.toggle('on',S.searchOpen);if(S.searchOpen)$('search-in').focus();else{$('search-results').classList.remove('on');$('search-results').innerHTML='';}}
+async function doSearch(){
+  const q=$('search-in').value.trim();if(!q)return;
+  $('search-results').innerHTML='<div class="sr-item"><div class="sr-cat">SEARCHING…</div></div>';
+  $('search-results').classList.add('on');
+  // Search vendors locally
+  const vMatches=vendors.filter(v=>(v.business_name||v.name).toLowerCase().includes(q.toLowerCase()));
+  const cMatches=circles.filter(c=>c.name.toLowerCase().includes(q.toLowerCase()));
+  // Ask AI for map/location context
+  const aiReply=await callAI([{role:'user',content:`Search: ${q}. Location: ${S.mapLat.toFixed(4)},${S.mapLng.toFixed(4)}. Give me a brief, direct answer about this location, place, or thing in 1-2 sentences.`}],'search');
+  let html='';
+  if(vMatches.length)html+=vMatches.map(v=>`<div class="sr-item" onclick="A.openVendorMenu(A._vById('${v.id||v.business_name}'));A.toggleSearch()"><div class="sr-cat">VENDOR</div>${v.business_name||v.name} — ${v.category}</div>`).join('');
+  if(cMatches.length)html+=cMatches.map(c=>`<div class="sr-item" onclick="A.openThread('circle','${c.id}','${c.name}');A.toggleSearch()"><div class="sr-cat">SOCIAL CIRCLE</div>${c.name} — ${c.member_count} members</div>`).join('');
+  if(aiReply)html+=`<div class="sr-item"><div class="sr-cat">AI</div>${aiReply}</div>`;
+  if(!html)html=`<div class="sr-item"><div class="sr-cat">NO RESULTS</div>Nothing found for "${q}"</div>`;
+  $('search-results').innerHTML=html;
+}
+$('search-in')?.addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();if(e.key==='Escape')toggleSearch();});
+
+/* ════ AI ════ */
+function setupAI(){
+  $('ai-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI(e.target.value);});
+}
+function openAI(pre=''){
+  S.aiOpen=true;$('ai-panel').classList.add('on');$('ai-in').classList.add('on');
+  if(pre)$('ai-in').value=pre;$('ai-log').classList.add('on');
+}
+function closeAI(){S.aiOpen=false;$('ai-panel').classList.remove('on');$('ai-in').value='';stopMic();}
+async function sendAI(txt){
+  txt=txt?.trim();if(!txt)return;$('ai-in').value='';addBubble(txt,'u');
+  const th=addBubble('···','a');th.id='aithink';
+  S.aiHistory.push({role:'user',content:txt});
+  const reply=await callAI(S.aiHistory.slice(-8));
+  $('aithink')?.remove();
+  S.aiHistory.push({role:'assistant',content:reply});
+  addBubble(reply,'a');speak(reply);
+}
+async function callAI(messages,mode='chat'){
+  try{
+    const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({messages,system:`You are Astranov — the AI intelligence of the ASTRANOV Internet Operating System, Rhodes Island, Greece. A powerful, knowledgeable, friendly navigator. Keep responses brief (2-3 sentences), warm, and immediately useful. Location: ${S.mapLat.toFixed(4)},${S.mapLng.toFixed(4)}. Layer: ${S.layer}.`,lat:S.mapLat,lng:S.mapLng,layer:S.layer,mode})});
+    const d=await res.json();
+    const reply=d.content?.[0]?.text||d.reply||localAI(messages.slice(-1)[0]?.content||'');
+    if(d.provider&&d.provider!=='local'){addBubble(d.provider,'prov');}
+    return reply;
+  }catch(e){return localAI(messages.slice(-1)[0]?.content||'');}
+}
+function localAI(t){
+  t=(t||'').toLowerCase();
+  if(/delivery|order|fee|cost/.test(t))return 'Delivery: €1/km. Night 21:00–09:00 +€1. Drivers guaranteed €33/h minimum with surge pricing.';
+  if(/vendor|shop|food|market/.test(t))return 'Tap any glowing marker on the map to browse menus. Vendors sync products from Google Sheets live.';
+  if(/driver|earn|salary/.test(t))return 'Drivers earn minimum €33/h guaranteed. Surge pricing activates when demand exceeds supply. Slots open automatically.';
+  if(/circle|social|community/.test(t))return 'Social Circles are dashed rings on the map. Tap any circle to join and open the live community thread.';
+  if(/wallet|coin|astran|pay/.test(t))return '1 Astran coin = €1. Top up your wallet from your user icon. Stripe integration is ready to connect.';
+  if(/video|youtube|post|media/.test(t))return 'Tap the ▶ button to pin a YouTube video, TikTok, Instagram, or your own upload to your current location on the map.';
+  if(/search|find|where/.test(t))return 'Use the 🔍 search button to find vendors, circles, or get AI answers about any location on the globe.';
+  if(/hello|hi|hey|γεια/.test(t))return 'I am Astranov — your world interface navigator. Explore the globe, descend into any city, tap vendors and Social Circles.';
+  if(/moon|sun|star|celestial/.test(t))return 'Real Moon and Sun positions calculated live from astronomical formulas. ISS tracked every 5 seconds. Stars visible on the globe layer.';
+  return 'Ask me about delivery, vendors, drivers, Social Circles, media posts, or your wallet. Tap the globe to explore anywhere on Earth.';
+}
+function addBubble(txt,who){
+  const log=$('ai-log'),d=document.createElement('div');d.className=`msg ${who}`;
+  d.textContent=(who==='a'?'⬡ ':who==='prov'?'via ':'')+txt;
+  log.appendChild(d);log.scrollTop=log.scrollHeight;return d;
+}
+function speak(txt){if(!speechSynthesis||!txt)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt.slice(0,200));u.rate=1.05;speechSynthesis.speak(u);}catch(e){}}
+
+/* ════ VOICE ════ */
+function startMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){openAI();showToast('Voice unavailable — type instead');return;}
+  if(S.recognition)try{S.recognition.stop();}catch(e){}
+  S.recognition=new SR();S.recognition.continuous=false;S.recognition.interimResults=false;S.recognition.lang='en-US';
+  S.recognition.onresult=e=>{const t=e.results[0][0].transcript;openAI(t);sendAI(t);};
+  S.recognition.onend=()=>{S.micOn=false;$('ab-mic')?.classList.remove('lit');$('hb-mic')?.classList.remove('lit');};
+  S.recognition.onerror=()=>{S.micOn=false;openAI();showToast('Microphone access needed');};
+  try{S.recognition.start();S.micOn=true;$('ab-mic')?.classList.add('lit');$('hb-mic')?.classList.add('lit');openAI();}catch(e){showToast('Could not start microphone');}
+}
+function stopMic(){if(S.recognition)try{S.recognition.stop();}catch(e){}S.micOn=false;$('ab-mic')?.classList.remove('lit');$('hb-mic')?.classList.remove('lit');}
+
+/* ════ SOUND ════ */
+function toggleSound(){
+  S.soundOn=!S.soundOn;$('sound-btn').classList.toggle('on',S.soundOn);
+  if(S.soundOn){initAudio();updateSound(S.layer);}else stopSound();
+}
+function initAudio(){
+  if(S.audioCtx)return;
+  try{S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+}
+function updateSound(layer){
+  if(!S.soundOn||!S.audioCtx)return;
+  stopSound();
+  try{
+    const ctx=S.audioCtx;
+    const osc=ctx.createOscillator();const gain=ctx.createGain();const filter=ctx.createBiquadFilter();
+    if(layer==='SOLAR'||layer==='ORBITAL'){
+      // Cosmic: deep drone
+      osc.type='sine';osc.frequency.value=55+Math.random()*10;
+      filter.type='lowpass';filter.frequency.value=200;
+      gain.gain.value=0.04;
+    }else if(layer==='REGIONAL'){
+      // Atmospheric: mid sweep
+      osc.type='triangle';osc.frequency.value=220;
+      filter.type='bandpass';filter.frequency.value=400;
+      gain.gain.value=0.025;
+    }else{
+      // Street: gentle urban hum
+      osc.type='sawtooth';osc.frequency.value=110;
+      filter.type='highpass';filter.frequency.value=80;
+      gain.gain.value=0.018;
     }
-    return pts;
-  }
+    osc.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.setTargetAtTime(0,ctx.currentTime+8,2);
+    S._osc=osc;S._gain=gain;
+  }catch(e){}
+}
+function stopSound(){if(S._osc)try{S._osc.stop();S._osc=null;}catch(e){}}
 
-  function checkAltitude() {
-    if (!globe) return;
-    const pov = globe.pointOfView();
-    const alt = pov.altitude;
-    S.globeAlt = alt;
+/* ════ ISS ════ */
+function issTrack(){
+  const upd=async()=>{
+    try{const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');if(!r.ok)return;const d=await r.json();
+      S._issPos={lat:d.latitude,lng:d.longitude};
+      $('iss').textContent=`🛸 ${d.latitude.toFixed(1)}° ${d.longitude.toFixed(1)}°`;$('iss').classList.add('on');
+    }catch(e){}
+  };upd();setInterval(upd,5000);
+}
 
-    /* Altitude bar */
-    const h = Math.max(4, Math.min(96, (1 - alt/6)*100));
-    $('alt-fill').style.height = h + '%';
-    $('alt-bar').style.opacity = '1';
+/* ════ HUD ════ */
+function setupHUD(){
+  $('map-back').onclick=toGlobe;
+  ['touchstart','mousedown'].forEach(ev=>document.addEventListener(ev,showHUD,{passive:true}));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll();});
+  $('search-in')?.addEventListener('keydown',e=>{if(e.key==='Enter')doSearch();});
+}
+function showHUD(){
+  $('hud').classList.add('on');clearTimeout(S.hudTimer);
+  if(!S.aiOpen&&!S.mapOn)S.hudTimer=setTimeout(()=>$('hud').classList.remove('on'),6500);
+}
+function userTap(){if(!S.user)openAuth();else openUserMenu();}
+function openUserMenu(){updateHUD();$('vendor-setup').classList.toggle('on',S.roles.vendor);$('driver-setup').classList.toggle('on',S.roles.driver);$('user-menu').classList.add('on');}
+function closeUserMenu(){$('user-menu').classList.remove('on');}
+function locate(){
+  if(!navigator.geolocation){showToast('Geolocation not available');return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    S.mapLat=pos.coords.latitude;S.mapLng=pos.coords.longitude;
+    if(S.user&&S.sb)S.sb.from('users').upsert({id:S.user.id,lat:S.mapLat,lng:S.mapLng});
+    if(S.mapOn&&S.map){S.map.setView([S.mapLat,S.mapLng],16);placeUserMarker();}
+    else{S.globe.controls().autoRotate=false;S.globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:0.2},2000);}
+    showToast('Located: '+cStr(S.mapLat,S.mapLng));
+  },()=>showToast('Location permission required'));
+}
+function closeAll(){['mkt-sheet','menu-sheet','video-sheet','user-menu','msg-panel'].forEach(id=>hideSheet(id));closeDelivery();closeAI();toggleSearch()&&toggleSearch();}
 
-    /* Layer */
-    let lyr;
-    if (alt > 4.5)      lyr = 'SOLAR';
-    else if (alt > 2.0) lyr = 'ORBITAL';
-    else if (alt > 0.8) lyr = 'REGIONAL';
-    else if (alt > 0.3) lyr = 'LOCAL';
-    else                lyr = 'STREET';
+function showSheet(id){document.querySelectorAll('.sheet').forEach(s=>s.id!==id&&s.classList.remove('on'));$(id)?.classList.add('on');}
+function hideSheet(id){$(id)?.classList.remove('on');}
 
-    if (lyr !== S.altPrev) {
-      S.altPrev = lyr;
-      S.layer = lyr;
-      $('layer-lbl').textContent = lyr;
-      if (lyr === 'LOCAL' || lyr === 'STREET') {
-        const p = globe.pointOfView();
-        S.mapLat = p.lat; S.mapLng = p.lng;
-        transitionToMap();
-      }
-      globe.controls().autoRotate = alt > 1.2;
-    }
-  }
+/* ════ BUILDER ════ */
+function setupBuilder(){
+  $('builder-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();builderSend();}});
+  $('builder-in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,110)+'px';});
+}
+function openBuilder(){if(!S.isOwner){showToast('Owner access required');return;}$('builder-panel').classList.add('on');builderLog(`CONNECTED · ${S.profile?.display_name||S.user?.email} · ${new Date().toLocaleTimeString()}`,'sys');}
+function closeBuilder(){$('builder-panel').classList.remove('on');}
+async function builderSend(){
+  const txt=$('builder-in').value.trim();if(!txt)return;$('builder-in').value='';$('builder-in').style.height='auto';
+  builderLog(txt,'u');S.builderHistory.push({role:'user',content:txt});
+  const th=builderLog('···','a');th.id='bthink';
+  const sys=`You are the ASTRANOV builder AI working with owner Notis Astranov. ASTRANOV is a single-file index.html Internet Operating System deployed on Vercel at astranov.eu with Supabase backend (kzlabcrlrpbnfiiyrjvl). Stack: globe.gl, Leaflet, Supabase JS, vanilla JS. AI via ai-router Edge Function (Gemini→Groq→OpenAI→Grok). Tables: users, vendors, products, drivers, orders, messages, social_circles, media_posts, wallet_transactions, driver_earnings, app_config, builder_sessions. Delivery: €1/km, night +€1, platform 3%, driver floor €33/h. Current state: layer=${S.layer}, location=${S.mapLat.toFixed(4)},${S.mapLng.toFixed(4)}, vendors=${vendors.length}, circles=${circles.length}. Be direct, precise, implementation-ready.`;
+  try{
+    const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({messages:S.builderHistory.slice(-10),system:sys,lat:S.mapLat,lng:S.mapLng,layer:S.layer,mode:'builder'})});
+    const d=await res.json();$('bthink')?.remove();
+    const reply=d.content?.[0]?.text||d.reply||'Edge Function not connected.';
+    S.builderHistory.push({role:'assistant',content:reply});
+    builderLog(reply,'a');
+    if(S.sb&&S.user)await S.sb.from('builder_sessions').insert({owner_id:S.user.id,prompt:txt,response:reply,provider:d.provider||'unknown'});
+  }catch(e){$('bthink')?.remove();builderLog('Deploy ai-router Edge Function and set API keys in Secrets.','sys');}
+}
+function builderLog(txt,who){const log=$('builder-log'),d=document.createElement('div');d.className=`bl ${who}`;d.textContent=(who==='a'?'⬡ ':'')+txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
 
-  /* ════════ MAP ════════ */
-  function initMap() {
-    if (map) return;
-    map = L.map('map', {
-      center:[S.mapLat, S.mapLng],
-      zoom:15, zoomControl:false, attributionControl:false,
-    });
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-      attribution:'© OpenStreetMap · © CARTO',
-      subdomains:'abcd', maxZoom:19,
-    }).addTo(map);
+/* ════ DELIVERY CALC ════ */
+function calcDel(km,opts={}){
+  const base=Math.max(1,+(1*km).toFixed(2));let ex=0;
+  if(opts.night)ex+=1;if(opts.weather)ex+=1;
+  const kg=opts.kg||0;if(kg>13)ex+=1+Math.floor((Math.min(kg,33)-13)/13);
+  return{base,extras:ex,total:+(base+ex).toFixed(2),night:!!opts.night};
+}
+function distKm(la1,ln1,la2,ln2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLn=(ln2-ln1)*Math.PI/180;const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+function isNight(){const h=new Date().getHours();return h>=21||h<9;}
+function cStr(la,ln){return `${Math.abs(la).toFixed(3)}°${la>=0?'N':'S'} ${Math.abs(ln).toFixed(3)}°${ln>=0?'E':'W'}`;}
 
-    drawSocialCircles();
-    drawVendorMarkers();
-    drawDriverMarkers();
+/* ════ TOAST / LOADING ════ */
+function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3500);}
+function animateLoading(){
+  const steps=[[18,'CONNECTING SUPABASE'],[35,'LOADING GLOBE ENGINE'],[55,'FETCHING EARTH TILES'],[70,'CELESTIAL CALIBRATION'],[85,'SYNCING VENDORS'],[100,'READY']];
+  let i=0;const tick=()=>{if(i>=steps.length){setTimeout(()=>{$('loading').classList.add('gone');setTimeout(()=>$('loading').remove(),1200);},400);return;}const[p,t]=steps[i++];$('ld-b').style.width=p+'%';$('ld-s').textContent=t;setTimeout(tick,320+Math.random()*220);};
+  setTimeout(tick,300);
+}
 
-    /* Zoom-out returns to globe */
-    map.on('zoomend', () => {
-      if (map.getZoom() < 10) transitionToGlobe();
-    });
-  }
-
-  function transitionToMap() {
-    if (S.mapOn) return;
-    S.mapOn = true;
-    initMap();
-    map.setView([S.mapLat, S.mapLng], 15);
-    $('map-wrap').classList.add('on');
-    $('map-back').classList.add('on');
-    $('role-strip').classList.add('on');
-    showToast(coordStr(S.mapLat, S.mapLng) + ' — CITY MAP');
-  }
-
-  function transitionToGlobe() {
-    if (!S.mapOn) return;
-    S.mapOn = false;
-    $('map-wrap').classList.remove('on');
-    $('map-back').classList.remove('on');
-    $('role-strip').classList.remove('on');
-    globe.controls().autoRotate = false;
-    globe.pointOfView({lat:S.mapLat, lng:S.mapLng, altitude:1.5}, 1200);
-    setTimeout(() => {
-      S.layer = 'REGIONAL'; S.altPrev = 'REGIONAL';
-      $('layer-lbl').textContent = 'REGIONAL';
-    }, 600);
-  }
-
-  /* ─── Map geometry ─── */
-  function drawSocialCircles() {
-    mapLayers.circles.forEach(c => c.remove());
-    mapLayers.circles = [];
-    for (const sc of SOCIAL_CIRCLES) {
-      const c = L.circle([sc.lat, sc.lng], {
-        radius: sc.r, color:'#00d4ff', fillColor:'#00d4ff',
-        fillOpacity:.04, weight:1.5, dashArray:'6 5', opacity:.45,
-      }).addTo(map);
-      c.on('click', () => {
-        showToast(`${sc.name} · ${sc.members} members`);
-        openAI(`Tell me about the ${sc.name} social circle.`);
-      });
-      const icon = L.divIcon({
-        className:'',
-        html:`<div style="font-family:'Orbitron',monospace;font-size:8px;color:rgba(0,212,255,.6);letter-spacing:.1em;text-shadow:0 0 6px #00d4ff;white-space:nowrap;">${sc.name}</div>`,
-        iconAnchor:[0,0],
-      });
-      const lm = L.marker([sc.lat+.0015, sc.lng], {icon}).addTo(map);
-      mapLayers.circles.push(c, lm);
-    }
-  }
-
-  function drawVendorMarkers() {
-    mapLayers.vendors.forEach(m => m.remove());
-    mapLayers.vendors = [];
-    for (const v of VENDORS) {
-      const icon = L.divIcon({
-        className:'',
-        html:`<div style="
-          width:34px;height:34px;border-radius:50%;
-          background:rgba(0,8,22,.92);
-          border:1.5px solid ${v.open?'#00d4ff':'#1a2840'};
-          display:flex;align-items:center;justify-content:center;
-          font-size:15px;
-          box-shadow:${v.open?'0 0 12px rgba(0,212,255,.4)':'none'};
-        ">${v.emoji}</div>`,
-        iconSize:[34,34], iconAnchor:[17,17],
-      });
-      const m = L.marker([v.lat, v.lng], {icon}).addTo(map);
-      m.on('click', () => openVendorMenu(v));
-      mapLayers.vendors.push(m);
-    }
-  }
-
-  function drawDriverMarkers() {
-    mapLayers.drivers.forEach(m => m.remove());
-    mapLayers.drivers = [];
-    for (const d of DRIVERS) {
-      if (!d.online) continue;
-      const icon = L.divIcon({
-        className:'',
-        html:`<div style="
-          width:30px;height:30px;border-radius:50%;
-          background:rgba(0,22,8,.92);
-          border:1.5px solid #00ff88;
-          display:flex;align-items:center;justify-content:center;
-          font-size:14px;
-          box-shadow:0 0 9px rgba(0,255,136,.3);
-        ">${d.emoji}</div>`,
-        iconSize:[30,30], iconAnchor:[15,15],
-      });
-      const m = L.marker([d.lat, d.lng], {icon}).addTo(map);
-      mapLayers.drivers.push(m);
-      /* Simulate movement */
-      setInterval(() => {
-        d.lat += (Math.random()-.5)*.0004;
-        d.lng += (Math.random()-.5)*.0004;
-        m.setLatLng([d.lat, d.lng]);
-      }, 4000 + Math.random()*2000);
-    }
-  }
-
-  function drawOrderTriangle(vendor) {
-    mapLayers.routes.forEach(l => l.remove());
-    mapLayers.routes = [];
-    mapLayers.labels.forEach(l => l.remove());
-    mapLayers.labels = [];
-
-    if (!map) return;
-    const cl = [S.mapLat, S.mapLng];
-    const vl = [vendor.lat, vendor.lng];
-    const dl = [DRIVERS[0].lat, DRIVERS[0].lng];
-    const del = calcDelivery(distKm(cl[0],cl[1],vl[0],vl[1]));
-
-    const tri = L.polygon([cl, vl, dl], {
-      color:'#00d4ff', fillColor:'#00d4ff', fillOpacity:.05,
-      weight:1.2, dashArray:'5 4', opacity:.6,
-    }).addTo(map);
-
-    const route = L.polyline([vl, cl], {
-      color:'#00d4ff', weight:2.5, opacity:.8, dashArray:'8 6',
-    }).addTo(map);
-
-    const mid = [(vl[0]+cl[0])/2, (vl[1]+cl[1])/2];
-    const pIcon = L.divIcon({
-      className:'',
-      html:`<div style="background:rgba(0,8,24,.9);border:1px solid rgba(0,212,255,.35);border-radius:8px;padding:4px 9px;font-family:'Orbitron',monospace;font-size:10px;color:#00d4ff;white-space:nowrap;">€${del.total.toFixed(2)} ✦</div>`,
-      iconAnchor:[30,10],
-    });
-    const pl = L.marker(mid, {icon:pIcon}).addTo(map);
-
-    mapLayers.routes.push(tri, route);
-    mapLayers.labels.push(pl);
-
-    setTimeout(() => {
-      mapLayers.routes.forEach(l => l.remove());
-      mapLayers.labels.forEach(l => l.remove());
-      mapLayers.routes = [];
-      mapLayers.labels = [];
-    }, 60000);
-  }
-
-  /* ════════ MARKETPLACE ════════ */
-  function openMarket() {
-    const list = $('vendor-list');
-    list.innerHTML = VENDORS.map(v => `
-      <div class="v-card" onclick="ASTR.openVendorMenu(ASTR._getVendor(${v.id}))">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:24px">${v.emoji}</span>
-          <div>
-            <div class="v-name">${v.name}</div>
-            <div class="v-sub">${v.type}</div>
-            <div class="v-status ${v.open?'v-open':'v-closed'}">${v.open?'● OPEN':'○ CLOSED'}</div>
-          </div>
-        </div>
-      </div>
-    `).join('');
-    $('mkt-sheet').classList.add('on');
-    closeSheet('menu');
-  }
-
-  function closeMkt() {
-    $('mkt-sheet').classList.remove('on');
-  }
-
-  function openVendorMenu(v) {
-    if (!v) return;
-    S.cartVendorId = v.id;
-    $('menu-title').textContent = v.name;
-    $('menu-items').innerHTML = !v.open
-      ? `<div style="color:rgba(255,255,255,.3);padding:20px 0;font-size:14px">This vendor is offline.</div>`
-      : v.items.map((it,i) => `
-        <div class="m-item">
-          <div>
-            <div class="m-name">${it.n}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,.35)">${it.u}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="m-price">€${it.p.toFixed(2)}</div>
-            <div class="m-add" onclick="ASTR.addToCart(${v.id},${i})">ADD</div>
-          </div>
-        </div>
-      `).join('');
-    $('menu-sheet').classList.add('on');
-    closeMkt();
-  }
-
-  function _getVendor(id) { return VENDORS.find(v=>v.id===id); }
-
-  function addToCart(vid, itemIdx) {
-    const v = VENDORS.find(v=>v.id===vid);
-    if (!v || !v.open) return;
-    if (S.cartVendorId !== null && S.cartVendorId !== vid) {
-      showToast('Clear cart first to order from another vendor');
-      return;
-    }
-    const item = v.items[itemIdx];
-    S.cart.push({...item, vid});
-    S.cartVendorId = vid;
-    updateOrderBar();
-    showToast(`${item.n} added`);
-  }
-
-  function updateOrderBar() {
-    const bar = $('order-bar');
-    if (S.cart.length === 0) {
-      bar.classList.remove('on');
-      return;
-    }
-    const total = S.cart.reduce((a,i)=>a+i.p, 0);
-    $('order-count').textContent = `${S.cart.length} ITEM${S.cart.length!==1?'S':''}`;
-    $('order-total').textContent = `€${total.toFixed(2)} + delivery`;
-    bar.classList.add('on');
-  }
-
-  function checkout() {
-    if (S.cart.length === 0) return;
-    const v = VENDORS.find(v=>v.id===S.cartVendorId);
-    if (!v) return;
-    const km = distKm(S.mapLat, S.mapLng, v.lat, v.lng) || 0.8;
-    const del = calcDelivery(km, {night:isNight(), weather:false, kg:S.cart.length*0.5});
-    const subtotal = S.cart.reduce((a,i)=>a+i.p, 0);
-    const platform = +(del.total * 0.03).toFixed(2);
-
-    $('del-content').innerHTML = `
-      <div class="del-row"><span>Vendor</span><span>${v.name}</span></div>
-      <div class="del-row"><span>Items (${S.cart.length})</span><span>€${subtotal.toFixed(2)}</span></div>
-      <div class="del-row"><span>Distance</span><span>${km.toFixed(2)} km</span></div>
-      <div class="del-row"><span>Base delivery (€1/km)</span><span>€${del.base.toFixed(2)}</span></div>
-      ${del.night?`<div class="del-row"><span>Night surcharge</span><span>+€1.00</span></div>`:''}
-      ${del.extras>0&&!del.night?`<div class="del-row"><span>Surcharges</span><span>+€${del.extras.toFixed(2)}</span></div>`:''}
-      <div class="del-row"><span>Platform (3%)</span><span>€${platform}</span></div>
-      <div class="del-row del-total"><span>TOTAL</span><span>€${(subtotal+del.total).toFixed(2)} / ${(subtotal+del.total).toFixed(0)} ✦</span></div>
-    `;
-    $('del-sheet').classList.add('on');
-  }
-
-  function closeDelivery() {
-    $('del-sheet').classList.remove('on');
-  }
-
-  function confirmOrder() {
-    const v = VENDORS.find(v=>v.id===S.cartVendorId);
-    closeDelivery();
-    closeSheet('menu');
-    closeMkt();
-    $('order-bar').classList.remove('on');
-    if (v && S.mapOn) drawOrderTriangle(v);
-    S.cart = [];
-    S.cartVendorId = null;
-    showToast('ORDER PLACED — Driver assigned 🛵');
-    setTimeout(()=>showToast('NIKOS K. ON THE WAY — 18 min'), 3500);
-  }
-
-  /* ════════ DELIVERY CALC ════════ */
-  function calcDelivery(km, opts={}) {
-    const base = Math.max(1.0, parseFloat((1.0 * km).toFixed(2)));
-    let extras = 0;
-    if (opts.night) extras += 1;
-    if (opts.weather) extras += 1;
-    const kg = opts.kg || 0;
-    if (kg > 13) extras += 1 + Math.floor((Math.min(kg,33)-13)/13);
-    return {base, extras, total: +(base+extras).toFixed(2), astran: +(base+extras).toFixed(2), night:!!opts.night};
-  }
-
-  function distKm(la1,ln1,la2,ln2) {
-    const R=6371, dLa=(la2-la1)*Math.PI/180, dLn=(ln2-ln1)*Math.PI/180;
-    const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
-
-  function isNight() { const h=new Date().getHours(); return h>=21||h<9; }
-
-  /* ════════ AI ════════ */
-  function setupAI() {
-    $('ab-close').onclick = closeAI;
-    $('ab-send').onclick = () => sendMsg($('ai-in').value);
-    $('ab-mic').onclick = toggleMic;
-    $('ai-in').addEventListener('keydown', e => { if(e.key==='Enter') sendMsg(e.target.value); });
-  }
-
-  function openAI(prefill='') {
-    S.aiOpen = true;
-    $('ai-panel').classList.add('on');
-    $('ai-in').classList.add('on');
-    if (prefill) { $('ai-in').value = prefill; }
-    showHUD();
-  }
-
-  function closeAI() {
-    S.aiOpen = false;
-    $('ai-panel').classList.remove('on');
-    $('ai-in').value = '';
-    stopMic();
-  }
-
-  async function sendMsg(txt) {
-    txt = txt.trim();
-    if (!txt) return;
-    $('ai-in').value = '';
-    addBubble(txt,'u');
-    $('ai-log').classList.add('on');
-
-    if (!S.apiKey) {
-      setTimeout(()=>{ const r=localAI(txt); addBubble(r,'a'); speak(r); }, 500);
-      return;
-    }
-
-    const thinking = addBubble('···','a','thinking');
-    try {
-      S.aiHistory.push({role:'user', content:txt});
-      const res = await fetch('https://api.anthropic.com/v1/messages',{
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'x-api-key': S.apiKey,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true',
-        },
-        body: JSON.stringify({
-          model:'claude-haiku-4-5-20251001',
-          max_tokens:400,
-          system:`You are Astranov — the AI intelligence of the ASTRANOV Internet Operating System, a collective reality platform based on Rhodes Island, Greece. You are a powerful, knowledgeable, friendly navigator — a winged Nordic warrior who also guides humans through the real world. Keep responses brief, useful, and warm. Current location: ${S.mapLat.toFixed(3)},${S.mapLng.toFixed(3)}. Layer: ${S.layer}. Role: ${S.role||'none'}.`,
-          messages: S.aiHistory.slice(-8),
-        }),
-      });
-      const data = await res.json();
-      thinking.remove();
-      if (data.content?.[0]?.text) {
-        const reply = data.content[0].text;
-        S.aiHistory.push({role:'assistant',content:reply});
-        addBubble(reply,'a');
-        speak(reply);
-      } else {
-        addBubble(localAI(txt),'a');
-      }
-    } catch(e) {
-      thinking.remove();
-      const r = localAI(txt);
-      addBubble(r,'a');
-      speak(r);
-    }
-  }
-
-  function localAI(t) {
-    t = t.toLowerCase();
-    if (/delivery|order|cost|fee/.test(t)) return 'Delivery: €1 per km base. Night hours (21:00–09:00) add €1. Extra €1 per 13kg above first 13kg. Platform takes 3% of completed transactions.';
-    if (/vendor|shop|market|store/.test(t)) return 'Active vendors: Aegean Fresh Market (groceries), Rodos Souvlaki House (food), Rhodes Bakery. Tap any glowing marker on the city map to browse menus.';
-    if (/driver/.test(t)) return 'Nikos K. and Maria P. are online nearby. Their live positions show as green moped icons on the map. Routes draw as blue geometry when an order is placed.';
-    if (/circle|social|community/.test(t)) return 'Social Circles are literal circles on the map. Old Town Community (47 members) and Mandraki Harbor (23 members) are active near you. Tap dashed blue circles to interact.';
-    if (/rhodes|ρόδος|city/.test(t)) return 'Rhodes is ASTRANOV\'s primary node. Population ~115,000. Ancient Knights\' stronghold, UNESCO World Heritage old town, Mediterranean maritime hub.';
-    if (/iss|space station/.test(t)) return 'ISS orbits at ~408 km altitude, 7.66 km/s, completing one orbit every 92 minutes. It appears on the globe as a signal when overhead.';
-    if (/astran|coin|token/.test(t)) return '1 Astran coin = €1 for delivery. The system dynamically rebalances pricing across hours to spread demand, reduce idle waste, and avoid destructive spikes.';
-    if (/hello|hey|hi|γεια/.test(t)) return 'I\'m Astranov — your world interface navigator. Explore the globe, descend into any city, tap shop markers, discover social circles. What do you need?';
-    if (/role|client|vendor|driver/.test(t)) return 'Tap your role in the strip above the map: CLIENT to order, VENDOR to manage your shop, DRIVER to go online and accept deliveries. You can hold all three.';
-    if (/weather/.test(t)) return 'Weather conditions affect delivery pricing — bad weather adds €1 to the delivery fee. Live weather integration is connection-ready.';
-    return 'Navigating that. Try tapping the globe to descend into a city, or ask me about delivery, vendors, social circles, or your role.';
-  }
-
-  function addBubble(txt, who, id='') {
-    const log = $('ai-log');
-    const d = document.createElement('div');
-    d.className = `msg ${who}`;
-    if (id) d.id = 'b-'+id;
-    d.textContent = (who==='a'?'⬡ ':'')+txt;
-    log.appendChild(d);
-    log.scrollTop = log.scrollHeight;
-    return d;
-  }
-
-  function speak(txt) {
-    if (!S.synth||!txt) return;
-    try { S.synth.cancel(); const u=new SpeechSynthesisUtterance(txt.slice(0,180)); u.rate=1.1; S.synth.speak(u); } catch(e){}
-  }
-
-  /* ════════ VOICE ════════ */
-  function toggleMic() {
-    S.micOn ? stopMic() : startMic();
-  }
-
-  function startMic() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { openAI(); showToast('Voice unavailable — type instead'); return; }
-    S.recognition = new SR();
-    S.recognition.continuous = false;
-    S.recognition.interimResults = false;
-    S.recognition.lang = 'en-US';
-    S.recognition.onresult = e => {
-      const txt = e.results[0][0].transcript;
-      openAI(txt);
-      sendMsg(txt);
-    };
-    S.recognition.onend = () => { S.micOn=false; $('ab-mic').classList.remove('lit'); $('hb-mic').classList.remove('lit'); };
-    S.recognition.onerror = () => { S.micOn=false; openAI(); showToast('Microphone access needed'); };
-    try {
-      S.recognition.start();
-      S.micOn = true;
-      $('ab-mic').classList.add('lit');
-      $('hb-mic').classList.add('lit');
-      openAI();
-    } catch(e) { showToast('Could not start microphone'); }
-  }
-
-  function stopMic() {
-    if (S.recognition) try { S.recognition.stop(); } catch(e){}
-    S.micOn = false;
-    $('ab-mic').classList.remove('lit');
-    $('hb-mic').classList.remove('lit');
-  }
-
-  /* ════════ HUD ════════ */
-  function setupHUD() {
-    $('hb-mic').onclick = () => { startMic(); };
-    $('hb-type').onclick = () => { openAI(); $('ai-in').focus(); };
-    $('hb-market').onclick = () => {
-      if (!S.mapOn) { showToast('Zoom into a city first'); globe.pointOfView({lat:36.44,lng:28.22,altitude:0.25},1800); return; }
-      openMarket();
-    };
-    $('hb-locate').onclick = locate;
-    $('map-back').onclick = transitionToGlobe;
-
-    document.querySelectorAll('.rb').forEach(b => {
-      b.onclick = () => {
-        const r = b.id.replace('rb-','');
-        setRole(r);
-      };
-    });
-
-    $('mkt-sheet').addEventListener('click', e => { if(e.target===$('mkt-sheet')) closeMkt(); });
-    $('menu-sheet').addEventListener('click', e => { if(e.target===$('menu-sheet')) closeSheet('menu'); });
-
-    ['touchstart','mousedown'].forEach(ev => {
-      document.addEventListener(ev, showHUD, {passive:true});
-    });
-  }
-
-  function showHUD() {
-    $('hud').classList.add('on');
-    clearTimeout(S.hudTimer);
-    if (!S.aiOpen && !S.mapOn) {
-      S.hudTimer = setTimeout(() => $('hud').classList.remove('on'), 5500);
-    }
-  }
-
-  function setRole(r) {
-    S.role = S.role===r ? null : r;
-    document.querySelectorAll('.rb').forEach(b => b.classList.remove('on'));
-    if (S.role) {
-      $('rb-'+S.role).classList.add('on');
-      showToast('Role: '+S.role.toUpperCase());
-    }
-  }
-
-  function locate() {
-    if (!navigator.geolocation) { showToast('Geolocation not available'); return; }
-    navigator.geolocation.getCurrentPosition(pos => {
-      S.mapLat = pos.coords.latitude;
-      S.mapLng = pos.coords.longitude;
-      if (S.mapOn && map) map.setView([S.mapLat, S.mapLng], 16);
-      else { globe.controls().autoRotate=false; globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:0.25},2000); }
-      showToast('Located: '+coordStr(S.mapLat, S.mapLng));
-    }, () => showToast('Location permission required'));
-  }
-
-  /* ════════ API KEY ════════ */
-  function saveKey() {
-    const k = $('key-in').value.trim();
-    if (k) { S.apiKey=k; localStorage.setItem('astr_ak',k); showToast('AI CONNECTED ✦'); }
-    $('key-dlg').classList.remove('on');
-  }
-  function skipKey() { $('key-dlg').classList.remove('on'); showToast('Local AI active'); }
-  function promptKey() { $('key-dlg').classList.add('on'); }
-
-  /* ════════ ISS ════════ */
-  function issTrack() {
-    const badge = $('iss-badge');
-    const update = async () => {
-      try {
-        const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
-        if (!r.ok) return;
-        const d = await r.json();
-        badge.textContent = `🛸 ISS ${d.latitude.toFixed(1)}°, ${d.longitude.toFixed(1)}°`;
-        badge.classList.add('on');
-        /* Add/move ISS point on globe */
-        if (globe) {
-          globe.pointsData([
-            ...makeSignals(),
-            {lat:d.latitude, lng:d.longitude, r:0.6, col:'#ffffff', txt:'ISS — Live Position'},
-          ]);
-        }
-      } catch(e) {}
-    };
-    update();
-    S.issInterval = setInterval(update, 5000);
-  }
-
-  /* ════════ LOADING ════════ */
-  function animateLoading() {
-    const steps=[
-      [18,'LOADING GLOBE ENGINE'],
-      [40,'CONNECTING EARTH TILES'],
-      [60,'INITIALIZING OVERLAYS'],
-      [78,'CALIBRATING SENSORS'],
-      [92,'ENTERING ORBIT'],
-      [100,'READY'],
-    ];
-    let i=0;
-    const tick=()=>{
-      if(i>=steps.length){
-        setTimeout(()=>{ $('loading').classList.add('gone'); setTimeout(()=>$('loading').remove(),1200); },300);
-        return;
-      }
-      const [p,t]=steps[i++];
-      $('ld-bar').style.width=p+'%';
-      $('ld-sub').textContent=t;
-      setTimeout(tick, 380+Math.random()*250);
-    };
-    setTimeout(tick,200);
-  }
-
-  /* ════════ UTILS ════════ */
-  function showToast(msg) {
-    const t=$('toast');
-    t.textContent=msg;
-    t.classList.add('on');
-    clearTimeout(t._t);
-    t._t=setTimeout(()=>t.classList.remove('on'),3200);
-  }
-
-  function coordStr(la,ln) {
-    return `${Math.abs(la).toFixed(3)}°${la>=0?'N':'S'} ${Math.abs(ln).toFixed(3)}°${ln>=0?'E':'W'}`;
-  }
-
-  function closeSheet(name) {
-    const sheets={mkt:'mkt-sheet',menu:'menu-sheet'};
-    if(sheets[name]) $(sheets[name]).classList.remove('on');
-  }
-
-  /* ════════ PUBLIC API ════════ */
-  return {
-    init, setRole, openVendorMenu, _getVendor, addToCart,
-    checkout, closeDelivery, confirmOrder,
-    openAI, closeAI,
-    saveKey, skipKey, promptKey,
-    transitionToGlobe,
-  };
-
+return{init,authTab,authSubmit,closeAuth,openAuth,signOut,toggleRole,saveVendor,saveDriver,topup,openUserMenu,closeUserMenu,userTap,openVendorMenu,_vById,addCart,checkout,closeDelivery,confirmOrder,openThread,sendMsg,openMkt,openVideo,closeVideo,selPlat,pinVideo,openAI,closeAI,sendAI,toggleSearch,doSearch,startMic,toggleSound,locate,openBuilder,closeBuilder,builderSend,toGlobe,stopDemo,dismissWelcome,showToast};
 })();
-
-document.addEventListener('DOMContentLoaded', ASTR.init);
+document.addEventListener('DOMContentLoaded',A.init);
 </script>
 </body>
 </html>
