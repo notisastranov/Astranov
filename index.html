@@ -572,11 +572,11 @@ async function loadProf(){
   const{data}=await S.sb.from('users').select('*').eq('id',S.user.id).single();
   if(data){S.prof=data;S.roles={client:!!data.role_client,vendor:!!data.role_vendor,driver:!!data.role_driver};S.isOwner=!!data.is_owner;}
 }
-async function saveProf(p){if(!S.sb||!S.user)return;await S.sb.from('users').upsert({id:S.user.id,...p});await loadProf();updateProfUI();}
+async function saveProf(p){if(!S.sb||!S.user)return;await S.sb.from('users').upsert({id:S.user.id,...p});await loadProf();updateProfUI();updateWalletBar();}
 async function loadVendors(){if(!S.sb)return;const{data}=await S.sb.from('vendors').select('*');if(data&&data.length)vendors=data;}
 async function loadCircles(){if(!S.sb)return;const{data}=await S.sb.from('social_circles').select('*').eq('is_public',true);if(data&&data.length)circles=data;}
 
-function updateProfUI(){
+function updateProfUI(){updateWalletBar&&updateWalletBar();
   const nm=S.prof?.display_name||S.user?.email?.split('@')[0]||'—';
   const bl=+(S.prof?.wallet_astran||0);
   const ph=S.prof?.phone||S.user?.user_metadata?.phone||'—';
@@ -694,7 +694,7 @@ function syncRoles(){['client','vendor','driver'].forEach((r,i)=>{const ids=['c'
 function updateIncog(){const all=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;$('incog').textContent=all?'👁 INCOGNITO — invisible':'● VISIBLE ON MAP';$('incog').classList.toggle('on',all);}
 async function saveVendor(){if(!S.sb||!S.user)return;const bn=$('v-bn').value.trim();if(!bn){showToast('Enter business name');return;}await S.sb.from('vendors').upsert({user_id:S.user.id,business_name:bn,category:$('v-ct').value.trim(),sheets_url:$('v-sh').value.trim(),lat:S.mapLat,lng:S.mapLng,is_open:true});showToast('VENDOR SAVED ✦');}
 async function saveDriver(){if(!S.sb||!S.user)return;await S.sb.from('drivers').upsert({user_id:S.user.id,vehicle_type:$('d-vh').value.trim()||'moped',max_kg:parseFloat($('d-kg').value)||13,lat:S.mapLat,lng:S.mapLng,is_online:true});showToast('DRIVER SAVED ✦');}
-async function topup(amt){if(!S.user){$('login-card').classList.add('on');return;}if(S.sb){await S.sb.from('wallet_transactions').insert({user_id:S.user.id,type:'topup',amount_astran:amt,note:'Top-up'});await loadProf();updateProfUI();}showToast(`+${amt} ✦ CREDITED`);}
+async function topup(amt){if(!S.user){$('login-card').classList.add('on');return;}if(S.sb){await S.sb.from('wallet_transactions').insert({user_id:S.user.id,type:'topup',amount_astran:amt,note:'Top-up'});await loadProf();updateProfUI();}showToast(`+${amt} ✦ CREDITED`);updateWalletBar();}
 
 /* ════ STARS ════ */
 function initStars(){
@@ -758,16 +758,23 @@ function checkAlt(){
 /* ════ MAP ════ */
 function initMap(){
   if(S.map)return;
-  S.map=L.map('map',{center:[S.mapLat,S.mapLng],zoom:15,zoomControl:false,attributionControl:false});
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19}).addTo(S.map);
+  S.map=L.map('map',{center:[S.mapLat,S.mapLng],zoom:15,zoomControl:false,attributionControl:false,minZoom:3});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{subdomains:'abc',maxZoom:19}).addTo(S.map);
   drawCircles();drawVendors();drawDrivers();
-  /* Intelligent zoom intent */
+  /* ALTITUDE LADDER
+     z>=14  STREET   : individual streets, delivery triangles
+     z 11-13 CITY    : whole city visible, all geometry
+     z 7-10  CLOUD   : city overview, see ALL activity at once
+     z 4-6   REGIONAL: island/country level
+     z<4     GLOBE   : transition back to 3D globe
+  */
   S.map.on('zoomend',()=>{
     const z=S.map.getZoom();
-    if(z<=10){
-      /* user is zooming out → return to globe */
-      setTimeout(()=>{if(S.mapOn&&S.map.getZoom()<=10)toGlobe();},300);
-    }
+    if(z>=14)      updateAltLabel('STREET');
+    else if(z>=11) updateAltLabel('CITY');
+    else if(z>=7)  { updateAltLabel('CLOUD'); showCloudLevel(); }
+    else if(z>=4)  { updateAltLabel('REGIONAL'); hideCloudLevel(); }
+    else           { hideCloudLevel(); clearTimeout(S._zT); S._zT=setTimeout(()=>{ if(S.mapOn&&S.map.getZoom()<4) toGlobe(); },800); }
   });
   /* Tap the map → triangle appears */
   S.map.on('click',e=>{
@@ -793,17 +800,75 @@ function toMap(){
   $('globe-wrap').style.opacity='0';
   placeUserMarker();
   if(S.demoRunning)startDemoOnMap();
+  updateWalletBar();
   showToast(cStr(S.mapLat,S.mapLng)+' — CITY MAP');
 }
 
 function toGlobe(){
   if(!S.mapOn)return;S.mapOn=false;
-  hideTriangle();hideOrbs();
+  hideTriangle();hideOrbs();hideWalletBar();hideCloudLevel();
   $('map-wrap').classList.remove('on');
   $('globe-wrap').style.opacity='1';
   S.globe.controls().autoRotate=false;
   S.globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:1.4},1000);
   $('layer-lbl').textContent='REGIONAL';S.layer='REGIONAL';S.altPrev='REGIONAL';
+}
+
+function updateAltLabel(lyr){
+  S.layer=lyr;
+  const el=document.getElementById('layer-lbl');
+  if(el) el.textContent=lyr;
+}
+
+/* CLOUD LEVEL — shows all city activity in overview */
+let cloudOverlays=[];
+function showCloudLevel(){
+  hideCloudLevel();
+  if(!S.map) return;
+  /* Draw a glowing halo over each active vendor */
+  for(const v of vendors){
+    if(v.is_open===false) continue;
+    const lat=v.lat||36.44, lng=v.lng||28.22;
+    const c=L.circle([lat,lng],{radius:400,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.06,weight:1,opacity:.35,dashArray:'3 6'}).addTo(S.map);
+    cloudOverlays.push(c);
+  }
+  /* Pulse marker for each social circle */
+  for(const sc of circles){
+    const c=L.circle([sc.lat,sc.lng],{radius:sc.radius_m*1.5,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:.8,opacity:.28}).addTo(S.map);
+    cloudOverlays.push(c);
+  }
+  showToast('CLOUD VIEW — full city activity visible');
+}
+function hideCloudLevel(){
+  cloudOverlays.forEach(l=>{try{l.remove();}catch(e){}});
+  cloudOverlays=[];
+}
+
+/* WALLET BAR — visible on map at all times when logged in */
+function showWalletBar(){
+  let bar=document.getElementById('wallet-bar');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='wallet-bar';
+    bar.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:800;display:flex;align-items:center;gap:10px;background:rgba(0,6,20,.95);backdrop-filter:blur(16px);border:1px solid rgba(0,212,255,.2);border-radius:22px;padding:8px 16px;cursor:pointer;';
+    bar.onclick=()=>openProfSheet();
+    bar.innerHTML=`<span style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(0,212,255,.5);letter-spacing:.06em">WALLET</span><span id="wb-bal" style="font-family:'Orbitron',monospace;font-size:13px;color:#00d4ff;font-weight:700;letter-spacing:.06em">0.00 ✦</span><span style="background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.28);border-radius:10px;padding:3px 9px;font-family:'Orbitron',monospace;font-size:8px;color:#00d4ff;letter-spacing:.08em">TOP UP</span>`;
+    document.body.appendChild(bar);
+  }
+  const bal=parseFloat(S.prof?.wallet_astran||0).toFixed(2);
+  const el=document.getElementById('wb-bal');
+  if(el) el.textContent=bal+' ✦';
+  bar.style.display='flex';
+}
+function hideWalletBar(){
+  const bar=document.getElementById('wallet-bar');
+  if(bar) bar.style.display='none';
+}
+function updateWalletBar(){
+  if(S.user&&S.mapOn) showWalletBar();
+  else hideWalletBar();
+  const el=document.getElementById('wb-bal');
+  if(el) el.textContent=parseFloat(S.prof?.wallet_astran||0).toFixed(2)+' ✦';
 }
 
 function placeUserMarker(){
@@ -1090,20 +1155,53 @@ function closeSheet(id){$(id)?.classList.remove('on');}
 /* ════ KEYS ════ */
 function setupKeys(){
   $('msg-txt').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-  $('ai-in').addEventListener('keydown',e=>{if(e.key==='Enter'){sendAI(e.target.value);}});
-  $('bld-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();bldSend();}});
+  $('ai-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI(e.target.value);});
+  $('bld-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();builderSend();}});
   $('bld-in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,100)+'px';});
-  /* Profile pill click */
   $('prof-pill').onclick=openProfSheet;
-  /* Dismiss triangle on outside tap */
-  document.addEventListener('click',e=>{
-    if(S.triOpen&&!e.target.closest('#tri-wrap')&&!e.target.closest('.orb')&&!e.target.closest('.sheet')&&!e.target.closest('#ai-panel')&&!e.target.closest('#msg-panel')&&!e.target.closest('#login-card')&&!e.target.closest('#prof-sheet'))hideTriangle();
-  });
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){hideTriangle();document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));$('prof-sheet').classList.remove('on');$('msg-panel').classList.remove('on');closeDel();closeAI();}});
-  /* Start continuous mic silently after first interaction */
-  document.addEventListener('touchend',()=>{if(!S.micOn&&!S._micStarted){S._micStarted=true;startMic();}},{once:true,passive:true});
-  /* AI field — show AI panel when focused */
   $('ai-in').addEventListener('focus',()=>$('ai-log').classList.add('on'));
+
+  /* ── TAP OUTSIDE ANY PANEL → CLOSE IT ── */
+  const PANELS=['#mkt-sheet','#menu-sheet','#team-sheet','#video-sheet','#ai-panel','#msg-panel','#prof-sheet','#builder-panel','#login-card','#tri-wrap','.orb','#del-overlay'];
+  document.addEventListener('pointerdown',e=>{
+    const inside=PANELS.some(sel=>{
+      try{return e.target.closest(sel);}catch(x){return false;}
+    });
+    if(!inside){
+      closeAllPanels();
+      hideTriangle();
+    }
+  },{passive:true});
+
+  /* ── SWIPE DOWN ON ANY PANEL → CLOSE IT ── */
+  let swipeY=0;
+  document.addEventListener('touchstart',e=>{swipeY=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dy=e.changedTouches[0].clientY-swipeY;
+    if(dy>60){/* swipe down 60px+ */
+      const openPanel=document.querySelector('.sheet.on,#msg-panel.on,#prof-sheet.on,#ai-panel.on,#builder-panel.on');
+      if(openPanel)openPanel.classList.remove('on');
+    }
+  },{passive:true});
+
+  /* ── ESC KEY ── */
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAllPanels();hideTriangle();}});
+
+  /* ── MIC starts on first touch ── */
+  document.addEventListener('touchend',()=>{
+    if(!S.micOn&&!S._micStarted){S._micStarted=true;startMic();}
+  },{once:true,passive:true});
+}
+
+function closeAllPanels(){
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
+  $('prof-sheet')?.classList.remove('on');
+  $('msg-panel')?.classList.remove('on');
+  $('ai-panel')?.classList.remove('on');
+  $('bld-panel')?.classList.remove('on');
+  $('del-overlay')?.classList.remove('on');
+  $('ai-log')?.classList.remove('on');
+  $('order-bar')?.classList.remove('on');
 }
 
 /* ════ UTILS ════ */
