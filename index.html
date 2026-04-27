@@ -1015,110 +1015,40 @@ function applySoundCommand(cmd){
 }
 
 /* ════ ALWAYS-ON BUILDER — AUTONOMOUS MODE ════
-   ASTRANOV LAW v1.4 governs all changes.
-   Builder decides autonomously. No owner intervention needed for safe changes.
-   If a proposed change contradicts core Law → sends owner a personal alert
-   and waits for approval before applying.
-
-   SAFE (auto-applies):
-   - UI/UX tweaks (brightness, font, sounds, zoom timing)
-   - Config adjustments based on usage patterns
-   - Bug fixes (tile reload, GPS reset, panel close)
-   - Text/label changes
-   - Performance tuning
-
-   REQUIRES OWNER APPROVAL:
-   - Removing or replacing core geometry (triangle/polygon system)
-   - Changing three-layer auth
-   - Modifying delivery economics (€1/km, €33/h floor)
-   - Altering role system (client/vendor/driver)
-   - Any change that removes a user right
-   - Changes that contradict the Manual-First Law
+   Safe changes: auto-applies. Law violations: alerts owner and waits.
 */
+const LAW_PROTECTED=['three_layer_auth','delivery_economics','role_system','transaction_geometry','manual_first','driver_floor','platform_fee','triangle_routing','three_option_law'];
+const BUILDER={frustrationTaps:0,lastTapTime:0,lastTapPos:{x:0,y:0},sessionIssues:[],fixHistory:[],active:true,lastComplaint:0,lastAIFix:0,pendingApprovals:[]};
 
-const LAW_PROTECTED=[
-  'three_layer_auth','delivery_economics','role_system',
-  'transaction_geometry','manual_first','driver_floor',
-  'platform_fee','triangle_routing','three_option_law',
-];
-
-const BUILDER={
-  frustrationTaps:0,lastTapTime:0,lastTapPos:{x:0,y:0},
-  errorCount:0,sessionIssues:[],fixQueue:[],active:true,
-  lastComplaint:0,lastAIFix:0,fixHistory:[],
-  pendingApprovals:[],/* changes waiting for owner OK */
-};
-
-/* ── LAW GUARDIAN ──
-   Checks if a proposed change touches any protected Law article.
-   Returns {safe:true} or {safe:false, article:'...', reason:'...'} */
-function checkLaw(changeDescription){
-  const t=(changeDescription||'').toLowerCase();
-  const violations=[];
-  if(/auth|login|password|phone|email|three.*layer|sign.*in/.test(t))
-    violations.push({article:'Three-Layer Auth Law',reason:'Cannot modify authentication without owner approval.'});
-  if(/delivery.*fee|per.*km|€1|euro.*km|platform.*fee|3%|commission/.test(t))
-    violations.push({article:'Delivery Economics Law',reason:'Cannot change delivery pricing without owner approval.'});
-  if(/driver.*floor|33.*hour|€33|guarantee/.test(t))
-    violations.push({article:'Driver Floor Law',reason:'Cannot change the €33/h driver guarantee.'});
-  if(/triangle|polygon|geometry|transaction.*link|remove.*geo/.test(t))
-    violations.push({article:'Transaction Geometry Law',reason:'Cannot remove transaction geometry system.'});
-  if(/remove.*role|delete.*role|client.*role|vendor.*role|driver.*role/.test(t))
-    violations.push({article:'Role System Law',reason:'Cannot remove or alter user roles.'});
-  if(/remove.*manual|auto.*only|no.*tap|no.*triangle|replace.*triangle/.test(t))
-    violations.push({article:'Manual-First Law',reason:'Cannot replace manual interaction with AI-only flow.'});
-  if(/remove.*three.*option|remove.*orb|remove.*social|remove.*team|remove.*market/.test(t))
-    violations.push({article:'Three-Option Law',reason:'Cannot remove the three-option bloom system.'});
-  return violations.length===0?{safe:true}:{safe:false,violations};
+function checkLaw(desc){
+  const t=(desc||'').toLowerCase();
+  const v=[];
+  if(/auth|login|password|phone|three.*layer/.test(t))v.push('Three-Layer Auth Law');
+  if(/delivery.*fee|per.*km|platform.*fee|3%/.test(t))v.push('Delivery Economics Law');
+  if(/driver.*floor|33.*hour|guarantee/.test(t))v.push('Driver Floor Law');
+  if(/remove.*triangle|remove.*polygon|remove.*geometry/.test(t))v.push('Transaction Geometry Law');
+  if(/remove.*role|delete.*role/.test(t))v.push('Role System Law');
+  if(/remove.*manual|auto.*only|no.*tap|replace.*triangle/.test(t))v.push('Manual-First Law');
+  if(/remove.*three.*option|remove.*orb/.test(t))v.push('Three-Option Law');
+  return v.length===0?{safe:true}:{safe:false,violations:v.map(a=>({article:a,reason:'Protected by ASTRANOV LAW v1.4'}))};
 }
 
-/* ── OWNER ALERT — personal message for Law-level changes ── */
 async function alertOwner(proposed, violations){
-  const msg=`⚠ BUILDER ALERT — LAW CONFLICT DETECTED
-
-Proposed change: "${proposed}"
-
-Conflicts:
-${violations.map(v=>`• ${v.article}: ${v.reason}`).join('
-')}
-
-Reply APPROVE or REJECT.`;
+  const msg='[!] LAW CONFLICT: "'+proposed+'" violates: '+violations.map(function(v){return v.article;}).join(', ')+'. Reply APPROVE or REJECT.';
   BUILDER.pendingApprovals.push({proposed,violations,ts:Date.now(),status:'pending'});
-
-  /* 1. Show in AI panel immediately */
   openAI();
   const d=document.createElement('div');
   d.className='msg a';
-  d.style.cssText='background:rgba(255,100,0,.1);border:1.5px solid rgba(255,120,0,.4);color:#ffaa44;max-width:100%;font-family:Orbitron,monospace;font-size:9px;letter-spacing:.05em';
-  d.textContent='⚠ LAW CONFLICT — OWNER APPROVAL REQUIRED
-'+violations.map(v=>v.article).join(' · ');
-  $('ailog').classList.add('on');
-  $('ailog').appendChild(d);
-  $('ailog').scrollTop=$('ailog').scrollHeight;
-
-  /* 2. If Supabase connected, send personal message to owner */
+  d.style.cssText='background:rgba(255,100,0,.1);border:1.5px solid rgba(255,120,0,.5);color:#ffaa44;max-width:100%;font-size:11px;padding:10px 12px';
+  d.textContent=msg;
+  const log=document.getElementById('ailog');
+  if(log){log.classList.add('on');log.appendChild(d);log.scrollTop=log.scrollHeight;}
   if(S.sb&&S.user){
-    try{
-      await S.sb.from('messages').insert({
-        sender_id:S.user.id,
-        body:msg,
-        link_id:'builder_approval_'+Date.now(),
-      });
-    }catch(e){}
-    /* Also log in builder_sessions */
-    try{
-      await S.sb.from('builder_sessions').insert({
-        owner_id:S.user.id,
-        prompt:'LAW_VIOLATION: '+proposed,
-        response:msg,
-        provider:'law_guardian',
-      });
-    }catch(e){}
+    try{await S.sb.from('builder_sessions').insert({owner_id:S.user.id,prompt:'LAW_VIOLATION:'+proposed,response:msg,provider:'law_guardian'});}catch(e){}
   }
-  showToast('⚠ APPROVAL REQUIRED — CHECK AI');
+  showToast('[!] APPROVAL REQUIRED — CHECK AI');
 }
 
-/* ── TAP FRUSTRATION DETECTOR ── */
 function watchTap(x,y){
   const now=Date.now();
   const dx=Math.abs(x-BUILDER.lastTapPos.x),dy=Math.abs(y-BUILDER.lastTapPos.y);
@@ -1129,166 +1059,72 @@ function watchTap(x,y){
   BUILDER.lastTapPos={x,y};BUILDER.lastTapTime=now;
 }
 
-/* ── COMPLAINT SCANNER ── */
 function scanForComplaint(txt){
   if(!txt||!BUILDER.active)return;
   const t=txt.toLowerCase();
   const now=Date.now();
   if(now-BUILDER.lastComplaint<4000)return;
   BUILDER.lastComplaint=now;
-  if(/can.t see|too dark|dark|can.t read|hard to read|not visible/.test(t)){autoDecide('visibility');return;}
-  if(/no map|map.*work|map.*show|black.*map|tiles|map.*load/.test(t)){autoDecide('map_missing');return;}
-  if(/sea|ocean|water|gps.*wrong|wrong.*location|not.*located/.test(t)){autoDecide('gps_sea');return;}
-  if(/zoom.*back|keeps.*zoom|zooming.*itself|map.*jump|map.*move/.test(t)){autoDecide('zoom_fighting');return;}
-  if(/can.t close|stuck|panel.*stuck|close.*button|how.*close/.test(t)){autoDecide('panel_stuck');return;}
-  if(/keyboard|text.*over|keyboard.*block|can.t type/.test(t)){autoDecide('keyboard_block');return;}
-  if(/annoying.*sound|too loud|beep|hate.*sound|noise/.test(t)){autoDecide('sound_annoying');return;}
-  if(/no.*triangle|no.*driver|order.*work|can.t.*order|delivery.*broken/.test(t)){autoDecide('delivery_broken');return;}
-  if(/small.*text|font.*small|letters.*small|text.*tiny|can.t.*read/.test(t)){autoDecide('font_small');return;}
-  if(/not.*work|broken|useless|nothing.*happen|what.*hell|wtf/.test(t)){autoDecide('general_broken');return;}
-  if(/too.*fast|zoom.*fast|change.*fast|transition.*fast/.test(t)){autoDecide('speed_tweak');return;}
-  if(/too.*slow|takes.*long|waiting|slow/.test(t)){autoDecide('latency_tweak');return;}
+  if(/can.t see|too dark|hard to read|not visible/.test(t)){autoDecide('visibility');return;}
+  if(/no map|map.*work|black.*map|tiles/.test(t)){autoDecide('map_missing');return;}
+  if(/sea|ocean|gps.*wrong|wrong.*location/.test(t)){autoDecide('gps_sea');return;}
+  if(/zoom.*back|keeps.*zoom|map.*jump/.test(t)){autoDecide('zoom_fighting');return;}
+  if(/can.t close|stuck|panel.*stuck/.test(t)){autoDecide('panel_stuck');return;}
+  if(/keyboard|text.*over|keyboard.*block/.test(t)){autoDecide('keyboard_block');return;}
+  if(/annoying.*sound|too loud|beep|hate.*sound/.test(t)){autoDecide('sound_annoying');return;}
+  if(/no.*triangle|no.*driver|order.*work/.test(t)){autoDecide('delivery_broken');return;}
+  if(/small.*text|font.*small|text.*tiny/.test(t)){autoDecide('font_small');return;}
+  if(/not.*work|broken|nothing.*happen|wtf/.test(t)){autoDecide('general_broken');return;}
+  if(/too.*fast|transition.*fast/.test(t)){autoDecide('speed_tweak');return;}
+  if(/too.*slow|takes.*long/.test(t)){autoDecide('latency_tweak');return;}
 }
 
-/* ── AUTO DECIDE — no owner needed unless Law violation ──
-   Builder picks the fix, checks Law, applies or escalates. */
-async function autoDecide(issue, data={}){
+async function autoDecide(issue, data){
+  data=data||{};
   BUILDER.sessionIssues.push({issue,data,ts:Date.now()});
   logUserBehavior(issue,'builder_auto');
   const now=Date.now();
-  if(now-BUILDER.lastAIFix<8000)return;/* rate limit */
+  if(now-BUILDER.lastAIFix<8000)return;
   BUILDER.lastAIFix=now;
-
-  /* First try local instant fix */
-  const applied=applyLocalFix(issue,data);
-  /* Log what was changed */
-  BUILDER.fixHistory.push({issue,applied,ts:Date.now()});
-  /* Persist fix history to Supabase */
-  if(S.sb&&S.user&&BUILDER.fixHistory.length%5===0){
-    S.sb.from('builder_sessions').insert({
-      owner_id:S.user.id,
-      prompt:'auto_fix_batch',
-      response:JSON.stringify(BUILDER.fixHistory.slice(-5)),
-      provider:'autonomous_builder',
-    }).then(()=>{}).catch(()=>{});
-  }
-  /* For persistent issues (3+ times) — ask AI for deeper fix and auto-apply */
-  const count=BUILDER.sessionIssues.filter(i=>i.issue===issue).length;
-  if(count>=3){
-    await aiDrivenFix(issue);
-  }
+  applyLocalFix(issue,data);
+  BUILDER.fixHistory.push({issue,ts:Date.now()});
+  const count=BUILDER.sessionIssues.filter(function(i){return i.issue===issue;}).length;
+  if(count>=3)await aiDrivenFix(issue);
 }
 
-/* ── LOCAL INSTANT FIXES ── no network, fires in <50ms */
-function applyLocalFix(issue,data={}){
-  const fixes={
-    visibility:()=>{
-      setBrightness(Math.min(2,S.mapBrightness+.35));
-      showToast('BRIGHTNESS ADJUSTED');
-      S.cfg.dayBrightness=S.mapBrightness;saveCfg();
-    },
-    map_missing:()=>{
-      if(!S.mapOn){toMap();showToast('OPENING MAP');}
-      else{
-        if(S.map)S.map.eachLayer(l=>{try{l.redraw&&l.redraw();}catch(e){}});
-        showToast('MAP TILES REFRESHED');
-      }
-    },
-    gps_sea:()=>{
-      S.lat=36.4349;S.lng=28.2176;
-      if(S.userM)S.userM.setLatLng([S.lat,S.lng]);
-      if(S.mapOn&&S.map)S.map.setView([S.lat,S.lng],14,{animate:true});
-      stopAutoGPS();setTimeout(startAutoGPS,600);
-      showToast('GPS RESET — RHODES');
-    },
-    zoom_fighting:()=>{
-      S._manualZoom=true;
-      clearTimeout(S._manualZoomT);
-      S._manualZoomT=setTimeout(()=>{S._manualZoom=false;},120000);
-      S.cfg.cityDelay=Math.min(600,S.cfg.cityDelay+60);
-      saveCfg();showToast('AUTO-ZOOM RELAXED');
-    },
-    panel_stuck:()=>{closeAll();showToast('PANELS CLEARED');},
-    keyboard_block:()=>{document.activeElement?.blur();closeAll();showToast('KEYBOARD DISMISSED');},
-    sound_annoying:()=>{
-      SOUND_PREFS.swoop=Math.max(0,SOUND_PREFS.swoop-.04);
-      SOUND_PREFS.motor=Math.max(0,SOUND_PREFS.motor-.04);
-      if(SOUND_PREFS.swoop<=.02)SOUND_PREFS.muted=true;
-      showToast(SOUND_PREFS.muted?'SOUNDS OFF':'VOLUME REDUCED');
-    },
-    delivery_broken:()=>{
-      if(S.orderVendor&&S.mapOn)drawDeliveryTriangle(S.orderVendor);
-      else openMkt();
-      showToast('DELIVERY RESTARTED');
-    },
-    font_small:()=>{
-      setFontSize(S.cfg.fontSize==='xlarge'?'xlarge':S.cfg.fontSize==='large'?'xlarge':'large');
-    },
-    speed_tweak:()=>{
-      S.cfg.cityDelay=Math.min(600,S.cfg.cityDelay+30);
-      S.cfg.globeDelay=Math.min(120,S.cfg.globeDelay+10);
-      saveCfg();showToast('TRANSITIONS SLOWER');
-    },
-    latency_tweak:()=>{
-      S.cfg.cityDelay=Math.max(30,S.cfg.cityDelay-30);
-      saveCfg();showToast('TRANSITIONS FASTER');
-    },
-    tap_frustration:(d)=>{
-      const el=document.elementFromPoint(d.x,d.y);
-      if(el){const btn=el.closest('.pnl-x,.madd,.vcard,.orb,.tbtn2,.bent,.bp2');if(btn){btn.click();return;}}
-      closeAll();
-    },
-    general_broken:()=>{/* handled by aiDrivenFix */},
-  };
-  try{const fn=fixes[issue];if(fn)fn(data);}catch(e){}
-  return issue;
+function applyLocalFix(issue,data){
+  try{
+    if(issue==='visibility'){setBrightness(Math.min(2,S.mapBrightness+.35));S.cfg.dayBrightness=S.mapBrightness;saveCfg();showToast('BRIGHTNESS ADJUSTED');}
+    else if(issue==='map_missing'){if(!S.mapOn)toMap();else{if(S.map)S.map.eachLayer(function(l){try{l.redraw&&l.redraw();}catch(e){}});}showToast('MAP REFRESHED');}
+    else if(issue==='gps_sea'){S.lat=36.4349;S.lng=28.2176;if(S.userM)S.userM.setLatLng([S.lat,S.lng]);if(S.mapOn&&S.map)S.map.setView([S.lat,S.lng],14,{animate:true});stopAutoGPS();setTimeout(startAutoGPS,600);showToast('GPS RESET — RHODES');}
+    else if(issue==='zoom_fighting'){S._manualZoom=true;clearTimeout(S._manualZoomT);S._manualZoomT=setTimeout(function(){S._manualZoom=false;},120000);S.cfg.cityDelay=Math.min(600,S.cfg.cityDelay+60);saveCfg();showToast('AUTO-ZOOM RELAXED');}
+    else if(issue==='panel_stuck'){closeAll();showToast('PANELS CLEARED');}
+    else if(issue==='keyboard_block'){document.activeElement&&document.activeElement.blur();closeAll();showToast('KEYBOARD DISMISSED');}
+    else if(issue==='sound_annoying'){SOUND_PREFS.swoop=Math.max(0,SOUND_PREFS.swoop-.04);SOUND_PREFS.motor=Math.max(0,SOUND_PREFS.motor-.04);if(SOUND_PREFS.swoop<=.02)SOUND_PREFS.muted=true;showToast(SOUND_PREFS.muted?'SOUNDS OFF':'VOLUME REDUCED');}
+    else if(issue==='delivery_broken'){if(S.orderVendor&&S.mapOn)drawDeliveryTriangle(S.orderVendor);else openMkt();showToast('DELIVERY RESTARTED');}
+    else if(issue==='font_small'){setFontSize(S.cfg.fontSize==='xlarge'?'xlarge':S.cfg.fontSize==='large'?'xlarge':'large');}
+    else if(issue==='speed_tweak'){S.cfg.cityDelay=Math.min(600,S.cfg.cityDelay+30);saveCfg();showToast('TRANSITIONS SLOWER');}
+    else if(issue==='latency_tweak'){S.cfg.cityDelay=Math.max(30,S.cfg.cityDelay-30);saveCfg();showToast('TRANSITIONS FASTER');}
+    else if(issue==='tap_frustration'){var el=document.elementFromPoint(data.x||0,data.y||0);if(el){var btn=el.closest('.pnl-x,.madd,.vcard,.orb,.tbtn2,.bent,.bp2');if(btn){btn.click();return;}}closeAll();}
+  }catch(e){}
 }
 
-/* ── AI DRIVEN FIX — network AI diagnoses and applies config changes ── */
 async function aiDrivenFix(issue){
   try{
-    const context=`Issue: ${issue} (occurred ${BUILDER.sessionIssues.filter(i=>i.issue===issue).length}x). Session issues: ${[...new Set(BUILDER.sessionIssues.map(i=>i.issue))].join(',')}. Config: ${JSON.stringify(S.cfg)}. Layer: ${S.layer}. Speed: ${S.lastSpeed}km/h. MapOn: ${S.mapOn}. GPS: ${S.lat.toFixed(3)},${S.lng.toFixed(3)}.`;
-    const res=await fetch(AI_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},
-      body:JSON.stringify({
-        messages:[{role:'user',content:context}],
-        system:`You are the ASTRANOV autonomous builder AI. You must decide a config fix for this persistent issue and return it as JSON only: {"action":"setConfig","key":"cityDelay","value":120} OR {"action":"setBrightness","value":1.4} OR {"action":"setFontSize","value":"large"} OR {"action":"toast","value":"message"} OR {"action":"noop"}. No other text. Safe actions only — no auth/economics/geometry changes.`,
-        mode:'builder_auto',
-      })
-    });
-    const d=await res.json();
-    const raw=d.content?.[0]?.text||d.reply||'';
-    let fix;
+    var context='Issue: '+issue+' (x'+BUILDER.sessionIssues.filter(function(i){return i.issue===issue;}).length+'). Config: cityDelay='+S.cfg.cityDelay+',globeDelay='+S.cfg.globeDelay+'. Layer: '+S.layer+'. Speed: '+S.lastSpeed+'kmh.';
+    var res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SB_KEY},body:JSON.stringify({messages:[{role:'user',content:context}],system:'You are the ASTRANOV autonomous builder AI. Return ONLY valid JSON: {"action":"setConfig","key":"cityDelay","value":120} OR {"action":"setBrightness","value":1.4} OR {"action":"setFontSize","value":"large"} OR {"action":"noop"}. No other text.',mode:'builder_auto'})});
+    var d=await res.json();
+    var raw=(d.content&&d.content[0]&&d.content[0].text)||d.reply||'';
+    var fix;
     try{fix=JSON.parse(raw.replace(/```json|```/g,'').trim());}catch(e){return;}
-    if(!fix||!fix.action)return;
-
-    /* Law check before applying */
-    const lawCheck=checkLaw(JSON.stringify(fix));
-    if(!lawCheck.safe){
-      await alertOwner(JSON.stringify(fix),lawCheck.violations);
-      return;
-    }
-    /* Apply safe AI fix autonomously */
-    if(fix.action==='setConfig'&&fix.key&&fix.value!==undefined){
-      S.cfg[fix.key]=fix.value;saveCfg();
-    } else if(fix.action==='setBrightness'){
-      setBrightness(fix.value);
-    } else if(fix.action==='setFontSize'){
-      setFontSize(fix.value);
-    } else if(fix.action==='toast'){
-      showToast(fix.value);
-    }
-    /* Log autonomous fix */
-    BUILDER.fixHistory.push({source:'ai',issue,fix,ts:Date.now()});
-    if(S.sb&&S.user){
-      S.sb.from('builder_sessions').insert({
-        owner_id:S.user.id,
-        prompt:`ai_auto_fix:${issue}`,
-        response:JSON.stringify(fix),
-        provider:'autonomous_builder_ai',
-      }).then(()=>{}).catch(()=>{});
-    }
+    if(!fix||!fix.action||fix.action==='noop')return;
+    var lawCheck=checkLaw(JSON.stringify(fix));
+    if(!lawCheck.safe){await alertOwner(JSON.stringify(fix),lawCheck.violations);return;}
+    if(fix.action==='setConfig'&&fix.key&&fix.value!==undefined){S.cfg[fix.key]=fix.value;saveCfg();}
+    else if(fix.action==='setBrightness'){setBrightness(fix.value);}
+    else if(fix.action==='setFontSize'){setFontSize(fix.value);}
+    BUILDER.fixHistory.push({source:'ai',issue:issue,fix:fix,ts:Date.now()});
+    if(S.sb&&S.user){try{await S.sb.from('builder_sessions').insert({owner_id:S.user.id,prompt:'ai_auto_fix:'+issue,response:JSON.stringify(fix),provider:'autonomous_builder_ai'});}catch(e){}}
   }catch(e){}
 }
 
