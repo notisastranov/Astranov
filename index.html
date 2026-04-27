@@ -306,7 +306,7 @@ const S={
   mode:'in',plat:'yt',isOwner:false,
   roles:{client:true,vendor:false,driver:false,miner:false},
   rec:null,micOn:false,aCtx:null,
-  gpsW:null,lastSpeed:0,gpsInterval:null,
+  gpsW:null,lastSpeed:0,gpsInterval:null,_gpsReady:false,
   activeOrder:null,orderVendor:null,
   _gpsState:'WALKING',_staticStart:null,_manualZoom:false,_manualZoomT:null,
   _cityT:null,_globeT:null,_txId:null,
@@ -536,7 +536,9 @@ function handlePos(pos){
   if(acc>200)return;
   if(Math.abs(lat)<.01&&Math.abs(lng)<.01)return;
   S.lat=lat;S.lng=lng;S.lastSpeed=speed;
+  S._gpsReady=true;/* GPS has a valid fix */
   if(S.userM)S.userM.setLatLng([lat,lng]);
+  else if(S.mapOn&&S.map)placeUserMarker();/* Place marker if map is open but marker missing */
   if(S.sb&&S.user)S.sb.from('users').upsert({id:S.user.id,lat:lat,lng:lng}).then(function(){});
   var wasMoving=S._gpsState==='DRIVING';
   var nowMoving=speed>S.cfg.driveSpeed;
@@ -600,7 +602,16 @@ function initGlobe(){
   var ctrl=S.globe.controls();
   ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.18;ctrl.enableDamping=true;ctrl.dampingFactor=0.07;ctrl.minDistance=101;ctrl.maxDistance=700;
   setInterval(updateGlobePts,15000);
-  S.globe.onGlobeClick(function(c){if(!c)return;ctrl.autoRotate=false;S.lat=c.lat;S.lng=c.lng;S.globe.pointOfView({lat:c.lat,lng:c.lng,altitude:.22},1700);setTimeout(toMap,1800);});
+  S.globe.onGlobeClick(function(c){
+    if(!c)return;
+    ctrl.autoRotate=false;
+    /* Use real GPS if available and accurate, otherwise use clicked point */
+    var targetLat=S._gpsReady?S.lat:c.lat;
+    var targetLng=S._gpsReady?S.lng:c.lng;
+    S.lat=targetLat;S.lng=targetLng;
+    S.globe.pointOfView({lat:targetLat,lng:targetLng,altitude:.22},1700);
+    setTimeout(toMap,1800);
+  });
   addEventListener('resize',function(){S.globe.width(innerWidth).height(innerHeight);});
   setTimeout(function(){snd('ambient');},3500);
 }
@@ -635,12 +646,44 @@ function initMap(){
 }
 function toMap(){
   if(S.mapOn)return;S.mapOn=true;initMap();
-  S.map.setView([S.lat,S.lng],14);
   $('mw').classList.add('on');$('gw').style.opacity='0';$('gbk').classList.add('on');
   $('wbar').classList.toggle('on',!!S.user);$('zslide').classList.add('on');
-  snd('up');placeUserMarker();
-  if(S.user&&!S.gpsW)startAutoGPS();
-  setLyr('CITY');showToast('CITY MAP');
+  snd('up');
+  /* Start GPS immediately if not running */
+  if(!S.gpsW)startAutoGPS();
+  /* If we have a GPS fix, go there. Otherwise start at last known. */
+  if(S._gpsReady){
+    S.map.setView([S.lat,S.lng],14,{animate:false});
+  } else {
+    /* No GPS yet — show map at last known, get fix fast */
+    S.map.setView([S.lat,S.lng],13,{animate:false});
+    /* Get position immediately */
+    navigator.geolocation&&navigator.geolocation.getCurrentPosition(function(pos){
+      var acc=pos.coords.accuracy||999;
+      if(acc>200)return;
+      var lat=pos.coords.latitude,lng=pos.coords.longitude;
+      if(Math.abs(lat)<.01&&Math.abs(lng)<.01)return;
+      S.lat=lat;S.lng=lng;S._gpsReady=true;
+      S.map.setView([lat,lng],14,{animate:true,duration:1});
+      placeUserMarker();
+      showToast('LOCATED · '+cStr(lat,lng));
+    },function(){},{enableHighAccuracy:true,timeout:6000,maximumAge:0});
+  }
+  placeUserMarker();
+  drawCityActivity();/* Draw all activity around user */
+  setLyr('CITY');showToast('CITY MAP — tap anywhere');
+}
+
+/* Draw all visible city activity centered on user */
+function drawCityActivity(){
+  if(!S.map)return;
+  /* Redraw vendors and circles */
+  drawVendors();drawCircles();drawDrivers();
+  /* Show active delivery if any */
+  if(S.activeOrder&&S.orderVendor){
+    /* Redraw the delivery triangle */
+    setTimeout(function(){if(S.orderVendor)drawDeliveryTriangle(S.orderVendor);},500);
+  }
 }
 function toGlobe(){
   if(!S.mapOn)return;S.mapOn=false;
@@ -654,11 +697,18 @@ function placeUserMarker(){
   if(!S.map)return;
   var all=!S.roles.client&&!S.roles.vendor&&!S.roles.driver&&!S.roles.miner;
   if(S.userM){S.userM.remove();S.userM=null;}
+  /* Always show marker — hide only if all roles off AND logged in */
   if(all&&S.user)return;
-  var nm=S.user?(S.prof?.display_name||S.user.email.split('@')[0]||'Me'):'GUEST';
-  var icon=L.divIcon({className:'',html:'<div onclick="A.openProf()" style="width:44px;height:44px;border-radius:50%;background:rgba(0,6,20,.96);border:2.5px solid #00d4ff;display:flex;align-items:center;justify-content:center;font-family:Orbitron,monospace;font-size:17px;cursor:pointer;box-shadow:0 0 22px rgba(0,212,255,.55);color:#00d4ff;font-weight:900">'+nm[0].toUpperCase()+'</div>',iconSize:[44,44],iconAnchor:[22,22]});
+  var nm=S.user?(S.prof&&(S.prof.display_name||S.user.email.split('@')[0])||'Me'):'ME';
+  var col=S.roles.miner?'#ffc800':'#00d4ff';/* Gold for miners */
+  var badge=S.roles.miner?'⬡':''+nm[0].toUpperCase();
+  var icon=L.divIcon({className:'',
+    html:'<div onclick="A.openProf()" style="width:48px;height:48px;border-radius:50%;background:rgba(0,6,20,.97);border:3px solid '+col+';display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Orbitron,monospace;cursor:pointer;box-shadow:0 0 28px '+col+'80,0 0 56px '+col+'30;color:'+col+';font-weight:900;font-size:17px;position:relative">'+badge+'<div style="position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:Orbitron,monospace;font-size:7px;color:'+col+';letter-spacing:.08em;text-shadow:0 0 6px '+col+'">'+nm+'</div></div>',
+    iconSize:[48,48],iconAnchor:[24,42]});/* anchor below name label */
   S.userM=L.marker([S.lat,S.lng],{icon:icon,zIndexOffset:1000}).addTo(S.map);
 }
+
+function cStr(la,ln){return Math.abs(la).toFixed(3)+'°'+(la>=0?'N':'S')+' '+Math.abs(ln).toFixed(3)+'°'+(ln>=0?'E':'W');}
 function drawCircles(){
   ML.circles.forEach(function(l){l.remove();});ML.circles=[];
   CIRCLES.forEach(function(sc){
