@@ -279,6 +279,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(circ
 .leaflet-container{background:#020617 !important}
 .leaflet-tile{filter:brightness(.9) contrast(1.12) saturate(.86)}
 .leaflet-pane.leaflet-overlay-pane svg{filter:drop-shadow(0 0 8px rgba(0,212,255,.28))}
+.leaflet-pane.leaflet-overlay-pane svg path.route-deliver,
+.leaflet-pane.leaflet-overlay-pane svg path[stroke="#00d4ff"][stroke-width="4.5"]{
+  filter:drop-shadow(0 0 6px #00d4ff) drop-shadow(0 0 14px rgba(0,212,255,.7));
+  animation:routePulse 2s ease-in-out infinite;
+}
+.leaflet-pane.leaflet-overlay-pane svg path.route-pickup,
+.leaflet-pane.leaflet-overlay-pane svg path[stroke="#c6a64a"]{
+  filter:drop-shadow(0 0 4px rgba(198,166,74,.7));
+}
+.leaflet-pane.leaflet-overlay-pane svg path.route-pending{
+  animation:pendingDash 1.5s linear infinite;
+}
+@keyframes routePulse{0%,100%{filter:drop-shadow(0 0 6px #00d4ff) drop-shadow(0 0 14px rgba(0,212,255,.7))}50%{filter:drop-shadow(0 0 12px #00d4ff) drop-shadow(0 0 22px rgba(0,212,255,.95))}}
+@keyframes pendingDash{to{stroke-dashoffset:-18}}
 .leaflet-popup-content-wrapper{background:rgba(2,6,23,.98) !important;border:1px solid rgba(0,212,255,.32) !important;border-radius:10px !important;color:var(--W) !important;box-shadow:0 0 22px rgba(0,212,255,.18)!important}
 .leaflet-popup-tip{background:rgba(2,6,23,.98) !important}
 .leaflet-control-zoom,.leaflet-control-attribution{display:none !important}
@@ -554,8 +568,55 @@ const CIRCLES=[
   {id:'sc2',name:'Mandraki Harbor',lat:36.432,lng:28.215,radius_m:500,member_count:23},
 ];
 let vendors=VSEED,circles=CIRCLES;
-let ML={circles:[],vendors:[],drivers:[],geo:[],demo:[]};
+let ML={circles:[],vendors:[],drivers:[],geo:[],demo:[],routes:[],orders:[]};
 const $=id=>document.getElementById(id);
+
+/* ════ OSRM REAL STREET ROUTING ════
+   Public OSRM demo server. Returns GeoJSON LineString that follows real streets.
+   Free, no key. Cached locally so repeated routes don't hammer the server. */
+const OSRM_URL='https://router.project-osrm.org/route/v1/driving';
+const OSRM_CACHE=new Map();
+async function osrmRoute(lat1,lng1,lat2,lng2){
+  const key=`${lat1.toFixed(5)},${lng1.toFixed(5)}->${lat2.toFixed(5)},${lng2.toFixed(5)}`;
+  if(OSRM_CACHE.has(key))return OSRM_CACHE.get(key);
+  const url=`${OSRM_URL}/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson&steps=false`;
+  try{
+    const r=await fetch(url);
+    if(!r.ok)throw new Error('osrm '+r.status);
+    const d=await r.json();
+    if(d.code!=='Ok'||!d.routes||!d.routes[0])throw new Error('no-route');
+    const result={
+      ok:true,
+      coords:d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]), // [lng,lat] -> [lat,lng]
+      km:d.routes[0].distance/1000,
+      sec:d.routes[0].duration,
+      legs:d.routes[0].legs
+    };
+    OSRM_CACHE.set(key,result);
+    return result;
+  }catch(e){
+    /* Fallback: straight line. The app still works — geometry just isn't street-routed. */
+    const fb={ok:false,reason:e.message,coords:[[lat1,lng1],[lat2,lng2]],km:distKm(lat1,lng1,lat2,lng2),sec:0};
+    return fb;
+  }
+}
+
+/* ════ DRIVER POOL ════
+   Real driver positions, online status. Drives the assignment + route logic. */
+const DRIVERS_SEED=[
+  {id:'dr1',name:'Nikos K.',vehicle:'🛵',lat:36.4392,lng:28.2188,online:true,kg_max:13,rating:4.9},
+  {id:'dr2',name:'Maria S.',vehicle:'🚗',lat:36.4365,lng:28.2210,online:true,kg_max:30,rating:4.8},
+  {id:'dr3',name:'Theo P.', vehicle:'🚲',lat:36.4380,lng:28.2155,online:true,kg_max:8, rating:4.7},
+  {id:'dr4',name:'Anna L.', vehicle:'🛵',lat:36.4421,lng:28.2240,online:false,kg_max:13,rating:4.9},
+];
+let drivers=DRIVERS_SEED;
+function nearestDrivers(lat,lng,n=1,kgNeeded=0){
+  return drivers
+    .filter(d=>d.online&&(kgNeeded?d.kg_max>=Math.min(kgNeeded,13):true))
+    .map(d=>({...d,dist:distKm(lat,lng,d.lat,d.lng)}))
+    .sort((a,b)=>a.dist-b.dist)
+    .slice(0,n);
+}
 
 /* ════ BOOT ════ */
 async function init(){
@@ -682,15 +743,24 @@ function startDemoOnMap(){
     const id=setInterval(()=>{if(S.user){clearInterval(id);return;}idx=(idx+1)%path.length;dMarkers[i].setLatLng(path[idx]);},2000+i*500);
     S.demoIntervals.push(id);
   });
-  /* Demo order triangle */
-  setTimeout(()=>{
-    if(!S.user){
-      const cl=[36.438,28.22],vl=[36.4401,28.2205],dl=[36.437,28.221];
-      const tri=L.polygon([cl,vl,dl],{color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.05,weight:1.2,dashArray:'5 4',opacity:.55}).addTo(S.map);
-      const li=L.divIcon({className:'',html:`<div class="gl g">DEMO ORDER · €9.70 ✦</div>`,iconAnchor:[45,10]});
-      const lm=L.marker([(cl[0]+vl[0])/2,(cl[1]+vl[1])/2],{icon:li}).addTo(S.map);
-      ML.demo.push(tri,lm);
-    }
+  /* Demo order — REAL street-routed path (driver → vendor → client) via OSRM */
+  setTimeout(async()=>{
+    if(S.user)return;
+    const cl=[36.438,28.22],vl=[36.4401,28.2205],dl=[36.437,28.221];
+    /* Real routed legs */
+    const [pickup,deliver]=await Promise.all([
+      osrmRoute(dl[0],dl[1],vl[0],vl[1]),
+      osrmRoute(vl[0],vl[1],cl[0],cl[1])
+    ]);
+    if(S.user)return;
+    const pickLine=L.polyline(pickup.coords,{color:'#c6a64a',weight:3,opacity:.7,dashArray:'8 6'}).addTo(S.map);
+    const delLine =L.polyline(deliver.coords,{color:'#c6a64a',weight:3.5,opacity:.85}).addTo(S.map);
+    const tri=L.polygon([cl,vl,dl],{color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.04,weight:1,dashArray:'4 6',opacity:.4,interactive:false}).addTo(S.map);
+    const dCoords=deliver.coords||[];
+    const mid=dCoords[Math.floor(dCoords.length/2)]||[(cl[0]+vl[0])/2,(cl[1]+vl[1])/2];
+    const li=L.divIcon({className:'',html:`<div class="gl g">DEMO · €9.70 ✦ · STREETS ROUTED</div>`,iconAnchor:[80,10]});
+    const lm=L.marker(mid,{icon:li}).addTo(S.map);
+    ML.demo.push(pickLine,delLine,tri,lm);
   },3500);
   /* Demo toasts */
   const tid1=setTimeout(()=>{if(!S.user)showToast('⬡ Old Town Community: "Ferry in 2h"');},8000);
@@ -941,10 +1011,28 @@ function drawVendors(){
 }
 function drawDrivers(){
   ML.drivers.forEach(l=>l.remove());ML.drivers=[];
-  [{lat:36.437,lng:28.221},{lat:36.442,lng:28.218}].forEach(d=>{
-    const icon=L.divIcon({className:'',html:`<div style="width:28px;height:28px;border-radius:50%;background:rgba(0,22,8,.92);border:1.5px solid #00ff88;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 0 8px rgba(0,255,136,.22)">🛵</div>`,iconSize:[28,28],iconAnchor:[14,14]});
-    const m=L.marker([d.lat,d.lng],{icon}).addTo(S.map);ML.drivers.push(m);
-    setInterval(()=>{d.lat+=(Math.random()-.5)*.0003;d.lng+=(Math.random()-.5)*.0003;m.setLatLng([d.lat,d.lng]);},3500+Math.random()*2000);
+  drivers.forEach(d=>{
+    if(!d.online&&!S.roles?.driver)return;
+    const color=d.online?'#00ff88':'rgba(255,255,255,.25)';
+    const bg=d.online?'rgba(0,22,8,.92)':'rgba(40,40,40,.85)';
+    const icon=L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;background:${bg};border:1.5px solid ${color};display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 10px ${d.online?'rgba(0,255,136,.32)':'rgba(0,0,0,.4)'}">${d.vehicle}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
+    const m=L.marker([d.lat,d.lng],{icon}).addTo(S.map);
+    m.bindTooltip(`${d.name} · ★${d.rating} · ${d.kg_max}kg`,{direction:'top',className:'gl'});
+    m.on('click',()=>{
+      if(S.user)M.openThread('driver',d.id,`${d.name} · ${d.vehicle}`);
+      else{showToast(`${d.name} · ★${d.rating} · ${d.kg_max}kg max`);}
+    });
+    ML.drivers.push(m);
+    /* Idle drift — drivers move slightly while waiting */
+    if(d.online){
+      const id=setInterval(()=>{
+        if(!S.map||!ML.drivers.includes(m)){clearInterval(id);return;}
+        d.lat+=(Math.random()-.5)*.0004;
+        d.lng+=(Math.random()-.5)*.0004;
+        m.setLatLng([d.lat,d.lng]);
+      },4500+Math.random()*2500);
+      S.demoIntervals.push(id);
+    }
   });
 }
 
@@ -981,17 +1069,132 @@ function optTap(type){
   else openMkt();
 }
 
-/* ════ GEOMETRY ════ */
-function drawDeliveryTriangle(v){
-  ML.geo.forEach(l=>l.remove());ML.geo=[];
-  const cl=[S.mapLat,S.mapLng],vl=[v.lat||36.44,v.lng||28.22],dl=[36.437,28.221];
-  const km=distKm(cl[0],cl[1],vl[0],vl[1])||0.7,del=calcDel(km,{night:isNight()});
-  const tri=L.polygon([cl,vl,dl],{color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.05,weight:1.3,dashArray:'5 4',opacity:.6}).addTo(S.map);
-  const rt=L.polyline([vl,cl],{color:'#00d4ff',weight:2,opacity:.7,dashArray:'8 6'}).addTo(S.map);
-  const mid=[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
-  const pi=L.divIcon({className:'',html:`<div class="gl" onclick="M.openThread('order',null,'Delivery Thread')">€${del.total.toFixed(2)} ✦ — CHAT</div>`,iconAnchor:[40,10]});
-  ML.geo.push(tri,rt,L.marker(mid,{icon:pi}).addTo(S.map));
-  setTimeout(()=>{ML.geo.forEach(l=>{try{l.remove();}catch(e){}});ML.geo=[];},90000);
+/* ════ GEOMETRY — REAL STREET ROUTING via OSRM ════ */
+async function drawDeliveryTriangle(v,opts={}){
+  ML.geo.forEach(l=>{try{l.remove();}catch(e){}});ML.geo=[];
+  if(!S.map)return;
+  const cl=[S.mapLat,S.mapLng];
+  const vl=[v.lat||36.44,v.lng||28.22];
+  const kgTotal=opts.kgTotal||S.cart.reduce((a,i)=>a+(i.kg||0.3),0);
+  /* Pick driver(s). Above 33kg → split across multiple drivers (polygon law). */
+  const splitNeeded=kgTotal>33;
+  const drvCount=splitNeeded?Math.ceil(kgTotal/33):1;
+  const assignedDrivers=nearestDrivers(vl[0],vl[1],drvCount,kgTotal);
+  if(!assignedDrivers.length){
+    showToast('No drivers online — connecting…');
+    /* Show vendor→client routed line anyway, with pending state */
+    const vc=await osrmRoute(vl[0],vl[1],cl[0],cl[1]);
+    const km=vc.km||distKm(vl[0],vl[1],cl[0],cl[1]);
+    const del=calcDel(km,{night:isNight(),kg:kgTotal});
+    const line=L.polyline(vc.coords,{color:'#00d4ff',weight:4,opacity:.85,dashArray:'10 8',className:'route-pending'}).addTo(S.map);
+    line.routeMeta={type:'pending',vendor:v,km,del};
+    line.on('click',()=>{M.openThread('order','pending-'+v.id,'Order Thread');});
+    ML.geo.push(line);
+    /* Mid-route price chip */
+    const midIdx=Math.floor(vc.coords.length/2);
+    const mid=vc.coords[midIdx]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
+    const pi=L.divIcon({className:'',html:`<div class="gl" onclick="M.openThread('order','pending-${v.id}','Delivery Thread')">€${del.total.toFixed(2)} ✦ · WAITING DRIVER</div>`,iconAnchor:[60,10]});
+    ML.geo.push(L.marker(mid,{icon:pi}).addTo(S.map));
+    return;
+  }
+  showToast('Routing through streets…');
+  /* For each driver: route driver → vendor (pickup leg, gold) + vendor → client (delivery leg, blue) */
+  let totalKm=0;
+  const allRoutes=[];
+  for(let i=0;i<assignedDrivers.length;i++){
+    const d=assignedDrivers[i];
+    const dl=[d.lat,d.lng];
+    const [pickup,deliver]=await Promise.all([
+      osrmRoute(dl[0],dl[1],vl[0],vl[1]),
+      osrmRoute(vl[0],vl[1],cl[0],cl[1])
+    ]);
+    totalKm+=(pickup.km||0)+(deliver.km||0);
+    /* Pickup leg — gold dashed (driver heading to vendor) */
+    const pickupLine=L.polyline(pickup.coords,{
+      color:'#c6a64a',weight:3,opacity:.78,dashArray:'8 6',className:'route-pickup'
+    }).addTo(S.map);
+    pickupLine.routeMeta={type:'pickup',driver:d,vendor:v,km:pickup.km};
+    /* Delivery leg — electric blue solid glow (vendor → client, the actual delivery) */
+    const deliverLine=L.polyline(deliver.coords,{
+      color:'#00d4ff',weight:4.5,opacity:.95,className:'route-deliver'
+    }).addTo(S.map);
+    deliverLine.routeMeta={type:'deliver',driver:d,vendor:v,client:{lat:cl[0],lng:cl[1]},km:deliver.km};
+    /* Click → open thread for this order leg */
+    const orderId=`ord-${v.id}-${d.id}-${Date.now()}`;
+    pickupLine.on('click',()=>M.openThread('order',orderId,`Pickup · ${d.name}`));
+    deliverLine.on('click',()=>M.openThread('order',orderId,`Delivery · ${d.name}`));
+    ML.geo.push(pickupLine,deliverLine);
+    allRoutes.push({driver:d,pickup,deliver,orderId});
+  }
+  /* Triangle/polygon overlay binding driver(s)+vendor+client (semantic — the relationship shape) */
+  const triPts=[cl,vl,...assignedDrivers.map(d=>[d.lat,d.lng])];
+  const shape=triPts.length===3?
+    L.polygon(triPts,{color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:1,dashArray:'4 6',opacity:.45,interactive:false}):
+    L.polygon(triPts,{color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.05,weight:1.2,dashArray:'4 6',opacity:.55,interactive:false});
+  shape.addTo(S.map);
+  ML.geo.push(shape);
+  /* Price chip — sits on the delivery leg midpoint */
+  const dCoords=allRoutes[0].deliver.coords;
+  const mid=dCoords[Math.floor(dCoords.length/2)]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
+  const km=allRoutes[0].deliver.km||distKm(vl[0],vl[1],cl[0],cl[1]);
+  const del=calcDel(km,{night:isNight(),kg:kgTotal});
+  const oid=allRoutes[0].orderId;
+  const drvNames=assignedDrivers.map(d=>d.name.split(' ')[0]).join(' + ');
+  const chipHtml=splitNeeded?
+    `<div class="gl g" onclick="M.openThread('order','${oid}','Order Thread')">€${del.total.toFixed(2)} ✦ · ${drvCount} DRIVERS · ${drvNames}</div>`:
+    `<div class="gl" onclick="M.openThread('order','${oid}','Order Thread')">€${del.total.toFixed(2)} ✦ · ${drvNames} · ${km.toFixed(1)}km</div>`;
+  const pi=L.divIcon({className:'',html:chipHtml,iconAnchor:[80,10]});
+  ML.geo.push(L.marker(mid,{icon:pi}).addTo(S.map));
+  /* Animate driver(s) along pickup → delivery for visual feedback */
+  allRoutes.forEach((r,i)=>animateDriverAlongRoute(r.driver,r.pickup.coords,r.deliver.coords,r.orderId,i*800));
+  /* Persist if logged in */
+  if(S.sb&&S.user){
+    try{
+      await S.sb.from('order_routes').insert({
+        order_id:oid,client_id:S.user.id,vendor_id:v.id,
+        driver_ids:assignedDrivers.map(d=>d.id),
+        total_km:+totalKm.toFixed(2),delivery_km:+km.toFixed(2),
+        total_eur:+del.total.toFixed(2),split:splitNeeded,
+        route_geojson:JSON.stringify(allRoutes.map(r=>({pickup:r.pickup.coords,deliver:r.deliver.coords})))
+      });
+    }catch(e){/* table may not exist yet — that's fine */}
+  }
+  /* Don't auto-clean: let user see the order until they explicitly close it or place another */
+  S.activeRoutes=ML.geo.slice();
+}
+
+/* Animate driver marker along their pickup→deliver route */
+function animateDriverAlongRoute(driver,pickupCoords,deliverCoords,orderId,delay=0){
+  if(!S.map)return;
+  const path=[...pickupCoords,...deliverCoords];
+  if(path.length<2)return;
+  const icon=L.divIcon({className:'',html:`<div style="width:34px;height:34px;border-radius:50%;background:rgba(40,30,5,.95);border:2px solid #c6a64a;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 14px rgba(198,166,74,.55)">${driver.vehicle}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
+  const m=L.marker(path[0],{icon,zIndexOffset:1000}).addTo(S.map);
+  m.bindTooltip(driver.name,{permanent:false,direction:'top',className:'gl'});
+  m.on('click',()=>M.openThread('order',orderId,`${driver.name} · ${driver.vehicle}`));
+  ML.geo.push(m);
+  let idx=0;
+  const stepMs=600;
+  setTimeout(()=>{
+    const id=setInterval(()=>{
+      if(!S.map||!ML.geo.includes(m)){clearInterval(id);return;}
+      idx++;
+      if(idx>=path.length){
+        clearInterval(id);
+        showToast(`${driver.name} delivered ✓`);
+        return;
+      }
+      m.setLatLng(path[idx]);
+    },stepMs);
+    S.demoIntervals&&S.demoIntervals.push(id);
+  },delay);
+}
+
+/* Clear all active route geometry — call before placing new order */
+function clearActiveRoutes(){
+  ML.geo.forEach(l=>{try{l.remove();}catch(e){}});
+  ML.geo=[];
+  S.activeRoutes=[];
 }
 
 /* ════ MARKETPLACE ════ */
@@ -1034,14 +1237,21 @@ async function confirmOrder(){
   const v=vendors.find(v=>v.id===S.cartVid||v.business_name===S.cartVid);
   closeDel();closeSheet('menu-sheet');closeSheet('mkt-sheet');$('order-bar').classList.remove('on');
   if(v){S.activeOrder={vendor:v,startedAt:Date.now()};S.orderVendor=v;startAutoGPS();}
-  if(v&&S.mapOn)drawDeliveryTriangle(v);
+  /* Clear previous routes before drawing this order */
+  clearActiveRoutes();
+  if(v&&S.mapOn){
+    const kgTotal=S.cart.reduce((a,i)=>a+(i.kg||i.weight_kg||0.3),0);
+    /* REAL street-routed delivery triangle */
+    await drawDeliveryTriangle(v,{kgTotal});
+  }
   if(S.sb&&S.user){
     const km=distKm(S.mapLat,S.mapLng,v?.lat||36.44,v?.lng||28.22)||0.7,del=calcDel(km,{night:isNight()});
     const sub=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0);
     await S.sb.from('orders').insert({client_id:S.user.id,vendor_id:v?.id,items:JSON.stringify(S.cart),subtotal:sub,delivery_km:km,delivery_fee:del.base,night_surcharge:del.night?1:0,platform_fee:+(del.total*.03).toFixed(2),total_eur:+(sub+del.total).toFixed(2),total_astran:+(sub+del.total).toFixed(2),client_lat:S.mapLat,client_lng:S.mapLng,vendor_lat:v?.lat||36.44,vendor_lng:v?.lng||28.22,status:'pending'});
   }
   S.cart=[];S.cartVid=null;
-  showToast('ORDER PLACED 🛵');setTimeout(()=>showToast('Driver assigned — 18 min'),3200);
+  showToast('ORDER PLACED 🛵 · ROUTING THROUGH STREETS');
+  setTimeout(()=>showToast('Driver picking up — watch the route'),3200);
 }
 
 /* ════ TEAM ════ */
@@ -1345,6 +1555,9 @@ return{
   toMap,toCityUserMap,toGlobe,locate,
   openBld,closeBld,bldSend,
   showToast,
+  /* Real routing — exposed for AI / programmatic use */
+  osrmRoute,drawDeliveryTriangle,clearActiveRoutes,nearestDrivers,
+  drivers:()=>drivers,vendors:()=>vendors,
 };
 })();
 window.M=M;
