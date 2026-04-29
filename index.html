@@ -2,803 +2,584 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
-<meta name="theme-color" content="#00000a">
-<title>ASTRANOV</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#020617">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ASTRANOV — Internet OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --black:#00000a;
-  --deep:#020617;
-  --deep2:#050b1f;
-  --blue:#00d4ff;
-  --blue-soft:rgba(0,212,255,.42);
-  --blue-dim:rgba(0,212,255,.16);
-  --gold:#c6a64a;
-  --gold-bright:#c6a64a;
-  --gold-soft:rgba(198,166,74,.32);
-  --white:#e8f4ff;
-  /* compatibility aliases for the existing code */
-  --B:var(--blue);--G:rgba(2,6,23,.96);--K:var(--black);--W:var(--white);--amber:var(--gold-bright);--green:#00ff88;
+  --B:#00d4ff; --B2:rgba(0,212,255,.4); --B3:rgba(0,212,255,.12);
+  --G:#c6a64a; --G2:rgba(198,166,74,.5); --G3:rgba(198,166,74,.12);
+  --K:#020617; --K2:rgba(2,6,23,.95);
+  --W:#e8f4ff; --T:rgba(232,244,255,.55);
+  --OK:#00ff88; --ER:#ff4d6d;
+  --ST:env(safe-area-inset-top,0px);
+  --SB:env(safe-area-inset-bottom,0px);
 }
-html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(circle at 30% 18%,#05102a 0%,#020617 36%,#00000a 78%);color:var(--W);font-family:'Rajdhani',sans-serif;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 30% 25%,#04102a 0%,#020617 50%,#00000a 100%);color:var(--W);font-family:'Rajdhani',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+body{position:fixed;inset:0;touch-action:manipulation}
+.mono{font-family:'Orbitron',monospace}
 
-/* MAP + GLOBE */
-#globe-wrap{position:fixed;inset:0;z-index:1}
-#globe-wrap canvas{display:block}
-#map-wrap{position:fixed;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity 1.2s}
-#map-wrap.on{opacity:1;pointer-events:all}
-#map{width:100%;height:100%;background:#020617}
-
-/* TITLE — only permanent UI */
-#title{
-  position:fixed;top:18px;left:50%;transform:translateX(-50%);
-  z-index:1000;font-family:'Orbitron',monospace;font-weight:900;
-  font-size:clamp(13px,4.5vw,20px);letter-spacing:.28em;
-  color:var(--B);pointer-events:none;white-space:nowrap;
-  text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.3);
-  animation:tp 4s ease-in-out infinite;
-  transition:opacity .5s;
-}
-@keyframes tp{0%,100%{text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.3)}50%{text-shadow:0 0 26px var(--B),0 0 60px rgba(0,200,255,.5)}}
-
-/* LAYER LABEL */
-#layer-lbl{
-  position:fixed;top:44px;left:50%;transform:translateX(-50%);
-  z-index:200;font-family:'Orbitron',monospace;font-size:7px;
-  letter-spacing:.2em;color:rgba(0,212,255,.25);pointer-events:none;
-  white-space:nowrap;transition:opacity .5s;
-}
-
-/* MYRMIDON TRIANGLE — appears at tap point */
-#tri-wrap{
-  position:fixed;z-index:500;pointer-events:none;
-  opacity:0;transition:opacity .25s;
-  transform:translate(-50%,-60%);
-}
-#tri-wrap.on{opacity:1;pointer-events:all}
-#tri-svg{cursor:pointer;filter:drop-shadow(0 0 18px rgba(0,212,255,.7));transition:transform .15s}
-#tri-svg:active{transform:scale(.92)}
-#tri-svg polygon{fill:rgba(0,8,24,.85);stroke:#00d4ff;stroke-width:1.8;transition:fill .2s}
-#tri-svg.open polygon{fill:rgba(0,212,255,.15)}
-#tri-plus{font-family:'Orbitron',monospace;font-size:24px;fill:#00d4ff;pointer-events:none}
-
-/* THREE CIRCLES — bloom from triangle corners */
-.orb{
-  position:fixed;z-index:501;
-  width:68px;height:68px;border-radius:50%;
-  background:var(--G);backdrop-filter:blur(22px);
-  border:2px solid rgba(0,212,255,.3);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  cursor:pointer;pointer-events:none;
-  opacity:0;transform:translate(-50%,-50%) scale(.2);
-  transition:opacity .35s cubic-bezier(.34,1.56,.64,1),
-              transform .35s cubic-bezier(.34,1.56,.64,1);
-  box-shadow:0 0 22px rgba(0,212,255,.25);
-}
-.orb.on{opacity:1;pointer-events:all;transform:translate(-50%,-50%) scale(1)}
-.orb:active{transform:translate(-50%,-50%) scale(.88) !important}
-.orb-icon{font-size:22px;line-height:1}
-.orb-lbl{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.08em;color:var(--B)}
-
-/* DEMO BADGE */
-#demo-badge{
-  position:fixed;top:0;left:0;right:0;z-index:1500;
-  height:20px;background:rgba(255,160,0,.1);
-  border-bottom:1px solid rgba(255,160,0,.18);
-  display:none;align-items:center;justify-content:center;
-  font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.18em;
-  color:rgba(255,180,0,.6);pointer-events:none;
-}
-#demo-badge.on{display:flex}
-
-/* LOGIN CARD — rises after 33s */
-#login-card{
-  position:fixed;bottom:0;left:0;right:0;z-index:3000;
-  background:rgba(0,6,20,.98);backdrop-filter:blur(28px);
-  border-top:1px solid rgba(0,212,255,.18);
-  border-radius:20px 20px 0 0;
-  padding:20px 18px 44px;
-  transform:translateY(100%);
-  transition:transform .55s cubic-bezier(.4,0,.2,1);
-}
-#login-card.on{transform:translateY(0)}
-.lc-logo{font-family:'Orbitron',monospace;font-weight:900;font-size:18px;color:var(--B);letter-spacing:.25em;margin-bottom:3px}
-.lc-sub{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.18em;color:rgba(0,212,255,.28);margin-bottom:20px}
-.lc-tabs{display:flex;gap:6px;margin-bottom:16px}
-.lc-tab{flex:1;padding:8px;border-radius:7px;text-align:center;cursor:pointer;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.09em;border:1px solid rgba(0,212,255,.12);color:rgba(0,212,255,.36);transition:all .18s}
-.lc-tab.on{background:rgba(0,212,255,.14);border-color:var(--B);color:var(--B)}
-.lc-err{font-size:10px;color:rgba(255,80,80,.65);margin-bottom:8px;min-height:14px;font-family:'Orbitron',monospace;letter-spacing:.04em}
-.fw{position:relative;margin-bottom:9px}
-.fi{width:100%;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.16);border-radius:9px;padding:12px 42px 12px 14px;color:var(--W);font-size:14px;outline:none;font-family:'Rajdhani',sans-serif;transition:border-color .2s}
-.fi:focus{border-color:rgba(0,212,255,.4)}
-.fi::placeholder{color:rgba(255,255,255,.18)}
-.eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(0,212,255,.4);cursor:pointer;font-size:15px;padding:4px;line-height:1}
-.eye:hover{color:var(--B)}
-.ph-hint{font-size:9px;color:rgba(0,212,255,.24);margin:-5px 0 9px 3px}
-.btn-enter{width:100%;background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.3);border-radius:10px;padding:13px;color:var(--B);font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.12em;cursor:pointer;margin-bottom:8px;transition:all .18s}
-.btn-enter:active{background:rgba(0,212,255,.24)}
-.btn-skip{width:100%;background:transparent;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;color:rgba(255,255,255,.22);font-size:12px;cursor:pointer}
-#signup-extra{display:none}
-
-/* PROFILE PILL — top right, minimal, only when logged in */
-#prof-pill{
-  position:fixed;top:16px;right:14px;z-index:1000;
-  display:none;align-items:center;gap:7px;
-  background:var(--G);backdrop-filter:blur(14px);
-  border:1px solid rgba(0,212,255,.15);border-radius:20px;
-  padding:5px 11px 5px 7px;cursor:pointer;
-  transition:opacity .4s;
-}
-#prof-pill.on{display:flex}
-#prof-av{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--B);background:rgba(0,212,255,.12);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:11px;color:var(--B)}
-#prof-bal{font-family:'Orbitron',monospace;font-size:8px;color:var(--gold-bright);letter-spacing:.05em;text-shadow:0 0 10px rgba(198,166,74,.35)}
-
-/* PROFILE SHEET */
-#prof-sheet{
-  position:fixed;bottom:0;left:0;right:0;z-index:2500;
-  background:rgba(0,6,20,.98);backdrop-filter:blur(28px);
-  border-top:1px solid rgba(0,212,255,.16);border-radius:20px 20px 0 0;
-  padding:16px 16px 44px;
-  transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);
-  max-height:85vh;overflow-y:auto;
-}
-#prof-sheet.on{transform:translateY(0)}
-
-/* SHEETS */
-.sheet{
-  position:fixed;bottom:0;left:0;right:0;z-index:2000;
-  background:rgba(0,6,20,.98);backdrop-filter:blur(28px);
-  border-top:1px solid rgba(0,212,255,.14);
-  border-radius:20px 20px 0 0;
-  padding:16px 16px 44px;
-  transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);
-  max-height:82vh;overflow-y:auto;
-}
-.sheet.on{transform:translateY(0)}
-.handle{width:34px;height:3px;background:rgba(0,212,255,.18);border-radius:2px;margin:0 auto 14px}
-.sh-t{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.14em;color:var(--B);margin-bottom:13px}
-
-/* VENDOR CARDS */
-.v-card{display:flex;align-items:center;gap:11px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:10px;padding:13px;margin-bottom:8px;cursor:pointer}
-.v-card:active{background:rgba(0,212,255,.11)}
-.v-em{font-size:24px;flex-shrink:0}
-.v-name{font-size:14px;font-weight:600}
-.v-sub{font-size:9px;color:rgba(0,212,255,.42);letter-spacing:.06em}
-.v-st{font-size:9px;margin-top:3px}
-.open{color:var(--green)}.closed{color:rgba(255,80,80,.5)}
-.m-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(0,212,255,.06)}
-.m-item:last-child{border:none}
-.m-price{color:var(--B);font-weight:600;font-size:13px}
-.m-add{background:rgba(0,212,255,.09);border:1px solid rgba(0,212,255,.22);border-radius:6px;padding:4px 10px;color:var(--B);font-size:11px;cursor:pointer}
-
-/* ORDER BAR — rises when cart has items */
-#order-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:2100;
-  background:rgba(198,166,74,.18);backdrop-filter:blur(18px);
-  border-top:1px solid rgba(198,166,74,.35);
-  padding:12px 16px;
-  display:flex;justify-content:space-between;align-items:center;
-  transform:translateY(100%);transition:transform .28s;
-}
-#order-bar.on{transform:translateY(0)}
-#o-go{background:var(--gold);border:none;border-radius:18px;padding:9px 18px;color:#00000a;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;cursor:pointer}
-
-/* DELIVERY CONFIRM */
-#del-overlay{position:fixed;inset:0;z-index:2800;background:rgba(0,0,10,.88);backdrop-filter:blur(14px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .28s}
-#del-overlay.on{opacity:1;pointer-events:all}
-.del-box{background:rgba(0,8,24,.98);border:1px solid rgba(0,212,255,.17);border-radius:20px 20px 0 0;padding:20px 18px 44px;width:100%;max-width:500px}
-.del-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(0,212,255,.06);font-size:12px}
-.del-row:last-of-type{border:none}
-.del-total{color:var(--B);font-weight:700;font-size:15px}
-
-/* MSG PANEL */
-#msg-panel{position:fixed;bottom:0;left:0;right:0;z-index:2600;background:rgba(0,6,20,.98);backdrop-filter:blur(28px);border-top:1px solid rgba(0,212,255,.14);border-radius:20px 20px 0 0;padding:14px 14px 34px;transform:translateY(100%);transition:transform .38s cubic-bezier(.4,0,.2,1);max-height:65vh;display:flex;flex-direction:column}
-#msg-panel.on{transform:translateY(0)}
-#msg-log{flex:1;overflow-y:auto;margin-bottom:9px;display:flex;flex-direction:column;gap:5px;min-height:80px}
-.msg{padding:7px 11px;margin-bottom:4px;border-radius:8px;font-size:13px;line-height:1.5;max-width:88%}
-.msg.u{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.18);color:var(--B);margin-left:auto;text-align:right}
-.msg.a{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:var(--W)}
-.msg-row{display:flex;gap:7px;align-items:center}
-#msg-txt{flex:1;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.18);border-radius:22px;padding:10px 15px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:14px;outline:none}
-#msg-go{width:42px;height:42px;border-radius:50%;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.09);color:var(--B);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-
-/* VIDEO SHEET */
-.plat-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px}
-.plat-btn{padding:5px 11px;border-radius:12px;border:1px solid rgba(0,212,255,.14);background:rgba(0,212,255,.04);color:rgba(0,212,255,.5);font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.06em;cursor:pointer;transition:all .18s}
-.plat-btn.on{background:rgba(0,212,255,.14);border-color:var(--B);color:var(--B)}
-
-/* AI PANEL — slides up, auto-dismisses */
-#ai-panel{
-  position:fixed;bottom:0;left:0;right:0;z-index:2200;
-  padding:0 14px 30px;
-  transform:translateY(110%);transition:transform .38s cubic-bezier(.4,0,.2,1);
-}
-#ai-panel.on{transform:translateY(0)}
-#ai-log{background:var(--G);backdrop-filter:blur(22px);border:1px solid rgba(0,212,255,.13);border-radius:14px;padding:11px;max-height:180px;overflow-y:auto;margin-bottom:9px;display:none;scroll-behavior:smooth}
-#ai-log.on{display:block}
-.ai-row{display:flex;gap:7px;align-items:center}
-#ai-in{flex:1;background:rgba(0,212,255,.07);border:1px solid rgba(0,212,255,.22);border-radius:22px;padding:12px 16px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none}
-#ai-in::placeholder{color:rgba(0,212,255,.3)}
-#ai-send{width:46px;height:46px;border-radius:50%;border:1px solid rgba(0,212,255,.28);background:rgba(0,212,255,.1);color:var(--B);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-#ai-send:active{transform:scale(.88)}
-
-/* PROFILE UI reuse */
-.prof-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(0,212,255,.06)}
-.prof-row:last-of-type{border:none}
-.prof-lbl{font-size:13px;font-weight:600}.prof-val{font-size:11px;color:rgba(255,255,255,.32)}
-.toggle{width:44px;height:24px;border-radius:12px;border:1px solid rgba(0,212,255,.2);background:rgba(0,212,255,.06);position:relative;cursor:pointer;transition:all .2s;flex-shrink:0}
-.toggle.on{background:rgba(0,212,255,.22);border-color:var(--B)}
-.knob{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:rgba(0,212,255,.4);transition:all .2s}
-.toggle.on .knob{left:23px;background:var(--B);box-shadow:0 0 7px var(--B)}
-.sect{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.16em;color:rgba(0,212,255,.35);margin:13px 0 7px;padding-top:13px;border-top:1px solid rgba(0,212,255,.06)}
-.topup-row{display:flex;gap:5px;margin-bottom:8px}
-.topup-btn{flex:1;padding:8px 2px;border-radius:7px;text-align:center;cursor:pointer;border:1px solid rgba(0,212,255,.13);background:rgba(0,212,255,.04);font-family:'Orbitron',monospace;font-size:9px;color:var(--B)}
-.topup-btn:active{background:rgba(0,212,255,.18)}
-.setup-panel{background:rgba(0,12,28,.9);border:1px solid rgba(0,212,255,.1);border-radius:9px;padding:13px;margin-top:8px;display:none}
-.setup-panel.on{display:block}
-.btn-p{width:100%;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.28);border-radius:9px;padding:11px;color:var(--B);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;cursor:pointer;margin-bottom:6px}
-.btn-g{width:100%;background:transparent;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:10px;color:rgba(255,255,255,.22);font-size:12px;cursor:pointer;margin-top:5px}
-.fi2{width:100%;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.14);border-radius:8px;padding:10px 13px;color:var(--W);font-size:13px;outline:none;margin-bottom:8px;font-family:'Rajdhani',sans-serif}
-.fi2::placeholder{color:rgba(255,255,255,.18)}
-.incog{text-align:center;padding:7px;margin:9px 0;background:rgba(255,255,255,.03);border-radius:7px;font-size:9px;color:rgba(255,255,255,.22);font-family:'Orbitron',monospace;letter-spacing:.04em}
-.incog.on{background:rgba(140,80,255,.08);color:rgba(170,100,255,.5);border:1px solid rgba(140,80,255,.18)}
-
-/* BUILDER */
-#bld-panel{position:fixed;inset:0;z-index:6000;background:rgba(0,0,8,.97);backdrop-filter:blur(20px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1)}
-#bld-panel.on{transform:translateY(0)}
-#bld-hdr{padding:15px 15px 10px;border-bottom:1px solid rgba(255,200,0,.12);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
-#bld-log{flex:1;overflow-y:auto;padding:12px 15px;display:flex;flex-direction:column;gap:8px}
-.bl{padding:9px 12px;border-radius:9px;font-size:12px;line-height:1.55;max-width:92%}
-.bl.u{background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.17);color:var(--amber);margin-left:auto;text-align:right}
-.bl.a{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:var(--W)}
-.bl.sys{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.12);color:rgba(0,212,255,.6);font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.07em;text-align:center;max-width:100%}
-#bld-row{padding:10px 15px 30px;border-top:1px solid rgba(255,200,0,.1);display:flex;gap:7px;align-items:flex-end;flex-shrink:0}
-#bld-in{flex:1;background:rgba(255,200,0,.04);border:1px solid rgba(255,200,0,.16);border-radius:11px;padding:10px 13px;color:var(--W);font-family:'Rajdhani',sans-serif;font-size:13px;outline:none;resize:none;min-height:40px;max-height:100px}
-#bld-in::placeholder{color:rgba(255,200,0,.2)}
-#bld-go{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,200,0,.25);background:rgba(255,200,0,.09);color:var(--amber);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-
-/* TOAST */
-#toast{position:fixed;top:58px;left:50%;z-index:9999;transform:translateX(-50%) translateY(-60px);background:rgba(0,212,255,.09);border:1px solid rgba(0,212,255,.22);border-radius:16px;padding:6px 15px;font-size:9px;color:var(--B);backdrop-filter:blur(14px);letter-spacing:.06em;transition:transform .24s;white-space:nowrap;pointer-events:none;font-family:'Orbitron',monospace}
-#toast.on{transform:translateX(-50%) translateY(0)}
-
-/* LOADING */
-#loading{position:fixed;inset:0;z-index:9500;background:var(--K);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .9s}
-#loading.gone{opacity:0;pointer-events:none}
-.ld-t{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(22px,7vw,36px);letter-spacing:.3em;color:var(--B);text-shadow:0 0 28px var(--B)}
-.ld-bw{width:180px;height:2px;background:rgba(0,212,255,.1);border-radius:1px}
-.ld-b{height:100%;width:0;background:var(--B);border-radius:1px;box-shadow:0 0 7px var(--B);transition:width .3s}
-.ld-s{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.2em;color:rgba(0,212,255,.28)}
-
-/* ATTR */
-#attr{position:fixed;bottom:4px;left:6px;z-index:999;font-size:7px;color:rgba(0,212,255,.14);line-height:1.5;pointer-events:none}
-
-/* LEAFLET — dark electric-blue map skin */
-.leaflet-container{background:#020617 !important}
-.leaflet-tile{filter:brightness(.9) contrast(1.12) saturate(.86)}
-.leaflet-pane.leaflet-overlay-pane svg{filter:drop-shadow(0 0 8px rgba(0,212,255,.28))}
-.leaflet-pane.leaflet-overlay-pane svg path.route-deliver,
-.leaflet-pane.leaflet-overlay-pane svg path[stroke="#00d4ff"][stroke-width="4.5"]{
-  filter:drop-shadow(0 0 6px #00d4ff) drop-shadow(0 0 14px rgba(0,212,255,.7));
-  animation:routePulse 2s ease-in-out infinite;
-}
-.leaflet-pane.leaflet-overlay-pane svg path.route-pickup,
-.leaflet-pane.leaflet-overlay-pane svg path[stroke="#c6a64a"]{
-  filter:drop-shadow(0 0 4px rgba(198,166,74,.7));
-}
-.leaflet-pane.leaflet-overlay-pane svg path.route-pending{
-  animation:pendingDash 1.5s linear infinite;
-}
-@keyframes routePulse{0%,100%{filter:drop-shadow(0 0 6px #00d4ff) drop-shadow(0 0 14px rgba(0,212,255,.7))}50%{filter:drop-shadow(0 0 12px #00d4ff) drop-shadow(0 0 22px rgba(0,212,255,.95))}}
-@keyframes pendingDash{to{stroke-dashoffset:-18}}
-.leaflet-popup-content-wrapper{background:rgba(2,6,23,.98) !important;border:1px solid rgba(0,212,255,.32) !important;border-radius:10px !important;color:var(--W) !important;box-shadow:0 0 22px rgba(0,212,255,.18)!important}
-.leaflet-popup-tip{background:rgba(2,6,23,.98) !important}
-.leaflet-control-zoom,.leaflet-control-attribution{display:none !important}
-
-/* GEO LABELS */
-.gl{background:rgba(0,8,24,.9);border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:3px 8px;font-family:'Orbitron',monospace;font-size:8px;color:#00d4ff;white-space:nowrap;cursor:pointer;box-shadow:0 0 8px rgba(0,212,255,.2)}
-.gl.g{border-color:rgba(255,200,0,.4);color:var(--amber)}
-.gl.v{border-color:rgba(0,255,136,.4);color:var(--green)}
-
-/* CANVAS STARS */
+/* ── LAYERS ── */
 #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+#globe-wrap{position:fixed;inset:0;z-index:1}
+#map-wrap{position:fixed;inset:0;z-index:2;opacity:0;pointer-events:none;transition:opacity .9s ease}
+#map-wrap.on{opacity:1;pointer-events:auto}
+#leaf{width:100%;height:100%;background:#020617}
+
+/* ── BRAND TITLE ── */
+#title{
+  position:fixed;top:calc(var(--ST) + 16px);left:50%;transform:translateX(-50%);
+  z-index:50;font-family:'Orbitron',monospace;font-weight:900;
+  font-size:clamp(14px,4.4vw,20px);letter-spacing:.28em;
+  color:var(--B);text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4);
+  pointer-events:none;white-space:nowrap;animation:pulse 4s ease-in-out infinite}
+#title .sub{display:block;font-size:7.5px;letter-spacing:.32em;color:rgba(0,212,255,.45);margin-top:2px;font-weight:500;text-shadow:none}
+@keyframes pulse{0%,100%{text-shadow:0 0 16px var(--B),0 0 40px rgba(0,180,255,.4)}50%{text-shadow:0 0 26px var(--B),0 0 60px rgba(0,200,255,.6)}}
+
+/* ── PROFILE PILL ── */
+#pill{
+  position:fixed;top:calc(var(--ST) + 14px);right:12px;z-index:60;
+  display:none;align-items:center;gap:7px;
+  background:rgba(2,6,23,.85);backdrop-filter:blur(12px);
+  border:1px solid var(--B3);border-radius:22px;
+  padding:5px 12px 5px 6px;cursor:pointer;font-size:11px;letter-spacing:.05em}
+#pill.on{display:flex;animation:rise .4s ease}
+#pill .av{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--B);background:var(--B3);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:11px;color:var(--B);font-weight:700}
+#pill .bal{font-family:'Orbitron',monospace;font-size:9px;color:var(--G);letter-spacing:.06em;text-shadow:0 0 8px var(--G3)}
+
+/* ── LOGIN FAB ── */
+#fab-login{
+  position:fixed;top:calc(var(--ST) + 14px);right:12px;z-index:60;
+  background:rgba(2,6,23,.85);backdrop-filter:blur(12px);
+  border:1px solid var(--B3);border-radius:22px;
+  padding:8px 16px;cursor:pointer;font-family:'Orbitron',monospace;
+  font-size:9px;letter-spacing:.14em;color:var(--B)}
+#fab-login.hide{display:none}
+
+/* ── BACK FAB ── */
+#fab-back{
+  position:fixed;top:calc(var(--ST) + 14px);left:12px;z-index:60;
+  width:40px;height:40px;border-radius:50%;
+  background:rgba(2,6,23,.88);backdrop-filter:blur(12px);
+  border:1px solid var(--B3);
+  display:none;align-items:center;justify-content:center;cursor:pointer;color:var(--B)}
+#fab-back.on{display:flex;animation:rise .4s ease}
+
+/* ── MIC FAB ── */
+#fab-mic{
+  position:fixed;bottom:calc(var(--SB) + 18px);right:14px;z-index:60;
+  width:56px;height:56px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,var(--B3),rgba(2,6,23,.95));
+  border:1.5px solid var(--B2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 0 22px rgba(0,212,255,.3);transition:transform .15s}
+#fab-mic:active{transform:scale(.92)}
+#fab-mic.live{animation:micRing 1.6s ease-out infinite;border-color:var(--ER)}
+@keyframes micRing{0%{box-shadow:0 0 0 0 rgba(255,77,109,.55)}100%{box-shadow:0 0 0 22px rgba(255,77,109,0)}}
+#fab-mic svg{width:24px;height:24px;stroke:var(--B);fill:none;stroke-width:1.8}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;left:50%;top:calc(var(--ST) + 70px);transform:translateX(-50%) translateY(-10px);
+  background:rgba(2,6,23,.94);border:1px solid var(--B2);
+  padding:8px 16px;border-radius:22px;font-size:12px;
+  color:var(--W);letter-spacing:.05em;
+  z-index:9000;opacity:0;pointer-events:none;
+  transition:opacity .25s ease,transform .25s ease;
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.1em;
+  max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── SHEETS (bottom drawers) ── */
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:200;
+  background:rgba(2,8,24,.97);backdrop-filter:blur(28px);
+  border-top:1px solid var(--B2);
+  border-radius:22px 22px 0 0;
+  padding:14px 18px calc(var(--SB) + 22px);
+  transform:translateY(105%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  max-height:84vh;overflow-y:auto;
+  box-shadow:0 -10px 40px rgba(0,0,0,.6)}
+.sheet.on{transform:translateY(0)}
+.handle{width:38px;height:4px;background:var(--B3);border-radius:3px;margin:0 auto 14px}
+.sh-t{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.18em;color:var(--B);margin-bottom:14px;text-align:center}
+.sh-x{position:absolute;top:10px;right:14px;width:30px;height:30px;border-radius:50%;background:rgba(2,6,23,.6);border:1px solid var(--B3);color:var(--T);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+
+/* ── BUTTONS ── */
+.btn{width:100%;background:var(--B3);border:1px solid var(--B2);border-radius:11px;
+  padding:13px;color:var(--B);font-family:'Orbitron',monospace;font-size:10px;
+  letter-spacing:.14em;cursor:pointer;margin-top:8px;transition:background .15s}
+.btn:active{background:rgba(0,212,255,.22)}
+.btn.gold{background:var(--G3);border-color:var(--G2);color:var(--G)}
+.btn.gold:active{background:rgba(198,166,74,.22)}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.4);font-size:11px}
+.chip{background:var(--B3);border:1px solid var(--B2);border-radius:99px;padding:5px 12px;color:var(--B);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.08em;cursor:pointer}
+.chip.gold{background:var(--G3);border-color:var(--G2);color:var(--G)}
+.chip.on{background:rgba(0,212,255,.25)}
+
+/* ── INPUTS ── */
+.input{width:100%;background:rgba(0,212,255,.05);border:1px solid var(--B3);
+  border-radius:10px;padding:12px 14px;color:var(--W);font-size:14px;
+  font-family:'Rajdhani',sans-serif;outline:none;margin-bottom:9px;transition:border-color .15s}
+.input:focus{border-color:var(--B2)}
+.input::placeholder{color:rgba(255,255,255,.22)}
+
+/* ── LOGIN CARD ── */
+#auth-tabs{display:flex;gap:6px;margin-bottom:14px}
+.auth-tab{flex:1;padding:9px;border-radius:8px;text-align:center;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.1em;
+  border:1px solid var(--B3);color:rgba(0,212,255,.45);transition:all .15s}
+.auth-tab.on{background:var(--B3);border-color:var(--B);color:var(--B)}
+#auth-err{font-size:11px;color:var(--ER);min-height:16px;margin-bottom:6px;font-family:'Orbitron',monospace;letter-spacing:.04em}
+
+/* ── VENDOR LIST ── */
+.v-card{display:flex;align-items:center;gap:12px;background:var(--B3);border:1px solid var(--B3);
+  border-radius:12px;padding:13px;margin-bottom:9px;cursor:pointer;transition:background .15s}
+.v-card:active{background:rgba(0,212,255,.16)}
+.v-em{font-size:26px;flex-shrink:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:rgba(0,212,255,.06);border-radius:10px}
+.v-name{font-size:15px;font-weight:600;color:var(--W)}
+.v-meta{font-size:10px;color:rgba(0,212,255,.55);letter-spacing:.06em;margin-top:2px}
+.v-stat{font-size:9px;margin-top:3px;font-family:'Orbitron',monospace;letter-spacing:.07em}
+.v-stat.open{color:var(--OK)}
+.v-stat.closed{color:rgba(255,77,109,.6)}
+.m-item{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(0,212,255,.07)}
+.m-item:last-child{border:none}
+.m-info{flex:1}
+.m-name{font-size:14px;color:var(--W)}
+.m-sub{font-size:10px;color:var(--T);margin-top:1px}
+.m-price{font-family:'Orbitron',monospace;color:var(--B);font-weight:700;font-size:13px;margin-right:10px}
+.m-add{background:var(--B3);border:1px solid var(--B2);border-radius:7px;padding:5px 11px;color:var(--B);font-size:11px;cursor:pointer;font-family:'Orbitron',monospace;letter-spacing:.05em}
+.m-add:active{background:rgba(0,212,255,.25)}
+.m-qty{display:flex;align-items:center;gap:7px}
+.m-qty b{font-family:'Orbitron',monospace;min-width:18px;text-align:center;color:var(--B)}
+
+/* ── ORDER BAR ── */
+#orderbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:150;
+  background:rgba(198,166,74,.18);backdrop-filter:blur(18px);
+  border-top:1px solid var(--G2);
+  padding:12px 16px calc(var(--SB) + 14px);
+  display:flex;justify-content:space-between;align-items:center;
+  transform:translateY(110%);transition:transform .3s ease}
+#orderbar.on{transform:translateY(0)}
+#orderbar .info{font-family:'Orbitron',monospace;font-size:10px;color:var(--G);letter-spacing:.08em}
+#orderbar .total{font-size:14px;font-weight:700;color:var(--W);margin-top:2px}
+#orderbar button{background:var(--G);border:0;border-radius:18px;padding:9px 18px;color:#1a1200;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.12em;cursor:pointer;font-weight:700}
+
+/* ── DELIVERY OVERLAY ── */
+#del-ovr{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,10,.85);backdrop-filter:blur(14px);
+  display:none;align-items:flex-end;justify-content:center;opacity:0;
+  transition:opacity .25s ease}
+#del-ovr.on{display:flex;opacity:1}
+.del-card{
+  width:100%;max-width:540px;
+  background:rgba(2,8,24,.98);border:1px solid var(--B2);
+  border-radius:22px 22px 0 0;
+  padding:18px 18px calc(var(--SB) + 24px);
+  box-shadow:0 -12px 50px rgba(0,0,0,.7)}
+.del-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(0,212,255,.06);font-size:13px}
+.del-row:last-of-type{border:none}
+.del-tot{color:var(--B);font-weight:700;font-size:16px;font-family:'Orbitron',monospace}
+
+/* ── MESSAGE PANEL ── */
+#msg-panel{
+  position:fixed;left:0;right:0;bottom:0;z-index:280;
+  background:rgba(2,8,24,.98);backdrop-filter:blur(28px);
+  border-top:1px solid var(--B2);
+  border-radius:22px 22px 0 0;
+  padding:14px 14px calc(var(--SB) + 16px);
+  transform:translateY(110%);transition:transform .35s cubic-bezier(.4,0,.2,1);
+  max-height:75vh;display:flex;flex-direction:column}
+#msg-panel.on{transform:translateY(0)}
+#msg-log{flex:1;overflow-y:auto;margin-bottom:10px;display:flex;flex-direction:column;gap:5px;min-height:120px;max-height:50vh}
+.msg{padding:7px 12px;border-radius:11px;font-size:13px;line-height:1.4;max-width:85%;word-wrap:break-word}
+.msg.u{background:var(--B3);border:1px solid var(--B2);color:var(--B);align-self:flex-end;text-align:right}
+.msg.a{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:var(--W);align-self:flex-start}
+.msg .who{font-family:'Orbitron',monospace;font-size:8.5px;letter-spacing:.06em;color:rgba(0,212,255,.55);margin-bottom:2px}
+.msg-row{display:flex;gap:8px;align-items:center}
+#msg-in{flex:1;background:var(--B3);border:1px solid var(--B2);border-radius:22px;padding:11px 16px;color:var(--W);font-size:14px;font-family:'Rajdhani',sans-serif;outline:none}
+#msg-go{width:42px;height:42px;border-radius:50%;border:1px solid var(--B2);background:var(--B3);color:var(--B);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+
+/* ── LEAFLET POPUPS / MAP ── */
+.leaflet-container{background:#020617!important;font-family:'Rajdhani',sans-serif!important}
+.leaflet-tile{filter:brightness(.88) contrast(1.1) saturate(.85)}
+.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
+.leaflet-popup-content-wrapper{
+  background:rgba(2,8,24,.98)!important;border:1px solid var(--B2)!important;
+  border-radius:14px!important;color:var(--W)!important;
+  box-shadow:0 0 28px rgba(0,212,255,.25)!important;backdrop-filter:blur(14px)}
+.leaflet-popup-tip{background:rgba(2,8,24,.98)!important}
+.leaflet-popup-close-button{color:var(--T)!important;font-size:18px!important}
+
+/* Glow on routed lines */
+.leaflet-overlay-pane svg path.r-deliver{
+  filter:drop-shadow(0 0 6px var(--B)) drop-shadow(0 0 14px rgba(0,212,255,.6));
+  animation:rPulse 2.2s ease-in-out infinite}
+.leaflet-overlay-pane svg path.r-pickup{filter:drop-shadow(0 0 4px var(--G2))}
+@keyframes rPulse{0%,100%{filter:drop-shadow(0 0 6px var(--B)) drop-shadow(0 0 12px rgba(0,212,255,.5))}50%{filter:drop-shadow(0 0 14px var(--B)) drop-shadow(0 0 22px rgba(0,212,255,.85))}}
+
+/* Map labels */
+.gl{background:rgba(2,8,24,.92);border:1px solid var(--B2);border-radius:7px;padding:4px 9px;font-family:'Orbitron',monospace;font-size:9px;color:var(--B);white-space:nowrap;cursor:pointer;box-shadow:0 0 10px rgba(0,212,255,.25);letter-spacing:.05em}
+.gl.gold{border-color:var(--G2);color:var(--G);box-shadow:0 0 10px rgba(198,166,74,.3)}
+.gl.green{border-color:rgba(0,255,136,.5);color:var(--OK)}
+
+/* Driver/vendor/user markers */
+.mk{display:flex;align-items:center;justify-content:center;border-radius:50%;border:2px solid;box-shadow:0 0 12px}
+.mk.user{width:38px;height:38px;background:var(--B3);border-color:var(--B);box-shadow-color:rgba(0,212,255,.6);font-family:'Orbitron',monospace;font-weight:700;color:var(--W);font-size:14px;box-shadow:0 0 18px rgba(0,212,255,.7)}
+.mk.shop{width:36px;height:36px;background:rgba(40,30,5,.95);border-color:var(--G);font-size:18px;box-shadow:0 0 12px rgba(198,166,74,.5)}
+.mk.shop.closed{border-color:rgba(255,77,109,.4);background:rgba(20,5,8,.9);opacity:.55}
+.mk.driver{width:32px;height:32px;background:rgba(0,22,8,.95);border-color:var(--OK);font-size:15px;box-shadow:0 0 10px rgba(0,255,136,.5)}
+.mk.driver.busy{border-color:var(--G);background:rgba(40,28,5,.95);box-shadow:0 0 10px rgba(198,166,74,.5)}
+
+/* Loading screen */
+#loading{position:fixed;inset:0;z-index:9500;background:#02060f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity .8s ease}
+#loading.gone{opacity:0;pointer-events:none}
+#loading .lt{font-family:'Orbitron',monospace;font-weight:900;font-size:clamp(22px,7vw,34px);letter-spacing:.3em;color:var(--B);text-shadow:0 0 24px var(--B)}
+#loading .lb{width:170px;height:2px;background:var(--B3);border-radius:1px;overflow:hidden}
+#loading .lb-i{height:100%;width:0;background:var(--B);border-radius:1px;box-shadow:0 0 8px var(--B);transition:width .35s ease}
+#loading .ls{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.22em;color:rgba(0,212,255,.45)}
+
+/* Routing badge */
+#routebadge{
+  position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:rgba(2,8,24,.95);border:1px solid var(--B2);border-radius:14px;
+  padding:14px 22px;font-family:'Orbitron',monospace;font-size:11px;
+  letter-spacing:.14em;color:var(--B);z-index:400;
+  box-shadow:0 0 30px rgba(0,212,255,.4);display:none}
+#routebadge.on{display:block}
+#routebadge .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--B);margin-right:8px;box-shadow:0 0 8px var(--B);animation:dotpulse 1s ease-in-out infinite}
+@keyframes dotpulse{0%,100%{opacity:.4}50%{opacity:1}}
+
+@keyframes rise{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Attribution (legal) */
+#attr{position:fixed;bottom:2px;left:6px;z-index:5;font-size:7px;color:rgba(0,212,255,.16);pointer-events:none;letter-spacing:.04em}
+
+/* Empty cart hint */
+.hint{font-size:13px;color:var(--T);text-align:center;padding:18px 0;line-height:1.5}
 </style>
 </head>
 <body>
 
-<canvas id="stars"></canvas>
-<div id="globe-wrap"></div>
-<div id="map-wrap"><div id="map"></div></div>
-
 <!-- LOADING -->
 <div id="loading">
-  <div class="ld-t">ASTRANOV</div>
-  <div class="ld-bw"><div class="ld-b" id="ld-b"></div></div>
-  <div class="ld-s" id="ld-s">LOADING</div>
+  <div class="lt">ASTRANOV</div>
+  <div class="lb"><div class="lb-i" id="lb-i"></div></div>
+  <div class="ls" id="lb-s">BOOTING</div>
 </div>
 
-<!-- DEMO BADGE -->
-<div id="demo-badge">⬡ DEMO MODE</div>
+<!-- LAYERS -->
+<canvas id="stars"></canvas>
+<div id="globe-wrap"></div>
+<div id="map-wrap"><div id="leaf"></div></div>
 
-<!-- TITLE — always visible -->
-<div id="title">ASTRANOV</div>
-<div id="layer-lbl">ORBITAL</div>
+<!-- BRAND -->
+<div id="title">ASTRANOV<span class="sub">INTERNET OPERATING SYSTEM</span></div>
 
-<!-- PROFILE PILL — top right, only when logged in -->
-<div id="prof-pill">
-  <div id="prof-av">⬡</div>
-  <div id="prof-bal">0.00 ✦</div>
+<!-- TOP RIGHT — Login or Profile -->
+<div id="fab-login" onclick="A.openAuth()">SIGN IN</div>
+<div id="pill" onclick="A.openProfile()">
+  <div class="av" id="pill-av">⬡</div>
+  <div class="bal" id="pill-bal">0.00 ✦</div>
 </div>
 
-<!-- MYRMIDON TRIANGLE -->
-<div id="tri-wrap">
-  <svg id="tri-svg" width="100" height="90" viewBox="0 0 100 90" onclick="M.triTap()">
-    <polygon points="50,5 95,82 5,82"/>
-    <text id="tri-plus" x="50" y="56" text-anchor="middle">+</text>
+<!-- TOP LEFT — Back to globe -->
+<div id="fab-back" onclick="A.toGlobe()">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>
   </svg>
 </div>
 
-<!-- THREE OPTION CIRCLES -->
-<div class="orb" id="orb-social" onclick="M.optTap('social')">
-  <div class="orb-icon">📱</div>
-  <div class="orb-lbl">SOCIAL</div>
-</div>
-<div class="orb" id="orb-team" onclick="M.optTap('team')">
-  <div class="orb-icon">◈</div>
-  <div class="orb-lbl">TEAM</div>
-</div>
-<div class="orb" id="orb-market" onclick="M.optTap('market')">
-  <div class="orb-icon">🛒</div>
-  <div class="orb-lbl">MARKET</div>
+<!-- MIC -->
+<div id="fab-mic" onclick="A.micToggle()">
+  <svg viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
 </div>
 
-<!-- LOGIN CARD — rises after 33 seconds -->
-<div id="login-card">
-  <div class="lc-logo">ASTRANOV</div>
-  <div class="lc-sub">INTERNET OPERATING SYSTEM</div>
-  <div class="lc-tabs">
-    <div class="lc-tab on" id="tab-in" onclick="M.authTab('in')">SIGN IN</div>
-    <div class="lc-tab"    id="tab-up" onclick="M.authTab('up')">CREATE ACCOUNT</div>
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ROUTING BADGE -->
+<div id="routebadge"><span class="dot"></span>ROUTING THROUGH STREETS…</div>
+
+<!-- AUTH SHEET -->
+<div class="sheet" id="auth-sheet">
+  <div class="handle"></div>
+  <div class="sh-t">ENTER ASTRANOV</div>
+  <button class="sh-x" onclick="A.closeSheet('auth-sheet')">×</button>
+  <div id="auth-tabs">
+    <div class="auth-tab on" id="auth-in" onclick="A.authMode('in')">SIGN IN</div>
+    <div class="auth-tab" id="auth-up" onclick="A.authMode('up')">CREATE</div>
   </div>
-  <div id="lc-err" class="lc-err"></div>
-  <div class="fw"><input class="fi" type="email"    id="a-email" placeholder="Email address" autocomplete="email"></div>
-  <div class="fw"><input class="fi" type="tel"      id="a-phone" placeholder="Phone  +30 6912345678" autocomplete="tel"></div>
-  <div class="ph-hint">International format: +country number</div>
-  <div class="fw">
-    <input class="fi" type="password" id="a-pw" placeholder="Password (min 8 characters)" autocomplete="current-password">
-    <button class="eye" onclick="M.eyeTap('a-pw',this)" type="button">👁</button>
+  <div id="auth-err"></div>
+  <input class="input" id="i-email" type="email" placeholder="Email" autocomplete="email">
+  <input class="input" id="i-pw" type="password" placeholder="Password (min 8)" autocomplete="current-password">
+  <div id="auth-extra" style="display:none">
+    <input class="input" id="i-name" type="text" placeholder="Your name" autocomplete="name">
   </div>
-  <div id="signup-extra">
-    <div class="fw">
-      <input class="fi" type="password" id="a-pw2" placeholder="Confirm password" autocomplete="new-password">
-      <button class="eye" onclick="M.eyeTap('a-pw2',this)" type="button">👁</button>
-    </div>
-    <div class="fw"><input class="fi" type="text" id="a-name" placeholder="Your name" autocomplete="name"></div>
-  </div>
-  <button class="btn-enter" id="a-btn" onclick="M.authSubmit()">ENTER</button>
-  <button class="btn-skip" onclick="M.dismissLogin()">Continue exploring</button>
+  <button class="btn" id="auth-go" onclick="A.authSubmit()">SIGN IN</button>
+  <button class="btn ghost" onclick="A.closeSheet('auth-sheet')">Continue exploring</button>
 </div>
 
-<!-- MARKET SHEET -->
+<!-- VENDORS SHEET -->
 <div class="sheet" id="mkt-sheet">
   <div class="handle"></div>
   <div class="sh-t">MARKETPLACE</div>
+  <button class="sh-x" onclick="A.closeSheet('mkt-sheet')">×</button>
   <div id="vendor-list"></div>
 </div>
 
-<!-- MENU SHEET -->
+<!-- VENDOR MENU SHEET -->
 <div class="sheet" id="menu-sheet">
   <div class="handle"></div>
-  <div class="sh-t" id="menu-title"></div>
+  <div class="sh-t" id="menu-title">MENU</div>
+  <button class="sh-x" onclick="A.closeSheet('menu-sheet')">×</button>
   <div id="menu-items"></div>
 </div>
 
-<!-- TEAM SHEET -->
-<div class="sheet" id="team-sheet">
+<!-- PROFILE SHEET -->
+<div class="sheet" id="prof-sheet">
   <div class="handle"></div>
-  <div class="sh-t">START TEAM OPERATION</div>
-  <input class="fi2" type="text" id="team-name" placeholder="Team name">
-  <input class="fi2" type="number" id="team-radius" placeholder="Area radius in meters (default 500)">
-  <button class="btn-p" onclick="M.createTeam()">◈ CREATE TEAM</button>
-  <button class="btn-g" onclick="M.closeSheet('team-sheet')">Cancel</button>
-</div>
-
-<!-- VIDEO SHEET -->
-<div class="sheet" id="video-sheet">
-  <div class="handle"></div>
-  <div class="sh-t">PIN MEDIA TO MAP</div>
-  <div class="plat-row">
-    <div class="plat-btn on" id="pt-yt"  onclick="M.selPlat('yt')">▶ YouTube</div>
-    <div class="plat-btn"    id="pt-vm"  onclick="M.selPlat('vm')">▷ Vimeo</div>
-    <div class="plat-btn"    id="pt-tt"  onclick="M.selPlat('tt')">♪ TikTok</div>
-    <div class="plat-btn"    id="pt-ig"  onclick="M.selPlat('ig')">◈ Instagram</div>
-    <div class="plat-btn"    id="pt-own" onclick="M.selPlat('own')">⬆ Upload</div>
+  <div class="sh-t">PROFILE</div>
+  <button class="sh-x" onclick="A.closeSheet('prof-sheet')">×</button>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+    <div style="width:54px;height:54px;border-radius:50%;border:2px solid var(--B);background:var(--B3);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:20px;color:var(--B);font-weight:700" id="ps-av">⬡</div>
+    <div>
+      <div style="font-size:16px;font-weight:600" id="ps-name">—</div>
+      <div style="font-size:11px;color:var(--T)" id="ps-email">—</div>
+      <div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--G);letter-spacing:.06em;margin-top:2px" id="ps-bal">✦ 0.00 ASTRAN</div>
+    </div>
   </div>
-  <input class="fi2" type="text" id="vid-url" placeholder="Paste URL…">
-  <input class="fi2" type="text" id="vid-cap" placeholder="Caption (optional)">
-  <div id="vid-prev"></div>
-  <button class="btn-p" onclick="M.pinVideo()" style="margin-top:6px">◎ PIN TO THIS LOCATION</button>
-  <button class="btn-g" onclick="M.closeSheet('video-sheet')">Cancel</button>
+  <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.16em;color:var(--T);margin:14px 0 8px;padding-top:14px;border-top:1px solid var(--B3)">ROLES</div>
+  <div style="display:flex;gap:7px;margin-bottom:12px">
+    <div class="chip on" id="role-c" onclick="A.toggleRole('client')">CLIENT</div>
+    <div class="chip" id="role-v" onclick="A.toggleRole('vendor')">VENDOR</div>
+    <div class="chip" id="role-d" onclick="A.toggleRole('driver')">DRIVER</div>
+  </div>
+  <div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:.16em;color:var(--T);margin:14px 0 8px;padding-top:14px;border-top:1px solid var(--B3)">WALLET</div>
+  <div style="display:flex;gap:6px">
+    <div class="chip gold" onclick="A.topup(5)">+ 5 ✦</div>
+    <div class="chip gold" onclick="A.topup(10)">+ 10 ✦</div>
+    <div class="chip gold" onclick="A.topup(20)">+ 20 ✦</div>
+    <div class="chip gold" onclick="A.topup(50)">+ 50 ✦</div>
+  </div>
+  <div style="font-size:10px;color:var(--T);margin-top:8px;line-height:1.5">1 Astran = 1 € · Platform 3% · Drivers earn ≥ €33/h</div>
+  <button class="btn ghost" onclick="A.signOut()" style="color:rgba(255,77,109,.5);margin-top:18px">SIGN OUT</button>
 </div>
 
 <!-- ORDER BAR -->
-<div id="order-bar">
+<div id="orderbar">
   <div>
-    <div id="o-cnt" style="font-family:'Orbitron',monospace;font-size:9px;color:var(--B)">0 ITEMS</div>
-    <div id="o-tot" style="font-size:13px;font-weight:600">€0.00</div>
+    <div class="info" id="ob-cnt">0 ITEMS</div>
+    <div class="total" id="ob-tot">€0.00</div>
   </div>
-  <button id="o-go" onclick="M.checkout()">CHECKOUT ›</button>
+  <button onclick="A.checkout()">CHECKOUT ›</button>
 </div>
 
-<!-- DELIVERY CONFIRM -->
-<div id="del-overlay">
-  <div class="del-box">
-    <div class="sh-t" style="margin-bottom:10px">DELIVERY SUMMARY</div>
+<!-- DELIVERY OVERLAY -->
+<div id="del-ovr">
+  <div class="del-card">
+    <div class="sh-t" style="margin-bottom:12px">CONFIRM ORDER</div>
     <div id="del-body"></div>
-    <button class="btn-p" onclick="M.confirmOrder()" style="margin-top:11px">CONFIRM &amp; SEND</button>
-    <button class="btn-g" onclick="M.closeDel()">Cancel</button>
+    <button class="btn gold" onclick="A.confirmOrder()">CONFIRM &amp; ROUTE</button>
+    <button class="btn ghost" onclick="A.closeDel()">Cancel</button>
   </div>
 </div>
 
-<!-- MSG PANEL -->
+<!-- MESSAGE PANEL -->
 <div id="msg-panel">
   <div class="handle"></div>
   <div class="sh-t" id="msg-title">THREAD</div>
+  <button class="sh-x" onclick="A.closeMsg()">×</button>
   <div id="msg-log"></div>
   <div class="msg-row">
-    <input type="text" id="msg-txt" placeholder="Message…" autocomplete="off">
-    <div id="msg-go" onclick="M.sendMsg()">›</div>
+    <input id="msg-in" placeholder="Message…" autocomplete="off"/>
+    <div id="msg-go" onclick="A.sendMsg()">›</div>
   </div>
 </div>
 
-<!-- AI PANEL -->
-<div id="ai-panel">
-  <div id="ai-log"></div>
-  <div class="ai-row">
-    <input type="text" id="ai-in" placeholder="Ask or command Astranov…" autocomplete="off" inputmode="text">
-    <div id="ai-send" onclick="M.sendAI($('ai-in').value)">›</div>
-  </div>
-</div>
+<div id="attr">Globe.gl · OpenStreetMap · OSRM · Astranov v0.3</div>
 
-<!-- PROFILE SHEET -->
-<div id="prof-sheet">
-  <div class="handle"></div>
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-    <div style="width:50px;height:50px;border-radius:50%;border:2px solid var(--B);background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:19px;color:var(--B);box-shadow:0 0 14px rgba(0,212,255,.3)" id="ps-av">⬡</div>
-    <div>
-      <div style="font-size:16px;font-weight:600" id="ps-name">—</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.3)" id="ps-email">—</div>
-      <div style="font-size:10px;color:rgba(255,255,255,.25)" id="ps-phone">—</div>
-      <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--B);letter-spacing:.06em" id="ps-bal">✦ 0.00 ASTRAN</div>
-    </div>
-  </div>
-  <div class="prof-row"><div><div class="prof-lbl">CLIENT</div><div class="prof-val">Browse and order</div></div><div class="toggle on" id="tog-c" onclick="M.toggleRole('client')"><div class="knob"></div></div></div>
-  <div class="prof-row"><div><div class="prof-lbl">VENDOR</div><div class="prof-val">Sell via Google Sheets</div></div><div class="toggle" id="tog-v" onclick="M.toggleRole('vendor')"><div class="knob"></div></div></div>
-  <div class="setup-panel" id="vsp">
-    <input class="fi2" type="text" id="v-bn" placeholder="Business name">
-    <input class="fi2" type="text" id="v-ct" placeholder="Category">
-    <input class="fi2" type="text" id="v-sh" placeholder="Google Sheets CSV URL">
-    <button class="btn-p" onclick="M.saveVendor()">SAVE VENDOR</button>
-  </div>
-  <div class="prof-row"><div><div class="prof-lbl">DRIVER</div><div class="prof-val">Earn ≥ €33/h guaranteed</div></div><div class="toggle" id="tog-d" onclick="M.toggleRole('driver')"><div class="knob"></div></div></div>
-  <div class="setup-panel" id="dsp">
-    <input class="fi2" type="text" id="d-vh" placeholder="Vehicle (moped/bicycle/car)">
-    <input class="fi2" type="number" id="d-kg" placeholder="Max kg (default 13)">
-    <button class="btn-p" onclick="M.saveDriver()">SAVE DRIVER</button>
-  </div>
-  <div class="incog" id="incog">● VISIBLE ON MAP</div>
-  <div class="sect">ASTRAN WALLET</div>
-  <div class="topup-row">
-    <div class="topup-btn" onclick="M.topup(5)">+5 ✦</div>
-    <div class="topup-btn" onclick="M.topup(10)">+10 ✦</div>
-    <div class="topup-btn" onclick="M.topup(20)">+20 ✦</div>
-    <div class="topup-btn" onclick="M.topup(50)">+50 ✦</div>
-  </div>
-  <div style="font-size:9px;color:rgba(255,255,255,.16);line-height:1.5">1 Astran = €1 · Platform 3% · Driver floor €33/h</div>
-  <button class="btn-g" onclick="M.closeProfSheet()" style="margin-top:14px">CLOSE</button>
-  <button class="btn-g" onclick="M.signOut()" style="color:rgba(255,60,60,.3)">SIGN OUT</button>
-</div>
-
-<!-- BUILDER PANEL -->
-<div id="bld-panel">
-  <div id="bld-hdr">
-    <div style="font-family:'Orbitron',monospace;font-size:9px;color:var(--amber);letter-spacing:.16em">⚙ ASTRANOV BUILDER</div>
-    <div style="color:rgba(255,255,255,.28);font-size:18px;cursor:pointer" onclick="M.closeBld()">✕</div>
-  </div>
-  <div id="bld-log"><div class="bl sys">OWNER MODE · Describe what to build or change</div></div>
-  <div id="bld-row">
-    <textarea id="bld-in" placeholder="Describe a change…" rows="1"></textarea>
-    <div id="bld-go" onclick="M.bldSend()">›</div>
-  </div>
-</div>
-
-<div id="toast"></div>
-<div id="attr">Globe: globe.gl · Map: © OpenStreetMap · © CARTO · ISS: wheretheiss.at · ASTRANOV MYRMIDON v1.2 · © Notis Astranov · Rhodes</div>
-
+<!-- DEPS -->
+<script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
 <script src="https://unpkg.com/globe.gl@2.27.0/dist/globe.gl.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   ASTRANOV MYRMIDON v1.2
-   Owner: Notis Astranov · Rhodes Island · 2026-04-26
-   Zero permanent UI · Triangle on tap · Three circles · Auto-fade
-   Three-layer auth (email + phone + password)
-   AI via ai-router (Gemini→Groq→OpenAI→Grok→local)
+   ASTRANOV — Internet OS · Real Earth · Real Maps · Real Routing
+   Astranov Law · Single-file build · Notis Astranov · Rhodes
    ═══════════════════════════════════════════════════════════════ */
-const M=(()=>{
+const A=(()=>{
+'use strict';
+
+/* ── CONFIG ── */
 const SB_URL='https://kzlabcrlrpbnfiiyrjvl.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bGFiY3JscnBibmZpaXlyanZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNjg3OTAsImV4cCI6MjA4OTc0NDc5MH0.TyshChfsIkc-k357FGME-8TnZn-zxeD74jL-GYRVlkg';
-const AI_URL=SB_URL+'/functions/v1/ai-router';
+const OSRM='https://router.project-osrm.org/route/v1/driving';
 
+/* ── STATE ── */
 const S={
-  sb:null,user:null,prof:null,globe:null,map:null,mapOn:false,
-  layer:'ORBITAL',altPrev:'ORBITAL',
-  mapLat:36.4349,mapLng:28.2176,
-  tapLat:null,tapLng:null,
-  triOpen:false,orbsOpen:false,
-  fadeTimer:null,
-  cart:[],cartVid:null,
-  aiHistory:[],bldHistory:[],
-  msgCtx:null,msgSub:null,
-  userMarker:null,geoL:[],demoL:[],
-  authMode:'in',plat:'yt',
+  view:'globe', // 'globe' | 'map'
+  city:null,
+  user:null,
+  prof:null,
+  sb:null,
+  globe:null,
+  map:null,
+  markers:{user:null,shops:[],drivers:[],circles:[]},
+  routes:[],
+  cart:[],
+  cartShop:null,
   roles:{client:true,vendor:false,driver:false},
-  isOwner:false,
-  recognition:null,micOn:false,micFail:0,
-  soundOn:false,audioCtx:null,
-  welcomeTimer:null,demoRunning:false,demoIntervals:[],
-  /* GPS autopilot: 33s refresh, navigation/cloud/global modes */
-  gpsW:null,gpsInterval:null,gpsSamples:[],gpsReady:false,lastSpeed:0,
-  gpsState:'IDLE',staticStart:null,cloudTimer:null,globeTimer:null,manualZoom:false,manualZoomTimer:null,
-  activeOrder:null,orderVendor:null,
-  cfg:{gpsForce:33,driveSpeed:4,cloudDelay:180,globeDelay:780,walkRadiusM:45,manualZoomLock:30},
+  authMode:'in',
+  msgCtx:null,
+  rec:null,
+  micOn:false,
+  threads:{}, // local fallback when no supabase
 };
 
-const VSEED=[
-  {id:'v1',business_name:'Aegean Fresh Market',category:'GROCERY',lat:36.4401,lng:28.2205,is_open:true,emoji:'🛒',items:[{n:'Tomatoes',p:2.5},{n:'Olive Oil',p:8},{n:'Feta PDO',p:5.5},{n:'Olives',p:3.8},{n:'Pita',p:1.2}]},
-  {id:'v2',business_name:'Rodos Souvlaki House',category:'FOOD',lat:36.435,lng:28.2185,is_open:true,emoji:'🍴',items:[{n:'Souvlaki Plate',p:9},{n:'Gyros Wrap',p:5.5},{n:'Greek Salad',p:6},{n:'Tzatziki',p:2.5}]},
-  {id:'v3',business_name:'Rhodes Bakery',category:'BAKERY',lat:36.437,lng:28.2155,is_open:true,emoji:'🥐',items:[{n:'Spanakopita',p:2.8},{n:'Sourdough',p:4.5},{n:'Baklava',p:3.2}]},
-  {id:'v4',business_name:'Island Pharmacy',category:'PHARMA',lat:36.439,lng:28.223,is_open:false,emoji:'💊',items:[]},
+/* ── SEED DATA ── Athens (default) ── */
+const CITIES=[
+  {k:'ath',name:'Athens',     lat:37.9838,lng:23.7275,size:.8,here:true},
+  {k:'rho',name:'Rhodes',     lat:36.4349,lng:28.2176,size:.4},
+  {k:'lon',name:'London',     lat:51.5074,lng:-0.1278,size:.7},
+  {k:'nyc',name:'New York',   lat:40.7128,lng:-74.006,size:.8},
+  {k:'tyo',name:'Tokyo',      lat:35.6762,lng:139.6503,size:.7},
+  {k:'par',name:'Paris',      lat:48.8566,lng:2.3522, size:.7},
+  {k:'rio',name:'Rio',        lat:-22.9068,lng:-43.1729,size:.55},
+  {k:'syd',name:'Sydney',     lat:-33.8688,lng:151.2093,size:.55},
+  {k:'cai',name:'Cairo',      lat:30.0444,lng:31.2357,size:.5},
+  {k:'lag',name:'Lagos',      lat:6.5244, lng:3.3792, size:.5},
+  {k:'sin',name:'Singapore',  lat:1.3521, lng:103.8198,size:.5},
+  {k:'mum',name:'Mumbai',     lat:19.076, lng:72.8777,size:.6}
 ];
-const CIRCLES=[
-  {id:'sc1',name:'Old Town Community',lat:36.4401,lng:28.22,radius_m:280,member_count:47},
-  {id:'sc2',name:'Mandraki Harbor',lat:36.432,lng:28.215,radius_m:500,member_count:23},
-];
-let vendors=VSEED,circles=CIRCLES;
-let ML={circles:[],vendors:[],drivers:[],geo:[],demo:[],routes:[],orders:[]};
-const $=id=>document.getElementById(id);
 
-/* ════ OSRM REAL STREET ROUTING ════
-   Public OSRM demo server. Returns GeoJSON LineString that follows real streets.
-   Free, no key. Cached locally so repeated routes don't hammer the server. */
-const OSRM_URL='https://router.project-osrm.org/route/v1/driving';
+/* Vendors per city — keyed by city.k. Real coords near each city centre. */
+function genVendors(city){
+  const off=()=>(Math.random()-.5)*.012;
+  return [
+    {id:`${city.k}-v1`,name:'Aegean Fresh Market',cat:'GROCERY',emoji:'🥬',lat:city.lat+off(),lng:city.lng+off(),open:true,
+     items:[{n:'Tomatoes',p:2.5,kg:.8},{n:'Olive Oil 500ml',p:8,kg:.5},{n:'Feta PDO',p:5.5,kg:.4},{n:'Olives jar',p:3.8,kg:.4},{n:'Pita 6pcs',p:1.2,kg:.3}]},
+    {id:`${city.k}-v2`,name:'Souvlaki House',cat:'FOOD',emoji:'🍴',lat:city.lat+off(),lng:city.lng+off(),open:true,
+     items:[{n:'Souvlaki plate',p:9,kg:.6},{n:'Gyros wrap',p:5.5,kg:.4},{n:'Greek salad',p:6,kg:.5},{n:'Tzatziki 250g',p:2.5,kg:.25}]},
+    {id:`${city.k}-v3`,name:'Astral Bakery',cat:'BAKERY',emoji:'🥐',lat:city.lat+off(),lng:city.lng+off(),open:true,
+     items:[{n:'Spanakopita',p:2.8,kg:.2},{n:'Sourdough loaf',p:4.5,kg:.7},{n:'Baklava 4pcs',p:3.2,kg:.3},{n:'Honey croissant',p:2.6,kg:.18}]},
+    {id:`${city.k}-v4`,name:'Lumen Pharmacy',cat:'PHARMA',emoji:'⚕',lat:city.lat+off(),lng:city.lng+off(),open:false,items:[]},
+    {id:`${city.k}-v5`,name:'Blue Taverna',cat:'FOOD',emoji:'🐟',lat:city.lat+off(),lng:city.lng+off(),open:true,
+     items:[{n:'Grilled fish',p:14,kg:.6},{n:'Calamari fried',p:8.5,kg:.4},{n:'Sea salad',p:7,kg:.3}]}
+  ];
+}
+
+function genDrivers(city){
+  const off=()=>(Math.random()-.5)*.014;
+  return [
+    {id:`${city.k}-d1`,name:'Nikos K.',vehicle:'🛵',lat:city.lat+off(),lng:city.lng+off(),online:true,kg_max:13,rating:4.9,busy:false},
+    {id:`${city.k}-d2`,name:'Maria S.',vehicle:'🚗',lat:city.lat+off(),lng:city.lng+off(),online:true,kg_max:30,rating:4.8,busy:false},
+    {id:`${city.k}-d3`,name:'Theo P.',vehicle:'🚲',lat:city.lat+off(),lng:city.lng+off(),online:true,kg_max:8,rating:4.7,busy:false},
+    {id:`${city.k}-d4`,name:'Anna L.',vehicle:'🛵',lat:city.lat+off(),lng:city.lng+off(),online:false,kg_max:13,rating:4.9,busy:false}
+  ];
+}
+
+function genCircles(city){
+  const off=()=>(Math.random()-.5)*.008;
+  return [
+    {id:`${city.k}-c1`,name:'Old Town',lat:city.lat+off(),lng:city.lng+off(),r:300,members:47,color:'#00d4ff'},
+    {id:`${city.k}-c2`,name:'Harbor Friends',lat:city.lat+off(),lng:city.lng+off(),r:240,members:23,color:'#c6a64a'}
+  ];
+}
+
+let VENDORS=[],DRIVERS=[],CIRCLES=[];
+
+/* ── UTIL ── */
+const $=id=>document.getElementById(id);
+const km=(la1,ln1,la2,ln2)=>{const R=6371,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1)*Math.PI/180;const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));};
+const isNight=()=>{const h=new Date().getHours();return h>=21||h<9};
+const toast=(m,d=2400)=>{const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),d);};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ── PRICING — Astranov delivery law ── */
+function calcDelivery(km,opts={}){
+  const base=Math.max(1,+(km*1).toFixed(2));
+  const breakdown=[{l:`${km.toFixed(2)} km × 1€/km`,v:base}];
+  let extra=0;
+  if(opts.night){extra+=1;breakdown.push({l:'Night hours',v:1})}
+  if(opts.weather){extra+=1;breakdown.push({l:'Bad weather',v:1})}
+  const kg=opts.kg||0;
+  if(kg>13){extra+=1;breakdown.push({l:'Load > 13 kg',v:1})}
+  if(kg>26){extra+=1;breakdown.push({l:'Load > 26 kg',v:1})}
+  const total=+(base+extra).toFixed(2);
+  const platform=+(total*.03).toFixed(2);
+  const drvShare=+(total-platform).toFixed(2);
+  const split=kg>33;
+  const nDrivers=split?Math.ceil(kg/33):1;
+  return {km,kg,base,extra,total,platform,drvShare,breakdown,split,nDrivers,coin:total,night:!!opts.night};
+}
+
+/* ── OSRM REAL ROUTING ── */
 const OSRM_CACHE=new Map();
 async function osrmRoute(lat1,lng1,lat2,lng2){
-  const key=`${lat1.toFixed(5)},${lng1.toFixed(5)}->${lat2.toFixed(5)},${lng2.toFixed(5)}`;
+  const key=`${lat1.toFixed(5)},${lng1.toFixed(5)}>${lat2.toFixed(5)},${lng2.toFixed(5)}`;
   if(OSRM_CACHE.has(key))return OSRM_CACHE.get(key);
-  const url=`${OSRM_URL}/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson&steps=false`;
+  const url=`${OSRM}/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
   try{
-    const r=await fetch(url);
-    if(!r.ok)throw new Error('osrm '+r.status);
+    const ctrl=new AbortController();
+    const tm=setTimeout(()=>ctrl.abort(),7000);
+    const r=await fetch(url,{signal:ctrl.signal});
+    clearTimeout(tm);
+    if(!r.ok)throw new Error('HTTP '+r.status);
     const d=await r.json();
     if(d.code!=='Ok'||!d.routes||!d.routes[0])throw new Error('no-route');
-    const result={
-      ok:true,
-      coords:d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]), // [lng,lat] -> [lat,lng]
-      km:d.routes[0].distance/1000,
-      sec:d.routes[0].duration,
-      legs:d.routes[0].legs
-    };
-    OSRM_CACHE.set(key,result);
-    return result;
+    const out={ok:true,coords:d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]),km:d.routes[0].distance/1000,sec:d.routes[0].duration};
+    OSRM_CACHE.set(key,out);
+    return out;
   }catch(e){
-    /* Fallback: straight line. The app still works — geometry just isn't street-routed. */
-    const fb={ok:false,reason:e.message,coords:[[lat1,lng1],[lat2,lng2]],km:distKm(lat1,lng1,lat2,lng2),sec:0};
+    /* Fallback so the UX never breaks */
+    const fb={ok:false,reason:e.message,coords:[[lat1,lng1],[lat2,lng2]],km:km(lat1,lng1,lat2,lng2),sec:0};
     return fb;
   }
 }
 
-/* ════ DRIVER POOL ════
-   Real driver positions, online status. Drives the assignment + route logic. */
-const DRIVERS_SEED=[
-  {id:'dr1',name:'Nikos K.',vehicle:'🛵',lat:36.4392,lng:28.2188,online:true,kg_max:13,rating:4.9},
-  {id:'dr2',name:'Maria S.',vehicle:'🚗',lat:36.4365,lng:28.2210,online:true,kg_max:30,rating:4.8},
-  {id:'dr3',name:'Theo P.', vehicle:'🚲',lat:36.4380,lng:28.2155,online:true,kg_max:8, rating:4.7},
-  {id:'dr4',name:'Anna L.', vehicle:'🛵',lat:36.4421,lng:28.2240,online:false,kg_max:13,rating:4.9},
-];
-let drivers=DRIVERS_SEED;
-function nearestDrivers(lat,lng,n=1,kgNeeded=0){
-  return drivers
-    .filter(d=>d.online&&(kgNeeded?d.kg_max>=Math.min(kgNeeded,13):true))
-    .map(d=>({...d,dist:distKm(lat,lng,d.lat,d.lng)}))
-    .sort((a,b)=>a.dist-b.dist)
-    .slice(0,n);
-}
-
-/* ════ BOOT ════ */
-async function init(){
-  initStars();animateLoading();initSB();initGlobe();setupKeys();issTrack();
-}
-
-/* ════ SUPABASE ════ */
-function initSB(){
-  try{
-    S.sb=supabase.createClient(SB_URL,SB_KEY);
-    S.sb.auth.onAuthStateChange(async(ev,sess)=>{
-      const wasGuest=!S.user;
-      S.user=sess?.user||null;
-      if(S.user){
-        stopDemo();dismissLogin();
-        await loadProf();updateProfUI();
-        if(S.mapOn)placeUserMarker();
-        $('prof-pill').classList.add('on');
-      }else{
-        S.prof=null;$('prof-pill').classList.remove('on');
-        startDemo();
-      }
-    });
-    S.sb.auth.getSession().then(({data:{session:sess}})=>{
-      S.user=sess?.user||null;
-      if(S.user){$('prof-pill').classList.add('on');loadProf().then(()=>updateProfUI());}
-      else startDemo();
-    });
-    loadVendors();loadCircles();
-  }catch(e){console.warn('SB:',e);startDemo();}
-}
-async function loadProf(){
-  if(!S.sb||!S.user)return;
-  const{data}=await S.sb.from('users').select('*').eq('id',S.user.id).single();
-  if(data){S.prof=data;S.roles={client:!!data.role_client,vendor:!!data.role_vendor,driver:!!data.role_driver};S.isOwner=!!data.is_owner;}
-}
-async function saveProf(p){if(!S.sb||!S.user)return;await S.sb.from('users').upsert({id:S.user.id,...p});await loadProf();updateProfUI();updateWalletBar();}
-async function loadVendors(){if(!S.sb)return;const{data}=await S.sb.from('vendors').select('*');if(data&&data.length)vendors=data;}
-async function loadCircles(){if(!S.sb)return;const{data}=await S.sb.from('social_circles').select('*').eq('is_public',true);if(data&&data.length)circles=data;}
-
-function updateProfUI(){updateWalletBar&&updateWalletBar();
-  const nm=S.prof?.display_name||S.user?.email?.split('@')[0]||'—';
-  const bl=+(S.prof?.wallet_astran||0);
-  const ph=S.prof?.phone||S.user?.user_metadata?.phone||'—';
-  $('prof-av').textContent=nm[0]?.toUpperCase()||'⬡';
-  $('prof-bal').textContent=bl.toFixed(2)+' ✦';
-  $('ps-av').textContent=nm[0]?.toUpperCase()||'⬡';
-  $('ps-name').textContent=nm;$('ps-email').textContent=S.user?.email||'—';
-  $('ps-phone').textContent=ph;$('ps-bal').textContent=`✦ ${bl.toFixed(2)} ASTRAN`;
-  syncRoles();updateIncog();
-}
-
-/* ════ AUTH ════ */
-function authTab(m){
-  S.authMode=m;$('tab-in').classList.toggle('on',m==='in');$('tab-up').classList.toggle('on',m==='up');
-  $('signup-extra').style.display=m==='up'?'block':'none';
-  $('a-btn').textContent=m==='in'?'SIGN IN':'CREATE ACCOUNT';$('lc-err').textContent='';
-}
-function eyeTap(id,btn){const f=$(id);const show=f.type==='password';f.type=show?'text':'password';btn.textContent=show?'🔒':'👁';}
-function validPhone(p){return /^\+[1-9]\d{6,14}$/.test(p.replace(/\s/g,''));}
-async function authSubmit(){
-  const email=$('a-email').value.trim(),phone=$('a-phone').value.trim().replace(/\s/g,''),pw=$('a-pw').value;
-  $('lc-err').textContent='';
-  if(!email){$('lc-err').textContent='Email required';return;}
-  if(!validPhone(phone)){$('lc-err').textContent='Phone must be +country then number';return;}
-  if(pw.length<8){$('lc-err').textContent='Password must be at least 8 characters';return;}
-  if(S.authMode==='up'){
-    if($('a-pw2').value!==pw){$('lc-err').textContent='Passwords do not match';return;}
-  }
-  $('a-btn').textContent='···';
-  try{
-    let err;
-    if(S.authMode==='in'){
-      ({error:err}=await S.sb.auth.signInWithPassword({email,password:pw}));
-      if(!err){
-        /* verify phone */
-        const{data:{user:u}}=await S.sb.auth.getUser();
-        if(u){const{data:p}=await S.sb.from('users').select('phone').eq('id',u.id).single();
-          if(p?.phone&&p.phone!==phone){await S.sb.auth.signOut();$('lc-err').textContent='Phone does not match account';$('a-btn').textContent='SIGN IN';return;}}
-      }
-    }else{
-      ({error:err}=await S.sb.auth.signUp({email,password:pw,options:{data:{full_name:$('a-name').value.trim()||email.split('@')[0],phone}}}));
-    }
-    if(err){$('lc-err').textContent=err.message;$('a-btn').textContent=S.authMode==='in'?'SIGN IN':'CREATE ACCOUNT';return;}
-  }catch(e){$('lc-err').textContent='Connection error';$('a-btn').textContent=S.authMode==='in'?'SIGN IN':'CREATE ACCOUNT';}
-}
-async function signOut(){if(S.sb)await S.sb.auth.signOut();S.user=null;S.prof=null;closeProfSheet();showToast('SIGNED OUT');startDemo();}
-function dismissLogin(){$('login-card').classList.remove('on');}
-
-/* ════ DEMO MODE ════ */
-function startDemo(){
-  if(S.demoRunning||S.user)return;
-  S.demoRunning=true;
-  $('demo-badge').classList.add('on');
-  S.welcomeTimer=setTimeout(()=>{if(!S.user)$('login-card').classList.add('on');},33000);
-  /* Auto-descend to Rhodes after 4s */
-  setTimeout(()=>{
-    if(!S.user&&S.globe){
-      S.globe.controls().autoRotate=false;
-      S.globe.pointOfView({lat:36.44,lng:28.22,altitude:0.25},2800);
-      setTimeout(()=>{if(!S.user)toMap();},3000);
-    }
-  },4000);
-}
-function stopDemo(){
-  S.demoRunning=false;$('demo-badge').classList.remove('on');
-  clearTimeout(S.welcomeTimer);
-  S.demoIntervals.forEach(id=>clearInterval(id));S.demoIntervals=[];
-  ML.demo.forEach(l=>{try{l.remove();}catch(e){}});ML.demo=[];
-}
-function startDemoOnMap(){
-  if(!S.map||S.user)return;
-  /* Demo drivers */
-  const dPaths=[
-    [[36.439,28.221],[36.441,28.223],[36.443,28.225],[36.441,28.222],[36.439,28.221]],
-    [[36.435,28.216],[36.437,28.214],[36.438,28.212],[36.436,28.214],[36.435,28.216]],
-  ];
-  const dMarkers=dPaths.map((path,i)=>{
-    const icon=L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;background:rgba(40,20,0,.92);border:2px solid #c6a64a;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 10px rgba(198,166,74,.3)">🛵</div>`,iconSize:[30,30],iconAnchor:[15,15]});
-    const m=L.marker(path[0],{icon}).addTo(S.map);ML.demo.push(m);return m;
-  });
-  dPaths.forEach((path,i)=>{
-    let idx=0;
-    const id=setInterval(()=>{if(S.user){clearInterval(id);return;}idx=(idx+1)%path.length;dMarkers[i].setLatLng(path[idx]);},2000+i*500);
-    S.demoIntervals.push(id);
-  });
-  /* Demo order — REAL street-routed path (driver → vendor → client) via OSRM */
-  setTimeout(async()=>{
-    if(S.user)return;
-    const cl=[36.438,28.22],vl=[36.4401,28.2205],dl=[36.437,28.221];
-    /* Real routed legs */
-    const [pickup,deliver]=await Promise.all([
-      osrmRoute(dl[0],dl[1],vl[0],vl[1]),
-      osrmRoute(vl[0],vl[1],cl[0],cl[1])
-    ]);
-    if(S.user)return;
-    const pickLine=L.polyline(pickup.coords,{color:'#c6a64a',weight:3,opacity:.7,dashArray:'8 6'}).addTo(S.map);
-    const delLine =L.polyline(deliver.coords,{color:'#c6a64a',weight:3.5,opacity:.85}).addTo(S.map);
-    const tri=L.polygon([cl,vl,dl],{color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.04,weight:1,dashArray:'4 6',opacity:.4,interactive:false}).addTo(S.map);
-    const dCoords=deliver.coords||[];
-    const mid=dCoords[Math.floor(dCoords.length/2)]||[(cl[0]+vl[0])/2,(cl[1]+vl[1])/2];
-    const li=L.divIcon({className:'',html:`<div class="gl g">DEMO · €9.70 ✦ · STREETS ROUTED</div>`,iconAnchor:[80,10]});
-    const lm=L.marker(mid,{icon:li}).addTo(S.map);
-    ML.demo.push(pickLine,delLine,tri,lm);
-  },3500);
-  /* Demo toasts */
-  const tid1=setTimeout(()=>{if(!S.user)showToast('⬡ Old Town Community: "Ferry in 2h"');},8000);
-  const tid2=setTimeout(()=>{if(!S.user)showToast('🛵 Nikos K. earned €33.20 this hour ✦');},15000);
-  S.demoIntervals.push(tid1,tid2);
-}
-
-/* ════ ROLES ════ */
-function toggleRole(r){
-  if(!S.user){$('login-card').classList.add('on');return;}
-  S.roles[r]=!S.roles[r];
-  const allOff=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;
-  syncRoles();updateIncog();
-  $('vsp').classList.toggle('on',S.roles.vendor);
-  $('dsp').classList.toggle('on',S.roles.driver);
-  saveProf({role_client:S.roles.client,role_vendor:S.roles.vendor,role_driver:S.roles.driver,incognito:allOff});
-  if(S.mapOn)placeUserMarker();
-  showToast(allOff?'👁 INCOGNITO':`${r.toUpperCase()} ${S.roles[r]?'ON':'OFF'}`);
-}
-function syncRoles(){['client','vendor','driver'].forEach((r,i)=>{const ids=['c','v','d'];$(`tog-${ids[i]}`)?.classList.toggle('on',!!S.roles[r]);});}
-function updateIncog(){const all=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;$('incog').textContent=all?'👁 INCOGNITO — invisible':'● VISIBLE ON MAP';$('incog').classList.toggle('on',all);}
-async function saveVendor(){if(!S.sb||!S.user)return;const bn=$('v-bn').value.trim();if(!bn){showToast('Enter business name');return;}await S.sb.from('vendors').upsert({user_id:S.user.id,business_name:bn,category:$('v-ct').value.trim(),sheets_url:$('v-sh').value.trim(),lat:S.mapLat,lng:S.mapLng,is_open:true});showToast('VENDOR SAVED ✦');}
-async function saveDriver(){if(!S.sb||!S.user)return;await S.sb.from('drivers').upsert({user_id:S.user.id,vehicle_type:$('d-vh').value.trim()||'moped',max_kg:parseFloat($('d-kg').value)||13,lat:S.mapLat,lng:S.mapLng,is_online:true});showToast('DRIVER SAVED ✦');}
-async function topup(amt){if(!S.user){$('login-card').classList.add('on');return;}if(S.sb){await S.sb.from('wallet_transactions').insert({user_id:S.user.id,type:'topup',amount_astran:amt,note:'Top-up'});await loadProf();updateProfUI();}showToast(`+${amt} ✦ CREDITED`);updateWalletBar();}
-
-/* ════ STARS ════ */
+/* ═══════════════════════════════════════════════════════════════
+   STARS
+   ═══════════════════════════════════════════════════════════════ */
 function initStars(){
   const cv=$('stars'),cx=cv.getContext('2d');let st=[];
-  const rsz=()=>{cv.width=innerWidth;cv.height=innerHeight;st=Array.from({length:300},()=>({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.2+.2,a:Math.random()*.7+.2,ph:Math.random()*Math.PI*2,sp:Math.random()*.004+.001}));};
-  const draw=()=>{cx.clearRect(0,0,cv.width,cv.height);for(const s of st){s.ph+=s.sp;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(180,220,255,${(s.a*(0.5+0.5*Math.sin(s.ph))).toFixed(2)})`;cx.fill();}requestAnimationFrame(draw);};
-  rsz();addEventListener('resize',rsz);requestAnimationFrame(draw);
+  const rsz=()=>{
+    cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;
+    cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px';
+    cx.scale(devicePixelRatio,devicePixelRatio);
+    st=Array.from({length:280},()=>({
+      x:Math.random()*innerWidth,y:Math.random()*innerHeight,
+      r:Math.random()*1.3+.2,a:Math.random()*.7+.2,
+      ph:Math.random()*Math.PI*2,sp:Math.random()*.004+.001
+    }));
+  };
+  const draw=()=>{
+    cx.clearRect(0,0,innerWidth,innerHeight);
+    for(const s of st){
+      s.ph+=s.sp;
+      cx.beginPath();
+      cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      cx.fillStyle=`rgba(180,220,255,${(s.a*(.5+.5*Math.sin(s.ph))).toFixed(2)})`;
+      cx.fill();
+    }
+    requestAnimationFrame(draw);
+  };
+  rsz();addEventListener('resize',rsz,{passive:true});
+  requestAnimationFrame(draw);
 }
 
-/* ════ CELESTIAL ════ */
-function sunPos(d){const D=d/86400000-10957.5,g=(357.529+0.98560028*D)*Math.PI/180,q=280.459+0.98564736*D,L=(q+1.915*Math.sin(g)+0.02*Math.sin(2*g))*Math.PI/180,e=23.439*Math.PI/180,sinL=Math.sin(L);return{lat:Math.asin(Math.sin(e)*sinL)*180/Math.PI,lng:(Math.atan2(Math.cos(e)*sinL,Math.cos(L))*180/Math.PI-d/240000%360+360)%360-180};}
-function moonPos(d){const D=d/86400000-10957.5,L=(218.316+13.176396*D)*Math.PI/180,M=(134.963+13.064993*D)*Math.PI/180,F=(93.272+13.229350*D)*Math.PI/180;const lon=L+6.289*Math.sin(M)*Math.PI/180,lat=5.128*Math.sin(F)*Math.PI/180;return{lat:lat*180/Math.PI,lng:(lon*180/Math.PI-d/240000%360+360)%360-180};}
-
-/* ════ GLOBE ════ */
+/* ═══════════════════════════════════════════════════════════════
+   GLOBE — globe.gl with NASA Earth texture, clickable city points
+   ═══════════════════════════════════════════════════════════════ */
 function initGlobe(){
   const el=$('globe-wrap');
   S.globe=Globe()
@@ -807,761 +588,747 @@ function initGlobe(){
     .atmosphereColor('#00c8ff').atmosphereAltitude(0.22)
     .backgroundColor('rgba(0,0,0,0)')(el);
   S.globe.width(innerWidth).height(innerHeight);
-  S.globe.pointOfView({lat:36.4,lng:28.2,altitude:2.5},0);
-  updateGlobePoints();
-  S.globe.arcsData([{slat:36.44,slng:28.22,elat:51.5,elng:-0.1},{slat:36.44,slng:28.22,elat:48.8,elng:2.35},{slat:36.44,slng:28.22,elat:40.7,elng:-74}])
-    .arcStartLat('slat').arcStartLng('slng').arcEndLat('elat').arcEndLng('elng')
-    .arcColor(()=>['rgba(0,212,255,0.04)','rgba(0,212,255,0.5)'])
-    .arcAltitude(0.18).arcStroke(0.18).arcDashLength(0.35).arcDashGap(2.5).arcDashAnimateTime(4500);
-  S.globe.labelsData([{lat:36.44,lng:28.22,txt:'Rhodes',size:.8,col:'rgba(0,212,255,.85)'}])
-    .labelText('txt').labelSize('size').labelColor('col').labelAltitude(0.01).labelDotRadius(0.3);
+  S.globe.pointOfView({lat:38,lng:24,altitude:2.4},0);
+  /* Cities as points + labels */
+  S.globe
+    .pointsData(CITIES)
+    .pointLat('lat').pointLng('lng')
+    .pointAltitude(.01)
+    .pointRadius(d=>d.size*.45)
+    .pointColor(d=>d.here?'#ffd870':'#00d4ff')
+    .pointResolution(8)
+    .onPointClick(d=>{
+      enterCity(d);
+    })
+    .labelsData(CITIES)
+    .labelLat('lat').labelLng('lng')
+    .labelText('name')
+    .labelSize(d=>d.size*.7)
+    .labelDotRadius(d=>d.size*.35)
+    .labelColor(d=>d.here?'rgba(255,216,112,.95)':'rgba(0,212,255,.85)')
+    .labelAltitude(.012)
+    .onLabelClick(d=>enterCity(d));
   const ctrl=S.globe.controls();
-  ctrl.autoRotate=true;ctrl.autoRotateSpeed=0.2;ctrl.enableDamping=true;ctrl.dampingFactor=0.07;ctrl.minDistance=101;ctrl.maxDistance=700;
-  setInterval(checkAlt,200);
-  setInterval(updateGlobePoints,12000);
-  S.globe.onGlobeClick(c=>{if(!c)return;ctrl.autoRotate=false;S.mapLat=c.lat;S.mapLng=c.lng;S.globe.pointOfView({lat:c.lat,lng:c.lng,altitude:0.22},1700);setTimeout(toCityUserMap,1800);});
+  ctrl.autoRotate=true;ctrl.autoRotateSpeed=.35;ctrl.enableDamping=true;ctrl.dampingFactor=.07;
+  ctrl.minDistance=140;ctrl.maxDistance=600;
   addEventListener('resize',()=>S.globe.width(innerWidth).height(innerHeight));
 }
-function updateGlobePoints(){
-  if(!S.globe)return;
-  const now=Date.now(),sun=sunPos(now),moon=moonPos(now),iss=S._iss||{lat:0,lng:0};
-  const base=[{lat:36.44,lng:28.22,r:.38,col:'#00d4ff',txt:'Rhodes'},{lat:51.5,lng:-0.1,r:.25,col:'rgba(0,180,255,.6)',txt:'London'},{lat:48.8,lng:2.35,r:.25,col:'rgba(0,180,255,.6)',txt:'Paris'},{lat:40.7,lng:-74,r:.25,col:'rgba(0,180,255,.6)',txt:'New York'}];
-  for(let i=0;i<50;i++)base.push({lat:(Math.random()-.5)*160,lng:(Math.random()-.5)*360,r:Math.random()*.12+.04,col:'rgba(0,120,170,.2)'});
-  S.globe.pointsData([...base,{lat:sun.lat,lng:sun.lng,r:.8,col:'#ffe000',txt:'☀ Sun'},{lat:moon.lat,lng:moon.lng,r:.5,col:'#c8d8ff',txt:'☽ Moon'},{lat:iss.lat,lng:iss.lng,r:.55,col:'#ffffff',txt:'🛸 ISS'}])
-    .pointColor(d=>d.col||'#00d4ff').pointAltitude(0.01).pointRadius(d=>d.r||0.3)
-    .onPointClick(d=>{if(d.txt)showToast(d.txt);});
-}
 
-/* ════ ALT / ZOOM INTENT ════ */
-function checkAlt(){
-  if(!S.globe)return;
-  const alt=S.globe.pointOfView().altitude;
-  let lyr=alt>4.5?'SOLAR':alt>2?'ORBITAL':alt>0.8?'REGIONAL':alt>0.3?'LOCAL':'STREET';
-  if(lyr!==S.altPrev){
-    S.altPrev=lyr;S.layer=lyr;$('layer-lbl').textContent=lyr;
-    if((lyr==='LOCAL'||lyr==='STREET')&&!S.mapOn){const p=S.globe.pointOfView();S.mapLat=p.lat;S.mapLng=p.lng;toMap();}
-    S.globe.controls().autoRotate=alt>1.2;
-    updateSound(lyr);
-  }
-}
-
-/* ════ MAP ════ */
-function initMap(){
-  if(!window.L){showToast('MAP ENGINE LOADING');setTimeout(initMap,350);return;}
-  if(S.map)return;
-  S.map=L.map('map',{center:[S.mapLat,S.mapLng],zoom:15,zoomControl:false,attributionControl:false,minZoom:3});
-  S.map.on('zoomstart',()=>onManualZoom());
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20}).addTo(S.map);
-  drawCircles();drawVendors();drawDrivers();
-  /* ALTITUDE LADDER
-     z>=14  STREET   : individual streets, delivery triangles
-     z 11-13 CITY    : whole city visible, all geometry
-     z 7-10  CLOUD   : city overview, see ALL activity at once
-     z 4-6   REGIONAL: island/country level
-     z<4     GLOBE   : transition back to 3D globe
-  */
-  S.map.on('zoomend',()=>{
-    const z=S.map.getZoom();
-    if(z>=14)      updateAltLabel('STREET');
-    else if(z>=11) updateAltLabel('CITY');
-    else if(z>=7)  { updateAltLabel('CLOUD'); showCloudLevel(); }
-    else if(z>=4)  { updateAltLabel('REGIONAL'); hideCloudLevel(); }
-    else           { hideCloudLevel(); clearTimeout(S._zT); S._zT=setTimeout(()=>{ if(S.mapOn&&S.map.getZoom()<4) toGlobe(); },800); }
-  });
-  /* Tap the map → triangle appears */
-  S.map.on('click',e=>{
-    hideTriangle();/* hide any existing */
-    S.tapLat=e.latlng.lat;S.tapLng=e.latlng.lng;
-    showTriangle(e.containerPoint.x,e.containerPoint.y);
-    schedFade();/* auto-fade after 3s if no further interaction */
-  });
-  /* Locate user → auto-zoom to city level */
-  S.map.on('locationfound',e=>{
-    S.mapLat=e.latlng.lat;S.mapLng=e.latlng.lng;
-    S.map.setView([S.mapLat,S.mapLng],16);
-    placeUserMarker();
-    if(S.user&&S.sb)S.sb.from('users').upsert({id:S.user.id,lat:S.mapLat,lng:S.mapLng});
-    showToast('Located: '+cStr(S.mapLat,S.mapLng));
-  });
-}
-
-function toMap(){
-  if(!window.L){showToast('MAP ENGINE LOADING');setTimeout(toMap,350);return;}
-  if(!S.map) initMap();
-  if(!S.map){showToast('MAP NOT READY');return;}
-  S.mapOn=true;
-  if(!S.gpsW)startAutoGPS();
+/* ═══════════════════════════════════════════════════════════════
+   CITY ENTRY — smooth zoom from globe into Leaflet map
+   ═══════════════════════════════════════════════════════════════ */
+async function enterCity(city){
+  if(S.view==='zooming'||S.view==='map')return;
+  S.view='zooming';
+  S.city=city;
+  toast(`Entering ${city.name}…`);
+  /* Generate world data for this city */
+  VENDORS=genVendors(city);
+  DRIVERS=genDrivers(city);
+  CIRCLES=genCircles(city);
+  /* Globe zoom in */
+  S.globe.controls().autoRotate=false;
+  S.globe.pointOfView({lat:city.lat,lng:city.lng,altitude:0.15},2400);
+  await sleep(2400);
+  /* Switch to map */
+  initMap(city);
   $('map-wrap').classList.add('on');
-  $('globe-wrap').style.opacity='0';
-  setTimeout(()=>{try{S.map.invalidateSize(true);}catch(e){}},60);
-  const z=S.gpsReady?15:13;
-  S.map.setView([S.mapLat,S.mapLng],z,{animate:false});
-  placeUserMarker();
-  drawCircles();drawVendors();drawDrivers();
-  hideCloudLevel();showCloudLevel();
-  if(S.demoRunning)startDemoOnMap();
-  updateWalletBar();
-  updateAltLabel('CITYUSER');
-  showToast(cStr(S.mapLat,S.mapLng)+' — CITY USER MAP');
-}
-function toCityUserMap(){
-  toMap();
-  setTimeout(()=>{
-    if(!S.map)return;
-    try{S.map.invalidateSize(true);}catch(e){}
-    S.map.setView([S.mapLat,S.mapLng],S.gpsReady?15:13,{animate:true,duration:.8});
-    updateAltLabel('CITYUSER');
-  },120);
+  $('fab-back').classList.add('on');
+  S.view='map';
+  /* Welcome */
+  setTimeout(()=>toast(`Welcome to ${city.name} · tap a vendor to order`),900);
 }
 
 function toGlobe(){
-  if(!S.mapOn)return;S.mapOn=false;
-  hideTriangle();hideOrbs();hideWalletBar();hideCloudLevel();
+  if(S.view!=='map')return;
+  S.view='zooming';
+  /* Clear active routes / markers */
+  clearRoutes();
   $('map-wrap').classList.remove('on');
-  $('globe-wrap').style.opacity='1';
-  S.globe.controls().autoRotate=false;
-  S.globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:1.4},1000);
-  $('layer-lbl').textContent='REGIONAL';S.layer='REGIONAL';S.altPrev='REGIONAL';
-}
-
-function updateAltLabel(lyr){
-  S.layer=lyr;
-  const el=document.getElementById('layer-lbl');
-  if(el) el.textContent=lyr;
-}
-
-/* CLOUD LEVEL — shows all city activity in overview */
-let cloudOverlays=[];
-function showCloudLevel(){
-  hideCloudLevel();
-  if(!S.map) return;
-  /* Draw a glowing halo over each active vendor */
-  for(const v of vendors){
-    if(v.is_open===false) continue;
-    const lat=v.lat||36.44, lng=v.lng||28.22;
-    const c=L.circle([lat,lng],{radius:420,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.08,weight:1.4,opacity:.55,dashArray:'3 6'}).addTo(S.map);
-    cloudOverlays.push(c);
-  }
-  /* Pulse marker for each social circle */
-  for(const sc of circles){
-    const c=L.circle([sc.lat,sc.lng],{radius:sc.radius_m*1.5,color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.05,weight:1.1,opacity:.42}).addTo(S.map);
-    cloudOverlays.push(c);
-  }
-  showToast('CLOUD VIEW — full city activity visible');
-}
-function hideCloudLevel(){
-  cloudOverlays.forEach(l=>{try{l.remove();}catch(e){}});
-  cloudOverlays=[];
-}
-
-/* WALLET BAR — visible on map at all times when logged in */
-function showWalletBar(){
-  let bar=document.getElementById('wallet-bar');
-  if(!bar){
-    bar=document.createElement('div');
-    bar.id='wallet-bar';
-    bar.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:800;display:flex;align-items:center;gap:10px;background:rgba(0,6,20,.95);backdrop-filter:blur(16px);border:1px solid rgba(0,212,255,.2);border-radius:22px;padding:8px 16px;cursor:pointer;';
-    bar.onclick=()=>openProfSheet();
-    bar.innerHTML=`<span style="font-family:'Orbitron',monospace;font-size:9px;color:rgba(0,212,255,.5);letter-spacing:.06em">WALLET</span><span id="wb-bal" style="font-family:'Orbitron',monospace;font-size:13px;color:#00d4ff;font-weight:700;letter-spacing:.06em">0.00 ✦</span><span style="background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.28);border-radius:10px;padding:3px 9px;font-family:'Orbitron',monospace;font-size:8px;color:#00d4ff;letter-spacing:.08em">TOP UP</span>`;
-    document.body.appendChild(bar);
-  }
-  const bal=parseFloat(S.prof?.wallet_astran||0).toFixed(2);
-  const el=document.getElementById('wb-bal');
-  if(el) el.textContent=bal+' ✦';
-  bar.style.display='flex';
-}
-function hideWalletBar(){
-  const bar=document.getElementById('wallet-bar');
-  if(bar) bar.style.display='none';
-}
-function updateWalletBar(){
-  if(S.user&&S.mapOn) showWalletBar();
-  else hideWalletBar();
-  const el=document.getElementById('wb-bal');
-  if(el) el.textContent=parseFloat(S.prof?.wallet_astran||0).toFixed(2)+' ✦';
-}
-
-function placeUserMarker(){
-  if(!S.map||!S.user)return;
-  const allOff=!S.roles.client&&!S.roles.vendor&&!S.roles.driver;
-  if(S.userMarker){S.userMarker.remove();S.userMarker=null;}
-  if(allOff)return;
-  const nm=S.prof?.display_name||S.user?.email?.split('@')[0]||'Me';
-  const icon=L.divIcon({className:'',html:`<div onclick="M.openProfSheet()" style="width:40px;height:40px;border-radius:50%;background:rgba(0,8,24,.92);border:2px solid #00d4ff;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:16px;cursor:pointer;box-shadow:0 0 16px rgba(0,212,255,.5)">${nm[0].toUpperCase()}</div>`,iconSize:[40,40],iconAnchor:[20,20]});
-  S.userMarker=L.marker([S.prof?.lat||S.mapLat,S.prof?.lng||S.mapLng],{icon}).addTo(S.map);
-}
-
-function drawCircles(){
-  ML.circles.forEach(l=>l.remove());ML.circles=[];
-  for(const sc of circles){
-    const c=L.circle([sc.lat,sc.lng],{radius:sc.radius_m,color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:1.2,dashArray:'6 5',opacity:.35}).addTo(S.map);
-    c.on('click',()=>openThread('circle',sc.id,`${sc.name} · ${sc.member_count} members`));
-    const li=L.divIcon({className:'',html:`<div style="font-family:'Orbitron',monospace;font-size:7px;color:rgba(0,212,255,.45);letter-spacing:.09em;text-shadow:0 0 5px #00d4ff;white-space:nowrap">${sc.name}</div>`,iconAnchor:[0,0]});
-    ML.circles.push(c,L.marker([sc.lat+.0012,sc.lng],{icon:li}).addTo(S.map));
-  }
-}
-function drawVendors(){
-  ML.vendors.forEach(l=>l.remove());ML.vendors=[];
-  for(const v of vendors){
-    const op=v.is_open!==false;
-    const icon=L.divIcon({className:'',html:`<div style="width:34px;height:34px;border-radius:50%;background:rgba(0,8,22,.92);border:1.5px solid ${op?'#00d4ff':'#1a2840'};display:flex;align-items:center;justify-content:center;font-size:14px;${op?'box-shadow:0 0 10px rgba(0,212,255,.3)':''};cursor:pointer">${v.emoji||'🏪'}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
-    const m=L.marker([v.lat||36.44,v.lng||28.22],{icon}).addTo(S.map);
-    m.on('click',()=>openVendorMenu(v));ML.vendors.push(m);
-  }
-}
-function drawDrivers(){
-  ML.drivers.forEach(l=>l.remove());ML.drivers=[];
-  drivers.forEach(d=>{
-    if(!d.online&&!S.roles?.driver)return;
-    const color=d.online?'#00ff88':'rgba(255,255,255,.25)';
-    const bg=d.online?'rgba(0,22,8,.92)':'rgba(40,40,40,.85)';
-    const icon=L.divIcon({className:'',html:`<div style="width:30px;height:30px;border-radius:50%;background:${bg};border:1.5px solid ${color};display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 10px ${d.online?'rgba(0,255,136,.32)':'rgba(0,0,0,.4)'}">${d.vehicle}</div>`,iconSize:[30,30],iconAnchor:[15,15]});
-    const m=L.marker([d.lat,d.lng],{icon}).addTo(S.map);
-    m.bindTooltip(`${d.name} · ★${d.rating} · ${d.kg_max}kg`,{direction:'top',className:'gl'});
-    m.on('click',()=>{
-      if(S.user)M.openThread('driver',d.id,`${d.name} · ${d.vehicle}`);
-      else{showToast(`${d.name} · ★${d.rating} · ${d.kg_max}kg max`);}
-    });
-    ML.drivers.push(m);
-    /* Idle drift — drivers move slightly while waiting */
-    if(d.online){
-      const id=setInterval(()=>{
-        if(!S.map||!ML.drivers.includes(m)){clearInterval(id);return;}
-        d.lat+=(Math.random()-.5)*.0004;
-        d.lng+=(Math.random()-.5)*.0004;
-        m.setLatLng([d.lat,d.lng]);
-      },4500+Math.random()*2500);
-      S.demoIntervals.push(id);
+  $('fab-back').classList.remove('on');
+  closeAllSheets();
+  setTimeout(()=>{
+    S.view='globe';
+    if(S.globe){
+      S.globe.controls().autoRotate=true;
+      S.globe.pointOfView({lat:38,lng:24,altitude:2.4},1400);
     }
+  },700);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAP — Leaflet with OSM, vendor/driver/circle markers
+   ═══════════════════════════════════════════════════════════════ */
+function initMap(city){
+  if(S.map){
+    S.map.setView([city.lat,city.lng],15);
+    drawWorld();
+    return;
+  }
+  S.map=L.map('leaf',{
+    center:[city.lat,city.lng],zoom:15,
+    zoomControl:false,attributionControl:false,minZoom:3
+  });
+  /* Dark CARTO tiles */
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    subdomains:'abcd',maxZoom:20
+  }).addTo(S.map);
+  drawWorld();
+}
+
+function drawWorld(){
+  /* Clear */
+  Object.values(S.markers).forEach(v=>{
+    if(Array.isArray(v))v.forEach(m=>{try{m.remove()}catch(e){}});
+    else if(v){try{v.remove()}catch(e){}}
+  });
+  S.markers={user:null,shops:[],drivers:[],circles:[]};
+  if(!S.map||!S.city)return;
+
+  /* User marker (you, at city centre) */
+  const u=L.marker([S.city.lat,S.city.lng],{
+    icon:L.divIcon({className:'',iconSize:[38,38],iconAnchor:[19,19],html:'<div class="mk user">U</div>'}),
+    zIndexOffset:500
+  }).addTo(S.map);
+  u.bindTooltip('You · tap to open profile',{direction:'top',className:'gl'});
+  u.on('click',()=>S.user?openProfile():openAuth());
+  S.markers.user=u;
+
+  /* Vendors */
+  VENDORS.forEach(v=>{
+    const cls='mk shop'+(v.open?'':' closed');
+    const m=L.marker([v.lat,v.lng],{
+      icon:L.divIcon({className:'',iconSize:[36,36],iconAnchor:[18,18],html:`<div class="${cls}">${v.emoji}</div>`}),
+      zIndexOffset:300
+    }).addTo(S.map);
+    m.bindTooltip(`${v.name} · ${v.cat}${v.open?'':' · CLOSED'}`,{direction:'top',className:'gl gold'});
+    m.on('click',()=>v.open?openVendor(v):toast(`${v.name} is closed`));
+    S.markers.shops.push(m);
+  });
+
+  /* Drivers */
+  DRIVERS.forEach(d=>{
+    const cls='mk driver'+(d.busy?' busy':'');
+    const m=L.marker([d.lat,d.lng],{
+      icon:L.divIcon({className:'',iconSize:[32,32],iconAnchor:[16,16],html:`<div class="${cls}">${d.vehicle}</div>`}),
+      zIndexOffset:400
+    }).addTo(S.map);
+    m.bindTooltip(`${d.name} · ★${d.rating} · ${d.kg_max}kg ${d.online?'· ONLINE':'· offline'}`,{direction:'top',className:'gl green'});
+    m.on('click',()=>openDriverThread(d));
+    d._marker=m;
+    S.markers.drivers.push(m);
+    if(d.online&&!d.busy)driftDriver(d);
+  });
+
+  /* Social circles */
+  CIRCLES.forEach(c=>{
+    const lc=L.circle([c.lat,c.lng],{
+      radius:c.r,color:c.color,fillColor:c.color,fillOpacity:.06,weight:1.3,
+      dashArray:'5 6',opacity:.6
+    }).addTo(S.map);
+    lc.on('click',()=>openCircleThread(c));
+    const lbl=L.marker([c.lat,c.lng],{
+      icon:L.divIcon({className:'',iconAnchor:[40,8],
+        html:`<div class="gl" style="border-color:${c.color};color:${c.color}">◯ ${c.name.toUpperCase()} · ${c.members}</div>`}),
+      interactive:false
+    }).addTo(S.map);
+    S.markers.circles.push(lc,lbl);
   });
 }
 
-/* ════ TRIANGLE BUTTON ════ */
-function showTriangle(px,py){
-  const t=$('tri-wrap');
-  t.style.left=px+'px';t.style.top=py+'px';
-  t.classList.add('on');S.triOpen=true;
-}
-function hideTriangle(){$('tri-wrap').classList.remove('on');$('tri-svg').classList.remove('open');S.triOpen=false;hideOrbs();}
-function triTap(){
-  clearTimeout(S.fadeTimer);
-  if(S.orbsOpen){hideOrbs();return;}
-  $('tri-svg').classList.add('open');
-  const t=$('tri-wrap');
-  const bx=parseFloat(t.style.left),by=parseFloat(t.style.top);
-  /* Bloom orbs from triangle corners — left, right, bottom */
-  setOrb('orb-social', bx-72, by-60);
-  setOrb('orb-team',   bx+72, by-60);
-  setOrb('orb-market', bx,    by+56);
-  S.orbsOpen=true;
-  /* Auto-fade if no action in 3s */
-  schedFade();
-}
-function setOrb(id,x,y){const el=$(id);el.style.left=x+'px';el.style.top=y+'px';el.classList.add('on');}
-function hideOrbs(){['orb-social','orb-team','orb-market'].forEach(id=>$(id).classList.remove('on'));$('tri-svg').classList.remove('open');S.orbsOpen=false;}
-function schedFade(){clearTimeout(S.fadeTimer);S.fadeTimer=setTimeout(()=>{hideTriangle();},3000);}
-
-function optTap(type){
-  clearTimeout(S.fadeTimer);
-  hideTriangle();
-  if(type==='social')openSheet('video-sheet');
-  else if(type==='team')openSheet('team-sheet');
-  else openMkt();
+function driftDriver(d){
+  const tick=()=>{
+    if(!S.map||S.view!=='map'||!d._marker||d.busy)return;
+    d.lat+=(Math.random()-.5)*.0006;
+    d.lng+=(Math.random()-.5)*.0006;
+    d._marker.setLatLng([d.lat,d.lng]);
+    setTimeout(tick,3500+Math.random()*2500);
+  };
+  setTimeout(tick,1000+Math.random()*2000);
 }
 
-/* ════ GEOMETRY — REAL STREET ROUTING via OSRM ════ */
-async function drawDeliveryTriangle(v,opts={}){
-  ML.geo.forEach(l=>{try{l.remove();}catch(e){}});ML.geo=[];
-  if(!S.map)return;
-  const cl=[S.mapLat,S.mapLng];
-  const vl=[v.lat||36.44,v.lng||28.22];
-  const kgTotal=opts.kgTotal||S.cart.reduce((a,i)=>a+(i.kg||0.3),0);
-  /* Pick driver(s). Above 33kg → split across multiple drivers (polygon law). */
-  const splitNeeded=kgTotal>33;
-  const drvCount=splitNeeded?Math.ceil(kgTotal/33):1;
-  const assignedDrivers=nearestDrivers(vl[0],vl[1],drvCount,kgTotal);
-  if(!assignedDrivers.length){
-    showToast('No drivers online — connecting…');
-    /* Show vendor→client routed line anyway, with pending state */
-    const vc=await osrmRoute(vl[0],vl[1],cl[0],cl[1]);
-    const km=vc.km||distKm(vl[0],vl[1],cl[0],cl[1]);
-    const del=calcDel(km,{night:isNight(),kg:kgTotal});
-    const line=L.polyline(vc.coords,{color:'#00d4ff',weight:4,opacity:.85,dashArray:'10 8',className:'route-pending'}).addTo(S.map);
-    line.routeMeta={type:'pending',vendor:v,km,del};
-    line.on('click',()=>{M.openThread('order','pending-'+v.id,'Order Thread');});
-    ML.geo.push(line);
-    /* Mid-route price chip */
-    const midIdx=Math.floor(vc.coords.length/2);
-    const mid=vc.coords[midIdx]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
-    const pi=L.divIcon({className:'',html:`<div class="gl" onclick="M.openThread('order','pending-${v.id}','Delivery Thread')">€${del.total.toFixed(2)} ✦ · WAITING DRIVER</div>`,iconAnchor:[60,10]});
-    ML.geo.push(L.marker(mid,{icon:pi}).addTo(S.map));
-    return;
-  }
-  showToast('Routing through streets…');
-  /* For each driver: route driver → vendor (pickup leg, gold) + vendor → client (delivery leg, blue) */
-  let totalKm=0;
-  const allRoutes=[];
-  for(let i=0;i<assignedDrivers.length;i++){
-    const d=assignedDrivers[i];
-    const dl=[d.lat,d.lng];
-    const [pickup,deliver]=await Promise.all([
-      osrmRoute(dl[0],dl[1],vl[0],vl[1]),
-      osrmRoute(vl[0],vl[1],cl[0],cl[1])
-    ]);
-    totalKm+=(pickup.km||0)+(deliver.km||0);
-    /* Pickup leg — gold dashed (driver heading to vendor) */
-    const pickupLine=L.polyline(pickup.coords,{
-      color:'#c6a64a',weight:3,opacity:.78,dashArray:'8 6',className:'route-pickup'
-    }).addTo(S.map);
-    pickupLine.routeMeta={type:'pickup',driver:d,vendor:v,km:pickup.km};
-    /* Delivery leg — electric blue solid glow (vendor → client, the actual delivery) */
-    const deliverLine=L.polyline(deliver.coords,{
-      color:'#00d4ff',weight:4.5,opacity:.95,className:'route-deliver'
-    }).addTo(S.map);
-    deliverLine.routeMeta={type:'deliver',driver:d,vendor:v,client:{lat:cl[0],lng:cl[1]},km:deliver.km};
-    /* Click → open thread for this order leg */
-    const orderId=`ord-${v.id}-${d.id}-${Date.now()}`;
-    pickupLine.on('click',()=>M.openThread('order',orderId,`Pickup · ${d.name}`));
-    deliverLine.on('click',()=>M.openThread('order',orderId,`Delivery · ${d.name}`));
-    ML.geo.push(pickupLine,deliverLine);
-    allRoutes.push({driver:d,pickup,deliver,orderId});
-  }
-  /* Triangle/polygon overlay binding driver(s)+vendor+client (semantic — the relationship shape) */
-  const triPts=[cl,vl,...assignedDrivers.map(d=>[d.lat,d.lng])];
-  const shape=triPts.length===3?
-    L.polygon(triPts,{color:'#00d4ff',fillColor:'#00d4ff',fillOpacity:.04,weight:1,dashArray:'4 6',opacity:.45,interactive:false}):
-    L.polygon(triPts,{color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.05,weight:1.2,dashArray:'4 6',opacity:.55,interactive:false});
-  shape.addTo(S.map);
-  ML.geo.push(shape);
-  /* Price chip — sits on the delivery leg midpoint */
-  const dCoords=allRoutes[0].deliver.coords;
-  const mid=dCoords[Math.floor(dCoords.length/2)]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
-  const km=allRoutes[0].deliver.km||distKm(vl[0],vl[1],cl[0],cl[1]);
-  const del=calcDel(km,{night:isNight(),kg:kgTotal});
-  const oid=allRoutes[0].orderId;
-  const drvNames=assignedDrivers.map(d=>d.name.split(' ')[0]).join(' + ');
-  const chipHtml=splitNeeded?
-    `<div class="gl g" onclick="M.openThread('order','${oid}','Order Thread')">€${del.total.toFixed(2)} ✦ · ${drvCount} DRIVERS · ${drvNames}</div>`:
-    `<div class="gl" onclick="M.openThread('order','${oid}','Order Thread')">€${del.total.toFixed(2)} ✦ · ${drvNames} · ${km.toFixed(1)}km</div>`;
-  const pi=L.divIcon({className:'',html:chipHtml,iconAnchor:[80,10]});
-  ML.geo.push(L.marker(mid,{icon:pi}).addTo(S.map));
-  /* Animate driver(s) along pickup → delivery for visual feedback */
-  allRoutes.forEach((r,i)=>animateDriverAlongRoute(r.driver,r.pickup.coords,r.deliver.coords,r.orderId,i*800));
-  /* Persist if logged in */
-  if(S.sb&&S.user){
-    try{
-      await S.sb.from('order_routes').insert({
-        order_id:oid,client_id:S.user.id,vendor_id:v.id,
-        driver_ids:assignedDrivers.map(d=>d.id),
-        total_km:+totalKm.toFixed(2),delivery_km:+km.toFixed(2),
-        total_eur:+del.total.toFixed(2),split:splitNeeded,
-        route_geojson:JSON.stringify(allRoutes.map(r=>({pickup:r.pickup.coords,deliver:r.deliver.coords})))
-      });
-    }catch(e){/* table may not exist yet — that's fine */}
-  }
-  /* Don't auto-clean: let user see the order until they explicitly close it or place another */
-  S.activeRoutes=ML.geo.slice();
-}
-
-/* Animate driver marker along their pickup→deliver route */
-function animateDriverAlongRoute(driver,pickupCoords,deliverCoords,orderId,delay=0){
-  if(!S.map)return;
-  const path=[...pickupCoords,...deliverCoords];
-  if(path.length<2)return;
-  const icon=L.divIcon({className:'',html:`<div style="width:34px;height:34px;border-radius:50%;background:rgba(40,30,5,.95);border:2px solid #c6a64a;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 0 14px rgba(198,166,74,.55)">${driver.vehicle}</div>`,iconSize:[34,34],iconAnchor:[17,17]});
-  const m=L.marker(path[0],{icon,zIndexOffset:1000}).addTo(S.map);
-  m.bindTooltip(driver.name,{permanent:false,direction:'top',className:'gl'});
-  m.on('click',()=>M.openThread('order',orderId,`${driver.name} · ${driver.vehicle}`));
-  ML.geo.push(m);
-  let idx=0;
-  const stepMs=600;
-  setTimeout(()=>{
-    const id=setInterval(()=>{
-      if(!S.map||!ML.geo.includes(m)){clearInterval(id);return;}
-      idx++;
-      if(idx>=path.length){
-        clearInterval(id);
-        showToast(`${driver.name} delivered ✓`);
-        return;
-      }
-      m.setLatLng(path[idx]);
-    },stepMs);
-    S.demoIntervals&&S.demoIntervals.push(id);
-  },delay);
-}
-
-/* Clear all active route geometry — call before placing new order */
-function clearActiveRoutes(){
-  ML.geo.forEach(l=>{try{l.remove();}catch(e){}});
-  ML.geo=[];
-  S.activeRoutes=[];
-}
-
-/* ════ MARKETPLACE ════ */
-function openMkt(){
-  if(!S.mapOn){toMap();setTimeout(openMkt,2200);return;}
-  $('vendor-list').innerHTML=vendors.map(v=>`<div class="v-card" onclick="M.openVendMenu(M._vById('${v.id||v.business_name}'))"><div class="v-em">${v.emoji||'🏪'}</div><div><div class="v-name">${v.business_name||v.name}</div><div class="v-sub">${v.category||''}</div><div class="v-st ${v.is_open!==false?'open':'closed'}">${v.is_open!==false?'● OPEN':'○ CLOSED'}</div></div></div>`).join('');
-  openSheet('mkt-sheet');
-}
-function _vById(id){return vendors.find(v=>v.id===id||v.business_name===id);}
-function openVendMenu(v){
-  if(!v)return;S.cartVid=v.id||v.business_name;$('menu-title').textContent=v.business_name||v.name;
-  $('menu-items').innerHTML=v.is_open===false?`<div style="color:rgba(255,255,255,.28);padding:16px 0">Vendor offline.</div>`:
-    (v.items||[]).map((it,i)=>`<div class="m-item"><div style="font-size:13px">${it.n||it.name}</div><div style="display:flex;align-items:center;gap:8px"><div class="m-price">€${parseFloat(it.p||it.price_eur||0).toFixed(2)}</div><div class="m-add" onclick="M.addCart('${v.id||v.business_name}',${i})">ADD</div></div></div>`).join('');
+/* ═══════════════════════════════════════════════════════════════
+   MARKETPLACE — vendor sheet, menu, cart
+   ═══════════════════════════════════════════════════════════════ */
+function openVendor(v){
+  S.cartShop=v;
+  $('menu-title').textContent=v.name;
+  const cart=cartFor(v);
+  const html=v.items.map((it,i)=>{
+    const inCart=cart.find(c=>c.n===it.n);
+    const q=inCart?inCart.qty:0;
+    return `<div class="m-item">
+      <div class="m-info">
+        <div class="m-name">${it.n}</div>
+        <div class="m-sub">${it.kg} kg</div>
+      </div>
+      <div class="m-price">€${it.p.toFixed(2)}</div>
+      ${q?`<div class="m-qty">
+        <div class="m-add" onclick="A.removeItem('${v.id}',${i})">−</div>
+        <b>${q}</b>
+        <div class="m-add" onclick="A.addItem('${v.id}',${i})">+</div>
+      </div>`:`<div class="m-add" onclick="A.addItem('${v.id}',${i})">ADD</div>`}
+    </div>`;
+  }).join('')||`<div class="hint">Vendor offline.</div>`;
+  $('menu-items').innerHTML=html;
   openSheet('menu-sheet');
 }
-function addCart(vid,idx){
-  const v=vendors.find(v=>v.id===vid||v.business_name===vid);
-  if(!v||v.is_open===false)return;
-  if(S.cartVid&&S.cartVid!==vid){showToast('Clear cart to order from another vendor');return;}
-  const it=v.items[idx];S.cart.push({...it,vid});S.cartVid=vid;updateOrderBar();showToast(`${it.n||it.name} added`);
+
+function cartFor(v){
+  return S.cart.filter(c=>c.shopId===v.id);
 }
-function updateOrderBar(){
-  if(!S.cart.length){$('order-bar').classList.remove('on');return;}
-  const tot=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0);
-  $('o-cnt').textContent=`${S.cart.length} ITEM${S.cart.length!==1?'S':''}`;
-  $('o-tot').textContent=`€${tot.toFixed(2)} + delivery`;
-  $('order-bar').classList.add('on');
+
+function addItem(shopId,idx){
+  const v=VENDORS.find(x=>x.id===shopId);
+  if(!v||!v.open)return;
+  if(S.cart.length&&S.cartShop&&S.cartShop.id!==shopId){
+    if(!confirm(`Clear cart from ${S.cartShop.name}?`))return;
+    S.cart=[];
+  }
+  S.cartShop=v;
+  const it=v.items[idx];
+  const ex=S.cart.find(c=>c.shopId===shopId&&c.n===it.n);
+  if(ex)ex.qty++;
+  else S.cart.push({...it,shopId,qty:1});
+  refreshCart();
+  openVendor(v); // re-render menu
 }
+
+function removeItem(shopId,idx){
+  const v=VENDORS.find(x=>x.id===shopId);
+  if(!v)return;
+  const it=v.items[idx];
+  const ex=S.cart.find(c=>c.shopId===shopId&&c.n===it.n);
+  if(!ex)return;
+  ex.qty--;
+  if(ex.qty<=0)S.cart=S.cart.filter(c=>c!==ex);
+  if(!S.cart.length)S.cartShop=null;
+  refreshCart();
+  openVendor(v);
+}
+
+function refreshCart(){
+  if(!S.cart.length){$('orderbar').classList.remove('on');return;}
+  const tot=S.cart.reduce((a,i)=>a+i.p*i.qty,0);
+  const cnt=S.cart.reduce((a,i)=>a+i.qty,0);
+  $('ob-cnt').textContent=`${cnt} ITEM${cnt!==1?'S':''} · ${S.cartShop.name}`;
+  $('ob-tot').textContent=`€${tot.toFixed(2)} + delivery`;
+  $('orderbar').classList.add('on');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CHECKOUT — show breakdown overlay
+   ═══════════════════════════════════════════════════════════════ */
 function checkout(){
-  if(!S.cart.length)return;
-  if(!S.user){$('login-card').classList.add('on');return;}
-  const v=vendors.find(v=>v.id===S.cartVid||v.business_name===S.cartVid);if(!v)return;
-  const km=distKm(S.mapLat,S.mapLng,v.lat||36.44,v.lng||28.22)||0.7,del=calcDel(km,{night:isNight()});
-  const sub=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0),plat=+(del.total*.03).toFixed(2);
-  $('del-body').innerHTML=`<div class="del-row"><span>Vendor</span><span>${v.business_name||v.name}</span></div><div class="del-row"><span>Items (${S.cart.length})</span><span>€${sub.toFixed(2)}</span></div><div class="del-row"><span>Distance</span><span>${km.toFixed(2)} km</span></div><div class="del-row"><span>Delivery (€1/km)</span><span>€${del.base.toFixed(2)}</span></div>${del.night?'<div class="del-row"><span>Night +€1</span><span>21:00–09:00</span></div>':''}<div class="del-row"><span>Platform 3%</span><span>€${plat}</span></div><div class="del-row del-total"><span>TOTAL</span><span>€${(sub+del.total).toFixed(2)} / ${(sub+del.total).toFixed(0)} ✦</span></div>`;
-  $('del-overlay').classList.add('on');
+  if(!S.cart.length||!S.cartShop)return;
+  const v=S.cartShop;
+  const sub=S.cart.reduce((a,i)=>a+i.p*i.qty,0);
+  const kg=S.cart.reduce((a,i)=>a+(i.kg||0)*i.qty,0);
+  const distance=km(S.city.lat,S.city.lng,v.lat,v.lng);
+  const del=calcDelivery(distance,{night:isNight(),kg});
+  const grand=+(sub+del.total).toFixed(2);
+  $('del-body').innerHTML=`
+    <div class="del-row"><span>${v.emoji} ${v.name}</span><span>${S.cart.length} item(s)</span></div>
+    <div class="del-row"><span>Items</span><span>€${sub.toFixed(2)}</span></div>
+    <div class="del-row"><span>Distance (straight)</span><span>${distance.toFixed(2)} km</span></div>
+    ${del.breakdown.map(b=>`<div class="del-row"><span>${b.l}</span><span>+€${b.v.toFixed(2)}</span></div>`).join('')}
+    ${del.split?`<div class="del-row" style="color:var(--ER)"><span>Load > 33 kg</span><span>${del.nDrivers} drivers</span></div>`:''}
+    <div class="del-row"><span>Platform 3%</span><span>€${del.platform.toFixed(2)}</span></div>
+    <div class="del-row"><span>Driver share</span><span>€${del.drvShare.toFixed(2)}</span></div>
+    <div class="del-row del-tot"><span>TOTAL</span><span>€${grand.toFixed(2)} · ${grand.toFixed(0)} ✦</span></div>
+  `;
+  $('del-ovr').classList.add('on');
 }
-function closeDel(){$('del-overlay').classList.remove('on');}
+
+function closeDel(){$('del-ovr').classList.remove('on');}
+
 async function confirmOrder(){
-  const v=vendors.find(v=>v.id===S.cartVid||v.business_name===S.cartVid);
-  closeDel();closeSheet('menu-sheet');closeSheet('mkt-sheet');$('order-bar').classList.remove('on');
-  if(v){S.activeOrder={vendor:v,startedAt:Date.now()};S.orderVendor=v;startAutoGPS();}
-  /* Clear previous routes before drawing this order */
-  clearActiveRoutes();
-  if(v&&S.mapOn){
-    const kgTotal=S.cart.reduce((a,i)=>a+(i.kg||i.weight_kg||0.3),0);
-    /* REAL street-routed delivery triangle */
-    await drawDeliveryTriangle(v,{kgTotal});
-  }
+  closeDel();
+  const v=S.cartShop;
+  if(!v)return;
+  closeAllSheets();
+  $('orderbar').classList.remove('on');
+  const sub=S.cart.reduce((a,i)=>a+i.p*i.qty,0);
+  const kg=S.cart.reduce((a,i)=>a+(i.kg||0)*i.qty,0);
+  /* Save order locally + supabase if logged in */
+  const orderId=`ord-${Date.now()}`;
+  const order={id:orderId,vendor:v,items:[...S.cart],sub,kg,at:Date.now(),user:S.user?S.user.id:null};
   if(S.sb&&S.user){
-    const km=distKm(S.mapLat,S.mapLng,v?.lat||36.44,v?.lng||28.22)||0.7,del=calcDel(km,{night:isNight()});
-    const sub=S.cart.reduce((a,i)=>a+(i.p||i.price_eur||0),0);
-    await S.sb.from('orders').insert({client_id:S.user.id,vendor_id:v?.id,items:JSON.stringify(S.cart),subtotal:sub,delivery_km:km,delivery_fee:del.base,night_surcharge:del.night?1:0,platform_fee:+(del.total*.03).toFixed(2),total_eur:+(sub+del.total).toFixed(2),total_astran:+(sub+del.total).toFixed(2),client_lat:S.mapLat,client_lng:S.mapLng,vendor_lat:v?.lat||36.44,vendor_lng:v?.lng||28.22,status:'pending'});
+    try{await S.sb.from('orders').insert({
+      client_id:S.user.id,vendor_id:v.id,items:JSON.stringify(S.cart),
+      subtotal:sub,client_lat:S.city.lat,client_lng:S.city.lng,
+      vendor_lat:v.lat,vendor_lng:v.lng,status:'routing'
+    });}catch(e){console.warn('order save:',e)}
   }
-  S.cart=[];S.cartVid=null;
-  showToast('ORDER PLACED 🛵 · ROUTING THROUGH STREETS');
-  setTimeout(()=>showToast('Driver picking up — watch the route'),3200);
+  S.cart=[];S.cartShop=null;
+  /* Draw the real route */
+  await drawOrderRoute(v,order);
 }
 
-/* ════ TEAM ════ */
-async function createTeam(){
-  if(!S.user){$('login-card').classList.add('on');return;}
-  const name=$('team-name').value.trim();if(!name){showToast('Enter team name');return;}
-  const rad=parseInt($('team-radius').value)||500;
-  if(S.sb)await S.sb.from('teams').insert({name,creator_id:S.user.id,lat:S.tapLat||S.mapLat,lng:S.tapLng||S.mapLng,radius_m:rad,is_active:false});
-  if(S.map){
-    const c=L.circle([S.tapLat||S.mapLat,S.tapLng||S.mapLng],{radius:rad,color:'#c6a64a',fillColor:'#c6a64a',fillOpacity:.03,weight:1,dashArray:'4 6',opacity:.4}).addTo(S.map);
-    const li=L.divIcon({className:'',html:`<div class="gl g">${name}</div>`,iconAnchor:[0,0]});
-    L.marker([(S.tapLat||S.mapLat)+.001,(S.tapLng||S.mapLng)],{icon:li}).addTo(S.map);
-    ML.geo.push(c);
+/* ═══════════════════════════════════════════════════════════════
+   ROUTE GEOMETRY — REAL OSRM, follows streets
+   ═══════════════════════════════════════════════════════════════ */
+function clearRoutes(){
+  S.routes.forEach(r=>{try{r.remove()}catch(e){}});
+  S.routes=[];
+}
+
+async function drawOrderRoute(vendor,order){
+  clearRoutes();
+  const cl=[S.city.lat,S.city.lng];
+  const vl=[vendor.lat,vendor.lng];
+  const kg=order.kg||0;
+  const split=kg>33;
+  const nDrivers=split?Math.ceil(kg/33):1;
+  /* Pick driver(s): nearest online, not busy */
+  const eligible=DRIVERS.filter(d=>d.online&&!d.busy);
+  if(!eligible.length){
+    toast('No drivers online — connecting demand…');
   }
-  closeSheet('team-sheet');showToast(`TEAM "${name}" CREATED ◈`);
-}
-
-/* ════ VIDEO ════ */
-function selPlat(p){S.plat=p;['yt','vm','tt','ig','own'].forEach(id=>$('pt-'+id)?.classList.remove('on'));$('pt-'+p)?.classList.add('on');}
-function ytId(u){const m=u.match(/(?:v=|youtu\.be\/|embed\/)([^&?\s]{11})/);return m?m[1]:null;}
-async function pinVideo(){
-  const url=$('vid-url').value.trim(),cap=$('vid-cap').value.trim();
-  if(!url&&!cap){showToast('Enter URL or caption');return;}
-  if(!S.user){$('login-card').classList.add('on');return;}
-  const id=ytId(url);
-  if(id)$('vid-prev').innerHTML=`<iframe style="width:100%;aspect-ratio:16/9;border-radius:9px;border:none;margin-top:9px" src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
-  if(S.sb)await S.sb.from('media_posts').insert({user_id:S.user.id,post_type:S.plat,media_url:url,caption:cap,lat:S.tapLat||S.mapLat,lng:S.tapLng||S.mapLng});
-  if(S.map){
-    const icon=L.divIcon({className:'',html:`<div class="gl v">▶ ${cap||'Video'}</div>`,iconAnchor:[0,10]});
-    L.marker([S.tapLat||S.mapLat,S.tapLng||S.mapLng],{icon}).addTo(S.map).on('click',()=>{
-      if(id)$('vid-prev').innerHTML=`<iframe style="width:100%;aspect-ratio:16/9;border-radius:9px;border:none;margin-top:9px" src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>`;
-      openSheet('video-sheet');
-    });
-  }
-  closeSheet('video-sheet');showToast('VIDEO PINNED ✦');
-}
-
-/* ════ MESSAGING ════ */
-function openThread(type,id,label){
-  if(!S.user){$('login-card').classList.add('on');return;}
-  S.msgCtx={type,id};$('msg-title').textContent=label||'THREAD';$('msg-log').innerHTML='';$('msg-panel').classList.add('on');
-  loadMsgs(type,id);
-  if(S.msgSub)S.sb?.removeChannel(S.msgSub);
-  if(S.sb&&id){S.msgSub=S.sb.channel(`m-${type}-${id}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>renderMsg(p.new)).subscribe();}
-}
-async function loadMsgs(type,id){
-  if(!S.sb||!id)return;
-  const col=type==='circle'?'circle_id':'link_id';
-  const{data}=await S.sb.from('messages').select('*').eq(col,id).order('created_at',{ascending:true}).limit(50);
-  if(data)data.forEach(renderMsg);
-}
-function renderMsg(msg){const log=$('msg-log'),isMe=msg.sender_id===S.user?.id;const d=document.createElement('div');d.className=`msg ${isMe?'u':'a'}`;d.textContent=(isMe?'':'⬡ ')+(msg.body||'');log.appendChild(d);log.scrollTop=log.scrollHeight;}
-async function sendMsg(){const body=$('msg-txt').value.trim();if(!body||!S.user)return;$('msg-txt').value='';if(!S.sb||!S.msgCtx){renderMsg({body,sender_id:S.user?.id});return;}const col=S.msgCtx.type==='circle'?'circle_id':'link_id';await S.sb.from('messages').insert({sender_id:S.user.id,[col]:S.msgCtx.id,body});}
-
-/* ════ AI ════ */
-function openAI(){$('ai-panel').classList.add('on');$('ai-in').focus();}
-function closeAI(){$('ai-panel').classList.remove('on');}
-async function sendAI(txt){
-  txt=(txt||'').trim();if(!txt)return;$('ai-in').value='';
-  addBubble(txt,'u');const th=addBubble('···','a');th.id='aith';
-  S.aiHistory.push({role:'user',content:txt});
-  /* Intent execution */
-  const tl=txt.toLowerCase();
-  if(/order|food|eat|market|shop/.test(tl)){$('aith')?.remove();addBubble('Opening marketplace…','a');openMkt();return;}
-  if(/team|group/.test(tl)){$('aith')?.remove();addBubble('Opening team creation…','a');openSheet('team-sheet');return;}
-  if(/video|post|youtube|social/.test(tl)){$('aith')?.remove();addBubble('Opening media pin…','a');openSheet('video-sheet');return;}
-  if(/locate|my location|where am i/.test(tl)){$('aith')?.remove();addBubble('Locating you…','a');locate();return;}
-  if(/zoom out|globe|space|earth/.test(tl)){$('aith')?.remove();addBubble('Zooming to globe…','a');toGlobe();return;}
-  try{
-    const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({messages:S.aiHistory.slice(-8),system:`You are Astranov — the AI intelligence of the ASTRANOV Internet Operating System. Help users with: ordering food (say 'opening marketplace'), starting teams, posting media, navigating the globe/map. Be brief (2-3 sentences), direct, and immediately actionable. If they want to DO something, guide them to tap the map then choose from Social, Team, or Marketplace. Location: ${S.mapLat.toFixed(4)},${S.mapLng.toFixed(4)}. Layer: ${S.layer}.`,lat:S.mapLat,lng:S.mapLng,layer:S.layer})});
-    const d=await res.json();$('aith')?.remove();
-    const reply=d.content?.[0]?.text||d.reply||localAI(txt);
-    S.aiHistory.push({role:'assistant',content:reply});addBubble(reply,'a');speak(reply);
-  }catch(e){$('aith')?.remove();const r=localAI(txt);addBubble(r,'a');speak(r);}
-}
-function localAI(t){
-  t=(t||'').toLowerCase();
-  if(/order|food|eat/.test(t))return 'Tap the map → the triangle appears → tap it → choose Marketplace 🛒 to browse vendors.';
-  if(/team/.test(t))return 'Tap the map → triangle → Team ◈ to start a team. A gold circle appears on the map.';
-  if(/video|post/.test(t))return 'Tap the map → triangle → Social 📱 to pin a video or post to that location.';
-  if(/driver|earn/.test(t))return 'Drivers earn minimum €33/hour guaranteed. Enable Driver role in your profile.';
-  if(/hello|hi|hey/.test(t))return 'Tap anywhere on the map. A glowing triangle appears. Tap it — three circles bloom: Social, Team, Marketplace. That is ASTRANOV.';
-  return 'Tap the map to get the triangle. Three circles bloom: Social, Team, Marketplace. Everything starts from there.';
-}
-function addBubble(txt,who){const log=$('ai-log'),d=document.createElement('div');d.className=`msg ${who}`;d.textContent=(who==='a'?'⬡ ':'')+txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
-function speak(txt){if(!speechSynthesis||!txt)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(txt.slice(0,200));u.rate=1.05;speechSynthesis.speak(u);}catch(e){}}
-
-/* ════ VOICE — continuous, no button needed ════ */
-function startMic(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR)return;
-  if(S.recognition)try{S.recognition.stop();}catch(e){}
-  S.recognition=new SR();S.recognition.continuous=true;S.recognition.interimResults=false;S.recognition.lang='en-US';
-  S.recognition.onresult=e=>{
-    S.micFail=0;const t=e.results[e.results.length-1][0].transcript.trim();
-    if(!t)return;openAI();$('ai-in').value=t;sendAI(t);
-  };
-  S.recognition.onend=()=>{if(S.micOn){S.micFail++;if(S.micFail<3)try{S.recognition.start();}catch(e){}else{S.micOn=false;showToast('Voice stopped — type in the AI field');openAI();}}};
-  S.recognition.onerror=e=>{if(e.error==='not-allowed'){S.micOn=false;showToast('Microphone permission needed');}};
-  try{S.recognition.start();S.micOn=true;S.micFail=0;}catch(e){}
-}
-function stopMic(){if(S.recognition)try{S.recognition.stop();}catch(e){}S.micOn=false;}
-
-
-/* ════ GPS AUTOPILOT — 33s pulse + mode choreography ════ */
-function startAutoGPS(){
-  if(!navigator.geolocation||S.gpsW)return;
-  const opts={enableHighAccuracy:true,maximumAge:5000,timeout:15000};
-  navigator.geolocation.getCurrentPosition(handleGPS,()=>showToast('GPS permission needed'),{enableHighAccuracy:true,timeout:8000,maximumAge:0});
-  S.gpsW=navigator.geolocation.watchPosition(handleGPS,()=>{},opts);
-  S.gpsInterval=setInterval(()=>{navigator.geolocation.getCurrentPosition(handleGPS,()=>{}, {enableHighAccuracy:true,timeout:8000,maximumAge:0});},S.cfg.gpsForce*1000);
-}
-function stopAutoGPS(){
-  if(S.gpsW)navigator.geolocation.clearWatch(S.gpsW);
-  S.gpsW=null;clearInterval(S.gpsInterval);S.gpsInterval=null;
-}
-function onManualZoom(){
-  S.manualZoom=true;clearTimeout(S.manualZoomTimer);
-  S.manualZoomTimer=setTimeout(()=>S.manualZoom=false,S.cfg.manualZoomLock*1000);
-}
-function handleGPS(pos){
-  const lat=pos.coords.latitude,lng=pos.coords.longitude;
-  const acc=pos.coords.accuracy||999;
-  const speed=(pos.coords.speed||0)*3.6;
-  if(acc>200||Math.abs(lat)<.01||Math.abs(lng)<.01)return;
-  const now=Date.now();
-  S.mapLat=lat;S.mapLng=lng;S.lastSpeed=speed;S.gpsReady=true;
-  S.gpsSamples.push({lat,lng,t:now,speed});
-  S.gpsSamples=S.gpsSamples.filter(p=>now-p.t<180000);
-  const first=S.gpsSamples[0]||{lat,lng};
-  const movedM=distKm(first.lat,first.lng,lat,lng)*1000;
-  const smallArea=movedM<S.cfg.walkRadiusM;
-  const navigation=!!S.activeOrder&&(speed>S.cfg.driveSpeed||S.roles.driver);
-  if(S.userMarker)S.userMarker.setLatLng([lat,lng]);
-  else if(S.mapOn)placeUserMarker();
-  if(S.sb&&S.user)S.sb.from('users').upsert({id:S.user.id,lat,lng,last_speed_kmh:speed}).then(()=>{});
-
-  if(navigation){
-    clearTimeout(S.cloudTimer);clearTimeout(S.globeTimer);
-    S.cloudTimer=S.globeTimer=null;S.staticStart=null;
-    if(S.gpsState!=='NAVIGATION')showToast('NAVIGATION MODE 🛵');
-    S.gpsState='NAVIGATION';
-    if(!S.mapOn)toMap();
-    if(S.map&&!S.manualZoom){S.map.setView([lat,lng],17,{animate:true,duration:.6,noMoveStart:true});updateAltLabel('NAVIGATION 🛵');}
+  const sorted=eligible.map(d=>({d,dist:km(vl[0],vl[1],d.lat,d.lng)})).sort((a,b)=>a.dist-b.dist);
+  const assigned=sorted.slice(0,nDrivers).map(x=>x.d);
+  if(!assigned.length){
+    /* still draw vendor → client pending route */
+    $('routebadge').classList.add('on');
+    const r=await osrmRoute(vl[0],vl[1],cl[0],cl[1]);
+    $('routebadge').classList.remove('on');
+    const line=L.polyline(r.coords,{color:'#00d4ff',weight:4,opacity:.85,dashArray:'10 8',className:'r-deliver'}).addTo(S.map);
+    line.on('click',()=>openOrderThread(order));
+    S.routes.push(line);
+    const mid=r.coords[Math.floor(r.coords.length/2)]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
+    const del=calcDelivery(r.km,{night:isNight(),kg});
+    const lbl=L.marker(mid,{
+      icon:L.divIcon({className:'',iconAnchor:[80,10],
+        html:`<div class="gl" onclick="A.openOrderThreadById('${order.id}')">€${del.total.toFixed(2)} ✦ · WAITING DRIVER · TAP CHAT</div>`})
+    }).addTo(S.map);
+    S.routes.push(lbl);
     return;
   }
-
-  if(!S.staticStart||S.gpsState==='NAVIGATION'){
-    S.staticStart=now;clearTimeout(S.cloudTimer);clearTimeout(S.globeTimer);
-    S.cloudTimer=setTimeout(()=>{
-      if(!S.mapOn||S.gpsState==='NAVIGATION'||S.manualZoom)return;
-      S.gpsState='CLOUD';hideCloudLevel();showCloudLevel();
-      S.map.setView([S.mapLat,S.mapLng],10,{animate:true,duration:2});
-      updateAltLabel('CLOUD');showToast('CLOUD VIEW — city activity visible');
-    },S.cfg.cloudDelay*1000);
-    S.globeTimer=setTimeout(()=>{
-      if(S.gpsState==='NAVIGATION'||S.manualZoom)return;
-      S.gpsState='GLOBAL';updateAltLabel('GLOBAL');showToast('GLOBAL MODE — orbital rest');
-      if(S.mapOn)setTimeout(()=>{if(S.mapOn&&!S.manualZoom)toGlobe();},1200);
-    },S.cfg.globeDelay*1000);
-  }
-
-  if(S.mapOn&&S.map&&!S.manualZoom){
-    if(!smallArea&&speed>1.2){
-      S.gpsState='WALKING';
-      const c=S.map.getCenter();
-      if(distKm(c.lat,c.lng,lat,lng)>.12)S.map.panTo([lat,lng],{animate:true,duration:1.1,noMoveStart:true});
-      updateAltLabel('WALKING');
-    }else if(S.gpsState!=='CLOUD'){
-      S.gpsState='IDLE';updateAltLabel('IDLE');
-    }
-  }
-}
-
-/* ════ LOCATE ════ */
-function locate(){
-  if(!navigator.geolocation){showToast('Geolocation not available');return;}
-  startAutoGPS();
-  navigator.geolocation.getCurrentPosition(pos=>{handleGPS(pos);if(S.mapOn&&S.map)S.map.setView([S.mapLat,S.mapLng],16,{animate:true,duration:1});else if(S.globe){S.globe.controls().autoRotate=false;S.globe.pointOfView({lat:S.mapLat,lng:S.mapLng,altitude:0.22},2000);}},()=>showToast('Location permission required'),{enableHighAccuracy:true,timeout:8000,maximumAge:0});
-}
-
-/* ════ SOUND ════ */
-function updateSound(lyr){
-  if(!S.soundOn)return;if(!S.audioCtx){try{S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}}
-  if(S._osc)try{S._osc.stop();S._osc=null;}catch(e){}
-  try{const ctx=S.audioCtx,osc=ctx.createOscillator(),gain=ctx.createGain(),flt=ctx.createBiquadFilter();
-    if(lyr==='SOLAR'||lyr==='ORBITAL'){osc.type='sine';osc.frequency.value=48;flt.type='lowpass';flt.frequency.value=150;gain.gain.value=0.035;}
-    else if(lyr==='REGIONAL'){osc.type='triangle';osc.frequency.value=180;flt.type='bandpass';flt.frequency.value=300;gain.gain.value=0.022;}
-    else{osc.type='sawtooth';osc.frequency.value=90;flt.type='highpass';flt.frequency.value=70;gain.gain.value=0.014;}
-    osc.connect(flt);flt.connect(gain);gain.connect(ctx.destination);osc.start();
-    gain.gain.setTargetAtTime(0,ctx.currentTime+10,3);S._osc=osc;
-  }catch(e){}
-}
-
-/* ════ ISS ════ */
-function issTrack(){const u=async()=>{try{const r=await fetch('https://api.wheretheiss.at/v1/satellites/25544');if(!r.ok)return;const d=await r.json();S._iss={lat:d.latitude,lng:d.longitude};}catch(e){}};u();setInterval(u,5000);}
-
-/* ════ PROFILE SHEET ════ */
-function openProfSheet(){updateProfUI();$('vsp').classList.toggle('on',S.roles.vendor);$('dsp').classList.toggle('on',S.roles.driver);$('prof-sheet').classList.add('on');}
-function closeProfSheet(){$('prof-sheet').classList.remove('on');}
-
-/* ════ BUILDER ════ */
-function openBld(){if(!S.isOwner){showToast('Owner access required');return;}$('bld-panel').classList.add('on');}
-function closeBld(){$('bld-panel').classList.remove('on');}
-async function bldSend(){
-  const txt=$('bld-in').value.trim();if(!txt)return;$('bld-in').value='';
-  bldLog(txt,'u');S.bldHistory.push({role:'user',content:txt});
-  const th=bldLog('···','a');th.id='bth';
-  try{
-    const res=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},body:JSON.stringify({messages:S.bldHistory.slice(-10),system:`ASTRANOV MYRMIDON v1.2 builder. Owner: Notis Astranov. Manual-first system: map tap → triangle → 3 circles (Social/Team/Market). Transaction geometry on map. Three-layer auth (email+phone+password). Supabase: kzlabcrlrpbnfiiyrjvl. AI via ai-router. Be precise and implementable.`,lat:S.mapLat,lng:S.mapLng,layer:S.layer,mode:'builder'})});
-    const d=await res.json();$('bth')?.remove();
-    const reply=d.content?.[0]?.text||d.reply||'Deploy ai-router Edge Function.';
-    S.bldHistory.push({role:'assistant',content:reply});bldLog(reply,'a');
-    if(S.sb&&S.user)await S.sb.from('builder_sessions').insert({owner_id:S.user.id,prompt:txt,response:reply,provider:d.provider||'local'});
-  }catch(e){$('bth')?.remove();bldLog('Edge Function not reachable.','sys');}
-}
-function bldLog(txt,who){const log=$('bld-log'),d=document.createElement('div');d.className=`bl ${who}`;d.textContent=(who==='a'?'⬡ ':'')+txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d;}
-
-/* ════ SHEETS ════ */
-function openSheet(id){document.querySelectorAll('.sheet').forEach(s=>s.id!==id&&s.classList.remove('on'));$(id)?.classList.add('on');}
-function closeSheet(id){$(id)?.classList.remove('on');}
-
-/* ════ KEYS ════ */
-function setupKeys(){
-  $('msg-txt').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
-  $('ai-in').addEventListener('keydown',e=>{if(e.key==='Enter')sendAI(e.target.value);});
-  $('bld-in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();builderSend();}});
-  $('bld-in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,100)+'px';});
-  $('prof-pill').onclick=openProfSheet;
-  $('ai-in').addEventListener('focus',()=>$('ai-log').classList.add('on'));
-
-  /* ── TAP OUTSIDE ANY PANEL → CLOSE IT ── */
-  const PANELS=['#mkt-sheet','#menu-sheet','#team-sheet','#video-sheet','#ai-panel','#msg-panel','#prof-sheet','#builder-panel','#login-card','#tri-wrap','.orb','#del-overlay'];
-  document.addEventListener('pointerdown',e=>{
-    const inside=PANELS.some(sel=>{
-      try{return e.target.closest(sel);}catch(x){return false;}
+  /* Mark drivers as busy */
+  assigned.forEach(d=>{d.busy=true;if(d._marker){d._marker.getElement()?.querySelector('.mk')?.classList.add('busy')}});
+  $('routebadge').classList.add('on');
+  /* Real OSRM legs: driver → vendor (pickup) and vendor → client (delivery) */
+  const legs=await Promise.all(assigned.map(d=>Promise.all([
+    osrmRoute(d.lat,d.lng,vl[0],vl[1]),
+    osrmRoute(vl[0],vl[1],cl[0],cl[1])
+  ])));
+  $('routebadge').classList.remove('on');
+  let totalKm=0;
+  legs.forEach(([pickup,deliver],i)=>{
+    const d=assigned[i];
+    totalKm+=(pickup.km||0)+(deliver.km||0);
+    /* Pickup leg — gold dashed */
+    const pLine=L.polyline(pickup.coords,{
+      color:'#c6a64a',weight:3,opacity:.78,dashArray:'8 6',className:'r-pickup'
+    }).addTo(S.map);
+    pLine.on('click',()=>openOrderThread(order,d));
+    S.routes.push(pLine);
+    /* Delivery leg — electric blue glow */
+    const dLine=L.polyline(deliver.coords,{
+      color:'#00d4ff',weight:4.5,opacity:.95,className:'r-deliver'
+    }).addTo(S.map);
+    dLine.on('click',()=>openOrderThread(order,d));
+    S.routes.push(dLine);
+    /* Animate driver marker along the path */
+    animateDriver(d,[...pickup.coords,...deliver.coords],()=>{
+      d.busy=false;
+      toast(`${d.name} delivered ✓`);
     });
-    if(!inside){
-      closeAllPanels();
-      hideTriangle();
+  });
+  /* Triangle/polygon shape (relationship overlay) */
+  const pts=[cl,vl,...assigned.map(d=>[d.lat,d.lng])];
+  const shape=L.polygon(pts,{
+    color:split?'#c6a64a':'#00d4ff',
+    fillColor:split?'#c6a64a':'#00d4ff',
+    fillOpacity:.04,weight:1,dashArray:'4 6',opacity:.45,interactive:false
+  }).addTo(S.map);
+  S.routes.push(shape);
+  /* Price chip on midpoint of first delivery leg */
+  const dCoords=legs[0][1].coords;
+  const mid=dCoords[Math.floor(dCoords.length/2)]||[(vl[0]+cl[0])/2,(vl[1]+cl[1])/2];
+  const distance=legs[0][1].km||km(vl[0],vl[1],cl[0],cl[1]);
+  const del=calcDelivery(distance,{night:isNight(),kg});
+  const drvNames=assigned.map(d=>d.name.split(' ')[0]).join(' + ');
+  const chipHtml=split?
+    `<div class="gl gold" onclick="A.openOrderThreadById('${order.id}')">€${del.total.toFixed(2)} ✦ · ${nDrivers} DRIVERS · TAP TO CHAT</div>`:
+    `<div class="gl" onclick="A.openOrderThreadById('${order.id}')">€${del.total.toFixed(2)} ✦ · ${drvNames} · ${distance.toFixed(1)}km · TAP TO CHAT</div>`;
+  const lbl=L.marker(mid,{
+    icon:L.divIcon({className:'',iconAnchor:[110,10],html:chipHtml})
+  }).addTo(S.map);
+  S.routes.push(lbl);
+  /* Save the order so we can re-open thread by id */
+  S.threads[order.id]=S.threads[order.id]||{messages:[
+    {who:'system',text:`Order placed · ${vendor.name} → you · ${assigned.map(d=>d.name).join(', ')}`}
+  ],meta:{vendor,drivers:assigned}};
+  toast(`Order routed · ${assigned.map(d=>d.name.split(' ')[0]).join(' + ')} en route`);
+  setTimeout(()=>toast(`Tap the blue line to chat with the driver`),2200);
+}
+
+function animateDriver(driver,path,done){
+  if(!path.length||!driver._marker)return;
+  let i=0;
+  const stepMs=Math.max(120,Math.min(800,12000/path.length));
+  const id=setInterval(()=>{
+    if(!S.map||!driver._marker){clearInterval(id);return;}
+    i++;
+    if(i>=path.length){clearInterval(id);done&&done();return;}
+    driver._marker.setLatLng(path[i]);
+    driver.lat=path[i][0];driver.lng=path[i][1];
+  },stepMs);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MESSAGING — instant chat on lines, triangles, circles, drivers
+   ═══════════════════════════════════════════════════════════════ */
+function openOrderThread(order,driver){
+  const id=order.id;
+  const title=driver?`${driver.vehicle} ${driver.name} · ORDER`:`ORDER · ${order.vendor.name}`;
+  S.msgCtx={kind:'order',id,driver,order};
+  $('msg-title').textContent=title;
+  renderThread(id);
+  openMsg();
+}
+function openOrderThreadById(id){
+  const t=S.threads[id];
+  if(!t)return;
+  S.msgCtx={kind:'order',id,driver:t.meta.drivers&&t.meta.drivers[0],order:{id,vendor:t.meta.vendor}};
+  $('msg-title').textContent=`ORDER · ${t.meta.vendor.name}`;
+  renderThread(id);
+  openMsg();
+}
+function openDriverThread(d){
+  const id=`drv-${d.id}`;
+  S.msgCtx={kind:'driver',id,driver:d};
+  $('msg-title').textContent=`${d.vehicle} ${d.name} · ★${d.rating}`;
+  if(!S.threads[id]){
+    S.threads[id]={messages:[
+      {who:d.name,text:`Hi! I'm ${d.name}, ${d.vehicle.includes('🛵')?'moped':d.vehicle.includes('🚗')?'car':'bike'} driver. ${d.online?'Online and ready.':'Currently offline.'} Capacity ${d.kg_max}kg.`}
+    ]};
+  }
+  renderThread(id);
+  openMsg();
+}
+function openCircleThread(c){
+  const id=`cir-${c.id}`;
+  S.msgCtx={kind:'circle',id,circle:c};
+  $('msg-title').textContent=`◯ ${c.name.toUpperCase()} · ${c.members} MEMBERS`;
+  if(!S.threads[id]){
+    S.threads[id]={messages:[
+      {who:'Local',text:`Welcome to ${c.name}. ${c.members} people active here.`},
+      {who:'Maria',text:'Anyone heading to the harbour today?'}
+    ]};
+  }
+  renderThread(id);
+  openMsg();
+}
+function renderThread(id){
+  const t=S.threads[id]||{messages:[]};
+  $('msg-log').innerHTML=t.messages.map(m=>{
+    const me=m.who==='You'||m.who===(S.prof?.display_name);
+    return `<div class="msg ${me?'u':'a'}"><div class="who">${m.who}</div>${escapeHtml(m.text)}</div>`;
+  }).join('');
+  $('msg-log').scrollTop=$('msg-log').scrollHeight;
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function openMsg(){$('msg-panel').classList.add('on');setTimeout(()=>$('msg-in').focus(),350);}
+function closeMsg(){$('msg-panel').classList.remove('on');}
+function sendMsg(){
+  const txt=$('msg-in').value.trim();if(!txt||!S.msgCtx)return;
+  $('msg-in').value='';
+  const id=S.msgCtx.id;
+  S.threads[id]=S.threads[id]||{messages:[]};
+  const me=S.prof?.display_name||S.user?.email?.split('@')[0]||'You';
+  S.threads[id].messages.push({who:me,text:txt});
+  renderThread(id);
+  /* Auto-reply for driver/circle/order */
+  setTimeout(()=>{
+    let reply='';
+    const ctx=S.msgCtx;
+    if(ctx.kind==='driver'&&ctx.driver){
+      const d=ctx.driver;
+      reply=d.online?`${d.name}: copy that. ETA on my way.`:`${d.name} is offline. They'll see this when back online.`;
+    }else if(ctx.kind==='order'&&ctx.driver){
+      reply=`${ctx.driver.name}: got it 👍 see you soon.`;
+    }else if(ctx.kind==='circle'){
+      reply=`Local: heard. Will share with the circle.`;
     }
-  },{passive:true});
-
-  /* ── SWIPE DOWN ON ANY PANEL → CLOSE IT ── */
-  let swipeY=0;
-  document.addEventListener('touchstart',e=>{swipeY=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchend',e=>{
-    const dy=e.changedTouches[0].clientY-swipeY;
-    if(dy>60){/* swipe down 60px+ */
-      const openPanel=document.querySelector('.sheet.on,#msg-panel.on,#prof-sheet.on,#ai-panel.on,#builder-panel.on');
-      if(openPanel)openPanel.classList.remove('on');
+    if(reply){
+      S.threads[id].messages.push({who:reply.split(':')[0],text:reply.split(':').slice(1).join(':').trim()});
+      renderThread(id);
     }
-  },{passive:true});
-
-  /* ── ESC KEY ── */
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAllPanels();hideTriangle();}});
-
-  /* ── MIC starts on first touch ── */
-  document.addEventListener('touchend',()=>{
-    if(!S.micOn&&!S._micStarted){S._micStarted=true;startMic();}
-  },{once:true,passive:true});
+  },800+Math.random()*1200);
+  /* Persist to supabase if available */
+  if(S.sb&&S.user){
+    try{S.sb.from('messages').insert({
+      sender_id:S.user.id,thread_id:id,body:txt,kind:S.msgCtx.kind
+    });}catch(e){}
+  }
 }
 
-function closeAllPanels(){
-  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
-  $('prof-sheet')?.classList.remove('on');
-  $('msg-panel')?.classList.remove('on');
-  $('ai-panel')?.classList.remove('on');
-  $('bld-panel')?.classList.remove('on');
-  $('del-overlay')?.classList.remove('on');
-  $('ai-log')?.classList.remove('on');
-  $('order-bar')?.classList.remove('on');
+/* ═══════════════════════════════════════════════════════════════
+   SHEETS / NAV
+   ═══════════════════════════════════════════════════════════════ */
+function openSheet(id){closeAllSheets();$(id).classList.add('on');}
+function closeSheet(id){$(id).classList.remove('on');}
+function closeAllSheets(){document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));$('msg-panel').classList.remove('on');$('del-ovr').classList.remove('on');}
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTH — Supabase
+   ═══════════════════════════════════════════════════════════════ */
+function initSB(){
+  try{
+    if(!window.supabase)return;
+    S.sb=window.supabase.createClient(SB_URL,SB_KEY);
+    S.sb.auth.onAuthStateChange((ev,sess)=>{
+      S.user=sess?.user||null;
+      if(S.user)loadProfile();
+      else{S.prof=null;updatePill();}
+    });
+    S.sb.auth.getSession().then(({data:{session}})=>{
+      S.user=session?.user||null;
+      if(S.user)loadProfile();
+    });
+  }catch(e){console.warn('supabase init:',e);}
+}
+async function loadProfile(){
+  if(!S.sb||!S.user)return;
+  try{
+    const {data}=await S.sb.from('users').select('*').eq('id',S.user.id).single();
+    if(data){
+      S.prof=data;
+      S.roles={
+        client:data.role_client!==false,
+        vendor:!!data.role_vendor,
+        driver:!!data.role_driver
+      };
+    }else{
+      /* create profile row */
+      const meta=S.user.user_metadata||{};
+      const newProf={id:S.user.id,email:S.user.email,display_name:meta.full_name||S.user.email.split('@')[0],wallet_astran:0,role_client:true};
+      await S.sb.from('users').insert(newProf);
+      S.prof=newProf;
+    }
+  }catch(e){
+    /* fallback profile */
+    S.prof={display_name:S.user.email.split('@')[0],wallet_astran:0,email:S.user.email};
+  }
+  updatePill();
+  updateProfSheet();
+}
+function updatePill(){
+  if(S.user){
+    $('fab-login').classList.add('hide');
+    $('pill').classList.add('on');
+    const nm=S.prof?.display_name||S.user.email.split('@')[0];
+    $('pill-av').textContent=nm[0].toUpperCase();
+    $('pill-bal').textContent=(+(S.prof?.wallet_astran||0)).toFixed(2)+' ✦';
+  }else{
+    $('fab-login').classList.remove('hide');
+    $('pill').classList.remove('on');
+  }
+}
+function updateProfSheet(){
+  if(!S.user)return;
+  const nm=S.prof?.display_name||S.user.email.split('@')[0];
+  $('ps-av').textContent=nm[0].toUpperCase();
+  $('ps-name').textContent=nm;
+  $('ps-email').textContent=S.user.email;
+  $('ps-bal').textContent=`✦ ${(+(S.prof?.wallet_astran||0)).toFixed(2)} ASTRAN`;
+  ['client','vendor','driver'].forEach(r=>{
+    $(`role-${r[0]}`).classList.toggle('on',!!S.roles[r]);
+  });
 }
 
-/* ════ UTILS ════ */
-function calcDel(km,opts={}){const base=Math.max(1,+(1*km).toFixed(2));let ex=0;if(opts.night)ex+=1;if(opts.weather)ex+=1;const kg=opts.kg||0;if(kg>13)ex+=1+Math.floor((Math.min(kg,33)-13)/13);return{base,extras:ex,total:+(base+ex).toFixed(2),night:!!opts.night};}
-function distKm(la1,ln1,la2,ln2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLn=(ln2-ln1)*Math.PI/180;const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLn/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
-function isNight(){const h=new Date().getHours();return h>=21||h<9;}
-function cStr(la,ln){return `${Math.abs(la).toFixed(3)}°${la>=0?'N':'S'} ${Math.abs(ln).toFixed(3)}°${ln>=0?'E':'W'}`;}
-function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),3500);}
-function openVendorMenu(v){openVendMenu(v);}/* alias for map click */
-
-/* ════ LOADING ════ */
-function animateLoading(){
-  const steps=[[15,'CONNECTING'],[32,'GLOBE ENGINE'],[52,'EARTH TILES'],[70,'CELESTIAL'],[88,'MYRMIDON'],[100,'ONLINE']];
-  let i=0;const tick=()=>{if(i>=steps.length){setTimeout(()=>{$('loading').classList.add('gone');setTimeout(()=>{try{$('loading').remove();}catch(e){}},1200);},400);return;}const[p,t]=steps[i++];$('ld-b').style.width=p+'%';$('ld-s').textContent=t;setTimeout(tick,280+Math.random()*200);};
-  setTimeout(tick,300);
+function openAuth(){openSheet('auth-sheet');}
+function authMode(m){
+  S.authMode=m;
+  $('auth-in').classList.toggle('on',m==='in');
+  $('auth-up').classList.toggle('on',m==='up');
+  $('auth-extra').style.display=m==='up'?'block':'none';
+  $('auth-go').textContent=m==='in'?'SIGN IN':'CREATE ACCOUNT';
+  $('auth-err').textContent='';
+}
+async function authSubmit(){
+  const email=$('i-email').value.trim();
+  const pw=$('i-pw').value;
+  $('auth-err').textContent='';
+  if(!email||!email.includes('@')){$('auth-err').textContent='Valid email required';return;}
+  if(pw.length<8){$('auth-err').textContent='Password ≥ 8 characters';return;}
+  if(!S.sb){$('auth-err').textContent='Connection unavailable';return;}
+  const btn=$('auth-go');btn.textContent='···';
+  try{
+    if(S.authMode==='in'){
+      const {error}=await S.sb.auth.signInWithPassword({email,password:pw});
+      if(error){$('auth-err').textContent=error.message;btn.textContent='SIGN IN';return;}
+    }else{
+      const name=$('i-name').value.trim()||email.split('@')[0];
+      const {error}=await S.sb.auth.signUp({email,password:pw,options:{data:{full_name:name}}});
+      if(error){$('auth-err').textContent=error.message;btn.textContent='CREATE ACCOUNT';return;}
+    }
+    closeSheet('auth-sheet');
+    toast('Welcome to Astranov ✦');
+    btn.textContent=S.authMode==='in'?'SIGN IN':'CREATE ACCOUNT';
+  }catch(e){
+    $('auth-err').textContent='Network error';
+    btn.textContent=S.authMode==='in'?'SIGN IN':'CREATE ACCOUNT';
+  }
+}
+async function signOut(){
+  if(S.sb)await S.sb.auth.signOut();
+  S.user=null;S.prof=null;updatePill();
+  closeSheet('prof-sheet');
+  toast('Signed out');
 }
 
-return{
-  init,authTab,eyeTap,authSubmit,dismissLogin,signOut,
-  toggleRole,saveVendor,saveDriver,topup,
-  openProfSheet,closeProfSheet,
-  openMkt,openVendMenu,_vById,addCart,checkout,closeDel,confirmOrder,
-  openSheet,closeSheet,
-  selPlat,pinVideo,
-  createTeam,
-  openThread,sendMsg,
-  openAI,closeAI,sendAI,
-  triTap,optTap,
-  toMap,toCityUserMap,toGlobe,locate,
-  openBld,closeBld,bldSend,
-  showToast,
-  /* Real routing — exposed for AI / programmatic use */
-  osrmRoute,drawDeliveryTriangle,clearActiveRoutes,nearestDrivers,
-  drivers:()=>drivers,vendors:()=>vendors,
+function openProfile(){
+  if(!S.user)return openAuth();
+  updateProfSheet();
+  openSheet('prof-sheet');
+}
+
+function toggleRole(r){
+  if(!S.user)return openAuth();
+  S.roles[r]=!S.roles[r];
+  if(!S.roles.client&&!S.roles.vendor&&!S.roles.driver)S.roles.client=true;
+  $(`role-${r[0]}`).classList.toggle('on',!!S.roles[r]);
+  if(S.sb)S.sb.from('users').update({
+    [`role_${r}`]:S.roles[r]
+  }).eq('id',S.user.id).then(()=>{});
+  toast(`${r.toUpperCase()} ${S.roles[r]?'on':'off'}`);
+}
+
+async function topup(amt){
+  if(!S.user)return openAuth();
+  S.prof=S.prof||{};
+  S.prof.wallet_astran=(+(S.prof.wallet_astran||0))+amt;
+  if(S.sb){
+    try{
+      await S.sb.from('users').update({wallet_astran:S.prof.wallet_astran}).eq('id',S.user.id);
+      await S.sb.from('wallet_transactions').insert({user_id:S.user.id,type:'topup',amount_astran:amt,note:'Top-up'});
+    }catch(e){}
+  }
+  updatePill();
+  updateProfSheet();
+  toast(`+${amt} ✦ credited`);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VOICE — Web Speech API, simple toggle
+   ═══════════════════════════════════════════════════════════════ */
+function micToggle(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice not supported — type to message');return;}
+  if(S.micOn){try{S.rec.stop()}catch(e){}S.micOn=false;$('fab-mic').classList.remove('live');return;}
+  try{
+    S.rec=new SR();
+    S.rec.lang='en-US';S.rec.continuous=false;S.rec.interimResults=false;
+    S.rec.onresult=e=>{
+      const t=e.results[0][0].transcript.trim();
+      handleVoice(t);
+    };
+    S.rec.onend=()=>{S.micOn=false;$('fab-mic').classList.remove('live');};
+    S.rec.onerror=e=>{
+      S.micOn=false;$('fab-mic').classList.remove('live');
+      if(e.error==='not-allowed')toast('Mic permission denied');
+    };
+    S.rec.start();
+    S.micOn=true;
+    $('fab-mic').classList.add('live');
+    toast('Listening…',1500);
+  }catch(e){toast('Mic error')}
+}
+
+function handleVoice(text){
+  toast(`🗣 ${text}`,3000);
+  const t=text.toLowerCase();
+  /* City names → enter that city */
+  for(const c of CITIES){
+    if(t.includes(c.name.toLowerCase())){
+      if(S.view==='map')toGlobe();
+      setTimeout(()=>enterCity(c),700);
+      return;
+    }
+  }
+  if(/back|globe|earth|home/.test(t)){toGlobe();return;}
+  if(/market|shop|order|food|eat/.test(t)){
+    if(S.view==='map'&&VENDORS[0])openVendor(VENDORS.find(v=>v.open)||VENDORS[0]);
+    else toast('Open a city first');
+    return;
+  }
+  if(/sign in|login|log in/.test(t)){openAuth();return;}
+  /* Default: speak it as a message if a thread is open */
+  if($('msg-panel').classList.contains('on')){
+    $('msg-in').value=text;sendMsg();
+    return;
+  }
+  toast('Say a city name, "back to globe", or "marketplace"',3500);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BOOT
+   ═══════════════════════════════════════════════════════════════ */
+function bootLoader(){
+  const steps=[[18,'CONNECTING'],[40,'EARTH ENGINE'],[65,'ATLAS TILES'],[85,'ROUTING NET'],[100,'ONLINE']];
+  let i=0;
+  const tick=()=>{
+    if(i>=steps.length){
+      setTimeout(()=>{$('loading').classList.add('gone');setTimeout(()=>$('loading').remove(),900);},250);
+      return;
+    }
+    const [p,t]=steps[i++];
+    $('lb-i').style.width=p+'%';
+    $('lb-s').textContent=t;
+    setTimeout(tick,260+Math.random()*180);
+  };
+  setTimeout(tick,180);
+}
+
+function boot(){
+  console.info('%cASTRANOV%c · Internet OS · v0.3','color:#00d4ff;font-weight:900;text-shadow:0 0 8px #00d4ff','color:#888');
+  initStars();
+  bootLoader();
+  initSB();
+  initGlobe();
+  /* Map deps may take a moment — Leaflet loads async */
+  /* Greet */
+  setTimeout(()=>toast('Tap a city on Earth to enter',3500),1600);
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+else boot();
+
+/* ── Public API ── */
+return {
+  enterCity,toGlobe,
+  openAuth,authMode,authSubmit,signOut,
+  openProfile,toggleRole,topup,
+  openVendor,addItem,removeItem,
+  checkout,closeDel,confirmOrder,
+  openSheet,closeSheet,closeAllSheets,
+  closeMsg,sendMsg,
+  openOrderThreadById,
+  micToggle,
+  /* For debugging / external */
+  state:()=>S, vendors:()=>VENDORS, drivers:()=>DRIVERS,
+  osrmRoute,
 };
 })();
-window.M=M;
-document.addEventListener('DOMContentLoaded',M.init);
+window.A=A;
+/* Submit on Enter in inputs */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter')return;
+  const t=e.target;
+  if(t.id==='msg-in')A.sendMsg();
+  else if(t.id==='i-email'||t.id==='i-pw'||t.id==='i-name')A.authSubmit();
+});
+/* Tap outside sheets to close */
+document.addEventListener('click',e=>{
+  if(e.target.closest('.sheet')||e.target.closest('#orderbar')||e.target.closest('#del-ovr'))return;
+  if(e.target.closest('#fab-login')||e.target.closest('#pill')||e.target.closest('#fab-back')||e.target.closest('#fab-mic'))return;
+  if(e.target.closest('.leaflet-marker-icon'))return;
+  /* Don't auto-close — let Esc / × / handle close. */
+},{passive:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')A.closeAllSheets();});
 </script>
 </body>
 </html>
