@@ -1,4 +1,4 @@
-// === PERF LAZY + TURBO — defer 574KB pack · adaptive boot · no duplicate RAF load ===
+// === PERF LAZY + TURBO — defer pack · force lite path · low DPR ===
 // AI HANDOFF: astranov-continuity.js → features.perfLazyBoot
 (function perfLazyBoot() {
   const LM = window.LazyModules;
@@ -8,10 +8,12 @@
   const mobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     || (navigator.maxTouchPoints > 1 && window.innerWidth < 960);
 
+  // Re-assert lite mode (app.js used to wipe _globePerfLite = false after boot)
+  if (mobile()) window._globePerfLite = true;
+
   const delayMs = () => {
-    const base = window.SlumberManager?.deferredDelay?.() ?? 1400;
-    // Longer defer on phone so first interactions stay smooth
-    return mobile() ? Math.max(base, 6500) : Math.max(base, 1800);
+    const base = window.SlumberManager?.deferredDelay?.() ?? 1800;
+    return mobile() ? Math.max(base, 5000) : Math.max(base, 2200);
   };
   const bootAt = () => window._bootAt || Date.now();
 
@@ -35,7 +37,7 @@
     if (w <= 0) return Promise.resolve().then(fn);
     return new Promise(resolve => {
       const go = () => Promise.resolve().then(fn).then(resolve);
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: w + 800 });
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: w + 900 });
       else setTimeout(go, w);
     });
   }
@@ -57,7 +59,6 @@
     }).catch((err) => {
       console.error('[perf-lazy] deferred load failed', err);
       window.MissionSupportReporter?.recordProblem?.('deferred_load', String(err?.message || err));
-      window.GlobeDeck?.setPreview?.('Fleet pack loading — tap or retry refresh');
       return fn?.();
     }));
   };
@@ -73,7 +74,7 @@
   if (origSchedule) {
     LM.schedule = function() {
       if (shouldDefer()) {
-        const w = Math.max(waitMs(), mobile() ? 5000 : 2200);
+        const w = Math.max(waitMs(), mobile() ? 6000 : 3000);
         setTimeout(() => {
           if (window._lazyUserReady || window._deferredBootDone) origSchedule();
         }, w);
@@ -99,20 +100,22 @@
     };
   }
 
-  function capMobileDpr() {
+  function capDprHard() {
     const r = window.renderer;
-    if (!r?.setPixelRatio || r._perfDprCapped) return;
-    if (!mobile()) return;
-    r._perfDprCapped = true;
-    const cap = Math.min(window.SlumberManager?.quality?.pixelRatio ?? 0.75, 0.85);
+    if (!r?.setPixelRatio) return;
+    const cap = mobile()
+      ? Math.min(window.SlumberManager?.quality?.pixelRatio ?? 0.65, 0.7)
+      : Math.min(window.SlumberManager?.quality?.pixelRatio ?? 1, 1);
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
   }
 
+  capDprHard();
   let hookN = 0;
   const hookIv = setInterval(() => {
     hookN++;
     wrapBrainBoot();
-    if (window.SlumberManager?._inited) capMobileDpr();
-    if (hookN > 25) clearInterval(hookIv);
-  }, 200);
+    if (mobile()) window._globePerfLite = true;
+    if (window.SlumberManager?._inited) capDprHard();
+    if (hookN > 20) clearInterval(hookIv);
+  }, 250);
 })();
