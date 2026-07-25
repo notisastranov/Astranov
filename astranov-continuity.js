@@ -42,7 +42,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712050000-cli-field-only',
+  version: '20260712060000-perf-sticky-fix',
   updated: '2026-07-14',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -319,9 +319,11 @@ const AstranovContinuity = {
         'First user tap sets _lazyUserReady → immediate ensure',
         'LazyModules.schedule waits for tap or long timeout (mobile 5s+)',
         'BrainNeurons.boot deduped; ensureBrain 2.8s after FieldHud.boot',
-        'animate: adaptive targetFps (12–60); skip idle frames; 60fps only drag/inertia',
-        'SlumberManager targetFps per tier; mobile defaults to conserve',
-        'Globe: 64 stars, earth 16 segments, no antialias on mobile, DPR ≤0.85 touch',
+        'CRITICAL: never force window._globePerfLite=false after mobile detect',
+        'animate: adaptive targetFps (~10–45); skip idle frames; no subsystem work when not due',
+        'WebGL: antialias off, alpha off, low-power, no ACES tone mapping, earth 12x12, 36 stars',
+        'Mobile tier forced conserve/slumber; DPR ≤0.7 touch / ≤1 desktop',
+        'Radar setInterval 250ms; pause when idle 45s; logo RAF stops when voice idle',
         'THREE/WebGL guarded — CLI boots if globe fails; host gate first',
         'three.js: cdnjs + onerror jsdelivr fallback',
         'sw.js network-first for all /astranov-*.js',
@@ -373,6 +375,7 @@ const AstranovContinuity = {
     { id: '20260712030000-spacenet-multi', note: 'SpaceNet brand, multi-rail, pilot multi-stop, 3%+15%, confirms, +/send input row' },
     { id: '20260712040000-spec-lock', note: 'Full progress written into continuity + ASTRANOV_SPECS.md' },
     { id: '20260712050000-cli-field-only', note: 'CLI input seamless — no +/send beside field; Enter sends; + edge only' },
+    { id: '20260712060000-perf-sticky-fix', note: 'Fix _globePerfLite wipe; no AA/tone map; lower FPS/DPR; radar 4fps; logo RAF idle stop' },
   ],
 
   /**
