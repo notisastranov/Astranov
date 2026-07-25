@@ -3,15 +3,10 @@
  * ASTRANOV AI CONTINUITY MANIFEST — read before editing or deploying
  * =============================================================================
  *
- * SPECS (when owner/agent says "specs"):
- *   1. SPECS.md          — unified human text at repo root
- *   2. THIS FILE         — machine contract (window.AstranovContinuity)
- * Keep SPECS.md in sync when features change.
- *
  * PURPOSE
  *   Machine- and human-readable contract for what the live app MUST keep doing.
- *   New AI tools: read SPECS.md + this file first, then the module named in each
- *   feature's `owner` field. Do not rip out patches listed under `doNotRemove`.
+ *   New AI tools: read this file first, then the module named in each feature's
+ *   `owner` field. Do not rip out patches listed under `doNotRemove`.
  *
  * LIVE
  *   Site: https://astranov.eu
@@ -31,52 +26,29 @@
  * BUNDLE SPLIT
  *   astranov-app.js      (~440KB) Globe, SuperCli, LazyModules stub, boot — parse-time WebGL
  *   astranov-deferred.js (~575KB) Commerce, MapComms, CodersHub, CityMap, BrainNeurons full
- *   astranov-perf-lazy.js        Defers deferred load until idle OR user tap
+ *   astranov-perf-lazy.js        Defers deferred load until SlumberManager delay OR user tap
  *   astranov-field-hud.js        Top-right field, radar, speed, miner rig opener
  *   astranov-mpp-tile.js         MenuProfilePostTile (+ hijack, locate, video, marketplace)
  *   astranov-galactic-sky.js     Sky layer
  *
  * =============================================================================
  */
-/* SPECS: continuity source — human twin is SPECS.md at repo root */
 const AstranovContinuity = {
-  version: '20260723340000-clean-shell',
-  updated: '2026-07-23',
-  specsHuman: 'SPECS.md',
-  /** Owner rule: every product change updates SPECS.md + this object in the same deploy. */
-  specsPolicy: 'always-update-SPECS-with-code',
-  shell: {
-    summary: 'Clean deep-space shell — void black, navy glass, steel text; no pastel cyan; no corrupt CSS',
-    build: '20260723340000',
-    palette: ['--void #000', '--ink #02060c', '--text #b8c4d4', '--accent #1e4d8c', '--accent-hot #3d6eb0'],
-    forbidden: ['pastel cyan floods', 'orphan #8ab CSS', 'coders-continuation chrome', 'permanent +', 'os-dock', 'first-run-coach'],
-  },
-  cliActivityLog: {
-    rule: 'USE THE CLI — GlobeDeck.log / AciCli.print / ActivityLog only',
-    summary: 'All errors and task activity log to CLI scroll — never sticky red bars',
-    ban: ['#astranov-hard-error fixed overlay'],
-    use: ['AciCli.print', 'GlobeDeck.log', 'ActivityLog'],
-  },
+  version: '20260712020000-delivery-finish',
+  updated: '2026-07-14',
 
   /**
    * Markdown / issues / sessions that MUST NOT drive implementation.
    */
   supersededDocs: {
-    authoritative: ['SPECS.md', 'astranov-continuity.js', 'CLAUDE.md', 'ASTRANOV_SPACENET_MISSION.md (vision only)'],
-    /** Removed from repo 2026-07-20 so agents are not confused by Claude/ChatGPT/Grok recycled specs */
-    deleted: [
-      'ASTRANOV_GROK_SPECS.md',
-      'ASTRANOV_GROK_FULL_HANDOVER.md',
-      'ASTRANOV_LIVING_TRUTH.md',
-      'ENGINEERING-ESCALATION-2026-07-05.md',
-      'index.restored.html',
-      '.grok/HELM.md',
-    ],
+    authoritative: ['astranov-continuity.js', 'CLAUDE.md', 'ASTRANOV_SPACENET_MISSION.md (vision only)'],
+    deprecatedStubs: ['ASTRANOV_GROK_SPECS.md'],
+    deleted: ['ASTRANOV_GROK_FULL_HANDOVER.md', 'index.restored.html'],
     notAuthoritative: [
-      'ChatGPT / Claude / Cursor / Grok session transcripts and compaction summaries',
+      'Grok/Cursor/Claude session transcripts and compaction summaries',
       'GitHub issues #97 #99 old P0 handoff checklists',
       'scripts/patch-trackball-cli.mjs build pins (historical)',
-      'Any chat-recycled “triangle of truth” markdown dumps',
+      'Chat-recycled “triangle of truth” (MISSION + GROK_SPECS + CLAUDE)',
     ],
     outdatedRules: [
       'index.html only — no new files',
@@ -165,65 +137,33 @@ const AstranovContinuity = {
       doNotRemove: ['_patchVideoCall', '_patchCliBar', '_openVideoCall'],
     },
 
-    zoomNationalCity: {
-      summary: 'Zoom must reach national and city/streets; city opens Leaflet map',
-      owner: 'js/09-zoom-tiers.js + js/phase-critical.js + js/61-city-map.js',
-      behavior: [
-        'Tiers: solar → global → national → regional → city → neighborhood',
-        'City/neighborhood handoff: CityMap.openAt / onCamera',
-        'Leave city: CityMap.returnToGlobe',
-        'ENTER_Z ~1.50 EXIT_Z ~1.90',
-      ],
-      doNotRemove: ['ZoomTiers', 'CityMap.openAt', 'returnToGlobe'],
-    },
-
-    multiTilePlaces: {
-      summary: 'Long-press MultiTile with unique real-world place names, pin adjust, CLI recovery',
-      owner: 'js/62-multi-tile.js',
-      selectors: ['#multi-tile', '#mt-close', '#mt-clear', '#mt-place-name', '#mt-lat', '#mt-lng'],
-      commands: ['place list', 'places', 'place open <name|id>'],
-      behavior: [
-        'Long-press any point at solar/global/national/city opens MultiTile (CSS injected)',
-        'No permanent + button — only offer #super-add-fab after failed add (js/92-add-plus-offer.js)',
-        'Nudge N/S/E/W + lat/lng apply for accurate pin',
-        'Clear + Close buttons required',
-        'Save stores unique name (reverse-geocode + role) in astranov:places-v1',
-        'CLI place open recovers saved places',
-      ],
-      doNotRemove: ['MultiTile', '_injectCss', 'resolvePlaceName', 'openPlace', 'clearPlace'],
-    },
-
-    deliveryDNA: {
-      summary: 'Instant internal AVC pay + city street routes with avoid-lights / hidden / fast prefs',
-      owner: 'js/85-delivery-dna.js',
-      selectors: [],
-      commands: [
-        'dna / dna status',
-        'route avoid traffic lights',
-        'route avoid populated roads',
-        'route use hidden roads',
-        'route fast roads',
-        'deliver route …',
-        'pay instant <amount>',
-      ],
-      behavior: [
-        'OSRM alternatives scored for prefs; exclude motorway/toll when set',
-        'DrivingView.fetchRoadRoute uses DeliveryDNA when available',
-        'Instant Coins pay via balance / ledger / rpc instant_avc_pay',
-        'Full flow: quote → instant pay → street route vendor→drop',
-      ],
-      doNotRemove: ['DeliveryDNA', 'fetchStreetRoute', 'payInstant', 'runDeliveryFlow'],
-    },
-
     deliveryMarketplace: {
-      summary: 'Monetization path: browse → cart → pay AVC → track delivery',
-      owner: 'astranov-mpp-tile.js + astranov-deferred.js (Commerce)',
-      selectors: ['#mpp-section-market', '#mpp-market-summary', '#miner-rig-panel'],
+      summary: 'Monetization path: browse → cart → pay AVC → track delivery → driver claim',
+      owner: 'astranov-mpp-tile.js + astranov-deferred.js (Commerce) + app MarketplaceDeliveryEngine',
+      selectors: [
+        '#mpp-section-market', '#mpp-market-summary', '#mpp-driver-jobs',
+        '#delivery-route-hud', '#vendor-menu',
+      ],
+      flow: [
+        'set_delivery / pin → MapPins.setClientDelivery → window._clientDelivery',
+        'browse_shops → Commerce.showPicker → open vendor → cart items',
+        'place_cart → Commerce.placeCart (uses _clientDelivery) → order-intake',
+        'onOrderPlaced → MarketplaceDeliveryEngine triangle + OrderTracking',
+        'track_delivery → loadMyActive + showHud #delivery-route-hud',
+        'driver_jobs → FieldBrain.listOpenJobs → claim_job → FieldBrain.claimDelivery',
+        'driver HUD: accept → pickup → en_route → delivered via order-intake status_update',
+      ],
       behavior: [
-        'refreshMarketplace shows delivery pin, vendor, cart count, AVC total',
-        'Client role primary foot: Place order when cart has items else Set delivery',
-        'Commerce.placeCart / placeOrder via order-intake edge function',
-        'MarketplaceDeliveryEngine missions + #delivery-route-hud for drivers/clients',
+        'refreshMarketplace: pin, shop, cart, quote total AVC, active order status',
+        'Client foot: Place order when cart has items else Set delivery',
+        'place_cart after success: loadMyActive + showHud',
+        'track_delivery loads customer/driver open orders from Supabase',
+        'Commerce.placeCart passes deliveryLat/Lng from _clientDelivery',
+        'MarketplaceDeliveryEngine.loadMyActive fetches customer_id + driver_id open orders',
+      ],
+      doNotRemove: [
+        'refreshMarketplace', 'place_cart', 'track_delivery', 'driver_jobs', 'claim_job',
+        'MarketplaceDeliveryEngine.loadMyActive', 'Commerce.placeCart',
       ],
     },
 
@@ -304,122 +244,6 @@ const AstranovContinuity = {
       meta: 'astranov-globe-physics locked-v20260710241000-never-change',
       constants: ['GlobeNavigate.GLOBAL_Z 3.5', 'Earth rotation display 1671 km/h', 'syncGlobePivotQuaternion'],
     },
-
-    architectBridge: {
-      summary: 'Owner-only in-app coding bridge: phone → Grok Build desktop (not public agent)',
-      owner: 'src/17-architect-bridge.js + supabase/functions/coders-bridge + scripts/architect-bridge-watch.mjs',
-      architect: 'notisastranov@gmail.com',
-      selectors: ['#aci-bridge'],
-      commands: ['fix <issue>', 'code <change>', 'dev <task>', 'bridge', 'bridge status', 'bridge poll <id>', 'bridge list'],
-      behavior: [
-        'After Google sign-in as architect: 🛠 visible, bridge auto-armed',
-        'fix/code/dev/edit queue cic_queue reason=architect_bridge coder_engine=grok_build',
-        'Natural-language build tasks from architect chat also queue Architect Bridge',
-        'Desktop: npm run bridge-watch → .grok/architect-bridge/CURRENT.md',
-        'Answer: node scripts/architect-bridge-answer.mjs <id> "done: …" → phone poll delivers reply',
-        'Paid XAI_API_KEY only for architect (server free-tier first, then paid fallback)',
-        'Composer (Cursor) remains optional via "use composer" / Coders Hub summon — not the default street path',
-      ],
-      doNotRemove: ['ArchitectBridge', 'architect_push', 'architect_pending', 'architect_answer', 'aci-bridge'],
-    },
-
-    coreBrain: {
-      summary: 'Local-first freeform AI + globe tools — never leave freeform as "unknown"',
-      owner: 'src/22-astranov-core-brain.js',
-      behavior: [
-        'AciCli freeform → AstranovCoreBrain.handle (not "unknown — try help")',
-        'SuperCli.exec freeform → Core Brain',
-        'Act on globe immediately (locate/fly/city/order/zoom) then optional aicycle ≤14s',
-        'Do not block UI waiting for 80s edge latency',
-      ],
-      doNotRemove: ['AstranovCoreBrain', 'queue freeform to Core Brain'],
-    },
-
-    astranovArt: {
-      summary: 'Cinematic globe — multi-layer stars, fresnel atmosphere, day/night limb, higher tessellation',
-      owner: 'src/00-globe.js + src/63-earth-daynight.js + src/60-graphics.js',
-      behavior: [
-        'Earth MeshPhong/shader not flat MeshBasic 24-seg Atari sphere',
-        'Additive multi-layer starfield',
-        'Fresnel atmosphere shell via AIGraphics.addAtmosphere',
-      ],
-      doNotRemove: ['bootAtmosphere upgrade path', 'EarthRealism day/night'],
-    },
-
-    astranovHelper: {
-      summary: 'AI helper character v2 — gaming mecha-angel (procedural THREE, not Atari boxes)',
-      owner: 'src/60-graphics.js (spawnAstranovFlyer / _buildProceduralHumanoid gen:2)',
-      behavior: [
-        'Energy multi-vane wings, halo, core bloom, thruster jets, orbiters',
-        'Hero scale at global zoom; flyAstranovTo uses same mesh',
-        'Advanced rim/metal/pulse shaders on helper materials',
-      ],
-      doNotRemove: ['spawnAstranovFlyer', 'flyAstranovTo', 'AstranovFlyer'],
-    },
-
-    cliHandleOnly: {
-      summary: 'Grok Build TUI fork: ONE chrome surface — session header + handle + scrollback + › prompt',
-      owner: 'js/08-astranov-os.js + index.html',
-      selectors: ['#super-cli-bar', '#os-cli-handle', '#globe-deck', '#globe-deck-header', '#aci-cli-prompt', '#globe-deck-log'],
-      forbidden: ['#os-dock floating bar', '#aci-bar dual chrome', '#app-shortcut-row as separate bar', '#news-ticker strip'],
-      behavior: [
-        'Astranov CLI is a fork of Grok Build — look AND work like this agent',
-        'Layout: #globe-deck-header → #super-cli-bar → #globe-deck-log → › + #aci-cli-in',
-        'Agent turn: › user → thinking → ◆ tools → reply; slash /help /clear /status /doctor /fix…',
-        'Keys: Enter send, Shift+Enter newline, ↑↓ history, Ctrl+K clear',
-        'Parity: js/90-grok-cli-parity.js + js/91-cli-gestures.js after delivery-dna',
-        'CLI pointer-events auto — scroll/log never falls through to Earth trackball',
-        'Handle tap toggle / drag resize; log overscroll-top minimizes; past turns → foldable cases',
-        'data-cli=grok-build-fork on #globe-deck',
-        'OS apps mount into #os-cli-handle inside #super-cli-bar',
-        '#os-dock must stay display:none / removed',
-        'chromeGuard keeps aci-bar / news / resource-monitor / first-run-coach off',
-      ],
-      doNotRemove: ['os-cli-handle', 'super-cli-bar', 'chromeGuard-product', 'aci-cli-prompt', 'globe-deck-header', '90-grok-cli-parity'],
-    },
-
-    astranovTheme: {
-      summary: 'Deep space void + navy glass (NOT light cyan) · Grok TUI density',
-      owner: 'index.html clean shell tokens',
-      tokens: [
-        '--void #000000', '--ink #02060c', '--text #b8c4d4', '--text-dim #5a6a7e',
-        '--accent #1e4d8c', '--accent-hot #3d6eb0', '--glow rgba(24,64,120,0.4)',
-        '--user #5a7ab0', '--ok #3d9a6a', '--err #c44a5a', '--mono',
-      ],
-      behavior: [
-        'Void black page; steel text; deep navy accents only',
-        'No pastel #3d9eff floods / no #8ab orphan CSS / no coders lab cards',
-        'CLI: left accent bars, › prompt, 8px handle buttons, dark glass',
-        'Logo pill uses accent-hot + soft glow',
-      ],
-      doNotRemove: ['--void', '--accent', '--mono', 'clean-shell'],
-    },
-
-    astranovOS: {
-      summary: 'Multi-device web OS — Earth desktop; controls on CLI handle (never floating dock)',
-      owner: 'js/08-astranov-os.js',
-      selectors: ['#astranov-os-root', '#os-cli-handle', '#os-surface'],
-      behavior: [
-        'Apps on CLI handle: Earth, Browser, Locate, Market, AI, Create, System',
-        'NO floating #os-dock above CLI (owner rejected second button bar)',
-        'Touch devices default conserve/lite power via SlumberManager',
-        'Globe remains primary home surface (SpaceNet primacy)',
-        'PWA install tips in System; Escape returns home',
-      ],
-      doNotRemove: ['AstranovOS', 'os-cli-handle', 'setMode'],
-    },
-
-    astranovBrowser: {
-      summary: 'In-OS web browser — tabs, URL bar, astranov:// routes, https iframe',
-      owner: 'src/08-astranov-browser.js',
-      selectors: ['#os-browser', '#os-browser-url', '#os-browser-frame'],
-      behavior: [
-        'Ctrl/Cmd+L focuses address; Ctrl/Cmd+T new tab',
-        'astranov://home|locate|market|plus|chat|system routes into OS actions',
-        'External http(s) only in sandboxed iframe',
-      ],
-      doNotRemove: ['AstranovBrowser', 'navigate', 'show', 'hide'],
-    },
   },
 
   /**
@@ -434,10 +258,6 @@ const AstranovContinuity = {
     'MPP marketplace: browse, place_cart, track_delivery when signed in',
     'Globe renders; radar sweeps; earth speed shows ~1671 km/h on global view',
     'First load feels faster; tap shop still loads Commerce after interaction',
-    'Architect sign-in → 🛠 visible · bridge armed · fix/code queues summon',
-    'Desktop bridge-watch acks task · answer script delivers reply to phone CLI',
-    'OS dock visible after features boot · Browser opens tabs · System shows build',
-    'index.html includes loader.js + phase-critical (live-check green)',
   ],
 
   /**
@@ -456,22 +276,15 @@ const AstranovContinuity = {
 
   /** Quick file → responsibility map */
   modules: {
-    'index.html': 'Assembled shell + core modules (from index.shell.html + src/)',
-    'index.shell.html': 'Shell HTML/CSS/DOM — edit here then assemble',
-    'src/17-architect-bridge.js': 'Architect Bridge client (phone → Grok Build)',
-    'src/18-aci-coders.js': 'Grok chat + build queue; architect routes builds to Bridge',
-    'src/14-aci-cli.js': 'CLI commands including fix/code/dev/bridge',
-    'src/12-auth.js': 'Google auth · isArchitect · bridge arm on owner email',
-    'astranov-deferred.js': 'Commerce, MapComms, CodersHub, DeferredBoot (assembled deferred)',
-    'astranov-continuity.js': 'AI contract — read before editing',
-    'src/08-astranov-os.js': 'Astranov OS dock + modes',
-    'src/08-astranov-browser.js': 'In-OS browser tabs + astranov://',
-    'supabase/functions/coders-bridge': 'architect_* + composer pending/answer modes',
-    'scripts/architect-bridge-watch.mjs': 'Desktop inbox for street tasks',
-    'scripts/architect-bridge-answer.mjs': 'Post fix summary back to phone',
+    'index.html': 'Shell HTML, MPP tile DOM, miner-rig-panel, CLI CSS exceptions, script tags',
+    'astranov-app.js': 'Globe, boot, LazyModules, SuperCli, SlumberManager, MarketplaceDeliveryEngine stub',
+    'astranov-deferred.js': 'Commerce, MapComms, CodersHub, CityMap, GlobeEntity, DeferredBoot',
+    'astranov-perf-lazy.js': 'Deferred timing patch, user-activation fast path, brain dedup',
+    'astranov-field-hud.js': 'field-balance-hud, radar, miner panel, AVC chip hide, brain schedule',
+    'astranov-mpp-tile.js': 'MenuProfilePostTile, +/locate/video/marketplace patches',
+    'astranov-galactic-sky.js': 'Galactic sky layer',
     'scripts/guard-base.mjs': 'Pre-deploy gate',
     'scripts/owner-push.mjs': 'Silent owner git push',
-    'scripts/assemble.mjs': 'src/* → index.html + astranov-deferred.js',
   },
 };
 
@@ -482,91 +295,7 @@ if (typeof console !== 'undefined' && console.info) {
   console.info(
     '[AstranovContinuity]',
     AstranovContinuity.version,
-    '— SPECS: SPECS.md + this object; features:',
+    '— read window.AstranovContinuity before editing; features:',
     Object.keys(AstranovContinuity.features).join(', ')
   );
 }
-
-/* SPECS: no SpaceNet start popup — kill first-run coach if any phase still shows it */
-(function killFirstRunCoach() {
-  function hide() {
-    try {
-      window.showFirstRunCoach = function () {};
-      var el = document.getElementById('first-run-coach');
-      if (el) {
-        el.hidden = true;
-        el.style.cssText = 'display:none!important;visibility:hidden!important;pointer-events:none!important';
-        el.innerHTML = '';
-      }
-      try {
-        localStorage.setItem('astranov:coach-v3-os', '1');
-        localStorage.setItem('astranov:coach-v4-spacenet', '1');
-        localStorage.setItem('astranov:coach-disabled', '1');
-      } catch (_) {}
-    } catch (_) {}
-  }
-  hide();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hide);
-  setTimeout(hide, 200);
-  setTimeout(hide, 1000);
-  setTimeout(hide, 2500);
-})();
-
-/* === ASTRANOV OS BOOT + ARCHITECT BRIDGE (SPECS-up) === */
-(function astranovOsBootFromContinuity() {
-  var build = ((document.querySelector('meta[name="astranov-build"]') || {}).content) || '0';
-  function loadJs(src, key) {
-    return new Promise(function (resolve) {
-      if (key && window[key]) return resolve();
-      if (document.querySelector('script[data-astranov-src="' + src + '"]')) return resolve();
-      var s = document.createElement('script');
-      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(build);
-      s.async = true;
-      s.dataset.astranovSrc = src;
-      s.onload = function () { resolve(); };
-      s.onerror = function () { resolve(); };
-      (document.head || document.documentElement).appendChild(s);
-    });
-  }
-  // Architect bridge: real client if only stub present
-  function ensureArchitect() {
-    try {
-      var ab = window.ArchitectBridge;
-      var stub = !ab || (typeof ab.handleCommand === 'function' && ab.handleCommand.length === 0 && !ab.api);
-      // Prefer loading full bridge when not armed API surface
-      if (!ab || typeof ab.bridgeUrl !== 'function') {
-        return loadJs('/js/17-architect-bridge.js').then(function () {
-          try { window.ArchitectBridge && window.ArchitectBridge.init && window.ArchitectBridge.init(); } catch (_) {}
-        });
-      }
-      try { ab.init && ab.init(); } catch (_) {}
-      return Promise.resolve();
-    } catch (_) { return Promise.resolve(); }
-  }
-  // OS boot — avoid double thrash
-  function ensureOs() {
-    if (window.__ASTRANOV_OS_BOOT__) return Promise.resolve();
-    if (document.querySelector('script[src*="astranov-os-boot"]')) return Promise.resolve();
-    if (document.querySelector('script[src*="08-astranov-os"]')) return Promise.resolve();
-    return loadJs('/js/astranov-os-boot.js');
-  }
-  // Soft-ensure SPECS modules from /js/ (CF github-sha serves js/* reliably)
-  function ensureSpecsModules() {
-    var chain = Promise.resolve();
-    if (!window.FieldHud) chain = chain.then(function () { return loadJs('/js/astranov-field-hud.js', 'FieldHud'); });
-    if (!window.MenuProfilePostTile) chain = chain.then(function () { return loadJs('/js/astranov-mpp-tile.js', 'MenuProfilePostTile'); });
-    return chain.then(function () {
-      try { if (window.MenuProfilePostTile && window.MenuProfilePostTile.init) window.MenuProfilePostTile.init(); } catch (_) {}
-      try { if (window.FieldHud && window.FieldHud.boot) window.FieldHud.boot(); } catch (_) {}
-    });
-  }
-  function run() {
-    ensureArchitect()
-      .then(ensureSpecsModules)
-      .then(ensureOs)
-      .catch(function (e) { try { console.warn('[AstranovContinuity] SPECS boot', e); } catch (_) {} });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
-  else run();
-  setTimeout(run, 1200);
-})();
