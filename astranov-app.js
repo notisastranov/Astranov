@@ -8112,9 +8112,9 @@ const SuperCli = {
   _context: 'idle',
   title: ACL_TITLE,
 
-  // Edge bar: G left · video 🎧 right · + & send on input row (not top CLI chrome)
+  // Edge bar: G left · video + 🎧 right · input row is field-only (Enter sends)
   TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab', 'aci-handsfree'],
-  INPUT_BTNS: ['globe-deck-send', 'globe-deck-plus'],
+  INPUT_BTNS: [],
 
   ensureBarLayout() {
     const bar = document.getElementById('super-cli-bar');
@@ -8199,8 +8199,6 @@ const SuperCli = {
 
   bindInputBar() {
     const hf = document.getElementById('aci-handsfree');
-    const send = document.getElementById('globe-deck-send');
-    const plusIn = document.getElementById('globe-deck-plus');
     if (hf && !hf._superBound) {
       hf._superBound = true;
       hf.onclick = e => {
@@ -8219,22 +8217,14 @@ const SuperCli = {
         void startVoiceOptions?.();
       };
     }
-    if (send && !send._superBound) {
-      send._superBound = true;
-      send.onclick = e => {
+    // Input row is field-only — send via Enter / form submit; + is edge #super-add-fab
+    const form = document.getElementById('aci-cli-form');
+    if (form && !form._superBound) {
+      form._superBound = true;
+      form.addEventListener('submit', e => {
         e.preventDefault();
-        e.stopPropagation();
         AciCli?.submitFromInput?.({ emptyFocus: true });
-      };
-    }
-    if (plusIn && !plusIn._superBound) {
-      plusIn._superBound = true;
-      plusIn.onclick = e => {
-        e.preventDefault();
-        e.stopPropagation();
-        GlobeDeck?.expand?.(ACL_TITLE);
-        window.MenuProfilePostTile?.openPlusField?.() || SuperCli?.run?.('add');
-      };
+      });
     }
   },
 
