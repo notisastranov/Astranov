@@ -1,63 +1,63 @@
-# Astranov SpaceNet — AI agent entry
+# Astranov SpaceNet — AI agent entry (2026-07-14)
 
-**STOP. Read the system guide before editing anything.**
+**Stop. Read the specs before editing anything.**
 
-## Authority order (owner-locked 2026-07-22)
+## Single source of truth
 
-1. **Live code** `index.html` + `js/spacenet/*` + **`js/spacenet/brain.js`** (`SNBrain`) + `astranov-continuity.js`
-2. **`support/PRODUCT-RULES.md`** — short never-forget bullets
-3. **`ASTRANOV_SPACENET_MISSION.md`** — vision
-4. **`ASTRANOV_SPACENET_GUIDE.md`** — solidified invariants (read fully every session)
-5. **This file / `AGENTS.md`** — entry only
+1. **`astranov-continuity.js`** → live `window.AstranovContinuity` (machine contract)
+2. **`ASTRANOV_SPECS.md`** — human-readable mirror of the same contract
+3. **`index.html`** meta `astranov-build` + `astranov-continuity` (must match script `?v=`)
 
-Chat history, compaction summaries, old Grok specs, and “rebuild from scratch” impulses are **not** authority.
+Chat history, Grok/Cursor session summaries, and **`ASTRANOV_GROK_SPECS.md`** are **not authoritative**.
 
-**Amnesia almost killed this project and cost the owner real money.** Extend the shell. Load `SNBrain`. Never wipe sacred physics or juice.
+## Deploy (mandatory — you run it)
 
-## What you are building
+```bash
+node scripts/guard-base.mjs
+node scripts/owner-push.mjs index.html astranov-continuity.js ASTRANOV_SPECS.md <other-files> --message=deploy-...
+```
 
-**Astranov SpaceNet** — multi-device Earth OS + CLI.  
-**Juice (default work):** network crawlers · city map population · jobs · dating · delivery · claim/progress/done · depict on globe.
+- **Live:** https://astranov.eu  
+- **Repo:** `notisastranov/astranov.eu` · path `C:\Users\N\Documents\GitHub\Astranov`  
+- Owner granted autonomous push — deploy yourself.  
+- When features change: update **continuity + ASTRANOV_SPECS.md** in the same deploy.
 
-**Not default work:** wiping the shell to chase FPS, re-introducing 1MB phase boot, forgetting inertia / CLI drag / zoom tiers.
+## Current product (locked progress)
 
-## Live architecture (2026-07+)
-
-| Path | Role |
+| Area | Spec |
 |------|------|
-| `index.html` | Shell + CLI dock |
-| `js/spacenet/boot.js` | Boot chain |
-| `js/spacenet/globe.js` | Real Earth, drag, **inertia**, zoom tiers |
-| `js/spacenet/cli.js` | Street CLI + crawl + zoom |
-| `js/spacenet/tasks.js` | City DNA |
-| `js/spacenet/map.js` | City map |
-| `js/spacenet/search.js` | Crawlers |
-| `js/spacenet/ui.js` | **One-finger CLI drag** + expand |
-| `js/spacenet/auth.js` / `ai.js` | Sign-in + Astranov freeform |
+| Brand | Top-center **Astranov SpaceNet** (hard reset only) |
+| + menu | Multi-tile rail: Data · Social · Vendors · Order · Pilot + glowing multi-tiles |
+| Input row | **+** and **Send** required (`#globe-deck-plus`, `#globe-deck-send`) |
+| Delivery | browse → cart → pay → track → driver claim → pilot multi-stop |
+| Fees | **3%** platform · vendor pays driver **15%** of gross goods |
+| Confirms | Client · vendor · driver realtime on delivery HUD |
+| Miner | Tap **#field-balance-hud** only (no CLI ⛏ strip) |
+| Perf | Adaptive FPS, deferred pack, no ensure@400ms |
 
-## Non-negotiables (summary)
+Full detail: `ASTRANOV_SPECS.md` and `astranov-continuity.js` `features` / `economics` / `buildHistory`.
 
-1. Product name: **Astranov SpaceNet**
-2. Globe: natural turn + **inertia** + real texture + **solar → global → national → city** + always **back to Earth**
-3. CLI: **one-finger drag** + one-finger **log scroll** + **expand/retract**; position + size saved
-4. Every street action **paints** the globe/map
-5. **Do not full-rewrite** the live shell to “fix lag” — measure and cut
-6. Deploy yourself; bump `astranov-build` + `?v=` together
+## Architecture
 
-## Session start
+| File | Role |
+|------|------|
+| `index.html` | Shell, logo, multi-rail, pilot DOM, +/send, delivery HUD |
+| `astranov-app.js` | Globe, boot, SuperCli, MarketplaceDeliveryEngine, pricing stub |
+| `astranov-deferred.js` | Commerce, DeliveryPricing full, OrderTracking, Brain |
+| `astranov-perf-lazy.js` | Defer 574KB pack / brain dedup |
+| `astranov-field-hud.js` | Field miner, radar, speed |
+| `astranov-mpp-tile.js` | Multi-tile +, locate, video, market, pilot |
 
-1. Read PRODUCT-RULES + ASTRANOV_SPACENET_GUIDE.md
-2. Confirm inertia + one-finger CLI + zoom tiers in code
-3. Only then work juice (crawl → city map → job/date/delivery)
-4. After physics/CLI changes: verify + live probe
+## Mission (vision only)
 
-## Deploy
+SpaceNet: unify services on a zoomable cosmos (solar → global → national → city → street).  
+`ASTRANOV_SPACENET_MISSION.md` — vision only. **Features:** continuity + SPECS.
 
-- **Live:** https://astranov.eu
-- **Repo:** `notisastranov/astranov.eu`
-- Prefer GitHub MCP `push_files` / Git Data API when local `git push` hangs
-- Owner granted autonomous deploy for this product
+## Superseded — do not implement from these
 
-## Full law
-
-→ **`ASTRANOV_SPACENET_GUIDE.md`**
+- `ASTRANOV_GROK_SPECS.md` (stub only)
+- Deleted full handover MDs
+- GitHub #97 / #99 old checklists
+- “index.html only, no new files”
+- “+ opens globe-super-add only”
+- CLI miner strip `#aci-miner`
