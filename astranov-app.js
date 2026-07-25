@@ -76,18 +76,15 @@ if (window.__astranovHostOk) {
         || (navigator.maxTouchPoints > 1 && window.innerWidth < 960);
       window._globePerfLite = window._globePerfLite ?? _touchLite;
       renderer = new THREE.WebGLRenderer({
-        antialias: !_touchLite,
-        alpha: true,
-        powerPreference: _touchLite ? 'low-power' : 'high-performance',
+        antialias: false,
+        alpha: false,
+        powerPreference: 'low-power',
       });
       renderer.setClearColor(0x000000, 1);
       renderer.setSize(window.innerWidth, window.innerHeight);
-      const _dprCap = _touchLite ? 0.85 : (window.SlumberManager?.quality?.pixelRatio ?? 1.1);
+      const _dprCap = _touchLite ? 0.7 : 1.0;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, _dprCap));
-      if (THREE.ACESFilmicToneMapping) {
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.08;
-      }
+      // Skip ACES tone mapping — expensive on mid GPUs; basic material globe does not need it
       if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
       window.renderer = renderer;
       container?.appendChild(renderer.domElement);
@@ -105,7 +102,7 @@ if (window.__astranovHostOk) {
       scene.add(sun);
 
       const starPos = [];
-      for (let i = 0; i < 64; i++) {
+      for (let i = 0; i < 36; i++) {
         const r = 140 + Math.random() * 900;
         const t = Math.random() * Math.PI * 2;
         const p = Math.acos(2 * Math.random() - 1);
@@ -127,7 +124,7 @@ if (window.__astranovHostOk) {
       });
       globePivot = new THREE.Group();
       scene.add(globePivot);
-      earth = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 16), earthMat);
+      earth = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 12), earthMat);
       globePivot.add(earth);
       globePivot.rotation.y = 0;
       globePivot.rotation.x = 0.12;
@@ -4992,8 +4989,8 @@ const SlumberManager = {
       presence: true,
     },
     balanced: {
-      pixelRatio: 1.0,
-      targetFps: 30,
+      pixelRatio: 0.9,
+      targetFps: 20,
       earthHd: true,
       earthTickMs: 400,
       entityTickMs: 320,
@@ -5008,8 +5005,8 @@ const SlumberManager = {
       presence: true,
     },
     conserve: {
-      pixelRatio: 0.75,
-      targetFps: 20,
+      pixelRatio: 0.65,
+      targetFps: 14,
       earthHd: false,
       earthTickMs: 650,
       entityTickMs: 520,
@@ -5024,8 +5021,8 @@ const SlumberManager = {
       presence: false,
     },
     slumber: {
-      pixelRatio: 0.65,
-      targetFps: 12,
+      pixelRatio: 0.55,
+      targetFps: 10,
       earthHd: false,
       earthTickMs: 900,
       entityTickMs: 780,
@@ -5119,7 +5116,11 @@ const SlumberManager = {
     else if (score >= 5) tier = 'full';
     else if (score >= 3) tier = 'balanced';
     else if (score >= 1) tier = 'conserve';
-    if (p.mobile && (tier === 'gaming' || tier === 'full' || tier === 'balanced')) tier = 'conserve';
+    // Touch / mobile always conserve-or-lower for sticky-drag relief
+    if (p.mobile) {
+      if (tier === 'gaming' || tier === 'full' || tier === 'balanced') tier = 'conserve';
+      if (p.lowEndGpu || p.cores <= 4 || p.memoryGb && p.memoryGb < 4) tier = 'slumber';
+    }
     return tier;
   },
 
@@ -5132,6 +5133,9 @@ const SlumberManager = {
     document.body.dataset.slumber = tier;
     this._applySubsystemDefaults(tier);
     this.applyQuality();
+    if (window.renderer?.setPixelRatio && this.quality?.pixelRatio) {
+      window.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this.quality.pixelRatio));
+    }
     if (reason && reason !== 'hardware probe') this.notify(`Slumber · ${this.TIER_LABEL[tier]} — ${reason}`);
     window.SpaceNetResourceMonitor?.onTierChange?.(tier, reason);
   },
@@ -5856,6 +5860,7 @@ const AstranovLogo = {
     if (on) {
       el.classList.add('voice-mic');
       void this.ensureMicAnalyser();
+      if (!this._raf) this._loop();
     } else {
       el.classList.remove('voice-mic');
     }
@@ -5865,8 +5870,10 @@ const AstranovLogo = {
     const el = document.getElementById('astranov-logo');
     if (!el) return;
     el.classList.toggle('voice-ai', !!on);
-    if (on) this._aiSynth = performance.now();
-    else this._aiAnalyser = null;
+    if (on) {
+      this._aiSynth = performance.now();
+      if (!this._raf) this._loop();
+    } else this._aiAnalyser = null;
   },
 
   hookAiAudio(audioEl) {
@@ -5977,6 +5984,8 @@ const AstranovLogo = {
         this._draw(this._readBars(this._aiAnalyser, idle + 0.28), 'rgba(0,230,110,0.95)');
       } else {
         this._ctx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+        this._raf = 0;
+        return; // stop logo RAF when idle — was 60fps no-op clear
       }
     }
     this._raf = requestAnimationFrame(() => this._loop());
@@ -11616,9 +11625,13 @@ function showPilotTelemachos() {
 }
 
 window._cycleTurbo = false;
-window._globePerfLite = false;
+// Do NOT force false — mobile path sets _globePerfLite true earlier; only default if unset
+if (window._globePerfLite == null) {
+  window._globePerfLite = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
+    || ((navigator.maxTouchPoints || 0) > 1 && window.innerWidth < 960);
+}
 window._animFrame = 0;
-const _slumberDiv = (k) => SlumberManager?.frameDivisor?.(k) || 6;
+const _slumberDiv = (k) => SlumberManager?.frameDivisor?.(k) || 8;
 
 function _globeInteracting() {
   return !!(drag || dragging || window._globeFly
@@ -11629,8 +11642,10 @@ function _globeInteracting() {
 }
 
 function _globeTargetFps() {
-  if (_globeInteracting()) return 60;
-  return SlumberManager?.quality?.targetFps ?? (window._globePerfLite ? 20 : 36);
+  if (_globeInteracting()) return window._globePerfLite ? 45 : 60;
+  const q = SlumberManager?.quality?.targetFps;
+  if (q) return q;
+  return window._globePerfLite ? 15 : 24;
 }
 
 function globePerfActive() {
@@ -11692,63 +11707,62 @@ function animate() {
   }
   const hasGlobe = !!(renderer && scene && camera);
   if (!hasGlobe) {
-    if (frame % 60 === 0) SlumberManager?.tickFrame?.();
+    if (frame % 90 === 0) SlumberManager?.tickFrame?.();
     return;
   }
-  const hidden = document.hidden;
+  if (document.hidden) {
+    if (frame % 120 === 0) {
+      try { renderer.render(scene, camera); } catch (_) {}
+    }
+    return;
+  }
   const now = performance.now();
   const interacting = _globeInteracting();
-  const targetFps = hidden ? 4 : _globeTargetFps();
+  const targetFps = _globeTargetFps();
   const renderGap = 1000 / targetFps;
   const dueRender = interacting || !window._lastGlobeRender || now - window._lastGlobeRender >= renderGap;
 
-  if (!interacting && !dueRender) {
-    if (frame % 24 === 0) SlumberManager?.tickFrame?.();
-    return;
-  }
-  if (frame % (interacting ? 3 : 10) === 0) SlumberManager?.tickFrame?.();
+  if (!interacting && !dueRender) return;
 
   if (interacting) {
     if (!drag && !window._globeFly) TrackballGuard?.applyInertia?.();
     GlobeZoom?.tick?.();
     tickGlobeFly?.();
   }
+
+  if (!dueRender) return;
+
+  if (frame % (interacting ? 6 : 20) === 0) SlumberManager?.tickFrame?.();
+
   const mde = MarketplaceDeliveryEngine;
-  if (!hidden && dueRender && frame % 3 === 0 && (mde?._globeMeshes?.length || mde?.missions?.length)) mde.tick?.();
-  if (hidden) {
-    if (dueRender) renderer.render(scene, camera);
-    window._lastGlobeRender = now;
-    return;
-  }
+  if (interacting && frame % 4 === 0 && (mde?._globeMeshes?.length || mde?.missions?.length)) mde.tick?.();
 
   const camZ = camera?.position?.z ?? GlobeNavigate.GLOBAL_Z;
   const level = CosmicZoom?.level || 'earth';
   const earthView = (level === 'earth' || level === 'orbit') && camZ < 4.8;
   const solarView = level === 'galactic' || level === 'galaxy' || camZ > 5.5;
 
-  if (dueRender) {
-    const voiceActive = window._handsFreeVoice || isListening;
-    const codersBusy = window.AciCoders?._cliBusy || window.AciCoders?._listenBusy;
-    if (voiceActive || codersBusy || GlobeDeck?.thinking) setVoicePerfMode?.(true);
-    else if (window._voicePerfMode) setVoicePerfMode?.(false);
+  const voiceActive = window._handsFreeVoice || isListening;
+  if (voiceActive || GlobeDeck?.thinking) setVoicePerfMode?.(true);
+  else if (window._voicePerfMode && frame % 30 === 0) setVoicePerfMode?.(false);
 
-    if (frame % _slumberDiv('orbital') === 0) window.updateOrbital?.();
-    if (frame % _slumberDiv('entity') === 0) {
-      MapDepict?.tick?.();
-      if (SlumberManager?.allows?.('entities')) GlobeEntity?.tick?.();
-    }
-    if (solarView && frame % _slumberDiv('cosmic') === 0) CosmicZoom.update(camZ);
-    else if (frame % Math.max(_slumberDiv('cosmic'), 8) === 0) CosmicZoom.update(camZ);
-    if (earthView && frame % Math.max(_slumberDiv('earth'), 2) === 0) AIGraphics?.update?.();
-    if (earthView && frame % _slumberDiv('earth') === 0) EarthRealism?.tick?.();
-    const skyView = (level === 'earth' || level === 'orbit' || level === 'galactic') && camZ >= 2.0 && camZ < 8.5;
-    if (skyView && frame % _slumberDiv('celestial') === 0 && SlumberManager?.allows?.('celestial')) {
-      window.CelestialNav?.tick?.();
-    }
-    if (frame % Math.max(_slumberDiv('entity'), 4) === 0) BrainNeurons?.tick?.();
-    renderer.render(scene, camera);
-    window._lastGlobeRender = now;
+  // Heavy subsystem ticks only on sparse frames when idle
+  const heavyDiv = interacting ? 1 : 2;
+  if (frame % (_slumberDiv('orbital') * heavyDiv) === 0) window.updateOrbital?.();
+  if (frame % (_slumberDiv('entity') * heavyDiv) === 0) {
+    MapDepict?.tick?.();
+    if (SlumberManager?.allows?.('entities')) GlobeEntity?.tick?.();
   }
+  if (solarView && frame % (_slumberDiv('cosmic') * heavyDiv) === 0) CosmicZoom.update(camZ);
+  else if (frame % Math.max(_slumberDiv('cosmic') * heavyDiv, 12) === 0) CosmicZoom.update(camZ);
+  if (earthView && frame % (_slumberDiv('earth') * heavyDiv) === 0) {
+    if (interacting) AIGraphics?.update?.();
+    EarthRealism?.tick?.();
+  }
+  if (frame % Math.max(_slumberDiv('entity') * heavyDiv, 8) === 0) BrainNeurons?.tick?.();
+
+  try { renderer.render(scene, camera); } catch (_) {}
+  window._lastGlobeRender = now;
 }
 
 function _astranovBoot() {
