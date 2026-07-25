@@ -4025,6 +4025,112 @@ const MarketplaceDeliveryEngine = {
     document.getElementById('delivery-route-hud')?.querySelectorAll('[data-drh]').forEach(btn => {
       btn.addEventListener('click', () => this._comms(btn.dataset.drh));
     });
+    document.querySelectorAll('#drh-confirms [data-party]').forEach(btn => {
+      btn.addEventListener('click', () => void this.confirmParty(btn.dataset.party));
+    });
+  },
+
+  /** Pilot multi-stop: sort by state weight, distance, priority then build one route */
+  async pilotBuildSchedule(opts) {
+    opts = opts || {};
+    await this.loadMyActive?.();
+    const open = ['pending', 'seeking_driver', 'assigned', 'active', 'en_route', 'picked_up'];
+    let list = (this.missions || []).filter(m => open.includes(m.order?.status || m.status));
+    if (!list.length) return { stops: [], missions: [], error: 'no_open_orders' };
+    const base = opts.base || window._driverBase || window._lastPos || { lat: 36.44, lng: 28.22 };
+    const stateW = { en_route: 100, picked_up: 90, active: 80, assigned: 60, seeking_driver: 40, pending: 20 };
+    list = list.map(m => {
+      const o = m.order || {};
+      const lat = o.delivery_lat ?? m.client?.lat;
+      const lng = o.delivery_lng ?? m.client?.lng;
+      const dist = (lat != null && lng != null)
+        ? SpaceNetGeo.haversineKm(base.lat, base.lng, lat, lng) : 99;
+      const st = o.status || m.status || 'pending';
+      const priority = Number(o.priority || m.priority || 0);
+      const score = (stateW[st] || 10) + priority * 15 - dist * 2;
+      return { mission: m, lat, lng, dist, st, priority, score };
+    }).sort((a, b) => b.score - a.score);
+    this._pilotSchedule = list;
+    const stops = [{ role: 'driver', lat: base.lat, lng: base.lng, label: 'Pilot start' }];
+    list.forEach((row, i) => {
+      const o = row.mission.order || {};
+      const vLat = o.vendor_lat ?? row.mission.vendor?.lat;
+      const vLng = o.vendor_lng ?? row.mission.vendor?.lng;
+      if (vLat != null) stops.push({ role: 'vendor', lat: vLat, lng: vLng, label: (o.vendor_name || 'Vendor') + ' #' + (i + 1), orderId: o.id });
+      if (row.lat != null) stops.push({ role: 'client', lat: row.lat, lng: row.lng, label: (o.short_id || 'Drop') + ' · P' + row.priority, orderId: o.id });
+    });
+    const route = await this.buildRoute(stops);
+    this._pilotRoute = route;
+    this._pilotStops = stops;
+    return { stops, missions: list, route, schedule: list };
+  },
+
+  async pilotStartRouting() {
+    const built = this._pilotSchedule?.length
+      ? { schedule: this._pilotSchedule, stops: this._pilotStops, route: this._pilotRoute }
+      : await this.pilotBuildSchedule();
+    if (built.error || !built.stops?.length) {
+      ACIControl?.reply?.('Pilot · no open orders to route');
+      return built;
+    }
+    const polyId = 'pilot-' + Date.now();
+    const mission = {
+      id: polyId,
+      order: {
+        id: polyId, short_id: 'PILOT', status: 'active', driver_accepted_at: new Date().toISOString(),
+        items: built.schedule.map(s => ({ name: s.mission.order?.short_id || s.mission.id, qty: 1 })),
+        calc: { total_avc: built.schedule.reduce((n, s) => n + Number(s.mission.order?.calc?.total_avc || 0), 0) },
+      },
+      vendor: { name: 'Multi-stop pilot' },
+      driver: { display_name: Auth?.user?.email?.split('@')[0] || 'Pilot' },
+      stops: built.stops,
+      route: built.route,
+      active: true,
+      polygon: true,
+      status: 'active',
+      pilot: true,
+      confirmations: { client: false, vendor: false, driver: false },
+    };
+    const idx = this.missions.findIndex(m => m.id === mission.id);
+    if (idx >= 0) this.missions[idx] = mission;
+    else this.missions.push(mission);
+    this.renderMission(mission);
+    this.showHud(mission);
+    ACIControl?.reply?.('Pilot routing · ' + built.schedule.length + ' orders · state · distance · priority');
+    AciCli?.print?.('pilot multi-stop · ' + built.schedule.length + ' stops', 'ok');
+    return mission;
+  },
+
+  confirmParty(party) {
+    const m = this.missions.find(x => x.id === this._selectedId);
+    if (!m) return;
+    if (!m.confirmations) m.confirmations = { client: false, vendor: false, driver: false };
+    if (!['client', 'vendor', 'driver'].includes(party)) return;
+    m.confirmations[party] = true;
+    m.confirmations[party + '_at'] = new Date().toISOString();
+    this._renderConfirms(m);
+    const all = m.confirmations.client && m.confirmations.vendor && m.confirmations.driver;
+    if (all) {
+      ACIControl?.reply?.('All parties confirmed · settlement unlocked · platform 3% · driver 15% gross');
+      AciCli?.print?.('confirms complete · ' + (m.order?.short_id || m.id), 'ok');
+      FieldBrain?.pulse?.('commerce', 'all-party confirm · ' + (m.order?.short_id || m.id), { role: 'pilot' });
+    } else {
+      AciCli?.print?.(party + ' confirmed · awaiting others', 'ok');
+    }
+    try {
+      const key = 'astranov:delivery-confirm:' + m.id;
+      localStorage.setItem(key, JSON.stringify(m.confirmations));
+    } catch (_) {}
+  },
+
+  _renderConfirms(mission) {
+    const c = mission?.confirmations || {};
+    ['client', 'vendor', 'driver'].forEach(p => {
+      const btn = document.getElementById('drh-cf-' + p);
+      if (!btn) return;
+      btn.classList.toggle('ok', !!c[p]);
+      btn.textContent = (c[p] ? '✓ ' : '') + p.charAt(0).toUpperCase() + p.slice(1) + ' confirm';
+    });
   },
 
   haversineM(lat1, lng1, lat2, lng2) { return SpaceNetGeo.haversineM(lat1, lng1, lat2, lng2); },
@@ -4292,6 +4398,21 @@ const MarketplaceDeliveryEngine = {
       mission.channel ? '🔗 Channel · ' + mission.channel : '24/7 · P2P · no central support',
     ];
     document.getElementById('drh-body').textContent = lines.filter(Boolean).join('\n');
+    const fees = document.getElementById('drh-fees');
+    if (fees) {
+      const c = calc || {};
+      const plat = c.platform_fee_eur != null ? c.platform_fee_eur : (c.total_avc != null ? (Number(c.total_avc) * 0.03).toFixed(2) : '—');
+      const drv = c.driver_from_vendor_eur != null ? c.driver_from_vendor_eur : (c.subtotal_eur != null ? (Number(c.subtotal_eur) * 0.15).toFixed(2) : '—');
+      fees.textContent = 'Platform 3% · ' + plat + ' AVC · Vendor → driver 15% gross · ' + drv + ' AVC'
+        + (mission.pilot ? ' · Pilot multi-stop' : '')
+        + ' · realtime all-party confirm';
+    }
+    if (!mission.confirmations) mission.confirmations = { client: false, vendor: false, driver: false };
+    try {
+      const raw = localStorage.getItem('astranov:delivery-confirm:' + mission.id);
+      if (raw) mission.confirmations = { ...mission.confirmations, ...JSON.parse(raw) };
+    } catch (_) {}
+    this._renderConfirms(mission);
     const acceptBtn = document.getElementById('drh-accept');
     const pickupBtn = document.getElementById('drh-pickup');
     const enrouteBtn = document.getElementById('drh-enroute');
@@ -4719,14 +4840,24 @@ window.AstranovSitesProvision = { request() { return Promise.resolve(); } };
 window.SuperBookingProvision = window.AstranovSitesProvision;
 window.AstranovWishlist = { add() {} };
 window.DeliveryPricing = {
+  PLATFORM_RATE: 0.03,
+  DRIVER_GROSS_RATE: 0.15,
   async quote(opts) {
     opts = opts || {};
     const km = Math.max(0, Number(opts.km) || 0);
     const subtotal = Math.max(0, Number(opts.subtotal_eur) || 0);
     const delivery = 3 + Math.ceil(Math.max(0, km - 3) / 3) * 3;
-    const platform = Math.round((subtotal + delivery) * 0.03 * 100) / 100;
+    const platform = Math.round((subtotal + delivery) * this.PLATFORM_RATE * 100) / 100;
+    const driverFromVendor = Math.round(subtotal * this.DRIVER_GROSS_RATE * 100) / 100;
     const total = Math.round((subtotal + delivery + platform) * 100) / 100;
-    return { km, subtotal_eur: subtotal, delivery_eur: delivery, platform_fee_eur: platform, total_eur: total, total_avc: total, driver_payout_eur: delivery * 0.85 };
+    return {
+      km, subtotal_eur: subtotal, delivery_eur: delivery,
+      platform_fee_eur: platform, platform_rate: this.PLATFORM_RATE,
+      driver_from_vendor_eur: driverFromVendor, driver_gross_rate: this.DRIVER_GROSS_RATE,
+      driver_payout_eur: driverFromVendor + Math.round(delivery * 0.85 * 100) / 100,
+      total_eur: total, total_avc: total,
+      invoice_note: 'Platform 3% · vendor pays driver 15% of gross instantly · all parties confirm',
+    };
   },
 };
 window.GoogleWalletPay = { pay() { return Promise.resolve(); } };
@@ -7974,16 +8105,16 @@ const AppShortcuts = {
 window.AppShortcuts = AppShortcuts;
 
 // === SUPER CLI — one window: toolbar + log + stage + input ===
-const ACL_TITLE = 'Astranov Command Line';
+const ACL_TITLE = 'Astranov SpaceNet';
 
 const SuperCli = {
   _bound: false,
   _context: 'idle',
   title: ACL_TITLE,
 
-  // Edge bar: G left · + and 🎧 right · apps/locate scroll inside middle
+  // Edge bar: G left · video 🎧 right · + & send on input row (not top CLI chrome)
   TOOLBAR_VISIBLE: ['aci-login', 'super-add-fab', 'aci-handsfree'],
-  INPUT_BTNS: ['globe-deck-send'],
+  INPUT_BTNS: ['globe-deck-send', 'globe-deck-plus'],
 
   ensureBarLayout() {
     const bar = document.getElementById('super-cli-bar');
@@ -8069,6 +8200,7 @@ const SuperCli = {
   bindInputBar() {
     const hf = document.getElementById('aci-handsfree');
     const send = document.getElementById('globe-deck-send');
+    const plusIn = document.getElementById('globe-deck-plus');
     if (hf && !hf._superBound) {
       hf._superBound = true;
       hf.onclick = e => {
@@ -8093,6 +8225,15 @@ const SuperCli = {
         e.preventDefault();
         e.stopPropagation();
         AciCli?.submitFromInput?.({ emptyFocus: true });
+      };
+    }
+    if (plusIn && !plusIn._superBound) {
+      plusIn._superBound = true;
+      plusIn.onclick = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        GlobeDeck?.expand?.(ACL_TITLE);
+        window.MenuProfilePostTile?.openPlusField?.() || SuperCli?.run?.('add');
       };
     }
   },
@@ -11684,8 +11825,8 @@ function _astranovBoot() {
   LazyModules.schedule();
   applyGlobalBootView();
 
-  GlobeDeck?.setTitle?.('Astranov Command Line');
-  GlobeDeck?.setPreview?.('Astranov — global earth · drag · pinch · tap locate 🎯');
+  GlobeDeck?.setTitle?.('Astranov SpaceNet');
+  GlobeDeck?.setPreview?.('Astranov SpaceNet — global earth · + multi-tile · send · locate 🎯');
   CliRibbon?.setActive?.('CLI');
   const board = document.getElementById('coders-race-board');
   if (board && /checking teams/i.test(board.textContent || '')) board.textContent = 'Astranov ready';
