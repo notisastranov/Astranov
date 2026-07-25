@@ -42,7 +42,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712040000-spec-lock',
+  version: '20260712050000-cli-field-only',
   updated: '2026-07-14',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -131,13 +131,12 @@ const AstranovContinuity = {
     },
 
     superAddPlus: {
-      summary: '+ opens multi-tile SpaceNet menu (MenuProfilePostTile), NOT small globe-super-add deck',
+      summary: 'Edge + opens multi-tile SpaceNet menu (MenuProfilePostTile), NOT small globe-super-add deck',
       owner: 'astranov-mpp-tile.js',
-      selectors: ['#super-add-fab', '#globe-deck-plus', '#menu-profile-post-tile', '#mpp-multi-rail'],
+      selectors: ['#super-add-fab', '#menu-profile-post-tile', '#mpp-multi-rail'],
       behavior: [
         'capture-phase click on #super-add-fab with stopImmediatePropagation',
-        '#globe-deck-plus on input row (next to send) also opens multi-tile menu',
-        'Edge + (#super-add-fab) remains; input-row + is required (not only top CLI chrome)',
+        'Edge + only — NO + or send buttons beside the CLI text field',
         'Multi rail hub tiles: Data · Social · Vendors · Order · Pilot',
         'Created multi-tiles: deep-blue glowing round rich-media previews (#mpp-multi-created)',
         'localStorage astranov:multi-tiles',
@@ -148,21 +147,22 @@ const AstranovContinuity = {
       doNotRemove: [
         '_bindPlusFab', '_bindMultiRail', '_patchSuperAdd',
         'MenuProfilePostTile.openPlusField', 'createMultiTile', 'renderMultiCreated',
-        '#globe-deck-plus',
       ],
     },
 
-    cliInputPlusSend: {
-      summary: '+ and Send live on CLI input row — not as the top-center brand button',
-      owner: 'index.html #globe-deck-input-row + SuperCli.bindInputBar',
-      selectors: ['#globe-deck-plus', '#globe-deck-send', '#aci-cli-in', '#globe-deck-input-row'],
+    cliInputFieldOnly: {
+      summary: 'CLI input row is one seamless field — no buttons beside the textarea',
+      owner: 'index.html #globe-deck-input-row + SuperCli + AciCli',
+      selectors: ['#aci-cli-in', '#aci-cli-form', '#globe-deck-input-row'],
       behavior: [
-        'Send (#globe-deck-send) submits CLI (AciCli.submitFromInput)',
-        'Plus (#globe-deck-plus) opens multi-tile menu (openPlusField)',
-        'SuperCli.INPUT_BTNS includes globe-deck-send and globe-deck-plus (keep unhidden)',
-        'Do not move brand logo into CLI controls',
+        'NO #globe-deck-plus or #globe-deck-send next to input (hidden if residual DOM)',
+        'Send via Enter / form submit → AciCli.submitFromInput',
+        'Input spans full width; borderless seamless into deck (one with CLI)',
+        'SuperCli.INPUT_BTNS is empty array',
+        'Multi-tile + stays on edge bar #super-add-fab only',
       ],
-      doNotRemove: ['#globe-deck-plus', '#globe-deck-send', 'bindInputBar plus handler'],
+      doNotRemove: ['#aci-cli-in', 'AciCli submitFromInput / Enter key handlers'],
+      doNotAdd: ['buttons next to #aci-cli-in', 'visible globe-deck-send beside field'],
     },
 
     menuProfilePostTile: {
@@ -341,10 +341,10 @@ const AstranovContinuity = {
     },
 
     cliBar: {
-      summary: 'SuperCli edge bar — minimal; +/send on input row; video left of edge +',
+      summary: 'SuperCli edge bar — minimal; input row field-only; video left of edge +',
       owner: 'index.html CSS + SuperCli + mpp-tile _patchCliBar',
       visible: ['#aci-login', '#aci-video-call', '#super-add-fab', '#aci-handsfree', '.app-shortcut-btn'],
-      inputRow: ['#globe-deck-plus', '#globe-deck-send'],
+      inputRow: ['#aci-cli-in only — no adjacent buttons'],
       pinnedShortcuts: ['#aci-avc', '#aci-locate in #app-shortcut-row'],
       note: 'Top-center #astranov-logo is brand SpaceNet, not a CLI button',
     },
@@ -372,6 +372,7 @@ const AstranovContinuity = {
     { id: '20260712020000-delivery-finish', note: 'loadMyActive, track sync, driver jobs, placeCart pin quote' },
     { id: '20260712030000-spacenet-multi', note: 'SpaceNet brand, multi-rail, pilot multi-stop, 3%+15%, confirms, +/send input row' },
     { id: '20260712040000-spec-lock', note: 'Full progress written into continuity + ASTRANOV_SPECS.md' },
+    { id: '20260712050000-cli-field-only', note: 'CLI input seamless — no +/send beside field; Enter sends; + edge only' },
   ],
 
   /**
@@ -380,8 +381,8 @@ const AstranovContinuity = {
   verify: [
     'Hard refresh https://astranov.eu — meta astranov-build matches deploy',
     'Top-center button reads Astranov SpaceNet; click hard-resets (not CLI)',
-    'Input row has + and Send; + opens multi-tile rail (Data/Social/Vendors/Order/Pilot)',
-    'Edge + also opens multi-tile; NOT small globe-super-add only',
+    'CLI input is field-only (no buttons beside it); Enter sends',
+    'Edge + opens multi-tile rail (Data/Social/Vendors/Order/Pilot); NOT globe-super-add only',
     '🎯 locate → city map or Rhodes fallback',
     '📹 left of edge + → connected users / video call',
     'Top-right field tap → miner rig (no ⛏ CLI strip)',
@@ -397,7 +398,7 @@ const AstranovContinuity = {
    */
   antiPatterns: [
     'Reverting + to SuperAdd.showPanel / globe-super-add only',
-    'Removing #globe-deck-plus or hiding #globe-deck-send',
+    'Putting + or send buttons beside the CLI textarea (breaks seamless CLI feel)',
     'Renaming top logo away from Astranov SpaceNet without owner request',
     'Hiding #aci-locate without app-shortcut-btn pin',
     'Adding #miner-cli-strip or #aci-miner back above CLI',
