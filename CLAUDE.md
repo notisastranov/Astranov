@@ -28,7 +28,7 @@ node scripts/owner-push.mjs index.html astranov-continuity.js ASTRANOV_SPECS.md 
 |------|------|
 | Brand | Top-center **Astranov SpaceNet** (hard reset only) |
 | + menu | Multi-tile rail: Data · Social · Vendors · Order · Pilot + glowing multi-tiles |
-| Input row | **+** and **Send** required (`#globe-deck-plus`, `#globe-deck-send`) |
+| CLI input | Field only (no side buttons); Enter sends; edge **+** for multi-tile |
 | Delivery | browse → cart → pay → track → driver claim → pilot multi-stop |
 | Fees | **3%** platform · vendor pays driver **15%** of gross goods |
 | Confirms | Client · vendor · driver realtime on delivery HUD |
