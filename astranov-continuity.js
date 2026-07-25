@@ -34,7 +34,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712020000-delivery-finish',
+  version: '20260712030000-spacenet-multi',
   updated: '2026-07-14',
 
   /**
@@ -75,26 +75,36 @@ const AstranovContinuity = {
    */
   features: {
     superAddPlus: {
-      summary: '+ opens full MenuProfilePostTile (social profile field), NOT small globe-super-add deck',
+      summary: '+ opens multi-tile SpaceNet menu (MenuProfilePostTile), NOT small globe-super-add deck',
       owner: 'astranov-mpp-tile.js',
-      selectors: ['#super-add-fab', '#menu-profile-post-tile'],
+      selectors: ['#super-add-fab', '#globe-deck-plus', '#menu-profile-post-tile', '#mpp-multi-rail'],
       behavior: [
         'capture-phase click on #super-add-fab with stopImmediatePropagation',
+        '#globe-deck-plus next to send on input row also opens multi-tile menu',
+        'Multi rail: Data · Social · Vendors · Order · Pilot + created deep-blue glowing round tiles',
         'SuperAdd.open/showPanel patched: redirect to MenuProfilePostTile unless opts.camera/media',
         'SuperCli.run(add|post|superadd) redirected to openPlusField',
-        'globe-super-add deck closed via _closeSuperAddDeck before open',
       ],
-      doNotRemove: ['_bindPlusFab', '_patchSuperAdd', 'MenuProfilePostTile.openPlusField'],
+      doNotRemove: ['_bindPlusFab', '_bindMultiRail', '_patchSuperAdd', 'MenuProfilePostTile.openPlusField', 'createMultiTile'],
+    },
+
+    spacenetBrand: {
+      summary: 'Top-center button is Astranov SpaceNet (not bare Astranov / not a CLI button)',
+      owner: 'index.html #astranov-logo + SuperCli ACL_TITLE',
+      selectors: ['#astranov-logo', '.astranov-logo-label', '#globe-deck-title'],
+      behavior: ['Label Astranov SpaceNet', 'Hard reset on click', 'CLI title Astranov SpaceNet'],
     },
 
     menuProfilePostTile: {
-      summary: 'Social super-add field: cover, avatar, roles, instant post, video peers, marketplace',
+      summary: 'Multi-tile SpaceNet field: cover, avatar, roles, social video, vendors, pilot schedule',
       owner: 'astranov-mpp-tile.js',
-      selectors: ['#menu-profile-post-tile', '#mpp-roles', '#mpp-section-market'],
-      roles: ['client', 'vendor', 'driver', 'user', 'social'],
+      selectors: ['#menu-profile-post-tile', '#mpp-roles', '#mpp-section-market', '#mpp-section-pilot', '#mpp-multi-rail'],
+      roles: ['client', 'vendor', 'driver', 'pilot', 'user', 'social'],
       sections: {
-        market: '#mpp-section-market — visible when client OR vendor role on',
+        multiRail: '#mpp-multi-rail — round deep-blue glowing hub tiles + created multi-tiles',
+        market: '#mpp-section-market — visible when client OR vendor OR pilot',
         vendor: '#mpp-section-vendor — nearby shops, list shop',
+        pilot: '#mpp-section-pilot — multi-stop schedule by state · distance · priority',
         driver: '#mpp-section-driver — online toggle, schedule, base',
         user: '#mpp-section-user — profile site, delivery address',
         social: '#mpp-section-social — caption, photo/video, post now',
@@ -160,10 +170,16 @@ const AstranovContinuity = {
         'track_delivery loads customer/driver open orders from Supabase',
         'Commerce.placeCart passes deliveryLat/Lng from _clientDelivery',
         'MarketplaceDeliveryEngine.loadMyActive fetches customer_id + driver_id open orders',
+        'Platform commission 3% on all transactions (DeliveryPricing.PLATFORM_RATE)',
+        'Vendor pays driver 15% of gross goods instantly (DRIVER_GROSS_RATE 0.15)',
+        'Realtime all-party confirms on #drh-confirms (client · vendor · driver)',
+        'Pilot: pilotBuildSchedule sorts by state weight, distance, priority; pilotStartRouting multi-stop',
       ],
       doNotRemove: [
         'refreshMarketplace', 'place_cart', 'track_delivery', 'driver_jobs', 'claim_job',
-        'MarketplaceDeliveryEngine.loadMyActive', 'Commerce.placeCart',
+        'pilot_build', 'pilot_start', 'create_multi_tile',
+        'MarketplaceDeliveryEngine.loadMyActive', 'pilotBuildSchedule', 'pilotStartRouting', 'confirmParty',
+        'Commerce.placeCart', 'DeliveryPricing.PLATFORM_RATE', 'DeliveryPricing.DRIVER_GROSS_RATE',
       ],
     },
 
