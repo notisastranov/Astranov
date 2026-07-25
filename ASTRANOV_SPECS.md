@@ -10,7 +10,7 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260712040000-spec-lock` |
+| **Current build** | `20260712060000-perf-sticky-fix` |
 
 ---
 
@@ -174,6 +174,7 @@ Shown on HUD `#drh-fees`.
 | `…-spacenet-multi` | SpaceNet, multi-rail, pilot, 3%+15%, confirms, +/send row |
 | `…-spec-lock` | **All progress written into specs** |
 | `…-cli-field-only` | Seamless CLI field — no buttons beside input |
+| `…-perf-sticky-fix` | Fixed `_globePerfLite` wipe; no AA; lower FPS/DPR; radar/logo idle |
 
 ---
 
