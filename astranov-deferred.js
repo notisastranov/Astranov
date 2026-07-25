@@ -5571,6 +5571,7 @@ window.AciConnect = AciConnect;
 // === DELIVERY PRICING + WEATHER + GOOGLE WALLET ===
 const DeliveryPricing = {
   PLATFORM_RATE: 0.03,
+  DRIVER_GROSS_RATE: 0.15,
   BASE_DELIVERY_EUR: 3,
   BLOCK_EUR: 3,
   KM_BLOCK: 3,
@@ -5631,8 +5632,9 @@ const DeliveryPricing = {
     const deliveryEur = distanceFee + weightFee + surcharges.reduce((s, x) => s + x.eur, 0);
     const goodsEur = subtotal;
     const platformEur = Math.round((goodsEur + deliveryEur) * this.PLATFORM_RATE * 100) / 100;
+    const driverFromVendorEur = Math.round(goodsEur * this.DRIVER_GROSS_RATE * 100) / 100;
     const totalEur = Math.round((goodsEur + deliveryEur + platformEur) * 100) / 100;
-    const driverPayoutEur = Math.round(deliveryEur * 0.85 * 100) / 100;
+    const driverPayoutEur = Math.round((driverFromVendorEur + deliveryEur * 0.85) * 100) / 100;
 
     return {
       currency: 'AVC',
@@ -5645,11 +5647,13 @@ const DeliveryPricing = {
       surcharges,
       platform_fee_eur: platformEur,
       platform_rate: this.PLATFORM_RATE,
+      driver_from_vendor_eur: driverFromVendorEur,
+      driver_gross_rate: this.DRIVER_GROSS_RATE,
       total_eur: totalEur,
       total_avc: totalEur,
       driver_payout_eur: driverPayoutEur,
       weather,
-      invoice_note: 'Monthly invoice · platform 3% · driver paid on delivery',
+      invoice_note: 'Platform 3% on all transactions · vendor pays driver 15% of gross instantly · all parties confirm realtime',
     };
   },
 
@@ -5658,7 +5662,7 @@ const DeliveryPricing = {
     let s = q.total_avc.toFixed(2) + ' AVC (= ' + q.total_eur.toFixed(2) + ' EUR)';
     s += ' · delivery ' + q.delivery_eur.toFixed(2);
     if (q.surcharges?.length) s += ' · ' + q.surcharges.map(x => x.label).join(', ');
-    s += ' · fee 3%';
+    s += ' · platform 3% · driver 15% gross';
     return s;
   },
 };
