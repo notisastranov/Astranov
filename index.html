@@ -2,20 +2,20 @@
 <html lang="en">
 <head>
 <script>
-(function(){if(!('serviceWorker'in navigator))return;var k='astranov-migrated-v43';if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');try{caches&&caches.keys&&caches.keys().then(function(ks){ks.forEach(function(n){caches.delete(n)})})}catch(e){}}navigator.serviceWorker.register('/sw.js?v=43').catch(function(){})})();
+(function(){if(!('serviceWorker'in navigator))return;var k='astranov-migrated-v44';if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');try{caches&&caches.keys&&caches.keys().then(function(ks){ks.forEach(function(n){caches.delete(n)})})}catch(e){}}navigator.serviceWorker.register('/sw.js?v=44').catch(function(){})})();
 </script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-continuity-20260712020000-delivery-finish" />
-<meta name="astranov-continuity" content="20260712020000-delivery-finish" />
+<meta name="compliance-check" content="astranov-continuity-20260712030000-spacenet-multi" />
+<meta name="astranov-continuity" content="20260712030000-spacenet-multi" />
 <meta name="astranov-ai-handoff" content="Read /astranov-continuity.js and window.AstranovContinuity before any edit" />
 <meta name="aci-session" content="SpaceNet Collective Intelligence">
 <meta name="theme-color" content="#0a1020" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astranov" />
-<meta name="astranov-build" content="20260712020000-delivery-finish" />
+<meta name="astranov-build" content="20260712030000-spacenet-multi" />
 <meta name="astranov-globe-physics" content="locked-v20260710241000-never-change" />
 <meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one — no satellites needed to communicate" />
 <meta name="astranov-base-lock" content="monolith-no-bootstrap-globe-deck-cli-no-circles-guard-base-mjs" />
@@ -23,7 +23,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
-<link rel="preload" href="/astranov-app.js?v=20260712020000-delivery-finish" as="script" />
+<link rel="preload" href="/astranov-app.js?v=20260712030000-spacenet-multi" as="script" />
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" onerror="(function(){if(window.__threeFb)return;window.__threeFb=1;var s=document.createElement('script');s.defer=true;s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';document.head.appendChild(s);})()"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -177,7 +177,7 @@
   @keyframes ai-core-breathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
   @keyframes ai-ring-pulse { 0%{ transform:scale(0.82); opacity:0.85; } 100%{ transform:scale(1.55); opacity:0; } }
   @keyframes ai-stop-flash { 0%{ box-shadow:0 0 28px rgba(255,170,40,0.9); } 100%{ box-shadow:0 0 8px rgba(255,170,40,0.2); } }
-  #astranov-logo { position:fixed; top:max(10px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:210; margin:0; padding:6px 16px; border-radius:999px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); backdrop-filter:blur(10px); cursor:pointer; font-family:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI","Segoe UI Rounded",system-ui,sans-serif; font-size:13px; font-weight:600; letter-spacing:0.04em; text-indent:0; text-transform:none; color:var(--ax-blue-bright); text-shadow:0 0 18px var(--ax-blue-glow); box-shadow:0 2px 14px rgba(0,0,0,0.45); transition:color 0.2s,border-color 0.2s,box-shadow 0.2s,background 0.2s,transform 0.15s; pointer-events:auto; touch-action:manipulation; user-select:none; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; min-width:min(240px,78vw); min-height:40px; overflow:hidden; opacity:1; visibility:visible; isolation:isolate; }
+  #astranov-logo { position:fixed; top:max(10px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:210; margin:0; padding:6px 14px; border-radius:999px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); backdrop-filter:blur(10px); cursor:pointer; font-family:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI","Segoe UI Rounded",system-ui,sans-serif; font-size:12px; font-weight:600; letter-spacing:0.03em; text-indent:0; text-transform:none; color:var(--ax-blue-bright); text-shadow:0 0 18px var(--ax-blue-glow); box-shadow:0 2px 14px rgba(0,0,0,0.45); transition:color 0.2s,border-color 0.2s,box-shadow 0.2s,background 0.2s,transform 0.15s; pointer-events:auto; touch-action:manipulation; user-select:none; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; min-width:min(280px,86vw); min-height:40px; overflow:hidden; opacity:1; visibility:visible; isolation:isolate; }
   body.globe-flying #astranov-logo, body.city-map-active #astranov-logo { z-index:210; opacity:1 !important; visibility:visible !important; pointer-events:auto !important; }
   body.globe-flying #zoom-label { top:max(52px,calc(10px + env(safe-area-inset-top) + 42px)); }
   #astranov-logo-wave { position:absolute; inset:2px 4px; width:calc(100% - 8px); height:calc(100% - 4px); z-index:0; pointer-events:none; opacity:1; border-radius:999px; }
@@ -398,7 +398,25 @@
   #globe-deck-input-row .deck-input-btn { background:var(--ax-blue-bg); border:1px solid var(--ax-blue-border); color:var(--ax-blue-bright); border-radius:50%; width:40px; height:40px; cursor:pointer; font-size:16px; flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; touch-action:manipulation; }
   #super-cli-bar #aci-handsfree.deck-btn-active, #super-cli-bar #aci-handsfree.listening { background:rgba(0,30,70,0.55); border-color:var(--ax-blue-bright); }
   #super-cli-bar #aci-handsfree.speaking { background:rgba(0,40,28,0.55); }
-  #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; }
+  #globe-deck-input-row #globe-deck-send { border-radius:12px; width:44px; font-size:15px; font-weight:700; display:inline-flex !important; }
+  #globe-deck-input-row #globe-deck-plus { border-radius:50%; width:40px; height:40px; font-size:20px; font-weight:700; display:inline-flex !important; align-items:center; justify-content:center; background:rgba(10,40,96,0.75); border:1px solid rgba(80,160,255,0.55); color:#8ec8ff; box-shadow:0 0 12px rgba(40,120,255,0.45); cursor:pointer; flex-shrink:0; touch-action:manipulation; }
+  #globe-deck-input-row #globe-deck-plus:active { transform:scale(0.94); }
+  #mpp-multi-rail { display:flex; gap:10px; padding:10px 8px 6px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; border-bottom:1px solid rgba(40,120,255,0.25); }
+  #mpp-multi-rail::-webkit-scrollbar { display:none; }
+  .mpp-multi-tile { flex:0 0 auto; width:72px; height:72px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; border:1.5px solid rgba(60,140,255,0.55); background:radial-gradient(circle at 35% 30%,rgba(40,100,220,0.55),rgba(4,16,48,0.95) 70%); box-shadow:0 0 16px rgba(30,100,255,0.45),0 0 28px rgba(20,80,220,0.25),inset 0 0 18px rgba(80,160,255,0.15); color:#c8e4ff; font-size:9px; font-weight:700; letter-spacing:0.02em; text-align:center; padding:6px; touch-action:manipulation; transition:transform 0.15s,box-shadow 0.2s; }
+  .mpp-multi-tile:hover, .mpp-multi-tile.active { transform:scale(1.06); box-shadow:0 0 22px rgba(60,160,255,0.7),0 0 40px rgba(40,120,255,0.35); border-color:rgba(120,190,255,0.9); }
+  .mpp-multi-tile .mmt-icon { font-size:22px; line-height:1; filter:drop-shadow(0 0 6px rgba(100,180,255,0.8)); }
+  .mpp-multi-tile .mmt-label { max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mpp-multi-tile.created { background:radial-gradient(circle at 35% 30%,rgba(20,80,200,0.7),rgba(2,10,32,0.98) 72%); border-color:rgba(80,170,255,0.85); box-shadow:0 0 20px rgba(40,130,255,0.65),0 0 36px rgba(20,90,255,0.4); }
+  .mpp-multi-tile.created .mmt-media { width:100%; height:100%; border-radius:50%; object-fit:cover; position:absolute; inset:0; opacity:0.55; }
+  .mpp-multi-tile { position:relative; overflow:hidden; }
+  .mpp-multi-tile .mmt-icon, .mpp-multi-tile .mmt-label { position:relative; z-index:1; }
+  #mpp-pilot-schedule { font-size:10px; line-height:1.4; color:#9ec8ff; max-height:120px; overflow-y:auto; padding:6px 8px; border-radius:10px; border:1px solid rgba(40,120,255,0.35); background:rgba(0,16,40,0.55); margin:6px 0; }
+  #mpp-pilot-schedule .mps-row { display:flex; justify-content:space-between; gap:6px; padding:3px 0; border-bottom:1px solid rgba(40,100,200,0.15); }
+  #drh-confirms { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
+  #drh-confirms button { flex:1; min-width:90px; padding:6px 8px; border-radius:10px; border:1px solid rgba(60,160,255,0.45); background:rgba(0,32,72,0.65); color:#a8d4ff; font-size:10px; font-weight:700; cursor:pointer; }
+  #drh-confirms button.ok { border-color:rgba(0,220,140,0.6); color:#7dffc0; background:rgba(0,48,32,0.55); }
+  #drh-fees { font-size:10px; color:rgba(160,210,255,0.85); margin:4px 0 8px; line-height:1.4; }
 
   #city-life-chip { display:none; position:fixed; top:52px; left:12px; bottom:auto; z-index:38; max-width:min(240px,calc(100vw - 24px)); padding:8px 12px; border-radius:12px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); font:10px/1.4 system-ui; color:var(--an-text); pointer-events:none; backdrop-filter:blur(8px); }
   #city-life-chip.open { display:block; }
@@ -832,9 +850,9 @@
 </style>
 </head>
 <body>
-  <button id="astranov-logo" type="button" title="Astranov — collective intelligence · hard reset · red=mic · green=AI" aria-label="Astranov hard reset reload">
+  <button id="astranov-logo" type="button" title="Astranov SpaceNet — collective intelligence · hard reset · red=mic · green=AI" aria-label="Astranov SpaceNet hard reset reload">
     <canvas id="astranov-logo-wave" aria-hidden="true"></canvas>
-    <span class="astranov-logo-label">Astranov</span>
+    <span class="astranov-logo-label">Astranov SpaceNet</span>
   </button>
   <div id="globe"></div>
   <button id="coders-hub-trigger" type="button" aria-hidden="true" tabindex="-1" hidden><span>⬡</span><span>Coders</span><span id="coders-hub-live-count">8</span></button>
@@ -962,10 +980,19 @@
         </div>
       </div>
     </div>
+    <div id="mpp-multi-rail" role="toolbar" aria-label="SpaceNet multi tiles">
+      <button type="button" class="mpp-multi-tile" data-mmt="data" title="Enter field data"><span class="mmt-icon">◎</span><span class="mmt-label">Data</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="social" title="Social posts &amp; video"><span class="mmt-icon">🎬</span><span class="mmt-label">Social</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="vendor" title="Vendors with menus"><span class="mmt-icon">🏪</span><span class="mmt-label">Vendors</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="market" title="Delivery marketplace"><span class="mmt-icon">🛒</span><span class="mmt-label">Order</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="pilot" title="Pilot multi-stop routing"><span class="mmt-icon">🛸</span><span class="mmt-label">Pilot</span></button>
+      <span id="mpp-multi-created" style="display:contents"></span>
+    </div>
     <div id="mpp-roles" role="group" aria-label="Field roles">
       <button type="button" class="mpp-role-chip on" data-mpp-role="client"><span class="mpp-role-dot"></span>Client</button>
       <button type="button" class="mpp-role-chip" data-mpp-role="vendor"><span class="mpp-role-dot"></span>Vendor</button>
       <button type="button" class="mpp-role-chip" data-mpp-role="driver"><span class="mpp-role-dot"></span>Driver</button>
+      <button type="button" class="mpp-role-chip" data-mpp-role="pilot"><span class="mpp-role-dot"></span>Pilot</button>
       <button type="button" class="mpp-role-chip on" data-mpp-role="user"><span class="mpp-role-dot"></span>User</button>
       <button type="button" class="mpp-role-chip on" data-mpp-role="social"><span class="mpp-role-dot"></span>Social</button>
     </div>
@@ -984,6 +1011,14 @@
         <div id="mpp-vendors"></div>
         <button type="button" class="mpp-act primary" data-mpp-act="browse_shops">Browse all shops here</button>
         <button type="button" class="mpp-act" data-mpp-act="list_shop">List my shop at pin</button>
+      </div>
+      <div id="mpp-section-pilot" class="mpp-section">
+        <div class="mpp-section-title">Pilot · multi-stop routing</div>
+        <div id="mpp-pilot-summary" style="font-size:10px;color:#9ec8ff;margin-bottom:6px">Pilot builds multi-stop schedule by state · distance · priority. All parties confirm in realtime. Platform 3% · vendor pays driver 15% of gross instantly.</div>
+        <div id="mpp-pilot-schedule"></div>
+        <button type="button" class="mpp-act primary" data-mpp-act="pilot_build">Build multi-stop schedule</button>
+        <button type="button" class="mpp-act" data-mpp-act="pilot_start">Start pilot routing</button>
+        <button type="button" class="mpp-act" data-mpp-act="create_multi_tile">Save as glowing multi-tile</button>
       </div>
       <div id="mpp-section-driver" class="mpp-section">
         <div class="mpp-section-title">Driver field</div>
@@ -1034,6 +1069,12 @@
     <div id="drh-type">▸ Delivery route</div>
     <div id="drh-title">—</div>
     <div id="drh-body"></div>
+    <div id="drh-fees"></div>
+    <div id="drh-confirms" aria-label="Realtime party confirms">
+      <button type="button" id="drh-cf-client" data-party="client">Client confirm</button>
+      <button type="button" id="drh-cf-vendor" data-party="vendor">Vendor confirm</button>
+      <button type="button" id="drh-cf-driver" data-party="driver">Driver confirm</button>
+    </div>
     <div id="drh-comms">
       <button type="button" data-drh="message">💬 Message</button>
       <button type="button" data-drh="video">📹 Video</button>
@@ -1123,7 +1164,7 @@
     <div id="news-ticker">Astranov — collective intelligence linking all · live</div>
     <div id="globe-deck" class="collapsed">
       <div id="globe-deck-header">
-        <span id="globe-deck-title">Astranov Command Line</span>
+        <span id="globe-deck-title">Astranov SpaceNet</span>
         <span id="globe-deck-preview"></span>
       </div>
       <div id="super-cli-bar">
@@ -1242,8 +1283,9 @@
       <div id="globe-deck-input-row">
         <span id="aci-cli-prompt">›</span>
         <form id="aci-cli-form" action="#" autocomplete="off">
-          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Talk to Astranov — type or tap 🎧 · Enter to send"></textarea>
+          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Talk to Astranov SpaceNet — type or tap 🎧 · Enter to send"></textarea>
         </form>
+        <button id="globe-deck-plus" type="button" title="Multi-tile menu · data · social · vendors · pilot">+</button>
         <button id="globe-deck-send" class="deck-input-btn" type="submit" form="aci-cli-form" title="Send command">➡</button>
       </div>
     </div>
@@ -1265,11 +1307,11 @@
   window._instantShellUnlock=unlock;
 })();
 </script>
-<script defer src="/astranov-app.js?v=20260712020000-delivery-finish"></script>
-<script defer src="/astranov-perf-lazy.js?v=20260712020000-delivery-finish"></script>
-<script defer src="/astranov-continuity.js?v=20260712020000-delivery-finish"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260712020000-delivery-finish"></script>
-<script defer src="/astranov-field-hud.js?v=20260712020000-delivery-finish"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260712020000-delivery-finish"></script>
+<script defer src="/astranov-app.js?v=20260712030000-spacenet-multi"></script>
+<script defer src="/astranov-perf-lazy.js?v=20260712030000-spacenet-multi"></script>
+<script defer src="/astranov-continuity.js?v=20260712030000-spacenet-multi"></script>
+<script defer src="/astranov-galactic-sky.js?v=20260712030000-spacenet-multi"></script>
+<script defer src="/astranov-field-hud.js?v=20260712030000-spacenet-multi"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260712030000-spacenet-multi"></script>
 </body>
 </html>
