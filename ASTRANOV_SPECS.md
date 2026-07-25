@@ -40,15 +40,15 @@ node scripts/owner-push.mjs <files> --message=deploy-...
 |----|------|
 | Top-center `#astranov-logo` | Label **Astranov SpaceNet**. Hard reset on click. **Not** a CLI button. |
 | Deck title / SuperCli | **Astranov SpaceNet** (`ACL_TITLE`) |
-| Input row | **+** (`#globe-deck-plus`) + **Send** (`#globe-deck-send`) required |
-| Edge bar | G, video, edge +, handsfree, shortcuts (locate pinned) |
+| CLI input | **Field only** — no buttons beside `#aci-cli-in`; **Enter** sends |
+| Edge bar | G, video, edge **+**, handsfree, shortcuts (locate pinned) |
 
 ---
 
 ## Multi-tile menu (+)
 
-**Opens:** `MenuProfilePostTile` via `#super-add-fab` **or** `#globe-deck-plus`  
-**Not:** small `globe-super-add` deck alone.
+**Opens:** `MenuProfilePostTile` via edge `#super-add-fab` only  
+**Not:** small `globe-super-add` deck alone · **not** buttons next to the text field
 
 ### Hub tiles (`#mpp-multi-rail`) — deep blue glowing rounds
 
@@ -173,13 +173,14 @@ Shown on HUD `#drh-fees`.
 | `…-delivery-finish` | Track/jobs/placeCart pin |
 | `…-spacenet-multi` | SpaceNet, multi-rail, pilot, 3%+15%, confirms, +/send row |
 | `…-spec-lock` | **All progress written into specs** |
+| `…-cli-field-only` | Seamless CLI field — no buttons beside input |
 
 ---
 
 ## Verify checklist
 
 1. Logo = **Astranov SpaceNet**; click reloads hard  
-2. Input **+** and **Send** present; + opens multi-rail  
+2. CLI input has **no** side buttons; Enter sends; edge **+** opens multi-rail  
 3. Hub tiles open Data / Social / Vendors / Order / Pilot  
 4. Locate + video still work  
 5. Field miner (top-right), no CLI ⛏ strip  
@@ -193,7 +194,8 @@ Shown on HUD `#drh-fees`.
 ## Anti-patterns (do not)
 
 - Revert + to `globe-super-add` only  
-- Drop input-row + or send  
+- Put + or send buttons beside the CLI textarea  
+
 - Restore CLI miner strip  
 - Boot `ensure()` at 400ms  
 - Change fees 3% / 15% without owner  
