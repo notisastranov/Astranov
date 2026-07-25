@@ -9,7 +9,9 @@ const MenuProfilePostTile = {
   _driverOnline: false,
   _mediaFile: null,
   _mediaKind: null,
-  _roles: { client: true, vendor: false, driver: false, user: true, social: true },
+  _roles: { client: true, vendor: false, driver: false, pilot: false, user: true, social: true },
+  _multiTiles: [],
+  MULTI_KEY: 'astranov:multi-tiles',
 
   formatCoords(lat, lng) {
     return Number(lat).toFixed(4) + ', ' + Number(lng).toFixed(4);
@@ -91,11 +93,115 @@ const MenuProfilePostTile = {
     });
     this._bindTileDrag(tile);
     this._bindPlusFab();
+    this._bindMultiRail();
     this._patchCliBar();
     this._patchLocate();
     this._patchVideoCall();
     this._loadRoles();
+    this._loadMultiTiles();
+    this.renderMultiCreated();
     this.updateRoleSections();
+  },
+
+  _bindMultiRail() {
+    document.querySelectorAll('.mpp-multi-tile[data-mmt]').forEach(btn => {
+      if (btn._mmtBound) return;
+      btn._mmtBound = true;
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        this.selectMultiHub(btn.dataset.mmt);
+      });
+    });
+  },
+
+  selectMultiHub(kind) {
+    document.querySelectorAll('.mpp-multi-tile[data-mmt]').forEach(b => {
+      b.classList.toggle('active', b.dataset.mmt === kind);
+    });
+    const roleMap = {
+      data: 'user',
+      social: 'social',
+      vendor: 'vendor',
+      market: 'client',
+      pilot: 'pilot',
+    };
+    const role = roleMap[kind];
+    if (role) {
+      Object.keys(this._roles).forEach(k => { this._roles[k] = (k === role || k === 'user'); });
+      if (kind === 'market') this._roles.client = true;
+      if (kind === 'social') this._roles.social = true;
+      document.querySelectorAll('.mpp-role-chip[data-mpp-role]').forEach(b => {
+        b.classList.toggle('on', !!this._roles[b.dataset.mppRole]);
+      });
+      this.updateRoleSections();
+    }
+    if (kind === 'social') {
+      document.getElementById('mpp-section-social')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+      document.getElementById('mpp-post-caption')?.focus();
+    }
+    if (kind === 'vendor' || kind === 'market') {
+      void this.runAction(kind === 'vendor' ? 'browse_shops' : 'browse_shops');
+    }
+    if (kind === 'pilot') {
+      document.getElementById('mpp-section-pilot')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+      void this.runAction('pilot_build');
+    }
+    if (kind === 'data') {
+      document.getElementById('mpp-data-list')?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    }
+  },
+
+  _loadMultiTiles() {
+    try {
+      const raw = localStorage.getItem(this.MULTI_KEY);
+      this._multiTiles = raw ? JSON.parse(raw) : [];
+    } catch (_) { this._multiTiles = []; }
+  },
+
+  _saveMultiTiles() {
+    try { localStorage.setItem(this.MULTI_KEY, JSON.stringify(this._multiTiles.slice(0, 24))); } catch (_) {}
+  },
+
+  renderMultiCreated() {
+    const host = document.getElementById('mpp-multi-created');
+    if (!host) return;
+    host.innerHTML = (this._multiTiles || []).map(t => {
+      const media = t.media
+        ? '<img class="mmt-media" src="' + String(t.media).replace(/"/g, '') + '" alt="" />'
+        : '';
+      return '<button type="button" class="mpp-multi-tile created" data-multi-id="' + t.id + '" title="' + (t.label || 'Multi-tile') + '">'
+        + media
+        + '<span class="mmt-icon">' + (t.icon || '◆') + '</span>'
+        + '<span class="mmt-label">' + (t.label || 'Tile') + '</span></button>';
+    }).join('');
+    host.querySelectorAll('[data-multi-id]').forEach(btn => {
+      btn.onclick = e => {
+        e.stopPropagation();
+        const t = this._multiTiles.find(x => x.id === btn.dataset.multiId);
+        if (t?.kind) this.selectMultiHub(t.kind);
+        if (t?.pilot) void this.runAction('pilot_start');
+      };
+    });
+  },
+
+  createMultiTile(opts) {
+    opts = opts || {};
+    const id = 'mt-' + Date.now().toString(36);
+    const tile = {
+      id,
+      kind: opts.kind || 'pilot',
+      label: opts.label || 'Pilot route',
+      icon: opts.icon || '🛸',
+      media: opts.media || null,
+      pilot: !!opts.pilot,
+      at: Date.now(),
+      pin: this._pinCoords(),
+    };
+    this._multiTiles.unshift(tile);
+    this._saveMultiTiles();
+    this.renderMultiCreated();
+    AciCli?.print?.('multi-tile saved · deep blue glow · ' + tile.label, 'ok');
+    return tile;
   },
 
   _closeSuperAddDeck() {
@@ -404,13 +510,14 @@ const MenuProfilePostTile = {
     const map = {
       vendor: 'mpp-section-vendor',
       driver: 'mpp-section-driver',
+      pilot: 'mpp-section-pilot',
       user: 'mpp-section-user',
       social: 'mpp-section-social',
     };
     Object.entries(map).forEach(([role, id]) => {
       document.getElementById(id)?.classList.toggle('visible', !!this._roles[role]);
     });
-    document.getElementById('mpp-section-market')?.classList.toggle('visible', !!(this._roles.client || this._roles.vendor));
+    document.getElementById('mpp-section-market')?.classList.toggle('visible', !!(this._roles.client || this._roles.vendor || this._roles.pilot));
     const connected = document.getElementById('mpp-connected');
     if (connected) connected.classList.toggle('visible', !!this._roles.social);
     this.refreshDataList();
@@ -426,6 +533,7 @@ const MenuProfilePostTile = {
       apply.textContent = 'Post to social field';
       return;
     }
+    if (this._roles.pilot) { apply.textContent = 'Build pilot multi-stop'; return; }
     if (this._roles.vendor) { apply.textContent = 'Browse shops here'; return; }
     if (this._roles.driver) { apply.textContent = 'Set driver base here'; return; }
     if (this._roles.client) {
@@ -770,7 +878,7 @@ const MenuProfilePostTile = {
   openPlusField() {
     this.init();
     this._closeSuperAddDeck();
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
     const pos = window._lastPos || CityMap?.globeCenterLatLng?.() || TrackballGuard?.facingLatLng?.() || { lat: 36.44, lng: 28.22 };
     this.openAt(pos.lat, pos.lng);
   },
@@ -792,6 +900,8 @@ const MenuProfilePostTile = {
     tile.style.transform = '';
     const coords = document.getElementById('mpp-coords');
     if (coords) coords.textContent = '📍 ' + this.formatCoords(lat, lng);
+    this.renderMultiCreated();
+    this._bindMultiRail();
     void this.refreshProfile();
     this.updateRoleSections();
     MapDepict?.pulse?.(lat, lng, 0x44ffaa, 'super add field', 8000);
@@ -825,6 +935,7 @@ const MenuProfilePostTile = {
       await this.instantPost();
       return;
     }
+    if (this._roles.pilot) { await this.runAction('pilot_build'); return; }
     if (this._roles.vendor) { await this.runAction('browse_shops'); return; }
     if (this._roles.driver) { await this.runAction('set_driver_base'); return; }
     if (this._roles.client) {
@@ -1048,6 +1159,54 @@ const MenuProfilePostTile = {
         if (m) MarketplaceDeliveryEngine?.showHud?.(m);
         this.close();
       }
+      return;
+    }
+    if (act === 'pilot_build') {
+      const box = document.getElementById('mpp-pilot-schedule');
+      if (box) box.innerHTML = 'Building schedule…';
+      const built = await MarketplaceDeliveryEngine?.pilotBuildSchedule?.({
+        base: window._driverBase || { lat, lng },
+      });
+      if (!built || built.error || !built.schedule?.length) {
+        if (box) box.innerHTML = 'No open orders — place or claim deliveries first';
+        ACIControl?.reply?.('Pilot · no open orders to schedule');
+        return;
+      }
+      if (box) {
+        box.innerHTML = built.schedule.map((row, i) => {
+          const o = row.mission.order || {};
+          return '<div class="mps-row"><span>#' + (i + 1) + ' ' + (o.short_id || o.id?.slice?.(0, 6) || 'ord')
+            + ' · ' + row.st + ' · P' + row.priority + '</span><span>' + row.dist.toFixed(1) + ' km · score '
+            + Math.round(row.score) + '</span></div>';
+        }).join('');
+      }
+      this._roles.pilot = true;
+      document.querySelectorAll('.mpp-role-chip[data-mpp-role="pilot"]').forEach(b => b.classList.add('on'));
+      this.updateRoleSections();
+      AciCli?.print?.('pilot schedule · ' + built.schedule.length + ' by state · distance · priority', 'ok');
+      ACIControl?.reply?.('Pilot multi-stop ready · ' + built.schedule.length + ' orders · start when ready');
+      return;
+    }
+    if (act === 'pilot_start') {
+      const m = await MarketplaceDeliveryEngine?.pilotStartRouting?.();
+      if (m) {
+        this.createMultiTile({ kind: 'pilot', label: 'Pilot · ' + (m.order?.short_id || 'route'), icon: '🛸', pilot: true });
+        this.close();
+      }
+      return;
+    }
+    if (act === 'create_multi_tile') {
+      const cap = (document.getElementById('mpp-post-caption')?.value || '').trim();
+      let media = null;
+      const prev = document.querySelector('#mpp-media-preview img, #mpp-media-preview video');
+      if (prev?.src) media = prev.src;
+      this.createMultiTile({
+        kind: this._roles.pilot ? 'pilot' : (this._roles.social ? 'social' : (this._roles.vendor ? 'vendor' : 'data')),
+        label: cap.slice(0, 18) || (this._roles.pilot ? 'Pilot route' : 'Field tile'),
+        icon: this._roles.pilot ? '🛸' : (this._roles.social ? '🎬' : (this._roles.vendor ? '🏪' : '◎')),
+        media,
+        pilot: !!this._roles.pilot,
+      });
       return;
     }
     if (act === 'list_shop') {
