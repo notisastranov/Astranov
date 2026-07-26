@@ -5934,6 +5934,12 @@ const Commerce = {
     if (!v) return v;
     if (v.owner_id || v.category === 'field_shop') return v;
     if (this.menuFor(v).length) return v;
+    // Never paste demo menus onto crawled OSM/Google POIs
+    const tid = String(v.id || v.osm_id || '');
+    const src = (typeof v.tags === 'object' && v.tags) ? (v.tags.profile_source || v.tags.source) : '';
+    if (/^(osm_|osm_w_|osm_r_|ggl_)/.test(tid) || /^(osm|google_places|hybrid)$/.test(String(src || ''))) {
+      return v;
+    }
     const demo = DEMO_VENDORS.find(d =>
       d.id === v.id
       || (v.name && d.name.toLowerCase().includes(String(v.name).toLowerCase().slice(0, 5)))
@@ -5953,17 +5959,46 @@ const Commerce = {
     return this.menuFor(vendor).length > 0;
   },
 
-  async loadVendors() {
+  async loadVendors(opts) {
+    opts = opts || {};
+    const u = (opts.lat != null && opts.lng != null)
+      ? { lat: Number(opts.lat), lng: Number(opts.lng) }
+      : this.userLatLng();
+    const radiusKm = Number(opts.radiusKm) > 0 ? Number(opts.radiusKm) : 40;
+    // Bbox filter so city maps get real crawled POIs instead of global first-80 demos
+    const dLat = radiusKm / 111;
+    const dLng = radiusKm / (111 * Math.max(0.2, Math.cos(u.lat * Math.PI / 180)));
+    const minLat = u.lat - dLat;
+    const maxLat = u.lat + dLat;
+    const minLng = u.lng - dLng;
+    const maxLng = u.lng + dLng;
+    const select = 'id,osm_id,name,emoji,lat,lng,category,items,tags,address,owner_id,is_active,delivery_enabled';
+    const qGeo = SB_URL + '/rest/v1/vendors?select=' + select
+      + '&is_active=eq.true'
+      + '&lat=gte.' + minLat + '&lat=lte.' + maxLat
+      + '&lng=gte.' + minLng + '&lng=lte.' + maxLng
+      + '&limit=150';
+    const qAll = SB_URL + '/rest/v1/vendors?select=' + select + '&is_active=eq.true&limit=100';
     try {
-      const r = await fetch(SB_URL + '/rest/v1/vendors?select=id,name,emoji,lat,lng,category,items,tags,owner_id,is_active,delivery_enabled&is_active=eq.true&limit=80', {
-        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
-      });
-      this.vendors = r.ok ? await r.json() : [];
+      let r = await fetch(qGeo, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+      let rows = r.ok ? await r.json() : [];
+      if (!Array.isArray(rows) || !rows.length) {
+        r = await fetch(qAll, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
+        rows = r.ok ? await r.json() : [];
+      }
+      this.vendors = Array.isArray(rows) ? rows : [];
     } catch { this.vendors = []; }
+    // Keep any already-crawled client-side POIs (not yet in DB)
+    if (Array.isArray(this._crawledLocal) && this._crawledLocal.length) {
+      const ids = new Set(this.vendors.map(v => String(v.id || v.osm_id)));
+      this._crawledLocal.forEach(v => {
+        const id = String(v.id || v.osm_id);
+        if (id && !ids.has(id)) this.vendors.push(v);
+      });
+    }
     if (!this.vendors.length) this.vendors = DEMO_VENDORS.map(v => ({ ...v }));
     else this.vendors = this.vendors.map(v => this._normalizeVendor(v));
     AstranovCityShop?.ensureInVendorList?.();
-    const u = this.userLatLng();
     this.vendors.sort((a, b) => {
       if (AstranovCityShop?.isConstructionVendor?.(a)) return -1;
       if (AstranovCityShop?.isConstructionVendor?.(b)) return 1;
