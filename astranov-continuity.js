@@ -1,4 +1,4 @@
-/**
+﻿/**
  * =============================================================================
  * ASTRANOV AI CONTINUITY MANIFEST — single source of truth for features
  * =============================================================================
@@ -43,8 +43,8 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712090000-boot-smooth-earth',
-  updated: '2026-07-14',
+  version: '20260726120000-vendor-crawl-profiles',
+  updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
 
@@ -405,6 +405,34 @@ const AstranovContinuity = {
       ],
       doNotRemove: ['SpaceNetDevBridge.open', 'CodersHub.saveJob', 'CONTINUATION_KEY'],
     },
+
+    vendorCrawlProfiles: {
+      summary: 'City/national maps fill with real vendors; profile tiles from OSM + Google Business + socials',
+      owner: 'SpaceNetCrawler + supabase/functions/vendor-crawler + VendorMapTile + Commerce.loadVendors',
+      commands: ['crawl', 'crawler', 'spacenet crawl'],
+      edge: 'POST /functions/v1/vendor-crawler { lat, lng, radius|radius_km }',
+      sources: [
+        'OpenStreetMap Overpass (always; edge + browser fallback)',
+        'Google Places Nearby/Details when GOOGLE_PLACES_API_KEY or GOOGLE_MAPS_API_KEY set on edge',
+        'OSM contact:facebook/instagram/twitter/youtube/tiktok → profile social chips',
+      ],
+      behavior: [
+        'On city enter (_enterCitySlow) and CityLife.dropIn: crawl sector then GlobeEntity.syncVendors + CityMap.syncMapPins',
+        'SpaceNetBrain.crawlArea delegates to SpaceNetCrawler.crawlAndPopulate (no fire-and-forget empty maps)',
+        'Edge returns vendors[] immediately; client merges even if DB upsert lags',
+        'Browser Overpass fallback when edge fails so maps still populate',
+        'Commerce.loadVendors geo-bbox first (lat/lng window) then global fallback',
+        'VendorMapTile: cover/avatar from google photo or OSM image; about with hours/phone/rating; #vmt-social links',
+        'Drops demo vendors when ≥3 real POIs present',
+      ],
+      doNotRemove: [
+        'SpaceNetCrawler',
+        'SpaceNetCrawler.crawlAndPopulate',
+        'VendorMapTile._socialLinks',
+        'vendor-crawler edge radius_km + vendors response',
+        'CLI crawl command',
+      ],
+    },
   },
 
   /**
@@ -428,6 +456,9 @@ const AstranovContinuity = {
     { id: '20260712070000-launch-audit', note: 'SpaceNetCities national hubs; CLI bridge; full launch audit report' },
     { id: '20260712080000-finance-multitile', note: 'Field balance opens finance multi-tile: 3% invoices, P2P ledger, report dropdowns' },
     { id: '20260712090000-boot-smooth-earth', note: 'Staggered boot (no deferred freeze); earth 24/32 segments not polygonal' },
+    { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
+    { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
+    { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials; CLI crawl' },
   ],
 
   /**
@@ -448,6 +479,8 @@ const AstranovContinuity = {
     'First load feels usable; deferred pack after idle/tap',
     'National zoom: map chip shows SpaceNet cities/users; city chips include sn-city hubs',
     'CLI: bridge saves job pack; coders composer continues from app',
+    'Enter city / locate → real shop pins (not only Rhodes demos); CLI crawl force-refreshes sector',
+    'Tap shop → VendorMapTile with source badge + social/website chips when OSM/GBP data exists',
   ],
 
   /**
