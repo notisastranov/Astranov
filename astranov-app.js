@@ -4260,6 +4260,9 @@ const SpaceNetShell = {
       '<button type="button" data-sn="city" class="primary"><span class="sn-ico">🎯</span><span>My city</span></button>',
       '<button type="button" data-sn="shops"><span class="sn-ico">🏬</span><span>Shops</span></button>',
       '<button type="button" data-sn="order"><span class="sn-ico">🛵</span><span>Order</span></button>',
+      '<button type="button" data-sn="place"><span class="sn-ico">📍</span><span>Place</span></button>',
+      '<button type="button" data-sn="vault"><span class="sn-ico">◎</span><span>Vault</span></button>',
+      '<button type="button" data-sn="mars"><span class="sn-ico">♂</span><span>Cydonia</span></button>',
       '<button type="button" data-sn="menu"><span class="sn-ico">＋</span><span>Menu</span></button>',
       '<button type="button" data-sn="talk"><span class="sn-ico">💬</span><span>Talk</span></button>',
       '</div>',
@@ -4307,14 +4310,16 @@ const SpaceNetShell = {
         new Promise((r) => setTimeout(r, 12000)),
       ]);
     } catch (_) {}
-    this.setStatus('Tap My city · Shops · Order · or Talk below');
+    try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+    this.setStatus('SpaceNet · files live in real space · Place · Vault · Cydonia');
     // Soft auto-crawl near last pos / Rhodes when pack ready
     const pos = window._lastPos || { lat: 36.44, lng: 28.22 };
     void SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, { radiusKm: 2.5 })
       .then((r) => {
-        if (r?.ok) this.setStatus((r.nearby || r.count || 0) + ' shops nearby · tap Shops');
+        if (r?.ok) this.setStatus((r.nearby || r.count || 0) + ' shops · zoom garage for Thesis.pdf');
       })
       .catch(() => {});
+    void SpaceNetSpatial?.sync?.();
   },
 
   async run(action) {
@@ -4376,15 +4381,52 @@ const SpaceNetShell = {
         return;
       }
 
+      if (a === 'place') {
+        try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+        const row = SpaceNetSpatial?.dropPrompt?.();
+        this.setStatus(row ? ('Placed ' + row.name + ' — zoom here to see it') : 'Place cancelled');
+        return;
+      }
+
+      if (a === 'vault') {
+        try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+        SpaceNetSpatial?.showVault?.();
+        this.setStatus('Vault · every object lives at coordinates');
+        return;
+      }
+
+      if (a === 'mars' || a === 'cydonia') {
+        try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+        await SpaceNetSpatial?.flyTo?.('seed-cydonia-music');
+        this.setStatus('Mars Cydonia · music folder in real space');
+        return;
+      }
+
+      if (a === 'thesis' || a === 'garage') {
+        try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+        await SpaceNetSpatial?.flyTo?.('seed-thesis-garage');
+        this.setStatus('Garage · Thesis.pdf lives here');
+        return;
+      }
+
+      if (a === 'video') {
+        document.getElementById('aci-video-call')?.click();
+        this.setStatus('Video · real-time peers on the net');
+        return;
+      }
+
       if (a === 'talk') {
         GlobeDeck?.expand?.('Astranov SpaceNet');
         const input = document.getElementById('aci-cli-in');
         if (input) {
-          input.placeholder = 'Talk to SpaceNet — say what you need…';
+          input.placeholder = 'put thesis on the garage · hide music on mars cydonia · go to…';
           input.focus();
         }
-        ACIControl?.reply?.('I am here — say: my city, shops near me, order food, or open menu');
-        this.setStatus('Talk · type or speak below — no special commands needed');
+        ACIControl?.reply?.(
+          SpaceNetSpatial?.LAW ||
+            'SpaceNet: put files on real places. Say: put notes on here · go to cydonia · open thesis',
+        );
+        this.setStatus('Talk · spatial language — put / hide / go to / vault');
         return;
       }
     } catch (e) {
@@ -4395,7 +4437,7 @@ const SpaceNetShell = {
 };
 window.SpaceNetShell = SpaceNetShell;
 
-// Natural-language talk path — map plain English/Greek to shell actions (not CLI jargon)
+// Natural-language talk — spatial first, then shell actions
 const SpaceNetTalk = {
   route(text) {
     const t = String(text || '').trim().toLowerCase();
@@ -4404,14 +4446,31 @@ const SpaceNetTalk = {
     if (/^(shops?|vendors?|καταστήμ|μαγαζ|near\s*me|around\s*me)/i.test(t)) return 'shops';
     if (/^(order|delivery|παράδοση|παραγγελ|food|φαγητ)/i.test(t)) return 'order';
     if (/^(menu|\+|plus|multi)/i.test(t)) return 'menu';
+    if (/^(place|drop\s*here|vault|places|cydonia|mars|thesis|garage|video)/i.test(t)) {
+      if (/cydonia|mars/.test(t)) return 'mars';
+      if (/thesis|garage/.test(t)) return 'thesis';
+      if (/vault|places/.test(t)) return 'vault';
+      if (/video|call/.test(t)) return 'video';
+      if (/place|drop/.test(t)) return 'place';
+    }
     if (/^(help|βοήθεια|what\s*can|τι\s*μπορ)/i.test(t)) return 'help';
     return null;
   },
   async handle(text) {
+    // Spatial OS first — put X on Y / go to / cydonia / thesis
+    try {
+      const sp = await window.SpaceNetSpatial?.handleTalk?.(text);
+      if (sp?.handled) return { handled: true, action: sp.action || 'spatial' };
+    } catch (_) {}
+
     const a = this.route(text);
     if (a === 'help') {
-      ACIControl?.reply?.('Tap My city · Shops · Order · Menu · or Talk. Or say those words.');
-      SpaceNetShell?.setStatus?.('Help · use the blue bar buttons');
+      ACIControl?.reply?.(
+        'SpaceNet = real space as UI. Put files on a garage or Mars Cydonia; zoom there to see them. ' +
+          'Buttons: My city · Shops · Order · Place · Vault · Cydonia · Talk. ' +
+          'Say: put notes on here · go to cydonia · open thesis · order food.',
+      );
+      SpaceNetShell?.setStatus?.('Help · real virtual space · Place · Vault · Cydonia');
       return { handled: true, action: 'help' };
     }
     if (a) {
@@ -12738,7 +12797,10 @@ function _astranovBoot() {
   window._bootEarthLock = false;
   window._snlForceDismiss?.();
   SpaceNetLoader?.dismiss?.('boot-ready');
-  ACIControl?.reply?.(SpaceNetMission?.bootReply || 'Astranov SpaceNet live · use the bar: My city · Shops · Order · Talk');
+  ACIControl?.reply?.(
+    SpaceNetMission?.bootReply ||
+      'SpaceNet live — real space is the UI. Place files on Earth or Mars; zoom there to open them. Marketplace + video in the same net.',
+  );
 
   // Rescue mpp/field/sky if origin served SPA HTML; mount app-first shell (no CLI required)
   later(() => {
