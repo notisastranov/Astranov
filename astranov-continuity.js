@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712070000-launch-audit',
+  version: '20260712080000-finance-multitile',
   updated: '2026-07-14',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -282,19 +282,39 @@ const AstranovContinuity = {
     },
 
     minerRig: {
-      summary: 'SpaceNet miner — NO separate CLI miner button; tap top-right field',
+      summary: 'SpaceNet miner + finance multi-tile — tap top-right field (NO CLI miner strip)',
       owner: 'astranov-field-hud.js',
-      selectors: ['#field-balance-hud', '#miner-rig-panel', '#fbh-mine-rate'],
+      selectors: ['#field-balance-hud', '#spacenet-finance-panel', '#fbh-mine-rate'],
       removed: ['#miner-cli-strip', '#aci-miner', '#aci-miner-rate — DO NOT ADD BACK'],
       behavior: [
         '#field-balance-hud top-right: AVC, fiat, peers, CPU/RAM/SSD/NET, mine rate',
-        'Click or Enter/Space on field → openMinerPanel (#miner-rig-panel)',
-        'Toggles: cpu, ram, storage, bandwidth, sleep — localStorage astranov:miner-rig-prefs',
-        'SpaceNetMiner.computeRate + canAcceptWork respect prefs',
-        'class mining-active on field when terms ok and rate > 0.003',
-        'bindFieldMiner (not bindMinerCli / aci-miner)',
+        'Click → openFinancePanel #spacenet-finance-panel (multi-tile finance hub)',
+        'Tiles: Stats · Mining · Platform 3% invoices · P2P ledger · Reports',
+        'Mining toggles still in Mining tile; prefs astranov:miner-rig-prefs',
+        'bindFieldMiner / openFinancePanel (not aci-miner)',
       ],
-      doNotRemove: ['bindFieldMiner', 'openMinerPanel', 'SpaceNetMiner in field-hud.js'],
+      doNotRemove: ['bindFieldMiner', 'openFinancePanel', 'SpaceNetFinance', 'SpaceNetMiner'],
+    },
+
+    spaceNetFinance: {
+      summary: 'Field money multi-tile: stats, mining, monthly 3% invoices, P2P accumulative, report builder',
+      owner: 'astranov-field-hud.js SpaceNetFinance + index.html #spacenet-finance-panel',
+      selectors: [
+        '#spacenet-finance-panel', '.sfp-tile', '#sfp-plat-table', '#sfp-p2p-table',
+        '#sfp-rep-type', '#sfp-rep-out',
+      ],
+      tiles: ['stats', 'mining', 'platform', 'p2p', 'reports'],
+      behavior: [
+        'Platform tile: monthly invoices FROM Astranov SpaceNet TO users/vendors/drivers for 3% fee',
+        'P2P tile: accumulative invoices vendor→driver 15%, client→vendor goods, client→driver delivery',
+        'Reports tile: dropdown report type · role · from/to month · Produce + export clipboard',
+        'Loads orders via Auth.client (customer_id, driver_id, owned vendor_id)',
+        'Dropdown filters for period, flow, role so any user can produce needed statements',
+      ],
+      doNotRemove: [
+        'SpaceNetFinance', 'buildPlatformInvoice', 'buildP2pLedger', 'produceReport',
+        'PLATFORM 0.03', 'DRIVER_GROSS 0.15',
+      ],
     },
 
     fieldHudRadar: {
@@ -406,6 +426,7 @@ const AstranovContinuity = {
     { id: '20260712050000-cli-field-only', note: 'CLI input seamless — no +/send beside field; Enter sends; + edge only' },
     { id: '20260712060000-perf-sticky-fix', note: 'Fix _globePerfLite wipe; no AA/tone map; lower FPS/DPR; radar 4fps; logo RAF idle stop' },
     { id: '20260712070000-launch-audit', note: 'SpaceNetCities national hubs; CLI bridge; full launch audit report' },
+    { id: '20260712080000-finance-multitile', note: 'Field balance opens finance multi-tile: 3% invoices, P2P ledger, report dropdowns' },
   ],
 
   /**
