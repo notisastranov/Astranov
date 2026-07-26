@@ -1,4 +1,4 @@
-﻿/**
+/**
  * =============================================================================
  * ASTRANOV AI CONTINUITY MANIFEST — single source of truth for features
  * =============================================================================
@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726130000-vendor-crawl-profiles',
+  version: '20260726150000-minspec-shell',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -433,6 +433,32 @@ const AstranovContinuity = {
         'CLI crawl command',
       ],
     },
+
+    minSpecShell: {
+      summary: 'P0 min SpaceNet UX without CLI — shell bar + asset rescue when origin serves SPA HTML for modules',
+      owner: 'index.html SpaceNetAssetBoot + astranov-app.js SpaceNetShell/SpaceNetTalk',
+      rootCause: [
+        'Live /astranov-mpp-tile.js, field-hud.js, galactic-sky.js returned index.html (Vercel SPA/dpl HTML) → MenuProfilePostTile/FieldHud never defined',
+        'GitHub main had correct files; origin deployment did not serve them as application/javascript',
+        'Without MPP: no multi-tile +, locate/video patches, marketplace sections',
+        'Without FieldHud: no field balance / finance / radar',
+        'Deferred commerce pack 4–7s + empty maps without crawl made product feel dead',
+        'Specs assumed CLI/bridge literacy; owner requires app-only interaction',
+      ],
+      behavior: [
+        'SpaceNetAssetBoot.ensureCoreUi fetches modules; if body is HTML, loads jsDelivr/GitHub raw instead',
+        '#spacenet-shell dock: My city · Shops · Order · Menu · Talk',
+        'SpaceNetTalk routes plain language to shell actions before CLI parser',
+        'LazyModules deferred pack starts ~2.2s; shell forces _lazyUserReady on actions',
+        'Auto soft-crawl after shell bootstrap',
+      ],
+      doNotRemove: [
+        'SpaceNetAssetBoot',
+        'SpaceNetShell',
+        'SpaceNetTalk',
+        '#spacenet-shell',
+      ],
+    },
   },
 
   /**
@@ -458,7 +484,8 @@ const AstranovContinuity = {
     { id: '20260712090000-boot-smooth-earth', note: 'Staggered boot (no deferred freeze); earth 24/32 segments not polygonal' },
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
-    { id: '20260726130000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials; CLI crawl' },
+    { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
+    { id: '20260726150000-minspec-shell', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
   ],
 
   /**
@@ -481,6 +508,9 @@ const AstranovContinuity = {
     'CLI: bridge saves job pack; coders composer continues from app',
     'Enter city / locate → real shop pins (not only Rhodes demos); CLI crawl force-refreshes sector',
     'Tap shop → VendorMapTile with source badge + social/website chips when OSM/GBP data exists',
+    '#spacenet-shell bar visible: My city · Shops · Order · Menu · Talk (no CLI required)',
+    'MenuProfilePostTile and FieldHud defined (not SPA HTML) — check __spacenetAssetReport',
+    'GET /astranov-mpp-tile.js content-type application/javascript OR rescued via jsDelivr',
   ],
 
   /**
@@ -500,6 +530,8 @@ const AstranovContinuity = {
     'Removing PLATFORM_RATE 0.03 or DRIVER_GROSS_RATE 0.15 without owner request',
     'Deleting pilot multi-stop or multi-tile rail as “cleanup”',
     'Implementing from ASTRANOV_GROK_SPECS.md or session transcripts instead of this file',
+    'Shipping index that loads mpp/field/sky without verifying they are JS (SPA HTML 200 is a silent P0)',
+    'Requiring owner to type CLI commands for My city / shops / order basics',
   ],
 
   /** Quick file → responsibility map */
