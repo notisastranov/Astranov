@@ -915,14 +915,19 @@ const FieldHud = {
       this.migrateSpeedHud();
       this.hideCliMoney();
       this.bindActivity();
-      this.loadSession();
-      SpaceNetMiner.detectCaps();
-      this.checkTerms();
-      this.patchAvcBalance();
-      this.startLoop();
-      setTimeout(() => this.ensureBrain(), 2800);
-      this.patchSuperCli();
       this.bindFieldMiner();
+      // Defer miner mesh + radar + brain so boot is never sticky
+      setTimeout(() => {
+        try {
+          this.loadSession();
+          SpaceNetMiner.detectCaps();
+          this.checkTerms();
+          this.patchAvcBalance();
+          this.patchSuperCli();
+        } catch (_) {}
+      }, 600);
+      setTimeout(() => { try { this.startLoop(); } catch (_) {} }, 1800);
+      setTimeout(() => this.ensureBrain(), 5000);
       this._retryPatches();
     } catch (e) { console.error('[FieldHud]', e); }
   },
@@ -1009,7 +1014,8 @@ const FieldHud = {
     panel.classList.add('open');
     SpaceNetFinance.showTab(tab || 'stats');
     this.refreshMinerPanel();
-    void SpaceNetFinance.refreshStats();
+    // Stats/network load off critical path so panel never freezes open
+    setTimeout(() => { void SpaceNetFinance.refreshStats(); }, 50);
     GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
   },
 
@@ -1134,55 +1140,52 @@ const SpaceNetFinance = {
       this._orders = [];
       return [];
     }
-    try {
-      const uid = Auth.user.id;
-      const client = Auth.client;
-      if (client?.from) {
-        const [cRes, dRes] = await Promise.all([
-          client.from('orders').select('*').eq('customer_id', uid).order('created_at', { ascending: false }).limit(120),
-          client.from('orders').select('*').eq('driver_id', uid).order('created_at', { ascending: false }).limit(120),
-        ]);
-        let asVendor = [];
-        const owned = (window.Commerce?.vendors || []).filter(v => v.owner_id === uid || v.user_id === uid);
-        if (owned.length) {
-          const ids = owned.map(v => v.id).filter(Boolean).slice(0, 20);
-          if (ids.length) {
-            const vRes = await client.from('orders').select('*').in('vendor_id', ids).order('created_at', { ascending: false }).limit(120);
-            asVendor = vRes?.data || [];
+    if (this._loadInflight) return this._loadInflight;
+    const timeout = new Promise(resolve => setTimeout(() => resolve('timeout'), 4000));
+    this._loadInflight = (async () => {
+      try {
+        const work = (async () => {
+          const uid = Auth.user.id;
+          const client = Auth.client;
+          if (client?.from) {
+            const [cRes, dRes] = await Promise.all([
+              client.from('orders').select('*').eq('customer_id', uid).order('created_at', { ascending: false }).limit(60),
+              client.from('orders').select('*').eq('driver_id', uid).order('created_at', { ascending: false }).limit(60),
+            ]);
+            let asVendor = [];
+            const owned = (window.Commerce?.vendors || []).filter(v => v.owner_id === uid || v.user_id === uid);
+            if (owned.length) {
+              const ids = owned.map(v => v.id).filter(Boolean).slice(0, 12);
+              if (ids.length) {
+                const vRes = await client.from('orders').select('*').in('vendor_id', ids).order('created_at', { ascending: false }).limit(60);
+                asVendor = vRes?.data || [];
+              }
+            }
+            const seen = new Set();
+            this._orders = [...(cRes?.data || []), ...(dRes?.data || []), ...asVendor].filter(o => {
+              if (!o?.id || seen.has(o.id)) return false;
+              seen.add(o.id);
+              return true;
+            });
+          } else {
+            this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
+              .map(m => m.order).filter(Boolean);
           }
+        })();
+        const raced = await Promise.race([work.then(() => 'ok'), timeout]);
+        if (raced === 'timeout') {
+          this._orders = this._orders?.length
+            ? this._orders
+            : (window.MarketplaceDeliveryEngine?.missions || []).map(m => m.order).filter(Boolean);
         }
-        const seen = new Set();
-        this._orders = [...(cRes?.data || []), ...(dRes?.data || []), ...asVendor].filter(o => {
-          if (!o?.id || seen.has(o.id)) return false;
-          seen.add(o.id);
-          return true;
-        });
-      } else if (Auth.authHeaders && typeof SB_URL !== 'undefined') {
-        const headers = await Auth.authHeaders();
-        const q = (filter) => fetch(
-          SB_URL + '/rest/v1/orders?select=*&' + filter + '&order=created_at.desc&limit=120',
-          { headers }
-        ).then(r => r.ok ? r.json() : []).catch(() => []);
-        const [asClient, asDriver] = await Promise.all([
-          q('customer_id=eq.' + encodeURIComponent(uid)),
-          q('driver_id=eq.' + encodeURIComponent(uid)),
-        ]);
-        const seen = new Set();
-        this._orders = [...(asClient || []), ...(asDriver || [])].filter(o => {
-          if (!o?.id || seen.has(o.id)) return false;
-          seen.add(o.id);
-          return true;
-        });
-      } else {
-        // offline demo from delivery engine missions
+      } catch (_) {
         this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
           .map(m => m.order).filter(Boolean);
       }
-    } catch (_) {
-      this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
-        .map(m => m.order).filter(Boolean);
-    }
-    return this._orders;
+      this._loadInflight = null;
+      return this._orders;
+    })();
+    return this._loadInflight;
   },
 
   orderGross(o) {
