@@ -1098,22 +1098,32 @@ out center body qt 100;`;
         if (Array.isArray(edgeMeta.vendors) && edgeMeta.vendors.length) {
           vendors = edgeMeta.vendors;
           source = 'edge';
+        } else if (edgeMeta && (edgeMeta.ok || edgeMeta.count > 0)) {
+          // Live edge may only return { ok, count } after DB upsert — pull rows next
+          source = 'edge-db';
         }
       } catch (_) { /* fall through */ }
+
+      // Reload DB after edge upsert (legacy or new) so map gets real rows
+      if ((source === 'edge' || source === 'edge-db') && window.Commerce?.loadVendors) {
+        try {
+          await Promise.race([
+            Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 10) }),
+            new Promise(r => setTimeout(r, 7000)),
+          ]);
+          const fromDb = (window.Commerce.vendors || []).filter(v =>
+            v && v.lat != null && !String(v.id || '').startsWith('demo-')
+          );
+          if (fromDb.length && !vendors.length) {
+            vendors = fromDb;
+            if (source === 'edge-db') source = 'edge-db';
+          }
+        } catch (_) {}
+      }
 
       if (!vendors.length) {
         vendors = await this.overpassLocal(lat, lng, radiusKm * 1000);
         source = 'overpass-local';
-      }
-
-      // Reload DB after edge upsert so owned shops merge
-      if (source === 'edge' && window.Commerce?.loadVendors) {
-        try {
-          await Promise.race([
-            Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 8) }),
-            new Promise(r => setTimeout(r, 6000)),
-          ]);
-        } catch (_) {}
       }
 
       const added = this.mergeIntoCommerce(vendors);
