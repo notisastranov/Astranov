@@ -113,25 +113,30 @@ if (window.__astranovHostOk) {
       sgeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
       scene.add(new THREE.Points(sgeo, new THREE.PointsMaterial({ color: 0xffffff, size: 2.8, sizeAttenuation: false })));
 
+      // Real Blue Marble / night lights — HD deferred to SpaceNetImagery + EarthRealism
       const EARTH_TEX = {
         day: 'https://unpkg.com/three-globe@2.31.1/example/img/earth-blue-marble.jpg',
         night: 'https://unpkg.com/three-globe@2.31.1/example/img/earth-night.jpg',
         fallback: 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg',
       };
       window.EARTH_TEX = EARTH_TEX;
-      const earthMat = new THREE.MeshBasicMaterial({ color: 0x44aaff });
-      // Defer texture load 1 frame so first paint is instant solid sphere
+      const earthMat = new THREE.MeshBasicMaterial({ color: 0x2a6a9a });
+      // First paint: solid; then real map (fallback first = smaller / reliable), then full marble
       setTimeout(() => {
         try {
-          new THREE.TextureLoader().load(EARTH_TEX.day, (tex) => {
+          const loader = new THREE.TextureLoader();
+          loader.load(EARTH_TEX.fallback, (tex) => {
             earthMat.map = tex; earthMat.needsUpdate = true;
+            loader.load(EARTH_TEX.day, (hi) => {
+              earthMat.map = hi; earthMat.needsUpdate = true;
+            }, undefined, () => {});
           }, undefined, () => {
-            new THREE.TextureLoader().load(EARTH_TEX.fallback, (fb) => {
-              earthMat.map = fb; earthMat.needsUpdate = true;
+            loader.load(EARTH_TEX.day, (tex) => {
+              earthMat.map = tex; earthMat.needsUpdate = true;
             });
           });
         } catch (_) {}
-      }, 80);
+      }, 40);
       globePivot = new THREE.Group();
       scene.add(globePivot);
       // 12x12 looked polygonal — 32 desktop / 24 mobile is smooth and still cheap
@@ -12859,12 +12864,15 @@ function _astranovBoot() {
   later(() => {
     void LazyModules.whenReady(() => {
       try { EarthRealism?.init?.(); } catch (_) {}
+      try { window.SpaceNetImagery?.init?.(); } catch (_) {}
+      try { window.SpaceNetImagery?.ensureEarth?.(true); } catch (_) {}
       try { CityMap?.ensureReady?.(); } catch (_) {}
       try { GlobeEntity?.init?.(); } catch (_) {}
       try { DrivingView?.init?.(); } catch (_) {}
       try { window.Commerce?.loadVendors?.({ radiusKm: 20 }); } catch (_) {}
     });
   }, 2200);
+  later(() => { try { window.SpaceNetImagery?.paintAllPlanets?.(); } catch (_) {} }, 5000);
   later(() => { try { LazyModules.schedule(); } catch (_) {} }, 3500);
 
   later(() => Auth.refreshAuthority?.(), 1500);
