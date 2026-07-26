@@ -2,28 +2,28 @@
 <html lang="en">
 <head>
 <script>
-(function(){if(!('serviceWorker'in navigator))return;var k='astranov-migrated-v46';if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');try{caches&&caches.keys&&caches.keys().then(function(ks){ks.forEach(function(n){caches.delete(n)})})}catch(e){}}navigator.serviceWorker.register('/sw.js?v=46').catch(function(){})})();
+(function(){if(!('serviceWorker'in navigator))return;var k='astranov-migrated-v47';if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,'1');try{caches&&caches.keys&&caches.keys().then(function(ks){ks.forEach(function(n){caches.delete(n)})})}catch(e){}}navigator.serviceWorker.register('/sw.js?v=47').catch(function(){})})();
 </script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-continuity-20260726130000-vendor-crawl-profiles" />
-<meta name="astranov-continuity" content="20260726130000-vendor-crawl-profiles" />
+<meta name="compliance-check" content="astranov-continuity-20260726150000-minspec-shell" />
+<meta name="astranov-continuity" content="20260726150000-minspec-shell" />
 <meta name="astranov-ai-handoff" content="Read /astranov-continuity.js and window.AstranovContinuity before any edit" />
 <meta name="aci-session" content="SpaceNet Collective Intelligence">
 <meta name="theme-color" content="#0a1020" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astranov" />
-<meta name="astranov-build" content="20260726130000-vendor-crawl-profiles" />
+<meta name="astranov-build" content="20260726150000-minspec-shell" />
 <meta name="astranov-globe-physics" content="locked-v20260710241000-never-change" />
-<meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one — no satellites needed to communicate" />
+<meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one â€” no satellites needed to communicate" />
 <meta name="astranov-base-lock" content="monolith-no-bootstrap-globe-deck-cli-no-circles-guard-base-mjs" />
 
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
-<link rel="preload" href="/astranov-app.js?v=20260726130000-vendor-crawl-profiles" as="script" />
+<link rel="preload" href="/astranov-app.js?v=20260726150000-minspec-shell" as="script" />
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" onerror="(function(){if(window.__threeFb)return;window.__threeFb=1;var s=document.createElement('script');s.defer=true;s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';document.head.appendChild(s);})()"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -90,7 +90,7 @@
       radial-gradient(1px 1px at 92% 78%, rgba(180,210,255,0.35), transparent),
       radial-gradient(1px 1px at 45% 92%, rgba(255,255,255,0.25), transparent);
   }
-  /* Coders hub — CLI only (say "coders"); no top chrome button overlapping logo */
+  /* Coders hub â€” CLI only (say "coders"); no top chrome button overlapping logo */
   #coders-hub-trigger { display:none !important; }
   #coders-hub-trigger:hover { border-color:var(--ax-blue-bright); box-shadow:0 0 16px var(--ax-blue-glow); }
   #coders-hub-panel { display:none; position:fixed; inset:auto 0 0 0; z-index:140; max-height:min(78vh,520px); overflow:hidden; flex-direction:column; border-radius:18px 18px 0 0; background:rgba(2,6,14,0.96); border:1px solid rgba(126,184,255,0.22); border-bottom:none; box-shadow:0 -8px 40px rgba(0,0,0,0.55); pointer-events:auto; font:11px/1.45 system-ui; color:var(--an-text); }
@@ -131,7 +131,7 @@
   .coders-open { width:100%; border:1px solid color-mix(in srgb, var(--lab-accent,#7eb8ff) 32%, transparent); color:color-mix(in srgb, var(--lab-accent,#7eb8ff) 85%, white); background:rgba(0,0,0,0.35); }
   :root { --globe-opacity:1; --map-opacity:0; }
   #globe { position:absolute; top:0; left:0; right:0; bottom:0; touch-action:none; z-index:2; background:radial-gradient(circle at 38% 42%,#1a4a7a 0%,#0a1830 45%,#000 100%); }
-  /* Legacy rect panels hidden — globe-deck CLI is the UI */
+  /* Legacy rect panels hidden â€” globe-deck CLI is the UI */
   #coders-hub-panel, #coders-hub-trigger, .deck, [id*="modal"], .rect-ui { display:none !important; }
   .celestial-circle { display:none !important; }
   #globe canvas { display:block; cursor:grab; opacity:var(--globe-opacity,1); transition:opacity 0.55s cubic-bezier(0.4,0,0.2,1); }
@@ -153,7 +153,7 @@
     #city-map:not([data-theme]) .leaflet-container { background:#0a1020; }
   }
   .city-map-pin { background:transparent !important; border:none !important; }
-  /* Map/theme brightness — phone system + CLI only (no on-screen buttons) */
+  /* Map/theme brightness â€” phone system + CLI only (no on-screen buttons) */
   #map-style-switch { display:none !important; visibility:hidden !important; pointer-events:none !important; position:fixed; inset:auto; width:0; height:0; overflow:hidden; opacity:0 !important; }
   .ai-glyph { position:relative; display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; color:var(--ai-color, var(--ax-blue-bright)); pointer-events:none; }
   .ai-glyph svg { width:100%; height:100%; display:block; filter:drop-shadow(0 0 5px var(--ai-color, var(--ax-blue-glow))); transition:filter 0.2s, transform 0.2s; }
@@ -758,7 +758,7 @@
   #aci-provider[data-provider="gemini"] { background:rgba(138,180,248,0.18); border-color:rgba(138,180,248,0.45); color:#8ab4f8; }
   .coders-summon { margin-top:8px; width:100%; padding:10px; border-radius:10px; border:1px solid rgba(168,200,255,0.35); background:rgba(61,142,255,0.12); color:#c8d8ff; font:inherit; font-size:11px; font-weight:700; cursor:pointer; }
   .auth-google-fallback { opacity:0.72; font-size:12px !important; padding:10px !important; }
-  /* Site shell — subdomain over Earth */
+  /* Site shell â€” subdomain over Earth */
   #astranov-site-shell { display:none; position:fixed; top:0; left:0; right:0; bottom:182px; z-index:110; flex-direction:column; pointer-events:auto; }
   #astranov-site-shell.open { display:flex; }
   body.site-shell-open #globe { opacity:0.42; filter:saturate(0.85) blur(0.3px); }
@@ -770,7 +770,7 @@
   /* Super batch evolved graphics HUD */
   #nb-mesh-viz { width:100%; height:52px; margin:8px 0; border-radius:10px; background:radial-gradient(ellipse at 50% 50%,var(--ax-blue-glow),rgba(0,8,20,0.92)); border:1px solid var(--ax-blue-border); position:relative; overflow:hidden; }
   #nb-mesh-viz::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(90deg,transparent,transparent 8px,rgba(26,111,212,0.08) 8px,rgba(26,111,212,0.08) 9px); animation:nb-scan 3s linear infinite; }
-  #nb-mesh-viz::after { content:'◎ neural mesh'; position:absolute; left:8px; bottom:4px; font-size:9px; color:var(--ax-blue-bright); letter-spacing:0.5px; text-shadow:0 0 6px var(--ax-blue-glow); }
+  #nb-mesh-viz::after { content:'â—Ž neural mesh'; position:absolute; left:8px; bottom:4px; font-size:9px; color:var(--ax-blue-bright); letter-spacing:0.5px; text-shadow:0 0 6px var(--ax-blue-glow); }
   @keyframes nb-scan { from { transform:translateX(0); } to { transform:translateX(18px); } }
   #node-batch.nb-super-live { box-shadow:inset 0 0 24px var(--ax-blue-glow); border:1px solid var(--ax-blue-border); border-radius:12px; }
   #node-batch.nb-super-live #nb-launch { background:linear-gradient(135deg,rgba(0,40,90,0.8),rgba(26,111,212,0.55)); border-color:var(--ax-blue-bright); animation:nb-glow 2.4s ease-in-out infinite; }
@@ -782,7 +782,7 @@
   #spacenet-loader .snl-label { margin-top:10px; font:10px/1.4 system-ui; color:rgba(180,220,255,0.72); letter-spacing:0.1em; text-transform:uppercase; }
   #nb-fleet-row { margin:6px 0 4px; padding:6px 8px; border-radius:8px; background:rgba(0,30,60,0.35); border:1px solid rgba(26,111,212,0.2); font-size:10px; color:#9bc; }
   @keyframes nb-glow { 50% { box-shadow:0 0 18px var(--ax-blue-glow); } }
-  /* Map team cloud — above globe, map stays visible */
+  /* Map team cloud â€” above globe, map stays visible */
   #map-comms-beam { position:fixed; inset:0; pointer-events:none; z-index:118; overflow:visible; }
   #map-comms-beam line { stroke:var(--ax-blue-bright); stroke-width:2; opacity:0.85; filter:drop-shadow(0 0 6px var(--ax-blue-glow)); }
   #map-comms-beam .mc-beam-glow { stroke:var(--ax-blue-bright); stroke-width:6; opacity:0.28; }
@@ -873,14 +873,14 @@
 </style>
 </head>
 <body>
-  <button id="astranov-logo" type="button" title="Astranov SpaceNet — collective intelligence · hard reset · red=mic · green=AI" aria-label="Astranov SpaceNet hard reset reload">
+  <button id="astranov-logo" type="button" title="Astranov SpaceNet â€” collective intelligence Â· hard reset Â· red=mic Â· green=AI" aria-label="Astranov SpaceNet hard reset reload">
     <canvas id="astranov-logo-wave" aria-hidden="true"></canvas>
     <span class="astranov-logo-label">Astranov SpaceNet</span>
   </button>
   <div id="globe"></div>
-  <button id="coders-hub-trigger" type="button" aria-hidden="true" tabindex="-1" hidden><span>⬡</span><span>Coders</span><span id="coders-hub-live-count">8</span></button>
+  <button id="coders-hub-trigger" type="button" aria-hidden="true" tabindex="-1" hidden><span>â¬¡</span><span>Coders</span><span id="coders-hub-live-count">8</span></button>
   <aside id="coders-hub-panel" aria-label="AI coder labs" aria-hidden="true">
-    <div id="coders-hub-head"><div><p style="margin:0;font-size:9px;color:#7a9">AI coder teams racing</p><h2>Coders Hub</h2></div><button id="coders-refresh-labs" type="button">Refresh</button><button id="coders-hub-close" type="button" aria-label="Close" style="background:transparent;border:1px solid #555;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">✖</button></div>
+    <div id="coders-hub-head"><div><p style="margin:0;font-size:9px;color:#7a9">AI coder teams racing</p><h2>Coders Hub</h2></div><button id="coders-refresh-labs" type="button">Refresh</button><button id="coders-hub-close" type="button" aria-label="Close" style="background:transparent;border:1px solid #555;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">âœ–</button></div>
     <div id="coders-hub-body">
       <p id="coders-race-board">Astranov ready</p>
       <p class="coders-lead">Every AI coder team has its own subdomain. Save your job here, then open any live lab to continue on the shared brain.</p>
@@ -900,8 +900,8 @@
   <div id="astranov-site-shell">
     <div class="as-shell-bar">
       <span id="as-shell-domain">astranov.eu site</span>
-      <button id="as-shell-external" type="button" title="Open in new tab">↗</button>
-      <button id="as-shell-close" type="button" title="Close site · back to Earth">✖</button>
+      <button id="as-shell-external" type="button" title="Open in new tab">â†—</button>
+      <button id="as-shell-close" type="button" title="Close site Â· back to Earth">âœ–</button>
     </div>
     <iframe id="as-shell-frame" title="Astranov Site" allow="camera; microphone; geolocation"></iframe>
   </div>
@@ -911,9 +911,9 @@
         <div>
           <b>Astranov Identity</b>
           <div class="auth-origin" id="auth-origin-url">https://astranov.eu</div>
-          <div class="auth-trust">Sign in on <b>astranov.eu</b> — Google should show <b>Astranov</b>, not a random code.</div>
+          <div class="auth-trust">Sign in on <b>astranov.eu</b> â€” Google should show <b>Astranov</b>, not a random code.</div>
         </div>
-        <button id="auth-close" type="button" style="background:transparent;border:1px solid #666;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">✖</button>
+        <button id="auth-close" type="button" style="background:transparent;border:1px solid #666;color:#aaa;border-radius:8px;padding:4px 10px;cursor:pointer">âœ–</button>
       </div>
       <div class="auth-tabs">
         <button class="auth-tab active" type="button" data-pane="auth-pane-signin">Sign in</button>
@@ -921,15 +921,15 @@
         <button class="auth-tab" type="button" data-pane="auth-pane-phone">Phone</button>
       </div>
       <div id="auth-pane-signin" class="auth-pane active">
-        <button type="button" id="auth-google-continue" class="auth-primary-btn google">Continue with Google — Astranov</button>
+        <button type="button" id="auth-google-continue" class="auth-primary-btn google">Continue with Google â€” Astranov</button>
         <div id="auth-google-btn" class="auth-gis-host"></div>
-        <div class="auth-trust-line">Google screen should say <b>Astranov</b> · returning to <b id="auth-origin-inline">astranov.eu</b></div>
-        <div class="auth-trust-line" style="margin:12px 0 8px;opacity:0.75">— or use email —</div>
+        <div class="auth-trust-line">Google screen should say <b>Astranov</b> Â· returning to <b id="auth-origin-inline">astranov.eu</b></div>
+        <div class="auth-trust-line" style="margin:12px 0 8px;opacity:0.75">â€” or use email â€”</div>
         <input id="auth-email-quick" type="email" autocomplete="email" inputmode="email" placeholder="your@gmail.com" class="auth-email-quick" />
         <button type="button" id="auth-email-link" class="auth-secondary-btn auth-email-primary">Send sign-in link to my email</button>
-        <div class="auth-trust-line">Open the email on <b>this phone</b> · tap the Astranov link · check spam</div>
+        <div class="auth-trust-line">Open the email on <b>this phone</b> Â· tap the Astranov link Â· check spam</div>
         <details class="auth-more-oauth">
-          <summary>Facebook · Apple · X</summary>
+          <summary>Facebook Â· Apple Â· X</summary>
           <div class="auth-oauth-grid">
             <button type="button" data-oauth="facebook">Facebook</button>
             <button type="button" data-oauth="apple">Apple</button>
@@ -941,7 +941,7 @@
       </div>
       <div id="auth-pane-id" class="auth-pane">
         <div class="auth-field"><label>Email, username, or phone</label><input id="auth-identifier" type="text" autocomplete="username" placeholder="you@email.com or my-shop" /></div>
-        <div class="auth-field"><label>Password (optional — magic link if empty)</label><input id="auth-password" type="password" autocomplete="current-password" /></div>
+        <div class="auth-field"><label>Password (optional â€” magic link if empty)</label><input id="auth-password" type="password" autocomplete="current-password" /></div>
         <div class="auth-actions"><button id="auth-signin-btn" type="button">Sign in</button><button id="auth-signup-btn" type="button">Create account</button></div>
       </div>
       <div id="auth-pane-phone" class="auth-pane">
@@ -955,7 +955,7 @@
   <div id="superspace-hud"></div>
   <div id="city-map"></div>
   <div id="map-style-switch" hidden aria-hidden="true" aria-label="Map style (CLI + phone system only)"></div>
-  <button id="spacenet-map-plus" type="button" title="Plus field — tell AI what you want to do" aria-label="Open plus field">+</button>
+  <button id="spacenet-map-plus" type="button" title="Plus field â€” tell AI what you want to do" aria-label="Open plus field">+</button>
   <div id="map-nav-chip" aria-hidden="true" hidden>GLOBAL</div>
   <div id="city-pick-chips" aria-label="Nearby cities and shops"></div>
   <div id="map-eta-labels" aria-label="Delivery ETAs"></div>
@@ -965,9 +965,9 @@
       <img id="vmt-avatar" alt="" />
       <div id="vmt-meta">
         <div id="vmt-name">Shop</div>
-        <div id="vmt-sub">Tap items · photos · prices · order</div>
+        <div id="vmt-sub">Tap items Â· photos Â· prices Â· order</div>
       </div>
-      <button id="vmt-close" type="button" aria-label="Close">✖</button>
+      <button id="vmt-close" type="button" aria-label="Close">âœ–</button>
     </div>
     <div id="vmt-badges" aria-hidden="true"></div>
     <div id="vmt-about"></div>
@@ -979,37 +979,37 @@
       <button id="vmt-order" type="button">Add items to order</button>
     </div>
   </div>
-  <div id="menu-profile-post-tile" aria-label="Super Add · social field profile">
+  <div id="menu-profile-post-tile" aria-label="Super Add Â· social field profile">
     <div id="mpp-hero">
       <div id="mpp-cover">
-        <button id="mpp-cover-edit" type="button" title="Change cover photo" aria-label="Change cover">📷</button>
+        <button id="mpp-cover-edit" type="button" title="Change cover photo" aria-label="Change cover">ðŸ“·</button>
         <input id="mpp-cover-file" type="file" accept="image/*" hidden />
       </div>
       <div id="mpp-profile-row">
         <div id="mpp-avatar-wrap">
           <img id="mpp-avatar" alt="" hidden />
-          <div id="mpp-avatar-fallback">👤</div>
-          <button id="mpp-avatar-edit" type="button" title="Change profile photo" aria-label="Change avatar">📷</button>
+          <div id="mpp-avatar-fallback">ðŸ‘¤</div>
+          <button id="mpp-avatar-edit" type="button" title="Change profile photo" aria-label="Change avatar">ðŸ“·</button>
           <input id="mpp-avatar-file" type="file" accept="image/*" hidden />
         </div>
         <div id="mpp-identity">
           <div id="mpp-name">Guest</div>
-          <div id="mpp-handle">@guest · sign in</div>
-          <div id="mpp-coords">—</div>
+          <div id="mpp-handle">@guest Â· sign in</div>
+          <div id="mpp-coords">â€”</div>
         </div>
         <div id="mpp-toolbar">
-          <button id="mpp-drag" type="button" title="Drag tile" aria-label="Drag tile">⠿</button>
-          <button id="mpp-pin-pick" type="button" title="Tap map to set pin" aria-label="Pick location on map">📍</button>
-          <button id="mpp-close" type="button" aria-label="Close">✖</button>
+          <button id="mpp-drag" type="button" title="Drag tile" aria-label="Drag tile">â ¿</button>
+          <button id="mpp-pin-pick" type="button" title="Tap map to set pin" aria-label="Pick location on map">ðŸ“</button>
+          <button id="mpp-close" type="button" aria-label="Close">âœ–</button>
         </div>
       </div>
     </div>
     <div id="mpp-multi-rail" role="toolbar" aria-label="SpaceNet multi tiles">
-      <button type="button" class="mpp-multi-tile" data-mmt="data" title="Enter field data"><span class="mmt-icon">◎</span><span class="mmt-label">Data</span></button>
-      <button type="button" class="mpp-multi-tile" data-mmt="social" title="Social posts &amp; video"><span class="mmt-icon">🎬</span><span class="mmt-label">Social</span></button>
-      <button type="button" class="mpp-multi-tile" data-mmt="vendor" title="Vendors with menus"><span class="mmt-icon">🏪</span><span class="mmt-label">Vendors</span></button>
-      <button type="button" class="mpp-multi-tile" data-mmt="market" title="Delivery marketplace"><span class="mmt-icon">🛒</span><span class="mmt-label">Order</span></button>
-      <button type="button" class="mpp-multi-tile" data-mmt="pilot" title="Pilot multi-stop routing"><span class="mmt-icon">🛸</span><span class="mmt-label">Pilot</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="data" title="Enter field data"><span class="mmt-icon">â—Ž</span><span class="mmt-label">Data</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="social" title="Social posts &amp; video"><span class="mmt-icon">ðŸŽ¬</span><span class="mmt-label">Social</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="vendor" title="Vendors with menus"><span class="mmt-icon">ðŸª</span><span class="mmt-label">Vendors</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="market" title="Delivery marketplace"><span class="mmt-icon">ðŸ›’</span><span class="mmt-label">Order</span></button>
+      <button type="button" class="mpp-multi-tile" data-mmt="pilot" title="Pilot multi-stop routing"><span class="mmt-icon">ðŸ›¸</span><span class="mmt-label">Pilot</span></button>
       <span id="mpp-multi-created" style="display:contents"></span>
     </div>
     <div id="mpp-roles" role="group" aria-label="Field roles">
@@ -1024,9 +1024,9 @@
       <dl id="mpp-data-list"></dl>
       <div id="mpp-section-market" class="mpp-section visible">
         <div class="mpp-section-title">Delivery marketplace</div>
-        <div id="mpp-market-summary">Set delivery pin · browse shops · pay AVC</div>
+        <div id="mpp-market-summary">Set delivery pin Â· browse shops Â· pay AVC</div>
         <button type="button" class="mpp-act primary" data-mpp-act="browse_shops">Browse shops &amp; add to cart</button>
-        <button type="button" class="mpp-act" data-mpp-act="place_cart">Place order · pay AVC</button>
+        <button type="button" class="mpp-act" data-mpp-act="place_cart">Place order Â· pay AVC</button>
         <button type="button" class="mpp-act" data-mpp-act="track_delivery">Track active delivery</button>
         <button type="button" class="mpp-act" data-mpp-act="set_delivery">Set delivery pin here</button>
       </div>
@@ -1037,8 +1037,8 @@
         <button type="button" class="mpp-act" data-mpp-act="list_shop">List my shop at pin</button>
       </div>
       <div id="mpp-section-pilot" class="mpp-section">
-        <div class="mpp-section-title">Pilot · multi-stop routing</div>
-        <div id="mpp-pilot-summary" style="font-size:10px;color:#9ec8ff;margin-bottom:6px">Pilot builds multi-stop schedule by state · distance · priority. All parties confirm in realtime. Platform 3% · vendor pays driver 15% of gross instantly.</div>
+        <div class="mpp-section-title">Pilot Â· multi-stop routing</div>
+        <div id="mpp-pilot-summary" style="font-size:10px;color:#9ec8ff;margin-bottom:6px">Pilot builds multi-stop schedule by state Â· distance Â· priority. All parties confirm in realtime. Platform 3% Â· vendor pays driver 15% of gross instantly.</div>
         <div id="mpp-pilot-schedule"></div>
         <button type="button" class="mpp-act primary" data-mpp-act="pilot_build">Build multi-stop schedule</button>
         <button type="button" class="mpp-act" data-mpp-act="pilot_start">Start pilot routing</button>
@@ -1054,7 +1054,7 @@
           <span>Schedule</span>
           <select id="mpp-driver-schedule" style="flex:1;max-width:140px;padding:4px 6px;border-radius:8px;border:1px solid var(--ax-blue-border);background:rgba(0,20,48,0.8);color:var(--an-text);font-size:10px">
             <option value="now">Available now</option>
-            <option value="tonight">Tonight 18–23</option>
+            <option value="tonight">Tonight 18â€“23</option>
             <option value="tomorrow_am">Tomorrow AM</option>
             <option value="off">Off duty</option>
           </select>
@@ -1071,17 +1071,17 @@
         <div id="mpp-social-compose">
           <textarea id="mpp-post-caption" placeholder="What's happening at this pin?" maxlength="280"></textarea>
           <div id="mpp-compose-bar">
-            <button type="button" id="mpp-pick-photo" title="Add photo">📷 Photo</button>
-            <button type="button" id="mpp-pick-video" title="Add video">🎬 Video</button>
+            <button type="button" id="mpp-pick-photo" title="Add photo">ðŸ“· Photo</button>
+            <button type="button" id="mpp-pick-video" title="Add video">ðŸŽ¬ Video</button>
             <button type="button" class="mpp-post-now" id="mpp-post-now" title="Post now">Post</button>
           </div>
           <input id="mpp-photo-file" type="file" accept="image/*" capture="environment" hidden />
           <input id="mpp-video-file" type="file" accept="video/*" capture="environment" hidden />
-          <div id="mpp-media-preview"><button type="button" id="mpp-media-clear" aria-label="Remove media">✖</button></div>
+          <div id="mpp-media-preview"><button type="button" id="mpp-media-clear" aria-label="Remove media">âœ–</button></div>
         </div>
       </div>
       <div id="mpp-connected" class="mpp-section visible">
-        <div class="mpp-section-title">Connected · tap to video call</div>
+        <div class="mpp-section-title">Connected Â· tap to video call</div>
         <div id="mpp-connected-users"></div>
       </div>
     </div>
@@ -1090,8 +1090,8 @@
     </div>
   </div>
   <div id="delivery-route-hud" aria-label="Delivery route details">
-    <div id="drh-type">▸ Delivery route</div>
-    <div id="drh-title">—</div>
+    <div id="drh-type">â–¸ Delivery route</div>
+    <div id="drh-title">â€”</div>
     <div id="drh-body"></div>
     <div id="drh-fees"></div>
     <div id="drh-confirms" aria-label="Realtime party confirms">
@@ -1100,35 +1100,35 @@
       <button type="button" id="drh-cf-driver" data-party="driver">Driver confirm</button>
     </div>
     <div id="drh-comms">
-      <button type="button" data-drh="message">💬 Message</button>
-      <button type="button" data-drh="video">📹 Video</button>
-      <button type="button" data-drh="phone">☎ Phone</button>
+      <button type="button" data-drh="message">ðŸ’¬ Message</button>
+      <button type="button" data-drh="video">ðŸ“¹ Video</button>
+      <button type="button" data-drh="phone">â˜Ž Phone</button>
     </div>
-    <button id="drh-accept" type="button">✓ Accept delivery assignment</button>
-    <button id="drh-pickup" type="button" style="display:none">📦 Picked up from vendor</button>
-    <button id="drh-enroute" type="button" style="display:none">🛵 En route to client</button>
-    <button id="drh-complete" type="button" style="display:none">✅ Mark delivered</button>
-    <button id="drh-close" type="button">✖ Close</button>
+    <button id="drh-accept" type="button">âœ“ Accept delivery assignment</button>
+    <button id="drh-pickup" type="button" style="display:none">ðŸ“¦ Picked up from vendor</button>
+    <button id="drh-enroute" type="button" style="display:none">ðŸ›µ En route to client</button>
+    <button id="drh-complete" type="button" style="display:none">âœ… Mark delivered</button>
+    <button id="drh-close" type="button">âœ– Close</button>
   </div>
-  <div id="spacenet-finance-panel" aria-label="SpaceNet finance · balance · mining · invoices" hidden>
+  <div id="spacenet-finance-panel" aria-label="SpaceNet finance Â· balance Â· mining Â· invoices" hidden>
     <div class="sfp-box">
       <div class="sfp-head">
-        <b>◎ SpaceNet Finance</b>
-        <button id="sfp-close" type="button">✖</button>
+        <b>â—Ž SpaceNet Finance</b>
+        <button id="sfp-close" type="button">âœ–</button>
       </div>
       <div class="sfp-rail" role="toolbar" aria-label="Finance multi tiles">
-        <button type="button" class="sfp-tile active" data-sfp="stats"><span class="sfp-ico">◎</span>Stats</button>
-        <button type="button" class="sfp-tile" data-sfp="mining"><span class="sfp-ico">⛏</span>Mining</button>
+        <button type="button" class="sfp-tile active" data-sfp="stats"><span class="sfp-ico">â—Ž</span>Stats</button>
+        <button type="button" class="sfp-tile" data-sfp="mining"><span class="sfp-ico">â›</span>Mining</button>
         <button type="button" class="sfp-tile" data-sfp="platform"><span class="sfp-ico">3%</span>Platform</button>
-        <button type="button" class="sfp-tile" data-sfp="p2p"><span class="sfp-ico">⇄</span>P2P</button>
-        <button type="button" class="sfp-tile" data-sfp="reports"><span class="sfp-ico">∑</span>Reports</button>
+        <button type="button" class="sfp-tile" data-sfp="p2p"><span class="sfp-ico">â‡„</span>P2P</button>
+        <button type="button" class="sfp-tile" data-sfp="reports"><span class="sfp-ico">âˆ‘</span>Reports</button>
       </div>
 
       <div class="sfp-pane active" data-sfp-pane="stats">
-        <p style="margin:0 0 8px;opacity:.85;font-size:10px">Balance · mining · mesh · all SpaceNet fees are <b style="color:#00ff99">3%</b> platform · vendor pays driver <b style="color:#00ff99">15%</b> of gross goods.</p>
+        <p style="margin:0 0 8px;opacity:.85;font-size:10px">Balance Â· mining Â· mesh Â· all SpaceNet fees are <b style="color:#00ff99">3%</b> platform Â· vendor pays driver <b style="color:#00ff99">15%</b> of gross goods.</p>
         <div class="mrp-stats">
-          <div class="mrp-stat"><span>Balance</span><b id="sfp-bal">— AVC</b></div>
-          <div class="mrp-stat"><span>Fiat</span><b id="sfp-fiat">€— · $—</b></div>
+          <div class="mrp-stat"><span>Balance</span><b id="sfp-bal">â€” AVC</b></div>
+          <div class="mrp-stat"><span>Fiat</span><b id="sfp-fiat">â‚¬â€” Â· $â€”</b></div>
           <div class="mrp-stat"><span>Mine rate</span><b id="sfp-rate">0.000/h</b></div>
           <div class="mrp-stat"><span>Session</span><b id="sfp-earned">+0.00</b></div>
           <div class="mrp-stat"><span>Peers</span><b id="sfp-peers">0</b></div>
@@ -1143,23 +1143,23 @@
       </div>
 
       <div class="sfp-pane" data-sfp-pane="mining">
-        <p style="margin:0 0 8px;opacity:.85">Share spare CPU · RAM · SSD · bandwidth. Users serve users — earn AVC while idle.</p>
+        <p style="margin:0 0 8px;opacity:.85">Share spare CPU Â· RAM Â· SSD Â· bandwidth. Users serve users â€” earn AVC while idle.</p>
         <div class="mrp-stats">
           <div class="mrp-stat"><span>Rate</span><b id="mrp-rate">0.000/h</b></div>
           <div class="mrp-stat"><span>Session</span><b id="mrp-earned">+0.00</b></div>
           <div class="mrp-stat"><span>Peers</span><b id="mrp-peers">0</b></div>
-          <div class="mrp-stat"><span>Balance</span><b id="mrp-avc">— AVC</b></div>
+          <div class="mrp-stat"><span>Balance</span><b id="mrp-avc">â€” AVC</b></div>
         </div>
-        <div class="mrp-row"><span>CPU · route &amp; brain shards</span><button type="button" class="mrp-toggle on" data-mrp="cpu" aria-pressed="true"></button></div>
-        <div class="mrp-row"><span>RAM · presence tables</span><button type="button" class="mrp-toggle on" data-mrp="ram" aria-pressed="true"></button></div>
-        <div class="mrp-row"><span>SSD · vendor indexes</span><button type="button" class="mrp-toggle on" data-mrp="storage" aria-pressed="true"></button></div>
-        <div class="mrp-row"><span>NET · P2P mesh sync</span><button type="button" class="mrp-toggle on" data-mrp="bandwidth" aria-pressed="true"></button></div>
-        <div class="mrp-row"><span>Sleep rig · earth view bonus</span><button type="button" class="mrp-toggle on" data-mrp="sleep" aria-pressed="true"></button></div>
-        <button id="mrp-start" type="button">Start earning · join mesh</button>
+        <div class="mrp-row"><span>CPU Â· route &amp; brain shards</span><button type="button" class="mrp-toggle on" data-mrp="cpu" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>RAM Â· presence tables</span><button type="button" class="mrp-toggle on" data-mrp="ram" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>SSD Â· vendor indexes</span><button type="button" class="mrp-toggle on" data-mrp="storage" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>NET Â· P2P mesh sync</span><button type="button" class="mrp-toggle on" data-mrp="bandwidth" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>Sleep rig Â· earth view bonus</span><button type="button" class="mrp-toggle on" data-mrp="sleep" aria-pressed="true"></button></div>
+        <button id="mrp-start" type="button">Start earning Â· join mesh</button>
       </div>
 
       <div class="sfp-pane" data-sfp-pane="platform">
-        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Monthly invoices <b>from Astranov SpaceNet</b> to users · vendors · drivers for the <b>3%</b> platform fee on every transaction.</p>
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Monthly invoices <b>from Astranov SpaceNet</b> to users Â· vendors Â· drivers for the <b>3%</b> platform fee on every transaction.</p>
         <div class="sfp-filters">
           <label>Month<select id="sfp-plat-month"></select></label>
           <label>Role view<select id="sfp-plat-role"><option value="all">All parties</option><option value="client">As client</option><option value="vendor">As vendor</option><option value="driver">As driver</option></select></label>
@@ -1173,14 +1173,14 @@
       </div>
 
       <div class="sfp-pane" data-sfp-pane="p2p">
-        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Accumulative invoices for <b>transactions between users</b> (vendor ↔ driver · driver ↔ client · client ↔ vendor).</p>
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Accumulative invoices for <b>transactions between users</b> (vendor â†” driver Â· driver â†” client Â· client â†” vendor).</p>
         <div class="sfp-filters">
           <label>Flow<select id="sfp-p2p-flow">
             <option value="all">All flows</option>
-            <option value="vendor_driver">Vendor → driver (15% gross)</option>
-            <option value="client_vendor">Client → vendor (goods)</option>
-            <option value="client_driver">Client → driver (delivery)</option>
-            <option value="driver_vendor">Driver ↔ vendor settlement</option>
+            <option value="vendor_driver">Vendor â†’ driver (15% gross)</option>
+            <option value="client_vendor">Client â†’ vendor (goods)</option>
+            <option value="client_driver">Client â†’ driver (delivery)</option>
+            <option value="driver_vendor">Driver â†” vendor settlement</option>
           </select></label>
           <label>Period<select id="sfp-p2p-period">
             <option value="mtd">This month</option>
@@ -1191,7 +1191,7 @@
           </select></label>
         </div>
         <div class="sfp-total">P2P cumulative: <b id="sfp-p2p-total">0.00 AVC</b></div>
-        <div style="overflow:auto;max-height:28vh"><table class="sfp-table" id="sfp-p2p-table"><thead><tr><th>When</th><th>From → To</th><th>Order</th><th class="num">Amount</th></tr></thead><tbody></tbody></table></div>
+        <div style="overflow:auto;max-height:28vh"><table class="sfp-table" id="sfp-p2p-table"><thead><tr><th>When</th><th>From â†’ To</th><th>Order</th><th class="num">Amount</th></tr></thead><tbody></tbody></table></div>
         <div class="sfp-actions">
           <button type="button" id="sfp-p2p-run">Build P2P ledger</button>
           <button type="button" id="sfp-p2p-export">Export ledger</button>
@@ -1199,7 +1199,7 @@
       </div>
 
       <div class="sfp-pane" data-sfp-pane="reports">
-        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Custom report builder — any role can produce statements for audit, tax, or payouts.</p>
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Custom report builder â€” any role can produce statements for audit, tax, or payouts.</p>
         <div class="sfp-filters">
           <label>Report type<select id="sfp-rep-type">
             <option value="platform_monthly">SpaceNet 3% monthly invoice</option>
@@ -1232,16 +1232,16 @@
   <div id="globe-entity-labels"></div>
   <svg id="map-comms-beam" aria-hidden="true"></svg>
   <div id="map-comms-cloud">
-    <div id="mc-head"><span id="mc-title">Cloud chat</span><button id="mc-close" type="button">✖</button></div>
+    <div id="mc-head"><span id="mc-title">Cloud chat</span><button id="mc-close" type="button">âœ–</button></div>
     <div id="mc-media"></div>
     <div id="mc-log"></div>
     <div id="mc-drivers"></div>
-    <div id="mc-foot"><input id="mc-input" type="text" placeholder="Message team…" autocomplete="off" /><button id="mc-send" type="button">Send</button></div>
+    <div id="mc-foot"><input id="mc-input" type="text" placeholder="Message teamâ€¦" autocomplete="off" /><button id="mc-send" type="button">Send</button></div>
   </div>
   <div id="profile-site-panel">
     <div id="ps-head">
       <div><div id="ps-title">Profile</div><div id="ps-sub"></div></div>
-      <button id="ps-close" type="button">✖</button>
+      <button id="ps-close" type="button">âœ–</button>
     </div>
     <div id="ps-body"></div>
     <div id="ps-foot">
@@ -1264,19 +1264,19 @@
     </div>
   </div>
   <div id="globe-entity-hud">
-    <div id="ge-hud-type">◎ Place</div>
-    <div id="ge-hud-title">—</div>
-    <div id="ge-hud-desc">Tap + or the map — type what you want to do</div>
+    <div id="ge-hud-type">â—Ž Place</div>
+    <div id="ge-hud-title">â€”</div>
+    <div id="ge-hud-desc">Tap + or the map â€” type what you want to do</div>
     <div id="ge-hud-plus-field">
       <input id="ge-hud-intent" type="text" autocomplete="off" spellcheck="false" placeholder="What do you want to do here?" aria-label="Intent for this place" />
-      <button id="ge-hud-intent-go" type="button" title="Classify intent">▸</button>
+      <button id="ge-hud-intent-go" type="button" title="Classify intent">â–¸</button>
     </div>
     <div id="classified-triangles-primary" class="ct-triangles" aria-label="Top 3 actions"></div>
-    <button id="ct-more-toggle" type="button" style="display:none">More options ▾</button>
+    <button id="ct-more-toggle" type="button" style="display:none">More options â–¾</button>
     <div id="classified-triangles-more" class="ct-more-wrap"></div>
     <div id="ge-hud-actions" class="ge-hud-actions" style="display:none"></div>
     <div id="ge-hud-row">
-      <button id="ge-hud-close" type="button">✖ Close</button>
+      <button id="ge-hud-close" type="button">âœ– Close</button>
     </div>
   </div>
   <div id="zoom-label">GLOBAL</div>
@@ -1285,7 +1285,7 @@
   <div id="user-chip"></div>
   <div id="drive-guide"></div>
   <div id="aci-hud">
-    <div id="news-ticker">Astranov — collective intelligence linking all · live</div>
+    <div id="news-ticker">Astranov â€” collective intelligence linking all Â· live</div>
     <div id="globe-deck" class="collapsed">
       <div id="globe-deck-header">
         <span id="globe-deck-title">Astranov SpaceNet</span>
@@ -1293,29 +1293,29 @@
       </div>
       <div id="super-cli-bar">
         <button id="aci-login" title="Sign in with Google" type="button">G</button>
-        <button id="aci-avc" class="app-shortcut-btn" type="button" title="AVC balance · tap for wallet" aria-live="polite"><span class="avc-emoji">◎</span><span class="avc-core">— AVC</span><span class="avc-fiat"><span class="avc-eur">€…</span><span class="avc-usd">$…</span></span></button>
+        <button id="aci-avc" class="app-shortcut-btn" type="button" title="AVC balance Â· tap for wallet" aria-live="polite"><span class="avc-emoji">â—Ž</span><span class="avc-core">â€” AVC</span><span class="avc-fiat"><span class="avc-eur">â‚¬â€¦</span><span class="avc-usd">$â€¦</span></span></button>
         <div id="super-cli-middle" class="super-cli-middle">
           <div id="app-shortcut-row" role="toolbar" aria-label="Open applications"></div>
           <span id="cli-ribbon-status" aria-live="polite"></span>
         </div>
         <div id="super-cli-edge-right" class="super-cli-edge-right">
-          <button id="aci-video-call" type="button" title="Video call — connected users on map">📹</button>
-          <button id="super-add-fab" type="button" title="Super Add · social profile · marketplace">+</button>
-          <button id="aci-handsfree" type="button" title="AI hands-free — listen &amp; speak" data-voice-state="off"></button>
+          <button id="aci-video-call" type="button" title="Video call â€” connected users on map">ðŸ“¹</button>
+          <button id="super-add-fab" type="button" title="Super Add Â· social profile Â· marketplace">+</button>
+          <button id="aci-handsfree" type="button" title="AI hands-free â€” listen &amp; speak" data-voice-state="off"></button>
         </div>
-        <button id="aci-stop" title="Stop AI · voice · tasks" type="button"></button>
-        <button id="aci-hold" title="Hold session — pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">⏸</button>
-        <button id="aci-locate" title="Locate me — city view" type="button">🎯</button>
-        <button id="aci-provider" type="button" title="AI provider — tap to cycle" data-provider="astranov">AV</button>
+        <button id="aci-stop" title="Stop AI Â· voice Â· tasks" type="button"></button>
+        <button id="aci-hold" title="Hold session â€” pause mic &amp; tasks for noisy places" type="button" aria-pressed="false">â¸</button>
+        <button id="aci-locate" title="Locate me â€” city view" type="button">ðŸŽ¯</button>
+        <button id="aci-provider" type="button" title="AI provider â€” tap to cycle" data-provider="astranov">AV</button>
         <!-- aci-theme removed: app now auto-follows device dark/bright (prefers-color-scheme); control via CLI 'theme auto|dark|bright' to reduce buttons -->
-        <button id="aci-order" title="Order" type="button">🛒</button>
-        <button id="aci-batch" title="Batch" type="button">🔗</button>
-        <button id="aci-vhf" title="PMR radio" type="button">📡</button>
-        <button id="aci-call" title="Phone" type="button">☎️</button>
+        <button id="aci-order" title="Order" type="button">ðŸ›’</button>
+        <button id="aci-batch" title="Batch" type="button">ðŸ”—</button>
+        <button id="aci-vhf" title="PMR radio" type="button">ðŸ“¡</button>
+        <button id="aci-call" title="Phone" type="button">â˜Žï¸</button>
       </div>
       <div id="cli-hub-bar">
-        <input id="cli-hub-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search users · conversations · CLI…" aria-label="Search CLI hub" />
-        <button id="cli-hub-search-btn" type="button" title="Search CLI hub">⌕</button>
+        <input id="cli-hub-search" type="search" autocomplete="off" spellcheck="false" placeholder="Search users Â· conversations Â· CLIâ€¦" aria-label="Search CLI hub" />
+        <button id="cli-hub-search-btn" type="button" title="Search CLI hub">âŒ•</button>
       </div>
       <div id="globe-deck-body">
         <div id="globe-deck-log"></div>
@@ -1324,59 +1324,59 @@
       <div id="cli-hub-results"><div class="ch-empty">Search users or open cli users</div></div>
     </div>
     <div id="sat-radio">
-      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">✖️</button></div>
-      <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) — browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
+      <div class="sr-row"><span class="sr-ch">EU PMR Ch 11</span><span class="sr-freq">446.13125 MHz</span><span>peers: <b id="sr-peers">0</b></span><button id="sr-close" type="button">âœ–ï¸</button></div>
+      <div class="sr-honest">RF: tune YOUR PMR446 handheld to Ch 11 (446.13125 MHz) â€” browser cannot transmit on 446 MHz. In-app: real mic + WebRTC voice to other Astranov users on this channel.</div>
       <div class="sr-step sr-active" id="sr-step-1"><span class="sr-n">1</span><span class="sr-step-msg">Enable Mic</span></div>
       <div class="sr-step" id="sr-step-2"><span class="sr-n">2</span><span class="sr-step-msg">Join Channel (WebRTC)</span></div>
-      <div class="sr-step" id="sr-step-3"><span class="sr-n">3</span><span class="sr-step-msg">Hold PTT — VU meter must move when you speak</span></div>
+      <div class="sr-step" id="sr-step-3"><span class="sr-n">3</span><span class="sr-step-msg">Hold PTT â€” VU meter must move when you speak</span></div>
       <div id="sr-actions">
-        <button id="sr-mic-btn" type="button">① Enable Mic</button>
-        <button id="sr-join-btn" type="button">② Join Channel</button>
+        <button id="sr-mic-btn" type="button">â‘  Enable Mic</button>
+        <button id="sr-join-btn" type="button">â‘¡ Join Channel</button>
       </div>
       <div id="sr-vu-wrap"><div id="sr-vu"></div></div>
-      <div id="sr-status">Tap 📡 then follow steps 1 → 2 → 3</div>
-      <button id="sr-ptt" type="button">③ HOLD PTT — REAL TRANSMIT</button>
+      <div id="sr-status">Tap ðŸ“¡ then follow steps 1 â†’ 2 â†’ 3</div>
+      <button id="sr-ptt" type="button">â‘¢ HOLD PTT â€” REAL TRANSMIT</button>
     </div>
     <div id="node-batch">
-      <div class="nb-row"><span><strong>🔗 Work together</strong> · Astranov node</span><button id="nb-close" type="button">✖️</button></div>
-      <div style="color:#9cb;font-size:10px;margin-bottom:8px">Εγκατάστησε native/PWA node — decentralized server + comms applet. Μετά batch για δουλειά μαζί.</div>
+      <div class="nb-row"><span><strong>ðŸ”— Work together</strong> Â· Astranov node</span><button id="nb-close" type="button">âœ–ï¸</button></div>
+      <div style="color:#9cb;font-size:10px;margin-bottom:8px">Î•Î³ÎºÎ±Ï„Î¬ÏƒÏ„Î·ÏƒÎµ native/PWA node â€” decentralized server + comms applet. ÎœÎµÏ„Î¬ batch Î³Î¹Î± Î´Î¿Ï…Î»ÎµÎ¹Î¬ Î¼Î±Î¶Î¯.</div>
       <div id="nb-platform" style="margin-bottom:6px;color:var(--ax-blue-bright)"></div>
       <div class="nb-step nb-active" id="nb-step-1"><span class="nb-n">1</span><span class="nb-step-msg">Sign in (G)</span></div>
       <div class="nb-step" id="nb-step-2"><span class="nb-n">2</span><span class="nb-step-msg">Install Astranov on device</span></div>
       <div class="nb-step" id="nb-step-3"><span class="nb-n">3</span><span class="nb-step-msg">Launch batch</span></div>
-      <div id="nb-ios-steps">🍎 <strong>iOS:</strong> Safari → Share ⬆️ → <strong>Add to Home Screen</strong> ➕ → open Astranov icon</div>
-      <button id="nb-install-android" type="button">📲 Install Android / PWA node</button>
-      <button id="nb-install-ios" type="button" style="display:none;width:100%;margin:6px 0;padding:10px;border-radius:12px;background:rgba(40,40,60,0.5);border:1px solid #88a;color:#cdf;cursor:pointer;font-weight:600">🍎 iOS install steps</button>
-      <button id="nb-launch" type="button">🔗 Launch batch · work together</button>
+      <div id="nb-ios-steps">ðŸŽ <strong>iOS:</strong> Safari â†’ Share â¬†ï¸ â†’ <strong>Add to Home Screen</strong> âž• â†’ open Astranov icon</div>
+      <button id="nb-install-android" type="button">ðŸ“² Install Android / PWA node</button>
+      <button id="nb-install-ios" type="button" style="display:none;width:100%;margin:6px 0;padding:10px;border-radius:12px;background:rgba(40,40,60,0.5);border:1px solid #88a;color:#cdf;cursor:pointer;font-weight:600">ðŸŽ iOS install steps</button>
+      <button id="nb-launch" type="button">ðŸ”— Launch batch Â· work together</button>
       <div id="nb-mesh-viz" aria-hidden="true"></div>
-      <div id="nb-fleet-row">Fleet: <b id="nb-fleet-count" style="color:var(--ax-blue-bright)">0</b> device(s) · <span id="nb-fleet-status" style="color:var(--ax-green-bright)">say fleet list</span></div>
-      <div style="margin:8px 0;font-size:10px;color:var(--an-muted)">Session: <b id="nb-batch-id" style="color:var(--ax-blue-bright)">ASTRANOV COLLECTIVE INTELLIGENCE</b> · Devices: <b id="nb-peers" style="color:var(--ax-blue-bright)">0</b> · <span id="nb-mesh-status" style="color:var(--ax-green-bright)">idle</span></div>
-      <button id="nb-join-comms" type="button">📡 Open comms channel (PMR/WebRTC)</button>
+      <div id="nb-fleet-row">Fleet: <b id="nb-fleet-count" style="color:var(--ax-blue-bright)">0</b> device(s) Â· <span id="nb-fleet-status" style="color:var(--ax-green-bright)">say fleet list</span></div>
+      <div style="margin:8px 0;font-size:10px;color:var(--an-muted)">Session: <b id="nb-batch-id" style="color:var(--ax-blue-bright)">ASTRANOV COLLECTIVE INTELLIGENCE</b> Â· Devices: <b id="nb-peers" style="color:var(--ax-blue-bright)">0</b> Â· <span id="nb-mesh-status" style="color:var(--ax-green-bright)">idle</span></div>
+      <button id="nb-join-comms" type="button">ðŸ“¡ Open comms channel (PMR/WebRTC)</button>
       <div id="nb-status" style="color:#9cb;font-size:10px;margin-top:6px">Install node to work together without browser babysitting</div>
     </div>
     <div id="globe-super-add">
       <div class="sa-head">
-        <span>Super Add · post on globe</span>
-        <button id="sa-close" type="button">✖</button>
+        <span>Super Add Â· post on globe</span>
+        <button id="sa-close" type="button">âœ–</button>
       </div>
       <div id="sa-preview-wrap">
         <video id="sa-preview" playsinline autoplay muted></video>
         <video id="sa-playback" playsinline controls></video>
       </div>
-      <div id="sa-status">Tap + on globe · record · choose channel</div>
+      <div id="sa-status">Tap + on globe Â· record Â· choose channel</div>
       <div id="sa-controls">
-        <button id="sa-flip" type="button">🔄 Flip</button>
-        <button id="sa-record" type="button">● Record</button>
-        <button id="sa-post" type="button">➕ Post</button>
+        <button id="sa-flip" type="button">ðŸ”„ Flip</button>
+        <button id="sa-record" type="button">â— Record</button>
+        <button id="sa-post" type="button">âž• Post</button>
       </div>
       <label for="sa-channel">Post to</label>
       <select id="sa-channel">
         <option value="global">Global channel</option>
         <option value="team" id="sa-channel-team">Team / batch</option>
-        <option value="local">Local · near me</option>
-        <option value="custom">Type channel…</option>
+        <option value="local">Local Â· near me</option>
+        <option value="custom">Type channelâ€¦</option>
       </select>
-      <input id="sa-channel-custom" type="text" placeholder="e.g. rhodes-team · my-circle" />
+      <input id="sa-channel-custom" type="text" placeholder="e.g. rhodes-team Â· my-circle" />
       <input id="sa-caption" type="text" placeholder="Caption or what you found on the map" />
       <div class="sa-checks">
         <label><input id="sa-as-map" type="checkbox" checked /> Pin on map where I am</label>
@@ -1391,27 +1391,27 @@
     <div id="globe-youtube">
       <div class="yt-head">
         <span id="yt-now-title">YouTube on globe</span>
-        <button id="yt-open-ext" type="button">Open ↗</button>
-        <button id="yt-close" type="button">✖</button>
+        <button id="yt-open-ext" type="button">Open â†—</button>
+        <button id="yt-close" type="button">âœ–</button>
       </div>
       <div id="yt-player-wrap"><iframe id="yt-frame" title="YouTube player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-      <div id="yt-hint">CLI: youtube mars doc · play 2 · space locate ISS · brain places on globe</div>
+      <div id="yt-hint">CLI: youtube mars doc Â· play 2 Â· space locate ISS Â· brain places on globe</div>
       <div id="yt-results"></div>
     </div>
     <div id="vendor-menu">
-      <div id="vm-header"><span id="vm-title">Καταστήματα</span><button id="vm-close" type="button">✖️</button></div>
-      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">← όλα τα καταστήματα</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><div id="vm-drivers-pick" class="vm-drivers-pick" style="display:none"></div><button id="vm-request" type="button" style="display:none">Ζήτησε μενού από κατάστημα</button><button id="vm-place" type="button">Παραγγελία</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">← όλα τα καταστήματα</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-pricing" class="vm-pricing" style="display:none"></div><div id="vm-balance"></div><button id="vm-wallet-pay" type="button" style="display:none">Google Wallet · Pay vendor</button><button id="vm-confirm-pay" type="button" style="display:none">Επιβεβαίωση &amp; Πληρωμή · AVC balance</button></div></div>
+      <div id="vm-header"><span id="vm-title">ÎšÎ±Ï„Î±ÏƒÏ„Î®Î¼Î±Ï„Î±</span><button id="vm-close" type="button">âœ–ï¸</button></div>
+      <div id="vm-body"><div id="vm-list"></div><div id="vm-detail" style="display:none"><button id="vm-back" type="button">â† ÏŒÎ»Î± Ï„Î± ÎºÎ±Ï„Î±ÏƒÏ„Î®Î¼Î±Ï„Î±</button><div id="vm-empty" style="display:none"></div><div id="vm-items"></div><div id="vm-drivers-pick" class="vm-drivers-pick" style="display:none"></div><button id="vm-request" type="button" style="display:none">Î–Î®Ï„Î·ÏƒÎµ Î¼ÎµÎ½Î¿Ï Î±Ï€ÏŒ ÎºÎ±Ï„Î¬ÏƒÏ„Î·Î¼Î±</button><button id="vm-place" type="button">Î Î±ÏÎ±Î³Î³ÎµÎ»Î¯Î±</button></div><div id="vm-compare" style="display:none"><button id="vm-compare-back" type="button">â† ÏŒÎ»Î± Ï„Î± ÎºÎ±Ï„Î±ÏƒÏ„Î®Î¼Î±Ï„Î±</button><div id="vm-wanted"></div><div id="vm-matches"></div><div id="vm-drivers"></div><div id="vm-pricing" class="vm-pricing" style="display:none"></div><div id="vm-balance"></div><button id="vm-wallet-pay" type="button" style="display:none">Google Wallet Â· Pay vendor</button><button id="vm-confirm-pay" type="button" style="display:none">Î•Ï€Î¹Î²ÎµÎ²Î±Î¯Ï‰ÏƒÎ· &amp; Î Î»Î·ÏÏ‰Î¼Î® Â· AVC balance</button></div></div>
     </div>
         </div>
       </div>
       <div id="globe-deck-input-row">
         <form id="aci-cli-form" action="#" autocomplete="off">
-          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Astranov SpaceNet · type · Enter to send · tap + above for multi-tile"></textarea>
+          <textarea id="aci-cli-in" name="cli" rows="1" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" inputmode="text" placeholder="Astranov SpaceNet Â· type Â· Enter to send Â· tap + above for multi-tile"></textarea>
         </form>
       </div>
     </div>
     <input id="aci-input" placeholder="" style="display:none" />
-    <button id="aci-send" type="button" style="display:none" title="Send">➡️</button>
+    <button id="aci-send" type="button" style="display:none" title="Send">âž¡ï¸</button>
   </div>
 <script>
 (function instantShellUnlock(){
@@ -1421,18 +1421,91 @@
     var deck=document.getElementById('globe-deck');
     if(deck){deck.style.display='flex';deck.style.visibility='visible';deck.style.pointerEvents='auto';}
     var prev=document.getElementById('globe-deck-preview');
-    if(prev&&!prev.textContent.trim()) prev.textContent='Starting Astranov…';
+    if(prev&&!prev.textContent.trim()) prev.textContent='Starting Astranovâ€¦';
   }
   unlock();
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',unlock);
   window._instantShellUnlock=unlock;
 })();
 </script>
-<script defer src="/astranov-app.js?v=20260726130000-vendor-crawl-profiles"></script>
-<script defer src="/astranov-perf-lazy.js?v=20260726130000-vendor-crawl-profiles"></script>
-<script defer src="/astranov-continuity.js?v=20260726130000-vendor-crawl-profiles"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260726130000-vendor-crawl-profiles"></script>
-<script defer src="/astranov-field-hud.js?v=20260726130000-vendor-crawl-profiles"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260726130000-vendor-crawl-profiles"></script>
+<script>
+/* SpaceNet asset rescue: Vercel SPA used to serve index.html as .js â†’ multi-tile/field/sky never booted */
+(function SpaceNetAssetBoot(){
+  var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || String(Date.now());
+  var CDN = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/';
+  var RAW = 'https://raw.githubusercontent.com/notisastranov/astranov.eu/main/';
+  function isBad(text, ct) {
+    if (!text || text.length < 40) return true;
+    var t = text.trimStart();
+    if (t.charAt(0) === '<' || t.indexOf('data-dpl-id') >= 0) return true;
+    if (ct && /html/i.test(ct) && t.indexOf('function') < 0 && t.indexOf('const ') < 0) return true;
+    return false;
+  }
+  function inject(code, name) {
+    var s = document.createElement('script');
+    s.dataset.astranovRescued = name;
+    s.text = code;
+    document.head.appendChild(s);
+  }
+  function loadScriptTag(src) {
+    return new Promise(function(resolve) {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = src;
+      s.onload = function() { resolve(true); };
+      s.onerror = function() { resolve(false); };
+      document.head.appendChild(s);
+    });
+  }
+  async function loadModule(name, probe) {
+    var qs = '?v=' + encodeURIComponent(BUILD) + '&sn=' + Date.now().toString(36);
+    var urls = ['/' + name + qs, CDN + name, RAW + name];
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        if (urls[i].indexOf('raw.githubusercontent') >= 0 || urls[i].indexOf('jsdelivr') >= 0) {
+          var ok = await loadScriptTag(urls[i] + (urls[i].indexOf('?') >= 0 ? '' : qs));
+          if (ok && (!probe || probe())) return 'cdn:' + urls[i];
+          continue;
+        }
+        var r = await fetch(urls[i], { cache: 'no-store' });
+        var ct = r.headers.get('content-type') || '';
+        var text = await r.text();
+        if (!r.ok || isBad(text, ct)) continue;
+        inject(text, name);
+        if (!probe || probe()) return 'origin:' + name;
+      } catch (e) {}
+    }
+    return null;
+  }
+  window.SpaceNetAssetBoot = {
+    BUILD: BUILD,
+    loadModule: loadModule,
+    async ensureCoreUi() {
+      var report = {};
+      report.app = !!window.LazyModules;
+      if (!window.MenuProfilePostTile) report.mpp = await loadModule('astranov-mpp-tile.js', function(){ return !!window.MenuProfilePostTile; });
+      else report.mpp = 'present';
+      if (!window.FieldHud) report.field = await loadModule('astranov-field-hud.js', function(){ return !!window.FieldHud; });
+      else report.field = 'present';
+      if (!window.GalacticSky) report.sky = await loadModule('astranov-galactic-sky.js', function(){ return !!window.GalacticSky; });
+      else report.sky = 'present';
+      try {
+        if (window.MenuProfilePostTile?.init) window.MenuProfilePostTile.init();
+        if (window.FieldHud?.boot) window.FieldHud.boot();
+        if (window.GalacticSky?.init) window.GalacticSky.init();
+      } catch (e) { console.error('[SpaceNetAssetBoot]', e); }
+      window.__spacenetAssetReport = report;
+      return report;
+    }
+  };
+})();
+</script>
+<script defer src="/astranov-app.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/astranov-perf-lazy.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/astranov-continuity.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/astranov-galactic-sky.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-galactic-sky.js',function(){return!!window.GalacticSky})"></script>
+<script defer src="/astranov-field-hud.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-field-hud.js',function(){return!!window.FieldHud})"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-mpp-tile.js',function(){return!!window.MenuProfilePostTile})"></script>
 </body>
 </html>
+
