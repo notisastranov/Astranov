@@ -1,8 +1,7 @@
 // === FIELD HUD — top-right balances/mining · left radar · center speed ===
-// AI HANDOFF: see astranov-continuity.js → features.minerRig, fieldHudRadar, aiBrain.
-// Miner: tap #field-balance-hud → #miner-rig-panel (NO #aci-miner CLI strip). Radar ~12fps unified RAF.
-// bindFieldMiner · ensureBrain/scheduleBrain · SpaceNetMiner prefs astranov:miner-rig-prefs.
-// SpaceNet miner: SETI-style decentralised P2P · CPU · RAM · storage · bandwidth
+// AI HANDOFF: see astranov-continuity.js → features.minerRig, spaceNetFinance, fieldHudRadar.
+// Tap #field-balance-hud → #spacenet-finance-panel multi-tile (stats · mining · 3% invoices · P2P · reports).
+// NO #aci-miner CLI strip. Radar throttled. SpaceNetMiner prefs astranov:miner-rig-prefs.
 const SpaceNetMiner = {
   TERMS_KEY: 'astranov:spacenet-miner-v2',
   SESSION_KEY: 'astranov:spacenet-miner-session',
@@ -977,6 +976,17 @@ const FieldHud = {
     set('mrp-peers', String(m._peerCount || 0));
     const bal = window.AvcBalance?._last;
     set('mrp-avc', bal != null ? bal.toFixed(2) + ' AVC' : '— AVC');
+    set('sfp-rate', m._mineRate.toFixed(3) + ' AVC/h');
+    set('sfp-earned', '+' + m._sessionEarned.toFixed(3));
+    set('sfp-peers', String(m._peerCount || 0));
+    set('sfp-bal', bal != null ? bal.toFixed(2) + ' AVC' : '— AVC');
+    const fx = window.AvcBalance?._fx || 1.08;
+    const fiat = document.getElementById('sfp-fiat');
+    if (fiat) {
+      fiat.textContent = bal != null
+        ? ('€' + bal.toFixed(2) + ' · $' + (bal * fx).toFixed(2))
+        : '€— · $—';
+    }
     const prefs = this._minerPrefs();
     document.querySelectorAll('.mrp-toggle[data-mrp]').forEach(btn => {
       const on = !!prefs[btn.dataset.mrp];
@@ -990,28 +1000,36 @@ const FieldHud = {
     this.syncMinerChip();
   },
 
-  openMinerPanel() {
-    const panel = document.getElementById('miner-rig-panel');
-    if (!panel) return;
+  openMinerPanel() { return this.openFinancePanel('mining'); },
+
+  openFinancePanel(tab) {
+    const panel = document.getElementById('spacenet-finance-panel');
+    if (!panel) return this._openLegacyMiner?.();
     panel.hidden = false;
     panel.classList.add('open');
+    SpaceNetFinance.showTab(tab || 'stats');
     this.refreshMinerPanel();
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+    void SpaceNetFinance.refreshStats();
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
   },
 
   closeMinerPanel() {
-    const panel = document.getElementById('miner-rig-panel');
-    if (!panel) return;
-    panel.classList.remove('open');
-    panel.hidden = true;
+    const panel = document.getElementById('spacenet-finance-panel');
+    if (panel) {
+      panel.classList.remove('open');
+      panel.hidden = true;
+    }
+    const legacy = document.getElementById('miner-rig-panel');
+    if (legacy) {
+      legacy.classList.remove('open');
+      legacy.hidden = true;
+    }
   },
 
   bindFieldMiner() {
     if (!this._minerPanelBound) {
       this._minerPanelBound = true;
-      const panel = document.getElementById('miner-rig-panel');
-      document.getElementById('mrp-close')?.addEventListener('click', () => this.closeMinerPanel());
-      panel?.addEventListener('click', e => { if (e.target === panel) this.closeMinerPanel(); });
+      SpaceNetFinance.bind();
       document.querySelectorAll('.mrp-toggle[data-mrp]').forEach(tog => {
         if (tog._mrpBound) return;
         tog._mrpBound = true;
@@ -1039,20 +1057,390 @@ const FieldHud = {
     if (!hud.getAttribute('role')) {
       hud.setAttribute('role', 'button');
       hud.setAttribute('tabindex', '0');
-      hud.setAttribute('title', 'SpaceNet field · tap for miner rig, balances & mesh');
-      hud.setAttribute('aria-label', 'SpaceNet field · open miner rig and earnings');
+      hud.setAttribute('title', 'SpaceNet finance · balance · mining · 3% invoices · P2P reports');
+      hud.setAttribute('aria-label', 'Open SpaceNet finance multi-tile');
     }
     const open = e => {
       e.preventDefault();
       e.stopPropagation();
-      this.openMinerPanel();
+      this.openFinancePanel('stats');
     };
     hud.addEventListener('click', open);
     hud.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openMinerPanel(); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openFinancePanel('stats'); }
     });
   },
 };
+
+// === SPACENET FINANCE — multi-tile from field balance: stats · mining · 3% invoices · P2P · reports ===
+const SpaceNetFinance = {
+  PLATFORM: 0.03,
+  DRIVER_GROSS: 0.15,
+  _orders: [],
+  _bound: false,
+  _lastReport: '',
+
+  bind() {
+    if (this._bound) return;
+    this._bound = true;
+    const panel = document.getElementById('spacenet-finance-panel');
+    document.getElementById('sfp-close')?.addEventListener('click', () => FieldHud.closeMinerPanel());
+    panel?.addEventListener('click', e => { if (e.target === panel) FieldHud.closeMinerPanel(); });
+    document.querySelectorAll('.sfp-tile[data-sfp]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        this.showTab(btn.dataset.sfp);
+      });
+    });
+    this._fillMonthSelects();
+    document.getElementById('sfp-open-wallet')?.addEventListener('click', () => {
+      window.CoinPortal?.open?.('wallet');
+      void window.AvcBalance?.refresh?.();
+    });
+    document.getElementById('sfp-refresh-stats')?.addEventListener('click', () => void this.refreshStats());
+    document.getElementById('sfp-plat-run')?.addEventListener('click', () => void this.buildPlatformInvoice());
+    document.getElementById('sfp-plat-export')?.addEventListener('click', () => this.exportText('platform'));
+    document.getElementById('sfp-p2p-run')?.addEventListener('click', () => void this.buildP2pLedger());
+    document.getElementById('sfp-p2p-export')?.addEventListener('click', () => this.exportText('p2p'));
+    document.getElementById('sfp-run-report')?.addEventListener('click', () => void this.produceReport());
+    document.getElementById('sfp-export')?.addEventListener('click', () => this.exportText('report'));
+  },
+
+  showTab(id) {
+    document.querySelectorAll('.sfp-tile[data-sfp]').forEach(b => b.classList.toggle('active', b.dataset.sfp === id));
+    document.querySelectorAll('.sfp-pane[data-sfp-pane]').forEach(p => p.classList.toggle('active', p.dataset.sfpPane === id));
+    if (id === 'platform') void this.buildPlatformInvoice();
+    if (id === 'p2p') void this.buildP2pLedger();
+    if (id === 'stats' || id === 'mining') FieldHud.refreshMinerPanel();
+  },
+
+  _fillMonthSelects() {
+    const now = new Date();
+    const opts = [];
+    for (let i = 0; i < 18; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const v = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const label = d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
+      opts.push('<option value="' + v + '">' + label + '</option>');
+    }
+    ['sfp-plat-month', 'sfp-rep-from', 'sfp-rep-to'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.options.length) el.innerHTML = opts.join('');
+    });
+  },
+
+  async loadOrders() {
+    if (!window.Auth?.user) {
+      this._orders = [];
+      return [];
+    }
+    try {
+      const uid = Auth.user.id;
+      const client = Auth.client;
+      if (client?.from) {
+        const [cRes, dRes] = await Promise.all([
+          client.from('orders').select('*').eq('customer_id', uid).order('created_at', { ascending: false }).limit(120),
+          client.from('orders').select('*').eq('driver_id', uid).order('created_at', { ascending: false }).limit(120),
+        ]);
+        let asVendor = [];
+        const owned = (window.Commerce?.vendors || []).filter(v => v.owner_id === uid || v.user_id === uid);
+        if (owned.length) {
+          const ids = owned.map(v => v.id).filter(Boolean).slice(0, 20);
+          if (ids.length) {
+            const vRes = await client.from('orders').select('*').in('vendor_id', ids).order('created_at', { ascending: false }).limit(120);
+            asVendor = vRes?.data || [];
+          }
+        }
+        const seen = new Set();
+        this._orders = [...(cRes?.data || []), ...(dRes?.data || []), ...asVendor].filter(o => {
+          if (!o?.id || seen.has(o.id)) return false;
+          seen.add(o.id);
+          return true;
+        });
+      } else if (Auth.authHeaders && typeof SB_URL !== 'undefined') {
+        const headers = await Auth.authHeaders();
+        const q = (filter) => fetch(
+          SB_URL + '/rest/v1/orders?select=*&' + filter + '&order=created_at.desc&limit=120',
+          { headers }
+        ).then(r => r.ok ? r.json() : []).catch(() => []);
+        const [asClient, asDriver] = await Promise.all([
+          q('customer_id=eq.' + encodeURIComponent(uid)),
+          q('driver_id=eq.' + encodeURIComponent(uid)),
+        ]);
+        const seen = new Set();
+        this._orders = [...(asClient || []), ...(asDriver || [])].filter(o => {
+          if (!o?.id || seen.has(o.id)) return false;
+          seen.add(o.id);
+          return true;
+        });
+      } else {
+        // offline demo from delivery engine missions
+        this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
+          .map(m => m.order).filter(Boolean);
+      }
+    } catch (_) {
+      this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
+        .map(m => m.order).filter(Boolean);
+    }
+    return this._orders;
+  },
+
+  orderGross(o) {
+    const c = o?.calc || {};
+    if (c.total_avc != null) return Number(c.total_avc) || 0;
+    if (c.total_eur != null) return Number(c.total_eur) || 0;
+    const items = Array.isArray(o?.items) ? o.items : [];
+    return items.reduce((s, i) => s + (Number(i.qty) || 1) * (Number(i.price) || 0), 0);
+  },
+
+  orderGoods(o) {
+    const c = o?.calc || {};
+    if (c.subtotal_eur != null) return Number(c.subtotal_eur) || 0;
+    if (c.goods_eur != null) return Number(c.goods_eur) || 0;
+    return this.orderGross(o) * 0.75;
+  },
+
+  orderDelivery(o) {
+    const c = o?.calc || {};
+    if (c.delivery_eur != null) return Number(c.delivery_eur) || 0;
+    return Math.max(0, this.orderGross(o) - this.orderGoods(o));
+  },
+
+  platformFee(o) {
+    const c = o?.calc || {};
+    if (c.platform_fee_eur != null) return Number(c.platform_fee_eur) || 0;
+    return Math.round(this.orderGross(o) * this.PLATFORM * 100) / 100;
+  },
+
+  driverFromVendor(o) {
+    const c = o?.calc || {};
+    if (c.driver_from_vendor_eur != null) return Number(c.driver_from_vendor_eur) || 0;
+    return Math.round(this.orderGoods(o) * this.DRIVER_GROSS * 100) / 100;
+  },
+
+  inMonth(iso, ym) {
+    if (!iso || !ym) return true;
+    return String(iso).slice(0, 7) === ym;
+  },
+
+  inPeriod(iso, period) {
+    if (!iso || period === 'all') return true;
+    const t = new Date(iso).getTime();
+    if (!isFinite(t)) return true;
+    const now = Date.now();
+    if (period === 'mtd') {
+      const d = new Date();
+      return t >= new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    }
+    if (period === '30d') return t >= now - 30 * 864e5;
+    if (period === '90d') return t >= now - 90 * 864e5;
+    if (period === 'ytd') return t >= new Date(new Date().getFullYear(), 0, 1).getTime();
+    return true;
+  },
+
+  async refreshStats() {
+    await this.loadOrders();
+    FieldHud.refreshMinerPanel();
+    const ym = new Date().toISOString().slice(0, 7);
+    const mtd = this._orders.filter(o => this.inMonth(o.created_at, ym));
+    const fee = mtd.reduce((s, o) => s + this.platformFee(o), 0);
+    const p2p = mtd.reduce((s, o) => s + this.orderGross(o), 0);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('sfp-orders-n', String(this._orders.length));
+    set('sfp-fee-mtd', fee.toFixed(2) + ' AVC');
+    set('sfp-p2p-mtd', p2p.toFixed(2) + ' AVC');
+  },
+
+  async buildPlatformInvoice() {
+    await this.loadOrders();
+    const ym = document.getElementById('sfp-plat-month')?.value || new Date().toISOString().slice(0, 7);
+    const role = document.getElementById('sfp-plat-role')?.value || 'all';
+    const uid = Auth?.user?.id;
+    let rows = this._orders.filter(o => this.inMonth(o.created_at, ym));
+    if (role === 'client') rows = rows.filter(o => o.customer_id === uid);
+    if (role === 'driver') rows = rows.filter(o => o.driver_id === uid);
+    if (role === 'vendor') {
+      const vids = new Set((Commerce?.vendors || []).filter(v => v.owner_id === uid).map(v => v.id));
+      rows = rows.filter(o => vids.has(o.vendor_id));
+    }
+    const tbody = document.querySelector('#sfp-plat-table tbody');
+    let total = 0;
+    const lines = rows.map(o => {
+      const fee = this.platformFee(o);
+      total += fee;
+      const party = o.customer_id === uid ? 'client' : o.driver_id === uid ? 'driver' : 'vendor';
+      const day = (o.created_at || '').slice(0, 10);
+      return '<tr><td>' + day + '</td><td>' + (o.short_id || String(o.id).slice(0, 8))
+        + '</td><td>' + party + '</td><td class="num">' + this.orderGross(o).toFixed(2)
+        + '</td><td class="num">' + fee.toFixed(2) + '</td></tr>';
+    });
+    if (tbody) tbody.innerHTML = lines.length ? lines.join('') : '<tr><td colspan="5">No orders this month — place or deliver to populate</td></tr>';
+    const tot = document.getElementById('sfp-plat-total');
+    if (tot) tot.textContent = total.toFixed(2) + ' AVC';
+    this._lastReport = this._formatPlatformInvoice(ym, role, rows, total);
+    AciCli?.print?.('platform 3% invoice · ' + ym + ' · ' + total.toFixed(2) + ' AVC', 'ok');
+  },
+
+  _formatPlatformInvoice(ym, role, rows, total) {
+    const who = Auth?.user?.email || Auth?.user?.id || 'user';
+    let s = 'ASTRANOV SPACENET — PLATFORM 3% MONTHLY INVOICE\n';
+    s += 'Period: ' + ym + ' · Issued to: ' + who + ' · Role filter: ' + role + '\n';
+    s += 'Rate: 3% of transaction gross (goods + delivery)\n';
+    s += '────────────────────────────────────────\n';
+    rows.forEach(o => {
+      s += (o.created_at || '').slice(0, 10) + '  ' + (o.short_id || o.id) + '  gross '
+        + this.orderGross(o).toFixed(2) + '  fee ' + this.platformFee(o).toFixed(2) + ' AVC\n';
+    });
+    s += '────────────────────────────────────────\n';
+    s += 'TOTAL PLATFORM FEE DUE: ' + total.toFixed(2) + ' AVC (= EUR)\n';
+    s += 'Invoice from Astranov SpaceNet · collective infrastructure\n';
+    return s;
+  },
+
+  async buildP2pLedger() {
+    await this.loadOrders();
+    const flow = document.getElementById('sfp-p2p-flow')?.value || 'all';
+    const period = document.getElementById('sfp-p2p-period')?.value || 'mtd';
+    const rows = this._orders.filter(o => this.inPeriod(o.created_at, period));
+    const entries = [];
+    rows.forEach(o => {
+      const goods = this.orderGoods(o);
+      const del = this.orderDelivery(o);
+      const d15 = this.driverFromVendor(o);
+      const oid = o.short_id || String(o.id).slice(0, 8);
+      const when = (o.created_at || '').slice(0, 10);
+      const client = 'Client';
+      const vendor = o.vendor_name || 'Vendor';
+      const driver = o.driver_name || 'Driver';
+      if (flow === 'all' || flow === 'client_vendor') {
+        entries.push({ when, flow: client + ' → ' + vendor, oid, amount: goods, kind: 'client_vendor' });
+      }
+      if (flow === 'all' || flow === 'client_driver') {
+        entries.push({ when, flow: client + ' → ' + driver, oid, amount: del, kind: 'client_driver' });
+      }
+      if (flow === 'all' || flow === 'vendor_driver') {
+        entries.push({ when, flow: vendor + ' → ' + driver + ' (15%)', oid, amount: d15, kind: 'vendor_driver' });
+      }
+      if (flow === 'all' || flow === 'driver_vendor') {
+        entries.push({ when, flow: driver + ' ↔ ' + vendor, oid, amount: goods - d15, kind: 'driver_vendor' });
+      }
+    });
+    const tbody = document.querySelector('#sfp-p2p-table tbody');
+    let total = 0;
+    const html = entries.map(e => {
+      total += e.amount;
+      return '<tr><td>' + e.when + '</td><td>' + e.flow + '</td><td>' + e.oid
+        + '</td><td class="num">' + e.amount.toFixed(2) + '</td></tr>';
+    });
+    if (tbody) tbody.innerHTML = html.length ? html.join('') : '<tr><td colspan="4">No P2P lines — need orders with parties</td></tr>';
+    const tot = document.getElementById('sfp-p2p-total');
+    if (tot) tot.textContent = total.toFixed(2) + ' AVC';
+    this._lastReport = this._formatP2p(flow, period, entries, total);
+  },
+
+  _formatP2p(flow, period, entries, total) {
+    let s = 'ASTRANOV SPACENET — P2P ACCUMULATIVE LEDGER\n';
+    s += 'Flow: ' + flow + ' · Period: ' + period + '\n';
+    s += 'Includes vendor→driver 15% gross · client→vendor goods · client→driver delivery\n';
+    s += '────────────────────────────────────────\n';
+    entries.forEach(e => {
+      s += e.when + '  ' + e.flow + '  ' + e.oid + '  ' + e.amount.toFixed(2) + ' AVC\n';
+    });
+    s += '────────────────────────────────────────\nTOTAL: ' + total.toFixed(2) + ' AVC\n';
+    return s;
+  },
+
+  async produceReport() {
+    await this.loadOrders();
+    const type = document.getElementById('sfp-rep-type')?.value || 'full_statement';
+    const role = document.getElementById('sfp-rep-role')?.value || 'auto';
+    const from = document.getElementById('sfp-rep-from')?.value;
+    const to = document.getElementById('sfp-rep-to')?.value;
+    const ymOk = (iso) => {
+      const m = (iso || '').slice(0, 7);
+      if (from && m < from) return false;
+      if (to && m > to) return false;
+      return true;
+    };
+    const rows = this._orders.filter(o => ymOk(o.created_at));
+    let text = 'ASTRANOV SPACENET STATEMENT\nBuild ' + (document.querySelector('meta[name="astranov-build"]')?.content || '') + '\n';
+    text += 'User: ' + (Auth?.user?.email || 'guest') + ' · Role: ' + role + '\n';
+    text += 'Range: ' + (from || '…') + ' → ' + (to || '…') + '\n\n';
+
+    if (type === 'mining') {
+      const m = SpaceNetMiner;
+      text += 'MINING\nRate ' + m._mineRate.toFixed(3) + ' AVC/h · session +' + m._sessionEarned.toFixed(3)
+        + ' · peers ' + m._peerCount + ' · terms ' + (m._termsOk ? 'ok' : 'pending') + '\n';
+    } else if (type === 'platform_monthly') {
+      const fee = rows.reduce((s, o) => s + this.platformFee(o), 0);
+      text += this._formatPlatformInvoice(from || to || 'range', role, rows, fee);
+    } else if (type === 'p2p_cumulative') {
+      await this.buildP2pLedger();
+      text += this._lastReport;
+    } else if (type === 'driver_earnings') {
+      text += 'DRIVER EARNINGS (15% gross goods + delivery share)\n';
+      let t = 0;
+      rows.filter(o => o.driver_id === Auth?.user?.id || role === 'auto').forEach(o => {
+        const a = this.driverFromVendor(o) + this.orderDelivery(o) * 0.85;
+        t += a;
+        text += (o.short_id || o.id) + '  ' + a.toFixed(2) + ' AVC\n';
+      });
+      text += 'TOTAL DRIVER: ' + t.toFixed(2) + ' AVC\n';
+    } else if (type === 'vendor_sales') {
+      text += 'VENDOR SALES + FEES PAID TO SPACENET 3% + DRIVER 15%\n';
+      let sales = 0, fees = 0, dpay = 0;
+      rows.forEach(o => {
+        sales += this.orderGoods(o);
+        fees += this.platformFee(o);
+        dpay += this.driverFromVendor(o);
+      });
+      text += 'Sales goods: ' + sales.toFixed(2) + '\nPlatform 3%: ' + fees.toFixed(2)
+        + '\nDriver 15% gross: ' + dpay.toFixed(2) + '\n';
+    } else if (type === 'client_spend') {
+      text += 'CLIENT SPEND\n';
+      let t = 0;
+      rows.filter(o => o.customer_id === Auth?.user?.id || role === 'auto').forEach(o => {
+        t += this.orderGross(o);
+        text += (o.short_id || o.id) + '  ' + this.orderGross(o).toFixed(2) + ' AVC\n';
+      });
+      text += 'TOTAL SPEND: ' + t.toFixed(2) + ' AVC\n';
+    } else {
+      const fee = rows.reduce((s, o) => s + this.platformFee(o), 0);
+      const gross = rows.reduce((s, o) => s + this.orderGross(o), 0);
+      text += 'FULL STATEMENT\nOrders: ' + rows.length + '\nGross volume: ' + gross.toFixed(2)
+        + ' AVC\nPlatform 3% cumulative: ' + fee.toFixed(2) + ' AVC\n';
+      text += 'Driver 15% gross cumulative: '
+        + rows.reduce((s, o) => s + this.driverFromVendor(o), 0).toFixed(2) + ' AVC\n';
+      text += '\n' + this._formatPlatformInvoice(from || 'range', role, rows, fee);
+    }
+
+    this._lastReport = text;
+    const out = document.getElementById('sfp-rep-out');
+    if (out) out.textContent = text;
+    AciCli?.print?.('report · ' + type + ' · ' + rows.length + ' orders', 'ok');
+  },
+
+  exportText(kind) {
+    const text = this._lastReport || document.getElementById('sfp-rep-out')?.textContent || '';
+    if (!text) {
+      AciCli?.print?.('Nothing to export — run report first', 'dim');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text).then(() => {
+          AciCli?.print?.('Invoice/report copied to clipboard', 'ok');
+          ACIControl?.reply?.('SpaceNet report copied · paste into email or accounting');
+        });
+      } else {
+        AciCli?.print?.(text.slice(0, 400), 'ok');
+      }
+    } catch (_) {
+      AciCli?.print?.(text.slice(0, 500), 'ok');
+    }
+  },
+};
+window.SpaceNetFinance = SpaceNetFinance;
 
 function fieldHudBoot() {
   try { FieldHud.boot(); } catch (e) { console.error('[FieldHud boot]', e); }
