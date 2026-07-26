@@ -113,29 +113,32 @@ User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 
 ---
 
-## 4. User surface (app-first — no CLI school)
+## 4. User surface — sci‑fi CLI + companion (NO button flood)
 
-Bottom **SpaceNet shell** (`#spacenet-shell`):
+### Hard rules (owner 2026-07-26)
 
-| Button | Spatial meaning |
-|--------|-----------------|
-| **My city** | GPS → city tier · local places + shops |
-| **Shops** | Crawl / browse vendors **in space** |
-| **Order** | Full delivery marketplace in real time |
-| **Menu** | Multi-tile (Data · Social · Vendors · Order · Pilot) |
-| **Talk** | Natural language spatial commands |
-| **Place** | Drop a file/folder **here** (facing coordinates) |
-| **Vault** | List all SpaceNet places · fly to any |
+| Rule | Spec |
+|------|------|
+| **No floating multi-button docks** | **Forbidden:** `#spacenet-shell` dock, second chrome windows, status pill bars that steal screen |
+| **CLI is the screen** | `#globe-deck` log + field = primary UI — links, dots, companion, replies |
+| **Few edge controls only** | **G** (auth) · **🎯 locate** · **📹 video** · **+** multi-tile · **handsfree** · stop/hold as needed. Hide permanent Order/Batch/VHF/Phone/CLI-hub strip |
+| **Companion** | `#sn-companion` — humanoid face of **deep glowing blue dots**; talks/listens/thinks via mood; lives **inside** CLI, not a separate window |
+| **Clickable CLI links** | Syntax `[[action\|label]]` in log (e.g. `[[city\|locate]]`) → `SpaceNetShell.run` |
+| **Dedummyfy** | Prefer real spatial actions + real imagery; no fake “app store” chrome |
+
+### Companion (code)
+
+`SpaceNetCompanion` in `astranov-app.js` — canvas face, colors ≈ `#1a6fd4` / `#3d9eff`, moods: idle · talk · listen · think.
 
 ### Talk → space (examples)
 
-| You say | SpaceNet does |
-|---------|----------------|
+| You say / tap | SpaceNet does |
+|---------------|----------------|
 | `put thesis on the garage` | Places file at garage coords · fly |
 | `hide music on mars cydonia` | Folder on Mars · fly orbit |
-| `go to cydonia` / `open thesis` | Fly + open place panel |
-| `drop here` / `places` / `vault` | Drop or list vault |
-| `my city` / `shops` / `order` | Shell actions |
+| `go to Jupiter` / `go to Orion` / `go to hyperspace` | Cosmos fly |
+| `[[city]]` / `[[shops]]` / `[[order]]` / `[[cosmos]]` | CLI links |
+| type in field + Enter | Natural language router |
 
 ---
 
