@@ -1773,6 +1773,96 @@ window.TrackballGuard = TrackballGuard;
 TrackballGuard.init();
 
 
+// === SPACENET CITIES — national step: active cities with live users + shops ===
+const SpaceNetCities = {
+  CELL: 0.55,
+  _hubs: [],
+  _lastAt: 0,
+
+  cellKey(lat, lng) {
+    const s = this.CELL;
+    return Math.round(lat / s) + ':' + Math.round(lng / s);
+  },
+
+  rebuild() {
+    const cells = new Map();
+    const push = (lat, lng, kind, meta) => {
+      if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
+      const k = this.cellKey(lat, lng);
+      let c = cells.get(k);
+      if (!c) {
+        c = { lat, lng, users: 0, shops: 0, drivers: 0, names: [], key: k };
+        cells.set(k, c);
+      }
+      c.lat = (c.lat * 0.7) + (lat * 0.3);
+      c.lng = (c.lng * 0.7) + (lng * 0.3);
+      if (kind === 'user') {
+        c.users++;
+        if (meta?.name && c.names.length < 3) c.names.push(meta.name);
+      } else if (kind === 'shop') c.shops++;
+      else if (kind === 'driver') c.drivers++;
+    };
+    (window.others || []).forEach(u => push(u.lat, u.lng, 'user', u));
+    (window.Commerce?.vendors || []).forEach(v => push(v.lat, v.lng, 'shop', v));
+    (window.FieldBrain?.drivers || []).forEach(d => {
+      if (d.field_lat != null) push(d.field_lat, d.field_lng, 'driver', d);
+    });
+    this._hubs = [...cells.values()]
+      .filter(h => h.users > 0 || h.shops > 0)
+      .map(h => ({
+        ...h,
+        score: h.users * 10 + h.shops * 2 + h.drivers * 3,
+        label: h.names[0] ? (h.names[0].split(/[\s·]/)[0] + ' area') : ('Hub ' + h.lat.toFixed(1) + '°'),
+      }))
+      .sort((a, b) => b.score - a.score);
+    this._lastAt = Date.now();
+    return this._hubs;
+  },
+
+  listHubs(n) {
+    if (Date.now() - this._lastAt > 8000) this.rebuild();
+    return this._hubs.slice(0, n || 12);
+  },
+
+  listNear(lat, lng, n) {
+    this.rebuild();
+    return this._hubs
+      .map(h => ({ ...h, d: SpaceNetGeo.haversineKm(lat, lng, h.lat, h.lng) }))
+      .sort((a, b) => a.d - b.d || b.score - a.score)
+      .slice(0, n || 6);
+  },
+
+  refresh(showGlobe) {
+    this.rebuild();
+    if (!showGlobe || !window.GlobeEntity?.register) return;
+    GlobeEntity.unregisterType?.('city_hub');
+    if (!GlobeNavigate?.isNational?.() && !CityMap?._nationalActive) return;
+    this._hubs.slice(0, 14).forEach((h, i) => {
+      if (h.users < 1 && h.shops < 1) return;
+      GlobeEntity.register({
+        id: 'sn-city-' + h.key,
+        type: 'city_hub',
+        lat: h.lat,
+        lng: h.lng,
+        title: '◎ ' + (h.label || 'SpaceNet city'),
+        description: (h.users || 0) + ' live users · ' + (h.shops || 0) + ' shops · tap to enter',
+        urgency: h.users >= 2 ? 3 : 2,
+        color: 0x3d9eff,
+        data: { hub: h },
+        _actionLabel: 'Enter city',
+        onTap: () => {
+          void GlobeNavigate?._enterCitySlow?.(h.lat, h.lng, { openShops: false, spaceNetCity: true });
+        },
+      });
+    });
+  },
+
+  clear() {
+    GlobeEntity?.unregisterType?.('city_hub');
+  },
+};
+window.SpaceNetCities = SpaceNetCities;
+
 // === GLOBE NAVIGATE — trackball · national stop · click city · no jumps ===
 const GlobeNavigate = {
   mode: 'global',
@@ -1810,14 +1900,29 @@ const GlobeNavigate = {
     if (!chip) return;
     const cosmic = CosmicZoom?.level || 'earth';
     let txt = 'GLOBAL · constellations · scroll out → galactic sky';
+    let show = false;
     if (cosmic === 'galaxy') txt = 'GALAXY · scroll in → exoplanet hosts → earth';
     else if (cosmic === 'galactic') txt = 'GALACTIC SKY · real exoplanet star positions';
     else if (cosmic === 'orbit') txt = 'ORBIT · constellations · scroll out → galactic sky';
-    else if (this.isCity()) txt = 'CITY z' + this.LEAFLET_ZOOM + ' · tap + for intent';
-    else if (this.isNational()) txt = 'NATIONAL · tap a city to descend slowly';
+    else if (this.isCity() || CityMap?.active) {
+      const n = (window.others || []).length;
+      txt = 'CITY · SpaceNet · ' + n + ' live user' + (n === 1 ? '' : 's') + ' · tap + for multi-tile';
+      show = true;
+    } else if (this.isNational() || CityMap?._nationalActive) {
+      const hubs = SpaceNetCities?.listHubs?.(8) || [];
+      const users = hubs.reduce((s, h) => s + (h.users || 0), 0);
+      txt = hubs.length
+        ? 'NATIONAL · SpaceNet · ' + hubs.length + ' active cities · ' + users + ' users · tap a city'
+        : 'NATIONAL · SpaceNet · tap map for cities with users & shops';
+      show = true;
+      SpaceNetCities?.refresh?.(true);
+    } else {
+      SpaceNetCities?.clear?.();
+    }
     chip.textContent = txt;
-    chip.classList.remove('visible');
-    chip.hidden = true;
+    chip.hidden = !show;
+    chip.classList.toggle('visible', show);
+    chip.setAttribute('aria-hidden', show ? 'false' : 'true');
   },
 
   unlockCity() {
@@ -1843,10 +1948,16 @@ const GlobeNavigate = {
       };
       this.mode = 'national';
       ZoomTiers?.goTo?.('national', false);
+      SpaceNetCities?.refresh?.(true);
     } else if (z > 2.35 && this.mode !== 'global') {
       this.mode = 'global';
       this._cityUnlocked = false;
       this._hideCityChips();
+      SpaceNetCities?.clear?.();
+    } else if (this.isNational()) {
+      SpaceNetCities?.refresh?.(true);
+      const p = this.anchor || window._lastPos || TrackballGuard?.facingLatLng?.();
+      if (p?.lat != null) this._showCityChips(p.lat, p.lng);
     }
     this._syncChip();
   },
@@ -1859,20 +1970,43 @@ const GlobeNavigate = {
   _showCityChips(lat, lng) {
     const el = document.getElementById('city-pick-chips');
     if (!el) return;
+    const hubs = SpaceNetCities?.listNear?.(lat, lng, 6) || [];
     const vendors = (window.Commerce?.vendors || []).filter(v => v.lat != null && v.lng != null);
-    const sorted = vendors.slice().sort((a, b) => {
+    const shops = vendors.slice().sort((a, b) => {
       const da = SpaceNetGeo.haversineM(lat, lng, a.lat, a.lng);
       const db = SpaceNetGeo.haversineM(lat, lng, b.lat, b.lng);
       return da - db;
-    }).slice(0, 3);
-    if (!sorted.length) {
+    }).slice(0, 2);
+
+    const parts = [];
+    hubs.forEach((h, i) => {
+      parts.push(
+        '<button type="button" class="sn-city" data-sn-hub="' + i + '">'
+        + '◎ ' + (h.label || 'City') + ' · <span class="sn-n">' + (h.users || 0) + '</span> users'
+        + (h.shops ? ' · ' + h.shops + ' shops' : '')
+        + '</button>'
+      );
+    });
+    shops.forEach(v => {
+      parts.push(
+        '<button type="button" data-city-pick="' + v.id + '">'
+        + (v.emoji || '🏬') + ' ' + (v.name || 'Shop') + '</button>'
+      );
+    });
+    if (!parts.length) {
       this._hideCityChips();
       return;
     }
-    el.innerHTML = sorted.map(v =>
-      '<button type="button" data-city-pick="' + v.id + '">' + (v.emoji || '🏬') + ' ' + (v.name || 'Shop') + '</button>'
-    ).join('');
+    el.innerHTML = parts.join('');
     el.classList.add('visible');
+    el.querySelectorAll('[data-sn-hub]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const h = hubs[Number(btn.dataset.snHub)];
+        if (h) void this._enterCitySlow(h.lat, h.lng, { openShops: false, spaceNetCity: true });
+      };
+    });
     el.querySelectorAll('[data-city-pick]').forEach(btn => {
       btn.onclick = (e) => {
         e.preventDefault();
@@ -8366,12 +8500,83 @@ const SuperCli = {
         GlobeDeck?.expand(ACL_TITLE);
         document.getElementById('aci-cli-in')?.focus();
         break;
+      case 'bridge':
+      case 'devbridge':
+      case 'composer':
+        await SpaceNetDevBridge?.open?.(opts?.rest || '');
+        break;
       default:
         if (AciCli && act) await AciCli.run(act + (opts?.rest ? ' ' + opts.rest : ''));
     }
   },
 };
 window.SuperCli = SuperCli;
+
+// === DEV BRIDGE — CLI handoff so owner can continue development with AI from the app ===
+const SpaceNetDevBridge = {
+  KEY: 'astranov:dev-bridge',
+
+  pack(extra) {
+    const c = window.AstranovContinuity;
+    const job = window.CodersHub?.buildJob?.() || {};
+    return {
+      type: 'astranov-dev-bridge',
+      at: new Date().toISOString(),
+      build: document.querySelector('meta[name="astranov-build"]')?.content || '',
+      continuity: c?.version || '',
+      live: 'https://astranov.eu',
+      readFirst: ['astranov-continuity.js', 'ASTRANOV_SPECS.md', 'CLAUDE.md'],
+      features: c ? Object.keys(c.features || {}) : [],
+      economics: c?.economics || null,
+      lastPrompt: job.lastPrompt || extra || '',
+      summary: job.summary || '',
+      cliTail: (window.AciCli?._lines || []).slice(-8).map(l => (l.text || l)).join('\n').slice(0, 800),
+      note: 'Continue development from CLI: type bridge after edits. Composer/Coders pick up saved job.',
+    };
+  },
+
+  async open(task) {
+    await LazyModules.ensure().catch(() => {});
+    const pack = this.pack(task);
+    try { localStorage.setItem(this.KEY, JSON.stringify(pack)); } catch (_) {}
+    try {
+      window.CodersHub?.writeJob?.({
+        updatedAt: pack.at,
+        fromLab: 'astranov.eu-cli',
+        summary: 'SpaceNet launch bridge · ' + (pack.build || ''),
+        lastPrompt: (task || pack.lastPrompt || 'Continue Astranov SpaceNet launch fixes from specs').slice(0, 400),
+        messages: [
+          { role: 'user', content: 'Read window.AstranovContinuity and ASTRANOV_SPECS.md. Continue development. Task: ' + (task || 'launch readiness') },
+          { role: 'assistant', content: 'Bridge pack ready · build ' + pack.build + ' · continuity ' + pack.continuity },
+        ],
+        engine: 'composer',
+      });
+    } catch (_) {}
+    window.CodersHub?.saveJob?.();
+    const line = [
+      '◎ Dev bridge ready',
+      'Build ' + pack.build,
+      'Continuity ' + pack.continuity,
+      'Say: coders composer <task> · or open Coders Hub → Summon Composer',
+      'Specs: continuity + ASTRANOV_SPECS.md',
+    ].join(' · ');
+    GlobeDeck?.expand?.(ACL_TITLE);
+    AciCli?.print?.(line, 'ok');
+    ACIControl?.reply?.('Bridge to AI coders saved — continue with: coders composer ' + (task || 'fix launch gaps'));
+    const input = document.getElementById('aci-cli-in');
+    if (input) {
+      input.value = 'coders composer Continue from bridge ' + pack.build + ': ' + (task || 'full launch audit fixes per ASTRANOV_SPECS');
+      input.dispatchEvent(new Event('input'));
+    }
+    if (task && window.AciCoders?.handleMessage) {
+      void AciCoders.handleMessage('composer ' + task, {});
+    } else if (window.CodersHub?.summonComposer) {
+      try { CodersHub.summonComposer(); } catch (_) {}
+    }
+    return pack;
+  },
+};
+window.SpaceNetDevBridge = SpaceNetDevBridge;
 
 // === ACI CLI — Collective dev terminal (login required) ===
 const AciCli = {
@@ -8656,8 +8861,16 @@ const AciCli = {
     const rest = parts.slice(1).map(p => p.replace(/^"|"$/g, '')).join(' ');
 
     try {
+      if (cmd === 'bridge' || cmd === 'devbridge' || cmd === 'handoff') {
+        await SpaceNetDevBridge?.open?.(rest);
+        return;
+      }
       if (cmd === 'coders' || cmd === 'composer' || cmd === 'cursor' ||
           (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
+        if (cmd === 'coders' && /^bridge\b/i.test(rest)) {
+          await SpaceNetDevBridge?.open?.(rest.replace(/^bridge\s*/i, ''));
+          return;
+        }
         const task = cmd === 'summon' ? parts.slice(2).join(' ')
           : (cmd === 'coders' ? rest : rest || '');
         await AciCoders?.handleCodersCommand(
