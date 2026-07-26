@@ -4214,9 +4214,180 @@ const SpaceNetLoader = {
 };
 window.SpaceNetLoader = SpaceNetLoader;
 
-// === SPACENET SHELL — app-first UI (no CLI knowledge required) ===
-// Root cause of “no basic SpaceNet”: critical modules (mpp/field/sky) were SPA HTML 404s.
-// This shell + asset rescue make My City / Shops / Order / Talk work as buttons.
+// === SPACENET SHELL + COMPANION — CLI is the UI (NO floating button dock) ===
+// Spec: few bar controls only (G · locate · video · + · handsfree). All else = CLI links + talk.
+// Companion: humanoid face of deep glowing blue dots in the CLI screen.
+
+const SpaceNetCompanion = {
+  _canvas: null,
+  _ctx: null,
+  _raf: 0,
+  _mood: 'idle', // idle | talk | listen | think
+  _t0: 0,
+  _ready: false,
+  // 12×14 face map: 0 empty, 1 deep blue, 2 bright glow, 3 eye white-blue
+  FACE: [
+    '............',
+    '..11111111..',
+    '.1111111111.',
+    '.1131111311.',
+    '.1131111311.',
+    '.1111111111.',
+    '.1111221111.',
+    '.1111111111.',
+    '.111....111.',
+    '.1111111111.',
+    '..11111111..',
+    '...111111...',
+    '....1111....',
+    '............',
+  ],
+  FACE_TALK: [
+    '............',
+    '..11111111..',
+    '.1111111111.',
+    '.1131111311.',
+    '.1131111311.',
+    '.1111111111.',
+    '.1111221111.',
+    '.1111111111.',
+    '.11......11.',
+    '.1111111111.',
+    '..11111111..',
+    '...111111...',
+    '....1111....',
+    '............',
+  ],
+
+  init() {
+    if (this._ready) return;
+    this._ready = true;
+    this._inject();
+    this._t0 = performance.now();
+    this._loop();
+    // Reflect voice / deck state
+    setInterval(() => this._syncMood(), 400);
+  },
+
+  _inject() {
+    if (document.getElementById('sn-companion')) return;
+    const deck = document.getElementById('globe-deck');
+    const body = document.getElementById('globe-deck-body');
+    if (!deck || !body) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'sn-companion';
+    wrap.setAttribute('aria-label', 'SpaceNet companion');
+    wrap.innerHTML = '<canvas id="sn-companion-face" width="96" height="112"></canvas>'
+      + '<div id="sn-companion-meta"><b>◎ NET</b><span id="sn-companion-line">online</span></div>';
+    body.insertBefore(wrap, body.firstChild);
+    if (!document.getElementById('sn-companion-css')) {
+      const s = document.createElement('style');
+      s.id = 'sn-companion-css';
+      s.textContent = [
+        '#sn-companion{display:flex;align-items:center;gap:10px;padding:6px 10px 4px;',
+        'border-bottom:1px solid rgba(26,111,212,0.28);background:linear-gradient(180deg,rgba(0,16,40,0.55),transparent);',
+        'flex-shrink:0;min-height:0}',
+        '#sn-companion-face{width:48px;height:56px;image-rendering:pixelated;flex-shrink:0;',
+        'filter:drop-shadow(0 0 8px rgba(61,158,255,0.55))}',
+        '#sn-companion-meta{display:flex;flex-direction:column;gap:2px;min-width:0;font:10px/1.3 ui-monospace,monospace;color:#6a9fd4}',
+        '#sn-companion-meta b{color:#3d9eff;text-shadow:0 0 8px rgba(61,158,255,0.6);font-size:11px}',
+        '#sn-companion-line{color:#8ab4e0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70vw}',
+        /* Kill floating multi-button docks + excess bar chrome */
+        '#spacenet-shell,#spacenet-shell-dock,#spacenet-shell-status{display:none!important}',
+        'body.sn-shell-open #globe-deck{padding-bottom:0!important}',
+        '#aci-order,#aci-batch,#aci-vhf,#aci-call,#cli-hub-bar,#cli-hub-panel{display:none!important}',
+        '#globe-deck-log .sn-cli-link{color:#5ec8ff;text-decoration:none;border-bottom:1px dotted rgba(94,200,255,0.55);',
+        'cursor:pointer;text-shadow:0 0 6px rgba(61,158,255,0.45)}',
+        '#globe-deck-log .sn-cli-link:hover{color:#9ed8ff;border-bottom-color:#9ed8ff}',
+        '#globe-deck-log .deck-line.deck-reply,#globe-deck-log .deck-line.deck-ok{color:#7ec8ff}',
+      ].join('');
+      document.head.appendChild(s);
+    }
+    // Remove any legacy dock from prior builds
+    try {
+      document.getElementById('spacenet-shell')?.remove();
+      document.body.classList.remove('sn-shell-open');
+    } catch (_) {}
+    this._canvas = document.getElementById('sn-companion-face');
+    this._ctx = this._canvas?.getContext('2d');
+    // CLI link clicks
+    document.getElementById('globe-deck-log')?.addEventListener('click', (e) => {
+      const a = e.target.closest('a.sn-cli-link[data-sn]');
+      if (!a) return;
+      e.preventDefault();
+      void SpaceNetShell?.run?.(a.getAttribute('data-sn'));
+    });
+  },
+
+  setLine(msg) {
+    const el = document.getElementById('sn-companion-line');
+    if (el) el.textContent = String(msg || '').slice(0, 96);
+  },
+
+  setMood(m) {
+    this._mood = m || 'idle';
+  },
+
+  _syncMood() {
+    const st = document.getElementById('globe-deck')?.dataset?.cliState || 'idle';
+    if (st === 'speaking') this._mood = 'talk';
+    else if (st === 'listening') this._mood = 'listen';
+    else if (st === 'thinking' || st === 'coders') this._mood = 'think';
+    else this._mood = 'idle';
+  },
+
+  _loop() {
+    this._draw();
+    this._raf = requestAnimationFrame(() => this._loop());
+  },
+
+  _draw() {
+    const ctx = this._ctx;
+    const c = this._canvas;
+    if (!ctx || !c) return;
+    const now = performance.now() - this._t0;
+    const blink = Math.floor(now / 3200) % 9 === 0;
+    const talk = this._mood === 'talk' && Math.floor(now / 120) % 2 === 0;
+    const map = talk ? this.FACE_TALK : this.FACE;
+    const cols = 12;
+    const rows = map.length;
+    const cell = 8;
+    ctx.clearRect(0, 0, c.width, c.height);
+    // ambient glow field
+    ctx.fillStyle = 'rgba(0,20,48,0.35)';
+    ctx.fillRect(0, 0, c.width, c.height);
+    for (let y = 0; y < rows; y++) {
+      const row = map[y] || '';
+      for (let x = 0; x < cols; x++) {
+        const ch = row[x] || '.';
+        if (ch === '.') continue;
+        let g = 0.55;
+        if (ch === '2') g = 0.95;
+        if (ch === '3') {
+          if (blink) continue;
+          g = 1;
+        }
+        if (this._mood === 'listen') g *= 0.85 + 0.15 * Math.sin(now / 180 + x);
+        if (this._mood === 'think') g *= 0.7 + 0.3 * Math.sin(now / 220 + y);
+        const px = x * cell + 1;
+        const py = y * cell + 1;
+        ctx.shadowColor = 'rgba(61,158,255,' + (0.35 + g * 0.5) + ')';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = ch === '2'
+          ? 'rgba(120,200,255,' + g + ')'
+          : ch === '3'
+            ? 'rgba(180,230,255,' + g + ')'
+            : 'rgba(26,111,212,' + (0.45 + g * 0.5) + ')';
+        ctx.beginPath();
+        ctx.arc(px + cell / 2 - 1, py + cell / 2 - 1, cell * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.shadowBlur = 0;
+  },
+};
+window.SpaceNetCompanion = SpaceNetCompanion;
+
 const SpaceNetShell = {
   _ready: false,
   _status: '',
@@ -4224,109 +4395,50 @@ const SpaceNetShell = {
   init() {
     if (this._ready) return;
     this._ready = true;
-    this._injectStyles();
-    this._injectDock();
-    this._bind();
-    this.setStatus('SpaceNet ready · use the bar below');
+    try { SpaceNetCompanion.init(); } catch (_) {}
+    // purge any leftover floating UI from older builds
+    try {
+      document.getElementById('spacenet-shell')?.remove();
+      document.body.classList.remove('sn-shell-open');
+    } catch (_) {}
     void this.bootstrap();
-  },
-
-  _injectStyles() {
-    if (document.getElementById('spacenet-shell-css')) return;
-    const s = document.createElement('style');
-    s.id = 'spacenet-shell-css';
-    s.textContent = [
-      '#spacenet-shell{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));',
-      'transform:translateX(-50%);z-index:160;display:flex;flex-direction:column;align-items:center;gap:6px;',
-      'width:min(520px,96vw);pointer-events:none;font:11px/1.3 system-ui,sans-serif}',
-      '#spacenet-shell-status{pointer-events:none;max-width:100%;padding:5px 12px;border-radius:999px;',
-      'background:rgba(0,12,28,0.82);border:1px solid rgba(61,158,255,0.4);color:#9ed0ff;',
-      'text-align:center;backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,0,0,0.45)}',
-      '#spacenet-shell-dock{pointer-events:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;',
-      'padding:8px;border-radius:18px;background:rgba(0,8,20,0.88);border:1px solid rgba(61,158,255,0.45);',
-      'box-shadow:0 8px 28px rgba(0,0,0,0.55),0 0 20px rgba(26,111,212,0.25);backdrop-filter:blur(10px)}',
-      '#spacenet-shell-dock button{appearance:none;border:1px solid rgba(61,158,255,0.4);background:rgba(0,32,72,0.75);',
-      'color:#cfe8ff;border-radius:14px;padding:10px 12px;min-width:72px;font-weight:700;font-size:11px;',
-      'cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:2px}',
-      '#spacenet-shell-dock button:active{transform:scale(0.97);border-color:#3d9eff}',
-      '#spacenet-shell-dock button .sn-ico{font-size:16px;line-height:1}',
-      '#spacenet-shell-dock button.primary{background:linear-gradient(135deg,rgba(26,111,212,0.85),rgba(0,60,120,0.9));',
-      'border-color:#3d9eff;box-shadow:0 0 14px rgba(61,158,255,0.35)}',
-      'body.sn-shell-open #globe-deck{padding-bottom:88px}',
-    ].join('');
-    document.head.appendChild(s);
-  },
-
-  _injectDock() {
-    if (document.getElementById('spacenet-shell')) return;
-    const el = document.createElement('div');
-    el.id = 'spacenet-shell';
-    el.setAttribute('role', 'navigation');
-    el.setAttribute('aria-label', 'SpaceNet main actions');
-    el.innerHTML = [
-      '<div id="spacenet-shell-status">Starting SpaceNet…</div>',
-      '<div id="spacenet-shell-dock">',
-      '<button type="button" data-sn="city" class="primary"><span class="sn-ico">🎯</span><span>My city</span></button>',
-      '<button type="button" data-sn="shops"><span class="sn-ico">🏬</span><span>Shops</span></button>',
-      '<button type="button" data-sn="order"><span class="sn-ico">🛵</span><span>Order</span></button>',
-      '<button type="button" data-sn="place"><span class="sn-ico">📍</span><span>Place</span></button>',
-      '<button type="button" data-sn="vault"><span class="sn-ico">◎</span><span>Vault</span></button>',
-      '<button type="button" data-sn="cosmos"><span class="sn-ico">🌌</span><span>Cosmos</span></button>',
-      '<button type="button" data-sn="mars"><span class="sn-ico">♂</span><span>Cydonia</span></button>',
-      '<button type="button" data-sn="menu"><span class="sn-ico">＋</span><span>Menu</span></button>',
-      '<button type="button" data-sn="talk"><span class="sn-ico">💬</span><span>Talk</span></button>',
-      '</div>',
-    ].join('');
-    document.body.appendChild(el);
-    document.body.classList.add('sn-shell-open');
   },
 
   setStatus(msg) {
     this._status = String(msg || '');
-    const el = document.getElementById('spacenet-shell-status');
-    if (el) el.textContent = this._status;
+    SpaceNetCompanion?.setLine?.(this._status);
     GlobeDeck?.setPreview?.(this._status);
   },
 
-  _bind() {
-    const dock = document.getElementById('spacenet-shell-dock');
-    if (!dock || dock._snBound) return;
-    dock._snBound = true;
-    dock.addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-sn]');
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      void this.run(btn.dataset.sn);
-    });
+  /** Print into sci-fi CLI with optional [[action|label]] links */
+  cli(msg, cls) {
+    AciCli?.print?.(msg, cls || 'reply');
+    SpaceNetCompanion?.setLine?.(String(msg).replace(/\[\[[^\]]+\]\]/g, '').slice(0, 80));
   },
 
   async bootstrap() {
-    this.setStatus('Loading SpaceNet modules…');
+    this.setStatus('SpaceNet · companion online');
     try {
-      const rep = await window.SpaceNetAssetBoot?.ensureCoreUi?.();
-      if (rep) {
-        const bad = Object.entries(rep).filter(([, v]) => !v).map(([k]) => k);
-        if (bad.length) this.setStatus('Module recovery · retrying ' + bad.join(','));
-      }
-    } catch (e) {
-      console.error('[SpaceNetShell bootstrap]', e);
-    }
-    // Bring commerce pack early so shops/orders work without waiting 7s
+      await window.SpaceNetAssetBoot?.ensureCoreUi?.();
+    } catch (_) {}
     try {
       window._lazyUserReady = true;
       await Promise.race([
         LazyModules?.whenReady?.(() => {}),
-        new Promise((r) => setTimeout(r, 12000)),
+        new Promise((r) => setTimeout(r, 10000)),
       ]);
     } catch (_) {}
     try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
-    this.setStatus('SpaceNet · files live in real space · Place · Vault · Cydonia');
-    // Soft auto-crawl near last pos / Rhodes when pack ready
+    try { window.SpaceNetCosmos?.init?.(); } catch (_) {}
+    this.cli(
+      '◎ Astranov SpaceNet — IP protected · real space is the UI. '
+      + '[[city|locate]] · [[shops]] · [[order]] · [[cosmos]] · [[vault]] · type help',
+      'ok',
+    );
     const pos = window._lastPos || { lat: 36.44, lng: 28.22 };
     void SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, { radiusKm: 2.5 })
       .then((r) => {
-        if (r?.ok) this.setStatus((r.nearby || r.count || 0) + ' shops · zoom garage for Thesis.pdf');
+        if (r?.ok) this.setStatus((r.nearby || r.count || 0) + ' shops in sector');
       })
       .catch(() => {});
     void SpaceNetSpatial?.sync?.();
@@ -4334,7 +4446,8 @@ const SpaceNetShell = {
 
   async run(action) {
     const a = String(action || '');
-    this.setStatus('Working…');
+    this.setStatus(a + '…');
+    SpaceNetCompanion?.setMood?.('think');
     try {
       await window.SpaceNetAssetBoot?.ensureCoreUi?.();
       window._lazyUserReady = true;
@@ -4343,8 +4456,7 @@ const SpaceNetShell = {
         new Promise((r) => setTimeout(r, 10000)),
       ]).catch(() => {});
 
-      if (a === 'city') {
-        this.setStatus('Locating your city…');
+      if (a === 'city' || a === 'locate') {
         try {
           if (CityLife?.locateAndDropIn) await CityLife.locateAndDropIn();
           else if (typeof locateMe === 'function') locateMe();
@@ -4354,12 +4466,11 @@ const SpaceNetShell = {
         }
         const p = window._lastPos || { lat: 36.44, lng: 28.22 };
         void SpaceNetCrawler?.crawlAndPopulate?.(p.lat, p.lng, { radiusKm: 3, force: true });
-        this.setStatus('City map · shops loading on the map');
+        this.cli('City open · [[shops]] · [[order]] · [[vault]]', 'ok');
         return;
       }
 
       if (a === 'shops') {
-        this.setStatus('Opening shops…');
         const p = window._lastPos || window.Commerce?.userLatLng?.() || { lat: 36.44, lng: 28.22 };
         await SpaceNetCrawler?.crawlAndPopulate?.(p.lat, p.lng, { radiusKm: 3, force: true });
         if (window.Commerce?.showPicker) await Commerce.showPicker();
@@ -4367,48 +4478,52 @@ const SpaceNetShell = {
           MenuProfilePostTile.openPlusField();
           MenuProfilePostTile.selectMultiHub?.('vendor');
         }
-        const n = (window.Commerce?.vendors || []).filter(v => !String(v.id || '').startsWith('demo-')).length;
-        this.setStatus((n || window.Commerce?.vendors?.length || 0) + ' shops · tap a pin or list item');
+        this.cli('Shops · tap map pins or [[order]]', 'ok');
         return;
       }
 
       if (a === 'order') {
-        this.setStatus('Delivery marketplace…');
         if (MenuProfilePostTile?.openPlusField) {
           MenuProfilePostTile.openPlusField();
           MenuProfilePostTile.selectMultiHub?.('market');
-        } else if (window.Commerce?.showPicker) {
-          await Commerce.showPicker();
-        }
-        this.setStatus('Order · set delivery pin · pick shop · cart');
+        } else if (window.Commerce?.showPicker) await Commerce.showPicker();
+        this.cli('Marketplace · pin delivery · cart · track', 'ok');
         return;
       }
 
-      if (a === 'menu') {
+      if (a === 'menu' || a === 'plus') {
         if (MenuProfilePostTile?.openPlusField) MenuProfilePostTile.openPlusField();
         else document.getElementById('super-add-fab')?.click();
-        this.setStatus('Menu · Data · Social · Vendors · Order · Pilot');
+        this.cli('Multi-tile open · roles + market + pilot', 'ok');
         return;
       }
 
       if (a === 'place') {
         try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
         const row = SpaceNetSpatial?.dropPrompt?.();
-        this.setStatus(row ? ('Placed ' + row.name + ' — zoom here to see it') : 'Place cancelled');
+        this.cli(row ? ('Placed ' + row.name + ' · zoom to open') : 'Place cancelled', row ? 'ok' : 'dim');
         return;
       }
 
       if (a === 'vault') {
         try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
+        // List in CLI instead of giant panel when possible
+        const places = SpaceNetSpatial?.places || [];
+        this.cli('Vault · ' + places.length + ' places — tap links or type go to …', 'ok');
+        places.slice(0, 12).forEach((p) => {
+          this.cli('  · ' + (p.emoji || '◎') + ' ' + (p.title || p.name) + ' @ ' + (p.body || 'earth'), 'dim');
+        });
         SpaceNetSpatial?.showVault?.();
-        this.setStatus('Vault · every object lives at coordinates');
         return;
       }
 
       if (a === 'cosmos' || a === 'atlas' || a === 'universe') {
         try { window.SpaceNetCosmos?.init?.(); } catch (_) {}
+        this.cli(
+          'Cosmos atlas · type: go to Jupiter · go to Orion · go to Sgr A* · go to hyperspace',
+          'ok',
+        );
         SpaceNetCosmos?.showBrowser?.('all');
-        this.setStatus('Cosmos · planets · black holes · systems · dimensions');
         return;
       }
 
@@ -4417,46 +4532,44 @@ const SpaceNetShell = {
         try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
         if (SpaceNetCosmos?.flyTo) await SpaceNetCosmos.flyTo('sol-mars');
         else await SpaceNetSpatial?.flyTo?.('seed-cydonia-music');
-        this.setStatus('Mars Cydonia · music folder in real space');
+        this.cli('Mars · Cydonia music folder', 'ok');
         return;
       }
 
       if (a === 'thesis' || a === 'garage') {
         try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
         await SpaceNetSpatial?.flyTo?.('seed-thesis-garage');
-        this.setStatus('Garage · Thesis.pdf lives here');
+        this.cli('Garage · Thesis.pdf', 'ok');
         return;
       }
 
       if (a === 'video') {
         document.getElementById('aci-video-call')?.click();
-        this.setStatus('Video · real-time peers on the net');
+        this.cli('Video peers', 'ok');
         return;
       }
 
-      if (a === 'talk') {
+      if (a === 'talk' || a === 'help') {
         GlobeDeck?.expand?.('Astranov SpaceNet');
-        const input = document.getElementById('aci-cli-in');
-        if (input) {
-          input.placeholder = 'put thesis on the garage · hide music on mars cydonia · go to…';
-          input.focus();
-        }
-        ACIControl?.reply?.(
-          SpaceNetSpatial?.LAW ||
-            'SpaceNet: put files on real places. Say: put notes on here · go to cydonia · open thesis',
+        document.getElementById('aci-cli-in')?.focus();
+        this.cli(
+          'Companion online. Edge: G · 🎯 locate · 📹 video · + · handsfree. '
+          + 'Type natural language. Links: [[city]] [[shops]] [[order]] [[cosmos]] [[vault]]',
+          'reply',
         );
-        this.setStatus('Talk · spatial language — put / hide / go to / vault');
         return;
       }
     } catch (e) {
-      this.setStatus('Error · ' + (e.message || e));
+      this.cli('Error · ' + (e.message || e), 'err');
       console.error('[SpaceNetShell]', e);
+    } finally {
+      SpaceNetCompanion?.setMood?.('idle');
     }
   },
 };
 window.SpaceNetShell = SpaceNetShell;
 
-// Natural-language talk — spatial first, then shell actions
+// Natural-language talk — spatial / cosmos / shell actions via CLI only
 const SpaceNetTalk = {
   route(text) {
     const t = String(text || '').trim().toLowerCase();
@@ -4477,25 +4590,24 @@ const SpaceNetTalk = {
     return null;
   },
   async handle(text) {
-    // Full cosmos first (any planet / BH / constellation / dimension)
     try {
       const cos = window.SpaceNetCosmos?.handleTalk?.(text);
-      if (cos?.handled) return { handled: true, action: cos.action || 'cosmos' };
+      if (cos?.handled) {
+        SpaceNetCompanion?.setMood?.('talk');
+        return { handled: true, action: cos.action || 'cosmos' };
+      }
     } catch (_) {}
-    // Spatial OS — put X on Y / go to / cydonia / thesis
     try {
       const sp = await window.SpaceNetSpatial?.handleTalk?.(text);
-      if (sp?.handled) return { handled: true, action: sp.action || 'spatial' };
+      if (sp?.handled) {
+        SpaceNetCompanion?.setMood?.('talk');
+        return { handled: true, action: sp.action || 'spatial' };
+      }
     } catch (_) {}
 
     const a = this.route(text);
     if (a === 'help') {
-      ACIControl?.reply?.(
-        'SpaceNet = ALL of space as UI. Go to any planet, black hole, constellation, exo system, galaxy, or sci‑fi dimension. ' +
-          'Buttons: Cosmos · Place · Vault · Cydonia · My city · Shops · Order. ' +
-          'Say: go to Jupiter · go to Orion · go to Sgr A* · go to hyperspace · put notes on Europa · open thesis.',
-      );
-      SpaceNetShell?.setStatus?.('Help · entire cosmos is address space');
+      await SpaceNetShell?.run?.('help');
       return { handled: true, action: 'help' };
     }
     if (a) {
@@ -8309,14 +8421,37 @@ const GlobeDeck = {
     if (!this.shouldLog(repaired, kind)) return;
     const out = this.logEl();
     if (!out) return;
+    // Sci-fi CLI: render [[action|label]] as glowing clickable links
+    const fillLinks = (el, raw) => {
+      const s = String(raw || '');
+      if (!/\[\[/.test(s)) {
+        el.textContent = s;
+        return;
+      }
+      el.textContent = '';
+      const re = /\[\[([a-z0-9_-]+)(?:\|([^\]]+))?\]\]/gi;
+      let last = 0;
+      let m;
+      while ((m = re.exec(s))) {
+        if (m.index > last) el.appendChild(document.createTextNode(s.slice(last, m.index)));
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'sn-cli-link';
+        a.setAttribute('data-sn', m[1]);
+        a.textContent = m[2] || m[1];
+        el.appendChild(a);
+        last = m.index + m[0].length;
+      }
+      if (last < s.length) el.appendChild(document.createTextNode(s.slice(last)));
+    };
     if (kind === 'dim') {
       if (this._thinkLine?.parentNode) {
-        this._thinkLine.textContent = repaired;
+        fillLinks(this._thinkLine, repaired);
         return;
       }
       const el = document.createElement('div');
       el.className = 'deck-line deck-dim';
-      el.textContent = repaired;
+      fillLinks(el, repaired);
       out.appendChild(el);
       while (out.children.length > 48) out.removeChild(out.firstChild);
       out.scrollTop = out.scrollHeight;
@@ -8331,7 +8466,7 @@ const GlobeDeck = {
     else if (this._userEngaged && this.expanded && (kind === 'reply' || kind === 'out' || kind === 'ok')) { /* stay open */ }
     const row = document.createElement('div');
     row.className = 'deck-line deck-' + kind;
-    row.textContent = repaired;
+    fillLinks(row, repaired);
     out.appendChild(row);
     while (out.children.length > 48) out.removeChild(out.firstChild);
     out.scrollTop = out.scrollHeight;
@@ -12830,12 +12965,16 @@ function _astranovBoot() {
   // Rescue mpp/field/sky if origin served SPA HTML; mount app-first shell (no CLI required)
   later(() => {
     void window.SpaceNetAssetBoot?.ensureCoreUi?.().then(() => {
+      try { SpaceNetCompanion?.init?.(); } catch (_) {}
       try { SpaceNetShell?.init?.(); } catch (e) { console.error('[SpaceNetShell]', e); }
     }).catch(() => {
-      try { SpaceNetShell?.init?.(); } catch (_) {}
+      try { SpaceNetCompanion?.init?.(); SpaceNetShell?.init?.(); } catch (_) {}
     });
   }, 80);
-  later(() => { try { SpaceNetShell?.init?.(); } catch (_) {} }, 600);
+  later(() => {
+    try { SpaceNetCompanion?.init?.(); } catch (_) {}
+    try { SpaceNetShell?.init?.(); } catch (_) {}
+  }, 600);
 
   // —— Phase 2: light UI (next frames) ——
   later(() => {
