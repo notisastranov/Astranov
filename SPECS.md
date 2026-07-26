@@ -184,13 +184,12 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 ## 8. Definition of healthy SpaceNet
 
 1. Hard refresh → Earth usable  
-2. Bottom shell visible: city · shops · order · place · vault · talk  
-3. **Thesis garage** seed: fly → see file pin → open text  
-4. **Cydonia music** seed: fly Mars → see folder → list tracks  
-5. Shops / order path still works on city map  
-6. Video control still opens peers  
-7. Talk: `put notes on here` creates a place at facing coords  
-8. Build meta matches script `?v=`
+2. **No** floating multi-button dock; companion face inside CLI  
+3. Edge: only essential controls (G · locate · video · + · handsfree)  
+4. CLI shows `[[links]]` and companion line; type natural language  
+5. Thesis garage + Cydonia seeds still fly/open  
+6. Shops / order / video paths work  
+7. Build meta matches script `?v=`  
 
 ---
 
@@ -206,14 +205,44 @@ node scripts/owner-push.mjs <files> --message=...
 
 ---
 
-## 10. Do not
+## 10. Agent discipline — always study / always record
 
-- Treat SpaceNet as “another map app with a chat box”  
-- Store primary user content only in abstract cloud folders with no coordinates  
-- Require CLI commands for put/zoom/open place  
-- Remove seed thesis / Cydonia demos without owner request  
-- Reintroduce SPA HTML as `astranov-*.js` without `/js/` rescue  
+**Without the owner having to repeat it:**
+
+1. After every owner instruction that changes product intent, **update this SPECS.md** (and continuity when selectors/owners change) in the **same deploy**.  
+2. Chat is non-authoritative after the fact — **SPECS + continuity win**.  
+3. Prefer implementing over babysitting.  
+4. Do not reintroduce removed anti-patterns (button docks, dual CLI bars, CLI miner strip).  
 
 ---
 
-*SpaceNet: if it exists, it exists **somewhere**. Zoom there.*
+## 11. Intellectual property — Astranov SpaceNet
+
+| Claim | Record |
+|-------|--------|
+| **Name** | Astranov · Astranov SpaceNet · SpaceNet (product) |
+| **Authors** | Product owner (notisastranov) + AI pair-development under owner direction |
+| **Subject** | Spatial internet UI; cosmos address OS; companion CLI; multi-tile field; 3%/15% marketplace economics |
+| **Repo** | github.com/notisastranov/astranov.eu |
+| **Live** | https://astranov.eu |
+| **Notice** | © Astranov SpaceNet. All rights reserved. |
+| **Machine** | `window.AstranovContinuity.ip` · meta `astranov-ip` |
+| **Protection** | Specs as creation record · continuity · copyright meta · repo provenance · build stamps |
+
+Agents **must not** strip IP notices or rebrand without owner request.
+
+---
+
+## 12. Do not
+
+- Flood the screen with floating multi-button docks / second chrome windows  
+- Treat SpaceNet as “another map app with a chat box”  
+- Store primary user content only in abstract folders with no coordinates  
+- Remove seed thesis / Cydonia demos without owner request  
+- Reintroduce SPA HTML as `astranov-*.js` without `/js/` rescue  
+- Skip SPECS updates when the owner gives new product law  
+- Strip Astranov SpaceNet IP notices  
+
+---
+
+*SpaceNet: if it exists, it exists **somewhere**. Zoom there. The CLI is the face of the net.*
