@@ -11,6 +11,7 @@
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
 | **Current build** | `20260726150000-minspec-shell` |
+| **App-first shell** | Bottom bar: My city · Shops · Order · Menu · Talk (no CLI required) |
 
 ---
 
