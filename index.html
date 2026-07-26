@@ -7,15 +7,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-continuity-20260712090000-boot-smooth-earth" />
-<meta name="astranov-continuity" content="20260712090000-boot-smooth-earth" />
+<meta name="compliance-check" content="astranov-continuity-20260712100000-logo-name-fix" />
+<meta name="astranov-continuity" content="20260712100000-logo-name-fix" />
 <meta name="astranov-ai-handoff" content="Read /astranov-continuity.js and window.AstranovContinuity before any edit" />
 <meta name="aci-session" content="SpaceNet Collective Intelligence">
 <meta name="theme-color" content="#0a1020" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astranov" />
-<meta name="astranov-build" content="20260712090000-boot-smooth-earth" />
+<meta name="astranov-build" content="20260712100000-logo-name-fix" />
 <meta name="astranov-globe-physics" content="locked-v20260710241000-never-change" />
 <meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one — no satellites needed to communicate" />
 <meta name="astranov-base-lock" content="monolith-no-bootstrap-globe-deck-cli-no-circles-guard-base-mjs" />
@@ -23,7 +23,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
-<link rel="preload" href="/astranov-app.js?v=20260712090000-boot-smooth-earth" as="script" />
+<link rel="preload" href="/astranov-app.js?v=20260712100000-logo-name-fix" as="script" />
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" onerror="(function(){if(window.__threeFb)return;window.__threeFb=1;var s=document.createElement('script');s.defer=true;s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';document.head.appendChild(s);})()"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -177,22 +177,22 @@
   @keyframes ai-core-breathe { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
   @keyframes ai-ring-pulse { 0%{ transform:scale(0.82); opacity:0.85; } 100%{ transform:scale(1.55); opacity:0; } }
   @keyframes ai-stop-flash { 0%{ box-shadow:0 0 28px rgba(255,170,40,0.9); } 100%{ box-shadow:0 0 8px rgba(255,170,40,0.2); } }
-  #astranov-logo { position:fixed; top:max(10px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:210; margin:0; padding:6px 14px; border-radius:999px; background:var(--ax-panel); border:1px solid var(--ax-blue-border); backdrop-filter:blur(10px); cursor:pointer; font-family:"Segoe UI Variable Display","Segoe UI Variable","Segoe UI","Segoe UI Rounded",system-ui,sans-serif; font-size:12px; font-weight:600; letter-spacing:0.03em; text-indent:0; text-transform:none; color:var(--ax-blue-bright); text-shadow:0 0 18px var(--ax-blue-glow); box-shadow:0 2px 14px rgba(0,0,0,0.45); transition:color 0.2s,border-color 0.2s,box-shadow 0.2s,background 0.2s,transform 0.15s; pointer-events:auto; touch-action:manipulation; user-select:none; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; min-width:min(280px,86vw); min-height:40px; overflow:hidden; opacity:1; visibility:visible; isolation:isolate; }
+  #astranov-logo { position:fixed; top:max(10px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:210; margin:0; padding:8px 18px; border-radius:999px; background:rgba(0,12,32,0.88); border:1px solid rgba(61,158,255,0.55); backdrop-filter:blur(10px); cursor:pointer; font-family:system-ui,"Segoe UI",sans-serif; font-size:13px; font-weight:700; letter-spacing:0.04em; text-indent:0; text-transform:none; color:#8ec8ff; text-shadow:0 0 12px rgba(61,158,255,0.55); box-shadow:0 2px 14px rgba(0,0,0,0.5); transition:color 0.2s,border-color 0.2s,box-shadow 0.2s,background 0.2s,transform 0.15s; pointer-events:auto; touch-action:manipulation; user-select:none; -webkit-tap-highlight-color:transparent; display:flex; align-items:center; justify-content:center; min-width:min(260px,82vw); min-height:40px; overflow:visible; opacity:1; visibility:visible; }
   body.globe-flying #astranov-logo, body.city-map-active #astranov-logo { z-index:210; opacity:1 !important; visibility:visible !important; pointer-events:auto !important; }
   body.globe-flying #zoom-label { top:max(52px,calc(10px + env(safe-area-inset-top) + 42px)); }
-  #astranov-logo-wave { position:absolute; inset:2px 4px; width:calc(100% - 8px); height:calc(100% - 4px); z-index:0; pointer-events:none; opacity:1; border-radius:999px; }
-  .astranov-logo-label { position:relative; z-index:2; pointer-events:none; letter-spacing:0.04em; text-indent:0; white-space:nowrap; mix-blend-mode:screen; }
-  #astranov-logo.voice-mic { border-color:rgba(255,55,55,0.72); box-shadow:0 0 18px rgba(255,55,55,0.5); color:#ffb0b0; background:rgba(8,14,28,0.38); }
-  #astranov-logo.voice-ai { border-color:rgba(0,220,100,0.72); box-shadow:0 0 18px rgba(0,220,100,0.5); color:#b0ffd0; background:rgba(8,14,28,0.38); }
-  #astranov-logo.voice-mic.voice-ai { background:rgba(8,14,28,0.32); }
-  #astranov-logo:hover { color:#fff; border-color:var(--ax-blue-bright); box-shadow:0 0 22px var(--ax-blue-glow); background:var(--ax-panel-strong); }
+  #astranov-logo-wave { position:absolute; inset:2px 4px; width:calc(100% - 8px); height:calc(100% - 4px); z-index:0; pointer-events:none; opacity:0.55; border-radius:999px; }
+  .astranov-logo-label { position:relative; z-index:3; pointer-events:none; letter-spacing:0.04em; text-indent:0; white-space:nowrap; color:inherit; opacity:1 !important; visibility:visible !important; mix-blend-mode:normal !important; display:inline-block; }
+  #astranov-logo.voice-mic { border-color:rgba(255,55,55,0.72); box-shadow:0 0 18px rgba(255,55,55,0.5); color:#ffb0b0; background:rgba(8,14,28,0.88); }
+  #astranov-logo.voice-ai { border-color:rgba(0,220,100,0.72); box-shadow:0 0 18px rgba(0,220,100,0.5); color:#b0ffd0; background:rgba(8,14,28,0.88); }
+  #astranov-logo.voice-mic.voice-ai { background:rgba(8,14,28,0.9); }
+  #astranov-logo:hover { color:#fff; border-color:#5eb0ff; box-shadow:0 0 22px rgba(61,158,255,0.55); background:rgba(0,20,48,0.94); }
   #astranov-logo:active { transform:translateX(-50%) scale(0.97); }
-  #astranov-logo:disabled { opacity:0.55; cursor:wait; letter-spacing:0.2em; }
-  [data-theme="bright"] #astranov-logo { background:var(--ax-panel); color:var(--ax-blue-bright); border-color:var(--ax-blue-border); text-shadow:0 0 14px var(--ax-blue-glow); box-shadow:0 2px 12px rgba(0,0,0,0.35); }
-  [data-theme="bright"] #astranov-logo:hover { color:#fff; border-color:var(--ax-blue-bright); }
+  #astranov-logo:disabled { opacity:0.7; cursor:wait; }
+  [data-theme="bright"] #astranov-logo { background:rgba(240,248,255,0.92); color:#0a5aaa; border-color:rgba(26,111,212,0.55); text-shadow:none; box-shadow:0 2px 12px rgba(0,0,0,0.2); }
+  [data-theme="bright"] #astranov-logo:hover { color:#064; border-color:#1a6fd4; }
   [data-theme="bright"] #astranov-logo.voice-mic,
-  [data-theme="bright"] #astranov-logo.voice-ai { background:rgba(255,255,255,0.42); }
-  [data-theme="bright"] .astranov-logo-label { mix-blend-mode:multiply; }
+  [data-theme="bright"] #astranov-logo.voice-ai { background:rgba(255,255,255,0.94); }
+  [data-theme="bright"] .astranov-logo-label { mix-blend-mode:normal !important; color:inherit; }
   /* user-chip removed */
   /* drive-guide removed */
   #drive-guide.open { display:block; }
@@ -1423,11 +1423,11 @@
   window._instantShellUnlock=unlock;
 })();
 </script>
-<script defer src="/astranov-app.js?v=20260712090000-boot-smooth-earth"></script>
-<script defer src="/astranov-perf-lazy.js?v=20260712090000-boot-smooth-earth"></script>
-<script defer src="/astranov-continuity.js?v=20260712090000-boot-smooth-earth"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260712090000-boot-smooth-earth"></script>
-<script defer src="/astranov-field-hud.js?v=20260712090000-boot-smooth-earth"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260712090000-boot-smooth-earth"></script>
+<script defer src="/astranov-app.js?v=20260712100000-logo-name-fix"></script>
+<script defer src="/astranov-perf-lazy.js?v=20260712100000-logo-name-fix"></script>
+<script defer src="/astranov-continuity.js?v=20260712100000-logo-name-fix"></script>
+<script defer src="/astranov-galactic-sky.js?v=20260712100000-logo-name-fix"></script>
+<script defer src="/astranov-field-hud.js?v=20260712100000-logo-name-fix"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260712100000-logo-name-fix"></script>
 </body>
 </html>
