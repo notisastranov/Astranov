@@ -181,15 +181,48 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 ---
 
-## 8. Definition of healthy SpaceNet
+## 8. Mission ship gate (do not ship dummy)
+
+**Owner rule:** do not deploy cosmetic / half-wired layers until the operating path is real.
+
+### Operating path (must work)
+
+```
+boot → deferred real → crawl sector → vendors[] without DEMO pollution
+     → SpaceNetSpatial.sync (sn_place on globe)
+     → locate/city → same crawl+sync
+     → shops/order use real POIs when count ≥ 3
+```
+
+### Kernel
+
+`SpaceNetMission.ensureOperatingPath` in `astranov-app.js`  
+Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[] }`
+
+### Green means
+
+| Gate | Pass |
+|------|------|
+| Modules | spatial + crawler + deferred commerce/GlobeEntity |
+| Shops | `shopsReal ≥ 3` (or crawl count ≥ 5 merged) — **not** demo-only |
+| Spatial | seeds/places ≥ 2 |
+| UI chrome | no floating multi-button dock |
+| CLI | icons readable; `[[links]]` work |
+
+### Red / do not call “ready”
+
+- Only `DEMO_VENDORS` on map  
+- Modules serving SPA HTML  
+- New UI chrome without path above green  
+
+### Healthy checklist
 
 1. Hard refresh → Earth usable  
-2. **No** floating multi-button dock; companion face inside CLI  
-3. Edge: only essential controls (G · locate · video · + · handsfree)  
-4. CLI shows `[[links]]` and companion line; type natural language  
-5. Thesis garage + Cydonia seeds still fly/open  
-6. Shops / order / video paths work  
-7. Build meta matches script `?v=`  
+2. CLI companion only (no dock flood); icons not mojibake  
+3. `__spacenetMission.ok` or honest `mission · NOT READY` line  
+4. Real shop pins near locate/city  
+5. Thesis garage + Cydonia still open  
+6. Build meta matches `?v=`  
 
 ---
 
