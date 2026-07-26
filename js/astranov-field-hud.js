@@ -1,8 +1,7 @@
-// === FIELD HUD ?top-right balances/mining  left radar  center speed ===
-/* SPECS: minerRig  fieldHudRadar  aiBrain ?SPECS.md 3.6?.7, 3.9
-   Tap #field-balance-hud ?miner panel. NEVER re-add #aci-miner / miner-cli-strip above CLI.
-   Radar interval draw; earth speed ~1671 km/h global. bindFieldMiner  ensureBrain. */
-// SpaceNet miner: SETI-style decentralised P2P  CPU  RAM  storage  bandwidth
+// === FIELD HUD — top-right balances/mining · left radar · center speed ===
+// AI HANDOFF: see astranov-continuity.js → features.minerRig, spaceNetFinance, fieldHudRadar.
+// Tap #field-balance-hud → #spacenet-finance-panel multi-tile (stats · mining · 3% invoices · P2P · reports).
+// NO #aci-miner CLI strip. Radar throttled. SpaceNetMiner prefs astranov:miner-rig-prefs.
 const SpaceNetMiner = {
   TERMS_KEY: 'astranov:spacenet-miner-v2',
   SESSION_KEY: 'astranov:spacenet-miner-session',
@@ -113,30 +112,8 @@ const SpaceNetMiner = {
     }
   },
 
-  /** Universal max total (own app + donate) ?ResourceMonitor master slider */
-  maxTotalCap() {
-    return window._resourceMaxTotal
-      ?? window.ResourceMonitor?.maxTotal?.()
-      ?? window._resourceMaxOccupy
-      ?? window.ResourceMonitor?.maxOccupy?.()
-      ?? 0.8;
-  },
-
-  /** Spare under the cap for idle donate ?never push device/fleet over max total */
-  idleBudget() {
-    if (typeof window.ResourceMonitor?.idleDonateBudget === 'function') {
-      return ResourceMonitor.idleDonateBudget();
-    }
-    const cap = this.maxTotalCap();
-    const load = FieldHud.deviceLoad();
-    return Math.max(0, Math.min(1, cap - load));
-  },
-
   canAcceptWork() {
-    if (!this._termsOk) return false;
-    const budget = this.idleBudget();
-    // Need real spare under universal max (includes user's own consumption)
-    if (budget < 0.05) return false;
+    if (!this._termsOk || FieldHud.deviceLoad() >= 0.65) return false;
     const prefs = FieldHud?._minerPrefs?.() || {};
     return ['cpu', 'ram', 'storage', 'bandwidth'].some(k => prefs[k] !== false);
   },
@@ -148,7 +125,6 @@ const SpaceNetMiner = {
       type: this.WORK_TYPES[Math.floor(Math.random() * this.WORK_TYPES.length)],
       shard: Math.random().toString(36).slice(2, 14),
       from: this.nodeId(),
-      maxTotal: this.maxTotalCap(),
     };
     this._channel.postMessage({ type: 'work_offer', unit });
     return unit;
@@ -156,9 +132,9 @@ const SpaceNetMiner = {
 
   async processWork(dt) {
     if (!this._termsOk || !this.canAcceptWork()) return;
-    // Budget is only spare under universal max (own use already counted)
-    const budget = this.idleBudget();
-    if (budget < 0.05) return;
+    const load = FieldHud.deviceLoad();
+    const budget = Math.max(0, 1 - load);
+    if (budget < 0.15) return;
 
     const unit = this._workQueue.shift() || this.offerWork();
     if (!unit) return;
@@ -233,11 +209,8 @@ const SpaceNetMiner = {
     const anyRes = ['cpu', 'ram', 'storage', 'bandwidth'].some(k => prefs[k] !== false);
     if (!anyRes) return 0;
     const load = FieldHud.deviceLoad();
-    const budget = this.idleBudget();
-    const cap = this.maxTotalCap();
-    // No earn when own load already at/over universal max
-    if (budget < 0.05 || load >= cap) return 0;
-    let rate = this.BASE_RATE * budget;
+    if (load > 0.7) return 0;
+    let rate = this.BASE_RATE * (1 - load);
     let resSum = 0;
     if (prefs.cpu !== false) resSum += this._rates.cpu / 100;
     if (prefs.ram !== false) resSum += this._rates.ram / 512;
@@ -246,7 +219,7 @@ const SpaceNetMiner = {
     rate *= 0.6 + Math.min(1.4, resSum);
     rate += this._peerCount * this.PEER_BONUS;
     if (prefs.sleep !== false && FieldHud.isSleepMode()) rate *= this.SLEEP_MULT;
-    else if (load > cap * 0.6) rate *= 0.4;
+    else if (load > 0.3) rate *= 0.4;
     return Math.max(0, rate);
   },
 
@@ -299,24 +272,24 @@ const SpaceNetMiner = {
     const earnedEl = document.getElementById('fbh-mine-earned');
     const statusEl = document.getElementById('fbh-mine-status');
     if (peers) peers.textContent = this._peerCount + ' peer' + (this._peerCount === 1 ? '' : 's');
-    if (cpu) cpu.textContent = this._rates.cpu ? this._rates.cpu + '%' : '?;
-    if (ram) ram.textContent = this._rates.ram ? this._rates.ram + 'MB' : '?;
-    if (sto) sto.textContent = this._rates.storage ? this._rates.storage + 'MB' : '?;
-    if (bw) bw.textContent = this._rates.bandwidth ? this._rates.bandwidth + 'kb/s' : '?;
-    if (rateEl) rateEl.textContent = this._mineRate.toFixed(3) + ' Coins/h';
+    if (cpu) cpu.textContent = this._rates.cpu ? this._rates.cpu + '%' : '—';
+    if (ram) ram.textContent = this._rates.ram ? this._rates.ram + 'MB' : '—';
+    if (sto) sto.textContent = this._rates.storage ? this._rates.storage + 'MB' : '—';
+    if (bw) bw.textContent = this._rates.bandwidth ? this._rates.bandwidth + 'kb/s' : '—';
+    if (rateEl) rateEl.textContent = this._mineRate.toFixed(3) + ' AVC/h';
     if (earnedEl) earnedEl.textContent = '+' + this._sessionEarned.toFixed(3);
     if (statusEl) {
       if (!this._termsOk) {
-        statusEl.textContent = 'SpaceNet  terms required';
+        statusEl.textContent = 'SpaceNet · terms required';
         statusEl.className = 'fbh-status';
       } else if (FieldHud.isSleepMode()) {
-        statusEl.textContent = 'P2P sleep rig  mesh idle';
+        statusEl.textContent = 'P2P sleep rig · mesh idle';
         statusEl.className = 'fbh-status sleep';
       } else if (this._mineRate > 0.005) {
-        statusEl.textContent = 'SETI mesh  serving SpaceNet';
+        statusEl.textContent = 'SETI mesh · serving SpaceNet';
         statusEl.className = 'fbh-status active';
       } else {
-        statusEl.textContent = 'mesh standby  users serve users';
+        statusEl.textContent = 'mesh standby · users serve users';
         statusEl.className = 'fbh-status';
       }
     }
@@ -354,6 +327,7 @@ const FieldHud = {
   _radarTargetsCache: [],
   _radarTargetsAt: 0,
   SWEEP_PERIOD_MS: 4200,
+  EARTH_ROTATION_KMH: 1671,
   EARTH_RADIUS_KM: 6371,
   _sessionEarned: 0,
   _mineRate: 0,
@@ -368,18 +342,18 @@ const FieldHud = {
     bal.setAttribute('aria-live', 'polite');
     bal.setAttribute('role', 'button');
     bal.setAttribute('tabindex', '0');
-    bal.setAttribute('title', 'SpaceNet field  tap for miner rig, balances & mesh');
-    bal.setAttribute('aria-label', 'SpaceNet field  open miner rig and earnings');
-    bal.innerHTML = '<div class="fbh-title">?SpaceNet</div>'
-      + '<div class="fbh-row fbh-bal"><span id="fbh-avc">?Coins</span></div>'
-      + '<div class="fbh-row fbh-fiat"><span id="fbh-eur">€?/span><span id="fbh-usd">$?/span></div>'
+    bal.setAttribute('title', 'SpaceNet field · tap for miner rig, balances & mesh');
+    bal.setAttribute('aria-label', 'SpaceNet field · open miner rig and earnings');
+    bal.innerHTML = '<div class="fbh-title">◎ SpaceNet</div>'
+      + '<div class="fbh-row fbh-bal"><span id="fbh-avc">— AVC</span></div>'
+      + '<div class="fbh-row fbh-fiat"><span id="fbh-eur">€—</span><span id="fbh-usd">$—</span></div>'
       + '<div class="fbh-mesh"><span id="fbh-peers">0 peers</span><span class="fbh-p2p">P2P</span></div>'
       + '<div id="fbh-resources" class="fbh-resources">'
-      + '<span>CPU <b id="fbh-cpu">?/b></span>'
-      + '<span>RAM <b id="fbh-ram">?/b></span>'
-      + '<span>SSD <b id="fbh-storage">?/b></span>'
-      + '<span>NET <b id="fbh-bw">?/b></span></div>'
-      + '<div class="fbh-mine"><span class="fbh-mine-icon">?/span>'
+      + '<span>CPU <b id="fbh-cpu">—</b></span>'
+      + '<span>RAM <b id="fbh-ram">—</b></span>'
+      + '<span>SSD <b id="fbh-storage">—</b></span>'
+      + '<span>NET <b id="fbh-bw">—</b></span></div>'
+      + '<div class="fbh-mine"><span class="fbh-mine-icon">⛏</span>'
       + '<span id="fbh-mine-rate">0.000/h</span>'
       + '<span id="fbh-mine-earned">+0.00</span></div>'
       + '<div id="fbh-mine-status" class="fbh-status">mesh standby</div>';
@@ -407,48 +381,19 @@ const FieldHud = {
     terms.hidden = true;
     terms.innerHTML = '<div class="mtm-panel">'
       + '<div class="mtm-title">SpaceNet SETI-style mesh participation</div>'
-      + '<p>By using Astranov you join a <b>decentralised peer-to-peer mesh</b> ?like SETI@home, '
+      + '<p>By using Astranov you join a <b>decentralised peer-to-peer mesh</b> — like SETI@home, '
       + 'but for SpaceNet. Your device shares spare resources to power routing, storage, AI, and comms '
       + 'for every user. <b>Users serve users.</b></p>'
-      + '<ul><li><b>CPU</b> ?route cache, brain shards, mesh relay compute</li>'
-      + '<li><b>RAM</b> ?live presence tables and peer coordination</li>'
-      + '<li><b>Storage</b> ?vendor indexes and offline route shards</li>'
-      + '<li><b>Bandwidth</b> ?P2P sync between peers when idle</li>'
-      + '<li>Resources used <em>only</em> when your device is idle or you sleep ?never during active use</li>'
-      + '<li>Sleep mode: earth view + space ambient  intelligent miner judges fair Coins share</li></ul>'
-      + '<button id="miner-terms-accept" type="button">I agree  join SpaceNet mesh</button>'
+      + '<ul><li><b>CPU</b> — route cache, brain shards, mesh relay compute</li>'
+      + '<li><b>RAM</b> — live presence tables and peer coordination</li>'
+      + '<li><b>Storage</b> — vendor indexes and offline route shards</li>'
+      + '<li><b>Bandwidth</b> — P2P sync between peers when idle</li>'
+      + '<li>Resources used <em>only</em> when your device is idle or you sleep — never during active use</li>'
+      + '<li>Sleep mode: earth view + space ambient · intelligent miner judges fair AVC share</li></ul>'
+      + '<button id="miner-terms-accept" type="button">I agree · join SpaceNet mesh</button>'
       + '</div>';
     document.body.appendChild(terms);
     document.getElementById('miner-terms-accept')?.addEventListener('click', () => SpaceNetMiner.acceptTerms());
-    }
-
-    if (!document.getElementById('miner-rig-panel')) {
-      const panel = document.createElement('div');
-      panel.id = 'miner-rig-panel';
-      panel.hidden = true;
-      panel.innerHTML = '<div class="mrp-card">'
-        + '<div class="mrp-head"><b>?SpaceNet miner rig</b><button type="button" id="mrp-close">?/button></div>'
-        + '<div class="mrp-stats">'
-        + '<div>Rate <b id="mrp-rate">0.000 Coins/h</b></div>'
-        + '<div>Session <b id="mrp-earned">+0.00</b></div>'
-        + '<div>Peers <b id="mrp-peers">0</b></div>'
-        + '<div>Balance <b id="mrp-avc">?Coins</b></div></div>'
-        + '<div class="mrp-max" style="margin:0 0 12px">'
-        + '<label style="display:flex;justify-content:space-between;font-size:11px;color:#9ab;margin-bottom:4px">'
-        + 'Max total idle (own + donate) <b id="mrp-max-val" style="color:#ffdd66">80%</b></label>'
-        + '<input type="range" id="mrp-max-total" min="15" max="100" value="80" '
-        + 'style="width:100%" title="Universal max on this device and fleet ?includes your own use" />'
-        + '<div style="font-size:10px;color:#678;margin-top:4px">Never loads device/fleet above this % when idling</div></div>'
-        + '<div class="mrp-toggles">'
-        + '<button type="button" class="mrp-toggle on" data-mrp="cpu" aria-pressed="true">CPU</button>'
-        + '<button type="button" class="mrp-toggle on" data-mrp="ram" aria-pressed="true">RAM</button>'
-        + '<button type="button" class="mrp-toggle on" data-mrp="storage" aria-pressed="true">SSD</button>'
-        + '<button type="button" class="mrp-toggle on" data-mrp="bandwidth" aria-pressed="true">NET</button>'
-        + '<button type="button" class="mrp-toggle on" data-mrp="sleep" aria-pressed="true">Sleep</button>'
-        + '</div>'
-        + '<button type="button" id="mrp-start">I agree  start earning Coins</button>'
-        + '</div>';
-      document.body.appendChild(panel);
     }
   },
 
@@ -515,29 +460,13 @@ const FieldHud = {
       'background:rgba(0,221,119,.2);color:#00ff99;font-weight:700;cursor:pointer;font-size:13px}',
       '#zoom-label{top:138px;left:10px;max-width:min(200px,50vw);font-size:10px}',
       '#cosmic-guide{top:160px}',
-      '#miner-rig-panel{position:fixed;inset:0;z-index:195;display:none;align-items:center;justify-content:center;',
-      'background:rgba(0,4,12,.78);pointer-events:auto}',
-      '#miner-rig-panel.open,#miner-rig-panel:not([hidden]){display:flex}',
-      '#miner-rig-panel[hidden]{display:none!important}',
-      '.mrp-card{width:min(360px,92vw);padding:16px;border-radius:14px;background:rgba(4,14,36,.96);',
-      'border:1px solid rgba(0,221,119,.4);box-shadow:0 0 28px rgba(0,221,119,.2);color:#e8f4ff;font:12px/1.4 system-ui}',
-      '.mrp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}',
-      '.mrp-head b{color:#00ff99}',
-      '#mrp-close{background:transparent;border:1px solid #456;color:#abc;border-radius:8px;padding:4px 8px;cursor:pointer}',
-      '.mrp-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;font-size:11px}',
-      '.mrp-stats b{color:#a8ffcc}',
-      '.mrp-toggles{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}',
-      '.mrp-toggle{padding:8px 10px;border-radius:8px;border:1px solid #456;background:rgba(0,20,40,.6);color:#9ab;cursor:pointer}',
-      '.mrp-toggle.on{border-color:#00dd77;color:#00ff99;background:rgba(0,221,119,.12)}',
-      '#mrp-start{width:100%;padding:11px;border-radius:10px;border:1px solid #00dd77;background:rgba(0,221,119,.2);',
-      'color:#00ff99;font-weight:700;cursor:pointer}',
     ].join('');
     document.head.appendChild(st);
   },
 
   hideCliMoney() {
-    const Coins = document.getElementById('aci-avc');
-    if (Coins) { Coins.hidden = true; Coins.style.display = 'none'; }
+    const avc = document.getElementById('aci-avc');
+    if (avc) { avc.hidden = true; avc.style.display = 'none'; }
     const sc = window.SuperCli;
     if (sc?.TOOLBAR_VISIBLE) {
       sc.TOOLBAR_VISIBLE = sc.TOOLBAR_VISIBLE.filter(id => id !== 'aci-avc');
@@ -553,8 +482,8 @@ const FieldHud = {
     if (_ensure) {
       sc.ensureBarLayout = function() {
         _ensure();
-        const Coins = document.getElementById('aci-avc');
-        if (Coins) { Coins.hidden = true; Coins.style.display = 'none'; }
+        const avc = document.getElementById('aci-avc');
+        if (avc) { avc.hidden = true; avc.style.display = 'none'; }
       };
     }
     const _run = sc.run?.bind(sc);
@@ -564,13 +493,13 @@ const FieldHud = {
         if (/^(miner|mesh|spacenet miner|rig)$/.test(low)) {
           const m = SpaceNetMiner;
           const lines = [
-            '?SpaceNet SETI mesh  ' + m._peerCount + ' peers',
-            '  CPU ' + (m._rates.cpu || 0) + '%  RAM ' + (m._rates.ram || 0) + 'MB  SSD ' + (m._rates.storage || 0) + 'MB  NET ' + (m._rates.bandwidth || 0) + 'kb/s',
-            '  Rate ' + m._mineRate.toFixed(3) + ' Coins/h  session +' + m._sessionEarned.toFixed(3),
-            '  Contrib cpu ' + m._contrib.cpu.toFixed(2) + '  ram ' + m._contrib.ram.toFixed(1) + '  storage ' + m._contrib.storage.toFixed(1) + '  bw ' + m._contrib.bandwidth.toFixed(1),
+            '◎ SpaceNet SETI mesh · ' + m._peerCount + ' peers',
+            '  CPU ' + (m._rates.cpu || 0) + '% · RAM ' + (m._rates.ram || 0) + 'MB · SSD ' + (m._rates.storage || 0) + 'MB · NET ' + (m._rates.bandwidth || 0) + 'kb/s',
+            '  Rate ' + m._mineRate.toFixed(3) + ' AVC/h · session +' + m._sessionEarned.toFixed(3),
+            '  Contrib cpu ' + m._contrib.cpu.toFixed(2) + ' · ram ' + m._contrib.ram.toFixed(1) + ' · storage ' + m._contrib.storage.toFixed(1) + ' · bw ' + m._contrib.bandwidth.toFixed(1),
           ];
           window.AciCli?.print?.(lines.join('\n'), 'ok');
-          window.ACIControl?.reply?.('SpaceNet mesh  ' + m._peerCount + ' peers  ' + m._mineRate.toFixed(3) + ' Coins/h');
+          window.ACIControl?.reply?.('SpaceNet mesh · ' + m._peerCount + ' peers · ' + m._mineRate.toFixed(3) + ' AVC/h');
           return;
         }
         return _run(cmd);
@@ -602,8 +531,8 @@ const FieldHud = {
     AB.render = (balance, guest, eurUsd) => {
       if (_render) _render(balance, guest, eurUsd);
       FieldHud.updateBalance(balance, guest, eurUsd || AB._fx);
-      const Coins = document.getElementById('aci-avc');
-      if (Coins) Coins.style.display = 'none';
+      const avc = document.getElementById('aci-avc');
+      if (avc) avc.style.display = 'none';
     };
     const _refresh = AB.refresh?.bind(AB);
     if (_refresh) {
@@ -616,16 +545,16 @@ const FieldHud = {
   },
 
   updateBalance(balance, guest, fx) {
-    const CoinsEl = document.getElementById('fbh-avc');
+    const avcEl = document.getElementById('fbh-avc');
     const eurEl = document.getElementById('fbh-eur');
     const usdEl = document.getElementById('fbh-usd');
-    if (!CoinsEl) return;
+    if (!avcEl) return;
     const isGuest = guest || !window.Auth?.user;
-    const Coins = Number(balance || 0);
+    const avc = Number(balance || 0);
     const rate = fx || window.AvcBalance?._fx || 1.08;
-    CoinsEl.textContent = isGuest ? '?Coins' : (Coins >= 10000 ? (Coins / 1000).toFixed(1) + 'k Coins' : Coins.toFixed(2) + ' Coins');
-    if (eurEl) eurEl.textContent = isGuest ? '€? : '? + Coins.toFixed(2);
-    if (usdEl) usdEl.textContent = isGuest ? '$? : '$' + (Coins * rate).toFixed(2);
+    avcEl.textContent = isGuest ? '— AVC' : (avc >= 10000 ? (avc / 1000).toFixed(1) + 'k AVC' : avc.toFixed(2) + ' AVC');
+    if (eurEl) eurEl.textContent = isGuest ? '€—' : '€' + avc.toFixed(2);
+    if (usdEl) usdEl.textContent = isGuest ? '$—' : '$' + (avc * rate).toFixed(2);
   },
 
   acceptTerms() { return SpaceNetMiner.acceptTerms(); },
@@ -633,36 +562,14 @@ const FieldHud = {
   loadSession() { SpaceNetMiner.loadSession(); this._sessionEarned = SpaceNetMiner._sessionEarned; },
   saveSession() { SpaceNetMiner.saveSession(); },
 
-  /** Universal max total (own + idle donate) ?fused top-right slider */
-  maxOccupy() {
-    return window._resourceMaxTotal
-      ?? window.ResourceMonitor?.maxTotal?.()
-      ?? window._resourceMaxOccupy
-      ?? window.ResourceMonitor?.maxOccupy?.()
-      ?? 0.8;
-  },
-
   deviceLoad() {
     const busy = window.GlobeDeck?.thinking || window._handsFreeVoice || window.DrivingView?.active
       || window.AciCoders?._cliBusy || document.hidden;
     if (busy) return 1;
-    let load = 0.12;
     const idleMs = Date.now() - (window._lastUserAct || Date.now());
-    if (idleMs < 12000) load = 0.72;
-    else if (idleMs < 45000) load = 0.48;
-    else if (idleMs < 120000) load = 0.28;
-    else load = 0.1;
-    try {
-      const fps = window.SlumberManager?._avgFps?.();
-      if (fps > 0 && fps < 50) load = Math.max(load, Math.min(0.95, (55 - fps) / 40));
-    } catch (_) {}
-    try {
-      if (performance.memory) {
-        const r = performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit;
-        load = Math.max(load, Math.min(0.95, r));
-      }
-    } catch (_) {}
-    return Math.min(1, load);
+    if (idleMs < 45000) return 0.85;
+    if (idleMs < 120000) return 0.35;
+    return 0.08;
   },
 
   isEarthSleepView() {
@@ -720,33 +627,29 @@ const FieldHud = {
     return level === 'earth' && z >= 2.0 && z <= 4.5 && !window.CityMap?.active && !window.DrivingView?.active;
   },
 
-  tickEarthSpin() {
-    // Real spin lives in EarthRealism.applySpinNow / animate loop ?not fake radar
-    try { EarthRealism?.applySpinNow?.(); } catch (_) {}
+  earthRotationKmh() {
+    return this.EARTH_ROTATION_KMH;
   },
 
-  /** Real ground speed km/h from GPS only (never Earth-rotation fakery) */
-  gpsSpeedKmh() {
-    // Prefer live GPS from presence / driving / last fix
-    let mps = null;
-    if (window.DrivingView?.active && window.DrivingView.speed >= 0) {
-      mps = window.DrivingView.speed;
+  tickEarthSpin() {
+    const ER = window.EarthRealism;
+    const e = window.earth;
+    if (!e) return;
+    if (!ER?._inited) { try { ER?.init?.(); } catch (_) {} }
+    const now = new Date();
+    if (ER?._earthSpin) e.rotation.y = ER._earthSpin(now);
+    else e.rotation.y = ((now.getUTCHours() + now.getUTCMinutes() / 60) / 24) * Math.PI * 2;
+    if (ER?._solarPosition && ER.sunDir) {
+      ER.sunDir.copy(ER._solarPosition(now));
+      if (e.material?.uniforms?.sunDirection && ER._sunLocal) {
+        e.material.uniforms.sunDirection.value.copy(ER._sunLocal(ER.sunDir));
+      }
     }
-    if ((mps == null || mps < 0) && window._gpsSpeedMps != null && window._gpsSpeedMps >= 0) {
-      mps = window._gpsSpeedMps;
-    }
-    if ((mps == null || mps < 0) && window._lastGpsFix?.speed != null && window._lastGpsFix.speed >= 0) {
-      mps = window._lastGpsFix.speed;
-    }
-    if (mps == null || mps < 0 || !Number.isFinite(mps)) return 0;
-    // Ignore GPS noise under ~0.5 m/s (~1.8 km/h)
-    if (mps < 0.5) return 0;
-    return Math.round(mps * 3.6);
   },
 
   speedLimitKmh() {
-    const s = this.gpsSpeedKmh();
-    if (window.DrivingView?.active || s > 25) {
+    if (window.DrivingView?.active) {
+      const s = (window.DrivingView?.speed || 0) * 3.6;
       if (s > 70) return 130;
       if (s > 35) return 90;
       return 50;
@@ -761,58 +664,38 @@ const FieldHud = {
     const lim = document.getElementById('fsh-limit');
     const mode = document.getElementById('fsh-mode');
     if (!hud || !val) return;
-    // TRUTH: only real GPS / derived ground speed ?never 1671 km/h Earth spin fake
-    const kmh = this.gpsSpeedKmh();
-    const driving = !!(window.DrivingView?.active) || kmh >= 15;
-    val.textContent = String(kmh);
-    if (mode) {
-      if (window.DrivingView?.active) mode.textContent = 'DRIVE';
-      else if (kmh > 0) mode.textContent = 'GPS';
-      else mode.textContent = '';
-      mode.style.position = 'absolute';
-      mode.style.top = '6px';
-      mode.style.left = '8px';
+    let kmh = 0;
+    let driving = false;
+    let earthSpin = false;
+    if (window.DrivingView?.active) {
+      kmh = Math.round((window.DrivingView.speed || 0) * 3.6);
+      driving = true;
+      if (mode) { mode.textContent = 'DRIVE'; mode.style.position = 'absolute'; mode.style.top = '6px'; mode.style.left = '8px'; }
+    } else if (this.isGlobalEarthView()) {
+      kmh = this.earthRotationKmh();
+      earthSpin = true;
+      if (mode) { mode.textContent = 'EARTH'; mode.style.position = 'absolute'; mode.style.top = '6px'; mode.style.left = '8px'; }
+    } else if (window.CityMap?.active && window.DrivingView?.speed > 0) {
+      kmh = Math.round((window.DrivingView.speed || 0) * 3.6);
+      driving = true;
+      if (mode) mode.textContent = 'CITY';
+    } else {
+      if (mode) mode.textContent = '';
     }
-    hud.classList.toggle('driving', driving && kmh > 0);
-    hud.classList.toggle('earth', false);
-    hud.classList.toggle('idle', kmh < 1);
+    val.textContent = String(kmh);
+    hud.classList.toggle('driving', driving);
+    hud.classList.toggle('earth', earthSpin);
+    hud.classList.toggle('idle', kmh < 1 && !earthSpin);
     const limit = this.speedLimitKmh();
     if (lim) {
-      if (kmh > 0 && limit > 0) {
+      if (driving && limit > 0) {
         lim.hidden = false;
         lim.textContent = 'lim ' + limit;
-        lim.style.color = kmh > limit ? '#ff8866' : 'rgba(100,200,255,.65)';
+        lim.style.color = kmh > limit ? '#ff6688' : 'rgba(100,200,255,.65)';
       } else {
         lim.hidden = true;
       }
     }
-  },
-
-  /** Start low-rate GPS watch for speed when not already watching */
-  ensureGpsSpeedWatch() {
-    if (this._gpsSpeedWatch != null || !navigator.geolocation) return;
-    this._gpsSpeedWatch = navigator.geolocation.watchPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        let speed = pos.coords.speed; // m/s or null
-        const now = Date.now();
-        const prev = window._lastGpsFix;
-        if ((speed == null || speed < 0) && prev?.lat != null && prev.t) {
-          const dt = (now - prev.t) / 1000;
-          if (dt > 0.5 && dt < 30) {
-            const dKm = this.haversineKm(prev.lat, prev.lng, lat, lng);
-            speed = (dKm * 1000) / dt;
-          }
-        }
-        window._gpsSpeedMps = (speed != null && speed >= 0) ? speed : 0;
-        window._lastGpsFix = { lat, lng, speed: window._gpsSpeedMps, t: now };
-        window._lastPos = { lat, lng };
-        userLocated = true;
-      },
-      () => { /* keep last good speed */ },
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
-    );
   },
 
   radarTargets() {
@@ -852,11 +735,11 @@ const FieldHud = {
   },
 
   bearing(lat1, lng1, lat2, lng2) {
-    const 1 = lat1 * Math.PI / 180;
-    const 2 = lat2 * Math.PI / 180;
-    const  = (lng2 - lng1) * Math.PI / 180;
-    const y = Math.sin() * Math.cos(2);
-    const x = Math.cos(1) * Math.sin(2) - Math.sin(1) * Math.cos(2) * Math.cos();
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δλ = (lng2 - lng1) * Math.PI / 180;
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
     return ((Math.atan2(y, x) * 180 / Math.PI) + 360) % 360;
   },
 
@@ -962,22 +845,20 @@ const FieldHud = {
     if (this._fieldTimer) return;
     let last = performance.now();
     let tickN = 0;
-    // 8fps on desktop  ~5fps on phone (radar is decorative)
-    const period = window._globePerfLite ? 200 : 125;
+    // ~4fps radar max — canvas trails are expensive; pause if user idle 45s
     this._fieldTimer = setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || window.CityMap?.active) return;
+      const idleMs = Date.now() - (window._lastUserAct || Date.now());
+      if (idleMs > 45000) return;
       const now = performance.now();
-      const dt = Math.min(64, now - last);
+      const dt = Math.min(80, now - last);
       last = now;
       tickN++;
-      // Speed always from GPS ?even in city map
-      if (tickN % 3 === 0) this.updateSpeed();
-      // Radar sweep only on globe (not over city map)
-      if (window.CityMap?.active) return;
       this._sweepAngle = (this._sweepAngle || 0) + (Math.PI * 2 / this.SWEEP_PERIOD_MS) * dt;
       if (this._sweepAngle > Math.PI * 2) this._sweepAngle -= Math.PI * 2;
-      if (tickN % 2 === 0) this.drawRadar(this._sweepAngle);
-    }, period);
+      if (tickN % 1 === 0) this.drawRadar(this._sweepAngle);
+      if (tickN % 2 === 0) this.updateSpeed();
+    }, 250);
   },
 
   stopFieldRaf() {
@@ -991,7 +872,6 @@ const FieldHud = {
     this._loop = setInterval(() => this.tick(), 1000);
     this.startFieldRaf();
     this.migrateSpeedHud();
-    this.ensureGpsSpeedWatch();
   },
 
   migrateSpeedHud() {
@@ -1035,14 +915,19 @@ const FieldHud = {
       this.migrateSpeedHud();
       this.hideCliMoney();
       this.bindActivity();
-      this.loadSession();
-      SpaceNetMiner.detectCaps();
-      this.checkTerms();
-      this.patchAvcBalance();
-      this.startLoop();
-      setTimeout(() => this.ensureBrain(), 2800);
-      this.patchSuperCli();
       this.bindFieldMiner();
+      // Defer miner mesh + radar + brain so boot is never sticky
+      setTimeout(() => {
+        try {
+          this.loadSession();
+          SpaceNetMiner.detectCaps();
+          this.checkTerms();
+          this.patchAvcBalance();
+          this.patchSuperCli();
+        } catch (_) {}
+      }, 600);
+      setTimeout(() => { try { this.startLoop(); } catch (_) {} }, 1800);
+      setTimeout(() => this.ensureBrain(), 5000);
       this._retryPatches();
     } catch (e) { console.error('[FieldHud]', e); }
   },
@@ -1085,21 +970,28 @@ const FieldHud = {
     const hud = document.getElementById('field-balance-hud');
     if (hud) hud.classList.toggle('mining-active', m._termsOk && m._mineRate > 0.003);
     const rate = document.getElementById('fbh-mine-rate');
-    if (rate) rate.textContent = m._mineRate.toFixed(3) + ' Coins/h';
+    if (rate) rate.textContent = m._mineRate.toFixed(3) + ' AVC/h';
   },
 
   refreshMinerPanel() {
     const m = SpaceNetMiner;
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('mrp-rate', m._mineRate.toFixed(3) + ' Coins/h');
+    set('mrp-rate', m._mineRate.toFixed(3) + ' AVC/h');
     set('mrp-earned', '+' + m._sessionEarned.toFixed(3));
     set('mrp-peers', String(m._peerCount || 0));
     const bal = window.AvcBalance?._last;
-    set('mrp-avc', bal != null ? bal.toFixed(2) + ' Coins' : '?Coins');
-    const cap = this.maxOccupy();
-    set('mrp-max-val', Math.round(cap * 100) + '%');
-    const maxIn = document.getElementById('mrp-max-total');
-    if (maxIn && document.activeElement !== maxIn) maxIn.value = String(Math.round(cap * 100));
+    set('mrp-avc', bal != null ? bal.toFixed(2) + ' AVC' : '— AVC');
+    set('sfp-rate', m._mineRate.toFixed(3) + ' AVC/h');
+    set('sfp-earned', '+' + m._sessionEarned.toFixed(3));
+    set('sfp-peers', String(m._peerCount || 0));
+    set('sfp-bal', bal != null ? bal.toFixed(2) + ' AVC' : '— AVC');
+    const fx = window.AvcBalance?._fx || 1.08;
+    const fiat = document.getElementById('sfp-fiat');
+    if (fiat) {
+      fiat.textContent = bal != null
+        ? ('€' + bal.toFixed(2) + ' · $' + (bal * fx).toFixed(2))
+        : '€— · $—';
+    }
     const prefs = this._minerPrefs();
     document.querySelectorAll('.mrp-toggle[data-mrp]').forEach(btn => {
       const on = !!prefs[btn.dataset.mrp];
@@ -1108,33 +1000,42 @@ const FieldHud = {
     });
     const start = document.getElementById('mrp-start');
     if (start) {
-      start.textContent = m._termsOk ? 'Mining active  adjust & close' : 'I agree  start earning Coins';
+      start.textContent = m._termsOk ? 'Mining active · adjust & close' : 'I agree · start earning AVC';
     }
     this.syncMinerChip();
   },
 
-  openMinerPanel() {
-    const panel = document.getElementById('miner-rig-panel');
-    if (!panel) return;
+  openMinerPanel() { return this.openFinancePanel('mining'); },
+
+  openFinancePanel(tab) {
+    const panel = document.getElementById('spacenet-finance-panel');
+    if (!panel) return this._openLegacyMiner?.();
     panel.hidden = false;
     panel.classList.add('open');
+    SpaceNetFinance.showTab(tab || 'stats');
     this.refreshMinerPanel();
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
+    // Stats/network load off critical path so panel never freezes open
+    setTimeout(() => { void SpaceNetFinance.refreshStats(); }, 50);
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
   },
 
   closeMinerPanel() {
-    const panel = document.getElementById('miner-rig-panel');
-    if (!panel) return;
-    panel.classList.remove('open');
-    panel.hidden = true;
+    const panel = document.getElementById('spacenet-finance-panel');
+    if (panel) {
+      panel.classList.remove('open');
+      panel.hidden = true;
+    }
+    const legacy = document.getElementById('miner-rig-panel');
+    if (legacy) {
+      legacy.classList.remove('open');
+      legacy.hidden = true;
+    }
   },
 
   bindFieldMiner() {
     if (!this._minerPanelBound) {
       this._minerPanelBound = true;
-      const panel = document.getElementById('miner-rig-panel');
-      document.getElementById('mrp-close')?.addEventListener('click', () => this.closeMinerPanel());
-      panel?.addEventListener('click', e => { if (e.target === panel) this.closeMinerPanel(); });
+      SpaceNetFinance.bind();
       document.querySelectorAll('.mrp-toggle[data-mrp]').forEach(tog => {
         if (tog._mrpBound) return;
         tog._mrpBound = true;
@@ -1146,32 +1047,15 @@ const FieldHud = {
           this._saveMinerPrefs(prefs);
           tog.classList.toggle('on', prefs[k]);
           tog.setAttribute('aria-pressed', prefs[k] ? 'true' : 'false');
-          AciCli?.print?.('miner  ' + k + ' ' + (prefs[k] ? 'on' : 'off'), 'ok');
+          AciCli?.print?.('miner · ' + k + ' ' + (prefs[k] ? 'on' : 'off'), 'ok');
         });
       });
       document.getElementById('mrp-start')?.addEventListener('click', () => {
         if (!SpaceNetMiner._termsOk) SpaceNetMiner.acceptTerms();
         else this.closeMinerPanel();
         this.refreshMinerPanel();
-        ACIControl?.reply?.('SpaceNet miner rig  earning Coins on your devices');
+        ACIControl?.reply?.('SpaceNet miner rig · earning AVC on your devices');
       });
-      const maxIn = document.getElementById('mrp-max-total');
-      if (maxIn && !maxIn._mrpBound) {
-        maxIn._mrpBound = true;
-        maxIn.addEventListener('input', () => {
-          const n = (Number(maxIn.value) || 80) / 100;
-          if (window.ResourceMonitor?.setMaxTotal) ResourceMonitor.setMaxTotal(n);
-          else {
-            window._resourceMaxTotal = n;
-            window._resourceMaxOccupy = n;
-            try { localStorage.setItem('astranov:resource-max-total', String(n)); } catch (_) {}
-          }
-          const lab = document.getElementById('mrp-max-val');
-          if (lab) lab.textContent = Math.round(n * 100) + '%';
-          window.ResourceMonitor?.refresh?.(true);
-          AciCli?.print?.('max total ' + Math.round(n * 100) + '%  own + idle  device & fleet', 'ok');
-        });
-      }
     }
     const hud = document.getElementById('field-balance-hud');
     if (!hud || hud._minerBound) return;
@@ -1179,20 +1063,387 @@ const FieldHud = {
     if (!hud.getAttribute('role')) {
       hud.setAttribute('role', 'button');
       hud.setAttribute('tabindex', '0');
-      hud.setAttribute('title', 'SpaceNet field  tap for miner rig, balances & mesh');
-      hud.setAttribute('aria-label', 'SpaceNet field  open miner rig and earnings');
+      hud.setAttribute('title', 'SpaceNet finance · balance · mining · 3% invoices · P2P reports');
+      hud.setAttribute('aria-label', 'Open SpaceNet finance multi-tile');
     }
     const open = e => {
       e.preventDefault();
       e.stopPropagation();
-      this.openMinerPanel();
+      this.openFinancePanel('stats');
     };
     hud.addEventListener('click', open);
     hud.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openMinerPanel(); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openFinancePanel('stats'); }
     });
   },
 };
+
+// === SPACENET FINANCE — multi-tile from field balance: stats · mining · 3% invoices · P2P · reports ===
+const SpaceNetFinance = {
+  PLATFORM: 0.03,
+  DRIVER_GROSS: 0.15,
+  _orders: [],
+  _bound: false,
+  _lastReport: '',
+
+  bind() {
+    if (this._bound) return;
+    this._bound = true;
+    const panel = document.getElementById('spacenet-finance-panel');
+    document.getElementById('sfp-close')?.addEventListener('click', () => FieldHud.closeMinerPanel());
+    panel?.addEventListener('click', e => { if (e.target === panel) FieldHud.closeMinerPanel(); });
+    document.querySelectorAll('.sfp-tile[data-sfp]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        this.showTab(btn.dataset.sfp);
+      });
+    });
+    this._fillMonthSelects();
+    document.getElementById('sfp-open-wallet')?.addEventListener('click', () => {
+      window.CoinPortal?.open?.('wallet');
+      void window.AvcBalance?.refresh?.();
+    });
+    document.getElementById('sfp-refresh-stats')?.addEventListener('click', () => void this.refreshStats());
+    document.getElementById('sfp-plat-run')?.addEventListener('click', () => void this.buildPlatformInvoice());
+    document.getElementById('sfp-plat-export')?.addEventListener('click', () => this.exportText('platform'));
+    document.getElementById('sfp-p2p-run')?.addEventListener('click', () => void this.buildP2pLedger());
+    document.getElementById('sfp-p2p-export')?.addEventListener('click', () => this.exportText('p2p'));
+    document.getElementById('sfp-run-report')?.addEventListener('click', () => void this.produceReport());
+    document.getElementById('sfp-export')?.addEventListener('click', () => this.exportText('report'));
+  },
+
+  showTab(id) {
+    document.querySelectorAll('.sfp-tile[data-sfp]').forEach(b => b.classList.toggle('active', b.dataset.sfp === id));
+    document.querySelectorAll('.sfp-pane[data-sfp-pane]').forEach(p => p.classList.toggle('active', p.dataset.sfpPane === id));
+    if (id === 'platform') void this.buildPlatformInvoice();
+    if (id === 'p2p') void this.buildP2pLedger();
+    if (id === 'stats' || id === 'mining') FieldHud.refreshMinerPanel();
+  },
+
+  _fillMonthSelects() {
+    const now = new Date();
+    const opts = [];
+    for (let i = 0; i < 18; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const v = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      const label = d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
+      opts.push('<option value="' + v + '">' + label + '</option>');
+    }
+    ['sfp-plat-month', 'sfp-rep-from', 'sfp-rep-to'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.options.length) el.innerHTML = opts.join('');
+    });
+  },
+
+  async loadOrders() {
+    if (!window.Auth?.user) {
+      this._orders = [];
+      return [];
+    }
+    if (this._loadInflight) return this._loadInflight;
+    const timeout = new Promise(resolve => setTimeout(() => resolve('timeout'), 4000));
+    this._loadInflight = (async () => {
+      try {
+        const work = (async () => {
+          const uid = Auth.user.id;
+          const client = Auth.client;
+          if (client?.from) {
+            const [cRes, dRes] = await Promise.all([
+              client.from('orders').select('*').eq('customer_id', uid).order('created_at', { ascending: false }).limit(60),
+              client.from('orders').select('*').eq('driver_id', uid).order('created_at', { ascending: false }).limit(60),
+            ]);
+            let asVendor = [];
+            const owned = (window.Commerce?.vendors || []).filter(v => v.owner_id === uid || v.user_id === uid);
+            if (owned.length) {
+              const ids = owned.map(v => v.id).filter(Boolean).slice(0, 12);
+              if (ids.length) {
+                const vRes = await client.from('orders').select('*').in('vendor_id', ids).order('created_at', { ascending: false }).limit(60);
+                asVendor = vRes?.data || [];
+              }
+            }
+            const seen = new Set();
+            this._orders = [...(cRes?.data || []), ...(dRes?.data || []), ...asVendor].filter(o => {
+              if (!o?.id || seen.has(o.id)) return false;
+              seen.add(o.id);
+              return true;
+            });
+          } else {
+            this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
+              .map(m => m.order).filter(Boolean);
+          }
+        })();
+        const raced = await Promise.race([work.then(() => 'ok'), timeout]);
+        if (raced === 'timeout') {
+          this._orders = this._orders?.length
+            ? this._orders
+            : (window.MarketplaceDeliveryEngine?.missions || []).map(m => m.order).filter(Boolean);
+        }
+      } catch (_) {
+        this._orders = (window.MarketplaceDeliveryEngine?.missions || [])
+          .map(m => m.order).filter(Boolean);
+      }
+      this._loadInflight = null;
+      return this._orders;
+    })();
+    return this._loadInflight;
+  },
+
+  orderGross(o) {
+    const c = o?.calc || {};
+    if (c.total_avc != null) return Number(c.total_avc) || 0;
+    if (c.total_eur != null) return Number(c.total_eur) || 0;
+    const items = Array.isArray(o?.items) ? o.items : [];
+    return items.reduce((s, i) => s + (Number(i.qty) || 1) * (Number(i.price) || 0), 0);
+  },
+
+  orderGoods(o) {
+    const c = o?.calc || {};
+    if (c.subtotal_eur != null) return Number(c.subtotal_eur) || 0;
+    if (c.goods_eur != null) return Number(c.goods_eur) || 0;
+    return this.orderGross(o) * 0.75;
+  },
+
+  orderDelivery(o) {
+    const c = o?.calc || {};
+    if (c.delivery_eur != null) return Number(c.delivery_eur) || 0;
+    return Math.max(0, this.orderGross(o) - this.orderGoods(o));
+  },
+
+  platformFee(o) {
+    const c = o?.calc || {};
+    if (c.platform_fee_eur != null) return Number(c.platform_fee_eur) || 0;
+    return Math.round(this.orderGross(o) * this.PLATFORM * 100) / 100;
+  },
+
+  driverFromVendor(o) {
+    const c = o?.calc || {};
+    if (c.driver_from_vendor_eur != null) return Number(c.driver_from_vendor_eur) || 0;
+    return Math.round(this.orderGoods(o) * this.DRIVER_GROSS * 100) / 100;
+  },
+
+  inMonth(iso, ym) {
+    if (!iso || !ym) return true;
+    return String(iso).slice(0, 7) === ym;
+  },
+
+  inPeriod(iso, period) {
+    if (!iso || period === 'all') return true;
+    const t = new Date(iso).getTime();
+    if (!isFinite(t)) return true;
+    const now = Date.now();
+    if (period === 'mtd') {
+      const d = new Date();
+      return t >= new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    }
+    if (period === '30d') return t >= now - 30 * 864e5;
+    if (period === '90d') return t >= now - 90 * 864e5;
+    if (period === 'ytd') return t >= new Date(new Date().getFullYear(), 0, 1).getTime();
+    return true;
+  },
+
+  async refreshStats() {
+    await this.loadOrders();
+    FieldHud.refreshMinerPanel();
+    const ym = new Date().toISOString().slice(0, 7);
+    const mtd = this._orders.filter(o => this.inMonth(o.created_at, ym));
+    const fee = mtd.reduce((s, o) => s + this.platformFee(o), 0);
+    const p2p = mtd.reduce((s, o) => s + this.orderGross(o), 0);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('sfp-orders-n', String(this._orders.length));
+    set('sfp-fee-mtd', fee.toFixed(2) + ' AVC');
+    set('sfp-p2p-mtd', p2p.toFixed(2) + ' AVC');
+  },
+
+  async buildPlatformInvoice() {
+    await this.loadOrders();
+    const ym = document.getElementById('sfp-plat-month')?.value || new Date().toISOString().slice(0, 7);
+    const role = document.getElementById('sfp-plat-role')?.value || 'all';
+    const uid = Auth?.user?.id;
+    let rows = this._orders.filter(o => this.inMonth(o.created_at, ym));
+    if (role === 'client') rows = rows.filter(o => o.customer_id === uid);
+    if (role === 'driver') rows = rows.filter(o => o.driver_id === uid);
+    if (role === 'vendor') {
+      const vids = new Set((Commerce?.vendors || []).filter(v => v.owner_id === uid).map(v => v.id));
+      rows = rows.filter(o => vids.has(o.vendor_id));
+    }
+    const tbody = document.querySelector('#sfp-plat-table tbody');
+    let total = 0;
+    const lines = rows.map(o => {
+      const fee = this.platformFee(o);
+      total += fee;
+      const party = o.customer_id === uid ? 'client' : o.driver_id === uid ? 'driver' : 'vendor';
+      const day = (o.created_at || '').slice(0, 10);
+      return '<tr><td>' + day + '</td><td>' + (o.short_id || String(o.id).slice(0, 8))
+        + '</td><td>' + party + '</td><td class="num">' + this.orderGross(o).toFixed(2)
+        + '</td><td class="num">' + fee.toFixed(2) + '</td></tr>';
+    });
+    if (tbody) tbody.innerHTML = lines.length ? lines.join('') : '<tr><td colspan="5">No orders this month — place or deliver to populate</td></tr>';
+    const tot = document.getElementById('sfp-plat-total');
+    if (tot) tot.textContent = total.toFixed(2) + ' AVC';
+    this._lastReport = this._formatPlatformInvoice(ym, role, rows, total);
+    AciCli?.print?.('platform 3% invoice · ' + ym + ' · ' + total.toFixed(2) + ' AVC', 'ok');
+  },
+
+  _formatPlatformInvoice(ym, role, rows, total) {
+    const who = Auth?.user?.email || Auth?.user?.id || 'user';
+    let s = 'ASTRANOV SPACENET — PLATFORM 3% MONTHLY INVOICE\n';
+    s += 'Period: ' + ym + ' · Issued to: ' + who + ' · Role filter: ' + role + '\n';
+    s += 'Rate: 3% of transaction gross (goods + delivery)\n';
+    s += '────────────────────────────────────────\n';
+    rows.forEach(o => {
+      s += (o.created_at || '').slice(0, 10) + '  ' + (o.short_id || o.id) + '  gross '
+        + this.orderGross(o).toFixed(2) + '  fee ' + this.platformFee(o).toFixed(2) + ' AVC\n';
+    });
+    s += '────────────────────────────────────────\n';
+    s += 'TOTAL PLATFORM FEE DUE: ' + total.toFixed(2) + ' AVC (= EUR)\n';
+    s += 'Invoice from Astranov SpaceNet · collective infrastructure\n';
+    return s;
+  },
+
+  async buildP2pLedger() {
+    await this.loadOrders();
+    const flow = document.getElementById('sfp-p2p-flow')?.value || 'all';
+    const period = document.getElementById('sfp-p2p-period')?.value || 'mtd';
+    const rows = this._orders.filter(o => this.inPeriod(o.created_at, period));
+    const entries = [];
+    rows.forEach(o => {
+      const goods = this.orderGoods(o);
+      const del = this.orderDelivery(o);
+      const d15 = this.driverFromVendor(o);
+      const oid = o.short_id || String(o.id).slice(0, 8);
+      const when = (o.created_at || '').slice(0, 10);
+      const client = 'Client';
+      const vendor = o.vendor_name || 'Vendor';
+      const driver = o.driver_name || 'Driver';
+      if (flow === 'all' || flow === 'client_vendor') {
+        entries.push({ when, flow: client + ' → ' + vendor, oid, amount: goods, kind: 'client_vendor' });
+      }
+      if (flow === 'all' || flow === 'client_driver') {
+        entries.push({ when, flow: client + ' → ' + driver, oid, amount: del, kind: 'client_driver' });
+      }
+      if (flow === 'all' || flow === 'vendor_driver') {
+        entries.push({ when, flow: vendor + ' → ' + driver + ' (15%)', oid, amount: d15, kind: 'vendor_driver' });
+      }
+      if (flow === 'all' || flow === 'driver_vendor') {
+        entries.push({ when, flow: driver + ' ↔ ' + vendor, oid, amount: goods - d15, kind: 'driver_vendor' });
+      }
+    });
+    const tbody = document.querySelector('#sfp-p2p-table tbody');
+    let total = 0;
+    const html = entries.map(e => {
+      total += e.amount;
+      return '<tr><td>' + e.when + '</td><td>' + e.flow + '</td><td>' + e.oid
+        + '</td><td class="num">' + e.amount.toFixed(2) + '</td></tr>';
+    });
+    if (tbody) tbody.innerHTML = html.length ? html.join('') : '<tr><td colspan="4">No P2P lines — need orders with parties</td></tr>';
+    const tot = document.getElementById('sfp-p2p-total');
+    if (tot) tot.textContent = total.toFixed(2) + ' AVC';
+    this._lastReport = this._formatP2p(flow, period, entries, total);
+  },
+
+  _formatP2p(flow, period, entries, total) {
+    let s = 'ASTRANOV SPACENET — P2P ACCUMULATIVE LEDGER\n';
+    s += 'Flow: ' + flow + ' · Period: ' + period + '\n';
+    s += 'Includes vendor→driver 15% gross · client→vendor goods · client→driver delivery\n';
+    s += '────────────────────────────────────────\n';
+    entries.forEach(e => {
+      s += e.when + '  ' + e.flow + '  ' + e.oid + '  ' + e.amount.toFixed(2) + ' AVC\n';
+    });
+    s += '────────────────────────────────────────\nTOTAL: ' + total.toFixed(2) + ' AVC\n';
+    return s;
+  },
+
+  async produceReport() {
+    await this.loadOrders();
+    const type = document.getElementById('sfp-rep-type')?.value || 'full_statement';
+    const role = document.getElementById('sfp-rep-role')?.value || 'auto';
+    const from = document.getElementById('sfp-rep-from')?.value;
+    const to = document.getElementById('sfp-rep-to')?.value;
+    const ymOk = (iso) => {
+      const m = (iso || '').slice(0, 7);
+      if (from && m < from) return false;
+      if (to && m > to) return false;
+      return true;
+    };
+    const rows = this._orders.filter(o => ymOk(o.created_at));
+    let text = 'ASTRANOV SPACENET STATEMENT\nBuild ' + (document.querySelector('meta[name="astranov-build"]')?.content || '') + '\n';
+    text += 'User: ' + (Auth?.user?.email || 'guest') + ' · Role: ' + role + '\n';
+    text += 'Range: ' + (from || '…') + ' → ' + (to || '…') + '\n\n';
+
+    if (type === 'mining') {
+      const m = SpaceNetMiner;
+      text += 'MINING\nRate ' + m._mineRate.toFixed(3) + ' AVC/h · session +' + m._sessionEarned.toFixed(3)
+        + ' · peers ' + m._peerCount + ' · terms ' + (m._termsOk ? 'ok' : 'pending') + '\n';
+    } else if (type === 'platform_monthly') {
+      const fee = rows.reduce((s, o) => s + this.platformFee(o), 0);
+      text += this._formatPlatformInvoice(from || to || 'range', role, rows, fee);
+    } else if (type === 'p2p_cumulative') {
+      await this.buildP2pLedger();
+      text += this._lastReport;
+    } else if (type === 'driver_earnings') {
+      text += 'DRIVER EARNINGS (15% gross goods + delivery share)\n';
+      let t = 0;
+      rows.filter(o => o.driver_id === Auth?.user?.id || role === 'auto').forEach(o => {
+        const a = this.driverFromVendor(o) + this.orderDelivery(o) * 0.85;
+        t += a;
+        text += (o.short_id || o.id) + '  ' + a.toFixed(2) + ' AVC\n';
+      });
+      text += 'TOTAL DRIVER: ' + t.toFixed(2) + ' AVC\n';
+    } else if (type === 'vendor_sales') {
+      text += 'VENDOR SALES + FEES PAID TO SPACENET 3% + DRIVER 15%\n';
+      let sales = 0, fees = 0, dpay = 0;
+      rows.forEach(o => {
+        sales += this.orderGoods(o);
+        fees += this.platformFee(o);
+        dpay += this.driverFromVendor(o);
+      });
+      text += 'Sales goods: ' + sales.toFixed(2) + '\nPlatform 3%: ' + fees.toFixed(2)
+        + '\nDriver 15% gross: ' + dpay.toFixed(2) + '\n';
+    } else if (type === 'client_spend') {
+      text += 'CLIENT SPEND\n';
+      let t = 0;
+      rows.filter(o => o.customer_id === Auth?.user?.id || role === 'auto').forEach(o => {
+        t += this.orderGross(o);
+        text += (o.short_id || o.id) + '  ' + this.orderGross(o).toFixed(2) + ' AVC\n';
+      });
+      text += 'TOTAL SPEND: ' + t.toFixed(2) + ' AVC\n';
+    } else {
+      const fee = rows.reduce((s, o) => s + this.platformFee(o), 0);
+      const gross = rows.reduce((s, o) => s + this.orderGross(o), 0);
+      text += 'FULL STATEMENT\nOrders: ' + rows.length + '\nGross volume: ' + gross.toFixed(2)
+        + ' AVC\nPlatform 3% cumulative: ' + fee.toFixed(2) + ' AVC\n';
+      text += 'Driver 15% gross cumulative: '
+        + rows.reduce((s, o) => s + this.driverFromVendor(o), 0).toFixed(2) + ' AVC\n';
+      text += '\n' + this._formatPlatformInvoice(from || 'range', role, rows, fee);
+    }
+
+    this._lastReport = text;
+    const out = document.getElementById('sfp-rep-out');
+    if (out) out.textContent = text;
+    AciCli?.print?.('report · ' + type + ' · ' + rows.length + ' orders', 'ok');
+  },
+
+  exportText(kind) {
+    const text = this._lastReport || document.getElementById('sfp-rep-out')?.textContent || '';
+    if (!text) {
+      AciCli?.print?.('Nothing to export — run report first', 'dim');
+      return;
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(text).then(() => {
+          AciCli?.print?.('Invoice/report copied to clipboard', 'ok');
+          ACIControl?.reply?.('SpaceNet report copied · paste into email or accounting');
+        });
+      } else {
+        AciCli?.print?.(text.slice(0, 400), 'ok');
+      }
+    } catch (_) {
+      AciCli?.print?.(text.slice(0, 500), 'ok');
+    }
+  },
+};
+window.SpaceNetFinance = SpaceNetFinance;
 
 function fieldHudBoot() {
   try { FieldHud.boot(); } catch (e) { console.error('[FieldHud boot]', e); }
