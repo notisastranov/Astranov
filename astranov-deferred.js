@@ -5997,8 +5997,26 @@ const Commerce = {
         if (id && !ids.has(id)) this.vendors.push(v);
       });
     }
-    if (!this.vendors.length) this.vendors = DEMO_VENDORS.map(v => ({ ...v }));
-    else this.vendors = this.vendors.map(v => this._normalizeVendor(v));
+    // Mission rule: never drown real POIs in DEMO_VENDORS
+    if (Array.isArray(this.vendors) && this.vendors.length) {
+      this.vendors = this.vendors.map(v => this._normalizeVendor(v));
+      const real = this.vendors.filter(v => v && !String(v.id || '').startsWith('demo-'));
+      if (real.length >= 2) {
+        const construction = this.vendors.filter(v => AstranovCityShop?.isConstructionVendor?.(v));
+        this.vendors = real.concat(construction.filter(c => !real.some(r => r.id === c.id)));
+        this._usingDemoVendors = false;
+      }
+    }
+    if (!this.vendors.length) {
+      // Honest empty unless explicitly allowing demo (legacy / offline)
+      if (opts.allowDemo === true) {
+        this.vendors = DEMO_VENDORS.map(v => ({ ...v }));
+        this._usingDemoVendors = true;
+      } else {
+        this.vendors = [];
+        this._usingDemoVendors = false;
+      }
+    }
     AstranovCityShop?.ensureInVendorList?.();
     this.vendors.sort((a, b) => {
       if (AstranovCityShop?.isConstructionVendor?.(a)) return -1;
