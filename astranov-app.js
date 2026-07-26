@@ -4214,6 +4214,57 @@ const SpaceNetLoader = {
 };
 window.SpaceNetLoader = SpaceNetLoader;
 
+// === SPACENET CLI ICONS — repair ribbon after UTF-8 mojibake (deploy path) ===
+// Use Unicode escapes only — never rely on index.html emoji bytes.
+const SpaceNetCliIcons = {
+  // Astranov-readable symbols (emoji where safe; clear fallbacks)
+  MAP: {
+    'aci-login': { t: 'G', title: 'Sign in with Google' },
+    'aci-video-call': { t: '\u{1F4F9}', title: 'Video call — peers on map' }, // 📹
+    'super-add-fab': { t: '+', title: 'Multi-tile · social · marketplace' },
+    'aci-handsfree': { t: '\u{1F3A4}', title: 'Hands-free voice' }, // 🎤
+    'aci-stop': { t: '\u25A0', title: 'Stop AI · voice · tasks' }, // ■
+    'aci-hold': { t: '\u23F8', title: 'Hold session — pause mic & tasks' }, // ⏸
+    'aci-locate': { t: '\u{1F3AF}', title: 'Locate me — city view' }, // 🎯
+    'aci-provider': { t: 'AV', title: 'AI provider — tap to cycle' },
+    'aci-order': { t: '\u{1F6D2}', title: 'Order' }, // 🛒
+    'aci-batch': { t: '\u{1F517}', title: 'Batch' }, // 🔗
+    'aci-vhf': { t: '\u{1F4E1}', title: 'PMR radio' }, // 📡
+    'aci-call': { t: '\u260E', title: 'Phone' }, // ☎
+  },
+
+  apply() {
+    Object.keys(this.MAP).forEach((id) => {
+      const el = document.getElementById(id);
+      const spec = this.MAP[id];
+      if (!el || !spec) return;
+      // Keep structure for handsfree if CSS uses empty content; force clear label
+      if (id === 'aci-avc') return;
+      el.textContent = spec.t;
+      if (spec.title) el.title = spec.title;
+      el.setAttribute('aria-label', spec.title || spec.t);
+    });
+    // AVC wallet row
+    const avc = document.getElementById('aci-avc');
+    if (avc) {
+      avc.title = 'AVC balance — tap for wallet';
+      const emo = avc.querySelector('.avc-emoji');
+      if (emo) emo.textContent = '\u25C8'; // ◈
+      const core = avc.querySelector('.avc-core');
+      if (core && /â|�|Ã/.test(core.textContent || '')) core.textContent = ' AVC';
+    }
+  },
+
+  init() {
+    this.apply();
+    // Re-apply after mpp-tile / SuperCli bar patches
+    setTimeout(() => this.apply(), 400);
+    setTimeout(() => this.apply(), 1600);
+    setTimeout(() => this.apply(), 4000);
+  },
+};
+window.SpaceNetCliIcons = SpaceNetCliIcons;
+
 // === SPACENET SHELL + COMPANION — CLI is the UI (NO floating button dock) ===
 // Spec: few bar controls only (G · locate · video · + · handsfree). All else = CLI links + talk.
 // Companion: humanoid face of deep glowing blue dots in the CLI screen.
@@ -4296,6 +4347,11 @@ const SpaceNetCompanion = {
         '#spacenet-shell,#spacenet-shell-dock,#spacenet-shell-status{display:none!important}',
         'body.sn-shell-open #globe-deck{padding-bottom:0!important}',
         '#aci-order,#aci-batch,#aci-vhf,#aci-call,#cli-hub-bar,#cli-hub-panel{display:none!important}',
+        /* Readable Astranov CLI ribbon icons */
+        '#super-cli-bar button{font-size:13px;font-weight:700;letter-spacing:0.02em;line-height:1;',
+        'font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",system-ui,sans-serif}',
+        '#super-cli-bar #super-add-fab{font-size:18px;font-weight:800}',
+        '#super-cli-bar #aci-locate,#super-cli-bar #aci-video-call,#super-cli-bar #aci-handsfree{font-size:15px}',
         '#globe-deck-log .sn-cli-link{color:#5ec8ff;text-decoration:none;border-bottom:1px dotted rgba(94,200,255,0.55);',
         'cursor:pointer;text-shadow:0 0 6px rgba(61,158,255,0.45)}',
         '#globe-deck-log .sn-cli-link:hover{color:#9ed8ff;border-bottom-color:#9ed8ff}',
@@ -4308,6 +4364,7 @@ const SpaceNetCompanion = {
       document.getElementById('spacenet-shell')?.remove();
       document.body.classList.remove('sn-shell-open');
     } catch (_) {}
+    try { SpaceNetCliIcons?.apply?.(); } catch (_) {}
     this._canvas = document.getElementById('sn-companion-face');
     this._ctx = this._canvas?.getContext('2d');
     // CLI link clicks
@@ -12964,14 +13021,17 @@ function _astranovBoot() {
 
   // Rescue mpp/field/sky if origin served SPA HTML; mount app-first shell (no CLI required)
   later(() => {
+    try { SpaceNetCliIcons?.init?.(); } catch (_) {}
     void window.SpaceNetAssetBoot?.ensureCoreUi?.().then(() => {
+      try { SpaceNetCliIcons?.apply?.(); } catch (_) {}
       try { SpaceNetCompanion?.init?.(); } catch (_) {}
       try { SpaceNetShell?.init?.(); } catch (e) { console.error('[SpaceNetShell]', e); }
     }).catch(() => {
-      try { SpaceNetCompanion?.init?.(); SpaceNetShell?.init?.(); } catch (_) {}
+      try { SpaceNetCliIcons?.apply?.(); SpaceNetCompanion?.init?.(); SpaceNetShell?.init?.(); } catch (_) {}
     });
   }, 80);
   later(() => {
+    try { SpaceNetCliIcons?.apply?.(); } catch (_) {}
     try { SpaceNetCompanion?.init?.(); } catch (_) {}
     try { SpaceNetShell?.init?.(); } catch (_) {}
   }, 600);
