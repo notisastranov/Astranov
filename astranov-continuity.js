@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726150000-minspec-shell',
+  version: '20260726170000-spacenet-spatial',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -447,7 +447,7 @@ const AstranovContinuity = {
       ],
       behavior: [
         'SpaceNetAssetBoot.ensureCoreUi fetches modules; if body is HTML, loads jsDelivr/GitHub raw instead',
-        '#spacenet-shell dock: My city · Shops · Order · Menu · Talk',
+        '#spacenet-shell dock: My city · Shops · Order · Place · Vault · Cydonia · Menu · Talk',
         'SpaceNetTalk routes plain language to shell actions before CLI parser',
         'LazyModules deferred pack starts ~2.2s; shell forces _lazyUserReady on actions',
         'Auto soft-crawl after shell bootstrap',
@@ -457,6 +457,29 @@ const AstranovContinuity = {
         'SpaceNetShell',
         'SpaceNetTalk',
         '#spacenet-shell',
+      ],
+    },
+
+    spatialInternet: {
+      summary: 'Real virtual space as UI — files/folders/shops/delivery/video live at body+lat+lng; zoom reveals them',
+      owner: 'js/astranov-spacenet-spatial.js SpaceNetSpatial + SPECS.md §0 Law',
+      law: 'Digital objects live at real coordinates. Zoom there → see them. Internet free in all dimensions.',
+      seeds: [
+        'seed-thesis-garage — Thesis.pdf on Rhodes garage',
+        'seed-cydonia-music — folder on Mars Cydonia',
+        'seed-spacenet-market-hub — delivery marketplace pin',
+        'seed-videocall-agora — Athens video pin',
+      ],
+      kinds: ['file', 'folder', 'shop', 'delivery', 'call', 'note', 'media'],
+      bodies: ['earth', 'mars', 'moon', 'solar'],
+      storage: 'localStorage astranov:spacenet-places-v1',
+      talk: ['put X on Y', 'hide music on mars cydonia', 'go to thesis', 'vault', 'drop here'],
+      globeType: 'sn_place',
+      doNotRemove: [
+        'SpaceNetSpatial',
+        'SpaceNetLaw',
+        'SEEDS thesis/cydonia',
+        'SPECS.md §0 The law',
       ],
     },
   },
@@ -485,7 +508,8 @@ const AstranovContinuity = {
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
     { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
-    { id: '20260726150000-minspec-shell', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726170000-spacenet-spatial', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726170000-spacenet-spatial', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
   ],
 
   /**
@@ -511,6 +535,8 @@ const AstranovContinuity = {
     '#spacenet-shell bar visible: My city · Shops · Order · Menu · Talk (no CLI required)',
     'MenuProfilePostTile and FieldHud defined (not SPA HTML) — check __spacenetAssetReport',
     'GET /astranov-mpp-tile.js content-type application/javascript OR rescued via jsDelivr',
+    'SpaceNetSpatial loaded; Thesis garage + Cydonia music seeds; Place/Vault/Cydonia on shell',
+    'Talk: put notes on here · go to cydonia · open thesis opens spatial panel',
   ],
 
   /**
