@@ -43,10 +43,37 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726190000-real-imagery',
+  version: '20260726200000-cli-companion-ip',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
+
+  /**
+   * Intellectual property — Astranov SpaceNet (owner + AI co-creation under owner direction)
+   */
+  ip: {
+    mark: 'Astranov SpaceNet',
+    notice: '© Astranov SpaceNet. All rights reserved.',
+    owners: ['notisastranov', 'AI pair sessions under owner direction'],
+    protect: [
+      'Spatial internet: objects at body+lat+lng, zoom-to-open',
+      'Full cosmos address catalog + sci-fi dimensions',
+      'Sci-fi CLI companion (deep blue dot humanoid)',
+      'Marketplace economics 3% platform / 15% driver gross',
+      'Multi-tile field OS + SpaceNetCities',
+    ],
+    doNotStrip: ['ip notice', 'SPECS.md IP section', 'meta astranov-ip'],
+  },
+
+  /**
+   * Always update SPECS when owner issues product law — no reminder required
+   */
+  agentDiscipline: {
+    alwaysUpdateSpecs: true,
+    alwaysUpdateContinuityOnSelectors: true,
+    noFloatingButtonDocks: true,
+    cliIsPrimaryUi: true,
+  },
 
   /**
    * Markdown / issues / sessions that MUST NOT drive implementation alone.
@@ -447,17 +474,18 @@ const AstranovContinuity = {
       ],
       behavior: [
         'SpaceNetAssetBoot.ensureCoreUi fetches modules; if body is HTML, loads jsDelivr/GitHub raw instead',
-        '#spacenet-shell dock: My city · Shops · Order · Place · Vault · Cydonia · Menu · Talk',
-        'SpaceNetTalk routes plain language to shell actions before CLI parser',
-        'LazyModules deferred pack starts ~2.2s; shell forces _lazyUserReady on actions',
-        'Auto soft-crawl after shell bootstrap',
+        'NO #spacenet-shell floating dock — removed; CLI + companion only',
+        'SpaceNetCompanion deep-blue dot face inside #globe-deck',
+        'CLI links [[action|label]]; few edge buttons only',
+        'SpaceNetTalk routes plain language before CLI parser',
       ],
       doNotRemove: [
         'SpaceNetAssetBoot',
         'SpaceNetShell',
         'SpaceNetTalk',
-        '#spacenet-shell',
+        'SpaceNetCompanion',
       ],
+      doNotAdd: ['#spacenet-shell multi-button dock', 'second chrome window of app buttons'],
     },
 
     spatialInternet: {
@@ -530,8 +558,8 @@ const AstranovContinuity = {
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
     { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
-    { id: '20260726190000-real-imagery', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
-    { id: '20260726190000-real-imagery', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
+    { id: '20260726200000-cli-companion-ip', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726200000-cli-companion-ip', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
   ],
 
   /**
@@ -554,11 +582,11 @@ const AstranovContinuity = {
     'CLI: bridge saves job pack; coders composer continues from app',
     'Enter city / locate → real shop pins (not only Rhodes demos); CLI crawl force-refreshes sector',
     'Tap shop → VendorMapTile with source badge + social/website chips when OSM/GBP data exists',
-    '#spacenet-shell bar visible: My city · Shops · Order · Menu · Talk (no CLI required)',
+    'NO floating #spacenet-shell dock; companion face in CLI; [[links]] work in log',
+    'Edge bar is minimal (G · locate · video · + · handsfree) — no Order/Batch/VHF/Phone clutter',
     'MenuProfilePostTile and FieldHud defined (not SPA HTML) — check __spacenetAssetReport',
-    'GET /astranov-mpp-tile.js content-type application/javascript OR rescued via jsDelivr',
-    'SpaceNetSpatial loaded; Thesis garage + Cydonia music seeds; Place/Vault/Cydonia on shell',
-    'Talk: put notes on here · go to cydonia · open thesis opens spatial panel',
+    'SpaceNetSpatial + Cosmos + Imagery loaded; IP notice in continuity.ip',
+    'Talk: put notes on here · go to cydonia · go to Jupiter · type help',
   ],
 
   /**
@@ -579,7 +607,9 @@ const AstranovContinuity = {
     'Deleting pilot multi-stop or multi-tile rail as “cleanup”',
     'Implementing from ASTRANOV_GROK_SPECS.md or session transcripts instead of this file',
     'Shipping index that loads mpp/field/sky without verifying they are JS (SPA HTML 200 is a silent P0)',
-    'Requiring owner to type CLI commands for My city / shops / order basics',
+    'Re-adding floating multi-button SpaceNet docks or second chrome windows',
+    'Skipping SPECS.md update when owner gives new product instructions',
+    'Stripping Astranov SpaceNet IP notices',
   ],
 
   /** Quick file → responsibility map */
