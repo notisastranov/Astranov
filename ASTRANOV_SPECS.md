@@ -1,4 +1,4 @@
-﻿# Astranov SpaceNet — Product Specs (2026-07-14)
+# Astranov SpaceNet — Product Specs (2026-07-14)
 
 **Authoritative machine contract:** `astranov-continuity.js` → `window.AstranovContinuity`  
 **This file** is the human-readable mirror. When they disagree, **continuity.js wins** after deploy.  
@@ -10,7 +10,7 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260726120000-vendor-crawl-profiles` |
+| **Current build** | `20260726150000-minspec-shell` |
 
 ---
 
