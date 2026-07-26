@@ -42,6 +42,16 @@ This is the evolution of the internet: **finally free in all dimensions**.
 
 Talk: `go to Jupiter` · `go to Orion` · `go to Sgr A*` · `go to hyperspace` · `put notes on Europa` · `cosmos`
 
+### Real imagery (speed-first)
+
+| Commitment | Rule |
+|------------|------|
+| **Real maps** | Earth Blue Marble + night lights; Sol planets use NASA-derived 1k maps (threex / three.js) when CORS allows |
+| **Never block boot** | Solid color → reliable mid-res → HD marble when idle / desktop |
+| **Mobile** | Cap parallel texture loads (2); skip heavy sky band; defer planet maps ~9s |
+| **Desktop** | EarthRealism day/night shader when `earth_hd` allowed; denser starfield + soft Milky band |
+| **Code** | `js/astranov-spacenet-imagery.js` → `SpaceNetImagery` |
+
 ---
 
 ## 1. Mission (one sentence)
