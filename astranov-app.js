@@ -1267,22 +1267,11 @@ let pressTimer = null;
 let pressStartX = 0;
 let pressStartY = 0;
 
-function trackballMove(clientX, clientY) {
-  const now = performance.now();
-  const dt = trackLastMoveT ? now - trackLastMoveT : 16;
-  trackLastMoveT = now;
-  const dx = clientX - px;
-  const dy = clientY - py;
-  px = clientX;
-  py = clientY;
-  applyTrackballDrag(dx, dy, dt);
-}
-
 function trackballStart(clientX, clientY) {
-  window._globeFly = null;
+  // Do NOT kill an in-flight fly on every mousedown — only cancel if user really drags
   GlobeControl?.userTookGlobe?.('drag');
   drag = true;
-  dragging = true;
+  dragging = false; // set true only after move threshold — so click/tap still works
   trackLastMoveT = performance.now();
   if (Math.abs(trackAngVel) > 1e-6) {
     trackAngVel *= ASTRANOV_GLOBE_PHYSICS_LOCK.track.TRACK_CATCH_DAMP;
@@ -1301,17 +1290,35 @@ function trackballStart(clientX, clientY) {
   }, 750);
 }
 
+function trackballMove(clientX, clientY) {
+  const now = performance.now();
+  const dt = trackLastMoveT ? now - trackLastMoveT : 16;
+  trackLastMoveT = now;
+  const dx = clientX - px;
+  const dy = clientY - py;
+  px = clientX;
+  py = clientY;
+  if (!dragging && Math.hypot(clientX - pressStartX, clientY - pressStartY) > 10) {
+    dragging = true;
+    window._globeFly = null; // user is dragging — cancel fly
+  }
+  if (dragging) applyTrackballDrag(dx, dy, dt);
+}
+
 function trackballEnd(clientX, clientY, opts) {
   clearTimeout(pressTimer);
+  const moved = dragging || (clientX != null && Math.hypot(clientX - pressStartX, clientY - pressStartY) > 10);
   drag = false;
   canvas.classList.remove('dragging');
-  if (trackAngAxis && Math.abs(trackVelSmooth) > TRACK_INERTIA_MIN) {
+  if (moved && trackAngAxis && Math.abs(trackVelSmooth) > TRACK_INERTIA_MIN) {
     trackAngVel = Math.max(-TRACK_MAX_ANG_VEL, Math.min(TRACK_MAX_ANG_VEL, trackVelSmooth * ASTRANOV_GLOBE_PHYSICS_LOCK.track.TRACK_RELEASE_BOOST));
     trackInertiaAxis = trackAngAxis;
     trackInertiaAngle = trackAngVel * 16;
   }
-  setTimeout(() => { dragging = false; }, 100);
-  if (!opts?.skipTap && clientX != null && clientY != null) registerTap(clientX, clientY);
+  // Clear immediately on tap so click handler runs; short delay only after real drag
+  if (!moved) dragging = false;
+  else setTimeout(() => { dragging = false; }, 80);
+  if (!opts?.skipTap && !moved && clientX != null && clientY != null) registerTap(clientX, clientY);
 }
 
 function registerTap(clientX, clientY) {
@@ -1464,7 +1471,16 @@ function bindTrackballEvents(targetCanvas) {
   }
   if (e.touches.length === 0 && drag) {
     const t = e.changedTouches[0];
-    trackballEnd(t ? t.clientX : null, t ? t.clientY : null);
+    const wasDrag = dragging;
+    const x = t ? t.clientX : null;
+    const y = t ? t.clientY : null;
+    trackballEnd(x, y);
+    // Mobile: no click event after touch — fire globe tap for national fly
+    if (!wasDrag && x != null && y != null) {
+      setTimeout(() => {
+        if (!dragging) onGlobeClick({ clientX: x, clientY: y, target: c });
+      }, 0);
+    }
   }
   });
   c.addEventListener('dblclick', e => {
@@ -1507,44 +1523,68 @@ function globeClickTargets() {
 }
 
 function onGlobeClick(e) {
+  // Only ignore real drags (threshold). Never block taps — old dragging=true-on-mousedown killed all clicks.
   if (dragging) return;
-  if (MapOverlayDismiss.handleMapClick(e)) return;
+  if (e.target?.closest?.('#menu-profile-post-tile, #spacenet-finance-panel, #globe-deck, button, a, input, textarea, select')) return;
+  try { if (MapOverlayDismiss?.handleMapClick?.(e)) return; } catch (_) {}
+  if (!earth || !camera || !renderer) return;
   mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  const routeHits = raycaster.intersectObjects(MarketplaceDeliveryEngine?._globeMeshes || [], true);
-  if (routeHits.length > 0 && MarketplaceDeliveryEngine?.pickFromGlobeHit?.(routeHits[0])) return;
+  try {
+    const routeHits = raycaster.intersectObjects(MarketplaceDeliveryEngine?._globeMeshes || [], true);
+    if (routeHits.length > 0 && MarketplaceDeliveryEngine?.pickFromGlobeHit?.(routeHits[0])) return;
+  } catch (_) {}
 
-  const markerHits = raycaster.intersectObjects(globeClickTargets(), true);
-  if (markerHits.length > 0) {
-    const hit = markerHits[0].object;
-    const entity = GlobeEntity?.pickFromHit?.(hit);
-    if (entity) {
-      GlobeEntity.activate(entity);
-      return;
+  try {
+    const markerHits = raycaster.intersectObjects(globeClickTargets(), true);
+    if (markerHits.length > 0) {
+      const hit = markerHits[0].object;
+      const entity = GlobeEntity?.pickFromHit?.(hit);
+      if (entity) {
+        GlobeEntity.activate(entity);
+        return;
+      }
+      const root = hit.userData?.vendor ? hit : (hit.parent?.userData?.vendor ? hit.parent : hit);
+      const ud = root.userData || hit.userData || {};
+      if (ud.vendor) { VendorMapTile?.open?.(ud.vendor); return; }
+      if (ud.type === 'me' || root === window._meMarker) {
+        const me = GlobeEntity?.entities?.get('me');
+        if (me) { GlobeEntity.activate(me); return; }
+        MapDepict?.zoomToUser?.(GlobeControl?.Z?.national || 1.82);
+        return;
+      }
     }
-    const root = hit.userData?.vendor ? hit : (hit.parent?.userData?.vendor ? hit.parent : hit);
-    const ud = root.userData || hit.userData || {};
-    if (ud.vendor) { VendorMapTile?.open?.(ud.vendor); return; }
-    if (ud.type === 'me' || root === window._meMarker) {
-      const entity = GlobeEntity?.entities?.get('me');
-      if (entity) { GlobeEntity.activate(entity); return; }
-      const up = window._lastPos || { lat: 36.22, lng: 28.12 };
-      MapDepict?.zoomToUser?.(GlobeControl?.Z?.national || 1.82);
-      return;
-    }
-  }
+  } catch (_) {}
 
   const intersects = raycaster.intersectObject(earth);
   if (intersects.length > 0) {
-    const pin = MapPlaceMenu?.pointFromGlobeHit?.(intersects[0].point);
+    const pin = MapPlaceMenu?.pointFromGlobeHit?.(intersects[0].point)
+      || pointFromGlobeHitFallback(intersects[0].point);
     if (pin && window.MenuProfilePostTile?.isPinPick?.()) {
       window.MenuProfilePostTile.setPin(pin.lat, pin.lng);
       return;
     }
-    if (pin) void GlobeNavigate?.handlePlaceClick?.(pin.lat, pin.lng, {});
+    if (pin) {
+      // Immediate national fly — do not wait on deferred pack
+      void GlobeNavigate?.handlePlaceClick?.(pin.lat, pin.lng, { fromClick: true });
+    }
   }
+}
+
+function pointFromGlobeHitFallback(point) {
+  if (!point || !globePivot) return null;
+  try {
+    const local = point.clone();
+    globePivot.worldToLocal(local);
+    local.normalize();
+    const lat = 90 - (Math.acos(Math.max(-1, Math.min(1, local.y))) * 180 / Math.PI);
+    let lng = (Math.atan2(local.z, -local.x) * 180 / Math.PI) - 180;
+    if (lng < -180) lng += 360;
+    if (lng > 180) lng -= 360;
+    return { lat, lng };
+  } catch (_) { return null; }
 }
 
 function eulerFromDir(dir) {
@@ -1555,10 +1595,12 @@ function eulerFromDir(dir) {
 
 function flyToPoint(point, targetZ = 1.82, opts) {
   opts = opts || {};
-  if (drag || dragging) {
+  // Allow programmatic fly even if a click just set drag flags; only skip if actively dragging
+  if (drag && dragging) {
     GlobeControl?.userTookGlobe?.('silent');
-    window._globeFly = null;
+    return;
   }
+  if (!point || !globePivot || !camera) return;
   syncGlobePivotRotation?.();
   const dir = point.clone().normalize();
   const toE = eulerFromDir(dir);
@@ -1574,6 +1616,8 @@ function flyToPoint(point, targetZ = 1.82, opts) {
   const fromZ = camera.position.z;
   const baseDur = opts.dur || GlobeControl?.flyDuration?.(fromZ, z) || 1400;
   const dur = Math.max(700, Math.min(5200, baseDur + angle * 820));
+  drag = false;
+  dragging = false;
   window._globeFly = {
     mode: 'quat',
     fromQ: qFrom,
@@ -1582,7 +1626,7 @@ function flyToPoint(point, targetZ = 1.82, opts) {
     toZ: z,
     t0: performance.now(),
     dur,
-    tierId: ZoomTiers?.current?.()?.id,
+    tierId: ZoomTiers?.current?.()?.id || (Math.abs(z - 1.82) < 0.15 ? 'national' : null),
     onDone: typeof opts.onDone === 'function' ? opts.onDone : null,
     onTier: !!opts.onTier,
   };
@@ -1594,8 +1638,9 @@ function focusOnGlobePoint(point, targetZ) {
 
 function tickGlobeFly() {
   const f = window._globeFly;
-  document.body.classList.toggle('globe-flying', !!(f && !drag && !dragging));
-  if (!f || drag || dragging) return;
+  document.body.classList.toggle('globe-flying', !!(f && !dragging));
+  // Allow fly during residual drag=false; only hard-stop if user is mid-drag-move
+  if (!f || dragging) return;
   const p = Math.min(1, (performance.now() - f.t0) / f.dur);
   const ease = p < 0.5
     ? 4 * p * p * p
@@ -2031,35 +2076,43 @@ const GlobeNavigate = {
 
   async handlePlaceClick(lat, lng, opts) {
     opts = opts || {};
-    if (lat == null || lng == null) return;
-    await LazyModules.ensure().catch(() => {});
-    if (window.CityMap?.ensureReady) await CityMap.ensureReady().catch(() => {});
-    if (window.Commerce?.loadVendors && !Commerce.vendors?.length) {
-      try { await Commerce.loadVendors(); } catch (_) {}
-    }
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
     const z = this.camZ();
-    const same = this._lastClick && Math.hypot(lat - this._lastClick.lat, lng - this._lastClick.lng) < 0.35
-      && Date.now() - this._lastClick.t < 8000;
     this._lastClick = { lat, lng, t: Date.now() };
     this.anchor = { lat, lng };
+    window._lastPos = { lat, lng };
 
     if (opts.vendor) {
+      void LazyModules.ensure().catch(() => {});
       VendorMapTile?.open?.(opts.vendor);
       return 'vendor';
     }
 
+    // GLOBAL → NATIONAL: fly immediately — never await deferred pack (that made clicks feel dead)
     if (this.isGlobal() || z > 2.05) {
       this.mode = 'national';
       this._cityUnlocked = false;
-      ZoomTiers?.goTo?.('national', false);
+      try { ZoomTiers?.goTo?.('national', false); } catch (_) {}
       const p = latLngToPos(lat, lng, 1.04);
-      flyToPoint(new THREE.Vector3(p.x, p.y, p.z), this.NATIONAL_Z, { dur: 2400, onTier: true });
+      flyToPoint(new THREE.Vector3(p.x, p.y, p.z), this.NATIONAL_Z, {
+        dur: 1800,
+        onTier: true,
+        onDone: () => {
+          try {
+            SpaceNetCities?.refresh?.(true);
+            this._showCityChips(lat, lng);
+            this._syncChip();
+          } catch (_) {}
+        },
+      });
       GlobeControl?.noteAutoFly?.();
-      CityMap?.onCamera?.(this.NATIONAL_Z, 'earth');
+      try { CityMap?.onCamera?.(this.NATIONAL_Z, 'earth'); } catch (_) {}
       this._showCityChips(lat, lng);
-      GlobeDeck?.setPreview?.('National airspace · pick a city chip or tap again');
-      AciCli?.print?.('nav · national · ' + lat.toFixed(2) + ',' + lng.toFixed(2), 'ok');
       this._syncChip();
+      GlobeDeck?.setPreview?.('National · SpaceNet · tap a city or scroll');
+      AciCli?.print?.('nav · national · ' + lat.toFixed(2) + ',' + lng.toFixed(2), 'ok');
+      // background warm deferred (shops/map) after fly starts
+      setTimeout(() => { void LazyModules.ensure().catch(() => {}); }, 400);
       return 'national';
     }
 
@@ -11974,15 +12027,16 @@ function animate() {
   const renderGap = 1000 / targetFps;
   const dueRender = interacting || !window._lastGlobeRender || now - window._lastGlobeRender >= renderGap;
 
-  if (!interacting && !dueRender) return;
-
-  if (interacting) {
-    if (!drag && !window._globeFly) TrackballGuard?.applyInertia?.();
-    GlobeZoom?.tick?.();
+  // Always advance camera fly even on idle-FPS frames
+  if (window._globeFly) {
     tickGlobeFly?.();
+  } else if (interacting) {
+    if (!drag) TrackballGuard?.applyInertia?.();
+    GlobeZoom?.tick?.();
   }
 
-  if (!dueRender) return;
+  if (!interacting && !dueRender && !window._globeFly) return;
+  if (!dueRender && !window._globeFly) return;
 
   if (frame % (interacting ? 6 : 20) === 0) SlumberManager?.tickFrame?.();
 
