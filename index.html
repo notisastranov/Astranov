@@ -1460,12 +1460,20 @@
   async function loadModule(name, probe) {
     var qs = '?v=' + encodeURIComponent(BUILD) + '&sn=' + Date.now().toString(36);
     // /js/* serves real JS on live; root astranov-mpp/field/sky currently SPA-HTML
-    var urls = ['/js/' + name + qs, CDN + name, RAW + name, '/' + name + qs];
+    var base = name.indexOf('/') >= 0 ? name : name;
+    var urls = [
+      CDN + base,
+      CDN + 'js/' + base.replace(/^js\//, ''),
+      RAW + base,
+      RAW + 'js/' + base.replace(/^js\//, ''),
+      '/js/' + base.replace(/^js\//, '') + qs,
+      '/' + base + qs,
+    ];
     for (var i = 0; i < urls.length; i++) {
       try {
         if (urls[i].indexOf('raw.githubusercontent') >= 0 || urls[i].indexOf('jsdelivr') >= 0) {
           var ok = await loadScriptTag(urls[i]);
-          await new Promise(function(r){ setTimeout(r, 80); });
+          await new Promise(function(r){ setTimeout(r, 120); });
           if (ok && (!probe || probe())) return 'cdn:' + urls[i];
           continue;
         }
@@ -1473,7 +1481,6 @@
         var ct = r.headers.get('content-type') || '';
         var text = await r.text();
         if (!r.ok || isBad(text, ct)) continue;
-        // Prefer script src for same-origin so CSP stays happy
         if (urls[i].charAt(0) === '/') {
           var ok2 = await loadScriptTag(urls[i]);
           await new Promise(function(res){ setTimeout(res, 60); });
@@ -1501,10 +1508,17 @@
       if (!window.GalacticSky) {
         report.sky = await loadModule('astranov-galactic-sky.js', function(){ return !!window.GalacticSky; });
       } else report.sky = 'present';
+      if (!window.SpaceNetSpatial) {
+        report.spatial = await loadModule('js/astranov-spacenet-spatial.js', function(){ return !!window.SpaceNetSpatial; });
+        if (!window.SpaceNetSpatial) {
+          report.spatial = await loadModule('astranov-spacenet-spatial.js', function(){ return !!window.SpaceNetSpatial; });
+        }
+      } else report.spatial = 'present';
       try {
         if (window.MenuProfilePostTile && window.MenuProfilePostTile.init) window.MenuProfilePostTile.init();
         if (window.FieldHud && window.FieldHud.boot) window.FieldHud.boot();
         if (window.GalacticSky && window.GalacticSky.init) window.GalacticSky.init();
+        if (window.SpaceNetSpatial && window.SpaceNetSpatial.init) window.SpaceNetSpatial.init();
       } catch (e) { console.error('[SpaceNetAssetBoot]', e); }
       window.__spacenetAssetReport = report;
       return report;
@@ -1512,21 +1526,36 @@
   };
   // Prefer /js/* (live serves real JS there) + CDN; skip root paths that SPA-fallback to HTML
   function preloadWorking() {
-    ['astranov-mpp-tile.js', 'astranov-field-hud.js', 'astranov-galactic-sky.js'].forEach(function(name) {
+    [
+      'astranov-mpp-tile.js',
+      'astranov-field-hud.js',
+      'astranov-galactic-sky.js',
+      'js/astranov-spacenet-spatial.js',
+    ].forEach(function(name) {
+      var isPath = name.indexOf('/') >= 0;
+      var file = isPath ? name.split('/').pop() : name;
       var s = document.createElement('script');
       s.defer = true;
-      s.src = '/js/' + name + '?v=' + encodeURIComponent(BUILD);
-      s.dataset.astranovJsPath = name;
+      s.src = (isPath ? '/' + name : '/js/' + name) + '?v=' + encodeURIComponent(BUILD);
+      s.dataset.astranovJsPath = file;
       s.onerror = function() {
         var s2 = document.createElement('script');
         s2.defer = true;
-        s2.src = CDN + name;
+        s2.src = CDN + (isPath ? name : file);
         document.head.appendChild(s2);
       };
       document.head.appendChild(s);
     });
   }
   preloadWorking();
+  // Always try CDN spatial (new files often missing from origin deploy)
+  (function(){
+    var s = document.createElement('script');
+    s.defer = true;
+    s.src = CDN + 'js/astranov-spacenet-spatial.js';
+    s.dataset.astranovCdn = 'spatial';
+    document.head.appendChild(s);
+  })();
   setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 1200);
   setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 3500);
 })();
@@ -1538,7 +1567,9 @@
 <script defer src="/js/astranov-galactic-sky.js?v=20260726170000-spacenet-spatial"></script>
 <script defer src="/js/astranov-field-hud.js?v=20260726170000-spacenet-spatial"></script>
 <script defer src="/js/astranov-mpp-tile.js?v=20260726170000-spacenet-spatial"></script>
+<script defer src="/js/00-spacenet-spatial.js?v=20260726170000-spacenet-spatial"></script>
 <script defer src="/js/astranov-spacenet-spatial.js?v=20260726170000-spacenet-spatial"></script>
+<script defer src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/astranov-spacenet-spatial.js"></script>
 </body>
 </html>
 
