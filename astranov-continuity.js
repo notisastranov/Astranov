@@ -38,11 +38,12 @@
  *   20260711 — perf-lazy, field-tap miner (no CLI ⛏ strip), continuity replaces old handoffs
  *   20260712 — boot-rescue (THREE guard), perf-turbo (adaptive FPS), delivery-finish
  *   20260712 — spacenet-multi: brand, multi-rail, pilot multi-stop, 3%+15%, party confirms
+ *   20260712 — launch-audit: SpaceNetCities national hubs; CLI bridge; ASTRANOV_LAUNCH_AUDIT.md
  *
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712060000-perf-sticky-fix',
+  version: '20260712070000-launch-audit',
   updated: '2026-07-14',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -356,6 +357,34 @@ const AstranovContinuity = {
       meta: 'astranov-globe-physics locked-v20260710241000-never-change',
       constants: ['GlobeNavigate.GLOBAL_Z 3.5', 'Earth rotation display 1671 km/h', 'syncGlobePivotQuaternion'],
     },
+
+    nationalSpaceNetCities: {
+      summary: 'National zoom shows active SpaceNet cities with live users + shops',
+      owner: 'astranov-app.js SpaceNetCities + GlobeNavigate',
+      selectors: ['#map-nav-chip', '#city-pick-chips', 'GlobeEntity type city_hub'],
+      behavior: [
+        'SpaceNetCities clusters window.others + vendors into cells (~0.55°)',
+        'At national zoom: #map-nav-chip visible with city/user counts',
+        'City chips: glowing sn-city buttons (users) + shop buttons',
+        'GlobeEntity city_hub markers; tap → _enterCitySlow',
+        'Presence _applyOthers calls SpaceNetCities.refresh when national',
+      ],
+      doNotRemove: ['SpaceNetCities', '_showCityChips sn-city', 'map-nav-chip.visible'],
+    },
+
+    cliDevBridge: {
+      summary: 'Continue development with AI from in-app CLI',
+      owner: 'astranov-app.js SpaceNetDevBridge + CodersHub + AciCoders',
+      commands: ['bridge', 'devbridge', 'handoff', 'coders bridge', 'coders composer <task>'],
+      storage: ['astranov:dev-bridge', 'astranov:job-continuation'],
+      behavior: [
+        'bridge saves continuity version + build + CLI tail + CodersHub job',
+        'Prefills aci-cli-in with composer handoff line',
+        'Coders Hub Save / Summon Composer for lab handoff',
+        'Always read continuity + ASTRANOV_SPECS before edits',
+      ],
+      doNotRemove: ['SpaceNetDevBridge.open', 'CodersHub.saveJob', 'CONTINUATION_KEY'],
+    },
   },
 
   /**
@@ -376,6 +405,7 @@ const AstranovContinuity = {
     { id: '20260712040000-spec-lock', note: 'Full progress written into continuity + ASTRANOV_SPECS.md' },
     { id: '20260712050000-cli-field-only', note: 'CLI input seamless — no +/send beside field; Enter sends; + edge only' },
     { id: '20260712060000-perf-sticky-fix', note: 'Fix _globePerfLite wipe; no AA/tone map; lower FPS/DPR; radar 4fps; logo RAF idle stop' },
+    { id: '20260712070000-launch-audit', note: 'SpaceNetCities national hubs; CLI bridge; full launch audit report' },
   ],
 
   /**
@@ -394,6 +424,8 @@ const AstranovContinuity = {
     'Pilot role: build schedule + start multi-stop routing; multi-tile glow previews appear',
     'Globe renders; radar sweeps; earth speed ~1671 km/h on global view',
     'First load feels usable; deferred pack after idle/tap',
+    'National zoom: map chip shows SpaceNet cities/users; city chips include sn-city hubs',
+    'CLI: bridge saves job pack; coders composer continues from app',
   ],
 
   /**
