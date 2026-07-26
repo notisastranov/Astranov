@@ -7,15 +7,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-continuity-20260712070000-launch-audit" />
-<meta name="astranov-continuity" content="20260712070000-launch-audit" />
+<meta name="compliance-check" content="astranov-continuity-20260712080000-finance-multitile" />
+<meta name="astranov-continuity" content="20260712080000-finance-multitile" />
 <meta name="astranov-ai-handoff" content="Read /astranov-continuity.js and window.AstranovContinuity before any edit" />
 <meta name="aci-session" content="SpaceNet Collective Intelligence">
 <meta name="theme-color" content="#0a1020" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astranov" />
-<meta name="astranov-build" content="20260712070000-launch-audit" />
+<meta name="astranov-build" content="20260712080000-finance-multitile" />
 <meta name="astranov-globe-physics" content="locked-v20260710241000-never-change" />
 <meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one — no satellites needed to communicate" />
 <meta name="astranov-base-lock" content="monolith-no-bootstrap-globe-deck-cli-no-circles-guard-base-mjs" />
@@ -23,7 +23,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
-<link rel="preload" href="/astranov-app.js?v=20260712070000-launch-audit" as="script" />
+<link rel="preload" href="/astranov-app.js?v=20260712080000-finance-multitile" as="script" />
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" onerror="(function(){if(window.__threeFb)return;window.__threeFb=1;var s=document.createElement('script');s.defer=true;s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';document.head.appendChild(s);})()"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -660,23 +660,40 @@
   #mpp-market-summary .mpp-market-total { font-size:13px; font-weight:800; color:#fff; margin-top:4px; }
   #mpp-foot { padding:8px 10px 10px; border-top:1px solid var(--ax-blue-border); display:flex; gap:6px; flex-shrink:0; background:rgba(0,10,24,0.65); }
   #mpp-apply { flex:1; padding:11px; border-radius:12px; border:1px solid var(--ax-green-border); background:var(--ax-green-bg); color:#fff; font-weight:700; font-size:11px; cursor:pointer; touch-action:manipulation; }
-  #miner-rig-panel { position:fixed; inset:0; z-index:205; display:none; align-items:center; justify-content:center; background:rgba(0,4,12,0.84); pointer-events:auto; }
-  #miner-rig-panel.open { display:flex; }
-  .mrp-box { width:min(360px,94vw); max-height:min(82vh,520px); overflow:auto; padding:16px 18px; border-radius:16px; border:1px solid var(--ax-green-border); background:rgba(4,18,36,0.97); box-shadow:0 0 32px rgba(0,221,119,0.28); font:11px/1.45 system-ui; color:#e8f4ff; }
-  .mrp-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .mrp-head b { color:var(--ax-green-bright); font-size:14px; }
+  #miner-rig-panel, #spacenet-finance-panel { position:fixed; inset:0; z-index:205; display:none; align-items:center; justify-content:center; background:rgba(0,4,12,0.88); pointer-events:auto; }
+  #miner-rig-panel.open, #spacenet-finance-panel.open { display:flex; }
+  .mrp-box, .sfp-box { width:min(440px,96vw); max-height:min(88vh,640px); overflow:auto; padding:14px 16px 16px; border-radius:18px; border:1px solid rgba(61,158,255,0.45); background:radial-gradient(ellipse at 20% 0%,rgba(20,70,160,0.35),rgba(2,10,28,0.98) 55%); box-shadow:0 0 36px rgba(26,111,212,0.35); font:11px/1.45 system-ui; color:#e8f4ff; }
+  .mrp-head, .sfp-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
+  .mrp-head b, .sfp-head b { color:#7ec8ff; font-size:13px; letter-spacing:.02em; }
+  .sfp-rail { display:flex; gap:8px; overflow-x:auto; padding:6px 0 10px; margin-bottom:6px; border-bottom:1px solid rgba(40,120,255,0.25); scrollbar-width:none; }
+  .sfp-rail::-webkit-scrollbar { display:none; }
+  .sfp-tile { flex:0 0 auto; width:64px; height:64px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer; border:1.5px solid rgba(60,140,255,0.5); background:radial-gradient(circle at 35% 30%,rgba(40,100,220,0.5),rgba(4,16,48,0.95) 70%); box-shadow:0 0 14px rgba(30,100,255,0.4); color:#c8e4ff; font-size:8px; font-weight:700; touch-action:manipulation; }
+  .sfp-tile .sfp-ico { font-size:18px; line-height:1; }
+  .sfp-tile.active { border-color:rgba(120,200,255,0.95); box-shadow:0 0 22px rgba(60,160,255,0.65); transform:scale(1.05); }
+  .sfp-pane { display:none; }
+  .sfp-pane.active { display:block; }
+  .sfp-filters { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:8px 0; }
+  .sfp-filters label { display:flex; flex-direction:column; gap:3px; font-size:9px; color:#8ab; text-transform:uppercase; letter-spacing:.05em; }
+  .sfp-filters select, .sfp-filters input { padding:7px 8px; border-radius:10px; border:1px solid rgba(61,158,255,0.35); background:rgba(0,16,40,0.75); color:#e8f4ff; font-size:11px; }
+  .sfp-table { width:100%; border-collapse:collapse; font-size:10px; margin-top:8px; }
+  .sfp-table th, .sfp-table td { padding:6px 4px; border-bottom:1px solid rgba(73,183,255,0.12); text-align:left; }
+  .sfp-table th { color:#7ec8ff; font-size:9px; text-transform:uppercase; letter-spacing:.04em; }
+  .sfp-table td.num { text-align:right; font-variant-numeric:tabular-nums; color:#00ff99; }
+  .sfp-total { margin-top:10px; padding:10px; border-radius:12px; border:1px solid rgba(0,221,119,0.35); background:rgba(0,32,24,0.45); font-size:11px; }
+  .sfp-total b { color:#00ff99; }
+  .sfp-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .sfp-actions button, #sfp-run-report, #sfp-export, #mrp-start { flex:1; min-width:120px; padding:10px; border-radius:12px; border:1px solid rgba(61,158,255,0.45); background:rgba(0,40,90,0.55); color:#fff; font-weight:700; font-size:11px; cursor:pointer; }
+  #sfp-export, #mrp-start { border-color:var(--ax-green-border); background:var(--ax-green-bg); }
   .mrp-stats { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:8px 0 12px; }
   .mrp-stat { padding:8px; border-radius:10px; border:1px solid rgba(0,221,119,0.25); background:rgba(0,20,40,0.5); text-align:center; }
   .mrp-stat span { display:block; font-size:9px; color:#8ab; text-transform:uppercase; letter-spacing:.06em; }
   .mrp-stat b { display:block; font-size:12px; color:#00ff99; margin-top:3px; }
   .mrp-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(73,183,255,0.12); }
-  .mrp-row:last-of-type { border-bottom:none; }
   .mrp-toggle { position:relative; width:44px; height:24px; border-radius:999px; border:1px solid var(--ax-blue-border); background:#1a2840; cursor:pointer; flex-shrink:0; }
   .mrp-toggle.on { background:var(--ax-green-bg); border-color:var(--ax-green-border); }
   .mrp-toggle::after { content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#9ab; transition:transform 0.15s; }
   .mrp-toggle.on::after { transform:translateX(20px); background:#fff; }
-  #mrp-start { width:100%; margin-top:12px; padding:12px; border-radius:12px; border:1px solid var(--ax-green-border); background:var(--ax-green-bg); color:#fff; font-weight:800; font-size:12px; cursor:pointer; }
-  #mrp-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:10px; }
+  #mrp-close, #sfp-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:10px; }
   #map-nav-chip { display:none; position:fixed; top:max(52px, calc(env(safe-area-inset-top) + 48px)); left:50%; transform:translateX(-50%); z-index:45; max-width:min(92vw,420px); padding:6px 14px; border-radius:999px; background:rgba(0,16,40,0.78); border:1px solid rgba(61,158,255,0.4); font:10px/1.35 system-ui; font-weight:600; color:#9ec8ff; text-align:center; pointer-events:none; box-shadow:0 0 14px rgba(26,111,212,0.25); }
   #map-nav-chip.visible { display:block; }
   #map-eta-labels { position:fixed; inset:0; z-index:155; pointer-events:none; overflow:hidden; }
@@ -1088,24 +1105,124 @@
     <button id="drh-complete" type="button" style="display:none">✅ Mark delivered</button>
     <button id="drh-close" type="button">✖ Close</button>
   </div>
-  <div id="miner-rig-panel" aria-label="SpaceNet miner rig" hidden>
-    <div class="mrp-box">
-      <div class="mrp-head"><b>⛏ SpaceNet Miner Rig</b><button id="mrp-close" type="button">✖</button></div>
-      <p style="margin:0 0 8px;opacity:0.85">Share spare CPU · RAM · SSD · bandwidth on your devices. Users serve users — earn AVC while idle.</p>
-      <div class="mrp-stats">
-        <div class="mrp-stat"><span>Rate</span><b id="mrp-rate">0.000/h</b></div>
-        <div class="mrp-stat"><span>Session</span><b id="mrp-earned">+0.00</b></div>
-        <div class="mrp-stat"><span>Peers</span><b id="mrp-peers">0</b></div>
-        <div class="mrp-stat"><span>Balance</span><b id="mrp-avc">— AVC</b></div>
+  <div id="spacenet-finance-panel" aria-label="SpaceNet finance · balance · mining · invoices" hidden>
+    <div class="sfp-box">
+      <div class="sfp-head">
+        <b>◎ SpaceNet Finance</b>
+        <button id="sfp-close" type="button">✖</button>
       </div>
-      <div class="mrp-row"><span>CPU · route &amp; brain shards</span><button type="button" class="mrp-toggle on" data-mrp="cpu" aria-pressed="true"></button></div>
-      <div class="mrp-row"><span>RAM · presence tables</span><button type="button" class="mrp-toggle on" data-mrp="ram" aria-pressed="true"></button></div>
-      <div class="mrp-row"><span>SSD · vendor indexes</span><button type="button" class="mrp-toggle on" data-mrp="storage" aria-pressed="true"></button></div>
-      <div class="mrp-row"><span>NET · P2P mesh sync</span><button type="button" class="mrp-toggle on" data-mrp="bandwidth" aria-pressed="true"></button></div>
-      <div class="mrp-row"><span>Sleep rig · earth view bonus</span><button type="button" class="mrp-toggle on" data-mrp="sleep" aria-pressed="true"></button></div>
-      <button id="mrp-start" type="button">Start earning · join mesh</button>
+      <div class="sfp-rail" role="toolbar" aria-label="Finance multi tiles">
+        <button type="button" class="sfp-tile active" data-sfp="stats"><span class="sfp-ico">◎</span>Stats</button>
+        <button type="button" class="sfp-tile" data-sfp="mining"><span class="sfp-ico">⛏</span>Mining</button>
+        <button type="button" class="sfp-tile" data-sfp="platform"><span class="sfp-ico">3%</span>Platform</button>
+        <button type="button" class="sfp-tile" data-sfp="p2p"><span class="sfp-ico">⇄</span>P2P</button>
+        <button type="button" class="sfp-tile" data-sfp="reports"><span class="sfp-ico">∑</span>Reports</button>
+      </div>
+
+      <div class="sfp-pane active" data-sfp-pane="stats">
+        <p style="margin:0 0 8px;opacity:.85;font-size:10px">Balance · mining · mesh · all SpaceNet fees are <b style="color:#00ff99">3%</b> platform · vendor pays driver <b style="color:#00ff99">15%</b> of gross goods.</p>
+        <div class="mrp-stats">
+          <div class="mrp-stat"><span>Balance</span><b id="sfp-bal">— AVC</b></div>
+          <div class="mrp-stat"><span>Fiat</span><b id="sfp-fiat">€— · $—</b></div>
+          <div class="mrp-stat"><span>Mine rate</span><b id="sfp-rate">0.000/h</b></div>
+          <div class="mrp-stat"><span>Session</span><b id="sfp-earned">+0.00</b></div>
+          <div class="mrp-stat"><span>Peers</span><b id="sfp-peers">0</b></div>
+          <div class="mrp-stat"><span>Orders (loaded)</span><b id="sfp-orders-n">0</b></div>
+          <div class="mrp-stat"><span>Platform 3% MTD</span><b id="sfp-fee-mtd">0.00</b></div>
+          <div class="mrp-stat"><span>P2P gross MTD</span><b id="sfp-p2p-mtd">0.00</b></div>
+        </div>
+        <div class="sfp-actions">
+          <button type="button" id="sfp-open-wallet">AVC wallet</button>
+          <button type="button" id="sfp-refresh-stats">Refresh stats</button>
+        </div>
+      </div>
+
+      <div class="sfp-pane" data-sfp-pane="mining">
+        <p style="margin:0 0 8px;opacity:.85">Share spare CPU · RAM · SSD · bandwidth. Users serve users — earn AVC while idle.</p>
+        <div class="mrp-stats">
+          <div class="mrp-stat"><span>Rate</span><b id="mrp-rate">0.000/h</b></div>
+          <div class="mrp-stat"><span>Session</span><b id="mrp-earned">+0.00</b></div>
+          <div class="mrp-stat"><span>Peers</span><b id="mrp-peers">0</b></div>
+          <div class="mrp-stat"><span>Balance</span><b id="mrp-avc">— AVC</b></div>
+        </div>
+        <div class="mrp-row"><span>CPU · route &amp; brain shards</span><button type="button" class="mrp-toggle on" data-mrp="cpu" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>RAM · presence tables</span><button type="button" class="mrp-toggle on" data-mrp="ram" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>SSD · vendor indexes</span><button type="button" class="mrp-toggle on" data-mrp="storage" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>NET · P2P mesh sync</span><button type="button" class="mrp-toggle on" data-mrp="bandwidth" aria-pressed="true"></button></div>
+        <div class="mrp-row"><span>Sleep rig · earth view bonus</span><button type="button" class="mrp-toggle on" data-mrp="sleep" aria-pressed="true"></button></div>
+        <button id="mrp-start" type="button">Start earning · join mesh</button>
+      </div>
+
+      <div class="sfp-pane" data-sfp-pane="platform">
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Monthly invoices <b>from Astranov SpaceNet</b> to users · vendors · drivers for the <b>3%</b> platform fee on every transaction.</p>
+        <div class="sfp-filters">
+          <label>Month<select id="sfp-plat-month"></select></label>
+          <label>Role view<select id="sfp-plat-role"><option value="all">All parties</option><option value="client">As client</option><option value="vendor">As vendor</option><option value="driver">As driver</option></select></label>
+        </div>
+        <div class="sfp-total">Platform 3% invoice total: <b id="sfp-plat-total">0.00 AVC</b></div>
+        <div style="overflow:auto;max-height:28vh"><table class="sfp-table" id="sfp-plat-table"><thead><tr><th>Date</th><th>Order</th><th>Party</th><th class="num">Gross</th><th class="num">3% fee</th></tr></thead><tbody></tbody></table></div>
+        <div class="sfp-actions">
+          <button type="button" id="sfp-plat-run">Build monthly invoice</button>
+          <button type="button" id="sfp-plat-export">Export invoice</button>
+        </div>
+      </div>
+
+      <div class="sfp-pane" data-sfp-pane="p2p">
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Accumulative invoices for <b>transactions between users</b> (vendor ↔ driver · driver ↔ client · client ↔ vendor).</p>
+        <div class="sfp-filters">
+          <label>Flow<select id="sfp-p2p-flow">
+            <option value="all">All flows</option>
+            <option value="vendor_driver">Vendor → driver (15% gross)</option>
+            <option value="client_vendor">Client → vendor (goods)</option>
+            <option value="client_driver">Client → driver (delivery)</option>
+            <option value="driver_vendor">Driver ↔ vendor settlement</option>
+          </select></label>
+          <label>Period<select id="sfp-p2p-period">
+            <option value="mtd">This month</option>
+            <option value="30d">Last 30 days</option>
+            <option value="90d">Last 90 days</option>
+            <option value="ytd">Year to date</option>
+            <option value="all">All time</option>
+          </select></label>
+        </div>
+        <div class="sfp-total">P2P cumulative: <b id="sfp-p2p-total">0.00 AVC</b></div>
+        <div style="overflow:auto;max-height:28vh"><table class="sfp-table" id="sfp-p2p-table"><thead><tr><th>When</th><th>From → To</th><th>Order</th><th class="num">Amount</th></tr></thead><tbody></tbody></table></div>
+        <div class="sfp-actions">
+          <button type="button" id="sfp-p2p-run">Build P2P ledger</button>
+          <button type="button" id="sfp-p2p-export">Export ledger</button>
+        </div>
+      </div>
+
+      <div class="sfp-pane" data-sfp-pane="reports">
+        <p style="margin:0 0 6px;opacity:.85;font-size:10px">Custom report builder — any role can produce statements for audit, tax, or payouts.</p>
+        <div class="sfp-filters">
+          <label>Report type<select id="sfp-rep-type">
+            <option value="platform_monthly">SpaceNet 3% monthly invoice</option>
+            <option value="p2p_cumulative">P2P cumulative between parties</option>
+            <option value="driver_earnings">Driver earnings (15% + delivery)</option>
+            <option value="vendor_sales">Vendor sales + fees paid</option>
+            <option value="client_spend">Client spend + delivery</option>
+            <option value="mining">Mining session stats</option>
+            <option value="full_statement">Full SpaceNet statement</option>
+          </select></label>
+          <label>As role<select id="sfp-rep-role">
+            <option value="auto">Auto (my roles)</option>
+            <option value="client">Client</option>
+            <option value="vendor">Vendor</option>
+            <option value="driver">Driver</option>
+          </select></label>
+          <label>From month<select id="sfp-rep-from"></select></label>
+          <label>To month<select id="sfp-rep-to"></select></label>
+        </div>
+        <pre id="sfp-rep-out" style="margin:8px 0 0;padding:10px;border-radius:12px;background:rgba(0,12,28,0.7);border:1px solid rgba(61,158,255,0.25);font:10px/1.45 ui-monospace,monospace;color:#b8d4f0;max-height:32vh;overflow:auto;white-space:pre-wrap"></pre>
+        <div class="sfp-actions">
+          <button type="button" id="sfp-run-report">Produce report</button>
+          <button type="button" id="sfp-export">Copy / export</button>
+        </div>
+      </div>
     </div>
   </div>
+  <div id="miner-rig-panel" aria-label="SpaceNet miner rig (legacy alias)" hidden></div>
   <div id="city-life-chip"></div>
   <div id="globe-entity-labels"></div>
   <svg id="map-comms-beam" aria-hidden="true"></svg>
@@ -1306,11 +1423,11 @@
   window._instantShellUnlock=unlock;
 })();
 </script>
-<script defer src="/astranov-app.js?v=20260712070000-launch-audit"></script>
-<script defer src="/astranov-perf-lazy.js?v=20260712070000-launch-audit"></script>
-<script defer src="/astranov-continuity.js?v=20260712070000-launch-audit"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260712070000-launch-audit"></script>
-<script defer src="/astranov-field-hud.js?v=20260712070000-launch-audit"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-app.js?v=20260712080000-finance-multitile"></script>
+<script defer src="/astranov-perf-lazy.js?v=20260712080000-finance-multitile"></script>
+<script defer src="/astranov-continuity.js?v=20260712080000-finance-multitile"></script>
+<script defer src="/astranov-galactic-sky.js?v=20260712080000-finance-multitile"></script>
+<script defer src="/astranov-field-hud.js?v=20260712080000-finance-multitile"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260712080000-finance-multitile"></script>
 </body>
 </html>
