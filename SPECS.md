@@ -1,181 +1,190 @@
-# Astranov SPECS (sole authority)
+# Astranov SpaceNet — SPECS (sole product authority)
 
-**When anyone says "specs" → this file first.** Every product change updates this file in the same deploy.
+**When anyone says "specs" → this file first.**  
+Machine mirror: `astranov-continuity.js` → `window.AstranovContinuity`  
+Human mirror (features): `ASTRANOV_SPECS.md`  
+Live: https://astranov.eu · Repo: `notisastranov/astranov.eu`
 
-| Layer | Path | Role |
-|--------|------|------|
-| Human | **`SPECS.md`** | Product contract |
-| Machine | **`astranov-continuity.js`** → `window.AstranovContinuity` | Selectors / owners |
-| Live | https://astranov.eu | SpaceNet product |
-| Repo | https://github.com/notisastranov/astranov.eu · `main` | Source of truth |
-
-Continuity stamp: `20260723340000-clean-shell`
+Continuity / build stamp must match `meta[name="astranov-build"]` on every deploy.
 
 ---
 
-## 1. Mission
+## 0. The law (non-negotiable)
 
-**SpaceNet:** unify internet activity under realistic space imagery  
-**Path:** solar → global → national → city → street  
-**Primary surface:** 3D Earth + **one** bottom CLI (`#globe-deck`).  
-No second chrome bars. No pastel toy UI. No permanent start popups.
+**SpaceNet uses real virtual space as the user interface.**
 
----
+| Principle | Meaning |
+|-----------|---------|
+| **Place = address** | Every digital object lives at **body + latitude + longitude** (+ optional altitude). Not a desktop folder path. |
+| **Zoom = open** | If you put a thesis file on the **garage of a house**, the person zooms that house → they **see the file**. |
+| **Hide in the cosmos** | If you hide music on **Mars Cydonia**, zooming Cydonia reveals the **folder**. |
+| **All dimensions** | Earth street → city → national → global → orbit → planets → galactic sky. One continuous net. |
+| **Any imaginable task** | Files, folders, notes, **live delivery marketplace**, **real-time video calling**, shops, drivers — all **in real space**. |
 
-## 2. Visual system (mandatory)
+This is the evolution of the internet: **finally free in all dimensions**.
 
-### 2.1 Palette — deep space (not light blue)
-
-| Token | Value | Use |
-|-------|--------|-----|
-| Void | `#000000` | Page / globe behind |
-| Ink | `#02060c` | Deep panels |
-| Text | `#b8c4d4` | Primary copy (steel, not cyan) |
-| Dim | `#5a6a7e` | Meta / muted |
-| Accent | `#1e4d8c` → hot `#3d6eb0` | Borders, focus, logo |
-| Glow | `rgba(24,64,120,0.4)` | Soft, not neon cyan |
-| User/cmd | `#5a7ab0` | CLI user lines |
-| OK / Err | `#3d9a6a` / `#c44a5a` | Status only |
-
-**Forbidden:** pastel cyan (`#7df`, `#3d9eff` floods), rainbow chrome, solid white panels, “coders lab” light-blue cards, orphan CSS tokens (`#8ab;`, `#00dd77;` mid-rules).
-
-### 2.2 Shape
-- CLI radius ~12px, handle buttons 8px rounded rects (Grok density)
-- Logo = pill
-- Glass: dark translucent panel + subtle navy border + soft glow (not bright ice blue)
-
-### 2.3 CLI = Grok Build fork
-Look **and** work like this agent’s TUI:
-- Session strip → tool handle → mono scrollback (left accent bars) → `›` prompt
-- Enter send · Shift+Enter newline · ↑↓ history · Ctrl+K clear
-- Slash: `/help` `/clear` `/status` `/doctor` `/theme` `/compact` `/fix` `/code` `/dev` `/bridge`
-- Agent turn: `›` user → thinking → `◆` tools → reply
-- Past turns compact into foldable **cases**
-- Modules: `js/90-grok-cli-parity.js`, `js/91-cli-gestures.js`
+Code owner: `js/astranov-spacenet-spatial.js` → `window.SpaceNetSpatial`  
+Law string: `window.SpaceNetLaw` / `SpaceNetSpatial.LAW`
 
 ---
 
-## 3. Chrome rules
+## 1. Mission (one sentence)
 
-### 3.1 One CLI surface
-- `#super-cli-bar` **inside** `#globe-deck` only
-- Top-right tools use **Astranov SpaceNet icons** (custom SVG, big + label):
-  - **Find** — Earth + crosshair (locate)
-  - **Send** — uplink rocket (submit)
-  - **Talk** — mic + wave rings (voice)
-- **No permanent `+`**
-- Full-width `#aci-cli-in` always visible when deck collapsed (body/log may hide)
-- Prompt always `›`
-
-### 3.2 Forbidden second bars
-- `#os-dock`, `#aci-bar`, `#app-shortcut-row` as a bar, `#news-ticker`, `#resource-monitor`
-- `#first-run-coach` / SpaceNet start popup — permanently off
-- Sticky red error overlays — errors go to CLI scroll only
-
-### 3.3 Touch / Earth isolation
-- `#globe-deck { pointer-events: auto }` — scroll never spins Earth
-- **Start minimized by default** (`#globe-deck.collapsed`, `__cliUserCollapsed=true`)
-- **Minimize (must work):**
-  - Swipe handle **down** → collapse
-  - Tap header/title/status → toggle
-  - Overscroll past **top or bottom** of log → collapse
-  - Stay collapsed until **user** expands (tap handle / send message) — no boot/log spam re-open
-  - CSS: `.collapsed` forces `#globe-deck-body` + log `display:none !important`
-- Module: `js/91-cli-gestures.js`
-
-### 3.4 Add / MultiTile
-- **Primary:** long-press any point (solar → city globe + city map) → MultiTile
-- **No permanent `+`**
-- If add is attempted and fails → offer `#super-add-fab` on CLI bar only (`js/92-add-plus-offer.js`, `body.cli-offer-plus`)
-- Hide `+` again after successful open
-- CLI recovery: `place list` · `place open <name|id>`
+Unify all internet activity under **realistic space** so that **where you look** on the cosmos **is** the interface — files, people, commerce, and calls inhabit coordinates.
 
 ---
 
-## 4. Boot (must not black-screen)
+## 2. Spatial object model (hardcoded)
 
 ```
-three.js
-  → phase-critical → __astranovBootCritical → remove #boot
-  → leaflet / supabase (soft)
-  → phase-app → phase-features
-  → field-hud · mpp-tile
-  → 62-multi-tile · 17-architect-bridge · 85-delivery-dna
-  → 90-grok-cli-parity · 91-cli-gestures · 92-add-plus-offer
-  → os-boot · 08-os · 08-browser
-  → deferred idle
+Place {
+  id, body: earth|mars|moon|solar,
+  lat, lng, alt?,
+  kind: file|folder|shop|delivery|call|note|media,
+  name, title, description, emoji,
+  payload: { text | children[] | url | action },
+  visibilityKm, minZ, owner, seed?
+}
 ```
 
-Rules:
-1. Boot IIFE must **parse** (balanced braces). Broken nested `.then` is a ship-blocker.
-2. `done()` after critical Earth is up; **8s failsafe** removes `#boot` anyway.
-3. Soft loads never block Earth.
-4. Bump `meta astranov-build` + all `?v=` together.
-5. Prefer `/js/*` paths (CF github-sha proxy).
+| Kind | Role in real space |
+|------|--------------------|
+| **file** | Document / blob at a pin (e.g. Thesis.pdf on garage roof) |
+| **folder** | Collection at a pin (e.g. Cydonia Music) |
+| **shop** | Vendor / market hub on the map |
+| **delivery** | Order / route pin |
+| **call** | Video / presence agora pin |
+| **note** | Lightweight message at a place |
+| **media** | Photo / video / audio at a place |
+
+### Seed places (always present)
+
+| ID | Body | Where | What |
+|----|------|-------|------|
+| `seed-thesis-garage` | Earth | ~36.441°N, 28.223°E (Rhodes garage demo) | **Thesis.pdf** — zoom street → open |
+| `seed-cydonia-music` | Mars | Cydonia ~40.75°N, 9.46°W | **Cydonia Music** folder |
+| `seed-spacenet-market-hub` | Earth | Rhodes city | Live **delivery marketplace** hub |
+| `seed-videocall-agora` | Earth | Athens | **Video call** presence pin |
+
+User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 
 ---
 
-## 5. Feature checklist
+## 3. Zoom stack (navigation = filesystem)
 
-| Area | Requirement | Code |
-|------|-------------|------|
-| Earth | Damped trackball, zoom tiers solar→city | `phase-critical`, `09-zoom-tiers` |
-| City map | Enter city/neighborhood → Leaflet | `61-city-map` / CityMap |
-| Locate | GPS → city; Rhodes fallback | `#aci-locate` |
-| MultiTile | Long-press places, name, nudge, cases | `js/62-multi-tile.js` |
-| Delivery DNA | Instant AVC pay + street prefs | `js/85-delivery-dna.js` |
-| Bridge | Owner `fix/code/dev` → Grok Build | `js/17-architect-bridge.js` |
-| OS / Browser | Apps on CLI handle only, no dock | `js/08-astranov-os.js` |
-| Field HUD | Miner / radar top-right field | `js/astranov-field-hud.js` |
-| Brain | Freeform never “unknown” | `AstranovCoreBrain` |
+| Tier | Z (approx) | What binds |
+|------|------------|------------|
+| GALAXY | ~16 | Deep sky |
+| GALACTIC SKY | ~7.2 | Constellations / exo hosts |
+| ORBIT / SOLAR | ~5.2 | Planets — **Mars Cydonia places** |
+| GLOBAL | ~3.5 | Earth overview · large hubs |
+| NATIONAL | ~1.82 | Regions · SpaceNet cities |
+| REGIONAL | ~1.65 | |
+| CITY | ~1.38 | Shops · delivery · video peers |
+| NEIGHBORHOOD | ~1.08 | **Street files / garage pins** |
 
----
-
-## 6. Zoom tiers
-
-Typical Z: national ~2.15 · regional ~1.78 · city ~1.45 · neighborhood ~1.15  
-City enter ~1.50 · exit ~1.90  
-Long-press MultiTile on **all** tiers.
+**Rule:** An object’s `minZ` + `visibilityKm` decide when it appears. Neighborhood reveals garage-scale files; orbit reveals Mars folders.
 
 ---
 
-## 7. Bridged development (owner)
+## 4. User surface (app-first — no CLI school)
 
-1. Hard refresh live; confirm build meta  
-2. Sign in as architect → bridge arms  
-3. CLI: `dev` / `fix` / `code` or natural language  
-4. Supabase `coders-bridge` · `coder_engine=grok_build`  
-5. Desktop: `npm run bridge-watch` · answer via architect-bridge script  
+Bottom **SpaceNet shell** (`#spacenet-shell`):
 
----
+| Button | Spatial meaning |
+|--------|-----------------|
+| **My city** | GPS → city tier · local places + shops |
+| **Shops** | Crawl / browse vendors **in space** |
+| **Order** | Full delivery marketplace in real time |
+| **Menu** | Multi-tile (Data · Social · Vendors · Order · Pilot) |
+| **Talk** | Natural language spatial commands |
+| **Place** | Drop a file/folder **here** (facing coordinates) |
+| **Vault** | List all SpaceNet places · fly to any |
 
-## 8. Deploy
+### Talk → space (examples)
 
-1. GitHub Contents API with owner PAT (User env) preferred  
-2. Never ship stub homepage / dual-load catastrophe  
-3. Same push: code + **SPECS.md** + continuity when selectors change  
-4. Unregister SW on shell (avoid stale black screens)
-
----
-
-## 9. Do not reintroduce
-
-- Corrupted mega-CSS (orphan `#8ab;`, half-selectors, light cyan floods)
-- Permanent `+` on the bar  
-- Floating OS dock / dual CLI bars  
-- Sticky red error bars  
-- First-run coach  
-- Unbalanced boot IIFE  
-- “Bright ice blue” Grok-pastel on product chrome  
+| You say | SpaceNet does |
+|---------|----------------|
+| `put thesis on the garage` | Places file at garage coords · fly |
+| `hide music on mars cydonia` | Folder on Mars · fly orbit |
+| `go to cydonia` / `open thesis` | Fly + open place panel |
+| `drop here` / `places` / `vault` | Drop or list vault |
+| `my city` / `shops` / `order` | Shell actions |
 
 ---
 
-## 10. Definition of healthy
+## 5. Real-time marketplace & video (in space)
 
-1. Hard refresh → Earth visible &lt; 3s, boot overlay gone  
-2. CLI deep dark glass, steel text, navy accent — **not** light blue  
-3. Scroll CLI without spinning Earth  
-4. Handle tap minimize / drag resize  
-5. Long-press opens MultiTile; no permanent +  
-6. Type in CLI → agent turn in scrollback  
-7. No coach, no dock, no stuck black “Earth?/p>”  
+| Capability | Spec |
+|------------|------|
+| Delivery | pin → browse → cart → place → track → driver claim → pilot multi-stop |
+| Fees | Platform **3%** · vendor→driver **15%** of gross goods |
+| Video | Edge video control · connected peers · MapComms — pins can be `kind: call` |
+| Presence | Live users cluster into **SpaceNetCities** hubs at national zoom |
+
+Marketplace and video are **not separate apps** — they are **kinds of places** on the net.
+
+---
+
+## 6. Brand & chrome
+
+| UI | Spec |
+|----|------|
+| Top logo | **Astranov SpaceNet** · hard reset only |
+| Deck title | Astranov SpaceNet |
+| CLI field | Optional power surface · **Talk** for humans · Enter sends |
+| Edge + | Multi-tile menu (not only small super-add deck) |
+| Modules path | Prefer **`/js/*`** (root `astranov-mpp-tile.js` etc. may SPA-fallback on host) |
+
+---
+
+## 7. Code map (hardcoded owners)
+
+| Concern | Owner |
+|---------|--------|
+| Spatial places · Mars · vault · talk put/go | `js/astranov-spacenet-spatial.js` |
+| Globe / boot / shell / talk router | `astranov-app.js` |
+| GlobeEntity markers | `astranov-deferred.js` `GlobeEntity` type `sn_place` |
+| Multi-tile · locate · video · market | `js/astranov-mpp-tile.js` (or root copy) |
+| Field / finance / radar | `js/astranov-field-hud.js` |
+| Vendors crawl | `SpaceNetCrawler` + edge `vendor-crawler` |
+| Continuity | `astranov-continuity.js` |
+
+---
+
+## 8. Definition of healthy SpaceNet
+
+1. Hard refresh → Earth usable  
+2. Bottom shell visible: city · shops · order · place · vault · talk  
+3. **Thesis garage** seed: fly → see file pin → open text  
+4. **Cydonia music** seed: fly Mars → see folder → list tracks  
+5. Shops / order path still works on city map  
+6. Video control still opens peers  
+7. Talk: `put notes on here` creates a place at facing coords  
+8. Build meta matches script `?v=`
+
+---
+
+## 9. Deploy
+
+```text
+node scripts/owner-push.mjs <files> --message=...
+```
+
+- Bump `astranov-build` + all `?v=` together  
+- Ship **SPECS.md** + **astranov-continuity.js** with every product change  
+- Serve critical modules from **`/js/`** when root HTML-fallback is broken  
+
+---
+
+## 10. Do not
+
+- Treat SpaceNet as “another map app with a chat box”  
+- Store primary user content only in abstract cloud folders with no coordinates  
+- Require CLI commands for put/zoom/open place  
+- Remove seed thesis / Cydonia demos without owner request  
+- Reintroduce SPA HTML as `astranov-*.js` without `/js/` rescue  
+
+---
+
+*SpaceNet: if it exists, it exists **somewhere**. Zoom there.*
