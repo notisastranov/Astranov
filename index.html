@@ -7,15 +7,15 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-continuity-20260712060000-perf-sticky-fix" />
-<meta name="astranov-continuity" content="20260712060000-perf-sticky-fix" />
+<meta name="compliance-check" content="astranov-continuity-20260712070000-launch-audit" />
+<meta name="astranov-continuity" content="20260712070000-launch-audit" />
 <meta name="astranov-ai-handoff" content="Read /astranov-continuity.js and window.AstranovContinuity before any edit" />
 <meta name="aci-session" content="SpaceNet Collective Intelligence">
 <meta name="theme-color" content="#0a1020" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Astranov" />
-<meta name="astranov-build" content="20260712060000-perf-sticky-fix" />
+<meta name="astranov-build" content="20260712070000-launch-audit" />
 <meta name="astranov-globe-physics" content="locked-v20260710241000-never-change" />
 <meta name="astranov-mission" content="SpaceNet: collective intelligence connecting everything into one — no satellites needed to communicate" />
 <meta name="astranov-base-lock" content="monolith-no-bootstrap-globe-deck-cli-no-circles-guard-base-mjs" />
@@ -23,7 +23,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/icon.svg" />
-<link rel="preload" href="/astranov-app.js?v=20260712060000-perf-sticky-fix" as="script" />
+<link rel="preload" href="/astranov-app.js?v=20260712070000-launch-audit" as="script" />
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous" onerror="(function(){if(window.__threeFb)return;window.__threeFb=1;var s=document.createElement('script');s.defer=true;s.src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';document.head.appendChild(s);})()"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
@@ -677,7 +677,8 @@
   .mrp-toggle.on::after { transform:translateX(20px); background:#fff; }
   #mrp-start { width:100%; margin-top:12px; padding:12px; border-radius:12px; border:1px solid var(--ax-green-border); background:var(--ax-green-bg); color:#fff; font-weight:800; font-size:12px; cursor:pointer; }
   #mrp-close { background:transparent; border:1px solid #666; color:#aaa; border-radius:8px; padding:4px 10px; cursor:pointer; font-size:10px; }
-  #map-nav-chip { display:none !important; visibility:hidden; pointer-events:none; }
+  #map-nav-chip { display:none; position:fixed; top:max(52px, calc(env(safe-area-inset-top) + 48px)); left:50%; transform:translateX(-50%); z-index:45; max-width:min(92vw,420px); padding:6px 14px; border-radius:999px; background:rgba(0,16,40,0.78); border:1px solid rgba(61,158,255,0.4); font:10px/1.35 system-ui; font-weight:600; color:#9ec8ff; text-align:center; pointer-events:none; box-shadow:0 0 14px rgba(26,111,212,0.25); }
+  #map-nav-chip.visible { display:block; }
   #map-eta-labels { position:fixed; inset:0; z-index:155; pointer-events:none; overflow:hidden; }
   .map-eta-label { position:absolute; transform:translate(-50%,-100%); padding:4px 8px; border-radius:8px; background:rgba(0,32,16,0.88); border:1px solid var(--ax-green-border); color:var(--ax-green-bright); font:9px/1.2 system-ui; font-weight:700; white-space:nowrap; box-shadow:0 0 10px var(--ax-green-glow); pointer-events:auto; cursor:pointer; touch-action:manipulation; }
   .map-eta-label.pending { background:rgba(40,32,0,0.88); border-color:var(--ax-yellow-border); color:var(--ax-yellow-bright); }
@@ -685,7 +686,9 @@
   .delivery-route-line { pointer-events:auto; cursor:pointer; }
   #city-pick-chips { display:none; position:fixed; bottom:calc(148px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:167; gap:8px; max-width:94vw; flex-wrap:wrap; justify-content:center; pointer-events:auto; }
   #city-pick-chips.visible { display:flex; }
-  #city-pick-chips button { padding:8px 12px; border-radius:999px; border:1px solid var(--ax-blue-border); background:var(--ax-panel-strong); color:var(--ax-blue-bright); font:10px system-ui; font-weight:600; cursor:pointer; touch-action:manipulation; }
+  #city-pick-chips button { padding:8px 12px; border-radius:999px; border:1px solid var(--ax-blue-border); background:var(--ax-panel-strong); color:var(--ax-blue-bright); font:10px system-ui; font-weight:600; cursor:pointer; touch-action:manipulation; box-shadow:0 0 10px rgba(40,120,255,0.25); }
+  #city-pick-chips button.sn-city { border-color:rgba(80,180,255,0.65); background:radial-gradient(circle at 30% 20%,rgba(30,90,200,0.55),rgba(0,12,32,0.92)); color:#c8e8ff; }
+  #city-pick-chips button.sn-city .sn-n { color:#7dffc0; font-weight:800; }
   /* Astranov Identity modal */
   #astranov-auth-modal { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; background:rgba(0,4,12,0.82); backdrop-filter:blur(8px); pointer-events:auto; }
   #astranov-auth-modal.open { display:flex; }
@@ -1303,11 +1306,11 @@
   window._instantShellUnlock=unlock;
 })();
 </script>
-<script defer src="/astranov-app.js?v=20260712060000-perf-sticky-fix"></script>
-<script defer src="/astranov-perf-lazy.js?v=20260712060000-perf-sticky-fix"></script>
-<script defer src="/astranov-continuity.js?v=20260712060000-perf-sticky-fix"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260712060000-perf-sticky-fix"></script>
-<script defer src="/astranov-field-hud.js?v=20260712060000-perf-sticky-fix"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260712060000-perf-sticky-fix"></script>
+<script defer src="/astranov-app.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-perf-lazy.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-continuity.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-galactic-sky.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-field-hud.js?v=20260712070000-launch-audit"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260712070000-launch-audit"></script>
 </body>
 </html>
