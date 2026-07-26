@@ -5945,17 +5945,41 @@ const AstranovLogo = {
   _aiSynth: 0,
   _bars: 24,
 
+  BRAND: 'Astranov SpaceNet',
+
+  ensureLabel() {
+    const el = document.getElementById('astranov-logo');
+    if (!el) return;
+    let label = el.querySelector('.astranov-logo-label');
+    if (!label) {
+      label = document.createElement('span');
+      label.className = 'astranov-logo-label';
+      el.appendChild(label);
+    }
+    if (!label.textContent || label.textContent === '…' || label.textContent === '...') {
+      label.textContent = this.BRAND;
+    }
+    // Never leave brand blank after partial resets
+    if (!/astranov/i.test(label.textContent)) label.textContent = this.BRAND;
+    el.setAttribute('title', this.BRAND + ' · hard reset · red=mic · green=AI');
+    el.setAttribute('aria-label', this.BRAND + ' hard reset reload');
+  },
+
   init() {
     const el = document.getElementById('astranov-logo');
     if (!el || this._bound) return;
     this._bound = true;
+    this.ensureLabel();
     this._mountWave(el);
+    this.ensureLabel();
     el.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
       this.hardReset();
     });
-    this._loop();
+    // Re-assert label after paint (canvas mount can race layout)
+    setTimeout(() => this.ensureLabel(), 0);
+    setTimeout(() => this.ensureLabel(), 400);
   },
 
   _mountWave(el) {
@@ -5968,6 +5992,9 @@ const AstranovLogo = {
       if (label) el.insertBefore(canvas, label);
       else el.appendChild(canvas);
     }
+    // Keep canvas under label
+    canvas.style.zIndex = '0';
+    canvas.style.pointerEvents = 'none';
     this._canvas = canvas;
     this._ctx = canvas.getContext('2d');
     this._resize();
@@ -6177,7 +6204,7 @@ const AstranovLogo = {
     if (el) {
       el._resetting = true;
       el.disabled = true;
-      if (label) label.textContent = '…';
+      if (label) label.textContent = this.BRAND + '…';
     }
     this.resetToGlobalView();
     try {
