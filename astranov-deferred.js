@@ -1389,6 +1389,7 @@ const GlobeEntity = {
     client_addr: { color: 0x44ff88, icon: '📦', label: 'Deliver here' },
     driver_base: { color: 0xffaa44, icon: '🚚', label: 'Driver base' },
     place: { color: 0x1a6fd4, icon: '◎', label: 'Place' },
+    sn_place: { color: 0x66ccff, icon: '📄', label: 'SpaceNet' },
     unit: { color: 0xffaa33, icon: '⚔', label: 'Unit' },
     drone: { color: 0x44ccff, icon: '🛸', label: 'Drone' },
     spy: { color: 0xaa44ff, icon: '🕵', label: 'Spy' },
