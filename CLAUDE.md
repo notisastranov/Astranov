@@ -35,7 +35,18 @@ node scripts/owner-push.mjs index.html astranov-continuity.js ASTRANOV_SPECS.md 
 | Miner | Tap **#field-balance-hud** only (no CLI ⛏ strip) |
 | Perf | Adaptive FPS, deferred pack, no ensure@400ms |
 
-Full detail: `ASTRANOV_SPECS.md` and `astranov-continuity.js` `features` / `economics` / `buildHistory`.
+Full detail: `ASTRANOV_SPECS.md` and `astranov-continuity.js` `features` / `economics` / `buildHistory`.  
+Launch audit: `ASTRANOV_LAUNCH_AUDIT.md`.
+
+### CLI bridge (continue AI work from the app)
+
+```
+bridge
+bridge fix delivery edge payouts
+coders composer Continue from specs
+```
+
+Saves `astranov:dev-bridge` + CodersHub job for Composer/labs.
 
 ## Architecture
 
