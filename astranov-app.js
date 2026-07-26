@@ -4132,7 +4132,7 @@ const SpaceNetCycle = {
 };
 window.SpaceNetCycle = SpaceNetCycle;
 
-// === SPACENET MISSION — collective intelligence · one mesh · no satellites ===
+// === SPACENET MISSION — law + operating path kernel (no dummy chrome) ===
 const SpaceNetMission = {
   ONE: 'SpaceNet is the collective intelligence connecting everything into one — so we need no satellites anymore to communicate.',
   SHORT: 'One mind · one mesh · no satellites',
@@ -4144,6 +4144,117 @@ const SpaceNetMission = {
     deferred: 'Fleet & relay ready',
   },
   bootReply: 'Astranov live · collective intelligence links everyone — scroll out → solar · galaxy',
+  VERSION: 1,
+  _last: null,
+  _running: false,
+
+  pos() {
+    return (
+      window._lastPos ||
+      window.Commerce?.userLatLng?.() ||
+      window.TrackballGuard?.facingLatLng?.() ||
+      { lat: 36.4345, lng: 28.2175 }
+    );
+  },
+
+  async ensureModules() {
+    const report = {};
+    try { await window.SpaceNetAssetBoot?.ensureCoreUi?.(); } catch (_) {}
+    report.spatial = !!window.SpaceNetSpatial?.sync;
+    report.cosmos = !!window.SpaceNetCosmos?.flyTo;
+    report.imagery = !!window.SpaceNetImagery?.ensureEarth;
+    report.mpp = !!window.MenuProfilePostTile?.openPlusField;
+    report.field = !!window.FieldHud?.boot || !!window.FieldHud?.init;
+    report.crawler = !!window.SpaceNetCrawler?.crawlAndPopulate;
+    return report;
+  },
+
+  /** Real shops + spatial on globe. Honest report — never “ready” on demo-only. */
+  async ensureOperatingPath(opts) {
+    opts = opts || {};
+    if (this._running && !opts.force) return this._last;
+    this._running = true;
+    const report = {
+      at: Date.now(), modules: {}, shopsReal: 0, shopsDemo: 0, spatial: 0,
+      crawl: null, deferred: false, ok: false, fails: [],
+    };
+    try {
+      report.modules = await this.ensureModules();
+      Object.entries(report.modules).forEach(([k, v]) => { if (!v) report.fails.push('module:' + k); });
+      window._lazyUserReady = true;
+      try {
+        await Promise.race([
+          LazyModules?.whenReady?.(() => {}),
+          new Promise((r) => setTimeout(r, 14000)),
+        ]);
+        report.deferred = !!(window.Commerce?.loadVendors && window.GlobeEntity?.register);
+      } catch (_) { report.fails.push('deferred'); }
+      if (!report.deferred) report.fails.push('globe/commerce not ready');
+
+      const p = opts.lat != null ? { lat: opts.lat, lng: opts.lng } : this.pos();
+      window._lastPos = { lat: p.lat, lng: p.lng };
+
+      if (window.SpaceNetCrawler?.crawlAndPopulate) {
+        try {
+          report.crawl = await SpaceNetCrawler.crawlAndPopulate(p.lat, p.lng, {
+            radiusKm: opts.radiusKm || 2.5, force: !!opts.force,
+          });
+        } catch (e) { report.fails.push('crawl:' + (e.message || e)); }
+      } else report.fails.push('no crawler');
+
+      if (window.Commerce?.loadVendors) {
+        try { await Commerce.loadVendors({ lat: p.lat, lng: p.lng, radiusKm: 12, allowDemo: false }); } catch (_) {}
+      }
+      const list = window.Commerce?.vendors || [];
+      report.shopsReal = list.filter((v) => v && !String(v.id || '').startsWith('demo-')).length;
+      report.shopsDemo = list.filter((v) => v && String(v.id || '').startsWith('demo-')).length;
+
+      if (!report.shopsReal && window.Commerce && opts.allowDemoFallback !== false) {
+        try {
+          await Commerce.loadVendors({ lat: p.lat, lng: p.lng, allowDemo: true });
+          report.shopsDemo = (Commerce.vendors || []).filter((v) => String(v.id || '').startsWith('demo-')).length;
+          if (report.shopsDemo) report.fails.push('demo-vendors-only');
+        } catch (_) {}
+      }
+
+      try {
+        window.SpaceNetSpatial?.init?.();
+        window.SpaceNetSpatial?.sync?.();
+        report.spatial = (window.SpaceNetSpatial?.places || []).length;
+      } catch (e) { report.fails.push('spatial:' + (e.message || e)); }
+
+      try {
+        window.SpaceNetImagery?.ensureEarth?.(true);
+        window.SpaceNetImagery?.paintAllPlanets?.();
+      } catch (_) {}
+      try {
+        window.GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
+        window.CityMap?.syncMapPins?.();
+        window.Commerce?.showOnGlobe?.();
+      } catch (_) {}
+
+      report.ok = report.deferred && report.modules.spatial && report.modules.crawler
+        && (report.shopsReal >= 3 || report.spatial >= 2)
+        && !report.fails.includes('demo-vendors-only');
+      if (!report.ok && report.crawl?.ok && (report.crawl.count || 0) >= 5 && report.deferred) {
+        report.ok = report.shopsReal >= 1 || report.crawl.count >= 5;
+        if (report.ok) report.fails = report.fails.filter((f) => f !== 'demo-vendors-only');
+      }
+
+      this._last = report;
+      window.__spacenetMission = report;
+      if (!opts.silent) {
+        const line = report.ok
+          ? 'mission · ' + report.shopsReal + ' real shops · ' + report.spatial + ' spatial places · path live'
+          : 'mission · NOT READY · ' + (report.fails.join('; ') || 'incomplete') + ' · shopsReal=' + report.shopsReal;
+        AciCli?.print?.(line, report.ok ? 'ok' : 'warn');
+        SpaceNetCompanion?.setLine?.(line.slice(0, 90));
+      }
+      return report;
+    } finally {
+      this._running = false;
+    }
+  },
 };
 window.SpaceNetMission = SpaceNetMission;
 
@@ -4683,165 +4794,6 @@ const SpaceNetTalk = {
   },
 };
 window.SpaceNetTalk = SpaceNetTalk;
-
-/**
- * SpaceNetMission — operating path kernel (not chrome)
- * Owner law: do not ship dummy layers; make the mission path real.
- * Gates: modules real · crawl/DB shops · spatial places · globe entities after deferred
- */
-const SpaceNetMission = {
-  VERSION: 1,
-  _last: null,
-  _running: false,
-
-  pos() {
-    return (
-      window._lastPos ||
-      window.Commerce?.userLatLng?.() ||
-      window.TrackballGuard?.facingLatLng?.() ||
-      { lat: 36.4345, lng: 28.2175 }
-    );
-  },
-
-  async ensureModules() {
-    const report = {};
-    try {
-      await window.SpaceNetAssetBoot?.ensureCoreUi?.();
-    } catch (_) {}
-    report.spatial = !!window.SpaceNetSpatial?.sync;
-    report.cosmos = !!window.SpaceNetCosmos?.flyTo;
-    report.imagery = !!window.SpaceNetImagery?.ensureEarth;
-    report.mpp = !!window.MenuProfilePostTile?.openPlusField;
-    report.field = !!window.FieldHud?.boot || !!window.FieldHud?.init;
-    report.crawler = !!window.SpaceNetCrawler?.crawlAndPopulate;
-    return report;
-  },
-
-  /**
-   * Operating path: real shops at coords + spatial seeds on globe + imagery.
-   * Returns honest report — never claims success with only demo vendors.
-   */
-  async ensureOperatingPath(opts) {
-    opts = opts || {};
-    if (this._running && !opts.force) return this._last;
-    this._running = true;
-    const report = {
-      at: Date.now(),
-      modules: {},
-      shopsReal: 0,
-      shopsDemo: 0,
-      spatial: 0,
-      crawl: null,
-      deferred: false,
-      ok: false,
-      fails: [],
-    };
-    try {
-      report.modules = await this.ensureModules();
-      Object.entries(report.modules).forEach(([k, v]) => {
-        if (!v) report.fails.push('module:' + k);
-      });
-
-      window._lazyUserReady = true;
-      try {
-        await Promise.race([
-          LazyModules?.whenReady?.(() => {}),
-          new Promise((r) => setTimeout(r, 14000)),
-        ]);
-        report.deferred = !!(window.Commerce?.loadVendors && window.GlobeEntity?.register);
-      } catch (_) {
-        report.fails.push('deferred');
-      }
-      if (!report.deferred) report.fails.push('globe/commerce not ready');
-
-      const p = opts.lat != null ? { lat: opts.lat, lng: opts.lng } : this.pos();
-      window._lastPos = { lat: p.lat, lng: p.lng };
-
-      // Real POI path — crawl then geo load (no demo injection)
-      if (window.SpaceNetCrawler?.crawlAndPopulate) {
-        try {
-          report.crawl = await SpaceNetCrawler.crawlAndPopulate(p.lat, p.lng, {
-            radiusKm: opts.radiusKm || 2.5,
-            force: !!opts.force,
-          });
-        } catch (e) {
-          report.fails.push('crawl:' + (e.message || e));
-        }
-      } else {
-        report.fails.push('no crawler');
-      }
-
-      if (window.Commerce?.loadVendors) {
-        try {
-          await Commerce.loadVendors({ lat: p.lat, lng: p.lng, radiusKm: 12, allowDemo: false });
-        } catch (_) {}
-      }
-
-      const list = window.Commerce?.vendors || [];
-      report.shopsReal = list.filter((v) => v && !String(v.id || '').startsWith('demo-')).length;
-      report.shopsDemo = list.filter((v) => v && String(v.id || '').startsWith('demo-')).length;
-
-      // If still empty after crawl, one honest demo only when offline — flagged
-      if (!report.shopsReal && window.Commerce && opts.allowDemoFallback !== false) {
-        try {
-          await Commerce.loadVendors({ lat: p.lat, lng: p.lng, allowDemo: true });
-          report.shopsDemo = (Commerce.vendors || []).filter((v) => String(v.id || '').startsWith('demo-')).length;
-          if (report.shopsDemo) report.fails.push('demo-vendors-only');
-        } catch (_) {}
-      }
-
-      try {
-        window.SpaceNetSpatial?.init?.();
-        window.SpaceNetSpatial?.sync?.();
-        report.spatial = (window.SpaceNetSpatial?.places || []).length;
-      } catch (e) {
-        report.fails.push('spatial:' + (e.message || e));
-      }
-
-      try {
-        window.SpaceNetImagery?.ensureEarth?.(true);
-        window.SpaceNetImagery?.paintAllPlanets?.();
-      } catch (_) {}
-
-      try {
-        window.GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
-        window.CityMap?.syncMapPins?.();
-        window.Commerce?.showOnGlobe?.();
-      } catch (_) {}
-
-      // Mission ok = real shops OR spatial places with deferred + core modules
-      report.ok =
-        report.deferred &&
-        report.modules.spatial &&
-        report.modules.crawler &&
-        (report.shopsReal >= 3 || report.spatial >= 2) &&
-        !report.fails.includes('demo-vendors-only');
-
-      // Soft ok when crawl returned count but UI merge lag
-      if (!report.ok && report.crawl?.ok && (report.crawl.count || 0) >= 5 && report.deferred) {
-        report.ok = report.shopsReal >= 1 || (report.crawl.count >= 5);
-        if (report.ok) report.fails = report.fails.filter((f) => f !== 'demo-vendors-only');
-      }
-
-      this._last = report;
-      window.__spacenetMission = report;
-
-      if (!opts.silent) {
-        const line = report.ok
-          ? 'mission · ' + report.shopsReal + ' real shops · ' + report.spatial + ' spatial places · path live'
-          : 'mission · NOT READY · ' + (report.fails.join('; ') || 'incomplete') + ' · shopsReal=' + report.shopsReal;
-        AciCli?.print?.(line, report.ok ? 'ok' : 'warn');
-        SpaceNetCompanion?.setLine?.(line.slice(0, 90));
-      }
-      return report;
-    } finally {
-      this._running = false;
-    }
-  },
-};
-window.SpaceNetMission = SpaceNetMission;
-// Alias used by loader boot copy
-window.SpaceNetMissionLaw = SpaceNetSpatial?.LAW || SpaceNetMission.VERSION;
 
 // === MARKETPLACE PRESENCE — driver heartbeat so real drivers appear on map ===
 const MarketplacePresence = {
