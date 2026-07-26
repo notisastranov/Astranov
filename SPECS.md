@@ -18,13 +18,29 @@ Continuity / build stamp must match `meta[name="astranov-build"]` on every deplo
 | **Place = address** | Every digital object lives at **body + latitude + longitude** (+ optional altitude). Not a desktop folder path. |
 | **Zoom = open** | If you put a thesis file on the **garage of a house**, the person zooms that house → they **see the file**. |
 | **Hide in the cosmos** | If you hide music on **Mars Cydonia**, zooming Cydonia reveals the **folder**. |
-| **All dimensions** | Earth street → city → national → global → orbit → planets → galactic sky. One continuous net. |
+| **ALL of known space** | Every **planet, moon, dwarf, asteroid, comet, black hole, solar system, constellation, galaxy** we catalog is a goable address. |
+| **Other dimensions** | Sci‑fi / theoretical layers (hyperspace, subspace, wormholes, mirror, bulk, void, CTC, …) are navigable place-layers for data. |
 | **Any imaginable task** | Files, folders, notes, **live delivery marketplace**, **real-time video calling**, shops, drivers — all **in real space**. |
 
 This is the evolution of the internet: **finally free in all dimensions**.
 
-Code owner: `js/astranov-spacenet-spatial.js` → `window.SpaceNetSpatial`  
-Law string: `window.SpaceNetLaw` / `SpaceNetSpatial.LAW`
+| Module | API |
+|--------|-----|
+| Spatial places | `js/astranov-spacenet-spatial.js` → `SpaceNetSpatial` · `SpaceNetLaw` |
+| Full cosmos atlas | `js/astranov-spacenet-cosmos.js` → `SpaceNetCosmos` · `SpaceNetCosmosLaw` |
+
+### Cosmos catalog (must stay open)
+
+| Realm | Contents |
+|-------|----------|
+| **sol** | Sun, Mercury→Neptune, Pluto + dwarfs, major moons, ISS, belt, Halley, Oort |
+| **blackhole** | Sgr A*, M87*, Cyg X-1, V404, GW150914 remnant, TON 618, Phoenix A… |
+| **constellation** | Major IAU constellations (Orion, Crux, Centaurus, …) |
+| **exo** | Proxima, TRAPPIST-1, Kepler hosts, TOI-700, … |
+| **galaxy** | Milky Way, M31, M33, LMC/SMC, M51, M81, M87… |
+| **dimension** | Hyperspace, subspace, wormhole net, mirror, Q, warp, slipstream, astral, void, matrix, CTC, bulk, limbo, null |
+
+Talk: `go to Jupiter` · `go to Orion` · `go to Sgr A*` · `go to hyperspace` · `put notes on Europa` · `cosmos`
 
 ---
 
