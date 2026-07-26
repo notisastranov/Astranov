@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726180000-full-cosmos',
+  version: '20260726190000-real-imagery',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -492,6 +492,18 @@ const AstranovContinuity = {
       shell: 'Cosmos button → showBrowser atlas',
       doNotRemove: ['SpaceNetCosmos', 'SpaceNetCosmosLaw', 'SOL/BLACK_HOLES/CONSTELLATIONS/EXO/GALAXIES/DIMENSIONS'],
     },
+
+    realImagery: {
+      summary: 'Real planetary / sky imagery within speed budget',
+      owner: 'js/astranov-spacenet-imagery.js SpaceNetImagery + EarthRealism',
+      behavior: [
+        'Earth: solid → atmos 2k → Blue Marble; night lights via EarthRealism when earth_hd',
+        'Planets: threex NASA-derived maps on CosmicZoom meshes (queued, max 2 parallel)',
+        'Mobile: defer planets, skip milky band, lower star count',
+        'Desktop idle: denser stars + canvas milky band',
+      ],
+      doNotRemove: ['SpaceNetImagery', 'EARTH_TEX', 'SpaceNetImagery.paintAllPlanets'],
+    },
   },
 
   /**
@@ -518,8 +530,8 @@ const AstranovContinuity = {
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
     { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
-    { id: '20260726180000-full-cosmos', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
-    { id: '20260726180000-full-cosmos', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
+    { id: '20260726190000-real-imagery', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726190000-real-imagery', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
   ],
 
   /**
