@@ -12794,6 +12794,13 @@ const AstranovPresence = {
     if (typeof others !== 'undefined') others = users;
     GlobeEntity?.syncFriends?.(users);
     if (CityMap?.active) CityMap._syncMarkers?.();
+    // National SpaceNet hubs: cluster live users + shops
+    if (GlobeNavigate?.isNational?.() || CityMap?._nationalActive) {
+      SpaceNetCities?.refresh?.(true);
+      GlobeNavigate?._syncChip?.();
+    } else {
+      SpaceNetCities?.rebuild?.();
+    }
     const chip = document.getElementById('city-life-chip');
     if (chip?.classList.contains('open') && users.length) {
       const shops = (Commerce?.vendors || []).length;
