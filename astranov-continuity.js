@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726200000-cli-companion-ip',
+  version: '20260726220000-mission-kernel',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -558,8 +558,8 @@ const AstranovContinuity = {
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
     { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
-    { id: '20260726200000-cli-companion-ip', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
-    { id: '20260726200000-cli-companion-ip', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
+    { id: '20260726220000-mission-kernel', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726220000-mission-kernel', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
   ],
 
   /**
