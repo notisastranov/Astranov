@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726170000-spacenet-spatial',
+  version: '20260726180000-full-cosmos',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -482,6 +482,16 @@ const AstranovContinuity = {
         'SPECS.md §0 The law',
       ],
     },
+
+    fullCosmos: {
+      summary: 'ALL known space + sci-fi dimensions are navigable addresses',
+      owner: 'js/astranov-spacenet-cosmos.js SpaceNetCosmos',
+      law: 'Every planet, black hole, solar system, constellation, galaxy, and sci-fi dimension is goable.',
+      realms: ['sol', 'blackhole', 'constellation', 'exo', 'galaxy', 'dimension'],
+      talk: ['go to Jupiter', 'go to Orion', 'go to Sgr A*', 'go to hyperspace', 'cosmos', 'put X on Europa'],
+      shell: 'Cosmos button → showBrowser atlas',
+      doNotRemove: ['SpaceNetCosmos', 'SpaceNetCosmosLaw', 'SOL/BLACK_HOLES/CONSTELLATIONS/EXO/GALAXIES/DIMENSIONS'],
+    },
   },
 
   /**
@@ -508,8 +518,8 @@ const AstranovContinuity = {
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
     { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials' },
-    { id: '20260726170000-spacenet-spatial', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
-    { id: '20260726170000-spacenet-spatial', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
+    { id: '20260726180000-full-cosmos', note: 'P0: SPA HTML killed mpp/field/sky; asset rescue + SpaceNetShell bar (app-only)' },
+    { id: '20260726180000-full-cosmos', note: 'Real space as UI: SpaceNetSpatial, thesis garage, Mars Cydonia, SPECS law' },
   ],
 
   /**
