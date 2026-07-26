@@ -1,4 +1,4 @@
-# Astranov SpaceNet — Product Specs (2026-07-14)
+﻿# Astranov SpaceNet — Product Specs (2026-07-14)
 
 **Authoritative machine contract:** `astranov-continuity.js` → `window.AstranovContinuity`  
 **This file** is the human-readable mirror. When they disagree, **continuity.js wins** after deploy.  
@@ -10,7 +10,7 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260712060000-perf-sticky-fix` |
+| **Current build** | `20260726120000-vendor-crawl-profiles` |
 
 ---
 
@@ -180,6 +180,21 @@ Shown on HUD `#drh-fees`.
 | `…-spec-lock` | **All progress written into specs** |
 | `…-cli-field-only` | Seamless CLI field — no buttons beside input |
 | `…-perf-sticky-fix` | Fixed `_globePerfLite` wipe; no AA; lower FPS/DPR; radar/logo idle |
+| `…-vendor-crawl-profiles` | Real OSM/GBP crawl fills city maps; profile tiles + socials; CLI `crawl` |
+
+---
+
+## Vendor crawlers & profile tiles
+
+| | |
+|--|--|
+| **Client** | `SpaceNetCrawler` in `astranov-app.js` |
+| **Edge** | `supabase/functions/vendor-crawler` — Overpass + optional Google Places |
+| **Triggers** | City enter, `CityLife.dropIn`, intent classify, CLI `crawl` / `spacenet crawl` |
+| **Maps** | After crawl → `Commerce` merge → `GlobeEntity.syncVendors` + `CityMap.syncMapPins` |
+| **Profile tile** | `VendorMapTile` cover/avatar, hours/phone/rating, `#vmt-social` (web/FB/IG/X/Google) |
+| **GBP** | Set edge secret `GOOGLE_PLACES_API_KEY` (or `GOOGLE_MAPS_API_KEY`) for Places photos/ratings |
+| **Fallback** | Browser Overpass if edge fails — maps still populate offline of DB |
 
 ---
 
@@ -194,6 +209,7 @@ Shown on HUD `#drh-fees`.
 7. Party confirms toggle green  
 8. Pilot builds multi-stop and can save glowing multi-tile  
 9. Globe + radar alive  
+10. Enter city → real shop pins (not only demos); `crawl` force-refreshes; tap shop shows profile/socials when data exists  
 
 ---
 
