@@ -4205,6 +4205,224 @@ const SpaceNetLoader = {
 };
 window.SpaceNetLoader = SpaceNetLoader;
 
+// === SPACENET SHELL — app-first UI (no CLI knowledge required) ===
+// Root cause of “no basic SpaceNet”: critical modules (mpp/field/sky) were SPA HTML 404s.
+// This shell + asset rescue make My City / Shops / Order / Talk work as buttons.
+const SpaceNetShell = {
+  _ready: false,
+  _status: '',
+
+  init() {
+    if (this._ready) return;
+    this._ready = true;
+    this._injectStyles();
+    this._injectDock();
+    this._bind();
+    this.setStatus('SpaceNet ready · use the bar below');
+    void this.bootstrap();
+  },
+
+  _injectStyles() {
+    if (document.getElementById('spacenet-shell-css')) return;
+    const s = document.createElement('style');
+    s.id = 'spacenet-shell-css';
+    s.textContent = [
+      '#spacenet-shell{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));',
+      'transform:translateX(-50%);z-index:160;display:flex;flex-direction:column;align-items:center;gap:6px;',
+      'width:min(520px,96vw);pointer-events:none;font:11px/1.3 system-ui,sans-serif}',
+      '#spacenet-shell-status{pointer-events:none;max-width:100%;padding:5px 12px;border-radius:999px;',
+      'background:rgba(0,12,28,0.82);border:1px solid rgba(61,158,255,0.4);color:#9ed0ff;',
+      'text-align:center;backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,0,0,0.45)}',
+      '#spacenet-shell-dock{pointer-events:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;',
+      'padding:8px;border-radius:18px;background:rgba(0,8,20,0.88);border:1px solid rgba(61,158,255,0.45);',
+      'box-shadow:0 8px 28px rgba(0,0,0,0.55),0 0 20px rgba(26,111,212,0.25);backdrop-filter:blur(10px)}',
+      '#spacenet-shell-dock button{appearance:none;border:1px solid rgba(61,158,255,0.4);background:rgba(0,32,72,0.75);',
+      'color:#cfe8ff;border-radius:14px;padding:10px 12px;min-width:72px;font-weight:700;font-size:11px;',
+      'cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:center;gap:2px}',
+      '#spacenet-shell-dock button:active{transform:scale(0.97);border-color:#3d9eff}',
+      '#spacenet-shell-dock button .sn-ico{font-size:16px;line-height:1}',
+      '#spacenet-shell-dock button.primary{background:linear-gradient(135deg,rgba(26,111,212,0.85),rgba(0,60,120,0.9));',
+      'border-color:#3d9eff;box-shadow:0 0 14px rgba(61,158,255,0.35)}',
+      'body.sn-shell-open #globe-deck{padding-bottom:88px}',
+    ].join('');
+    document.head.appendChild(s);
+  },
+
+  _injectDock() {
+    if (document.getElementById('spacenet-shell')) return;
+    const el = document.createElement('div');
+    el.id = 'spacenet-shell';
+    el.setAttribute('role', 'navigation');
+    el.setAttribute('aria-label', 'SpaceNet main actions');
+    el.innerHTML = [
+      '<div id="spacenet-shell-status">Starting SpaceNet…</div>',
+      '<div id="spacenet-shell-dock">',
+      '<button type="button" data-sn="city" class="primary"><span class="sn-ico">🎯</span><span>My city</span></button>',
+      '<button type="button" data-sn="shops"><span class="sn-ico">🏬</span><span>Shops</span></button>',
+      '<button type="button" data-sn="order"><span class="sn-ico">🛵</span><span>Order</span></button>',
+      '<button type="button" data-sn="menu"><span class="sn-ico">＋</span><span>Menu</span></button>',
+      '<button type="button" data-sn="talk"><span class="sn-ico">💬</span><span>Talk</span></button>',
+      '</div>',
+    ].join('');
+    document.body.appendChild(el);
+    document.body.classList.add('sn-shell-open');
+  },
+
+  setStatus(msg) {
+    this._status = String(msg || '');
+    const el = document.getElementById('spacenet-shell-status');
+    if (el) el.textContent = this._status;
+    GlobeDeck?.setPreview?.(this._status);
+  },
+
+  _bind() {
+    const dock = document.getElementById('spacenet-shell-dock');
+    if (!dock || dock._snBound) return;
+    dock._snBound = true;
+    dock.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-sn]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      void this.run(btn.dataset.sn);
+    });
+  },
+
+  async bootstrap() {
+    this.setStatus('Loading SpaceNet modules…');
+    try {
+      const rep = await window.SpaceNetAssetBoot?.ensureCoreUi?.();
+      if (rep) {
+        const bad = Object.entries(rep).filter(([, v]) => !v).map(([k]) => k);
+        if (bad.length) this.setStatus('Module recovery · retrying ' + bad.join(','));
+      }
+    } catch (e) {
+      console.error('[SpaceNetShell bootstrap]', e);
+    }
+    // Bring commerce pack early so shops/orders work without waiting 7s
+    try {
+      window._lazyUserReady = true;
+      await Promise.race([
+        LazyModules?.whenReady?.(() => {}),
+        new Promise((r) => setTimeout(r, 12000)),
+      ]);
+    } catch (_) {}
+    this.setStatus('Tap My city · Shops · Order · or Talk below');
+    // Soft auto-crawl near last pos / Rhodes when pack ready
+    const pos = window._lastPos || { lat: 36.44, lng: 28.22 };
+    void SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, { radiusKm: 2.5 })
+      .then((r) => {
+        if (r?.ok) this.setStatus((r.nearby || r.count || 0) + ' shops nearby · tap Shops');
+      })
+      .catch(() => {});
+  },
+
+  async run(action) {
+    const a = String(action || '');
+    this.setStatus('Working…');
+    try {
+      await window.SpaceNetAssetBoot?.ensureCoreUi?.();
+      window._lazyUserReady = true;
+      await Promise.race([
+        LazyModules?.ensure?.() || Promise.resolve(),
+        new Promise((r) => setTimeout(r, 10000)),
+      ]).catch(() => {});
+
+      if (a === 'city') {
+        this.setStatus('Locating your city…');
+        try {
+          if (CityLife?.locateAndDropIn) await CityLife.locateAndDropIn();
+          else if (typeof locateMe === 'function') locateMe();
+          else await enterCityView?.(36.44, 28.22, { openShops: false });
+        } catch (_) {
+          await enterCityView?.(36.44, 28.22, { openShops: false });
+        }
+        const p = window._lastPos || { lat: 36.44, lng: 28.22 };
+        void SpaceNetCrawler?.crawlAndPopulate?.(p.lat, p.lng, { radiusKm: 3, force: true });
+        this.setStatus('City map · shops loading on the map');
+        return;
+      }
+
+      if (a === 'shops') {
+        this.setStatus('Opening shops…');
+        const p = window._lastPos || window.Commerce?.userLatLng?.() || { lat: 36.44, lng: 28.22 };
+        await SpaceNetCrawler?.crawlAndPopulate?.(p.lat, p.lng, { radiusKm: 3, force: true });
+        if (window.Commerce?.showPicker) await Commerce.showPicker();
+        else if (MenuProfilePostTile?.openPlusField) {
+          MenuProfilePostTile.openPlusField();
+          MenuProfilePostTile.selectMultiHub?.('vendor');
+        }
+        const n = (window.Commerce?.vendors || []).filter(v => !String(v.id || '').startsWith('demo-')).length;
+        this.setStatus((n || window.Commerce?.vendors?.length || 0) + ' shops · tap a pin or list item');
+        return;
+      }
+
+      if (a === 'order') {
+        this.setStatus('Delivery marketplace…');
+        if (MenuProfilePostTile?.openPlusField) {
+          MenuProfilePostTile.openPlusField();
+          MenuProfilePostTile.selectMultiHub?.('market');
+        } else if (window.Commerce?.showPicker) {
+          await Commerce.showPicker();
+        }
+        this.setStatus('Order · set delivery pin · pick shop · cart');
+        return;
+      }
+
+      if (a === 'menu') {
+        if (MenuProfilePostTile?.openPlusField) MenuProfilePostTile.openPlusField();
+        else document.getElementById('super-add-fab')?.click();
+        this.setStatus('Menu · Data · Social · Vendors · Order · Pilot');
+        return;
+      }
+
+      if (a === 'talk') {
+        GlobeDeck?.expand?.('Astranov SpaceNet');
+        const input = document.getElementById('aci-cli-in');
+        if (input) {
+          input.placeholder = 'Talk to SpaceNet — say what you need…';
+          input.focus();
+        }
+        ACIControl?.reply?.('I am here — say: my city, shops near me, order food, or open menu');
+        this.setStatus('Talk · type or speak below — no special commands needed');
+        return;
+      }
+    } catch (e) {
+      this.setStatus('Error · ' + (e.message || e));
+      console.error('[SpaceNetShell]', e);
+    }
+  },
+};
+window.SpaceNetShell = SpaceNetShell;
+
+// Natural-language talk path — map plain English/Greek to shell actions (not CLI jargon)
+const SpaceNetTalk = {
+  route(text) {
+    const t = String(text || '').trim().toLowerCase();
+    if (!t) return null;
+    if (/^(my\s*city|locate|gps|πόλη|βρες\s*με|where\s*am\s*i|city\s*map)/i.test(t)) return 'city';
+    if (/^(shops?|vendors?|καταστήμ|μαγαζ|near\s*me|around\s*me)/i.test(t)) return 'shops';
+    if (/^(order|delivery|παράδοση|παραγγελ|food|φαγητ)/i.test(t)) return 'order';
+    if (/^(menu|\+|plus|multi)/i.test(t)) return 'menu';
+    if (/^(help|βοήθεια|what\s*can|τι\s*μπορ)/i.test(t)) return 'help';
+    return null;
+  },
+  async handle(text) {
+    const a = this.route(text);
+    if (a === 'help') {
+      ACIControl?.reply?.('Tap My city · Shops · Order · Menu · or Talk. Or say those words.');
+      SpaceNetShell?.setStatus?.('Help · use the blue bar buttons');
+      return { handled: true, action: 'help' };
+    }
+    if (a) {
+      await SpaceNetShell?.run?.(a);
+      return { handled: true, action: a };
+    }
+    return { handled: false };
+  },
+};
+window.SpaceNetTalk = SpaceNetTalk;
+
 // === MARKETPLACE PRESENCE — driver heartbeat so real drivers appear on map ===
 const MarketplacePresence = {
   _timer: null,
@@ -9323,6 +9541,12 @@ const AciCli = {
     const routed = await SuperCli?.exec?.(line, opts);
     if (routed?.handled) return;
 
+    // App-first natural talk — "my city", "shops", "order" without CLI training
+    try {
+      const talk = await SpaceNetTalk?.handle?.(line);
+      if (talk?.handled) return;
+    } catch (_) {}
+
     const parts = line.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
     const cmd = (parts[0] || '').toLowerCase().replace(/^"|"$/g, '');
     const rest = parts.slice(1).map(p => p.replace(/^"|"$/g, '')).join(' ');
@@ -12514,7 +12738,17 @@ function _astranovBoot() {
   window._bootEarthLock = false;
   window._snlForceDismiss?.();
   SpaceNetLoader?.dismiss?.('boot-ready');
-  ACIControl?.reply?.(SpaceNetMission?.bootReply || 'Astranov SpaceNet live · drag earth · tap + · locate');
+  ACIControl?.reply?.(SpaceNetMission?.bootReply || 'Astranov SpaceNet live · use the bar: My city · Shops · Order · Talk');
+
+  // Rescue mpp/field/sky if origin served SPA HTML; mount app-first shell (no CLI required)
+  later(() => {
+    void window.SpaceNetAssetBoot?.ensureCoreUi?.().then(() => {
+      try { SpaceNetShell?.init?.(); } catch (e) { console.error('[SpaceNetShell]', e); }
+    }).catch(() => {
+      try { SpaceNetShell?.init?.(); } catch (_) {}
+    });
+  }, 80);
+  later(() => { try { SpaceNetShell?.init?.(); } catch (_) {} }, 600);
 
   // —— Phase 2: light UI (next frames) ——
   later(() => {
@@ -12538,17 +12772,18 @@ function _astranovBoot() {
   later(() => AiRouter?.init?.(), 3000);
   later(() => MissionSupportReporter?.init?.(), 3200);
 
-  // —— Phase 3: 574KB deferred pack — only after globe is interactive ——
-  // Early whenReady/schedule was freezing boot on mid devices.
+  // —— Phase 3: 574KB deferred pack — earlier after shell so shops/orders work ——
+  // Still delayed enough to keep first paint smooth; user tap sets _lazyUserReady sooner.
   later(() => {
     void LazyModules.whenReady(() => {
       try { EarthRealism?.init?.(); } catch (_) {}
       try { CityMap?.ensureReady?.(); } catch (_) {}
       try { GlobeEntity?.init?.(); } catch (_) {}
       try { DrivingView?.init?.(); } catch (_) {}
+      try { window.Commerce?.loadVendors?.({ radiusKm: 20 }); } catch (_) {}
     });
-  }, 4500);
-  later(() => { try { LazyModules.schedule(); } catch (_) {} }, 7000);
+  }, 2200);
+  later(() => { try { LazyModules.schedule(); } catch (_) {} }, 3500);
 
   later(() => Auth.refreshAuthority?.(), 1500);
   later(() => { try { window.SpaceNetFleet?.init?.(); } catch (_) {} }, 5000);
