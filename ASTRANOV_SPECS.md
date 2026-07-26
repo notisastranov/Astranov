@@ -10,8 +10,29 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260726150000-minspec-shell` |
-| **App-first shell** | Bottom bar: My city · Shops · Order · Menu · Talk (no CLI required) |
+| **Current build** | `20260726170000-spacenet-spatial` |
+| **App-first shell** | My city · Shops · Order · Place · Vault · Cydonia · Menu · Talk |
+| **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI |
+
+---
+
+## The law (SpaceNet)
+
+**Digital objects live at real coordinates on real bodies.**  
+Put a thesis on a garage → zoom the garage → see the file.  
+Hide music on Mars Cydonia → zoom Cydonia → see the folder.  
+Marketplace + video calling are place-kinds on the same net.
+
+| Code | Role |
+|------|------|
+| `js/astranov-spacenet-spatial.js` | `SpaceNetSpatial` · seeds · vault · put/go talk |
+| `GlobeEntity` type `sn_place` | Earth markers |
+| Mars group on CosmicZoom | Cydonia markers |
+| Storage | `astranov:spacenet-places-v1` |
+
+Seeds: `seed-thesis-garage` · `seed-cydonia-music` · market hub · Athens video agora.
+
+Talk: `put X on Y` · `hide music on mars cydonia` · `go to thesis` · `vault` · `drop here`
 
 ---
 
