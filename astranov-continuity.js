@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260712080000-finance-multitile',
+  version: '20260712090000-boot-smooth-earth',
   updated: '2026-07-14',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -427,6 +427,7 @@ const AstranovContinuity = {
     { id: '20260712060000-perf-sticky-fix', note: 'Fix _globePerfLite wipe; no AA/tone map; lower FPS/DPR; radar 4fps; logo RAF idle stop' },
     { id: '20260712070000-launch-audit', note: 'SpaceNetCities national hubs; CLI bridge; full launch audit report' },
     { id: '20260712080000-finance-multitile', note: 'Field balance opens finance multi-tile: 3% invoices, P2P ledger, report dropdowns' },
+    { id: '20260712090000-boot-smooth-earth', note: 'Staggered boot (no deferred freeze); earth 24/32 segments not polygonal' },
   ],
 
   /**
