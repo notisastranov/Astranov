@@ -10,9 +10,9 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260726170000-spacenet-spatial` |
-| **App-first shell** | My city · Shops · Order · Place · Vault · Cydonia · Menu · Talk |
-| **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI |
+| **Current build** | `20260726180000-full-cosmos` |
+| **App-first shell** | My city · Shops · Order · Place · Vault · **Cosmos** · Cydonia · Menu · Talk |
+| **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI · ALL of space addressable |
 
 ---
 
