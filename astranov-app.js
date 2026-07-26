@@ -834,6 +834,306 @@ const AiRouter = {
 
 window.AiRouter = AiRouter;
 
+// === SPACENET CRAWLER — real POI → vendors map + GBP/social profile tiles ===
+// Edge: /functions/v1/vendor-crawler (Overpass + optional Google Places)
+// Fallback: browser Overpass when edge fails so city maps still populate.
+const SpaceNetCrawler = {
+  _busy: new Set(),
+  _lastAt: new Map(),
+  COOLDOWN_MS: 90000,
+  OVERPASS: [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+  ],
+  CAT: {
+    restaurant: { emoji: '🍴', category: 'restaurant', delivery: true },
+    cafe: { emoji: '☕', category: 'cafe', delivery: true },
+    fast_food: { emoji: '🍟', category: 'fast_food', delivery: true },
+    bakery: { emoji: '🥖', category: 'bakery', delivery: true },
+    ice_cream: { emoji: '🍨', category: 'cafe', delivery: true },
+    bar: { emoji: '🍻', category: 'bar', delivery: false },
+    pub: { emoji: '🍺', category: 'bar', delivery: false },
+    pharmacy: { emoji: '💊', category: 'pharmacy', delivery: true },
+    supermarket: { emoji: '🛒', category: 'supermarket', delivery: true },
+    convenience: { emoji: '🛍️', category: 'shop', delivery: true },
+    clothes: { emoji: '👕', category: 'shop', delivery: false },
+    electronics: { emoji: '💻', category: 'shop', delivery: false },
+    books: { emoji: '📖', category: 'shop', delivery: false },
+    sports: { emoji: '🏀', category: 'shop', delivery: false },
+    hairdresser: { emoji: '💇', category: 'service', delivery: false },
+    hotel: { emoji: '🏨', category: 'hotel', delivery: false },
+  },
+
+  _headers() {
+    const h = { 'Content-Type': 'application/json', apikey: SB_KEY };
+    if (Auth?.session?.access_token) h.Authorization = 'Bearer ' + Auth.session.access_token;
+    else h.Authorization = 'Bearer ' + SB_KEY;
+    return h;
+  },
+
+  sectorKey(lat, lng) {
+    return Number(lat).toFixed(3) + ',' + Number(lng).toFixed(3);
+  },
+
+  _meta(kind) {
+    return this.CAT[kind] || { emoji: '🏬', category: 'shop', delivery: false };
+  },
+
+  _socials(tags) {
+    tags = tags || {};
+    const pick = (...keys) => {
+      for (const k of keys) {
+        const v = tags[k];
+        if (v && String(v).trim()) return String(v).trim();
+      }
+      return null;
+    };
+    const norm = (u, host) => {
+      if (!u) return null;
+      let s = String(u).trim();
+      if (s.startsWith('@') && host) s = host + s.slice(1);
+      if (!/^https?:\/\//i.test(s) && /^[\w.-]+\.\w/.test(s)) s = 'https://' + s;
+      if (!/^https?:\/\//i.test(s) && host && !s.includes('/')) s = host + s.replace(/^@/, '');
+      return s;
+    };
+    return {
+      facebook: norm(pick('contact:facebook', 'facebook'), 'https://facebook.com/'),
+      instagram: norm(pick('contact:instagram', 'instagram'), 'https://instagram.com/'),
+      twitter: norm(pick('contact:twitter', 'twitter', 'contact:x'), 'https://x.com/'),
+      youtube: norm(pick('contact:youtube', 'youtube'), 'https://youtube.com/'),
+      tiktok: norm(pick('contact:tiktok', 'tiktok'), 'https://tiktok.com/@'),
+    };
+  },
+
+  _profileTags(tags, source, extra) {
+    tags = tags || {};
+    extra = extra || {};
+    const social = this._socials(tags);
+    const image = tags.image || tags['image:0'] || null;
+    const website = tags.website || tags['contact:website'] || tags.url || null;
+    const phone = tags.phone || tags['contact:phone'] || null;
+    const about = [
+      tags.description,
+      tags.cuisine ? 'Cuisine: ' + tags.cuisine : null,
+      tags.opening_hours ? 'Hours: ' + tags.opening_hours : null,
+    ].filter(Boolean).join(' · ') || null;
+    return {
+      source,
+      profile_source: source,
+      amenity: tags.amenity || null,
+      shop: tags.shop || null,
+      cuisine: tags.cuisine || null,
+      opening_hours: tags.opening_hours || null,
+      phone,
+      website,
+      cover_url: image || extra.cover_url || null,
+      profile_url: image || extra.profile_url || null,
+      about,
+      social,
+      google_place_id: extra.google_place_id || null,
+      google_rating: extra.google_rating ?? null,
+      google_reviews: extra.google_reviews ?? null,
+      google_photo_url: extra.google_photo_url || null,
+      ...extra,
+    };
+  },
+
+  _rowFromOsm(el) {
+    const tags = el.tags || {};
+    if (!tags.name) return null;
+    const lat = el.lat ?? el.center?.lat;
+    const lng = el.lon ?? el.center?.lon;
+    if (lat == null || lng == null) return null;
+    const amenity = tags.amenity || tags.shop || tags.tourism || 'shop';
+    const meta = this._meta(amenity);
+    const prefix = el.type === 'way' ? 'osm_w_' : el.type === 'relation' ? 'osm_r_' : 'osm_';
+    const osmId = prefix + el.id;
+    const ptags = this._profileTags(tags, 'osm');
+    return {
+      id: osmId,
+      osm_id: osmId,
+      name: String(tags.name),
+      emoji: meta.emoji,
+      category: meta.category,
+      lat: Number(lat),
+      lng: Number(lng),
+      address: {
+        street: tags['addr:street'] || null,
+        housenumber: tags['addr:housenumber'] || null,
+        city: tags['addr:city'] || null,
+        postcode: tags['addr:postcode'] || null,
+        phone: ptags.phone,
+        website: ptags.website,
+      },
+      tags: ptags,
+      items: [],
+      delivery_enabled: meta.delivery,
+      is_active: true,
+      cover_url: ptags.cover_url,
+      logo_url: ptags.profile_url,
+    };
+  },
+
+  async overpassLocal(lat, lng, radiusM) {
+    radiusM = Math.max(400, Math.min(Number(radiusM) || 2000, 6000));
+    const query = `[out:json][timeout:22];
+(
+  nwr["amenity"~"^(restaurant|cafe|fast_food|bakery|ice_cream|bar|pub|pharmacy)$"](around:${radiusM},${lat},${lng});
+  nwr["shop"~"^(clothes|electronics|books|sports|bakery|convenience|supermarket|hairdresser)$"](around:${radiusM},${lat},${lng});
+);
+out center body qt 100;`;
+    let lastErr = 'overpass unavailable';
+    for (const url of this.OVERPASS) {
+      try {
+        const resp = await fetch(url, {
+          method: 'POST',
+          body: query,
+          headers: { 'Content-Type': 'text/plain', 'User-Agent': 'AstranovSpaceNet/1.0' },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!resp.ok) { lastErr = 'HTTP ' + resp.status; continue; }
+        const data = await resp.json();
+        return (data.elements || []).map(el => this._rowFromOsm(el)).filter(Boolean);
+      } catch (e) {
+        lastErr = String(e.message || e);
+      }
+    }
+    throw new Error(lastErr);
+  },
+
+  async edgeCrawl(lat, lng, radiusKm) {
+    const radiusM = Math.round((Number(radiusKm) || 2) * 1000);
+    const resp = await fetch(SB_URL + '/functions/v1/vendor-crawler', {
+      method: 'POST',
+      headers: this._headers(),
+      body: JSON.stringify({
+        lat,
+        lng,
+        radius: radiusM,
+        radius_km: radiusKm || 2,
+        source: 'spacenet-crawler',
+      }),
+      signal: AbortSignal.timeout(28000),
+    });
+    const j = await resp.json().catch(() => ({}));
+    if (!resp.ok && !j.vendors) throw new Error(j.error || ('edge HTTP ' + resp.status));
+    return j;
+  },
+
+  mergeIntoCommerce(vendors) {
+    if (!vendors?.length) return 0;
+    const C = window.Commerce;
+    if (!C) return 0;
+    if (!Array.isArray(C.vendors)) C.vendors = [];
+    if (!Array.isArray(C._crawledLocal)) C._crawledLocal = [];
+    const byId = new Map(C.vendors.map(v => [String(v.id || v.osm_id), v]));
+    let added = 0;
+    for (const raw of vendors) {
+      const v = C._normalizeVendor ? C._normalizeVendor(raw) : raw;
+      const id = String(v.id || v.osm_id);
+      if (!id || v.lat == null) continue;
+      const isDemo = String(id).startsWith('demo-');
+      if (isDemo) continue;
+      if (!byId.has(id)) added++;
+      const merged = { ...byId.get(id), ...v, id, is_active: true };
+      byId.set(id, merged);
+      const li = C._crawledLocal.findIndex(x => String(x.id || x.osm_id) === id);
+      if (li >= 0) C._crawledLocal[li] = merged;
+      else C._crawledLocal.push(merged);
+    }
+    if (C._crawledLocal.length > 200) C._crawledLocal = C._crawledLocal.slice(-200);
+    let list = [...byId.values()];
+    const real = list.filter(v => !String(v.id || '').startsWith('demo-'));
+    if (real.length >= 3) list = real.concat(list.filter(v => window.AstranovCityShop?.isConstructionVendor?.(v)));
+    const u = C.userLatLng?.() || { lat: vendors[0].lat, lng: vendors[0].lng };
+    list.sort((a, b) => {
+      if (window.AstranovCityShop?.isConstructionVendor?.(a)) return -1;
+      if (window.AstranovCityShop?.isConstructionVendor?.(b)) return 1;
+      const ha = C.haversineKm?.(u.lat, u.lng, a.lat, a.lng) ?? 99;
+      const hb = C.haversineKm?.(u.lat, u.lng, b.lat, b.lng) ?? 99;
+      return ha - hb;
+    });
+    C.vendors = list.slice(0, 120);
+    window.AstranovCityShop?.ensureInVendorList?.();
+    return added;
+  },
+
+  applyToMaps(lat, lng) {
+    const C = window.Commerce;
+    if (!C?.vendors?.length) return;
+    try { C.showOnGlobe?.(); } catch (_) {}
+    try { GlobeEntity?.syncVendors?.(C.vendors); } catch (_) {}
+    try { MapPins?.syncGlobe?.(); } catch (_) {}
+    try { CityMap?.syncMapPins?.(); } catch (_) {}
+    try { SpaceNetCities?.refresh?.(true); } catch (_) {}
+    const n = (C.vendors || []).filter(v => {
+      if (v.lat == null || !C.haversineKm) return true;
+      return C.haversineKm(lat, lng, v.lat, v.lng) <= 6;
+    }).length;
+    GlobeDeck?.setPreview?.(n + ' real shops in sector · tap pin for profile tile');
+    return n;
+  },
+
+  /**
+   * Crawl sector, upsert via edge when possible, always refresh maps with real POIs.
+   */
+  async crawlAndPopulate(lat, lng, opts) {
+    opts = opts || {};
+    lat = Number(lat);
+    lng = Number(lng);
+    if (!isFinite(lat) || !isFinite(lng)) return { ok: false, error: 'no coordinates' };
+    const key = this.sectorKey(lat, lng);
+    const force = !!opts.force;
+    if (!force && this._busy.has(key)) return { ok: false, skipped: 'busy' };
+    const last = this._lastAt.get(key) || 0;
+    if (!force && Date.now() - last < this.COOLDOWN_MS) return { ok: false, skipped: 'cooldown' };
+    this._busy.add(key);
+    const radiusKm = Number(opts.radiusKm) || 2;
+    let vendors = [];
+    let source = 'none';
+    let edgeMeta = null;
+    try {
+      try {
+        edgeMeta = await this.edgeCrawl(lat, lng, radiusKm);
+        if (Array.isArray(edgeMeta.vendors) && edgeMeta.vendors.length) {
+          vendors = edgeMeta.vendors;
+          source = 'edge';
+        }
+      } catch (_) { /* fall through */ }
+
+      if (!vendors.length) {
+        vendors = await this.overpassLocal(lat, lng, radiusKm * 1000);
+        source = 'overpass-local';
+      }
+
+      // Reload DB after edge upsert so owned shops merge
+      if (source === 'edge' && window.Commerce?.loadVendors) {
+        try {
+          await Promise.race([
+            Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 8) }),
+            new Promise(r => setTimeout(r, 6000)),
+          ]);
+        } catch (_) {}
+      }
+
+      const added = this.mergeIntoCommerce(vendors);
+      const nearby = this.applyToMaps(lat, lng);
+      this._lastAt.set(key, Date.now());
+      const msg = 'crawler · ' + (nearby || vendors.length) + ' shops · ' + source
+        + (edgeMeta?.sources ? ' (osm ' + (edgeMeta.sources.osm || 0) + ' · ggl ' + (edgeMeta.sources.google || 0) + ')' : '');
+      AciCli?.print?.(msg, vendors.length ? 'ok' : 'dim');
+      if (opts.verbose) ACIControl?.reply?.(msg);
+      return { ok: true, count: vendors.length, added, source, nearby, edge: edgeMeta };
+    } catch (e) {
+      AciCli?.print?.('crawler failed · ' + (e.message || e), 'err');
+      return { ok: false, error: String(e.message || e) };
+    } finally {
+      setTimeout(() => this._busy.delete(key), force ? 8000 : this.COOLDOWN_MS);
+    }
+  },
+};
+window.SpaceNetCrawler = SpaceNetCrawler;
+
 // === SPACENET BRAIN — orchestrates ACI, ai-router, crawlers for unified internet ingestion ===
 const SpaceNetBrain = {
   _crawlBusy: new Set(),
@@ -847,6 +1147,7 @@ const SpaceNetBrain = {
     else h.Authorization = 'Bearer ' + SB_KEY;
     return h;
   },
+
 
   async think(prompt, opts) {
     opts = opts || {};
@@ -913,19 +1214,19 @@ const SpaceNetBrain = {
     return found;
   },
 
-  async crawlArea(lat, lng, radiusKm) {
-    const key = lat.toFixed(3) + ',' + lng.toFixed(3);
-    if (this._crawlBusy.has(key)) return;
+  async crawlArea(lat, lng, radiusKm, opts) {
+    const key = Number(lat).toFixed(3) + ',' + Number(lng).toFixed(3);
+    if (this._crawlBusy.has(key) && !opts?.force) return;
     this._crawlBusy.add(key);
     try {
-      await fetch(SB_URL + '/functions/v1/vendor-crawler', {
-        method: 'POST',
-        headers: this._headers(),
-        body: JSON.stringify({ lat, lng, radius_km: radiusKm || 2, source: 'spacenet-brain' }),
+      const r = await SpaceNetCrawler?.crawlAndPopulate?.(lat, lng, {
+        radiusKm: radiusKm || 2,
+        force: !!opts?.force,
+        verbose: !!opts?.verbose,
       });
-      AciCli?.print?.('crawler · sector ' + key, 'dim');
+      if (r?.ok) AciCli?.print?.('brain crawl · ' + (r.nearby || r.count || 0) + ' · ' + (r.source || ''), 'ok');
     } catch (_) {}
-    setTimeout(() => this._crawlBusy.delete(key), 120000);
+    setTimeout(() => this._crawlBusy.delete(key), 90000);
   },
 
   async orchestrate(actionId, pin) {
@@ -2165,13 +2466,25 @@ const GlobeNavigate = {
     await CityMap?.openAt?.(lat, lng, { camZ: this.CITY_CAM_Z, zoom: this.LEAFLET_ZOOM });
     window._lastPos = { lat, lng };
     if (window.Commerce?.loadVendors) {
-      await Promise.race([window.Commerce.loadVendors(), new Promise(r => setTimeout(r, 5000))]);
+      await Promise.race([
+        window.Commerce.loadVendors({ lat, lng, radiusKm: 12 }),
+        new Promise(r => setTimeout(r, 5000)),
+      ]);
     }
+    // Populate map with real OSM/GBP vendors for this city (edge + Overpass fallback)
+    void SpaceNetCrawler?.crawlAndPopulate?.(lat, lng, { radiusKm: 2.5 })
+      .then(() => {
+        window.Commerce?.showOnGlobe?.();
+        GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
+        CityMap?.syncMapPins?.();
+      })
+      .catch(() => {});
     window.Commerce?.showOnGlobe?.();
     GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
+    CityMap?.syncMapPins?.();
     window._cityDropLock = false;
-    GlobeDeck?.setPreview?.('City z' + this.LEAFLET_ZOOM + ' · tap shop or + for intent');
-    AciCli?.print?.('nav · city z' + this.LEAFLET_ZOOM, 'ok');
+    GlobeDeck?.setPreview?.('City z' + this.LEAFLET_ZOOM + ' · crawling real shops…');
+    AciCli?.print?.('nav · city z' + this.LEAFLET_ZOOM + ' · vendor crawl started', 'ok');
     this._syncChip();
     if (opts?.openShops) await window.Commerce?.showPicker?.();
     return 'city';
@@ -2227,12 +2540,49 @@ const VendorMapTile = {
 
   _coverUrl(v) {
     const t = this._tags(v);
-    return v?.cover_url || v?.cover || v?.banner_url || t.cover_url || t.cover || v?.profile_page?.cover_url || '';
+    return v?.cover_url || v?.cover || v?.banner_url || t.cover_url || t.cover
+      || t.google_photo_url || v?.profile_page?.cover_url || '';
   },
 
   _about(v) {
     const t = this._tags(v);
-    return t.about || v?.bio || v?.description || '';
+    const bits = [
+      t.about || v?.bio || v?.description || '',
+      t.opening_hours ? 'Hours: ' + t.opening_hours : '',
+      t.phone || v?.address?.phone ? '☎ ' + (t.phone || v?.address?.phone) : '',
+      t.google_rating != null ? '★ ' + t.google_rating + (t.google_reviews ? ' (' + t.google_reviews + ')' : '') : '',
+    ].filter(Boolean);
+    return bits.join(' · ');
+  },
+
+  _socialLinks(v) {
+    const t = this._tags(v);
+    const s = (t.social && typeof t.social === 'object') ? t.social : {};
+    const website = t.website || v?.address?.website || s.website || null;
+    const links = [];
+    if (website) links.push({ id: 'web', label: 'Website', url: website });
+    if (s.facebook) links.push({ id: 'fb', label: 'Facebook', url: s.facebook });
+    if (s.instagram) links.push({ id: 'ig', label: 'Instagram', url: s.instagram });
+    if (s.twitter) links.push({ id: 'x', label: 'X', url: s.twitter });
+    if (s.youtube) links.push({ id: 'yt', label: 'YouTube', url: s.youtube });
+    if (s.tiktok) links.push({ id: 'tt', label: 'TikTok', url: s.tiktok });
+    if (t.google_maps_url || t.google_place_id) {
+      links.push({
+        id: 'ggl',
+        label: 'Google',
+        url: t.google_maps_url || ('https://www.google.com/maps/place/?q=place_id:' + t.google_place_id),
+      });
+    }
+    return links;
+  },
+
+  _sourceBadge(v) {
+    const t = this._tags(v);
+    const src = t.profile_source || t.source || '';
+    if (src === 'google_places' || src === 'hybrid') return 'Google Business';
+    if (src === 'osm') return 'OpenStreetMap';
+    if (String(v?.id || '').startsWith('demo-')) return 'Demo';
+    return src || '';
   },
 
   _isOwner() {
@@ -2287,6 +2637,7 @@ const VendorMapTile = {
     const subEl = document.getElementById('vmt-sub');
     const aboutEl = document.getElementById('vmt-about');
     const badgesEl = document.getElementById('vmt-badges');
+    const socialEl = document.getElementById('vmt-social');
     if (nameEl) nameEl.textContent = (v.emoji || '🏬') + ' ' + (v.name || 'Shop');
     if (subEl) {
       subEl.textContent = opts.enlist
@@ -2305,7 +2656,21 @@ const VendorMapTile = {
       if (isConstruction) badges.push('<span class="vmt-badge construction">Under construction</span>');
       else if (v.delivery_enabled !== false) badges.push('<span class="vmt-badge delivery">🚚 Delivery</span>');
       if (v.category) badges.push('<span class="vmt-badge">' + this.esc(v.category) + '</span>');
+      const src = this._sourceBadge(v);
+      if (src) badges.push('<span class="vmt-badge source">' + this.esc(src) + '</span>');
       badgesEl.innerHTML = badges.join('');
+    }
+    if (socialEl) {
+      const links = this._socialLinks(v);
+      if (links.length) {
+        socialEl.innerHTML = links.map(l =>
+          '<a class="vmt-social-link" href="' + this.esc(l.url) + '" target="_blank" rel="noopener noreferrer">' + this.esc(l.label) + '</a>'
+        ).join('');
+        socialEl.style.display = 'flex';
+      } else {
+        socialEl.innerHTML = '';
+        socialEl.style.display = 'none';
+      }
     }
 
     this._renderMenu();
@@ -8957,6 +9322,26 @@ const AciCli = {
         await SpaceNetDevBridge?.open?.(rest);
         return;
       }
+      if (cmd === 'crawl' || cmd === 'crawler' || (cmd === 'spacenet' && /^crawl\b/i.test(rest))) {
+        const pos = window._lastPos || window.Commerce?.userLatLng?.() || TrackballGuard?.facingLatLng?.();
+        if (!pos?.lat) {
+          this.print('crawl needs location — locate or open a city first', 'err');
+          return;
+        }
+        this.print('crawling real vendors @ ' + pos.lat.toFixed(3) + ',' + pos.lng.toFixed(3) + '…', 'dim');
+        const r = await SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, {
+          radiusKm: 3,
+          force: true,
+          verbose: true,
+        });
+        this.print(
+          r?.ok
+            ? ('crawl done · ' + (r.nearby || r.count || 0) + ' shops · ' + (r.source || ''))
+            : ('crawl failed · ' + (r?.error || r?.skipped || 'unknown')),
+          r?.ok ? 'ok' : 'err',
+        );
+        return;
+      }
       if (cmd === 'coders' || cmd === 'composer' || cmd === 'cursor' ||
           (cmd === 'summon' && /^coders?$/i.test(parts[1] || ''))) {
         if (cmd === 'coders' && /^bridge\b/i.test(rest)) {
@@ -10534,10 +10919,16 @@ const CityLife = {
 
       if (window.Commerce?.loadVendors) {
         await Promise.race([
-          window.Commerce.loadVendors(),
+          window.Commerce.loadVendors({ lat: pos.lat, lng: pos.lng, radiusKm: 12 }),
           new Promise(resolve => setTimeout(() => resolve(null), 8000)),
         ]);
       }
+      try {
+        await Promise.race([
+          SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, { radiusKm: 2.5 }),
+          new Promise(resolve => setTimeout(() => resolve(null), 16000)),
+        ]);
+      } catch (_) {}
       await window.AstranovCityShop?.placeForUser?.(pos.lat, pos.lng);
       let nearby = this.nearbyVendors(pos.lat, pos.lng);
       const construction = (window.Commerce?.vendors || []).find(v => window.AstranovCityShop?.isConstructionVendor?.(v));
