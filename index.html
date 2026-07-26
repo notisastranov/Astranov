@@ -1459,9 +1459,9 @@
   }
   async function loadModule(name, probe) {
     var qs = '?v=' + encodeURIComponent(BUILD) + '&sn=' + Date.now().toString(36);
-  // CDN first — origin currently returns SPA HTML for several modules
-  var urls = [CDN + name, RAW + name, '/' + name + qs];
-  for (var i = 0; i < urls.length; i++) {
+    // /js/* serves real JS on live; root astranov-mpp/field/sky currently SPA-HTML
+    var urls = ['/js/' + name + qs, CDN + name, RAW + name, '/' + name + qs];
+    for (var i = 0; i < urls.length; i++) {
       try {
         if (urls[i].indexOf('raw.githubusercontent') >= 0 || urls[i].indexOf('jsdelivr') >= 0) {
           var ok = await loadScriptTag(urls[i]);
@@ -1473,8 +1473,14 @@
         var ct = r.headers.get('content-type') || '';
         var text = await r.text();
         if (!r.ok || isBad(text, ct)) continue;
+        // Prefer script src for same-origin so CSP stays happy
+        if (urls[i].charAt(0) === '/') {
+          var ok2 = await loadScriptTag(urls[i]);
+          await new Promise(function(res){ setTimeout(res, 60); });
+          if (ok2 && (!probe || probe())) return 'origin:' + urls[i];
+        }
         inject(text, name);
-        if (!probe || probe()) return 'origin:' + name;
+        if (!probe || probe()) return 'inject:' + name;
       } catch (e) {}
     }
     return null;
@@ -1504,17 +1510,23 @@
       return report;
     }
   };
-  // Preload broken origin modules from CDN immediately (do not wait for 200 HTML parse fail)
-  function preloadFromCdn() {
+  // Prefer /js/* (live serves real JS there) + CDN; skip root paths that SPA-fallback to HTML
+  function preloadWorking() {
     ['astranov-mpp-tile.js', 'astranov-field-hud.js', 'astranov-galactic-sky.js'].forEach(function(name) {
       var s = document.createElement('script');
       s.defer = true;
-      s.src = CDN + name;
-      s.dataset.astranovCdn = name;
+      s.src = '/js/' + name + '?v=' + encodeURIComponent(BUILD);
+      s.dataset.astranovJsPath = name;
+      s.onerror = function() {
+        var s2 = document.createElement('script');
+        s2.defer = true;
+        s2.src = CDN + name;
+        document.head.appendChild(s2);
+      };
       document.head.appendChild(s);
     });
   }
-  preloadFromCdn();
+  preloadWorking();
   setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 1200);
   setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 3500);
 })();
@@ -1522,10 +1534,10 @@
 <script defer src="/astranov-app.js?v=20260726150000-minspec-shell"></script>
 <script defer src="/astranov-perf-lazy.js?v=20260726150000-minspec-shell"></script>
 <script defer src="/astranov-continuity.js?v=20260726150000-minspec-shell"></script>
-<!-- Origin copies often SPA-fallback to HTML; CDN preloaded above is the real module source -->
-<script defer src="/astranov-galactic-sky.js?v=20260726150000-minspec-shell"></script>
-<script defer src="/astranov-field-hud.js?v=20260726150000-minspec-shell"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260726150000-minspec-shell"></script>
+<!-- Real modules: /js/* (not root — root SPA-falls to index.html on current Vercel deploy) -->
+<script defer src="/js/astranov-galactic-sky.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/js/astranov-field-hud.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/js/astranov-mpp-tile.js?v=20260726150000-minspec-shell"></script>
 </body>
 </html>
 
