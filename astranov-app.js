@@ -459,12 +459,16 @@ const CosmicZoom = {
     sun.userData = { name: 'Sun', desc: 'G-type star · system barycenter' };
     this.solarGroup.add(sun);
 
+    // Full Sol major planets (Uranus/Neptune/dwarfs added by SpaceNetCosmos too)
     const planetDefs = [
       { n: 'Mercury', desc: 'Rocky · 87.97-day sidereal orbit · 7.0° incl', c: 0xaaaaaa, r: 0.04, dist: 0.7, periodDays: 87.969, incl: 7.005, omega: 48.331, M0: 174.796 },
       { n: 'Venus', desc: 'Cloud cover · 224.7-day sidereal orbit · 3.4° incl', c: 0xddbb88, r: 0.06, dist: 1.0, periodDays: 224.701, incl: 3.395, omega: 76.680, M0: 50.416 },
       { n: 'Mars', desc: 'Red desert · 687-day sidereal orbit · 1.9° incl', c: 0xff6644, r: 0.05, dist: 1.5, periodDays: 686.980, incl: 1.850, omega: 49.558, M0: 19.373 },
       { n: 'Jupiter', desc: 'Gas giant · 11.86-year sidereal orbit · 1.3° incl', c: 0xccaa77, r: 0.12, dist: 2.2, periodDays: 4332.589, incl: 1.305, omega: 100.464, M0: 20.020 },
       { n: 'Saturn', desc: 'Rings (not shown) · 29.46-year sidereal orbit · 2.5° incl', c: 0xddcc99, r: 0.1, dist: 3.0, periodDays: 10759.22, incl: 2.485, omega: 113.666, M0: 317.020 },
+      { n: 'Uranus', desc: 'Ice giant · tipped axis · 84-year orbit', c: 0x88ddcc, r: 0.08, dist: 3.7, periodDays: 30688, incl: 0.77, omega: 74.0, M0: 142.0 },
+      { n: 'Neptune', desc: 'Ice giant · Great Dark Spot · 165-year orbit', c: 0x4466ff, r: 0.078, dist: 4.3, periodDays: 60182, incl: 1.77, omega: 131.8, M0: 256.0 },
+      { n: 'Pluto', desc: 'Kuiper dwarf · Tombaugh Regio', c: 0xccbbaa, r: 0.03, dist: 4.9, periodDays: 90560, incl: 17.1, omega: 110.3, M0: 14.9 },
     ];
     planetDefs.forEach(p => {
       const m = new THREE.Mesh(
@@ -4262,6 +4266,7 @@ const SpaceNetShell = {
       '<button type="button" data-sn="order"><span class="sn-ico">🛵</span><span>Order</span></button>',
       '<button type="button" data-sn="place"><span class="sn-ico">📍</span><span>Place</span></button>',
       '<button type="button" data-sn="vault"><span class="sn-ico">◎</span><span>Vault</span></button>',
+      '<button type="button" data-sn="cosmos"><span class="sn-ico">🌌</span><span>Cosmos</span></button>',
       '<button type="button" data-sn="mars"><span class="sn-ico">♂</span><span>Cydonia</span></button>',
       '<button type="button" data-sn="menu"><span class="sn-ico">＋</span><span>Menu</span></button>',
       '<button type="button" data-sn="talk"><span class="sn-ico">💬</span><span>Talk</span></button>',
@@ -4395,9 +4400,18 @@ const SpaceNetShell = {
         return;
       }
 
+      if (a === 'cosmos' || a === 'atlas' || a === 'universe') {
+        try { window.SpaceNetCosmos?.init?.(); } catch (_) {}
+        SpaceNetCosmos?.showBrowser?.('all');
+        this.setStatus('Cosmos · planets · black holes · systems · dimensions');
+        return;
+      }
+
       if (a === 'mars' || a === 'cydonia') {
+        try { window.SpaceNetCosmos?.init?.(); } catch (_) {}
         try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
-        await SpaceNetSpatial?.flyTo?.('seed-cydonia-music');
+        if (SpaceNetCosmos?.flyTo) await SpaceNetCosmos.flyTo('sol-mars');
+        else await SpaceNetSpatial?.flyTo?.('seed-cydonia-music');
         this.setStatus('Mars Cydonia · music folder in real space');
         return;
       }
@@ -4446,6 +4460,7 @@ const SpaceNetTalk = {
     if (/^(shops?|vendors?|καταστήμ|μαγαζ|near\s*me|around\s*me)/i.test(t)) return 'shops';
     if (/^(order|delivery|παράδοση|παραγγελ|food|φαγητ)/i.test(t)) return 'order';
     if (/^(menu|\+|plus|multi)/i.test(t)) return 'menu';
+    if (/^(cosmos|atlas|universe|all\s*space)/i.test(t)) return 'cosmos';
     if (/^(place|drop\s*here|vault|places|cydonia|mars|thesis|garage|video)/i.test(t)) {
       if (/cydonia|mars/.test(t)) return 'mars';
       if (/thesis|garage/.test(t)) return 'thesis';
@@ -4457,7 +4472,12 @@ const SpaceNetTalk = {
     return null;
   },
   async handle(text) {
-    // Spatial OS first — put X on Y / go to / cydonia / thesis
+    // Full cosmos first (any planet / BH / constellation / dimension)
+    try {
+      const cos = window.SpaceNetCosmos?.handleTalk?.(text);
+      if (cos?.handled) return { handled: true, action: cos.action || 'cosmos' };
+    } catch (_) {}
+    // Spatial OS — put X on Y / go to / cydonia / thesis
     try {
       const sp = await window.SpaceNetSpatial?.handleTalk?.(text);
       if (sp?.handled) return { handled: true, action: sp.action || 'spatial' };
@@ -4466,11 +4486,11 @@ const SpaceNetTalk = {
     const a = this.route(text);
     if (a === 'help') {
       ACIControl?.reply?.(
-        'SpaceNet = real space as UI. Put files on a garage or Mars Cydonia; zoom there to see them. ' +
-          'Buttons: My city · Shops · Order · Place · Vault · Cydonia · Talk. ' +
-          'Say: put notes on here · go to cydonia · open thesis · order food.',
+        'SpaceNet = ALL of space as UI. Go to any planet, black hole, constellation, exo system, galaxy, or sci‑fi dimension. ' +
+          'Buttons: Cosmos · Place · Vault · Cydonia · My city · Shops · Order. ' +
+          'Say: go to Jupiter · go to Orion · go to Sgr A* · go to hyperspace · put notes on Europa · open thesis.',
       );
-      SpaceNetShell?.setStatus?.('Help · real virtual space · Place · Vault · Cydonia');
+      SpaceNetShell?.setStatus?.('Help · entire cosmos is address space');
       return { handled: true, action: 'help' };
     }
     if (a) {
