@@ -1459,11 +1459,13 @@
   }
   async function loadModule(name, probe) {
     var qs = '?v=' + encodeURIComponent(BUILD) + '&sn=' + Date.now().toString(36);
-    var urls = ['/' + name + qs, CDN + name, RAW + name];
-    for (var i = 0; i < urls.length; i++) {
+  // CDN first — origin currently returns SPA HTML for several modules
+  var urls = [CDN + name, RAW + name, '/' + name + qs];
+  for (var i = 0; i < urls.length; i++) {
       try {
         if (urls[i].indexOf('raw.githubusercontent') >= 0 || urls[i].indexOf('jsdelivr') >= 0) {
-          var ok = await loadScriptTag(urls[i] + (urls[i].indexOf('?') >= 0 ? '' : qs));
+          var ok = await loadScriptTag(urls[i]);
+          await new Promise(function(r){ setTimeout(r, 80); });
           if (ok && (!probe || probe())) return 'cdn:' + urls[i];
           continue;
         }
@@ -1483,29 +1485,47 @@
     async ensureCoreUi() {
       var report = {};
       report.app = !!window.LazyModules;
-      if (!window.MenuProfilePostTile) report.mpp = await loadModule('astranov-mpp-tile.js', function(){ return !!window.MenuProfilePostTile; });
-      else report.mpp = 'present';
-      if (!window.FieldHud) report.field = await loadModule('astranov-field-hud.js', function(){ return !!window.FieldHud; });
-      else report.field = 'present';
-      if (!window.GalacticSky) report.sky = await loadModule('astranov-galactic-sky.js', function(){ return !!window.GalacticSky; });
-      else report.sky = 'present';
+      // Prefer CDN first for modules known to 404 as SPA HTML on origin
+      if (!window.MenuProfilePostTile) {
+        report.mpp = await loadModule('astranov-mpp-tile.js', function(){ return !!window.MenuProfilePostTile; });
+      } else report.mpp = 'present';
+      if (!window.FieldHud) {
+        report.field = await loadModule('astranov-field-hud.js', function(){ return !!window.FieldHud; });
+      } else report.field = 'present';
+      if (!window.GalacticSky) {
+        report.sky = await loadModule('astranov-galactic-sky.js', function(){ return !!window.GalacticSky; });
+      } else report.sky = 'present';
       try {
-        if (window.MenuProfilePostTile?.init) window.MenuProfilePostTile.init();
-        if (window.FieldHud?.boot) window.FieldHud.boot();
-        if (window.GalacticSky?.init) window.GalacticSky.init();
+        if (window.MenuProfilePostTile && window.MenuProfilePostTile.init) window.MenuProfilePostTile.init();
+        if (window.FieldHud && window.FieldHud.boot) window.FieldHud.boot();
+        if (window.GalacticSky && window.GalacticSky.init) window.GalacticSky.init();
       } catch (e) { console.error('[SpaceNetAssetBoot]', e); }
       window.__spacenetAssetReport = report;
       return report;
     }
   };
+  // Preload broken origin modules from CDN immediately (do not wait for 200 HTML parse fail)
+  function preloadFromCdn() {
+    ['astranov-mpp-tile.js', 'astranov-field-hud.js', 'astranov-galactic-sky.js'].forEach(function(name) {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = CDN + name;
+      s.dataset.astranovCdn = name;
+      document.head.appendChild(s);
+    });
+  }
+  preloadFromCdn();
+  setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 1200);
+  setTimeout(function(){ window.SpaceNetAssetBoot.ensureCoreUi(); }, 3500);
 })();
 </script>
 <script defer src="/astranov-app.js?v=20260726150000-minspec-shell"></script>
 <script defer src="/astranov-perf-lazy.js?v=20260726150000-minspec-shell"></script>
 <script defer src="/astranov-continuity.js?v=20260726150000-minspec-shell"></script>
-<script defer src="/astranov-galactic-sky.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-galactic-sky.js',function(){return!!window.GalacticSky})"></script>
-<script defer src="/astranov-field-hud.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-field-hud.js',function(){return!!window.FieldHud})"></script>
-<script defer src="/astranov-mpp-tile.js?v=20260726150000-minspec-shell" onerror="window.SpaceNetAssetBoot&&SpaceNetAssetBoot.loadModule('astranov-mpp-tile.js',function(){return!!window.MenuProfilePostTile})"></script>
+<!-- Origin copies often SPA-fallback to HTML; CDN preloaded above is the real module source -->
+<script defer src="/astranov-galactic-sky.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/astranov-field-hud.js?v=20260726150000-minspec-shell"></script>
+<script defer src="/astranov-mpp-tile.js?v=20260726150000-minspec-shell"></script>
 </body>
 </html>
 
