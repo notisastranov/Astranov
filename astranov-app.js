@@ -75,16 +75,16 @@ if (window.__astranovHostOk) {
       const _touchLite = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
         || (navigator.maxTouchPoints > 1 && window.innerWidth < 960);
       window._globePerfLite = window._globePerfLite ?? _touchLite;
+      // Smooth earth needs decent segments; cost is tiny vs textures. AA only on desktop.
       renderer = new THREE.WebGLRenderer({
-        antialias: false,
+        antialias: !_touchLite,
         alpha: false,
-        powerPreference: 'low-power',
+        powerPreference: _touchLite ? 'low-power' : 'high-performance',
       });
       renderer.setClearColor(0x000000, 1);
       renderer.setSize(window.innerWidth, window.innerHeight);
-      const _dprCap = _touchLite ? 0.7 : 1.0;
+      const _dprCap = _touchLite ? 0.85 : 1.25;
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, _dprCap));
-      // Skip ACES tone mapping — expensive on mid GPUs; basic material globe does not need it
       if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
       window.renderer = renderer;
       container?.appendChild(renderer.domElement);
@@ -102,7 +102,8 @@ if (window.__astranovHostOk) {
       scene.add(sun);
 
       const starPos = [];
-      for (let i = 0; i < 36; i++) {
+      const starN = _touchLite ? 48 : 96;
+      for (let i = 0; i < starN; i++) {
         const r = 140 + Math.random() * 900;
         const t = Math.random() * Math.PI * 2;
         const p = Math.acos(2 * Math.random() - 1);
@@ -119,12 +120,23 @@ if (window.__astranovHostOk) {
       };
       window.EARTH_TEX = EARTH_TEX;
       const earthMat = new THREE.MeshBasicMaterial({ color: 0x44aaff });
-      new THREE.TextureLoader().load(EARTH_TEX.day, (tex) => { earthMat.map = tex; earthMat.needsUpdate = true; }, undefined, () => {
-        new THREE.TextureLoader().load(EARTH_TEX.fallback, (fb) => { earthMat.map = fb; earthMat.needsUpdate = true; });
-      });
+      // Defer texture load 1 frame so first paint is instant solid sphere
+      setTimeout(() => {
+        try {
+          new THREE.TextureLoader().load(EARTH_TEX.day, (tex) => {
+            earthMat.map = tex; earthMat.needsUpdate = true;
+          }, undefined, () => {
+            new THREE.TextureLoader().load(EARTH_TEX.fallback, (fb) => {
+              earthMat.map = fb; earthMat.needsUpdate = true;
+            });
+          });
+        } catch (_) {}
+      }, 80);
       globePivot = new THREE.Group();
       scene.add(globePivot);
-      earth = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 12), earthMat);
+      // 12x12 looked polygonal — 32 desktop / 24 mobile is smooth and still cheap
+      const earthSeg = _touchLite ? 24 : 32;
+      earth = new THREE.Mesh(new THREE.SphereGeometry(1, earthSeg, earthSeg), earthMat);
       globePivot.add(earth);
       globePivot.rotation.y = 0;
       globePivot.rotation.x = 0.12;
@@ -11988,7 +12000,9 @@ function _astranovBoot() {
   CliRibbon?.clearNotice?.();
 
   const run = (fn) => { try { fn(); } catch (e) { console.error('[boot]', e); } };
+  const later = (fn, ms) => setTimeout(() => run(fn), ms);
 
+  // —— Phase 1: critical shell only (must finish fast so boot never “sticks”) ——
   run(() => initUser());
   run(() => SlumberManager.init());
   run(() => TrackballGuard.init());
@@ -12001,73 +12015,85 @@ function _astranovBoot() {
   run(() => Auth.init());
   run(() => GlobeDeck.init());
   run(() => GlobeDeck.bootCollapsed?.());
-  if (window.AvcBalance?.init) run(() => window.AvcBalance.init());
-  else {
-    const avcBtn = document.getElementById('aci-avc');
-    if (avcBtn) { avcBtn.classList.add('app-shortcut-btn'); avcBtn.hidden = false; }
-  }
   run(() => SuperCli.init());
   run(() => SessionHold.init());
   run(() => AciCli.init());
   run(() => ACIControl.init());
-  run(() => ACI.init());
-  run(() => CosmicZoom.init());
   run(() => ZoomTiers.init());
   run(() => GlobeNavigate.init());
-  LazyModules.whenReady(() => {
-    EarthRealism?.init?.();
-    CityMap?.ensureReady?.();
-    GlobeEntity?.init?.();
-    DrivingView?.init?.();
-  });
-  applyGlobalBootView();
-  const idle = (fn, t) => {
-    const go = () => run(fn);
-    if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: t || 1200 });
-    else setTimeout(go, t || 80);
-  };
-  idle(() => AstranovTheme.init(), 400);
-  idle(() => AiGlyphs.init(), 500);
-  idle(() => AstranovLogo.init(), 600);
-  idle(() => MapPins.init(), 700);
-  idle(() => MapOverlayDismiss.init(), 800);
-  run(() => CityLife.init());
-  idle(() => VendorMapTile.init(), 900);
-  idle(() => ClassifiedTriangles.init(), 1400);
-  run(() => MarketplaceDeliveryEngine.init());
-  idle(() => FieldWork.init(), 1600);
-  idle(() => SpaceNetCycle.init(), 1800);
-  idle(() => AiRouter.init(), 2000);
-  idle(() => MissionSupportReporter.init(), 2200);
-  LazyModules.schedule();
   applyGlobalBootView();
 
   GlobeDeck?.setTitle?.('Astranov SpaceNet');
-  GlobeDeck?.setPreview?.('Astranov SpaceNet — global earth · + multi-tile · send · locate 🎯');
+  GlobeDeck?.setPreview?.('Astranov SpaceNet — drag earth · + multi-tile · locate 🎯');
   CliRibbon?.setActive?.('CLI');
   const board = document.getElementById('coders-race-board');
   if (board && /checking teams/i.test(board.textContent || '')) board.textContent = 'Astranov ready';
 
   window._bootEarthLock = false;
-  if (/boottest=1/.test(location.search)) {
-    void LazyModules.whenReady(() => SpaceNetScenarioRunner?.runAll?.('boot')).then?.((rows) => MissionSupportReporter?.reportBootRegression?.(rows));
-  }
-  ACIControl?.reply?.(SpaceNetMission?.bootReply || 'Astranov live · collective intelligence links all · scroll out → solar · galaxy');
+  window._snlForceDismiss?.();
+  SpaceNetLoader?.dismiss?.('boot-ready');
+  ACIControl?.reply?.(SpaceNetMission?.bootReply || 'Astranov SpaceNet live · drag earth · tap + · locate');
 
-  setTimeout(() => Auth.refreshAuthority(), 600);
-  setTimeout(() => { try { window.SpaceNetFleet?.init?.(); } catch (_) {} }, 3500);
-  setTimeout(() => { try { window.SpaceNetResourceMonitor?.init?.(); } catch (_) {} }, 4000);
-  setTimeout(() => { LazyModules.whenReady(() => AciCoders?.enterSession?.({ ping: false, focus: false })); }, 5000);
-  setTimeout(() => { try { primeGrokVoice?.(); } catch (_) {} }, 4500);
-  setTimeout(() => { try { Voice.init(); initVoice(); } catch (_) {} }, 4200);
-  setTimeout(() => { try { Circles.init(); } catch (_) {} }, 4800);
+  // —— Phase 2: light UI (next frames) ——
+  later(() => {
+    if (window.AvcBalance?.init) AvcBalance.init();
+    ACI?.init?.();
+    CosmicZoom?.init?.();
+    MarketplaceDeliveryEngine?.init?.();
+  }, 120);
+  later(() => {
+    AstranovTheme?.init?.();
+    AiGlyphs?.init?.();
+    AstranovLogo?.init?.();
+    MapPins?.init?.();
+    MapOverlayDismiss?.init?.();
+  }, 400);
+  later(() => CityLife?.init?.(), 900);
+  later(() => VendorMapTile?.init?.(), 1200);
+  later(() => ClassifiedTriangles?.init?.(), 1800);
+  later(() => FieldWork?.init?.(), 2200);
+  later(() => SpaceNetCycle?.init?.(), 2600);
+  later(() => AiRouter?.init?.(), 3000);
+  later(() => MissionSupportReporter?.init?.(), 3200);
+
+  // —— Phase 3: 574KB deferred pack — only after globe is interactive ——
+  // Early whenReady/schedule was freezing boot on mid devices.
+  later(() => {
+    void LazyModules.whenReady(() => {
+      try { EarthRealism?.init?.(); } catch (_) {}
+      try { CityMap?.ensureReady?.(); } catch (_) {}
+      try { GlobeEntity?.init?.(); } catch (_) {}
+      try { DrivingView?.init?.(); } catch (_) {}
+    });
+  }, 4500);
+  later(() => { try { LazyModules.schedule(); } catch (_) {} }, 7000);
+
+  later(() => Auth.refreshAuthority?.(), 1500);
+  later(() => { try { window.SpaceNetFleet?.init?.(); } catch (_) {} }, 5000);
+  later(() => { try { window.SpaceNetResourceMonitor?.init?.(); } catch (_) {} }, 5500);
+  later(() => { try { Voice.init(); initVoice(); } catch (_) {} }, 6000);
+  later(() => { try { primeGrokVoice?.(); } catch (_) {} }, 6500);
+  later(() => { try { Circles.init(); } catch (_) {} }, 7000);
+  later(() => {
+    void LazyModules.whenReady(() => AciCoders?.enterSession?.({ ping: false, focus: false }));
+  }, 9000);
+
+  if (/boottest=1/.test(location.search)) {
+    later(() => {
+      void LazyModules.whenReady(() => SpaceNetScenarioRunner?.runAll?.('boot'))
+        .then?.((rows) => MissionSupportReporter?.reportBootRegression?.(rows));
+    }, 10000);
+  }
 }
 
 if (window.__astranovHostOk) {
   window._animateStarted = true;
   animate();
-  setTimeout(function() {
-    try { _astranovBoot(); } catch (e) { console.error('[Astranov boot]', e); }
-  }, 0);
+  // Yield one frame so first globe paint lands before boot work
+  requestAnimationFrame(function() {
+    setTimeout(function() {
+      try { _astranovBoot(); } catch (e) { console.error('[Astranov boot]', e); }
+    }, 0);
+  });
 }
 
