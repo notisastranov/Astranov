@@ -116,11 +116,16 @@ Shown on HUD `#drh-fees`.
 
 ---
 
-## Miner (SpaceNet field)
+## Miner + Finance multi-tile (SpaceNet field)
 
-- **Tap top-right** `#field-balance-hud` → `#miner-rig-panel`
+- **Tap top-right** `#field-balance-hud` → `#spacenet-finance-panel` (multi-tile)
+- Tiles: **Stats · Mining · Platform 3% · P2P · Reports**
+- **Platform invoices:** monthly statements from Astranov SpaceNet to clients/vendors/drivers for **3%** on every transaction
+- **P2P ledger:** accumulative vendor→driver (15% gross), client→vendor (goods), client→driver (delivery)
+- **Reports:** dropdowns (type, role, from/to month) → Produce + export/copy
+- Mining controls live under **Mining** tile (same toggles/prefs)
 - **Do not** restore `#miner-cli-strip` / `#aci-miner`
-- Prefs: `astranov:miner-rig-prefs` (cpu, ram, storage, bandwidth, sleep)
+- Prefs: `astranov:miner-rig-prefs`
 
 ---
 
