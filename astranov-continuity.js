@@ -43,7 +43,7 @@
  * =============================================================================
  */
 const AstranovContinuity = {
-  version: '20260726120000-vendor-crawl-profiles',
+  version: '20260726130000-vendor-crawl-profiles',
   updated: '2026-07-26',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -458,7 +458,7 @@ const AstranovContinuity = {
     { id: '20260712090000-boot-smooth-earth', note: 'Staggered boot (no deferred freeze); earth 24/32 segments not polygonal' },
     { id: '20260712100000-logo-name-fix', note: 'Logo mix-blend fix for Astranov SpaceNet label' },
     { id: '20260712110000-click-plus-fix', note: 'National fly without deferred wait; + multi-tile not ensureCityAt' },
-    { id: '20260726120000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials; CLI crawl' },
+    { id: '20260726130000-vendor-crawl-profiles', note: 'Real OSM/GBP crawl → map pins; profile tiles with socials; CLI crawl' },
   ],
 
   /**
