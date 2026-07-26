@@ -876,42 +876,64 @@ const MenuProfilePostTile = {
   },
 
   openPlusField() {
-    this.init();
-    this._closeSuperAddDeck();
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
-    const pos = window._lastPos || CityMap?.globeCenterLatLng?.() || TrackballGuard?.facingLatLng?.() || { lat: 36.44, lng: 28.22 };
-    this.openAt(pos.lat, pos.lng);
+    try {
+      this.init();
+      this._closeSuperAddDeck();
+      GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
+      const pos = window._lastPos
+        || TrackballGuard?.facingLatLng?.()
+        || { lat: 36.44, lng: 28.22 };
+      this.openAt(Number(pos.lat) || 36.44, Number(pos.lng) || 28.22);
+    } catch (e) {
+      console.error('[MPP openPlusField]', e);
+      const tile = document.getElementById('menu-profile-post-tile');
+      if (tile) {
+        tile.classList.add('open');
+        tile.style.display = 'flex';
+      }
+    }
   },
 
   openAt(lat, lng) {
-    if (lat == null || lng == null) return;
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) {
+      lat = 36.44; lng = 28.22;
+    }
     this.init();
     this._closeSuperAddDeck();
-    MapPlaceMenu?.close?.();
-    VendorMapTile?.close?.();
+    try { MapPlaceMenu?.close?.(); } catch (_) {}
+    try { VendorMapTile?.close?.(); } catch (_) {}
     this._pin = { lat, lng };
     window._pendingShopLatLng = { lat, lng };
+    window._lastPos = { lat, lng };
     const tile = document.getElementById('menu-profile-post-tile');
-    if (!tile) return;
+    if (!tile) {
+      AciCli?.print?.('multi-tile DOM missing', 'err');
+      return;
+    }
+    // Force visible — do not wait on city entry or deferred pack
+    tile.hidden = false;
+    tile.style.display = 'flex';
     tile.classList.add('open');
     tile.classList.remove('mpp-dragged');
     tile.style.left = '';
     tile.style.top = '';
     tile.style.transform = '';
+    tile.style.zIndex = '190';
     const coords = document.getElementById('mpp-coords');
     if (coords) coords.textContent = '📍 ' + this.formatCoords(lat, lng);
-    this.renderMultiCreated();
-    this._bindMultiRail();
-    void this.refreshProfile();
-    this.updateRoleSections();
-    MapDepict?.pulse?.(lat, lng, 0x44ffaa, 'super add field', 8000);
-    GlobeDeck?.setPreview?.('▸ Social profile · roles · post · video peers — drag or 📍 pick on map');
-    AciCli?.print?.('▸ super add field · ' + this.formatCoords(lat, lng), 'map');
+    try { this.renderMultiCreated(); } catch (_) {}
+    try { this._bindMultiRail(); } catch (_) {}
+    try { this.updateRoleSections(); } catch (_) {}
     SuperCli?.setContext?.('add');
-    void this._refreshVendors();
-    void this.refreshConnected();
-    void this.refreshMarketplace();
-    void GlobeNavigate?.ensureCityAt?.(lat, lng);
+    GlobeDeck?.setPreview?.('▸ Multi-tile · Data · Social · Vendors · Order · Pilot');
+    AciCli?.print?.('▸ multi-tile open · ' + this.formatCoords(lat, lng), 'map');
+    // Light refresh only — never block open with ensureCityAt / LazyModules.ensure
+    setTimeout(() => {
+      try { void this.refreshProfile(); } catch (_) {}
+      try { void this._refreshVendors(); } catch (_) {}
+      try { void this.refreshConnected(); } catch (_) {}
+      try { void this.refreshMarketplace(); } catch (_) {}
+    }, 80);
   },
 
   close() {
@@ -919,7 +941,10 @@ const MenuProfilePostTile = {
     this._pin = null;
     this.clearMediaPreview();
     const tile = document.getElementById('menu-profile-post-tile');
-    tile?.classList.remove('open', 'mpp-pin-pick');
+    if (tile) {
+      tile.classList.remove('open', 'mpp-pin-pick');
+      tile.style.display = '';
+    }
     document.getElementById('mpp-pin-pick')?.classList.remove('active');
     if (GlobeDeck?.activeTask === 'add') GlobeDeck?.completeTask?.('add');
     SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
