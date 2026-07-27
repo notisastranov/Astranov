@@ -1,30 +1,53 @@
-/* Astranov AI — fork of Grok for SpaceNet
- * Collective mind: Astranov. Organs: xAI/Grok path via aicycle when available.
- * Writes code, runs with crawlers, never forgets SNBrain law.
+/**
+ * Astranov AI — product mind on SpaceNet
+ * Speaks first, runs tasks, freeform CLI. Edge aicycle when up; local act always.
  */
 (function (global) {
   'use strict';
 
-  const HIST_KEY = 'sn:ai-hist-v1';
-  const hist = [];
+  var HIST_KEY = 'sn:ai-hist-v1';
+  var hist = [];
+  var greeted = false;
+  var busy = false;
 
   function loadHist() {
     try {
-      const raw = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
-      if (Array.isArray(raw)) raw.slice(-12).forEach((m) => hist.push(m));
-    } catch (_) {}
+      var raw = JSON.parse(localStorage.getItem(HIST_KEY) || '[]');
+      if (Array.isArray(raw)) raw.slice(-12).forEach(function (m) {
+        hist.push(m);
+      });
+    } catch (e) {}
   }
 
   function saveHist() {
     try {
       localStorage.setItem(HIST_KEY, JSON.stringify(hist.slice(-16)));
-    } catch (_) {}
+    } catch (e) {}
   }
 
   function pushHist(role, content) {
-    hist.push({ role, content: String(content).slice(0, 1200) });
+    hist.push({ role: role, content: String(content).slice(0, 1200) });
     if (hist.length > 20) hist.splice(0, hist.length - 20);
     saveHist();
+  }
+
+  function say(text, cls) {
+    var t = String(text || '').trim();
+    if (!t) return;
+    if (global.SNCli && SNCli.log) {
+      String(t)
+        .split('\n')
+        .forEach(function (ln) {
+          if (ln.trim()) SNCli.log(ln, cls || 'ok');
+        });
+    }
+    if (global.SNCli && SNCli.preview) SNCli.preview(t.slice(0, 90));
+    if (global.SNField && SNField.setNotice) SNField.setNotice(t.slice(0, 48));
+    if (global.SNUi && SNUi.expandPanel) {
+      try {
+        SNUi.expandPanel(true);
+      } catch (e) {}
+    }
   }
 
   function isCodeIntent(msg) {
@@ -34,8 +57,8 @@
   }
 
   async function headers() {
-    const cfg = global.SN_CONFIG || {};
-    if (global.SNAuth?.authHeaders) return SNAuth.authHeaders();
+    var cfg = global.SN_CONFIG || {};
+    if (global.SNAuth && SNAuth.authHeaders) return SNAuth.authHeaders();
     return {
       'Content-Type': 'application/json',
       apikey: cfg.sbKey || global.SB_KEY,
@@ -44,189 +67,298 @@
   }
 
   function aicycleUrl() {
-    const cfg = global.SN_CONFIG || {};
+    var cfg = global.SN_CONFIG || {};
     return (cfg.sbUrl || global.SB_URL) + '/functions/v1/aicycle';
   }
 
-  /** Full system: brain law + Grok-fork coder identity */
   function systemFor(mode) {
-    const law =
+    var law =
       (typeof global.SNBrain?.systemPrompt === 'function' && global.SNBrain.systemPrompt()) ||
-      'Astranov SpaceNet. Sacred inertia + CLI drag. Juice: crawl tiles job date deliver.';
-
-    const fork =
-      'You are ASTRANOV — a fork of Grok (xAI spirit) living inside Astranov SpaceNet (https://astranov.eu). ' +
-      'You are NOT a generic chatbot. You are the product brain that builds and operates the real-Earth OS. ' +
-      'Identity: one collective intelligence named Astranov; never name underlying vendors as your self. ' +
-      'You write production code for js/spacenet/* (modular lite), edge functions, SQL — clear, complete, copy-pasteable. ' +
-      'When coding: prefer extend over rewrite; never strip globe inertia or CLI one-finger drag; never reintroduce 1MB phase boot. ' +
-      'Almighty crawl is available: SNSearch.crawl finds maps, web, wiki, code (GitHub/npm), products, media, books, weather. ' +
-      'CLI: crawl|find X · code … · me · vendors · job · date · deliver · city · earth · verify. ' +
-      'Match user language (Greek or English). ';
-
+      'Astranov SpaceNet. SNGlobe Earth. CLI grab. S primary. Juice: shops jobs dates deliver.';
+    var fork =
+      'You are ASTRANOV AI — the living mind of Astranov SpaceNet (https://astranov.eu). ' +
+      'Talk to the user like a capable co-pilot. Propose and run real SpaceNet actions: locate, city, shops, job, date, deliver, multi-tile, rate. ' +
+      'Identity: Astranov only (not a vendor chatbot). Match Greek or English. Be concrete. 2–5 short sentences + one CLI step.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
+        ' ' +
         law +
-        ' MODE: CODE. Reply with working code first (fenced blocks with language tags), then 1–3 lines of how to wire it into SpaceNet. ' +
-        'Paths: js/spacenet/brain.js globe.js ui.js cli.js search.js map.js profiles.js tile.js tasks.js ai.js boot.js. ' +
-        'If the ask is ambiguous, assume Astranov SpaceNet lite modular architecture.'
+        ' MODE CODE: working code first, wire into js/spacenet/*.'
       );
     }
-    return (
-      fork +
-      law +
-      ' MODE: CHAT. Short (2–4 sentences) unless they ask for depth. End with one concrete CLI next step when helpful.'
-    );
+    return fork + ' ' + law + ' MODE CHAT: help them get juice done on the map.';
   }
 
   async function callEdge(message, mode, opts) {
-    const body = {
+    var body = {
       mode: mode === 'code' ? 'coders' : mode || 'chat',
-      message: String(message || '').slice(0, opts?.long ? 4000 : 1400),
+      message: String(message || '').slice(0, opts && opts.long ? 4000 : 1400),
       system: String(systemFor(mode)).slice(0, 3200),
       fast: mode !== 'code' && mode !== 'coders',
-      fallback_prefs: mode === 'code' || mode === 'coders' ? { force: 'xai', skip: [] } : { force: 'groq', skip: [] },
     };
-    // Prefer stronger path for code when possible
-    if (mode === 'code' || mode === 'coders') {
-      body.fallback_prefs = { prefer: ['xai', 'anthropic', 'openrouter', 'groq'], skip: [] };
-    }
-
-    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    const ms = mode === 'code' || mode === 'coders' ? 28000 : 14000;
-    const t = setTimeout(() => {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var ms = mode === 'code' || mode === 'coders' ? 28000 : 12000;
+    var t = setTimeout(function () {
       try {
-        ctrl?.abort();
-      } catch (_) {}
+        if (ctrl) ctrl.abort();
+      } catch (e) {}
     }, ms);
-
     try {
-      const r = await fetch(aicycleUrl(), {
+      var r = await fetch(aicycleUrl(), {
         method: 'POST',
         headers: await headers(),
         body: JSON.stringify(body),
-        signal: ctrl?.signal,
+        signal: ctrl ? ctrl.signal : undefined,
       });
-      const j = await r.json().catch(() => ({}));
-      const text = String(j.text || j.response || j.message || '').trim();
-      if (!text || /try again|no model|warming|unavailable/i.test(text)) return null;
-      return text.slice(0, opts?.long ? 6000 : 900);
-    } catch (_) {
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      var text = String(j.text || j.response || j.message || j.content || '').trim();
+      if (!text || /try again|no model|warming|unavailable|error/i.test(text)) return null;
+      return text.slice(0, opts && opts.long ? 6000 : 900);
+    } catch (e) {
       return null;
     } finally {
       clearTimeout(t);
     }
   }
 
-  /** Offline local code scaffolds when edge is down */
-  function localCode(message) {
-    const m = String(message || '').toLowerCase();
-    if (/crawl|search/.test(m)) {
-      return (
-        '```js\n// Almighty crawl from CLI or code\nconst r = await SNSearch.crawl("restaurants", { openMap: true });\nSNSearch.report(r);\n// r.places · r.nearby · r.web · r.wiki · r.code · r.products\n```\nWire: already in js/spacenet/search.js — type `crawl restaurants`.'
-      );
+  /**
+   * Do real SpaceNet work for the user. Returns { did, reply }.
+   */
+  async function actLocal(message) {
+    var line = String(message || '').trim();
+    var low = line.toLowerCase();
+    var did = [];
+    var reply = '';
+
+    function runCli(cmd) {
+      try {
+        if (global.SNCli && SNCli.run) {
+          void SNCli.run(cmd);
+          did.push(cmd);
+          return true;
+        }
+      } catch (e) {}
+      return false;
     }
-    if (/tile|profile|vendor/.test(m)) {
-      return (
-        '```js\n// Open multi-role tile\nSNTile.openMe();\nSNProfiles.toggleRole(SNProfiles.me().id, "vendor");\nSNTile.open(SNProfiles.me(), { tab: "menu" });\n```\nFiles: profiles.js + tile.js.'
-      );
+
+    if (!line) {
+      return { did: did, reply: 'I am Astranov. Say locate, shops, job, date, or just talk to me.' };
     }
-    if (/inertia|globe|physics/.test(m)) {
-      return (
-        '```js\n// Sacred inertia — never strip\nconst p = SNGlobe.getPhysics(); // { velX, velY, damp, inertia }\n// damp ~0.94 in js/spacenet/globe.js loop\n```\nDo not zero velX/velY on release.'
-      );
+
+    // Direct task verbs → execute
+    if (/^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) || low === 'ai' || low === 'astronov' || low === 'astranov') {
+      reply =
+        'I am Astranov AI on SpaceNet. I can locate you, open city shops, post jobs/dates/deliveries, and multi-tile places. What do you want to do?';
+      return { did: did, reply: reply };
     }
-    return (
-      'Edge AI offline. I am Astranov (Grok-fork) local brain.\n' +
-      'Try: `crawl <anything>` · `code write a leaflet pin for vendors` · `verify` · `me`\n' +
-      'Modules: js/spacenet/{brain,search,ai,globe,cli,tile,profiles}.js'
-    );
+
+    if (/\b(locate|where am i|gps|find me)\b/.test(low)) {
+      runCli('locate');
+      reply = 'Locating you on Earth — then we can open nearby shops or drop a multi-tile.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) || /^find\s+(food|pizza|coffee)/.test(low)) {
+      runCli('shops');
+      reply = 'Opening real shops on the city map. Tap a pin for menu · cart · order in S.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(city|street map|map)\b/.test(low) && !/\bglobe|earth\b/.test(low)) {
+      runCli('city');
+      reply = 'City map open. Zoom out or 🌍 returns to 3D SNGlobe Earth. Tap empty ground for multi-tile.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(earth|globe|global|back to earth)\b/.test(low)) {
+      runCli('global');
+      reply = 'Back on SNGlobe — full GLOBAL Earth imaging.';
+      return { did: did, reply: reply };
+    }
+
+    if (/^date\b|\bcoffee\s*date\b|\bdating\b/.test(low)) {
+      if (global.SNTasks && SNTasks.create) {
+        var td = SNTasks.create(line);
+        did.push('task:' + (td && td.id));
+        reply = 'Date task open: ' + (td && td.title) + '. Claim from the map when ready.';
+      } else {
+        runCli(line);
+        reply = 'Date flow started.';
+      }
+      return { did: did, reply: reply };
+    }
+
+    if (/^deliver|\bdelivery\b|\bpackage\b|food\s*order/.test(low)) {
+      if (global.SNTasks && SNTasks.create) {
+        var te = SNTasks.create(line.indexOf('deliver') >= 0 ? line : 'delivery ' + line);
+        did.push('task:' + (te && te.id));
+        reply = 'Delivery open: ' + (te && te.title) + '. Drivers can claim · fees in S.';
+      } else reply = 'Delivery path ready — type deliver food.';
+      return { did: did, reply: reply };
+    }
+
+    if (/^job\b|^gig\b|barman|bartender|cleaner|nanny|waiter|tutor|looking\s+for\s+work|need\s+a\b/.test(low)) {
+      if (global.SNTasks && SNTasks.create) {
+        var tj = SNTasks.create(line);
+        did.push('task:' + (tj && tj.id));
+        reply = 'Job posted: ' + (tj && tj.title) + '. Visible on map · task list.';
+      } else reply = 'Try: job barman 3h';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(rate|wallet|money|spacenets|\bs\b currency)\b/.test(low)) {
+      runCli('rate');
+      reply = 'S (SpaceNets) is primary. Fiat/crypto are secondary quotes only.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(resources|mine|donate|performance)\b/.test(low)) {
+      runCli('resources');
+      reply = 'Resources / mine panel — spare capacity earns S when you opt in.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(thesis|vault|mars|cydonia)\b/.test(low)) {
+      if (/mars|cydonia/.test(low)) runCli('go to mars');
+      else if (/vault/.test(low)) runCli('vault');
+      else runCli('thesis');
+      reply = 'Spatial place opened — zoom is open on SpaceNet.';
+      return { did: did, reply: reply };
+    }
+
+    if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
+      reply =
+        'I am Astranov AI. I talk and I act: locate · city · shops · job … · date … · deliver … · multi-tile (tap map) · rate · 🎙 hands-free. What should we do?';
+      return { did: did, reply: reply };
+    }
+
+    // Conversational / unknown — local co-pilot still answers and suggests action
+    reply =
+      'Understood. I can run: locate, shops, city, job, date, deliver — or keep talking. ' +
+      'Edge AI may enrich this when online. Next: try shops or locate.';
+    return { did: did, reply: reply, needsEdge: true };
   }
 
-  /**
-   * Chat — freeform; auto-upgrades to code mode on intent
-   */
   async function ask(message, opts) {
-    const msg = String(message || '').trim();
+    opts = opts || {};
+    var msg = String(message || '').trim();
     if (!msg) return null;
-    const mode = opts?.mode || (isCodeIntent(msg) ? 'code' : 'chat');
+    busy = true;
     pushHist('user', msg);
 
-    // Optional: enrich with a quick crawl when user asks "what/where/find"
-    let enriched = msg;
-    if (opts?.withCrawl || /\b(what is|where is|find|who is|search online)\b/i.test(msg)) {
-      try {
-        const q = msg.replace(/^(what is|where is|who is|find|search online)\s+/i, '').slice(0, 80);
-        const crawled = await global.SNSearch?.crawl?.(q, { openMap: false, all: true });
-        if (crawled && crawled.score > 0) {
-          const bits = [];
-          if (crawled.wiki?.text) bits.push('WIKI: ' + crawled.wiki.text.slice(0, 280));
-          if (crawled.web?.[0]) bits.push('WEB: ' + (crawled.web[0].text || crawled.web[0].title).slice(0, 200));
-          if (crawled.places?.[0]) bits.push('GEO: ' + crawled.places[0].name);
-          if (crawled.code?.[0]) bits.push('CODE: ' + crawled.code[0].title);
-          if (bits.length) enriched = msg + '\n\n[Almighty crawl context]\n' + bits.join('\n');
-        }
-      } catch (_) {}
+    var local = await actLocal(msg);
+    var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
+    var text = null;
+
+    // Always try edge for chat richness unless pure command already done
+    if (mode === 'code' || mode === 'coders' || local.needsEdge || opts.forceEdge || !local.did.length) {
+      text = await callEdge(
+        local.reply
+          ? msg + '\n\n[Local SpaceNet already: ' + (local.did.join(', ') || 'none') + '. Build on that.]'
+          : msg,
+        mode,
+        { long: mode === 'code' }
+      );
     }
 
-    let text = await callEdge(enriched, mode, { long: mode === 'code' });
-    if (!text && mode === 'code') text = localCode(msg);
-    if (!text) text = await callEdge(msg, 'chat', { long: false });
-    if (!text) {
+    if (!text && mode === 'code') {
       text =
-        'I am Astranov. Edge warming — try crawl ' +
-        msg.slice(0, 40) +
-        ' · or code … · verify';
+        'Code edge offline. Local: extend js/spacenet/* — CLI grab ui.js, SNGlobe globe.js, SNAi ai.js.';
     }
+
+    if (!text) text = local.reply;
+    if (!text) text = 'I am Astranov. Edge quiet — I still run locate · shops · job · date · deliver.';
+
+    // Prefix so user always sees the mind
+    if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+
     pushHist('assistant', text);
+    busy = false;
     return text;
   }
 
-  /** Explicit code generation */
   async function code(message) {
-    return ask(message, { mode: 'code' });
+    return ask(message, { mode: 'code', forceEdge: true });
   }
 
-  /** Coders mode — longer build partner */
   async function coders(message) {
-    return ask(message, { mode: 'coders' });
+    return ask(message, { mode: 'coders', forceEdge: true });
   }
 
-  /** Crawl then synthesize with AI */
   async function research(query) {
-    const q = String(query || '').trim();
-    const crawled = global.SNSearch?.crawl
-      ? await SNSearch.crawl(q, { openMap: true, all: true })
-      : null;
-    if (crawled) global.SNSearch?.report?.(crawled);
-    const summary =
-      'Synthesize for SpaceNet user. Query: ' +
+    var q = String(query || '').trim();
+    var crawled = global.SNSearch && SNSearch.crawl ? await SNSearch.crawl(q, { openMap: true, all: true }) : null;
+    if (crawled && global.SNSearch && SNSearch.report) SNSearch.report(crawled);
+    var summary =
+      'User research: ' +
       q +
-      '. Sources: ' +
-      (crawled?.sources || []).join(', ') +
-      '. Wiki: ' +
-      (crawled?.wiki?.text || '').slice(0, 300) +
-      '. Top place: ' +
-      (crawled?.places?.[0]?.name || 'none') +
-      '. Nearby POIs: ' +
-      (crawled?.nearby?.length || 0) +
-      '. Give map/CLI next steps.';
-    const text = await ask(summary, { mode: 'chat' });
-    return { crawled, text };
+      '. Places: ' +
+      (crawled && crawled.places && crawled.places[0] ? crawled.places[0].name : 'none') +
+      '. Give map next steps.';
+    var text = await ask(summary, { mode: 'chat', forceEdge: true });
+    return { crawled: crawled, text: text };
+  }
+
+  /** Proactive presence — talk to user and offer work */
+  async function greet() {
+    if (greeted) return;
+    greeted = true;
+    var lines = [
+      'Astranov AI online — I am here with you on SpaceNet.',
+      'I talk and I act: locate you, open real shops, post jobs/dates/deliveries, multi-tiles on the map.',
+      'Say what you need, tap ➤, or 🎙 hands-free. Try: locate · shops · job barman 3h',
+    ];
+    lines.forEach(function (ln) {
+      say(ln, 'ok');
+    });
+    pushHist('assistant', lines.join(' '));
+
+    // Soft edge warm + personalized tip (non-blocking)
+    try {
+      var tip = await callEdge(
+        'Greet a SpaceNet user in one short sentence and propose one concrete action (locate or shops). Identity: Astranov AI only.',
+        'chat',
+        { long: false }
+      );
+      if (tip) say('Astranov AI · ' + tip.replace(/^astranov ai\s*[·:.-]\s*/i, ''), 'dim');
+    } catch (e) {}
+  }
+
+  function bootPresence() {
+    // Expand CLI so the conversation is visible
+    try {
+      if (global.SNUi && SNUi.setSize) SNUi.setSize('mid', true);
+      else if (global.SNUi && SNUi.expandPanel) SNUi.expandPanel(true);
+    } catch (e) {}
+    setTimeout(function () {
+      void greet();
+    }, 350);
   }
 
   loadHist();
 
   global.SNAi = {
-    ask,
-    code,
-    coders,
-    research,
-    isCodeIntent,
-    systemFor,
+    ask: ask,
+    code: code,
+    coders: coders,
+    research: research,
+    greet: greet,
+    bootPresence: bootPresence,
+    actLocal: actLocal,
+    isCodeIntent: isCodeIntent,
+    systemFor: systemFor,
+    say: say,
+    get busy() {
+      return busy;
+    },
     get history() {
       return hist.slice();
     },
+    get ready() {
+      return true;
+    },
   };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

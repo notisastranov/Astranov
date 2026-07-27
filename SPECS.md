@@ -89,7 +89,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | **Auth** | 🔐 under radar | |
 | **CLI** | Field + **➤ Send** + **🎙 hands-free** → `SNAi` | Required |
 | **CLI grab** | **One finger from anywhere** on the CLI panel: vertical = smooth expand/retract · free = move · snap collapsed/mid/expanded | Sacred (`SNUi` / `ui.js`) |
-| **AI** | `ai.js` → `SNAi.ask` soon after boot | Product-required |
+| **AI** | **`SNAi` must greet, talk, and run tasks** on boot (`bootPresence` / `greet`). Freeform CLI → `SNAi.ask` (acts: locate/shops/job/date/deliver + edge chat). Not a silent optional module. | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
 **Contaminated (discard):** any build missing radar **or** S field **or** mine/resources/perf **or** task ribbon **or** GLOBAL default — thin “globe+CLI only” is fake.

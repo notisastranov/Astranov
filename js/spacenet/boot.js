@@ -225,15 +225,24 @@
         } catch (e) {}
       }, 900);
 
-      // AI soon after paint (CLI freeform needs SNAi)
+      // Astranov AI — load immediately and SPEAK (not a silent module)
       setTimeout(function () {
-        loadSoft('/js/spacenet/ai.js', 10000).then(function () {
-          try {
-            if (window.SNCli && SNCli.log && window.SNAi)
-              SNCli.log('AI ready · type or 🎙 hands-free', 'dim');
-          } catch (e) {}
-        });
-      }, 400);
+        load('/js/spacenet/ai.js', 10000)
+          .then(function () {
+            try {
+              if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
+              else if (window.SNAi && SNAi.greet) void SNAi.greet();
+            } catch (e) {
+              console.warn('[SpaceNet] AI presence', e);
+            }
+          })
+          .catch(function () {
+            try {
+              if (window.SNCli && SNCli.log)
+                SNCli.log('AI module failed to load · hard refresh', 'err');
+            } catch (e) {}
+          });
+      }, 200);
       setTimeout(function () {
         loadSoft('/js/spacenet/search.js', 12000);
       }, 700);

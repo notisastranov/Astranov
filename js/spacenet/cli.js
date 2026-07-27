@@ -629,18 +629,28 @@
         return;
       }
 
-      // Freeform → Grok edge (optional); never block if offline
-      preview('Thinking…');
+      // Freeform → Astranov AI (must talk + act)
+      preview('Astranov AI…');
+      global.SNUi?.expandPanel?.(true);
+      if (!global.SNAi?.ask) {
+        // brief wait if AI still loading
+        await new Promise((r) => setTimeout(r, 600));
+      }
       if (global.SNAi?.ask) {
         const reply = await SNAi.ask(line);
         if (reply) {
-          log(reply, 'ok');
-          preview(reply.slice(0, 80));
+          // ask() may already have run tasks; print reply lines
+          String(reply)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln, /Astranov AI/i.test(ln) ? 'ok' : 'ok');
+            });
+          preview(reply.replace(/^Astranov AI\s*[·:.-]\s*/i, '').slice(0, 80));
           return;
         }
       }
-      log('Heard. Try: job barman 3h · date coffee · deliver food · city · locate · help', 'dim');
-      preview('Type help');
+      log('Astranov AI loading… try again in a second · or: locate · shops · job', 'dim');
+      preview('AI loading…');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');
     }
@@ -746,8 +756,14 @@
     $('btn-locate')?.addEventListener('click', () => void run('locate'));
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
-    log('Astranov SpaceNet · ➤ send · 🎙 hands-free AI · type help', 'dim');
-    preview('Send · hands-free · locate · shops · AI');
+    log('CLI ready · Astranov AI will greet you · ➤ send · 🎙 hands-free', 'dim');
+    preview('Talk to Astranov AI…');
+    // If AI already loaded (race), ensure presence
+    setTimeout(() => {
+      try {
+        if (global.SNAi?.bootPresence && !global.SNAi.history?.length) SNAi.bootPresence();
+      } catch (_) {}
+    }, 900);
   }
 
   global.SNCli = { init, run, log, help, preview, toggleHandsfree };
