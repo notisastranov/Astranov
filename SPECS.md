@@ -221,12 +221,14 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 
 ### Healthy checklist
 
-1. Hard refresh → Earth usable  
+1. Hard refresh → Earth usable without multi-second freeze  
 2. CLI companion only (no dock flood); icons not mojibake  
-3. `__spacenetMission.ok` or honest `mission · NOT READY` line  
-4. Real shop pins near locate/city  
-5. Thesis garage + Cydonia still open  
-6. Build meta matches `?v=`  
+3. **Locate / city enter** runs `SpaceNetMission.ensureOperatingPath` (DB-first)  
+4. Real shop pins (`shopsReal ≥ 3` when DB has data) — not demo-only  
+5. **showPicker** uses geo mission load, title shows real count  
+6. No fake friend GPS jitter when presence offline  
+7. Thesis garage + Cydonia still open  
+8. Build meta matches `?v=`  
 
 ---
 
