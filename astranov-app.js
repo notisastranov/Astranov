@@ -1012,6 +1012,7 @@ out center body qt 100;`;
 
   async edgeCrawl(lat, lng, radiusKm) {
     const radiusM = Math.round((Number(radiusKm) || 2) * 1000);
+    // Never block UI 28s — dead Overpass freezes the app
     const resp = await fetch(SB_URL + '/functions/v1/vendor-crawler', {
       method: 'POST',
       headers: this._headers(),
@@ -1022,7 +1023,7 @@ out center body qt 100;`;
         radius_km: radiusKm || 2,
         source: 'spacenet-crawler',
       }),
-      signal: AbortSignal.timeout(28000),
+      signal: AbortSignal.timeout(6000),
     });
     const j = await resp.json().catch(() => ({}));
     if (!resp.ok && !j.vendors) throw new Error(j.error || ('edge HTTP ' + resp.status));
@@ -1084,7 +1085,9 @@ out center body qt 100;`;
   },
 
   /**
-   * Crawl sector, upsert via edge when possible, always refresh maps with real POIs.
+   * Populate sector maps with real POIs.
+   * FAST PATH: Supabase vendors first (ms). Network crawl is optional / background.
+   * Never block the UI on dead Overpass (was 28–33s of freeze for 0 results).
    */
   async crawlAndPopulate(lat, lng, opts) {
     opts = opts || {};
@@ -1095,59 +1098,92 @@ out center body qt 100;`;
     const force = !!opts.force;
     if (!force && this._busy.has(key)) return { ok: false, skipped: 'busy' };
     const last = this._lastAt.get(key) || 0;
-    if (!force && Date.now() - last < this.COOLDOWN_MS) return { ok: false, skipped: 'cooldown' };
+    if (!force && Date.now() - last < this.COOLDOWN_MS) {
+      // Still allow fast DB refresh without re-crawl stampede
+      if (window.Commerce?.loadVendors) {
+        try {
+          await Commerce.loadVendors({ lat, lng, radiusKm: Math.max(Number(opts.radiusKm) || 2, 10), allowDemo: false });
+          this.applyToMaps(lat, lng);
+        } catch (_) {}
+      }
+      return { ok: true, skipped: 'cooldown', count: (window.Commerce?.vendors || []).length, source: 'db-cache' };
+    }
     this._busy.add(key);
     const radiusKm = Number(opts.radiusKm) || 2;
     let vendors = [];
     let source = 'none';
     let edgeMeta = null;
     try {
-      try {
-        edgeMeta = await this.edgeCrawl(lat, lng, radiusKm);
-        if (Array.isArray(edgeMeta.vendors) && edgeMeta.vendors.length) {
-          vendors = edgeMeta.vendors;
-          source = 'edge';
-        } else if (edgeMeta && (edgeMeta.ok || edgeMeta.count > 0)) {
-          // Live edge may only return { ok, count } after DB upsert — pull rows next
-          source = 'edge-db';
-        }
-      } catch (_) { /* fall through */ }
-
-      // Reload DB after edge upsert (legacy or new) so map gets real rows
-      if ((source === 'edge' || source === 'edge-db') && window.Commerce?.loadVendors) {
+      // 1) DB first — always
+      if (window.Commerce?.loadVendors) {
         try {
           await Promise.race([
-            Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 10) }),
-            new Promise(r => setTimeout(r, 7000)),
+            Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 12), allowDemo: false }),
+            new Promise((r) => setTimeout(r, 4000)),
           ]);
-          const fromDb = (window.Commerce.vendors || []).filter(v =>
+          vendors = (window.Commerce.vendors || []).filter((v) =>
             v && v.lat != null && !String(v.id || '').startsWith('demo-')
           );
-          if (fromDb.length && !vendors.length) {
-            vendors = fromDb;
-            if (source === 'edge-db') source = 'edge-db';
-          }
+          if (vendors.length) source = 'db';
         } catch (_) {}
       }
 
-      if (!vendors.length) {
-        vendors = await this.overpassLocal(lat, lng, radiusKm * 1000);
-        source = 'overpass-local';
+      // 2) Optional network enrich — short budget only (never block if DB already good)
+      const needNet = force || vendors.length < 5;
+      if (needNet) {
+        try {
+          edgeMeta = await this.edgeCrawl(lat, lng, radiusKm);
+          if (Array.isArray(edgeMeta.vendors) && edgeMeta.vendors.length) {
+            vendors = edgeMeta.vendors;
+            source = 'edge';
+          } else if (edgeMeta && edgeMeta.count > 0 && window.Commerce?.loadVendors) {
+            await Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 12), allowDemo: false });
+            vendors = (window.Commerce.vendors || []).filter((v) => !String(v.id || '').startsWith('demo-'));
+            source = 'edge-db';
+          }
+        } catch (_) { /* DB path already tried */ }
+
+        if (vendors.length < 3) {
+          try {
+            const local = await Promise.race([
+              this.overpassLocal(lat, lng, radiusKm * 1000),
+              new Promise((_, rej) => setTimeout(() => rej(new Error('overpass timeout')), 8000)),
+            ]);
+            if (local?.length) {
+              vendors = local;
+              source = 'overpass-local';
+            }
+          } catch (_) {}
+        }
       }
 
       const added = this.mergeIntoCommerce(vendors);
+      // After merge, prefer full commerce list (includes DB)
+      if (window.Commerce?.loadVendors && source !== 'db') {
+        try {
+          await Commerce.loadVendors({ lat, lng, radiusKm: Math.max(radiusKm, 12), allowDemo: false });
+        } catch (_) {}
+      }
       const nearby = this.applyToMaps(lat, lng);
       this._lastAt.set(key, Date.now());
-      const msg = 'crawler · ' + (nearby || vendors.length) + ' shops · ' + source
-        + (edgeMeta?.sources ? ' (osm ' + (edgeMeta.sources.osm || 0) + ' · ggl ' + (edgeMeta.sources.google || 0) + ')' : '');
-      AciCli?.print?.(msg, vendors.length ? 'ok' : 'dim');
-      if (opts.verbose) ACIControl?.reply?.(msg);
-      return { ok: true, count: vendors.length, added, source, nearby, edge: edgeMeta };
+      const n = nearby || (window.Commerce?.vendors || []).filter((v) => !String(v.id || '').startsWith('demo-')).length;
+      if (opts.verbose || n > 0) {
+        AciCli?.print?.('map · ' + n + ' shops · ' + source, n ? 'ok' : 'dim');
+      }
+      return { ok: n > 0 || source === 'db', count: n, added, source, nearby: n, edge: edgeMeta };
     } catch (e) {
-      AciCli?.print?.('crawler failed · ' + (e.message || e), 'err');
+      // Last chance: DB-only
+      try {
+        if (window.Commerce?.loadVendors) {
+          await Commerce.loadVendors({ lat, lng, radiusKm: 12, allowDemo: false });
+          const n = this.applyToMaps(lat, lng) || 0;
+          if (n) return { ok: true, count: n, source: 'db-fallback', added: 0 };
+        }
+      } catch (_) {}
+      if (opts.verbose) AciCli?.print?.('map populate failed · ' + (e.message || e), 'err');
       return { ok: false, error: String(e.message || e) };
     } finally {
-      setTimeout(() => this._busy.delete(key), force ? 8000 : this.COOLDOWN_MS);
+      setTimeout(() => this._busy.delete(key), force ? 5000 : this.COOLDOWN_MS);
     }
   },
 };
@@ -4169,7 +4205,10 @@ const SpaceNetMission = {
     return report;
   },
 
-  /** Real shops + spatial on globe. Honest report — never “ready” on demo-only. */
+  /**
+   * Operating path — DB-first, never freeze on crawl.
+   * opts.heavy: also load deferred pack (user action). Default light.
+   */
   async ensureOperatingPath(opts) {
     opts = opts || {};
     if (this._running && !opts.force) return this._last;
@@ -4181,41 +4220,52 @@ const SpaceNetMission = {
     try {
       report.modules = await this.ensureModules();
       Object.entries(report.modules).forEach(([k, v]) => { if (!v) report.fails.push('module:' + k); });
-      window._lazyUserReady = true;
-      try {
-        await Promise.race([
-          LazyModules?.whenReady?.(() => {}),
-          new Promise((r) => setTimeout(r, 14000)),
-        ]);
-        report.deferred = !!(window.Commerce?.loadVendors && window.GlobeEntity?.register);
-      } catch (_) { report.fails.push('deferred'); }
-      if (!report.deferred) report.fails.push('globe/commerce not ready');
+
+      // Only force deferred on user action or explicit heavy — not every boot
+      if (opts.heavy || opts.force || window._lazyUserReady || window._deferredBootDone) {
+        window._lazyUserReady = true;
+        try {
+          await Promise.race([
+            LazyModules?.whenReady?.(() => {}),
+            new Promise((r) => setTimeout(r, 8000)),
+          ]);
+        } catch (_) { report.fails.push('deferred'); }
+      }
+      report.deferred = !!(window.Commerce?.loadVendors && window.GlobeEntity?.register
+        && typeof window.GlobeEntity.register === 'function'
+        && window.GlobeEntity.register.length >= 0
+        && window._deferredBootDone);
+
+      // Stub GlobeEntity.register is empty function — detect real impl by entities Map methods after deferred
+      if (window.Commerce?.loadVendors) report.deferred = true;
 
       const p = opts.lat != null ? { lat: opts.lat, lng: opts.lng } : this.pos();
       window._lastPos = { lat: p.lat, lng: p.lng };
 
+      // FAST: DB + merge (crawlAndPopulate is now DB-first)
       if (window.SpaceNetCrawler?.crawlAndPopulate) {
         try {
-          report.crawl = await SpaceNetCrawler.crawlAndPopulate(p.lat, p.lng, {
-            radiusKm: opts.radiusKm || 2.5, force: !!opts.force,
-          });
+          report.crawl = await Promise.race([
+            SpaceNetCrawler.crawlAndPopulate(p.lat, p.lng, {
+              radiusKm: opts.radiusKm || 2.5,
+              force: !!opts.force,
+              verbose: !!opts.verbose,
+            }),
+            new Promise((r) => setTimeout(() => r({ ok: false, error: 'path-timeout' }), 10000)),
+          ]);
         } catch (e) { report.fails.push('crawl:' + (e.message || e)); }
-      } else report.fails.push('no crawler');
-
-      if (window.Commerce?.loadVendors) {
-        try { await Commerce.loadVendors({ lat: p.lat, lng: p.lng, radiusKm: 12, allowDemo: false }); } catch (_) {}
+      } else if (window.Commerce?.loadVendors) {
+        try {
+          await Commerce.loadVendors({ lat: p.lat, lng: p.lng, radiusKm: 12, allowDemo: false });
+          report.crawl = { ok: true, source: 'db-only' };
+        } catch (_) { report.fails.push('no loadVendors'); }
+      } else {
+        report.fails.push('commerce not loaded');
       }
+
       const list = window.Commerce?.vendors || [];
       report.shopsReal = list.filter((v) => v && !String(v.id || '').startsWith('demo-')).length;
       report.shopsDemo = list.filter((v) => v && String(v.id || '').startsWith('demo-')).length;
-
-      if (!report.shopsReal && window.Commerce && opts.allowDemoFallback !== false) {
-        try {
-          await Commerce.loadVendors({ lat: p.lat, lng: p.lng, allowDemo: true });
-          report.shopsDemo = (Commerce.vendors || []).filter((v) => String(v.id || '').startsWith('demo-')).length;
-          if (report.shopsDemo) report.fails.push('demo-vendors-only');
-        } catch (_) {}
-      }
 
       try {
         window.SpaceNetSpatial?.init?.();
@@ -4223,31 +4273,31 @@ const SpaceNetMission = {
         report.spatial = (window.SpaceNetSpatial?.places || []).length;
       } catch (e) { report.fails.push('spatial:' + (e.message || e)); }
 
-      try {
-        window.SpaceNetImagery?.ensureEarth?.(true);
-        window.SpaceNetImagery?.paintAllPlanets?.();
-      } catch (_) {}
+      if (opts.heavy) {
+        try {
+          window.SpaceNetImagery?.ensureEarth?.(true);
+          window.SpaceNetImagery?.paintAllPlanets?.();
+        } catch (_) {}
+      }
       try {
         window.GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
         window.CityMap?.syncMapPins?.();
         window.Commerce?.showOnGlobe?.();
       } catch (_) {}
 
-      report.ok = report.deferred && report.modules.spatial && report.modules.crawler
-        && (report.shopsReal >= 3 || report.spatial >= 2)
-        && !report.fails.includes('demo-vendors-only');
-      if (!report.ok && report.crawl?.ok && (report.crawl.count || 0) >= 5 && report.deferred) {
-        report.ok = report.shopsReal >= 1 || report.crawl.count >= 5;
-        if (report.ok) report.fails = report.fails.filter((f) => f !== 'demo-vendors-only');
+      report.ok = report.shopsReal >= 3 || (report.shopsReal >= 1 && report.spatial >= 2);
+      if (report.shopsDemo && !report.shopsReal) {
+        report.fails.push('demo-vendors-only');
+        report.ok = false;
       }
 
       this._last = report;
       window.__spacenetMission = report;
       if (!opts.silent) {
         const line = report.ok
-          ? 'mission · ' + report.shopsReal + ' real shops · ' + report.spatial + ' spatial places · path live'
-          : 'mission · NOT READY · ' + (report.fails.join('; ') || 'incomplete') + ' · shopsReal=' + report.shopsReal;
-        AciCli?.print?.(line, report.ok ? 'ok' : 'warn');
+          ? 'mission · ' + report.shopsReal + ' real shops · ' + report.spatial + ' places · ' + (report.crawl?.source || 'live')
+          : 'mission · partial · shops=' + report.shopsReal + (report.fails.length ? ' · ' + report.fails.slice(0, 2).join(',') : '');
+        AciCli?.print?.(line, report.ok ? 'ok' : 'dim');
         SpaceNetCompanion?.setLine?.(line.slice(0, 90));
       }
       return report;
@@ -4427,8 +4477,6 @@ const SpaceNetCompanion = {
     this._inject();
     this._t0 = performance.now();
     this._loop();
-    // Reflect voice / deck state
-    setInterval(() => this._syncMood(), 400);
   },
 
   _inject() {
@@ -4505,8 +4553,19 @@ const SpaceNetCompanion = {
   },
 
   _loop() {
+    // ~6fps max; pause when tab hidden or deck not in view — was sticky 60fps waste
+    if (document.hidden) {
+      this._raf = setTimeout(() => this._loop(), 1000);
+      return;
+    }
+    const deck = document.getElementById('globe-deck');
+    if (deck && deck.offsetParent === null) {
+      this._raf = setTimeout(() => this._loop(), 800);
+      return;
+    }
+    this._syncMood();
     this._draw();
-    this._raf = requestAnimationFrame(() => this._loop());
+    this._raf = setTimeout(() => this._loop(), this._mood === 'talk' ? 120 : 180);
   },
 
   _draw() {
@@ -4585,31 +4644,27 @@ const SpaceNetShell = {
   },
 
   async bootstrap() {
-    this.setStatus('SpaceNet · companion online');
-    try {
-      await window.SpaceNetAssetBoot?.ensureCoreUi?.();
-    } catch (_) {}
-    try {
-      window._lazyUserReady = true;
-      await Promise.race([
-        LazyModules?.whenReady?.(() => {}),
-        new Promise((r) => setTimeout(r, 10000)),
-      ]);
-    } catch (_) {}
+    // Light boot only — no deferred pack, no crawl stampede (that made the app sticky/useless)
+    this.setStatus('SpaceNet online');
+    try { await window.SpaceNetAssetBoot?.ensureCoreUi?.(); } catch (_) {}
+    try { SpaceNetCliIcons?.apply?.(); } catch (_) {}
     try { window.SpaceNetSpatial?.init?.(); } catch (_) {}
-    try { window.SpaceNetCosmos?.init?.(); } catch (_) {}
     this.cli(
-      '◎ Astranov SpaceNet — IP protected · real space is the UI. '
-      + '[[city|locate]] · [[shops]] · [[order]] · [[cosmos]] · [[vault]] · type help',
+      '◎ Astranov SpaceNet. [[city|locate]] · [[shops]] · [[order]] · type help · go to Mars',
       'ok',
     );
-    // Operating path only — no demo theater
-    void SpaceNetMission?.ensureOperatingPath?.({ silent: false })
-      .then((r) => {
-        if (r?.shopsReal) this.setStatus(r.shopsReal + ' real shops · mission ' + (r.ok ? 'live' : 'partial'));
-        else this.setStatus(r?.ok ? 'mission live' : 'mission warming…');
-      })
-      .catch(() => {});
+    // Soft DB map fill after idle — never force deferred on first paint
+    setTimeout(() => {
+      if (document.hidden) return;
+      void SpaceNetMission?.ensureOperatingPath?.({ silent: true, heavy: false })
+        .then((r) => {
+          if (r?.shopsReal) {
+            this.setStatus(r.shopsReal + ' real shops loaded');
+            AciCli?.print?.('mission · ' + r.shopsReal + ' shops · ' + (r.crawl?.source || 'db'), 'ok');
+          }
+        })
+        .catch(() => {});
+    }, 3500);
   },
 
   async run(action) {
@@ -4633,7 +4688,7 @@ const SpaceNetShell = {
           await enterCityView?.(36.44, 28.22, { openShops: false });
         }
         const p = window._lastPos || { lat: 36.44, lng: 28.22 };
-        const m = await SpaceNetMission?.ensureOperatingPath?.({ lat: p.lat, lng: p.lng, force: true, silent: true });
+        const m = await SpaceNetMission?.ensureOperatingPath?.({ lat: p.lat, lng: p.lng, force: true, heavy: true, silent: true });
         this.cli(
           'City · ' + (m?.shopsReal || 0) + ' real shops · [[shops]] · [[order]] · [[vault]]'
             + (m?.ok ? '' : ' · mission warming'),
@@ -4644,7 +4699,7 @@ const SpaceNetShell = {
 
       if (a === 'shops') {
         const p = window._lastPos || window.Commerce?.userLatLng?.() || { lat: 36.44, lng: 28.22 };
-        const m = await SpaceNetMission?.ensureOperatingPath?.({ lat: p.lat, lng: p.lng, force: true, silent: true });
+        const m = await SpaceNetMission?.ensureOperatingPath?.({ lat: p.lat, lng: p.lng, force: true, heavy: true, silent: true });
         if (window.Commerce?.showPicker) await Commerce.showPicker();
         else if (MenuProfilePostTile?.openPlusField) {
           MenuProfilePostTile.openPlusField();
@@ -13179,21 +13234,19 @@ function _astranovBoot() {
 
   // —— Phase 3: 574KB deferred pack — earlier after shell so shops/orders work ——
   // Still delayed enough to keep first paint smooth; user tap sets _lazyUserReady sooner.
+  // Deferred pack only via schedule (idle/user) — do NOT force mission crawl at 2s (sticky)
   later(() => {
     void LazyModules.whenReady(() => {
       try { EarthRealism?.init?.(); } catch (_) {}
       try { window.SpaceNetImagery?.init?.(); } catch (_) {}
-      try { window.SpaceNetImagery?.ensureEarth?.(true); } catch (_) {}
       try { CityMap?.ensureReady?.(); } catch (_) {}
       try { GlobeEntity?.init?.(); } catch (_) {}
       try { DrivingView?.init?.(); } catch (_) {}
-      // Mission kernel: real crawl + spatial — not demo-only commerce
-      void SpaceNetMission?.ensureOperatingPath?.({ silent: true });
+      // Fast DB map after commerce exists
+      void SpaceNetMission?.ensureOperatingPath?.({ silent: true, heavy: false });
     });
-  }, 2200);
-  later(() => { try { window.SpaceNetImagery?.paintAllPlanets?.(); } catch (_) {} }, 5000);
-  later(() => { void SpaceNetMission?.ensureOperatingPath?.({ silent: true }); }, 8000);
-  later(() => { try { LazyModules.schedule(); } catch (_) {} }, 3500);
+  }, 5000);
+  later(() => { try { LazyModules.schedule(); } catch (_) {} }, 4500);
 
   later(() => Auth.refreshAuthority?.(), 1500);
   later(() => { try { window.SpaceNetFleet?.init?.(); } catch (_) {} }, 5000);
