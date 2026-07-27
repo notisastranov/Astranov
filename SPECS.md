@@ -119,22 +119,24 @@ User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 
 ---
 
-## 4. User surface — sci‑fi CLI + companion (NO button flood)
+## 4. User surface — CLI + full Earth (NO button flood)
 
-### Hard rules (owner 2026-07-26)
+### Hard rules (owner 2026-07-28)
 
 | Rule | Spec |
 |------|------|
+| **No overlapping elements** | **Forbidden:** chrome stacked on chrome, logo over edge buttons, city “Globe” over logo, free-drag CLI covering top bars, dual HUDs. **Reserved zones:** top-left (auth), top-center (logo + tier), top-right (LOC/MAP/ME/+), bottom (single CLI dock). Layout must keep **full Earth** readable |
+| **Default view** | **Full GLOBAL Earth** on boot — `SNGlobe` tier `global`, city map **closed**, CLI **collapsed** (field + one preview line). Soft shop preload must **not** auto-open city map |
 | **No floating multi-button docks** | **Forbidden:** `#spacenet-shell` dock, second chrome windows, status pill bars that steal screen |
-| **CLI is the screen** | `#globe-deck` log + field = primary UI — links, dots, companion, replies |
-| **Few edge controls only** | **G** (auth) · **🎯 locate** · **📹 video** · **+** multi-tile · **handsfree** · stop/hold as needed. Hide permanent Order/Batch/VHF/Phone/CLI-hub strip |
-| **Companion** | `#sn-companion` — humanoid face of **deep glowing blue dots**; talks/listens/thinks via mood; lives **inside** CLI, not a separate window |
-| **Clickable CLI links** | Syntax `[[action\|label]]` in log (e.g. `[[city\|locate]]`) → `SpaceNetShell.run` |
+| **CLI is the power surface** | Single bottom (or free-drag) panel: preview + log + field — **not** a second window |
+| **Few edge controls only** | **G** (auth) · **LOC** · **MAP** · **ME** · **+**. No permanent Order/Batch/VHF/Phone/CLI-hub strip |
+| **No dot-matrix companion** | **Banned until** the **AI graphics engine** can **surpass high-level gaming graphics**. No `#sn-companion`, no canvas face of glowing dots, no low-FPS humanoid placeholder. Reintroduce only after that bar is met |
+| **Clickable CLI links** | Syntax `[[action\|label]]` in log → run command |
 | **Dedummyfy** | Prefer real spatial actions + real imagery; no fake “app store” chrome |
 
-### Companion (code)
+### Companion (future gate)
 
-`SpaceNetCompanion` in `astranov-app.js` — canvas face, colors ≈ `#1a6fd4` / `#3d9eff`, moods: idle · talk · listen · think.
+Do **not** ship any companion avatar/figure until AI graphics quality **exceeds** current high-end game presentation. Until then: text CLI + real Earth only.
 
 ### Talk → space (examples)
 
@@ -203,11 +205,14 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 | UI | Spec |
 |----|------|
-| Top logo | **Astranov SpaceNet** · hard reset only |
-| Deck title | Astranov SpaceNet |
-| CLI field | Optional power surface · **Talk** for humans · Enter sends |
-| Edge + | Multi-tile menu (not only small super-add deck) |
-| Modules path | Prefer **`/js/*`** (root `astranov-mpp-tile.js` etc. may SPA-fallback on host) |
+| Default canvas | Full **GLOBAL** Earth fills the viewport under chrome |
+| Top logo | **Astranov SpaceNet** · hard reset only · **never** under edge buttons |
+| Tier label | Single line under logo (`GLOBAL` / …) — no second competing HUD |
+| CLI field | Single dock · Enter sends · default **collapsed** so Earth stays full |
+| Edge | **G** · **LOC** · **MAP** · **ME** · **+** only — non-overlapping |
+| City → Globe | “Globe” control sits in a free zone (not on logo) |
+| Companion figure | **Off** until AI graphics > high-level gaming |
+| Modules path | Live: **`/js/spacenet/*`** only |
 
 ---
 
@@ -233,12 +238,10 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 ### Operating path (must work)
 
 ```
-boot (light) → globe + CLI + companion ≤6fps
-     → idle/user: deferred pack
-     → FAST: Supabase vendors by bbox (ms) → map pins  [never wait 30s Overpass]
-     → optional short edge/overpass enrich (≤6–8s budget)
-     → SpaceNetSpatial.sync
-     → locate/shops (heavy): deferred + populate + picker
+boot (light) → full GLOBAL Earth + CLI (collapsed, no companion figure)
+     → soft: DB shops for pulses only (do not steal default to city map)
+     → user: locate / city / shops → open map intentionally
+     → never wait 30s Overpass on boot
 ```
 
 **Sticky anti-pattern (banned):** `ensureOperatingPath` on boot that awaits 28s crawl returning 0.
@@ -255,8 +258,9 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 | Modules | spatial + crawler + deferred commerce/GlobeEntity |
 | Shops | `shopsReal ≥ 3` (or crawl count ≥ 5 merged) — **not** demo-only |
 | Spatial | seeds/places ≥ 2 |
-| UI chrome | no floating multi-button dock |
-| CLI | icons readable; `[[links]]` work |
+| UI chrome | no floating multi-button dock; **no overlapping** chrome |
+| Default | full **GLOBAL** Earth; city map closed |
+| CLI | no dot-matrix figure; field usable |
 
 ### Red / do not call “ready”
 
@@ -266,12 +270,12 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 
 ### Healthy checklist
 
-1. Hard refresh → Earth usable without multi-second freeze  
-2. CLI companion only (no dock flood); icons not mojibake  
-3. **Locate / city enter** runs `SpaceNetMission.ensureOperatingPath` (DB-first)  
-4. Real shop pins (`shopsReal ≥ 3` when DB has data) — not demo-only  
-5. **showPicker** uses geo mission load, title shows real count  
-6. No fake friend GPS jitter when presence offline  
+1. Hard refresh → **full GLOBAL Earth** usable without multi-second freeze  
+2. **No overlapping** chrome; **no** dot-matrix companion  
+3. CLI collapsed by default; expands on use  
+4. Soft shop load does **not** auto-open city map  
+5. **Locate / city / shops** open map intentionally (DB-first)  
+6. Real shop pins when user asks (`shopsReal ≥ 3` when DB has data) — not demo-only  
 7. Thesis garage + Cydonia still open  
 8. Build meta matches `?v=`  
 
@@ -323,7 +327,7 @@ Pre-ship checklist (all required):
 |-------|--------|
 | **Name** | Astranov · Astranov SpaceNet · SpaceNet (product) · **S / SpaceNets** (currency) |
 | **Authors** | Product owner (notisastranov) + AI pair-development under owner direction |
-| **Subject** | Spatial internet UI; cosmos address OS; companion CLI; multi-tile field; **S** economics 3%/15%; dynamic network-linked value |
+| **Subject** | Spatial internet UI; cosmos address OS; CLI power surface (no low-fi companion figure); multi-tile field; **S** economics 3%/15%; dynamic network-linked value |
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Live** | https://astranov.eu |
 | **Notice** | © Astranov SpaceNet. All rights reserved. |
@@ -337,6 +341,9 @@ Agents **must not** strip IP notices or rebrand without owner request.
 ## 13. Do not
 
 - Flood the screen with floating multi-button docks / second chrome windows  
+- **Overlap** any UI elements (logo, edge, CLI, city close, coach)  
+- Ship **dot-matrix / low-fi companion figures** before AI graphics surpass high-level gaming  
+- Boot into city map / national zoom — default is **full GLOBAL Earth**  
 - Treat SpaceNet as “another map app with a chat box”  
 - Store primary user content only in abstract folders with no coordinates  
 - Remove seed thesis / Cydonia demos without owner request  
@@ -347,4 +354,4 @@ Agents **must not** strip IP notices or rebrand without owner request.
 
 ---
 
-*SpaceNet: if it exists, it exists **somewhere**. Zoom there. The CLI is the face of the net.*
+*SpaceNet: if it exists, it exists **somewhere**. Default: full Earth. Zoom there. The CLI is the power surface of the net.*

@@ -12,6 +12,9 @@
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
 | **Current build** | `20260728020000-spacenets-S` |
 | **Currency** | **S (SpaceNets)** primary — dynamic network value; EUR/USD/BTC/ETH/all others secondary quotes only (no SpaceNet substance); **not AVC / coins** |
+| **Default view** | Full **GLOBAL** Earth; city map closed; CLI collapsed |
+| **Chrome** | **No overlapping** elements; reserved zones (auth / logo / edge / CLI) |
+| **Companion figure** | **Off** until AI graphics engine surpasses high-level gaming graphics |
 | **App-first shell** | My city · Shops · Order · Place · Vault · **Cosmos** · Cydonia · Menu · Talk |
 | **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI · ALL of space addressable |
 

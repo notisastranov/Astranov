@@ -3,7 +3,7 @@
  * Clean stack 2026-07-28: js/spacenet/* only. Legacy archived under _archive/.
  */
 const AstranovContinuity = {
-  version: '20260728030000-spacenets-primacy',
+  version: '20260728040000-ui-global-no-overlap',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -16,7 +16,7 @@ const AstranovContinuity = {
       'Spatial internet UI (body+lat+lng, zoom-to-open)',
       'Clean js/spacenet stack',
       'DB-first real shops',
-      'Sci-fi CLI companion',
+      'Full GLOBAL Earth default; no overlapping chrome',
       'S (SpaceNets) primary currency — fiat/crypto secondary; not AVC',
       'SpaceNet as interstellar OS for artificial and biological entities',
     ],
@@ -44,6 +44,9 @@ const AstranovContinuity = {
     noDeploySpam: false,
     failClosedOnRedProbe: true,
     noFloatingButtonDocks: true,
+    noOverlappingChrome: true,
+    noLowFiCompanionFigure: true,
+    defaultFullGlobalEarth: true,
     cliIsPrimaryUi: true,
   },
 
@@ -59,7 +62,7 @@ const AstranovContinuity = {
 
   features: {
     operatingPath: {
-      summary: 'locate/city/shops → SNCommerce.populateMap (Supabase bbox) → map pins',
+      summary: 'locate/city/shops → SNCommerce.populateMap (openMap when user asks) → map pins',
       owner: 'js/spacenet/commerce.js + map.js + cli.js',
     },
     spatial: {
@@ -67,24 +70,28 @@ const AstranovContinuity = {
       owner: 'js/spacenet/spatial.js',
     },
     globe: {
-      summary: 'Three.js Earth real texture, inertia, zoom tiers',
+      summary: 'Three.js Earth; default tier global; full Earth view',
       owner: 'js/spacenet/globe.js',
     },
     cli: {
-      summary: 'Sci-fi CLI + companion dots; no floating multi-docks',
-      owner: 'js/spacenet/cli.js + index companion',
+      summary: 'Single CLI dock; no companion figure until AI graphics > high-level gaming',
+      owner: 'js/spacenet/cli.js + index',
+    },
+    chrome: {
+      summary: 'No overlapping zones: left auth · center logo · right edge · bottom CLI',
+      owner: 'index.html + ui.js',
     },
   },
 
   verify: [
-    'Hard refresh astranov.eu — globe paints, boot hides',
+    'Hard refresh — full GLOBAL Earth, city map closed',
+    'No #sn-companion / no dot-matrix face canvas',
+    'No overlapping logo vs edge vs Globe vs CLI',
+    'CLI collapsed by default',
+    'Soft shop load does not open city map',
     'CLI accepts locate · city · shops · rate',
-    'shops loads real Supabase vendors when DB has data',
+    'shops with openMap paints real Supabase vendors when DB has data',
     'No request for astranov-app.js / deferred',
-    'thesis · vault · go to mars work',
-    'CLI rate shows S SpaceNets primacy (not AVC/coins)',
-    'currency.js loads; prices show N.NN S',
-    'rate status: fiat/crypto are secondary quotes, not unit of account',
   ],
 };
 

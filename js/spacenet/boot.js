@@ -85,6 +85,11 @@
     .then(() => loadScript('/js/spacenet/search.js'))
     .then(() => {
       if (!window.SNGlobe?.init?.()) throw new Error('globe init failed');
+      // Default view: full GLOBAL Earth (SPECS A4)
+      try {
+        SNGlobe.goToTier?.('global');
+        SNMap?.close?.();
+      } catch (_) {}
       // NO seedDemo — real shops come from Supabase via SNCommerce
       SNProfiles?.me?.();
       SNSpatial?.init?.();
@@ -94,23 +99,20 @@
       SNMap?.init?.();
       const ms = Math.round(performance.now() - t0);
       done('ready ' + ms + 'ms');
-      SNCli?.log?.('Astranov SpaceNet · ' + ms + 'ms · type help · locate · city · shops', 'ok');
-      SNCli?.preview?.('locate · city · shops · thesis · go to mars');
-      const line = document.getElementById('sn-face-line');
-      if (line) line.textContent = '◎ ready ' + ms + 'ms';
+      SNCli?.log?.('Astranov SpaceNet · ' + ms + 'ms · full GLOBAL Earth', 'ok');
+      SNCli?.preview?.('Full Earth · locate · city · shops · help');
       try {
         const v = window.SNBrain?.verify?.();
         if (v && !v.ok) {
           SNCli?.log?.('Brain ⚠ ' + (v.failed || []).map((f) => f.id).join(', '), 'err');
         }
       } catch (_) {}
-      // Soft load real shops after paint (DB-first, no freeze)
+      // Soft load shops for globe pulses only — do NOT open city map (default Earth)
       setTimeout(() => {
         const p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
-        void SNCommerce?.populateMap?.(p.lat, p.lng)?.then((r) => {
+        void SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: false })?.then((r) => {
           if (r?.count) {
-            SNCli?.log?.('mission · ' + r.count + ' real shops · db', 'ok');
-            if (line) line.textContent = r.count + ' shops';
+            SNCli?.log?.('mission · ' + r.count + ' real shops ready · type shops', 'dim');
           }
         });
       }, 900);

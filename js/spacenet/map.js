@@ -162,7 +162,7 @@
 
     // Real shops from Supabase — never auto seedCity (dummy)
     try {
-      const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng);
+      const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
       if (!r?.count) {
         // Offline / empty sector only: light seed so map isn't blank
         global.SNProfiles?.seedCity?.(p.lat, p.lng);

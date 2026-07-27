@@ -74,7 +74,9 @@
     G.scene = new THREE.Scene();
     G.scene.background = new THREE.Color(0x000000);
     G.camera = new THREE.PerspectiveCamera(42, w / h, 0.05, 200);
+    // Default view: full GLOBAL Earth (SPECS A4)
     G.camera.position.set(0, 0.12, TIERS.global.z);
+    G.tier = 'global';
 
     G.renderer = new THREE.WebGLRenderer({
       antialias: !touch,

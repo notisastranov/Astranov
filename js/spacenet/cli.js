@@ -160,7 +160,7 @@
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         if (!vendors.length) {
           const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
-          await global.SNCommerce?.populateMap?.(p.lat, p.lng);
+          await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
         }
         const list = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         list.slice(0, 12).forEach((v) => {
@@ -342,9 +342,10 @@
               : 'Located ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
             'ok'
           );
-          const r = await global.SNCommerce?.populateMap?.(pos.lat, pos.lng);
-          if (r?.count) log(r.count + ' real shops near you', 'ok');
-          preview(r?.count ? r.count + ' shops' : pos.demo ? 'You (fallback)' : 'You');
+          // Stay on full Earth after locate unless user asks city/shops
+          const r = await global.SNCommerce?.populateMap?.(pos.lat, pos.lng, { openMap: false });
+          if (r?.count) log(r.count + ' real shops near you · type city or shops', 'ok');
+          preview(r?.count ? r.count + ' shops · full Earth' : pos.demo ? 'You (fallback)' : 'You · Earth');
         }
         return;
       }
@@ -359,7 +360,7 @@
         const p = Tasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
         Globe?.goToTier?.('city');
         await global.SNMap?.open?.(p.lat, p.lng);
-        const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng);
+        const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
         const n = r?.count || 0;
         (global.SNCommerce?.vendors || []).slice(0, 12).forEach((v) => {
           log((v.emoji || '🏪') + ' ' + v.name + (v.km != null ? ' · ' + v.km.toFixed(1) + ' km' : ''), 'ok');
@@ -546,7 +547,7 @@
       if (/^order\b|^market\b|^checkout\b/.test(low)) {
         const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
         await global.SNMap?.open?.(p.lat, p.lng);
-        const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng);
+        const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
         log(
           r?.count
             ? 'Market · ' + r.count + ' real shops · open a vendor tile · cart · order'

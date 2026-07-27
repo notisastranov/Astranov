@@ -82,8 +82,13 @@
     }));
   }
 
-  /** Load real shops → map pins + globe pulses (mission path) */
-  async function populateMap(lat, lng) {
+  /**
+   * Load real shops. Default: keep full GLOBAL Earth (no auto city map).
+   * opts.openMap: true only when user asked (city / shops / locate path).
+   */
+  async function populateMap(lat, lng, opts) {
+    opts = opts || {};
+    const openMap = opts.openMap === true;
     const pos = {
       lat: lat != null ? lat : global._snLastPos?.lat || global.SNTasks?.pos?.lat || 36.4341,
       lng: lng != null ? lng : global._snLastPos?.lng || global.SNTasks?.pos?.lng || 28.2176,
@@ -101,8 +106,17 @@
       return { ok: false, count: 0, error: String(e.message || e) };
     }
 
-    // Paint city map without fake seedCity when we have real data
-    if (global.SNMap?.active || rows.length) {
+    // Profile/crawl data always; city map only if already open or user asked
+    rows.slice(0, 40).forEach((v) => {
+      try {
+        global.SNProfiles?.fromCrawlPlace?.(
+          { name: v.name, lat: v.lat, lng: v.lng, kind: v.category || 'shop' },
+          pos
+        );
+      } catch (_) {}
+    });
+
+    if (openMap || global.SNMap?.active) {
       try {
         if (!global.SNMap?.active) await global.SNMap?.open?.(pos.lat, pos.lng);
         else {
@@ -110,20 +124,11 @@
           map?.setView?.([pos.lat, pos.lng], 14);
         }
       } catch (_) {}
-      // Convert real vendors to profile pins via fromCrawlPlace
-      rows.slice(0, 40).forEach((v) => {
-        try {
-          global.SNProfiles?.fromCrawlPlace?.(
-            { name: v.name, lat: v.lat, lng: v.lng, kind: v.category || 'shop' },
-            pos
-          );
-        } catch (_) {}
-      });
       global.SNMap?.plotCrawl?.(toPlaces());
       global.SNMap?.showProfiles?.();
     }
 
-    // Globe pulses for nearest shops
+    // Globe pulses keep full-Earth default useful without stealing the view
     rows.slice(0, 12).forEach((v, i) => {
       try {
         global.SNGlobe?.pulse?.(v.lat, v.lng, i === 0 ? 0x44ffaa : 0x3d9eff, v.name, 18000);

@@ -54,10 +54,16 @@
   }
 
   function applyPos(dock, panel, left, top) {
-    const maxL = Math.max(0, window.innerWidth - panel.offsetWidth - 8);
-    const maxT = Math.max(0, window.innerHeight - Math.min(panel.offsetHeight, window.innerHeight * 0.85) - 8);
-    const l = Math.min(maxL, Math.max(8, left));
-    const t = Math.min(maxT, Math.max(8, top));
+    // Reserved chrome zones — no overlap (SPECS A4)
+    const padTop = 64;
+    const padSide = 8;
+    const maxL = Math.max(padSide, window.innerWidth - panel.offsetWidth - padSide);
+    const maxT = Math.max(
+      padTop,
+      window.innerHeight - Math.min(panel.offsetHeight, window.innerHeight * 0.85) - 8
+    );
+    const l = Math.min(maxL, Math.max(padSide, left));
+    const t = Math.min(maxT, Math.max(padTop, top));
     dock.classList.add('free');
     dock.style.left = l + 'px';
     dock.style.top = t + 'px';
@@ -98,9 +104,13 @@
         const p = JSON.parse(raw);
         if (typeof p.left === 'number' && typeof p.top === 'number') applyPos(dock, panel, p.left, p.top);
       }
+      // Default collapsed for full GLOBAL Earth; user size still sticky after first change
       const sz = localStorage.getItem(SIZE_KEY);
       if (sz === 'collapsed' || sz === 'expanded' || sz === 'mid') setSize(sz);
-    } catch (_) {}
+      else setSize('collapsed');
+    } catch (_) {
+      setSize('collapsed');
+    }
 
     function onStart(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;

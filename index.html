@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728030000-spacenets-primacy" />
-<meta name="astranov-continuity" content="20260728030000-spacenets-primacy" />
+<meta name="astranov-build" content="20260728040000-ui-global-no-overlap" />
+<meta name="astranov-continuity" content="20260728040000-ui-global-no-overlap" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. Currency: S SpaceNets primary." />
-<meta name="astranov-mission" content="SpaceNet = real-space OS for interstellar artificial and biological entities. S = primary value." />
+<meta name="astranov-mission" content="Full GLOBAL Earth default. No overlapping chrome. No low-fi companion figure until AI graphics surpass high-level gaming." />
 <meta name="astranov-ai-handoff" content="Read SPECS.md and astranov-continuity.js before edits" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
@@ -23,40 +23,71 @@
     --border: rgba(26, 111, 212, 0.45);
     --ok: #3d9a6a;
     --err: #c44a5a;
+    --zone-side: 168px;
+    --zone-top: 56px;
+    --zone-cli: 72px;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
     font: 13px/1.45 system-ui, sans-serif; overflow: hidden; }
+  /* Earth is the canvas — full viewport */
   #globe { position: fixed; inset: 0; z-index: 1; }
   #globe.city-hidden { opacity: 0; pointer-events: none; }
   #city-map { position: fixed; inset: 0; z-index: 2; display: none; background: #02060c; }
   #city-map.active { display: block; }
+
+  /* Non-overlapping reserved zones (SPECS A4) */
   #hud {
     position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 20;
-    display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    pointer-events: none;
+    max-width: min(260px, calc(100vw - var(--zone-side) * 2));
+    width: max-content;
   }
   #astranov-logo {
-    pointer-events: auto; border: 1px solid var(--border); background: var(--panel);
-    color: var(--bright); font-weight: 700; font-size: 12px; padding: 8px 16px; border-radius: 999px;
-    cursor: pointer; box-shadow: 0 0 16px rgba(26,111,212,0.35);
+    pointer-events: auto; border: 1px solid var(--border);
+    background: var(--panel); color: var(--bright); font-weight: 700; font-size: 12px;
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 0 16px rgba(26,111,212,0.35); white-space: nowrap;
   }
   #tier-label, #zoom-label, #hud-line {
     font: 10px/1.2 ui-monospace, monospace; color: var(--dim); text-align: center;
   }
-  #hud-line { color: var(--bright); max-width: 90vw; }
-  #edge {
-    position: fixed; top: 12px; right: 10px; z-index: 25; display: flex; gap: 6px;
+  #hud-line { color: var(--bright); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #zoom-label { display: none; } /* avoid duplicate tier text overlapping */
+
+  #bar-left {
+    position: fixed; top: 12px; left: 10px; z-index: 25;
+    display: flex; gap: 6px; align-items: center;
+    max-width: calc(var(--zone-side) - 12px);
   }
-  #edge button, #bar-left button {
+  #edge {
+    position: fixed; top: 12px; right: 10px; z-index: 25;
+    display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px;
+    max-width: calc(var(--zone-side) - 4px);
+  }
+  #edge button, #bar-left button, #btn-city-close {
     width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border);
     background: var(--panel); color: var(--bright); font-weight: 700; cursor: pointer;
-    font-size: 14px;
+    font-size: 12px; flex-shrink: 0;
   }
-  #bar-left { position: fixed; top: 12px; left: 10px; z-index: 25; display: flex; gap: 6px; align-items: center; }
-  #user-chip { font: 10px ui-monospace, monospace; color: var(--dim); max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  #user-chip {
+    font: 10px ui-monospace, monospace; color: var(--dim);
+    max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Globe return — under right edge, never on logo */
+  #btn-city-close {
+    position: fixed; top: 58px; right: 10px; z-index: 40;
+    display: none; width: auto; min-width: 72px; padding: 0 12px;
+    border-radius: 999px; font-size: 12px;
+  }
+  body.city-map-on #btn-city-close { display: block; }
+  body.city-map-on #hud { opacity: 0.5; }
+
   #dock {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    display: flex; justify-content: center; padding: 0 10px calc(10px + env(safe-area-inset-bottom));
+    display: flex; justify-content: center;
+    padding: 0 10px calc(10px + env(safe-area-inset-bottom));
     pointer-events: none;
   }
   #dock.free { justify-content: flex-start; }
@@ -67,7 +98,8 @@
     box-shadow: 0 -4px 28px rgba(0,0,0,0.55), 0 0 20px rgba(26,111,212,0.2);
     transition: max-height 0.2s ease;
   }
-  #panel.collapsed { max-height: 120px; }
+  /* Default collapsed = more full Earth */
+  #panel.collapsed { max-height: 108px; }
   #panel.mid { max-height: 38vh; }
   #panel.expanded { max-height: min(78vh, 640px); }
   #cli-drag {
@@ -75,13 +107,6 @@
     user-select: none; touch-action: none;
   }
   #cli-preview { font: 11px/1.3 ui-monospace, monospace; color: var(--bright); min-height: 16px; }
-  #sn-companion {
-    display: flex; align-items: center; gap: 8px; padding: 4px 10px 2px;
-    border-bottom: 1px solid rgba(26,111,212,0.2);
-  }
-  #sn-companion canvas { width: 40px; height: 46px; image-rendering: pixelated;
-    filter: drop-shadow(0 0 6px rgba(61,158,255,0.5)); }
-  #sn-companion span { font: 10px ui-monospace, monospace; color: var(--dim); }
   #cli-log {
     flex: 1; overflow-y: auto; padding: 8px 12px; min-height: 48px;
     font: 12px/1.4 ui-monospace, monospace; -webkit-overflow-scrolling: touch;
@@ -102,13 +127,6 @@
     border: 0; border-left: 1px solid var(--border); background: transparent;
     color: var(--bright); padding: 0 14px; cursor: pointer; font-weight: 700;
   }
-  #btn-city-close {
-    position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 40;
-    display: none; border: 1px solid var(--border); background: var(--panel);
-    color: var(--bright); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-weight: 600;
-  }
-  body.city-map-on #btn-city-close { display: block; }
-  body.city-map-on #hud { opacity: 0.35; }
   #boot {
     position: fixed; inset: 0; z-index: 100; background: #000; display: flex;
     align-items: center; justify-content: center; transition: opacity 0.35s;
@@ -136,6 +154,11 @@
   }
   .sn-pin-inner img { width: 100%; height: 100%; object-fit: cover; }
   #perf-badge { font: 9px ui-monospace, monospace; color: var(--dim); }
+  @media (max-width: 420px) {
+    :root { --zone-side: 120px; }
+    #edge button, #bar-left button { width: 36px; height: 36px; font-size: 11px; }
+    #astranov-logo { font-size: 11px; padding: 7px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -162,16 +185,12 @@
   <button type="button" id="btn-tile" title="Your tile">ME</button>
   <button type="button" id="sn-plus" title="Add">+</button>
 </div>
-<button type="button" id="btn-city-close">Globe</button>
+<button type="button" id="btn-city-close" title="Back to full Earth">Globe</button>
 
 <div id="dock">
-  <div id="panel" class="mid">
+  <div id="panel" class="collapsed">
     <div id="cli-drag">
-      <div id="cli-preview">Type help · locate · city · shops</div>
-    </div>
-    <div id="sn-companion" aria-label="Companion">
-      <canvas id="sn-face" width="80" height="92"></canvas>
-      <span id="sn-face-line">◎ NET</span>
+      <div id="cli-preview">Full Earth · type help · locate · city · shops</div>
     </div>
     <div id="cli-log"></div>
     <form id="cli-form">
@@ -184,40 +203,12 @@
 <div id="coach" hidden>
   <div class="card">
     <b style="color:#3d9eff">Astranov SpaceNet</b>
-    <p style="font-size:12px;color:#8a9bb0;margin:8px 0 0">Real space is the UI. Drag Earth · LOC to find you · MAP for city shops · type help.</p>
+    <p style="font-size:12px;color:#8a9bb0;margin:8px 0 0">Full Earth is the default. Drag the globe · LOC for you · MAP for city · type help. No overlapping chrome.</p>
     <button type="button" id="coach-ok">Enter</button>
   </div>
 </div>
 
-<script>
-/* Minimal companion face — deep blue dots, low FPS */
-(function(){
-  var c=document.getElementById('sn-face'); if(!c) return;
-  var ctx=c.getContext('2d');
-  var FACE=['............','..11111111..','.1111111111.','.1131111311.','.1131111311.','.1111111111.','.1111221111.','.1111111111.','.111....111.','.1111111111.','..11111111..','...111111...','....1111....','............'];
-  var t0=performance.now();
-  function draw(){
-    if(document.hidden){ setTimeout(draw,800); return; }
-    var now=performance.now()-t0, blink=Math.floor(now/3000)%8===0, cell=6;
-    ctx.clearRect(0,0,c.width,c.height);
-    for(var y=0;y<FACE.length;y++){
-      var row=FACE[y];
-      for(var x=0;x<12;x++){
-        var ch=row[x]; if(ch==='.') continue;
-        if(ch==='3'&&blink) continue;
-        var g=ch==='2'?0.95:ch==='3'?1:0.65;
-        ctx.fillStyle='rgba(26,111,212,'+(0.4+g*0.55)+')';
-        ctx.shadowColor='rgba(61,158,255,0.55)'; ctx.shadowBlur=4;
-        ctx.beginPath(); ctx.arc(x*cell+4,y*cell+4,2.2,0,Math.PI*2); ctx.fill();
-      }
-    }
-    ctx.shadowBlur=0;
-    setTimeout(draw,160);
-  }
-  draw();
-})();
-</script>
-<script src="/js/spacenet/boot.js?v=20260728030000-spacenets-primacy"></script>
+<script src="/js/spacenet/boot.js?v=20260728040000-ui-global-no-overlap"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
