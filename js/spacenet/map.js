@@ -160,10 +160,19 @@
     map.setView([p.lat, p.lng], 14);
     setTimeout(() => map.invalidateSize(), 80);
 
-    // Seed city profiles once per area
+    // Real shops from Supabase — never auto seedCity (dummy)
     try {
-      global.SNProfiles?.seedCity?.(p.lat, p.lng);
-    } catch (_) {}
+      const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng);
+      if (!r?.count) {
+        // Offline / empty sector only: light seed so map isn't blank
+        global.SNProfiles?.seedCity?.(p.lat, p.lng);
+        global.SNCli?.log?.('No DB shops here · local seed tiles only', 'dim');
+      }
+    } catch (_) {
+      try {
+        global.SNProfiles?.seedCity?.(p.lat, p.lng);
+      } catch (__) {}
+    }
 
     showTasks();
     showProfiles();
