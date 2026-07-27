@@ -1,5 +1,5 @@
 /**
- * Field chrome (spartan one-file): radar · S HUD · mine/perf · task ribbon · finance
+ * Field chrome (spartan one-file): radar, S HUD, mine/perf, task ribbon, finance
  * SPECS P0+P2. No companion. No overlapping owners.
  */
 (function (g) {

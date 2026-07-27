@@ -1,5 +1,5 @@
 /**
- * S — SpaceNets (primary) + wallet. Secondary quotes only.
+ * S - SpaceNets (primary) + wallet. Secondary quotes only.
  * Spartan: quotes + balance in one module.
  */
 (function (g) {

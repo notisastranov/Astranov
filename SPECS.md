@@ -15,11 +15,14 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Function first** | If it doesn’t run the operating path, delete it. |
 | **Effectiveness** | One clear owner per concern. No dual systems (no AVC *and* S, no dual CLI, no legacy + live). |
 | **Speed** | Never block boot. Soft-load non-critical work. Adaptive FPS. No 30s crawls on start. |
+| **Never hang** | Boot must hide within ~18s even on partial failure (CLI-only fallback). No infinite “Loading…”. |
+| **Fail closed on ship** | **Forbidden to ship** if `node scripts/probe-spacenet-boot.mjs` is not PASS (real JS, not SPA HTML). |
 | **Few files** | Prefer one small module over four “clean” micro-files that re-import each other. |
 | **No patch theatre** | If a series of specs is missing, **rebuild** the surface — do not stack micro-patches on a dummy. |
 | **No fat** | No companion figure until AI graphics > high-end games. No floating multi-docks. No demo-as-primary. |
 
-**Agent test:** before adding code, ask *can this be ½ the lines and still pass verify?* If yes, cut.
+**Agent test:** before adding code, ask *can this be ½ the lines and still pass verify?* If yes, cut.  
+**Ship test:** probe live critical modules → PASS → then push. Never “hope it works”.
 
 ---
 

@@ -1,11 +1,12 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728060000-spartan-specs',
+  version: '20260728070000-boot-failsoft',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
 
-  p0: 'spartan-coding', // minimal · functional · effective · fast
+  p0: 'spartan-coding', // minimal · functional · effective · fast · never hang
+  shipGate: 'node scripts/probe-spacenet-boot.mjs must PASS before ship',
 
   ip: {
     mark: 'Astranov SpaceNet',

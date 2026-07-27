@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728060000-spartan-specs" />
-<meta name="astranov-continuity" content="20260728060000-spartan-specs" />
+<meta name="astranov-build" content="20260728070000-boot-failsoft" />
+<meta name="astranov-continuity" content="20260728070000-boot-failsoft" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
-<meta name="astranov-mission" content="P0 spartan code. Full Earth. Radar+S+ribbon. S primary." />
-<meta name="astranov-ai-handoff" content="SPECS.md P0-P8. Minimal code. index + /js/spacenet/* only." />
+<meta name="astranov-mission" content="Fail-soft boot. Never hang. Probe before ship." />
+<meta name="astranov-ai-handoff" content="SPECS P0. Never ship without: node scripts/probe-spacenet-boot.mjs PASS" />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -351,7 +351,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728060000-spartan-specs"></script>
+<script src="/js/spacenet/boot.js?v=20260728070000-boot-failsoft"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

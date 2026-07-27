@@ -1,158 +1,267 @@
-/* SpaceNet boot — spartan chain (SPECS P0) */
+/* SpaceNet boot — fail-soft, never hang (SPECS P0) */
 (function () {
   'use strict';
   var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '1';
   var bootEl = document.getElementById('boot');
+  var t0 = performance.now();
+  var finished = false;
 
-  function load(src) {
+  function v(src) {
+    if (/^https?:\/\//i.test(src)) return src;
+    return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
+  }
+
+  /** Native script tag — reliable with CF proxy; no HTML-as-JS trap from fetch inject */
+  function load(src, timeoutMs) {
+    timeoutMs = timeoutMs || 12000;
     return new Promise(function (resolve, reject) {
-      var url = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
-      if (/^https?:\/\//i.test(src)) {
-        var s = document.createElement('script');
-        s.src = url;
-        s.async = true;
-        s.onload = function () {
-          resolve();
-        };
-        s.onerror = function () {
-          reject(new Error(src));
-        };
-        document.head.appendChild(s);
-        return;
-      }
-      fetch(url, { cache: 'no-cache', credentials: 'same-origin' })
-        .then(function (r) {
-          if (!r.ok) throw new Error(src + ' ' + r.status);
-          return r.text().then(function (t) {
-            var head = t.trimStart().slice(0, 32);
-            var ct = (r.headers.get('content-type') || '').toLowerCase();
-            if (ct.indexOf('text/html') >= 0 || head.indexOf('<!') === 0 || t.indexOf('data-dpl-id') >= 0)
-              throw new Error('HTML fallback: ' + src);
-            var el = document.createElement('script');
-            el.text = t;
-            document.head.appendChild(el);
-            resolve();
-          });
-        })
-        .catch(reject);
+      var s = document.createElement('script');
+      s.async = false;
+      s.src = v(src);
+      var done = false;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        try {
+          s.remove();
+        } catch (e) {}
+        reject(new Error('timeout ' + src));
+      }, timeoutMs);
+      s.onload = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        resolve();
+      };
+      s.onerror = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        reject(new Error('load fail ' + src));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  function loadSoft(src, timeoutMs) {
+    return load(src, timeoutMs).catch(function (e) {
+      console.warn('[SpaceNet] soft skip', src, e && e.message);
     });
   }
 
   function done(msg) {
+    if (finished) return;
+    finished = true;
     if (bootEl) {
       bootEl.classList.add('hide');
       setTimeout(function () {
         try {
           bootEl.remove();
         } catch (e) {}
-      }, 300);
+      }, 350);
     }
     if (msg) console.info('[SpaceNet]', msg);
   }
 
   function fail(msg) {
-    if (bootEl)
+    if (finished) return;
+    finished = true;
+    if (bootEl) {
       bootEl.innerHTML =
-        '<div class="boot-card"><b>SPACENET</b><p>' + msg + '</p><p class="dim">Hard refresh</p></div>';
+        '<div class="boot-card"><b>SPACENET</b><p>' +
+        String(msg || 'boot failed').slice(0, 200) +
+        '</p><p class="dim">Hard refresh · check console</p>' +
+        '<p><button type="button" id="sn-boot-retry" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid #1a6fd4;background:#061428;color:#3d9eff;font-weight:700;cursor:pointer">Retry</button></p></div>';
+      var b = document.getElementById('sn-boot-retry');
+      if (b)
+        b.onclick = function () {
+          location.reload();
+        };
+    }
+    console.error('[SpaceNet] boot fail', msg);
   }
+
+  // Absolute ceiling — never stuck on Loading…
+  setTimeout(function () {
+    if (!finished) {
+      console.error('[SpaceNet] boot watchdog 18s');
+      try {
+        if (window.SNCli && SNCli.init) SNCli.init();
+      } catch (e) {}
+      done('watchdog · partial boot');
+      try {
+        if (window.SNCli && SNCli.log) SNCli.log('Boot slow · partial UI · type help', 'err');
+      } catch (e2) {}
+    }
+  }, 18000);
 
   try {
     if (matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0) window._snLite = true;
   } catch (e) {}
 
-  var t0 = performance.now();
-  // Critical path only — field is one file (radar+S+mine+ribbon)
-  load('/js/spacenet/config.js')
+  // Critical path (minimal). search/ai/auth lazy.
+  var chain = [
+    '/js/spacenet/config.js',
+    '/js/spacenet/brain.js',
+    '/js/spacenet/globe.js',
+    '/js/spacenet/tasks.js',
+    '/js/spacenet/profiles.js',
+    '/js/spacenet/currency.js',
+    '/js/spacenet/field.js',
+    '/js/spacenet/commerce.js',
+    '/js/spacenet/spatial.js',
+    '/js/spacenet/cli.js',
+    '/js/spacenet/ui.js',
+    '/js/spacenet/tile.js',
+    '/js/spacenet/map.js',
+  ];
+
+  function loadThree() {
+    return load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 15000).catch(function () {
+      return load('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', 15000);
+    });
+  }
+
+  function runChain(i) {
+    if (i >= chain.length) return Promise.resolve();
+    return load(chain[i], 10000).then(function () {
+      return runChain(i + 1);
+    });
+  }
+
+  load('/js/spacenet/config.js', 8000)
     .then(function () {
-      return load('/js/spacenet/brain.js');
+      return load('/js/spacenet/brain.js', 8000);
     })
     .then(function () {
-      return load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js').catch(function () {
-        return load('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js');
-      });
+      return loadThree();
     })
     .then(function () {
-      return load('/js/spacenet/globe.js');
+      // after THREE: rest of chain without config/brain again
+      var rest = chain.slice(2);
+      function next(j) {
+        if (j >= rest.length) return Promise.resolve();
+        return load(rest[j], 10000).then(function () {
+          return next(j + 1);
+        });
+      }
+      return next(0);
     })
     .then(function () {
-      return load('/js/spacenet/tasks.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/profiles.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/currency.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/field.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/commerce.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/spatial.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/cli.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/ui.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/tile.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/map.js');
-    })
-    .then(function () {
-      return load('/js/spacenet/search.js');
-    })
-    .then(function () {
-      if (!window.SNGlobe || !SNGlobe.init()) throw new Error('globe init failed');
+      var globeOk = false;
       try {
-        SNGlobe.goToTier('global');
-        SNMap && SNMap.close && SNMap.close();
+        if (window.SNGlobe && typeof THREE !== 'undefined') {
+          globeOk = !!SNGlobe.init();
+          if (globeOk) {
+            try {
+              SNGlobe.goToTier && SNGlobe.goToTier('global');
+            } catch (e) {}
+          }
+        }
+      } catch (e) {
+        console.warn('[SpaceNet] globe init', e);
+        globeOk = false;
+      }
+
+      try {
+        if (window.SNMap && SNMap.close) SNMap.close();
       } catch (e) {}
-      SNProfiles && SNProfiles.me && SNProfiles.me();
-      SNSpatial && SNSpatial.init && SNSpatial.init();
-      SNField && SNField.init && SNField.init();
-      SNCli && SNCli.init && SNCli.init();
-      SNUi && SNUi.init && SNUi.init();
-      SNTile && SNTile.init && SNTile.init();
-      SNMap && SNMap.init && SNMap.init();
+
+      // Never throw from optional inits
+      [
+        function () {
+          SNProfiles && SNProfiles.me && SNProfiles.me();
+        },
+        function () {
+          SNSpatial && SNSpatial.init && SNSpatial.init();
+        },
+        function () {
+          SNField && SNField.init && SNField.init();
+        },
+        function () {
+          SNCli && SNCli.init && SNCli.init();
+        },
+        function () {
+          SNUi && SNUi.init && SNUi.init();
+        },
+        function () {
+          SNTile && SNTile.init && SNTile.init();
+        },
+        function () {
+          SNMap && SNMap.init && SNMap.init();
+        },
+      ].forEach(function (fn) {
+        try {
+          fn();
+        } catch (e) {
+          console.warn('[SpaceNet] init step', e);
+        }
+      });
+
       var ms = Math.round(performance.now() - t0);
-      done('ready ' + ms + 'ms');
-      SNCli && SNCli.log && SNCli.log('SpaceNet · ' + ms + 'ms · GLOBAL · spartan', 'ok');
-      SNCli && SNCli.preview && SNCli.preview('locate · shops · rate · resources · help');
-      SNField && SNField.setNotice && SNField.setNotice(ms + 'ms');
-      // Soft shops — pulses only
+      done('ready ' + ms + 'ms' + (globeOk ? '' : ' · no-globe'));
+      try {
+        if (window.SNCli && SNCli.log) {
+          SNCli.log('SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL' : 'CLI-only (globe failed)'), 'ok');
+          SNCli.preview('locate · shops · rate · resources · help');
+        }
+        if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
+      } catch (e) {}
+
+      // Soft shops
       setTimeout(function () {
-        var p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
-        SNCommerce &&
-          SNCommerce.populateMap &&
-          SNCommerce.populateMap(p.lat, p.lng, { openMap: false }).then(function (r) {
-            if (r && r.count) {
-              SNCli && SNCli.log && SNCli.log(r.count + ' shops ready · type shops', 'dim');
-              SNField && SNField.refreshBlips && SNField.refreshBlips();
-            }
-          });
-      }, 800);
+        try {
+          var p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
+          if (window.SNCommerce && SNCommerce.populateMap) {
+            SNCommerce.populateMap(p.lat, p.lng, { openMap: false })
+              .then(function (r) {
+                if (r && r.count && window.SNCli && SNCli.log) {
+                  SNCli.log(r.count + ' shops ready · type shops', 'dim');
+                }
+                if (window.SNField && SNField.refreshBlips) SNField.refreshBlips();
+              })
+              .catch(function () {});
+          }
+        } catch (e) {}
+      }, 900);
+
+      // Lazy: search · auth · ai (not on critical path)
       setTimeout(function () {
-        load('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js')
-          .then(function () {
-            return load('/js/spacenet/auth.js');
-          })
-          .then(function () {
-            SNAuth && SNAuth.init && SNAuth.init();
-          })
-          .catch(function () {});
-      }, window._snLite ? 1400 : 700);
+        loadSoft('/js/spacenet/search.js', 12000);
+      }, 400);
       setTimeout(function () {
-        load('/js/spacenet/ai.js').catch(function () {});
-      }, 2800);
+        loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000).then(
+          function () {
+            return loadSoft('/js/spacenet/auth.js', 8000);
+          }
+        ).then(function () {
+          try {
+            if (window.SNAuth && SNAuth.init) SNAuth.init();
+          } catch (e) {}
+        });
+      }, window._snLite ? 1600 : 800);
+      setTimeout(function () {
+        loadSoft('/js/spacenet/ai.js', 10000);
+      }, 3000);
     })
     .catch(function (e) {
+      // Last resort: still try CLI-only surface
       console.error(e);
-      fail(String(e.message || e));
+      try {
+        loadSoft('/js/spacenet/cli.js', 8000).then(function () {
+          try {
+            if (window.SNCli && SNCli.init) SNCli.init();
+          } catch (e2) {}
+          done('degraded');
+          try {
+            if (window.SNCli && SNCli.log) SNCli.log('Degraded boot · ' + (e && e.message), 'err');
+          } catch (e3) {}
+        });
+      } catch (e4) {
+        fail(e && e.message ? e.message : e);
+      }
+      setTimeout(function () {
+        if (!finished) fail(e && e.message ? e.message : e);
+      }, 2000);
     });
 })();
