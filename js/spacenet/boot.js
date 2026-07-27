@@ -64,7 +64,7 @@
 
   const t0 = performance.now();
 
-  // Critical path: brain first (anti-amnesia) → globe + CLI → juice modules → AI
+  // Critical path only — no legacy monolith. Mission: globe + CLI + real shops (DB).
   loadScript('/js/spacenet/config.js')
     .then(() => loadScript('/js/spacenet/brain.js'))
     .then(() =>
@@ -75,47 +75,57 @@
     .then(() => loadScript('/js/spacenet/globe.js'))
     .then(() => loadScript('/js/spacenet/tasks.js'))
     .then(() => loadScript('/js/spacenet/profiles.js'))
+    .then(() => loadScript('/js/spacenet/commerce.js'))
+    .then(() => loadScript('/js/spacenet/spatial.js'))
     .then(() => loadScript('/js/spacenet/cli.js'))
     .then(() => loadScript('/js/spacenet/ui.js'))
     .then(() => loadScript('/js/spacenet/tile.js'))
     .then(() => loadScript('/js/spacenet/map.js'))
     .then(() => loadScript('/js/spacenet/search.js'))
-    .then(() => loadScript('/js/spacenet/ai.js'))
     .then(() => {
       if (!window.SNGlobe?.init?.()) throw new Error('globe init failed');
-      SNTasks?.seedDemo?.();
+      // NO seedDemo — real shops come from Supabase via SNCommerce
       SNProfiles?.me?.();
+      SNSpatial?.init?.();
       SNCli?.init?.();
       SNUi?.init?.();
       SNTile?.init?.();
       SNMap?.init?.();
       const ms = Math.round(performance.now() - t0);
       done('ready ' + ms + 'ms');
-      SNCli?.log?.('Astranov SpaceNet ready ' + ms + 'ms · tile juice · type help', 'dim');
-      SNCli?.preview?.('city · crawl · + profile · job · date · deliver');
-      // Sacred physics self-check (console + optional CLI)
+      SNCli?.log?.('Astranov SpaceNet · ' + ms + 'ms · type help · locate · city · shops', 'ok');
+      SNCli?.preview?.('locate · city · shops · thesis · go to mars');
+      const line = document.getElementById('sn-face-line');
+      if (line) line.textContent = '◎ ready ' + ms + 'ms';
       try {
         const v = window.SNBrain?.verify?.();
         if (v && !v.ok) {
-          console.warn('[AstranovBrain] verify failed', v.failed);
-          SNCli?.log?.('Brain verify ⚠ ' + (v.failed || []).map((f) => f.id).join(', '), 'err');
-        } else if (v) {
-          console.info('[AstranovBrain] verify OK', v.build);
+          SNCli?.log?.('Brain ⚠ ' + (v.failed || []).map((f) => f.id).join(', '), 'err');
         }
-      } catch (err) {
-        console.warn('[AstranovBrain] verify error', err);
-      }
-      // Auth after first paint
-      const authDelay = window._snLite ? 1000 : 500;
+      } catch (_) {}
+      // Soft load real shops after paint (DB-first, no freeze)
+      setTimeout(() => {
+        const p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
+        void SNCommerce?.populateMap?.(p.lat, p.lng)?.then((r) => {
+          if (r?.count) {
+            SNCli?.log?.('mission · ' + r.count + ' real shops · db', 'ok');
+            if (line) line.textContent = r.count + ' shops';
+          }
+        });
+      }, 900);
       setTimeout(() => {
         loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js')
           .then(() => loadScript('/js/spacenet/auth.js'))
           .then(() => {
             SNAuth?.init?.();
-            SNCli?.log?.('Auth ready · G to sign in', 'dim');
+            SNCli?.log?.('Auth · G to sign in', 'dim');
           })
           .catch(() => {});
-      }, authDelay);
+      }, window._snLite ? 1200 : 600);
+      // AI module optional — after idle
+      setTimeout(() => {
+        loadScript('/js/spacenet/ai.js').catch(() => {});
+      }, 2500);
     })
     .catch((e) => {
       console.error(e);
