@@ -3,7 +3,7 @@
  * Clean stack 2026-07-28: js/spacenet/* only. Legacy archived under _archive/.
  */
 const AstranovContinuity = {
-  version: '20260728020000-spacenets-S',
+  version: '20260728030000-spacenets-primacy',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -17,15 +17,23 @@ const AstranovContinuity = {
       'Clean js/spacenet stack',
       'DB-first real shops',
       'Sci-fi CLI companion',
-      'S (SpaceNets) currency — dynamic network-linked value; not AVC',
+      'S (SpaceNets) primary currency — fiat/crypto secondary; not AVC',
+      'SpaceNet as interstellar OS for artificial and biological entities',
     ],
   },
 
   economics: {
-    currency: { name: 'SpaceNets', symbol: 'S', ban: ['AVC', 'coins', 'fixed-1-EUR'] },
+    currency: {
+      name: 'SpaceNets',
+      symbol: 'S',
+      primacy: true,
+      ban: ['AVC', 'coins', 'fixed-1-EUR', 'fiat-as-primary', 'crypto-as-primary'],
+    },
     platformFee: 0.03,
     driverGrossShare: 0.15,
-    valueModel: 'dynamic-vs-fiat-crypto-tight-to-spacenet-network',
+    valueModel: 'S-primary-dynamic-network; EUR/USD/BTC/ETH/others secondary quotes only',
+    lesserCurrencies: ['EUR', 'USD', 'BTC', 'ETH', 'all-other-fiat-crypto'],
+    osThesis: 'SpaceNet is the new OS for interstellar artificial and biological entities',
     code: 'js/spacenet/currency.js SNCurrency',
   },
 
@@ -74,8 +82,9 @@ const AstranovContinuity = {
     'shops loads real Supabase vendors when DB has data',
     'No request for astranov-app.js / deferred',
     'thesis · vault · go to mars work',
-    'CLI rate shows S SpaceNets (not AVC/coins)',
+    'CLI rate shows S SpaceNets primacy (not AVC/coins)',
     'currency.js loads; prices show N.NN S',
+    'rate status: fiat/crypto are secondary quotes, not unit of account',
   ],
 };
 

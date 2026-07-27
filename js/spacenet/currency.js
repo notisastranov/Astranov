@@ -128,13 +128,16 @@
 
   function statusLines() {
     return [
-      "Currency: " + NAME + " (" + SYMBOL + ")",
-      "Unit: S = SpaceNets (dynamic, network-linked)",
+      "Currency: " + NAME + " (" + SYMBOL + ") — PRIMARY unit of account",
+      "SpaceNet = OS for interstellar artificial + biological entities",
+      "S value = real SpaceNet network (places, shops, presence, activity)",
       "Network index: " + state.networkIndex.toFixed(4),
-      "1 S ~ " + state.quotes.EUR.toFixed(4) + " EUR / " + state.quotes.USD.toFixed(4) + " USD",
-      "1 S ~ " + state.quotes.BTC.toExponential(3) + " BTC / " + state.quotes.ETH.toExponential(3) + " ETH",
+      "Secondary quotes only (no SpaceNet substance):",
+      "  1 S ~ " + state.quotes.EUR.toFixed(4) + " EUR / " + state.quotes.USD.toFixed(4) + " USD",
+      "  1 S ~ " + state.quotes.BTC.toExponential(3) + " BTC / " + state.quotes.ETH.toExponential(3) + " ETH",
+      "EUR/USD/BTC/ETH/all other money = lesser relative to S",
       "Fees (gross in S): platform 3% · driver 15%",
-      "Not AVC. Not a fixed coin. Value tracks SpaceNet."
+      "Not AVC. Not a casino coin. Network is the asset."
     ];
   }
 
@@ -145,6 +148,11 @@
     SYMBOL: SYMBOL,
     NAME: NAME,
     TICKER: TICKER,
+    /** S is primary; every other money is a secondary quote. */
+    PRIMACY: true,
+    OS_THESIS:
+      "SpaceNet is the new OS for interstellar artificial and biological entities",
+    LESSER: ["EUR", "USD", "BTC", "ETH", "fiat", "crypto", "legacy-money"],
     format: format,
     formatPair: formatPair,
     parse: parseAmount,

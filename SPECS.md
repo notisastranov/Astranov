@@ -22,7 +22,8 @@ Continuity / build stamp must match `meta[name="astranov-build"]` on every deplo
 | **Other dimensions** | Sci‑fi / theoretical layers (hyperspace, subspace, wormholes, mirror, bulk, void, CTC, …) are navigable place-layers for data. |
 | **Any imaginable task** | Files, folders, notes, **live delivery marketplace**, **real-time video calling**, shops, drivers — all **in real space**. |
 
-This is the evolution of the internet: **finally free in all dimensions**.
+This is the evolution of the internet: **finally free in all dimensions**.  
+**SpaceNet is the new OS** for **interstellar artificial and biological entities** — and **S (SpaceNets)** is the primary value of that OS (legacy fiat/crypto are secondary quotes only; see §5).
 
 | Module | API |
 |--------|-----|
@@ -153,22 +154,34 @@ User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 |------|------|
 | **Name** | **SpaceNets** |
 | **Ticker / symbol** | **S** |
-| **Banned** | **AVC**, generic “coins”, fixed 1:1 EUR toy units, dual coin chrome |
+| **Banned** | **AVC**, generic “coins”, fixed 1:1 EUR toy units, dual coin chrome, treating EUR/USD/BTC/ETH as equal to S |
 | **Unit of account** | All prices, carts, fees, payouts on SpaceNet are denominated in **S** |
-| **Value model** | **Dynamic** — the market value of **S** is **tightly coupled to the value of SpaceNet itself** (network utility, real activity, trust, coverage) **against** all other money: **fiat, crypto, or otherwise** |
-| **Vision** | Honors **SpaceX AI pioneers and shareholders** and builders who treat the network as the asset — not a separate casino coin |
-| **Display** | UI shows amounts as `12.50 S` (not € / AVC) |
-| **FX display (optional)** | May show estimated fiat/crypto equivalent for clarity: `12.50 S (~…)` using live `SNCurrency.quote(fiatOrAsset)` — never reverse the unit of account |
-| **Code** | `js/spacenet/currency.js` → `window.SNCurrency` · `format(amount)` · `rate(asset)` · `networkIndex()` |
+| **Primacy** | **S is primary.** EUR, USD, BTC, ETH, and every other fiat/crypto/legacy money are **secondary quotes only** — they **lack real SpaceNet value** (no network places, no spatial OS, no interstellar presence). They may be shown as estimates; they never become the unit of account |
+| **Value model** | **Dynamic** — market value of **S** is **tightly coupled to the value of SpaceNet itself** (network utility, real activity, trust, coverage, spatial density) **against** all other money |
+| **OS thesis** | SpaceNet is the **new OS** for **interstellar artificial and biological entities** — economy rides the same real-space UI as files, shops, and presence |
+| **Vision** | Honors **SpaceX AI pioneers and shareholders** and builders who treat the **network as the asset** — not a casino side-coin pegged to legacy money |
+| **Display** | UI shows amounts as `12.50 S` (not € / AVC as primary) |
+| **FX display (optional)** | May show lesser-currency estimate for human clarity: `12.50 S (~… EUR/USD/BTC/ETH)` via `SNCurrency.quote` — **never reverse primacy** |
+| **Code** | `js/spacenet/currency.js` → `window.SNCurrency` · `format(amount)` · `rate(asset)` · `networkIndex()` · `status()` |
+
+### Hierarchy (product law)
+
+```
+S (SpaceNets)     = primary value  ← real SpaceNet network index
+EUR / USD / …     = secondary fiat quote (no SpaceNet substance)
+BTC / ETH / …     = secondary crypto quote (no SpaceNet substance)
+all other money   = lesser relative to S for the same reason
+```
 
 ### Dynamic value (conceptual — implement transparently)
 
 ```
 S_value_vs_X ≈ f(SpaceNet_network_index, liquidity, real_economy_on_net)
 SpaceNet_network_index ← real shops, orders, places, presence, spatial activity (not hype alone)
+X ∈ {EUR, USD, BTC, ETH, …} is always a quote of S — never the other way around as product law
 ```
 
-Agents must **not** reintroduce AVC, coin.astranov.eu as primary money, or hard-code “1 unit = 1 EUR” as the product law.
+Agents must **not** reintroduce AVC, coin.astranov.eu as primary money, hard-code “1 unit = 1 EUR”, or elevate any fiat/crypto above **S**.
 
 ---
 

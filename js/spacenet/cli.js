@@ -35,7 +35,7 @@
     log('TILE  me · vendors · cart · order', 'ok');
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
-    log('MONEY S · rate · currency  (= SpaceNets, dynamic vs fiat/crypto)', 'ok');
+    log('MONEY S primary · rate  (EUR/USD/BTC/ETH = secondary quotes only)', 'ok');
     preview('locate · city · shops · rate');
   }
 
@@ -45,14 +45,15 @@
       log('Currency offline — currency.js missing', 'err');
       return;
     }
-    (C.status?.() || ['S · SpaceNets']).forEach((ln) =>
-      log(ln, /Not AVC|dynamic|Network/.test(ln) ? 'ok' : 'dim')
+    (C.status?.() || ['S · SpaceNets primary']).forEach((ln) =>
+      log(ln, /PRIMARY|primary|SpaceNet = OS|Network index|Not AVC|lesser|secondary/i.test(ln) ? 'ok' : 'dim')
     );
     preview(
-      '1 S ~ ' +
+      'S primary · net ' +
+        (C.networkIndex?.()?.toFixed?.(4) || '?') +
+        ' · quotes only ~' +
         (C.quote?.('EUR')?.toFixed?.(4) || '?') +
-        ' EUR · network ' +
-        (C.networkIndex?.()?.toFixed?.(4) || '?')
+        ' EUR'
     );
   }
 
