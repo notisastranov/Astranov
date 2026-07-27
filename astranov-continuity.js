@@ -3,7 +3,7 @@
  * Clean stack 2026-07-28: js/spacenet/* only. Legacy archived under _archive/.
  */
 const AstranovContinuity = {
-  version: '20260728010000-clean-spacenet',
+  version: '20260728020000-spacenets-S',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -17,7 +17,16 @@ const AstranovContinuity = {
       'Clean js/spacenet stack',
       'DB-first real shops',
       'Sci-fi CLI companion',
+      'S (SpaceNets) currency — dynamic network-linked value; not AVC',
     ],
+  },
+
+  economics: {
+    currency: { name: 'SpaceNets', symbol: 'S', ban: ['AVC', 'coins', 'fixed-1-EUR'] },
+    platformFee: 0.03,
+    driverGrossShare: 0.15,
+    valueModel: 'dynamic-vs-fiat-crypto-tight-to-spacenet-network',
+    code: 'js/spacenet/currency.js SNCurrency',
   },
 
   agentDiscipline: {
@@ -33,7 +42,7 @@ const AstranovContinuity = {
   stack: {
     entry: 'index.html → /js/spacenet/boot.js',
     modules: [
-      'config', 'brain', 'globe', 'tasks', 'profiles', 'commerce', 'spatial',
+      'config', 'brain', 'globe', 'tasks', 'profiles', 'currency', 'commerce', 'spatial',
       'cli', 'ui', 'tile', 'map', 'search', 'auth', 'ai',
     ],
     archived: '_archive/legacy-20260727 + _archive/legacy-js-phase',
@@ -61,10 +70,12 @@ const AstranovContinuity = {
 
   verify: [
     'Hard refresh astranov.eu — globe paints, boot hides',
-    'CLI accepts locate · city · shops',
+    'CLI accepts locate · city · shops · rate',
     'shops loads real Supabase vendors when DB has data',
     'No request for astranov-app.js / deferred',
     'thesis · vault · go to mars work',
+    'CLI rate shows S SpaceNets (not AVC/coins)',
+    'currency.js loads; prices show N.NN S',
   ],
 };
 

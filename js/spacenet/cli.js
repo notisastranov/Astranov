@@ -35,7 +35,25 @@
     log('TILE  me · vendors · cart · order', 'ok');
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
-    preview('locate · city · shops · thesis');
+    log('MONEY S · rate · currency  (= SpaceNets, dynamic vs fiat/crypto)', 'ok');
+    preview('locate · city · shops · rate');
+  }
+
+  function moneyStatus() {
+    const C = global.SNCurrency;
+    if (!C) {
+      log('Currency offline — currency.js missing', 'err');
+      return;
+    }
+    (C.status?.() || ['S · SpaceNets']).forEach((ln) =>
+      log(ln, /Not AVC|dynamic|Network/.test(ln) ? 'ok' : 'dim')
+    );
+    preview(
+      '1 S ~ ' +
+        (C.quote?.('EUR')?.toFixed?.(4) || '?') +
+        ' EUR · network ' +
+        (C.networkIndex?.()?.toFixed?.(4) || '?')
+    );
   }
 
   function dumpBrain(mode) {
@@ -190,8 +208,23 @@
         const items = global.SNProfiles?.cart?.() || [];
         if (!items.length) log('Cart empty · vendors · tap + on menu items', 'dim');
         else {
-          items.forEach((i) => log('· ' + i.name + ' €' + i.price + ' · ' + i.vendorName, 'ok'));
-          log('Total €' + (global.SNProfiles.cartTotal() || 0).toFixed(2), 'ok');
+          items.forEach((i) =>
+            log(
+              '· ' +
+                i.name +
+                ' ' +
+                (global.SNCurrency?.format?.(i.price) || i.price + ' S') +
+                ' · ' +
+                i.vendorName,
+              'ok'
+            )
+          );
+          log(
+            'Total ' +
+              (global.SNCurrency?.format?.(global.SNProfiles.cartTotal() || 0) ||
+                (global.SNProfiles.cartTotal() || 0).toFixed(2) + ' S'),
+            'ok'
+          );
         }
         global.SNTile?.openMe?.('cart');
         return;
@@ -202,7 +235,12 @@
           log(r?.error || 'cart empty · open vendors first', 'err');
           return;
         }
-        log('Order €' + r.total.toFixed(2) + ' · delivery opened for drivers', 'ok');
+        log(
+          'Order ' +
+            (global.SNCurrency?.format?.(r.total) || r.total.toFixed(2) + ' S') +
+            ' · delivery opened for drivers',
+          'ok'
+        );
         await global.SNMap?.open?.();
         global.SNMap?.showTasks?.();
         global.SNMap?.showProfiles?.();
@@ -216,14 +254,36 @@
         log('Seeded map tiles · vendors · dating · drivers · social', 'ok');
         return;
       }
+      if (
+        low === 's' ||
+        low === 'money' ||
+        low === 'currency' ||
+        low === 'rate' ||
+        low === 'spacenets' ||
+        low === 'space nets'
+      ) {
+        moneyStatus();
+        return;
+      }
       if (low === 'solo' || low === 'status') {
         const n = Tasks?.list?.()?.length || 0;
         const build = document.querySelector('meta[name="astranov-build"]')?.content || '?';
         const who = global.SNAuth?.user?.email || 'guest';
         const tier = Globe?.tier || '?';
         const phys = Globe?.getPhysics?.();
+        const C = global.SNCurrency;
         log('Astranov SpaceNet · build ' + build + ' · zoom ' + tier, 'ok');
         log('user ' + who + ' · open tasks ' + n, 'ok');
+        if (C) {
+          log(
+            'S (SpaceNets) · index ' +
+              C.networkIndex().toFixed(4) +
+              ' · 1 S ~ ' +
+              (C.quote('EUR') || 0).toFixed(4) +
+              ' EUR',
+            'ok'
+          );
+        }
         log(
           'AI ' +
             (global.SNAi ? 'ready' : 'loading') +
@@ -232,7 +292,7 @@
             (phys ? ' · inertia damp ' + phys.damp : ''),
           'dim'
         );
-        log('https://astranov.eu · type brain · verify', 'dim');
+        log('https://astranov.eu · type rate · brain · verify', 'dim');
         preview('Astranov SpaceNet · ' + tier + ' · ' + n + ' tasks');
         return;
       }

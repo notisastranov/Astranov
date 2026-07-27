@@ -269,8 +269,8 @@
                   '<span>' +
                   esc(m.desc) +
                   '</span>' +
-                  '<em>€' +
-                  Number(m.price).toFixed(2) +
+                  '<em>' +
+                  (window.SNCurrency ? SNCurrency.format(m.price) : Number(m.price).toFixed(2) + ' S') +
                   '</em>' +
                   '</div>' +
                   '<button type="button" class="sn-add" data-add="' +
@@ -281,8 +281,8 @@
               .join('')
           : '<div class="sn-empty">No menu yet · activate Vendor on your tile</div>');
       foot.innerHTML =
-        '<button type="button" class="sn-btn" data-act="cart">Cart €' +
-        (Prof.cartTotal?.() || 0).toFixed(2) +
+        '<button type="button" class="sn-btn" data-act="cart">Cart ' +
+        (window.SNCurrency ? SNCurrency.format(Prof.cartTotal?.() || 0) : (Prof.cartTotal?.() || 0).toFixed(2) + ' S') +
         '</button>' +
         '<button type="button" class="sn-btn primary" data-act="order">Order + deliver</button>';
       body.querySelectorAll('[data-add]').forEach((btn) => {
@@ -290,7 +290,10 @@
           const item = (p.menu || []).find((x) => x.id === btn.dataset.add);
           if (!item) return;
           Prof.cartAdd(p.id, item, 1);
-          global.SNCli?.log?.('Cart + ' + item.name + ' €' + item.price, 'ok');
+          global.SNCli?.log?.(
+            'Cart + ' + item.name + ' ' + (window.SNCurrency ? SNCurrency.format(item.price) : item.price + ' S'),
+            'ok'
+          );
           render();
         });
       });
@@ -370,15 +373,15 @@
                 esc(i.name) +
                 '</b><span>' +
                 esc(i.vendorName) +
-                '</span><em>€' +
-                Number(i.price).toFixed(2) +
+                '</span><em>' +
+                (window.SNCurrency ? SNCurrency.format(i.price) : Number(i.price).toFixed(2) + ' S') +
                 ' ×' +
                 (i.qty || 1) +
                 '</em></div></div>'
             )
             .join('') +
-          '<div class="sn-total">Total €' +
-          Prof.cartTotal().toFixed(2) +
+          '<div class="sn-total">Total ' +
+          (window.SNCurrency ? SNCurrency.format(Prof.cartTotal()) : Prof.cartTotal().toFixed(2) + ' S') +
           '</div>'
         : '<div class="sn-empty">Cart empty · open a vendor menu</div>';
       foot.innerHTML =
@@ -458,7 +461,7 @@
         global.SNCli?.log?.(r.error || 'order failed', 'err');
         return;
       }
-      global.SNCli?.log?.('Order €' + r.total.toFixed(2) + ' · delivery task open', 'ok');
+      global.SNCli?.log?.('Order '+(window.SNCurrency?SNCurrency.format(r.total):(Number(r.total).toFixed(2)+' S')) + ' · delivery task open', 'ok');
       global.SNCli?.log?.('Drivers online can claim · task claim', 'dim');
       if (p.lat != null) await global.SNMap?.open?.(p.lat, p.lng);
       global.SNMap?.showTasks?.();

@@ -147,20 +147,46 @@ User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 
 ---
 
-## 5. Real-time marketplace & video (in space)
+## 5. Currency — **S (SpaceNets)** (not AVC, not “coins”)
+
+| Rule | Spec |
+|------|------|
+| **Name** | **SpaceNets** |
+| **Ticker / symbol** | **S** |
+| **Banned** | **AVC**, generic “coins”, fixed 1:1 EUR toy units, dual coin chrome |
+| **Unit of account** | All prices, carts, fees, payouts on SpaceNet are denominated in **S** |
+| **Value model** | **Dynamic** — the market value of **S** is **tightly coupled to the value of SpaceNet itself** (network utility, real activity, trust, coverage) **against** all other money: **fiat, crypto, or otherwise** |
+| **Vision** | Honors **SpaceX AI pioneers and shareholders** and builders who treat the network as the asset — not a separate casino coin |
+| **Display** | UI shows amounts as `12.50 S` (not € / AVC) |
+| **FX display (optional)** | May show estimated fiat/crypto equivalent for clarity: `12.50 S (~…)` using live `SNCurrency.quote(fiatOrAsset)` — never reverse the unit of account |
+| **Code** | `js/spacenet/currency.js` → `window.SNCurrency` · `format(amount)` · `rate(asset)` · `networkIndex()` |
+
+### Dynamic value (conceptual — implement transparently)
+
+```
+S_value_vs_X ≈ f(SpaceNet_network_index, liquidity, real_economy_on_net)
+SpaceNet_network_index ← real shops, orders, places, presence, spatial activity (not hype alone)
+```
+
+Agents must **not** reintroduce AVC, coin.astranov.eu as primary money, or hard-code “1 unit = 1 EUR” as the product law.
+
+---
+
+## 6. Real-time marketplace & video (in space)
 
 | Capability | Spec |
 |------------|------|
 | Delivery | pin → browse → cart → place → track → driver claim → pilot multi-stop |
-| Fees | Platform **3%** · vendor→driver **15%** of gross goods |
-| Video | Edge video control · connected peers · MapComms — pins can be `kind: call` |
-| Presence | Live users cluster into **SpaceNetCities** hubs at national zoom |
+| Fees | Platform **3% of S** · vendor→driver **15% of gross goods in S** |
+| Currency | All fees and prices in **S (SpaceNets)** |
+| Video | Edge video / peers — pins can be `kind: call` |
+| Presence | Live users cluster into SpaceNet city hubs at national zoom |
 
 Marketplace and video are **not separate apps** — they are **kinds of places** on the net.
 
 ---
 
-## 6. Brand & chrome
+## 7. Brand & chrome
 
 | UI | Spec |
 |----|------|
@@ -172,7 +198,7 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 ---
 
-## 7. Code map (hardcoded owners)
+## 8. Code map (hardcoded owners)
 
 | Concern | Owner |
 |---------|--------|
@@ -187,7 +213,7 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 ---
 
-## 8. Mission ship gate (do not ship dummy)
+## 9. Mission ship gate (do not ship dummy)
 
 **Owner rule:** do not deploy cosmetic / half-wired layers until the operating path is real.
 
@@ -238,7 +264,7 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 
 ---
 
-## 9. Deploy (strict — owner 2026-07-27)
+## 10. Deploy (strict — owner 2026-07-27)
 
 ```text
 node scripts/owner-push.mjs <files> --message=...
@@ -266,7 +292,7 @@ Pre-ship checklist (all required):
 
 ---
 
-## 10. Agent discipline — always study / always record
+## 11. Agent discipline — always study / always record
 
 **Without the owner having to repeat it:**
 
@@ -278,13 +304,13 @@ Pre-ship checklist (all required):
 
 ---
 
-## 11. Intellectual property — Astranov SpaceNet
+## 12. Intellectual property — Astranov SpaceNet
 
 | Claim | Record |
 |-------|--------|
-| **Name** | Astranov · Astranov SpaceNet · SpaceNet (product) |
+| **Name** | Astranov · Astranov SpaceNet · SpaceNet (product) · **S / SpaceNets** (currency) |
 | **Authors** | Product owner (notisastranov) + AI pair-development under owner direction |
-| **Subject** | Spatial internet UI; cosmos address OS; companion CLI; multi-tile field; 3%/15% marketplace economics |
+| **Subject** | Spatial internet UI; cosmos address OS; companion CLI; multi-tile field; **S** economics 3%/15%; dynamic network-linked value |
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Live** | https://astranov.eu |
 | **Notice** | © Astranov SpaceNet. All rights reserved. |
@@ -295,7 +321,7 @@ Agents **must not** strip IP notices or rebrand without owner request.
 
 ---
 
-## 12. Do not
+## 13. Do not
 
 - Flood the screen with floating multi-button docks / second chrome windows  
 - Treat SpaceNet as “another map app with a chat box”  
@@ -304,6 +330,7 @@ Agents **must not** strip IP notices or rebrand without owner request.
 - Reintroduce SPA HTML as `astranov-*.js` without `/js/` rescue  
 - Skip SPECS updates when the owner gives new product law  
 - Strip Astranov SpaceNet IP notices  
+- Reintroduce **AVC**, dual coins, or fixed 1:1 EUR as product money — use **S (SpaceNets)** only  
 
 ---
 

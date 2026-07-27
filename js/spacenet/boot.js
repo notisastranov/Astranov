@@ -75,6 +75,7 @@
     .then(() => loadScript('/js/spacenet/globe.js'))
     .then(() => loadScript('/js/spacenet/tasks.js'))
     .then(() => loadScript('/js/spacenet/profiles.js'))
+    .then(() => loadScript('/js/spacenet/currency.js'))
     .then(() => loadScript('/js/spacenet/commerce.js'))
     .then(() => loadScript('/js/spacenet/spatial.js'))
     .then(() => loadScript('/js/spacenet/cli.js'))

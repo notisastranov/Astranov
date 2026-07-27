@@ -274,7 +274,11 @@
     const t = global.SNTasks?.create?.({
       kind: 'delivery',
       role: 'driver',
-      title: '📦 Order · ' + items.map((i) => i.name).slice(0, 2).join(', ') + ' · €' + total.toFixed(2),
+      title:
+        '📦 Order · ' +
+        items.map((i) => i.name).slice(0, 2).join(', ') +
+        ' · ' +
+        (global.SNCurrency ? SNCurrency.format(total) : total.toFixed(2) + ' S'),
       dur: '45m',
       raw: 'delivery order ' + total,
       lat: get(vendorId)?.lat,

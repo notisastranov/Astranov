@@ -10,7 +10,8 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260727240000-city-mission-path` |
+| **Current build** | `20260728020000-spacenets-S` |
+| **Currency** | **S (SpaceNets)** — dynamic value of SpaceNet vs fiat/crypto; **not AVC / coins** |
 | **App-first shell** | My city · Shops · Order · Place · Vault · **Cosmos** · Cydonia · Menu · Talk |
 | **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI · ALL of space addressable |
 
