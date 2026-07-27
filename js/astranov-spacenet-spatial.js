@@ -123,7 +123,11 @@
       this._injectPanel();
       this.sync();
       if (this._tickIv) clearInterval(this._tickIv);
-      this._tickIv = setInterval(() => this.sync(), 2200);
+      // Sync on demand + slow pulse (was 2.2s hammer → sticky)
+      this._tickIv = setInterval(() => {
+        if (document.hidden) return;
+        this.sync();
+      }, 12000);
       window.addEventListener('astranov:city-open', () => this.sync());
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) this.sync();
