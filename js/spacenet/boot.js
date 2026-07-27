@@ -111,6 +111,7 @@
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
     '/js/spacenet/cli.js',
+    '/js/spacenet/ai.js', // Astranov AI on critical path — must greet
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
@@ -202,11 +203,21 @@
       done('ready ' + ms + 'ms' + (globeOk ? '' : ' · no-globe'));
       try {
         if (window.SNCli && SNCli.log) {
-          SNCli.log('SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL' : 'CLI-only (globe failed)'), 'ok');
-          SNCli.preview('locate · shops · rate · resources · help');
+          SNCli.log('SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL' : 'CLI-only'), 'ok');
+          SNCli.preview('Astranov AI · locate · shops · talk');
         }
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
+
+      // Astranov AI must speak now (already on critical load chain)
+      try {
+        if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
+        else if (window.SNAi && SNAi.greet) void SNAi.greet();
+        else if (window.SNCli && SNCli.log)
+          SNCli.log('Astranov AI missing from boot chain', 'err');
+      } catch (e) {
+        console.warn('[SpaceNet] AI presence', e);
+      }
 
       // Soft shops
       setTimeout(function () {
@@ -224,25 +235,6 @@
           }
         } catch (e) {}
       }, 900);
-
-      // Astranov AI — load immediately and SPEAK (not a silent module)
-      setTimeout(function () {
-        load('/js/spacenet/ai.js', 10000)
-          .then(function () {
-            try {
-              if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
-              else if (window.SNAi && SNAi.greet) void SNAi.greet();
-            } catch (e) {
-              console.warn('[SpaceNet] AI presence', e);
-            }
-          })
-          .catch(function () {
-            try {
-              if (window.SNCli && SNCli.log)
-                SNCli.log('AI module failed to load · hard refresh', 'err');
-            } catch (e) {}
-          });
-      }, 200);
       setTimeout(function () {
         loadSoft('/js/spacenet/search.js', 12000);
       }, 700);

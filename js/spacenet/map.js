@@ -86,18 +86,97 @@
       { passive: false }
     );
 
-    // Empty-map click → multi-tile create at coordinates
-    M.map.on('click', (ev) => {
-      if (!ev?.latlng) return;
-      // Ignore if click was on a marker (Leaflet fires map click after marker sometimes — short delay check)
-      try {
-        global.SNTile?.createAt?.(ev.latlng.lat, ev.latlng.lng);
-      } catch (e) {
-        global.SNCli?.log?.('Tile create failed · ' + (e.message || e), 'err');
-      }
-    });
+    // LONG-PRESS empty map → multi-tile create (never short accidental click)
+    bindLongPressCreate(M.map);
 
     return M.map;
+  }
+
+  function bindLongPressCreate(map) {
+    if (!map || map._snLongPressBound) return;
+    map._snLongPressBound = true;
+    const HOLD_MS = 580;
+    let timer = null;
+    let startLL = null;
+    let startPt = null;
+    let cancelled = false;
+
+    function clear() {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      startLL = null;
+      startPt = null;
+    }
+
+    function onDown(e) {
+      // Original event may be on a marker — skip create
+      const oe = e.originalEvent;
+      if (oe && oe.target) {
+        const t = oe.target;
+        if (
+          t.closest &&
+          (t.closest('.leaflet-marker-icon') ||
+            t.closest('.leaflet-interactive') ||
+            t.closest('.sn-pin') ||
+            t.closest('.sn-pin-inner'))
+        ) {
+          return;
+        }
+      }
+      if (M._markerHit) return;
+      cancelled = false;
+      startLL = e.latlng;
+      startPt = e.containerPoint;
+      timer = setTimeout(() => {
+        timer = null;
+        if (cancelled || !startLL || !M.active) return;
+        try {
+          global.SNTile?.createAt?.(startLL.lat, startLL.lng);
+          global.SNCli?.log?.('Long-press · multi-tile', 'ok');
+        } catch (err) {
+          global.SNCli?.log?.('Tile create failed · ' + (err.message || err), 'err');
+        }
+      }, HOLD_MS);
+    }
+
+    function onMove(e) {
+      if (!startPt || !e.containerPoint) return;
+      const dx = e.containerPoint.x - startPt.x;
+      const dy = e.containerPoint.y - startPt.y;
+      if (dx * dx + dy * dy > 100) {
+        cancelled = true;
+        clear();
+      }
+    }
+
+    function onUp() {
+      clear();
+      // allow next marker hit flag to clear after click cycle
+      setTimeout(() => {
+        M._markerHit = false;
+      }, 50);
+    }
+
+    map.on('mousedown', onDown);
+    map.on('touchstart', onDown, { passive: true });
+    map.on('mousemove', onMove);
+    map.on('touchmove', onMove, { passive: true });
+    map.on('mouseup', onUp);
+    map.on('touchend', onUp);
+    map.on('touchcancel', onUp);
+    // Explicitly do NOT create on short click
+    map.on('click', () => {
+      clear();
+    });
+  }
+
+  function markMarkerHit() {
+    M._markerHit = true;
+    setTimeout(() => {
+      M._markerHit = false;
+    }, 400);
   }
 
   function clearGroup(arr) {
@@ -163,13 +242,16 @@
             '">Claim</button>'
         );
       m.on('click', (e) => {
+        markMarkerHit();
         try {
           L.DomEvent.stopPropagation(e);
+          if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
         } catch (_) {}
       });
       m.on('popupopen', () => {
         document.querySelectorAll('[data-task="' + t.id + '"]').forEach((btn) => {
-          btn.onclick = () => {
+          btn.onclick = (ev) => {
+            ev?.stopPropagation?.();
             const r = global.SNTasks?.claim?.(t.id);
             if (r?.ok) global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
           };
@@ -191,12 +273,24 @@
       const m = L.marker([p.lat, p.lng], {
         icon: avatarIcon(p.avatar, color),
         title: p.name,
+        riseOnHover: true,
+        keyboard: true,
       }).addTo(M.map);
       m.on('click', (e) => {
+        markMarkerHit();
         try {
           L.DomEvent.stopPropagation(e);
+          if (e.originalEvent) {
+            L.DomEvent.preventDefault(e.originalEvent);
+            L.DomEvent.stop(e.originalEvent);
+          }
         } catch (_) {}
-        global.SNTile?.open?.(p);
+        try {
+          const full = global.SNProfiles?.get?.(p.id) || p;
+          global.SNTile?.open?.(full);
+        } catch (err) {
+          global.SNCli?.log?.('Tile open failed · ' + (err.message || err), 'err');
+        }
       });
       M.profileMarkers.push(m);
     });
@@ -246,8 +340,10 @@
         weight: 2,
       }).addTo(map);
       M._me.on('click', (e) => {
+        markMarkerHit();
         try {
           L.DomEvent.stopPropagation(e);
+          if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
         } catch (_) {}
         global.SNTile?.openMe?.();
       });
@@ -255,8 +351,8 @@
       M._me.setLatLng([p.lat, p.lng]);
     }
 
-    global.SNCli?.log?.('City map · profile tiles · tap pin for menu/date/driver', 'ok');
-    global.SNCli?.preview?.('City · tap tiles · + for your profile');
+    global.SNCli?.log?.('City · short-tap pin = open tile · long-press empty = create', 'ok');
+    global.SNCli?.preview?.('Tap pin · long-press map · 🌍 Earth');
     return true;
   }
 
@@ -310,7 +406,11 @@
           weight: 1,
         })
           .addTo(M.map)
-          .on('click', () => {
+          .on('click', (e) => {
+            markMarkerHit();
+            try {
+              L.DomEvent.stopPropagation(e);
+            } catch (_) {}
             const id =
               'poi_' +
               String(p.name || 'x')

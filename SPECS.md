@@ -80,7 +80,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 |------|------|------|
 | **Earth imaging KEEP** | **`SNGlobe`** `js/spacenet/globe.js` — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
 | **Zoom out of city** | Leaves flat map → **3D SNGlobe GLOBAL** | Hard ban: stuck on Leaflet as “world” |
-| **Map empty click** | `SNTile.createAt(lat,lng)` multi-tile create | Required |
+| **Map long-press** | **Long-press** empty map (~580ms) → `SNTile.createAt` multi-tile. **Short-tap never creates.** Short-tap pin → open full tile | Required |
 | **Radar** | Top-left · ~8fps · 1671 km/h on global | Required |
 | **Logo** | Center · hard reset | Never under edge/S |
 | **S field** | Top-right · S balance · mine · FPS · finance | Required · **S primary** |

@@ -22,7 +22,52 @@
       .replace(/"/g, '&quot;');
   }
 
+  function ensureCss() {
+    if (document.getElementById('sn-tile-css')) return;
+    const st = document.createElement('style');
+    st.id = 'sn-tile-css';
+    st.textContent = [
+      '#sn-tile{position:fixed;inset:0;z-index:55;display:none;align-items:flex-end;justify-content:center;',
+      'padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:rgba(0,0,0,.45);pointer-events:auto}',
+      '#sn-tile.open{display:flex}',
+      '#sn-tile .sn-tile-card{width:min(440px,100%);max-height:min(78vh,720px);overflow:auto;border-radius:16px;',
+      'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.45);box-shadow:0 12px 40px rgba(0,0,0,.65);',
+      'color:#c8e4ff;display:flex;flex-direction:column}',
+      '#sn-tile .sn-tile-cover{position:relative;height:120px;background:#061428 center/cover no-repeat;flex-shrink:0}',
+      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;border:0;border-radius:10px;',
+      'background:rgba(0,0,0,.55);color:#fff;width:36px;height:36px;cursor:pointer;font-size:16px}',
+      '#sn-tile .sn-tile-x{right:8px}#sn-tile .sn-tile-edit-cover{right:52px}',
+      '#sn-tile .sn-tile-head{display:flex;gap:12px;padding:0 14px 10px;margin-top:-28px;align-items:flex-end}',
+      '#sn-tile .sn-tile-av-wrap{position:relative;flex-shrink:0}',
+      '#sn-tile .sn-tile-av{width:64px;height:64px;border-radius:50%;border:3px solid #1a6fd4;object-fit:cover;background:#0a1a30}',
+      '#sn-tile .sn-tile-edit-av{position:absolute;right:-4px;bottom:-4px;width:24px;height:24px;border-radius:50%;',
+      'border:0;background:#1a6fd4;color:#fff;cursor:pointer;font-weight:700}',
+      '#sn-tile .sn-tile-name{font:700 16px system-ui;color:#e8f4ff}',
+      '#sn-tile .sn-tile-handle{font:12px ui-monospace,monospace;color:#5a8aaa}',
+      '#sn-tile .sn-tile-bio{font:12px system-ui;color:#8a9bb0;margin-top:4px}',
+      '#sn-tile .sn-tile-roles,#sn-tile .sn-tile-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px}',
+      '#sn-tile .sn-role,#sn-tile .sn-tab{border:1px solid rgba(61,158,255,.35);background:rgba(0,12,28,.8);',
+      'color:#b8c4d4;border-radius:999px;padding:6px 10px;font:600 11px system-ui;cursor:pointer}',
+      '#sn-tile .sn-role.on,#sn-tile .sn-tab.on{border-color:#3d9eff;color:#3d9eff;background:rgba(26,111,212,.2)}',
+      '#sn-tile .sn-tile-body{padding:8px 14px 12px;flex:1;overflow:auto;font:13px/1.45 system-ui}',
+      '#sn-tile .sn-tile-foot{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 14px;border-top:1px solid rgba(26,111,212,.25)}',
+      '#sn-tile .sn-btn{border:1px solid rgba(61,158,255,.4);background:rgba(26,111,212,.25);color:#e8f4ff;',
+      'border-radius:10px;padding:8px 12px;font:600 12px system-ui;cursor:pointer}',
+      '#sn-tile .sn-btn.primary{background:rgba(0,221,136,.2);border-color:rgba(0,221,136,.45);color:#6dffb0}',
+      '#sn-tile .sn-empty{color:#5a6a7e;font-size:12px;padding:8px 0}',
+      '#sn-tile .sn-menu-row,#sn-tile .sn-post{display:flex;justify-content:space-between;gap:8px;padding:8px 0;',
+      'border-bottom:1px solid rgba(26,111,212,.15)}',
+      '.sn-pin{background:transparent!important;border:0!important}',
+      '.sn-pin-inner{width:36px;height:36px;border-radius:50%;border:2px solid #3d9eff;background:#061428;',
+      'overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}',
+      '.sn-pin-inner img{width:100%;height:100%;object-fit:cover}',
+      '.leaflet-marker-icon.sn-pin{margin-left:-18px!important;margin-top:-18px!important}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
   function ensureDom() {
+    ensureCss();
     if ($('sn-tile')) return;
     const el = document.createElement('div');
     el.id = 'sn-tile';
@@ -52,7 +97,10 @@
       '  <div class="sn-tile-foot" id="sn-tile-foot"></div>' +
       '</div>';
     document.body.appendChild(el);
-    $('sn-tile-close')?.addEventListener('click', close);
+    $('sn-tile-close')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      close();
+    });
     el.addEventListener('click', (e) => {
       if (e.target === el) close();
     });
@@ -88,25 +136,38 @@
   function open(profileOrId, opts) {
     ensureDom();
     const Prof = global.SNProfiles;
-    if (!Prof) return;
+    if (!Prof) {
+      global.SNCli?.log?.('Profiles offline', 'err');
+      return null;
+    }
     let p =
       typeof profileOrId === 'string'
         ? Prof.get(profileOrId)
         : profileOrId && profileOrId.id
-          ? profileOrId
+          ? Prof.get(profileOrId.id) || profileOrId
           : null;
     if (!p) p = Prof.me();
+    if (!p || !p.id) {
+      global.SNCli?.log?.('No tile profile', 'err');
+      return null;
+    }
+    // Keep map registry in sync so re-open works
+    try {
+      if (Prof.upsert && profileOrId && typeof profileOrId === 'object') Prof.upsert(p);
+    } catch (_) {}
     T.profileId = p.id;
     T.open = true;
-    T.tab = opts?.tab || defaultTab(p);
+    T.tab = (opts && opts.tab) || defaultTab(p);
     const root = $('sn-tile');
+    if (!root) return null;
     root.classList.add('open');
     root.setAttribute('aria-hidden', 'false');
+    root.style.display = 'flex';
     render();
-    global.SNCli?.preview?.(p.name + ' · tile');
-    if (p.lat != null && global.SNGlobe?.pulse) {
-      SNGlobe.pulse(p.lat, p.lng, parseInt((Prof.pinColor(p) || '#6dffb0').slice(1), 16) || 0x6dffb0, p.name, 9000);
-    }
+    global.SNCli?.log?.('Tile · ' + (p.name || p.id), 'ok');
+    global.SNCli?.preview?.((p.name || 'Tile') + ' open');
+    global.SNUi?.expandPanel?.(false);
+    return p;
   }
 
   function defaultTab(p) {
@@ -123,6 +184,7 @@
     if (root) {
       root.classList.remove('open');
       root.setAttribute('aria-hidden', 'true');
+      root.style.display = 'none';
     }
   }
 
@@ -476,40 +538,49 @@
     open(global.SNProfiles?.me?.(), { tab: tab || 'about' });
   }
 
-  /** Multi-tile create at map coordinates (map empty-click / +) */
+  /**
+   * Multi-tile create — only via long-press on map or intentional + .
+   * Never short-click.
+   */
   function createAt(lat, lng, opts) {
     const Prof = global.SNProfiles;
     if (!Prof || lat == null || lng == null) return null;
+    opts = opts || {};
     const id =
       'place_' +
-      String(lat.toFixed(4) + '_' + lng.toFixed(4)).replace(/\./g, 'p').replace(/-/g, 'm');
+      String(Number(lat).toFixed(4) + '_' + Number(lng).toFixed(4))
+        .replace(/\./g, 'p')
+        .replace(/-/g, 'm');
     const existing = Prof.get?.(id);
     if (existing) {
-      open(existing, opts || { tab: 'about' });
-      return existing;
+      return open(existing, { tab: opts.tab || 'about' });
     }
     const p = Prof.upsert({
       id,
-      name: (opts && opts.name) || 'New place',
+      name: opts.name || 'Place ' + Number(lat).toFixed(3) + '°',
       handle: '@place',
-      bio: 'Tap roles · menu · social · multi-tile',
-      lat,
-      lng,
-      roles: { social: true, client: true, vendor: false, driver: false, dating: false },
-      posts: [{ id: 'p0', text: 'Dropped on SpaceNet map', t: Date.now() }],
+      bio: 'Long-press created · set roles · menu · social',
+      cover: '',
+      avatar: '',
+      lat: Number(lat),
+      lng: Number(lng),
+      roles: { social: true, client: true, vendor: false, driver: false, dating: false, worker: false },
+      posts: [{ id: 'p0', text: 'New multi-tile on SpaceNet', t: Date.now() }],
+      menu: [],
     });
-    global._snLastPos = { lat, lng };
+    global._snLastPos = { lat: Number(lat), lng: Number(lng) };
     try {
-      global.SNTasks?.setPos?.(lat, lng);
+      global.SNTasks?.setPos?.(Number(lat), Number(lng));
     } catch (_) {}
-    open(p, opts || { tab: 'about' });
-    global.SNMap?.showProfiles?.();
+    const opened = open(p, { tab: opts.tab || 'about' });
+    try {
+      global.SNMap?.showProfiles?.();
+    } catch (_) {}
     global.SNCli?.log?.(
-      'Multi-tile · ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ' · set roles on tile',
+      'Multi-tile created · ' + Number(lat).toFixed(4) + ', ' + Number(lng).toFixed(4),
       'ok'
     );
-    global.SNCli?.preview?.('Multi-tile open');
-    return p;
+    return opened || p;
   }
 
   function init() {

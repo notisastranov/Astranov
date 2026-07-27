@@ -9,6 +9,7 @@
   var hist = [];
   var greeted = false;
   var busy = false;
+  var GREET_KEY = 'sn:ai-greeted-session';
 
   function loadHist() {
     try {
@@ -302,24 +303,27 @@
     return { crawled: crawled, text: text };
   }
 
-  /** Proactive presence — talk to user and offer work */
-  async function greet() {
-    if (greeted) return;
+  /** Proactive presence — talk to user and offer work (every page load) */
+  async function greet(force) {
+    if (greeted && !force) return;
     greeted = true;
+    try {
+      sessionStorage.setItem(GREET_KEY, String(Date.now()));
+    } catch (e) {}
     var lines = [
-      'Astranov AI online — I am here with you on SpaceNet.',
-      'I talk and I act: locate you, open real shops, post jobs/dates/deliveries, multi-tiles on the map.',
-      'Say what you need, tap ➤, or 🎙 hands-free. Try: locate · shops · job barman 3h',
+      'Astranov AI · online with you on SpaceNet.',
+      'I talk and I act: locate · shops · job · date · deliver. Long-press map to create multi-tile. Short-tap pins to open.',
+      'Type anything, tap ➤, or 🎙 — try: locate',
     ];
     lines.forEach(function (ln) {
       say(ln, 'ok');
     });
     pushHist('assistant', lines.join(' '));
 
-    // Soft edge warm + personalized tip (non-blocking)
+    // Soft edge tip (non-blocking)
     try {
       var tip = await callEdge(
-        'Greet a SpaceNet user in one short sentence and propose one concrete action (locate or shops). Identity: Astranov AI only.',
+        'One short sentence: greet SpaceNet user and suggest locate or shops. You are Astranov AI only.',
         'chat',
         { long: false }
       );
@@ -328,14 +332,12 @@
   }
 
   function bootPresence() {
-    // Expand CLI so the conversation is visible
     try {
       if (global.SNUi && SNUi.setSize) SNUi.setSize('mid', true);
       else if (global.SNUi && SNUi.expandPanel) SNUi.expandPanel(true);
     } catch (e) {}
-    setTimeout(function () {
-      void greet();
-    }, 350);
+    // Immediate local voice — do not wait for edge
+    void greet(true);
   }
 
   loadHist();
