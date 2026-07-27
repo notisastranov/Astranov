@@ -195,7 +195,11 @@
       this._injectUi();
       this._ensureCosmicBodies();
       this.syncMarkers();
-      setInterval(() => this.syncMarkers(), 4000);
+      setInterval(() => {
+        if (document.hidden) return;
+        const lv = window.CosmicZoom?.level;
+        if (lv === 'galactic' || lv === 'galaxy' || lv === 'orbit') this.syncMarkers();
+      }, 15000);
     },
 
     list(filter) {
