@@ -2520,26 +2520,29 @@ const GlobeNavigate = {
     if (typeof waitForGlobeFly === 'function') await waitForGlobeFly(dur + 800);
     await CityMap?.openAt?.(lat, lng, { camZ: this.CITY_CAM_Z, zoom: this.LEAFLET_ZOOM });
     window._lastPos = { lat, lng };
-    if (window.Commerce?.loadVendors) {
-      await Promise.race([
-        window.Commerce.loadVendors({ lat, lng, radiusKm: 12 }),
-        new Promise(r => setTimeout(r, 5000)),
+    window._lazyUserReady = true;
+    let shopsReal = 0;
+    try {
+      const m = await Promise.race([
+        SpaceNetMission?.ensureOperatingPath?.({ lat, lng, force: true, heavy: true, silent: true }),
+        new Promise((r) => setTimeout(() => r(null), 12000)),
       ]);
+      shopsReal = m?.shopsReal || 0;
+    } catch (_) {
+      if (window.Commerce?.loadVendors) {
+        try {
+          await Commerce.loadVendors({ lat, lng, radiusKm: 12, allowDemo: false });
+          shopsReal = (Commerce.vendors || []).filter((v) => !String(v.id || '').startsWith('demo-')).length;
+        } catch (__) {}
+      }
     }
-    // Populate map with real OSM/GBP vendors for this city (edge + Overpass fallback)
-    void SpaceNetCrawler?.crawlAndPopulate?.(lat, lng, { radiusKm: 2.5 })
-      .then(() => {
-        window.Commerce?.showOnGlobe?.();
-        GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
-        CityMap?.syncMapPins?.();
-      })
-      .catch(() => {});
     window.Commerce?.showOnGlobe?.();
     GlobeEntity?.syncVendors?.(window.Commerce?.vendors || []);
     CityMap?.syncMapPins?.();
+    try { SpaceNetSpatial?.sync?.(); } catch (_) {}
     window._cityDropLock = false;
-    GlobeDeck?.setPreview?.('City z' + this.LEAFLET_ZOOM + ' · crawling real shops…');
-    AciCli?.print?.('nav · city z' + this.LEAFLET_ZOOM + ' · vendor crawl started', 'ok');
+    GlobeDeck?.setPreview?.('City · ' + shopsReal + ' real shops');
+    AciCli?.print?.('nav · city · ' + shopsReal + ' real shops', shopsReal ? 'ok' : 'dim');
     this._syncChip();
     if (opts?.openShops) await window.Commerce?.showPicker?.();
     return 'city';
@@ -11601,53 +11604,75 @@ const CityLife = {
       void this.flyToCity(pos.lat, pos.lng, opts.label || 'Your city');
       setTimeout(() => CityMap?.openAt?.(pos.lat, pos.lng, { camZ: this.CITY_ZOOM }), 120);
 
-      if (window.Commerce?.loadVendors) {
-        await Promise.race([
-          window.Commerce.loadVendors({ lat: pos.lat, lng: pos.lng, radiusKm: 12 }),
-          new Promise(resolve => setTimeout(() => resolve(null), 8000)),
-        ]);
-      }
+      // Mission path: DB-first shops + spatial (never 16s dual crawl)
+      window._lazyUserReady = true;
+      let mission = null;
       try {
-        await Promise.race([
-          SpaceNetCrawler?.crawlAndPopulate?.(pos.lat, pos.lng, { radiusKm: 2.5 }),
-          new Promise(resolve => setTimeout(() => resolve(null), 16000)),
+        mission = await Promise.race([
+          SpaceNetMission?.ensureOperatingPath?.({
+            lat: pos.lat, lng: pos.lng, force: true, heavy: true, silent: true,
+          }),
+          new Promise((r) => setTimeout(() => r(null), 12000)),
         ]);
       } catch (_) {}
+      if (!mission && window.Commerce?.loadVendors) {
+        try {
+          await Promise.race([
+            Commerce.loadVendors({ lat: pos.lat, lng: pos.lng, radiusKm: 12, allowDemo: false }),
+            new Promise((r) => setTimeout(r, 5000)),
+          ]);
+        } catch (_) {}
+      }
       await window.AstranovCityShop?.placeForUser?.(pos.lat, pos.lng);
       let nearby = this.nearbyVendors(pos.lat, pos.lng);
+      // Prefer real POIs; strip demos if reals present
+      const realN = nearby.filter((v) => v && !String(v.id || '').startsWith('demo-'));
+      if (realN.length >= 2) nearby = realN;
       const construction = (window.Commerce?.vendors || []).find(v => window.AstranovCityShop?.isConstructionVendor?.(v));
       if (construction && !nearby.some(v => v.id === construction.id)) nearby = [construction].concat(nearby);
       if (nearby.length) {
         window.Commerce.vendors = nearby.concat((window.Commerce.vendors || []).filter(v => !nearby.includes(v))).slice(0, 40);
       }
       window.AstranovCityShop?.ensureInVendorList?.();
-    window.Commerce?.showOnGlobe?.();
-    GlobeEntity?.syncVendors?.(window.Commerce.vendors);
+      window.Commerce?.showOnGlobe?.();
+      GlobeEntity?.syncVendors?.(window.Commerce.vendors);
+      try { window.SpaceNetSpatial?.sync?.(); } catch (_) {}
+      try { CityMap?.syncMapPins?.(); } catch (_) {}
 
-    const drivers = window.Commerce?.fetchNearbyDrivers
-      ? await Promise.race([
-        window.Commerce.fetchNearbyDrivers(pos.lat, pos.lng),
-        new Promise(resolve => setTimeout(() => resolve([]), 6000)),
-      ])
-      : [];
-    window.Commerce?.showDriversOnGlobe?.(drivers);
-    this._pulseFriends();
-    this._showLocalNews(pos.lat, pos.lng);
-    this._updateChip(nearby.length, drivers.length);
+      const drivers = window.Commerce?.fetchNearbyDrivers
+        ? await Promise.race([
+          window.Commerce.fetchNearbyDrivers(pos.lat, pos.lng),
+          new Promise(resolve => setTimeout(() => resolve([]), 4000)),
+        ])
+        : [];
+      window.Commerce?.showDriversOnGlobe?.(drivers);
+      this._pulseFriends();
+      this._showLocalNews(pos.lat, pos.lng);
+      this._updateChip(nearby.length, drivers.length);
 
       CityMap?.onCamera?.(this.CITY_ZOOM, 'earth');
-      const msg = nearby.length + ' shops · ' + drivers.length + ' drivers · ' + (window.others?.length || 0) + ' friends nearby';
-      GlobeDeck?.setMapStatus('🏙 City map · ' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2));
-      GlobeDeck?.setPreview('🏙 ' + msg);
-      AciCli?.print('◎ City view · ' + msg, 'ok');
-      ACIControl?.reply('City map open — ' + msg + ' · tap a shop or type: order pitogyra');
-      FieldBrain?.pulse?.('city', msg, { role: 'client', props: { lat: pos.lat, lng: pos.lng, shops: nearby.length } });
+      const realCount = nearby.filter((v) => !String(v.id || '').startsWith('demo-')).length;
+      const msg = realCount + ' real shops · ' + drivers.length + ' drivers · ' + (window.others?.length || 0) + ' friends';
+      GlobeDeck?.setMapStatus('City · ' + pos.lat.toFixed(2) + ', ' + pos.lng.toFixed(2));
+      GlobeDeck?.setPreview?.(msg);
+      AciCli?.print?.('◎ City · ' + msg + (mission?.crawl?.source ? ' · ' + mission.crawl.source : ''), realCount ? 'ok' : 'dim');
+      ACIControl?.reply?.(msg + (realCount ? ' · tap a shop pin or [[shops]]' : ' · [[shops]] to refresh'));
+      FieldBrain?.pulse?.('city', msg, { role: 'client', props: { lat: pos.lat, lng: pos.lng, shops: realCount } });
+      SpaceNetCompanion?.setLine?.(msg.slice(0, 90));
 
       if (opts.openShops && nearby.length) {
-        GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+        GlobeDeck?.expand?.(SuperCli?.title || 'Astranov SpaceNet');
         await window.Commerce?.showPicker?.();
       }
-      return { vendors: nearby, drivers, lat: pos.lat, lng: pos.lng, mapActive: !!CityMap?.active };
+      return {
+        vendors: nearby,
+        drivers,
+        lat: pos.lat,
+        lng: pos.lng,
+        mapActive: !!CityMap?.active,
+        shopsReal: realCount,
+        mission,
+      };
     } catch (e) {
       AciCli?.print('city drop error: ' + (e.message || e), 'err');
       CityMap?._applyLayerStack?.(4);
@@ -11690,15 +11715,10 @@ const CityLife = {
   },
 
   _tickFriends() {
-    if (Auth?.user || AstranovPresence?.rtChannel) return;
+    // No fake friend jitter — dummy motion wastes CPU and lies on the map
+    if (!Auth?.user && !AstranovPresence?.rtChannel) return;
     if (!(window.others || []).length) return;
-    const friends = window.others || [];
-    friends.forEach((u) => {
-      u.lat += (Math.random() - 0.5) * 0.0012;
-      u.lng += (Math.random() - 0.5) * 0.0012;
-    });
-    window.others = friends;
-    GlobeEntity?.syncFriends?.(friends);
+    GlobeEntity?.syncFriends?.(window.others);
     if (CityMap?.active) CityMap._syncMarkers?.();
   },
 
