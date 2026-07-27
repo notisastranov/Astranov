@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728080100-map-cli-ai" />
-<meta name="astranov-continuity" content="20260728080100-map-cli-ai" />
+<meta name="astranov-build" content="20260728090000-cli-grab-any" />
+<meta name="astranov-continuity" content="20260728090000-cli-grab-any" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
-<meta name="astranov-mission" content="SNGlobe imaging · zoom-out to Earth · multi-tile map click · CLI send+handsfree+AI" />
-<meta name="astranov-ai-handoff" content="SPECS: never make owner restate law. Probe before ship. Keep SNGlobe Earth imaging." />
+<meta name="astranov-mission" content="CLI one-finger grab anywhere · smooth expand/retract · SNGlobe keep" />
+<meta name="astranov-ai-handoff" content="SPECS: CLI grab anywhere. Never make owner restate. SNGlobe keep." />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -150,16 +150,29 @@
     background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
     display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 -4px 28px rgba(0,0,0,0.55);
+    touch-action: none; /* one-finger grab anywhere on panel */
+    cursor: grab;
   }
-  #panel.collapsed { max-height: 108px; }
+  #panel.sn-size-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+  #panel.dragging { cursor: grabbing; transition: none !important; user-select: none; }
+  #panel.collapsed { max-height: 120px; }
   #panel.mid { max-height: 38vh; }
   #panel.expanded { max-height: min(78vh, 640px); }
-  #cli-drag { cursor: grab; padding: 8px 12px 4px; border-bottom: 1px solid rgba(26,111,212,0.25);
-    user-select: none; touch-action: none; }
+  #cli-drag {
+    cursor: grab; padding: 10px 12px 6px; border-bottom: 1px solid rgba(26,111,212,0.25);
+    user-select: none; touch-action: none; flex-shrink: 0;
+  }
+  #cli-drag::before {
+    content: ''; display: block; width: 36px; height: 4px; border-radius: 99px;
+    background: rgba(61,158,255,0.45); margin: 0 auto 8px;
+  }
   #cli-preview { font: 11px/1.3 ui-monospace, monospace; color: var(--bright); min-height: 16px; }
-  #cli-log { flex: 1; overflow-y: auto; padding: 8px 12px; min-height: 48px;
-    font: 12px/1.4 ui-monospace, monospace; }
+  #cli-log {
+    flex: 1; overflow-y: auto; padding: 8px 12px; min-height: 48px;
+    font: 12px/1.4 ui-monospace, monospace; touch-action: pan-y; cursor: default;
+  }
   #panel.collapsed #cli-log { display: none; }
+  #cli-form { touch-action: manipulation; cursor: default; }
   .cli-line { margin: 0 0 4px; color: var(--text); white-space: pre-wrap; word-break: break-word; }
   .cli-line.cmd { color: var(--bright); }
   .cli-line.ok { color: #6dffb0; }
@@ -358,7 +371,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728080100-map-cli-ai"></script>
+<script src="/js/spacenet/boot.js?v=20260728090000-cli-grab-any"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

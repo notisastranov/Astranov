@@ -1,9 +1,9 @@
-/* Astranov SpaceNet UI — one-finger drag + expand/retract CLI (PRODUCT RULE) */
+/* SpaceNet CLI — one-finger grab ANYWHERE: move + smooth expand/retract (SPECS) */
 (function (global) {
   'use strict';
 
-  const POS_KEY = 'sn:cli-pos-v1';
-  const SIZE_KEY = 'sn:cli-size-v1'; // collapsed | mid | expanded
+  var POS_KEY = 'sn:cli-pos-v1';
+  var SIZE_KEY = 'sn:cli-size-v1';
 
   function $(id) {
     return document.getElementById(id);
@@ -15,29 +15,47 @@
     } catch (_) {
       return;
     }
-    const el = $('coach');
+    var el = $('coach');
     if (!el) return;
     el.hidden = false;
-    $('coach-ok')?.addEventListener(
-      'click',
-      () => {
-        el.hidden = true;
-        try {
-          localStorage.setItem('sn:coach-v1', '1');
-        } catch (_) {}
-        $('cli-in')?.focus();
-      },
-      { once: true }
-    );
+    $('coach-ok') &&
+      $('coach-ok').addEventListener(
+        'click',
+        function () {
+          el.hidden = true;
+          try {
+            localStorage.setItem('sn:coach-v1', '1');
+          } catch (_) {}
+          $('cli-in') && $('cli-in').focus();
+        },
+        { once: true }
+      );
   }
 
-  function setSize(mode) {
-    const panel = $('panel');
+  function sizePx(mode) {
+    var h = window.innerHeight || 700;
+    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16));
+    if (mode === 'expanded') return Math.min(640, Math.round(h * 0.78));
+    return Math.min(Math.round(h * 0.38), Math.round(h * 0.42));
+  }
+
+  function currentMode(panel) {
+    if (panel.classList.contains('expanded')) return 'expanded';
+    if (panel.classList.contains('collapsed')) return 'collapsed';
+    return 'mid';
+  }
+
+  function setSize(mode, animate) {
+    var panel = $('panel');
     if (!panel) return;
     panel.classList.remove('expanded', 'collapsed', 'mid');
     if (mode === 'collapsed') panel.classList.add('collapsed');
     else if (mode === 'expanded') panel.classList.add('expanded');
     else panel.classList.add('mid');
+    // Clear live height so CSS classes drive size smoothly
+    panel.style.maxHeight = '';
+    panel.style.height = '';
+    if (animate !== false) panel.classList.add('sn-size-anim');
     try {
       localStorage.setItem(SIZE_KEY, mode);
     } catch (_) {}
@@ -47,23 +65,23 @@
     if (on === true) setSize('expanded');
     else if (on === false) setSize('collapsed');
     else {
-      const p = $('panel');
-      if (p?.classList.contains('expanded')) setSize('mid');
+      var p = $('panel');
+      var m = p ? currentMode(p) : 'mid';
+      if (m === 'expanded') setSize('mid');
+      else if (m === 'collapsed') setSize('mid');
       else setSize('expanded');
     }
   }
 
   function applyPos(dock, panel, left, top) {
-    // Reserved chrome zones — no overlap (SPECS A4)
-    const padTop = 64;
-    const padSide = 8;
-    const maxL = Math.max(padSide, window.innerWidth - panel.offsetWidth - padSide);
-    const maxT = Math.max(
-      padTop,
-      window.innerHeight - Math.min(panel.offsetHeight, window.innerHeight * 0.85) - 8
-    );
-    const l = Math.min(maxL, Math.max(padSide, left));
-    const t = Math.min(maxT, Math.max(padTop, top));
+    var padTop = 56;
+    var padSide = 8;
+    var pw = panel.offsetWidth || Math.min(540, window.innerWidth - 16);
+    var ph = panel.offsetHeight || 120;
+    var maxL = Math.max(padSide, window.innerWidth - pw - padSide);
+    var maxT = Math.max(padTop, window.innerHeight - Math.min(ph, window.innerHeight * 0.9) - 8);
+    var l = Math.min(maxL, Math.max(padSide, left));
+    var t = Math.min(maxT, Math.max(padTop, top));
     dock.classList.add('free');
     dock.style.left = l + 'px';
     dock.style.top = t + 'px';
@@ -78,46 +96,60 @@
     return { left: l, top: t };
   }
 
+  function isInteractive(el) {
+    if (!el || !el.closest) return false;
+    var tag = (el.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'A')
+      return true;
+    if (el.isContentEditable) return true;
+    if (el.closest('button, a, input, textarea, select, [role="button"]')) return true;
+    return false;
+  }
+
   /**
-   * One finger on #cli-drag:
-   * - horizontal / free drag → move panel (persist)
-   * - strong vertical swipe → fully expand or retract
+   * One finger grab from ANYWHERE on #panel:
+   * - vertical dominate → live expand/retract (smooth px height) → snap collapsed|mid|expanded
+   * - horizontal / free → move dock (persist)
+   * - taps on buttons/input still work if finger barely moves
    */
   function bindCliDrag() {
-    const dock = $('dock');
-    const panel = $('panel');
-    const handle = $('cli-drag') || $('cli-preview');
-    if (!dock || !panel || !handle || handle._snDragBound) return;
-    handle._snDragBound = true;
+    var dock = $('dock');
+    var panel = $('panel');
+    if (!dock || !panel || panel._snDragBound) return;
+    panel._snDragBound = true;
 
-    let startX = 0,
+    var startX = 0,
       startY = 0,
       origL = 0,
       origT = 0,
+      startH = 0,
       dragging = false,
       moved = false,
-      mode = 'none'; // move | size
+      mode = 'none',
+      ptrId = null,
+      startedOnInteractive = false;
 
     try {
-      const raw = localStorage.getItem(POS_KEY);
+      var raw = localStorage.getItem(POS_KEY);
       if (raw) {
-        const p = JSON.parse(raw);
-        if (typeof p.left === 'number' && typeof p.top === 'number') applyPos(dock, panel, p.left, p.top);
+        var p = JSON.parse(raw);
+        if (typeof p.left === 'number' && typeof p.top === 'number')
+          applyPos(dock, panel, p.left, p.top);
       }
-      // Default collapsed for full GLOBAL Earth; user size still sticky after first change
-      const sz = localStorage.getItem(SIZE_KEY);
-      if (sz === 'collapsed' || sz === 'expanded' || sz === 'mid') setSize(sz);
-      else setSize('collapsed');
+      var sz = localStorage.getItem(SIZE_KEY);
+      if (sz === 'collapsed' || sz === 'expanded' || sz === 'mid') setSize(sz, false);
+      else setSize('collapsed', false);
     } catch (_) {
-      setSize('collapsed');
+      setSize('collapsed', false);
     }
 
     function onStart(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
       if (e.button != null && e.button !== 0) return;
-      const t = e.touches ? e.touches[0] : e;
+      var t = e;
       if (!t) return;
-      const rect = dock.getBoundingClientRect();
+      startedOnInteractive = isInteractive(e.target);
+      var rect = dock.getBoundingClientRect();
       if (!dock.classList.contains('free')) {
         origL = rect.left;
         origT = rect.top;
@@ -127,43 +159,61 @@
       }
       startX = t.clientX;
       startY = t.clientY;
+      startH = panel.getBoundingClientRect().height || sizePx(currentMode(panel));
       dragging = true;
       moved = false;
       mode = 'none';
-      handle.setPointerCapture?.(e.pointerId);
+      ptrId = e.pointerId;
+      try {
+        panel.setPointerCapture(e.pointerId);
+      } catch (_) {}
       panel.classList.add('dragging');
+      panel.classList.remove('sn-size-anim');
     }
 
     function onMove(e) {
       if (!dragging) return;
-      const t = e.touches ? e.touches[0] : e;
-      if (!t) return;
-      const dx = t.clientX - startX;
-      const dy = t.clientY - startY;
-      if (!moved && Math.abs(dx) + Math.abs(dy) < 6) return;
+      if (ptrId != null && e.pointerId !== ptrId) return;
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      var dist = Math.abs(dx) + Math.abs(dy);
+      // On interactive targets, require a clearer drag so taps still work
+      var thresh = startedOnInteractive ? 14 : 6;
+      if (!moved && dist < thresh) return;
       moved = true;
-      // Decide: vertical swipe on handle = size; else move
       if (mode === 'none') {
-        mode = Math.abs(dy) > Math.abs(dx) * 1.25 ? 'size' : 'move';
+        mode = Math.abs(dy) > Math.abs(dx) * 1.05 ? 'size' : 'move';
       }
       if (mode === 'move') {
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
-        // Live height feedback while swiping
-        if (dy < -40) panel.classList.add('expanded');
-        if (dy > 40) panel.classList.add('collapsed');
+        // Live height: drag up expands, down retracts (smooth)
+        var next = Math.max(88, Math.min(window.innerHeight * 0.88, startH - dy));
+        panel.style.maxHeight = next + 'px';
+        panel.style.height = next + 'px';
+        // preview class near thresholds
+        panel.classList.remove('expanded', 'collapsed', 'mid');
+        if (next < sizePx('collapsed') + 24) panel.classList.add('collapsed');
+        else if (next > sizePx('mid') + 40) panel.classList.add('expanded');
+        else panel.classList.add('mid');
       }
       if (e.cancelable) e.preventDefault();
     }
 
     function onEnd(e) {
       if (!dragging) return;
+      if (ptrId != null && e.pointerId !== ptrId && e.type !== 'pointercancel') return;
       dragging = false;
       panel.classList.remove('dragging');
       try {
-        handle.releasePointerCapture?.(e.pointerId);
+        if (ptrId != null) panel.releasePointerCapture(ptrId);
       } catch (_) {}
-      if (!moved) return;
+      ptrId = null;
+      if (!moved) {
+        // pure tap — leave input/buttons alone
+        mode = 'none';
+        return;
+      }
       if (mode === 'move') {
         try {
           localStorage.setItem(
@@ -175,23 +225,30 @@
           );
         } catch (_) {}
       } else if (mode === 'size') {
-        const dy = (e.changedTouches ? e.changedTouches[0]?.clientY : e.clientY) - startY;
-        // Swipe up = expand; swipe down = retract
-        if (dy < -36) setSize('expanded');
-        else if (dy > 36) setSize('collapsed');
-        else setSize('mid');
+        var h = panel.getBoundingClientRect().height || startH;
+        var c = sizePx('collapsed');
+        var m = sizePx('mid');
+        var x = sizePx('expanded');
+        var pick = 'mid';
+        if (h < (c + m) / 2) pick = 'collapsed';
+        else if (h > (m + x) / 2) pick = 'expanded';
+        setSize(pick, true);
       }
       mode = 'none';
     }
 
-    handle.addEventListener('pointerdown', onStart, { passive: true });
-    window.addEventListener('pointermove', onMove, { passive: false });
+    // Whole panel is the grab surface
+    panel.addEventListener('pointerdown', onStart, { passive: true });
+    panel.addEventListener('pointermove', onMove, { passive: false });
+    panel.addEventListener('pointerup', onEnd, { passive: true });
+    panel.addEventListener('pointercancel', onEnd, { passive: true });
+    // Also track on window so finger leaving panel still ends cleanly
     window.addEventListener('pointerup', onEnd, { passive: true });
     window.addEventListener('pointercancel', onEnd, { passive: true });
 
     window.addEventListener(
       'resize',
-      () => {
+      function () {
         if (!dock.classList.contains('free')) return;
         applyPos(dock, panel, parseFloat(dock.style.left) || 8, parseFloat(dock.style.top) || 8);
       },
@@ -202,16 +259,24 @@
   function init() {
     if (init._done) return;
     init._done = true;
-    $('cli-in')?.addEventListener('focus', () => expandPanel(true));
-    $('btn-expand')?.addEventListener('click', () => expandPanel());
+    // Focus expands mid so field is usable, without fighting grab
+    $('cli-in') &&
+      $('cli-in').addEventListener('focus', function () {
+        var p = $('panel');
+        if (p && p.classList.contains('collapsed')) setSize('mid', true);
+      });
+    $('btn-expand') &&
+      $('btn-expand').addEventListener('click', function () {
+        expandPanel();
+      });
     bindCliDrag();
     setTimeout(showCoach, 700);
-    const badge = $('perf-badge');
+    var badge = $('perf-badge');
     if (badge) {
       badge.textContent = 'AS';
-      badge.title = 'Astranov SpaceNet — see ASTRANOV_SPACENET_GUIDE.md';
+      badge.title = 'Astranov SpaceNet';
     }
   }
 
-  global.SNUi = { init, showCoach, expandPanel, bindCliDrag, setSize };
+  global.SNUi = { init: init, showCoach: showCoach, expandPanel: expandPanel, bindCliDrag: bindCliDrag, setSize: setSize };
 })(window);

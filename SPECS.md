@@ -88,6 +88,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | **Edge** | 🎯 🗺 👤 ➕ (emoji) + 🌍 Globe | Not letter-only LOC/MAP |
 | **Auth** | 🔐 under radar | |
 | **CLI** | Field + **➤ Send** + **🎙 hands-free** → `SNAi` | Required |
+| **CLI grab** | **One finger from anywhere** on the CLI panel: vertical = smooth expand/retract · free = move · snap collapsed/mid/expanded | Sacred (`SNUi` / `ui.js`) |
 | **AI** | `ai.js` → `SNAi.ask` soon after boot | Product-required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 

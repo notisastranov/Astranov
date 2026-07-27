@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728080100-map-cli-ai',
+  version: '20260728090000-cli-grab-any',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
