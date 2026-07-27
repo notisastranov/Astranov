@@ -646,6 +646,66 @@
     }
   }
 
+  let speechRec = null;
+  let handsfreeOn = false;
+
+  function toggleHandsfree() {
+    const btn = $('btn-handsfree');
+    const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
+    if (!SR) {
+      log('Hands-free needs browser speech · type to AI instead', 'err');
+      return;
+    }
+    if (handsfreeOn && speechRec) {
+      try {
+        speechRec.stop();
+      } catch (_) {}
+      speechRec = null;
+      handsfreeOn = false;
+      if (btn) btn.classList.remove('on');
+      log('Hands-free off', 'dim');
+      preview('Hands-free off');
+      return;
+    }
+    speechRec = new SR();
+    speechRec.lang = navigator.language || 'en-US';
+    speechRec.interimResults = false;
+    speechRec.continuous = false;
+    speechRec.onresult = (ev) => {
+      try {
+        const t = ev.results?.[0]?.[0]?.transcript;
+        if (t) {
+          const input = $('cli-in');
+          if (input) input.value = t;
+          log('🎙 ' + t, 'cmd');
+          void run(t);
+        }
+      } catch (_) {}
+    };
+    speechRec.onerror = () => {
+      handsfreeOn = false;
+      if (btn) btn.classList.remove('on');
+      log('Hands-free error · try again', 'err');
+    };
+    speechRec.onend = () => {
+      // one-shot; stay "armed" if still on — restart listen
+      if (handsfreeOn && speechRec) {
+        try {
+          speechRec.start();
+        } catch (_) {}
+      }
+    };
+    try {
+      speechRec.start();
+      handsfreeOn = true;
+      if (btn) btn.classList.add('on');
+      log('Hands-free on · speak · AI will answer', 'ok');
+      preview('🎙 listening…');
+    } catch (e) {
+      log('Hands-free start failed · ' + (e.message || e), 'err');
+    }
+  }
+
   function init() {
     const form = $('cli-form');
     const input = $('cli-in');
@@ -657,6 +717,11 @@
       input.value = '';
       void run(v);
     });
+    $('btn-send')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      form.requestSubmit?.() || form.dispatchEvent(new Event('submit', { cancelable: true }));
+    });
+    $('btn-handsfree')?.addEventListener('click', () => toggleHandsfree());
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -674,15 +739,16 @@
           input.value = '';
         }
       } else if (e.key === 'Escape') {
-        global.SNMap?.close?.();
+        if (global.SNMap?.active) global.SNMap.backToGlobe?.() || global.SNMap.close?.();
+        else global.SNMap?.close?.();
       }
     });
     $('btn-locate')?.addEventListener('click', () => void run('locate'));
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
-    log('Astranov SpaceNet online · type help', 'dim');
-    preview('Astranov SpaceNet · national · city · crawl · job · date');
+    log('Astranov SpaceNet · ➤ send · 🎙 hands-free AI · type help', 'dim');
+    preview('Send · hands-free · locate · shops · AI');
   }
 
-  global.SNCli = { init, run, log, help, preview };
+  global.SNCli = { init, run, log, help, preview, toggleHandsfree };
 })(window);

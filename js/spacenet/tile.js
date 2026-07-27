@@ -476,16 +476,54 @@
     open(global.SNProfiles?.me?.(), { tab: tab || 'about' });
   }
 
+  /** Multi-tile create at map coordinates (map empty-click / +) */
+  function createAt(lat, lng, opts) {
+    const Prof = global.SNProfiles;
+    if (!Prof || lat == null || lng == null) return null;
+    const id =
+      'place_' +
+      String(lat.toFixed(4) + '_' + lng.toFixed(4)).replace(/\./g, 'p').replace(/-/g, 'm');
+    const existing = Prof.get?.(id);
+    if (existing) {
+      open(existing, opts || { tab: 'about' });
+      return existing;
+    }
+    const p = Prof.upsert({
+      id,
+      name: (opts && opts.name) || 'New place',
+      handle: '@place',
+      bio: 'Tap roles · menu · social · multi-tile',
+      lat,
+      lng,
+      roles: { social: true, client: true, vendor: false, driver: false, dating: false },
+      posts: [{ id: 'p0', text: 'Dropped on SpaceNet map', t: Date.now() }],
+    });
+    global._snLastPos = { lat, lng };
+    try {
+      global.SNTasks?.setPos?.(lat, lng);
+    } catch (_) {}
+    open(p, opts || { tab: 'about' });
+    global.SNMap?.showProfiles?.();
+    global.SNCli?.log?.(
+      'Multi-tile · ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + ' · set roles on tile',
+      'ok'
+    );
+    global.SNCli?.preview?.('Multi-tile open');
+    return p;
+  }
+
   function init() {
     ensureDom();
     document.getElementById('btn-tile')?.addEventListener('click', () => openMe());
-    // Floating + opens own tile (multi-role field)
+    // + → multi-tile at last pos or open me
     const fab = document.getElementById('sn-plus');
     if (fab && !fab._snBound) {
       fab._snBound = true;
       fab.addEventListener('click', (e) => {
         e.preventDefault();
-        openMe();
+        const pos = global._snLastPos || global.SNTasks?.pos || { lat: 36.4341, lng: 28.2176 };
+        if (global.SNMap?.active) createAt(pos.lat, pos.lng);
+        else openMe();
       });
     }
   }
@@ -494,6 +532,7 @@
     init,
     open,
     openMe,
+    createAt,
     close,
     toggle,
     render,

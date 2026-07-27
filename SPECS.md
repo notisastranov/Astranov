@@ -20,6 +20,8 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Few files** | Prefer one small module over four “clean” micro-files that re-import each other. |
 | **No patch theatre** | If a series of specs is missing, **rebuild** the surface — do not stack micro-patches on a dummy. |
 | **No fat** | No companion figure until AI graphics > high-end games. No floating multi-docks. No demo-as-primary. |
+| **Never make owner restate law** | **Forbidden** to force the owner to re-explain the same SPECS. Agents must read SPECS + continuity **before** coding, remember owner decisions from this file, and not regress fixed surface (globe return, multi-tile, CLI send/hands-free/AI, emoji edge, SNGlobe imaging). |
+| **Ship only if it works** | If boot/map/CLI/AI path is red, **keep working** — do not declare done. Live probe + manual path green required. |
 
 **Agent test:** before adding code, ask *can this be ½ the lines and still pass verify?* If yes, cut.  
 **Ship test:** probe live critical modules → PASS → then push. Never “hope it works”.
@@ -67,26 +69,27 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 │ sweep · 1671 km/h     │     │ Astranov SpaceNet │     │ balance S   │
 │ blips shops/places    │     │                   │     │ mine · FPS  │
 └───────────────────────┘     └───────────────────┘     └─────────────┘
-        G (auth)                    task ribbon                 LOC MAP ME +
-                              (buttons for THIS task only)
+     🔐 auth                 task ribbon (this task)      🎯 🗺 👤 ➕
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         FULL GLOBAL EARTH                             │
+│              FULL GLOBAL EARTH — SNGlobe imaging (KEEP)               │
 └─────────────────────────────────────────────────────────────────────┘
-                              CLI (collapsed default)
+                    CLI: field · 🎙 hands-free · ➤ Send
 ```
 
 | Zone | What | Rule |
 |------|------|------|
+| **Earth imaging KEEP** | **`SNGlobe`** `js/spacenet/globe.js` — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
+| **Zoom out of city** | Leaves flat map → **3D SNGlobe GLOBAL** | Hard ban: stuck on Leaflet as “world” |
+| **Map empty click** | `SNTile.createAt(lat,lng)` multi-tile create | Required |
 | **Radar** | Top-left · ~8fps · 1671 km/h on global | Required |
 | **Logo** | Center · hard reset | Never under edge/S |
-| **S field** | Top-right · S balance · secondary EUR/USD · mine · FPS/spare · tap → finance | Required · **S primary** |
-| **Task ribbon** | Under logo · **materialises** buttons for **current task only** | Not a permanent dock flood |
-| **Edge** | Right under S: **LOC MAP ME +** only | Few permanent controls |
-| **G** | Under radar | Auth |
-| **CLI** | Bottom · field + log · Enter sends | Power surface |
-| **Earth** | Full viewport behind chrome | Default GLOBAL |
-| **No overlap** | Zones must not stack | Hard ban |
-| **No companion figure** | Until AI graphics > high-end games | Hard ban |
+| **S field** | Top-right · S balance · mine · FPS · finance | Required · **S primary** |
+| **Task ribbon** | Materialised buttons for **current task only** | Not permanent dock flood |
+| **Edge** | 🎯 🗺 👤 ➕ (emoji) + 🌍 Globe | Not letter-only LOC/MAP |
+| **Auth** | 🔐 under radar | |
+| **CLI** | Field + **➤ Send** + **🎙 hands-free** → `SNAi` | Required |
+| **AI** | `ai.js` → `SNAi.ask` soon after boot | Product-required |
+| **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
 **Contaminated (discard):** any build missing radar **or** S field **or** mine/resources/perf **or** task ribbon **or** GLOBAL default — thin “globe+CLI only” is fake.
 
@@ -133,8 +136,10 @@ Live load **only** `/js/spacenet/*`. Root `astranov-*.js` and `_archive/` are **
 | Concern | File → API |
 |---------|------------|
 | Boot | `boot.js` |
-| Globe inertia + tiers | `globe.js` → `SNGlobe` |
-| CLI | `cli.js` → `SNCli` |
+| **Earth imaging (KEEP)** | `globe.js` → **`SNGlobe`** (Three.js atmos/specular/clouds) |
+| CLI + send + hands-free | `cli.js` → `SNCli` |
+| AI | `ai.js` → `SNAi` (load soon after boot) |
+| Multi-tile | `tile.js` → `SNTile.createAt` / `openMe` |
 | CLI drag/size | `ui.js` → `SNUi` |
 | Field chrome (radar+S+mine+ribbon+finance) | `field.js` → `SNField` |
 | S quotes + wallet | `currency.js` → `SNCurrency` |
@@ -201,6 +206,11 @@ Do not strip IP or rebrand without owner request.
 ## P8 — Do not
 
 - Write fat / clever / multi-layer code when a short path works (**violates P0**)  
+- Make the **owner restate SPECS** the agent already has  
+- Ship red boot / dead CLI / no AI / zoom-out stuck on flat map  
+- Strip **SNGlobe** Earth imaging (atmos / specular / clouds)  
+- Letter-only edge buttons when emoji icons are required  
+- CLI without **Send** + **hands-free**  
 - Overlap chrome · permanent multi-button docks · dual CLI bars  
 - Ship without radar + S + resources/mine + task ribbon  
 - Boot into city map · block boot with crawl  
@@ -211,4 +221,4 @@ Do not strip IP or rebrand without owner request.
 
 ---
 
-*Spartan code. Full Earth. Real places. S is the value. Zoom is open.*
+*Spartan code. SNGlobe Earth. Real places. S is the value. Zoom out = back to 3D Earth.*

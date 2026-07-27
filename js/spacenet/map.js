@@ -30,6 +30,17 @@
     });
   }
 
+  function backToGlobe() {
+    close();
+    try {
+      global.SNGlobe?.goToTier?.('global');
+    } catch (_) {}
+    try {
+      global.SNCli?.log?.('3D Earth · SNGlobe imaging', 'ok');
+      global.SNCli?.preview?.('GLOBAL Earth');
+    } catch (_) {}
+  }
+
   async function ensure() {
     if (M.map) return M.map;
     loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
@@ -40,11 +51,49 @@
     M.map = L.map(el, {
       zoomControl: true,
       attributionControl: false,
+      minZoom: 11,
+      maxZoom: 19,
     }).setView([pos.lat, pos.lng], 14);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       subdomains: 'abcd',
     }).addTo(M.map);
+
+    // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
+    M._lastZ = 14;
+    M.map.on('zoomend', () => {
+      if (!M.active) return;
+      const z = M.map.getZoom();
+      if (z < M._lastZ && z <= M.map.getMinZoom()) {
+        backToGlobe();
+        return;
+      }
+      M._lastZ = z;
+    });
+    // Wheel zoom-out past min also returns to globe
+    M.map.getContainer().addEventListener(
+      'wheel',
+      (e) => {
+        if (!M.active || e.deltaY <= 0) return;
+        if (M.map.getZoom() <= M.map.getMinZoom()) {
+          e.preventDefault();
+          backToGlobe();
+        }
+      },
+      { passive: false }
+    );
+
+    // Empty-map click → multi-tile create at coordinates
+    M.map.on('click', (ev) => {
+      if (!ev?.latlng) return;
+      // Ignore if click was on a marker (Leaflet fires map click after marker sometimes — short delay check)
+      try {
+        global.SNTile?.createAt?.(ev.latlng.lat, ev.latlng.lng);
+      } catch (e) {
+        global.SNCli?.log?.('Tile create failed · ' + (e.message || e), 'err');
+      }
+    });
+
     return M.map;
   }
 
@@ -110,6 +159,11 @@
             escapeHtml(t.id) +
             '">Claim</button>'
         );
+      m.on('click', (e) => {
+        try {
+          L.DomEvent.stopPropagation(e);
+        } catch (_) {}
+      });
       m.on('popupopen', () => {
         document.querySelectorAll('[data-task="' + t.id + '"]').forEach((btn) => {
           btn.onclick = () => {
@@ -135,7 +189,10 @@
         icon: avatarIcon(p.avatar, color),
         title: p.name,
       }).addTo(M.map);
-      m.on('click', () => {
+      m.on('click', (e) => {
+        try {
+          L.DomEvent.stopPropagation(e);
+        } catch (_) {}
         global.SNTile?.open?.(p);
       });
       M.profileMarkers.push(m);
@@ -185,7 +242,12 @@
         fillOpacity: 1,
         weight: 2,
       }).addTo(map);
-      M._me.on('click', () => global.SNTile?.openMe?.());
+      M._me.on('click', (e) => {
+        try {
+          L.DomEvent.stopPropagation(e);
+        } catch (_) {}
+        global.SNTile?.openMe?.();
+      });
     } else {
       M._me.setLatLng([p.lat, p.lng]);
     }
@@ -206,6 +268,10 @@
     document.body.classList.remove('city-map-on');
     M.active = false;
     global.SNTile?.close?.();
+    // Ensure 3D globe is visible after leaving flat map
+    try {
+      if (global.SNGlobe?.goToTier) global.SNGlobe.goToTier('global');
+    } catch (_) {}
     global.SNCli?.preview?.('Earth · type a command');
   }
 
@@ -256,10 +322,7 @@
       void toggle().catch((e) => global.SNCli?.log?.(String(e.message || e), 'err'));
     });
     document.getElementById('btn-city-close')?.addEventListener('click', () => {
-      close();
-      try {
-        global.SNGlobe?.goToTier?.('global');
-      } catch (_) {}
+      backToGlobe();
     });
   }
 
@@ -268,6 +331,7 @@
     open,
     close,
     toggle,
+    backToGlobe,
     showTasks,
     showProfiles,
     plotCrawl,

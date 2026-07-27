@@ -1,4 +1,8 @@
-/* Astranov SpaceNet Globe — real Earth texture + zoom tiers (solar→global→national→city) */
+/* SNGlobe — Earth imaging engine (KEEP)
+ * Mechanical name: window.SNGlobe (js/spacenet/globe.js)
+ * Three.js sphere + TextureLoader: earth_atmos_2048 · specular · clouds
+ * Sacred: inertia velX/velY damp · zoom tiers solar→global→national→city
+ */
 (function (global) {
   'use strict';
 

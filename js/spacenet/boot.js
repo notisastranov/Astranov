@@ -225,24 +225,29 @@
         } catch (e) {}
       }, 900);
 
-      // Lazy: search · auth · ai (not on critical path)
+      // AI soon after paint (CLI freeform needs SNAi)
       setTimeout(function () {
-        loadSoft('/js/spacenet/search.js', 12000);
-      }, 400);
-      setTimeout(function () {
-        loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000).then(
-          function () {
-            return loadSoft('/js/spacenet/auth.js', 8000);
-          }
-        ).then(function () {
+        loadSoft('/js/spacenet/ai.js', 10000).then(function () {
           try {
-            if (window.SNAuth && SNAuth.init) SNAuth.init();
+            if (window.SNCli && SNCli.log && window.SNAi)
+              SNCli.log('AI ready · type or 🎙 hands-free', 'dim');
           } catch (e) {}
         });
-      }, window._snLite ? 1600 : 800);
+      }, 400);
       setTimeout(function () {
-        loadSoft('/js/spacenet/ai.js', 10000);
-      }, 3000);
+        loadSoft('/js/spacenet/search.js', 12000);
+      }, 700);
+      setTimeout(function () {
+        loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000)
+          .then(function () {
+            return loadSoft('/js/spacenet/auth.js', 8000);
+          })
+          .then(function () {
+            try {
+              if (window.SNAuth && SNAuth.init) SNAuth.init();
+            } catch (e) {}
+          });
+      }, window._snLite ? 1600 : 800);
     })
     .catch(function (e) {
       // Last resort: still try CLI-only surface

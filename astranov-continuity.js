@@ -1,12 +1,19 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728070000-boot-failsoft',
+  version: '20260728080000-map-cli-ai',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
 
-  p0: 'spartan-coding', // minimal · functional · effective · fast · never hang
+  p0: 'spartan-coding',
   shipGate: 'node scripts/probe-spacenet-boot.mjs must PASS before ship',
+  neverMakeOwnerRestateSpecs: true,
+  keepImaging: {
+    name: 'SNGlobe',
+    file: 'js/spacenet/globe.js',
+    textures: ['earth_atmos_2048', 'earth_specular_2048', 'earth_clouds_1024'],
+    engine: 'Three.js TextureLoader sphere',
+  },
 
   ip: {
     mark: 'Astranov SpaceNet',
