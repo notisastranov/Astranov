@@ -10,7 +10,7 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260728050000-rebuild-full-chrome` |
+| **Current build** | `20260728060000-spartan-specs` · **P0 = spartan coding** (see SPECS.md) |
 | **Currency** | **S (SpaceNets)** primary — wallet + field HUD; EUR/USD secondary quotes; **not AVC** |
 | **Default view** | Full **GLOBAL** Earth; city map closed; CLI collapsed |
 | **Chrome** | Radar · S field · task ribbon · edge · CLI — **no overlapping**; thin stacks without these = **contaminated → rebuild** |

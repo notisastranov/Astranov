@@ -1,86 +1,54 @@
-/**
- * Astranov SpaceNet — continuity (machine contract)
- * FULL CHROME REBUILD 2026-07-28 — thin stacks without radar/S/mine/ribbon = contaminated.
- */
+/** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728050000-rebuild-full-chrome',
+  version: '20260728060000-spartan-specs',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
-  rebuild: {
-    reason: 'Prior thin stack omitted radar, S field, mining/resources/perf, task ribbon',
-    policy: 'discard-contaminated-dummy-rebuild-to-SPECS',
-  },
+
+  p0: 'spartan-coding', // minimal · functional · effective · fast
 
   ip: {
     mark: 'Astranov SpaceNet',
     notice: '© Astranov SpaceNet. All rights reserved.',
     owners: ['notisastranov', 'AI pair under owner direction'],
-    protect: [
-      'Spatial internet UI (body+lat+lng, zoom-to-open)',
-      'Full chrome: radar + S wallet + resources/mine + task ribbon',
-      'Clean js/spacenet stack only on live',
-      'S (SpaceNets) primary currency',
-      'SpaceNet OS for interstellar artificial and biological entities',
-    ],
   },
 
   economics: {
-    currency: {
-      name: 'SpaceNets',
-      symbol: 'S',
-      primacy: true,
-      ban: ['AVC', 'coins', 'fixed-1-EUR', 'fiat-as-primary'],
-    },
+    currency: { name: 'SpaceNets', symbol: 'S', primacy: true },
+    ban: ['AVC', 'coins', 'fixed-1-EUR'],
     platformFee: 0.03,
     driverGrossShare: 0.15,
-    miningUnit: 'S',
-    code: 'currency.js + wallet.js + resources.js',
+    code: 'js/spacenet/currency.js',
   },
+
+  stack: {
+    entry: 'index.html → boot.js',
+    modules: [
+      'config', 'brain', 'globe', 'tasks', 'profiles',
+      'currency', // S + wallet
+      'field', // radar + S HUD + mine + ribbon + finance
+      'commerce', 'spatial', 'cli', 'ui', 'tile', 'map', 'search', 'auth', 'ai',
+    ],
+    doNotLoad: ['astranov-app.js', 'astranov-deferred.js', 'phase-*.js', 'wallet.js', 'radar.js', 'resources.js', 'ribbon.js'],
+  },
+
+  surface: ['radar', 'S-field', 'resources-mine-perf', 'task-ribbon', 'cli', 'global-earth'],
 
   agentDiscipline: {
     alwaysUpdateSpecs: true,
     verifyBeforeShip: true,
-    noDummyShips: true,
-    discardContaminatedThinStacks: true,
-    rebuildWhenSeriesOfSpecsViolated: true,
+    spartanFirst: true,
     noOverlappingChrome: true,
-    noLowFiCompanionFigure: true,
+    noLowFiCompanion: true,
     defaultFullGlobalEarth: true,
-    requiredSurface: ['radar', 'S-field', 'resources-mine-perf', 'task-ribbon', 'cli', 'global-earth'],
-  },
-
-  stack: {
-    entry: 'index.html → /js/spacenet/boot.js',
-    modules: [
-      'config', 'brain', 'globe', 'tasks', 'profiles',
-      'currency', 'wallet', 'resources', 'radar', 'field', 'ribbon',
-      'commerce', 'spatial', 'cli', 'ui', 'tile', 'map', 'search', 'auth', 'ai',
-    ],
-    doNotLoad: ['astranov-app.js', 'astranov-deferred.js', 'phase-*.js', 'astranov-field-hud.js on live path'],
-  },
-
-  features: {
-    radar: { owner: 'js/spacenet/radar.js', fps: 8, earthKmh: 1671 },
-    currencyField: { owner: 'js/spacenet/field.js + wallet.js + currency.js' },
-    resources: { owner: 'js/spacenet/resources.js', cmds: ['resources', 'mine', 'donate', 'boost'] },
-    taskRibbon: { owner: 'js/spacenet/ribbon.js', note: 'materialise buttons for current task only' },
-    operatingPath: {
-      summary: 'locate/city/shops openMap intentional; boot stays GLOBAL Earth',
-      owner: 'commerce.js + map.js + cli.js',
-    },
   },
 
   verify: [
-    'build 20260728050000-rebuild-full-chrome',
-    'full GLOBAL Earth default',
-    '#field-radar present',
-    '#field-balance-hud shows S',
-    '#sn-task-ribbon materialises task buttons',
-    'CLI resources · rate · wallet · mine on',
-    'no sn-companion',
-    'no overlapping logo vs radar vs S vs edge',
-    'soft shops do not open city map',
+    'GLOBAL Earth default',
+    '#field-radar · #field-balance-hud · #sn-task-ribbon',
+    'CLI: rate · resources · shops · locate',
+    'no companion · no overlap',
+    'field.js + currency.js only for field economy',
   ],
 };
 

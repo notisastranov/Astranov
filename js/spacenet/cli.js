@@ -44,19 +44,13 @@
   function moneyStatus() {
     const C = global.SNCurrency;
     if (!C) {
-      log('Currency offline — currency.js missing', 'err');
+      log('Currency offline', 'err');
       return;
     }
-    (C.status?.() || ['S · SpaceNets primary']).forEach((ln) =>
-      log(ln, /PRIMARY|primary|SpaceNet = OS|Network index|Not AVC|lesser|secondary/i.test(ln) ? 'ok' : 'dim')
+    (C.status?.() || ['S primary']).forEach((ln) =>
+      log(ln, /PRIMARY|Wallet|secondary|Fees/i.test(ln) ? 'ok' : 'dim')
     );
-    preview(
-      'S primary · net ' +
-        (C.networkIndex?.()?.toFixed?.(4) || '?') +
-        ' · quotes only ~' +
-        (C.quote?.('EUR')?.toFixed?.(4) || '?') +
-        ' EUR'
-    );
+    preview('S ' + (C.format?.(C.balance?.() || 0) || '') + ' · index ' + (C.networkIndex?.()?.toFixed?.(4) || '?'));
   }
 
   function dumpBrain(mode) {
@@ -271,11 +265,11 @@
         return;
       }
       if (low === 'wallet' || low === 'balance') {
-        const W = global.SNWallet;
-        const snap = W?.snapshot?.() || { balance: 0, mined: 0 };
-        log('Wallet ' + (global.SNCurrency?.format?.(snap.balance) || snap.balance + ' S'), 'ok');
-        log('Mined lifetime ' + (global.SNCurrency?.format?.(snap.mined) || snap.mined), 'dim');
-        global.SNField?.refreshBalance?.();
+        const C = global.SNCurrency;
+        const snap = C?.snapshot?.() || { balance: 0, mined: 0 };
+        log('Wallet ' + (C?.format?.(snap.balance) || snap.balance + ' S'), 'ok');
+        log('Mined lifetime ' + (C?.format?.(snap.mined) || snap.mined), 'dim');
+        global.SNField?.paint?.();
         global.SNRibbon?.setTask?.('money');
         preview(snap.line || 'wallet');
         return;

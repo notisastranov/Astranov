@@ -1,175 +1,140 @@
 /**
- * S - SpaceNets currency (SPECS A5)
- * Unit of account on SpaceNet. Dynamic value vs fiat/crypto/other money,
- * tightly coupled to SpaceNet network value - not AVC, not a fixed EUR coin.
+ * S — SpaceNets (primary) + wallet. Secondary quotes only.
+ * Spartan: quotes + balance in one module.
  */
-(function (global) {
-  "use strict";
-
-  var STORAGE_KEY = "spacenet_currency_v1";
-  var SYMBOL = "S";
-  var NAME = "SpaceNets";
-  var TICKER = "S";
-
-  var state = {
-    networkIndex: 1.0,
-    lastUpdated: 0,
-    quotes: {
-      EUR: 1.0,
-      USD: 1.08,
-      BTC: 0.000015,
-      ETH: 0.00025
-    }
+(function (g) {
+  'use strict';
+  var QK = 'spacenet_currency_v1';
+  var WK = 'spacenet_wallet_v1';
+  var SYM = 'S';
+  var st = {
+    networkIndex: 1,
+    quotes: { EUR: 1, USD: 1.08, BTC: 0.000015, ETH: 0.00025 },
+    balance: 0,
+    mined: 0,
+    platformFees: 0,
   };
 
   function load() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      var data = JSON.parse(raw);
-      if (data && typeof data.networkIndex === "number" && data.networkIndex > 0) {
-        state.networkIndex = data.networkIndex;
-      }
-      if (data && data.quotes && typeof data.quotes === "object") {
-        Object.keys(data.quotes).forEach(function (k) {
-          if (typeof data.quotes[k] === "number" && data.quotes[k] > 0) {
-            state.quotes[k] = data.quotes[k];
-          }
-        });
-      }
-      if (data && data.lastUpdated) state.lastUpdated = data.lastUpdated;
-    } catch (e) {
-      /* ignore */
-    }
-  }
-
-  function save() {
+      var q = JSON.parse(localStorage.getItem(QK) || '{}');
+      if (q.networkIndex > 0) st.networkIndex = q.networkIndex;
+      if (q.quotes) Object.keys(q.quotes).forEach(function (k) {
+        if (q.quotes[k] > 0) st.quotes[k] = q.quotes[k];
+      });
+    } catch (e) {}
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          networkIndex: state.networkIndex,
-          quotes: state.quotes,
-          lastUpdated: state.lastUpdated
-        })
-      );
-    } catch (e) {
-      /* ignore */
-    }
+      var w = JSON.parse(localStorage.getItem(WK) || '{}');
+      if (typeof w.balance === 'number') st.balance = Math.max(0, w.balance);
+      if (typeof w.mined === 'number') st.mined = w.mined;
+      if (typeof w.platformFees === 'number') st.platformFees = w.platformFees;
+    } catch (e) {}
+    recompute();
   }
 
-  function recomputeQuotes() {
-    var n = state.networkIndex;
-    state.quotes.EUR = n * 1.0;
-    state.quotes.USD = n * 1.08;
-    state.quotes.BTC = n * 0.000015;
-    state.quotes.ETH = n * 0.00025;
-    state.lastUpdated = Date.now();
-    save();
+  function saveQ() {
+    try {
+      localStorage.setItem(QK, JSON.stringify({ networkIndex: st.networkIndex, quotes: st.quotes }));
+    } catch (e) {}
+  }
+  function saveW() {
+    try {
+      localStorage.setItem(WK, JSON.stringify({ balance: st.balance, mined: st.mined, platformFees: st.platformFees }));
+    } catch (e) {}
   }
 
-  function format(amountS, opts) {
-    opts = opts || {};
-    var n = Number(amountS);
+  function recompute() {
+    var n = st.networkIndex;
+    st.quotes.EUR = n;
+    st.quotes.USD = n * 1.08;
+    st.quotes.BTC = n * 0.000015;
+    st.quotes.ETH = n * 0.00025;
+    saveQ();
+  }
+
+  function fmt(a) {
+    var n = Number(a);
     if (!isFinite(n)) n = 0;
-    var digits = opts.digits != null ? opts.digits : 2;
-    var body = n.toFixed(digits);
-    if (opts.compact) return body + " " + SYMBOL;
-    return body + " " + SYMBOL;
+    return n.toFixed(2) + ' ' + SYM;
   }
 
-  function formatPair(amountS, fiatCode) {
-    fiatCode = (fiatCode || "EUR").toUpperCase();
-    var s = format(amountS);
-    var rate = state.quotes[fiatCode];
-    if (!rate || !isFinite(rate)) return s;
-    var fiat = (Number(amountS) * rate).toFixed(2);
-    return s + " (~" + fiat + " " + fiatCode + ")";
-  }
-
-  function parseAmount(raw) {
-    if (raw == null) return 0;
-    if (typeof raw === "number") return isFinite(raw) ? raw : 0;
-    var s = String(raw).trim().replace(/,/g, ".");
-    s = s.replace(/\s*(S|SpaceNets|EUR|€|\$|USD)\s*/gi, "");
-    s = s.replace(/[^\d.-]/g, "");
-    var n = parseFloat(s);
-    return isFinite(n) ? n : 0;
-  }
-
-  function fromFiat(amountFiat, fiatCode) {
-    fiatCode = (fiatCode || "EUR").toUpperCase();
-    var rate = state.quotes[fiatCode] || state.quotes.EUR || 1;
-    if (!rate) rate = 1;
-    return Number(amountFiat) / rate;
-  }
-
-  function toFiat(amountS, fiatCode) {
-    fiatCode = (fiatCode || "EUR").toUpperCase();
-    var rate = state.quotes[fiatCode] || state.quotes.EUR || 1;
-    return Number(amountS) * rate;
-  }
-
-  function setNetworkIndex(index) {
-    var n = Number(index);
-    if (!isFinite(n) || n <= 0) return false;
-    state.networkIndex = n;
-    recomputeQuotes();
-    return true;
-  }
-
-  function bumpNetwork(deltaPct) {
-    var d = Number(deltaPct);
-    if (!isFinite(d)) return state.networkIndex;
-    state.networkIndex = Math.max(0.0001, state.networkIndex * (1 + d / 100));
-    recomputeQuotes();
-    return state.networkIndex;
-  }
-
-  function statusLines() {
-    return [
-      "Currency: " + NAME + " (" + SYMBOL + ") — PRIMARY unit of account",
-      "SpaceNet = OS for interstellar artificial + biological entities",
-      "S value = real SpaceNet network (places, shops, presence, activity)",
-      "Network index: " + state.networkIndex.toFixed(4),
-      "Secondary quotes only (no SpaceNet substance):",
-      "  1 S ~ " + state.quotes.EUR.toFixed(4) + " EUR / " + state.quotes.USD.toFixed(4) + " USD",
-      "  1 S ~ " + state.quotes.BTC.toExponential(3) + " BTC / " + state.quotes.ETH.toExponential(3) + " ETH",
-      "EUR/USD/BTC/ETH/all other money = lesser relative to S",
-      "Fees (gross in S): platform 3% · driver 15%",
-      "Not AVC. Not a casino coin. Network is the asset."
-    ];
+  function credit(a, why) {
+    a = Number(a);
+    if (!isFinite(a) || a <= 0) return st.balance;
+    st.balance += a;
+    if (why === 'mine') st.mined += a;
+    saveW();
+    g.SNField && g.SNField.paint && g.SNField.paint();
+    return st.balance;
   }
 
   load();
-  if (!state.lastUpdated) recomputeQuotes();
 
-  global.SNCurrency = {
-    SYMBOL: SYMBOL,
-    NAME: NAME,
-    TICKER: TICKER,
-    /** S is primary; every other money is a secondary quote. */
+  g.SNCurrency = {
+    SYMBOL: SYM,
+    NAME: 'SpaceNets',
     PRIMACY: true,
-    OS_THESIS:
-      "SpaceNet is the new OS for interstellar artificial and biological entities",
-    LESSER: ["EUR", "USD", "BTC", "ETH", "fiat", "crypto", "legacy-money"],
-    format: format,
-    formatPair: formatPair,
-    parse: parseAmount,
-    fromFiat: fromFiat,
-    toFiat: toFiat,
-    quote: function (code) {
-      return state.quotes[(code || "EUR").toUpperCase()] || null;
+    format: fmt,
+    formatPair: function (a, code) {
+      code = (code || 'EUR').toUpperCase();
+      var r = st.quotes[code];
+      return fmt(a) + (r ? ' (~' + (Number(a) * r).toFixed(2) + ' ' + code + ')' : '');
     },
-    rate: function (code) {
-      return this.quote(code);
+    quote: function (c) {
+      return st.quotes[(c || 'EUR').toUpperCase()] || null;
+    },
+    rate: function (c) {
+      return this.quote(c);
+    },
+    toFiat: function (a, c) {
+      return Number(a) * (this.quote(c) || 1);
+    },
+    fromFiat: function (a, c) {
+      var r = this.quote(c) || 1;
+      return Number(a) / r;
     },
     networkIndex: function () {
-      return state.networkIndex;
+      return st.networkIndex;
     },
-    setNetworkIndex: setNetworkIndex,
-    bumpNetwork: bumpNetwork,
-    status: statusLines,
-    fees: { platformPct: 3, driverPct: 15 }
+    setNetworkIndex: function (n) {
+      n = Number(n);
+      if (!(n > 0)) return false;
+      st.networkIndex = n;
+      recompute();
+      return true;
+    },
+    balance: function () {
+      return st.balance;
+    },
+    mined: function () {
+      return st.mined;
+    },
+    credit: credit,
+    creditMined: function (a) {
+      return credit(a, 'mine');
+    },
+    debit: function (a) {
+      a = Number(a);
+      if (!(a > 0) || a > st.balance) return { ok: false, balance: st.balance };
+      st.balance -= a;
+      saveW();
+      g.SNField && g.SNField.paint && g.SNField.paint();
+      return { ok: true, balance: st.balance };
+    },
+    fees: { platformPct: 3, driverPct: 15 },
+    status: function () {
+      return [
+        'S (SpaceNets) PRIMARY · index ' + st.networkIndex.toFixed(4),
+        'Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined),
+        '1 S ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
+        'EUR/USD/BTC/ETH = secondary quotes only',
+        'Fees 3% platform · 15% driver (in S)',
+      ];
+    },
+    snapshot: function () {
+      return { balance: st.balance, mined: st.mined, platformFees: st.platformFees, line: fmt(st.balance) };
+    },
   };
-})(typeof window !== "undefined" ? window : globalThis);
+  // Compat alias used by older field hooks
+  g.SNWallet = g.SNCurrency;
+})(typeof window !== 'undefined' ? window : globalThis);
