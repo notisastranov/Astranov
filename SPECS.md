@@ -188,11 +188,15 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 ### Operating path (must work)
 
 ```
-boot → deferred real → crawl sector → vendors[] without DEMO pollution
-     → SpaceNetSpatial.sync (sn_place on globe)
-     → locate/city → same crawl+sync
-     → shops/order use real POIs when count ≥ 3
+boot (light) → globe + CLI + companion ≤6fps
+     → idle/user: deferred pack
+     → FAST: Supabase vendors by bbox (ms) → map pins  [never wait 30s Overpass]
+     → optional short edge/overpass enrich (≤6–8s budget)
+     → SpaceNetSpatial.sync
+     → locate/shops (heavy): deferred + populate + picker
 ```
+
+**Sticky anti-pattern (banned):** `ensureOperatingPath` on boot that awaits 28s crawl returning 0.
 
 ### Kernel
 
