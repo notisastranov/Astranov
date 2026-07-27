@@ -26,8 +26,13 @@ This is the evolution of the internet: **finally free in all dimensions**.
 
 | Module | API |
 |--------|-----|
-| Spatial places | `js/astranov-spacenet-spatial.js` → `SpaceNetSpatial` · `SpaceNetLaw` |
-| Full cosmos atlas | `js/astranov-spacenet-cosmos.js` → `SpaceNetCosmos` · `SpaceNetCosmosLaw` |
+| **Clean stack (live)** | `index.html` + **`/js/spacenet/*`** only |
+| Spatial places | `js/spacenet/spatial.js` → `SNSpatial` |
+| Real shops | `js/spacenet/commerce.js` → `SNCommerce` (Supabase DB-first) |
+| Globe | `js/spacenet/globe.js` → `SNGlobe` |
+| CLI | `js/spacenet/cli.js` → `SNCli` |
+| City map | `js/spacenet/map.js` → `SNMap` |
+| Legacy | `_archive/` — **do not load** |
 
 ### Cosmos catalog (must stay open)
 
@@ -171,13 +176,14 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 | Concern | Owner |
 |---------|--------|
-| Spatial places · Mars · vault · talk put/go | `js/astranov-spacenet-spatial.js` |
-| Globe / boot / shell / talk router | `astranov-app.js` |
-| GlobeEntity markers | `astranov-deferred.js` `GlobeEntity` type `sn_place` |
-| Multi-tile · locate · video · market | `js/astranov-mpp-tile.js` (or root copy) |
-| Field / finance / radar | `js/astranov-field-hud.js` |
-| Vendors crawl | `SpaceNetCrawler` + edge `vendor-crawler` |
+| Boot chain | `js/spacenet/boot.js` |
+| Globe + inertia | `js/spacenet/globe.js` |
+| CLI + commands | `js/spacenet/cli.js` |
+| Real shops DB | `js/spacenet/commerce.js` |
+| Spatial seeds | `js/spacenet/spatial.js` |
+| City Leaflet | `js/spacenet/map.js` |
 | Continuity | `astranov-continuity.js` |
+| Archived fat stack | `_archive/legacy-*` — never load on live |
 
 ---
 
