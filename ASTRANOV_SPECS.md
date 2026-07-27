@@ -10,11 +10,13 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260728020000-spacenets-S` |
-| **Currency** | **S (SpaceNets)** primary — dynamic network value; EUR/USD/BTC/ETH/all others secondary quotes only (no SpaceNet substance); **not AVC / coins** |
+| **Current build** | `20260728050000-rebuild-full-chrome` |
+| **Currency** | **S (SpaceNets)** primary — wallet + field HUD; EUR/USD secondary quotes; **not AVC** |
 | **Default view** | Full **GLOBAL** Earth; city map closed; CLI collapsed |
-| **Chrome** | **No overlapping** elements; reserved zones (auth / logo / edge / CLI) |
-| **Companion figure** | **Off** until AI graphics engine surpasses high-level gaming graphics |
+| **Chrome** | Radar · S field · task ribbon · edge · CLI — **no overlapping**; thin stacks without these = **contaminated → rebuild** |
+| **Mining / resources / perf** | `SNResources` · FPS · spare% · mine S/h · donate |
+| **Task ribbon** | Materialised buttons for **current task only** (`SNRibbon`) |
+| **Companion figure** | **Off** until AI graphics surpass high-level gaming |
 | **App-first shell** | My city · Shops · Order · Place · Vault · **Cosmos** · Cydonia · Menu · Talk |
 | **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI · ALL of space addressable |
 

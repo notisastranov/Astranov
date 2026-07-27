@@ -119,24 +119,29 @@ User places persist in `localStorage` key `astranov:spacenet-places-v1`.
 
 ---
 
-## 4. User surface — CLI + full Earth (NO button flood)
+## 4. User surface — full chrome (NO thin dummy stack)
 
-### Hard rules (owner 2026-07-28)
+**Owner 2026-07-28:** Thin “globe + CLI only” patches that omit radar, S field, mining/resources/perf, and the **task ribbon** are **contaminated**. Treat as fake/dummy — **discard and rebuild** to this section. Do not micro-patch over a missing surface.
+
+### Hard rules
 
 | Rule | Spec |
 |------|------|
-| **No overlapping elements** | **Forbidden:** chrome stacked on chrome, logo over edge buttons, city “Globe” over logo, free-drag CLI covering top bars, dual HUDs. **Reserved zones:** top-left (auth), top-center (logo + tier), top-right (LOC/MAP/ME/+), bottom (single CLI dock). Layout must keep **full Earth** readable |
-| **Default view** | **Full GLOBAL Earth** on boot — `SNGlobe` tier `global`, city map **closed**, CLI **collapsed** (field + one preview line). Soft shop preload must **not** auto-open city map |
-| **No floating multi-button docks** | **Forbidden:** `#spacenet-shell` dock, second chrome windows, status pill bars that steal screen |
-| **CLI is the power surface** | Single bottom (or free-drag) panel: preview + log + field — **not** a second window |
-| **Few edge controls only** | **G** (auth) · **LOC** · **MAP** · **ME** · **+**. No permanent Order/Batch/VHF/Phone/CLI-hub strip |
-| **No dot-matrix companion** | **Banned until** the **AI graphics engine** can **surpass high-level gaming graphics**. No `#sn-companion`, no canvas face of glowing dots, no low-FPS humanoid placeholder. Reintroduce only after that bar is met |
-| **Clickable CLI links** | Syntax `[[action\|label]]` in log → run command |
-| **Dedummyfy** | Prefer real spatial actions + real imagery; no fake “app store” chrome |
+| **No overlapping elements** | **Forbidden:** chrome on chrome. **Reserved zones** (fixed): **radar** top-left · **logo+tier** top-center · **S field HUD** top-right · **edge LOC/MAP/ME/+** under balance (right stack) · **task ribbon** center band (under logo) · **CLI** bottom · **G** under radar. Free-drag CLI must not cover top zones |
+| **Default view** | **Full GLOBAL Earth** — city map closed, CLI collapsed, soft shop load **does not** open city map |
+| **Radar** | `#field-radar` · canvas ~8fps · Earth speed **1671 km/h** on global · blips from shops/places · `js/spacenet/radar.js` → `SNRadar` |
+| **Currencies / S field** | `#field-balance-hud` shows **S (SpaceNets)** balance + secondary EUR/USD quotes · tap opens finance multi-tile (Stats · Mining · Platform 3% · P2P · Reports) · `SNCurrency` + `SNWallet` + `SNField` |
+| **Mining + resources + perf** | CPU/RAM/SSD/NET rates · mine rate **S/h** · session mined · FPS + spare % · donate mesh · CLI `resources` · `mine on\|off` · `donate on\|off` · `js/spacenet/resources.js` → `SNResources` |
+| **Task ribbon** | `#sn-task-ribbon` — **materialises** action buttons for the **current task only** (idle / map / shops / order / mine / money / space). **Not** a permanent multi-dock flood. `js/spacenet/ribbon.js` → `SNRibbon` |
+| **CLI is the power surface** | Bottom dock: preview + log + field · Enter sends · no permanent Order/Batch/VHF strip beside input |
+| **Edge (permanent, few)** | **G** · **LOC** · **MAP** · **ME** · **+** only |
+| **No dot-matrix companion** | **Banned until** AI graphics **surpass high-level gaming graphics** |
+| **No floating multi-button docks** | Forbidden: `#spacenet-shell` second chrome, dual CLI bars, CLI miner strip |
+| **Dedummyfy** | Real spatial actions + real imagery; rebuild when a series of specs is violated |
 
 ### Companion (future gate)
 
-Do **not** ship any companion avatar/figure until AI graphics quality **exceeds** current high-end game presentation. Until then: text CLI + real Earth only.
+Do **not** ship companion avatar/figure until AI graphics quality **exceeds** high-end game presentation.
 
 ### Talk → space (examples)
 
@@ -205,14 +210,14 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 
 | UI | Spec |
 |----|------|
-| Default canvas | Full **GLOBAL** Earth fills the viewport under chrome |
-| Top logo | **Astranov SpaceNet** · hard reset only · **never** under edge buttons |
-| Tier label | Single line under logo (`GLOBAL` / …) — no second competing HUD |
-| CLI field | Single dock · Enter sends · default **collapsed** so Earth stays full |
-| Edge | **G** · **LOC** · **MAP** · **ME** · **+** only — non-overlapping |
-| City → Globe | “Globe” control sits in a free zone (not on logo) |
-| Companion figure | **Off** until AI graphics > high-level gaming |
-| Modules path | Live: **`/js/spacenet/*`** only |
+| Default canvas | Full **GLOBAL** Earth |
+| Logo | **Astranov SpaceNet** · hard reset · center zone only |
+| Radar | Top-left · 1671 km/h global |
+| S field | Top-right · balance + mine + perf · finance panel |
+| Task ribbon | Center · **current-task buttons only** |
+| Edge | Right stack under S field: LOC MAP ME + |
+| CLI | Bottom · collapsed default · no companion figure |
+| Modules | Live: **`/js/spacenet/*` only** |
 
 ---
 
@@ -223,11 +228,17 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 | Boot chain | `js/spacenet/boot.js` |
 | Globe + inertia | `js/spacenet/globe.js` |
 | CLI + commands | `js/spacenet/cli.js` |
+| Task ribbon | `js/spacenet/ribbon.js` → `SNRibbon` |
+| Radar | `js/spacenet/radar.js` → `SNRadar` |
+| S quotes | `js/spacenet/currency.js` → `SNCurrency` |
+| Wallet | `js/spacenet/wallet.js` → `SNWallet` |
+| Resources / mine / perf | `js/spacenet/resources.js` → `SNResources` |
+| Field HUD + finance | `js/spacenet/field.js` → `SNField` |
 | Real shops DB | `js/spacenet/commerce.js` |
 | Spatial seeds | `js/spacenet/spatial.js` |
 | City Leaflet | `js/spacenet/map.js` |
 | Continuity | `astranov-continuity.js` |
-| Archived fat stack | `_archive/legacy-*` — never load on live |
+| Legacy monolith | root `astranov-*.js` / `_archive/` — **do not load on live** |
 
 ---
 
@@ -238,10 +249,11 @@ Marketplace and video are **not separate apps** — they are **kinds of places**
 ### Operating path (must work)
 
 ```
-boot (light) → full GLOBAL Earth + CLI (collapsed, no companion figure)
-     → soft: DB shops for pulses only (do not steal default to city map)
-     → user: locate / city / shops → open map intentionally
+boot → GLOBAL Earth + radar + S field + resources + task ribbon + CLI
+     → soft: DB shops for pulses only (do not open city map)
+     → user: locate / city / shops / mine / rate → intentional
      → never wait 30s Overpass on boot
+     → never ship without radar + S + resources + ribbon (else contaminated)
 ```
 
 **Sticky anti-pattern (banned):** `ensureOperatingPath` on boot that awaits 28s crawl returning 0.
@@ -270,14 +282,15 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 
 ### Healthy checklist
 
-1. Hard refresh → **full GLOBAL Earth** usable without multi-second freeze  
-2. **No overlapping** chrome; **no** dot-matrix companion  
-3. CLI collapsed by default; expands on use  
-4. Soft shop load does **not** auto-open city map  
-5. **Locate / city / shops** open map intentionally (DB-first)  
-6. Real shop pins when user asks (`shopsReal ≥ 3` when DB has data) — not demo-only  
-7. Thesis garage + Cydonia still open  
-8. Build meta matches `?v=`  
+1. Hard refresh → **full GLOBAL Earth**  
+2. **Radar** visible top-left; speed 1671 on global  
+3. **S field** top-right with balance + mine + FPS/spare  
+4. **Task ribbon** shows materialised actions for current task  
+5. **No overlapping** chrome; **no** dot-matrix companion  
+6. CLI: `resources` · `rate` · `wallet` · `mine on` · `shops` work  
+7. Soft shop load does **not** auto-open city map  
+8. Thesis garage + Cydonia still open  
+9. Build meta matches `?v=`  
 
 ---
 
@@ -341,9 +354,11 @@ Agents **must not** strip IP notices or rebrand without owner request.
 ## 13. Do not
 
 - Flood the screen with floating multi-button docks / second chrome windows  
-- **Overlap** any UI elements (logo, edge, CLI, city close, coach)  
+- **Overlap** any UI elements  
+- Ship **without** radar, S field, mining/resources/perf, or task ribbon (contaminated thin stack)  
 - Ship **dot-matrix / low-fi companion figures** before AI graphics surpass high-level gaming  
-- Boot into city map / national zoom — default is **full GLOBAL Earth**  
+- Boot into city map — default is **full GLOBAL Earth**  
+- Micro-patch over a series of violated specs — **rebuild** instead  
 - Treat SpaceNet as “another map app with a chat box”  
 - Store primary user content only in abstract folders with no coordinates  
 - Remove seed thesis / Cydonia demos without owner request  

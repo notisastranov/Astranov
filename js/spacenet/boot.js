@@ -1,4 +1,4 @@
-/* SpaceNet boot — lite chain; map/auth SDK lazy */
+/* SpaceNet boot — full chrome rebuild (not thin dummy) */
 (function () {
   'use strict';
   const BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '1';
@@ -64,7 +64,7 @@
 
   const t0 = performance.now();
 
-  // Critical path only — no legacy monolith. Mission: globe + CLI + real shops (DB).
+  // Full product surface chain — SPECS rebuild
   loadScript('/js/spacenet/config.js')
     .then(() => loadScript('/js/spacenet/brain.js'))
     .then(() =>
@@ -76,6 +76,11 @@
     .then(() => loadScript('/js/spacenet/tasks.js'))
     .then(() => loadScript('/js/spacenet/profiles.js'))
     .then(() => loadScript('/js/spacenet/currency.js'))
+    .then(() => loadScript('/js/spacenet/wallet.js'))
+    .then(() => loadScript('/js/spacenet/resources.js'))
+    .then(() => loadScript('/js/spacenet/radar.js'))
+    .then(() => loadScript('/js/spacenet/field.js'))
+    .then(() => loadScript('/js/spacenet/ribbon.js'))
     .then(() => loadScript('/js/spacenet/commerce.js'))
     .then(() => loadScript('/js/spacenet/spatial.js'))
     .then(() => loadScript('/js/spacenet/cli.js'))
@@ -85,37 +90,48 @@
     .then(() => loadScript('/js/spacenet/search.js'))
     .then(() => {
       if (!window.SNGlobe?.init?.()) throw new Error('globe init failed');
-      // Default view: full GLOBAL Earth (SPECS A4)
       try {
         SNGlobe.goToTier?.('global');
         SNMap?.close?.();
       } catch (_) {}
-      // NO seedDemo — real shops come from Supabase via SNCommerce
+
       SNProfiles?.me?.();
       SNSpatial?.init?.();
+      SNResources?.init?.();
+      SNRadar?.init?.();
+      SNField?.init?.();
+      SNRibbon?.init?.();
       SNCli?.init?.();
       SNUi?.init?.();
       SNTile?.init?.();
       SNMap?.init?.();
+
       const ms = Math.round(performance.now() - t0);
       done('ready ' + ms + 'ms');
-      SNCli?.log?.('Astranov SpaceNet · ' + ms + 'ms · full GLOBAL Earth', 'ok');
-      SNCli?.preview?.('Full Earth · locate · city · shops · help');
+      SNCli?.log?.('Astranov SpaceNet rebuild · ' + ms + 'ms · GLOBAL Earth', 'ok');
+      SNCli?.log?.('Surface: radar · S wallet · resources/mine · task ribbon · CLI', 'dim');
+      SNCli?.preview?.('Full Earth · rate · resources · shops · help');
+      SNRibbon?.setNotice?.('ready ' + ms + 'ms');
+      SNField?.refreshBalance?.();
+      SNField?.refreshPerf?.();
+
       try {
         const v = window.SNBrain?.verify?.();
         if (v && !v.ok) {
           SNCli?.log?.('Brain ⚠ ' + (v.failed || []).map((f) => f.id).join(', '), 'err');
         }
       } catch (_) {}
-      // Soft load shops for globe pulses only — do NOT open city map (default Earth)
+
       setTimeout(() => {
         const p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
         void SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: false })?.then((r) => {
           if (r?.count) {
             SNCli?.log?.('mission · ' + r.count + ' real shops ready · type shops', 'dim');
+            SNRadar?.refresh?.();
           }
         });
       }, 900);
+
       setTimeout(() => {
         loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js')
           .then(() => loadScript('/js/spacenet/auth.js'))
@@ -125,7 +141,7 @@
           })
           .catch(() => {});
       }, window._snLite ? 1200 : 600);
-      // AI module optional — after idle
+
       setTimeout(() => {
         loadScript('/js/spacenet/ai.js').catch(() => {});
       }, 2500);

@@ -27,16 +27,18 @@
   }
 
   function help() {
-    log('── Astranov SpaceNet ──', 'ok');
+    log('── Astranov SpaceNet (full chrome) ──', 'ok');
     log('MAP   locate · city · shops · globe', 'ok');
     log('PLACE thesis · vault · go to mars', 'ok');
     log('ZOOM  solar · global · national · city', 'ok');
     log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
     log('TILE  me · vendors · cart · order', 'ok');
+    log('FIELD radar · resources · mine on|off · donate on|off', 'ok');
+    log('MONEY S · rate · wallet · finance  (primary; fiat/crypto secondary)', 'ok');
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
-    log('MONEY S primary · rate  (EUR/USD/BTC/ETH = secondary quotes only)', 'ok');
-    preview('locate · city · shops · rate');
+    log('UI    task ribbon materialises buttons for current task only', 'dim');
+    preview('locate · resources · rate · shops');
   }
 
   function moneyStatus() {
@@ -97,6 +99,7 @@
     histIdx = hist.length;
     log('› ' + line, 'cmd');
     global.SNUi?.expandPanel?.(true);
+    global.SNRibbon?.infer?.(line);
 
     const low = line.toLowerCase();
     const Tasks = global.SNTasks;
@@ -264,6 +267,63 @@
         low === 'space nets'
       ) {
         moneyStatus();
+        global.SNRibbon?.setTask?.('money');
+        return;
+      }
+      if (low === 'wallet' || low === 'balance') {
+        const W = global.SNWallet;
+        const snap = W?.snapshot?.() || { balance: 0, mined: 0 };
+        log('Wallet ' + (global.SNCurrency?.format?.(snap.balance) || snap.balance + ' S'), 'ok');
+        log('Mined lifetime ' + (global.SNCurrency?.format?.(snap.mined) || snap.mined), 'dim');
+        global.SNField?.refreshBalance?.();
+        global.SNRibbon?.setTask?.('money');
+        preview(snap.line || 'wallet');
+        return;
+      }
+      if (low === 'finance' || low === 'field' || low === 'ledger') {
+        global.SNField?.openFinance?.();
+        log('Finance panel · Stats · Mining · Platform 3% · P2P · Reports', 'ok');
+        return;
+      }
+      if (low === 'radar') {
+        global.SNRadar?.refresh?.();
+        log('Radar · Earth ' + (global.SNRadar?.EARTH_KMH || 1671) + ' km/h · blips from shops/places', 'ok');
+        return;
+      }
+      if (low === 'resources' || low === 'resource' || low === 'performance' || low === 'perf') {
+        const lines = global.SNResources?.status?.() || ['resources offline'];
+        lines.forEach((ln) => log(ln, /FPS|mine|spare/i.test(ln) ? 'ok' : 'dim'));
+        global.SNRibbon?.setTask?.('mine');
+        preview(global.SNResources?.report?.()?.line || 'resources');
+        return;
+      }
+      if (low === 'mine on' || low === 'mining on' || low === 'mine') {
+        if (!global.SNResources?.checkTerms?.()) {
+          global.SNField?.showTerms?.();
+          log('Accept mesh terms to mine in S', 'dim');
+          return;
+        }
+        global.SNResources?.setMining?.(true);
+        log('Mining on · earn S from spare capacity', 'ok');
+        global.SNRibbon?.setTask?.('mine');
+        return;
+      }
+      if (low === 'mine off' || low === 'mining off') {
+        global.SNResources?.setMining?.(false);
+        log('Mining off', 'dim');
+        return;
+      }
+      if (low === 'donate on') {
+        global.SNResources?.setDonate?.(true);
+        return;
+      }
+      if (low === 'donate off') {
+        global.SNResources?.setDonate?.(false);
+        return;
+      }
+      if (low === 'boost') {
+        log('Boost · prefer full FPS while active (3 min soft)', 'ok');
+        global.SNResources?.noteFrame?.();
         return;
       }
       if (low === 'solo' || low === 'status') {
