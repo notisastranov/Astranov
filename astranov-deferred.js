@@ -6580,7 +6580,22 @@ const Commerce = {
   },
 
   async showPicker(filter) {
-    await this.loadVendors();
+    const u0 = this.userLatLng();
+    // Mission: geo load real shops before picker (not bare global/demo)
+    try {
+      if (window.SpaceNetMission?.ensureOperatingPath) {
+        await Promise.race([
+          SpaceNetMission.ensureOperatingPath({
+            lat: u0.lat, lng: u0.lng, heavy: true, force: false, silent: true,
+          }),
+          new Promise((r) => setTimeout(r, 10000)),
+        ]);
+      } else {
+        await this.loadVendors({ lat: u0.lat, lng: u0.lng, radiusKm: 15, allowDemo: false });
+      }
+    } catch (_) {
+      try { await this.loadVendors({ lat: u0.lat, lng: u0.lng, radiusKm: 15, allowDemo: false }); } catch (__) {}
+    }
     if (!userLocated && navigator.geolocation) {
       await new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(
@@ -6601,7 +6616,8 @@ const Commerce = {
     if (list) list.style.display = 'block';
     this._suggestion = null;
     const title = document.getElementById('vm-title');
-    if (title) title.textContent = 'Επίλεξε κατάστημα · ' + this.vendors.length;
+    const realN = (this.vendors || []).filter((v) => !String(v.id || '').startsWith('demo-')).length;
+    if (title) title.textContent = 'Shops · ' + realN + ' real · ' + this.vendors.length + ' listed';
 
     let rows = this.vendors;
     if (filter) {
