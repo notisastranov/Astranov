@@ -232,14 +232,30 @@ Report: `window.__spacenetMission` `{ ok, shopsReal, shopsDemo, spatial, fails[]
 
 ---
 
-## 9. Deploy
+## 9. Deploy (strict — owner 2026-07-27)
 
 ```text
 node scripts/owner-push.mjs <files> --message=...
 ```
 
-- Bump `astranov-build` + all `?v=` together  
-- Ship **SPECS.md** + **astranov-continuity.js** with every product change  
+### Hard rules — do NOT overload Vercel / GitHub
+
+| Rule | Meaning |
+|------|---------|
+| **Verify before ship** | No `owner-push` until local syntax check **and** live/mission probes pass for the change |
+| **No dummy ships** | Cosmetic-only, untested, or “hope it works” deploys are **banned** |
+| **Batch changes** | One verified ship per coherent fix, not many micro-pushes |
+| **Fail closed** | If probe is RED, **do not deploy**; fix and re-verify |
+| **Bump once** | Bump `astranov-build` + all `?v=` together **only** when shipping product JS/HTML |
+
+Pre-ship checklist (all required):
+
+1. `node --check` on every changed `.js`  
+2. Live or scripted probe of the **operating path** touched by the change  
+3. No new floating docks / demo-only map / 30s blocking crawl  
+4. SPECS/continuity updated when product law changed  
+
+- Ship **SPECS.md** + **astranov-continuity.js** when product law changes (can be docs-only if no code)  
 - Serve critical modules from **`/js/`** when root HTML-fallback is broken  
 
 ---
@@ -248,10 +264,11 @@ node scripts/owner-push.mjs <files> --message=...
 
 **Without the owner having to repeat it:**
 
-1. After every owner instruction that changes product intent, **update this SPECS.md** (and continuity when selectors/owners change) in the **same deploy**.  
+1. After every owner instruction that changes product intent, **update this SPECS.md** (and continuity when selectors/owners change).  
 2. Chat is non-authoritative after the fact — **SPECS + continuity win**.  
 3. Prefer implementing over babysitting.  
 4. Do not reintroduce removed anti-patterns (button docks, dual CLI bars, CLI miner strip).  
+5. **Never ship until verified** (see §9). Do not spam GitHub/Vercel.  
 
 ---
 
