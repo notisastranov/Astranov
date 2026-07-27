@@ -32,8 +32,11 @@
 
   function backToGlobe() {
     close();
+    // Animate 3D Earth only after map is closed (do not call goToTier before close —
+    // goToTier also calls close; recursion-safe via M.active false).
     try {
-      global.SNGlobe?.goToTier?.('global');
+      if (global.SNGlobe?.goToTier) global.SNGlobe.goToTier('global');
+      else if (global.SNGlobe?.animateZ) global.SNGlobe.animateZ?.(2.75, 700);
     } catch (_) {}
     try {
       global.SNCli?.log?.('3D Earth · SNGlobe imaging', 'ok');
@@ -258,6 +261,13 @@
   }
 
   function close() {
+    if (!M.active && !document.body.classList.contains('city-map-on')) {
+      // already closed — avoid recursion with SNGlobe.goToTier → close
+      if (document.getElementById('globe')) {
+        document.getElementById('globe').classList.remove('city-hidden');
+      }
+      return;
+    }
     const wrap = document.getElementById('city-map');
     const globe = document.getElementById('globe');
     if (wrap) {
@@ -267,10 +277,8 @@
     if (globe) globe.classList.remove('city-hidden');
     document.body.classList.remove('city-map-on');
     M.active = false;
-    global.SNTile?.close?.();
-    // Ensure 3D globe is visible after leaving flat map
     try {
-      if (global.SNGlobe?.goToTier) global.SNGlobe.goToTier('global');
+      global.SNTile?.close?.();
     } catch (_) {}
     global.SNCli?.preview?.('Earth · type a command');
   }
