@@ -229,18 +229,7 @@
       };
     }
     if (tier === 'solar') return SPEED.orbit;
-    if (cityOn) {
-      // Prefer walking at neighborhood feel; driving when zoomed out on map a bit
-      try {
-        var z = g.SNMap && SNMap.ensure && null;
-        // Leaflet zoom if available
-        var map = g.SNMap && g.SNMap._map;
-        // access via active map internals if exposed later — default walk at city
-      } catch (e) {}
-      // If user last used LOC/drive context — keep simple: walk when city map open
-      // Driving when zoom tier city but map closed is rare; use drive for national→city fly
-      return SPEED.walk;
-    }
+    if (cityOn) return SPEED.walk;
     if (tier === 'city') return SPEED.drive;
     if (tier === 'national') return SPEED.rotate;
     return SPEED.rotate; // global default
