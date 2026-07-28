@@ -73,11 +73,12 @@
    * Plus optional current-task extras (cart/order/…)
    */
   var RIBBON_CORE = [
-    { act: 'locate', label: '🎯 Locate', title: 'Locate me on Earth' },
-    { act: 'user', label: '👤 User', title: 'Your multi-tile' },
-    { act: 'add', label: '➕ Add', title: 'Create multi-tile at focus' },
-    { act: 'handsfree', label: '🎙 SpaceNet', title: 'Hands-free voice → SpaceNet AI', id: 'sn-rib-hf' },
-    { act: 'send', label: '➤ Send', title: 'Send message to SpaceNet AI / CLI' },
+    { act: 'locate', emoji: '🎯', text: 'Locate', title: 'Locate me on Earth' },
+    { act: 'user', emoji: '👤', text: 'User', title: 'Your multi-tile' },
+    { act: 'add', emoji: '➕', text: 'Add', title: 'Create multi-tile at focus' },
+    { act: 'handsfree', emoji: '🎙', text: 'SpaceNet', title: 'Hands-free voice → SpaceNet AI', id: 'sn-rib-hf' },
+    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet AI' },
+    { act: 'expand', emoji: '↕️', text: 'Size', title: 'Expand / collapse CLI' },
   ];
   var TASKS = {
     idle: [],
@@ -124,11 +125,14 @@
     }
     if (act === 'send') {
       var form = $('cli-form');
-      var input = $('cli-in');
-      if (form && input) {
+      if (form) {
         if (form.requestSubmit) form.requestSubmit();
         else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
       }
+      return;
+    }
+    if (act === 'expand') {
+      if (g.SNUi && SNUi.expandPanel) SNUi.expandPanel();
       return;
     }
     if (g.SNCli && SNCli.run) void SNCli.run(act);
@@ -151,9 +155,14 @@
         '"' +
         (b.id ? ' id="' + b.id + '"' : '') +
         ' title="' +
-        (b.title || b.label) +
+        (b.title || b.text) +
         '">' +
-        b.label +
+        '<span class="sn-rib-emoji" aria-hidden="true">' +
+        (b.emoji || '') +
+        '</span>' +
+        '<span class="sn-rib-txt">' +
+        (b.text || b.act) +
+        '</span>' +
         '</button>';
     }
     var ctx = TASKS[task] || [];

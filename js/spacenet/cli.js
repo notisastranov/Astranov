@@ -992,14 +992,13 @@
   let voicesReady = false;
 
   function setHandsfreeUi(on, label) {
-    const btn = $('btn-handsfree');
-    if (btn) {
+    // Ribbon is the only hands-free control (bottom bar removed)
+    const btns = [$('btn-handsfree'), $('sn-rib-hf')].filter(Boolean);
+    btns.forEach((btn) => {
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.title = on
-        ? 'Mic + voice ON · tap to stop'
-        : 'Hands-free: mic + Astranov voice reply';
-    }
+      btn.title = on ? 'SpaceNet voice ON · tap to stop' : 'Hands-free SpaceNet AI';
+    });
     if (label) preview(label);
   }
 

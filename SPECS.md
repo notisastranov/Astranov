@@ -217,9 +217,9 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 **Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
-| **CLI top ribbon (permanent)** | **Always visible** on CLI panel top: **🎯 Locate · 👤 User · ➕ Add · 🎙 AI hands-free · ➤ Send** | **Required — never hide when idle** |
-| **CLI task extras** | Optional extra keys only while a task context is active (cart/order/…) | Additive, not a replacement for the permanent five |
-| **CLI field row** | Text input + expand (⋮); Send/Hands-free also on ribbon | Required |
+| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🎙 SpaceNet · ➤ Send · ↕️ Size** | **Required — never hide** |
+| **CLI task extras** | Optional extra keys while a task is active | Additive only |
+| **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
 | **CLI max height** | Default expand = **1/3 of screen** (button, no drag). **User drag may override** taller (up to ~72vh). | Required |
 | **Globe control** | Drag must cancel fly + zero inertia; euler YXZ only (no quat/euler fight); soft damp; no wild spin | Required |
@@ -235,10 +235,11 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **👤 User** | Open my multi-tile | `SNTile.openMe` |
 | **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
 | **🎙 SpaceNet** | Hands-free voice ↔ **SpaceNet AI** | `SNCli.toggleHandsfree` |
-| **➤ Send** | Submit CLI / talk to AI | form submit |
+| **➤ Send** | Submit CLI / talk to SpaceNet | form submit |
+| **↕️ Size** | Expand / collapse CLI (max 1/3 default) | `SNUi.expandPanel` |
 
-**Forbidden:** agents removing this permanent five, or hiding the ribbon when idle.  
-**Not on ribbon without new owner order:** permanent shops/help/login/first-delivery flood, floating edge docks.
+**Forbidden:** bottom CLI button bar next to input; removing permanent ribbon keys; hiding ribbon when idle.  
+**Input:** seamless with log — Enter sends.
 
 **Contaminated (discard):** missing radar **or** miner S **or** Astranov SpaceNet home **or** GLOBAL default **or** permanent multi-button ribbon flood.
 

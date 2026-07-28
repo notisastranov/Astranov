@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728400000-architect-auth" />
-<meta name="astranov-continuity" content="20260728400000-architect-auth" />
+<meta name="astranov-build" content="20260728410000-cli-seamless" />
+<meta name="astranov-continuity" content="20260728410000-cli-seamless" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -102,26 +102,35 @@
   #field-radar-legend b.v { color: #ffcc44; }
   #field-radar-legend b.r { color: #00dcff; }
 
-  /* CLI top ribbon — permanent basics always visible (SPECS) */
+  /* CLI top ribbon — big emoji + text, always visible */
   #sn-task-ribbon {
-    display: flex !important; flex-wrap: nowrap; align-items: center; gap: 6px;
-    padding: 8px 10px; border-bottom: 1px solid rgba(26,111,212,0.28);
-    flex-shrink: 0; min-height: 44px; overflow-x: auto; overflow-y: hidden;
+    display: flex !important; flex-wrap: nowrap; align-items: stretch; gap: 8px;
+    padding: 10px 10px 8px; border-bottom: 1px solid rgba(26,111,212,0.22);
+    flex-shrink: 0; min-height: 64px; overflow-x: auto; overflow-y: hidden;
     -webkit-overflow-scrolling: touch; cursor: default; touch-action: manipulation;
+    background: rgba(0,8,20,0.55);
   }
   #sn-task-ribbon[hidden] { display: flex !important; }
   .sn-rib-btn {
-    border: 1px solid var(--border); background: rgba(0,12,28,.95); color: #c8e4ff;
-    font: 600 12px/1 system-ui; padding: 8px 11px; border-radius: 999px; cursor: pointer;
-    white-space: nowrap; flex-shrink: 0;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; min-width: 64px; min-height: 56px; padding: 8px 10px;
+    border: 1px solid rgba(61,158,255,.4); background: rgba(6,20,40,.95); color: #e0f0ff;
+    border-radius: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
   }
-  .sn-rib-btn:hover, .sn-rib-btn:active { border-color: var(--bright); color: #fff; }
-  .sn-rib-btn.sn-rib-core { border-color: rgba(61,158,255,.4); }
+  .sn-rib-emoji { font-size: 22px; line-height: 1; display: block; }
+  .sn-rib-txt { font: 700 11px/1.1 system-ui, sans-serif; letter-spacing: 0.02em; color: #9ec8ff; }
+  .sn-rib-btn:hover, .sn-rib-btn:active {
+    border-color: #3d9eff; background: rgba(26,111,212,0.28);
+  }
+  .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #fff; }
   .sn-rib-btn#sn-rib-hf.on, .sn-rib-btn.on {
-    color: #ff6b7a; border-color: rgba(255,107,122,.55);
-    background: rgba(196,74,90,0.2);
+    border-color: rgba(255,107,122,.65); background: rgba(196,74,90,0.25);
   }
-  .sn-rib-task { opacity: 0.9; font-size: 11px; }
+  .sn-rib-btn#sn-rib-hf.on .sn-rib-txt, .sn-rib-btn.on .sn-rib-txt { color: #ff9aa5; }
+  .sn-rib-btn.sn-rib-task {
+    min-width: 52px; min-height: 48px; font: 600 11px system-ui; flex-direction: row;
+    opacity: 0.92;
+  }
 
   /* CLI dock — bottom only · ALWAYS above tiles/modals (never buried) */
   #dock {
@@ -141,7 +150,7 @@
   #panel.sn-size-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
   #panel.dragging { cursor: grabbing; transition: none !important; user-select: none; }
   /* Default expand = 1/3 screen; user drag may set taller inline height */
-  #panel.collapsed { max-height: min(148px, 20vh); }
+  #panel.collapsed { max-height: min(168px, 22vh); }
   #panel.mid { max-height: 28vh; }
   #panel.expanded { max-height: 33.333vh; }
   #panel.collapsed #cli-log { display: none; }
@@ -154,40 +163,31 @@
     background: rgba(61,158,255,0.45); margin: 0 auto 8px;
   }
   #cli-preview { font: 11px/1.3 ui-monospace, monospace; color: var(--bright); min-height: 16px; }
+  /* Log + input = one seamless stream (no bottom button bar) */
   #cli-log {
-    flex: 1; overflow-y: auto; padding: 8px 12px; min-height: 48px;
-    font: 12px/1.4 ui-monospace, monospace; touch-action: pan-y; cursor: default;
+    flex: 1; overflow-y: auto; padding: 8px 14px 4px; min-height: 40px;
+    font: 12px/1.45 ui-monospace, monospace; touch-action: pan-y; cursor: default;
+    background: transparent;
   }
-  #cli-form { touch-action: manipulation; cursor: default; }
   .cli-line { margin: 0 0 4px; color: var(--text); white-space: pre-wrap; word-break: break-word; }
   .cli-line.cmd { color: var(--bright); }
   .cli-line.ok { color: #6dffb0; }
   .cli-line.err { color: #ff6b7a; }
   .cli-line.dim { color: var(--dim); font-size: 11px; }
-  #cli-form { display: flex; align-items: stretch; border-top: 1px solid rgba(26,111,212,0.3); }
+  #cli-form {
+    display: flex; align-items: stretch; flex-shrink: 0;
+    border: 0; margin: 0; padding: 0 8px 10px; background: transparent;
+    touch-action: manipulation; cursor: default;
+  }
   #cli-in {
-    flex: 1; border: 0; background: rgba(2,10,28,0.6); color: #c8e4ff;
-    padding: 12px 10px; font: 14px/1.4 system-ui, sans-serif; outline: none; min-height: 48px;
-    min-width: 0;
+    flex: 1; border: 0; border-radius: 0; background: transparent; color: #d0e8ff;
+    padding: 8px 6px 10px; font: 14px/1.45 ui-monospace, monospace, system-ui; outline: none;
+    min-height: 40px; min-width: 0; box-shadow: none;
   }
-  #cli-in::placeholder { color: rgba(120,170,220,0.45); }
-  #btn-handsfree, #btn-send, #btn-expand {
-    border: 0; border-left: 1px solid var(--border); background: transparent;
-    color: var(--bright); padding: 0 12px; cursor: pointer; font-weight: 700; font-size: 16px;
-    flex-shrink: 0;
-  }
-  #btn-send { color: #6dffb0; font-size: 15px; }
-  #btn-handsfree.on {
-    color: #ff6b7a;
-    background: rgba(196,74,90,0.22);
-    box-shadow: 0 0 0 2px rgba(255,107,122,0.45);
-    animation: sn-hf-pulse 1.4s ease-in-out infinite;
-  }
-  @keyframes sn-hf-pulse {
-    0%, 100% { box-shadow: 0 0 0 2px rgba(255,107,122,0.35); }
-    50% { box-shadow: 0 0 0 5px rgba(255,107,122,0.12); }
-  }
-  #btn-expand { font-size: 14px; }
+  #cli-in::placeholder { color: rgba(120,170,220,0.4); }
+  #cli-in:focus { outline: none; }
+  /* Bottom buttons removed — use top ribbon only (hidden legacy ids safe) */
+  #btn-handsfree, #btn-send, #btn-expand { display: none !important; }
 
   /* Finance multi-tile */
   #spacenet-finance-panel {
@@ -359,11 +359,12 @@
       <div id="cli-preview">SpaceNet · talk or tap ribbon</div>
     </div>
     <div id="cli-log"></div>
-    <form id="cli-form">
-      <input id="cli-in" autocomplete="off" spellcheck="false" placeholder="Talk to SpaceNet · pizza · locate · help" aria-label="SpaceNet CLI" />
-      <button type="button" id="btn-handsfree" title="Hands-free voice → SpaceNet AI" aria-label="Hands-free SpaceNet">🎙</button>
-      <button type="submit" id="btn-send" title="Send" aria-label="Send">➤</button>
-      <button type="button" id="btn-expand" title="Expand">⋮</button>
+    <form id="cli-form" autocomplete="off">
+      <input id="cli-in" autocomplete="off" spellcheck="false" placeholder="Talk to SpaceNet…" aria-label="SpaceNet input" enterkeyhint="send" />
+      <!-- Bottom action buttons removed — ribbon only (legacy hooks kept hidden) -->
+      <button type="button" id="btn-handsfree" hidden tabindex="-1" aria-hidden="true">🎙</button>
+      <button type="submit" id="btn-send" hidden tabindex="-1" aria-hidden="true">Send</button>
+      <button type="button" id="btn-expand" hidden tabindex="-1" aria-hidden="true">Size</button>
     </form>
   </div>
 </div>
@@ -399,7 +400,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728400000-architect-auth"></script>
+<script src="/js/spacenet/boot.js?v=20260728410000-cli-seamless"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
