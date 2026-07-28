@@ -176,7 +176,8 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Globe click = go there** | Raycast → NATIONAL on **current body** + scan | SpaceNet law |
 | **Zoom out of city** | Flat map → **3D body GLOBAL** (Earth: SNGlobe Earth) | Hard ban: stuck on Leaflet as “world” |
 | **Map long-press** | **Long-press** empty map (~580ms) → `SNTile.createAt` multi-tile. **Short-tap never creates.** Short-tap pin → open full tile | Required |
-| **Radar** | Top-left · ~8fps · 1671 km/h on global | Required |
+| **Radar** | Top-left · ~8fps · center = speed km/h · **caption below** names the mode | Required |
+| **Radar speed meaning** | **Solar:** Earth through space (orbit ~107208 km/h). **Global/national:** Earth rotation at equator (~1671 km/h). **City map:** walking (~5 km/h). **City tier:** driving urban (~50 km/h). Text under radar explains which | Required |
 | **Logo** | Center · hard reset | Never under edge/S |
 | **S field** | Top-right · S balance · mine · FPS · finance | Required · **S primary** |
 | **Task ribbon** | Materialised buttons for **current task only** | Not permanent dock flood |

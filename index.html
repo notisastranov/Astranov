@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728130000-cosmos-dedummy" />
-<meta name="astranov-continuity" content="20260728130000-cosmos-dedummy" />
+<meta name="astranov-build" content="20260728140000-radar-speed-caption" />
+<meta name="astranov-continuity" content="20260728140000-radar-speed-caption" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
-<meta name="astranov-mission" content="Go anywhere in space: real body globe + land + crawl. SNCosmos + SNGlobe." />
-<meta name="astranov-ai-handoff" content="SNCosmos.go / setBody / scan. Dedummyfy every planet globe." />
+<meta name="astranov-mission" content="Radar center speed + caption: orbit / rotation / walk / drive. Cosmos go + crawl." />
+<meta name="astranov-ai-handoff" content="Radar #fsh-explain under radar. SPECS radar speed meaning." />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -49,9 +49,9 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #zoom-label, #perf-badge { display: none; }
 
-  /* Top-left under radar: auth only (radar owns top-left field) */
+  /* Top-left under radar + speed caption: auth only */
   #bar-left {
-    position: fixed; top: 138px; left: 10px; z-index: 25;
+    position: fixed; top: 198px; left: 10px; z-index: 25;
     display: flex; gap: 6px; align-items: center;
   }
   #bar-left button {
@@ -117,6 +117,18 @@
   #field-radar-speed.idle { opacity: 0.35; }
   .fr-label { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;
     font: 8px/1 system-ui; letter-spacing: .14em; color: rgba(0,200,255,.55); }
+  /* Explains center radar number (orbit / rotation / walk / drive) */
+  #field-radar-caption {
+    position: fixed; top: 132px; left: 10px; z-index: 42; width: 132px;
+    pointer-events: none; text-align: left;
+  }
+  #fsh-mode-title {
+    font: 700 9px/1.2 system-ui; letter-spacing: .06em; color: #4db8ff;
+    text-transform: uppercase; margin: 0 0 3px;
+  }
+  #fsh-explain {
+    font: 9px/1.35 system-ui; color: #6a8aaa; margin: 0;
+  }
 
   /* Task ribbon — materialised buttons for CURRENT task (under logo row, full center band) */
   #sn-task-ribbon {
@@ -264,7 +276,8 @@
     #sn-task-ribbon { max-width: calc(100vw - 24px); top: auto; bottom: calc(118px + env(safe-area-inset-bottom)); left: 12px; right: 12px; transform: none; }
     #field-balance-hud { max-width: 140px; font-size: 10px; }
     #field-radar { width: 96px; height: 96px; }
-    #bar-left { top: 112px; }
+    #field-radar-caption { top: 108px; width: 110px; }
+    #bar-left { top: 168px; }
     #edge { top: 150px; }
   }
 </style>
@@ -275,7 +288,7 @@
 <div id="globe" aria-label="Earth"></div>
 <div id="city-map" aria-hidden="true"></div>
 
-<!-- Radar (left) -->
+<!-- Radar (left) + speed meaning caption -->
 <div id="field-radar" aria-label="Radar">
   <canvas id="field-radar-canvas" width="120" height="120"></canvas>
   <div id="field-radar-speed" class="earth">
@@ -283,6 +296,10 @@
     <span id="fsh-unit">km/h</span>
   </div>
   <span class="fr-label">RADAR</span>
+</div>
+<div id="field-radar-caption" aria-live="polite">
+  <p id="fsh-mode-title">Earth rotation</p>
+  <p id="fsh-explain">Earth surface rotation at equator · center number is km/h</p>
 </div>
 
 <!-- Logo center -->
@@ -371,7 +388,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728130000-cosmos-dedummy"></script>
+<script src="/js/spacenet/boot.js?v=20260728140000-radar-speed-caption"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728130000-cosmos-dedummy',
+  version: '20260728140000-radar-speed-caption',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -127,6 +127,14 @@ const AstranovContinuity = {
     dedummyfyEveryGlobe: true,
   },
 
+  radarSpeed: {
+    solar: { kmh: 107208, label: 'Earth through space (orbit)' },
+    globalNational: { kmh: 1671, label: 'Earth surface rotation equator' },
+    cityMap: { kmh: 5, label: 'Walking on Earth surface' },
+    cityTier: { kmh: 50, label: 'Driving urban Earth surface' },
+    captionEl: '#field-radar-caption #fsh-explain',
+  },
+
   verify: [
     'GLOBAL Earth default',
     'short-tap Earth → NATIONAL + scan (not always my city)',
@@ -134,7 +142,8 @@ const AstranovContinuity = {
     'go to moon / jupiter work',
     'cosmos lists bodies',
     'off-Earth does not open Earth Leaflet as that world',
-    '#field-radar · #field-balance-hud · #sn-task-ribbon',
+    '#field-radar · #field-radar-caption · #field-balance-hud · #sn-task-ribbon',
+    'radar caption explains orbit / rotation / walk / drive',
     'CLI: rate · resources · shops · locate · cosmos',
     'SNAi greets on boot',
     'long-press map create · short-tap pin open tile',

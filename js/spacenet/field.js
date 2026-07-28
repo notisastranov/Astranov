@@ -4,9 +4,33 @@
  */
 (function (g) {
   'use strict';
-  var EARTH = 1671;
+  /** Radar center speeds (km/h) + plain-language captions (SPECS radar) */
+  var SPEED = {
+    orbit: {
+      v: 107208,
+      mode: 'Earth through space',
+      explain: 'Earth orbital speed around the Sun (~29.8 km/s) · center = km/h in space',
+    },
+    rotate: {
+      v: 1671,
+      mode: 'Earth rotation',
+      explain: 'Earth surface rotation at the equator · how fast ground moves with the planet',
+    },
+    walk: {
+      v: 5,
+      mode: 'Walking',
+      explain: 'Typical walking speed on Earth surface · street / pedestrian scale',
+    },
+    drive: {
+      v: 50,
+      mode: 'Driving',
+      explain: 'Typical urban driving on Earth surface · city road scale',
+    },
+  };
+  var EARTH = SPEED.rotate.v;
   var task = 'idle';
   var notice = '';
+  var speedMode = 'rotate';
   var mine = {
     on: false,
     terms: false,
@@ -182,10 +206,69 @@
       ctx.arc(x, y, 2, 0, Math.PI * 2);
       ctx.fill();
     }
-    var v = $('fsh-value');
-    var tier = (g.SNGlobe && SNGlobe.tier) || 'global';
-    if (v) v.textContent = String(tier === 'city' ? 0 : EARTH);
+    updateRadarSpeed();
     noteFrame();
+  }
+
+  /**
+   * Center number + caption under radar:
+   * solar → Earth through space (orbit)
+   * global/national → Earth rotation (equator)
+   * city map / street → walking or driving
+   */
+  function pickSpeedMode() {
+    var tier = (g.SNGlobe && SNGlobe.tier) || 'global';
+    var body = (g.SNGlobe && SNGlobe.bodyId) || 'earth';
+    var cityOn = !!(g.SNMap && SNMap.active);
+    if (body !== 'earth') {
+      return {
+        v: SPEED.orbit.v,
+        mode: String(body).toUpperCase() + ' context',
+        explain:
+          'Off-Earth body · center shows reference Earth-orbit scale until body telemetry is live',
+      };
+    }
+    if (tier === 'solar') return SPEED.orbit;
+    if (cityOn) {
+      // Prefer walking at neighborhood feel; driving when zoomed out on map a bit
+      try {
+        var z = g.SNMap && SNMap.ensure && null;
+        // Leaflet zoom if available
+        var map = g.SNMap && g.SNMap._map;
+        // access via active map internals if exposed later — default walk at city
+      } catch (e) {}
+      // If user last used LOC/drive context — keep simple: walk when city map open
+      // Driving when zoom tier city but map closed is rare; use drive for national→city fly
+      return SPEED.walk;
+    }
+    if (tier === 'city') return SPEED.drive;
+    if (tier === 'national') return SPEED.rotate;
+    return SPEED.rotate; // global default
+  }
+
+  function updateRadarSpeed() {
+    var s = pickSpeedMode();
+    speedMode = s.mode;
+    var v = $('fsh-value');
+    var u = $('fsh-unit');
+    var title = $('fsh-mode-title');
+    var exp = $('fsh-explain');
+    var wrap = $('field-radar-speed');
+    if (v) {
+      // Compact display for large orbital number
+      if (s.v >= 10000) v.textContent = String(Math.round(s.v / 1000)) + 'k';
+      else v.textContent = String(s.v);
+    }
+    if (u) u.textContent = 'km/h';
+    if (title) title.textContent = s.mode;
+    if (exp) exp.textContent = s.explain;
+    if (wrap) {
+      wrap.classList.remove('earth', 'driving', 'idle', 'walk', 'orbit');
+      if (s === SPEED.orbit) wrap.classList.add('orbit');
+      else if (s === SPEED.walk) wrap.classList.add('walk');
+      else if (s === SPEED.drive) wrap.classList.add('driving');
+      else wrap.classList.add('earth');
+    }
   }
 
   function refreshBlips() {
@@ -360,6 +443,8 @@
       if (p) p.hidden = true;
     },
     refreshBlips: refreshBlips,
+    updateRadarSpeed: updateRadarSpeed,
+    SPEED: SPEED,
     EARTH_KMH: EARTH,
   };
 
@@ -367,7 +452,9 @@
   g.SNRadar = {
     init: function () {},
     refresh: refreshBlips,
+    updateSpeed: updateRadarSpeed,
     EARTH_KMH: EARTH,
+    SPEED: SPEED,
   };
   g.SNResources = {
     init: function () {},
