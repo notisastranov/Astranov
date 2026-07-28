@@ -8,7 +8,10 @@
     open: false,
     profileId: null,
     tab: 'about', // about | menu | dating | drive | social | cart
+    /** Visual scale of card (pinch / wheel) — 0.55–1.35 */
+    scale: 0.78,
   };
+  const SIZE_KEY = 'sn:tile-scale-v1';
 
   function $(id) {
     return document.getElementById(id);
@@ -22,63 +25,97 @@
       .replace(/"/g, '&quot;');
   }
 
+  function loadScale() {
+    try {
+      const n = parseFloat(localStorage.getItem(SIZE_KEY) || '');
+      if (n >= 0.55 && n <= 1.35) T.scale = n;
+    } catch (_) {}
+  }
+
+  function saveScale() {
+    try {
+      localStorage.setItem(SIZE_KEY, String(T.scale));
+    } catch (_) {}
+  }
+
+  function applyScale() {
+    const card = document.querySelector('#sn-tile .sn-tile-card');
+    if (!card) return;
+    const s = Math.max(0.55, Math.min(1.35, T.scale || 0.78));
+    T.scale = s;
+    card.style.setProperty('--sn-tile-scale', String(s));
+    card.style.width = 'min(' + Math.round(320 * s) + 'px, calc(100vw - 24px))';
+    card.style.maxHeight = 'min(' + Math.round(42 * s) + 'vh, ' + Math.round(420 * s) + 'px)';
+    card.style.transform = 'scale(1)'; // size via width/height, not transform (keeps pinch natural)
+  }
+
   function ensureCss() {
-    // Bump id when layout law changes so old full-screen tile CSS is replaced
-    const old = document.getElementById('sn-tile-css');
-    if (old) old.remove();
-    if (document.getElementById('sn-tile-css-v2')) return;
+    // Bump id when layout law changes so old huge-tile CSS is replaced
+    ['sn-tile-css', 'sn-tile-css-v2'].forEach((id) => {
+      const old = document.getElementById(id);
+      if (old) old.remove();
+    });
+    if (document.getElementById('sn-tile-css-v3')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v2';
+    st.id = 'sn-tile-css-v3';
     st.textContent = [
-      /* z-index BELOW CLI dock (100) — never bury 🎙 / send / controls */
+      /* Compact sheet above CLI · pinch to resize */
       '#sn-tile{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;',
-      'padding:12px 12px calc(132px + env(safe-area-inset-bottom));background:rgba(0,0,0,.4);pointer-events:auto}',
+      'padding:8px 10px calc(148px + env(safe-area-inset-bottom));background:rgba(0,0,0,.32);pointer-events:auto;',
+      'touch-action:none}',
       '#sn-tile.open{display:flex}',
-      '#sn-tile .sn-tile-card{width:min(440px,100%);max-height:min(58vh,560px);overflow:auto;border-radius:16px;',
-      'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.45);box-shadow:0 12px 40px rgba(0,0,0,.65);',
-      'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto}',
-      '#sn-tile .sn-tile-cover{position:relative;height:120px;background:#061428 center/cover no-repeat;flex-shrink:0}',
-      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;border:0;border-radius:10px;',
-      'background:rgba(0,0,0,.55);color:#fff;width:36px;height:36px;cursor:pointer;font-size:16px}',
-      '#sn-tile .sn-tile-x{right:8px}#sn-tile .sn-tile-edit-cover{right:52px}',
-      '#sn-tile .sn-tile-head{display:flex;gap:12px;padding:0 14px 10px;margin-top:-28px;align-items:flex-end}',
+      '#sn-tile .sn-tile-card{',
+      'width:min(280px,calc(100vw - 24px));max-height:min(38vh,360px);overflow:auto;border-radius:14px;',
+      'background:rgba(0,8,20,.97);border:1px solid rgba(61,158,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.6);',
+      'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto;',
+      'touch-action:none;transform-origin:bottom center;transition:width .08s ease,max-height .08s ease}',
+      '#sn-tile .sn-tile-grip{flex-shrink:0;text-align:center;padding:6px 8px 2px;font:10px system-ui;color:#5a8aaa;',
+      'user-select:none;letter-spacing:.04em}',
+      '#sn-tile .sn-tile-grip::before{content:"";display:block;width:36px;height:4px;border-radius:99px;',
+      'background:rgba(61,158,255,.4);margin:0 auto 4px}',
+      '#sn-tile .sn-tile-cover{position:relative;height:72px;background:#061428 center/cover no-repeat;flex-shrink:0}',
+      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:6px;border:0;border-radius:10px;',
+      'background:rgba(0,0,0,.55);color:#fff;width:32px;height:32px;cursor:pointer;font-size:15px}',
+      '#sn-tile .sn-tile-x{right:6px}#sn-tile .sn-tile-edit-cover{right:44px}',
+      '#sn-tile .sn-tile-head{display:flex;gap:10px;padding:0 12px 8px;margin-top:-22px;align-items:flex-end}',
       '#sn-tile .sn-tile-av-wrap{position:relative;flex-shrink:0}',
-      '#sn-tile .sn-tile-av{width:64px;height:64px;border-radius:50%;border:3px solid #1a6fd4;object-fit:cover;background:#0a1a30}',
-      '#sn-tile .sn-tile-edit-av{position:absolute;right:-4px;bottom:-4px;width:24px;height:24px;border-radius:50%;',
-      'border:0;background:#1a6fd4;color:#fff;cursor:pointer;font-weight:700}',
-      '#sn-tile .sn-tile-name{font:700 16px system-ui;color:#e8f4ff}',
-      '#sn-tile .sn-tile-handle{font:12px ui-monospace,monospace;color:#5a8aaa}',
-      '#sn-tile .sn-tile-bio{font:12px system-ui;color:#8a9bb0;margin-top:4px}',
-      '#sn-tile .sn-tile-roles,#sn-tile .sn-tile-tabs{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px}',
+      '#sn-tile .sn-tile-av{width:48px;height:48px;border-radius:50%;border:2px solid #1a6fd4;object-fit:cover;background:#0a1a30}',
+      '#sn-tile .sn-tile-edit-av{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;',
+      'border:0;background:#1a6fd4;color:#fff;cursor:pointer;font-weight:700;font-size:12px}',
+      '#sn-tile .sn-tile-name{font:700 14px system-ui;color:#e8f4ff}',
+      '#sn-tile .sn-tile-handle{font:11px ui-monospace,monospace;color:#5a8aaa}',
+      '#sn-tile .sn-tile-bio{font:11px system-ui;color:#8a9bb0;margin-top:2px;max-height:2.6em;overflow:hidden}',
+      '#sn-tile .sn-tile-roles,#sn-tile .sn-tile-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:6px 12px}',
       '#sn-tile .sn-role,#sn-tile .sn-tab{border:1px solid rgba(61,158,255,.35);background:rgba(0,12,28,.8);',
-      'color:#b8c4d4;border-radius:999px;padding:6px 10px;font:600 11px system-ui;cursor:pointer}',
+      'color:#b8c4d4;border-radius:999px;padding:5px 9px;font:600 10px system-ui;cursor:pointer}',
       '#sn-tile .sn-role.on,#sn-tile .sn-tab.on{border-color:#3d9eff;color:#3d9eff;background:rgba(26,111,212,.2)}',
-      '#sn-tile .sn-tile-body{padding:8px 14px 12px;flex:1;overflow:auto;font:13px/1.45 system-ui}',
-      '#sn-tile .sn-tile-foot{display:flex;flex-wrap:wrap;gap:8px;padding:10px 14px 14px;border-top:1px solid rgba(26,111,212,.25)}',
+      '#sn-tile .sn-tile-body{padding:6px 12px 10px;flex:1;overflow:auto;font:12px/1.4 system-ui;',
+      'touch-action:pan-y}',
+      '#sn-tile .sn-tile-foot{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 12px;border-top:1px solid rgba(26,111,212,.25)}',
       '#sn-tile .sn-btn{border:1px solid rgba(61,158,255,.4);background:rgba(26,111,212,.25);color:#e8f4ff;',
-      'border-radius:10px;padding:8px 12px;font:600 12px system-ui;cursor:pointer}',
+      'border-radius:10px;padding:7px 10px;font:600 11px system-ui;cursor:pointer}',
       '#sn-tile .sn-btn.primary{background:rgba(0,221,136,.2);border-color:rgba(0,221,136,.45);color:#6dffb0}',
-      '#sn-tile .sn-empty{color:#5a6a7e;font-size:12px;padding:8px 0}',
-      '#sn-tile .sn-menu-head{font-weight:700;color:#3d9eff;margin-bottom:8px}',
-      '#sn-tile .sn-menu-item{display:flex;align-items:center;gap:10px;padding:8px 0;',
+      '#sn-tile .sn-empty{color:#5a6a7e;font-size:11px;padding:6px 0}',
+      '#sn-tile .sn-menu-head{font-weight:700;color:#3d9eff;margin-bottom:6px;font-size:12px}',
+      '#sn-tile .sn-menu-item{display:flex;align-items:center;gap:8px;padding:6px 0;',
       'border-bottom:1px solid rgba(26,111,212,.15)}',
-      '#sn-tile .sn-menu-item img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#0a1a30;flex-shrink:0}',
+      '#sn-tile .sn-menu-item img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#0a1a30;flex-shrink:0}',
       '#sn-tile .sn-menu-meta{flex:1;min-width:0}',
-      '#sn-tile .sn-menu-meta b{display:block;color:#e8f4ff}',
-      '#sn-tile .sn-menu-meta span{display:block;font-size:11px;color:#6a8aaa}',
-      '#sn-tile .sn-menu-meta em{display:block;color:#6dffb0;font-style:normal;font-weight:700;margin-top:2px}',
-      '#sn-tile .sn-add{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,221,136,.45);',
+      '#sn-tile .sn-menu-meta b{display:block;color:#e8f4ff;font-size:12px}',
+      '#sn-tile .sn-menu-meta span{display:block;font-size:10px;color:#6a8aaa}',
+      '#sn-tile .sn-menu-meta em{display:block;color:#6dffb0;font-style:normal;font-weight:700;margin-top:2px;font-size:12px}',
+      '#sn-tile .sn-add{width:32px;height:32px;border-radius:8px;border:1px solid rgba(0,221,136,.45);',
       'background:rgba(0,221,136,.15);color:#6dffb0;font-weight:800;cursor:pointer;flex-shrink:0}',
-      '#sn-tile .sn-total{margin-top:10px;font-weight:700;color:#6dffb0}',
-      '#sn-tile .sn-fee{font-size:11px;color:#6a8aaa;margin-top:4px}',
-      '#sn-tile .sn-post{padding:8px 0;border-bottom:1px solid rgba(26,111,212,.15)}',
-      '#sn-tile .sn-compose{display:flex;gap:6px;margin-bottom:10px}',
-      '#sn-tile .sn-compose input{flex:1;border-radius:10px;border:1px solid rgba(61,158,255,.35);',
-      'background:rgba(0,12,28,.8);color:#e8f4ff;padding:8px}',
-      '#sn-tile .sn-compose button{border:0;border-radius:10px;background:#1a6fd4;color:#fff;padding:8px 12px;cursor:pointer}',
-      '#sn-tile .sn-big{font-size:18px;font-weight:700;margin-bottom:6px}',
-      '#sn-tile .sn-tags span{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;',
-      'background:rgba(26,111,212,.2);font-size:11px}',
+      '#sn-tile .sn-total{margin-top:8px;font-weight:700;color:#6dffb0;font-size:12px}',
+      '#sn-tile .sn-fee{font-size:10px;color:#6a8aaa;margin-top:3px}',
+      '#sn-tile .sn-post{padding:6px 0;border-bottom:1px solid rgba(26,111,212,.15);font-size:12px}',
+      '#sn-tile .sn-compose{display:flex;gap:6px;margin-bottom:8px}',
+      '#sn-tile .sn-compose input{flex:1;border-radius:8px;border:1px solid rgba(61,158,255,.35);',
+      'background:rgba(0,12,28,.8);color:#e8f4ff;padding:6px 8px;font-size:12px}',
+      '#sn-tile .sn-compose button{border:0;border-radius:8px;background:#1a6fd4;color:#fff;padding:6px 10px;cursor:pointer;font-size:12px}',
+      '#sn-tile .sn-big{font-size:15px;font-weight:700;margin-bottom:4px}',
+      '#sn-tile .sn-tags span{display:inline-block;margin:2px 4px 2px 0;padding:2px 7px;border-radius:999px;',
+      'background:rgba(26,111,212,.2);font-size:10px}',
       '.sn-pin{background:transparent!important;border:0!important}',
       '.sn-pin-inner{width:36px;height:36px;border-radius:50%;border:2px solid #3d9eff;background:#061428;',
       'overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}',
@@ -88,14 +125,91 @@
     document.head.appendChild(st);
   }
 
+  function dist(a, b) {
+    const dx = a.clientX - b.clientX;
+    const dy = a.clientY - b.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /** Pinch (2-finger) + Ctrl/wheel resize on the tile card */
+  function bindResize(root) {
+    if (!root || root._snResizeBound) return;
+    root._snResizeBound = true;
+    let pinching = false;
+    let startDist = 0;
+    let startScale = 1;
+
+    root.addEventListener(
+      'touchstart',
+      (e) => {
+        if (e.touches.length === 2) {
+          pinching = true;
+          startDist = dist(e.touches[0], e.touches[1]);
+          startScale = T.scale || 0.78;
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+
+    root.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!pinching || e.touches.length !== 2) return;
+        e.preventDefault();
+        const d = dist(e.touches[0], e.touches[1]);
+        if (startDist < 8) return;
+        const ratio = d / startDist;
+        T.scale = Math.max(0.55, Math.min(1.35, startScale * ratio));
+        applyScale();
+      },
+      { passive: false }
+    );
+
+    root.addEventListener(
+      'touchend',
+      (e) => {
+        if (e.touches.length < 2) {
+          if (pinching) {
+            pinching = false;
+            saveScale();
+          }
+        }
+      },
+      { passive: true }
+    );
+
+    // Desktop: Ctrl+wheel or trackpad pinch often fires wheel
+    root.addEventListener(
+      'wheel',
+      (e) => {
+        if (!T.open) return;
+        // pinch-zoom on trackpads often sets ctrlKey
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.04 : 0.04;
+        T.scale = Math.max(0.55, Math.min(1.35, (T.scale || 0.78) + delta));
+        applyScale();
+        saveScale();
+      },
+      { passive: false }
+    );
+  }
+
   function ensureDom() {
     ensureCss();
-    if ($('sn-tile')) return;
+    loadScale();
+    if ($('sn-tile')) {
+      bindResize($('sn-tile'));
+      applyScale();
+      return;
+    }
     const el = document.createElement('div');
     el.id = 'sn-tile';
     el.setAttribute('aria-hidden', 'true');
     el.innerHTML =
       '<div class="sn-tile-card">' +
+      '  <div class="sn-tile-grip" id="sn-tile-grip" title="Pinch to resize">pinch to resize</div>' +
       '  <div class="sn-tile-cover" id="sn-tile-cover">' +
       '    <button type="button" class="sn-tile-x" id="sn-tile-close" aria-label="Close">×</button>' +
       '    <button type="button" class="sn-tile-edit-cover" id="sn-tile-edit-cover" title="Cover">📷</button>' +
@@ -130,6 +244,8 @@
     $('sn-tile-edit-av')?.addEventListener('click', () => $('sn-tile-av-file')?.click());
     $('sn-tile-cover-file')?.addEventListener('change', (e) => onFile(e, 'cover'));
     $('sn-tile-av-file')?.addEventListener('change', (e) => onFile(e, 'avatar'));
+    bindResize(el);
+    applyScale();
   }
 
   function onFile(e, kind) {
@@ -185,9 +301,10 @@
     root.classList.add('open');
     root.setAttribute('aria-hidden', 'false');
     root.style.display = 'flex';
+    applyScale();
     render();
-    global.SNCli?.log?.('Tile · ' + (p.name || p.id), 'ok');
-    global.SNCli?.preview?.((p.name || 'Tile') + ' open');
+    global.SNCli?.log?.('Tile · ' + (p.name || p.id) + ' · pinch to resize', 'ok');
+    global.SNCli?.preview?.((p.name || 'Tile') + ' · pinch');
     global.SNUi?.expandPanel?.(false);
     return p;
   }
