@@ -158,23 +158,25 @@
    * Raycast screen point → Earth lat/lng (SpaceNet address under finger).
    */
   function pickLatLng(clientX, clientY) {
-    if (!G.ready || !G.earth || !G.camera || !G.renderer) return null;
+    if (!G.ready || !G.earth || !G.camera || !G.renderer || !G.pivot) return null;
     var rect = G.renderer.domElement.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     var x = ((clientX - rect.left) / rect.width) * 2 - 1;
     var y = -((clientY - rect.top) / rect.height) * 2 + 1;
     if (!G.raycaster) G.raycaster = new THREE.Raycaster();
     try {
+      // Full chain: pivot (user drag) + earth mesh must be current for hit→lat/lng
+      G.pivot.updateMatrixWorld(true);
       G.earth.updateMatrixWorld(true);
-      if (G.clouds) G.clouds.updateMatrixWorld(true);
+      G.camera.updateMatrixWorld(true);
     } catch (_) {}
     G.raycaster.setFromCamera(new THREE.Vector2(x, y), G.camera);
-    // Prefer solid earth over cloud shell (clouds are larger and skew picks)
     var hits = G.raycaster.intersectObject(G.earth, false);
     if (!hits || !hits.length) return null;
-    // Point in world space → earth local (same frame as latLngToVec / pulse)
     var local = G.earth.worldToLocal(hits[0].point.clone());
-    return vecToLatLng(local);
+    var ll = vecToLatLng(local);
+    if (!ll || !isFinite(ll.lat) || !isFinite(ll.lng)) return null;
+    return ll;
   }
 
   /** Stop inertia / idle spin / in-flight camera so goToPlace is decisive */
@@ -423,18 +425,20 @@
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
       var t = e.changedTouches ? e.changedTouches[0] : e;
-      // Short tap (not drag): single = dive in · double = zoom out one level
+      // Short tap (not drag): single → NATIONAL fly to place · double → zoom out
       if (!moved && t) {
         var now = performance.now();
         var gap = now - lastTapAt;
         var dist = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
-        if (gap < 340 && dist < 36 && lastTapAt > 0) {
-          // Double-tap / double-click → zoom OUT (toward globe)
+        if (gap < 340 && dist < 40 && lastTapAt > 0) {
           if (tapTimer) {
             clearTimeout(tapTimer);
             tapTimer = null;
           }
           lastTapAt = 0;
+          // Cancel pending dive if any
+          G.flyGen = (G.flyGen || 0) + 1;
+          G.flying = false;
           zoomOutOne();
         } else {
           lastTapAt = now;
@@ -443,12 +447,24 @@
           if (tapTimer) clearTimeout(tapTimer);
           var cx = t.clientX;
           var cy = t.clientY;
-          // Wait so a real double-tap can cancel the dive
+          // Pick immediately (while matrices match the tap), dive after short double-tap window
+          var llNow = pickLatLng(cx, cy);
           tapTimer = setTimeout(function () {
             tapTimer = null;
-            var ll = pickLatLng(cx, cy);
-            if (ll) diveInAt(ll.lat, ll.lng);
-          }, 300);
+            var ll = llNow || pickLatLng(cx, cy);
+            if (ll) {
+              // Always start at NATIONAL for a fresh place tap (SPECS)
+              G.velX = 0;
+              G.velY = 0;
+              goToPlace(ll.lat, ll.lng, {
+                tier: 'national',
+                openMap: false,
+                pulse: false,
+                body: G.bodyId || 'earth',
+              });
+              G.diveTier = 'national';
+            }
+          }, 220);
         }
       }
       ptrId = null;
@@ -504,14 +520,17 @@
   }
 
   /**
-   * Single tap/click: fly to point + zoom deeper (NATIONAL → REGIONAL → CITY).
+   * Progressive dive: first tap NATIONAL, more taps same area → regional → city.
    * No blue rings — fly and zoom only.
    */
   function diveInAt(lat, lng) {
-    if (lat == null || lng == null) return false;
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
     var tier = nextDiveTier(lat, lng);
-    var openMap =
-      tier === 'city' && (G.bodyId === 'earth' || !G.bodyId);
+    // From solar/global always land NATIONAL first (usable map of the place)
+    if (tier === 'solar' || tier === 'global' || !tier) tier = 'national';
+    var openMap = tier === 'city' && (G.bodyId === 'earth' || !G.bodyId);
+    G.velX = 0;
+    G.velY = 0;
     return goToPlace(lat, lng, {
       tier: tier,
       openMap: openMap,

@@ -76,7 +76,7 @@
     { act: 'locate', emoji: '🎯', text: 'Locate', title: 'Locate me on Earth' },
     { act: 'user', emoji: '👤', text: 'User', title: 'Your multi-tile' },
     { act: 'add', emoji: '➕', text: 'Add', title: 'Create multi-tile at focus' },
-    { act: 'handsfree', emoji: '🎙', text: 'SpaceNet', title: 'Hands-free voice → SpaceNet AI', id: 'sn-rib-hf' },
+    { act: 'handsfree', emoji: '🤖', text: 'AI', title: 'SpaceNet AI · hands-free voice', id: 'sn-rib-hf' },
     { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet AI' },
   ];
   var TASKS = {

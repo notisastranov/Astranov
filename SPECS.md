@@ -66,7 +66,8 @@ Object appears by `minZ` + `visibilityKm`.
 
 | Input | Behavior |
 |-------|----------|
-| **Single click / single tap** on body | **Fly + zoom to that place.** First hit (or new place far from focus) → **NATIONAL**. Further singles on same area → **REGIONAL** then **CITY**. CITY opens Earth street map. |
+| **Single click / single tap** on body | **Fly + zoom to that place at NATIONAL** (must work — pickLatLng after pivot bake). Further singles same area → **REGIONAL** then **CITY**. |
+| **City map short-click empty** | Close street map → **NATIONAL** globe at that lat/lng | Required |
 | **Double click / double tap** | **Zoom out one ladder step** toward the globe: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
 | **Drag** | Spin globe only (no dive). |
 | **Wheel** | Zoom camera; city Z opens street map at focus under cursor. |
@@ -217,7 +218,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 **Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
-| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🎙 SpaceNet · ➤ Send** only | **Required — never hide** · **no Size button** (drag panel to resize) |
+| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🤖 AI · ➤ Send** only | **Required — never hide** · **no Size button** |
 | **CLI task extras** | Optional extra keys while a task is active | Additive only |
 | **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
@@ -234,7 +235,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **🎯 Locate** | GPS + fly globe to user | `SNCli.run('locate')` / `SNGlobe.locate` |
 | **👤 User** | Open my multi-tile | `SNTile.openMe` |
 | **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
-| **🎙 SpaceNet** | Hands-free voice ↔ **SpaceNet AI** | `SNCli.toggleHandsfree` |
+| **🤖 AI** | Hands-free voice ↔ **SpaceNet AI** (emoji + **AI** letters) | `SNCli.toggleHandsfree` |
 | **➤ Send** | Submit CLI / talk to SpaceNet | form submit |
 
 **Forbidden:** Size / expand ribbon key (unauthorized); bottom CLI button bar; removing permanent five; hiding ribbon when idle.  

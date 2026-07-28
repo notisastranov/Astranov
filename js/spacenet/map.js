@@ -54,7 +54,7 @@
     M.map = L.map(el, {
       zoomControl: true,
       attributionControl: false,
-      minZoom: 11,
+      minZoom: 3,
       maxZoom: 19,
     }).setView([pos.lat, pos.lng], 14);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -166,9 +166,36 @@
     map.on('mouseup', onUp);
     map.on('touchend', onUp);
     map.on('touchcancel', onUp);
-    // Explicitly do NOT create on short click
-    map.on('click', () => {
+    // Short click empty map → NATIONAL globe at that place (map was unusable before)
+    map.on('click', (e) => {
       clear();
+      if (M._markerHit) return;
+      if (!e || !e.latlng) return;
+      const la = e.latlng.lat;
+      const lo = e.latlng.lng;
+      try {
+        // Leave street map, fly 3D Earth to that place at NATIONAL
+        close();
+        if (global.SNGlobe?.goToPlace) {
+          global.SNGlobe.goToPlace(la, lo, {
+            tier: 'national',
+            openMap: false,
+            pulse: false,
+            body: 'earth',
+            label: 'Map focus',
+          });
+        } else if (global.SNGlobe?.flyNear) {
+          global.SNGlobe.flyNear(la, lo, 'national');
+        }
+        global._snLastPos = { lat: la, lng: lo };
+        global.SNTasks?.setPos?.(la, lo);
+        global.SNCli?.log?.(
+          'NATIONAL · ' + la.toFixed(3) + ', ' + lo.toFixed(3),
+          'ok'
+        );
+      } catch (err) {
+        global.SNCli?.log?.('Map fly failed · ' + (err.message || err), 'err');
+      }
     });
   }
 
