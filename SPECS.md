@@ -286,6 +286,7 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 | 4 Driver online | `drive on` | me.driver + online |
 | 5 Deliver | `deliver me` | `claim` + `complete` open delivery |
 | Auto | `first delivery` | `SNMarket.runFirstLoop` full path |
+| **Food juice** | `pizza` / `order sushi` / food words | `SNMarket.fulfillFoodIntent`: locate → find → tiles/menus/prices S → judge → order → assign driver |
 
 **Astranov AI** greets with this path until `SNUsage` flag `firstDeliveryDone`. Pain reports → `SNUsage.handoff` for coding agent.
 

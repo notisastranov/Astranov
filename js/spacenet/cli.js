@@ -124,6 +124,19 @@
         dumpBrain('verify');
         return;
       }
+      // Food juice: "pizza" → locate → find → menus → order → driver
+      if (
+        global.SNMarket?.parseFoodIntent?.(line) &&
+        !/^(list\s+shop|menu\s+add|order\s+me|drive\s+on|first\s+delivery)/i.test(low)
+      ) {
+        const fi = global.SNMarket.parseFoodIntent(line);
+        log('Food juice · ' + fi.food + ' · locate → find → judge → order → driver…', 'dim');
+        preview(fi.food);
+        const r = await global.SNMarket.fulfillFoodIntent(fi, { autoOrder: true });
+        if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+        else log(r?.error || 'food path failed', 'err');
+        return;
+      }
       // First marketplace loop + usage (Astranov AI coaches the same path)
       if (
         low === 'first delivery' ||
