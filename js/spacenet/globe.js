@@ -33,6 +33,10 @@
     damp: 0.94,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
+    bodyId: 'earth',
+    bodyMeta: null,
+    earthMat: null,
+    cloudMat: null,
   };
 
   function isTouch() {
@@ -161,33 +165,46 @@
       specular: 0x333333,
       shininess: 12,
     });
+    G.earthMat = mat;
     G.earth = new THREE.Mesh(new THREE.SphereGeometry(1, segs, segs), mat);
     G.pivot.add(G.earth);
+    G._loader = loader;
+    G.bodyId = 'earth';
 
-    loader.load(
-      earthUrl,
-      function (tex) {
-        tex.anisotropy = Math.min(4, (G.renderer.capabilities.getMaxAnisotropy && G.renderer.capabilities.getMaxAnisotropy()) || 1);
-        mat.map = tex;
-        mat.color.set(0xffffff);
+    function applyEarthTextures() {
+      loader.load(
+        earthUrl,
+        function (tex) {
+          tex.anisotropy = Math.min(
+            4,
+            (G.renderer.capabilities.getMaxAnisotropy &&
+              G.renderer.capabilities.getMaxAnisotropy()) ||
+              1
+          );
+          mat.map = tex;
+          mat.color.set(0xffffff);
+          mat.needsUpdate = true;
+        },
+        undefined,
+        function () {
+          mat.color.set(0x1a4d7a);
+          mat.emissive = new THREE.Color(0x041018);
+        }
+      );
+      loader.load(specUrl, function (tex) {
+        mat.specularMap = tex;
         mat.needsUpdate = true;
-      },
-      undefined,
-      function () {
-        mat.color.set(0x1a4d7a);
-        mat.emissive = new THREE.Color(0x041018);
-      }
-    );
-    loader.load(specUrl, function (tex) {
-      mat.specularMap = tex;
-      mat.needsUpdate = true;
-    });
+      });
+    }
+    applyEarthTextures();
+    G._applyEarthTextures = applyEarthTextures;
 
     var cloudMat = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: 0.35,
       depthWrite: false,
     });
+    G.cloudMat = cloudMat;
     G.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.015, segs, segs), cloudMat);
     G.pivot.add(G.clouds);
     loader.load(cloudUrl, function (tex) {
@@ -300,11 +317,15 @@
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
       var t = e.changedTouches ? e.changedTouches[0] : e;
-      // Short tap (not drag) → go to national space under finger
+      // Short tap (not drag) → go to that place on CURRENT body + crawl
       if (!moved && t) {
         var ll = pickLatLng(t.clientX, t.clientY);
         if (ll) {
-          goToPlace(ll.lat, ll.lng, { tier: 'national', openMap: false });
+          goToPlace(ll.lat, ll.lng, {
+            tier: 'national',
+            openMap: false,
+            body: G.bodyId || 'earth',
+          });
         }
       }
       ptrId = null;
@@ -359,31 +380,102 @@
   }
 
   /**
-   * SpaceNet: go to the place you clicked — rotate + zoom tier.
+   * Switch planetary / body globe (Earth, Mars, Moon, …). Dedummyfy multi-world.
+   */
+  function setBody(bodyId, meta) {
+    if (!G.ready || !G.earthMat) return false;
+    var id = String(bodyId || 'earth').toLowerCase();
+    G.bodyId = id;
+    G.bodyMeta = meta || null;
+    var mat = G.earthMat;
+    var loader = G._loader || new THREE.TextureLoader();
+
+    // Reset maps
+    mat.map = null;
+    mat.specularMap = null;
+    mat.emissive = new THREE.Color(0x000000);
+    mat.emissiveIntensity = 0;
+
+    if (id === 'earth') {
+      mat.color.set(0x223344);
+      if (G._applyEarthTextures) G._applyEarthTextures();
+      if (G.clouds) G.clouds.visible = true;
+      setHud('Earth · GLOBAL');
+      return true;
+    }
+
+    if (G.clouds) G.clouds.visible = false;
+    var col = (meta && meta.color) || 0x888888;
+    mat.color.set(col);
+    mat.needsUpdate = true;
+
+    if (meta && meta.map) {
+      loader.load(
+        meta.map,
+        function (tex) {
+          mat.map = tex;
+          mat.color.set(0xffffff);
+          mat.needsUpdate = true;
+        },
+        undefined,
+        function () {
+          mat.color.set(col);
+          mat.needsUpdate = true;
+        }
+      );
+    }
+    setHud((meta && meta.name) || id);
+    try {
+      if (global.SNCli && SNCli.log)
+        SNCli.log('Globe body · ' + ((meta && meta.name) || id), 'ok');
+    } catch (_) {}
+    return true;
+  }
+
+  /**
+   * SpaceNet: go to the place you clicked — rotate + zoom tier + crawl what is there.
    */
   function goToPlace(lat, lng, opts) {
     opts = opts || {};
     if (lat == null || lng == null) return false;
     setFocus(lat, lng);
     var tier = opts.tier || 'national';
+    var bodyId = opts.body || G.bodyId || 'earth';
     flyNear(lat, lng, tier);
     pulse(lat, lng, opts.color != null ? opts.color : 0x3d9eff, opts.label || 'Here', opts.ms || 12000);
     try {
-      var label =
-        (TIERS[tier] && TIERS[tier].label) || tier;
-      setHud(label + ' · ' + lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°');
+      var label = (TIERS[tier] && TIERS[tier].label) || tier;
+      var bname =
+        (global.SNCosmos && SNCosmos.body && SNCosmos.body.name) ||
+        bodyId ||
+        'Earth';
+      setHud(bname + ' · ' + label + ' · ' + lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°');
       if (global.SNCli && SNCli.log) {
         SNCli.log(
-          'SpaceNet · ' + label + ' · ' + lat.toFixed(3) + ', ' + lng.toFixed(3),
+          'SpaceNet · ' +
+            bname +
+            ' · ' +
+            label +
+            ' · ' +
+            lat.toFixed(3) +
+            ', ' +
+            lng.toFixed(3),
           'ok'
         );
-        SNCli.preview(label + ' · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+        SNCli.preview(bname + ' · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
       }
     } catch (_) {}
-    if (opts.openMap || tier === 'city') {
+    // Earth city map only when on Earth
+    if ((opts.openMap || tier === 'city') && (bodyId === 'earth' || G.bodyId === 'earth')) {
       try {
         if (global.SNMap && SNMap.open) void SNMap.open(lat, lng);
       } catch (_) {}
+    }
+    // Crawl what is at this address (unless caller already scanning)
+    if (!opts.skipScan && global.SNCosmos && SNCosmos.scan) {
+      void SNCosmos.scan(bodyId || G.bodyId || 'earth', lat, lng, {
+        openMap: false,
+      });
     }
     return true;
   }
@@ -569,6 +661,7 @@
     flyNear: flyNear,
     goToTier: goToTier,
     goToPlace: goToPlace,
+    setBody: setBody,
     pickLatLng: pickLatLng,
     setFocus: setFocus,
     focusPos: focusPos,
@@ -577,6 +670,9 @@
     TIERS: TIERS,
     get tier() {
       return G.tier;
+    },
+    get bodyId() {
+      return G.bodyId || 'earth';
     },
     get ready() {
       return G.ready;

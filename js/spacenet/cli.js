@@ -29,7 +29,7 @@
   function help() {
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
     log('MAP   locate · city · shops · globe', 'ok');
-    log('PLACE thesis · vault · go to mars', 'ok');
+    log('SPACE go to mars|moon|jupiter|europa · thesis · vault · cosmos', 'ok');
     log('ZOOM  solar · global · national · city', 'ok');
     log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
     log('TILE  me · vendors · cart · order', 'ok');
@@ -434,23 +434,59 @@
         global.SNSpatial?.open?.('seed-thesis-garage');
         return;
       }
-      if (low === 'mars' || low === 'cydonia' || low === 'go to mars' || /^go\s+to\s+mars/.test(low)) {
-        global.SNSpatial?.open?.('seed-cydonia-music');
+      if (low === 'cosmos' || low === 'bodies' || low === 'planets') {
+        const list = global.SNCosmos?.list?.() || [];
+        list.forEach((b) => log('◎ ' + b.name + ' · go to ' + b.id, 'ok'));
+        preview('go to mars · moon · jupiter · earth');
+        return;
+      }
+      // go to <planet|place> — real body switch + land + crawl
+      {
+        const dest = global.SNCosmos?.parseGo?.(line);
+        const directBody =
+          !dest && global.SNCosmos?.resolve?.(low) && low !== 'earth'
+            ? low
+            : null;
+        if (dest || directBody || low === 'mars' || low === 'cydonia' || low === 'go to mars') {
+          const where = dest || directBody || (low.indexOf('cydonia') >= 0 ? 'cydonia' : 'mars');
+          preview('Going · ' + where);
+          if (global.SNCosmos?.go) {
+            const r = await global.SNCosmos.go(where);
+            if (r) log('Arrived · ' + (r.body?.name || where), 'ok');
+          } else {
+            global.SNSpatial?.open?.('seed-cydonia-music');
+          }
+          return;
+        }
+      }
+      if (low === 'earth' || low === 'go to earth' || low === 'back to earth') {
+        if (global.SNCosmos?.go) await global.SNCosmos.go('earth', null, null, { tier: 'global' });
+        else {
+          global.SNMap?.close?.();
+          Globe?.setBody?.('earth');
+          Globe?.goToTier?.('global');
+        }
+        log('Earth · GLOBAL SNGlobe', 'ok');
         return;
       }
       if (low === 'globe' || low === 'close map' || low === 'back' || low === 'home') {
         global.SNMap?.close?.();
-        Globe?.goToTier?.('global');
-        log('Back to Earth · GLOBAL', 'ok');
+        if (Globe?.bodyId && Globe.bodyId !== 'earth' && global.SNCosmos?.go) {
+          await global.SNCosmos.go('earth');
+        } else {
+          Globe?.setBody?.('earth');
+          Globe?.goToTier?.('global');
+        }
+        log('Back · ' + (Globe?.bodyId || 'earth') + ' GLOBAL', 'ok');
         return;
       }
-      // fly city
+      // fly city on Earth (geocode + crawl)
       for (const [name, ll] of Object.entries(CITIES)) {
         if (new RegExp('^(fly\\s+)?' + name + '$', 'i').test(low) || low === 'fly ' + name) {
-          Globe?.flyNear?.(ll[0], ll[1]);
-          Globe?.pulse?.(ll[0], ll[1], 0xffffff, name, 12000);
+          if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
+          Globe?.goToPlace?.(ll[0], ll[1], { tier: 'national', label: name, body: 'earth' });
           Tasks?.setPos?.(ll[0], ll[1]);
-          log('Fly · ' + name, 'ok');
+          log('Fly · ' + name + ' · crawling…', 'ok');
           preview(name);
           return;
         }
@@ -459,10 +495,25 @@
         const name = low.replace(/^fly\s+/, '').trim();
         const ll = CITIES[name.replace(/\s+/g, '')] || CITIES[name];
         if (ll) {
-          Globe?.flyNear?.(ll[0], ll[1]);
-          Globe?.pulse?.(ll[0], ll[1], 0xffffff, name, 12000);
+          if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
+          Globe?.goToPlace?.(ll[0], ll[1], { tier: 'national', label: name, body: 'earth' });
           log('Fly · ' + name, 'ok');
-        } else log('Unknown place · try: fly athens · fly starbase · fly london', 'dim');
+        } else if (global.SNSearch?.geocode) {
+          preview('Finding · ' + name);
+          const places = await SNSearch.geocode(name);
+          if (places?.[0]) {
+            const p = places[0];
+            if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
+            Globe?.goToPlace?.(p.lat, p.lng, {
+              tier: 'national',
+              label: p.name,
+              body: 'earth',
+            });
+            log('Fly · ' + String(p.name).slice(0, 60), 'ok');
+          } else if (global.SNCosmos?.resolve?.(name)) {
+            await global.SNCosmos.go(name);
+          } else log('Unknown · fly athens · go to mars · go to jupiter', 'dim');
+        } else log('Unknown place · try: fly athens · go to mars', 'dim');
         return;
       }
       if (/^task\s*list$|^list$|^tasks$/.test(low)) {

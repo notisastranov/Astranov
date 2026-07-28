@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728120000-globe-click-go',
+  version: '20260728130000-cosmos-dedummy',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -13,6 +13,11 @@ const AstranovContinuity = {
     file: 'js/spacenet/globe.js',
     textures: ['earth_atmos_2048', 'earth_specular_2048', 'earth_clouds_1024'],
     engine: 'Three.js TextureLoader sphere',
+  },
+  cosmos: {
+    name: 'SNCosmos',
+    file: 'js/spacenet/cosmos.js',
+    rule: 'go anywhere = setBody + land + crawl; no dummy solar-only',
   },
 
   ip: {

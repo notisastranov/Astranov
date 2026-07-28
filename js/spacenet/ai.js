@@ -222,11 +222,18 @@
       return { did: did, reply: reply };
     }
 
-    if (/\b(thesis|vault|mars|cydonia)\b/.test(low)) {
-      if (/mars|cydonia/.test(low)) runCli('go to mars');
-      else if (/vault/.test(low)) runCli('vault');
-      else runCli('thesis');
-      reply = 'Spatial place opened — zoom is open on SpaceNet.';
+    if (/\b(thesis|vault|mars|cydonia|jupiter|moon|europa|titan|pluto|saturn|venus|mercury|neptune)\b/.test(low) || /^go\s+to\b/.test(low)) {
+      if (/vault/.test(low) && !/go\s+to/.test(low)) runCli('vault');
+      else if (/thesis|garage/.test(low) && !/go\s+to/.test(low)) runCli('thesis');
+      else if (/cydonia/.test(low)) runCli('go to cydonia');
+      else if (/mars/.test(low)) runCli('go to mars');
+      else if (/moon|luna/.test(low)) runCli('go to moon');
+      else if (/jupiter/.test(low)) runCli('go to jupiter');
+      else if (/europa/.test(low)) runCli('go to europa');
+      else if (/titan/.test(low)) runCli('go to titan');
+      else if (/go\s+to\b/.test(low)) runCli(line);
+      else runCli('cosmos');
+      reply = 'Navigating SpaceNet body — real globe + crawl of what is there.';
       return { did: did, reply: reply };
     }
 

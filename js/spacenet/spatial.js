@@ -85,13 +85,20 @@
         .split('\n')
         .forEach((ln) => global.SNCli?.log?.(ln, 'dim'));
     }
-    if (p.body === 'earth' && p.lat != null) {
-      global.SNGlobe?.pulse?.(p.lat, p.lng, 0x66ccff, p.name, 20000);
-      global.SNGlobe?.flyNear?.(p.lat, p.lng, 'national');
-      void global.SNMap?.open?.(p.lat, p.lng);
-    } else if (p.body === 'mars') {
-      global.SNGlobe?.goToTier?.('solar');
-      global.SNCli?.log?.('Mars tier · Cydonia folder (coords ' + p.lat + ',' + p.lng + ')', 'ok');
+    // Real go: switch body globe + land + crawl (no dummy solar-only)
+    if (global.SNCosmos?.go) {
+      void global.SNCosmos.go(p.body || 'earth', p.lat, p.lng, {
+        label: p.title || p.name,
+        openMap: (p.body || 'earth') === 'earth',
+      }).then(() => {
+        global.SNCli?.preview?.(p.title || p.name);
+      });
+    } else if ((p.body || 'earth') === 'earth' && p.lat != null) {
+      global.SNGlobe?.goToPlace?.(p.lat, p.lng, {
+        tier: 'national',
+        openMap: true,
+        label: p.name,
+      });
     }
     global.SNCli?.preview?.(p.title || p.name);
     return p;

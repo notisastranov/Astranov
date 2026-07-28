@@ -104,6 +104,7 @@
     '/js/spacenet/config.js',
     '/js/spacenet/brain.js',
     '/js/spacenet/globe.js',
+    '/js/spacenet/cosmos.js', // multi-body go + crawl
     '/js/spacenet/tasks.js',
     '/js/spacenet/profiles.js',
     '/js/spacenet/currency.js',
