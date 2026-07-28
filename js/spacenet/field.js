@@ -78,7 +78,6 @@
     { act: 'add', emoji: '➕', text: 'Add', title: 'Create multi-tile at focus' },
     { act: 'handsfree', emoji: '🎙', text: 'SpaceNet', title: 'Hands-free voice → SpaceNet AI', id: 'sn-rib-hf' },
     { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet AI' },
-    { act: 'expand', emoji: '↕️', text: 'Size', title: 'Expand / collapse CLI' },
   ];
   var TASKS = {
     idle: [],
@@ -129,10 +128,6 @@
         if (form.requestSubmit) form.requestSubmit();
         else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
       }
-      return;
-    }
-    if (act === 'expand') {
-      if (g.SNUi && SNUi.expandPanel) SNUi.expandPanel();
       return;
     }
     if (g.SNCli && SNCli.run) void SNCli.run(act);

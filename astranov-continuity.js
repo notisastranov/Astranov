@@ -114,7 +114,7 @@ const AstranovContinuity = {
       ],
     },
     ambassador: { supportEarnsS: true, meshBoost: true, unit: 'S' },
-    cliRibbonPermanent: ['locate', 'user', 'add', 'handsfree-AI', 'send'],
+    cliRibbonPermanent: ['locate', 'user', 'add', 'handsfree-SpaceNet', 'send'],
     cliRibbonAlwaysVisible: true,
     cliFormFixed: ['input', 'expand'],
     noFloatingEdge: true,
