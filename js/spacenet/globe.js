@@ -1,7 +1,11 @@
 /* SNGlobe — Earth imaging engine (KEEP)
  * Mechanical name: window.SNGlobe (js/spacenet/globe.js)
  * Three.js sphere + TextureLoader: earth_atmos_2048 · specular · clouds
- * Sacred: inertia velX/velY damp · zoom tiers · CLICK = go to that place (SpaceNet)
+ * Sacred: inertia damp · zoom tiers
+ * SPECS click law:
+ *   single tap  → fly + zoom deeper (NATIONAL → REGIONAL → CITY / street map)
+ *   double tap  → zoom OUT one level toward globe
+ *   never place huge blue rings on click
  */
 (function (global) {
   'use strict';
@@ -10,8 +14,14 @@
     solar: { z: 7.5, label: 'SOLAR' },
     global: { z: 2.75, label: 'GLOBAL' },
     national: { z: 1.95, label: 'NATIONAL' },
-    city: { z: 1.52, label: 'CITY' },
+    regional: { z: 1.72, label: 'REGIONAL' },
+    city: { z: 1.48, label: 'CITY' },
   };
+
+  /** Zoom ladder (coarse → fine). Single-tap dives in; double-tap steps out. */
+  var LADDER = ['solar', 'global', 'national', 'regional', 'city'];
+  /** Single-tap dive starts at national (from solar/global) then deepens */
+  var DIVE = ['national', 'regional', 'city'];
 
   var G = {
     ready: false,
@@ -35,6 +45,7 @@
     damp: 0.94,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
+    diveTier: null,
     bodyId: 'earth',
     bodyMeta: null,
     earthMat: null,
@@ -73,12 +84,55 @@
   function tierFromZ(z) {
     if (z >= 5.5) return 'solar';
     if (z >= 2.35) return 'global';
-    if (z >= 1.7) return 'national';
+    if (z >= 1.84) return 'national';
+    if (z >= 1.6) return 'regional';
     return 'city';
   }
 
+  function ladderIndex(name) {
+    var i = LADDER.indexOf(name);
+    return i >= 0 ? i : LADDER.indexOf('global');
+  }
+
+  function currentTier() {
+    return G.diveTier || tierFromZ(G.camera ? G.camera.position.z : TIERS.global.z);
+  }
+
+  /** Degrees-ish distance between two lat/lng (rough, for same-place dive) */
+  function farFromFocus(lat, lng) {
+    var f = focusPos();
+    if (!f || f.lat == null) return true;
+    var dLat = Math.abs(f.lat - lat);
+    var dLng = Math.abs(f.lng - lng);
+    if (dLng > 180) dLng = 360 - dLng;
+    return dLat > 6 || dLng > 6;
+  }
+
+  /**
+   * Next deeper dive tier for a single tap.
+   * From solar/global or new place → NATIONAL. Then REGIONAL → CITY.
+   */
+  function nextDiveTier(lat, lng) {
+    var cur = currentTier();
+    if (cur === 'solar' || cur === 'global' || farFromFocus(lat, lng) || DIVE.indexOf(cur) < 0) {
+      return 'national';
+    }
+    var i = DIVE.indexOf(cur);
+    if (i < 0) return 'national';
+    if (i >= DIVE.length - 1) return 'city';
+    return DIVE[i + 1];
+  }
+
+  /** One level coarser toward full globe */
+  function prevZoomTier() {
+    var cur = currentTier();
+    var i = ladderIndex(cur);
+    if (i <= 0) return 'solar';
+    return LADDER[i - 1];
+  }
+
   function setTierLabel() {
-    G.tier = tierFromZ(G.camera.position.z);
+    G.tier = G.diveTier || tierFromZ(G.camera.position.z);
     var el = document.getElementById('tier-label');
     if (el) el.textContent = (TIERS[G.tier] && TIERS[G.tier].label) || G.tier;
     var zl = document.getElementById('zoom-label');
@@ -278,7 +332,11 @@
       downX = 0,
       downY = 0,
       moved = false,
-      ptrId = null;
+      ptrId = null,
+      tapTimer = null,
+      lastTapAt = 0,
+      lastTapX = 0,
+      lastTapY = 0;
 
     function onDown(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
@@ -312,8 +370,11 @@
       lx = t.clientX;
       ly = t.clientY;
       if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 8) moved = true;
+      // Drag uses euler — sync from quaternion if last fly left pure quat
+      G.pivot.rotation.setFromQuaternion(G.pivot.quaternion, G.pivot.rotation.order);
       G.pivot.rotation.y += dx * 0.005;
       G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + dy * 0.004));
+      G.pivot.rotation.z = 0;
       G.velX = dx * (16 / dt) * 0.005;
       G.velY = dy * (16 / dt) * 0.004;
       if (e.cancelable) e.preventDefault();
@@ -330,15 +391,32 @@
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
       var t = e.changedTouches ? e.changedTouches[0] : e;
-      // Short tap (not drag) → go to that place on CURRENT body + crawl
+      // Short tap (not drag): single = dive in · double = zoom out one level
       if (!moved && t) {
-        var ll = pickLatLng(t.clientX, t.clientY);
-        if (ll) {
-          goToPlace(ll.lat, ll.lng, {
-            tier: 'national',
-            openMap: false,
-            body: G.bodyId || 'earth',
-          });
+        var now = performance.now();
+        var gap = now - lastTapAt;
+        var dist = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
+        if (gap < 340 && dist < 36 && lastTapAt > 0) {
+          // Double-tap / double-click → zoom OUT (toward globe)
+          if (tapTimer) {
+            clearTimeout(tapTimer);
+            tapTimer = null;
+          }
+          lastTapAt = 0;
+          zoomOutOne();
+        } else {
+          lastTapAt = now;
+          lastTapX = t.clientX;
+          lastTapY = t.clientY;
+          if (tapTimer) clearTimeout(tapTimer);
+          var cx = t.clientX;
+          var cy = t.clientY;
+          // Wait so a real double-tap can cancel the dive
+          tapTimer = setTimeout(function () {
+            tapTimer = null;
+            var ll = pickLatLng(cx, cy);
+            if (ll) diveInAt(ll.lat, ll.lng);
+          }, 300);
         }
       }
       ptrId = null;
@@ -360,6 +438,7 @@
 
         var next = Math.max(1.42, Math.min(9, G.camera.position.z + e.deltaY * 0.0022));
         G.camera.position.z = next;
+        G.diveTier = tierFromZ(next);
         setTierLabel();
 
         // Enter city tier → street map at FOCUS (clicked/zoomed place), never forced home city
@@ -380,16 +459,68 @@
       { passive: false }
     );
 
-    // Double-click / double-tap: dive into that place (national → city map at click)
+    // Desktop dblclick also zooms out (pointer path already handles most cases)
     canvas.addEventListener('dblclick', function (e) {
-      var ll = pickLatLng(e.clientX, e.clientY);
-      if (!ll) return;
-      if (G.camera.position.z > TIERS.national.z + 0.05) {
-        goToPlace(ll.lat, ll.lng, { tier: 'national', openMap: false });
-      } else {
-        goToPlace(ll.lat, ll.lng, { tier: 'city', openMap: true });
+      e.preventDefault();
+      if (tapTimer) {
+        clearTimeout(tapTimer);
+        tapTimer = null;
       }
+      lastTapAt = 0;
+      zoomOutOne();
     });
+  }
+
+  /**
+   * Single tap/click: fly to point + zoom deeper (NATIONAL → REGIONAL → CITY).
+   * No blue rings — fly and zoom only.
+   */
+  function diveInAt(lat, lng) {
+    if (lat == null || lng == null) return false;
+    var tier = nextDiveTier(lat, lng);
+    var openMap =
+      tier === 'city' && (G.bodyId === 'earth' || !G.bodyId);
+    return goToPlace(lat, lng, {
+      tier: tier,
+      openMap: openMap,
+      pulse: false,
+      body: G.bodyId || 'earth',
+    });
+  }
+
+  /**
+   * Double tap/click: zoom OUT one ladder step (city→regional→national→global→solar).
+   */
+  function zoomOutOne() {
+    var prev = prevZoomTier();
+    G.diveTier = prev;
+    G.velX = 0;
+    G.velY = 0;
+    if (prev === 'city' || prev === 'regional' || prev === 'national') {
+      try {
+        if (global.SNMap && SNMap.close) SNMap.close();
+      } catch (_) {}
+      var f = focusPos();
+      if (f && f.lat != null) {
+        flyNear(f.lat, f.lng, prev);
+      } else {
+        animateZ(TIERS[prev].z, 700);
+      }
+    } else {
+      try {
+        if (global.SNMap && SNMap.close) SNMap.close();
+      } catch (_) {}
+      animateZ(TIERS[prev].z, 700);
+      if (prev === 'global' || prev === 'solar') G.diveTier = prev;
+    }
+    setTierLabel();
+    var label = (TIERS[prev] && TIERS[prev].label) || prev;
+    setHud('Astranov SpaceNet · ' + label);
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('Zoom out · ' + label, 'dim');
+      if (global.SNCli && SNCli.preview) SNCli.preview(label);
+    } catch (_) {}
+    return prev;
   }
 
   /**
@@ -446,17 +577,23 @@
   }
 
   /**
-   * SpaceNet: go to the place you clicked — rotate + zoom tier + crawl what is there.
+   * SpaceNet: fly to lat/lng + zoom tier + optional crawl.
+   * Default: NO pulse markers (SPECS — click is fly/zoom only).
+   * Pass pulse:true only for explicit pin highlights (locate / optional UI).
    */
   function goToPlace(lat, lng, opts) {
     opts = opts || {};
     if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
     setFocus(lat, lng);
     var tier = opts.tier || 'national';
+    if (!TIERS[tier]) tier = 'national';
+    G.diveTier = tier;
     var bodyId = opts.body || G.bodyId || 'earth';
-    // Fly first and hold — scan must not steal the camera (opts.fly false)
+    // Fly + zoom only — no decorative rings unless explicitly requested
     flyNear(lat, lng, tier);
-    pulse(lat, lng, opts.color != null ? opts.color : 0x3d9eff, opts.label || 'Here', opts.ms || 12000);
+    if (opts.pulse === true) {
+      pulse(lat, lng, opts.color != null ? opts.color : 0x3d9eff, opts.label || '', opts.ms || 8000);
+    }
     try {
       var label = (TIERS[tier] && TIERS[tier].label) || tier;
       var bname =
@@ -476,22 +613,30 @@
             lng.toFixed(3),
           'ok'
         );
-        SNCli.preview(bname + ' · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+        SNCli.preview(bname + ' · ' + label);
       }
     } catch (_) {}
-    // Earth city map only when on Earth
-    if ((opts.openMap || tier === 'city') && (bodyId === 'earth' || G.bodyId === 'earth')) {
+    // Earth street map only at CITY (or openMap:true) — not at national/regional
+    if (
+      (opts.openMap === true || (opts.openMap !== false && tier === 'city')) &&
+      (bodyId === 'earth' || G.bodyId === 'earth')
+    ) {
       try {
         if (global.SNMap && SNMap.open) void SNMap.open(lat, lng);
       } catch (_) {}
+    } else if (tier !== 'city') {
+      try {
+        if (global.SNMap && SNMap.close && global.SNMap.active) SNMap.close();
+      } catch (_) {}
     }
-    // Crawl POIs at this address — never re-fly (user already landed on click/command)
+    // Crawl POIs at this address — never re-fly
     if (!opts.skipScan && global.SNCosmos && SNCosmos.scan) {
       void SNCosmos.scan(bodyId || G.bodyId || 'earth', lat, lng, {
         openMap: false,
         fly: false,
       });
     }
+    setTierLabel();
     return true;
   }
 
@@ -563,12 +708,14 @@
 
   function goToTier(name) {
     var t = TIERS[name] || TIERS.global;
+    G.diveTier = name in TIERS ? name : 'global';
     if (name !== 'city') {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
     }
     animateZ(t.z, 700);
+    setTierLabel();
     setHud('Astranov SpaceNet · ' + t.label);
     try {
       if (global.SNCli && SNCli.preview) SNCli.preview(t.label + ' zoom');
@@ -576,24 +723,28 @@
     return t.label;
   }
 
+  function clearMarkers() {
+    G.markers.forEach(function (m) {
+      try {
+        G.pivot.remove(m.mesh);
+        if (m.ring) G.pivot.remove(m.ring);
+      } catch (_) {}
+    });
+    G.markers = [];
+  }
+
+  /** Tiny pin for locate/shops only — never used on click dive (SPECS) */
   function pulse(lat, lng, color, label, ms) {
     if (!G.ready) return null;
     var c = color != null ? color : 0x44ffaa;
-    var pos = latLngToVec(lat, lng, 1.03);
+    var pos = latLngToVec(lat, lng, 1.012);
     var mesh = new THREE.Mesh(
-      new THREE.SphereGeometry(0.022, 10, 10),
+      new THREE.SphereGeometry(0.008, 8, 8),
       new THREE.MeshBasicMaterial({ color: c })
     );
     mesh.position.copy(pos);
     G.pivot.add(mesh);
-    var ring = new THREE.Mesh(
-      new THREE.RingGeometry(0.03, 0.045, 24),
-      new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
-    );
-    ring.position.copy(pos);
-    ring.lookAt(0, 0, 0);
-    G.pivot.add(ring);
-    G.markers.push({ mesh: mesh, ring: ring, born: Date.now(), ms: ms || 14000 });
+    G.markers.push({ mesh: mesh, ring: null, born: Date.now(), ms: ms || 10000 });
     var now = Date.now();
     G.markers = G.markers.filter(function (m) {
       if (now - m.born > m.ms) {
@@ -656,9 +807,13 @@
   function locate() {
     return new Promise(function (resolve) {
       function finish(lat, lng, fallback) {
-        setFocus(lat, lng);
-        pulse(lat, lng, 0x3d9eff, fallback ? 'You (GPS default)' : 'You', 22000);
-        flyNear(lat, lng, 'national');
+        goToPlace(lat, lng, {
+          tier: 'national',
+          pulse: true,
+          color: 0x3d9eff,
+          label: fallback ? 'You (GPS default)' : 'You',
+          skipScan: false,
+        });
         resolve({ lat: lat, lng: lng, fallback: !!fallback, demo: false });
       }
       // Default Rhodes only when GPS unavailable — real coords, not a "demo city"
@@ -696,10 +851,13 @@
   global.SNGlobe = {
     init: init,
     pulse: pulse,
+    clearMarkers: clearMarkers,
     locate: locate,
     flyNear: flyNear,
     goToTier: goToTier,
     goToPlace: goToPlace,
+    diveInAt: diveInAt,
+    zoomOutOne: zoomOutOne,
     setBody: setBody,
     pickLatLng: pickLatLng,
     setFocus: setFocus,
@@ -707,6 +865,8 @@
     setHud: setHud,
     getPhysics: getPhysics,
     TIERS: TIERS,
+    LADDER: LADDER,
+    DIVE: DIVE,
     get tier() {
       return G.tier;
     },

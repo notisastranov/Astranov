@@ -57,9 +57,21 @@ Storage: `astranov:spacenet-places-v1` / `sn:places-v1`.
 
 ### Zoom = filesystem (on current body)
 
-`SOLAR → GLOBAL → NATIONAL → CITY → STREET`  
+`SOLAR → GLOBAL → NATIONAL → REGIONAL → CITY → STREET`  
 Default boot: **full GLOBAL Earth**. City map closed until user asks.  
 Object appears by `minZ` + `visibilityKm`.
+
+### Globe pointer law (non-negotiable)
+
+| Input | Behavior |
+|-------|----------|
+| **Single click / single tap** on body | **Fly + zoom to that place.** First hit (or new place far from focus) → **NATIONAL**. Further singles on same area → **REGIONAL** then **CITY**. CITY opens Earth street map. |
+| **Double click / double tap** | **Zoom out one ladder step** toward the globe: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
+| **Drag** | Spin globe only (no dive). |
+| **Wheel** | Zoom camera; city Z opens street map at focus under cursor. |
+| **No click markers** | Single/double tap **must not** drop huge blue dots / rings. Fly + zoom only. Tiny optional pins only for `locate` / explicit `pulse:true`. |
+
+Mechanical: `SNGlobe.diveInAt` · `SNGlobe.zoomOutOne` · `goToPlace({ pulse: false })` default.
 
 Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · `go to moon` · `shops` · `locate` · `cosmos`
 
@@ -76,7 +88,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | **Go anywhere = three steps** | **(1) `setBody`** real sphere for that world · **(2) land** at lat/lng · **(3) `scan` / crawl** what is there |
 | **Every body is a globe** | Not a text label. `SNGlobe.setBody(id, meta)` swaps texture and/or body color on the Three.js sphere |
 | **Earth imaging KEEP** | Earth stays **`SNGlobe`** + `earth_atmos_2048` / specular / clouds. Do not strip |
-| **Click = that place on current body** | Raycast → lat/lng → `goToPlace` NATIONAL + crawl. **Fly faces the click** (quaternion = same frame as pulse markers). Post-click crawl **must not re-fly** to geocode/wiki. Focus = last click/zoom — **never** always force “my city only” |
+| **Click = that place on current body** | Raycast → progressive **dive** (national → regional → city) or **double = zoom out**. **Fly faces the click** (quaternion). **No blue rings on click.** Post-click crawl **must not re-fly**. Focus = last click — never force “my city only” |
 | **City map is Earth street only** | Leaflet opens only when **body === earth**. Leaving Earth **closes** city map |
 | **Dummy banned** | “go to mars” that only prints a line or jumps solar tier **without** body switch + land + crawl = **contaminated** |
 | **Crawl on arrival** | Always after land (unless caller already scanning) |

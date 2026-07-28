@@ -30,7 +30,8 @@
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
     log('MAP   locate · city · shops · globe', 'ok');
     log('SPACE go to mars|moon|jupiter|europa · thesis · vault · cosmos', 'ok');
-    log('ZOOM  solar · global · national · city', 'ok');
+    log('ZOOM  solar · global · national · regional · city', 'ok');
+    log('GLOBE  single-tap dive · double-tap zoom out · no blue rings', 'dim');
     log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
     log('TILE  me · vendors · cart · order', 'ok');
     log('FIELD radar · resources · mine on|off · donate on|off', 'ok');

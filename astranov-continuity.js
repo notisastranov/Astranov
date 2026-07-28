@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728180000-fly-fix',
+  version: '20260728190000-click-dive',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -51,8 +51,11 @@ const AstranovContinuity = {
     file: 'js/spacenet/globe.js',
     textures: ['earth_atmos_2048', 'earth_specular_2048', 'earth_clouds_1024'],
     engine: 'Three.js TextureLoader sphere',
-    api: ['setBody', 'goToPlace', 'pickLatLng', 'flyNear', 'goToTier'],
+    api: ['setBody', 'goToPlace', 'diveInAt', 'zoomOutOne', 'pickLatLng', 'flyNear', 'goToTier'],
     clickGoesThere: true,
+    singleTapDive: 'national→regional→city',
+    doubleTapZoomOut: true,
+    noClickPulseRings: true,
     cityZoomUsesFocusNotHomeOnly: true,
   },
 
@@ -121,8 +124,9 @@ const AstranovContinuity = {
 
   verify: [
     'GLOBAL Earth default',
+    'single-tap → dive national→regional→city fly+zoom NO blue rings',
+    'double-tap → zoom out one ladder step toward globe',
     'short-tap Earth → fly TO click (quaternion face + no crawl re-fly)',
-    'short-tap Earth → NATIONAL + scan (not always my city)',
     'go to mars → setBody mars + land + crawl',
     'ensureSector not seedCity NPCs',
     'no seedDemo auto tasks',

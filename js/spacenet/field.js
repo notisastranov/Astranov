@@ -231,6 +231,7 @@
     if (tier === 'solar') return SPEED.orbit;
     if (cityOn) return SPEED.walk;
     if (tier === 'city') return SPEED.drive;
+    if (tier === 'regional') return SPEED.drive;
     if (tier === 'national') return SPEED.rotate;
     return SPEED.rotate; // global default
   }
