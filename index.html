@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728240000-voice-on" />
-<meta name="astranov-continuity" content="20260728240000-voice-on" />
+<meta name="astranov-build" content="20260728250000-home-label" />
+<meta name="astranov-continuity" content="20260728250000-home-label" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -233,7 +233,8 @@
     #field-balance-hud { min-width: 96px; padding: 8px 10px; }
     #fbh-s { font-size: 14px; }
     #field-radar { width: 96px; height: 96px; }
-    #btn-home { font-size: 12px; padding: 7px 12px; }
+    #btn-home { font-size: 11px; padding: 7px 12px; max-width: min(220px, 56vw);
+      overflow: hidden; text-overflow: ellipsis; }
     #sn-task-ribbon { max-height: 64px; padding: 6px 8px; }
     .sn-rib-btn { padding: 6px 8px; font-size: 10px; }
   }
@@ -259,7 +260,7 @@
   <p id="fsh-explain"></p>
 </div>
 
-<button type="button" id="btn-home" title="Home · full Earth GLOBAL">🏠 Home</button>
+<button type="button" id="btn-home" title="Astranov SpaceNet · full Earth GLOBAL">Astranov SpaceNet</button>
 
 <!-- Miner: S balance + S/day only -->
 <div id="field-balance-hud" role="button" tabindex="0" title="S balance · mining rate · tap for finance" aria-label="Wallet and mining">
@@ -333,7 +334,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728240000-voice-on"></script>
+<script src="/js/spacenet/boot.js?v=20260728250000-home-label"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
