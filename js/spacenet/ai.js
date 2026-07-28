@@ -79,19 +79,28 @@
     var flags = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
     var market =
       (global.SNMarket && SNMarket.coachStatus && SNMarket.coachStatus()) || {};
+    var focus = '';
+    try {
+      var f = (global.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || global._snLastPos;
+      if (f && f.lat != null)
+        focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
+    } catch (e) {}
     var fork =
       'You are ASTRANOV AI — living mind of Astranov SpaceNet (https://astranov.eu). ' +
       'Co-pilot for real actions. Match Greek or English. 2–5 short sentences + one next step. ' +
-      'FIRST MARKETPLACE LOOP (priority until done): list shop → menu add <item> <priceS> → order me → drive on → deliver me. ' +
-      'Or: first delivery (auto-run full path). User is vendor+client+driver (no NPCs). ' +
+      'GLOBE FOLLOWS YOU: when user wants a place/body, local code flies SNGlobe. ' +
+      'You may emit action tags the client executes: [[LOCATE]] [[GO:mars]] [[GO:athens]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
+      'Put tags at end of reply. Tags are stripped from speech. ' +
+      'FIRST LOOP: list shop → menu add → order me → drive on → deliver me · or first delivery. ' +
       'Flags: firstDeliveryDone=' +
       !!flags.firstDeliveryDone +
       ' vendorListed=' +
       !!flags.firstVendorListed +
       ' coachStep=' +
       (market.step || 'idle') +
-      '. ' +
-      'If user reports pain/bug, queue handoff (say so). Identity: Astranov only.';
+      '.' +
+      focus +
+      ' Identity: Astranov only.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
@@ -100,7 +109,135 @@
         ' MODE CODE: working code first in js/spacenet/*; queue SNUsage.handoff for midnight Athens ship if not shippable now.'
       );
     }
-    return fork + ' ' + law + ' MODE CHAT: coach first loop or juice on the map.';
+    return fork + ' ' + law + ' MODE CHAT: coach first loop; globe follows place intents.';
+  }
+
+  /**
+   * Drive SNGlobe / SNCosmos for real — AI words must move the sphere.
+   * Never nested freeform CLI (that re-enters AI and leaves the globe stuck).
+   */
+  async function globeGo(target, opts) {
+    opts = opts || {};
+    var raw = String(target || '').trim();
+    if (!raw) return { ok: false, error: 'empty' };
+    var low = raw.toLowerCase().replace(/^(go\s+to|goto|fly\s+to|fly|take\s+me\s+to|show\s+me|where\s+is|open)\s+/i, '').trim();
+    try {
+      if (global.SNMap && SNMap.close && opts.closeMap !== false) {
+        try {
+          SNMap.close();
+        } catch (e) {}
+      }
+      // Planetary / multi-body
+      if (global.SNCosmos && SNCosmos.resolve && SNCosmos.resolve(low)) {
+        await SNCosmos.go(low);
+        return { ok: true, kind: 'body', id: low };
+      }
+      if (global.SNCosmos && SNCosmos.parseGo) {
+        var dest = SNCosmos.parseGo('go to ' + low);
+        if (dest && SNCosmos.resolve && SNCosmos.resolve(dest)) {
+          await SNCosmos.go(dest);
+          return { ok: true, kind: 'body', id: dest };
+        }
+      }
+      // Earth place via geocode
+      var places = null;
+      if (global.SNSearch && SNSearch.geocode) {
+        places = await SNSearch.geocode(raw);
+      }
+      if (places && places[0] && places[0].lat != null) {
+        var p = places[0];
+        if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(p.lat, p.lng, {
+            tier: opts.tier || 'national',
+            label: String(p.name || raw).slice(0, 40),
+            body: 'earth',
+            pulse: false,
+            openMap: !!opts.openMap,
+          });
+        } else if (global.SNGlobe && SNGlobe.flyNear) {
+          SNGlobe.flyNear(p.lat, p.lng, opts.tier || 'national');
+        }
+        try {
+          if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(p.lat, p.lng);
+          global._snLastPos = { lat: p.lat, lng: p.lng };
+        } catch (e2) {}
+        return { ok: true, kind: 'place', name: p.name, lat: p.lat, lng: p.lng };
+      }
+      // Locate self
+      if (/^(me|here|home|gps|locate)$/i.test(low)) {
+        if (global.SNGlobe && SNGlobe.locate) {
+          var pos = await SNGlobe.locate();
+          return { ok: !!pos, kind: 'locate', lat: pos && pos.lat, lng: pos && pos.lng };
+        }
+      }
+    } catch (e) {
+      return { ok: false, error: String(e && e.message ? e.message : e) };
+    }
+    return { ok: false, error: 'not found', query: raw };
+  }
+
+  /** Pull place/body intent from user speech/text */
+  function parsePlaceIntent(line) {
+    var s = String(line || '').trim();
+    if (!s) return null;
+    var m =
+      s.match(
+        /^(?:go\s+to|goto|fly\s+to|fly|take\s+me\s+to|show\s+me|where\s+is|open|πήγαινε(?:\s+στην|\s+στο|\s+σε)?|δείξε(?:\s+μου)?)\s+(.+)$/i
+      ) ||
+      s.match(/^(?:near|around|in)\s+(.+)$/i);
+    if (m) return m[1].trim();
+    // Bare body names
+    if (
+      /^(earth|mars|moon|luna|jupiter|europa|titan|venus|mercury|saturn|neptune|uranus|pluto|cydonia)$/i.test(
+        s
+      )
+    )
+      return s;
+    return null;
+  }
+
+  /** Execute [[GO:x]] [[LOCATE]] etc from edge AI; strip tags from visible text */
+  async function applyActionTags(text) {
+    var t = String(text || '');
+    var did = [];
+    var re = /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
+    var m;
+    var targets = [];
+    while ((m = re.exec(t))) {
+      targets.push({ op: m[1].toUpperCase(), arg: (m[2] || '').trim() });
+    }
+    t = t.replace(re, ' ').replace(/\s{2,}/g, ' ').trim();
+    for (var i = 0; i < targets.length; i++) {
+      var a = targets[i];
+      try {
+        if (a.op === 'LOCATE') {
+          if (global.SNGlobe && SNGlobe.locate) await SNGlobe.locate();
+          did.push('locate');
+        } else if (a.op === 'CITY') {
+          var pos = global._snLastPos || (global.SNTasks && SNTasks.pos);
+          if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('city');
+          if (pos && global.SNMap && SNMap.open) await SNMap.open(pos.lat, pos.lng);
+          did.push('city');
+        } else if (a.op === 'SHOPS') {
+          var p2 = global._snLastPos || { lat: 36.43, lng: 28.22 };
+          if (global.SNGlobe && SNGlobe.goToPlace)
+            SNGlobe.goToPlace(p2.lat, p2.lng, { tier: 'national', body: 'earth', pulse: false });
+          if (global.SNCommerce && SNCommerce.ensureSector)
+            await SNCommerce.ensureSector(p2.lat, p2.lng, { openMap: true });
+          did.push('shops');
+        } else if (a.op === 'GLOBAL' || a.op === 'EARTH') {
+          if (global.SNMap && SNMap.close) SNMap.close();
+          if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
+          if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+          did.push('global');
+        } else if ((a.op === 'GO' || a.op === 'FLY') && a.arg) {
+          var r = await globeGo(a.arg, { closeMap: true });
+          if (r && r.ok) did.push('go:' + a.arg);
+        }
+      } catch (e) {}
+    }
+    return { text: t, did: did };
   }
 
   async function callEdge(message, mode, opts) {
@@ -139,6 +276,7 @@
 
   /**
    * Do real SpaceNet work for the user. Returns { did, reply }.
+   * Globe navigation uses globeGo — never nested freeform AI.
    */
   async function actLocal(message) {
     var line = String(message || '').trim();
@@ -146,10 +284,11 @@
     var did = [];
     var reply = '';
 
-    function runCli(cmd) {
+    /** Safe CLI for known short commands only (not freeform) */
+    async function runCli(cmd) {
       try {
         if (global.SNCli && SNCli.run) {
-          void SNCli.run(cmd);
+          await SNCli.run(cmd);
           did.push(cmd);
           return true;
         }
@@ -160,7 +299,7 @@
     if (!line) {
       return {
         did: did,
-        reply: 'I am Astranov. Try: first delivery · list shop … · locate · shops.',
+        reply: 'I am Astranov. Try: first delivery · list shop … · locate · fly athens · go to mars.',
       };
     }
 
@@ -186,8 +325,8 @@
     if (/^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) || low === 'ai' || low === 'astronov' || low === 'astranov') {
       var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
       reply = fl.firstDeliveryDone
-        ? 'I am Astranov AI. Marketplace loop already done once — shops, jobs, dates, or tell me what hurt (I queue a midnight fix).'
-        : 'I am Astranov AI. Let’s list your shop and do the first delivery to you. Type: first delivery  — or step by step: list shop Your Name';
+        ? 'I am Astranov AI. Say fly athens · go to mars · locate — the globe follows. Or shops / first delivery.'
+        : 'I am Astranov AI. Globe follows me: fly athens · go to mars · locate. Or first delivery for your shop.';
       return { did: did, reply: reply };
     }
 
@@ -202,27 +341,134 @@
       return { did: did, reply: reply };
     }
 
-    if (/\b(locate|where am i|gps|find me)\b/.test(low)) {
-      runCli('locate');
-      reply = 'Locating you on Earth — then we can open nearby shops or drop a multi-tile.';
+    // —— Globe follows AI (priority navigation) ——
+    if (/\b(locate|where am i|gps|find me|βρες\s+με)\b/.test(low)) {
+      try {
+        if (global.SNGlobe && SNGlobe.locate) {
+          var loc = await SNGlobe.locate();
+          did.push('locate');
+          reply = loc
+            ? 'Globe on you · ' +
+              Number(loc.lat).toFixed(3) +
+              ', ' +
+              Number(loc.lng).toFixed(3) +
+              (loc.fallback ? ' (GPS default)' : '') +
+              '. Say shops when ready.'
+            : 'Locate failed · try again.';
+        } else {
+          await runCli('locate');
+          reply = 'Locating on SNGlobe…';
+        }
+      } catch (e) {
+        reply = 'Locate error · ' + (e.message || e);
+      }
+      return { did: did, reply: reply };
+    }
+
+    var placeIntent = parsePlaceIntent(line);
+    if (
+      placeIntent ||
+      /\b(thesis|vault|mars|cydonia|jupiter|moon|europa|titan|pluto|saturn|venus|mercury|neptune)\b/.test(
+        low
+      ) ||
+      /^go\s+to\b|^fly\b|^take\s+me\b/.test(low)
+    ) {
+      var dest = placeIntent;
+      if (!dest) {
+        if (/vault/.test(low)) dest = 'garage';
+        else if (/thesis|garage/.test(low)) dest = 'garage rhodes';
+        else if (/cydonia/.test(low)) dest = 'cydonia';
+        else if (/mars/.test(low)) dest = 'mars';
+        else if (/moon|luna/.test(low)) dest = 'moon';
+        else if (/jupiter/.test(low)) dest = 'jupiter';
+        else if (/europa/.test(low)) dest = 'europa';
+        else if (/titan/.test(low)) dest = 'titan';
+        else if (/pluto/.test(low)) dest = 'pluto';
+        else if (/saturn/.test(low)) dest = 'saturn';
+        else if (/venus/.test(low)) dest = 'venus';
+        else if (/mercury/.test(low)) dest = 'mercury';
+        else if (/neptune/.test(low)) dest = 'neptune';
+        else dest = line.replace(/^(go\s+to|fly\s+to|fly|take\s+me\s+to)\s+/i, '').trim();
+      }
+      if (/garage|thesis|rhodes\s*garage/i.test(dest)) {
+        if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(36.44125, 28.22255, {
+            tier: 'national',
+            label: 'Garage Rhodes',
+            body: 'earth',
+            pulse: false,
+          });
+          did.push('go:garage');
+          reply = 'Globe · garage Rhodes. National zoom.';
+          return { did: did, reply: reply };
+        }
+      }
+      var nav = await globeGo(dest, { closeMap: true, tier: 'national' });
+      if (nav && nav.ok) {
+        did.push('go:' + (nav.id || nav.name || dest));
+        reply =
+          nav.kind === 'body'
+            ? 'Globe switched · ' + (nav.id || dest) + ' · land + crawl.'
+            : 'Globe flying · ' +
+              (nav.name || dest) +
+              (nav.lat != null ? ' · ' + Number(nav.lat).toFixed(2) + ', ' + Number(nav.lng).toFixed(2) : '') +
+              '.';
+        return { did: did, reply: reply };
+      }
+      reply = 'Could not find “' + dest + '” on SpaceNet · try fly athens · go to mars · locate.';
       return { did: did, reply: reply };
     }
 
     if (/\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) || /^find\s+(food|pizza|coffee)/.test(low)) {
-      runCli('shops');
-      reply = 'Opening real shops on the city map. Tap a pin for menu · cart · order in S.';
+      var sp = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.4341, lng: 28.2176 };
+      try {
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(sp.lat, sp.lng, {
+            tier: 'national',
+            body: 'earth',
+            pulse: false,
+            openMap: false,
+          });
+        }
+        if (global.SNCommerce && SNCommerce.ensureSector) {
+          await SNCommerce.ensureSector(sp.lat, sp.lng, { openMap: true });
+        }
+        did.push('shops');
+      } catch (e) {
+        await runCli('shops');
+      }
+      reply = 'Globe on sector · live shops · tap a pin for menu · cart · order in S.';
       return { did: did, reply: reply };
     }
 
     if (/\b(city|street map|map)\b/.test(low) && !/\bglobe|earth\b/.test(low)) {
-      runCli('city');
-      reply = 'City map open. Zoom out or 🌍 returns to 3D SNGlobe Earth. Tap empty ground for multi-tile.';
+      var cp = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.43, lng: 28.22 };
+      try {
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(cp.lat, cp.lng, { tier: 'city', body: 'earth', pulse: false, openMap: true });
+        } else {
+          if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('city');
+          if (global.SNMap && SNMap.open) await SNMap.open(cp.lat, cp.lng);
+        }
+        did.push('city');
+      } catch (e) {
+        await runCli('city');
+      }
+      reply = 'City map at focus · Astranov SpaceNet home returns to full Earth.';
       return { did: did, reply: reply };
     }
 
-    if (/\b(earth|globe|global|back to earth)\b/.test(low)) {
-      runCli('global');
-      reply = 'Back on SNGlobe — full GLOBAL Earth imaging.';
+    if (/\b(earth|globe|global|back to earth)\b/.test(low) || low === 'home') {
+      try {
+        if (global.SNMap && SNMap.close) SNMap.close();
+        if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
+        if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+        did.push('global');
+      } catch (e) {
+        await runCli('global');
+      }
+      reply = 'Globe · full GLOBAL Earth.';
       return { did: did, reply: reply };
     }
 
@@ -232,8 +478,7 @@
         did.push('task:' + (td && td.id));
         reply = 'Date task open: ' + (td && td.title) + '. Claim from the map when ready.';
       } else {
-        runCli(line);
-        reply = 'Date flow started.';
+        reply = 'Date flow — try: date coffee';
       }
       return { did: did, reply: reply };
     }
@@ -257,43 +502,41 @@
     }
 
     if (/\b(rate|wallet|money|spacenets|\bs\b currency)\b/.test(low)) {
-      runCli('rate');
+      await runCli('rate');
       reply = 'S (SpaceNets) is primary. Fiat/crypto are secondary quotes only.';
       return { did: did, reply: reply };
     }
 
     if (/\b(resources|mine|donate|performance)\b/.test(low)) {
-      runCli('resources');
+      await runCli('resources');
       reply = 'Resources / mine panel — spare capacity earns S when you opt in.';
-      return { did: did, reply: reply };
-    }
-
-    if (/\b(thesis|vault|mars|cydonia|jupiter|moon|europa|titan|pluto|saturn|venus|mercury|neptune)\b/.test(low) || /^go\s+to\b/.test(low)) {
-      if (/vault/.test(low) && !/go\s+to/.test(low)) runCli('vault');
-      else if (/thesis|garage/.test(low) && !/go\s+to/.test(low)) runCli('thesis');
-      else if (/cydonia/.test(low)) runCli('go to cydonia');
-      else if (/mars/.test(low)) runCli('go to mars');
-      else if (/moon|luna/.test(low)) runCli('go to moon');
-      else if (/jupiter/.test(low)) runCli('go to jupiter');
-      else if (/europa/.test(low)) runCli('go to europa');
-      else if (/titan/.test(low)) runCli('go to titan');
-      else if (/go\s+to\b/.test(low)) runCli(line);
-      else runCli('cosmos');
-      reply = 'Navigating SpaceNet body — real globe + crawl of what is there.';
       return { did: did, reply: reply };
     }
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
       reply =
-        'I talk and act: first delivery · list shop … · menu add … · order me · drive on · deliver me · locate · shops · job · date · usage. 🎙 hands-free OK.';
+        'Globe follows: locate · fly athens · go to mars · city · shops. Also first delivery · list shop · 🎙.';
       return { did: did, reply: reply };
     }
 
-    // Conversational / unknown — local co-pilot still answers and suggests action
+    // Conversational — still try place-ish free text as geocode (short phrases)
+    if (line.length < 48 && !/\?$/.test(line) && /^[a-zA-Zα-ωΑ-Ω\s\-']+$/u.test(line)) {
+      var guess = await globeGo(line, { closeMap: true });
+      if (guess && guess.ok) {
+        did.push('go:' + (guess.name || line));
+        reply =
+          'Globe · ' +
+          (guess.name || line) +
+          (guess.kind === 'body' ? ' body' : '') +
+          '. Say shops or city next.';
+        return { did: did, reply: reply };
+      }
+    }
+
     var fl2 = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
     reply = fl2.firstDeliveryDone
-      ? 'Understood. Edge may enrich this. Try shops, locate, or tell me a pain point to handoff.'
-      : 'Understood. Priority path: first delivery (auto) or list shop <name>. Edge may enrich when online.';
+      ? 'Understood. Edge may enrich. Globe: fly <place> · go to mars · locate.'
+      : 'Understood. Globe follows: fly athens · go to mars · locate · or first delivery.';
     return { did: did, reply: reply, needsEdge: true };
   }
 
@@ -333,11 +576,14 @@
       return text;
     }
 
-    // Always try edge for chat richness unless pure command already done
+    // Edge for chat richness when needed
     if (mode === 'code' || mode === 'coders' || local.needsEdge || opts.forceEdge || !local.did.length) {
       text = await callEdge(
         local.reply
-          ? msg + '\n\n[Local SpaceNet already: ' + (local.did.join(', ') || 'none') + '. Build on that.]'
+          ? msg +
+              '\n\n[Local SpaceNet already did: ' +
+              (local.did.join(', ') || 'none') +
+              '. Globe may have moved. Build on that. You may add [[GO:place]] tags.]'
           : msg,
         mode,
         { long: mode === 'code' }
@@ -353,7 +599,38 @@
     }
 
     if (!text) text = local.reply;
-    if (!text) text = 'I am Astranov. Edge quiet — try first delivery · locate · shops.';
+    if (!text) text = 'I am Astranov. Edge quiet — try first delivery · locate · fly athens · go to mars.';
+
+    // Edge tags → move globe; strip tags from spoken/visible text
+    try {
+      var applied = await applyActionTags(text);
+      text = applied.text || text;
+      if (applied.did && applied.did.length) {
+        try {
+          if (global.SNUsage && SNUsage.track)
+            SNUsage.track('ai_globe_tags', { did: applied.did });
+        } catch (e3) {}
+      }
+    } catch (e4) {}
+
+    // If nothing navigated yet and user mentioned a place-ish phrase, last chance follow
+    if (!local.did || !local.did.some(function (d) {
+      return /^(go:|locate|shops|city|global)/.test(d);
+    })) {
+      var pi = parsePlaceIntent(msg);
+      if (pi) {
+        try {
+          var late = await globeGo(pi, { closeMap: true });
+          if (late && late.ok) {
+            text =
+              (text || '') +
+              (late.kind === 'body'
+                ? ' · Globe on ' + (late.id || pi)
+                : ' · Globe on ' + (late.name || pi));
+          }
+        } catch (e5) {}
+      }
+    }
 
     // Prefix so user always sees the mind
     if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
@@ -445,6 +722,9 @@
     greet: greet,
     bootPresence: bootPresence,
     actLocal: actLocal,
+    globeGo: globeGo,
+    parsePlaceIntent: parsePlaceIntent,
+    applyActionTags: applyActionTags,
     isCodeIntent: isCodeIntent,
     systemFor: systemFor,
     say: say,
