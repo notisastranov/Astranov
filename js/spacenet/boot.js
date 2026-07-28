@@ -111,6 +111,8 @@
     '/js/spacenet/field.js',
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
+    '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship
+    '/js/spacenet/market.js', // first vendor → delivery coach
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js', // Astranov AI on critical path — must greet
     '/js/spacenet/ui.js',

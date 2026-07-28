@@ -405,6 +405,15 @@
     if (vendor?.lat != null && global.SNGlobe?.pulse) {
       SNGlobe.pulse(vendor.lat, vendor.lng, 0x3d9eff, 'Pickup', 12000);
     }
+    try {
+      if (global.SNUsage && SNUsage.track) {
+        SNUsage.track('place_order', {
+          total: total,
+          vendorId: vendorId,
+          taskId: t && t.id,
+        });
+      }
+    } catch (_) {}
     return {
       ok: true,
       task: t,

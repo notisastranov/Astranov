@@ -238,6 +238,32 @@ Progress these — do not re-litigate globe chrome forever.
 
 Marketplace path: pin → browse → cart → place → track → claim → pilot multi-stop.
 
+### First vendor + first delivery (painful path — coached)
+
+**Goal:** owner/user lists a **real** shop + menu, places an order, assigns a **real** driver (same human can wear vendor+client+driver hats), delivers to client — **no NPCs**.
+
+| Step | Chat / CLI | Mechanical |
+|------|------------|------------|
+| 1 List shop | `list shop Rhodes Grill` or AI coach | `SNMarket.listShop` → me.vendor + pin at focus |
+| 2 Menu in S | `menu add Souvlaki 4.5` | `SNMarket.addMenuItem` |
+| 3 Order as client | `order me` | cart my menu → `placeOrder` (S fees) |
+| 4 Driver online | `drive on` | me.driver + online |
+| 5 Deliver | `deliver me` | `claim` + `complete` open delivery |
+| Auto | `first delivery` | `SNMarket.runFirstLoop` full path |
+
+**Astranov AI** greets with this path until `SNUsage` flag `firstDeliveryDone`. Pain reports → `SNUsage.handoff` for coding agent.
+
+### Usage data + midnight Greek ship (P4-U)
+
+| Rule | Spec |
+|------|------|
+| **Track** | `SNUsage.track` on list/order/claim/AI/handoff (localStorage) |
+| **Export** | CLI `usage` · `usage export` (ship packet markdown + clipboard) |
+| **Handoff bridge** | Chat pain → handoff queue; coding agent reads packet |
+| **Cadence** | **One fix per Athens midnight** (`Europe/Athens`) from usage top + open handoffs |
+| **Ship** | Workflow `.grok/workflows/midnight-greek-ship.rhai` + `scripts/schedule-midnight-athens.ps1` |
+| **Scope** | Single coherent fix in `js/spacenet/*` · probe · push `main` |
+
 ### Multi-tile + marketplace must be usable (dedummyfy)
 
 | Step | Spec |

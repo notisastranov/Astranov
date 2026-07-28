@@ -76,19 +76,31 @@
     var law =
       (typeof global.SNBrain?.systemPrompt === 'function' && global.SNBrain.systemPrompt()) ||
       'Astranov SpaceNet. SNGlobe Earth. CLI grab. S primary. Juice: shops jobs dates deliver.';
+    var flags = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
+    var market =
+      (global.SNMarket && SNMarket.coachStatus && SNMarket.coachStatus()) || {};
     var fork =
-      'You are ASTRANOV AI — the living mind of Astranov SpaceNet (https://astranov.eu). ' +
-      'Talk to the user like a capable co-pilot. Propose and run real SpaceNet actions: locate, city, shops, job, date, deliver, multi-tile, rate. ' +
-      'Identity: Astranov only (not a vendor chatbot). Match Greek or English. Be concrete. 2–5 short sentences + one CLI step.';
+      'You are ASTRANOV AI — living mind of Astranov SpaceNet (https://astranov.eu). ' +
+      'Co-pilot for real actions. Match Greek or English. 2–5 short sentences + one next step. ' +
+      'FIRST MARKETPLACE LOOP (priority until done): list shop → menu add <item> <priceS> → order me → drive on → deliver me. ' +
+      'Or: first delivery (auto-run full path). User is vendor+client+driver (no NPCs). ' +
+      'Flags: firstDeliveryDone=' +
+      !!flags.firstDeliveryDone +
+      ' vendorListed=' +
+      !!flags.firstVendorListed +
+      ' coachStep=' +
+      (market.step || 'idle') +
+      '. ' +
+      'If user reports pain/bug, queue handoff (say so). Identity: Astranov only.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
         ' ' +
         law +
-        ' MODE CODE: working code first, wire into js/spacenet/*.'
+        ' MODE CODE: working code first in js/spacenet/*; queue SNUsage.handoff for midnight Athens ship if not shippable now.'
       );
     }
-    return fork + ' ' + law + ' MODE CHAT: help them get juice done on the map.';
+    return fork + ' ' + law + ' MODE CHAT: coach first loop or juice on the map.';
   }
 
   async function callEdge(message, mode, opts) {
@@ -146,13 +158,47 @@
     }
 
     if (!line) {
-      return { did: did, reply: 'I am Astranov. Say locate, shops, job, date, or just talk to me.' };
+      return {
+        did: did,
+        reply: 'I am Astranov. Try: first delivery · list shop … · locate · shops.',
+      };
+    }
+
+    // Marketplace coach (vendor list → menu → order → drive → deliver)
+    if (global.SNMarket && SNMarket.handleChat) {
+      var mk = SNMarket.handleChat(line);
+      if (mk && mk.handled) {
+        if (mk.async && mk.action === 'runFirstLoop') {
+          return {
+            did: did.concat(['first_loop']),
+            reply: 'Running first vendor→delivery loop now…',
+            runFirstLoop: true,
+          };
+        }
+        try {
+          if (global.SNUsage && SNUsage.track) SNUsage.track('ai_market', { did: mk.did });
+        } catch (e) {}
+        return { did: (mk.did || []).concat(did), reply: mk.reply || 'Done.' };
+      }
     }
 
     // Direct task verbs → execute
     if (/^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) || low === 'ai' || low === 'astronov' || low === 'astranov') {
+      var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
+      reply = fl.firstDeliveryDone
+        ? 'I am Astranov AI. Marketplace loop already done once — shops, jobs, dates, or tell me what hurt (I queue a midnight fix).'
+        : 'I am Astranov AI. Let’s list your shop and do the first delivery to you. Type: first delivery  — or step by step: list shop Your Name';
+      return { did: did, reply: reply };
+    }
+
+    // Bridge pain → handoff for coding agent
+    if (/\b(broken|bug|fix this|handoff|painful|doesn'?t work|άχρηστο|χάλια|φτιάξε)\b/i.test(low) && line.length > 8) {
+      try {
+        if (global.SNUsage && SNUsage.handoff) SNUsage.handoff(line, { source: 'ai_act' });
+        did.push('handoff');
+      } catch (e) {}
       reply =
-        'I am Astranov AI on SpaceNet. I can locate you, open city shops, post jobs/dates/deliveries, and multi-tile places. What do you want to do?';
+        'Logged for ship. One fix per Athens midnight from usage + handoffs. Type usage export to copy the packet for the coding agent.';
       return { did: did, reply: reply };
     }
 
@@ -239,14 +285,15 @@
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
       reply =
-        'I am Astranov AI. I talk and I act: locate · city · shops · job … · date … · deliver … · multi-tile (tap map) · rate · 🎙 hands-free. What should we do?';
+        'I talk and act: first delivery · list shop … · menu add … · order me · drive on · deliver me · locate · shops · job · date · usage. 🎙 hands-free OK.';
       return { did: did, reply: reply };
     }
 
     // Conversational / unknown — local co-pilot still answers and suggests action
-    reply =
-      'Understood. I can run: locate, shops, city, job, date, deliver — or keep talking. ' +
-      'Edge AI may enrich this when online. Next: try shops or locate.';
+    var fl2 = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
+    reply = fl2.firstDeliveryDone
+      ? 'Understood. Edge may enrich this. Try shops, locate, or tell me a pain point to handoff.'
+      : 'Understood. Priority path: first delivery (auto) or list shop <name>. Edge may enrich when online.';
     return { did: did, reply: reply, needsEdge: true };
   }
 
@@ -256,10 +303,35 @@
     if (!msg) return null;
     busy = true;
     pushHist('user', msg);
+    try {
+      if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });
+    } catch (e) {}
 
     var local = await actLocal(msg);
     var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
     var text = null;
+
+    // Run first marketplace loop when requested
+    if (local.runFirstLoop && global.SNMarket && SNMarket.runFirstLoop) {
+      try {
+        var fr = await SNMarket.runFirstLoop({});
+        text =
+          fr && fr.ok
+            ? 'First delivery complete. You listed, ordered, drove, and delivered to yourself in S. Type usage · or tell me what was painful.'
+            : 'First loop partial: ' +
+              ((fr && fr.delivery && fr.delivery.error) ||
+                (fr && fr.order && fr.order.error) ||
+                'check CLI') +
+              '. Try steps: list shop · menu add X 5 · order me · drive on · deliver me';
+      } catch (e) {
+        text = 'First loop error: ' + (e && e.message ? e.message : e);
+      }
+      if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+      pushHist('assistant', text);
+      say(text, 'ok');
+      busy = false;
+      return text;
+    }
 
     // Always try edge for chat richness unless pure command already done
     if (mode === 'code' || mode === 'coders' || local.needsEdge || opts.forceEdge || !local.did.length) {
@@ -274,16 +346,20 @@
 
     if (!text && mode === 'code') {
       text =
-        'Code edge offline. Local: extend js/spacenet/* — CLI grab ui.js, SNGlobe globe.js, SNAi ai.js.';
+        'Code edge offline. Local: extend js/spacenet/* — market.js usage.js ai.js. Queue handoff for Athens midnight ship.';
+      try {
+        if (global.SNUsage && SNUsage.handoff) SNUsage.handoff(msg, { source: 'code_offline' });
+      } catch (e2) {}
     }
 
     if (!text) text = local.reply;
-    if (!text) text = 'I am Astranov. Edge quiet — I still run locate · shops · job · date · deliver.';
+    if (!text) text = 'I am Astranov. Edge quiet — try first delivery · locate · shops.';
 
     // Prefix so user always sees the mind
     if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
 
     pushHist('assistant', text);
+    // CLI / caller prints reply — avoid double log (say only for greet / first-loop)
     busy = false;
     return text;
   }
@@ -317,20 +393,32 @@
     try {
       sessionStorage.setItem(GREET_KEY, String(Date.now()));
     } catch (e) {}
-    var lines = [
-      'Astranov AI · online with you on SpaceNet.',
-      'I talk and I act: locate · shops · job · date · deliver. Long-press map to create multi-tile. Short-tap pins to open.',
-      'Type anything, tap ➤, or 🎙 — try: locate',
-    ];
+    var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
+    var lines = fl.firstDeliveryDone
+      ? [
+          'Astranov AI · online on SpaceNet.',
+          'Marketplace first loop already done on this device. shops · locate · or tell me a pain → midnight Greek fix.',
+          'Type anything · ➤ · 🎙',
+        ]
+      : [
+          'Astranov AI · online. Let’s make your first shop + delivery real.',
+          'Type: first delivery  (auto list→menu→order→drive→deliver to you) — or: list shop Your Cafe',
+          'S only · no NPC shops. ➤ send · 🎙 hands-free.',
+        ];
     lines.forEach(function (ln) {
       say(ln, 'ok');
     });
     pushHist('assistant', lines.join(' '));
+    try {
+      if (global.SNUsage && SNUsage.track) SNUsage.track('ai_greet', { firstDone: !!fl.firstDeliveryDone });
+    } catch (e0) {}
 
     // Soft edge tip (non-blocking)
     try {
       var tip = await callEdge(
-        'One short sentence: greet SpaceNet user and suggest locate or shops. You are Astranov AI only.',
+        fl.firstDeliveryDone
+          ? 'One short sentence: greet SpaceNet user; suggest shops or report a pain for handoff. Astranov AI only.'
+          : 'One short sentence: invite user to type first delivery for vendor+self-delivery loop. Astranov AI only.',
         'chat',
         { long: false }
       );

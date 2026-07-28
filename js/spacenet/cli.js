@@ -34,6 +34,8 @@
     log('GLOBE  single-tap dive · double-tap zoom out · no blue rings', 'dim');
     log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
     log('TILE  me · vendors · cart · order', 'ok');
+    log('FIRST list shop · menu add · order me · drive on · deliver me · first delivery', 'ok');
+    log('DATA  usage · usage export · handoff', 'dim');
     log('FIELD radar · resources · mine on|off · donate on|off', 'ok');
     log('MONEY S · rate · wallet · finance  (primary; fiat/crypto secondary)', 'ok');
     log('WORK  job · date · deliver · task list', 'dim');
@@ -122,6 +124,100 @@
         dumpBrain('verify');
         return;
       }
+      // First marketplace loop + usage (Astranov AI coaches the same path)
+      if (
+        low === 'first delivery' ||
+        low === 'first loop' ||
+        low === 'first order' ||
+        low === 'πρώτη παράδοση'
+      ) {
+        log('First loop · vendor → menu → order → driver → you…', 'dim');
+        preview('first delivery');
+        if (global.SNMarket?.runFirstLoop) {
+          const r = await global.SNMarket.runFirstLoop({});
+          log(r?.ok ? 'First delivery DONE' : r?.error || r?.order?.error || 'partial — see AI lines', r?.ok ? 'ok' : 'err');
+        } else log('Market module loading… hard refresh', 'err');
+        return;
+      }
+      if (/^list\s+shop\b/.test(low) || /^shop\s+name\b/.test(low)) {
+        const name = line.replace(/^(list\s+shop|shop\s+name)\s+/i, '').trim() || 'My shop';
+        const r = global.SNMarket?.listShop?.(name);
+        log(r?.ok ? 'Shop listed · ' + r.shop + ' · next: menu add Name 5' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        return;
+      }
+      if (/^menu\s+add\b/.test(low) || /^add\s+item\b/.test(low)) {
+        const m = line.match(/^(?:menu\s+add|add\s+item)\s+(.+?)\s+(\d+(?:[.,]\d+)?)/i);
+        if (!m) {
+          log('Usage: menu add Espresso 3.5', 'dim');
+          return;
+        }
+        const r = global.SNMarket?.addMenuItem?.(m[1].trim(), parseFloat(m[2].replace(',', '.')));
+        log(r?.ok ? 'Menu item added · next: order me' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        return;
+      }
+      if (low === 'order me' || low === 'order self' || low === 'buy from me') {
+        const r = global.SNMarket?.orderFromMyShop?.(1);
+        log(
+          r?.ok
+            ? 'Order ' + (global.SNCurrency?.format?.(r.total) || r.total + ' S') + ' · next: drive on'
+            : r?.error || 'order fail',
+          r?.ok ? 'ok' : 'err'
+        );
+        return;
+      }
+      if (low === 'drive on' || low === 'driver on' || low === 'go online') {
+        const r = global.SNMarket?.goDriverOnline?.();
+        log(r?.ok ? 'Driver ONLINE · next: deliver me' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        return;
+      }
+      if (low === 'deliver me' || low === 'claim and deliver' || low === 'finish delivery') {
+        const r = global.SNMarket?.claimAndComplete?.();
+        log(r?.ok ? 'Delivered to you · first loop complete' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        return;
+      }
+      if (low === 'usage' || low === 'usage summary' || low === 'stats') {
+        const s = global.SNUsage?.summary?.(14);
+        if (!s) {
+          log('Usage offline', 'err');
+          return;
+        }
+        log('Usage · Athens ' + s.athensToday + ' · ' + s.events + ' events · handoffs ' + s.openHandoffs, 'ok');
+        (s.top || []).forEach((t) => log('· ' + t.name + ' ×' + t.n, 'dim'));
+        const f = s.flags || {};
+        log(
+          'Flags · vendor=' +
+            !!f.firstVendorListed +
+            ' delivery=' +
+            !!f.firstDeliveryDone,
+          'dim'
+        );
+        return;
+      }
+      if (low === 'usage export' || low === 'ship packet' || low === 'export usage') {
+        const pkt = global.SNUsage?.shipPacket?.() || '';
+        log('── ship packet (copy for coding agent / midnight) ──', 'ok');
+        pkt.split('\n').forEach((ln) => log(ln, 'dim'));
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            void navigator.clipboard.writeText(pkt);
+            log('Copied ship packet to clipboard', 'ok');
+          }
+        } catch (_) {}
+        return;
+      }
+      if (low === 'handoff' || low === 'handoffs') {
+        const list = global.SNUsage?.openHandoffs?.() || [];
+        if (!list.length) log('No open handoffs · report a pain in chat to queue one', 'dim');
+        else list.slice(0, 12).forEach((h, i) => log(i + 1 + '. ' + h.note.slice(0, 100), 'ok'));
+        return;
+      }
+      if (/^handoff\s+/.test(low)) {
+        const note = line.replace(/^handoff\s+/i, '').trim();
+        global.SNUsage?.handoff?.(note, { source: 'cli' });
+        log('Handoff queued · Athens midnight ship picks one fix', 'ok');
+        return;
+      }
+
       // Unified multi-role tile juice
       if (low === 'me' || low === 'profile' || low === 'tile' || low === 'plus' || low === 'my tile') {
         global.SNTile?.openMe?.();
@@ -740,27 +836,25 @@
         return;
       }
 
-      // Freeform → Astranov AI (must talk + act)
+      // Freeform → Astranov AI (must talk + act; coaches first shop/delivery)
       preview('Astranov AI…');
       global.SNUi?.expandPanel?.(true);
       if (!global.SNAi?.ask) {
-        // brief wait if AI still loading
         await new Promise((r) => setTimeout(r, 600));
       }
       if (global.SNAi?.ask) {
         const reply = await SNAi.ask(line);
         if (reply) {
-          // ask() may already have run tasks; print reply lines
           String(reply)
             .split('\n')
             .forEach((ln) => {
-              if (ln.trim()) log(ln, /Astranov AI/i.test(ln) ? 'ok' : 'ok');
+              if (ln.trim()) log(ln, 'ok');
             });
           preview(reply.replace(/^Astranov AI\s*[·:.-]\s*/i, '').slice(0, 80));
           return;
         }
       }
-      log('Astranov AI loading… try again in a second · or: locate · shops · job', 'dim');
+      log('Astranov AI loading… try: first delivery · locate · shops', 'dim');
       preview('AI loading…');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');

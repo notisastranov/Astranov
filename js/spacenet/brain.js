@@ -68,6 +68,11 @@
       { id: 'delivery', what: 'driver profiles online + claim deliveries' },
       { id: 'errands', what: 'errand … same DNA' },
       { id: 'marketplace', what: 'browse → cart → order → track' },
+      {
+        id: 'first_loop',
+        what: 'AI-coached first shop list + self-delivery (list shop → menu → order me → drive → deliver me)',
+      },
+      { id: 'usage_ship', what: 'SNUsage events + handoff → one fix per Athens midnight' },
       { id: 'ai', what: 'Single collective intelligence Astranov' },
     ],
     commands: [

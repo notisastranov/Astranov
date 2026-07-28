@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728190000-click-dive',
+  version: '20260728200000-first-loop',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -90,7 +90,7 @@ const AstranovContinuity = {
     entry: 'index.html → boot.js',
     modules: [
       'config', 'brain', 'globe', 'cosmos', 'tasks', 'profiles', 'currency',
-      'field', 'commerce', 'spatial', 'cli', 'ai', 'ui', 'tile', 'map', 'search', 'auth',
+      'field', 'commerce', 'spatial', 'usage', 'market', 'cli', 'ai', 'ui', 'tile', 'map', 'search', 'auth',
     ],
     doNotLoad: [
       'astranov-app.js', 'astranov-deferred.js', 'phase-*.js',
@@ -122,6 +122,22 @@ const AstranovContinuity = {
     captionEl: '#field-radar-caption #fsh-explain',
   },
 
+  firstLoop: {
+    coach: 'SNMarket + SNAi',
+    path: 'list shop → menu add → order me → drive on → deliver me',
+    auto: 'first delivery',
+    zeroNpc: true,
+  },
+
+  usageShip: {
+    module: 'js/spacenet/usage.js',
+    timezone: 'Europe/Athens',
+    cadence: 'one fix per midnight',
+    cli: ['usage', 'usage export', 'handoff'],
+    workflow: '.grok/workflows/midnight-greek-ship.rhai',
+    schedule: 'scripts/schedule-midnight-athens.ps1',
+  },
+
   verify: [
     'GLOBAL Earth default',
     'single-tap → dive national→regional→city fly+zoom NO blue rings',
@@ -134,6 +150,8 @@ const AstranovContinuity = {
     'shops uses live DB/overpass/crawl',
     'marketplace alwaysOn 24/7/365',
     'SNAi greets on boot',
+    'first delivery path coached by AI',
+    'usage + handoff for midnight Greek ship',
     'long-press create · short-tap open tile',
     'no companion · no overlap',
   ],
