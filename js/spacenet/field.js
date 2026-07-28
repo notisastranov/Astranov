@@ -68,46 +68,102 @@
     'rgba(200,140,255,0.9)',
   ];
   /**
-   * SPECS: task ribbon = materialised buttons for **current task only**.
-   * No permanent dock flood (locate/shops/me/help/login are CLI/AI text, not ribbon).
-   * idle = empty ribbon (hidden).
+   * SPECS CLI top ribbon — ALWAYS visible permanent basics:
+   * 🎯 Locate · 👤 User · ➕ Add multi-tile · 🎙 Hands-free AI · ➤ Send
+   * Plus optional current-task extras (cart/order/…)
    */
+  var RIBBON_CORE = [
+    { act: 'locate', label: '🎯 Locate', title: 'Locate me on Earth' },
+    { act: 'user', label: '👤 User', title: 'Your multi-tile' },
+    { act: 'add', label: '➕ Add', title: 'Create multi-tile at focus' },
+    { act: 'handsfree', label: '🎙 AI', title: 'Hands-free voice → Astranov AI', id: 'sn-rib-hf' },
+    { act: 'send', label: '➤ Send', title: 'Send message to AI / CLI' },
+  ];
   var TASKS = {
     idle: [],
     map: ['shops', 'cart', 'order'],
     shops: ['cart', 'order', 'menu'],
-    mine: ['mine on', 'mine off', 'resources'],
+    mine: ['mine on', 'mine off'],
     money: ['rate', 'finance'],
-    space: ['go to earth', 'cosmos'],
-    delivery: ['claim', 'task list', 'cart', 'order'],
+    space: ['cosmos'],
+    delivery: ['claim', 'cart', 'order'],
   };
 
   function $(id) {
     return document.getElementById(id);
   }
 
+  function ribbonAct(act) {
+    if (act === 'locate') {
+      if (g.SNCli && SNCli.run) void SNCli.run('locate');
+      return;
+    }
+    if (act === 'user') {
+      if (g.SNTile && SNTile.openMe) SNTile.openMe();
+      else if (g.SNCli && SNCli.run) void SNCli.run('me');
+      return;
+    }
+    if (act === 'add') {
+      var pos =
+        g._snLastPos ||
+        (g.SNTasks && SNTasks.pos) ||
+        (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || { lat: 36.43, lng: 28.22 };
+      if (g.SNTile && SNTile.createAt) {
+        void (async function () {
+          try {
+            if (g.SNMap && !SNMap.active && SNMap.open) await SNMap.open(pos.lat, pos.lng);
+          } catch (e) {}
+          g.SNTile.createAt(pos.lat, pos.lng);
+        })();
+      } else if (g.SNCli && SNCli.run) void SNCli.run('me');
+      return;
+    }
+    if (act === 'handsfree') {
+      if (g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
+      return;
+    }
+    if (act === 'send') {
+      var form = $('cli-form');
+      var input = $('cli-in');
+      if (form && input) {
+        if (form.requestSubmit) form.requestSubmit();
+        else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+      return;
+    }
+    if (g.SNCli && SNCli.run) void SNCli.run(act);
+  }
+
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
     if (!bar) return;
-    // SPECS: current task only — no RIBBON_CORE permanent set
-    var ctx = TASKS[task] || [];
-    if (!ctx.length) {
-      bar.innerHTML = '';
-      bar.hidden = true;
-      bar.setAttribute('aria-hidden', 'true');
-      return;
-    }
     bar.hidden = false;
     bar.setAttribute('aria-hidden', 'false');
     var seen = {};
     var h = '';
-    for (var i = 0; i < ctx.length; i++) {
+    var i;
+    for (i = 0; i < RIBBON_CORE.length; i++) {
+      var b = RIBBON_CORE[i];
+      seen[b.act] = 1;
+      h +=
+        '<button type="button" class="sn-rib-btn sn-rib-core" data-act="' +
+        b.act +
+        '"' +
+        (b.id ? ' id="' + b.id + '"' : '') +
+        ' title="' +
+        (b.title || b.label) +
+        '">' +
+        b.label +
+        '</button>';
+    }
+    var ctx = TASKS[task] || [];
+    for (i = 0; i < ctx.length; i++) {
       var cmd = ctx[i];
       var k = String(cmd).toLowerCase();
       if (seen[k]) continue;
       seen[k] = 1;
       h +=
-        '<button type="button" class="sn-rib-btn" data-run="' +
+        '<button type="button" class="sn-rib-btn sn-rib-task" data-run="' +
         String(cmd).replace(/"/g, '') +
         '">' +
         cmd +
@@ -119,14 +175,29 @@
       } catch (e) {}
     }
     bar.innerHTML = h;
-    bar.querySelectorAll('[data-run]').forEach(function (b) {
-      b.onclick = function (ev) {
+    // Sync hands-free visual with CLI state
+    try {
+      var hf = $('sn-rib-hf');
+      if (hf && g.SNCli && SNCli.handsfreeOn) hf.classList.add('on');
+    } catch (e2) {}
+    bar.querySelectorAll('[data-act]').forEach(function (btn) {
+      btn.onclick = function (ev) {
         if (ev) {
           ev.preventDefault();
           ev.stopPropagation();
         }
-        var c = b.getAttribute('data-run');
-        if (g.SNCli && SNCli.run) void SNCli.run(c);
+        ribbonAct(btn.getAttribute('data-act'));
+        // refresh hf on state after toggle
+        setTimeout(paintRibbon, 50);
+      };
+    });
+    bar.querySelectorAll('[data-run]').forEach(function (btn) {
+      btn.onclick = function (ev) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        if (g.SNCli && SNCli.run) void SNCli.run(btn.getAttribute('data-run'));
       };
     });
   }

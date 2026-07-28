@@ -215,22 +215,27 @@ Google’s screen shows whatever is configured for the OAuth client / Auth host.
 Until custom domain + Google branding are live, Google may still show the technical Supabase host; that is infrastructure, not acceptable long-term product.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
-| **Task ribbon** | On CLI top · **materialised for current task only** · **hidden when idle** | **Not permanent button flood** |
-| **CLI fixed controls** | Field + **➤ Send** + **🎙 hands-free** (+ size expand) | Required on form, not ribbon |
+| **CLI top ribbon (permanent)** | **Always visible** on CLI panel top: **🎯 Locate · 👤 User · ➕ Add · 🎙 AI hands-free · ➤ Send** | **Required — never hide when idle** |
+| **CLI task extras** | Optional extra keys only while a task context is active (cart/order/…) | Additive, not a replacement for the permanent five |
+| **CLI field row** | Text input + expand (⋮); Send/Hands-free also on ribbon | Required |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
 | **CLI max height** | Default expand = **1/3 of screen** (button, no drag). **User drag may override** taller (up to ~72vh). | Required |
 | **Globe control** | Drag must cancel fly + zero inertia; euler YXZ only (no quat/euler fight); soft damp; no wild spin | Required |
 | **AI** | `SNAi` greets + freeform acts (locate/shops/fly/go + marketplace) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
-### CLI ribbon law (non-negotiable)
+### CLI top ribbon law (non-negotiable — owner locked)
 
-| Allowed on ribbon | Forbidden without **owner authorize** |
-|-------------------|----------------------------------------|
-| Buttons for the **active task context only** (e.g. shops → cart/order/menu; delivery → claim) | Permanent locate · city · shops · me · help · login · first delivery · wallet strip |
-| Empty / hidden when task = idle | Floating edge 🎯 🗺 👤 ➕ docks (use CLI text / AI / home / miner instead) |
+| Button | Action | Mechanical |
+|--------|--------|------------|
+| **🎯 Locate** | GPS + fly globe to user | `SNCli.run('locate')` / `SNGlobe.locate` |
+| **👤 User** | Open my multi-tile | `SNTile.openMe` |
+| **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
+| **🎙 AI** | Hands-free voice ↔ Astranov AI | `SNCli.toggleHandsfree` |
+| **➤ Send** | Submit CLI / talk to AI | form submit |
 
-`locate` · `city` · `shops` · `help` · `login` · `me` remain **CLI commands / AI speech**, not permanent ribbon keys.
+**Forbidden:** agents removing this permanent five, or hiding the ribbon when idle.  
+**Not on ribbon without new owner order:** permanent shops/help/login/first-delivery flood, floating edge docks.
 
 **Contaminated (discard):** missing radar **or** miner S **or** Astranov SpaceNet home **or** GLOBAL default **or** permanent multi-button ribbon flood.
 

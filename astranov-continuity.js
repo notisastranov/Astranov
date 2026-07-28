@@ -114,9 +114,9 @@ const AstranovContinuity = {
       ],
     },
     ambassador: { supportEarnsS: true, meshBoost: true, unit: 'S' },
-    cliRibbon: 'current-task-only-hidden-when-idle',
-    cliFormFixed: ['input', 'handsfree', 'send', 'expand'],
-    noPermanentRibbonFlood: true,
+    cliRibbonPermanent: ['locate', 'user', 'add', 'handsfree-AI', 'send'],
+    cliRibbonAlwaysVisible: true,
+    cliFormFixed: ['input', 'expand'],
     noFloatingEdge: true,
   },
 
