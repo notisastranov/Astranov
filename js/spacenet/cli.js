@@ -863,61 +863,197 @@
 
   let speechRec = null;
   let handsfreeOn = false;
+  let hfRestartTimer = null;
+  let hfLastHeard = 0;
+
+  function setHandsfreeUi(on, label) {
+    const btn = $('btn-handsfree');
+    if (btn) {
+      btn.classList.toggle('on', !!on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.title = on ? 'Hands-free ON · tap to stop' : 'Hands-free voice → AI';
+    }
+    if (label) preview(label);
+  }
+
+  /** Speak Astranov replies when hands-free is armed (AI voice out) */
+  function speakAi(text) {
+    if (!handsfreeOn) return;
+    try {
+      const synth = global.speechSynthesis;
+      if (!synth || !global.SpeechSynthesisUtterance) return;
+      const clean = String(text || '')
+        .replace(/^Astranov AI\s*[·:.-]\s*/i, '')
+        .replace(/[🎙➤⋮]/g, '')
+        .trim()
+        .slice(0, 400);
+      if (!clean) return;
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = (navigator.language || 'en-US').indexOf('el') === 0 ? 'el-GR' : navigator.language || 'en-US';
+      u.rate = 1.02;
+      u.pitch = 1;
+      // Pause mic while TTS so we don't hear ourselves
+      try {
+        if (speechRec && handsfreeOn) speechRec.stop();
+      } catch (_) {}
+      u.onend = () => {
+        if (handsfreeOn) scheduleListenRestart(280);
+      };
+      synth.speak(u);
+    } catch (_) {}
+  }
+
+  function scheduleListenRestart(ms) {
+    if (hfRestartTimer) clearTimeout(hfRestartTimer);
+    hfRestartTimer = setTimeout(() => {
+      hfRestartTimer = null;
+      if (!handsfreeOn || !speechRec) return;
+      try {
+        speechRec.start();
+        setHandsfreeUi(true, '🎙 listening…');
+      } catch (e) {
+        // InvalidStateError if already started — ignore
+        if (!/already|started/i.test(String(e && e.message))) {
+          try {
+            speechRec.start();
+          } catch (_) {}
+        }
+      }
+    }, ms || 400);
+  }
+
+  function stopHandsfree(reason) {
+    handsfreeOn = false;
+    if (hfRestartTimer) {
+      clearTimeout(hfRestartTimer);
+      hfRestartTimer = null;
+    }
+    try {
+      if (speechRec) {
+        speechRec.onend = null;
+        speechRec.onerror = null;
+        speechRec.onresult = null;
+        speechRec.stop();
+      }
+    } catch (_) {}
+    speechRec = null;
+    try {
+      global.speechSynthesis?.cancel?.();
+    } catch (_) {}
+    setHandsfreeUi(false, reason || 'Hands-free off');
+  }
 
   function toggleHandsfree() {
-    const btn = $('btn-handsfree');
     const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
-    if (!SR) {
-      log('Hands-free needs browser speech · type to AI instead', 'err');
-      return;
-    }
-    if (handsfreeOn && speechRec) {
-      try {
-        speechRec.stop();
-      } catch (_) {}
-      speechRec = null;
-      handsfreeOn = false;
-      if (btn) btn.classList.remove('on');
+    if (handsfreeOn) {
+      stopHandsfree('Hands-free off');
       log('Hands-free off', 'dim');
-      preview('Hands-free off');
       return;
     }
+    if (!global.isSecureContext && location.hostname !== 'localhost') {
+      log('Hands-free needs HTTPS · open https://astranov.eu', 'err');
+      return;
+    }
+    if (!SR) {
+      log('Hands-free needs Chrome/Edge speech · type to AI instead', 'err');
+      preview('No speech API');
+      return;
+    }
+
+    // Expand CLI so feedback is visible
+    try {
+      global.SNUi?.setSize?.('mid', true);
+      global.SNUi?.expandPanel?.(true);
+    } catch (_) {}
+
     speechRec = new SR();
-    speechRec.lang = navigator.language || 'en-US';
-    speechRec.interimResults = false;
-    speechRec.continuous = false;
+    // Prefer Greek if browser is Greek, else en
+    const nav = navigator.language || 'en-US';
+    speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
+    speechRec.interimResults = true;
+    speechRec.continuous = true;
+    speechRec.maxAlternatives = 1;
+
+    speechRec.onstart = () => {
+      setHandsfreeUi(true, '🎙 listening…');
+      log('🎙 Mic live · speak to Astranov · tap 🎙 again to stop', 'ok');
+    };
+
     speechRec.onresult = (ev) => {
       try {
-        const t = ev.results?.[0]?.[0]?.transcript;
-        if (t) {
-          const input = $('cli-in');
-          if (input) input.value = t;
-          log('🎙 ' + t, 'cmd');
-          void run(t);
+        let finalText = '';
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const piece = ev.results[i][0]?.transcript || '';
+          if (ev.results[i].isFinal) finalText += piece;
+          else interim += piece;
         }
+        if (interim) preview('🎙 ' + interim.slice(0, 60));
+        const t = String(finalText || '').trim();
+        if (!t) return;
+        // Debounce double finals
+        const now = Date.now();
+        if (now - hfLastHeard < 600) return;
+        hfLastHeard = now;
+        const input = $('cli-in');
+        if (input) input.value = t;
+        log('🎙 ' + t, 'cmd');
+        preview('Astranov…');
+        void (async () => {
+          try {
+            await run(t);
+            // Speak last AI-ish log is hard; speak via SNAi if last reply in history
+            const hist = global.SNAi?.history;
+            if (hist && hist.length) {
+              const last = hist[hist.length - 1];
+              if (last && last.role === 'assistant') speakAi(last.content);
+            }
+          } catch (e) {
+            log('Voice run · ' + (e.message || e), 'err');
+          }
+        })();
       } catch (_) {}
     };
-    speechRec.onerror = () => {
-      handsfreeOn = false;
-      if (btn) btn.classList.remove('on');
-      log('Hands-free error · try again', 'err');
-    };
-    speechRec.onend = () => {
-      // one-shot; stay "armed" if still on — restart listen
-      if (handsfreeOn && speechRec) {
-        try {
-          speechRec.start();
-        } catch (_) {}
+
+    speechRec.onerror = (ev) => {
+      const code = (ev && ev.error) || 'error';
+      if (code === 'aborted' || code === 'no-speech') {
+        // keep armed — restart listen
+        if (handsfreeOn) scheduleListenRestart(350);
+        return;
       }
+      if (code === 'not-allowed' || code === 'service-not-allowed') {
+        stopHandsfree('Mic blocked');
+        log('Mic permission denied · allow microphone for astranov.eu · then tap 🎙', 'err');
+        return;
+      }
+      if (code === 'network') {
+        log('Speech network error · check connection · keep typing', 'err');
+        if (handsfreeOn) scheduleListenRestart(1200);
+        return;
+      }
+      log('Hands-free · ' + code + ' · try again', 'err');
+      if (handsfreeOn) scheduleListenRestart(500);
     };
+
+    speechRec.onend = () => {
+      // Browsers end continuous sessions often — re-arm while ON
+      if (handsfreeOn) scheduleListenRestart(300);
+    };
+
+    handsfreeOn = true;
+    setHandsfreeUi(true, '🎙 starting mic…');
     try {
       speechRec.start();
-      handsfreeOn = true;
-      if (btn) btn.classList.add('on');
-      log('Hands-free on · speak · AI will answer', 'ok');
-      preview('🎙 listening…');
+      try {
+        if (global.SNUsage?.track) SNUsage.track('handsfree_on', {});
+      } catch (_) {}
+      // Confirm voice path works (short TTS)
+      speakAi('Astranov listening. Say first delivery, or locate.');
     } catch (e) {
-      log('Hands-free start failed · ' + (e.message || e), 'err');
+      stopHandsfree('Hands-free failed');
+      log('Hands-free start failed · ' + (e.message || e) + ' · allow mic · use Chrome/Edge', 'err');
     }
   }
 
@@ -934,9 +1070,23 @@
     });
     $('btn-send')?.addEventListener('click', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       form.requestSubmit?.() || form.dispatchEvent(new Event('submit', { cancelable: true }));
     });
-    $('btn-handsfree')?.addEventListener('click', () => toggleHandsfree());
+    const hf = $('btn-handsfree');
+    if (hf && !hf._snHf) {
+      hf._snHf = true;
+      hf.type = 'button';
+      hf.addEventListener(
+        'click',
+        (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleHandsfree();
+        },
+        true
+      );
+    }
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -971,5 +1121,16 @@
     }, 900);
   }
 
-  global.SNCli = { init, run, log, help, preview, toggleHandsfree };
+  global.SNCli = {
+    init,
+    run,
+    log,
+    help,
+    preview,
+    toggleHandsfree,
+    speakAi,
+    get handsfreeOn() {
+      return handsfreeOn;
+    },
+  };
 })(window);

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728200000-first-loop" />
-<meta name="astranov-continuity" content="20260728200000-first-loop" />
+<meta name="astranov-build" content="20260728210000-handsfree" />
+<meta name="astranov-continuity" content="20260728210000-handsfree" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -203,7 +203,16 @@
     flex-shrink: 0;
   }
   #btn-send { color: #6dffb0; font-size: 15px; }
-  #btn-handsfree.on { color: #ff6b7a; background: rgba(196,74,90,0.15); }
+  #btn-handsfree.on {
+    color: #ff6b7a;
+    background: rgba(196,74,90,0.22);
+    box-shadow: 0 0 0 2px rgba(255,107,122,0.45);
+    animation: sn-hf-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes sn-hf-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(255,107,122,0.35); }
+    50% { box-shadow: 0 0 0 5px rgba(255,107,122,0.12); }
+  }
   #btn-expand { font-size: 14px; }
 
   /* Finance multi-tile */
@@ -388,7 +397,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728200000-first-loop"></script>
+<script src="/js/spacenet/boot.js?v=20260728210000-handsfree"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

@@ -149,6 +149,11 @@
       var t = e;
       if (!t) return;
       startedOnInteractive = isInteractive(e.target);
+      // Never steal clicks from 🎙 / send / inputs — capture breaks hands-free & buttons
+      if (startedOnInteractive) {
+        dragging = false;
+        return;
+      }
       var rect = dock.getBoundingClientRect();
       if (!dock.classList.contains('free')) {
         origL = rect.left;
