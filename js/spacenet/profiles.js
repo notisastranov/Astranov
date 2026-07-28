@@ -265,12 +265,13 @@
   }
 
   function placeOrder() {
+    // SPECS P4-M: no platform curfew — 24/7/365 all locations
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
     const total = cartTotal();
     const items = cart();
     cartClear();
-    // Create delivery task DNA
+    // Create delivery task DNA (always open pipeline)
     const t = global.SNTasks?.create?.({
       kind: 'delivery',
       role: 'driver',
@@ -283,14 +284,22 @@
       raw: 'delivery order ' + total,
       lat: get(vendorId)?.lat,
       lng: get(vendorId)?.lng,
+      always_on: true,
     });
-    // Notify drivers on map
+    // Notify drivers on map (drivers may be offline as people — marketplace still open)
     list({ role: 'driver' }).forEach((d) => {
       if (d.driverOnline && global.SNGlobe?.pulse) {
         SNGlobe.pulse(d.lat, d.lng, 0x44ffaa, 'Order!', 8000);
       }
     });
-    return { ok: true, task: t, total, items, vendorId };
+    return {
+      ok: true,
+      task: t,
+      total,
+      items,
+      vendorId,
+      marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
+    };
   }
 
   function fromCrawlPlace(place, pos) {

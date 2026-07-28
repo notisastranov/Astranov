@@ -1,10 +1,17 @@
-/* SpaceNet Commerce — real vendors from Supabase (DB-first, no demo pollution) */
+/* SpaceNet Commerce — real vendors from Supabase (DB-first, no demo pollution)
+ * SPECS P4-M: marketplace alwaysOn 24/7/365 all locations — no platform curfew.
+ */
 (function (global) {
   'use strict';
 
   const C = {
     vendors: [],
     lastLoad: 0,
+    /** Product law: platform never time-gates delivery marketplace */
+    alwaysOn: true,
+    hours: '24/7',
+    daysPerYear: 365,
+    allLocations: true,
   };
 
   function headers() {
@@ -143,6 +150,10 @@
     populateMap,
     toPlaces,
     haversineKm,
+    alwaysOn: true,
+    hours: '24/7',
+    daysPerYear: 365,
+    allLocations: true,
     get vendors() {
       return C.vendors;
     },

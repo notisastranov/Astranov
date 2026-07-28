@@ -216,13 +216,46 @@ Display: `12.50 S` optional `(~… EUR)`.
 Progress these — do not re-litigate globe chrome forever.
 
 1. **Locate → city → real shops** (Supabase DB-first; no boot Overpass freeze)  
-2. **Cart → order → delivery task** (fees in S)  
+2. **Cart → order → delivery task** (fees in S) — **24/7/365 all locations** (P4-M)  
 3. **Jobs / dates / errands** as place-tasks  
 4. **Go anywhere in space** (P1-C): body globe + land + crawl  
 5. **Spatial seeds** (thesis Earth, Cydonia Mars)  
 6. **Video / presence** as place kinds (later, same model)
 
 Marketplace path: pin → browse → cart → place → track → claim → pilot multi-stop.
+
+---
+
+## P4-M — Delivery marketplace: always on (24 / 7 / 365)
+
+**SpaceNet allows continuous delivery marketplace operation — 24 hours a day, 365 days a year, in all locations.**
+
+This is product law, not a nice-to-have. The net does not “close for the night” or “close on Sundays” as a platform.
+
+| Rule | Spec |
+|------|------|
+| **Always open** | Platform marketplace accepts browse · cart · order · claim · track · pilot **at any hour, any day of year** |
+| **All locations** | Any Earth city/sector SpaceNet can address (locate / fly / crawl / DB shops) — no region hard-off by product default |
+| **No platform curfew** | Agents must **not** add artificial “marketplace closed 22:00–08:00”, weekend-only, or geo-kill switches without owner order |
+| **Vendor hours ≠ platform hours** | A shop’s OSM/local `opening_hours` may be **shown** for honesty; they **do not** shut SpaceNet or block the delivery pipeline product-wide. Drivers/vendors may still be offline as **people** — the **marketplace** stays operable |
+| **Fees still apply** | 3% platform · 15% driver gross — in **S** — whenever a transaction runs |
+| **Currency** | All marketplace amounts in **S (SpaceNets)** |
+| **Code** | `commerce.js` · `profiles.js` · `tile.js` · `tasks.js` (delivery kind) · map pins — no time-window gate on place order |
+
+### Operating truth
+
+```
+any UTC instant · any addressed lat/lng on Earth
+  → user may open shops · add cart · place order (S)
+  → delivery task may open · driver may claim when available
+  → no SPECS-level “closed calendar”
+```
+
+### Red (do not ship)
+
+- Hard-coded marketplace closed hours / closed days  
+- “Only open in country X business hours” as product default  
+- Blocking order placement solely because local wall-clock is night  
 
 ---
 
@@ -316,6 +349,7 @@ Do not strip IP or rebrand without owner request.
 - Overlap chrome · permanent multi-button docks · dual CLI bars  
 - Ship without radar + S + resources/mine + task ribbon  
 - Boot into city map · block boot with crawl  
+- Impose **marketplace curfew** or closed calendar (violates **P4-M** 24/7/365 all locations)  
 - AVC / coins / 1:1 EUR as product money  
 - Low-fi companion figure before AI graphics > high-end games  
 - Micro-patch over a broken series of specs — **rebuild**  

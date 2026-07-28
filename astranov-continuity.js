@@ -61,6 +61,19 @@ const AstranovContinuity = {
     code: 'js/spacenet/currency.js',
   },
 
+  /** P4-M: delivery marketplace never platform-closes */
+  marketplace: {
+    alwaysOn: true,
+    hours: '24/7',
+    days: 365,
+    allLocations: true,
+    noPlatformCurfew: true,
+    vendorHoursInformationalOnly: true,
+    feesInS: true,
+    path: 'pin → browse → cart → place → track → claim → pilot',
+    code: ['commerce.js', 'profiles.js', 'tile.js', 'tasks.js', 'map.js'],
+  },
+
   stack: {
     entry: 'index.html → boot.js',
     modules: [
@@ -126,6 +139,7 @@ const AstranovContinuity = {
     'SNAi greets on boot',
     'long-press map create · short-tap pin open tile',
     'no companion · no overlap',
+    'marketplace alwaysOn 24/7/365 all locations (no platform curfew)',
   ],
 };
 
