@@ -10,15 +10,16 @@
 | **Repo** | github.com/notisastranov/astranov.eu |
 | **Local** | `C:\Users\N\Documents\GitHub\Astranov` |
 | **Build** | `meta[name="astranov-build"]` must match all script `?v=` |
-| **Current build** | `20260728060000-spartan-specs` · **P0 = spartan coding** (see SPECS.md) |
+| **Current build** | See live `meta[name="astranov-build"]` · **SPECS.md** sole law |
 | **Currency** | **S (SpaceNets)** primary — wallet + field HUD; EUR/USD secondary quotes; **not AVC** |
 | **Default view** | Full **GLOBAL** Earth; city map closed; CLI collapsed |
-| **Chrome** | Radar · S field · task ribbon · edge · CLI — **no overlapping**; thin stacks without these = **contaminated → rebuild** |
-| **Mining / resources / perf** | `SNResources` · FPS · spare% · mine S/h · donate |
-| **Task ribbon** | Materialised buttons for **current task only** (`SNRibbon`) |
+| **Cosmos P1-C** | **SNCosmos** + **SNGlobe.setBody**: go anywhere = real body globe + land + **crawl**. Dummy solar-only banned |
+| **Chrome** | Radar · S field · task ribbon · edge · CLI — **no overlapping**; thin stacks = contaminated → rebuild |
+| **Mining / resources / perf** | In `field.js` · FPS · spare% · mine S/h · donate |
+| **Task ribbon** | Materialised buttons for **current task only** |
 | **Companion figure** | **Off** until AI graphics surpass high-level gaming |
 | **App-first shell** | My city · Shops · Order · Place · Vault · **Cosmos** · Cydonia · Menu · Talk |
-| **Sole authority for the law** | **`SPECS.md` §0** — real virtual space as UI · ALL of space addressable |
+| **Sole authority for the law** | **`SPECS.md`** — P0 spartan · P1 space OS · **P1-C multi-body** · P2 surface |
 
 ---
 
