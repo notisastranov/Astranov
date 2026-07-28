@@ -193,7 +193,9 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap pin → open tile | Required |
 | **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
 | **Radar** | Top-left · speed km/h | Required |
-| **Home** | Center label **Astranov SpaceNet** → full GLOBAL Earth | Required |
+| **Home** | Center label **Astranov SpaceNet** opens **home menu** (not a bare jump) | Required |
+| **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
+| **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
 | **Task ribbon** | On CLI top · **materialised for current task only** · **hidden when idle** | **Not permanent button flood** |
 | **CLI fixed controls** | Field + **➤ Send** + **🎙 hands-free** (+ size expand) | Required on form, not ribbon |

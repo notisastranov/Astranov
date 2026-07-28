@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728230000-spartan-chrome',
+  version: '20260728290000-home-menu',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -105,14 +105,19 @@ const AstranovContinuity = {
   chromeLaw: {
     onScreenOnly: ['radar', 'home-Astranov-SpaceNet', 'miner'],
     minerShows: ['S balance', 'S/day mining rate'],
+    homeMenu: {
+      file: 'js/spacenet/home.js',
+      items: [
+        'version', 'local-time', 'athens-time', 'user-info', 'login',
+        'earth-global', 'reload', 'hard-reset',
+        'role-vendor', 'role-driver', 'role-ambassador',
+      ],
+    },
+    ambassador: { supportEarnsS: true, meshBoost: true, unit: 'S' },
     cliRibbon: 'current-task-only-hidden-when-idle',
     cliFormFixed: ['input', 'handsfree', 'send', 'expand'],
     noPermanentRibbonFlood: true,
     noFloatingEdge: true,
-    ribbonNeedsOwnerAuth: [
-      'permanent locate/city/shops/me/help/login/first',
-      'floating 🎯🗺👤➕ edge dock',
-    ],
   },
 
   agentDiscipline: {

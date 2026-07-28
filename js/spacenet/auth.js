@@ -67,8 +67,11 @@
     }
     try {
       global.SNCli?.preview?.(
-        A.user ? 'Signed in · ' + (name || 'user') : 'Guest · sign in G · type help'
+        A.user ? 'Signed in · ' + (name || 'user') : 'Guest · Astranov SpaceNet menu · sign in'
       );
+    } catch (_) {}
+    try {
+      if (global.SNHome && SNHome.openState && SNHome.paint) SNHome.paint();
     } catch (_) {}
   }
 

@@ -162,6 +162,13 @@
     mine.rates.storage = Math.round(32 * budget);
     mine.rates.bandwidth = Math.round(200 * budget);
     mine.rate = 0.012 * budget * (document.hidden ? 2 : 1);
+    // Ambassador online: experienced support mining boost (SpaceNets S)
+    try {
+      var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
+      if (me && me.roles && me.roles.ambassador && me.ambassadorOnline !== false) {
+        mine.rate += 0.008 * budget;
+      }
+    } catch (e) {}
     if (mine.rate > 0) {
       var earn = mine.rate * (dt / 3600000);
       mine.session += earn;
@@ -413,28 +420,14 @@
       ($('field-balance-hud').onclick = function () {
         openFinance('mining');
       });
-    $('btn-home') &&
-      ($('btn-home').onclick = function (e) {
+    // Home button owned by SNHome menu (menu has Back to Earth GLOBAL)
+    if (g.SNHome && SNHome.init) SNHome.init();
+    else if ($('btn-home')) {
+      $('btn-home').onclick = function (e) {
         if (e) e.preventDefault();
-        try {
-          if (g.SNMap && SNMap.close) SNMap.close();
-        } catch (err) {}
-        try {
-          if (g.SNTile && SNTile.close) SNTile.close();
-        } catch (err2) {}
-        try {
-          if (g.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
-          else if (g.SNCli && SNCli.run) void SNCli.run('earth');
-        } catch (err3) {}
-        setTask('idle');
-        paintRibbon();
-      });
-    // Logo alias → home
-    $('astranov-logo') &&
-      ($('astranov-logo').onclick = function () {
-        var h = $('btn-home');
-        if (h) h.click();
-      });
+        if (g.SNHome && SNHome.toggle) SNHome.toggle();
+      };
+    }
     $('sfp-close') &&
       ($('sfp-close').onclick = function () {
         var p = $('spacenet-finance-panel');

@@ -109,6 +109,7 @@
     '/js/spacenet/profiles.js',
     '/js/spacenet/currency.js',
     '/js/spacenet/field.js',
+    '/js/spacenet/home.js', // Astranov SpaceNet menu · roles · account
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
     '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship

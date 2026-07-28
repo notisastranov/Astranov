@@ -268,9 +268,50 @@
       }
 
       // Unified multi-role tile juice
+      if (low === 'menu home' || low === 'home menu' || low === 'account' || low === 'settings') {
+        if (global.SNHome?.toggle) global.SNHome.toggle();
+        else log('Home menu loading…', 'dim');
+        return;
+      }
+      if (low === 'support list' || low === 'support') {
+        const list = global.SNHome?.supportList?.() || [];
+        if (!list.length) log('No support requests · type: support help <your question>', 'dim');
+        else
+          list.slice(0, 12).forEach((r) =>
+            log(
+              (r.status === 'open' ? '○ ' : '● ') +
+                r.id +
+                ' · ' +
+                String(r.text).slice(0, 60) +
+                (r.helper ? ' · helped by ' + r.helper : ''),
+              r.status === 'open' ? 'ok' : 'dim'
+            )
+          );
+        log('Ambassadors: support claim [id] · earn S', 'dim');
+        return;
+      }
+      if (/^support\s+help\b|^support\s+ask\b/.test(low)) {
+        const text = line.replace(/^support\s+(help|ask)\s+/i, '').trim() || 'Need help on SpaceNet';
+        const r = global.SNHome?.supportRequest?.(text);
+        log(r ? 'Support request open · ' + r.id : 'Support offline', r ? 'ok' : 'err');
+        return;
+      }
+      if (/^support\s+claim\b|^help\s+claim\b/.test(low)) {
+        const id = line.replace(/^(support\s+claim|help\s+claim)\s*/i, '').trim() || null;
+        const r = global.SNHome?.supportClaim?.(id || undefined);
+        if (r?.ok)
+          log(
+            'Helped · +' +
+              (global.SNCurrency?.format?.(r.reward) || r.reward + ' S') +
+              ' ambassador mine',
+            'ok'
+          );
+        else log(r?.error || 'claim failed', 'err');
+        return;
+      }
       if (low === 'me' || low === 'profile' || low === 'tile' || low === 'plus' || low === 'my tile') {
         global.SNTile?.openMe?.();
-        log('Your tile · cover · avatar · tap roles: social dating vendor driver client work', 'ok');
+        log('Your tile · or Astranov SpaceNet menu for vendor/driver/ambassador', 'ok');
         return;
       }
       if (low === 'roles' || low === 'role') {
@@ -1285,8 +1326,8 @@
     $('btn-locate')?.addEventListener('click', () => void run('locate'));
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
-    $('btn-home')?.addEventListener('click', () => void run('earth'));
-    log('CLI ready · ribbon · 🎙 voice · type voice test if silent', 'dim');
+    // Home button → SNHome menu (not direct earth); earth via menu or CLI
+    log('CLI ready · ribbon · 🎙 · Astranov SpaceNet menu for roles', 'dim');
     preview('Talk to Astranov AI…');
     warmVoices();
     // If AI already loaded (race), ensure presence

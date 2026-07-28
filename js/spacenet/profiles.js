@@ -15,6 +15,11 @@
     driver: { label: 'Driver', color: '#44ffaa', emoji: '🛵' },
     client: { label: 'Client', color: '#ffcc66', emoji: '🛒' },
     worker: { label: 'Work', color: '#66aaff', emoji: '💼' },
+    ambassador: {
+      label: 'Ambassador',
+      color: '#c9a0ff',
+      emoji: '🎓',
+    },
   };
 
   const P = {
@@ -110,6 +115,7 @@
         driver: !!roles.driver,
         client: !!roles.client,
         worker: !!roles.worker,
+        ambassador: !!roles.ambassador,
       },
       lat: p.lat != null ? p.lat : null,
       lng: p.lng != null ? p.lng : null,
@@ -124,6 +130,9 @@
       driverOnline: !!p.driverOnline,
       vehicle: p.vehicle || '',
       rating: p.rating != null ? p.rating : null,
+      // ambassador (support → mine S)
+      ambassadorOnline: !!p.ambassadorOnline,
+      supportHelps: p.supportHelps != null ? p.supportHelps : 0,
       // social
       posts: Array.isArray(p.posts) ? p.posts : [],
       // meta
@@ -208,6 +217,8 @@
     }
     if (p.roles.driver && !p.vehicle) p.vehicle = 'Scooter';
     if (p.roles.dating && !p.lookingFor) p.lookingFor = 'Coffee · walk · real talk';
+    if (p.roles.ambassador) p.ambassadorOnline = true;
+    else p.ambassadorOnline = false;
     p.updated = Date.now();
     P.profiles.set(p.id, p);
     save();
@@ -496,6 +507,7 @@
   }
 
   function primaryRole(p) {
+    if (p.roles?.ambassador) return 'ambassador';
     if (p.roles?.vendor) return 'vendor';
     if (p.roles?.driver && p.driverOnline) return 'driver';
     if (p.roles?.dating) return 'dating';
