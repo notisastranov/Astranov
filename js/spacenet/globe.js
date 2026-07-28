@@ -28,6 +28,8 @@
     frame: 0,
     tier: 'global',
     zoomAnim: null,
+    flying: false,
+    flyGen: 0,
     velX: 0,
     velY: 0,
     damp: 0.94,
@@ -103,19 +105,30 @@
   function pickLatLng(clientX, clientY) {
     if (!G.ready || !G.earth || !G.camera || !G.renderer) return null;
     var rect = G.renderer.domElement.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
     var x = ((clientX - rect.left) / rect.width) * 2 - 1;
     var y = -((clientY - rect.top) / rect.height) * 2 + 1;
     if (!G.raycaster) G.raycaster = new THREE.Raycaster();
+    try {
+      G.earth.updateMatrixWorld(true);
+      if (G.clouds) G.clouds.updateMatrixWorld(true);
+    } catch (_) {}
     G.raycaster.setFromCamera(new THREE.Vector2(x, y), G.camera);
+    // Prefer solid earth over cloud shell (clouds are larger and skew picks)
     var hits = G.raycaster.intersectObject(G.earth, false);
-    if (!hits || !hits.length) {
-      // try clouds as slightly larger shell
-      if (G.clouds) hits = G.raycaster.intersectObject(G.clouds, false);
-    }
     if (!hits || !hits.length) return null;
-    // Point in world space → earth local
+    // Point in world space → earth local (same frame as latLngToVec / pulse)
     var local = G.earth.worldToLocal(hits[0].point.clone());
     return vecToLatLng(local);
+  }
+
+  /** Stop inertia / idle spin / in-flight camera so goToPlace is decisive */
+  function stopMotion() {
+    G.velX = 0;
+    G.velY = 0;
+    G.flyGen = (G.flyGen || 0) + 1;
+    G.flying = false;
+    G.lastAct = Date.now();
   }
 
   function init() {
@@ -272,9 +285,9 @@
       down = true;
       moved = false;
       G.dragging = true;
-      G.velX = 0;
-      G.velY = 0;
-      G.lastAct = Date.now();
+      // User takes control — cancel any fly-to so drag/tap is not fighting animation
+      stopMotion();
+      G.dragging = true;
       lastT = performance.now();
       var t = e.touches ? e.touches[0] : e;
       lx = t.clientX;
@@ -437,10 +450,11 @@
    */
   function goToPlace(lat, lng, opts) {
     opts = opts || {};
-    if (lat == null || lng == null) return false;
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
     setFocus(lat, lng);
     var tier = opts.tier || 'national';
     var bodyId = opts.body || G.bodyId || 'earth';
+    // Fly first and hold — scan must not steal the camera (opts.fly false)
     flyNear(lat, lng, tier);
     pulse(lat, lng, opts.color != null ? opts.color : 0x3d9eff, opts.label || 'Here', opts.ms || 12000);
     try {
@@ -471,10 +485,11 @@
         if (global.SNMap && SNMap.open) void SNMap.open(lat, lng);
       } catch (_) {}
     }
-    // Crawl what is at this address (unless caller already scanning)
+    // Crawl POIs at this address — never re-fly (user already landed on click/command)
     if (!opts.skipScan && global.SNCosmos && SNCosmos.scan) {
       void SNCosmos.scan(bodyId || G.bodyId || 'earth', lat, lng, {
         openMap: false,
+        fly: false,
       });
     }
     return true;
@@ -503,11 +518,15 @@
     }
     G.frame++;
     var idle = Date.now() - G.lastAct > 2800;
-    if (!G.dragging && !G.zoomAnim) {
+    if (!G.dragging && !G.zoomAnim && !G.flying) {
       var skip = idle ? 3 : 1;
       if (G.frame % skip !== 0) return;
     }
-    if (!G.dragging && (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)) {
+    if (
+      !G.dragging &&
+      !G.flying &&
+      (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)
+    ) {
       G.pivot.rotation.y += G.velX;
       G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + G.velY));
       G.velX *= G.damp;
@@ -515,7 +534,8 @@
       if (Math.abs(G.velX) < 0.00005) G.velX = 0;
       if (Math.abs(G.velY) < 0.00005) G.velY = 0;
       G.lastAct = Date.now();
-    } else if (!G.dragging && idle && G.camera.position.z > 2.2) {
+    } else if (!G.dragging && !G.flying && idle && G.camera.position.z > 2.2) {
+      // Gentle idle only at GLOBAL/SOLAR — never fight NATIONAL goToPlace
       G.pivot.rotation.y += 0.0009;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
@@ -589,26 +609,44 @@
     return mesh;
   }
 
+  /**
+   * Rotate pivot so lat/lng faces the camera — same frame as pulse/latLngToVec.
+   * Old formula (-lng, lat*0.55) did NOT match the sphere mapping → marker OK, view wrong.
+   */
   function flyNear(lat, lng, tierHint) {
-    if (!G.ready) return;
+    if (!G.ready || !G.pivot || !G.camera) return;
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
     setFocus(lat, lng);
-    var targetY = (-lng * Math.PI) / 180;
-    var targetX = ((lat * Math.PI) / 180) * 0.55;
-    var startY = G.pivot.rotation.y;
-    var startX = G.pivot.rotation.x;
-    // Shortest rotation path
-    var dy = targetY - startY;
-    while (dy > Math.PI) dy -= Math.PI * 2;
-    while (dy < -Math.PI) dy += Math.PI * 2;
+    G.velX = 0;
+    G.velY = 0;
+    G.flyGen = (G.flyGen || 0) + 1;
+    var gen = G.flyGen;
+    G.flying = true;
+    G.lastAct = Date.now();
+
+    // Local surface point (identical math to pulse markers)
+    var local = latLngToVec(lat, lng, 1).normalize();
+    // Face that point toward the camera (not crude euler guess)
+    var camDir = G.camera.position.clone().normalize();
+    if (camDir.lengthSq() < 1e-8) camDir.set(0, 0, 1);
+    var qEnd = new THREE.Quaternion().setFromUnitVectors(local, camDir);
+    var qStart = G.pivot.quaternion.clone();
+
     var t0 = performance.now();
-    var dur = 850;
+    var dur = 900;
     function step(t) {
+      if (gen !== G.flyGen) return;
       var k = Math.min(1, (t - t0) / dur);
       var e = k * (2 - k);
-      G.pivot.rotation.y = startY + dy * e;
-      G.pivot.rotation.x = startX + (targetX - startX) * e;
+      G.pivot.quaternion.slerpQuaternions(qStart, qEnd, e);
       G.lastAct = Date.now();
-      if (k < 1) requestAnimationFrame(step);
+      if (k < 1) {
+        requestAnimationFrame(step);
+      } else {
+        G.pivot.quaternion.copy(qEnd);
+        G.flying = false;
+        G.lastAct = Date.now();
+      }
     }
     requestAnimationFrame(step);
     if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 700);

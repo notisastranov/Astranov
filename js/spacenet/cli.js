@@ -624,6 +624,7 @@
             pos: Tasks?.pos || global._snLastPos,
             openMap: true,
             all: true,
+            fly: true,
           });
           SNSearch.report?.(crawled, log);
           if (!crawled.score) log('Empty · try: crawl pizza · find Greece · code three.js', 'dim');

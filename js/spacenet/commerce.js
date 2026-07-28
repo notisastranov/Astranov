@@ -247,6 +247,7 @@
           pos: pos,
           openMap: false,
           all: false,
+          fly: false,
         });
         const stuff = (crawled?.nearby || []).concat(crawled?.places || []);
         stuff.slice(0, 30).forEach((p) => {

@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728170000-zero-dummy',
+  version: '20260728180000-fly-fix',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -121,6 +121,7 @@ const AstranovContinuity = {
 
   verify: [
     'GLOBAL Earth default',
+    'short-tap Earth → fly TO click (quaternion face + no crawl re-fly)',
     'short-tap Earth → NATIONAL + scan (not always my city)',
     'go to mars → setBody mars + land + crawl',
     'ensureSector not seedCity NPCs',

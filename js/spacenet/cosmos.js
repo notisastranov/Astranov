@@ -221,6 +221,8 @@
             openMap: opts.openMap === true,
             pos: { lat: lat, lng: lng },
             all: false,
+            // Default false: scan after land must not re-fly to wiki/geocode
+            fly: opts.fly === true,
           });
           if (crawled) {
             results.wiki = crawled.wiki;
@@ -255,7 +257,7 @@
             if (w.text) results.lines.push(String(w.text).slice(0, 160));
           }
         } else if (global.SNSearch && SNSearch.crawl) {
-          var c2 = await SNSearch.crawl(topic, { openMap: false, all: true });
+          var c2 = await SNSearch.crawl(topic, { openMap: false, all: true, fly: false });
           if (c2 && c2.wiki) {
             results.wiki = c2.wiki;
             results.lines.push('Wiki: ' + c2.wiki.title);
@@ -364,7 +366,10 @@
     }
 
     // Crawl what is there
-    var scanResult = await scan(id, la, lo, { openMap: id === 'earth' && opts.openMap === true });
+    var scanResult = await scan(id, la, lo, {
+      openMap: id === 'earth' && opts.openMap === true,
+      fly: false,
+    });
     return { body: body, lat: la, lng: lo, scan: scanResult };
   }
 

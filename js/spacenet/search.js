@@ -602,7 +602,7 @@
       results.localTasks = { tasks: [], roles: [] };
     }
 
-    // Paint globe
+    // Paint globe (markers only — never steal camera unless fly requested)
     results.places.slice(0, 6).forEach((p, i) => {
       if (p.lat != null)
         global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffffff, String(p.name).slice(0, 20), 16000 + i * 400);
@@ -614,14 +614,33 @@
       global.SNGlobe?.pulse?.(results.wiki.lat, results.wiki.lng, 0x66aaff, results.wiki.title, 20000);
     }
 
-    // Fly
-    if (results.places[0]?.lat != null) {
-      global.SNGlobe?.flyNear?.(results.places[0].lat, results.places[0].lng, 'national');
+    // Fly only when caller wants it (CLI search / fly city). Click-land + sector scan pass fly:false
+    // so reverse-geocode/wiki does not yank the globe away from the tapped point.
+    const doFly = opts?.fly !== false;
+    if (doFly) {
+      if (results.places[0]?.lat != null) {
+        global.SNGlobe?.goToPlace?.(results.places[0].lat, results.places[0].lng, {
+          tier: 'national',
+          openMap: false,
+          skipScan: true,
+          label: String(results.places[0].name || 'Place').slice(0, 24),
+        });
+        try {
+          global.SNTasks?.setPos?.(results.places[0].lat, results.places[0].lng);
+        } catch (_) {}
+      } else if (results.wiki?.lat != null) {
+        global.SNGlobe?.goToPlace?.(results.wiki.lat, results.wiki.lng, {
+          tier: 'national',
+          openMap: false,
+          skipScan: true,
+          label: results.wiki.title,
+        });
+      }
+    } else if (opts?.pos?.lat != null) {
+      // Stay locked on the address we already landed on
       try {
-        global.SNTasks?.setPos?.(results.places[0].lat, results.places[0].lng);
+        global.SNTasks?.setPos?.(opts.pos.lat, opts.pos.lng);
       } catch (_) {}
-    } else if (results.wiki?.lat != null) {
-      global.SNGlobe?.flyNear?.(results.wiki.lat, results.wiki.lng, 'national');
     }
 
     // City map + vendor tiles

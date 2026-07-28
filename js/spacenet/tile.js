@@ -478,9 +478,14 @@
     const Prof = global.SNProfiles;
     if (name === 'fly') {
       if (p.lat != null) {
+        global.SNGlobe?.goToPlace?.(p.lat, p.lng, {
+          tier: 'national',
+          openMap: false,
+          skipScan: true,
+          label: p.name || p.shopName || 'Pin',
+        });
         await global.SNMap?.open?.(p.lat, p.lng);
         global.SNMap?.showProfiles?.();
-        global.SNGlobe?.flyNear?.(p.lat, p.lng);
       }
       return;
     }
