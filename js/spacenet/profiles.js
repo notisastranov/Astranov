@@ -56,13 +56,28 @@
     return pic(seed || 'av', 150, 150);
   }
 
+  function isDemoJunk(p) {
+    if (!p || !p.id) return true;
+    const id = String(p.id);
+    if (id.startsWith('demo-') || id.startsWith('npc-') || id.startsWith('seed-')) return true;
+    if (p.demo === true || p.npc === true || p.fake === true) return true;
+    return false;
+  }
+
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
+        let purged = false;
         JSON.parse(raw).forEach((p) => {
-          if (p?.id) P.profiles.set(p.id, p);
+          if (!p?.id) return;
+          if (isDemoJunk(p)) {
+            purged = true;
+            return;
+          }
+          P.profiles.set(p.id, p);
         });
+        if (purged) save();
       }
       P.meId = localStorage.getItem(ME_KEY) || null;
       const cart = localStorage.getItem(CART_KEY);
@@ -108,7 +123,7 @@
       // driver
       driverOnline: !!p.driverOnline,
       vehicle: p.vehicle || '',
-      rating: p.rating != null ? p.rating : 4.8,
+      rating: p.rating != null ? p.rating : null,
       // social
       posts: Array.isArray(p.posts) ? p.posts : [],
       // meta
@@ -189,7 +204,7 @@
     // sensible defaults when enabling
     if (p.roles.vendor && !p.shopName) {
       p.shopName = p.name + "'s shop";
-      if (!p.menu.length) p.menu = defaultMenu(p.shopKind || 'cafe');
+      if (!Array.isArray(p.menu)) p.menu = [];
     }
     if (p.roles.driver && !p.vehicle) p.vehicle = 'Scooter';
     if (p.roles.dating && !p.lookingFor) p.lookingFor = 'Coffee · walk · real talk';
@@ -199,28 +214,9 @@
     return p;
   }
 
-  function defaultMenu(kind) {
-    const k = String(kind || 'cafe').toLowerCase();
-    // Prices in S (SpaceNets) — product unit of account
-    if (/pizza|food|restaurant/.test(k)) {
-      return [
-        { id: uid('m'), name: 'Margherita', price: 9.5, photo: pic('pizza', 200, 200), desc: 'Tomato · mozzarella' },
-        { id: uid('m'), name: 'Pepperoni', price: 11, photo: pic('pep', 200, 200), desc: 'Spicy' },
-        { id: uid('m'), name: 'Greek salad', price: 7.5, photo: pic('salad', 200, 200), desc: 'Feta · olive' },
-      ];
-    }
-    if (/coffee|cafe|bar/.test(k)) {
-      return [
-        { id: uid('m'), name: 'Espresso', price: 2.5, photo: pic('esp', 200, 200), desc: 'Single' },
-        { id: uid('m'), name: 'Cappuccino', price: 3.8, photo: pic('cap', 200, 200), desc: 'Foam' },
-        { id: uid('m'), name: 'Croissant', price: 2.9, photo: pic('cro', 200, 200), desc: 'Butter' },
-      ];
-    }
-    return [
-      { id: uid('m'), name: 'House special', price: 6, photo: pic('a', 200, 200), desc: 'Popular' },
-      { id: uid('m'), name: 'Combo', price: 12, photo: pic('b', 200, 200), desc: 'Value' },
-      { id: uid('m'), name: 'Side', price: 3.5, photo: pic('c', 200, 200), desc: 'Extra' },
-    ];
+  /** Honest empty menu — never invent Margherita/Espresso NPCs (SPECS P0-D) */
+  function defaultMenu(_kind) {
+    return [];
   }
 
   function parseMenuItems(items) {
@@ -245,18 +241,18 @@
       .filter((m) => m.name);
   }
 
-  /** Real DB vendor → usable multi-tile vendor profile */
+  /** Real DB vendor → usable multi-tile vendor profile (coords required; no invented menu) */
   function fromVendor(v, pos) {
     if (!v) return null;
-    const base = pos || global.SNTasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
+    if (v.lat == null || v.lng == null) return null;
+    if (String(v.id || '').startsWith('demo-')) return null;
     const id = 'v_' + String(v.id || v.osm_id || v.name || uid('v'))
       .toLowerCase()
       .replace(/[^a-z0-9_-]+/g, '_')
       .slice(0, 40);
     const kind = String(v.category || v.kind || 'shop').toLowerCase();
-    let menu = parseMenuItems(v.items);
-    if (!menu.length) menu = defaultMenu(kind);
     const prev = get(id);
+    const menu = parseMenuItems(v.items);
     return upsert({
       id,
       name: v.name || prev?.name || 'Shop',
@@ -265,12 +261,13 @@
       cover: prev?.cover || pic(id + 'c', 900, 360),
       avatar: prev?.avatar || pic(id + 'a', 150, 150),
       roles: { social: true, vendor: true, client: false, dating: false, driver: false, worker: false },
-      lat: v.lat != null ? Number(v.lat) : base.lat,
-      lng: v.lng != null ? Number(v.lng) : base.lng,
+      lat: Number(v.lat),
+      lng: Number(v.lng),
       shopName: v.name || 'Shop',
       shopKind: kind,
-      menu,
-      real: !!v.real || !!v.id,
+      menu: menu.length ? menu : prev?.menu || [],
+      real: true,
+      source: v.source || 'db',
       delivery_enabled: v.delivery_enabled !== false,
       posts: prev?.posts || [{ id: uid('post'), text: 'Open on SpaceNet · order in S', t: Date.now() }],
     });
@@ -421,7 +418,8 @@
   }
 
   function fromCrawlPlace(place, pos) {
-    if (place && (place.id || place.items != null) && place.lat != null) {
+    if (!place || place.lat == null || place.lng == null) return null;
+    if (place && (place.id || place.items != null)) {
       return fromVendor(
         {
           id: place.id,
@@ -431,63 +429,61 @@
           category: place.kind || place.category,
           items: place.items,
           emoji: place.emoji,
-          real: place.real,
+          real: true,
+          source: place.source || 'crawl',
           delivery_enabled: place.delivery_enabled,
         },
         pos
       );
     }
-    const base = pos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
     const id =
       'poi_' +
-      String(place?.name || 'x')
+      String(place.name || place.lat + '_' + place.lng)
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '_')
         .slice(0, 24);
-    const kind = String(place?.kind || 'shop').toLowerCase();
-    const isFood = /restaurant|cafe|fast_food|bar|food|pizza/.test(kind);
+    const kind = String(place.kind || 'shop').toLowerCase();
     if (P.profiles.has(id)) {
       const prev = get(id);
-      if (place?.lat != null) {
-        prev.lat = place.lat;
-        prev.lng = place.lng;
-        if (!prev.menu || !prev.menu.length)
-          prev.menu = defaultMenu(isFood ? (/cafe|coffee|bar/.test(kind) ? 'cafe' : 'restaurant') : 'shop');
-        save();
-      }
+      prev.lat = place.lat;
+      prev.lng = place.lng;
+      prev.real = true;
+      prev.source = place.source || prev.source || 'crawl';
+      save();
       return prev;
     }
     return upsert({
       id,
-      name: place?.name || 'Place',
+      name: place.name || 'Place',
       handle: '@' + id.slice(0, 16),
-      bio: (place?.kind || 'vendor') + ' · SpaceNet city',
+      bio: (place.kind || 'vendor') + ' · live crawl · SpaceNet',
       cover: pic(id + '-c', 900, 360),
       avatar: pic(id + '-a', 150, 150),
       roles: { social: true, vendor: true, client: false, dating: false, driver: false, worker: false },
-      lat: place?.lat != null ? place.lat : base.lat + (Math.random() - 0.5) * 0.02,
-      lng: place?.lng != null ? place.lng : base.lng + (Math.random() - 0.5) * 0.02,
-      shopName: place?.name || 'Shop',
+      lat: place.lat,
+      lng: place.lng,
+      shopName: place.name || 'Shop',
       shopKind: kind,
-      menu: defaultMenu(isFood ? (/cafe|coffee|bar/.test(kind) ? 'cafe' : 'restaurant') : 'shop'),
-      posts: [{ id: uid('post'), text: 'Open on SpaceNet · order in S', t: Date.now() }],
+      menu: parseMenuItems(place.items),
+      real: true,
+      source: place.source || 'crawl',
+      posts: [{ id: uid('post'), text: 'Live place · order when menu listed · S', t: Date.now() }],
     });
   }
 
   /**
-   * @deprecated Dummy seedCity removed (SPECS zero-dummy).
-   * Use SNCommerce.ensureSector — live DB + crawlers only.
+   * @deprecated Never invent NPCs. Forwards to SNCommerce.ensureSector only.
    */
   function seedCity(lat, lng) {
     me();
     global.SNCli?.log?.(
-      'seed disabled · real path: shops / scan city (DB + Overpass + crawl)',
+      'seed disabled · real path: shops / scan (DB + Overpass + crawl)',
       'dim'
     );
     if (global.SNCommerce?.ensureSector) {
-      void global.SNCommerce.ensureSector(lat, lng, { openMap: true });
+      return global.SNCommerce.ensureSector(lat, lng, { openMap: true });
     }
-    return list();
+    return Promise.resolve({ ok: false, count: 0, source: 'none', error: 'commerce offline' });
   }
 
   function primaryRole(p) {

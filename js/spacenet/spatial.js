@@ -1,33 +1,8 @@
-/* SpaceNet Spatial — objects live at body+lat+lng (SPECS law) */
+/* SpaceNet Spatial — objects live at body+lat+lng (SPECS law · zero dummy seeds) */
 (function (global) {
   'use strict';
 
   const KEY = 'sn:places-v1';
-  const SEEDS = [
-    {
-      id: 'seed-thesis-garage',
-      body: 'earth',
-      lat: 36.44125,
-      lng: 28.22255,
-      kind: 'file',
-      emoji: '📄',
-      name: 'Thesis.pdf',
-      title: 'Thesis on the garage',
-      text:
-        'ASTRANOV SPACENET\n\nThis file lives at real coordinates (garage, Rhodes).\nZoom the city map here to open it.\n',
-    },
-    {
-      id: 'seed-cydonia-music',
-      body: 'mars',
-      lat: 40.75,
-      lng: -9.46,
-      kind: 'folder',
-      emoji: '🎵',
-      name: 'Cydonia Music',
-      title: 'Music on Mars Cydonia',
-      text: 'Folder: Face_of_Mars.mp3 · Red_Dust.wav · Playlist.md\nGo: go to mars',
-    },
-  ];
 
   const S = { places: [] };
 
@@ -36,17 +11,18 @@
       const raw = localStorage.getItem(KEY);
       S.places = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(S.places)) S.places = [];
+      // Drop legacy seed-* demo places (SPECS P0-D)
+      const before = S.places.length;
+      S.places = S.places.filter((p) => p && p.id && !String(p.id).startsWith('seed-') && !p.demo);
+      if (S.places.length !== before) save();
     } catch (_) {
       S.places = [];
     }
-    SEEDS.forEach((seed) => {
-      if (!S.places.some((p) => p.id === seed.id)) S.places.push({ ...seed });
-    });
   }
 
   function save() {
     try {
-      localStorage.setItem(KEY, JSON.stringify(S.places.filter((p) => !String(p.id).startsWith('seed-')).slice(-100)));
+      localStorage.setItem(KEY, JSON.stringify(S.places.slice(-100)));
     } catch (_) {}
   }
 
@@ -66,6 +42,7 @@
       title: String(place.title || place.name || 'Place').slice(0, 100),
       text: place.text || '',
     };
+    if (row.lat !== row.lat || row.lng !== row.lng) return null;
     const i = S.places.findIndex((p) => p.id === row.id);
     if (i >= 0) S.places[i] = row;
     else S.places.unshift(row);
@@ -76,7 +53,7 @@
   function open(id) {
     const p = get(id);
     if (!p) {
-      global.SNCli?.log?.('place not found', 'err');
+      global.SNCli?.log?.('place not found · put a place at real coords first', 'err');
       return null;
     }
     global.SNCli?.log?.((p.emoji || '📌') + ' ' + (p.title || p.name) + ' @ ' + (p.body || 'earth'), 'ok');
@@ -112,5 +89,5 @@
     load();
   }
 
-  global.SNSpatial = { init, put, get, open, list, SEEDS };
+  global.SNSpatial = { init, put, get, open, list, SEEDS: [] };
 })(window);

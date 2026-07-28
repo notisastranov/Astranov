@@ -107,6 +107,7 @@
       'Persistent rectangles / nav bars as primary UI',
       'Fake city data instead of crawler-fed places',
       'seedCity NPC people / seedDemo auto tasks / demo vendors',
+      'Invented default menus / random jitter coords / seed-* spatial demos',
       'Any dummy path on live stack (SPECS P0-D zero dummy)',
       'Delete features to go faster — measure + lazy-load instead',
       'Claim done without live probe of build stamp + physics + CLI',

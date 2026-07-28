@@ -172,7 +172,7 @@
   }
 
   /**
-   * Crawl what exists at body+lat+lng (wiki, geocode, spatial seeds, shops on Earth).
+   * Crawl what exists at body+lat+lng (wiki, geocode, spatial places, shops on Earth).
    */
   async function scan(bodyId, lat, lng, opts) {
     opts = opts || {};

@@ -458,13 +458,32 @@
       }
       if (low === 'thesis' || low === 'garage' || low === 'vault') {
         if (low === 'vault') {
-          (global.SNSpatial?.list?.() || []).forEach((p) => {
-            log((p.emoji || '📌') + ' ' + (p.title || p.name) + ' · ' + (p.body || 'earth'), 'ok');
-          });
+          const places = global.SNSpatial?.list?.() || [];
+          if (!places.length) {
+            log('Vault empty · put places at real body+lat+lng (no seed demos)', 'dim');
+          } else {
+            places.forEach((p) => {
+              log((p.emoji || '📌') + ' ' + (p.title || p.name) + ' · ' + (p.body || 'earth'), 'ok');
+            });
+          }
           preview('vault');
           return;
         }
-        global.SNSpatial?.open?.('seed-thesis-garage');
+        // Real Rhodes garage coords — land + crawl (SPECS P0-D / P1-C)
+        log('Garage · Rhodes · live land + crawl', 'dim');
+        if (global.SNCosmos?.go) {
+          await global.SNCosmos.go('earth', 36.44125, 28.22255, {
+            label: 'Garage Rhodes',
+            openMap: true,
+          });
+        } else {
+          await global.SNGlobe?.goToPlace?.(36.44125, 28.22255, {
+            tier: 'national',
+            openMap: true,
+            label: 'Garage',
+          });
+        }
+        preview('garage');
         return;
       }
       if (low === 'cosmos' || low === 'bodies' || low === 'planets') {
@@ -487,7 +506,7 @@
             const r = await global.SNCosmos.go(where);
             if (r) log('Arrived · ' + (r.body?.name || where), 'ok');
           } else {
-            global.SNSpatial?.open?.('seed-cydonia-music');
+            log('SNCosmos offline · cannot land on ' + where, 'err');
           }
           return;
         }

@@ -250,6 +250,9 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 | Auto `seedCity` fake vendors/dates/drivers | Live **DB vendors**, **Overpass/edge crawl** POIs |
 | `seedDemo` auto tasks | User-posted **job / date / deliver** only |
 | `demo-*` vendor rows | Filter out; never surface as shops |
+| Invented default menus (Margherita/Espresso) | Real vendor `items` only — empty until listed |
+| Random jitter fake lat/lng for shops/tasks | Real coords only — skip row if missing |
+| Auto spatial `seed-*` demo files | User-`put` places at real body+lat+lng |
 | “Demo map” / fake GPS city as product | Real GPS **or** honest **default coords** (labeled fallback) |
 | Fake friend GPS jitter | Offline presence stays offline |
 | Placeholder external broken images as primary | SVG data URIs or real user media |
@@ -257,7 +260,7 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 | Dummy planet go (text only) | **setBody + land + crawl** (P1-C) |
 | Marketplace closed hours | **24/7/365** (P4-M) |
 
-**Code law:** `seedCity` / `seedDemo` must not invent content. `ensureSector` is the only sector fill. Agents reintroducing NPC seeds = SPECS violation.
+**Code law:** `seedCity` / `seedDemo` must not invent content. `ensureSector` is the only sector fill. Tile **Scan live shops** → `ensureSector`. Agents reintroducing NPC seeds = SPECS violation.
 
 ---
 

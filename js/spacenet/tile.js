@@ -359,7 +359,7 @@
                   '</div>'
               )
               .join('')
-          : '<div class="sn-empty">No menu yet · activate Vendor on your tile</div>');
+          : '<div class="sn-empty">No menu listed yet · vendor adds real items · or message them · S only</div>');
       foot.innerHTML =
         '<button type="button" class="sn-btn" data-act="cart">Cart ' +
         (window.SNCurrency ? SNCurrency.format(Prof.cartTotal?.() || 0) : (Prof.cartTotal?.() || 0).toFixed(2) + ' S') +
@@ -484,11 +484,27 @@
       }
       return;
     }
-    if (name === 'seed') {
-      Prof.seedCity(p.lat, p.lng);
-      await global.SNMap?.open?.(p.lat, p.lng);
-      global.SNMap?.showProfiles?.();
-      global.SNCli?.log?.('City tiles seeded · vendors · dates · drivers', 'ok');
+    if (name === 'seed' || name === 'scan') {
+      // SPECS P0-D: live DB + crawlers only — never seedCity NPCs
+      global.SNCli?.log?.('Live sector scan · DB + Overpass + crawl…', 'dim');
+      if (typeof window.snToast === 'function') window.snToast('Live scan…', 'info');
+      const r =
+        (global.SNCommerce?.ensureSector &&
+          (await global.SNCommerce.ensureSector(p.lat, p.lng, { openMap: true }))) ||
+        null;
+      const n = r?.count || 0;
+      global.SNCli?.log?.(
+        n
+          ? 'Sector live · ' + n + ' shop tiles · ' + (r.source || 'live')
+          : 'Sector empty · long-press map to create tile · or fly elsewhere',
+        n ? 'ok' : 'dim'
+      );
+      if (typeof window.snToast === 'function') {
+        window.snToast(
+          n ? 'Live: ' + n + ' vendors · ' + (r.source || 'scan') : 'Empty sector · create or fly',
+          n ? 'ok' : 'err'
+        );
+      }
       render();
       return;
     }
