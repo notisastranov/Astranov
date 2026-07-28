@@ -8,16 +8,43 @@ const AstranovContinuity = {
   p0: 'spartan-coding',
   shipGate: 'node scripts/probe-spacenet-boot.mjs must PASS before ship',
   neverMakeOwnerRestateSpecs: true,
+
+  /** P1-C: internet → SpaceNet multi-body (dedummyfy every globe) */
+  cosmos: {
+    name: 'SNCosmos',
+    file: 'js/spacenet/cosmos.js',
+    api: ['go', 'scan', 'resolve', 'list', 'parseGo'],
+    pipeline: 'setBody → land goToPlace → scan/crawl',
+    rule: 'go anywhere = real body globe + land + crawl; no dummy solar-only',
+    bodiesMin: [
+      'earth',
+      'moon',
+      'mars',
+      'mercury',
+      'venus',
+      'jupiter',
+      'saturn',
+      'uranus',
+      'neptune',
+      'pluto',
+      'europa',
+      'titan',
+    ],
+    earthOnlyCityMap: true,
+    crawl: {
+      earth: ['reverse', 'SNSearch.crawl', 'SNCommerce.loadNear', 'SNSpatial'],
+      other: ['wikipedia', 'SNSpatial'],
+    },
+  },
+
   keepImaging: {
     name: 'SNGlobe',
     file: 'js/spacenet/globe.js',
     textures: ['earth_atmos_2048', 'earth_specular_2048', 'earth_clouds_1024'],
     engine: 'Three.js TextureLoader sphere',
-  },
-  cosmos: {
-    name: 'SNCosmos',
-    file: 'js/spacenet/cosmos.js',
-    rule: 'go anywhere = setBody + land + crawl; no dummy solar-only',
+    api: ['setBody', 'goToPlace', 'pickLatLng', 'flyNear', 'goToTier'],
+    clickGoesThere: true,
+    cityZoomUsesFocusNotHomeOnly: true,
   },
 
   ip: {
@@ -37,15 +64,45 @@ const AstranovContinuity = {
   stack: {
     entry: 'index.html → boot.js',
     modules: [
-      'config', 'brain', 'globe', 'tasks', 'profiles',
-      'currency', // S + wallet
-      'field', // radar + S HUD + mine + ribbon + finance
-      'commerce', 'spatial', 'cli', 'ui', 'tile', 'map', 'search', 'auth', 'ai',
+      'config',
+      'brain',
+      'globe',
+      'cosmos',
+      'tasks',
+      'profiles',
+      'currency',
+      'field',
+      'commerce',
+      'spatial',
+      'cli',
+      'ai',
+      'ui',
+      'tile',
+      'map',
+      'search',
+      'auth',
     ],
-    doNotLoad: ['astranov-app.js', 'astranov-deferred.js', 'phase-*.js', 'wallet.js', 'radar.js', 'resources.js', 'ribbon.js'],
+    doNotLoad: [
+      'astranov-app.js',
+      'astranov-deferred.js',
+      'phase-*.js',
+      'wallet.js',
+      'radar.js',
+      'resources.js',
+      'ribbon.js',
+    ],
   },
 
-  surface: ['radar', 'S-field', 'resources-mine-perf', 'task-ribbon', 'cli', 'global-earth'],
+  surface: [
+    'radar',
+    'S-field',
+    'resources-mine-perf',
+    'task-ribbon',
+    'cli',
+    'global-earth',
+    'multi-body-cosmos',
+    'astranov-ai-presence',
+  ],
 
   agentDiscipline: {
     alwaysUpdateSpecs: true,
@@ -54,14 +111,21 @@ const AstranovContinuity = {
     noOverlappingChrome: true,
     noLowFiCompanion: true,
     defaultFullGlobalEarth: true,
+    dedummyfyEveryGlobe: true,
   },
 
   verify: [
     'GLOBAL Earth default',
+    'short-tap Earth → NATIONAL + scan (not always my city)',
+    'go to mars → setBody mars + land + crawl',
+    'go to moon / jupiter work',
+    'cosmos lists bodies',
+    'off-Earth does not open Earth Leaflet as that world',
     '#field-radar · #field-balance-hud · #sn-task-ribbon',
-    'CLI: rate · resources · shops · locate',
+    'CLI: rate · resources · shops · locate · cosmos',
+    'SNAi greets on boot',
+    'long-press map create · short-tap pin open tile',
     'no companion · no overlap',
-    'field.js + currency.js only for field economy',
   ],
 };
 

@@ -37,28 +37,121 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Place = address** | `body + lat + lng` (+ alt). Not desktop folders. |
 | **Zoom = open** | Thesis on garage roof → zoom garage → see file. |
 | **Hide in cosmos** | Music on Mars Cydonia → zoom Cydonia → see folder. |
-| **All catalogued space** | Planets, moons, dwarfs, belts, black holes, constellations, galaxies, sci-fi dimensions = goable addresses. |
+| **All catalogued space** | Planets, moons, dwarfs, belts, black holes, constellations, galaxies, sci-fi dimensions = **goable addresses**. |
 | **Any task in space** | Files, shops, delivery, video, jobs — kinds of **places**, not separate apps. |
-| **SpaceNet OS** | OS for interstellar **artificial and biological** entities. |
-| **S is primary value** | **SpaceNets (S)** = unit of account. EUR/USD/BTC/ETH/all other money = **secondary quotes only** (no SpaceNet substance). Not AVC. Not “coins”. |
+| **SpaceNet OS** | OS for interstellar **artificial and biological** entities. Internet advanced to SpaceNet. |
+| **S is primary value** | **SpaceNets (S)** = unit of account. EUR/USD/BTC/ETH/all other money = **secondary quotes only**. Not AVC. Not “coins”. |
+| **Dedummyfy space** | Every body has a **real globe**. Going anywhere **lands** there and **crawls** what is there. No fake “solar label only”. |
 
 ### Place model
 
 ```
 Place { id, body, lat, lng, alt?, kind, name, payload, visibilityKm, minZ, owner? }
+body ∈ earth | moon | mars | … (see P1-C)
 kind ∈ file | folder | shop | delivery | call | note | media
 ```
 
 **Seeds (always):** thesis garage (Earth) · Cydonia music (Mars) · market hub · video agora.  
-Storage: `astranov:spacenet-places-v1`.
+Storage: `astranov:spacenet-places-v1` / `sn:places-v1`.
 
-### Zoom = filesystem
+### Zoom = filesystem (on current body)
 
 `SOLAR → GLOBAL → NATIONAL → CITY → STREET`  
 Default boot: **full GLOBAL Earth**. City map closed until user asks.  
 Object appears by `minZ` + `visibilityKm`.
 
-Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · `shops` · `locate`
+Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · `go to moon` · `shops` · `locate` · `cosmos`
+
+---
+
+## P1-C — Cosmos / multi-body (dedummyfy every globe)
+
+**This is the advancement of the internet to SpaceNet:** you do not browse a flat list of planets — you **go** into space. Every destination is a **body + coordinates**. Landing **must** run crawlers for what exists there.
+
+### Law (non-negotiable)
+
+| Rule | Spec |
+|------|------|
+| **Go anywhere = three steps** | **(1) `setBody`** real sphere for that world · **(2) land** at lat/lng · **(3) `scan` / crawl** what is there |
+| **Every body is a globe** | Not a text label. `SNGlobe.setBody(id, meta)` swaps texture and/or body color on the Three.js sphere |
+| **Earth imaging KEEP** | Earth stays **`SNGlobe`** + `earth_atmos_2048` / specular / clouds. Do not strip |
+| **Click = that place on current body** | Raycast → lat/lng → `goToPlace` NATIONAL + crawl. Focus = last click/zoom — **never** always force “my city only” |
+| **City map is Earth street only** | Leaflet opens only when **body === earth**. Leaving Earth **closes** city map |
+| **Dummy banned** | “go to mars” that only prints a line or jumps solar tier **without** body switch + land + crawl = **contaminated** |
+| **Crawl on arrival** | Always after land (unless caller already scanning) |
+
+### Mechanical owners
+
+| API | File | Does |
+|-----|------|------|
+| **`SNGlobe`** | `js/spacenet/globe.js` | Sphere, imaging, inertia, `pickLatLng`, `goToPlace`, `setBody`, `flyNear`, tiers |
+| **`SNCosmos`** | `js/spacenet/cosmos.js` | Body catalog, `go(name)`, `scan(body,lat,lng)`, `resolve`, `parseGo` |
+| **`SNSearch`** | `js/spacenet/search.js` | Almighty crawl (geocode, reverse, POI, wiki, web, …) |
+| **`SNSpatial`** | `js/spacenet/spatial.js` | Places at body+lat+lng; open → `SNCosmos.go` |
+| **`SNCommerce`** | `js/spacenet/commerce.js` | Earth shops bbox (crawl feed on Earth land) |
+
+### Go pipeline (implement exactly)
+
+```
+user "go to mars" | "go to jupiter" | SNCosmos.go(target, lat?, lng?)
+  → resolve body from catalog
+  → SNGlobe.setBody(body.id, body)     // real globe for that world
+  → if body !== earth: SNMap.close()
+  → SNGlobe.goToPlace(lat, lng, { tier, body, skipScan: true })
+  → SNCosmos.scan(body, lat, lng)      // crawlers: what is there
+```
+
+```
+short-tap on current globe
+  → pickLatLng(x,y)
+  → goToPlace(lat, lng, { tier: national, body: current })
+  → scan(current body, lat, lng)
+```
+
+### Bodies (minimum catalog — extend, do not shrink)
+
+| id | Notes |
+|----|--------|
+| **earth** | Full textures + clouds; city map + shops + reverse geocode |
+| **moon** | Texture when available; default Sea of Tranquility |
+| **mars** | Texture or color fallback; default **Cydonia** |
+| **mercury · venus · jupiter · saturn · uranus · neptune · pluto** | Color (and map if available); named defaults where set |
+| **europa · titan** | Moons as bodies (parent noted in meta) |
+| **cydonia** | Alias → mars + Cydonia lat/lng |
+
+CLI: `cosmos` lists bodies · `go to <body>` · `go to earth` · `fly <city>` (Earth geocode + land + crawl).
+
+### Crawl matrix (what “search through crawlers” means)
+
+| Body | On land / scan must attempt |
+|------|------------------------------|
+| **earth** | Reverse geocode · `SNSearch.crawl` (places/POI/wiki) · `SNCommerce.loadNear` shops · spatial seeds on earth |
+| **other** | Wikipedia summary (body / region) · spatial places on that body · CLI report lines |
+| **always** | List matching `SNSpatial` seeds/places near lat/lng on that body |
+
+Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. Not silent.
+
+### Zoom tiers (per current body)
+
+| Tier | Meaning |
+|------|---------|
+| SOLAR | Far context (camera z high) |
+| GLOBAL | Whole-body overview |
+| NATIONAL | Regional / large feature (click target) |
+| CITY | Street map **only if body = earth** |
+| STREET | Same path via map zoom |
+
+### CLI (cosmos minimum)
+
+`cosmos` · `go to mars` · `go to moon` · `go to jupiter` · `go to europa` · `go to earth` · `fly athens` · `thesis` · `vault` · (any `go to <catalog id>`)
+
+### Red / dummy (do not ship)
+
+- go to planet = text only, no `setBody`  
+- Zoom always opens **GPS/home city** regardless of click focus  
+- Off-Earth still opens Earth Leaflet as if it were that world  
+- Land with **no** crawl/scan attempt  
+- Strip multi-body catalog back to Earth-only without owner order  
 
 ---
 
@@ -78,11 +171,10 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 
 | Zone | What | Rule |
 |------|------|------|
-| **Earth imaging KEEP** | **`SNGlobe`** `js/spacenet/globe.js` — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
-| **Globe click = go there** | Short-tap current body raycasts **lat/lng** → fly **NATIONAL** + **crawl** what is there. Double-tap / zoom-to-city at **clicked focus** — never always “my city only” | SpaceNet law |
-| **Every body is a globe** | **`SNCosmos`** + `SNGlobe.setBody` — Earth/Moon/Mars/Jupiter/… real sphere (texture or color). `go to mars` switches body, lands, crawls wiki/spatial. Dummy “solar tier only” banned | Required |
-| **Crawl on arrival** | Landing anywhere runs crawlers (Earth: reverse+POI+shops; other: wiki + spatial seeds) | Required |
-| **Zoom out of city** | Leaves flat map → **3D SNGlobe GLOBAL** | Hard ban: stuck on Leaflet as “world” |
+| **Earth imaging KEEP** | **`SNGlobe`** — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
+| **Cosmos (P1-C)** | **`SNCosmos` + `setBody` + land + crawl** — every body a real globe; internet → SpaceNet | Required |
+| **Globe click = go there** | Raycast → NATIONAL on **current body** + scan | SpaceNet law |
+| **Zoom out of city** | Flat map → **3D body GLOBAL** (Earth: SNGlobe Earth) | Hard ban: stuck on Leaflet as “world” |
 | **Map long-press** | **Long-press** empty map (~580ms) → `SNTile.createAt` multi-tile. **Short-tap never creates.** Short-tap pin → open full tile | Required |
 | **Radar** | Top-left · ~8fps · 1671 km/h on global | Required |
 | **Logo** | Center · hard reset | Never under edge/S |
@@ -99,7 +191,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 
 ### CLI (minimum commands)
 
-`help` · `locate` · `city` · `shops` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `finance` · `thesis` · `vault` · `go to mars` · `global` · `task list`
+`help` · `locate` · `city` · `shops` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `finance` · `thesis` · `vault` · **`cosmos`** · **`go to mars|moon|jupiter|…`** · **`go to earth`** · `fly <city>` · `global` · `task list`
 
 ---
 
@@ -126,8 +218,9 @@ Progress these — do not re-litigate globe chrome forever.
 1. **Locate → city → real shops** (Supabase DB-first; no boot Overpass freeze)  
 2. **Cart → order → delivery task** (fees in S)  
 3. **Jobs / dates / errands** as place-tasks  
-4. **Spatial seeds** (thesis, Cydonia)  
-5. **Video / presence** as place kinds (later, same model)
+4. **Go anywhere in space** (P1-C): body globe + land + crawl  
+5. **Spatial seeds** (thesis Earth, Cydonia Mars)  
+6. **Video / presence** as place kinds (later, same model)
 
 Marketplace path: pin → browse → cart → place → track → claim → pilot multi-stop.
 
@@ -139,22 +232,23 @@ Live load **only** `/js/spacenet/*`. Root `astranov-*.js` and `_archive/` are **
 
 | Concern | File → API |
 |---------|------------|
-| Boot | `boot.js` |
-| **Earth imaging (KEEP)** | `globe.js` → **`SNGlobe`** (Three.js atmos/specular/clouds) |
-| CLI + send + hands-free | `cli.js` → `SNCli` |
-| AI | `ai.js` → `SNAi` (load soon after boot) |
-| Multi-tile | `tile.js` → `SNTile.createAt` / `openMe` |
+| Boot | `boot.js` (loads `cosmos.js` after `globe.js`) |
+| **Earth / multi-body imaging** | `globe.js` → **`SNGlobe`** · `setBody` · `goToPlace` · `pickLatLng` |
+| **Cosmos go + crawl** | `cosmos.js` → **`SNCosmos`** · `go` · `scan` · body catalog |
+| CLI + send + hands-free | `cli.js` → `SNCli` (`go to …` · `cosmos` · `fly`) |
+| AI | `ai.js` → `SNAi` (greet + act including go to body) |
+| Multi-tile | `tile.js` → `SNTile` (long-press create / short-tap open) |
 | CLI drag/size | `ui.js` → `SNUi` |
-| Field chrome (radar+S+mine+ribbon+finance) | `field.js` → `SNField` |
+| Field chrome | `field.js` → `SNField` |
 | S quotes + wallet | `currency.js` → `SNCurrency` |
 | Shops DB | `commerce.js` → `SNCommerce` |
-| Map | `map.js` → `SNMap` |
+| City map (Earth only) | `map.js` → `SNMap` |
 | Profiles / cart / order | `profiles.js` · `tile.js` |
-| Places | `spatial.js` → `SNSpatial` |
+| Places | `spatial.js` → `SNSpatial` (open → `SNCosmos.go`) |
 | Tasks | `tasks.js` → `SNTasks` |
-| Search / crawl | `search.js` |
-| Auth / AI | `auth.js` · `ai.js` (lazy) |
-| Brain / law in code | `brain.js` → `SNBrain` |
+| Almighty crawl | `search.js` → `SNSearch` |
+| Auth | `auth.js` |
+| Brain | `brain.js` → `SNBrain` |
 | Continuity | `astranov-continuity.js` |
 
 **Spartan file rule:** field surface is **one** `field.js` (not four). Currency+wallet is **one** `currency.js`.
@@ -176,6 +270,7 @@ GLOBAL Earth + field chrome + CLI collapsed
 | Radar + S field + ribbon present | SPA HTML served as JS |
 | `resources` · `rate` · `shops` work | Missing required surface |
 | Soft shops ≠ auto city map | Overlapping chrome / companion figure |
+| Tap Earth lands + scans; `go to mars` setBody+land+scan | Dummy planet (text / solar only) |
 | Verify before push; one coherent ship | Deploy spam / dummy ships |
 
 ```text
@@ -213,6 +308,9 @@ Do not strip IP or rebrand without owner request.
 - Make the **owner restate SPECS** the agent already has  
 - Ship red boot / dead CLI / no AI / zoom-out stuck on flat map  
 - Strip **SNGlobe** Earth imaging (atmos / specular / clouds)  
+- **Dummy cosmos**: go to planet without `setBody` + land + crawl  
+- Always zoom city map to **home GPS only** (ignore click focus)  
+- Open Earth Leaflet as stand-in for Mars/Moon/etc.  
 - Letter-only edge buttons when emoji icons are required  
 - CLI without **Send** + **hands-free**  
 - Overlap chrome · permanent multi-button docks · dual CLI bars  
@@ -222,7 +320,8 @@ Do not strip IP or rebrand without owner request.
 - Low-fi companion figure before AI graphics > high-end games  
 - Micro-patch over a broken series of specs — **rebuild**  
 - Load legacy monoliths on live  
+- Make owner restate P1-C multi-body law  
 
 ---
 
-*Spartan code. SNGlobe Earth. Real places. S is the value. Zoom out = back to 3D Earth.*
+*Spartan code. Go anywhere = real body globe + land + crawl. SNGlobe · SNCosmos. S is the value.*
