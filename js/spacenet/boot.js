@@ -54,6 +54,7 @@
     finished = true;
     if (bootEl) {
       bootEl.classList.add('hide');
+      bootEl.setAttribute('aria-busy', 'false');
       setTimeout(function () {
         try {
           bootEl.remove();
@@ -66,12 +67,14 @@
   function fail(msg) {
     if (finished) return;
     finished = true;
+    // Splash stays brand-only; details go to console (SPECS: no unauthorized boot prose)
     if (bootEl) {
       bootEl.innerHTML =
-        '<div class="boot-card"><b>SPACENET</b><p>' +
-        String(msg || 'boot failed').slice(0, 200) +
-        '</p><p class="dim">Hard refresh · check console</p>' +
-        '<p><button type="button" id="sn-boot-retry" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px solid #1a6fd4;background:#061428;color:#3d9eff;font-weight:700;cursor:pointer">Retry</button></p></div>';
+        '<div class="boot-card">' +
+        '<span class="boot-title">ASTRANOV SPACENET</span>' +
+        '<svg class="boot-loader" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="14"/></svg>' +
+        '<button type="button" class="boot-retry" id="sn-boot-retry">Retry</button>' +
+        '</div>';
       var b = document.getElementById('sn-boot-retry');
       if (b)
         b.onclick = function () {

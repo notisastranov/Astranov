@@ -16,6 +16,7 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Effectiveness** | One clear owner per concern. No dual systems (no AVC *and* S, no dual CLI, no legacy + live). |
 | **Speed** | Never block boot. Soft-load non-critical work. Adaptive FPS. No 30s crawls on start. |
 | **Never hang** | Boot must hide within ~18s even on partial failure (CLI-only fallback). No infinite “Loading…”. |
+| **Splash screen** | **Only** wordmark **ASTRANOV SPACENET** + a **loading vector** (SVG spinner). **Forbidden:** status prose (“full chrome”, “rebuild”, “loading modules”, version spam, agent notes). Fail state: same brand + optional Retry — details in console only. |
 | **Fail closed on ship** | **Forbidden to ship** if `node scripts/probe-spacenet-boot.mjs` is not PASS (real JS, not SPA HTML). |
 | **Few files** | Prefer one small module over four “clean” micro-files that re-import each other. |
 | **No patch theatre** | If a series of specs is missing, **rebuild** the surface — do not stack micro-patches on a dummy. |
@@ -391,6 +392,16 @@ Live load **only** `/js/spacenet/*`. Root `astranov-*.js` and `_archive/` are **
 | Continuity | `astranov-continuity.js` |
 
 **Spartan file rule:** field surface is **one** `field.js` (not four). Currency+wallet is **one** `currency.js`.
+
+### Splash (first paint)
+
+```
+#boot  →  black full-screen
+          ASTRANOV SPACENET
+          [spinning ring vector only]
+```
+
+No other copy. `#boot` hides when ready. Agents must not reintroduce status lines on splash.
 
 ### Operating path (boot)
 
