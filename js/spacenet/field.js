@@ -45,6 +45,18 @@
   var blips = [];
   var fpsBuf = [];
   var lastF = 0;
+  var radarBig = false;
+  var radarLastTap = 0;
+  var RADAR_SM = 120;
+  var RADAR_LG = 320;
+  /** Blip kinds: f friend green · c competitor red · v vendor/client yellow */
+  var BLIP_COLOR = {
+    f: 'rgba(68,255,136,0.95)',
+    c: 'rgba(255,85,102,0.95)',
+    v: 'rgba(255,204,68,0.95)',
+    s: 'rgba(255,204,68,0.95)', // shop = vendor yellow
+    p: 'rgba(100,180,255,0.75)',
+  };
   /**
    * SPECS: task ribbon = materialised buttons for **current task only**.
    * No permanent dock flood (locate/shops/me/help/login are CLI/AI text, not ribbon).
@@ -176,19 +188,90 @@
     }
   }
 
+  function radarSizePx() {
+    if (!radarBig) return RADAR_SM;
+    return Math.min(RADAR_LG, (typeof window !== 'undefined' ? window.innerWidth : 400) - 24);
+  }
+
+  function syncRadarCanvas() {
+    var c = $('field-radar-canvas');
+    var wrap = $('field-radar');
+    if (!c || !wrap) return;
+    var px = radarSizePx();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var need = Math.round(px * dpr);
+    if (c.width !== need || c.height !== need) {
+      c.width = need;
+      c.height = need;
+    }
+  }
+
+  function setRadarExpanded(on) {
+    radarBig = !!on;
+    var wrap = $('field-radar');
+    if (wrap) {
+      wrap.classList.toggle('expanded', radarBig);
+      wrap.setAttribute('aria-expanded', radarBig ? 'true' : 'false');
+      wrap.title = radarBig
+        ? 'Double-tap to shrink radar'
+        : 'Tap to expand radar · double-tap to shrink';
+    }
+    syncRadarCanvas();
+    try {
+      if (g.SNUsage && SNUsage.track) SNUsage.track('radar_size', { big: radarBig });
+    } catch (e) {}
+  }
+
+  function bindRadarTap() {
+    var wrap = $('field-radar');
+    if (!wrap || wrap._snRadarTap) return;
+    wrap._snRadarTap = true;
+    wrap.addEventListener(
+      'click',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var now = Date.now();
+        // Double-tap within 320ms → small; single tap → expand
+        if (now - radarLastTap < 320) {
+          radarLastTap = 0;
+          setRadarExpanded(false);
+          return;
+        }
+        radarLastTap = now;
+        setTimeout(function () {
+          if (radarLastTap && Date.now() - radarLastTap >= 300) {
+            // single tap confirmed
+            if (!radarBig) setRadarExpanded(true);
+            radarLastTap = 0;
+          }
+        }, 310);
+      },
+      true
+    );
+    wrap.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setRadarExpanded(!radarBig);
+      }
+    });
+  }
+
   function drawRadar() {
     var c = $('field-radar-canvas');
     if (!c) return;
+    syncRadarCanvas();
     var ctx = c.getContext('2d');
     if (!ctx) return;
     var w = c.width,
       h = c.height,
       cx = w / 2,
       cy = h / 2,
-      R = Math.min(w, h) / 2 - 4;
+      R = Math.min(w, h) / 2 - (radarBig ? 10 : 4);
+    var blipR = radarBig ? 4 : 2.2;
     ctx.clearRect(0, 0, w, h);
     ctx.strokeStyle = 'rgba(0,180,255,0.25)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = radarBig ? 1.5 : 1;
     for (var n = 1; n <= 3; n++) {
       ctx.beginPath();
       ctx.arc(cx, cy, (R * n) / 3, 0, Math.PI * 2);
@@ -200,7 +283,13 @@
     ctx.moveTo(cx, cy - R);
     ctx.lineTo(cx, cy + R);
     ctx.stroke();
-    sweep = (sweep + 0.07) % (Math.PI * 2);
+    // self (center ring)
+    ctx.strokeStyle = 'rgba(120,220,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radarBig ? 5 : 3, 0, Math.PI * 2);
+    ctx.stroke();
+    sweep = (sweep + (radarBig ? 0.05 : 0.07)) % (Math.PI * 2);
     ctx.fillStyle = 'rgba(0,180,255,0.12)';
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -208,6 +297,7 @@
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = 'rgba(80,200,255,0.85)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(sweep) * R, cy + Math.sin(sweep) * R);
@@ -216,10 +306,15 @@
       var t = blips[i];
       var x = cx + Math.cos(t.a) * t.r * R;
       var y = cy + Math.sin(t.a) * t.r * R;
-      ctx.fillStyle = t.k === 's' ? 'rgba(0,255,150,0.9)' : 'rgba(100,180,255,0.9)';
+      ctx.fillStyle = BLIP_COLOR[t.k] || BLIP_COLOR.p;
       ctx.beginPath();
-      ctx.arc(x, y, 2, 0, Math.PI * 2);
+      ctx.arc(x, y, blipR, 0, Math.PI * 2);
       ctx.fill();
+      if (radarBig && t.label) {
+        ctx.fillStyle = 'rgba(180,210,230,0.85)';
+        ctx.font = '10px system-ui';
+        ctx.fillText(String(t.label).slice(0, 12), x + 6, y + 3);
+      }
     }
     updateRadarSpeed();
     noteFrame();
@@ -276,15 +371,90 @@
     }
   }
 
+  /**
+   * Radar contacts:
+   * green f = friends · red c = competitors · yellow v = vendors & clients
+   */
+  function classifyProfile(p, me) {
+    if (!p) return null;
+    if (me && p.id === me.id) return null;
+    if (p.competitor === true || p.relation === 'competitor') return 'c';
+    if (p.friend === true || p.relation === 'friend') return 'f';
+    var r = p.roles || {};
+    // Marketplace actors — yellow
+    if (r.vendor || r.client) return 'v';
+    // Competing drivers / workers — red
+    if (r.driver || r.worker) return 'c';
+    // Social / dating / ambassador — friends green
+    if (r.social || r.dating || r.ambassador) return 'f';
+    return 'f';
+  }
+
+  function bearingFromFocus(lat, lng, focus) {
+    // Angle on radar from focus position (simple lng-based azimuth)
+    var dLng = (Number(lng) - Number(focus.lng)) * Math.cos((Number(lat) * Math.PI) / 180);
+    var dLat = Number(lat) - Number(focus.lat);
+    return Math.atan2(dLng, dLat);
+  }
+
+  function distRing(lat, lng, focus) {
+    var dLat = Number(lat) - Number(focus.lat);
+    var dLng = Number(lng) - Number(focus.lng);
+    var d = Math.sqrt(dLat * dLat + dLng * dLng);
+    return Math.max(0.12, Math.min(0.92, 0.18 + d * 8));
+  }
+
   function refreshBlips() {
     blips = [];
+    var focus =
+      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      g._snLastPos ||
+      (g.SNTasks && SNTasks.pos) || { lat: 36.43, lng: 28.22 };
+    var me = null;
+    try {
+      me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
+    } catch (e) {}
+
+    // Profiles → friends / competitors / vendors & clients
+    try {
+      var list = (g.SNProfiles && SNProfiles.list && SNProfiles.list()) || [];
+      for (var i = 0; i < list.length && blips.length < 28; i++) {
+        var p = list[i];
+        if (!p || p.lat == null || p.lng == null) continue;
+        var kind = classifyProfile(p, me);
+        if (!kind) continue;
+        blips.push({
+          a: bearingFromFocus(p.lat, p.lng, focus),
+          r: distRing(p.lat, p.lng, focus),
+          k: kind,
+          label: p.name || p.shopName || '',
+        });
+      }
+    } catch (e2) {}
+
+    // DB / commerce vendors → yellow (vendors)
     var vs = (g.SNCommerce && SNCommerce.vendors) || [];
-    for (var i = 0; i < Math.min(10, vs.length); i++) {
-      blips.push({ a: ((vs[i].lng || 0) * Math.PI) / 180, r: 0.3 + (i % 4) * 0.12, k: 's' });
+    for (var j = 0; j < Math.min(14, vs.length); j++) {
+      var v = vs[j];
+      if (!v || v.lat == null) continue;
+      blips.push({
+        a: bearingFromFocus(v.lat, v.lng, focus),
+        r: distRing(v.lat, v.lng, focus),
+        k: 'v',
+        label: v.name || 'Shop',
+      });
     }
+
+    // Spatial places — neutral (blue) only if room
     var ps = (g.SNSpatial && SNSpatial.list && SNSpatial.list()) || [];
-    for (var j = 0; j < Math.min(4, ps.length); j++) {
-      blips.push({ a: ((ps[j].lng || 0) * Math.PI) / 180, r: 0.4 + j * 0.1, k: 'p' });
+    for (var k = 0; k < Math.min(4, ps.length) && blips.length < 36; k++) {
+      if (ps[k].lat == null) continue;
+      blips.push({
+        a: bearingFromFocus(ps[k].lat, ps[k].lng, focus),
+        r: distRing(ps[k].lat, ps[k].lng, focus),
+        k: 'p',
+        label: ps[k].name || '',
+      });
     }
   }
 
@@ -405,6 +575,8 @@
     } catch (e) {}
     paint();
     refreshBlips();
+    bindRadarTap();
+    syncRadarCanvas();
     drawRadar();
     setInterval(drawRadar, 125);
     setInterval(refreshBlips, 8000);
@@ -458,6 +630,10 @@
       if (p) p.hidden = true;
     },
     refreshBlips: refreshBlips,
+    setRadarExpanded: setRadarExpanded,
+    get radarExpanded() {
+      return radarBig;
+    },
     updateRadarSpeed: updateRadarSpeed,
     SPEED: SPEED,
     EARTH_KMH: EARTH,
