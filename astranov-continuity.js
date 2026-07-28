@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728220000-no-babble',
+  version: '20260728230000-spartan-chrome',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -99,9 +99,15 @@ const AstranovContinuity = {
   },
 
   surface: [
-    'radar', 'S-field', 'resources-mine-perf', 'task-ribbon', 'cli',
-    'global-earth', 'multi-body-cosmos', 'astranov-ai-presence', 'zero-dummy',
+    'radar', 'home-button', 'miner-S-and-S-per-day', 'cli-top-ribbon-buttons',
+    'cli', 'global-earth', 'multi-body-cosmos', 'astranov-ai-presence', 'zero-dummy',
   ],
+  chromeLaw: {
+    onScreenOnly: ['radar', 'home', 'miner'],
+    minerShows: ['S balance', 'S/day mining rate'],
+    buttonsOn: 'CLI top ribbon #sn-task-ribbon',
+    noFloatingEdge: true,
+  },
 
   agentDiscipline: {
     alwaysUpdateSpecs: true,

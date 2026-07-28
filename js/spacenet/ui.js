@@ -34,9 +34,9 @@
 
   function sizePx(mode) {
     var h = window.innerHeight || 700;
-    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16));
+    if (mode === 'collapsed') return Math.min(168, Math.round(h * 0.22));
     if (mode === 'expanded') return Math.min(640, Math.round(h * 0.78));
-    return Math.min(Math.round(h * 0.38), Math.round(h * 0.42));
+    return Math.min(Math.round(h * 0.42), Math.round(h * 0.46));
   }
 
   function currentMode(panel) {

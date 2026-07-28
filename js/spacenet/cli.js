@@ -1184,10 +1184,12 @@
         else global.SNMap?.close?.();
       }
     });
+    // Edge buttons may be hidden — ribbon owns tools; keep aliases if present
     $('btn-locate')?.addEventListener('click', () => void run('locate'));
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
-    log('CLI ready · Astranov AI will greet you · ➤ send · 🎙 hands-free', 'dim');
+    $('btn-home')?.addEventListener('click', () => void run('earth'));
+    log('CLI ready · ribbon buttons · radar · home · miner · ➤ · 🎙', 'dim');
     preview('Talk to Astranov AI…');
     // If AI already loaded (race), ensure presence
     setTimeout(() => {

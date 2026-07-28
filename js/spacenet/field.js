@@ -1,6 +1,6 @@
 /**
- * Field chrome (spartan one-file): radar, S HUD, mine/perf, task ribbon, finance
- * SPECS P0+P2. No companion. No overlapping owners.
+ * Field chrome (spartan): radar + home + miner (S + S/day) · CLI top ribbon buttons
+ * SPECS P0+P2. No companion. No floating edge docks.
  */
 (function (g) {
   'use strict';
@@ -58,28 +58,59 @@
     return document.getElementById(id);
   }
 
+  /** Primary tools always on CLI top ribbon + context actions */
+  var RIBBON_CORE = [
+    { cmd: 'earth', label: '🏠 Home' },
+    { cmd: 'locate', label: '🎯 Locate' },
+    { cmd: 'city', label: '🗺 City' },
+    { cmd: 'shops', label: '🏪 Shops' },
+    { cmd: 'me', label: '👤 Me' },
+    { cmd: 'first delivery', label: '📦 First' },
+    { cmd: 'help', label: '❓ Help' },
+    { cmd: 'login', label: '🔐' },
+  ];
+
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
     if (!bar) return;
-    var acts = TASKS[task] || TASKS.idle;
-    var h = '<span class="sn-rib-task">' + task.toUpperCase() + '</span>';
-    for (var i = 0; i < acts.length; i++) {
+    var ctx = TASKS[task] || [];
+    var seen = {};
+    var h = '';
+    function add(cmd, label) {
+      var k = String(cmd).toLowerCase();
+      if (seen[k]) return;
+      seen[k] = 1;
       h +=
-        '<button type="button" class="sn-rib-btn" data-run="' +
-        acts[i] +
+        '<button type="button" class="sn-rib-btn' +
+        (k === 'earth' || k === 'global' ? ' home' : '') +
+        '" data-run="' +
+        String(cmd).replace(/"/g, '') +
         '">' +
-        acts[i] +
+        (label || cmd) +
         '</button>';
     }
-    h +=
-      '<span class="sn-rib-bal">' +
-      (g.SNCurrency ? SNCurrency.format(SNCurrency.balance()) : '0 S') +
-      '</span>';
-    if (notice) h += '<span class="sn-rib-notice">' + notice + '</span>';
+    RIBBON_CORE.forEach(function (b) {
+      add(b.cmd, b.label);
+    });
+    // Context extras (no dupes)
+    for (var i = 0; i < ctx.length; i++) {
+      add(ctx[i], ctx[i]);
+    }
+    if (notice) {
+      /* notice goes to cli preview, not clutter ribbon */
+      try {
+        if (g.SNCli && SNCli.preview) SNCli.preview(notice);
+      } catch (e) {}
+    }
     bar.innerHTML = h;
     bar.querySelectorAll('[data-run]').forEach(function (b) {
-      b.onclick = function () {
-        g.SNCli && SNCli.run(b.getAttribute('data-run'));
+      b.onclick = function (ev) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        var cmd = b.getAttribute('data-run');
+        if (g.SNCli && SNCli.run) void SNCli.run(cmd);
       };
     });
   }
@@ -89,31 +120,14 @@
     var bal = C ? C.balance() : 0;
     var s = $('fbh-s');
     if (s) s.textContent = C ? C.format(bal) : bal.toFixed(2) + ' S';
-    var e = $('fbh-eur');
-    var u = $('fbh-usd');
-    if (e && C) e.textContent = '~' + C.toFiat(bal, 'EUR').toFixed(2) + ' EUR';
-    if (u && C) u.textContent = '~' + C.toFiat(bal, 'USD').toFixed(2) + ' USD';
-    var r = mine.rates;
-    var map = { 'fbh-cpu': r.cpu ? r.cpu + '%' : '—', 'fbh-ram': r.ram ? r.ram + 'MB' : '—', 'fbh-storage': r.storage ? r.storage + 'MB' : '—', 'fbh-bw': r.bandwidth ? r.bandwidth + 'kb/s' : '—' };
-    Object.keys(map).forEach(function (id) {
-      var el = $(id);
-      if (el) el.textContent = map[id];
-    });
+    // Mining rate as S per day only (product miner face)
     var mr = $('fbh-mine-rate');
-    var me = $('fbh-mine-earned');
-    var st = $('fbh-mine-status');
-    if (mr) mr.textContent = mine.rate.toFixed(3) + ' S/h';
-    if (me) me.textContent = '+' + mine.session.toFixed(3) + ' S';
-    if (st) {
-      st.textContent = !mine.terms ? 'terms required' : mine.on ? 'mesh mining S' : 'mine standby';
-      st.className = 'fbh-status' + (mine.on ? ' active' : '');
+    if (mr) {
+      var perDay = (mine.rate || 0) * 24;
+      mr.textContent = perDay.toFixed(2) + ' S/day';
     }
-    var pf = $('fbh-perf');
-    if (pf)
-      pf.textContent =
-        'FPS ' + (mine.fps || '—') + ' · spare ' + mine.spare + '%' + (mine.donate ? ' · ♻' : '');
     var hud = $('field-balance-hud');
-    if (hud) hud.classList.toggle('mining-active', !!mine.on);
+    if (hud) hud.classList.toggle('mining-active', !!mine.on && !!mine.terms);
     paintRibbon();
   }
 
@@ -402,7 +416,29 @@
 
     $('field-balance-hud') &&
       ($('field-balance-hud').onclick = function () {
-        openFinance('stats');
+        openFinance('mining');
+      });
+    $('btn-home') &&
+      ($('btn-home').onclick = function (e) {
+        if (e) e.preventDefault();
+        try {
+          if (g.SNMap && SNMap.close) SNMap.close();
+        } catch (err) {}
+        try {
+          if (g.SNTile && SNTile.close) SNTile.close();
+        } catch (err2) {}
+        try {
+          if (g.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+          else if (g.SNCli && SNCli.run) void SNCli.run('earth');
+        } catch (err3) {}
+        setTask('idle');
+        paintRibbon();
+      });
+    // Logo alias → home
+    $('astranov-logo') &&
+      ($('astranov-logo').onclick = function () {
+        var h = $('btn-home');
+        if (h) h.click();
       });
     $('sfp-close') &&
       ($('sfp-close').onclick = function () {
@@ -415,6 +451,7 @@
       };
     });
     $('sn-miner-accept') && ($('sn-miner-accept').onclick = acceptTerms);
+    paintRibbon();
   }
 
   g.SNField = {
