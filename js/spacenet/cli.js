@@ -390,7 +390,13 @@
         log('Zoom · NATIONAL', 'ok');
         return;
       }
-      if (low === 'zoom city' || low === 'zoom street') {
+      if (low === 'regional' || low === 'region' || low === 'zoom regional') {
+        global.SNMap?.close?.();
+        Globe?.goToTier?.('regional');
+        log('Zoom · REGIONAL', 'ok');
+        return;
+      }
+      if (low === 'zoom city' || low === 'zoom street' || low === 'city zoom') {
         const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
         Globe?.goToTier?.('city');
         await global.SNMap?.open?.(p.lat, p.lng);
