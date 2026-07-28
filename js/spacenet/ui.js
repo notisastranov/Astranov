@@ -32,19 +32,25 @@
       );
   }
 
-  /** Absolute max CLI height: 1/3 of viewport (no drag required to reach max) */
-  function maxCliPx() {
+  /** Default expand target: 1/3 viewport (button/AI — no drag needed) */
+  function defaultMaxCliPx() {
     var h = window.innerHeight || 700;
     return Math.round(h / 3);
   }
 
+  /** User drag may go taller than default — absolute ceiling */
+  function dragMaxCliPx() {
+    var h = window.innerHeight || 700;
+    return Math.round(h * 0.72);
+  }
+
   function sizePx(mode) {
     var h = window.innerHeight || 700;
-    var cap = maxCliPx();
-    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16), cap);
-    // mid and expanded both cap at 1/3 — expand button reaches max without drag
-    if (mode === 'expanded') return cap;
-    return Math.min(Math.round(h * 0.28), cap);
+    var def = defaultMaxCliPx();
+    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16), def);
+    // Expand button → default 1/3 (drag can override higher)
+    if (mode === 'expanded') return def;
+    return Math.min(Math.round(h * 0.28), def);
   }
 
   function currentMode(panel) {
@@ -60,7 +66,7 @@
     if (mode === 'collapsed') panel.classList.add('collapsed');
     else if (mode === 'expanded') panel.classList.add('expanded');
     else panel.classList.add('mid');
-    // Enforce 1/3 viewport cap without requiring user drag
+    // Default sizes (1/3 max for expanded) — drag can leave a taller height via free style
     var px = sizePx(mode === 'expanded' ? 'expanded' : mode === 'collapsed' ? 'collapsed' : 'mid');
     panel.style.maxHeight = px + 'px';
     panel.style.height = '';
@@ -228,14 +234,13 @@
       if (mode === 'move') {
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
-        // Live height: drag up expands, down retracts — hard cap 1/3 screen
-        var next = Math.max(88, Math.min(maxCliPx(), startH - dy));
+        // Drag overrides default 1/3 — up to 72vh absolute
+        var next = Math.max(88, Math.min(dragMaxCliPx(), startH - dy));
         panel.style.maxHeight = next + 'px';
         panel.style.height = next + 'px';
-        // preview class near thresholds
         panel.classList.remove('expanded', 'collapsed', 'mid');
         if (next < sizePx('collapsed') + 16) panel.classList.add('collapsed');
-        else if (next > sizePx('mid') + 12) panel.classList.add('expanded');
+        else if (next > defaultMaxCliPx() - 8) panel.classList.add('expanded');
         else panel.classList.add('mid');
       }
       if (e.cancelable) e.preventDefault();
@@ -266,14 +271,25 @@
           );
         } catch (_) {}
       } else if (mode === 'size') {
+        // Keep user-dragged height — do NOT snap back to 1/3 if they overrode
         var h = panel.getBoundingClientRect().height || startH;
         var c = sizePx('collapsed');
-        var m = sizePx('mid');
-        var x = sizePx('expanded');
+        var def = defaultMaxCliPx();
         var pick = 'mid';
-        if (h < (c + m) / 2) pick = 'collapsed';
-        else if (h > (m + x) / 2) pick = 'expanded';
-        setSize(pick, true);
+        if (h < (c + sizePx('mid')) / 2) pick = 'collapsed';
+        else if (h >= def - 12) pick = 'expanded';
+        panel.classList.remove('expanded', 'collapsed', 'mid');
+        panel.classList.add(pick);
+        // Preserve free height when user dragged past default max
+        if (h > def + 4) {
+          panel.style.maxHeight = Math.min(dragMaxCliPx(), Math.round(h)) + 'px';
+          panel.style.height = panel.style.maxHeight;
+        } else {
+          setSize(pick, true);
+        }
+        try {
+          localStorage.setItem(SIZE_KEY, pick);
+        } catch (_) {}
       }
       mode = 'none';
     }

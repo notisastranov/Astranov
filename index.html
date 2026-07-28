@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728320000-cli-third" />
-<meta name="astranov-continuity" content="20260728320000-cli-third" />
+<meta name="astranov-build" content="20260728330000-globe-stable" />
+<meta name="astranov-continuity" content="20260728330000-globe-stable" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -138,7 +138,7 @@
   }
   #panel.sn-size-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
   #panel.dragging { cursor: grabbing; transition: none !important; user-select: none; }
-  /* SPECS: expand max = 1/3 screen without user drag */
+  /* Default expand = 1/3 screen; user drag may set taller inline height */
   #panel.collapsed { max-height: min(120px, 16vh); }
   #panel.mid { max-height: 28vh; }
   #panel.expanded { max-height: 33.333vh; }
@@ -364,7 +364,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728320000-cli-third"></script>
+<script src="/js/spacenet/boot.js?v=20260728330000-globe-stable"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

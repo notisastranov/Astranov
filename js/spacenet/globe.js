@@ -42,7 +42,8 @@
     flyGen: 0,
     velX: 0,
     velY: 0,
-    damp: 0.94,
+    damp: 0.88,
+    lastUserControl: 0,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
     diveTier: null,
@@ -183,6 +184,23 @@
     G.flyGen = (G.flyGen || 0) + 1;
     G.flying = false;
     G.lastAct = Date.now();
+    G.lastUserControl = Date.now();
+  }
+
+  /** Bake quaternion → clean YXZ euler (kills gimbal shake from quat/euler fight) */
+  function bakePivotEuler() {
+    if (!G.pivot) return;
+    try {
+      var e = new THREE.Euler().setFromQuaternion(G.pivot.quaternion.clone().normalize(), 'YXZ');
+      G.pivot.rotation.order = 'YXZ';
+      var x = e.x;
+      var y = e.y;
+      // Clamp polar tilt so globe never flips / spins crazy
+      if (x > 1.25) x = 1.25;
+      if (x < -1.25) x = -1.25;
+      G.pivot.rotation.set(x, y, 0);
+      G.pivot.quaternion.setFromEuler(G.pivot.rotation);
+    } catch (_) {}
   }
 
   function init() {
@@ -342,10 +360,12 @@
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
       down = true;
       moved = false;
-      G.dragging = true;
-      // User takes control — cancel any fly-to so drag/tap is not fighting animation
+      // User takes control — kill fly + inertia so sphere does not fight the hand
       stopMotion();
+      bakePivotEuler();
       G.dragging = true;
+      G.velX = 0;
+      G.velY = 0;
       lastT = performance.now();
       var t = e.touches ? e.touches[0] : e;
       lx = t.clientX;
@@ -361,22 +381,29 @@
     function onMove(e) {
       if (!down) return;
       G.lastAct = Date.now();
+      G.lastUserControl = Date.now();
       var t = e.touches ? e.touches[0] : e;
       var now = performance.now();
-      var dt = Math.max(8, now - lastT);
+      var dt = Math.max(12, now - lastT);
       lastT = now;
       var dx = t.clientX - lx;
       var dy = t.clientY - ly;
       lx = t.clientX;
       ly = t.clientY;
-      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 8) moved = true;
-      // Drag uses euler — sync from quaternion if last fly left pure quat
-      G.pivot.rotation.setFromQuaternion(G.pivot.quaternion, G.pivot.rotation.order);
-      G.pivot.rotation.y += dx * 0.005;
-      G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + dy * 0.004));
+      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 10) moved = true;
+      // Euler-only drag (YXZ) — never setFromQuaternion mid-drag (that caused shake/spin)
+      G.pivot.rotation.order = 'YXZ';
+      G.pivot.rotation.y += dx * 0.0038;
+      G.pivot.rotation.x = Math.max(
+        -1.2,
+        Math.min(1.2, G.pivot.rotation.x + dy * 0.0032)
+      );
       G.pivot.rotation.z = 0;
-      G.velX = dx * (16 / dt) * 0.005;
-      G.velY = dy * (16 / dt) * 0.004;
+      // Soft inertia only — hard cap so it cannot go crazy
+      var sx = dx * (16 / dt) * 0.0028;
+      var sy = dy * (16 / dt) * 0.0022;
+      G.velX = Math.max(-0.035, Math.min(0.035, sx));
+      G.velY = Math.max(-0.025, Math.min(0.025, sy));
       if (e.cancelable) e.preventDefault();
     }
 
@@ -385,8 +412,13 @@
       down = false;
       G.dragging = false;
       G.lastAct = Date.now();
-      G.velX = Math.max(-0.08, Math.min(0.08, G.velX));
-      G.velY = Math.max(-0.05, Math.min(0.05, G.velY));
+      G.lastUserControl = Date.now();
+      // Strong clamp after release — light glide only
+      G.velX = Math.max(-0.028, Math.min(0.028, G.velX * 0.55));
+      G.velY = Math.max(-0.02, Math.min(0.02, G.velY * 0.55));
+      if (Math.abs(G.velX) < 0.002) G.velX = 0;
+      if (Math.abs(G.velY) < 0.002) G.velY = 0;
+      bakePivotEuler();
       try {
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
@@ -667,21 +699,30 @@
       var skip = idle ? 3 : 1;
       if (G.frame % skip !== 0) return;
     }
+    var userCool = Date.now() - (G.lastUserControl || 0) < 450;
     if (
       !G.dragging &&
       !G.flying &&
-      (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)
+      !userCool &&
+      (Math.abs(G.velX) > 0.00008 || Math.abs(G.velY) > 0.00008)
     ) {
+      G.pivot.rotation.order = 'YXZ';
       G.pivot.rotation.y += G.velX;
-      G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + G.velY));
+      G.pivot.rotation.x = Math.max(-1.2, Math.min(1.2, G.pivot.rotation.x + G.velY));
+      G.pivot.rotation.z = 0;
       G.velX *= G.damp;
       G.velY *= G.damp;
-      if (Math.abs(G.velX) < 0.00005) G.velX = 0;
-      if (Math.abs(G.velY) < 0.00005) G.velY = 0;
-      G.lastAct = Date.now();
-    } else if (!G.dragging && !G.flying && idle && G.camera.position.z > 2.2) {
-      // Gentle idle only at GLOBAL/SOLAR — never fight NATIONAL goToPlace
-      G.pivot.rotation.y += 0.0009;
+      if (Math.abs(G.velX) < 0.00008) G.velX = 0;
+      if (Math.abs(G.velY) < 0.00008) G.velY = 0;
+    } else if (
+      !G.dragging &&
+      !G.flying &&
+      !userCool &&
+      idle &&
+      G.camera.position.z > 2.35
+    ) {
+      // Very gentle idle only at GLOBAL/SOLAR — never fight user control
+      G.pivot.rotation.y += 0.00045;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
     try {
@@ -784,9 +825,15 @@
     var qStart = G.pivot.quaternion.clone();
 
     var t0 = performance.now();
-    var dur = 900;
+    var dur = 780;
     function step(t) {
       if (gen !== G.flyGen) return;
+      // User grabbed mid-fly — abort (stopMotion bumps flyGen)
+      if (G.dragging) {
+        G.flying = false;
+        bakePivotEuler();
+        return;
+      }
       var k = Math.min(1, (t - t0) / dur);
       var e = k * (2 - k);
       G.pivot.quaternion.slerpQuaternions(qStart, qEnd, e);
@@ -795,13 +842,16 @@
         requestAnimationFrame(step);
       } else {
         G.pivot.quaternion.copy(qEnd);
+        bakePivotEuler();
+        G.velX = 0;
+        G.velY = 0;
         G.flying = false;
         G.lastAct = Date.now();
       }
     }
     requestAnimationFrame(step);
-    if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 700);
-    else if (G.camera.position.z > TIERS.national.z) animateZ(TIERS.national.z, 700);
+    if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 650);
+    else if (G.camera.position.z > TIERS.national.z) animateZ(TIERS.national.z, 650);
   }
 
   function locate() {
