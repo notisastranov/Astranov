@@ -425,6 +425,9 @@
         });
       }
     } catch (_) {}
+    try {
+      if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
+    } catch (_) {}
     return {
       ok: true,
       task: t,

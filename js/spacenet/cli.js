@@ -273,6 +273,18 @@
         else log('Home menu loading…', 'dim');
         return;
       }
+      if (low === 'routes' || low === 'radar routes' || low === 'show routes') {
+        log('Refreshing delivery route polygons on radar…', 'dim');
+        const list = (await global.SNField?.refreshRoutes?.(true)) || [];
+        if (!list.length) log('No open delivery routes · place an order first', 'dim');
+        else {
+          list.forEach((r) =>
+            log('━ ' + (r.label || r.id) + ' · ' + (r.points?.length || 0) + ' pts', 'ok')
+          );
+          global.SNField?.setRadarExpanded?.(true);
+        }
+        return;
+      }
       if (low === 'support list' || low === 'support') {
         const list = global.SNHome?.supportList?.() || [];
         if (!list.length) log('No support requests · type: support help <your question>', 'dim');

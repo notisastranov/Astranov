@@ -49,6 +49,10 @@
   var radarLastTap = 0;
   var RADAR_SM = 120;
   var RADAR_LG = 320;
+  /** Active routes for radar: { id, points:[{lat,lng}], color, label } */
+  var routes = [];
+  var routeFetchBusy = false;
+  var routeFetchAt = 0;
   /** Blip kinds: f friend green · c competitor red · v vendor/client yellow */
   var BLIP_COLOR = {
     f: 'rgba(68,255,136,0.95)',
@@ -57,6 +61,12 @@
     s: 'rgba(255,204,68,0.95)', // shop = vendor yellow
     p: 'rgba(100,180,255,0.75)',
   };
+  var ROUTE_COLORS = [
+    'rgba(0,220,255,0.95)',
+    'rgba(255,180,60,0.95)',
+    'rgba(120,255,160,0.9)',
+    'rgba(200,140,255,0.9)',
+  ];
   /**
    * SPECS: task ribbon = materialised buttons for **current task only**.
    * No permanent dock flood (locate/shops/me/help/login are CLI/AI text, not ribbon).
@@ -213,10 +223,13 @@
       wrap.classList.toggle('expanded', radarBig);
       wrap.setAttribute('aria-expanded', radarBig ? 'true' : 'false');
       wrap.title = radarBig
-        ? 'Double-tap to shrink radar'
-        : 'Tap to expand radar · double-tap to shrink';
+        ? 'Double-tap to shrink · routes & contacts'
+        : 'Tap expand · routes · friends green · competitors red · vendors yellow';
     }
     syncRadarCanvas();
+    if (radarBig) {
+      void refreshRoutes(true);
+    }
     try {
       if (g.SNUsage && SNUsage.track) SNUsage.track('radar_size', { big: radarBig });
     } catch (e) {}
@@ -283,6 +296,8 @@
     ctx.moveTo(cx, cy - R);
     ctx.lineTo(cx, cy + R);
     ctx.stroke();
+    // Route polygons / polylines under sweep (delivery & active paths)
+    drawRoutes(ctx, cx, cy, R);
     // self (center ring)
     ctx.strokeStyle = 'rgba(120,220,255,0.9)';
     ctx.lineWidth = 1.5;
@@ -318,6 +333,274 @@
     }
     updateRadarSpeed();
     noteFrame();
+  }
+
+  function focusPos() {
+    return (
+      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      g._snLastPos ||
+      (g.SNTasks && SNTasks.pos) || { lat: 36.43, lng: 28.22 }
+    );
+  }
+
+  /** Local meters relative to focus (north-up) */
+  function toLocalM(lat, lng, focus) {
+    var lat0 = Number(focus.lat);
+    var lng0 = Number(focus.lng);
+    var north = (Number(lat) - lat0) * 111320;
+    var east = (Number(lng) - lng0) * 111320 * Math.cos((lat0 * Math.PI) / 180);
+    return { x: east, y: north };
+  }
+
+  /**
+   * Draw full route polygons on radar:
+   * - filled corridor polygon along path
+   * - centerline polyline
+   * - start/end markers
+   */
+  function drawRoutes(ctx, cx, cy, R) {
+    if (!routes || !routes.length) return;
+    var focus = focusPos();
+    var maxD = 80; // meters floor so short routes still show
+    var i, j, loc, pts, route;
+
+    // Fit scale to all route vertices
+    for (i = 0; i < routes.length; i++) {
+      pts = routes[i].points || [];
+      for (j = 0; j < pts.length; j++) {
+        loc = toLocalM(pts[j].lat, pts[j].lng, focus);
+        var d = Math.sqrt(loc.x * loc.x + loc.y * loc.y);
+        if (d > maxD) maxD = d;
+      }
+    }
+    var scale = (R * 0.9) / maxD;
+
+    function toCanvas(lat, lng) {
+      var L = toLocalM(lat, lng, focus);
+      return {
+        x: cx + L.x * scale,
+        y: cy - L.y * scale, // north up
+      };
+    }
+
+    for (i = 0; i < routes.length; i++) {
+      route = routes[i];
+      pts = route.points || [];
+      if (pts.length < 2) continue;
+      var col = route.color || ROUTE_COLORS[i % ROUTE_COLORS.length];
+      var canvasPts = [];
+      for (j = 0; j < pts.length; j++) canvasPts.push(toCanvas(pts[j].lat, pts[j].lng));
+
+      // Corridor polygon (offset polyline both sides)
+      var halfW = radarBig ? 5.5 : 3.2;
+      var left = [];
+      var right = [];
+      for (j = 0; j < canvasPts.length; j++) {
+        var prev = canvasPts[Math.max(0, j - 1)];
+        var next = canvasPts[Math.min(canvasPts.length - 1, j + 1)];
+        var dx = next.x - prev.x;
+        var dy = next.y - prev.y;
+        var len = Math.sqrt(dx * dx + dy * dy) || 1;
+        var nx = (-dy / len) * halfW;
+        var ny = (dx / len) * halfW;
+        left.push({ x: canvasPts[j].x + nx, y: canvasPts[j].y + ny });
+        right.push({ x: canvasPts[j].x - nx, y: canvasPts[j].y - ny });
+      }
+      ctx.beginPath();
+      ctx.moveTo(left[0].x, left[0].y);
+      for (j = 1; j < left.length; j++) ctx.lineTo(left[j].x, left[j].y);
+      for (j = right.length - 1; j >= 0; j--) ctx.lineTo(right[j].x, right[j].y);
+      ctx.closePath();
+      ctx.fillStyle = col.replace('0.95', '0.18').replace('0.9', '0.16');
+      if (ctx.fillStyle === col) ctx.fillStyle = 'rgba(0,200,255,0.15)';
+      ctx.fill();
+      ctx.strokeStyle = col.replace('0.95', '0.45').replace('0.9', '0.4');
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Centerline
+      ctx.beginPath();
+      ctx.moveTo(canvasPts[0].x, canvasPts[0].y);
+      for (j = 1; j < canvasPts.length; j++) ctx.lineTo(canvasPts[j].x, canvasPts[j].y);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = radarBig ? 2.4 : 1.6;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Start / end
+      var a0 = canvasPts[0];
+      var a1 = canvasPts[canvasPts.length - 1];
+      ctx.fillStyle = 'rgba(68,255,136,0.95)';
+      ctx.beginPath();
+      ctx.arc(a0.x, a0.y, radarBig ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,100,120,0.95)';
+      ctx.beginPath();
+      ctx.arc(a1.x, a1.y, radarBig ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (radarBig && route.label) {
+        ctx.fillStyle = 'rgba(200,230,255,0.9)';
+        ctx.font = '10px system-ui';
+        ctx.fillText(String(route.label).slice(0, 18), a1.x + 6, a1.y - 4);
+      }
+    }
+  }
+
+  function setRoutes(list) {
+    routes = Array.isArray(list) ? list.slice(0, 8) : [];
+  }
+
+  function clearRoutes() {
+    routes = [];
+  }
+
+  function straightRoute(aLat, aLng, bLat, bLng, steps) {
+    steps = steps || 12;
+    var out = [];
+    for (var i = 0; i <= steps; i++) {
+      var t = i / steps;
+      out.push({
+        lat: aLat + (bLat - aLat) * t,
+        lng: aLng + (bLng - aLng) * t,
+      });
+    }
+    return out;
+  }
+
+  /** OSRM driving geometry (GeoJSON line) — free public router */
+  async function fetchOsrmRoute(aLat, aLng, bLat, bLng) {
+    var url =
+      'https://router.project-osrm.org/route/v1/driving/' +
+      Number(aLng) +
+      ',' +
+      Number(aLat) +
+      ';' +
+      Number(bLng) +
+      ',' +
+      Number(bLat) +
+      '?overview=full&geometries=geojson';
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var to = setTimeout(function () {
+      try {
+        if (ctrl) ctrl.abort();
+      } catch (_) {}
+    }, 8000);
+    try {
+      var res = await fetch(url, {
+        signal: ctrl ? ctrl.signal : undefined,
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error('osrm ' + res.status);
+      var j = await res.json();
+      var coords =
+        j &&
+        j.routes &&
+        j.routes[0] &&
+        j.routes[0].geometry &&
+        j.routes[0].geometry.coordinates;
+      if (!coords || !coords.length) throw new Error('no geom');
+      // OSRM = [lng, lat]
+      return coords.map(function (c) {
+        return { lat: c[1], lng: c[0] };
+      });
+    } finally {
+      clearTimeout(to);
+    }
+  }
+
+  /**
+   * Build radar routes from open delivery tasks (pickup → drop).
+   * Full road polygons when OSRM available; straight fallback otherwise.
+   */
+  async function refreshRoutes(force) {
+    if (routeFetchBusy) return routes;
+    if (!force && Date.now() - routeFetchAt < 12000) return routes;
+    routeFetchBusy = true;
+    routeFetchAt = Date.now();
+    var next = [];
+    try {
+      var tasks = [];
+      try {
+        if (g.SNTasks && SNTasks.list) {
+          tasks = SNTasks.list({ all: true }).filter(function (t) {
+            return (
+              t &&
+              (t.kind === 'delivery' || t.role === 'driver') &&
+              (t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress') &&
+              t.lat != null &&
+              t.lng != null
+            );
+          });
+        }
+      } catch (_) {}
+      // Also manual routes set via setRoutes already in routes — keep non-task ids
+      var manual = routes.filter(function (r) {
+        return r && r.id && String(r.id).indexOf('task:') !== 0;
+      });
+
+      for (var i = 0; i < Math.min(tasks.length, 6); i++) {
+        var t = tasks[i];
+        var dropLat = t.drop_lat != null ? t.drop_lat : focusPos().lat;
+        var dropLng = t.drop_lng != null ? t.drop_lng : focusPos().lng;
+        var pts = null;
+        try {
+          pts = await fetchOsrmRoute(t.lat, t.lng, dropLat, dropLng);
+        } catch (_) {
+          pts = straightRoute(t.lat, t.lng, dropLat, dropLng, 16);
+        }
+        if (pts && pts.length >= 2) {
+          next.push({
+            id: 'task:' + t.id,
+            points: pts,
+            color: ROUTE_COLORS[i % ROUTE_COLORS.length],
+            label: (t.title || 'Route').replace(/^📦\s*/, '').slice(0, 22),
+            kind: 'delivery',
+          });
+        }
+      }
+      routes = manual.concat(next).slice(0, 8);
+    } catch (_) {
+    } finally {
+      routeFetchBusy = false;
+    }
+    return routes;
+  }
+
+  /** Public: set a route from waypoints (lat/lng array or OSRM fetch between first/last) */
+  async function showRoute(waypoints, opts) {
+    opts = opts || {};
+    var pts = [];
+    if (Array.isArray(waypoints) && waypoints.length >= 2) {
+      if (waypoints[0].lat != null && waypoints.length > 2 && !opts.osrm) {
+        pts = waypoints.map(function (w) {
+          return { lat: Number(w.lat), lng: Number(w.lng) };
+        });
+      } else {
+        var a = waypoints[0];
+        var b = waypoints[waypoints.length - 1];
+        try {
+          pts = await fetchOsrmRoute(a.lat, a.lng, b.lat, b.lng);
+        } catch (_) {
+          pts = straightRoute(a.lat, a.lng, b.lat, b.lng, 16);
+        }
+      }
+    }
+    if (pts.length < 2) return null;
+    var row = {
+      id: opts.id || 'route_' + Date.now().toString(36),
+      points: pts,
+      color: opts.color || ROUTE_COLORS[0],
+      label: opts.label || 'Route',
+      kind: opts.kind || 'custom',
+    };
+    routes = routes.filter(function (r) {
+      return r.id !== row.id;
+    });
+    routes.unshift(row);
+    routes = routes.slice(0, 8);
+    return row;
   }
 
   /**
@@ -456,6 +739,9 @@
         label: ps[k].name || '',
       });
     }
+
+    // Keep delivery route polygons in sync (throttled)
+    void refreshRoutes(false);
   }
 
   function setTask(name) {
@@ -580,6 +866,13 @@
     drawRadar();
     setInterval(drawRadar, 125);
     setInterval(refreshBlips, 8000);
+    setInterval(function () {
+      void refreshRoutes(false);
+    }, 20000);
+    // Warm routes shortly after boot (delivery polygons)
+    setTimeout(function () {
+      void refreshRoutes(true);
+    }, 2500);
     var last = performance.now();
     setInterval(function () {
       var n = performance.now();
@@ -631,6 +924,13 @@
     },
     refreshBlips: refreshBlips,
     setRadarExpanded: setRadarExpanded,
+    refreshRoutes: refreshRoutes,
+    showRoute: showRoute,
+    setRoutes: setRoutes,
+    clearRoutes: clearRoutes,
+    get routes() {
+      return routes.slice();
+    },
     get radarExpanded() {
       return radarBig;
     },

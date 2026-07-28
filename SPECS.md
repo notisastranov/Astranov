@@ -194,6 +194,7 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
 | **Radar** | Top-left · speed km/h · **single tap = big view** · **double tap = small** | Required |
 | **Radar blips** | **Green** friends · **red** competitors · **yellow** vendors & clients | Required |
+| **Radar routes** | Full **route polygons** (corridor + centerline) for active deliveries · OSRM road path when available · green start · red end · shown small & big radar | Required (`SNField.refreshRoutes` / `showRoute`) |
 | **Home** | Center label **Astranov SpaceNet** opens **home menu** (not a bare jump) | Required |
 | **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |

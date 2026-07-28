@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728300000-radar-expand" />
-<meta name="astranov-continuity" content="20260728300000-radar-expand" />
+<meta name="astranov-build" content="20260728310000-radar-routes" />
+<meta name="astranov-continuity" content="20260728310000-radar-routes" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -100,6 +100,7 @@
   #field-radar-legend b.f { color: #44ff88; }
   #field-radar-legend b.c { color: #ff5566; }
   #field-radar-legend b.v { color: #ffcc44; }
+  #field-radar-legend b.r { color: #00dcff; }
 
   /* CLI task ribbon — SPECS: current task only; hidden when idle */
   #sn-task-ribbon {
@@ -280,6 +281,7 @@
     <b class="f">● friends</b>
     · <b class="c">● competitors</b>
     · <b class="v">● vendors &amp; clients</b>
+    · <b class="r">━ routes</b>
   </div>
 </div>
 <div id="field-radar-caption" hidden aria-hidden="true">
@@ -361,7 +363,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728300000-radar-expand"></script>
+<script src="/js/spacenet/boot.js?v=20260728310000-radar-routes"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
