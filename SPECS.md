@@ -79,6 +79,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | Zone | What | Rule |
 |------|------|------|
 | **Earth imaging KEEP** | **`SNGlobe`** `js/spacenet/globe.js` — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
+| **Globe click = go there** | Short-tap Earth raycasts **lat/lng** → fly **NATIONAL** of that place. Double-tap / zoom-to-city opens map at **clicked focus** — never always “my city only” (`goToPlace` / `pickLatLng`) | SpaceNet law |
 | **Zoom out of city** | Leaves flat map → **3D SNGlobe GLOBAL** | Hard ban: stuck on Leaflet as “world” |
 | **Map long-press** | **Long-press** empty map (~580ms) → `SNTile.createAt` multi-tile. **Short-tap never creates.** Short-tap pin → open full tile | Required |
 | **Radar** | Top-left · ~8fps · 1671 km/h on global | Required |
