@@ -426,6 +426,380 @@
     return { handled: false, reply: '', did: did, status: st };
   }
 
+  /**
+   * Food keywords → what to hunt on map / Overpass / crawl
+   * "pizza" | "I want sushi" | "order coffee" | Greek equivalents
+   */
+  function parseFoodIntent(line) {
+    var low = String(line || '')
+      .toLowerCase()
+      .trim();
+    if (!low) return null;
+    // Skip pure place navigation
+    if (/^(go\s+to|fly|locate|mars|moon)/i.test(low)) return null;
+    var map = [
+      { re: /\b(pizza|πίτσα|πιτσα|pizzeria)\b/i, food: 'pizza', overpass: 'pizza restaurant' },
+      { re: /\b(sushi|σούσι)\b/i, food: 'sushi', overpass: 'sushi restaurant' },
+      { re: /\b(burger|μπέργκερ|hamburger)\b/i, food: 'burger', overpass: 'burger restaurant' },
+      { re: /\b(coffee|cafe|καφέ|καφε|espresso)\b/i, food: 'coffee', overpass: 'cafe coffee' },
+      { re: /\b(souvlaki|σουβλάκι|gyro|γύρο)\b/i, food: 'souvlaki', overpass: 'fast_food souvlaki' },
+      { re: /\b(kebab|kebap|döner|ντονέρ)\b/i, food: 'kebab', overpass: 'kebab restaurant' },
+      { re: /\b(pasta|italian|ιταλικ)\b/i, food: 'pasta', overpass: 'italian restaurant' },
+      { re: /\b(chinese|κινέζικ)\b/i, food: 'chinese', overpass: 'chinese restaurant' },
+      { re: /\b(food|φαγητ|delivery|παράδοση|πεινάω|hungry|eat)\b/i, food: 'food', overpass: 'restaurant food' },
+    ];
+    for (var i = 0; i < map.length; i++) {
+      if (map[i].re.test(low)) {
+        return {
+          food: map[i].food,
+          overpass: map[i].overpass,
+          raw: line,
+          autoOrder: /\b(order|bring|get me|θέλω|παράγγειλ|order me)\b/i.test(low) || low === map[i].food || low.length < 24,
+        };
+      }
+    }
+    return null;
+  }
+
+  function haversineKm(a, b) {
+    if (!a || !b || a.lat == null || b.lat == null) return 99;
+    var R = 6371;
+    var dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    var dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    var x =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((a.lat * Math.PI) / 180) *
+        Math.cos((b.lat * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+
+  function defaultFoodPrice(food) {
+    var f = String(food || 'food').toLowerCase();
+    if (f === 'coffee') return 3.5;
+    if (f === 'pizza') return 11;
+    if (f === 'sushi') return 14;
+    if (f === 'burger') return 9;
+    if (f === 'souvlaki' || f === 'kebab') return 6.5;
+    return 10;
+  }
+
+  function scoreVendor(v, pos, food) {
+    var score = 0;
+    var name = String(v.shopName || v.name || '').toLowerCase();
+    var kind = String(v.shopKind || '').toLowerCase();
+    var f = String(food || '').toLowerCase();
+    if (name.indexOf(f) >= 0) score += 40;
+    if (kind.indexOf(f) >= 0 || kind.indexOf('restaurant') >= 0 || kind.indexOf('pizza') >= 0 || kind.indexOf('cafe') >= 0)
+      score += 15;
+    if (v.real) score += 10;
+    if (v.menu && v.menu.length) score += 12 + Math.min(8, v.menu.length);
+    var km = haversineKm(pos, v);
+    score += Math.max(0, 25 - km * 8);
+    if (v.rating != null) score += Math.min(10, Number(v.rating));
+    // Prefer open-looking (we don't always have hours — slight boost if delivery enabled)
+    if (v.delivery_enabled !== false) score += 5;
+    return { score: score, km: km };
+  }
+
+  function ensureFoodMenu(vendor, food) {
+    if (!vendor || !global.SNProfiles) return vendor;
+    var menu = vendor.menu || [];
+    var f = String(food || 'Food');
+    var has = menu.some(function (m) {
+      return String(m.name || '')
+        .toLowerCase()
+        .indexOf(f.toLowerCase()) >= 0;
+    });
+    if (!has) {
+      // User-requested line item on a real place (not NPC shop invent) — honest custom order in S
+      global.SNProfiles.setMenuItem(vendor.id, {
+        name: f.charAt(0).toUpperCase() + f.slice(1),
+        price: defaultFoodPrice(food),
+        desc: 'Ordered via Astranov AI · pay in S · confirm with kitchen',
+      });
+      vendor = global.SNProfiles.get(vendor.id) || vendor;
+    }
+    return vendor;
+  }
+
+  function pickMenuItem(vendor, food) {
+    var menu = (vendor && vendor.menu) || [];
+    var f = String(food || '').toLowerCase();
+    var hit = menu.find(function (m) {
+      return String(m.name || '')
+        .toLowerCase()
+        .indexOf(f) >= 0;
+    });
+    return hit || menu[0] || null;
+  }
+
+  /**
+   * Full juice path for "pizza" / "order sushi" / "I want coffee":
+   * locate → find open places → vendor tiles + menus/prices → judge → order → assign driver
+   */
+  async function fulfillFoodIntent(query, opts) {
+    opts = opts || {};
+    var intent = typeof query === 'object' ? query : parseFoodIntent(query);
+    if (!intent) return { ok: false, error: 'not a food intent' };
+    var food = intent.food || 'food';
+    var log = function (m, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
+      } catch (_) {}
+      try {
+        if (global.SNAi && SNAi.say) SNAi.say(m, c || 'dim');
+      } catch (_) {}
+    };
+    var steps = [];
+
+    // 1) Locate
+    log('1/6 · Locating you…', 'dim');
+    var pos = null;
+    try {
+      if (global.SNGlobe && SNGlobe.locate) pos = await SNGlobe.locate();
+    } catch (_) {}
+    if (!pos || pos.lat == null) {
+      pos = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.4341, lng: 28.2176 };
+      log('GPS soft · using last/default focus', 'dim');
+    }
+    global._snLastPos = { lat: pos.lat, lng: pos.lng };
+    try {
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
+    } catch (_) {}
+    steps.push('locate');
+
+    // 2) Find pizza (etc.) places — Overpass + sector DB
+    log('2/6 · Finding ' + food + ' places near you…', 'dim');
+    var pois = [];
+    try {
+      if (global.SNSearch && SNSearch.nearby) {
+        pois = (await SNSearch.nearby(pos.lat, pos.lng, 3500, intent.overpass || food)) || [];
+      }
+    } catch (_) {}
+    try {
+      if (global.SNCommerce && SNCommerce.ensureSector) {
+        await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
+      }
+    } catch (_) {}
+    // Paint crawl places as vendor tiles
+    (pois || []).slice(0, 24).forEach(function (p) {
+      if (p.lat == null) return;
+      try {
+        global.SNProfiles.fromCrawlPlace(
+          {
+            name: p.name,
+            lat: p.lat,
+            lng: p.lng,
+            kind: p.kind || food,
+            real: true,
+            source: p.source || 'overpass',
+          },
+          pos
+        );
+      } catch (_) {}
+    });
+    steps.push('find');
+
+    // 3) Collect + show vendor tiles
+    log('3/6 · Building vendor tiles · menus · prices in S…', 'dim');
+    var vendors = (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
+      if (v.lat == null) return false;
+      var km = haversineKm(pos, v);
+      if (km > 8) return false;
+      var blob = (v.shopName || '') + ' ' + (v.name || '') + ' ' + (v.shopKind || '');
+      if (food === 'food') return true;
+      return (
+        blob.toLowerCase().indexOf(food) >= 0 ||
+        km < 2.5 ||
+        (pois || []).some(function (p) {
+          return p.name && v.name && p.name.indexOf(v.name.slice(0, 8)) >= 0;
+        })
+      );
+    });
+    // If filter too tight, fall back to nearest vendors
+    if (vendors.length < 2) {
+      vendors = (global.SNProfiles.list({ role: 'vendor' }) || [])
+        .filter(function (v) {
+          return v.lat != null && haversineKm(pos, v) < 6;
+        })
+        .slice(0, 12);
+    }
+    vendors = vendors.map(function (v) {
+      v = ensureFoodMenu(v, food);
+      var sc = scoreVendor(v, pos, food);
+      return Object.assign({}, v, { _score: sc.score, _km: sc.km });
+    });
+    vendors.sort(function (a, b) {
+      return (b._score || 0) - (a._score || 0);
+    });
+    vendors = vendors.slice(0, 8);
+    try {
+      if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
+      if (global.SNField && SNField.refreshBlips) SNField.refreshBlips();
+    } catch (_) {}
+    steps.push('tiles');
+
+    // 4) Judge
+    log('4/6 · Judging vendors…', 'ok');
+    var lines = [];
+    vendors.forEach(function (v, idx) {
+      var item = pickMenuItem(v, food);
+      var price = item
+        ? global.SNCurrency
+          ? SNCurrency.format(item.price)
+          : item.price + ' S'
+        : '—';
+      var line =
+        idx +
+        1 +
+        '. ' +
+        (v.shopName || v.name) +
+        ' · ' +
+        (v._km != null ? v._km.toFixed(1) + ' km' : '?') +
+        ' · score ' +
+        Math.round(v._score || 0) +
+        ' · ' +
+        (item ? item.name + ' ' + price : 'no menu');
+      lines.push(line);
+      log(line, idx === 0 ? 'ok' : 'dim');
+    });
+    if (!vendors.length) {
+      return {
+        ok: false,
+        error: 'No ' + food + ' vendors near you · try fly another city or long-press to list your shop',
+        steps: steps,
+        pos: pos,
+      };
+    }
+    steps.push('judge');
+    var best = vendors[0];
+    best = ensureFoodMenu(best, food);
+    var menuItem = pickMenuItem(best, food);
+    try {
+      if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'menu' });
+      if (global.SNGlobe && SNGlobe.goToPlace && best.lat != null) {
+        SNGlobe.goToPlace(best.lat, best.lng, {
+          tier: 'national',
+          body: 'earth',
+          pulse: false,
+          openMap: true,
+          label: best.shopName || best.name,
+        });
+      }
+    } catch (_) {}
+
+    // 5) Order (auto when intent is order-like or single food word)
+    var orderResult = null;
+    if (opts.autoOrder !== false && intent.autoOrder !== false && menuItem) {
+      log('5/6 · Ordering from ' + (best.shopName || best.name) + '…', 'ok');
+      try {
+        global.SNProfiles.cartClear();
+        global.SNProfiles.cartAdd(best.id, menuItem, 1);
+        orderResult = global.SNProfiles.placeOrder();
+        if (orderResult && orderResult.ok) {
+          log(
+            'Order placed · ' +
+              (global.SNCurrency ? SNCurrency.format(orderResult.total) : orderResult.total + ' S'),
+            'ok'
+          );
+          steps.push('order');
+        } else {
+          log((orderResult && orderResult.error) || 'order failed', 'err');
+        }
+      } catch (e) {
+        log('Order error · ' + (e.message || e), 'err');
+      }
+    } else {
+      log('5/6 · Best pick open · say order me or + on menu to buy', 'dim');
+    }
+
+    // 6) Assign driver from available online, else you go online
+    var driver = null;
+    var claim = null;
+    if (orderResult && orderResult.ok && orderResult.task) {
+      log('6/6 · Assigning driver…', 'dim');
+      var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
+        return d.driverOnline && d.id !== (global.SNProfiles.me() && global.SNProfiles.me().id);
+      });
+      // Prefer nearest online driver
+      drivers.sort(function (a, b) {
+        return haversineKm(pos, a) - haversineKm(pos, b);
+      });
+      if (drivers.length) {
+        driver = drivers[0];
+        try {
+          claim = global.SNTasks.claim(orderResult.task.id);
+          if (claim && claim.ok && claim.task) {
+            claim.task.driverId = driver.id;
+            claim.task.status = 'in_progress';
+          }
+          log('Driver · ' + driver.name + ' · claimed delivery', 'ok');
+        } catch (_) {}
+      } else {
+        // Self as courier so path completes (real user, not NPC)
+        goDriverOnline('Scooter');
+        driver = global.SNProfiles.me();
+        try {
+          claim = global.SNTasks.claim(orderResult.task.id);
+          log('No other drivers online · you are ONLINE as driver · claim ready', 'dim');
+        } catch (_) {}
+      }
+      try {
+        if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
+        if (global.SNMap && SNMap.showTasks) SNMap.showTasks();
+      } catch (_) {}
+      steps.push('driver');
+    }
+
+    track('food_intent', {
+      food: food,
+      vendors: vendors.length,
+      best: best && best.id,
+      ordered: !!(orderResult && orderResult.ok),
+      driver: driver && driver.id,
+    });
+
+    var fmt = function (n) {
+      return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
+    };
+    var reply =
+      'Located you. Found ' +
+      vendors.length +
+      ' ' +
+      food +
+      ' options. Best: ' +
+      (best.shopName || best.name) +
+      (best._km != null ? ' (' + best._km.toFixed(1) + ' km)' : '') +
+      (menuItem ? ' · ' + menuItem.name + ' ' + fmt(menuItem.price) : '') +
+      '. ' +
+      (orderResult && orderResult.ok
+        ? 'Ordered ' +
+          fmt(orderResult.total) +
+          '. ' +
+          (driver
+            ? 'Driver: ' + driver.name + (claim && claim.ok ? ' · assigned' : '')
+            : 'No driver yet · enable Driver in Astranov SpaceNet menu.')
+        : 'Open tile · + cart · order when ready.') +
+      ' Routes on radar.';
+
+    return {
+      ok: true,
+      food: food,
+      pos: pos,
+      vendors: vendors,
+      best: best,
+      menuItem: menuItem,
+      order: orderResult,
+      driver: driver,
+      claim: claim,
+      steps: steps,
+      lines: lines,
+      reply: reply,
+    };
+  }
+
   load();
 
   global.SNMarket = {
@@ -438,6 +812,8 @@
     coachStart: coachStart,
     coachStatus: coachStatus,
     handleChat: handleChat,
+    parseFoodIntent: parseFoodIntent,
+    fulfillFoodIntent: fulfillFoodIntent,
     get step() {
       return W.step;
     },

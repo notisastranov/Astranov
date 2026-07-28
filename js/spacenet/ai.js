@@ -91,7 +91,9 @@
       'GLOBE FOLLOWS YOU: when user wants a place/body, local code flies SNGlobe. ' +
       'You may emit action tags the client executes: [[LOCATE]] [[GO:mars]] [[GO:athens]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
       'Put tags at end of reply. Tags are stripped from speech. ' +
-      'FIRST LOOP: list shop → menu add → order me → drive on → deliver me · or first delivery. ' +
+      'FOOD JUICE: if user says pizza/sushi/coffee/φαγητό/etc, local code runs full path: ' +
+      'locate → find open places → vendor tiles menus prices in S → judge → order → assign driver. ' +
+      'FIRST LOOP: list shop → menu add → order me · or first delivery. ' +
       'Flags: firstDeliveryDone=' +
       !!flags.firstDeliveryDone +
       ' vendorListed=' +
@@ -301,6 +303,18 @@
         did: did,
         reply: 'I am Astranov. Try: first delivery · list shop … · locate · fly athens · go to mars.',
       };
+    }
+
+    // Food juice: "pizza" / "order sushi" / "θέλω καφέ" → full marketplace pipeline
+    if (global.SNMarket && SNMarket.parseFoodIntent && SNMarket.fulfillFoodIntent) {
+      var foodIntent = SNMarket.parseFoodIntent(line);
+      if (foodIntent) {
+        return {
+          did: did.concat(['food_intent:' + foodIntent.food]),
+          reply: 'On it · locate → find ' + foodIntent.food + ' → menus → order → driver…',
+          runFoodIntent: foodIntent,
+        };
+      }
     }
 
     // Marketplace coach (vendor list → menu → order → drive → deliver)
@@ -568,6 +582,27 @@
               '. Try steps: list shop · menu add X 5 · order me · drive on · deliver me';
       } catch (e) {
         text = 'First loop error: ' + (e && e.message ? e.message : e);
+      }
+      if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+      pushHist('assistant', text);
+      say(text, 'ok');
+      busy = false;
+      return text;
+    }
+
+    // Food intent pipeline: pizza → locate → find → judge → order → driver
+    if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
+      try {
+        var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, { autoOrder: true });
+        text =
+          (foodR && foodR.reply) ||
+          (foodR && foodR.error) ||
+          'Could not complete food order · try locate then shops';
+        if (foodR && foodR.lines && foodR.lines.length) {
+          // already logged per-vendor lines in fulfill
+        }
+      } catch (eFood) {
+        text = 'Food path error · ' + (eFood && eFood.message ? eFood.message : eFood);
       }
       if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
       pushHist('assistant', text);
