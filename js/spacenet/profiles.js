@@ -27,12 +27,33 @@
     return (prefix || 'p') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   }
 
+  /** Offline-safe media — no broken external dummy hosts */
   function pic(seed, w, h) {
-    return 'https://picsum.photos/seed/' + encodeURIComponent(seed) + '/' + (w || 800) + '/' + (h || 400);
+    w = w || 400;
+    h = h || 200;
+    const label = encodeURIComponent(String(seed || 'SN').slice(0, 12));
+    const c1 = '0a1a30';
+    const c2 = '1a6fd4';
+    return (
+      'data:image/svg+xml,' +
+      encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="' +
+          w +
+          '" height="' +
+          h +
+          '"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#' +
+          c1 +
+          '"/><stop offset="1" stop-color="#' +
+          c2 +
+          '"/></linearGradient></defs><rect fill="url(#g)" width="100%" height="100%"/><text x="50%" y="54%" fill="#9ec8ff" font-size="22" font-family="system-ui" text-anchor="middle">' +
+          label +
+          '</text></svg>'
+      )
+    );
   }
 
   function avatar(seed) {
-    return 'https://i.pravatar.cc/150?u=' + encodeURIComponent(seed);
+    return pic(seed || 'av', 150, 150);
   }
 
   function load() {
@@ -133,7 +154,7 @@
       id: P.meId || uid('me'),
       name: global.SNAuth?.user?.user_metadata?.full_name || global.SNAuth?.user?.email?.split('@')[0] || 'You',
       handle: '@' + (global.SNAuth?.user?.email?.split('@')[0] || 'astranov'),
-      bio: 'SpaceNet citizen · activate roles on your tile',
+      bio: 'SpaceNet citizen · client · marketplace 24/7 in S',
       cover: pic('me-cover', 900, 360),
       avatar: global.SNAuth?.user?.user_metadata?.avatar_url || avatar('me-av'),
       roles: { social: true, client: true, dating: false, vendor: false, driver: false, worker: false },
@@ -143,6 +164,12 @@
     });
     P.meId = self.id;
     save();
+    // Welcome S so marketplace is usable immediately
+    try {
+      if (global.SNCurrency && SNCurrency.balance() < 1) {
+        SNCurrency.credit(100, 'welcome SpaceNet');
+      }
+    } catch (_) {}
     return self;
   }
 
@@ -174,24 +201,79 @@
 
   function defaultMenu(kind) {
     const k = String(kind || 'cafe').toLowerCase();
+    // Prices in S (SpaceNets) — product unit of account
     if (/pizza|food|restaurant/.test(k)) {
       return [
-        { id: uid('m'), name: 'Margherita', price: 9.5, photo: pic('pizza1', 200, 200), desc: 'Tomato · mozzarella' },
-        { id: uid('m'), name: 'Pepperoni', price: 11, photo: pic('pizza2', 200, 200), desc: 'Spicy' },
-        { id: uid('m'), name: 'Greek salad', price: 7.5, photo: pic('salad1', 200, 200), desc: 'Feta · olive' },
+        { id: uid('m'), name: 'Margherita', price: 9.5, photo: pic('pizza', 200, 200), desc: 'Tomato · mozzarella' },
+        { id: uid('m'), name: 'Pepperoni', price: 11, photo: pic('pep', 200, 200), desc: 'Spicy' },
+        { id: uid('m'), name: 'Greek salad', price: 7.5, photo: pic('salad', 200, 200), desc: 'Feta · olive' },
       ];
     }
     if (/coffee|cafe|bar/.test(k)) {
       return [
-        { id: uid('m'), name: 'Espresso', price: 2.5, photo: pic('cof1', 200, 200), desc: 'Single' },
-        { id: uid('m'), name: 'Cappuccino', price: 3.8, photo: pic('cof2', 200, 200), desc: 'Foam' },
-        { id: uid('m'), name: 'Croissant', price: 2.9, photo: pic('pastry1', 200, 200), desc: 'Butter' },
+        { id: uid('m'), name: 'Espresso', price: 2.5, photo: pic('esp', 200, 200), desc: 'Single' },
+        { id: uid('m'), name: 'Cappuccino', price: 3.8, photo: pic('cap', 200, 200), desc: 'Foam' },
+        { id: uid('m'), name: 'Croissant', price: 2.9, photo: pic('cro', 200, 200), desc: 'Butter' },
       ];
     }
     return [
-      { id: uid('m'), name: 'Item A', price: 5, photo: pic('itema', 200, 200), desc: 'Popular' },
-      { id: uid('m'), name: 'Item B', price: 8, photo: pic('itemb', 200, 200), desc: 'Chef pick' },
+      { id: uid('m'), name: 'House special', price: 6, photo: pic('a', 200, 200), desc: 'Popular' },
+      { id: uid('m'), name: 'Combo', price: 12, photo: pic('b', 200, 200), desc: 'Value' },
+      { id: uid('m'), name: 'Side', price: 3.5, photo: pic('c', 200, 200), desc: 'Extra' },
     ];
+  }
+
+  function parseMenuItems(items) {
+    let raw = items;
+    if (raw == null) return [];
+    if (typeof raw === 'string') {
+      try {
+        raw = JSON.parse(raw);
+      } catch (_) {
+        return [];
+      }
+    }
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map((it, i) => ({
+        id: it.id || 'm_' + i,
+        name: String(it.name || it.title || 'Item').slice(0, 80),
+        price: Number(it.price != null ? it.price : it.amount) || 0,
+        photo: it.photo || it.image || pic(String(it.name || i), 200, 200),
+        desc: String(it.desc || it.description || '').slice(0, 120),
+      }))
+      .filter((m) => m.name);
+  }
+
+  /** Real DB vendor → usable multi-tile vendor profile */
+  function fromVendor(v, pos) {
+    if (!v) return null;
+    const base = pos || global.SNTasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
+    const id = 'v_' + String(v.id || v.osm_id || v.name || uid('v'))
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '_')
+      .slice(0, 40);
+    const kind = String(v.category || v.kind || 'shop').toLowerCase();
+    let menu = parseMenuItems(v.items);
+    if (!menu.length) menu = defaultMenu(kind);
+    const prev = get(id);
+    return upsert({
+      id,
+      name: v.name || prev?.name || 'Shop',
+      handle: '@' + id.slice(0, 18),
+      bio: (v.emoji || '🏪') + ' ' + kind + ' · SpaceNet marketplace · 24/7',
+      cover: prev?.cover || pic(id + 'c', 900, 360),
+      avatar: prev?.avatar || pic(id + 'a', 150, 150),
+      roles: { social: true, vendor: true, client: false, dating: false, driver: false, worker: false },
+      lat: v.lat != null ? Number(v.lat) : base.lat,
+      lng: v.lng != null ? Number(v.lng) : base.lng,
+      shopName: v.name || 'Shop',
+      shopKind: kind,
+      menu,
+      real: !!v.real || !!v.id,
+      delivery_enabled: v.delivery_enabled !== false,
+      posts: prev?.posts || [{ id: uid('post'), text: 'Open on SpaceNet · order in S', t: Date.now() }],
+    });
   }
 
   function setMenuItem(profileId, item) {
@@ -265,13 +347,37 @@
   }
 
   function placeOrder() {
-    // SPECS P4-M: no platform curfew — 24/7/365 all locations
+    // SPECS P4-M: 24/7/365 all locations — no platform curfew
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
+    const vendor = get(vendorId);
     const total = cartTotal();
     const items = cart();
+    const platformFee = Math.round(total * 0.03 * 100) / 100;
+    const driverCut = Math.round(total * 0.15 * 100) / 100;
+    const client = me();
+    // Ensure client can pay in S — welcome credit if empty wallet
+    try {
+      if (global.SNCurrency && typeof SNCurrency.balance === 'function') {
+        if (SNCurrency.balance() < total) {
+          const need = total - SNCurrency.balance() + 20;
+          SNCurrency.credit(need, 'marketplace top-up');
+          global.SNCli?.log?.(
+            'Wallet topped · ' + (SNCurrency.format ? SNCurrency.format(need) : need + ' S') + ' for order',
+            'dim'
+          );
+        }
+        const pay = SNCurrency.debit(total);
+        if (!pay.ok) return { ok: false, error: 'insufficient S' };
+        if (SNCurrency.notePlatformFee) SNCurrency.notePlatformFee(platformFee);
+      }
+    } catch (_) {}
+
     cartClear();
-    // Create delivery task DNA (always open pipeline)
+    const drop = global._snLastPos || global.SNTasks?.pos || {
+      lat: client.lat,
+      lng: client.lng,
+    };
     const t = global.SNTasks?.create?.({
       kind: 'delivery',
       role: 'driver',
@@ -282,20 +388,32 @@
         (global.SNCurrency ? SNCurrency.format(total) : total.toFixed(2) + ' S'),
       dur: '45m',
       raw: 'delivery order ' + total,
-      lat: get(vendorId)?.lat,
-      lng: get(vendorId)?.lng,
+      lat: vendor?.lat != null ? vendor.lat : drop.lat,
+      lng: vendor?.lng != null ? vendor.lng : drop.lng,
       always_on: true,
+      vendorId,
+      clientId: client.id,
+      items,
+      total_s: total,
+      platform_fee_s: platformFee,
+      driver_s: driverCut,
+      drop_lat: drop.lat,
+      drop_lng: drop.lng,
     });
-    // Notify drivers on map (drivers may be offline as people — marketplace still open)
     list({ role: 'driver' }).forEach((d) => {
       if (d.driverOnline && global.SNGlobe?.pulse) {
         SNGlobe.pulse(d.lat, d.lng, 0x44ffaa, 'Order!', 8000);
       }
     });
+    if (vendor?.lat != null && global.SNGlobe?.pulse) {
+      SNGlobe.pulse(vendor.lat, vendor.lng, 0x3d9eff, 'Pickup', 12000);
+    }
     return {
       ok: true,
       task: t,
       total,
+      platformFee,
+      driverCut,
       items,
       vendorId,
       marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
@@ -303,28 +421,56 @@
   }
 
   function fromCrawlPlace(place, pos) {
+    if (place && (place.id || place.items != null) && place.lat != null) {
+      return fromVendor(
+        {
+          id: place.id,
+          name: place.name,
+          lat: place.lat,
+          lng: place.lng,
+          category: place.kind || place.category,
+          items: place.items,
+          emoji: place.emoji,
+          real: place.real,
+          delivery_enabled: place.delivery_enabled,
+        },
+        pos
+      );
+    }
     const base = pos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
-    const id = 'poi_' + String(place.name || 'x')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')
-      .slice(0, 24);
-    if (P.profiles.has(id)) return get(id);
-    const kind = String(place.kind || 'shop').toLowerCase();
+    const id =
+      'poi_' +
+      String(place?.name || 'x')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .slice(0, 24);
+    const kind = String(place?.kind || 'shop').toLowerCase();
     const isFood = /restaurant|cafe|fast_food|bar|food|pizza/.test(kind);
+    if (P.profiles.has(id)) {
+      const prev = get(id);
+      if (place?.lat != null) {
+        prev.lat = place.lat;
+        prev.lng = place.lng;
+        if (!prev.menu || !prev.menu.length)
+          prev.menu = defaultMenu(isFood ? (/cafe|coffee|bar/.test(kind) ? 'cafe' : 'restaurant') : 'shop');
+        save();
+      }
+      return prev;
+    }
     return upsert({
       id,
-      name: place.name || 'Place',
+      name: place?.name || 'Place',
       handle: '@' + id.slice(0, 16),
-      bio: (place.kind || 'vendor') + ' · live from city crawl',
+      bio: (place?.kind || 'vendor') + ' · SpaceNet city',
       cover: pic(id + '-c', 900, 360),
       avatar: pic(id + '-a', 150, 150),
       roles: { social: true, vendor: true, client: false, dating: false, driver: false, worker: false },
-      lat: place.lat != null ? place.lat : base.lat + (Math.random() - 0.5) * 0.02,
-      lng: place.lng != null ? place.lng : base.lng + (Math.random() - 0.5) * 0.02,
-      shopName: place.name || 'Shop',
+      lat: place?.lat != null ? place.lat : base.lat + (Math.random() - 0.5) * 0.02,
+      lng: place?.lng != null ? place.lng : base.lng + (Math.random() - 0.5) * 0.02,
+      shopName: place?.name || 'Shop',
       shopKind: kind,
-      menu: defaultMenu(isFood ? ( /cafe|coffee|bar/.test(kind) ? 'cafe' : 'restaurant') : 'shop'),
-      posts: [{ id: uid('post'), text: 'Open on SpaceNet city map', t: Date.now() }],
+      menu: defaultMenu(isFood ? (/cafe|coffee|bar/.test(kind) ? 'cafe' : 'restaurant') : 'shop'),
+      posts: [{ id: uid('post'), text: 'Open on SpaceNet · order in S', t: Date.now() }],
     });
   }
 
@@ -447,6 +593,9 @@
     setMenuItem,
     setMedia,
     addPost,
+    fromVendor,
+    parseMenuItems,
+    defaultMenu,
     defaultMenu,
     fromCrawlPlace,
     seedCity,

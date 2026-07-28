@@ -55,8 +55,26 @@
       'border-radius:10px;padding:8px 12px;font:600 12px system-ui;cursor:pointer}',
       '#sn-tile .sn-btn.primary{background:rgba(0,221,136,.2);border-color:rgba(0,221,136,.45);color:#6dffb0}',
       '#sn-tile .sn-empty{color:#5a6a7e;font-size:12px;padding:8px 0}',
-      '#sn-tile .sn-menu-row,#sn-tile .sn-post{display:flex;justify-content:space-between;gap:8px;padding:8px 0;',
+      '#sn-tile .sn-menu-head{font-weight:700;color:#3d9eff;margin-bottom:8px}',
+      '#sn-tile .sn-menu-item{display:flex;align-items:center;gap:10px;padding:8px 0;',
       'border-bottom:1px solid rgba(26,111,212,.15)}',
+      '#sn-tile .sn-menu-item img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#0a1a30;flex-shrink:0}',
+      '#sn-tile .sn-menu-meta{flex:1;min-width:0}',
+      '#sn-tile .sn-menu-meta b{display:block;color:#e8f4ff}',
+      '#sn-tile .sn-menu-meta span{display:block;font-size:11px;color:#6a8aaa}',
+      '#sn-tile .sn-menu-meta em{display:block;color:#6dffb0;font-style:normal;font-weight:700;margin-top:2px}',
+      '#sn-tile .sn-add{width:36px;height:36px;border-radius:10px;border:1px solid rgba(0,221,136,.45);',
+      'background:rgba(0,221,136,.15);color:#6dffb0;font-weight:800;cursor:pointer;flex-shrink:0}',
+      '#sn-tile .sn-total{margin-top:10px;font-weight:700;color:#6dffb0}',
+      '#sn-tile .sn-fee{font-size:11px;color:#6a8aaa;margin-top:4px}',
+      '#sn-tile .sn-post{padding:8px 0;border-bottom:1px solid rgba(26,111,212,.15)}',
+      '#sn-tile .sn-compose{display:flex;gap:6px;margin-bottom:10px}',
+      '#sn-tile .sn-compose input{flex:1;border-radius:10px;border:1px solid rgba(61,158,255,.35);',
+      'background:rgba(0,12,28,.8);color:#e8f4ff;padding:8px}',
+      '#sn-tile .sn-compose button{border:0;border-radius:10px;background:#1a6fd4;color:#fff;padding:8px 12px;cursor:pointer}',
+      '#sn-tile .sn-big{font-size:18px;font-weight:700;margin-bottom:6px}',
+      '#sn-tile .sn-tags span{display:inline-block;margin:2px 4px 2px 0;padding:3px 8px;border-radius:999px;',
+      'background:rgba(26,111,212,.2);font-size:11px}',
       '.sn-pin{background:transparent!important;border:0!important}',
       '.sn-pin-inner{width:36px;height:36px;border-radius:50%;border:2px solid #3d9eff;background:#061428;',
       'overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}',
@@ -502,9 +520,17 @@
       return;
     }
     if (name === 'claim') {
-      const r = global.SNTasks?.claim?.();
-      if (r?.ok) global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
-      else global.SNCli?.log?.(r?.error || 'no deliveries', 'dim');
+      const open = (global.SNTasks?.list?.({ kind: 'delivery' }) || []).filter(
+        (t) => t.status === 'open'
+      );
+      const r = global.SNTasks?.claim?.(open[0]?.id);
+      if (r?.ok) {
+        global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
+        global.SNMap?.showTasks?.();
+        render();
+      } else {
+        global.SNCli?.log?.(r?.error || 'No open deliveries · place an order first', 'dim');
+      }
       return;
     }
     if (name === 'cart') {
@@ -523,8 +549,23 @@
         global.SNCli?.log?.(r.error || 'order failed', 'err');
         return;
       }
-      global.SNCli?.log?.('Order '+(window.SNCurrency?SNCurrency.format(r.total):(Number(r.total).toFixed(2)+' S')) + ' · delivery task open', 'ok');
-      global.SNCli?.log?.('Drivers online can claim · task claim', 'dim');
+      const fmt = (n) =>
+        window.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
+      global.SNCli?.log?.('Order placed · ' + fmt(r.total) + ' · 24/7 marketplace', 'ok');
+      global.SNCli?.log?.(
+        'Fees · platform ' +
+          fmt(r.platformFee || r.total * 0.03) +
+          ' · driver ' +
+          fmt(r.driverCut || r.total * 0.15),
+        'dim'
+      );
+      global.SNCli?.log?.(
+        r.task
+          ? 'Delivery task ' + r.task.id + ' · drivers: claim from Drive tab or CLI task claim'
+          : 'Delivery open',
+        'ok'
+      );
+      global.SNField?.paint?.();
       if (p.lat != null) await global.SNMap?.open?.(p.lat, p.lng);
       global.SNMap?.showTasks?.();
       global.SNMap?.showProfiles?.();

@@ -225,6 +225,19 @@ Progress these — do not re-litigate globe chrome forever.
 
 Marketplace path: pin → browse → cart → place → track → claim → pilot multi-stop.
 
+### Multi-tile + marketplace must be usable (dedummyfy)
+
+| Step | Spec |
+|------|------|
+| **Open tile** | Short-tap map pin → full `#sn-tile` panel (CSS + roles + tabs) |
+| **Vendor menu** | Real or default menu in **S**; **+** adds to cart |
+| **Cart** | Cart tab shows lines + total **S** |
+| **Order** | Order + deliver → debit **S** · fees 3%/15% · delivery **task** open · map pulses |
+| **Claim** | Driver tile / CLI `task claim` claims open delivery |
+| **DB vendors** | `fromVendor` maps Supabase `items` → menu; fallback default menu |
+| **Seed fallback** | Empty sector still seeds usable shops (not blank dummy) |
+| **Media** | Offline-safe SVG photos — no broken external image hosts required |
+
 ---
 
 ## P4-M — Delivery marketplace: always on (24 / 7 / 365)

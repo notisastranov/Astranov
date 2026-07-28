@@ -113,13 +113,26 @@
       return { ok: false, count: 0, error: String(e.message || e) };
     }
 
-    // Profile/crawl data always; city map only if already open or user asked
+    // Real vendor tiles with menus (usable marketplace)
+    const tiles = [];
     rows.slice(0, 40).forEach((v) => {
       try {
-        global.SNProfiles?.fromCrawlPlace?.(
-          { name: v.name, lat: v.lat, lng: v.lng, kind: v.category || 'shop' },
-          pos
-        );
+        const p =
+          global.SNProfiles?.fromVendor?.(v, pos) ||
+          global.SNProfiles?.fromCrawlPlace?.(
+            {
+              id: v.id,
+              name: v.name,
+              lat: v.lat,
+              lng: v.lng,
+              kind: v.category || 'shop',
+              items: v.items,
+              emoji: v.emoji,
+              real: true,
+            },
+            pos
+          );
+        if (p) tiles.push(p);
       } catch (_) {}
     });
 
@@ -131,8 +144,14 @@
           map?.setView?.([pos.lat, pos.lng], 14);
         }
       } catch (_) {}
-      global.SNMap?.plotCrawl?.(toPlaces());
       global.SNMap?.showProfiles?.();
+      global.SNMap?.plotCrawl?.(toPlaces());
+      if (tiles.length) {
+        global.SNCli?.log?.(
+          'Marketplace · ' + tiles.length + ' shop tiles · tap pin · Menu · + cart · Order',
+          'ok'
+        );
+      }
     }
 
     // Globe pulses keep full-Earth default useful without stealing the view

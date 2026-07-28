@@ -106,6 +106,15 @@
       lng: p.lng != null ? p.lng : T.pos.lng + (Math.random() - 0.5) * 0.03,
       dur: p.dur || '2h',
       created: Date.now(),
+      vendorId: p.vendorId || null,
+      clientId: p.clientId || null,
+      items: p.items || null,
+      total_s: p.total_s != null ? p.total_s : null,
+      platform_fee_s: p.platform_fee_s != null ? p.platform_fee_s : null,
+      driver_s: p.driver_s != null ? p.driver_s : null,
+      drop_lat: p.drop_lat != null ? p.drop_lat : null,
+      drop_lng: p.drop_lng != null ? p.drop_lng : null,
+      always_on: p.always_on !== false,
     };
     T.tasks.set(task.id, task);
     save();
@@ -122,10 +131,14 @@
   }
 
   function list(filter) {
-    let arr = [...T.tasks.values()].filter((t) => t.status === 'open' || filter?.all);
+    let arr = [...T.tasks.values()].filter(
+      (t) => filter?.all || t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress'
+    );
+    if (!filter?.all) arr = arr.filter((t) => t.status === 'open' || filter?.status === t.status);
     if (filter?.kind) arr = arr.filter((t) => t.kind === filter.kind);
     if (filter?.dating) arr = arr.filter((t) => t.kind === 'dating');
     if (filter?.jobs) arr = arr.filter((t) => t.kind === 'job');
+    if (filter?.status) arr = arr.filter((t) => t.status === filter.status);
     return arr.sort((a, b) => b.created - a.created);
   }
 
