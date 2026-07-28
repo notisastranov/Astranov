@@ -77,12 +77,14 @@
 
   async function signInGoogle() {
     const c = await ensureClient();
-    const origin = location.origin;
+    // Must match Supabase Auth → URL Configuration → Redirect URLs
+    const origin = location.origin || 'https://astranov.eu';
+    const redirectTo = origin.replace(/\/$/, '') + '/';
     const { error } = await c.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: origin + '/',
-        queryParams: { access_type: 'offline', prompt: 'consent' },
+        redirectTo: redirectTo,
+        queryParams: { access_type: 'offline', prompt: 'select_account' },
       },
     });
     if (error) throw error;
@@ -127,11 +129,43 @@
     document.getElementById('btn-login')?.addEventListener('click', () => {
       void toggle().catch((e) => global.SNCli?.log?.(String(e.message || e), 'err'));
     });
-    // Session restore without blocking boot
-    ensureClient().catch(() => {
-      A.ready = true;
-      paint();
-    });
+    // Session restore + OAuth return (PKCE code in URL)
+    ensureClient()
+      .then(async () => {
+        try {
+          // After Google Continue → redirect lands with ?code= or #access_token
+          const { data, error } = await A.client.auth.getSession();
+          if (error) throw error;
+          A.user = data?.session?.user || null;
+          if (A.user) {
+            global.SNCli?.log?.(
+              'Signed in · ' +
+                (A.user.user_metadata?.full_name || A.user.email || 'user'),
+              'ok'
+            );
+            // Sync profile name from Google
+            try {
+              const me = global.SNProfiles?.me?.();
+              if (me && A.user) {
+                const nm = A.user.user_metadata?.full_name || A.user.email?.split('@')[0];
+                if (nm) {
+                  me.name = nm;
+                  if (A.user.user_metadata?.avatar_url) me.avatar = A.user.user_metadata.avatar_url;
+                  if (A.user.email) me.handle = '@' + A.user.email.split('@')[0];
+                  global.SNProfiles.upsert(me);
+                }
+              }
+            } catch (_) {}
+          }
+          paint();
+        } catch (_) {
+          paint();
+        }
+      })
+      .catch(() => {
+        A.ready = true;
+        paint();
+      });
   }
 
   global.SNAuth = {
