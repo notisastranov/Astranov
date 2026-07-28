@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728270000-globe-follow-ai" />
-<meta name="astranov-continuity" content="20260728270000-globe-follow-ai" />
+<meta name="astranov-build" content="20260728280000-ribbon-spec" />
+<meta name="astranov-continuity" content="20260728280000-ribbon-spec" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -82,12 +82,15 @@
   .fr-label { position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;
     font: 8px/1 system-ui; letter-spacing: .14em; color: rgba(0,200,255,.55); }
 
-  /* CLI top ribbon — all action buttons live here */
+  /* CLI task ribbon — SPECS: current task only; hidden when idle */
   #sn-task-ribbon {
     display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
     padding: 8px 10px 6px; border-bottom: 1px solid rgba(26,111,212,0.28);
     flex-shrink: 0; max-height: 72px; overflow-x: auto; overflow-y: hidden;
     -webkit-overflow-scrolling: touch; cursor: default; touch-action: manipulation;
+  }
+  #sn-task-ribbon[hidden], #sn-task-ribbon:empty {
+    display: none !important; padding: 0; border: 0; max-height: 0;
   }
   .sn-rib-btn {
     border: 1px solid var(--border); background: rgba(0,12,28,.9); color: #c8e4ff;
@@ -334,7 +337,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728270000-globe-follow-ai"></script>
+<script src="/js/spacenet/boot.js?v=20260728280000-ribbon-spec"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

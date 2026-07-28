@@ -171,37 +171,46 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 ## P2 — Full picture (one surface)
 
 ```
-┌──────── radar ────────┐     ┌── logo + GLOBAL ──┐     ┌── S field ──┐
-│ sweep · 1671 km/h     │     │ Astranov SpaceNet │     │ balance S   │
-│ blips shops/places    │     │                   │     │ mine · FPS  │
-└───────────────────────┘     └───────────────────┘     └─────────────┘
-     🔐 auth                 task ribbon (this task)      🎯 🗺 👤 ➕
+┌── radar ──┐          ┌── Astranov SpaceNet ──┐          ┌── miner ──┐
+│ speed km/h│          │ home → GLOBAL Earth   │          │ S balance │
+└───────────┘          └───────────────────────┘          │ S/day     │
+                                                          └───────────┘
 ┌─────────────────────────────────────────────────────────────────────┐
 │              FULL GLOBAL EARTH — SNGlobe imaging (KEEP)               │
 └─────────────────────────────────────────────────────────────────────┘
-                    CLI: field · 🎙 hands-free · ➤ Send
+┌─ CLI ───────────────────────────────────────────────────────────────┐
+│  task ribbon: **current task only** (hidden when idle)                │
+│  field · 🎙 hands-free · ➤ Send · expand                              │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 | Zone | What | Rule |
 |------|------|------|
 | **Earth imaging KEEP** | **`SNGlobe`** — Three.js + `earth_atmos_2048` / specular / clouds | **Never strip** |
 | **Cosmos (P1-C)** | **`SNCosmos` + `setBody` + land + crawl** — every body a real globe; internet → SpaceNet | Required |
-| **Globe click = go there** | Raycast → NATIONAL on **current body** + scan | SpaceNet law |
+| **Globe click = go there** | Raycast → progressive dive · double zoom out | SpaceNet law |
 | **Zoom out of city** | Flat map → **3D body GLOBAL** (Earth: SNGlobe Earth) | Hard ban: stuck on Leaflet as “world” |
-| **Map long-press** | **Long-press** empty map (~580ms) → `SNTile.createAt` multi-tile. **Short-tap never creates.** Short-tap pin → open full tile | Required |
-| **Radar** | Top-left · ~8fps · center = speed km/h · **caption below** names the mode | Required |
-| **Radar speed meaning** | **Solar:** Earth through space (orbit ~107208 km/h). **Global/national:** Earth rotation at equator (~1671 km/h). **City map:** walking (~5 km/h). **City tier:** driving urban (~50 km/h). Text under radar explains which | Required |
-| **Logo** | Center · hard reset | Never under edge/S |
-| **S field** | Top-right · S balance · mine · FPS · finance | Required · **S primary** |
-| **Task ribbon** | Materialised buttons for **current task only** | Not permanent dock flood |
-| **Edge** | 🎯 🗺 👤 ➕ (emoji) + 🌍 Globe | Not letter-only LOC/MAP |
-| **Auth** | 🔐 under radar | |
-| **CLI** | Field + **➤ Send** + **🎙 hands-free** → `SNAi` | Required |
-| **CLI grab** | **One finger from anywhere** on the CLI panel: vertical = smooth expand/retract · free = move · snap collapsed/mid/expanded | Sacred (`SNUi` / `ui.js`) |
-| **AI** | **`SNAi` must greet, talk, and run tasks** on boot (`bootPresence` / `greet`). Freeform CLI → `SNAi.ask` (acts: locate/shops/job/date/deliver + edge chat). Not a silent optional module. | Required |
+| **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap pin → open tile | Required |
+| **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
+| **Radar** | Top-left · speed km/h | Required |
+| **Home** | Center label **Astranov SpaceNet** → full GLOBAL Earth | Required |
+| **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
+| **Task ribbon** | On CLI top · **materialised for current task only** · **hidden when idle** | **Not permanent button flood** |
+| **CLI fixed controls** | Field + **➤ Send** + **🎙 hands-free** (+ size expand) | Required on form, not ribbon |
+| **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
+| **AI** | `SNAi` greets + freeform acts (locate/shops/fly/go + marketplace) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
-**Contaminated (discard):** any build missing radar **or** S field **or** mine/resources/perf **or** task ribbon **or** GLOBAL default — thin “globe+CLI only” is fake.
+### CLI ribbon law (non-negotiable)
+
+| Allowed on ribbon | Forbidden without **owner authorize** |
+|-------------------|----------------------------------------|
+| Buttons for the **active task context only** (e.g. shops → cart/order/menu; delivery → claim) | Permanent locate · city · shops · me · help · login · first delivery · wallet strip |
+| Empty / hidden when task = idle | Floating edge 🎯 🗺 👤 ➕ docks (use CLI text / AI / home / miner instead) |
+
+`locate` · `city` · `shops` · `help` · `login` · `me` remain **CLI commands / AI speech**, not permanent ribbon keys.
+
+**Contaminated (discard):** missing radar **or** miner S **or** Astranov SpaceNet home **or** GLOBAL default **or** permanent multi-button ribbon flood.
 
 ### CLI (minimum commands)
 

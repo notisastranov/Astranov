@@ -45,59 +45,53 @@
   var blips = [];
   var fpsBuf = [];
   var lastF = 0;
+  /**
+   * SPECS: task ribbon = materialised buttons for **current task only**.
+   * No permanent dock flood (locate/shops/me/help/login are CLI/AI text, not ribbon).
+   * idle = empty ribbon (hidden).
+   */
   var TASKS = {
-    idle: ['help', 'locate', 'shops', 'rate'],
-    map: ['shops', 'global', 'cart', 'order'],
-    shops: ['cart', 'order', 'menu', 'global'],
-    mine: ['resources', 'donate on', 'mine off', 'rate'],
-    money: ['rate', 'wallet', 'mine on', 'finance'],
-    space: ['thesis', 'go to mars', 'vault', 'global'],
+    idle: [],
+    map: ['shops', 'cart', 'order'],
+    shops: ['cart', 'order', 'menu'],
+    mine: ['mine on', 'mine off', 'resources'],
+    money: ['rate', 'finance'],
+    space: ['go to earth', 'cosmos'],
+    delivery: ['claim', 'task list', 'cart', 'order'],
   };
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  /** Primary tools always on CLI top ribbon + context actions */
-  var RIBBON_CORE = [
-    { cmd: 'earth', label: '🏠 Home' },
-    { cmd: 'locate', label: '🎯 Locate' },
-    { cmd: 'city', label: '🗺 City' },
-    { cmd: 'shops', label: '🏪 Shops' },
-    { cmd: 'me', label: '👤 Me' },
-    { cmd: 'first delivery', label: '📦 First' },
-    { cmd: 'help', label: '❓ Help' },
-    { cmd: 'login', label: '🔐' },
-  ];
-
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
     if (!bar) return;
+    // SPECS: current task only — no RIBBON_CORE permanent set
     var ctx = TASKS[task] || [];
+    if (!ctx.length) {
+      bar.innerHTML = '';
+      bar.hidden = true;
+      bar.setAttribute('aria-hidden', 'true');
+      return;
+    }
+    bar.hidden = false;
+    bar.setAttribute('aria-hidden', 'false');
     var seen = {};
     var h = '';
-    function add(cmd, label) {
+    for (var i = 0; i < ctx.length; i++) {
+      var cmd = ctx[i];
       var k = String(cmd).toLowerCase();
-      if (seen[k]) return;
+      if (seen[k]) continue;
       seen[k] = 1;
       h +=
-        '<button type="button" class="sn-rib-btn' +
-        (k === 'earth' || k === 'global' ? ' home' : '') +
-        '" data-run="' +
+        '<button type="button" class="sn-rib-btn" data-run="' +
         String(cmd).replace(/"/g, '') +
         '">' +
-        (label || cmd) +
+        cmd +
         '</button>';
     }
-    RIBBON_CORE.forEach(function (b) {
-      add(b.cmd, b.label);
-    });
-    // Context extras (no dupes)
-    for (var i = 0; i < ctx.length; i++) {
-      add(ctx[i], ctx[i]);
-    }
     if (notice) {
-      /* notice goes to cli preview, not clutter ribbon */
       try {
         if (g.SNCli && SNCli.preview) SNCli.preview(notice);
       } catch (e) {}
@@ -109,8 +103,8 @@
           ev.preventDefault();
           ev.stopPropagation();
         }
-        var cmd = b.getAttribute('data-run');
-        if (g.SNCli && SNCli.run) void SNCli.run(cmd);
+        var c = b.getAttribute('data-run');
+        if (g.SNCli && SNCli.run) void SNCli.run(c);
       };
     });
   }
@@ -298,8 +292,9 @@
     else if (/^city|^map/.test(l)) setTask('map');
     else if (/^mine|^resources|^donate|^boost/.test(l)) setTask('mine');
     else if (/^rate|^wallet|^money|^finance|^s\b/.test(l)) setTask('money');
-    else if (/^thesis|^vault|^mars|^go to/.test(l)) setTask('space');
-    else if (/^global|^locate|^earth/.test(l)) setTask('idle');
+    else if (/^thesis|^vault|^mars|^go to|^cosmos/.test(l)) setTask('space');
+    else if (/^deliver|^claim|^first delivery/.test(l)) setTask('delivery');
+    else if (/^global|^locate|^earth|^help/.test(l)) setTask('idle');
   }
 
   function showTerms() {

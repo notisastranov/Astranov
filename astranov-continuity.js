@@ -103,10 +103,16 @@ const AstranovContinuity = {
     'cli', 'global-earth', 'multi-body-cosmos', 'astranov-ai-presence', 'zero-dummy',
   ],
   chromeLaw: {
-    onScreenOnly: ['radar', 'home', 'miner'],
+    onScreenOnly: ['radar', 'home-Astranov-SpaceNet', 'miner'],
     minerShows: ['S balance', 'S/day mining rate'],
-    buttonsOn: 'CLI top ribbon #sn-task-ribbon',
+    cliRibbon: 'current-task-only-hidden-when-idle',
+    cliFormFixed: ['input', 'handsfree', 'send', 'expand'],
+    noPermanentRibbonFlood: true,
     noFloatingEdge: true,
+    ribbonNeedsOwnerAuth: [
+      'permanent locate/city/shops/me/help/login/first',
+      'floating 🎯🗺👤➕ edge dock',
+    ],
   },
 
   agentDiscipline: {
