@@ -233,6 +233,27 @@
         log('Voice stopped', 'ok');
         return;
       }
+      if (low === 'voice on' || low === 'speak on' || low === 'tts on') {
+        hfSpeakOut = true;
+        warmVoices();
+        speakAi('Voice on. You should hear me now.', true);
+        log('Voice ON · turn up device volume · Chrome/Edge recommended', 'ok');
+        return;
+      }
+      if (low === 'voice off' || low === 'speak off' || low === 'tts off') {
+        hfSpeakOut = false;
+        try {
+          global.speechSynthesis?.cancel?.();
+        } catch (_) {}
+        log('Voice OFF', 'dim');
+        return;
+      }
+      if (low === 'voice test' || low === 'test voice' || low === 'say test') {
+        warmVoices();
+        speakAi('Astranov SpaceNet voice test. If you hear this, audio works.', true);
+        log('Playing voice test…', 'ok');
+        return;
+      }
       if (low === 'handoff' || low === 'handoffs') {
         const list = global.SNUsage?.openHandoffs?.() || [];
         if (!list.length) log('No open handoffs · report a pain in chat to queue one', 'dim');
@@ -879,6 +900,10 @@
               if (ln.trim()) log(ln, 'ok');
             });
           preview(reply.replace(/^Astranov AI\s*[·:.-]\s*/i, '').slice(0, 80));
+          // Speak AI reply when 🎙 is on (mic muted during speech)
+          try {
+            if (handsfreeOn) speakAi(reply, true);
+          } catch (_) {}
           return;
         }
       }
@@ -896,8 +921,9 @@
   let hfMutedUntil = 0; // ignore mic while TTS / cooldown (kills feedback loop)
   let hfBusy = false; // one command at a time
   let hfRunTimes = []; // runaway guard
-  /** TTS off by default — talking non-stop was a product emergency */
-  let hfSpeakOut = false;
+  /** Speak AI replies while 🎙 is on (mic paused during speech) */
+  let hfSpeakOut = true;
+  let voicesReady = false;
 
   function setHandsfreeUi(on, label) {
     const btn = $('btn-handsfree');
@@ -905,8 +931,8 @@
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       btn.title = on
-        ? 'Mic ON · tap to stop (voice reply off unless enabled)'
-        : 'Hands-free mic → AI (no auto babble)';
+        ? 'Mic + voice ON · tap to stop'
+        : 'Hands-free: mic + Astranov voice reply';
     }
     if (label) preview(label);
   }
@@ -915,37 +941,101 @@
     hfMutedUntil = Date.now() + (ms || 2000);
   }
 
-  /** Optional speak — OFF by default. Never auto-loop. */
-  function speakAi(text, force) {
-    if (!force && !hfSpeakOut) return;
-    if (!handsfreeOn && !force) return;
+  function warmVoices() {
     try {
       const synth = global.speechSynthesis;
-      if (!synth || !global.SpeechSynthesisUtterance) return;
+      if (!synth) return;
+      const list = synth.getVoices() || [];
+      if (list.length) voicesReady = true;
+      if (typeof synth.onvoiceschanged !== 'undefined') {
+        synth.onvoiceschanged = function () {
+          voicesReady = (synth.getVoices() || []).length > 0;
+        };
+      }
+    } catch (_) {}
+  }
+
+  function pickVoice(lang) {
+    try {
+      const voices = global.speechSynthesis?.getVoices?.() || [];
+      if (!voices.length) return null;
+      const want = String(lang || 'en-US').toLowerCase();
+      const pref =
+        voices.find((v) => (v.lang || '').toLowerCase() === want) ||
+        voices.find((v) => (v.lang || '').toLowerCase().indexOf(want.slice(0, 2)) === 0) ||
+        voices.find((v) => /en/i.test(v.lang) && /google|natural|premium|enhanced/i.test(v.name || '')) ||
+        voices.find((v) => /en/i.test(v.lang)) ||
+        voices[0];
+      return pref || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Speak Astranov text. force=true always tries (used for AI replies + 🎙 on).
+   * Mic stays muted until speech ends → no feedback loop.
+   */
+  function speakAi(text, force) {
+    if (!force && !hfSpeakOut) return;
+    if (!force && !handsfreeOn) return;
+    try {
+      const synth = global.speechSynthesis;
+      if (!synth || !global.SpeechSynthesisUtterance) {
+        log('No speech synthesis in this browser · try Chrome/Edge', 'err');
+        return;
+      }
+      warmVoices();
+      // Chrome often leaves synth "paused" after cancel — resume
+      try {
+        synth.resume();
+      } catch (_) {}
       const clean = String(text || '')
-        .replace(/^Astranov AI\s*[·:.-]\s*/i, '')
-        .replace(/[🎙➤⋮]/g, '')
+        .replace(/^Astranov AI\s*[·:.-]\s*/gi, '')
+        .replace(/[🎙➤⋮🏠🎯]/g, '')
+        .replace(/\s+/g, ' ')
         .trim()
-        .slice(0, 180);
+        .slice(0, 320);
       if (!clean) return;
       synth.cancel();
-      muteMic(Math.min(12000, 1500 + clean.length * 45));
+      // Mute mic for full speech + cushion
+      muteMic(Math.min(20000, 2200 + clean.length * 55));
       try {
         if (speechRec) speechRec.abort();
       } catch (_) {}
+      const lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
       const u = new SpeechSynthesisUtterance(clean);
-      u.lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
-      u.rate = 1.05;
+      u.lang = lang;
+      u.rate = 1.0;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      const voice = pickVoice(lang);
+      if (voice) u.voice = voice;
       u.onend = () => {
-        muteMic(900);
-        if (handsfreeOn) scheduleListenRestart(1000);
+        muteMic(1100);
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(1200);
       };
-      u.onerror = () => {
-        muteMic(500);
-        if (handsfreeOn) scheduleListenRestart(800);
+      u.onerror = (ev) => {
+        try {
+          log('Voice error · ' + ((ev && ev.error) || 'speak failed'), 'dim');
+        } catch (_) {}
+        muteMic(600);
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(900);
       };
-      synth.speak(u);
-    } catch (_) {}
+      // Slight delay helps Chrome after getVoices / cancel
+      setTimeout(function () {
+        try {
+          synth.resume();
+          synth.speak(u);
+        } catch (e) {
+          log('Could not speak · ' + (e.message || e), 'err');
+        }
+      }, 60);
+    } catch (e) {
+      try {
+        log('Speak failed · ' + (e.message || e), 'err');
+      } catch (_) {}
+    }
   }
 
   function scheduleListenRestart(ms) {
@@ -969,7 +1059,7 @@
   function stopHandsfree(reason) {
     handsfreeOn = false;
     hfBusy = false;
-    hfSpeakOut = false;
+    // keep hfSpeakOut true so next 🎙 still has voice
     if (hfRestartTimer) {
       clearTimeout(hfRestartTimer);
       hfRestartTimer = null;
@@ -1116,17 +1206,19 @@
     };
 
     handsfreeOn = true;
-    hfSpeakOut = false;
+    hfSpeakOut = true;
     hfRunTimes = [];
-    muteMic(400);
-    setHandsfreeUi(true, '🎙 mic on (silent)');
+    muteMic(2500); // don't hear the greeting
+    setHandsfreeUi(true, '🎙 mic + voice');
+    warmVoices();
     try {
       speechRec.start();
       try {
-        if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: false });
+        if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: true });
       } catch (_) {}
-      log('🎙 Mic ON · speak a command · no auto-talk · tap 🎙 to stop', 'ok');
-      log('Tip: type first delivery · tile stays under CLI · type close tile if stuck', 'dim');
+      log('🎙 Mic + voice ON · I will speak replies · tap 🎙 to stop', 'ok');
+      // User gesture = this click → browser allows TTS
+      speakAi('Astranov here. I can hear you. Say locate, or first delivery.', true);
     } catch (e) {
       stopHandsfree('Hands-free failed');
       log('Hands-free start failed · ' + (e.message || e), 'err');
@@ -1189,8 +1281,9 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     $('btn-home')?.addEventListener('click', () => void run('earth'));
-    log('CLI ready · ribbon buttons · radar · home · miner · ➤ · 🎙', 'dim');
+    log('CLI ready · ribbon · 🎙 voice · type voice test if silent', 'dim');
     preview('Talk to Astranov AI…');
+    warmVoices();
     // If AI already loaded (race), ensure presence
     setTimeout(() => {
       try {
