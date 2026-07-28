@@ -1,6 +1,6 @@
 /** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728360000-splash-clean',
+  version: '20260728400000-architect-auth',
   updated: '2026-07-28',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -166,7 +166,9 @@ const AstranovContinuity = {
     'no Aegean Bites / Orbit Café NPC seeds',
     'shops uses live DB/overpass/crawl',
     'marketplace alwaysOn 24/7/365',
-    'SNAi greets on boot',
+    'SpaceNet AI greets on boot (not Astranov)',
+    'Astranov is Architect of SpaceNet',
+    'Google OAuth branded astranov.eu not supabase project id',
     'first delivery path coached by AI',
     'usage + handoff for midnight Greek ship',
     'long-press create · short-tap open tile',

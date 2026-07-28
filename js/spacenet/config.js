@@ -20,6 +20,10 @@
       site: 'https://astranov.eu',
       privacy: 'https://astranov.eu/privacy.html',
       terms: 'https://astranov.eu/terms.html',
+      architect: 'Astranov',
+      ai: 'SpaceNet',
+      // When Supabase Custom Domain is live, set sbUrl to e.g. https://api.astranov.eu
+      // so Google OAuth shows your host, not xxxx.supabase.co
     },
   };
   g.SB_URL = g.SN_CONFIG.sbUrl;

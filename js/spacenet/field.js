@@ -76,8 +76,8 @@
     { act: 'locate', label: '🎯 Locate', title: 'Locate me on Earth' },
     { act: 'user', label: '👤 User', title: 'Your multi-tile' },
     { act: 'add', label: '➕ Add', title: 'Create multi-tile at focus' },
-    { act: 'handsfree', label: '🎙 AI', title: 'Hands-free voice → Astranov AI', id: 'sn-rib-hf' },
-    { act: 'send', label: '➤ Send', title: 'Send message to AI / CLI' },
+    { act: 'handsfree', label: '🎙 SpaceNet', title: 'Hands-free voice → SpaceNet AI', id: 'sn-rib-hf' },
+    { act: 'send', label: '➤ Send', title: 'Send message to SpaceNet AI / CLI' },
   ];
   var TASKS = {
     idle: [],

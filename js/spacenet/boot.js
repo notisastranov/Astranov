@@ -118,7 +118,7 @@
     '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship
     '/js/spacenet/market.js', // first vendor → delivery coach
     '/js/spacenet/cli.js',
-    '/js/spacenet/ai.js', // Astranov AI on critical path — must greet
+    '/js/spacenet/ai.js', // SpaceNet AI on critical path — must greet
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
@@ -211,7 +211,7 @@
       try {
         if (window.SNCli && SNCli.log) {
           SNCli.log('SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL' : 'CLI-only'), 'ok');
-          SNCli.preview('Astranov AI · locate · shops · talk');
+          SNCli.preview('SpaceNet · locate · shops · talk');
         }
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
@@ -220,12 +220,12 @@
       try {
         if (window.speechSynthesis) window.speechSynthesis.cancel();
       } catch (e0) {}
-      // Astranov AI text presence (NOT TTS babble)
+      // SpaceNet text presence (NOT TTS babble)
       try {
         if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
         else if (window.SNAi && SNAi.greet) void SNAi.greet();
         else if (window.SNCli && SNCli.log)
-          SNCli.log('Astranov AI missing from boot chain', 'err');
+          SNCli.log('SpaceNet missing from boot chain', 'err');
       } catch (e) {
         console.warn('[SpaceNet] AI presence', e);
       }

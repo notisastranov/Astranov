@@ -1,5 +1,6 @@
 /**
- * Astranov AI — product mind on SpaceNet
+ * SpaceNet AI — the mind of the net
+ * Astranov = Architect of SpaceNet (human owner). AI is named SpaceNet only.
  * Speaks first, runs tasks, freeform CLI. Edge aicycle when up; local act always.
  */
 (function (global) {
@@ -10,6 +11,16 @@
   var greeted = false;
   var busy = false;
   var GREET_KEY = 'sn:ai-greeted-session';
+  var AI_NAME = 'SpaceNet';
+
+  function brandReply(text) {
+    var t = String(text || '').trim();
+    if (!t) return t;
+    t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
+    t = t.replace(/^astranov\s*[·:.-]\s*/i, '');
+    t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
+    return AI_NAME + ' · ' + t;
+  }
 
   function loadHist() {
     try {
@@ -86,7 +97,8 @@
         focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are ASTRANOV AI — living mind of Astranov SpaceNet (https://astranov.eu). ' +
+      'You are SPACENET — the AI of the SpaceNet platform (https://astranov.eu). ' +
+      'Astranov is the Architect of SpaceNet (human owner). You are SpaceNet, never call yourself Astranov. ' +
       'Co-pilot for real actions. Match Greek or English. 2–5 short sentences + one next step. ' +
       'GLOBE FOLLOWS YOU: when user wants a place/body, local code flies SNGlobe. ' +
       'You may emit action tags the client executes: [[LOCATE]] [[GO:mars]] [[GO:athens]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
@@ -102,7 +114,7 @@
       (market.step || 'idle') +
       '.' +
       focus +
-      ' Identity: Astranov only.';
+      ' Sign replies as SpaceNet only.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
@@ -301,7 +313,7 @@
     if (!line) {
       return {
         did: did,
-        reply: 'I am Astranov. Try: first delivery · list shop … · locate · fly athens · go to mars.',
+        reply: 'I am SpaceNet. Try: pizza · first delivery · locate · fly athens · go to mars.',
       };
     }
 
@@ -339,8 +351,8 @@
     if (/^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) || low === 'ai' || low === 'astronov' || low === 'astranov') {
       var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
       reply = fl.firstDeliveryDone
-        ? 'I am Astranov AI. Say fly athens · go to mars · locate — the globe follows. Or shops / first delivery.'
-        : 'I am Astranov AI. Globe follows me: fly athens · go to mars · locate. Or first delivery for your shop.';
+        ? 'I am SpaceNet — the AI of the net. Astranov is the Architect of SpaceNet. Say fly athens · go to mars · locate · pizza · shops.'
+        : 'I am SpaceNet. Astranov is the Architect of SpaceNet. Globe follows me: locate · pizza · fly athens · first delivery.';
       return { did: did, reply: reply };
     }
 
@@ -583,7 +595,7 @@
       } catch (e) {
         text = 'First loop error: ' + (e && e.message ? e.message : e);
       }
-      if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+      text = brandReply(text);
       pushHist('assistant', text);
       say(text, 'ok');
       busy = false;
@@ -604,7 +616,7 @@
       } catch (eFood) {
         text = 'Food path error · ' + (eFood && eFood.message ? eFood.message : eFood);
       }
-      if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+      text = brandReply(text);
       pushHist('assistant', text);
       say(text, 'ok');
       busy = false;
@@ -634,7 +646,7 @@
     }
 
     if (!text) text = local.reply;
-    if (!text) text = 'I am Astranov. Edge quiet — try first delivery · locate · fly athens · go to mars.';
+    if (!text) text = 'I am SpaceNet. Edge quiet — try pizza · locate · fly athens · go to mars.';
 
     // Edge tags → move globe; strip tags from spoken/visible text
     try {
@@ -667,8 +679,8 @@
       }
     }
 
-    // Prefix so user always sees the mind
-    if (!/^astranov/i.test(text)) text = 'Astranov AI · ' + text;
+    // Prefix so user always hears SpaceNet (not Astranov)
+    text = brandReply(text);
 
     pushHist('assistant', text);
     // CLI / caller prints reply — avoid double log (say only for greet / first-loop)
@@ -708,13 +720,13 @@
     var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
     var lines = fl.firstDeliveryDone
       ? [
-          'Astranov AI · online on SpaceNet.',
-          'Marketplace first loop already done on this device. shops · locate · or tell me a pain → midnight Greek fix.',
-          'Type anything · ➤ · 🎙',
+          'SpaceNet · online. Astranov is the Architect of SpaceNet.',
+          'Say pizza · locate · shops · or tell me a pain for handoff.',
+          'Type · ➤ · 🎙',
         ]
       : [
-          'Astranov AI · online. Let’s make your first shop + delivery real.',
-          'Type: first delivery  (auto list→menu→order→drive→deliver to you) — or: list shop Your Cafe',
+          'SpaceNet · online. I am the AI. Astranov is the Architect of SpaceNet.',
+          'Try: pizza · first delivery · locate. Or list shop Your Cafe.',
           'S only · no NPC shops. ➤ send · 🎙 hands-free.',
         ];
     lines.forEach(function (ln) {
@@ -729,12 +741,12 @@
     try {
       var tip = await callEdge(
         fl.firstDeliveryDone
-          ? 'One short sentence: greet SpaceNet user; suggest shops or report a pain for handoff. Astranov AI only.'
-          : 'One short sentence: invite user to type first delivery for vendor+self-delivery loop. Astranov AI only.',
+          ? 'One short sentence as SpaceNet AI (not Astranov): greet user; suggest shops or pizza. Astranov is the Architect of SpaceNet.'
+          : 'One short sentence as SpaceNet AI (not Astranov): invite pizza or first delivery. Astranov is the Architect of SpaceNet.',
         'chat',
         { long: false }
       );
-      if (tip) say('Astranov AI · ' + tip.replace(/^astranov ai\s*[·:.-]\s*/i, ''), 'dim');
+      if (tip) say(brandReply(tip), 'dim');
     } catch (e) {}
   }
 
@@ -750,6 +762,8 @@
   loadHist();
 
   global.SNAi = {
+    NAME: AI_NAME,
+    brandReply: brandReply,
     ask: ask,
     code: code,
     coders: coders,

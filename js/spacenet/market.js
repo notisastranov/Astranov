@@ -1,5 +1,5 @@
 /* SNMarket — first vendor listing + first self-delivery (real path, zero NPC)
- * Coached by Astranov AI · chat steps · CLI: list shop · menu add · first delivery
+ * Coached by SpaceNet AI · chat steps · CLI: list shop · menu add · first delivery
  */
 (function (global) {
   'use strict';
@@ -517,7 +517,7 @@
       global.SNProfiles.setMenuItem(vendor.id, {
         name: f.charAt(0).toUpperCase() + f.slice(1),
         price: defaultFoodPrice(food),
-        desc: 'Ordered via Astranov AI · pay in S · confirm with kitchen',
+        desc: 'Ordered via SpaceNet AI · pay in S · confirm with kitchen',
       });
       vendor = global.SNProfiles.get(vendor.id) || vendor;
     }

@@ -200,19 +200,21 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
 | **Auth branding** | Users must sign in to **Astranov SpaceNet / astranov.eu** — **never** show raw `*.supabase.co` project ref as the product identity | Required (Google Cloud OAuth branding + recommended Supabase custom domain) |
 
-### Auth branding (Google must not show random Supabase project name)
+### Auth branding (Google must show astranov.eu / Astranov SpaceNet — not supabase mambojumbo)
 
-Google’s screen shows whatever is configured for the OAuth client / Auth host. Product law:
+**Law:** Users must never see a random `*.supabase.co` project id as the thing they “sign in to.” Product identity is **Astranov SpaceNet** at **astranov.eu**.
 
-| Layer | Owner action |
-|-------|----------------|
-| **Google Cloud → Auth Platform → Branding** | App name **Astranov SpaceNet** · home **https://astranov.eu** · privacy/terms on astranov.eu · logo · authorized domain **astranov.eu** · **Publish** app |
-| **Google Cloud → Clients** | Authorized JS origins: `https://astranov.eu` · redirect URI = Supabase callback (Dashboard → Auth → Google) |
-| **Supabase → Auth → URL** | Site URL `https://astranov.eu` · Redirect `https://astranov.eu/**` |
-| **Supabase custom domain (recommended)** | e.g. `api.astranov.eu` or `auth.astranov.eu` so callback host is **your** domain, not `xxxx.supabase.co` · then set `SN_CONFIG.sbUrl` to that host |
-| **App UI** | Sign-in copy always says **Astranov SpaceNet · astranov.eu** (`home.js` / `auth.js`) |
+Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**, not by front-end copy alone.
 
-Until custom domain + Google branding are live, Google may still show the technical Supabase host; that is infrastructure, not acceptable long-term product.
+| Layer | Required action |
+|-------|-----------------|
+| **Google Cloud → Branding** | App name **Astranov SpaceNet** · support email yours · home **https://astranov.eu** · privacy **https://astranov.eu/privacy.html** · terms **https://astranov.eu/terms.html** · authorized domain **astranov.eu** · logo · **Publish app** (not Testing-only) |
+| **Google Cloud → OAuth Client (Web)** | Origins: `https://astranov.eu` · Redirect URI from Supabase Auth → Google provider page (callback) |
+| **Supabase → Auth → URL config** | Site URL `https://astranov.eu` · Redirect URLs `https://astranov.eu` and `https://astranov.eu/**` |
+| **Supabase → Custom Domain** | Add **`api.astranov.eu`** (or `auth.astranov.eu`) so Auth host is **your** domain. DNS CNAME as Supabase shows. Then set `SN_CONFIG.sbUrl` to `https://api.astranov.eu` and update Google redirect to `https://api.astranov.eu/auth/v1/callback` |
+| **App UI** | Always **Sign in with Google · astranov.eu** — never advertise supabase project ref |
+
+**Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
 | **CLI top ribbon (permanent)** | **Always visible** on CLI panel top: **🎯 Locate · 👤 User · ➕ Add · 🎙 AI hands-free · ➤ Send** | **Required — never hide when idle** |
@@ -221,7 +223,8 @@ Until custom domain + Google branding are live, Google may still show the techni
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
 | **CLI max height** | Default expand = **1/3 of screen** (button, no drag). **User drag may override** taller (up to ~72vh). | Required |
 | **Globe control** | Drag must cancel fly + zero inertia; euler YXZ only (no quat/euler fight); soft damp; no wild spin | Required |
-| **AI** | `SNAi` greets + freeform acts (locate/shops/fly/go + marketplace) | Required |
+| **AI name** | The AI is **SpaceNet**. **Astranov** is the **Architect of SpaceNet** (owner). AI never claims to be Astranov. | Required |
+| **AI** | `SNAi` (SpaceNet) greets + freeform acts (locate/shops/food juice/fly/go + marketplace) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
 ### CLI top ribbon law (non-negotiable — owner locked)
@@ -231,7 +234,7 @@ Until custom domain + Google branding are live, Google may still show the techni
 | **🎯 Locate** | GPS + fly globe to user | `SNCli.run('locate')` / `SNGlobe.locate` |
 | **👤 User** | Open my multi-tile | `SNTile.openMe` |
 | **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
-| **🎙 AI** | Hands-free voice ↔ Astranov AI | `SNCli.toggleHandsfree` |
+| **🎙 SpaceNet** | Hands-free voice ↔ **SpaceNet AI** | `SNCli.toggleHandsfree` |
 | **➤ Send** | Submit CLI / talk to AI | form submit |
 
 **Forbidden:** agents removing this permanent five, or hiding the ribbon when idle.  
@@ -288,7 +291,7 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 | Auto | `first delivery` | `SNMarket.runFirstLoop` full path |
 | **Food juice** | `pizza` / `order sushi` / food words | `SNMarket.fulfillFoodIntent`: locate → find → tiles/menus/prices S → judge → order → assign driver |
 
-**Astranov AI** greets with this path until `SNUsage` flag `firstDeliveryDone`. Pain reports → `SNUsage.handoff` for coding agent.
+**SpaceNet AI** greets with this path until `SNUsage` flag `firstDeliveryDone`. Pain reports → `SNUsage.handoff`. **Astranov = Architect of SpaceNet.**
 
 ### Usage data + midnight Greek ship (P4-U)
 

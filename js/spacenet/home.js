@@ -316,11 +316,9 @@
         } else {
           var brand = (global.SN_CONFIG && SN_CONFIG.brand) || {};
           var ok = global.confirm(
-            'Sign in to ' +
-              (brand.name || 'Astranov SpaceNet') +
-              ' (' +
-              (brand.domain || 'astranov.eu') +
-              ')?\n\nGoogle may open next. Use account for SpaceNet on astranov.eu.'
+            'Sign in to Astranov SpaceNet (astranov.eu)?\n\n' +
+              'You are signing into the SpaceNet platform at astranov.eu — not a third-party cloud project name.\n\n' +
+              'Architect: Astranov · AI: SpaceNet'
           );
           if (!ok) return;
           if (global.SNAuth && SNAuth.toggle) await SNAuth.toggle();

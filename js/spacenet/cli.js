@@ -137,7 +137,7 @@
         else log(r?.error || 'food path failed', 'err');
         return;
       }
-      // First marketplace loop + usage (Astranov AI coaches the same path)
+      // First marketplace loop + usage (SpaceNet coaches the same path)
       if (
         low === 'first delivery' ||
         low === 'first loop' ||
@@ -951,8 +951,8 @@
         return;
       }
 
-      // Freeform → Astranov AI (must talk + act; coaches first shop/delivery)
-      preview('Astranov AI…');
+      // Freeform → SpaceNet (must talk + act; coaches first shop/delivery)
+      preview('SpaceNet…');
       global.SNUi?.expandPanel?.(true);
       if (!global.SNAi?.ask) {
         await new Promise((r) => setTimeout(r, 600));
@@ -965,7 +965,7 @@
             .forEach((ln) => {
               if (ln.trim()) log(ln, 'ok');
             });
-          preview(reply.replace(/^Astranov AI\s*[·:.-]\s*/i, '').slice(0, 80));
+          preview(reply.replace(/^SpaceNet\s*[·:.-]\s*/i, '').slice(0, 80));
           // Speak AI reply when 🎙 is on (mic muted during speech)
           try {
             if (handsfreeOn) speakAi(reply, true);
@@ -973,7 +973,7 @@
           return;
         }
       }
-      log('Astranov AI loading… try: first delivery · locate · shops', 'dim');
+      log('SpaceNet loading… try: first delivery · locate · shops', 'dim');
       preview('AI loading…');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');
@@ -1057,7 +1057,7 @@
         synth.resume();
       } catch (_) {}
       const clean = String(text || '')
-        .replace(/^Astranov AI\s*[·:.-]\s*/gi, '')
+        .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
         .replace(/[🎙➤⋮🏠🎯]/g, '')
         .replace(/\s+/g, ' ')
         .trim()
@@ -1289,7 +1289,7 @@
       } catch (_) {}
       log('🎙 Mic + voice ON · I will speak replies · tap 🎙 to stop', 'ok');
       // User gesture = this click → browser allows TTS
-      speakAi('Astranov here. I can hear you. Say locate, or first delivery.', true);
+      speakAi('SpaceNet here. I can hear you. Say pizza, locate, or first delivery.', true);
     } catch (e) {
       stopHandsfree('Hands-free failed');
       log('Hands-free start failed · ' + (e.message || e), 'err');
@@ -1353,7 +1353,7 @@
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     // Home button → SNHome menu (not direct earth); earth via menu or CLI
     log('CLI ready · ribbon · 🎙 · Astranov SpaceNet menu for roles', 'dim');
-    preview('Talk to Astranov AI…');
+    preview('Talk to SpaceNet…');
     warmVoices();
     // If AI already loaded (race), ensure presence
     setTimeout(() => {
