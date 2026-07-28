@@ -32,11 +32,19 @@
       );
   }
 
+  /** Absolute max CLI height: 1/3 of viewport (no drag required to reach max) */
+  function maxCliPx() {
+    var h = window.innerHeight || 700;
+    return Math.round(h / 3);
+  }
+
   function sizePx(mode) {
     var h = window.innerHeight || 700;
-    if (mode === 'collapsed') return Math.min(168, Math.round(h * 0.22));
-    if (mode === 'expanded') return Math.min(640, Math.round(h * 0.78));
-    return Math.min(Math.round(h * 0.42), Math.round(h * 0.46));
+    var cap = maxCliPx();
+    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16), cap);
+    // mid and expanded both cap at 1/3 — expand button reaches max without drag
+    if (mode === 'expanded') return cap;
+    return Math.min(Math.round(h * 0.28), cap);
   }
 
   function currentMode(panel) {
@@ -52,8 +60,9 @@
     if (mode === 'collapsed') panel.classList.add('collapsed');
     else if (mode === 'expanded') panel.classList.add('expanded');
     else panel.classList.add('mid');
-    // Clear live height so CSS classes drive size smoothly
-    panel.style.maxHeight = '';
+    // Enforce 1/3 viewport cap without requiring user drag
+    var px = sizePx(mode === 'expanded' ? 'expanded' : mode === 'collapsed' ? 'collapsed' : 'mid');
+    panel.style.maxHeight = px + 'px';
     panel.style.height = '';
     if (animate !== false) panel.classList.add('sn-size-anim');
     try {
@@ -219,14 +228,14 @@
       if (mode === 'move') {
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
-        // Live height: drag up expands, down retracts (smooth)
-        var next = Math.max(88, Math.min(window.innerHeight * 0.88, startH - dy));
+        // Live height: drag up expands, down retracts — hard cap 1/3 screen
+        var next = Math.max(88, Math.min(maxCliPx(), startH - dy));
         panel.style.maxHeight = next + 'px';
         panel.style.height = next + 'px';
         // preview class near thresholds
         panel.classList.remove('expanded', 'collapsed', 'mid');
-        if (next < sizePx('collapsed') + 24) panel.classList.add('collapsed');
-        else if (next > sizePx('mid') + 40) panel.classList.add('expanded');
+        if (next < sizePx('collapsed') + 16) panel.classList.add('collapsed');
+        else if (next > sizePx('mid') + 12) panel.classList.add('expanded');
         else panel.classList.add('mid');
       }
       if (e.cancelable) e.preventDefault();

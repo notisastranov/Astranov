@@ -202,6 +202,7 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Task ribbon** | On CLI top · **materialised for current task only** · **hidden when idle** | **Not permanent button flood** |
 | **CLI fixed controls** | Field + **➤ Send** + **🎙 hands-free** (+ size expand) | Required on form, not ribbon |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
+| **CLI max height** | Expand caps at **1/3 of screen** (no drag required to reach max; drag cannot exceed 1/3) | Required |
 | **AI** | `SNAi` greets + freeform acts (locate/shops/fly/go + marketplace) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
