@@ -66,7 +66,7 @@
     global.SNProfiles.upsert(p);
     try {
       global.SNMap?.showProfiles?.();
-      global.SNTile?.open?.(p, { tab: 'menu' });
+      // Do NOT auto-open full tile over CLI (SPECS: no bury controls)
     } catch (_) {}
     W.shopName = shop;
     W.step = p.menu.length ? 'ready_order' : 'need_menu';
@@ -98,7 +98,6 @@
     save();
     track('menu_add', { name: n, price: pr });
     try {
-      global.SNTile?.open?.(me(), { tab: 'menu' });
       global.SNMap?.showProfiles?.();
     } catch (_) {}
     return { ok: true, item: item, menu: (me() && me().menu) || [] };
@@ -155,7 +154,6 @@
     global.SNProfiles.upsert(p);
     track('driver_online', { vehicle: p.vehicle });
     try {
-      global.SNTile?.open?.(p, { tab: 'drive' });
       global.SNMap?.showProfiles?.();
     } catch (_) {}
     W.step = 'claim';
@@ -215,6 +213,12 @@
     var shop = opts.shop || W.shopName || 'My SpaceNet Shop';
     var item = opts.item || 'House special';
     var price = opts.price != null ? opts.price : 5;
+    // Kill runaway voice + close any tile covering CLI
+    try {
+      global.speechSynthesis?.cancel?.();
+      global.SNCli?.stopHandsfree?.('first-loop');
+      global.SNTile?.close?.();
+    } catch (_) {}
     say('First loop · listing your shop at current place…', 'dim');
     // Prefer GPS focus
     try {

@@ -73,6 +73,33 @@
     }
   }
 
+  /** Put CLI back bottom-center; clear free drag scatter */
+  function resetChrome() {
+    var dock = $('dock');
+    var panel = $('panel');
+    if (!dock || !panel) return;
+    try {
+      localStorage.removeItem(POS_KEY);
+    } catch (_) {}
+    dock.classList.remove('free');
+    dock.style.left = '';
+    dock.style.top = '';
+    dock.style.right = '';
+    dock.style.bottom = '';
+    dock.style.transform = '';
+    dock.style.width = '';
+    dock.style.padding = '';
+    panel.style.margin = '';
+    panel.style.maxWidth = '';
+    panel.style.width = '';
+    panel.style.maxHeight = '';
+    panel.style.height = '';
+    setSize('mid', true);
+    try {
+      global.SNTile?.close?.();
+    } catch (_) {}
+  }
+
   function applyPos(dock, panel, left, top) {
     var padTop = 56;
     var padSide = 8;
@@ -283,5 +310,12 @@
     }
   }
 
-  global.SNUi = { init: init, showCoach: showCoach, expandPanel: expandPanel, bindCliDrag: bindCliDrag, setSize: setSize };
+  global.SNUi = {
+    init: init,
+    showCoach: showCoach,
+    expandPanel: expandPanel,
+    bindCliDrag: bindCliDrag,
+    setSize: setSize,
+    resetChrome: resetChrome,
+  };
 })(window);

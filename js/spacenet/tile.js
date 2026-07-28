@@ -23,16 +23,20 @@
   }
 
   function ensureCss() {
-    if (document.getElementById('sn-tile-css')) return;
+    // Bump id when layout law changes so old full-screen tile CSS is replaced
+    const old = document.getElementById('sn-tile-css');
+    if (old) old.remove();
+    if (document.getElementById('sn-tile-css-v2')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css';
+    st.id = 'sn-tile-css-v2';
     st.textContent = [
-      '#sn-tile{position:fixed;inset:0;z-index:55;display:none;align-items:flex-end;justify-content:center;',
-      'padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:rgba(0,0,0,.45);pointer-events:auto}',
+      /* z-index BELOW CLI dock (100) — never bury 🎙 / send / controls */
+      '#sn-tile{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;',
+      'padding:12px 12px calc(132px + env(safe-area-inset-bottom));background:rgba(0,0,0,.4);pointer-events:auto}',
       '#sn-tile.open{display:flex}',
-      '#sn-tile .sn-tile-card{width:min(440px,100%);max-height:min(78vh,720px);overflow:auto;border-radius:16px;',
+      '#sn-tile .sn-tile-card{width:min(440px,100%);max-height:min(58vh,560px);overflow:auto;border-radius:16px;',
       'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.45);box-shadow:0 12px 40px rgba(0,0,0,.65);',
-      'color:#c8e4ff;display:flex;flex-direction:column}',
+      'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto}',
       '#sn-tile .sn-tile-cover{position:relative;height:120px;background:#061428 center/cover no-repeat;flex-shrink:0}',
       '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;border:0;border-radius:10px;',
       'background:rgba(0,0,0,.55);color:#fff;width:36px;height:36px;cursor:pointer;font-size:16px}',

@@ -212,7 +212,11 @@
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
 
-      // Astranov AI must speak now (already on critical load chain)
+      // Kill any stuck browser TTS from prior session / bad hands-free
+      try {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } catch (e0) {}
+      // Astranov AI text presence (NOT TTS babble)
       try {
         if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
         else if (window.SNAi && SNAi.greet) void SNAi.greet();

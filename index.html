@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728210000-handsfree" />
-<meta name="astranov-continuity" content="20260728210000-handsfree" />
+<meta name="astranov-build" content="20260728220000-no-babble" />
+<meta name="astranov-continuity" content="20260728220000-no-babble" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="First shop+delivery coached by AI. Usage → midnight Athens ship." />
 <meta name="astranov-ai-handoff" content="Coach first delivery. SNUsage handoff. One fix per Athens midnight." />
@@ -51,7 +51,7 @@
 
   /* Top-left under radar + speed caption: auth only */
   #bar-left {
-    position: fixed; top: 198px; left: 10px; z-index: 25;
+    position: fixed; top: 198px; left: 10px; z-index: 90;
     display: flex; gap: 6px; align-items: center;
   }
   #bar-left button {
@@ -63,7 +63,7 @@
 
   /* Top-right: S field HUD (not under logo) */
   #field-balance-hud {
-    position: fixed; top: 8px; right: 10px; z-index: 42; pointer-events: auto; cursor: pointer;
+    position: fixed; top: 8px; right: 10px; z-index: 90; pointer-events: auto; cursor: pointer;
     font: 11px/1.35 ui-monospace, monospace; text-align: right; padding: 8px 10px; border-radius: 10px;
     background: rgba(0,8,20,.72); border: 1px solid rgba(0,221,119,.35);
     box-shadow: 0 0 14px rgba(0,221,119,.2); min-width: 128px; max-width: 160px;
@@ -86,7 +86,7 @@
 
   /* Edge ops under balance HUD — never over logo or balance */
   #edge {
-    position: fixed; top: 168px; right: 10px; z-index: 25;
+    position: fixed; top: 168px; right: 10px; z-index: 90;
     display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
   }
   #edge button {
@@ -102,7 +102,7 @@
 
   /* Radar — top-left (reserved), not over logo */
   #field-radar {
-    position: fixed; top: 8px; left: 10px; z-index: 42; width: 120px; height: 120px;
+    position: fixed; top: 8px; left: 10px; z-index: 90; width: 120px; height: 120px;
     pointer-events: none; border-radius: 50%; background: rgba(0,12,28,.5);
     border: 1px solid rgba(0,200,255,.28); box-shadow: 0 0 16px rgba(0,200,255,.12); overflow: visible;
   }
@@ -119,7 +119,7 @@
     font: 8px/1 system-ui; letter-spacing: .14em; color: rgba(0,200,255,.55); }
   /* Explains center radar number (orbit / rotation / walk / drive) */
   #field-radar-caption {
-    position: fixed; top: 132px; left: 10px; z-index: 42; width: 132px;
+    position: fixed; top: 132px; left: 10px; z-index: 90; width: 132px;
     pointer-events: none; text-align: left;
   }
   #fsh-mode-title {
@@ -150,9 +150,9 @@
   .sn-rib-notice { font: 10px ui-monospace, monospace; color: var(--dim); max-width: 140px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* CLI dock — bottom only */
+  /* CLI dock — bottom only · ALWAYS above tiles/modals (never buried) */
   #dock {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
     display: flex; justify-content: center;
     padding: 0 10px calc(10px + env(safe-area-inset-bottom)); pointer-events: none;
   }
@@ -397,7 +397,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728210000-handsfree"></script>
+<script src="/js/spacenet/boot.js?v=20260728220000-no-babble"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

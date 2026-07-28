@@ -205,6 +205,34 @@
         } catch (_) {}
         return;
       }
+      if (low === 'close tile' || low === 'closetile' || low === 'tile close' || low === 'close panel') {
+        global.SNTile?.close?.();
+        global.SNCli?.stopHandsfree?.('stopped');
+        try {
+          global.speechSynthesis?.cancel?.();
+        } catch (_) {}
+        global.SNUi?.resetChrome?.();
+        log('Tile closed · chrome reset · voice stopped', 'ok');
+        return;
+      }
+      if (low === 'reset ui' || low === 'reset chrome' || low === 'unscatter') {
+        global.SNTile?.close?.();
+        global.SNCli?.stopHandsfree?.('stopped');
+        try {
+          global.speechSynthesis?.cancel?.();
+        } catch (_) {}
+        global.SNUi?.resetChrome?.();
+        log('UI reset · CLI bottom · controls in corners', 'ok');
+        return;
+      }
+      if (low === 'stop talking' || low === 'shut up' || low === 'silence' || low === 'stop voice') {
+        try {
+          global.speechSynthesis?.cancel?.();
+        } catch (_) {}
+        global.SNCli?.stopHandsfree?.('stopped');
+        log('Voice stopped', 'ok');
+        return;
+      }
       if (low === 'handoff' || low === 'handoffs') {
         const list = global.SNUsage?.openHandoffs?.() || [];
         if (!list.length) log('No open handoffs · report a pain in chat to queue one', 'dim');
@@ -865,20 +893,32 @@
   let handsfreeOn = false;
   let hfRestartTimer = null;
   let hfLastHeard = 0;
+  let hfMutedUntil = 0; // ignore mic while TTS / cooldown (kills feedback loop)
+  let hfBusy = false; // one command at a time
+  let hfRunTimes = []; // runaway guard
+  /** TTS off by default — talking non-stop was a product emergency */
+  let hfSpeakOut = false;
 
   function setHandsfreeUi(on, label) {
     const btn = $('btn-handsfree');
     if (btn) {
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.title = on ? 'Hands-free ON · tap to stop' : 'Hands-free voice → AI';
+      btn.title = on
+        ? 'Mic ON · tap to stop (voice reply off unless enabled)'
+        : 'Hands-free mic → AI (no auto babble)';
     }
     if (label) preview(label);
   }
 
-  /** Speak Astranov replies when hands-free is armed (AI voice out) */
-  function speakAi(text) {
-    if (!handsfreeOn) return;
+  function muteMic(ms) {
+    hfMutedUntil = Date.now() + (ms || 2000);
+  }
+
+  /** Optional speak — OFF by default. Never auto-loop. */
+  function speakAi(text, force) {
+    if (!force && !hfSpeakOut) return;
+    if (!handsfreeOn && !force) return;
     try {
       const synth = global.speechSynthesis;
       if (!synth || !global.SpeechSynthesisUtterance) return;
@@ -886,19 +926,23 @@
         .replace(/^Astranov AI\s*[·:.-]\s*/i, '')
         .replace(/[🎙➤⋮]/g, '')
         .trim()
-        .slice(0, 400);
+        .slice(0, 180);
       if (!clean) return;
       synth.cancel();
-      const u = new SpeechSynthesisUtterance(clean);
-      u.lang = (navigator.language || 'en-US').indexOf('el') === 0 ? 'el-GR' : navigator.language || 'en-US';
-      u.rate = 1.02;
-      u.pitch = 1;
-      // Pause mic while TTS so we don't hear ourselves
+      muteMic(Math.min(12000, 1500 + clean.length * 45));
       try {
-        if (speechRec && handsfreeOn) speechRec.stop();
+        if (speechRec) speechRec.abort();
       } catch (_) {}
+      const u = new SpeechSynthesisUtterance(clean);
+      u.lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
+      u.rate = 1.05;
       u.onend = () => {
-        if (handsfreeOn) scheduleListenRestart(280);
+        muteMic(900);
+        if (handsfreeOn) scheduleListenRestart(1000);
+      };
+      u.onerror = () => {
+        muteMic(500);
+        if (handsfreeOn) scheduleListenRestart(800);
       };
       synth.speak(u);
     } catch (_) {}
@@ -908,23 +952,24 @@
     if (hfRestartTimer) clearTimeout(hfRestartTimer);
     hfRestartTimer = setTimeout(() => {
       hfRestartTimer = null;
-      if (!handsfreeOn || !speechRec) return;
+      if (!handsfreeOn || !speechRec || hfBusy) return;
+      if (Date.now() < hfMutedUntil) {
+        scheduleListenRestart(400);
+        return;
+      }
       try {
         speechRec.start();
         setHandsfreeUi(true, '🎙 listening…');
-      } catch (e) {
-        // InvalidStateError if already started — ignore
-        if (!/already|started/i.test(String(e && e.message))) {
-          try {
-            speechRec.start();
-          } catch (_) {}
-        }
+      } catch (_) {
+        /* already started */
       }
-    }, ms || 400);
+    }, ms || 600);
   }
 
   function stopHandsfree(reason) {
     handsfreeOn = false;
+    hfBusy = false;
+    hfSpeakOut = false;
     if (hfRestartTimer) {
       clearTimeout(hfRestartTimer);
       hfRestartTimer = null;
@@ -934,7 +979,8 @@
         speechRec.onend = null;
         speechRec.onerror = null;
         speechRec.onresult = null;
-        speechRec.stop();
+        speechRec.onstart = null;
+        speechRec.abort();
       }
     } catch (_) {}
     speechRec = null;
@@ -942,6 +988,30 @@
       global.speechSynthesis?.cancel?.();
     } catch (_) {}
     setHandsfreeUi(false, reason || 'Hands-free off');
+  }
+
+  function isEchoGarbage(t) {
+    const low = String(t || '')
+      .toLowerCase()
+      .trim();
+    if (low.length < 2) return true;
+    // Echo of our own TTS / system noise
+    if (/astranov\s*listening|say first delivery|tap (again|🎙)|hands-?free|mic live/i.test(low))
+      return true;
+    if (/^astranov(\s+ai)?[.!]?$/i.test(low)) return true;
+    return false;
+  }
+
+  function runawayTrip() {
+    const now = Date.now();
+    hfRunTimes = hfRunTimes.filter((t) => now - t < 12000);
+    hfRunTimes.push(now);
+    if (hfRunTimes.length >= 4) {
+      stopHandsfree('Hands-free auto-stopped (loop guard)');
+      log('🎙 Auto-stopped · was firing too fast · type instead or tap 🎙 once to try again', 'err');
+      return true;
+    }
+    return false;
   }
 
   function toggleHandsfree() {
@@ -961,99 +1031,105 @@
       return;
     }
 
-    // Expand CLI so feedback is visible
+    // Kill any stuck TTS from previous session
     try {
+      global.speechSynthesis?.cancel?.();
+    } catch (_) {}
+    try {
+      global.SNTile?.close?.();
+    } catch (_) {}
+    try {
+      global.SNUi?.resetChrome?.();
       global.SNUi?.setSize?.('mid', true);
-      global.SNUi?.expandPanel?.(true);
     } catch (_) {}
 
     speechRec = new SR();
-    // Prefer Greek if browser is Greek, else en
     const nav = navigator.language || 'en-US';
     speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
-    speechRec.interimResults = true;
-    speechRec.continuous = true;
+    speechRec.interimResults = false; // finals only — less chatter
+    speechRec.continuous = false; // push-to-session: one utterance, then re-arm carefully
     speechRec.maxAlternatives = 1;
 
     speechRec.onstart = () => {
       setHandsfreeUi(true, '🎙 listening…');
-      log('🎙 Mic live · speak to Astranov · tap 🎙 again to stop', 'ok');
     };
 
     speechRec.onresult = (ev) => {
       try {
+        if (Date.now() < hfMutedUntil) return;
+        if (hfBusy) return;
         let finalText = '';
-        let interim = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          const piece = ev.results[i][0]?.transcript || '';
-          if (ev.results[i].isFinal) finalText += piece;
-          else interim += piece;
+          if (ev.results[i].isFinal) finalText += ev.results[i][0]?.transcript || '';
         }
-        if (interim) preview('🎙 ' + interim.slice(0, 60));
         const t = String(finalText || '').trim();
-        if (!t) return;
-        // Debounce double finals
+        if (!t || isEchoGarbage(t)) return;
         const now = Date.now();
-        if (now - hfLastHeard < 600) return;
+        if (now - hfLastHeard < 1400) return;
         hfLastHeard = now;
+        if (runawayTrip()) return;
+        hfBusy = true;
+        muteMic(8000);
         const input = $('cli-in');
         if (input) input.value = t;
         log('🎙 ' + t, 'cmd');
-        preview('Astranov…');
+        preview('…');
         void (async () => {
           try {
             await run(t);
-            // Speak last AI-ish log is hard; speak via SNAi if last reply in history
-            const hist = global.SNAi?.history;
-            if (hist && hist.length) {
-              const last = hist[hist.length - 1];
-              if (last && last.role === 'assistant') speakAi(last.content);
+            // Text only if user enabled speak-out (default OFF)
+            if (hfSpeakOut) {
+              const hist = global.SNAi?.history;
+              const last = hist && hist[hist.length - 1];
+              if (last && last.role === 'assistant') speakAi(String(last.content).slice(0, 160));
             }
           } catch (e) {
-            log('Voice run · ' + (e.message || e), 'err');
+            log('Voice · ' + (e.message || e), 'err');
+          } finally {
+            hfBusy = false;
+            muteMic(1200);
+            if (handsfreeOn) scheduleListenRestart(1400);
           }
         })();
-      } catch (_) {}
+      } catch (_) {
+        hfBusy = false;
+      }
     };
 
     speechRec.onerror = (ev) => {
       const code = (ev && ev.error) || 'error';
-      if (code === 'aborted' || code === 'no-speech') {
-        // keep armed — restart listen
-        if (handsfreeOn) scheduleListenRestart(350);
+      if (code === 'aborted') return;
+      if (code === 'no-speech') {
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(500);
         return;
       }
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         stopHandsfree('Mic blocked');
-        log('Mic permission denied · allow microphone for astranov.eu · then tap 🎙', 'err');
+        log('Mic denied · allow microphone · then tap 🎙 once', 'err');
         return;
       }
-      if (code === 'network') {
-        log('Speech network error · check connection · keep typing', 'err');
-        if (handsfreeOn) scheduleListenRestart(1200);
-        return;
-      }
-      log('Hands-free · ' + code + ' · try again', 'err');
-      if (handsfreeOn) scheduleListenRestart(500);
+      if (handsfreeOn && !hfBusy) scheduleListenRestart(900);
     };
 
     speechRec.onend = () => {
-      // Browsers end continuous sessions often — re-arm while ON
-      if (handsfreeOn) scheduleListenRestart(300);
+      if (handsfreeOn && !hfBusy && Date.now() >= hfMutedUntil) scheduleListenRestart(700);
     };
 
     handsfreeOn = true;
-    setHandsfreeUi(true, '🎙 starting mic…');
+    hfSpeakOut = false;
+    hfRunTimes = [];
+    muteMic(400);
+    setHandsfreeUi(true, '🎙 mic on (silent)');
     try {
       speechRec.start();
       try {
-        if (global.SNUsage?.track) SNUsage.track('handsfree_on', {});
+        if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: false });
       } catch (_) {}
-      // Confirm voice path works (short TTS)
-      speakAi('Astranov listening. Say first delivery, or locate.');
+      log('🎙 Mic ON · speak a command · no auto-talk · tap 🎙 to stop', 'ok');
+      log('Tip: type first delivery · tile stays under CLI · type close tile if stuck', 'dim');
     } catch (e) {
       stopHandsfree('Hands-free failed');
-      log('Hands-free start failed · ' + (e.message || e) + ' · allow mic · use Chrome/Edge', 'err');
+      log('Hands-free start failed · ' + (e.message || e), 'err');
     }
   }
 
@@ -1129,6 +1205,7 @@
     preview,
     toggleHandsfree,
     speakAi,
+    stopHandsfree,
     get handsfreeOn() {
       return handsfreeOn;
     },
