@@ -617,12 +617,13 @@
 
   function locate() {
     return new Promise(function (resolve) {
-      function finish(lat, lng, demo) {
+      function finish(lat, lng, fallback) {
         setFocus(lat, lng);
-        pulse(lat, lng, 0x3d9eff, demo ? 'You (demo)' : 'You', 22000);
+        pulse(lat, lng, 0x3d9eff, fallback ? 'You (GPS default)' : 'You', 22000);
         flyNear(lat, lng, 'national');
-        resolve({ lat: lat, lng: lng, demo: !!demo });
+        resolve({ lat: lat, lng: lng, fallback: !!fallback, demo: false });
       }
+      // Default Rhodes only when GPS unavailable — real coords, not a "demo city"
       if (!navigator.geolocation) return finish(36.4341, 28.2176, true);
       navigator.geolocation.getCurrentPosition(
         function (pos) {

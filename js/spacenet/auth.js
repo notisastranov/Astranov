@@ -55,8 +55,10 @@
       A.user?.email?.split?.('@')?.[0] ||
       null;
     if (btn) {
-      btn.textContent = A.user ? 'G' : 'G';
-      btn.title = A.user ? 'Signed in as ' + (name || 'user') + ' · click to sign out' : 'Sign in with Google';
+      btn.textContent = A.user ? '✓' : '🔐';
+      btn.title = A.user
+        ? 'Signed in as ' + (name || 'user') + ' · click to sign out'
+        : 'Sign in with Google';
       btn.classList.toggle('in', !!A.user);
     }
     if (chip) {

@@ -95,6 +95,7 @@ const AstranovContinuity = {
       'search',
       'auth',
     ],
+    // search lazy-loaded but required for ensureSector Overpass path
     doNotLoad: [
       'astranov-app.js',
       'astranov-deferred.js',
@@ -149,6 +150,8 @@ const AstranovContinuity = {
     'long-press map create · short-tap pin open tile',
     'no companion · no overlap',
     'marketplace alwaysOn 24/7/365 all locations (no platform curfew)',
+    'zero dummy: ensureSector not seedCity NPCs',
+    'no seedDemo auto tasks',
   ],
 };
 

@@ -161,12 +161,151 @@
       } catch (_) {}
     });
 
-    return { ok: rows.length > 0, count: rows.length, source: 'db', lat: pos.lat, lng: pos.lng };
+    return {
+      ok: rows.length > 0,
+      count: rows.length,
+      source: 'db',
+      lat: pos.lat,
+      lng: pos.lng,
+      tiles: tiles.length,
+    };
+  }
+
+  /**
+   * Real sector fill — never invent dummy shops/people.
+   * Order: Supabase DB → edge crawler → Overpass → report empty (still usable: place multi-tile).
+   */
+  async function ensureSector(lat, lng, opts) {
+    opts = opts || {};
+    const openMap = opts.openMap !== false;
+    const pos = {
+      lat: lat != null ? Number(lat) : global._snLastPos?.lat || 36.4341,
+      lng: lng != null ? Number(lng) : global._snLastPos?.lng || 28.2176,
+    };
+    global._snLastPos = pos;
+    try {
+      global.SNTasks?.setPos?.(pos.lat, pos.lng);
+    } catch (_) {}
+
+    let source = 'none';
+    let count = 0;
+
+    // 1) DB
+    try {
+      const r = await populateMap(pos.lat, pos.lng, { openMap: false });
+      count = r?.count || 0;
+      if (count) source = 'db';
+    } catch (e) {
+      global.SNCli?.log?.('DB shops · ' + (e.message || e), 'dim');
+    }
+
+    // 2) Edge crawler warm then DB again
+    if (count < 3 && global.SNSearch?.edgeVendors) {
+      try {
+        const edge = await SNSearch.edgeVendors(pos.lat, pos.lng, 3000);
+        if (edge?.ok || edge?.count) {
+          const r2 = await populateMap(pos.lat, pos.lng, { openMap: false });
+          if ((r2?.count || 0) > count) {
+            count = r2.count;
+            source = 'edge+db';
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3) Live Overpass POIs → real vendor tiles
+    if (count < 1 && global.SNSearch?.nearby) {
+      try {
+        global.SNCli?.log?.('Crawling live map POIs…', 'dim');
+        const pois = await SNSearch.nearby(pos.lat, pos.lng, 2800, 'restaurant cafe shop food');
+        (pois || []).slice(0, 36).forEach((p) => {
+          try {
+            global.SNProfiles?.fromCrawlPlace?.(
+              {
+                name: p.name,
+                lat: p.lat,
+                lng: p.lng,
+                kind: p.kind || 'shop',
+                real: true,
+                source: 'overpass',
+              },
+              pos
+            );
+          } catch (_) {}
+        });
+        count = (pois && pois.length) || 0;
+        if (count) source = 'overpass';
+      } catch (e) {
+        global.SNCli?.log?.('Overpass · ' + (e.message || e), 'dim');
+      }
+    }
+
+    // 4) Almighty crawl as last live path
+    if (count < 1 && global.SNSearch?.crawl) {
+      try {
+        const crawled = await SNSearch.crawl('restaurants cafes shops', {
+          pos: pos,
+          openMap: false,
+          all: false,
+        });
+        const stuff = (crawled?.nearby || []).concat(crawled?.places || []);
+        stuff.slice(0, 30).forEach((p) => {
+          if (p.lat == null) return;
+          try {
+            global.SNProfiles?.fromCrawlPlace?.(
+              {
+                name: p.name,
+                lat: p.lat,
+                lng: p.lng,
+                kind: p.kind || p.type || 'shop',
+                real: true,
+                source: p.source || 'crawl',
+              },
+              pos
+            );
+          } catch (_) {}
+        });
+        count = stuff.filter((p) => p.lat != null).length;
+        if (count) source = 'crawl';
+      } catch (_) {}
+    }
+
+    // Self as courier capability (not fake NPCs)
+    try {
+      const me = global.SNProfiles?.me?.();
+      if (me && me.lat == null) {
+        me.lat = pos.lat;
+        me.lng = pos.lng;
+        global.SNProfiles.upsert(me);
+      }
+    } catch (_) {}
+
+    if (openMap) {
+      try {
+        if (!global.SNMap?.active) await global.SNMap?.open?.(pos.lat, pos.lng);
+        else {
+          const map = await global.SNMap.ensure?.();
+          map?.setView?.([pos.lat, pos.lng], 14);
+        }
+        global.SNMap?.showProfiles?.();
+        global.SNMap?.showTasks?.();
+      } catch (_) {}
+    }
+
+    const vendors = (global.SNProfiles?.list?.({ role: 'vendor' }) || []).length;
+    global.SNCli?.log?.(
+      vendors
+        ? 'Sector live · ' + vendors + ' shop tiles · ' + source + ' · tap pin for menu'
+        : 'Sector empty of POIs · long-press map to create multi-tile · try fly another city',
+      vendors ? 'ok' : 'dim'
+    );
+    return { ok: vendors > 0, count: vendors, source: source, lat: pos.lat, lng: pos.lng };
   }
 
   global.SNCommerce = {
     loadNear,
     populateMap,
+    ensureSector,
     toPlaces,
     haversineKm,
     alwaysOn: true,

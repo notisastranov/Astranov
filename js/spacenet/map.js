@@ -314,18 +314,15 @@
     map.setView([p.lat, p.lng], 14);
     setTimeout(() => map.invalidateSize(), 80);
 
-    // Real shops from Supabase — never auto seedCity (dummy)
+    // Real sector only — DB + edge + Overpass + crawl (SPECS: zero dummy)
     try {
-      const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
-      if (!r?.count) {
-        // Offline / empty sector only: light seed so map isn't blank
-        global.SNProfiles?.seedCity?.(p.lat, p.lng);
-        global.SNCli?.log?.('No DB shops here · local seed tiles only', 'dim');
+      if (global.SNCommerce?.ensureSector) {
+        await global.SNCommerce.ensureSector(p.lat, p.lng, { openMap: true });
+      } else {
+        await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
       }
-    } catch (_) {
-      try {
-        global.SNProfiles?.seedCity?.(p.lat, p.lng);
-      } catch (__) {}
+    } catch (e) {
+      global.SNCli?.log?.('Sector load · ' + (e.message || e), 'err');
     }
 
     showTasks();
@@ -351,8 +348,11 @@
       M._me.setLatLng([p.lat, p.lng]);
     }
 
-    global.SNCli?.log?.('City · short-tap pin = open tile · long-press empty = create', 'ok');
-    global.SNCli?.preview?.('Tap pin · long-press map · 🌍 Earth');
+    global.SNCli?.log?.(
+      'City · short-tap pin = open · long-press empty = create · live crawl shops',
+      'ok'
+    );
+    global.SNCli?.preview?.('Tap pin · long-press create · 🌍 Earth');
     return true;
   }
 

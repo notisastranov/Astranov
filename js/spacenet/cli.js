@@ -157,7 +157,7 @@
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         if (!vendors.length) {
           const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
-          await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
+          await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
         }
         const list = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         list.slice(0, 12).forEach((v) => {
@@ -174,31 +174,40 @@
       }
       if (low === 'drivers' || low === 'driver') {
         const list = global.SNProfiles?.list?.({ role: 'driver' }) || [];
-        if (!list.length) global.SNProfiles?.seedCity?.();
-        (global.SNProfiles?.list?.({ role: 'driver' }) || []).forEach((d) => {
-          log(
-            '🛵 ' + d.name + ' · ' + (d.driverOnline ? 'ONLINE' : 'off') + ' · ' + (d.vehicle || ''),
-            d.driverOnline ? 'ok' : 'dim'
-          );
-        });
-        const d0 = (global.SNProfiles?.list?.({ role: 'driver' }) || [])[0];
-        if (d0?.lat != null) {
-          await global.SNMap?.open?.(d0.lat, d0.lng);
-          global.SNMap?.showProfiles?.();
-          global.SNTile?.open?.(d0, { tab: 'drive' });
+        if (!list.length) {
+          log('No drivers yet · open ME tile · enable Driver · Go online to claim deliveries', 'dim');
+          global.SNTile?.openMe?.('drive');
+        } else {
+          list.forEach((d) => {
+            log(
+              '🛵 ' + d.name + ' · ' + (d.driverOnline ? 'ONLINE' : 'off') + ' · ' + (d.vehicle || ''),
+              d.driverOnline ? 'ok' : 'dim'
+            );
+          });
+          const d0 = list[0];
+          if (d0?.lat != null) {
+            await global.SNMap?.open?.(d0.lat, d0.lng);
+            global.SNMap?.showProfiles?.();
+            global.SNTile?.open?.(d0, { tab: 'drive' });
+          }
         }
         return;
       }
       if (low === 'dates' || low === 'dating people' || low === 'people') {
-        if (!(global.SNProfiles?.list?.({ role: 'dating' }) || []).length) global.SNProfiles?.seedCity?.();
-        (global.SNProfiles?.list?.({ role: 'dating' }) || []).forEach((d) => {
-          log('💕 ' + d.name + ' · ' + (d.lookingFor || 'open'), 'ok');
-        });
-        const d0 = (global.SNProfiles?.list?.({ role: 'dating' }) || [])[0];
-        if (d0) {
-          if (d0.lat != null) await global.SNMap?.open?.(d0.lat, d0.lng);
-          global.SNMap?.showProfiles?.();
-          global.SNTile?.open?.(d0, { tab: 'dating' });
+        const list = global.SNProfiles?.list?.({ role: 'dating' }) || [];
+        if (!list.length) {
+          log('No dating profiles yet · open ME · enable Dating role (real users only)', 'dim');
+          global.SNTile?.openMe?.('dating');
+        } else {
+          list.forEach((d) => {
+            log('💕 ' + d.name + ' · ' + (d.lookingFor || 'open'), 'ok');
+          });
+          const d0 = list[0];
+          if (d0) {
+            if (d0.lat != null) await global.SNMap?.open?.(d0.lat, d0.lng);
+            global.SNMap?.showProfiles?.();
+            global.SNTile?.open?.(d0, { tab: 'dating' });
+          }
         }
         return;
       }
@@ -244,12 +253,23 @@
         global.SNMap?.showProfiles?.();
         return;
       }
-      if (low === 'seed' || low === 'seed city' || low === 'tiles') {
+      if (
+        low === 'seed' ||
+        low === 'seed city' ||
+        low === 'tiles' ||
+        low === 'scan city' ||
+        low === 'scan' ||
+        low === 'fill sector'
+      ) {
         const pos = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
-        global.SNProfiles?.seedCity?.(pos.lat, pos.lng);
-        await global.SNMap?.open?.(pos.lat, pos.lng);
-        global.SNMap?.showProfiles?.();
-        log('Seeded map tiles · vendors · dating · drivers · social', 'ok');
+        log('Live sector scan · DB + crawlers (no dummy seeds)…', 'dim');
+        const r = await global.SNCommerce?.ensureSector?.(pos.lat, pos.lng, { openMap: true });
+        log(
+          r?.count
+            ? 'Sector · ' + r.count + ' live tiles · ' + (r.source || 'live')
+            : 'No POIs here · try fly athens · or long-press to create',
+          r?.count ? 'ok' : 'dim'
+        );
         return;
       }
       if (
@@ -391,15 +411,14 @@
         if (pos) {
           Tasks?.setPos?.(pos.lat, pos.lng);
           log(
-            pos.demo
-              ? 'Located Rhodes fallback · type city'
+            pos.fallback
+              ? 'Default position (GPS off) · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4)
               : 'Located ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
             'ok'
           );
-          // Stay on full Earth after locate unless user asks city/shops
-          const r = await global.SNCommerce?.populateMap?.(pos.lat, pos.lng, { openMap: false });
-          if (r?.count) log(r.count + ' real shops near you · type city or shops', 'ok');
-          preview(r?.count ? r.count + ' shops · full Earth' : pos.demo ? 'You (fallback)' : 'You · Earth');
+          const r = await global.SNCommerce?.ensureSector?.(pos.lat, pos.lng, { openMap: false });
+          if (r?.count) log(r.count + ' live shops near you · type shops', 'ok');
+          preview(r?.count ? r.count + ' shops · Earth' : 'You · type shops');
         }
         return;
       }
@@ -413,13 +432,27 @@
       if (low === 'shops' || low === 'vendors' || low === 'stores') {
         const p = Tasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
         Globe?.goToTier?.('city');
-        await global.SNMap?.open?.(p.lat, p.lng);
-        const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
-        const n = r?.count || 0;
-        (global.SNCommerce?.vendors || []).slice(0, 12).forEach((v) => {
-          log((v.emoji || '🏪') + ' ' + v.name + (v.km != null ? ' · ' + v.km.toFixed(1) + ' km' : ''), 'ok');
+        const r = await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
+        const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
+        vendors.slice(0, 12).forEach((v) => {
+          log(
+            '🏪 ' +
+              (v.shopName || v.name) +
+              ' · ' +
+              (v.menu?.length || 0) +
+              ' menu' +
+              (v.real ? ' · live' : ''),
+            'ok'
+          );
         });
-        log(n ? n + ' real shops · tap map pins' : 'No DB shops in sector', n ? 'ok' : 'dim');
+        const n = vendors.length || r?.count || 0;
+        log(
+          n
+            ? n + ' shop tiles · tap pin · Menu · + · Order (S) · source ' + (r?.source || 'live')
+            : 'No shops · try fly another city · or crawl restaurants',
+          n ? 'ok' : 'dim'
+        );
+        if (vendors[0]) global.SNTile?.open?.(vendors[0], { tab: 'menu' });
         preview(n + ' shops');
         return;
       }

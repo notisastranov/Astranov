@@ -183,25 +183,10 @@
     return { tasks: hits, roles };
   }
 
+  /** Removed: never auto-inject fake tasks (SPECS zero-dummy) */
   function seedDemo() {
     try {
-      if (localStorage.getItem('sn:demo-v1')) return;
-      if (T.tasks.size) {
-        localStorage.setItem('sn:demo-v1', '1');
-        return;
-      }
-    } catch (_) {
-      return;
-    }
-    [
-      'barman 3h',
-      'coffee date 1h',
-      'delivery food 45m',
-      'pharmacy errand',
-      'cleaner 4h',
-    ].forEach((t) => create(t));
-    try {
-      localStorage.setItem('sn:demo-v1', '1');
+      global.SNCli?.log?.('seedDemo disabled · post real job/date/deliver from CLI', 'dim');
     } catch (_) {}
   }
 

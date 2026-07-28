@@ -236,9 +236,10 @@
           }
         } catch (e) {}
       }, 900);
+      // Search early — ensureSector needs Overpass/crawl (zero dummy)
       setTimeout(function () {
         loadSoft('/js/spacenet/search.js', 12000);
-      }, 700);
+      }, 300);
       setTimeout(function () {
         loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000)
           .then(function () {

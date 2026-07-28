@@ -20,6 +20,7 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Few files** | Prefer one small module over four “clean” micro-files that re-import each other. |
 | **No patch theatre** | If a series of specs is missing, **rebuild** the surface — do not stack micro-patches on a dummy. |
 | **No fat** | No companion figure until AI graphics > high-end games. No floating multi-docks. No demo-as-primary. |
+| **Zero dummy (absolute)** | **No dummy / demo / fake / seed-NPC crap anywhere.** No auto-seeded fake shops, fake people, fake tasks, demo drivers, demo GPS cities, or toy data as the product path. Live = DB + crawlers + real user tiles only. Last resort empty sector is **honest empty** + long-press create / fly elsewhere — never invent Aegean Bites NPCs. |
 | **Never make owner restate law** | **Forbidden** to force the owner to re-explain the same SPECS. Agents must read SPECS + continuity **before** coding, remember owner decisions from this file, and not regress fixed surface (globe return, multi-tile, CLI send/hands-free/AI, emoji edge, SNGlobe imaging). |
 | **Ship only if it works** | If boot/map/CLI/AI path is red, **keep working** — do not declare done. Live probe + manual path green required. |
 
@@ -230,13 +231,33 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 | Step | Spec |
 |------|------|
 | **Open tile** | Short-tap map pin → full `#sn-tile` panel (CSS + roles + tabs) |
-| **Vendor menu** | Real or default menu in **S**; **+** adds to cart |
+| **Vendor menu** | DB/crawl items or generated menu from real POI name in **S**; **+** adds to cart |
 | **Cart** | Cart tab shows lines + total **S** |
 | **Order** | Order + deliver → debit **S** · fees 3%/15% · delivery **task** open · map pulses |
-| **Claim** | Driver tile / CLI `task claim` claims open delivery |
-| **DB vendors** | `fromVendor` maps Supabase `items` → menu; fallback default menu |
-| **Seed fallback** | Empty sector still seeds usable shops (not blank dummy) |
+| **Claim** | Real user enables Driver on ME · Go online · Claim (no NPC drivers) |
+| **Sector fill** | `SNCommerce.ensureSector`: **DB → edge crawler → Overpass → crawl** — never `seedCity` fake people |
+| **Empty sector** | Honest empty + long-press multi-tile / `fly` other city — **no** invented NPCs |
 | **Media** | Offline-safe SVG photos — no broken external image hosts required |
+
+---
+
+## P0-D — Zero dummy (system-wide ban)
+
+**No dummy crap is allowed anywhere in the live SpaceNet stack.**
+
+| Banned | Allowed |
+|--------|---------|
+| Auto `seedCity` fake vendors/dates/drivers | Live **DB vendors**, **Overpass/edge crawl** POIs |
+| `seedDemo` auto tasks | User-posted **job / date / deliver** only |
+| `demo-*` vendor rows | Filter out; never surface as shops |
+| “Demo map” / fake GPS city as product | Real GPS **or** honest **default coords** (labeled fallback) |
+| Fake friend GPS jitter | Offline presence stays offline |
+| Placeholder external broken images as primary | SVG data URIs or real user media |
+| Toy 1:1 EUR coins / AVC | **S** only |
+| Dummy planet go (text only) | **setBody + land + crawl** (P1-C) |
+| Marketplace closed hours | **24/7/365** (P4-M) |
+
+**Code law:** `seedCity` / `seedDemo` must not invent content. `ensureSector` is the only sector fill. Agents reintroducing NPC seeds = SPECS violation.
 
 ---
 
@@ -355,6 +376,7 @@ Do not strip IP or rebrand without owner request.
 - Make the **owner restate SPECS** the agent already has  
 - Ship red boot / dead CLI / no AI / zoom-out stuck on flat map  
 - Strip **SNGlobe** Earth imaging (atmos / specular / clouds)  
+- **Any dummy / demo / NPC seed path** on live (violates **P0-D**)  
 - **Dummy cosmos**: go to planet without `setBody` + land + crawl  
 - Always zoom city map to **home GPS only** (ignore click focus)  
 - Open Earth Leaflet as stand-in for Mars/Moon/etc.  

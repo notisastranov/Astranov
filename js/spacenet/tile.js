@@ -324,7 +324,7 @@
       foot.innerHTML =
         '<button type="button" class="sn-btn" data-act="fly">Fly map</button>' +
         (isMe(p)
-          ? '<button type="button" class="sn-btn primary" data-act="seed">Seed city tiles</button>'
+          ? '<button type="button" class="sn-btn primary" data-act="scan">Scan live shops</button>'
           : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
     } else if (T.tab === 'menu') {
       const menu = p.menu || [];

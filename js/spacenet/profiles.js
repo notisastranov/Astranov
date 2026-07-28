@@ -474,93 +474,19 @@
     });
   }
 
+  /**
+   * @deprecated Dummy seedCity removed (SPECS zero-dummy).
+   * Use SNCommerce.ensureSector — live DB + crawlers only.
+   */
   function seedCity(lat, lng) {
-    const L = lat != null ? lat : 36.4341;
-    const G = lng != null ? lng : 28.2176;
-    const seeds = [
-      {
-        id: 'seed_vendor_blue',
-        name: 'Aegean Bites',
-        handle: '@aegeanbites',
-        bio: 'Street food · Rhodes · order on map',
-        roles: { vendor: true, social: true, client: false },
-        shopName: 'Aegean Bites',
-        shopKind: 'restaurant',
-        lat: L + 0.008,
-        lng: G + 0.006,
-        menu: defaultMenu('restaurant'),
-      },
-      {
-        id: 'seed_cafe_orbit',
-        name: 'Orbit Café',
-        handle: '@orbitcafe',
-        bio: 'Coffee + wifi · good for dates',
-        roles: { vendor: true, social: true },
-        shopName: 'Orbit Café',
-        shopKind: 'cafe',
-        lat: L - 0.006,
-        lng: G + 0.01,
-        menu: defaultMenu('cafe'),
-      },
-      {
-        id: 'seed_date_nova',
-        name: 'Nova',
-        handle: '@nova',
-        bio: 'Looking for coffee & orbit walks',
-        roles: { dating: true, social: true },
-        lookingFor: 'Coffee · walk · sunset',
-        interests: ['travel', 'music', 'space'],
-        lat: L + 0.004,
-        lng: G - 0.007,
-      },
-      {
-        id: 'seed_date_leo',
-        name: 'Leo',
-        handle: '@leo',
-        bio: 'Driver by day · dates by night',
-        roles: { dating: true, driver: true, social: true },
-        lookingFor: 'Dinner · real talk',
-        vehicle: 'E-bike',
-        driverOnline: true,
-        lat: L - 0.01,
-        lng: G - 0.004,
-      },
-      {
-        id: 'seed_driver_iris',
-        name: 'Iris',
-        handle: '@iris_drive',
-        bio: 'Delivery · 4.9★ · online now',
-        roles: { driver: true, social: true },
-        vehicle: 'Scooter',
-        driverOnline: true,
-        rating: 4.9,
-        lat: L + 0.012,
-        lng: G - 0.002,
-      },
-      {
-        id: 'seed_social_aria',
-        name: 'Aria',
-        handle: '@aria',
-        bio: 'Photographer · city stories',
-        roles: { social: true, worker: true },
-        lat: L - 0.003,
-        lng: G + 0.014,
-        posts: [
-          { id: 'p1', text: 'Golden hour over the marina 📷', t: Date.now() - 3600000 },
-          { id: 'p2', text: 'Hiring assistants this week · job nanny? no — photo gigs', t: Date.now() - 7200000 },
-        ],
-      },
-    ];
-    seeds.forEach((s) => {
-      if (!P.profiles.has(s.id)) {
-        upsert({
-          ...s,
-          cover: pic(s.id + 'c', 900, 360),
-          avatar: avatar(s.id),
-        });
-      }
-    });
-    me(); // ensure self exists
+    me();
+    global.SNCli?.log?.(
+      'seed disabled · real path: shops / scan city (DB + Overpass + crawl)',
+      'dim'
+    );
+    if (global.SNCommerce?.ensureSector) {
+      void global.SNCommerce.ensureSector(lat, lng, { openMap: true });
+    }
     return list();
   }
 
@@ -595,7 +521,6 @@
     addPost,
     fromVendor,
     parseMenuItems,
-    defaultMenu,
     defaultMenu,
     fromCrawlPlace,
     seedCity,
