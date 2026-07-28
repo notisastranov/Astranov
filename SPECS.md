@@ -76,7 +76,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | **Go anywhere = three steps** | **(1) `setBody`** real sphere for that world · **(2) land** at lat/lng · **(3) `scan` / crawl** what is there |
 | **Every body is a globe** | Not a text label. `SNGlobe.setBody(id, meta)` swaps texture and/or body color on the Three.js sphere |
 | **Earth imaging KEEP** | Earth stays **`SNGlobe`** + `earth_atmos_2048` / specular / clouds. Do not strip |
-| **Click = that place on current body** | Raycast → lat/lng → `goToPlace` NATIONAL + crawl. Focus = last click/zoom — **never** always force “my city only” |
+| **Click = that place on current body** | Raycast → lat/lng → `goToPlace` NATIONAL + crawl. **Fly faces the click** (quaternion = same frame as pulse markers). Post-click crawl **must not re-fly** to geocode/wiki. Focus = last click/zoom — **never** always force “my city only” |
 | **City map is Earth street only** | Leaflet opens only when **body === earth**. Leaving Earth **closes** city map |
 | **Dummy banned** | “go to mars” that only prints a line or jumps solar tier **without** body switch + land + crawl = **contaminated** |
 | **Crawl on arrival** | Always after land (unless caller already scanning) |
