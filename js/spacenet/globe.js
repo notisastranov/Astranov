@@ -1,19 +1,19 @@
 /* SNGlobe — Earth imaging engine (KEEP)
  * Mechanical name: window.SNGlobe (js/spacenet/globe.js)
  * Three.js sphere + TextureLoader: earth_atmos_2048 · specular · clouds
- * Sacred: inertia velX/velY damp · zoom tiers solar→global→national→city
+ * Sacred: inertia velX/velY damp · zoom tiers · CLICK = go to that place (SpaceNet)
  */
 (function (global) {
   'use strict';
 
-  const TIERS = {
+  var TIERS = {
     solar: { z: 7.5, label: 'SOLAR' },
     global: { z: 2.75, label: 'GLOBAL' },
     national: { z: 1.95, label: 'NATIONAL' },
     city: { z: 1.52, label: 'CITY' },
   };
 
-  const G = {
+  var G = {
     ready: false,
     renderer: null,
     scene: null,
@@ -21,16 +21,18 @@
     earth: null,
     clouds: null,
     pivot: null,
+    raycaster: null,
     markers: [],
     dragging: false,
     lastAct: 0,
     frame: 0,
     tier: 'global',
     zoomAnim: null,
-    // Inertia (owner rule — never ship without)
     velX: 0,
     velY: 0,
     damp: 0.94,
+    /** Last place the user aimed (click / zoom target) — SpaceNet focus */
+    focus: null,
   };
 
   function isTouch() {
@@ -42,13 +44,24 @@
   }
 
   function latLngToVec(lat, lng, r) {
-    const phi = (90 - lat) * (Math.PI / 180);
-    const theta = (lng + 180) * (Math.PI / 180);
+    r = r == null ? 1 : r;
+    var phi = ((90 - lat) * Math.PI) / 180;
+    var theta = ((lng + 180) * Math.PI) / 180;
     return new THREE.Vector3(
       -r * Math.sin(phi) * Math.cos(theta),
       r * Math.cos(phi),
       r * Math.sin(phi) * Math.sin(theta)
     );
+  }
+
+  /** Inverse of latLngToVec — local unit vector on sphere → lat/lng */
+  function vecToLatLng(v) {
+    var n = v.clone().normalize();
+    var lat = 90 - (Math.acos(Math.max(-1, Math.min(1, n.y))) * 180) / Math.PI;
+    var lng = (Math.atan2(n.z, -n.x) * 180) / Math.PI - 180;
+    if (lng > 180) lng -= 360;
+    if (lng < -180) lng += 360;
+    return { lat: lat, lng: lng };
   }
 
   function tierFromZ(z) {
@@ -60,25 +73,59 @@
 
   function setTierLabel() {
     G.tier = tierFromZ(G.camera.position.z);
-    const el = document.getElementById('tier-label');
-    if (el) el.textContent = TIERS[G.tier]?.label || G.tier;
-    const zl = document.getElementById('zoom-label');
-    if (zl) zl.textContent = 'Astranov SpaceNet · ' + (TIERS[G.tier]?.label || G.tier);
+    var el = document.getElementById('tier-label');
+    if (el) el.textContent = (TIERS[G.tier] && TIERS[G.tier].label) || G.tier;
+    var zl = document.getElementById('zoom-label');
+    if (zl) zl.textContent = 'Astranov SpaceNet · ' + ((TIERS[G.tier] && TIERS[G.tier].label) || G.tier);
+  }
+
+  function setFocus(lat, lng) {
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
+    G.focus = { lat: lat, lng: lng };
+    global._snGlobeFocus = G.focus;
+    try {
+      global._snLastPos = { lat: lat, lng: lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(lat, lng);
+    } catch (_) {}
+  }
+
+  function focusPos() {
+    return G.focus || global._snGlobeFocus || global._snLastPos || global.SNTasks?.pos || null;
+  }
+
+  /**
+   * Raycast screen point → Earth lat/lng (SpaceNet address under finger).
+   */
+  function pickLatLng(clientX, clientY) {
+    if (!G.ready || !G.earth || !G.camera || !G.renderer) return null;
+    var rect = G.renderer.domElement.getBoundingClientRect();
+    var x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    var y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    if (!G.raycaster) G.raycaster = new THREE.Raycaster();
+    G.raycaster.setFromCamera(new THREE.Vector2(x, y), G.camera);
+    var hits = G.raycaster.intersectObject(G.earth, false);
+    if (!hits || !hits.length) {
+      // try clouds as slightly larger shell
+      if (G.clouds) hits = G.raycaster.intersectObject(G.clouds, false);
+    }
+    if (!hits || !hits.length) return null;
+    // Point in world space → earth local
+    var local = G.earth.worldToLocal(hits[0].point.clone());
+    return vecToLatLng(local);
   }
 
   function init() {
     if (G.ready || typeof THREE === 'undefined') return false;
-    const el = document.getElementById('globe');
+    var el = document.getElementById('globe');
     if (!el) return false;
 
-    const touch = isTouch();
-    const w = el.clientWidth || window.innerWidth;
-    const h = el.clientHeight || window.innerHeight;
+    var touch = isTouch();
+    var w = el.clientWidth || window.innerWidth;
+    var h = el.clientHeight || window.innerHeight;
 
     G.scene = new THREE.Scene();
     G.scene.background = new THREE.Color(0x000000);
     G.camera = new THREE.PerspectiveCamera(42, w / h, 0.05, 200);
-    // Default view: full GLOBAL Earth (SPECS A4)
     G.camera.position.set(0, 0.12, TIERS.global.z);
     G.tier = 'global';
 
@@ -92,25 +139,24 @@
     el.innerHTML = '';
     el.appendChild(G.renderer.domElement);
 
-    const amb = new THREE.AmbientLight(0x445566, 0.55);
-    const sun = new THREE.DirectionalLight(0xfff5e6, 1.35);
+    var amb = new THREE.AmbientLight(0x445566, 0.55);
+    var sun = new THREE.DirectionalLight(0xfff5e6, 1.35);
     sun.position.set(5, 1.2, 2.5);
     G.scene.add(amb, sun);
 
     G.pivot = new THREE.Object3D();
     G.scene.add(G.pivot);
 
-    const segs = touch ? 48 : 64;
-    const loader = new THREE.TextureLoader();
-    // Real Earth textures (public NASA/blue-marble style CDN mirrors used by many demos)
-    const earthUrl =
+    var segs = touch ? 48 : 64;
+    var loader = new THREE.TextureLoader();
+    var earthUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
-    const specUrl =
+    var specUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg';
-    const cloudUrl =
+    var cloudUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png';
 
-    const mat = new THREE.MeshPhongMaterial({
+    var mat = new THREE.MeshPhongMaterial({
       color: 0x223344,
       specular: 0x333333,
       shininess: 12,
@@ -120,38 +166,35 @@
 
     loader.load(
       earthUrl,
-      (tex) => {
-        tex.anisotropy = Math.min(4, G.renderer.capabilities.getMaxAnisotropy?.() || 1);
+      function (tex) {
+        tex.anisotropy = Math.min(4, (G.renderer.capabilities.getMaxAnisotropy && G.renderer.capabilities.getMaxAnisotropy()) || 1);
         mat.map = tex;
         mat.color.set(0xffffff);
         mat.needsUpdate = true;
       },
       undefined,
-      () => {
-        // fallback solid ocean/land look
+      function () {
         mat.color.set(0x1a4d7a);
         mat.emissive = new THREE.Color(0x041018);
       }
     );
-    loader.load(specUrl, (tex) => {
+    loader.load(specUrl, function (tex) {
       mat.specularMap = tex;
       mat.needsUpdate = true;
     });
 
-    // Clouds
-    const cloudMat = new THREE.MeshLambertMaterial({
+    var cloudMat = new THREE.MeshLambertMaterial({
       transparent: true,
       opacity: 0.35,
       depthWrite: false,
     });
     G.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.015, segs, segs), cloudMat);
     G.pivot.add(G.clouds);
-    loader.load(cloudUrl, (tex) => {
+    loader.load(cloudUrl, function (tex) {
       cloudMat.map = tex;
       cloudMat.needsUpdate = true;
     });
 
-    // Atmosphere
     G.pivot.add(
       new THREE.Mesh(
         new THREE.SphereGeometry(1.045, segs, segs),
@@ -164,13 +207,12 @@
       )
     );
 
-    // Stars
-    const starN = touch ? 400 : 900;
-    const starPos = new Float32Array(starN * 3);
-    for (let i = 0; i < starN; i++) {
-      const r = 20 + Math.random() * 50;
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
+    var starN = touch ? 400 : 900;
+    var starPos = new Float32Array(starN * 3);
+    for (var i = 0; i < starN; i++) {
+      var r = 20 + Math.random() * 50;
+      var th = Math.random() * Math.PI * 2;
+      var ph = Math.acos(2 * Math.random() - 1);
       starPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
       starPos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
       starPos[i * 3 + 2] = r * Math.cos(ph);
@@ -178,7 +220,13 @@
     G.scene.add(
       new THREE.Points(
         new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(starPos, 3)),
-        new THREE.PointsMaterial({ color: 0xffffff, size: 0.045, sizeAttenuation: true, opacity: 0.85, transparent: true })
+        new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 0.045,
+          sizeAttenuation: true,
+          opacity: 0.85,
+          transparent: true,
+        })
       )
     );
 
@@ -192,83 +240,159 @@
   }
 
   function bindInput() {
-    const canvas = G.renderer.domElement;
-    let lx = 0,
+    var canvas = G.renderer.domElement;
+    var lx = 0,
       ly = 0,
       down = false,
-      lastT = 0;
-    const onDown = (e) => {
+      lastT = 0,
+      downX = 0,
+      downY = 0,
+      moved = false,
+      ptrId = null;
+
+    function onDown(e) {
+      if (e.pointerType === 'touch' && e.isPrimary === false) return;
       down = true;
+      moved = false;
       G.dragging = true;
       G.velX = 0;
       G.velY = 0;
       G.lastAct = Date.now();
       lastT = performance.now();
-      const t = e.touches ? e.touches[0] : e;
+      var t = e.touches ? e.touches[0] : e;
       lx = t.clientX;
       ly = t.clientY;
-    };
-    const onMove = (e) => {
+      downX = t.clientX;
+      downY = t.clientY;
+      ptrId = e.pointerId;
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+
+    function onMove(e) {
       if (!down) return;
       G.lastAct = Date.now();
-      const t = e.touches ? e.touches[0] : e;
-      const now = performance.now();
-      const dt = Math.max(8, now - lastT);
+      var t = e.touches ? e.touches[0] : e;
+      var now = performance.now();
+      var dt = Math.max(8, now - lastT);
       lastT = now;
-      const dx = t.clientX - lx;
-      const dy = t.clientY - ly;
+      var dx = t.clientX - lx;
+      var dy = t.clientY - ly;
       lx = t.clientX;
       ly = t.clientY;
+      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 8) moved = true;
       G.pivot.rotation.y += dx * 0.005;
       G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + dy * 0.004));
-      // Velocity for inertia (px/frame scale)
       G.velX = dx * (16 / dt) * 0.005;
       G.velY = dy * (16 / dt) * 0.004;
       if (e.cancelable) e.preventDefault();
-    };
-    const onUp = () => {
+    }
+
+    function onUp(e) {
+      if (!down) return;
       down = false;
       G.dragging = false;
       G.lastAct = Date.now();
-      // Clamp inertia so it doesn't spin forever
       G.velX = Math.max(-0.08, Math.min(0.08, G.velX));
       G.velY = Math.max(-0.05, Math.min(0.05, G.velY));
-    };
+      try {
+        if (ptrId != null) canvas.releasePointerCapture(ptrId);
+      } catch (_) {}
+      var t = e.changedTouches ? e.changedTouches[0] : e;
+      // Short tap (not drag) → go to national space under finger
+      if (!moved && t) {
+        var ll = pickLatLng(t.clientX, t.clientY);
+        if (ll) {
+          goToPlace(ll.lat, ll.lng, { tier: 'national', openMap: false });
+        }
+      }
+      ptrId = null;
+    }
+
     canvas.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove, { passive: false });
+    canvas.addEventListener('pointermove', onMove, { passive: false });
+    canvas.addEventListener('pointerup', onUp);
+    canvas.addEventListener('pointercancel', onUp);
     window.addEventListener('pointerup', onUp);
+
     canvas.addEventListener(
       'wheel',
-      (e) => {
+      function (e) {
         G.lastAct = Date.now();
-        const next = Math.max(1.42, Math.min(9, G.camera.position.z + e.deltaY * 0.0022));
+        // Zoom toward cursor: update focus from point under wheel
+        var under = pickLatLng(e.clientX, e.clientY);
+        if (under) setFocus(under.lat, under.lng);
+
+        var next = Math.max(1.42, Math.min(9, G.camera.position.z + e.deltaY * 0.0022));
         G.camera.position.z = next;
         setTierLabel();
-        // Cross into city tier → open street map
+
+        // Enter city tier → street map at FOCUS (clicked/zoomed place), never forced home city
         if (next <= TIERS.city.z + 0.02 && !global.SNMap?.active) {
-          const p = global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
+          var p = focusPos() || under || { lat: 36.43, lng: 28.22 };
+          if (under) p = under;
+          setFocus(p.lat, p.lng);
           void global.SNMap?.open?.(p.lat, p.lng);
+          try {
+            global.SNCli?.log?.(
+              'City map · ' + p.lat.toFixed(3) + ', ' + p.lng.toFixed(3) + ' (zoom target)',
+              'ok'
+            );
+          } catch (_) {}
         }
         e.preventDefault();
       },
       { passive: false }
     );
-    canvas.addEventListener('dblclick', () => {
-      // double-click: dive national → city map
-      if (G.camera.position.z > TIERS.national.z) goToTier('national');
-      else {
-        const p = global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
-        goToTier('city');
-        void global.SNMap?.open?.(p.lat, p.lng);
+
+    // Double-click / double-tap: dive into that place (national → city map at click)
+    canvas.addEventListener('dblclick', function (e) {
+      var ll = pickLatLng(e.clientX, e.clientY);
+      if (!ll) return;
+      if (G.camera.position.z > TIERS.national.z + 0.05) {
+        goToPlace(ll.lat, ll.lng, { tier: 'national', openMap: false });
+      } else {
+        goToPlace(ll.lat, ll.lng, { tier: 'city', openMap: true });
       }
     });
   }
 
+  /**
+   * SpaceNet: go to the place you clicked — rotate + zoom tier.
+   */
+  function goToPlace(lat, lng, opts) {
+    opts = opts || {};
+    if (lat == null || lng == null) return false;
+    setFocus(lat, lng);
+    var tier = opts.tier || 'national';
+    flyNear(lat, lng, tier);
+    pulse(lat, lng, opts.color != null ? opts.color : 0x3d9eff, opts.label || 'Here', opts.ms || 12000);
+    try {
+      var label =
+        (TIERS[tier] && TIERS[tier].label) || tier;
+      setHud(label + ' · ' + lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°');
+      if (global.SNCli && SNCli.log) {
+        SNCli.log(
+          'SpaceNet · ' + label + ' · ' + lat.toFixed(3) + ', ' + lng.toFixed(3),
+          'ok'
+        );
+        SNCli.preview(label + ' · ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+      }
+    } catch (_) {}
+    if (opts.openMap || tier === 'city') {
+      try {
+        if (global.SNMap && SNMap.open) void SNMap.open(lat, lng);
+      } catch (_) {}
+    }
+    return true;
+  }
+
   function onResize() {
     if (!G.renderer) return;
-    const el = document.getElementById('globe');
-    const w = el.clientWidth || window.innerWidth;
-    const h = el.clientHeight || window.innerHeight;
+    var el = document.getElementById('globe');
+    var w = el.clientWidth || window.innerWidth;
+    var h = el.clientHeight || window.innerHeight;
     G.camera.aspect = w / h;
     G.camera.updateProjectionMatrix();
     G.renderer.setSize(w, h, false);
@@ -277,7 +401,6 @@
   function loop() {
     requestAnimationFrame(loop);
     if (!G.ready || document.hidden) return;
-    // Pause heavy render when city map covers
     if (global.SNMap?.active) {
       if (++G.frame % 40 === 0) {
         try {
@@ -287,12 +410,11 @@
       return;
     }
     G.frame++;
-    const idle = Date.now() - G.lastAct > 2800;
+    var idle = Date.now() - G.lastAct > 2800;
     if (!G.dragging && !G.zoomAnim) {
-      const skip = idle ? 3 : 1;
+      var skip = idle ? 3 : 1;
       if (G.frame % skip !== 0) return;
     }
-    // Inertia after finger release (owner rule)
     if (!G.dragging && (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)) {
       G.pivot.rotation.y += G.velX;
       G.pivot.rotation.x = Math.max(-1.35, Math.min(1.35, G.pivot.rotation.x + G.velY));
@@ -311,13 +433,13 @@
   }
 
   function animateZ(toZ, ms) {
-    const from = G.camera.position.z;
-    const t0 = performance.now();
-    const dur = ms || 650;
+    var from = G.camera.position.z;
+    var t0 = performance.now();
+    var dur = ms || 650;
     G.zoomAnim = true;
     function step(t) {
-      const k = Math.min(1, (t - t0) / dur);
-      const e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
       G.camera.position.z = from + (toZ - from) * e;
       setTierLabel();
       G.lastAct = Date.now();
@@ -328,41 +450,40 @@
   }
 
   function goToTier(name) {
-    const t = TIERS[name] || TIERS.global;
+    var t = TIERS[name] || TIERS.global;
     if (name !== 'city') {
       try {
-        global.SNMap?.close?.();
+        if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
     }
     animateZ(t.z, 700);
     setHud('Astranov SpaceNet · ' + t.label);
     try {
-      global.SNCli?.preview?.(t.label + ' zoom');
+      if (global.SNCli && SNCli.preview) SNCli.preview(t.label + ' zoom');
     } catch (_) {}
     return t.label;
   }
 
   function pulse(lat, lng, color, label, ms) {
     if (!G.ready) return null;
-    const c = color != null ? color : 0x44ffaa;
-    const pos = latLngToVec(lat, lng, 1.03);
-    const mesh = new THREE.Mesh(
+    var c = color != null ? color : 0x44ffaa;
+    var pos = latLngToVec(lat, lng, 1.03);
+    var mesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.022, 10, 10),
       new THREE.MeshBasicMaterial({ color: c })
     );
     mesh.position.copy(pos);
     G.pivot.add(mesh);
-    // ring
-    const ring = new THREE.Mesh(
+    var ring = new THREE.Mesh(
       new THREE.RingGeometry(0.03, 0.045, 24),
       new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.65, side: THREE.DoubleSide })
     );
     ring.position.copy(pos);
     ring.lookAt(0, 0, 0);
     G.pivot.add(ring);
-    G.markers.push({ mesh, ring, born: Date.now(), ms: ms || 14000 });
-    const now = Date.now();
-    G.markers = G.markers.filter((m) => {
+    G.markers.push({ mesh: mesh, ring: ring, born: Date.now(), ms: ms || 14000 });
+    var now = Date.now();
+    G.markers = G.markers.filter(function (m) {
       if (now - m.born > m.ms) {
         try {
           G.pivot.remove(m.mesh);
@@ -373,57 +494,61 @@
       return true;
     });
     G.lastAct = Date.now();
-    flyNear(lat, lng);
     return mesh;
   }
 
   function flyNear(lat, lng, tierHint) {
     if (!G.ready) return;
-    const targetY = (-lng * Math.PI) / 180;
-    const targetX = ((lat * Math.PI) / 180) * 0.55;
-    const startY = G.pivot.rotation.y;
-    const startX = G.pivot.rotation.x;
-    const t0 = performance.now();
-    const dur = 800;
+    setFocus(lat, lng);
+    var targetY = (-lng * Math.PI) / 180;
+    var targetX = ((lat * Math.PI) / 180) * 0.55;
+    var startY = G.pivot.rotation.y;
+    var startX = G.pivot.rotation.x;
+    // Shortest rotation path
+    var dy = targetY - startY;
+    while (dy > Math.PI) dy -= Math.PI * 2;
+    while (dy < -Math.PI) dy += Math.PI * 2;
+    var t0 = performance.now();
+    var dur = 850;
     function step(t) {
-      const k = Math.min(1, (t - t0) / dur);
-      const e = k * (2 - k);
-      G.pivot.rotation.y = startY + (targetY - startY) * e;
+      var k = Math.min(1, (t - t0) / dur);
+      var e = k * (2 - k);
+      G.pivot.rotation.y = startY + dy * e;
       G.pivot.rotation.x = startX + (targetX - startX) * e;
       G.lastAct = Date.now();
       if (k < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
-    if (tierHint) goToTier(tierHint);
+    if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 700);
     else if (G.camera.position.z > TIERS.national.z) animateZ(TIERS.national.z, 700);
   }
 
   function locate() {
-    return new Promise((resolve) => {
+    return new Promise(function (resolve) {
       function finish(lat, lng, demo) {
-        global._snLastPos = { lat, lng };
-        try {
-          global.SNTasks?.setPos?.(lat, lng);
-        } catch (_) {}
+        setFocus(lat, lng);
         pulse(lat, lng, 0x3d9eff, demo ? 'You (demo)' : 'You', 22000);
-        goToTier('national');
-        resolve({ lat, lng, demo: !!demo });
+        flyNear(lat, lng, 'national');
+        resolve({ lat: lat, lng: lng, demo: !!demo });
       }
       if (!navigator.geolocation) return finish(36.4341, 28.2176, true);
       navigator.geolocation.getCurrentPosition(
-        (pos) => finish(pos.coords.latitude, pos.coords.longitude, false),
-        () => finish(36.4341, 28.2176, true),
+        function (pos) {
+          finish(pos.coords.latitude, pos.coords.longitude, false);
+        },
+        function () {
+          finish(36.4341, 28.2176, true);
+        },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
       );
     });
   }
 
   function setHud(text) {
-    const el = document.getElementById('hud-line');
+    var el = document.getElementById('hud-line');
     if (el) el.textContent = text || '';
   }
 
-  /** Brain/continuity probe — inertia must never be stripped */
   function getPhysics() {
     return {
       velX: G.velX,
@@ -433,18 +558,23 @@
       dragging: G.dragging,
       tier: G.tier,
       z: G.camera ? G.camera.position.z : null,
+      focus: focusPos(),
     };
   }
 
   global.SNGlobe = {
-    init,
-    pulse,
-    locate,
-    flyNear,
-    goToTier,
-    setHud,
-    getPhysics,
-    TIERS,
+    init: init,
+    pulse: pulse,
+    locate: locate,
+    flyNear: flyNear,
+    goToTier: goToTier,
+    goToPlace: goToPlace,
+    pickLatLng: pickLatLng,
+    setFocus: setFocus,
+    focusPos: focusPos,
+    setHud: setHud,
+    getPhysics: getPhysics,
+    TIERS: TIERS,
     get tier() {
       return G.tier;
     },
@@ -452,7 +582,7 @@
       return G.ready;
     },
     get lastPos() {
-      return global._snLastPos || null;
+      return focusPos();
     },
   };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);

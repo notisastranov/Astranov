@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728110000-longpress-tile-ai" />
-<meta name="astranov-continuity" content="20260728110000-longpress-tile-ai" />
+<meta name="astranov-build" content="20260728120000-globe-click-go" />
+<meta name="astranov-continuity" content="20260728120000-globe-click-go" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
-<meta name="astranov-mission" content="Long-press create tile. Short-tap open tile. AI greets on boot. SNGlobe keep." />
-<meta name="astranov-ai-handoff" content="Long-press map create only. Tile CSS required. SNAi on critical path + bootPresence." />
+<meta name="astranov-mission" content="Click Earth = go to that national space. Zoom city = clicked place. SNGlobe." />
+<meta name="astranov-ai-handoff" content="SNGlobe.goToPlace + pickLatLng. Never dummy zoom only to my city." />
 <link rel="icon" href="/icon.svg" type="image/svg+xml" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -371,7 +371,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728110000-longpress-tile-ai"></script>
+<script src="/js/spacenet/boot.js?v=20260728120000-globe-click-go"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
