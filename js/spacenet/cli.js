@@ -1168,17 +1168,22 @@
           try {
             await run(t);
             // Text only if user enabled speak-out (default OFF)
+            // Speak AI reply (force) — mic muted until speech ends
             if (hfSpeakOut) {
               const hist = global.SNAi?.history;
               const last = hist && hist[hist.length - 1];
-              if (last && last.role === 'assistant') speakAi(String(last.content).slice(0, 160));
+              if (last && last.role === 'assistant') {
+                speakAi(String(last.content).slice(0, 280), true);
+              } else {
+                speakAi('Done.', true);
+              }
             }
           } catch (e) {
             log('Voice · ' + (e.message || e), 'err');
           } finally {
             hfBusy = false;
-            muteMic(1200);
-            if (handsfreeOn) scheduleListenRestart(1400);
+            if (hfSpeakOut) muteMic(2500);
+            else if (handsfreeOn) scheduleListenRestart(1000);
           }
         })();
       } catch (_) {
