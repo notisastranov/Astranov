@@ -94,8 +94,13 @@
       ) +
       '<div class="sn-home-section">Session</div>' +
       '<button type="button" class="sn-home-btn" data-act="login" id="sn-home-login">' +
-      (auth ? 'Sign out' : 'Sign in') +
+      (auth
+        ? 'Sign out'
+        : 'Sign in with Google · astranov.eu') +
       '</button>' +
+      (auth
+        ? ''
+        : '<p class="sn-home-hint">You sign in to <b>Astranov SpaceNet</b> at <b>astranov.eu</b> — not a random cloud project name.</p>') +
       '<button type="button" class="sn-home-btn" data-act="earth">Back to Earth GLOBAL</button>' +
       '<button type="button" class="sn-home-btn" data-act="reload">Reload</button>' +
       '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset</button>' +
@@ -306,8 +311,21 @@
   async function act(name) {
     if (name === 'login') {
       try {
-        if (global.SNAuth && SNAuth.toggle) await SNAuth.toggle();
-        else if (global.SNCli && SNCli.log) SNCli.log('Auth loading… try again', 'dim');
+        if (global.SNAuth && SNAuth.user) {
+          await SNAuth.toggle();
+        } else {
+          var brand = (global.SN_CONFIG && SN_CONFIG.brand) || {};
+          var ok = global.confirm(
+            'Sign in to ' +
+              (brand.name || 'Astranov SpaceNet') +
+              ' (' +
+              (brand.domain || 'astranov.eu') +
+              ')?\n\nGoogle may open next. Use account for SpaceNet on astranov.eu.'
+          );
+          if (!ok) return;
+          if (global.SNAuth && SNAuth.toggle) await SNAuth.toggle();
+          else if (global.SNCli && SNCli.log) SNCli.log('Auth loading… try again', 'dim');
+        }
       } catch (e) {
         if (global.SNCli && SNCli.log) SNCli.log(String(e.message || e), 'err');
       }

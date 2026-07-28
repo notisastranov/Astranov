@@ -197,6 +197,21 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Radar routes** | Full **route polygons** (corridor + centerline) for active deliveries · OSRM road path when available · green start · red end · shown small & big radar | Required (`SNField.refreshRoutes` / `showRoute`) |
 | **Home** | Center label **Astranov SpaceNet** opens **home menu** (not a bare jump) | Required |
 | **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
+| **Auth branding** | Users must sign in to **Astranov SpaceNet / astranov.eu** — **never** show raw `*.supabase.co` project ref as the product identity | Required (Google Cloud OAuth branding + recommended Supabase custom domain) |
+
+### Auth branding (Google must not show random Supabase project name)
+
+Google’s screen shows whatever is configured for the OAuth client / Auth host. Product law:
+
+| Layer | Owner action |
+|-------|----------------|
+| **Google Cloud → Auth Platform → Branding** | App name **Astranov SpaceNet** · home **https://astranov.eu** · privacy/terms on astranov.eu · logo · authorized domain **astranov.eu** · **Publish** app |
+| **Google Cloud → Clients** | Authorized JS origins: `https://astranov.eu` · redirect URI = Supabase callback (Dashboard → Auth → Google) |
+| **Supabase → Auth → URL** | Site URL `https://astranov.eu` · Redirect `https://astranov.eu/**` |
+| **Supabase custom domain (recommended)** | e.g. `api.astranov.eu` or `auth.astranov.eu` so callback host is **your** domain, not `xxxx.supabase.co` · then set `SN_CONFIG.sbUrl` to that host |
+| **App UI** | Sign-in copy always says **Astranov SpaceNet · astranov.eu** (`home.js` / `auth.js`) |
+
+Until custom domain + Google branding are live, Google may still show the technical Supabase host; that is infrastructure, not acceptable long-term product.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
 | **Task ribbon** | On CLI top · **materialised for current task only** · **hidden when idle** | **Not permanent button flood** |

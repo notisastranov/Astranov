@@ -77,14 +77,23 @@
 
   async function signInGoogle() {
     const c = await ensureClient();
-    // Must match Supabase Auth → URL Configuration → Redirect URLs
-    const origin = location.origin || 'https://astranov.eu';
-    const redirectTo = origin.replace(/\/$/, '') + '/';
+    const brand = cfg().brand || {};
+    const site = (brand.site || cfg().live || 'https://astranov.eu').replace(/\/$/, '');
+    // After Google, land on astranov.eu (not supabase host). Callback still goes through
+    // Supabase Auth until a custom domain is configured on the project.
+    const redirectTo = (location.origin || site).replace(/\/$/, '') + '/';
+    global.SNCli?.log?.(
+      'Sign in · ' + (brand.name || 'Astranov SpaceNet') + ' · ' + (brand.domain || 'astranov.eu'),
+      'ok'
+    );
     const { error } = await c.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: redirectTo,
-        queryParams: { access_type: 'offline', prompt: 'select_account' },
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'select_account',
+        },
       },
     });
     if (error) throw error;
