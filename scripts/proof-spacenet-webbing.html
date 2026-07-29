@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SPACENET webbing proof</title>
+  <style>
+    html, body { margin: 0; background: #000; overflow: hidden; }
+    #c { width: 100vw; height: 100vh; display: block; }
+    #badge {
+      position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+      z-index: 2; color: #3d9eff; font: 700 14px/1.3 ui-monospace, system-ui;
+      background: rgba(0,10,24,.85); border: 1px solid rgba(61,158,255,.6);
+      padding: 10px 16px; border-radius: 999px;
+      box-shadow: 0 0 20px rgba(26,111,212,.45);
+    }
+  </style>
+</head>
+<body>
+  <div id="badge">SPACENET webbing proof · glowing blue grid</div>
+  <canvas id="c"></canvas>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    (function () {
+      var canvas = document.getElementById('c');
+      var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+      var camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.05, 100);
+      camera.position.set(0, 0.15, 2.6);
+      var amb = new THREE.AmbientLight(0x334455, 0.4);
+      var sun = new THREE.DirectionalLight(0xfff5e6, 1.2);
+      sun.position.set(5, 1, 2);
+      scene.add(amb, sun);
+      var pivot = new THREE.Object3D();
+      scene.add(pivot);
+      var earth = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 64, 64),
+        new THREE.MeshPhongMaterial({ color: 0x0a2848, emissive: 0x020810, shininess: 8 })
+      );
+      pivot.add(earth);
+      function latLngToVec(lat, lng, r) {
+        r = r == null ? 1 : r;
+        var phi = ((90 - lat) * Math.PI) / 180;
+        var theta = ((lng + 180) * Math.PI) / 180;
+        return new THREE.Vector3(
+          -r * Math.sin(phi) * Math.cos(theta),
+          r * Math.cos(phi),
+          r * Math.sin(phi) * Math.sin(theta)
+        );
+      }
+      var stepDeg = 15;
+      var r = 1.022;
+      var segs = 36;
+      var positions = [];
+      for (var lng = -180; lng < 180; lng += stepDeg) {
+        for (var lat = -90; lat < 90; lat += 180 / segs) {
+          var a = latLngToVec(lat, lng, r);
+          var b = latLngToVec(Math.min(90, lat + 180 / segs), lng, r);
+          positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+        }
+      }
+      for (var la = -75; la <= 75; la += stepDeg) {
+        for (var lo = -180; lo < 180; lo += 360 / segs) {
+          var p0 = latLngToVec(la, lo, r);
+          var p1 = latLngToVec(la, lo + 360 / segs, r);
+          positions.push(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+        }
+      }
+      var geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
+      var grid = new THREE.LineSegments(
+        geo,
+        new THREE.LineBasicMaterial({
+          color: 0x55c8ff,
+          transparent: true,
+          opacity: 0.95,
+          depthTest: false,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      );
+      grid.renderOrder = 20;
+      pivot.add(grid);
+      var glow = new THREE.LineSegments(
+        geo.clone(),
+        new THREE.LineBasicMaterial({
+          color: 0x1a8fff,
+          transparent: true,
+          opacity: 0.5,
+          depthTest: false,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+      );
+      glow.scale.setScalar(1.004);
+      glow.renderOrder = 19;
+      pivot.add(glow);
+      window._spacenetProof = {
+        ok: true,
+        segments: positions.length / 6,
+        stepDeg: stepDeg,
+        color: '0x55c8ff',
+      };
+      function loop() {
+        requestAnimationFrame(loop);
+        pivot.rotation.y += 0.002;
+        var pulse = 0.7 + 0.28 * Math.sin(Date.now() * 0.0028);
+        grid.material.opacity = pulse;
+        glow.material.opacity = 0.35 + 0.25 * Math.sin(Date.now() * 0.0028 + 1);
+        renderer.render(scene, camera);
+      }
+      loop();
+      window.addEventListener('resize', function () {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    })();
+  </script>
+</body>
+</html>
