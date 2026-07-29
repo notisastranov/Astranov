@@ -498,8 +498,16 @@
       return { did: did, reply: reply };
     }
 
-    if (/^date\b|\bcoffee\s*date\b|\bdating\b/.test(low)) {
-      if (global.SNTasks && SNTasks.create) {
+    if (/^date\b|\bcoffee\s*date\b|\bdating\b|available\s*woman|meet\s*(a\s*)?woman/.test(low)) {
+      if (global.SNMarket && SNMarket.fulfillDatingIntent) {
+        try {
+          var dr = await SNMarket.fulfillDatingIntent(line);
+          did.push('dating_fulfill');
+          reply = (dr && dr.reply) || 'Dating request path ran.';
+        } catch (e) {
+          reply = 'Dating path failed · ' + (e.message || e);
+        }
+      } else if (global.SNTasks && SNTasks.create) {
         var td = SNTasks.create(line);
         did.push('task:' + (td && td.id));
         reply = 'Date task open: ' + (td && td.title) + '. Claim from the map when ready.';
@@ -519,7 +527,15 @@
     }
 
     if (/^job\b|^gig\b|barman|bartender|cleaner|nanny|waiter|tutor|looking\s+for\s+work|need\s+a\b/.test(low)) {
-      if (global.SNTasks && SNTasks.create) {
+      if (global.SNMarket && SNMarket.fulfillWorkIntent) {
+        try {
+          var wr = await SNMarket.fulfillWorkIntent(line);
+          did.push('work_fulfill');
+          reply = (wr && wr.reply) || 'Work offer path ran.';
+        } catch (e) {
+          reply = 'Work path failed · ' + (e.message || e);
+        }
+      } else if (global.SNTasks && SNTasks.create) {
         var tj = SNTasks.create(line);
         did.push('task:' + (tj && tj.id));
         reply = 'Job posted: ' + (tj && tj.title) + '. Visible on map · task list.';

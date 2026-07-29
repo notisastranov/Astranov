@@ -19,12 +19,19 @@
     why:
       'Amnesia loops (rewrite-from-zero, strip inertia/CLI, chase FPS, forget juice) almost killed the project and cost the owner real money and years of focus. Memory is not optional.',
     mission:
-      'Unify internet activity under realistic space imagery — solar → global → national → city → street — and evolve the internet into SpaceNet.',
+      'Unify internet activity under realistic space imagery via SPACENET (GLOBAL→NATIONAL→REGIONAL→CITY) — and evolve the internet into SpaceNet.',
+    spacenet: {
+      name: 'SPACENET',
+      law: 'Pilot fly grid net — without SPACENET, flying on the net is not possible',
+      path: 'GLOBAL → NATIONAL → REGIONAL → CITY',
+      file: 'js/spacenet/spacenet-grid.js',
+      api: 'window.SPACENET · SNGlobe.diveInAt',
+    },
     identity: {
       coldBoot: 'Silent globe (Greece-centered) + CLI. No persistent nav chrome.',
       globePrimacy: '3D Earth is the only permanent UI surface.',
       realism: 'Real geocoding, routing, WebRTC, geolocation, live crawlers. No fake city data as primary.',
-      ai: 'Astranov = Grok-fork collective brain: chats, writes code, drives almighty crawlers. Never generic assistant.',
+      ai: 'SpaceNet AI. Astranov = Architect of SpaceNet. Never generic assistant.',
     },
     authority: [
       'Live code index.html + js/spacenet/* (+ astranov-continuity.js when present)',
@@ -41,9 +48,10 @@
         inertia: true,
         velKeys: ['velX', 'velY'],
         dampRange: [0.88, 0.94],
-        tiers: ['solar', 'global', 'national', 'city', 'street'],
+        tiers: ['solar', 'global', 'national', 'regional', 'city', 'street'],
+        spacenet: 'GLOBAL→NATIONAL→REGIONAL→CITY',
         alwaysBackToEarth: true,
-        owner: 'js/spacenet/globe.js',
+        owner: 'js/spacenet/globe.js + spacenet-grid.js',
       },
       cli: {
         oneFingerDrag: true,

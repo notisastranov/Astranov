@@ -115,6 +115,8 @@
       drop_lat: p.drop_lat != null ? p.drop_lat : null,
       drop_lng: p.drop_lng != null ? p.drop_lng : null,
       always_on: p.always_on !== false,
+      targetId: p.targetId || null,
+      targetName: p.targetName || null,
     };
     T.tasks.set(task.id, task);
     save();

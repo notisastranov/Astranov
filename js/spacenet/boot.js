@@ -106,6 +106,7 @@
   var chain = [
     '/js/spacenet/config.js',
     '/js/spacenet/brain.js',
+    '/js/spacenet/spacenet-grid.js', // SPACENET pilot fly grid (GLOBAL→NATIONAL→REGIONAL→CITY)
     '/js/spacenet/globe.js',
     '/js/spacenet/cosmos.js', // multi-body go + crawl
     '/js/spacenet/tasks.js',

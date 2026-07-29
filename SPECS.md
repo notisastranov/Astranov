@@ -56,24 +56,49 @@ kind ∈ file | folder | shop | delivery | call | note | media
 **Seeds (always):** thesis garage (Earth) · Cydonia music (Mars) · market hub · video agora.  
 Storage: `astranov:spacenet-places-v1` / `sn:places-v1`.
 
-### Zoom = filesystem (on current body)
+### SPACENET — pilot fly grid net (non-negotiable)
 
-`SOLAR → GLOBAL → NATIONAL → REGIONAL → CITY → STREET`  
-Default boot: **full GLOBAL Earth**. City map closed until user asks.  
+**Name:** **SPACENET** (the pilot fly grid). Without SPACENET, **flying on the net is not possible**.
+
+```
+SOLAR
+  ↕
+GLOBAL      whole-body overview
+  ↕
+NATIONAL    country-scale · borders · major cities · day/night · local time
+  ↕
+REGIONAL    metro / province scale
+  ↕
+CITY        operational street map + vendor / worker / driver / dating tiles
+  ↕
+STREET      same path as CITY map (Earth Leaflet)
+```
+
+| Rule | Law |
+|------|-----|
+| **Grid cells** | **GLOBAL → NATIONAL → REGIONAL → CITY** (single-tap same place advances one cell) |
+| **New place** | Far click re-enters at **GLOBAL** facing that lat/lng (anchor reset) |
+| **Double tap** | Step **out** one cell: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR |
+| **Anchor** | Same-place radius is tier-aware (wide at GLOBAL, tighter at CITY) so taps do not falsely reset |
+| **Altitude is truth** | Next cell uses camera **z** + `diveTier`, not a fragile counter alone |
+| **Mechanical** | `window.SPACENET` · `js/spacenet/spacenet-grid.js` · `SNGlobe.diveInAt` · `zoomOutOne` · `goToPlace` |
+| **CLI speech** | Log lines say **SPACENET · GLOBAL|NATIONAL|REGIONAL|CITY** |
+
+Default boot: **full GLOBAL Earth** on SPACENET. City map closed until CITY cell (or user asks).  
 Object appears by `minZ` + `visibilityKm`.
 
 ### Globe pointer law (non-negotiable)
 
 | Input | Behavior |
 |-------|----------|
-| **Single click / single tap** on body | **Fly + zoom to that place at NATIONAL** (must work — pickLatLng after pivot bake). Further singles same area → **REGIONAL** then **CITY**. |
-| **City map short-click empty** | Close street map → **NATIONAL** globe at that lat/lng | Required |
-| **Double click / double tap** | **Zoom out one ladder step** toward the globe: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
+| **Single click / single tap** on body | **SPACENET dive** one cell deeper on **same place**: GLOBAL → NATIONAL → REGIONAL → CITY. New place → GLOBAL at click. |
+| **City map short-click empty** | Close street map → **NATIONAL** (or SPACENET step out) at that lat/lng | Required |
+| **Double click / double tap** | **SPACENET out** one cell: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
 | **Drag** | Spin globe only (no dive). |
 | **Wheel** | Zoom camera; city Z opens street map at focus under cursor. |
 | **No click markers** | Single/double tap **must not** drop huge blue dots / rings. Fly + zoom only. Tiny optional pins only for `locate` / explicit `pulse:true`. |
 
-Mechanical: `SNGlobe.diveInAt` · `SNGlobe.zoomOutOne` · `goToPlace({ pulse: false })` default.
+Mechanical: `SNGlobe.diveInAt` (SPACENET) · `SNGlobe.zoomOutOne` · `goToPlace({ pulse: false })` default.
 
 Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · `go to moon` · `shops` · `locate` · `cosmos`
 
@@ -90,7 +115,7 @@ Talk examples: `put thesis on the garage` · `go to mars` · `go to Jupiter` · 
 | **Go anywhere = three steps** | **(1) `setBody`** real sphere for that world · **(2) land** at lat/lng · **(3) `scan` / crawl** what is there |
 | **Every body is a globe** | Not a text label. `SNGlobe.setBody(id, meta)` swaps texture and/or body color on the Three.js sphere |
 | **Earth imaging KEEP** | Earth stays **`SNGlobe`** + `earth_atmos_2048` / specular / clouds. Do not strip |
-| **Click = that place on current body** | Raycast → progressive **dive** (national → regional → city) or **double = zoom out**. **Fly faces the click** (quaternion). **No blue rings on click.** Post-click crawl **must not re-fly**. Focus = last click — never force “my city only” |
+| **Click = that place on current body** | Raycast → **SPACENET** dive (global → national → regional → city) or **double = zoom out**. **Fly faces the click** (quaternion). **No blue rings on click.** Post-click crawl **must not re-fly**. Focus = last click — never force “my city only” |
 | **City map is Earth street only** | Leaflet opens only when **body === earth**. Leaving Earth **closes** city map |
 | **Dummy banned** | “go to mars” that only prints a line or jumps solar tier **without** body switch + land + crawl = **contaminated** |
 | **Crawl on arrival** | Always after land (unless caller already scanning) |
@@ -117,10 +142,11 @@ user "go to mars" | "go to jupiter" | SNCosmos.go(target, lat?, lng?)
 ```
 
 ```
-short-tap on current globe
+short-tap on current globe (SPACENET)
   → pickLatLng(x,y)
-  → goToPlace(lat, lng, { tier: national, body: current })
-  → scan(current body, lat, lng)
+  → SPACENET.nextDive({ anchor, z, tier, lat, lng })
+  → goToPlace(lat, lng, { tier: global|national|regional|city, body: current })
+  → at CITY: open street map + ensureSector tiles
 ```
 
 ### Bodies (minimum catalog — extend, do not shrink)
@@ -148,13 +174,29 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 
 ### Zoom tiers (per current body)
 
-| Tier | Meaning |
-|------|---------|
-| SOLAR | Far context (camera z high) |
-| GLOBAL | Whole-body overview |
-| NATIONAL | Regional / large feature (click target) |
-| CITY | Street map **only if body = earth** |
+| SPACENET cell | Meaning |
+|---------------|---------|
+| SOLAR | Far context (camera z high) — above the grid |
+| GLOBAL | Whole-body overview — SPACENET entry |
+| NATIONAL | Country-scale: **boundary lines** (glowing blue) · **major cities** · **local time** · **day/night** |
+| REGIONAL | Metro / province — same national layer, closer |
+| CITY | Street map **only if body = earth** · vendors · workers · drivers · dating · tasks |
 | STREET | Same path via map zoom |
+
+### Surface map engine (near surface / CITY)
+
+Lightweight **Leaflet** (lazy-loaded only at CITY). Basemap variations (no API key):
+
+| Layer | Engine tiles | Use |
+|-------|----------------|-----|
+| **Bright** | Carto Voyager | Day / readable streets |
+| **Dark** | Carto Dark | Night / SpaceNet chrome match |
+| **Satellite** | Esri World Imagery (+ optional labels) | Terrain / roof / coastline truth |
+
+Control: top-right ☀️ Bright · 🌑 Dark · 🛰 Sat on city map. CLI: `map dark` · `map bright` · `map satellite`. Preference in `sn:map-layer-v1`. Default without pref: bright by local day, dark by night.
+
+Mechanical: `window.SPACENET` + `SNGlobe` national layer (`syncNationalLayer`) — Earth only; visible at NATIONAL/REGIONAL.  
+City tasks: `pizza` → `SNMarket.fulfillFoodIntent` · `job barman` → `fulfillWorkIntent` · `date` → `fulfillDatingIntent` (real tiles only, zero NPC).
 
 ### CLI (cosmos minimum)
 
@@ -195,10 +237,10 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 | **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap pin → open tile | Required |
 | **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
 | **Radar** | Top-left · speed km/h · **single tap = big view** · **double tap = small** | Required |
-| **Radar blips** | **Green** friends · **red** competitors · **yellow** vendors & clients | Required |
+| **Radar blips** | **Green** friends · **red** competitors · **yellow** vendor workers & clients | Required |
 | **Radar routes** | Full **route polygons** (corridor + centerline) for active deliveries · OSRM road path when available · green start · red end · shown small & big radar | Required (`SNField.refreshRoutes` / `showRoute`) |
 | **Home** | Center label **Astranov SpaceNet** opens **home menu** (not a bare jump) | Required |
-| **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
+| **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor worker** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
 | **Auth branding** | Users must sign in to **Astranov SpaceNet / astranov.eu** — **never** show raw `*.supabase.co` project ref as the product identity | Required (Google Cloud OAuth branding + recommended Supabase custom domain) |
 
 ### Auth branding (Google must show astranov.eu / Astranov SpaceNet — not supabase mambojumbo)
@@ -218,7 +260,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 **Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
-| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🤖 AI · ➤ Send** only | **Required — never hide** · **no Size button** |
+| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🎧 AI · ➤ Send** only | **Required — never hide** · **no Size button** |
 | **CLI task extras** | Optional extra keys while a task is active | Additive only |
 | **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
@@ -235,7 +277,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **🎯 Locate** | GPS + fly globe to user | `SNCli.run('locate')` / `SNGlobe.locate` |
 | **👤 User** | Open my multi-tile | `SNTile.openMe` |
 | **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
-| **🤖 AI** | Hands-free voice ↔ **SpaceNet AI** (emoji + **AI** letters) | `SNCli.toggleHandsfree` |
+| **🎧 AI** | Hands-free voice ↔ **SpaceNet AI** (headphones emoji + **AI** letters) | `SNCli.toggleHandsfree` |
 | **➤ Send** | Submit CLI / talk to SpaceNet | form submit |
 
 **Forbidden:** Size / expand ribbon key (unauthorized); bottom CLI button bar; removing permanent five; hiding ribbon when idle.  

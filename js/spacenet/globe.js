@@ -1,27 +1,45 @@
 /* SNGlobe — Earth imaging engine (KEEP)
  * Mechanical name: window.SNGlobe (js/spacenet/globe.js)
- * Three.js sphere + TextureLoader: earth_atmos_2048 · specular · clouds
- * Sacred: inertia damp · zoom tiers
+ * Three.js sphere + TextureLoader: earth_atmos_2048 · specular · clouds · night
+ * Sacred: inertia damp · SPACENET pilot fly grid
+ *
+ * SPACENET (window.SPACENET / spacenet-grid.js) — pilot fly grid net:
+ *   GLOBAL → NATIONAL → REGIONAL → CITY
+ * Without SPACENET, flying on the net is not possible.
+ *
+ * NATIONAL layer: day/night · glowing blue borders · major cities · local time
  * SPECS click law:
- *   single tap  → fly + zoom deeper (NATIONAL → REGIONAL → CITY / street map)
- *   double tap  → zoom OUT one level toward globe
+ *   single tap  → SPACENET dive one cell deeper (same place)
+ *   double tap  → SPACENET step out one cell
  *   never place huge blue rings on click
  */
 (function (global) {
   'use strict';
 
+  function snApi() {
+    return global.SPACENET || null;
+  }
+  var SN = snApi();
   var TIERS = {
-    solar: { z: 7.5, label: 'SOLAR' },
-    global: { z: 2.75, label: 'GLOBAL' },
-    national: { z: 1.95, label: 'NATIONAL' },
-    regional: { z: 1.72, label: 'REGIONAL' },
-    city: { z: 1.48, label: 'CITY' },
+    solar: { z: 7.8, label: 'SOLAR' },
+    global: { z: 3.05, label: 'GLOBAL' },
+    national: { z: 1.88, label: 'NATIONAL' },
+    regional: { z: 1.58, label: 'REGIONAL' },
+    city: { z: 1.38, label: 'CITY' },
   };
+  // Sync dramatic Z from SPACENET law when present
+  (function syncZ() {
+    var S = snApi();
+    if (!S || !S.Z) return;
+    Object.keys(TIERS).forEach(function (k) {
+      if (S.Z[k] != null) TIERS[k].z = S.Z[k];
+    });
+  })();
 
-  /** Zoom ladder (coarse → fine). Single-tap dives in; double-tap steps out. */
-  var LADDER = ['solar', 'global', 'national', 'regional', 'city'];
-  /** Single-tap dive starts at national (from solar/global) then deepens */
-  var DIVE = ['national', 'regional', 'city'];
+  /** Full altitude ladder (includes SOLAR). SPACENET cells = LADDER without solar. */
+  var LADDER = (SN && SN.LADDER) || ['solar', 'global', 'national', 'regional', 'city'];
+  /** SPACENET pilot fly grid cells (single-tap progression) */
+  var DIVE = (SN && SN.CELLS) || ['global', 'national', 'regional', 'city'];
 
   var G = {
     ready: false,
@@ -47,11 +65,102 @@
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
     diveTier: null,
+    /** SPACENET cell index: 0 global · 1 national · 2 regional · 3 city */
+    diveStep: 0,
+    /** Anchor lat/lng for same-place SPACENET dive (wide thresholds) */
+    diveAnchor: null,
+    /** Fly glow rings pulsing during SPACENET travel */
+    flyFx: [],
+    zoomGen: 0,
+    flashEl: null,
     bodyId: 'earth',
     bodyMeta: null,
     earthMat: null,
     cloudMat: null,
+    ambLight: null,
+    sunLight: null,
+    dayNightUniforms: null,
+    dayNightReady: false,
+    /** SPACENET webbing root — basis of global OS imaging (always on Earth) */
+    nationalRoot: null,
+    webbGrid: null,
+    webbGridGlow: null,
+    borderLines: null,
+    borderGlow: null,
+    cityGlow: null,
+    cityCore: null,
+    bordersLoaded: false,
+    bordersLoading: false,
+    webbingBuilt: false,
+    nationalOn: false,
+    _natHudLast: 0,
   };
+
+  /** Major cities — compact offline set for NATIONAL glow pins */
+  var MAJOR_CITIES = [
+    { n: 'Athens', lat: 37.98, lng: 23.73 },
+    { n: 'Istanbul', lat: 41.01, lng: 28.98 },
+    { n: 'Rome', lat: 41.9, lng: 12.5 },
+    { n: 'Paris', lat: 48.86, lng: 2.35 },
+    { n: 'London', lat: 51.51, lng: -0.13 },
+    { n: 'Madrid', lat: 40.42, lng: -3.7 },
+    { n: 'Berlin', lat: 52.52, lng: 13.41 },
+    { n: 'Moscow', lat: 55.76, lng: 37.62 },
+    { n: 'Cairo', lat: 30.04, lng: 31.24 },
+    { n: 'Lagos', lat: 6.45, lng: 3.4 },
+    { n: 'Johannesburg', lat: -26.2, lng: 28.05 },
+    { n: 'Nairobi', lat: -1.29, lng: 36.82 },
+    { n: 'Dubai', lat: 25.2, lng: 55.27 },
+    { n: 'Mumbai', lat: 19.08, lng: 72.88 },
+    { n: 'Delhi', lat: 28.61, lng: 77.21 },
+    { n: 'Bangkok', lat: 13.76, lng: 100.5 },
+    { n: 'Singapore', lat: 1.35, lng: 103.82 },
+    { n: 'Hong Kong', lat: 22.32, lng: 114.17 },
+    { n: 'Shanghai', lat: 31.23, lng: 121.47 },
+    { n: 'Beijing', lat: 39.9, lng: 116.41 },
+    { n: 'Tokyo', lat: 35.68, lng: 139.69 },
+    { n: 'Seoul', lat: 37.57, lng: 126.98 },
+    { n: 'Sydney', lat: -33.87, lng: 151.21 },
+    { n: 'Melbourne', lat: -37.81, lng: 144.96 },
+    { n: 'Auckland', lat: -36.85, lng: 174.76 },
+    { n: 'Los Angeles', lat: 34.05, lng: -118.24 },
+    { n: 'San Francisco', lat: 37.77, lng: -122.42 },
+    { n: 'Chicago', lat: 41.88, lng: -87.63 },
+    { n: 'New York', lat: 40.71, lng: -74.01 },
+    { n: 'Toronto', lat: 43.65, lng: -79.38 },
+    { n: 'Mexico City', lat: 19.43, lng: -99.13 },
+    { n: 'Bogotá', lat: 4.71, lng: -74.07 },
+    { n: 'São Paulo', lat: -23.55, lng: -46.63 },
+    { n: 'Rio', lat: -22.91, lng: -43.17 },
+    { n: 'Buenos Aires', lat: -34.6, lng: -58.38 },
+    { n: 'Santiago', lat: -33.45, lng: -70.67 },
+    { n: 'Lima', lat: -12.05, lng: -77.04 },
+    { n: 'Cape Town', lat: -33.92, lng: 18.42 },
+    { n: 'Riyadh', lat: 24.71, lng: 46.68 },
+    { n: 'Tehran', lat: 35.69, lng: 51.39 },
+    { n: 'Karachi', lat: 24.86, lng: 67.0 },
+    { n: 'Jakarta', lat: -6.21, lng: 106.85 },
+    { n: 'Manila', lat: 14.6, lng: 120.98 },
+    { n: 'Hanoi', lat: 21.03, lng: 105.85 },
+    { n: 'Warsaw', lat: 52.23, lng: 21.01 },
+    { n: 'Stockholm', lat: 59.33, lng: 18.07 },
+    { n: 'Oslo', lat: 59.91, lng: 10.75 },
+    { n: 'Helsinki', lat: 60.17, lng: 24.94 },
+    { n: 'Vienna', lat: 48.21, lng: 16.37 },
+    { n: 'Prague', lat: 50.08, lng: 14.44 },
+    { n: 'Budapest', lat: 47.5, lng: 19.04 },
+    { n: 'Bucharest', lat: 44.43, lng: 26.1 },
+    { n: 'Kyiv', lat: 50.45, lng: 30.52 },
+    { n: 'Ankara', lat: 39.93, lng: 32.86 },
+    { n: 'Tel Aviv', lat: 32.09, lng: 34.78 },
+    { n: 'Rhodes', lat: 36.43, lng: 28.22 },
+    { n: 'Thessaloniki', lat: 40.64, lng: 22.94 },
+  ];
+
+  var BORDER_URL =
+    'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/ne_110m_admin_0_boundary_lines_land.geojson';
+  var NIGHT_URL =
+    'https://cdn.jsdelivr.net/npm/three-globe@2.31.1/example/img/earth-night.jpg';
 
   function isTouch() {
     try {
@@ -83,14 +192,18 @@
   }
 
   function tierFromZ(z) {
-    if (z >= 5.5) return 'solar';
+    var S = snApi();
+    if (S && S.tierFromZ) return S.tierFromZ(z);
+    if (z >= 5.2) return 'solar';
     if (z >= 2.35) return 'global';
-    if (z >= 1.84) return 'national';
-    if (z >= 1.6) return 'regional';
+    if (z >= 1.72) return 'national';
+    if (z >= 1.48) return 'regional';
     return 'city';
   }
 
   function ladderIndex(name) {
+    var S = snApi();
+    if (S && S.ladderIndex) return S.ladderIndex(name);
     var i = LADDER.indexOf(name);
     return i >= 0 ? i : LADDER.indexOf('global');
   }
@@ -99,34 +212,82 @@
     return G.diveTier || tierFromZ(G.camera ? G.camera.position.z : TIERS.global.z);
   }
 
-  /** Degrees-ish distance between two lat/lng (rough, for same-place dive) */
+  /** Degrees-ish distance — prefer SPACENET anchor */
   function farFromFocus(lat, lng) {
-    var f = focusPos();
+    var S = snApi();
+    var f = G.diveAnchor || focusPos();
     if (!f || f.lat == null) return true;
+    var thr = 28;
+    var t = currentTier();
+    if (S && S.SAME_DEG && S.SAME_DEG[t] != null) thr = S.SAME_DEG[t];
+    if (S && S.degDist) return S.degDist(f.lat, f.lng, lat, lng) > thr;
     var dLat = Math.abs(f.lat - lat);
     var dLng = Math.abs(f.lng - lng);
     if (dLng > 180) dLng = 360 - dLng;
-    return dLat > 6 || dLng > 6;
+    return dLat > thr || dLng > thr;
   }
 
   /**
-   * Next deeper dive tier for a single tap.
-   * From solar/global or new place → NATIONAL. Then REGIONAL → CITY.
+   * SPACENET next cell — committed diveTier first so z-lag cannot re-pick same cell.
    */
-  function nextDiveTier(lat, lng) {
-    var cur = currentTier();
-    if (cur === 'solar' || cur === 'global' || farFromFocus(lat, lng) || DIVE.indexOf(cur) < 0) {
-      return 'national';
+  function nextDiveAction(lat, lng) {
+    var z = G.camera ? G.camera.position.z : TIERS.global.z;
+    var tier = currentTier();
+    var S = snApi();
+    if (S && S.nextDive) {
+      var n = S.nextDive({
+        lat: lat,
+        lng: lng,
+        z: z,
+        tier: tier,
+        diveTier: G.diveTier || tier,
+        diveStep: G.diveStep,
+        anchor: G.diveAnchor || focusPos(),
+      });
+      return {
+        action: n.cell,
+        cell: n.cell,
+        step: n.step,
+        openMap: !!n.openMap,
+        same: !!n.same,
+        hint: n.hint || '',
+        z: n.z,
+      };
     }
-    var i = DIVE.indexOf(cur);
-    if (i < 0) return 'national';
-    if (i >= DIVE.length - 1) return 'city';
-    return DIVE[i + 1];
+    // Inline fallback: always deepen committed tier
+    if (farFromFocus(lat, lng)) {
+      return {
+        action: 'national',
+        cell: 'national',
+        step: 1,
+        openMap: false,
+        same: false,
+        hint: 'SPACENET · NATIONAL',
+      };
+    }
+    var order = ['global', 'national', 'regional', 'city'];
+    var i = order.indexOf(tier);
+    if (i < 0) i = 0;
+    if (i < order.length - 1) i++;
+    var cell = order[i];
+    return {
+      action: cell,
+      cell: cell,
+      step: i,
+      openMap: cell === 'city',
+      same: true,
+      hint: 'SPACENET · ' + cell.toUpperCase(),
+    };
   }
 
-  /** One level coarser toward full globe */
+  function nextDiveTier(lat, lng) {
+    return nextDiveAction(lat, lng).action;
+  }
+
+  /** One level coarser on SPACENET ladder toward full globe */
   function prevZoomTier() {
     var cur = currentTier();
+    if (SN && SN.prevCell) return SN.prevCell(cur);
     var i = ladderIndex(cur);
     if (i <= 0) return 'solar';
     return LADDER[i - 1];
@@ -134,10 +295,595 @@
 
   function setTierLabel() {
     G.tier = G.diveTier || tierFromZ(G.camera.position.z);
+    var lab = (TIERS[G.tier] && TIERS[G.tier].label) || G.tier;
     var el = document.getElementById('tier-label');
-    if (el) el.textContent = (TIERS[G.tier] && TIERS[G.tier].label) || G.tier;
+    if (el) el.textContent = lab;
     var zl = document.getElementById('zoom-label');
-    if (zl) zl.textContent = 'Astranov SpaceNet · ' + ((TIERS[G.tier] && TIERS[G.tier].label) || G.tier);
+    if (zl) zl.textContent = 'SPACENET · ' + lab;
+    syncNationalLayer();
+  }
+
+  function setDiveAnchor(lat, lng) {
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
+    G.diveAnchor = { lat: lat, lng: lng };
+  }
+
+  function syncDiveStepFromTier(tier) {
+    var t = tier || currentTier();
+    if (t === 'city' || t === 'street') G.diveStep = 3;
+    else if (t === 'regional') G.diveStep = 2;
+    else if (t === 'national') G.diveStep = 1;
+    else if (t === 'global') G.diveStep = 0;
+    else G.diveStep = -1; // solar
+  }
+
+  /** Subsolar point → unit vector in earth mesh local space (matches latLngToVec) */
+  function solarDirectionLocal(date) {
+    var d = date || new Date();
+    var start = Date.UTC(d.getUTCFullYear(), 0, 0);
+    var day =
+      (Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - start) / 86400000;
+    var decl =
+      23.44 * Math.sin(((360 / 365) * (day - 81) * Math.PI) / 180);
+    var utcH = d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+    var lon = (12 - utcH) * 15;
+    while (lon > 180) lon -= 360;
+    while (lon < -180) lon += 360;
+    return latLngToVec(decl, lon, 1).normalize();
+  }
+
+  function isDayAt(lat, lng, date) {
+    var sun = solarDirectionLocal(date);
+    var p = latLngToVec(lat, lng, 1).normalize();
+    return p.dot(sun) > 0.02;
+  }
+
+  /** Local civil clock from longitude (15° ≈ 1h) — no tzdb dependency */
+  function localClockAt(lat, lng, date) {
+    var d = date || new Date();
+    var offsetH = Math.round(lng / 15);
+    if (offsetH > 14) offsetH = 14;
+    if (offsetH < -12) offsetH = -12;
+    var ms = d.getTime() + offsetH * 3600000;
+    var t = new Date(ms);
+    var hh = t.getUTCHours();
+    var mm = t.getUTCMinutes();
+    var pad = function (n) {
+      return (n < 10 ? '0' : '') + n;
+    };
+    var day = isDayAt(lat, lng, d);
+    return {
+      time: pad(hh) + ':' + pad(mm),
+      offsetH: offsetH,
+      dayNight: day ? 'DAY' : 'NIGHT',
+      day: day,
+    };
+  }
+
+  function nearestMajorCity(lat, lng) {
+    var best = null;
+    var bestD = 1e9;
+    for (var i = 0; i < MAJOR_CITIES.length; i++) {
+      var c = MAJOR_CITIES[i];
+      var dLat = c.lat - lat;
+      var dLng = c.lng - lng;
+      if (dLng > 180) dLng -= 360;
+      if (dLng < -180) dLng += 360;
+      var d = dLat * dLat + dLng * dLng;
+      if (d < bestD) {
+        bestD = d;
+        best = c;
+      }
+    }
+    return best;
+  }
+
+  function nationalHudEl() {
+    var el = document.getElementById('sn-national-hud');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'sn-national-hud';
+    el.setAttribute('aria-live', 'polite');
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function cityLabelsRoot() {
+    var el = document.getElementById('sn-city-labels');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'sn-city-labels';
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function projectToScreen(lat, lng) {
+    if (!G.camera || !G.earth || !G.renderer || !G.pivot) return null;
+    try {
+      G.pivot.updateMatrixWorld(true);
+      var local = latLngToVec(lat, lng, 1.02);
+      var world = local.clone().applyMatrix4(G.pivot.matrixWorld);
+      // Front hemisphere relative to camera
+      var camDir = G.camera.position.clone().normalize();
+      var n = world.clone().normalize();
+      if (n.dot(camDir) < 0.12) return null;
+      var v = world.project(G.camera);
+      if (v.z > 1 || v.x < -1.2 || v.x > 1.2 || v.y < -1.2 || v.y > 1.2) return null;
+      var rect = G.renderer.domElement.getBoundingClientRect();
+      return {
+        x: ((v.x + 1) / 2) * rect.width + rect.left,
+        y: ((-v.y + 1) / 2) * rect.height + rect.top,
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function updateCityLabels() {
+    var root = cityLabelsRoot();
+    if (!G.nationalOn || (G.bodyId && G.bodyId !== 'earth') || global.SNMap?.active) {
+      root.innerHTML = '';
+      root.classList.remove('on');
+      return;
+    }
+    root.classList.add('on');
+    var f = focusPos();
+    var flat = f && f.lat != null ? f.lat : 0;
+    var flng = f && f.lng != null ? f.lng : 0;
+    var html = [];
+    var n = 0;
+    for (var i = 0; i < MAJOR_CITIES.length && n < 14; i++) {
+      var c = MAJOR_CITIES[i];
+      var dLat = Math.abs(c.lat - flat);
+      var dLng = Math.abs(c.lng - flng);
+      if (dLng > 180) dLng = 360 - dLng;
+      if (dLat > 28 || dLng > 32) continue;
+      var scr = projectToScreen(c.lat, c.lng);
+      if (!scr) continue;
+      var clk = localClockAt(c.lat, c.lng);
+      html.push(
+        '<span class="sn-city-lab" style="left:' +
+          Math.round(scr.x) +
+          'px;top:' +
+          Math.round(scr.y) +
+          'px"><b>' +
+          c.n +
+          '</b><i>' +
+          clk.time +
+          ' · ' +
+          clk.dayNight +
+          '</i></span>'
+      );
+      n++;
+    }
+    root.innerHTML = html.join('');
+  }
+
+  function updateNationalHud(force) {
+    var now = Date.now();
+    if (!force && now - (G._natHudLast || 0) < 900) return;
+    G._natHudLast = now;
+    var el = nationalHudEl();
+    if (!G.nationalOn || (G.bodyId && G.bodyId !== 'earth')) {
+      el.classList.remove('on');
+      el.textContent = '';
+      updateCityLabels();
+      return;
+    }
+    var f = focusPos();
+    var lat = f && f.lat != null ? f.lat : 0;
+    var lng = f && f.lng != null ? f.lng : 0;
+    var clock = localClockAt(lat, lng);
+    var city = nearestMajorCity(lat, lng);
+    var cityBit = city ? city.n : lat.toFixed(1) + '°, ' + lng.toFixed(1) + '°';
+    var tierLab = (TIERS[G.tier] && TIERS[G.tier].label) || 'NATIONAL';
+    el.classList.add('on');
+    el.innerHTML =
+      '<span class="snh-tier">' +
+      tierLab +
+      '</span>' +
+      '<span class="snh-place">' +
+      cityBit +
+      '</span>' +
+      '<span class="snh-time">' +
+      clock.time +
+      ' local</span>' +
+      '<span class="snh-dn ' +
+      (clock.day ? 'day' : 'night') +
+      '">' +
+      clock.dayNight +
+      '</span>';
+    updateCityLabels();
+  }
+
+  /**
+   * SPACENET webbing is ALWAYS the basis of the global OS on Earth.
+   * Hidden only off-Earth bodies or when flat city map covers the globe.
+   */
+  function webbingShouldShow() {
+    if (!(G.bodyId === 'earth' || !G.bodyId)) return false;
+    if (global.SNMap && SNMap.active) return false;
+    return true;
+  }
+
+  function nationalTierActive() {
+    // denser UI / city labels at national+
+    var t = currentTier();
+    return t === 'national' || t === 'regional' || t === 'city';
+  }
+
+  function ensureNationalRoot() {
+    if (G.nationalRoot || !G.pivot) return G.nationalRoot;
+    G.nationalRoot = new THREE.Object3D();
+    G.nationalRoot.name = 'spacenetWebbing';
+    G.nationalRoot.visible = true;
+    G.pivot.add(G.nationalRoot);
+    return G.nationalRoot;
+  }
+
+  function bufAttr(arr, itemSize) {
+    var a = arr instanceof Float32Array ? arr : new Float32Array(arr);
+    if (THREE.Float32BufferAttribute) return new THREE.Float32BufferAttribute(a, itemSize);
+    return new THREE.BufferAttribute(a, itemSize);
+  }
+
+  /**
+   * Offline SPACENET graticule — glowing blue lat/lng webbing.
+   * No CDN required: this IS the net you fly on.
+   * stepDeg: 15 global · 10 national · 5 regional
+   */
+  function buildWebbingGraticule(stepDeg) {
+    ensureNationalRoot();
+    stepDeg = stepDeg || 15;
+    var positions = [];
+    // Above clouds (1.015) so webbing is never buried under cloud texture
+    var r = 1.022;
+    var segs = 36;
+
+    // Meridians (longitude lines)
+    for (var lng = -180; lng < 180; lng += stepDeg) {
+      for (var lat = -90; lat < 90; lat += 180 / segs) {
+        var a = latLngToVec(lat, lng, r);
+        var b = latLngToVec(Math.min(90, lat + 180 / segs), lng, r);
+        positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+      }
+    }
+    // Parallels (latitude lines)
+    for (var la = -75; la <= 75; la += stepDeg) {
+      for (var lo = -180; lo < 180; lo += 360 / segs) {
+        var p0 = latLngToVec(la, lo, r);
+        var p1 = latLngToVec(la, lo + 360 / segs, r);
+        positions.push(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+      }
+    }
+
+    if (G.webbGrid) {
+      try {
+        G.nationalRoot.remove(G.webbGrid);
+        if (G.webbGrid.geometry) G.webbGrid.geometry.dispose();
+      } catch (_) {}
+      G.webbGrid = null;
+    }
+    if (G.webbGridGlow) {
+      try {
+        G.nationalRoot.remove(G.webbGridGlow);
+        if (G.webbGridGlow.geometry) G.webbGridGlow.geometry.dispose();
+      } catch (_) {}
+      G.webbGridGlow = null;
+    }
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', bufAttr(positions, 3));
+    // depthTest false — glow always draws on top of earth/clouds
+    var mat = new THREE.LineBasicMaterial({
+      color: 0x55c8ff,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    G.webbGrid = new THREE.LineSegments(geo, mat);
+    G.webbGrid.renderOrder = 20;
+    G.webbGrid.name = 'spacenetGraticule';
+    G.webbGrid.frustumCulled = false;
+    G.nationalRoot.add(G.webbGrid);
+
+    var glowGeo = new THREE.BufferGeometry();
+    glowGeo.setAttribute('position', bufAttr(positions, 3));
+    var glowMat = new THREE.LineBasicMaterial({
+      color: 0x1a8fff,
+      transparent: true,
+      opacity: 0.55,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    G.webbGridGlow = new THREE.LineSegments(glowGeo, glowMat);
+    G.webbGridGlow.scale.setScalar(1.004);
+    G.webbGridGlow.renderOrder = 19;
+    G.webbGridGlow.frustumCulled = false;
+    G.nationalRoot.add(G.webbGridGlow);
+    G.webbingBuilt = true;
+    G._webbStep = stepDeg;
+    try {
+      if (global.SNCli && SNCli.log) {
+        SNCli.log(
+          'SPACENET webbing ON · blue grid · step ' + stepDeg + '° · verts ' + positions.length / 2,
+          'ok'
+        );
+      }
+    } catch (_) {}
+  }
+
+  function webbStepForTier() {
+    var t = currentTier();
+    if (t === 'city' || t === 'regional') return 5;
+    if (t === 'national') return 10;
+    if (t === 'solar') return 30;
+    return 15; // global
+  }
+
+  function ensureWebbing() {
+    ensureNationalRoot();
+    var step = webbStepForTier();
+    if (!G.webbingBuilt || G._webbStep !== step) {
+      buildWebbingGraticule(step);
+    }
+    buildCityLayer();
+    loadNationalBorders();
+  }
+
+  function buildCityLayer() {
+    if (G.cityCore || !G.nationalRoot) return;
+    var corePos = [];
+    var glowPos = [];
+    for (var i = 0; i < MAJOR_CITIES.length; i++) {
+      var c = MAJOR_CITIES[i];
+      var p = latLngToVec(c.lat, c.lng, 1.011);
+      corePos.push(p.x, p.y, p.z);
+      var g = latLngToVec(c.lat, c.lng, 1.013);
+      glowPos.push(g.x, g.y, g.z);
+    }
+    var coreGeo = new THREE.BufferGeometry();
+    coreGeo.setAttribute('position', bufAttr(corePos, 3));
+    var glowGeo = new THREE.BufferGeometry();
+    glowGeo.setAttribute('position', bufAttr(glowPos, 3));
+    G.cityGlow = new THREE.Points(
+      glowGeo,
+      new THREE.PointsMaterial({
+        color: 0x4db8ff,
+        size: 0.05,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      })
+    );
+    G.cityCore = new THREE.Points(
+      coreGeo,
+      new THREE.PointsMaterial({
+        color: 0xc8ecff,
+        size: 0.022,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      })
+    );
+    G.nationalRoot.add(G.cityGlow);
+    G.nationalRoot.add(G.cityCore);
+  }
+
+  function ringToSegments(coords, positions, r) {
+    if (!coords || coords.length < 2) return;
+    for (var i = 0; i < coords.length - 1; i++) {
+      var a = coords[i];
+      var b = coords[i + 1];
+      if (!a || !b || a.length < 2 || b.length < 2) continue;
+      var pa = latLngToVec(a[1], a[0], r);
+      var pb = latLngToVec(b[1], b[0], r);
+      positions.push(pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
+    }
+  }
+
+  function geoCoordsToSegments(geom, positions, r) {
+    if (!geom || !geom.type) return;
+    var t = geom.type;
+    var c = geom.coordinates;
+    if (t === 'LineString') {
+      ringToSegments(c, positions, r);
+    } else if (t === 'MultiLineString') {
+      for (var i = 0; i < c.length; i++) ringToSegments(c[i], positions, r);
+    } else if (t === 'Polygon') {
+      for (var j = 0; j < c.length; j++) ringToSegments(c[j], positions, r);
+    } else if (t === 'MultiPolygon') {
+      for (var k = 0; k < c.length; k++) {
+        var poly = c[k];
+        for (var m = 0; m < poly.length; m++) ringToSegments(poly[m], positions, r);
+      }
+    }
+  }
+
+  function attachBorderLines(positions) {
+    if (!G.nationalRoot || !positions.length) return;
+    if (G.borderLines) {
+      try {
+        G.nationalRoot.remove(G.borderLines);
+        if (G.borderLines.geometry) G.borderLines.geometry.dispose();
+        if (G.borderGlow) {
+          G.nationalRoot.remove(G.borderGlow);
+          if (G.borderGlow.geometry) G.borderGlow.geometry.dispose();
+        }
+      } catch (_) {}
+      G.borderLines = null;
+      G.borderGlow = null;
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', bufAttr(positions, 3));
+    var mat = new THREE.LineBasicMaterial({
+      color: 0x66ccff,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    G.borderLines = new THREE.LineSegments(geo, mat);
+    G.borderLines.renderOrder = 5;
+    G.borderLines.name = 'spacenetBorders';
+    G.nationalRoot.add(G.borderLines);
+    var glowMat = new THREE.LineBasicMaterial({
+      color: 0x1a6fd4,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    G.borderGlow = new THREE.LineSegments(geo.clone(), glowMat);
+    G.borderGlow.scale.setScalar(1.0025);
+    G.borderGlow.renderOrder = 4;
+    G.nationalRoot.add(G.borderGlow);
+    G.bordersLoaded = true;
+  }
+
+  function loadNationalBorders() {
+    if (G.bordersLoaded || G.bordersLoading) return;
+    G.bordersLoading = true;
+    ensureNationalRoot();
+    var urls = [
+      BORDER_URL,
+      'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@v5.1.2/geojson/ne_110m_admin_0_countries.geojson',
+      'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
+    ];
+    function tryFetch(i) {
+      if (i >= urls.length) {
+        G.bordersLoading = false;
+        // Graticule already provides SPACENET webbing without CDN
+        return;
+      }
+      fetch(urls[i], { mode: 'cors' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('border ' + r.status);
+          return r.json();
+        })
+        .then(function (data) {
+          var positions = [];
+          if (data && data.type === 'FeatureCollection' && data.features) {
+            for (var f = 0; f < data.features.length; f++) {
+              var feat = data.features[f];
+              if (feat && feat.geometry) geoCoordsToSegments(feat.geometry, positions, 1.009);
+            }
+          } else if (data && data.type === 'Feature' && data.geometry) {
+            geoCoordsToSegments(data.geometry, positions, 1.009);
+          } else if (data && data.objects) {
+            throw new Error('topojson');
+          }
+          if (positions.length < 6) throw new Error('empty borders');
+          // Cap vertices for mobile perf
+          if (positions.length > 900000) {
+            var thin = [];
+            for (var t = 0; t < positions.length; t += 6) {
+              if ((t / 6) % 2 === 0) {
+                thin.push(
+                  positions[t],
+                  positions[t + 1],
+                  positions[t + 2],
+                  positions[t + 3],
+                  positions[t + 4],
+                  positions[t + 5]
+                );
+              }
+            }
+            positions = thin;
+          }
+          attachBorderLines(positions);
+          G.bordersLoading = false;
+          syncNationalLayer();
+        })
+        .catch(function () {
+          tryFetch(i + 1);
+        });
+    }
+    tryFetch(0);
+  }
+
+  /** syncNationalLayer = SPACENET webbing OS layer */
+  function syncNationalLayer() {
+    if (!G.ready || !G.pivot) return;
+    var on = webbingShouldShow();
+    G.nationalOn = on;
+    if (on) {
+      ensureWebbing();
+      if (G.nationalRoot) G.nationalRoot.visible = true;
+      // Cities brighter when closer
+      var close = nationalTierActive();
+      if (G.cityCore) G.cityCore.visible = true;
+      if (G.cityGlow) G.cityGlow.visible = true;
+      if (G.cityCore && G.cityCore.material) {
+        G.cityCore.material.opacity = close ? 1 : 0.55;
+      }
+      if (G.borderLines) G.borderLines.visible = true;
+      if (G.borderGlow) G.borderGlow.visible = true;
+    } else if (G.nationalRoot) {
+      G.nationalRoot.visible = false;
+    }
+    updateNationalHud(true);
+  }
+
+  function updateDayNight() {
+    if (!G.dayNightUniforms || !G.dayNightReady) return;
+    var sun = solarDirectionLocal();
+    G.dayNightUniforms.sunDirection.value.copy(sun);
+    if (G.sunLight) {
+      // Keep a soft world fill aligned with subsolar for specular/clouds
+      G.sunLight.position.set(sun.x * 6, sun.y * 6, sun.z * 6);
+    }
+  }
+
+  function makeDayNightMaterial(dayMap, nightMap) {
+    var uniforms = {
+      dayMap: { value: dayMap },
+      nightMap: { value: nightMap },
+      sunDirection: { value: solarDirectionLocal() },
+    };
+    G.dayNightUniforms = uniforms;
+    return new THREE.ShaderMaterial({
+      uniforms: uniforms,
+      vertexShader: [
+        'varying vec2 vUv;',
+        'varying vec3 vNormal;',
+        'void main() {',
+        '  vUv = uv;',
+        '  // Object-space normal — sunDirection is mesh-local (subsolar lat/lng)',
+        '  vNormal = normalize(normal);',
+        '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'uniform sampler2D dayMap;',
+        'uniform sampler2D nightMap;',
+        'uniform vec3 sunDirection;',
+        'varying vec2 vUv;',
+        'varying vec3 vNormal;',
+        'void main() {',
+        '  vec3 n = normalize(vNormal);',
+        '  float d = dot(n, normalize(sunDirection));',
+        '  float blend = smoothstep(-0.08, 0.18, d);',
+        '  vec3 dayC = texture2D(dayMap, vUv).rgb;',
+        '  vec3 nightC = texture2D(nightMap, vUv).rgb;',
+        '  // City lights on night side; mute day texture in dark',
+        '  vec3 nightLit = nightC * 1.15 + vec3(0.01, 0.02, 0.04);',
+        '  vec3 dayLit = dayC * (0.55 + 0.55 * max(d, 0.0));',
+        '  vec3 col = mix(nightLit, dayLit, blend);',
+        '  // Soft terminator glow',
+        '  float term = exp(-pow(d * 8.0, 2.0)) * 0.12;',
+        '  col += vec3(0.2, 0.45, 0.9) * term;',
+        '  gl_FragColor = vec4(col, 1.0);',
+        '}',
+      ].join('\n'),
+    });
   }
 
   function setFocus(lat, lng) {
@@ -230,9 +976,11 @@
     el.innerHTML = '';
     el.appendChild(G.renderer.domElement);
 
-    var amb = new THREE.AmbientLight(0x445566, 0.55);
-    var sun = new THREE.DirectionalLight(0xfff5e6, 1.35);
+    var amb = new THREE.AmbientLight(0x334455, 0.28);
+    var sun = new THREE.DirectionalLight(0xfff5e6, 1.55);
     sun.position.set(5, 1.2, 2.5);
+    G.ambLight = amb;
+    G.sunLight = sun;
     G.scene.add(amb, sun);
 
     G.pivot = new THREE.Object3D();
@@ -242,8 +990,6 @@
     var loader = new THREE.TextureLoader();
     var earthUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
-    var specUrl =
-      'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_specular_2048.jpg';
     var cloudUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png';
 
@@ -257,31 +1003,65 @@
     G.pivot.add(G.earth);
     G._loader = loader;
     G.bodyId = 'earth';
+    // SPACENET webbing is the OS baselayer — build immediately (offline graticule)
+    ensureNationalRoot();
+    buildWebbingGraticule(15);
+    buildCityLayer();
 
     function applyEarthTextures() {
+      G.dayNightReady = false;
+      var dayTex = null;
+      var nightTex = null;
+      var aniso = Math.min(
+        4,
+        (G.renderer.capabilities.getMaxAnisotropy &&
+          G.renderer.capabilities.getMaxAnisotropy()) ||
+          1
+      );
+      function tryShader() {
+        if (!dayTex) return;
+        // Prefer day/night blend when night map ready; else Phong day only
+        if (nightTex) {
+          var sm = makeDayNightMaterial(dayTex, nightTex);
+          G.earth.material = sm;
+          G.earthMat = sm;
+          G.dayNightReady = true;
+          updateDayNight();
+        } else {
+          mat.map = dayTex;
+          mat.color.set(0xffffff);
+          mat.needsUpdate = true;
+          G.earth.material = mat;
+          G.earthMat = mat;
+        }
+      }
       loader.load(
         earthUrl,
         function (tex) {
-          tex.anisotropy = Math.min(
-            4,
-            (G.renderer.capabilities.getMaxAnisotropy &&
-              G.renderer.capabilities.getMaxAnisotropy()) ||
-              1
-          );
-          mat.map = tex;
-          mat.color.set(0xffffff);
-          mat.needsUpdate = true;
+          tex.anisotropy = aniso;
+          dayTex = tex;
+          tryShader();
         },
         undefined,
         function () {
           mat.color.set(0x1a4d7a);
           mat.emissive = new THREE.Color(0x041018);
+          G.earth.material = mat;
+          G.earthMat = mat;
         }
       );
-      loader.load(specUrl, function (tex) {
-        mat.specularMap = tex;
-        mat.needsUpdate = true;
-      });
+      loader.load(
+        NIGHT_URL,
+        function (tex) {
+          tex.anisotropy = aniso;
+          nightTex = tex;
+          tryShader();
+        },
+        undefined,
+        function () {
+          /* night optional — day Phong still works */
+        }
+      );
     }
     applyEarthTextures();
     G._applyEarthTextures = applyEarthTextures;
@@ -338,6 +1118,17 @@
     window.addEventListener('resize', onResize, { passive: true });
     G.ready = true;
     G.lastAct = Date.now();
+    updateDayNight();
+    // Force SPACENET webbing visible at boot (GLOBAL)
+    try {
+      ensureWebbing();
+      if (G.nationalRoot) G.nationalRoot.visible = true;
+      G.nationalOn = true;
+    } catch (e) {
+      try {
+        console.error('[SNGlobe] SPACENET webbing boot fail', e);
+      } catch (_) {}
+    }
     setTierLabel();
     loop();
     return true;
@@ -425,7 +1216,7 @@
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
       var t = e.changedTouches ? e.changedTouches[0] : e;
-      // Short tap (not drag): single → NATIONAL fly to place · double → zoom out
+      // Short tap (not drag): SPACENET GLOBAL→NATIONAL→REGIONAL→CITY · double → out
       if (!moved && t) {
         var now = performance.now();
         var gap = now - lastTapAt;
@@ -453,16 +1244,9 @@
             tapTimer = null;
             var ll = llNow || pickLatLng(cx, cy);
             if (ll) {
-              // Always start at NATIONAL for a fresh place tap (SPECS)
               G.velX = 0;
               G.velY = 0;
-              goToPlace(ll.lat, ll.lng, {
-                tier: 'national',
-                openMap: false,
-                pulse: false,
-                body: G.bodyId || 'earth',
-              });
-              G.diveTier = 'national';
+              diveInAt(ll.lat, ll.lng);
             }
           }, 220);
         }
@@ -520,56 +1304,86 @@
   }
 
   /**
-   * Progressive dive: first tap NATIONAL, more taps same area → regional → city.
+   * SPACENET pilot dive — one cell deeper on the fly grid.
+   * GLOBAL → NATIONAL → REGIONAL → CITY (street map + operational tiles).
+   * New place restarts at GLOBAL facing that lat/lng.
    * No blue rings — fly and zoom only.
    */
   function diveInAt(lat, lng) {
     if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
-    var tier = nextDiveTier(lat, lng);
-    // From solar/global always land NATIONAL first (usable map of the place)
-    if (tier === 'solar' || tier === 'global' || !tier) tier = 'national';
-    var openMap = tier === 'city' && (G.bodyId === 'earth' || !G.bodyId);
+    var n = nextDiveAction(lat, lng);
+    var cell = n.cell || n.action || 'global';
+    if (!TIERS[cell]) cell = 'global';
+
+    // New place: lock SPACENET anchor so the next three taps deepen here
+    if (!n.same) {
+      setDiveAnchor(lat, lng);
+    } else if (!G.diveAnchor) {
+      setDiveAnchor(lat, lng);
+    }
+    // Soft-update anchor toward click (stays in same country/metro)
+    setFocus(lat, lng);
+
+    G.diveStep = n.step != null ? n.step : DIVE.indexOf(cell);
     G.velX = 0;
     G.velY = 0;
-    return goToPlace(lat, lng, {
-      tier: tier,
+
+    var openMap =
+      n.openMap === true || (cell === 'city' && (G.bodyId === 'earth' || !G.bodyId));
+
+    var ok = goToPlace(lat, lng, {
+      tier: cell,
       openMap: openMap,
       pulse: false,
       body: G.bodyId || 'earth',
+      skipScan: cell === 'city' ? false : cell === 'global',
     });
+
+    try {
+      var path = (SN && SN.pathString && SN.pathString()) || 'GLOBAL → NATIONAL → REGIONAL → CITY';
+      var hint = n.hint || 'SPACENET · ' + ((TIERS[cell] && TIERS[cell].label) || cell);
+      if (global.SNCli && SNCli.log) {
+        SNCli.log(hint + ' · ' + lat.toFixed(3) + ', ' + lng.toFixed(3), 'ok');
+        if (cell !== 'city') SNCli.log('SPACENET grid · ' + path, 'dim');
+        SNCli.preview(hint);
+      }
+      setHud(hint);
+    } catch (_) {}
+    return ok;
   }
 
   /**
-   * Double tap/click: zoom OUT one ladder step (city→regional→national→global→solar).
+   * Double tap/click: SPACENET step OUT one cell (city→regional→national→global→solar).
    */
   function zoomOutOne() {
     var prev = prevZoomTier();
     G.diveTier = prev;
+    syncDiveStepFromTier(prev);
     G.velX = 0;
     G.velY = 0;
-    if (prev === 'city' || prev === 'regional' || prev === 'national') {
+    if (prev === 'city' || prev === 'regional' || prev === 'national' || prev === 'global') {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
-      var f = focusPos();
-      if (f && f.lat != null) {
+      var f = focusPos() || G.diveAnchor;
+      if (f && f.lat != null && prev !== 'solar') {
         flyNear(f.lat, f.lng, prev);
       } else {
-        animateZ(TIERS[prev].z, 700);
+        animateZ(TIERS[prev] ? TIERS[prev].z : TIERS.global.z, 700);
       }
     } else {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
-      animateZ(TIERS[prev].z, 700);
-      if (prev === 'global' || prev === 'solar') G.diveTier = prev;
+      animateZ(TIERS[prev] ? TIERS[prev].z : TIERS.solar.z, 700);
+      G.diveTier = prev;
     }
     setTierLabel();
     var label = (TIERS[prev] && TIERS[prev].label) || prev;
-    setHud('Astranov SpaceNet · ' + label);
+    setHud('SPACENET · ' + label + ' · zoom out');
     try {
-      if (global.SNCli && SNCli.log) SNCli.log('Zoom out · ' + label, 'dim');
-      if (global.SNCli && SNCli.preview) SNCli.preview(label);
+      if (global.SNCli && SNCli.log) SNCli.log('SPACENET out · ' + label, 'dim');
+      if (global.SNCli && SNCli.preview) SNCli.preview('SPACENET · ' + label);
     } catch (_) {}
     return prev;
   }
@@ -578,44 +1392,55 @@
    * Switch planetary / body globe (Earth, Mars, Moon, …). Dedummyfy multi-world.
    */
   function setBody(bodyId, meta) {
-    if (!G.ready || !G.earthMat) return false;
+    if (!G.ready || !G.earth) return false;
     var id = String(bodyId || 'earth').toLowerCase();
     G.bodyId = id;
     G.bodyMeta = meta || null;
-    var mat = G.earthMat;
     var loader = G._loader || new THREE.TextureLoader();
 
-    // Reset maps
-    mat.map = null;
-    mat.specularMap = null;
-    mat.emissive = new THREE.Color(0x000000);
-    mat.emissiveIntensity = 0;
+    G.dayNightReady = false;
+    G.dayNightUniforms = null;
 
     if (id === 'earth') {
-      mat.color.set(0x223344);
+      var earthPhong = new THREE.MeshPhongMaterial({
+        color: 0x223344,
+        specular: 0x333333,
+        shininess: 12,
+      });
+      G.earth.material = earthPhong;
+      G.earthMat = earthPhong;
       if (G._applyEarthTextures) G._applyEarthTextures();
       if (G.clouds) G.clouds.visible = true;
+      syncNationalLayer();
       setHud('Earth · GLOBAL');
       return true;
     }
 
     if (G.clouds) G.clouds.visible = false;
+    if (G.nationalRoot) G.nationalRoot.visible = false;
+    G.nationalOn = false;
+    updateNationalHud(true);
     var col = (meta && meta.color) || 0x888888;
-    mat.color.set(col);
-    mat.needsUpdate = true;
+    var bodyMat = new THREE.MeshPhongMaterial({
+      color: col,
+      specular: 0x222222,
+      shininess: 8,
+    });
+    G.earth.material = bodyMat;
+    G.earthMat = bodyMat;
 
     if (meta && meta.map) {
       loader.load(
         meta.map,
         function (tex) {
-          mat.map = tex;
-          mat.color.set(0xffffff);
-          mat.needsUpdate = true;
+          bodyMat.map = tex;
+          bodyMat.color.set(0xffffff);
+          bodyMat.needsUpdate = true;
         },
         undefined,
         function () {
-          mat.color.set(col);
-          mat.needsUpdate = true;
+          bodyMat.color.set(col);
+          bodyMat.needsUpdate = true;
         }
       );
     }
@@ -636,9 +1461,13 @@
     opts = opts || {};
     if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
     setFocus(lat, lng);
+    setDiveAnchor(lat, lng);
     var tier = opts.tier || 'national';
+    if (tier === 'center') tier = 'global';
     if (!TIERS[tier]) tier = 'national';
     G.diveTier = tier;
+    // Align SPACENET cell index with explicit tier
+    syncDiveStepFromTier(tier);
     var bodyId = opts.body || G.bodyId || 'earth';
     // Fly + zoom only — no decorative rings unless explicitly requested
     flyNear(lat, lng, tier);
@@ -651,20 +1480,41 @@
         (global.SNCosmos && SNCosmos.body && SNCosmos.body.name) ||
         bodyId ||
         'Earth';
-      setHud(bname + ' · ' + label + ' · ' + lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°');
+      var clock = localClockAt(lat, lng);
+      var near = nearestMajorCity(lat, lng);
+      var placeBit = near ? near.n : lat.toFixed(2) + '°, ' + lng.toFixed(2) + '°';
+      setHud(
+        bname +
+          ' · ' +
+          label +
+          ' · ' +
+          placeBit +
+          ' · ' +
+          clock.time +
+          ' · ' +
+          clock.dayNight
+      );
       if (global.SNCli && SNCli.log) {
+        var nextHint = '';
+        if (tier === 'global') nextHint = ' · tap → NATIONAL';
+        else if (tier === 'national') nextHint = ' · tap → REGIONAL';
+        else if (tier === 'regional') nextHint = ' · tap → CITY';
+        else if (tier === 'city') nextHint = ' · pizza · barman · date';
         SNCli.log(
-          'SpaceNet · ' +
+          'SPACENET · ' +
             bname +
             ' · ' +
             label +
             ' · ' +
-            lat.toFixed(3) +
-            ', ' +
-            lng.toFixed(3),
+            placeBit +
+            ' · ' +
+            clock.time +
+            ' local · ' +
+            clock.dayNight +
+            nextHint,
           'ok'
         );
-        SNCli.preview(bname + ' · ' + label);
+        SNCli.preview('SPACENET · ' + label + nextHint);
       }
     } catch (_) {}
     // Earth street map only at CITY (or openMap:true) — not at national/regional
@@ -688,6 +1538,7 @@
       });
     }
     setTierLabel();
+    syncNationalLayer();
     return true;
   }
 
@@ -744,6 +1595,26 @@
       G.pivot.rotation.y += 0.00045;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
+    // Day/night + SPACENET webbing pulse (always when visible)
+    if (G.frame % 3 === 0) {
+      updateDayNight();
+      if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible)) {
+        updateNationalHud(false);
+        var pulse = 0.7 + 0.28 * Math.sin(Date.now() * 0.0028);
+        if (G.webbGrid && G.webbGrid.material) {
+          G.webbGrid.material.opacity = pulse;
+        }
+        if (G.webbGridGlow && G.webbGridGlow.material) {
+          G.webbGridGlow.material.opacity = 0.35 + 0.25 * Math.sin(Date.now() * 0.0028 + 1);
+        }
+        if (G.borderLines && G.borderLines.material) {
+          G.borderLines.material.opacity = pulse;
+        }
+        if (G.cityGlow && G.cityGlow.material) {
+          G.cityGlow.material.opacity = 0.45 + 0.3 * Math.sin(Date.now() * 0.003);
+        }
+      }
+    }
     try {
       G.renderer.render(G.scene, G.camera);
     } catch (_) {}
@@ -869,8 +1740,8 @@
       }
     }
     requestAnimationFrame(step);
+    // Only change altitude when a real tier is requested (center pass uses null)
     if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 650);
-    else if (G.camera.position.z > TIERS.national.z) animateZ(TIERS.national.z, 650);
   }
 
   function locate() {
@@ -914,6 +1785,9 @@
       tier: G.tier,
       z: G.camera ? G.camera.position.z : null,
       focus: focusPos(),
+      diveAnchor: G.diveAnchor,
+      diveStep: G.diveStep,
+      spacenet: true,
     };
   }
 
@@ -936,6 +1810,8 @@
     TIERS: TIERS,
     LADDER: LADDER,
     DIVE: DIVE,
+    /** SPACENET pilot fly grid (alias of window.SPACENET) */
+    SPACENET: SN || null,
     get tier() {
       return G.tier;
     },
@@ -947,6 +1823,9 @@
     },
     get lastPos() {
       return focusPos();
+    },
+    get diveAnchor() {
+      return G.diveAnchor;
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

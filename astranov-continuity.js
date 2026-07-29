@@ -46,17 +46,45 @@ const AstranovContinuity = {
     },
   },
 
+  /** SPACENET = pilot fly grid net — without it, flying on the net is not possible */
+  spacenet: {
+    name: 'SPACENET',
+    law: 'Pilot fly grid net',
+    file: 'js/spacenet/spacenet-grid.js',
+    global: 'window.SPACENET',
+    path: 'GLOBAL → NATIONAL → REGIONAL → CITY',
+    ladder: ['solar', 'global', 'national', 'regional', 'city'],
+    singleTap: 'one cell deeper (same place); new place → GLOBAL',
+    doubleTap: 'one cell out toward SOLAR',
+    owner: 'SNGlobe.diveInAt / zoomOutOne / goToPlace',
+  },
+
   keepImaging: {
     name: 'SNGlobe',
     file: 'js/spacenet/globe.js',
-    textures: ['earth_atmos_2048', 'earth_specular_2048', 'earth_clouds_1024'],
-    engine: 'Three.js TextureLoader sphere',
+    textures: ['earth_atmos_2048', 'earth_clouds_1024', 'earth-night'],
+    engine: 'Three.js TextureLoader sphere + day/night shader',
     api: ['setBody', 'goToPlace', 'diveInAt', 'zoomOutOne', 'pickLatLng', 'flyNear', 'goToTier'],
     clickGoesThere: true,
-    singleTapDive: 'national→regional→city',
+    singleTapDive: 'SPACENET global→national→regional→city',
     doubleTapZoomOut: true,
     noClickPulseRings: true,
     cityZoomUsesFocusNotHomeOnly: true,
+    cityTasks: ['pizza/food→driver', 'job/barman→work offer', 'date→dating request'],
+    surfaceMap: {
+      engine: 'Leaflet (lazy)',
+      layers: ['bright:carto-voyager', 'dark:carto-dark', 'satellite:esri-world-imagery'],
+      control: '#sn-map-layers',
+      cli: 'map dark|bright|satellite',
+      file: 'js/spacenet/map.js',
+    },
+
+    nationalLayer: {
+      borders: 'glowing blue LineSegments (NE 110m)',
+      cities: 'major city additive Points',
+      dayNight: 'subsolar shader + night lights',
+      localTime: '#sn-national-hud',
+    },
   },
 
   ip: {

@@ -47,19 +47,82 @@
     card.style.width = 'min(' + Math.round(320 * s) + 'px, calc(100vw - 24px))';
     card.style.maxHeight = 'min(' + Math.round(42 * s) + 'vh, ' + Math.round(420 * s) + 'px)';
     card.style.transform = 'scale(1)'; // size via width/height, not transform (keeps pinch natural)
+    // Dim +/− at min/max so users know the limits
+    const minus = $('sn-tile-smaller');
+    const plus = $('sn-tile-bigger');
+    if (minus) {
+      minus.disabled = s <= 0.55 + 0.001;
+      minus.setAttribute('aria-disabled', minus.disabled ? 'true' : 'false');
+    }
+    if (plus) {
+      plus.disabled = s >= 1.35 - 0.001;
+      plus.setAttribute('aria-disabled', plus.disabled ? 'true' : 'false');
+    }
+  }
+
+  /** Click + / − to resize (also pinch / wheel still work) */
+  function stepScale(dir) {
+    const step = 0.1;
+    const next = (T.scale || 0.78) + (dir < 0 ? -step : step);
+    T.scale = Math.max(0.55, Math.min(1.35, Math.round(next * 100) / 100));
+    applyScale();
+    saveScale();
+  }
+
+  function bindSizeButtons() {
+    const minus = $('sn-tile-smaller');
+    const plus = $('sn-tile-bigger');
+    if (minus && !minus._snBound) {
+      minus._snBound = true;
+      minus.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stepScale(-1);
+      });
+    }
+    if (plus && !plus._snBound) {
+      plus._snBound = true;
+      plus.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        stepScale(1);
+      });
+    }
+  }
+
+  function gripHtml() {
+    return (
+      '<div class="sn-tile-grip" id="sn-tile-grip" title="Resize tile">' +
+      '<button type="button" class="sn-tile-size-btn" id="sn-tile-smaller" aria-label="Make tile smaller">−</button>' +
+      '<span class="sn-tile-grip-label">pinch to resize</span>' +
+      '<button type="button" class="sn-tile-size-btn" id="sn-tile-bigger" aria-label="Make tile larger">+</button>' +
+      '</div>'
+    );
+  }
+
+  /** Upgrade old grip bar if tile already in DOM without +/− */
+  function ensureGripControls() {
+    const grip = $('sn-tile-grip');
+    if (!grip) return;
+    if ($('sn-tile-smaller') && $('sn-tile-bigger')) {
+      bindSizeButtons();
+      return;
+    }
+    grip.outerHTML = gripHtml();
+    bindSizeButtons();
   }
 
   function ensureCss() {
     // Bump id when layout law changes so old huge-tile CSS is replaced
-    ['sn-tile-css', 'sn-tile-css-v2'].forEach((id) => {
+    ['sn-tile-css', 'sn-tile-css-v2', 'sn-tile-css-v3'].forEach((id) => {
       const old = document.getElementById(id);
       if (old) old.remove();
     });
-    if (document.getElementById('sn-tile-css-v3')) return;
+    if (document.getElementById('sn-tile-css-v4')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v3';
+    st.id = 'sn-tile-css-v4';
     st.textContent = [
-      /* Compact sheet above CLI · pinch to resize */
+      /* Compact sheet above CLI · +/− and pinch to resize */
       '#sn-tile{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;',
       'padding:8px 10px calc(148px + env(safe-area-inset-bottom));background:rgba(0,0,0,.32);pointer-events:auto;',
       'touch-action:none}',
@@ -68,11 +131,17 @@
       'width:min(280px,calc(100vw - 24px));max-height:min(38vh,360px);overflow:auto;border-radius:14px;',
       'background:rgba(0,8,20,.97);border:1px solid rgba(61,158,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.6);',
       'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto;',
-      'touch-action:none;transform-origin:bottom center;transition:width .08s ease,max-height .08s ease}',
-      '#sn-tile .sn-tile-grip{flex-shrink:0;text-align:center;padding:6px 8px 2px;font:10px system-ui;color:#5a8aaa;',
-      'user-select:none;letter-spacing:.04em}',
-      '#sn-tile .sn-tile-grip::before{content:"";display:block;width:36px;height:4px;border-radius:99px;',
-      'background:rgba(61,158,255,.4);margin:0 auto 4px}',
+      'touch-action:none;transform-origin:bottom center;transition:width .12s ease,max-height .12s ease}',
+      '#sn-tile .sn-tile-grip{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;',
+      'gap:8px;padding:8px 10px 4px;font:10px system-ui;color:#5a8aaa;user-select:none}',
+      '#sn-tile .sn-tile-grip-label{flex:1;text-align:center;letter-spacing:.04em;pointer-events:none}',
+      '#sn-tile .sn-tile-size-btn{flex-shrink:0;width:36px;height:32px;border-radius:10px;',
+      'border:1px solid rgba(61,158,255,.55);background:rgba(26,111,212,.28);color:#e8f4ff;',
+      'font:800 20px/1 system-ui,sans-serif;cursor:pointer;padding:0;',
+      'box-shadow:0 0 10px rgba(26,111,212,.25);touch-action:manipulation}',
+      '#sn-tile .sn-tile-size-btn:hover{border-color:#3d9eff;background:rgba(26,111,212,.45);color:#fff}',
+      '#sn-tile .sn-tile-size-btn:active{transform:scale(0.96)}',
+      '#sn-tile .sn-tile-size-btn:disabled{opacity:.35;cursor:default;box-shadow:none}',
       '#sn-tile .sn-tile-cover{position:relative;height:72px;background:#061428 center/cover no-repeat;flex-shrink:0}',
       '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:6px;border:0;border-radius:10px;',
       'background:rgba(0,0,0,.55);color:#fff;width:32px;height:32px;cursor:pointer;font-size:15px}',
@@ -200,6 +269,7 @@
     ensureCss();
     loadScale();
     if ($('sn-tile')) {
+      ensureGripControls();
       bindResize($('sn-tile'));
       applyScale();
       return;
@@ -209,7 +279,7 @@
     el.setAttribute('aria-hidden', 'true');
     el.innerHTML =
       '<div class="sn-tile-card">' +
-      '  <div class="sn-tile-grip" id="sn-tile-grip" title="Pinch to resize">pinch to resize</div>' +
+      gripHtml() +
       '  <div class="sn-tile-cover" id="sn-tile-cover">' +
       '    <button type="button" class="sn-tile-x" id="sn-tile-close" aria-label="Close">×</button>' +
       '    <button type="button" class="sn-tile-edit-cover" id="sn-tile-edit-cover" title="Cover">📷</button>' +
@@ -233,6 +303,7 @@
       '  <div class="sn-tile-foot" id="sn-tile-foot"></div>' +
       '</div>';
     document.body.appendChild(el);
+    bindSizeButtons();
     $('sn-tile-close')?.addEventListener('click', (e) => {
       e.stopPropagation();
       close();
@@ -303,8 +374,8 @@
     root.style.display = 'flex';
     applyScale();
     render();
-    global.SNCli?.log?.('Tile · ' + (p.name || p.id) + ' · pinch to resize', 'ok');
-    global.SNCli?.preview?.((p.name || 'Tile') + ' · pinch');
+    global.SNCli?.log?.('Tile · ' + (p.name || p.id) + ' · − / + or pinch to resize', 'ok');
+    global.SNCli?.preview?.((p.name || 'Tile') + ' · − + size');
     global.SNUi?.expandPanel?.(false);
     return p;
   }
@@ -428,6 +499,8 @@
     if (!body || !foot) return;
 
     if (T.tab === 'about') {
+      const hours = p.hours || p.opening_hours || '24/7';
+      const sched = global.SNMarket?.verifySchedule?.(p);
       body.innerHTML =
         '<div class="sn-about">' +
         '<div>📍 ' +
@@ -439,20 +512,35 @@
           .join(', ') +
         '</div>' +
         (p.shopName ? '<div>🏪 ' + esc(p.shopName) + ' · ' + esc(p.shopKind) + '</div>' : '') +
+        '<div>🕒 ' +
+        esc(sched?.label || hours) +
+        '</div>' +
         (p.vehicle ? '<div>🛵 ' + esc(p.vehicle) + (p.driverOnline ? ' · ONLINE' : '') + '</div>' : '') +
+        (p.roles?.worker
+          ? '<div>🧰 Worker · ' + esc(p.jobTitle || p.workerRole || 'available') + '</div>'
+          : '') +
         (p.lookingFor ? '<div>💕 ' + esc(p.lookingFor) + '</div>' : '') +
         '</div>';
       foot.innerHTML =
         '<button type="button" class="sn-btn" data-act="fly">Fly map</button>' +
         (isMe(p)
           ? '<button type="button" class="sn-btn primary" data-act="scan">Scan live shops</button>'
-          : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
+          : p.roles?.worker
+            ? '<button type="button" class="sn-btn primary" data-act="hire">Send work offer</button>'
+            : p.roles?.dating
+              ? '<button type="button" class="sn-btn primary" data-act="date">Dating request</button>'
+              : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
     } else if (T.tab === 'menu') {
       const menu = p.menu || [];
+      const hours = p.hours || p.opening_hours || '24/7';
+      const sched = global.SNMarket?.verifySchedule?.(p);
       body.innerHTML =
         '<div class="sn-menu-head">' +
         esc(p.shopName || p.name) +
         ' · menu</div>' +
+        '<div class="sn-empty" style="margin-bottom:6px">🕒 ' +
+        esc(sched?.label || hours) +
+        '</div>' +
         (menu.length
           ? menu
               .map(
@@ -480,7 +568,7 @@
                   '</div>'
               )
               .join('')
-          : '<div class="sn-empty">No menu listed yet · vendor adds real items · or message them · S only</div>');
+          : '<div class="sn-empty">No menu listed yet · vendor worker adds real items · or message them · S only</div>');
       foot.innerHTML =
         '<button type="button" class="sn-btn" data-act="cart">Cart ' +
         (window.SNCurrency ? SNCurrency.format(Prof.cartTotal?.() || 0) : (Prof.cartTotal?.() || 0).toFixed(2) + ' S') +
@@ -647,8 +735,30 @@
         raw: 'date with ' + p.name,
         lat: p.lat,
         lng: p.lng,
+        targetId: p.id,
       });
-      global.SNCli?.log?.('Date open · ' + t.title, 'ok');
+      global.SNCli?.log?.('Dating request · ' + (t?.title || p.name), 'ok');
+      global.SNMap?.showTasks?.();
+      return;
+    }
+    if (name === 'hire') {
+      const role = p.workerRole || p.jobTitle || 'worker';
+      const t = global.SNTasks?.create?.({
+        kind: 'job',
+        role: String(role).toLowerCase().slice(0, 24),
+        title: '🧰 Work offer · ' + (p.name || role) + ' · 3h',
+        dur: '3h',
+        raw: 'hire ' + (p.name || role),
+        lat: p.lat,
+        lng: p.lng,
+        targetId: p.id,
+        targetName: p.name,
+      });
+      const sched = global.SNMarket?.verifySchedule?.(p);
+      global.SNCli?.log?.(
+        'Work offer → ' + (p.name || role) + ' · ' + (t?.title || '') + ' · ' + (sched?.label || '24/7'),
+        'ok'
+      );
       global.SNMap?.showTasks?.();
       return;
     }

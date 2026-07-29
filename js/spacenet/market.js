@@ -554,15 +554,28 @@
     };
     var steps = [];
 
-    // 1) Locate
+    // 1) Prefer globe/city focus (dive place) — locate only if none
     log('1/6 · Locating you…', 'dim');
     var pos = null;
     try {
-      if (global.SNGlobe && SNGlobe.locate) pos = await SNGlobe.locate();
+      if (global.SNGlobe && SNGlobe.focusPos) {
+        var fp = SNGlobe.focusPos();
+        if (fp && fp.lat != null) pos = { lat: fp.lat, lng: fp.lng };
+      }
     } catch (_) {}
     if (!pos || pos.lat == null) {
-      pos = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.4341, lng: 28.2176 };
-      log('GPS soft · using last/default focus', 'dim');
+      pos = global._snLastPos || (global.SNTasks && SNTasks.pos) || null;
+    }
+    if (!pos || pos.lat == null) {
+      try {
+        if (global.SNGlobe && SNGlobe.locate) pos = await SNGlobe.locate();
+      } catch (_) {}
+    }
+    if (!pos || pos.lat == null) {
+      pos = { lat: 36.4341, lng: 28.2176 };
+      log('GPS soft · using default focus', 'dim');
+    } else {
+      log('Focus · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3), 'dim');
     }
     global._snLastPos = { lat: pos.lat, lng: pos.lng };
     try {
@@ -753,12 +766,25 @@
       steps.push('driver');
     }
 
+    // Schedule check (hours / 24-7 marketplace law)
+    var sched = verifySchedule(best);
+    log(
+      'Schedule · ' +
+        (best.shopName || best.name) +
+        ' · ' +
+        sched.label +
+        (sched.hours ? ' · ' + sched.hours : ''),
+      sched.open ? 'ok' : 'dim'
+    );
+    steps.push('schedule');
+
     track('food_intent', {
       food: food,
       vendors: vendors.length,
       best: best && best.id,
       ordered: !!(orderResult && orderResult.ok),
       driver: driver && driver.id,
+      schedule: sched.open,
     });
 
     var fmt = function (n) {
@@ -773,6 +799,8 @@
       (best.shopName || best.name) +
       (best._km != null ? ' (' + best._km.toFixed(1) + ' km)' : '') +
       (menuItem ? ' · ' + menuItem.name + ' ' + fmt(menuItem.price) : '') +
+      ' · ' +
+      sched.label +
       '. ' +
       (orderResult && orderResult.ok
         ? 'Ordered ' +
@@ -794,8 +822,360 @@
       order: orderResult,
       driver: driver,
       claim: claim,
+      schedule: sched,
       steps: steps,
       lines: lines,
+      reply: reply,
+    };
+  }
+
+  /** Working hours check — marketplace is 24/7; vendor hours are informational */
+  function verifySchedule(profile) {
+    var hours = String((profile && (profile.hours || profile.opening_hours)) || '').trim();
+    if (!hours || /24\s*[\/7]|24h|always|open/i.test(hours)) {
+      return {
+        open: true,
+        label: 'OPEN · SpaceNet 24/7',
+        hours: hours || '24/7',
+        alwaysOn: true,
+      };
+    }
+    // Heuristic: if string contains "closed" alone, treat closed; else assume open for order path
+    if (/^closed$/i.test(hours) || /\bpermanently closed\b/i.test(hours)) {
+      return { open: false, label: 'CLOSED (listed hours)', hours: hours, alwaysOn: false };
+    }
+    return {
+      open: true,
+      label: 'HOURS · ' + hours.slice(0, 40),
+      hours: hours,
+      alwaysOn: false,
+    };
+  }
+
+  function parseWorkIntent(line) {
+    var low = String(line || '')
+      .toLowerCase()
+      .trim();
+    if (!low) return null;
+    if (/^(go\s+to|fly|locate|pizza|sushi)/i.test(low)) return null;
+    var roles = [
+      { re: /\b(barman|bartender|μπαρμαν|μπαρτέντερ)\b/i, role: 'barman', title: 'Barman / bartender' },
+      { re: /\b(cleaner|καθαριστ)\b/i, role: 'cleaner', title: 'Cleaner' },
+      { re: /\b(nanny|babysitter)\b/i, role: 'nanny', title: 'Nanny' },
+      { re: /\b(waiter|σερβιτόρ)\b/i, role: 'waiter', title: 'Waiter' },
+      { re: /\b(tutor|teacher|δάσκαλ)\b/i, role: 'tutor', title: 'Tutor' },
+      { re: /\b(worker|handyman|gardener|cook|chef)\b/i, role: 'worker', title: 'Worker' },
+    ];
+    for (var i = 0; i < roles.length; i++) {
+      if (roles[i].re.test(low) || new RegExp('job\\s+' + roles[i].role).test(low) || new RegExp('hire\\s+(a\\s+)?' + roles[i].role).test(low)) {
+        var dm = low.match(/(\d+(?:\.\d+)?)\s*(h|hr|hours?|d|days?)\b/);
+        return {
+          role: roles[i].role,
+          title: roles[i].title,
+          dur: dm ? dm[1] + (dm[2][0] === 'd' ? 'd' : 'h') : '3h',
+          raw: line,
+          place: /villa|home|house|office/i.test(low) ? 'venue' : 'local',
+        };
+      }
+    }
+    if (/^job\b|^gig\b|^hire\b|looking\s+for\s+work|need\s+a\b/.test(low)) {
+      return { role: 'worker', title: 'Job', dur: '3h', raw: line, place: 'local' };
+    }
+    return null;
+  }
+
+  function parseDatingIntent(line) {
+    var low = String(line || '')
+      .toLowerCase()
+      .trim();
+    if (!low) return null;
+    if (!/\b(date|dating|date\s*me|coffee\s*date|dinner\s*date|meet\s*(a\s*)?(woman|man|girl|guy)|available\s*woman)\b/i.test(low) && low !== 'dating')
+      return null;
+    var gender =
+      /\b(woman|girl|female|lady)\b/i.test(low) ? 'woman' : /\b(man|guy|male)\b/i.test(low) ? 'man' : null;
+    var kind = /dinner/.test(low) ? 'dinner' : /walk/.test(low) ? 'walk' : 'coffee';
+    return { kind: kind, gender: gender, raw: line };
+  }
+
+  function scoreWorker(p, pos, role) {
+    var score = 0;
+    var blob = (
+      (p.name || '') +
+      ' ' +
+      (p.bio || '') +
+      ' ' +
+      (p.skills || '') +
+      ' ' +
+      (p.jobTitle || '') +
+      ' ' +
+      (p.workerRole || '')
+    ).toLowerCase();
+    if (blob.indexOf(String(role || '').toLowerCase()) >= 0) score += 40;
+    if (p.roles && p.roles.worker) score += 25;
+    if (p.workerOnline || p.available) score += 20;
+    if (p.real) score += 8;
+    var km = haversineKm(pos, p);
+    score += Math.max(0, 20 - km * 5);
+    if (p.rating != null) score += Math.min(10, Number(p.rating));
+    return { score: score, km: km };
+  }
+
+  function scoreDating(p, pos, intent) {
+    var score = 0;
+    if (p.roles && p.roles.dating) score += 30;
+    if (p.lookingFor) score += 12;
+    if (p.available !== false) score += 10;
+    if (intent && intent.gender) {
+      var g = String(p.gender || p.sex || p.lookingAs || '').toLowerCase();
+      if (g && g.indexOf(intent.gender[0]) >= 0) score += 25;
+      // Prefer profiles that match requested gender when tagged; else keep list honest
+    }
+    var km = haversineKm(pos, p);
+    score += Math.max(0, 18 - km * 4);
+    if (p.real) score += 8;
+    return { score: score, km: km };
+  }
+
+  /**
+   * Work offer path: barman for villa · cleaner · etc.
+   * Find best listed available worker → open tile → post working offer task.
+   */
+  async function fulfillWorkIntent(query, opts) {
+    opts = opts || {};
+    var intent = typeof query === 'object' ? query : parseWorkIntent(query);
+    if (!intent) return { ok: false, error: 'not a work intent' };
+    var log = function (m, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
+      } catch (_) {}
+      try {
+        if (global.SNAi && SNAi.say) SNAi.say(m, c || 'dim');
+      } catch (_) {}
+    };
+    var role = intent.role || 'worker';
+    var loc = pos();
+    try {
+      if (global.SNGlobe && SNGlobe.focusPos) {
+        var f = SNGlobe.focusPos();
+        if (f && f.lat != null) loc = f;
+      }
+    } catch (_) {}
+    log('Work · finding ' + role + ' near focus…', 'dim');
+    try {
+      if (global.SNCommerce && SNCommerce.ensureSector) {
+        await SNCommerce.ensureSector(loc.lat, loc.lng, { openMap: true });
+      } else if (global.SNMap && SNMap.open) {
+        await SNMap.open(loc.lat, loc.lng);
+      }
+    } catch (_) {}
+
+    var workers = (global.SNProfiles.list({ role: 'worker' }) || []).concat(
+      (global.SNProfiles.list() || []).filter(function (p) {
+        return p.roles && (p.roles.worker || p.roles.vendor) && p.id !== (me() && me().id);
+      })
+    );
+    // Dedupe by id
+    var seen = {};
+    workers = workers.filter(function (p) {
+      if (!p || !p.id || seen[p.id]) return false;
+      seen[p.id] = true;
+      return p.lat != null && haversineKm(loc, p) < 25;
+    });
+    workers = workers.map(function (p) {
+      var sc = scoreWorker(p, loc, role);
+      return Object.assign({}, p, { _score: sc.score, _km: sc.km });
+    });
+    workers.sort(function (a, b) {
+      return (b._score || 0) - (a._score || 0);
+    });
+    workers = workers.slice(0, 8);
+    try {
+      global.SNMap?.showProfiles?.();
+      global.SNMap?.showTasks?.();
+    } catch (_) {}
+
+    var best = workers[0] || null;
+    var task = null;
+    try {
+      task = global.SNTasks.create({
+        kind: 'job',
+        role: role,
+        title:
+          '🧰 ' +
+          (intent.title || role) +
+          (best ? ' · ' + best.name : '') +
+          ' · ' +
+          (intent.dur || '3h'),
+        dur: intent.dur || '3h',
+        lat: loc.lat,
+        lng: loc.lng,
+        raw: intent.raw || role,
+        clientId: me() && me().id,
+        targetId: best && best.id,
+        targetName: best && best.name,
+        always_on: true,
+      });
+    } catch (_) {}
+
+    if (best) {
+      var sched = verifySchedule(best);
+      log(
+        'Best ' +
+          role +
+          ' · ' +
+          best.name +
+          (best._km != null ? ' · ' + best._km.toFixed(1) + ' km' : '') +
+          ' · ' +
+          sched.label,
+        'ok'
+      );
+      try {
+        if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'about' });
+      } catch (_) {}
+    } else {
+      log(
+        'No listed ' +
+          role +
+          ' online yet · offer posted for real workers · enable Worker on ME tile to appear',
+        'dim'
+      );
+    }
+    try {
+      global.SNMap?.showTasks?.();
+    } catch (_) {}
+
+    track('work_intent', { role: role, workers: workers.length, best: best && best.id });
+    var reply = best
+      ? 'Best available ' +
+        role +
+        ': ' +
+        best.name +
+        '. Working offer open · they can claim · ' +
+        (intent.dur || '3h') +
+        '. Schedule: ' +
+        verifySchedule(best).label +
+        '.'
+      : 'Working offer for ' +
+        role +
+        ' posted at your place (' +
+        (intent.dur || '3h') +
+        '). No listed workers in sector yet — real users enable Worker on their tile.';
+
+    return {
+      ok: true,
+      role: role,
+      pos: loc,
+      workers: workers,
+      best: best,
+      task: task,
+      schedule: best ? verifySchedule(best) : { open: true, label: 'OFFER OPEN 24/7' },
+      reply: reply,
+    };
+  }
+
+  /**
+   * Dating path: find available dating profiles → open tile → send dating request task.
+   * Zero dummy — only real profiles with dating role.
+   */
+  async function fulfillDatingIntent(query, opts) {
+    opts = opts || {};
+    var intent = typeof query === 'object' ? query : parseDatingIntent(query);
+    if (!intent) return { ok: false, error: 'not a dating intent' };
+    var log = function (m, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
+      } catch (_) {}
+      try {
+        if (global.SNAi && SNAi.say) SNAi.say(m, c || 'dim');
+      } catch (_) {}
+    };
+    var loc = pos();
+    try {
+      if (global.SNGlobe && SNGlobe.focusPos) {
+        var f = SNGlobe.focusPos();
+        if (f && f.lat != null) loc = f;
+      }
+    } catch (_) {}
+    log('Dating · searching available profiles near focus…', 'dim');
+    try {
+      if (global.SNCommerce && SNCommerce.ensureSector) {
+        await SNCommerce.ensureSector(loc.lat, loc.lng, { openMap: true });
+      } else if (global.SNMap && SNMap.open) {
+        await SNMap.open(loc.lat, loc.lng);
+      }
+    } catch (_) {}
+
+    var people = (global.SNProfiles.list({ role: 'dating' }) || []).filter(function (p) {
+      return p && p.id !== (me() && me().id) && p.lat != null && haversineKm(loc, p) < 40;
+    });
+    people = people.map(function (p) {
+      var sc = scoreDating(p, loc, intent);
+      return Object.assign({}, p, { _score: sc.score, _km: sc.km });
+    });
+    people.sort(function (a, b) {
+      return (b._score || 0) - (a._score || 0);
+    });
+    people = people.slice(0, 8);
+    try {
+      global.SNMap?.showProfiles?.();
+    } catch (_) {}
+
+    var best = people[0] || null;
+    var task = null;
+    try {
+      task = global.SNTasks.create({
+        kind: 'dating',
+        role: intent.kind || 'coffee',
+        title:
+          '💕 ' +
+          (intent.kind === 'dinner' ? 'Dinner' : intent.kind === 'walk' ? 'Walk' : 'Coffee') +
+          ' date request' +
+          (best ? ' · ' + best.name : ''),
+        dur: intent.kind === 'dinner' ? '3h' : '1h',
+        lat: best && best.lat != null ? best.lat : loc.lat,
+        lng: best && best.lng != null ? best.lng : loc.lng,
+        raw: intent.raw || 'date',
+        clientId: me() && me().id,
+        targetId: best && best.id,
+        always_on: true,
+      });
+    } catch (_) {}
+
+    if (best) {
+      log(
+        'Available · ' +
+          best.name +
+          (best._km != null ? ' · ' + best._km.toFixed(1) + ' km' : '') +
+          ' · dating request sent',
+        'ok'
+      );
+      try {
+        if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'dating' });
+      } catch (_) {}
+    } else {
+      log(
+        'No dating profiles listed nearby · enable Dating on ME tile (real users only) · request still open on map',
+        'dim'
+      );
+    }
+    try {
+      global.SNMap?.showTasks?.();
+    } catch (_) {}
+
+    track('dating_intent', { people: people.length, best: best && best.id, kind: intent.kind });
+    var reply = best
+      ? 'Found available profile: ' +
+        best.name +
+        '. Dating request open — they can accept from map/tasks. Coffee/walk/dinner via same tile.'
+      : 'Dating request posted. No listed profiles in sector yet — real users enable Dating on their multi-tile.';
+
+    return {
+      ok: true,
+      pos: loc,
+      people: people,
+      best: best,
+      task: task,
+      intent: intent,
       reply: reply,
     };
   }
@@ -814,6 +1194,11 @@
     handleChat: handleChat,
     parseFoodIntent: parseFoodIntent,
     fulfillFoodIntent: fulfillFoodIntent,
+    parseWorkIntent: parseWorkIntent,
+    fulfillWorkIntent: fulfillWorkIntent,
+    parseDatingIntent: parseDatingIntent,
+    fulfillDatingIntent: fulfillDatingIntent,
+    verifySchedule: verifySchedule,
     get step() {
       return W.step;
     },

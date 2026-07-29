@@ -1,6 +1,6 @@
 /* SNHome — Astranov SpaceNet home menu (SPECS home control)
  * Version · reload · hard reset · date/time · user · login · role toggles
- * Roles: vendor · delivery driver · ambassador (support → mine S)
+ * Roles: vendor worker · delivery driver · ambassador (support → mine S)
  */
 (function (global) {
   'use strict';
@@ -80,11 +80,11 @@
       '<div class="sn-home-user-sub">Wallet ' +
       esc(bal) +
       (roles.ambassador ? ' · 🎓 Ambassador' : '') +
-      (roles.vendor ? ' · 🏪 Vendor' : '') +
+      (roles.vendor ? ' · 🏪 Vendor worker' : '') +
       (roles.driver ? ' · 🛵 Driver' : '') +
       '</div></div>' +
       '<div class="sn-home-section">Roles</div>' +
-      roleToggle('vendor', 'Vendor', 'List shop · menu · sell in S', !!roles.vendor) +
+      roleToggle('vendor', 'Vendor worker', 'List shop · menu · sell in S', !!roles.vendor) +
       roleToggle('driver', 'Delivery driver', 'Go online · claim · deliver', !!roles.driver) +
       roleToggle(
         'ambassador',

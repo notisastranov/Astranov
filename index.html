@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728430000-map-national" />
-<meta name="astranov-continuity" content="20260728430000-map-national" />
+<meta name="astranov-build" content="20260728520000-spacenet-webbing-ship" />
+<meta name="astranov-continuity" content="20260728520000-spacenet-webbing-ship" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -98,6 +98,35 @@
   }
   #field-radar.expanded #field-radar-legend { display: block; }
   #field-radar-legend b.f { color: #44ff88; }
+
+  /* NATIONAL layer HUD — local time + day/night (globe national/regional) */
+  #sn-national-hud {
+    display: none; position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+    z-index: 88; pointer-events: none; max-width: min(92vw, 420px);
+    padding: 7px 14px; border-radius: 999px;
+    background: rgba(0, 10, 24, 0.78); border: 1px solid rgba(61, 158, 255, 0.45);
+    box-shadow: 0 0 18px rgba(26, 111, 212, 0.35);
+    font: 600 11px/1.35 ui-monospace, system-ui, sans-serif; color: #9ec8ff;
+    letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #sn-national-hud.on { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  #sn-national-hud .snh-tier { color: #3d9eff; font-weight: 800; letter-spacing: 0.12em; }
+  #sn-national-hud .snh-place { color: #e8f4ff; }
+  #sn-national-hud .snh-time { color: #8ab4d0; }
+  #sn-national-hud .snh-dn.day { color: #ffd78a; text-shadow: 0 0 8px rgba(255, 200, 80, 0.45); }
+  #sn-national-hud .snh-dn.night { color: #7ec8ff; text-shadow: 0 0 10px rgba(61, 158, 255, 0.65); }
+  #sn-city-labels { display: none; position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
+  #sn-city-labels.on { display: block; }
+  .sn-city-lab {
+    position: absolute; transform: translate(-50%, -120%);
+    padding: 2px 7px 3px; border-radius: 6px;
+    background: rgba(0, 12, 28, 0.72); border: 1px solid rgba(61, 158, 255, 0.55);
+    box-shadow: 0 0 12px rgba(26, 111, 212, 0.45);
+    font: 600 10px/1.2 system-ui, sans-serif; color: #a8d8ff; white-space: nowrap;
+    text-shadow: 0 0 8px rgba(61, 158, 255, 0.7);
+  }
+  .sn-city-lab b { color: #e8f6ff; font-weight: 700; }
+  .sn-city-lab i { display: block; font-style: normal; font-size: 8px; color: #6aa8d8; margin-top: 1px; letter-spacing: 0.04em; }
   #field-radar-legend b.c { color: #ff5566; }
   #field-radar-legend b.v { color: #ffcc44; }
   #field-radar-legend b.r { color: #00dcff; }
@@ -316,7 +345,7 @@
   <div id="field-radar-legend" aria-hidden="true">
     <b class="f">● friends</b>
     · <b class="c">● competitors</b>
-    · <b class="v">● vendors &amp; clients</b>
+    · <b class="v">● vendor workers &amp; clients</b>
     · <b class="r">━ routes</b>
   </div>
 </div>
@@ -332,6 +361,10 @@
   <span id="fbh-s">0.00 S</span>
   <span id="fbh-mine-rate">0.00 S/day</span>
 </div>
+
+<!-- NATIONAL layer: status chip + projected major-city labels (SNGlobe) -->
+<div id="sn-national-hud" aria-live="polite"></div>
+<div id="sn-city-labels" aria-hidden="true"></div>
 
 <!-- Legacy hooks (hidden) for scripts that still query these ids -->
 <div id="hud" hidden>
@@ -400,7 +433,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728430000-map-national"></script>
+<script src="/js/spacenet/boot.js?v=20260728520000-spacenet-webbing-ship"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

@@ -1,13 +1,84 @@
-/* SpaceNet city map — Leaflet lazy; profile tiles + tasks + crawl pins */
+/* SpaceNet surface map — lightweight Leaflet engine
+ * Near surface (SPACENET CITY / street): bright · dark · satellite basemaps
+ * Lazy-load Leaflet only when flying close enough to open the flat map.
+ */
 (function (global) {
   'use strict';
+
+  const LAYER_KEY = 'sn:map-layer-v1';
+
+  /** Lightweight free tile stacks (no API key) */
+  const BASEMAPS = {
+    dark: {
+      id: 'dark',
+      label: 'Dark',
+      emoji: '🌑',
+      // Carto Dark — light CDN, pairs with SpaceNet chrome
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', attribution: '© OSM · CARTO' },
+    },
+    bright: {
+      id: 'bright',
+      label: 'Bright',
+      emoji: '☀️',
+      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', attribution: '© OSM · CARTO' },
+    },
+    satellite: {
+      id: 'satellite',
+      label: 'Sat',
+      emoji: '🛰',
+      // Esri World Imagery — free tile service, good satellite variation
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      opts: { maxZoom: 19, maxNativeZoom: 19, attribution: 'Esri · Maxar' },
+      // Optional light labels on top of imagery
+      labelsUrl: 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
+      labelsOpts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', opacity: 0.85, pane: 'overlayPane' },
+    },
+  };
 
   const M = {
     map: null,
     active: false,
     markers: [],
     profileMarkers: [],
+    basemapId: 'dark',
+    basemapLayer: null,
+    labelsLayer: null,
+    layerCtl: null,
   };
+
+  function loadBasemapPref() {
+    try {
+      const v = localStorage.getItem(LAYER_KEY);
+      if (v && BASEMAPS[v]) M.basemapId = v;
+    } catch (_) {}
+  }
+
+  function saveBasemapPref(id) {
+    try {
+      localStorage.setItem(LAYER_KEY, id);
+    } catch (_) {}
+  }
+
+  /**
+   * Prefer dark at night / bright by day when user has not locked a preference this session.
+   * Still overridable via layer control.
+   */
+  function suggestBasemapFromDayNight(lat, lng) {
+    // Local civil hour from longitude (15° ≈ 1h) — bright by day, dark by night
+    const offsetH = Math.round((lng || 0) / 15);
+    const h = (new Date().getUTCHours() + offsetH + 24) % 24;
+    return h >= 7 && h < 19 ? 'bright' : 'dark';
+  }
+
+  function hasUserLayerPref() {
+    try {
+      return !!localStorage.getItem(LAYER_KEY);
+    } catch (_) {
+      return false;
+    }
+  }
 
   function loadCss(href) {
     if (document.querySelector('link[data-sn-map]')) return;
@@ -44,23 +115,123 @@
     } catch (_) {}
   }
 
+  function ensureLayerCss() {
+    if (document.getElementById('sn-map-layer-css')) return;
+    const st = document.createElement('style');
+    st.id = 'sn-map-layer-css';
+    st.textContent = [
+      '#sn-map-layers{position:absolute;top:12px;right:12px;z-index:1000;display:flex;gap:6px;',
+      'pointer-events:auto;background:rgba(0,8,20,.82);border:1px solid rgba(61,158,255,.45);',
+      'border-radius:12px;padding:5px;box-shadow:0 4px 18px rgba(0,0,0,.45)}',
+      '#sn-map-layers button{border:1px solid transparent;background:transparent;color:#9ec8ff;',
+      'border-radius:9px;padding:7px 9px;font:700 11px/1.1 system-ui;cursor:pointer;',
+      'display:flex;flex-direction:column;align-items:center;gap:2px;min-width:48px}',
+      '#sn-map-layers button span{font-size:16px;line-height:1}',
+      '#sn-map-layers button.on{border-color:#3d9eff;background:rgba(26,111,212,.35);color:#e8f4ff;',
+      'box-shadow:0 0 12px rgba(61,158,255,.35)}',
+      '#sn-map-layers button:active{transform:scale(0.96)}',
+      /* No Leaflet +/− zoom chrome (pinch/wheel only) */
+      '.leaflet-control-zoom{display:none!important}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  function buildLayerControl(map) {
+    ensureLayerCss();
+    let box = document.getElementById('sn-map-layers');
+    if (box) box.remove();
+    box = document.createElement('div');
+    box.id = 'sn-map-layers';
+    box.setAttribute('role', 'toolbar');
+    box.setAttribute('aria-label', 'Map style: bright dark satellite');
+    Object.keys(BASEMAPS).forEach((id) => {
+      const def = BASEMAPS[id];
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.layer = id;
+      btn.title = def.label + ' basemap';
+      btn.innerHTML = '<span aria-hidden="true">' + def.emoji + '</span>' + def.label;
+      if (id === M.basemapId) btn.classList.add('on');
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setBasemap(id, { user: true });
+      });
+      box.appendChild(btn);
+    });
+    map.getContainer().appendChild(box);
+    M.layerCtl = box;
+  }
+
+  function setBasemap(id, opts) {
+    opts = opts || {};
+    if (!M.map || typeof L === 'undefined') return false;
+    const def = BASEMAPS[id] || BASEMAPS.dark;
+    id = def.id;
+    M.basemapId = id;
+    if (opts.user) saveBasemapPref(id);
+
+    if (M.basemapLayer) {
+      try {
+        M.map.removeLayer(M.basemapLayer);
+      } catch (_) {}
+      M.basemapLayer = null;
+    }
+    if (M.labelsLayer) {
+      try {
+        M.map.removeLayer(M.labelsLayer);
+      } catch (_) {}
+      M.labelsLayer = null;
+    }
+
+    M.basemapLayer = L.tileLayer(def.url, Object.assign({ className: 'sn-base-' + id }, def.opts));
+    M.basemapLayer.addTo(M.map);
+    // keep basemap under markers
+    try {
+      M.basemapLayer.bringToBack();
+    } catch (_) {}
+
+    if (def.labelsUrl) {
+      M.labelsLayer = L.tileLayer(def.labelsUrl, def.labelsOpts || {});
+      M.labelsLayer.addTo(M.map);
+    }
+
+    if (M.layerCtl) {
+      M.layerCtl.querySelectorAll('button').forEach((b) => {
+        b.classList.toggle('on', b.dataset.layer === id);
+      });
+    }
+
+    try {
+      if (opts.user || opts.log) {
+        global.SNCli?.log?.(
+          'Surface map · ' + def.label + ' layer (bright / dark / satellite)',
+          'ok'
+        );
+      }
+    } catch (_) {}
+    return true;
+  }
+
   async function ensure() {
     if (M.map) return M.map;
+    loadBasemapPref();
     loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
     await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
     const el = document.getElementById('city-map');
     if (!el || typeof L === 'undefined') throw new Error('map container');
     const pos = global.SNTasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
     M.map = L.map(el, {
-      zoomControl: true,
-      attributionControl: false,
+      zoomControl: false, // no +/− corner controls — pinch/wheel only
+      attributionControl: true,
       minZoom: 3,
-      maxZoom: 19,
+      maxZoom: 20,
+      preferCanvas: true, // lighter pin drawing when many markers
     }).setView([pos.lat, pos.lng], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
-    }).addTo(M.map);
+
+    // Lightweight basemap engine: bright · dark · satellite
+    setBasemap(M.basemapId || 'dark', { log: false });
+    buildLayerControl(M.map);
 
     // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
     M._lastZ = 14;
@@ -288,6 +459,23 @@
     });
   }
 
+  function roleBadge(p) {
+    const r = p.roles || {};
+    const bits = [];
+    if (r.vendor) bits.push('🏪');
+    if (r.driver) bits.push(p.driverOnline ? '🛵🟢' : '🛵');
+    if (r.worker) bits.push('🧰');
+    if (r.dating) bits.push('💕');
+    if (r.client) bits.push('👤');
+    return bits.join(' ') || '·';
+  }
+
+  function hoursLine(p) {
+    const h = p.hours || p.opening_hours || '';
+    if (!h) return 'Hours · SpaceNet 24/7';
+    return 'Hours · ' + String(h).slice(0, 48);
+  }
+
   function showProfiles() {
     if (!M.map) return;
     clearGroup(M.profileMarkers);
@@ -299,10 +487,24 @@
       const color = Prof.pinColor(p);
       const m = L.marker([p.lat, p.lng], {
         icon: avatarIcon(p.avatar, color),
-        title: p.name,
+        title: (p.shopName || p.name || 'Tile') + ' ' + roleBadge(p),
         riseOnHover: true,
         keyboard: true,
       }).addTo(M.map);
+      const menuN = (p.menu && p.menu.length) || 0;
+      m.bindPopup(
+        '<b>' +
+          escapeHtml(p.shopName || p.name) +
+          '</b> ' +
+          roleBadge(p) +
+          '<br/>' +
+          escapeHtml(hoursLine(p)) +
+          (menuN ? '<br/>Menu · ' + menuN + ' items' : '') +
+          (p.driverOnline ? '<br/>Driver ONLINE' : '') +
+          (p.roles?.worker ? '<br/>Worker available' : '') +
+          (p.roles?.dating ? '<br/>Dating open' : '') +
+          '<br/><small>Tap pin again or Close → open full tile</small>'
+      );
       m.on('click', (e) => {
         markMarkerHit();
         try {
@@ -314,7 +516,14 @@
         } catch (_) {}
         try {
           const full = global.SNProfiles?.get?.(p.id) || p;
-          global.SNTile?.open?.(full);
+          const tab = full.roles?.vendor
+            ? 'menu'
+            : full.roles?.dating
+              ? 'dating'
+              : full.roles?.driver
+                ? 'drive'
+                : 'about';
+          global.SNTile?.open?.(full, { tab: tab });
         } catch (err) {
           global.SNCli?.log?.('Tile open failed · ' + (err.message || err), 'err');
         }
@@ -338,8 +547,24 @@
     if (globe) globe.classList.add('city-hidden');
     document.body.classList.add('city-map-on');
     M.active = true;
-    map.setView([p.lat, p.lng], 14);
+    map.setView([p.lat, p.lng], 15);
     setTimeout(() => map.invalidateSize(), 80);
+
+    // Surface basemap: keep user choice, else bright/dark from local day-night
+    if (!hasUserLayerPref()) {
+      setBasemap(suggestBasemapFromDayNight(p.lat, p.lng), { log: false });
+    } else if (!M.basemapLayer) {
+      setBasemap(M.basemapId || 'dark', { log: false });
+    }
+
+    try {
+      global.SNCli?.log?.(
+        'SPACENET surface · Leaflet · ' +
+          (BASEMAPS[M.basemapId]?.label || M.basemapId) +
+          ' · ☀️ bright · 🌑 dark · 🛰 sat (top-right)',
+        'dim'
+      );
+    } catch (_) {}
 
     // Real sector only — DB + edge + Overpass + crawl (SPECS: zero dummy)
     try {
@@ -375,11 +600,42 @@
       M._me.setLatLng([p.lat, p.lng]);
     }
 
-    global.SNCli?.log?.(
-      'City · short-tap pin = open · long-press empty = create · live crawl shops',
-      'ok'
-    );
-    global.SNCli?.preview?.('Tap pin · long-press create · 🌍 Earth');
+    // City briefing — vendors · workers · drivers · dating (real tiles only)
+    try {
+      const Prof = global.SNProfiles;
+      const all = (Prof?.list?.() || []).filter((x) => x.lat != null);
+      const nV = all.filter((x) => x.roles?.vendor).length;
+      const nD = all.filter((x) => x.roles?.driver).length;
+      const nW = all.filter((x) => x.roles?.worker).length;
+      const nDate = all.filter((x) => x.roles?.dating).length;
+      const nTask = (global.SNTasks?.list?.() || []).length;
+      global.SNCli?.log?.(
+        'CITY · 🏪' +
+          nV +
+          ' vendors · 🛵' +
+          nD +
+          ' drivers · 🧰' +
+          nW +
+          ' workers · 💕' +
+          nDate +
+          ' dating · tasks ' +
+          nTask,
+        nV || nD || nW || nDate ? 'ok' : 'dim'
+      );
+      global.SNCli?.log?.(
+        'Tap pin → tile (menu · hours · roles) · pizza · job barman · date coffee · long-press create',
+        'dim'
+      );
+      global.SNCli?.preview?.(
+        nV || nD ? nV + ' shops · ' + nD + ' drivers' : 'City · pizza · barman · date'
+      );
+    } catch (_) {
+      global.SNCli?.log?.(
+        'City · short-tap pin = open · long-press empty = create · live crawl shops',
+        'ok'
+      );
+      global.SNCli?.preview?.('Tap pin · long-press create · 🌍 Earth');
+    }
     return true;
   }
 
@@ -471,6 +727,11 @@
     showProfiles,
     plotCrawl,
     ensure,
+    setBasemap,
+    getBasemap: function () {
+      return M.basemapId;
+    },
+    BASEMAPS,
     get active() {
       return M.active;
     },

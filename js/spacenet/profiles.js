@@ -11,7 +11,7 @@
   const ROLES = {
     social: { label: 'Social', color: '#6dffb0', emoji: '✨' },
     dating: { label: 'Dating', color: '#ff6699', emoji: '💕' },
-    vendor: { label: 'Vendor', color: '#3d9eff', emoji: '🏪' },
+    vendor: { label: 'Vendor worker', color: '#3d9eff', emoji: '🏪' },
     driver: { label: 'Driver', color: '#44ffaa', emoji: '🛵' },
     client: { label: 'Client', color: '#ffcc66', emoji: '🛒' },
     worker: { label: 'Work', color: '#66aaff', emoji: '💼' },
@@ -277,6 +277,7 @@
       shopName: v.name || 'Shop',
       shopKind: kind,
       menu: menu.length ? menu : prev?.menu || [],
+      hours: v.hours || v.opening_hours || prev?.hours || '24/7',
       real: true,
       source: v.source || 'db',
       delivery_enabled: v.delivery_enabled !== false,
@@ -472,6 +473,9 @@
       prev.lng = place.lng;
       prev.real = true;
       prev.source = place.source || prev.source || 'crawl';
+      if (place.hours || place.opening_hours) {
+        prev.hours = place.hours || place.opening_hours;
+      }
       save();
       return prev;
     }
@@ -488,6 +492,7 @@
       shopName: place.name || 'Shop',
       shopKind: kind,
       menu: parseMenuItems(place.items),
+      hours: place.hours || place.opening_hours || '24/7',
       real: true,
       source: place.source || 'crawl',
       posts: [{ id: uid('post'), text: 'Live place · order when menu listed · S', t: Date.now() }],

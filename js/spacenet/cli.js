@@ -30,7 +30,8 @@
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
     log('MAP   locate · city · shops · globe', 'ok');
     log('SPACE go to mars|moon|jupiter|europa · thesis · vault · cosmos', 'ok');
-    log('ZOOM  solar · global · national · regional · city', 'ok');
+    log('SPACENET  GLOBAL → NATIONAL → REGIONAL → CITY (tap globe to dive)', 'ok');
+    log('ZOOM  solar · global · national · regional · city · spacenet', 'ok');
     log('GLOBE  single-tap dive · double-tap zoom out · no blue rings', 'dim');
     log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
     log('TILE  me · vendors · cart · order', 'ok');
@@ -348,7 +349,7 @@
         Object.keys(global.SNProfiles.ROLES).forEach((k) => {
           log((me.roles[k] ? '● ' : '○ ') + k + ' · ' + global.SNProfiles.ROLES[k].label, me.roles[k] ? 'ok' : 'dim');
         });
-        log('Toggle: role vendor · role dating · role driver', 'dim');
+        log('Toggle: role vendor worker · role dating · role driver', 'dim');
         global.SNTile?.openMe?.('about');
         return;
       }
@@ -583,35 +584,69 @@
         preview('Astranov SpaceNet · ' + tier + ' · ' + n + ' tasks');
         return;
       }
-      // Zoom tiers
+      // SPACENET pilot fly grid
+      if (low === 'spacenet' || low === 'fly grid' || low === 'grid' || low === 'pilot grid') {
+        const path =
+          (global.SPACENET && global.SPACENET.pathString && global.SPACENET.pathString()) ||
+          'GLOBAL → NATIONAL → REGIONAL → CITY';
+        const tier = Globe?.tier || 'global';
+        const z = Globe?.getPhysics?.()?.z;
+        log('SPACENET · pilot fly grid · without it flying is not possible', 'ok');
+        log('Path · ' + path, 'ok');
+        log(
+          'You are · ' +
+            String(tier).toUpperCase() +
+            (z != null ? ' · z=' + Number(z).toFixed(2) : '') +
+            ' · single-tap deeper · double-tap out',
+          'dim'
+        );
+        preview('SPACENET · ' + path);
+        return;
+      }
+      // Zoom tiers (SPACENET cells)
       if (low === 'solar' || low === 'zoom solar' || low === 'galaxy') {
         Globe?.goToTier?.('solar');
-        log('Zoom · SOLAR', 'ok');
+        log('SPACENET · SOLAR', 'ok');
         return;
       }
       if (low === 'global' || low === 'earth' || low === 'world' || low === 'zoom global' || low === 'zoom earth') {
         global.SNMap?.close?.();
         Globe?.goToTier?.('global');
-        log('Zoom · GLOBAL Earth', 'ok');
+        log('SPACENET · GLOBAL Earth', 'ok');
         return;
       }
       if (low === 'national' || low === 'country' || low === 'zoom national') {
         global.SNMap?.close?.();
         Globe?.goToTier?.('national');
-        log('Zoom · NATIONAL', 'ok');
+        log('SPACENET · NATIONAL', 'ok');
         return;
       }
       if (low === 'regional' || low === 'region' || low === 'zoom regional') {
         global.SNMap?.close?.();
         Globe?.goToTier?.('regional');
-        log('Zoom · REGIONAL', 'ok');
+        log('SPACENET · REGIONAL', 'ok');
         return;
       }
       if (low === 'zoom city' || low === 'zoom street' || low === 'city zoom') {
         const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
         Globe?.goToTier?.('city');
         await global.SNMap?.open?.(p.lat, p.lng);
-        log('Zoom · CITY / street map', 'ok');
+        log('SPACENET · CITY / street map', 'ok');
+        return;
+      }
+      // Surface basemap: bright · dark · satellite
+      if (/^(map\s+)?(dark|bright|light|sat|satellite|basemap)\b/.test(low) || low === 'map layer') {
+        let id = 'dark';
+        if (/bright|light/.test(low)) id = 'bright';
+        else if (/sat/.test(low)) id = 'satellite';
+        else if (/dark/.test(low)) id = 'dark';
+        else {
+          log('Surface layers · dark · bright · satellite (or map dark)', 'dim');
+          return;
+        }
+        const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
+        if (!global.SNMap?.active) await global.SNMap?.open?.(p.lat, p.lng);
+        global.SNMap?.setBasemap?.(id, { user: true, log: true });
         return;
       }
       if (low === 'login' || low === 'signin' || low === 'sign in') {
@@ -889,7 +924,14 @@
         } else log('Code edge offline · try again · brain still holds law', 'err');
         return;
       }
-      if (/^date\b|^dating\b|coffee\s*date|dinner\s*date/.test(low)) {
+      if (/^date\b|^dating\b|coffee\s*date|dinner\s*date|available\s*woman|meet\s*(a\s*)?woman/.test(low)) {
+        if (global.SNMarket?.fulfillDatingIntent) {
+          log('Dating · search available · send request…', 'dim');
+          const r = await global.SNMarket.fulfillDatingIntent(line);
+          log(r?.reply || (r?.ok ? 'Dating request open' : r?.error || 'dating failed'), r?.ok ? 'ok' : 'err');
+          preview(r?.best?.name || 'dating');
+          return;
+        }
         const t = Tasks?.create?.(line);
         log('Date open · ' + t.title, 'ok');
         preview(t.title);
@@ -914,6 +956,13 @@
           low
         )
       ) {
+        if (global.SNMarket?.fulfillWorkIntent) {
+          log('Work · find best available · send offer…', 'dim');
+          const r = await global.SNMarket.fulfillWorkIntent(line);
+          log(r?.reply || (r?.ok ? 'Work offer open' : r?.error || 'job failed'), r?.ok ? 'ok' : 'err');
+          preview(r?.best?.name || r?.role || 'job');
+          return;
+        }
         const t = Tasks?.create?.(line);
         log('Job open · ' + t.title, 'ok');
         preview(t.title);
