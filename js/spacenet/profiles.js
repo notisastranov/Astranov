@@ -551,6 +551,7 @@
     seedCity,
     primaryRole,
     pinColor,
+    targetColor: pinColor,
     cart,
     cartAdd,
     cartClear,

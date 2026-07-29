@@ -96,7 +96,7 @@ Object appears by `minZ` + `visibilityKm`.
 | **Double click / double tap** | **SPACENET out** one cell: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
 | **Drag** | Spin globe only (no dive). |
 | **Wheel** | Zoom camera; city Z opens street map at focus under cursor. |
-| **No click markers** | Single/double tap **must not** drop huge blue dots / rings. Fly + zoom only. Tiny optional pins only for `locate` / explicit `pulse:true`. |
+| **No click markers** | Single/double tap **must not** drop huge blue dots / rings. Fly + zoom only. Tiny optional **targets** only for `locate` / explicit `pulse:true`. |
 
 Mechanical: `SNGlobe.diveInAt` (SPACENET) · `SNGlobe.zoomOutOne` · `goToPlace({ pulse: false })` default.
 
@@ -185,17 +185,34 @@ Results print to CLI: `◎ Body · lat, lng` then wiki/POI/shop/spatial lines. N
 
 ### Surface map engine (near surface / CITY)
 
-Lightweight **Leaflet** (lazy-loaded only at CITY). Basemap variations (no API key):
+Lightweight **Leaflet** (lazy-loaded only at CITY). **Layers** button (top-right) opens multi-provider panel.
 
-| Layer | Engine tiles | Use |
-|-------|----------------|-----|
-| **Bright** | Carto Voyager | Day / readable streets |
-| **Dark** | Carto Dark | Night / SpaceNet chrome match |
-| **Satellite** | Esri World Imagery (+ optional labels) | Terrain / roof / coastline truth |
+**Basemap (pick one):**
 
-Control: top-right ☀️ Bright · 🌑 Dark · 🛰 Sat on city map. CLI: `map dark` · `map bright` · `map satellite`. Preference in `sn:map-layer-v1`. Default without pref: bright by local day, dark by night.
+| Layer | Engine | Cost |
+|-------|--------|------|
+| **Bright** | Carto Voyager | Free |
+| **Dark** | Carto Dark | Free |
+| **Satellite** | Esri World Imagery | Free |
+| **Google** | OSM HOT stand-in (or `SN_CONFIG.layers.googleTiles`) | Free / paid key |
+| **Traffic** | OSM DE roads basemap | Free |
 
-Mechanical: `window.SPACENET` + `SNGlobe` national layer (`syncNationalLayer`) — Earth only; visible at NATIONAL/REGIONAL.  
+**Overlays (multi on):**
+
+| Overlay | Source | Notes |
+|---------|--------|--------|
+| **Windy** | Windy embed iframe | Weather · wind |
+| **w3w** | what3words API or SN fallback words | Key optional |
+| **ISS** | wheretheiss.at | Live station |
+| **Sats** | ISS + sample LEO marks | Expand with TLE later |
+| **Planes** | OpenSky Network | Live aircraft in view |
+| **Ships** | OpenSeaMap seamarks | Chart marks free |
+| **Roads** | HOT roads tile overlay | Emphasis |
+
+CLI: `layers` · `map dark|bright|satellite|google|traffic` · `windy` · `iss` · `planes` · `ships` · `w3w`.  
+Prefs: `sn:map-layer-v1` · `sn:map-overlays-v1`.
+
+Mechanical: `window.SPACENET` + `SNGlobe` webbing (`syncNationalLayer`) — Earth only; **visible only below GLOBAL** (NATIONAL · REGIONAL · CITY globe). **Grid is transparent and faded only** (low opacity, no bright pulse). Hidden at SOLAR/GLOBAL overview and when street map is open.  
 City tasks: `pizza` → `SNMarket.fulfillFoodIntent` · `job barman` → `fulfillWorkIntent` · `date` → `fulfillDatingIntent` (real tiles only, zero NPC).
 
 ### CLI (cosmos minimum)
@@ -234,7 +251,7 @@ City tasks: `pizza` → `SNMarket.fulfillFoodIntent` · `job barman` → `fulfil
 | **Cosmos (P1-C)** | **`SNCosmos` + `setBody` + land + crawl** — every body a real globe; internet → SpaceNet | Required |
 | **Globe click = go there** | Raycast → progressive dive · double zoom out | SpaceNet law |
 | **Zoom out of city** | Flat map → **3D body GLOBAL** (Earth: SNGlobe Earth) | Hard ban: stuck on Leaflet as “world” |
-| **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap pin → open tile | Required |
+| **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap **target** → open tile | Required |
 | **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
 | **Radar** | Top-left · speed km/h · **single tap = big view** · **double tap = small** | Required |
 | **Radar blips** | **Green** friends · **red** competitors · **yellow** vendor workers & clients | Required |
@@ -260,7 +277,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 **Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
-| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🎧 AI · ➤ Send** only | **Required — never hide** · **no Size button** |
+| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send** | **Required — never hide** · **no Size button** |
 | **CLI task extras** | Optional extra keys while a task is active | Additive only |
 | **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |
 | **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
@@ -274,13 +291,25 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 
 | Button | Action | Mechanical |
 |--------|--------|------------|
-| **🎯 Locate** | GPS + fly globe to user | `SNCli.run('locate')` / `SNGlobe.locate` |
-| **👤 User** | Open my multi-tile | `SNTile.openMe` |
-| **➕ Add** | Create multi-tile at focus (map open if needed) | `SNTile.createAt` |
-| **🎧 AI** | Hands-free voice ↔ **SpaceNet AI** (headphones emoji + **AI** letters) | `SNCli.toggleHandsfree` |
-| **➤ Send** | Submit CLI / talk to SpaceNet | form submit |
+| **🎯 Locate** | **Expands upward:** Locate me · Last focus · My city map | `SNField.openRibbonFlyout` |
+| **👤 User** | **Expands upward:** My multi-tile · Sign in/out · Home menu | `openRibbonFlyout` |
+| **➕ Add** | **Expands upward:** Pin · Polygon/targets · Video call · Vendor · Social video post · Emergency help | `openRibbonFlyout` → `SNTopo.runAddOption` |
+| **🗺 Layers** | **Expands upward:** Full panel · basemaps · windy · w3w · ISS · planes · ships · sats | `openRibbonFlyout` → `SNMap` |
+| **🎧 AI** | **Expands upward:** Hands-free on/off · Type to SpaceNet · AI help | `openRibbonFlyout` |
+| **➤ Send** | **Single action** (no submenu) — submit CLI | form submit |
 
-**Forbidden:** Size / expand ribbon key (unauthorized); bottom CLI button bar; removing permanent five; hiding ribbon when idle.  
+#### Upward expand law (all multi-option ribbon buttons)
+
+| Rule | Spec |
+|------|------|
+| **If a ribbon button has more than one option** | It **must expand upward** from that button (flyout sheet above the CLI ribbon). |
+| **Never** | Instant side-effect only (e.g. Add must not locate / open tile without a menu pick). |
+| **Position** | Sheet anchored to the tapped button · opens **up** into free space · Cancel / backdrop closes. |
+| **Single-action buttons** | Only **Send** (and any future single-fire key) may act with no menu. |
+| **Mechanical** | `SNField.openRibbonFlyout(anchor, { title, items }, onPick)` · shared CSS `#sn-rib-fly` |
+| **Contaminated** | Dropdowns that open downward into the keyboard · modal that replaces the whole app · missing upward menu on multi-option keys |
+
+**Forbidden:** Size / expand ribbon key (unauthorized); bottom CLI button bar; hiding ribbon when idle; multi-option keys without upward flyout.  
 **Resize:** drag the CLI panel (default max 1/3). **Input:** seamless with log — Enter sends.
 
 **Contaminated (discard):** missing radar **or** miner S **or** Astranov SpaceNet home **or** GLOBAL default **or** permanent multi-button ribbon flood.
@@ -318,7 +347,7 @@ Progress these — do not re-litigate globe chrome forever.
 5. **Spatial seeds** (thesis Earth, Cydonia Mars)  
 6. **Video / presence** as place kinds (later, same model)
 
-Marketplace path: pin → browse → cart → place → track → claim → pilot multi-stop.
+Marketplace path: target → browse → cart → place → track → claim → pilot multi-stop.
 
 ### First vendor + first delivery (painful path — coached)
 
@@ -326,7 +355,7 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 
 | Step | Chat / CLI | Mechanical |
 |------|------------|------------|
-| 1 List shop | `list shop Rhodes Grill` or AI coach | `SNMarket.listShop` → me.vendor + pin at focus |
+| 1 List shop | `list shop Rhodes Grill` or AI coach | `SNMarket.listShop` → me.vendor + target at focus |
 | 2 Menu in S | `menu add Souvlaki 4.5` | `SNMarket.addMenuItem` |
 | 3 Order as client | `order me` | cart my menu → `placeOrder` (S fees) |
 | 4 Driver online | `drive on` | me.driver + online |
@@ -351,7 +380,7 @@ Marketplace path: pin → browse → cart → place → track → claim → pilo
 
 | Step | Spec |
 |------|------|
-| **Open tile** | Short-tap map pin → full `#sn-tile` panel (CSS + roles + tabs) |
+| **Open tile** | Short-tap map **target** → full `#sn-tile` panel (CSS + roles + tabs) |
 | **Vendor menu** | DB/crawl items or generated menu from real POI name in **S**; **+** adds to cart |
 | **Cart** | Cart tab shows lines + total **S** |
 | **Order** | Order + deliver → debit **S** · fees 3%/15% · delivery **task** open · map pulses |
@@ -399,7 +428,7 @@ This is product law, not a nice-to-have. The net does not “close for the night
 | **Vendor hours ≠ platform hours** | A shop’s OSM/local `opening_hours` may be **shown** for honesty; they **do not** shut SpaceNet or block the delivery pipeline product-wide. Drivers/vendors may still be offline as **people** — the **marketplace** stays operable |
 | **Fees still apply** | 3% platform · 15% driver gross — in **S** — whenever a transaction runs |
 | **Currency** | All marketplace amounts in **S (SpaceNets)** |
-| **Code** | `commerce.js` · `profiles.js` · `tile.js` · `tasks.js` (delivery kind) · map pins — no time-window gate on place order |
+| **Code** | `commerce.js` · `profiles.js` · `tile.js` · `tasks.js` (delivery kind) · map **targets** — no time-window gate on place order |
 
 ### Operating truth
 

@@ -78,6 +78,22 @@ const AstranovContinuity = {
       cli: 'map dark|bright|satellite',
       file: 'js/spacenet/map.js',
     },
+    ribbonFlyout: {
+      law: 'Any multi-option CLI ribbon button expands UPWARD',
+      api: 'SNField.openRibbonFlyout',
+      multi: ['locate', 'user', 'add', 'layers', 'handsfree'],
+      single: ['send'],
+    },
+    placeTool: {
+      ribbon: '➕ Add → upward flyout',
+      file: 'js/spacenet/topo.js',
+      menu: ['pin', 'targets', 'video', 'vendor', 'social', 'emergency'],
+      pin: 'single location',
+      targets: 'multi + polygon area m²',
+    },
+
+
+
 
     nationalLayer: {
       borders: 'glowing blue LineSegments (NE 110m)',
@@ -109,7 +125,7 @@ const AstranovContinuity = {
     noPlatformCurfew: true,
     vendorHoursInformationalOnly: true,
     feesInS: true,
-    path: 'pin → browse → cart → place → track → claim → pilot',
+    path: 'target → browse → cart → place → track → claim → pilot',
     code: ['commerce.js', 'profiles.js', 'tile.js', 'tasks.js', 'map.js'],
     sectorFill: 'ensureSector',
   },

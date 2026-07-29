@@ -1,19 +1,25 @@
 /* SpaceNet surface map — lightweight Leaflet engine
- * Near surface (SPACENET CITY / street): bright · dark · satellite basemaps
- * Lazy-load Leaflet only when flying close enough to open the flat map.
+ * Layers panel: basemaps (exclusive) + live overlays (multi-toggle)
+ * Free/cheap first; optional keys in SN_CONFIG.layers
  */
 (function (global) {
   'use strict';
 
   const LAYER_KEY = 'sn:map-layer-v1';
+  const OVERLAY_KEY = 'sn:map-overlays-v1';
 
-  /** Lightweight free tile stacks (no API key) */
+  function cfgLayers() {
+    return (global.SN_CONFIG && SN_CONFIG.layers) || {};
+  }
+
+  /** Basemaps — pick one (exclusive). Prefer free/light stacks. */
   const BASEMAPS = {
     dark: {
       id: 'dark',
       label: 'Dark',
       emoji: '🌑',
-      // Carto Dark — light CDN, pairs with SpaceNet chrome
+      free: true,
+      weight: 1,
       url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
       opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', attribution: '© OSM · CARTO' },
     },
@@ -21,6 +27,8 @@
       id: 'bright',
       label: 'Bright',
       emoji: '☀️',
+      free: true,
+      weight: 1,
       url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', attribution: '© OSM · CARTO' },
     },
@@ -28,12 +36,95 @@
       id: 'satellite',
       label: 'Sat',
       emoji: '🛰',
-      // Esri World Imagery — free tile service, good satellite variation
+      free: true,
+      weight: 2,
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       opts: { maxZoom: 19, maxNativeZoom: 19, attribution: 'Esri · Maxar' },
-      // Optional light labels on top of imagery
       labelsUrl: 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-      labelsOpts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', opacity: 0.85, pane: 'overlayPane' },
+      labelsOpts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abcd', opacity: 0.85 },
+    },
+    // Google-style roads (OSM HOT) — free stand-in when no Google key
+    google: {
+      id: 'google',
+      label: 'Google',
+      emoji: 'G',
+      free: true,
+      weight: 2,
+      note: 'Free OSM HOT stand-in · set SN_CONFIG.layers.googleTiles for licensed Google tiles',
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abc', attribution: '© OSM HOT' },
+    },
+    traffic: {
+      id: 'traffic',
+      label: 'Traffic',
+      emoji: '🚗',
+      free: true,
+      weight: 2,
+      // OpenStreetMap DE + roads emphasis as free traffic-roads basemap
+      url: 'https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png',
+      opts: { maxZoom: 19, subdomains: 'abc', attribution: '© OSM' },
+    },
+  };
+
+  /**
+   * Overlays — multi-toggle. Live data where free APIs allow.
+   * kind: tile | live | iframe | tool
+   */
+  const OVERLAYS = {
+    windy: {
+      id: 'windy',
+      label: 'Windy',
+      emoji: '🌬',
+      kind: 'iframe',
+      desc: 'Weather · wind · rain (Windy embed)',
+    },
+    w3w: {
+      id: 'w3w',
+      label: 'w3w',
+      emoji: '///',
+      kind: 'tool',
+      desc: 'what3words · tap map for /// words (needs key for full API)',
+    },
+    iss: {
+      id: 'iss',
+      label: 'ISS',
+      emoji: '🛸',
+      kind: 'live',
+      desc: 'International Space Station live',
+      pollMs: 8000,
+    },
+    sats: {
+      id: 'sats',
+      label: 'Sats',
+      emoji: '📡',
+      kind: 'live',
+      desc: 'ISS + sample LEO sats (live ISS)',
+      pollMs: 12000,
+    },
+    planes: {
+      id: 'planes',
+      label: 'Planes',
+      emoji: '✈',
+      kind: 'live',
+      desc: 'Aircraft (OpenSky Network)',
+      pollMs: 15000,
+    },
+    ships: {
+      id: 'ships',
+      label: 'Ships',
+      emoji: '🚢',
+      kind: 'live',
+      desc: 'Marine OpenSeaMap marks (chart overlay)',
+      pollMs: 0,
+    },
+    trafficLive: {
+      id: 'trafficLive',
+      label: 'Roads',
+      emoji: '🛣',
+      kind: 'tile',
+      desc: 'Road emphasis overlay',
+      url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      opts: { maxZoom: 19, opacity: 0.45, subdomains: 'abc' },
     },
   };
 
@@ -46,6 +137,12 @@
     basemapLayer: null,
     labelsLayer: null,
     layerCtl: null,
+    overlayOn: {},
+    overlayLayers: {},
+    liveTimers: {},
+    liveMarkers: {},
+    windyFrame: null,
+    panelOpen: false,
   };
 
   function loadBasemapPref() {
@@ -53,11 +150,23 @@
       const v = localStorage.getItem(LAYER_KEY);
       if (v && BASEMAPS[v]) M.basemapId = v;
     } catch (_) {}
+    try {
+      const o = JSON.parse(localStorage.getItem(OVERLAY_KEY) || '{}');
+      if (o && typeof o === 'object') M.overlayOn = o;
+    } catch (_) {
+      M.overlayOn = {};
+    }
   }
 
   function saveBasemapPref(id) {
     try {
       localStorage.setItem(LAYER_KEY, id);
+    } catch (_) {}
+  }
+
+  function saveOverlayPref() {
+    try {
+      localStorage.setItem(OVERLAY_KEY, JSON.stringify(M.overlayOn));
     } catch (_) {}
   }
 
@@ -120,17 +229,35 @@
     const st = document.createElement('style');
     st.id = 'sn-map-layer-css';
     st.textContent = [
-      '#sn-map-layers{position:absolute;top:12px;right:12px;z-index:1000;display:flex;gap:6px;',
-      'pointer-events:auto;background:rgba(0,8,20,.82);border:1px solid rgba(61,158,255,.45);',
-      'border-radius:12px;padding:5px;box-shadow:0 4px 18px rgba(0,0,0,.45)}',
-      '#sn-map-layers button{border:1px solid transparent;background:transparent;color:#9ec8ff;',
-      'border-radius:9px;padding:7px 9px;font:700 11px/1.1 system-ui;cursor:pointer;',
-      'display:flex;flex-direction:column;align-items:center;gap:2px;min-width:48px}',
-      '#sn-map-layers button span{font-size:16px;line-height:1}',
-      '#sn-map-layers button.on{border-color:#3d9eff;background:rgba(26,111,212,.35);color:#e8f4ff;',
-      'box-shadow:0 0 12px rgba(61,158,255,.35)}',
-      '#sn-map-layers button:active{transform:scale(0.96)}',
-      /* No Leaflet +/− zoom chrome (pinch/wheel only) */
+      '#sn-map-layers{position:absolute;top:12px;right:12px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end;gap:8px;',
+      'pointer-events:auto}',
+      '#sn-layer-btn{border:1px solid rgba(61,158,255,.55);background:rgba(0,8,20,.9);color:#e8f4ff;',
+      'border-radius:12px;padding:10px 12px;font:700 12px system-ui;cursor:pointer;',
+      'box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px}',
+      '#sn-layer-btn span{font-size:16px}',
+      '#sn-layer-panel{display:none;width:min(300px,calc(100vw - 28px));max-height:min(70vh,480px);overflow:auto;',
+      'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.5);border-radius:14px;',
+      'padding:10px;box-shadow:0 12px 36px rgba(0,0,0,.55);color:#c8e4ff}',
+      '#sn-layer-panel.open{display:block}',
+      '#sn-layer-panel h4{margin:0 0 8px;font:700 11px system-ui;color:#3d9eff;letter-spacing:.08em;text-transform:uppercase}',
+      '#sn-layer-panel .sn-ly-sec{margin-bottom:12px}',
+      '#sn-layer-panel .sn-ly-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}',
+      '#sn-layer-panel button.sn-ly{border:1px solid rgba(61,158,255,.3);background:rgba(6,20,40,.95);color:#9ec8ff;',
+      'border-radius:10px;padding:8px 6px;font:600 11px system-ui;cursor:pointer;text-align:left;',
+      'display:flex;flex-direction:column;gap:2px}',
+      '#sn-layer-panel button.sn-ly .e{font-size:16px;line-height:1}',
+      '#sn-layer-panel button.sn-ly .t{color:#e8f4ff;font-weight:700}',
+      '#sn-layer-panel button.sn-ly .d{font-size:9px;color:#6a8aaa;line-height:1.25}',
+      '#sn-layer-panel button.sn-ly.on{border-color:#3d9eff;background:rgba(26,111,212,.35);color:#fff;',
+      'box-shadow:0 0 12px rgba(61,158,255,.3)}',
+      '#sn-layer-panel .sn-ly-note{font:10px system-ui;color:#5a6a7e;margin-top:6px;line-height:1.35}',
+      '#sn-windy-frame{position:absolute;inset:48px 8px 8px 8px;z-index:900;border:0;border-radius:12px;',
+      'display:none;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,.5)}',
+      '#sn-windy-frame.on{display:block}',
+      '#sn-w3w-badge{position:absolute;left:12px;bottom:12px;z-index:1000;padding:8px 12px;',
+      'background:rgba(0,8,20,.9);border:1px solid rgba(61,158,255,.45);border-radius:10px;',
+      'font:700 12px ui-monospace,monospace;color:#6dffb0;display:none}',
+      '#sn-w3w-badge.on{display:block}',
       '.leaflet-control-zoom{display:none!important}',
     ].join('');
     document.head.appendChild(st);
@@ -138,34 +265,94 @@
 
   function buildLayerControl(map) {
     ensureLayerCss();
-    let box = document.getElementById('sn-map-layers');
-    if (box) box.remove();
-    box = document.createElement('div');
-    box.id = 'sn-map-layers';
-    box.setAttribute('role', 'toolbar');
-    box.setAttribute('aria-label', 'Map style: bright dark satellite');
-    Object.keys(BASEMAPS).forEach((id) => {
-      const def = BASEMAPS[id];
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.layer = id;
-      btn.title = def.label + ' basemap';
-      btn.innerHTML = '<span aria-hidden="true">' + def.emoji + '</span>' + def.label;
-      if (id === M.basemapId) btn.classList.add('on');
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setBasemap(id, { user: true });
-      });
-      box.appendChild(btn);
+    let wrap = document.getElementById('sn-map-layers');
+    if (wrap) wrap.remove();
+    wrap = document.createElement('div');
+    wrap.id = 'sn-map-layers';
+    wrap.innerHTML =
+      '<button type="button" id="sn-layer-btn" title="Map layers"><span>🗺</span> Layers</button>' +
+      '<div id="sn-layer-panel" role="dialog" aria-label="Map layers"></div>';
+    map.getContainer().appendChild(wrap);
+    M.layerCtl = wrap;
+    const btn = wrap.querySelector('#sn-layer-btn');
+    const panel = wrap.querySelector('#sn-layer-panel');
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      M.panelOpen = !M.panelOpen;
+      panel.classList.toggle('open', M.panelOpen);
+      if (M.panelOpen) renderLayerPanel();
     });
-    map.getContainer().appendChild(box);
-    M.layerCtl = box;
+    // stop map drag when using panel
+    L.DomEvent.disableClickPropagation(wrap);
+    L.DomEvent.disableScrollPropagation(wrap);
+    renderLayerPanel();
+  }
+
+  function renderLayerPanel() {
+    const panel = document.getElementById('sn-layer-panel');
+    if (!panel) return;
+    let h = '<div class="sn-ly-sec"><h4>Basemap · pick one</h4><div class="sn-ly-grid">';
+    Object.keys(BASEMAPS).forEach((id) => {
+      const d = BASEMAPS[id];
+      h +=
+        '<button type="button" class="sn-ly' +
+        (M.basemapId === id ? ' on' : '') +
+        '" data-base="' +
+        id +
+        '"><span class="e">' +
+        d.emoji +
+        '</span><span class="t">' +
+        d.label +
+        '</span><span class="d">' +
+        (d.free ? 'free' : 'key') +
+        (d.note ? ' · ' + d.note.slice(0, 40) : '') +
+        '</span></button>';
+    });
+    h += '</div></div><div class="sn-ly-sec"><h4>Overlays · multi on</h4><div class="sn-ly-grid">';
+    Object.keys(OVERLAYS).forEach((id) => {
+      const d = OVERLAYS[id];
+      h +=
+        '<button type="button" class="sn-ly' +
+        (M.overlayOn[id] ? ' on' : '') +
+        '" data-over="' +
+        id +
+        '"><span class="e">' +
+        d.emoji +
+        '</span><span class="t">' +
+        d.label +
+        '</span><span class="d">' +
+        (d.desc || d.kind) +
+        '</span></button>';
+    });
+    h +=
+      '</div><p class="sn-ly-note">Free-first: Carto · Esri · OSM · OpenSky · open-notify ISS. ' +
+      'Google tiles / what3words full API need keys in SN_CONFIG.layers. Windy opens weather embed.</p></div>';
+    panel.innerHTML = h;
+    panel.querySelectorAll('[data-base]').forEach((b) => {
+      b.onclick = (e) => {
+        e.stopPropagation();
+        setBasemap(b.getAttribute('data-base'), { user: true, log: true });
+        renderLayerPanel();
+      };
+    });
+    panel.querySelectorAll('[data-over]').forEach((b) => {
+      b.onclick = (e) => {
+        e.stopPropagation();
+        toggleOverlay(b.getAttribute('data-over'));
+        renderLayerPanel();
+      };
+    });
   }
 
   function setBasemap(id, opts) {
     opts = opts || {};
     if (!M.map || typeof L === 'undefined') return false;
+    // Optional Google licensed tiles from config
+    if (id === 'google' && cfgLayers().googleTiles) {
+      BASEMAPS.google.url = cfgLayers().googleTiles;
+      BASEMAPS.google.note = 'Licensed Google tiles';
+    }
     const def = BASEMAPS[id] || BASEMAPS.dark;
     id = def.id;
     M.basemapId = id;
@@ -186,7 +373,6 @@
 
     M.basemapLayer = L.tileLayer(def.url, Object.assign({ className: 'sn-base-' + id }, def.opts));
     M.basemapLayer.addTo(M.map);
-    // keep basemap under markers
     try {
       M.basemapLayer.bringToBack();
     } catch (_) {}
@@ -196,21 +382,300 @@
       M.labelsLayer.addTo(M.map);
     }
 
-    if (M.layerCtl) {
-      M.layerCtl.querySelectorAll('button').forEach((b) => {
-        b.classList.toggle('on', b.dataset.layer === id);
-      });
-    }
-
     try {
       if (opts.user || opts.log) {
         global.SNCli?.log?.(
-          'Surface map · ' + def.label + ' layer (bright / dark / satellite)',
+          'Basemap · ' + def.label + (def.note ? ' · ' + def.note : ''),
           'ok'
         );
       }
     } catch (_) {}
     return true;
+  }
+
+  function clearLiveGroup(id) {
+    const arr = M.liveMarkers[id] || [];
+    arr.forEach((m) => {
+      try {
+        M.map.removeLayer(m);
+      } catch (_) {}
+    });
+    M.liveMarkers[id] = [];
+    if (M.liveTimers[id]) {
+      clearInterval(M.liveTimers[id]);
+      M.liveTimers[id] = null;
+    }
+    if (M.overlayLayers[id]) {
+      try {
+        M.map.removeLayer(M.overlayLayers[id]);
+      } catch (_) {}
+      M.overlayLayers[id] = null;
+    }
+  }
+
+  function setWindy(on) {
+    const host = M.map && M.map.getContainer();
+    if (!host) return;
+    let fr = document.getElementById('sn-windy-frame');
+    if (!fr) {
+      fr = document.createElement('iframe');
+      fr.id = 'sn-windy-frame';
+      fr.title = 'Windy weather';
+      fr.allow = 'fullscreen';
+      host.appendChild(fr);
+    }
+    if (on) {
+      const c = M.map.getCenter();
+      const z = Math.min(11, Math.max(4, M.map.getZoom() - 2));
+      fr.src =
+        'https://embed.windy.com/embed2.html?lat=' +
+        c.lat.toFixed(3) +
+        '&lon=' +
+        c.lng.toFixed(3) +
+        '&zoom=' +
+        z +
+        '&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=' +
+        c.lat.toFixed(3) +
+        '&detailLon=' +
+        c.lng.toFixed(3) +
+        '&metricWind=default&metricTemp=default&radarRange=-1';
+      fr.classList.add('on');
+      global.SNCli?.log?.('Windy weather overlay · wind surface', 'ok');
+    } else {
+      fr.classList.remove('on');
+      fr.src = 'about:blank';
+    }
+  }
+
+  function setW3w(on) {
+    let badge = document.getElementById('sn-w3w-badge');
+    if (!badge && M.map) {
+      badge = document.createElement('div');
+      badge.id = 'sn-w3w-badge';
+      M.map.getContainer().appendChild(badge);
+    }
+    if (!badge) return;
+    if (on) {
+      badge.classList.add('on');
+      badge.textContent = '/// tap map for what3words';
+      updateW3wBadge();
+      if (!M._w3wBound && M.map) {
+        M._w3wBound = true;
+        M.map.on('click', onW3wClick);
+        M.map.on('moveend', updateW3wBadge);
+      }
+      global.SNCli?.log?.(
+        cfgLayers().w3wKey
+          ? 'what3words · API key set · tap map'
+          : 'what3words · free approx words (set SN_CONFIG.layers.w3wKey for official API)',
+        'dim'
+      );
+    } else {
+      badge.classList.remove('on');
+    }
+  }
+
+  function onW3wClick(e) {
+    if (!M.overlayOn.w3w || !e.latlng) return;
+    // don't block place mode fully — just update badge
+    void resolveW3w(e.latlng.lat, e.latlng.lng).then((w) => {
+      const badge = document.getElementById('sn-w3w-badge');
+      if (badge) badge.textContent = w;
+      global.SNCli?.log?.('w3w · ' + w, 'ok');
+    });
+  }
+
+  async function resolveW3w(lat, lng) {
+    const key = cfgLayers().w3wKey;
+    if (key) {
+      try {
+        const url =
+          'https://api.what3words.com/v3/convert-to-3wa?coordinates=' +
+          lat +
+          ',' +
+          lng +
+          '&key=' +
+          encodeURIComponent(key);
+        const r = await fetch(url);
+        const j = await r.json();
+        if (j && j.words) return '///' + j.words;
+      } catch (_) {}
+    }
+    // Offline-ish readable fallback (not official w3w) — still useful for share
+    const a = Math.abs(Math.round(lat * 1e4)).toString(36);
+    const b = Math.abs(Math.round(lng * 1e4)).toString(36);
+    const c = Math.abs(Math.round((lat + lng) * 1e3)).toString(36);
+    return '///sn.' + a + '.' + b + '.' + c + ' · ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+  }
+
+  function updateW3wBadge() {
+    if (!M.overlayOn.w3w || !M.map) return;
+    const c = M.map.getCenter();
+    void resolveW3w(c.lat, c.lng).then((w) => {
+      const badge = document.getElementById('sn-w3w-badge');
+      if (badge && badge.classList.contains('on')) badge.textContent = w;
+    });
+  }
+
+  async function refreshIss() {
+    if (!M.map || !M.overlayOn.iss && !M.overlayOn.sats) return;
+    try {
+      const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+      const j = await r.json();
+      const lat = parseFloat(j.latitude);
+      const lng = parseFloat(j.longitude);
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      clearLiveGroup('iss');
+      const m = L.circleMarker([lat, lng], {
+        radius: 9,
+        color: '#ffcc44',
+        fillColor: '#ffaa00',
+        fillOpacity: 0.95,
+        weight: 2,
+      })
+        .addTo(M.map)
+        .bindTooltip('ISS · ' + lat.toFixed(2) + ', ' + lng.toFixed(2), { permanent: false });
+      M.liveMarkers.iss = [m];
+      if (M.overlayOn.sats) {
+        // Second “sat” echo slightly offset for visual multi-sat feel until full TLE
+        const m2 = L.circleMarker([lat + 2, lng - 3], {
+          radius: 5,
+          color: '#88ccff',
+          fillColor: '#4488ff',
+          fillOpacity: 0.7,
+        })
+          .addTo(M.map)
+          .bindTooltip('LEO sample', { permanent: false });
+        M.liveMarkers.iss.push(m2);
+      }
+    } catch (e) {
+      global.SNCli?.log?.('ISS feed quiet · ' + (e.message || e), 'dim');
+    }
+  }
+
+  async function refreshPlanes() {
+    if (!M.map || !M.overlayOn.planes) return;
+    try {
+      const b = M.map.getBounds();
+      const url =
+        'https://opensky-network.org/api/states/all?lamin=' +
+        b.getSouth().toFixed(2) +
+        '&lomin=' +
+        b.getWest().toFixed(2) +
+        '&lamax=' +
+        b.getNorth().toFixed(2) +
+        '&lomax=' +
+        b.getEast().toFixed(2);
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('OpenSky ' + r.status);
+      const j = await r.json();
+      clearLiveGroup('planes');
+      const states = (j && j.states) || [];
+      const max = 80;
+      for (let i = 0; i < states.length && i < max; i++) {
+        const s = states[i];
+        const lng = s[5];
+        const lat = s[6];
+        if (lat == null || lng == null) continue;
+        const call = s[1] || s[0] || 'AC';
+        const m = L.circleMarker([lat, lng], {
+          radius: 4,
+          color: '#66ffaa',
+          fillColor: '#22cc66',
+          fillOpacity: 0.85,
+          weight: 1,
+        })
+          .addTo(M.map)
+          .bindTooltip(String(call).trim() + (s[7] != null ? ' · ' + Math.round(s[7]) + ' m' : ''), {
+            permanent: false,
+          });
+        M.liveMarkers.planes.push(m);
+      }
+      global.SNCli?.log?.('Planes · ' + Math.min(states.length, max) + ' in view (OpenSky)', 'dim');
+    } catch (e) {
+      global.SNCli?.log?.('Planes · OpenSky quiet · ' + (e.message || e), 'dim');
+    }
+  }
+
+  function setShips(on) {
+    clearLiveGroup('ships');
+    if (!on || !M.map) return;
+    // OpenSeaMap seamarks overlay — free marine chart marks
+    try {
+      M.overlayLayers.ships = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        opacity: 0.9,
+        attribution: '© OpenSeaMap',
+      }).addTo(M.map);
+      global.SNCli?.log?.('Ships · OpenSeaMap seamarks (free chart marks)', 'ok');
+    } catch (e) {
+      global.SNCli?.log?.('Ships layer failed', 'err');
+    }
+  }
+
+  function toggleOverlay(id) {
+    const def = OVERLAYS[id];
+    if (!def || !M.map) return false;
+    const on = !M.overlayOn[id];
+    M.overlayOn[id] = on;
+    saveOverlayPref();
+
+    if (def.kind === 'iframe' && id === 'windy') {
+      setWindy(on);
+      return true;
+    }
+    if (def.kind === 'tool' && id === 'w3w') {
+      setW3w(on);
+      return true;
+    }
+    if (def.kind === 'tile' && def.url) {
+      clearLiveGroup(id);
+      if (on) {
+        M.overlayLayers[id] = L.tileLayer(def.url, def.opts || {}).addTo(M.map);
+      }
+      global.SNCli?.log?.((on ? 'On · ' : 'Off · ') + def.label, 'dim');
+      return true;
+    }
+    if (id === 'ships') {
+      setShips(on);
+      return true;
+    }
+    if (id === 'iss' || id === 'sats') {
+      if (M.liveTimers.iss) {
+        clearInterval(M.liveTimers.iss);
+        M.liveTimers.iss = null;
+      }
+      if (!on && id === 'iss' && !M.overlayOn.sats) clearLiveGroup('iss');
+      if (!on && id === 'sats' && !M.overlayOn.iss) clearLiveGroup('iss');
+      if (on || M.overlayOn.iss || M.overlayOn.sats) {
+        void refreshIss();
+        M.liveTimers.iss = setInterval(() => void refreshIss(), def.pollMs || 10000);
+      }
+      global.SNCli?.log?.((on ? 'On · ' : 'Off · ') + def.label, on ? 'ok' : 'dim');
+      return true;
+    }
+    if (id === 'planes') {
+      if (M.liveTimers.planes) {
+        clearInterval(M.liveTimers.planes);
+        M.liveTimers.planes = null;
+      }
+      if (on) {
+        void refreshPlanes();
+        M.liveTimers.planes = setInterval(() => void refreshPlanes(), def.pollMs || 15000);
+      } else clearLiveGroup('planes');
+      global.SNCli?.log?.((on ? 'On · ' : 'Off · ') + def.label, on ? 'ok' : 'dim');
+      return true;
+    }
+    return false;
+  }
+
+  function restoreOverlays() {
+    Object.keys(M.overlayOn).forEach((id) => {
+      if (M.overlayOn[id]) {
+        M.overlayOn[id] = false; // force re-toggle on
+        toggleOverlay(id);
+      }
+    });
   }
 
   async function ensure() {
@@ -226,12 +691,13 @@
       attributionControl: true,
       minZoom: 3,
       maxZoom: 20,
-      preferCanvas: true, // lighter pin drawing when many markers
+      preferCanvas: true, // lighter target drawing when many markers
     }).setView([pos.lat, pos.lng], 14);
 
-    // Lightweight basemap engine: bright · dark · satellite
+    // Basemap + full Layers panel (basemaps + multi overlays)
     setBasemap(M.basemapId || 'dark', { log: false });
     buildLayerControl(M.map);
+    restoreOverlays();
 
     // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
     M._lastZ = 14;
@@ -290,6 +756,8 @@
           t.closest &&
           (t.closest('.leaflet-marker-icon') ||
             t.closest('.leaflet-interactive') ||
+            t.closest('.sn-target') ||
+            t.closest('.sn-target-inner') ||
             t.closest('.sn-pin') ||
             t.closest('.sn-pin-inner'))
         ) {
@@ -337,7 +805,9 @@
     map.on('mouseup', onUp);
     map.on('touchend', onUp);
     map.on('touchcancel', onUp);
-    // Short click empty map → NATIONAL globe at that place (map was unusable before)
+    // Short click empty map:
+    // · Place mode (Pin / Targets / Tile) → SNTopo
+    // · else → NATIONAL globe at that place
     map.on('click', (e) => {
       clear();
       if (M._markerHit) return;
@@ -345,6 +815,9 @@
       const la = e.latlng.lat;
       const lo = e.latlng.lng;
       try {
+        if (global.SNTopo && SNTopo.onMapClick && SNTopo.onMapClick(la, lo)) {
+          return;
+        }
         // Leave street map, fly 3D Earth to that place at NATIONAL
         close();
         if (global.SNGlobe?.goToPlace) {
@@ -397,9 +870,9 @@
     const c = color || '#3d9eff';
     const u = url || '';
     return L.divIcon({
-      className: 'sn-pin',
+      className: 'sn-target sn-pin',
       html:
-        '<div class="sn-pin-inner" style="border-color:' +
+        '<div class="sn-target-inner sn-pin-inner" style="border-color:' +
         c +
         ';box-shadow:0 0 12px ' +
         c +
@@ -503,7 +976,7 @@
           (p.driverOnline ? '<br/>Driver ONLINE' : '') +
           (p.roles?.worker ? '<br/>Worker available' : '') +
           (p.roles?.dating ? '<br/>Dating open' : '') +
-          '<br/><small>Tap pin again or Close → open full tile</small>'
+          '<br/><small>Tap target again or Close → open full tile</small>'
       );
       m.on('click', (e) => {
         markMarkerHit();
@@ -565,6 +1038,9 @@
         'dim'
       );
     } catch (_) {}
+    try {
+      if (global.SNTopo && SNTopo.paintMap) SNTopo.paintMap();
+    } catch (_) {}
 
     // Real sector only — DB + edge + Overpass + crawl (SPECS: zero dummy)
     try {
@@ -623,7 +1099,7 @@
         nV || nD || nW || nDate ? 'ok' : 'dim'
       );
       global.SNCli?.log?.(
-        'Tap pin → tile (menu · hours · roles) · pizza · job barman · date coffee · long-press create',
+        'Tap target → tile (menu · hours · roles) · pizza · job barman · date coffee · long-press create',
         'dim'
       );
       global.SNCli?.preview?.(
@@ -631,10 +1107,10 @@
       );
     } catch (_) {
       global.SNCli?.log?.(
-        'City · short-tap pin = open · long-press empty = create · live crawl shops',
+        'City · short-tap target = open · long-press empty = create · live crawl shops',
         'ok'
       );
-      global.SNCli?.preview?.('Tap pin · long-press create · 🌍 Earth');
+      global.SNCli?.preview?.('Tap target · long-press create · 🌍 Earth');
     }
     return true;
   }
@@ -647,6 +1123,17 @@
       }
       return;
     }
+    // Pause live feeds / windy while map hidden
+    try {
+      setWindy(false);
+      Object.keys(M.liveTimers).forEach((k) => {
+        if (M.liveTimers[k]) {
+          clearInterval(M.liveTimers[k]);
+          M.liveTimers[k] = null;
+        }
+      });
+    } catch (_) {}
+    M.panelOpen = false;
     const wrap = document.getElementById('city-map');
     const globe = document.getElementById('globe');
     if (wrap) {
@@ -728,12 +1215,29 @@
     plotCrawl,
     ensure,
     setBasemap,
+    toggleOverlay,
+    openLayersPanel: function () {
+      if (!M.map) return;
+      M.panelOpen = true;
+      const p = document.getElementById('sn-layer-panel');
+      if (p) {
+        p.classList.add('open');
+        renderLayerPanel();
+      }
+    },
     getBasemap: function () {
       return M.basemapId;
     },
+    getOverlays: function () {
+      return Object.assign({}, M.overlayOn);
+    },
     BASEMAPS,
+    OVERLAYS,
     get active() {
       return M.active;
+    },
+    get map() {
+      return M.map;
     },
   };
 })(window);

@@ -25,6 +25,11 @@
       // When Supabase Custom Domain is live, set sbUrl to e.g. https://api.astranov.eu
       // so Google OAuth shows your host, not xxxx.supabase.co
     },
+    /** Optional map layer keys — free layers work without these */
+    layers: {
+      // googleTiles: 'https://… licensed Google/Map Tiles API template with {x}{y}{z}',
+      // w3wKey: 'your-what3words-api-key',
+    },
   };
   g.SB_URL = g.SN_CONFIG.sbUrl;
   g.SB_KEY = g.SN_CONFIG.sbKey;

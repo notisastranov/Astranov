@@ -123,6 +123,7 @@
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
+    '/js/spacenet/topo.js', // Place: Pin · Targets · Tile + polygon measure
   ];
 
   function loadThree() {

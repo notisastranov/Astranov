@@ -332,7 +332,7 @@
         reply: r.ok
           ? 'Shop live: ' +
             r.shop +
-            ' at your pin. Step 2: add a menu line — menu add Espresso 3.5  (price in S).'
+            ' at your target. Step 2: add a menu line — menu add Espresso 3.5  (price in S).'
           : r.error,
         did: did,
       };

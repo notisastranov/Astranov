@@ -96,7 +96,7 @@
     _natHudLast: 0,
   };
 
-  /** Major cities — compact offline set for NATIONAL glow pins */
+  /** Major cities — compact offline set for NATIONAL glow targets */
   var MAJOR_CITIES = [
     { n: 'Athens', lat: 37.98, lng: 23.73 },
     { n: 'Istanbul', lat: 41.01, lng: 28.98 },
@@ -497,13 +497,14 @@
   }
 
   /**
-   * SPACENET webbing is ALWAYS the basis of the global OS on Earth.
-   * Hidden only off-Earth bodies or when flat city map covers the globe.
+   * SPACENET webbing: only below GLOBAL (national · regional · city globe).
+   * Hidden at SOLAR/GLOBAL overview, off-Earth, or when street map is open.
    */
   function webbingShouldShow() {
     if (!(G.bodyId === 'earth' || !G.bodyId)) return false;
     if (global.SNMap && SNMap.active) return false;
-    return true;
+    var t = currentTier();
+    return t === 'national' || t === 'regional' || t === 'city';
   }
 
   function nationalTierActive() {
@@ -574,17 +575,17 @@
 
     var geo = new THREE.BufferGeometry();
     geo.setAttribute('position', bufAttr(positions, 3));
-    // depthTest false — glow always draws on top of earth/clouds
+    // Faded transparent SPACENET grid only — subtle, never loud
     var mat = new THREE.LineBasicMaterial({
-      color: 0x55c8ff,
+      color: 0x3d9eff,
       transparent: true,
-      opacity: 0.95,
-      depthTest: false,
+      opacity: 0.18,
+      depthTest: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
     });
     G.webbGrid = new THREE.LineSegments(geo, mat);
-    G.webbGrid.renderOrder = 20;
+    G.webbGrid.renderOrder = 8;
     G.webbGrid.name = 'spacenetGraticule';
     G.webbGrid.frustumCulled = false;
     G.nationalRoot.add(G.webbGrid);
@@ -592,16 +593,16 @@
     var glowGeo = new THREE.BufferGeometry();
     glowGeo.setAttribute('position', bufAttr(positions, 3));
     var glowMat = new THREE.LineBasicMaterial({
-      color: 0x1a8fff,
+      color: 0x1a6fd4,
       transparent: true,
-      opacity: 0.55,
-      depthTest: false,
+      opacity: 0.08,
+      depthTest: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
     });
     G.webbGridGlow = new THREE.LineSegments(glowGeo, glowMat);
-    G.webbGridGlow.scale.setScalar(1.004);
-    G.webbGridGlow.renderOrder = 19;
+    G.webbGridGlow.scale.setScalar(1.002);
+    G.webbGridGlow.renderOrder = 7;
     G.webbGridGlow.frustumCulled = false;
     G.nationalRoot.add(G.webbGridGlow);
     G.webbingBuilt = true;
@@ -1119,11 +1120,11 @@
     G.ready = true;
     G.lastAct = Date.now();
     updateDayNight();
-    // Force SPACENET webbing visible at boot (GLOBAL)
+    // Prebuild webbing mesh offline; visibility only when below GLOBAL
     try {
       ensureWebbing();
-      if (G.nationalRoot) G.nationalRoot.visible = true;
-      G.nationalOn = true;
+      if (G.nationalRoot) G.nationalRoot.visible = false;
+      G.nationalOn = false;
     } catch (e) {
       try {
         console.error('[SNGlobe] SPACENET webbing boot fail', e);
@@ -1595,23 +1596,23 @@
       G.pivot.rotation.y += 0.00045;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
-    // Day/night + SPACENET webbing pulse (always when visible)
-    if (G.frame % 3 === 0) {
+    // Day/night + soft HUD; grid stays fixed faded (no loud pulse)
+    if (G.frame % 4 === 0) {
       updateDayNight();
       if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible)) {
         updateNationalHud(false);
-        var pulse = 0.7 + 0.28 * Math.sin(Date.now() * 0.0028);
         if (G.webbGrid && G.webbGrid.material) {
-          G.webbGrid.material.opacity = pulse;
+          G.webbGrid.material.opacity = 0.16;
         }
         if (G.webbGridGlow && G.webbGridGlow.material) {
-          G.webbGridGlow.material.opacity = 0.35 + 0.25 * Math.sin(Date.now() * 0.0028 + 1);
+          G.webbGridGlow.material.opacity = 0.07;
         }
+        // Borders only softly breathe if present
         if (G.borderLines && G.borderLines.material) {
-          G.borderLines.material.opacity = pulse;
+          G.borderLines.material.opacity = 0.28 + 0.08 * Math.sin(Date.now() * 0.0015);
         }
         if (G.cityGlow && G.cityGlow.material) {
-          G.cityGlow.material.opacity = 0.45 + 0.3 * Math.sin(Date.now() * 0.003);
+          G.cityGlow.material.opacity = 0.35 + 0.1 * Math.sin(Date.now() * 0.002);
         }
       }
     }
@@ -1664,7 +1665,7 @@
     G.markers = [];
   }
 
-  /** Tiny pin for locate/shops only — never used on click dive (SPECS) */
+  /** Tiny target pulse for locate/shops only — never used on click dive (SPECS) */
   function pulse(lat, lng, color, label, ms) {
     if (!G.ready) return null;
     var c = color != null ? color : 0x44ffaa;

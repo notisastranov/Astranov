@@ -148,7 +148,7 @@
       global.SNMap?.plotCrawl?.(toPlaces());
       if (tiles.length) {
         global.SNCli?.log?.(
-          'Marketplace · ' + tiles.length + ' shop tiles · tap pin · Menu · + cart · Order',
+          'Marketplace · ' + tiles.length + ' shop tiles · tap target · Menu · + cart · Order',
           'ok'
         );
       }
@@ -296,7 +296,7 @@
     const vendors = (global.SNProfiles?.list?.({ role: 'vendor' }) || []).length;
     global.SNCli?.log?.(
       vendors
-        ? 'Sector live · ' + vendors + ' shop tiles · ' + source + ' · tap pin for menu'
+        ? 'Sector live · ' + vendors + ' shop tiles · ' + source + ' · tap target for menu'
         : 'Sector empty of POIs · long-press map to create multi-tile · try fly another city',
       vendors ? 'ok' : 'dim'
     );

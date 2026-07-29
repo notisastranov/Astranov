@@ -69,7 +69,7 @@
       { id: 'unified_tile', what: 'One tile: cover/avatar + social/dating/vendor/driver/client/worker roles' },
       { id: 'crawlers', what: 'Almighty SNSearch.crawl — geo/POI/web/wiki/code/products/media/books/weather/edge' },
       { id: 'code_brain', what: 'SNAi.code / coders — Grok-fork writes SpaceNet modules' },
-      { id: 'city_maps', what: 'Leaflet pins open multi-role tiles' },
+      { id: 'city_maps', what: 'Leaflet targets open multi-role tiles' },
       { id: 'vendor_menus', what: 'Menu items with photos + prices → cart → order → delivery task' },
       { id: 'jobs', what: 'job … → list → claim → complete on globe' },
       { id: 'dating', what: 'dating profiles + date invite DNA' },

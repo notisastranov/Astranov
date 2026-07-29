@@ -29,6 +29,8 @@
   function help() {
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
     log('MAP   locate · city · shops · globe', 'ok');
+    log('ADD   ribbon ➕ · pin · targets · tile · shop · job · date · delivery', 'ok');
+    log('TOPO  measure · clear targets · clear pin', 'dim');
     log('SPACE go to mars|moon|jupiter|europa · thesis · vault · cosmos', 'ok');
     log('SPACENET  GLOBAL → NATIONAL → REGIONAL → CITY (tap globe to dive)', 'ok');
     log('ZOOM  solar · global · national · regional · city · spacenet', 'ok');
@@ -634,19 +636,54 @@
         log('SPACENET · CITY / street map', 'ok');
         return;
       }
-      // Surface basemap: bright · dark · satellite
-      if (/^(map\s+)?(dark|bright|light|sat|satellite|basemap)\b/.test(low) || low === 'map layer') {
+      // Surface layers panel / basemap / overlays
+      if (
+        low === 'layers' ||
+        low === 'map layers' ||
+        low === 'layer' ||
+        /^map\s+layers?$/.test(low)
+      ) {
+        const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
+        if (!global.SNMap?.active) await global.SNMap?.open?.(p.lat, p.lng);
+        global.SNMap?.openLayersPanel?.();
+        log(
+          'Layers · basemap: dark bright sat google traffic · overlays: windy w3w iss sats planes ships',
+          'ok'
+        );
+        return;
+      }
+      if (/^(map\s+)?(dark|bright|light|sat|satellite|google|traffic|basemap)\b/.test(low) || low === 'map layer') {
         let id = 'dark';
         if (/bright|light/.test(low)) id = 'bright';
+        else if (/google/.test(low)) id = 'google';
+        else if (/traffic/.test(low)) id = 'traffic';
         else if (/sat/.test(low)) id = 'satellite';
         else if (/dark/.test(low)) id = 'dark';
         else {
-          log('Surface layers · dark · bright · satellite (or map dark)', 'dim');
+          log('Basemap · dark · bright · satellite · google · traffic · or type layers', 'dim');
           return;
         }
         const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
         if (!global.SNMap?.active) await global.SNMap?.open?.(p.lat, p.lng);
         global.SNMap?.setBasemap?.(id, { user: true, log: true });
+        return;
+      }
+      if (
+        /^(windy|w3w|what3words|iss|sats?|planes?|aircraft|ships?|roads)\b/.test(low) ||
+        /^overlay\s+/.test(low)
+      ) {
+        const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
+        if (!global.SNMap?.active) await global.SNMap?.open?.(p.lat, p.lng);
+        let id = null;
+        if (/windy/.test(low)) id = 'windy';
+        else if (/w3w|what3words/.test(low)) id = 'w3w';
+        else if (/\biss\b/.test(low)) id = 'iss';
+        else if (/sats?/.test(low)) id = 'sats';
+        else if (/planes?|aircraft/.test(low)) id = 'planes';
+        else if (/ships?/.test(low)) id = 'ships';
+        else if (/roads/.test(low)) id = 'trafficLive';
+        if (id && global.SNMap?.toggleOverlay) global.SNMap.toggleOverlay(id);
+        else log('Overlays · windy · w3w · iss · sats · planes · ships · roads', 'dim');
         return;
       }
       if (low === 'login' || low === 'signin' || low === 'sign in') {
@@ -656,6 +693,72 @@
       if (low === 'logout' || low === 'signout' || low === 'sign out') {
         if (global.SNAuth?.user) await global.SNAuth.signOut();
         log('Signed out', 'dim');
+        return;
+      }
+      // Place tool: pin (1) · targets (multi/topo) · tile
+      if (
+        low === 'place' ||
+        low === 'pin' ||
+        low === 'targets' ||
+        low === 'target mode' ||
+        low === 'tile mode' ||
+        low === 'measure' ||
+        low === 'clear targets' ||
+        low === 'clear pin' ||
+        low === 'clear place' ||
+        /^mode\s+(pin|targets|tile)$/.test(low)
+      ) {
+        const Topo = global.SNTopo;
+        if (!Topo) {
+          log('Place tool offline · hard refresh', 'err');
+          return;
+        }
+        if (low === 'clear targets') {
+          Topo.clear('targets');
+          return;
+        }
+        if (low === 'clear pin') {
+          Topo.clear('pin');
+          return;
+        }
+        if (low === 'clear place') {
+          Topo.clear('all');
+          return;
+        }
+        if (low === 'measure') {
+          const st = Topo.measure();
+          log(
+            st.count < 3
+              ? 'Targets · ' + st.count + ' · need ≥3 for polygon area'
+              : 'Polygon · area ' + st.areaLabel + ' · perimeter ' + st.perimeterLabel,
+            st.count >= 3 ? 'ok' : 'dim'
+          );
+          preview(st.count >= 3 ? st.areaLabel : st.count + ' targets');
+          return;
+        }
+        if (low === 'pin' || low === 'mode pin') {
+          Topo.setMode('pin');
+          Topo.activate();
+          return;
+        }
+        if (low === 'targets' || low === 'target mode' || low === 'mode targets') {
+          Topo.setMode('targets');
+          Topo.activate();
+          return;
+        }
+        if (low === 'tile mode' || low === 'mode tile') {
+          Topo.setMode('tile');
+          Topo.activate();
+          return;
+        }
+        // place / add — open full Add menu
+        if (Topo.openAddMenu) Topo.openAddMenu();
+        else Topo.activate();
+        return;
+      }
+      if (low === 'add' || low === 'add menu' || low === 'add anything') {
+        if (global.SNTopo?.openAddMenu) global.SNTopo.openAddMenu();
+        else log('Add menu offline · hard refresh', 'err');
         return;
       }
       if (low === 'locate' || low === 'gps' || low === 'where am i') {
@@ -701,7 +804,7 @@
         const n = vendors.length || r?.count || 0;
         log(
           n
-            ? n + ' shop tiles · tap pin · Menu · + · Order (S) · source ' + (r?.source || 'live')
+            ? n + ' shop tiles · tap target · Menu · + · Order (S) · source ' + (r?.source || 'live')
             : 'No shops · try fly another city · or crawl restaurants',
           n ? 'ok' : 'dim'
         );

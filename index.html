@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260728520000-spacenet-webbing-ship" />
-<meta name="astranov-continuity" content="20260728520000-spacenet-webbing-ship" />
+<meta name="astranov-build" content="20260728620000-layers-ribbon-ship" />
+<meta name="astranov-continuity" content="20260728620000-layers-ribbon-ship" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -131,20 +131,23 @@
   #field-radar-legend b.v { color: #ffcc44; }
   #field-radar-legend b.r { color: #00dcff; }
 
-  /* CLI top ribbon — big emoji + text, always visible */
+  /* CLI top ribbon — big emoji + text, ALWAYS all 6 keys visible (wrap on narrow) */
   #sn-task-ribbon {
-    display: flex !important; flex-wrap: nowrap; align-items: stretch; gap: 8px;
-    padding: 10px 10px 8px; border-bottom: 1px solid rgba(26,111,212,0.22);
-    flex-shrink: 0; min-height: 64px; overflow-x: auto; overflow-y: hidden;
-    -webkit-overflow-scrolling: touch; cursor: default; touch-action: manipulation;
+    display: flex !important; flex-wrap: wrap; align-items: stretch; justify-content: space-between;
+    gap: 6px; padding: 10px 8px 8px; border-bottom: 1px solid rgba(26,111,212,0.22);
+    flex-shrink: 0; min-height: 64px; overflow: visible;
+    cursor: default; touch-action: manipulation;
     background: rgba(0,8,20,0.55);
   }
   #sn-task-ribbon[hidden] { display: flex !important; }
   .sn-rib-btn {
     display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 3px; min-width: 64px; min-height: 56px; padding: 8px 10px;
+    gap: 2px; flex: 1 1 48px; min-width: 48px; max-width: 80px; min-height: 54px; padding: 6px 4px;
     border: 1px solid rgba(61,158,255,.4); background: rgba(6,20,40,.95); color: #e0f0ff;
-    border-radius: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    border-radius: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .sn-rib-btn#sn-rib-layers {
+    border-color: rgba(0,200,255,.55); box-shadow: 0 0 10px rgba(0,180,255,.2);
   }
   .sn-rib-emoji { font-size: 22px; line-height: 1; display: block; }
   .sn-rib-txt { font: 700 11px/1.1 system-ui, sans-serif; letter-spacing: 0.02em; color: #9ec8ff; }
@@ -152,10 +155,17 @@
     border-color: #3d9eff; background: rgba(26,111,212,0.28);
   }
   .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #fff; }
-  .sn-rib-btn#sn-rib-hf.on, .sn-rib-btn.on {
+  .sn-rib-btn#sn-rib-hf.on {
     border-color: rgba(255,107,122,.65); background: rgba(196,74,90,0.25);
   }
-  .sn-rib-btn#sn-rib-hf.on .sn-rib-txt, .sn-rib-btn.on .sn-rib-txt { color: #ff9aa5; }
+  .sn-rib-btn#sn-rib-hf.on .sn-rib-txt { color: #ff9aa5; }
+  .sn-rib-btn#sn-rib-add.on {
+    border-color: rgba(0,221,136,.55); background: rgba(0,80,50,0.35);
+  }
+  .sn-rib-btn#sn-rib-add.on .sn-rib-txt { color: #6dffb0; }
+  .sn-rib-btn.on {
+    border-color: rgba(61,158,255,.65); background: rgba(26,111,212,0.28);
+  }
   .sn-rib-btn.sn-rib-task {
     min-width: 52px; min-height: 48px; font: 600 11px system-ui; flex-direction: row;
     opacity: 0.92;
@@ -305,11 +315,11 @@
     border: 1px solid var(--border); background: rgba(26,111,212,0.35);
     color: #fff; font-weight: 700; cursor: pointer;
   }
-  .sn-pin-inner {
+  .sn-target-inner, .sn-pin-inner {
     width: 32px; height: 32px; border-radius: 50%; border: 2px solid #3d9eff;
     background: #061428; overflow: hidden; display: flex; align-items: center; justify-content: center;
   }
-  .sn-pin-inner img { width: 100%; height: 100%; object-fit: cover; }
+  .sn-target-inner img, .sn-pin-inner img { width: 100%; height: 100%; object-fit: cover; }
   @media (max-width: 520px) {
     #field-balance-hud { min-width: 96px; padding: 8px 10px; }
     #fbh-s { font-size: 14px; }
@@ -386,8 +396,8 @@
 
 <div id="dock">
   <div id="panel" class="collapsed">
-    <!-- Permanent CLI top ribbon: Locate · User · Add · AI hands-free · Send -->
-    <div id="sn-task-ribbon" aria-label="CLI actions: locate user add hands-free send"></div>
+    <!-- Permanent CLI top ribbon: Locate · User · Add · Layers · AI · Send -->
+    <div id="sn-task-ribbon" aria-label="CLI actions: locate user add layers hands-free send"></div>
     <div id="cli-drag">
       <div id="cli-preview">SpaceNet · talk or tap ribbon</div>
     </div>
@@ -433,7 +443,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260728520000-spacenet-webbing-ship"></script>
+<script src="/js/spacenet/boot.js?v=20260728620000-layers-ribbon-ship"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

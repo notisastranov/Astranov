@@ -69,15 +69,45 @@
   ];
   /**
    * SPECS CLI top ribbon — ALWAYS visible permanent basics:
-   * 🎯 Locate · 👤 User · ➕ Add multi-tile · 🎧 AI · ➤ Send
-   * Plus optional current-task extras (cart/order/…)
+   * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
    */
   var RIBBON_CORE = [
-    { act: 'locate', emoji: '🎯', text: 'Locate', title: 'Locate me on Earth' },
-    { act: 'user', emoji: '👤', text: 'User', title: 'Your multi-tile' },
-    { act: 'add', emoji: '➕', text: 'Add', title: 'Create multi-tile at focus' },
-    { act: 'handsfree', emoji: '🎧', text: 'AI', title: 'SpaceNet AI · hands-free voice', id: 'sn-rib-hf' },
-    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet AI' },
+    {
+      act: 'locate',
+      emoji: '🎯',
+      text: 'Locate',
+      title: 'Locate · expands upward',
+      id: 'sn-rib-locate',
+    },
+    {
+      act: 'user',
+      emoji: '👤',
+      text: 'User',
+      title: 'User · expands upward',
+      id: 'sn-rib-user',
+    },
+    {
+      act: 'add',
+      emoji: '➕',
+      text: 'Add',
+      title: 'Add · expands upward',
+      id: 'sn-rib-add',
+    },
+    {
+      act: 'layers',
+      emoji: '🗺',
+      text: 'Layers',
+      title: 'Layers · basemap + windy ISS planes ships · expands upward',
+      id: 'sn-rib-layers',
+    },
+    {
+      act: 'handsfree',
+      emoji: '🎧',
+      text: 'AI',
+      title: 'AI · expands upward',
+      id: 'sn-rib-hf',
+    },
+    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet', id: 'sn-rib-send' },
   ];
   var TASKS = {
     idle: [],
@@ -93,35 +123,310 @@
     return document.getElementById(id);
   }
 
+  /**
+   * SPECS: any ribbon button with more than one action MUST expand upward.
+   * openRibbonFlyout(anchorEl|selector, { title, items:[{id,e,t,d}] }, onPick)
+   */
+  function ensureFlyoutCss() {
+    if (document.getElementById('sn-rib-fly-css')) return;
+    var st = document.createElement('style');
+    st.id = 'sn-rib-fly-css';
+    st.textContent = [
+      '#sn-rib-fly{position:fixed;inset:0;z-index:135;display:none;pointer-events:none}',
+      '#sn-rib-fly.open{display:block;pointer-events:auto}',
+      '#sn-rib-fly .sn-rib-fly-bg{position:absolute;inset:0;background:rgba(0,0,0,.3)}',
+      '#sn-rib-fly .sn-rib-fly-sheet{position:fixed;z-index:136;width:min(300px,calc(100vw - 16px));',
+      'max-height:min(58vh,440px);overflow:auto;padding:8px;',
+      'background:rgba(0,6,16,.98);border:1px solid rgba(61,158,255,.55);border-radius:14px;',
+      'box-shadow:0 -10px 36px rgba(0,0,0,.7),0 0 20px rgba(26,111,212,.25);color:#c8e4ff}',
+      '#sn-rib-fly .sn-rib-fly-head{font:700 11px system-ui;color:#3d9eff;letter-spacing:.1em;',
+      'text-transform:uppercase;padding:6px 8px 8px;border-bottom:1px solid rgba(26,111,212,.28);margin-bottom:4px}',
+      '#sn-rib-fly .sn-rib-fly-opt{border:0;border-radius:10px;background:transparent;color:#e0f0ff;',
+      'padding:10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;width:100%;',
+      'font:600 13px system-ui}',
+      '#sn-rib-fly .sn-rib-fly-opt:hover,#sn-rib-fly .sn-rib-fly-opt:active{background:rgba(26,111,212,.28)}',
+      '#sn-rib-fly .sn-rib-fly-opt .e{font-size:20px;width:28px;text-align:center;flex-shrink:0}',
+      '#sn-rib-fly .sn-rib-fly-opt .meta{display:flex;flex-direction:column;gap:2px;min-width:0}',
+      '#sn-rib-fly .sn-rib-fly-opt .t{font-weight:700;color:#e8f4ff}',
+      '#sn-rib-fly .sn-rib-fly-opt .d{font:10px/1.25 system-ui;color:#6a8aaa}',
+      '#sn-rib-fly .sn-rib-fly-cancel{margin-top:4px;width:100%;border:1px solid rgba(61,158,255,.3);',
+      'border-radius:10px;background:rgba(0,12,28,.85);color:#8ab4d0;padding:10px;font:600 12px system-ui;cursor:pointer}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  function closeRibbonFlyout() {
+    var root = document.getElementById('sn-rib-fly');
+    if (root) {
+      root.classList.remove('open');
+      root.innerHTML = '';
+    }
+  }
+
+  /**
+   * Expand options UPWARD from a ribbon button (SPECS law).
+   * @param {HTMLElement|string} anchor
+   * @param {{title?:string, items:Array<{id:string,e?:string,t:string,d?:string}>}} cfg
+   * @param {function(string):void} onPick
+   */
+  function openRibbonFlyout(anchor, cfg, onPick) {
+    ensureFlyoutCss();
+    closeRibbonFlyout();
+    // Close competing menus
+    try {
+      if (g.SNTopo && SNTopo.closeAddMenu) SNTopo.closeAddMenu();
+    } catch (e) {}
+
+    var el =
+      typeof anchor === 'string' ? document.getElementById(anchor) || document.querySelector(anchor) : anchor;
+    var root = document.getElementById('sn-rib-fly');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'sn-rib-fly';
+      root.setAttribute('role', 'dialog');
+      document.body.appendChild(root);
+    }
+    var items = (cfg && cfg.items) || [];
+    var rows = items
+      .map(function (o) {
+        return (
+          '<button type="button" class="sn-rib-fly-opt" data-pick="' +
+          o.id +
+          '"><span class="e" aria-hidden="true">' +
+          (o.e || '·') +
+          '</span><span class="meta"><span class="t">' +
+          (o.t || o.id) +
+          '</span>' +
+          (o.d ? '<span class="d">' + o.d + '</span>' : '') +
+          '</span></button>'
+        );
+      })
+      .join('');
+    root.innerHTML =
+      '<div class="sn-rib-fly-bg" data-pick="__close"></div>' +
+      '<div class="sn-rib-fly-sheet" id="sn-rib-fly-sheet">' +
+      '<div class="sn-rib-fly-head">' +
+      ((cfg && cfg.title) || 'Options') +
+      '</div>' +
+      rows +
+      '<button type="button" class="sn-rib-fly-cancel" data-pick="__close">Cancel</button></div>';
+
+    var sheet = root.querySelector('#sn-rib-fly-sheet');
+    var pad = 8;
+    var w = Math.min(300, window.innerWidth - 16);
+    if (el && sheet) {
+      var r = el.getBoundingClientRect();
+      var left = Math.max(pad, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - pad));
+      sheet.style.width = w + 'px';
+      sheet.style.left = left + 'px';
+      sheet.style.bottom = window.innerHeight - r.top + 8 + 'px';
+      sheet.style.top = 'auto';
+      sheet.style.transform = 'none';
+    } else if (sheet) {
+      sheet.style.left = '50%';
+      sheet.style.transform = 'translateX(-50%)';
+      sheet.style.bottom = '120px';
+    }
+    root.classList.add('open');
+    root.querySelectorAll('[data-pick]').forEach(function (btn) {
+      btn.addEventListener(
+        'click',
+        function (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          var id = btn.getAttribute('data-pick');
+          closeRibbonFlyout();
+          if (id && id !== '__close' && typeof onPick === 'function') onPick(id);
+        },
+        true
+      );
+    });
+  }
+
+  function focusPos() {
+    return (
+      g._snLastPos ||
+      (g.SNTasks && SNTasks.pos) ||
+      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || {
+        lat: 36.4341,
+        lng: 28.2176,
+      }
+    );
+  }
+
+  function openCityMap() {
+    var p = focusPos();
+    return (g.SNMap && SNMap.open ? SNMap.open(p.lat, p.lng) : Promise.resolve()).catch(function () {});
+  }
+
   function ribbonAct(act) {
+    // Multi-option buttons: ALWAYS expand upward (SPECS)
     if (act === 'locate') {
-      if (g.SNCli && SNCli.run) void SNCli.run('locate');
+      openRibbonFlyout(
+        'sn-rib-locate',
+        {
+          title: '🎯 Locate',
+          items: [
+            { id: 'gps', e: '🎯', t: 'Locate me', d: 'GPS · fly globe to you' },
+            { id: 'focus', e: '◎', t: 'Last focus', d: 'Fly to last map focus' },
+            { id: 'city', e: '🗺', t: 'My city map', d: 'Open street map at me / focus' },
+          ],
+        },
+        function (id) {
+          if (id === 'gps' && g.SNCli && SNCli.run) void SNCli.run('locate');
+          else if (id === 'focus') {
+            var p = focusPos();
+            if (g.SNGlobe && SNGlobe.goToPlace)
+              SNGlobe.goToPlace(p.lat, p.lng, { tier: 'national', openMap: false, pulse: true });
+          } else if (id === 'city') {
+            var p2 = focusPos();
+            void openCityMap();
+            if (g.SNCli && SNCli.log) SNCli.log('City map · focus', 'ok');
+          }
+        }
+      );
       return;
     }
     if (act === 'user') {
-      if (g.SNTile && SNTile.openMe) SNTile.openMe();
-      else if (g.SNCli && SNCli.run) void SNCli.run('me');
+      var signed = !!(g.SNAuth && SNAuth.user);
+      openRibbonFlyout(
+        'sn-rib-user',
+        {
+          title: '👤 User',
+          items: [
+            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · menu' },
+            {
+              id: 'auth',
+              e: signed ? '🚪' : '🔐',
+              t: signed ? 'Sign out' : 'Sign in with Google',
+              d: 'astranov.eu · Astranov SpaceNet',
+            },
+            { id: 'home', e: '🏠', t: 'Home menu', d: 'Version · clocks · roles' },
+          ],
+        },
+        function (id) {
+          if (id === 'me') {
+            if (g.SNTile && SNTile.openMe) SNTile.openMe();
+            else if (g.SNCli && SNCli.run) void SNCli.run('me');
+          } else if (id === 'auth') {
+            if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
+            else if (g.SNCli && SNCli.run) void SNCli.run(signed ? 'logout' : 'login');
+          } else if (id === 'home' && g.SNHome && SNHome.toggle) SNHome.toggle();
+        }
+      );
       return;
     }
-    if (act === 'add') {
-      var pos =
-        g._snLastPos ||
-        (g.SNTasks && SNTasks.pos) ||
-        (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || { lat: 36.43, lng: 28.22 };
-      if (g.SNTile && SNTile.createAt) {
-        void (async function () {
+    // ➕ Add → upward menu ONLY
+    if (act === 'place' || act === 'add' || act === 'target' || act === 'pin') {
+      openRibbonFlyout(
+        'sn-rib-add',
+        {
+          title: '➕ Add',
+          items: [
+            { id: 'pin', e: '📍', t: 'Pin', d: 'Single location on the map' },
+            { id: 'targets', e: '◎', t: 'Polygon / targets', d: 'Multi points · measure land size' },
+            { id: 'video', e: '📹', t: 'Video call', d: 'Live video call request' },
+            { id: 'vendor', e: '🏪', t: 'Vendor', d: 'List shop · sell in S' },
+            { id: 'social', e: '🎬', t: 'Social video post', d: 'Post video to the field' },
+            { id: 'emergency', e: '🆘', t: 'Emergency help', d: 'Urgent help on the map' },
+          ],
+        },
+        function (id) {
           try {
-            if (g.SNMap && !SNMap.active && SNMap.open) await SNMap.open(pos.lat, pos.lng);
-          } catch (e) {}
-          g.SNTile.createAt(pos.lat, pos.lng);
-        })();
-      } else if (g.SNCli && SNCli.run) void SNCli.run('me');
+            if (g.SNTopo && SNTopo.runAddOption) SNTopo.runAddOption(id);
+            else if (g.SNTopo && SNTopo.openAddMenu) {
+              // Fallback: open topo menu then can't auto-pick — call internal if exposed
+              if (typeof SNTopo._runAdd === 'function') SNTopo._runAdd(id);
+              else if (g.SNCli && SNCli.log) SNCli.log('Add · ' + id + ' · hard refresh for full tool', 'dim');
+            }
+          } catch (e) {
+            console.error('[SNField] add pick', e);
+          }
+        }
+      );
+      return;
+    }
+    // 🗺 Layers → upward menu of basemaps + overlays
+    if (act === 'layers' || act === 'layer') {
+      openRibbonFlyout(
+        'sn-rib-layers',
+        {
+          title: '🗺 Layers',
+          items: [
+            { id: 'panel', e: '🗺', t: 'Full layers panel', d: 'Open map · all providers' },
+            { id: 'dark', e: '🌑', t: 'Dark basemap', d: 'Carto dark' },
+            { id: 'bright', e: '☀️', t: 'Bright basemap', d: 'Carto voyager' },
+            { id: 'satellite', e: '🛰', t: 'Satellite', d: 'Esri imagery' },
+            { id: 'google', e: 'G', t: 'Google-style', d: 'OSM HOT / config tiles' },
+            { id: 'traffic', e: '🚗', t: 'Traffic roads', d: 'Roads basemap' },
+            { id: 'windy', e: '🌬', t: 'Windy weather', d: 'Wind overlay' },
+            { id: 'w3w', e: '///', t: 'what3words', d: '/// address on map' },
+            { id: 'iss', e: '🛸', t: 'ISS', d: 'Live station' },
+            { id: 'planes', e: '✈', t: 'Airplanes', d: 'OpenSky traffic' },
+            { id: 'ships', e: '🚢', t: 'Ships', d: 'OpenSeaMap marks' },
+            { id: 'sats', e: '📡', t: 'Satellites', d: 'ISS + LEO marks' },
+          ],
+        },
+        function (id) {
+          void (async function () {
+            try {
+              await openCityMap();
+              if (id === 'panel') {
+                if (g.SNMap && SNMap.openLayersPanel) SNMap.openLayersPanel();
+                return;
+              }
+              if (
+                id === 'dark' ||
+                id === 'bright' ||
+                id === 'satellite' ||
+                id === 'google' ||
+                id === 'traffic'
+              ) {
+                if (g.SNMap && SNMap.setBasemap) SNMap.setBasemap(id, { user: true, log: true });
+                return;
+              }
+              if (g.SNMap && SNMap.toggleOverlay) g.SNMap.toggleOverlay(id);
+            } catch (e) {
+              if (g.SNCli && SNCli.log) SNCli.log('Layers · ' + (e.message || e), 'err');
+            }
+          })();
+        }
+      );
       return;
     }
     if (act === 'handsfree') {
-      if (g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
+      var hfOn = !!(g.SNCli && SNCli.handsfreeOn);
+      openRibbonFlyout(
+        'sn-rib-hf',
+        {
+          title: '🎧 AI · SpaceNet',
+          items: [
+            {
+              id: 'toggle',
+              e: '🎧',
+              t: hfOn ? 'Hands-free OFF' : 'Hands-free ON',
+              d: hfOn ? 'Stop mic + voice' : 'Mic + voice replies',
+            },
+            { id: 'focus', e: '⌨️', t: 'Type to SpaceNet', d: 'Focus CLI input' },
+            { id: 'help', e: '❓', t: 'AI help', d: 'What can SpaceNet do' },
+          ],
+        },
+        function (id) {
+          if (id === 'toggle' && g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
+          else if (id === 'focus') {
+            var inp = $('cli-in');
+            if (inp) {
+              try {
+                if (g.SNUi && SNUi.expandPanel) SNUi.expandPanel(true);
+              } catch (e) {}
+              inp.focus();
+            }
+          } else if (id === 'help' && g.SNCli && SNCli.run) void SNCli.run('help');
+        }
+      );
       return;
     }
+    // Send = single action (no submenu)
     if (act === 'send') {
       var form = $('cli-form');
       if (form) {
@@ -144,8 +449,12 @@
     for (i = 0; i < RIBBON_CORE.length; i++) {
       var b = RIBBON_CORE[i];
       seen[b.act] = 1;
+      var onCls =
+        b.act === 'add' && g.SNTopo && SNTopo.active ? ' on' : '';
       h +=
-        '<button type="button" class="sn-rib-btn sn-rib-core" data-act="' +
+        '<button type="button" class="sn-rib-btn sn-rib-core' +
+        onCls +
+        '" data-act="' +
         b.act +
         '"' +
         (b.id ? ' id="' + b.id + '"' : '') +
@@ -185,13 +494,13 @@
       if (hf && g.SNCli && SNCli.handsfreeOn) hf.classList.add('on');
     } catch (e2) {}
     bar.querySelectorAll('[data-act]').forEach(function (btn) {
+      var act = btn.getAttribute('data-act');
       btn.onclick = function (ev) {
         if (ev) {
           ev.preventDefault();
           ev.stopPropagation();
         }
-        ribbonAct(btn.getAttribute('data-act'));
-        // refresh hf on state after toggle
+        ribbonAct(act);
         setTimeout(paintRibbon, 50);
       };
     });
@@ -985,6 +1294,9 @@
   g.SNField = {
     init: init,
     paint: paint,
+    paintRibbon: paintRibbon,
+    openRibbonFlyout: openRibbonFlyout,
+    closeRibbonFlyout: closeRibbonFlyout,
     setTask: setTask,
     infer: infer,
     setNotice: function (t) {

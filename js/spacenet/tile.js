@@ -185,11 +185,11 @@
       '#sn-tile .sn-big{font-size:15px;font-weight:700;margin-bottom:4px}',
       '#sn-tile .sn-tags span{display:inline-block;margin:2px 4px 2px 0;padding:2px 7px;border-radius:999px;',
       'background:rgba(26,111,212,.2);font-size:10px}',
-      '.sn-pin{background:transparent!important;border:0!important}',
-      '.sn-pin-inner{width:36px;height:36px;border-radius:50%;border:2px solid #3d9eff;background:#061428;',
+      '.sn-target,.sn-pin{background:transparent!important;border:0!important}',
+      '.sn-target-inner,.sn-pin-inner{width:36px;height:36px;border-radius:50%;border:2px solid #3d9eff;background:#061428;',
       'overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}',
-      '.sn-pin-inner img{width:100%;height:100%;object-fit:cover}',
-      '.leaflet-marker-icon.sn-pin{margin-left:-18px!important;margin-top:-18px!important}',
+      '.sn-target-inner img,.sn-pin-inner img{width:100%;height:100%;object-fit:cover}',
+      '.leaflet-marker-icon.sn-target,.leaflet-marker-icon.sn-pin{margin-left:-18px!important;margin-top:-18px!important}',
     ].join('');
     document.head.appendChild(st);
   }
@@ -504,7 +504,7 @@
       body.innerHTML =
         '<div class="sn-about">' +
         '<div>📍 ' +
-        (p.lat != null ? p.lat.toFixed(4) + ', ' + p.lng.toFixed(4) : 'no pin yet') +
+        (p.lat != null ? p.lat.toFixed(4) + ', ' + p.lng.toFixed(4) : 'no target yet') +
         '</div>' +
         '<div>Roles: ' +
         Object.keys(p.roles || [])
@@ -691,7 +691,7 @@
           tier: 'national',
           openMap: false,
           skipScan: true,
-          label: p.name || p.shopName || 'Pin',
+          label: p.name || p.shopName || 'Target',
         });
         await global.SNMap?.open?.(p.lat, p.lng);
         global.SNMap?.showProfiles?.();

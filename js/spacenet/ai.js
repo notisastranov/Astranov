@@ -464,7 +464,7 @@
       } catch (e) {
         await runCli('shops');
       }
-      reply = 'Globe on sector · live shops · tap a pin for menu · cart · order in S.';
+      reply = 'Globe on sector · live shops · tap a target for menu · cart · order in S.';
       return { did: did, reply: reply };
     }
 
