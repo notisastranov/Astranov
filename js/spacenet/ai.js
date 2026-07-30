@@ -2,6 +2,7 @@
  * SpaceNet AI — the mind of the net
  * Astranov = Architect of SpaceNet (human owner). AI is named SpaceNet only.
  * Priority: LISTEN → ANALYZE → RESPOND brief · show on globe (fly/zoom + vendor tile).
+ * FREE FIRST: SNFreeMind (own product AI) — no paid xAI required for chat.
  * Vendor carousel: next · show all.
  */
 (function (global) {
@@ -931,8 +932,35 @@
       return text;
     }
 
-    // Edge for chat richness when needed
-    if (mode === 'code' || mode === 'coders' || local.needsEdge || opts.forceEdge || !local.did.length) {
+    // —— FREE FIRST: own SpaceNet Free mind (no paid xAI / no begging) ——
+    var freeHit = null;
+    if (mode !== 'code' && mode !== 'coders' && !opts.forceEdge) {
+      try {
+        if (global.SNFreeMind && SNFreeMind.answer) {
+          freeHit = SNFreeMind.answer(msg, {
+            localReply: local.reply,
+            did: local.did,
+            needsEdge: !!local.needsEdge,
+          });
+          if (freeHit && freeHit.text && freeHit.score >= 0.28) {
+            text = freeHit.text;
+            try {
+              if (SNFreeMind.learnInteraction)
+                SNFreeMind.learnInteraction(msg, text, {
+                  score: freeHit.score,
+                  source: freeHit.source,
+                });
+            } catch (eLearn) {}
+          }
+        }
+      } catch (eFree) {}
+    }
+
+    // Paid/cloud edge ONLY for code modes or explicit forceEdge — never required for free chat
+    if (
+      !text &&
+      (mode === 'code' || mode === 'coders' || opts.forceEdge === true)
+    ) {
       text = await callEdge(
         local.reply
           ? msg +
@@ -947,14 +975,15 @@
 
     if (!text && mode === 'code') {
       text =
-        'Code edge offline. Local: extend js/spacenet/* — market.js usage.js ai.js. Queue handoff for Athens midnight ship.';
+        'Code offline · free mind cannot ship patches yet · handoff for Athens midnight.';
       try {
         if (global.SNUsage && SNUsage.handoff) SNUsage.handoff(msg, { source: 'code_offline' });
       } catch (e2) {}
     }
 
     if (!text) text = local.reply;
-    if (!text) text = 'I am SpaceNet. Edge quiet — try pizza · locate · fly athens · go to mars.';
+    if (!text && freeHit && freeHit.text) text = freeHit.text;
+    if (!text) text = 'SpaceNet Free · pizza · shops · next · fly · locate · teach to grow';
 
     // Edge tags → move globe; strip tags from spoken/visible text
     try {
@@ -1079,6 +1108,9 @@
     isCodeIntent: isCodeIntent,
     systemFor: systemFor,
     say: say,
+    freeMind: function () {
+      return global.SNFreeMind || null;
+    },
     setSuggestList: setSuggestList,
     presentVendor: presentVendor,
     presentNext: presentNext,

@@ -83,7 +83,8 @@ const AstranovContinuity = {
       api: 'SNField.openRibbonFlyout',
       multi: ['locate', 'user', 'add', 'layers'],
       single: ['send', 'handsfree'],
-      aiLaw: 'LISTEN→ANALYZE→BRIEF; SPACENET LISTENING on AI tap; vendors fly+tile; next|show all',
+      aiLaw: 'LISTEN→ANALYZE·BRIEF; SPACENET LISTENING; vendors fly+tile; next|show all',
+      freeMind: 'SNFreeMind own free AI first — no paid xAI for chat; teach + free export',
     },
     placeTool: {
       ribbon: '➕ Add → upward flyout',

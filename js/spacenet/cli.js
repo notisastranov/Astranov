@@ -44,6 +44,7 @@
     log('MONEY S · rate · wallet · finance  (primary; fiat/crypto secondary)', 'ok');
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
+    log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -116,8 +117,69 @@
         if (box) box.innerHTML = '';
         return;
       }
-      if (low === 'brain' || low === 'memory' || low === 'mind') {
+      if (low === 'brain' || low === 'memory') {
         dumpBrain('summary');
+        return;
+      }
+      // SpaceNet Free mind — own free AI (no paid xAI)
+      if (
+        low === 'free mind' ||
+        low === 'free ai' ||
+        low === 'spacenet free' ||
+        low === 'mind status' ||
+        low === 'mind'
+      ) {
+        const st = global.SNFreeMind?.status?.() || {};
+        log('── SpaceNet Free (own AI) ──', 'ok');
+        log(
+          'Learned ' +
+            (st.learned || 0) +
+            ' · seeds ' +
+            (st.seeds || 0) +
+            ' · answers ' +
+            (st.stats && st.stats.answers != null ? st.stats.answers : 0),
+          'ok'
+        );
+        log('No paid xAI required · users grow me: teach FACT or teach Q => A', 'dim');
+        log('Export trainset: free export · then open fine-tune later', 'dim');
+        preview('SpaceNet Free · teach to grow');
+        global.SNGlobe?.setHud?.('SPACENET FREE');
+        return;
+      }
+      if (low === 'free export' || low === 'mind export' || low === 'export mind') {
+        try {
+          const pack = global.SNFreeMind?.exportTrainset?.();
+          if (!pack) {
+            log('Free mind loading · hard refresh', 'err');
+            return;
+          }
+          const json = JSON.stringify(pack, null, 2);
+          if (navigator.clipboard?.writeText) {
+            void navigator.clipboard.writeText(json).then(
+              () => log('Trainset copied · ' + pack.count + ' rows', 'ok'),
+              () => log('Copy failed · see console', 'err')
+            );
+          } else {
+            log('Trainset ' + pack.count + ' rows · clipboard unavailable', 'dim');
+          }
+          console.log('[SNFreeMind trainset]', pack);
+          preview(pack.count + ' train rows');
+        } catch (e) {
+          log('Export fail · ' + (e.message || e), 'err');
+        }
+        return;
+      }
+      if (/^teach\b/i.test(low)) {
+        if (global.SNAi?.ask) {
+          const reply = await SNAi.ask(line);
+          if (reply) {
+            log(reply, 'ok');
+            preview(String(reply).slice(0, 80));
+          }
+        } else if (global.SNFreeMind?.answer) {
+          const r = SNFreeMind.answer(line);
+          log(r.text || 'noted', 'ok');
+        }
         return;
       }
       if (low === 'law' || low === 'rules' || low === 'invariants') {

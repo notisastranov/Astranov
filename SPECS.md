@@ -290,6 +290,9 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **AI priority** | **LISTEN → ANALYZE → RESPOND** as brief as possible · reply also on **globe HUD** | Required |
 | **AI ribbon** | Tap → **SPACENET LISTENING** (no submenu monologue) · mic if available · type still works | Required |
 | **AI vendors** | Suggest → **fly + zoom globe** + **open vendor tile** · **next** = next vendor · **show all** = all on map | Required |
+| **SpaceNet Free** | **Own free public AI** (`SNFreeMind`) — law seeds + user teach + learn-from-use. **No paid xAI required** for chat. Not a fork of proprietary Grok weights. | Required |
+| **AI free-first** | Chat uses **free mind first**. Cloud/paid edge only for explicit code modes or `forceEdge`. | Required |
+| **AI grow** | Users help grow Free: `teach Q => A` · `free export` trainset for future open fine-tunes | Required |
 | **AI** | `SNAi` freeform acts (locate/shops/food/fly/go + marketplace carousel) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 

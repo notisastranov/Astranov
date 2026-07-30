@@ -118,8 +118,9 @@
     '/js/spacenet/spatial.js',
     '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship
     '/js/spacenet/market.js', // first vendor → delivery coach
+    '/js/spacenet/free-ai.js', // SpaceNet Free mind — own AI, no paid xAI required
     '/js/spacenet/cli.js',
-    '/js/spacenet/ai.js', // SpaceNet AI on critical path — must greet
+    '/js/spacenet/ai.js', // SpaceNet AI — free mind first
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
