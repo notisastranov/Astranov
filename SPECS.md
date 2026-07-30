@@ -194,8 +194,11 @@ Lightweight **Leaflet** (lazy-loaded only at CITY). **Layers** button (top-right
 | **Bright** | Carto Voyager | Free |
 | **Dark** | Carto Dark | Free |
 | **Satellite** | Esri World Imagery | Free |
-| **Google** | OSM HOT stand-in (or `SN_CONFIG.layers.googleTiles`) | Free / paid key |
+| **Google-style** | OSM HOT stand-in | Free |
+| **G-Sat / G-Hyb / G-Topo / G-Road** | **Google Maps JS** satellite · hybrid · terrain · roadmap (+ Street View) | **Needs `googleMapsKey`** |
 | **Traffic** | OSM DE roads basemap | Free |
+
+**Google Earth imaging (official):** set `SN_CONFIG.layers.googleMapsKey` with **Maps JavaScript API** + **Elevation API** enabled (billing). Mechanical: `SNGoogleEarth` · `js/spacenet/google-earth.js`. Topo: geodesic area/distance · elevation samples · 3D path length (`measure topo`). Without key: free Esri sat + open-elevation.
 
 **Overlays (multi on):**
 
@@ -295,7 +298,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **👤 User** | **Expands upward:** My multi-tile · Sign in/out · Home menu | `openRibbonFlyout` |
 | **➕ Add** | **Expands upward:** Pin · Polygon/targets · Video call · Vendor · Social video post · Emergency help | `openRibbonFlyout` → `SNTopo.runAddOption` |
 | **🗺 Layers** | **Expands upward:** Full panel · basemaps · windy · w3w · ISS · planes · ships · sats | `openRibbonFlyout` → `SNMap` |
-| **🎧 AI** | **Expands upward:** Hands-free on/off · Type to SpaceNet · AI help | `openRibbonFlyout` |
+| **🎧 AI** | **Single action** for now — silent hands-free listen on/off (no submenu) | `SNCli.toggleHandsfree` |
 | **➤ Send** | **Single action** (no submenu) — submit CLI | form submit |
 
 #### Upward expand law (all multi-option ribbon buttons)
@@ -305,7 +308,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **If a ribbon button has more than one option** | It **must expand upward** from that button (flyout sheet above the CLI ribbon). |
 | **Never** | Instant side-effect only (e.g. Add must not locate / open tile without a menu pick). |
 | **Position** | Sheet anchored to the tapped button · opens **up** into free space · Cancel / backdrop closes. |
-| **Single-action buttons** | Only **Send** (and any future single-fire key) may act with no menu. |
+| **Single-action buttons** | **Send** and **AI** (for now) act with no menu. Multi-option keys still expand upward. |
 | **Mechanical** | `SNField.openRibbonFlyout(anchor, { title, items }, onPick)` · shared CSS `#sn-rib-fly` |
 | **Contaminated** | Dropdowns that open downward into the keyboard · modal that replaces the whole app · missing upward menu on multi-option keys |
 

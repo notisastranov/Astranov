@@ -81,8 +81,8 @@ const AstranovContinuity = {
     ribbonFlyout: {
       law: 'Any multi-option CLI ribbon button expands UPWARD',
       api: 'SNField.openRibbonFlyout',
-      multi: ['locate', 'user', 'add', 'layers', 'handsfree'],
-      single: ['send'],
+      multi: ['locate', 'user', 'add', 'layers'],
+      single: ['send', 'handsfree'],
     },
     placeTool: {
       ribbon: '➕ Add → upward flyout',

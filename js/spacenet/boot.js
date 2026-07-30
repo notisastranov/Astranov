@@ -123,7 +123,8 @@
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
-    '/js/spacenet/topo.js', // Place: Pin · Targets · Tile + polygon measure
+    '/js/spacenet/google-earth.js', // Google Earth imaging + elevation/topo (API key)
+    '/js/spacenet/topo.js', // Place: Pin · Targets · polygon + topo measure
   ];
 
   function loadThree() {
@@ -218,11 +219,24 @@
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
 
-      // Kill any stuck browser TTS from prior session / bad hands-free
+      // Kill any stuck browser TTS — AI must never talk unprompted on boot
       try {
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          // Cancel again after voices load (Chrome queues delayed speak)
+          setTimeout(function () {
+            try {
+              window.speechSynthesis.cancel();
+            } catch (e1) {}
+          }, 400);
+          setTimeout(function () {
+            try {
+              window.speechSynthesis.cancel();
+            } catch (e2) {}
+          }, 1500);
+        }
       } catch (e0) {}
-      // SpaceNet text presence (NOT TTS babble)
+      // SpaceNet text presence only (CLI lines — NOT TTS)
       try {
         if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
         else if (window.SNAi && SNAi.greet) void SNAi.greet();

@@ -251,8 +251,35 @@
 
   function measure() {
     var pts = T.targets.slice();
+    // Prefer Google geodesic area/distance when Google Earth imaging is active
     var areaM2 = polygonAreaM2(pts);
     var perim = perimeterM(pts);
+    var engine = 'haversine';
+    try {
+      if (
+        global.SNGoogleEarth &&
+        SNGoogleEarth.status &&
+        SNGoogleEarth.status().ready
+      ) {
+        var gArea = SNGoogleEarth.geodesicAreaM2 && SNGoogleEarth.geodesicAreaM2(pts);
+        if (gArea != null && gArea > 0) {
+          areaM2 = gArea;
+          engine = 'google-geodesic';
+        }
+        if (pts.length >= 2 && SNGoogleEarth.geodesicDistanceM) {
+          var gp = 0;
+          for (var j = 0; j < pts.length - 1; j++) {
+            var d = SNGoogleEarth.geodesicDistanceM(pts[j], pts[j + 1]);
+            gp += d != null ? d : haversineM(pts[j], pts[j + 1]);
+          }
+          if (pts.length >= 3) {
+            var dc = SNGoogleEarth.geodesicDistanceM(pts[pts.length - 1], pts[0]);
+            gp += dc != null ? dc : haversineM(pts[pts.length - 1], pts[0]);
+          }
+          if (gp > 0) perim = gp;
+        }
+      }
+    } catch (_) {}
     var segs = [];
     for (var i = 0; i < pts.length - 1; i++) {
       segs.push({
@@ -269,7 +296,57 @@
       perimeterLabel: formatDist(perim),
       segments: segs,
       closed: pts.length >= 3,
+      engine: engine,
     };
+  }
+
+  /** Full topo report: area + perimeter + elevations + 3D path (Google or open-elevation) */
+  async function measureTopo() {
+    var base = measure();
+    var pts = T.targets.slice();
+    if (T.pin && !pts.length) pts = [T.pin];
+    var elev = [];
+    var path3d = null;
+    try {
+      if (global.SNGoogleEarth && SNGoogleEarth.pathLength3dM && pts.length >= 2) {
+        path3d = await SNGoogleEarth.pathLength3dM(pts);
+        elev = path3d.elev || [];
+      } else if (global.SNGoogleEarth && SNGoogleEarth.elevations && pts.length) {
+        elev = await SNGoogleEarth.elevations(pts);
+      }
+    } catch (_) {}
+    var elevLabel = '';
+    if (elev.length) {
+      var nums = elev.map(function (e) {
+        return e.elevM;
+      }).filter(function (n) {
+        return n != null && isFinite(n);
+      });
+      if (nums.length) {
+        var min = Math.min.apply(null, nums);
+        var max = Math.max.apply(null, nums);
+        elevLabel = 'elev ' + Math.round(min) + '–' + Math.round(max) + ' m';
+      }
+    }
+    var out = Object.assign({}, base, {
+      elev: elev,
+      elevLabel: elevLabel,
+      path3dM: path3d && path3d.path3dM,
+      path3dLabel: path3d ? formatDist(path3d.path3dM) : '',
+      horizM: path3d && path3d.horizM,
+    });
+    log(
+      'Topo · ' +
+        (out.count || 0) +
+        ' pts' +
+        (out.areaM2 > 0 ? ' · area ' + out.areaLabel : '') +
+        (out.perimeterM > 0 ? ' · perim ' + out.perimeterLabel : '') +
+        (out.path3dLabel ? ' · 3D path ' + out.path3dLabel : '') +
+        (elevLabel ? ' · ' + elevLabel : '') +
+        (out.engine ? ' · ' + out.engine : ''),
+      'ok'
+    );
+    return out;
   }
 
   function clear(which) {
@@ -722,6 +799,7 @@
     activateMode: activateMode,
     onMapClick: onMapClick,
     measure: measure,
+    measureTopo: measureTopo,
     clear: clear,
     paintMap: paintMap,
     haversineM: haversineM,

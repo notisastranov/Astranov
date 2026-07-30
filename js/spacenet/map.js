@@ -50,9 +50,46 @@
       emoji: 'G',
       free: true,
       weight: 2,
-      note: 'Free OSM HOT stand-in · set SN_CONFIG.layers.googleTiles for licensed Google tiles',
+      note: 'OSM stand-in · or full Google Earth imaging with googleMapsKey',
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abc', attribution: '© OSM HOT' },
+    },
+    // Full Google Earth-class imaging (requires SN_CONFIG.layers.googleMapsKey)
+    g_satellite: {
+      id: 'g_satellite',
+      label: 'G-Sat',
+      emoji: '🌍',
+      free: false,
+      weight: 3,
+      googleType: 'satellite',
+      note: 'Google satellite (Maps JS API key)',
+    },
+    g_hybrid: {
+      id: 'g_hybrid',
+      label: 'G-Hyb',
+      emoji: '🗺',
+      free: false,
+      weight: 3,
+      googleType: 'hybrid',
+      note: 'Google hybrid labels + imagery',
+    },
+    g_terrain: {
+      id: 'g_terrain',
+      label: 'G-Topo',
+      emoji: '⛰',
+      free: false,
+      weight: 3,
+      googleType: 'terrain',
+      note: 'Google terrain / topographic',
+    },
+    g_roadmap: {
+      id: 'g_roadmap',
+      label: 'G-Road',
+      emoji: '🛣',
+      free: false,
+      weight: 3,
+      googleType: 'roadmap',
+      note: 'Google roadmap',
     },
     traffic: {
       id: 'traffic',
@@ -60,7 +97,6 @@
       emoji: '🚗',
       free: true,
       weight: 2,
-      // OpenStreetMap DE + roads emphasis as free traffic-roads basemap
       url: 'https://{s}.tile.openstreetmap.de/{z}/{x}/{y}.png',
       opts: { maxZoom: 19, subdomains: 'abc', attribution: '© OSM' },
     },
@@ -348,7 +384,7 @@
   function setBasemap(id, opts) {
     opts = opts || {};
     if (!M.map || typeof L === 'undefined') return false;
-    // Optional Google licensed tiles from config
+    // Optional Google licensed tile URL template from config
     if (id === 'google' && cfgLayers().googleTiles) {
       BASEMAPS.google.url = cfgLayers().googleTiles;
       BASEMAPS.google.note = 'Licensed Google tiles';
@@ -357,6 +393,40 @@
     id = def.id;
     M.basemapId = id;
     if (opts.user) saveBasemapPref(id);
+
+    // Full Google Earth imaging path (Maps JS API)
+    if (def.googleType) {
+      const c = M.map.getCenter();
+      const z = M.map.getZoom();
+      void (async function () {
+        if (!global.SNGoogleEarth) {
+          global.SNCli?.log?.(
+            'Google Earth module offline · hard refresh · set googleMapsKey in config',
+            'err'
+          );
+          return;
+        }
+        const r = await SNGoogleEarth.show(def.googleType, {
+          lat: c.lat,
+          lng: c.lng,
+          zoom: z,
+        });
+        if (!r || !r.ok) {
+          global.SNCli?.log?.(
+            'Google imaging needs Maps JavaScript API key · SN_CONFIG.layers.googleMapsKey',
+            'err'
+          );
+          // Fall back to free Esri satellite
+          setBasemap('satellite', { log: true });
+        }
+      })();
+      return true;
+    }
+
+    // Leaflet basemap — hide Google host if it was on
+    try {
+      if (global.SNGoogleEarth && SNGoogleEarth.hide) SNGoogleEarth.hide();
+    } catch (_) {}
 
     if (M.basemapLayer) {
       try {
@@ -369,6 +439,11 @@
         M.map.removeLayer(M.labelsLayer);
       } catch (_) {}
       M.labelsLayer = null;
+    }
+
+    if (!def.url) {
+      global.SNCli?.log?.('Basemap · missing URL for ' + id, 'err');
+      return false;
     }
 
     M.basemapLayer = L.tileLayer(def.url, Object.assign({ className: 'sn-base-' + id }, def.opts));

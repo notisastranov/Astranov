@@ -25,9 +25,18 @@
       // When Supabase Custom Domain is live, set sbUrl to e.g. https://api.astranov.eu
       // so Google OAuth shows your host, not xxxx.supabase.co
     },
-    /** Optional map layer keys — free layers work without these */
+    /**
+     * Map / Google Earth imaging
+     * Free basemaps work with no keys. For full Google Earth-class data:
+     * 1) Google Cloud → enable Maps JavaScript API + Elevation API (+ billing)
+     * 2) Restrict key to astranov.eu
+     * 3) Set googleMapsKey below
+     * Optional: googleMapId for cloud-based map styling
+     */
     layers: {
-      // googleTiles: 'https://… licensed Google/Map Tiles API template with {x}{y}{z}',
+      // googleMapsKey: 'AIza…',
+      // googleMapId: '…',
+      // googleTiles: 'https://…{z}/{x}/{y}…',  // alternate tile template
       // w3wKey: 'your-what3words-api-key',
     },
   };

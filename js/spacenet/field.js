@@ -104,7 +104,7 @@
       act: 'handsfree',
       emoji: '🎧',
       text: 'AI',
-      title: 'AI · expands upward',
+      title: 'Hands-free listen (silent) · tap again to stop',
       id: 'sn-rib-hf',
     },
     { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet', id: 'sn-rib-send' },
@@ -354,10 +354,14 @@
           title: '🗺 Layers',
           items: [
             { id: 'panel', e: '🗺', t: 'Full layers panel', d: 'Open map · all providers' },
-            { id: 'dark', e: '🌑', t: 'Dark basemap', d: 'Carto dark' },
-            { id: 'bright', e: '☀️', t: 'Bright basemap', d: 'Carto voyager' },
-            { id: 'satellite', e: '🛰', t: 'Satellite', d: 'Esri imagery' },
-            { id: 'google', e: 'G', t: 'Google-style', d: 'OSM HOT / config tiles' },
+            { id: 'dark', e: '🌑', t: 'Dark', d: 'Carto free' },
+            { id: 'bright', e: '☀️', t: 'Bright', d: 'Carto free' },
+            { id: 'satellite', e: '🛰', t: 'Satellite free', d: 'Esri imagery' },
+            { id: 'g_satellite', e: '🌍', t: 'Google Earth sat', d: 'Full Google satellite' },
+            { id: 'g_hybrid', e: '🗺', t: 'Google hybrid', d: 'Imagery + labels' },
+            { id: 'g_terrain', e: '⛰', t: 'Google topo', d: 'Terrain / topographic' },
+            { id: 'g_roadmap', e: '🛣', t: 'Google roads', d: 'Roadmap' },
+            { id: 'google', e: 'G', t: 'Google-style free', d: 'OSM HOT stand-in' },
             { id: 'traffic', e: '🚗', t: 'Traffic roads', d: 'Roads basemap' },
             { id: 'windy', e: '🌬', t: 'Windy weather', d: 'Wind overlay' },
             { id: 'w3w', e: '///', t: 'what3words', d: '/// address on map' },
@@ -365,6 +369,7 @@
             { id: 'planes', e: '✈', t: 'Airplanes', d: 'OpenSky traffic' },
             { id: 'ships', e: '🚢', t: 'Ships', d: 'OpenSeaMap marks' },
             { id: 'sats', e: '📡', t: 'Satellites', d: 'ISS + LEO marks' },
+            { id: 'topo', e: '📐', t: 'Topo measure', d: 'Area · elev · 3D path' },
           ],
         },
         function (id) {
@@ -375,12 +380,21 @@
                 if (g.SNMap && SNMap.openLayersPanel) SNMap.openLayersPanel();
                 return;
               }
+              if (id === 'topo') {
+                if (g.SNTopo && SNTopo.measureTopo) await SNTopo.measureTopo();
+                else if (g.SNCli && SNCli.run) void SNCli.run('measure');
+                return;
+              }
               if (
                 id === 'dark' ||
                 id === 'bright' ||
                 id === 'satellite' ||
                 id === 'google' ||
-                id === 'traffic'
+                id === 'traffic' ||
+                id === 'g_satellite' ||
+                id === 'g_hybrid' ||
+                id === 'g_terrain' ||
+                id === 'g_roadmap'
               ) {
                 if (g.SNMap && SNMap.setBasemap) SNMap.setBasemap(id, { user: true, log: true });
                 return;
@@ -394,36 +408,11 @@
       );
       return;
     }
+    // AI = single action for now (no submenu) — silent hands-free toggle
     if (act === 'handsfree') {
-      var hfOn = !!(g.SNCli && SNCli.handsfreeOn);
-      openRibbonFlyout(
-        'sn-rib-hf',
-        {
-          title: '🎧 AI · SpaceNet',
-          items: [
-            {
-              id: 'toggle',
-              e: '🎧',
-              t: hfOn ? 'Hands-free OFF' : 'Hands-free ON',
-              d: hfOn ? 'Stop mic + voice' : 'Mic + voice replies',
-            },
-            { id: 'focus', e: '⌨️', t: 'Type to SpaceNet', d: 'Focus CLI input' },
-            { id: 'help', e: '❓', t: 'AI help', d: 'What can SpaceNet do' },
-          ],
-        },
-        function (id) {
-          if (id === 'toggle' && g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
-          else if (id === 'focus') {
-            var inp = $('cli-in');
-            if (inp) {
-              try {
-                if (g.SNUi && SNUi.expandPanel) SNUi.expandPanel(true);
-              } catch (e) {}
-              inp.focus();
-            }
-          } else if (id === 'help' && g.SNCli && SNCli.run) void SNCli.run('help');
-        }
-      );
+      try {
+        if (g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
+      } catch (e) {}
       return;
     }
     // Send = single action (no submenu)
