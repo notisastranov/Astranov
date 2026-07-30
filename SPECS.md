@@ -281,6 +281,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
 | **Finance entry** | **Only** top-right money HUD (`#field-balance-hud`). **Forbidden:** finance / rate / wallet **buttons on CLI ribbon** without owner authorization. CLI may print text (`rate` · `wallet` · `fees`) only. | Required |
+| **Burger menu** | **Top-left under radar** (`#sn-burger-btn` / `#sn-burger-panel`). Place for **extensive secondary menus** (navigate · market · mesh/tools). **Not** CLI ribbon. **Not** finance (S HUD). | Required |
 | **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send** | **Required — never hide** · **no Size button** |
 | **CLI task extras** | Optional extra keys while a task is active | Additive only |
 | **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |

@@ -1279,7 +1279,127 @@
       };
     });
     $('sn-miner-accept') && ($('sn-miner-accept').onclick = acceptTerms);
+    bindBurgerMenu();
     paintRibbon();
+  }
+
+  /**
+   * SPECS: extensive secondary menu lives under radar (top-left burger).
+   * Not CLI ribbon. Finance stays top-right S HUD only.
+   */
+  function bindBurgerMenu() {
+    var btn = $('sn-burger-btn');
+    var panel = $('sn-burger-panel');
+    if (!btn || !panel || btn._snBurger) return;
+    btn._snBurger = true;
+
+    var SECTIONS = [
+      {
+        title: 'Navigate',
+        items: [
+          { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
+          { e: '🌍', t: 'Full Earth', d: 'GLOBAL SPACENET', run: 'global' },
+          { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
+          { e: '🏛', t: 'Fly Rhodes', d: 'Island focus', run: 'fly rhodes' },
+        ],
+      },
+      {
+        title: 'Marketplace',
+        items: [
+          { e: '🏪', t: 'Shops', d: 'Vendor tiles near focus', run: 'shops' },
+          { e: '🍕', t: 'Pizza', d: 'Find · tile · next', run: 'pizza' },
+          { e: '⏭', t: 'Next vendor', d: 'Carousel next', run: 'next' },
+          { e: '▦', t: 'Show all', d: 'All vendors on map', run: 'show all' },
+          { e: '📦', t: 'Task list', d: 'Jobs · deliveries', run: 'task list' },
+        ],
+      },
+      {
+        title: 'Mesh & tools',
+        items: [
+          { e: '⚡', t: 'Resources', d: 'CPU · mine status', run: 'resources' },
+          { e: '⛏', t: 'Mine on', d: 'Earn S from spare', run: 'mine on' },
+          { e: '🧠', t: 'Free mind', d: 'SpaceNet Free AI status', run: 'free mind' },
+          { e: '📡', t: 'Sim-33 LIVE', d: 'Rhodes swarm', run: 'sim live' },
+          { e: '■', t: 'Sim stop', d: 'Halt swarm', run: 'sim stop' },
+          { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },
+          { e: '❓', t: 'Help', d: 'Commands', run: 'help' },
+        ],
+      },
+    ];
+
+    function close() {
+      panel.classList.remove('open');
+      panel.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    }
+
+    function open() {
+      // Close competing flyouts
+      try {
+        if (typeof closeRibbonFlyout === 'function') closeRibbonFlyout();
+      } catch (e) {}
+      var h =
+        '<div class="sn-bg-head">☰ SpaceNet</div>' +
+        '<div class="sn-bg-note">Finance · tap top-right S · not here</div>';
+      var si, ii;
+      for (si = 0; si < SECTIONS.length; si++) {
+        var sec = SECTIONS[si];
+        h += '<div class="sn-bg-sec">' + sec.title + '</div>';
+        for (ii = 0; ii < sec.items.length; ii++) {
+          var it = sec.items[ii];
+          h +=
+            '<button type="button" class="sn-bg-item" role="menuitem" data-run="' +
+            String(it.run).replace(/"/g, '') +
+            '">' +
+            '<span>' +
+            (it.e || '') +
+            ' ' +
+            (it.t || '') +
+            '</span>' +
+            (it.d ? '<span class="d">' + it.d + '</span>' : '') +
+            '</button>';
+        }
+      }
+      panel.innerHTML = h;
+      panel.hidden = false;
+      panel.classList.add('open');
+      btn.setAttribute('aria-expanded', 'true');
+      panel.querySelectorAll('[data-run]').forEach(function (b) {
+        b.onclick = function (ev) {
+          if (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+          }
+          var cmd = b.getAttribute('data-run');
+          close();
+          if (cmd && g.SNCli && SNCli.run) void SNCli.run(cmd);
+        };
+      });
+    }
+
+    function toggle(ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      if (panel.classList.contains('open')) close();
+      else open();
+    }
+
+    btn.addEventListener('click', toggle, true);
+    document.addEventListener(
+      'click',
+      function (ev) {
+        if (!panel.classList.contains('open')) return;
+        var t = ev.target;
+        if (t === btn || btn.contains(t) || t === panel || panel.contains(t)) return;
+        close();
+      },
+      true
+    );
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && panel.classList.contains('open')) close();
+    });
   }
 
   g.SNField = {

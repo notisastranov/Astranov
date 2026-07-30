@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260730210000-no-finance-ribbon" />
-<meta name="astranov-continuity" content="20260730210000-no-finance-ribbon" />
+<meta name="astranov-build" content="20260730220000-burger-under-radar" />
+<meta name="astranov-continuity" content="20260730220000-burger-under-radar" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -130,6 +130,44 @@
   #field-radar-legend b.c { color: #ff5566; }
   #field-radar-legend b.v { color: #ffcc44; }
   #field-radar-legend b.r { color: #00dcff; }
+
+  /* Burger menu — under radar (top-left). Extensive secondary menu (SPECS). Not CLI ribbon. */
+  #sn-burger-btn {
+    position: fixed; top: 136px; left: 10px; z-index: 91;
+    width: 44px; height: 44px; border-radius: 12px; pointer-events: auto; cursor: pointer;
+    border: 1px solid rgba(61,158,255,.5); background: rgba(0,10,24,.9);
+    color: #c8e4ff; font: 700 20px/1 system-ui; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.45), 0 0 12px rgba(26,111,212,.2);
+  }
+  #sn-burger-btn:hover, #sn-burger-btn[aria-expanded="true"] {
+    border-color: #3d9eff; box-shadow: 0 0 16px rgba(61,158,255,.35);
+  }
+  #sn-burger-panel {
+    display: none; position: fixed; top: 188px; left: 10px; z-index: 92;
+    width: min(280px, calc(100vw - 20px)); max-height: min(58vh, 420px); overflow: auto;
+    padding: 8px; border-radius: 14px; pointer-events: auto;
+    background: rgba(0,8,18,.96); border: 1px solid rgba(61,158,255,.5);
+    box-shadow: 0 12px 36px rgba(0,0,0,.65), 0 0 18px rgba(26,111,212,.2);
+    color: #c8e4ff; font: 12px/1.35 system-ui, sans-serif;
+  }
+  #sn-burger-panel.open { display: block; }
+  #sn-burger-panel .sn-bg-head {
+    font: 700 10px system-ui; letter-spacing: .12em; text-transform: uppercase;
+    color: #3d9eff; padding: 4px 8px 8px; border-bottom: 1px solid rgba(26,111,212,.28); margin-bottom: 4px;
+  }
+  #sn-burger-panel .sn-bg-sec {
+    font: 700 9px system-ui; letter-spacing: .1em; text-transform: uppercase;
+    color: #6a9cc8; padding: 10px 8px 4px;
+  }
+  #sn-burger-panel button.sn-bg-item {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%;
+    text-align: left; margin: 2px 0; padding: 8px 10px; border-radius: 10px; cursor: pointer;
+    border: 1px solid rgba(26,111,212,.28); background: rgba(0,16,36,.75); color: #e0f0ff;
+    font: 600 13px system-ui;
+  }
+  #sn-burger-panel button.sn-bg-item:hover { border-color: rgba(61,158,255,.55); background: rgba(0,28,56,.9); }
+  #sn-burger-panel button.sn-bg-item span.d { font: 400 10px system-ui; color: #7a9ab8; }
+  #sn-burger-panel .sn-bg-note { font-size: 10px; color: #6a8aaa; padding: 8px 8px 4px; }
 
   /* CLI top ribbon — big emoji + text, ALWAYS all 6 keys visible (wrap on narrow) */
   #sn-task-ribbon {
@@ -324,6 +362,8 @@
     #field-balance-hud { min-width: 96px; padding: 8px 10px; }
     #fbh-s { font-size: 14px; }
     #field-radar { width: 96px; height: 96px; }
+    #sn-burger-btn { top: 112px; width: 40px; height: 40px; }
+    #sn-burger-panel { top: 160px; }
     #btn-home { font-size: 11px; padding: 7px 12px; max-width: min(220px, 56vw);
       overflow: hidden; text-overflow: ellipsis; }
     #sn-task-ribbon { max-height: 64px; padding: 6px 8px; }
@@ -363,6 +403,10 @@
   <p id="fsh-mode-title">Earth rotation</p>
   <p id="fsh-explain"></p>
 </div>
+
+<!-- Extensive secondary menu under radar (not CLI ribbon) -->
+<button type="button" id="sn-burger-btn" title="SpaceNet menu" aria-label="SpaceNet menu" aria-expanded="false" aria-controls="sn-burger-panel">☰</button>
+<div id="sn-burger-panel" role="menu" aria-label="SpaceNet extended menu" hidden></div>
 
 <button type="button" id="btn-home" title="Astranov SpaceNet · full Earth GLOBAL">Astranov SpaceNet</button>
 
@@ -443,7 +487,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260730210000-no-finance-ribbon"></script>
+<script src="/js/spacenet/boot.js?v=20260730220000-burger-under-radar"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
