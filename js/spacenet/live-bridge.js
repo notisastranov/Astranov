@@ -33,12 +33,10 @@
     var op = String(cmd.op).toLowerCase();
     log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : '') + (cmd.text ? ' ' + cmd.text : ''), 'cmd');
     try {
-      if ((op === 'day_start' || op === 'sim_start') && global.SNDriverDay) {
-        SNDriverDay.start();
-      } else if ((op === 'day_stop' || op === 'sim_stop') && global.SNDriverDay) {
-        SNDriverDay.stop();
-      } else if (op === 'sim_cmd' && global.SNDriverDay && SNDriverDay.cmd) {
-        void SNDriverDay.cmd(cmd.text || cmd.line || '');
+      if (op === 'sim_task' && global.SNTaskBoard && SNTaskBoard.simTask) {
+        void SNTaskBoard.simTask(cmd.id || null);
+      } else if (op === 'task_fit' && global.SNTaskBoard && SNTaskBoard.listCompatibleOnCli) {
+        SNTaskBoard.listCompatibleOnCli();
       } else if (op === 'cli' && global.SNCli && SNCli.run) {
         void SNCli.run(String(cmd.text || cmd.cmd || ''));
       } else if (op === 'credit_fee' && global.SNCurrency && SNCurrency.notePlatformFee) {

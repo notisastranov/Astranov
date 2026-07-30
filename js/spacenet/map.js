@@ -1027,30 +1027,55 @@
   function showTasks() {
     if (!M.map) return;
     clearGroup(M.markers);
-    const tasks = global.SNTasks?.list?.() || [];
+    const tasks = global.SNTasks?.list?.({ all: true }) || global.SNTasks?.list?.() || [];
     tasks.forEach((t) => {
-      if (t.lat == null) return;
+      if (!t || t.lat == null) return;
+      if (t.status === 'done') return;
+      const en = global.SNTaskBoard?.enrich?.(t);
+      const price =
+        en && en.price != null
+          ? global.SNCurrency
+            ? SNCurrency.format(en.price)
+            : en.price.toFixed(2) + ' S'
+          : '';
       const color = (global.SNTasks?.KINDS?.[t.kind] || {}).color;
       const hex =
-        typeof color === 'number' ? '#' + color.toString(16).padStart(6, '0') : '#6dffb0';
+        typeof color === 'number' ? '#' + color.toString(16).padStart(6, '0') : '#1a6fd4';
       const m = L.circleMarker([t.lat, t.lng], {
-        radius: 7,
+        radius: 8,
         color: hex,
         fillColor: hex,
-        fillOpacity: 0.85,
-        weight: 1,
+        fillOpacity: 0.9,
+        weight: 2,
       })
         .addTo(M.map)
         .bindPopup(
-          '<b>' +
+          '<div style="min-width:160px">' +
+            (price
+              ? '<div style="font:800 20px ui-monospace,system-ui;color:#1a6fd4;text-shadow:0 0 10px rgba(26,111,212,.9)">' +
+                escapeHtml(price) +
+                '</div>'
+              : '') +
+            '<b>' +
             escapeHtml(t.title) +
             '</b><br/>' +
-            t.kind +
-            ' · ' +
-            t.dur +
-            '<br/><button type="button" class="sn-pop-btn" data-task="' +
+            (en
+              ? '<span style="color:#8ab4d0;font-size:11px">Vendor · ' +
+                escapeHtml(en.vendorName) +
+                '<br/>' +
+                escapeHtml(en.vendorAddress) +
+                '<br/>Client · ' +
+                escapeHtml(en.clientName) +
+                '<br/>' +
+                escapeHtml(en.clientAddress) +
+                '</span><br/>'
+              : '') +
+            '<button type="button" class="sn-pop-btn" data-task-open="' +
             escapeHtml(t.id) +
-            '">Claim</button>'
+            '">Open task</button> ' +
+            '<button type="button" class="sn-pop-btn" data-task="' +
+            escapeHtml(t.id) +
+            '">Claim</button></div>'
         );
       m.on('click', (e) => {
         markMarkerHit();
@@ -1058,13 +1083,25 @@
           L.DomEvent.stopPropagation(e);
           if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
         } catch (_) {}
+        try {
+          if (global.SNTaskBoard?.openTaskTile) global.SNTaskBoard.openTaskTile(t);
+        } catch (_) {}
       });
       m.on('popupopen', () => {
         document.querySelectorAll('[data-task="' + t.id + '"]').forEach((btn) => {
           btn.onclick = (ev) => {
             ev?.stopPropagation?.();
             const r = global.SNTasks?.claim?.(t.id);
-            if (r?.ok) global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
+            if (r?.ok) {
+              global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
+              void global.SNTaskBoard?.previewTaskOnMap?.(r.task, { fit: true, force: true });
+            }
+          };
+        });
+        document.querySelectorAll('[data-task-open="' + t.id + '"]').forEach((btn) => {
+          btn.onclick = (ev) => {
+            ev?.stopPropagation?.();
+            global.SNTaskBoard?.openTaskTile?.(t);
           };
         });
       });

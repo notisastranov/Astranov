@@ -45,7 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('SIM   sim on|off · then dictate: wake · coffee · work · claim · deliver · date', 'ok');
+    log('TASK  task list · task open · task fit · sim task · advise · claim · deliver', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -122,71 +122,50 @@
         dumpBrain('summary');
         return;
       }
-      // Real sim mode — YOU dictate (wake · coffee · work · claim · deliver · date)
+      // Real use: task board · route-compatible jobs · optional sim one route
       if (
-        low === 'sim' ||
-        low === 'sim toggle' ||
-        low === 'sim start' ||
-        low === 'sim stop' ||
-        low === 'sim on' ||
-        low === 'sim off' ||
-        low === 'sim live' ||
-        low === 'day' ||
-        low === 'day start' ||
-        low === 'day stop' ||
-        low === 'driver day'
+        low === 'sim task' ||
+        /^sim\s+task\b/.test(low) ||
+        low === 'sim route' ||
+        low === 'drive task'
       ) {
-        const Day = global.SNDriverDay || global.SNSim;
-        if (!Day) {
-          log('Sim loading · hard refresh', 'err');
-          return;
-        }
-        if (low === 'sim stop' || low === 'sim off' || low === 'day stop') {
-          Day.stop();
-          return;
-        }
-        if (
-          low === 'sim start' ||
-          low === 'sim on' ||
-          low === 'sim live' ||
-          low === 'day' ||
-          low === 'day start' ||
-          low === 'driver day'
-        ) {
-          Day.start();
-          return;
-        }
-        if (Day.running) Day.stop();
-        else Day.start();
+        const id = line.replace(/^(sim\s+task|sim\s+route|drive\s+task)\s*/i, '').trim();
+        if (global.SNTaskBoard?.simTask) await SNTaskBoard.simTask(id || null);
+        else log('Task board loading · hard refresh', 'err');
         return;
       }
-      if (low === 'day status' || low === 'sim status') {
-        const st = global.SNDriverDay?.status?.() || {};
-        log(
-          'Sim · ' +
-            (st.running || st.mode === 'on' ? 'ON' : 'OFF') +
-            ' · phase ' +
-            (st.phase || '—') +
-            ' · dictate: ' +
-            (st.dictate || 'wake coffee work claim deliver date'),
-          st.running || st.mode === 'on' ? 'ok' : 'dim'
-        );
+      if (low === 'task fit' || low === 'tasks fit' || low === 'compatible' || low === 'fit tasks') {
+        if (global.SNTaskBoard?.listCompatibleOnCli) SNTaskBoard.listCompatibleOnCli();
+        else log('Task board loading · hard refresh', 'err');
         return;
       }
-      // Dictation verbs (real paths) — work when sim on, or auto-arm sim
-      if (
-        /^(wake|morning|coffee|espresso|freddo|work|shift|jobs?|claim|deliver|complete|arrive|drop|offline|end\s*shift|date|dating|evening|sim\s*help|help\s*sim)\b/i.test(
-          low
-        )
-      ) {
-        if (global.SNDriverDay?.cmd) {
-          const r = await SNDriverDay.cmd(line);
-          if (r && r.unknown) {
-            /* fall through */
-          } else {
-            return;
-          }
-        }
+      if (low === 'advise' || low === 'traffic' || low === 'scan advise') {
+        if (global.SNTaskBoard?.adviseScan) SNTaskBoard.adviseScan();
+        else log('Advise offline', 'dim');
+        return;
+      }
+      if (/^task\s+open\b|^open\s+task\b/.test(low)) {
+        const id = line.replace(/^(task\s+open|open\s+task)\s*/i, '').trim();
+        const open = Tasks?.list?.({ all: true }) || [];
+        const t =
+          (id && open.find((x) => x.id === id || String(x.title || '').toLowerCase().includes(id.toLowerCase()))) ||
+          open[0];
+        if (t && global.SNTaskBoard?.openTaskTile) SNTaskBoard.openTaskTile(t);
+        else log('No task · task list', 'dim');
+        return;
+      }
+      if (low === 'task map' || low === 'tasks map' || low === 'preview tasks') {
+        const open = Tasks?.list?.({ all: true }) || [];
+        const t =
+          open.find((x) => x.status === 'claimed' || x.status === 'in_progress') || open[0];
+        if (t && global.SNTaskBoard?.previewTaskOnMap)
+          await SNTaskBoard.previewTaskOnMap(t, { fit: true, force: true });
+        else log('No tasks to preview', 'dim');
+        return;
+      }
+      if (/^sim\b/.test(low) && !/^sim\s+task/.test(low)) {
+        log('Demo sim removed · real use on CLI · sim task [id] to train one route', 'dim');
+        return;
       }
       if (low === 'super' || low === 'fleet' || low === 'super deck') {
         if (global.SNSuper && SNSuper.show) SNSuper.show();

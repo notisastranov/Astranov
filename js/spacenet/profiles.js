@@ -423,6 +423,19 @@
       always_on: true,
       vendorId,
       clientId: client.id,
+      vendorName: vendor?.shopName || vendor?.name || null,
+      clientName: client?.name || null,
+      vendorAddress:
+        vendor?.address ||
+        vendor?.shopAddress ||
+        (vendor?.lat != null
+          ? Number(vendor.lat).toFixed(4) + '°, ' + Number(vendor.lng).toFixed(4) + '°'
+          : null),
+      clientAddress:
+        client?.address ||
+        (drop.lat != null
+          ? Number(drop.lat).toFixed(4) + '°, ' + Number(drop.lng).toFixed(4) + '°'
+          : null),
       items,
       total_s: total,
       platform_fee_s: platformFee,

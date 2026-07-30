@@ -297,7 +297,8 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **SpaceNet Free** | **Own free public AI** (`SNFreeMind`) — law seeds + user teach + learn-from-use. **No paid xAI required** for chat. Not a fork of proprietary Grok weights. | Required |
 | **AI free-first** | Chat uses **free mind first**. Cloud/paid edge only for explicit code modes or `forceEdge`. | Required |
 | **AI grow** | Users help grow Free: `teach Q => A` · `free export` trainset for future open fine-tunes | Required |
-| **Real sim (CLI-dictated)** | Burger **Sim start/stop** arms mode. Owner types: `wake` · `coffee` · `work` · `claim` · `deliver` · `date`. Real orders/routes/fees. No auto script. No 33-swarm. | Required |
+| **No demo sim** | **Deleted** multi-agent / driver-day demo. Real use via CLI. Optional **`sim task`** drives one real route for training only. | Hard ban |
+| **Task multi-tile** | Glowing **deep blue price (S)** · below: **vendor name+address** · **client name+address**. Map shows **all my task routes** · center/zoom preview. System ranks open tasks by **route compatibility**. | Required |
 | **Training surface** | Default view = **Rodos city map** (Leaflet). CLI switches: `rodos` · `fly <city>` · `global` / `globe` for full Earth. | Required |
 | **AI** | `SNAi` freeform acts (locate/shops/food/fly/go + marketplace carousel) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |

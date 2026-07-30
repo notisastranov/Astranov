@@ -7,9 +7,11 @@
   const T = {
     open: false,
     profileId: null,
-    tab: 'about', // about | menu | dating | drive | social | cart
+    tab: 'about', // about | menu | dating | drive | social | cart | task
     /** Visual scale of card (pinch / wheel) — 0.55–1.35 */
     scale: 0.78,
+    /** SNTaskBoard enrich payload when showing a delivery task multi-tile */
+    taskBoard: null,
   };
   const SIZE_KEY = 'sn:tile-scale-v1';
 
@@ -344,29 +346,42 @@
 
   function open(profileOrId, opts) {
     ensureDom();
+    opts = opts || {};
+    T.taskBoard = opts.taskBoard || null;
     const Prof = global.SNProfiles;
-    if (!Prof) {
+    if (!Prof && !T.taskBoard) {
       global.SNCli?.log?.('Profiles offline', 'err');
       return null;
     }
     let p =
       typeof profileOrId === 'string'
-        ? Prof.get(profileOrId)
+        ? Prof?.get?.(profileOrId)
         : profileOrId && profileOrId.id
-          ? Prof.get(profileOrId.id) || profileOrId
+          ? Prof?.get?.(profileOrId.id) || profileOrId
           : null;
-    if (!p) p = Prof.me();
+    if (!p && T.taskBoard) {
+      p = {
+        id: 'task:' + T.taskBoard.task.id,
+        name: T.taskBoard.task.title || 'Task',
+        handle: '@task',
+        bio: 'Delivery task',
+        roles: { driver: true },
+        lat: T.taskBoard.pickup && T.taskBoard.pickup.lat,
+        lng: T.taskBoard.pickup && T.taskBoard.pickup.lng,
+      };
+    }
+    if (!p) p = Prof?.me?.();
     if (!p || !p.id) {
       global.SNCli?.log?.('No tile profile', 'err');
       return null;
     }
-    // Keep map registry in sync so re-open works
     try {
-      if (Prof.upsert && profileOrId && typeof profileOrId === 'object') Prof.upsert(p);
+      if (Prof?.upsert && profileOrId && typeof profileOrId === 'object' && !T.taskBoard)
+        Prof.upsert(p);
     } catch (_) {}
     T.profileId = p.id;
     T.open = true;
-    T.tab = (opts && opts.tab) || defaultTab(p);
+    T.tab = T.taskBoard ? 'task' : opts.tab || defaultTab(p);
     const root = $('sn-tile');
     if (!root) return null;
     root.classList.add('open');
@@ -374,10 +389,41 @@
     root.style.display = 'flex';
     applyScale();
     render();
-    global.SNCli?.log?.('Tile · ' + (p.name || p.id) + ' · − / + or pinch to resize', 'ok');
-    global.SNCli?.preview?.((p.name || 'Tile') + ' · − + size');
-    global.SNUi?.expandPanel?.(false);
+    global.SNCli?.log?.(
+      'Tile · ' + (p.name || p.id) + (T.taskBoard ? ' · task' : ''),
+      'ok'
+    );
+    global.SNCli?.preview?.((p.name || 'Tile') + (T.taskBoard ? ' · task' : ''));
     return p;
+  }
+
+  /** Delivery / work task multi-tile — price glow + vendor/client addresses */
+  function openTask(enriched) {
+    if (!enriched || !enriched.task) {
+      if (global.SNTaskBoard && SNTaskBoard.openTaskTile) return SNTaskBoard.openTaskTile(enriched);
+      return null;
+    }
+    ensureDom();
+    T.taskBoard = enriched;
+    T.profileId = 'task:' + enriched.task.id;
+    T.open = true;
+    T.tab = 'task';
+    const root = $('sn-tile');
+    if (!root) return null;
+    root.classList.add('open');
+    root.setAttribute('aria-hidden', 'false');
+    root.style.display = 'flex';
+    applyScale();
+    render();
+    global.SNCli?.log?.('Task tile · ' + String(enriched.task.title || '').slice(0, 40), 'ok');
+    global.SNCli?.preview?.(
+      (enriched.price != null
+        ? global.SNCurrency
+          ? SNCurrency.format(enriched.price)
+          : enriched.price + ' S'
+        : 'Task') + ' · map preview'
+    );
+    return enriched;
   }
 
   function defaultTab(p) {
@@ -390,6 +436,7 @@
 
   function close() {
     T.open = false;
+    T.taskBoard = null;
     const root = $('sn-tile');
     if (root) {
       root.classList.remove('open');
@@ -405,6 +452,11 @@
 
   function render() {
     const Prof = global.SNProfiles;
+    // Task multi-tile (delivery board)
+    if (T.tab === 'task' && T.taskBoard) {
+      renderTaskBoard(T.taskBoard);
+      return;
+    }
     const p = Prof?.get?.(T.profileId) || Prof?.me?.();
     if (!p) return;
     T.profileId = p.id;
@@ -683,6 +735,68 @@
     });
   }
 
+  function renderTaskBoard(e) {
+    if (!e || !e.task) return;
+    const body = $('sn-tile-body');
+    const foot = $('sn-tile-foot');
+    const nameEl = $('sn-tile-name');
+    const handle = $('sn-tile-handle');
+    const roles = $('sn-tile-roles');
+    if (nameEl) nameEl.textContent = e.task.title || 'Task';
+    if (handle) handle.textContent = (e.task.status || 'open') + ' · ' + (e.task.kind || 'delivery');
+    if (roles) roles.innerHTML = '<span class="sn-role on">TASK</span>';
+    const priceBlock =
+      global.SNTaskBoard && SNTaskBoard.priceHtml
+        ? SNTaskBoard.priceHtml(e.price)
+        : '<span class="sn-task-price">' +
+          (e.price != null ? Number(e.price).toFixed(2) + ' S' : '— S') +
+          '</span>';
+    if (body) {
+      body.innerHTML =
+        priceBlock +
+        '<div class="sn-task-party"><div class="lbl">Vendor</div><b>' +
+        esc(e.vendorName) +
+        '</b><span>' +
+        esc(e.vendorAddress) +
+        '</span></div>' +
+        '<div class="sn-task-party"><div class="lbl">Client</div><b>' +
+        esc(e.clientName) +
+        '</b><span>' +
+        esc(e.clientAddress) +
+        '</span></div>' +
+        '<p style="font-size:11px;color:#6a8aaa;margin:0">All your task routes stay on the map · arrange multi-stops</p>';
+    }
+    if (foot) {
+      foot.innerHTML =
+        '<div class="sn-task-actions">' +
+        '<button type="button" class="sn-btn primary" data-tact="preview">Map routes</button>' +
+        '<button type="button" class="sn-btn" data-tact="claim">Claim</button>' +
+        '<button type="button" class="sn-btn" data-tact="sim">Sim drive</button>' +
+        '<button type="button" class="sn-btn" data-tact="close">Close</button>' +
+        '</div>';
+      foot.querySelectorAll('[data-tact]').forEach((btn) => {
+        btn.onclick = (ev) => {
+          ev?.preventDefault?.();
+          const a = btn.getAttribute('data-tact');
+          if (a === 'close') close();
+          else if (a === 'preview') {
+            void global.SNTaskBoard?.previewTaskOnMap?.(e.task, { fit: true, force: true });
+          } else if (a === 'claim') {
+            const r = global.SNTasks?.claim?.(e.task.id);
+            if (r?.ok) {
+              global.SNCli?.log?.('Claimed · ' + r.task.title, 'ok');
+              T.taskBoard = global.SNTaskBoard?.enrich?.(r.task) || e;
+              render();
+              void global.SNTaskBoard?.previewTaskOnMap?.(r.task, { fit: true, force: true });
+            }
+          } else if (a === 'sim') {
+            void global.SNTaskBoard?.simTask?.(e.task.id);
+          }
+        };
+      });
+    }
+  }
+
   async function act(name, p) {
     const Prof = global.SNProfiles;
     if (name === 'fly') {
@@ -896,6 +1010,7 @@
     init,
     open,
     openMe,
+    openTask,
     createAt,
     close,
     toggle,

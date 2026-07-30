@@ -108,6 +108,10 @@
       created: Date.now(),
       vendorId: p.vendorId || null,
       clientId: p.clientId || null,
+      vendorName: p.vendorName || null,
+      clientName: p.clientName || null,
+      vendorAddress: p.vendorAddress || null,
+      clientAddress: p.clientAddress || null,
       items: p.items || null,
       total_s: p.total_s != null ? p.total_s : null,
       platform_fee_s: p.platform_fee_s != null ? p.platform_fee_s : null,
@@ -118,10 +122,20 @@
       targetId: p.targetId || null,
       targetName: p.targetName || null,
     };
+    // Prefer route-compatible placement when creating open deliveries (score for drivers later)
+    try {
+      if (task.kind === 'delivery' && global.SNTaskBoard && SNTaskBoard.scoreCompatibility) {
+        task._routeFit = SNTaskBoard.scoreCompatibility(task);
+      }
+    } catch (_) {}
     T.tasks.set(task.id, task);
     save();
     paint(task);
     return task;
+  }
+
+  function get(taskId) {
+    return taskId ? T.tasks.get(taskId) || null : null;
   }
 
   function paint(task) {
@@ -141,6 +155,20 @@
     if (filter?.dating) arr = arr.filter((t) => t.kind === 'dating');
     if (filter?.jobs) arr = arr.filter((t) => t.kind === 'job');
     if (filter?.status) arr = arr.filter((t) => t.status === filter.status);
+    // Prefer route-compatible open deliveries first when requested
+    if (filter?.compatible && global.SNTaskBoard?.scoreCompatibility) {
+      arr = arr
+        .map((t) => {
+          try {
+            t._routeFit = SNTaskBoard.scoreCompatibility(t);
+          } catch (_) {
+            t._routeFit = 0;
+          }
+          return t;
+        })
+        .sort((a, b) => (b._routeFit || 0) - (a._routeFit || 0) || b.created - a.created);
+      return arr;
+    }
     return arr.sort((a, b) => b.created - a.created);
   }
 
@@ -203,6 +231,7 @@
 
   global.SNTasks = {
     create,
+    get,
     list,
     claim,
     complete,
