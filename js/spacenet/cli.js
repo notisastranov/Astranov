@@ -128,17 +128,43 @@
         dumpBrain('verify');
         return;
       }
-      // Food juice: "pizza" → locate → find → menus → order → driver
+      // next / show all / prev → AI vendor carousel (globe + tile)
+      if (
+        /^(next|επόμεν|επομεν|άλλο|αλλο|another|next\s*one|n|prev|previous|back|show\s*all|all|όλα|ολα|όλοι|ολοι)$/i.test(
+          low
+        ) ||
+        low === '>>' ||
+        low === '<<'
+      ) {
+        if (global.SNAi?.ask) {
+          const reply = await SNAi.ask(line);
+          if (reply) {
+            log(reply, 'ok');
+            preview(String(reply).slice(0, 80));
+          }
+        } else log('AI loading · hard refresh', 'err');
+        return;
+      }
+      // Food: listen → find → fly/zoom · open tile · next | show all (AI path)
       if (
         global.SNMarket?.parseFoodIntent?.(line) &&
         !/^(list\s+shop|menu\s+add|order\s+me|drive\s+on|first\s+delivery)/i.test(low)
       ) {
-        const fi = global.SNMarket.parseFoodIntent(line);
-        log('Food juice · ' + fi.food + ' · locate → find → judge → order → driver…', 'dim');
-        preview(fi.food);
-        const r = await global.SNMarket.fulfillFoodIntent(fi, { autoOrder: true });
-        if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
-        else log(r?.error || 'food path failed', 'err');
+        if (global.SNAi?.ask) {
+          const reply = await SNAi.ask(line);
+          if (reply) {
+            log(reply, 'ok');
+            preview(String(reply).slice(0, 80));
+            try {
+              if (handsfreeOn && hfSpeakOut && reply) speakAi(reply);
+            } catch (_) {}
+          }
+        } else {
+          const fi = global.SNMarket.parseFoodIntent(line);
+          const r = await global.SNMarket.fulfillFoodIntent(fi, { autoOrder: false, quiet: true });
+          if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+          else log(r?.error || 'food path failed', 'err');
+        }
         return;
       }
       // First marketplace loop + usage (SpaceNet coaches the same path)
@@ -802,28 +828,21 @@
         return;
       }
       if (low === 'shops' || low === 'vendors' || low === 'stores') {
+        // AI presents first vendor on globe + tile; next / show all continue
+        if (global.SNAi?.ask) {
+          const reply = await SNAi.ask(line);
+          if (reply) {
+            log(reply, 'ok');
+            preview(String(reply).slice(0, 80));
+          }
+          return;
+        }
         const p = Tasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
         Globe?.goToTier?.('city');
         const r = await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
-        vendors.slice(0, 12).forEach((v) => {
-          log(
-            '🏪 ' +
-              (v.shopName || v.name) +
-              ' · ' +
-              (v.menu?.length || 0) +
-              ' menu' +
-              (v.real ? ' · live' : ''),
-            'ok'
-          );
-        });
         const n = vendors.length || r?.count || 0;
-        log(
-          n
-            ? n + ' shop tiles · tap target · Menu · + · Order (S) · source ' + (r?.source || 'live')
-            : 'No shops · try fly another city · or crawl restaurants',
-          n ? 'ok' : 'dim'
-        );
+        log(n ? n + ' shops · tap target' : 'No shops near focus', n ? 'ok' : 'dim');
         if (vendors[0]) global.SNTile?.open?.(vendors[0], { tab: 'menu' });
         preview(n + ' shops');
         return;
@@ -1177,11 +1196,7 @@
     btns.forEach((btn) => {
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.title = on
-        ? hfSpeakOut
-          ? 'SpaceNet listen + speak ON · tap AI to stop'
-          : 'SpaceNet listening (silent) · tap AI to stop'
-        : 'Hands-free listen (silent) · tap again to stop';
+      btn.title = on ? 'SPACENET LISTENING · tap AI to stop' : 'AI · SPACENET LISTENING';
     });
     if (label) preview(label);
   }
@@ -1330,7 +1345,7 @@
       }
       try {
         speechRec.start();
-        setHandsfreeUi(true, '🎙 listening…');
+        setHandsfreeUi(true, 'SPACENET LISTENING');
       } catch (_) {
         /* already started */
       }
@@ -1388,17 +1403,38 @@
   function toggleHandsfree() {
     const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
     if (handsfreeOn) {
-      stopHandsfree('Hands-free off');
-      log('Hands-free off', 'dim');
+      stopHandsfree('SPACENET OFF');
+      try {
+        if (global.SNAi && SNAi.listeningOff) SNAi.listeningOff();
+        else {
+          log('SPACENET OFF', 'dim');
+          preview('SPACENET OFF');
+          global.SNGlobe?.setHud?.('SPACENET OFF');
+        }
+      } catch (_) {
+        log('SPACENET OFF', 'dim');
+      }
       return;
     }
+    // Always brief greet first — LISTEN priority (even if mic fails)
+    try {
+      if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
+      else {
+        log('SPACENET LISTENING', 'ok');
+        preview('SPACENET LISTENING');
+        global.SNGlobe?.setHud?.('SPACENET LISTENING');
+      }
+    } catch (_) {
+      log('SPACENET LISTENING', 'ok');
+      preview('SPACENET LISTENING');
+    }
     if (!global.isSecureContext && location.hostname !== 'localhost') {
-      log('Hands-free needs HTTPS · open https://astranov.eu', 'err');
+      log('Mic needs HTTPS · type pizza · shops · next', 'dim');
       return;
     }
     if (!SR) {
-      log('Hands-free needs Chrome/Edge speech · type to AI instead', 'err');
-      preview('No speech API');
+      log('Type pizza · shops · next · show all', 'dim');
+      preview('SPACENET LISTENING');
       return;
     }
 
@@ -1422,7 +1458,7 @@
     speechRec.maxAlternatives = 1;
 
     speechRec.onstart = () => {
-      setHandsfreeUi(true, '🎙 listening…');
+      setHandsfreeUi(true, 'SPACENET LISTENING');
     };
 
     speechRec.onresult = (ev) => {
@@ -1448,12 +1484,12 @@
         void (async () => {
           try {
             await run(t);
-            // Speak reply only if user turned voice on
+            // Speak brief reply only if user turned voice on
             if (hfSpeakOut) {
               const hist = global.SNAi?.history;
               const last = hist && hist[hist.length - 1];
               if (last && last.role === 'assistant') {
-                speakAi(String(last.content).slice(0, 220));
+                speakAi(String(last.content).slice(0, 120));
               }
             }
           } catch (e) {
@@ -1490,27 +1526,20 @@
 
     handsfreeOn = true;
     // Keep speak-out OFF unless user already said "voice on"
-    // Never auto-babble a greeting
     killSpeech();
     hfRunTimes = [];
     muteMic(800);
-    setHandsfreeUi(true, hfSpeakOut ? '🎧 listen + speak' : '🎧 listen (silent)');
+    setHandsfreeUi(true, 'SPACENET LISTENING');
     warmVoices();
     try {
       speechRec.start();
       try {
         if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: !!hfSpeakOut });
       } catch (_) {}
-      log(
-        hfSpeakOut
-          ? '🎧 Listening · voice replies ON · type voice off to silence'
-          : '🎧 Listening · silent (type voice on if you want spoken replies)',
-        'ok'
-      );
-      preview(hfSpeakOut ? 'Listening + speak' : 'Listening silent');
+      // Greeting already logged as SPACENET LISTENING
     } catch (e) {
-      stopHandsfree('Hands-free failed');
-      log('Hands-free start failed · ' + (e.message || e), 'err');
+      // Stay "listening" for typed CLI even if mic start fails
+      log('Mic soft-fail · type pizza · next · show all', 'dim');
     }
   }
 

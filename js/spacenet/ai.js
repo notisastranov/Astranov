@@ -1,7 +1,8 @@
 /**
  * SpaceNet AI — the mind of the net
  * Astranov = Architect of SpaceNet (human owner). AI is named SpaceNet only.
- * Speaks first, runs tasks, freeform CLI. Edge aicycle when up; local act always.
+ * Priority: LISTEN → ANALYZE → RESPOND brief · show on globe (fly/zoom + vendor tile).
+ * Vendor carousel: next · show all.
  */
 (function (global) {
   'use strict';
@@ -12,14 +13,266 @@
   var busy = false;
   var GREET_KEY = 'sn:ai-greeted-session';
   var AI_NAME = 'SpaceNet';
+  /** Vendor suggestion session: list + index for next / show all */
+  var suggest = { list: [], idx: 0, query: '' };
 
   function brandReply(text) {
     var t = String(text || '').trim();
     if (!t) return t;
     t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
     t = t.replace(/^astranov\s*[·:.-]\s*/i, '');
-    t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
+    t = t.replace(/^SPACENET\s*[·:.-]\s*/i, '');
+    // Keep all-caps status lines clean (SPACENET LISTENING)
+    if (/^SPACENET\b/i.test(t) && t === t.toUpperCase()) return t;
     return AI_NAME + ' · ' + t;
+  }
+
+  /** One short line — AI must not monologue */
+  function brief(text, maxLen) {
+    maxLen = maxLen || 88;
+    var t = String(text || '')
+      .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t) return '';
+    var cut = t.search(/[.!?\n]/);
+    if (cut > 12 && cut < maxLen) t = t.slice(0, cut + 1);
+    if (t.length > maxLen) t = t.slice(0, maxLen - 1).replace(/\s+\S*$/, '') + '…';
+    return t;
+  }
+
+  /** Always paint reply on globe HUD + CLI preview/notice */
+  function showOnGlobe(text) {
+    var t = brief(text, 72);
+    if (!t) return;
+    try {
+      if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud(t);
+    } catch (e) {}
+    try {
+      if (global.SNCli && SNCli.preview) SNCli.preview(t.slice(0, 90));
+    } catch (e2) {}
+    try {
+      if (global.SNField && SNField.setNotice) SNField.setNotice(t.slice(0, 48));
+    } catch (e3) {}
+  }
+
+  function setSuggestList(list, opts) {
+    opts = opts || {};
+    suggest.list = (list || []).filter(function (v) {
+      return v && v.lat != null && v.lng != null;
+    });
+    suggest.idx = Math.max(0, Math.min(opts.idx || 0, Math.max(0, suggest.list.length - 1)));
+    suggest.query = String(opts.query || suggest.query || '');
+    return suggest.list.length;
+  }
+
+  function vendorLabel(v) {
+    if (!v) return 'Shop';
+    return String(v.shopName || v.name || 'Shop').slice(0, 36);
+  }
+
+  /**
+   * Fly + zoom globe to vendor and open multi-tile.
+   * Response always brief on globe HUD.
+   */
+  function presentVendor(idx, opts) {
+    opts = opts || {};
+    var n = suggest.list.length;
+    if (!n) {
+      return { ok: false, reply: 'No vendors · say pizza or shops', did: [] };
+    }
+    var i = ((Number(idx) % n) + n) % n;
+    suggest.idx = i;
+    var v = suggest.list[i];
+    var name = vendorLabel(v);
+    var km =
+      v._km != null
+        ? Number(v._km).toFixed(1) + ' km'
+        : v.km != null
+          ? Number(v.km).toFixed(1) + ' km'
+          : '';
+    try {
+      if (opts.closeMap !== false && global.SNMap && SNMap.active && SNMap.close) {
+        try {
+          SNMap.close();
+        } catch (e0) {}
+      }
+    } catch (e1) {}
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace && v.lat != null) {
+        SNGlobe.goToPlace(v.lat, v.lng, {
+          tier: opts.tier || 'city',
+          body: 'earth',
+          pulse: false,
+          openMap: false,
+          label: name,
+        });
+      }
+    } catch (e2) {}
+    try {
+      if (global.SNTile && SNTile.open) SNTile.open(v, { tab: opts.tab || 'menu' });
+    } catch (e3) {}
+    try {
+      global._snLastPos = { lat: v.lat, lng: v.lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(v.lat, v.lng);
+    } catch (e4) {}
+    var reply =
+      i +
+      1 +
+      '/' +
+      n +
+      ' · ' +
+      name +
+      (km ? ' · ' + km : '') +
+      (n > 1 ? ' · next | show all' : '');
+    // goToPlace sets HUD — re-apply AI line after camera settles
+    setTimeout(function () {
+      showOnGlobe(reply);
+    }, 120);
+    showOnGlobe(reply);
+    return {
+      ok: true,
+      reply: reply,
+      did: ['vendor:' + (v.id || i), 'suggest'],
+      vendor: v,
+      idx: i,
+    };
+  }
+
+  function presentNext() {
+    if (!suggest.list.length) {
+      return { ok: false, reply: 'Nothing queued · say pizza or shops first', did: [] };
+    }
+    return presentVendor(suggest.idx + 1);
+  }
+
+  function presentPrev() {
+    if (!suggest.list.length) {
+      return { ok: false, reply: 'Nothing queued · say pizza or shops first', did: [] };
+    }
+    return presentVendor(suggest.idx - 1);
+  }
+
+  /** Pulse every vendor, fly to cluster center, open map marks */
+  function presentAll() {
+    var n = suggest.list.length;
+    if (!n) {
+      return { ok: false, reply: 'Nothing to show · say pizza or shops', did: [] };
+    }
+    var sumLat = 0;
+    var sumLng = 0;
+    var i;
+    for (i = 0; i < n; i++) {
+      sumLat += Number(suggest.list[i].lat);
+      sumLng += Number(suggest.list[i].lng);
+      try {
+        if (global.SNGlobe && SNGlobe.pulse) {
+          SNGlobe.pulse(
+            suggest.list[i].lat,
+            suggest.list[i].lng,
+            i === suggest.idx ? 0x44ffaa : 0x3d9eff,
+            vendorLabel(suggest.list[i]),
+            22000
+          );
+        }
+      } catch (e) {}
+    }
+    var cLat = sumLat / n;
+    var cLng = sumLng / n;
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(cLat, cLng, {
+          tier: n > 4 ? 'regional' : 'city',
+          body: 'earth',
+          pulse: false,
+          openMap: true,
+          label: n + ' vendors',
+        });
+      }
+    } catch (e2) {}
+    try {
+      if (global.SNMap && SNMap.open) {
+        void SNMap.open(cLat, cLng).then(function () {
+          try {
+            if (global.SNMap.showProfiles) SNMap.showProfiles();
+          } catch (e3) {}
+        });
+      }
+    } catch (e4) {}
+    var reply = n + ' vendors on map · next for one · tap tile';
+    setTimeout(function () {
+      showOnGlobe(reply);
+    }, 160);
+    showOnGlobe(reply);
+    return { ok: true, reply: reply, did: ['suggest:all', 'shops'], count: n };
+  }
+
+  /** Build vendor list near focus (shops / food without full order path) */
+  async function loadVendorsNear(query) {
+    var pos =
+      (global.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      global._snLastPos ||
+      (global.SNTasks && SNTasks.pos) ||
+      { lat: 36.4341, lng: 28.2176 };
+    try {
+      if (global.SNCommerce && SNCommerce.ensureSector) {
+        await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: false });
+      }
+    } catch (e) {}
+    var list = [];
+    try {
+      list = (global.SNProfiles && SNProfiles.list({ role: 'vendor' })) || [];
+    } catch (e2) {}
+    list = (list || []).filter(function (v) {
+      return v && v.lat != null && v.lng != null;
+    });
+    var q = String(query || '').toLowerCase();
+    if (q && q !== 'food' && q !== 'shops' && q !== 'vendors') {
+      var scored = list.map(function (v) {
+        var blob = ((v.shopName || '') + ' ' + (v.name || '') + ' ' + (v.shopKind || '')).toLowerCase();
+        var hit = blob.indexOf(q) >= 0 ? 20 : 0;
+        var km = 99;
+        try {
+          var R = 6371;
+          var dLat = ((v.lat - pos.lat) * Math.PI) / 180;
+          var dLng = ((v.lng - pos.lng) * Math.PI) / 180;
+          var x =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((pos.lat * Math.PI) / 180) *
+              Math.cos((v.lat * Math.PI) / 180) *
+              Math.sin(dLng / 2) *
+              Math.sin(dLng / 2);
+          km = 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+        } catch (e3) {}
+        return Object.assign({}, v, { _km: km, _score: hit + Math.max(0, 25 - km * 5) });
+      });
+      scored.sort(function (a, b) {
+        return (b._score || 0) - (a._score || 0);
+      });
+      list = scored;
+    } else {
+      list = list
+        .map(function (v) {
+          var km = 99;
+          try {
+            var R = 6371;
+            var dLat = ((v.lat - pos.lat) * Math.PI) / 180;
+            var dLng = ((v.lng - pos.lng) * Math.PI) / 180;
+            var x =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((pos.lat * Math.PI) / 180) *
+                Math.cos((v.lat * Math.PI) / 180) *
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+            km = 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+          } catch (e4) {}
+          return Object.assign({}, v, { _km: km });
+        })
+        .sort(function (a, b) {
+          return (a._km || 99) - (b._km || 99);
+        });
+    }
+    return list.slice(0, 12);
   }
 
   function loadHist() {
@@ -44,17 +297,12 @@
   }
 
   function say(text, cls) {
-    var t = String(text || '').trim();
+    var t = brief(text, 120);
     if (!t) return;
+    showOnGlobe(t);
     if (global.SNCli && SNCli.log) {
-      String(t)
-        .split('\n')
-        .forEach(function (ln) {
-          if (ln.trim()) SNCli.log(ln, cls || 'ok');
-        });
+      SNCli.log(t, cls || 'ok');
     }
-    if (global.SNCli && SNCli.preview) SNCli.preview(t.slice(0, 90));
-    if (global.SNField && SNField.setNotice) SNField.setNotice(t.slice(0, 48));
     if (global.SNUi && SNUi.expandPanel) {
       try {
         SNUi.expandPanel(true);
@@ -97,15 +345,13 @@
         focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are SPACENET — the AI of the SpaceNet platform (https://astranov.eu). ' +
-      'Astranov is the Architect of SpaceNet (human owner). You are SpaceNet, never call yourself Astranov. ' +
-      'Co-pilot for real actions. Match Greek or English. 2–5 short sentences + one next step. ' +
-      'GLOBE FOLLOWS YOU: when user wants a place/body, local code flies SNGlobe. ' +
-      'You may emit action tags the client executes: [[LOCATE]] [[GO:mars]] [[GO:athens]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
-      'Put tags at end of reply. Tags are stripped from speech. ' +
-      'FOOD JUICE: if user says pizza/sushi/coffee/φαγητό/etc, local code runs full path: ' +
-      'locate → find open places → vendor tiles menus prices in S → judge → order → assign driver. ' +
-      'FIRST LOOP: list shop → menu add → order me · or first delivery. ' +
+      'You are SPACENET — AI of https://astranov.eu. Astranov = Architect of SpaceNet (human). Never call yourself Astranov. ' +
+      'PRIORITY: 1) LISTEN 2) ANALYZE 3) RESPOND in ONE short line (max ~12 words). No monologue. ' +
+      'Show results on the globe: fly + zoom + open vendor tile. ' +
+      'User may say NEXT (next vendor) or SHOW ALL (all vendors on map). ' +
+      'Local client already flies SNGlobe and opens tiles. ' +
+      'Optional tags only: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
+      'FOOD: browse vendors first; order only if user says order. ' +
       'Flags: firstDeliveryDone=' +
       !!flags.firstDeliveryDone +
       ' vendorListed=' +
@@ -114,7 +360,7 @@
       (market.step || 'idle') +
       '.' +
       focus +
-      ' Sign replies as SpaceNet only.';
+      ' Sign as SpaceNet only.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
@@ -313,17 +559,34 @@
     if (!line) {
       return {
         did: did,
-        reply: 'I am SpaceNet. Try: pizza · first delivery · locate · fly athens · go to mars.',
+        reply: 'SPACENET LISTENING',
       };
     }
 
-    // Food juice: "pizza" / "order sushi" / "θέλω καφέ" → full marketplace pipeline
+    // —— Vendor carousel: NEXT / PREV / SHOW ALL (priority after listen) ——
+    if (/^(next|επόμεν|επομεν|άλλο|αλλο|another|next\s*one|n)\b/i.test(low) || low === 'n' || low === '>>') {
+      var nx = presentNext();
+      return { did: did.concat(nx.did || []), reply: nx.reply, skipBrand: true };
+    }
+    if (/^(prev|previous|back|προηγ|πίσω|πριν)\b/i.test(low) || low === 'p' || low === '<<') {
+      var pv = presentPrev();
+      return { did: did.concat(pv.did || []), reply: pv.reply, skipBrand: true };
+    }
+    if (
+      /^(show\s*all|all|όλα|ολα|όλοι|ολοι|show\s*all\s*vendors|list\s*all)\b/i.test(low) ||
+      low === 'show all'
+    ) {
+      var al = presentAll();
+      return { did: did.concat(al.did || []), reply: al.reply, skipBrand: true };
+    }
+
+    // Food juice: "pizza" / "order sushi" → find vendors · fly · tile (order only if said)
     if (global.SNMarket && SNMarket.parseFoodIntent && SNMarket.fulfillFoodIntent) {
       var foodIntent = SNMarket.parseFoodIntent(line);
       if (foodIntent) {
         return {
           did: did.concat(['food_intent:' + foodIntent.food]),
-          reply: 'On it · locate → find ' + foodIntent.food + ' → menus → order → driver…',
+          reply: 'Finding ' + foodIntent.food + '…',
           runFoodIntent: foodIntent,
         };
       }
@@ -348,12 +611,16 @@
     }
 
     // Direct task verbs → execute
-    if (/^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) || low === 'ai' || low === 'astronov' || low === 'astranov') {
-      var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
-      reply = fl.firstDeliveryDone
-        ? 'I am SpaceNet — the AI of the net. Astranov is the Architect of SpaceNet. Say fly athens · go to mars · locate · pizza · shops.'
-        : 'I am SpaceNet. Astranov is the Architect of SpaceNet. Globe follows me: locate · pizza · fly athens · first delivery.';
-      return { did: did, reply: reply };
+    if (
+      /^(hi|hello|hey|γεια|καλησπέρα|καλημέρα|yo)\b/.test(low) ||
+      low === 'ai' ||
+      low === 'spacenet' ||
+      low === 'astronov' ||
+      low === 'astranov'
+    ) {
+      reply = 'SPACENET LISTENING';
+      showOnGlobe(reply);
+      return { did: did, reply: reply, skipBrand: true };
     }
 
     // Bridge pain → handoff for coding agent
@@ -446,25 +713,28 @@
       return { did: did, reply: reply };
     }
 
-    if (/\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) || /^find\s+(food|pizza|coffee)/.test(low)) {
-      var sp = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.4341, lng: 28.2176 };
+    if (
+      /^(shops|vendors|stores|market)$/i.test(low) ||
+      /\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) ||
+      /^find\s+(food|pizza|coffee)/.test(low)
+    ) {
       try {
-        if (global.SNGlobe && SNGlobe.goToPlace) {
-          SNGlobe.goToPlace(sp.lat, sp.lng, {
-            tier: 'national',
-            body: 'earth',
-            pulse: false,
-            openMap: false,
-          });
-        }
-        if (global.SNCommerce && SNCommerce.ensureSector) {
-          await SNCommerce.ensureSector(sp.lat, sp.lng, { openMap: true });
+        var near = await loadVendorsNear('shops');
+        setSuggestList(near, { query: 'shops', idx: 0 });
+        if (near.length) {
+          var sh = presentVendor(0);
+          return {
+            did: did.concat(sh.did || ['shops']),
+            reply: sh.reply,
+            skipBrand: true,
+          };
         }
         did.push('shops');
+        reply = 'No shops near focus · fly a city first';
       } catch (e) {
         await runCli('shops');
+        reply = 'Shops scan failed · try again';
       }
-      reply = 'Globe on sector · live shops · tap a target for menu · cart · order in S.';
       return { did: did, reply: reply };
     }
 
@@ -556,8 +826,7 @@
     }
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
-      reply =
-        'Globe follows: locate · fly athens · go to mars · city · shops. Also first delivery · list shop · 🎙.';
+      reply = 'pizza · shops · next · show all · fly · locate';
       return { did: did, reply: reply };
     }
 
@@ -618,23 +887,46 @@
       return text;
     }
 
-    // Food intent pipeline: pizza → locate → find → judge → order → driver
+    // Food intent: find → fly/zoom → open tile · next / show all (order only if said)
     if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
       try {
-        var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, { autoOrder: true });
-        text =
-          (foodR && foodR.reply) ||
-          (foodR && foodR.error) ||
-          'Could not complete food order · try locate then shops';
-        if (foodR && foodR.lines && foodR.lines.length) {
-          // already logged per-vendor lines in fulfill
+        var wantOrder =
+          local.runFoodIntent.autoOrder === true ||
+          /\b(order|order\s+me|bring|get\s+me|παράγγειλ)\b/i.test(msg);
+        var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, {
+          autoOrder: wantOrder,
+          quiet: true,
+        });
+        if (foodR && foodR.vendors && foodR.vendors.length) {
+          setSuggestList(foodR.vendors, { query: foodR.food || local.runFoodIntent.food, idx: 0 });
+          var shown = presentVendor(0);
+          text = shown.reply;
+          if (wantOrder && foodR.order && foodR.order.ok) {
+            text = brief(shown.reply + ' · ordered', 88);
+            showOnGlobe(text);
+          }
+        } else {
+          text = brief(
+            (foodR && foodR.error) ||
+              (foodR && foodR.reply) ||
+              'No ' + (local.runFoodIntent.food || 'food') + ' near you',
+            88
+          );
+          showOnGlobe(text);
         }
       } catch (eFood) {
-        text = 'Food path error · ' + (eFood && eFood.message ? eFood.message : eFood);
+        text = 'Find failed · try shops';
+        showOnGlobe(text);
       }
-      text = brandReply(text);
+      text = local.skipBrand ? text : brandReply(text);
+      // presentVendor already branded-free brief — keep as-is if skip
+      if (text && text.indexOf('·') > 0 && /^\d+\//.test(text)) {
+        /* carousel line: leave unbranded for HUD clarity */
+      } else if (!/^SpaceNet\b/i.test(text) && !/^SPACENET\b/i.test(text) && !/^\d+\//.test(text)) {
+        text = brandReply(text);
+      }
       pushHist('assistant', text);
-      say(text, 'ok');
+      // CLI caller logs once — avoid double lines
       busy = false;
       return text;
     }
@@ -695,8 +987,14 @@
       }
     }
 
-    // Prefix so user always hears SpaceNet (not Astranov)
-    text = brandReply(text);
+    // Brief + brand; carousel / status lines stay clean
+    text = brief(text, 100);
+    if (local.skipBrand || /^\d+\//.test(text) || /^SPACENET\b/i.test(text)) {
+      /* keep */
+    } else {
+      text = brandReply(text);
+    }
+    showOnGlobe(text);
 
     pushHist('assistant', text);
     // CLI / caller prints reply — avoid double log (say only for greet / first-loop)
@@ -726,53 +1024,37 @@
     return { crawled: crawled, text: text };
   }
 
-  /** Proactive presence — talk to user and offer work (every page load) */
+  /** Boot stays quiet — AI button says SPACENET LISTENING when user taps */
   async function greet(force) {
     if (greeted && !force) return;
     greeted = true;
     try {
       sessionStorage.setItem(GREET_KEY, String(Date.now()));
     } catch (e) {}
-    var fl = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
-    var lines = fl.firstDeliveryDone
-      ? [
-          'SpaceNet · online. Astranov is the Architect of SpaceNet.',
-          'Say pizza · locate · shops · or tell me a pain for handoff.',
-          'Type · ➤ · 🎙',
-        ]
-      : [
-          'SpaceNet · online. I am the AI. Astranov is the Architect of SpaceNet.',
-          'Try: pizza · first delivery · locate. Or list shop Your Cafe.',
-          'S only · no NPC shops. ➤ send · 🎙 hands-free.',
-        ];
-    lines.forEach(function (ln) {
-      say(ln, 'ok');
-    });
-    pushHist('assistant', lines.join(' '));
+    // No boot monologue — listen-first law
     try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('ai_greet', { firstDone: !!fl.firstDeliveryDone });
+      if (global.SNUsage && SNUsage.track) SNUsage.track('ai_greet', { silent: true });
     } catch (e0) {}
-
-    // Soft edge tip (non-blocking)
-    try {
-      var tip = await callEdge(
-        fl.firstDeliveryDone
-          ? 'One short sentence as SpaceNet AI (not Astranov): greet user; suggest shops or pizza. Astranov is the Architect of SpaceNet.'
-          : 'One short sentence as SpaceNet AI (not Astranov): invite pizza or first delivery. Astranov is the Architect of SpaceNet.',
-        'chat',
-        { long: false }
-      );
-      if (tip) say(brandReply(tip), 'dim');
-    } catch (e) {}
   }
 
   function bootPresence() {
-    try {
-      if (global.SNUi && SNUi.setSize) SNUi.setSize('mid', true);
-      else if (global.SNUi && SNUi.expandPanel) SNUi.expandPanel(true);
-    } catch (e) {}
-    // Immediate local voice — do not wait for edge
-    void greet(true);
+    // Do not spam CLI on load — user activates AI ribbon for SPACENET LISTENING
+    greeted = true;
+  }
+
+  /** AI ribbon pressed — brief status only */
+  function listeningOn() {
+    var t = 'SPACENET LISTENING';
+    showOnGlobe(t);
+    if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
+    return t;
+  }
+
+  function listeningOff() {
+    var t = 'SPACENET OFF';
+    showOnGlobe(t);
+    if (global.SNCli && SNCli.log) SNCli.log(t, 'dim');
+    return t;
   }
 
   loadHist();
@@ -780,12 +1062,16 @@
   global.SNAi = {
     NAME: AI_NAME,
     brandReply: brandReply,
+    brief: brief,
+    showOnGlobe: showOnGlobe,
     ask: ask,
     code: code,
     coders: coders,
     research: research,
     greet: greet,
     bootPresence: bootPresence,
+    listeningOn: listeningOn,
+    listeningOff: listeningOff,
     actLocal: actLocal,
     globeGo: globeGo,
     parsePlaceIntent: parsePlaceIntent,
@@ -793,6 +1079,18 @@
     isCodeIntent: isCodeIntent,
     systemFor: systemFor,
     say: say,
+    setSuggestList: setSuggestList,
+    presentVendor: presentVendor,
+    presentNext: presentNext,
+    presentPrev: presentPrev,
+    presentAll: presentAll,
+    get suggest() {
+      return {
+        list: suggest.list.slice(),
+        idx: suggest.idx,
+        query: suggest.query,
+      };
+    },
     get busy() {
       return busy;
     },

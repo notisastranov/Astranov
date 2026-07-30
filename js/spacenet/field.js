@@ -104,7 +104,7 @@
       act: 'handsfree',
       emoji: '🎧',
       text: 'AI',
-      title: 'Hands-free listen (silent) · tap again to stop',
+      title: 'AI · SPACENET LISTENING · then pizza · next · show all',
       id: 'sn-rib-hf',
     },
     { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet', id: 'sn-rib-send' },

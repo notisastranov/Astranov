@@ -287,7 +287,10 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **CLI max height** | Default expand = **1/3 of screen** (button, no drag). **User drag may override** taller (up to ~72vh). | Required |
 | **Globe control** | Drag must cancel fly + zero inertia; euler YXZ only (no quat/euler fight); soft damp; no wild spin | Required |
 | **AI name** | The AI is **SpaceNet**. **Astranov** is the **Architect of SpaceNet** (owner). AI never claims to be Astranov. | Required |
-| **AI** | `SNAi` (SpaceNet) greets + freeform acts (locate/shops/food juice/fly/go + marketplace) | Required |
+| **AI priority** | **LISTEN → ANALYZE → RESPOND** as brief as possible · reply also on **globe HUD** | Required |
+| **AI ribbon** | Tap → **SPACENET LISTENING** (no submenu monologue) · mic if available · type still works | Required |
+| **AI vendors** | Suggest → **fly + zoom globe** + **open vendor tile** · **next** = next vendor · **show all** = all on map | Required |
+| **AI** | `SNAi` freeform acts (locate/shops/food/fly/go + marketplace carousel) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
 ### CLI top ribbon law (non-negotiable — owner locked)

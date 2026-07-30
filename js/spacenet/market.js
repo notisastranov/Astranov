@@ -454,7 +454,8 @@
           food: map[i].food,
           overpass: map[i].overpass,
           raw: line,
-          autoOrder: /\b(order|bring|get me|θέλω|παράγγειλ|order me)\b/i.test(low) || low === map[i].food || low.length < 24,
+          // Auto-order only on explicit buy words — browse is default (AI shows tile · next · show all)
+          autoOrder: /\b(order|order\s+me|bring|get\s+me|παράγγειλ|παράγγειλε)\b/i.test(low),
         };
       }
     }
@@ -541,15 +542,14 @@
    */
   async function fulfillFoodIntent(query, opts) {
     opts = opts || {};
+    var quiet = opts.quiet === true;
     var intent = typeof query === 'object' ? query : parseFoodIntent(query);
     if (!intent) return { ok: false, error: 'not a food intent' };
     var food = intent.food || 'food';
     var log = function (m, c) {
+      if (quiet) return;
       try {
         if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
-      } catch (_) {}
-      try {
-        if (global.SNAi && SNAi.say) SNAi.say(m, c || 'dim');
       } catch (_) {}
     };
     var steps = [];
@@ -790,27 +790,23 @@
     var fmt = function (n) {
       return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
     };
+    // Brief by default — AI presents on globe; user says next / show all
     var reply =
-      'Located you. Found ' +
-      vendors.length +
-      ' ' +
-      food +
-      ' options. Best: ' +
-      (best.shopName || best.name) +
-      (best._km != null ? ' (' + best._km.toFixed(1) + ' km)' : '') +
+      (best.shopName || best.name || 'Shop') +
+      (best._km != null ? ' · ' + best._km.toFixed(1) + ' km' : '') +
       (menuItem ? ' · ' + menuItem.name + ' ' + fmt(menuItem.price) : '') +
-      ' · ' +
-      sched.label +
-      '. ' +
+      ' · 1/' +
+      vendors.length +
       (orderResult && orderResult.ok
-        ? 'Ordered ' +
-          fmt(orderResult.total) +
-          '. ' +
-          (driver
-            ? 'Driver: ' + driver.name + (claim && claim.ok ? ' · assigned' : '')
-            : 'No driver yet · enable Driver in Astranov SpaceNet menu.')
-        : 'Open tile · + cart · order when ready.') +
-      ' Routes on radar.';
+        ? ' · ordered ' + fmt(orderResult.total)
+        : ' · next | show all');
+
+    // Register for AI carousel (next / show all)
+    try {
+      if (global.SNAi && SNAi.setSuggestList) {
+        SNAi.setSuggestList(vendors, { query: food, idx: 0 });
+      }
+    } catch (_) {}
 
     return {
       ok: true,
