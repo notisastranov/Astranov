@@ -103,9 +103,21 @@
     },
     {
       id: 'layers',
-      q: 'layers map satellite windy planes ships google earth',
-      a: 'Layers ribbon · basemap · windy · ISS · planes · ships · Google if key set',
+      q: 'layers map satellite windy planes ships google earth dark bright basemap night',
+      a: 'Say dark map · bright map · sat · layers · iss · planes · ships — I switch them',
       tags: ['map'],
+    },
+    {
+      id: 'dark_map',
+      q: 'dark map night map switch dark basemap black map dark mode',
+      a: 'Switching dark basemap now · city map dark tiles',
+      tags: ['map', 'control'],
+    },
+    {
+      id: 'bright_map',
+      q: 'bright map light map day map switch bright basemap',
+      a: 'Switching bright basemap now',
+      tags: ['map', 'control'],
     },
     {
       id: 'greek',

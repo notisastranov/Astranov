@@ -447,16 +447,24 @@
 
   function setBasemap(id, opts) {
     opts = opts || {};
-    if (!M.map || typeof L === 'undefined') return false;
-    // Optional Google licensed tile URL template from config
+    // Resolve id early so AI/CLI can queue preference before Leaflet exists
     if (id === 'google' && cfgLayers().googleTiles) {
       BASEMAPS.google.url = cfgLayers().googleTiles;
       BASEMAPS.google.note = 'Licensed Google tiles';
     }
-    const def = BASEMAPS[id] || BASEMAPS.dark;
+    const def = BASEMAPS[id] || BASEMAPS[String(id || '').toLowerCase()] || BASEMAPS.dark;
     id = def.id;
     M.basemapId = id;
-    if (opts.user) saveBasemapPref(id);
+    if (opts.user || opts.prefer) saveBasemapPref(id);
+    if (!M.map || typeof L === 'undefined') {
+      // Preference saved — applied on next map open
+      try {
+        if (opts.user || opts.log) {
+          global.SNCli?.log?.('Basemap · ' + def.label + ' · queued until map open', 'ok');
+        }
+      } catch (_) {}
+      return 'queued';
+    }
 
     // Full Google Earth imaging path (Maps JS API)
     if (def.googleType) {

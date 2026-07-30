@@ -354,8 +354,11 @@
       'PRIORITY: 1) LISTEN 2) ANALYZE 3) RESPOND in ONE short line (max ~12 words). No monologue. ' +
       'Show results on the globe: fly + zoom + open vendor tile. ' +
       'User may say NEXT (next vendor) or SHOW ALL (all vendors on map). ' +
-      'Local client already flies SNGlobe and opens tiles. ' +
-      'Optional tags only: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]]. ' +
+      'You CONTROL the app: client executes every request (map, layers, basemap, globe, shops, tiles, CLI). ' +
+      'When user asks dark/bright/sat map — client already switches basemap; confirm briefly. ' +
+      'Tags (optional): [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] ' +
+      '[[MAP:dark|bright|sat|google|traffic]] [[OVERLAY:iss|sats|planes|ships|windy|w3w]] ' +
+      '[[LAYERS]] [[PILOT:on|off]] [[CLI:command]] [[TILE:me|menu]]. ' +
       'FOOD: browse vendors first; order only if user says order. ' +
       'Flags: firstDeliveryDone=' +
       !!flags.firstDeliveryDone +
@@ -462,11 +465,203 @@
     return null;
   }
 
-  /** Execute [[GO:x]] [[LOCATE]] etc from edge AI; strip tags from visible text */
+  /** Ensure city map ready so basemap/overlays can apply (AI control path) */
+  async function ensureCityMapForControl() {
+    var p =
+      global._snLastPos ||
+      (global.SNTasks && SNTasks.pos) ||
+      { lat: 36.43, lng: 28.22 };
+    try {
+      if (global.SNMap && !SNMap.active && SNMap.open) {
+        await SNMap.open(p.lat, p.lng, { force: true });
+      } else if (global.SNMap && SNMap.ensure) {
+        await SNMap.ensure();
+      }
+    } catch (e) {}
+    return p;
+  }
+
+  function parseBasemapId(s) {
+    var low = String(s || '').toLowerCase();
+    if (/bright|light|day|voyager/.test(low)) return 'bright';
+    if (/google|hybrid|g_hybrid/.test(low)) return 'google';
+    if (/traffic|roads/.test(low) && !/overlay/.test(low)) return 'traffic';
+    if (/sat|satellite|imagery|earth\s*view/.test(low)) return 'satellite';
+    if (/dark|night|noir|black/.test(low)) return 'dark';
+    if (/^(dark|bright|satellite|google|traffic)$/.test(low.trim())) return low.trim();
+    return null;
+  }
+
+  function parseOverlayId(s) {
+    var low = String(s || '').toLowerCase();
+    if (/windy|weather|wind/.test(low)) return 'windy';
+    if (/w3w|what3words|what\s*3\s*words/.test(low)) return 'w3w';
+    if (/\biss\b|station/.test(low)) return 'iss';
+    if (/sats?|satellite\s*mark|constellation|leo/.test(low)) return 'sats';
+    if (/planes?|aircraft|flights?/.test(low)) return 'planes';
+    if (/ships?|marine|sea/.test(low)) return 'ships';
+    if (/roads|traffic\s*live/.test(low)) return 'trafficLive';
+    return null;
+  }
+
+  /**
+   * Empowered app control — AI / free mind / speech can drive any surface:
+   * basemap, overlays, layers panel, pilot, tiles, CLI commands, globe.
+   */
+  async function controlApp(message) {
+    var line = String(message || '').trim();
+    var low = line.toLowerCase().replace(/[?.!]+$/g, '').trim();
+    var did = [];
+    if (!low) return { handled: false, did: did, reply: '' };
+
+    async function runCli(cmd) {
+      try {
+        if (global.SNCli && SNCli.run) {
+          await SNCli.run(cmd);
+          did.push('cli:' + cmd);
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    // —— Basemap (dark / bright / sat / google / traffic) ——
+    // Must run before bare "map" → city open
+    var basemapAsk =
+      parseBasemapId(low) &&
+      (/\b(map|basemap|layer|mode|tiles?|carto|style|theme)\b/.test(low) ||
+        /^(dark|bright|light|night|satellite|sat|google|traffic)$/.test(low) ||
+        /\b(switch|set|use|change|make|turn|show|enable|want|need)\b/.test(low) ||
+        /\b(dark|bright|night|satellite)\s+(map|mode|basemap|layer)\b/.test(low) ||
+        /\b(map|basemap)\s+(to\s+)?(dark|bright|night|sat)/.test(low));
+    if (
+      basemapAsk ||
+      /\b(dark|night)\s*(map|mode|basemap)?\b/.test(low) ||
+      /\b(bright|light)\s*(map|mode|basemap)?\b/.test(low) ||
+      /\b(satellite|sat)\s*(map|view|imagery)?\b/.test(low) ||
+      /\bgoogle\s*(map|earth|hybrid)\b/.test(low) ||
+      /\b(switch|change|set|use)\b.+\b(dark|bright|night|satellite|sat)\b/.test(low)
+    ) {
+      var bm = parseBasemapId(low) || 'dark';
+      // "map" alone without style → not basemap
+      if (/^(map|city map|street map)$/.test(low)) {
+        /* fall through */
+      } else {
+        try {
+          await ensureCityMapForControl();
+          var ok = false;
+          if (global.SNMap && SNMap.setBasemap) {
+            ok = SNMap.setBasemap(bm, { user: true, log: true, prefer: true });
+          }
+          if (!ok) await runCli(bm === 'satellite' ? 'sat' : bm);
+          did.push('basemap:' + bm);
+          return {
+            handled: true,
+            did: did,
+            reply: 'Map · ' + bm + ' basemap on.',
+            skipBrand: false,
+          };
+        } catch (e) {
+          return {
+            handled: true,
+            did: did,
+            reply: 'Basemap failed · try Layers ribbon · dark',
+          };
+        }
+      }
+    }
+
+    // —— Overlays on/off ——
+    if (
+      /\b(show|hide|toggle|enable|disable|turn\s+on|turn\s+off|add|remove)\b.+\b(iss|sats?|planes?|ships?|windy|w3w|aircraft)\b/.test(
+        low
+      ) ||
+      /^(iss|sats?|planes?|ships?|windy|w3w)\s*(on|off)?$/.test(low) ||
+      /\boverlay\b/.test(low)
+    ) {
+      var ov = parseOverlayId(low);
+      if (ov) {
+        try {
+          await ensureCityMapForControl();
+          if (global.SNMap && SNMap.toggleOverlay) SNMap.toggleOverlay(ov);
+          else await runCli(ov);
+          did.push('overlay:' + ov);
+          return { handled: true, did: did, reply: 'Overlay · ' + ov + ' toggled.' };
+        } catch (e) {}
+      }
+    }
+
+    // —— Layers panel ——
+    if (/^(layers?|map layers?)$/i.test(low) || /\bopen\s+layers\b/.test(low)) {
+      try {
+        await ensureCityMapForControl();
+        if (global.SNMap && SNMap.openLayersPanel) SNMap.openLayersPanel();
+        else await runCli('layers');
+        did.push('layers');
+        return {
+          handled: true,
+          did: did,
+          reply: 'Layers open · dark bright sat · ISS planes ships.',
+        };
+      } catch (e) {}
+    }
+
+    // —— Camera pilot ——
+    if (/\bpilot\s+on\b|\bautopilot\s+on\b/.test(low)) {
+      await runCli('pilot on');
+      return { handled: true, did: did, reply: 'Pilot on · map may follow routes.' };
+    }
+    if (/\bpilot\s+off\b|\bhold\s+camera\b|\bmy\s+camera\b/.test(low)) {
+      await runCli('pilot off');
+      return { handled: true, did: did, reply: 'Pilot off · your camera hold.' };
+    }
+
+    // —— Tile me / menu ——
+    if (/^(me|my tile|open me|my profile)$/i.test(low)) {
+      try {
+        if (global.SNTile && SNTile.openMe) SNTile.openMe();
+        did.push('tile:me');
+        return { handled: true, did: did, reply: 'Your tile on CLI strip.' };
+      } catch (e) {}
+    }
+
+    // —— Direct CLI power verbs (short known commands) ——
+    if (
+      /^(task list|task map|task fit|advise|claim|deliver|rate|wallet|finance|resources|mine on|mine off|super|verify|help|shops|global|city|locate|rodos|rhodes)$/i.test(
+        low
+      ) ||
+      /^(fly\s+\w+|go\s+to\s+\w+)/i.test(low)
+    ) {
+      var ran = await runCli(line);
+      if (ran) {
+        return {
+          handled: true,
+          did: did,
+          reply: 'Done · ' + line.slice(0, 40),
+        };
+      }
+    }
+
+    // —— "run X" / "type X" / "cli X" → full CLI ——
+    var cliM = low.match(/^(?:run|type|cli|execute|do)\s+(.+)$/i);
+    if (cliM && cliM[1]) {
+      await runCli(cliM[1].trim());
+      return {
+        handled: true,
+        did: did,
+        reply: 'CLI · ' + cliM[1].trim().slice(0, 48),
+      };
+    }
+
+    return { handled: false, did: did, reply: '' };
+  }
+
+  /** Execute [[GO:x]] [[MAP:dark]] etc from edge AI; strip tags from visible text */
   async function applyActionTags(text) {
     var t = String(text || '');
     var did = [];
-    var re = /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
+    var re =
+      /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH|MAP|BASEMAP|LAYER|LAYERS|OVERLAY|PILOT|CLI|TILE|CMD)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
     var m;
     var targets = [];
     while ((m = re.exec(t))) {
@@ -496,6 +691,34 @@
           if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
           if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
           did.push('global');
+        } else if (a.op === 'MAP' || a.op === 'BASEMAP' || a.op === 'LAYER') {
+          var bm = parseBasemapId(a.arg || 'dark') || 'dark';
+          await ensureCityMapForControl();
+          if (global.SNMap && SNMap.setBasemap)
+            SNMap.setBasemap(bm, { user: true, log: true, prefer: true });
+          did.push('basemap:' + bm);
+        } else if (a.op === 'LAYERS') {
+          await ensureCityMapForControl();
+          if (global.SNMap && SNMap.openLayersPanel) SNMap.openLayersPanel();
+          did.push('layers');
+        } else if (a.op === 'OVERLAY') {
+          var ov = parseOverlayId(a.arg) || String(a.arg || '').toLowerCase();
+          if (ov) {
+            await ensureCityMapForControl();
+            if (global.SNMap && SNMap.toggleOverlay) SNMap.toggleOverlay(ov);
+            did.push('overlay:' + ov);
+          }
+        } else if (a.op === 'PILOT') {
+          if (global.SNCli && SNCli.run)
+            await SNCli.run(/off|0|false/i.test(a.arg) ? 'pilot off' : 'pilot on');
+          did.push('pilot');
+        } else if (a.op === 'TILE') {
+          if (/menu/i.test(a.arg) && global.SNTile && SNTile.openMe) SNTile.openMe('menu');
+          else if (global.SNTile && SNTile.openMe) SNTile.openMe();
+          did.push('tile');
+        } else if ((a.op === 'CLI' || a.op === 'CMD') && a.arg) {
+          if (global.SNCli && SNCli.run) await SNCli.run(a.arg);
+          did.push('cli:' + a.arg);
         } else if ((a.op === 'GO' || a.op === 'FLY') && a.arg) {
           var r = await globeGo(a.arg, { closeMap: true });
           if (r && r.ok) did.push('go:' + a.arg);
@@ -584,6 +807,19 @@
       var al = presentAll();
       return { did: did.concat(al.did || []), reply: al.reply, skipBrand: true };
     }
+
+    // —— App control FIRST (basemap dark/bright, overlays, layers, CLI power) ——
+    // Before city/map heuristics so "dark map" is not mistaken for street map only
+    try {
+      var appCtrl = await controlApp(line);
+      if (appCtrl && appCtrl.handled) {
+        return {
+          did: did.concat(appCtrl.did || []),
+          reply: appCtrl.reply || 'Done.',
+          skipBrand: !!appCtrl.skipBrand,
+        };
+      }
+    } catch (eCtrl) {}
 
     // Food juice: "pizza" / "order sushi" → find vendors · fly · tile (order only if said)
     if (global.SNMarket && SNMarket.parseFoodIntent && SNMarket.fulfillFoodIntent) {
@@ -743,7 +979,12 @@
       return { did: did, reply: reply };
     }
 
-    if (/\b(city|street map|map)\b/.test(low) && !/\bglobe|earth\b/.test(low)) {
+    // City / street map only when clearly about surface map (not basemap style)
+    if (
+      (/\b(city map|street map|open (the )?map|show (the )?map)\b/.test(low) ||
+        /^(city|map)$/i.test(low)) &&
+      !/\b(dark|bright|sat|satellite|google|basemap|layer)\b/.test(low)
+    ) {
       var cp = global._snLastPos || (global.SNTasks && SNTasks.pos) || { lat: 36.43, lng: 28.22 };
       try {
         if (global.SNGlobe && SNGlobe.goToPlace) {
@@ -756,7 +997,7 @@
       } catch (e) {
         await runCli('city');
       }
-      reply = 'City map at focus · Astranov SpaceNet home returns to full Earth.';
+      reply = 'City map at focus · global returns to full Earth in space.';
       return { did: did, reply: reply };
     }
 
@@ -831,7 +1072,8 @@
     }
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
-      reply = 'pizza · shops · next · show all · fly · locate';
+      reply =
+        'I control the app · dark map · bright · sat · layers · iss · fly · shops · next · locate';
       return { did: did, reply: reply };
     }
 
@@ -936,9 +1178,20 @@
       return text;
     }
 
+    // Local app control already executed (basemap, layers, CLI…) — keep that reply
+    var localActed =
+      local &&
+      local.did &&
+      local.did.length &&
+      !local.needsEdge &&
+      local.reply &&
+      !local.runFoodIntent &&
+      !local.runFirstLoop;
+
     // —— FREE FIRST: own SpaceNet Free mind (no paid xAI / no begging) ——
+    // Never override a successful local app-control result
     var freeHit = null;
-    if (mode !== 'code' && mode !== 'coders' && !opts.forceEdge) {
+    if (!localActed && mode !== 'code' && mode !== 'coders' && !opts.forceEdge) {
       try {
         if (global.SNFreeMind && SNFreeMind.answer) {
           freeHit = SNFreeMind.answer(msg, {
@@ -958,6 +1211,9 @@
           }
         }
       } catch (eFree) {}
+    }
+    if (localActed) {
+      text = local.reply;
     }
 
     // Paid/cloud edge ONLY for code modes or explicit forceEdge — never required for free chat
@@ -989,7 +1245,7 @@
     if (!text && freeHit && freeHit.text) text = freeHit.text;
     if (!text) text = 'SpaceNet Free · pizza · shops · next · fly · locate · teach to grow';
 
-    // Edge tags → move globe; strip tags from spoken/visible text
+    // Edge tags → move globe / map / CLI; strip tags from spoken/visible text
     try {
       var applied = await applyActionTags(text);
       text = applied.text || text;
@@ -1001,9 +1257,20 @@
       }
     } catch (e4) {}
 
+    // Free mind may only talk — if user asked control and local missed, re-try control
+    if (!local.did || !local.did.length) {
+      try {
+        var lateCtrl = await controlApp(msg);
+        if (lateCtrl && lateCtrl.handled) {
+          local.did = lateCtrl.did || [];
+          if (lateCtrl.reply) text = lateCtrl.reply;
+        }
+      } catch (eLate) {}
+    }
+
     // If nothing navigated yet and user mentioned a place-ish phrase, last chance follow
     if (!local.did || !local.did.some(function (d) {
-      return /^(go:|locate|shops|city|global)/.test(d);
+      return /^(go:|locate|shops|city|global|basemap:|overlay:|cli:|layers)/.test(d);
     })) {
       var pi = parsePlaceIntent(msg);
       if (pi) {
@@ -1106,9 +1373,11 @@
     listeningOn: listeningOn,
     listeningOff: listeningOff,
     actLocal: actLocal,
+    controlApp: controlApp,
     globeGo: globeGo,
     parsePlaceIntent: parsePlaceIntent,
     applyActionTags: applyActionTags,
+    parseBasemapId: parseBasemapId,
     isCodeIntent: isCodeIntent,
     systemFor: systemFor,
     say: say,
