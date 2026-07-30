@@ -158,14 +158,19 @@
     }
     var actorC = client.name || client.id || 'client';
     var actorV = vendor.shopName || vendor.name || 'vendor';
-    io('IN', actorC, 'open vendor menu tile · ' + actorV + ' @ ' + (vendor.lat && vendor.lat.toFixed ? vendor.lat.toFixed(3) : ''));
+    io(
+      'IN',
+      actorC,
+      'order from vendor · ' +
+        actorV +
+        ' @ ' +
+        (vendor.lat && vendor.lat.toFixed ? vendor.lat.toFixed(3) : '')
+    );
     try {
       if (global.SNProfiles.setMe) SNProfiles.setMe(client.id);
     } catch (e) {}
-    try {
-      if (global.SNTile && SNTile.open) SNTile.open(vendor, { tab: 'menu' });
-    } catch (eT) {}
-    io('OUT', actorV, 'menu tile open · ' + ((vendor.menu && vendor.menu.length) || 0) + ' items');
+    // Never auto-open multi-tile (blocks city map) — user taps targets
+    io('OUT', actorV, 'menu ready · ' + ((vendor.menu && vendor.menu.length) || 0) + ' items · tap map to open');
 
     var item = (vendor.menu && vendor.menu[0]) || null;
     if (!item) {

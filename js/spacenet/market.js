@@ -691,15 +691,24 @@
     best = ensureFoodMenu(best, food);
     var menuItem = pickMenuItem(best, food);
     try {
-      if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'menu' });
+      // Never auto-open vendor tile — user taps map target
       if (global.SNGlobe && SNGlobe.goToPlace && best.lat != null) {
         SNGlobe.goToPlace(best.lat, best.lng, {
-          tier: 'national',
+          tier: 'city',
           body: 'earth',
           pulse: false,
-          openMap: true,
+          openMap: false,
           label: best.shopName || best.name,
         });
+      }
+      if (global.SNMap && SNMap.open && best.lat != null) {
+        if (SNMap.active && SNMap.ensure) {
+          void SNMap.ensure().then(function (map) {
+            try {
+              map.setView([best.lat, best.lng], map.getZoom() || 14);
+            } catch (e) {}
+          });
+        }
       }
     } catch (_) {}
 
@@ -1025,9 +1034,7 @@
           sched.label,
         'ok'
       );
-      try {
-        if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'about' });
-      } catch (_) {}
+      // no auto tile open
     } else {
       log(
         'No listed ' +
@@ -1145,9 +1152,7 @@
           ' · dating request sent',
         'ok'
       );
-      try {
-        if (global.SNTile && SNTile.open) SNTile.open(best, { tab: 'dating' });
-      } catch (_) {}
+      // no auto tile open
     } else {
       log(
         'No dating profiles listed nearby · enable Dating on ME tile (real users only) · request still open on map',

@@ -101,7 +101,7 @@
     hist.push(line);
     histIdx = hist.length;
     log('› ' + line, 'cmd');
-    global.SNUi?.expandPanel?.(true);
+    // Never auto-expand CLI or open tiles — keep city map usable
     global.SNRibbon?.infer?.(line);
 
     const low = line.toLowerCase();
@@ -1077,8 +1077,7 @@
         const r = await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         const n = vendors.length || r?.count || 0;
-        log(n ? n + ' shops · tap target' : 'No shops near focus', n ? 'ok' : 'dim');
-        if (vendors[0]) global.SNTile?.open?.(vendors[0], { tab: 'menu' });
+        log(n ? n + ' shops · tap map target for tile' : 'No shops near focus', n ? 'ok' : 'dim');
         preview(n + ' shops');
         return;
       }
@@ -1385,7 +1384,6 @@
 
       // Freeform → SpaceNet (must talk + act; coaches first shop/delivery)
       preview('SpaceNet…');
-      global.SNUi?.expandPanel?.(true);
       if (!global.SNAi?.ask) {
         await new Promise((r) => setTimeout(r, 600));
       }
@@ -1690,10 +1688,7 @@
     try {
       global.SNTile?.close?.();
     } catch (_) {}
-    try {
-      global.SNUi?.resetChrome?.();
-      global.SNUi?.setSize?.('mid', true);
-    } catch (_) {}
+    // Do not auto-resize CLI panel on hands-free
 
     speechRec = new SR();
     const nav = navigator.language || 'en-US';

@@ -475,12 +475,7 @@
         } catch (eM) {}
       }
       flyRhodes(agent, 'city', shop);
-      try {
-        if (global.SNTile && SNTile.open) {
-          var p = SNProfiles.get(agent.id);
-          if (p) SNTile.open(p, { tab: 'menu' });
-        }
-      } catch (eG) {}
+      // Never auto-open tiles (screen law) — user taps map targets
       ok(agent, 'list shop', shop + ' · ' + agent.hub);
       teach('Rhodes vendor', 'list shop on Rhodes · menu in S · tile open');
     } catch (e) {
@@ -653,6 +648,9 @@
   function start(opts) {
     opts = opts || {};
     killFloatingPanels();
+    try {
+      if (global.SNTile && SNTile.close) SNTile.close();
+    } catch (eT) {}
     if (running) {
       log('Sim-33 already running on Rhodes · sim stop · all output on CLI', 'dim');
       return status();

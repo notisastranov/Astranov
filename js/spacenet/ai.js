@@ -110,8 +110,11 @@
         });
       }
     } catch (e2) {}
+    // Never auto-open tiles — user opens multi-tile by tapping map targets
     try {
-      if (global.SNTile && SNTile.open) SNTile.open(v, { tab: opts.tab || 'menu' });
+      if (opts.openTile === true && global.SNTile && SNTile.open) {
+        SNTile.open(v, { tab: opts.tab || 'menu' });
+      }
     } catch (e3) {}
     try {
       global._snLastPos = { lat: v.lat, lng: v.lng };
@@ -304,11 +307,7 @@
     if (global.SNCli && SNCli.log) {
       SNCli.log(t, cls || 'ok');
     }
-    if (global.SNUi && SNUi.expandPanel) {
-      try {
-        SNUi.expandPanel(true);
-      } catch (e) {}
-    }
+    // Do not auto-expand CLI panel (screen law)
   }
 
   function isCodeIntent(msg) {
