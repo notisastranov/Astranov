@@ -1114,7 +1114,10 @@
     var dLat = Number(opts.dropLat != null ? opts.dropLat : opts.to && opts.to.lat);
     var dLng = Number(opts.dropLng != null ? opts.dropLng : opts.to && opts.to.lng);
     if (!isFinite(vLat) || !isFinite(dLat)) return null;
-    setRadarExpanded(true);
+    // Never auto-expand radar — keep small so city map stays usable
+    try {
+      if (radarBig) setRadarExpanded(false);
+    } catch (eR) {}
     try {
       g._snLastPos = { lat: (vLat + dLat) / 2, lng: (vLng + dLng) / 2 };
       if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(g._snLastPos.lat, g._snLastPos.lng);

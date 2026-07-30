@@ -493,7 +493,7 @@
               'ok'
             )
           );
-          global.SNField?.setRadarExpanded?.(true);
+          // Do not auto-expand radar — user taps radar for big view
           preview((list[0] && list[0].label) || 'routes');
         }
         return;

@@ -48,10 +48,9 @@
     return line;
   }
 
+  /** Never auto-expand radar (blocks city map). User taps radar if they want big view. */
   function expandRadar() {
-    try {
-      if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
-    } catch (e) {}
+    /* no-op by product law */
   }
 
   function clearMapLines() {
