@@ -1203,7 +1203,7 @@
         openFinance(tab);
       };
     });
-    setTask('money');
+    // Never setTask('money') — finance is top-right S HUD only, not CLI ribbon
   }
 
   function report() {
