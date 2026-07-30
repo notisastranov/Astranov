@@ -157,7 +157,37 @@
             localStorage.setItem('sn:sim-watch', '1');
           } catch (_) {}
           if (Sim.showLive) Sim.showLive();
-          else Sim.start({ fast: true });
+          else Sim.start({ ms: 5500 });
+          if (global.SNSuper && SNSuper.isSuper && SNSuper.isSuper()) SNSuper.show();
+          return;
+        }
+        if (/^sim\s+speed/.test(low)) {
+          const ms = parseInt(low.replace(/\D+/g, ''), 10) || 5500;
+          if (Sim.setSpeed) Sim.setSpeed(ms);
+          else log('Sim speed needs hard refresh', 'err');
+          return;
+        }
+        if (low === 'super' || low === 'fleet' || low === 'super deck') {
+          if (global.SNSuper && SNSuper.show) SNSuper.show();
+          else log('Super deck loading · hard refresh', 'err');
+          return;
+        }
+        if (/^bridge\b/.test(low)) {
+          const rest = line.replace(/^bridge\s*/i, '').trim();
+          if (!rest || rest === 'status') {
+            log(
+              'Bridge · ' +
+                (global.SNLiveBridge?.bridgeUrl?.() || 'n/a') +
+                ' · seq ' +
+                (global.SNLiveBridge?.lastSeq || 0),
+              'dim'
+            );
+            return;
+          }
+          if (global.SNLiveBridge?.inject) {
+            SNLiveBridge.inject([{ op: 'cli', text: rest }]);
+            log('Bridge inject · cli ' + rest, 'ok');
+          }
           return;
         }
         if (low === 'sim stop' || low === 'sim off') {

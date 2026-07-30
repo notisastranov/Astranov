@@ -380,12 +380,26 @@
         }
         const pay = SNCurrency.debit(total);
         if (!pay.ok) return { ok: false, error: 'insufficient S' };
-        // Architect 3% — every order credits SpaceNet coins to owner
+        // Architect 3% — every order credits vault + wallet (vault never spent)
+        const why =
+          'order · ' + (vendor?.shopName || vendor?.name || vendorId || 'shop');
+        let feeRes = null;
         if (typeof SNCurrency.takePlatformFeeFrom === 'function') {
-          SNCurrency.takePlatformFeeFrom(total, 'order · ' + (vendor?.shopName || vendor?.name || vendorId || 'shop'));
+          feeRes = SNCurrency.takePlatformFeeFrom(total, why);
         } else if (typeof SNCurrency.notePlatformFee === 'function') {
-          SNCurrency.notePlatformFee(platformFee, { why: 'order' });
+          feeRes = SNCurrency.notePlatformFee(platformFee, { why: why });
         }
+        try {
+          if (global.SNSuper && SNSuper.pushTx) {
+            SNSuper.pushTx({
+              kind: 'order',
+              total: total,
+              fee: (feeRes && feeRes.fee) || platformFee,
+              who: client?.name || client?.id,
+              why: why,
+            });
+          }
+        } catch (_) {}
       }
     } catch (_) {}
 

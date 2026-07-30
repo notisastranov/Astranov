@@ -70,20 +70,23 @@
 
   /**
    * Architect platform revenue — 3% of every marketplace transaction in S.
-   * Credits YOUR SpaceNet wallet and accumulates platformFees ledger.
+   * platformFees vault ONLY GROWS (never spent by sim/client debit).
+   * Also credits spendable balance so total coins rise.
    */
   function notePlatformFee(a, meta) {
     a = Number(a);
-    if (!isFinite(a) || a <= 0) return { ok: false, fee: 0, platformFees: st.platformFees, balance: st.balance };
-    st.platformFees = (Number(st.platformFees) || 0) + a;
+    if (!isFinite(a) || a <= 0)
+      return { ok: false, fee: 0, platformFees: st.platformFees, balance: st.balance };
+    st.platformFees = Math.round(((Number(st.platformFees) || 0) + a) * 100) / 100;
+    // Vault is source of truth for "my 3% builds up"
     credit(a, 'platform');
     saveW();
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'Platform +' +
+          'YOUR 3% +' +
             fmt(a) +
-            ' (3%) · lifetime fees ' +
+            ' · vault ' +
             fmt(st.platformFees) +
             ' · wallet ' +
             fmt(st.balance) +
@@ -91,11 +94,27 @@
           'ok'
         );
       }
-      if (g.SNCli && SNCli.preview) SNCli.preview('+' + fmt(a) + ' platform 3%');
-      if (g.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('Platform +' + fmt(a) + ' · 3%');
+      if (g.SNCli && SNCli.preview) SNCli.preview('Vault ' + fmt(st.platformFees) + ' · +3%');
+      if (g.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('Vault ' + fmt(st.platformFees));
+      if (g.SNField && SNField.paint) SNField.paint();
       if (g.SNUsage && SNUsage.track) {
-        SNUsage.track('platform_fee_3pct', { fee: a, total: st.platformFees, why: (meta && meta.why) || 'tx' });
+        SNUsage.track('platform_fee_3pct', {
+          fee: a,
+          total: st.platformFees,
+          why: (meta && meta.why) || 'tx',
+        });
       }
+      // Superuser TX tape
+      try {
+        if (g.SNSuper && SNSuper.pushTx) {
+          SNSuper.pushTx({
+            kind: 'platform_3pct',
+            fee: a,
+            vault: st.platformFees,
+            why: (meta && meta.why) || 'tx',
+          });
+        }
+      } catch (e2) {}
     } catch (e) {}
     return { ok: true, fee: a, platformFees: st.platformFees, balance: st.balance };
   }
@@ -163,6 +182,7 @@
       a = Number(a);
       if (!(a > 0) || a > st.balance) return { ok: false, balance: st.balance };
       st.balance -= a;
+      // Never reduce platformFees vault — architect 3% only grows
       saveW();
       g.SNField && g.SNField.paint && g.SNField.paint();
       return { ok: true, balance: st.balance };

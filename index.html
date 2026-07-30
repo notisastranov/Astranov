@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260730220000-burger-under-radar" />
-<meta name="astranov-continuity" content="20260730220000-burger-under-radar" />
+<meta name="astranov-build" content="20260730230000-sim-normal-bridge" />
+<meta name="astranov-continuity" content="20260730230000-sim-normal-bridge" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -59,6 +59,10 @@
   }
   #fbh-mine-rate {
     display: block; margin-top: 4px; font-size: 11px; font-weight: 700; color: #a8ffcc;
+  }
+  #fbh-fees {
+    display: block; margin-top: 3px; font-size: 10px; font-weight: 700; color: #ffd633;
+    text-shadow: 0 0 8px rgba(255, 214, 51, 0.35);
   }
   .fbh-title, .fbh-fiat, .fbh-resources, .fbh-mine, .fbh-status, #fbh-perf,
   #fbh-eur, #fbh-usd, #fbh-cpu, #fbh-ram, #fbh-storage, #fbh-bw,
@@ -411,8 +415,9 @@
 <button type="button" id="btn-home" title="Astranov SpaceNet · full Earth GLOBAL">Astranov SpaceNet</button>
 
 <!-- Miner: S balance + S/day only -->
-<div id="field-balance-hud" role="button" tabindex="0" title="S balance · mining rate · tap for finance" aria-label="Wallet and mining">
+<div id="field-balance-hud" role="button" tabindex="0" title="S balance · your 3% vault · mining · tap for finance" aria-label="Wallet and mining">
   <span id="fbh-s">0.00 S</span>
+  <span id="fbh-fees">3% vault 0.00 S</span>
   <span id="fbh-mine-rate">0.00 S/day</span>
 </div>
 
@@ -487,7 +492,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260730220000-burger-under-radar"></script>
+<script src="/js/spacenet/boot.js?v=20260730230000-sim-normal-bridge"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

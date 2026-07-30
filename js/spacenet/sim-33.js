@@ -15,7 +15,8 @@
   var running = false;
   var timer = null;
   var authWatch = null;
-  var tickMs = 1100;
+  /** Normal human-watchable pace (ms). fast=2.5s · normal=5.5s · slow=9s */
+  var tickMs = 5500;
   var agents = [];
   var idx = 0;
   var feed = [];
@@ -716,7 +717,15 @@
     }
     running = true;
     stats.startedAt = Date.now();
-    tickMs = opts.fast ? 700 : opts.slow ? 2000 : 1100;
+    // Observable pace for any user; superuser can bridge sim_speed later
+    tickMs =
+      opts.ms > 0
+        ? opts.ms
+        : opts.fast
+          ? 2500
+          : opts.slow
+            ? 9000
+            : 5500;
     // Open globe on Rhodes immediately so you SEE the island
     try {
       if (global.SNGlobe && SNGlobe.goToPlace) {
@@ -853,27 +862,39 @@
     });
   }
 
+  function setSpeed(ms) {
+    ms = Math.max(2000, Math.min(30000, Number(ms) || 5500));
+    tickMs = ms;
+    if (running && timer) {
+      clearInterval(timer);
+      timer = setInterval(function () {
+        void tick();
+      }, tickMs);
+    }
+    log('Sim-33 speed · ' + tickMs + ' ms/tick', 'ok');
+    return tickMs;
+  }
+
   function maybeAutostart() {
     try {
       if (localStorage.getItem(AUTO_KEY) === '0') return;
       var q = typeof location !== 'undefined' ? location.search || '' : '';
       if (/[?&]sim=0\b/.test(q)) return;
-      // Start when logged in (or ?sim=1) so owner SEES Rhodes activity
+      // Normal speed for everyone to observe (not blitz)
       function tryStart() {
         if (running) return;
         if (isLoggedIn() || /[?&]sim=1\b/.test(q) || localStorage.getItem(AUTO_KEY) === '1') {
-          start({ fast: true });
+          start({ ms: 5500 });
         }
       }
-      setTimeout(tryStart, 2800);
-      // If login happens later, start then
+      setTimeout(tryStart, 3500);
       if (authWatch) clearInterval(authWatch);
       authWatch = setInterval(function () {
         if (!running && isLoggedIn() && localStorage.getItem(AUTO_KEY) !== '0') {
-          start({ fast: true });
+          start({ ms: 5500 });
         }
         if (running && isWatching()) showLivePanel(true);
-      }, 4000);
+      }, 5000);
     } catch (e) {}
   }
 
@@ -907,8 +928,9 @@
         localStorage.setItem('sn:sim-watch', '1');
       } catch (e) {}
       showLivePanel(true);
-      if (!running) start({ fast: true });
+      if (!running) start({ ms: 5500 });
     },
+    setSpeed: setSpeed,
     get running() {
       return running;
     },
@@ -917,6 +939,9 @@
     },
     get feed() {
       return feed.slice();
+    },
+    get tickMs() {
+      return tickMs;
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
