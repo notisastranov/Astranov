@@ -329,13 +329,10 @@
     const st = document.createElement('style');
     st.id = 'sn-map-layer-css';
     st.textContent = [
-      '#sn-map-layers{position:absolute;top:12px;right:12px;z-index:1000;display:flex;flex-direction:column;align-items:flex-end;gap:8px;',
-      'pointer-events:auto}',
-      '#sn-layer-btn{border:1px solid rgba(61,158,255,.55);background:rgba(0,8,20,.9);color:#e8f4ff;',
-      'border-radius:12px;padding:10px 12px;font:700 12px system-ui;cursor:pointer;',
-      'box-shadow:0 4px 18px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px}',
-      '#sn-layer-btn span{font-size:16px}',
-      '#sn-layer-panel{display:none;width:min(300px,calc(100vw - 28px));max-height:min(70vh,480px);overflow:auto;',
+      /* Layers panel only — opened from CLI ribbon 🗺 Layers (no map-corner button; money HUD is top-right) */
+      '#sn-map-layers{position:absolute;left:12px;bottom:12px;z-index:1000;display:flex;flex-direction:column;',
+      'align-items:flex-start;gap:8px;pointer-events:none}',
+      '#sn-layer-panel{display:none;pointer-events:auto;width:min(300px,calc(100vw - 28px));max-height:min(55vh,420px);overflow:auto;',
       'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.5);border-radius:14px;',
       'padding:10px;box-shadow:0 12px 36px rgba(0,0,0,.55);color:#c8e4ff}',
       '#sn-layer-panel.open{display:block}',
@@ -351,6 +348,8 @@
       '#sn-layer-panel button.sn-ly.on{border-color:#3d9eff;background:rgba(26,111,212,.35);color:#fff;',
       'box-shadow:0 0 12px rgba(61,158,255,.3)}',
       '#sn-layer-panel .sn-ly-note{font:10px system-ui;color:#5a6a7e;margin-top:6px;line-height:1.35}',
+      '#sn-layer-panel .sn-ly-close{width:100%;margin-bottom:8px;padding:8px;border-radius:10px;cursor:pointer;',
+      'border:1px solid rgba(61,158,255,.4);background:rgba(0,24,56,.8);color:#9ec8ff;font:700 11px system-ui}',
       '#sn-windy-frame{position:absolute;inset:48px 8px 8px 8px;z-index:900;border:0;border-radius:12px;',
       'display:none;pointer-events:auto;box-shadow:0 8px 32px rgba(0,0,0,.5)}',
       '#sn-windy-frame.on{display:block}',
@@ -369,21 +368,11 @@
     if (wrap) wrap.remove();
     wrap = document.createElement('div');
     wrap.id = 'sn-map-layers';
+    // Panel only — no corner Layers button (CLI ribbon 🗺 Layers owns open)
     wrap.innerHTML =
-      '<button type="button" id="sn-layer-btn" title="Map layers"><span>🗺</span> Layers</button>' +
       '<div id="sn-layer-panel" role="dialog" aria-label="Map layers"></div>';
     map.getContainer().appendChild(wrap);
     M.layerCtl = wrap;
-    const btn = wrap.querySelector('#sn-layer-btn');
-    const panel = wrap.querySelector('#sn-layer-panel');
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      M.panelOpen = !M.panelOpen;
-      panel.classList.toggle('open', M.panelOpen);
-      if (M.panelOpen) renderLayerPanel();
-    });
-    // stop map drag when using panel
     L.DomEvent.disableClickPropagation(wrap);
     L.DomEvent.disableScrollPropagation(wrap);
     renderLayerPanel();
@@ -392,7 +381,9 @@
   function renderLayerPanel() {
     const panel = document.getElementById('sn-layer-panel');
     if (!panel) return;
-    let h = '<div class="sn-ly-sec"><h4>Basemap · pick one</h4><div class="sn-ly-grid">';
+    let h =
+      '<button type="button" class="sn-ly-close" id="sn-layer-close">Close layers</button>' +
+      '<div class="sn-ly-sec"><h4>Basemap · pick one</h4><div class="sn-ly-grid">';
     Object.keys(BASEMAPS).forEach((id) => {
       const d = BASEMAPS[id];
       h +=
@@ -443,6 +434,15 @@
         renderLayerPanel();
       };
     });
+    const closeBtn = panel.querySelector('#sn-layer-close');
+    if (closeBtn) {
+      closeBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        M.panelOpen = false;
+        panel.classList.remove('open');
+      };
+    }
   }
 
   function setBasemap(id, opts) {
@@ -1409,13 +1409,14 @@
       return M.userHold;
     },
     openLayersPanel: function () {
-      if (!M.map) return;
+      if (!M.map) return false;
+      if (!document.getElementById('sn-layer-panel')) buildLayerControl(M.map);
       M.panelOpen = true;
       const p = document.getElementById('sn-layer-panel');
-      if (p) {
-        p.classList.add('open');
-        renderLayerPanel();
-      }
+      if (!p) return false;
+      p.classList.add('open');
+      renderLayerPanel();
+      return true;
     },
     getBasemap: function () {
       return M.basemapId;
