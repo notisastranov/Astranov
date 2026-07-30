@@ -119,6 +119,7 @@
     '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship
     '/js/spacenet/market.js', // first vendor → delivery coach
     '/js/spacenet/free-ai.js', // SpaceNet Free mind — own AI, no paid xAI required
+    '/js/spacenet/sim-33.js', // 33 SPECS agents: clients·vendors·drivers·ambassadors
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js', // SpaceNet AI — free mind first
     '/js/spacenet/ui.js',

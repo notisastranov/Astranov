@@ -45,6 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
+    log('SIM   sim start · 33 agents use app (client/vendor/driver/ambassador)', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -119,6 +120,64 @@
       }
       if (low === 'brain' || low === 'memory') {
         dumpBrain('summary');
+        return;
+      }
+      // 33 SPECS agents swarm
+      if (/^sim\b/.test(low)) {
+        const Sim = global.SNSim33;
+        if (!Sim) {
+          log('Sim-33 loading · hard refresh', 'err');
+          return;
+        }
+        if (low === 'sim' || low === 'sim status') {
+          const st = Sim.status();
+          log(
+            'Sim-33 · ' +
+              (st.running ? 'RUNNING' : 'stopped') +
+              ' · ok ' +
+              st.stats.ok +
+              ' · fail ' +
+              st.stats.fail +
+              ' · taught ' +
+              st.stats.taught +
+              ' · ticks ' +
+              st.stats.ticks,
+            st.running ? 'ok' : 'dim'
+          );
+          log('12 clients · 8 vendors · 8 drivers · 5 ambassadors', 'dim');
+          if (st.stats.last) log('Last · ' + st.stats.last, 'dim');
+          preview(st.running ? 'SIM-33 ON' : 'SIM-33 OFF');
+          return;
+        }
+        if (low === 'sim start' || low === 'sim on') {
+          try {
+            localStorage.setItem('sn:sim-auto', '1');
+          } catch (_) {}
+          Sim.start({ fast: true });
+          return;
+        }
+        if (low === 'sim stop' || low === 'sim off') {
+          try {
+            localStorage.setItem('sn:sim-auto', '0');
+          } catch (_) {}
+          Sim.stop();
+          return;
+        }
+        if (low === 'sim wipe') {
+          Sim.wipe();
+          return;
+        }
+        if (/^sim\s+burst/.test(low)) {
+          const n = parseInt(low.replace(/\D+/g, ''), 10) || 33;
+          await Sim.burst(n);
+          return;
+        }
+        if (low === 'sim fast') {
+          Sim.stop();
+          Sim.start({ fast: true });
+          return;
+        }
+        log('sim start|stop|status|wipe|burst 33|fast', 'dim');
         return;
       }
       // SpaceNet Free mind — own free AI (no paid xAI)
