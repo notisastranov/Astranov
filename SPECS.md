@@ -293,7 +293,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **SpaceNet Free** | **Own free public AI** (`SNFreeMind`) — law seeds + user teach + learn-from-use. **No paid xAI required** for chat. Not a fork of proprietary Grok weights. | Required |
 | **AI free-first** | Chat uses **free mind first**. Cloud/paid edge only for explicit code modes or `forceEdge`. | Required |
 | **AI grow** | Users help grow Free: `teach Q => A` · `free export` trainset for future open fine-tunes | Required |
-| **Sim-33 swarm** | Owner-dev: **33 agents** (12 client · 8 vendor · 8 driver · 5 ambassador) use live stack + grow Free. CLI `sim start|stop`. Tagged `sim:true` — not public product NPCs when stopped. | Dev / owner |
+| **Sim-33 swarm** | Owner-dev: **33 agents on Rhodes Island, Greece** (12 client · 8 vendor · 8 driver · 5 ambassador). LIVE panel when logged in. CLI `sim live|stop`. `sim:true` — hidden when stopped. | Dev / owner |
 | **AI** | `SNAi` freeform acts (locate/shops/food/fly/go + marketplace carousel) | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 

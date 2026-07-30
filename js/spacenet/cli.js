@@ -45,7 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('SIM   sim start · 33 agents use app (client/vendor/driver/ambassador)', 'ok');
+    log('SIM   sim live · 33 agents on RHODES Island (see LIVE panel)', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -132,28 +132,32 @@
         if (low === 'sim' || low === 'sim status') {
           const st = Sim.status();
           log(
-            'Sim-33 · ' +
-              (st.running ? 'RUNNING' : 'stopped') +
+            'Sim-33 · RHODES · ' +
+              (st.running ? 'LIVE' : 'stopped') +
               ' · ok ' +
               st.stats.ok +
               ' · fail ' +
               st.stats.fail +
               ' · taught ' +
               st.stats.taught +
-              ' · ticks ' +
+              ' · t' +
               st.stats.ticks,
             st.running ? 'ok' : 'dim'
           );
+          log('Focus: Rhodes Island, Greece · Old Town · Lindos · Faliraki…', 'dim');
           log('12 clients · 8 vendors · 8 drivers · 5 ambassadors', 'dim');
           if (st.stats.last) log('Last · ' + st.stats.last, 'dim');
-          preview(st.running ? 'SIM-33 ON' : 'SIM-33 OFF');
+          preview(st.running ? 'RHODES · SIM LIVE' : 'SIM OFF');
+          if (Sim.showLive) Sim.showLive();
           return;
         }
-        if (low === 'sim start' || low === 'sim on') {
+        if (low === 'sim start' || low === 'sim on' || low === 'sim live') {
           try {
             localStorage.setItem('sn:sim-auto', '1');
+            localStorage.setItem('sn:sim-watch', '1');
           } catch (_) {}
-          Sim.start({ fast: true });
+          if (Sim.showLive) Sim.showLive();
+          else Sim.start({ fast: true });
           return;
         }
         if (low === 'sim stop' || low === 'sim off') {

@@ -1,14 +1,10 @@
 /**
- * SNSim33 — 33 SPECS agents (clients · vendors · drivers · ambassadors)
+ * SNSim33 — 33 SPECS agents focused on RHODES ISLAND, Greece
  *
- * Owner-dev swarm: they USE the live app stack (profiles, market, tasks, free mind, globe)
- * to exercise SPECS paths and grow SpaceNet Free. Not public product NPCs.
+ * Owner-dev swarm uses live stack on Rhodes only (Old Town · Mandraki · Lindos · …).
+ * Real-time LIVE panel when logged in / watching. CLI: sim start|stop|status|wipe|burst
  *
- * CLI: sim start | sim stop | sim status | sim wipe | sim burst
- * Auto: ?sim=1 or localStorage sn:sim-auto=1
- *
- * SPECS: zero dummy shops for casual visitors — sim profiles tagged sim:true,
- * hidden from marketplace when swarm is stopped.
+ * sim:true tags — hidden from marketplace when swarm stopped.
  */
 (function (global) {
   'use strict';
@@ -18,9 +14,12 @@
   var AUTO_KEY = 'sn:sim-auto';
   var running = false;
   var timer = null;
-  var tickMs = 900;
+  var authWatch = null;
+  var tickMs = 1100;
   var agents = [];
   var idx = 0;
+  var feed = [];
+  var currentAct = null;
   var stats = {
     ticks: 0,
     ok: 0,
@@ -29,6 +28,7 @@
     byRole: { client: 0, vendor: 0, driver: 0, ambassador: 0 },
     last: '',
     startedAt: 0,
+    focus: 'Rhodes Island, Greece',
   };
   var savedMe = null;
 
@@ -42,17 +42,33 @@
     for (i = 0; i < 5; i++) ROLE_PLAN.push('ambassador');
   })();
 
-  // Focus cities (real coords — SPECS place = lat/lng)
+  /**
+   * RHODES ONLY — real island places (lat/lng).
+   * All swarm activity stays on Rhodes, Greece.
+   */
+  var RHODES = { name: 'Rhodes', lat: 36.4341, lng: 28.2176 };
   var HUBS = [
-    { name: 'Rhodes', lat: 36.4341, lng: 28.2176 },
-    { name: 'Athens', lat: 37.9838, lng: 23.7275 },
-    { name: 'Thessaloniki', lat: 40.6401, lng: 22.9444 },
-    { name: 'Heraklion', lat: 35.3387, lng: 25.1442 },
-    { name: 'Patras', lat: 38.2466, lng: 21.7346 },
+    { name: 'Old Town', lat: 36.4425, lng: 28.2272 },
+    { name: 'Mandraki', lat: 36.4508, lng: 28.2265 },
+    { name: 'New Market', lat: 36.4438, lng: 28.222 },
+    { name: 'Garage Rhodes', lat: 36.44125, lng: 28.22255 },
+    { name: 'Ixia', lat: 36.416, lng: 28.168 },
+    { name: 'Ialysos', lat: 36.413, lng: 28.155 },
+    { name: 'Faliraki', lat: 36.339, lng: 28.199 },
+    { name: 'Afandou', lat: 36.294, lng: 28.167 },
+    { name: 'Kolymbia', lat: 36.249, lng: 28.165 },
+    { name: 'Lindos', lat: 36.0917, lng: 28.0856 },
+    { name: 'Airport Diagoras', lat: 36.4054, lng: 28.0862 },
+    { name: 'Kremasti', lat: 36.411, lng: 28.119 },
+    { name: 'Pastida', lat: 36.388, lng: 28.135 },
+    { name: 'Koskinou', lat: 36.392, lng: 28.21 },
+    { name: 'Kalithea', lat: 36.377, lng: 28.228 },
   ];
 
-  var FOODS = ['pizza', 'coffee', 'souvlaki', 'burger', 'sushi'];
-  var SHOP_KINDS = ['cafe', 'pizza', 'grill', 'bakery', 'market'];
+  var FOODS = ['pizza', 'souvlaki', 'coffee', 'gyro', 'seafood'];
+  var SHOP_KINDS = ['cafe', 'pizza', 'grill', 'taverna', 'bakery'];
+  var ROLE_EMOJI = { client: '👤', vendor: '🏪', driver: '🛵', ambassador: '📣' };
+  var ROLE_COLOR = { client: 0x3d9eff, vendor: 0x44ffaa, driver: 0xffcc44, ambassador: 0xff66aa };
 
   function log(m, c) {
     try {
@@ -65,16 +81,238 @@
       if (global.SNCli && SNCli.preview) SNCli.preview(m);
     } catch (e) {}
     try {
-      if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud(String(m).slice(0, 64));
+      if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud(String(m).slice(0, 72));
     } catch (e2) {}
   }
 
-  function jitter(n, s) {
-    return n + (Math.random() - 0.5) * (s || 0.04);
+  function isLoggedIn() {
+    try {
+      return !!(global.SNAuth && SNAuth.user);
+    } catch (e) {
+      return false;
+    }
   }
 
-  function uid(p) {
-    return (p || 's') + '_' + Math.random().toString(36).slice(2, 9);
+  /** Spectator: logged-in owner wants real-time view */
+  function isWatching() {
+    if (isLoggedIn()) return true;
+    try {
+      if (localStorage.getItem('sn:sim-watch') === '1') return true;
+      if (/[?&]sim=1\b/.test(location.search || '')) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function jitter(n, s) {
+    // Small jitter — stay on Rhodes island
+    return n + (Math.random() - 0.5) * (s || 0.012);
+  }
+
+  function flyRhodes(agent, tier, label) {
+    if (!agent || !global.SNGlobe) return;
+    var t = tier || 'city';
+    try {
+      if (SNGlobe.setBody) SNGlobe.setBody('earth');
+      if (SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(agent.lat, agent.lng, {
+          tier: t,
+          body: 'earth',
+          pulse: false,
+          openMap: false,
+          label: label || agent.hub || 'Rhodes',
+        });
+      }
+      if (SNGlobe.pulse) {
+        SNGlobe.pulse(
+          agent.lat,
+          agent.lng,
+          ROLE_COLOR[agent.role] || 0x3d9eff,
+          (ROLE_EMOJI[agent.role] || '·') + ' ' + (label || agent.name),
+          9000
+        );
+      }
+    } catch (e) {}
+    try {
+      global._snLastPos = { lat: agent.lat, lng: agent.lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
+    } catch (e2) {}
+  }
+
+  function pushFeed(line, kind) {
+    feed.unshift({
+      t: Date.now(),
+      line: String(line || '').slice(0, 120),
+      kind: kind || 'ok',
+    });
+    if (feed.length > 24) feed.length = 24;
+    paintLive();
+  }
+
+  function ensureLiveCss() {
+    if (document.getElementById('sn-sim33-css')) return;
+    var st = document.createElement('style');
+    st.id = 'sn-sim33-css';
+    st.textContent = [
+      '#sn-sim33-live{position:fixed;top:12px;right:12px;z-index:140;width:min(320px,calc(100vw - 24px));',
+      'max-height:min(52vh,420px);display:none;flex-direction:column;gap:6px;padding:10px 12px;',
+      'background:rgba(0,8,18,.94);border:1px solid rgba(61,158,255,.55);border-radius:14px;',
+      'box-shadow:0 8px 32px rgba(0,0,0,.65),0 0 20px rgba(26,111,212,.2);color:#c8e4ff;',
+      'font:12px/1.35 system-ui,Segoe UI,sans-serif;pointer-events:auto}',
+      '#sn-sim33-live.open{display:flex}',
+      '#sn-sim33-live .sim-head{display:flex;align-items:center;gap:8px;font-weight:700;',
+      'letter-spacing:.06em;text-transform:uppercase;color:#3d9eff;font-size:11px}',
+      '#sn-sim33-live .sim-dot{width:9px;height:9px;border-radius:50%;background:#44ffaa;',
+      'box-shadow:0 0 10px #44ffaa;animation:snSimPulse 1s ease infinite}',
+      '#sn-sim33-live.off .sim-dot{background:#666;box-shadow:none;animation:none}',
+      '@keyframes snSimPulse{0%,100%{opacity:1}50%{opacity:.35}}',
+      '#sn-sim33-live .sim-focus{color:#ffd633;font-size:11px;font-weight:600}',
+      '#sn-sim33-live .sim-now{font-size:13px;color:#e8f4ff;min-height:2.6em}',
+      '#sn-sim33-live .sim-stats{display:flex;flex-wrap:wrap;gap:6px 10px;color:#8ab4d8;font-size:11px}',
+      '#sn-sim33-live .sim-feed{overflow:auto;max-height:min(28vh,220px);border-top:1px solid rgba(26,111,212,.3);',
+      'padding-top:6px;margin-top:2px}',
+      '#sn-sim33-live .sim-row{padding:3px 0;border-bottom:1px solid rgba(26,111,212,.12);color:#9ec8f0}',
+      '#sn-sim33-live .sim-row.err{color:#ff8899}',
+      '#sn-sim33-live .sim-row.ok{color:#a8f0c8}',
+      '#sn-sim33-live .sim-btns{display:flex;gap:6px;margin-top:4px}',
+      '#sn-sim33-live button{flex:1;cursor:pointer;border-radius:8px;border:1px solid rgba(61,158,255,.45);',
+      'background:rgba(0,24,56,.7);color:#c8e4ff;padding:6px 8px;font:700 11px system-ui}',
+      '#sn-sim33-live button:hover{border-color:#3d9eff}',
+    ].join('');
+    document.head.appendChild(st);
+  }
+
+  function ensureLivePanel() {
+    ensureLiveCss();
+    var el = document.getElementById('sn-sim33-live');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'sn-sim33-live';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.innerHTML =
+      '<div class="sim-head"><span class="sim-dot"></span><span>Sim-33 LIVE</span></div>' +
+      '<div class="sim-focus" id="sn-sim33-focus">📍 Rhodes Island, Greece</div>' +
+      '<div class="sim-now" id="sn-sim33-now">Waiting…</div>' +
+      '<div class="sim-stats" id="sn-sim33-stats"></div>' +
+      '<div class="sim-feed" id="sn-sim33-feed"></div>' +
+      '<div class="sim-btns">' +
+      '<button type="button" id="sn-sim33-stop">Stop</button>' +
+      '<button type="button" id="sn-sim33-hide">Hide</button>' +
+      '</div>';
+    document.body.appendChild(el);
+    var stopB = document.getElementById('sn-sim33-stop');
+    var hideB = document.getElementById('sn-sim33-hide');
+    if (stopB)
+      stopB.onclick = function () {
+        stop();
+      };
+    if (hideB)
+      hideB.onclick = function () {
+        el.classList.remove('open');
+        try {
+          localStorage.setItem('sn:sim-watch', '0');
+        } catch (e) {}
+      };
+    return el;
+  }
+
+  function showLivePanel(on) {
+    if (!isWatching() && on) return;
+    var el = ensureLivePanel();
+    if (on) {
+      el.classList.add('open');
+      el.classList.toggle('off', !running);
+    } else {
+      el.classList.remove('open');
+    }
+    paintLive();
+  }
+
+  function paintLive() {
+    var el = document.getElementById('sn-sim33-live');
+    if (!el || !el.classList.contains('open')) return;
+    el.classList.toggle('off', !running);
+    var now = document.getElementById('sn-sim33-now');
+    var st = document.getElementById('sn-sim33-stats');
+    var fd = document.getElementById('sn-sim33-feed');
+    var fo = document.getElementById('sn-sim33-focus');
+    if (fo) fo.textContent = '📍 Rhodes Island · Old Town · Lindos · Faliraki…';
+    if (now) {
+      if (currentAct) {
+        now.textContent =
+          (ROLE_EMOJI[currentAct.role] || '·') +
+          ' #' +
+          currentAct.i +
+          ' ' +
+          currentAct.role +
+          ' @ ' +
+          (currentAct.hub || 'Rhodes') +
+          '\n' +
+          (currentAct.action || '…');
+      } else {
+        now.textContent = running ? 'Swarm on Rhodes…' : 'Stopped';
+      }
+    }
+    if (st) {
+      st.innerHTML =
+        '<span>ok ' +
+        stats.ok +
+        '</span><span>fail ' +
+        stats.fail +
+        '</span><span>taught ' +
+        stats.taught +
+        '</span><span>t' +
+        stats.ticks +
+        '</span>';
+    }
+    if (fd) {
+      fd.innerHTML = feed
+        .slice(0, 12)
+        .map(function (r) {
+          return (
+            '<div class="sim-row ' +
+            (r.kind === 'err' ? 'err' : 'ok') +
+            '">' +
+            escapeHtml(r.line) +
+            '</div>'
+          );
+        })
+        .join('');
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function setCurrent(agent, action) {
+    currentAct = {
+      i: agent.i,
+      role: agent.role,
+      hub: agent.hub,
+      name: agent.name,
+      action: action,
+    };
+    preview(
+      'Rhodes · ' +
+        (ROLE_EMOJI[agent.role] || '') +
+        ' #' +
+        agent.i +
+        ' ' +
+        agent.role +
+        ' · ' +
+        String(action || '').slice(0, 40)
+    );
+    try {
+      if (global.SNField && SNField.setNotice)
+        SNField.setNotice(
+          'Rhodes · #' + agent.i + ' ' + agent.role + ' · ' + String(action || '').slice(0, 28)
+        );
+    } catch (e) {}
+    paintLive();
   }
 
   function ensureAgents() {
@@ -89,11 +327,14 @@
         i: i + 1,
         id: id,
         role: role,
-        name: role.charAt(0).toUpperCase() + role.slice(1) + ' · ' + (i + 1),
+        name: role.charAt(0).toUpperCase() + role.slice(1) + ' · Rhodes · ' + (i + 1),
         hub: hub.name,
-        lat: jitter(hub.lat, 0.06),
-        lng: jitter(hub.lng, 0.06),
-        shopName: role === 'vendor' ? 'Sim·' + SHOP_KINDS[i % SHOP_KINDS.length] + ' ' + (i + 1) : null,
+        lat: jitter(hub.lat, 0.01),
+        lng: jitter(hub.lng, 0.01),
+        shopName:
+          role === 'vendor'
+            ? 'Sim·' + SHOP_KINDS[i % SHOP_KINDS.length] + ' ' + hub.name
+            : null,
         shopKind: role === 'vendor' ? SHOP_KINDS[i % SHOP_KINDS.length] : null,
         food: FOODS[i % FOODS.length],
         vehicle: role === 'driver' ? (i % 2 ? 'Scooter' : 'Bike') : null,
@@ -160,15 +401,28 @@
   function fail(agent, path, err) {
     stats.fail++;
     agent.fails++;
-    var msg = 'Sim·' + agent.i + ' ' + agent.role + ' · ' + path + ' · ' + (err || 'fail');
+    var msg =
+      'Rhodes · #' +
+      agent.i +
+      ' ' +
+      agent.role +
+      ' @ ' +
+      (agent.hub || '') +
+      ' · ' +
+      path +
+      ' · ' +
+      (err || 'fail');
     stats.last = msg;
     log(msg, 'err');
+    pushFeed(msg, 'err');
+    setCurrent(agent, path + ' FAIL');
     try {
       if (global.SNUsage && SNUsage.handoff) {
-        SNUsage.handoff('sim33:' + path + ' · ' + (err || ''), {
+        SNUsage.handoff('sim33:rhodes:' + path + ' · ' + (err || ''), {
           source: 'sim-33',
           agent: agent.id,
           role: agent.role,
+          hub: agent.hub,
         });
       }
     } catch (e) {}
@@ -178,8 +432,22 @@
     stats.ok++;
     agent.acts++;
     stats.byRole[agent.role] = (stats.byRole[agent.role] || 0) + 1;
-    stats.last = 'Sim·' + agent.i + ' ' + agent.role + ' · ' + path + (detail ? ' · ' + detail : '');
-    teach(agent.role + ' ' + path, brief(detail || path, 80));
+    var msg =
+      'Rhodes · #' +
+      agent.i +
+      ' ' +
+      agent.role +
+      ' @ ' +
+      (agent.hub || '') +
+      ' · ' +
+      path +
+      (detail ? ' · ' + brief(detail, 40) : '');
+    stats.last = msg;
+    log(msg, 'ok');
+    pushFeed(msg, 'ok');
+    setCurrent(agent, path + (detail ? ' · ' + brief(detail, 36) : ''));
+    teach('Rhodes ' + agent.role + ' ' + path, brief(detail || path, 80));
+    teach('Rhodes Island Greece', 'SpaceNet activity on Rhodes · ' + (agent.hub || 'island'));
   }
 
   function brief(t, n) {
@@ -187,37 +455,37 @@
     return t.length <= n ? t : t.slice(0, n - 1) + '…';
   }
 
-  /** Client SPECS path: locate focus · ask free AI · shops / food · next */
+  /** Client SPECS path — always on Rhodes */
   async function actClient(agent) {
     become(agent);
+    flyRhodes(agent, 'city', agent.hub);
+    setCurrent(agent, 'client @ ' + agent.hub);
     var cmds = [
       'locate',
       agent.food,
       'shops',
       'next',
-      'help',
+      'souvlaki',
+      'fly rhodes',
       'who are you',
-      'fly ' + agent.hub.toLowerCase(),
     ];
     var cmd = cmds[Math.floor(Math.random() * cmds.length)];
     try {
-      if (cmd === 'locate' && global.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(agent.lat, agent.lng, {
-          tier: 'city',
-          body: 'earth',
-          pulse: false,
-          label: agent.name,
-        });
-        ok(agent, 'locate', agent.hub);
+      if (cmd === 'locate' || cmd === 'fly rhodes') {
+        flyRhodes(agent, 'city', agent.hub);
+        ok(agent, cmd === 'locate' ? 'locate' : 'fly rhodes', agent.hub);
         return;
       }
       if (global.SNAi && SNAi.ask) {
+        setCurrent(agent, 'says: ' + cmd);
         var r = await SNAi.ask(cmd);
+        flyRhodes(agent, 'city', agent.hub);
         ok(agent, 'ai:' + cmd, r);
         return;
       }
       if (global.SNCli && SNCli.run) {
         await SNCli.run(cmd);
+        flyRhodes(agent, 'city', agent.hub);
         ok(agent, 'cli:' + cmd);
         return;
       }
@@ -227,23 +495,25 @@
     }
   }
 
-  /** Vendor SPECS: list shop · menu · pulse on globe */
+  /** Vendor SPECS on Rhodes: list shop · menu · fly · open tile */
   async function actVendor(agent) {
     become(agent);
+    flyRhodes(agent, 'city', agent.hub);
+    setCurrent(agent, 'vendor @ ' + agent.hub);
     try {
       if (!global.SNMarket || !SNMarket.listShop) {
         fail(agent, 'list shop', 'no market');
         return;
       }
-      var shop = agent.shopName || 'Sim Shop ' + agent.i;
-      var listed = SNMarket.listShop(shop, agent.shopKind || 'cafe');
+      var shop = agent.shopName || 'Sim·Taverna ' + agent.hub;
+      var listed = SNMarket.listShop(shop, agent.shopKind || 'taverna');
       if (!listed || listed.ok === false) {
         fail(agent, 'list shop', (listed && listed.error) || 'fail');
         return;
       }
       var items = [
-        { name: agent.food || 'Item', price: 5 + (agent.i % 7) },
-        { name: 'Daily special ' + agent.i, price: 8 + (agent.i % 5) },
+        { name: agent.food || 'Souvlaki', price: 5 + (agent.i % 7) },
+        { name: 'Rhodes special · ' + agent.hub, price: 8 + (agent.i % 5) },
       ];
       var j;
       for (j = 0; j < items.length; j++) {
@@ -253,35 +523,30 @@
             SNProfiles.setMenuItem(agent.id, {
               name: items[j].name,
               price: items[j].price,
-              desc: 'Sim-33 SPECS menu',
+              desc: 'Rhodes Sim-33 · S',
             });
           }
         } catch (eM) {}
       }
+      flyRhodes(agent, 'city', shop);
       try {
-        if (global.SNGlobe && SNGlobe.goToPlace) {
-          SNGlobe.goToPlace(agent.lat, agent.lng, {
-            tier: 'regional',
-            body: 'earth',
-            pulse: false,
-            label: shop,
-          });
-        }
         if (global.SNTile && SNTile.open) {
           var p = SNProfiles.get(agent.id);
           if (p) SNTile.open(p, { tab: 'menu' });
         }
       } catch (eG) {}
-      ok(agent, 'list shop', shop + ' · menu');
-      teach('vendor list shop', 'list shop Name · menu add Item price · S only');
+      ok(agent, 'list shop', shop + ' · ' + agent.hub);
+      teach('Rhodes vendor', 'list shop on Rhodes · menu in S · tile open');
     } catch (e) {
       fail(agent, 'vendor', e.message || e);
     }
   }
 
-  /** Driver SPECS: online · claim open delivery · complete */
+  /** Driver SPECS on Rhodes: online · claim · complete */
   async function actDriver(agent) {
     become(agent);
+    flyRhodes(agent, 'city', agent.hub);
+    setCurrent(agent, 'driver @ ' + agent.hub);
     try {
       if (global.SNMarket && SNMarket.goDriverOnline) {
         SNMarket.goDriverOnline(agent.vehicle || 'Scooter');
@@ -310,8 +575,9 @@
           c.task.status = 'in_progress';
           if (SNTasks.complete) {
             var d = SNTasks.complete(c.task.id);
+            flyRhodes(agent, 'city', 'delivery');
             ok(agent, 'deliver', open.title || open.id);
-            teach('driver deliver', 'drive on · claim · complete · earn S');
+            teach('Rhodes driver', 'scooter on Rhodes · claim · complete · S');
             return;
           }
         }
@@ -345,37 +611,43 @@
           if (ord && ord.ok && ord.task && SNTasks.claim) {
             var c2 = SNTasks.claim(ord.task.id);
             if (c2 && c2.ok && SNTasks.complete) SNTasks.complete(c2.task.id);
-            ok(agent, 'order+deliver', v.shopName || v.name);
+            flyRhodes(agent, 'city', 'order+deliver');
+            ok(agent, 'order+deliver', (v.shopName || v.name) + ' · ' + agent.hub);
             return;
           }
         }
       }
-      ok(agent, 'driver online', agent.vehicle || 'ready');
-      teach('driver online', 'drive on · wait for order · claim · complete');
+      flyRhodes(agent, 'city', agent.hub);
+      ok(agent, 'driver online', (agent.vehicle || 'ready') + ' · ' + agent.hub);
+      teach('Rhodes driver online', 'drive on Rhodes · claim · complete');
     } catch (e) {
       fail(agent, 'driver', e.message || e);
     }
   }
 
-  /** Ambassador: free mind teach · handoff quality · SPECS tips · verify */
+  /** Ambassador on Rhodes: teach SPECS · free mind · fly island */
   async function actAmbassador(agent) {
     become(agent);
+    flyRhodes(agent, 'regional', agent.hub);
+    setCurrent(agent, 'ambassador @ ' + agent.hub);
     try {
       var tips = [
+        ['Rhodes SpaceNet', 'Activity on Rhodes Island Greece · Old Town · Lindos · Faliraki'],
         ['S currency', 'S SpaceNets is primary · fiat crypto secondary quotes only'],
-        ['SPACENET grid', 'GLOBAL then NATIONAL then REGIONAL then CITY · tap to dive'],
+        ['SPACENET grid', 'GLOBAL then NATIONAL then REGIONAL then CITY · tap to dive on Rhodes'],
         ['AI free', 'SpaceNet Free first · teach to grow · no paid xAI required for chat'],
-        ['vendor path', 'list shop · menu add · order me · drive on · deliver me'],
-        ['next show all', 'next vendor on globe · show all paints map'],
-        ['zero dummy', 'No fake NPC shops as product · sim-33 is owner swarm only'],
+        ['Rhodes vendor', 'list shop on Rhodes · menu add · order · driver scooter'],
+        ['next show all', 'next vendor on globe · show all paints map near Rhodes'],
       ];
       var tip = tips[agent.i % tips.length];
       teach(tip[0], tip[1]);
       if (global.SNAi && SNAi.ask) {
+        setCurrent(agent, 'teaches: ' + tip[0]);
         var r = await SNAi.ask(tip[0]);
-        ok(agent, 'ambassador teach', brief(r, 60));
+        flyRhodes(agent, 'regional', agent.hub);
+        ok(agent, 'ambassador', brief(r, 60));
       } else {
-        ok(agent, 'ambassador teach', tip[0]);
+        ok(agent, 'ambassador', tip[0]);
       }
       try {
         if (global.SNBrain && SNBrain.verify) {
@@ -385,16 +657,6 @@
           }
         }
       } catch (eV) {}
-      try {
-        if (global.SNGlobe && SNGlobe.goToPlace) {
-          SNGlobe.goToPlace(agent.lat, agent.lng, {
-            tier: 'national',
-            body: 'earth',
-            pulse: false,
-            label: 'Amb ' + agent.i,
-          });
-        }
-      } catch (eG) {}
     } catch (e) {
       fail(agent, 'ambassador', e.message || e);
     }
@@ -410,6 +672,12 @@
 
   async function tick() {
     if (!running) return;
+    // Real-time view only when logged in / watching
+    if (!isWatching()) {
+      showLivePanel(false);
+    } else {
+      showLivePanel(true);
+    }
     stats.ticks++;
     ensureAgents();
     var agent = agents[idx % agents.length];
@@ -419,30 +687,7 @@
     } catch (e) {
       fail(agent, 'tick', e.message || e);
     }
-    if (stats.ticks % 11 === 0) {
-      preview(
-        'Sim33 · t' +
-          stats.ticks +
-          ' · ok' +
-          stats.ok +
-          ' · fail' +
-          stats.fail +
-          ' · teach' +
-          stats.taught
-      );
-      log(
-        'Sim-33 · tick ' +
-          stats.ticks +
-          ' · ok ' +
-          stats.ok +
-          ' · fail ' +
-          stats.fail +
-          ' · free taught ' +
-          stats.taught,
-        'ok'
-      );
-    }
-    // Persist light stats
+    paintLive();
     try {
       localStorage.setItem(
         KEY,
@@ -450,6 +695,7 @@
           stats: stats,
           idx: idx,
           n: agents.length,
+          focus: 'Rhodes',
         })
       );
     } catch (eS) {}
@@ -458,7 +704,8 @@
   function start(opts) {
     opts = opts || {};
     if (running) {
-      log('Sim-33 already running · sim stop to halt', 'dim');
+      log('Sim-33 already running on Rhodes · sim stop to halt', 'dim');
+      showLivePanel(true);
       return status();
     }
     ensureAgents();
@@ -469,13 +716,29 @@
     }
     running = true;
     stats.startedAt = Date.now();
-    tickMs = opts.fast ? 400 : opts.slow ? 2000 : 900;
-    log('── Sim-33 SPECS swarm START · ' + N + ' agents ──', 'ok');
-    log('12 clients · 8 vendors · 8 drivers · 5 ambassadors · grow SpaceNet Free', 'dim');
-    log('sim stop · sim status · sim wipe · not public product NPCs', 'dim');
-    preview('SIM-33 RUNNING');
+    tickMs = opts.fast ? 700 : opts.slow ? 2000 : 1100;
+    // Open globe on Rhodes immediately so you SEE the island
     try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('sim33_start', { n: N });
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(RHODES.lat, RHODES.lng, {
+          tier: 'regional',
+          body: 'earth',
+          pulse: false,
+          label: 'Rhodes Island',
+        });
+      }
+    } catch (eR) {}
+    log('── Sim-33 LIVE · RHODES ISLAND, Greece · ' + N + ' agents ──', 'ok');
+    log('Old Town · Mandraki · Lindos · Faliraki · Ialysos · Garage…', 'dim');
+    log('12 clients · 8 vendors · 8 drivers · 5 ambassadors', 'dim');
+    preview('RHODES · SIM-33 LIVE');
+    try {
+      localStorage.setItem('sn:sim-watch', '1');
+    } catch (eW) {}
+    showLivePanel(true);
+    try {
+      if (global.SNUsage && SNUsage.track)
+        SNUsage.track('sim33_start', { n: N, focus: 'Rhodes' });
     } catch (e2) {}
     void tick();
     timer = setInterval(function () {
@@ -491,11 +754,20 @@
       timer = null;
     }
     restoreMe();
-    log('── Sim-33 STOP · ok ' + stats.ok + ' · fail ' + stats.fail + ' ──', 'ok');
-    preview('SIM-33 OFF');
+    currentAct = null;
+    log('── Sim-33 STOP · Rhodes · ok ' + stats.ok + ' · fail ' + stats.fail + ' ──', 'ok');
+    preview('RHODES · SIM OFF');
+    paintLive();
+    var el = document.getElementById('sn-sim33-live');
+    if (el) el.classList.add('off');
     try {
       if (global.SNUsage && SNUsage.track)
-        SNUsage.track('sim33_stop', { ok: stats.ok, fail: stats.fail, taught: stats.taught });
+        SNUsage.track('sim33_stop', {
+          ok: stats.ok,
+          fail: stats.fail,
+          taught: stats.taught,
+          focus: 'Rhodes',
+        });
     } catch (e) {}
     return status();
   }
@@ -563,6 +835,12 @@
       stats: Object.assign({}, stats),
       roles: { client: 12, vendor: 8, driver: 8, ambassador: 5 },
       tickMs: tickMs,
+      focus: 'Rhodes Island, Greece',
+      hubs: HUBS.map(function (h) {
+        return h.name;
+      }),
+      watching: isWatching(),
+      loggedIn: isLoggedIn(),
     };
   }
 
@@ -577,18 +855,28 @@
 
   function maybeAutostart() {
     try {
-      // Owner can lock off: localStorage sn:sim-auto=0
       if (localStorage.getItem(AUTO_KEY) === '0') return;
       var q = typeof location !== 'undefined' ? location.search || '' : '';
       if (/[?&]sim=0\b/.test(q)) return;
-      // Default ON once per page load — 33 SPECS agents use + improve app + free mind
-      setTimeout(function () {
-        if (!running) start({ fast: true });
-      }, 3200);
+      // Start when logged in (or ?sim=1) so owner SEES Rhodes activity
+      function tryStart() {
+        if (running) return;
+        if (isLoggedIn() || /[?&]sim=1\b/.test(q) || localStorage.getItem(AUTO_KEY) === '1') {
+          start({ fast: true });
+        }
+      }
+      setTimeout(tryStart, 2800);
+      // If login happens later, start then
+      if (authWatch) clearInterval(authWatch);
+      authWatch = setInterval(function () {
+        if (!running && isLoggedIn() && localStorage.getItem(AUTO_KEY) !== '0') {
+          start({ fast: true });
+        }
+        if (running && isWatching()) showLivePanel(true);
+      }, 4000);
     } catch (e) {}
   }
 
-  // Patch list to hide sim when stopped (soft wrap)
   function patchProfilesList() {
     try {
       if (!global.SNProfiles || !SNProfiles.list || SNProfiles.list._simPatched) return;
@@ -605,6 +893,8 @@
 
   global.SNSim33 = {
     N: N,
+    RHODES: RHODES,
+    HUBS: HUBS,
     start: start,
     stop: stop,
     wipe: wipe,
@@ -612,11 +902,21 @@
     status: status,
     tick: tick,
     filterSim: filterSim,
+    showLive: function () {
+      try {
+        localStorage.setItem('sn:sim-watch', '1');
+      } catch (e) {}
+      showLivePanel(true);
+      if (!running) start({ fast: true });
+    },
     get running() {
       return running;
     },
     get agents() {
       return agents.slice();
+    },
+    get feed() {
+      return feed.slice();
     },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
