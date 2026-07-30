@@ -154,8 +154,32 @@
         );
         return;
       }
-      if (/^sim\b/.test(low)) {
-        log('Sim-33 deleted · use: day start (driver day on Rodos)', 'dim');
+      if (
+        low === 'sim' ||
+        low === 'sim toggle' ||
+        low === 'sim start' ||
+        low === 'sim stop' ||
+        low === 'sim on' ||
+        low === 'sim off' ||
+        low === 'sim live'
+      ) {
+        // One control: toggle driver-day scenario (33-swarm deleted)
+        const Day = global.SNDriverDay;
+        if (!Day) {
+          log('Sim mode loading · hard refresh', 'err');
+          return;
+        }
+        if (low === 'sim stop' || low === 'sim off') {
+          Day.stop();
+          return;
+        }
+        if (low === 'sim start' || low === 'sim on' || low === 'sim live') {
+          void Day.start();
+          return;
+        }
+        // sim / sim toggle
+        if (Day.running) Day.stop();
+        else void Day.start();
         return;
       }
       if (low === 'super' || low === 'fleet' || low === 'super deck') {
