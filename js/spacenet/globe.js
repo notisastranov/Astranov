@@ -21,11 +21,12 @@
   }
   var SN = snApi();
   var TIERS = {
-    solar: { z: 7.8, label: 'SOLAR' },
-    global: { z: 3.05, label: 'GLOBAL' },
-    national: { z: 1.88, label: 'NATIONAL' },
-    regional: { z: 1.58, label: 'REGIONAL' },
-    city: { z: 1.38, label: 'CITY' },
+    // GLOBAL = full planet in space (ISS / sats visible). Not a cropped close-up.
+    solar: { z: 12.0, label: 'SOLAR' },
+    global: { z: 6.4, label: 'GLOBAL' },
+    national: { z: 2.35, label: 'NATIONAL' },
+    regional: { z: 1.72, label: 'REGIONAL' },
+    city: { z: 1.42, label: 'CITY' },
   };
   // Sync dramatic Z from SPACENET law when present
   (function syncZ() {
@@ -194,10 +195,10 @@
   function tierFromZ(z) {
     var S = snApi();
     if (S && S.tierFromZ) return S.tierFromZ(z);
-    if (z >= 5.2) return 'solar';
-    if (z >= 2.35) return 'global';
-    if (z >= 1.72) return 'national';
-    if (z >= 1.48) return 'regional';
+    if (z >= 9.0) return 'solar';
+    if (z >= 4.0) return 'global';
+    if (z >= 1.95) return 'national';
+    if (z >= 1.55) return 'regional';
     return 'city';
   }
 
@@ -964,8 +965,10 @@
     G.scene = new THREE.Scene();
     G.scene.background = new THREE.Color(0x000000);
     G.camera = new THREE.PerspectiveCamera(42, w / h, 0.05, 200);
-    G.camera.position.set(0, 0.12, TIERS.global.z);
+    // Full-Earth space overview (whole sphere + stars around it)
+    G.camera.position.set(0, 0.06, TIERS.global.z);
     G.tier = 'global';
+    G.diveTier = 'global';
 
     G.renderer = new THREE.WebGLRenderer({
       antialias: !touch,
@@ -1092,28 +1095,29 @@
       )
     );
 
-    var starN = touch ? 400 : 900;
+    var starN = touch ? 700 : 1600;
     var starPos = new Float32Array(starN * 3);
     for (var i = 0; i < starN; i++) {
-      var r = 20 + Math.random() * 50;
+      var r = 18 + Math.random() * 70;
       var th = Math.random() * Math.PI * 2;
       var ph = Math.acos(2 * Math.random() - 1);
       starPos[i * 3] = r * Math.sin(ph) * Math.cos(th);
       starPos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
       starPos[i * 3 + 2] = r * Math.cos(ph);
     }
-    G.scene.add(
-      new THREE.Points(
-        new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(starPos, 3)),
-        new THREE.PointsMaterial({
-          color: 0xffffff,
-          size: 0.045,
-          sizeAttenuation: true,
-          opacity: 0.85,
-          transparent: true,
-        })
-      )
+    G.stars = new THREE.Points(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(starPos, 3)),
+      new THREE.PointsMaterial({
+        color: 0xffffff,
+        size: 0.055,
+        sizeAttenuation: true,
+        opacity: 0.92,
+        transparent: true,
+        depthWrite: false,
+      })
     );
+    G.scene.add(G.stars);
+    buildSpaceOrbitLayer();
 
     bindInput();
     window.addEventListener('resize', onResize, { passive: true });
@@ -1130,9 +1134,141 @@
         console.error('[SNGlobe] SPACENET webbing boot fail', e);
       } catch (_) {}
     }
+    setSpaceLive(true);
     setTierLabel();
     loop();
     return true;
+  }
+
+  /**
+   * LEO band + ISS marker — visible at GLOBAL/SOLAR (full Earth in space).
+   * ISS lat/lng from free feed; constellation = dense LEO shell (not map layers).
+   */
+  function buildSpaceOrbitLayer() {
+    if (!G.pivot || G.spaceRoot) return;
+    G.spaceRoot = new THREE.Object3D();
+    G.spaceRoot.name = 'spaceOrbit';
+    G.pivot.add(G.spaceRoot);
+
+    // Starlink-style LEO constellation shell (~400–550 km → r ≈ 1.06–1.09)
+    var n = 180;
+    var pos = new Float32Array(n * 3);
+    var i;
+    for (i = 0; i < n; i++) {
+      var lat = (Math.random() - 0.5) * 140;
+      var lng = Math.random() * 360 - 180;
+      var rr = 1.055 + Math.random() * 0.04;
+      var v = latLngToVec(lat, lng, rr);
+      pos[i * 3] = v.x;
+      pos[i * 3 + 1] = v.y;
+      pos[i * 3 + 2] = v.z;
+    }
+    G.leoCloud = new THREE.Points(
+      new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(pos, 3)),
+      new THREE.PointsMaterial({
+        color: 0x88ccff,
+        size: 0.012,
+        sizeAttenuation: true,
+        transparent: true,
+        opacity: 0.85,
+        depthWrite: false,
+      })
+    );
+    G.spaceRoot.add(G.leoCloud);
+
+    // Faint orbital ring (visual constellation band)
+    var ringPts = [];
+    var segs = 96;
+    for (i = 0; i <= segs; i++) {
+      var a = (i / segs) * Math.PI * 2;
+      ringPts.push(new THREE.Vector3(Math.cos(a) * 1.07, 0, Math.sin(a) * 1.07));
+    }
+    G.leoRing = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(ringPts),
+      new THREE.LineBasicMaterial({
+        color: 0x3d9eff,
+        transparent: true,
+        opacity: 0.22,
+      })
+    );
+    G.leoRing.rotation.x = 0.55;
+    G.spaceRoot.add(G.leoRing);
+
+    // ISS marker
+    G.issMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.018, 10, 10),
+      new THREE.MeshBasicMaterial({ color: 0xffcc44 })
+    );
+    G.issMesh.visible = false;
+    G.spaceRoot.add(G.issMesh);
+    G.issHalo = new THREE.Mesh(
+      new THREE.SphereGeometry(0.032, 10, 10),
+      new THREE.MeshBasicMaterial({
+        color: 0xffaa00,
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false,
+      })
+    );
+    G.issHalo.visible = false;
+    G.spaceRoot.add(G.issHalo);
+    G.spaceRoot.visible = true;
+  }
+
+  function spaceLayerShouldShow() {
+    if (!(G.bodyId === 'earth' || !G.bodyId)) return false;
+    if (global.SNMap && SNMap.active) return false;
+    var t = currentTier();
+    return t === 'global' || t === 'solar';
+  }
+
+  function syncSpaceLayerVis() {
+    if (!G.spaceRoot) return;
+    var on = spaceLayerShouldShow();
+    G.spaceRoot.visible = on;
+    if (G.stars) G.stars.visible = true;
+  }
+
+  function setSpaceLive(on) {
+    if (G._issTimer) {
+      try {
+        clearInterval(G._issTimer);
+      } catch (_) {}
+      G._issTimer = null;
+    }
+    if (!on) return;
+    void refreshIssGlobe();
+    G._issTimer = setInterval(function () {
+      void refreshIssGlobe();
+    }, 12000);
+  }
+
+  async function refreshIssGlobe() {
+    if (!G.issMesh || !spaceLayerShouldShow()) {
+      if (G.issMesh) G.issMesh.visible = false;
+      if (G.issHalo) G.issHalo.visible = false;
+      return;
+    }
+    try {
+      var r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
+      if (!r.ok) throw new Error('iss ' + r.status);
+      var j = await r.json();
+      var lat = parseFloat(j.latitude);
+      var lng = parseFloat(j.longitude);
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      // LEO altitude ~420 km → radius scale ~1.066 on unit Earth
+      var alt = 1.066;
+      var p = latLngToVec(lat, lng, alt);
+      G.issMesh.position.copy(p);
+      G.issMesh.visible = true;
+      if (G.issHalo) {
+        G.issHalo.position.copy(p);
+        G.issHalo.visible = true;
+      }
+      G._issPos = { lat: lat, lng: lng };
+    } catch (_) {
+      /* feed optional — constellation still shows */
+    }
   }
 
   function bindInput() {
@@ -1269,10 +1405,11 @@
         var under = pickLatLng(e.clientX, e.clientY);
         if (under) setFocus(under.lat, under.lng);
 
-        var next = Math.max(1.42, Math.min(9, G.camera.position.z + e.deltaY * 0.0022));
+        var next = Math.max(1.42, Math.min(14, G.camera.position.z + e.deltaY * 0.0028));
         G.camera.position.z = next;
         G.diveTier = tierFromZ(next);
         setTierLabel();
+        syncSpaceLayerVis();
 
         // Enter city tier → street map at FOCUS (clicked/zoomed place), never forced home city
         if (next <= TIERS.city.z + 0.02 && !global.SNMap?.active) {
@@ -1590,15 +1727,21 @@
       !G.flying &&
       !userCool &&
       idle &&
-      G.camera.position.z > 2.35
+      G.camera.position.z > 4.0
     ) {
       // Very gentle idle only at GLOBAL/SOLAR — never fight user control
       G.pivot.rotation.y += 0.00045;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
+    // ISS halo soft pulse when space layer on
+    if (G.issHalo && G.issHalo.visible) {
+      var s = 1 + 0.12 * Math.sin(Date.now() * 0.004);
+      G.issHalo.scale.set(s, s, s);
+    }
     // Day/night + soft HUD; grid stays fixed faded (no loud pulse)
     if (G.frame % 4 === 0) {
       updateDayNight();
+      syncSpaceLayerVis();
       if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible)) {
         updateNationalHud(false);
         if (G.webbGrid && G.webbGrid.material) {
@@ -1631,26 +1774,61 @@
       var e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
       G.camera.position.z = from + (toZ - from) * e;
       setTierLabel();
+      syncSpaceLayerVis();
       G.lastAct = Date.now();
       if (k < 1) requestAnimationFrame(step);
-      else G.zoomAnim = false;
+      else {
+        G.zoomAnim = false;
+        syncSpaceLayerVis();
+      }
     }
     requestAnimationFrame(step);
   }
 
   function goToTier(name) {
-    var t = TIERS[name] || TIERS.global;
-    G.diveTier = name in TIERS ? name : 'global';
-    if (name !== 'city') {
+    var key = String(name || 'global').toLowerCase();
+    if (key === 'earth' || key === 'full' || key === 'space') key = 'global';
+    var t = TIERS[key] || TIERS.global;
+    G.diveTier = key in TIERS ? key : 'global';
+    syncDiveStepFromTier(G.diveTier);
+    if (key !== 'city') {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
     }
-    animateZ(t.z, 700);
+    // GLOBAL/SOLAR: full sphere in space — center camera, pull back, show ISS/sats
+    if (key === 'global' || key === 'solar') {
+      if (G.camera) {
+        G.camera.position.x = 0;
+        G.camera.position.y = key === 'solar' ? 0.04 : 0.06;
+      }
+      setSpaceLive(true);
+    }
+    animateZ(t.z, 800);
     setTierLabel();
-    setHud('Astranov SpaceNet · ' + t.label);
+    syncSpaceLayerVis();
+    G.tier = G.diveTier;
+    var hud =
+      key === 'global'
+        ? 'GLOBAL · full Earth in space · ISS + sats'
+        : key === 'solar'
+          ? 'SOLAR · deep space overview'
+          : 'Astranov SpaceNet · ' + t.label;
+    setHud(hud);
     try {
-      if (global.SNCli && SNCli.preview) SNCli.preview(t.label + ' zoom');
+      if (global.SNCli && SNCli.preview) {
+        SNCli.preview(
+          key === 'global' ? 'GLOBAL · full Earth in space' : t.label
+        );
+      }
+      if (global.SNCli && SNCli.log && (key === 'global' || key === 'solar')) {
+        SNCli.log(
+          key === 'global'
+            ? 'SPACENET · GLOBAL · whole Earth in space · ISS · LEO constellation'
+            : 'SPACENET · SOLAR · deep space',
+          'ok'
+        );
+      }
     } catch (_) {}
     return t.label;
   }

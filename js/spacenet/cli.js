@@ -790,8 +790,10 @@
       }
       if (low === 'global' || low === 'earth' || low === 'world' || low === 'zoom global' || low === 'zoom earth') {
         global.SNMap?.close?.();
+        Globe?.setBody?.('earth');
         Globe?.goToTier?.('global');
-        log('SPACENET · GLOBAL Earth', 'ok');
+        log('SPACENET · GLOBAL · full Earth in space · ISS · constellation', 'ok');
+        preview('GLOBAL · full Earth in space');
         return;
       }
       if (low === 'national' || low === 'country' || low === 'zoom national') {
@@ -1017,8 +1019,8 @@
           Globe?.setBody?.('earth');
           Globe?.goToTier?.('global');
         } catch (_) {}
-        log('Surface · GLOBAL Earth · fly <city> or dive for city map', 'ok');
-        preview('GLOBAL Earth');
+        log('Surface · GLOBAL · full Earth in space · ISS · sats', 'ok');
+        preview('GLOBAL · full Earth in space');
         return;
       }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {

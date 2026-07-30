@@ -206,7 +206,7 @@ const AstranovContinuity = {
   },
 
   verify: [
-    'GLOBAL Earth default',
+    'GLOBAL = full Earth in space (camera far) · ISS + LEO constellation · not cropped hemisphere',
     'single-tap → dive national→regional→city fly+zoom NO blue rings',
     'double-tap → zoom out one ladder step toward globe',
     'short-tap Earth → fly TO click (quaternion face + no crawl re-fly)',

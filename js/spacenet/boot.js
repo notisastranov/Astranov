@@ -170,7 +170,7 @@
           globeOk = !!SNGlobe.init();
           if (globeOk) {
             try {
-              // Law: default view is always full GLOBAL Earth — never city map on boot
+              // Law: GLOBAL = full Earth floating in space (ISS/sats), never cropped hemisphere
               if (SNGlobe.setBody) SNGlobe.setBody('earth');
               if (SNGlobe.goToTier) SNGlobe.goToTier('global');
             } catch (e) {}
