@@ -1005,7 +1005,7 @@
         }
         return;
       }
-      // View switches: training default = Rodos city map; CLI can leave anytime
+      // Optional city surfaces (boot default is GLOBAL — never auto-open map)
       if (
         low === 'rodos' ||
         low === 'rhodes' ||

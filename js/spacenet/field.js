@@ -1656,8 +1656,8 @@
           { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
           { e: '🌍', t: 'Full Earth', d: 'GLOBAL SPACENET', run: 'global' },
           { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
-          { e: '🏛', t: 'Rodos city map', d: 'Training surface', run: 'rodos' },
-          { e: '🌍', t: 'Global globe', d: 'Leave city map', run: 'global' },
+          { e: '🏛', t: 'Rodos city map', d: 'Optional · CLI rodos', run: 'rodos' },
+          { e: '🌍', t: 'Global globe', d: 'Default home view', run: 'global' },
         ],
       },
       {

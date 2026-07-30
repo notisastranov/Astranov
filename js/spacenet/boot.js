@@ -170,18 +170,9 @@
           globeOk = !!SNGlobe.init();
           if (globeOk) {
             try {
-              // Training surface: land on Rhodes city (map opens after SNMap.init)
-              if (SNGlobe.goToPlace) {
-                SNGlobe.goToPlace(36.4341, 28.2176, {
-                  tier: 'city',
-                  body: 'earth',
-                  pulse: false,
-                  openMap: false,
-                  label: 'Rhodes',
-                });
-              } else if (SNGlobe.goToTier) {
-                SNGlobe.goToTier('city');
-              }
+              // Law: default view is always full GLOBAL Earth — never city map on boot
+              if (SNGlobe.setBody) SNGlobe.setBody('earth');
+              if (SNGlobe.goToTier) SNGlobe.goToTier('global');
             } catch (e) {}
           }
         }
@@ -221,26 +212,20 @@
         }
       });
 
-      // Default training surface = Rodos city map (CLI: global · fly <city> to leave)
+      // City map stays closed until user dives to CITY / CLI city|rodos|fly|locate
       try {
-        window._snLastPos = { lat: 36.4341, lng: 28.2176 };
-        if (window.SNTasks && SNTasks.setPos) SNTasks.setPos(36.4341, 28.2176);
-        if (window.SNMap && SNMap.open) {
-          void SNMap.open(36.4341, 28.2176).then(function () {
-            try {
-              if (window.SNCli && SNCli.log)
-                SNCli.log('Surface · Rodos city map · CLI: global · fly athens · fly london', 'dim');
-            } catch (e2) {}
-          });
-        }
+        if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
       } catch (e3) {}
 
       var ms = Math.round(performance.now() - t0);
       done('ready ' + ms + 'ms' + (globeOk ? '' : ' · no-globe'));
       try {
         if (window.SNCli && SNCli.log) {
-          SNCli.log('SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL' : 'CLI-only'), 'ok');
-          SNCli.preview('SpaceNet · locate · shops · talk');
+          SNCli.log(
+            'SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL Earth' : 'CLI-only') + ' · tap to dive · city|rodos when ready',
+            'ok'
+          );
+          SNCli.preview('GLOBAL Earth');
         }
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
