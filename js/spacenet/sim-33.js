@@ -114,21 +114,15 @@
    */
   function flyRhodes(agent, tier, label) {
     if (!agent) return;
+    // Always update logical pos for orders/routes — NEVER move camera (user observes free)
     try {
-      // Soft focus for logistics only — do not steal camera if user intervened
-      if (global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot()) {
-        return;
+      // Do not stomp global focus while user holds camera — keep their observed spot
+      if (!(global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot())) {
+        global._snLastPos = { lat: agent.lat, lng: agent.lng };
+        if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
       }
-      global._snLastPos = { lat: agent.lat, lng: agent.lng };
-      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
     } catch (e2) {}
-    try {
-      // Autopilot only: rare soft pan (not every agent every tick)
-      if (global.SNMap && SNMap.softSetView) {
-        // no-op path — sim no longer setView per agent
-      }
-      // No globe pulse spam (was jumping visual attention)
-    } catch (e) {}
+    // Camera never moves from sim ticks
   }
 
   function openRhodesCityMap(force) {
@@ -787,25 +781,17 @@
   }
 
   function maybeAutostart() {
+    // DEFAULT OFF — continuous 33-swarm burns tokens/attention.
+    // Only explicit: sim live | ?sim=1 | sn:sim-auto=1
     try {
-      if (localStorage.getItem(AUTO_KEY) === '0') return;
+      localStorage.setItem(AUTO_KEY, localStorage.getItem(AUTO_KEY) === '1' ? '1' : '0');
+      if (localStorage.getItem(AUTO_KEY) !== '1') return;
       var q = typeof location !== 'undefined' ? location.search || '' : '';
-      if (/[?&]sim=0\b/.test(q)) return;
-      // Normal speed for everyone to observe (not blitz)
-      function tryStart() {
-        if (running) return;
-        if (isLoggedIn() || /[?&]sim=1\b/.test(q) || localStorage.getItem(AUTO_KEY) === '1') {
-          start({ ms: 5500 });
-        }
+      if (/[?&]sim=1\b/.test(q) || localStorage.getItem(AUTO_KEY) === '1') {
+        setTimeout(function () {
+          if (!running) start({ ms: 5500 });
+        }, 4000);
       }
-      setTimeout(tryStart, 3500);
-      if (authWatch) clearInterval(authWatch);
-      authWatch = setInterval(function () {
-        if (!running && isLoggedIn() && localStorage.getItem(AUTO_KEY) !== '0') {
-          start({ ms: 5500 });
-        }
-        if (running && isWatching()) showLivePanel(true);
-      }, 5000);
     } catch (e) {}
   }
 

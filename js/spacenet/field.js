@@ -67,6 +67,8 @@
     'rgba(120,255,160,0.9)',
     'rgba(200,140,255,0.9)',
   ];
+  /** Leaflet polylines on city map — independent of camera hold */
+  var mapRouteLayers = [];
   /**
    * SPECS CLI top ribbon — ALWAYS visible permanent basics:
    * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
@@ -845,6 +847,104 @@
 
   function clearRoutes() {
     routes = [];
+    clearMapRouteLayers();
+  }
+
+  function clearMapRouteLayers() {
+    mapRouteLayers.forEach(function (Lyr) {
+      try {
+        if (Lyr && Lyr.remove) Lyr.remove();
+      } catch (e) {}
+    });
+    mapRouteLayers = [];
+  }
+
+  /**
+   * Draw route polygon/polyline + pickup/drop on CITY MAP.
+   * Always runs when map is open — does NOT move camera (user hold respected).
+   */
+  function paintRouteOnCityMap(row) {
+    if (!row || !row.points || row.points.length < 2) return;
+    if (!g.SNMap || !SNMap.active || !SNMap.map || typeof L === 'undefined') return;
+    try {
+      var map = SNMap.map;
+      var latlngs = row.points.map(function (p) {
+        return [p.lat, p.lng];
+      });
+      // Remove prior layer same id
+      mapRouteLayers = mapRouteLayers.filter(function (ly) {
+        if (ly && ly._snRouteId === row.id) {
+          try {
+            ly.remove();
+          } catch (e0) {}
+          return false;
+        }
+        return true;
+      });
+      var col = (row.color || '#00dcff').replace('0.95', '1').replace('rgba', 'rgb');
+      if (col.indexOf('rgba') === 0) col = '#3d9eff';
+      var poly = L.polyline(latlngs, {
+        color: typeof row.color === 'string' && row.color.indexOf('#') === 0 ? row.color : '#00d4ff',
+        weight: 5,
+        opacity: 0.9,
+        lineJoin: 'round',
+      }).addTo(map);
+      poly._snRouteId = row.id;
+      try {
+        poly.bindPopup(
+          (row.label || 'Route') +
+            (row.eta ? '<br>ETA ' + row.eta : '') +
+            (row.speedKmh != null ? '<br>' + Math.round(row.speedKmh) + ' km/h' : '')
+        );
+      } catch (e1) {}
+      mapRouteLayers.push(poly);
+      var a0 = row.points[0];
+      var a1 = row.points[row.points.length - 1];
+      var m0 = L.circleMarker([a0.lat, a0.lng], {
+        radius: 7,
+        color: '#22ff88',
+        fillColor: '#22ff88',
+        fillOpacity: 0.95,
+        weight: 2,
+      })
+        .addTo(map)
+        .bindPopup('Vendor pickup');
+      m0._snRouteId = row.id;
+      mapRouteLayers.push(m0);
+      var m1 = L.circleMarker([a1.lat, a1.lng], {
+        radius: 7,
+        color: '#ff4466',
+        fillColor: '#ff4466',
+        fillOpacity: 0.95,
+        weight: 2,
+      })
+        .addTo(map)
+        .bindPopup('Client stop');
+      m1._snRouteId = row.id;
+      mapRouteLayers.push(m1);
+      // Cap layers
+      while (mapRouteLayers.length > 36) {
+        try {
+          mapRouteLayers.shift().remove();
+        } catch (e2) {}
+      }
+      // Driver marker (updates via progress) — store on row
+      if (!row._mapDriver) {
+        row._mapDriver = L.circleMarker([a0.lat, a0.lng], {
+          radius: 8,
+          color: '#ffcc33',
+          fillColor: '#ffdd55',
+          fillOpacity: 1,
+          weight: 2,
+        }).addTo(map);
+        row._mapDriver._snRouteId = row.id;
+        mapRouteLayers.push(row._mapDriver);
+      }
+    } catch (e) {
+      try {
+        if (g.SNCli && SNCli.log) SNCli.log('Map route paint · ' + (e.message || e), 'dim');
+      } catch (e3) {}
+    }
   }
 
   function straightRoute(aLat, aLng, bLat, bLng, steps) {
@@ -1129,6 +1229,11 @@
       }
     );
     if (!row) return null;
+    // Always paint on city map + radar — camera hold does NOT block route polygons
+    paintRouteOnCityMap(row);
+    try {
+      if (g.SNMap && SNMap.showTasks) SNMap.showTasks();
+    } catch (eT) {}
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
@@ -1138,14 +1243,15 @@
             (row.eta || '?') +
             ' · ' +
             Math.round(row.speedKmh || 0) +
-            ' km/h · vendor→client',
+            ' km/h · vendor→client · map polygon ON' +
+            (g.SNMap && SNMap.userHold ? ' · camera held by you' : ''),
           'ok'
         );
       }
       if (g.SNCli && SNCli.preview)
         SNCli.preview('ETA ' + (row.eta || '?') + ' · ' + Math.round(row.speedKmh || 0) + ' km/h');
     } catch (e2) {}
-    // Animate driver along polygon (scooter city pace)
+    // Animate driver along polygon (scooter city pace) — map marker follows
     var durationMs = Math.max(8000, Math.min(90000, (row.durationS || 600) * 1000 * 0.35));
     var t0 = Date.now();
     var animId = id;
@@ -1169,6 +1275,17 @@
         ' · ' +
         Math.round(r.speedKmh || 28) +
         'km/h';
+      try {
+        var pt = pointAlong(r.points, u);
+        if (pt && r._mapDriver && r._mapDriver.setLatLng) {
+          r._mapDriver.setLatLng([pt.lat, pt.lng]);
+          if (r._mapDriver.setPopupContent) {
+            r._mapDriver.setPopupContent(
+              'Driver · ETA ' + r.eta + ' · ' + Math.round(r.speedKmh || 0) + ' km/h'
+            );
+          }
+        }
+      } catch (eD) {}
       if (u >= 1) {
         r.progress = 1;
         try {
@@ -1560,7 +1677,9 @@
           { e: '⚡', t: 'Resources', d: 'CPU · mine status', run: 'resources' },
           { e: '⛏', t: 'Mine on', d: 'Earn S from spare', run: 'mine on' },
           { e: '🧠', t: 'Free mind', d: 'SpaceNet Free AI status', run: 'free mind' },
-          { e: '📡', t: 'Sim-33', d: 'Rhodes · output on CLI', run: 'sim live' },
+          { e: '🌅', t: 'Driver day', d: 'Wake→coffee→work→date', run: 'day start' },
+          { e: '⏹', t: 'Day stop', d: 'Abort driver day', run: 'day stop' },
+          { e: '📡', t: 'Sim-33 (opt)', d: 'Swarm OFF by default', run: 'sim live' },
           { e: '■', t: 'Sim stop', d: 'Halt swarm', run: 'sim stop' },
           { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },
           { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },

@@ -350,6 +350,28 @@
     };
   }
 
+  /** Optional training thought stream (CLI / mind strip if present) */
+  function think(text, kind) {
+    var t = String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 160);
+    if (!t) return;
+    try {
+      var box = document.getElementById('cli-ai-mind-log');
+      if (box) {
+        var line = document.createElement('div');
+        line.className = 'cli-ai-think';
+        line.textContent = '· ' + t;
+        box.appendChild(line);
+        while (box.children.length > 12) box.removeChild(box.firstChild);
+        box.scrollTop = box.scrollHeight;
+      } else if (global.SNCli && SNCli.log) {
+        SNCli.log('🧠 ' + t, 'dim');
+      }
+    } catch (e) {}
+  }
+
   function teach(q, a, tags) {
     q = String(q || '')
       .trim()
@@ -358,6 +380,9 @@
       .trim()
       .slice(0, 280);
     if (!q || !a) return { ok: false };
+    try {
+      think('learned · ' + q.slice(0, 40) + ' → ' + a.slice(0, 50), 'teach');
+    } catch (eT) {}
     // Merge similar
     var qTok = tokens(q);
     var i;
@@ -439,6 +464,7 @@
     NAME: NAME,
     answer: answer,
     teach: teach,
+    think: think,
     learnInteraction: learnInteraction,
     exportTrainset: exportTrainset,
     status: status,

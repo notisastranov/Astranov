@@ -120,8 +120,9 @@
     '/js/spacenet/market.js', // first vendor → delivery coach
     '/js/spacenet/market-live.js', // Rhodes delivery polygons · ETA · CLI I/O
     '/js/spacenet/free-ai.js', // SpaceNet Free mind — own AI, no paid xAI required
-    '/js/spacenet/sim-33.js', // 33 SPECS agents · normal watchable pace
-    '/js/spacenet/super.js', // Architect fleet + TX tape
+    '/js/spacenet/sim-33.js', // optional swarm · OFF by default
+    '/js/spacenet/driver-day.js', // tight driver day: wake→coffee→work→dating
+    '/js/spacenet/super.js', // Architect fleet + TX on CLI
     '/js/spacenet/live-bridge.js', // runtime control without redeploy
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js', // SpaceNet AI — free mind first

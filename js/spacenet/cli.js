@@ -45,7 +45,8 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('SIM   sim live · 33 agents Rhodes · all output on this CLI', 'ok');
+    log('DAY   day start · driver routine wake→coffee→work→dating (Rodos)', 'ok');
+    log('SIM   sim live · optional 33-swarm (OFF by default · burns attention)', 'dim');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -122,7 +123,39 @@
         dumpBrain('summary');
         return;
       }
-      // 33 SPECS agents swarm
+      // Tight driver day (preferred over swarm)
+      if (
+        low === 'day' ||
+        low === 'day start' ||
+        low === 'driver day' ||
+        low === 'start day' ||
+        low === 'daily' ||
+        low === 'routine'
+      ) {
+        if (global.SNDriverDay && SNDriverDay.start) {
+          void SNDriverDay.start();
+        } else log('Driver day loading · hard refresh', 'err');
+        return;
+      }
+      if (low === 'day stop' || low === 'stop day') {
+        if (global.SNDriverDay && SNDriverDay.stop) SNDriverDay.stop();
+        else log('No day running', 'dim');
+        return;
+      }
+      if (low === 'day status') {
+        const st = global.SNDriverDay?.status?.() || {};
+        log(
+          'Day · ' +
+            (st.running ? 'RUNNING' : 'idle') +
+            ' · phase ' +
+            (st.phase || '—') +
+            ' · ' +
+            (st.focus || 'Rhodes'),
+          st.running ? 'ok' : 'dim'
+        );
+        return;
+      }
+      // 33 SPECS agents swarm (optional · off by default)
       if (/^sim\b/.test(low)) {
         const Sim = global.SNSim33;
         if (!Sim) {
