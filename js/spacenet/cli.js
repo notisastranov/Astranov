@@ -1213,16 +1213,29 @@
         return;
       }
       if (/^task\s*list$|^list$|^tasks$/.test(low)) {
-        const open = Tasks?.list?.() || [];
+        const open = Tasks?.list?.({ all: true }) || Tasks?.list?.() || [];
         if (!open.length) {
-          log('No open tasks · job barman 3h · date coffee · deliver food', 'dim');
+          log('No open tasks · order food or wait for jobs', 'dim');
         } else {
           open.slice(0, 15).forEach((t) => {
-            log((t.status || 'open') + ' · ' + t.kind + ' · ' + t.dur + ' · ' + t.title.slice(0, 42), 'ok');
-            Globe?.pulse?.(t.lat, t.lng, (Tasks.KINDS[t.kind] || {}).color, t.title.slice(0, 16), 9000);
+            const en = global.SNTaskBoard?.enrich?.(t);
+            const price =
+              en?.price != null
+                ? global.SNCurrency
+                  ? SNCurrency.format(en.price)
+                  : en.price.toFixed(2) + ' S'
+                : '';
+            log(
+              (t.status || 'open') +
+                ' · ' +
+                (price ? price + ' · ' : '') +
+                t.title.slice(0, 36) +
+                (en ? ' · ' + en.vendorName + ' → ' + en.clientName : ''),
+              'ok'
+            );
           });
           if (global.SNMap?.active) global.SNMap.showTasks?.();
-          preview(open.length + ' open on globe');
+          preview(open.length + ' tasks · task open / task fit');
         }
         return;
       }
@@ -1232,7 +1245,8 @@
         if (r?.ok) {
           log('Claimed · ' + r.task.title, 'ok');
           preview('Claimed · ' + r.task.kind);
-          if (global.SNMap?.active) global.SNMap.showTasks?.();
+          if (global.SNTaskBoard?.openTaskTile) SNTaskBoard.openTaskTile(r.task);
+          else if (global.SNMap?.active) global.SNMap.showTasks?.();
         } else log(r?.error || 'claim failed', 'err');
         return;
       }
