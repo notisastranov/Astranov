@@ -1680,7 +1680,7 @@
           {
             e: '▶',
             t: 'Sim start / stop',
-            d: 'Toggle driver day on Rodos',
+            d: 'Real mode · you dictate on CLI',
             run: 'sim toggle',
           },
           { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },

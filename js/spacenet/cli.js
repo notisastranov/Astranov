@@ -45,7 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('DAY   day start · driver routine wake→coffee→work→dating (Rodos)', 'ok');
+    log('SIM   sim on|off · then dictate: wake · coffee · work · claim · deliver · date', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -122,38 +122,7 @@
         dumpBrain('summary');
         return;
       }
-      // Tight driver day (preferred over swarm)
-      if (
-        low === 'day' ||
-        low === 'day start' ||
-        low === 'driver day' ||
-        low === 'start day' ||
-        low === 'daily' ||
-        low === 'routine'
-      ) {
-        if (global.SNDriverDay && SNDriverDay.start) {
-          void SNDriverDay.start();
-        } else log('Driver day loading · hard refresh', 'err');
-        return;
-      }
-      if (low === 'day stop' || low === 'stop day') {
-        if (global.SNDriverDay && SNDriverDay.stop) SNDriverDay.stop();
-        else log('No day running', 'dim');
-        return;
-      }
-      if (low === 'day status') {
-        const st = global.SNDriverDay?.status?.() || {};
-        log(
-          'Day · ' +
-            (st.running ? 'RUNNING' : 'idle') +
-            ' · phase ' +
-            (st.phase || '—') +
-            ' · ' +
-            (st.focus || 'Rhodes'),
-          st.running ? 'ok' : 'dim'
-        );
-        return;
-      }
+      // Real sim mode — YOU dictate (wake · coffee · work · claim · deliver · date)
       if (
         low === 'sim' ||
         low === 'sim toggle' ||
@@ -161,26 +130,63 @@
         low === 'sim stop' ||
         low === 'sim on' ||
         low === 'sim off' ||
-        low === 'sim live'
+        low === 'sim live' ||
+        low === 'day' ||
+        low === 'day start' ||
+        low === 'day stop' ||
+        low === 'driver day'
       ) {
-        // One control: toggle driver-day scenario (33-swarm deleted)
-        const Day = global.SNDriverDay;
+        const Day = global.SNDriverDay || global.SNSim;
         if (!Day) {
-          log('Sim mode loading · hard refresh', 'err');
+          log('Sim loading · hard refresh', 'err');
           return;
         }
-        if (low === 'sim stop' || low === 'sim off') {
+        if (low === 'sim stop' || low === 'sim off' || low === 'day stop') {
           Day.stop();
           return;
         }
-        if (low === 'sim start' || low === 'sim on' || low === 'sim live') {
-          void Day.start();
+        if (
+          low === 'sim start' ||
+          low === 'sim on' ||
+          low === 'sim live' ||
+          low === 'day' ||
+          low === 'day start' ||
+          low === 'driver day'
+        ) {
+          Day.start();
           return;
         }
-        // sim / sim toggle
         if (Day.running) Day.stop();
-        else void Day.start();
+        else Day.start();
         return;
+      }
+      if (low === 'day status' || low === 'sim status') {
+        const st = global.SNDriverDay?.status?.() || {};
+        log(
+          'Sim · ' +
+            (st.running || st.mode === 'on' ? 'ON' : 'OFF') +
+            ' · phase ' +
+            (st.phase || '—') +
+            ' · dictate: ' +
+            (st.dictate || 'wake coffee work claim deliver date'),
+          st.running || st.mode === 'on' ? 'ok' : 'dim'
+        );
+        return;
+      }
+      // Dictation verbs (real paths) — work when sim on, or auto-arm sim
+      if (
+        /^(wake|morning|coffee|espresso|freddo|work|shift|jobs?|claim|deliver|complete|arrive|drop|offline|end\s*shift|date|dating|evening|sim\s*help|help\s*sim)\b/i.test(
+          low
+        )
+      ) {
+        if (global.SNDriverDay?.cmd) {
+          const r = await SNDriverDay.cmd(line);
+          if (r && r.unknown) {
+            /* fall through */
+          } else {
+            return;
+          }
+        }
       }
       if (low === 'super' || low === 'fleet' || low === 'super deck') {
         if (global.SNSuper && SNSuper.show) SNSuper.show();

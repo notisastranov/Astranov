@@ -1,23 +1,20 @@
 /**
- * SNDriverDay — one tight all-inclusive Rodos scenario (no token-burn swarm)
+ * SNDriverDay / real Sim mode — YOU dictate on CLI (no auto swarm, no auto day script)
  *
- * Driver daily routine:
- *   1 WAKE     · morning · go driver online
- *   2 COFFEE   · order coffee · route vendor→you
- *   3 WORK     · claim/make deliveries · tasks · routes
- *   4 EVENING  · dating request · day complete
+ * Burger: Sim start/stop → arms real Rodos session
+ * CLI you type, for example:
+ *   wake | coffee | work | deliver | claim | date | offline | day status
  *
- * CLI: day | driver day | day start | day stop
- * Camera: never thrash · no auto tiles · all story on main CLI
+ * Real product paths: profiles, orders, 3% fees, routes, tasks, dating.
+ * No camera thrash · no auto tiles · all on main CLI.
  */
 (function (global) {
   'use strict';
 
   var RHODES = { lat: 36.4341, lng: 28.2176 };
-  var running = false;
-  var abort = false;
-  var stepTimer = null;
+  var modeOn = false;
   var phase = 'idle';
+  var last = { order: null, task: null };
 
   function log(m, c) {
     try {
@@ -33,50 +30,36 @@
 
   function think(m) {
     try {
-      if (global.SNFreeMind && SNFreeMind.think) SNFreeMind.think(m, 'day');
+      if (global.SNFreeMind && SNFreeMind.think) SNFreeMind.think(m, 'sim');
       else if (global.SNCli && SNCli.log) SNCli.log('🧠 ' + m, 'dim');
-    } catch (e) {
-      try {
-        if (global.SNCli && SNCli.log) SNCli.log('🧠 ' + m, 'dim');
-      } catch (e2) {}
-    }
+    } catch (e) {}
   }
 
-  function sleep(ms) {
-    return new Promise(function (resolve) {
-      stepTimer = setTimeout(resolve, ms);
-    });
-  }
-
-  function stopped() {
-    return abort || !running;
-  }
-
-  function pos(hub) {
+  function spot(i) {
     var hubs = [
       { n: 'Old Town', lat: 36.4425, lng: 28.2272 },
       { n: 'Mandraki', lat: 36.4508, lng: 28.2265 },
       { n: 'Ixia', lat: 36.416, lng: 28.168 },
       { n: 'Faliraki', lat: 36.339, lng: 28.199 },
+      { n: 'New Market', lat: 36.4438, lng: 28.222 },
     ];
-    var h = hubs[hub % hubs.length];
+    var h = hubs[i % hubs.length];
     return {
-      lat: h.lat + (Math.random() - 0.5) * 0.008,
-      lng: h.lng + (Math.random() - 0.5) * 0.008,
+      lat: h.lat + (Math.random() - 0.5) * 0.006,
+      lng: h.lng + (Math.random() - 0.5) * 0.006,
       name: h.n,
     };
   }
 
   function ensureCafe() {
-    var p = pos(0);
+    var p = spot(1);
     var id = 'day_cafe_rhodes';
-    var cafe = null;
     try {
-      cafe = global.SNProfiles.upsert({
+      global.SNProfiles.upsert({
         id: id,
         name: 'Mandraki Coffee',
         handle: '@mandrakicoffee',
-        bio: '☕ Rodos morning coffee · SpaceNet 24/7',
+        bio: '☕ Rodos · SpaceNet',
         roles: { vendor: true, client: true, social: true },
         lat: p.lat,
         lng: p.lng,
@@ -84,82 +67,58 @@
         shopKind: 'cafe',
         sim: true,
         source: 'driver-day',
-        menu: [
-          { id: 'c1', name: 'Espresso', price: 2.5, desc: 'Morning shot' },
-          { id: 'c2', name: 'Freddo cappuccino', price: 4.0, desc: 'Rodos classic' },
-        ],
+        menu: [],
       });
       if (global.SNProfiles.setMenuItem) {
-        global.SNProfiles.setMenuItem(id, {
-          name: 'Espresso',
-          price: 2.5,
-          desc: 'Morning shot',
-        });
-        global.SNProfiles.setMenuItem(id, {
-          name: 'Freddo cappuccino',
-          price: 4.0,
-          desc: 'Rodos classic',
-        });
-        cafe = global.SNProfiles.get(id) || cafe;
+        SNProfiles.setMenuItem(id, { name: 'Espresso', price: 2.5, desc: 'Morning' });
+        SNProfiles.setMenuItem(id, { name: 'Freddo cappuccino', price: 4.0, desc: 'Rodos' });
       }
-    } catch (e) {}
-    return cafe || global.SNProfiles.get(id);
+      return SNProfiles.get(id);
+    } catch (e) {
+      return null;
+    }
   }
 
   function ensureDriver() {
-    var p = pos(1);
+    var p = spot(0);
     var id = 'day_driver_me';
     try {
       var d = global.SNProfiles.upsert({
         id: id,
         name: 'Driver · Rodos',
         handle: '@driver_rodos',
-        bio: '🛵 Delivery driver · Rhodes daily routine',
-        roles: { driver: true, client: true, dating: true, social: true, worker: true },
+        bio: '🛵 You dictate the shift on CLI',
+        roles: {
+          driver: true,
+          client: true,
+          dating: true,
+          social: true,
+          worker: true,
+        },
         lat: p.lat,
         lng: p.lng,
         vehicle: 'Scooter',
-        driverOnline: true,
+        driverOnline: false,
         lookingFor: 'Coffee · walk · real talk after shift',
         sim: true,
         source: 'driver-day',
       });
       if (global.SNProfiles.setMe) SNProfiles.setMe(id);
-      return d;
+      return d || SNProfiles.get(id);
     } catch (e) {
       return null;
     }
   }
 
-  function ensureClientDrop() {
-    var p = pos(2);
-    var id = 'day_client_drop';
-    try {
-      return global.SNProfiles.upsert({
-        id: id,
-        name: 'Client · Ixia',
-        handle: '@client_ixia',
-        bio: 'Waiting for delivery',
-        roles: { client: true, social: true },
-        lat: p.lat,
-        lng: p.lng,
-        sim: true,
-        source: 'driver-day',
-      });
-    } catch (e) {
-      return { id: id, lat: p.lat, lng: p.lng, name: 'Client' };
-    }
-  }
-
-  function ensureDateProfile() {
-    var p = pos(3);
+  function ensureDate() {
+    var p = spot(3);
     var id = 'day_date_faliraki';
     try {
       return global.SNProfiles.upsert({
         id: id,
         name: 'Alex · Faliraki',
         handle: '@alex_fali',
-        bio: 'Evening walk · coffee · honest talk',
+        bio: 'Evening walk · coffee',
         roles: { dating: true, social: true, client: true },
         lat: p.lat,
         lng: p.lng,
@@ -172,322 +131,347 @@
     }
   }
 
-  async function phaseWake(driver) {
-    phase = 'wake';
-    log('── DAY 1/4 · WAKE · Rhodes morning ──', 'ok');
-    think('Driver wakes on Rhodes · shift ahead · coffee then deliveries then maybe date');
-    preview('Day · wake');
+  function meDriver() {
+    var d = ensureDriver();
+    try {
+      if (d && global.SNProfiles.setMe) SNProfiles.setMe(d.id);
+    } catch (e) {}
+    return d;
+  }
+
+  /** Sim mode ON — real session ready; you dictate next CLI lines */
+  function start() {
+    modeOn = true;
+    phase = 'ready';
+    try {
+      localStorage.setItem('sn:sim-mode', '1');
+    } catch (e) {}
+    ensureDriver();
+    ensureCafe();
+    ensureDate();
     try {
       if (global.SNMap && SNMap.open) {
         void SNMap.open(RHODES.lat, RHODES.lng, { force: false });
       }
-    } catch (e) {}
-    try {
-      if (global.SNMarket && SNMarket.goDriverOnline) {
-        SNMarket.goDriverOnline(driver.vehicle || 'Scooter');
-      } else if (driver) {
-        driver.driverOnline = true;
-        driver.roles = driver.roles || {};
-        driver.roles.driver = true;
-        global.SNProfiles.upsert(driver);
-      }
     } catch (e2) {}
-    log('Driver ONLINE · scooter · ready for Rodos streets', 'ok');
-    think('Online as driver · no thrash camera · user may observe any spot');
-    await sleep(4500);
-  }
-
-  async function phaseCoffee(driver, cafe) {
-    phase = 'coffee';
-    log('── DAY 2/4 · COFFEE · order morning fuel ──', 'ok');
-    think('Order coffee from Mandraki · self as client · then ride the route');
-    preview('Day · coffee');
-    if (!cafe || !cafe.menu || !cafe.menu.length) {
-      log('Coffee shop missing · skip order', 'dim');
-      return null;
-    }
-    try {
-      if (global.SNCurrency && SNCurrency.balance && SNCurrency.balance() < 20) {
-        SNCurrency.credit(50, 'day start wallet');
-      }
-    } catch (e) {}
-    var ord = null;
-    try {
-      if (global.SNProfiles.setMe) SNProfiles.setMe(driver.id);
-      global._snLastPos = { lat: driver.lat, lng: driver.lng };
-      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(driver.lat, driver.lng);
-      SNProfiles.cartClear && SNProfiles.cartClear();
-      var item =
-        (cafe.menu || []).find(function (m) {
-          return /freddo|cappuccino|coffee|espresso/i.test(m.name || '');
-        }) || cafe.menu[0];
-      SNProfiles.cartAdd(cafe.id, item, 1);
-      ord = SNProfiles.placeOrder();
-      if (ord && ord.ok) {
-        log(
-          'Coffee ordered · ' +
-            item.name +
-            ' · ' +
-            (global.SNCurrency && SNCurrency.format
-              ? SNCurrency.format(ord.total)
-              : ord.total + ' S'),
-          'ok'
-        );
-        think('Coffee task live · vendor→me polygon · 3% vault tick');
-      } else {
-        log((ord && ord.error) || 'coffee order failed', 'err');
-      }
-    } catch (e2) {
-      log('Coffee · ' + (e2.message || e2), 'err');
-    }
-    await sleep(6000);
-    // Claim own coffee delivery as driver (self-loop day path)
-    if (ord && ord.task && global.SNTasks) {
-      try {
-        if (global.SNProfiles.setMe) SNProfiles.setMe(driver.id);
-        var c = SNTasks.claim(ord.task.id);
-        if (c && c.ok && c.task) {
-          c.task.driverId = driver.id;
-          c.task.status = 'in_progress';
-          if (global.SNField && SNField.startDeliveryRoute) {
-            await SNField.startDeliveryRoute({
-              id: 'live:coffee:' + c.task.id,
-              vendorLat: cafe.lat,
-              vendorLng: cafe.lng,
-              dropLat: driver.lat,
-              dropLng: driver.lng,
-              label: '☕ coffee',
-              driver: driver.name,
-              color: 'rgba(255,180,80,0.95)',
-              onArrive: function () {
-                try {
-                  SNTasks.complete(c.task.id);
-                  log('Coffee in hand · fuel for the shift', 'ok');
-                  think('Morning coffee delivered · ready for work tasks');
-                } catch (e3) {}
-              },
-            });
-          }
-          log('Driving for coffee · route on map · ETA on radar/CLI', 'ok');
-        }
-      } catch (e4) {}
-    }
-    await sleep(8000);
-    return ord;
-  }
-
-  async function phaseWork(driver, client) {
-    phase = 'work';
-    log('── DAY 3/4 · WORK · deliveries on Rodos ──', 'ok');
-    think('Shift peak · claim deliveries · polygons stay even if camera held');
-    preview('Day · work');
-
-    // Seed 2–3 delivery tasks for the day
-    var jobs = [
-      { title: '📦 Parcel · Old Town → Ixia', from: pos(0), to: pos(2) },
-      { title: '📦 Food bag · Mandraki → Faliraki', from: pos(1), to: pos(3) },
-      { title: '📦 Docs · Airport side → New Market', from: pos(0), to: pos(1) },
-    ];
-    var i;
-    for (i = 0; i < jobs.length; i++) {
-      if (stopped()) return;
-      var j = jobs[i];
-      try {
-        var t = global.SNTasks.create({
-          kind: 'delivery',
-          role: 'driver',
-          title: j.title,
-          raw: 'delivery ' + j.title,
-          lat: j.from.lat,
-          lng: j.from.lng,
-          drop_lat: j.to.lat,
-          drop_lng: j.to.lng,
-          dur: '45m',
-          always_on: true,
-          total_s: 8 + i * 2,
-          driver_s: 1.5,
-        });
-        log('Task open · ' + j.title + ' · ' + j.from.name + ' → drop', 'ok');
-        think('New delivery task · claim when ready · route will paint');
-        // Claim and drive
-        if (t && global.SNTasks.claim) {
-          if (global.SNProfiles.setMe) SNProfiles.setMe(driver.id);
-          var cl = SNTasks.claim(t.id);
-          if (cl && cl.ok && cl.task) {
-            cl.task.driverId = driver.id;
-            cl.task.status = 'in_progress';
-            if (global.SNField && SNField.startDeliveryRoute) {
-              await SNField.startDeliveryRoute({
-                id: 'live:work:' + t.id,
-                vendorLat: j.from.lat,
-                vendorLng: j.from.lng,
-                dropLat: j.to.lat,
-                dropLng: j.to.lng,
-                label: '🛵 job ' + (i + 1),
-                driver: driver.name,
-                color: 'rgba(0,200,255,0.95)',
-                onArrive: function () {
-                  try {
-                    SNTasks.complete(t.id);
-                    log('Delivered · ' + j.title, 'ok');
-                    think('Job done · next task or wind down toward evening');
-                  } catch (eA) {}
-                },
-              });
-            }
-            log('En route · ' + j.title + ' · ETA on map polyline', 'ok');
-          }
-        }
-      } catch (e) {
-        log('Work task · ' + (e.message || e), 'err');
-      }
-      await sleep(7000);
-    }
-
-    // Also post a worker-style gig for the day log
-    try {
-      if (global.SNTasks && SNTasks.create) {
-        SNTasks.create({
-          kind: 'job',
-          role: 'barman',
-          title: '💼 Evening barman shift · Mandraki (optional)',
-          raw: 'job barman 3h Rhodes',
-          lat: RHODES.lat,
-          lng: RHODES.lng,
-          dur: '3h',
-        });
-        log('Optional job posted · barman 3h · still on board if wanted', 'dim');
-      }
-    } catch (eJ) {}
-
-    await sleep(4000);
-  }
-
-  async function phaseDating(driver, dateP) {
-    phase = 'dating';
-    log('── DAY 4/4 · EVENING · dating after shift ──', 'ok');
-    think('Shift done · go offline · open dating · honest evening plan');
-    preview('Day · dating');
-    try {
-      if (driver) {
-        driver.driverOnline = false;
-        global.SNProfiles.upsert(driver);
-        log('Driver OFFLINE · shift complete', 'ok');
-      }
-    } catch (e) {}
-
-    try {
-      if (global.SNProfiles.setMe) SNProfiles.setMe(driver.id);
-      if (global.SNMarket && SNMarket.fulfillDatingIntent) {
-        var dr = await SNMarket.fulfillDatingIntent('date coffee walk Rhodes evening', {});
-        log((dr && dr.reply) || 'Dating path ran', 'ok');
-        think('Dating request · evening social · day arc complete');
-      } else if (global.SNTasks && SNTasks.create) {
-        SNTasks.create({
-          kind: 'dating',
-          role: 'coffee',
-          title:
-            '💕 Coffee walk · ' +
-            ((dateP && dateP.name) || 'someone') +
-            ' · after deliveries',
-          raw: 'date coffee',
-          lat: (dateP && dateP.lat) || RHODES.lat,
-          lng: (dateP && dateP.lng) || RHODES.lng,
-          dur: '2h',
-          always_on: true,
-        });
-        log('Dating task open · coffee walk after work', 'ok');
-      }
-    } catch (e2) {
-      log('Dating · ' + (e2.message || e2), 'err');
-    }
-
-    await sleep(3500);
-    log('── DAY COMPLETE · wake · coffee · work · dating ──', 'ok');
-    think('Full driver day on Rodos closed · vault + routes + tasks exercised');
-    preview('Day complete');
-    try {
-      if (global.SNUsage && SNUsage.track) {
-        SNUsage.track('driver_day_complete', { focus: 'Rhodes' });
-      }
-      if (global.SNFreeMind && SNFreeMind.teach) {
-        SNFreeMind.teach(
-          'driver day Rhodes',
-          'Wake · go online · order coffee · claim deliveries with routes · offline · dating'
-        );
-      }
-    } catch (e3) {}
-  }
-
-  async function runDay() {
-    if (running) {
-      log('Driver day already running · day stop to abort', 'dim');
-      return status();
-    }
-    running = true;
-    abort = false;
-    log('── DRIVER DAY · RODOS · tight loop (not 33-swarm) ──', 'ok');
-    log('Phases: wake → coffee → work deliveries → evening dating', 'dim');
-    log('Camera: your drag holds view · routes still paint · no auto tiles', 'dim');
-
-    var driver = ensureDriver();
-    var cafe = ensureCafe();
-    var client = ensureClientDrop();
-    var dateP = ensureDateProfile();
-
-    try {
-      if (!stopped()) await phaseWake(driver);
-      if (!stopped()) await phaseCoffee(driver, cafe);
-      if (!stopped()) await phaseWork(driver, client);
-      if (!stopped()) await phaseDating(driver, dateP);
-    } catch (e) {
-      log('Day error · ' + (e.message || e), 'err');
-    }
-
-    running = false;
-    phase = 'idle';
-    if (abort) {
-      log('── DAY STOPPED ──', 'dim');
-      preview('Day stopped');
-    }
+    log('── SIM ON · real Rodos · YOU dictate on CLI ──', 'ok');
+    log('Type: wake · coffee · work · deliver · claim · date · offline · sim stop', 'dim');
+    log('No auto script · no 33-swarm · drag map = your camera', 'dim');
+    think('Sim armed · waiting for your CLI dictation');
+    preview('SIM ON · dictate');
     return status();
   }
 
-  function stopDay() {
-    abort = true;
-    running = false;
-    if (stepTimer) {
-      clearTimeout(stepTimer);
-      stepTimer = null;
-    }
+  function stop() {
+    modeOn = false;
     phase = 'idle';
-    log('Driver day aborted', 'dim');
-    preview('Day stop');
+    try {
+      localStorage.setItem('sn:sim-mode', '0');
+    } catch (e) {}
+    try {
+      var d = global.SNProfiles && SNProfiles.get('day_driver_me');
+      if (d) {
+        d.driverOnline = false;
+        SNProfiles.upsert(d);
+      }
+    } catch (e2) {}
+    log('── SIM OFF ──', 'dim');
+    preview('SIM OFF');
+    return status();
+  }
+
+  function toggle() {
+    if (modeOn) return stop();
+    return start();
+  }
+
+  /** Dictated steps — call from CLI when sim is on (or always allow) */
+  async function cmd(raw) {
+    var low = String(raw || '')
+      .toLowerCase()
+      .trim();
+    if (!low) return { ok: false };
+
+    if (!modeOn && !/^(sim|day)/.test(low)) {
+      // Allow dictate verbs only in sim mode, or auto-arm
+      start();
+    }
+
+    var driver = meDriver();
+    var cafe = ensureCafe();
+
+    // —— WAKE ——
+    if (/^wake\b|^morning\b|^up\b/.test(low)) {
+      phase = 'wake';
+      log('── WAKE ──', 'ok');
+      think('You woke the driver · go online when ready');
+      if (driver) {
+        driver.driverOnline = true;
+        driver.roles = driver.roles || {};
+        driver.roles.driver = true;
+        try {
+          SNProfiles.upsert(driver);
+        } catch (e) {}
+      }
+      try {
+        if (global.SNMarket && SNMarket.goDriverOnline) {
+          SNMarket.goDriverOnline((driver && driver.vehicle) || 'Scooter');
+        }
+      } catch (e2) {}
+      log('Driver ONLINE · scooter · Rhodes', 'ok');
+      preview('Wake · online');
+      return { ok: true, phase: phase };
+    }
+
+    // —— COFFEE ——
+    if (/^coffee\b|^espresso\b|^freddo\b|^café\b|^καφέ/.test(low)) {
+      phase = 'coffee';
+      log('── COFFEE ──', 'ok');
+      think('Ordering coffee · real cart · real 3% · route polygon');
+      if (!cafe) {
+        log('No cafe · try again', 'err');
+        return { ok: false };
+      }
+      try {
+        if (global.SNCurrency && SNCurrency.balance && SNCurrency.balance() < 15) {
+          SNCurrency.credit(40, 'sim coffee wallet');
+        }
+        meDriver();
+        global._snLastPos = { lat: driver.lat, lng: driver.lng };
+        if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(driver.lat, driver.lng);
+        SNProfiles.cartClear && SNProfiles.cartClear();
+        var item =
+          (cafe.menu || []).find(function (m) {
+            return /freddo|cappuccino|espresso|coffee/i.test(m.name || '');
+          }) ||
+          (cafe.menu && cafe.menu[0]) ||
+          { name: 'Coffee', price: 3.5 };
+        if (!cafe.menu || !cafe.menu.length) {
+          SNProfiles.setMenuItem(cafe.id, { name: item.name, price: item.price || 3.5 });
+          cafe = SNProfiles.get(cafe.id);
+          item = cafe.menu[0];
+        }
+        SNProfiles.cartAdd(cafe.id, item, 1);
+        var ord = SNProfiles.placeOrder();
+        last.order = ord;
+        last.task = ord && ord.task;
+        if (ord && ord.ok) {
+          log(
+            'Ordered · ' +
+              item.name +
+              ' · ' +
+              (SNCurrency.format ? SNCurrency.format(ord.total) : ord.total + ' S'),
+            'ok'
+          );
+          log('Next: claim · deliver  (or work for other jobs)', 'dim');
+          preview('Coffee ordered');
+          return { ok: true, order: ord };
+        }
+        log((ord && ord.error) || 'order failed', 'err');
+      } catch (e) {
+        log('Coffee · ' + (e.message || e), 'err');
+      }
+      return { ok: false };
+    }
+
+    // —— WORK: open delivery tasks ——
+    if (/^work\b|^shift\b|^jobs?\b|^tasks?\b/.test(low) && !/^task\s*list/.test(low)) {
+      phase = 'work';
+      log('── WORK · open deliveries ──', 'ok');
+      think('You posted work · claim when ready');
+      var a = spot(0);
+      var b = spot(2);
+      var t1 = null;
+      try {
+        t1 = global.SNTasks.create({
+          kind: 'delivery',
+          role: 'driver',
+          title: '📦 Parcel · ' + a.name + ' → ' + b.name,
+          raw: 'delivery ' + a.name,
+          lat: a.lat,
+          lng: a.lng,
+          drop_lat: b.lat,
+          drop_lng: b.lng,
+          dur: '45m',
+          always_on: true,
+          total_s: 10,
+          driver_s: 1.5,
+        });
+        last.task = t1;
+        log('Task open · ' + (t1 && t1.title) + ' · type claim', 'ok');
+        preview('Work · task open');
+      } catch (e) {
+        log('Work · ' + (e.message || e), 'err');
+      }
+      return { ok: true, task: t1 };
+    }
+
+    // —— CLAIM ——
+    if (/^claim\b/.test(low)) {
+      phase = 'claim';
+      log('── CLAIM ──', 'ok');
+      meDriver();
+      var task = null;
+      try {
+        var open = (global.SNTasks.list && SNTasks.list({ all: true })) || [];
+        task =
+          open.find(function (t) {
+            return t && t.kind === 'delivery' && (t.status === 'open' || t.status === 'claimed');
+          }) || last.task;
+        if (!task) {
+          log('No open delivery · type work or coffee first', 'dim');
+          return { ok: false };
+        }
+        var c = SNTasks.claim(task.id);
+        if (c && c.ok && c.task) {
+          c.task.driverId = driver && driver.id;
+          c.task.status = 'in_progress';
+          last.task = c.task;
+          log('Claimed · ' + (c.task.title || c.task.id), 'ok');
+          if (global.SNField && SNField.startDeliveryRoute) {
+            await SNField.startDeliveryRoute({
+              id: 'live:' + c.task.id,
+              vendorLat: c.task.lat,
+              vendorLng: c.task.lng,
+              dropLat: c.task.drop_lat != null ? c.task.drop_lat : driver.lat,
+              dropLng: c.task.drop_lng != null ? c.task.drop_lng : driver.lng,
+              label: '🛵 you',
+              driver: (driver && driver.name) || 'Driver',
+              color: 'rgba(0,200,255,0.95)',
+            });
+          }
+          log('Route painted · type deliver when arrived', 'dim');
+          preview('Claimed · en route');
+          think('You claimed · polygon on map · camera still yours if held');
+          return { ok: true, task: c.task };
+        }
+        log((c && c.error) || 'claim failed', 'err');
+      } catch (e) {
+        log('Claim · ' + (e.message || e), 'err');
+      }
+      return { ok: false };
+    }
+
+    // —— DELIVER / complete ——
+    if (/^deliver\b|^complete\b|^arrive\b|^drop\b/.test(low)) {
+      phase = 'deliver';
+      log('── DELIVER ──', 'ok');
+      meDriver();
+      try {
+        var t =
+          last.task ||
+          ((global.SNTasks.list &&
+            SNTasks.list({ all: true }).find(function (x) {
+              return x && (x.status === 'claimed' || x.status === 'in_progress');
+            })) ||
+            null);
+        if (!t) {
+          log('Nothing to deliver · claim first', 'dim');
+          return { ok: false };
+        }
+        var done = SNTasks.complete(t.id);
+        if (done && done.ok) {
+          log('Delivered · ' + (t.title || t.id), 'ok');
+          think('Delivery complete · 3% already on order if coffee path');
+          preview('Delivered');
+          return { ok: true };
+        }
+        log((done && done.error) || 'complete failed', 'err');
+      } catch (e) {
+        log('Deliver · ' + (e.message || e), 'err');
+      }
+      return { ok: false };
+    }
+
+    // —— OFFLINE / end shift ——
+    if (/^offline\b|^end\s*shift\b|^clock\s*out\b/.test(low)) {
+      phase = 'offline';
+      meDriver();
+      try {
+        if (driver) {
+          driver.driverOnline = false;
+          SNProfiles.upsert(driver);
+        }
+      } catch (e) {}
+      log('Driver OFFLINE · shift pause', 'ok');
+      preview('Offline');
+      return { ok: true };
+    }
+
+    // —— DATE / evening ——
+    if (/^date\b|^dating\b|^evening\b|^walk\b/.test(low)) {
+      phase = 'dating';
+      log('── DATING ──', 'ok');
+      think('Evening social · you dictated dating');
+      meDriver();
+      ensureDate();
+      try {
+        if (driver) {
+          driver.driverOnline = false;
+          SNProfiles.upsert(driver);
+        }
+      } catch (e) {}
+      try {
+        if (global.SNMarket && SNMarket.fulfillDatingIntent) {
+          var dr = await SNMarket.fulfillDatingIntent(raw || 'date coffee walk Rhodes', {});
+          log((dr && dr.reply) || 'Dating request open', 'ok');
+        } else if (global.SNTasks && SNTasks.create) {
+          SNTasks.create({
+            kind: 'dating',
+            role: 'coffee',
+            title: '💕 Coffee walk · after shift · Rhodes',
+            raw: 'date coffee',
+            lat: RHODES.lat,
+            lng: RHODES.lng,
+            dur: '2h',
+            always_on: true,
+          });
+          log('Dating task open · coffee walk', 'ok');
+        }
+        preview('Dating');
+        return { ok: true };
+      } catch (e2) {
+        log('Dating · ' + (e2.message || e2), 'err');
+      }
+      return { ok: false };
+    }
+
+    // —— HELP for dictation ——
+    if (/^help\s*sim\b|^sim\s*help\b|^dictat/.test(low)) {
+      log('Dictate: wake · coffee · work · claim · deliver · offline · date', 'ok');
+      log('sim / sim toggle · start or stop mode', 'dim');
+      return { ok: true };
+    }
+
+    return { ok: false, unknown: true };
   }
 
   function status() {
     return {
-      running: running,
+      running: modeOn,
+      mode: modeOn ? 'on' : 'off',
       phase: phase,
       focus: 'Rhodes',
       name: 'SNDriverDay',
+      dictate: 'wake · coffee · work · claim · deliver · offline · date',
     };
   }
 
-  // Kill auto sim burn on load
-  try {
-    localStorage.setItem('sn:sim-auto', '0');
-  } catch (e) {}
-
+  // Aliases: start/stop/toggle = mode arming only (no auto script)
   global.SNDriverDay = {
-    start: runDay,
-    stop: stopDay,
+    start: start,
+    stop: stop,
+    toggle: toggle,
+    cmd: cmd,
     status: status,
     get running() {
-      return running;
+      return modeOn;
     },
     get phase() {
       return phase;
     },
   };
+
+  // Real sim handle
+  global.SNSim = global.SNDriverDay;
 })(typeof window !== 'undefined' ? window : globalThis);
