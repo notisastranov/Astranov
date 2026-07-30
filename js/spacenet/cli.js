@@ -655,14 +655,23 @@
         global.SNRibbon?.setTask?.('money');
         return;
       }
-      if (low === 'wallet' || low === 'balance') {
+      if (low === 'wallet' || low === 'balance' || low === 'fees' || low === 'platform') {
         const C = global.SNCurrency;
-        const snap = C?.snapshot?.() || { balance: 0, mined: 0 };
+        const snap = C?.snapshot?.() || { balance: 0, mined: 0, platformFees: 0 };
         log('Wallet ' + (C?.format?.(snap.balance) || snap.balance + ' S'), 'ok');
+        log(
+          'Your platform 3% lifetime · ' +
+            (C?.format?.(snap.platformFees) || (snap.platformFees || 0) + ' S'),
+          'ok'
+        );
         log('Mined lifetime ' + (C?.format?.(snap.mined) || snap.mined), 'dim');
         global.SNField?.paint?.();
         global.SNRibbon?.setTask?.('money');
-        preview(snap.line || 'wallet');
+        preview(
+          (snap.line || 'wallet') +
+            ' · fees ' +
+            (C?.format?.(snap.platformFees) || (snap.platformFees || 0) + ' S')
+        );
         return;
       }
       if (low === 'finance' || low === 'field' || low === 'ledger') {

@@ -68,6 +68,47 @@
     return st.balance;
   }
 
+  /**
+   * Architect platform revenue — 3% of every marketplace transaction in S.
+   * Credits YOUR SpaceNet wallet and accumulates platformFees ledger.
+   */
+  function notePlatformFee(a, meta) {
+    a = Number(a);
+    if (!isFinite(a) || a <= 0) return { ok: false, fee: 0, platformFees: st.platformFees, balance: st.balance };
+    st.platformFees = (Number(st.platformFees) || 0) + a;
+    credit(a, 'platform');
+    saveW();
+    try {
+      if (g.SNCli && SNCli.log) {
+        SNCli.log(
+          'Platform +' +
+            fmt(a) +
+            ' (3%) · lifetime fees ' +
+            fmt(st.platformFees) +
+            ' · wallet ' +
+            fmt(st.balance) +
+            (meta && meta.why ? ' · ' + meta.why : ''),
+          'ok'
+        );
+      }
+      if (g.SNCli && SNCli.preview) SNCli.preview('+' + fmt(a) + ' platform 3%');
+      if (g.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('Platform +' + fmt(a) + ' · 3%');
+      if (g.SNUsage && SNUsage.track) {
+        SNUsage.track('platform_fee_3pct', { fee: a, total: st.platformFees, why: (meta && meta.why) || 'tx' });
+      }
+    } catch (e) {}
+    return { ok: true, fee: a, platformFees: st.platformFees, balance: st.balance };
+  }
+
+  /** Compute 3% of gross (min 0.01 S if gross > 0) and credit architect */
+  function takePlatformFeeFrom(gross, why) {
+    gross = Number(gross);
+    if (!isFinite(gross) || gross <= 0) return { ok: false, fee: 0 };
+    var fee = Math.round(gross * 0.03 * 100) / 100;
+    if (fee < 0.01 && gross > 0) fee = 0.01;
+    return notePlatformFee(fee, { why: why || 'transaction', gross: gross });
+  }
+
   load();
 
   g.SNCurrency = {
@@ -109,10 +150,15 @@
     mined: function () {
       return st.mined;
     },
+    platformFees: function () {
+      return st.platformFees || 0;
+    },
     credit: credit,
     creditMined: function (a) {
       return credit(a, 'mine');
     },
+    notePlatformFee: notePlatformFee,
+    takePlatformFeeFrom: takePlatformFeeFrom,
     debit: function (a) {
       a = Number(a);
       if (!(a > 0) || a > st.balance) return { ok: false, balance: st.balance };
@@ -126,13 +172,19 @@
       return [
         'S (SpaceNets) PRIMARY · index ' + st.networkIndex.toFixed(4),
         'Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined),
+        'Platform fees (your 3%) ' + fmt(st.platformFees || 0) + ' lifetime',
         '1 S ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
         'EUR/USD/BTC/ETH = secondary quotes only',
-        'Fees 3% platform · 15% driver (in S)',
+        'Fees 3% platform → Architect · 15% driver (in S)',
       ];
     },
     snapshot: function () {
-      return { balance: st.balance, mined: st.mined, platformFees: st.platformFees, line: fmt(st.balance) };
+      return {
+        balance: st.balance,
+        mined: st.mined,
+        platformFees: st.platformFees || 0,
+        line: fmt(st.balance),
+      };
     },
   };
   // Compat alias used by older field hooks

@@ -86,6 +86,7 @@ const AstranovContinuity = {
       aiLaw: 'LISTEN→ANALYZE·BRIEF; SPACENET LISTENING; vendors fly+tile; next|show all',
       freeMind: 'SNFreeMind own free AI first — no paid xAI for chat; teach + free export',
       sim33: 'SNSim33 · 12 client · 8 vendor · 8 driver · 5 ambassador · sim start|stop',
+      platformFee: '3% of every order gross in S → SNCurrency.notePlatformFee / takePlatformFeeFrom → Architect wallet',
     },
     placeTool: {
       ribbon: '➕ Add → upward flyout',

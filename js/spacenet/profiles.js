@@ -357,12 +357,14 @@
 
   function placeOrder() {
     // SPECS P4-M: 24/7/365 all locations — no platform curfew
+    // SPECS fees: platform 3% of S → Architect wallet · driver 15% of gross
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
     const vendor = get(vendorId);
     const total = cartTotal();
     const items = cart();
-    const platformFee = Math.round(total * 0.03 * 100) / 100;
+    let platformFee = Math.round(total * 0.03 * 100) / 100;
+    if (total > 0 && platformFee < 0.01) platformFee = 0.01;
     const driverCut = Math.round(total * 0.15 * 100) / 100;
     const client = me();
     // Ensure client can pay in S — welcome credit if empty wallet
@@ -378,7 +380,12 @@
         }
         const pay = SNCurrency.debit(total);
         if (!pay.ok) return { ok: false, error: 'insufficient S' };
-        if (SNCurrency.notePlatformFee) SNCurrency.notePlatformFee(platformFee);
+        // Architect 3% — every order credits SpaceNet coins to owner
+        if (typeof SNCurrency.takePlatformFeeFrom === 'function') {
+          SNCurrency.takePlatformFeeFrom(total, 'order · ' + (vendor?.shopName || vendor?.name || vendorId || 'shop'));
+        } else if (typeof SNCurrency.notePlatformFee === 'function') {
+          SNCurrency.notePlatformFee(platformFee, { why: 'order' });
+        }
       }
     } catch (_) {}
 
