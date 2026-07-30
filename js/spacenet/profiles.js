@@ -450,6 +450,27 @@
     try {
       if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
     } catch (_) {}
+    // Rhodes / live: vendor → client delivery polygon + ETA/speed on radar
+    try {
+      if (global.SNField && SNField.startDeliveryRoute && vendor && t) {
+        void SNField.startDeliveryRoute({
+          id: 'live:' + t.id,
+          vendorLat: vendor.lat != null ? vendor.lat : t.lat,
+          vendorLng: vendor.lng != null ? vendor.lng : t.lng,
+          dropLat: drop.lat,
+          dropLng: drop.lng,
+          label: '🛵 ' + String(vendor.shopName || vendor.name || 'Shop').slice(0, 12),
+          driver: 'Driver',
+          color: 'rgba(0,220,255,0.95)',
+        });
+      } else if (global.SNMarketLive && SNMarketLive.paintRoute && vendor) {
+        void SNMarketLive.paintRoute(
+          { lat: vendor.lat, lng: vendor.lng },
+          { lat: drop.lat, lng: drop.lng },
+          { id: 'order:' + (t && t.id), label: '📦 delivery', kind: 'delivery' }
+        );
+      }
+    } catch (_) {}
     return {
       ok: true,
       task: t,

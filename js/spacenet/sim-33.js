@@ -345,43 +345,64 @@
     return t.length <= n ? t : t.slice(0, n - 1) + '…';
   }
 
-  /** Client SPECS path — always on Rhodes */
+  /** Client SPECS — order from vendor → route polygon vendor→client on Rhodes */
   async function actClient(agent) {
     become(agent);
     flyRhodes(agent, 'city', agent.hub);
     setCurrent(agent, 'client @ ' + agent.hub);
-    var cmds = [
-      'locate',
-      agent.food,
-      'shops',
-      'next',
-      'souvlaki',
-      'fly rhodes',
-      'who are you',
-    ];
-    var cmd = cmds[Math.floor(Math.random() * cmds.length)];
     try {
+      var vendors =
+        (global.SNProfiles &&
+          SNProfiles.list({ role: 'vendor' }).filter(function (v) {
+            return v && v.lat != null && v.menu && v.menu.length;
+          })) ||
+        [];
+      // Prefer marketplace order + radar polygon when vendors exist
+      if (vendors.length && Math.random() > 0.35) {
+        var v = vendors[agent.i % vendors.length];
+        var clientP = SNProfiles.get(agent.id) || become(agent);
+        if (global.SNMarketLive && SNMarketLive.runOrderLoop) {
+          var loop = await SNMarketLive.runOrderLoop(clientP, v, {});
+          if (loop && loop.ok) {
+            ok(
+              agent,
+              'order',
+              (v.shopName || v.name) + ' → ' + agent.hub + ' · route on radar'
+            );
+            return;
+          }
+        }
+        // Fallback: cart + placeOrder (triggers startDeliveryRoute)
+        try {
+          if (global.SNCurrency && SNCurrency.balance && SNCurrency.balance() < 40) {
+            SNCurrency.credit(80, 'sim client top-up');
+          }
+          SNProfiles.setMe(agent.id);
+          SNProfiles.cartClear && SNProfiles.cartClear();
+          SNProfiles.cartAdd(v.id, v.menu[0], 1);
+          global._snLastPos = { lat: agent.lat, lng: agent.lng };
+          var ord = SNProfiles.placeOrder();
+          if (ord && ord.ok) {
+            ok(agent, 'order', (v.shopName || v.name) + ' · polygon ETA');
+            return;
+          }
+        } catch (eO) {}
+      }
+      var cmds = ['locate', agent.food, 'shops', 'souvlaki', 'fly rhodes'];
+      var cmd = cmds[Math.floor(Math.random() * cmds.length)];
       if (cmd === 'locate' || cmd === 'fly rhodes') {
         flyRhodes(agent, 'city', agent.hub);
-        ok(agent, cmd === 'locate' ? 'locate' : 'fly rhodes', agent.hub);
+        ok(agent, cmd, agent.hub);
         return;
       }
       if (global.SNAi && SNAi.ask) {
-        setCurrent(agent, 'says: ' + cmd);
         var r = await SNAi.ask(cmd);
-        flyRhodes(agent, 'city', agent.hub);
         ok(agent, 'ai:' + cmd, r);
         return;
       }
-      if (global.SNCli && SNCli.run) {
-        await SNCli.run(cmd);
-        flyRhodes(agent, 'city', agent.hub);
-        ok(agent, 'cli:' + cmd);
-        return;
-      }
-      fail(agent, cmd, 'no AI/CLI');
+      ok(agent, 'idle', agent.hub);
     } catch (e) {
-      fail(agent, cmd, e.message || e);
+      fail(agent, 'client', e.message || e);
     }
   }
 
@@ -432,7 +453,7 @@
     }
   }
 
-  /** Driver SPECS on Rhodes: online · claim · complete */
+  /** Driver on Rhodes: claim delivery · show drive polygon with ETA/speed · complete later */
   async function actDriver(agent) {
     become(agent);
     flyRhodes(agent, 'city', agent.hub);
@@ -454,62 +475,71 @@
           return (
             t &&
             t.kind === 'delivery' &&
-            (t.status === 'open' || t.status === 'claimed')
+            (t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress')
           );
         });
       }
       if (open && global.SNTasks.claim) {
-        var c = SNTasks.claim(open.id);
+        var c =
+          open.status === 'open'
+            ? SNTasks.claim(open.id)
+            : { ok: true, task: open };
         if (c && c.ok && c.task) {
           c.task.driverId = agent.id;
           c.task.status = 'in_progress';
-          if (SNTasks.complete) {
-            var d = SNTasks.complete(c.task.id);
-            flyRhodes(agent, 'city', 'delivery');
-            ok(agent, 'deliver', open.title || open.id);
-            teach('Rhodes driver', 'scooter on Rhodes · claim · complete · S');
-            return;
+          var pick = { lat: c.task.lat, lng: c.task.lng };
+          var drop = {
+            lat: c.task.drop_lat != null ? c.task.drop_lat : agent.lat,
+            lng: c.task.drop_lng != null ? c.task.drop_lng : agent.lng,
+          };
+          if (global.SNField && SNField.startDeliveryRoute) {
+            await SNField.startDeliveryRoute({
+              id: 'live:' + c.task.id,
+              vendorLat: pick.lat,
+              vendorLng: pick.lng,
+              dropLat: drop.lat,
+              dropLng: drop.lng,
+              label: '🛵 ' + agent.name.slice(0, 10),
+              driver: agent.name,
+              color: 'rgba(255,200,60,0.95)',
+              onArrive: function () {
+                try {
+                  if (SNTasks.complete) SNTasks.complete(c.task.id);
+                  log(
+                    'Rhodes · driver #' + agent.i + ' delivered · complete',
+                    'ok'
+                  );
+                } catch (eA) {}
+              },
+            });
           }
+          ok(agent, 'driving', 'ETA on radar · ' + (agent.vehicle || 'Scooter'));
+          teach('Rhodes driver', 'claim · polygon · ETA km/h · deliver');
+          return;
         }
       }
-      // No open order — create self-loop order path if vendors exist
+      // Seed an order so next ticks have routes
       var vendors =
         (global.SNProfiles &&
           SNProfiles.list({ role: 'vendor' }).filter(function (v) {
-            return v.sim && v.menu && v.menu.length;
+            return v && v.menu && v.menu.length;
           })) ||
         [];
-      if (vendors.length && global.SNProfiles.cartAdd && global.SNProfiles.placeOrder) {
-        // Switch to a client agent briefly for order, then back
-        var clients = agents.filter(function (a) {
-          return a.role === 'client';
-        });
-        var cl = clients[agent.i % Math.max(1, clients.length)];
-        if (cl) {
-          become(cl);
-          try {
-            if (global.SNCurrency && SNCurrency.balance && SNCurrency.balance() < 50) {
-              SNCurrency.credit(80, 'sim top-up');
-            }
-          } catch (eC) {}
-          var v = vendors[agent.i % vendors.length];
-          var item = v.menu[0];
-          SNProfiles.cartClear && SNProfiles.cartClear();
-          SNProfiles.cartAdd(v.id, item, 1);
-          var ord = SNProfiles.placeOrder();
-          become(agent);
-          if (ord && ord.ok && ord.task && SNTasks.claim) {
-            var c2 = SNTasks.claim(ord.task.id);
-            if (c2 && c2.ok && SNTasks.complete) SNTasks.complete(c2.task.id);
-            flyRhodes(agent, 'city', 'order+deliver');
-            ok(agent, 'order+deliver', (v.shopName || v.name) + ' · ' + agent.hub);
-            return;
-          }
-        }
+      var clients = agents.filter(function (a) {
+        return a.role === 'client';
+      });
+      if (vendors.length && clients.length && global.SNMarketLive && SNMarketLive.runOrderLoop) {
+        var cl = clients[agent.i % clients.length];
+        var vn = vendors[agent.i % vendors.length];
+        become(cl);
+        var clP = SNProfiles.get(cl.id) || become(cl);
+        await SNMarketLive.runOrderLoop(clP, vn, {});
+        become(agent);
+        ok(agent, 'seed order', 'waiting claim · polygon live');
+        return;
       }
       flyRhodes(agent, 'city', agent.hub);
       ok(agent, 'driver online', (agent.vehicle || 'ready') + ' · ' + agent.hub);
-      teach('Rhodes driver online', 'drive on Rhodes · claim · complete');
     } catch (e) {
       fail(agent, 'driver', e.message || e);
     }

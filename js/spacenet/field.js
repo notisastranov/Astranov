@@ -809,22 +809,51 @@
       ctx.lineCap = 'round';
       ctx.stroke();
 
-      // Start / end
+      // Vendor pickup (green) · client drop (red)
       var a0 = canvasPts[0];
       var a1 = canvasPts[canvasPts.length - 1];
       ctx.fillStyle = 'rgba(68,255,136,0.95)';
       ctx.beginPath();
-      ctx.arc(a0.x, a0.y, radarBig ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.arc(a0.x, a0.y, radarBig ? 5 : 3, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = 'rgba(255,100,120,0.95)';
       ctx.beginPath();
-      ctx.arc(a1.x, a1.y, radarBig ? 4 : 2.5, 0, Math.PI * 2);
+      ctx.arc(a1.x, a1.y, radarBig ? 5 : 3, 0, Math.PI * 2);
       ctx.fill();
+
+      // Moving delivery driver along polygon
+      var prog = route.progress != null ? route.progress : 0;
+      if (prog > 0 || route.kind === 'delivery') {
+        var drv = pointAlong(route.points, prog > 0 ? prog : 0.02);
+        if (drv) {
+          var L = toLocalM(drv.lat, drv.lng, focus);
+          var dx = cx + L.x * scale;
+          var dy = cy - L.y * scale;
+          ctx.fillStyle = 'rgba(255,220,80,0.98)';
+          ctx.beginPath();
+          ctx.arc(dx, dy, radarBig ? 5.5 : 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          if (radarBig) {
+            ctx.fillStyle = 'rgba(255,240,180,0.95)';
+            ctx.font = '9px system-ui';
+            var tag =
+              '🛵 ' +
+              (route.eta || '') +
+              ' ' +
+              Math.round(route.speedKmh || 0) +
+              'km/h';
+            ctx.fillText(tag.slice(0, 22), dx + 7, dy - 4);
+          }
+        }
+      }
 
       if (radarBig && route.label) {
         ctx.fillStyle = 'rgba(200,230,255,0.9)';
         ctx.font = '10px system-ui';
-        ctx.fillText(String(route.label).slice(0, 18), a1.x + 6, a1.y - 4);
+        ctx.fillText(String(route.label).slice(0, 28), a1.x + 6, a1.y - 4);
       }
     }
   }
@@ -850,7 +879,43 @@
     return out;
   }
 
-  /** OSRM driving geometry (GeoJSON line) — free public router */
+  function haversineKm(aLat, aLng, bLat, bLng) {
+    var R = 6371;
+    var dLat = ((bLat - aLat) * Math.PI) / 180;
+    var dLng = ((bLng - aLng) * Math.PI) / 180;
+    var x =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((aLat * Math.PI) / 180) *
+        Math.cos((bLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+
+  function pathLengthKm(pts) {
+    if (!pts || pts.length < 2) return 0;
+    var sum = 0;
+    for (var i = 0; i < pts.length - 1; i++) {
+      sum += haversineKm(pts[i].lat, pts[i].lng, pts[i + 1].lat, pts[i + 1].lng);
+    }
+    return sum;
+  }
+
+  function fmtEta(sec) {
+    sec = Math.max(0, Math.round(Number(sec) || 0));
+    if (sec < 60) return sec + 's';
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    if (m < 60) return m + 'm' + (s ? s + 's' : '');
+    var h = Math.floor(m / 60);
+    m = m % 60;
+    return h + 'h' + m + 'm';
+  }
+
+  /**
+   * OSRM driving geometry + distance/duration (Rhodes city roads when available).
+   * Returns { points, km, durationS, speedKmh } or throws.
+   */
   async function fetchOsrmRoute(aLat, aLng, bLat, bLng) {
     var url =
       'https://router.project-osrm.org/route/v1/driving/' +
@@ -875,17 +940,16 @@
       });
       if (!res.ok) throw new Error('osrm ' + res.status);
       var j = await res.json();
-      var coords =
-        j &&
-        j.routes &&
-        j.routes[0] &&
-        j.routes[0].geometry &&
-        j.routes[0].geometry.coordinates;
+      var rt = j && j.routes && j.routes[0];
+      var coords = rt && rt.geometry && rt.geometry.coordinates;
       if (!coords || !coords.length) throw new Error('no geom');
-      // OSRM = [lng, lat]
-      return coords.map(function (c) {
+      var points = coords.map(function (c) {
         return { lat: c[1], lng: c[0] };
       });
+      var km = rt.distance != null ? Number(rt.distance) / 1000 : pathLengthKm(points);
+      var durationS = rt.duration != null ? Number(rt.duration) : (km / 28) * 3600;
+      var speedKmh = durationS > 0 ? (km / durationS) * 3600 : 28;
+      return { points: points, km: km, durationS: durationS, speedKmh: speedKmh };
     } finally {
       clearTimeout(to);
     }
@@ -925,23 +989,55 @@
         var t = tasks[i];
         var dropLat = t.drop_lat != null ? t.drop_lat : focusPos().lat;
         var dropLng = t.drop_lng != null ? t.drop_lng : focusPos().lng;
+        var meta = null;
         var pts = null;
         try {
-          pts = await fetchOsrmRoute(t.lat, t.lng, dropLat, dropLng);
+          meta = await fetchOsrmRoute(t.lat, t.lng, dropLat, dropLng);
+          pts = meta.points;
         } catch (_) {
           pts = straightRoute(t.lat, t.lng, dropLat, dropLng, 16);
+          var km0 = pathLengthKm(pts);
+          meta = {
+            points: pts,
+            km: km0,
+            durationS: (km0 / 28) * 3600,
+            speedKmh: 28,
+          };
         }
         if (pts && pts.length >= 2) {
+          var eta0 = fmtEta(meta.durationS);
+          var sp0 = Math.round(meta.speedKmh || 28);
           next.push({
             id: 'task:' + t.id,
             points: pts,
             color: ROUTE_COLORS[i % ROUTE_COLORS.length],
-            label: (t.title || 'Route').replace(/^📦\s*/, '').slice(0, 22),
+            label:
+              (t.title || 'Delivery').replace(/^📦\s*/, '').slice(0, 14) +
+              ' · ' +
+              eta0 +
+              ' · ' +
+              sp0 +
+              'km/h',
             kind: 'delivery',
+            km: meta.km,
+            durationS: meta.durationS,
+            speedKmh: meta.speedKmh,
+            eta: eta0,
+            progress: t.status === 'in_progress' ? t._driveProgress || 0.15 : 0,
+            vendorLat: t.lat,
+            vendorLng: t.lng,
+            dropLat: dropLat,
+            dropLng: dropLng,
           });
         }
       }
-      routes = manual.concat(next).slice(0, 8);
+      // Keep animated live deliveries (live:*) from startDeliveryRoute
+      var live = routes.filter(function (r) {
+        return r && r.id && String(r.id).indexOf('live:') === 0;
+      });
+      routes = live.concat(manual.filter(function (r) {
+        return String(r.id || '').indexOf('live:') !== 0;
+      })).concat(next).slice(0, 10);
     } catch (_) {
     } finally {
       routeFetchBusy = false;
@@ -953,35 +1049,191 @@
   async function showRoute(waypoints, opts) {
     opts = opts || {};
     var pts = [];
+    var km = 0;
+    var durationS = 0;
+    var speedKmh = opts.speedKmh || 28;
     if (Array.isArray(waypoints) && waypoints.length >= 2) {
       if (waypoints[0].lat != null && waypoints.length > 2 && !opts.osrm) {
         pts = waypoints.map(function (w) {
           return { lat: Number(w.lat), lng: Number(w.lng) };
         });
+        km = pathLengthKm(pts);
+        durationS = opts.durationS != null ? opts.durationS : (km / speedKmh) * 3600;
       } else {
         var a = waypoints[0];
         var b = waypoints[waypoints.length - 1];
         try {
-          pts = await fetchOsrmRoute(a.lat, a.lng, b.lat, b.lng);
+          var meta = await fetchOsrmRoute(a.lat, a.lng, b.lat, b.lng);
+          pts = meta.points;
+          km = meta.km;
+          durationS = meta.durationS;
+          speedKmh = meta.speedKmh;
         } catch (_) {
           pts = straightRoute(a.lat, a.lng, b.lat, b.lng, 16);
+          km = pathLengthKm(pts);
+          durationS = (km / speedKmh) * 3600;
         }
       }
     }
     if (pts.length < 2) return null;
+    var eta = fmtEta(durationS);
+    var baseLabel = opts.label || 'Route';
     var row = {
       id: opts.id || 'route_' + Date.now().toString(36),
       points: pts,
       color: opts.color || ROUTE_COLORS[0],
-      label: opts.label || 'Route',
+      label: baseLabel + ' · ' + eta + ' · ' + Math.round(speedKmh) + 'km/h',
       kind: opts.kind || 'custom',
+      km: km,
+      durationS: durationS,
+      speedKmh: speedKmh,
+      eta: eta,
+      progress: opts.progress != null ? opts.progress : 0,
+      driver: opts.driver || null,
+      vendorLat: opts.vendorLat,
+      vendorLng: opts.vendorLng,
+      dropLat: opts.dropLat,
+      dropLng: opts.dropLng,
     };
     routes = routes.filter(function (r) {
       return r.id !== row.id;
     });
     routes.unshift(row);
-    routes = routes.slice(0, 8);
+    routes = routes.slice(0, 10);
     return row;
+  }
+
+  /**
+   * Rhodes city delivery: vendor → client stop polygon + live driver progress.
+   * Draws on radar (expand), logs ETA/speed on CLI. No extra panels.
+   */
+  async function startDeliveryRoute(opts) {
+    opts = opts || {};
+    var vLat = Number(opts.vendorLat != null ? opts.vendorLat : opts.from && opts.from.lat);
+    var vLng = Number(opts.vendorLng != null ? opts.vendorLng : opts.from && opts.from.lng);
+    var dLat = Number(opts.dropLat != null ? opts.dropLat : opts.to && opts.to.lat);
+    var dLng = Number(opts.dropLng != null ? opts.dropLng : opts.to && opts.to.lng);
+    if (!isFinite(vLat) || !isFinite(dLat)) return null;
+    setRadarExpanded(true);
+    try {
+      g._snLastPos = { lat: (vLat + dLat) / 2, lng: (vLng + dLng) / 2 };
+      if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(g._snLastPos.lat, g._snLastPos.lng);
+      if (g.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(g._snLastPos.lat, g._snLastPos.lng, {
+          tier: 'city',
+          body: 'earth',
+          pulse: false,
+          label: 'Rhodes delivery',
+        });
+      }
+    } catch (e) {}
+    var id = opts.id || 'live:' + Date.now().toString(36);
+    var row = await showRoute(
+      [
+        { lat: vLat, lng: vLng },
+        { lat: dLat, lng: dLng },
+      ],
+      {
+        id: id,
+        label: opts.label || '🛵 Rodos',
+        kind: 'delivery',
+        osrm: true,
+        color: opts.color || 'rgba(0,220,255,0.95)',
+        progress: 0,
+        driver: opts.driver || 'Driver',
+        vendorLat: vLat,
+        vendorLng: vLng,
+        dropLat: dLat,
+        dropLng: dLng,
+        speedKmh: opts.speedKmh,
+      }
+    );
+    if (!row) return null;
+    try {
+      if (g.SNCli && SNCli.log) {
+        SNCli.log(
+          'Route · Rhodes · ' +
+            (row.km != null ? row.km.toFixed(2) + ' km' : '?') +
+            ' · ETA ' +
+            (row.eta || '?') +
+            ' · ' +
+            Math.round(row.speedKmh || 0) +
+            ' km/h · vendor→client',
+          'ok'
+        );
+      }
+      if (g.SNCli && SNCli.preview)
+        SNCli.preview('ETA ' + (row.eta || '?') + ' · ' + Math.round(row.speedKmh || 0) + ' km/h');
+    } catch (e2) {}
+    // Animate driver along polygon (scooter city pace)
+    var durationMs = Math.max(8000, Math.min(90000, (row.durationS || 600) * 1000 * 0.35));
+    var t0 = Date.now();
+    var animId = id;
+    function step() {
+      var r = null;
+      for (var i = 0; i < routes.length; i++) {
+        if (routes[i].id === animId) {
+          r = routes[i];
+          break;
+        }
+      }
+      if (!r) return;
+      var u = Math.min(1, (Date.now() - t0) / durationMs);
+      r.progress = u;
+      var remainS = (r.durationS || 0) * (1 - u);
+      r.eta = fmtEta(remainS);
+      r.label =
+        (opts.label || '🛵 Rodos') +
+        ' · ETA ' +
+        r.eta +
+        ' · ' +
+        Math.round(r.speedKmh || 28) +
+        'km/h';
+      if (u >= 1) {
+        r.progress = 1;
+        try {
+          if (g.SNCli && SNCli.log) SNCli.log('Driver arrived · client stop · Rhodes', 'ok');
+        } catch (e3) {}
+        if (opts.onArrive) {
+          try {
+            opts.onArrive(r);
+          } catch (e4) {}
+        }
+        return;
+      }
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    return row;
+  }
+
+  function pointAlong(points, progress) {
+    if (!points || points.length < 2) return null;
+    var u = Math.max(0, Math.min(1, progress || 0));
+    if (u <= 0) return points[0];
+    if (u >= 1) return points[points.length - 1];
+    var total = 0;
+    var segs = [];
+    var i;
+    for (i = 0; i < points.length - 1; i++) {
+      var d = haversineKm(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng);
+      segs.push(d);
+      total += d;
+    }
+    if (total <= 0) return points[0];
+    var target = total * u;
+    var acc = 0;
+    for (i = 0; i < segs.length; i++) {
+      if (acc + segs[i] >= target) {
+        var f = segs[i] > 0 ? (target - acc) / segs[i] : 0;
+        return {
+          lat: points[i].lat + (points[i + 1].lat - points[i].lat) * f,
+          lng: points[i].lng + (points[i + 1].lng - points[i].lng) * f,
+        };
+      }
+      acc += segs[i];
+    }
+    return points[points.length - 1];
   }
 
   /**
@@ -1318,6 +1570,7 @@
           { e: '⏭', t: 'Next vendor', d: 'Carousel next', run: 'next' },
           { e: '▦', t: 'Show all', d: 'All vendors on map', run: 'show all' },
           { e: '📦', t: 'Task list', d: 'Jobs · deliveries', run: 'task list' },
+          { e: '🛣', t: 'Show routes', d: 'Radar polygons · ETA', run: 'routes' },
         ],
       },
       {
@@ -1432,6 +1685,7 @@
     setRadarExpanded: setRadarExpanded,
     refreshRoutes: refreshRoutes,
     showRoute: showRoute,
+    startDeliveryRoute: startDeliveryRoute,
     setRoutes: setRoutes,
     clearRoutes: clearRoutes,
     get routes() {
