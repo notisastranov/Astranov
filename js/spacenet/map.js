@@ -179,7 +179,71 @@
     liveMarkers: {},
     windyFrame: null,
     panelOpen: false,
+    /** User intervened — sim/AI must not thrash camera until pilot on */
+    userHold: false,
   };
+
+  function canAutopilot() {
+    return !M.userHold;
+  }
+
+  function userHoldCamera(reason) {
+    if (M.userHold) return;
+    M.userHold = true;
+    try {
+      global.SNCli?.log?.(
+        'Camera · you have control' +
+          (reason ? ' · ' + reason : '') +
+          ' · type pilot on to follow sim again',
+        'ok'
+      );
+      global.SNCli?.preview?.('Camera · your control');
+    } catch (_) {}
+  }
+
+  function releasePilot() {
+    M.userHold = false;
+    try {
+      global.SNCli?.log?.('Camera · autopilot on · sim may recenter', 'ok');
+      global.SNCli?.preview?.('Autopilot on');
+    } catch (_) {}
+  }
+
+  /** Soft pan only when autopilot allowed (sim/AI). force=true for user CLI/locate. */
+  function softSetView(lat, lng, zoom, opts) {
+    opts = opts || {};
+    if (!opts.force && !canAutopilot()) return false;
+    if (!M.map || !M.active) return false;
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return false;
+    try {
+      const z = zoom != null ? zoom : M.map.getZoom() || 14;
+      M.map.setView([lat, lng], z, { animate: !!opts.animate });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function bindUserCameraLock(map) {
+    if (!map || map._snPilotBound) return;
+    map._snPilotBound = true;
+    map.on('dragstart', function () {
+      userHoldCamera('drag');
+    });
+    map.on('zoomstart', function (e) {
+      // zoom from user gesture (not programmatic setView)
+      try {
+        if (e && e.originalEvent) userHoldCamera('zoom');
+      } catch (_) {}
+    });
+    map.on('mousedown', function () {
+      /* ready */
+    });
+    // Double-click zoom is user
+    map.on('dblclick', function () {
+      userHoldCamera('dblclick');
+    });
+  }
 
   function loadBasemapPref() {
     try {
@@ -1080,8 +1144,11 @@
     });
   }
 
-  async function open(lat, lng) {
+  async function open(lat, lng, opts) {
+    opts = opts || {};
+    const force = opts.force === true;
     const map = await ensure();
+    bindUserCameraLock(map);
     const p = {
       lat: lat != null ? lat : global.SNTasks?.pos?.lat || 36.43,
       lng: lng != null ? lng : global.SNTasks?.pos?.lng || 28.22,
@@ -1094,8 +1161,12 @@
     }
     if (globe) globe.classList.add('city-hidden');
     document.body.classList.add('city-map-on');
+    const wasActive = M.active;
     M.active = true;
-    map.setView([p.lat, p.lng], 15);
+    // Recenter only if autopilot OR forced (user CLI / first open)
+    if (force || canAutopilot() || !wasActive) {
+      map.setView([p.lat, p.lng], wasActive ? map.getZoom() || 15 : 15);
+    }
     setTimeout(() => map.invalidateSize(), 80);
 
     // Surface basemap: keep user choice, else bright/dark from local day-night
@@ -1291,6 +1362,14 @@
     ensure,
     setBasemap,
     toggleOverlay,
+    softSetView,
+    canAutopilot,
+    userHoldCamera,
+    releasePilot: releasePilot,
+    /** true when user has overridden sim/AI camera */
+    get userHold() {
+      return M.userHold;
+    },
     openLayersPanel: function () {
       if (!M.map) return;
       M.panelOpen = true;

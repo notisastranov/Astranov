@@ -1102,24 +1102,9 @@
     try {
       g._snLastPos = { lat: (vLat + dLat) / 2, lng: (vLng + dLng) / 2 };
       if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(g._snLastPos.lat, g._snLastPos.lng);
-      // Keep Rodos city map as training surface; pan to route mid
-      if (g.SNMap && SNMap.open) {
-        if (SNMap.active && SNMap.ensure) {
-          void SNMap.ensure().then(function (map) {
-            try {
-              map.setView([g._snLastPos.lat, g._snLastPos.lng], Math.max(map.getZoom() || 14, 13));
-            } catch (eM) {}
-          });
-        } else {
-          void SNMap.open(g._snLastPos.lat, g._snLastPos.lng);
-        }
-      } else if (g.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(g._snLastPos.lat, g._snLastPos.lng, {
-          tier: 'city',
-          body: 'earth',
-          pulse: false,
-          label: 'Rhodes delivery',
-        });
+      // Routes draw on radar; do not thrash city map camera unless autopilot
+      if (g.SNMap && SNMap.canAutopilot && SNMap.canAutopilot() && g.SNMap.softSetView) {
+        g.SNMap.softSetView(g._snLastPos.lat, g._snLastPos.lng, null, { animate: false });
       }
     } catch (e) {}
     var id = opts.id || 'live:' + Date.now().toString(36);

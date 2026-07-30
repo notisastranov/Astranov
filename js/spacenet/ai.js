@@ -100,7 +100,12 @@
       }
     } catch (e1) {}
     try {
-      if (global.SNGlobe && SNGlobe.goToPlace && v.lat != null) {
+      // Respect user camera hold — no thrashing map
+      if (global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot()) {
+        /* user pilot */
+      } else if (global.SNMap && SNMap.softSetView && v.lat != null) {
+        SNMap.softSetView(v.lat, v.lng, null, {});
+      } else if (global.SNGlobe && SNGlobe.goToPlace && v.lat != null) {
         SNGlobe.goToPlace(v.lat, v.lng, {
           tier: opts.tier || 'city',
           body: 'earth',

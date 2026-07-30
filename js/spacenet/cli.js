@@ -28,7 +28,7 @@
 
   function help() {
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
-    log('MAP   rodos · city · fly <city> · global · shops · locate', 'ok');
+    log('MAP   rodos · fly <city> · global · locate · pilot on|off (camera)', 'ok');
     log('ADD   ribbon ➕ · pin · targets · video · vendor · social · emergency', 'ok');
     log('TOPO  measure · measure topo · clear targets · clear pin', 'dim');
     log('EARTH g_satellite · g_hybrid · g_terrain · google key in SN_CONFIG.layers', 'dim');
@@ -310,9 +310,7 @@
           if (reply) {
             log(reply, 'ok');
             preview(String(reply).slice(0, 80));
-            try {
-              if (handsfreeOn && hfSpeakOut && reply) speakAi(reply);
-            } catch (_) {}
+            replyOut(reply);
           }
         } else {
           const fi = global.SNMarket.parseFoodIntent(line);
@@ -979,16 +977,36 @@
         else log('Add menu offline · hard refresh', 'err');
         return;
       }
+      if (
+        low === 'pilot on' ||
+        low === 'autopilot on' ||
+        low === 'follow sim' ||
+        low === 'camera auto'
+      ) {
+        global.SNMap?.releasePilot?.();
+        return;
+      }
+      if (
+        low === 'pilot off' ||
+        low === 'autopilot off' ||
+        low === 'hold camera' ||
+        low === 'camera hold' ||
+        low === 'hold'
+      ) {
+        global.SNMap?.userHoldCamera?.('cli');
+        return;
+      }
       if (low === 'locate' || low === 'gps' || low === 'where am i') {
         preview('Locating…');
         const pos = await Globe?.locate?.();
         if (pos) {
           Tasks?.setPos?.(pos.lat, pos.lng);
           global._snLastPos = { lat: pos.lat, lng: pos.lng };
-          // Recenter: city map if open, else fly globe to user
+          // User intent: force recenter even if hold
           try {
-            if (global.SNMap?.active && global.SNMap.ensure) {
-              const map = await SNMap.ensure();
+            if (global.SNMap?.active) {
+              global.SNMap.softSetView?.(pos.lat, pos.lng, Math.max(14, 14), { force: true });
+              const map = await SNMap.ensure?.();
               map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 14, 14));
             } else if (Globe?.goToPlace) {
               Globe.goToPlace(pos.lat, pos.lng, {
@@ -1030,8 +1048,8 @@
           Globe?.setBody?.('earth');
           Globe?.goToPlace?.(lat, lng, { tier: 'city', body: 'earth', pulse: false, label: 'Rhodes' });
         } catch (_) {}
-        await global.SNMap?.open?.(lat, lng);
-        log('Surface · Rodos city map · switch: global · fly athens · fly london', 'ok');
+        await global.SNMap?.open?.(lat, lng, { force: true });
+        log('Surface · Rodos city map · drag = your control · pilot on = follow sim', 'ok');
         preview('Rodos city map');
         return;
       }
@@ -1186,8 +1204,8 @@
             openMap: false,
           });
         } catch (_) {}
-        await global.SNMap?.open?.(lat, lng);
-        log('City map · ' + label + ' · global for globe · rodos for Rhodes', 'ok');
+        await global.SNMap?.open?.(lat, lng, { force: true });
+        log('City map · ' + label + ' · drag = hold · pilot on to follow sim', 'ok');
         preview(label);
       }
       for (const [name, ll] of Object.entries(CITIES)) {
@@ -1411,10 +1429,8 @@
               if (ln.trim()) log(ln, 'ok');
             });
           preview(reply.replace(/^SpaceNet\s*[·:.-]\s*/i, '').slice(0, 80));
-          // Speak only if user enabled voice on (never unprompted)
-          try {
-            if (handsfreeOn && hfSpeakOut && reply) speakAi(reply);
-          } catch (_) {}
+          // Speak conversation when AI talk mode is on
+          replyOut(reply);
           return;
         }
       }
@@ -1434,20 +1450,16 @@
   let hfRunTimes = []; // runaway guard
   let hfPending = ''; // last transcript (final or interim) to auto-send
   /**
-   * Speak-out is OFF by default. AI must not talk unprompted.
-   * User enables with "voice on".
+   * Talk mode: when AI hands-free is ON, SpaceNet speaks replies (conversation).
+   * voice off / hands-free off stops spoken replies. Boot stays silent.
    */
   let hfSpeakOut = false;
   let voicesReady = false;
   const VOICE_KEY = 'sn:tts-speak-v1';
 
-  try {
-    // Never auto-resume babble from a previous session
-    if (localStorage.getItem(VOICE_KEY) === '1') {
-      /* user previously enabled — still default silent until hands-free */
-      hfSpeakOut = false;
-    }
-  } catch (_) {}
+  function talking() {
+    return !!(handsfreeOn || hfSpeakOut);
+  }
 
   function setHandsfreeUi(on, label) {
     // Ribbon is the only hands-free control (bottom bar removed)
@@ -1455,9 +1467,21 @@
     btns.forEach((btn) => {
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.title = on ? 'SPACENET LISTENING · tap AI to stop' : 'AI · SPACENET LISTENING';
+      btn.title = on
+        ? 'SpaceNet talking · listen + speak · tap AI to stop'
+        : 'AI · talk to SpaceNet';
     });
     if (label) preview(label);
+  }
+
+  /** Speak AI / system reply during conversation (hands-free or voice on) */
+  function replyOut(text) {
+    const t = String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t) return;
+    if (!talking()) return;
+    speakAi(t);
   }
 
   function muteMic(ms) {
@@ -1527,13 +1551,11 @@
   }
 
   /**
-   * Speak SpaceNet text — ONLY when user enabled speak-out (voice on).
-   * force='test' allows one-shot voice test / voice-on confirm.
-   * Never speaks on boot or unprompted.
+   * Speak SpaceNet text in conversation (hands-free / voice on / force test).
+   * Never speaks on cold boot — only after user taps AI or says voice on.
    */
   function speakAi(text, force) {
-    // Only speak if user enabled voice, or this is an explicit voice test
-    if (force !== 'test' && !hfSpeakOut) return;
+    if (force !== 'test' && !talking() && force !== true) return;
     try {
       const synth = global.speechSynthesis;
       if (!synth || !global.SpeechSynthesisUtterance) {
@@ -1546,37 +1568,38 @@
       } catch (_) {}
       const clean = String(text || '')
         .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
+        .replace(/^SPACENET\s*[·:.-]\s*/gi, '')
         .replace(/[🎙➤⋮🏠🎯]/g, '')
         .replace(/\s+/g, ' ')
         .trim()
-        .slice(0, 280);
+        .slice(0, 320);
       if (!clean) return;
       synth.cancel();
-      muteMic(Math.min(20000, 2200 + clean.length * 55));
+      muteMic(Math.min(24000, 1800 + clean.length * 50));
       try {
         if (speechRec) speechRec.abort();
       } catch (_) {}
       const lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
       const u = new SpeechSynthesisUtterance(clean);
       u.lang = lang;
-      u.rate = 0.96;
-      u.pitch = 1.05; // slightly softer than default male robot
-      u.volume = 0.92;
+      u.rate = 0.98;
+      u.pitch = 1.08;
+      u.volume = 1;
       const voice = pickVoice(lang);
       if (voice) {
         u.voice = voice;
         u.lang = voice.lang || lang;
       }
       u.onend = () => {
-        muteMic(1400);
-        if (handsfreeOn && !hfBusy) scheduleListenRestart(1400);
+        muteMic(900);
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(900);
       };
       u.onerror = (ev) => {
         try {
           log('Voice error · ' + ((ev && ev.error) || 'speak failed'), 'dim');
         } catch (_) {}
-        muteMic(600);
-        if (handsfreeOn && !hfBusy) scheduleListenRestart(900);
+        muteMic(400);
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(700);
       };
       setTimeout(function () {
         try {
@@ -1585,7 +1608,7 @@
         } catch (e) {
           log('Could not speak · ' + (e.message || e), 'err');
         }
-      }, 80);
+      }, 60);
     } catch (e) {
       try {
         log('Speak failed · ' + (e.message || e), 'err');
@@ -1681,22 +1704,15 @@
     preview('…');
     void (async () => {
       try {
-        // Clear field like form submit, then run freeform/AI path
+        // Clear field like form submit, then run freeform/AI path (run → replyOut speaks)
         if (input) input.value = '';
         await run(t);
-        if (hfSpeakOut) {
-          const hist = global.SNAi?.history;
-          const last = hist && hist[hist.length - 1];
-          if (last && last.role === 'assistant') {
-            speakAi(String(last.content).slice(0, 160));
-          }
-        }
       } catch (e) {
         log('Voice send · ' + (e.message || e), 'err');
       } finally {
         hfBusy = false;
-        if (hfSpeakOut) muteMic(2000);
-        else if (handsfreeOn) scheduleListenRestart(800);
+        // Restart listen after speak ends (speakAi onend) or soon if silent path
+        if (handsfreeOn && !hfSpeakOut) scheduleListenRestart(600);
       }
     })();
     return true;
@@ -1717,6 +1733,11 @@
   function toggleHandsfree() {
     const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
     if (handsfreeOn) {
+      hfSpeakOut = false;
+      try {
+        localStorage.setItem(VOICE_KEY, '0');
+      } catch (_) {}
+      killSpeech();
       stopHandsfree('SPACENET OFF');
       try {
         if (global.SNAi && SNAi.listeningOff) SNAi.listeningOff();
@@ -1730,7 +1751,11 @@
       }
       return;
     }
-    // Always brief greet first — LISTEN priority (even if mic fails)
+    // Conversation mode: listen + speak what is happening
+    hfSpeakOut = true;
+    try {
+      localStorage.setItem(VOICE_KEY, '1');
+    } catch (_) {}
     try {
       if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
       else {
@@ -1742,13 +1767,17 @@
       log('SPACENET LISTENING', 'ok');
       preview('SPACENET LISTENING');
     }
+    // Spoken open so user knows conversation is live
+    setTimeout(function () {
+      speakAi('I am SpaceNet. I am listening. Tell me what you need.', true);
+    }, 200);
     if (!global.isSecureContext && location.hostname !== 'localhost') {
-      log('Mic needs HTTPS · type pizza · shops · next', 'dim');
+      log('Mic needs HTTPS · type to talk · I can still reply in text', 'dim');
       return;
     }
     if (!SR) {
-      log('Type pizza · shops · next · show all', 'dim');
-      preview('SPACENET LISTENING');
+      log('No speech API · type to me · I still reply in text and voice', 'dim');
+      preview('SPACENET · type to talk');
       return;
     }
 

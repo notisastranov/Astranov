@@ -141,7 +141,9 @@
         if (!global.SNMap?.active) await global.SNMap?.open?.(pos.lat, pos.lng);
         else {
           const map = await global.SNMap.ensure?.();
-          map?.setView?.([pos.lat, pos.lng], 14);
+          if (global.SNMap?.canAutopilot?.() !== false) {
+            global.SNMap?.softSetView?.(pos.lat, pos.lng, 14) || map?.setView?.([pos.lat, pos.lng], 14);
+          }
         }
       } catch (_) {}
       global.SNMap?.showProfiles?.();
@@ -286,7 +288,9 @@
         if (!global.SNMap?.active) await global.SNMap?.open?.(pos.lat, pos.lng);
         else {
           const map = await global.SNMap.ensure?.();
-          map?.setView?.([pos.lat, pos.lng], 14);
+          if (global.SNMap?.canAutopilot?.() !== false) {
+            global.SNMap?.softSetView?.(pos.lat, pos.lng, 14) || map?.setView?.([pos.lat, pos.lng], 14);
+          }
         }
         global.SNMap?.showProfiles?.();
         global.SNMap?.showTasks?.();

@@ -110,64 +110,41 @@
   }
 
   /**
-   * Training surface = Rhodes CITY MAP (Leaflet).
-   * Keep map open; pan to agent. Globe only if user closed map (CLI global).
+   * Agent logical position only — does NOT thrash camera when user holds pilot.
    */
   function flyRhodes(agent, tier, label) {
     if (!agent) return;
     try {
+      // Soft focus for logistics only — do not steal camera if user intervened
+      if (global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot()) {
+        return;
+      }
       global._snLastPos = { lat: agent.lat, lng: agent.lng };
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
     } catch (e2) {}
     try {
-      // Prefer Rodos city map for all sim activity
-      if (global.SNMap && SNMap.open) {
-        if (SNMap.active && SNMap.ensure) {
-          void SNMap.ensure().then(function (map) {
-            try {
-              map.setView([agent.lat, agent.lng], map.getZoom() || 14);
-            } catch (e3) {}
-          });
-        } else {
-          void SNMap.open(agent.lat, agent.lng);
-        }
-      } else if (global.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(agent.lat, agent.lng, {
-          tier: tier || 'city',
-          body: 'earth',
-          pulse: false,
-          openMap: true,
-          label: label || agent.hub || 'Rhodes',
-        });
+      // Autopilot only: rare soft pan (not every agent every tick)
+      if (global.SNMap && SNMap.softSetView) {
+        // no-op path — sim no longer setView per agent
       }
-      if (global.SNGlobe && SNGlobe.pulse) {
-        SNGlobe.pulse(
-          agent.lat,
-          agent.lng,
-          ROLE_COLOR[agent.role] || 0x3d9eff,
-          (ROLE_EMOJI[agent.role] || '·') + ' ' + (label || agent.name),
-          9000
-        );
-      }
+      // No globe pulse spam (was jumping visual attention)
     } catch (e) {}
   }
 
-  function openRhodesCityMap() {
+  function openRhodesCityMap(force) {
     try {
+      // Respect user camera hold unless forced
+      if (!force && global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot()) {
+        log('Rodos map kept · you have camera control · pilot on to auto-follow', 'dim');
+        return;
+      }
       global._snLastPos = { lat: RHODES.lat, lng: RHODES.lng };
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(RHODES.lat, RHODES.lng);
       if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
-      if (global.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(RHODES.lat, RHODES.lng, {
-          tier: 'city',
-          body: 'earth',
-          pulse: false,
-          openMap: false,
-          label: 'Rhodes · Rodos',
-        });
+      if (global.SNMap && SNMap.open) {
+        void SNMap.open(RHODES.lat, RHODES.lng, { force: !!force });
       }
-      if (global.SNMap && SNMap.open) void SNMap.open(RHODES.lat, RHODES.lng);
-      log('Surface · Rodos city map · CLI: global · fly athens · fly lindos', 'ok');
+      log('Surface · Rodos city map · drag map = your control · pilot on = follow sim', 'ok');
       preview('Rodos city map');
     } catch (e) {
       log('Rodos map · ' + (e.message || e), 'err');
@@ -672,8 +649,8 @@
           : opts.slow
             ? 9000
             : 5500;
-    // Training: Rodos CITY MAP only (switch via CLI: global · fly <city>)
-    openRhodesCityMap();
+    // Training: ensure Rodos city map once (won't steal if user holds camera)
+    openRhodesCityMap(false);
     log('── Sim-33 · RODOS CITY MAP · ' + N + ' agents · CLI ──', 'ok');
     log('12 clients · 8 vendors · 8 drivers · 5 ambassadors · ~' + tickMs + 'ms/tick', 'dim');
     log('View: city map Rhodes · switch: global · fly athens · fly london · city', 'dim');
