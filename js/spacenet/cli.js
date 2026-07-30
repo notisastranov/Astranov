@@ -1417,6 +1417,7 @@
   let hfMutedUntil = 0; // ignore mic while TTS / cooldown (kills feedback loop)
   let hfBusy = false; // one command at a time
   let hfRunTimes = []; // runaway guard
+  let hfPending = ''; // last transcript (final or interim) to auto-send
   /**
    * Speak-out is OFF by default. AI must not talk unprompted.
    * User enables with "voice on".
@@ -1623,12 +1624,67 @@
     const low = String(t || '')
       .toLowerCase()
       .trim();
-    if (low.length < 2) return true;
-    // Echo of our own TTS / system noise
-    if (/astranov\s*listening|say first delivery|tap (again|🎙)|hands-?free|mic live/i.test(low))
+    if (low.length < 1) return true;
+    // Echo of our own TTS / system status only — do not block real commands
+    if (
+      /^(spacenet\s*)?listening[.!]?$/.test(low) ||
+      /^spacenet\s*off[.!]?$/.test(low) ||
+      /astranov\s*listening|tap (again|🎙)|hands-?free off|mic (live|denied)/i.test(low)
+    )
       return true;
     if (/^astranov(\s+ai)?[.!]?$/i.test(low)) return true;
     return false;
+  }
+
+  /**
+   * Auto-send transcribed voice into CLI conversation (always run — never leave only in input).
+   */
+  function commitVoice(raw) {
+    const t = String(raw || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t) return false;
+    if (Date.now() < hfMutedUntil) return false;
+    if (hfBusy) return false;
+    if (isEchoGarbage(t)) {
+      log('🎙 ignored echo · ' + t.slice(0, 40), 'dim');
+      return false;
+    }
+    const now = Date.now();
+    if (now - hfLastHeard < 700) return false;
+    hfLastHeard = now;
+    if (runawayTrip()) return false;
+
+    hfBusy = true;
+    hfPending = '';
+    muteMic(6000);
+    const input = $('cli-in');
+    if (input) {
+      input.value = t;
+    }
+    log('🎙 › ' + t, 'cmd');
+    preview('…');
+    void (async () => {
+      try {
+        // Clear field like form submit, then run freeform/AI path
+        if (input) input.value = '';
+        await run(t);
+        if (hfSpeakOut) {
+          const hist = global.SNAi?.history;
+          const last = hist && hist[hist.length - 1];
+          if (last && last.role === 'assistant') {
+            speakAi(String(last.content).slice(0, 160));
+          }
+        }
+      } catch (e) {
+        log('Voice send · ' + (e.message || e), 'err');
+      } finally {
+        hfBusy = false;
+        if (hfSpeakOut) muteMic(2000);
+        else if (handsfreeOn) scheduleListenRestart(800);
+      }
+    })();
+    return true;
   }
 
   function runawayTrip() {
@@ -1693,12 +1749,15 @@
     speechRec = new SR();
     const nav = navigator.language || 'en-US';
     speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
-    speechRec.interimResults = false; // finals only — less chatter
-    speechRec.continuous = false; // push-to-session: one utterance, then re-arm carefully
+    // interim helps fill the box; we commit on final OR onend with pending
+    speechRec.interimResults = true;
+    speechRec.continuous = false;
     speechRec.maxAlternatives = 1;
+    hfPending = '';
 
     speechRec.onstart = () => {
       setHandsfreeUi(true, 'SPACENET LISTENING');
+      preview('SPACENET LISTENING · speak');
     };
 
     speechRec.onresult = (ev) => {
@@ -1706,41 +1765,26 @@
         if (Date.now() < hfMutedUntil) return;
         if (hfBusy) return;
         let finalText = '';
+        let interimText = '';
         for (let i = ev.resultIndex; i < ev.results.length; i++) {
-          if (ev.results[i].isFinal) finalText += ev.results[i][0]?.transcript || '';
+          const piece = ev.results[i][0]?.transcript || '';
+          if (ev.results[i].isFinal) finalText += piece;
+          else interimText += piece;
         }
-        const t = String(finalText || '').trim();
-        if (!t || isEchoGarbage(t)) return;
-        const now = Date.now();
-        if (now - hfLastHeard < 1400) return;
-        hfLastHeard = now;
-        if (runawayTrip()) return;
-        hfBusy = true;
-        muteMic(8000);
-        const input = $('cli-in');
-        if (input) input.value = t;
-        log('🎙 ' + t, 'cmd');
-        preview('…');
-        void (async () => {
-          try {
-            await run(t);
-            // Speak brief reply only if user turned voice on
-            if (hfSpeakOut) {
-              const hist = global.SNAi?.history;
-              const last = hist && hist[hist.length - 1];
-              if (last && last.role === 'assistant') {
-                speakAi(String(last.content).slice(0, 120));
-              }
-            }
-          } catch (e) {
-            log('Voice · ' + (e.message || e), 'err');
-          } finally {
-            hfBusy = false;
-            if (hfSpeakOut) muteMic(2500);
-            else if (handsfreeOn) scheduleListenRestart(1000);
-          }
-        })();
-      } catch (_) {
+        const shown = String(finalText || interimText || '').trim();
+        if (shown) {
+          hfPending = shown;
+          const input = $('cli-in');
+          if (input) input.value = shown;
+          preview('🎙 ' + shown.slice(0, 48));
+        }
+        // Final chunk → auto-send immediately
+        const fin = String(finalText || '').trim();
+        if (fin) {
+          commitVoice(fin);
+        }
+      } catch (e) {
+        log('Voice result · ' + (e.message || e), 'err');
         hfBusy = false;
       }
     };
@@ -1749,26 +1793,37 @@
       const code = (ev && ev.error) || 'error';
       if (code === 'aborted') return;
       if (code === 'no-speech') {
-        if (handsfreeOn && !hfBusy) scheduleListenRestart(500);
+        if (handsfreeOn && !hfBusy) scheduleListenRestart(400);
         return;
       }
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         stopHandsfree('Mic blocked');
-        log('Mic denied · allow microphone · then tap 🎙 once', 'err');
+        log('Mic denied · allow microphone · then tap AI once', 'err');
         return;
       }
-      if (handsfreeOn && !hfBusy) scheduleListenRestart(900);
+      if (code === 'network') {
+        log('Voice network error · try again', 'dim');
+      }
+      if (handsfreeOn && !hfBusy) scheduleListenRestart(700);
     };
 
     speechRec.onend = () => {
-      if (handsfreeOn && !hfBusy && Date.now() >= hfMutedUntil) scheduleListenRestart(700);
+      // Many browsers only settle transcript at end — force auto-send then
+      if (handsfreeOn && !hfBusy && hfPending) {
+        const pending = hfPending;
+        hfPending = '';
+        if (commitVoice(pending)) return;
+      }
+      if (handsfreeOn && !hfBusy && Date.now() >= hfMutedUntil) scheduleListenRestart(500);
     };
 
     handsfreeOn = true;
-    // Keep speak-out OFF unless user already said "voice on"
     killSpeech();
     hfRunTimes = [];
-    muteMic(800);
+    hfBusy = false;
+    hfPending = '';
+    // Short mute so greeting does not eat first words
+    muteMic(350);
     setHandsfreeUi(true, 'SPACENET LISTENING');
     warmVoices();
     try {
@@ -1776,10 +1831,9 @@
       try {
         if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: !!hfSpeakOut });
       } catch (_) {}
-      // Greeting already logged as SPACENET LISTENING
+      log('SPACENET LISTENING · speak · auto-sends to CLI', 'ok');
     } catch (e) {
-      // Stay "listening" for typed CLI even if mic start fails
-      log('Mic soft-fail · type pizza · next · show all', 'dim');
+      log('Mic soft-fail · type to SpaceNet', 'dim');
     }
   }
 
