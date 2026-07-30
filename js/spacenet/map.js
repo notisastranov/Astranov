@@ -832,6 +832,7 @@
       maxZoom: 20,
       preferCanvas: true, // lighter target drawing when many markers
     }).setView([pos.lat, pos.lng], 14);
+    bindUserCameraLock(M.map);
 
     // Basemap + full Layers panel (basemaps + multi overlays)
     setBasemap(M.basemapId || 'dark', { log: false });
