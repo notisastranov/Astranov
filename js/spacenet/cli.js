@@ -476,14 +476,25 @@
         return;
       }
       if (low === 'routes' || low === 'radar routes' || low === 'show routes') {
-        log('Refreshing delivery route polygons on radar…', 'dim');
-        const list = (await global.SNField?.refreshRoutes?.(true)) || [];
-        if (!list.length) log('No open delivery routes · place an order first', 'dim');
+        log('Rhodes · delivery polygons on radar (vendor→client · ETA · km/h)…', 'dim');
+        const list = (await global.SNField?.refreshRoutes?.(true)) || global.SNField?.routes || [];
+        if (!list.length) log('No open delivery routes · order from a vendor first', 'dim');
         else {
           list.forEach((r) =>
-            log('━ ' + (r.label || r.id) + ' · ' + (r.points?.length || 0) + ' pts', 'ok')
+            log(
+              '━ ' +
+                (r.label || r.id) +
+                (r.km != null ? ' · ' + Number(r.km).toFixed(2) + ' km' : '') +
+                (r.eta ? ' · ETA ' + r.eta : '') +
+                (r.speedKmh != null ? ' · ' + Math.round(r.speedKmh) + ' km/h' : '') +
+                ' · ' +
+                (r.points?.length || 0) +
+                ' pts',
+              'ok'
+            )
           );
           global.SNField?.setRadarExpanded?.(true);
+          preview((list[0] && list[0].label) || 'routes');
         }
         return;
       }
