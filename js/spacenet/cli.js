@@ -45,7 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('SIM   sim live · 33 agents on RHODES Island (see LIVE panel)', 'ok');
+    log('SIM   sim live · 33 agents Rhodes · all output on this CLI', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -158,7 +158,7 @@
           } catch (_) {}
           if (Sim.showLive) Sim.showLive();
           else Sim.start({ ms: 5500 });
-          if (global.SNSuper && SNSuper.isSuper && SNSuper.isSuper()) SNSuper.show();
+          // Super TX continues on CLI lines only — no floating deck
           return;
         }
         if (/^sim\s+speed/.test(low)) {

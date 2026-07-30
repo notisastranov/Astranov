@@ -146,140 +146,29 @@
       kind: kind || 'ok',
     });
     if (feed.length > 24) feed.length = 24;
-    paintLive();
+    // SPECS: all activity on main CLI only — no floating panels
   }
 
-  function ensureLiveCss() {
-    if (document.getElementById('sn-sim33-css')) return;
-    var st = document.createElement('style');
-    st.id = 'sn-sim33-css';
-    st.textContent = [
-      '#sn-sim33-live{position:fixed;top:12px;right:12px;z-index:140;width:min(320px,calc(100vw - 24px));',
-      'max-height:min(52vh,420px);display:none;flex-direction:column;gap:6px;padding:10px 12px;',
-      'background:rgba(0,8,18,.94);border:1px solid rgba(61,158,255,.55);border-radius:14px;',
-      'box-shadow:0 8px 32px rgba(0,0,0,.65),0 0 20px rgba(26,111,212,.2);color:#c8e4ff;',
-      'font:12px/1.35 system-ui,Segoe UI,sans-serif;pointer-events:auto}',
-      '#sn-sim33-live.open{display:flex}',
-      '#sn-sim33-live .sim-head{display:flex;align-items:center;gap:8px;font-weight:700;',
-      'letter-spacing:.06em;text-transform:uppercase;color:#3d9eff;font-size:11px}',
-      '#sn-sim33-live .sim-dot{width:9px;height:9px;border-radius:50%;background:#44ffaa;',
-      'box-shadow:0 0 10px #44ffaa;animation:snSimPulse 1s ease infinite}',
-      '#sn-sim33-live.off .sim-dot{background:#666;box-shadow:none;animation:none}',
-      '@keyframes snSimPulse{0%,100%{opacity:1}50%{opacity:.35}}',
-      '#sn-sim33-live .sim-focus{color:#ffd633;font-size:11px;font-weight:600}',
-      '#sn-sim33-live .sim-now{font-size:13px;color:#e8f4ff;min-height:2.6em}',
-      '#sn-sim33-live .sim-stats{display:flex;flex-wrap:wrap;gap:6px 10px;color:#8ab4d8;font-size:11px}',
-      '#sn-sim33-live .sim-feed{overflow:auto;max-height:min(28vh,220px);border-top:1px solid rgba(26,111,212,.3);',
-      'padding-top:6px;margin-top:2px}',
-      '#sn-sim33-live .sim-row{padding:3px 0;border-bottom:1px solid rgba(26,111,212,.12);color:#9ec8f0}',
-      '#sn-sim33-live .sim-row.err{color:#ff8899}',
-      '#sn-sim33-live .sim-row.ok{color:#a8f0c8}',
-      '#sn-sim33-live .sim-btns{display:flex;gap:6px;margin-top:4px}',
-      '#sn-sim33-live button{flex:1;cursor:pointer;border-radius:8px;border:1px solid rgba(61,158,255,.45);',
-      'background:rgba(0,24,56,.7);color:#c8e4ff;padding:6px 8px;font:700 11px system-ui}',
-      '#sn-sim33-live button:hover{border-color:#3d9eff}',
-    ].join('');
-    document.head.appendChild(st);
+  /** Kill legacy floating sim panels (never recreate) */
+  function killFloatingPanels() {
+    try {
+      var el = document.getElementById('sn-sim33-live');
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+      var css = document.getElementById('sn-sim33-css');
+      if (css && css.parentNode) css.parentNode.removeChild(css);
+      var sp = document.getElementById('sn-super-panel');
+      if (sp && sp.parentNode) sp.parentNode.removeChild(sp);
+      var sc = document.getElementById('sn-super-css');
+      if (sc && sc.parentNode) sc.parentNode.removeChild(sc);
+    } catch (e) {}
   }
 
-  function ensureLivePanel() {
-    ensureLiveCss();
-    var el = document.getElementById('sn-sim33-live');
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = 'sn-sim33-live';
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-live', 'polite');
-    el.innerHTML =
-      '<div class="sim-head"><span class="sim-dot"></span><span>Sim-33 LIVE</span></div>' +
-      '<div class="sim-focus" id="sn-sim33-focus">📍 Rhodes Island, Greece</div>' +
-      '<div class="sim-now" id="sn-sim33-now">Waiting…</div>' +
-      '<div class="sim-stats" id="sn-sim33-stats"></div>' +
-      '<div class="sim-feed" id="sn-sim33-feed"></div>' +
-      '<div class="sim-btns">' +
-      '<button type="button" id="sn-sim33-stop">Stop</button>' +
-      '<button type="button" id="sn-sim33-hide">Hide</button>' +
-      '</div>';
-    document.body.appendChild(el);
-    var stopB = document.getElementById('sn-sim33-stop');
-    var hideB = document.getElementById('sn-sim33-hide');
-    if (stopB)
-      stopB.onclick = function () {
-        stop();
-      };
-    if (hideB)
-      hideB.onclick = function () {
-        el.classList.remove('open');
-        try {
-          localStorage.setItem('sn:sim-watch', '0');
-        } catch (e) {}
-      };
-    return el;
-  }
-
-  function showLivePanel(on) {
-    if (!isWatching() && on) return;
-    var el = ensureLivePanel();
-    if (on) {
-      el.classList.add('open');
-      el.classList.toggle('off', !running);
-    } else {
-      el.classList.remove('open');
-    }
-    paintLive();
+  function showLivePanel() {
+    killFloatingPanels();
   }
 
   function paintLive() {
-    var el = document.getElementById('sn-sim33-live');
-    if (!el || !el.classList.contains('open')) return;
-    el.classList.toggle('off', !running);
-    var now = document.getElementById('sn-sim33-now');
-    var st = document.getElementById('sn-sim33-stats');
-    var fd = document.getElementById('sn-sim33-feed');
-    var fo = document.getElementById('sn-sim33-focus');
-    if (fo) fo.textContent = '📍 Rhodes Island · Old Town · Lindos · Faliraki…';
-    if (now) {
-      if (currentAct) {
-        now.textContent =
-          (ROLE_EMOJI[currentAct.role] || '·') +
-          ' #' +
-          currentAct.i +
-          ' ' +
-          currentAct.role +
-          ' @ ' +
-          (currentAct.hub || 'Rhodes') +
-          '\n' +
-          (currentAct.action || '…');
-      } else {
-        now.textContent = running ? 'Swarm on Rhodes…' : 'Stopped';
-      }
-    }
-    if (st) {
-      st.innerHTML =
-        '<span>ok ' +
-        stats.ok +
-        '</span><span>fail ' +
-        stats.fail +
-        '</span><span>taught ' +
-        stats.taught +
-        '</span><span>t' +
-        stats.ticks +
-        '</span>';
-    }
-    if (fd) {
-      fd.innerHTML = feed
-        .slice(0, 12)
-        .map(function (r) {
-          return (
-            '<div class="sim-row ' +
-            (r.kind === 'err' ? 'err' : 'ok') +
-            '">' +
-            escapeHtml(r.line) +
-            '</div>'
-          );
-        })
-        .join('');
-    }
+    killFloatingPanels();
   }
 
   function escapeHtml(s) {
@@ -673,12 +562,7 @@
 
   async function tick() {
     if (!running) return;
-    // Real-time view only when logged in / watching
-    if (!isWatching()) {
-      showLivePanel(false);
-    } else {
-      showLivePanel(true);
-    }
+    killFloatingPanels();
     stats.ticks++;
     ensureAgents();
     var agent = agents[idx % agents.length];
@@ -688,7 +572,6 @@
     } catch (e) {
       fail(agent, 'tick', e.message || e);
     }
-    paintLive();
     try {
       localStorage.setItem(
         KEY,
@@ -704,9 +587,9 @@
 
   function start(opts) {
     opts = opts || {};
+    killFloatingPanels();
     if (running) {
-      log('Sim-33 already running on Rhodes · sim stop to halt', 'dim');
-      showLivePanel(true);
+      log('Sim-33 already running on Rhodes · sim stop · all output on CLI', 'dim');
       return status();
     }
     ensureAgents();
@@ -737,14 +620,12 @@
         });
       }
     } catch (eR) {}
-    log('── Sim-33 LIVE · RHODES ISLAND, Greece · ' + N + ' agents ──', 'ok');
-    log('Old Town · Mandraki · Lindos · Faliraki · Ialysos · Garage…', 'dim');
-    log('12 clients · 8 vendors · 8 drivers · 5 ambassadors', 'dim');
-    preview('RHODES · SIM-33 LIVE');
+    log('── Sim-33 · RHODES · ' + N + ' agents · CLI only (no extra panels) ──', 'ok');
+    log('12 clients · 8 vendors · 8 drivers · 5 ambassadors · ~' + tickMs + 'ms/tick', 'dim');
+    preview('Sim-33 Rhodes · CLI');
     try {
       localStorage.setItem('sn:sim-watch', '1');
     } catch (eW) {}
-    showLivePanel(true);
     try {
       if (global.SNUsage && SNUsage.track)
         SNUsage.track('sim33_start', { n: N, focus: 'Rhodes' });
@@ -765,10 +646,8 @@
     restoreMe();
     currentAct = null;
     log('── Sim-33 STOP · Rhodes · ok ' + stats.ok + ' · fail ' + stats.fail + ' ──', 'ok');
-    preview('RHODES · SIM OFF');
-    paintLive();
-    var el = document.getElementById('sn-sim33-live');
-    if (el) el.classList.add('off');
+    preview('Sim off');
+    killFloatingPanels();
     try {
       if (global.SNUsage && SNUsage.track)
         SNUsage.track('sim33_stop', {
@@ -927,8 +806,9 @@
       try {
         localStorage.setItem('sn:sim-watch', '1');
       } catch (e) {}
-      showLivePanel(true);
+      killFloatingPanels();
       if (!running) start({ ms: 5500 });
+      else log('Sim already on · watch CLI lines only', 'dim');
     },
     setSpeed: setSpeed,
     get running() {
