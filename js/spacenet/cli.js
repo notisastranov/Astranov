@@ -652,7 +652,7 @@
         low === 'space nets'
       ) {
         moneyStatus();
-        global.SNRibbon?.setTask?.('money');
+        // No ribbon money/finance buttons — finance UI = top-right S HUD only
         return;
       }
       if (low === 'wallet' || low === 'balance' || low === 'fees' || low === 'platform') {
@@ -665,8 +665,8 @@
           'ok'
         );
         log('Mined lifetime ' + (C?.format?.(snap.mined) || snap.mined), 'dim');
+        log('Finance menu · tap top-right S balance (not on CLI ribbon)', 'dim');
         global.SNField?.paint?.();
-        global.SNRibbon?.setTask?.('money');
         preview(
           (snap.line || 'wallet') +
             ' · fees ' +
@@ -675,8 +675,9 @@
         return;
       }
       if (low === 'finance' || low === 'field' || low === 'ledger') {
+        // Open same panel as top-right gadget — never via ribbon buttons
         global.SNField?.openFinance?.();
-        log('Finance panel · Stats · Mining · Platform 3% · P2P · Reports', 'ok');
+        log('Finance · opened from money path · or tap top-right S', 'ok');
         return;
       }
       if (low === 'radar') {

@@ -114,7 +114,8 @@
     map: ['shops', 'cart', 'order'],
     shops: ['cart', 'order', 'menu'],
     mine: ['mine on', 'mine off'],
-    money: ['rate', 'finance'],
+    // SPECS: finance is NOT on CLI ribbon — only top-right S money HUD (field-balance-hud)
+    money: [],
     space: ['cosmos'],
     delivery: ['claim', 'cart', 'order'],
   };
@@ -1127,7 +1128,8 @@
     if (/^shops|^menu|^order|^cart|^market/.test(l)) setTask('shops');
     else if (/^city|^map/.test(l)) setTask('map');
     else if (/^mine|^resources|^donate|^boost/.test(l)) setTask('mine');
-    else if (/^rate|^wallet|^money|^finance|^s\b/.test(l)) setTask('money');
+    // Money/finance: do NOT setTask('money') — never inject rate/finance ribbon buttons
+    // Finance opens only from #field-balance-hud (top-right S gadget)
     else if (/^thesis|^vault|^mars|^go to|^cosmos/.test(l)) setTask('space');
     else if (/^deliver|^claim|^first delivery/.test(l)) setTask('delivery');
     else if (/^global|^locate|^earth|^help/.test(l)) setTask('idle');
