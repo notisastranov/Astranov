@@ -12,17 +12,15 @@
     scale: 0.78,
     /** SNTaskBoard enrich payload when showing a delivery task multi-tile */
     taskBoard: null,
-    /** CLI strip: chips always; expand docks inside #cli-tile-expand */
-    dock: 'cli',
-    /** id → chip meta for horizontal scroll line */
-    chips: Object.create(null),
-    chipOrder: [],
-    lastChipTap: 0,
-    lastChipId: null,
+    /** Feed dock: tiles are posts in #cli-log (social stream), not a strip */
+    dock: 'feed',
+    /** id → meta for reopen from feed post */
+    tiles: Object.create(null),
     lastCardTap: 0,
+    activeRow: null,
   };
   const SIZE_KEY = 'sn:tile-scale-v1';
-  const MAX_CHIPS = 28;
+  const MAX_FEED_TILES = 40;
 
   function $(id) {
     return document.getElementById(id);
@@ -287,80 +285,16 @@
     );
   }
 
-  function ensureStrip() {
-    let strip = $('cli-tile-strip');
-    if (!strip) {
-      const panel = $('panel');
-      if (!panel) return null;
-      strip = document.createElement('div');
-      strip.id = 'cli-tile-strip';
-      strip.setAttribute('role', 'list');
-      strip.setAttribute('aria-label', 'Tiles in CLI');
-      const drag = $('cli-drag');
-      if (drag && drag.nextSibling) panel.insertBefore(strip, drag.nextSibling);
-      else panel.appendChild(strip);
-    }
-    let expand = $('cli-tile-expand');
-    if (!expand) {
-      expand = document.createElement('div');
-      expand.id = 'cli-tile-expand';
-      expand.hidden = true;
-      expand.setAttribute('aria-hidden', 'true');
-      strip.insertAdjacentElement('afterend', expand);
-    }
-    if (!strip._snBound) {
-      strip._snBound = true;
-      // Double-tap empty strip chrome → minimize
-      strip.addEventListener('dblclick', (e) => {
-        if (e.target === strip) minimize();
-      });
-    }
-    if (!document._snTileOutside) {
-      document._snTileOutside = true;
-      document.addEventListener(
-        'pointerdown',
-        (e) => {
-          if (!T.open) return;
-          const t = e.target;
-          if (!t || !t.closest) return;
-          // Inside expanded tile, strip chip, ribbon, form → keep open
-          if (t.closest('#sn-tile') || t.closest('#cli-tile-expand') || t.closest('#cli-tile-strip'))
-            return;
-          if (t.closest('#sn-task-ribbon') || t.closest('#cli-form') || t.closest('#cli-in')) return;
-          // Tap log / map / globe / radar → minimize back to scroll line
-          if (
-            t.closest('#cli-log') ||
-            t.closest('#globe') ||
-            t.closest('#city-map') ||
-            t.closest('#field-radar') ||
-            t.closest('#field-balance-hud') ||
-            t.closest('#sn-burger-btn') ||
-            t.closest('#btn-home') ||
-            t === document.body ||
-            t === document.documentElement
-          ) {
-            minimize();
-          }
-        },
-        true
-      );
-    }
-    return strip;
+  function killStripDom() {
+    try {
+      const s = $('cli-tile-strip');
+      if (s) s.remove();
+      const e = $('cli-tile-expand');
+      if (e) e.remove();
+    } catch (_) {}
   }
 
-  function panelSetTileOpen(on) {
-    const panel = $('panel');
-    if (!panel) return;
-    panel.classList.toggle('tile-open', !!on);
-    if (on) {
-      panel.classList.remove('collapsed');
-      if (!panel.classList.contains('expanded') && !panel.classList.contains('mid')) {
-        panel.classList.add('mid');
-      }
-    }
-  }
-
-  function chipEmoji(meta) {
+  function tileEmoji(meta) {
     if (meta.emoji) return meta.emoji;
     if (meta.kind === 'task') return '📦';
     if (meta.kind === 'me') return '👤';
@@ -370,12 +304,11 @@
     return '▣';
   }
 
-  function upsertChip(meta) {
+  function rememberTile(meta) {
     if (!meta || !meta.id) return;
-    ensureStrip();
     const id = String(meta.id);
-    const prev = T.chips[id] || {};
-    T.chips[id] = {
+    const prev = T.tiles[id] || {};
+    T.tiles[id] = {
       id: id,
       title: meta.title || prev.title || id,
       emoji: meta.emoji || prev.emoji || '',
@@ -386,139 +319,105 @@
       taskBoard: meta.taskBoard !== undefined ? meta.taskBoard : prev.taskBoard,
       profile: meta.profile !== undefined ? meta.profile : prev.profile,
     };
-    const i = T.chipOrder.indexOf(id);
-    if (i >= 0) T.chipOrder.splice(i, 1);
-    T.chipOrder.unshift(id);
-    while (T.chipOrder.length > MAX_CHIPS) {
-      const drop = T.chipOrder.pop();
-      if (drop && drop !== T.profileId) delete T.chips[drop];
-    }
-    renderStrip();
   }
 
-  function renderStrip() {
-    const strip = ensureStrip();
-    if (!strip) return;
-    const ids = T.chipOrder.filter((id) => T.chips[id]);
-    if (!ids.length) {
-      strip.classList.remove('has-tiles');
-      strip.innerHTML = '';
-      return;
+  /** Append tile as a feed post in scroll order (after CLI text) */
+  function postToFeed(meta, opts) {
+    opts = opts || {};
+    rememberTile(meta);
+    killStripDom();
+    let row = null;
+    if (!opts.forceNew) {
+      try {
+        const sid = String(meta.id).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        row = document.querySelector('#cli-log .cli-tile-block[data-tile-id="' + sid + '"]');
+      } catch (_) {
+        row = null;
+      }
     }
-    strip.classList.add('has-tiles');
-    strip.innerHTML = ids
-      .map((id) => {
-        const c = T.chips[id];
-        const on = T.open && T.profileId === id ? ' on' : '';
-        const av = c.avatar
-          ? '<img src="' + esc(c.avatar) + '" alt="" />'
-          : '<span class="cli-chip-e">' + esc(chipEmoji(c)) + '</span>';
-        const price = c.priceLabel
-          ? '<span class="cli-chip-s">' + esc(c.priceLabel) + '</span>'
-          : '';
-        return (
-          '<button type="button" class="cli-chip' +
-          on +
-          '" role="listitem" data-chip="' +
-          esc(id) +
-          '" title="' +
-          esc(c.title) +
-          ' · tap expand · double-tap minimize">' +
-          av +
-          '<span class="cli-chip-t">' +
-          esc(String(c.title).slice(0, 22)) +
-          '</span>' +
-          price +
-          '</button>'
-        );
-      })
-      .join('');
-    strip.querySelectorAll('[data-chip]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = btn.getAttribute('data-chip');
-        const now = Date.now();
-        // Double-tap chip → minimize if this tile open
-        if (T.lastChipId === id && now - T.lastChipTap < 380) {
-          T.lastChipTap = 0;
-          if (T.open && T.profileId === id) minimize();
-          else openChip(id);
-          return;
-        }
-        T.lastChipTap = now;
-        T.lastChipId = id;
-        // Single tap: toggle expand
-        if (T.open && T.profileId === id) minimize();
-        else openChip(id);
+    if (!row && global.SNCli && SNCli.appendTilePost) {
+      row = SNCli.appendTilePost({
+        id: meta.id,
+        title: meta.title,
+        emoji: meta.emoji || tileEmoji(meta),
+        kind: meta.kind,
+        priceLabel: meta.priceLabel,
+        extraSearch: meta.extraSearch || '',
       });
-    });
-  }
-
-  function openChip(id) {
-    const c = T.chips[id];
-    if (!c) return;
-    if (c.kind === 'task' && c.taskBoard) {
-      openTask(c.taskBoard, { fromStrip: true });
-      return;
     }
-    const p =
-      c.profile ||
-      global.SNProfiles?.get?.(id) ||
-      (id === (global.SNProfiles?.me?.() || {}).id ? global.SNProfiles.me() : null);
-    if (p) open(p, { fromStrip: true });
-    else global.SNCli?.log?.('Tile gone · ' + id, 'dim');
+    // Cap total tile blocks in feed
+    try {
+      const blocks = document.querySelectorAll('#cli-log .cli-tile-block');
+      if (blocks.length > MAX_FEED_TILES) {
+        for (let i = 0; i < blocks.length - MAX_FEED_TILES; i++) {
+          if (blocks[i] && !blocks[i].classList.contains('expanded')) blocks[i].remove();
+        }
+      }
+    } catch (_) {}
+    return row;
   }
 
-  function mountInCli() {
-    ensureStrip();
-    const expand = $('cli-tile-expand');
+  function mountInFeedRow(row) {
     const root = $('sn-tile');
-    if (!expand || !root) return;
-    if (root.parentElement !== expand) expand.appendChild(root);
+    if (!root || !row) return;
+    const body = row.querySelector('.cli-tile-body');
+    if (!body) return;
+    // Collapse other expanded tiles
+    document.querySelectorAll('#cli-log .cli-tile-block.expanded').forEach((el) => {
+      if (el !== row) el.classList.remove('expanded');
+    });
+    if (root.parentElement !== body) body.appendChild(root);
     root.classList.remove('overlay-mode');
     root.classList.add('open', 'cli-docked');
     root.setAttribute('aria-hidden', 'false');
     root.style.display = 'flex';
-    expand.hidden = false;
-    expand.classList.add('open');
-    expand.setAttribute('aria-hidden', 'false');
-    panelSetTileOpen(true);
-    T.dock = 'cli';
+    row.classList.add('expanded');
+    T.activeRow = row;
+    T.dock = 'feed';
+    try {
+      const panel = $('panel');
+      if (panel) {
+        panel.classList.remove('collapsed');
+        if (!panel.classList.contains('expanded') && !panel.classList.contains('mid')) {
+          panel.classList.add('mid');
+        }
+      }
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } catch (_) {}
   }
 
   function unmountExpand() {
-    const expand = $('cli-tile-expand');
     const root = $('sn-tile');
     if (root) {
       root.classList.remove('open', 'overlay-mode');
       root.setAttribute('aria-hidden', 'true');
       root.style.display = 'none';
+      if (root.parentElement && root.parentElement !== document.body) {
+        document.body.appendChild(root);
+      }
     }
-    if (expand) {
-      expand.hidden = true;
-      expand.classList.remove('open');
-      expand.setAttribute('aria-hidden', 'true');
+    if (T.activeRow) {
+      T.activeRow.classList.remove('expanded');
+      T.activeRow = null;
     }
-    panelSetTileOpen(false);
+    document.querySelectorAll('#cli-log .cli-tile-block.expanded').forEach((el) => {
+      el.classList.remove('expanded');
+    });
   }
 
   function bindCardDoubleTap(root) {
     if (!root || root._snDbl) return;
     root._snDbl = true;
-    const card = () => root.querySelector('.sn-tile-card');
     root.addEventListener(
       'click',
       (e) => {
         if (!T.open) return;
-        // backdrop (overlay mode only)
         if (e.target === root && root.classList.contains('overlay-mode')) {
           minimize();
           return;
         }
-        const c = card();
+        const c = root.querySelector('.sn-tile-card');
         if (!c || !c.contains(e.target)) return;
-        // ignore interactive controls for double-tap minimize
         if (e.target.closest('button, a, input, select, textarea, label')) return;
         const now = Date.now();
         if (now - T.lastCardTap < 380) {
@@ -532,10 +431,40 @@
     );
   }
 
+  function ensureOutsideMin() {
+    if (document._snTileOutside) return;
+    document._snTileOutside = true;
+    document.addEventListener(
+      'pointerdown',
+      (e) => {
+        if (!T.open) return;
+        const t = e.target;
+        if (!t || !t.closest) return;
+        if (t.closest('#sn-tile') || t.closest('.cli-tile-block.expanded')) return;
+        if (t.closest('#sn-task-ribbon') || t.closest('#cli-form') || t.closest('#cli-in')) return;
+        // Tap another feed item / map / globe → collapse tile back into stream
+        if (
+          t.closest('#cli-log') ||
+          t.closest('#globe') ||
+          t.closest('#city-map') ||
+          t.closest('#field-radar') ||
+          t.closest('#field-balance-hud') ||
+          t.closest('#btn-home')
+        ) {
+          // Allow tapping another tile head to switch without double minimize race
+          if (t.closest('.cli-tile-head')) return;
+          minimize();
+        }
+      },
+      true
+    );
+  }
+
   function ensureDom() {
     ensureCss();
     loadScale();
-    ensureStrip();
+    killStripDom();
+    ensureOutsideMin();
     if ($('sn-tile')) {
       ensureGripControls();
       bindResize($('sn-tile'));
@@ -571,8 +500,7 @@
       '  <div class="sn-tile-body" id="sn-tile-body"></div>' +
       '  <div class="sn-tile-foot" id="sn-tile-foot"></div>' +
       '</div>';
-    const host = $('cli-tile-expand') || document.body;
-    host.appendChild(el);
+    document.body.appendChild(el);
     bindSizeButtons();
     $('sn-tile-close')?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -588,6 +516,29 @@
     bindResize(el);
     bindCardDoubleTap(el);
     applyScale();
+  }
+
+  /** Expand tile from a feed post tap */
+  function openFromFeed(id, rowEl) {
+    const c = T.tiles[id];
+    if (!c) {
+      global.SNCli?.log?.('Tile not in feed · ' + id, 'dim');
+      return;
+    }
+    if (T.open && T.profileId === id) {
+      minimize();
+      return;
+    }
+    if (c.kind === 'task' && c.taskBoard) {
+      openTask(c.taskBoard, { fromFeed: true, row: rowEl });
+      return;
+    }
+    const p =
+      c.profile ||
+      global.SNProfiles?.get?.(id) ||
+      (id === (global.SNProfiles?.me?.() || {}).id ? global.SNProfiles.me() : null);
+    if (p) open(p, { fromFeed: true, row: rowEl });
+    else global.SNCli?.log?.('Tile gone · ' + id, 'dim');
   }
 
   function onFile(e, kind) {
@@ -651,15 +602,17 @@
     T.profileId = p.id;
     T.open = true;
     T.tab = T.taskBoard ? 'task' : opts.tab || defaultTab(p);
-    T.dock = opts.overlay === true ? 'overlay' : 'cli';
-    upsertChip({
+    T.dock = opts.overlay === true ? 'overlay' : 'feed';
+    const meta = {
       id: p.id,
       title: p.name || p.id,
       avatar: p.avatar || '',
       kind: isMe(p) ? 'me' : 'profile',
       roles: p.roles,
       profile: p,
-    });
+      emoji: tileEmoji({ kind: isMe(p) ? 'me' : 'profile', roles: p.roles }),
+    };
+    rememberTile(meta);
     const root = $('sn-tile');
     if (!root) return null;
     if (T.dock === 'overlay') {
@@ -669,18 +622,19 @@
       root.setAttribute('aria-hidden', 'false');
       root.style.display = 'flex';
       unmountExpand();
-      panelSetTileOpen(false);
     } else {
-      mountInCli();
+      const row = opts.row || postToFeed(meta, { forceNew: !opts.fromFeed });
+      if (row) mountInFeedRow(row);
+      else {
+        // Fallback overlay if feed host missing
+        root.classList.add('open', 'overlay-mode');
+        root.style.display = 'flex';
+      }
     }
     applyScale();
     render();
-    renderStrip();
-    if (!opts.fromStrip && !opts.quiet) {
-      global.SNCli?.log?.(
-        'Tile · ' + (p.name || p.id) + ' · CLI strip · double-tap to minimize',
-        'ok'
-      );
+    if (!opts.fromFeed && !opts.quiet) {
+      // Text already in stream via postToFeed — no strip noise
     }
     global.SNCli?.preview?.((p.name || 'Tile') + (T.taskBoard ? ' · task' : ' · expanded'));
     return p;
@@ -698,21 +652,22 @@
     T.profileId = 'task:' + enriched.task.id;
     T.open = true;
     T.tab = 'task';
-    T.dock = opts.overlay === true ? 'overlay' : 'cli';
+    T.dock = opts.overlay === true ? 'overlay' : 'feed';
     const priceLabel =
       enriched.price != null
         ? global.SNCurrency
           ? SNCurrency.format(enriched.price)
           : enriched.price + ' S'
         : '';
-    upsertChip({
+    const meta = {
       id: T.profileId,
       title: enriched.task.title || 'Task',
       emoji: '📦',
       kind: 'task',
       priceLabel: priceLabel,
       taskBoard: enriched,
-    });
+    };
+    rememberTile(meta);
     const root = $('sn-tile');
     if (!root) return null;
     if (T.dock === 'overlay') {
@@ -722,19 +677,17 @@
       root.setAttribute('aria-hidden', 'false');
       root.style.display = 'flex';
       unmountExpand();
-      panelSetTileOpen(false);
     } else {
-      mountInCli();
+      const row = opts.row || postToFeed(meta, { forceNew: !opts.fromFeed });
+      if (row) mountInFeedRow(row);
+      else {
+        root.classList.add('open', 'overlay-mode');
+        root.style.display = 'flex';
+      }
     }
     applyScale();
     render();
-    renderStrip();
-    if (!opts.fromStrip) {
-      global.SNCli?.log?.('Task tile · ' + String(enriched.task.title || '').slice(0, 40), 'ok');
-    }
-    global.SNCli?.preview?.(
-      (priceLabel || 'Task') + ' · CLI strip'
-    );
+    global.SNCli?.preview?.((priceLabel || 'Task') + ' · feed');
     return enriched;
   }
 
@@ -746,18 +699,15 @@
     return 'about';
   }
 
-  /** Collapse expanded work surface — chip stays on CLI scroll line */
+  /** Collapse expanded tile — post stays in feed stream */
   function minimize() {
     T.open = false;
-    // keep taskBoard / profileId for re-open from chip
     unmountExpand();
-    renderStrip();
     try {
-      global.SNCli?.preview?.('Tiles on CLI strip · tap to expand');
+      global.SNCli?.preview?.('Feed · scroll · /search · tap tile');
     } catch (_) {}
   }
 
-  /** Minimize and clear task payload (chip may remain) */
   function close() {
     minimize();
     T.taskBoard = null;
@@ -769,7 +719,7 @@
     else open(profileOrId);
   }
 
-  /** Put profile/task on strip without expanding (shops load, task list) */
+  /** Put profile/task into feed stream (no expand unless opts.expand) */
   function offer(profileOrMeta, opts) {
     opts = opts || {};
     ensureDom();
@@ -782,7 +732,7 @@
             ? SNCurrency.format(en.price)
             : en.price + ' S'
           : '';
-      upsertChip({
+      postToFeed({
         id: 'task:' + en.task.id,
         title: en.task.title || 'Task',
         emoji: '📦',
@@ -790,6 +740,7 @@
         priceLabel: priceLabel,
         taskBoard: en,
       });
+      if (opts.expand) openTask(en, { fromFeed: true });
       return;
     }
     const p =
@@ -797,15 +748,16 @@
         ? global.SNProfiles?.get?.(profileOrMeta)
         : profileOrMeta;
     if (!p || !p.id) return;
-    upsertChip({
+    postToFeed({
       id: p.id,
       title: p.name || p.id,
       avatar: p.avatar || '',
       kind: isMe(p) ? 'me' : 'profile',
       roles: p.roles,
       profile: p,
+      emoji: tileEmoji({ kind: isMe(p) ? 'me' : 'profile', roles: p.roles }),
     });
-    if (opts.expand) open(p, { quiet: true, tab: opts.tab });
+    if (opts.expand) open(p, { quiet: true, tab: opts.tab, fromFeed: true });
   }
 
   function seedMe() {
@@ -1358,11 +1310,9 @@
 
   function init() {
     ensureDom();
-    ensureStrip();
-    seedMe();
-    renderStrip();
+    killStripDom();
+    // Do not flood feed with vendors on boot — shops/offer push into stream when asked
     document.getElementById('btn-tile')?.addEventListener('click', () => openMe());
-    // + → multi-tile at last pos or open me
     const fab = document.getElementById('sn-plus');
     if (fab && !fab._snBound) {
       fab._snBound = true;
@@ -1373,11 +1323,6 @@
         else openMe();
       });
     }
-    // Soft seed vendors already in memory
-    try {
-      const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
-      offerMany(vendors.slice(0, 12));
-    } catch (_) {}
   }
 
   global.SNTile = {
@@ -1385,6 +1330,7 @@
     open,
     openMe,
     openTask,
+    openFromFeed,
     createAt,
     close,
     minimize,
@@ -1393,15 +1339,12 @@
     offer,
     offerMany,
     seedMe,
-    renderStrip,
+    postToFeed,
     get openId() {
       return T.profileId;
     },
     get isOpen() {
       return T.open;
-    },
-    get chips() {
-      return T.chipOrder.slice();
     },
   };
 })(window);

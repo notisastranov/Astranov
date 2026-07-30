@@ -1,23 +1,178 @@
-/* SpaceNet CLI — street DNA complete surface */
+/* SpaceNet CLI — social feed surface
+ * One scroll stream: text + tiles (no static strip).
+ * Scroll history · type / or ? to search feed.
+ */
 (function (global) {
   'use strict';
 
   const hist = [];
   let histIdx = -1;
+  const FEED_MAX = 280;
+  let feedFilter = '';
+  let stickBottom = true;
 
   function $(id) {
     return document.getElementById(id);
   }
 
-  function log(text, cls) {
+  function feedBox() {
     const box = $('cli-log');
+    if (!box) return null;
+    try {
+      const strip = $('cli-tile-strip');
+      if (strip) strip.remove();
+      const exp = $('cli-tile-expand');
+      if (exp) exp.remove();
+    } catch (_) {}
+    let hint = $('cli-feed-search-hint');
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = 'cli-feed-search-hint';
+      box.insertBefore(hint, box.firstChild);
+    }
+    if (!box._snFeedBound) {
+      box._snFeedBound = true;
+      box.addEventListener(
+        'scroll',
+        () => {
+          stickBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 48;
+        },
+        { passive: true }
+      );
+    }
+    return box;
+  }
+
+  function trimFeed(box) {
     if (!box) return;
+    while (box.children.length > FEED_MAX + 2) {
+      const n = box.children[1] || box.firstChild;
+      if (n && n.id === 'cli-feed-search-hint') {
+        if (box.children[2]) box.removeChild(box.children[2]);
+        else break;
+      } else if (n) box.removeChild(n);
+      else break;
+    }
+  }
+
+  function scrollFeedToEnd(box) {
+    if (!box || !stickBottom || feedFilter) return;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function applyFeedFilter(q) {
+    const box = feedBox();
+    if (!box) return 0;
+    feedFilter = String(q || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^[/？?]\s*/, '')
+      .replace(/^search\s+/i, '');
+    const hint = $('cli-feed-search-hint');
+    let n = 0;
+    if (!feedFilter) {
+      box.classList.remove('filtering');
+      if (hint) hint.textContent = '';
+      box.querySelectorAll('.cli-feed-item').forEach((el) => el.classList.remove('match'));
+      return 0;
+    }
+    box.classList.add('filtering');
+    box.querySelectorAll('.cli-feed-item').forEach((el) => {
+      const hay = (el.getAttribute('data-search') || el.textContent || '').toLowerCase();
+      const ok = hay.indexOf(feedFilter) >= 0;
+      el.classList.toggle('match', ok);
+      if (ok) n++;
+    });
+    if (hint) {
+      hint.textContent =
+        n > 0
+          ? 'Search · “' + feedFilter + '” · ' + n + ' · clear input to exit'
+          : 'Search · “' + feedFilter + '” · no matches · clear input to exit';
+    }
+    return n;
+  }
+
+  function log(text, cls) {
+    const box = feedBox();
+    if (!box) return null;
+    const wrap = document.createElement('div');
+    wrap.className = 'cli-feed-item';
     const line = document.createElement('div');
     line.className = 'cli-line' + (cls ? ' ' + cls : '');
-    line.textContent = text;
-    box.appendChild(line);
-    while (box.children.length > 100) box.removeChild(box.firstChild);
-    box.scrollTop = box.scrollHeight;
+    const meta = document.createElement('span');
+    meta.className = 'cli-feed-meta';
+    const t = new Date();
+    meta.textContent =
+      (cls === 'cmd' ? 'YOU' : cls === 'ok' ? 'SPACENET' : cls === 'err' ? 'ERROR' : 'FEED') +
+      ' · ' +
+      String(t.getHours()).padStart(2, '0') +
+      ':' +
+      String(t.getMinutes()).padStart(2, '0');
+    const body = document.createElement('div');
+    body.textContent = text;
+    line.appendChild(meta);
+    line.appendChild(body);
+    wrap.appendChild(line);
+    wrap.setAttribute('data-search', String(text || ''));
+    if (feedFilter) {
+      wrap.classList.toggle(
+        'match',
+        String(text || '')
+          .toLowerCase()
+          .indexOf(feedFilter) >= 0
+      );
+    }
+    box.appendChild(wrap);
+    trimFeed(box);
+    scrollFeedToEnd(box);
+    return wrap;
+  }
+
+  /** Tile card in feed order (not a strip) */
+  function appendTilePost(meta) {
+    const box = feedBox();
+    if (!box || !meta || !meta.id) return null;
+    const id = String(meta.id);
+    const wrap = document.createElement('div');
+    wrap.className = 'cli-feed-item cli-tile-block';
+    wrap.dataset.tileId = id;
+    const title = String(meta.title || id).slice(0, 48);
+    const emoji = meta.emoji || (meta.kind === 'task' ? '📦' : meta.kind === 'me' ? '👤' : '▣');
+    const price = meta.priceLabel ? String(meta.priceLabel) : '';
+    const search = title + ' ' + (meta.kind || '') + ' ' + price + ' ' + (meta.extraSearch || '');
+    wrap.setAttribute('data-search', search);
+    function esc(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }
+    wrap.innerHTML =
+      '<button type="button" class="cli-tile-head">' +
+      '<span class="e" aria-hidden="true">' +
+      esc(emoji) +
+      '</span>' +
+      '<span class="t">' +
+      esc(title) +
+      '</span>' +
+      (price ? '<span class="s">' + esc(price) + '</span>' : '') +
+      '<span class="h">tile · tap</span></button>' +
+      '<div class="cli-tile-body"></div>';
+    if (feedFilter) {
+      wrap.classList.toggle('match', search.toLowerCase().indexOf(feedFilter) >= 0);
+    }
+    box.appendChild(wrap);
+    trimFeed(box);
+    scrollFeedToEnd(box);
+    const head = wrap.querySelector('.cli-tile-head');
+    if (head) {
+      head.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (global.SNTile?.openFromFeed) SNTile.openFromFeed(id, wrap);
+      });
+    }
+    return wrap;
   }
 
   function preview(text) {
@@ -46,8 +201,9 @@
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
     log('TASK  task list · task open · task fit · task map · advise · claim · deliver', 'ok');
-    log('UI    tiles on CLI scroll strip · tap expand menu/order · double-tap minimize', 'dim');
-    preview('locate · resources · rate · shops');
+    log('FEED  scroll up/down · type / or ? + words to search history', 'ok');
+    log('TILE  appear in this feed · tap expand menu/order · tap out to minimize', 'dim');
+    preview('scroll feed · /search · talk');
   }
 
   function moneyStatus() {
@@ -99,8 +255,23 @@
   async function run(raw) {
     const line = String(raw || '').trim();
     if (!line) return;
+    // /search or ?query → filter feed only (social search)
+    if (/^[/？?]/.test(line) || /^search\s+/i.test(line)) {
+      const q = line.replace(/^search\s+/i, '').replace(/^[/？?]\s*/, '');
+      if (!q) {
+        applyFeedFilter('');
+        preview('Feed search off · scroll freely');
+        return;
+      }
+      const n = applyFeedFilter(q);
+      log('Search feed · “' + q + '” · ' + n + ' match' + (n === 1 ? '' : 'es'), 'dim');
+      preview(n + ' in feed · clear / to exit search');
+      return;
+    }
     hist.push(line);
     histIdx = hist.length;
+    // New talk ends search mode so feed shows live stream
+    if (feedFilter) applyFeedFilter('');
     log('› ' + line, 'cmd');
     // Never auto-expand CLI or open tiles — keep city map usable
     global.SNRibbon?.infer?.(line);
@@ -114,9 +285,17 @@
         help();
         return;
       }
-      if (low === 'clear') {
-        const box = $('cli-log');
-        if (box) box.innerHTML = '';
+      if (low === 'clear' || low === 'clear feed') {
+        const box = feedBox();
+        if (box) {
+          box.innerHTML = '';
+          const hint = document.createElement('div');
+          hint.id = 'cli-feed-search-hint';
+          box.appendChild(hint);
+        }
+        applyFeedFilter('');
+        stickBottom = true;
+        log('Feed cleared', 'dim');
         return;
       }
       if (low === 'brain' || low === 'memory') {
@@ -1857,6 +2036,7 @@
       e.preventDefault();
       const v = input.value;
       input.value = '';
+      input.classList.remove('searching');
       void run(v);
     });
     $('btn-send')?.addEventListener('click', (e) => {
@@ -1878,6 +2058,22 @@
         true
       );
     }
+    // Live feed search while typing / or ?
+    input.addEventListener('input', () => {
+      const v = input.value || '';
+      if (/^[/？?]/.test(v) || /^search\s+/i.test(v)) {
+        input.classList.add('searching');
+        const q = v.replace(/^search\s+/i, '').replace(/^[/？?]\s*/, '');
+        applyFeedFilter(q);
+        preview(q ? 'Searching feed…' : 'Type to search feed history');
+      } else if (feedFilter) {
+        input.classList.remove('searching');
+        applyFeedFilter('');
+        preview('Talk to SpaceNet…');
+      } else {
+        input.classList.remove('searching');
+      }
+    });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowUp') {
         e.preventDefault();
@@ -1895,6 +2091,14 @@
           input.value = '';
         }
       } else if (e.key === 'Escape') {
+        if (feedFilter || /^[/？?]/.test(input.value || '')) {
+          e.preventDefault();
+          input.value = '';
+          input.classList.remove('searching');
+          applyFeedFilter('');
+          preview('Talk to SpaceNet…');
+          return;
+        }
         if (global.SNMap?.active) global.SNMap.backToGlobe?.() || global.SNMap.close?.();
         else global.SNMap?.close?.();
       }
@@ -1903,9 +2107,9 @@
     $('btn-locate')?.addEventListener('click', () => void run('locate'));
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
-    // Home button → SNHome menu (not direct earth); earth via menu or CLI
-    log('CLI ready · ribbon · 🎙 · Astranov SpaceNet menu for roles', 'dim');
-    preview('Talk to SpaceNet…');
+    feedBox();
+    log('Feed ready · scroll history · / or ? to search · tiles join this stream', 'dim');
+    preview('Talk · scroll feed · /search');
     warmVoices();
     // If AI already loaded (race), ensure presence
     setTimeout(() => {
@@ -1921,6 +2125,9 @@
     log,
     help,
     preview,
+    appendTilePost,
+    applyFeedFilter,
+    feedBox,
     toggleHandsfree,
     speakAi,
     stopHandsfree,

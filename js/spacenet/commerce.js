@@ -155,13 +155,13 @@
       global.SNMap?.plotCrawl?.(toPlaces());
       if (tiles.length) {
         global.SNCli?.log?.(
-          'Marketplace · ' + tiles.length + ' shop tiles on CLI strip · tap chip → Menu / Order',
+          'Marketplace · ' + tiles.length + ' shops in feed · scroll · tap tile → Menu',
           'ok'
         );
       }
     } else if (tiles.length) {
       global.SNCli?.log?.(
-        tiles.length + ' shop tiles on CLI strip · tap to open Menu',
+        tiles.length + ' shops posted to feed · scroll · tap to open Menu',
         'dim'
       );
     }

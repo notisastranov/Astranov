@@ -282,7 +282,7 @@
         {
           title: '👤 User',
           items: [
-            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · on CLI strip' },
+            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · in feed' },
             {
               id: 'auth',
               e: signed ? '🚪' : '🔐',

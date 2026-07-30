@@ -621,7 +621,7 @@
       try {
         if (global.SNTile && SNTile.openMe) SNTile.openMe();
         did.push('tile:me');
-        return { handled: true, did: did, reply: 'Your tile on CLI strip.' };
+        return { handled: true, did: did, reply: 'Your tile in the feed.' };
       } catch (e) {}
     }
 
