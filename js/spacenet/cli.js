@@ -28,7 +28,7 @@
 
   function help() {
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
-    log('MAP   locate · city · shops · globe', 'ok');
+    log('MAP   rodos · city · fly <city> · global · shops · locate', 'ok');
     log('ADD   ribbon ➕ · pin · targets · video · vendor · social · emergency', 'ok');
     log('TOPO  measure · measure topo · clear targets · clear pin', 'dim');
     log('EARTH g_satellite · g_hybrid · g_terrain · google key in SN_CONFIG.layers', 'dim');
@@ -996,11 +996,70 @@
         }
         return;
       }
+      // View switches: training default = Rodos city map; CLI can leave anytime
+      if (
+        low === 'rodos' ||
+        low === 'rhodes' ||
+        low === 'rhodes city' ||
+        low === 'rodos city' ||
+        low === 'fly rhodes' ||
+        low === 'fly rodos' ||
+        low === 'view rhodes' ||
+        low === 'view rodos'
+      ) {
+        const lat = 36.4341;
+        const lng = 28.2176;
+        Tasks?.setPos?.(lat, lng);
+        global._snLastPos = { lat, lng };
+        try {
+          Globe?.setBody?.('earth');
+          Globe?.goToPlace?.(lat, lng, { tier: 'city', body: 'earth', pulse: false, label: 'Rhodes' });
+        } catch (_) {}
+        await global.SNMap?.open?.(lat, lng);
+        log('Surface · Rodos city map · switch: global · fly athens · fly london', 'ok');
+        preview('Rodos city map');
+        return;
+      }
+      if (
+        low === 'global' ||
+        low === 'globe' ||
+        low === 'earth' ||
+        low === 'view global' ||
+        low === 'full earth' ||
+        low === 'back to earth'
+      ) {
+        try {
+          if (global.SNMap?.close) SNMap.close();
+          else if (global.SNMap?.backToGlobe) SNMap.backToGlobe();
+        } catch (_) {}
+        try {
+          Globe?.setBody?.('earth');
+          Globe?.goToTier?.('global');
+        } catch (_) {}
+        log('Surface · GLOBAL globe · type rodos or fly <city> for city map', 'ok');
+        preview('GLOBAL Earth');
+        return;
+      }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {
-        const p = Tasks?.pos || global._snLastPos || (await Globe?.locate?.()) || { lat: 36.43, lng: 28.22 };
+        // City map at last focus — default Rhodes when focus unset
+        const p =
+          Tasks?.pos ||
+          global._snLastPos ||
+          { lat: 36.4341, lng: 28.2176 };
         if (p.lat) Tasks?.setPos?.(p.lat, p.lng);
-        Globe?.goToTier?.('city');
+        try {
+          Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', body: 'earth', pulse: false });
+        } catch (_) {}
         await global.SNMap?.open?.(p.lat, p.lng);
+        log(
+          'City map · ' +
+            Number(p.lat).toFixed(3) +
+            ',' +
+            Number(p.lng).toFixed(3) +
+            ' · global to leave',
+          'ok'
+        );
+        preview('City map');
         return;
       }
       if (low === 'shops' || low === 'vendors' || low === 'stores') {
@@ -1099,40 +1158,50 @@
         log('Back · ' + (Globe?.bodyId || 'earth') + ' GLOBAL', 'ok');
         return;
       }
-      // fly city on Earth (geocode + crawl)
+      // fly <city> → open that city's street map (leave Rodos training surface)
+      async function openCityAt(lat, lng, label) {
+        Tasks?.setPos?.(lat, lng);
+        global._snLastPos = { lat, lng };
+        if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
+        try {
+          Globe?.goToPlace?.(lat, lng, {
+            tier: 'city',
+            label: label,
+            body: 'earth',
+            pulse: false,
+            openMap: false,
+          });
+        } catch (_) {}
+        await global.SNMap?.open?.(lat, lng);
+        log('City map · ' + label + ' · global for globe · rodos for Rhodes', 'ok');
+        preview(label);
+      }
       for (const [name, ll] of Object.entries(CITIES)) {
         if (new RegExp('^(fly\\s+)?' + name + '$', 'i').test(low) || low === 'fly ' + name) {
-          if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
-          Globe?.goToPlace?.(ll[0], ll[1], { tier: 'national', label: name, body: 'earth' });
-          Tasks?.setPos?.(ll[0], ll[1]);
-          log('Fly · ' + name + ' · crawling…', 'ok');
-          preview(name);
+          await openCityAt(ll[0], ll[1], name);
           return;
         }
       }
       if (/^fly\s+/.test(low)) {
         const name = low.replace(/^fly\s+/, '').trim();
+        if (/^rhodes$|^rodos$/.test(name)) {
+          await openCityAt(36.4341, 28.2176, 'Rhodes');
+          return;
+        }
         const ll = CITIES[name.replace(/\s+/g, '')] || CITIES[name];
         if (ll) {
-          if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
-          Globe?.goToPlace?.(ll[0], ll[1], { tier: 'national', label: name, body: 'earth' });
-          log('Fly · ' + name, 'ok');
+          await openCityAt(ll[0], ll[1], name);
         } else if (global.SNSearch?.geocode) {
           preview('Finding · ' + name);
           const places = await SNSearch.geocode(name);
           if (places?.[0]) {
             const p = places[0];
-            if (Globe?.bodyId && Globe.bodyId !== 'earth') Globe.setBody?.('earth');
-            Globe?.goToPlace?.(p.lat, p.lng, {
-              tier: 'national',
-              label: p.name,
-              body: 'earth',
-            });
-            log('Fly · ' + String(p.name).slice(0, 60), 'ok');
+            await openCityAt(p.lat, p.lng, String(p.name || name).slice(0, 40));
           } else if (global.SNCosmos?.resolve?.(name)) {
+            global.SNMap?.close?.();
             await global.SNCosmos.go(name);
-          } else log('Unknown · fly athens · go to mars · go to jupiter', 'dim');
-        } else log('Unknown place · try: fly athens · go to mars', 'dim');
+          } else log('Unknown · fly athens · fly rodos · global', 'dim');
+        } else log('Unknown place · fly athens · fly rodos · global', 'dim');
         return;
       }
       if (/^task\s*list$|^list$|^tasks$/.test(low)) {

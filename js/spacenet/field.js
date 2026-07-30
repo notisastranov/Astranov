@@ -1118,7 +1118,18 @@
     try {
       g._snLastPos = { lat: (vLat + dLat) / 2, lng: (vLng + dLng) / 2 };
       if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(g._snLastPos.lat, g._snLastPos.lng);
-      if (g.SNGlobe && SNGlobe.goToPlace) {
+      // Keep Rodos city map as training surface; pan to route mid
+      if (g.SNMap && SNMap.open) {
+        if (SNMap.active && SNMap.ensure) {
+          void SNMap.ensure().then(function (map) {
+            try {
+              map.setView([g._snLastPos.lat, g._snLastPos.lng], Math.max(map.getZoom() || 14, 13));
+            } catch (eM) {}
+          });
+        } else {
+          void SNMap.open(g._snLastPos.lat, g._snLastPos.lng);
+        }
+      } else if (g.SNGlobe && SNGlobe.goToPlace) {
         SNGlobe.goToPlace(g._snLastPos.lat, g._snLastPos.lng, {
           tier: 'city',
           body: 'earth',
@@ -1559,7 +1570,8 @@
           { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
           { e: '🌍', t: 'Full Earth', d: 'GLOBAL SPACENET', run: 'global' },
           { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
-          { e: '🏛', t: 'Fly Rhodes', d: 'Island focus', run: 'fly rhodes' },
+          { e: '🏛', t: 'Rodos city map', d: 'Training surface', run: 'rodos' },
+          { e: '🌍', t: 'Global globe', d: 'Leave city map', run: 'global' },
         ],
       },
       {

@@ -170,7 +170,18 @@
           globeOk = !!SNGlobe.init();
           if (globeOk) {
             try {
-              SNGlobe.goToTier && SNGlobe.goToTier('global');
+              // Training surface: land on Rhodes city (map opens after SNMap.init)
+              if (SNGlobe.goToPlace) {
+                SNGlobe.goToPlace(36.4341, 28.2176, {
+                  tier: 'city',
+                  body: 'earth',
+                  pulse: false,
+                  openMap: false,
+                  label: 'Rhodes',
+                });
+              } else if (SNGlobe.goToTier) {
+                SNGlobe.goToTier('city');
+              }
             } catch (e) {}
           }
         }
@@ -178,10 +189,6 @@
         console.warn('[SpaceNet] globe init', e);
         globeOk = false;
       }
-
-      try {
-        if (window.SNMap && SNMap.close) SNMap.close();
-      } catch (e) {}
 
       // Never throw from optional inits
       [
@@ -213,6 +220,20 @@
           console.warn('[SpaceNet] init step', e);
         }
       });
+
+      // Default training surface = Rodos city map (CLI: global · fly <city> to leave)
+      try {
+        window._snLastPos = { lat: 36.4341, lng: 28.2176 };
+        if (window.SNTasks && SNTasks.setPos) SNTasks.setPos(36.4341, 28.2176);
+        if (window.SNMap && SNMap.open) {
+          void SNMap.open(36.4341, 28.2176).then(function () {
+            try {
+              if (window.SNCli && SNCli.log)
+                SNCli.log('Surface · Rodos city map · CLI: global · fly athens · fly london', 'dim');
+            } catch (e2) {}
+          });
+        }
+      } catch (e3) {}
 
       var ms = Math.round(performance.now() - t0);
       done('ready ' + ms + 'ms' + (globeOk ? '' : ' · no-globe'));

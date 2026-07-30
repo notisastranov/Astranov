@@ -109,21 +109,38 @@
     return n + (Math.random() - 0.5) * (s || 0.012);
   }
 
+  /**
+   * Training surface = Rhodes CITY MAP (Leaflet).
+   * Keep map open; pan to agent. Globe only if user closed map (CLI global).
+   */
   function flyRhodes(agent, tier, label) {
-    if (!agent || !global.SNGlobe) return;
-    var t = tier || 'city';
+    if (!agent) return;
     try {
-      if (SNGlobe.setBody) SNGlobe.setBody('earth');
-      if (SNGlobe.goToPlace) {
+      global._snLastPos = { lat: agent.lat, lng: agent.lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
+    } catch (e2) {}
+    try {
+      // Prefer Rodos city map for all sim activity
+      if (global.SNMap && SNMap.open) {
+        if (SNMap.active && SNMap.ensure) {
+          void SNMap.ensure().then(function (map) {
+            try {
+              map.setView([agent.lat, agent.lng], map.getZoom() || 14);
+            } catch (e3) {}
+          });
+        } else {
+          void SNMap.open(agent.lat, agent.lng);
+        }
+      } else if (global.SNGlobe && SNGlobe.goToPlace) {
         SNGlobe.goToPlace(agent.lat, agent.lng, {
-          tier: t,
+          tier: tier || 'city',
           body: 'earth',
           pulse: false,
-          openMap: false,
+          openMap: true,
           label: label || agent.hub || 'Rhodes',
         });
       }
-      if (SNGlobe.pulse) {
+      if (global.SNGlobe && SNGlobe.pulse) {
         SNGlobe.pulse(
           agent.lat,
           agent.lng,
@@ -133,10 +150,28 @@
         );
       }
     } catch (e) {}
+  }
+
+  function openRhodesCityMap() {
     try {
-      global._snLastPos = { lat: agent.lat, lng: agent.lng };
-      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(agent.lat, agent.lng);
-    } catch (e2) {}
+      global._snLastPos = { lat: RHODES.lat, lng: RHODES.lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(RHODES.lat, RHODES.lng);
+      if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(RHODES.lat, RHODES.lng, {
+          tier: 'city',
+          body: 'earth',
+          pulse: false,
+          openMap: false,
+          label: 'Rhodes · Rodos',
+        });
+      }
+      if (global.SNMap && SNMap.open) void SNMap.open(RHODES.lat, RHODES.lng);
+      log('Surface · Rodos city map · CLI: global · fly athens · fly lindos', 'ok');
+      preview('Rodos city map');
+    } catch (e) {
+      log('Rodos map · ' + (e.message || e), 'err');
+    }
   }
 
   function pushFeed(line, kind) {
@@ -639,20 +674,12 @@
           : opts.slow
             ? 9000
             : 5500;
-    // Open globe on Rhodes immediately so you SEE the island
-    try {
-      if (global.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(RHODES.lat, RHODES.lng, {
-          tier: 'regional',
-          body: 'earth',
-          pulse: false,
-          label: 'Rhodes Island',
-        });
-      }
-    } catch (eR) {}
-    log('── Sim-33 · RHODES · ' + N + ' agents · CLI only (no extra panels) ──', 'ok');
+    // Training: Rodos CITY MAP only (switch via CLI: global · fly <city>)
+    openRhodesCityMap();
+    log('── Sim-33 · RODOS CITY MAP · ' + N + ' agents · CLI ──', 'ok');
     log('12 clients · 8 vendors · 8 drivers · 5 ambassadors · ~' + tickMs + 'ms/tick', 'dim');
-    preview('Sim-33 Rhodes · CLI');
+    log('View: city map Rhodes · switch: global · fly athens · fly london · city', 'dim');
+    preview('Rodos city · sim');
     try {
       localStorage.setItem('sn:sim-watch', '1');
     } catch (eW) {}
@@ -841,6 +868,8 @@
       else log('Sim already on · watch CLI lines only', 'dim');
     },
     setSpeed: setSpeed,
+    openRhodesCityMap: openRhodesCityMap,
+    RHODES: RHODES,
     get running() {
       return running;
     },
