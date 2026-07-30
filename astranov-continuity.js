@@ -81,8 +81,8 @@ const AstranovContinuity = {
     ribbonFlyout: {
       law: 'Any multi-option CLI ribbon button expands UPWARD',
       api: 'SNField.openRibbonFlyout',
-      multi: ['locate', 'user', 'add', 'layers'],
-      single: ['send', 'handsfree'],
+      multi: ['user', 'add', 'layers'],
+      single: ['locate', 'send', 'handsfree'],
       aiLaw: 'LISTEN→ANALYZE·BRIEF; SPACENET LISTENING; vendors fly+tile; next|show all',
       freeMind: 'SNFreeMind own free AI first — no paid xAI for chat; teach + free export',
       sim33: 'SNSim33 · 12 client · 8 vendor · 8 driver · 5 ambassador · sim start|stop',

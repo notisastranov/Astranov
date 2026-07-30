@@ -76,7 +76,7 @@
       act: 'locate',
       emoji: '🎯',
       text: 'Locate',
-      title: 'Locate · expands upward',
+      title: 'Locate me · GPS recenter',
       id: 'sn-rib-locate',
     },
     {
@@ -261,33 +261,14 @@
   }
 
   function ribbonAct(act) {
-    // Multi-option buttons: ALWAYS expand upward (SPECS)
+    // Locate = single action (GPS recenter) — no submenu
     if (act === 'locate') {
-      openRibbonFlyout(
-        'sn-rib-locate',
-        {
-          title: '🎯 Locate',
-          items: [
-            { id: 'gps', e: '🎯', t: 'Locate me', d: 'GPS · fly globe to you' },
-            { id: 'focus', e: '◎', t: 'Last focus', d: 'Fly to last map focus' },
-            { id: 'city', e: '🗺', t: 'My city map', d: 'Open street map at me / focus' },
-          ],
-        },
-        function (id) {
-          if (id === 'gps' && g.SNCli && SNCli.run) void SNCli.run('locate');
-          else if (id === 'focus') {
-            var p = focusPos();
-            if (g.SNGlobe && SNGlobe.goToPlace)
-              SNGlobe.goToPlace(p.lat, p.lng, { tier: 'national', openMap: false, pulse: true });
-          } else if (id === 'city') {
-            var p2 = focusPos();
-            void openCityMap();
-            if (g.SNCli && SNCli.log) SNCli.log('City map · focus', 'ok');
-          }
-        }
-      );
+      try {
+        if (g.SNCli && SNCli.run) void SNCli.run('locate');
+      } catch (e) {}
       return;
     }
+    // Multi-option buttons: expand upward (SPECS)
     if (act === 'user') {
       var signed = !!(g.SNAuth && SNAuth.user);
       openRibbonFlyout(

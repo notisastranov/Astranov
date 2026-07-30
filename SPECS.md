@@ -306,7 +306,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 
 | Button | Action | Mechanical |
 |--------|--------|------------|
-| **🎯 Locate** | **Expands upward:** Locate me · Last focus · My city map | `SNField.openRibbonFlyout` |
+| **🎯 Locate** | **Single action** — GPS locate + recenter (no submenu) | `SNCli.run('locate')` |
 | **👤 User** | **Expands upward:** My multi-tile · Sign in/out · Home menu | `openRibbonFlyout` |
 | **➕ Add** | **Expands upward:** Pin · Polygon/targets · Video call · Vendor · Social video post · Emergency help | `openRibbonFlyout` → `SNTopo.runAddOption` |
 | **🗺 Layers** | **Expands upward:** Full panel · basemaps · windy · w3w · ISS · planes · ships · sats | `openRibbonFlyout` → `SNMap` |
@@ -320,7 +320,7 @@ Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**
 | **If a ribbon button has more than one option** | It **must expand upward** from that button (flyout sheet above the CLI ribbon). |
 | **Never** | Instant side-effect only (e.g. Add must not locate / open tile without a menu pick). |
 | **Position** | Sheet anchored to the tapped button · opens **up** into free space · Cancel / backdrop closes. |
-| **Single-action buttons** | **Send** and **AI** (for now) act with no menu. Multi-option keys still expand upward. |
+| **Single-action buttons** | **Locate** · **Send** · **AI** act with no menu. Multi-option keys still expand upward. |
 | **Mechanical** | `SNField.openRibbonFlyout(anchor, { title, items }, onPick)` · shared CSS `#sn-rib-fly` |
 | **Contaminated** | Dropdowns that open downward into the keyboard · modal that replaces the whole app · missing upward menu on multi-option keys |
 

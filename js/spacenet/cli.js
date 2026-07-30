@@ -984,15 +984,30 @@
         const pos = await Globe?.locate?.();
         if (pos) {
           Tasks?.setPos?.(pos.lat, pos.lng);
+          global._snLastPos = { lat: pos.lat, lng: pos.lng };
+          // Recenter: city map if open, else fly globe to user
+          try {
+            if (global.SNMap?.active && global.SNMap.ensure) {
+              const map = await SNMap.ensure();
+              map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 14, 14));
+            } else if (Globe?.goToPlace) {
+              Globe.goToPlace(pos.lat, pos.lng, {
+                tier: 'city',
+                body: 'earth',
+                pulse: false,
+                label: 'You',
+              });
+            }
+          } catch (_) {}
           log(
             pos.fallback
               ? 'Default position (GPS off) · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4)
-              : 'Located ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
+              : 'Located · GPS recenter · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
             'ok'
           );
-          const r = await global.SNCommerce?.ensureSector?.(pos.lat, pos.lng, { openMap: false });
-          if (r?.count) log(r.count + ' live shops near you · type shops', 'ok');
-          preview(r?.count ? r.count + ' shops · Earth' : 'You · type shops');
+          preview('Located · recentered');
+        } else {
+          log('Locate failed · allow location · try again', 'err');
         }
         return;
       }
