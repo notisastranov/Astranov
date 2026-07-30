@@ -1679,8 +1679,6 @@
           { e: '🧠', t: 'Free mind', d: 'SpaceNet Free AI status', run: 'free mind' },
           { e: '🌅', t: 'Driver day', d: 'Wake→coffee→work→date', run: 'day start' },
           { e: '⏹', t: 'Day stop', d: 'Abort driver day', run: 'day stop' },
-          { e: '📡', t: 'Sim-33 (opt)', d: 'Swarm OFF by default', run: 'sim live' },
-          { e: '■', t: 'Sim stop', d: 'Halt swarm', run: 'sim stop' },
           { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },
           { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },
           { e: '❓', t: 'Help', d: 'Commands', run: 'help' },

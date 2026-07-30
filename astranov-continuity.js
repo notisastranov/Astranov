@@ -85,7 +85,7 @@ const AstranovContinuity = {
       single: ['locate', 'send', 'handsfree'],
       aiLaw: 'LISTEN→ANALYZE·BRIEF; SPACENET LISTENING; vendors fly+tile; next|show all',
       freeMind: 'SNFreeMind own free AI first — no paid xAI for chat; teach + free export',
-      sim33: 'SNSim33 · 12 client · 8 vendor · 8 driver · 5 ambassador · sim start|stop',
+      sim33: 'DELETED · use SNDriverDay day start only',
       platformFee: '3% of every order gross in S → SNCurrency.notePlatformFee / takePlatformFeeFrom → Architect wallet',
       burgerUnderRadar: 'sn-burger-btn under #field-radar · extensive secondary menu · not CLI ribbon · not finance',
     },

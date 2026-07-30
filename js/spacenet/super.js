@@ -99,22 +99,19 @@
           : bal.toFixed(2) + ' S'),
       'ok'
     );
-    var agents = (global.SNSim33 && SNSim33.agents) || [];
-    log('Fleet · ' + agents.length + ' agents', 'dim');
-    agents.forEach(function (a) {
-      log(
-        '  ' +
-          (a.role || '?') +
-          ' #' +
-          a.i +
-          ' @ ' +
-          (a.hub || '') +
-          ' · acts ' +
-          (a.acts || 0) +
-          (a.shopName ? ' · ' + a.shopName : ''),
-        'dim'
-      );
-    });
+    log('Fleet · use day start for driver routine (Sim-33 removed)', 'dim');
+    try {
+      var drivers = (global.SNProfiles && SNProfiles.list({ role: 'driver' })) || [];
+      drivers.slice(0, 12).forEach(function (d) {
+        log(
+          '  🛵 ' +
+            (d.name || d.id) +
+            (d.driverOnline ? ' · ONLINE' : '') +
+            (d.vehicle ? ' · ' + d.vehicle : ''),
+          'dim'
+        );
+      });
+    } catch (eF) {}
     log('TX tape · last ' + Math.min(20, txs.length), 'dim');
     txs.slice(0, 20).forEach(function (r) {
       log(

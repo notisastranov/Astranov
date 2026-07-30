@@ -5,7 +5,7 @@
  * - Full CLI I/O of every IN / OUT
  * - Feeds SNFreeMind so SpaceNet Free improves from real loops
  *
- * Used by Sim-33 and any live order/claim path.
+ * Used by driver-day and any live order/claim path.
  */
 (function (global) {
   'use strict';

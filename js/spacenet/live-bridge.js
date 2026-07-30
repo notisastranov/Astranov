@@ -33,14 +33,12 @@
     var op = String(cmd.op).toLowerCase();
     log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : '') + (cmd.text ? ' ' + cmd.text : ''), 'cmd');
     try {
-      if (op === 'sim_start' && global.SNSim33) {
-        SNSim33.start({ ms: cmd.ms || 5500 });
-      } else if (op === 'sim_stop' && global.SNSim33) {
-        SNSim33.stop();
-      } else if (op === 'sim_speed' && global.SNSim33 && SNSim33.setSpeed) {
-        SNSim33.setSpeed(cmd.ms || 5500);
-      } else if (op === 'sim_burst' && global.SNSim33) {
-        void SNSim33.burst(cmd.n || 5);
+      if (op === 'day_start' && global.SNDriverDay) {
+        void SNDriverDay.start();
+      } else if (op === 'day_stop' && global.SNDriverDay) {
+        SNDriverDay.stop();
+      } else if (op === 'sim_start' || op === 'sim_stop' || op === 'sim_speed' || op === 'sim_burst') {
+        log('Bridge · Sim-33 removed · use day_start', 'dim');
       } else if (op === 'cli' && global.SNCli && SNCli.run) {
         void SNCli.run(String(cmd.text || cmd.cmd || ''));
       } else if (op === 'credit_fee' && global.SNCurrency && SNCurrency.notePlatformFee) {

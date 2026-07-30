@@ -46,7 +46,6 @@
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
     log('DAY   day start · driver routine wake→coffee→work→dating (Rodos)', 'ok');
-    log('SIM   sim live · optional 33-swarm (OFF by default · burns attention)', 'dim');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -155,96 +154,31 @@
         );
         return;
       }
-      // 33 SPECS agents swarm (optional · off by default)
       if (/^sim\b/.test(low)) {
-        const Sim = global.SNSim33;
-        if (!Sim) {
-          log('Sim-33 loading · hard refresh', 'err');
-          return;
-        }
-        if (low === 'sim' || low === 'sim status') {
-          const st = Sim.status();
+        log('Sim-33 deleted · use: day start (driver day on Rodos)', 'dim');
+        return;
+      }
+      if (low === 'super' || low === 'fleet' || low === 'super deck') {
+        if (global.SNSuper && SNSuper.show) SNSuper.show();
+        else log('Super deck loading · hard refresh', 'err');
+        return;
+      }
+      if (/^bridge\b/.test(low)) {
+        const rest = line.replace(/^bridge\s*/i, '').trim();
+        if (!rest || rest === 'status') {
           log(
-            'Sim-33 · RHODES · ' +
-              (st.running ? 'LIVE' : 'stopped') +
-              ' · ok ' +
-              st.stats.ok +
-              ' · fail ' +
-              st.stats.fail +
-              ' · taught ' +
-              st.stats.taught +
-              ' · t' +
-              st.stats.ticks,
-            st.running ? 'ok' : 'dim'
+            'Bridge · ' +
+              (global.SNLiveBridge?.bridgeUrl?.() || 'n/a') +
+              ' · seq ' +
+              (global.SNLiveBridge?.lastSeq || 0),
+            'dim'
           );
-          log('Focus: Rhodes Island, Greece · Old Town · Lindos · Faliraki…', 'dim');
-          log('12 clients · 8 vendors · 8 drivers · 5 ambassadors', 'dim');
-          if (st.stats.last) log('Last · ' + st.stats.last, 'dim');
-          preview(st.running ? 'RHODES · SIM LIVE' : 'SIM OFF');
-          if (Sim.showLive) Sim.showLive();
           return;
         }
-        if (low === 'sim start' || low === 'sim on' || low === 'sim live') {
-          try {
-            localStorage.setItem('sn:sim-auto', '1');
-            localStorage.setItem('sn:sim-watch', '1');
-          } catch (_) {}
-          if (Sim.showLive) Sim.showLive();
-          else Sim.start({ ms: 5500 });
-          // Super TX continues on CLI lines only — no floating deck
-          return;
+        if (global.SNLiveBridge?.inject) {
+          SNLiveBridge.inject([{ op: 'cli', text: rest }]);
+          log('Bridge inject · cli ' + rest, 'ok');
         }
-        if (/^sim\s+speed/.test(low)) {
-          const ms = parseInt(low.replace(/\D+/g, ''), 10) || 5500;
-          if (Sim.setSpeed) Sim.setSpeed(ms);
-          else log('Sim speed needs hard refresh', 'err');
-          return;
-        }
-        if (low === 'super' || low === 'fleet' || low === 'super deck') {
-          if (global.SNSuper && SNSuper.show) SNSuper.show();
-          else log('Super deck loading · hard refresh', 'err');
-          return;
-        }
-        if (/^bridge\b/.test(low)) {
-          const rest = line.replace(/^bridge\s*/i, '').trim();
-          if (!rest || rest === 'status') {
-            log(
-              'Bridge · ' +
-                (global.SNLiveBridge?.bridgeUrl?.() || 'n/a') +
-                ' · seq ' +
-                (global.SNLiveBridge?.lastSeq || 0),
-              'dim'
-            );
-            return;
-          }
-          if (global.SNLiveBridge?.inject) {
-            SNLiveBridge.inject([{ op: 'cli', text: rest }]);
-            log('Bridge inject · cli ' + rest, 'ok');
-          }
-          return;
-        }
-        if (low === 'sim stop' || low === 'sim off') {
-          try {
-            localStorage.setItem('sn:sim-auto', '0');
-          } catch (_) {}
-          Sim.stop();
-          return;
-        }
-        if (low === 'sim wipe') {
-          Sim.wipe();
-          return;
-        }
-        if (/^sim\s+burst/.test(low)) {
-          const n = parseInt(low.replace(/\D+/g, ''), 10) || 33;
-          await Sim.burst(n);
-          return;
-        }
-        if (low === 'sim fast') {
-          Sim.stop();
-          Sim.start({ fast: true });
-          return;
-        }
-        log('sim start|stop|status|wipe|burst 33|fast', 'dim');
         return;
       }
       // SpaceNet Free mind — own free AI (no paid xAI)

@@ -424,12 +424,6 @@
       log('Driver day already running · day stop to abort', 'dim');
       return status();
     }
-    // Kill continuous swarm burn
-    try {
-      if (global.SNSim33 && SNSim33.running && SNSim33.stop) SNSim33.stop();
-      localStorage.setItem('sn:sim-auto', '0');
-    } catch (e) {}
-
     running = true;
     abort = false;
     log('── DRIVER DAY · RODOS · tight loop (not 33-swarm) ──', 'ok');
