@@ -46,7 +46,7 @@
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
     log('TASK  task list · task open · task fit · task map · advise · claim · deliver', 'ok');
-    log('UI    task ribbon materialises buttons for current task only', 'dim');
+    log('UI    tiles on CLI scroll strip · tap expand menu/order · double-tap minimize', 'dim');
     preview('locate · resources · rate · shops');
   }
 
@@ -536,22 +536,25 @@
         return;
       }
       if (low === 'menu') {
+        // Menu lives on vendor tile only — strip chips + expand Menu tab
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         if (!vendors.length) {
           const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
-          await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
+          await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: false });
         }
         const list = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
+        if (global.SNTile?.offerMany) SNTile.offerMany(list.slice(0, 16));
         list.slice(0, 12).forEach((v) => {
-          log('🏪 ' + (v.shopName || v.name) + ' · ' + (v.menu?.length || 0) + ' items', 'ok');
+          log('🏪 ' + (v.shopName || v.name) + ' · ' + (v.menu?.length || 0) + ' items · tap chip', 'ok');
         });
         const first = list[0];
         if (first) {
-          if (first.lat != null) await global.SNMap?.open?.(first.lat, first.lng);
           global.SNMap?.showProfiles?.();
           global.SNTile?.open?.(first, { tab: 'menu' });
+        } else {
+          log('No vendors · shops or long-press map · menu is inside the tile', 'dim');
         }
-        preview((list.length || 0) + ' vendor tiles');
+        preview((list.length || 0) + ' vendor tiles · Menu tab');
         return;
       }
       if (low === 'drivers' || low === 'driver') {

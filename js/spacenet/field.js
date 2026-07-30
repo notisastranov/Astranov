@@ -111,15 +111,19 @@
     },
     { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet', id: 'sn-rib-send' },
   ];
+  /**
+   * Context task buttons REMOVED from CLI ribbon.
+   * Menu / cart / order / claim live inside expanded CLI tiles only.
+   * Ribbon stays permanent 6: Locate · User · Add · Layers · AI · Send.
+   */
   var TASKS = {
     idle: [],
-    map: ['shops', 'cart', 'order'],
-    shops: ['cart', 'order', 'menu'],
-    mine: ['mine on', 'mine off'],
-    // SPECS: finance is NOT on CLI ribbon — only top-right S money HUD (field-balance-hud)
+    map: [],
+    shops: [],
+    mine: [],
     money: [],
-    space: ['cosmos'],
-    delivery: ['claim', 'cart', 'order'],
+    space: [],
+    delivery: [],
   };
 
   function $(id) {
@@ -278,7 +282,7 @@
         {
           title: '👤 User',
           items: [
-            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · menu' },
+            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · on CLI strip' },
             {
               id: 'auth',
               e: signed ? '🚪' : '🔐',
@@ -442,19 +446,7 @@
         '</span>' +
         '</button>';
     }
-    var ctx = TASKS[task] || [];
-    for (i = 0; i < ctx.length; i++) {
-      var cmd = ctx[i];
-      var k = String(cmd).toLowerCase();
-      if (seen[k]) continue;
-      seen[k] = 1;
-      h +=
-        '<button type="button" class="sn-rib-btn sn-rib-task" data-run="' +
-        String(cmd).replace(/"/g, '') +
-        '">' +
-        cmd +
-        '</button>';
-    }
+    // No sn-rib-task / menu / cart / order buttons — those are tile tabs only
     if (notice) {
       try {
         if (g.SNCli && SNCli.preview) SNCli.preview(notice);
@@ -475,15 +467,6 @@
         }
         ribbonAct(act);
         setTimeout(paintRibbon, 50);
-      };
-    });
-    bar.querySelectorAll('[data-run]').forEach(function (btn) {
-      btn.onclick = function (ev) {
-        if (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-        }
-        if (g.SNCli && SNCli.run) void SNCli.run(btn.getAttribute('data-run'));
       };
     });
   }
@@ -1475,17 +1458,22 @@
   }
 
   function setTask(name) {
-    task = TASKS[name] ? name : 'idle';
+    // Keep state for paint()/radar only — never inject CLI ribbon buttons
+    task = TASKS[name] != null ? name : 'idle';
     paintRibbon();
   }
 
   function infer(line) {
     var l = String(line || '').toLowerCase();
-    if (/^shops|^menu|^order|^cart|^market/.test(l)) setTask('shops');
-    else if (/^city|^map/.test(l)) setTask('map');
+    // Shops/menu/order → open vendor tile strip (not ribbon buttons)
+    if (/^shops|^menu|^order|^cart|^market/.test(l)) {
+      setTask('shops');
+      try {
+        if (g.SNTile && SNTile.seedMe) SNTile.seedMe();
+      } catch (e) {}
+    } else if (/^city|^map/.test(l)) setTask('map');
     else if (/^mine|^resources|^donate|^boost/.test(l)) setTask('mine');
-    // Money/finance: do NOT setTask('money') — never inject rate/finance ribbon buttons
-    // Finance opens only from #field-balance-hud (top-right S gadget)
+    // Money/finance: never inject rate/finance ribbon buttons
     else if (/^thesis|^vault|^mars|^go to|^cosmos/.test(l)) setTask('space');
     else if (/^deliver|^claim|^first delivery/.test(l)) setTask('delivery');
     else if (/^global|^locate|^earth|^help/.test(l)) setTask('idle');

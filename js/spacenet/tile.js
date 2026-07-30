@@ -12,8 +12,17 @@
     scale: 0.78,
     /** SNTaskBoard enrich payload when showing a delivery task multi-tile */
     taskBoard: null,
+    /** CLI strip: chips always; expand docks inside #cli-tile-expand */
+    dock: 'cli',
+    /** id → chip meta for horizontal scroll line */
+    chips: Object.create(null),
+    chipOrder: [],
+    lastChipTap: 0,
+    lastChipId: null,
+    lastCardTap: 0,
   };
   const SIZE_KEY = 'sn:tile-scale-v1';
+  const MAX_CHIPS = 28;
 
   function $(id) {
     return document.getElementById(id);
@@ -46,8 +55,14 @@
     const s = Math.max(0.55, Math.min(1.35, T.scale || 0.78));
     T.scale = s;
     card.style.setProperty('--sn-tile-scale', String(s));
-    card.style.width = 'min(' + Math.round(320 * s) + 'px, calc(100vw - 24px))';
-    card.style.maxHeight = 'min(' + Math.round(42 * s) + 'vh, ' + Math.round(420 * s) + 'px)';
+    const docked = T.dock !== 'overlay';
+    if (docked) {
+      card.style.width = '100%';
+      card.style.maxHeight = 'min(' + Math.round(38 * s) + 'vh, ' + Math.round(360 * s) + 'px)';
+    } else {
+      card.style.width = 'min(' + Math.round(320 * s) + 'px, calc(100vw - 24px))';
+      card.style.maxHeight = 'min(' + Math.round(42 * s) + 'vh, ' + Math.round(420 * s) + 'px)';
+    }
     card.style.transform = 'scale(1)'; // size via width/height, not transform (keeps pinch natural)
     // Dim +/− at min/max so users know the limits
     const minus = $('sn-tile-smaller');
@@ -116,24 +131,29 @@
 
   function ensureCss() {
     // Bump id when layout law changes so old huge-tile CSS is replaced
-    ['sn-tile-css', 'sn-tile-css-v2', 'sn-tile-css-v3'].forEach((id) => {
+    ['sn-tile-css', 'sn-tile-css-v2', 'sn-tile-css-v3', 'sn-tile-css-v4'].forEach((id) => {
       const old = document.getElementById(id);
       if (old) old.remove();
     });
-    if (document.getElementById('sn-tile-css-v4')) return;
+    if (document.getElementById('sn-tile-css-v5')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v4';
+    st.id = 'sn-tile-css-v5';
     st.textContent = [
-      /* Compact sheet above CLI · +/− and pinch to resize */
-      '#sn-tile{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;',
-      'padding:8px 10px calc(148px + env(safe-area-inset-bottom));background:rgba(0,0,0,.32);pointer-events:auto;',
-      'touch-action:none}',
+      /* Default: docked inside CLI expand host (saves map/space) */
+      '#sn-tile{position:relative;inset:auto;z-index:auto;display:none;align-items:stretch;justify-content:stretch;',
+      'padding:0;background:transparent;pointer-events:auto;width:100%;height:100%;max-height:inherit;',
+      'touch-action:pan-y}',
       '#sn-tile.open{display:flex}',
+      /* Rare full-screen fallback */
+      '#sn-tile.overlay-mode{position:fixed;inset:0;z-index:40;align-items:flex-end;justify-content:center;',
+      'padding:8px 10px calc(148px + env(safe-area-inset-bottom));background:rgba(0,0,0,.32);touch-action:none}',
       '#sn-tile .sn-tile-card{',
-      'width:min(280px,calc(100vw - 24px));max-height:min(38vh,360px);overflow:auto;border-radius:14px;',
-      'background:rgba(0,8,20,.97);border:1px solid rgba(61,158,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.6);',
+      'width:100%;max-height:min(40vh,360px);overflow:auto;border-radius:0;',
+      'background:rgba(0,8,20,.97);border:0;border-top:1px solid rgba(61,158,255,.35);box-shadow:none;',
       'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto;',
-      'touch-action:none;transform-origin:bottom center;transition:width .12s ease,max-height .12s ease}',
+      'touch-action:pan-y;transform-origin:top center;transition:max-height .12s ease}',
+      '#sn-tile.overlay-mode .sn-tile-card{width:min(280px,calc(100vw - 24px));border-radius:14px;',
+      'border:1px solid rgba(61,158,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.6);touch-action:none}',
       '#sn-tile .sn-tile-grip{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;',
       'gap:8px;padding:8px 10px 4px;font:10px system-ui;color:#5a8aaa;user-select:none}',
       '#sn-tile .sn-tile-grip-label{flex:1;text-align:center;letter-spacing:.04em;pointer-events:none}',
@@ -267,12 +287,259 @@
     );
   }
 
+  function ensureStrip() {
+    let strip = $('cli-tile-strip');
+    if (!strip) {
+      const panel = $('panel');
+      if (!panel) return null;
+      strip = document.createElement('div');
+      strip.id = 'cli-tile-strip';
+      strip.setAttribute('role', 'list');
+      strip.setAttribute('aria-label', 'Tiles in CLI');
+      const drag = $('cli-drag');
+      if (drag && drag.nextSibling) panel.insertBefore(strip, drag.nextSibling);
+      else panel.appendChild(strip);
+    }
+    let expand = $('cli-tile-expand');
+    if (!expand) {
+      expand = document.createElement('div');
+      expand.id = 'cli-tile-expand';
+      expand.hidden = true;
+      expand.setAttribute('aria-hidden', 'true');
+      strip.insertAdjacentElement('afterend', expand);
+    }
+    if (!strip._snBound) {
+      strip._snBound = true;
+      // Double-tap empty strip chrome → minimize
+      strip.addEventListener('dblclick', (e) => {
+        if (e.target === strip) minimize();
+      });
+    }
+    if (!document._snTileOutside) {
+      document._snTileOutside = true;
+      document.addEventListener(
+        'pointerdown',
+        (e) => {
+          if (!T.open) return;
+          const t = e.target;
+          if (!t || !t.closest) return;
+          // Inside expanded tile, strip chip, ribbon, form → keep open
+          if (t.closest('#sn-tile') || t.closest('#cli-tile-expand') || t.closest('#cli-tile-strip'))
+            return;
+          if (t.closest('#sn-task-ribbon') || t.closest('#cli-form') || t.closest('#cli-in')) return;
+          // Tap log / map / globe / radar → minimize back to scroll line
+          if (
+            t.closest('#cli-log') ||
+            t.closest('#globe') ||
+            t.closest('#city-map') ||
+            t.closest('#field-radar') ||
+            t.closest('#field-balance-hud') ||
+            t.closest('#sn-burger-btn') ||
+            t.closest('#btn-home') ||
+            t === document.body ||
+            t === document.documentElement
+          ) {
+            minimize();
+          }
+        },
+        true
+      );
+    }
+    return strip;
+  }
+
+  function panelSetTileOpen(on) {
+    const panel = $('panel');
+    if (!panel) return;
+    panel.classList.toggle('tile-open', !!on);
+    if (on) {
+      panel.classList.remove('collapsed');
+      if (!panel.classList.contains('expanded') && !panel.classList.contains('mid')) {
+        panel.classList.add('mid');
+      }
+    }
+  }
+
+  function chipEmoji(meta) {
+    if (meta.emoji) return meta.emoji;
+    if (meta.kind === 'task') return '📦';
+    if (meta.kind === 'me') return '👤';
+    if (meta.roles && meta.roles.vendor) return '🏪';
+    if (meta.roles && meta.roles.driver) return '🛵';
+    if (meta.roles && meta.roles.dating) return '💜';
+    return '▣';
+  }
+
+  function upsertChip(meta) {
+    if (!meta || !meta.id) return;
+    ensureStrip();
+    const id = String(meta.id);
+    const prev = T.chips[id] || {};
+    T.chips[id] = {
+      id: id,
+      title: meta.title || prev.title || id,
+      emoji: meta.emoji || prev.emoji || '',
+      avatar: meta.avatar || prev.avatar || '',
+      kind: meta.kind || prev.kind || 'profile',
+      roles: meta.roles || prev.roles || null,
+      priceLabel: meta.priceLabel != null ? meta.priceLabel : prev.priceLabel,
+      taskBoard: meta.taskBoard !== undefined ? meta.taskBoard : prev.taskBoard,
+      profile: meta.profile !== undefined ? meta.profile : prev.profile,
+    };
+    const i = T.chipOrder.indexOf(id);
+    if (i >= 0) T.chipOrder.splice(i, 1);
+    T.chipOrder.unshift(id);
+    while (T.chipOrder.length > MAX_CHIPS) {
+      const drop = T.chipOrder.pop();
+      if (drop && drop !== T.profileId) delete T.chips[drop];
+    }
+    renderStrip();
+  }
+
+  function renderStrip() {
+    const strip = ensureStrip();
+    if (!strip) return;
+    const ids = T.chipOrder.filter((id) => T.chips[id]);
+    if (!ids.length) {
+      strip.classList.remove('has-tiles');
+      strip.innerHTML = '';
+      return;
+    }
+    strip.classList.add('has-tiles');
+    strip.innerHTML = ids
+      .map((id) => {
+        const c = T.chips[id];
+        const on = T.open && T.profileId === id ? ' on' : '';
+        const av = c.avatar
+          ? '<img src="' + esc(c.avatar) + '" alt="" />'
+          : '<span class="cli-chip-e">' + esc(chipEmoji(c)) + '</span>';
+        const price = c.priceLabel
+          ? '<span class="cli-chip-s">' + esc(c.priceLabel) + '</span>'
+          : '';
+        return (
+          '<button type="button" class="cli-chip' +
+          on +
+          '" role="listitem" data-chip="' +
+          esc(id) +
+          '" title="' +
+          esc(c.title) +
+          ' · tap expand · double-tap minimize">' +
+          av +
+          '<span class="cli-chip-t">' +
+          esc(String(c.title).slice(0, 22)) +
+          '</span>' +
+          price +
+          '</button>'
+        );
+      })
+      .join('');
+    strip.querySelectorAll('[data-chip]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = btn.getAttribute('data-chip');
+        const now = Date.now();
+        // Double-tap chip → minimize if this tile open
+        if (T.lastChipId === id && now - T.lastChipTap < 380) {
+          T.lastChipTap = 0;
+          if (T.open && T.profileId === id) minimize();
+          else openChip(id);
+          return;
+        }
+        T.lastChipTap = now;
+        T.lastChipId = id;
+        // Single tap: toggle expand
+        if (T.open && T.profileId === id) minimize();
+        else openChip(id);
+      });
+    });
+  }
+
+  function openChip(id) {
+    const c = T.chips[id];
+    if (!c) return;
+    if (c.kind === 'task' && c.taskBoard) {
+      openTask(c.taskBoard, { fromStrip: true });
+      return;
+    }
+    const p =
+      c.profile ||
+      global.SNProfiles?.get?.(id) ||
+      (id === (global.SNProfiles?.me?.() || {}).id ? global.SNProfiles.me() : null);
+    if (p) open(p, { fromStrip: true });
+    else global.SNCli?.log?.('Tile gone · ' + id, 'dim');
+  }
+
+  function mountInCli() {
+    ensureStrip();
+    const expand = $('cli-tile-expand');
+    const root = $('sn-tile');
+    if (!expand || !root) return;
+    if (root.parentElement !== expand) expand.appendChild(root);
+    root.classList.remove('overlay-mode');
+    root.classList.add('open', 'cli-docked');
+    root.setAttribute('aria-hidden', 'false');
+    root.style.display = 'flex';
+    expand.hidden = false;
+    expand.classList.add('open');
+    expand.setAttribute('aria-hidden', 'false');
+    panelSetTileOpen(true);
+    T.dock = 'cli';
+  }
+
+  function unmountExpand() {
+    const expand = $('cli-tile-expand');
+    const root = $('sn-tile');
+    if (root) {
+      root.classList.remove('open', 'overlay-mode');
+      root.setAttribute('aria-hidden', 'true');
+      root.style.display = 'none';
+    }
+    if (expand) {
+      expand.hidden = true;
+      expand.classList.remove('open');
+      expand.setAttribute('aria-hidden', 'true');
+    }
+    panelSetTileOpen(false);
+  }
+
+  function bindCardDoubleTap(root) {
+    if (!root || root._snDbl) return;
+    root._snDbl = true;
+    const card = () => root.querySelector('.sn-tile-card');
+    root.addEventListener(
+      'click',
+      (e) => {
+        if (!T.open) return;
+        // backdrop (overlay mode only)
+        if (e.target === root && root.classList.contains('overlay-mode')) {
+          minimize();
+          return;
+        }
+        const c = card();
+        if (!c || !c.contains(e.target)) return;
+        // ignore interactive controls for double-tap minimize
+        if (e.target.closest('button, a, input, select, textarea, label')) return;
+        const now = Date.now();
+        if (now - T.lastCardTap < 380) {
+          T.lastCardTap = 0;
+          minimize();
+          return;
+        }
+        T.lastCardTap = now;
+      },
+      true
+    );
+  }
+
   function ensureDom() {
     ensureCss();
     loadScale();
+    ensureStrip();
     if ($('sn-tile')) {
       ensureGripControls();
       bindResize($('sn-tile'));
+      bindCardDoubleTap($('sn-tile'));
       applyScale();
       return;
     }
@@ -283,7 +550,7 @@
       '<div class="sn-tile-card">' +
       gripHtml() +
       '  <div class="sn-tile-cover" id="sn-tile-cover">' +
-      '    <button type="button" class="sn-tile-x" id="sn-tile-close" aria-label="Close">×</button>' +
+      '    <button type="button" class="sn-tile-x" id="sn-tile-close" aria-label="Minimize">×</button>' +
       '    <button type="button" class="sn-tile-edit-cover" id="sn-tile-edit-cover" title="Cover">📷</button>' +
       '    <input type="file" id="sn-tile-cover-file" accept="image/*" hidden />' +
       '  </div>' +
@@ -304,20 +571,22 @@
       '  <div class="sn-tile-body" id="sn-tile-body"></div>' +
       '  <div class="sn-tile-foot" id="sn-tile-foot"></div>' +
       '</div>';
-    document.body.appendChild(el);
+    const host = $('cli-tile-expand') || document.body;
+    host.appendChild(el);
     bindSizeButtons();
     $('sn-tile-close')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      close();
+      minimize();
     });
     el.addEventListener('click', (e) => {
-      if (e.target === el) close();
+      if (e.target === el && el.classList.contains('overlay-mode')) minimize();
     });
     $('sn-tile-edit-cover')?.addEventListener('click', () => $('sn-tile-cover-file')?.click());
     $('sn-tile-edit-av')?.addEventListener('click', () => $('sn-tile-av-file')?.click());
     $('sn-tile-cover-file')?.addEventListener('change', (e) => onFile(e, 'cover'));
     $('sn-tile-av-file')?.addEventListener('change', (e) => onFile(e, 'avatar'));
     bindResize(el);
+    bindCardDoubleTap(el);
     applyScale();
   }
 
@@ -382,23 +651,44 @@
     T.profileId = p.id;
     T.open = true;
     T.tab = T.taskBoard ? 'task' : opts.tab || defaultTab(p);
+    T.dock = opts.overlay === true ? 'overlay' : 'cli';
+    upsertChip({
+      id: p.id,
+      title: p.name || p.id,
+      avatar: p.avatar || '',
+      kind: isMe(p) ? 'me' : 'profile',
+      roles: p.roles,
+      profile: p,
+    });
     const root = $('sn-tile');
     if (!root) return null;
-    root.classList.add('open');
-    root.setAttribute('aria-hidden', 'false');
-    root.style.display = 'flex';
+    if (T.dock === 'overlay') {
+      if (root.parentElement !== document.body) document.body.appendChild(root);
+      root.classList.add('open', 'overlay-mode');
+      root.classList.remove('cli-docked');
+      root.setAttribute('aria-hidden', 'false');
+      root.style.display = 'flex';
+      unmountExpand();
+      panelSetTileOpen(false);
+    } else {
+      mountInCli();
+    }
     applyScale();
     render();
-    global.SNCli?.log?.(
-      'Tile · ' + (p.name || p.id) + (T.taskBoard ? ' · task' : ''),
-      'ok'
-    );
-    global.SNCli?.preview?.((p.name || 'Tile') + (T.taskBoard ? ' · task' : ''));
+    renderStrip();
+    if (!opts.fromStrip && !opts.quiet) {
+      global.SNCli?.log?.(
+        'Tile · ' + (p.name || p.id) + ' · CLI strip · double-tap to minimize',
+        'ok'
+      );
+    }
+    global.SNCli?.preview?.((p.name || 'Tile') + (T.taskBoard ? ' · task' : ' · expanded'));
     return p;
   }
 
   /** Delivery / work task multi-tile — price glow + vendor/client addresses */
-  function openTask(enriched) {
+  function openTask(enriched, opts) {
+    opts = opts || {};
     if (!enriched || !enriched.task) {
       if (global.SNTaskBoard && SNTaskBoard.openTaskTile) return SNTaskBoard.openTaskTile(enriched);
       return null;
@@ -408,20 +698,42 @@
     T.profileId = 'task:' + enriched.task.id;
     T.open = true;
     T.tab = 'task';
-    const root = $('sn-tile');
-    if (!root) return null;
-    root.classList.add('open');
-    root.setAttribute('aria-hidden', 'false');
-    root.style.display = 'flex';
-    applyScale();
-    render();
-    global.SNCli?.log?.('Task tile · ' + String(enriched.task.title || '').slice(0, 40), 'ok');
-    global.SNCli?.preview?.(
-      (enriched.price != null
+    T.dock = opts.overlay === true ? 'overlay' : 'cli';
+    const priceLabel =
+      enriched.price != null
         ? global.SNCurrency
           ? SNCurrency.format(enriched.price)
           : enriched.price + ' S'
-        : 'Task') + ' · map preview'
+        : '';
+    upsertChip({
+      id: T.profileId,
+      title: enriched.task.title || 'Task',
+      emoji: '📦',
+      kind: 'task',
+      priceLabel: priceLabel,
+      taskBoard: enriched,
+    });
+    const root = $('sn-tile');
+    if (!root) return null;
+    if (T.dock === 'overlay') {
+      if (root.parentElement !== document.body) document.body.appendChild(root);
+      root.classList.add('open', 'overlay-mode');
+      root.classList.remove('cli-docked');
+      root.setAttribute('aria-hidden', 'false');
+      root.style.display = 'flex';
+      unmountExpand();
+      panelSetTileOpen(false);
+    } else {
+      mountInCli();
+    }
+    applyScale();
+    render();
+    renderStrip();
+    if (!opts.fromStrip) {
+      global.SNCli?.log?.('Task tile · ' + String(enriched.task.title || '').slice(0, 40), 'ok');
+    }
+    global.SNCli?.preview?.(
+      (priceLabel || 'Task') + ' · CLI strip'
     );
     return enriched;
   }
@@ -434,20 +746,77 @@
     return 'about';
   }
 
-  function close() {
+  /** Collapse expanded work surface — chip stays on CLI scroll line */
+  function minimize() {
     T.open = false;
+    // keep taskBoard / profileId for re-open from chip
+    unmountExpand();
+    renderStrip();
+    try {
+      global.SNCli?.preview?.('Tiles on CLI strip · tap to expand');
+    } catch (_) {}
+  }
+
+  /** Minimize and clear task payload (chip may remain) */
+  function close() {
+    minimize();
     T.taskBoard = null;
-    const root = $('sn-tile');
-    if (root) {
-      root.classList.remove('open');
-      root.setAttribute('aria-hidden', 'true');
-      root.style.display = 'none';
-    }
   }
 
   function toggle(profileOrId) {
-    if (T.open && (!profileOrId || T.profileId === (profileOrId.id || profileOrId))) close();
+    const id = profileOrId && (profileOrId.id || profileOrId);
+    if (T.open && (!id || T.profileId === id)) minimize();
     else open(profileOrId);
+  }
+
+  /** Put profile/task on strip without expanding (shops load, task list) */
+  function offer(profileOrMeta, opts) {
+    opts = opts || {};
+    ensureDom();
+    if (!profileOrMeta) return;
+    if (profileOrMeta.task && profileOrMeta.task.id) {
+      const en = profileOrMeta;
+      const priceLabel =
+        en.price != null
+          ? global.SNCurrency
+            ? SNCurrency.format(en.price)
+            : en.price + ' S'
+          : '';
+      upsertChip({
+        id: 'task:' + en.task.id,
+        title: en.task.title || 'Task',
+        emoji: '📦',
+        kind: 'task',
+        priceLabel: priceLabel,
+        taskBoard: en,
+      });
+      return;
+    }
+    const p =
+      typeof profileOrMeta === 'string'
+        ? global.SNProfiles?.get?.(profileOrMeta)
+        : profileOrMeta;
+    if (!p || !p.id) return;
+    upsertChip({
+      id: p.id,
+      title: p.name || p.id,
+      avatar: p.avatar || '',
+      kind: isMe(p) ? 'me' : 'profile',
+      roles: p.roles,
+      profile: p,
+    });
+    if (opts.expand) open(p, { quiet: true, tab: opts.tab });
+  }
+
+  function seedMe() {
+    try {
+      const me = global.SNProfiles?.me?.();
+      if (me) offer(me);
+    } catch (_) {}
+  }
+
+  function offerMany(list) {
+    (list || []).forEach((p) => offer(p));
   }
 
   function render() {
@@ -989,6 +1358,9 @@
 
   function init() {
     ensureDom();
+    ensureStrip();
+    seedMe();
+    renderStrip();
     document.getElementById('btn-tile')?.addEventListener('click', () => openMe());
     // + → multi-tile at last pos or open me
     const fab = document.getElementById('sn-plus');
@@ -1001,6 +1373,11 @@
         else openMe();
       });
     }
+    // Soft seed vendors already in memory
+    try {
+      const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
+      offerMany(vendors.slice(0, 12));
+    } catch (_) {}
   }
 
   global.SNTile = {
@@ -1010,13 +1387,21 @@
     openTask,
     createAt,
     close,
+    minimize,
     toggle,
     render,
+    offer,
+    offerMany,
+    seedMe,
+    renderStrip,
     get openId() {
       return T.profileId;
     },
     get isOpen() {
       return T.open;
+    },
+    get chips() {
+      return T.chipOrder.slice();
     },
   };
 })(window);

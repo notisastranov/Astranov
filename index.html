@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260730400000-global-full-space" />
-<meta name="astranov-continuity" content="20260730400000-global-full-space" />
+<meta name="astranov-build" content="20260730420000-menu-in-tile" />
+<meta name="astranov-continuity" content="20260730420000-menu-in-tile" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -208,10 +208,8 @@
   .sn-rib-btn.on {
     border-color: rgba(61,158,255,.65); background: rgba(26,111,212,0.28);
   }
-  .sn-rib-btn.sn-rib-task {
-    min-width: 52px; min-height: 48px; font: 600 11px system-ui; flex-direction: row;
-    opacity: 0.92;
-  }
+  /* sn-rib-task removed — menu/cart/order only inside CLI tiles */
+  .sn-rib-btn.sn-rib-task { display: none !important; }
 
   /* CLI dock — bottom only · ALWAYS above tiles/modals (never buried) */
   #dock {
@@ -235,6 +233,47 @@
   #panel.mid { max-height: 28vh; }
   #panel.expanded { max-height: 33.333vh; }
   #panel.collapsed #cli-log { display: none; }
+  #panel.collapsed #cli-tile-strip { display: none; }
+  #panel.tile-open {
+    max-height: min(58vh, 520px) !important;
+  }
+  #panel.tile-open #cli-log { max-height: 64px; min-height: 0; }
+  /* Horizontal tile chips inside CLI — scroll line */
+  #cli-tile-strip {
+    display: none; flex-shrink: 0; gap: 8px; padding: 6px 10px 8px;
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity; border-bottom: 1px solid rgba(26,111,212,0.2);
+    background: rgba(0,10,24,0.55); touch-action: pan-x; cursor: default;
+  }
+  #cli-tile-strip.has-tiles { display: flex; }
+  #cli-tile-strip::-webkit-scrollbar { height: 4px; }
+  #cli-tile-strip::-webkit-scrollbar-thumb { background: rgba(61,158,255,0.35); border-radius: 4px; }
+  .cli-chip {
+    flex: 0 0 auto; scroll-snap-align: start; display: inline-flex; align-items: center; gap: 6px;
+    max-width: 148px; padding: 6px 10px 6px 6px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(61,158,255,0.4); background: rgba(6,20,40,0.95); color: #d0e8ff;
+    font: 600 11px system-ui, sans-serif; white-space: nowrap; user-select: none;
+    touch-action: manipulation;
+  }
+  .cli-chip img {
+    width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #0a1a30;
+    border: 1px solid rgba(61,158,255,0.45); flex-shrink: 0;
+  }
+  .cli-chip .cli-chip-e { font-size: 16px; line-height: 1; width: 28px; text-align: center; flex-shrink: 0; }
+  .cli-chip .cli-chip-t { overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
+  .cli-chip .cli-chip-s { font: 700 10px ui-monospace, monospace; color: #6dffb0; }
+  .cli-chip.on {
+    border-color: #3d9eff; background: rgba(26,111,212,0.35);
+    box-shadow: 0 0 12px rgba(61,158,255,0.35);
+  }
+  .cli-chip:active { transform: scale(0.97); }
+  /* Expanded tile docks inside CLI (not full-screen) */
+  #cli-tile-expand {
+    display: none; flex-shrink: 1; min-height: 0; max-height: min(42vh, 380px);
+    overflow: hidden; border-bottom: 1px solid rgba(26,111,212,0.22);
+    background: rgba(0,6,16,0.9);
+  }
+  #cli-tile-expand.open { display: block; }
   #cli-drag {
     cursor: grab; padding: 10px 12px 6px; border-bottom: 1px solid rgba(26,111,212,0.25);
     user-select: none; touch-action: none; flex-shrink: 0;
@@ -450,6 +489,9 @@
     <div id="cli-drag">
       <div id="cli-preview">SpaceNet · talk or tap ribbon</div>
     </div>
+    <!-- Interactive tile chips · scroll · tap expand · double-tap / outside minimize -->
+    <div id="cli-tile-strip" role="list" aria-label="Tiles in CLI"></div>
+    <div id="cli-tile-expand" hidden aria-hidden="true"></div>
     <div id="cli-log"></div>
     <form id="cli-form" autocomplete="off">
       <input id="cli-in" autocomplete="off" spellcheck="false" placeholder="Talk to SpaceNet…" aria-label="SpaceNet input" enterkeyhint="send" />
@@ -492,7 +534,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260730400000-global-full-space"></script>
+<script src="/js/spacenet/boot.js?v=20260730420000-menu-in-tile"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
