@@ -28,7 +28,7 @@
 
   function help() {
     log('── Astranov SpaceNet (full chrome) ──', 'ok');
-    log('MAP   rodos · fly <city> · global · locate · pilot on|off (camera)', 'ok');
+    log('MAP   fly <city> · city · global · locate · pilot on|off (camera)', 'ok');
     log('ADD   ribbon ➕ · pin · targets · video · vendor · social · emergency', 'ok');
     log('TOPO  measure · measure topo · clear targets · clear pin', 'dim');
     log('EARTH g_satellite · g_hybrid · g_terrain · google key in SN_CONFIG.layers', 'dim');
@@ -45,7 +45,7 @@
     log('WORK  job · date · deliver · task list', 'dim');
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('TASK  task list · task open · task fit · sim task · advise · claim · deliver', 'ok');
+    log('TASK  task list · task open · task fit · task map · advise · claim · deliver', 'ok');
     log('UI    task ribbon materialises buttons for current task only', 'dim');
     preview('locate · resources · rate · shops');
   }
@@ -85,6 +85,7 @@
   const CITIES = {
     athens: [37.9838, 23.7275],
     rhodes: [36.4341, 28.2176],
+    rodos: [36.4341, 28.2176],
     london: [51.5074, -0.1278],
     paris: [48.8566, 2.3522],
     berlin: [52.52, 13.405],
@@ -122,16 +123,15 @@
         dumpBrain('summary');
         return;
       }
-      // Real use: task board · route-compatible jobs · optional sim one route
+      // Real use: task board · route-compatible jobs
       if (
         low === 'sim task' ||
         /^sim\s+task\b/.test(low) ||
         low === 'sim route' ||
-        low === 'drive task'
+        low === 'drive task' ||
+        /^sim\b/.test(low)
       ) {
-        const id = line.replace(/^(sim\s+task|sim\s+route|drive\s+task)\s*/i, '').trim();
-        if (global.SNTaskBoard?.simTask) await SNTaskBoard.simTask(id || null);
-        else log('Task board loading · hard refresh', 'err');
+        log('Sim/training removed · use task list · claim · deliver · task map', 'dim');
         return;
       }
       if (low === 'task fit' || low === 'tasks fit' || low === 'compatible' || low === 'fit tasks') {
@@ -161,10 +161,6 @@
         if (t && global.SNTaskBoard?.previewTaskOnMap)
           await SNTaskBoard.previewTaskOnMap(t, { fit: true, force: true });
         else log('No tasks to preview', 'dim');
-        return;
-      }
-      if (/^sim\b/.test(low) && !/^sim\s+task/.test(low)) {
-        log('Demo sim removed · real use on CLI · sim task [id] to train one route', 'dim');
         return;
       }
       if (low === 'super' || low === 'fleet' || low === 'super deck') {
@@ -1005,30 +1001,6 @@
         }
         return;
       }
-      // Optional city surfaces (boot default is GLOBAL — never auto-open map)
-      if (
-        low === 'rodos' ||
-        low === 'rhodes' ||
-        low === 'rhodes city' ||
-        low === 'rodos city' ||
-        low === 'fly rhodes' ||
-        low === 'fly rodos' ||
-        low === 'view rhodes' ||
-        low === 'view rodos'
-      ) {
-        const lat = 36.4341;
-        const lng = 28.2176;
-        Tasks?.setPos?.(lat, lng);
-        global._snLastPos = { lat, lng };
-        try {
-          Globe?.setBody?.('earth');
-          Globe?.goToPlace?.(lat, lng, { tier: 'city', body: 'earth', pulse: false, label: 'Rhodes' });
-        } catch (_) {}
-        await global.SNMap?.open?.(lat, lng, { force: true });
-        log('Surface · Rodos city map · drag = your control · pilot on = follow sim', 'ok');
-        preview('Rodos city map');
-        return;
-      }
       if (
         low === 'global' ||
         low === 'globe' ||
@@ -1045,16 +1017,16 @@
           Globe?.setBody?.('earth');
           Globe?.goToTier?.('global');
         } catch (_) {}
-        log('Surface · GLOBAL globe · type rodos or fly <city> for city map', 'ok');
+        log('Surface · GLOBAL Earth · fly <city> or dive for city map', 'ok');
         preview('GLOBAL Earth');
         return;
       }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {
-        // City map at last focus — default Rhodes when focus unset
+        // City map at last focus — GPS/last pos only (no hard-coded training city)
         const p =
           Tasks?.pos ||
           global._snLastPos ||
-          { lat: 36.4341, lng: 28.2176 };
+          { lat: 37.9838, lng: 23.7275 };
         if (p.lat) Tasks?.setPos?.(p.lat, p.lng);
         try {
           Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', body: 'earth', pulse: false });
@@ -1166,7 +1138,7 @@
         log('Back · ' + (Globe?.bodyId || 'earth') + ' GLOBAL', 'ok');
         return;
       }
-      // fly <city> → open that city's street map (leave Rodos training surface)
+      // fly <city> → open that city's street map (user-requested only)
       async function openCityAt(lat, lng, label) {
         Tasks?.setPos?.(lat, lng);
         global._snLastPos = { lat, lng };
@@ -1181,24 +1153,20 @@
           });
         } catch (_) {}
         await global.SNMap?.open?.(lat, lng, { force: true });
-        log('City map · ' + label + ' · drag = hold · pilot on to follow sim', 'ok');
+        log('City map · ' + label + ' · drag holds camera · pilot on for autopilot', 'ok');
         preview(label);
       }
       for (const [name, ll] of Object.entries(CITIES)) {
         if (new RegExp('^(fly\\s+)?' + name + '$', 'i').test(low) || low === 'fly ' + name) {
-          await openCityAt(ll[0], ll[1], name);
+          await openCityAt(ll[0], ll[1], name === 'rodos' ? 'Rhodes' : name);
           return;
         }
       }
       if (/^fly\s+/.test(low)) {
         const name = low.replace(/^fly\s+/, '').trim();
-        if (/^rhodes$|^rodos$/.test(name)) {
-          await openCityAt(36.4341, 28.2176, 'Rhodes');
-          return;
-        }
         const ll = CITIES[name.replace(/\s+/g, '')] || CITIES[name];
         if (ll) {
-          await openCityAt(ll[0], ll[1], name);
+          await openCityAt(ll[0], ll[1], name === 'rodos' ? 'Rhodes' : name);
         } else if (global.SNSearch?.geocode) {
           preview('Finding · ' + name);
           const places = await SNSearch.geocode(name);
@@ -1208,8 +1176,8 @@
           } else if (global.SNCosmos?.resolve?.(name)) {
             global.SNMap?.close?.();
             await global.SNCosmos.go(name);
-          } else log('Unknown · fly athens · fly rodos · global', 'dim');
-        } else log('Unknown place · fly athens · fly rodos · global', 'dim');
+          } else log('Unknown · fly athens · fly london · global', 'dim');
+        } else log('Unknown place · fly athens · fly london · global', 'dim');
         return;
       }
       if (/^task\s*list$|^list$|^tasks$/.test(low)) {

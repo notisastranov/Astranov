@@ -1,11 +1,9 @@
 /**
- * SNMarketLive — real-time marketplace activity on Rhodes
+ * SNMarketLive — real-time marketplace activity
  *
  * - Delivery routing polygons (radar + optional map polylines)
  * - Full CLI I/O of every IN / OUT
  * - Feeds SNFreeMind so SpaceNet Free improves from real loops
- *
- * Used by driver-day and any live order/claim path.
  */
 (function (global) {
   'use strict';
@@ -254,7 +252,7 @@
         io(
           'OUT',
           'route',
-          'Rodos city · vendor→client · ETA ' +
+          'Route · vendor→client · ETA ' +
             ((route && route.eta) || '?') +
             ' · ' +
             Math.round((route && route.speedKmh) || 0) +
@@ -293,10 +291,10 @@
       if (global.SNFreeMind && SNFreeMind.teach) {
         SNFreeMind.teach(
           'order from vendor tile',
-          'Open menu · + cart · order in S · route polygon pickup→drop on Rhodes'
+          'Open menu · + cart · order in S · route polygon pickup→drop'
         );
         SNFreeMind.teach(
-          'Rhodes delivery route',
+          'delivery route',
           'Radar shows corridor polygon · driver claims · complete delivery'
         );
       }
@@ -357,7 +355,7 @@
       io('OUT', name, 'DELIVERED · done');
       try {
         if (global.SNCurrency && SNCurrency.credit && task.driver_s) {
-          SNCurrency.credit(task.driver_s, 'driver delivery Rhodes');
+          SNCurrency.credit(task.driver_s, 'driver delivery');
           io('OUT', 'wallet', 'driver +' + task.driver_s + ' S');
         }
       } catch (e) {}
@@ -367,15 +365,15 @@
     return { ok: false };
   }
 
-  /** Worker receives job offer on Rhodes */
+  /** Worker receives job offer near hub */
   function postWorkOffer(workerHub, opts) {
     opts = opts || {};
     var jobs = [
-      'job barman 3h Rhodes',
+      'job barman 3h',
       'job waiter 5h taverna',
       'job cleaner 4h hotel',
       'job tutor 2h',
-      'errand pharmacy Rhodes',
+      'errand pharmacy',
     ];
     var raw = opts.raw || jobs[Math.floor(Math.random() * jobs.length)];
     io('SYS', 'work', 'post offer · ' + raw);
@@ -398,7 +396,7 @@
     } catch (e) {}
     try {
       if (global.SNFreeMind && SNFreeMind.teach) {
-        SNFreeMind.teach('work offer Rhodes', 'Workers get job tasks on map · claim · complete · S');
+        SNFreeMind.teach('work offer', 'Workers get job tasks on map · claim · complete · S');
       }
     } catch (e2) {}
     return t;

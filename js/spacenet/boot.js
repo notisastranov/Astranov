@@ -120,7 +120,7 @@
     '/js/spacenet/market.js', // first vendor → delivery coach
     '/js/spacenet/market-live.js', // Rhodes delivery polygons · ETA · CLI I/O
     '/js/spacenet/free-ai.js', // SpaceNet Free mind — own AI, no paid xAI required
-    '/js/spacenet/task-board.js', // real task tiles · multi-route map · sim task
+    '/js/spacenet/task-board.js', // real task tiles · multi-route map · task fit
     '/js/spacenet/super.js', // Architect fleet + TX on CLI
     '/js/spacenet/live-bridge.js', // runtime control without redeploy
     '/js/spacenet/cli.js',
@@ -212,7 +212,7 @@
         }
       });
 
-      // City map stays closed until user dives to CITY / CLI city|rodos|fly|locate
+      // City map stays closed until user dives to CITY / CLI city|fly|locate
       try {
         if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
       } catch (e3) {}
@@ -222,7 +222,7 @@
       try {
         if (window.SNCli && SNCli.log) {
           SNCli.log(
-            'SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL Earth' : 'CLI-only') + ' · tap to dive · city|rodos when ready',
+            'SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL Earth' : 'CLI-only') + ' · tap to dive · fly <city> when ready',
             'ok'
           );
           SNCli.preview('GLOBAL Earth');

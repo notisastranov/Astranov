@@ -1,11 +1,11 @@
 /**
- * SNTaskBoard — real driver task board (no demo sim)
+ * SNTaskBoard — real driver task board
  *
  * - Task multi-tile: glowing deep-blue price · vendor/client name+address
  * - Map: all my task routes + center/zoom preview for selected task
  * - Match: score open tasks against existing routes (compatibility)
- * - CLI: sim task [id] · forces one route drive for training (not demo day)
  * - Advise: traffic/event hints when scanning (best-effort)
+ * - No demo sim · no train/sim-task shortcuts
  */
 (function (global) {
   'use strict';
@@ -419,73 +419,6 @@
     preview('Compatible tasks · open / claim');
   }
 
-  /**
-   * Train shortcut: sim one task route (drive it) without demo day crap.
-   * CLI: sim task | sim task <id>
-   */
-  async function simTask(taskId) {
-    var open = (global.SNTasks && SNTasks.list({ all: true })) || [];
-    var task = null;
-    if (taskId) {
-      task = open.find(function (t) {
-        return t && t.id === taskId;
-      });
-    }
-    if (!task) {
-      task =
-        open.find(function (t) {
-          return t && (t.status === 'claimed' || t.status === 'in_progress');
-        }) ||
-        open.find(function (t) {
-          return t && t.status === 'open' && t.kind === 'delivery';
-        });
-    }
-    if (!task) {
-      log('No task to sim · create/order first', 'dim');
-      return { ok: false };
-    }
-    var e = enrich(task);
-    log('Sim task · drive route only · ' + (task.title || task.id).slice(0, 40), 'ok');
-    openTaskTile(task);
-    try {
-      if (task.status === 'open' && global.SNTasks.claim) {
-        var c = SNTasks.claim(task.id);
-        if (c && c.ok) task = c.task;
-      }
-      if (task) {
-        task.status = 'in_progress';
-      }
-    } catch (eC) {}
-    if (global.SNField && SNField.startDeliveryRoute && e) {
-      await SNField.startDeliveryRoute({
-        id: 'live:sim:' + task.id,
-        vendorLat: e.pickup.lat,
-        vendorLng: e.pickup.lng,
-        dropLat: e.drop.lat,
-        dropLng: e.drop.lng,
-        label: '🛵 sim',
-        driver: 'you',
-        color: 'rgba(26,111,212,0.95)',
-        onArrive: function () {
-          try {
-            if (global.SNTasks && SNTasks.complete) SNTasks.complete(task.id);
-            log('Sim task done · route complete', 'ok');
-          } catch (eA) {}
-        },
-      });
-    }
-    await previewTaskOnMap(task, { fit: true, force: true });
-    try {
-      if (global.SNFreeMind && SNFreeMind.teach) {
-        SNFreeMind.teach(
-          'sim task drive',
-          'CLI sim task drives one real route for training · multi-task map arrange'
-        );
-      }
-    } catch (eT) {}
-    return { ok: true, task: task };
-  }
-
   /** Best-effort traffic/event advise while driving/scanning */
   function adviseScan(lat, lng) {
     lat = lat != null ? lat : (global._snLastPos && global._snLastPos.lat) || 36.43;
@@ -522,7 +455,6 @@
     scoreCompatibility: scoreCompatibility,
     suggestCompatible: suggestCompatible,
     listCompatibleOnCli: listCompatibleOnCli,
-    simTask: simTask,
     adviseScan: adviseScan,
     clearMapLayers: clearMapLayers,
     priceHtml: priceHtml,

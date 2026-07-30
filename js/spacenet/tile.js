@@ -771,7 +771,6 @@
         '<div class="sn-task-actions">' +
         '<button type="button" class="sn-btn primary" data-tact="preview">Map routes</button>' +
         '<button type="button" class="sn-btn" data-tact="claim">Claim</button>' +
-        '<button type="button" class="sn-btn" data-tact="sim">Sim drive</button>' +
         '<button type="button" class="sn-btn" data-tact="close">Close</button>' +
         '</div>';
       foot.querySelectorAll('[data-tact]').forEach((btn) => {
@@ -789,8 +788,6 @@
               render();
               void global.SNTaskBoard?.previewTaskOnMap?.(r.task, { fit: true, force: true });
             }
-          } else if (a === 'sim') {
-            void global.SNTaskBoard?.simTask?.(e.task.id);
           }
         };
       });

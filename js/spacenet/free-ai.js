@@ -350,7 +350,7 @@
     };
   }
 
-  /** Optional training thought stream (CLI / mind strip if present) */
+  /** Optional mind thought stream (CLI / mind strip if present) */
   function think(text, kind) {
     var t = String(text || '')
       .replace(/\s+/g, ' ')

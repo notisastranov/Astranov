@@ -33,8 +33,8 @@
     var op = String(cmd.op).toLowerCase();
     log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : '') + (cmd.text ? ' ' + cmd.text : ''), 'cmd');
     try {
-      if (op === 'sim_task' && global.SNTaskBoard && SNTaskBoard.simTask) {
-        void SNTaskBoard.simTask(cmd.id || null);
+      if (op === 'sim_task' || op === 'sim' || op === 'train') {
+        log('Bridge · sim/train removed · use task_fit / cli', 'dim');
       } else if (op === 'task_fit' && global.SNTaskBoard && SNTaskBoard.listCompatibleOnCli) {
         SNTaskBoard.listCompatibleOnCli();
       } else if (op === 'cli' && global.SNCli && SNCli.run) {

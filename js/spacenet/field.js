@@ -994,7 +994,7 @@
   }
 
   /**
-   * OSRM driving geometry + distance/duration (Rhodes city roads when available).
+   * OSRM driving geometry + distance/duration when available.
    * Returns { points, km, durationS, speedKmh } or throws.
    */
   async function fetchOsrmRoute(aLat, aLng, bLat, bLng) {
@@ -1185,7 +1185,7 @@
   }
 
   /**
-   * Rhodes city delivery: vendor → client stop polygon + live driver progress.
+   * Delivery: vendor → client stop polygon + live driver progress.
    * Draws on radar (expand), logs ETA/speed on CLI. No extra panels.
    */
   async function startDeliveryRoute(opts) {
@@ -1215,7 +1215,7 @@
       ],
       {
         id: id,
-        label: opts.label || '🛵 Rodos',
+        label: opts.label || '🛵 Route',
         kind: 'delivery',
         osrm: true,
         color: opts.color || 'rgba(0,220,255,0.95)',
@@ -1237,7 +1237,7 @@
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'Route · Rhodes · ' +
+          'Route · ' +
             (row.km != null ? row.km.toFixed(2) + ' km' : '?') +
             ' · ETA ' +
             (row.eta || '?') +
@@ -1269,7 +1269,7 @@
       var remainS = (r.durationS || 0) * (1 - u);
       r.eta = fmtEta(remainS);
       r.label =
-        (opts.label || '🛵 Rodos') +
+        (opts.label || '🛵 Route') +
         ' · ETA ' +
         r.eta +
         ' · ' +
@@ -1289,7 +1289,7 @@
       if (u >= 1) {
         r.progress = 1;
         try {
-          if (g.SNCli && SNCli.log) SNCli.log('Driver arrived · client stop · Rhodes', 'ok');
+          if (g.SNCli && SNCli.log) SNCli.log('Driver arrived · client stop', 'ok');
         } catch (e3) {}
         if (opts.onArrive) {
           try {
@@ -1654,10 +1654,8 @@
         title: 'Navigate',
         items: [
           { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
-          { e: '🌍', t: 'Full Earth', d: 'GLOBAL SPACENET', run: 'global' },
+          { e: '🌍', t: 'Full Earth', d: 'GLOBAL default', run: 'global' },
           { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
-          { e: '🏛', t: 'Rodos city map', d: 'Optional · CLI rodos', run: 'rodos' },
-          { e: '🌍', t: 'Global globe', d: 'Default home view', run: 'global' },
         ],
       },
       {
@@ -1679,7 +1677,6 @@
           { e: '🧠', t: 'Free mind', d: 'SpaceNet Free AI status', run: 'free mind' },
           { e: '📦', t: 'Task fit', d: 'Jobs that match your routes', run: 'task fit' },
           { e: '🗺', t: 'Tasks on map', d: 'All routes · arrange', run: 'task map' },
-          { e: '🛵', t: 'Sim task', d: 'Drive one route (train)', run: 'sim task' },
           { e: '⚠', t: 'Advise', d: 'Traffic / scan tips', run: 'advise' },
           { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },
           { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },
