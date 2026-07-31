@@ -103,7 +103,7 @@
     meta.className = 'cli-feed-meta';
     const t = new Date();
     meta.textContent =
-      (cls === 'cmd' ? 'YOU' : cls === 'ok' ? 'SPACENET' : cls === 'err' ? 'ERROR' : 'FEED') +
+      (cls === 'cmd' ? 'YOU' : cls === 'ok' ? 'ASTRANOV' : cls === 'err' ? 'ERROR' : 'FEED') +
       ' · ' +
       String(t.getHours()).padStart(2, '0') +
       ':' +
@@ -1838,16 +1838,16 @@
         localStorage.setItem(VOICE_KEY, '0');
       } catch (_) {}
       killSpeech();
-      stopHandsfree('SPACENET OFF');
+      stopHandsfree('ASTRANOV OFF');
       try {
         if (global.SNAi && SNAi.listeningOff) SNAi.listeningOff();
         else {
-          log('SPACENET OFF', 'dim');
-          preview('SPACENET OFF');
-          global.SNGlobe?.setHud?.('SPACENET OFF');
+          log('ASTRANOV OFF', 'dim');
+          preview('ASTRANOV OFF');
+          global.SNGlobe?.setHud?.('ASTRANOV OFF');
         }
       } catch (_) {
-        log('SPACENET OFF', 'dim');
+        log('ASTRANOV OFF', 'dim');
       }
       return;
     }
@@ -1877,7 +1877,7 @@
     }
     if (!SR) {
       log('No speech API · type to me · I still reply in text and voice', 'dim');
-      preview('SPACENET · type to talk');
+      preview('Astranov · type to talk');
       return;
     }
 
