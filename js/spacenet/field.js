@@ -145,6 +145,11 @@
   var routes = [];
   var routeFetchBusy = false;
   var routeFetchAt = 0;
+  /** Radar range zoom (1 = default). Two-finger scroll / pinch adjusts. */
+  var radarZoom = 1;
+  var loadHist = [];
+  var LOAD_HIST_N = 36;
+  var physPos = null;
   /** Blip kinds: f friend green · c competitor red · v vendor/client yellow */
   var BLIP_COLOR = {
     f: 'rgba(68,255,136,0.95)',
@@ -590,24 +595,229 @@
   function paint() {
     var C = g.SNCurrency;
     var bal = C ? C.balance() : 0;
-    var fees = C && C.platformFees ? C.platformFees() : C && C.snapshot ? (C.snapshot().platformFees || 0) : 0;
+    var fees =
+      C && C.platformFees
+        ? C.platformFees()
+        : C && C.snapshot
+          ? C.snapshot().platformFees || 0
+          : 0;
     var s = $('fbh-s');
-    if (s) s.textContent = C ? C.format(bal) : bal.toFixed(2) + ' S';
-    // Architect 3% vault — only grows (SPECS platform fee)
+    if (s) {
+      s.textContent = C
+        ? C.formatCompact
+          ? C.formatCompact(bal)
+          : C.format(bal)
+        : '◎ ' + bal.toFixed(2);
+    }
     var fe = $('fbh-fees');
     if (fe) {
-      fe.textContent = '3% vault ' + (C && C.format ? C.format(fees) : Number(fees).toFixed(2) + ' S');
+      fe.textContent =
+        '3% vault ' +
+        (C && C.formatCompact
+          ? C.formatCompact(fees)
+          : C && C.format
+            ? C.format(fees)
+            : '◎ ' + Number(fees).toFixed(2));
       fe.hidden = false;
     }
-    // Mining rate as S per day only (product miner face)
     var mr = $('fbh-mine-rate');
     if (mr) {
       var perDay = (mine.rate || 0) * 24;
-      mr.textContent = perDay.toFixed(2) + ' S/day';
+      mr.textContent = C && C.formatRate
+        ? C.formatRate(perDay, 'day')
+        : perDay.toFixed(2) + ' strands/day';
+      if (mine.on && mine.terms) {
+        mr.textContent += ' · ON';
+      } else {
+        mr.textContent += ' · off';
+      }
     }
+    paintLoadGraph();
     var hud = $('field-balance-hud');
-    if (hud) hud.classList.toggle('mining-active', !!mine.on && !!mine.terms);
+    if (hud) {
+      hud.classList.toggle('mining-active', !!mine.on && !!mine.terms);
+      hud.title =
+        'Strand of coins · mining ' +
+        ((mine.rate || 0) * 24).toFixed(2) +
+        '/day · device load · tap finance';
+    }
+    paintNavMeta();
     paintRibbon();
+  }
+
+  function paintLoadGraph() {
+    var c = $('fbh-load-graph');
+    var lab = $('fbh-load-label');
+    if (!c) return;
+    var ctx = c.getContext('2d');
+    if (!ctx) return;
+    var w = c.width;
+    var h = c.height;
+    // CPU load 0–100 from rates; spare inverted
+    var cpu = mine.rates && mine.rates.cpu != null ? mine.rates.cpu : 0;
+    var spare = mine.spare != null ? mine.spare : 0;
+    var loadPct = mine.on && mine.terms ? Math.max(cpu, 100 - spare) : Math.max(8, 100 - spare) * 0.35;
+    loadHist.push(Math.max(0, Math.min(100, loadPct)));
+    if (loadHist.length > LOAD_HIST_N) loadHist.shift();
+    ctx.clearRect(0, 0, w, h);
+    // grid
+    ctx.strokeStyle = 'rgba(0,232,160,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.stroke();
+    if (loadHist.length < 2) return;
+    var i;
+    // fill
+    ctx.beginPath();
+    for (i = 0; i < loadHist.length; i++) {
+      var x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
+      var y = h - 2 - (loadHist[i] / 100) * (h - 4);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w - 1, h - 1);
+    ctx.lineTo(1, h - 1);
+    ctx.closePath();
+    ctx.fillStyle = mine.on && mine.terms ? 'rgba(0,255,176,0.18)' : 'rgba(76,201,255,0.1)';
+    ctx.fill();
+    // line
+    ctx.beginPath();
+    for (i = 0; i < loadHist.length; i++) {
+      x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
+      y = h - 2 - (loadHist[i] / 100) * (h - 4);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    if (lab) {
+      var role = (roleProfile() && roleProfile().label) || mine.deviceRole || 'device';
+      lab.textContent =
+        (mine.on && mine.terms ? 'mining · ' : 'idle · ') +
+        Math.round(loadPct) +
+        '% load · ' +
+        role.replace(/\s*device/i, '');
+    }
+  }
+
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
+  }
+
+  function fmtClock(d, utc) {
+    if (utc) {
+      return pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes()) + ':' + pad2(d.getUTCSeconds());
+    }
+    return pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' + pad2(d.getSeconds());
+  }
+
+  function fmtLL(lat, lng) {
+    if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return '—';
+    return Number(lat).toFixed(3) + '°, ' + Number(lng).toFixed(3) + '°';
+  }
+
+  function placeNameNear(lat, lng) {
+    try {
+      if (g.SNGlobe && SNGlobe.nearestCity) {
+        var c = SNGlobe.nearestCity(lat, lng);
+        if (c && c.n) return c.n;
+      }
+    } catch (_) {}
+    try {
+      var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
+      if (me && me.lat != null && Math.abs(me.lat - lat) < 0.05) return me.name || 'You';
+    } catch (_) {}
+    return null;
+  }
+
+  function paintNavMeta() {
+    var now = new Date();
+    var spd = pickSpeedMode();
+    var spEl = $('fnm-speed');
+    var modeEl = $('fnm-mode');
+    var timeEl = $('fnm-time');
+    var physEl = $('fnm-phys');
+    var virtEl = $('fnm-virt');
+    if (spEl) {
+      var vtxt =
+        spd.v >= 10000 ? Math.round(spd.v / 1000) + 'k' : String(Math.round(spd.v));
+      spEl.textContent = vtxt + ' km/h';
+    }
+    if (modeEl) modeEl.textContent = spd.mode || '—';
+    if (timeEl) {
+      timeEl.textContent = 'UTC ' + fmtClock(now, true) + ' · Local ' + fmtClock(now, false);
+    }
+    // Physical: GPS / last known body position
+    var p =
+      physPos ||
+      g._snPhysPos ||
+      (g.SNProfiles && SNProfiles.me && SNProfiles.me()) ||
+      g._snLastPos;
+    var pLat = p && p.lat != null ? p.lat : null;
+    var pLng = p && p.lng != null ? p.lng : null;
+    var pName = pLat != null ? placeNameNear(pLat, pLng) : null;
+    if (physEl) {
+      physEl.textContent =
+        'PHYS · ' +
+        (pName ? pName + ' · ' : '') +
+        fmtLL(pLat, pLng) +
+        (p && p.fallback ? ' · soft' : '');
+    }
+    // Virtual: where camera/focus is looking (may differ when flying)
+    var v =
+      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      (g.SNMap && SNMap.active && g.SNMap.center && SNMap.center()) ||
+      g._snLastPos;
+    var vLat = v && v.lat != null ? v.lat : null;
+    var vLng = v && v.lng != null ? v.lng : null;
+    var tier =
+      (g.SNGlobe && SNGlobe.currentTier && SNGlobe.currentTier()) ||
+      (g.SNGlobe && SNGlobe.tier) ||
+      'global';
+    if (typeof tier === 'function') {
+      try {
+        tier = g.SNGlobe.currentTier();
+      } catch (_) {
+        tier = 'global';
+      }
+    }
+    var vName = vLat != null ? placeNameNear(vLat, vLng) : null;
+    var same =
+      pLat != null &&
+      vLat != null &&
+      Math.abs(pLat - vLat) < 0.02 &&
+      Math.abs(pLng - vLng) < 0.02;
+    if (virtEl) {
+      virtEl.textContent =
+        'VIEW · ' +
+        String(tier).toUpperCase() +
+        (vName ? ' · ' + vName : '') +
+        ' · ' +
+        fmtLL(vLat, vLng) +
+        (same ? '' : ' · flying');
+    }
+  }
+
+  function refreshPhysPos() {
+    if (!navigator.geolocation) return;
+    try {
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          physPos = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            t: Date.now(),
+          };
+          g._snPhysPos = physPos;
+          paintNavMeta();
+        },
+        function () {},
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 8000 }
+      );
+    } catch (_) {}
   }
 
   function noteFrame() {
@@ -876,10 +1086,14 @@
       wrap.classList.toggle('expanded', radarBig);
       wrap.setAttribute('aria-expanded', radarBig ? 'true' : 'false');
       wrap.title = radarBig
-        ? 'Double-tap to shrink · routes & contacts'
-        : 'Tap expand · routes · friends green · competitors red · vendors yellow';
+        ? 'Double-tap to shrink · two-finger scroll = range zoom'
+        : 'Tap expand · two-finger scroll = range · friends green · competitors red';
     }
+    try {
+      document.body.classList.toggle('radar-expanded', radarBig);
+    } catch (_) {}
     syncRadarCanvas();
+    paintRadarZoomLabel();
     if (radarBig) {
       void refreshRoutes(true);
     }
@@ -888,10 +1102,30 @@
     } catch (e) {}
   }
 
+  function paintRadarZoomLabel() {
+    var el = $('field-radar-zoom');
+    if (el) el.textContent = 'rng ' + radarZoom.toFixed(1) + '×';
+  }
+
+  function setRadarZoom(z) {
+    radarZoom = Math.max(0.35, Math.min(4.5, Number(z) || 1));
+    paintRadarZoomLabel();
+  }
+
   function bindRadarTap() {
     var wrap = $('field-radar');
     if (!wrap || wrap._snRadarTap) return;
     wrap._snRadarTap = true;
+    var pinchStartDist = 0;
+    var pinchStartZoom = 1;
+
+    function touchDist(touches) {
+      if (!touches || touches.length < 2) return 0;
+      var dx = touches[0].clientX - touches[1].clientX;
+      var dy = touches[0].clientY - touches[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
     wrap.addEventListener(
       'click',
       function (e) {
@@ -907,7 +1141,6 @@
         radarLastTap = now;
         setTimeout(function () {
           if (radarLastTap && Date.now() - radarLastTap >= 300) {
-            // single tap confirmed
             if (!radarBig) setRadarExpanded(true);
             radarLastTap = 0;
           }
@@ -920,6 +1153,46 @@
         e.preventDefault();
         setRadarExpanded(!radarBig);
       }
+    });
+
+    // Two-finger trackpad / mouse wheel on radar → range zoom
+    wrap.addEventListener(
+      'wheel',
+      function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var factor = e.deltaY > 0 ? 1.08 : 0.92;
+        if (e.ctrlKey) factor = e.deltaY > 0 ? 1.12 : 0.88;
+        setRadarZoom(radarZoom * factor);
+      },
+      { passive: false }
+    );
+
+    wrap.addEventListener(
+      'touchstart',
+      function (e) {
+        if (e.touches && e.touches.length === 2) {
+          pinchStartDist = touchDist(e.touches);
+          pinchStartZoom = radarZoom;
+          e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+    wrap.addEventListener(
+      'touchmove',
+      function (e) {
+        if (e.touches && e.touches.length === 2 && pinchStartDist > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          var d = touchDist(e.touches);
+          if (d > 0) setRadarZoom(pinchStartZoom * (d / pinchStartDist));
+        }
+      },
+      { passive: false }
+    );
+    wrap.addEventListener('touchend', function () {
+      pinchStartDist = 0;
     });
   }
 
@@ -972,8 +1245,10 @@
     ctx.stroke();
     for (var i = 0; i < blips.length; i++) {
       var t = blips[i];
-      var x = cx + Math.cos(t.a) * t.r * R;
-      var y = cy + Math.sin(t.a) * t.r * R;
+      // radarZoom = range multiplier (higher = see farther → blips closer to center)
+      var rr = Math.min(0.98, (t.r || 0) / radarZoom);
+      var x = cx + Math.cos(t.a) * rr * R;
+      var y = cy + Math.sin(t.a) * rr * R;
       ctx.fillStyle = BLIP_COLOR[t.k] || BLIP_COLOR.p;
       ctx.beginPath();
       ctx.arc(x, y, blipR, 0, Math.PI * 2);
@@ -985,6 +1260,7 @@
       }
     }
     updateRadarSpeed();
+    paintNavMeta();
     noteFrame();
   }
 
@@ -1015,6 +1291,8 @@
     if (!routes || !routes.length) return;
     var focus = focusPos();
     var maxD = 80; // meters floor so short routes still show
+    // Range zoom: higher radarZoom → larger geographic window
+    var rangeMul = radarZoom > 0 ? radarZoom : 1;
     var i, j, loc, pts, route;
 
     // Fit scale to all route vertices
@@ -1026,7 +1304,7 @@
         if (d > maxD) maxD = d;
       }
     }
-    var scale = (R * 0.9) / maxD;
+    var scale = (R * 0.9) / (maxD * rangeMul);
 
     function toCanvas(lat, lng) {
       var L = toLocalM(lat, lng, focus);
@@ -1977,7 +2255,11 @@
    * city map / street → walking or driving
    */
   function pickSpeedMode() {
-    var tier = (g.SNGlobe && SNGlobe.tier) || 'global';
+    var tier = 'global';
+    try {
+      if (g.SNGlobe && typeof SNGlobe.currentTier === 'function') tier = SNGlobe.currentTier();
+      else if (g.SNGlobe && SNGlobe.tier) tier = SNGlobe.tier;
+    } catch (_) {}
     var body = (g.SNGlobe && SNGlobe.bodyId) || 'earth';
     var cityOn = !!(g.SNMap && SNMap.active);
     if (body !== 'earth') {
@@ -2005,7 +2287,6 @@
     var exp = $('fsh-explain');
     var wrap = $('field-radar-speed');
     if (v) {
-      // Compact display for large orbital number
       if (s.v >= 10000) v.textContent = String(Math.round(s.v / 1000)) + 'k';
       else v.textContent = String(s.v);
     }
@@ -2019,6 +2300,7 @@
       else if (s === SPEED.drive) wrap.classList.add('driving');
       else wrap.classList.add('earth');
     }
+    paintNavMeta();
   }
 
   /**
@@ -2236,10 +2518,36 @@
         mine.spare +
         '%' +
         (mine.donate ? ' · mesh' : '') +
-        (mine.on && mine.terms ? ' · ' + mine.rate.toFixed(3) + ' S/h' : ' · mine off'),
+        (mine.on && mine.terms
+          ? ' · ' +
+            (g.SNCurrency && SNCurrency.formatRate
+              ? SNCurrency.formatRate(mine.rate, 'h')
+              : mine.rate.toFixed(3) + ' strands/h')
+          : ' · mine off'),
       workerOps: mine.workerOps,
       meshPeers: mine.meshPeers || 1,
     };
+  }
+
+  function activateMiningEngine() {
+    try {
+      mine.terms = !!localStorage.getItem('astranov:spacenet-miner-v2');
+      if (!mine.terms) {
+        // First visit: show terms once so mining can start
+        showTerms();
+        return false;
+      }
+      mine.on = true;
+      mine.donate = true;
+      localStorage.setItem('astranov_donate_compute', '1');
+      localStorage.setItem('sn:mine-on-v1', '1');
+      ensureMineWorker();
+      touchFleetHeartbeat();
+      paint();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function init() {
@@ -2248,16 +2556,35 @@
     try {
       mine.terms = !!localStorage.getItem('astranov:spacenet-miner-v2');
       var wantMine = localStorage.getItem('sn:mine-on-v1');
+      // Default ON when terms accepted (user: activate mining engine)
       mine.on = mine.terms && wantMine !== '0';
       mine.donate =
-        localStorage.getItem('astranov_donate_compute') === '1' ||
-        mine.terms;
+        localStorage.getItem('astranov_donate_compute') === '1' || mine.terms;
+      if (mine.terms) {
+        mine.on = wantMine !== '0';
+        mine.donate = true;
+        try {
+          localStorage.setItem('astranov_donate_compute', '1');
+          if (wantMine !== '0') localStorage.setItem('sn:mine-on-v1', '1');
+        } catch (_) {}
+      }
       loadDeviceRole();
       var sess = parseFloat(localStorage.getItem('sn:mine-session-v1') || '0');
       if (isFinite(sess) && sess > 0) mine.session = sess;
     } catch (e) {}
     if (mine.on && mine.terms && mine.donate) ensureMineWorker();
+    else if (!mine.terms) {
+      // Soft-prompt terms so mining can activate
+      setTimeout(function () {
+        try {
+          if (!mine.terms) showTerms();
+        } catch (_) {}
+      }, 1800);
+    }
     touchFleetHeartbeat();
+    paintRadarZoomLabel();
+    refreshPhysPos();
+    setInterval(refreshPhysPos, 45000);
     paint();
     refreshBlips();
     bindRadarTap();
@@ -2406,6 +2733,7 @@
       paint();
       return true;
     },
+    activateMining: activateMiningEngine,
     setDonate: function (on) {
       mine.donate = !!on;
       try {

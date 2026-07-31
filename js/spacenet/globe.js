@@ -2341,6 +2341,8 @@
     focusPos: focusPos,
     setHud: setHud,
     getPhysics: getPhysics,
+    nearestCity: nearestMajorCity,
+    currentTier: currentTier,
     TIERS: TIERS,
     LADDER: LADDER,
     DIVE: DIVE,

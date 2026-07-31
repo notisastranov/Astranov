@@ -1,12 +1,16 @@
 /**
- * S - SpaceNets (primary) + wallet. Secondary quotes only.
- * Spartan: quotes + balance in one module.
+ * Strand of coins — primary wallet unit (was SpaceNets / S).
+ * Fiat/crypto remain secondary quotes only.
  */
 (function (g) {
   'use strict';
   var QK = 'spacenet_currency_v1';
   var WK = 'spacenet_wallet_v1';
-  var SYM = 'S';
+  /** Primary currency: a strand of coins */
+  var SYM = 'strands';
+  var NAME = 'strand of coins';
+  var NAME_PL = 'strands';
+  var GLYPH = '◎';
   var st = {
     networkIndex: 1,
     quotes: { EUR: 1, USD: 1.08, BTC: 0.000015, ETH: 0.00025 },
@@ -49,13 +53,26 @@
     st.quotes.USD = n * 1.08;
     st.quotes.BTC = n * 0.000015;
     st.quotes.ETH = n * 0.00025;
-    saveQ();
   }
 
   function fmt(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
-    return n.toFixed(2) + ' ' + SYM;
+    return n.toFixed(2) + ' ' + NAME_PL;
+  }
+
+  /** Compact HUD: ◎ 12.50 */
+  function fmtCompact(a) {
+    var n = Number(a);
+    if (!isFinite(n)) n = 0;
+    return GLYPH + ' ' + n.toFixed(2);
+  }
+
+  function fmtRate(perUnit, unit) {
+    var n = Number(perUnit);
+    if (!isFinite(n)) n = 0;
+    unit = unit || 'day';
+    return n.toFixed(2) + ' ' + NAME_PL + '/' + unit;
   }
 
   function credit(a, why) {
@@ -69,16 +86,14 @@
   }
 
   /**
-   * Architect platform revenue — 3% of every marketplace transaction in S.
+   * Architect platform revenue — 3% of every marketplace transaction in strands.
    * platformFees vault ONLY GROWS (never spent by sim/client debit).
-   * Also credits spendable balance so total coins rise.
    */
   function notePlatformFee(a, meta) {
     a = Number(a);
     if (!isFinite(a) || a <= 0)
       return { ok: false, fee: 0, platformFees: st.platformFees, balance: st.balance };
     st.platformFees = Math.round(((Number(st.platformFees) || 0) + a) * 100) / 100;
-    // Vault is source of truth for "my 3% builds up"
     credit(a, 'platform');
     saveW();
     try {
@@ -104,63 +119,53 @@
           why: (meta && meta.why) || 'tx',
         });
       }
-      // Superuser TX tape
-      try {
-        if (g.SNSuper && SNSuper.pushTx) {
-          SNSuper.pushTx({
-            kind: 'platform_3pct',
-            fee: a,
-            vault: st.platformFees,
-            why: (meta && meta.why) || 'tx',
-          });
-        }
-      } catch (e2) {}
     } catch (e) {}
     return { ok: true, fee: a, platformFees: st.platformFees, balance: st.balance };
   }
 
-  /** Compute 3% of gross (min 0.01 S if gross > 0) and credit architect */
   function takePlatformFeeFrom(gross, why) {
     gross = Number(gross);
-    if (!isFinite(gross) || gross <= 0) return { ok: false, fee: 0 };
+    if (!isFinite(gross) || gross <= 0) return 0;
     var fee = Math.round(gross * 0.03 * 100) / 100;
-    if (fee < 0.01 && gross > 0) fee = 0.01;
-    return notePlatformFee(fee, { why: why || 'transaction', gross: gross });
+    notePlatformFee(fee, { why: why || 'transaction', gross: gross });
+    return fee;
   }
 
   load();
 
   g.SNCurrency = {
     SYMBOL: SYM,
-    NAME: 'SpaceNets',
-    PRIMACY: true,
+    GLYPH: GLYPH,
+    NAME: NAME,
+    NAME_PL: NAME_PL,
+    /** @deprecated alias — was SpaceNets / S */
+    LEGACY: 'SpaceNets',
     format: fmt,
+    formatCompact: fmtCompact,
+    formatRate: fmtRate,
     formatPair: function (a, code) {
-      code = (code || 'EUR').toUpperCase();
-      var r = st.quotes[code];
-      return fmt(a) + (r ? ' (~' + (Number(a) * r).toFixed(2) + ' ' + code + ')' : '');
+      var n = Number(a);
+      if (!isFinite(n)) n = 0;
+      var q = st.quotes[code] || 1;
+      return fmt(n) + ' · ~' + (n * q).toFixed(2) + ' ' + (code || 'EUR');
     },
-    quote: function (c) {
-      return st.quotes[(c || 'EUR').toUpperCase()] || null;
-    },
-    rate: function (c) {
-      return this.quote(c);
-    },
-    toFiat: function (a, c) {
-      return Number(a) * (this.quote(c) || 1);
-    },
-    fromFiat: function (a, c) {
-      var r = this.quote(c) || 1;
-      return Number(a) / r;
-    },
-    networkIndex: function () {
-      return st.networkIndex;
+    snapshot: function () {
+      return {
+        balance: st.balance,
+        mined: st.mined,
+        platformFees: st.platformFees,
+        networkIndex: st.networkIndex,
+        quotes: Object.assign({}, st.quotes),
+        name: NAME,
+        symbol: SYM,
+      };
     },
     setNetworkIndex: function (n) {
       n = Number(n);
       if (!(n > 0)) return false;
       st.networkIndex = n;
       recompute();
+      saveQ();
       return true;
     },
     balance: function () {
@@ -182,7 +187,6 @@
       a = Number(a);
       if (!(a > 0) || a > st.balance) return { ok: false, balance: st.balance };
       st.balance -= a;
-      // Never reduce platformFees vault — architect 3% only grows
       saveW();
       g.SNField && g.SNField.paint && g.SNField.paint();
       return { ok: true, balance: st.balance };
@@ -190,23 +194,13 @@
     fees: { platformPct: 3, driverPct: 15 },
     status: function () {
       return [
-        'S (SpaceNets) PRIMARY · index ' + st.networkIndex.toFixed(4),
+        NAME.toUpperCase() + ' PRIMARY · index ' + st.networkIndex.toFixed(4),
         'Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined),
         'Platform fees (your 3%) ' + fmt(st.platformFees || 0) + ' lifetime',
-        '1 S ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
+        '1 strand ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
         'EUR/USD/BTC/ETH = secondary quotes only',
-        'Fees 3% platform → Architect · 15% driver (in S)',
+        'Fees 3% platform → Architect · 15% driver (in strands)',
       ];
     },
-    snapshot: function () {
-      return {
-        balance: st.balance,
-        mined: st.mined,
-        platformFees: st.platformFees || 0,
-        line: fmt(st.balance),
-      };
-    },
   };
-  // Compat alias used by older field hooks
-  g.SNWallet = g.SNCurrency;
 })(typeof window !== 'undefined' ? window : globalThis);
