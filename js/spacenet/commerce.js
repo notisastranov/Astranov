@@ -204,6 +204,18 @@
       console.warn('[SNCommerce] shops', e);
     }
 
+    // 1b) Warm edge crawler when thin
+    if (count < 5 && global.SNMeshOrders && SNMeshOrders.warmSector) {
+      try {
+        await SNMeshOrders.warmSector(pos.lat, pos.lng);
+        const rWarm = await populateMap(pos.lat, pos.lng, { openMap: false });
+        if ((rWarm?.count || 0) > count) {
+          count = rWarm.count;
+          source = source === 'none' ? 'crawler' : source + '+crawler';
+        }
+      } catch (_) {}
+    }
+
     // 2) Edge crawler warm then DB again
     if (count < 3 && global.SNSearch?.edgeVendors) {
       try {

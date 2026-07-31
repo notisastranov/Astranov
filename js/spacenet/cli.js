@@ -990,6 +990,36 @@
         preview(open.length + ' open · market');
         return;
       }
+      if (
+        low === 'mesh' ||
+        low === 'network' ||
+        low === 'network orders' ||
+        low === 'open deliveries' ||
+        low === 'mesh pull'
+      ) {
+        try {
+          if (!global.SNMeshOrders) {
+            log('Mesh loading · try again in a second', 'dim');
+            return;
+          }
+          activity('mesh · network deliveries…', 'delivery', { label: 'Mesh' });
+          const r = await global.SNMeshOrders.pullOpenOrders({ quiet: false });
+          const st = global.SNMeshOrders.status?.() || {};
+          log(
+            'Mesh · network open ' +
+              (st.openNetwork || 0) +
+              ' · pulled ' +
+              (r?.imported || 0) +
+              ' · total near ' +
+              (r?.count || 0),
+            r?.ok ? 'ok' : 'dim'
+          );
+          preview('mesh · ' + (st.openNetwork || 0));
+        } catch (e) {
+          log('Mesh · ' + (e.message || e), 'err');
+        }
+        return;
+      }
       if (low === 'usage' || low === 'usage summary' || low === 'stats') {
         const s = global.SNUsage?.summary?.(14);
         if (!s) {
@@ -1562,8 +1592,9 @@
             );
             return;
           }
-          log('Opening Google · astranov.eu…', 'ok');
+          log('Sign in · ASTRANOV · astranov.eu (Google on this site only)', 'ok');
           await global.SNAuth.signInGoogle();
+
         } catch (e) {
           log(String(e.message || e), 'err');
         }

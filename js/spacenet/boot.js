@@ -161,7 +161,9 @@
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
     '/js/spacenet/market-live.js',
+    '/js/spacenet/mesh-orders.js',
     '/js/spacenet/task-board.js',
+
     '/js/spacenet/super.js',
     '/js/spacenet/live-bridge.js',
     '/js/spacenet/map.js',

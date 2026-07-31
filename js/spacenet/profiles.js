@@ -515,7 +515,7 @@
         });
       }
     } catch (_) {}
-    return {
+    const result = {
       ok: true,
       task: t,
       total,
@@ -526,11 +526,23 @@
       vendorId,
       drop: drop,
       vendor: vendor
-        ? { lat: vendor.lat, lng: vendor.lng, name: vendor.shopName || vendor.name }
+        ? {
+            id: vendor.id,
+            lat: vendor.lat,
+            lng: vendor.lng,
+            name: vendor.shopName || vendor.name,
+          }
         : null,
       marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
       fees: { platformPct: 3, driverPct: 15, vendorPct: Math.round((vendorCut / total) * 100) },
     };
+    // Production mesh: broadcast + best-effort network intake (non-blocking)
+    try {
+      if (global.SNMeshOrders && SNMeshOrders.afterLocalOrder) {
+        void SNMeshOrders.afterLocalOrder(result, { vendor: vendor, drop: drop });
+      }
+    } catch (_) {}
+    return result;
   }
 
   /**
