@@ -74,13 +74,25 @@
     },
     {
       id: 'free',
-      q: 'free ai model grok paid xai openai public fork train',
-      a: 'I am Astranov free mind — local + learn. No paid Grok required. teach FACT to grow me.',
+      q: 'free ai model paid public fork train mind local',
+      a: 'I am Astranov free mind — local + learn. teach FACT to grow me.',
       tags: ['free', 'ai'],
     },
     {
+      id: 'grok',
+      q: 'grok xai elon paid grok is grok here is grok there do you have grok are you grok',
+      a: 'No Grok here. I am Astranov — free local mind on astranov.eu. No xAI/Grok key required.',
+      tags: ['identity', 'ai', 'grok'],
+    },
+    {
+      id: 'openai',
+      q: 'openai chatgpt gpt claude gemini anthropic which model',
+      a: 'I am Astranov free mind — not ChatGPT/Claude/Gemini. Local first; no paid API required for chat.',
+      tags: ['identity', 'ai'],
+    },
+    {
       id: 'architect',
-      q: 'architect owner notis astranov who owns',
+      q: 'architect owner notis who owns brand',
       a: 'I am Astranov AI. Owner operates astranov.eu. S is the currency.',
       tags: ['identity'],
     },
@@ -163,13 +175,69 @@
     } catch (e) {}
   }
 
+  var STOP = {
+    is: 1,
+    are: 1,
+    am: 1,
+    the: 1,
+    a: 1,
+    an: 1,
+    to: 1,
+    of: 1,
+    in: 1,
+    on: 1,
+    for: 1,
+    and: 1,
+    or: 1,
+    do: 1,
+    does: 1,
+    did: 1,
+    you: 1,
+    your: 1,
+    me: 1,
+    my: 1,
+    we: 1,
+    can: 1,
+    could: 1,
+    would: 1,
+    will: 1,
+    what: 1,
+    who: 1,
+    how: 1,
+    when: 1,
+    where: 1,
+    why: 1,
+    there: 1,
+    here: 1,
+    this: 1,
+    that: 1,
+    with: 1,
+    from: 1,
+    have: 1,
+    has: 1,
+    had: 1,
+    be: 1,
+    been: 1,
+    was: 1,
+    were: 1,
+    it: 1,
+    its: 1,
+    if: 1,
+    so: 1,
+    just: 1,
+    please: 1,
+    tell: 1,
+    say: 1,
+    about: 1,
+  };
+
   function tokens(s) {
     return String(s || '')
       .toLowerCase()
       .replace(/[^a-z0-9α-ωάέήίόύώϊϋΐΰ\s]/gi, ' ')
       .split(/\s+/)
       .filter(function (t) {
-        return t.length > 1;
+        return t.length > 1 && !STOP[t];
       });
   }
 
@@ -183,11 +251,20 @@
     for (i = 0; i < queryTok.length; i++) {
       if (set[queryTok[i]]) hit++;
     }
-    // weight + phrase bonus
+    if (!hit) return 0;
+    // Require real content hits — do not reward stopword-only matches
     var score = hit / Math.max(1, queryTok.length);
-    if (hit >= 2) score += 0.15;
-    if (hit >= 3) score += 0.1;
+    if (hit >= 2) score += 0.2;
+    if (hit >= 3) score += 0.12;
     return score;
+  }
+
+  function isJunkAnswer(a) {
+    var t = String(a || '').trim();
+    if (t.length < 8) return true;
+    if (/^(climb|yes|no|ok|idk|lol|test|asdf|null|undefined)$/i.test(t)) return true;
+    if (t.split(/\s+/).length < 3 && t.length < 24) return true;
+    return false;
   }
 
   function allDocs() {
@@ -258,6 +335,38 @@
     }
     var low = msg.toLowerCase();
 
+    // —— Hard intents (never fuzzy-wrong) ——
+    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
+      return {
+        text:
+          'No Grok here. I am Astranov — free local mind on astranov.eu. No xAI/Grok required for chat.',
+        score: 1,
+        via: 'free-mind',
+        source: 'intent-grok',
+      };
+    }
+    if (/\b(chatgpt|openai|gpt-?\d|claude|gemini|anthropic)\b/i.test(low)) {
+      return {
+        text:
+          'I am Astranov free mind — not ChatGPT/Claude/Gemini. Local first; no paid API for chat.',
+        score: 1,
+        via: 'free-mind',
+        source: 'intent-model',
+      };
+    }
+    if (
+      /who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov|τι\s+είσαι|ποιος\s+είσαι/i.test(
+        low
+      )
+    ) {
+      return {
+        text: 'I am Astranov — AI of astranov.eu. Say pizza · shops · first delivery · donate on.',
+        score: 1,
+        via: 'free-mind',
+        source: 'intent-who',
+      };
+    }
+
     // Explicit free-mind status
     if (/^(free\s*ai|free\s*mind|mind\s*status|spacenet\s*free)$/i.test(low)) {
       return {
@@ -280,7 +389,16 @@
       var body = teachM[1].trim();
       var parts = body.split(/\s*=>\s*|\s*\|\s*/);
       if (parts.length >= 2) {
-        teach(parts[0], parts.slice(1).join(' | '));
+        var ans = parts.slice(1).join(' | ');
+        if (isJunkAnswer(ans)) {
+          return {
+            text: 'Teach rejected · answer too short/junk',
+            score: 1,
+            via: 'free-mind',
+            source: 'teach-reject',
+          };
+        }
+        teach(parts[0], ans);
         return {
           text: 'Learned · ' + brief(parts[0], 40),
           score: 1,
@@ -303,18 +421,35 @@
     }
 
     var qTok = tokens(msg);
+    // Too little signal after stopwords → honest fallback, no random seed
+    if (qTok.length < 1) {
+      return {
+        text: 'Astranov · ask clearly: pizza · shops · first delivery · who are you',
+        score: 0.2,
+        via: 'free-mind',
+        source: 'fallback',
+      };
+    }
+
     var docs = allDocs();
     var best = null;
     var bestScore = 0;
     var i;
     for (i = 0; i < docs.length; i++) {
       var d = docs[i];
-      var sc = scoreMatch(qTok, d.q + ' ' + (d.tags || []).join(' ') + ' ' + d.a) * (d.strength || 1);
-      // boost exact tag words in query
+      // Match question + tags ONLY — never answer body (avoids garbage like "climb")
+      var sc =
+        scoreMatch(qTok, d.q + ' ' + (d.tags || []).join(' ')) * (d.strength || 1);
       if (d.tags) {
         d.tags.forEach(function (tg) {
-          if (low.indexOf(tg) >= 0) sc += 0.12;
+          if (low.indexOf(String(tg).toLowerCase()) >= 0) sc += 0.18;
         });
+      }
+      // Prefer seeds over junk learned when close
+      if (d.source === 'seed') sc += 0.02;
+      if (d.source === 'learned') {
+        if (isJunkAnswer(d.a)) continue;
+        sc *= 0.85;
       }
       if (sc > bestScore) {
         bestScore = sc;
@@ -322,18 +457,20 @@
       }
     }
 
-    // Strengthen learned hits
-    if (best && best.source === 'learned' && bestScore >= 0.35) {
-      try {
-        var li = parseInt(String(best.id).replace('learn_', ''), 10);
-        if (learned[li]) {
-          learned[li].hits = (learned[li].hits || 0) + 1;
-          save();
-        }
-      } catch (e3) {}
-    }
+    // Stricter accept bar — short questions need a real hit
+    var need = qTok.length <= 2 ? 0.55 : 0.42;
+    if (best && best.source === 'learned') need = Math.max(need, 0.55);
 
-    if (best && bestScore >= 0.28) {
+    if (best && bestScore >= need && !isJunkAnswer(best.a)) {
+      if (best.source === 'learned') {
+        try {
+          var li = parseInt(String(best.id).replace('learn_', ''), 10);
+          if (learned[li]) {
+            learned[li].hits = (learned[li].hits || 0) + 1;
+            save();
+          }
+        } catch (e3) {}
+      }
       stats.answers = (stats.answers || 0) + 1;
       save();
       try {
@@ -341,7 +478,7 @@
           SNUsage.track('free_mind_hit', { id: best.id, score: Math.round(bestScore * 100) });
       } catch (e4) {}
       return {
-        text: brief(best.a, 100),
+        text: brief(best.a, 110),
         score: bestScore,
         via: 'free-mind',
         source: best.source,
@@ -349,15 +486,15 @@
       };
     }
 
-    // Soft free defaults (never empty, never paid)
+    // Soft free defaults (never empty, never paid, never random junk)
     stats.misses = (stats.misses || 0) + 1;
     save();
     var fallback = opts.localReply
       ? brief(opts.localReply, 88)
-      : 'Astranov · pizza · shops · next · fly · locate · teach to grow me';
+      : 'Astranov · not sure · try: who are you · pizza · shops · first delivery · donate on';
     return {
       text: fallback,
-      score: opts.localReply ? 0.5 : 0.25,
+      score: opts.localReply ? 0.45 : 0.22,
       via: 'free-mind',
       source: 'fallback',
     };

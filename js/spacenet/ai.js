@@ -853,6 +853,23 @@
       return { did: did.concat(al.did || []), reply: al.reply, skipBrand: true };
     }
 
+    // —— Direct identity (never free-mind fuzzy junk) ——
+    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
+      return {
+        did: did.concat(['identity:grok']),
+        reply:
+          'No Grok here. I am Astranov — free local mind. No xAI/Grok for chat.',
+        skipBrand: false,
+      };
+    }
+    if (/who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov/i.test(low)) {
+      return {
+        did: did.concat(['identity:who']),
+        reply: 'I am Astranov — AI of astranov.eu. Pizza · shops · first delivery · donate on.',
+        skipBrand: false,
+      };
+    }
+
     // —— App control FIRST (basemap dark/bright, overlays, layers, CLI power) ——
     // Before city/map heuristics so "dark map" is not mistaken for street map only
     try {
@@ -1252,7 +1269,8 @@
             did: local.did,
             needsEdge: !!local.needsEdge,
           });
-          if (freeHit && freeHit.text && freeHit.score >= 0.28) {
+          // Raise bar: weak fuzzy matches produced garbage (e.g. "climb")
+          if (freeHit && freeHit.text && freeHit.score >= 0.42) {
             text = freeHit.text;
             try {
               if (SNFreeMind.learnInteraction)
