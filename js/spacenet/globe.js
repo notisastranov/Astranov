@@ -67,7 +67,7 @@
     flyGen: 0,
     velX: 0,
     velY: 0,
-    damp: 0.88,
+    damp: 0.92,
     lastUserControl: 0,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
@@ -1180,7 +1180,7 @@
     G.lastUserControl = Date.now();
   }
 
-  var TILT_MAX = 1.15; // ~66° — keeps poles from gimbal into clock-spin
+  var TILT_MAX = 1.05; // ~60° — stable poles, less shake near extreme tilt
 
   /** Keep dual axes clean: tilt.X only · spin.Y only · never Z (polar axis law) */
   function bakePivotEuler() {
@@ -1190,10 +1190,13 @@
       var y = G.spin.rotation.y;
       if (x > TILT_MAX) x = TILT_MAX;
       if (x < -TILT_MAX) x = -TILT_MAX;
-      G.tilt.rotation.set(x, 0, 0);
-      G.spin.rotation.set(0, y, 0);
-      G.tilt.quaternion.setFromEuler(G.tilt.rotation);
-      G.spin.quaternion.setFromEuler(G.spin.rotation);
+      // Direct euler only — no quaternion rewrite (was causing micro-jumps)
+      G.tilt.rotation.x = x;
+      G.tilt.rotation.y = 0;
+      G.tilt.rotation.z = 0;
+      G.spin.rotation.x = 0;
+      G.spin.rotation.y = y;
+      G.spin.rotation.z = 0;
     } catch (_) {}
   }
 
@@ -1589,11 +1592,25 @@
       lastT = 0,
       downX = 0,
       downY = 0,
+      downAt = 0,
       moved = false,
+      dragActive = false,
       ptrId = null,
       holdTimer = null,
       holdRepeat = null,
-      holdFired = false;
+      holdFired = false,
+      // EMA of pointer velocity (screen px/ms) for soft fling only
+      smVx = 0,
+      smVy = 0,
+      // Accumulated path length to distinguish tap vs rotate
+      pathLen = 0;
+
+    // Sensitivity: lower + distance-scaled so near-surface rotates slower (less shake)
+    function rotScale() {
+      var z = G.camera && G.camera.position ? G.camera.position.z : 5;
+      // closer → smaller spin per pixel
+      return Math.max(0.0014, Math.min(0.0032, 0.0022 * (z / 4.5)));
+    }
 
     function clearHold() {
       if (holdTimer) {
@@ -1611,9 +1628,10 @@
       G.lastUserControl = Date.now();
       G.velX = 0;
       G.velY = 0;
+      smVx = 0;
+      smVy = 0;
       G.flyGen = (G.flyGen || 0) + 1;
       G.flying = false;
-      // Street map open → close first
       if (global.SNMap && SNMap.active) {
         try {
           SNMap.close();
@@ -1631,33 +1649,43 @@
 
     function onDown(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
+      // Ignore secondary buttons
+      if (e.button != null && e.button !== 0) return;
       down = true;
       moved = false;
+      dragActive = false;
       holdFired = false;
+      pathLen = 0;
+      smVx = 0;
+      smVy = 0;
       clearHold();
-      // User takes control — kill fly + inertia so sphere does not fight the hand
-      stopMotion();
-      bakePivotEuler();
-      G.dragging = true;
+      // Kill fly + inertia so sphere never fights the hand
       G.velX = 0;
       G.velY = 0;
+      G.flyGen = (G.flyGen || 0) + 1;
+      G.flying = false;
+      G.zoomAnim = false; // stop mid-zoom jump during grab
+      G.dragging = true;
+      G.lastAct = Date.now();
+      G.lastUserControl = Date.now();
       lastT = performance.now();
+      downAt = lastT;
       var t = e.touches ? e.touches[0] : e;
       lx = t.clientX;
       ly = t.clientY;
       downX = t.clientX;
       downY = t.clientY;
-      ptrId = e.pointerId;
+      ptrId = e.pointerId != null ? e.pointerId : 'm';
       try {
-        canvas.setPointerCapture(e.pointerId);
+        if (e.pointerId != null) canvas.setPointerCapture(e.pointerId);
       } catch (_) {}
 
-      // Hold → continuous zoom out
+      // Hold-zoom only if truly still (not rotating) — longer delay
       holdTimer = setTimeout(function () {
         holdTimer = null;
-        if (!down || moved) return;
+        if (!down || moved || dragActive) return;
         holdFired = true;
-        G.dragging = false; // hold is zoom, not drag
+        G.dragging = false;
         doZoomOutStep();
         holdRepeat = setInterval(function () {
           if (!down || moved) {
@@ -1665,101 +1693,157 @@
             return;
           }
           doZoomOutStep();
-        }, 420);
-      }, 380);
+        }, 480);
+      }, 520);
     }
 
     function onMove(e) {
       if (!down) return;
-      G.lastAct = Date.now();
-      G.lastUserControl = Date.now();
+      // Only track the pointer we captured
+      if (ptrId != null && e.pointerId != null && e.pointerId !== ptrId) return;
       var t = e.touches ? e.touches[0] : e;
       var now = performance.now();
-      var dt = Math.max(12, now - lastT);
+      var dt = Math.max(8, Math.min(48, now - lastT)); // clamp dt → no velocity spikes
       lastT = now;
       var dx = t.clientX - lx;
       var dy = t.clientY - ly;
       lx = t.clientX;
       ly = t.clientY;
-      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 10) {
-        if (!moved) {
-          moved = true;
-          clearHold(); // drag cancels hold-zoom
+      pathLen += Math.abs(dx) + Math.abs(dy);
+
+      var distFromDown = Math.hypot(t.clientX - downX, t.clientY - downY);
+      // Deadzone: ignore micro jitter (stops shake on click)
+      if (!dragActive) {
+        if (distFromDown < 8 && pathLen < 12) {
+          if (e.cancelable) e.preventDefault();
+          return;
         }
+        dragActive = true;
+        moved = true;
+        clearHold();
+        // Re-seed last point so first real frame has no jump
+        lx = t.clientX;
+        ly = t.clientY;
+        if (e.cancelable) e.preventDefault();
+        return;
       }
-      // If hold-zoom already started, don't spin
+
+      G.lastAct = Date.now();
+      G.lastUserControl = Date.now();
+
       if (holdFired) {
         if (e.cancelable) e.preventDefault();
         return;
       }
-      // Polar axis: horizontal → spin Y · vertical → tilt X · never Z
+
+      // Soft low-pass on deltas (anti-shake)
+      var sx = dx * 0.72;
+      var sy = dy * 0.72;
+      var k = rotScale();
+
       if (G.spin && G.tilt) {
-        G.spin.rotation.y += dx * 0.0038;
-        G.tilt.rotation.x = Math.max(
-          -TILT_MAX,
-          Math.min(TILT_MAX, G.tilt.rotation.x + dy * 0.0032)
-        );
+        G.spin.rotation.y += sx * k;
+        var nx = G.tilt.rotation.x + sy * k * 0.85;
+        if (nx > TILT_MAX) nx = TILT_MAX;
+        if (nx < -TILT_MAX) nx = -TILT_MAX;
+        G.tilt.rotation.x = nx;
         G.spin.rotation.x = 0;
         G.spin.rotation.z = 0;
         G.tilt.rotation.y = 0;
         G.tilt.rotation.z = 0;
       }
-      var sx = dx * (16 / dt) * 0.0028;
-      var sy = dy * (16 / dt) * 0.0022;
-      G.velX = Math.max(-0.035, Math.min(0.035, sx));
-      G.velY = Math.max(-0.025, Math.min(0.025, sy));
+
+      // EMA screen velocity for optional fling (rad/frame units later)
+      var invDt = 1 / dt;
+      smVx = smVx * 0.65 + dx * invDt * 0.35;
+      smVy = smVy * 0.65 + dy * invDt * 0.35;
+
       if (e.cancelable) e.preventDefault();
     }
 
     function onUp(e) {
       if (!down) return;
+      if (ptrId != null && e.pointerId != null && e.pointerId !== ptrId && e.type !== 'pointercancel')
+        return;
       down = false;
       G.dragging = false;
       G.lastAct = Date.now();
       G.lastUserControl = Date.now();
-      G.velX = Math.max(-0.028, Math.min(0.028, G.velX * 0.55));
-      G.velY = Math.max(-0.02, Math.min(0.02, G.velY * 0.55));
-      if (Math.abs(G.velX) < 0.002) G.velX = 0;
-      if (Math.abs(G.velY) < 0.002) G.velY = 0;
-      bakePivotEuler();
-      try {
-        if (ptrId != null) canvas.releasePointerCapture(ptrId);
-      } catch (_) {}
-      var t = e.changedTouches ? e.changedTouches[0] : e;
       var wasHold = holdFired;
+      var wasDrag = dragActive || moved;
       clearHold();
       holdFired = false;
+      try {
+        if (e.pointerId != null) canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
 
-      // Short single tap (not drag, not hold): zoom IN / dive deeper
-      if (!moved && !wasHold && t) {
-        var cx = t.clientX;
-        var cy = t.clientY;
-        var ll = pickLatLng(cx, cy) || focusPos();
-        if (ll && ll.lat != null) {
-          G.velX = 0;
-          G.velY = 0;
-          diveInAt(ll.lat, ll.lng);
-        } else {
-          var cur = currentTier();
-          var idx = ladderIndex(cur);
-          if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
+      var holdMs = performance.now() - downAt;
+      // Soft fling only if user flicked (fast + was dragging)
+      var flickSpeed = Math.hypot(smVx, smVy);
+      if (wasDrag && flickSpeed > 0.45 && holdMs < 900) {
+        var k = rotScale();
+        // Convert px/ms → rad/frame-ish, heavily damped
+        G.velX = Math.max(-0.018, Math.min(0.018, smVx * k * 9));
+        G.velY = Math.max(-0.012, Math.min(0.012, smVy * k * 8));
+      } else {
+        // Stop where you left it — no bounce / shake after slow rotate
+        G.velX = 0;
+        G.velY = 0;
+      }
+      smVx = 0;
+      smVy = 0;
+      bakePivotEuler();
+
+      // Single tap zoom-in only: short, still, not hold
+      if (!wasDrag && !wasHold && holdMs < 320) {
+        var t = e.changedTouches ? e.changedTouches[0] : e;
+        if (t) {
+          var cx = t.clientX;
+          var cy = t.clientY;
+          var ll = pickLatLng(cx, cy) || focusPos();
+          if (ll && ll.lat != null) {
+            G.velX = 0;
+            G.velY = 0;
+            diveInAt(ll.lat, ll.lng);
+          } else {
+            var cur = currentTier();
+            var idx = ladderIndex(cur);
+            if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
+          }
         }
       }
       ptrId = null;
+      dragActive = false;
+      moved = false;
     }
 
     canvas.addEventListener('pointerdown', onDown);
     canvas.addEventListener('pointermove', onMove, { passive: false });
     canvas.addEventListener('pointerup', onUp);
     canvas.addEventListener('pointercancel', onUp);
-    window.addEventListener('pointerup', onUp);
+    // Do NOT also bind window pointerup — double-fire caused jumps
+    canvas.addEventListener(
+      'lostpointercapture',
+      function () {
+        if (down) {
+          down = false;
+          G.dragging = false;
+          clearHold();
+          G.velX = 0;
+          G.velY = 0;
+        }
+      },
+      { passive: true }
+    );
 
     canvas.addEventListener(
       'wheel',
       function (e) {
         e.preventDefault();
         G.lastAct = Date.now();
-        // Discrete SPACENET steps only — never free continuous Z
+        G.lastUserControl = Date.now();
+        G.velX = 0;
+        G.velY = 0;
         var under = pickLatLng(e.clientX, e.clientY);
         if (under) setFocus(under.lat, under.lng);
 
@@ -1789,11 +1873,17 @@
       { passive: false }
     );
 
-    // Desktop: still allow dblclick as zoom-out shortcut
     canvas.addEventListener('dblclick', function (e) {
       e.preventDefault();
       doZoomOutStep();
     });
+
+    // CSS: prevent browser pan/zoom fighting our drag
+    try {
+      canvas.style.touchAction = 'none';
+      canvas.style.userSelect = 'none';
+      canvas.style.webkitUserSelect = 'none';
+    } catch (_) {}
   }
 
   /**
@@ -2047,7 +2137,7 @@
   function loop() {
     requestAnimationFrame(loop);
     if (!G.ready || document.hidden) return;
-    // City map open: freeze Earth almost completely (was sticky dual-render)
+    // City map open: freeze Earth almost completely
     if (global.SNMap && SNMap.active) {
       if (++G.frame % 90 === 0) {
         try {
@@ -2057,24 +2147,27 @@
       return;
     }
     G.frame++;
-    var idle = Date.now() - G.lastAct > 2200;
+    var moving =
+      G.dragging ||
+      G.zoomAnim ||
+      G.flying ||
+      Math.abs(G.velX) > 0.00005 ||
+      Math.abs(G.velY) > 0.00005;
+    var idle = Date.now() - G.lastAct > 2400;
     var idleSkip = (global.SNPerf && SNPerf.idleSkip) || (G._lite ? 4 : 3);
-    if (!G.dragging && !G.zoomAnim && !G.flying) {
-      var skip = idle ? idleSkip : 1;
-      // Cap ~30fps when not interacting (smooth, not sticky 60)
-      if (!idle && G.frame % 2 === 0 && !(global.SNPerf && SNPerf.lite)) {
-        /* full rate only every other frame when calm */
-      }
+    // Never skip frames while user drags or inertia runs (skip was causing jump/shake)
+    if (!moving) {
+      var skip = idle ? idleSkip : 2;
       if (G.frame % skip !== 0) return;
     }
-    var userCool = Date.now() - (G.lastUserControl || 0) < 450;
+    var userCool = Date.now() - (G.lastUserControl || 0) < 650;
     if (
       !G.dragging &&
       !G.flying &&
       !userCool &&
       G.spin &&
       G.tilt &&
-      (Math.abs(G.velX) > 0.00008 || Math.abs(G.velY) > 0.00008)
+      (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)
     ) {
       G.spin.rotation.y += G.velX;
       G.tilt.rotation.x = Math.max(
@@ -2087,26 +2180,24 @@
       G.tilt.rotation.z = 0;
       G.velX *= G.damp;
       G.velY *= G.damp;
-      if (Math.abs(G.velX) < 0.00008) G.velX = 0;
-      if (Math.abs(G.velY) < 0.00008) G.velY = 0;
+      if (Math.abs(G.velX) < 0.00005) G.velX = 0;
+      if (Math.abs(G.velY) < 0.00005) G.velY = 0;
     } else if (
       !G.dragging &&
       !G.flying &&
       !userCool &&
       idle &&
       G.camera.position.z > 4.0 &&
-      G.spin
+      G.spin &&
+      Math.abs(G.velX) < 0.00005
     ) {
-      // Idle spin around true polar axis (Y) only — lighter when far
-      G.spin.rotation.y += G._lite ? 0.00032 : 0.00045;
+      G.spin.rotation.y += G._lite ? 0.00028 : 0.0004;
     }
     if (G.clouds && !G._lite) G.clouds.rotation.y += 0.00035;
-    // ISS halo soft pulse when space layer on
     if (G.issHalo && G.issHalo.visible) {
       var s = 1 + 0.1 * Math.sin(Date.now() * 0.0035);
       G.issHalo.scale.set(s, s, s);
     }
-    // Day/night + soft HUD less often
     var hudEvery = G._lite ? 8 : 5;
     if (G.frame % hudEvery === 0) {
       updateDayNight();
