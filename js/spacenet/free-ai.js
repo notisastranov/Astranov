@@ -127,9 +127,15 @@
     },
     {
       id: 'first',
-      q: 'first delivery first loop list shop',
-      a: 'first delivery · or list shop → menu add → order me → drive on → deliver me',
+      q: 'first delivery first loop list shop first order complete order',
+      a: 'Say first delivery — I run shop → menu → order → drive → you',
       tags: ['market'],
+    },
+    {
+      id: 'donate_mesh',
+      q: 'donate mesh seti mine spare cpu resources earn s network',
+      a: 'donate on · SETI-style mesh · spare CPU earns S while idle',
+      tags: ['mine'],
     },
     {
       id: 'handoff',

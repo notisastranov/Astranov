@@ -210,54 +210,81 @@
    */
   async function runFirstLoop(opts) {
     opts = opts || {};
-    var shop = opts.shop || W.shopName || 'My SpaceNet Shop';
+    var shop = opts.shop || W.shopName || 'My Astranov Shop';
     var item = opts.item || 'House special';
     var price = opts.price != null ? opts.price : 5;
-    // Kill runaway voice + close any tile covering CLI
     try {
       global.speechSynthesis?.cancel?.();
       global.SNCli?.stopHandsfree?.('first-loop');
-      global.SNTile?.close?.();
+      global.SNTile?.minimize?.();
     } catch (_) {}
-    say('First loop · listing your shop at current place…', 'dim');
-    // Prefer GPS focus
-    try {
-      if (global.SNGlobe && SNGlobe.locate && !opts.skipLocate) {
-        await SNGlobe.locate();
-      }
-    } catch (_) {}
+    say('First order · listing your shop…', 'dim');
+    // Fast path: never block on GPS — use focus / last pos (2s max if locate asked)
+    if (!opts.skipLocate && global.SNGlobe && SNGlobe.locate) {
+      try {
+        await Promise.race([
+          SNGlobe.locate(),
+          new Promise(function (r) {
+            setTimeout(r, 1800);
+          }),
+        ]);
+      } catch (_) {}
+    }
     var listed = listShop(shop, opts.kind || 'cafe');
-    if (!listed.ok) return listed;
-    say('Shop listed: ' + listed.shop + ' · adding menu in S…', 'ok');
+    if (!listed.ok) {
+      say(listed.error || 'list shop failed', 'err');
+      return listed;
+    }
+    try {
+      if (global.SNTile && SNTile.offer) SNTile.offer(listed.profile || global.SNProfiles.me());
+    } catch (_) {}
+    say('Shop live: ' + listed.shop + ' · menu…', 'ok');
     var menu = addMenuItem(item, price);
-    if (!menu.ok) return menu;
+    if (!menu.ok) {
+      say(menu.error || 'menu failed', 'err');
+      return menu;
+    }
     say(
-      'Menu: ' +
+      'Menu · ' +
         item +
         ' · ' +
         (global.SNCurrency ? SNCurrency.format(price) : price + ' S') +
-        ' · ordering as client…',
+        ' · ordering as you…',
       'ok'
     );
     var ord = orderFromMyShop(1);
-    if (!ord.ok) return ord;
+    if (!ord.ok) {
+      say(ord.error || 'order failed', 'err');
+      return ord;
+    }
     say(
-      'Order placed · ' +
+      'Order · ' +
         (global.SNCurrency ? SNCurrency.format(ord.total) : ord.total + ' S') +
-        ' · you go ONLINE as driver…',
+        ' · driver online…',
       'ok'
     );
     goDriverOnline(opts.vehicle || 'Scooter');
-    say('Claiming + completing delivery to you…', 'dim');
+    say('Claim + deliver to you…', 'dim');
     var del = claimAndComplete();
     if (del.ok) {
       say(
-        'First delivery DONE · vendor → order → driver → you. Marketplace path is live. Type usage for data.',
+        'FIRST ORDER DONE · shop → menu → pay S → drive → you. Tap tile in feed · donate on for mesh S.',
         'ok'
       );
       track('first_loop_ok', { shop: shop, item: item, total: ord.total });
+      try {
+        if (ord.task && global.SNTaskBoard && SNTaskBoard.enrich && global.SNTile) {
+          var en = SNTaskBoard.enrich(ord.task);
+          if (en) SNTile.offer(en);
+        } else if (global.SNTile && SNTile.openMe) {
+          SNTile.openMe('cart');
+        }
+      } catch (_) {}
+      try {
+        if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstDeliveryDone', true);
+      } catch (_) {}
     } else {
-      say('Delivery step: ' + (del.error || 'claim failed') + ' · try: claim · complete', 'err');
+      say('Delivery: ' + (del.error || 'claim failed') + ' · try claim · complete', 'err');
       track('first_loop_fail', { error: del.error });
     }
     return {
@@ -294,7 +321,7 @@
     return {
       ok: true,
       reply:
-        'First SpaceNet loop — real you only. Step 1: shop name? Reply like: list shop Rhodes Grill  (or first delivery to auto-run).',
+        'First order — you only. Step 1: list shop My Cafe  (or say first delivery to auto-run all steps).',
     };
   }
 

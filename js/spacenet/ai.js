@@ -616,6 +616,50 @@
       return { handled: true, did: did, reply: 'Pilot off · your camera hold.' };
     }
 
+    // —— First order scenario (full marketplace loop) ——
+    if (
+      /first\s*(delivery|loop|order)|complete\s*(the\s*)?(first\s*)?(order|delivery)|run\s*first|πρώτη\s*παράδοση/i.test(
+        low
+      ) ||
+      low === 'first' ||
+      low === 'coach'
+    ) {
+      did.push('first_loop');
+      return {
+        handled: true,
+        did: did,
+        reply: 'Running first order · shop → menu → pay → drive → you…',
+        runFirstLoop: true,
+      };
+    }
+
+    // —— Mesh donate / mine ——
+    if (/donate\s*on|mesh\s*on|seti|donate\s*compute|share\s*(cpu|resources)/i.test(low)) {
+      try {
+        if (global.SNResources && SNResources.setDonate) SNResources.setDonate(true);
+        did.push('donate_on');
+        return {
+          handled: true,
+          did: did,
+          reply: 'Mesh donate ON · spare device capacity earns S.',
+        };
+      } catch (e) {}
+    }
+    if (/donate\s*off|mesh\s*off/i.test(low)) {
+      try {
+        if (global.SNResources && SNResources.setDonate) SNResources.setDonate(false);
+        did.push('donate_off');
+        return { handled: true, did: did, reply: 'Mesh donate off.' };
+      } catch (e) {}
+    }
+    if (/^mine\s*on|start\s*mining|mining\s*on/i.test(low)) {
+      try {
+        if (global.SNResources && SNResources.setMining) SNResources.setMining(true);
+        did.push('mine_on');
+        return { handled: true, did: did, reply: 'Mining on · accept terms if asked.' };
+      } catch (e) {}
+    }
+
     // —— Tile me / menu ——
     if (/^(me|my tile|open me|my profile)$/i.test(low)) {
       try {
@@ -817,6 +861,8 @@
           did: did.concat(appCtrl.did || []),
           reply: appCtrl.reply || 'Done.',
           skipBrand: !!appCtrl.skipBrand,
+          runFirstLoop: !!appCtrl.runFirstLoop,
+          runFoodIntent: appCtrl.runFoodIntent || null,
         };
       }
     } catch (eCtrl) {}
@@ -1179,6 +1225,7 @@
     }
 
     // Local app control already executed (basemap, layers, CLI…) — keep that reply
+    // Do not treat first_loop / food as "acted" until async runners finish below
     var localActed =
       local &&
       local.did &&

@@ -34,11 +34,34 @@
     log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : '') + (cmd.text ? ' ' + cmd.text : ''), 'cmd');
     try {
       if (op === 'sim_task' || op === 'sim' || op === 'train') {
-        log('Bridge · sim/train removed · use task_fit / cli', 'dim');
+        log('Bridge · sim/train removed · use first_loop / cli', 'dim');
+      } else if (op === 'first_loop' || op === 'first_delivery' || op === 'first_order') {
+        if (global.SNMarket && SNMarket.runFirstLoop) {
+          void SNMarket.runFirstLoop({ skipLocate: !!cmd.skipLocate });
+        } else log('Bridge · market not loaded yet', 'err');
+      } else if (op === 'donate_on' && global.SNResources) {
+        SNResources.setDonate(true);
+      } else if (op === 'donate_off' && global.SNResources) {
+        SNResources.setDonate(false);
+      } else if (op === 'mine_on' && global.SNResources) {
+        SNResources.setMining(true);
+      } else if (op === 'mine_off' && global.SNResources) {
+        SNResources.setMining(false);
+      } else if (op === 'status' || op === 'monitor') {
+        var st = {
+          build: (document.querySelector('meta[name="astranov-build"]') || {}).content || '',
+          mine: global.SNResources && SNResources.report && SNResources.report(),
+          market: global.SNMarket && SNMarket.coachStatus && SNMarket.coachStatus(),
+          shellMs: performance.now(),
+        };
+        log('Monitor · ' + JSON.stringify(st).slice(0, 220), 'dim');
+        console.info('[Astranov monitor]', st);
       } else if (op === 'task_fit' && global.SNTaskBoard && SNTaskBoard.listCompatibleOnCli) {
         SNTaskBoard.listCompatibleOnCli();
       } else if (op === 'cli' && global.SNCli && SNCli.run) {
         void SNCli.run(String(cmd.text || cmd.cmd || ''));
+      } else if (op === 'ai' && global.SNAi && SNAi.ask) {
+        void SNAi.ask(String(cmd.text || cmd.msg || ''));
       } else if (op === 'credit_fee' && global.SNCurrency && SNCurrency.notePlatformFee) {
         SNCurrency.notePlatformFee(Number(cmd.amount) || 0.01, { why: 'bridge' });
       } else if (op === 'take_fee' && global.SNCurrency && SNCurrency.takePlatformFeeFrom) {

@@ -901,11 +901,12 @@
         log('Mining off', 'dim');
         return;
       }
-      if (low === 'donate on') {
+      if (low === 'donate on' || low === 'mesh on' || low === 'seti on') {
         global.SNResources?.setDonate?.(true);
+        log('Mesh donate ON · SETI-style spare capacity → S', 'ok');
         return;
       }
-      if (low === 'donate off') {
+      if (low === 'donate off' || low === 'mesh off') {
         global.SNResources?.setDonate?.(false);
         return;
       }
@@ -2108,8 +2109,8 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     feedBox();
-    log('Feed ready · scroll history · / or ? to search · tiles join this stream', 'dim');
-    preview('Talk · scroll feed · /search');
+    log('Feed ready · scroll · /search · first delivery · donate on', 'dim');
+    preview('Talk · first delivery · donate on');
     warmVoices();
     // If AI already loaded (race), ensure presence
     setTimeout(() => {

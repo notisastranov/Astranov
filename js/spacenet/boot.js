@@ -1,19 +1,19 @@
-/* SpaceNet boot — fail-soft, never hang (SPECS P0) */
+/* Astranov boot — FAST shell first, globe + extras after paint (never hang) */
 (function () {
   'use strict';
   var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '1';
   var bootEl = document.getElementById('boot');
   var t0 = performance.now();
   var finished = false;
+  var shellReady = false;
 
   function v(src) {
     if (/^https?:\/\//i.test(src)) return src;
     return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
   }
 
-  /** Native script tag — reliable with CF proxy; no HTML-as-JS trap from fetch inject */
   function load(src, timeoutMs) {
-    timeoutMs = timeoutMs || 12000;
+    timeoutMs = timeoutMs || 10000;
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
       s.async = false;
@@ -45,11 +45,29 @@
 
   function loadSoft(src, timeoutMs) {
     return load(src, timeoutMs).catch(function (e) {
-      console.warn('[SpaceNet] soft skip', src, e && e.message);
+      console.warn('[Astranov] soft skip', src, e && e.message);
     });
   }
 
-  function done(msg) {
+  function loadParallel(list, timeoutMs) {
+    return Promise.all(
+      list.map(function (src) {
+        return loadSoft(src, timeoutMs || 10000);
+      })
+    );
+  }
+
+  function seq(list, timeoutMs) {
+    var i = 0;
+    function next() {
+      if (i >= list.length) return Promise.resolve();
+      var src = list[i++];
+      return load(src, timeoutMs || 9000).then(next);
+    }
+    return next();
+  }
+
+  function hideBoot(msg) {
     if (finished) return;
     finished = true;
     if (bootEl) {
@@ -59,19 +77,18 @@
         try {
           bootEl.remove();
         } catch (e) {}
-      }, 350);
+      }, 280);
     }
-    if (msg) console.info('[SpaceNet]', msg);
+    if (msg) console.info('[Astranov]', msg);
   }
 
   function fail(msg) {
     if (finished) return;
     finished = true;
-    // Splash stays brand-only; details go to console (SPECS: no unauthorized boot prose)
     if (bootEl) {
       bootEl.innerHTML =
         '<div class="boot-card">' +
-        '<span class="boot-title">ASTRANOV SPACENET</span>' +
+        '<span class="boot-title">ASTRANOV</span>' +
         '<svg class="boot-loader" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="14"/></svg>' +
         '<button type="button" class="boot-retry" id="sn-boot-retry">Retry</button>' +
         '</div>';
@@ -81,204 +98,214 @@
           location.reload();
         };
     }
-    console.error('[SpaceNet] boot fail', msg);
+    console.error('[Astranov] boot fail', msg);
   }
 
-  // Absolute ceiling — never stuck on Loading…
+  // Hard ceiling — interactive shell must appear
   setTimeout(function () {
     if (!finished) {
-      console.error('[SpaceNet] boot watchdog 18s');
+      console.error('[Astranov] boot watchdog 10s');
       try {
         if (window.SNCli && SNCli.init) SNCli.init();
       } catch (e) {}
-      done('watchdog · partial boot');
+      hideBoot('watchdog · partial');
       try {
-        if (window.SNCli && SNCli.log) SNCli.log('Boot slow · partial UI · type help', 'err');
+        if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err');
       } catch (e2) {}
     }
-  }, 18000);
+  }, 10000);
 
   try {
     if (matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0) window._snLite = true;
   } catch (e) {}
 
-  // Critical path (minimal). search/ai/auth lazy.
-  var chain = [
+  /**
+   * WAVE 1 — shell: CLI + chrome + AI free mind (no THREE, no map, no market bulk)
+   * Goal: feed usable in ~1–2s on good network.
+   */
+  var WAVE_SHELL = [
     '/js/spacenet/config.js',
-    '/js/spacenet/brain.js',
-    '/js/spacenet/spacenet-grid.js', // SPACENET pilot fly grid (GLOBAL→NATIONAL→REGIONAL→CITY)
-    '/js/spacenet/globe.js',
-    '/js/spacenet/cosmos.js', // multi-body go + crawl
-    '/js/spacenet/tasks.js',
-    '/js/spacenet/profiles.js',
     '/js/spacenet/currency.js',
+    '/js/spacenet/profiles.js',
+    '/js/spacenet/tasks.js',
     '/js/spacenet/field.js',
-    '/js/spacenet/home.js', // Astranov SpaceNet menu · roles · account
-    '/js/spacenet/commerce.js',
-    '/js/spacenet/spatial.js',
-    '/js/spacenet/usage.js', // usage + handoff → midnight Greek ship
-    '/js/spacenet/market.js', // first vendor → delivery coach
-    '/js/spacenet/market-live.js', // Rhodes delivery polygons · ETA · CLI I/O
-    '/js/spacenet/free-ai.js', // SpaceNet Free mind — own AI, no paid xAI required
-    '/js/spacenet/task-board.js', // real task tiles · multi-route map · task fit
-    '/js/spacenet/super.js', // Architect fleet + TX on CLI
-    '/js/spacenet/live-bridge.js', // runtime control without redeploy
+    '/js/spacenet/home.js',
+    '/js/spacenet/free-ai.js',
     '/js/spacenet/cli.js',
-    '/js/spacenet/ai.js', // SpaceNet AI — free mind first
+    '/js/spacenet/ai.js',
     '/js/spacenet/ui.js',
     '/js/spacenet/tile.js',
-    '/js/spacenet/map.js',
-    '/js/spacenet/google-earth.js', // Google Earth imaging + elevation/topo (API key)
-    '/js/spacenet/topo.js', // Place: Pin · Targets · polygon + topo measure
   ];
 
-  function loadThree() {
-    return load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 15000).catch(function () {
-      return load('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', 15000);
-    });
-  }
+  /**
+   * WAVE 2 — globe imaging (THREE is the heavy cost)
+   */
+  var WAVE_GLOBE = [
+    '/js/spacenet/spacenet-grid.js',
+    '/js/spacenet/globe.js',
+    '/js/spacenet/cosmos.js',
+  ];
 
-  function runChain(i) {
-    if (i >= chain.length) return Promise.resolve();
-    return load(chain[i], 10000).then(function () {
-      return runChain(i + 1);
-    });
-  }
+  /**
+   * WAVE 3 — marketplace + map + soft (parallel soft)
+   */
+  var WAVE_APP = [
+    '/js/spacenet/brain.js',
+    '/js/spacenet/commerce.js',
+    '/js/spacenet/spatial.js',
+    '/js/spacenet/usage.js',
+    '/js/spacenet/market.js',
+    '/js/spacenet/market-live.js',
+    '/js/spacenet/task-board.js',
+    '/js/spacenet/super.js',
+    '/js/spacenet/live-bridge.js',
+    '/js/spacenet/map.js',
+    '/js/spacenet/google-earth.js',
+    '/js/spacenet/topo.js',
+  ];
 
-  load('/js/spacenet/config.js', 8000)
-    .then(function () {
-      return load('/js/spacenet/brain.js', 8000);
-    })
-    .then(function () {
-      return loadThree();
-    })
-    .then(function () {
-      // after THREE: rest of chain without config/brain again
-      var rest = chain.slice(2);
-      function next(j) {
-        if (j >= rest.length) return Promise.resolve();
-        return load(rest[j], 10000).then(function () {
-          return next(j + 1);
-        });
-      }
-      return next(0);
-    })
-    .then(function () {
-      var globeOk = false;
+  function initShell() {
+    [
+      function () {
+        SNProfiles && SNProfiles.me && SNProfiles.me();
+      },
+      function () {
+        SNField && SNField.init && SNField.init();
+      },
+      function () {
+        SNHome && SNHome.init && SNHome.init();
+      },
+      function () {
+        SNCli && SNCli.init && SNCli.init();
+      },
+      function () {
+        SNUi && SNUi.init && SNUi.init();
+      },
+      function () {
+        SNTile && SNTile.init && SNTile.init();
+      },
+    ].forEach(function (fn) {
       try {
-        if (window.SNGlobe && typeof THREE !== 'undefined') {
-          globeOk = !!SNGlobe.init();
-          if (globeOk) {
-            try {
-              // Law: GLOBAL = full Earth floating in space (ISS/sats), never cropped hemisphere
-              if (SNGlobe.setBody) SNGlobe.setBody('earth');
-              if (SNGlobe.goToTier) SNGlobe.goToTier('global');
-            } catch (e) {}
-          }
-        }
+        fn();
       } catch (e) {
-        console.warn('[SpaceNet] globe init', e);
-        globeOk = false;
+        console.warn('[Astranov] shell init', e);
       }
+    });
+    // Kill stuck TTS
+    try {
+      if (window.speechSynthesis) speechSynthesis.cancel();
+    } catch (e0) {}
+    try {
+      if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
+    } catch (e1) {}
+  }
 
-      // Never throw from optional inits
+  function initGlobe() {
+    var globeOk = false;
+    try {
+      if (window.SNGlobe && typeof THREE !== 'undefined') {
+        globeOk = !!SNGlobe.init();
+        if (globeOk) {
+          try {
+            if (SNGlobe.setBody) SNGlobe.setBody('earth');
+            if (SNGlobe.goToTier) SNGlobe.goToTier('global');
+          } catch (e) {}
+        }
+      }
+    } catch (e) {
+      console.warn('[Astranov] globe', e);
+    }
+    return globeOk;
+  }
+
+  function loadThree() {
+    return load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 12000).catch(function () {
+      return load('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', 12000);
+    });
+  }
+
+  // —— START: shell first ——
+  seq(WAVE_SHELL, 8000)
+    .then(function () {
+      initShell();
+      shellReady = true;
+      var ms = Math.round(performance.now() - t0);
+      hideBoot('shell ' + ms + 'ms');
+      try {
+        if (window.SNCli && SNCli.log) {
+          SNCli.log('ASTRANOV · shell ' + ms + 'ms · feed ready · globe loading…', 'ok');
+          SNCli.preview('Shell ready · talk · first delivery · donate on');
+        }
+        if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
+      } catch (e) {}
+
+      // WAVE 2: THREE + globe after first paint
+      return loadThree()
+        .then(function () {
+          return seq(WAVE_GLOBE, 9000);
+        })
+        .then(function () {
+          var ok = initGlobe();
+          try {
+            if (window.SNCli && SNCli.log) {
+              SNCli.log(
+                ok ? 'GLOBAL Earth · full sphere in space' : 'Globe soft-fail · CLI still live',
+                ok ? 'ok' : 'dim'
+              );
+              if (ok) SNCli.preview('GLOBAL Earth');
+            }
+          } catch (e2) {}
+        })
+        .catch(function (e) {
+          console.warn('[Astranov] globe wave', e);
+          try {
+            if (window.SNCli && SNCli.log) SNCli.log('Globe delayed · keep using feed', 'dim');
+          } catch (e3) {}
+        });
+    })
+    .then(function () {
+      // WAVE 3: app modules in parallel (soft)
+      return loadParallel(WAVE_APP, 12000);
+    })
+    .then(function () {
       [
-        function () {
-          SNProfiles && SNProfiles.me && SNProfiles.me();
-        },
         function () {
           SNSpatial && SNSpatial.init && SNSpatial.init();
         },
         function () {
-          SNField && SNField.init && SNField.init();
-        },
-        function () {
-          SNCli && SNCli.init && SNCli.init();
-        },
-        function () {
-          SNUi && SNUi.init && SNUi.init();
-        },
-        function () {
-          SNTile && SNTile.init && SNTile.init();
-        },
-        function () {
           SNMap && SNMap.init && SNMap.init();
+        },
+        function () {
+          SNLiveBridge && SNLiveBridge.start && SNLiveBridge.start();
         },
       ].forEach(function (fn) {
         try {
           fn();
         } catch (e) {
-          console.warn('[SpaceNet] init step', e);
+          console.warn('[Astranov] app init', e);
         }
       });
-
-      // City map stays closed until user dives to CITY / CLI city|fly|locate
       try {
         if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
       } catch (e3) {}
-
-      var ms = Math.round(performance.now() - t0);
-      done('ready ' + ms + 'ms' + (globeOk ? '' : ' · no-globe'));
+      var total = Math.round(performance.now() - t0);
       try {
         if (window.SNCli && SNCli.log) {
           SNCli.log(
-            'SpaceNet · ' + ms + 'ms · ' + (globeOk ? 'GLOBAL Earth' : 'CLI-only') + ' · tap to dive · fly <city> when ready',
-            'ok'
+            'App modules · ' +
+              total +
+              'ms · type: first delivery · donate on · shops',
+            'dim'
           );
-          SNCli.preview('GLOBAL Earth');
         }
-        if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
-      } catch (e) {}
+      } catch (e4) {}
 
-      // Kill any stuck browser TTS — AI must never talk unprompted on boot
-      try {
-        if (window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-          // Cancel again after voices load (Chrome queues delayed speak)
-          setTimeout(function () {
-            try {
-              window.speechSynthesis.cancel();
-            } catch (e1) {}
-          }, 400);
-          setTimeout(function () {
-            try {
-              window.speechSynthesis.cancel();
-            } catch (e2) {}
-          }, 1500);
-        }
-      } catch (e0) {}
-      // SpaceNet text presence only (CLI lines — NOT TTS)
-      try {
-        if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
-        else if (window.SNAi && SNAi.greet) void SNAi.greet();
-        else if (window.SNCli && SNCli.log)
-          SNCli.log('SpaceNet missing from boot chain', 'err');
-      } catch (e) {
-        console.warn('[SpaceNet] AI presence', e);
-      }
-
-      // Soft shops
+      // Auth soft (not on critical path)
       setTimeout(function () {
-        try {
-          var p = window._snLastPos || { lat: 36.4341, lng: 28.2176 };
-          if (window.SNCommerce && SNCommerce.populateMap) {
-            SNCommerce.populateMap(p.lat, p.lng, { openMap: false })
-              .then(function (r) {
-                if (r && r.count && window.SNCli && SNCli.log) {
-                  SNCli.log(r.count + ' shops ready · type shops', 'dim');
-                }
-                if (window.SNField && SNField.refreshBlips) SNField.refreshBlips();
-              })
-              .catch(function () {});
-          }
-        } catch (e) {}
-      }, 900);
-      // Search early — ensureSector needs Overpass/crawl (zero dummy)
-      setTimeout(function () {
-        loadSoft('/js/spacenet/search.js', 12000);
-      }, 300);
-      setTimeout(function () {
-        loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000)
+        loadSoft(
+          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+          12000
+        )
           .then(function () {
             return loadSoft('/js/spacenet/auth.js', 8000);
           })
@@ -287,26 +314,40 @@
               if (window.SNAuth && SNAuth.init) SNAuth.init();
             } catch (e) {}
           });
-      }, window._snLite ? 1600 : 800);
+      }, window._snLite ? 2000 : 1200);
+
+      // Search / shops only when idle — never freeze shell
+      setTimeout(function () {
+        loadSoft('/js/spacenet/search.js', 12000);
+      }, 2500);
+      setTimeout(function () {
+        try {
+          if (document.hidden) return;
+          var p = window._snLastPos || { lat: 37.98, lng: 23.73 };
+          if (window.SNCommerce && SNCommerce.populateMap) {
+            SNCommerce.populateMap(p.lat, p.lng, { openMap: false }).catch(function () {});
+          }
+        } catch (e) {}
+      }, 4000);
     })
     .catch(function (e) {
-      // Last resort: still try CLI-only surface
       console.error(e);
-      try {
+      if (!shellReady) {
         loadSoft('/js/spacenet/cli.js', 8000).then(function () {
           try {
             if (window.SNCli && SNCli.init) SNCli.init();
           } catch (e2) {}
-          done('degraded');
+          hideBoot('degraded');
           try {
-            if (window.SNCli && SNCli.log) SNCli.log('Degraded boot · ' + (e && e.message), 'err');
+            if (window.SNCli && SNCli.log)
+              SNCli.log('Degraded · ' + (e && e.message), 'err');
           } catch (e3) {}
         });
-      } catch (e4) {
-        fail(e && e.message ? e.message : e);
+      } else {
+        hideBoot('partial');
       }
       setTimeout(function () {
         if (!finished) fail(e && e.message ? e.message : e);
-      }, 2000);
+      }, 1500);
     });
 })();

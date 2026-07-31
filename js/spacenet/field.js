@@ -40,6 +40,9 @@
     spare: 0,
     fps: 0,
     rates: { cpu: 0, ram: 0, storage: 0, bandwidth: 0 },
+    worker: null,
+    workerOps: 0,
+    meshPeers: 1,
   };
   var sweep = 0;
   var blips = [];
@@ -511,27 +514,82 @@
     mine.spare = Math.max(0, Math.min(100, Math.round((1 - load) * 80) - (mine.donate ? 15 : 0)));
   }
 
+  /**
+   * SETI-style mesh donation: idle Web Worker burns spare CPU when donate is on.
+   * Rewards S from spare capacity so global users fund the net without servers only.
+   */
+  function ensureMineWorker() {
+    if (mine.worker || typeof Worker === 'undefined') return;
+    try {
+      var src =
+        'var n=0;onmessage=function(e){var ops=e.data&&e.data.ops||40000;var h=0|0;for(var i=0;i<ops;i++){h=((h<<5)-h+i)|0;n++;}postMessage({ops:ops,h:h,n:n});};';
+      var blob = new Blob([src], { type: 'application/javascript' });
+      var url = URL.createObjectURL(blob);
+      mine.worker = new Worker(url);
+      mine.worker.onmessage = function (ev) {
+        if (ev && ev.data && ev.data.ops) mine.workerOps += Number(ev.data.ops) || 0;
+      };
+      mine.worker.onerror = function () {
+        try {
+          mine.worker.terminate();
+        } catch (e) {}
+        mine.worker = null;
+      };
+    } catch (e) {
+      mine.worker = null;
+    }
+  }
+
+  function stopMineWorker() {
+    if (!mine.worker) return;
+    try {
+      mine.worker.terminate();
+    } catch (e) {}
+    mine.worker = null;
+  }
+
   function tickMine(dt) {
     if (!mine.on || !mine.terms) {
       mine.rate = 0;
+      stopMineWorker();
       return;
     }
-    var load = document.hidden ? 0.2 : mine.fps >= 40 ? 0.3 : 0.55;
-    if (load > 0.7) {
+    var load = document.hidden ? 0.15 : mine.fps >= 40 ? 0.28 : mine.fps >= 25 ? 0.45 : 0.65;
+    // Donate = use more spare when tab hidden / idle (SETI style)
+    if (mine.donate) {
+      ensureMineWorker();
+      load = document.hidden ? 0.08 : Math.min(load, 0.4);
+    }
+    if (load > 0.85) {
       mine.rate = 0;
       return;
     }
-    var budget = 1 - load;
+    var budget = Math.max(0.05, 1 - load);
     var cores = navigator.hardwareConcurrency || 4;
-    var ops = Math.floor(3000 * budget * (cores / 8) * Math.min(dt / 500, 1));
+    // Main-thread light hash (always) + worker when donate
+    var ops = Math.floor(2000 * budget * (cores / 8) * Math.min(dt / 500, 1));
     var h = 0;
-    for (var i = 0; i < ops; i++) h = ((h << 5) - h + i) | 0;
-    mine.rates.cpu = Math.min(100, Math.round(budget * cores * 8));
+    var i;
+    for (i = 0; i < ops; i++) h = ((h << 5) - h + i) | 0;
+    if (mine.donate && mine.worker) {
+      try {
+        var wops = Math.floor(25000 * budget * (document.hidden ? 2.2 : 1));
+        mine.worker.postMessage({ ops: wops });
+      } catch (eW) {}
+    }
+    mine.rates.cpu = Math.min(100, Math.round(budget * cores * (mine.donate ? 12 : 8)));
     mine.rates.ram = Math.round((navigator.deviceMemory || 4) * 64 * budget);
-    mine.rates.storage = Math.round(32 * budget);
-    mine.rates.bandwidth = Math.round(200 * budget);
-    mine.rate = 0.012 * budget * (document.hidden ? 2 : 1);
-    // Ambassador online: experienced support mining boost (SpaceNets S)
+    mine.rates.storage = Math.round(32 * budget * (mine.donate ? 1.4 : 1));
+    mine.rates.bandwidth = Math.round(200 * budget * (mine.donate ? 1.3 : 1));
+    // Base mesh reward
+    mine.rate = 0.014 * budget * (document.hidden ? 1.8 : 1);
+    // SETI-style donation multiplies spare-capacity reward
+    if (mine.donate) {
+      mine.rate *= document.hidden ? 3.2 : 2.1;
+      mine.meshPeers = Math.max(1, Math.min(99, Math.round(1 + budget * cores)));
+    } else {
+      mine.meshPeers = 1;
+    }
     try {
       var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
       if (me && me.roles && me.roles.ambassador && me.ambassadorOnline !== false) {
@@ -1521,9 +1579,11 @@
         ' · spare ' +
         mine.spare +
         '%</div>' +
+        '<p class="sfp-line dim">SETI-style mesh: spare CPU (worker) · RAM · storage · bandwidth when idle. Rewards in S. Global users power the net.</p>' +
         '<div class="sfp-actions"><button type="button" data-cmd="mine on">Mine on</button>' +
         '<button type="button" data-cmd="mine off">Mine off</button>' +
-        '<button type="button" data-cmd="donate on">Donate</button></div>';
+        '<button type="button" data-cmd="donate on">Donate mesh ON</button>' +
+        '<button type="button" data-cmd="donate off">Donate off</button></div>';
     } else if (tab === 'platform') {
       body.innerHTML =
         '<div class="sfp-line"><b>Platform</b> 3% of S · <b>Driver</b> 15% gross S</div>';
@@ -1565,8 +1625,10 @@
         ' · spare ' +
         mine.spare +
         '%' +
-        (mine.donate ? ' · donate' : '') +
+        (mine.donate ? ' · MESH DONATE · peers~' + (mine.meshPeers || 1) : '') +
         (mine.on ? ' · ' + mine.rate.toFixed(3) + ' S/h' : ' · mine off'),
+      workerOps: mine.workerOps,
+      meshPeers: mine.meshPeers || 1,
     };
   }
 
@@ -1797,7 +1859,19 @@
     report: report,
     status: function () {
       var r = report();
-      return [r.line, 'CPU ' + (r.rates.cpu || 0) + '% · spare ' + r.spareScore + '%', 'Session ' + (g.SNCurrency ? SNCurrency.format(r.sessionMined) : r.sessionMined)];
+      return [
+        r.line,
+        'Mesh donate · ' + (r.donating ? 'ON (worker)' : 'off') + ' · peers~' + (r.meshPeers || 1),
+        'CPU ' +
+          (r.rates.cpu || 0) +
+          '% · spare ' +
+          r.spareScore +
+          '% · ops ' +
+          (r.workerOps || 0),
+        'Session mined ' +
+          (g.SNCurrency ? SNCurrency.format(r.sessionMined) : r.sessionMined),
+        'Tip: donate on · leave tab open idle · earn S · powers global net',
+      ];
     },
     checkTerms: function () {
       return mine.terms;
@@ -1809,6 +1883,8 @@
         return false;
       }
       mine.on = !!on;
+      if (!on) stopMineWorker();
+      else if (mine.donate) ensureMineWorker();
       paint();
       return true;
     },
@@ -1818,8 +1894,23 @@
         if (on) localStorage.setItem('astranov_donate_compute', '1');
         else localStorage.removeItem('astranov_donate_compute');
       } catch (e) {}
+      if (on) {
+        if (!mine.terms) {
+          showTerms();
+        } else {
+          mine.on = true;
+          ensureMineWorker();
+        }
+        g.SNCli &&
+          SNCli.log(
+            'Mesh donate ON · SETI-style spare CPU/RAM/bandwidth → S rewards · tab idle earns more',
+            'ok'
+          );
+      } else {
+        stopMineWorker();
+        g.SNCli && SNCli.log('Mesh donate off · local mine only if mine on', 'dim');
+      }
       paint();
-      g.SNCli && SNCli.log(on ? 'Donate on' : 'Donate off', 'ok');
     },
     get mining() {
       return mine.on && mine.terms;
