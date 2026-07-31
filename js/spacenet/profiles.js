@@ -460,10 +460,8 @@
         });
       }
     } catch (_) {}
-    try {
-      if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
-    } catch (_) {}
-    // Rhodes / live: vendor → client delivery polygon + ETA/speed on radar
+    // Vendor → client polygon is drawn by caller (market) after claim —
+    // still kick a route if map is ready so placeOrder alone shows path
     try {
       if (global.SNField && SNField.startDeliveryRoute && vendor && t) {
         void SNField.startDeliveryRoute({
@@ -476,12 +474,6 @@
           driver: 'Driver',
           color: 'rgba(0,220,255,0.95)',
         });
-      } else if (global.SNMarketLive && SNMarketLive.paintRoute && vendor) {
-        void SNMarketLive.paintRoute(
-          { lat: vendor.lat, lng: vendor.lng },
-          { lat: drop.lat, lng: drop.lng },
-          { id: 'order:' + (t && t.id), label: '📦 delivery', kind: 'delivery' }
-        );
       }
     } catch (_) {}
     return {
@@ -492,6 +484,10 @@
       driverCut,
       items,
       vendorId,
+      drop: drop,
+      vendor: vendor
+        ? { lat: vendor.lat, lng: vendor.lng, name: vendor.shopName || vendor.name }
+        : null,
       marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
     };
   }
@@ -528,9 +524,15 @@
       prev.lng = place.lng;
       prev.real = true;
       prev.source = place.source || prev.source || 'crawl';
+      prev.roles = prev.roles || {};
+      prev.roles.vendor = true;
+      prev.shopName = prev.shopName || place.name || prev.name || 'Shop';
+      if (place.kind) prev.shopKind = String(place.kind).toLowerCase();
       if (place.hours || place.opening_hours) {
         prev.hours = place.hours || place.opening_hours;
       }
+      prev.updated = Date.now();
+      P.profiles.set(prev.id, prev);
       save();
       return prev;
     }

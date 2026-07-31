@@ -999,19 +999,62 @@
     mapRouteLayers = [];
   }
 
+  /** Offset lat/lng meters for corridor polygon */
+  function offsetLatLng(lat, lng, eastM, northM) {
+    var dLat = northM / 111320;
+    var dLng = eastM / (111320 * Math.cos((lat * Math.PI) / 180) || 1);
+    return [lat + dLat, lng + dLng];
+  }
+
+  function corridorPolygon(points, halfWidthM) {
+    halfWidthM = halfWidthM || 45;
+    if (!points || points.length < 2) return [];
+    var left = [];
+    var right = [];
+    var i;
+    for (i = 0; i < points.length; i++) {
+      var prev = points[Math.max(0, i - 1)];
+      var next = points[Math.min(points.length - 1, i + 1)];
+      var dLat = (next.lat - prev.lat) * 111320;
+      var dLng = (next.lng - prev.lng) * 111320 * Math.cos((points[i].lat * Math.PI) / 180);
+      var len = Math.sqrt(dLat * dLat + dLng * dLng) || 1;
+      var nx = (-dLng / len) * halfWidthM;
+      var ny = (dLat / len) * halfWidthM;
+      left.push(offsetLatLng(points[i].lat, points[i].lng, nx, ny));
+      right.push(offsetLatLng(points[i].lat, points[i].lng, -nx, -ny));
+    }
+    return left.concat(right.reverse());
+  }
+
+  function labelIcon(html, className) {
+    return L.divIcon({
+      className: className || 'sn-route-label',
+      html:
+        '<div style="white-space:nowrap;padding:3px 8px;border-radius:8px;font:700 11px/1.2 system-ui,sans-serif;' +
+        'background:rgba(0,10,24,.92);border:1px solid rgba(61,158,255,.65);color:#e8f4ff;' +
+        'box-shadow:0 0 12px rgba(26,111,212,.45)">' +
+        html +
+        '</div>',
+      iconSize: [120, 24],
+      iconAnchor: [60, 28],
+    });
+  }
+
   /**
-   * Draw route polygon/polyline + pickup/drop on CITY MAP.
-   * Always runs when map is open — does NOT move camera (user hold respected).
+   * Draw ROUTE POLYGON + vendor / driver / you + live progress on city map.
    */
   function paintRouteOnCityMap(row) {
     if (!row || !row.points || row.points.length < 2) return;
     if (!g.SNMap || typeof L === 'undefined') return;
-    // Open map if closed — first task must show polygon
     if (!SNMap.active || !SNMap.map) {
       try {
         var mid = row.points[Math.floor(row.points.length / 2)] || row.points[0];
         if (SNMap.open && mid) {
           void SNMap.open(mid.lat, mid.lng).then(function () {
+            try {
+              if (SNMap.ensure) return SNMap.ensure();
+            } catch (_) {}
+          }).then(function () {
             try {
               paintRouteOnCityMap(row);
             } catch (_) {}
@@ -1025,7 +1068,7 @@
       var latlngs = row.points.map(function (p) {
         return [p.lat, p.lng];
       });
-      // Remove prior layer same id
+      // Clear prior layers for this route id
       mapRouteLayers = mapRouteLayers.filter(function (ly) {
         if (ly && ly._snRouteId === row.id) {
           try {
@@ -1035,70 +1078,195 @@
         }
         return true;
       });
-      var col = (row.color || '#00dcff').replace('0.95', '1').replace('rgba', 'rgb');
-      if (col.indexOf('rgba') === 0) col = '#3d9eff';
+      row._mapDriver = null;
+      row._mapProg = null;
+      row._mapStatus = null;
+
+      // Corridor polygon (delivery zone)
+      var ring = corridorPolygon(row.points, 55);
+      if (ring.length >= 4) {
+        var corridor = L.polygon(ring, {
+          color: '#00d4ff',
+          weight: 2,
+          opacity: 0.85,
+          fillColor: '#00d4ff',
+          fillOpacity: 0.14,
+        }).addTo(map);
+        corridor._snRouteId = row.id;
+        mapRouteLayers.push(corridor);
+      }
+
+      // Full route centerline
       var poly = L.polyline(latlngs, {
-        color: typeof row.color === 'string' && row.color.indexOf('#') === 0 ? row.color : '#00d4ff',
-        weight: 5,
-        opacity: 0.9,
+        color: '#00d4ff',
+        weight: 6,
+        opacity: 0.95,
         lineJoin: 'round',
       }).addTo(map);
       poly._snRouteId = row.id;
-      try {
-        poly.bindPopup(
-          (row.label || 'Route') +
-            (row.eta ? '<br>ETA ' + row.eta : '') +
-            (row.speedKmh != null ? '<br>' + Math.round(row.speedKmh) + ' km/h' : '')
-        );
-      } catch (e1) {}
+      poly.bindPopup(
+        (row.label || 'Delivery route') +
+          (row.phase ? '<br/>' + row.phase : '') +
+          (row.eta ? '<br/>ETA ' + row.eta : '') +
+          (row.speedKmh != null ? '<br/>' + Math.round(row.speedKmh) + ' km/h' : '')
+      );
       mapRouteLayers.push(poly);
+
+      // Progress line (done segment) — yellow
+      var prog = Math.max(0, Math.min(1, row.progress || 0));
+      if (prog > 0.02) {
+        var donePts = [];
+        var target = Math.max(2, Math.floor((row.points.length - 1) * prog) + 1);
+        var di;
+        for (di = 0; di <= target && di < row.points.length; di++) {
+          donePts.push([row.points[di].lat, row.points[di].lng]);
+        }
+        var along = pointAlong(row.points, prog);
+        if (along) donePts.push([along.lat, along.lng]);
+        if (donePts.length >= 2) {
+          row._mapProg = L.polyline(donePts, {
+            color: '#ffcc33',
+            weight: 7,
+            opacity: 1,
+            lineJoin: 'round',
+          }).addTo(map);
+          row._mapProg._snRouteId = row.id;
+          mapRouteLayers.push(row._mapProg);
+        }
+      }
+
       var a0 = row.points[0];
       var a1 = row.points[row.points.length - 1];
+      // VENDOR (green)
       var m0 = L.circleMarker([a0.lat, a0.lng], {
-        radius: 7,
+        radius: 11,
         color: '#22ff88',
-        fillColor: '#22ff88',
-        fillOpacity: 0.95,
-        weight: 2,
+        fillColor: '#00cc66',
+        fillOpacity: 1,
+        weight: 3,
       })
         .addTo(map)
-        .bindPopup('Vendor pickup');
+        .bindPopup('<b>VENDOR</b><br/>Pickup · kitchen');
       m0._snRouteId = row.id;
       mapRouteLayers.push(m0);
+      var labV = L.marker([a0.lat, a0.lng], {
+        icon: labelIcon('VENDOR · PREP', 'sn-lab-v'),
+        interactive: false,
+      }).addTo(map);
+      labV._snRouteId = row.id;
+      mapRouteLayers.push(labV);
+      row._mapVendorLab = labV;
+
+      // YOU (red)
       var m1 = L.circleMarker([a1.lat, a1.lng], {
-        radius: 7,
+        radius: 11,
         color: '#ff4466',
-        fillColor: '#ff4466',
-        fillOpacity: 0.95,
-        weight: 2,
+        fillColor: '#ff2244',
+        fillOpacity: 1,
+        weight: 3,
       })
         .addTo(map)
-        .bindPopup('Client stop');
+        .bindPopup('<b>YOU</b><br/>Delivery stop');
       m1._snRouteId = row.id;
       mapRouteLayers.push(m1);
-      // Cap layers
-      while (mapRouteLayers.length > 36) {
+      var labY = L.marker([a1.lat, a1.lng], {
+        icon: labelIcon('YOU · DROP', 'sn-lab-y'),
+        interactive: false,
+      }).addTo(map);
+      labY._snRouteId = row.id;
+      mapRouteLayers.push(labY);
+
+      // DRIVER (yellow) — moves with progress
+      var dpt = pointAlong(row.points, prog) || a0;
+      row._mapDriver = L.circleMarker([dpt.lat, dpt.lng], {
+        radius: 12,
+        color: '#ffcc33',
+        fillColor: '#ffdd55',
+        fillOpacity: 1,
+        weight: 3,
+      })
+        .addTo(map)
+        .bindPopup('<b>DRIVER</b><br/>' + (row.phase || 'En route'));
+      row._mapDriver._snRouteId = row.id;
+      mapRouteLayers.push(row._mapDriver);
+
+      row._mapStatus = L.marker([dpt.lat, dpt.lng], {
+        icon: labelIcon(row.phase || 'DRIVER · 0%', 'sn-lab-d'),
+        interactive: false,
+      }).addTo(map);
+      row._mapStatus._snRouteId = row.id;
+      mapRouteLayers.push(row._mapStatus);
+
+      while (mapRouteLayers.length > 48) {
         try {
           mapRouteLayers.shift().remove();
         } catch (e2) {}
       }
-      // Driver marker (updates via progress) — store on row
-      if (!row._mapDriver) {
-        row._mapDriver = L.circleMarker([a0.lat, a0.lng], {
-          radius: 8,
-          color: '#ffcc33',
-          fillColor: '#ffdd55',
-          fillOpacity: 1,
-          weight: 2,
-        }).addTo(map);
-        row._mapDriver._snRouteId = row.id;
-        mapRouteLayers.push(row._mapDriver);
-      }
     } catch (e) {
       try {
-        if (g.SNCli && SNCli.log) SNCli.log('Map route paint · ' + (e.message || e), 'dim');
+        if (g.SNCli && SNCli.log) SNCli.log('Map route · ' + (e.message || e), 'err');
       } catch (e3) {}
     }
+  }
+
+  /** Update driver + progress line without full repaint */
+  function updateRouteProgressOnMap(row) {
+    if (!row || !row.points) return;
+    var prog = Math.max(0, Math.min(1, row.progress || 0));
+    var pt = pointAlong(row.points, prog);
+    if (!pt) return;
+    try {
+      if (row._mapDriver && row._mapDriver.setLatLng) {
+        row._mapDriver.setLatLng([pt.lat, pt.lng]);
+        if (row._mapDriver.setPopupContent) {
+          row._mapDriver.setPopupContent(
+            '<b>DRIVER</b><br/>' +
+              (row.phase || '') +
+              '<br/>' +
+              Math.round(prog * 100) +
+              '% · ETA ' +
+              (row.eta || '?')
+          );
+        }
+      }
+      if (row._mapStatus && row._mapStatus.setLatLng) {
+        row._mapStatus.setLatLng([pt.lat, pt.lng]);
+        if (row._mapStatus.setIcon) {
+          row._mapStatus.setIcon(
+            labelIcon(
+              (row.phase || 'DRIVER') + ' · ' + Math.round(prog * 100) + '%',
+              'sn-lab-d'
+            )
+          );
+        }
+      }
+      if (row._mapVendorLab && row._mapVendorLab.setIcon && prog > 0.2) {
+        row._mapVendorLab.setIcon(labelIcon('VENDOR · OUT', 'sn-lab-v'));
+      }
+      // Refresh progress polyline
+      if (g.SNMap && SNMap.map && typeof L !== 'undefined' && prog > 0.02) {
+        if (row._mapProg) {
+          try {
+            row._mapProg.remove();
+          } catch (_) {}
+          row._mapProg = null;
+        }
+        var donePts = [];
+        var target = Math.max(2, Math.floor((row.points.length - 1) * prog) + 1);
+        var di;
+        for (di = 0; di <= target && di < row.points.length; di++) {
+          donePts.push([row.points[di].lat, row.points[di].lng]);
+        }
+        donePts.push([pt.lat, pt.lng]);
+        row._mapProg = L.polyline(donePts, {
+          color: '#ffcc33',
+          weight: 7,
+          opacity: 1,
+        }).addTo(SNMap.map);
+        row._mapProg._snRouteId = row.id;
+        mapRouteLayers.push(row._mapProg);
+      }
+    } catch (_) {}
   }
 
   function straightRoute(aLat, aLng, bLat, bLng, steps) {
@@ -1390,7 +1558,9 @@
       }
     );
     if (!row) return null;
-    // Paint polygon + pins on city map, then fit both ends
+    row.phase = 'VENDOR PREP';
+    row.progress = 0;
+    // Paint corridor polygon + vendor / driver / you
     paintRouteOnCityMap(row);
     try {
       if (g.SNMap && SNMap.fitLatLngs) {
@@ -1399,75 +1569,113 @@
             { lat: vLat, lng: vLng },
             { lat: dLat, lng: dLng },
           ].concat(row.points || []),
-          { padding: 48, maxZoom: 15, force: true }
+          { padding: 56, maxZoom: 15, force: true }
         );
       } else if (g.SNMap && SNMap.map && typeof L !== 'undefined') {
         var b = L.latLngBounds([
           [vLat, vLng],
           [dLat, dLng],
         ]);
-        g.SNMap.map.fitBounds(b, { padding: [48, 48], maxZoom: 15 });
+        g.SNMap.map.fitBounds(b, { padding: [56, 56], maxZoom: 15 });
       }
     } catch (eFit) {}
     try {
-      if (g.SNMap && SNMap.showTasks) SNMap.showTasks();
+      if (g.SNMap && SNMap.markYou) g.SNMap.markYou(dLat, dLng, 'YOU · drop');
       if (g.SNMap && SNMap.showProfiles) SNMap.showProfiles();
+      if (g.SNMap && SNMap.showTasks) SNMap.showTasks();
+      // Re-paint route on top of tasks/profiles
+      paintRouteOnCityMap(row);
     } catch (eT) {}
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'Route on map · ' +
-            (row.km != null ? row.km.toFixed(2) + ' km' : '?') +
+          'MAP ROUTE · polygon ON · green=VENDOR · yellow=DRIVER · red=YOU · ' +
+            (row.km != null ? row.km.toFixed(2) + ' km' : '') +
             ' · ETA ' +
-            (row.eta || '?') +
-            ' · ' +
-            Math.round(row.speedKmh || 0) +
-            ' km/h · green=vendor · red=you',
+            (row.eta || '?'),
           'ok'
         );
       }
       if (g.SNCli && SNCli.preview)
-        SNCli.preview('ETA ' + (row.eta || '?') + ' · route on map');
+        SNCli.preview('VENDOR PREP · then driver moves on polygon');
+      if (g.SNCli && SNCli.setActivity) g.SNCli.setActivity('prep');
     } catch (e2) {}
-    // Animate driver along polygon (scooter city pace) — map marker follows
-    var durationMs = Math.max(8000, Math.min(90000, (row.durationS || 600) * 1000 * 0.35));
+
+    // Phase 1: kitchen prep (driver waits at vendor) · Phase 2: drive along polygon
+    var prepMs = 4500;
+    var driveMs = Math.max(10000, Math.min(75000, (row.durationS || 600) * 1000 * 0.4));
     var t0 = Date.now();
     var animId = id;
+    var lastLogPct = -1;
     function step() {
       var r = null;
-      for (var i = 0; i < routes.length; i++) {
+      var i;
+      for (i = 0; i < routes.length; i++) {
         if (routes[i].id === animId) {
           r = routes[i];
           break;
         }
       }
       if (!r) return;
-      var u = Math.min(1, (Date.now() - t0) / durationMs);
-      r.progress = u;
-      var remainS = (r.durationS || 0) * (1 - u);
-      r.eta = fmtEta(remainS);
+      var elapsed = Date.now() - t0;
+      var u;
+      if (elapsed < prepMs) {
+        u = 0;
+        r.phase = 'VENDOR PREP · kitchen';
+        r.progress = 0;
+      } else {
+        var du = Math.min(1, (elapsed - prepMs) / driveMs);
+        u = du;
+        r.progress = du;
+        if (du < 0.85) r.phase = 'DRIVER EN ROUTE';
+        else if (du < 1) r.phase = 'ARRIVING';
+        else r.phase = 'DELIVERED';
+      }
+      var remainS =
+        r.phase === 'VENDOR PREP · kitchen'
+          ? (r.durationS || 600) + (prepMs - elapsed) / 1000
+          : (r.durationS || 0) * (1 - u);
+      r.eta = fmtEta(Math.max(0, remainS));
       r.label =
         (opts.label || '🛵 Route') +
-        ' · ETA ' +
-        r.eta +
         ' · ' +
-        Math.round(r.speedKmh || 28) +
-        'km/h';
-      try {
-        var pt = pointAlong(r.points, u);
-        if (pt && r._mapDriver && r._mapDriver.setLatLng) {
-          r._mapDriver.setLatLng([pt.lat, pt.lng]);
-          if (r._mapDriver.setPopupContent) {
-            r._mapDriver.setPopupContent(
-              'Driver · ETA ' + r.eta + ' · ' + Math.round(r.speedKmh || 0) + ' km/h'
+        r.phase +
+        ' · ' +
+        Math.round(u * 100) +
+        '% · ETA ' +
+        r.eta;
+      updateRouteProgressOnMap(r);
+      // CLI progress every ~15%
+      var pct = Math.floor(u * 100);
+      if (pct >= lastLogPct + 15 || (u >= 1 && lastLogPct < 100)) {
+        lastLogPct = pct;
+        try {
+          if (g.SNCli && SNCli.log) {
+            SNCli.log(
+              r.phase +
+                ' · ' +
+                pct +
+                '% · ETA ' +
+                r.eta +
+                ' · ' +
+                Math.round(r.speedKmh || 28) +
+                ' km/h',
+              'ok'
             );
           }
-        }
-      } catch (eD) {}
-      if (u >= 1) {
+          if (g.SNCli && SNCli.preview) SNCli.preview(r.phase + ' · ' + pct + '%');
+          if (g.SNCli && SNCli.setActivity)
+            g.SNCli.setActivity(r.phase === 'VENDOR PREP · kitchen' ? 'prep' : 'drive');
+        } catch (eL) {}
+      }
+      if (u >= 1 && elapsed >= prepMs + driveMs) {
         r.progress = 1;
+        r.phase = 'DELIVERED';
+        updateRouteProgressOnMap(r);
         try {
-          if (g.SNCli && SNCli.log) SNCli.log('Driver arrived · client stop', 'ok');
+          if (g.SNCli && SNCli.log) SNCli.log('DELIVERED · driver at YOU · order complete', 'ok');
+          if (g.SNCli && SNCli.preview) SNCli.preview('DELIVERED');
+          if (g.SNCli && SNCli.setActivity) g.SNCli.setActivity('done');
         } catch (e3) {}
         if (opts.onArrive) {
           try {
