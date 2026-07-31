@@ -676,20 +676,18 @@
       temper: prefs.temper || '',
       service: 'Astranov delivery',
       researchNote:
-        'Temper · ' +
+        "For you: " +
         (prefs.temper || 'open') +
-        ' · company ~' +
+        ', about ' +
         company +
+        ' people' +
         (prefs.company && prefs.company.girlfriends
           ? ' (you + ' + prefs.company.girlfriends + ' girlfriends)'
           : '') +
         (prefs.company && (prefs.company.cats || prefs.company.dogs)
-          ? ' · pets ' +
-            (prefs.company.cats || 0) +
-            ' cats · ' +
-            (prefs.company.dogs || 0) +
-            ' dogs'
-          : ''),
+          ? ', pets noted'
+          : '') +
+        '.',
     };
   }
 
