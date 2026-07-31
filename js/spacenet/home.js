@@ -50,9 +50,9 @@
     }
 
     return (
-      '<div class="sn-home-card" role="dialog" aria-label="Astranov SpaceNet menu">' +
+      '<div class="sn-home-card" role="dialog" aria-label="ASTRANOV menu">' +
       '<div class="sn-home-head">' +
-      '<b>Astranov SpaceNet</b>' +
+      '<b>ASTRANOV</b>' +
       '<button type="button" class="sn-home-x" id="sn-home-close" aria-label="Close">×</button>' +
       '</div>' +
       '<div class="sn-home-body">' +
@@ -424,7 +424,8 @@
         if (e) e.preventDefault();
         toggle();
       };
-      btn.title = 'Astranov SpaceNet menu · roles · account · Earth';
+      btn.title = 'ASTRANOV · menu · roles · account · Earth';
+      if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     // Stop other handlers from only flying earth without menu
     var logo = $('astranov-logo');
