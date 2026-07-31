@@ -48,7 +48,12 @@
       .replace(/\bGIS path\b/gi, 'Google sign-in')
       .replace(/\bDB shops\b/gi, 'shops')
       .replace(/\b thrash\b/gi, '')
+      // Kill junk categories that used to flood the feed
+      .replace(/\bNigerian comedy films\b/gi, '')
+      .replace(/\bd3-polygon\b/gi, '')
+      .replace(/\bAtari\b/gi, '')
       .replace(/\s*[·]\s*/g, '. ')
+      .replace(/\s{2,}/g, ' ')
       .trim();
   }
 
@@ -1834,37 +1839,42 @@
               ''
             )
             .trim() || line;
-        // Map OS default: POIs only. Full dump ONLY on explicit almighty / research.
-        // (Was dumping npm d3-polygon + OpenLibrary "Elizabeth Cady Stanton" into chat.)
-        const wantFull = /^almighty\b/.test(low) || /^crawl\b/.test(low);
+        // Map default. crawl/find/search = nearby only. Never full TV/books/npm dump.
+        const wantFull = /^almighty\b/.test(low);
         const wantKnowledge = /^(who\s+is|what\s+is|look\s+up)\b/.test(low);
-        const crawlMode = wantFull ? 'full' : wantKnowledge ? 'knowledge' : 'map';
-        const local = Tasks?.search?.(q) || { tasks: [], roles: [] };
-        local.tasks.slice(0, 4).forEach((t) => log('task · ' + t.title.slice(0, 50), 'ok'));
+        const crawlMode = wantFull ? 'knowledge' : wantKnowledge ? 'knowledge' : 'map';
         if (global.SNSearch?.crawl) {
           const crawled = await SNSearch.crawl(q, {
             pos: Tasks?.pos || global._snLastPos,
-            openMap: crawlMode === 'map' || crawlMode === 'full',
-            all: crawlMode === 'full',
+            openMap: crawlMode === 'map',
+            all: false,
             mode: crawlMode,
-            fly: crawlMode !== 'knowledge',
+            fly: false,
+            quiet: true,
           });
-          SNSearch.report?.(crawled, log, { full: crawlMode === 'full' });
-          if (!crawled.score) log('Empty · try: find pizza · who is Greece · almighty three.js', 'dim');
-        } else if (!local.tasks.length) {
-          log('Search module loading… try again', 'dim');
+          SNSearch.report?.(crawled, log, { silent: crawlMode === 'map' });
+        } else {
+          log('Search still loading — try again in a second.', 'dim');
         }
-        preview((crawlMode === 'full' ? 'Almighty · ' : 'Find · ') + q.slice(0, 40));
+        preview(crawlMode === 'map' ? 'Nearby shops' : 'Lookup');
         return;
       }
       if (/^research\b/.test(low)) {
-        const q = line.replace(/^research\s+/i, '').trim() || 'Astranov SpaceNet';
-        preview('Research · ' + q);
-        if (global.SNAi?.research) {
-          const r = await SNAi.research(q);
-          if (r?.text) log(r.text, 'ok');
-        } else {
-          await run('crawl ' + q);
+        const q = line.replace(/^research\s+/i, '').trim() || 'astranov';
+        preview('Research…');
+        if (global.SNSearch?.crawl) {
+          const crawled = await SNSearch.crawl(q, {
+            mode: 'knowledge',
+            all: false,
+            openMap: false,
+            fly: false,
+            quiet: true,
+          });
+          SNSearch.report?.(crawled, log);
+        }
+        if (global.SNAi?.ask) {
+          const tip = await SNAi.ask('Short plain answer about: ' + q, { mode: 'chat' });
+          if (tip) log(String(tip).slice(0, 200), 'ok');
         }
         return;
       }

@@ -457,32 +457,31 @@
   function intentOf(q) {
     const s = String(q || '').toLowerCase();
     return {
-      code: /\b(code|github|npm|library|sdk|api|repo|package|javascript|python|rust|typescript|d3)\b/.test(
+      code: /\b(code|github|npm|library|sdk|repo|package|javascript|python|rust|typescript)\b/.test(
         s
       ),
       product: /\b(product|brand|barcode|nutrition|openfood)\b/.test(s),
-      media: /\b(movie|film|series|tv|show|netflix|actor)\b/.test(s),
-      book: /\b(book|novel|author|isbn|read|bible|literature)\b/.test(s),
+      // NEVER bare "show" — matches "show all" and floods TVMaze (Nigerian films etc.)
+      media: /\b(movie|film|series|netflix|tv\s*show|actor|actress|cinema)\b/.test(s),
+      book: /\b(book|novel|author|isbn)\b/.test(s),
       country: /\b(country|nation|capital of|population of)\b/.test(s),
       weather: /\b(weather|temperature|forecast|rain|wind)\b/.test(s),
-      // Food/map stays map — never books/npm just because query is short
       map:
-        /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|city|street|pizza|food|vendor|delivery|polygon|route)\b/.test(
+        /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|city|street|pizza|food|vendor|delivery|polygon|route|kitchen|eat|hungry)\b/.test(
           s
         ) ||
         (s.length < 40 &&
-          !/\b(code|github|npm|book|novel|movie|author|library|sdk)\b/.test(s)),
+          !/\b(code|github|npm|book|novel|movie|film|author|library|sdk|netflix)\b/.test(s)),
       knowledge: /\b(who is|what is|wiki|history|biography)\b/.test(s),
+      placeName:
+        !/\b(restaurant|cafe|shop|food|pizza|vendor|near|nearby|map|delivery|order)\b/.test(s) &&
+        /^[a-zA-Zα-ωΑ-Ω\s\-'.]{2,40}$/u.test(String(q || '').trim()),
     };
   }
 
   /**
-   * Crawl modes:
-   *   map (default) — geo + POIs + edge vendors only. No npm / OpenLibrary spam.
-   *   knowledge     — wiki + web + wikidata (+ geo if place-like)
-   *   full/almighty — all sources (explicit research only)
-   *
-   * BUG WAS: opts.all defaulted true → every land/scan dumped d3-polygon + Elizabeth Cady Stanton books into CLI.
+   * Crawl modes — map default is SILENT nearby POIs only.
+   * Never dumps TV/books/npm/random geocode cities into CLI.
    */
   async function crawl(query, opts) {
     opts = opts || {};
@@ -492,38 +491,47 @@
     }
     const pos = opts.pos || global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
     const intent = intentOf(q);
-    // Explicit full only — never default almighty
-    const mode =
-      opts.mode ||
-      (opts.all === true
-        ? 'full'
-        : intent.code
-          ? 'code'
-          : intent.book
-            ? 'books'
-            : intent.media
-              ? 'media'
-              : intent.knowledge
-                ? 'knowledge'
-                : 'map');
+    // opts.mode wins. opts.all only if mode not set. Never infer media from "show".
+    var mode = opts.mode;
+    if (!mode) {
+      if (opts.all === true) mode = 'full';
+      else if (intent.code) mode = 'code';
+      else if (intent.book) mode = 'books';
+      else if (intent.media) mode = 'media';
+      else if (intent.knowledge) mode = 'knowledge';
+      else mode = 'map';
+    }
+    // Food/shop words always force map — never full/media side paths
+    if (
+      mode !== 'full' &&
+      mode !== 'almighty' &&
+      /\b(restaurant|cafe|shop|food|pizza|vendor|delivery|hungry|eat)\b/i.test(q)
+    ) {
+      mode = 'map';
+    }
     const full = mode === 'full' || mode === 'almighty';
     const wantMap = full || mode === 'map' || intent.map;
-    const wantKnowledge = full || mode === 'knowledge' || intent.knowledge;
-    const wantCode = full || mode === 'code' || intent.code;
-    const wantBooks = full || mode === 'books' || intent.book;
-    const wantMedia = full || mode === 'media' || intent.media;
-    const wantProduct = full || intent.product;
+    const wantKnowledge = full || mode === 'knowledge';
+    const wantCode = full || mode === 'code';
+    const wantBooks = full || mode === 'books';
+    const wantMedia = full || mode === 'media';
+    const wantProduct = full || (intent.product && mode !== 'map');
     const wantCountry = full || intent.country;
-    const wantWeather = full || intent.weather || mode === 'map';
+    const wantWeather = full || intent.weather;
+    // Geocode only real place names — never "vendor" / "pizza" → Kingstown / Nigerian films path
+    const wantGeocode =
+      full ||
+      mode === 'knowledge' ||
+      (mode === 'map' && intent.placeName && !intent.map) ||
+      (opts.geocode === true);
 
-    const label =
-      mode === 'full' || mode === 'almighty'
-        ? 'Looking everywhere for'
-        : mode === 'map'
-          ? 'Looking nearby for'
-          : 'Looking up';
-    global.SNCli?.log?.(label + ' “' + q.slice(0, 48) + '”…', 'dim');
-    global.SNCli?.preview?.(label + '…');
+    if (opts.quiet !== true && opts.silent !== true) {
+      if (mode === 'map') {
+        global.SNCli?.preview?.('Shops near you…');
+      } else {
+        global.SNCli?.preview?.('Looking…');
+      }
+    }
 
     const results = emptyResult();
     results.query = q;
@@ -533,8 +541,7 @@
 
     const jobs = [];
 
-    // Geo always useful for place-ish queries
-    if (wantMap || wantKnowledge || full) {
+    if (wantGeocode) {
       jobs.push(
         geocode(q)
           .then((p) => {
@@ -544,7 +551,7 @@
       );
     }
 
-    // Knowledge: wiki / web — NOT on pure map food scans
+    // Knowledge: wiki / web — NOT on map food scans
     if (wantKnowledge || full) {
       jobs.push(
         webSearch(q)
@@ -659,22 +666,31 @@
       results.localTasks = { tasks: [], roles: [] };
     }
 
-    // Paint globe (markers only — never steal camera unless fly requested)
-    results.places.slice(0, 6).forEach((p, i) => {
-      if (p.lat != null)
-        global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffffff, String(p.name).slice(0, 20), 16000 + i * 400);
-    });
-    results.nearby.slice(0, 16).forEach((p) => {
-      global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffaa44, String(p.name).slice(0, 16), 12000);
-    });
-    if (results.wiki?.lat != null) {
-      global.SNGlobe?.pulse?.(results.wiki.lat, results.wiki.lng, 0x66aaff, results.wiki.title, 20000);
-    }
+    // Map mode: only nearby POIs around user — never pulse random world geocode hits
+    const nearOnly =
+      mode === 'map'
+        ? (results.nearby || []).filter(function (p) {
+            if (p.lat == null) return false;
+            var dLat = Math.abs(p.lat - pos.lat);
+            var dLng = Math.abs(p.lng - pos.lng);
+            return dLat < 0.12 && dLng < 0.15; // ~10–15 km
+          })
+        : results.nearby || [];
+    results.nearby = nearOnly;
 
-    // Fly only when caller wants it (CLI search / fly city). Click-land + sector scan pass fly:false
-    // so reverse-geocode/wiki does not yank the globe away from the tapped point.
-    const doFly = opts?.fly !== false;
-    if (doFly) {
+    if (mode !== 'map') {
+      (results.places || []).slice(0, 3).forEach(function (p, i) {
+        if (p.lat != null)
+          global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffffff, String(p.name).slice(0, 18), 12000 + i * 300);
+      });
+    }
+    nearOnly.slice(0, 10).forEach(function (p) {
+      global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffaa44, String(p.name).slice(0, 14), 10000);
+    });
+
+    // Fly only when asked — never for silent map sector fills
+    const doFly = opts.fly === true;
+    if (doFly && mode !== 'map') {
       if (results.places[0]?.lat != null) {
         global.SNGlobe?.goToPlace?.(results.places[0].lat, results.places[0].lng, {
           tier: 'national',
@@ -685,26 +701,17 @@
         try {
           global.SNTasks?.setPos?.(results.places[0].lat, results.places[0].lng);
         } catch (_) {}
-      } else if (results.wiki?.lat != null) {
-        global.SNGlobe?.goToPlace?.(results.wiki.lat, results.wiki.lng, {
-          tier: 'national',
-          openMap: false,
-          skipScan: true,
-          label: results.wiki.title,
-        });
       }
-    } else if (opts?.pos?.lat != null) {
-      // Stay locked on the address we already landed on
+    } else if (opts.pos?.lat != null) {
       try {
         global.SNTasks?.setPos?.(opts.pos.lat, opts.pos.lng);
       } catch (_) {}
     }
 
-    // City map + vendor tiles
-    const mapStuff = results.nearby.concat(results.places.filter((p) => p.lat != null));
-    if (mapStuff.length && opts?.openMap !== false) {
-      const f = results.places[0] || pos;
-      void global.SNMap?.open?.(f.lat, f.lng)?.then?.(() => {
+    // City map: nearby POIs only (not world "The Vendor" geocode junk)
+    const mapStuff = nearOnly.slice();
+    if (mapStuff.length && opts.openMap !== false) {
+      void global.SNMap?.open?.(pos.lat, pos.lng)?.then?.(function () {
         try {
           global.SNMap?.plotCrawl?.(mapStuff);
           global.SNMap?.showProfiles?.();
@@ -714,6 +721,18 @@
 
     results.sources = summarizeSources(results);
     results.score = scoreResult(results);
+    // Strip junk sources from map results so nothing re-reports them
+    if (mode === 'map') {
+      results.web = [];
+      results.wiki = null;
+      results.wikiHits = [];
+      results.wikidata = [];
+      results.code = [];
+      results.products = [];
+      results.media = [];
+      results.books = [];
+      results.places = [];
+    }
     return results;
   }
 
@@ -768,48 +787,64 @@
   }
 
   /**
-   * Pretty dump for CLI.
-   * Map mode: places + POIs only (no books / npm / TV spam).
-   * Full mode: all sources (research / almighty).
+   * CLI report — QUIET by default.
+   * Map: one line + up to 3 nearby names. Never TV/books/npm/world geocode spam.
    */
   function report(results, log, reportOpts) {
     const L = log || ((t, c) => global.SNCli?.log?.(t, c));
     if (!results) return;
     reportOpts = reportOpts || {};
     const mode = results.mode || 'map';
-    const full =
-      reportOpts.full === true || mode === 'full' || mode === 'almighty' || mode === 'code' || mode === 'books';
-    if (full) {
-      L('Here\'s what I found:', 'dim');
-    } else if ((results.nearby || []).length || (results.places || []).length) {
-      L('Nearby:', 'dim');
+    if (reportOpts.silent || mode === 'map') {
+      const n = (results.nearby || []).length;
+      if (n) {
+        L(n + ' places near you — pins on the map. Tap one.', 'ok');
+        (results.nearby || []).slice(0, 3).forEach(function (p) {
+          L('· ' + String(p.name || 'shop').slice(0, 40), 'dim');
+        });
+      } else if (reportOpts.silent) {
+        /* quiet miss */
+      } else {
+        L('No shops right here — try locate, then shops again.', 'dim');
+      }
+      return;
     }
-    if (results.weather?.text) L('🌤 ' + results.weather.text, 'ok');
-    (results.places || []).slice(0, 5).forEach((p) => L('📍 ' + String(p.name).slice(0, 70), 'ok'));
-    (results.nearby || []).slice(0, 8).forEach((p) =>
-      L('• ' + String(p.name || '').slice(0, 48) + ' · ' + (p.kind || 'poi'), 'ok')
-    );
-    // Knowledge only when not pure map food scan
-    if (full || mode === 'knowledge') {
+    if (mode === 'knowledge') {
       if (results.wiki?.text)
-        L('📖 ' + results.wiki.title + ': ' + results.wiki.text.slice(0, 200), 'ok');
-      (results.web || []).slice(0, 5).forEach((w) => L('· ' + (w.title || w.text).slice(0, 90), 'ok'));
+        L(results.wiki.title + ': ' + results.wiki.text.slice(0, 160), 'ok');
+      else if ((results.web || []).length)
+        L(String(results.web[0].title || results.web[0].text).slice(0, 100), 'ok');
+      else L("Nothing solid on that.", 'dim');
+      return;
     }
-    // Never dump npm/books on map mode — that was the Elizabeth Cady Stanton / d3-polygon spam
-    if (full || mode === 'code') {
-      (results.code || []).slice(0, 5).forEach((c) =>
-        L('</> ' + c.title + ' · ' + (c.text || '').slice(0, 50), 'ok')
-      );
+    // Explicit research / code / books only — still capped hard
+    if (mode === 'code') {
+      (results.code || []).slice(0, 3).forEach(function (c) {
+        L(c.title, 'ok');
+      });
+      return;
     }
-    if (full) {
-      (results.products || []).slice(0, 4).forEach((p) => L('🛒 ' + p.title, 'ok'));
-      (results.media || []).slice(0, 4).forEach((m) => L('🎬 ' + m.title, 'ok'));
+    if (mode === 'books') {
+      (results.books || []).slice(0, 3).forEach(function (b) {
+        L(b.title, 'ok');
+      });
+      return;
     }
-    if (full || mode === 'books') {
-      (results.books || []).slice(0, 4).forEach((b) => L('📚 ' + b.title + ' · ' + b.text, 'ok'));
+    if (mode === 'media') {
+      (results.media || []).slice(0, 3).forEach(function (m) {
+        L(m.title, 'ok');
+      });
+      return;
     }
-    if (!(results.score > 0))
-      L("Nothing solid — try find pizza, or a place name.", 'dim');
+    if (mode === 'full' || mode === 'almighty') {
+      L('Research notes (short):', 'dim');
+      if (results.wiki?.title) L(results.wiki.title, 'ok');
+      (results.nearby || []).slice(0, 2).forEach(function (p) {
+        L('· ' + String(p.name).slice(0, 40), 'dim');
+      });
+      // NEVER dump media/books/npm lists into CLI even in full — user hated Nigerian films / Atari spam
+      return;
+    }
   }
 
   global.SNSearch = {

@@ -277,6 +277,8 @@
           all: false,
           mode: 'map',
           fly: false,
+          quiet: true,
+          silent: true,
         });
         const stuff = (crawled?.nearby || []).concat(crawled?.places || []);
         stuff.slice(0, 30).forEach((p) => {

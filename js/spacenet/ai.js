@@ -1432,15 +1432,23 @@
 
   async function research(query) {
     var q = String(query || '').trim();
-    var crawled = global.SNSearch && SNSearch.crawl ? await SNSearch.crawl(q, { openMap: true, all: true }) : null;
+    // Knowledge only — never full crawl (that flooded CLI with films/npm/books)
+    var crawled =
+      global.SNSearch && SNSearch.crawl
+        ? await SNSearch.crawl(q, {
+            openMap: false,
+            all: false,
+            mode: 'knowledge',
+            fly: false,
+            quiet: true,
+          })
+        : null;
     if (crawled && global.SNSearch && SNSearch.report) SNSearch.report(crawled);
-    var summary =
-      'User research: ' +
-      q +
-      '. Places: ' +
-      (crawled && crawled.places && crawled.places[0] ? crawled.places[0].name : 'none') +
-      '. Give map next steps.';
-    var text = await ask(summary, { mode: 'chat', forceEdge: true });
+    var text =
+      (crawled && crawled.wiki && crawled.wiki.text
+        ? String(crawled.wiki.title || '') + ': ' + String(crawled.wiki.text).slice(0, 160)
+        : null) ||
+      (await ask('In one short human sentence about: ' + q, { mode: 'chat' }));
     return { crawled: crawled, text: text };
   }
 
