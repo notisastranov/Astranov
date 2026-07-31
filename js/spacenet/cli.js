@@ -384,12 +384,12 @@
   }
 
   function help() {
-    log('Hey — I\'m Astranov. Talk normally.', 'ok');
-    log('Try: order me a pizza — you judge type, size, shop, courier, eat time', 'ok');
-    log('Or: locate · shops · fly athens · dark map · bright map', 'dim');
-    log('Map: tap the globe to zoom in. Say global for full Earth.', 'dim');
-    log('Money unit is S. Type help anytime.', 'dim');
-    preview('Just talk — pizza, shops, fly…');
+    log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
+    log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
+    log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
+    log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
+    log('Mind: mind · mind wipe · cancel · pilot home', 'dim');
+    preview('Astranov Mind · talk Greeklish or English');
   }
 
   function moneyStatus() {
@@ -549,24 +549,54 @@
         }
         return;
       }
-      // SpaceNet Free mind — own free AI (no paid xAI)
+      // Astranov Mind — permanent owner memory
       if (
         low === 'free mind' ||
         low === 'free ai' ||
-        low === 'spacenet free' ||
+        low === 'astranov mind' ||
         low === 'mind status' ||
-        low === 'mind'
+        low === 'mind' ||
+        low === 'my mind'
       ) {
-        const st = global.SNFreeMind?.status?.() || {};
-        log("I'm good.", 'ok');
+        const st = (global.SNAstranovMind || global.SNFreeMind)?.status?.() || {};
+        log('── Astranov Mind ──', 'ok');
         log(
-          'Remembered ' +
+          'Owner memory · ' +
             (st.learned || 0) +
-            ' notes. If I sound weird, type mind wipe.',
-          'dim'
+            ' lived notes · ' +
+            (st.seeds || 0) +
+            ' seed memories · evolves forever',
+          'ok'
         );
-        preview("I'm here");
-        global.SNGlobe?.setHud?.('Astranov');
+        log('Archangelos dialect · Telemachos pilot · tray: pitogyra mpyronia tsigareta', 'dim');
+        log('If corrupted: mind wipe · then hard refresh', 'dim');
+        preview('Astranov Mind');
+        global.SNGlobe?.setHud?.('ASTRANOV MIND');
+        return;
+      }
+      if (
+        low === 'telemachos' ||
+        low === 'tilemaxos' ||
+        low === 'pilot' ||
+        low === 'drone' ||
+        /^pilot\b|^telemach|^tilemax|^deliver\b/i.test(low)
+      ) {
+        if (global.SNTelemachos?.cli) {
+          const r = await SNTelemachos.cli(line);
+          log(
+            r?.tray
+              ? 'Telemachos · ' + r.tray
+              : 'Telemachos (Τηλέμαχος) · drone pilot ready',
+            'ok'
+          );
+          preview('Telemachos');
+        } else log('Telemachos loading · hard refresh', 'err');
+        return;
+      }
+      if (low === 'archangelos' || low === 'arcangelo' || /^fly\s+archangel/i.test(low)) {
+        if (global.SNTelemachos?.flyHome) await SNTelemachos.flyHome();
+        else log('Archangelos · 36.215, 28.125 Rhodes', 'ok');
+        preview('Archangelos');
         return;
       }
       if (

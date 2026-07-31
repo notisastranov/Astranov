@@ -31,7 +31,7 @@
       coldBoot: 'Silent globe (Greece-centered) + CLI. No persistent nav chrome.',
       globePrimacy: '3D Earth is the only permanent UI surface.',
       realism: 'Real geocoding, routing, WebRTC, geolocation, live crawlers. No fake city data as primary.',
-      ai: 'Astranov free mind first (own AI, no paid xAI). Brand: Astranov. Never generic assistant.',
+      ai: 'Astranov Mind — permanent owner memory (Archangelos dialect, Telemachos, tray). Evolves forever. Brand: Astranov. Never generic free chatbot.',
     },
     authority: [
       'Live code index.html + js/spacenet/* (+ astranov-continuity.js when present)',

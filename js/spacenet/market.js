@@ -602,8 +602,21 @@
       return null;
     if (/\b(cancel|stop|never\s*mind|forget\s*it|abort|clear\s*order)\b/i.test(low)) return null;
 
+    // Normalize Archangelos / Greeklish first
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        low = String(ArcangeloDialect.normalizeForRouting(line) || line)
+          .toLowerCase()
+          .trim();
+      }
+    } catch (_) {}
     var map = [
       { re: /\b(pizza|πίτσα|πιτσα|pizzeria)\b/i, food: 'pizza', overpass: 'pizza restaurant' },
+      {
+        re: /\b(pitogyra|pitogyro|πιτογύρα|πιτόγυρο|πιτογυρο|πιτογύρο)\b/i,
+        food: 'pitogyra',
+        overpass: 'restaurant food',
+      },
       { re: /\b(sushi|σούσι)\b/i, food: 'sushi', overpass: 'sushi restaurant' },
       { re: /\b(burger|μπέργκερ|hamburger)\b/i, food: 'burger', overpass: 'burger restaurant' },
       { re: /\b(coffee|cafe|καφέ|καφε|espresso)\b/i, food: 'coffee', overpass: 'cafe coffee' },
@@ -611,11 +624,16 @@
       { re: /\b(kebab|kebap|döner|ντονέρ)\b/i, food: 'kebab', overpass: 'kebab restaurant' },
       { re: /\b(pasta|italian|ιταλικ)\b/i, food: 'pasta', overpass: 'italian restaurant' },
       { re: /\b(chinese|κινέζικ)\b/i, food: 'chinese', overpass: 'chinese restaurant' },
+      {
+        re: /\b(mpyronia|mpironia|mpyres|μπυρόνια|μπίρες|beer|beers)\b/i,
+        food: 'beer',
+        overpass: 'supermarket convenience',
+      },
     ];
     // Generic "food/hungry" only with clear order intent — not every "eat" chat
     var genericFood =
-      /\b(food|φαγητ|πεινάω|hungry|i'?m\s+hungry|want\s+to\s+eat)\b/i.test(low) &&
-      /\b(order|bring|get\s+me|buy|παράγγειλ|find|want)\b/i.test(low);
+      /\b(food|φαγητ|πεινάω|hungry|i'?m\s+hungry|want\s+to\s+eat|thelo|θέλω)\b/i.test(low) &&
+      /\b(order|bring|get\s+me|buy|παράγγειλ|find|want|thelo|θέλω)\b/i.test(low);
 
     var food = null;
     var overpass = 'restaurant food';

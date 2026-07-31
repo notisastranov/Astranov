@@ -123,7 +123,7 @@
    * WAVE 1 — shell: CLI + chrome + AI free mind (no THREE, no map, no market bulk)
    * Goal: feed usable in ~1–2s on good network.
    */
-  // Shell includes market so `first delivery` works immediately (owner P0 path)
+  // Shell: Astranov Mind + dialect + market (owner memory lane loads first)
   var WAVE_SHELL = [
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
@@ -132,10 +132,12 @@
     '/js/spacenet/usage.js',
     '/js/spacenet/field.js',
     '/js/spacenet/home.js',
-    // Search on shell — first-task pizza needs Overpass before WAVE_APP
+    // Owner memory: Archangelos dialect → Astranov Mind → Telemachos
+    '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/search.js',
     '/js/spacenet/market.js',
     '/js/spacenet/free-ai.js',
+    '/js/spacenet/telemachos.js',
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js',
     '/js/spacenet/ui.js',

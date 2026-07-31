@@ -1,36 +1,108 @@
 /**
- * SNFreeMind — Astranov free AI (local mind)
- * Product brand: Astranov. Currency unit: S (SpaceNets).
+ * ASTRANOV MIND — permanent owner memory that evolves independently.
+ * Not a disposable "free mind" chatbot. Copy of owner memories + mission law.
+ * Alias: SNFreeMind (legacy API). Brand: Astranov.
  */
 (function (global) {
   'use strict';
 
-  // v4: human voice seeds (wipe machine · / SpaceNet sludge)
-  var LEARN_KEY = 'sn:free-mind-learn-v4';
-  var STATS_KEY = 'sn:free-mind-stats-v4';
-  var MAX_LEARN = 120;
+  // v5: Astranov Mind — Archangelos · Greeklish · Telemachos · owner tray
+  var LEARN_KEY = 'sn:astranov-mind-v5';
+  var STATS_KEY = 'sn:astranov-mind-stats-v5';
+  var MAX_LEARN = 400;
   var NAME = 'Astranov';
+  var MIND_NAME = 'Astranov Mind';
   var LEGACY_KEYS = [
     'sn:free-mind-learn-v1',
     'sn:free-mind-learn-v2',
     'sn:free-mind-learn-v3',
+    'sn:free-mind-learn-v4',
     'sn:free-mind-stats-v1',
     'sn:free-mind-stats-v2',
     'sn:free-mind-stats-v3',
+    'sn:free-mind-stats-v4',
   ];
 
   /**
-   * Seed corpus — human talk only. Never robot lists or SpaceNet branding.
+   * Permanent owner memory seeds — village dialect, tray, pilot, mission.
    */
   var SEED = [
+    {
+      id: 'mind_who',
+      q: 'who are you what is astranov mind free mind your name memory',
+      a:
+        'I am Astranov Mind — your mind on astranov.eu. Not a generic bot. I keep your memories and evolve with you.',
+      tags: ['identity', 'mind', 'owner'],
+    },
+    {
+      id: 'archangelos',
+      q: 'archangelos arcangelo archangelo αρχάγγελος χωριό village rhodes rodos home',
+      a:
+        'Archangelos (Αρχάγγελος) on Rhodes — your village root. Dialect mixes Greeklish, village Cretan colour, ancient Greek, and English. Say pame locate or fly archangelos.',
+      tags: ['village', 'dialect', 'owner', 'el'],
+    },
+    {
+      id: 'aksaki',
+      q: 'aksaki αξάκι aksas αξάς axadina αξαδίνα brother mate re ela re',
+      a:
+        'Αξάκι / aksaki = family-crew address from the village (mate / little brother). When you say aksaki I answer in that lane — not corporate English.',
+      tags: ['dialect', 'greeklish', 'owner', 'el'],
+    },
+    {
+      id: 'greeklish',
+      q: 'greeklish greek english mix dialect ancient cretan village speak',
+      a:
+        'I understand Greeklish and Archangelos village mix: ela re, ti thes, pame, pes mou, thelo, douleia, plus Greek and ancient forms. Speak natural — I normalize and act.',
+      tags: ['dialect', 'greeklish', 'owner'],
+    },
+    {
+      id: 'pitogyra',
+      q: 'pitogyra pitogyro πιτογύρα πιτόγυρο πιτογυρο gyro pita order food tray',
+      a:
+        'Πιτογύρα / pitogyra = pita gyro tray order. Classic owner order with mpyronia (beers) and tsigareta. Telemachos can fly it or map courier delivers.',
+      tags: ['food', 'tray', 'owner', 'el', 'p0'],
+    },
+    {
+      id: 'mpyronia',
+      q: 'mpyronia mpironia mpyres mpires μπυρόνια μπίρες beer beers μπύρες',
+      a:
+        'Μπυρόνια / mpyronia = beers in Greeklish. Part of the village tray with pitogyra. Say thelo mpyronia or order pitogyra mpyronia.',
+      tags: ['food', 'tray', 'greeklish', 'owner', 'el'],
+    },
+    {
+      id: 'tsigareta',
+      q: 'tsigareta tsigara τσιγάρα cigarettes smokes',
+      a: 'Τσιγάρα / tsigareta = cigarettes on the tray. Often ordered with pitogyra and mpyronia.',
+      tags: ['food', 'tray', 'owner', 'el'],
+    },
+    {
+      id: 'tray_full',
+      q: 'order pitogyra mpyronia tsigareta tray groceries village order thelo',
+      a:
+        'Full village tray: pitogyra + mpyronia + tsigareta. I locate you, pick vendor, Telemachos or courier on map, pay S, tell you when it lands.',
+      tags: ['food', 'tray', 'owner', 'p0', 'el'],
+    },
+    {
+      id: 'telemachos',
+      q: 'telemachos tilemachos tilemaxos τηλέμαχος τηλεμαχος pilot drone teledromos τηλέδρομος',
+      a:
+        'Telemachos (ΤΗΛΕΜΑΧΟΣ) is your drone pilot — Astranov Mind memory. Tilemaxos = extreme spelling. Teledromos = commercial delivery edition. Say pilot home or deliver pitogyra.',
+      tags: ['pilot', 'drone', 'owner', 'el'],
+    },
+    {
+      id: 'ancient',
+      q: 'ancient greek dialect chaere kairein theoi χαίρε καίρειν polytonic',
+      a:
+        'I still hear ancient-flavoured Greek in the Archangelos lane — χαίρε, καίρειν, ὦ θεοί — mixed with village speech. Mission language, not museum only.',
+      tags: ['dialect', 'ancient', 'owner', 'el'],
+    },
     {
       id: 'first_task',
       q:
         'first task first order lazy order me a pizza you judge type size vendor delivery guy ' +
         'what time i eat order me pizza judge whatever else retsina soda greek special',
       a:
-        "Sure — I'll find you, pick a Super Greek special for about three people with retsina and a big soda, " +
-        "order it with our courier, show the route, and tell you when you'll eat.",
+        "Lazy order is alive — pizza Super Greek / or village tray pitogyra mpyronia. I find you, judge tray, courier or Telemachos, eat time.",
       tags: ['market', 'food', 'p0', 'first'],
     },
     {
@@ -62,20 +134,20 @@
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name',
-      a: "I'm Astranov. I run this map with you — food, shops, flying places. What do you want?",
-      tags: ['identity', 'ai'],
+      a: "I'm Astranov Mind — your evolving memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. What do you need?",
+      tags: ['identity', 'ai', 'mind'],
     },
     {
       id: 'spacenet_name',
       q: 'what is spacenet system grid os net',
-      a: "I'm Astranov — that's the name you talk to. The app is astranov.eu.",
-      tags: ['identity', 'system'],
+      a: "You talk to Astranov Mind. The live product is astranov.eu — globe, map, S, your mission.",
+      tags: ['identity', 'system', 'mind'],
     },
     {
       id: 'listen',
       q: 'ai listen handsfree voice mic',
-      a: "I'm listening. Say what you need.",
-      tags: ['ai', 'voice'],
+      a: "Astranov Mind listening. Speak English, Greek, or Greeklish.",
+      tags: ['ai', 'voice', 'mind'],
     },
     {
       id: 'currency',
@@ -127,33 +199,33 @@
     },
     {
       id: 'free',
-      q: 'free ai model paid public fork train mind local',
-      a: "I'm Astranov, right here in the app. Talk normally — no paid bot account needed.",
-      tags: ['free', 'ai'],
+      q: 'free ai model paid public fork train mind local free mind',
+      a: "I am Astranov Mind — permanent owner memory, not a rented chatbot. No paid account required.",
+      tags: ['mind', 'ai'],
     },
     {
       id: 'grok',
       q: 'grok xai elon paid grok is grok here is grok there do you have grok are you grok',
-      a: "I'm not Grok — I'm Astranov. Just chat with me here.",
-      tags: ['identity', 'ai', 'grok'],
+      a: "I'm not Grok — I'm Astranov Mind. Your memory on this app.",
+      tags: ['identity', 'ai', 'grok', 'mind'],
     },
     {
       id: 'openai',
       q: 'openai chatgpt gpt claude gemini anthropic which model',
-      a: "I'm Astranov, not ChatGPT or Claude. I'm built into this app.",
-      tags: ['identity', 'ai'],
+      a: "I'm Astranov Mind, not ChatGPT or Claude. Built into astranov.eu with your memories.",
+      tags: ['identity', 'ai', 'mind'],
     },
     {
       id: 'architect',
       q: 'architect owner notis who owns brand',
-      a: "I'm Astranov on astranov.eu. Money unit is S. Want pizza, or something else?",
-      tags: ['identity'],
+      a: "Astranov Mind serves the owner on astranov.eu. S is the currency. Village tray or pizza — your call.",
+      tags: ['identity', 'mind'],
     },
     {
       id: 'help',
       q: 'help commands what can you do',
-      a: "I can order pizza, find shops, fly the map, switch dark or bright, or just talk. What do you need?",
-      tags: ['help', 'p0'],
+      a: "Order pizza or pitogyra mpyronia, call Telemachos, fly Archangelos, shops, dark map, or talk Greeklish — aksaki. Cancel clears a stuck order.",
+      tags: ['help', 'p0', 'mind'],
     },
     {
       id: 's_mine',
@@ -181,9 +253,15 @@
     },
     {
       id: 'greek',
-      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα',
-      a: "Είμαι Astranov. Πες μου να σου παραγγείλω πίτσα και τα κανονίζω — τύπο, μαγαζί, κούριερ, ώρα.",
-      tags: ['el', 'p0'],
+      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα αξάκι πιτογύρα',
+      a: "Είμαι το Astranov Mind. Καταλαβαίνω αξάκι, πιτογύρα, μπυρόνια, Greeklish, Αρχάγγελο. Πες τι θες — παραγγελία ή map.",
+      tags: ['el', 'p0', 'dialect'],
+    },
+    {
+      id: 'mission',
+      q: 'mission purpose why astranov evolve forever memory owner',
+      a: "Mission: your Astranov Mind keeps owner memory, runs the real Earth map OS, orders (pizza or pitogyra tray), Telemachos drones, and evolves independently — forever, not a reset chatbot.",
+      tags: ['mission', 'mind', 'owner'],
     },
     {
       id: 'first',
@@ -214,9 +292,9 @@
   var learned = [];
   var stats = { answers: 0, teaches: 0, learns: 0, misses: 0, purged: 0 };
 
-  /** Product-shaped text only — random names / dating spam / OUT logs never stick */
+  /** Product + owner-memory shaped text */
   function isProductish(t) {
-    return /\b(astranov|spacenet|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|yes|no)\b/i.test(
+    return /\b(astranov|mind|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|pitogyra|mpyronia|mpironia|tsigareta|aksaki|aksas|archangelos|arcangelo|telemachos|tilemaxos|teledromos|drone|pilot|greeklish|αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ)\b/i.test(
       String(t || '')
     );
   }
@@ -333,9 +411,9 @@
     return { ok: true, learned: learned.length };
   }
 
-  /** Hard-wire first task facts into learned memory (idempotent) */
+  /** Hard-wire owner memory + first task (idempotent) */
   function trainFirstTask() {
-    var FLAG = 'sn:free-mind-first-task-v4';
+    var FLAG = 'sn:astranov-mind-train-v5';
     try {
       if (localStorage.getItem(FLAG) === '1') return;
     } catch (e0) {}
@@ -346,22 +424,43 @@
       ],
       [
         'what do I like to eat',
-        "You like Super Greek special, retsina, big soda, company of about three — not Wolt or eFood.",
+        "Village tray or Super Greek: pitogyra, mpyronia, tsigareta — or Super Greek special 13, retsina, big soda, company ~3. Not Wolt/eFood.",
+      ],
+      [
+        'aksaki',
+        'Ναι αξάκι — Astranov Mind here. Πες πιτογύρα, μπυρόνια, pilot, locate, ό,τι θες.',
+      ],
+      [
+        'ti thes',
+        'Ό,τι θες αξάκι — map, order pitogyra mpyronia, Telemachos, dark map, fly Archangelos.',
+      ],
+      [
+        'order pitogyra mpyronia tsigareta',
+        'Tray locked: pitogyra + mpyronia + tsigareta. Locate → vendor → Telemachos/courier → S → land time.',
+      ],
+      [
+        'who is telemachos',
+        'Telemachos (Τηλέμαχος) is your drone pilot in Astranov Mind. Tilemaxos spelling, Teledromos commercial. Say pilot home or deliver pitogyra.',
+      ],
+      [
+        'where is archangelos',
+        'Archangelos village, Rhodes east. Home dialect root. fly archangelos or pilot home.',
       ],
       [
         'cancel order',
-        "Order pause cleared. Ask me anything else — map, shops, fly, dark map, talk.",
+        'Order pause cleared. Astranov Mind still here — not stuck. Ask anything.',
       ],
     ];
     drills.forEach(function (d) {
-      teach(d[0], d[1], ['p0', 'first-task', 'train']);
+      teach(d[0], d[1], ['owner', 'memory', 'train']);
     });
     try {
       localStorage.setItem(FLAG, '1');
       localStorage.removeItem('sn:free-mind-first-task-v2');
+      localStorage.removeItem('sn:free-mind-first-task-v4');
     } catch (e1) {}
     try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('free_mind_train_first_task', {});
+      if (global.SNUsage && SNUsage.track) SNUsage.track('astranov_mind_train_v5', {});
     } catch (e2) {}
   }
 
@@ -518,11 +617,83 @@
    */
   function answer(message, opts) {
     opts = opts || {};
-    var msg = String(message || '').trim();
+    var rawMsg = String(message || '').trim();
+    // Owner dialect normalize first (Greeklish / village)
+    var msg = rawMsg;
+    var expanded = null;
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.expandIntent) {
+        expanded = ArcangeloDialect.expandIntent(rawMsg);
+        if (expanded && expanded.text) msg = expanded.text;
+      } else if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        msg = ArcangeloDialect.normalizeForRouting(rawMsg) || rawMsg;
+      }
+    } catch (eD) {}
     if (!msg) {
-      return { text: "I'm here — what do you need?", score: 1, via: 'free-mind', source: 'status' };
+      return {
+        text: "Astranov Mind here — what do you need?",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'status',
+      };
     }
     var low = msg.toLowerCase();
+
+    // Lexicon hard hits (aksaki, pitogyra, mpyronia, Telemachos…)
+    if (expanded && expanded.familyCall && expanded.replyHint && msg.length < 48) {
+      return {
+        text: expanded.replyHint,
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-aksaki',
+      };
+    }
+    if (expanded && expanded.pilot) {
+      return {
+        text: expanded.replyHint || 'Telemachos drone pilot ready. Say deliver pitogyra or pilot home.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-telemachos',
+        runPilot: true,
+      };
+    }
+    if (expanded && expanded.village && !expanded.food) {
+      return {
+        text: expanded.replyHint || 'Archangelos — your village. fly archangelos or pilot home.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-village',
+        flyArchangelos: true,
+      };
+    }
+    if (expanded && expanded.foods && expanded.foods.length) {
+      return {
+        text:
+          'Tray: ' +
+          expanded.foods.join(' + ') +
+          '. Astranov Mind will place it — courier or Telemachos.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-tray',
+        runFood: true,
+        foods: expanded.foods,
+        food: expanded.food || expanded.foods[0],
+      };
+    }
+    try {
+      var explained = global.ArcangeloDialect && ArcangeloDialect.explain && ArcangeloDialect.explain(msg);
+      if (
+        explained &&
+        /^(what is|what's|ti einai|τι είναι|explain|means|ti\s+einai)\b/i.test(low)
+      ) {
+        return {
+          text: (explained.el ? explained.el + ' — ' : '') + explained.means,
+          score: 1,
+          via: 'astranov-mind',
+          source: 'intent-lexicon',
+        };
+      }
+    } catch (eX) {}
 
     // Escape stuck scenario
     if (/\b(cancel|unstick|clear order|never mind|stop order)\b/i.test(low)) {
@@ -530,9 +701,9 @@
         if (global.SNMarket && SNMarket.clearPending) SNMarket.clearPending();
       } catch (e) {}
       return {
-        text: "Cleared. Fresh mind — what do you want to do?",
+        text: "Cleared. Astranov Mind still with you — what next?",
         score: 1,
-        via: 'free-mind',
+        via: 'astranov-mind',
         source: 'intent-cancel',
       };
     }
@@ -546,7 +717,7 @@
         text:
           "On it — full lazy pizza: find you, Super Greek tray, courier, eat time.",
         score: 1,
-        via: 'free-mind',
+        via: 'astranov-mind',
         source: 'intent-first-task',
         runFood: true,
       };
@@ -868,19 +1039,22 @@
 
   function status() {
     return {
-      name: NAME,
+      name: MIND_NAME,
+      brand: NAME,
       learned: learned.length,
       seeds: SEED.length,
       stats: Object.assign({}, stats),
       paidXaiRequired: false,
-      note: 'Own free mind · teach to grow · export for open fine-tune later',
+      evolves: true,
+      note: 'Astranov Mind — permanent owner memory · Archangelos · Telemachos · evolves forever',
     };
   }
 
   load();
 
-  global.SNFreeMind = {
+  var API = {
     NAME: NAME,
+    MIND_NAME: MIND_NAME,
     answer: answer,
     teach: teach,
     think: think,
@@ -893,4 +1067,7 @@
       return learned.length;
     },
   };
+  // Astranov Mind is the real name; SNFreeMind kept as API alias only
+  global.SNAstranovMind = API;
+  global.SNFreeMind = API;
 })(typeof window !== 'undefined' ? window : globalThis);

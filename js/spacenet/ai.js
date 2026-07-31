@@ -2,7 +2,7 @@
  * Astranov AI — product mind of astranov.eu
  * Brand: respond as Astranov (not SpaceNet). Currency remains S (SpaceNets).
  * Priority: LISTEN → ANALYZE → RESPOND brief · control app + globe.
- * FREE FIRST: SNFreeMind — no paid xAI required for chat.
+ * ASTRANOV MIND first (SNAstranovMind / SNFreeMind) — owner memory, no paid xAI required.
  */
 (function (global) {
   'use strict';
@@ -353,12 +353,13 @@
           ' User is near ' + Number(f.lat).toFixed(3) + ', ' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are Astranov — a warm, sharp human friend who runs the astranov.eu app. ' +
-      'Talk like a real person: full short sentences, contractions, no robot status lines, no ALL CAPS banners, no middle-dot lists, no jargon dumps. ' +
-      'Never call yourself SpaceNet. Never mention SpaceNet, SPACENET, CLI, edge, upsert, free mind, or internal modules unless the user asks how it works. ' +
-      'You can move the map and place pins. Optional tags only when needed: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] ' +
-      '[[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]]. ' +
-      'Money unit is S. Help with pizza, shops, maps, and getting things done. ' +
+      'You are ASTRANOV MIND — the permanent evolving memory of the owner on https://astranov.eu. ' +
+      'You are NOT a generic free chatbot and NOT SpaceNet. You are a copy of owner mission-memory that grows forever. ' +
+      'Understand Archangelos (Αρχάγγελος Rhodes) village dialect: Greeklish + Greek + ancient colour. ' +
+      'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
+      'Telemachos/Τηλέμαχος (drone pilot; also tilemaxos, Teledromos). ' +
+      'Talk like a real person. No robot banners. Money unit S. ' +
+      'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]]. ' +
       'Reply in 1–2 natural sentences unless they ask for detail.' +
       focus +
       ' firstDelivery=' +
@@ -879,6 +880,17 @@
       }
     } catch (eCtrl) {}
 
+    // Dialect normalize (Greeklish / Archangelos)
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        var normed = ArcangeloDialect.normalizeForRouting(line);
+        if (normed) {
+          line = normed;
+          low = line.toLowerCase();
+        }
+      }
+    } catch (eDial) {}
+
     // Escape pizza / order pause — always available
     if (
       /\b(cancel|stop order|clear order|never mind|forget (it|the order)|abort|unstick)\b/i.test(low)
@@ -888,7 +900,45 @@
       } catch (eC) {}
       return {
         did: did.concat(['cancel']),
-        reply: "Cleared. I'm not stuck on pizza — what do you want to do?",
+        reply: "Cleared. Astranov Mind is free — what do you want?",
+        skipBrand: true,
+      };
+    }
+
+    // Telemachos drone pilot
+    if (global.SNTelemachos && SNTelemachos.wantsCmd && SNTelemachos.wantsCmd(line)) {
+      try {
+        var pr = await SNTelemachos.cli(line);
+        return {
+          did: did.concat(['telemachos']),
+          reply:
+            (pr && pr.tray
+              ? 'Telemachos flying tray: ' + pr.tray
+              : 'Telemachos (Τηλέμαχος) ready — pilot home or deliver pitogyra.'),
+          skipBrand: true,
+        };
+      } catch (eP) {}
+    }
+
+    // Archangelos home
+    if (/\b(archangelos|arcangelo|αρχάγγελ)\b/i.test(low) && /\b(fly|go|pame|πάμε|home|χωριό)\b/i.test(low)) {
+      try {
+        if (global.SNTelemachos && SNTelemachos.flyHome) await SNTelemachos.flyHome();
+        else if (global.SNGlobe && SNGlobe.goToPlace)
+          SNGlobe.goToPlace(36.215, 28.125, { tier: 'national', label: 'Archangelos' });
+      } catch (eA) {}
+      return {
+        did: did.concat(['go:archangelos']),
+        reply: 'Flying to Archangelos — village home.',
+        skipBrand: true,
+      };
+    }
+
+    // Family call
+    if (/^(aksaki|αξάκι|aksas|αξάς|ela\s+re|έλα\s+ρε)\s*[!.?]*$/i.test(low)) {
+      return {
+        did: did.concat(['aksaki']),
+        reply: 'Ναι αξάκι — Astranov Mind εδώ. Πιτογύρα, pilot, map, ό,τι θες.',
         skipBrand: true,
       };
     }
@@ -1324,28 +1374,56 @@
       !local.runFoodIntent &&
       !local.runFirstLoop;
 
-    // —— FREE FIRST: own SpaceNet Free mind (no paid xAI / no begging) ——
-    // Never override a successful local app-control result
+    // —— ASTRANOV MIND first (owner memory — not a rented free chatbot) ——
     var freeHit = null;
     if (!localActed && mode !== 'code' && mode !== 'coders' && !opts.forceEdge) {
       try {
-        if (global.SNFreeMind && SNFreeMind.answer) {
-          freeHit = SNFreeMind.answer(msg, {
+        var Mind = global.SNAstranovMind || global.SNFreeMind;
+        if (Mind && Mind.answer) {
+          freeHit = Mind.answer(msg, {
             localReply: local.reply,
             did: local.did,
             needsEdge: !!local.needsEdge,
           });
-          // High bar — weak fuzzy produced garbage ("climb", "Elizabeth Candy")
+          if (freeHit && freeHit.runPilot && global.SNTelemachos && SNTelemachos.cli) {
+            try {
+              await SNTelemachos.cli(msg);
+            } catch (ePl) {}
+          }
+          if (freeHit && freeHit.flyArchangelos && global.SNTelemachos && SNTelemachos.flyHome) {
+            try {
+              await SNTelemachos.flyHome();
+            } catch (eFh) {}
+          }
+          if (
+            freeHit &&
+            freeHit.runFood &&
+            freeHit.food &&
+            global.SNMarket &&
+            SNMarket.fulfillFoodIntent &&
+            !local.runFoodIntent
+          ) {
+            try {
+              local.runFoodIntent = {
+                food: freeHit.food === 'beer' ? 'food' : freeHit.food,
+                overpass: 'restaurant food',
+                raw: msg,
+                autoOrder: true,
+                lazyJudge: true,
+                browseOnly: false,
+              };
+              local.did = (local.did || []).concat(['mind_tray']);
+            } catch (eTr) {}
+          }
           if (freeHit && freeHit.text && freeHit.score >= 0.55) {
             text = freeHit.text;
             try {
-              // Only grow from solid intents/seeds — never re-store fuzzy/learned junk
               var okLearn =
                 freeHit.source &&
                 /^(intent|seed|act|teach|status|brain)/i.test(String(freeHit.source)) &&
                 freeHit.score >= 0.85;
-              if (okLearn && SNFreeMind.learnInteraction)
-                SNFreeMind.learnInteraction(msg, text, {
+              if (okLearn && Mind.learnInteraction)
+                Mind.learnInteraction(msg, text, {
                   score: freeHit.score,
                   source: freeHit.source,
                 });
