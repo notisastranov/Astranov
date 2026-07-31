@@ -222,3 +222,4 @@ js/spacenet/auth.js          → Google GIS preferred
 *Agent note 2026-07-31: **Smooth boot/perf** — THREE parallel with shell; lite segs/stars/DPR; radar 180–250ms; AI gfx + HELPER on-demand RAF; Earth idle skip; city map freezes globe. Build `20260731205000-smooth-boot`.*
 *Agent note 2026-07-31: Globe drag anti-shake — deadzone, fling-only inertia, no frame-skip while dragging, no double pointerup, soft delta filter. Build `20260731210000-globe-smooth-drag`.*
 *Agent note 2026-07-31: Tile top row − yellow · **X red close** · + green. Close in middle of ±. Build `20260731211000-tile-xyz-buttons`.*
+*Agent note 2026-07-31: **Unified top chrome** — radar · local · ASTRANOV · device graph · money in one CLI-width bar; drag down expand / up retract. Collapsed = amount + name + local + mini radar/graph. Build `20260731213000-topchrome`.*

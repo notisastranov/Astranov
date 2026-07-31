@@ -1120,6 +1120,212 @@
         fmtLL(vLat, vLng) +
         (same ? '' : ' · flying');
     }
+    // Compact top-chrome local line
+    var stc = $('stc-local');
+    if (stc) {
+      var mode = spd.mode || 'field';
+      var place = pName || (pLat != null ? fmtLL(pLat, pLng) : 'locating…');
+      stc.textContent =
+        String(mode).slice(0, 18) +
+        ' · ' +
+        String(place).slice(0, 28) +
+        (same ? '' : ' · view');
+    }
+    paintStcPerf();
+  }
+
+  /** Mini device performance graph in collapsed top chrome */
+  function paintStcPerf() {
+    var c = $('stc-perf');
+    if (!c) return;
+    var ctx = c.getContext('2d');
+    if (!ctx) return;
+    var w = c.width;
+    var h = c.height;
+    ctx.clearRect(0, 0, w, h);
+    // Use existing loadHist from paintLoadGraph (no double-push)
+    var load =
+      mine.on && mine.terms
+        ? Math.max(mine.rates.cpu || 0, 100 - (mine.spare || 0))
+        : Math.max(6, (100 - (mine.spare || 50)) * 0.3);
+    if (!loadHist.length) {
+      loadHist.push(Math.max(0, Math.min(100, load)));
+    }
+    ctx.strokeStyle = 'rgba(76,201,255,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.stroke();
+    if (loadHist.length < 2) {
+      // single point still show rate
+      ctx.fillStyle = 'rgba(168,236,255,0.75)';
+      ctx.font = '600 8px JetBrains Mono,monospace';
+      ctx.fillText(((mine.rate || 0) * 24).toFixed(1), 2, 9);
+      return;
+    }
+    var i;
+    ctx.beginPath();
+    for (i = 0; i < loadHist.length; i++) {
+      var x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
+      var y = h - 2 - (loadHist[i] / 100) * (h - 4);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(168,236,255,0.75)';
+    ctx.font = '600 8px JetBrains Mono,monospace';
+    ctx.fillText(((mine.rate || 0) * 24).toFixed(1), 2, 9);
+  }
+
+  /**
+   * Unified top chrome — same width language as CLI.
+   * Drag handle down = expand · up = retract (one finger).
+   */
+  function bindTopChrome() {
+    var panel = $('sn-topchrome-panel');
+    var handle = $('sn-topchrome-drag');
+    if (!panel || panel._stcBound) return;
+    panel._stcBound = true;
+    try {
+      document.body.classList.add('stc-on');
+    } catch (_) {}
+
+    var KEY = 'sn:topchrome-size-v1';
+    var startY = 0;
+    var startH = 0;
+    var dragging = false;
+    var moved = false;
+    var ptrId = null;
+
+    function sizePx(mode) {
+      var h = window.innerHeight || 700;
+      if (mode === 'collapsed') return 56;
+      if (mode === 'expanded') return Math.min(320, Math.round(h * 0.42));
+      return Math.min(160, Math.round(h * 0.22));
+    }
+
+    function setMode(mode, animate, freeH) {
+      panel.classList.remove('collapsed', 'mid', 'expanded');
+      panel.classList.add(mode);
+      if (animate !== false) panel.classList.add('stc-anim');
+      else panel.classList.remove('stc-anim');
+      var px = freeH != null ? freeH : sizePx(mode);
+      panel.style.maxHeight = px + 'px';
+      panel.style.height = '';
+      try {
+        localStorage.setItem(KEY, mode);
+      } catch (_) {}
+      // Resize radar canvas after layout
+      setTimeout(function () {
+        try {
+          syncRadarCanvas();
+          drawRadar();
+        } catch (_) {}
+      }, 40);
+    }
+
+    try {
+      var sz = localStorage.getItem(KEY);
+      if (sz === 'collapsed' || sz === 'mid' || sz === 'expanded') setMode(sz, false);
+      else setMode('collapsed', false);
+    } catch (_) {
+      setMode('collapsed', false);
+    }
+
+    function onDown(e) {
+      if (e.pointerType === 'touch' && e.isPrimary === false) return;
+      if (e.button != null && e.button !== 0) return;
+      // Prefer handle; allow vertical drag on panel chrome not buttons
+      var t = e.target;
+      if (
+        t &&
+        t.closest &&
+        t.closest('button, a, input, #field-balance-hud, #field-radar, #btn-home')
+      ) {
+        // still allow handle
+        if (!t.closest('#sn-topchrome-drag')) return;
+      }
+      startY = e.clientY;
+      startH = panel.getBoundingClientRect().height || sizePx('collapsed');
+      dragging = true;
+      moved = false;
+      ptrId = e.pointerId;
+      panel.classList.add('dragging');
+      panel.classList.remove('stc-anim');
+      try {
+        panel.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      if (ptrId != null && e.pointerId !== ptrId) return;
+      var dy = e.clientY - startY;
+      if (!moved && Math.abs(dy) < 6) return;
+      moved = true;
+      // Drag DOWN expands (opposite of CLI which expands upward)
+      var next = Math.max(48, Math.min(sizePx('expanded') + 40, startH + dy));
+      panel.style.maxHeight = next + 'px';
+      panel.style.height = next + 'px';
+      panel.classList.remove('collapsed', 'mid', 'expanded');
+      if (next < 80) panel.classList.add('collapsed');
+      else if (next > sizePx('expanded') - 24) panel.classList.add('expanded');
+      else panel.classList.add('mid');
+      if (e.cancelable) e.preventDefault();
+    }
+
+    function onUp(e) {
+      if (!dragging) return;
+      dragging = false;
+      panel.classList.remove('dragging');
+      try {
+        if (ptrId != null) panel.releasePointerCapture(ptrId);
+      } catch (_) {}
+      ptrId = null;
+      if (!moved) return;
+      var h = panel.getBoundingClientRect().height || startH;
+      var pick = 'mid';
+      if (h < 90) pick = 'collapsed';
+      else if (h > sizePx('expanded') - 30) pick = 'expanded';
+      setMode(pick, true, null);
+    }
+
+    handle && handle.addEventListener('pointerdown', onDown);
+    panel.addEventListener('pointerdown', onDown);
+    panel.addEventListener('pointermove', onMove, { passive: false });
+    panel.addEventListener('pointerup', onUp);
+    panel.addEventListener('pointercancel', onUp);
+
+    // Double-tap handle toggles collapsed/expanded
+    var lastTap = 0;
+    handle &&
+      handle.addEventListener('click', function () {
+        var now = Date.now();
+        if (now - lastTap < 320) {
+          var m = panel.classList.contains('expanded')
+            ? 'collapsed'
+            : panel.classList.contains('collapsed')
+              ? 'expanded'
+              : 'collapsed';
+          setMode(m, true);
+          lastTap = 0;
+        } else lastTap = now;
+      });
+
+    g.SNTopChrome = {
+      set: setMode,
+      expand: function () {
+        setMode('expanded', true);
+      },
+      collapse: function () {
+        setMode('collapsed', true);
+      },
+      toggle: function () {
+        setMode(panel.classList.contains('expanded') ? 'collapsed' : 'expanded', true);
+      },
+    };
   }
 
   function refreshPhysPos() {
@@ -2995,6 +3201,7 @@
     paintRadarZoomLabel();
     refreshPhysPos();
     setInterval(refreshPhysPos, 45000);
+    bindTopChrome();
     paint();
     refreshBlips();
     bindRadarTap();

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731211000-tile-xyz-buttons" />
-<meta name="astranov-continuity" content="20260731211000-tile-xyz-buttons" />
+<meta name="astranov-build" content="20260731213000-topchrome" />
+<meta name="astranov-continuity" content="20260731213000-topchrome" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -64,7 +64,190 @@
   }
   #city-map.active { display: block; }
 
-  /* ── HOME ── */
+  
+  /* ── UNIFIED TOP CHROME (CLI twin · drag down to expand) ── */
+  #sn-topchrome {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 95;
+    display: flex; justify-content: center;
+    padding: calc(6px + env(safe-area-inset-top)) 10px 0;
+    pointer-events: none;
+  }
+  #sn-topchrome-panel {
+    pointer-events: auto;
+    width: min(700px, 100%);
+    max-height: 56px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    background: linear-gradient(165deg, rgba(4, 18, 40, 0.94), rgba(2, 8, 18, 0.96));
+    backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
+    border: 1px solid rgba(61, 184, 255, 0.35);
+    border-radius: 14px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.45),
+      0 0 28px rgba(11, 111, 212, 0.22),
+      inset 0 1px 0 rgba(168, 236, 255, 0.1);
+    touch-action: none;
+    transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #sn-topchrome-panel.stc-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+  #sn-topchrome-panel.dragging { transition: none !important; user-select: none; cursor: grabbing; }
+  #sn-topchrome-panel.collapsed { max-height: 56px; }
+  #sn-topchrome-panel.mid { max-height: min(160px, 22vh); }
+  #sn-topchrome-panel.expanded { max-height: min(320px, 42vh); }
+  #sn-topchrome-panel.collapsed .stc-detail { display: none !important; }
+  #sn-topchrome-panel.collapsed #fbh-mine-rate,
+  #sn-topchrome-panel.collapsed #fbh-econ-graph,
+  #sn-topchrome-panel.collapsed #fbh-econ-label,
+  #sn-topchrome-panel.collapsed #fbh-fees { display: none !important; }
+  #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-row { display: none !important; }
+  #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-head { margin: 0; }
+  #sn-topchrome-panel.collapsed #field-nav-meta .fnm-row:not(#fnm-phys):not(#fnm-mode) { display: none !important; }
+  #sn-topchrome-panel.collapsed #field-radar { width: 40px !important; height: 40px !important; }
+  #sn-topchrome-panel.collapsed #field-radar-zoom,
+  #sn-topchrome-panel.collapsed .fr-label,
+  #sn-topchrome-panel.collapsed #field-radar-legend { display: none !important; }
+
+  #stc-body {
+    flex: 1; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #stc-compact {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0,1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 4px;
+    min-height: 44px;
+  }
+  #stc-detail {
+    flex: 1; min-height: 0; overflow: auto;
+    padding: 4px 10px 6px;
+    display: flex; flex-direction: column; gap: 8px;
+    border-top: 1px solid rgba(26, 111, 212, 0.2);
+  }
+  #sn-topchrome-panel.mid #stc-detail,
+  #sn-topchrome-panel.expanded #stc-detail { display: flex; }
+
+  /* Radar inside chrome — not free-floating */
+  #sn-topchrome #field-radar {
+    position: relative !important; top: auto !important; left: auto !important; right: auto !important;
+    width: 40px; height: 40px; flex-shrink: 0;
+    z-index: 1;
+  }
+  #sn-topchrome-panel.mid #field-radar,
+  #sn-topchrome-panel.expanded #field-radar {
+    width: 88px; height: 88px;
+  }
+  #sn-topchrome-panel.expanded #field-radar {
+    width: 120px; height: 120px;
+  }
+  #sn-topchrome #field-radar.expanded {
+    /* expand handled by chrome size, not free screen takeover */
+    top: auto !important;
+    width: 120px !important; height: 120px !important;
+    border-radius: 50% !important;
+  }
+  #sn-topchrome #field-radar::before { inset: -1px; }
+
+  #stc-center {
+    min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; text-align: center;
+  }
+  #stc-local {
+    font: 600 9px/1.2 var(--font-mono); color: #6dffb0;
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+  }
+  #sn-topchrome #btn-home {
+    position: relative !important; top: auto !important; left: auto !important;
+    transform: none !important;
+    font: 700 11px/1 var(--font-display); letter-spacing: 0.22em;
+    color: #a8ecff;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 2px 4px;
+    box-shadow: none;
+    text-shadow: 0 0 12px rgba(76, 201, 255, 0.55);
+    backdrop-filter: none;
+  }
+  #sn-topchrome #btn-home:hover { color: #fff; }
+
+  #stc-perf {
+    width: 56px; height: 28px; border-radius: 6px;
+    background: rgba(0, 8, 20, 0.55);
+    border: 1px solid rgba(76, 201, 255, 0.25);
+    flex-shrink: 0;
+  }
+  #sn-topchrome-panel.expanded #stc-perf { width: 72px; height: 36px; }
+
+  #sn-topchrome #field-balance-hud {
+    position: relative !important; top: auto !important; right: auto !important;
+    min-width: 0; max-width: 100px;
+    padding: 4px 6px;
+    animation: none;
+    box-shadow: 0 0 10px rgba(11, 111, 212, 0.25);
+  }
+  #sn-topchrome #fbh-s { font-size: 11px; }
+  #sn-topchrome-panel.expanded #field-balance-hud { max-width: 140px; padding: 6px 8px; }
+  #sn-topchrome-panel.expanded #fbh-s { font-size: 13px; }
+  #sn-topchrome-panel.expanded #fbh-econ-graph { height: 28px; display: block; }
+  #sn-topchrome-panel.mid #fbh-mine-rate,
+  #sn-topchrome-panel.expanded #fbh-mine-rate { display: block !important; }
+  #sn-topchrome-panel.mid #fbh-fees,
+  #sn-topchrome-panel.expanded #fbh-fees { display: block !important; }
+  #sn-topchrome-panel.expanded #fbh-econ-graph,
+  #sn-topchrome-panel.expanded #fbh-econ-label { display: block !important; }
+
+  #sn-topchrome #field-nav-meta {
+    position: relative !important; top: auto !important; left: auto !important;
+    max-width: none; padding: 6px 8px; width: 100%;
+    box-shadow: none;
+  }
+  #sn-topchrome #sn-fleet-monitor {
+    position: relative !important; top: auto !important; left: auto !important;
+    transform: none !important; width: 100%;
+    padding: 4px 6px; box-shadow: none;
+  }
+  #stc-detail-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  @media (max-width: 520px) {
+    #stc-detail-row { grid-template-columns: 1fr; }
+    #stc-compact { gap: 6px; padding: 5px 8px 3px; }
+    #stc-local { font-size: 8px; }
+    #sn-topchrome #btn-home { font-size: 10px; letter-spacing: 0.16em; }
+    #stc-perf { width: 44px; height: 24px; }
+  }
+
+  #sn-topchrome-drag {
+    flex-shrink: 0; cursor: grab; touch-action: none; user-select: none;
+    padding: 4px 0 6px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: linear-gradient(180deg, transparent, rgba(8, 28, 56, 0.35));
+  }
+  #sn-topchrome-drag::before {
+    content: ''; display: block; width: 36px; height: 3px; border-radius: 99px;
+    background: linear-gradient(90deg, transparent, rgba(76, 201, 255, 0.65), transparent);
+    box-shadow: 0 0 10px rgba(76, 201, 255, 0.4);
+  }
+  #sn-topchrome-drag span {
+    font: 600 8px/1 var(--font-mono); letter-spacing: 0.12em; color: rgba(140, 180, 220, 0.55);
+    text-transform: uppercase;
+  }
+  #sn-topchrome-panel.dragging #sn-topchrome-drag { cursor: grabbing; }
+
+  /* Kill free-float leftovers if any outside chrome */
+  body.stc-on #field-nav-meta:not(#sn-topchrome #field-nav-meta),
+  body.stc-on #field-balance-hud:not(#sn-topchrome #field-balance-hud),
+  body.stc-on #field-radar:not(#sn-topchrome #field-radar),
+  body.stc-on #sn-fleet-monitor:not(#sn-topchrome #sn-fleet-monitor),
+  body.stc-on #btn-home:not(#sn-topchrome #btn-home) {
+    /* elements live inside chrome only */
+  }
+
+  /* ── HOME (now inside top chrome) ── */
   #btn-home {
     position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 90;
     font: 700 10px/1 var(--font-display); letter-spacing: 0.28em;
@@ -1000,27 +1183,82 @@
 <div id="globe" aria-label="Earth"></div>
 <div id="city-map" aria-hidden="true"></div>
 
-<div id="field-nav-meta" aria-live="polite">
-  <span class="fnm-row" id="fnm-speed">— km/h</span>
-  <span class="fnm-row" id="fnm-mode">—</span>
-  <span class="fnm-row" id="fnm-time">UTC — · Local —</span>
-  <span class="fnm-row" id="fnm-phys">PHYS · locating…</span>
-  <span class="fnm-row" id="fnm-virt">VIEW · GLOBAL</span>
-</div>
 
-<div id="field-radar" aria-label="Radar · tap zoom in · hold zoom out · two-finger pinch" title="Tap = zoom in · hold = zoom out · two-finger pinch = range" role="button" tabindex="0">
-  <canvas id="field-radar-canvas" width="120" height="120"></canvas>
-  <div id="field-radar-zoom">rng 1.0×</div>
-  <div id="field-radar-speed" class="earth" aria-hidden="true">
-    <span id="fsh-value">1671</span>
-    <span id="fsh-unit">km/h</span>
-  </div>
-  <span class="fr-label">RADAR</span>
-  <div id="field-radar-legend" aria-hidden="true">
-    <b class="f">● friends</b>
-    · <b class="c">● competitors</b>
-    · <b class="v">● vendor workers & clients</b>
-    · <b class="r">━ routes</b>
+<div id="sn-topchrome" aria-label="Astranov top chrome">
+  <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Status · drag down to expand">
+    <div id="stc-body">
+      <div id="stc-compact">
+        <div id="field-radar" aria-label="Radar · tap zoom in · hold zoom out" title="Tap zoom in · hold zoom out" role="button" tabindex="0">
+          <canvas id="field-radar-canvas" width="120" height="120"></canvas>
+          <div id="field-radar-zoom">rng 1.0×</div>
+          <div id="field-radar-speed" class="earth" aria-hidden="true">
+            <span id="fsh-value">1671</span>
+            <span id="fsh-unit">km/h</span>
+          </div>
+          <span class="fr-label">RADAR</span>
+          <div id="field-radar-legend" aria-hidden="true">
+            <b class="f">● friends</b>
+            · <b class="c">● competitors</b>
+            · <b class="v">● vendor workers & clients</b>
+            · <b class="r">━ routes</b>
+          </div>
+        </div>
+        <div id="stc-center">
+          <div id="stc-local" title="Local place">PHYS · locating…</div>
+          <button type="button" id="btn-home" title="ASTRANOV · tools · account · Earth">ASTRANOV</button>
+        </div>
+        <canvas id="stc-perf" width="72" height="36" aria-label="Device performance" title="Device load · mine rate"></canvas>
+        <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
+          <span id="fbh-s">◈ 0.00</span>
+          <span id="fbh-mine-rate">0.00 AC/day</span>
+          <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true"></canvas>
+          <span id="fbh-econ-label">economy · live 1s</span>
+          <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
+          <span id="fbh-load-label" hidden>device load</span>
+          <span id="fbh-fees">3% vault ◈ 0.00</span>
+        </div>
+      </div>
+      <div id="stc-detail" class="stc-detail">
+        <div id="stc-detail-row">
+          <div id="field-nav-meta" aria-live="polite">
+            <span class="fnm-row" id="fnm-speed">— km/h</span>
+            <span class="fnm-row" id="fnm-mode">—</span>
+            <span class="fnm-row" id="fnm-time">UTC — · Local —</span>
+            <span class="fnm-row" id="fnm-phys">PHYS · locating…</span>
+            <span class="fnm-row" id="fnm-virt">VIEW · GLOBAL</span>
+          </div>
+          <div id="sn-fleet-monitor" aria-label="Fleet resource monitor" title="Device fleet · ASTRANOV hub for roles">
+            <div class="sfm-head">
+              <span class="sfm-title">FLEET · RESOURCES</span>
+              <span class="sfm-sum" id="sfm-sum">—</span>
+            </div>
+            <div class="sfm-row">
+              <div class="sfm-card" id="sfm-main" data-role="main">
+                <div class="sfm-role">Main</div>
+                <div class="sfm-state" id="sfm-main-state">—</div>
+                <canvas id="sfm-main-g" width="120" height="28" aria-hidden="true"></canvas>
+                <div class="sfm-meta" id="sfm-main-meta">load · mine</div>
+              </div>
+              <div class="sfm-card" id="sfm-secondary" data-role="secondary">
+                <div class="sfm-role">Hot-swap</div>
+                <div class="sfm-state" id="sfm-secondary-state">—</div>
+                <canvas id="sfm-secondary-g" width="120" height="28" aria-hidden="true"></canvas>
+                <div class="sfm-meta" id="sfm-secondary-meta">load · mine</div>
+              </div>
+              <div class="sfm-card raid" id="sfm-raid" data-role="raid">
+                <div class="sfm-role">RAID</div>
+                <div class="sfm-state" id="sfm-raid-state">—</div>
+                <canvas id="sfm-raid-g" width="120" height="28" aria-hidden="true"></canvas>
+                <div class="sfm-meta" id="sfm-raid-meta">array · harvest</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="sn-topchrome-drag" title="Drag down to expand · up to retract" aria-label="Drag to expand or retract top bar">
+      <span>pull</span>
+    </div>
   </div>
 </div>
 <div id="field-radar-caption" hidden aria-hidden="true">
@@ -1028,23 +1266,6 @@
   <p id="fsh-explain"></p>
 </div>
 
-<button type="button" id="btn-home" title="ASTRANOV · tools · account · Earth">ASTRANOV</button>
-
-<div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · vault · mine · live economy · tap finance" aria-label="Astranov coins wallet and economy">
-  <span id="fbh-s">◈ 0.00</span>
-  <span id="fbh-mine-rate">0.00 AC/day</span>
-  <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true"></canvas>
-  <span id="fbh-econ-label">economy · live 1s</span>
-  <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
-  <span id="fbh-load-label" hidden>device load</span>
-  <span id="fbh-fees">3% vault ◈ 0.00</span>
-</div>
-
-<div id="sn-fleet-monitor" aria-label="Fleet resource monitor · main · secondary · RAID" title="Device fleet · load graphs · ASTRANOV hub for roles">
-  <div class="sfm-head">
-    <span class="sfm-title">FLEET · RESOURCES</span>
-    <span class="sfm-sum" id="sfm-sum">—</span>
-  </div>
   <div class="sfm-row">
     <div class="sfm-card" id="sfm-main" data-role="main">
       <div class="sfm-role">Main</div>
@@ -1130,7 +1351,7 @@
   <div class="mtm-panel">
     <div style="color:#4cc9ff;font-weight:700;margin-bottom:8px;font-family:Orbitron,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
     <p>SETI-style mesh: spare <b>CPU · RAM · storage · bandwidth</b> powers routing, indexes, and multi-stop topo when idle. Mine <b>Astranov coins</b>. Assign this device as Main · Hot-swap · or home RAID under ASTRANOV.</p>
-    <button type="button" id="sn-miner-accept">I AGREE · JOIN MESH · MINE STRANDS</button>
+    <button type="button" id="sn-miner-accept">I AGREE · JOIN MESH · MINE ASTRANOV COINS</button>
   </div>
 </div>
 
@@ -1142,7 +1363,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731211000-tile-xyz-buttons"></script>
+<script src="/js/spacenet/boot.js?v=20260731213000-topchrome"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
