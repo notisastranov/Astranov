@@ -44,6 +44,9 @@ const AstranovContinuity = {
       'OV-13 naming SpaceNet system / Astranov AI',
       'OV-14 SPECS thin rebuild',
     ],
+    '2026-07-31': [
+      'OV-15 CLI top ribbon Locate·User·Add·Layers·AI·Send · no burger · tools on ASTRANOV home',
+    ],
   },
 
   spacenet: {
