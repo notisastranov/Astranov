@@ -439,8 +439,15 @@
   };
 
   async function run(raw) {
-    const line = String(raw || '').trim();
+    let line = String(raw || '').trim();
     if (!line) return;
+    // Astranov Mind — Archangelos / Greeklish before routing
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        const n = ArcangeloDialect.normalizeForRouting(line);
+        if (n) line = n;
+      }
+    } catch (_) {}
     // /search or ?query → filter feed only (does not pollute history)
     if (/^[/？?]/.test(line) || /^search\s+/i.test(line)) {
       const q = line.replace(/^search\s+/i, '').replace(/^[/？?]\s*/, '');
