@@ -1490,9 +1490,7 @@
       }
       if (low === 'locate' || low === 'gps' || low === 'where am i') {
         activity('locating you…', 'work', { label: 'Locate' });
-        // GPS first (works even if 3D globe still loading)
         let pos = await gpsLocate();
-        // Prefer globe locate when ready (same GPS, also animates globe)
         try {
           if (Globe?.locate && Globe.ready) {
             const gpos = await Promise.race([
@@ -1511,11 +1509,19 @@
           Tasks?.setPos?.(pos.lat, pos.lng);
           global._snLastPos = { lat: pos.lat, lng: pos.lng };
           try {
-            // Always show you on city map when we have coords
             if (global.SNMap?.open) {
               await global.SNMap.open(pos.lat, pos.lng);
-              const map = await global.SNMap.ensure?.();
-              map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 15, 15));
+              await global.SNMap.ensure?.();
+              if (global.SNMap.markYou) global.SNMap.markYou(pos.lat, pos.lng, 'YOU · here');
+              if (global.SNMap.fitLatLngs) {
+                global.SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], {
+                  zoom: 15,
+                  force: true,
+                });
+              } else {
+                const map = await global.SNMap.ensure?.();
+                map?.setView?.([pos.lat, pos.lng], 15);
+              }
             }
           } catch (_) {}
           try {
@@ -1542,7 +1548,7 @@
                     ? 'location needs secure site (https)'
                     : pos.reason === 'unsupported'
                       ? 'this browser has no GPS'
-                      : 'GPS unavailable · showing default focus';
+                      : 'GPS soft · blue YOU pin is best estimate · type YES if ok';
             log(why + ' · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4), 'err');
           } else {
             log(
@@ -1551,7 +1557,7 @@
                 ', ' +
                 pos.lng.toFixed(4) +
                 (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + 'm' : '') +
-                ' · map on you',
+                ' · blue YOU pin on city map',
               'ok'
             );
           }

@@ -1005,7 +1005,21 @@
    */
   function paintRouteOnCityMap(row) {
     if (!row || !row.points || row.points.length < 2) return;
-    if (!g.SNMap || !SNMap.active || !SNMap.map || typeof L === 'undefined') return;
+    if (!g.SNMap || typeof L === 'undefined') return;
+    // Open map if closed — first task must show polygon
+    if (!SNMap.active || !SNMap.map) {
+      try {
+        var mid = row.points[Math.floor(row.points.length / 2)] || row.points[0];
+        if (SNMap.open && mid) {
+          void SNMap.open(mid.lat, mid.lng).then(function () {
+            try {
+              paintRouteOnCityMap(row);
+            } catch (_) {}
+          });
+        }
+      } catch (_) {}
+      return;
+    }
     try {
       var map = SNMap.map;
       var latlngs = row.points.map(function (p) {
@@ -1335,17 +1349,24 @@
     var dLat = Number(opts.dropLat != null ? opts.dropLat : opts.to && opts.to.lat);
     var dLng = Number(opts.dropLng != null ? opts.dropLng : opts.to && opts.to.lng);
     if (!isFinite(vLat) || !isFinite(dLat)) return null;
-    // Never auto-expand radar — keep small so city map stays usable
+    // Degenerate pickup==drop → nudge so polygon is visible
+    if (Math.abs(vLat - dLat) < 1e-5 && Math.abs(vLng - dLng) < 1e-5) {
+      vLat = dLat + 0.004;
+      vLng = dLng + 0.0035;
+    }
     try {
       if (radarBig) setRadarExpanded(false);
     } catch (eR) {}
+    // Always open city map for order polygon (first task must SHOW vendor → you)
     try {
-      g._snLastPos = { lat: (vLat + dLat) / 2, lng: (vLng + dLng) / 2 };
-      if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(g._snLastPos.lat, g._snLastPos.lng);
-      // Routes draw on radar; do not thrash city map camera unless autopilot
-      if (g.SNMap && SNMap.canAutopilot && SNMap.canAutopilot() && g.SNMap.softSetView) {
-        g.SNMap.softSetView(g._snLastPos.lat, g._snLastPos.lng, null, { animate: false });
+      if (g.SNMap && SNMap.open) {
+        await SNMap.open(dLat, dLng);
+        if (SNMap.ensure) await SNMap.ensure();
       }
+    } catch (eOpen) {}
+    try {
+      g._snLastPos = { lat: dLat, lng: dLng };
+      if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(dLat, dLng);
     } catch (e) {}
     var id = opts.id || 'live:' + Date.now().toString(36);
     var row = await showRoute(
@@ -1369,27 +1390,44 @@
       }
     );
     if (!row) return null;
-    // Always paint on city map + radar — camera hold does NOT block route polygons
+    // Paint polygon + pins on city map, then fit both ends
     paintRouteOnCityMap(row);
     try {
+      if (g.SNMap && SNMap.fitLatLngs) {
+        g.SNMap.fitLatLngs(
+          [
+            { lat: vLat, lng: vLng },
+            { lat: dLat, lng: dLng },
+          ].concat(row.points || []),
+          { padding: 48, maxZoom: 15, force: true }
+        );
+      } else if (g.SNMap && SNMap.map && typeof L !== 'undefined') {
+        var b = L.latLngBounds([
+          [vLat, vLng],
+          [dLat, dLng],
+        ]);
+        g.SNMap.map.fitBounds(b, { padding: [48, 48], maxZoom: 15 });
+      }
+    } catch (eFit) {}
+    try {
       if (g.SNMap && SNMap.showTasks) SNMap.showTasks();
+      if (g.SNMap && SNMap.showProfiles) SNMap.showProfiles();
     } catch (eT) {}
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'Route · ' +
+          'Route on map · ' +
             (row.km != null ? row.km.toFixed(2) + ' km' : '?') +
             ' · ETA ' +
             (row.eta || '?') +
             ' · ' +
             Math.round(row.speedKmh || 0) +
-            ' km/h · vendor→client · map polygon ON' +
-            (g.SNMap && SNMap.userHold ? ' · camera held by you' : ''),
+            ' km/h · green=vendor · red=you',
           'ok'
         );
       }
       if (g.SNCli && SNCli.preview)
-        SNCli.preview('ETA ' + (row.eta || '?') + ' · ' + Math.round(row.speedKmh || 0) + ' km/h');
+        SNCli.preview('ETA ' + (row.eta || '?') + ' · route on map');
     } catch (e2) {}
     // Animate driver along polygon (scooter city pace) — map marker follows
     var durationMs = Math.max(8000, Math.min(90000, (row.durationS || 600) * 1000 * 0.35));

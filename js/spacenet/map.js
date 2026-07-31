@@ -1032,6 +1032,69 @@
     });
   }
 
+  /** Fit map to lat/lng points (order polygon · you + vendor). force bypasses camera hold. */
+  function fitLatLngs(points, opts) {
+    opts = opts || {};
+    if (!M.map || typeof L === 'undefined' || !points || !points.length) return false;
+    try {
+      if (opts.force) {
+        M.userHold = false;
+        try {
+          localStorage.removeItem('sn:map-user-hold');
+        } catch (_) {}
+      }
+      var ll = points
+        .filter(function (p) {
+          return p && p.lat != null && p.lng != null && isFinite(p.lat) && isFinite(p.lng);
+        })
+        .map(function (p) {
+          return [Number(p.lat), Number(p.lng)];
+        });
+      if (!ll.length) return false;
+      if (ll.length === 1) {
+        M.map.setView(ll[0], opts.zoom || 15, { animate: true });
+        return true;
+      }
+      var b = L.latLngBounds(ll);
+      M.map.fitBounds(b, {
+        padding: [opts.padding != null ? opts.padding : 48, opts.padding != null ? opts.padding : 48],
+        maxZoom: opts.maxZoom != null ? opts.maxZoom : 15,
+        animate: opts.animate !== false,
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /** Blue “YOU” marker on city map */
+  function markYou(lat, lng, label) {
+    if (lat == null || lng == null || !M.map || typeof L === 'undefined') return null;
+    try {
+      if (M._youMark) {
+        try {
+          M.map.removeLayer(M._youMark);
+        } catch (_) {}
+        M._youMark = null;
+      }
+      M._youMark = L.circleMarker([Number(lat), Number(lng)], {
+        radius: 10,
+        color: '#3d9eff',
+        fillColor: '#1a6fd4',
+        fillOpacity: 0.95,
+        weight: 3,
+      })
+        .addTo(M.map)
+        .bindPopup(label || 'YOU · delivery stop');
+      try {
+        M._youMark.openPopup();
+      } catch (_) {}
+      return M._youMark;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function showTasks() {
     if (!M.map) return;
     clearGroup(M.markers);
