@@ -641,6 +641,7 @@
     }
     paintLoadGraph();
     paintEconGraph();
+    paintStcPerf();
     paintFleetMonitor();
     var hud = $('field-balance-hud');
     if (hud) {
@@ -1120,63 +1121,108 @@
         fmtLL(vLat, vLng) +
         (same ? '' : ' · flying');
     }
-    // Compact top-chrome local line
-    var stc = $('stc-local');
-    if (stc) {
-      var mode = spd.mode || 'field';
-      var place = pName || (pLat != null ? fmtLL(pLat, pLng) : 'locating…');
-      stc.textContent =
-        String(mode).slice(0, 18) +
-        ' · ' +
-        String(place).slice(0, 28) +
-        (same ? '' : ' · view');
-    }
+    // Compact local line removed from top bar (no earth-rotation junk)
     paintStcPerf();
   }
 
-  /** Mini device performance graph in collapsed top chrome */
+  /** Device load graph under ASTRANOV — stretches full center width */
   function paintStcPerf() {
     var c = $('stc-perf');
+    var wrap = $('stc-perf-wrap');
     if (!c) return;
     var ctx = c.getContext('2d');
     if (!ctx) return;
+    // Dynamic size to fill space between radar and money
+    var cssW = 120;
+    var cssH = 22;
+    if (wrap) {
+      var r = wrap.getBoundingClientRect();
+      if (r.width > 20) cssW = Math.round(r.width);
+      if (r.height > 8) cssH = Math.round(r.height);
+    }
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var needW = Math.max(40, Math.round(cssW * dpr));
+    var needH = Math.max(16, Math.round(cssH * dpr));
+    if (c.width !== needW || c.height !== needH) {
+      c.width = needW;
+      c.height = needH;
+    }
     var w = c.width;
     var h = c.height;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
-    // Use existing loadHist from paintLoadGraph (no double-push)
-    var load =
-      mine.on && mine.terms
-        ? Math.max(mine.rates.cpu || 0, 100 - (mine.spare || 0))
-        : Math.max(6, (100 - (mine.spare || 50)) * 0.3);
-    if (!loadHist.length) {
-      loadHist.push(Math.max(0, Math.min(100, load)));
-    }
-    ctx.strokeStyle = 'rgba(76,201,255,0.15)';
+
+    // soft grid
+    ctx.strokeStyle = 'rgba(76,201,255,0.1)';
+    ctx.lineWidth = dpr;
     ctx.beginPath();
     ctx.moveTo(0, h * 0.5);
     ctx.lineTo(w, h * 0.5);
     ctx.stroke();
-    if (loadHist.length < 2) {
-      // single point still show rate
-      ctx.fillStyle = 'rgba(168,236,255,0.75)';
-      ctx.font = '600 8px JetBrains Mono,monospace';
-      ctx.fillText(((mine.rate || 0) * 24).toFixed(1), 2, 9);
+
+    var hist = loadHist.length ? loadHist : [12];
+    if (hist.length < 2) {
+      // gentle baseline pulse when idle
+      var mid = h * 0.62;
+      ctx.strokeStyle = 'rgba(76,201,255,0.35)';
+      ctx.lineWidth = 1.2 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(0, mid);
+      ctx.lineTo(w, mid);
+      ctx.stroke();
       return;
     }
+
     var i;
+    var n = hist.length;
+    // fill under curve
     ctx.beginPath();
-    for (i = 0; i < loadHist.length; i++) {
-      var x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
-      var y = h - 2 - (loadHist[i] / 100) * (h - 4);
+    for (i = 0; i < n; i++) {
+      var x = (i / (Math.max(n - 1, 1))) * (w - 2 * dpr) + dpr;
+      var y = h - 2 * dpr - (hist[i] / 100) * (h - 4 * dpr);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
-    ctx.lineWidth = 1.4;
+    ctx.lineTo(w - dpr, h - dpr);
+    ctx.lineTo(dpr, h - dpr);
+    ctx.closePath();
+    var g = ctx.createLinearGradient(0, 0, 0, h);
+    if (mine.on && mine.terms) {
+      g.addColorStop(0, 'rgba(0,255,176,0.28)');
+      g.addColorStop(1, 'rgba(0,255,176,0.02)');
+      ctx.strokeStyle = '#5dffb0';
+    } else {
+      g.addColorStop(0, 'rgba(76,201,255,0.28)');
+      g.addColorStop(1, 'rgba(76,201,255,0.02)');
+      ctx.strokeStyle = '#6ec8ff';
+    }
+    ctx.fillStyle = g;
+    ctx.fill();
+
+    // stroke curve
+    ctx.beginPath();
+    for (i = 0; i < n; i++) {
+      x = (i / (Math.max(n - 1, 1))) * (w - 2 * dpr) + dpr;
+      y = h - 2 * dpr - (hist[i] / 100) * (h - 4 * dpr);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.lineWidth = 1.5 * dpr;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.stroke();
-    ctx.fillStyle = 'rgba(168,236,255,0.75)';
-    ctx.font = '600 8px JetBrains Mono,monospace';
-    ctx.fillText(((mine.rate || 0) * 24).toFixed(1), 2, 9);
+
+    // live tip
+    var last = hist[n - 1];
+    var lx = w - 2 * dpr;
+    var ly = h - 2 * dpr - (last / 100) * (h - 4 * dpr);
+    ctx.fillStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 6 * dpr;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 2.2 * dpr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
   }
 
   /**
@@ -1201,7 +1247,7 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      if (mode === 'collapsed') return 56;
+      if (mode === 'collapsed') return 64;
       if (mode === 'expanded') return Math.min(320, Math.round(h * 0.42));
       return Math.min(160, Math.round(h * 0.22));
     }

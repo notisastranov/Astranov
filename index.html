@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731220000-day-ship" />
-<meta name="astranov-continuity" content="20260731220000-day-ship" />
+<meta name="astranov-build" content="20260731221000-top-name-graph" />
+<meta name="astranov-continuity" content="20260731221000-top-name-graph" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -92,7 +92,7 @@
   }
   #sn-topchrome-panel.stc-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
   #sn-topchrome-panel.dragging { transition: none !important; user-select: none; cursor: grabbing; }
-  #sn-topchrome-panel.collapsed { max-height: 56px; }
+  #sn-topchrome-panel.collapsed { max-height: 64px; }
   #sn-topchrome-panel.mid { max-height: min(160px, 22vh); }
   #sn-topchrome-panel.expanded { max-height: min(320px, 42vh); }
   #sn-topchrome-panel.collapsed .stc-detail { display: none !important; }
@@ -115,11 +115,11 @@
   #stc-compact {
     flex-shrink: 0;
     display: grid;
-    grid-template-columns: auto minmax(0,1fr) auto auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 8px;
-    padding: 6px 10px 4px;
-    min-height: 44px;
+    gap: 10px 12px;
+    padding: 8px 12px 6px;
+    min-height: 52px;
     overflow: hidden;
   }
   #stc-detail {
@@ -152,37 +152,70 @@
   }
   #sn-topchrome #field-radar::before { inset: -1px; }
 
+  /* Center column: ASTRANOV name · load graph fills width under it */
   #stc-center {
-    min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 2px; text-align: center;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 5px;
+    text-align: center;
   }
-  #stc-local {
-    font: 600 9px/1.2 var(--font-mono); color: #6dffb0;
-    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    letter-spacing: 0.02em;
-  }
+  #stc-local { display: none !important; } /* no earth-rotation junk above name */
   #sn-topchrome #btn-home {
     position: relative !important; top: auto !important; left: auto !important;
     transform: none !important;
-    font: 700 11px/1 var(--font-display); letter-spacing: 0.22em;
-    color: #a8ecff;
+    align-self: center;
+    font: 800 15px/1.1 var(--font-display) !important;
+    letter-spacing: 0.28em !important;
+    color: #eaf6ff;
     background: transparent;
     border: 0;
     border-radius: 0;
-    padding: 2px 4px;
+    padding: 2px 6px 0;
+    margin: 0;
     box-shadow: none;
-    text-shadow: 0 0 12px rgba(76, 201, 255, 0.55);
+    text-shadow: 0 0 16px rgba(76, 201, 255, 0.55), 0 0 28px rgba(11, 111, 212, 0.35);
     backdrop-filter: none;
+    white-space: nowrap;
   }
-  #sn-topchrome #btn-home:hover { color: #fff; }
+  #sn-topchrome #btn-home:hover { color: #fff; text-shadow: 0 0 20px rgba(120, 220, 255, 0.75); }
 
-  #stc-perf {
-    width: 56px; height: 28px; border-radius: 6px;
-    background: rgba(0, 8, 20, 0.55);
-    border: 1px solid rgba(76, 201, 255, 0.25);
-    flex-shrink: 0;
+  #stc-perf-wrap {
+    width: 100%;
+    min-width: 0;
+    height: 22px;
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(6, 24, 48, 0.75), rgba(0, 8, 20, 0.85));
+    border: 1px solid rgba(76, 201, 255, 0.28);
+    box-shadow: inset 0 0 12px rgba(11, 111, 212, 0.12), 0 0 10px rgba(11, 111, 212, 0.08);
+    overflow: hidden;
+    position: relative;
   }
-  #sn-topchrome-panel.expanded #stc-perf { width: 72px; height: 36px; }
+  #stc-perf-wrap::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(168, 236, 255, 0.06), transparent);
+    pointer-events: none;
+  }
+  #stc-perf {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+  }
+  #sn-topchrome-panel.mid #stc-perf-wrap,
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 28px;
+  }
+  #sn-topchrome-panel.collapsed {
+    max-height: 64px;
+  }
 
   #sn-topchrome #field-balance-hud {
     position: relative !important; top: auto !important; right: auto !important;
@@ -217,10 +250,9 @@
   }
   @media (max-width: 520px) {
     #stc-detail-row { grid-template-columns: 1fr; }
-    #stc-compact { gap: 6px; padding: 5px 8px 3px; }
-    #stc-local { font-size: 8px; }
-    #sn-topchrome #btn-home { font-size: 10px; letter-spacing: 0.16em; }
-    #stc-perf { width: 44px; height: 24px; }
+    #stc-compact { gap: 8px; padding: 6px 8px 4px; }
+    #sn-topchrome #btn-home { font-size: 13px !important; letter-spacing: 0.2em !important; }
+    #stc-perf-wrap { height: 18px; }
   }
 
   #sn-topchrome-drag {
@@ -1194,8 +1226,8 @@
     letter-spacing: 0.18em;
     font-weight: 700;
   }
-  #btn-home {
-    font-size: 13px !important;
+  #sn-topchrome #btn-home {
+    font-size: 15px !important;
     line-height: 1.15 !important;
   }
   #fbh-s {
@@ -1299,10 +1331,11 @@
           </div>
         </div>
         <div id="stc-center">
-          <div id="stc-local" title="Local place">PHYS · locating…</div>
           <button type="button" id="btn-home" title="ASTRANOV · tools · account · Earth">ASTRANOV</button>
+          <div id="stc-perf-wrap" title="Device load">
+            <canvas id="stc-perf" width="280" height="44" aria-label="Device load graph"></canvas>
+          </div>
         </div>
-        <canvas id="stc-perf" width="72" height="36" aria-label="Device performance" title="Device load · mine rate"></canvas>
         <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
           <span id="fbh-s">◈ 0.00</span>
           <span id="fbh-mine-rate">0.00 AC/day</span>
@@ -1458,7 +1491,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731220000-day-ship"></script>
+<script src="/js/spacenet/boot.js?v=20260731221000-top-name-graph"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
