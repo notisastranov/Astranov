@@ -147,6 +147,33 @@
   var routeFetchAt = 0;
   /** Radar range zoom (1 = default). Two-finger scroll / pinch adjusts. */
   var radarZoom = 1;
+
+  function applyDeviceTheme() {
+    try {
+      var root = document.documentElement;
+      var forced = '';
+      try {
+        forced = localStorage.getItem('sn:theme-v1') || '';
+      } catch (_) {}
+      root.classList.remove('theme-light', 'theme-dark');
+      if (forced === 'light' || forced === 'dark') {
+        root.classList.add('theme-' + forced);
+      } else if (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) {
+        root.classList.add('theme-light');
+      } else {
+        root.classList.add('theme-dark');
+      }
+    } catch (_) {}
+  }
+  try {
+    applyDeviceTheme();
+    if (window.matchMedia) {
+      var mq = matchMedia('(prefers-color-scheme: light)');
+      if (mq.addEventListener) mq.addEventListener('change', applyDeviceTheme);
+      else if (mq.addListener) mq.addListener(applyDeviceTheme);
+    }
+  } catch (_) {}
+
   var loadHist = [];
   var LOAD_HIST_N = 36;
   /** Multi-metric device history (CPU RAM BAT temps) */
@@ -1376,8 +1403,16 @@
   }
 
   function metricColor(sev) {
-    if (sev === 'crit') return '#ff4d5e';
-    if (sev === 'warn') return '#ffc857';
+    if (sev === 'crit') return '#e11d38';
+    if (sev === 'warn') return '#d4a017';
+    // deep blue — readable on light and dark glass
+    try {
+      if (document.documentElement.classList.contains('theme-light') ||
+          (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches &&
+            !document.documentElement.classList.contains('theme-dark'))) {
+        return '#0a5ec4';
+      }
+    } catch (_) {}
     return '#1a8cff';
   }
 
@@ -1401,9 +1436,9 @@
     try {
       var panel = $('sn-topchrome-panel');
       if (panel) {
-        if (panel.classList.contains('expanded')) cssH = Math.max(cssH, 160);
-        else if (panel.classList.contains('mid')) cssH = Math.max(cssH, 120);
-        else cssH = Math.max(cssH, 88);
+        if (panel.classList.contains('expanded')) cssH = Math.max(cssH, 118);
+        else if (panel.classList.contains('mid')) cssH = Math.max(cssH, 82);
+        else cssH = Math.max(cssH, 46);
       }
     } catch (_) {}
 
@@ -1450,7 +1485,10 @@
             ? 'rgba(255,200,87,0.55)'
             : 'rgba(255,77,94,0.6)';
 
-      ctx.fillStyle = 'rgba(8, 30, 70, 0.28)';
+      ctx.fillStyle =
+        document.documentElement.classList.contains('theme-light')
+          ? 'rgba(30, 100, 200, 0.08)'
+          : 'rgba(8, 30, 70, 0.28)';
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(padX, y0, w - padX * 2, rowH, 3 * dpr);
       else ctx.rect(padX, y0, w - padX * 2, rowH);
@@ -1559,11 +1597,10 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      // Floor = top-scroll min — never cut gadgets (CLI twin rule)
-      var MIN = 148;
-      if (mode === 'collapsed') return MIN;
-      if (mode === 'expanded') return Math.max(MIN, Math.min(440, Math.round(h * 0.52)));
-      return Math.max(MIN, Math.min(300, Math.round(h * 0.36)));
+      var MIN = 72;
+      if (mode === 'collapsed') return 72;
+      if (mode === 'expanded') return Math.max(MIN, Math.min(280, Math.round(h * 0.36)));
+      return Math.max(MIN, Math.min(200, Math.round(h * 0.26)));
     }
 
     function setMode(mode, animate, freeH) {

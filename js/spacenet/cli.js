@@ -1406,6 +1406,29 @@
         return;
       }
 
+
+      if (low === 'theme' || low === 'theme light' || low === 'theme dark' || low === 'theme auto' || low === 'light mode' || low === 'dark mode') {
+        let mode = 'auto';
+        if (/dark/.test(low)) mode = 'dark';
+        else if (/light/.test(low)) mode = 'light';
+        else if (/auto|system/.test(low)) mode = 'auto';
+        try {
+          if (mode === 'auto') localStorage.removeItem('sn:theme-v1');
+          else localStorage.setItem('sn:theme-v1', mode);
+        } catch (_) {}
+        try {
+          const root = document.documentElement;
+          root.classList.remove('theme-light', 'theme-dark');
+          if (mode === 'auto') {
+            if (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
+              root.classList.add('theme-light');
+            else root.classList.add('theme-dark');
+          } else root.classList.add('theme-' + mode);
+        } catch (_) {}
+        log('Theme · ' + mode + ' · follows device when auto', 'ok');
+        return;
+      }
+
       if (
         low === 'go live' ||
         low === 'live check' ||

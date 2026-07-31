@@ -1,12 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+(function(){try{
+  var f=localStorage.getItem('sn:theme-v1');
+  var light=f==='light'||(!f&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches);
+  document.documentElement.classList.add(light?'theme-light':'theme-dark');
+  if(f==='dark'){document.documentElement.classList.remove('theme-light');document.documentElement.classList.add('theme-dark');}
+}catch(e){}})();
+</script>
+
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731233000-device-labeled-graph" />
-<meta name="astranov-continuity" content="20260731233000-device-labeled-graph" />
+<meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
+<meta name="astranov-build" content="20260731235000-light-compact-scroll" />
+<meta name="astranov-continuity" content="20260731235000-light-compact-scroll" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -41,7 +51,7 @@
     --font-ui: "Nunito", "Varela Round", system-ui, sans-serif;
     --font-display: "Comfortaa", "Nunito", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
-    --zone-top: 64px;
+    --zone-top: 72px;
     --r-sm: 10px;
     --r-md: 14px;
     --r-lg: 18px;
@@ -200,7 +210,7 @@
   #stc-perf-wrap {
     width: 100%;
     min-width: 0;
-    height: 22px;
+    height: 52px;
     border-radius: 8px;
     background:
       linear-gradient(180deg, rgba(6, 24, 48, 0.75), rgba(0, 8, 20, 0.85));
@@ -1655,23 +1665,23 @@
   #stc-perf-wrap {
     width: 100% !important;
     min-width: 0 !important;
-    height: 92px !important;
-    min-height: 92px !important;
+    height: 52px !important;
+    min-height: 52px !important;
     border-radius: 10px !important;
     padding: 4px 2px !important;
     box-sizing: border-box !important;
   }
   #sn-topchrome-panel.collapsed #stc-perf-wrap {
-    height: 92px !important;
-    min-height: 92px !important;
+    height: 52px !important;
+    min-height: 52px !important;
   }
   #sn-topchrome-panel.mid #stc-perf-wrap {
-    height: 128px !important;
-    min-height: 128px !important;
+    height: 88px !important;
+    min-height: 88px !important;
   }
   #sn-topchrome-panel.expanded #stc-perf-wrap {
-    height: 168px !important;
-    min-height: 168px !important;
+    height: 130px !important;
+    min-height: 130px !important;
   }
   #stc-perf {
     width: 100% !important;
@@ -1684,10 +1694,151 @@
     margin: 0; font: 500 10px/1.4 var(--font-ui); color: #7aa8d8;
   }
   /* top scroll taller when collapsed so 5 labeled rows fit */
-  :root { --top-scroll-min: 148px; }
+  :root { --top-scroll-min: 72px; }
   #sn-topchrome-panel.collapsed {
-    min-height: 148px !important;
+    min-height: 72px !important;
+    max-height: 88px !important;
   }
+
+
+  :root { color-scheme: light dark; }
+
+  /* Compact top scroll */
+  #sn-topchrome-panel.collapsed {
+    max-height: 88px !important;
+    min-height: 68px !important;
+  }
+  #sn-topchrome-panel.mid { max-height: min(200px, 28vh) !important; }
+  #sn-topchrome-panel.expanded { max-height: min(280px, 38vh) !important; }
+  #stc-compact {
+    min-height: 0 !important;
+    padding: 4px 10px 2px !important;
+    gap: 6px 10px !important;
+  }
+  #sn-topchrome #btn-home {
+    font-size: 13px !important;
+    letter-spacing: 0.22em !important;
+    padding: 0 4px !important;
+  }
+  #sn-topchrome-panel.collapsed #field-radar {
+    width: 36px !important; height: 36px !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 48px !important; min-height: 48px !important;
+  }
+  #sn-topchrome-panel.mid #stc-perf-wrap {
+    height: 84px !important; min-height: 84px !important;
+  }
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 120px !important; min-height: 120px !important;
+  }
+  #sn-topchrome-drag { padding: 2px 0 4px !important; }
+
+  /* LIGHT THEME — follow device / html.theme-light */
+  @media (prefers-color-scheme: light) {
+    html:not(.theme-dark) {
+      --bg: #eef4fc; --bg-deep: #e4edf8; --void: #d8e6f5;
+      --text: #0c1e36; --text-bright: #061018; --dim: #4a6480; --muted: #3a5570;
+      --panel: rgba(255,255,255,0.82); --panel-solid: #f4f8fd;
+      --border: rgba(20,90,180,0.32); --border-strong: rgba(20,90,180,0.55);
+      --cli-bg: rgba(255,255,255,0.78); --cli-text: #0c1e36; --cli-muted: #3a5a7a;
+      --cli-dim: #5a7a9a; --cli-glow: #0b6fd4; --cli-blue: #0a4fd4;
+      --bright: #0a62c4; --glow: #1a7ae8; --ice: #0b4a8a;
+    }
+    html:not(.theme-dark) body {
+      background: radial-gradient(120% 80% at 50% -10%, #f5f9ff 0%, #e4edf8 45%, #d0e0f2 100%);
+      color: #0c1e36;
+    }
+    html:not(.theme-dark) #city-map {
+      background: radial-gradient(ellipse at 50% 40%, #dce8f6 0%, #c5d8ec 70%);
+    }
+    html:not(.theme-dark) #sn-topchrome-panel,
+    html:not(.theme-dark) #panel {
+      background:
+        radial-gradient(ellipse 100% 90% at 50% 0%, rgba(80,150,255,0.1) 0%, transparent 50%),
+        linear-gradient(165deg, rgba(255,255,255,0.88) 0%, rgba(232,242,255,0.8) 100%) !important;
+      border-color: rgba(20,100,200,0.35) !important;
+      box-shadow: 0 8px 28px rgba(20,50,100,0.1), 0 0 20px rgba(40,120,220,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.95) !important;
+      animation: none !important;
+      color: #0c1e36 !important;
+    }
+    html:not(.theme-dark) #sn-topchrome #btn-home {
+      color: #0a5ec4 !important;
+      text-shadow: 0 0 10px rgba(40,120,255,0.4), 0 0 20px rgba(30,100,220,0.25) !important;
+    }
+    html:not(.theme-dark) #cli-form {
+      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(232,242,255,0.92)) !important;
+      border-color: rgba(20,110,220,0.45) !important;
+      box-shadow: 0 0 0 1px rgba(40,120,220,0.22), 0 0 16px rgba(40,120,220,0.18) !important;
+      animation: none !important;
+    }
+    html:not(.theme-dark) #cli-in { color: #0c1e36 !important; caret-color: #0b6fd4 !important; }
+    html:not(.theme-dark) #cli-in::placeholder { color: rgba(40,90,140,0.6) !important; text-shadow: none !important; }
+    html:not(.theme-dark) .cli-prompt-prefix { color: #0b6fd4 !important; text-shadow: 0 0 8px rgba(40,120,255,0.3) !important; }
+    html:not(.theme-dark) .cli-titlebar .cli-brand { color: #0a5ec4 !important; text-shadow: 0 0 8px rgba(40,120,255,0.25) !important; }
+    html:not(.theme-dark) #cli-preview { color: #2a4a6a !important; }
+    html:not(.theme-dark) #cli-activity { color: #3a5a7a !important; }
+    html:not(.theme-dark) .cli-line { color: #0c1e36 !important; }
+    html:not(.theme-dark) .cli-line.cmd .cli-body { color: #061018 !important; }
+    html:not(.theme-dark) .cli-line.ok .cli-body { color: #1a3a58 !important; }
+    html:not(.theme-dark) .cli-line.dim .cli-body, html:not(.theme-dark) .cli-line.progress .cli-body { color: #4a6a88 !important; }
+    html:not(.theme-dark) #sn-topchrome #fbh-s {
+      color: #0a5ec4 !important; text-shadow: 0 0 8px rgba(40,120,255,0.3) !important;
+    }
+    html:not(.theme-dark) #sn-topchrome #field-balance-hud {
+      background: linear-gradient(155deg, rgba(255,255,255,0.92), rgba(230,242,255,0.88)) !important;
+      border-color: rgba(20,100,200,0.38) !important;
+      box-shadow: 0 0 12px rgba(40,120,220,0.12) !important;
+    }
+    html:not(.theme-dark) #stc-perf-wrap {
+      background: linear-gradient(180deg, rgba(255,255,255,0.8), rgba(230,240,255,0.75)) !important;
+      border-color: rgba(20,100,200,0.28) !important;
+    }
+    html:not(.theme-dark) #sn-topchrome #field-radar {
+      border-color: rgba(20,100,200,0.38) !important;
+      box-shadow: 0 0 12px rgba(40,120,220,0.12) !important;
+    }
+    html:not(.theme-dark) #boot {
+      background: radial-gradient(120% 80% at 50% 0%, #f0f6ff 0%, #dce8f6 100%);
+    }
+    html:not(.theme-dark) .boot-title { color: #0a5ec4; text-shadow: 0 0 18px rgba(40,120,255,0.35); }
+    html:not(.theme-dark) #cli-log { color: #0c1e36; }
+    html:not(.theme-dark) .stc-g-detail {
+      background: linear-gradient(165deg, rgba(255,255,255,0.9), rgba(236,244,255,0.88)) !important;
+      border-color: rgba(20,100,200,0.3) !important;
+      color: #1a3a58 !important;
+    }
+    html:not(.theme-dark) .stc-scroll-label,
+    html:not(.theme-dark) .cli-scroll-label { color: rgba(20,80,150,0.7) !important; text-shadow: none !important; }
+    html:not(.theme-dark) #sn-ribbon .sn-rib-btn,
+    html:not(.theme-dark) .sn-rib-label { color: #0c1e36 !important; }
+  }
+  /* Explicit theme-light class (same as media light) */
+  html.theme-light {
+    --bg: #eef4fc; --bg-deep: #e4edf8; --void: #d8e6f5;
+    --text: #0c1e36; --text-bright: #061018;
+    --panel: rgba(255,255,255,0.82); --cli-bg: rgba(255,255,255,0.78);
+    --cli-text: #0c1e36; --cli-glow: #0b6fd4;
+  }
+  html.theme-light body {
+    background: radial-gradient(120% 80% at 50% -10%, #f5f9ff 0%, #e4edf8 45%, #d0e0f2 100%);
+    color: #0c1e36;
+  }
+  html.theme-light #sn-topchrome-panel,
+  html.theme-light #panel {
+    background: linear-gradient(165deg, rgba(255,255,255,0.88), rgba(232,242,255,0.8)) !important;
+    border-color: rgba(20,100,200,0.35) !important;
+    animation: none !important;
+    color: #0c1e36 !important;
+  }
+  html.theme-light #sn-topchrome #btn-home { color: #0a5ec4 !important; }
+  html.theme-light #cli-form {
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(232,242,255,0.92)) !important;
+    animation: none !important;
+  }
+  html.theme-light #cli-in { color: #0c1e36 !important; }
+  html.theme-light .cli-line { color: #0c1e36 !important; }
 
 </style>
 </head>
@@ -1907,7 +2058,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731233000-device-labeled-graph"></script>
+<script src="/js/spacenet/boot.js?v=20260731235000-light-compact-scroll"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
