@@ -31,6 +31,48 @@
   var task = 'idle';
   var notice = '';
   var speedMode = 'rotate';
+  /**
+   * Device harvest roles (ASTRANOV technical settings):
+   * main — primary phone/PC · conservative spare harvest
+   * secondary — hot-swap spare · low harvest · battery / monitor
+   * raid — array node · heavy harvest · always below TJ max (thermal ceiling)
+   */
+  var DEVICE_ROLES = {
+    main: {
+      id: 'main',
+      label: 'Main device',
+      harvest: 0.32,
+      donateBoost: 1.15,
+      workerScale: 0.45,
+      maxBudget: 0.55,
+      loadCap: 0.72,
+      preferHidden: false,
+    },
+    secondary: {
+      id: 'secondary',
+      label: 'Secondary device',
+      harvest: 0.12,
+      donateBoost: 1.0,
+      workerScale: 0.18,
+      maxBudget: 0.28,
+      loadCap: 0.5,
+      preferHidden: true,
+    },
+    raid: {
+      id: 'raid',
+      label: 'RAID device',
+      harvest: 0.78,
+      donateBoost: 2.4,
+      workerScale: 1.85,
+      maxBudget: 0.9,
+      loadCap: 0.88,
+      preferHidden: false,
+      /** Thermal junction soft max — never 100% */
+      tjMax: 0.92,
+    },
+  };
+  var ROLE_KEY = 'sn:device-role-v1';
+
   var mine = {
     on: false,
     terms: false,
@@ -43,7 +85,54 @@
     worker: null,
     workerOps: 0,
     meshPeers: 1,
+    deviceRole: 'main',
   };
+
+  function loadDeviceRole() {
+    try {
+      var r = localStorage.getItem(ROLE_KEY) || 'main';
+      if (!DEVICE_ROLES[r]) r = 'main';
+      mine.deviceRole = r;
+    } catch (e) {
+      mine.deviceRole = 'main';
+    }
+    return mine.deviceRole;
+  }
+
+  function roleProfile() {
+    return DEVICE_ROLES[mine.deviceRole] || DEVICE_ROLES.main;
+  }
+
+  function setDeviceRole(role) {
+    var id = String(role || 'main').toLowerCase();
+    if (id === 'hotswap' || id === 'hot-swap' || id === 'spare') id = 'secondary';
+    if (id === 'array' || id === 'miner') id = 'raid';
+    if (!DEVICE_ROLES[id]) id = 'main';
+    mine.deviceRole = id;
+    try {
+      localStorage.setItem(ROLE_KEY, id);
+    } catch (e) {}
+    // Roles imply mesh donation posture
+    if (id === 'raid' || id === 'main') {
+      mine.donate = true;
+      try {
+        localStorage.setItem('astranov_donate_compute', '1');
+      } catch (e2) {}
+    }
+    if (id === 'secondary') {
+      // Low harvest · still can donate lightly for monitoring mesh
+      mine.donate = true;
+      try {
+        localStorage.setItem('astranov_donate_compute', '1');
+      } catch (e3) {}
+    }
+    if (mine.on && mine.terms && mine.donate) ensureMineWorker();
+    paint();
+    try {
+      if (g.SNUsage && SNUsage.track) SNUsage.track('device_role', { role: id });
+    } catch (e4) {}
+    return DEVICE_ROLES[id];
+  }
   var sweep = 0;
   var blips = [];
   var fpsBuf = [];
@@ -405,9 +494,9 @@
   }
 
   /**
-   * Permanent CLI top shortcut ribbon (owner 2026-07-31):
+   * Permanent CLI top shortcut ribbon:
    * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
-   * Multi-option buttons expand upward. No menu/cart/order flood.
+   * ONLY ➕ and Layers expand menus. All other keys = one action.
    */
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
@@ -552,38 +641,50 @@
       stopMineWorker();
       return;
     }
-    var load = document.hidden ? 0.15 : mine.fps >= 40 ? 0.28 : mine.fps >= 25 ? 0.45 : 0.65;
-    // Donate = use more spare when tab hidden / idle (SETI style)
+    var prof = roleProfile();
+    var load = document.hidden ? 0.12 : mine.fps >= 40 ? 0.28 : mine.fps >= 25 ? 0.45 : 0.65;
     if (mine.donate) {
       ensureMineWorker();
-      load = document.hidden ? 0.08 : Math.min(load, 0.4);
+      load = document.hidden ? 0.06 : Math.min(load, 0.42);
     }
-    if (load > 0.85) {
+    // Secondary: battery first — throttle hard when tab foreground
+    if (prof.preferHidden && !document.hidden) load = Math.max(load, 0.55);
+    // Stop if approaching role load cap (protect battery / TJ)
+    if (load > (prof.loadCap != null ? prof.loadCap : 0.85)) {
       mine.rate = 0;
+      mine.rates.cpu = 0;
       return;
     }
-    var budget = Math.max(0.05, 1 - load);
+    var budget = Math.max(0.02, 1 - load) * (prof.harvest || 0.3);
+    var tj = prof.tjMax != null ? prof.tjMax : 1;
+    var maxB = Math.min(prof.maxBudget != null ? prof.maxBudget : 1, tj);
+    if (budget > maxB) budget = maxB;
     var cores = navigator.hardwareConcurrency || 4;
-    // Main-thread light hash (always) + worker when donate
-    var ops = Math.floor(2000 * budget * (cores / 8) * Math.min(dt / 500, 1));
+    var ops = Math.floor(1600 * budget * (cores / 8) * Math.min(dt / 500, 1));
     var h = 0;
     var i;
     for (i = 0; i < ops; i++) h = ((h << 5) - h + i) | 0;
     if (mine.donate && mine.worker) {
       try {
-        var wops = Math.floor(25000 * budget * (document.hidden ? 2.2 : 1));
-        mine.worker.postMessage({ ops: wops });
+        var wops = Math.floor(
+          18000 * budget * (prof.workerScale || 1) * (document.hidden ? 2.0 : 0.9)
+        );
+        // RAID stays below TJ max worker thrash
+        if (prof.tjMax != null) wops = Math.floor(wops * prof.tjMax);
+        mine.worker.postMessage({ ops: Math.max(500, wops) });
       } catch (eW) {}
     }
-    mine.rates.cpu = Math.min(100, Math.round(budget * cores * (mine.donate ? 12 : 8)));
-    mine.rates.ram = Math.round((navigator.deviceMemory || 4) * 64 * budget);
-    mine.rates.storage = Math.round(32 * budget * (mine.donate ? 1.4 : 1));
-    mine.rates.bandwidth = Math.round(200 * budget * (mine.donate ? 1.3 : 1));
-    // Base mesh reward
-    mine.rate = 0.014 * budget * (document.hidden ? 1.8 : 1);
-    // SETI-style donation multiplies spare-capacity reward
+    mine.rates.cpu = Math.min(
+      Math.round(100 * maxB),
+      Math.round(budget * cores * (mine.donate ? 10 : 6) * (prof.workerScale || 1))
+    );
+    mine.rates.ram = Math.round((navigator.deviceMemory || 4) * 48 * budget);
+    mine.rates.storage = Math.round(28 * budget);
+    mine.rates.bandwidth = Math.round(160 * budget);
+    mine.rate =
+      0.012 * budget * (document.hidden ? 1.6 : prof.preferHidden ? 0.55 : 1);
     if (mine.donate) {
-      mine.rate *= document.hidden ? 3.2 : 2.1;
+      mine.rate *= (document.hidden ? 2.8 : 1.6) * (prof.donateBoost || 1);
       mine.meshPeers = Math.max(1, Math.min(99, Math.round(1 + budget * cores)));
     } else {
       mine.meshPeers = 1;
@@ -591,7 +692,7 @@
     try {
       var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
       if (me && me.roles && me.roles.ambassador && me.ambassadorOnline !== false) {
-        mine.rate += 0.008 * budget;
+        mine.rate += 0.005 * budget;
       }
     } catch (e) {}
     if (mine.rate > 0) {
@@ -1609,6 +1710,7 @@
   }
 
   function report() {
+    var prof = roleProfile();
     return {
       fps: mine.fps,
       spareScore: mine.spare,
@@ -1617,13 +1719,18 @@
       rateSPerH: mine.rate,
       sessionMined: mine.session,
       rates: mine.rates,
+      deviceRole: mine.deviceRole,
+      roleLabel: prof.label,
+      harvest: prof.harvest,
+      tjMax: prof.tjMax != null ? prof.tjMax : null,
       line:
-        'FPS ~' +
+        (prof.label || 'Device') +
+        ' · FPS ~' +
         mine.fps +
         ' · spare ' +
         mine.spare +
         '%' +
-        (mine.donate ? ' · MESH DONATE · peers~' + (mine.meshPeers || 1) : '') +
+        (mine.donate ? ' · mesh' : '') +
         (mine.on ? ' · ' + mine.rate.toFixed(3) + ' S/h' : ' · mine off'),
       workerOps: mine.workerOps,
       meshPeers: mine.meshPeers || 1,
@@ -1637,6 +1744,7 @@
       mine.terms = !!localStorage.getItem('astranov:spacenet-miner-v2');
       mine.on = mine.terms;
       mine.donate = localStorage.getItem('astranov_donate_compute') === '1';
+      loadDeviceRole();
     } catch (e) {}
     paint();
     refreshBlips();
@@ -1748,9 +1856,15 @@
     report: report,
     status: function () {
       var r = report();
+      var prof = roleProfile();
       return [
+        'Device · ' + (r.roleLabel || r.deviceRole),
         r.line,
-        'Mesh donate · ' + (r.donating ? 'ON (worker)' : 'off') + ' · peers~' + (r.meshPeers || 1),
+        'Harvest profile · ' +
+          Math.round((prof.harvest || 0) * 100) +
+          '%' +
+          (prof.tjMax != null ? ' · TJ max ' + Math.round(prof.tjMax * 100) + '%' : ' · conservative'),
+        'Mesh · ' + (r.donating ? 'ON' : 'off') + ' · peers~' + (r.meshPeers || 1),
         'CPU ' +
           (r.rates.cpu || 0) +
           '% · spare ' +
@@ -1759,7 +1873,6 @@
           (r.workerOps || 0),
         'Session mined ' +
           (g.SNCurrency ? SNCurrency.format(r.sessionMined) : r.sessionMined),
-        'Tip: donate on · leave tab open idle · earn S · powers global net',
       ];
     },
     checkTerms: function () {
@@ -1790,17 +1903,16 @@
           mine.on = true;
           ensureMineWorker();
         }
-        g.SNCli &&
-          SNCli.log(
-            'Mesh donate ON · SETI-style spare CPU/RAM/bandwidth → S rewards · tab idle earns more',
-            'ok'
-          );
       } else {
         stopMineWorker();
-        g.SNCli && SNCli.log('Mesh donate off · local mine only if mine on', 'dim');
       }
       paint();
     },
+    setDeviceRole: setDeviceRole,
+    getDeviceRole: function () {
+      return mine.deviceRole;
+    },
+    deviceRoles: DEVICE_ROLES,
     get mining() {
       return mine.on && mine.terms;
     },

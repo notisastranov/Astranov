@@ -72,9 +72,11 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 |------|-----|
 | **Chrome** | Radar (top-left) · **ASTRANOV** home (center) · Miner S (top-right). No floating multi-docks. |
 | **Radar** | Tap expand · double-tap shrink · friends green · competitors red · vendors yellow · routes when active |
-| **Home** | Wordmark **ASTRANOV** · **full menu** (former burger tools + account · roles · session · Earth · reload · hard reset). **No ☰ burger.** |
+| **Home** | Wordmark **ASTRANOV** · **technical settings only**: device resource donation roles (**Main** · **Secondary** · **RAID**), mesh mine on/off, build, hard reset. **No** marketplace/nav junk. **No ☰ burger.** |
 | **Auth** | Sign-in face = **astranov.eu / ASTRANOV** only. **Never** `*.supabase.co` project as product identity. Prefer GIS + `signInWithIdToken`. Custom domain `api.astranov.eu` when live. |
-| **CLI** | Log + input + **permanent top shortcut ribbon** only: **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send**. Multi-option buttons expand **upward**. Scroll history · `/` or `?` search. **Forbidden:** feed chip/button tiles · finance keys on CLI · menu/cart/order ribbon flood. Tools also: **ASTRANOV home** · typed commands · AI by typing. |
+| **CLI ribbon** | **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send**. **Only ➕ and Layers expand menus.** Locate / User / AI / Send = one action. User: login or profile tile. |
+| **Device roles** | **Main** = conservative harvest (daily device). **Secondary** = low harvest · battery · hot-swap monitor. **RAID** = heavy array harvest **below TJ max** (~92% thermal ceiling). |
+| **CLI feed** | Your interaction only (user line + reply/progress for that turn). No boot spam. |
 | **Multi-tile** | Full multi-role card **on map** (menu/order/roles). Not CLI buttons. Long-press empty map creates; short-tap target opens. |
 | **Layers** | No map-corner Layers control under money HUD. Layers via ribbon · typed CLI · ASTRANOV home. |
 | **Finance** | Only top-right S HUD. CLI may print `rate` / `wallet` / `fees` as text. |
@@ -126,6 +128,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | OV-13 | 2026-07-30 | **Naming:** SpaceNet = system/grid internal · **AI = Astranov** · public face ASTRANOV |
 | OV-14 | 2026-07-30 | **SPECS rebuilt** thin CORE + this log; legacy contradictions void |
 | OV-15 | 2026-07-31 | **CLI top shortcut ribbon back** (Locate·User·Add·Layers·AI·Send). **No ☰ burger.** Former burger items move to **ASTRANOV** home menu. Supersedes OV-04 “no ribbon”. Multi-tile still on map; no feed chip tiles. |
+| OV-16 | 2026-07-31 | Ribbon: **only ➕ + Layers expand**. User = login / profile. **ASTRANOV home = technical device harvest only** (Main · Secondary · RAID below TJ max). No junk tool menus on home. |
 
 ---
 

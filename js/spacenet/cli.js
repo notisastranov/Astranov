@@ -1,18 +1,39 @@
-/* SpaceNet CLI — social feed surface
- * One scroll stream: text + tiles (no static strip).
- * Scroll history · type / or ? to search feed.
+/* SpaceNet CLI — YOUR interaction with the system only
+ * Feed = your lines + answers/progress for that turn.
+ * No boot spam · no background status · no free-floating noise.
  */
 (function (global) {
   'use strict';
 
   const hist = [];
   let histIdx = -1;
-  const FEED_MAX = 280;
+  const FEED_MAX = 120;
   let feedFilter = '';
   let stickBottom = true;
+  /** >0 while handling user send — only then may feed write */
+  let turnOpen = 0;
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function beginTurn() {
+    turnOpen++;
+    try {
+      const panel = $('panel');
+      if (panel && panel.classList.contains('collapsed')) {
+        panel.classList.remove('collapsed', 'mid');
+        panel.classList.add('expanded');
+      }
+    } catch (_) {}
+  }
+
+  function endTurn() {
+    turnOpen = Math.max(0, turnOpen - 1);
+  }
+
+  function inTurn() {
+    return turnOpen > 0;
   }
 
   function feedBox() {
@@ -92,7 +113,19 @@
     return n;
   }
 
-  function log(text, cls) {
+  /**
+   * Write to feed ONLY during an active user turn (or force:true).
+   * Outside a turn: silence. Errors may update the title bar only.
+   */
+  function log(text, cls, force) {
+    if (!force && !inTurn()) {
+      if (cls === 'err') {
+        try {
+          preview(String(text || '').slice(0, 90));
+        } catch (_) {}
+      }
+      return null;
+    }
     const box = feedBox();
     if (!box) return null;
     const wrap = document.createElement('div');
@@ -103,7 +136,7 @@
     meta.className = 'cli-feed-meta';
     const t = new Date();
     const role =
-      cls === 'cmd' ? 'user' : cls === 'ok' ? 'astranov' : cls === 'err' ? 'error' : 'system';
+      cls === 'cmd' ? 'you' : cls === 'ok' ? 'astranov' : cls === 'err' ? 'error' : 'progress';
     meta.textContent =
       role +
       '  ' +
@@ -216,25 +249,23 @@
   async function run(raw) {
     const line = String(raw || '').trim();
     if (!line) return;
-    // /search or ?query → filter feed only (social search)
+    // /search or ?query → filter feed only (does not pollute history)
     if (/^[/？?]/.test(line) || /^search\s+/i.test(line)) {
       const q = line.replace(/^search\s+/i, '').replace(/^[/？?]\s*/, '');
       if (!q) {
         applyFeedFilter('');
-        preview('Feed search off · scroll freely');
+        preview('Search off');
         return;
       }
       const n = applyFeedFilter(q);
-      log('Search feed · “' + q + '” · ' + n + ' match' + (n === 1 ? '' : 'es'), 'dim');
-      preview(n + ' in feed · clear / to exit search');
+      preview(n + ' match · clear / to exit');
       return;
     }
+    beginTurn();
     hist.push(line);
     histIdx = hist.length;
-    // New talk ends search mode so feed shows live stream
     if (feedFilter) applyFeedFilter('');
-    log('› ' + line, 'cmd');
-    // Never auto-expand CLI or open tiles — keep city map usable
+    log(line, 'cmd');
     global.SNRibbon?.infer?.(line);
 
     const low = line.toLowerCase();
@@ -256,7 +287,7 @@
         }
         applyFeedFilter('');
         stickBottom = true;
-        log('Feed cleared', 'dim');
+        preview('cleared');
         return;
       }
       if (low === 'brain' || low === 'memory') {
@@ -412,24 +443,33 @@
         } else log('AI loading · hard refresh', 'err');
         return;
       }
-      // Food: listen → find → fly/zoom · open tile · next | show all (AI path)
+      // Food / pizza order — direct market path (clean progress in THIS turn only)
+      // Skip exact self-shop coach lines handled below
       if (
         global.SNMarket?.parseFoodIntent?.(line) &&
-        !/^(list\s+shop|menu\s+add|order\s+me|drive\s+on|first\s+delivery)/i.test(low)
+        !/^(list\s+shop|menu\s+add|order\s+me\s*$|drive\s+on|first\s+delivery)/i.test(low)
       ) {
-        if (global.SNAi?.ask) {
-          const reply = await SNAi.ask(line);
-          if (reply) {
-            log(reply, 'ok');
-            preview(String(reply).slice(0, 80));
-            replyOut(reply);
-          }
-        } else {
-          const fi = global.SNMarket.parseFoodIntent(line);
-          const r = await global.SNMarket.fulfillFoodIntent(fi, { autoOrder: false, quiet: true });
-          if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
-          else log(r?.error || 'food path failed', 'err');
-        }
+        const fi = global.SNMarket.parseFoodIntent(line);
+        const wantOrder =
+          fi.autoOrder === true ||
+          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|buy|pay)\b/i.test(low);
+        fi.autoOrder = wantOrder;
+        fi.raw = line;
+        const r = await global.SNMarket.fulfillFoodIntent(fi, {
+          autoOrder: wantOrder,
+          quiet: false,
+          judgeAll: true,
+        });
+        if (r?.summary) {
+          String(r.summary)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln.trim(), r.ok ? 'ok' : 'err');
+            });
+        } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+        else log(r?.error || 'Could not complete food request', 'err');
+        preview(r?.eatLine || r?.reply || (r?.ok ? 'done' : 'failed'));
+        if (r?.reply) replyOut(r.reply);
         return;
       }
       // First marketplace loop + usage (SpaceNet coaches the same path)
@@ -902,6 +942,37 @@
       }
       if (low === 'donate off' || low === 'mesh off') {
         global.SNResources?.setDonate?.(false);
+        return;
+      }
+      if (
+        low === 'device main' ||
+        low === 'role main' ||
+        low === 'device secondary' ||
+        low === 'role secondary' ||
+        low === 'device raid' ||
+        low === 'role raid' ||
+        low === 'device role' ||
+        low === 'harvest role'
+      ) {
+        const role =
+          /raid/.test(low) ? 'raid' : /secondary|hot\s*swap|spare/.test(low) ? 'secondary' : /main/.test(low) ? 'main' : null;
+        if (role && global.SNResources?.setDeviceRole) {
+          const p = global.SNResources.setDeviceRole(role);
+          global.SNResources.setMining?.(true);
+          global.SNResources.setDonate?.(true);
+          log(
+            'Device · ' +
+              (p?.label || role) +
+              ' · harvest ' +
+              Math.round((p?.harvest || 0) * 100) +
+              '%' +
+              (p?.tjMax != null ? ' · TJ max ' + Math.round(p.tjMax * 100) + '%' : ''),
+            'ok'
+          );
+        } else {
+          const cur = global.SNResources?.getDeviceRole?.() || 'main';
+          log('Device role · ' + cur + ' · set: device main | device secondary | device raid', 'ok');
+        }
         return;
       }
       if (low === 'boost') {
@@ -1521,15 +1592,15 @@
         if (global.SNMap?.active) global.SNMap.showTasks?.();
         return;
       }
-      if (/^order\b|^market\b|^checkout\b/.test(low)) {
+      if (low === 'order' || low === 'market' || low === 'checkout' || /^market\b|^checkout\b/.test(low)) {
         const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
         await global.SNMap?.open?.(p.lat, p.lng);
         const r = await global.SNCommerce?.populateMap?.(p.lat, p.lng, { openMap: true });
         log(
           r?.count
-            ? 'Market · ' + r.count + ' real shops · open a vendor tile · cart · order'
-            : 'Market · no shops in sector · try fly rhodes · shops',
-          r?.count ? 'ok' : 'dim'
+            ? 'Market · ' + r.count + ' shops near you'
+            : 'Market · no shops here · try fly <city> · shops',
+          r?.count ? 'ok' : 'err'
         );
         preview(r?.count ? r.count + ' shops' : 'market');
         return;
@@ -1552,8 +1623,8 @@
         return;
       }
 
-      // Freeform → SpaceNet (must talk + act; coaches first shop/delivery)
-      preview('SpaceNet…');
+      // Freeform → Astranov (same turn only)
+      preview('…');
       if (!global.SNAi?.ask) {
         await new Promise((r) => setTimeout(r, 600));
       }
@@ -1565,16 +1636,17 @@
             .forEach((ln) => {
               if (ln.trim()) log(ln, 'ok');
             });
-          preview(reply.replace(/^SpaceNet\s*[·:.-]\s*/i, '').slice(0, 80));
-          // Speak conversation when AI talk mode is on
+          preview(reply.replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
           replyOut(reply);
           return;
         }
       }
-      log('SpaceNet loading… try: first delivery · locate · shops', 'dim');
-      preview('AI loading…');
+      log('System loading · try again in a moment', 'err');
+      preview('loading…');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');
+    } finally {
+      endTurn();
     }
   }
 
@@ -2103,14 +2175,12 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     feedBox();
-    log('Astranov CLI · Grok-style scrollback · text only · / search', 'dim');
-    log('First order: type  first delivery  (or step: list shop · menu add · order me · drive on · deliver me)', 'ok');
-    preview('ready · type first delivery');
+    // Empty feed until YOU speak — no boot crap
+    preview('›');
     try {
       document.querySelectorAll('#cli-log .cli-tile-block').forEach((el) => el.remove());
     } catch (_) {}
     warmVoices();
-    // If AI already loaded (race), ensure presence
     setTimeout(() => {
       try {
         if (global.SNAi?.bootPresence && !global.SNAi.history?.length) SNAi.bootPresence();
@@ -2127,6 +2197,9 @@
     appendTilePost,
     applyFeedFilter,
     feedBox,
+    beginTurn,
+    endTurn,
+    inTurn,
     toggleHandsfree,
     speakAi,
     stopHandsfree,
