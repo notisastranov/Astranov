@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731174000-scifi-ui" />
-<meta name="astranov-continuity" content="20260731174000-scifi-ui" />
+<meta name="astranov-build" content="20260731180000-tier-snap-activity" />
+<meta name="astranov-continuity" content="20260731180000-tier-snap-activity" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. S primary currency." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -214,6 +214,15 @@
     display: block; font-style: normal; font-size: 9px; color: #6aa8d8;
     margin-top: 1px; letter-spacing: 0.06em; font-family: var(--font-mono);
   }
+  .sn-city-lab.sn-region-lab {
+    border-color: rgba(168, 236, 255, 0.35);
+    background: rgba(4, 20, 44, 0.82);
+  }
+  .sn-city-lab.sn-region-lab b {
+    color: #8ad4ff; font-family: var(--font-display); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .sn-city-lab.sn-region-lab i { color: #4a7a9a; letter-spacing: 0.14em; }
 
   #sn-burger-btn, #sn-burger-panel { display: none !important; }
 
@@ -715,7 +724,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731174000-scifi-ui"></script>
+<script src="/js/spacenet/boot.js?v=20260731180000-tier-snap-activity"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

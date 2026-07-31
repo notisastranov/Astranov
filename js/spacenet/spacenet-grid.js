@@ -18,17 +18,18 @@
 
   /**
    * Dramatic camera Z per cell — spreads must be obvious to the eye.
-   * Closer = lower z.
-   * GLOBAL = full Earth floating in space (not a cropped hemisphere).
-   * SOLAR = deeper space overview. NATIONAL+ = surface approach.
+   * Closer = lower z. Wheel/scroll snaps to these only (never free continuous zoom).
+   * GLOBAL = full Earth in space. NATIONAL = country + major cities.
+   * REGIONAL = metro cluster. CITY = street map handoff.
    */
   var Z = {
-    solar: 12.0,
-    global: 6.4,
-    national: 2.35,
-    regional: 1.72,
-    city: 1.42,
+    solar: 11.5,
+    global: 5.6,
+    national: 2.85,
+    regional: 1.95,
+    city: 1.48,
   };
+
 
   var LABELS = {
     solar: 'SOLAR',
@@ -50,10 +51,11 @@
 
   function tierFromZ(z) {
     if (z == null || !isFinite(z)) return 'global';
-    if (z >= 9.0) return 'solar';
+    // Midpoints between snapped Z values
+    if (z >= 8.2) return 'solar';
     if (z >= 4.0) return 'global';
-    if (z >= 1.95) return 'national';
-    if (z >= 1.55) return 'regional';
+    if (z >= 2.35) return 'national';
+    if (z >= 1.7) return 'regional';
     return 'city';
   }
 

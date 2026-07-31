@@ -22,12 +22,14 @@
   var SN = snApi();
   var TIERS = {
     // GLOBAL = full planet in space (ISS / sats visible). Not a cropped close-up.
-    solar: { z: 12.0, label: 'SOLAR' },
-    global: { z: 6.4, label: 'GLOBAL' },
-    national: { z: 2.35, label: 'NATIONAL' },
-    regional: { z: 1.72, label: 'REGIONAL' },
-    city: { z: 1.42, label: 'CITY' },
+    // Z values are discrete SNAP altitudes — wheel never free-flies between them.
+    solar: { z: 11.5, label: 'SOLAR' },
+    global: { z: 5.6, label: 'GLOBAL' },
+    national: { z: 2.85, label: 'NATIONAL' },
+    regional: { z: 1.95, label: 'REGIONAL' },
+    city: { z: 1.48, label: 'CITY' },
   };
+
   // Sync dramatic Z from SPACENET law when present
   (function syncZ() {
     var S = snApi();
@@ -159,6 +161,62 @@
     { n: 'Tel Aviv', lat: 32.09, lng: 34.78 },
     { n: 'Rhodes', lat: 36.43, lng: 28.22 },
     { n: 'Thessaloniki', lat: 40.64, lng: 22.94 },
+    { n: 'Heraklion', lat: 35.34, lng: 25.13 },
+    { n: 'Patras', lat: 38.25, lng: 21.73 },
+    { n: 'Ilioúpoli', lat: 37.93, lng: 23.75 },
+    { n: 'Piraeus', lat: 37.94, lng: 23.65 },
+    { n: 'Larissa', lat: 39.64, lng: 22.42 },
+    { n: 'Ioannina', lat: 39.67, lng: 20.85 },
+    { n: 'Chania', lat: 35.51, lng: 24.02 },
+    { n: 'Mykonos', lat: 37.45, lng: 25.33 },
+    { n: 'Santorini', lat: 36.39, lng: 25.46 },
+    { n: 'Nicosia', lat: 35.19, lng: 33.38 },
+    { n: 'Sofia', lat: 42.7, lng: 23.32 },
+    { n: 'Belgrade', lat: 44.79, lng: 20.45 },
+    { n: 'Tirana', lat: 41.33, lng: 19.82 },
+    { n: 'Skopje', lat: 41.99, lng: 21.43 },
+  ];
+
+  /** Region / state labels — shown at NATIONAL and denser at REGIONAL */
+  var REGIONS = [
+    { n: 'Attica', lat: 38.0, lng: 23.7 },
+    { n: 'Central Greece', lat: 38.7, lng: 22.5 },
+    { n: 'Peloponnese', lat: 37.4, lng: 22.3 },
+    { n: 'Thessaly', lat: 39.5, lng: 22.3 },
+    { n: 'Epirus', lat: 39.6, lng: 20.8 },
+    { n: 'Macedonia', lat: 40.7, lng: 22.9 },
+    { n: 'Thrace', lat: 41.1, lng: 25.4 },
+    { n: 'Crete', lat: 35.2, lng: 24.9 },
+    { n: 'South Aegean', lat: 36.8, lng: 25.5 },
+    { n: 'North Aegean', lat: 39.1, lng: 26.3 },
+    { n: 'Ionian', lat: 38.5, lng: 20.5 },
+    { n: 'Anatolia', lat: 39.0, lng: 32.0 },
+    { n: 'Balkans', lat: 42.5, lng: 22.0 },
+    { n: 'Levant', lat: 33.5, lng: 35.5 },
+    { n: 'Nile', lat: 28.0, lng: 31.0 },
+    { n: 'Maghreb', lat: 32.0, lng: 3.0 },
+    { n: 'Iberia', lat: 40.0, lng: -4.0 },
+    { n: 'Italy', lat: 42.5, lng: 12.5 },
+    { n: 'Central Europe', lat: 50.0, lng: 10.0 },
+    { n: 'British Isles', lat: 54.0, lng: -2.0 },
+    { n: 'Scandinavia', lat: 62.0, lng: 15.0 },
+    { n: 'Eastern Europe', lat: 52.0, lng: 30.0 },
+    { n: 'Caucasus', lat: 42.0, lng: 44.0 },
+    { n: 'Gulf', lat: 25.0, lng: 52.0 },
+    { n: 'Indus', lat: 28.0, lng: 70.0 },
+    { n: 'Ganges', lat: 26.0, lng: 82.0 },
+    { n: 'Indochina', lat: 15.0, lng: 105.0 },
+    { n: 'China proper', lat: 34.0, lng: 113.0 },
+    { n: 'Japan', lat: 36.0, lng: 138.0 },
+    { n: 'California', lat: 36.5, lng: -120.0 },
+    { n: 'Northeast US', lat: 41.0, lng: -74.0 },
+    { n: 'Midwest', lat: 41.5, lng: -88.0 },
+    { n: 'Texas', lat: 31.0, lng: -99.0 },
+    { n: 'Southeast US', lat: 33.0, lng: -84.0 },
+    { n: 'Andes', lat: -12.0, lng: -75.0 },
+    { n: 'SE Brazil', lat: -23.0, lng: -46.0 },
+    { n: 'Rio de la Plata', lat: -34.0, lng: -58.0 },
+    { n: 'SE Australia', lat: -34.0, lng: 151.0 },
   ];
 
   var BORDER_URL =
@@ -198,10 +256,10 @@
   function tierFromZ(z) {
     var S = snApi();
     if (S && S.tierFromZ) return S.tierFromZ(z);
-    if (z >= 9.0) return 'solar';
+    if (z >= 8.2) return 'solar';
     if (z >= 4.0) return 'global';
-    if (z >= 1.95) return 'national';
-    if (z >= 1.55) return 'regional';
+    if (z >= 2.35) return 'national';
+    if (z >= 1.7) return 'regional';
     return 'city';
   }
 
@@ -425,7 +483,22 @@
 
   function updateCityLabels() {
     var root = cityLabelsRoot();
-    if (!G.nationalOn || (G.bodyId && G.bodyId !== 'earth') || global.SNMap?.active) {
+    if ((G.bodyId && G.bodyId !== 'earth') || global.SNMap?.active) {
+      root.innerHTML = '';
+      root.classList.remove('on');
+      return;
+    }
+    var tier = currentTier();
+    // GLOBAL: activity-only (no dense city chrome). NATIONAL+: cities + regions.
+    if (tier === 'solar' || tier === 'global') {
+      // Still show a few megacity anchors at GLOBAL so the planet reads as living
+      if (tier === 'solar') {
+        root.innerHTML = '';
+        root.classList.remove('on');
+        return;
+      }
+    }
+    if (!G.nationalOn && tier !== 'global') {
       root.innerHTML = '';
       root.classList.remove('on');
       return;
@@ -436,12 +509,40 @@
     var flng = f && f.lng != null ? f.lng : 0;
     var html = [];
     var n = 0;
-    for (var i = 0; i < MAJOR_CITIES.length && n < 14; i++) {
+    var maxN = tier === 'regional' ? 28 : tier === 'national' ? 18 : tier === 'city' ? 10 : 8;
+    var maxDLat = tier === 'regional' ? 12 : tier === 'national' ? 32 : tier === 'city' ? 6 : 50;
+    var maxDLng = tier === 'regional' ? 14 : tier === 'national' ? 38 : tier === 'city' ? 8 : 60;
+
+    // Regions first at NATIONAL+
+    if (tier === 'national' || tier === 'regional') {
+      for (var ri = 0; ri < REGIONS.length && n < Math.min(10, maxN); ri++) {
+        var reg = REGIONS[ri];
+        var rdLat = Math.abs(reg.lat - flat);
+        var rdLng = Math.abs(reg.lng - flng);
+        if (rdLng > 180) rdLng = 360 - rdLng;
+        var rCap = tier === 'regional' ? 18 : 40;
+        if (rdLat > rCap || rdLng > rCap + 5) continue;
+        var rscr = projectToScreen(reg.lat, reg.lng);
+        if (!rscr) continue;
+        html.push(
+          '<span class="sn-city-lab sn-region-lab" style="left:' +
+            Math.round(rscr.x) +
+            'px;top:' +
+            Math.round(rscr.y) +
+            'px"><b>' +
+            reg.n +
+            '</b><i>REGION</i></span>'
+        );
+        n++;
+      }
+    }
+
+    for (var i = 0; i < MAJOR_CITIES.length && n < maxN; i++) {
       var c = MAJOR_CITIES[i];
       var dLat = Math.abs(c.lat - flat);
       var dLng = Math.abs(c.lng - flng);
       if (dLng > 180) dLng = 360 - dLng;
-      if (dLat > 28 || dLng > 32) continue;
+      if (dLat > maxDLat || dLng > maxDLng) continue;
       var scr = projectToScreen(c.lat, c.lng);
       if (!scr) continue;
       var clk = localClockAt(c.lat, c.lng);
@@ -468,7 +569,15 @@
     if (!force && now - (G._natHudLast || 0) < 900) return;
     G._natHudLast = now;
     var el = nationalHudEl();
-    if (!G.nationalOn || (G.bodyId && G.bodyId !== 'earth')) {
+    var tier = currentTier();
+    if ((G.bodyId && G.bodyId !== 'earth') || (tier === 'solar')) {
+      el.classList.remove('on');
+      el.textContent = '';
+      updateCityLabels();
+      return;
+    }
+    // Show HUD at GLOBAL+ (activity sky) and NATIONAL+
+    if (!G.nationalOn && tier !== 'global') {
       el.classList.remove('on');
       el.textContent = '';
       updateCityLabels();
@@ -480,7 +589,14 @@
     var clock = localClockAt(lat, lng);
     var city = nearestMajorCity(lat, lng);
     var cityBit = city ? city.n : lat.toFixed(1) + '°, ' + lng.toFixed(1) + '°';
-    var tierLab = (TIERS[G.tier] && TIERS[G.tier].label) || 'NATIONAL';
+    var tierLab = (TIERS[tier] && TIERS[tier].label) || 'GLOBAL';
+    var arcN = 0;
+    try {
+      if (G.activityLines && G.activityLines.geometry) {
+        var pos = G.activityLines.geometry.getAttribute('position');
+        arcN = pos ? Math.floor(pos.count / 22) : 0;
+      }
+    } catch (_) {}
     el.classList.add('on');
     el.innerHTML =
       '<span class="snh-tier">' +
@@ -496,19 +612,31 @@
       (clock.day ? 'day' : 'night') +
       '">' +
       clock.dayNight +
-      '</span>';
+      '</span>' +
+      (arcN
+        ? '<span class="snh-time">· ' + arcN + ' live arcs</span>'
+        : tier === 'global'
+          ? '<span class="snh-time">· activity sky</span>'
+          : '');
     updateCityLabels();
   }
 
   /**
-   * SPACENET webbing: only below GLOBAL (national · regional · city globe).
-   * Hidden at SOLAR/GLOBAL overview, off-Earth, or when street map is open.
+   * SPACENET webbing: national · regional · city globe.
+   * Activity arcs stay visible from GLOBAL (high sky) so traffic reads from orbit.
    */
   function webbingShouldShow() {
     if (!(G.bodyId === 'earth' || !G.bodyId)) return false;
     if (global.SNMap && SNMap.active) return false;
     var t = currentTier();
     return t === 'national' || t === 'regional' || t === 'city';
+  }
+
+  function activityShouldShow() {
+    if (!(G.bodyId === 'earth' || !G.bodyId)) return false;
+    if (global.SNMap && SNMap.active) return false;
+    var t = currentTier();
+    return t === 'global' || t === 'national' || t === 'regional' || t === 'city';
   }
 
   function nationalTierActive() {
@@ -814,7 +942,7 @@
     tryFetch(0);
   }
 
-  /** syncNationalLayer = SPACENET webbing OS layer */
+  /** syncNationalLayer = SPACENET webbing OS layer + activity arcs */
   function syncNationalLayer() {
     if (!G.ready || !G.pivot) return;
     var on = webbingShouldShow();
@@ -822,19 +950,169 @@
     if (on) {
       ensureWebbing();
       if (G.nationalRoot) G.nationalRoot.visible = true;
-      // Cities brighter when closer
+      if (G.webbGrid) G.webbGrid.visible = true;
+      if (G.webbGridGlow) G.webbGridGlow.visible = true;
       var close = nationalTierActive();
       if (G.cityCore) G.cityCore.visible = true;
       if (G.cityGlow) G.cityGlow.visible = true;
       if (G.cityCore && G.cityCore.material) {
         G.cityCore.material.opacity = close ? 1 : 0.55;
       }
+      if (G.cityGlow && G.cityGlow.material) {
+        var z = G.camera ? G.camera.position.z : 3;
+        G.cityGlow.material.size = z > 2.5 ? 0.07 : z > 1.9 ? 0.045 : 0.03;
+      }
       if (G.borderLines) G.borderLines.visible = true;
       if (G.borderGlow) G.borderGlow.visible = true;
     } else if (G.nationalRoot) {
-      G.nationalRoot.visible = false;
+      // Keep root for activity arcs even at GLOBAL
+      if (activityShouldShow()) {
+        ensureNationalRoot();
+        G.nationalRoot.visible = true;
+        if (G.webbGrid) G.webbGrid.visible = false;
+        if (G.webbGridGlow) G.webbGridGlow.visible = false;
+        if (G.borderLines) G.borderLines.visible = false;
+        if (G.borderGlow) G.borderGlow.visible = false;
+        // Megacity pinpoints at GLOBAL
+        if (!G.cityCore) buildCityLayer();
+        if (G.cityCore) {
+          G.cityCore.visible = true;
+          if (G.cityCore.material) G.cityCore.material.opacity = 0.7;
+        }
+        if (G.cityGlow) {
+          G.cityGlow.visible = true;
+          if (G.cityGlow.material) {
+            G.cityGlow.material.opacity = 0.45;
+            G.cityGlow.material.size = 0.09;
+          }
+        }
+      } else {
+        G.nationalRoot.visible = false;
+      }
     }
+    refreshActivityArcs();
     updateNationalHud(true);
+  }
+
+  /**
+   * Harvest live marketplace / task pairs → glowing blue great-circle arcs.
+   * Visible from GLOBAL so activity density is readable high above.
+   */
+  function harvestActivityPairs() {
+    var pairs = [];
+    function pushPair(aLat, aLng, bLat, bLng) {
+      if (
+        aLat == null ||
+        aLng == null ||
+        bLat == null ||
+        bLng == null ||
+        !isFinite(aLat) ||
+        !isFinite(bLat)
+      )
+        return;
+      if (Math.abs(aLat - bLat) < 1e-5 && Math.abs(aLng - bLng) < 1e-5) return;
+      pairs.push({
+        a: { lat: Number(aLat), lng: Number(aLng) },
+        b: { lat: Number(bLat), lng: Number(bLng) },
+      });
+    }
+    try {
+      var tasks =
+        (global.SNTasks && SNTasks.list && (SNTasks.list({ kind: 'delivery' }) || SNTasks.list())) ||
+        [];
+      for (var i = 0; i < tasks.length && pairs.length < 48; i++) {
+        var t = tasks[i];
+        if (!t) continue;
+        if (t.status === 'done' || t.status === 'cancelled') continue;
+        var vLat = t.vendor_lat != null ? t.vendor_lat : t.lat;
+        var vLng = t.vendor_lng != null ? t.vendor_lng : t.lng;
+        var dLat = t.drop_lat != null ? t.drop_lat : t.to_lat;
+        var dLng = t.drop_lng != null ? t.drop_lng : t.to_lng;
+        pushPair(vLat, vLng, dLat, dLng);
+      }
+    } catch (_) {}
+    try {
+      var me = global.SNProfiles && SNProfiles.me && SNProfiles.me();
+      var vendors = (global.SNProfiles && SNProfiles.list && SNProfiles.list({ role: 'vendor' })) || [];
+      if (me && me.lat != null) {
+        for (var v = 0; v < vendors.length && pairs.length < 64; v++) {
+          var shop = vendors[v];
+          if (!shop || shop.lat == null) continue;
+          // only nearby shops for density around you
+          var dd = Math.abs(shop.lat - me.lat) + Math.abs(shop.lng - me.lng);
+          if (dd > 4) continue;
+          pushPair(shop.lat, shop.lng, me.lat, me.lng);
+        }
+      }
+    } catch (_) {}
+    try {
+      if (global.SNMeshOrders && SNMeshOrders.listLocal) {
+        var open = SNMeshOrders.listLocal() || [];
+        open.forEach(function (o) {
+          if (o && o.vendor_lat != null && o.drop_lat != null)
+            pushPair(o.vendor_lat, o.vendor_lng, o.drop_lat, o.drop_lng);
+        });
+      }
+    } catch (_) {}
+    // No dummy corridors — only real tasks / mesh / nearby vendor→you
+    return pairs;
+  }
+
+  function arcPositions(a, b, r, segs) {
+    segs = segs || 12;
+    r = r || 1.03;
+    var out = [];
+    for (var i = 0; i < segs; i++) {
+      var t0 = i / segs;
+      var t1 = (i + 1) / segs;
+      // height bulge mid-arc so lines read from orbit
+      var h0 = r + 0.04 * Math.sin(Math.PI * t0);
+      var h1 = r + 0.04 * Math.sin(Math.PI * t1);
+      var lat0 = a.lat + (b.lat - a.lat) * t0;
+      var lng0 = a.lng + (b.lng - a.lng) * t0;
+      var lat1 = a.lat + (b.lat - a.lat) * t1;
+      var lng1 = a.lng + (b.lng - a.lng) * t1;
+      var p0 = latLngToVec(lat0, lng0, h0);
+      var p1 = latLngToVec(lat1, lng1, h1);
+      out.push(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z);
+    }
+    return out;
+  }
+
+  function refreshActivityArcs() {
+    if (!G.ready || !G.pivot) return;
+    ensureNationalRoot();
+    if (G.activityLines) {
+      try {
+        G.nationalRoot.remove(G.activityLines);
+        if (G.activityLines.geometry) G.activityLines.geometry.dispose();
+      } catch (_) {}
+      G.activityLines = null;
+    }
+    if (!activityShouldShow()) return;
+    var pairs = harvestActivityPairs();
+    if (!pairs.length) return;
+    var positions = [];
+    for (var i = 0; i < pairs.length; i++) {
+      var segs = arcPositions(pairs[i].a, pairs[i].b, 1.028, 10);
+      for (var k = 0; k < segs.length; k++) positions.push(segs[k]);
+    }
+    if (!positions.length) return;
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', bufAttr(positions, 3));
+    var mat = new THREE.LineBasicMaterial({
+      color: 0x4cc9ff,
+      transparent: true,
+      opacity: currentTier() === 'global' ? 0.55 : 0.75,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    G.activityLines = new THREE.LineSegments(geo, mat);
+    G.activityLines.renderOrder = 12;
+    G.activityLines.name = 'activityArcs';
+    G.activityLines.frustumCulled = false;
+    G.nationalRoot.add(G.activityLines);
+    G.nationalRoot.visible = true;
   }
 
   function updateDayNight() {
@@ -1430,31 +1708,52 @@
     canvas.addEventListener(
       'wheel',
       function (e) {
+        e.preventDefault();
         G.lastAct = Date.now();
-        // Zoom toward cursor: update focus from point under wheel
+        // Discrete SPACENET steps only — never free continuous Z (was "teleporting")
         var under = pickLatLng(e.clientX, e.clientY);
         if (under) setFocus(under.lat, under.lng);
 
-        var next = Math.max(1.42, Math.min(14, G.camera.position.z + e.deltaY * 0.0028));
-        G.camera.position.z = next;
-        G.diveTier = tierFromZ(next);
-        setTierLabel();
-        syncSpaceLayerVis();
+        G._wheelAcc = (G._wheelAcc || 0) + e.deltaY;
+        var now = Date.now();
+        if (G.zoomAnim || G.flying) return;
+        if (now < (G._wheelCoolUntil || 0)) return;
+        // Threshold: one notch / trackpad flick = one tier
+        if (Math.abs(G._wheelAcc) < 48) return;
+        var zoomOut = G._wheelAcc > 0;
+        G._wheelAcc = 0;
+        G._wheelCoolUntil = now + 480;
 
-        // Enter city tier → street map at FOCUS (clicked/zoomed place), never forced home city
-        if (next <= TIERS.city.z + 0.02 && !global.SNMap?.active) {
-          var p = focusPos() || under || { lat: 36.43, lng: 28.22 };
-          if (under) p = under;
-          setFocus(p.lat, p.lng);
-          void global.SNMap?.open?.(p.lat, p.lng);
-          try {
-            global.SNCli?.log?.(
-              'City map · ' + p.lat.toFixed(3) + ', ' + p.lng.toFixed(3) + ' (zoom target)',
-              'ok'
-            );
-          } catch (_) {}
+        if (zoomOut) {
+          // Street map open → close first, stay CITY, then next scroll goes regional
+          if (global.SNMap && SNMap.active) {
+            try {
+              SNMap.close();
+            } catch (_) {}
+            G.diveTier = 'city';
+            syncDiveStepFromTier('city');
+            animateZ(TIERS.city.z, 520);
+            setTierLabel();
+            syncSpaceLayerVis();
+            syncNationalLayer();
+            try {
+              if (global.SNCli && SNCli.log) SNCli.log('CITY · globe · scroll again for REGIONAL', 'dim');
+            } catch (_) {}
+            return;
+          }
+          zoomOutOne();
+          return;
         }
-        e.preventDefault();
+
+        // Zoom in: one cell deeper under cursor / focus
+        var p = under || focusPos();
+        if (p && p.lat != null) {
+          diveInAt(p.lat, p.lng);
+        } else {
+          var cur = currentTier();
+          var idx = ladderIndex(cur);
+          if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
+        }
       },
       { passive: false }
     );
@@ -1779,12 +2078,13 @@
     if (G.frame % 4 === 0) {
       updateDayNight();
       syncSpaceLayerVis();
-      if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible)) {
+      if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible) || activityShouldShow()) {
         updateNationalHud(false);
-        if (G.webbGrid && G.webbGrid.material) {
+        if (G.frame % 90 === 0) refreshActivityArcs();
+        if (G.webbGrid && G.webbGrid.material && G.webbGrid.visible) {
           G.webbGrid.material.opacity = 0.16;
         }
-        if (G.webbGridGlow && G.webbGridGlow.material) {
+        if (G.webbGridGlow && G.webbGridGlow.material && G.webbGridGlow.visible) {
           G.webbGridGlow.material.opacity = 0.07;
         }
         // Borders only softly breathe if present
@@ -1792,7 +2092,13 @@
           G.borderLines.material.opacity = 0.28 + 0.08 * Math.sin(Date.now() * 0.0015);
         }
         if (G.cityGlow && G.cityGlow.material) {
-          G.cityGlow.material.opacity = 0.35 + 0.1 * Math.sin(Date.now() * 0.002);
+          G.cityGlow.material.opacity =
+            (currentTier() === 'global' ? 0.4 : 0.35) + 0.1 * Math.sin(Date.now() * 0.002);
+        }
+        if (G.activityLines && G.activityLines.material) {
+          G.activityLines.material.opacity =
+            (currentTier() === 'global' ? 0.5 : 0.7) +
+            0.12 * Math.sin(Date.now() * 0.0025);
         }
       }
     }
