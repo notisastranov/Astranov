@@ -1821,29 +1821,27 @@
               ''
             )
             .trim() || line;
+        // Map OS default: POIs only. Full dump ONLY on explicit almighty / research.
+        // (Was dumping npm d3-polygon + OpenLibrary "Elizabeth Cady Stanton" into chat.)
+        const wantFull = /^almighty\b/.test(low) || /^crawl\b/.test(low);
+        const wantKnowledge = /^(who\s+is|what\s+is|look\s+up)\b/.test(low);
+        const crawlMode = wantFull ? 'full' : wantKnowledge ? 'knowledge' : 'map';
         const local = Tasks?.search?.(q) || { tasks: [], roles: [] };
         local.tasks.slice(0, 4).forEach((t) => log('task · ' + t.title.slice(0, 50), 'ok'));
         if (global.SNSearch?.crawl) {
           const crawled = await SNSearch.crawl(q, {
             pos: Tasks?.pos || global._snLastPos,
-            openMap: true,
-            all: true,
-            fly: true,
+            openMap: crawlMode === 'map' || crawlMode === 'full',
+            all: crawlMode === 'full',
+            mode: crawlMode,
+            fly: crawlMode !== 'knowledge',
           });
-          SNSearch.report?.(crawled, log);
-          if (!crawled.score) log('Empty · try: crawl pizza · find Greece · code three.js', 'dim');
+          SNSearch.report?.(crawled, log, { full: crawlMode === 'full' });
+          if (!crawled.score) log('Empty · try: find pizza · who is Greece · almighty three.js', 'dim');
         } else if (!local.tasks.length) {
           log('Search module loading… try again', 'dim');
         }
-        preview('Almighty · ' + q.slice(0, 40));
-        if (global.SNAi?.ask) {
-          void SNAi.ask(
-            'User almighty-crawled: ' + q + '. One short SpaceNet tip with a CLI next step.',
-            { mode: 'chat' }
-          ).then((tip) => {
-            if (tip) log(tip, 'dim');
-          });
-        }
+        preview((crawlMode === 'full' ? 'Almighty · ' : 'Find · ') + q.slice(0, 40));
         return;
       }
       if (/^research\b/.test(low)) {

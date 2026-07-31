@@ -257,7 +257,13 @@
             if (w.text) results.lines.push(String(w.text).slice(0, 160));
           }
         } else if (global.SNSearch && SNSearch.crawl) {
-          var c2 = await SNSearch.crawl(topic, { openMap: false, all: true, fly: false });
+          // knowledge only — never full almighty (no npm/books spam on planet land)
+          var c2 = await SNSearch.crawl(topic, {
+            openMap: false,
+            all: false,
+            mode: 'knowledge',
+            fly: false,
+          });
           if (c2 && c2.wiki) {
             results.wiki = c2.wiki;
             results.lines.push('Wiki: ' + c2.wiki.title);

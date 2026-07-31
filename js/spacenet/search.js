@@ -120,6 +120,14 @@
   // ─── OVERPASS POIs (broad intent → filter) ───────────
   function overpassFilter(q) {
     const s = String(q || '').toLowerCase();
+    // Pizza first (must not lose to generic "restaurant" only)
+    if (/pizza|πίτσα|πιτσα|pizzeria/.test(s))
+      return (
+        'node["amenity"~"restaurant|fast_food|cafe"]["cuisine"~"pizza",i];' +
+        'node["amenity"="fast_food"]["name"~"pizza|πίτσα|Pizza",i];' +
+        'node["amenity"~"restaurant|fast_food|cafe"];' +
+        'way["amenity"~"restaurant|fast_food"]["cuisine"~"pizza",i]'
+      );
     if (/restaurant|food|eat|dining|φαγητ|εστιατ/.test(s))
       return 'node["amenity"~"restaurant|cafe|fast_food|bar|biergarten|food_court"]';
     if (/cafe|coffee|καφ/.test(s)) return 'node["amenity"~"cafe|bar"]';
@@ -449,86 +457,136 @@
   function intentOf(q) {
     const s = String(q || '').toLowerCase();
     return {
-      code: /\b(code|github|npm|library|sdk|api|repo|package|javascript|python|rust|typescript)\b/.test(s),
-      product: /\b(product|food|brand|barcode|nutrition|buy)\b/.test(s),
+      code: /\b(code|github|npm|library|sdk|api|repo|package|javascript|python|rust|typescript|d3)\b/.test(
+        s
+      ),
+      product: /\b(product|brand|barcode|nutrition|openfood)\b/.test(s),
       media: /\b(movie|film|series|tv|show|netflix|actor)\b/.test(s),
-      book: /\b(book|novel|author|isbn|read)\b/.test(s),
+      book: /\b(book|novel|author|isbn|read|bible|literature)\b/.test(s),
       country: /\b(country|nation|capital of|population of)\b/.test(s),
       weather: /\b(weather|temperature|forecast|rain|wind)\b/.test(s),
-      map: /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|city|street)\b/.test(s) || s.length < 40,
+      // Food/map stays map — never books/npm just because query is short
+      map:
+        /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|city|street|pizza|food|vendor|delivery|polygon|route)\b/.test(
+          s
+        ) ||
+        (s.length < 40 &&
+          !/\b(code|github|npm|book|novel|movie|author|library|sdk)\b/.test(s)),
+      knowledge: /\b(who is|what is|wiki|history|biography)\b/.test(s),
     };
   }
 
   /**
-   * ALMIGHTY crawl — parallel multi-source; paints map + profiles + knowledge
+   * Crawl modes:
+   *   map (default) — geo + POIs + edge vendors only. No npm / OpenLibrary spam.
+   *   knowledge     — wiki + web + wikidata (+ geo if place-like)
+   *   full/almighty — all sources (explicit research only)
+   *
+   * BUG WAS: opts.all defaulted true → every land/scan dumped d3-polygon + Elizabeth Cady Stanton books into CLI.
    */
   async function crawl(query, opts) {
+    opts = opts || {};
     const q = String(query || '').trim();
     if (!q) {
       return emptyResult();
     }
-    const pos = opts?.pos || global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
+    const pos = opts.pos || global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
     const intent = intentOf(q);
-    const almighty = opts?.all !== false; // default almighty
+    // Explicit full only — never default almighty
+    const mode =
+      opts.mode ||
+      (opts.all === true
+        ? 'full'
+        : intent.code
+          ? 'code'
+          : intent.book
+            ? 'books'
+            : intent.media
+              ? 'media'
+              : intent.knowledge
+                ? 'knowledge'
+                : 'map');
+    const full = mode === 'full' || mode === 'almighty';
+    const wantMap = full || mode === 'map' || intent.map;
+    const wantKnowledge = full || mode === 'knowledge' || intent.knowledge;
+    const wantCode = full || mode === 'code' || intent.code;
+    const wantBooks = full || mode === 'books' || intent.book;
+    const wantMedia = full || mode === 'media' || intent.media;
+    const wantProduct = full || intent.product;
+    const wantCountry = full || intent.country;
+    const wantWeather = full || intent.weather || mode === 'map';
 
-    global.SNCli?.log?.('⚡ Almighty crawl · ' + q, 'dim');
-    global.SNCli?.preview?.('Crawl · ' + q);
+    const label =
+      mode === 'full' || mode === 'almighty'
+        ? 'Almighty'
+        : mode === 'map'
+          ? 'Map crawl'
+          : 'Crawl · ' + mode;
+    global.SNCli?.log?.('⚡ ' + label + ' · ' + q, 'dim');
+    global.SNCli?.preview?.(label + ' · ' + q.slice(0, 36));
 
     const results = emptyResult();
     results.query = q;
     results.intent = intent;
+    results.mode = mode;
     results.pos = pos;
 
     const jobs = [];
 
-    // Always: geo + knowledge
-    jobs.push(
-      geocode(q)
-        .then((p) => {
-          results.places = p;
-        })
-        .catch(() => {})
-    );
-    jobs.push(
-      webSearch(q)
-        .then((w) => {
-          results.web = w;
-        })
-        .catch(() => {})
-    );
-    jobs.push(
-      wiki(q)
-        .then((w) => {
-          results.wiki = w;
-        })
-        .catch(() => {})
-    );
-    jobs.push(
-      wikiSearch(q)
-        .then((w) => {
-          results.wikiHits = w;
-        })
-        .catch(() => {})
-    );
-    jobs.push(
-      wikidata(q)
-        .then((w) => {
-          results.wikidata = w;
-        })
-        .catch(() => {})
-    );
+    // Geo always useful for place-ish queries
+    if (wantMap || wantKnowledge || full) {
+      jobs.push(
+        geocode(q)
+          .then((p) => {
+            results.places = p;
+          })
+          .catch(() => {})
+      );
+    }
+
+    // Knowledge: wiki / web — NOT on pure map food scans
+    if (wantKnowledge || full) {
+      jobs.push(
+        webSearch(q)
+          .then((w) => {
+            results.web = w;
+          })
+          .catch(() => {})
+      );
+      jobs.push(
+        wiki(q)
+          .then((w) => {
+            results.wiki = w;
+          })
+          .catch(() => {})
+      );
+      jobs.push(
+        wikiSearch(q)
+          .then((w) => {
+            results.wikiHits = w;
+          })
+          .catch(() => {})
+      );
+      jobs.push(
+        wikidata(q)
+          .then((w) => {
+            results.wikidata = w;
+          })
+          .catch(() => {})
+      );
+    }
 
     // Maps / POIs
-    if (almighty || intent.map) {
+    if (wantMap) {
       jobs.push(
-        nearby(pos.lat, pos.lng, opts?.radiusM || 2500, q)
+        nearby(pos.lat, pos.lng, opts.radiusM || 2500, q)
           .then((n) => {
             results.nearby = n;
           })
           .catch(() => {})
       );
       jobs.push(
-        edgeVendors(pos.lat, pos.lng, opts?.radiusM || 2500)
+        edgeVendors(pos.lat, pos.lng, opts.radiusM || 2500)
           .then((e) => {
             results.edge = e;
           })
@@ -536,8 +594,8 @@
       );
     }
 
-    // Specialized sources
-    if (almighty || intent.code) {
+    // Specialized — ONLY when mode/intent asks (never silent on map land)
+    if (wantCode) {
       jobs.push(
         codeSearch(q)
           .then((c) => {
@@ -546,7 +604,7 @@
           .catch(() => {})
       );
     }
-    if (almighty || intent.product) {
+    if (wantProduct) {
       jobs.push(
         products(q)
           .then((p) => {
@@ -555,7 +613,7 @@
           .catch(() => {})
       );
     }
-    if (almighty || intent.media) {
+    if (wantMedia) {
       jobs.push(
         media(q)
           .then((m) => {
@@ -564,7 +622,7 @@
           .catch(() => {})
       );
     }
-    if (almighty || intent.book) {
+    if (wantBooks) {
       jobs.push(
         books(q)
           .then((b) => {
@@ -573,12 +631,11 @@
           .catch(() => {})
       );
     }
-    if (almighty || intent.country) {
+    if (wantCountry) {
       jobs.push(
         nations(q)
           .then((n) => {
             results.nations = n;
-            // nations with coords act as places
             n.forEach((c) => {
               if (c.lat != null) results.places.push(c);
             });
@@ -591,7 +648,7 @@
 
     // Weather at focus
     const focus = results.places[0] || (results.wiki?.lat != null ? results.wiki : null) || pos;
-    if (almighty || intent.weather) {
+    if (wantWeather && focus && focus.lat != null) {
       results.weather = await weather(focus.lat, focus.lng).catch(() => null);
     }
 
@@ -710,22 +767,61 @@
     );
   }
 
-  /** Pretty dump for CLI */
-  function report(results, log) {
+  /**
+   * Pretty dump for CLI.
+   * Map mode: places + POIs only (no books / npm / TV spam).
+   * Full mode: all sources (research / almighty).
+   */
+  function report(results, log, reportOpts) {
     const L = log || ((t, c) => global.SNCli?.log?.(t, c));
     if (!results) return;
-    L('── Almighty · ' + (results.sources || []).join(' · ') + ' · score ' + (results.score || 0), 'dim');
+    reportOpts = reportOpts || {};
+    const mode = results.mode || 'map';
+    const full =
+      reportOpts.full === true || mode === 'full' || mode === 'almighty' || mode === 'code' || mode === 'books';
+    const title =
+      mode === 'full' || mode === 'almighty'
+        ? 'Almighty'
+        : mode === 'map'
+          ? 'Map'
+          : String(mode);
+    L(
+      '── ' +
+        title +
+        ' · ' +
+        (results.sources || []).join(' · ') +
+        ' · score ' +
+        (results.score || 0),
+      'dim'
+    );
     if (results.weather?.text) L('🌤 ' + results.weather.text, 'ok');
     (results.places || []).slice(0, 5).forEach((p) => L('📍 ' + String(p.name).slice(0, 70), 'ok'));
-    (results.nearby || []).slice(0, 8).forEach((p) => L('• ' + p.name.slice(0, 48) + ' · ' + p.kind, 'ok'));
-    if (results.wiki?.text) L('📖 ' + results.wiki.title + ': ' + results.wiki.text.slice(0, 200), 'ok');
-    (results.web || []).slice(0, 5).forEach((w) => L('· ' + (w.title || w.text).slice(0, 90), 'ok'));
-    (results.code || []).slice(0, 5).forEach((c) => L('</> ' + c.title + ' · ' + (c.text || '').slice(0, 50), 'ok'));
-    (results.products || []).slice(0, 4).forEach((p) => L('🛒 ' + p.title, 'ok'));
-    (results.media || []).slice(0, 4).forEach((m) => L('🎬 ' + m.title, 'ok'));
-    (results.books || []).slice(0, 4).forEach((b) => L('📚 ' + b.title + ' · ' + b.text, 'ok'));
-    if (results.edge?.ok) L('Edge vendors upsert · ' + results.edge.count, 'dim');
-    if (!(results.score > 0)) L('Empty · try: crawl restaurants near me · find Elon Musk · code three.js globe', 'dim');
+    (results.nearby || []).slice(0, 8).forEach((p) =>
+      L('• ' + String(p.name || '').slice(0, 48) + ' · ' + (p.kind || 'poi'), 'ok')
+    );
+    // Knowledge only when not pure map food scan
+    if (full || mode === 'knowledge') {
+      if (results.wiki?.text)
+        L('📖 ' + results.wiki.title + ': ' + results.wiki.text.slice(0, 200), 'ok');
+      (results.web || []).slice(0, 5).forEach((w) => L('· ' + (w.title || w.text).slice(0, 90), 'ok'));
+    }
+    // Never dump npm/books on map mode — that was the Elizabeth Cady Stanton / d3-polygon spam
+    if (full || mode === 'code') {
+      (results.code || []).slice(0, 5).forEach((c) =>
+        L('</> ' + c.title + ' · ' + (c.text || '').slice(0, 50), 'ok')
+      );
+    }
+    if (full) {
+      (results.products || []).slice(0, 4).forEach((p) => L('🛒 ' + p.title, 'ok'));
+      (results.media || []).slice(0, 4).forEach((m) => L('🎬 ' + m.title, 'ok'));
+    }
+    if (full || mode === 'books') {
+      (results.books || []).slice(0, 4).forEach((b) => L('📚 ' + b.title + ' · ' + b.text, 'ok'));
+    }
+    if (results.edge?.ok && (results.edge.count || 0) > 0)
+      L('Edge vendors · ' + results.edge.count, 'dim');
+    if (!(results.score > 0))
+      L('Empty · try: find pizza near me · who is Elon · almighty three.js', 'dim');
   }
 
   global.SNSearch = {
