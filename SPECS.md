@@ -81,7 +81,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | **Layers** | No map-corner Layers control under money HUD. Layers via ribbon · typed CLI · ASTRANOV home. |
 | **Finance** | Only top-right S HUD. CLI may print `rate` / `wallet` / `fees` as text. |
 | **AI** | **Astranov** · **ASTRANOV LISTENING** · free mind first · control app (map, basemap, first delivery, …) · no junk fuzzy answers |
-| **First order (lazy)** | Natural language: **order me a pizza you judge type size vendor…** → Astranov picks type/size/vendor/courier, pays S, map shows route, **tells eat time**. Self-loop still: `first delivery`. Market on shell boot. |
+| **First order (lazy)** | **1 Locate** · **2 if GPS soft/default → ask YES/NO** · **3 research likings/temper/company** (e.g. feisty Greek · company 3 · Super Greek 13 · retsina · 1.5L soda) · **4 vendor+courier** · **5 pay S** · **6 eat time**. Not Wolt/eFood. Self-loop: `first delivery`. |
 | **Mesh donate** | SETI-style `donate on` — spare capacity → S. |
 | **3% vault** | Every order: **3% of gross S** to platform vault (Architect). Driver cut 15% of gross in S. |
 | **No training sim** | Sim-33 / driver-day / sim-task train / Rodos training default = **deleted**. |

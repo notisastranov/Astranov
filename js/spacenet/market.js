@@ -1,11 +1,34 @@
-/* SNMarket — first vendor listing + first self-delivery (real path, zero NPC)
- * Coached by SpaceNet AI · chat steps · CLI: list shop · menu add · first delivery
+/* SNMarket — first vendor + lazy food order (locate · verify · prefs · pay · ETA)
+ * Lazy: order me a pizza you judge… · confirm location if GPS soft
  */
 (function (global) {
   'use strict';
 
   var WIZ_KEY = 'sn:market-wiz-v1';
+  var PREFS_KEY = 'sn:order-prefs-v1';
+  var PENDING_KEY = 'sn:order-pending-v1';
   var W = { step: 'idle', shopName: '', lastItem: null };
+
+  /** Owner / guest order personality — learned + stated likes */
+  var DEFAULT_PREFS = {
+    temper: 'feisty greek guy',
+    company: {
+      people: 3, // you + 2 girlfriends (stated)
+      girlfriends: 2,
+      cats: 2,
+      dogs: 2,
+      note: 'company of 3 + 2 cats + 2 dogs',
+    },
+    likes: ['super greek special', 'retsina', 'big soda 1.5L', 'greek pizza'],
+    pizza: {
+      name: 'Super Greek special 13 pieces',
+      pieces: 13,
+      style: 'super greek special',
+      with: ['retsina', 'soda 1.5L'],
+    },
+    drink: { retsina: true, sodaL: 1.5 },
+    verifiedLoc: null, // { lat, lng, label, t }
+  };
 
   function load() {
     try {
@@ -18,6 +41,56 @@
     try {
       localStorage.setItem(WIZ_KEY, JSON.stringify(W));
     } catch (_) {}
+  }
+
+  function loadPrefs() {
+    try {
+      var p = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
+      if (p && typeof p === 'object') return Object.assign({}, DEFAULT_PREFS, p, {
+        company: Object.assign({}, DEFAULT_PREFS.company, p.company || {}),
+        pizza: Object.assign({}, DEFAULT_PREFS.pizza, p.pizza || {}),
+        drink: Object.assign({}, DEFAULT_PREFS.drink, p.drink || {}),
+        likes: p.likes || DEFAULT_PREFS.likes,
+      });
+    } catch (_) {}
+    return JSON.parse(JSON.stringify(DEFAULT_PREFS));
+  }
+
+  function savePrefs(p) {
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(p));
+    } catch (_) {}
+  }
+
+  function loadPending() {
+    try {
+      return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function savePending(p) {
+    try {
+      if (p) localStorage.setItem(PENDING_KEY, JSON.stringify(p));
+      else localStorage.removeItem(PENDING_KEY);
+    } catch (_) {}
+  }
+
+  function locationIsSuspect(pos) {
+    if (!pos || pos.lat == null) return { suspect: true, why: 'no position' };
+    if (pos.fallback) return { suspect: true, why: pos.reason || 'GPS soft / default focus' };
+    if (pos.accuracy != null && Number(pos.accuracy) > 400) {
+      return { suspect: true, why: 'GPS accuracy ±' + Math.round(pos.accuracy) + 'm (weak)' };
+    }
+    // Rhodes default pin often used when GPS fails
+    if (
+      Math.abs(Number(pos.lat) - 36.4341) < 0.0008 &&
+      Math.abs(Number(pos.lng) - 28.2176) < 0.0008
+    ) {
+      return { suspect: true, why: 'looks like default map pin (Rhodes training pin)' };
+    }
+    return { suspect: false, why: '' };
   }
 
   function track(n, p) {
@@ -345,6 +418,17 @@
     var did = [];
     var st = coachStatus();
 
+    // Pending location confirm for lazy pizza order
+    if (loadPending() && /^(yes|y|ok|okay|correct|here|no|wrong|ν|ναι|όχι|oxi|confirm|go|proceed)/i.test(low)) {
+      return {
+        handled: true,
+        async: true,
+        action: 'confirmLocationAndOrder',
+        line: line,
+        did: did.concat(['loc_confirm']),
+      };
+    }
+
     if (
       /^(first\s*(delivery|loop|order)|list\s*my\s*shop|open\s*my\s*shop|become\s*vendor|πρώτη\s*παράδοση|μαγαζί\s*μου)/i.test(
         low
@@ -507,26 +591,37 @@
   }
 
   /**
-   * Astranov judges pizza (or meal) type + size when user says "you judge".
-   * Honest defaults — not Wolt/eFood; Astranov mesh delivery.
+   * Astranov judges meal from line + stored likings / temper / company size.
+   * Feisty Greek guy · company of 3 · Super Greek special 13 · retsina · 1.5L soda.
    */
   function judgeMeal(food, rawLine) {
+    var prefs = loadPrefs();
     var low = String(rawLine || '').toLowerCase();
     var f = String(food || 'food').toLowerCase();
+    var company = (prefs.company && prefs.company.people) || 3;
     var size = 'Large';
+    if (company >= 4 || (prefs.pizza && prefs.pizza.pieces >= 12)) size = 'Family';
     if (/\b(small|personal|μικρ)\b/i.test(low)) size = 'Small';
     else if (/\b(medium|med|μεσα)\b/i.test(low)) size = 'Medium';
-    else if (/\b(family|xl|extra\s*large|οικογεν)\b/i.test(low)) size = 'Family';
-    // Lazy judge: default Large for pizza, Medium otherwise
-    if (f !== 'pizza' && !/\b(large|small|medium|family)\b/i.test(low)) size = 'Medium';
+    else if (/\b(family|xl|extra\s*large|οικογεν|13)\b/i.test(low)) size = 'Family';
 
     var type = null;
+    var pieces = prefs.pizza && prefs.pizza.pieces ? prefs.pizza.pieces : 8;
     if (f === 'pizza') {
       if (/pepperoni|πεπερόνι/i.test(low)) type = 'Pepperoni';
       else if (/margherita|μαργαρίτα/i.test(low)) type = 'Margherita';
-      else if (/four\s*cheese|4\s*cheese|τετρατύρ|τετρατυρ/i.test(low)) type = 'Four cheese';
-      else if (/special|house/i.test(low)) type = 'House special';
-      else type = 'Margherita'; // Astranov default pick
+      else if (/four\s*cheese|4\s*cheese/i.test(low)) type = 'Four cheese';
+      else if (/greek|ελλην|special|super/i.test(low) || /greek/i.test(prefs.temper || '')) {
+        type = 'Super Greek special';
+        pieces = 13;
+        size = 'Family';
+      } else if (/feisty|greek|temper/i.test(prefs.temper || '') || (prefs.likes || []).some(function (l) {
+        return /greek|special/i.test(l);
+      })) {
+        type = 'Super Greek special';
+        pieces = 13;
+        size = 'Family';
+      } else type = 'Margherita';
     } else if (f === 'sushi') type = 'Chef set';
     else if (f === 'burger') type = 'Classic';
     else if (f === 'coffee') {
@@ -536,20 +631,65 @@
 
     var price = defaultFoodPrice(f);
     if (size === 'Small') price *= 0.75;
-    if (size === 'Large' || size === 'Family') price *= size === 'Family' ? 1.45 : 1.15;
+    if (size === 'Large') price *= 1.15;
+    if (size === 'Family' || pieces >= 12) price = Math.max(price * 1.55, 18);
+    if (type && /super greek/i.test(type)) price = 22;
     price = Math.round(price * 100) / 100;
 
     var itemName =
-      f === 'coffee' ? type : size + ' ' + type + (f === 'pizza' ? ' pizza' : f !== type.toLowerCase() ? '' : '');
-    if (f === 'pizza' && itemName.indexOf('pizza') < 0) itemName = size + ' ' + type + ' pizza';
+      f === 'pizza'
+        ? type + ' · ' + pieces + ' pieces · ' + size
+        : f === 'coffee'
+          ? type
+          : size + ' ' + type;
+
+    var extras = [];
+    // Drinks from prefs / line
+    var wantRetsina =
+      prefs.drink && prefs.drink.retsina !== false &&
+      (/retsina|ρετσίνα|ρετσινα|wine|κρασί/i.test(low) ||
+        /greek|feisty/i.test(prefs.temper || '') ||
+        (prefs.likes || []).some(function (l) {
+          return /retsina/i.test(l);
+        }));
+    var wantSoda =
+      (prefs.drink && prefs.drink.sodaL) ||
+      /soda|αναψυκ|cola|1\.5|liter|λίτρ/i.test(low) ||
+      company >= 2;
+    if (wantRetsina) {
+      extras.push({ name: 'Retsina (bottle)', price: 8, kind: 'drink' });
+    }
+    if (wantSoda) {
+      var liters = (prefs.drink && prefs.drink.sodaL) || 1.5;
+      extras.push({ name: 'Big soda ' + liters + 'L', price: 3.5, kind: 'drink' });
+    }
 
     return {
       food: f,
       size: size,
       type: type,
+      pieces: pieces,
       itemName: itemName,
       price: price,
-      service: 'Astranov delivery', // not Wolt/eFood — mesh courier on the map
+      extras: extras,
+      company: company,
+      temper: prefs.temper || '',
+      service: 'Astranov delivery',
+      researchNote:
+        'Temper · ' +
+        (prefs.temper || 'open') +
+        ' · company ~' +
+        company +
+        (prefs.company && prefs.company.girlfriends
+          ? ' (you + ' + prefs.company.girlfriends + ' girlfriends)'
+          : '') +
+        (prefs.company && (prefs.company.cats || prefs.company.dogs)
+          ? ' · pets ' +
+            (prefs.company.cats || 0) +
+            ' cats · ' +
+            (prefs.company.dogs || 0) +
+            ' dogs'
+          : ''),
     };
   }
 
@@ -666,6 +806,48 @@
    * Full juice path for "pizza" / "order sushi" / "I want coffee":
    * locate → find open places → vendor tiles + menus/prices → judge → order → assign driver
    */
+  /**
+   * Resume after user confirms location (yes / correct / here).
+   */
+  async function confirmLocationAndOrder(line) {
+    var low = String(line || '')
+      .toLowerCase()
+      .trim();
+    var pend = loadPending();
+    if (!pend || !pend.intent) return { ok: false, handled: false };
+
+    if (/^(no|wrong|not me|όχι|oxi|false|elsewhere)/i.test(low)) {
+      savePending(null);
+      return {
+        ok: false,
+        handled: true,
+        needsConfirm: false,
+        reply:
+          'OK · location rejected. Type locate when GPS is good, or fly <city>, then paste your order again.',
+        summary: 'Location rejected · locate again · then re-order',
+      };
+    }
+    if (/^(yes|y|ok|okay|correct|here|ν|ναι|ναι είμαι|here i am|confirm|go|proceed)/i.test(low)) {
+      var prefs = loadPrefs();
+      if (pend.pos) {
+        prefs.verifiedLoc = {
+          lat: pend.pos.lat,
+          lng: pend.pos.lng,
+          t: Date.now(),
+          label: 'confirmed',
+        };
+        savePrefs(prefs);
+        global._snLastPos = { lat: pend.pos.lat, lng: pend.pos.lng };
+      }
+      var intent = pend.intent;
+      intent.skipLocConfirm = true;
+      intent.confirmedPos = pend.pos;
+      savePending(null);
+      return fulfillFoodIntent(intent, { autoOrder: true, quiet: false, skipLocConfirm: true });
+    }
+    return { ok: false, handled: false };
+  }
+
   async function fulfillFoodIntent(query, opts) {
     opts = opts || {};
     var quiet = opts.quiet === true;
@@ -673,10 +855,18 @@
     if (!intent) return { ok: false, error: 'not a food intent' };
     var food = intent.food || 'food';
     var rawLine = intent.raw || (typeof query === 'string' ? query : '');
-    // Lazy first order always pays when user said order / judge
     if (opts.autoOrder === true || intent.autoOrder || intent.lazyJudge) {
       intent.autoOrder = true;
     }
+    // Persist stated prefs from this session (owner likes)
+    try {
+      var prefSave = loadPrefs();
+      prefSave.temper = prefSave.temper || DEFAULT_PREFS.temper;
+      prefSave.company = Object.assign({}, DEFAULT_PREFS.company, prefSave.company || {});
+      prefSave.pizza = Object.assign({}, DEFAULT_PREFS.pizza, prefSave.pizza || {});
+      prefSave.drink = Object.assign({}, DEFAULT_PREFS.drink, prefSave.drink || {});
+      savePrefs(prefSave);
+    } catch (_) {}
     var judged = judgeMeal(food, rawLine);
     var log = function (m, c, mapKind, mapOpts) {
       if (quiet) return;
@@ -690,14 +880,16 @@
     };
     var steps = [];
 
-    // 1) Locate you (GPS if possible)
-    log('locating you…', 'dim', 'work', { label: 'Locate' });
-    var pos = null;
-    try {
-      if (global.SNCli && SNCli.gpsLocate) {
-        pos = await SNCli.gpsLocate();
-      }
-    } catch (_) {}
+    // 1) Locate you FIRST
+    log('step 1 · locating you…', 'dim', 'work', { label: 'Locate' });
+    var pos = intent.confirmedPos || null;
+    if (!pos || pos.lat == null) {
+      try {
+        if (global.SNCli && SNCli.gpsLocate) {
+          pos = await SNCli.gpsLocate();
+        }
+      } catch (_) {}
+    }
     if (!pos || pos.lat == null) {
       try {
         if (global.SNGlobe && SNGlobe.focusPos) {
@@ -715,25 +907,96 @@
       } catch (_) {}
     }
     if (!pos || pos.lat == null) {
-      pos = { lat: 36.4341, lng: 28.2176, fallback: true };
-      log('default focus · map still moves', 'dim');
-    } else {
-      log(
-        'you · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3),
-        'dim',
-        'locate',
-        { lat: pos.lat, lng: pos.lng, label: 'You' }
-      );
+      pos = { lat: 36.4341, lng: 28.2176, fallback: true, reason: 'unavailable' };
     }
     global._snLastPos = { lat: pos.lat, lng: pos.lng };
     try {
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
     } catch (_) {}
+    try {
+      if (global.SNMap && SNMap.open) await SNMap.open(pos.lat, pos.lng);
+    } catch (_) {}
+    log(
+      'you · ' +
+        pos.lat.toFixed(4) +
+        ', ' +
+        pos.lng.toFixed(4) +
+        (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + 'm' : '') +
+        (pos.fallback ? ' · GPS soft' : ''),
+      pos.fallback ? 'dim' : 'ok',
+      'locate',
+      { lat: pos.lat, lng: pos.lng, label: 'You' }
+    );
     steps.push('locate');
 
-    // 2) Astranov judges meal BEFORE hunt (lazy path)
+    // 1b) If location suspect → STOP and ask user (do not wrong-door pizza)
+    var locCheck = locationIsSuspect(pos);
+    var prefsNow = loadPrefs();
+    var recentlyOk =
+      prefsNow.verifiedLoc &&
+      Date.now() - (prefsNow.verifiedLoc.t || 0) < 6 * 3600 * 1000 &&
+      Math.abs(prefsNow.verifiedLoc.lat - pos.lat) < 0.01 &&
+      Math.abs(prefsNow.verifiedLoc.lng - pos.lng) < 0.01;
+    if (
+      locCheck.suspect &&
+      !opts.skipLocConfirm &&
+      !intent.skipLocConfirm &&
+      !recentlyOk
+    ) {
+      savePending({
+        intent: {
+          food: food,
+          overpass: intent.overpass,
+          raw: rawLine,
+          autoOrder: true,
+          lazyJudge: true,
+        },
+        pos: { lat: pos.lat, lng: pos.lng, fallback: !!pos.fallback, reason: pos.reason },
+        t: Date.now(),
+      });
+      var ask =
+        'I think you are at ' +
+        pos.lat.toFixed(4) +
+        ', ' +
+        pos.lng.toFixed(4) +
+        ' (' +
+        locCheck.why +
+        '). Is this correct? Reply YES to continue the pizza order · NO to stop and relocate.';
+      log(ask, 'ok');
+      log('Waiting for you · type yes or no', 'dim');
+      return {
+        ok: false,
+        needsConfirm: true,
+        pending: true,
+        pos: pos,
+        judged: judged,
+        reply: ask,
+        summary:
+          'LOCATION CHECK\n' +
+          pos.lat.toFixed(4) +
+          ', ' +
+          pos.lng.toFixed(4) +
+          '\nWhy · ' +
+          locCheck.why +
+          '\nReply YES or NO',
+        eatLine: 'paused · confirm location first',
+      };
+    }
+    steps.push('loc_ok');
+
+    // 2) Research likings / temper / company → judge meal
+    log('research · ' + judged.researchNote, 'ok');
     log(
-      'judging · ' + judged.size + ' ' + judged.type + (food === 'pizza' ? ' pizza' : '') + ' · ' + judged.service,
+      'judging · ' +
+        judged.itemName +
+        (judged.extras && judged.extras.length
+          ? ' + ' +
+            judged.extras
+              .map(function (e) {
+                return e.name;
+              })
+              .join(' + ')
+          : ''),
       'ok'
     );
     steps.push('judge_meal');
@@ -894,14 +1157,26 @@
       }
     } catch (_) {}
 
-    // 5) Pay
+    // 5) Pay — pizza + retsina + soda (full company tray)
     var orderResult = null;
     var fmt = function (n) {
       return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
     };
     if (opts.autoOrder !== false && intent.autoOrder !== false && menuItem) {
       log(
-        'ordering · ' + menuItem.name + ' from ' + (best.shopName || best.name) + '…',
+        'ordering · ' +
+          menuItem.name +
+          (judged.extras && judged.extras.length
+            ? ' + ' +
+              judged.extras
+                .map(function (e) {
+                  return e.name;
+                })
+                .join(' + ')
+            : '') +
+          ' · ' +
+          (best.shopName || best.name) +
+          '…',
         'ok',
         'order',
         { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
@@ -909,6 +1184,13 @@
       try {
         global.SNProfiles.cartClear();
         global.SNProfiles.cartAdd(best.id, menuItem, 1);
+        (judged.extras || []).forEach(function (ex) {
+          global.SNProfiles.cartAdd(
+            best.id,
+            { name: ex.name, price: ex.price, id: 'ex_' + ex.name },
+            1
+          );
+        });
         orderResult = global.SNProfiles.placeOrder();
         if (orderResult && orderResult.ok) {
           log('paid · ' + fmt(orderResult.total), 'ok');
@@ -992,13 +1274,18 @@
 
     // Full lazy summary for CLI
     var summaryLines = [
+      'LOC · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
+      'YOU · ' + judged.researchNote,
       'TYPE · ' + judged.type + (food === 'pizza' ? ' pizza' : ''),
-      'SIZE · ' + judged.size,
+      'SIZE · ' + judged.size + (judged.pieces ? ' · ' + judged.pieces + ' pieces' : ''),
       'VENDOR · ' + (best.shopName || best.name) + (kmBest != null ? ' · ' + kmBest.toFixed(1) + ' km' : ''),
       'ITEM · ' + (menuItem ? menuItem.name : judged.itemName) + ' · ' + fmt(menuItem ? menuItem.price : judged.price),
-      'COURIER · ' + courierNote,
-      'SERVICE · Astranov delivery (not Wolt / eFood)',
     ];
+    (judged.extras || []).forEach(function (ex) {
+      summaryLines.push('EXTRA · ' + ex.name + ' · ' + fmt(ex.price));
+    });
+    summaryLines.push('COURIER · ' + courierNote);
+    summaryLines.push('SERVICE · Astranov delivery (not Wolt / eFood)');
     if (orderResult && orderResult.ok) {
       summaryLines.push('PAID · ' + fmt(orderResult.total));
       summaryLines.push(eta.eatLine);
@@ -1404,6 +1691,10 @@
     handleChat: handleChat,
     parseFoodIntent: parseFoodIntent,
     fulfillFoodIntent: fulfillFoodIntent,
+    confirmLocationAndOrder: confirmLocationAndOrder,
+    loadPrefs: loadPrefs,
+    savePrefs: savePrefs,
+    loadPending: loadPending,
     parseWorkIntent: parseWorkIntent,
     fulfillWorkIntent: fulfillWorkIntent,
     parseDatingIntent: parseDatingIntent,

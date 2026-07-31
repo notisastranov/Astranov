@@ -909,6 +909,14 @@
             runFirstLoop: true,
           };
         }
+        if (mk.async && mk.action === 'confirmLocationAndOrder') {
+          return {
+            did: did.concat(['loc_confirm']),
+            reply: 'Checking your location…',
+            confirmLocationAndOrder: true,
+            confirmLine: mk.line || message,
+          };
+        }
         try {
           if (global.SNUsage && SNUsage.track) SNUsage.track('ai_market', { did: mk.did });
         } catch (e) {}
@@ -1199,22 +1207,51 @@
       return text;
     }
 
-    // Food intent: find → fly/zoom → open tile · next / show all (order only if said)
+    // Location confirm after soft GPS (lazy pizza)
+    if (local.confirmLocationAndOrder && global.SNMarket && SNMarket.confirmLocationAndOrder) {
+      try {
+        var conf = await SNMarket.confirmLocationAndOrder(local.confirmLine || msg);
+        text = conf.eatLine || conf.reply || conf.summary || (conf.ok ? 'Order continuing' : 'Stopped');
+        if (conf.summary && global.SNCli && SNCli.log) {
+          String(conf.summary)
+            .split('\n')
+            .forEach(function (ln) {
+              if (ln.trim()) SNCli.log(ln.trim(), conf.ok ? 'ok' : 'dim');
+            });
+        }
+        showOnGlobe(brief(text, 72));
+      } catch (eC) {
+        text = 'Location confirm failed · try order again';
+        showOnGlobe(text);
+      }
+      pushHist('assistant', text);
+      busy = false;
+      return text;
+    }
+
+    // Food intent: locate → verify if soft → judge prefs → order → ETA
     if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
       try {
         var wantOrder =
           local.runFoodIntent.autoOrder === true ||
-          /\b(order|order\s+me|bring|get\s+me|παράγγειλ)\b/i.test(msg);
+          local.runFoodIntent.lazyJudge === true ||
+          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|judge|what\s+time\s+i\s+eat)\b/i.test(msg);
         var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, {
           autoOrder: wantOrder,
-          quiet: true,
+          quiet: false,
         });
-        if (foodR && foodR.vendors && foodR.vendors.length) {
+        if (foodR && foodR.needsConfirm) {
+          text = foodR.reply || 'Confirm location · yes or no';
+          showOnGlobe(brief(text, 72));
+        } else if (foodR && foodR.summary) {
+          text = foodR.eatLine || foodR.reply || 'Order done';
+          showOnGlobe(brief(text, 72));
+        } else if (foodR && foodR.vendors && foodR.vendors.length) {
           setSuggestList(foodR.vendors, { query: foodR.food || local.runFoodIntent.food, idx: 0 });
           var shown = presentVendor(0);
           text = shown.reply;
           if (wantOrder && foodR.order && foodR.order.ok) {
-            text = brief(shown.reply + ' · ordered', 88);
+            text = brief((foodR.eatLine || shown.reply) + ' · ordered', 100);
             showOnGlobe(text);
           }
         } else {

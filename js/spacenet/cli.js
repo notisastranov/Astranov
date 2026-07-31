@@ -640,6 +640,31 @@
         } else log('AI loading · hard refresh', 'err');
         return;
       }
+      // Pending lazy-order location confirm (YES / NO after soft GPS)
+      if (
+        global.SNMarket?.loadPending?.() &&
+        /^(yes|y|ok|okay|correct|here|no|wrong|ν|ναι|όχι|oxi|confirm|go|proceed)$/i.test(low)
+      ) {
+        activity('location check…', 'work', { label: 'Confirm' });
+        const cr = await global.SNMarket.confirmLocationAndOrder(line);
+        if (cr?.summary) {
+          String(cr.summary)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln.trim(), /failed|reject|error/i.test(ln) ? 'err' : 'ok');
+            });
+        } else if (cr?.reply) log(cr.reply, cr.ok ? 'ok' : 'err');
+        if (cr?.best) {
+          depict(cr.ok ? 'order' : 'locate', {
+            lat: cr.best?.lat || cr.pos?.lat,
+            lng: cr.best?.lng || cr.pos?.lng,
+            label: cr.best?.shopName || cr.best?.name || 'You',
+          });
+        }
+        preview(cr?.eatLine || cr?.reply || 'done');
+        if (cr?.eatLine) replyOut(cr.eatLine);
+        return;
+      }
       // Food / pizza order — direct market path (clean progress in THIS turn only)
       // Skip exact self-shop coach lines handled below
       if (
@@ -672,11 +697,17 @@
             label: r.best.shopName || r.best.name || fi.food,
           });
         }
+        if (r?.needsConfirm) {
+          log(r.reply || 'Confirm location · YES or NO', 'ok');
+          preview('waiting · yes / no');
+          replyOut(r.reply || 'Is this your location?');
+          return;
+        }
         if (r?.summary) {
           String(r.summary)
             .split('\n')
             .forEach((ln) => {
-              if (ln.trim()) log(ln.trim(), /failed|error|PAY · failed/i.test(ln) ? 'err' : 'ok');
+              if (ln.trim()) log(ln.trim(), /failed|error|PAY · failed|reject/i.test(ln) ? 'err' : 'ok');
             });
         } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
         else log(r?.error || 'Could not complete food request', 'err');
