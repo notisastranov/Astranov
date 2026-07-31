@@ -1,6 +1,6 @@
 /** Astranov / SpaceNet continuity — machine contract. SPECS.md is sole law. */
 const AstranovContinuity = {
-  version: '20260731010000-grok-cli-look',
+  version: '20260731020000-ribbon-home-tools',
   updated: '2026-07-31',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -59,12 +59,14 @@ const AstranovContinuity = {
   },
 
   surface: {
-    chrome: ['radar', 'ASTRANOV home', 'miner S HUD'],
-    cli: 'text log + input only',
-    cliForbidden: ['ribbon button bar', 'feed chip tiles'],
-    tools: 'burger · home · money HUD · map multi-tile · typed CLI',
+    chrome: ['radar', 'ASTRANOV home (full tools menu)', 'miner S HUD'],
+    cli: 'top ribbon 6 shortcuts + log + input',
+    cliRibbon: ['locate', 'user', 'add', 'layers', 'AI', 'send'],
+    cliForbidden: ['feed chip tiles', 'menu/cart/order ribbon flood', 'burger chrome'],
+    tools: 'ASTRANOV home · CLI ribbon · money HUD · map multi-tile · typed CLI',
     multiTile: 'map overlay only',
     finance: 'money HUD only',
+    noBurger: true,
   },
 
   ai: {
@@ -100,8 +102,9 @@ const AstranovContinuity = {
     'training-sim',
     'sim-task-train',
     'rodos-training-default',
-    'cli-ribbon-button-flood',
     'cli-feed-chip-tiles',
+    'cli-burger-chrome',
+    'menu-cart-order-ribbon-flood',
     'ai-brand-spacenet',
     'dummy-npc-seeds',
     'marketplace-curfew',

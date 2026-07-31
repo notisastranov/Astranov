@@ -72,11 +72,11 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 |------|-----|
 | **Chrome** | Radar (top-left) · **ASTRANOV** home (center) · Miner S (top-right). No floating multi-docks. |
 | **Radar** | Tap expand · double-tap shrink · friends green · competitors red · vendors yellow · routes when active |
-| **Home** | Wordmark **ASTRANOV** · menu: account · roles · back GLOBAL · reload · hard reset |
+| **Home** | Wordmark **ASTRANOV** · **full menu** (former burger tools + account · roles · session · Earth · reload · hard reset). **No ☰ burger.** |
 | **Auth** | Sign-in face = **astranov.eu / ASTRANOV** only. **Never** `*.supabase.co` project as product identity. Prefer GIS + `signInWithIdToken`. Custom domain `api.astranov.eu` when live. |
-| **CLI** | **Text only:** `#cli-log` + `#cli-in`. Scroll history · `/` or `?` search. **Forbidden:** ribbon button bar · feed chip/button tiles · finance keys on CLI. Tools: **☰ burger** · typed commands · AI by typing. |
+| **CLI** | Log + input + **permanent top shortcut ribbon** only: **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send**. Multi-option buttons expand **upward**. Scroll history · `/` or `?` search. **Forbidden:** feed chip/button tiles · finance keys on CLI · menu/cart/order ribbon flood. Tools also: **ASTRANOV home** · typed commands · AI by typing. |
 | **Multi-tile** | Full multi-role card **on map** (menu/order/roles). Not CLI buttons. Long-press empty map creates; short-tap target opens. |
-| **Layers** | No map-corner Layers control under money HUD. Layers via typed CLI / burger. |
+| **Layers** | No map-corner Layers control under money HUD. Layers via ribbon · typed CLI · ASTRANOV home. |
 | **Finance** | Only top-right S HUD. CLI may print `rate` / `wallet` / `fees` as text. |
 | **AI** | **Astranov** · **ASTRANOV LISTENING** · free mind first · control app (map, basemap, first delivery, …) · no junk fuzzy answers |
 | **First order** | `first delivery` / steps: list shop → menu add → order me → drive on → deliver me. Market on shell boot. |
@@ -96,7 +96,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | Green | Red |
 |-------|-----|
 | GLOBAL in space, shell fast | City auto-open · training default · freeze boot |
-| Text CLI | CLI button flood · chip tiles in log |
+| Top ribbon 6 shortcuts + text log | Chip tiles in log · menu/cart flood on ribbon · ☰ burger chrome |
 | Multi-tile on map | Multi-tile as CLI buttons |
 | Astranov AI identity | AI answers as SpaceNet/Grok |
 | Login face astranov.eu | supabase project host as product |
@@ -125,6 +125,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | OV-12 | 2026-07-30 | False ship → escalation file + email owner |
 | OV-13 | 2026-07-30 | **Naming:** SpaceNet = system/grid internal · **AI = Astranov** · public face ASTRANOV |
 | OV-14 | 2026-07-30 | **SPECS rebuilt** thin CORE + this log; legacy contradictions void |
+| OV-15 | 2026-07-31 | **CLI top shortcut ribbon back** (Locate·User·Add·Layers·AI·Send). **No ☰ burger.** Former burger items move to **ASTRANOV** home menu. Supersedes OV-04 “no ribbon”. Multi-tile still on map; no feed chip tiles. |
 
 ---
 
@@ -134,14 +135,15 @@ The following older SPECS ideas are **void** if they conflict with CORE or OWNER
 
 | Void topic | Superseded by |
 |------------|----------------|
-| Permanent CLI ribbon Locate·User·Add·Layers·AI·Send as required chrome | OV-04 · P2 CLI text only |
+| CLI must never show top ribbon (hard ban) | **OV-15** restores permanent 6 shortcuts |
+| ☰ burger under radar as required chrome | **OV-15** · tools on ASTRANOV home |
 | AI name = SpaceNet; Astranov only Architect | OV-06 · OV-13 · Naming |
 | SPACENET LISTENING as AI brand | ASTRANOV LISTENING |
 | Default Rodos city training surface | OV-01 · OV-02 |
 | Optional sim task for training | OV-02 |
 | Splash “ASTRANOV SPACENET” | OV-09 |
-| Contaminated if missing “task ribbon” | Text CLI is law |
-| Any row that re-locks CLI buttons or AI=SpaceNet | CORE Naming + CLI |
+| Menu/cart/order buttons on ribbon flood | CORE multi-tile on map |
+| Any row that re-locks AI=SpaceNet | CORE Naming |
 
 ---
 
@@ -180,7 +182,7 @@ js/spacenet/auth.js          → Google GIS preferred
 2. Spartan first.  
 3. Never force owner to restate OV rows.  
 4. False ship → `support/ESCALATION-*.md` + email `notisastranov@gmail.com`.  
-5. Do not reintroduce training sim, CLI button bar, AI=SpaceNet brand, dummy NPCs, finance-on-CLI.
+5. Do not reintroduce training sim, ☰ burger chrome, feed chip tiles, AI=SpaceNet brand, dummy NPCs, finance-on-CLI. Keep permanent 6-button ribbon (OV-15).
 
 ---
 

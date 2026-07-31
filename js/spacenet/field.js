@@ -419,21 +419,61 @@
   }
 
   /**
-   * CLI is text-only (owner law 2026-07-30). Ribbon buttons must not render in dock.
-   * Keep hook so paint() / setTask do not crash; tools live in ☰ burger + typed CLI.
+   * Permanent CLI top shortcut ribbon (owner 2026-07-31):
+   * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
+   * Multi-option buttons expand upward. No menu/cart/order flood.
    */
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
-    if (bar) {
-      bar.innerHTML = '';
-      bar.hidden = true;
-      bar.setAttribute('aria-hidden', 'true');
+    if (!bar) return;
+    bar.hidden = false;
+    bar.removeAttribute('hidden');
+    bar.setAttribute('aria-hidden', 'false');
+    bar.setAttribute('aria-label', 'CLI shortcuts: locate user add layers AI send');
+    var h = '';
+    var i;
+    for (i = 0; i < RIBBON_CORE.length; i++) {
+      var b = RIBBON_CORE[i];
+      var onCls = b.act === 'add' && g.SNTopo && SNTopo.active ? ' on' : '';
+      h +=
+        '<button type="button" class="sn-rib-btn sn-rib-core' +
+        onCls +
+        '" data-act="' +
+        b.act +
+        '"' +
+        (b.id ? ' id="' + b.id + '"' : '') +
+        ' title="' +
+        (b.title || b.text) +
+        '">' +
+        '<span class="sn-rib-emoji" aria-hidden="true">' +
+        (b.emoji || '') +
+        '</span>' +
+        '<span class="sn-rib-txt">' +
+        (b.text || b.act) +
+        '</span>' +
+        '</button>';
     }
     if (notice) {
       try {
         if (g.SNCli && SNCli.preview) SNCli.preview(notice);
       } catch (e) {}
     }
+    bar.innerHTML = h;
+    try {
+      var hf = $('sn-rib-hf');
+      if (hf && g.SNCli && SNCli.handsfreeOn) hf.classList.add('on');
+    } catch (e2) {}
+    bar.querySelectorAll('[data-act]').forEach(function (btn) {
+      var act = btn.getAttribute('data-act');
+      btn.onclick = function (ev) {
+        if (ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+        ribbonAct(act);
+        setTimeout(paintRibbon, 50);
+      };
+    });
   }
 
   function paint() {
@@ -1647,129 +1687,20 @@
       };
     });
     $('sn-miner-accept') && ($('sn-miner-accept').onclick = acceptTerms);
-    bindBurgerMenu();
+    // Burger removed (OV-15) — tools live under ASTRANOV home · ribbon is top CLI shortcuts
+    try {
+      var bBtn = $('sn-burger-btn');
+      var bPanel = $('sn-burger-panel');
+      if (bBtn) {
+        bBtn.hidden = true;
+        bBtn.style.display = 'none';
+      }
+      if (bPanel) {
+        bPanel.hidden = true;
+        bPanel.style.display = 'none';
+      }
+    } catch (eB) {}
     paintRibbon();
-  }
-
-  /**
-   * SPECS: extensive secondary menu lives under radar (top-left burger).
-   * Not CLI ribbon. Finance stays top-right S HUD only.
-   */
-  function bindBurgerMenu() {
-    var btn = $('sn-burger-btn');
-    var panel = $('sn-burger-panel');
-    if (!btn || !panel || btn._snBurger) return;
-    btn._snBurger = true;
-
-    var SECTIONS = [
-      {
-        title: 'Navigate',
-        items: [
-          { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
-          { e: '🌍', t: 'Full Earth', d: 'GLOBAL default', run: 'global' },
-          { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
-        ],
-      },
-      {
-        title: 'Marketplace',
-        items: [
-          { e: '🏪', t: 'Shops', d: 'Vendor tiles near focus', run: 'shops' },
-          { e: '🍕', t: 'Pizza', d: 'Find · tile · next', run: 'pizza' },
-          { e: '⏭', t: 'Next vendor', d: 'Carousel next', run: 'next' },
-          { e: '▦', t: 'Show all', d: 'All vendors on map', run: 'show all' },
-          { e: '📦', t: 'Task list', d: 'Jobs · deliveries', run: 'task list' },
-          { e: '🛣', t: 'Show routes', d: 'Radar polygons · ETA', run: 'routes' },
-        ],
-      },
-      {
-        title: 'Mesh & tools',
-        items: [
-          { e: '⚡', t: 'Resources', d: 'CPU · mine status', run: 'resources' },
-          { e: '⛏', t: 'Mine on', d: 'Earn S from spare', run: 'mine on' },
-          { e: '🧠', t: 'Free mind', d: 'Astranov AI status', run: 'free mind' },
-          { e: '📦', t: 'Task fit', d: 'Jobs that match your routes', run: 'task fit' },
-          { e: '🗺', t: 'Tasks on map', d: 'All routes · arrange', run: 'task map' },
-          { e: '⚠', t: 'Advise', d: 'Traffic / scan tips', run: 'advise' },
-          { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },
-          { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },
-          { e: '❓', t: 'Help', d: 'Commands', run: 'help' },
-        ],
-      },
-    ];
-
-    function close() {
-      panel.classList.remove('open');
-      panel.hidden = true;
-      btn.setAttribute('aria-expanded', 'false');
-    }
-
-    function open() {
-      // Close competing flyouts
-      try {
-        if (typeof closeRibbonFlyout === 'function') closeRibbonFlyout();
-      } catch (e) {}
-      var h =
-        '<div class="sn-bg-head">☰ ASTRANOV</div>' +
-        '<div class="sn-bg-note">Finance · tap top-right S · not here</div>';
-      var si, ii;
-      for (si = 0; si < SECTIONS.length; si++) {
-        var sec = SECTIONS[si];
-        h += '<div class="sn-bg-sec">' + sec.title + '</div>';
-        for (ii = 0; ii < sec.items.length; ii++) {
-          var it = sec.items[ii];
-          h +=
-            '<button type="button" class="sn-bg-item" role="menuitem" data-run="' +
-            String(it.run).replace(/"/g, '') +
-            '">' +
-            '<span>' +
-            (it.e || '') +
-            ' ' +
-            (it.t || '') +
-            '</span>' +
-            (it.d ? '<span class="d">' + it.d + '</span>' : '') +
-            '</button>';
-        }
-      }
-      panel.innerHTML = h;
-      panel.hidden = false;
-      panel.classList.add('open');
-      btn.setAttribute('aria-expanded', 'true');
-      panel.querySelectorAll('[data-run]').forEach(function (b) {
-        b.onclick = function (ev) {
-          if (ev) {
-            ev.preventDefault();
-            ev.stopPropagation();
-          }
-          var cmd = b.getAttribute('data-run');
-          close();
-          if (cmd && g.SNCli && SNCli.run) void SNCli.run(cmd);
-        };
-      });
-    }
-
-    function toggle(ev) {
-      if (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-      }
-      if (panel.classList.contains('open')) close();
-      else open();
-    }
-
-    btn.addEventListener('click', toggle, true);
-    document.addEventListener(
-      'click',
-      function (ev) {
-        if (!panel.classList.contains('open')) return;
-        var t = ev.target;
-        if (t === btn || btn.contains(t) || t === panel || panel.contains(t)) return;
-        close();
-      },
-      true
-    );
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape' && panel.classList.contains('open')) close();
-    });
   }
 
   g.SNField = {

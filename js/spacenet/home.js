@@ -1,6 +1,6 @@
-/* SNHome — Astranov SpaceNet home menu (SPECS home control)
- * Version · reload · hard reset · date/time · user · login · role toggles
- * Roles: vendor worker · delivery driver · ambassador (support → mine S)
+/* SNHome — ASTRANOV home menu (SPECS · OV-15)
+ * Tap ASTRANOV wordmark: account · roles · session + former burger tools
+ * (Navigate · Marketplace · Mesh). No separate ☰ burger.
  */
 (function (global) {
   'use strict';
@@ -9,8 +9,69 @@
   var clockTimer = null;
   var SUPPORT_KEY = 'sn:support-v1';
 
+  /** Former burger sections — now under ASTRANOV button only */
+  var TOOL_SECTIONS = [
+    {
+      title: 'Navigate',
+      items: [
+        { e: '🎯', t: 'Locate me', d: 'GPS · fly globe', run: 'locate' },
+        { e: '🌍', t: 'Full Earth', d: 'GLOBAL default', run: 'global' },
+        { e: '🗺', t: 'City map', d: 'Street map at focus', run: 'city' },
+      ],
+    },
+    {
+      title: 'Marketplace',
+      items: [
+        { e: '🏪', t: 'Shops', d: 'Vendor tiles near focus', run: 'shops' },
+        { e: '🍕', t: 'Pizza', d: 'Find · tile · next', run: 'pizza' },
+        { e: '⏭', t: 'Next vendor', d: 'Carousel next', run: 'next' },
+        { e: '▦', t: 'Show all', d: 'All vendors on map', run: 'show all' },
+        { e: '📦', t: 'Task list', d: 'Jobs · deliveries', run: 'task list' },
+        { e: '🛣', t: 'Show routes', d: 'Radar polygons · ETA', run: 'routes' },
+        { e: '🚀', t: 'First delivery', d: 'Full first order loop', run: 'first delivery' },
+      ],
+    },
+    {
+      title: 'Mesh & tools',
+      items: [
+        { e: '⚡', t: 'Resources', d: 'CPU · mine status', run: 'resources' },
+        { e: '⛏', t: 'Mine on', d: 'Earn S from spare', run: 'mine on' },
+        { e: '🌐', t: 'Donate on', d: 'SETI mesh spare → S', run: 'donate on' },
+        { e: '🧠', t: 'Free mind', d: 'Astranov AI status', run: 'free mind' },
+        { e: '📦', t: 'Task fit', d: 'Jobs that match your routes', run: 'task fit' },
+        { e: '🗺', t: 'Tasks on map', d: 'All routes · arrange', run: 'task map' },
+        { e: '⚠', t: 'Advise', d: 'Traffic / scan tips', run: 'advise' },
+        { e: '👑', t: 'Super / fleet', d: 'Dump fleet + TX on CLI', run: 'super' },
+        { e: '✓', t: 'Verify', d: 'Brain / product check', run: 'verify' },
+        { e: '❓', t: 'Help', d: 'Commands', run: 'help' },
+      ],
+    },
+  ];
+
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function toolHtml() {
+    var h = '';
+    var si, ii;
+    for (si = 0; si < TOOL_SECTIONS.length; si++) {
+      var sec = TOOL_SECTIONS[si];
+      h += '<div class="sn-home-section">' + esc(sec.title) + '</div>';
+      for (ii = 0; ii < sec.items.length; ii++) {
+        var it = sec.items[ii];
+        h +=
+          '<button type="button" class="sn-home-btn sn-home-tool" data-run="' +
+          esc(it.run) +
+          '">' +
+          '<span class="sn-home-tool-t">' +
+          esc((it.e ? it.e + ' ' : '') + it.t) +
+          '</span>' +
+          (it.d ? '<span class="sn-home-tool-d">' + esc(it.d) + '</span>' : '') +
+          '</button>';
+      }
+    }
+    return h;
   }
 
   function build() {
@@ -83,6 +144,8 @@
       (roles.vendor ? ' · 🏪 Vendor worker' : '') +
       (roles.driver ? ' · 🛵 Driver' : '') +
       '</div></div>' +
+      '<p class="sn-home-hint">Tools below were the old ☰ burger — all on ASTRANOV now. Finance stays top-right S.</p>' +
+      toolHtml() +
       '<div class="sn-home-section">Roles</div>' +
       roleToggle('vendor', 'Vendor worker', 'List shop · menu · sell in S', !!roles.vendor) +
       roleToggle('driver', 'Delivery driver', 'Go online · claim · deliver', !!roles.driver) +
@@ -164,6 +227,9 @@
       'border:1px solid rgba(61,158,255,.4);background:rgba(26,111,212,.2);color:#e8f4ff;font:600 13px system-ui;cursor:pointer;text-align:left}' +
       '#sn-home-menu .sn-home-btn:hover{border-color:#3d9eff}' +
       '#sn-home-menu .sn-home-btn.danger{border-color:rgba(255,107,122,.45);color:#ff9aa5;background:rgba(120,30,40,.2)}' +
+      '#sn-home-menu .sn-home-btn.sn-home-tool{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 12px}' +
+      '#sn-home-menu .sn-home-tool-t{font:600 13px system-ui;color:#e8f4ff}' +
+      '#sn-home-menu .sn-home-tool-d{font:400 10px system-ui;color:#6a8aaa}' +
       '#sn-home-menu .sn-home-hint{font:11px/1.4 system-ui;color:#5a6a7e;margin:10px 0 0}';
     document.head.appendChild(st);
   }
@@ -213,6 +279,18 @@
       btn.onclick = function (e) {
         e.stopPropagation();
         void act(btn.getAttribute('data-act'));
+      };
+    });
+    el.querySelectorAll('[data-run]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var cmd = btn.getAttribute('data-run');
+        close();
+        try {
+          if (cmd && global.SNCli && SNCli.run) void SNCli.run(cmd);
+        } catch (err) {
+          if (global.SNCli && SNCli.log) SNCli.log(String(err.message || err), 'err');
+        }
       };
     });
     el.querySelectorAll('input[data-role]').forEach(function (inp) {
@@ -423,7 +501,7 @@
         if (e) e.preventDefault();
         toggle();
       };
-      btn.title = 'ASTRANOV · menu · roles · account · Earth';
+      btn.title = 'ASTRANOV · tools · navigate · market · mesh · roles · account';
       if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     // Stop other handlers from only flying earth without menu
