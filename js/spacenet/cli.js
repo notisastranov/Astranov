@@ -59,17 +59,56 @@
 
   /**
    * GPS locate that does NOT require the 3D globe module.
+   * Never invents a foreign city when GPS fails — caller must confirm soft pins.
    * Returns { lat, lng, fallback, reason?, accuracy? }
    */
   function gpsLocate() {
     return new Promise(function (resolve) {
-      const rhodes = { lat: 36.4341, lng: 28.2176, fallback: true };
+      // Soft fallbacks: verified order pin → last good GPS → last focus (still marked soft)
+      var soft = null;
+      try {
+        var pref = global.SNMarket && SNMarket.loadPrefs && SNMarket.loadPrefs();
+        if (pref && pref.verifiedLoc && pref.verifiedLoc.lat != null) {
+          soft = {
+            lat: pref.verifiedLoc.lat,
+            lng: pref.verifiedLoc.lng,
+            fallback: true,
+            reason: 'last verified delivery pin',
+          };
+        }
+      } catch (_) {}
+      if (!soft) {
+        try {
+          var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
+          if (g && g.lat != null && g.lng != null && Date.now() - (g.t || 0) < 7 * 864e5) {
+            soft = {
+              lat: g.lat,
+              lng: g.lng,
+              fallback: true,
+              reason: 'last good GPS',
+              accuracy: g.accuracy,
+            };
+          }
+        } catch (_) {}
+      }
+      if (!soft && global._snLastPos && global._snLastPos.lat != null) {
+        soft = {
+          lat: global._snLastPos.lat,
+          lng: global._snLastPos.lng,
+          fallback: true,
+          reason: 'last map pin',
+        };
+      }
+      if (!soft) {
+        soft = { lat: null, lng: null, fallback: true, reason: 'unavailable' };
+      }
+
       if (!navigator.geolocation) {
-        resolve(Object.assign({}, rhodes, { reason: 'unsupported' }));
+        resolve(Object.assign({}, soft, { reason: soft.reason || 'unsupported' }));
         return;
       }
       if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
-        resolve(Object.assign({}, rhodes, { reason: 'insecure' }));
+        resolve(Object.assign({}, soft, { reason: 'insecure context · need https' }));
         return;
       }
       let done = false;
@@ -79,34 +118,53 @@
         resolve(r);
       };
       const t = setTimeout(function () {
-        finish(Object.assign({}, rhodes, { reason: 'timeout' }));
-      }, 16000);
+        finish(Object.assign({}, soft, { reason: soft.lat != null ? soft.reason || 'timeout' : 'timeout' }));
+      }, 12000);
       try {
         navigator.geolocation.getCurrentPosition(
           function (pos) {
             clearTimeout(t);
-            finish({
+            var row = {
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
               fallback: false,
               accuracy: pos.coords.accuracy,
-            });
+            };
+            try {
+              localStorage.setItem(
+                'sn:last-good-gps',
+                JSON.stringify({
+                  lat: row.lat,
+                  lng: row.lng,
+                  accuracy: row.accuracy,
+                  t: Date.now(),
+                })
+              );
+            } catch (_) {}
+            finish(row);
           },
           function (err) {
             clearTimeout(t);
             const code = err && err.code;
             finish(
-              Object.assign({}, rhodes, {
-                reason: code === 1 ? 'denied' : code === 2 ? 'unavailable' : code === 3 ? 'timeout' : 'error',
+              Object.assign({}, soft, {
+                reason:
+                  code === 1
+                    ? 'denied'
+                    : code === 2
+                      ? 'unavailable'
+                      : code === 3
+                        ? 'timeout'
+                        : soft.reason || 'error',
                 code: code,
               })
             );
           },
-          { enableHighAccuracy: true, timeout: 14000, maximumAge: 20000 }
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
         );
       } catch (e) {
         clearTimeout(t);
-        finish(Object.assign({}, rhodes, { reason: 'error' }));
+        finish(Object.assign({}, soft, { reason: 'error' }));
       }
     });
   }

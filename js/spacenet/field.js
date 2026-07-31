@@ -1533,49 +1533,58 @@
       }
     } catch (eOpen) {}
     try {
-      g._snLastPos = { lat: dLat, lng: dLng };
+      g._snLastPos = { lat: dLat, lng: dLng, reason: 'order' };
       if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(dLat, dLng);
     } catch (e) {}
     var id = opts.id || 'live:' + Date.now().toString(36);
-    var row = await showRoute(
-      [
-        { lat: vLat, lng: vLng },
-        { lat: dLat, lng: dLng },
-      ],
-      {
-        id: id,
-        label: opts.label || '🛵 Route',
-        kind: 'delivery',
-        osrm: true,
-        color: opts.color || 'rgba(0,220,255,0.95)',
-        progress: 0,
-        driver: opts.driver || 'Driver',
-        vendorLat: vLat,
-        vendorLng: vLng,
-        dropLat: dLat,
-        dropLng: dLng,
-        speedKmh: opts.speedKmh,
-      }
-    );
+    // Multi-stop: vendor → other deliveries → you
+    var path = [];
+    if (opts.waypoints && opts.waypoints.length >= 2) {
+      path = opts.waypoints.map(function (p) {
+        return { lat: Number(p.lat), lng: Number(p.lng) };
+      }).filter(function (p) {
+        return isFinite(p.lat) && isFinite(p.lng);
+      });
+    }
+    if (path.length < 2) {
+      path = [{ lat: vLat, lng: vLng }];
+      (opts.stops || []).forEach(function (s) {
+        if (s && s.lat != null && s.lng != null) path.push({ lat: Number(s.lat), lng: Number(s.lng) });
+      });
+      path.push({ lat: dLat, lng: dLng });
+    }
+    var stopCount = Math.max(0, path.length - 2);
+    var row = await showRoute(path, {
+      id: id,
+      label: opts.label || '🛵 Route',
+      kind: 'delivery',
+      osrm: true,
+      color: opts.color || 'rgba(0,220,255,0.95)',
+      progress: 0,
+      driver: opts.driver || 'Driver',
+      vendorLat: vLat,
+      vendorLng: vLng,
+      dropLat: dLat,
+      dropLng: dLng,
+      speedKmh: opts.speedKmh,
+      stops: opts.stops || [],
+      etaMin: opts.etaMin,
+    });
     if (!row) return null;
-    row.phase = 'VENDOR PREP';
+    row.phase = stopCount ? 'MULTI-STOP · ' + stopCount + ' before you' : 'VENDOR PREP';
     row.progress = 0;
-    // Paint corridor polygon + vendor / driver / you
+    row.stopCount = stopCount;
+    // Paint corridor polygon + vendor / intermediate / you
     paintRouteOnCityMap(row);
     try {
       if (g.SNMap && SNMap.fitLatLngs) {
-        g.SNMap.fitLatLngs(
-          [
-            { lat: vLat, lng: vLng },
-            { lat: dLat, lng: dLng },
-          ].concat(row.points || []),
-          { padding: 56, maxZoom: 15, force: true }
-        );
+        g.SNMap.fitLatLngs(path.concat(row.points || []), {
+          padding: 56,
+          maxZoom: 15,
+          force: true,
+        });
       } else if (g.SNMap && SNMap.map && typeof L !== 'undefined') {
-        var b = L.latLngBounds([
-          [vLat, vLng],
-          [dLat, dLng],
-        ]);
+        var b = L.latLngBounds(path.map(function (p) { return [p.lat, p.lng]; }));
         g.SNMap.map.fitBounds(b, { padding: [56, 56], maxZoom: 15 });
       }
     } catch (eFit) {}
@@ -1583,27 +1592,33 @@
       if (g.SNMap && SNMap.markYou) g.SNMap.markYou(dLat, dLng, 'YOU · drop');
       if (g.SNMap && SNMap.showProfiles) SNMap.showProfiles();
       if (g.SNMap && SNMap.showTasks) SNMap.showTasks();
-      // Re-paint route on top of tasks/profiles
       paintRouteOnCityMap(row);
     } catch (eT) {}
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'Route on the map — green shop, yellow driver, red you · ' +
+          'Route · vendor' +
+            (stopCount ? ' → ' + stopCount + ' stop' + (stopCount > 1 ? 's' : '') : '') +
+            ' → you · ' +
             (row.km != null ? row.km.toFixed(2) + ' km' : '') +
             ' · ETA ' +
-            (row.eta || '?'),
+            (opts.etaMin != null ? opts.etaMin + ' min' : row.eta || '?'),
           'ok'
         );
       }
       if (g.SNCli && SNCli.preview)
-        SNCli.preview('Kitchen prep — then the driver moves');
+        SNCli.preview(
+          'ETA ' + (opts.etaMin != null ? opts.etaMin + 'm' : row.eta || '?')
+        );
       if (g.SNCli && SNCli.setActivity) g.SNCli.setActivity('prep');
-    } catch (e2) {}
+    } catch (eL) {}
 
     // Phase 1: kitchen prep (driver waits at vendor) · Phase 2: drive along polygon
     var prepMs = 4500;
     var driveMs = Math.max(10000, Math.min(75000, (row.durationS || 600) * 1000 * 0.4));
+    if (opts.etaMin != null && opts.etaMin > 0) {
+      driveMs = Math.max(8000, Math.min(90000, (opts.etaMin - 8) * 60 * 1000 * 0.15));
+    }
     var t0 = Date.now();
     var animId = id;
     var lastLogPct = -1;
@@ -1621,18 +1636,21 @@
       var u;
       if (elapsed < prepMs) {
         u = 0;
-        r.phase = 'VENDOR PREP · kitchen';
+        r.phase =
+          stopCount > 0
+            ? 'VENDOR PREP · then ' + stopCount + ' stop' + (stopCount > 1 ? 's' : '')
+            : 'VENDOR PREP · kitchen';
         r.progress = 0;
       } else {
         var du = Math.min(1, (elapsed - prepMs) / driveMs);
         u = du;
         r.progress = du;
-        if (du < 0.85) r.phase = 'DRIVER EN ROUTE';
+        if (du < 0.85) r.phase = stopCount ? 'MULTI-STOP EN ROUTE' : 'DRIVER EN ROUTE';
         else if (du < 1) r.phase = 'ARRIVING';
         else r.phase = 'DELIVERED';
       }
       var remainS =
-        r.phase === 'VENDOR PREP · kitchen'
+        r.phase.indexOf('VENDOR PREP') === 0
           ? (r.durationS || 600) + (prepMs - elapsed) / 1000
           : (r.durationS || 0) * (1 - u);
       r.eta = fmtEta(Math.max(0, remainS));
@@ -1665,8 +1683,8 @@
           }
           if (g.SNCli && SNCli.preview) SNCli.preview(r.phase + ' · ' + pct + '%');
           if (g.SNCli && SNCli.setActivity)
-            g.SNCli.setActivity(r.phase === 'VENDOR PREP · kitchen' ? 'prep' : 'drive');
-        } catch (eL) {}
+            g.SNCli.setActivity(r.phase.indexOf('VENDOR PREP') === 0 ? 'prep' : 'drive');
+        } catch (eL2) {}
       }
       if (u >= 1 && elapsed >= prepMs + driveMs) {
         r.progress = 1;

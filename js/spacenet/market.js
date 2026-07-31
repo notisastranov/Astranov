@@ -104,19 +104,173 @@
   }
 
   function locationIsSuspect(pos) {
-    if (!pos || pos.lat == null) return { suspect: true, why: 'no position' };
-    if (pos.fallback) return { suspect: true, why: pos.reason || 'GPS soft / default focus' };
+    if (!pos || pos.lat == null || pos.lng == null) return { suspect: true, why: 'no position' };
+    if (pos.fallback) return { suspect: true, why: pos.reason || 'GPS soft / not live' };
     if (pos.accuracy != null && Number(pos.accuracy) > 400) {
       return { suspect: true, why: 'GPS accuracy ±' + Math.round(pos.accuracy) + 'm (weak)' };
     }
-    // Rhodes default pin often used when GPS fails
+    // Old training pins — never auto-order there without YES
     if (
       Math.abs(Number(pos.lat) - 36.4341) < 0.0008 &&
       Math.abs(Number(pos.lng) - 28.2176) < 0.0008
     ) {
-      return { suspect: true, why: 'looks like default map pin (Rhodes training pin)' };
+      return { suspect: true, why: 'looks like default Rhodes pin' };
     }
+    // Globe left on another continent while ordering food
+    try {
+      var last = global._snLastPos;
+      if (
+        last &&
+        last.lat != null &&
+        !pos.fallback &&
+        haversineKm(pos, last) > 80 &&
+        last.reason !== 'order'
+      ) {
+        // live GPS wins — not suspect
+      }
+    } catch (_) {}
     return { suspect: false, why: '' };
+  }
+
+  function isShopOpenNow(v) {
+    var hours = String((v && (v.hours || v.opening_hours)) || '').trim();
+    if (!hours || /24\s*[\/7]|24h|always|open/i.test(hours)) return true;
+    if (/^closed$/i.test(hours) || /permanently closed/i.test(hours)) return false;
+    // marketplace 24/7 — treat unknown hours as open for delivery pipeline
+    return true;
+  }
+
+  function menuPriceOf(v, food, judged) {
+    try {
+      var it = pickMenuItem(v, food, judged);
+      if (it && it.price > 0) return Number(it.price);
+    } catch (_) {}
+    if (v && v.menu && v.menu[0] && v.menu[0].price > 0) return Number(v.menu[0].price);
+    return defaultFoodPrice(food);
+  }
+
+  /**
+   * Rank: near you · open · better rating · better (lower) price · food match.
+   * Hard distance is applied by collector — score never rewards other continents.
+   */
+  function scoreVendor(v, pos, food, judged) {
+    var km = haversineKm(pos, v);
+    var score = 0;
+    var name = String(v.shopName || v.name || '').toLowerCase();
+    var kind = String(v.shopKind || v.category || '').toLowerCase();
+    var f = String(food || '').toLowerCase();
+    // Distance dominates (0–50)
+    score += Math.max(0, 50 - km * 12);
+    if (km > 8) score -= 80;
+    if (km > 15) score -= 200;
+    // Open now
+    if (isShopOpenNow(v)) score += 18;
+    else score -= 40;
+    // Rating 0–5 → up to 25
+    var rating = v.rating != null ? Number(v.rating) : v.stars != null ? Number(v.stars) : null;
+    if (rating != null && isFinite(rating)) score += Math.min(25, rating * 5);
+    else score += 8; // unknown — mild
+    // Price — lower better (up to 20)
+    var price = menuPriceOf(v, food, judged);
+    var base = defaultFoodPrice(food);
+    if (price > 0) {
+      var rel = price / Math.max(0.5, base);
+      score += Math.max(0, 20 - rel * 12);
+    }
+    // Food match
+    if (name.indexOf(f) >= 0) score += 16;
+    if (
+      kind.indexOf(f) >= 0 ||
+      kind.indexOf('restaurant') >= 0 ||
+      kind.indexOf('pizza') >= 0 ||
+      kind.indexOf('cafe') >= 0 ||
+      kind.indexOf('food') >= 0
+    )
+      score += 10;
+    if (v.real) score += 8;
+    if (v.source === 'supabase' || v.source === 'db' || v.source === 'google-places') score += 6;
+    if (v.delivery_enabled !== false) score += 5;
+    if (v.menu && v.menu.length) score += 6;
+    // Never boost invented kitchen over real shops
+    if (v.source === 'astranov-kitchen') score -= 30;
+    return { score: score, km: km, price: price, rating: rating, open: isShopOpenNow(v) };
+  }
+
+  /** Other open deliveries as intermediate stops before you */
+  function driverOtherStops(dropPos, excludeTaskId) {
+    var stops = [];
+    try {
+      var list = (global.SNTasks && SNTasks.list && SNTasks.list({ kind: 'delivery' })) || [];
+      list.forEach(function (t) {
+        if (!t || t.id === excludeTaskId) return;
+        if (t.status !== 'open' && t.status !== 'claimed' && t.status !== 'in_progress') return;
+        var la = t.drop_lat != null ? t.drop_lat : t.lat;
+        var lo = t.drop_lng != null ? t.drop_lng : t.lng;
+        if (la == null || lo == null) return;
+        if (haversineKm(dropPos, { lat: la, lng: lo }) > 12) return;
+        stops.push({
+          lat: la,
+          lng: lo,
+          label: String(t.title || 'stop').slice(0, 28),
+          taskId: t.id,
+        });
+      });
+    } catch (_) {}
+    return stops.slice(0, 4);
+  }
+
+  function etaWithStops(kmDirect, stopCount) {
+    // scooter city: ~22 km/h + 4 min/stop + 8 min kitchen prep
+    var prepMin = 8;
+    var driveMin = Math.max(4, Math.round((kmDirect / 22) * 60));
+    var stopMin = (stopCount || 0) * 4;
+    var totalMin = prepMin + driveMin + stopMin;
+    var eat = new Date(Date.now() + totalMin * 60000);
+    var hh = eat.getHours();
+    var mm = eat.getMinutes();
+    var clock =
+      (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+    return {
+      totalMin: totalMin,
+      prepMin: prepMin,
+      driveMin: driveMin,
+      stopMin: stopMin,
+      stopCount: stopCount || 0,
+      eatClock: clock,
+      eatLine:
+        'You eat ~' +
+        clock +
+        ' · ' +
+        totalMin +
+        ' min' +
+        (stopCount ? ' · ' + stopCount + ' stop' + (stopCount > 1 ? 's' : '') + ' before you' : ''),
+    };
+  }
+
+  function scheduleArrivalNotify(eta, vendorName) {
+    try {
+      var mins = Math.max(1, (eta && eta.totalMin) || 20);
+      var warnAt = Math.max(30, (mins - 5) * 60 * 1000);
+      if (global._snArrivalNotify) clearTimeout(global._snArrivalNotify);
+      global._snArrivalNotify = setTimeout(function () {
+        try {
+          var msg =
+            'Driver ~5 min out · ' +
+            (vendorName || 'order') +
+            ' · be ready at drop pin';
+          if (global.SNCli && SNCli.log) SNCli.log(msg, 'ok');
+          if (global.SNCli && SNCli.preview) SNCli.preview('Driver ~5 min');
+          if (global.SNField && SNField.setNotice) SNField.setNotice('Driver ~5 min');
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification('Astranov', { body: msg });
+          } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+            Notification.requestPermission().then(function (p) {
+              if (p === 'granted') new Notification('Astranov', { body: msg });
+            });
+          }
+        } catch (_) {}
+      }, warnAt);
+    } catch (_) {}
   }
 
   function track(n, p) {
@@ -824,24 +978,6 @@
     return 10;
   }
 
-  function scoreVendor(v, pos, food) {
-    var score = 0;
-    var name = String(v.shopName || v.name || '').toLowerCase();
-    var kind = String(v.shopKind || '').toLowerCase();
-    var f = String(food || '').toLowerCase();
-    if (name.indexOf(f) >= 0) score += 40;
-    if (kind.indexOf(f) >= 0 || kind.indexOf('restaurant') >= 0 || kind.indexOf('pizza') >= 0 || kind.indexOf('cafe') >= 0)
-      score += 15;
-    if (v.real) score += 10;
-    if (v.menu && v.menu.length) score += 12 + Math.min(8, v.menu.length);
-    var km = haversineKm(pos, v);
-    score += Math.max(0, 25 - km * 8);
-    if (v.rating != null) score += Math.min(10, Number(v.rating));
-    // Prefer open-looking (we don't always have hours — slight boost if delivery enabled)
-    if (v.delivery_enabled !== false) score += 5;
-    return { score: score, km: km };
-  }
-
   function ensureFoodMenu(vendor, food, judged) {
     if (!vendor || !global.SNProfiles) return vendor;
     var menu = vendor.menu || [];
@@ -861,7 +997,8 @@
         price: judged && judged.price != null ? judged.price : defaultFoodPrice(food),
         desc: 'Ordered via Astranov · pay in S · kitchen confirms',
       });
-      vendor = global.SNProfiles.get(vendor.id) || vendor;
+      vendor = (global.SNProfiles.get && global.SNProfiles.get(vendor.id)) || vendor;
+
     }
     return vendor;
   }
@@ -974,85 +1111,82 @@
       } catch (_) {}
     };
     var steps = [];
+    var MAX_SHOP_KM = 6;
 
-    // 1) Locate you FIRST
-    log('Finding where you are…', 'dim', 'work', { label: 'Locate' });
+    // ═══════════════════════════════════════════════════════════
+    // BUSINESS PIPELINE
+    // 1 Locate me → 2 real open shops near me → 3 rank price/rating
+    // → 4 suggest 1·2·3 → 5 buy/pay S → 6 driver → 7 multi-stop route
+    // → 8 ETA → 9 notify before arrival
+    // NEVER fly other continents. NEVER use globe focus as your address.
+    // ═══════════════════════════════════════════════════════════
+
+    // 1) LOCATE YOU — GPS only as truth; soft pin only if confirmed / last good
+    log('Step 1 · locating you…', 'dim', 'locate', { label: 'You' });
     var pos = intent.confirmedPos || null;
     if (!pos || pos.lat == null) {
       try {
-        if (global.SNCli && SNCli.gpsLocate) {
-          pos = await SNCli.gpsLocate();
-        }
+        if (global.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate();
       } catch (_) {}
     }
-    if (!pos || pos.lat == null) {
-      try {
-        if (global.SNGlobe && SNGlobe.focusPos) {
-          var fp = SNGlobe.focusPos();
-          if (fp && fp.lat != null) pos = { lat: fp.lat, lng: fp.lng };
-        }
-      } catch (_) {}
+    // Do NOT use globe focus (often another city/continent from flying)
+    if ((!pos || pos.lat == null) && global._snLastPos && global._snLastPos.lat != null) {
+      pos = {
+        lat: global._snLastPos.lat,
+        lng: global._snLastPos.lng,
+        fallback: true,
+        reason: 'last map pin',
+      };
     }
     if (!pos || pos.lat == null) {
-      pos = global._snLastPos || (global.SNTasks && SNTasks.pos) || null;
+      log('GPS off · type locate then allow location · or fly to your city first', 'err');
+      return {
+        ok: false,
+        error: 'need your location · type locate · allow GPS · then order again',
+        reply: 'I need your real location first. Type locate, allow GPS, then order pizza again.',
+        steps: ['locate_fail'],
+      };
     }
-    if (!pos || pos.lat == null) {
-      try {
-        if (global.SNGlobe && SNGlobe.locate) pos = await SNGlobe.locate();
-      } catch (_) {}
-    }
-    if (!pos || pos.lat == null) {
-      pos = { lat: 36.4341, lng: 28.2176, fallback: true, reason: 'unavailable' };
-    }
-    global._snLastPos = { lat: pos.lat, lng: pos.lng };
+    // Reject absurd soft pins from world roam without confirm
+    global._snLastPos = { lat: pos.lat, lng: pos.lng, reason: 'order' };
     try {
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
     } catch (_) {}
-    try {
-      if (global.SNMap && SNMap.open) await SNMap.open(pos.lat, pos.lng);
-    } catch (_) {}
-    // City map + YOU marker always (user must SEE where we think they are)
+    // Pin city map ONCE at you — no globe fly tour
     try {
       if (global.SNMap && SNMap.open) {
         await SNMap.open(pos.lat, pos.lng);
         if (SNMap.ensure) await SNMap.ensure();
         if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · delivery stop');
-        if (SNMap.fitLatLngs) SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], { zoom: 15, force: true });
-      }
-    } catch (_) {}
-    try {
-      if (global.SNGlobe && SNGlobe.pulse) {
-        SNGlobe.pulse(pos.lat, pos.lng, 0x3d9eff, 'YOU', 20000);
+        if (SNMap.fitLatLngs)
+          SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], { zoom: 15, force: true });
       }
     } catch (_) {}
     log(
-      'you · ' +
-        pos.lat.toFixed(4) +
+      'YOU · ' +
+        pos.lat.toFixed(5) +
         ', ' +
-        pos.lng.toFixed(4) +
+        pos.lng.toFixed(5) +
         (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + 'm' : '') +
-        (pos.fallback ? ' · GPS soft' : '') +
-        ' · blue pin on map',
+        (pos.fallback ? ' · soft pin' : ' · live GPS') +
+        ' · search radius ' +
+        MAX_SHOP_KM +
+        ' km only',
       pos.fallback ? 'dim' : 'ok',
       'locate',
       { lat: pos.lat, lng: pos.lng, label: 'You' }
     );
     steps.push('locate');
 
-    // 1b) If location suspect → STOP and ask user (do not wrong-door pizza)
+    // 1b) Confirm soft / suspect location
     var locCheck = locationIsSuspect(pos);
     var prefsNow = loadPrefs();
     var recentlyOk =
       prefsNow.verifiedLoc &&
       Date.now() - (prefsNow.verifiedLoc.t || 0) < 6 * 3600 * 1000 &&
-      Math.abs(prefsNow.verifiedLoc.lat - pos.lat) < 0.01 &&
-      Math.abs(prefsNow.verifiedLoc.lng - pos.lng) < 0.01;
-    if (
-      locCheck.suspect &&
-      !opts.skipLocConfirm &&
-      !intent.skipLocConfirm &&
-      !recentlyOk
-    ) {
+      Math.abs(prefsNow.verifiedLoc.lat - pos.lat) < 0.015 &&
+      Math.abs(prefsNow.verifiedLoc.lng - pos.lng) < 0.015;
+    if (locCheck.suspect && !opts.skipLocConfirm && !intent.skipLocConfirm && !recentlyOk) {
       savePending({
         intent: {
           food: food,
@@ -1065,15 +1199,14 @@
         t: Date.now(),
       });
       var ask =
-        'I think you are at ' +
+        'Delivery pin · ' +
         pos.lat.toFixed(4) +
         ', ' +
         pos.lng.toFixed(4) +
         ' (' +
         locCheck.why +
-        '). Is this correct? Reply YES to continue the pizza order · NO to stop and relocate.';
+        '). Is this YOU? Reply YES to shop near here · NO to stop (then type locate).';
       log(ask, 'ok');
-      log('Waiting for you · type yes or no', 'dim');
       return {
         ok: false,
         needsConfirm: true,
@@ -1081,23 +1214,21 @@
         pos: pos,
         judged: judged,
         reply: ask,
-        summary:
-          'LOCATION CHECK\n' +
-          pos.lat.toFixed(4) +
-          ', ' +
-          pos.lng.toFixed(4) +
-          '\nWhy · ' +
-          locCheck.why +
-          '\nReply YES or NO',
-        eatLine: 'paused · confirm location first',
+        summary: 'LOCATION CHECK\n' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) + '\n' + locCheck.why,
+        eatLine: 'paused · confirm location',
       };
     }
+    // Lock verified pin for this session
+    try {
+      prefsNow.verifiedLoc = { lat: pos.lat, lng: pos.lng, t: Date.now() };
+      savePrefs(prefsNow);
+    } catch (_) {}
     steps.push('loc_ok');
 
-    // 2) Research likings / temper / company → judge meal
+    // 2) Meal for you
     log(judged.researchNote || 'Picking what fits you…', 'ok');
     log(
-      'judging · ' +
+      'tray · ' +
         judged.itemName +
         (judged.extras && judged.extras.length
           ? ' + ' +
@@ -1111,25 +1242,34 @@
     );
     steps.push('judge_meal');
 
-    // 3) Find places — wait for search if still loading, then Overpass + sector
-    log('Looking for ' + food + ' near you…', 'dim', 'food', {
-      lat: pos.lat,
-      lng: pos.lng,
-      label: food,
-    });
+    // 3) REAL SHOPS near YOU only (no world crawl)
+    log(
+      'Step 2 · open shops within ' + MAX_SHOP_KM + ' km of you…',
+      'dim',
+      'shops',
+      { lat: pos.lat, lng: pos.lng, label: food }
+    );
     var pois = [];
     try {
       var waited = 0;
-      while ((!global.SNSearch || !SNSearch.nearby) && waited < 6000) {
+      while ((!global.SNSearch || !SNSearch.nearby) && waited < 5000) {
         await new Promise(function (r) {
           setTimeout(r, 200);
         });
         waited += 200;
       }
       if (global.SNSearch && SNSearch.nearby) {
-        pois = (await SNSearch.nearby(pos.lat, pos.lng, 4500, intent.overpass || food)) || [];
+        pois =
+          (await SNSearch.nearby(
+            pos.lat,
+            pos.lng,
+            MAX_SHOP_KM * 1000,
+            intent.overpass || food
+          )) || [];
         if ((!pois || !pois.length) && food === 'pizza') {
-          pois = (await SNSearch.nearby(pos.lat, pos.lng, 5000, 'restaurant food')) || [];
+          pois =
+            (await SNSearch.nearby(pos.lat, pos.lng, MAX_SHOP_KM * 1000, 'restaurant food')) ||
+            [];
         }
       }
     } catch (_) {}
@@ -1138,8 +1278,10 @@
         await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
       }
     } catch (_) {}
-    (pois || []).slice(0, 36).forEach(function (p) {
-      if (p.lat == null) return;
+    // Only accept POIs actually near you
+    (pois || []).forEach(function (p) {
+      if (p.lat == null || p.lng == null) return;
+      if (haversineKm(pos, p) > MAX_SHOP_KM + 0.5) return;
       try {
         global.SNProfiles.fromCrawlPlace(
           {
@@ -1153,41 +1295,33 @@
             phone: p.phone || '',
             website: p.website || '',
             cuisine: p.cuisine || '',
+            rating: p.rating != null ? p.rating : p.stars,
           },
           pos
         );
       } catch (_) {}
     });
     log(
-      (pois && pois.length ? pois.length + ' places found · painting vendors…' : 'live map quiet · planting kitchen…'),
+      (pois && pois.length ? pois.length + ' map places near you' : 'map quiet near you · checking DB…'),
       pois && pois.length ? 'ok' : 'dim'
     );
     steps.push('find');
 
-    // 4) Vendors on map — wide net, then force-visible kitchen if empty
-    log('Putting shops on the map…', 'dim', 'shops', {
-      lat: pos.lat,
-      lng: pos.lng,
-      label: food,
-    });
     function collectVendors(maxKm) {
       return (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
-        if (!v || v.lat == null) return false;
-        // never treat pure "me" client pin as the only shop unless named kitchen
-        if (v.id && String(v.id).indexOf('me') === 0 && !/kitchen|shop|pizza/i.test(v.shopName || v.name || '')) {
+        if (!v || v.lat == null || v.lng == null) return false;
+        if (v.id && String(v.id).indexOf('me') === 0 && !/kitchen|shop|pizza/i.test(v.shopName || v.name || ''))
           return false;
-        }
+        // HARD: never a shop on another continent
         return haversineKm(pos, v) <= maxKm;
       });
     }
-    var vendors = collectVendors(10);
-    if (vendors.length < 1) vendors = collectVendors(20);
-    if (vendors.length < 1) {
-      vendors = (global.SNProfiles.list() || []).filter(function (v) {
-        return v && v.lat != null && v.roles && v.roles.vendor && haversineKm(pos, v) < 25;
-      });
+    var vendors = collectVendors(MAX_SHOP_KM);
+    if (vendors.length < 2) {
+      var wider = collectVendors(MAX_SHOP_KM + 2);
+      if (wider.length > vendors.length) vendors = wider;
     }
-    // Always ensure at least one orderable kitchen near you (visible polygon)
+    // Last resort kitchen ONLY at your pin — never far away
     if (!vendors.length && global.SNProfiles) {
       try {
         var kid =
@@ -1195,36 +1329,47 @@
           String(Number(pos.lat).toFixed(3)).replace(/\./g, 'p') +
           '_' +
           String(Number(pos.lng).toFixed(3)).replace(/\./g, 'p');
-        var kitchen = global.SNProfiles.upsert({
-          id: kid,
-          name: 'Astranov Kitchen',
-          shopName: 'Astranov Kitchen',
-          shopKind: food === 'pizza' ? 'pizza' : food,
-          handle: '@kitchen',
-          bio: 'Astranov fulfillment · map pin · pay in S',
-          roles: { vendor: true, client: false, social: true, driver: false },
-          lat: Number(pos.lat) + 0.0038,
-          lng: Number(pos.lng) + 0.0032,
-          real: true,
-          source: 'astranov-kitchen',
-          hours: '24/7',
-          menu: [],
-        });
-        vendors = [kitchen];
-        log('Astranov Kitchen planted on map · green pickup pin', 'ok');
+        vendors = [
+          global.SNProfiles.upsert({
+            id: kid,
+            name: 'Astranov Kitchen',
+            shopName: 'Astranov Kitchen',
+            shopKind: food === 'pizza' ? 'pizza' : food,
+            roles: { vendor: true },
+            lat: Number(pos.lat) + 0.0022,
+            lng: Number(pos.lng) + 0.0018,
+            real: true,
+            source: 'astranov-kitchen',
+            hours: '24/7',
+            rating: 4.2,
+            menu: [],
+          }),
+        ];
+        log('No live shops in range · Astranov Kitchen at your sector (fallback)', 'dim');
       } catch (_) {}
     }
-    vendors = vendors.map(function (v) {
-      v = ensureFoodMenu(v, food, judged);
-      var sc = scoreVendor(v, pos, food);
-      return Object.assign({}, v, { _score: sc.score, _km: sc.km });
-    });
+
+    vendors = vendors
+      .map(function (v) {
+        v = ensureFoodMenu(v, food, judged);
+        var sc = scoreVendor(v, pos, food, judged);
+        return Object.assign({}, v, {
+          _score: sc.score,
+          _km: sc.km,
+          _price: sc.price,
+          _rating: sc.rating,
+          _open: sc.open,
+        });
+      })
+      .filter(function (v) {
+        return v._km <= MAX_SHOP_KM + 2.5;
+      });
     vendors.sort(function (a, b) {
       return (b._score || 0) - (a._score || 0);
     });
-    vendors = vendors.slice(0, 12);
+    vendors = vendors.slice(0, 8);
 
-    // Force map scene: you + all vendor pins + fit bounds
+    // Map: only you + nearby shops (no globe world tour)
     try {
       if (global.SNMap && SNMap.open) {
         await SNMap.open(pos.lat, pos.lng);
@@ -1236,42 +1381,47 @@
             return { lat: v.lat, lng: v.lng };
           })
         );
-        if (SNMap.fitLatLngs) SNMap.fitLatLngs(pins, { padding: 56, maxZoom: 15, force: true });
+        if (SNMap.fitLatLngs) SNMap.fitLatLngs(pins, { padding: 48, maxZoom: 15, force: true });
       }
-      if (global.SNGlobe && SNGlobe.pulse) {
-        SNGlobe.pulse(pos.lat, pos.lng, 0x3d9eff, 'YOU', 20000);
-        vendors.slice(0, 6).forEach(function (v, i) {
-          try {
-            SNGlobe.pulse(v.lat, v.lng, i === 0 ? 0x00ff99 : 0xffcc44, v.shopName || v.name, 16000);
-          } catch (_) {}
-        });
-      }
-      if (global.SNField && SNField.refreshBlips) SNField.refreshBlips();
     } catch (_) {}
-    log(
-      vendors.length +
-        ' vendor' +
-        (vendors.length === 1 ? '' : 's') +
-        ' on map · pick ' +
-        (vendors[0] && (vendors[0].shopName || vendors[0].name)),
-      'ok'
-    );
     steps.push('tiles');
 
     if (!vendors.length) {
       return {
         ok: false,
-        error: 'No vendor pin could be placed · hard refresh · try locate then order again',
-        steps: steps,
+        error: 'No shops within ' + MAX_SHOP_KM + ' km · try locate · fill shops',
         pos: pos,
         judged: judged,
+        steps: steps,
+        reply: 'No shops near your pin. Type locate, then fill shops, then order again.',
       };
     }
 
-    var best = vendors[0];
+    // 4) SUGGEST 1 · 2 · 3 (price + rating + distance)
+    var top3 = vendors.slice(0, 3);
+    log('Step 3 · best near you (price · rating · distance):', 'ok');
+    top3.forEach(function (v, i) {
+      log(
+        (i + 1) +
+          ') ' +
+          (v.shopName || v.name) +
+          ' · ' +
+          (v._km != null ? v._km.toFixed(1) + ' km' : '?') +
+          ' · ' +
+          (v._price != null ? Number(v._price).toFixed(2) + ' S' : '?') +
+          (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '') +
+          (v._open === false ? ' · closed?' : ' · open'),
+        i === 0 ? 'ok' : 'dim',
+        'shops',
+        { lat: v.lat, lng: v.lng, label: i + 1 + '·' + (v.shopName || v.name) }
+      );
+    });
+    steps.push('suggest');
+
+    // Auto path picks #1; browse path stops here
+    var best = top3[0];
     best = ensureFoodMenu(best, food, judged);
     var menuItem = pickMenuItem(best, food, judged);
-    // Force judged line on cart if menu still generic
     if (menuItem && judged && judged.itemName) {
       menuItem = {
         id: menuItem.id,
@@ -1282,45 +1432,19 @@
     }
     var kmBest = best._km != null ? best._km : haversineKm(pos, best);
     log(
-      'vendor · ' +
+      'Chosen · #1 ' +
         (best.shopName || best.name) +
         ' · ' +
-        (kmBest != null ? kmBest.toFixed(1) + ' km' : '?'),
+        kmBest.toFixed(1) +
+        ' km' +
+        (intent.autoOrder ? '' : ' · say order me pizza to buy'),
       'ok',
-      'fly',
-      {
-        lat: best.lat,
-        lng: best.lng,
-        label: best.shopName || best.name,
-        tier: 'city',
-        openMap: true,
-      }
+      'order',
+      { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
     );
-    steps.push('judge');
+    steps.push('choose');
 
-    try {
-      if (global.SNMap && SNMap.open) {
-        await SNMap.open(pos.lat, pos.lng);
-        if (SNMap.ensure) await SNMap.ensure();
-        if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · delivery stop');
-        if (SNMap.showProfiles) SNMap.showProfiles();
-        if (SNMap.fitLatLngs) {
-          SNMap.fitLatLngs(
-            [
-              { lat: pos.lat, lng: pos.lng },
-              { lat: best.lat, lng: best.lng },
-            ],
-            { padding: 56, maxZoom: 15, force: true }
-          );
-        }
-      }
-      if (global.SNGlobe && SNGlobe.pulse) {
-        SNGlobe.pulse(best.lat, best.lng, 0x00ff99, best.shopName || 'Vendor', 18000);
-        SNGlobe.pulse(pos.lat, pos.lng, 0x3d9eff, 'YOU', 18000);
-      }
-    } catch (_) {}
-
-    // Pin client for placeOrder drop_lat
+    // Pin client for drop
     try {
       var clientMe = me();
       if (clientMe && global.SNProfiles) {
@@ -1330,18 +1454,18 @@
         clientMe.roles.client = true;
         global.SNProfiles.upsert(clientMe);
       }
-      global._snLastPos = { lat: pos.lat, lng: pos.lng };
+      global._snLastPos = { lat: pos.lat, lng: pos.lng, reason: 'order' };
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
     } catch (_) {}
 
-    // 5) Pay — pizza + retsina + soda (full company tray)
+    // 5) PAY
     var orderResult = null;
     var fmt = function (n) {
       return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
     };
     if (opts.autoOrder !== false && intent.autoOrder !== false && menuItem) {
       log(
-        'ordering · ' +
+        'Step 4 · pay · ' +
           menuItem.name +
           (judged.extras && judged.extras.length
             ? ' + ' +
@@ -1351,9 +1475,8 @@
                 })
                 .join(' + ')
             : '') +
-          ' · ' +
-          (best.shopName || best.name) +
-          '…',
+          ' @ ' +
+          (best.shopName || best.name),
         'ok',
         'order',
         { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
@@ -1370,7 +1493,7 @@
         });
         orderResult = global.SNProfiles.placeOrder();
         if (orderResult && orderResult.ok) {
-          log('Paid ' + fmt(orderResult.total) + '.', 'ok');
+          log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
           steps.push('order');
         } else {
           log((orderResult && orderResult.error) || 'order failed', 'err');
@@ -1379,23 +1502,25 @@
         log('order error · ' + (e.message || e), 'err');
       }
     } else {
-      log('best pick on map · say order to buy', 'dim');
+      log('Suggestions ready · say order me ' + food + ' to pay #1', 'dim');
     }
 
-    // 6) Courier (Astranov mesh — not Wolt/eFood)
+    // 6) DRIVER + multi-stop route + ETA + notify
     var driver = null;
     var claim = null;
     var completeRes = null;
     var courierNote = judged.service;
+    var extraStops = [];
+    var eta = etaWithStops(kmBest, 0);
     if (orderResult && orderResult.ok && orderResult.task) {
-      log('Assigning a courier…', 'dim', 'delivery', {
+      log('Step 5 · assigning courier…', 'dim', 'delivery', {
         lat: best.lat,
         lng: best.lng,
         label: 'Courier',
       });
       var meP = global.SNProfiles && SNProfiles.me && SNProfiles.me();
       var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
-        return d.driverOnline && d.id !== (meP && meP.id);
+        return d.driverOnline && d.id !== (meP && meP.id) && haversineKm(pos, d) < 20;
       });
       drivers.sort(function (a, b) {
         return haversineKm(pos, a) - haversineKm(pos, b);
@@ -1406,51 +1531,71 @@
           claim = global.SNTasks.claim(orderResult.task.id, driver);
           if (claim && claim.ok && claim.task) {
             claim.task.driverId = driver.id;
-            claim.task.driverName = driver.name || driver.shopName || 'Driver';
+            claim.task.driverName = driver.name || 'Driver';
             claim.task.status = 'in_progress';
           }
           courierNote =
-            'Astranov courier · ' +
+            'Courier · ' +
             (driver.name || 'driver') +
             (driver.vehicle ? ' · ' + driver.vehicle : '') +
             ' · say deliver me when landed';
           log(courierNote, 'ok');
         } catch (_) {}
       } else {
-        // Self-courier: go online, claim, complete + settle in one lazy path
         goDriverOnline('Scooter');
         driver = global.SNProfiles.me();
         try {
           claim = global.SNTasks.claim(orderResult.task.id, driver || undefined);
           if (claim && claim.ok && claim.task) {
             claim.task.driverId = driver && driver.id;
-            claim.task.driverName = (driver && (driver.name || driver.shopName)) || 'You';
+            claim.task.driverName = (driver && driver.name) || 'You';
             claim.task.status = 'in_progress';
           }
-          // Lazy pizza = money loop finishes: complete settles driver+vendor
           completeRes = global.SNTasks.complete(orderResult.task.id);
           if (completeRes && completeRes.ok) {
-            courierNote =
-              'Astranov courier · self-loop delivered · settled ' +
-              (orderResult.driverCut != null ? orderResult.driverCut : claim.task.driver_s) +
-              ' S driver';
+            courierNote = 'Self-courier · delivered · settled';
             log(courierNote, 'ok');
             steps.push('delivered');
           } else {
-            courierNote = 'Astranov courier · you online · say deliver me to finish';
+            courierNote = 'You online as courier · say deliver me to finish';
             log(courierNote, 'ok');
           }
-        } catch (eSelf) {
+        } catch (_) {
           courierNote = 'Courier assign failed · say deliver me';
           log(courierNote, 'err');
         }
       }
-      // Force map route polygon vendor → you
+
+      // Intermediate stops: other open deliveries before you
+      extraStops = driverOtherStops(pos, orderResult.task && orderResult.task.id);
+      eta = etaWithStops(kmBest, extraStops.length);
+      if (extraStops.length) {
+        log(
+          'Route stops before you · ' +
+            extraStops.length +
+            ' · ' +
+            extraStops
+              .map(function (s) {
+                return s.label;
+              })
+              .join(' · '),
+          'ok'
+        );
+      }
+
+      // 7) Polygon: vendor → stops → you
       try {
         if (global.SNMap && SNMap.open) {
           await SNMap.open(pos.lat, pos.lng);
           if (SNMap.ensure) await SNMap.ensure();
         }
+        var waypts = [{ lat: best.lat, lng: best.lng }]
+          .concat(
+            extraStops.map(function (s) {
+              return { lat: s.lat, lng: s.lng };
+            })
+          )
+          .concat([{ lat: pos.lat, lng: pos.lng }]);
         if (global.SNField && SNField.startDeliveryRoute) {
           await SNField.startDeliveryRoute({
             id: 'live:' + (orderResult.task && orderResult.task.id),
@@ -1458,43 +1603,46 @@
             vendorLng: best.lng,
             dropLat: pos.lat,
             dropLng: pos.lng,
+            stops: extraStops,
+            waypoints: waypts,
             label: '🛵 ' + String(best.shopName || best.name || 'Shop').slice(0, 14),
             driver: (driver && driver.name) || 'Courier',
             color: 'rgba(0,220,255,0.95)',
+            etaMin: eta.totalMin,
           });
-        } else if (global.SNField && SNField.refreshRoutes) {
-          void SNField.refreshRoutes(true);
+        } else if (global.SNField && SNField.showRoute) {
+          await SNField.showRoute(waypts, {
+            id: 'live:' + (orderResult.task && orderResult.task.id),
+            label: '🛵 multi-stop',
+            kind: 'delivery',
+            osrm: true,
+          });
         }
-        if (global.SNMap && SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · delivery stop');
+        if (global.SNMap && SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · drop');
         if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
         if (global.SNMap && SNMap.showTasks) SNMap.showTasks();
         if (global.SNMap && SNMap.fitLatLngs) {
-          SNMap.fitLatLngs(
-            [
-              { lat: best.lat, lng: best.lng },
-              { lat: pos.lat, lng: pos.lng },
-            ],
-            { padding: 56, maxZoom: 15, force: true }
-          );
+          SNMap.fitLatLngs(waypts, { padding: 48, maxZoom: 15, force: true });
         }
         log(
-          'map · green=vendor ' +
-            (best.shopName || best.name) +
-            ' · red/blue=you · cyan route polygon',
+          'map · vendor →' +
+            (extraStops.length ? ' ' + extraStops.length + ' stops →' : '') +
+            ' you · cyan route',
           'ok'
         );
       } catch (eMap) {
         log('map route · ' + (eMap.message || eMap), 'err');
       }
       steps.push('driver');
-    }
 
-    var sched = verifySchedule(best);
-    var eta = etaEat(kmBest);
-    if (orderResult && orderResult.ok) {
+      // 8 + 9 ETA + pre-arrival notify
       log(eta.eatLine, 'ok');
+      scheduleArrivalNotify(eta, best.shopName || best.name);
+      log('Notify armed · alert ~5 min before arrival', 'dim');
+      steps.push('eta');
+    } else {
+      eta = etaWithStops(kmBest, 0);
     }
-    steps.push('eta');
 
     track('food_intent', {
       food: food,
@@ -1504,26 +1652,40 @@
       driver: driver && driver.id,
       judged: judged.itemName,
       eatAt: eta.eatClock,
+      stops: extraStops.length,
+      km: kmBest,
     });
 
-    // Full lazy summary for CLI
     var summaryLines = [
-      'LOC · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
-      'YOU · ' + judged.researchNote,
-      'TYPE · ' + judged.type + (food === 'pizza' ? ' pizza' : ''),
-      'SIZE · ' + judged.size + (judged.pieces ? ' · ' + judged.pieces + ' pieces' : ''),
-      'VENDOR · ' + (best.shopName || best.name) + (kmBest != null ? ' · ' + kmBest.toFixed(1) + ' km' : ''),
-      'ITEM · ' + (menuItem ? menuItem.name : judged.itemName) + ' · ' + fmt(menuItem ? menuItem.price : judged.price),
+      'LOC · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) + (pos.fallback ? ' · soft' : ' · GPS'),
+      'YOU · ' + (judged.researchNote || ''),
+      'NEAR · shops ≤ ' + MAX_SHOP_KM + ' km only',
     ];
+    top3.forEach(function (v, i) {
+      summaryLines.push(
+        (i + 1) +
+          ') ' +
+          (v.shopName || v.name) +
+          ' · ' +
+          (v._km != null ? v._km.toFixed(1) + ' km' : '') +
+          ' · ' +
+          (v._price != null ? Number(v._price).toFixed(2) + ' S' : '') +
+          (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '')
+      );
+    });
+    summaryLines.push('CHOSEN · #1 ' + (best.shopName || best.name));
+    summaryLines.push(
+      'ITEM · ' + (menuItem ? menuItem.name : judged.itemName) + ' · ' + fmt(menuItem ? menuItem.price : judged.price)
+    );
     (judged.extras || []).forEach(function (ex) {
       summaryLines.push('EXTRA · ' + ex.name + ' · ' + fmt(ex.price));
     });
     summaryLines.push('COURIER · ' + courierNote);
+    if (extraStops.length) summaryLines.push('STOPS BEFORE YOU · ' + extraStops.length);
     summaryLines.push('SERVICE · Astranov delivery (not Wolt / eFood)');
     if (orderResult && orderResult.ok) {
       summaryLines.push('PAID · ' + fmt(orderResult.total));
-      if (orderResult.platformFee != null)
-        summaryLines.push('VAULT 3% · ' + fmt(orderResult.platformFee));
+      if (orderResult.platformFee != null) summaryLines.push('VAULT 3% · ' + fmt(orderResult.platformFee));
       if (orderResult.driverCut != null)
         summaryLines.push(
           'DRIVER 15% · ' +
@@ -1536,13 +1698,14 @@
             fmt(orderResult.vendorCut) +
             (completeRes && completeRes.ok ? ' · paid' : ' · on deliver')
         );
-      if (completeRes && completeRes.ok) summaryLines.push('STATUS · delivered · settled');
-      else summaryLines.push('STATUS · paid · courier assigned · say deliver me if not auto');
+      summaryLines.push(
+        completeRes && completeRes.ok ? 'STATUS · delivered · settled' : 'STATUS · paid · en route'
+      );
       summaryLines.push(eta.eatLine);
     } else if (orderResult && !orderResult.ok) {
       summaryLines.push('PAY · failed · ' + (orderResult.error || 'retry'));
     } else {
-      summaryLines.push('PAY · not placed · say order me pizza');
+      summaryLines.push('PAY · not placed · say order me ' + food);
     }
 
     var reply =
@@ -1550,11 +1713,11 @@
         ? 'Delivered · '
         : orderResult && orderResult.ok
           ? 'Ordered · '
-          : 'Ready · ') +
+          : 'Options · ') +
       judged.itemName +
       ' · ' +
       (best.shopName || best.name) +
-      (orderResult && orderResult.ok ? ' · ' + eta.eatLine : '');
+      (orderResult && orderResult.ok ? ' · ' + eta.eatLine : ' · pick 1–3 above');
 
     try {
       if (global.SNAi && SNAi.setSuggestList) {
@@ -1570,6 +1733,7 @@
       food: food,
       pos: pos,
       vendors: vendors,
+      top3: top3,
       best: best,
       menuItem: menuItem,
       judged: judged,
@@ -1577,7 +1741,7 @@
       driver: driver,
       claim: claim,
       complete: completeRes,
-      schedule: sched,
+      stops: extraStops,
       eta: eta,
       eatLine: eta.eatLine,
       summary: summaryLines.join('\n'),
@@ -1588,7 +1752,7 @@
     };
   }
 
-  /** Working hours check — marketplace is 24/7; vendor hours are informational */
+
   function verifySchedule(profile) {
     var hours = String((profile && (profile.hours || profile.opening_hours)) || '').trim();
     if (!hours || /24\s*[\/7]|24h|always|open/i.test(hours)) {
