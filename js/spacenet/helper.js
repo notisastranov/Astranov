@@ -174,7 +174,7 @@
     // rim light
     ctx.strokeStyle = 'rgba(160,220,255,0.55)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(cx - 22, cy - 40, 44, 96);
+    try { ctx.strokeRect(cx - 22, cy - 40, 44, 96); } catch (_sr) {}
     return c;
   }
 
