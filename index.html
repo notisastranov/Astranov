@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731230000-go-live-delivery" />
-<meta name="astranov-continuity" content="20260731230000-go-live-delivery" />
+<meta name="astranov-build" content="20260731231000-scrolls-starry-input" />
+<meta name="astranov-continuity" content="20260731231000-scrolls-starry-input" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -79,14 +79,18 @@
     overflow: hidden;
     display: flex; flex-direction: column;
     min-height: 52px;
-    background: linear-gradient(165deg, rgba(4, 18, 40, 0.94), rgba(2, 8, 18, 0.96));
-    backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
-    border: 1px solid rgba(61, 184, 255, 0.35);
-    border-radius: 14px;
+    background:
+      radial-gradient(ellipse 120% 80% at 50% -20%, rgba(40, 100, 255, 0.18) 0%, transparent 55%),
+      linear-gradient(165deg, rgba(4, 20, 56, 0.42) 0%, rgba(2, 8, 28, 0.38) 100%);
+    backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35);
+    border: 1px solid rgba(40, 130, 255, 0.42);
+    border-radius: 16px;
     box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.45),
-      0 0 28px rgba(11, 111, 212, 0.22),
-      inset 0 1px 0 rgba(168, 236, 255, 0.1);
+      0 8px 40px rgba(0, 0, 0, 0.35),
+      0 0 36px rgba(20, 90, 255, 0.28),
+      0 0 60px rgba(10, 60, 200, 0.12),
+      inset 0 1px 0 rgba(100, 180, 255, 0.18),
+      inset 0 0 40px rgba(20, 80, 220, 0.08);
     touch-action: none;
     transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -168,20 +172,30 @@
     position: relative !important; top: auto !important; left: auto !important;
     transform: none !important;
     align-self: center;
-    font: 800 15px/1.1 var(--font-display) !important;
-    letter-spacing: 0.28em !important;
-    color: #eaf6ff;
+    font: 800 16px/1.1 var(--font-display) !important;
+    letter-spacing: 0.3em !important;
+    color: #4da6ff !important;
     background: transparent;
     border: 0;
     border-radius: 0;
     padding: 2px 6px 0;
     margin: 0;
     box-shadow: none;
-    text-shadow: 0 0 16px rgba(76, 201, 255, 0.55), 0 0 28px rgba(11, 111, 212, 0.35);
+    text-shadow:
+      0 0 8px rgba(30, 120, 255, 0.95),
+      0 0 18px rgba(20, 90, 255, 0.85),
+      0 0 36px rgba(10, 60, 220, 0.65),
+      0 0 56px rgba(8, 40, 180, 0.4);
     backdrop-filter: none;
     white-space: nowrap;
   }
-  #sn-topchrome #btn-home:hover { color: #fff; text-shadow: 0 0 20px rgba(120, 220, 255, 0.75); }
+  #sn-topchrome #btn-home:hover {
+    color: #7ec8ff !important;
+    text-shadow:
+      0 0 10px rgba(80, 160, 255, 1),
+      0 0 24px rgba(40, 120, 255, 0.95),
+      0 0 48px rgba(20, 90, 255, 0.7);
+  }
 
   #stc-perf-wrap {
     width: 100%;
@@ -888,13 +902,17 @@
     50% { opacity: 1; transform: scale(1.2); }
   }
   #dock {
-    --cli-bg: rgba(2, 10, 24, 0.86);
-    --cli-bg-solid: #020a18;
+    --cli-bg: rgba(2, 8, 28, 0.42);
+    --cli-bg-solid: #020814;
     --cli-text: #d4ecff;
     --cli-muted: #6a90b0;
-    --cli-dim: #3d5a78;
-    --cli-glow: #3db8ff;
-    --cli-blue: #0b6fd4;
+    --cli-dim: #4a6a90;
+    --cli-glow: #1a8cff;
+    --cli-blue: #0a4fd4;
+    --scroll-deep: rgba(4, 16, 48, 0.38);
+    --scroll-edge: rgba(30, 120, 255, 0.55);
+    --scroll-glow: rgba(20, 100, 255, 0.45);
+    --star-name: #3d9eff;
     --cli-err: #ff6b7a;
     --cli-mono: var(--font-mono);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
@@ -1476,6 +1494,162 @@
     margin-top: 2px;
   }
 
+
+  /* SCI-FI SCROLLS + INPUT ALWAYS ON · deep starry blue · high glass */
+  @keyframes scroll-star-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px rgba(40, 130, 255, 0.35),
+        0 0 28px rgba(20, 90, 255, 0.32),
+        0 0 56px rgba(10, 50, 180, 0.18),
+        inset 0 1px 0 rgba(120, 190, 255, 0.15),
+        inset 0 0 48px rgba(20, 80, 220, 0.1);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px rgba(80, 170, 255, 0.55),
+        0 0 40px rgba(40, 120, 255, 0.45),
+        0 0 72px rgba(20, 80, 220, 0.28),
+        inset 0 1px 0 rgba(160, 210, 255, 0.22),
+        inset 0 0 56px rgba(30, 100, 255, 0.14);
+    }
+  }
+  @keyframes input-glow-breathe {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px rgba(40, 140, 255, 0.45),
+        0 0 16px rgba(30, 110, 255, 0.45),
+        0 0 32px rgba(15, 70, 220, 0.25),
+        inset 0 0 18px rgba(20, 90, 255, 0.12);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px rgba(100, 190, 255, 0.7),
+        0 0 24px rgba(50, 140, 255, 0.65),
+        0 0 48px rgba(30, 100, 255, 0.35),
+        inset 0 0 24px rgba(40, 120, 255, 0.18);
+    }
+  }
+
+  #sn-topchrome-panel,
+  #panel {
+    background:
+      radial-gradient(ellipse 100% 90% at 50% 0%, rgba(50, 120, 255, 0.16) 0%, transparent 50%),
+      radial-gradient(circle at 12% 80%, rgba(20, 60, 180, 0.12) 0%, transparent 40%),
+      radial-gradient(circle at 88% 30%, rgba(40, 100, 255, 0.1) 0%, transparent 35%),
+      linear-gradient(165deg, rgba(4, 18, 52, 0.4) 0%, rgba(2, 8, 28, 0.36) 100%) !important;
+    backdrop-filter: blur(24px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(1.4) !important;
+    border: 1px solid rgba(40, 130, 255, 0.45) !important;
+    animation: scroll-star-pulse 4.5s ease-in-out infinite;
+  }
+  #panel {
+    overflow: hidden;
+  }
+
+  /* Bottom scroll: INPUT ALWAYS VISIBLE + glowing invite */
+  #panel.collapsed #cli-form,
+  #panel.mid #cli-form,
+  #panel.expanded #cli-form,
+  #cli-form {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex-shrink: 0 !important;
+    position: relative;
+    z-index: 5;
+    margin: 0 10px 10px !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(40, 140, 255, 0.4) !important;
+    background:
+      linear-gradient(180deg, rgba(8, 30, 72, 0.45) 0%, rgba(4, 14, 40, 0.35) 100%) !important;
+    animation: input-glow-breathe 2.8s ease-in-out infinite !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-height: 48px !important;
+    box-shadow:
+      0 0 0 1px rgba(40, 140, 255, 0.35),
+      0 0 18px rgba(30, 110, 255, 0.4),
+      inset 0 0 20px rgba(20, 90, 255, 0.12) !important;
+  }
+  #cli-form:focus-within {
+    animation: none !important;
+    border-color: rgba(100, 190, 255, 0.85) !important;
+    background:
+      linear-gradient(180deg, rgba(12, 40, 90, 0.55) 0%, rgba(6, 20, 55, 0.45) 100%) !important;
+    box-shadow:
+      0 0 0 1px rgba(120, 200, 255, 0.75),
+      0 0 28px rgba(50, 140, 255, 0.7),
+      0 0 48px rgba(30, 100, 255, 0.35),
+      inset 0 0 28px rgba(40, 120, 255, 0.2) !important;
+  }
+  #cli-in {
+    color: #e8f4ff !important;
+    caret-color: #4da6ff !important;
+    font-size: 15px !important;
+    min-height: 28px !important;
+    background: transparent !important;
+  }
+  #cli-in::placeholder {
+    color: rgba(120, 180, 255, 0.72) !important;
+    opacity: 1 !important;
+    text-shadow: 0 0 12px rgba(40, 120, 255, 0.45);
+    font-weight: 600;
+  }
+  .cli-prompt-prefix {
+    color: #3d9eff !important;
+    text-shadow:
+      0 0 10px rgba(40, 130, 255, 0.95),
+      0 0 22px rgba(20, 90, 255, 0.7) !important;
+    font-size: 16px !important;
+  }
+  /* Collapsed bottom scroll still shows ribbon + drag + input — log may hide */
+  #panel.collapsed #cli-log { display: none; }
+  #panel.collapsed {
+    max-height: min(200px, 32vh) !important;
+    min-height: max(var(--bottom-scroll-min), 132px) !important;
+  }
+  .cli-titlebar .cli-brand {
+    color: #3d9eff !important;
+    text-shadow:
+      0 0 10px rgba(40, 130, 255, 0.9),
+      0 0 22px rgba(20, 90, 255, 0.7) !important;
+  }
+  #cli-drag::before,
+  #sn-topchrome-drag::before {
+    background: linear-gradient(90deg, transparent, rgba(50, 140, 255, 0.85), transparent) !important;
+    box-shadow: 0 0 14px rgba(40, 120, 255, 0.65) !important;
+  }
+  .cli-scroll-label,
+  #sn-topchrome-drag .stc-scroll-label {
+    color: rgba(100, 170, 255, 0.75) !important;
+    text-shadow: 0 0 10px rgba(40, 120, 255, 0.4);
+  }
+  /* money glyph deep blue not pale ice */
+  #sn-topchrome #fbh-s {
+    color: #5eb0ff !important;
+    text-shadow:
+      0 0 10px rgba(40, 130, 255, 0.85),
+      0 0 22px rgba(20, 90, 255, 0.5) !important;
+  }
+  #sn-topchrome #field-balance-hud {
+    background:
+      radial-gradient(ellipse 120% 80% at 80% 0%, rgba(30, 90, 220, 0.2) 0%, transparent 55%),
+      linear-gradient(155deg, rgba(6, 24, 64, 0.45) 0%, rgba(2, 10, 32, 0.4) 100%) !important;
+    border-color: rgba(40, 130, 255, 0.45) !important;
+    box-shadow: 0 0 16px rgba(20, 90, 255, 0.25) !important;
+  }
+  #sn-topchrome #field-radar {
+    border-color: rgba(40, 130, 255, 0.5) !important;
+    box-shadow: 0 0 18px rgba(20, 90, 255, 0.3), inset 0 0 14px rgba(30, 100, 255, 0.12) !important;
+  }
+  #stc-perf-wrap {
+    background: linear-gradient(180deg, rgba(6, 24, 64, 0.4), rgba(0, 10, 32, 0.45)) !important;
+    border-color: rgba(40, 130, 255, 0.35) !important;
+  }
+
+
 </style>
 </head>
 <body>
@@ -1706,7 +1880,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731230000-go-live-delivery"></script>
+<script src="/js/spacenet/boot.js?v=20260731231000-scrolls-starry-input"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
