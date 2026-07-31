@@ -1594,10 +1594,19 @@
           }
           log('Sign in · ASTRANOV · astranov.eu (Google on this site only)', 'ok');
           await global.SNAuth.signInGoogle();
-
         } catch (e) {
           log(String(e.message || e), 'err');
         }
+        return;
+      }
+      if (low === 'auth setup' || low === 'login setup' || low === 'google setup') {
+        const lines =
+          (global.SNAuth && SNAuth.setupLines && SNAuth.setupLines()) ||
+          ['Auth module loading · try again'];
+        lines.forEach((ln) =>
+          log(ln, /^AUTH SETUP|^[0-9]\)|^·/.test(ln) ? 'ok' : 'dim')
+        );
+        preview('auth setup');
         return;
       }
       if (low === 'logout' || low === 'signout' || low === 'sign out') {

@@ -13,12 +13,34 @@
     _customAuthOk: null,
   };
 
-  /** Google OAuth Web client — Authorized JS origins must include https://astranov.eu */
-  const GOOGLE_CLIENT_ID =
+  /**
+   * Default Web OAuth client. Override in SN_CONFIG.googleClientId if you create a new client.
+   * Google Cloud → this EXACT client → Authorized JavaScript origins must list the page origin.
+   */
+  const DEFAULT_GOOGLE_CLIENT_ID =
     '73846897360-va7gcqngfc370gfp7rl059no0vd4ts11.apps.googleusercontent.com';
 
   function cfg() {
     return global.SN_CONFIG || {};
+  }
+
+  function googleClientId() {
+    const c = cfg();
+    return (
+      c.googleClientId ||
+      c.googleClientID ||
+      (c.layers && (c.layers.googleClientId || c.layers.googleOAuthClientId)) ||
+      global.ASTRANOV_GOOGLE_CLIENT_ID ||
+      DEFAULT_GOOGLE_CLIENT_ID
+    );
+  }
+
+  function pageOrigin() {
+    try {
+      return (location.origin || 'https://astranov.eu').replace(/\/$/, '');
+    } catch (_) {
+      return 'https://astranov.eu';
+    }
   }
 
   function brand() {
@@ -39,8 +61,8 @@
       .replace(/\blkoatrkhuigdolnjsbie\b/gi, 'astranov')
       .replace(/\bsupabase\b/gi, 'Astranov')
       .replace(/\bgotrue\b/gi, 'Astranov')
-      .replace(/\binvalid_client\b/gi, 'Google app not configured for this site')
-      .replace(/\bno registered origin\b/gi, 'site origin not registered for Google')
+      .replace(/\binvalid_client\b/gi, 'Google client not allowed for this site')
+      .replace(/\bno registered origin\b/gi, 'this site origin is missing on the Google OAuth client')
       .replace(/\bredirect_uri_mismatch\b/gi, 'sign-in redirect not allowed');
   }
 
@@ -61,11 +83,6 @@
     } catch (_) {}
   }
 
-  /**
-   * API base for Supabase client.
-   * Prefer custom domain only when it actually answers (else GIS still works
-   * against direct host — users never see that host; only API traffic does).
-   */
   function authBaseUrl() {
     const b = brand();
     const direct = String(cfg().sbUrl || global.SB_URL || '').replace(/\/$/, '');
@@ -74,7 +91,6 @@
     return direct;
   }
 
-  /** Probe custom domain once — enable silently if healthy */
   async function probeCustomAuth() {
     if (A._customAuthOk != null) return A._customAuthOk;
     const host = brand().authHost;
@@ -89,7 +105,6 @@
         headers: key ? { apikey: key } : {},
         cache: 'no-store',
       });
-      // 1014 / 403 Cloudflare CNAME fail → not ready
       A._customAuthOk = r.ok || r.status === 200;
       if (A._customAuthOk) {
         try {
@@ -180,13 +195,47 @@
     return A._gsiReady;
   }
 
+  /** Owner-facing checklist for Google Cloud (this exact client + this exact origin) */
   function originHelp() {
-    const origin = (location.origin || 'https://astranov.eu').replace(/\/$/, '');
+    const origin = pageOrigin();
+    const cid = googleClientId();
+    const short = cid.replace('.apps.googleusercontent.com', '');
     return (
-      'Google does not allow this origin yet. Owner: Google Cloud → Credentials → OAuth client → Authorized JavaScript origins → add ' +
+      'Google blocked origin ' +
       origin +
-      ' (and https://www.astranov.eu). Hard refresh after save.'
+      '. Fix (5 min): Google Cloud → Credentials → OAuth 2.0 Client ID ending …' +
+      short.slice(-12) +
+      ' → type Web application → Authorized JavaScript origins ADD exactly: ' +
+      origin +
+      ' and https://www.astranov.eu → Save → wait 2–10 min → hard refresh. ' +
+      'Also Supabase → Authentication → Providers → Google → same Client ID + Secret. ' +
+      'Full client: ' +
+      cid
     );
+  }
+
+  function setupLines() {
+    const origin = pageOrigin();
+    const cid = googleClientId();
+    return [
+      'AUTH SETUP · Google must allow THIS origin on THIS client',
+      '1) Open: https://console.cloud.google.com/apis/credentials',
+      '2) OAuth 2.0 Client IDs → open client: ' + cid,
+      '3) Application type must be: Web application',
+      '4) Authorized JavaScript origins — add ALL of:',
+      '   · ' + origin,
+      '   · https://astranov.eu',
+      '   · https://www.astranov.eu',
+      '5) Authorized redirect URIs (for later custom domain / fallback):',
+      '   · https://lkoatrkhuigdolnjsbie.supabase.co/auth/v1/callback',
+      '   · https://api.astranov.eu/auth/v1/callback',
+      '6) Save. Wait 2–10 minutes (Google cache).',
+      '7) Supabase Dashboard → Authentication → Providers → Google ON',
+      '   Client ID = same · Client Secret = from that Google client',
+      '8) OAuth consent screen → App name ASTRANOV · Authorized domain astranov.eu · Publish',
+      '9) Hard refresh astranov.eu (Ctrl+F5) · login again',
+      'If you created a NEW client, set SN_CONFIG.googleClientId in config.js to its full *.apps.googleusercontent.com id and redeploy.',
+    ];
   }
 
   function applyUser(user) {
@@ -213,9 +262,7 @@
       token: credential,
     });
     if (error) {
-      const msg = scrub(error.message || error);
-      // Never leak API host
-      throw new Error(msg);
+      throw new Error(scrub(error.message || error));
     }
     applyUser(data?.user || data?.session?.user || null);
     if (A.user) {
@@ -238,7 +285,7 @@
       '#sn-auth-modal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;' +
       'background:rgba(0,4,12,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:20px}' +
       '#sn-auth-modal[hidden]{display:none!important}' +
-      '#sn-auth-card{width:min(360px,100%);background:linear-gradient(165deg,#061018 0%,#0a1624 55%,#050c14 100%);' +
+      '#sn-auth-card{width:min(400px,100%);max-height:min(92vh,640px);overflow:auto;background:linear-gradient(165deg,#061018 0%,#0a1624 55%,#050c14 100%);' +
       'border:1px solid rgba(61,158,255,.35);border-radius:18px;padding:28px 24px 22px;box-shadow:0 24px 80px rgba(0,40,80,.55),0 0 40px rgba(61,158,255,.12);' +
       'color:#e8f2ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center}' +
       '#sn-auth-card .sn-auth-mark{font-size:13px;letter-spacing:.28em;font-weight:700;color:#3d9eff;margin:0 0 6px}' +
@@ -248,21 +295,34 @@
       '#sn-auth-gsi{display:flex;justify-content:center;min-height:44px;margin:0 0 14px}' +
       '#sn-auth-card .sn-auth-note{font-size:11px;color:#6a8aaa;margin:0 0 12px;line-height:1.4}' +
       '#sn-auth-card .sn-auth-close{background:transparent;border:1px solid rgba(138,180,217,.25);color:#8ab4d9;' +
-      'border-radius:999px;padding:8px 18px;font-size:12px;cursor:pointer}' +
+      'border-radius:999px;padding:8px 18px;font-size:12px;cursor:pointer;margin:0 6px}' +
       '#sn-auth-card .sn-auth-close:hover{border-color:#3d9eff;color:#cfe8ff}' +
-      '#sn-auth-card .sn-auth-err{font-size:12px;color:#ff8a8a;margin:10px 0 0;min-height:1.2em}';
+      '#sn-auth-card .sn-auth-err{font-size:12px;color:#ff8a8a;margin:10px 0 0;min-height:1.2em;text-align:left;white-space:pre-wrap;word-break:break-word}' +
+      '#sn-auth-card .sn-auth-setup{display:none;text-align:left;font-size:11px;line-height:1.45;color:#9ec0dc;background:rgba(0,0,0,.35);' +
+      'border:1px solid rgba(61,158,255,.2);border-radius:12px;padding:12px;margin:12px 0 0;max-height:220px;overflow:auto}' +
+      '#sn-auth-card.show-setup .sn-auth-setup{display:block}' +
+      '#sn-auth-card .sn-auth-cid{font-size:10px;color:#5a7a96;margin:8px 0 0;word-break:break-all}';
     document.head.appendChild(st);
   }
 
   function closeModal() {
-    if (A._modal) {
-      A._modal.hidden = true;
-    }
+    if (A._modal) A._modal.hidden = true;
+  }
+
+  function showSetupInModal() {
+    if (!A._modal) return;
+    A._modal.querySelector('#sn-auth-card')?.classList.add('show-setup');
+    const box = document.getElementById('sn-auth-setup');
+    if (box) box.textContent = setupLines().join('\n');
+    setupLines().forEach(function (ln) {
+      say(ln, 'dim');
+    });
   }
 
   function openModal(errText) {
     ensureModalStyles();
     const b = brand();
+    const origin = pageOrigin();
     if (!A._modal) {
       const root = document.createElement('div');
       root.id = 'sn-auth-modal';
@@ -275,16 +335,23 @@
         '<h2>Sign in</h2>' +
         '<p class="sn-auth-domain">' +
         b.domain +
+        ' · ' +
+        origin +
         '</p>' +
         '<p class="sn-auth-copy">You are signing in to <b>ASTRANOV</b> on <b>' +
         b.domain +
-        '</b>. Google will only show this site — not any third-party project host.</p>' +
+        '</b>. Google only sees this site — never a third-party project host.</p>' +
         '<div id="sn-auth-gsi"></div>' +
         '<p class="sn-auth-note">Secure Google · stays on ' +
         b.domain +
         '</p>' +
+        '<div>' +
+        '<button type="button" class="sn-auth-close" id="sn-auth-setup-btn">Setup help</button>' +
         '<button type="button" class="sn-auth-close" id="sn-auth-close">Cancel</button>' +
+        '</div>' +
         '<p class="sn-auth-err" id="sn-auth-err"></p>' +
+        '<pre class="sn-auth-setup" id="sn-auth-setup"></pre>' +
+        '<p class="sn-auth-cid" id="sn-auth-cid"></p>' +
         '</div>';
       root.addEventListener('click', function (ev) {
         if (ev.target === root) closeModal();
@@ -292,35 +359,42 @@
       document.body.appendChild(root);
       A._modal = root;
       root.querySelector('#sn-auth-close')?.addEventListener('click', closeModal);
+      root.querySelector('#sn-auth-setup-btn')?.addEventListener('click', showSetupInModal);
       document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape' && A._modal && !A._modal.hidden) closeModal();
       });
     }
     A._modal.hidden = false;
+    A._modal.querySelector('#sn-auth-card')?.classList.remove('show-setup');
     const errEl = document.getElementById('sn-auth-err');
     if (errEl) errEl.textContent = errText ? scrub(errText) : '';
+    const cidEl = document.getElementById('sn-auth-cid');
+    if (cidEl) cidEl.textContent = 'OAuth client · ' + googleClientId();
     return document.getElementById('sn-auth-gsi');
   }
 
   function initGis(callback) {
     global.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
+      client_id: googleClientId(),
       callback: callback,
       auto_select: false,
       cancel_on_tap_outside: true,
       context: 'signin',
       itp_support: true,
-      // FedCM can hide the prompt on some browsers; button path is primary
       use_fedcm_for_prompt: false,
-      // Branding hint for Google UI (app name still set in Google Cloud console)
     });
     A._gsiInit = true;
   }
 
+  function isOriginError(raw) {
+    return /invalid_client|origin|401|registered|FedCM|NotAllowed|no registered|Access blocked|Authorization Error/i.test(
+      String(raw || '')
+    );
+  }
+
   /**
    * Primary path: branded modal + Google button on THIS origin.
-   * Uses signInWithIdToken — Google never redirects through *.supabase.co.
-   * OAuth redirect fallback is intentionally disabled (ship-red / phishing face).
+   * signInWithIdToken — never OAuth redirect via *.supabase.co.
    */
   async function signInGoogleGis() {
     await ensureClient();
@@ -329,7 +403,7 @@
       throw new Error('Google sign-in unavailable');
     }
     const b = brand();
-    say('Sign in · ' + b.name + ' · ' + b.domain, 'ok');
+    say('Sign in · ' + b.name + ' · ' + b.domain + ' · ' + pageOrigin(), 'ok');
 
     return new Promise(function (resolve, reject) {
       let settled = false;
@@ -337,8 +411,14 @@
         if (settled) return;
         settled = true;
         if (err) {
-          closeModal();
-          reject(err);
+          if (isOriginError(err.message || err)) {
+            showSetupInModal();
+            const errEl = document.getElementById('sn-auth-err');
+            if (errEl) errEl.textContent = scrub(originHelp());
+          } else {
+            closeModal();
+          }
+          reject(err instanceof Error ? err : new Error(String(err)));
         } else resolve(data);
       }
 
@@ -353,11 +433,8 @@
           done(null, data);
         } catch (e) {
           const raw = String((e && e.message) || e || '');
-          if (/invalid_client|origin|401|registered|FedCM|NotAllowed/i.test(raw)) {
-            const help = originHelp();
-            const errEl = document.getElementById('sn-auth-err');
-            if (errEl) errEl.textContent = scrub(help);
-            done(new Error(help));
+          if (isOriginError(raw)) {
+            done(new Error(originHelp()));
           } else {
             const errEl = document.getElementById('sn-auth-err');
             if (errEl) errEl.textContent = scrub(raw);
@@ -373,7 +450,6 @@
         return;
       }
 
-      // Always show branded modal with official Google button (origin = astranov.eu)
       const mount = openModal();
       if (mount) {
         mount.innerHTML = '';
@@ -388,12 +464,13 @@
             width: 280,
           });
         } catch (eBtn) {
-          done(eBtn);
+          done(
+            isOriginError(eBtn && eBtn.message) ? new Error(originHelp()) : eBtn
+          );
           return;
         }
       }
 
-      // Optional One Tap on top of button (same origin — no redirect)
       try {
         global.google.accounts.id.prompt(function (notification) {
           if (!notification) return;
@@ -402,20 +479,17 @@
               const reason =
                 (notification.getNotDisplayedReason && notification.getNotDisplayedReason()) ||
                 '';
-              if (/invalid_client|unregistered_origin|origin/i.test(String(reason))) {
+              if (isOriginError(reason)) {
                 const help = originHelp();
                 const errEl = document.getElementById('sn-auth-err');
-                if (errEl) errEl.textContent = help;
+                if (errEl) errEl.textContent = scrub(help);
+                showSetupInModal();
               }
-              // Button remains — do NOT fall back to OAuth redirect
             }
           } catch (_) {}
         });
-      } catch (_) {
-        /* button is enough */
-      }
+      } catch (_) {}
 
-      // If user closes modal without signing in, settle after they click cancel
       const closeBtn = document.getElementById('sn-auth-close');
       if (closeBtn) {
         const onCancel = function () {
@@ -427,19 +501,11 @@
     });
   }
 
-  /**
-   * HARD BAN on redirect OAuth through Supabase project host.
-   * That path shows lkoatrkhuigdolnjsbie.supabase.co on Google → users flee.
-   * Only re-enable if custom domain health is true AND preferCustomAuth is forced.
-   */
   async function signInGoogleOAuthFallback() {
     const customOk = await probeCustomAuth();
     if (!customOk || cfg().preferCustomAuth !== true) {
-      throw new Error(
-        'Sign in uses Google on astranov.eu only. Full-page redirect is off (prevents third-party project names). Use the Google button on the sign-in card.'
-      );
+      throw new Error(originHelp());
     }
-    // Custom domain live: OAuth callback is api.astranov.eu — brand-safe
     const c = await ensureClient();
     const b = brand();
     const redirectTo = (location.origin || b.site).replace(/\/$/, '') + '/';
@@ -448,22 +514,18 @@
       provider: 'google',
       options: {
         redirectTo: redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'select_account',
-        },
+        queryParams: { access_type: 'offline', prompt: 'select_account' },
       },
     });
     if (error) {
       const raw = scrub(error.message || error);
-      if (/invalid_client|origin|redirect/i.test(raw)) throw new Error(originHelp());
+      if (isOriginError(raw)) throw new Error(originHelp());
       throw new Error(raw);
     }
     return null;
   }
 
   async function signInGoogle() {
-    // Never auto-chain into supabase OAuth face
     return signInGoogleGis();
   }
 
@@ -483,7 +545,14 @@
         await signInGoogle();
       } catch (e) {
         const msg = scrub(e && e.message ? e.message : e);
-        if (!/cancelled/i.test(msg)) say(msg, 'err');
+        if (!/cancelled/i.test(msg)) {
+          say(msg, 'err');
+          if (isOriginError(msg)) {
+            setupLines().forEach(function (ln) {
+              say(ln, 'dim');
+            });
+          }
+        }
         throw new Error(msg);
       }
     }
@@ -513,8 +582,8 @@
       apikey: cfg().sbKey || global.SB_KEY,
     };
     try {
-      // best-effort from local storage session
-      const raw = localStorage.getItem('astranov_auth_v3') || localStorage.getItem('astranov_auth_v2');
+      const raw =
+        localStorage.getItem('astranov_auth_v3') || localStorage.getItem('astranov_auth_v2');
       if (raw) {
         const j = JSON.parse(raw);
         const tok = j?.access_token || j?.currentSession?.access_token;
@@ -531,7 +600,6 @@
     document.getElementById('btn-login')?.addEventListener('click', () => {
       void toggle().catch(() => {});
     });
-    // Preload GSI + probe custom domain (non-blocking)
     void loadGsi().catch(() => {});
     void probeCustomAuth();
     ensureClient()
@@ -543,14 +611,16 @@
           if (A.user) applyUser(A.user);
           try {
             if (location.search || location.hash) {
-              // Strip oauth codes/errors; never leave supabase-looking junk in URL
               let q = (location.search || '')
                 .replace(/[?&](code|error|error_description|state|provider)=[^&]*/gi, '')
                 .replace(/\?&/, '?')
                 .replace(/\?$/, '');
               let hash = (location.hash || '')
                 .replace(/#.*access_token[^&]*/gi, '')
-                .replace(/[&#](access_token|refresh_token|token_type|expires_in|provider_token)=[^&]*/gi, '');
+                .replace(
+                  /[&#](access_token|refresh_token|token_type|expires_in|provider_token)=[^&]*/gi,
+                  ''
+                );
               if (hash === '#' || hash === '') hash = '';
               history.replaceState(null, '', (location.pathname || '/') + q + hash);
             }
@@ -571,7 +641,6 @@
     toggle,
     signInGoogle,
     signInGoogleGis,
-    /** Exported but blocked unless custom domain healthy */
     signInGoogleOAuthFallback,
     signOut,
     authHeaders,
@@ -579,10 +648,14 @@
     ensureClient,
     scrub,
     originHelp,
+    setupLines,
     openModal,
     closeModal,
     probeCustomAuth,
-    GOOGLE_CLIENT_ID,
+    googleClientId,
+    get GOOGLE_CLIENT_ID() {
+      return googleClientId();
+    },
     get user() {
       return A.user;
     },

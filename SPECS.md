@@ -206,3 +206,4 @@ js/spacenet/auth.js          → Google GIS preferred
 ---
 
 *Thin CORE. Owner log is truth of what you locked. SpaceNet runs the grid. Astranov is the AI. Push is not ship.*
+*Agent note 2026-07-31 (not owner OV): **Google invalid_client / no registered origin** = GCP OAuth client missing JS origin for live site. Code cannot invent Google allow-list. Type `auth setup` for checklist. Client `73846897360-…0vd4ts11`. Build `20260731171000-auth-origin-fix`.*

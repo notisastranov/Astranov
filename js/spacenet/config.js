@@ -14,12 +14,20 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI',
     live: 'https://astranov.eu',
     /**
+     * Google OAuth Web client (GIS). Must match Google Cloud Credentials client.
+     * Error "no registered origin" / invalid_client = this origin missing on THIS client.
+     * Override here if you create a new Web client, then redeploy.
+     */
+    googleClientId:
+      '73846897360-va7gcqngfc370gfp7rl059no0vd4ts11.apps.googleusercontent.com',
+    /**
      * Auth branding law: Google must show ASTRANOV / astranov.eu only.
      * preferCustomAuth: true only when api.astranov.eu health is green (auth auto-probes).
      * Login path is Google GIS + id_token on this origin — never OAuth redirect via *.supabase.co.
      */
     preferCustomAuth: false,
     authHost: 'https://api.astranov.eu',
+
 
     brand: {
       name: 'ASTRANOV',
