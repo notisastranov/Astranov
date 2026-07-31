@@ -1,11 +1,6 @@
 /**
- * SNFreeMind — Astranov SpaceNet's own FREE public AI
- *
- * NOT a fork of proprietary Grok weights (impossible / illegal).
- * This is our product mind: law + seeds + live acts + user growth.
- *
- * Priority: FREE first for every user. No paid xAI required.
- * Grows when people use SpaceNet (local learn + optional export for future open fine-tunes).
+ * SNFreeMind — Astranov free AI (local mind)
+ * Product brand: Astranov. Currency unit: S (SpaceNets).
  */
 (function (global) {
   'use strict';
@@ -13,20 +8,20 @@
   var LEARN_KEY = 'sn:free-mind-learn-v1';
   var STATS_KEY = 'sn:free-mind-stats-v1';
   var MAX_LEARN = 400;
-  var NAME = 'SpaceNet Free';
+  var NAME = 'Astranov';
 
   /** Seed corpus — product law (grows via teach / use) */
   var SEED = [
     {
       id: 'who',
-      q: 'who are you what is spacenet ai astranov',
-      a: 'I am SpaceNet Free — Astranov SpaceNet AI. Astranov is the Architect of SpaceNet.',
+      q: 'who are you what is spacenet ai astranov name',
+      a: 'I am Astranov — the AI of astranov.eu. Ask pizza · shops · first delivery · donate on.',
       tags: ['identity', 'ai'],
     },
     {
       id: 'listen',
       q: 'ai listen handsfree voice mic',
-      a: 'SPACENET LISTENING · say pizza · shops · next · show all · fly · locate',
+      a: 'ASTRANOV LISTENING · say pizza · shops · next · show all · fly · locate',
       tags: ['ai', 'voice'],
     },
     {
@@ -62,7 +57,7 @@
     {
       id: 'fly',
       q: 'fly go to athens rhodes mars moon globe place',
-      a: 'fly athens · go to mars · fly rhodes · globe follows SpaceNet',
+      a: 'fly athens · go to mars · fly rhodes · globe follows Astranov',
       tags: ['globe'],
     },
     {
@@ -80,13 +75,13 @@
     {
       id: 'free',
       q: 'free ai model grok paid xai openai public fork train',
-      a: 'SpaceNet Free is ours — local mind + learn. No paid Grok required. teach FACT to grow me.',
+      a: 'I am Astranov free mind — local + learn. No paid Grok required. teach FACT to grow me.',
       tags: ['free', 'ai'],
     },
     {
       id: 'architect',
       q: 'architect owner notis astranov who owns',
-      a: 'Astranov is the Architect of SpaceNet (owner). I am SpaceNet Free — never claim to be Astranov.',
+      a: 'I am Astranov AI. Owner operates astranov.eu. S is the currency.',
       tags: ['identity'],
     },
     {
@@ -122,7 +117,7 @@
     {
       id: 'greek',
       q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι',
-      a: 'Είμαι SpaceNet Free. Πες πίτσα · shops · next · locate · fly',
+      a: 'Είμαι Astranov. Πες πίτσα · shops · next · locate · fly',
       tags: ['el'],
     },
     {
@@ -259,7 +254,7 @@
     opts = opts || {};
     var msg = String(message || '').trim();
     if (!msg) {
-      return { text: 'SPACENET LISTENING', score: 1, via: 'free-mind', source: 'status' };
+      return { text: 'ASTRANOV LISTENING', score: 1, via: 'free-mind', source: 'status' };
     }
     var low = msg.toLowerCase();
 
@@ -359,7 +354,7 @@
     save();
     var fallback = opts.localReply
       ? brief(opts.localReply, 88)
-      : 'SpaceNet Free · pizza · shops · next · fly · locate · teach to grow me';
+      : 'Astranov · pizza · shops · next · fly · locate · teach to grow me';
     return {
       text: fallback,
       score: opts.localReply ? 0.5 : 0.25,

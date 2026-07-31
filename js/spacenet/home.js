@@ -318,7 +318,7 @@
           var ok = global.confirm(
             'Sign in to Astranov SpaceNet (astranov.eu)?\n\n' +
               'You are signing into the SpaceNet platform at astranov.eu — not a third-party cloud project name.\n\n' +
-              'Architect: Astranov · AI: SpaceNet'
+              'Brand: Astranov · AI: Astranov'
           );
           if (!ok) return;
           if (global.SNAuth && SNAuth.toggle) await SNAuth.toggle();

@@ -1,9 +1,8 @@
 /**
- * SpaceNet AI — the mind of the net
- * Astranov = Architect of SpaceNet (human owner). AI is named SpaceNet only.
- * Priority: LISTEN → ANALYZE → RESPOND brief · show on globe (fly/zoom + vendor tile).
- * FREE FIRST: SNFreeMind (own product AI) — no paid xAI required for chat.
- * Vendor carousel: next · show all.
+ * Astranov AI — product mind of astranov.eu
+ * Brand: respond as Astranov (not SpaceNet). Currency remains S (SpaceNets).
+ * Priority: LISTEN → ANALYZE → RESPOND brief · control app + globe.
+ * FREE FIRST: SNFreeMind — no paid xAI required for chat.
  */
 (function (global) {
   'use strict';
@@ -13,7 +12,7 @@
   var greeted = false;
   var busy = false;
   var GREET_KEY = 'sn:ai-greeted-session';
-  var AI_NAME = 'SpaceNet';
+  var AI_NAME = 'Astranov';
   /** Vendor suggestion session: list + index for next / show all */
   var suggest = { list: [], idx: 0, query: '' };
 
@@ -21,10 +20,12 @@
     var t = String(text || '').trim();
     if (!t) return t;
     t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
-    t = t.replace(/^astranov\s*[·:.-]\s*/i, '');
     t = t.replace(/^SPACENET\s*[·:.-]\s*/i, '');
-    // Keep all-caps status lines clean (SPACENET LISTENING)
-    if (/^SPACENET\b/i.test(t) && t === t.toUpperCase()) return t;
+    t = t.replace(/^Astranov\s*[·:.-]\s*/i, '');
+    t = t.replace(/^ASTRANOV\s*[·:.-]\s*/i, '');
+    // All-caps status lines
+    if (/^ASTRANOV\b/i.test(t) && t === t.toUpperCase()) return t;
+    if (/^SPACENET\b/i.test(t) && t === t.toUpperCase()) return 'ASTRANOV LISTENING';
     return AI_NAME + ' · ' + t;
   }
 
@@ -33,6 +34,7 @@
     maxLen = maxLen || 88;
     var t = String(text || '')
       .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
+      .replace(/^Astranov\s*[·:.-]\s*/gi, '')
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return '';
@@ -350,16 +352,15 @@
         focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are SPACENET — AI of https://astranov.eu. Astranov = Architect of SpaceNet (human). Never call yourself Astranov. ' +
+      'You are ASTRANOV — AI of https://astranov.eu. Always sign as Astranov (never SpaceNet). ' +
       'PRIORITY: 1) LISTEN 2) ANALYZE 3) RESPOND in ONE short line (max ~12 words). No monologue. ' +
-      'Show results on the globe: fly + zoom + open vendor tile. ' +
-      'User may say NEXT (next vendor) or SHOW ALL (all vendors on map). ' +
-      'You CONTROL the app: client executes every request (map, layers, basemap, globe, shops, tiles, CLI). ' +
-      'When user asks dark/bright/sat map — client already switches basemap; confirm briefly. ' +
+      'Show results on the globe: fly + zoom + open vendor multi-tile. ' +
+      'User may say NEXT or SHOW ALL. ' +
+      'You CONTROL the app: map, layers, basemap, globe, shops, CLI. ' +
       'Tags (optional): [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] ' +
       '[[MAP:dark|bright|sat|google|traffic]] [[OVERLAY:iss|sats|planes|ships|windy|w3w]] ' +
       '[[LAYERS]] [[PILOT:on|off]] [[CLI:command]] [[TILE:me|menu]]. ' +
-      'FOOD: browse vendors first; order only if user says order. ' +
+      'FOOD: browse first; order only if user says order. Currency unit is S. ' +
       'Flags: firstDeliveryDone=' +
       !!flags.firstDeliveryDone +
       ' vendorListed=' +
@@ -368,7 +369,7 @@
       (market.step || 'idle') +
       '.' +
       focus +
-      ' Sign as SpaceNet only.';
+      ' Sign as Astranov only.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
@@ -831,7 +832,7 @@
     if (!line) {
       return {
         did: did,
-        reply: 'SPACENET LISTENING',
+        reply: 'ASTRANOV LISTENING',
       };
     }
 
@@ -905,7 +906,7 @@
       low === 'astronov' ||
       low === 'astranov'
     ) {
-      reply = 'SPACENET LISTENING';
+      reply = 'ASTRANOV LISTENING';
       showOnGlobe(reply);
       return { did: did, reply: reply, skipBrand: true };
     }
@@ -996,7 +997,7 @@
               '.';
         return { did: did, reply: reply };
       }
-      reply = 'Could not find “' + dest + '” on SpaceNet · try fly athens · go to mars · locate.';
+      reply = 'Could not find “' + dest + '” · try fly athens · go to mars · locate.';
       return { did: did, reply: reply };
     }
 
@@ -1215,7 +1216,12 @@
       // presentVendor already branded-free brief — keep as-is if skip
       if (text && text.indexOf('·') > 0 && /^\d+\//.test(text)) {
         /* carousel line: leave unbranded for HUD clarity */
-      } else if (!/^SpaceNet\b/i.test(text) && !/^SPACENET\b/i.test(text) && !/^\d+\//.test(text)) {
+      } else if (
+        !/^Astranov\b/i.test(text) &&
+        !/^ASTRANOV\b/i.test(text) &&
+        !/^SpaceNet\b/i.test(text) &&
+        !/^\d+\//.test(text)
+      ) {
         text = brandReply(text);
       }
       pushHist('assistant', text);
@@ -1290,7 +1296,7 @@
 
     if (!text) text = local.reply;
     if (!text && freeHit && freeHit.text) text = freeHit.text;
-    if (!text) text = 'SpaceNet Free · pizza · shops · next · fly · locate · teach to grow';
+    if (!text) text = 'Astranov · pizza · shops · next · fly · locate · teach to grow';
 
     // Edge tags → move globe / map / CLI; strip tags from spoken/visible text
     try {
@@ -1336,8 +1342,13 @@
 
     // Brief + brand; carousel / status lines stay clean
     text = brief(text, 100);
-    if (local.skipBrand || /^\d+\//.test(text) || /^SPACENET\b/i.test(text)) {
-      /* keep */
+    if (
+      local.skipBrand ||
+      /^\d+\//.test(text) ||
+      /^ASTRANOV\b/i.test(text) ||
+      /^SPACENET\b/i.test(text)
+    ) {
+      if (/^SPACENET\b/i.test(text)) text = String(text).replace(/^SPACENET/i, 'ASTRANOV');
     } else {
       text = brandReply(text);
     }
@@ -1371,34 +1382,32 @@
     return { crawled: crawled, text: text };
   }
 
-  /** Boot stays quiet — AI button says SPACENET LISTENING when user taps */
+  /** Boot stays quiet — AI button says ASTRANOV LISTENING when user taps */
   async function greet(force) {
     if (greeted && !force) return;
     greeted = true;
     try {
       sessionStorage.setItem(GREET_KEY, String(Date.now()));
     } catch (e) {}
-    // No boot monologue — listen-first law
     try {
       if (global.SNUsage && SNUsage.track) SNUsage.track('ai_greet', { silent: true });
     } catch (e0) {}
   }
 
   function bootPresence() {
-    // Do not spam CLI on load — user activates AI ribbon for SPACENET LISTENING
     greeted = true;
   }
 
   /** AI ribbon pressed — brief status only */
   function listeningOn() {
-    var t = 'SPACENET LISTENING';
+    var t = 'ASTRANOV LISTENING';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
     return t;
   }
 
   function listeningOff() {
-    var t = 'SPACENET OFF';
+    var t = 'ASTRANOV OFF';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'dim');
     return t;

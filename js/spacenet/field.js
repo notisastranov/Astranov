@@ -109,10 +109,10 @@
       act: 'handsfree',
       emoji: '🎧',
       text: 'AI',
-      title: 'AI · SPACENET LISTENING · then pizza · next · show all',
+      title: 'AI · ASTRANOV LISTENING · pizza · next · show all',
       id: 'sn-rib-hf',
     },
-    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to SpaceNet', id: 'sn-rib-send' },
+    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to Astranov', id: 'sn-rib-send' },
   ];
   /**
    * Context task buttons REMOVED from CLI ribbon.
@@ -1724,7 +1724,7 @@
         items: [
           { e: '⚡', t: 'Resources', d: 'CPU · mine status', run: 'resources' },
           { e: '⛏', t: 'Mine on', d: 'Earn S from spare', run: 'mine on' },
-          { e: '🧠', t: 'Free mind', d: 'SpaceNet Free AI status', run: 'free mind' },
+          { e: '🧠', t: 'Free mind', d: 'Astranov AI status', run: 'free mind' },
           { e: '📦', t: 'Task fit', d: 'Jobs that match your routes', run: 'task fit' },
           { e: '🗺', t: 'Tasks on map', d: 'All routes · arrange', run: 'task map' },
           { e: '⚠', t: 'Advise', d: 'Traffic / scan tips', run: 'advise' },
@@ -1747,7 +1747,7 @@
         if (typeof closeRibbonFlyout === 'function') closeRibbonFlyout();
       } catch (e) {}
       var h =
-        '<div class="sn-bg-head">☰ SpaceNet</div>' +
+        '<div class="sn-bg-head">☰ ASTRANOV</div>' +
         '<div class="sn-bg-note">Finance · tap top-right S · not here</div>';
       var si, ii;
       for (si = 0; si < SECTIONS.length; si++) {

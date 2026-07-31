@@ -332,7 +332,7 @@
         low === 'mind'
       ) {
         const st = global.SNFreeMind?.status?.() || {};
-        log('── SpaceNet Free (own AI) ──', 'ok');
+        log('── Astranov free mind ──', 'ok');
         log(
           'Learned ' +
             (st.learned || 0) +
@@ -342,10 +342,10 @@
             (st.stats && st.stats.answers != null ? st.stats.answers : 0),
           'ok'
         );
-        log('No paid xAI required · users grow me: teach FACT or teach Q => A', 'dim');
-        log('Export trainset: free export · then open fine-tune later', 'dim');
-        preview('SpaceNet Free · teach to grow');
-        global.SNGlobe?.setHud?.('SPACENET FREE');
+        log('No paid xAI required · grow me: teach FACT or teach Q => A', 'dim');
+        log('Export: free export · open fine-tune later', 'dim');
+        preview('Astranov · teach to grow');
+        global.SNGlobe?.setHud?.('ASTRANOV');
         return;
       }
       if (low === 'free export' || low === 'mind export' || low === 'export mind') {
@@ -559,7 +559,7 @@
       }
       if (low === 'voice test' || low === 'test voice' || low === 'say test') {
         warmVoices();
-        speakAi('SpaceNet voice test.', 'test');
+        speakAi('Astranov voice test.', 'test');
         log('Voice test · one short line only', 'ok');
         return;
       }
@@ -1727,7 +1727,7 @@
       }
       try {
         speechRec.start();
-        setHandsfreeUi(true, 'SPACENET LISTENING');
+        setHandsfreeUi(true, 'ASTRANOV LISTENING');
       } catch (_) {
         /* already started */
       }
@@ -1859,17 +1859,17 @@
     try {
       if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
       else {
-        log('SPACENET LISTENING', 'ok');
-        preview('SPACENET LISTENING');
-        global.SNGlobe?.setHud?.('SPACENET LISTENING');
+        log('ASTRANOV LISTENING', 'ok');
+        preview('ASTRANOV LISTENING');
+        global.SNGlobe?.setHud?.('ASTRANOV LISTENING');
       }
     } catch (_) {
-      log('SPACENET LISTENING', 'ok');
-      preview('SPACENET LISTENING');
+      log('ASTRANOV LISTENING', 'ok');
+      preview('ASTRANOV LISTENING');
     }
     // Spoken open so user knows conversation is live
     setTimeout(function () {
-      speakAi('I am SpaceNet. I am listening. Tell me what you need.', true);
+        speakAi('I am Astranov. I am listening. Tell me what you need.', true);
     }, 200);
     if (!global.isSecureContext && location.hostname !== 'localhost') {
       log('Mic needs HTTPS · type to talk · I can still reply in text', 'dim');
@@ -1900,8 +1900,8 @@
     hfPending = '';
 
     speechRec.onstart = () => {
-      setHandsfreeUi(true, 'SPACENET LISTENING');
-      preview('SPACENET LISTENING · speak');
+      setHandsfreeUi(true, 'ASTRANOV LISTENING');
+      preview('ASTRANOV LISTENING · speak');
     };
 
     speechRec.onresult = (ev) => {
@@ -1968,14 +1968,14 @@
     hfPending = '';
     // Short mute so greeting does not eat first words
     muteMic(350);
-    setHandsfreeUi(true, 'SPACENET LISTENING');
+    setHandsfreeUi(true, 'ASTRANOV LISTENING');
     warmVoices();
     try {
       speechRec.start();
       try {
         if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: !!hfSpeakOut });
       } catch (_) {}
-      log('SPACENET LISTENING · speak · auto-sends to CLI', 'ok');
+      log('ASTRANOV LISTENING · speak · auto-sends to CLI', 'ok');
     } catch (e) {
       log('Mic soft-fail · type to SpaceNet', 'dim');
     }
