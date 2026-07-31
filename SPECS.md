@@ -217,3 +217,4 @@ js/spacenet/auth.js          → Google GIS preferred
 *Agent note 2026-07-31: **First test orders ready** — `test ready` seeds wallet (50 strands), Ilioupoli/GPS pin, 4 local shops + 2 drivers; `test order` runs full pizza pipeline. Build `20260731194000-first-test-orders`.*
 *Agent note 2026-07-31: **Fleet monitor** under ASTRANOV replaces GLOBAL pill — Main / Hot-swap / RAID load graphs + state. Tap opens science hub. Build `20260731195500-fleet-monitor`.*
 *Agent note 2026-07-31: Money button deep space-blue glow + live economy graph (balance/vault/total) at 1 Hz. Build `20260731200500-money-blue-econ`.*
+*Agent note 2026-07-31: Globe+radar **single tap = zoom in**, **hold = zoom out** (repeat while pressed). Drag still spins globe. Build `20260731201500-tap-hold-zoom`.*

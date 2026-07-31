@@ -1441,6 +1441,13 @@
     wrap._snRadarTap = true;
     var pinchStartDist = 0;
     var pinchStartZoom = 1;
+    var holdTimer = null;
+    var holdRepeat = null;
+    var holdFired = false;
+    var ptrDown = false;
+    var downX = 0;
+    var downY = 0;
+    var moved = false;
 
     function touchDist(touches) {
       if (!touches || touches.length < 2) return 0;
@@ -1449,32 +1456,103 @@
       return Math.sqrt(dx * dx + dy * dy);
     }
 
+    function clearHold() {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+      if (holdRepeat) {
+        clearInterval(holdRepeat);
+        holdRepeat = null;
+      }
+    }
+
+    // Single tap → zoom IN (tighter range). Hold → zoom OUT (wider).
     wrap.addEventListener(
-      'click',
+      'pointerdown',
       function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var now = Date.now();
-        // Double-tap within 320ms → small; single tap → expand
-        if (now - radarLastTap < 320) {
-          radarLastTap = 0;
-          setRadarExpanded(false);
-          return;
-        }
-        radarLastTap = now;
-        setTimeout(function () {
-          if (radarLastTap && Date.now() - radarLastTap >= 300) {
-            if (!radarBig) setRadarExpanded(true);
-            radarLastTap = 0;
-          }
-        }, 310);
+        if (e.pointerType === 'touch' && e.isPrimary === false) return;
+        // Two-finger pinch handled separately
+        if (e.pointerType === 'touch' && e.touches && e.touches.length > 1) return;
+        ptrDown = true;
+        moved = false;
+        holdFired = false;
+        downX = e.clientX;
+        downY = e.clientY;
+        clearHold();
+        try {
+          wrap.setPointerCapture(e.pointerId);
+        } catch (_) {}
+        holdTimer = setTimeout(function () {
+          holdTimer = null;
+          if (!ptrDown || moved) return;
+          holdFired = true;
+          // Continuous zoom out (see farther)
+          setRadarZoom(radarZoom * 1.18);
+          holdRepeat = setInterval(function () {
+            if (!ptrDown) {
+              clearHold();
+              return;
+            }
+            setRadarZoom(radarZoom * 1.14);
+          }, 280);
+        }, 360);
       },
-      true
+      { passive: true }
     );
+
+    wrap.addEventListener(
+      'pointermove',
+      function (e) {
+        if (!ptrDown) return;
+        if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 12) {
+          if (!moved) {
+            moved = true;
+            clearHold();
+          }
+        }
+      },
+      { passive: true }
+    );
+
+    wrap.addEventListener(
+      'pointerup',
+      function (e) {
+        if (!ptrDown) return;
+        ptrDown = false;
+        var wasHold = holdFired;
+        clearHold();
+        holdFired = false;
+        try {
+          wrap.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        if (moved || wasHold) return;
+        // Single short tap → zoom IN (tighter range)
+        setRadarZoom(radarZoom * 0.82);
+        // First tap also expands if still small (readable zoom)
+        if (!radarBig) setRadarExpanded(true);
+      },
+      { passive: true }
+    );
+
+    wrap.addEventListener('pointercancel', function () {
+      ptrDown = false;
+      clearHold();
+      holdFired = false;
+    });
+
     wrap.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         setRadarExpanded(!radarBig);
+      }
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault();
+        setRadarZoom(radarZoom * 0.85);
+      }
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault();
+        setRadarZoom(radarZoom * 1.15);
       }
     });
 
@@ -1495,6 +1573,8 @@
       'touchstart',
       function (e) {
         if (e.touches && e.touches.length === 2) {
+          clearHold();
+          holdFired = true; // cancel single-tap on multi-touch
           pinchStartDist = touchDist(e.touches);
           pinchStartZoom = radarZoom;
           e.preventDefault();
@@ -1517,6 +1597,13 @@
     wrap.addEventListener('touchend', function () {
       pinchStartDist = 0;
     });
+
+    wrap.title =
+      'Tap = zoom in · hold = zoom out · two-finger pinch = range · drag free';
+    wrap.setAttribute(
+      'aria-label',
+      'Radar · single tap zoom in · hold zoom out · two-finger pinch'
+    );
   }
 
   function drawRadar() {

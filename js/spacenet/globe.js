@@ -9,8 +9,9 @@
  *
  * NATIONAL layer: day/night · glowing blue borders · major cities · local time
  * SPECS click law:
- *   single tap  → SPACENET dive one cell deeper (same place)
- *   double tap  → SPACENET step out one cell
+ *   single tap  → zoom in / dive one cell deeper (same place)
+ *   hold press  → zoom out (repeat while held)
+ *   drag        → spin / tilt globe
  *   never place huge blue rings on click
  */
 (function (global) {
@@ -1547,15 +1548,50 @@
       downY = 0,
       moved = false,
       ptrId = null,
-      tapTimer = null,
-      lastTapAt = 0,
-      lastTapX = 0,
-      lastTapY = 0;
+      holdTimer = null,
+      holdRepeat = null,
+      holdFired = false;
+
+    function clearHold() {
+      if (holdTimer) {
+        clearTimeout(holdTimer);
+        holdTimer = null;
+      }
+      if (holdRepeat) {
+        clearInterval(holdRepeat);
+        holdRepeat = null;
+      }
+    }
+
+    function doZoomOutStep() {
+      G.lastAct = Date.now();
+      G.lastUserControl = Date.now();
+      G.velX = 0;
+      G.velY = 0;
+      G.flyGen = (G.flyGen || 0) + 1;
+      G.flying = false;
+      // Street map open → close first
+      if (global.SNMap && SNMap.active) {
+        try {
+          SNMap.close();
+        } catch (_) {}
+        G.diveTier = 'city';
+        syncDiveStepFromTier('city');
+        animateZ(TIERS.city.z, 420);
+        setTierLabel();
+        syncSpaceLayerVis();
+        syncNationalLayer();
+        return;
+      }
+      zoomOutOne();
+    }
 
     function onDown(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
       down = true;
       moved = false;
+      holdFired = false;
+      clearHold();
       // User takes control — kill fly + inertia so sphere does not fight the hand
       stopMotion();
       bakePivotEuler();
@@ -1572,6 +1608,22 @@
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch (_) {}
+
+      // Hold → continuous zoom out
+      holdTimer = setTimeout(function () {
+        holdTimer = null;
+        if (!down || moved) return;
+        holdFired = true;
+        G.dragging = false; // hold is zoom, not drag
+        doZoomOutStep();
+        holdRepeat = setInterval(function () {
+          if (!down || moved) {
+            clearHold();
+            return;
+          }
+          doZoomOutStep();
+        }, 420);
+      }, 380);
     }
 
     function onMove(e) {
@@ -1586,7 +1638,17 @@
       var dy = t.clientY - ly;
       lx = t.clientX;
       ly = t.clientY;
-      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 10) moved = true;
+      if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 10) {
+        if (!moved) {
+          moved = true;
+          clearHold(); // drag cancels hold-zoom
+        }
+      }
+      // If hold-zoom already started, don't spin
+      if (holdFired) {
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
       // Polar axis: horizontal → spin Y · vertical → tilt X · never Z
       if (G.spin && G.tilt) {
         G.spin.rotation.y += dx * 0.0038;
@@ -1601,8 +1663,8 @@
       }
       var sx = dx * (16 / dt) * 0.0028;
       var sy = dy * (16 / dt) * 0.0022;
-      G.velX = Math.max(-0.035, Math.min(0.035, sx)); // lon inertia
-      G.velY = Math.max(-0.025, Math.min(0.025, sy)); // lat inertia
+      G.velX = Math.max(-0.035, Math.min(0.035, sx));
+      G.velY = Math.max(-0.025, Math.min(0.025, sy));
       if (e.cancelable) e.preventDefault();
     }
 
@@ -1612,7 +1674,6 @@
       G.dragging = false;
       G.lastAct = Date.now();
       G.lastUserControl = Date.now();
-      // Strong clamp after release — light glide only
       G.velX = Math.max(-0.028, Math.min(0.028, G.velX * 0.55));
       G.velY = Math.max(-0.02, Math.min(0.02, G.velY * 0.55));
       if (Math.abs(G.velX) < 0.002) G.velX = 0;
@@ -1622,39 +1683,23 @@
         if (ptrId != null) canvas.releasePointerCapture(ptrId);
       } catch (_) {}
       var t = e.changedTouches ? e.changedTouches[0] : e;
-      // Short tap (not drag): SPACENET GLOBAL→NATIONAL→REGIONAL→CITY · double → out
-      if (!moved && t) {
-        var now = performance.now();
-        var gap = now - lastTapAt;
-        var dist = Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY);
-        if (gap < 340 && dist < 40 && lastTapAt > 0) {
-          if (tapTimer) {
-            clearTimeout(tapTimer);
-            tapTimer = null;
-          }
-          lastTapAt = 0;
-          // Cancel pending dive if any
-          G.flyGen = (G.flyGen || 0) + 1;
-          G.flying = false;
-          zoomOutOne();
+      var wasHold = holdFired;
+      clearHold();
+      holdFired = false;
+
+      // Short single tap (not drag, not hold): zoom IN / dive deeper
+      if (!moved && !wasHold && t) {
+        var cx = t.clientX;
+        var cy = t.clientY;
+        var ll = pickLatLng(cx, cy) || focusPos();
+        if (ll && ll.lat != null) {
+          G.velX = 0;
+          G.velY = 0;
+          diveInAt(ll.lat, ll.lng);
         } else {
-          lastTapAt = now;
-          lastTapX = t.clientX;
-          lastTapY = t.clientY;
-          if (tapTimer) clearTimeout(tapTimer);
-          var cx = t.clientX;
-          var cy = t.clientY;
-          // Pick immediately (while matrices match the tap), dive after short double-tap window
-          var llNow = pickLatLng(cx, cy);
-          tapTimer = setTimeout(function () {
-            tapTimer = null;
-            var ll = llNow || pickLatLng(cx, cy);
-            if (ll) {
-              G.velX = 0;
-              G.velY = 0;
-              diveInAt(ll.lat, ll.lng);
-            }
-          }, 220);
+          var cur = currentTier();
+          var idx = ladderIndex(cur);
+          if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
         }
       }
       ptrId = null;
@@ -1671,7 +1716,7 @@
       function (e) {
         e.preventDefault();
         G.lastAct = Date.now();
-        // Discrete SPACENET steps only — never free continuous Z (was "teleporting")
+        // Discrete SPACENET steps only — never free continuous Z
         var under = pickLatLng(e.clientX, e.clientY);
         if (under) setFocus(under.lat, under.lng);
 
@@ -1679,34 +1724,16 @@
         var now = Date.now();
         if (G.zoomAnim || G.flying) return;
         if (now < (G._wheelCoolUntil || 0)) return;
-        // Threshold: one notch / trackpad flick = one tier
         if (Math.abs(G._wheelAcc) < 48) return;
         var zoomOut = G._wheelAcc > 0;
         G._wheelAcc = 0;
         G._wheelCoolUntil = now + 480;
 
         if (zoomOut) {
-          // Street map open → close first, stay CITY, then next scroll goes regional
-          if (global.SNMap && SNMap.active) {
-            try {
-              SNMap.close();
-            } catch (_) {}
-            G.diveTier = 'city';
-            syncDiveStepFromTier('city');
-            animateZ(TIERS.city.z, 520);
-            setTierLabel();
-            syncSpaceLayerVis();
-            syncNationalLayer();
-            try {
-              if (global.SNCli && SNCli.log) SNCli.log('CITY · globe · scroll again for REGIONAL', 'dim');
-            } catch (_) {}
-            return;
-          }
-          zoomOutOne();
+          doZoomOutStep();
           return;
         }
 
-        // Zoom in: one cell deeper under cursor / focus
         var p = under || focusPos();
         if (p && p.lat != null) {
           diveInAt(p.lat, p.lng);
@@ -1719,15 +1746,10 @@
       { passive: false }
     );
 
-    // Desktop dblclick also zooms out (pointer path already handles most cases)
+    // Desktop: still allow dblclick as zoom-out shortcut
     canvas.addEventListener('dblclick', function (e) {
       e.preventDefault();
-      if (tapTimer) {
-        clearTimeout(tapTimer);
-        tapTimer = null;
-      }
-      lastTapAt = 0;
-      zoomOutOne();
+      doZoomOutStep();
     });
   }
 
