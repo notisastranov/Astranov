@@ -203,12 +203,7 @@
     });
     P.meId = self.id;
     save();
-    // Welcome S so marketplace is usable immediately
-    try {
-      if (global.SNCurrency && SNCurrency.balance() < 1) {
-        SNCurrency.credit(100, 'welcome SpaceNet');
-      }
-    } catch (_) {}
+    // No free welcome float on public live path (money machine = real pay / mine)
     return self;
   }
 
@@ -370,37 +365,55 @@
     return P.cart.reduce((s, i) => s + i.price * (i.qty || 1), 0);
   }
 
-  function placeOrder() {
-    // SPECS: 24/7/365 · platform 3% vault · driver 15% · vendor rest · all in S
+  function placeOrder(opts) {
+    opts = opts || {};
+    // SPECS: 24/7/365 · platform 3% vault · driver 15% · vendor rest · Astranov coins
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
     const vendor = get(vendorId);
     const total = cartTotal();
     const items = cart();
-    if (!(total > 0)) return { ok: false, error: 'cart total is 0 S' };
+    if (!(total > 0)) return { ok: false, error: 'cart total is 0' };
     let platformFee = Math.round(total * 0.03 * 100) / 100;
     if (total > 0 && platformFee < 0.01) platformFee = 0.01;
     const driverCut = Math.round(total * 0.15 * 100) / 100;
     let vendorCut = Math.round((total - platformFee - driverCut) * 100) / 100;
     if (vendorCut < 0) vendorCut = 0;
     const client = me();
-    // Pay in S — top-up only enough for this order (money machine must not free-float forever)
+    // Live path: never free-float top-up. Test mode only via opts.allowTopUp or sn:test-mode
+    let testMode = false;
+    try {
+      testMode =
+        !!opts.allowTopUp ||
+        !!opts.testMode ||
+        (typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1');
+    } catch (_) {}
     try {
       if (global.SNCurrency && typeof SNCurrency.balance === 'function') {
         const bal = SNCurrency.balance();
         if (bal < total) {
-          const need = Math.ceil((total - bal + 0.001) * 100) / 100;
-          SNCurrency.credit(need, 'order top-up');
-          global.SNCli?.log?.(
-            'Wallet top-up · ' +
-              (SNCurrency.format ? SNCurrency.format(need) : need + ' S') +
-              ' to cover order',
-            'dim'
-          );
+          if (testMode) {
+            const need = Math.ceil((total - bal + 0.001) * 100) / 100;
+            SNCurrency.credit(need, 'test-mode order top-up');
+            global.SNCli?.log?.(
+              'TEST mode top-up · ' +
+                (SNCurrency.format ? SNCurrency.format(need) : need + ' AC'),
+              'dim'
+            );
+          } else {
+            return {
+              ok: false,
+              error:
+                'insufficient AC · need ' +
+                (SNCurrency.format ? SNCurrency.format(total) : total.toFixed(2)) +
+                ' · wallet ' +
+                (SNCurrency.format ? SNCurrency.format(bal) : bal.toFixed(2)) +
+                ' · mine coins or type test ready (test only)',
+            };
+          }
         }
         const pay = SNCurrency.debit(total);
-        if (!pay.ok) return { ok: false, error: 'insufficient S · top up wallet' };
-        // Architect 3% vault (from gross)
+        if (!pay.ok) return { ok: false, error: 'insufficient AC · mine or top up' };
         const why =
           'order · ' + (vendor?.shopName || vendor?.name || vendorId || 'shop');
         let feeRes = null;
@@ -426,10 +439,10 @@
           if (global.SNCli && SNCli.log) {
             SNCli.log(
               'Paid ' +
-                (SNCurrency.format ? SNCurrency.format(total) : total + ' S') +
+                (SNCurrency.format ? SNCurrency.format(total) : total + ' AC') +
                 ' · 3% vault · 15% driver · ' +
                 vendorCut.toFixed(2) +
-                ' S vendor on deliver',
+                ' AC vendor on deliver',
               'ok'
             );
           }
@@ -451,12 +464,13 @@
         '📦 Order · ' +
         items.map((i) => i.name).slice(0, 2).join(', ') +
         ' · ' +
-        (global.SNCurrency ? SNCurrency.format(total) : total.toFixed(2) + ' S'),
+        (global.SNCurrency ? SNCurrency.format(total) : total.toFixed(2) + ' AC'),
       dur: '45m',
       raw: 'delivery order ' + total,
       lat: vendor?.lat != null ? vendor.lat : drop.lat,
       lng: vendor?.lng != null ? vendor.lng : drop.lng,
       always_on: true,
+      status: 'seeking_driver',
       vendorId,
       clientId: client.id,
       vendorName: vendor?.shopName || vendor?.name || null,
@@ -478,8 +492,10 @@
       driver_s: driverCut,
       vendor_s: vendorCut,
       settled: false,
+      paid: true,
       drop_lat: drop.lat,
       drop_lng: drop.lng,
+      live: !testMode,
     });
     list({ role: 'driver' }).forEach((d) => {
       if (d.driverOnline && global.SNGlobe?.pulse) {
@@ -498,6 +514,7 @@
           platformFee: platformFee,
           driverCut: driverCut,
           vendorCut: vendorCut,
+          live: !testMode,
         });
       }
     } catch (_) {}
@@ -536,7 +553,6 @@
       marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
       fees: { platformPct: 3, driverPct: 15, vendorPct: Math.round((vendorCut / total) * 100) },
     };
-    // Production mesh: broadcast + best-effort network intake (non-blocking)
     try {
       if (global.SNMeshOrders && SNMeshOrders.afterLocalOrder) {
         void SNMeshOrders.afterLocalOrder(result, { vendor: vendor, drop: drop });
@@ -546,8 +562,92 @@
   }
 
   /**
+   * Cancel paid order if not yet delivered. Refunds client wallet (minus 3% if already en route).
+   */
+  function cancelOrder(taskIdOrOpts) {
+    const opts = typeof taskIdOrOpts === 'object' && taskIdOrOpts ? taskIdOrOpts : {};
+    let taskId = typeof taskIdOrOpts === 'string' ? taskIdOrOpts : opts.taskId || opts.id;
+    let task = null;
+    try {
+      if (taskId && global.SNTasks && SNTasks.get) task = SNTasks.get(taskId);
+      if (!task && global.SNTasks && SNTasks.list) {
+        const open = (SNTasks.list({ all: true }) || []).filter(function (t) {
+          return (
+            t &&
+            t.kind === 'delivery' &&
+            t.paid &&
+            !t.settled &&
+            t.status !== 'done' &&
+            t.status !== 'cancelled'
+          );
+        });
+        open.sort(function (a, b) {
+          return (b.created || b.t || 0) - (a.created || a.t || 0);
+        });
+        task = open[0] || null;
+        if (task) taskId = task.id;
+      }
+    } catch (_) {}
+    if (!task) return { ok: false, error: 'no open paid order to cancel' };
+    if (task.settled || task.status === 'done') {
+      return { ok: false, error: 'already delivered · cannot cancel' };
+    }
+    if (task.status === 'cancelled') return { ok: true, already: true, task: task };
+
+    const total = Number(task.total_s) || 0;
+    const platformFee = Number(task.platform_fee_s) || Math.round(total * 0.03 * 100) / 100;
+    const enRoute = task.status === 'in_progress' || task.status === 'claimed';
+    // Full refund if still seeking driver; if en route, refund net of 3% vault (architect keeps fee)
+    const refund = enRoute ? Math.max(0, Math.round((total - platformFee) * 100) / 100) : total;
+
+    try {
+      if (refund > 0 && global.SNCurrency && SNCurrency.credit) {
+        SNCurrency.credit(refund, enRoute ? 'cancel refund net' : 'cancel refund full');
+      }
+    } catch (e) {
+      return { ok: false, error: (e && e.message) || 'refund failed' };
+    }
+
+    task.status = 'cancelled';
+    task.cancelledAt = Date.now();
+    task.cancelRefund_s = refund;
+    task.settled = true; // freeze further settle
+    try {
+      if (global.SNTasks && SNTasks.update) SNTasks.update(task.id, task);
+      else if (global.SNTasks && SNTasks.get) {
+        const live = SNTasks.get(task.id);
+        if (live) {
+          live.status = 'cancelled';
+          live.settled = true;
+          live.cancelRefund_s = refund;
+        }
+      }
+    } catch (_) {}
+    try {
+      if (global.SNField && SNField.clearRoute) SNField.clearRoute('live:' + task.id);
+    } catch (_) {}
+    try {
+      if (global._snArrivalNotify) clearTimeout(global._snArrivalNotify);
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.log) {
+        SNCli.log(
+          'Order cancelled · refund ' +
+            (global.SNCurrency && SNCurrency.format
+              ? SNCurrency.format(refund)
+              : refund.toFixed(2) + ' AC') +
+            (enRoute ? ' · 3% vault kept' : ' · full'),
+          'ok'
+        );
+      }
+    } catch (_) {}
+    return { ok: true, task: task, refund: refund, enRoute: enRoute };
+  }
+
+  /**
    * Settle delivery task on complete — pay driver 15% + vendor remainder (idempotent).
    * Client already debited full total at placeOrder; platform 3% already vaulted.
+   * Credits ONLY when recipient is this device (me) — no free double-pay to self for foreign roles.
    */
   function settleOrder(task) {
     if (!task) return { ok: false, error: 'no task' };
@@ -559,6 +659,9 @@
         vendorPaid: 0,
         task: task,
       };
+    }
+    if (task.status === 'cancelled') {
+      return { ok: false, error: 'cancelled' };
     }
     const total = Number(task.total_s) || 0;
     let platformFee = Number(task.platform_fee_s);
@@ -572,15 +675,28 @@
     if (!(driverPay > 0)) driverPay = 0;
     if (!(vendorPay > 0)) vendorPay = 0;
 
+    const meP = me();
+    const meId = meP && meP.id;
+    const isDriverMe =
+      meId &&
+      (task.driverId === meId ||
+        task.claimedBy === meId ||
+        (task.driverName && meP.name && task.driverName === meP.name && task.clientId === meId));
+    const isVendorMe =
+      meId &&
+      (task.vendorId === meId ||
+        (meP.roles && meP.roles.vendor && task.vendorId === meId));
+
     let driverPaid = 0;
     let vendorPaid = 0;
     try {
       if (global.SNCurrency && SNCurrency.credit) {
-        if (driverPay > 0) {
+        // Only credit local wallet when THIS user is the recipient
+        if (driverPay > 0 && isDriverMe) {
           SNCurrency.credit(driverPay, 'driver delivery');
           driverPaid = driverPay;
         }
-        if (vendorPay > 0) {
+        if (vendorPay > 0 && isVendorMe) {
           SNCurrency.credit(vendorPay, 'vendor order');
           vendorPaid = vendorPay;
         }
@@ -593,6 +709,8 @@
     task.settledAt = Date.now();
     task.driverPaid_s = driverPaid;
     task.vendorPaid_s = vendorPaid;
+    task.driverOwed_s = driverPay;
+    task.vendorOwed_s = vendorPay;
     try {
       if (global.SNTasks && SNTasks.get && task.id) {
         const live = SNTasks.get(task.id);
@@ -939,6 +1057,7 @@
     cartClear,
     cartTotal,
     placeOrder,
+    cancelOrder,
     settleOrder,
   };
 })(window);

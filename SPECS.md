@@ -232,3 +232,11 @@ js/spacenet/auth.js          → Google GIS preferred
 *Agent note 2026-07-31: Device multi-line graph CPU/RAM/BAT/CPU°/BAT° + battery≤33% sound+text alerts; expanded detail tiles under radar/device/money. ASTRANOV opens extreme menu. Build `20260731223000-device-metrics-alerts`.*
 *Agent note 2026-07-31: Top + bottom **scrolls** — min height floors so gadgets never clip (top ≥92px, bottom ≥120px). Labels TOP SCROLL / BOTTOM SCROLL. Build `20260731224000-top-bottom-scrolls`.*
 *Agent note 2026-07-31: Google Access blocked = **GCP Authorized JavaScript origins** missing https://astranov.eu on client `73846897360-…0vd4ts11`. Code uses GIS only (no supabase host face). api.astranov.eu still CF 403. Owner must Save origins in Google Cloud. Build `20260731225000-auth-google-fix-help`.*
+*Agent note 2026-07-31 **GO LIVE delivery economy**:
+- No free order top-up / no welcome 100 AC (mine or real balance)
+- 3% vault-only (not credited to wallet)
+- Settle pays only me-as-driver / me-as-vendor
+- Live: no fake kitchen invent · seeking_driver if no courier (no instant self-deliver)
+- cancel / cancel order refunds · test ready enables TEST MODE · live mode for public
+- CLI: go live · live mode · test mode · cancel order
+Build `20260731230000-go-live-delivery`.*

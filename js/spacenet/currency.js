@@ -87,21 +87,21 @@
 
   /**
    * Architect platform revenue — 3% of every marketplace transaction in Astranov coins.
-   * platformFees vault ONLY GROWS (never spent by sim/client debit).
+   * platformFees vault ONLY GROWS — never credited back into client spendable balance.
+   * (Client already paid full gross via debit; vault is architect accounting.)
    */
   function notePlatformFee(a, meta) {
     a = Number(a);
     if (!isFinite(a) || a <= 0)
       return { ok: false, fee: 0, platformFees: st.platformFees, balance: st.balance };
     st.platformFees = Math.round(((Number(st.platformFees) || 0) + a) * 100) / 100;
-    credit(a, 'platform');
     saveW();
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'YOUR 3% +' +
+          '3% vault +' +
             fmt(a) +
-            ' · vault ' +
+            ' · vault total ' +
             fmt(st.platformFees) +
             ' · wallet ' +
             fmt(st.balance) +

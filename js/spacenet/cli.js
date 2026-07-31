@@ -1405,6 +1405,64 @@
         // No ribbon money/finance buttons — finance UI = top-right Astranov coins HUD only
         return;
       }
+
+      if (
+        low === 'go live' ||
+        low === 'live check' ||
+        low === 'live status' ||
+        low === 'public ready'
+      ) {
+        const rep =
+          (global.SNMarket && SNMarket.goLiveStatus && SNMarket.goLiveStatus()) || {
+            summary: 'goLiveStatus missing',
+            checks: [],
+            blockers: [],
+            tips: [],
+          };
+        log('═══ GO LIVE · delivery marketplace ═══', 'ok');
+        (rep.checks || []).forEach(function (c) {
+          log((c.ok ? '✓ ' : '✗ ') + c.id + ' · ' + (c.detail || ''), c.ok ? 'ok' : 'err');
+        });
+        (rep.tips || []).forEach(function (tip) {
+          log('· ' + tip, 'dim');
+        });
+        if (rep.blockers && rep.blockers.length) {
+          log('Blockers · ' + rep.blockers.join(' · '), 'err');
+        }
+        log(rep.summary || (rep.ok ? 'READY' : 'NOT READY'), rep.ok ? 'ok' : 'err');
+        log('Live path: locate → fill shops → order me a pizza → driver claims → deliver me', 'dim');
+        log('Test only: test ready · test order  |  Exit test: live mode', 'dim');
+        log('Auth all users: auth setup (Google origins once)', 'dim');
+        return;
+      }
+      if (low === 'live mode' || low === 'public mode' || low === 'exit test') {
+        if (global.SNMarket && SNMarket.setLiveMode) SNMarket.setLiveMode(true);
+        log('LIVE MODE ON · no fake kitchen · no free order top-up', 'ok');
+        return;
+      }
+      if (low === 'test mode') {
+        if (global.SNMarket && SNMarket.setLiveMode) SNMarket.setLiveMode(false);
+        log('TEST MODE ON · sector seed + top-up allowed · type live mode before public', 'dim');
+        return;
+      }
+      if (low === 'cancel order' || low === 'cancel delivery' || low === 'refund order') {
+        const r =
+          (global.SNProfiles && SNProfiles.cancelOrder && SNProfiles.cancelOrder({})) || {
+            ok: false,
+            error: 'cancelOrder missing',
+          };
+        if (r.ok) {
+          log(
+            'Cancelled · refund ' +
+              (global.SNCurrency && SNCurrency.format
+                ? SNCurrency.format(r.refund)
+                : (r.refund || 0) + ' AC'),
+            'ok'
+          );
+        } else log(r.error || 'nothing to cancel', 'err');
+        return;
+      }
+
       if (
         low === 'test ready' ||
         low === 'prepare orders' ||

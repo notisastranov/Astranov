@@ -608,15 +608,28 @@
     var did = [];
     var st = coachStatus();
 
-    // Escape hatch — leave pizza/location pause
+    // Escape hatch — leave pizza/location pause + refund open paid order if any
     if (/\b(cancel|stop order|clear order|never mind|forget (the )?order|abort)\b/i.test(low)) {
       clearPending('Stopped the paused order.');
       W.step = 'idle';
       save();
+      var refunded = null;
+      try {
+        if (global.SNProfiles && SNProfiles.cancelOrder) {
+          refunded = SNProfiles.cancelOrder({});
+        }
+      } catch (_) {}
       return {
         handled: true,
-        reply: "Okay — pizza pause cleared. What do you want instead?",
-        did: did.concat(['cancel_pending']),
+        reply:
+          refunded && refunded.ok
+            ? 'Order cancelled · refund ' +
+              (global.SNCurrency && SNCurrency.format
+                ? SNCurrency.format(refunded.refund)
+                : (refunded.refund || 0) + ' AC') +
+              (refunded.enRoute ? ' · 3% vault kept' : '')
+            : "Okay — order pause cleared. What do you want instead?",
+        did: did.concat(['cancel_pending', refunded && refunded.ok ? 'cancel_order' : '']),
       };
     }
 
@@ -1330,8 +1343,14 @@
       var wider = collectVendors(MAX_SHOP_KM + 2);
       if (wider.length > vendors.length) vendors = wider;
     }
-    // Last resort kitchen ONLY at your pin — never far away
-    if (!vendors.length && global.SNProfiles) {
+    // Last resort kitchen ONLY in test mode — live path never invents shops
+    var testMode = false;
+    try {
+      testMode =
+        !!opts.testMode ||
+        (typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1');
+    } catch (_) {}
+    if (!vendors.length && global.SNProfiles && testMode) {
       try {
         var kid =
           'kitchen_' +
@@ -1348,13 +1367,13 @@
             lat: Number(pos.lat) + 0.0022,
             lng: Number(pos.lng) + 0.0018,
             real: true,
-            source: 'astranov-kitchen',
+            source: 'astranov-kitchen-test',
             hours: '24/7',
             rating: 4.2,
             menu: [],
           }),
         ];
-        log('No live shops in range · Astranov Kitchen at your sector (fallback)', 'dim');
+        log('TEST mode · Astranov Kitchen fallback at your sector', 'dim');
       } catch (_) {}
     }
 
@@ -1504,7 +1523,10 @@
             1
           );
         });
-        orderResult = global.SNProfiles.placeOrder();
+        orderResult = global.SNProfiles.placeOrder({
+          testMode: testMode,
+          allowTopUp: testMode,
+        });
         if (orderResult && orderResult.ok) {
           log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
           steps.push('order');
@@ -1588,31 +1610,47 @@
                 pick.maxCargo +
                 ' (lightest free)'
               : '') +
-            ' · say deliver me when landed';
+            ' · en route · say deliver me when landed';
           log(courierNote, 'ok');
         } catch (_) {}
       } else {
-        goDriverOnline('Scooter');
-        driver = global.SNProfiles.me();
-        try {
-          claim = global.SNTasks.claim(orderResult.task.id, driver || undefined);
-          if (claim && claim.ok && claim.task) {
-            claim.task.driverId = driver && driver.id;
-            claim.task.driverName = (driver && driver.name) || 'You';
-            claim.task.status = 'in_progress';
-          }
-          completeRes = global.SNTasks.complete(orderResult.task.id);
-          if (completeRes && completeRes.ok) {
-            courierNote = 'Self-courier · delivered · settled';
+        // LIVE: leave order seeking_driver — mesh / real drivers claim. No instant self-settle.
+        var allowSelf =
+          testMode ||
+          opts.allowSelfCourier === true ||
+          (typeof localStorage !== 'undefined' &&
+            localStorage.getItem('sn:test-mode-v1') === '1');
+        if (allowSelf) {
+          goDriverOnline('Scooter');
+          driver = global.SNProfiles.me();
+          try {
+            claim = global.SNTasks.claim(orderResult.task.id, driver || undefined);
+            if (claim && claim.ok && claim.task) {
+              claim.task.driverId = driver && driver.id;
+              claim.task.driverName = (driver && driver.name) || 'You';
+              claim.task.status = 'in_progress';
+            }
+            courierNote = 'TEST · you online as courier · say deliver me to finish';
             log(courierNote, 'ok');
-            steps.push('delivered');
-          } else {
-            courierNote = 'You online as courier · say deliver me to finish';
-            log(courierNote, 'ok');
+          } catch (_) {
+            courierNote = 'TEST courier assign failed · say deliver me';
+            log(courierNote, 'err');
           }
-        } catch (_) {
-          courierNote = 'Courier assign failed · say deliver me';
-          log(courierNote, 'err');
+        } else {
+          try {
+            if (orderResult.task) {
+              orderResult.task.status = 'seeking_driver';
+            }
+          } catch (_) {}
+          courierNote =
+            'Seeking driver · order paid · open on mesh · go driver online nearby or wait';
+          log(courierNote, 'ok');
+          steps.push('seeking_driver');
+          try {
+            if (global.SNMeshOrders && SNMeshOrders.pullOpenOrders) {
+              void SNMeshOrders.pullOpenOrders();
+            }
+          } catch (_) {}
         }
       }
 
@@ -2310,6 +2348,10 @@
     };
 
     log('═══ FIRST TEST ORDERS · preparing system ═══', 'ok');
+    try {
+      localStorage.setItem('sn:test-mode-v1', '1');
+      log('· TEST MODE ON · fake sector allowed · free top-up allowed', 'dim');
+    } catch (_) {}
 
     try {
       var meP = me();
@@ -2512,6 +2554,8 @@
       autoOrder: true,
       skipLocConfirm: true,
       quiet: false,
+      testMode: true,
+      allowSelfCourier: true,
     });
     return {
       ok: !!(result && result.ok),
@@ -2522,6 +2566,131 @@
         (result && result.error) ||
         'test order finished',
     };
+  }
+
+  /**
+   * Public live readiness checklist — honest status for go-live.
+   */
+  function goLiveStatus() {
+    var report = {
+      ok: false,
+      live: true,
+      checks: [],
+      blockers: [],
+      tips: [],
+    };
+    function add(id, ok, detail, block) {
+      report.checks.push({ id: id, ok: !!ok, detail: detail || '' });
+      if (!ok && block) report.blockers.push(block);
+    }
+    try {
+      var C = global.SNCurrency;
+      var bal = C && C.balance ? C.balance() : 0;
+      var vault = C && C.platformFees ? C.platformFees() : 0;
+      add('wallet', bal >= 0, 'AC ' + Number(bal).toFixed(2) + ' · vault ' + Number(vault).toFixed(2), null);
+      if (bal < 5) report.tips.push('Mine AC or receive pay · wallet low for first order');
+    } catch (e) {
+      add('wallet', false, String(e.message || e), 'currency offline');
+    }
+    try {
+      var pos =
+        global._snPhysPos ||
+        global._snLastPos ||
+        (global.SNTasks && SNTasks.pos) ||
+        null;
+      add(
+        'location',
+        !!(pos && pos.lat != null),
+        pos ? Number(pos.lat).toFixed(4) + ',' + Number(pos.lng).toFixed(4) : 'none',
+        'type locate'
+      );
+    } catch (_) {
+      add('location', false, 'error', 'type locate');
+    }
+    try {
+      var vendors = (global.SNProfiles && SNProfiles.list({ role: 'vendor' })) || [];
+      var near = vendors.filter(function (v) {
+        return v && v.lat != null && v.source !== 'astranov-kitchen-test';
+      });
+      add(
+        'vendors',
+        near.length >= 1,
+        near.length + ' real/crawled shops',
+        'fill shops · google shops near your pin'
+      );
+    } catch (_) {
+      add('vendors', false, '0', 'fill shops');
+    }
+    try {
+      var drivers = ((global.SNProfiles && SNProfiles.list({ role: 'driver' })) || []).filter(
+        function (d) {
+          return d && d.driverOnline;
+        }
+      );
+      add(
+        'drivers',
+        drivers.length >= 1,
+        drivers.length + ' online',
+        'drivers must go online · or mesh seeking_driver'
+      );
+      report.tips.push(
+        drivers.length
+          ? 'Drivers online · assign will pick nearest lightest cargo'
+          : 'No online drivers · paid orders wait as seeking_driver (not auto-fake-deliver)'
+      );
+    } catch (_) {
+      add('drivers', false, '0', 'need drivers online');
+    }
+    try {
+      var auth = global.SNAuth;
+      var signed = !!(auth && auth.user);
+      add(
+        'auth',
+        true,
+        signed ? 'signed in · astranov.eu' : 'guest OK for local · Google for multi-user',
+        null
+      );
+      if (!signed) {
+        report.tips.push(
+          'Google login: fix OAuth origins in Google Cloud (auth setup) for all users'
+        );
+      }
+    } catch (_) {}
+    try {
+      var testOn =
+        typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1';
+      add(
+        'test_mode',
+        !testOn,
+        testOn ? 'ON · type live mode to disable fake sector' : 'OFF · public live path',
+        testOn ? 'type live mode' : null
+      );
+    } catch (_) {}
+    try {
+      add(
+        'economy',
+        true,
+        'no free order top-up · 3% vault-only · cancel refunds · settle pays me-only roles',
+        null
+      );
+    } catch (_) {}
+
+    report.ok = report.blockers.length === 0;
+    report.summary = report.ok
+      ? 'LIVE PATH READY · locate · fill shops · order · drivers claim'
+      : 'LIVE GAPS · ' + report.blockers.join(' · ');
+    return report;
+  }
+
+  function setLiveMode(on) {
+    try {
+      if (on) {
+        localStorage.removeItem('sn:test-mode-v1');
+      } else {
+        localStorage.setItem('sn:test-mode-v1', '1');
+      }
+    } catch (_) {}
+    return { ok: true, testMode: !on, live: !!on };
   }
 
   load();
@@ -2541,6 +2710,11 @@
     confirmLocationAndOrder: confirmLocationAndOrder,
     clearPending: clearPending,
     isLocConfirmLine: isLocConfirmLine,
+    prepareFirstTest: prepareFirstTest,
+    seedTestSector: seedTestSector,
+    runTestOrder: runTestOrder,
+    goLiveStatus: goLiveStatus,
+    setLiveMode: setLiveMode,
     loadPrefs: loadPrefs,
     savePrefs: savePrefs,
     loadPending: loadPending,
@@ -2549,11 +2723,8 @@
     parseDatingIntent: parseDatingIntent,
     fulfillDatingIntent: fulfillDatingIntent,
     verifySchedule: verifySchedule,
-    seedTestSector: seedTestSector,
-    prepareFirstTest: prepareFirstTest,
-    runTestOrder: runTestOrder,
     get step() {
       return W.step;
     },
   };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);
