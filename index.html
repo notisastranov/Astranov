@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731221000-top-name-graph" />
-<meta name="astranov-continuity" content="20260731221000-top-name-graph" />
+<meta name="astranov-build" content="20260731223000-device-metrics-alerts" />
+<meta name="astranov-continuity" content="20260731223000-device-metrics-alerts" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1297,6 +1297,114 @@
   /* Breathing room under chrome for globe taps */
   #globe, #city-map { padding-top: 0; }
 
+
+  /* Multi-metric device lines + expanded gadget tiles */
+  #stc-compact {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .stc-col {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    min-width: 0;
+  }
+  .stc-col-radar { align-items: center; }
+  .stc-col-money { align-items: flex-end; }
+  #stc-perf-wrap {
+    height: 36px;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 32px;
+  }
+  #sn-topchrome-panel.mid #stc-perf-wrap,
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 48px;
+  }
+  #stc-perf-legend {
+    display: none;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    justify-content: center;
+    font: 600 8px/1.2 var(--font-ui);
+    letter-spacing: 0.04em;
+  }
+  #sn-topchrome-panel.mid #stc-perf-legend,
+  #sn-topchrome-panel.expanded #stc-perf-legend {
+    display: flex;
+  }
+  #stc-perf-legend span {
+    display: inline-flex; align-items: center; gap: 3px;
+    color: #8ab4d0;
+  }
+  #stc-perf-legend i {
+    display: inline-block; width: 10px; height: 2px; border-radius: 2px;
+  }
+  .stc-g-detail {
+    display: none;
+    width: 100%;
+    padding: 6px 7px;
+    border-radius: 10px;
+    background: linear-gradient(165deg, rgba(4, 18, 40, 0.88), rgba(2, 8, 18, 0.92));
+    border: 1px solid rgba(76, 201, 255, 0.28);
+    box-shadow: inset 0 0 12px rgba(11, 111, 212, 0.08);
+    font: 600 9px/1.35 var(--font-ui);
+    color: #9ec8ff;
+    text-align: left;
+  }
+  #sn-topchrome-panel.mid .stc-g-detail,
+  #sn-topchrome-panel.expanded .stc-g-detail {
+    display: block;
+  }
+  .stc-g-detail .stc-g-title {
+    font: 700 9px/1 var(--font-display);
+    letter-spacing: 0.14em;
+    color: #4cc9ff;
+    margin-bottom: 4px;
+  }
+  .stc-g-detail .stc-g-row {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: #a8ecff;
+  }
+  .stc-g-detail .stc-g-row.warn { color: #ffc857; }
+  .stc-g-detail .stc-g-row.crit { color: #ff6b7a; }
+  .stc-g-detail canvas {
+    display: block; width: 100%; height: 56px; margin-top: 4px;
+    border-radius: 6px; background: rgba(0, 8, 16, 0.5);
+  }
+  #stc-d-radar .stc-g-title { color: #6ec8ff; }
+  #stc-d-device .stc-g-title { color: #5dffb0; }
+  #stc-d-money .stc-g-title { color: #ffc857; }
+  #sn-topchrome-panel.collapsed { max-height: 72px; }
+  #sn-topchrome-panel.mid { max-height: min(280px, 38vh); }
+  #sn-topchrome-panel.expanded { max-height: min(420px, 52vh); }
+  #sn-device-alert {
+    display: none;
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    max-width: min(92vw, 420px);
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: linear-gradient(165deg, rgba(40, 8, 12, 0.96), rgba(12, 4, 8, 0.97));
+    border: 1px solid rgba(255, 80, 90, 0.65);
+    box-shadow: 0 0 28px rgba(255, 60, 80, 0.35);
+    color: #ffd0d4;
+    font: 700 13px/1.35 var(--font-ui);
+    text-align: center;
+    pointer-events: none;
+  }
+  #sn-device-alert.show { display: block; animation: sn-alert-pop 0.25s ease-out; }
+  @keyframes sn-alert-pop {
+    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
 </style>
 </head>
 <body>
@@ -1315,37 +1423,72 @@
   <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Status · drag down to expand">
     <div id="stc-body">
       <div id="stc-compact">
-        <div id="field-radar" aria-label="Radar · tap zoom in · hold zoom out" title="Tap zoom in · hold zoom out" role="button" tabindex="0">
-          <canvas id="field-radar-canvas" width="120" height="120"></canvas>
-          <div id="field-radar-zoom">rng 1.0×</div>
-          <div id="field-radar-speed" class="earth" aria-hidden="true">
-            <span id="fsh-value">1671</span>
-            <span id="fsh-unit">km/h</span>
+        <div class="stc-col stc-col-radar">
+          <div id="field-radar" aria-label="Radar · tap zoom in · hold zoom out" title="Tap zoom in · hold zoom out" role="button" tabindex="0">
+            <canvas id="field-radar-canvas" width="120" height="120"></canvas>
+            <div id="field-radar-zoom">rng 1.0×</div>
+            <div id="field-radar-speed" class="earth" aria-hidden="true">
+              <span id="fsh-value">1671</span>
+              <span id="fsh-unit">km/h</span>
+            </div>
+            <span class="fr-label">RADAR</span>
+            <div id="field-radar-legend" aria-hidden="true">
+              <b class="f">● friends</b>
+              · <b class="c">● competitors</b>
+              · <b class="v">● vendor workers & clients</b>
+              · <b class="r">━ routes</b>
+            </div>
           </div>
-          <span class="fr-label">RADAR</span>
-          <div id="field-radar-legend" aria-hidden="true">
-            <b class="f">● friends</b>
-            · <b class="c">● competitors</b>
-            · <b class="v">● vendor workers & clients</b>
-            · <b class="r">━ routes</b>
+          <div class="stc-g-detail" id="stc-d-radar">
+            <div class="stc-g-title">RADAR</div>
+            <div class="stc-g-row"><span>Range</span><span id="stc-radar-rng">1.0×</span></div>
+            <div class="stc-g-row"><span>Contacts</span><span id="stc-radar-n">0</span></div>
+            <div class="stc-g-row"><span>Routes</span><span id="stc-radar-routes">0</span></div>
+            <div class="stc-g-row"><span>Speed</span><span id="stc-radar-spd">—</span></div>
           </div>
         </div>
-        <div id="stc-center">
-          <button type="button" id="btn-home" title="ASTRANOV · tools · account · Earth">ASTRANOV</button>
-          <div id="stc-perf-wrap" title="Device load">
-            <canvas id="stc-perf" width="280" height="44" aria-label="Device load graph"></canvas>
+        <div class="stc-col stc-col-device" id="stc-center">
+          <button type="button" id="btn-home" title="ASTRANOV · extreme menu · tools · account">ASTRANOV</button>
+          <div id="stc-perf-wrap" title="CPU · RAM · battery · temps">
+            <canvas id="stc-perf" width="320" height="64" aria-label="Device metrics graph"></canvas>
+          </div>
+          <div id="stc-perf-legend" aria-hidden="true">
+            <span><i style="background:#4cc9ff"></i>CPU</span>
+            <span><i style="background:#a78bfa"></i>RAM</span>
+            <span><i style="background:#5dffb0"></i>BAT</span>
+            <span><i style="background:#ff8c42"></i>CPU°C</span>
+            <span><i style="background:#ff6b7a"></i>BAT°C</span>
+          </div>
+          <div class="stc-g-detail" id="stc-d-device">
+            <div class="stc-g-title">DEVICE · LOAD</div>
+            <div class="stc-g-row" id="stc-m-cpu"><span>CPU</span><span>—</span></div>
+            <div class="stc-g-row" id="stc-m-ram"><span>RAM</span><span>—</span></div>
+            <div class="stc-g-row" id="stc-m-bat"><span>Battery</span><span>—</span></div>
+            <div class="stc-g-row" id="stc-m-cput"><span>CPU temp</span><span>—</span></div>
+            <div class="stc-g-row" id="stc-m-batt"><span>Bat temp</span><span>—</span></div>
+            <canvas id="stc-perf-detail" width="280" height="72" aria-hidden="true"></canvas>
           </div>
         </div>
-        <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
-          <span id="fbh-s">◈ 0.00</span>
-          <span id="fbh-mine-rate">0.00 AC/day</span>
-          <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true"></canvas>
-          <span id="fbh-econ-label">economy · live 1s</span>
-          <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
-          <span id="fbh-load-label" hidden>device load</span>
-          <span id="fbh-fees">3% vault ◈ 0.00</span>
+        <div class="stc-col stc-col-money">
+          <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
+            <span id="fbh-s">◈ 0.00</span>
+            <span id="fbh-mine-rate">0.00 AC/day</span>
+            <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true"></canvas>
+            <span id="fbh-econ-label">economy · live 1s</span>
+            <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
+            <span id="fbh-load-label" hidden>device load</span>
+            <span id="fbh-fees">3% vault ◈ 0.00</span>
+          </div>
+          <div class="stc-g-detail" id="stc-d-money">
+            <div class="stc-g-title">MONEY · AC</div>
+            <div class="stc-g-row"><span>Wallet</span><span id="stc-money-bal">◈ 0.00</span></div>
+            <div class="stc-g-row"><span>Mine rate</span><span id="stc-money-rate">0 AC/d</span></div>
+            <div class="stc-g-row"><span>3% vault</span><span id="stc-money-vault">◈ 0.00</span></div>
+            <div class="stc-g-row"><span>Mined life</span><span id="stc-money-mined">◈ 0.00</span></div>
+          </div>
         </div>
       </div>
+      <div id="sn-device-alert" role="alert" aria-live="assertive"></div>
       <div id="stc-detail" class="stc-detail">
         <div id="stc-detail-row">
           <div id="field-nav-meta" aria-live="polite">
@@ -1491,7 +1634,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731221000-top-name-graph"></script>
+<script src="/js/spacenet/boot.js?v=20260731223000-device-metrics-alerts"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

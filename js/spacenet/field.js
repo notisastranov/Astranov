@@ -149,6 +149,14 @@
   var radarZoom = 1;
   var loadHist = [];
   var LOAD_HIST_N = 36;
+  /** Multi-metric device history (CPU RAM BAT temps) */
+  var devHist = [];
+  var DEV_HIST_N = 48;
+  var batteryApi = null;
+  var batteryLevel = null; // 0–100
+  var batteryCharging = false;
+  var alertCool = {}; // key -> last ms
+  var alertElTimer = 0;
   /** Economy performance samples (balance + vault) · 1 Hz */
   var econHist = [];
   var ECON_HIST_N = 60;
@@ -641,7 +649,9 @@
     }
     paintLoadGraph();
     paintEconGraph();
+    sampleDeviceMetrics();
     paintStcPerf();
+    paintGadgetDetails();
     paintFleetMonitor();
     var hud = $('field-balance-hud');
     if (hud) {
@@ -863,15 +873,7 @@
   }
 
   function paintLoadGraph() {
-    // Device load still tracked for fleet; money button shows economy graph
-    var cpu = mine.rates && mine.rates.cpu != null ? mine.rates.cpu : 0;
-    var spare = mine.spare != null ? mine.spare : 0;
-    var loadPct =
-      mine.on && mine.terms
-        ? Math.max(cpu, 100 - spare)
-        : Math.max(8, (100 - spare) * 0.35);
-    loadHist.push(Math.max(0, Math.min(100, loadPct)));
-    if (loadHist.length > LOAD_HIST_N) loadHist.shift();
+    // loadHist filled by sampleDeviceMetrics / paint path
   }
 
   /** Economy performance samples (balance + vault) · called at 1 Hz */
@@ -1121,20 +1123,197 @@
         fmtLL(vLat, vLng) +
         (same ? '' : ' · flying');
     }
-    // Compact local line removed from top bar (no earth-rotation junk)
-    paintStcPerf();
+    // Device metrics painted in paint() — avoid double sample
   }
 
-  /** Device load graph under ASTRANOV — stretches full center width */
+  function ensureBattery() {
+    if (batteryApi || !navigator.getBattery) return;
+    try {
+      navigator.getBattery().then(function (b) {
+        batteryApi = b;
+        function sync() {
+          batteryLevel = Math.round((b.level || 0) * 100);
+          batteryCharging = !!b.charging;
+        }
+        sync();
+        b.addEventListener('levelchange', sync);
+        b.addEventListener('chargingchange', sync);
+      }).catch(function () {});
+    } catch (_) {}
+  }
+
+  /**
+   * Sample CPU / RAM / battery / thermal proxies (browser-safe).
+   * Temps are estimated from load + charge state when OS sensors unavailable.
+   */
+  function sampleDeviceMetrics() {
+    ensureBattery();
+    var cpu =
+      mine.rates && mine.rates.cpu != null
+        ? Number(mine.rates.cpu)
+        : mine.on && mine.terms
+          ? Math.max(20, 100 - (mine.spare || 40))
+          : Math.max(6, (100 - (mine.spare || 55)) * 0.35);
+    cpu = Math.max(0, Math.min(100, cpu));
+
+    var ram = 18;
+    try {
+      if (performance && performance.memory && performance.memory.jsHeapSizeLimit) {
+        ram = Math.round(
+          (performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100
+        );
+      } else if (navigator.deviceMemory) {
+        // Coarse: busier when mining
+        ram = Math.min(92, 22 + (mine.on ? 28 : 8) + (cpu * 0.25));
+      }
+    } catch (_) {}
+    ram = Math.max(0, Math.min(100, ram));
+
+    var bat =
+      batteryLevel != null
+        ? batteryLevel
+        : 100; // assume full until API reports
+    bat = Math.max(0, Math.min(100, bat));
+
+    // Thermal proxies (°C-ish 0–100 scale mapped to line % of danger zone)
+    // CPU°C ~ 35 + load*0.55; BAT°C ~ 28 + (100-bat)*0.15 + charging heat
+    var cpuTempC = 34 + cpu * 0.52 + (mine.on ? 6 : 0);
+    var batTempC = 27 + (100 - bat) * 0.12 + (batteryCharging ? 8 : 0) + cpu * 0.08;
+    // Map temps to 0–100 graph: 30°C=0 … 90°C=100 (limits visible)
+    function tempPct(c) {
+      return Math.max(0, Math.min(100, ((c - 30) / 60) * 100));
+    }
+
+    var sample = {
+      t: Date.now(),
+      cpu: cpu,
+      ram: ram,
+      bat: bat,
+      cpuT: tempPct(cpuTempC),
+      batT: tempPct(batTempC),
+      cpuTempC: Math.round(cpuTempC),
+      batTempC: Math.round(batTempC),
+      charging: batteryCharging,
+    };
+    devHist.push(sample);
+    if (devHist.length > DEV_HIST_N) devHist.shift();
+    // Keep loadHist for fleet compatibility
+    loadHist.push(cpu);
+    if (loadHist.length > LOAD_HIST_N) loadHist.shift();
+
+    checkDeviceAlerts(sample);
+    return sample;
+  }
+
+  function playAlertTone(kind) {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!g._snAudioCtx) g._snAudioCtx = new AC();
+      var ctx = g._snAudioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      var o = ctx.createOscillator();
+      var gain = ctx.createGain();
+      o.connect(gain);
+      gain.connect(ctx.destination);
+      var now = ctx.currentTime;
+      if (kind === 'battery') {
+        o.frequency.setValueAtTime(880, now);
+        o.frequency.setValueAtTime(660, now + 0.12);
+        o.frequency.setValueAtTime(520, now + 0.24);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+        o.start(now);
+        o.stop(now + 0.48);
+      } else {
+        o.type = 'square';
+        o.frequency.setValueAtTime(440, now);
+        o.frequency.setValueAtTime(720, now + 0.08);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.09, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+        o.start(now);
+        o.stop(now + 0.3);
+      }
+    } catch (_) {}
+  }
+
+  function showDeviceAlert(msg, key) {
+    var el = $('sn-device-alert');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sn-device-alert';
+      el.setAttribute('role', 'alert');
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(alertElTimer);
+    alertElTimer = setTimeout(function () {
+      el.classList.remove('show');
+    }, 5200);
+    try {
+      if (g.SNCli && SNCli.log) SNCli.log(msg, 'err');
+      if (g.SNCli && SNCli.preview) SNCli.preview(msg);
+    } catch (_) {}
+  }
+
+  function checkDeviceAlerts(s) {
+    var now = Date.now();
+    function cool(k, ms) {
+      if (alertCool[k] && now - alertCool[k] < ms) return false;
+      alertCool[k] = now;
+      return true;
+    }
+    // Battery ≤ 33% — immediate notify + sound
+    if (s.bat <= 33 && s.bat < 100) {
+      if (cool('bat33', s.bat <= 15 ? 45000 : 90000)) {
+        var msg =
+          s.bat <= 15
+            ? '⚠ Battery critical · ' + s.bat + '% · charge now'
+            : '⚠ Battery low · ' + s.bat + '% · under ⅓ · charge soon';
+        showDeviceAlert(msg, 'bat33');
+        playAlertTone('battery');
+      }
+    }
+    if (s.cpu >= 92 && cool('cpu', 120000)) {
+      showDeviceAlert('⚠ CPU load high · ' + Math.round(s.cpu) + '%', 'cpu');
+      playAlertTone('warn');
+    }
+    if (s.ram >= 90 && cool('ram', 120000)) {
+      showDeviceAlert('⚠ RAM pressure · ' + Math.round(s.ram) + '%', 'ram');
+      playAlertTone('warn');
+    }
+    if (s.cpuTempC >= 78 && cool('cput', 120000)) {
+      showDeviceAlert('⚠ CPU temperature high · ~' + s.cpuTempC + '°C', 'cput');
+      playAlertTone('warn');
+    }
+    if (s.batTempC >= 45 && cool('batt', 120000)) {
+      showDeviceAlert('⚠ Battery temperature high · ~' + s.batTempC + '°C', 'batt');
+      playAlertTone('warn');
+    }
+  }
+
+  var METRIC_LINES = [
+    { key: 'cpu', color: '#4cc9ff', label: 'CPU', limit: 85 },
+    { key: 'ram', color: '#a78bfa', label: 'RAM', limit: 85 },
+    { key: 'bat', color: '#5dffb0', label: 'BAT', limit: 33, invert: true }, // low is bad
+    { key: 'cpuT', color: '#ff8c42', label: 'CPU°', limit: 75 },
+    { key: 'batT', color: '#ff6b7a', label: 'BAT°', limit: 70 },
+  ];
+
+  /** Device multi-line graph under ASTRANOV — horizontal time series per metric */
   function paintStcPerf() {
     var c = $('stc-perf');
     var wrap = $('stc-perf-wrap');
     if (!c) return;
     var ctx = c.getContext('2d');
     if (!ctx) return;
-    // Dynamic size to fill space between radar and money
-    var cssW = 120;
-    var cssH = 22;
+    if (!devHist.length) sampleDeviceMetrics();
+
+    var cssW = 160;
+    var cssH = 32;
     if (wrap) {
       var r = wrap.getBoundingClientRect();
       if (r.width > 20) cssW = Math.round(r.width);
@@ -1142,7 +1321,7 @@
     }
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var needW = Math.max(40, Math.round(cssW * dpr));
-    var needH = Math.max(16, Math.round(cssH * dpr));
+    var needH = Math.max(20, Math.round(cssH * dpr));
     if (c.width !== needW || c.height !== needH) {
       c.width = needW;
       c.height = needH;
@@ -1152,77 +1331,158 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // soft grid
-    ctx.strokeStyle = 'rgba(76,201,255,0.1)';
+    // limit guides (33% battery band, 85% load)
+    ctx.strokeStyle = 'rgba(255,107,122,0.22)';
     ctx.lineWidth = dpr;
+    ctx.setLineDash([4 * dpr, 4 * dpr]);
+    // 33% from bottom for battery low zone
+    var y33 = h - 2 * dpr - 0.33 * (h - 4 * dpr);
     ctx.beginPath();
-    ctx.moveTo(0, h * 0.5);
-    ctx.lineTo(w, h * 0.5);
+    ctx.moveTo(0, y33);
+    ctx.lineTo(w, y33);
     ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,200,87,0.18)';
+    var y85 = h - 2 * dpr - 0.85 * (h - 4 * dpr);
+    ctx.beginPath();
+    ctx.moveTo(0, y85);
+    ctx.lineTo(w, y85);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    var hist = loadHist.length ? loadHist : [12];
-    if (hist.length < 2) {
-      // gentle baseline pulse when idle
-      var mid = h * 0.62;
-      ctx.strokeStyle = 'rgba(76,201,255,0.35)';
-      ctx.lineWidth = 1.2 * dpr;
+    if (devHist.length < 2) return;
+
+    function drawSeries(key, color) {
+      var i;
+      var n = devHist.length;
       ctx.beginPath();
-      ctx.moveTo(0, mid);
-      ctx.lineTo(w, mid);
+      for (i = 0; i < n; i++) {
+        var v = Number(devHist[i][key]);
+        if (!isFinite(v)) v = 0;
+        var x = (i / (n - 1)) * (w - 2 * dpr) + dpr;
+        var y = h - 2 * dpr - (v / 100) * (h - 4 * dpr);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.35 * dpr;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       ctx.stroke();
-      return;
+      // tip
+      var last = Number(devHist[n - 1][key]);
+      var lx = w - 2 * dpr;
+      var ly = h - 2 * dpr - (last / 100) * (h - 4 * dpr);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(lx, ly, 1.8 * dpr, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    var i;
-    var n = hist.length;
-    // fill under curve
-    ctx.beginPath();
-    for (i = 0; i < n; i++) {
-      var x = (i / (Math.max(n - 1, 1))) * (w - 2 * dpr) + dpr;
-      var y = h - 2 * dpr - (hist[i] / 100) * (h - 4 * dpr);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.lineTo(w - dpr, h - dpr);
-    ctx.lineTo(dpr, h - dpr);
-    ctx.closePath();
-    var g = ctx.createLinearGradient(0, 0, 0, h);
-    if (mine.on && mine.terms) {
-      g.addColorStop(0, 'rgba(0,255,176,0.28)');
-      g.addColorStop(1, 'rgba(0,255,176,0.02)');
-      ctx.strokeStyle = '#5dffb0';
-    } else {
-      g.addColorStop(0, 'rgba(76,201,255,0.28)');
-      g.addColorStop(1, 'rgba(76,201,255,0.02)');
-      ctx.strokeStyle = '#6ec8ff';
-    }
-    ctx.fillStyle = g;
-    ctx.fill();
+    METRIC_LINES.forEach(function (m) {
+      drawSeries(m.key, m.color);
+    });
+  }
 
-    // stroke curve
-    ctx.beginPath();
-    for (i = 0; i < n; i++) {
-      x = (i / (Math.max(n - 1, 1))) * (w - 2 * dpr) + dpr;
-      y = h - 2 * dpr - (hist[i] / 100) * (h - 4 * dpr);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+  function paintGadgetDetails() {
+    var last = devHist.length ? devHist[devHist.length - 1] : sampleDeviceMetrics();
+    function setRow(id, label, val, cls) {
+      var el = $(id);
+      if (!el) return;
+      el.className = 'stc-g-row' + (cls ? ' ' + cls : '');
+      el.innerHTML = '<span>' + label + '</span><span>' + val + '</span>';
     }
-    ctx.lineWidth = 1.5 * dpr;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+    var cpuCls = last.cpu >= 85 ? 'crit' : last.cpu >= 70 ? 'warn' : '';
+    var ramCls = last.ram >= 85 ? 'crit' : last.ram >= 70 ? 'warn' : '';
+    var batCls = last.bat <= 33 ? 'crit' : last.bat <= 45 ? 'warn' : '';
+    var ctCls = last.cpuTempC >= 78 ? 'crit' : last.cpuTempC >= 65 ? 'warn' : '';
+    var btCls = last.batTempC >= 42 ? 'crit' : last.batTempC >= 36 ? 'warn' : '';
+    setRow('stc-m-cpu', 'CPU', Math.round(last.cpu) + '%', cpuCls);
+    setRow('stc-m-ram', 'RAM', Math.round(last.ram) + '%', ramCls);
+    setRow(
+      'stc-m-bat',
+      'Battery',
+      Math.round(last.bat) + '%' + (last.charging ? ' ⚡' : ''),
+      batCls
+    );
+    setRow('stc-m-cput', 'CPU temp', '~' + last.cpuTempC + '°C', ctCls);
+    setRow('stc-m-batt', 'Bat temp', '~' + last.batTempC + '°C', btCls);
 
-    // live tip
-    var last = hist[n - 1];
-    var lx = w - 2 * dpr;
-    var ly = h - 2 * dpr - (last / 100) * (h - 4 * dpr);
-    ctx.fillStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.shadowBlur = 6 * dpr;
-    ctx.beginPath();
-    ctx.arc(lx, ly, 2.2 * dpr, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    // detail canvas = larger multi-line
+    var dc = $('stc-perf-detail');
+    if (dc && dc.getContext) {
+      var ctx = dc.getContext('2d');
+      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      var wrap = dc.parentElement;
+      var cssW = wrap ? wrap.clientWidth || 200 : 200;
+      var cssH = 56;
+      var nw = Math.round(cssW * dpr);
+      var nh = Math.round(cssH * dpr);
+      if (dc.width !== nw || dc.height !== nh) {
+        dc.width = nw;
+        dc.height = nh;
+      }
+      // reuse paint by temp swap
+      var hold = $('stc-perf');
+      // draw inline
+      var w = dc.width;
+      var h = dc.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = 'rgba(255,107,122,0.25)';
+      ctx.setLineDash([3 * dpr, 3 * dpr]);
+      var y33 = h - 2 * dpr - 0.33 * (h - 4 * dpr);
+      ctx.beginPath();
+      ctx.moveTo(0, y33);
+      ctx.lineTo(w, y33);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (devHist.length >= 2) {
+        METRIC_LINES.forEach(function (m) {
+          var i;
+          var n = devHist.length;
+          ctx.beginPath();
+          for (i = 0; i < n; i++) {
+            var v = Number(devHist[i][m.key]);
+            var x = (i / (n - 1)) * (w - 2 * dpr) + dpr;
+            var y = h - 2 * dpr - (v / 100) * (h - 4 * dpr);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.strokeStyle = m.color;
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.stroke();
+        });
+      }
+    }
+
+    // Radar detail
+    var rn = $('stc-radar-rng');
+    if (rn) rn.textContent = radarZoom.toFixed(1) + '×';
+    var rN = $('stc-radar-n');
+    if (rN) rN.textContent = String((blips && blips.length) || 0);
+    var rR = $('stc-radar-routes');
+    if (rR) rR.textContent = String((routes && routes.length) || 0);
+    var rS = $('stc-radar-spd');
+    if (rS) {
+      var spd = pickSpeedMode();
+      rS.textContent = Math.round(spd.v) + ' km/h';
+    }
+
+    // Money detail
+    var C = g.SNCurrency;
+    var bal = C && C.balance ? C.balance() : 0;
+    var vault = C && C.platformFees ? C.platformFees() : 0;
+    var mined = C && C.mined ? C.mined() : 0;
+    var fmt = function (n) {
+      return C && C.formatCompact ? C.formatCompact(n) : '◈ ' + Number(n).toFixed(2);
+    };
+    var mb = $('stc-money-bal');
+    if (mb) mb.textContent = fmt(bal);
+    var mr = $('stc-money-rate');
+    if (mr) mr.textContent = ((mine.rate || 0) * 24).toFixed(2) + ' AC/d';
+    var mv = $('stc-money-vault');
+    if (mv) mv.textContent = fmt(vault);
+    var mm = $('stc-money-mined');
+    if (mm) mm.textContent = fmt(mined);
   }
 
   /**
@@ -1247,9 +1507,9 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      if (mode === 'collapsed') return 64;
-      if (mode === 'expanded') return Math.min(320, Math.round(h * 0.42));
-      return Math.min(160, Math.round(h * 0.22));
+      if (mode === 'collapsed') return 72;
+      if (mode === 'expanded') return Math.min(420, Math.round(h * 0.52));
+      return Math.min(280, Math.round(h * 0.36));
     }
 
     function setMode(mode, animate, freeH) {
