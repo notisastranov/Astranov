@@ -150,6 +150,9 @@
   var loadHist = [];
   var LOAD_HIST_N = 36;
   var physPos = null;
+  /** Per-role load histories for fleet monitor under ASTRANOV */
+  var fleetHist = { main: [], secondary: [], raid: [] };
+  var FLEET_HIST_N = 32;
   /** Blip kinds: f friend green · c competitor red · v vendor/client yellow */
   var BLIP_COLOR = {
     f: 'rgba(68,255,136,0.95)',
@@ -633,6 +636,7 @@
       }
     }
     paintLoadGraph();
+    paintFleetMonitor();
     var hud = $('field-balance-hud');
     if (hud) {
       hud.classList.toggle('mining-active', !!mine.on && !!mine.terms);
@@ -643,6 +647,208 @@
     }
     paintNavMeta();
     paintRibbon();
+  }
+
+  function drawSpark(canvasId, hist, color) {
+    var c = $(canvasId);
+    if (!c) return;
+    var ctx = c.getContext('2d');
+    if (!ctx) return;
+    var w = c.width;
+    var h = c.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(76,201,255,0.12)';
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.stroke();
+    if (!hist || hist.length < 2) return;
+    var i, x, y;
+    ctx.beginPath();
+    for (i = 0; i < hist.length; i++) {
+      x = (i / (FLEET_HIST_N - 1)) * (w - 2) + 1;
+      y = h - 2 - (Math.max(0, Math.min(100, hist[i])) / 100) * (h - 4);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = color || '#4cc9ff';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    // fill under
+    ctx.lineTo(w - 1, h - 1);
+    ctx.lineTo(1, h - 1);
+    ctx.closePath();
+    ctx.fillStyle = (color || '#4cc9ff').replace(')', ',0.12)').replace('rgb', 'rgba').replace('#', '');
+    // simple alpha fill
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = color || '#4cc9ff';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  function pushHist(role, val) {
+    if (!fleetHist[role]) fleetHist[role] = [];
+    fleetHist[role].push(Math.max(0, Math.min(100, val)));
+    if (fleetHist[role].length > FLEET_HIST_N) fleetHist[role].shift();
+  }
+
+  /**
+   * Center slot under ASTRANOV: Main · Hot-swap · RAID resource graphs + state.
+   */
+  function paintFleetMonitor() {
+    var root = $('sn-fleet-monitor');
+    if (!root) return;
+    var fleet = [];
+    try {
+      fleet = loadFleet() || [];
+    } catch (_) {
+      fleet = [];
+    }
+    var now = Date.now();
+    var STALE_MS = 3 * 60 * 1000;
+    var thisId = deviceId();
+    var thisRole = mine.deviceRole || 'main';
+    var thisLoad =
+      mine.on && mine.terms
+        ? Math.max(mine.rates.cpu || 0, 100 - (mine.spare || 0))
+        : Math.max(8, (100 - (mine.spare || 50)) * 0.35);
+
+    function bestForRole(role) {
+      var list = fleet.filter(function (d) {
+        return d && d.role === role;
+      });
+      // Prefer live this device if it matches role
+      if (thisRole === role) {
+        return {
+          id: thisId,
+          role: role,
+          name: 'This device',
+          live: true,
+          self: true,
+          load: thisLoad,
+          mining: !!(mine.on && mine.terms),
+          rate: mine.rate || 0,
+          t: now,
+        };
+      }
+      if (!list.length) return null;
+      list.sort(function (a, b) {
+        return (b.t || 0) - (a.t || 0);
+      });
+      var d = list[0];
+      var live = now - (d.t || 0) < STALE_MS;
+      // Simulated residual load for remote peers from last harvest snapshot
+      var load = live
+        ? Math.min(100, Math.max(12, (d.harvest || 0.3) * 100 + (d.mining ? 18 : 0)))
+        : 4;
+      return {
+        id: d.id,
+        role: role,
+        name: d.name || d.id,
+        live: live,
+        self: d.id === thisId,
+        load: load,
+        mining: !!d.mining || (live && (d.harvest || 0) > 0.2),
+        rate: d.rate != null ? d.rate : live ? (d.harvest || 0.2) * 0.02 : 0,
+        t: d.t || 0,
+        count: list.length,
+      };
+    }
+
+    var roles = [
+      { id: 'main', color: '#4cc9ff', label: 'Main' },
+      { id: 'secondary', color: '#88aaff', label: 'Hot-swap' },
+      { id: 'raid', color: '#ffc857', label: 'RAID' },
+    ];
+    var liveN = 0;
+    var mineN = 0;
+    var raidNodes = 0;
+
+    roles.forEach(function (r) {
+      var d = bestForRole(r.id);
+      // RAID array count
+      if (r.id === 'raid') {
+        raidNodes = fleet.filter(function (x) {
+          return x.role === 'raid' && now - (x.t || 0) < STALE_MS;
+        }).length;
+        if (thisRole === 'raid') raidNodes = Math.max(raidNodes, 1);
+      }
+      var card = $('sfm-' + r.id);
+      var st = $('sfm-' + r.id + '-state');
+      var meta = $('sfm-' + r.id + '-meta');
+      var load = d ? d.load : 0;
+      // Keep a gentle idle wave when absent so cards don't look broken
+      if (!d) load = 2 + Math.sin(now / 800 + r.id.length) * 1.5;
+      pushHist(r.id, load);
+      drawSpark('sfm-' + r.id + '-g', fleetHist[r.id], r.color);
+
+      if (card) {
+        card.classList.toggle('live', !!(d && d.live));
+        card.classList.toggle('absent', !d);
+        card.classList.toggle('raid', r.id === 'raid');
+      }
+      if (d && d.live) liveN++;
+      if (d && d.mining) mineN++;
+
+      if (st) {
+        if (!d) {
+          st.textContent = 'not registered';
+        } else if (!d.live) {
+          st.textContent = 'offline · ' + (d.name || '').slice(0, 14);
+        } else if (d.self) {
+          st.textContent =
+            'THIS · ' +
+            (d.mining ? 'mining' : 'live') +
+            (document.hidden ? ' · bg' : '');
+        } else {
+          st.textContent = (d.mining ? 'mining · ' : 'online · ') + (d.name || 'node').slice(0, 12);
+        }
+      }
+      if (meta) {
+        if (!d) {
+          meta.textContent = 'assign in ASTRANOV hub';
+        } else if (r.id === 'raid') {
+          meta.textContent =
+            Math.round(load) +
+            '% · ' +
+            (raidNodes || (d.live ? 1 : 0)) +
+            ' node' +
+            (raidNodes === 1 ? '' : 's') +
+            (d.rate ? ' · ' + (d.rate * 24).toFixed(2) + '/d' : '');
+        } else {
+          meta.textContent =
+            Math.round(load) +
+            '% load' +
+            (d.mining ? ' · mine ON' : ' · idle') +
+            (d.rate ? ' · ' + (d.rate * 24).toFixed(2) + '/d' : '');
+        }
+      }
+    });
+
+    var sum = $('sfm-sum');
+    if (sum) {
+      sum.textContent =
+        liveN +
+        ' live · ' +
+        mineN +
+        ' mining' +
+        (raidNodes ? ' · RAID×' + raidNodes : '') +
+        ' · ' +
+        ((mine.rate || 0) * 24).toFixed(2) +
+        '◎/d here';
+    }
+
+    // Tap → open science hub
+    if (!root._snFleetTap) {
+      root._snFleetTap = true;
+      root.style.cursor = 'pointer';
+      root.addEventListener('click', function () {
+        try {
+          if (g.SNHome && SNHome.open) SNHome.open();
+          else if (g.SNCli && SNCli.run) SNCli.run('home');
+        } catch (_) {}
+      });
+    }
   }
 
   function paintLoadGraph() {
@@ -1004,6 +1210,8 @@
       mining: !!(mine.on && mine.terms),
       donate: !!mine.donate,
       rate: mine.rate,
+      harvest: (roleProfile() && roleProfile().harvest) || 0.3,
+      load: Math.max(mine.rates.cpu || 0, mine.on ? 100 - (mine.spare || 0) : 10),
       cores: navigator.hardwareConcurrency || 4,
       mem: navigator.deviceMemory || null,
       t: Date.now(),

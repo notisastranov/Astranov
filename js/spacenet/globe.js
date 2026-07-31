@@ -565,59 +565,20 @@
   }
 
   function updateNationalHud(force) {
+    // GLOBAL pill under ASTRANOV retired — fleet resource monitor owns that slot.
+    // Keep city labels + internal throttle only.
     var now = Date.now();
     if (!force && now - (G._natHudLast || 0) < 900) return;
     G._natHudLast = now;
-    var el = nationalHudEl();
-    var tier = currentTier();
-    if ((G.bodyId && G.bodyId !== 'earth') || (tier === 'solar')) {
-      el.classList.remove('on');
-      el.textContent = '';
-      updateCityLabels();
-      return;
-    }
-    // Show HUD at GLOBAL+ (activity sky) and NATIONAL+
-    if (!G.nationalOn && tier !== 'global') {
-      el.classList.remove('on');
-      el.textContent = '';
-      updateCityLabels();
-      return;
-    }
-    var f = focusPos();
-    var lat = f && f.lat != null ? f.lat : 0;
-    var lng = f && f.lng != null ? f.lng : 0;
-    var clock = localClockAt(lat, lng);
-    var city = nearestMajorCity(lat, lng);
-    var cityBit = city ? city.n : lat.toFixed(1) + '°, ' + lng.toFixed(1) + '°';
-    var tierLab = (TIERS[tier] && TIERS[tier].label) || 'GLOBAL';
-    var arcN = 0;
     try {
-      if (G.activityLines && G.activityLines.geometry) {
-        var pos = G.activityLines.geometry.getAttribute('position');
-        arcN = pos ? Math.floor(pos.count / 22) : 0;
+      var el = document.getElementById('sn-national-hud');
+      if (el) {
+        el.classList.remove('on');
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+        el.textContent = '';
       }
     } catch (_) {}
-    el.classList.add('on');
-    el.innerHTML =
-      '<span class="snh-tier">' +
-      tierLab +
-      '</span>' +
-      '<span class="snh-place">' +
-      cityBit +
-      '</span>' +
-      '<span class="snh-time">' +
-      clock.time +
-      ' local</span>' +
-      '<span class="snh-dn ' +
-      (clock.day ? 'day' : 'night') +
-      '">' +
-      clock.dayNight +
-      '</span>' +
-      (arcN
-        ? '<span class="snh-time">· ' + arcN + ' live arcs</span>'
-        : tier === 'global'
-          ? '<span class="snh-time">· activity sky</span>'
-          : '');
     updateCityLabels();
   }
 

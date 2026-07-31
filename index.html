@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731194000-first-test-orders" />
-<meta name="astranov-continuity" content="20260731194000-first-test-orders" />
+<meta name="astranov-build" content="20260731195500-fleet-monitor" />
+<meta name="astranov-continuity" content="20260731195500-fleet-monitor" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Strand of coins primary currency." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -220,26 +220,70 @@
   #field-radar-legend b.v { color: #ffd060; }
   #field-radar-legend b.r { color: #00dcff; }
 
-  /* ── NATIONAL HUD ── */
-  #sn-national-hud {
-    display: none; position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
-    z-index: 88; pointer-events: none; max-width: min(92vw, 440px);
-    padding: 8px 16px; border-radius: 999px;
-    background: rgba(2, 14, 32, 0.82); border: 1px solid rgba(61, 184, 255, 0.48);
-    box-shadow: var(--glow-soft);
-    font: 600 12px/1.35 var(--font-mono); color: #9ec8ff;
-    letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  /* ── NATIONAL HUD retired · fleet resource monitor under ASTRANOV ── */
+  #sn-national-hud { display: none !important; }
+
+  #sn-fleet-monitor {
+    position: fixed; top: 52px; left: 50%; transform: translateX(-50%);
+    z-index: 88; pointer-events: auto;
+    width: min(94vw, 420px);
+    padding: 8px 10px 9px;
+    border-radius: var(--r-md);
+    background: linear-gradient(165deg, rgba(4, 18, 40, 0.92), rgba(2, 8, 18, 0.94));
+    border: 1px solid rgba(76, 201, 255, 0.38);
+    box-shadow: 0 0 22px rgba(11, 111, 212, 0.22), inset 0 1px 0 rgba(76, 201, 255, 0.08);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    font-family: var(--font-mono);
   }
-  #sn-national-hud.on { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
-  #sn-national-hud .snh-tier {
-    color: var(--bright); font-family: var(--font-display);
-    font-weight: 700; letter-spacing: 0.16em; font-size: 10px;
+  #sn-fleet-monitor .sfm-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px; gap: 8px;
   }
-  #sn-national-hud .snh-place { color: var(--text-bright); }
-  #sn-national-hud .snh-time { color: var(--muted); }
-  #sn-national-hud .snh-dn.day { color: var(--warn); text-shadow: 0 0 10px rgba(255, 200, 80, 0.45); }
-  #sn-national-hud .snh-dn.night { color: var(--glow); text-shadow: 0 0 12px rgba(61, 184, 255, 0.65); }
+  #sn-fleet-monitor .sfm-title {
+    font: 700 9px/1 var(--font-display); letter-spacing: 0.18em;
+    color: #4cc9ff; text-shadow: 0 0 10px rgba(76, 201, 255, 0.45);
+  }
+  #sn-fleet-monitor .sfm-sum {
+    font: 600 9px/1 var(--font-mono); color: #8ab4d0;
+  }
+  #sn-fleet-monitor .sfm-row {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+  }
+  #sn-fleet-monitor .sfm-card {
+    min-width: 0; padding: 6px 6px 5px;
+    border-radius: 10px;
+    background: rgba(0, 12, 24, 0.55);
+    border: 1px solid rgba(61, 184, 255, 0.22);
+  }
+  #sn-fleet-monitor .sfm-card.live {
+    border-color: rgba(0, 255, 176, 0.45);
+    box-shadow: 0 0 12px rgba(0, 255, 176, 0.12);
+  }
+  #sn-fleet-monitor .sfm-card.raid {
+    border-color: rgba(255, 200, 87, 0.4);
+  }
+  #sn-fleet-monitor .sfm-card.absent {
+    opacity: 0.55;
+    border-style: dashed;
+  }
+  #sn-fleet-monitor .sfm-role {
+    font: 700 9px/1.1 var(--font-display); letter-spacing: 0.1em;
+    color: #a8ecff; text-transform: uppercase;
+  }
+  #sn-fleet-monitor .sfm-state {
+    font: 600 8px/1.2 var(--font-mono); color: #6a8aaa; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #sn-fleet-monitor .sfm-card.live .sfm-state { color: #6dffb0; }
+  #sn-fleet-monitor .sfm-card.raid.live .sfm-state { color: #ffc857; }
+  #sn-fleet-monitor .sfm-card canvas {
+    display: block; width: 100%; height: 28px; margin-top: 4px;
+    border-radius: 4px; background: rgba(0, 8, 16, 0.5);
+  }
+  #sn-fleet-monitor .sfm-meta {
+    font: 600 8px/1.2 var(--font-mono); color: #7aa0c0; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
 
   #sn-city-labels { display: none; position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; }
   #sn-city-labels.on { display: block; }
@@ -637,6 +681,12 @@
     #field-nav-meta .fnm-row { font-size: 9px; }
     #field-radar { top: 118px; width: 100px; height: 100px; }
     #field-radar.expanded { top: 8px; }
+    #sn-fleet-monitor {
+      top: 50px; width: min(96vw, 360px); padding: 6px 7px 7px;
+    }
+    #sn-fleet-monitor .sfm-card canvas { height: 22px; }
+    #sn-fleet-monitor .sfm-role { font-size: 8px; }
+    #sn-fleet-monitor .sfm-state, #sn-fleet-monitor .sfm-meta { font-size: 7px; }
     #btn-home {
       font-size: 10px; padding: 8px 14px; letter-spacing: 0.22em;
       max-width: min(220px, 56vw); overflow: hidden; text-overflow: ellipsis;
@@ -706,7 +756,34 @@
   <span id="fbh-fees">3% vault ◎ 0.00</span>
 </div>
 
-<div id="sn-national-hud" aria-live="polite"></div>
+<div id="sn-fleet-monitor" aria-label="Fleet resource monitor · main · secondary · RAID" title="Device fleet · load graphs · ASTRANOV hub for roles">
+  <div class="sfm-head">
+    <span class="sfm-title">FLEET · RESOURCES</span>
+    <span class="sfm-sum" id="sfm-sum">—</span>
+  </div>
+  <div class="sfm-row">
+    <div class="sfm-card" id="sfm-main" data-role="main">
+      <div class="sfm-role">Main</div>
+      <div class="sfm-state" id="sfm-main-state">—</div>
+      <canvas id="sfm-main-g" width="120" height="28" aria-hidden="true"></canvas>
+      <div class="sfm-meta" id="sfm-main-meta">load · mine</div>
+    </div>
+    <div class="sfm-card" id="sfm-secondary" data-role="secondary">
+      <div class="sfm-role">Hot-swap</div>
+      <div class="sfm-state" id="sfm-secondary-state">—</div>
+      <canvas id="sfm-secondary-g" width="120" height="28" aria-hidden="true"></canvas>
+      <div class="sfm-meta" id="sfm-secondary-meta">load · mine</div>
+    </div>
+    <div class="sfm-card raid" id="sfm-raid" data-role="raid">
+      <div class="sfm-role">RAID</div>
+      <div class="sfm-state" id="sfm-raid-state">—</div>
+      <canvas id="sfm-raid-g" width="120" height="28" aria-hidden="true"></canvas>
+      <div class="sfm-meta" id="sfm-raid-meta">array · harvest</div>
+    </div>
+  </div>
+</div>
+
+<div id="sn-national-hud" hidden aria-hidden="true"></div>
 <div id="sn-city-labels" aria-hidden="true"></div>
 
 <div id="hud" hidden>
@@ -781,7 +858,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731194000-first-test-orders"></script>
+<script src="/js/spacenet/boot.js?v=20260731195500-fleet-monitor"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
