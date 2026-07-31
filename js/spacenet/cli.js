@@ -1740,6 +1740,50 @@
         preview('cargo');
         return;
       }
+      if (
+        low === 'gfx' ||
+        low === 'graphics' ||
+        low === 'ai graphics' ||
+        low === 'aigraphics' ||
+        /^gfx\b/.test(low)
+      ) {
+        const G = global.SNAIGraphics || global.AIGraphics;
+        if (!G) {
+          log('AI Graphics loading · hard refresh', 'err');
+          return;
+        }
+        if (G.init) G.init();
+        const arg = low.replace(/^(gfx|graphics|ai graphics|aigraphics)\s*/, '').trim();
+        if (arg === 'supreme' || arg === 'balanced' || arg === 'lite' || arg === 'full' || arg === 'low') {
+          const m = G.setMode(arg);
+          log('AI Graphics · ' + (m?.label || arg) + ' · generative (not polygon assets)', 'ok');
+          preview('gfx ' + (m?.id || arg));
+          return;
+        }
+        if (arg === 'pulse' || arg === 'think') {
+          G.showNeural?.(true);
+          G.setThinkPulse?.(true);
+          G.spawnEffect?.(0, 0, 0x4cc9ff, 24, 45);
+          setTimeout(() => G.setThinkPulse?.(false), 2000);
+          log('Think pulse · neural field', 'ok');
+          return;
+        }
+        if (arg === 'neural on' || arg === 'neural') {
+          G.showNeural?.(true);
+          log('Neural overlay ON', 'ok');
+          return;
+        }
+        if (arg === 'neural off') {
+          G.showNeural?.(false);
+          log('Neural overlay off', 'dim');
+          return;
+        }
+        (G.status?.() || ['AI Graphics online']).forEach((ln) =>
+          log(ln, /SUPREME|AI Graphics|Modes/.test(ln) ? 'ok' : 'dim')
+        );
+        preview('gfx');
+        return;
+      }
       if (low === 'logout' || low === 'signout' || low === 'sign out') {
         if (global.SNAuth?.user) await global.SNAuth.signOut();
         log('Signed out', 'ok');

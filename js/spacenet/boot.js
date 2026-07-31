@@ -170,6 +170,7 @@
     '/js/spacenet/map.js',
     '/js/spacenet/google-earth.js',
     '/js/spacenet/places-business.js',
+    '/js/spacenet/ai-graphics.js',
     '/js/spacenet/topo.js',
   ];
 
@@ -192,6 +193,10 @@
       },
       function () {
         SNTile && SNTile.init && SNTile.init();
+      },
+      function () {
+        if (window.SNAIGraphics && SNAIGraphics.init) SNAIGraphics.init();
+        else if (window.AIGraphics && AIGraphics.init) AIGraphics.init();
       },
     ].forEach(function (fn) {
       try {

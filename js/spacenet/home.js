@@ -195,6 +195,60 @@
       '</div>' +
       '<div class="sn-home-status-sub">Combines tasks · traffic hour curve · weather hints · channel jobs</div></div>' +
       '<button type="button" class="sn-home-btn" data-act="routes">Refresh live routes on radar</button>' +
+      '<div class="sn-home-section">AI supreme graphics</div>' +
+      '<p class="sn-home-hint">Not past-era polygon AAA. Prompt-seeded generative canvas fields · neural HUD · cached sprites. Game-class look · phone cost.</p>' +
+      '<div class="sn-home-status">' +
+      '<div class="sn-home-status-line">' +
+      esc(
+        (function () {
+          try {
+            var r =
+              (global.SNAIGraphics && SNAIGraphics.report && SNAIGraphics.report()) ||
+              (global.AIGraphics && AIGraphics.report && AIGraphics.report());
+            return (r && r.line) || 'AI Graphics loading…';
+          } catch (_) {
+            return 'AI Graphics offline';
+          }
+        })()
+      ) +
+      '</div></div>' +
+      roleCard(
+        'gfx-supreme',
+        'Supreme AI graphics',
+        'Full generative HUD + neural fields + high detail synthesis. Still zero mesh asset farms.',
+        (function () {
+          try {
+            return (global.SNAIGraphics || global.AIGraphics)?.getMode?.() === 'supreme';
+          } catch (_) {
+            return true;
+          }
+        })()
+      ) +
+      roleCard(
+        'gfx-balanced',
+        'Balanced graphics',
+        'Strong generative quality for mid phones.',
+        (function () {
+          try {
+            return (global.SNAIGraphics || global.AIGraphics)?.getMode?.() === 'balanced';
+          } catch (_) {
+            return false;
+          }
+        })()
+      ) +
+      roleCard(
+        'gfx-lite',
+        'Lite graphics',
+        'Minimal overlays · battery first · still generative (not 3D downgrade).',
+        (function () {
+          try {
+            return (global.SNAIGraphics || global.AIGraphics)?.getMode?.() === 'lite';
+          } catch (_) {
+            return false;
+          }
+        })()
+      ) +
+      '<button type="button" class="sn-home-btn" data-act="gfx-pulse">Think pulse demo</button>' +
       '<button type="button" class="sn-home-btn" data-act="global">Back to GLOBAL Earth</button>' +
       '<div class="sn-home-section">Danger</div>' +
       '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset this device</button>' +
@@ -279,6 +333,16 @@
       btn.onclick = function (e) {
         e.stopPropagation();
         var id = btn.getAttribute('data-role-pick');
+        // Graphics modes use same card UI
+        if (id && id.indexOf('gfx-') === 0) {
+          var mode = id.replace('gfx-', '');
+          try {
+            if (global.SNAIGraphics && SNAIGraphics.setMode) SNAIGraphics.setMode(mode);
+            else if (global.AIGraphics && AIGraphics.setMode) AIGraphics.setMode(mode);
+          } catch (_) {}
+          paint();
+          return;
+        }
         try {
           if (global.SNResources && SNResources.setDeviceRole) {
             if (!global.SNResources.checkTerms || !global.SNResources.checkTerms()) {
@@ -417,6 +481,22 @@
         else if (global.SNCli && SNCli.run) await SNCli.run('global');
       } catch (_) {}
       close();
+      return;
+    }
+    if (name === 'gfx-pulse') {
+      try {
+        var G = global.SNAIGraphics || global.AIGraphics;
+        if (G) {
+          if (G.init) G.init();
+          if (G.showNeural) G.showNeural(true);
+          if (G.setThinkPulse) G.setThinkPulse(true);
+          if (G.spawnEffect) G.spawnEffect(0, 0, 0x4cc9ff, 28, 50);
+          setTimeout(function () {
+            if (G.setThinkPulse) G.setThinkPulse(false);
+          }, 2200);
+          if (global.SNCli && SNCli.log) SNCli.log('AI Graphics · think pulse', 'ok');
+        }
+      } catch (_) {}
       return;
     }
     if (name === 'name-device') {

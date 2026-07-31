@@ -11,6 +11,14 @@
   var hist = [];
   var greeted = false;
   var busy = false;
+    clearThinkGfx();
+
+  function clearThinkGfx() {
+    try {
+      var G = global.SNAIGraphics || global.AIGraphics;
+      if (G && G.setThinkPulse) G.setThinkPulse(false);
+    } catch (_) {}
+  }
   var GREET_KEY = 'sn:ai-greeted-session';
   var AI_NAME = 'Astranov';
   /** Vendor suggestion session: list + index for next / show all */
@@ -1370,6 +1378,14 @@
     var msg = String(message || '').trim();
     if (!msg) return null;
     busy = true;
+    try {
+      var Gx = global.SNAIGraphics || global.AIGraphics;
+      if (Gx) {
+        if (Gx.init) Gx.init();
+        if (Gx.setThinkPulse) Gx.setThinkPulse(true);
+        if (Gx.showNeural) Gx.showNeural(true);
+      }
+    } catch (_) {}
     pushHist('user', msg);
     try {
       if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });
@@ -1398,6 +1414,7 @@
       pushHist('assistant', text);
       say(text, 'ok');
       busy = false;
+    clearThinkGfx();
       return text;
     }
 
@@ -1420,6 +1437,7 @@
       }
       pushHist('assistant', text);
       busy = false;
+    clearThinkGfx();
       return text;
     }
 
@@ -1478,6 +1496,7 @@
       pushHist('assistant', text);
       // CLI caller logs once — avoid double lines
       busy = false;
+    clearThinkGfx();
       return text;
     }
 
@@ -1661,6 +1680,12 @@
     pushHist('assistant', text);
     // CLI / caller prints reply — avoid double log (say only for greet / first-loop)
     busy = false;
+    clearThinkGfx();
+    // pulse already cleared
+    try {
+      var Gx2 = global.SNAIGraphics || global.AIGraphics;
+      if (Gx2 && Gx2.setThinkPulse) Gx2.setThinkPulse(false);
+    } catch (_) {}
     return text;
   }
 

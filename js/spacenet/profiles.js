@@ -858,6 +858,22 @@
     });
     vendor.menu = menu;
     vendor.menuReady = true;
+    // Generative cover if no real photos (AI Graphics — not empty dots)
+    try {
+      if (
+        (!vendor.photos || !vendor.photos.length || !vendor.cover) &&
+        global.SNAIGraphics &&
+        SNAIGraphics.enrichVendorCover
+      ) {
+        SNAIGraphics.enrichVendorCover(vendor);
+      } else if (
+        (!vendor.photos || !vendor.photos.length || !vendor.cover) &&
+        global.AIGraphics &&
+        AIGraphics.enrichVendorCover
+      ) {
+        AIGraphics.enrichVendorCover(vendor);
+      }
+    } catch (_) {}
     P.profiles.set(vendor.id, vendor);
     save();
     return vendor;
