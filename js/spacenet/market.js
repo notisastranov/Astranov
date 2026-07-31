@@ -260,47 +260,57 @@
     return { ok: true, profile: p };
   }
 
-  /** Claim open delivery + complete → first delivery done */
+  /** Claim open delivery + complete → first delivery done · settles S */
   function claimAndComplete() {
     var open =
       (global.SNTasks?.list?.({ kind: 'delivery' }) || []).filter(function (t) {
-        return t.status === 'open';
+        return t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress';
       })[0] ||
-      (global.SNTasks?.list?.() || []).filter(function (t) {
-        return t.status === 'open' && t.kind === 'delivery';
-      })[0];
-    if (!open) {
-      var any = (global.SNTasks?.list?.({ all: true }) || []).find(function (t) {
-        return t.kind === 'delivery' && (t.status === 'open' || t.status === 'claimed');
+      (global.SNTasks?.list?.({ all: true }) || []).find(function (t) {
+        return t.kind === 'delivery' && t.status !== 'done';
       });
-      open = any;
-    }
     if (!open) return { ok: false, error: 'no delivery task — order first' };
     var p = me();
-    var claim = global.SNTasks.claim(open.id);
+    var claim = global.SNTasks.claim(open.id, p || undefined);
     if (!claim.ok) return claim;
     if (claim.task) {
       claim.task.driverId = p && p.id;
+      claim.task.driverName = (p && (p.name || p.shopName)) || 'You';
       claim.task.status = 'in_progress';
+      try {
+        // persist driver fields
+        if (global.SNTasks && SNTasks.get) {
+          var live = SNTasks.get(claim.task.id);
+          if (live) {
+            live.driverId = claim.task.driverId;
+            live.driverName = claim.task.driverName;
+            live.status = 'in_progress';
+          }
+        }
+      } catch (_) {}
     }
+    // complete → settleOrder pays driver + vendor (no double tip)
     var done = global.SNTasks.complete(claim.task.id);
     if (done.ok) {
-      track('delivery_complete', { taskId: done.task && done.task.id, self: true });
+      track('delivery_complete', {
+        taskId: done.task && done.task.id,
+        self: true,
+        settled: !!(done.settled && done.settled.ok),
+      });
       try {
         if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstDeliveryDone', true);
         if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstVendorListed', true);
       } catch (_) {}
       W.step = 'done';
       save();
-      // Small driver tip credit in S (honest self-loop reward)
-      try {
-        var tip = (done.task && done.task.driver_s) || 0;
-        if (tip > 0 && global.SNCurrency && SNCurrency.credit) {
-          SNCurrency.credit(tip, 'driver delivery');
-        }
-      } catch (_) {}
     }
-    return { ok: !!(done && done.ok), claim: claim, complete: done, task: done && done.task };
+    return {
+      ok: !!(done && done.ok),
+      claim: claim,
+      complete: done,
+      task: done && done.task,
+      settled: done && done.settled,
+    };
   }
 
   /**
@@ -1375,6 +1385,7 @@
     // 6) Courier (Astranov mesh — not Wolt/eFood)
     var driver = null;
     var claim = null;
+    var completeRes = null;
     var courierNote = judged.service;
     if (orderResult && orderResult.ok && orderResult.task) {
       log('Assigning a courier…', 'dim', 'delivery', {
@@ -1382,8 +1393,9 @@
         lng: best.lng,
         label: 'Courier',
       });
+      var meP = global.SNProfiles && SNProfiles.me && SNProfiles.me();
       var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
-        return d.driverOnline && d.id !== (global.SNProfiles.me() && global.SNProfiles.me().id);
+        return d.driverOnline && d.id !== (meP && meP.id);
       });
       drivers.sort(function (a, b) {
         return haversineKm(pos, a) - haversineKm(pos, b);
@@ -1391,31 +1403,49 @@
       if (drivers.length) {
         driver = drivers[0];
         try {
-          claim = global.SNTasks.claim(orderResult.task.id);
+          claim = global.SNTasks.claim(orderResult.task.id, driver);
           if (claim && claim.ok && claim.task) {
             claim.task.driverId = driver.id;
+            claim.task.driverName = driver.name || driver.shopName || 'Driver';
             claim.task.status = 'in_progress';
           }
           courierNote =
             'Astranov courier · ' +
             (driver.name || 'driver') +
-            (driver.vehicle ? ' · ' + driver.vehicle : '');
+            (driver.vehicle ? ' · ' + driver.vehicle : '') +
+            ' · say deliver me when landed';
           log(courierNote, 'ok');
         } catch (_) {}
       } else {
+        // Self-courier: go online, claim, complete + settle in one lazy path
         goDriverOnline('Scooter');
         driver = global.SNProfiles.me();
         try {
-          claim = global.SNTasks.claim(orderResult.task.id);
+          claim = global.SNTasks.claim(orderResult.task.id, driver || undefined);
           if (claim && claim.ok && claim.task) {
             claim.task.driverId = driver && driver.id;
+            claim.task.driverName = (driver && (driver.name || driver.shopName)) || 'You';
             claim.task.status = 'in_progress';
           }
-        } catch (_) {}
-        courierNote = 'Astranov courier · you online as driver (no other drivers near)';
-        log(courierNote, 'ok');
+          // Lazy pizza = money loop finishes: complete settles driver+vendor
+          completeRes = global.SNTasks.complete(orderResult.task.id);
+          if (completeRes && completeRes.ok) {
+            courierNote =
+              'Astranov courier · self-loop delivered · settled ' +
+              (orderResult.driverCut != null ? orderResult.driverCut : claim.task.driver_s) +
+              ' S driver';
+            log(courierNote, 'ok');
+            steps.push('delivered');
+          } else {
+            courierNote = 'Astranov courier · you online · say deliver me to finish';
+            log(courierNote, 'ok');
+          }
+        } catch (eSelf) {
+          courierNote = 'Courier assign failed · say deliver me';
+          log(courierNote, 'err');
+        }
       }
-      // Force map route polygon vendor → you (first task must SHOW it)
+      // Force map route polygon vendor → you
       try {
         if (global.SNMap && SNMap.open) {
           await SNMap.open(pos.lat, pos.lng);
@@ -1492,6 +1522,22 @@
     summaryLines.push('SERVICE · Astranov delivery (not Wolt / eFood)');
     if (orderResult && orderResult.ok) {
       summaryLines.push('PAID · ' + fmt(orderResult.total));
+      if (orderResult.platformFee != null)
+        summaryLines.push('VAULT 3% · ' + fmt(orderResult.platformFee));
+      if (orderResult.driverCut != null)
+        summaryLines.push(
+          'DRIVER 15% · ' +
+            fmt(orderResult.driverCut) +
+            (completeRes && completeRes.ok ? ' · paid' : ' · on deliver')
+        );
+      if (orderResult.vendorCut != null)
+        summaryLines.push(
+          'VENDOR · ' +
+            fmt(orderResult.vendorCut) +
+            (completeRes && completeRes.ok ? ' · paid' : ' · on deliver')
+        );
+      if (completeRes && completeRes.ok) summaryLines.push('STATUS · delivered · settled');
+      else summaryLines.push('STATUS · paid · courier assigned · say deliver me if not auto');
       summaryLines.push(eta.eatLine);
     } else if (orderResult && !orderResult.ok) {
       summaryLines.push('PAY · failed · ' + (orderResult.error || 'retry'));
@@ -1500,7 +1546,11 @@
     }
 
     var reply =
-      (orderResult && orderResult.ok ? 'Ordered · ' : 'Ready · ') +
+      (completeRes && completeRes.ok
+        ? 'Delivered · '
+        : orderResult && orderResult.ok
+          ? 'Ordered · '
+          : 'Ready · ') +
       judged.itemName +
       ' · ' +
       (best.shopName || best.name) +
@@ -1513,7 +1563,10 @@
     } catch (_) {}
 
     return {
-      ok: !!(orderResult && orderResult.ok) || (!intent.autoOrder && !!best),
+      ok:
+        !!(completeRes && completeRes.ok) ||
+        !!(orderResult && orderResult.ok) ||
+        (!intent.autoOrder && !!best),
       food: food,
       pos: pos,
       vendors: vendors,
@@ -1523,6 +1576,7 @@
       order: orderResult,
       driver: driver,
       claim: claim,
+      complete: completeRes,
       schedule: sched,
       eta: eta,
       eatLine: eta.eatLine,

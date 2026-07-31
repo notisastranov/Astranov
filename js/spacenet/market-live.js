@@ -349,14 +349,20 @@
     io('IN', name, 'complete delivery · ' + (task.id || ''));
     var d = SNTasks.complete(task.id);
     if (d && d.ok) {
-      io('OUT', name, 'DELIVERED · done');
-      try {
-        if (global.SNCurrency && SNCurrency.credit && task.driver_s) {
-          SNCurrency.credit(task.driver_s, 'driver delivery');
-          io('OUT', 'wallet', 'driver +' + task.driver_s + ' S');
-        }
-      } catch (e) {}
-      return { ok: true, task: d.task };
+      // settleOrder already ran inside complete — never double-credit
+      var st = d.settled || {};
+      io(
+        'OUT',
+        name,
+        st.ok
+          ? 'DELIVERED · driver +' +
+              (st.driverPaid || 0) +
+              ' S · vendor +' +
+              (st.vendorPaid || 0) +
+              ' S'
+          : 'DELIVERED · done'
+      );
+      return { ok: true, task: d.task, settled: st };
     }
     io('OUT', name, (d && d.error) || 'complete fail', 'err');
     return { ok: false };

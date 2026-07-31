@@ -387,6 +387,7 @@
     log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
     log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
     log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
+    log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
     log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
     log('Plans: plan list · plan status · claim · task list · task map', 'dim');
     log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
@@ -943,7 +944,50 @@
       }
       if (low === 'deliver me' || low === 'claim and deliver' || low === 'finish delivery') {
         const r = global.SNMarket?.claimAndComplete?.();
-        log(r?.ok ? 'Delivered to you · first loop complete' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        if (r?.ok) {
+          const s = r.settled || {};
+          log(
+            'Delivered · settled' +
+              (s.driverPaid != null ? ' · driver ' + s.driverPaid + ' S' : '') +
+              (s.vendorPaid != null ? ' · vendor ' + s.vendorPaid + ' S' : ''),
+            'ok'
+          );
+          preview('DELIVERED · settled');
+        } else {
+          log(r?.error || 'fail', 'err');
+        }
+        return;
+      }
+      if (low === 'market status' || low === 'marketplace' || low === 'orders status') {
+        const open = (global.SNTasks?.list?.({ kind: 'delivery' }) || []).filter(
+          (t) => t.status !== 'done'
+        );
+        const done = (global.SNTasks?.list?.({ all: true, kind: 'delivery' }) || []).filter(
+          (t) => t.status === 'done'
+        );
+        const w = global.SNCurrency?.snapshot?.() || {};
+        log(
+          'Market · open deliveries ' +
+            open.length +
+            ' · done ' +
+            done.length +
+            ' · wallet ' +
+            (w.line || '?') +
+            ' · vault ' +
+            (global.SNCurrency?.format?.(w.platformFees) || (w.platformFees || 0) + ' S'),
+          'ok'
+        );
+        open.slice(0, 6).forEach((t) => {
+          log(
+            '  ' +
+              (t.status || '?') +
+              ' · ' +
+              String(t.title || '').slice(0, 42) +
+              (t.total_s != null ? ' · ' + t.total_s + ' S' : ''),
+            'dim'
+          );
+        });
+        preview(open.length + ' open · market');
         return;
       }
       if (low === 'usage' || low === 'usage summary' || low === 'stats') {

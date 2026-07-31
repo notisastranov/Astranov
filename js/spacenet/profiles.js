@@ -371,31 +371,36 @@
   }
 
   function placeOrder() {
-    // SPECS P4-M: 24/7/365 all locations — no platform curfew
-    // SPECS fees: platform 3% of S → Architect wallet · driver 15% of gross
+    // SPECS: 24/7/365 · platform 3% vault · driver 15% · vendor rest · all in S
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
     const vendor = get(vendorId);
     const total = cartTotal();
     const items = cart();
+    if (!(total > 0)) return { ok: false, error: 'cart total is 0 S' };
     let platformFee = Math.round(total * 0.03 * 100) / 100;
     if (total > 0 && platformFee < 0.01) platformFee = 0.01;
     const driverCut = Math.round(total * 0.15 * 100) / 100;
+    let vendorCut = Math.round((total - platformFee - driverCut) * 100) / 100;
+    if (vendorCut < 0) vendorCut = 0;
     const client = me();
-    // Ensure client can pay in S — welcome credit if empty wallet
+    // Pay in S — top-up only enough for this order (money machine must not free-float forever)
     try {
       if (global.SNCurrency && typeof SNCurrency.balance === 'function') {
-        if (SNCurrency.balance() < total) {
-          const need = total - SNCurrency.balance() + 20;
-          SNCurrency.credit(need, 'marketplace top-up');
+        const bal = SNCurrency.balance();
+        if (bal < total) {
+          const need = Math.ceil((total - bal + 0.001) * 100) / 100;
+          SNCurrency.credit(need, 'order top-up');
           global.SNCli?.log?.(
-            'Wallet topped · ' + (SNCurrency.format ? SNCurrency.format(need) : need + ' S') + ' for order',
+            'Wallet top-up · ' +
+              (SNCurrency.format ? SNCurrency.format(need) : need + ' S') +
+              ' to cover order',
             'dim'
           );
         }
         const pay = SNCurrency.debit(total);
-        if (!pay.ok) return { ok: false, error: 'insufficient S' };
-        // Architect 3% — every order credits vault + wallet (vault never spent)
+        if (!pay.ok) return { ok: false, error: 'insufficient S · top up wallet' };
+        // Architect 3% vault (from gross)
         const why =
           'order · ' + (vendor?.shopName || vendor?.name || vendorId || 'shop');
         let feeRes = null;
@@ -410,13 +415,29 @@
               kind: 'order',
               total: total,
               fee: (feeRes && feeRes.fee) || platformFee,
+              driver: driverCut,
+              vendor: vendorCut,
               who: client?.name || client?.id,
               why: why,
             });
           }
         } catch (_) {}
+        try {
+          if (global.SNCli && SNCli.log) {
+            SNCli.log(
+              'Paid ' +
+                (SNCurrency.format ? SNCurrency.format(total) : total + ' S') +
+                ' · 3% vault · 15% driver · ' +
+                vendorCut.toFixed(2) +
+                ' S vendor on deliver',
+              'ok'
+            );
+          }
+        } catch (_) {}
       }
-    } catch (_) {}
+    } catch (ePay) {
+      return { ok: false, error: (ePay && ePay.message) || 'payment failed' };
+    }
 
     cartClear();
     const drop = global._snLastPos || global.SNTasks?.pos || {
@@ -455,6 +476,8 @@
       total_s: total,
       platform_fee_s: platformFee,
       driver_s: driverCut,
+      vendor_s: vendorCut,
+      settled: false,
       drop_lat: drop.lat,
       drop_lng: drop.lng,
     });
@@ -472,11 +495,12 @@
           total: total,
           vendorId: vendorId,
           taskId: t && t.id,
+          platformFee: platformFee,
+          driverCut: driverCut,
+          vendorCut: vendorCut,
         });
       }
     } catch (_) {}
-    // Vendor → client polygon is drawn by caller (market) after claim —
-    // still kick a route if map is ready so placeOrder alone shows path
     try {
       if (global.SNField && SNField.startDeliveryRoute && vendor && t) {
         void SNField.startDeliveryRoute({
@@ -497,6 +521,7 @@
       total,
       platformFee,
       driverCut,
+      vendorCut,
       items,
       vendorId,
       drop: drop,
@@ -504,6 +529,98 @@
         ? { lat: vendor.lat, lng: vendor.lng, name: vendor.shopName || vendor.name }
         : null,
       marketplace: { alwaysOn: true, hours: '24/7', days: 365 },
+      fees: { platformPct: 3, driverPct: 15, vendorPct: Math.round((vendorCut / total) * 100) },
+    };
+  }
+
+  /**
+   * Settle delivery task on complete — pay driver 15% + vendor remainder (idempotent).
+   * Client already debited full total at placeOrder; platform 3% already vaulted.
+   */
+  function settleOrder(task) {
+    if (!task) return { ok: false, error: 'no task' };
+    if (task.settled) {
+      return {
+        ok: true,
+        already: true,
+        driverPaid: 0,
+        vendorPaid: 0,
+        task: task,
+      };
+    }
+    const total = Number(task.total_s) || 0;
+    let platformFee = Number(task.platform_fee_s);
+    if (!isFinite(platformFee) && total > 0) platformFee = Math.round(total * 0.03 * 100) / 100;
+    let driverPay = Number(task.driver_s);
+    if (!isFinite(driverPay) && total > 0) driverPay = Math.round(total * 0.15 * 100) / 100;
+    let vendorPay = Number(task.vendor_s);
+    if (!isFinite(vendorPay) && total > 0) {
+      vendorPay = Math.round((total - (platformFee || 0) - (driverPay || 0)) * 100) / 100;
+    }
+    if (!(driverPay > 0)) driverPay = 0;
+    if (!(vendorPay > 0)) vendorPay = 0;
+
+    let driverPaid = 0;
+    let vendorPaid = 0;
+    try {
+      if (global.SNCurrency && SNCurrency.credit) {
+        if (driverPay > 0) {
+          SNCurrency.credit(driverPay, 'driver delivery');
+          driverPaid = driverPay;
+        }
+        if (vendorPay > 0) {
+          SNCurrency.credit(vendorPay, 'vendor order');
+          vendorPaid = vendorPay;
+        }
+      }
+    } catch (e) {
+      return { ok: false, error: (e && e.message) || 'credit failed' };
+    }
+
+    task.settled = true;
+    task.settledAt = Date.now();
+    task.driverPaid_s = driverPaid;
+    task.vendorPaid_s = vendorPaid;
+    try {
+      if (global.SNTasks && SNTasks.get && task.id) {
+        const live = SNTasks.get(task.id);
+        if (live) {
+          live.settled = true;
+          live.settledAt = task.settledAt;
+          live.driverPaid_s = driverPaid;
+          live.vendorPaid_s = vendorPaid;
+          // tasks Map is same object if get returns ref
+        }
+      }
+    } catch (_) {}
+    try {
+      if (global.SNUsage && SNUsage.track) {
+        SNUsage.track('order_settle', {
+          taskId: task.id,
+          driver: driverPaid,
+          vendor: vendorPaid,
+          total: total,
+        });
+      }
+    } catch (_) {}
+    try {
+      if (global.SNSuper && SNSuper.pushTx) {
+        SNSuper.pushTx({
+          kind: 'settle',
+          taskId: task.id,
+          driver: driverPaid,
+          vendor: vendorPaid,
+          total: total,
+        });
+      }
+    } catch (_) {}
+    return {
+      ok: true,
+      driverPaid: driverPaid,
+      vendorPaid: vendorPaid,
+      platformFee: platformFee || 0,
+      total: total,
+      task: task,
     };
   }
 
@@ -664,5 +781,6 @@
     cartClear,
     cartTotal,
     placeOrder,
+    settleOrder,
   };
 })(window);

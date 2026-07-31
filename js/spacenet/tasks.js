@@ -154,6 +154,10 @@
       total_s: p.total_s != null ? p.total_s : null,
       platform_fee_s: p.platform_fee_s != null ? p.platform_fee_s : null,
       driver_s: p.driver_s != null ? p.driver_s : null,
+      vendor_s: p.vendor_s != null ? p.vendor_s : null,
+      settled: !!p.settled,
+      driverId: p.driverId || null,
+      driverName: p.driverName || null,
       drop_lat: p.drop_lat != null ? p.drop_lat : null,
       drop_lng: p.drop_lng != null ? p.drop_lng : null,
       always_on: p.always_on !== false,
@@ -192,12 +196,14 @@
 
   function list(filter) {
     filter = filter || {};
-    let arr = [...T.tasks.values()].filter(function (t) {
-      return filter.all || t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress';
-    });
-    if (!filter.all) arr = arr.filter(function (t) {
-      return t.status === 'open' || filter.status === t.status;
-    });
+    let arr = [...T.tasks.values()];
+    // Active work queue = open + claimed + in_progress (was broken: second filter dropped claimed)
+    if (!filter.all) {
+      arr = arr.filter(function (t) {
+        if (filter.status) return t.status === filter.status;
+        return t.status === 'open' || t.status === 'claimed' || t.status === 'in_progress';
+      });
+    }
     if (filter.kind) arr = arr.filter(function (t) {
       return t.kind === filter.kind;
     });
@@ -207,7 +213,7 @@
     if (filter.jobs) arr = arr.filter(function (t) {
       return t.kind === 'job';
     });
-    if (filter.status) arr = arr.filter(function (t) {
+    if (filter.status && filter.all) arr = arr.filter(function (t) {
       return t.status === filter.status;
     });
     if (filter.planId) arr = arr.filter(function (t) {
@@ -238,16 +244,29 @@
 
   function claim(taskId, who) {
     let task = taskId ? T.tasks.get(taskId) : null;
-    if (!task) task = list()[0];
-    if (!task) return { ok: false, error: 'no open tasks' };
-    if (task.status !== 'open' && task.status !== 'claimed') {
-      return { ok: false, error: 'task not claimable · ' + task.status };
+    if (!task) {
+      task =
+        list({ kind: 'delivery' }).find(function (t) {
+          return t.status === 'open';
+        }) || list()[0];
     }
-    task.status = 'claimed';
-    task.claimedAt = Date.now();
+    if (!task) return { ok: false, error: 'no open tasks' };
+    // Allow re-claim of claimed/in_progress to attach driver / continue delivery
+    if (task.status === 'done') {
+      return { ok: false, error: 'task already done' };
+    }
+    if (task.status === 'open') {
+      task.status = 'claimed';
+      task.claimedAt = Date.now();
+    } else if (task.status === 'claimed') {
+      task.status = 'in_progress';
+    }
+    // in_progress: keep status, refresh assignee
     if (who) {
       task.assigneeId = who.id || who.assigneeId || task.assigneeId;
       task.assigneeName = who.name || who.shopName || who.assigneeName || task.assigneeName;
+      task.driverId = who.id || who.driverId || task.driverId;
+      task.driverName = who.name || who.shopName || task.driverName;
     }
     T.tasks.set(task.id, task);
     refreshPlan(task.planId);
@@ -260,20 +279,50 @@
     let task = taskId ? T.tasks.get(taskId) : null;
     if (!task) {
       task = [...T.tasks.values()].find(function (t) {
-        return t.status === 'claimed' || t.status === 'in_progress';
+        return t.status === 'claimed' || t.status === 'in_progress' || t.status === 'open';
       });
     }
     if (!task) task = list()[0];
     if (!task) return { ok: false, error: 'no task to complete' };
+    if (task.status === 'done') return { ok: true, task: task, already: true };
+
+    // Marketplace settlement BEFORE mark done (idempotent)
+    var settled = null;
+    try {
+      if (task.kind === 'delivery' && global.SNProfiles && SNProfiles.settleOrder) {
+        settled = SNProfiles.settleOrder(task);
+      }
+    } catch (eSet) {
+      settled = { ok: false, error: (eSet && eSet.message) || 'settle failed' };
+    }
+
     task.status = 'done';
     task.doneAt = Date.now();
+    if (settled && settled.ok) task.settled = true;
     T.tasks.set(task.id, task);
     refreshPlan(task.planId);
     save();
     if (global.SNGlobe && SNGlobe.pulse) {
       SNGlobe.pulse(task.lat, task.lng, 0xffffff, 'done', 6000);
     }
-    return { ok: true, task: task };
+    try {
+      if (task.kind === 'delivery' && global.SNUsage && SNUsage.flag) {
+        SNUsage.flag('firstDeliveryDone', true);
+      }
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.log && settled && settled.ok) {
+        SNCli.log(
+          'Settled · driver ' +
+            (settled.driverPaid != null ? settled.driverPaid : 0) +
+            ' S · vendor ' +
+            (settled.vendorPaid != null ? settled.vendorPaid : 0) +
+            ' S',
+          'ok'
+        );
+      }
+    } catch (_) {}
+    return { ok: true, task: task, settled: settled };
   }
 
   function search(q) {

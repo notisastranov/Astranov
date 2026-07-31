@@ -132,6 +132,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 
 *Agent note 2026-07-31 (not owner OV): multi-user **coord** plans live in `js/spacenet/tasks.js` — `coord …` · `assign …` · `plan list` · `plan status`. Build `20260731160000-coord-plans`.*
 *Agent note 2026-07-31 (not owner OV): **Astranov Mind v6** — English chat + Greeklish + modern/ancient Greek hard paths, retrain drills, simple task flags (`locate` · `dark map` · pizza). Build `20260731161200-mind-v6-lang`. Owner: hard refresh; if poisoned memory say `mind wipe`.*
+*Agent note 2026-07-31 (not owner OV): **Marketplace settlement** — client pays full S · vault 3% · on complete driver 15% + vendor rest; task list keeps claimed/in_progress; lazy pizza self-courier auto-completes settle; `deliver me` / `market status`. Build `20260731163000-market-settle`. Live multi-device / real POI still depend on crawl + GPS. Not owner OV.*
 
 
 ---
