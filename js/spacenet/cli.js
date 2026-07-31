@@ -647,10 +647,24 @@
         } else log('AI loading · hard refresh', 'err');
         return;
       }
-      // Pending lazy-order location confirm (YES / NO after soft GPS)
+      // Escape pizza / order pause
+      if (
+        /\b(cancel|stop order|clear order|never mind|forget (it|the order)|abort|unstick)\b/i.test(
+          low
+        )
+      ) {
+        try {
+          global.SNMarket?.clearPending?.('Order pause cleared');
+        } catch (_) {}
+        log("Cleared. Not stuck on pizza — say what you need.", 'ok');
+        preview('ready');
+        return;
+      }
+      // Pending lazy-order location confirm — exact yes/no only
       if (
         global.SNMarket?.loadPending?.() &&
-        /^(yes|y|ok|okay|correct|here|no|wrong|ν|ναι|όχι|oxi|confirm|go|proceed)$/i.test(low)
+        (global.SNMarket.isLocConfirmLine?.(line) ||
+          /^(yes|y|ok|okay|no|nope|wrong|ν|ναι|όχι)$/i.test(low))
       ) {
         activity('location check…', 'work', { label: 'Confirm' });
         const cr = await global.SNMarket.confirmLocationAndOrder(line);
@@ -672,56 +686,61 @@
         if (cr?.eatLine) replyOut(cr.eatLine);
         return;
       }
-      // Food / pizza order — direct market path (clean progress in THIS turn only)
-      // Skip exact self-shop coach lines handled below
-      if (
-        global.SNMarket?.parseFoodIntent?.(line) &&
-        !/^(list\s+shop|menu\s+add|order\s+me\s*$|drive\s+on|first\s+delivery)/i.test(low)
-      ) {
-        const fi = global.SNMarket.parseFoodIntent(line);
-        // Lazy first order: order me a pizza you judge… → always pay + ETA
-        const wantOrder =
-          fi.autoOrder === true ||
-          fi.lazyJudge === true ||
-          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|buy|pay|judge|what\s+time\s+i\s+eat)\b/i.test(
-            low
+      // Food — strict parser only. Full pay loop only when user orders.
+      {
+        const fi = global.SNMarket?.parseFoodIntent?.(line);
+        if (
+          fi &&
+          !/^(list\s+shop|menu\s+add|order\s+me\s*$|drive\s+on|first\s+delivery)/i.test(low)
+        ) {
+          const wantOrder =
+            fi.autoOrder === true ||
+            fi.lazyJudge === true ||
+            (/\border\b/i.test(low) &&
+              /\b(pizza|sushi|burger|coffee|food|souvlaki|kebab)\b/i.test(low));
+          fi.autoOrder = wantOrder;
+          fi.lazyJudge = wantOrder;
+          fi.browseOnly = !wantOrder;
+          fi.raw = line;
+          activity(
+            (wantOrder ? 'ordering ' : 'finding ') + (fi.food || 'food') + '…',
+            'food',
+            { label: fi.food || 'food' }
           );
-        fi.autoOrder = wantOrder;
-        fi.lazyJudge = wantOrder || fi.lazyJudge;
-        fi.raw = line;
-        activity('ordering ' + (fi.food || 'food') + ' · map live…', 'food', {
-          label: fi.food || 'food',
-        });
-        const r = await global.SNMarket.fulfillFoodIntent(fi, {
-          autoOrder: wantOrder,
-          quiet: false,
-          judgeAll: true,
-        });
-        if (r?.best) {
-          depict(wantOrder ? 'order' : 'food', {
-            lat: r.best.lat,
-            lng: r.best.lng,
-            label: r.best.shopName || r.best.name || fi.food,
+          const r = await global.SNMarket.fulfillFoodIntent(fi, {
+            autoOrder: wantOrder,
+            quiet: false,
+            judgeAll: wantOrder,
           });
-        }
-        if (r?.needsConfirm) {
-          log(r.reply || 'Confirm location · YES or NO', 'ok');
-          preview('waiting · yes / no');
-          replyOut(r.reply || 'Is this your location?');
+          if (r?.best) {
+            depict(wantOrder ? 'order' : 'food', {
+              lat: r.best.lat,
+              lng: r.best.lng,
+              label: r.best.shopName || r.best.name || fi.food,
+            });
+          }
+          if (r?.needsConfirm) {
+            log(r.reply || 'Is this your location? Yes or no.', 'ok');
+            preview('waiting · yes / no');
+            replyOut(r.reply || 'Is this your location?');
+            return;
+          }
+          if (r?.summary && wantOrder) {
+            String(r.summary)
+              .split('\n')
+              .forEach((ln) => {
+                if (ln.trim())
+                  log(ln.trim(), /failed|error|PAY · failed|reject/i.test(ln) ? 'err' : 'ok');
+              });
+          } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+          else if (r?.error) log(r.error, 'err');
+          else if (!wantOrder && r?.best)
+            log('Found ' + (r.best.shopName || r.best.name) + ' — say order to buy.', 'ok');
+          preview(r?.eatLine || r?.reply || (r?.ok ? 'done' : 'ok'));
+          if (r?.eatLine) replyOut(r.eatLine);
+          else if (r?.reply) replyOut(r.reply);
           return;
         }
-        if (r?.summary) {
-          String(r.summary)
-            .split('\n')
-            .forEach((ln) => {
-              if (ln.trim()) log(ln.trim(), /failed|error|PAY · failed|reject/i.test(ln) ? 'err' : 'ok');
-            });
-        } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
-        else log(r?.error || 'Could not complete food request', 'err');
-        preview(r?.eatLine || r?.reply || (r?.ok ? 'done' : 'failed'));
-        if (r?.eatLine) replyOut(r.eatLine);
-        else if (r?.reply) replyOut(r.reply);
-        return;
       }
       // First marketplace loop + usage (SpaceNet coaches the same path)
       if (

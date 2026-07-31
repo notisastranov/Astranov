@@ -64,7 +64,14 @@
 
   function loadPending() {
     try {
-      return JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+      var p = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+      if (!p) return null;
+      // Stale pause must not trap forever (10 min)
+      if (p.t && Date.now() - p.t > 10 * 60 * 1000) {
+        savePending(null);
+        return null;
+      }
+      return p;
     } catch (_) {
       return null;
     }
@@ -75,6 +82,25 @@
       if (p) localStorage.setItem(PENDING_KEY, JSON.stringify(p));
       else localStorage.removeItem(PENDING_KEY);
     } catch (_) {}
+  }
+
+  function clearPending(reason) {
+    savePending(null);
+    try {
+      if (global.SNCli && SNCli.log)
+        SNCli.log(reason || 'Order pause cleared — you can talk about anything else.', 'dim');
+    } catch (_) {}
+    return { ok: true };
+  }
+
+  /** Exact short yes/no only — "ok go dark map" must NOT resume pizza */
+  function isLocConfirmLine(line) {
+    var low = String(line || '')
+      .toLowerCase()
+      .trim();
+    return /^(yes|y|yeah|yep|ok|okay|correct|here|confirm|go|proceed|no|nope|wrong|ν|ναι|όχι|oxi)$/i.test(
+      low
+    );
   }
 
   function locationIsSuspect(pos) {
@@ -418,8 +444,20 @@
     var did = [];
     var st = coachStatus();
 
-    // Pending location confirm for lazy pizza order
-    if (loadPending() && /^(yes|y|ok|okay|correct|here|no|wrong|ν|ναι|όχι|oxi|confirm|go|proceed)/i.test(low)) {
+    // Escape hatch — leave pizza/location pause
+    if (/\b(cancel|stop order|clear order|never mind|forget (the )?order|abort)\b/i.test(low)) {
+      clearPending('Stopped the paused order.');
+      W.step = 'idle';
+      save();
+      return {
+        handled: true,
+        reply: "Okay — pizza pause cleared. What do you want instead?",
+        did: did.concat(['cancel_pending']),
+      };
+    }
+
+    // Pending location confirm — ONLY exact yes/no lines
+    if (loadPending() && isLocConfirmLine(low)) {
       return {
         handled: true,
         async: true,
@@ -430,13 +468,11 @@
     }
 
     if (
-      /^(first\s*(delivery|loop|order)|list\s*my\s*shop|open\s*my\s*shop|become\s*vendor|πρώτη\s*παράδοση|μαγαζί\s*μου)/i.test(
+      /^(first\s*(delivery|loop)|list\s*my\s*shop|open\s*my\s*shop|become\s*vendor|πρώτη\s*παράδοση|μαγαζί\s*μου|coach)$/i.test(
         low
-      ) ||
-      low === 'first' ||
-      low === 'coach'
+      )
     ) {
-      if (/first\s*(delivery|loop)|πρώτη/.test(low) || /auto|run|go/.test(low)) {
+      if (/first\s*(delivery|loop)|πρώτη/.test(low)) {
         return { handled: true, async: true, action: 'runFirstLoop', did: did };
       }
       var c = coachStart();
@@ -557,7 +593,15 @@
       .toLowerCase()
       .trim();
     if (!low) return null;
-    if (/^(go\s+to|fly|locate|mars|moon)/i.test(low)) return null;
+    // Never hijack navigation / map / chat control into pizza loop
+    if (
+      /^(go\s+to|fly|locate|mars|moon|dark|bright|sat|layers|shops|global|city|help|hi|hey|hello)\b/i.test(
+        low
+      )
+    )
+      return null;
+    if (/\b(cancel|stop|never\s*mind|forget\s*it|abort|clear\s*order)\b/i.test(low)) return null;
+
     var map = [
       { re: /\b(pizza|πίτσα|πιτσα|pizzeria)\b/i, food: 'pizza', overpass: 'pizza restaurant' },
       { re: /\b(sushi|σούσι)\b/i, food: 'sushi', overpass: 'sushi restaurant' },
@@ -567,27 +611,47 @@
       { re: /\b(kebab|kebap|döner|ντονέρ)\b/i, food: 'kebab', overpass: 'kebab restaurant' },
       { re: /\b(pasta|italian|ιταλικ)\b/i, food: 'pasta', overpass: 'italian restaurant' },
       { re: /\b(chinese|κινέζικ)\b/i, food: 'chinese', overpass: 'chinese restaurant' },
-      { re: /\b(food|φαγητ|delivery|παράδοση|πεινάω|hungry|eat)\b/i, food: 'food', overpass: 'restaurant food' },
     ];
-    for (var i = 0; i < map.length; i++) {
+    // Generic "food/hungry" only with clear order intent — not every "eat" chat
+    var genericFood =
+      /\b(food|φαγητ|πεινάω|hungry|i'?m\s+hungry|want\s+to\s+eat)\b/i.test(low) &&
+      /\b(order|bring|get\s+me|buy|παράγγειλ|find|want)\b/i.test(low);
+
+    var food = null;
+    var overpass = 'restaurant food';
+    var i;
+    for (i = 0; i < map.length; i++) {
       if (map[i].re.test(low)) {
-        var auto =
-          /\b(order|order\s+me|order\s+me\s+a|bring|get\s+me|buy|pay|παράγγειλ|παράγγειλε)\b/i.test(
-            low
-          ) || /\b(judge|you\s+pick|you\s+choose|whatever|decide)\b/i.test(low);
-        return {
-          food: map[i].food,
-          overpass: map[i].overpass,
-          raw: line,
-          autoOrder: auto,
-          lazyJudge:
-            /\b(judge|you\s+pick|you\s+choose|whatever|type|size|vendor|delivery\s+guy|what\s+time\s+i\s+eat)\b/i.test(
-              low
-            ) || auto,
-        };
+        food = map[i].food;
+        overpass = map[i].overpass;
+        break;
       }
     }
-    return null;
+    if (!food && genericFood) {
+      food = 'food';
+    }
+    if (!food) return null;
+
+    // Full lazy order only when user clearly asks to order / judge the tray
+    var auto =
+      /\border(\s+me)?(\s+a)?\b/i.test(low) ||
+      /\b(bring|get\s+me|buy\s+me|παράγγειλ|παράγγειλε)\b/i.test(low) ||
+      /\b(you\s+judge|judge\s+the|you\s+pick|you\s+choose|whatever\s+else|what\s+time\s+i\s+eat)\b/i.test(
+        low
+      );
+    var lazyJudge =
+      auto ||
+      /\b(you\s+judge|judge\s+type|judge\s+the|what\s+time\s+i\s+eat)\b/i.test(low);
+
+    return {
+      food: food,
+      overpass: overpass,
+      raw: line,
+      autoOrder: !!auto,
+      lazyJudge: !!lazyJudge,
+      // Weak: just "pizza" / "coffee" → browse, don't auto-pay loop
+      browseOnly: !auto && !lazyJudge,
+    };
   }
 
   /**
@@ -813,19 +877,20 @@
       .trim();
     var pend = loadPending();
     if (!pend || !pend.intent) return { ok: false, handled: false };
+    if (!isLocConfirmLine(low)) return { ok: false, handled: false };
 
-    if (/^(no|wrong|not me|όχι|oxi|false|elsewhere)/i.test(low)) {
+    if (/^(no|nope|wrong|όχι|oxi)$/i.test(low)) {
       savePending(null);
       return {
         ok: false,
         handled: true,
         needsConfirm: false,
         reply:
-          'OK · location rejected. Type locate when GPS is good, or fly <city>, then paste your order again.',
-        summary: 'Location rejected · locate again · then re-order',
+          "Got it — not that pin. Say locate when you're ready, then order again. Or talk about something else.",
+        summary: 'Location rejected',
       };
     }
-    if (/^(yes|y|ok|okay|correct|here|ν|ναι|ναι είμαι|here i am|confirm|go|proceed)/i.test(low)) {
+    if (/^(yes|y|yeah|yep|ok|okay|correct|here|confirm|go|proceed|ν|ναι)$/i.test(low)) {
       var prefs = loadPrefs();
       if (pend.pos) {
         prefs.verifiedLoc = {
@@ -853,7 +918,11 @@
     if (!intent) return { ok: false, error: 'not a food intent' };
     var food = intent.food || 'food';
     var rawLine = intent.raw || (typeof query === 'string' ? query : '');
-    if (opts.autoOrder === true || intent.autoOrder || intent.lazyJudge) {
+    // Browse-only ("pizza" alone) finds shops — does not force pay loop
+    if (intent.browseOnly && opts.autoOrder !== true) {
+      intent.autoOrder = false;
+      intent.lazyJudge = false;
+    } else if (opts.autoOrder === true || intent.autoOrder || intent.lazyJudge) {
       intent.autoOrder = true;
     }
     // Persist stated prefs from this session (owner likes)
@@ -1809,6 +1878,8 @@
     parseFoodIntent: parseFoodIntent,
     fulfillFoodIntent: fulfillFoodIntent,
     confirmLocationAndOrder: confirmLocationAndOrder,
+    clearPending: clearPending,
+    isLocConfirmLine: isLocConfirmLine,
     loadPrefs: loadPrefs,
     savePrefs: savePrefs,
     loadPending: loadPending,

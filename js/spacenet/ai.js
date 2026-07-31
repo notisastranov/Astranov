@@ -879,7 +879,21 @@
       }
     } catch (eCtrl) {}
 
-    // Food juice: "pizza" / "order sushi" → find vendors · fly · tile (order only if said)
+    // Escape pizza / order pause — always available
+    if (
+      /\b(cancel|stop order|clear order|never mind|forget (it|the order)|abort|unstick)\b/i.test(low)
+    ) {
+      try {
+        if (global.SNMarket && SNMarket.clearPending) SNMarket.clearPending();
+      } catch (eC) {}
+      return {
+        did: did.concat(['cancel']),
+        reply: "Cleared. I'm not stuck on pizza — what do you want to do?",
+        skipBrand: true,
+      };
+    }
+
+    // Food: only when parseFoodIntent says so (strict). Browse vs full order.
     if (global.SNMarket && SNMarket.parseFoodIntent && SNMarket.fulfillFoodIntent) {
       var foodIntent = SNMarket.parseFoodIntent(line);
       if (foodIntent) {
@@ -887,17 +901,17 @@
           did: did.concat(['food_intent:' + foodIntent.food]),
           reply:
             foodIntent.autoOrder || foodIntent.lazyJudge
-              ? "On it — finding you first, then I'll pick the pizza and get it moving."
+              ? "On it — finding you, then ordering " + foodIntent.food + "."
               : "Looking for " + foodIntent.food + " near you…",
           runFoodIntent: foodIntent,
         };
       }
     }
 
-    // Explicit first-task phrase without food parser edge case
+    // Lazy full pizza ONLY with explicit order+judge language (not every "first")
     if (
-      /\bfirst\s+task\b/i.test(low) ||
-      (/\border\s+me\s+(a\s+)?pizza\b/i.test(low) && /\bjudge\b/i.test(low))
+      /\border\s+me\s+(a\s+)?pizza\b/i.test(low) &&
+      /\b(judge|whatever|type|size|delivery|what\s+time)\b/i.test(low)
     ) {
       if (global.SNMarket && SNMarket.parseFoodIntent) {
         var fi2 =
@@ -908,31 +922,32 @@
         if (fi2) {
           fi2.autoOrder = true;
           fi2.lazyJudge = true;
+          fi2.browseOnly = false;
           fi2.raw = line;
           return {
-            did: did.concat(['first_task']),
-            reply: "Alright — I'll find you, pick the tray, order it, and tell you when you'll eat.",
+            did: did.concat(['lazy_pizza']),
+            reply: "Alright — full lazy pizza order. Finding you now.",
             runFoodIntent: fi2,
           };
         }
       }
     }
 
-    // Marketplace coach (vendor list → menu → order → drive → deliver)
+    // Marketplace coach — explicit coach commands only
     if (global.SNMarket && SNMarket.handleChat) {
       var mk = SNMarket.handleChat(line);
       if (mk && mk.handled) {
         if (mk.async && mk.action === 'runFirstLoop') {
           return {
             did: did.concat(['first_loop']),
-            reply: "Running the full shop-to-door loop for you now…",
+            reply: "Running the shop-to-door loop…",
             runFirstLoop: true,
           };
         }
         if (mk.async && mk.action === 'confirmLocationAndOrder') {
           return {
             did: did.concat(['loc_confirm']),
-            reply: "Checking if I've got the right spot for you…",
+            reply: "Checking your pin…",
             confirmLocationAndOrder: true,
             confirmLine: mk.line || message,
           };
@@ -1160,7 +1175,7 @@
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
       reply =
-        "I can order you pizza, find shops, switch the map, fly you places, or just talk. Try: order me a pizza — you judge everything.";
+        "I can order food, find shops, switch the map, fly places, or just talk. Stuck on an order? Say cancel. Full lazy pizza only if you paste the long order line.";
       return { did: did, reply: reply };
     }
 
@@ -1178,7 +1193,7 @@
     }
 
     reply =
-      "I'm with you. Tell me in plain words — pizza, shops, fly somewhere, dark map, or whatever you need.";
+      "I'm with you — not stuck on any scenario. Say what you need: map, shops, fly a place, dark map, order food, or cancel if an order is hanging.";
     return { did: did, reply: reply, needsEdge: false };
   }
 
@@ -1244,9 +1259,11 @@
     if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
       try {
         var wantOrder =
-          local.runFoodIntent.autoOrder === true ||
-          local.runFoodIntent.lazyJudge === true ||
-          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|judge|what\s+time\s+i\s+eat)\b/i.test(msg);
+          local.runFoodIntent.browseOnly !== true &&
+          (local.runFoodIntent.autoOrder === true ||
+            local.runFoodIntent.lazyJudge === true ||
+            (/\border\b/i.test(msg) &&
+              /\b(pizza|sushi|burger|coffee|food)\b/i.test(msg)));
         var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, {
           autoOrder: wantOrder,
           quiet: false,

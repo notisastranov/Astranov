@@ -345,20 +345,12 @@
         "I'll find you, pick Super Greek for about three with retsina and a big soda, order with our courier, show the route, and tell you when you'll eat.",
       ],
       [
-        'first task',
-        "Your first job for me is pizza — say order me a pizza and I'll judge the rest.",
-      ],
-      [
         'what do I like to eat',
         "You like Super Greek special, retsina, big soda, company of about three — not Wolt or eFood.",
       ],
       [
-        'yes',
-        "Perfect — I'll continue from that pin.",
-      ],
-      [
-        'no',
-        "Okay, wrong pin. Say locate, then ask for pizza again.",
+        'cancel order',
+        "Order pause cleared. Ask me anything else — map, shops, fly, dark map, talk.",
       ],
     ];
     drills.forEach(function (d) {
@@ -532,18 +524,27 @@
     }
     var low = msg.toLowerCase();
 
-    // —— Hard intents (never fuzzy-wrong) ——
+    // Escape stuck scenario
+    if (/\b(cancel|unstick|clear order|never mind|stop order)\b/i.test(low)) {
+      try {
+        if (global.SNMarket && SNMarket.clearPending) SNMarket.clearPending();
+      } catch (e) {}
+      return {
+        text: "Cleared. Fresh mind — what do you want to do?",
+        score: 1,
+        via: 'free-mind',
+        source: 'intent-cancel',
+      };
+    }
+
+    // Lazy pizza ONLY with explicit order language — never trap every chat
     if (
-      /\border\s+me\s+(a\s+)?pizza\b/i.test(low) ||
-      (/\bpizza\b/i.test(low) &&
-        /\b(judge|type|size|vendor|delivery|eat|time)\b/i.test(low)) ||
-      /\bfirst\s+task\b/i.test(low) ||
-      (/\bfirst\s+order\b/i.test(low) && !/\bfirst\s+delivery\b/i.test(low))
+      /\border\s+me\s+(a\s+)?pizza\b/i.test(low) &&
+      /\b(judge|whatever|type|size|delivery|what\s+time)\b/i.test(low)
     ) {
       return {
         text:
-          "On it — finding you, picking Super Greek with retsina and a big soda for the company, " +
-          "ordering with our courier, and I'll tell you when you'll eat.",
+          "On it — full lazy pizza: find you, Super Greek tray, courier, eat time.",
         score: 1,
         via: 'free-mind',
         source: 'intent-first-task',
@@ -678,10 +679,19 @@
       // Prefer seeds; learned must earn it
       if (d.source === 'seed') sc += 0.05;
       if (d.source === 'brain') sc += 0.03;
+      // Demote pizza/first-task seeds unless user said pizza/order
+      if (
+        (d.tags || []).indexOf('p0') >= 0 ||
+        (d.tags || []).indexOf('first') >= 0 ||
+        /pizza|first.task|lazy/i.test(d.id || '')
+      ) {
+        if (!/\b(pizza|order|hungry|food|σουβλ|πίτσα)\b/i.test(low)) sc *= 0.15;
+      }
       if (d.source === 'learned') {
         if (isJunkAnswer(d.a) || isJunkQuestion(d.q)) continue;
-        // Auto-learned without product shape never surfaces
         if ((d.tags || []).indexOf('auto') >= 0 && !isProductish(d.a)) continue;
+        // Never surface learned yes/no pizza pin answers for free chat
+        if (/^(yes|no)$/i.test(String(d.q || '').trim())) continue;
         sc *= 0.72;
       }
       if (sc > bestScore) {
@@ -691,8 +701,8 @@
     }
 
     // High bar — random name sludge must never win a weak token hit
-    var need = qTok.length <= 2 ? 0.72 : 0.58;
-    if (best && best.source === 'learned') need = Math.max(need, 0.78);
+    var need = qTok.length <= 2 ? 0.75 : 0.62;
+    if (best && best.source === 'learned') need = Math.max(need, 0.8);
     // Require at least 2 content-token hits for learned rows
     if (best && best.source === 'learned') {
       var learnHits = 0;
@@ -736,7 +746,7 @@
     save();
     var fallback = opts.localReply
       ? brief(opts.localReply, 140)
-      : "Not sure I got that — try pizza, shops, locate, or say it another way.";
+      : "Not sure I got that — say it plain: shops, fly athens, dark map, order pizza, or cancel.";
     return {
       text: fallback,
       score: opts.localReply ? 0.45 : 0.22,
