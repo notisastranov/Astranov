@@ -383,10 +383,12 @@
     } catch (_) {}
   }
 
-  function help() {
+    function help() {
     log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
     log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
     log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
+    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
+    log('Plans: plan list · plan status · claim · task list · task map', 'dim');
     log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
     log('Mind: mind · mind wipe · cancel · pilot home', 'dim');
     preview('Astranov Mind · talk Greeklish or English');
@@ -504,9 +506,85 @@
         log('Sim/training removed · use task list · claim · deliver · task map', 'dim');
         return;
       }
-      if (low === 'task fit' || low === 'tasks fit' || low === 'compatible' || low === 'fit tasks') {
+                  if (low === 'task fit' || low === 'tasks fit' || low === 'compatible' || low === 'fit tasks') {
         if (global.SNTaskBoard?.listCompatibleOnCli) SNTaskBoard.listCompatibleOnCli();
         else log('Task board loading · hard refresh', 'err');
+        return;
+      }
+      // Plan queries first (before isCoordIntent — "plan" must not create)
+      if (low === 'plan list' || low === 'plans' || low === 'plans list') {
+        const plans = Tasks?.listPlans?.({ all: true }) || [];
+        if (!plans.length) {
+          log('No plans · coord need driver and vendor for pizza for 3', 'dim');
+        } else {
+          plans.slice(0, 12).forEach((p) => {
+            log(
+              (p.status || 'open') +
+                ' · ' +
+                String(p.id).slice(-8) +
+                (p.food ? ' · ' + p.food : '') +
+                (p.party ? ' · ×' + p.party : '') +
+                ' · ' +
+                (p.taskIds?.length || 0) +
+                ' tasks',
+              'ok'
+            );
+          });
+        }
+        preview(plans.length + ' plans');
+        return;
+      }
+      if (low === 'plan status' || low === 'plan' || /^plan\s+status\b/.test(low)) {
+        const idPart = line.replace(/^plan(\s+status)?\s*/i, '').trim();
+        const st = Tasks?.planStatus?.(idPart || undefined);
+        if (st?.ok) {
+          const body = Tasks.formatPlanCli?.(st) || st.reply;
+          String(body)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln.trim(), 'ok');
+            });
+          preview('Plan status');
+        } else log(st?.error || 'no plan', 'dim');
+        return;
+      }
+      // Multi-user coordination plans (P0)
+      if (
+        /^coord\b|^coordinate\b|^team\b/.test(low) ||
+        (Tasks?.isCoordIntent && Tasks.isCoordIntent(line))
+      ) {
+        const text = line.replace(/^(coord|coordinate|team)\s*/i, '').trim() || line;
+        activity('coordinating…', 'work', { label: 'Coord' });
+        const r = Tasks?.createPlan?.(text);
+        if (r?.ok) {
+          const body = Tasks.formatPlanCli?.(r) || r.reply || 'Plan created';
+          String(body)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln.trim(), 'ok');
+            });
+          preview('Plan · ' + (r.tasks?.length || 0) + ' tasks');
+          try {
+            if (global.SNMap?.active) {
+              global.SNMap.showTasks?.();
+              global.SNMap.showProfiles?.();
+            }
+          } catch (_) {}
+        } else log(r?.error || 'Could not create plan', 'err');
+        return;
+      }
+      if (/^assign\b/.test(low)) {
+        activity('assigning…', 'work', { label: 'Assign' });
+        const r = Tasks?.assignPlan?.(line);
+        if (r?.ok) {
+          const body = Tasks.formatPlanCli?.(r) || r.reply || 'Assigned';
+          String(body)
+            .split('\n')
+            .forEach((ln) => {
+              if (ln.trim()) log(ln.trim(), 'ok');
+            });
+          preview('Assigned');
+        } else log(r?.error || 'assign failed', 'err');
         return;
       }
       if (low === 'advise' || low === 'traffic' || low === 'scan advise') {

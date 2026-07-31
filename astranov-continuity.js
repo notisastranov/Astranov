@@ -1,6 +1,6 @@
 /** Astranov / SpaceNet continuity — machine contract. SPECS.md is sole law. */
 const AstranovContinuity = {
-  version: '20260731020000-ribbon-home-tools',
+  version: '20260731160000-coord-plans',
   updated: '2026-07-31',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
@@ -16,13 +16,15 @@ const AstranovContinuity = {
     publicBrand: 'ASTRANOV',
     domain: 'astranov.eu',
     ai: 'Astranov',
-    aiListen: 'ASTRANOV LISTENING',
+    aiMind: 'Astranov Mind',
+    aiListen: 'human short sentences (no robot LISTENING spam)',
     currency: 'S / SpaceNets',
     forbiddenAiNames: ['SpaceNet', 'Grok', 'ChatGPT'],
   },
 
   p0: 'spartan-coding',
   p0d: 'zero-dummy-absolute',
+  p0Coord: 'multi-user-task-coordination',
   shipGate: 'live path green OR honest not-verified; push alone is not ship',
   neverMakeOwnerRestateSpecs: true,
   emailSupportOnFalseShip: true,
@@ -46,6 +48,20 @@ const AstranovContinuity = {
     ],
     '2026-07-31': [
       'OV-15 CLI top ribbon Locate·User·Add·Layers·AI·Send · no burger · tools on ASTRANOV home',
+      'OV-16 Ribbon: only ➕ + Layers expand · User=login/profile · ASTRANOV home=device harvest Main/Secondary/RAID',
+    ],
+  },
+
+  coordination: {
+    module: 'js/spacenet/tasks.js',
+    apis: ['createPlan', 'assignPlan', 'planStatus', 'listPlans', 'isCoordIntent'],
+    cli: ['coord <text>', 'assign …', 'plan list', 'plan status', 'claim', 'task list', 'task map'],
+    rules: [
+      'parse natural multi-role intent → linked tasks with planId',
+      'nearest real profiles only — no dummy users',
+      'driver tasks may dependOn vendor prep',
+      'one human summary line on CLI — no spam',
+      'pulse map + showTasks when map open',
     ],
   },
 
@@ -62,22 +78,23 @@ const AstranovContinuity = {
   },
 
   surface: {
-    chrome: ['radar', 'ASTRANOV home (full tools menu)', 'miner S HUD'],
+    chrome: ['radar', 'ASTRANOV home (device harvest technical)', 'miner S HUD'],
     cli: 'top ribbon 6 shortcuts + log + input',
     cliRibbon: ['locate', 'user', 'add', 'layers', 'AI', 'send'],
-    cliForbidden: ['feed chip tiles', 'menu/cart/order ribbon flood', 'burger chrome'],
+    cliForbidden: ['feed chip tiles', 'menu/cart/order ribbon flood', 'burger chrome', 'almighty crawl spam'],
     tools: 'ASTRANOV home · CLI ribbon · money HUD · map multi-tile · typed CLI',
-    multiTile: 'map overlay only',
+    multiTile: 'map overlay only · peek first then expand',
     finance: 'money HUD only',
     noBurger: true,
   },
 
   ai: {
     name: 'Astranov',
-    listen: 'ASTRANOV LISTENING',
+    mind: 'Astranov Mind',
     freeFirst: true,
     controlApp: true,
     noJunkFuzzy: true,
+    hardIntentsFirst: ['coord', 'food', 'telemachos', 'navigate'],
   },
 
   auth: {
@@ -111,25 +128,15 @@ const AstranovContinuity = {
     'ai-brand-spacenet',
     'dummy-npc-seeds',
     'marketplace-curfew',
+    'full-screen-tile-on-badge-tap',
   ],
 
   zeroDummy: {
     sectorFill: 'SNCommerce.ensureSector (db → edge → overpass → crawl)',
     emptySector: 'honest empty + long-press create or fly',
+    coordination: 'nearest real profiles only; self as driver only if alone',
   },
-
-  verify: [
-    'Naming: SpaceNet=system/grid · AI=Astranov · face=ASTRANOV',
-    'Boot GLOBAL Earth in space · city closed',
-    'Splash ASTRANOV + horizontal blue loader',
-    'CLI text-only',
-    'Multi-tile on map only',
-    'ASTRANOV LISTENING',
-    'Auth face astranov.eu not supabase project',
-    'first delivery works',
-    'donate on mesh',
-    'false ship → email + ESCALATION',
-  ],
 };
 
-window.AstranovContinuity = AstranovContinuity;
+if (typeof window !== 'undefined') window.AstranovContinuity = AstranovContinuity;
+if (typeof module !== 'undefined' && module.exports) module.exports = AstranovContinuity;

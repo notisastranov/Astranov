@@ -96,7 +96,7 @@
         'I still hear ancient-flavoured Greek in the Archangelos lane — χαίρε, καίρειν, ὦ θεοί — mixed with village speech. Mission language, not museum only.',
       tags: ['dialect', 'ancient', 'owner', 'el'],
     },
-    {
+        {
       id: 'first_task',
       q:
         'first task first order lazy order me a pizza you judge type size vendor delivery guy ' +
@@ -104,6 +104,22 @@
       a:
         "Lazy order is alive — pizza Super Greek / or village tray pitogyra mpyronia. I find you, judge tray, courier or Telemachos, eat time.",
       tags: ['market', 'food', 'p0', 'first'],
+    },
+    {
+      id: 'coord_multi',
+      q:
+        'coord coordinate team assign need driver and vendor shop kitchen courier for pizza for 3 at my pin ' +
+        'assign 2 drivers nearest multi user plan notify when both claim στείλε driver μαγαζί θέλω πιτογύρα',
+      a:
+        "I can split work: kitchen prep for a shop, courier for a driver, you as client. Say coord need driver and vendor for pizza for 3 — or assign 2 drivers nearest. Plan list · claim · task map.",
+      tags: ['tasks', 'coord', 'p0', 'multi'],
+    },
+    {
+      id: 'coord_greeklish',
+      q: 'θέλω πιτογύρα μπυρόνια στείλε driver μαγαζί team assign plan status',
+      a:
+        "Ναι αξάκι — coord: vendor + driver για πιτογύρα. Type coord or just say need driver and shop. plan status · claim.",
+      tags: ['tasks', 'coord', 'dialect', 'el'],
     },
     {
       id: 'first_task_steps',
@@ -224,7 +240,7 @@
     {
       id: 'help',
       q: 'help commands what can you do',
-      a: "Order pizza or pitogyra mpyronia, call Telemachos, fly Archangelos, shops, dark map, or talk Greeklish — aksaki. Cancel clears a stuck order.",
+            a: "Order pizza or pitogyra mpyronia, coordinate driver+shop with coord, call Telemachos, fly Archangelos, shops, dark map, or talk Greeklish — aksaki. Cancel clears a stuck order.",
       tags: ['help', 'p0', 'mind'],
     },
     {

@@ -891,7 +891,7 @@
       }
     } catch (eDial) {}
 
-    // Escape pizza / order pause — always available
+        // Escape pizza / order pause — always available
     if (
       /\b(cancel|stop order|clear order|never mind|forget (it|the order)|abort|unstick)\b/i.test(low)
     ) {
@@ -903,6 +903,53 @@
         reply: "Cleared. Astranov Mind is free — what do you want?",
         skipBrand: true,
       };
+    }
+
+    // Multi-user coordination (hard intent before food / fuzzy)
+    if (global.SNTasks && SNTasks.isCoordIntent && SNTasks.isCoordIntent(line)) {
+      try {
+        var planRes =
+          /^assign\b/i.test(low) && SNTasks.assignPlan
+            ? SNTasks.assignPlan(line)
+            : SNTasks.createPlan
+              ? SNTasks.createPlan(line)
+              : null;
+        if (planRes && planRes.ok) {
+          var nKids = (planRes.tasks && planRes.tasks.length) || 0;
+          var human =
+            'Coordinated ' +
+            nKids +
+            ' tasks' +
+            (planRes.plan && planRes.plan.food ? ' for ' + planRes.plan.food : '') +
+            (planRes.plan && planRes.plan.party ? ' ×' + planRes.plan.party : '') +
+            '. ' +
+            (planRes.reply || 'See plan status · claim · task map.');
+          // Keep CLI quiet — one summary; details on plan status
+          showOnGlobe(
+            'Plan · ' +
+              nKids +
+              ' tasks' +
+              (planRes.plan && planRes.plan.food ? ' · ' + planRes.plan.food : '')
+          );
+          try {
+            if (global.SNMap && SNMap.active) {
+              if (SNMap.showTasks) SNMap.showTasks();
+              if (SNMap.showProfiles) SNMap.showProfiles();
+            }
+          } catch (eM) {}
+          return {
+            did: did.concat(['coord', 'plan:' + ((planRes.plan && planRes.plan.id) || '')]),
+            reply: human,
+            skipBrand: true,
+          };
+        }
+      } catch (eCoord) {
+        return {
+          did: did.concat(['coord_fail']),
+          reply: 'Could not coordinate that — try: coord need driver and vendor for pizza for 3',
+          skipBrand: true,
+        };
+      }
     }
 
     // Telemachos drone pilot
@@ -1223,9 +1270,9 @@
       return { did: did, reply: reply };
     }
 
-    if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
+        if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
       reply =
-        "I can order food, find shops, switch the map, fly places, or just talk. Stuck on an order? Say cancel. Full lazy pizza only if you paste the long order line.";
+        "I can order food, coordinate a driver and shop, find places, or just talk. Try: coord need driver and vendor for pizza for 3. Stuck? Say cancel.";
       return { did: did, reply: reply };
     }
 
