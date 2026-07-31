@@ -1667,6 +1667,79 @@
         preview('auth setup');
         return;
       }
+      if (
+        low === 'channels' ||
+        low === 'channel' ||
+        low === 'channel manager' ||
+        low === 'platforms'
+      ) {
+        if (!global.SNChannel) {
+          log('Channel manager loading · hard refresh', 'err');
+          return;
+        }
+        SNChannel.statusLines().forEach((ln) => log(ln, /CHANNEL|Linked|Commands/.test(ln) ? 'ok' : 'dim'));
+        preview('channels');
+        return;
+      }
+      if (/^link\s+\w+/.test(low)) {
+        if (!global.SNChannel) {
+          log('Channel manager offline', 'err');
+          return;
+        }
+        const m = line.match(/^link\s+(\w+)\s*(.*)$/i);
+        const plat = m && m[1];
+        const rest = (m && m[2] && m[2].trim()) || '';
+        const p = SNChannel.link(plat, rest, '');
+        log(
+          'Linked · ' + (p.name || plat) + (p.externalId ? ' · ' + p.externalId : '') + ' · go drive on',
+          'ok'
+        );
+        preview('link ' + plat);
+        return;
+      }
+      if (/^unlink\s+\w+/.test(low)) {
+        if (!global.SNChannel) return;
+        const plat = low.replace(/^unlink\s+/, '').trim();
+        SNChannel.unlink(plat);
+        log('Unlinked · ' + plat, 'ok');
+        return;
+      }
+      if (low === 'orchestrate' || /^orchestrate\b/.test(low) || low === 'channel jobs') {
+        if (!global.SNChannel) {
+          log('Channel manager offline', 'err');
+          return;
+        }
+        const jobs = SNChannel.listJobs().filter((j) => j.status === 'queued' || j.status === 'assigned');
+        if (!jobs.length) {
+          log('No channel jobs · ingest via link + external push, or order pizza on Astranov', 'dim');
+          return;
+        }
+        const r = await SNChannel.orchestrate(jobs[0]);
+        log(r.reply || (r.ok ? 'orchestrated' : r.error), r.ok ? 'ok' : 'err');
+        return;
+      }
+      if (low === 'drivers cargo' || low === 'cargo' || low === 'driver load') {
+        const drivers = (global.SNProfiles?.list?.({ role: 'driver' }) || []).filter((d) => d.driverOnline);
+        if (!drivers.length) {
+          log('No online drivers · go drive on', 'dim');
+          return;
+        }
+        drivers.forEach((d) => {
+          const c = (global.SNChannel && SNChannel.cargoLoad(d.id)) || 0;
+          const max = d.maxCargo != null ? d.maxCargo : 3;
+          log(
+            (d.name || d.id) +
+              ' · cargo ' +
+              c +
+              '/' +
+              max +
+              (c >= max ? ' · FULL' : c === 0 ? ' · free' : ' · light'),
+            c >= max ? 'err' : 'ok'
+          );
+        });
+        preview('cargo');
+        return;
+      }
       if (low === 'logout' || low === 'signout' || low === 'sign out') {
         if (global.SNAuth?.user) await global.SNAuth.signOut();
         log('Signed out', 'ok');

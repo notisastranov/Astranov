@@ -162,6 +162,7 @@
     '/js/spacenet/spatial.js',
     '/js/spacenet/market-live.js',
     '/js/spacenet/mesh-orders.js',
+    '/js/spacenet/channel-manager.js',
     '/js/spacenet/task-board.js',
 
     '/js/spacenet/super.js',

@@ -482,6 +482,7 @@
       '#sn-tile .sn-menu-item{display:flex;align-items:center;gap:8px;padding:6px 0;',
       'border-bottom:1px solid rgba(26,111,212,.15)}',
       '#sn-tile .sn-menu-item img{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#0a1a30;flex-shrink:0}',
+      '#sn-tile .sn-menu-item.sn-menu-off{opacity:.45}',
       '#sn-tile .sn-menu-meta{flex:1;min-width:0}',
       '#sn-tile .sn-menu-meta b{display:block;color:#e8f4ff;font-size:12px}',
       '#sn-tile .sn-menu-meta span{display:block;font-size:10px;color:#6a8aaa}',
@@ -1117,26 +1118,49 @@
                   : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
       }
     } else if (T.tab === 'menu') {
+      // Ensure full orderable menu before paint
+      try {
+        if (global.SNProfiles?.ensureOrderableMenu) {
+          const filled = SNProfiles.ensureOrderableMenu(p);
+          if (filled) p = filled;
+        }
+      } catch (_) {}
       const menu = p.menu || [];
       const hours = p.hours || p.opening_hours || '';
       const sched = global.SNMarket?.verifySchedule?.(p);
+      const openBit =
+        p.openNow === true
+          ? ' · OPEN NOW'
+          : p.openNow === false
+            ? ' · closed now'
+            : '';
       const bandNote = menu.some((m) => m && m.source === 'google-price-band')
-        ? '<div class="sn-empty" style="margin-bottom:6px">Google lists a price band, not a full dish menu. These are order slots in S — call the shop for the real menu.</div>'
-        : '';
+        ? '<div class="sn-empty" style="margin-bottom:6px">Google price band · cuisine order slots in S. Vendor can replace with live dish names.</div>'
+        : menu.some((m) => m && m.source === 'cuisine-template')
+          ? '<div class="sn-empty" style="margin-bottom:6px">Menu from cuisine + live shop data · prices in S · photos from shop.</div>'
+          : '';
       body.innerHTML =
         '<div class="sn-menu-head">' +
         esc(p.shopName || p.name) +
         ' · menu</div>' +
         '<div class="sn-empty" style="margin-bottom:6px">🕒 ' +
         esc(sched?.label || hours || 'Hours not listed') +
+        openBit +
         (p.phone ? ' · 📞 ' + esc(p.phone) : '') +
+        (p.rating != null ? ' · ★' + Number(p.rating).toFixed(1) : '') +
         '</div>' +
+        (p.address
+          ? '<div class="sn-empty" style="margin-bottom:6px">' + esc(p.address) + '</div>'
+          : '') +
         bandNote +
         (menu.length
           ? menu
-              .map(
-                (m) =>
-                  '<div class="sn-menu-item" data-mid="' +
+              .map(function (m) {
+                const avail = m.available !== false;
+                return (
+                  '<div class="sn-menu-item' +
+                  (avail ? '' : ' sn-menu-off') +
+                  '" data-mid="' +
                   esc(m.id) +
                   '">' +
                   '<img src="' +
@@ -1145,24 +1169,30 @@
                   '<div class="sn-menu-meta">' +
                   '<b>' +
                   esc(m.name) +
+                  (avail ? '' : ' · unavailable') +
                   '</b>' +
                   '<span>' +
-                  esc(m.desc) +
+                  esc(m.desc || '') +
                   '</span>' +
                   '<em>' +
-                  (window.SNCurrency ? SNCurrency.format(m.price) : Number(m.price).toFixed(2) + ' S') +
+                  (window.SNCurrency
+                    ? SNCurrency.format(m.price)
+                    : Number(m.price).toFixed(2) + ' S') +
                   '</em>' +
                   '</div>' +
-                  '<button type="button" class="sn-add" data-add="' +
-                  esc(m.id) +
-                  '">+</button>' +
+                  (avail
+                    ? '<button type="button" class="sn-add" data-add="' +
+                      esc(m.id) +
+                      '">+</button>'
+                    : '<span class="sn-add" style="opacity:.35">—</span>') +
                   '</div>'
-              )
+                );
+              })
               .join('')
-          : '<div class="sn-empty">No dish menu on Google for this place. ' +
+          : '<div class="sn-empty">No menu yet. Tap Scan shops or fill shops · then reopen. ' +
             (p.phone ? 'Call ' + esc(p.phone) + '. ' : '') +
-            (p.website ? 'Or open the website. ' : '') +
-            'Vendor can add real items in S.</div>');
+            (p.website ? 'Website available. ' : '') +
+            '</div>');
       foot.innerHTML =
         (p.phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '') +
         (p.website ? '<button type="button" class="sn-btn" data-act="website">Website</button>' : '') +
@@ -1173,7 +1203,7 @@
       body.querySelectorAll('[data-add]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const item = (p.menu || []).find((x) => x.id === btn.dataset.add);
-          if (!item) return;
+          if (!item || item.available === false) return;
           Prof.cartAdd(p.id, item, 1);
           global.SNCli?.log?.(
             'Cart + ' + item.name + ' ' + (window.SNCurrency ? SNCurrency.format(item.price) : item.price + ' S'),

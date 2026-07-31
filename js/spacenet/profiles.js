@@ -672,10 +672,12 @@
       prev.roles.vendor = true;
       prev.shopName = prev.shopName || place.name || prev.name || 'Shop';
       if (place.kind) prev.shopKind = String(place.kind).toLowerCase();
+      if (place.cuisine) prev.cuisine = place.cuisine;
       if (place.hours || place.opening_hours) {
         prev.hours = place.hours || place.opening_hours;
         prev.opening_hours = prev.hours;
       }
+      if (place.openNow != null) prev.openNow = place.openNow;
       if (place.phone) prev.phone = place.phone;
       if (place.website) prev.website = place.website;
       if (place.address) prev.address = place.address;
@@ -693,10 +695,11 @@
       prev.updated = Date.now();
       P.profiles.set(prev.id, prev);
       save();
-      return prev;
+      return ensureOrderableMenu(prev);
     }
     const photos = Array.isArray(place.photos) ? place.photos : [];
-    return upsert({
+    return ensureOrderableMenu(
+      upsert({
       id,
       name: place.name || 'Place',
       handle: '@' + id.slice(0, 16),
@@ -712,6 +715,7 @@
       lng: place.lng,
       shopName: place.name || 'Shop',
       shopKind: kind,
+      cuisine: place.cuisine || '',
       menu: parseMenuItems(place.items || place.menu),
       hours: place.hours || place.opening_hours || '',
       opening_hours: place.hours || place.opening_hours || '',
@@ -719,6 +723,7 @@
       website: place.website || '',
       address: place.address || '',
       rating: place.rating != null ? place.rating : null,
+      openNow: place.openNow != null ? place.openNow : true,
       googlePlaceId: place.googlePlaceId || '',
       googleMapsUrl: place.googleMapsUrl || place.url || '',
       real: true,
@@ -732,7 +737,130 @@
           t: Date.now(),
         },
       ],
+    })
+    );
+  }
+
+  /**
+   * Cuisine/kind → orderable menu with photos, prices in S, availability.
+   * Used when Google/Overpass give a REAL shop but no dish list.
+   * Never invents shops — only fills menus for existing vendor pins.
+   */
+  function cuisineMenuFor(vendor) {
+    const kind = String(vendor.shopKind || vendor.kind || vendor.category || '').toLowerCase();
+    const cuisine = String(vendor.cuisine || '').toLowerCase();
+    const name = String(vendor.shopName || vendor.name || '').toLowerCase();
+    const blob = kind + ' ' + cuisine + ' ' + name;
+    const photos = Array.isArray(vendor.photos) ? vendor.photos : [];
+    const cover = vendor.cover || photos[0] || vendor.avatar || '';
+    const ph = function (i) {
+      return photos[i % Math.max(1, photos.length)] || cover || pic('menu-' + i, 200, 200);
+    };
+    const open =
+      vendor.openNow !== false &&
+      !/^closed$/i.test(String(vendor.hours || vendor.opening_hours || ''));
+    function item(name, price, desc, i) {
+      return {
+        id: 'cm_' + String(name).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 28),
+        name: name,
+        price: Math.round(Number(price) * 100) / 100,
+        desc: desc || 'Order in S · Astranov delivery',
+        photo: ph(i || 0),
+        available: open,
+        source: 'cuisine-template',
+      };
+    }
+    if (/pizza/.test(blob)) {
+      return [
+        item('Margherita', 9.5, 'Tomato · mozzarella', 0),
+        item('Pepperoni', 12, 'Spicy pepperoni', 1),
+        item('Greek special', 13.5, 'Feta · olives · oregano', 2),
+        item('Family tray 13pc', 22, 'Share size', 3),
+        item('1.5L soda', 3.5, 'Cold drink', 4),
+      ];
+    }
+    if (/souvlaki|gyro|kebab|grill|greek|ψήστ|πιτογ|pitogyr|gyros/.test(blob)) {
+      return [
+        item('Pita gyros', 3.8, 'Pork or chicken', 0),
+        item('Pita souvlaki', 4.2, 'Skewered meat', 1),
+        item('Portion gyros', 7.5, 'Plate + fries', 2),
+        item('Mpyronia / beer', 3.5, 'Cold', 3),
+        item('Village salad', 6.5, 'Horiatiki', 4),
+      ];
+    }
+    if (/sushi|japan|ramen/.test(blob)) {
+      return [
+        item('Salmon set', 14, '8 pcs', 0),
+        item('Mix roll tray', 16, '12 pcs', 1),
+        item('Miso soup', 4, 'Hot', 2),
+        item('Edamame', 4.5, 'Side', 3),
+      ];
+    }
+    if (/burger|american|fast_food/.test(blob)) {
+      return [
+        item('Classic burger', 8.5, 'Beef · cheese', 0),
+        item('Double stack', 11.5, 'Two patties', 1),
+        item('Fries', 3.5, 'Salted', 2),
+        item('Soda', 2.5, '0.5L', 3),
+      ];
+    }
+    if (/cafe|coffee|bar|bakery/.test(blob)) {
+      return [
+        item('Espresso', 2.2, 'Single', 0),
+        item('Cappuccino', 3.5, 'Milk foam', 1),
+        item('Freddo espresso', 3.2, 'Greek iced', 2),
+        item('Croissant', 2.8, 'Butter', 3),
+        item('Sandwich', 5.5, 'Day special', 4),
+      ];
+    }
+    // General restaurant / food shop
+    return [
+      item('Chef special', 12, 'House dish · confirm by call', 0),
+      item('Meal for one', 11, 'Main + side', 1),
+      item('Share tray', 22, '2–3 people', 2),
+      item('Soft drink', 2.5, 'Cold', 3),
+      item('Dessert', 5, 'House sweet', 4),
+    ];
+  }
+
+  /** Ensure vendor has orderable menu (photos · prices · availability) */
+  function ensureOrderableMenu(vendor) {
+    if (!vendor || !vendor.id) return vendor;
+    let menu = Array.isArray(vendor.menu) ? vendor.menu.slice() : [];
+    const hasReal = menu.some(function (m) {
+      return m && m.source !== 'google-price-band' && m.price > 0;
     });
+    if (!hasReal || menu.length < 2) {
+      const pack = cuisineMenuFor(vendor);
+      // Prefer cuisine pack over empty / only price-band slots
+      if (!hasReal) menu = pack;
+      else {
+        pack.forEach(function (it) {
+          if (!menu.some(function (m) {
+            return String(m.name).toLowerCase() === String(it.name).toLowerCase();
+          }))
+            menu.push(it);
+        });
+      }
+    }
+    // Attach photos + available flags
+    const photos = Array.isArray(vendor.photos) ? vendor.photos : [];
+    const cover = vendor.cover || photos[0] || vendor.avatar || '';
+    const open =
+      vendor.openNow !== false &&
+      !/^closed$/i.test(String(vendor.hours || vendor.opening_hours || ''));
+    menu = menu.map(function (m, i) {
+      return Object.assign({}, m, {
+        photo: m.photo || photos[i % Math.max(1, photos.length)] || cover || pic(m.name || i, 200, 200),
+        available: m.available != null ? !!m.available : open,
+        price: Number(m.price) > 0 ? Number(m.price) : 10,
+      });
+    });
+    vendor.menu = menu;
+    vendor.menuReady = true;
+    P.profiles.set(vendor.id, vendor);
+    save();
+    return vendor;
   }
 
   /**
@@ -784,6 +912,8 @@
     parseMenuItems,
     defaultMenu,
     fromCrawlPlace,
+    ensureOrderableMenu,
+    cuisineMenuFor,
     seedCity,
     primaryRole,
     pinColor,

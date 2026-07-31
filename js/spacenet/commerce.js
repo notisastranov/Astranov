@@ -230,31 +230,33 @@
       } catch (_) {}
     }
 
-    // 3) Google Places (Business Profile surface) when key present — photos/hours/phone/website
-    if (count < 3 && global.SNPlacesBusiness?.fillSector && SNPlacesBusiness.hasKey?.()) {
+    // 3) Google Places — always try when key present (photos · hours · phone · ratings)
+    if (global.SNPlacesBusiness?.fillSector && SNPlacesBusiness.hasKey?.()) {
       try {
-        global.SNCli?.log?.('Filling shops from Google Places…', 'dim');
-        const g = await SNPlacesBusiness.fillSector(pos.lat, pos.lng, {
-          radiusM: 2800,
-          limit: 20,
-          details: 12,
-          quiet: false,
-        });
-        if (g?.count) {
-          count = Math.max(count, g.count);
-          source = source === 'none' ? 'google-places' : source + '+google';
+        if (count < 8) {
+          global.SNCli?.log?.('Filling shops from Google Places…', 'dim');
+          const g = await SNPlacesBusiness.fillSector(pos.lat, pos.lng, {
+            radiusM: 3200,
+            limit: 28,
+            details: 16,
+            quiet: false,
+          });
+          if (g?.count) {
+            count = Math.max(count, g.count);
+            source = source === 'none' ? 'google-places' : source + '+google';
+          }
         }
       } catch (e) {
         console.warn('[SNCommerce] google places', e);
       }
     }
 
-    // 4) Live Overpass POIs → real vendor tiles (phone/website/hours when tagged)
-    if (count < 1 && global.SNSearch?.nearby) {
+    // 4) Live Overpass POIs → real vendor tiles (always warm for phone/hours tags)
+    if (count < 12 && global.SNSearch?.nearby) {
       try {
         global.SNCli?.log?.('Looking up map shops…', 'dim');
-        const pois = await SNSearch.nearby(pos.lat, pos.lng, 2800, 'restaurant cafe shop food');
-        (pois || []).slice(0, 36).forEach((p) => {
+        const pois = await SNSearch.nearby(pos.lat, pos.lng, 3200, 'restaurant cafe shop food');
+        (pois || []).slice(0, 40).forEach((p) => {
           try {
             global.SNProfiles?.fromCrawlPlace?.(
               {
@@ -273,14 +275,45 @@
             );
           } catch (_) {}
         });
-        count = (pois && pois.length) || 0;
-        if (count) source = 'overpass';
+        const n = (pois && pois.length) || 0;
+        if (n) {
+          count = Math.max(count, n);
+          source = source === 'none' ? 'overpass' : source + '+overpass';
+        }
       } catch (e) {
         global.SNCli?.log?.('Map shops · ' + (e.message || e), 'dim');
       }
     }
 
-    // 5) Map crawl as last live path
+    // 5) Force orderable menus (photos · prices · availability) on every vendor near you
+    try {
+      const vendors = (global.SNProfiles?.list?.({ role: 'vendor' }) || []).filter(function (v) {
+        if (!v || v.lat == null) return false;
+        const dLat = Math.abs(v.lat - pos.lat);
+        const dLng = Math.abs(v.lng - pos.lng);
+        return dLat < 0.08 && dLng < 0.1;
+      });
+      vendors.forEach(function (v) {
+        try {
+          if (global.SNProfiles.ensureOrderableMenu) SNProfiles.ensureOrderableMenu(v);
+        } catch (_) {}
+      });
+      // Enrich top pins via Google when key present
+      if (global.SNPlacesBusiness?.enrichProfile && SNPlacesBusiness.hasKey?.()) {
+        const top = vendors.slice(0, 10);
+        for (let i = 0; i < top.length; i++) {
+          try {
+            await SNPlacesBusiness.enrichProfile(top[i]);
+            if (global.SNProfiles.ensureOrderableMenu) {
+              const g = SNProfiles.get(top[i].id);
+              if (g) SNProfiles.ensureOrderableMenu(g);
+            }
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
+    // 6) Map crawl as last live path
     if (count < 1 && global.SNSearch?.crawl) {
       try {
         const crawled = await SNSearch.crawl('restaurants cafes shops', {

@@ -980,6 +980,9 @@
 
   function ensureFoodMenu(vendor, food, judged) {
     if (!vendor || !global.SNProfiles) return vendor;
+    if (global.SNProfiles.ensureOrderableMenu) {
+      vendor = SNProfiles.ensureOrderableMenu(vendor) || vendor;
+    }
     var menu = vendor.menu || [];
     var wantName = judged && judged.itemName ? judged.itemName : String(food || 'Food');
     var f = String(food || 'Food');
@@ -996,9 +999,10 @@
         name: wantName.charAt(0).toUpperCase() + wantName.slice(1),
         price: judged && judged.price != null ? judged.price : defaultFoodPrice(food),
         desc: 'Ordered via Astranov · pay in S · kitchen confirms',
+        available: true,
+        photo: (vendor.photos && vendor.photos[0]) || vendor.cover || vendor.avatar || '',
       });
       vendor = (global.SNProfiles.get && global.SNProfiles.get(vendor.id)) || vendor;
-
     }
     return vendor;
   }
@@ -1519,12 +1523,25 @@
         label: 'Courier',
       });
       var meP = global.SNProfiles && SNProfiles.me && SNProfiles.me();
-      var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
-        return d.driverOnline && d.id !== (meP && meP.id) && haversineKm(pos, d) < 20;
-      });
-      drivers.sort(function (a, b) {
-        return haversineKm(pos, a) - haversineKm(pos, b);
-      });
+      var pick =
+        global.SNChannel && SNChannel.pickBestDriver
+          ? SNChannel.pickBestDriver(pos, { maxKm: 20, excludeMe: false })
+          : null;
+      var drivers = [];
+      if (pick && pick.driver) {
+        drivers = [pick.driver];
+      } else {
+        drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
+          return d.driverOnline && d.id !== (meP && meP.id) && haversineKm(pos, d) < 20;
+        });
+        drivers.sort(function (a, b) {
+          var ca =
+            (global.SNChannel && SNChannel.cargoLoad && SNChannel.cargoLoad(a.id)) || 0;
+          var cb =
+            (global.SNChannel && SNChannel.cargoLoad && SNChannel.cargoLoad(b.id)) || 0;
+          return haversineKm(pos, a) * 10 + ca * 28 - (haversineKm(pos, b) * 10 + cb * 28);
+        });
+      }
       if (drivers.length) {
         driver = drivers[0];
         try {
@@ -1533,11 +1550,21 @@
             claim.task.driverId = driver.id;
             claim.task.driverName = driver.name || 'Driver';
             claim.task.status = 'in_progress';
+            claim.task.cargoAtAssign = pick ? pick.cargo : 0;
           }
           courierNote =
             'Courier · ' +
             (driver.name || 'driver') +
             (driver.vehicle ? ' · ' + driver.vehicle : '') +
+            (pick
+              ? ' · ' +
+                pick.km.toFixed(1) +
+                ' km · cargo ' +
+                pick.cargo +
+                '/' +
+                pick.maxCargo +
+                ' (lightest free)'
+              : '') +
             ' · say deliver me when landed';
           log(courierNote, 'ok');
         } catch (_) {}

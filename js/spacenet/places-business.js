@@ -241,6 +241,21 @@
     if (extra.menu && extra.menu.length) menu = extra.menu.slice();
     else if (band) menu = slotsFromPriceBand(band, place.name);
 
+    // Stamp shop photos onto menu slots so tiles are never empty dots
+    if (menu.length && photos.length) {
+      menu = menu.map(function (m, i) {
+        return Object.assign({}, m, {
+          photo: m.photo || photos[i % photos.length] || cover,
+          available:
+            m.available != null
+              ? m.available
+              : place.opening_hours && place.opening_hours.open_now != null
+                ? !!place.opening_hours.open_now
+                : true,
+        });
+      });
+    }
+
     return {
       googlePlaceId: place.place_id || extra.googlePlaceId || '',
       name: place.name || extra.name || 'Place',
@@ -396,8 +411,14 @@
       menu: keepMenu ? prev.menu : spec.menu,
       cover: spec.cover || (prev && prev.cover) || '',
       avatar: spec.avatar || (prev && prev.avatar) || '',
+      cuisine: (prev && prev.cuisine) || (types && types[0]) || '',
     });
-    return SNProfiles.upsert(merged);
+    var out = SNProfiles.upsert(merged);
+    // Always ensure orderable menu with photos/prices/availability
+    if (global.SNProfiles && SNProfiles.ensureOrderableMenu) {
+      out = SNProfiles.ensureOrderableMenu(out) || out;
+    }
+    return out;
   }
 
   /**
