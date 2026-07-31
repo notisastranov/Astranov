@@ -650,11 +650,14 @@
             (st.learned || 0) +
             ' lived notes · ' +
             (st.seeds || 0) +
-            ' seed memories · evolves forever',
+            ' seed memories · train ' +
+            (st.train || 'v6') +
+            ' · evolves forever',
           'ok'
         );
-        log('Archangelos dialect · Telemachos pilot · tray: pitogyra mpyronia tsigareta', 'dim');
-        log('If corrupted: mind wipe · then hard refresh', 'dim');
+        log('English · Greek · Greeklish · ancient · Telemachos · tray pitogyra mpyronia', 'dim');
+        log('If broken speech: mind wipe · then hard refresh', 'dim');
+
         preview('Astranov Mind');
         global.SNGlobe?.setHud?.('ASTRANOV MIND');
         return;

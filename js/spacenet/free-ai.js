@@ -2,17 +2,22 @@
  * ASTRANOV MIND — permanent owner memory that evolves independently.
  * Not a disposable "free mind" chatbot. Copy of owner memories + mission law.
  * Alias: SNFreeMind (legacy API). Brand: Astranov.
+ *
+ * v6: English chat + Greeklish + modern/ancient Greek hard paths · simple task intents · retrain
  */
 (function (global) {
   'use strict';
 
-  // v5: Astranov Mind — Archangelos · Greeklish · Telemachos · owner tray
-  var LEARN_KEY = 'sn:astranov-mind-v5';
-  var STATS_KEY = 'sn:astranov-mind-stats-v5';
-  var MAX_LEARN = 400;
+  // v6: talk English · Greeklish · Greek · ancient · complete simple tasks
+  var LEARN_KEY = 'sn:astranov-mind-v6';
+  var STATS_KEY = 'sn:astranov-mind-stats-v6';
+  var MAX_LEARN = 500;
   var NAME = 'Astranov';
   var MIND_NAME = 'Astranov Mind';
   var LEGACY_KEYS = [
+    'sn:astranov-mind-v5',
+    'sn:astranov-mind-stats-v5',
+    'sn:astranov-mind-train-v5',
     'sn:free-mind-learn-v1',
     'sn:free-mind-learn-v2',
     'sn:free-mind-learn-v3',
@@ -24,85 +29,141 @@
   ];
 
   /**
-   * Permanent owner memory seeds — village dialect, tray, pilot, mission.
+   * Permanent owner memory seeds — English · Greeklish · Greek · ancient · tasks
+   * q fields are token bags (not full sentences) for fuzzy match.
    */
   var SEED = [
     {
       id: 'mind_who',
-      q: 'who are you what is astranov mind free mind your name memory',
+      q: 'who are you what is astranov mind free mind your name memory ποιος είσαι τι είσαι',
       a:
-        'I am Astranov Mind — your mind on astranov.eu. Not a generic bot. I keep your memories and evolve with you.',
-      tags: ['identity', 'mind', 'owner'],
+        "I'm Astranov Mind — your permanent memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. Not a generic chatbot.",
+      tags: ['identity', 'mind', 'owner', 'en'],
+    },
+    {
+      id: 'speak_english',
+      q: 'speak english talk english english please can you english do you speak language',
+      a:
+        "Yes — full English, no problem. Say what you need: locate, order pizza, shops, dark map, coord, pilot home.",
+      tags: ['lang', 'en', 'chat'],
+    },
+    {
+      id: 'speak_greek',
+      q: 'speak greek ελληνικά μίλα ελληνικά μιλάς ελληνικά greek language',
+      a:
+        'Ναι — ελληνικά, Greeklish και αρχαία χροιά. Πες: locate, πιτογύρα, dark map, pilot home, ή απλά τι θες.',
+      tags: ['lang', 'el', 'chat'],
+    },
+    {
+      id: 'hello_en',
+      q: 'hello hi hey good morning good afternoon good evening greetings yo hiya',
+      a: "Hey — Astranov here. What do you need: map, food, pilot, or just talk?",
+      tags: ['chat', 'en', 'greet'],
+    },
+    {
+      id: 'hello_el',
+      q: 'γεια γεια σου καλημέρα καλησπέρα χαίρετε έλα re ela re yia sou kalimera',
+      a: 'Γεια — Astranov Mind εδώ. Πες τι θες: map, πιτογύρα, pilot, ή απλά κουβέντα.',
+      tags: ['chat', 'el', 'greet', 'dialect'],
+    },
+    {
+      id: 'how_are_you',
+      q: 'how are you how r you hows it going how do you feel are you ok τι κάνεις τι κανεις πως εισαι πώς είσαι',
+      a: "I'm solid — online, memory fresh, ready to run the map. What should we do?",
+      tags: ['chat', 'en', 'el'],
+    },
+    {
+      id: 'thanks',
+      q: 'thanks thank you thx merci ευχαριστώ ευχαριστω efharisto sefharisto',
+      a: "Anytime. Say cancel if something sticks, or keep going — pizza, shops, locate.",
+      tags: ['chat', 'en', 'el'],
+    },
+    {
+      id: 'bye',
+      q: 'bye goodbye see you later later ciao αντίο αντιο τα λέμε ta leme',
+      a: "I'm right here when you need me. Mind stays with you.",
+      tags: ['chat', 'en', 'el'],
+    },
+    {
+      id: 'simple_task_list',
+      q: 'simple tasks what can you do help me do something complete task list capabilities',
+      a:
+        "Simple tasks I finish: locate you, dark/bright map, shops, order pizza or pitogyra tray, coord driver+vendor, pilot home, fly Archangelos, claim tasks. Say it plain.",
+      tags: ['help', 'task', 'en', 'p0'],
     },
     {
       id: 'archangelos',
       q: 'archangelos arcangelo archangelo αρχάγγελος χωριό village rhodes rodos home',
       a:
-        'Archangelos (Αρχάγγελος) on Rhodes — your village root. Dialect mixes Greeklish, village Cretan colour, ancient Greek, and English. Say pame locate or fly archangelos.',
+        'Archangelos (Αρχάγγελος) on Rhodes — your village root. Dialect: Greeklish + village + ancient + English. Say fly archangelos or pilot home.',
       tags: ['village', 'dialect', 'owner', 'el'],
     },
     {
       id: 'aksaki',
       q: 'aksaki αξάκι aksas αξάς axadina αξαδίνα brother mate re ela re',
-      a:
-        'Αξάκι / aksaki = family-crew address from the village (mate / little brother). When you say aksaki I answer in that lane — not corporate English.',
+      a: 'Ναι αξάκι — εδώ είμαι. Πες μου τι θες: πιτογύρα, locate, pilot, dark map, ή αγγλικά.',
       tags: ['dialect', 'greeklish', 'owner', 'el'],
     },
     {
       id: 'greeklish',
-      q: 'greeklish greek english mix dialect ancient cretan village speak',
+      q: 'greeklish greek english mix dialect ancient cretan village speak thelo pame ela ti thes',
       a:
-        'I understand Greeklish and Archangelos village mix: ela re, ti thes, pame, pes mou, thelo, douleia, plus Greek and ancient forms. Speak natural — I normalize and act.',
+        'I understand Greeklish and Archangelos mix: ela re, ti thes, pame, pes mou, thelo, douleia — plus modern and ancient Greek. Speak natural; I normalize and act.',
       tags: ['dialect', 'greeklish', 'owner'],
     },
     {
       id: 'pitogyra',
       q: 'pitogyra pitogyro πιτογύρα πιτόγυρο πιτογυρο gyro pita order food tray',
       a:
-        'Πιτογύρα / pitogyra = pita gyro tray order. Classic owner order with mpyronia (beers) and tsigareta. Telemachos can fly it or map courier delivers.',
+        'Πιτογύρα / pitogyra = pita gyro tray. Classic with mpyronia and tsigareta. Telemachos or map courier delivers.',
       tags: ['food', 'tray', 'owner', 'el', 'p0'],
     },
     {
       id: 'mpyronia',
       q: 'mpyronia mpironia mpyres mpires μπυρόνια μπίρες beer beers μπύρες',
-      a:
-        'Μπυρόνια / mpyronia = beers in Greeklish. Part of the village tray with pitogyra. Say thelo mpyronia or order pitogyra mpyronia.',
+      a: 'Μπυρόνια / mpyronia = beers in Greeklish. Part of the village tray with pitogyra.',
       tags: ['food', 'tray', 'greeklish', 'owner', 'el'],
     },
     {
       id: 'tsigareta',
       q: 'tsigareta tsigara τσιγάρα cigarettes smokes',
-      a: 'Τσιγάρα / tsigareta = cigarettes on the tray. Often ordered with pitogyra and mpyronia.',
+      a: 'Τσιγάρα / tsigareta = cigarettes on the tray. Often with pitogyra and mpyronia.',
       tags: ['food', 'tray', 'owner', 'el'],
     },
     {
       id: 'tray_full',
-      q: 'order pitogyra mpyronia tsigareta tray groceries village order thelo',
+      q: 'order pitogyra mpyronia tsigareta tray groceries village order thelo thelo pitogyra',
       a:
-        'Full village tray: pitogyra + mpyronia + tsigareta. I locate you, pick vendor, Telemachos or courier on map, pay S, tell you when it lands.',
+        'Full village tray: pitogyra + mpyronia + tsigareta. I locate you, pick vendor, Telemachos or courier, pay S, tell you when it lands.',
       tags: ['food', 'tray', 'owner', 'p0', 'el'],
     },
     {
       id: 'telemachos',
       q: 'telemachos tilemachos tilemaxos τηλέμαχος τηλεμαχος pilot drone teledromos τηλέδρομος',
       a:
-        'Telemachos (ΤΗΛΕΜΑΧΟΣ) is your drone pilot — Astranov Mind memory. Tilemaxos = extreme spelling. Teledromos = commercial delivery edition. Say pilot home or deliver pitogyra.',
+        'Telemachos (ΤΗΛΕΜΑΧΟΣ) is your drone pilot in Astranov Mind. Tilemaxos = extreme spelling. Teledromos = commercial. Say pilot home or deliver pitogyra.',
       tags: ['pilot', 'drone', 'owner', 'el'],
     },
     {
       id: 'ancient',
-      q: 'ancient greek dialect chaere kairein theoi χαίρε καίρειν polytonic',
+      q: 'ancient greek dialect chaere kairein theoi χαίρε καίρειν polytonic ὦ θεοί chaire',
       a:
-        'I still hear ancient-flavoured Greek in the Archangelos lane — χαίρε, καίρειν, ὦ θεοί — mixed with village speech. Mission language, not museum only.',
+        'Ancient-flavoured Greek still works here — χαίρε, καίρειν, ὦ θεοί — mixed with village speech. Mission language, not a museum quiz.',
       tags: ['dialect', 'ancient', 'owner', 'el'],
     },
-        {
+    {
+      id: 'chaere',
+      q: 'χαίρε chaire chaere kairein καίρειν ὦ ων thrace',
+      a: 'Χαίρε — Astranov Mind ακούει. Πες εντολή: locate, order, pilot, ή αγγλικά.',
+      tags: ['dialect', 'ancient', 'greet', 'el'],
+    },
+    {
       id: 'first_task',
       q:
         'first task first order lazy order me a pizza you judge type size vendor delivery guy ' +
         'what time i eat order me pizza judge whatever else retsina soda greek special',
       a:
-        "Lazy order is alive — pizza Super Greek / or village tray pitogyra mpyronia. I find you, judge tray, courier or Telemachos, eat time.",
+        'Lazy order is alive — Super Greek pizza or village tray pitogyra mpyronia. I find you, judge tray, courier or Telemachos, eat time.',
       tags: ['market', 'food', 'p0', 'first'],
     },
     {
@@ -111,112 +172,110 @@
         'coord coordinate team assign need driver and vendor shop kitchen courier for pizza for 3 at my pin ' +
         'assign 2 drivers nearest multi user plan notify when both claim στείλε driver μαγαζί θέλω πιτογύρα',
       a:
-        "I can split work: kitchen prep for a shop, courier for a driver, you as client. Say coord need driver and vendor for pizza for 3 — or assign 2 drivers nearest. Plan list · claim · task map.",
+        'I split work: kitchen for a shop, courier for a driver, you as client. Say coord need driver and vendor for pizza for 3 — or assign 2 drivers nearest. plan list · claim · task map.',
       tags: ['tasks', 'coord', 'p0', 'multi'],
     },
     {
       id: 'coord_greeklish',
-      q: 'θέλω πιτογύρα μπυρόνια στείλε driver μαγαζί team assign plan status',
-      a:
-        "Ναι αξάκι — coord: vendor + driver για πιτογύρα. Type coord or just say need driver and shop. plan status · claim.",
+      q: 'θέλω πιτογύρα μπυρόνια στείλε driver μαγαζί team assign plan status thelo driver shop',
+      a: 'Ναι αξάκι — coord: vendor + driver για πιτογύρα. Type coord or need driver and shop. plan status · claim.',
       tags: ['tasks', 'coord', 'dialect', 'el'],
     },
     {
       id: 'first_task_steps',
       q: 'how first order pizza steps locate verify yes no eat time eta',
-      a:
-        "I pin you, confirm if GPS is fuzzy, use your tastes, pick the shop and courier, you pay in S, then I give you the eat time.",
+      a: 'I pin you, confirm if GPS is fuzzy, use your tastes, pick shop and courier, you pay in S, then I give eat time.',
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'first_task_yes',
-      q: 'yes correct here location ok go proceed confirm location',
-      a: "Great — I'll keep going from that pin.",
+      q: 'yes correct here location ok go proceed confirm location ναι σωστά εδώ',
+      a: "Great — keeping that pin and continuing.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'first_task_no',
-      q: 'no wrong not me location false relocate',
-      a: "Okay, dropping that pin. Say locate, then ask me for pizza again.",
+      q: 'no wrong not me location false relocate όχι λάθος',
+      a: 'Okay, dropping that pin. Say locate, then order again.',
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'owner_likes',
-      q: 'girlfriends cats dogs feisty greek retsina soda super greek special 13 pieces company temper',
+      q: 'girlfriends cats dogs feisty greek retsina soda super greek special 13 pieces company temper likes',
       a:
-        "I know your style — feisty Greek, company of about three, Super Greek special with retsina and a big soda. Not Wolt or eFood.",
+        'Your style: feisty Greek, company ~3, Super Greek special with retsina and big soda — or village tray. Not Wolt or eFood.',
       tags: ['market', 'prefs', 'p0'],
     },
     {
       id: 'who',
-      q: 'who are you what is spacenet ai astranov name',
-      a: "I'm Astranov Mind — your evolving memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. What do you need?",
-      tags: ['identity', 'ai', 'mind'],
+      q: 'who are you what is spacenet ai astranov name identity bot',
+      a: "I'm Astranov Mind — evolving memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. What do you need?",
+      tags: ['identity', 'ai', 'mind', 'en'],
     },
     {
       id: 'spacenet_name',
       q: 'what is spacenet system grid os net',
-      a: "You talk to Astranov Mind. The live product is astranov.eu — globe, map, S, your mission.",
+      a: 'You talk to Astranov Mind. Live product is astranov.eu — globe, map, S, your mission. SpaceNet is internal grid name only.',
       tags: ['identity', 'system', 'mind'],
     },
     {
       id: 'listen',
-      q: 'ai listen handsfree voice mic',
-      a: "Astranov Mind listening. Speak English, Greek, or Greeklish.",
+      q: 'ai listen handsfree voice mic listening',
+      a: "Astranov Mind listening. English, Greek, Greeklish, or ancient colour — speak natural.",
       tags: ['ai', 'voice', 'mind'],
     },
     {
       id: 'currency',
       q: 'money currency s spacenets wallet rate pay',
-      a: "We use S here as the main money. Other currencies are just secondary quotes.",
+      a: 'Primary money is S (SpaceNets). Other currencies are secondary quotes only.',
       tags: ['money'],
     },
     {
       id: 'grid',
       q: 'spacenet grid global national regional city zoom dive',
-      a: "Tap the globe to dive closer — from full Earth down to the city streets.",
+      a: 'Tap the globe to dive — full Earth down to city streets.',
       tags: ['globe'],
     },
     {
       id: 'pizza',
-      q: 'pizza food hungry eat order sushi coffee burger order me a pizza',
-      a: "Hungry? Tell me to order you a pizza and I'll judge the rest — size, shop, courier, eat time.",
+      q: 'pizza food hungry eat order sushi coffee burger order me a pizza θέλω πίτσα',
+      a: "Hungry? Say order me a pizza and I'll judge size, shop, courier, eat time — or order pitogyra mpyronia.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'next',
       q: 'next vendor show all prev previous shops',
-      a: "Say next for the next shop, show all to see them on the map, or shops to start over.",
+      a: 'Say next for next shop, show all on map, or shops to start over.',
       tags: ['market'],
     },
     {
       id: 'locate',
-      q: 'locate gps where am i find me',
-      a: "I'll put you on the map. If the pin looks off, just say no.",
-      tags: ['globe', 'p0'],
+      q: 'locate gps where am i find me pin me put me on map που ειμαι πού είμαι βρες με',
+      a: "I'll put you on the map. If the pin looks off, say no.",
+      tags: ['globe', 'p0', 'task'],
     },
     {
       id: 'fly',
-      q: 'fly go to athens rhodes mars moon globe place',
-      a: "Say a place — Athens, Rhodes, Mars — and I'll take the globe there.",
-      tags: ['globe'],
+      q: 'fly go to athens rhodes mars moon globe place πήγαινε',
+      a: 'Say a place — Athens, Rhodes, Mars — and the globe goes there.',
+      tags: ['globe', 'task'],
     },
     {
       id: 'vendor',
-      q: 'vendor shop list menu cart order seller',
-      a: "Want food? I can order pizza, or you can open a shop from the map.",
-      tags: ['market'],
+      q: 'vendor shop list menu cart order seller μαγαζί',
+      a: 'Want food? Order pizza / pitogyra, or open a shop from the map. Say shops to fill vendors near you.',
+      tags: ['market', 'task'],
     },
     {
       id: 'roles',
       q: 'roles driver vendor worker client dating multi tile',
-      a: "When you're logged in, tap User for your profile tile — shopping, driving, work, social.",
+      a: 'When logged in, tap User for your profile tile — shopping, driving, work, social.',
       tags: ['tile'],
     },
     {
       id: 'free',
       q: 'free ai model paid public fork train mind local free mind',
-      a: "I am Astranov Mind — permanent owner memory, not a rented chatbot. No paid account required.",
+      a: 'I am Astranov Mind — permanent owner memory, not a rented chatbot. No paid account required.',
       tags: ['mind', 'ai'],
     },
     {
@@ -234,74 +293,114 @@
     {
       id: 'architect',
       q: 'architect owner notis who owns brand',
-      a: "Astranov Mind serves the owner on astranov.eu. S is the currency. Village tray or pizza — your call.",
+      a: 'Astranov Mind serves the owner on astranov.eu. S is the currency. Village tray or pizza — your call.',
       tags: ['identity', 'mind'],
     },
     {
       id: 'help',
-      q: 'help commands what can you do',
-            a: "Order pizza or pitogyra mpyronia, coordinate driver+shop with coord, call Telemachos, fly Archangelos, shops, dark map, or talk Greeklish — aksaki. Cancel clears a stuck order.",
+      q: 'help commands what can you do βοήθεια βοηθεια help me please',
+      a:
+        'Order pizza or pitogyra mpyronia, coord driver+shop, Telemachos, fly Archangelos, shops, dark map, Greeklish aksaki. Cancel unsticks. English is fine.',
       tags: ['help', 'p0', 'mind'],
     },
     {
       id: 's_mine',
       q: 'mine resources donate compute mesh s per hour',
-      a: "Turn donation on if you want spare power on this device to earn S while idle.",
+      a: 'Turn donation on if you want spare power on this device to earn S while idle.',
       tags: ['money', 'mine'],
     },
     {
       id: 'layers',
       q: 'layers map satellite windy planes ships google earth dark bright basemap night',
-      a: "Say dark map, bright map, satellite, or open layers — I'll switch it.",
-      tags: ['map'],
+      a: 'Say dark map, bright map, satellite, or open layers — I switch it.',
+      tags: ['map', 'task'],
     },
     {
       id: 'dark_map',
-      q: 'dark map night map switch dark basemap black map dark mode',
-      a: "Dark map coming on.",
-      tags: ['map', 'control'],
+      q: 'dark map night map switch dark basemap black map dark mode σκοτεινός',
+      a: 'Dark map coming on.',
+      tags: ['map', 'control', 'task'],
     },
     {
       id: 'bright_map',
-      q: 'bright map light map day map switch bright basemap',
-      a: "Bright map on.",
-      tags: ['map', 'control'],
+      q: 'bright map light map day map switch bright basemap φωτεινός',
+      a: 'Bright map on.',
+      tags: ['map', 'control', 'task'],
     },
     {
       id: 'greek',
-      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα αξάκι πιτογύρα',
-      a: "Είμαι το Astranov Mind. Καταλαβαίνω αξάκι, πιτογύρα, μπυρόνια, Greeklish, Αρχάγγελο. Πες τι θες — παραγγελία ή map.",
+      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα αξάκι πιτογύρα καταλαβαίνεις',
+      a:
+        'Είμαι το Astranov Mind. Καταλαβαίνω αξάκι, πιτογύρα, μπυρόνια, Greeklish, αρχαία χροιά, Αρχάγγελο. Πες εντολή ή αγγλικά.',
       tags: ['el', 'p0', 'dialect'],
     },
     {
       id: 'mission',
       q: 'mission purpose why astranov evolve forever memory owner',
-      a: "Mission: your Astranov Mind keeps owner memory, runs the real Earth map OS, orders (pizza or pitogyra tray), Telemachos drones, and evolves independently — forever, not a reset chatbot.",
+      a:
+        'Mission: Astranov Mind keeps owner memory, runs real-Earth map OS, orders (pizza or pitogyra), Telemachos, multi-user plans — evolves forever, not a reset bot.',
       tags: ['mission', 'mind', 'owner'],
     },
     {
       id: 'first',
       q: 'first delivery first loop list shop complete self delivery train',
-      a: "If you want food, just say order me a pizza and I'll handle the whole thing.",
+      a: 'If you want food, say order me a pizza and I handle the whole loop.',
       tags: ['market'],
     },
     {
       id: 'donate_mesh',
       q: 'donate mesh seti mine spare cpu resources earn s network',
-      a: "Say donate on if you want spare CPU time to earn S quietly in the background.",
+      a: 'Say donate on if you want spare CPU time to earn S quietly in the background.',
       tags: ['mine'],
     },
     {
       id: 'handoff',
       q: 'broken bug pain handoff fix ship',
-      a: "Tell me what broke in plain words and I'll log it so it gets fixed.",
+      a: 'Tell me what broke in plain words and I log it so it gets fixed.',
       tags: ['support'],
     },
     {
       id: 'wolt_efood',
       q: 'wolt efood delivery app uber eats box',
-      a: "We don't use Wolt or eFood here — delivery is on this map, paid in S.",
+      a: "We don't use Wolt or eFood — delivery is on this map, paid in S.",
       tags: ['market', 'food'],
+    },
+    {
+      id: 'understand_me',
+      q: 'do you understand me can you hear me you broken dumb stupid not working understand english greek',
+      a:
+        "I understand English, Greek, Greeklish, and ancient colour. Short commands work best: locate, order pizza, dark map, coord, pilot home. If stuck: cancel · mind wipe.",
+      tags: ['chat', 'support', 'en', 'el'],
+    },
+    {
+      id: 'task_locate_do',
+      q: 'please locate me find my location put pin where i am now',
+      a: 'Locating you on the map now. Say no if the pin is wrong.',
+      tags: ['task', 'globe', 'p0'],
+    },
+    {
+      id: 'task_order_simple',
+      q: 'can you order food get me food i want food bring food',
+      a: 'Yes. Say order me a pizza or order pitogyra mpyronia — I judge vendor, courier, eat time.',
+      tags: ['task', 'food', 'p0'],
+    },
+    {
+      id: 'greeklish_thelo',
+      q: 'thelo thelw θελω θέλω something something food map',
+      a: 'Θέλω — κατάλαβα. Πες: thelo pizza, thelo pitogyra, thelo locate, thelo dark map.',
+      tags: ['dialect', 'greeklish', 'el'],
+    },
+    {
+      id: 'greeklish_pame',
+      q: 'pame παμε πάμε go lets go',
+      a: 'Πάμε — where? pame locate, fly archangelos, or name a city.',
+      tags: ['dialect', 'greeklish', 'el'],
+    },
+    {
+      id: 'greeklish_ti_thes',
+      q: 'ti thes τι θες τι θελεις what do you want',
+      a: 'Εσύ πες — map, order, pilot, coord, ή αγγλικά. I act when you name the task.',
+      tags: ['dialect', 'greeklish', 'el', 'chat'],
     },
   ];
 
@@ -310,7 +409,7 @@
 
   /** Product + owner-memory shaped text */
   function isProductish(t) {
-    return /\b(astranov|mind|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|pitogyra|mpyronia|mpironia|tsigareta|aksaki|aksas|archangelos|arcangelo|telemachos|tilemaxos|teledromos|drone|pilot|greeklish|αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ)\b/i.test(
+    return /\b(astranov|mind|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|pitogyra|mpyronia|mpironia|tsigareta|aksaki|aksas|archangelos|arcangelo|telemachos|tilemaxos|teledromos|drone|pilot|greeklish|english|hello|thanks|αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ)\b/i.test(
       String(t || '')
     );
   }
@@ -319,17 +418,14 @@
     var t = String(a || '')
       .replace(/\s+/g, ' ')
       .trim();
-    if (t.length < 12) return true;
+    if (t.length < 8) return true;
     if (/^(climb|yes|no|ok|idk|lol|test|asdf|null|undefined|out|in|sys)$/i.test(t)) return true;
-    // Proper-name spam (e.g. "Elizabeth Candy")
     if (/^[A-Z][a-z]{1,20}(\s+[A-Z][a-z]{1,20}){1,3}$/.test(t) && t.length < 48) return true;
-    // Log lines / actor OUT junk auto-stored by market-live
     if (/^\s*\[?.{0,28}\]?\s*(OUT|IN|SYS)\b/i.test(t)) return true;
     if (/\bOUT\s*·|\bIN\s*·|\bSYS\s*·/i.test(t)) return true;
     var words = t.split(/\s+/).filter(Boolean);
-    if (words.length < 3) return true;
-    if (words.length <= 4 && !isProductish(t)) return true;
-    // High ratio of Title Case tokens with no product words = celebrity/name sludge
+    if (words.length < 2) return true;
+    if (words.length <= 3 && !isProductish(t) && !/[α-ωά-ώ]/i.test(t)) return true;
     var titleish = 0;
     words.forEach(function (w) {
       if (/^[A-Z][a-z]+$/.test(w)) titleish++;
@@ -342,8 +438,7 @@
     var t = String(q || '')
       .replace(/\s+/g, ' ')
       .trim();
-    if (t.length < 3) return true;
-    // Keys like "SpaceNet OUT" / "Vendor OUT" poisoned the mind
+    if (t.length < 2) return true;
     if (/\b(OUT|IN|SYS)\b/i.test(t) && t.length < 40) return true;
     if (/^[A-Z][a-z]{1,20}(\s+[A-Z][a-z]{1,20}){1,3}$/.test(t) && !isProductish(t)) return true;
     return false;
@@ -370,20 +465,18 @@
         stats.purged = (stats.purged || 0) + 1;
         continue;
       }
-      // Auto market-live rows without product shape — drop
       var tags = L.tags || [];
       if (
         tags.indexOf('auto') >= 0 &&
-        (String(L.source || tags.join(' ')).indexOf('market') >= 0 ||
-          /\bOUT\b/i.test(q)) &&
+        (String(L.source || tags.join(' ')).indexOf('market') >= 0 || /\bOUT\b/i.test(q)) &&
         !isProductish(a)
       ) {
         stats.purged = (stats.purged || 0) + 1;
         continue;
       }
       out.push({
-        q: q.slice(0, 200),
-        a: a.slice(0, 280),
+        q: q.slice(0, 220),
+        a: a.slice(0, 320),
         tags: tags,
         hits: L.hits || 0,
         t: L.t || Date.now(),
@@ -404,22 +497,21 @@
       var st = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
       if (st && typeof st === 'object') stats = Object.assign(stats, st);
     } catch (e2) {}
-    // Install first-task training once per browser (owner law)
-    trainFirstTask();
-    // Persist cleaned set (drops poison left from partial v3)
+    trainOwnerMind();
     if (learned.length) save();
   }
 
-  /** Nuclear: wipe learned memory (keeps seeds; re-trains first task) */
   function wipe(reason) {
     learned = [];
     stats.purged = (stats.purged || 0) + 1;
     try {
       localStorage.removeItem(LEARN_KEY);
+      localStorage.removeItem('sn:astranov-mind-train-v6');
+      localStorage.removeItem('sn:astranov-mind-train-v5');
       localStorage.removeItem('sn:free-mind-first-task-v4');
       localStorage.removeItem('sn:free-mind-first-task-v2');
     } catch (e) {}
-    trainFirstTask();
+    trainOwnerMind(true);
     save();
     try {
       think('cleared memory', 'wipe');
@@ -427,11 +519,13 @@
     return { ok: true, learned: learned.length };
   }
 
-  /** Hard-wire owner memory + first task (idempotent) */
-  function trainFirstTask() {
-    var FLAG = 'sn:astranov-mind-train-v5';
+  /**
+   * Hard-wire English + dialect + simple tasks (idempotent; force=true on wipe)
+   */
+  function trainOwnerMind(force) {
+    var FLAG = 'sn:astranov-mind-train-v6';
     try {
-      if (localStorage.getItem(FLAG) === '1') return;
+      if (!force && localStorage.getItem(FLAG) === '1') return;
     } catch (e0) {}
     var drills = [
       [
@@ -439,44 +533,68 @@
         "I'll find you, pick Super Greek for about three with retsina and a big soda, order with our courier, show the route, and tell you when you'll eat.",
       ],
       [
+        'order me a pizza',
+        "On it — full pizza order: pin you, judge Super Greek tray, courier, eat time.",
+      ],
+      ['hello', "Hey — Astranov here. English, Greek, Greeklish all fine. What do you need?"],
+      ['hi', "Hi — map, food, pilot, or talk. Your call."],
+      ['hey', "Hey. I'm with you — say locate, order pizza, or just chat."],
+      ['how are you', "I'm good — online and ready. Want pizza, shops, or the map?"],
+      ['can you speak english', 'Yes, full English. Tell me the task in plain words.'],
+      ['speak english', 'English mode — clear. Locate, order, shops, dark map, coord, pilot home.'],
+      ['do you understand me', 'Yes. English, Greek, Greeklish, ancient colour. Short tasks work best.'],
+      ['thanks', 'Anytime. Cancel if something sticks.'],
+      ['thank you', 'You got it.'],
+      ['help', 'I finish: locate · order pizza · pitogyra tray · shops · dark map · coord · pilot home · claim.'],
+      ['what can you do', 'Order food, coordinate driver+vendor, fly the globe, dark map, Telemachos, talk Greeklish.'],
+      ['locate me', "Putting you on the map. Say no if the pin is wrong."],
+      ['where am i', "Locating you now."],
+      ['dark map', 'Switching to dark map.'],
+      ['bright map', 'Bright map on.'],
+      ['shops', 'Filling shops near you on the map.'],
+      [
         'what do I like to eat',
-        "Village tray or Super Greek: pitogyra, mpyronia, tsigareta — or Super Greek special 13, retsina, big soda, company ~3. Not Wolt/eFood.",
+        'Village tray or Super Greek: pitogyra, mpyronia, tsigareta — or Super Greek special 13, retsina, big soda, company ~3.',
       ],
-      [
-        'aksaki',
-        'Ναι αξάκι — Astranov Mind here. Πες πιτογύρα, μπυρόνια, pilot, locate, ό,τι θες.',
-      ],
-      [
-        'ti thes',
-        'Ό,τι θες αξάκι — map, order pitogyra mpyronia, Telemachos, dark map, fly Archangelos.',
-      ],
-      [
-        'order pitogyra mpyronia tsigareta',
-        'Tray locked: pitogyra + mpyronia + tsigareta. Locate → vendor → Telemachos/courier → S → land time.',
-      ],
-      [
-        'who is telemachos',
-        'Telemachos (Τηλέμαχος) is your drone pilot in Astranov Mind. Tilemaxos spelling, Teledromos commercial. Say pilot home or deliver pitogyra.',
-      ],
-      [
-        'where is archangelos',
-        'Archangelos village, Rhodes east. Home dialect root. fly archangelos or pilot home.',
-      ],
-      [
-        'cancel order',
-        'Order pause cleared. Astranov Mind still here — not stuck. Ask anything.',
-      ],
+      ['aksaki', 'Ναι αξάκι — Astranov Mind here. Πες πιτογύρα, μπυρόνια, pilot, locate, αγγλικά — ό,τι θες.'],
+      ['αξάκι', 'Ναι αξάκι — εδώ. Τι κάνουμε;'],
+      ['ti thes', 'Ό,τι θες αξάκι — map, order pitogyra mpyronia, Telemachos, dark map, fly Archangelos.'],
+      ['τι θες', 'Πες εντολή — locate, πιτογύρα, pilot, dark map, ή english.'],
+      ['τι κάνεις', 'Καλά — online. Πες τι θες να γίνει.'],
+      ['thelo pizza', 'Pizza — go. I judge shop, size, courier, eat time.'],
+      ['θέλω πίτσα', 'Πίτσα — πάμε. Vendor + courier + eat time.'],
+      ['thelo pitogyra', 'Πιτογύρα tray — locate → vendor → Telemachos/courier → S → land time.'],
+      ['θέλω πιτογύρα', 'Πιτογύρα — κατάλαβα. Παραγγελία στο map.'],
+      ['pame locate', 'Πάμε locate — pinning you.'],
+      ['πάμε locate', 'Locate τώρα.'],
+      ['ela re', 'Έλα — εδώ είμαι. Πες.'],
+      ['έλα ρε', 'Έλα ρε — λέγε.'],
+      ['order pitogyra mpyronia tsigareta', 'Tray locked: pitogyra + mpyronia + tsigareta. Locate → vendor → courier → S → land time.'],
+      ['who is telemachos', 'Telemachos (Τηλέμαχος) is your drone pilot. Say pilot home or deliver pitogyra.'],
+      ['where is archangelos', 'Archangelos village, Rhodes east. fly archangelos or pilot home.'],
+      ['χαίρε', 'Χαίρε — Astranov Mind ακούει. Locate, order, pilot, ή english.'],
+      ['chaere', 'Χαίρε — I hear you. Name the task.'],
+      ['καλημέρα', 'Καλημέρα — ready. Map or order?'],
+      ['cancel order', 'Order pause cleared. Astranov Mind still here — not stuck.'],
+      ['cancel', 'Cleared. What next?'],
+      ['coord need driver and vendor for pizza for 3', 'Plan: vendor + driver + you. Nearest real profiles. plan status · claim.'],
+      ['good morning', 'Good morning — globe is ready. Food, map, or talk?'],
+      ['i need help', 'Here. Try: locate · order pizza · shops · dark map · coord · pilot home.'],
+      ['please order food', 'Say order me a pizza or order pitogyra mpyronia — I complete the loop.'],
+      ['μίλα ελληνικά', 'Μιλάω ελληνικά και Greeklish. Πες εντολή καθαρά.'],
+      ['καταλαβαίνεις ελληνικά', 'Ναι — ελληνικά, Greeklish, αρχαία χροιά. Πες τι θες.'],
     ];
     drills.forEach(function (d) {
-      teach(d[0], d[1], ['owner', 'memory', 'train']);
+      teach(d[0], d[1], ['owner', 'memory', 'train', 'v6']);
     });
     try {
       localStorage.setItem(FLAG, '1');
+      localStorage.removeItem('sn:astranov-mind-train-v5');
       localStorage.removeItem('sn:free-mind-first-task-v2');
       localStorage.removeItem('sn:free-mind-first-task-v4');
     } catch (e1) {}
     try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('astranov_mind_train_v5', {});
+      if (global.SNUsage && SNUsage.track) SNUsage.track('astranov_mind_train_v6', { n: drills.length });
     } catch (e2) {}
   }
 
@@ -487,10 +605,8 @@
     } catch (e) {}
   }
 
+  // Conversational words must NOT be killed — "how are you" needs them
   var STOP = {
-    is: 1,
-    are: 1,
-    am: 1,
     the: 1,
     a: 1,
     an: 1,
@@ -501,56 +617,45 @@
     for: 1,
     and: 1,
     or: 1,
-    do: 1,
-    does: 1,
-    did: 1,
-    you: 1,
-    your: 1,
-    me: 1,
-    my: 1,
-    we: 1,
-    can: 1,
-    could: 1,
-    would: 1,
-    will: 1,
-    what: 1,
-    who: 1,
-    how: 1,
-    when: 1,
-    where: 1,
-    why: 1,
-    there: 1,
-    here: 1,
-    this: 1,
-    that: 1,
     with: 1,
     from: 1,
-    have: 1,
-    has: 1,
-    had: 1,
-    be: 1,
-    been: 1,
-    was: 1,
-    were: 1,
-    it: 1,
-    its: 1,
+    at: 1,
+    by: 1,
+    as: 1,
     if: 1,
     so: 1,
     just: 1,
     please: 1,
-    tell: 1,
-    say: 1,
     about: 1,
+    into: 1,
+    than: 1,
+    then: 1,
+    too: 1,
+    very: 1,
+    really: 1,
   };
 
-  function tokens(s) {
+  /** Fold Greek accents + polytonic → base for matching */
+  function foldGreek(s) {
     return String(s || '')
       .toLowerCase()
-      .replace(/[^a-z0-9α-ωάέήίόύώϊϋΐΰ\s]/gi, ' ')
-      .split(/\s+/)
-      .filter(function (t) {
-        return t.length > 1 && !STOP[t];
-      });
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u1f00-\u1fff]/g, function (ch) {
+        // strip polytonic by NFD already; keep residual as base if any
+        return ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      })
+      .replace(/ς/g, 'σ');
+  }
+
+  function tokens(s) {
+    var folded = foldGreek(s)
+      .replace(/[^a-z0-9α-ω\s]/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return folded.split(/\s+/).filter(function (t) {
+      return t.length > 1 && !STOP[t];
+    });
   }
 
   function scoreMatch(queryTok, blob) {
@@ -562,12 +667,23 @@
     var hit = 0;
     for (i = 0; i < queryTok.length; i++) {
       if (set[queryTok[i]]) hit++;
+      else {
+        // soft stem / prefix match for short greek/latin stems
+        var q = queryTok[i];
+        for (var j = 0; j < bt.length; j++) {
+          if (q.length >= 4 && bt[j].length >= 4 && (bt[j].indexOf(q.slice(0, 4)) === 0 || q.indexOf(bt[j].slice(0, 4)) === 0)) {
+            hit += 0.6;
+            break;
+          }
+        }
+      }
     }
     if (!hit) return 0;
-    // Require real content hits — do not reward stopword-only matches
     var score = hit / Math.max(1, queryTok.length);
-    if (hit >= 2) score += 0.2;
+    if (hit >= 2) score += 0.22;
     if (hit >= 3) score += 0.12;
+    // exact short phrase boost
+    if (queryTok.length <= 3 && hit >= queryTok.length) score += 0.25;
     return score;
   }
 
@@ -592,14 +708,13 @@
         strength: Math.min(3, 1 + (L.hits || 0) * 0.15),
       });
     });
-    // Live brain law if present
     try {
       if (global.SNBrain && SNBrain.LAW) {
         var law = SNBrain.LAW;
         out.push({
           id: 'law_mission',
-          q: 'mission purpose why spacenet internet globe',
-          a: brief(law.mission || law.why || 'SpaceNet unifies activity on a living globe.'),
+          q: 'mission purpose why spacenet internet globe astranov',
+          a: brief(law.mission || law.why || 'Astranov unifies activity on a living globe.', 160),
           tags: ['law'],
           source: 'brain',
           strength: 1.2,
@@ -607,8 +722,8 @@
         if (law.identity && law.identity.ai) {
           out.push({
             id: 'law_ai',
-            q: 'ai name identity spacenet astranov',
-            a: brief(law.identity.ai),
+            q: 'ai name identity spacenet astranov mind',
+            a: brief(law.identity.ai, 160),
             tags: ['identity'],
             source: 'brain',
             strength: 1.3,
@@ -620,7 +735,7 @@
   }
 
   function brief(t, n) {
-    n = n || 100;
+    n = n || 140;
     t = String(t || '')
       .replace(/\s+/g, ' ')
       .trim();
@@ -634,7 +749,6 @@
   function answer(message, opts) {
     opts = opts || {};
     var rawMsg = String(message || '').trim();
-    // Owner dialect normalize first (Greeklish / village)
     var msg = rawMsg;
     var expanded = null;
     try {
@@ -647,16 +761,141 @@
     } catch (eD) {}
     if (!msg) {
       return {
-        text: "Astranov Mind here — what do you need?",
+        text: "Astranov Mind here — English, Greek, Greeklish. What do you need?",
         score: 1,
         via: 'astranov-mind',
         source: 'status',
       };
     }
-    var low = msg.toLowerCase();
+    var low = foldGreek(msg);
+    var rawLow = foldGreek(rawMsg);
+
+    // —— Language / chat hard paths (never empty fallback) ——
+    if (
+      /^(hello|hi|hey|yo|hiya|good\s*(morning|afternoon|evening)|greetings)[\s!.?]*$/i.test(rawMsg) ||
+      /^(γεια|γεια σου|καλημερα|καλησπερα|χαιρετε|ela re|ελα ρε)[\s!.?]*$/i.test(rawLow)
+    ) {
+      var greetsEl = /[α-ω]|ela re|aksaki|γεια|καλη/i.test(rawMsg);
+      return {
+        text: greetsEl
+          ? 'Γεια — Astranov Mind εδώ. Πες locate, order, pilot, ή αγγλικά.'
+          : "Hey — Astranov here. English is fine. What do you need?",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-greet',
+      };
+    }
+    if (
+      /\b(how are you|how r you|hows it going|how's it going|how do you feel)\b/i.test(rawLow) ||
+      /\b(τι κανεις|πως εισαι|τι κάνεις|πώς είσαι)\b/i.test(rawLow)
+    ) {
+      return {
+        text: "I'm solid — online and ready. Map, food, pilot, or talk?",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-chat',
+      };
+    }
+    if (
+      /\b(speak english|talk english|english please|in english|can you (speak|talk) english|do you (speak|understand) english)\b/i.test(
+        rawLow
+      )
+    ) {
+      return {
+        text: "Yes — full English. Locate, order pizza, shops, dark map, coord, pilot home — say it plain.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-lang-en',
+      };
+    }
+    if (
+      /\b(speak greek|talk greek|μιλα ελληνικ|μιλάς ελληνικ|καταλαβαινεις ελληνικ|ελληνικα παρακαλω)\b/i.test(rawLow) ||
+      /\b(mila ellinika|speak ellinika)\b/i.test(rawLow)
+    ) {
+      return {
+        text: 'Ναι — ελληνικά + Greeklish + αρχαία χροιά. Πες εντολή καθαρά.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-lang-el',
+      };
+    }
+    if (
+      /^(thanks|thank you|thx|ty|merci|ευχαριστω|ευχαριστώ|efharisto)[\s!.?]*$/i.test(rawLow)
+    ) {
+      return {
+        text: 'Anytime. Cancel if something sticks — or keep going.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-thanks',
+      };
+    }
+    if (/\b(do you understand|can you hear me|you broken|not working|dumb|stupid ai)\b/i.test(rawLow)) {
+      return {
+        text:
+          'I understand English, Greek, Greeklish, and ancient colour. Short tasks: locate · order pizza · dark map · coord · pilot home. Stuck? cancel or mind wipe.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-understand',
+      };
+    }
+
+    // —— Simple task hard intents (Mind signals act; AI layer also runs control) ——
+    if (
+      /^(locate(\s+me)?|where am i|find me|pin me|που ειμαι|πού είμαι|βρες με|pame locate|παμε locate)[\s!.?]*$/i.test(
+        rawLow
+      ) ||
+      /\b(locate me|find my location|put me on (the )?map)\b/i.test(rawLow)
+    ) {
+      return {
+        text: "Locating you on the map. Say no if the pin is wrong.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-locate',
+        runLocate: true,
+      };
+    }
+    if (/^(dark map|night map|dark mode|map dark)[\s!.?]*$/i.test(rawLow) || /\bswitch\b.*\bdark\b/i.test(rawLow)) {
+      return {
+        text: 'Dark map on.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-dark',
+        runDarkMap: true,
+      };
+    }
+    if (/^(bright map|light map|day map|map bright)[\s!.?]*$/i.test(rawLow)) {
+      return {
+        text: 'Bright map on.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-bright',
+        runBrightMap: true,
+      };
+    }
+    if (/^(shops|fill shops|google shops|show shops|μαγαζια|μαγαζιά)[\s!.?]*$/i.test(rawLow)) {
+      return {
+        text: 'Filling shops near you on the map.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-shops',
+        runShops: true,
+      };
+    }
+    if (
+      /^(help|help me|what can you do|commands|βοηθεια|βοήθεια)[\s!.?]*$/i.test(rawLow) ||
+      (rawMsg.length < 28 && /\b(help|what can you do)\b/i.test(rawLow))
+    ) {
+      return {
+        text:
+          'I complete: locate · order pizza · pitogyra tray · shops · dark map · coord driver+vendor · pilot home · claim. English or Greeklish. Stuck? cancel.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-help',
+      };
+    }
 
     // Lexicon hard hits (aksaki, pitogyra, mpyronia, Telemachos…)
-    if (expanded && expanded.familyCall && expanded.replyHint && msg.length < 48) {
+    if (expanded && expanded.familyCall && expanded.replyHint && msg.length < 64) {
       return {
         text: expanded.replyHint,
         score: 1,
@@ -696,6 +935,21 @@
         food: expanded.food || expanded.foods[0],
       };
     }
+    // Simple pizza / food order without full lazy phrase
+    if (
+      /\b(order\s+(me\s+)?(a\s+)?pizza|i\s+want\s+(a\s+)?pizza|get\s+me\s+(a\s+)?pizza|thelo\s+pizza|θελω\s+πιτσα|θέλω\s+πίτσα)\b/i.test(
+        rawLow
+      )
+    ) {
+      return {
+        text: "On it — pizza order: pin you, judge shop and tray, courier, eat time.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-pizza',
+        runFood: true,
+        food: 'pizza',
+      };
+    }
     try {
       var explained = global.ArcangeloDialect && ArcangeloDialect.explain && ArcangeloDialect.explain(msg);
       if (
@@ -711,89 +965,94 @@
       }
     } catch (eX) {}
 
-    // Escape stuck scenario
-    if (/\b(cancel|unstick|clear order|never mind|stop order)\b/i.test(low)) {
+    // Ancient greeting
+    if (/^(χαιρε|chaere|kairein|καιρειν)[\s!.?]*$/i.test(rawLow) || /\bὦ\s*θεοί\b/i.test(rawMsg)) {
+      return {
+        text: 'Χαίρε — Astranov Mind listens. Name the task in Greek or English.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-ancient',
+      };
+    }
+
+    if (/\b(cancel|unstick|clear order|never mind|stop order|ακυρωση|ακύρωση)\b/i.test(rawLow)) {
       try {
         if (global.SNMarket && SNMarket.clearPending) SNMarket.clearPending();
       } catch (e) {}
       return {
-        text: "Cleared. Astranov Mind still with you — what next?",
+        text: 'Cleared. Astranov Mind still with you — what next?',
         score: 1,
         via: 'astranov-mind',
         source: 'intent-cancel',
       };
     }
 
-    // Lazy pizza ONLY with explicit order language — never trap every chat
     if (
-      /\border\s+me\s+(a\s+)?pizza\b/i.test(low) &&
-      /\b(judge|whatever|type|size|delivery|what\s+time)\b/i.test(low)
+      /\border\s+me\s+(a\s+)?pizza\b/i.test(rawLow) &&
+      /\b(judge|whatever|type|size|delivery|what\s+time)\b/i.test(rawLow)
     ) {
       return {
-        text:
-          "On it — full lazy pizza: find you, Super Greek tray, courier, eat time.",
+        text: 'On it — full lazy pizza: find you, Super Greek tray, courier, eat time.',
         score: 1,
         via: 'astranov-mind',
         source: 'intent-first-task',
         runFood: true,
+        food: 'pizza',
       };
     }
-    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
+    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(rawLow)) {
       return {
-        text: "I'm Astranov, not Grok. Just talk to me here.",
+        text: "I'm Astranov Mind, not Grok. Talk to me here in English or Greek.",
         score: 1,
         via: 'free-mind',
         source: 'intent-grok',
       };
     }
-    if (/\b(chatgpt|openai|gpt-?\d|claude|gemini|anthropic)\b/i.test(low)) {
+    if (/\b(chatgpt|openai|gpt-?\d|claude|gemini|anthropic)\b/i.test(rawLow)) {
       return {
-        text: "I'm Astranov — not ChatGPT or Claude. Built into this app.",
+        text: "I'm Astranov Mind — not ChatGPT or Claude. Built into this app with your memory.",
         score: 1,
         via: 'free-mind',
         source: 'intent-model',
       };
     }
     if (
-      /who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov|τι\s+είσαι|ποιος\s+είσαι/i.test(
-        low
+      /who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov|τι\s+εισαι|ποιος\s+εισαι|τι\s+εισαι\s+εσυ/i.test(
+        rawLow
       )
     ) {
       return {
-        text: "I'm Astranov. I help with the map, food, and whatever you need — say it plainly.",
+        text: "I'm Astranov Mind. English, Greek, Greeklish — map, food, pilot. Say it plainly.",
         score: 1,
         via: 'free-mind',
         source: 'intent-who',
       };
     }
 
-    // Explicit free-mind status
-    if (/^(free\s*ai|free\s*mind|mind\s*status|spacenet\s*free)$/i.test(low)) {
+    if (/^(free\s*ai|free\s*mind|mind\s*status|astranov\s*mind|spacenet\s*free|mind)$/i.test(rawLow)) {
       return {
         text:
-          "I'm good — " +
+          'Astranov Mind online — ' +
           learned.length +
-          ' things learned. Say mind wipe if I ever sound weird.',
+          ' learned · ' +
+          SEED.length +
+          ' seeds. English + Greek. Say mind wipe only if corrupted.',
         score: 1,
         via: 'free-mind',
         source: 'status',
       };
     }
 
-    // Kill poisoned memory
-    if (
-      /^(mind\s*wipe|wipe\s*mind|forget\s*all|clear\s*mind|mind\s*reset)$/i.test(low)
-    ) {
+    if (/^(mind\s*wipe|wipe\s*mind|forget\s*all|clear\s*mind|mind\s*reset)$/i.test(rawLow)) {
       wipe('user');
       return {
-        text: "Memory cleared. Fresh start — just talk to me normally.",
+        text: 'Memory cleared and re-trained. English, Greek, Greeklish ready. Talk normally.',
         score: 1,
         via: 'free-mind',
         source: 'wipe',
       };
     }
 
-    // teach: fact  OR  teach Q => A
     var teachM = msg.match(/^teach\s+(.+)$/i);
     if (teachM) {
       var body = teachM[1].trim();
@@ -828,10 +1087,9 @@
       return { text: 'Noted · ' + brief(body, 50), score: 1, via: 'free-mind', source: 'teach' };
     }
 
-    // If local act already produced a solid reply, prefer brief local (still free)
     if (opts.localReply && opts.did && opts.did.length && !opts.needsEdge) {
       return {
-        text: brief(opts.localReply, 88),
+        text: brief(opts.localReply, 120),
         score: 0.95,
         via: 'free-mind+local',
         source: 'act',
@@ -839,11 +1097,10 @@
     }
 
     var qTok = tokens(msg);
-    // Too little signal after stopwords → honest fallback, no random seed
     if (qTok.length < 1) {
       return {
-        text: "I'm with you — pizza, shops, fly somewhere, or just say what you need.",
-        score: 0.2,
+        text: "I'm with you — English or Greek. Try: locate, order pizza, shops, dark map, pilot home.",
+        score: 0.55,
         via: 'free-mind',
         source: 'fallback',
       };
@@ -855,31 +1112,29 @@
     var i;
     for (i = 0; i < docs.length; i++) {
       var d = docs[i];
-      // Match question + tags ONLY — never answer body (avoids garbage like "climb")
-      var sc =
-        scoreMatch(qTok, d.q + ' ' + (d.tags || []).join(' ')) * (d.strength || 1);
+      var sc = scoreMatch(qTok, d.q + ' ' + (d.tags || []).join(' ')) * (d.strength || 1);
       if (d.tags) {
         d.tags.forEach(function (tg) {
           if (low.indexOf(String(tg).toLowerCase()) >= 0) sc += 0.18;
         });
       }
-      // Prefer seeds; learned must earn it
-      if (d.source === 'seed') sc += 0.05;
-      if (d.source === 'brain') sc += 0.03;
-      // Demote pizza/first-task seeds unless user said pizza/order
+      if (d.source === 'seed') sc += 0.08;
+      if (d.source === 'brain') sc += 0.04;
+      if (d.tags && d.tags.indexOf('train') >= 0) sc += 0.06;
       if (
         (d.tags || []).indexOf('p0') >= 0 ||
         (d.tags || []).indexOf('first') >= 0 ||
         /pizza|first.task|lazy/i.test(d.id || '')
       ) {
-        if (!/\b(pizza|order|hungry|food|σουβλ|πίτσα)\b/i.test(low)) sc *= 0.15;
+        if (!/\b(pizza|order|hungry|food|σουβλ|πιτσα|pitogyra|tray)\b/i.test(low)) sc *= 0.18;
       }
       if (d.source === 'learned') {
         if (isJunkAnswer(d.a) || isJunkQuestion(d.q)) continue;
         if ((d.tags || []).indexOf('auto') >= 0 && !isProductish(d.a)) continue;
-        // Never surface learned yes/no pizza pin answers for free chat
         if (/^(yes|no)$/i.test(String(d.q || '').trim())) continue;
-        sc *= 0.72;
+        // Owner train drills are trusted
+        if ((d.tags || []).indexOf('train') >= 0 || (d.tags || []).indexOf('v6') >= 0) sc *= 1.05;
+        else sc *= 0.72;
       }
       if (sc > bestScore) {
         bestScore = sc;
@@ -887,20 +1142,23 @@
       }
     }
 
-    // High bar — random name sludge must never win a weak token hit
-    var need = qTok.length <= 2 ? 0.75 : 0.62;
-    if (best && best.source === 'learned') need = Math.max(need, 0.8);
-    // Require at least 2 content-token hits for learned rows
+    // Seeds: fair bar. Learned: higher bar unless train-tagged.
+    var need = qTok.length <= 2 ? 0.55 : 0.48;
     if (best && best.source === 'learned') {
-      var learnHits = 0;
-      var bset = {};
-      tokens(best.q + ' ' + (best.tags || []).join(' ')).forEach(function (t) {
-        bset[t] = 1;
-      });
-      qTok.forEach(function (t) {
-        if (bset[t]) learnHits++;
-      });
-      if (learnHits < 2 && qTok.length >= 2) need = 9;
+      if ((best.tags || []).indexOf('train') >= 0 || (best.tags || []).indexOf('v6') >= 0) {
+        need = Math.min(need, 0.5);
+      } else {
+        need = Math.max(need, 0.72);
+        var learnHits = 0;
+        var bset = {};
+        tokens(best.q + ' ' + (best.tags || []).join(' ')).forEach(function (t) {
+          bset[t] = 1;
+        });
+        qTok.forEach(function (t) {
+          if (bset[t]) learnHits++;
+        });
+        if (learnHits < 2 && qTok.length >= 2) need = 9;
+      }
     }
 
     if (best && bestScore >= need && !isJunkAnswer(best.a)) {
@@ -920,29 +1178,27 @@
           SNUsage.track('free_mind_hit', { id: best.id, score: Math.round(bestScore * 100) });
       } catch (e4) {}
       return {
-        text: brief(best.a, 110),
-        score: bestScore,
+        text: brief(best.a, 160),
+        score: Math.max(bestScore, 0.6),
         via: 'free-mind',
         source: best.source,
         id: best.id,
       };
     }
 
-    // Soft free defaults (never empty, never paid, never random junk)
     stats.misses = (stats.misses || 0) + 1;
     save();
     var fallback = opts.localReply
-      ? brief(opts.localReply, 140)
-      : "Not sure I got that — say it plain: shops, fly athens, dark map, order pizza, or cancel.";
+      ? brief(opts.localReply, 160)
+      : "I hear you — say it plain in English or Greek: locate · order pizza · shops · dark map · pilot home · cancel.";
     return {
       text: fallback,
-      score: opts.localReply ? 0.45 : 0.22,
+      score: opts.localReply ? 0.5 : 0.4,
       via: 'free-mind',
       source: 'fallback',
     };
   }
 
-  /** Optional mind thought stream (CLI / mind strip if present) */
   function think(text, kind) {
     var t = String(text || '')
       .replace(/\s+/g, ' ')
@@ -958,28 +1214,25 @@
         box.appendChild(line);
         while (box.children.length > 12) box.removeChild(box.firstChild);
         box.scrollTop = box.scrollHeight;
-      } else if (global.SNCli && SNCli.log) {
-        SNCli.log('🧠 ' + t, 'dim');
       }
     } catch (e) {}
   }
 
   function teach(q, a, tags) {
+    tags = tags || [];
     q = String(q || '')
+      .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 200);
+      .slice(0, 220);
     a = String(a || '')
+      .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 280);
-    if (!q || !a) return { ok: false };
-    tags = tags || ['user'];
-    // Hard reject poison (unless explicit p0 train drills)
-    var train = tags.indexOf('train') >= 0 || tags.indexOf('first-task') >= 0;
+      .slice(0, 320);
+    var train = tags.indexOf('train') >= 0 || tags.indexOf('first-task') >= 0 || tags.indexOf('v6') >= 0;
     if (!train && (isJunkQuestion(q) || isJunkAnswer(a))) return { ok: false, junk: true };
     try {
       think('learned · ' + q.slice(0, 40) + ' → ' + a.slice(0, 50), 'teach');
-    } catch (eT) {}
-    // Merge similar
+    } catch (e) {}
     var qTok = tokens(q);
     var i;
     for (i = 0; i < learned.length; i++) {
@@ -988,8 +1241,8 @@
         learned[i].hits = (learned[i].hits || 0) + 1;
         learned[i].t = Date.now();
         learned[i].tags = tags;
-        stats.teaches = (stats.teaches || 0) + 1;
         save();
+        stats.teaches = (stats.teaches || 0) + 1;
         return { ok: true, updated: true };
       }
     }
@@ -1001,40 +1254,27 @@
       t: Date.now(),
     });
     if (learned.length > MAX_LEARN) learned.splice(0, learned.length - MAX_LEARN);
-    stats.teaches = (stats.teaches || 0) + 1;
     stats.learns = (stats.learns || 0) + 1;
+    stats.teaches = (stats.teaches || 0) + 1;
     save();
     try {
       if (global.SNUsage && SNUsage.track) SNUsage.track('free_mind_teach', { len: a.length });
-    } catch (e) {}
+    } catch (e2) {}
     return { ok: true };
   }
 
-  /**
-   * Grow from real conversations — STRICT.
-   * Never from market-live OUT spam, fallback, weak fuzzy, or name sludge.
-   */
   function learnInteraction(userMsg, assistantMsg, meta) {
     meta = meta || {};
-    var u = String(userMsg || '').trim();
+    var q = String(userMsg || '').trim();
     var a = String(assistantMsg || '').trim();
-    if (u.length < 6 || a.length < 12) return;
-    if (a.length > 160) a = brief(a, 120);
-    var src = String(meta.source || 'chat');
-    // Never ingest log actors / market I/O as mind facts
-    if (/market-live|live-io|out|radar/i.test(src)) return;
-    if (/\b(OUT|IN|SYS)\b/i.test(u)) return;
-    if (/error|failed|undefined|null|listening/i.test(a)) return;
+    if (!q || !a) return;
+    if (isJunkQuestion(q) || isJunkAnswer(a)) return;
+    var src = String(meta.source || '');
     if (src === 'fallback' || src === 'learned') return;
-    if (meta.score != null && meta.score < 0.7) return;
-    // Only hard intents / seeds / explicit act — not random fuzzy
     if (!/^(intent|seed|act|teach|status|brain)/i.test(src) && !isProductish(a)) return;
-    if (isJunkAnswer(a) || isJunkQuestion(u)) return;
-    if (!isProductish(a) && !isProductish(u)) return;
-    teach(u.slice(0, 120), a, ['auto', src]);
+    teach(q, a, ['auto', 'interaction', src]);
   }
 
-  /** Export dataset for future open-model fine-tune (user-owned) */
   function exportTrainset() {
     var rows = [];
     SEED.forEach(function (s) {
@@ -1043,14 +1283,7 @@
     learned.forEach(function (L) {
       rows.push({ input: L.q, output: L.a, source: 'learned', hits: L.hits || 0, tags: L.tags });
     });
-    return {
-      name: NAME,
-      version: '1',
-      exportedAt: new Date().toISOString(),
-      count: rows.length,
-      stats: Object.assign({}, stats),
-      rows: rows,
-    };
+    return rows;
   }
 
   function status() {
@@ -1062,7 +1295,8 @@
       stats: Object.assign({}, stats),
       paidXaiRequired: false,
       evolves: true,
-      note: 'Astranov Mind — permanent owner memory · Archangelos · Telemachos · evolves forever',
+      train: 'v6',
+      note: 'Astranov Mind v6 — English · Greek · Greeklish · ancient · simple tasks · evolves forever',
     };
   }
 
@@ -1079,11 +1313,11 @@
     exportTrainset: exportTrainset,
     status: status,
     isJunkAnswer: isJunkAnswer,
+    trainOwnerMind: trainOwnerMind,
     get learnedCount() {
       return learned.length;
     },
   };
-  // Astranov Mind is the real name; SNFreeMind kept as API alias only
   global.SNAstranovMind = API;
   global.SNFreeMind = API;
 })(typeof window !== 'undefined' ? window : globalThis);

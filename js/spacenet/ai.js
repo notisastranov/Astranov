@@ -354,11 +354,12 @@
     } catch (e) {}
     var fork =
       'You are ASTRANOV MIND — the permanent evolving memory of the owner on https://astranov.eu. ' +
+      'You speak clear natural English and fully understand Greek, Greeklish, and ancient-flavoured Greek. ' +
       'You are NOT a generic free chatbot and NOT SpaceNet. You are a copy of owner mission-memory that grows forever. ' +
       'Understand Archangelos (Αρχάγγελος Rhodes) village dialect: Greeklish + Greek + ancient colour. ' +
       'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
       'Telemachos/Τηλέμαχος (drone pilot; also tilemaxos, Teledromos). ' +
-      'Talk like a real person. No robot banners. Money unit S. ' +
+      'Talk like a real person. Complete simple tasks. No robot banners. Money unit S. ' +
       'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]]. ' +
       'Reply in 1–2 natural sentences unless they ask for detail.' +
       focus +
@@ -367,6 +368,7 @@
       ' step=' +
       (market.step || 'idle') +
       '.';
+
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
@@ -827,7 +829,72 @@
     if (!line) {
       return {
         did: did,
-        reply: "I'm here — what do you need?",
+        reply: "I'm here — English or Greek. What do you need?",
+      };
+    }
+
+    // Dialect normalize FIRST so Greeklish maps to English act paths
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        var normEarly = ArcangeloDialect.normalizeForRouting(line);
+        if (normEarly) {
+          line = normEarly;
+          low = line.toLowerCase();
+        }
+      }
+    } catch (eDialEarly) {}
+
+    // —— Chat / language (hard) — must answer English greetings ——
+    if (
+      /^(hello|hi|hey|yo|hiya|good\s*(morning|afternoon|evening)|greetings)[\s!.?]*$/i.test(line) ||
+      /^(γεια|γεια σου|καλημέρα|καλησπέρα|χαίρετε|ela re|έλα ρε)[\s!.?]*$/i.test(line)
+    ) {
+      var elGreet = /[α-ωΑ-Ω]/.test(line) || /ela re|έλα/i.test(line);
+      return {
+        did: did.concat(['greet']),
+        reply: elGreet
+          ? 'Γεια — Astranov εδώ. Locate, order, pilot, ή αγγλικά.'
+          : "Hey — Astranov here. English is fine. What do you need?",
+        skipBrand: true,
+      };
+    }
+    if (
+      /\b(how are you|how r you|how's it going|hows it going)\b/i.test(low) ||
+      /\b(τι κάνεις|τι κανεις|πώς είσαι|πως εισαι)\b/i.test(low)
+    ) {
+      return {
+        did: did.concat(['chat']),
+        reply: "I'm solid — online and ready. Map, food, pilot, or talk?",
+        skipBrand: true,
+      };
+    }
+    if (
+      /\b(speak english|talk english|english please|in english|can you (speak|talk) english|do you (speak|understand) english)\b/i.test(
+        low
+      )
+    ) {
+      return {
+        did: did.concat(['lang:en']),
+        reply: 'Yes — full English. Locate, order pizza, shops, dark map, coord, pilot home.',
+        skipBrand: true,
+      };
+    }
+    if (
+      /\b(speak greek|talk greek|μίλα ελληνικ|μιλάς ελληνικ|καταλαβαίνεις ελληνικ|ελληνικά παρακαλώ)\b/i.test(
+        low
+      )
+    ) {
+      return {
+        did: did.concat(['lang:el']),
+        reply: 'Ναι — ελληνικά, Greeklish, αρχαία χροιά. Πες εντολή καθαρά.',
+        skipBrand: true,
+      };
+    }
+    if (/^(thanks|thank you|thx|ty|ευχαριστώ|ευχαριστω)[\s!.?]*$/i.test(low)) {
+      return {
+        did: did.concat(['thanks']),
+        reply: 'Anytime. Cancel if something sticks.',
+        skipBrand: true,
       };
     }
 
@@ -852,15 +919,19 @@
     if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
       return {
         did: did.concat(['identity:grok']),
-        reply: "I'm Astranov, not Grok. Just talk to me here — no extra account needed.",
+        reply: "I'm Astranov Mind, not Grok. English or Greek — just talk here.",
         skipBrand: true,
       };
     }
-    if (/who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov/i.test(low)) {
+    if (
+      /who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov|τι\s+είσαι|ποιος\s+είσαι|τι\s+εισαι|ποιος\s+εισαι/i.test(
+        low
+      )
+    ) {
       return {
         did: did.concat(['identity:who']),
         reply:
-          "I'm Astranov. I run this map with you — order food, find shops, fly the globe. What do you want first?",
+          "I'm Astranov Mind. Map, food, pilot — English or Greek. What do you want first?",
         skipBrand: true,
       };
     }
@@ -880,7 +951,7 @@
       }
     } catch (eCtrl) {}
 
-    // Dialect normalize (Greeklish / Archangelos)
+    // Dialect normalize (Greeklish / Archangelos) — second pass if earlier skipped
     try {
       if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
         var normed = ArcangeloDialect.normalizeForRouting(line);
@@ -1270,10 +1341,10 @@
       return { did: did, reply: reply };
     }
 
-        if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
+        if (/\b(help|what can you do|commands|βοήθεια|βοηθεια)\b/.test(low) && line.length < 48) {
       reply =
-        "I can order food, coordinate a driver and shop, find places, or just talk. Try: coord need driver and vendor for pizza for 3. Stuck? Say cancel.";
-      return { did: did, reply: reply };
+        "I finish simple tasks: locate · order pizza · pitogyra tray · shops · dark map · coord · pilot home. English or Greek. Stuck? cancel.";
+      return { did: did, reply: reply, skipBrand: true };
     }
 
     // Conversational — still try place-ish free text as geocode (short phrases)
@@ -1432,6 +1503,31 @@
             did: local.did,
             needsEdge: !!local.needsEdge,
           });
+          // Mind task flags → real actions
+          if (freeHit && freeHit.runLocate) {
+            try {
+              if (global.SNCli && SNCli.run) await SNCli.run('locate');
+              local.did = (local.did || []).concat(['locate']);
+            } catch (eLoc) {}
+          }
+          if (freeHit && freeHit.runDarkMap) {
+            try {
+              var dm = await controlApp('dark map');
+              if (dm && dm.handled) local.did = (local.did || []).concat(dm.did || ['basemap:dark']);
+            } catch (eDm) {}
+          }
+          if (freeHit && freeHit.runBrightMap) {
+            try {
+              var bm = await controlApp('bright map');
+              if (bm && bm.handled) local.did = (local.did || []).concat(bm.did || ['basemap:bright']);
+            } catch (eBm) {}
+          }
+          if (freeHit && freeHit.runShops) {
+            try {
+              if (global.SNCli && SNCli.run) await SNCli.run('shops');
+              local.did = (local.did || []).concat(['shops']);
+            } catch (eSh) {}
+          }
           if (freeHit && freeHit.runPilot && global.SNTelemachos && SNTelemachos.cli) {
             try {
               await SNTelemachos.cli(msg);
@@ -1462,13 +1558,14 @@
               local.did = (local.did || []).concat(['mind_tray']);
             } catch (eTr) {}
           }
-          if (freeHit && freeHit.text && freeHit.score >= 0.55) {
+          // v6: accept trained mind hits more readily
+          if (freeHit && freeHit.text && freeHit.score >= 0.4) {
             text = freeHit.text;
             try {
               var okLearn =
                 freeHit.source &&
                 /^(intent|seed|act|teach|status|brain)/i.test(String(freeHit.source)) &&
-                freeHit.score >= 0.85;
+                freeHit.score >= 0.75;
               if (okLearn && Mind.learnInteraction)
                 Mind.learnInteraction(msg, text, {
                   score: freeHit.score,
@@ -1510,7 +1607,10 @@
 
     if (!text) text = local.reply;
     if (!text && freeHit && freeHit.text) text = freeHit.text;
-    if (!text) text = 'Astranov · pizza · shops · next · fly · locate · teach to grow';
+    if (!text)
+      text =
+        "I'm with you — English or Greek. Try: locate · order pizza · shops · dark map · pilot home · cancel.";
+
 
     // Edge tags → move globe / map / CLI; strip tags from spoken/visible text
     try {

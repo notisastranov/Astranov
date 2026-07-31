@@ -4,14 +4,15 @@
  *
  * Stealth by default: do not mirror village voice on UI unless the owner spoke it first.
  * This is part of ASTRANOV MIND (owner memory), not a disposable chatbot skill.
+ * v3: richer route map · English-safe expand · simple task intents
  */
 (function (global) {
   'use strict';
 
   var D = {
-    ID: 'arcangelo_village_v2',
-    ACTIVATE: 28,
-    TEAM: 50,
+    ID: 'arcangelo_village_v3',
+    ACTIVATE: 22,
+    TEAM: 45,
     _active: false,
     _score: 0,
     _team: false,
@@ -54,6 +55,7 @@
       /\bχαίρε\b/i,
       /\bκαίρειν\b/i,
       /\bchaere\b/i,
+      /\bchaire\b/i,
       /\bkairein\b/i,
       /\bὦ\b/,
       /\bθεοί\b/i,
@@ -71,25 +73,26 @@
       /\bdouleia\b/i,
       /\bδουλειά\b/i,
       /\bthelo\b/i,
+      /\bthelw\b/i,
       /\bθέλω\b/i,
       /\bkatalava\b/i,
       /\bkala\b/i,
       /\boraia\b/i,
+      /\byia\b/i,
+      /\bkalimera\b/i,
+      /\bkalispera\b/i,
+      /\befharisto\b/i,
     ],
-    _greek: /[\u0370-\u03FF]/,
+    _greek: /[\u0370-\u03FF\u1F00-\u1FFF]/,
 
     /**
      * Owner tray / village order lexicon (Greeklish + Greek)
-     * aksaki = brother/mate (family address)
-     * pitogyra = pita gyro / pitogyro order
-     * mpyronia / mpironia = beers (μπυρόνια)
-     * tsigareta = cigarettes
      */
     LEXICON: {
       aksaki: {
         means: 'family/crew address — little brother / mate from Archangelos village',
         el: 'αξάκι',
-        reply: 'Ναι αξάκι — εδώ είμαι. Πες μου τι θες.',
+        reply: 'Ναι αξάκι — εδώ είμαι. English or Greek — πες τι θες.',
       },
       aksas: {
         means: 'family/crew address — brother / mate',
@@ -129,7 +132,7 @@
       telemachos: {
         means: 'ΤΗΛΕΜΑΧΟΣ — Astranov drone pilot (gaming + delivery stack)',
         el: 'Τηλέμαχος',
-        reply: 'Telemachos (Τηλέμαχος) online — drone pilot. Πες deliver / pitogyra / pilot.',
+        reply: 'Telemachos (Τηλέμαχος) online — drone pilot. Πες deliver / pitogyra / pilot home.',
       },
       tilemaxos: {
         means: 'tilemaxos — extreme Telemachos edition spelling',
@@ -148,15 +151,29 @@
       /\b(arcangelo|archangelo|village\s+mix)\b/gi,
     ],
 
+    // Greeklish / Greek → English routing for AI + CLI act paths
     _routeMap: [
-      [/\b(pame|πάμε)\s+(locate|me|gps|εδώ|edo)\b/i, 'locate me'],
+      [/\b(pame|πάμε|παμε)\s+(locate|me|gps|εδώ|edo|here)\b/i, 'locate me'],
+      [/\b(pame|πάμε)\s+(home|σπιτι|σπίτι)\b/i, 'pilot home'],
       [/\b(pes|πες)\s+(mou|μου)\s+(.+)/i, '$3'],
-      [/\b(ti\s+thes|τι\s+θες)\b/i, ''],
-      [/\b(douleia|δουλειά)\b/i, 'work'],
-      [/\b(thelo|θέλω)\s+(pitogyra|πιτογυρ)/i, 'order pitogyra'],
-      [/\b(thelo|θέλω)\s+(mpyronia|mpironia|μπυρ)/i, 'order beer'],
+      [/\b(ti\s+thes|τι\s+θες|τι\s+θέλεις)\b/i, 'help'],
+      [/\b(douleia|δουλειά|δουλεια)\b/i, 'work'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(pitogyra|πιτογυρ|πιτογύρ)/i, 'order pitogyra'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(mpyronia|mpironia|μπυρ|beer)/i, 'order beer'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(pizza|πιτσα|πίτσα)\b/i, 'order me a pizza'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(locate|gps|pin)\b/i, 'locate me'],
+      [/\b(που\s+ειμαι|πού\s+είμαι|pou\s+eimai|vres\s+me|βρες\s+με)\b/i, 'locate me'],
+      [/\b(σκοτειν(ό|ο)?\s*map|dark\s*χαρτη|night\s*map)\b/i, 'dark map'],
+      [/\b(φωτειν(ό|ο)?\s*map|bright\s*map)\b/i, 'bright map'],
+      [/\b(παραγγειλε|παράγγειλε|paraggeile)\s+(πιτσα|πίτσα|pizza)\b/i, 'order me a pizza'],
+      [/\b(παραγγειλε|παράγγειλε)\s+(πιτογυρ)/i, 'order pitogyra'],
       [/\bela\s+re\b/i, ''],
       [/\b(aksaki|αξάκι)\b/i, ''],
+      [/\b(καλημερα|καλημέρα|kalimera)\b/i, 'good morning'],
+      [/\b(καλησπερα|καλησπέρα|kalispera)\b/i, 'good evening'],
+      [/\b(ευχαριστω|ευχαριστώ|efharisto)\b/i, 'thanks'],
+      [/\b(βοηθεια|βοήθεια|voitheia)\b/i, 'help'],
+      [/\b(μαγαζια|μαγαζιά|magazia)\b/i, 'shops'],
     ],
 
     _brandRules: [
@@ -192,6 +209,7 @@
       [/\b(αξάκι|αξακι|aksaki)\b/gi, 'aksaki'],
       [/\b(αξαδίνα|αξαδινα|axadina)\b/gi, 'axadina'],
       [/\b(locate\s*me|λοκέιτ|λοκειτ)\b/gi, 'locate me'],
+      [/\b(thelo|thelw|θελω|θέλω)\b/gi, 'thelo'],
     ],
 
     _latinGreek: function (s) {
@@ -226,10 +244,9 @@
       score += this._count(this._ancient, text) * 11;
       score += this._count(this._greeklish, low) * 6;
       if (mixed) score += 12;
-      // lexicon hits
-      if (/\b(aksaki|aksas|pitogyra|mpyronia|mpironia|tsigareta|telemachos|tilemaxos)\b/i.test(low))
+      if (/\b(aksaki|aksas|pitogyra|mpyronia|mpironia|tsigareta|telemachos|tilemaxos|thelo|pame)\b/i.test(low))
         score += 20;
-      if (/αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ/i.test(text)) score += 20;
+      if (/αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ|θέλω|πάμε/i.test(text)) score += 20;
       var team =
         score >= this.TEAM ||
         (this._count(this._family, low) + this._count(this._family, norm) >= 1 &&
@@ -315,11 +332,12 @@
       return s.replace(/\s+/g, ' ').trim();
     },
 
-    /** Expand owner lexicon hits into food/order/pilot intents for Astranov Mind */
+    /** Expand owner lexicon hits into food/order/pilot/task intents for Astranov Mind */
     expandIntent: function (text) {
       var raw = String(text || '');
       var s = this.normalizeForRouting(raw);
       var low = s.toLowerCase();
+      var folded = this._latinGreek(raw + ' ' + s);
       var out = {
         text: s,
         dialect: this.detect(raw),
@@ -328,6 +346,7 @@
         pilot: false,
         village: false,
         familyCall: false,
+        locate: false,
         replyHint: null,
       };
       if (/\b(aksaki|aksas|axadina|αξάκι|αξάς)\b/i.test(low + raw)) {
@@ -338,9 +357,12 @@
         out.village = true;
         out.replyHint = this.LEXICON.archangelos.reply;
       }
-      if (/\b(telemachos|tilemaxos|tilemachos|teledromos|τηλεμαχ|drone\s*pilot|pilot)\b/i.test(low + raw)) {
+      if (/\b(telemachos|tilemaxos|tilemachos|teledromos|τηλεμαχ|drone\s*pilot|pilot\s+home)\b/i.test(low + raw)) {
         out.pilot = true;
         out.replyHint = this.LEXICON.telemachos.reply;
+      }
+      if (/\b(locate|where am i|που ειμαι)\b/i.test(folded)) {
+        out.locate = true;
       }
       if (/\b(pitogyra|pitogyro|πιτογυρ)\b/i.test(low + raw)) {
         out.food = 'pitogyra';
@@ -352,6 +374,10 @@
       }
       if (/\b(tsigareta|tsigara|τσιγάρ|cigar)\b/i.test(low + raw)) {
         out.foods.push('tsigareta');
+      }
+      if (/\b(pizza|πιτσα|πίτσα)\b/i.test(low + raw) && /\b(order|thelo|θελω|θέλω|want|hungry)\b/i.test(folded)) {
+        if (!out.food) out.food = 'pizza';
+        if (out.foods.indexOf('pizza') < 0) out.foods.push('pizza');
       }
       if (out.foods.length && !out.food) out.food = out.foods[0];
       return out;
