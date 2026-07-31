@@ -25,6 +25,81 @@
     if (el) el.textContent = activityLabel;
   }
 
+  /** User-facing speech only — never engine names (Leaflet) or internal OS dumps */
+  function userFace(text) {
+    return String(text || '')
+      .replace(/\bLeaflet\b/gi, 'map')
+      .replace(/\bleaflet\b/gi, 'map')
+      .replace(/\bOpenStreetMap\b/gi, 'street map')
+      .replace(/\bOverpass\b/gi, 'map search')
+      .replace(/\bOpenSky\b/gi, 'air traffic')
+      .replace(/\bCarto\b/gi, 'map style')
+      .replace(/\bSPACENET\b/g, 'ASTRANOV')
+      .replace(/\bSpaceNet\b/g, 'Astranov')
+      .replace(/\bspacenet\b/g, 'astranov')
+      .replace(/https?:\/\/[a-z0-9-]+\.supabase\.co[^\s]*/gi, 'astranov.eu')
+      .replace(/\bsupabase(?:\.co)?\b/gi, 'astranov.eu')
+      .replace(/\bSNGlobe\b/g, 'globe')
+      .replace(/\bGIS path\b/gi, 'Google sign-in')
+      .replace(/\bDB shops\b/gi, 'shops')
+      .replace(/\b thrash\b/gi, '')
+      .trim();
+  }
+
+  /**
+   * GPS locate that does NOT require the 3D globe module.
+   * Returns { lat, lng, fallback, reason?, accuracy? }
+   */
+  function gpsLocate() {
+    return new Promise(function (resolve) {
+      const rhodes = { lat: 36.4341, lng: 28.2176, fallback: true };
+      if (!navigator.geolocation) {
+        resolve(Object.assign({}, rhodes, { reason: 'unsupported' }));
+        return;
+      }
+      if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
+        resolve(Object.assign({}, rhodes, { reason: 'insecure' }));
+        return;
+      }
+      let done = false;
+      const finish = function (r) {
+        if (done) return;
+        done = true;
+        resolve(r);
+      };
+      const t = setTimeout(function () {
+        finish(Object.assign({}, rhodes, { reason: 'timeout' }));
+      }, 16000);
+      try {
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            clearTimeout(t);
+            finish({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              fallback: false,
+              accuracy: pos.coords.accuracy,
+            });
+          },
+          function (err) {
+            clearTimeout(t);
+            const code = err && err.code;
+            finish(
+              Object.assign({}, rhodes, {
+                reason: code === 1 ? 'denied' : code === 2 ? 'unavailable' : code === 3 ? 'timeout' : 'error',
+                code: code,
+              })
+            );
+          },
+          { enableHighAccuracy: true, timeout: 14000, maximumAge: 20000 }
+        );
+      } catch (e) {
+        clearTimeout(t);
+        finish(Object.assign({}, rhodes, { reason: 'error' }));
+      }
+    });
+  }
+
   function setLive(on) {
     try {
       const panel = $('panel');
@@ -261,16 +336,17 @@
     const line = document.createElement('div');
     const kind = cls === 'dim' ? 'progress' : cls || 'ok';
     line.className = 'cli-line' + (kind ? ' ' + kind : '');
+    const face = userFace(text);
     const body = document.createElement('div');
     body.className = 'cli-body';
-    body.textContent = text;
+    body.textContent = face;
     line.appendChild(body);
     wrap.appendChild(line);
-    wrap.setAttribute('data-search', String(text || ''));
+    wrap.setAttribute('data-search', String(face || ''));
     if (feedFilter) {
       wrap.classList.toggle(
         'match',
-        String(text || '')
+        String(face || '')
           .toLowerCase()
           .indexOf(feedFilter) >= 0
       );
@@ -278,7 +354,7 @@
     box.appendChild(wrap);
     trimFeed(box);
     scrollFeedToEnd(box);
-    if (cls === 'ok' || cls === 'cmd') preview(String(text || '').slice(0, 90));
+    if (cls === 'ok' || cls === 'cmd') preview(String(face || '').slice(0, 90));
     return wrap;
   }
 
@@ -288,10 +364,11 @@
   }
 
   function preview(text) {
+    const face = userFace(text);
     const el = $('cli-preview');
-    if (el) el.textContent = text || '';
+    if (el) el.textContent = face || '';
     try {
-      if (global.SNGlobe?.setHud) SNGlobe.setHud(String(text || '').slice(0, 72));
+      if (global.SNGlobe?.setHud) SNGlobe.setHud(String(face || '').slice(0, 72));
     } catch (_) {}
   }
 
@@ -1245,12 +1322,31 @@
         return;
       }
       if (low === 'login' || low === 'signin' || low === 'sign in') {
-        await global.SNAuth?.toggle?.();
+        try {
+          if (!global.SNAuth) {
+            log('Auth loading · wait a second · try again', 'err');
+            return;
+          }
+          if (global.SNAuth.user) {
+            log(
+              'Already signed in · ' +
+                (global.SNAuth.user.user_metadata?.full_name ||
+                  global.SNAuth.user.email ||
+                  'user'),
+              'ok'
+            );
+            return;
+          }
+          log('Opening Google · astranov.eu…', 'ok');
+          await global.SNAuth.signInGoogle();
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
         return;
       }
       if (low === 'logout' || low === 'signout' || low === 'sign out') {
         if (global.SNAuth?.user) await global.SNAuth.signOut();
-        log('Signed out', 'dim');
+        log('Signed out', 'ok');
         return;
       }
       // Place tool: pin (1) · targets (multi/topo) · tile
@@ -1350,27 +1446,74 @@
         return;
       }
       if (low === 'locate' || low === 'gps' || low === 'where am i') {
-        activity('locating on globe…', 'work', { label: 'Locate' });
-        const pos = await Globe?.locate?.();
-        if (pos) {
+        activity('locating you…', 'work', { label: 'Locate' });
+        // GPS first (works even if 3D globe still loading)
+        let pos = await gpsLocate();
+        // Prefer globe locate when ready (same GPS, also animates globe)
+        try {
+          if (Globe?.locate && Globe.ready) {
+            const gpos = await Promise.race([
+              Globe.locate(),
+              new Promise(function (r) {
+                setTimeout(function () {
+                  r(null);
+                }, 12000);
+              }),
+            ]);
+            if (gpos && gpos.lat != null && !gpos.fallback) pos = gpos;
+            else if (gpos && gpos.lat != null && pos.fallback) pos = gpos;
+          }
+        } catch (_) {}
+        if (pos && pos.lat != null) {
           Tasks?.setPos?.(pos.lat, pos.lng);
           global._snLastPos = { lat: pos.lat, lng: pos.lng };
           try {
-            if (global.SNMap?.active) {
-              global.SNMap.softSetView?.(pos.lat, pos.lng, Math.max(14, 14), { force: true });
-              const map = await SNMap.ensure?.();
-              map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 14, 14));
+            // Always show you on city map when we have coords
+            if (global.SNMap?.open) {
+              await global.SNMap.open(pos.lat, pos.lng);
+              const map = await global.SNMap.ensure?.();
+              map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 15, 15));
+            }
+          } catch (_) {}
+          try {
+            if (Globe?.goToPlace) {
+              Globe.goToPlace(pos.lat, pos.lng, {
+                tier: 'city',
+                body: 'earth',
+                pulse: true,
+                label: 'You',
+                openMap: true,
+              });
+            } else if (Globe?.pulse) {
+              Globe.pulse(pos.lat, pos.lng, 0x3d9eff, 'You', 16000);
             }
           } catch (_) {}
           depict('locate', { lat: pos.lat, lng: pos.lng, label: 'You', tier: 'city' });
-          log(
-            pos.fallback
-              ? 'default focus · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4)
-              : 'you · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) + ' · map recentered',
-            'ok'
-          );
+          if (pos.fallback) {
+            const why =
+              pos.reason === 'denied'
+                ? 'location permission denied · allow location for this site and try again'
+                : pos.reason === 'timeout'
+                  ? 'GPS timed out · try outdoors or enable precise location'
+                  : pos.reason === 'insecure'
+                    ? 'location needs secure site (https)'
+                    : pos.reason === 'unsupported'
+                      ? 'this browser has no GPS'
+                      : 'GPS unavailable · showing default focus';
+            log(why + ' · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4), 'err');
+          } else {
+            log(
+              'you · ' +
+                pos.lat.toFixed(4) +
+                ', ' +
+                pos.lng.toFixed(4) +
+                (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + 'm' : '') +
+                ' · map on you',
+              'ok'
+            );
+          }
         } else {
-          log('Locate failed · allow location · try again', 'err');
+          log('Locate failed · allow location in browser · try again', 'err');
         }
         return;
       }
@@ -2324,6 +2467,8 @@
     depict,
     setActivity,
     setLive,
+    userFace,
+    gpsLocate,
     toggleHandsfree,
     speakAi,
     stopHandsfree,

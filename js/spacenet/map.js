@@ -1223,11 +1223,9 @@
     }
 
     try {
-      global.SNCli?.log?.(
-        'SPACENET surface · Leaflet · ' +
-          (BASEMAPS[M.basemapId]?.label || M.basemapId) +
-          ' · ☀️ bright · 🌑 dark · 🛰 sat (top-right)',
-        'dim'
+      // Silent open — user already asked for city; no engine chatter
+      global.SNCli?.preview?.(
+        'City map · ' + (BASEMAPS[M.basemapId]?.label || M.basemapId)
       );
     } catch (_) {}
     try {

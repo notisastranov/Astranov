@@ -1,4 +1,4 @@
-/* Astranov auth — Google via GIS id_token (brand: astranov.eu, not supabase host) */
+/* Astranov auth — Google via GIS id_token (brand: astranov.eu only) */
 (function (global) {
   'use strict';
 
@@ -10,7 +10,7 @@
     _gsiInit: false,
   };
 
-  /** Public Google OAuth client — must match Google Cloud app branded ASTRANOV / astranov.eu */
+  /** Public Google OAuth client — must list https://astranov.eu as Authorized JavaScript origin */
   const GOOGLE_CLIENT_ID =
     '73846897360-va7gcqngfc370gfp7rl059no0vd4ts11.apps.googleusercontent.com';
 
@@ -27,25 +27,42 @@
     };
   }
 
-  /** Never show supabase project host in user-facing strings */
   function scrub(text) {
     return String(text || '')
       .replace(/https?:\/\/[a-z0-9-]+\.supabase\.co[^\s]*/gi, 'astranov.eu')
       .replace(/[a-z0-9]{15,}\.supabase\.co/gi, 'astranov.eu')
-      .replace(/\bsupabase\b/gi, 'Astranov');
+      .replace(/\bsupabase\b/gi, 'Astranov')
+      .replace(/\binvalid_client\b/gi, 'Google app not configured for this site')
+      .replace(/\bno registered origin\b/gi, 'site origin not registered in Google');
+  }
+
+  function say(msg, cls) {
+    try {
+      if (global.SNCli) {
+        if (SNCli.beginTurn && !SNCli.inTurn?.()) {
+          SNCli.beginTurn();
+          try {
+            SNCli.log(msg, cls || 'ok');
+          } finally {
+            SNCli.endTurn();
+          }
+        } else if (SNCli.log) {
+          SNCli.log(msg, cls || 'ok', true);
+        }
+      }
+    } catch (_) {}
   }
 
   function authBaseUrl() {
     const custom = (cfg().brand && cfg().brand.authHost) || cfg().authHost || 'https://api.astranov.eu';
     const direct = cfg().sbUrl || global.SB_URL || '';
-    // Prefer custom domain when configured; client still needs working Supabase project
     if (cfg().preferCustomAuth === true && custom) return custom.replace(/\/$/, '');
     return String(direct).replace(/\/$/, '');
   }
 
   async function ensureClient() {
     if (A.client) return A.client;
-    if (typeof supabase === 'undefined') throw new Error('auth SDK not loaded');
+    if (typeof supabase === 'undefined') throw new Error('Auth not loaded yet · wait a moment');
     const url = authBaseUrl();
     const key = cfg().sbKey || global.SB_KEY;
     A.client = supabase.createClient(url, key, {
@@ -88,7 +105,7 @@
       global.SNCli?.preview?.(
         A.user
           ? 'Signed in · ' + (name || 'user') + ' · astranov.eu'
-          : 'Guest · sign in at astranov.eu'
+          : 'Guest · tap User to sign in'
       );
     } catch (_) {}
     try {
@@ -113,17 +130,58 @@
         resolve();
       };
       s.onerror = function () {
-        reject(new Error('Google sign-in script failed'));
+        reject(new Error('Google sign-in script blocked · check network'));
       };
       document.head.appendChild(s);
     });
     return A._gsiReady;
   }
 
+  function originHelp() {
+    const origin = (location.origin || 'https://astranov.eu').replace(/\/$/, '');
+    return (
+      'Google blocked this site. In Google Cloud → Credentials → OAuth client, add Authorized JavaScript origin: ' +
+      origin +
+      ' (and https://www.astranov.eu if used). Then hard refresh.'
+    );
+  }
+
+  function applyUser(user) {
+    A.user = user || null;
+    paint();
+    if (!A.user) return;
+    try {
+      const me = global.SNProfiles?.me?.();
+      if (me) {
+        const nm = A.user.user_metadata?.full_name || A.user.email?.split('@')[0];
+        if (nm) me.name = nm;
+        if (A.user.user_metadata?.avatar_url) me.avatar = A.user.user_metadata.avatar_url;
+        if (A.user.email) me.handle = '@' + A.user.email.split('@')[0];
+        global.SNProfiles.upsert(me);
+      }
+    } catch (_) {}
+  }
+
+  async function completeIdToken(credential) {
+    await ensureClient();
+    const { data, error } = await A.client.auth.signInWithIdToken({
+      provider: 'google',
+      token: credential,
+    });
+    if (error) throw error;
+    applyUser(data?.user || data?.session?.user || null);
+    if (A.user) {
+      say(
+        'Signed in · ' + (A.user.user_metadata?.full_name || A.user.email || 'user') + ' · astranov.eu',
+        'ok'
+      );
+    }
+    return data;
+  }
+
   /**
    * Google Identity Services → Supabase signInWithIdToken.
-   * User stays on Google account picker branded for the OAuth client (astranov.eu),
-   * without opening authorize URL that displays *.supabase.co as redirect host.
+   * Origin https://astranov.eu MUST be registered on the OAuth client.
    */
   async function signInGoogleGis() {
     await ensureClient();
@@ -132,7 +190,7 @@
       throw new Error('Google sign-in unavailable');
     }
     const b = brand();
-    global.SNCli?.log?.('Sign in · ' + b.name + ' · ' + b.domain, 'ok');
+    say('Sign in · ' + b.name + ' · ' + b.domain, 'ok');
 
     return new Promise(function (resolve, reject) {
       let settled = false;
@@ -143,8 +201,8 @@
         else resolve(data);
       }
 
-      if (!A._gsiInit) {
-        A._gsiInit = true;
+      // Always re-init with current origin (avoids stale GIS state)
+      try {
         global.google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: async function (resp) {
@@ -153,57 +211,44 @@
                 done(new Error('Google sign-in cancelled'));
                 return;
               }
-              global.SNCli?.log?.('Signing in to astranov.eu…', 'dim');
-              const { data, error } = await A.client.auth.signInWithIdToken({
-                provider: 'google',
-                token: resp.credential,
-              });
-              if (error) throw error;
-              A.user = data?.user || data?.session?.user || null;
-              paint();
-              if (A.user) {
-                try {
-                  const me = global.SNProfiles?.me?.();
-                  if (me) {
-                    const nm =
-                      A.user.user_metadata?.full_name || A.user.email?.split('@')[0];
-                    if (nm) me.name = nm;
-                    if (A.user.user_metadata?.avatar_url)
-                      me.avatar = A.user.user_metadata.avatar_url;
-                    if (A.user.email) me.handle = '@' + A.user.email.split('@')[0];
-                    global.SNProfiles.upsert(me);
-                  }
-                } catch (_) {}
-                global.SNCli?.log?.(
-                  'Signed in · ' +
-                    (A.user.user_metadata?.full_name || A.user.email || 'user') +
-                    ' · astranov.eu',
-                  'ok'
-                );
-              }
+              say('Signing in to astranov.eu…', 'dim');
+              const data = await completeIdToken(resp.credential);
               done(null, data);
             } catch (e) {
-              done(e);
+              const raw = String((e && e.message) || e || '');
+              if (/invalid_client|origin|401|registered/i.test(raw)) {
+                done(new Error(originHelp()));
+              } else {
+                done(e);
+              }
             }
           },
           auto_select: false,
           cancel_on_tap_outside: true,
           context: 'signin',
           itp_support: true,
-          ux_mode: 'popup',
+          use_fedcm_for_prompt: true,
         });
+        A._gsiInit = true;
+      } catch (eInit) {
+        done(eInit);
+        return;
       }
 
-      // Prompt One Tap / account chooser (no supabase.co in the URL bar path)
       try {
         global.google.accounts.id.prompt(function (notification) {
           if (!notification) return;
           try {
-            if (
-              notification.isNotDisplayed &&
-              notification.isNotDisplayed()
-            ) {
-              // Fallback: OAuth still used only if GIS prompt blocked
+            // Google surfaces origin errors here when prompt cannot display
+            if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+              const reason =
+                (notification.getNotDisplayedReason && notification.getNotDisplayedReason()) ||
+                '';
+              if (/origin|invalid_client|unregistered/i.test(String(reason))) {
+                done(new Error(originHelp()));
+                return;
+              }
+              // User dismissed or browser blocked One Tap → try OAuth redirect
               void signInGoogleOAuthFallback().then(
                 function (d) {
                   done(null, d);
@@ -212,10 +257,7 @@
                   done(e);
                 }
               );
-            } else if (
-              notification.isSkippedMoment &&
-              notification.isSkippedMoment()
-            ) {
+            } else if (notification.isSkippedMoment && notification.isSkippedMoment()) {
               void signInGoogleOAuthFallback().then(
                 function (d) {
                   done(null, d);
@@ -224,6 +266,9 @@
                   done(e);
                 }
               );
+            } else if (notification.isDismissedMoment && notification.isDismissedMoment()) {
+              // User closed chooser — do not auto-fallback spam
+              done(new Error('Sign-in cancelled'));
             }
           } catch (_) {}
         });
@@ -240,15 +285,11 @@
     });
   }
 
-  /** Last-resort OAuth — still redirect back to astranov.eu (never leave user on supabase app) */
   async function signInGoogleOAuthFallback() {
     const c = await ensureClient();
     const b = brand();
     const redirectTo = (location.origin || b.site).replace(/\/$/, '') + '/';
-    global.SNCli?.log?.(
-      'Sign in · ' + b.name + ' · ' + b.domain + ' (secure handoff)',
-      'ok'
-    );
+    say('Sign in · opening Google for ' + b.domain + '…', 'ok');
     const { error } = await c.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -257,10 +298,13 @@
           access_type: 'offline',
           prompt: 'select_account',
         },
-        // Do not skip browser redirect — user returns to astranov.eu
       },
     });
-    if (error) throw error;
+    if (error) {
+      const raw = String(error.message || error);
+      if (/invalid_client|origin|redirect/i.test(raw)) throw new Error(originHelp());
+      throw error;
+    }
     return null;
   }
 
@@ -269,7 +313,10 @@
       return await signInGoogleGis();
     } catch (e) {
       const msg = scrub(e && e.message ? e.message : e);
-      global.SNCli?.log?.('GIS path · ' + msg + ' · trying handoff…', 'dim');
+      if (/Authorized JavaScript origin|Google blocked|not registered/i.test(msg)) {
+        throw new Error(msg);
+      }
+      say('Trying alternate Google handoff…', 'dim');
       return signInGoogleOAuthFallback();
     }
   }
@@ -284,13 +331,14 @@
   async function toggle() {
     if (A.user) {
       await signOut();
-      global.SNCli?.log?.('Signed out · astranov.eu', 'dim');
+      say('Signed out · astranov.eu', 'ok');
     } else {
-      global.SNCli?.log?.('Opening Google · astranov.eu…', 'dim');
       try {
         await signInGoogle();
       } catch (e) {
-        throw new Error(scrub(e && e.message ? e.message : e));
+        const msg = scrub(e && e.message ? e.message : e);
+        say(msg, 'err');
+        throw new Error(msg);
       }
     }
   }
@@ -317,9 +365,7 @@
     if (A._bound) return;
     A._bound = true;
     document.getElementById('btn-login')?.addEventListener('click', () => {
-      void toggle().catch((e) =>
-        global.SNCli?.log?.(scrub(String(e.message || e)), 'err')
-      );
+      void toggle().catch(() => {});
     });
     ensureClient()
       .then(async () => {
@@ -328,26 +374,8 @@
           if (error) throw error;
           A.user = data?.session?.user || null;
           if (A.user) {
-            global.SNCli?.log?.(
-              'Signed in · ' +
-                (A.user.user_metadata?.full_name || A.user.email || 'user') +
-                ' · astranov.eu',
-              'ok'
-            );
-            try {
-              const me = global.SNProfiles?.me?.();
-              if (me && A.user) {
-                const nm =
-                  A.user.user_metadata?.full_name || A.user.email?.split('@')[0];
-                if (nm) me.name = nm;
-                if (A.user.user_metadata?.avatar_url)
-                  me.avatar = A.user.user_metadata.avatar_url;
-                if (A.user.email) me.handle = '@' + A.user.email.split('@')[0];
-                global.SNProfiles.upsert(me);
-              }
-            } catch (_) {}
+            applyUser(A.user);
           }
-          // Clean OAuth junk from URL without showing supabase
           try {
             if (location.search || location.hash) {
               const clean =
@@ -379,6 +407,7 @@
     authHeaders,
     ensureClient,
     scrub,
+    originHelp,
     GOOGLE_CLIENT_ID,
     get user() {
       return A.user;

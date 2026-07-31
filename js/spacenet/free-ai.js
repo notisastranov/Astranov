@@ -15,13 +15,13 @@
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name',
-      a: 'I am Astranov — the AI. SpaceNet is the system/grid. Ask pizza · shops · first delivery · donate on.',
+      a: 'I am Astranov — AI of astranov.eu. Ask pizza · shops · first delivery · donate on · locate.',
       tags: ['identity', 'ai'],
     },
     {
       id: 'spacenet_name',
       q: 'what is spacenet system grid os net',
-      a: 'SpaceNet is the system and pilot fly grid. I am Astranov, the AI.',
+      a: 'I am Astranov. The live grid runs under ASTRANOV on the globe.',
       tags: ['identity', 'system'],
     },
     {
@@ -39,7 +39,7 @@
     {
       id: 'grid',
       q: 'spacenet grid global national regional city zoom dive',
-      a: 'SPACENET fly grid: GLOBAL → NATIONAL → REGIONAL → CITY. Tap globe to dive.',
+      a: 'Zoom grid: GLOBAL → NATIONAL → REGIONAL → CITY. Tap the globe to dive.',
       tags: ['globe'],
     },
     {

@@ -155,7 +155,7 @@
         );
       }
     } else if (tiles.length) {
-      global.SNCli?.log?.(tiles.length + ' shops ready · open city map · tap targets', 'dim');
+      global.SNCli?.log?.(tiles.length + ' shops ready · open city · tap targets', 'dim');
     }
 
     // Globe pulses keep full-Earth default useful without stealing the view
@@ -200,7 +200,8 @@
       count = r?.count || 0;
       if (count) source = 'db';
     } catch (e) {
-      global.SNCli?.log?.('DB shops · ' + (e.message || e), 'dim');
+      // Quiet technical fail — do not dump engine errors to user CLI
+      console.warn('[SNCommerce] shops', e);
     }
 
     // 2) Edge crawler warm then DB again

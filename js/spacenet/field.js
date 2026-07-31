@@ -371,8 +371,8 @@
       var signed = !!(g.SNAuth && SNAuth.user);
       try {
         if (!signed) {
-          if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
-          else if (g.SNCli && SNCli.run) void SNCli.run('login');
+          if (g.SNCli && SNCli.run) void SNCli.run('login');
+          else if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
         } else {
           if (g.SNTile && SNTile.openMe) SNTile.openMe();
           else if (g.SNCli && SNCli.run) void SNCli.run('me');

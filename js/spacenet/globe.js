@@ -266,7 +266,7 @@
         step: 1,
         openMap: false,
         same: false,
-        hint: 'SPACENET · NATIONAL',
+        hint: 'NATIONAL',
       };
     }
     var order = ['global', 'national', 'regional', 'city'];
@@ -280,7 +280,7 @@
       step: i,
       openMap: cell === 'city',
       same: true,
-      hint: 'SPACENET · ' + cell.toUpperCase(),
+      hint: cell.toUpperCase(),
     };
   }
 
@@ -303,7 +303,7 @@
     var el = document.getElementById('tier-label');
     if (el) el.textContent = lab;
     var zl = document.getElementById('zoom-label');
-    if (zl) zl.textContent = 'SPACENET · ' + lab;
+    if (zl) zl.textContent = lab;
     syncNationalLayer();
   }
 
@@ -1509,10 +1509,10 @@
 
     try {
       var path = (SN && SN.pathString && SN.pathString()) || 'GLOBAL → NATIONAL → REGIONAL → CITY';
-      var hint = n.hint || 'SPACENET · ' + ((TIERS[cell] && TIERS[cell].label) || cell);
+      var hint = n.hint || ((TIERS[cell] && TIERS[cell].label) || cell);
       if (global.SNCli && SNCli.log) {
         SNCli.log(hint + ' · ' + lat.toFixed(3) + ', ' + lng.toFixed(3), 'ok');
-        if (cell !== 'city') SNCli.log('SPACENET grid · ' + path, 'dim');
+        if (cell !== 'city') SNCli.log('Zoom · ' + path, 'dim');
         SNCli.preview(hint);
       }
       setHud(hint);
@@ -1548,10 +1548,10 @@
     }
     setTierLabel();
     var label = (TIERS[prev] && TIERS[prev].label) || prev;
-    setHud('SPACENET · ' + label + ' · zoom out');
+    setHud(label + ' · zoom out');
     try {
-      if (global.SNCli && SNCli.log) SNCli.log('SPACENET out · ' + label, 'dim');
-      if (global.SNCli && SNCli.preview) SNCli.preview('SPACENET · ' + label);
+      if (global.SNCli && SNCli.log) SNCli.log('Zoom out · ' + label, 'dim');
+      if (global.SNCli && SNCli.preview) SNCli.preview(label);
     } catch (_) {}
     return prev;
   }
@@ -1669,8 +1669,7 @@
         else if (tier === 'regional') nextHint = ' · tap → CITY';
         else if (tier === 'city') nextHint = ' · pizza · barman · date';
         SNCli.log(
-          'SPACENET · ' +
-            bname +
+          bname +
             ' · ' +
             label +
             ' · ' +
@@ -1682,7 +1681,7 @@
             nextHint,
           'ok'
         );
-        SNCli.preview('SPACENET · ' + label + nextHint);
+        SNCli.preview(label + nextHint);
       }
     } catch (_) {}
     // Earth street map only at CITY (or openMap:true) — not at national/regional
@@ -1851,7 +1850,7 @@
         ? 'GLOBAL · full Earth in space · ISS + sats'
         : key === 'solar'
           ? 'SOLAR · deep space overview'
-          : 'Astranov SpaceNet · ' + t.label;
+          : 'Astranov · ' + t.label;
     setHud(hud);
     try {
       if (global.SNCli && SNCli.preview) {
@@ -1862,8 +1861,8 @@
       if (global.SNCli && SNCli.log && (key === 'global' || key === 'solar')) {
         SNCli.log(
           key === 'global'
-            ? 'SPACENET · GLOBAL · whole Earth in space · ISS · LEO constellation'
-            : 'SPACENET · SOLAR · deep space',
+            ? 'GLOBAL · whole Earth in space · ISS · satellites'
+            : 'SOLAR · deep space',
           'ok'
         );
       }
@@ -1961,26 +1960,40 @@
 
   function locate() {
     return new Promise(function (resolve) {
-      function finish(lat, lng, fallback) {
-        goToPlace(lat, lng, {
-          tier: 'national',
-          pulse: true,
-          color: 0x3d9eff,
-          label: fallback ? 'You (GPS default)' : 'You',
-          skipScan: false,
+      function finish(lat, lng, fallback, reason) {
+        try {
+          goToPlace(lat, lng, {
+            tier: fallback ? 'national' : 'city',
+            pulse: true,
+            color: 0x3d9eff,
+            label: fallback ? 'You (default)' : 'You',
+            skipScan: false,
+            openMap: !fallback,
+          });
+        } catch (_) {}
+        resolve({
+          lat: lat,
+          lng: lng,
+          fallback: !!fallback,
+          demo: false,
+          reason: reason || null,
         });
-        resolve({ lat: lat, lng: lng, fallback: !!fallback, demo: false });
       }
-      // Default Rhodes only when GPS unavailable — real coords, not a "demo city"
-      if (!navigator.geolocation) return finish(36.4341, 28.2176, true);
+      if (!navigator.geolocation) return finish(36.4341, 28.2176, true, 'unsupported');
+      if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
+        return finish(36.4341, 28.2176, true, 'insecure');
+      }
       navigator.geolocation.getCurrentPosition(
         function (pos) {
-          finish(pos.coords.latitude, pos.coords.longitude, false);
+          finish(pos.coords.latitude, pos.coords.longitude, false, null);
         },
-        function () {
-          finish(36.4341, 28.2176, true);
+        function (err) {
+          var code = err && err.code;
+          var reason =
+            code === 1 ? 'denied' : code === 2 ? 'unavailable' : code === 3 ? 'timeout' : 'error';
+          finish(36.4341, 28.2176, true, reason);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 14000, maximumAge: 20000 }
       );
     });
   }
