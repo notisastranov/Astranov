@@ -16,7 +16,8 @@
     timeoutMs = timeoutMs || 10000;
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      s.async = false;
+      // Parallel loads for app wave; sequential shell keeps order for deps
+      s.async = true;
       s.src = v(src);
       var done = false;
       var to = setTimeout(function () {
@@ -57,14 +58,66 @@
     );
   }
 
+  /** Sequential load — keep async=false order for dependency chain */
   function seq(list, timeoutMs) {
     var i = 0;
     function next() {
       if (i >= list.length) return Promise.resolve();
       var src = list[i++];
-      return load(src, timeoutMs || 9000).then(next);
+      return loadOrdered(src, timeoutMs || 9000).then(next);
     }
     return next();
+  }
+
+  function loadOrdered(src, timeoutMs) {
+    timeoutMs = timeoutMs || 10000;
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.async = false;
+      s.src = v(src);
+      var done = false;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        try {
+          s.remove();
+        } catch (e) {}
+        reject(new Error('timeout ' + src));
+      }, timeoutMs);
+      s.onload = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        resolve();
+      };
+      s.onerror = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        reject(new Error('load fail ' + src));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  function whenIdle(fn, timeout) {
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(function () {
+        try {
+          fn();
+        } catch (e) {
+          console.warn('[Astranov] idle', e);
+        }
+      }, { timeout: timeout || 2000 });
+    } else {
+      setTimeout(function () {
+        try {
+          fn();
+        } catch (e) {
+          console.warn('[Astranov] idle', e);
+        }
+      }, 80);
+    }
   }
 
   function hideBoot(msg) {
@@ -77,7 +130,7 @@
         try {
           bootEl.remove();
         } catch (e) {}
-      }, 280);
+      }, 220);
     }
     if (msg) console.info('[Astranov]', msg);
   }
@@ -104,7 +157,7 @@
   // Hard ceiling — interactive shell must appear
   setTimeout(function () {
     if (!finished) {
-      console.error('[Astranov] boot watchdog 10s');
+      console.error('[Astranov] boot watchdog 8s');
       try {
         if (window.SNCli && SNCli.init) SNCli.init();
       } catch (e) {}
@@ -113,17 +166,40 @@
         if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err');
       } catch (e2) {}
     }
-  }, 10000);
+  }, 8000);
 
+  var isLite = false;
   try {
-    if (matchMedia('(pointer:coarse)').matches || navigator.maxTouchPoints > 0) window._snLite = true;
+    isLite =
+      matchMedia('(pointer:coarse)').matches ||
+      navigator.maxTouchPoints > 0 ||
+      (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+      (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+    if (isLite) window._snLite = true;
   } catch (e) {}
 
+  // Global performance governor
+  window.SNPerf = {
+    lite: isLite,
+    dprCap: isLite ? 1 : 1.25,
+    globeSegs: isLite ? 32 : 48,
+    starN: isLite ? 280 : 700,
+    radarMs: isLite ? 250 : 180,
+    idleSkip: isLite ? 4 : 3,
+    hudHz: isLite ? 12 : 20,
+    helperAuto: false,
+    t0: t0,
+    mark: function (name) {
+      try {
+        performance.mark('sn:' + name);
+      } catch (_) {}
+    },
+  };
+
   /**
-   * WAVE 1 — shell: CLI + chrome + AI free mind (no THREE, no map, no market bulk)
-   * Goal: feed usable in ~1–2s on good network.
+   * WAVE 1 — critical shell only (feed usable ASAP)
+   * Deferred: tile (heavy), market bulk still needed for first order
    */
-  // Shell: Astranov Mind + dialect + market (owner memory lane loads first)
   var WAVE_SHELL = [
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
@@ -132,7 +208,6 @@
     '/js/spacenet/usage.js',
     '/js/spacenet/field.js',
     '/js/spacenet/home.js',
-    // Owner memory: Archangelos dialect → Astranov Mind → Telemachos
     '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/search.js',
     '/js/spacenet/market.js',
@@ -141,22 +216,16 @@
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js',
     '/js/spacenet/ui.js',
-    '/js/spacenet/tile.js',
   ];
 
-  /**
-   * WAVE 2 — globe imaging (THREE is the heavy cost)
-   */
   var WAVE_GLOBE = [
     '/js/spacenet/spacenet-grid.js',
     '/js/spacenet/globe.js',
     '/js/spacenet/cosmos.js',
   ];
 
-  /**
-   * WAVE 3 — map + soft (parallel soft)
-   */
   var WAVE_APP = [
+    '/js/spacenet/tile.js',
     '/js/spacenet/brain.js',
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
@@ -164,7 +233,6 @@
     '/js/spacenet/mesh-orders.js',
     '/js/spacenet/channel-manager.js',
     '/js/spacenet/task-board.js',
-
     '/js/spacenet/super.js',
     '/js/spacenet/live-bridge.js',
     '/js/spacenet/map.js',
@@ -192,16 +260,6 @@
       function () {
         SNUi && SNUi.init && SNUi.init();
       },
-      function () {
-        SNTile && SNTile.init && SNTile.init();
-      },
-      function () {
-        if (window.SNAIGraphics && SNAIGraphics.init) SNAIGraphics.init();
-        else if (window.AIGraphics && AIGraphics.init) AIGraphics.init();
-      },
-      function () {
-        if (window.SNHelper && SNHelper.init) SNHelper.init();
-      },
     ].forEach(function (fn) {
       try {
         fn();
@@ -209,13 +267,15 @@
         console.warn('[Astranov] shell init', e);
       }
     });
-    // Kill stuck TTS
     try {
       if (window.speechSynthesis) speechSynthesis.cancel();
     } catch (e0) {}
-    try {
-      if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
-    } catch (e1) {}
+    // Presence after paint — don't block shell
+    whenIdle(function () {
+      try {
+        if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
+      } catch (e1) {}
+    }, 1500);
   }
 
   function initGlobe() {
@@ -223,12 +283,7 @@
     try {
       if (window.SNGlobe && typeof THREE !== 'undefined') {
         globeOk = !!SNGlobe.init();
-        if (globeOk) {
-          try {
-            if (SNGlobe.setBody) SNGlobe.setBody('earth');
-            if (SNGlobe.goToTier) SNGlobe.goToTier('global');
-          } catch (e) {}
-        }
+        // Already boots at GLOBAL — skip second goToTier (was double work)
       }
     } catch (e) {
       console.warn('[Astranov] globe', e);
@@ -237,37 +292,60 @@
   }
 
   function loadThree() {
-    return load('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 12000).catch(function () {
+    return load(
+      'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+      12000
+    ).catch(function () {
       return load('https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js', 12000);
     });
   }
 
+  // Start THREE download immediately in parallel with shell (biggest win)
+  var threePromise = loadThree().catch(function (e) {
+    console.warn('[Astranov] THREE early', e);
+  });
+  window.SNPerf.mark('three_start');
+
   // —— START: shell first ——
-  seq(WAVE_SHELL, 8000)
+  seq(WAVE_SHELL, 7000)
     .then(function () {
       initShell();
       shellReady = true;
       var ms = Math.round(performance.now() - t0);
       hideBoot('shell ' + ms + 'ms');
+      window.SNPerf.mark('shell_ready');
       try {
         if (window.SNCli && SNCli.log) {
-          SNCli.log('ASTRANOV · shell ' + ms + 'ms · feed ready · globe loading…', 'ok');
-          SNCli.preview('Shell ready · talk · first delivery · donate on');
+          SNCli.log(
+            'ASTRANOV · shell ' +
+              ms +
+              'ms · ' +
+              (isLite ? 'lite' : 'full') +
+              ' · feed ready · Earth loading…',
+            'ok'
+          );
+          SNCli.preview('Shell ' + ms + 'ms · talk · order · locate');
         }
         if (window.SNField && SNField.setNotice) SNField.setNotice(ms + 'ms');
       } catch (e) {}
 
-      // WAVE 2: THREE + globe after first paint
-      return loadThree()
+      // WAVE 2: wait for THREE (already downloading) + globe modules
+      return threePromise
         .then(function () {
-          return seq(WAVE_GLOBE, 9000);
+          window.SNPerf.mark('three_ready');
+          return seq(WAVE_GLOBE, 8000);
         })
         .then(function () {
           var ok = initGlobe();
+          window.SNPerf.mark('globe_ready');
           try {
             if (window.SNCli && SNCli.log) {
               SNCli.log(
-                ok ? 'GLOBAL Earth · full sphere in space' : 'Globe soft-fail · CLI still live',
+                ok
+                  ? 'GLOBAL Earth · smooth path · ' +
+                      Math.round(performance.now() - t0) +
+                      'ms'
+                  : 'Globe soft-fail · CLI still live',
                 ok ? 'ok' : 'dim'
               );
               if (ok) SNCli.preview('GLOBAL Earth');
@@ -282,74 +360,99 @@
         });
     })
     .then(function () {
-      // WAVE 3: app modules in parallel (soft)
-      return loadParallel(WAVE_APP, 12000);
+      // WAVE 3: soft modules — idle so Earth stays buttery
+      return new Promise(function (resolve) {
+        whenIdle(function () {
+          loadParallel(WAVE_APP, 14000).then(resolve);
+        }, 1200);
+      });
     })
     .then(function () {
-      [
-        function () {
-          SNSpatial && SNSpatial.init && SNSpatial.init();
-        },
-        function () {
-          SNMap && SNMap.init && SNMap.init();
-        },
-        function () {
-          SNLiveBridge && SNLiveBridge.start && SNLiveBridge.start();
-        },
-      ].forEach(function (fn) {
-        try {
-          fn();
-        } catch (e) {
-          console.warn('[Astranov] app init', e);
-        }
-      });
-      try {
-        if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
-      } catch (e3) {}
-      var total = Math.round(performance.now() - t0);
-      try {
-        if (window.SNCli && SNCli.log) {
-          SNCli.log(
-            'App modules · ' +
-              total +
-              'ms · type: first delivery · donate on · shops',
-            'dim'
-          );
-        }
-      } catch (e4) {}
-
-      // Auth soft (not on critical path)
-      setTimeout(function () {
-        loadSoft(
-          'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
-          12000
-        )
-          .then(function () {
-            return loadSoft('/js/spacenet/auth.js', 8000);
-          })
-          .then(function () {
-            try {
-              if (window.SNAuth && SNAuth.init) SNAuth.init();
-            } catch (e) {}
-          });
-      }, window._snLite ? 2000 : 1200);
-
-      // Search / shops only when idle — never freeze shell
-      setTimeout(function () {
-        // search.js already on WAVE_SHELL for first-task pizza
-      }, 2500);
-      setTimeout(function () {
-        try {
-          if (document.hidden) return;
-          var p = window._snLastPos || { lat: 37.98, lng: 23.73 };
-          if (window.SNCommerce && SNCommerce.populateMap) {
-            SNCommerce.populateMap(p.lat, p.lng, { openMap: false }).catch(function () {});
+      whenIdle(function () {
+        [
+          function () {
+            SNTile && SNTile.init && SNTile.init();
+          },
+          function () {
+            SNSpatial && SNSpatial.init && SNSpatial.init();
+          },
+          function () {
+            SNMap && SNMap.init && SNMap.init();
+          },
+          function () {
+            if (window.SNAIGraphics && SNAIGraphics.init) {
+              // Prefer balanced/lite on constrained devices
+              try {
+                if (isLite && SNAIGraphics.setMode) SNAIGraphics.setMode('lite');
+                else if (SNAIGraphics.setMode && !localStorage.getItem('sn:ai-gfx-mode-v1'))
+                  SNAIGraphics.setMode('balanced');
+              } catch (_) {}
+              SNAIGraphics.init();
+            }
+          },
+          function () {
+            // HELPER on demand only — continuous RAF was sticky
+            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false });
+          },
+          function () {
+            SNLiveBridge && SNLiveBridge.start && SNLiveBridge.start();
+          },
+        ].forEach(function (fn) {
+          try {
+            fn();
+          } catch (e) {
+            console.warn('[Astranov] app init', e);
           }
-        } catch (e) {}
-      }, 4000);
+        });
+        try {
+          if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
+        } catch (e3) {}
+        var total = Math.round(performance.now() - t0);
+        window.SNPerf.bootMs = total;
+        try {
+          if (window.SNCli && SNCli.log) {
+            SNCli.log(
+              'Smooth boot · ' +
+                total +
+                'ms · ' +
+                (isLite ? 'lite device' : 'desktop') +
+                ' · type: test ready · order pizza',
+              'dim'
+            );
+          }
+        } catch (e4) {}
+
+        // Auth soft (not on critical path)
+        setTimeout(function () {
+          loadSoft(
+            'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+            12000
+          )
+            .then(function () {
+              return loadSoft('/js/spacenet/auth.js', 8000);
+            })
+            .then(function () {
+              try {
+                if (window.SNAuth && SNAuth.init) SNAuth.init();
+              } catch (e) {}
+            });
+        }, isLite ? 2800 : 1500);
+
+        // Shop warm only when idle + delayed — never freeze Earth
+        setTimeout(function () {
+          try {
+            if (document.hidden) return;
+            var p = window._snLastPos || window._snPhysPos;
+            if (!p || p.lat == null) return;
+            if (window.SNCommerce && SNCommerce.populateMap) {
+              SNCommerce.populateMap(p.lat, p.lng, { openMap: false }).catch(function () {});
+            }
+          } catch (e) {}
+        }, isLite ? 8000 : 5000);
+      }, 800);
     })
     .catch(function (e) {
-      console.error(e);
+      console.error('[Astranov] boot', e);
       if (!shellReady) {
         loadSoft('/js/spacenet/cli.js', 8000).then(function () {
           try {

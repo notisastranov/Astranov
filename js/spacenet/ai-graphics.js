@@ -442,17 +442,24 @@
 
   function setThinkPulse(on) {
     GFX.think = !!on;
-    if (on) ensureHud();
+    if (on) {
+      ensureHud();
+      ensureLoop();
+    }
   }
 
   function showNeural(on) {
     GFX.neural = on !== false;
-    if (GFX.neural) ensureHud();
+    if (GFX.neural) {
+      ensureHud();
+      ensureLoop();
+    }
   }
 
   function spawnEffect(latOrX, lngOrY, color, count, life) {
     // Accept lat/lng or screen-ish coords; store as soft HUD particle burst
     ensureHud();
+    ensureLoop();
     var prof = modeProfile();
     if (GFX.effects.length >= prof.effectCap) GFX.effects.shift();
     var col = color != null ? color : 0x4cc9ff;
@@ -603,23 +610,38 @@
   }
 
   function loop(now) {
+    // Stop RAF when nothing to paint (big sticky win)
+    var need =
+      GFX.think ||
+      GFX.neural ||
+      (GFX.effects && GFX.effects.length) ||
+      GFX.flyer ||
+      GFX.mode === 'supreme';
+    if (!need) {
+      GFX.raf = 0;
+      if (GFX.hudCtx && GFX.hud) {
+        try {
+          var w0 = window.innerWidth || 1;
+          var h0 = window.innerHeight || 1;
+          GFX.hudCtx.clearRect(0, 0, w0, h0);
+        } catch (_) {}
+      }
+      return;
+    }
     GFX.raf = requestAnimationFrame(loop);
     if (!GFX.lastF) GFX.lastF = now;
     var dt = now - GFX.lastF;
-    var hz = modeProfile().hudHz;
+    var hz = (global.SNPerf && SNPerf.hudHz) || modeProfile().hudHz;
     var minDt = 1000 / hz;
     if (dt < minDt) return;
     GFX.lastF = now;
-    // FPS estimate
     GFX.frames++;
     if (now - (GFX._fpsAt || 0) > 1000) {
       GFX.fps = GFX.frames;
       GFX.frames = 0;
       GFX._fpsAt = now;
     }
-    // Skip when tab hidden
     if (document.hidden) return;
-    // Skip heavy paint if map street fully open and lite
     if (GFX.mode === 'lite' && global.SNMap && SNMap.active && !GFX.think) return;
     paintHud(now);
   }
@@ -627,27 +649,26 @@
   function init() {
     if (GFX.ready) return true;
     loadMode();
-    ensureHud();
+    // Auto lite/balanced from SNPerf when no user preference
+    try {
+      if (!localStorage.getItem(MODE_KEY) && global.SNPerf) {
+        if (SNPerf.lite) GFX.mode = 'lite';
+        else GFX.mode = 'balanced';
+      }
+    } catch (_) {}
+    // Don't create full-screen HUD until think/neural/effect needed
     GFX.t0 = performance.now();
     GFX.ready = true;
     window.addEventListener('resize', resizeHud, { passive: true });
-    if (!GFX.raf) GFX.raf = requestAnimationFrame(loop);
-    // Pre-warm common generative assets
-    try {
-      generateSprite('neural mind cyan', 64);
-      generateSprite('route delivery arc', 96);
-      generateSprite('city night lattice', 128);
-    } catch (_) {}
-    try {
-      if (global.SNCli && SNCli.log) {
-        SNCli.log(
-          'AI Graphics · ' + modeProfile().label + ' · generative (not polygon AAA assets)',
-          'ok'
-        );
-      }
-    } catch (_) {}
-    global._aiGraphicsReady = true;
+    // No continuous RAF until needed
     return true;
+  }
+
+  function ensureLoop() {
+    if (!GFX.raf) {
+      ensureHud();
+      GFX.raf = requestAnimationFrame(loop);
+    }
   }
 
   function report() {

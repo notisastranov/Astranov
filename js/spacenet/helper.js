@@ -393,9 +393,16 @@
   }
 
   function loop(now) {
+    if (!H.visible) {
+      H.raf = 0;
+      return;
+    }
     H.raf = requestAnimationFrame(loop);
-    if (!H.visible || !H.ctx) return;
+    if (!H.ctx) return;
     if (document.hidden) return;
+    // ~30fps cap — smooth without sticky main thread
+    if (H._lastPaint && now - H._lastPaint < 32) return;
+    H._lastPaint = now;
     var w = window.innerWidth || 1;
     var h = window.innerHeight || 1;
     var ctx = H.ctx;
@@ -530,26 +537,36 @@
     ctx.restore();
   }
 
-  function init() {
+  function init(opts) {
+    opts = opts || {};
     if (H.ready) return true;
     ensureSprites();
-    ensureCanvas();
+    // Don't attach full-screen canvas until first wake (boot speed)
     H.x = (window.innerWidth || 400) * 0.78;
     H.y = (window.innerHeight || 700) * 0.22;
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
     window.addEventListener('resize', resize, { passive: true });
-    // Soft presence after boot
-    setTimeout(function () {
-      if (!H.visible) {
-        wake({ label: 'HELPER' });
-        H.status = 'standby';
-        setTimeout(function () {
-          if (!H.busy) H.status = 'ready';
-        }, 1200);
-      }
-    }, 2200);
+    var auto = opts.autoWake;
+    if (auto == null) auto = !(global.SNPerf && SNPerf.helperAuto === false);
+    if (auto && !(global.SNPerf && global.SNPerf.lite)) {
+      setTimeout(function () {
+        if (!H.visible) {
+          wake({ label: 'HELPER' });
+          H.status = 'standby';
+          setTimeout(function () {
+            if (!H.busy) {
+              H.status = 'ready';
+              // Park after 8s idle — stop burning RAF
+              setTimeout(function () {
+                if (!H.busy && H.visible) sleep();
+              }, 8000);
+            }
+          }, 1200);
+        }
+      }, 4000);
+    }
     return true;
   }
 

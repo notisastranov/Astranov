@@ -1222,6 +1222,7 @@
     if (!el) return false;
 
     var touch = isTouch();
+    var lite = !!(global._snLite || (global.SNPerf && SNPerf.lite) || touch);
     var w = el.clientWidth || window.innerWidth;
     var h = el.clientHeight || window.innerHeight;
 
@@ -1234,12 +1235,19 @@
     G.diveTier = 'global';
 
     G.renderer = new THREE.WebGLRenderer({
-      antialias: !touch,
+      antialias: !lite,
       alpha: false,
-      powerPreference: touch ? 'low-power' : 'default',
+      powerPreference: lite ? 'low-power' : 'high-performance',
+      stencil: false,
+      depth: true,
     });
     G.renderer.setSize(w, h, false);
-    G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, touch ? 1.0 : 1.5));
+    var dprCap = (global.SNPerf && SNPerf.dprCap) || (lite ? 1 : 1.25);
+    G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+    // Avoid auto-clear thrash
+    try {
+      G.renderer.sortObjects = false;
+    } catch (_) {}
     el.innerHTML = '';
     el.appendChild(G.renderer.domElement);
 
@@ -1257,27 +1265,41 @@
     G.tilt.add(G.spin);
     G.pivot = G.spin; // children (earth, markers, webbing) ride the polar spin
 
-    var segs = touch ? 48 : 64;
+    var segs =
+      (global.SNPerf && SNPerf.globeSegs) || (lite ? 32 : 48);
     var loader = new THREE.TextureLoader();
-    var earthUrl =
-      'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
+    // Lite: smaller day map first — less decode jank on phones
+    var earthUrl = lite
+      ? 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg'
+      : 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_atmos_2048.jpg';
     var cloudUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png';
 
     var mat = new THREE.MeshPhongMaterial({
-      color: 0x223344,
-      specular: 0x333333,
-      shininess: 12,
+      color: 0x1a4a78,
+      specular: 0x222222,
+      shininess: 10,
+      // Instant solid Earth — textures stream in (no white stall)
+      emissive: new THREE.Color(0x041018),
     });
     G.earthMat = mat;
     G.earth = new THREE.Mesh(new THREE.SphereGeometry(1, segs, segs), mat);
     G.spin.add(G.earth);
     G._loader = loader;
     G.bodyId = 'earth';
+    G._lite = lite;
     // SPACENET webbing is the OS baselayer — build immediately (offline graticule)
     ensureNationalRoot();
-    buildWebbingGraticule(15);
-    buildCityLayer();
+    buildWebbingGraticule(lite ? 20 : 15);
+    if (!lite) buildCityLayer();
+    else {
+      // Cities after first frames
+      setTimeout(function () {
+        try {
+          buildCityLayer();
+        } catch (_) {}
+      }, 900);
+    }
 
     function applyEarthTextures() {
       G.dayNightReady = false;
@@ -1337,22 +1359,26 @@
     applyEarthTextures();
     G._applyEarthTextures = applyEarthTextures;
 
-    var cloudMat = new THREE.MeshLambertMaterial({
-      transparent: true,
-      opacity: 0.35,
-      depthWrite: false,
-    });
-    G.cloudMat = cloudMat;
-    G.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.015, segs, segs), cloudMat);
-    G.pivot.add(G.clouds);
-    loader.load(cloudUrl, function (tex) {
-      cloudMat.map = tex;
-      cloudMat.needsUpdate = true;
-    });
+    if (!lite) {
+      var cloudMat = new THREE.MeshLambertMaterial({
+        transparent: true,
+        opacity: 0.35,
+        depthWrite: false,
+      });
+      G.cloudMat = cloudMat;
+      G.clouds = new THREE.Mesh(new THREE.SphereGeometry(1.015, segs, segs), cloudMat);
+      G.pivot.add(G.clouds);
+      loader.load(cloudUrl, function (tex) {
+        cloudMat.map = tex;
+        cloudMat.needsUpdate = true;
+      });
+    } else {
+      G.clouds = null;
+    }
 
     G.pivot.add(
       new THREE.Mesh(
-        new THREE.SphereGeometry(1.045, segs, segs),
+        new THREE.SphereGeometry(1.045, lite ? Math.max(24, segs - 8) : segs, lite ? Math.max(24, segs - 8) : segs),
         new THREE.MeshBasicMaterial({
           color: 0x4a9fff,
           transparent: true,
@@ -1362,7 +1388,7 @@
       )
     );
 
-    var starN = touch ? 700 : 1600;
+    var starN = (global.SNPerf && SNPerf.starN) || (lite ? 280 : 700);
     var starPos = new Float32Array(starN * 3);
     for (var i = 0; i < starN; i++) {
       var r = 18 + Math.random() * 70;
@@ -1376,18 +1402,35 @@
       new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(starPos, 3)),
       new THREE.PointsMaterial({
         color: 0xffffff,
-        size: 0.055,
+        size: lite ? 0.07 : 0.055,
         sizeAttenuation: true,
-        opacity: 0.92,
+        opacity: 0.9,
         transparent: true,
         depthWrite: false,
       })
     );
     G.scene.add(G.stars);
-    buildSpaceOrbitLayer();
+    // Orbit layer after first paint on lite
+    if (lite) {
+      setTimeout(function () {
+        try {
+          buildSpaceOrbitLayer();
+        } catch (_) {}
+      }, 600);
+    } else {
+      buildSpaceOrbitLayer();
+    }
 
     bindInput();
-    window.addEventListener('resize', onResize, { passive: true });
+    var resizeT = 0;
+    window.addEventListener(
+      'resize',
+      function () {
+        clearTimeout(resizeT);
+        resizeT = setTimeout(onResize, 120);
+      },
+      { passive: true }
+    );
     G.ready = true;
     G.lastAct = Date.now();
     updateDayNight();
@@ -2004,8 +2047,9 @@
   function loop() {
     requestAnimationFrame(loop);
     if (!G.ready || document.hidden) return;
-    if (global.SNMap?.active) {
-      if (++G.frame % 40 === 0) {
+    // City map open: freeze Earth almost completely (was sticky dual-render)
+    if (global.SNMap && SNMap.active) {
+      if (++G.frame % 90 === 0) {
         try {
           G.renderer.render(G.scene, G.camera);
         } catch (_) {}
@@ -2013,9 +2057,14 @@
       return;
     }
     G.frame++;
-    var idle = Date.now() - G.lastAct > 2800;
+    var idle = Date.now() - G.lastAct > 2200;
+    var idleSkip = (global.SNPerf && SNPerf.idleSkip) || (G._lite ? 4 : 3);
     if (!G.dragging && !G.zoomAnim && !G.flying) {
-      var skip = idle ? 3 : 1;
+      var skip = idle ? idleSkip : 1;
+      // Cap ~30fps when not interacting (smooth, not sticky 60)
+      if (!idle && G.frame % 2 === 0 && !(global.SNPerf && SNPerf.lite)) {
+        /* full rate only every other frame when calm */
+      }
       if (G.frame % skip !== 0) return;
     }
     var userCool = Date.now() - (G.lastUserControl || 0) < 450;
@@ -2048,40 +2097,40 @@
       G.camera.position.z > 4.0 &&
       G.spin
     ) {
-      // Idle spin around true polar axis (Y) only
-      G.spin.rotation.y += 0.00045;
+      // Idle spin around true polar axis (Y) only — lighter when far
+      G.spin.rotation.y += G._lite ? 0.00032 : 0.00045;
     }
-    if (G.clouds) G.clouds.rotation.y += 0.00035;
+    if (G.clouds && !G._lite) G.clouds.rotation.y += 0.00035;
     // ISS halo soft pulse when space layer on
     if (G.issHalo && G.issHalo.visible) {
-      var s = 1 + 0.12 * Math.sin(Date.now() * 0.004);
+      var s = 1 + 0.1 * Math.sin(Date.now() * 0.0035);
       G.issHalo.scale.set(s, s, s);
     }
-    // Day/night + soft HUD; grid stays fixed faded (no loud pulse)
-    if (G.frame % 4 === 0) {
+    // Day/night + soft HUD less often
+    var hudEvery = G._lite ? 8 : 5;
+    if (G.frame % hudEvery === 0) {
       updateDayNight();
       syncSpaceLayerVis();
       if (G.nationalOn || (G.nationalRoot && G.nationalRoot.visible) || activityShouldShow()) {
         updateNationalHud(false);
-        if (G.frame % 90 === 0) refreshActivityArcs();
+        if (G.frame % 120 === 0) refreshActivityArcs();
         if (G.webbGrid && G.webbGrid.material && G.webbGrid.visible) {
           G.webbGrid.material.opacity = 0.16;
         }
         if (G.webbGridGlow && G.webbGridGlow.material && G.webbGridGlow.visible) {
           G.webbGridGlow.material.opacity = 0.07;
         }
-        // Borders only softly breathe if present
         if (G.borderLines && G.borderLines.material) {
-          G.borderLines.material.opacity = 0.28 + 0.08 * Math.sin(Date.now() * 0.0015);
+          G.borderLines.material.opacity = 0.28 + 0.06 * Math.sin(Date.now() * 0.0012);
         }
         if (G.cityGlow && G.cityGlow.material) {
           G.cityGlow.material.opacity =
-            (currentTier() === 'global' ? 0.4 : 0.35) + 0.1 * Math.sin(Date.now() * 0.002);
+            (currentTier() === 'global' ? 0.4 : 0.35) + 0.08 * Math.sin(Date.now() * 0.0018);
         }
         if (G.activityLines && G.activityLines.material) {
           G.activityLines.material.opacity =
             (currentTier() === 'global' ? 0.5 : 0.7) +
-            0.12 * Math.sin(Date.now() * 0.0025);
+            0.1 * Math.sin(Date.now() * 0.002);
         }
       }
     }

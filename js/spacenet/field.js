@@ -3000,15 +3000,16 @@
     bindRadarTap();
     syncRadarCanvas();
     drawRadar();
-    setInterval(drawRadar, 125);
-    setInterval(refreshBlips, 8000);
+    var radarMs = (g.SNPerf && SNPerf.radarMs) || 200;
+    setInterval(drawRadar, radarMs);
+    setInterval(refreshBlips, 10000);
     setInterval(function () {
       void refreshRoutes(false);
-    }, 20000);
+    }, 28000);
     // Warm routes shortly after boot (delivery polygons)
     setTimeout(function () {
       void refreshRoutes(true);
-    }, 2500);
+    }, 4000);
     var last = performance.now();
     setInterval(function () {
       var n = performance.now();
