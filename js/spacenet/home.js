@@ -100,7 +100,7 @@
       '</button>' +
       (auth
         ? ''
-        : '<p class="sn-home-hint">You sign in to <b>Astranov SpaceNet</b> at <b>astranov.eu</b> — not a random cloud project name.</p>') +
+        : '<p class="sn-home-hint">You sign in to <b>ASTRANOV</b> at <b>astranov.eu</b> only — never a third-party cloud project name.</p>') +
       '<button type="button" class="sn-home-btn" data-act="earth">Back to Earth GLOBAL</button>' +
       '<button type="button" class="sn-home-btn" data-act="reload">Reload</button>' +
       '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset</button>' +
@@ -314,11 +314,10 @@
         if (global.SNAuth && SNAuth.user) {
           await SNAuth.toggle();
         } else {
-          var brand = (global.SN_CONFIG && SN_CONFIG.brand) || {};
           var ok = global.confirm(
-            'Sign in to Astranov SpaceNet (astranov.eu)?\n\n' +
-              'You are signing into the SpaceNet platform at astranov.eu — not a third-party cloud project name.\n\n' +
-              'Brand: Astranov · AI: Astranov'
+            'Sign in to ASTRANOV (astranov.eu)?\n\n' +
+              'You are signing into astranov.eu only — not a third-party cloud project.\n\n' +
+              'Brand: ASTRANOV'
           );
           if (!ok) return;
           if (global.SNAuth && SNAuth.toggle) await SNAuth.toggle();

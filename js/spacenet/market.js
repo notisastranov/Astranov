@@ -210,22 +210,30 @@
    */
   async function runFirstLoop(opts) {
     opts = opts || {};
+    // Always skip locate by default — first task must complete without GPS thrash
+    if (opts.skipLocate == null) opts.skipLocate = true;
     var shop = opts.shop || W.shopName || 'My Astranov Shop';
     var item = opts.item || 'House special';
     var price = opts.price != null ? opts.price : 5;
     try {
       global.speechSynthesis?.cancel?.();
       global.SNCli?.stopHandsfree?.('first-loop');
-      global.SNTile?.minimize?.();
+      global.SNTile?.close?.();
+    } catch (_) {}
+    // Ensure focus exists for shop pin
+    try {
+      if (!global._snLastPos) {
+        global._snLastPos = { lat: 37.9838, lng: 23.7275 };
+        if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(37.9838, 23.7275);
+      }
     } catch (_) {}
     say('First order · listing your shop…', 'dim');
-    // Fast path: never block on GPS — use focus / last pos (2s max if locate asked)
     if (!opts.skipLocate && global.SNGlobe && SNGlobe.locate) {
       try {
         await Promise.race([
           SNGlobe.locate(),
           new Promise(function (r) {
-            setTimeout(r, 1800);
+            setTimeout(r, 1200);
           }),
         ]);
       } catch (_) {}
@@ -268,7 +276,7 @@
     var del = claimAndComplete();
     if (del.ok) {
       say(
-        'FIRST ORDER DONE · shop → menu → pay S → drive → you. Tap tile in feed · donate on for mesh S.',
+        'FIRST ORDER DONE · shop → menu → pay S → drive → you. Type donate on for mesh S.',
         'ok'
       );
       track('first_loop_ok', { shop: shop, item: item, total: ord.total });

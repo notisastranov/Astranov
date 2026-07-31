@@ -418,60 +418,22 @@
     if (g.SNCli && SNCli.run) void SNCli.run(act);
   }
 
+  /**
+   * CLI is text-only (owner law 2026-07-30). Ribbon buttons must not render in dock.
+   * Keep hook so paint() / setTask do not crash; tools live in ☰ burger + typed CLI.
+   */
   function paintRibbon() {
     var bar = $('sn-task-ribbon');
-    if (!bar) return;
-    bar.hidden = false;
-    bar.setAttribute('aria-hidden', 'false');
-    var seen = {};
-    var h = '';
-    var i;
-    for (i = 0; i < RIBBON_CORE.length; i++) {
-      var b = RIBBON_CORE[i];
-      seen[b.act] = 1;
-      var onCls =
-        b.act === 'add' && g.SNTopo && SNTopo.active ? ' on' : '';
-      h +=
-        '<button type="button" class="sn-rib-btn sn-rib-core' +
-        onCls +
-        '" data-act="' +
-        b.act +
-        '"' +
-        (b.id ? ' id="' + b.id + '"' : '') +
-        ' title="' +
-        (b.title || b.text) +
-        '">' +
-        '<span class="sn-rib-emoji" aria-hidden="true">' +
-        (b.emoji || '') +
-        '</span>' +
-        '<span class="sn-rib-txt">' +
-        (b.text || b.act) +
-        '</span>' +
-        '</button>';
+    if (bar) {
+      bar.innerHTML = '';
+      bar.hidden = true;
+      bar.setAttribute('aria-hidden', 'true');
     }
-    // No sn-rib-task / menu / cart / order buttons — those are tile tabs only
     if (notice) {
       try {
         if (g.SNCli && SNCli.preview) SNCli.preview(notice);
       } catch (e) {}
     }
-    bar.innerHTML = h;
-    // Sync hands-free visual with CLI state
-    try {
-      var hf = $('sn-rib-hf');
-      if (hf && g.SNCli && SNCli.handsfreeOn) hf.classList.add('on');
-    } catch (e2) {}
-    bar.querySelectorAll('[data-act]').forEach(function (btn) {
-      var act = btn.getAttribute('data-act');
-      btn.onclick = function (ev) {
-        if (ev) {
-          ev.preventDefault();
-          ev.stopPropagation();
-        }
-        ribbonAct(act);
-        setTimeout(paintRibbon, 50);
-      };
-    });
   }
 
   function paint() {

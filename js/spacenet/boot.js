@@ -89,7 +89,7 @@
       bootEl.innerHTML =
         '<div class="boot-card">' +
         '<span class="boot-title">ASTRANOV</span>' +
-        '<svg class="boot-loader" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><circle cx="20" cy="20" r="14"/></svg>' +
+        '<div class="boot-loader" aria-hidden="true"><span class="boot-loader-bar"></span></div>' +
         '<button type="button" class="boot-retry" id="sn-boot-retry">Retry</button>' +
         '</div>';
       var b = document.getElementById('sn-boot-retry');
@@ -123,13 +123,16 @@
    * WAVE 1 — shell: CLI + chrome + AI free mind (no THREE, no map, no market bulk)
    * Goal: feed usable in ~1–2s on good network.
    */
+  // Shell includes market so `first delivery` works immediately (owner P0 path)
   var WAVE_SHELL = [
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
     '/js/spacenet/profiles.js',
     '/js/spacenet/tasks.js',
+    '/js/spacenet/usage.js',
     '/js/spacenet/field.js',
     '/js/spacenet/home.js',
+    '/js/spacenet/market.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/cli.js',
     '/js/spacenet/ai.js',
@@ -147,14 +150,12 @@
   ];
 
   /**
-   * WAVE 3 — marketplace + map + soft (parallel soft)
+   * WAVE 3 — map + soft (parallel soft)
    */
   var WAVE_APP = [
     '/js/spacenet/brain.js',
     '/js/spacenet/commerce.js',
     '/js/spacenet/spatial.js',
-    '/js/spacenet/usage.js',
-    '/js/spacenet/market.js',
     '/js/spacenet/market-live.js',
     '/js/spacenet/task-board.js',
     '/js/spacenet/super.js',

@@ -1,14 +1,30 @@
-/** Astranov SpaceNet continuity — machine contract. SPECS.md is law. */
+/** Astranov continuity — machine contract. SPECS.md is law. */
 const AstranovContinuity = {
-  version: '20260728400000-architect-auth',
-  updated: '2026-07-28',
+  version: '20260730510000-owner-verified-specs',
+  updated: '2026-07-30',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
+  ownerEmail: 'notisastranov@gmail.com',
 
   p0: 'spartan-coding',
   p0d: 'zero-dummy-absolute',
-  shipGate: 'node scripts/probe-spacenet-boot.mjs must PASS before ship',
+  shipGate: 'live path green OR honest not-verified; push alone is not ship',
   neverMakeOwnerRestateSpecs: true,
+  emailSupportOnFalseShip: true,
+
+  ownerVerified20260730: {
+    splash: 'ASTRANOV only + horizontal deep blue glow loader',
+    home: 'ASTRANOV wordmark only',
+    boot: 'GLOBAL Earth in space · no city auto · no Rodos training',
+    cli: 'text log + input only · no ribbon button flood · no feed chip tiles',
+    multiTile: 'full card on map only',
+    layers: 'no map-corner Layers under money HUD',
+    ai: 'Astranov brand · ASTRANOV LISTENING · no junk free-mind',
+    auth: 'astranov.eu only · never supabase project host',
+    firstOrder: 'first delivery on shell boot path',
+    mesh: 'donate on SETI-style spare capacity → S',
+    globeDrag: 'polar Y spin · X tilt · no clock Z',
+  },
 
   zeroDummy: {
     ban: [
@@ -78,24 +94,26 @@ const AstranovContinuity = {
       cli: 'map dark|bright|satellite',
       file: 'js/spacenet/map.js',
     },
-    ribbonFlyout: {
-      law: 'Any multi-option CLI ribbon button expands UPWARD',
-      api: 'SNField.openRibbonFlyout',
-      multi: ['user', 'add', 'layers'],
-      single: ['locate', 'send', 'handsfree'],
-      aiLaw: 'LISTEN→ANALYZE·BRIEF; SPACENET LISTENING; vendors fly+tile; next|show all',
-      freeMind: 'SNFreeMind own free AI first — no paid xAI for chat; teach + free export',
-      sim33: 'DELETED',
-      taskBoard: 'SNTaskBoard · blue price tile · multi-route map · task fit · no sim/train',
-      platformFee: '3% of every order gross in S → SNCurrency.notePlatformFee / takePlatformFeeFrom → Architect wallet',
-      burgerUnderRadar: 'sn-burger-btn under #field-radar · extensive secondary menu · not CLI ribbon · not finance',
+    cliSurface: {
+      law: 'CLI is text log + typed input only (owner 2026-07-30)',
+      forbidden: ['ribbon button bar in dock', 'feed chip tiles', 'menu/cart/order ribbon keys'],
+      tools: 'burger under radar · home menu · money HUD · map multi-tile · typed commands',
+      history: 'scroll + / or ? search',
     },
+    aiLaw: {
+      name: 'Astranov',
+      listen: 'ASTRANOV LISTENING',
+      freeMind: 'SNFreeMind free-first · hard intents · no junk fuzzy',
+      controlApp: true,
+    },
+    sim33: 'DELETED',
+    trainingSurface: 'DELETED',
+    taskBoard: 'SNTaskBoard · blue price · map routes · no sim/train',
+    platformFee: '3% every order gross in S → vault',
+    burgerUnderRadar: 'sn-burger-btn under #field-radar · secondary menus · not finance',
     placeTool: {
-      ribbon: '➕ Add → upward flyout',
-      file: 'js/spacenet/topo.js',
+      via: 'burger / typed CLI · topo.js',
       menu: ['pin', 'targets', 'video', 'vendor', 'social', 'emergency'],
-      pin: 'single location',
-      targets: 'multi + polygon area m²',
     },
 
 
@@ -206,23 +224,17 @@ const AstranovContinuity = {
   },
 
   verify: [
-    'GLOBAL = full Earth in space (camera far) · ISS + LEO constellation · not cropped hemisphere',
-    'single-tap → dive national→regional→city fly+zoom NO blue rings',
-    'double-tap → zoom out one ladder step toward globe',
-    'short-tap Earth → fly TO click (quaternion face + no crawl re-fly)',
-    'go to mars → setBody mars + land + crawl',
-    'ensureSector not seedCity NPCs',
-    'no seedDemo auto tasks',
-    'no Aegean Bites / Orbit Café NPC seeds',
-    'shops uses live DB/overpass/crawl',
-    'marketplace alwaysOn 24/7/365',
-    'SpaceNet AI greets on boot (not Astranov)',
-    'Astranov is Architect of SpaceNet',
-    'Google OAuth branded astranov.eu not supabase project id',
-    'first delivery path coached by AI',
-    'usage + handoff for midnight Greek ship',
-    'long-press create · short-tap open tile',
-    'no companion · no overlap',
+    'GLOBAL Earth in space (full sphere) · city closed',
+    'splash ASTRANOV + horizontal blue loader',
+    'home ASTRANOV only',
+    'CLI text-only · no ribbon/chip buttons',
+    'multi-tile on map only',
+    'AI = Astranov · ASTRANOV LISTENING',
+    'Google login astranov.eu not supabase project host',
+    'first delivery on shell',
+    'donate on mesh SETI-style',
+    'zero dummy · no training sim',
+    'false ship → email owner + ESCALATION file',
   ],
 };
 

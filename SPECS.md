@@ -16,7 +16,7 @@ Build stamp = `meta[name="astranov-build"]` = every script `?v=`
 | **Effectiveness** | One clear owner per concern. No dual systems (no AVC *and* S, no dual CLI, no legacy + live). |
 | **Speed** | Never block boot. Soft-load non-critical work. Adaptive FPS. No 30s crawls on start. |
 | **Never hang** | Boot must hide within ~18s even on partial failure (CLI-only fallback). No infinite “Loading…”. |
-| **Splash screen** | **Only** wordmark **ASTRANOV SPACENET** + a **loading vector** (SVG spinner). **Forbidden:** status prose (“full chrome”, “rebuild”, “loading modules”, version spam, agent notes). Fail state: same brand + optional Retry — details in console only. |
+| **Splash screen** | **Only** wordmark **ASTRANOV** (no SpaceNet text) + **horizontal** deep **glowing blue** loader bar. **Forbidden:** “SPACENET” on splash · status prose · version spam · agent notes. Fail: same brand + optional Retry — details in console only. |
 | **Fail closed on ship** | **Forbidden to ship** if `node scripts/probe-spacenet-boot.mjs` is not PASS (real JS, not SPA HTML). |
 | **Few files** | Prefer one small module over four “clean” micro-files that re-import each other. |
 | **No patch theatre** | If a series of specs is missing, **rebuild** the surface — do not stack micro-patches on a dummy. |
@@ -84,7 +84,9 @@ STREET      same path as CITY map (Earth Leaflet)
 | **Mechanical** | `window.SPACENET` · `js/spacenet/spacenet-grid.js` · `SNGlobe.diveInAt` · `zoomOutOne` · `goToPlace` |
 | **CLI speech** | Log lines say **SPACENET · GLOBAL|NATIONAL|REGIONAL|CITY** |
 
-Default boot: **full GLOBAL Earth** on SPACENET. City map closed until CITY cell (or user asks).  
+Default boot: **full GLOBAL Earth in space** (whole sphere visible · stars · ISS/LEO when ready).  
+**Not** a cropped hemisphere · **not** city map · **not** Rodos/training surface.  
+City map closed until CITY cell (user dive / `city` / `fly` / `locate` path).  
 Object appears by `minZ` + `visibilityKm`.
 
 ### Globe pointer law (non-negotiable)
@@ -94,7 +96,7 @@ Object appears by `minZ` + `visibilityKm`.
 | **Single click / single tap** on body | **SPACENET dive** one cell deeper on **same place**: GLOBAL → NATIONAL → REGIONAL → CITY. New place → GLOBAL at click. |
 | **City map short-click empty** | Close street map → **NATIONAL** (or SPACENET step out) at that lat/lng | Required |
 | **Double click / double tap** | **SPACENET out** one cell: CITY → REGIONAL → NATIONAL → GLOBAL → SOLAR. Close street map when leaving CITY. |
-| **Drag** | Spin globe only (no dive). |
+| **Drag** | Spin globe only (no dive). **Polar axis law:** longitude spin around **true Y (north–south)**; latitude tilt around **X** only. **Forbidden:** clock-face spin (Z / gimbal) · flip over poles. |
 | **Wheel** | Zoom camera; city Z opens street map at focus under cursor. |
 | **No click markers** | Single/double tap **must not** drop huge blue dots / rings. Fly + zoom only. Tiny optional **targets** only for `locate` / explicit `pulse:true`. |
 
@@ -255,84 +257,68 @@ City tasks: `pizza` → `SNMarket.fulfillFoodIntent` · `job barman` → `fulfil
 | **Globe click = go there** | Raycast → progressive dive · double zoom out | SpaceNet law |
 | **Zoom out of city** | Flat map → **3D body GLOBAL** (Earth: SNGlobe Earth) | Hard ban: stuck on Leaflet as “world” |
 | **Map long-press** | **Long-press** empty map → multi-tile. **Short-tap never creates.** Short-tap **target** → open tile | Required |
-| **On-screen chrome only** | **Radar** · **Astranov SpaceNet** (home/GLOBAL) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
+| **On-screen chrome only** | **Radar** · **ASTRANOV** home (center) · **Miner** (S balance + **S/day** only) | No floating multi-docks |
 | **Radar** | Top-left · speed km/h · **single tap = big view** · **double tap = small** | Required |
 | **Radar blips** | **Green** friends · **red** competitors · **yellow** vendor workers & clients | Required |
 | **Radar routes** | Full **route polygons** (corridor + centerline) for active deliveries · OSRM road path when available · green start · red end · shown small & big radar | Required (`SNField.refreshRoutes` / `showRoute`) |
-| **Home** | Center label **Astranov SpaceNet** opens **home menu** (not a bare jump) | Required |
+| **Home** | Center label **ASTRANOV** only (no SpaceNet word) · opens **home menu** | Required · owner-verified 2026-07-30 |
 | **Home menu** | Version · local + Athens date/time · user info · sign in/out · **Back to Earth GLOBAL** · reload · hard reset · role toggles: **vendor worker** · **delivery driver** · **ambassador** | Required (`SNHome` / `home.js`) |
-| **Auth branding** | Users must sign in to **Astranov SpaceNet / astranov.eu** — **never** show raw `*.supabase.co` project ref as the product identity | Required (Google Cloud OAuth branding + recommended Supabase custom domain) |
+| **Auth branding** | Users must know they sign in to **ASTRANOV / astranov.eu** only — **never** Supabase project ref / `*.supabase.co` as product identity | Required · **ship-red** if Google shows project host |
 
-### Auth branding (Google must show astranov.eu / Astranov SpaceNet — not supabase mambojumbo)
+### Auth branding (login must show astranov.eu / ASTRANOV — not supabase project crap)
 
-**Law:** Users must never see a random `*.supabase.co` project id as the thing they “sign in to.” Product identity is **Astranov SpaceNet** at **astranov.eu**.
-
-Google’s OAuth page is controlled by **Google Cloud + the Auth callback host**, not by front-end copy alone.
+**Law (owner-verified):** On the Google login screen users must see they are signing into **astranov.eu / ASTRANOV** — **never** a random `xxxx.supabase.co` project id.
 
 | Layer | Required action |
 |-------|-----------------|
-| **Google Cloud → Branding** | App name **Astranov SpaceNet** · support email yours · home **https://astranov.eu** · privacy **https://astranov.eu/privacy.html** · terms **https://astranov.eu/terms.html** · authorized domain **astranov.eu** · logo · **Publish app** (not Testing-only) |
-| **Google Cloud → OAuth Client (Web)** | Origins: `https://astranov.eu` · Redirect URI from Supabase Auth → Google provider page (callback) |
-| **Supabase → Auth → URL config** | Site URL `https://astranov.eu` · Redirect URLs `https://astranov.eu` and `https://astranov.eu/**` |
-| **Supabase → Custom Domain** | Add **`api.astranov.eu`** (or `auth.astranov.eu`) so Auth host is **your** domain. DNS CNAME as Supabase shows. Then set `SN_CONFIG.sbUrl` to `https://api.astranov.eu` and update Google redirect to `https://api.astranov.eu/auth/v1/callback` |
-| **App UI** | Always **Sign in with Google · astranov.eu** — never advertise supabase project ref |
+| **Google Cloud → Branding** | App name **ASTRANOV** (or Astranov) · support email owner · home **https://astranov.eu** · privacy/terms on astranov.eu · authorized domain **astranov.eu** · logo · **Publish app** |
+| **Google Cloud → OAuth Client (Web)** | Origins: `https://astranov.eu` · redirect URIs for auth host (custom domain preferred) |
+| **Supabase → Auth → URL config** | Site URL `https://astranov.eu` · Redirect URLs `https://astranov.eu/**` |
+| **Supabase → Custom Domain** | **`api.astranov.eu`** (or `auth.astranov.eu`) live · DNS **DNS-only** (grey cloud) · then `SN_CONFIG.sbUrl` = that host · Google callback on that host |
+| **Preferred sign-in path** | **Google Identity Services** (`gsi/client`) + Supabase `signInWithIdToken` so users never open an authorize URL whose `redirect_uri` is `*.supabase.co` |
+| **App UI** | **Sign in with Google · astranov.eu** · scrub any supabase host from user-visible errors |
 
-**Without Custom Domain:** Google may still print `xxxx.supabase.co` as the technical host even if app name is correct — that is **not ship-acceptable**. Architect enables Custom Domain or reverse-proxy Auth under astranov.eu.
+**Without Custom Domain + branded GIS path:** Google showing `xxxx.supabase.co` = **contaminated / not ship-acceptable**.
 | **Ambassador** | Experienced users support others (`support help` / `support claim`) · **mines SpaceNets (S)** (not “coins”) · mesh rate boost while role on | Authorized product path |
 | **Miner** | Top-right · **S balance** + **mining rate S/day** only (tap → finance detail) | Required · **S primary** |
 | **Finance entry** | **Only** top-right money HUD (`#field-balance-hud`). **Forbidden:** finance / rate / wallet **buttons on CLI ribbon** without owner authorization. CLI may print text (`rate` · `wallet` · `fees`) only. | Required |
 | **Burger menu** | **Top-left under radar** (`#sn-burger-btn` / `#sn-burger-panel`). Place for **extensive secondary menus** (navigate · market · mesh/tools). **Not** CLI ribbon. **Not** finance (S HUD). | Required |
 | **One CLI surface** | Sim / super / TX / fleet dump **only into main CLI log** (`#cli-log`). **Forbidden:** floating “LIVE” panels, super decks, or extra CLI-like menus flooding the globe. | Required |
 | **No auto chrome steal** | **Forbidden** to auto-expand radar, auto-open multi-tiles, or auto-blow CLI panel on sim/AI/order. User opens tiles by **tap on map**; radar expand by **tap radar**. | Required |
-| **CLI top ribbon (permanent)** | **Always visible**, **large emoji + text**: **🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send** | **Required — never hide** · **no Size button** |
-| **CLI task extras** | Optional extra keys while a task is active | Additive only |
-| **CLI input** | **Seamless** bottom of results stream (same surface as log) — **no bottom button bar** | Required |
-| **CLI grab** | One finger anywhere on panel: expand/retract / move | Sacred (`SNUi`) |
-| **CLI max height** | Default expand = **1/3 of screen** (button, no drag). **User drag may override** taller (up to ~72vh). | Required |
-| **Globe control** | Drag must cancel fly + zero inertia; euler YXZ only (no quat/euler fight); soft damp; no wild spin | Required |
-| **AI name** | The AI is **SpaceNet**. **Astranov** is the **Architect of SpaceNet** (owner). AI never claims to be Astranov. | Required |
-| **AI priority** | **LISTEN → ANALYZE → RESPOND** as brief as possible · reply also on **globe HUD** | Required |
-| **AI ribbon** | Tap → **SPACENET LISTENING** (no submenu monologue) · mic if available · type still works | Required |
-| **AI vendors** | Suggest → **fly + zoom globe** + **open vendor tile** · **next** = next vendor · **show all** = all on map | Required |
-| **SpaceNet Free** | **Own free public AI** (`SNFreeMind`) — law seeds + user teach + learn-from-use. **No paid xAI required** for chat. Not a fork of proprietary Grok weights. | Required |
-| **AI free-first** | Chat uses **free mind first**. Cloud/paid edge only for explicit code modes or `forceEdge`. | Required |
-| **AI grow** | Users help grow Free: `teach Q => A` · `free export` trainset for future open fine-tunes | Required |
-| **No demo sim** | **Deleted** multi-agent / driver-day demo. Real use via CLI. Optional **`sim task`** drives one real route for training only. | Hard ban |
-| **Task multi-tile** | Glowing **deep blue price (S)** · below: **vendor name+address** · **client name+address**. Map shows **all my task routes** · center/zoom preview. System ranks open tasks by **route compatibility**. | Required |
-| **Training surface** | Default view = **Rodos city map** (Leaflet). CLI switches: `rodos` · `fly <city>` · `global` / `globe` for full Earth. | Required |
-| **AI** | `SNAi` freeform acts (locate/shops/food/fly/go + marketplace carousel) | Required |
+| **CLI = text CLI** | **Log + typed input only.** **Forbidden:** emoji button ribbon inside CLI dock · feed “chip/button tiles” · menu/cart/order ribbon keys. Tools: **☰ burger** · **typed commands** · **AI by typing**. Enter sends. | Owner-verified 2026-07-30 · hard ban on CLI buttons |
+| **CLI history** | Scroll log for history · type `/` or `?` + words to search history | Required |
+| **Multi-tile** | Full multi-role tile **on map** (overlay card · menu/order/roles). **Not** fake buttons inside CLI. | Required |
+| **Map Layers control** | **No** map-corner Layers button (overlaps money HUD). Layers via **typed CLI** / burger · panel may open from commands. | Required |
+| **CLI grab** | One finger on panel drag handle / panel: expand/retract / move | Sacred (`SNUi`) |
+| **CLI max height** | Default expand ≈ **1/3 screen**. User drag may override taller. | Required |
+| **Globe control** | Drag cancels fly + zero inertia; **polar Y spin + X tilt only**; soft damp; no clock/Z spin | Required |
+| **AI name** | The AI is **Astranov**. Answers as **Astranov** · status **ASTRANOV LISTENING**. Currency unit remains **S (SpaceNets)**. | Owner-verified 2026-07-30 |
+| **AI priority** | **LISTEN → ANALYZE → RESPOND** brief · reply on **globe HUD** · **control the app** (basemap, layers, first delivery, etc.) | Required |
+| **AI free mind** | `SNFreeMind` free-first · no paid Grok/xAI required for chat · **no junk fuzzy answers** (e.g. “climb” to “is Grok there”) · hard intents for identity | Required |
+| **AI grow** | `teach Q => A` · `free export` | Required |
+| **No demo / no training sim** | **Deleted** Sim-33 · driver-day · **`sim task` train** · Rodos “training surface” default. Real CLI use only. | Hard ban · owner-verified |
+| **Task multi-tile** | Glowing **deep blue price (S)** · vendor name+address · client name+address · map routes · route compatibility ranking | Required |
+| **First order path** | `first delivery` / `first order` must complete: list shop → menu → order S → driver online → claim/deliver. Market module **on shell boot**. | Required · owner P0 |
+| **Mesh donate (SETI-style)** | `donate on` · spare CPU/worker · RAM/storage/bandwidth idle → **S** rewards · global users power the net | Required |
 | **No overlap / no companion** | Zones; no low-fi figure until AI graphics > games | Hard ban |
 
-### CLI top ribbon law (non-negotiable — owner locked)
-
-| Button | Action | Mechanical |
-|--------|--------|------------|
-| **🎯 Locate** | **Single action** — GPS locate + recenter (no submenu) | `SNCli.run('locate')` |
-| **👤 User** | **Expands upward:** My multi-tile · Sign in/out · Home menu | `openRibbonFlyout` |
-| **➕ Add** | **Expands upward:** Pin · Polygon/targets · Video call · Vendor · Social video post · Emergency help | `openRibbonFlyout` → `SNTopo.runAddOption` |
-| **🗺 Layers** | **Expands upward:** Full panel · basemaps · windy · w3w · ISS · planes · ships · sats | `openRibbonFlyout` → `SNMap` |
-| **🎧 AI** | **Single action** for now — silent hands-free listen on/off (no submenu) | `SNCli.toggleHandsfree` |
-| **➤ Send** | **Single action** (no submenu) — submit CLI | form submit |
-
-#### Upward expand law (all multi-option ribbon buttons)
+### CLI surface law (owner-verified — text, not buttons)
 
 | Rule | Spec |
 |------|------|
-| **If a ribbon button has more than one option** | It **must expand upward** from that button (flyout sheet above the CLI ribbon). |
-| **Never** | Instant side-effect only (e.g. Add must not locate / open tile without a menu pick). |
-| **Position** | Sheet anchored to the tapped button · opens **up** into free space · Cancel / backdrop closes. |
-| **Single-action buttons** | **Locate** · **Send** · **AI** act with no menu. Multi-option keys still expand upward. |
-| **Mechanical** | `SNField.openRibbonFlyout(anchor, { title, items }, onPick)` · shared CSS `#sn-rib-fly` |
-| **Contaminated** | Dropdowns that open downward into the keyboard · modal that replaces the whole app · missing upward menu on multi-option keys |
+| **What CLI is** | Terminal: **#cli-log** scroll stream + **#cli-in** type line. |
+| **What CLI is not** | Permanent Locate/User/Add/Layers/AI/Send **button bar** · tile chip strip · feed button cards. |
+| **Secondary tools** | **☰ under radar** (extensive) · home menu · money HUD finance · map multi-tile. |
+| **AI activation** | Type to Astranov / `ai` / hands-free command paths — not a fat ribbon key required. |
+| **Contaminated** | CLI dock full of buttons · “shipped” while ribbon still floods · multi-tile as CLI buttons |
 
-**Forbidden:** Size / expand ribbon key (unauthorized); bottom CLI button bar; hiding ribbon when idle; multi-option keys without upward flyout.  
-**Resize:** drag the CLI panel (default max 1/3). **Input:** seamless with log — Enter sends.
+**Resize:** drag panel. **Input:** seamless with log — Enter sends.
 
-**Contaminated (discard):** missing radar **or** miner S **or** Astranov SpaceNet home **or** GLOBAL default **or** permanent multi-button ribbon flood.
+**Contaminated (discard):** missing radar **or** miner S **or** **ASTRANOV** home **or** GLOBAL-in-space default **or** CLI button flood **or** supabase project on Google login.
 
 ### CLI (minimum commands)
 
-`help` · `locate` · `city` · `shops` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `finance` · `thesis` · `vault` · **`cosmos`** · **`go to mars|moon|jupiter|…`** · **`go to earth`** · `fly <city>` · `global` · `task list`
+`help` · `locate` · `city` · `shops` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `finance` · `thesis` · `vault` · **`cosmos`** · **`go to mars|moon|jupiter|…`** · **`go to earth`** · `fly <city>` · `global` · `first delivery` · `task list` · `layers` · `dark` / basemap words
 
 ---
 
@@ -494,31 +480,42 @@ Live load **only** `/js/spacenet/*`. Root `astranov-*.js` and `_archive/` are **
 
 ```
 #boot  →  black full-screen
-          ASTRANOV SPACENET
-          [spinning ring vector only]
+          ASTRANOV
+          [horizontal deep glowing blue loader bar]
 ```
 
-No other copy. `#boot` hides when ready. Agents must not reintroduce status lines on splash.
+No SpaceNet word. No other copy. `#boot` hides when shell ready. Agents must not reintroduce status lines on splash.
 
 ### Operating path (boot)
 
 ```
-GLOBAL Earth + field chrome + CLI collapsed
-  → soft DB shops for pulses only (no city map steal)
-  → user locate|city|shops|mine|rate → intentional
-  → never 30s Overpass on boot
+Fast shell (CLI + field + market first delivery path) → hide splash
+  → then THREE + GLOBAL Earth in space
+  → soft map/commerce after
+  → never city map auto-open · never 30s Overpass on boot
+  → user intentional: locate|city|shops|first delivery|donate on
 ```
 
 ### Ship gate
 
 | Green | Red |
 |-------|-----|
-| GLOBAL Earth, no multi-sec freeze | Demo-only shops as “ready” |
-| Radar + S field + ribbon present | SPA HTML served as JS |
-| `resources` · `rate` · `shops` work | Missing required surface |
+| GLOBAL Earth **in space** (full sphere), no multi-sec freeze | Demo shops / training Rodos default / city auto-open |
+| Radar + S field + **text CLI** | SPA HTML as JS · CLI button flood |
+| `first delivery` works after shell boot | Market missing · order path red |
+| Google login shows **astranov.eu / ASTRANOV** | `*.supabase.co` project host on consent |
 | Soft shops ≠ auto city map | Overlapping chrome / companion figure |
 | Tap Earth lands + scans; `go to mars` setBody+land+scan | Dummy planet (text / solar only) |
-| Verify before push; one coherent ship | Deploy spam / dummy ships |
+| Live path verified **or** honest “not verified” | Claim “shipped” on push alone |
+
+### Ship honesty + support email (owner-locked)
+
+| Rule | Law |
+|------|-----|
+| **Push ≠ shipped** | Commit/push alone is **not** a ship claim. |
+| **Ship claim** | Only after owner path works **or** agent states **not verified live** with exact gap. |
+| **If claimed shipped and still broken** | Agent **must** write `support/ESCALATION-YYYYMMDD-*.md` **and email owner support** (`notisastranov@gmail.com`) with: what was claimed, what failed, build stamp, files, next fix. |
+| **Spec up owner progress** | When owner verifies or re-locks law, **update this SPECS** same day (this section + conflicting rows). |
 
 ```text
 node scripts/owner-push.mjs <files> --message=...
@@ -528,11 +525,34 @@ node scripts/owner-push.mjs <files> --message=...
 
 ## P6 — Agent discipline
 
-1. Owner changes intent → **update this SPECS** (+ continuity if owners/selectors change).  
+1. Owner changes intent / verifies progress → **update this SPECS same session** (+ continuity).  
 2. **Spartan first** — cut before you add.  
 3. Implement; don’t babysit.  
 4. Never ship unverified; fail closed on red probe.  
-5. Do not reintroduce AVC, dual docks, CLI miner strip, thin contaminated stacks.
+5. Do not reintroduce AVC, dual docks, CLI button bar, training sim, thin contaminated stacks.  
+6. **Email support on false ship** — see Ship honesty above.  
+7. **Do not force owner to restate** locked rows in this file.
+
+---
+
+## Owner-verified progress log · 2026-07-30
+
+*Entries below are **owner-locked** from live session feedback. Agents must not regress them.*
+
+| ID | Owner verification | Law |
+|----|-------------------|-----|
+| OV-01 | Default view wrong when city/Rodos | Boot **GLOBAL Earth in space** · city closed |
+| OV-02 | Training surface / sim task banned | **No** Rodos training default · **no** sim-task train stack |
+| OV-03 | Layers button under money HUD | **No** map-corner Layers button |
+| OV-04 | CLI polluted with buttons / tile chips | CLI **text only** · multi-tile **on map** |
+| OV-05 | Home said SpaceNet | Home wordmark **ASTRANOV** only |
+| OV-06 | AI answered as SpaceNet | AI brand **Astranov** · **ASTRANOV LISTENING** |
+| OV-07 | “Is Grok there?” → junk (“climb”) | Hard identity intents · no garbage fuzzy |
+| OV-08 | Login shows supabase project | Login identity **astranov.eu** only (GIS + custom domain) |
+| OV-09 | Splash SpaceNet + wrong loader | Splash **ASTRANOV** + horizontal blue glow bar |
+| OV-10 | Globe spins like a clock | Spin on **real polar axis** (Y) · tilt X only |
+| OV-11 | Speed / first order / mesh | Fast shell boot · `first delivery` · SETI-style `donate on` |
+| OV-12 | Ship claims false | **Email support** + escalation file when claim ≠ live |
 
 ---
 
@@ -562,8 +582,12 @@ Do not strip IP or rebrand without owner request.
 - Letter-only edge buttons when emoji icons are required  
 - CLI without **Send** + **hands-free**  
 - Overlap chrome · permanent multi-button docks · dual CLI bars  
-- Ship without radar + S + resources/mine + task ribbon  
-- Boot into city map · block boot with crawl  
+- Ship without radar + S + resources/mine + **text CLI**  
+- Boot into city map · Rodos training default · block boot with crawl  
+- Put **button tiles** or **ribbon button flood** inside CLI  
+- AI brand as SpaceNet / Grok when owner locked **Astranov**  
+- Google login showing **supabase project host** as the product  
+- Claim “shipped” without live path or support email on failure  
 - Impose **marketplace curfew** or closed calendar (violates **P4-M** 24/7/365 all locations)  
 - AVC / coins / 1:1 EUR as product money  
 - Low-fi companion figure before AI graphics > high-end games  
@@ -573,4 +597,4 @@ Do not strip IP or rebrand without owner request.
 
 ---
 
-*Spartan code. Go anywhere = real body globe + land + crawl. SNGlobe · SNCosmos. S is the value.*
+*Spartan code. Go anywhere = real body globe + land + crawl. SNGlobe · SNCosmos. S is the value. Brand: ASTRANOV. CLI is text. Push is not ship.*

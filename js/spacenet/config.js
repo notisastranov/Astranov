@@ -2,11 +2,10 @@
 (function (g) {
   'use strict';
   /**
-   * Auth branding law: users sign in to Astranov SpaceNet / astranov.eu —
-   * never present raw project-ref.supabase.co as the product name.
-   * Google consent screen is configured in Google Cloud (app name + domain).
-   * For the OAuth host itself to be astranov.eu, enable Supabase Custom Domain
-   * and set sbUrl below to that host (e.g. https://api.astranov.eu).
+   * Auth branding law (owner 2026-07-30): users sign in to ASTRANOV / astranov.eu only.
+   * Never present raw project-ref.supabase.co as product identity.
+   * Preferred path: Google GIS + signInWithIdToken (auth.js).
+   * Custom domain api.astranov.eu must be active for full OAuth host branding.
    */
   g.SN_CONFIG = {
     build: (document.querySelector('meta[name="astranov-build"]') || {}).content || '0',
@@ -14,16 +13,17 @@
     sbKey:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI',
     live: 'https://astranov.eu',
+    preferCustomAuth: false,
+    authHost: 'https://api.astranov.eu',
     brand: {
-      name: 'Astranov SpaceNet',
+      name: 'ASTRANOV',
       domain: 'astranov.eu',
       site: 'https://astranov.eu',
       privacy: 'https://astranov.eu/privacy.html',
       terms: 'https://astranov.eu/terms.html',
       architect: 'Astranov',
-      ai: 'SpaceNet',
-      // When Supabase Custom Domain is live, set sbUrl to e.g. https://api.astranov.eu
-      // so Google OAuth shows your host, not xxxx.supabase.co
+      ai: 'Astranov',
+      authHost: 'https://api.astranov.eu',
     },
     /**
      * Map / Google Earth imaging
