@@ -280,16 +280,17 @@
         'ok'
       );
       track('first_loop_ok', { shop: shop, item: item, total: ord.total });
+      // Keep CLI clear for first-order walkthrough — no auto multi-tile steal
       try {
-        if (ord.task && global.SNTaskBoard && SNTaskBoard.enrich && global.SNTile) {
-          var en = SNTaskBoard.enrich(ord.task);
-          if (en) SNTile.openTask(en);
-        } else if (global.SNTile && SNTile.openMe) {
-          SNTile.openMe('cart');
-        }
+        if (global.SNMap && SNMap.showTasks) SNMap.showTasks();
+        if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
       } catch (_) {}
       try {
         if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstDeliveryDone', true);
+        if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstVendorListed', true);
+      } catch (_) {}
+      try {
+        if (global.SNCli && SNCli.preview) SNCli.preview('FIRST ORDER DONE · type usage');
       } catch (_) {}
     } else {
       say('Delivery: ' + (del.error || 'claim failed') + ' · try claim · complete', 'err');
@@ -301,6 +302,8 @@
       menu: menu,
       order: ord,
       delivery: del,
+      task: ord && ord.task,
+      total: ord && ord.total,
     };
   }
 

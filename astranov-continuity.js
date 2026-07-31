@@ -1,7 +1,7 @@
 /** Astranov / SpaceNet continuity — machine contract. SPECS.md is sole law. */
 const AstranovContinuity = {
-  version: '20260730530000-specs-rebuild',
-  updated: '2026-07-30',
+  version: '20260731010000-grok-cli-look',
+  updated: '2026-07-31',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
   ownerEmail: 'notisastranov@gmail.com',

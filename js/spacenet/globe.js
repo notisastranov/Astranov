@@ -49,6 +49,9 @@
     camera: null,
     earth: null,
     clouds: null,
+    /** tilt = latitude (X only) · spin = longitude (Y only) · pivot alias = spin for children */
+    tilt: null,
+    spin: null,
     pivot: null,
     raycaster: null,
     markers: [],
@@ -937,20 +940,40 @@
     G.lastUserControl = Date.now();
   }
 
-  /** Bake quaternion → clean YXZ euler (kills gimbal shake from quat/euler fight) */
+  var TILT_MAX = 1.15; // ~66° — keeps poles from gimbal into clock-spin
+
+  /** Keep dual axes clean: tilt.X only · spin.Y only · never Z (polar axis law) */
   function bakePivotEuler() {
-    if (!G.pivot) return;
+    if (!G.tilt || !G.spin) return;
     try {
-      var e = new THREE.Euler().setFromQuaternion(G.pivot.quaternion.clone().normalize(), 'YXZ');
-      G.pivot.rotation.order = 'YXZ';
-      var x = e.x;
-      var y = e.y;
-      // Clamp polar tilt so globe never flips / spins crazy
-      if (x > 1.25) x = 1.25;
-      if (x < -1.25) x = -1.25;
-      G.pivot.rotation.set(x, y, 0);
-      G.pivot.quaternion.setFromEuler(G.pivot.rotation);
+      var x = G.tilt.rotation.x;
+      var y = G.spin.rotation.y;
+      if (x > TILT_MAX) x = TILT_MAX;
+      if (x < -TILT_MAX) x = -TILT_MAX;
+      G.tilt.rotation.set(x, 0, 0);
+      G.spin.rotation.set(0, y, 0);
+      G.tilt.quaternion.setFromEuler(G.tilt.rotation);
+      G.spin.quaternion.setFromEuler(G.spin.rotation);
     } catch (_) {}
+  }
+
+  /** Face lat/lng toward camera using polar axes only (no free quaternion → no clock spin) */
+  function setGlobeLatLng(lat, lng) {
+    if (!G.tilt || !G.spin) return;
+    var x = (-Number(lat) * Math.PI) / 180;
+    var y = (-Number(lng) * Math.PI) / 180;
+    if (x > TILT_MAX) x = TILT_MAX;
+    if (x < -TILT_MAX) x = -TILT_MAX;
+    G.tilt.rotation.set(x, 0, 0);
+    G.spin.rotation.set(0, y, 0);
+    G.tilt.quaternion.setFromEuler(G.tilt.rotation);
+    G.spin.quaternion.setFromEuler(G.spin.rotation);
+  }
+
+  function unwrapAngle(a) {
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    return a;
   }
 
   function init() {
@@ -987,8 +1010,12 @@
     G.sunLight = sun;
     G.scene.add(amb, sun);
 
-    G.pivot = new THREE.Object3D();
-    G.scene.add(G.pivot);
+    // Dual-axis globe: tilt (lat / X) parent of spin (lon / Y) — real polar axis
+    G.tilt = new THREE.Object3D();
+    G.spin = new THREE.Object3D();
+    G.scene.add(G.tilt);
+    G.tilt.add(G.spin);
+    G.pivot = G.spin; // children (earth, markers, webbing) ride the polar spin
 
     var segs = touch ? 48 : 64;
     var loader = new THREE.TextureLoader();
@@ -1004,7 +1031,7 @@
     });
     G.earthMat = mat;
     G.earth = new THREE.Mesh(new THREE.SphereGeometry(1, segs, segs), mat);
-    G.pivot.add(G.earth);
+    G.spin.add(G.earth);
     G._loader = loader;
     G.bodyId = 'earth';
     // SPACENET webbing is the OS baselayer — build immediately (offline graticule)
@@ -1321,19 +1348,22 @@
       lx = t.clientX;
       ly = t.clientY;
       if (Math.abs(t.clientX - downX) + Math.abs(t.clientY - downY) > 10) moved = true;
-      // Euler-only drag (YXZ) — never setFromQuaternion mid-drag (that caused shake/spin)
-      G.pivot.rotation.order = 'YXZ';
-      G.pivot.rotation.y += dx * 0.0038;
-      G.pivot.rotation.x = Math.max(
-        -1.2,
-        Math.min(1.2, G.pivot.rotation.x + dy * 0.0032)
-      );
-      G.pivot.rotation.z = 0;
-      // Soft inertia only — hard cap so it cannot go crazy
+      // Polar axis: horizontal → spin Y · vertical → tilt X · never Z
+      if (G.spin && G.tilt) {
+        G.spin.rotation.y += dx * 0.0038;
+        G.tilt.rotation.x = Math.max(
+          -TILT_MAX,
+          Math.min(TILT_MAX, G.tilt.rotation.x + dy * 0.0032)
+        );
+        G.spin.rotation.x = 0;
+        G.spin.rotation.z = 0;
+        G.tilt.rotation.y = 0;
+        G.tilt.rotation.z = 0;
+      }
       var sx = dx * (16 / dt) * 0.0028;
       var sy = dy * (16 / dt) * 0.0022;
-      G.velX = Math.max(-0.035, Math.min(0.035, sx));
-      G.velY = Math.max(-0.025, Math.min(0.025, sy));
+      G.velX = Math.max(-0.035, Math.min(0.035, sx)); // lon inertia
+      G.velY = Math.max(-0.025, Math.min(0.025, sy)); // lat inertia
       if (e.cancelable) e.preventDefault();
     }
 
@@ -1712,12 +1742,19 @@
       !G.dragging &&
       !G.flying &&
       !userCool &&
+      G.spin &&
+      G.tilt &&
       (Math.abs(G.velX) > 0.00008 || Math.abs(G.velY) > 0.00008)
     ) {
-      G.pivot.rotation.order = 'YXZ';
-      G.pivot.rotation.y += G.velX;
-      G.pivot.rotation.x = Math.max(-1.2, Math.min(1.2, G.pivot.rotation.x + G.velY));
-      G.pivot.rotation.z = 0;
+      G.spin.rotation.y += G.velX;
+      G.tilt.rotation.x = Math.max(
+        -TILT_MAX,
+        Math.min(TILT_MAX, G.tilt.rotation.x + G.velY)
+      );
+      G.spin.rotation.x = 0;
+      G.spin.rotation.z = 0;
+      G.tilt.rotation.y = 0;
+      G.tilt.rotation.z = 0;
       G.velX *= G.damp;
       G.velY *= G.damp;
       if (Math.abs(G.velX) < 0.00008) G.velX = 0;
@@ -1727,10 +1764,11 @@
       !G.flying &&
       !userCool &&
       idle &&
-      G.camera.position.z > 4.0
+      G.camera.position.z > 4.0 &&
+      G.spin
     ) {
-      // Very gentle idle only at GLOBAL/SOLAR — never fight user control
-      G.pivot.rotation.y += 0.00045;
+      // Idle spin around true polar axis (Y) only
+      G.spin.rotation.y += 0.00045;
     }
     if (G.clouds) G.clouds.rotation.y += 0.00035;
     // ISS halo soft pulse when space layer on
@@ -1875,7 +1913,7 @@
    * Old formula (-lng, lat*0.55) did NOT match the sphere mapping → marker OK, view wrong.
    */
   function flyNear(lat, lng, tierHint) {
-    if (!G.ready || !G.pivot || !G.camera) return;
+    if (!G.ready || !G.tilt || !G.spin || !G.camera) return;
     if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
     setFocus(lat, lng);
     G.velX = 0;
@@ -1885,19 +1923,18 @@
     G.flying = true;
     G.lastAct = Date.now();
 
-    // Local surface point (identical math to pulse markers)
-    var local = latLngToVec(lat, lng, 1).normalize();
-    // Face that point toward the camera (not crude euler guess)
-    var camDir = G.camera.position.clone().normalize();
-    if (camDir.lengthSq() < 1e-8) camDir.set(0, 0, 1);
-    var qEnd = new THREE.Quaternion().setFromUnitVectors(local, camDir);
-    var qStart = G.pivot.quaternion.clone();
+    var x0 = G.tilt.rotation.x;
+    var y0 = G.spin.rotation.y;
+    var x1 = (-Number(lat) * Math.PI) / 180;
+    var y1 = (-Number(lng) * Math.PI) / 180;
+    if (x1 > TILT_MAX) x1 = TILT_MAX;
+    if (x1 < -TILT_MAX) x1 = -TILT_MAX;
+    var dyAng = unwrapAngle(y1 - y0);
 
     var t0 = performance.now();
     var dur = 780;
     function step(t) {
       if (gen !== G.flyGen) return;
-      // User grabbed mid-fly — abort (stopMotion bumps flyGen)
       if (G.dragging) {
         G.flying = false;
         bakePivotEuler();
@@ -1905,13 +1942,13 @@
       }
       var k = Math.min(1, (t - t0) / dur);
       var e = k * (2 - k);
-      G.pivot.quaternion.slerpQuaternions(qStart, qEnd, e);
+      G.tilt.rotation.set(x0 + (x1 - x0) * e, 0, 0);
+      G.spin.rotation.set(0, y0 + dyAng * e, 0);
       G.lastAct = Date.now();
       if (k < 1) {
         requestAnimationFrame(step);
       } else {
-        G.pivot.quaternion.copy(qEnd);
-        bakePivotEuler();
+        setGlobeLatLng(lat, lng);
         G.velX = 0;
         G.velY = 0;
         G.flying = false;
@@ -1919,7 +1956,6 @@
       }
     }
     requestAnimationFrame(step);
-    // Only change altitude when a real tier is requested (center pass uses null)
     if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 650);
   }
 

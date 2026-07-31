@@ -102,13 +102,16 @@
     const meta = document.createElement('span');
     meta.className = 'cli-feed-meta';
     const t = new Date();
+    const role =
+      cls === 'cmd' ? 'user' : cls === 'ok' ? 'astranov' : cls === 'err' ? 'error' : 'system';
     meta.textContent =
-      (cls === 'cmd' ? 'YOU' : cls === 'ok' ? 'ASTRANOV' : cls === 'err' ? 'ERROR' : 'FEED') +
-      ' · ' +
+      role +
+      '  ' +
       String(t.getHours()).padStart(2, '0') +
       ':' +
       String(t.getMinutes()).padStart(2, '0');
     const body = document.createElement('div');
+    body.className = 'cli-body';
     body.textContent = text;
     line.appendChild(meta);
     line.appendChild(body);
@@ -436,12 +439,46 @@
         low === 'first order' ||
         low === 'πρώτη παράδοση'
       ) {
-        log('First loop · vendor → menu → order → driver → you…', 'dim');
+        log('── First order (CLI path) ──', 'ok');
+        log('1 list shop · 2 menu · 3 order S · 4 drive · 5 deliver', 'dim');
         preview('first delivery');
         if (global.SNMarket?.runFirstLoop) {
-          const r = await global.SNMarket.runFirstLoop({});
-          log(r?.ok ? 'First delivery DONE' : r?.error || r?.order?.error || 'partial — see AI lines', r?.ok ? 'ok' : 'err');
-        } else log('Market module loading… hard refresh', 'err');
+          const r = await global.SNMarket.runFirstLoop({ skipLocate: true });
+          if (r?.ok) {
+            log('✓ Shop · ' + (r.listed?.shop || 'ok'), 'ok');
+            log(
+              '✓ Menu · ' +
+                (r.menu?.item?.name || 'item') +
+                ' · ' +
+                (global.SNCurrency?.format?.(r.menu?.item?.price ?? r.total) ||
+                  (r.total != null ? r.total + ' S' : '')),
+              'ok'
+            );
+            log(
+              '✓ Order · ' +
+                (global.SNCurrency?.format?.(r.total ?? r.order?.total) ||
+                  (r.order?.total != null ? r.order.total + ' S' : 'paid')),
+              'ok'
+            );
+            log('✓ Driver online · claimed · delivered to you', 'ok');
+            log('FIRST ORDER COMPLETE · type usage · donate on', 'ok');
+            preview('FIRST ORDER DONE');
+          } else {
+            log(
+              'First order FAILED · ' +
+                (r?.error ||
+                  r?.order?.error ||
+                  r?.delivery?.error ||
+                  r?.listed?.error ||
+                  r?.menu?.error ||
+                  'unknown'),
+              'err'
+            );
+            log('Manual: list shop My Cafe → menu add Special 5 → order me → drive on → deliver me', 'dim');
+          }
+        } else {
+          log('Market not loaded · hard refresh · stamp must include market on shell', 'err');
+        }
         return;
       }
       if (/^list\s+shop\b/.test(low) || /^shop\s+name\b/.test(low)) {
@@ -2066,9 +2103,9 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     feedBox();
-    log('CLI text feed · scroll · /search · multi-tile on map only', 'dim');
-    preview('Talk · first delivery · donate on');
-    // Purge any leftover button-tiles from old builds
+    log('Astranov CLI · Grok-style scrollback · text only · / search', 'dim');
+    log('First order: type  first delivery  (or step: list shop · menu add · order me · drive on · deliver me)', 'ok');
+    preview('ready · type first delivery');
     try {
       document.querySelectorAll('#cli-log .cli-tile-block').forEach((el) => el.remove());
     } catch (_) {}
