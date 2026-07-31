@@ -395,6 +395,12 @@
       'border-radius:10px;padding:7px 10px;font:600 11px system-ui;cursor:pointer}',
       '#sn-tile .sn-btn.primary{background:rgba(0,221,136,.2);border-color:rgba(0,221,136,.45);color:#6dffb0}',
       '#sn-tile .sn-empty{color:#5a6a7e;font-size:11px;padding:6px 0}',
+      '#sn-tile .sn-photo-row{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;margin:0 -2px}',
+      '#sn-tile .sn-photo-thumb{width:72px;height:54px;border-radius:8px;object-fit:cover;flex-shrink:0;',
+      'border:1px solid rgba(61,158,255,.35);background:#061428}',
+      '#sn-tile .sn-link{color:#6ec8ff;text-decoration:none;word-break:break-all}',
+      '#sn-tile .sn-link:hover{text-decoration:underline;color:#fff}',
+      '#sn-tile .sn-about{display:flex;flex-direction:column;gap:6px;font-size:12px;line-height:1.4}',
       '#sn-tile .sn-menu-head{font-weight:700;color:#3d9eff;margin-bottom:6px;font-size:12px}',
       '#sn-tile .sn-menu-item{display:flex;align-items:center;gap:8px;padding:6px 0;',
       'border-bottom:1px solid rgba(26,111,212,.15)}',
@@ -676,10 +682,25 @@
     showOverlay();
     applyScale();
     render();
-    if (!opts.quiet) {
-      global.SNCli?.log?.('Multi-tile · ' + (p.name || p.id) + ' · map surface', 'ok');
+    // Fill photos / hours / phone / website from Google Places when opening a vendor
+    if (
+      !T.taskBoard &&
+      p.roles?.vendor &&
+      global.SNPlacesBusiness &&
+      SNPlacesBusiness.enrichProfile &&
+      opts.enrich !== false
+    ) {
+      void SNPlacesBusiness.enrichProfile(p).then(function (enriched) {
+        if (!T.open || T.profileId !== p.id) return;
+        if (enriched && enriched.id) {
+          T.profileId = enriched.id;
+          render();
+        }
+      });
     }
-    global.SNCli?.preview?.(p.name || 'Tile');
+    if (!opts.quiet) {
+      global.SNCli?.preview?.(p.name || 'Tile');
+    }
     return p;
   }
 
@@ -868,22 +889,65 @@
     if (!body || !foot) return;
 
     if (T.tab === 'about') {
-      const hours = p.hours || p.opening_hours || '24/7';
+      const hours = p.hours || p.opening_hours || '';
       const sched = global.SNMarket?.verifySchedule?.(p);
+      const photos = Array.isArray(p.photos) ? p.photos.slice(0, 6) : [];
+      const phone = p.phone || '';
+      const web = p.website || '';
+      const gmap = p.googleMapsUrl || p.googleUrl || '';
       body.innerHTML =
         '<div class="sn-about">' +
+        (photos.length
+          ? '<div class="sn-photo-row">' +
+            photos
+              .map(
+                (u) =>
+                  '<img class="sn-photo-thumb" src="' +
+                  esc(u) +
+                  '" alt="" loading="lazy" />'
+              )
+              .join('') +
+            '</div>'
+          : '') +
+        (p.address ? '<div>📍 ' + esc(p.address) + '</div>' : '') +
         '<div>📍 ' +
-        (p.lat != null ? p.lat.toFixed(4) + ', ' + p.lng.toFixed(4) : 'no target yet') +
+        (p.lat != null ? p.lat.toFixed(4) + ', ' + p.lng.toFixed(4) : 'no pin yet') +
         '</div>' +
-        '<div>Roles: ' +
-        Object.keys(p.roles || [])
-          .filter((k) => p.roles[k])
-          .join(', ') +
-        '</div>' +
-        (p.shopName ? '<div>🏪 ' + esc(p.shopName) + ' · ' + esc(p.shopKind) + '</div>' : '') +
+        (p.shopName
+          ? '<div>🏪 ' + esc(p.shopName) + (p.shopKind ? ' · ' + esc(p.shopKind) : '') + '</div>'
+          : '') +
+        (p.rating != null
+          ? '<div>★ ' +
+            esc(String(p.rating)) +
+            (p.ratingCount ? ' (' + esc(String(p.ratingCount)) + ')' : '') +
+            (p.priceBand ? ' · ' + esc(p.priceBand) : '') +
+            '</div>'
+          : p.priceBand
+            ? '<div>Price band · ' + esc(p.priceBand) + '</div>'
+            : '') +
         '<div>🕒 ' +
-        esc(sched?.label || hours) +
+        esc(sched?.label || hours || (p.openNow === true ? 'Open now' : p.openNow === false ? 'Closed now' : 'Hours not listed')) +
         '</div>' +
+        (phone
+          ? '<div>📞 <a class="sn-link" href="tel:' +
+            esc(phone.replace(/\s+/g, '')) +
+            '">' +
+            esc(phone) +
+            '</a></div>'
+          : '') +
+        (web
+          ? '<div>🌐 <a class="sn-link" href="' +
+            esc(web) +
+            '" target="_blank" rel="noopener">' +
+            esc(web.replace(/^https?:\/\//, '').slice(0, 42)) +
+            '</a></div>'
+          : '') +
+        (gmap
+          ? '<div>🗺️ <a class="sn-link" href="' +
+            esc(gmap) +
+            '" target="_blank" rel="noopener">Google Business / Maps</a></div>'
+          : '') +
+        (p.source ? '<div class="sn-empty">Source · ' + esc(p.source) + '</div>' : '') +
         (p.vehicle ? '<div>🛵 ' + esc(p.vehicle) + (p.driverOnline ? ' · ONLINE' : '') + '</div>' : '') +
         (p.roles?.worker
           ? '<div>🧰 Worker · ' + esc(p.jobTitle || p.workerRole || 'available') + '</div>'
@@ -892,24 +956,33 @@
         '</div>';
       foot.innerHTML =
         '<button type="button" class="sn-btn" data-act="fly">Fly map</button>' +
+        (phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '') +
+        (web ? '<button type="button" class="sn-btn" data-act="website">Website</button>' : '') +
         (isMe(p)
           ? '<button type="button" class="sn-btn primary" data-act="scan">Scan live shops</button>'
           : p.roles?.worker
             ? '<button type="button" class="sn-btn primary" data-act="hire">Send work offer</button>'
             : p.roles?.dating
               ? '<button type="button" class="sn-btn primary" data-act="date">Dating request</button>'
-              : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
+              : p.roles?.vendor
+                ? '<button type="button" class="sn-btn primary" data-act="menu">Menu</button>'
+                : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
     } else if (T.tab === 'menu') {
       const menu = p.menu || [];
-      const hours = p.hours || p.opening_hours || '24/7';
+      const hours = p.hours || p.opening_hours || '';
       const sched = global.SNMarket?.verifySchedule?.(p);
+      const bandNote = menu.some((m) => m && m.source === 'google-price-band')
+        ? '<div class="sn-empty" style="margin-bottom:6px">Google lists a price band, not a full dish menu. These are order slots in S — call the shop for the real menu.</div>'
+        : '';
       body.innerHTML =
         '<div class="sn-menu-head">' +
         esc(p.shopName || p.name) +
         ' · menu</div>' +
         '<div class="sn-empty" style="margin-bottom:6px">🕒 ' +
-        esc(sched?.label || hours) +
+        esc(sched?.label || hours || 'Hours not listed') +
+        (p.phone ? ' · 📞 ' + esc(p.phone) : '') +
         '</div>' +
+        bandNote +
         (menu.length
           ? menu
               .map(
@@ -918,7 +991,7 @@
                   esc(m.id) +
                   '">' +
                   '<img src="' +
-                  esc(m.photo) +
+                  esc(m.photo || p.avatar || p.cover || '') +
                   '" alt="" loading="lazy" />' +
                   '<div class="sn-menu-meta">' +
                   '<b>' +
@@ -937,8 +1010,13 @@
                   '</div>'
               )
               .join('')
-          : '<div class="sn-empty">No menu listed yet · vendor worker adds real items · or message them · S only</div>');
+          : '<div class="sn-empty">No dish menu on Google for this place. ' +
+            (p.phone ? 'Call ' + esc(p.phone) + '. ' : '') +
+            (p.website ? 'Or open the website. ' : '') +
+            'Vendor can add real items in S.</div>');
       foot.innerHTML =
+        (p.phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '') +
+        (p.website ? '<button type="button" class="sn-btn" data-act="website">Website</button>' : '') +
         '<button type="button" class="sn-btn" data-act="cart">Cart ' +
         (window.SNCurrency ? SNCurrency.format(Prof.cartTotal?.() || 0) : (Prof.cartTotal?.() || 0).toFixed(2) + ' S') +
         '</button>' +
@@ -1113,6 +1191,28 @@
 
   async function act(name, p) {
     const Prof = global.SNProfiles;
+    if (name === 'call') {
+      if (p.phone) {
+        try {
+          global.location.href = 'tel:' + String(p.phone).replace(/\s+/g, '');
+        } catch (_) {}
+        global.SNCli?.log?.('Calling ' + p.phone, 'ok');
+      }
+      return;
+    }
+    if (name === 'website') {
+      if (p.website) {
+        try {
+          global.open(p.website, '_blank', 'noopener');
+        } catch (_) {}
+      }
+      return;
+    }
+    if (name === 'menu') {
+      T.tab = 'menu';
+      render();
+      return;
+    }
     if (name === 'fly') {
       if (p.lat != null) {
         global.SNGlobe?.goToPlace?.(p.lat, p.lng, {

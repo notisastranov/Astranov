@@ -122,10 +122,25 @@
       // dating
       lookingFor: p.lookingFor || '',
       interests: p.interests || [],
-      // vendor
+      // vendor / Google Business-style fields
       shopName: p.shopName || '',
       shopKind: p.shopKind || 'shop',
       menu: Array.isArray(p.menu) ? p.menu : [],
+      hours: p.hours || p.opening_hours || '',
+      opening_hours: p.opening_hours || p.hours || '',
+      phone: p.phone || p.tel || '',
+      website: p.website || p.url || '',
+      address: p.address || p.vicinity || '',
+      photos: Array.isArray(p.photos) ? p.photos : [],
+      googlePlaceId: p.googlePlaceId || p.place_id || '',
+      googleMapsUrl: p.googleMapsUrl || p.googleUrl || p.url || '',
+      priceLevel: p.priceLevel != null ? p.priceLevel : p.price_level,
+      priceBand: p.priceBand || '',
+      ratingCount: p.ratingCount != null ? p.ratingCount : p.user_ratings_total,
+      openNow: p.openNow != null ? p.openNow : p.open_now,
+      googleEnrichedAt: p.googleEnrichedAt || null,
+      source: p.source || '',
+      real: p.real === true,
       // driver
       driverOnline: !!p.driverOnline,
       vehicle: p.vehicle || '',
@@ -530,29 +545,64 @@
       if (place.kind) prev.shopKind = String(place.kind).toLowerCase();
       if (place.hours || place.opening_hours) {
         prev.hours = place.hours || place.opening_hours;
+        prev.opening_hours = prev.hours;
+      }
+      if (place.phone) prev.phone = place.phone;
+      if (place.website) prev.website = place.website;
+      if (place.address) prev.address = place.address;
+      if (place.rating != null) prev.rating = place.rating;
+      if (place.photos && place.photos.length) {
+        prev.photos = place.photos;
+        if (place.photos[0]) prev.cover = place.photos[0];
+        if (place.photos[1] || place.photos[0]) prev.avatar = place.photos[1] || place.photos[0];
+      }
+      if (place.googlePlaceId) prev.googlePlaceId = place.googlePlaceId;
+      if (place.cover) prev.cover = place.cover;
+      if (place.menu && place.menu.length && !(prev.menu && prev.menu.length)) {
+        prev.menu = parseMenuItems(place.menu);
       }
       prev.updated = Date.now();
       P.profiles.set(prev.id, prev);
       save();
       return prev;
     }
+    const photos = Array.isArray(place.photos) ? place.photos : [];
     return upsert({
       id,
       name: place.name || 'Place',
       handle: '@' + id.slice(0, 16),
-      bio: (place.kind || 'vendor') + ' · live crawl · SpaceNet',
-      cover: pic(id + '-c', 900, 360),
-      avatar: pic(id + '-a', 150, 150),
+      bio:
+        (place.address || place.kind || 'vendor') +
+        (place.rating != null ? ' · ★' + place.rating : '') +
+        (place.phone ? ' · ' + place.phone : ''),
+      cover: place.cover || photos[0] || pic(id + '-c', 900, 360),
+      avatar: place.avatar || photos[1] || photos[0] || pic(id + '-a', 150, 150),
+      photos: photos,
       roles: { social: true, vendor: true, client: false, dating: false, driver: false, worker: false },
       lat: place.lat,
       lng: place.lng,
       shopName: place.name || 'Shop',
       shopKind: kind,
-      menu: parseMenuItems(place.items),
-      hours: place.hours || place.opening_hours || '24/7',
+      menu: parseMenuItems(place.items || place.menu),
+      hours: place.hours || place.opening_hours || '',
+      opening_hours: place.hours || place.opening_hours || '',
+      phone: place.phone || '',
+      website: place.website || '',
+      address: place.address || '',
+      rating: place.rating != null ? place.rating : null,
+      googlePlaceId: place.googlePlaceId || '',
+      googleMapsUrl: place.googleMapsUrl || place.url || '',
       real: true,
       source: place.source || 'crawl',
-      posts: [{ id: uid('post'), text: 'Live place · order when menu listed · S', t: Date.now() }],
+      posts: [
+        {
+          id: uid('post'),
+          text: place.phone
+            ? 'Call ' + place.phone + (place.website ? ' · ' + place.website : '')
+            : 'Live shop · open menu · pay in S',
+          t: Date.now(),
+        },
+      ],
     });
   }
 

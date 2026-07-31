@@ -218,10 +218,29 @@
       } catch (_) {}
     }
 
-    // 3) Live Overpass POIs → real vendor tiles
+    // 3) Google Places (Business Profile surface) when key present — photos/hours/phone/website
+    if (count < 3 && global.SNPlacesBusiness?.fillSector && SNPlacesBusiness.hasKey?.()) {
+      try {
+        global.SNCli?.log?.('Filling shops from Google Places…', 'dim');
+        const g = await SNPlacesBusiness.fillSector(pos.lat, pos.lng, {
+          radiusM: 2800,
+          limit: 20,
+          details: 12,
+          quiet: false,
+        });
+        if (g?.count) {
+          count = Math.max(count, g.count);
+          source = source === 'none' ? 'google-places' : source + '+google';
+        }
+      } catch (e) {
+        console.warn('[SNCommerce] google places', e);
+      }
+    }
+
+    // 4) Live Overpass POIs → real vendor tiles (phone/website/hours when tagged)
     if (count < 1 && global.SNSearch?.nearby) {
       try {
-        global.SNCli?.log?.('Crawling live map POIs…', 'dim');
+        global.SNCli?.log?.('Looking up map shops…', 'dim');
         const pois = await SNSearch.nearby(pos.lat, pos.lng, 2800, 'restaurant cafe shop food');
         (pois || []).slice(0, 36).forEach((p) => {
           try {
@@ -233,6 +252,10 @@
                 kind: p.kind || 'shop',
                 real: true,
                 source: 'overpass',
+                phone: p.phone || '',
+                website: p.website || '',
+                hours: p.hours || '',
+                cuisine: p.cuisine || '',
               },
               pos
             );
@@ -241,17 +264,18 @@
         count = (pois && pois.length) || 0;
         if (count) source = 'overpass';
       } catch (e) {
-        global.SNCli?.log?.('Overpass · ' + (e.message || e), 'dim');
+        global.SNCli?.log?.('Map shops · ' + (e.message || e), 'dim');
       }
     }
 
-    // 4) Almighty crawl as last live path
+    // 5) Map crawl as last live path
     if (count < 1 && global.SNSearch?.crawl) {
       try {
         const crawled = await SNSearch.crawl('restaurants cafes shops', {
           pos: pos,
           openMap: false,
           all: false,
+          mode: 'map',
           fly: false,
         });
         const stuff = (crawled?.nearby || []).concat(crawled?.places || []);
@@ -266,6 +290,9 @@
                 kind: p.kind || p.type || 'shop',
                 real: true,
                 source: p.source || 'crawl',
+                phone: p.phone || '',
+                website: p.website || '',
+                hours: p.hours || '',
               },
               pos
             );

@@ -1618,6 +1618,41 @@
         preview(n + ' shops');
         return;
       }
+      if (
+        low === 'google shops' ||
+        low === 'google places' ||
+        low === 'fill shops' ||
+        low === 'fill google'
+      ) {
+        const p = Tasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
+        if (!global.SNPlacesBusiness?.hasKey?.()) {
+          log(
+            'Set SN_CONFIG.layers.googleMapsKey (Maps JS + Places API) then hard refresh.',
+            'err'
+          );
+          preview('need Google key');
+          return;
+        }
+        activity('Google Places…', 'shops', { label: 'Google' });
+        log('Filling shop tiles from Google Places (photos, hours, phone, website)…', 'dim');
+        const g = await SNPlacesBusiness.fillSector(p.lat, p.lng, {
+          radiusM: 3000,
+          limit: 24,
+          details: 14,
+        });
+        try {
+          await global.SNMap?.open?.(p.lat, p.lng);
+          global.SNMap?.showProfiles?.();
+        } catch (_) {}
+        log(
+          g?.ok
+            ? g.count + ' Google shops on map · tap a pin for full tile'
+            : 'Google returned no shops · try locate first · check Places API billing',
+          g?.ok ? 'ok' : 'err'
+        );
+        preview((g?.count || 0) + ' Google shops');
+        return;
+      }
       if (low === 'thesis' || low === 'garage' || low === 'vault') {
         if (low === 'vault') {
           const places = global.SNSpatial?.list?.() || [];

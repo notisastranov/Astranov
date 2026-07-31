@@ -132,6 +132,8 @@
     '/js/spacenet/usage.js',
     '/js/spacenet/field.js',
     '/js/spacenet/home.js',
+    // Search on shell — first-task pizza needs Overpass before WAVE_APP
+    '/js/spacenet/search.js',
     '/js/spacenet/market.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/cli.js',
@@ -162,6 +164,7 @@
     '/js/spacenet/live-bridge.js',
     '/js/spacenet/map.js',
     '/js/spacenet/google-earth.js',
+    '/js/spacenet/places-business.js',
     '/js/spacenet/topo.js',
   ];
 
@@ -319,7 +322,7 @@
 
       // Search / shops only when idle — never freeze shell
       setTimeout(function () {
-        loadSoft('/js/spacenet/search.js', 12000);
+        // search.js already on WAVE_SHELL for first-task pizza
       }, 2500);
       setTimeout(function () {
         try {

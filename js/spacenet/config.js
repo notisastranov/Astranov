@@ -27,12 +27,13 @@
       authHost: 'https://api.astranov.eu',
     },
     /**
-     * Map / Google Earth imaging
-     * Free basemaps work with no keys. For full Google Earth-class data:
-     * 1) Google Cloud → enable Maps JavaScript API + Elevation API (+ billing)
-     * 2) Restrict key to astranov.eu
-     * 3) Set googleMapsKey below
-     * Optional: googleMapId for cloud-based map styling
+     * Map / Google Earth / Google Places (Business Profile data)
+     * Free basemaps work with no keys.
+     * For photos · hours · phone · website · ratings on vendor tiles:
+     * 1) Google Cloud → enable Maps JavaScript API + Places API + Elevation (+ billing)
+     * 2) Restrict key to https://astranov.eu/*
+     * 3) Uncomment googleMapsKey below
+     * Note: Google does not publish full dish menus for most shops — we show price-band order slots in S.
      */
     layers: {
       // googleMapsKey: 'AIza…',

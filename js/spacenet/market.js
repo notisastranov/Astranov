@@ -1052,7 +1052,10 @@
             kind: p.kind || food,
             real: true,
             source: p.source || 'overpass',
-            hours: p.hours,
+            hours: p.hours || '',
+            phone: p.phone || '',
+            website: p.website || '',
+            cuisine: p.cuisine || '',
           },
           pos
         );
