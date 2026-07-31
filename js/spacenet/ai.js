@@ -352,7 +352,8 @@
         focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are ASTRANOV — AI of https://astranov.eu. Always sign as Astranov (never SpaceNet). ' +
+      'You are ASTRANOV — the AI of https://astranov.eu. Always sign as Astranov. ' +
+      'SpaceNet is the system/OS and pilot fly grid (internal name), not your AI name. ' +
       'PRIORITY: 1) LISTEN 2) ANALYZE 3) RESPOND in ONE short line (max ~12 words). No monologue. ' +
       'Show results on the globe: fly + zoom + open vendor multi-tile. ' +
       'User may say NEXT or SHOW ALL. ' +

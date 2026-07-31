@@ -15,8 +15,14 @@
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name',
-      a: 'I am Astranov — the AI of astranov.eu. Ask pizza · shops · first delivery · donate on.',
+      a: 'I am Astranov — the AI. SpaceNet is the system/grid. Ask pizza · shops · first delivery · donate on.',
       tags: ['identity', 'ai'],
+    },
+    {
+      id: 'spacenet_name',
+      q: 'what is spacenet system grid os net',
+      a: 'SpaceNet is the system and pilot fly grid. I am Astranov, the AI.',
+      tags: ['identity', 'system'],
     },
     {
       id: 'listen',
