@@ -23,7 +23,7 @@
       terms: 'https://astranov.eu/terms.html',
       architect: 'Astranov',
       ai: 'Astranov',
-      system: 'SpaceNet',
+      system: 'ASTRANOV',
       authHost: 'https://api.astranov.eu',
     },
     /**

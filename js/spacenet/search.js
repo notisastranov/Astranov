@@ -518,12 +518,12 @@
 
     const label =
       mode === 'full' || mode === 'almighty'
-        ? 'Almighty'
+        ? 'Looking everywhere for'
         : mode === 'map'
-          ? 'Map crawl'
-          : 'Crawl · ' + mode;
-    global.SNCli?.log?.('⚡ ' + label + ' · ' + q, 'dim');
-    global.SNCli?.preview?.(label + ' · ' + q.slice(0, 36));
+          ? 'Looking nearby for'
+          : 'Looking up';
+    global.SNCli?.log?.(label + ' “' + q.slice(0, 48) + '”…', 'dim');
+    global.SNCli?.preview?.(label + '…');
 
     const results = emptyResult();
     results.query = q;
@@ -779,21 +779,11 @@
     const mode = results.mode || 'map';
     const full =
       reportOpts.full === true || mode === 'full' || mode === 'almighty' || mode === 'code' || mode === 'books';
-    const title =
-      mode === 'full' || mode === 'almighty'
-        ? 'Almighty'
-        : mode === 'map'
-          ? 'Map'
-          : String(mode);
-    L(
-      '── ' +
-        title +
-        ' · ' +
-        (results.sources || []).join(' · ') +
-        ' · score ' +
-        (results.score || 0),
-      'dim'
-    );
+    if (full) {
+      L('Here\'s what I found:', 'dim');
+    } else if ((results.nearby || []).length || (results.places || []).length) {
+      L('Nearby:', 'dim');
+    }
     if (results.weather?.text) L('🌤 ' + results.weather.text, 'ok');
     (results.places || []).slice(0, 5).forEach((p) => L('📍 ' + String(p.name).slice(0, 70), 'ok'));
     (results.nearby || []).slice(0, 8).forEach((p) =>
@@ -818,10 +808,8 @@
     if (full || mode === 'books') {
       (results.books || []).slice(0, 4).forEach((b) => L('📚 ' + b.title + ' · ' + b.text, 'ok'));
     }
-    if (results.edge?.ok && (results.edge.count || 0) > 0)
-      L('Edge vendors · ' + results.edge.count, 'dim');
     if (!(results.score > 0))
-      L('Empty · try: find pizza near me · who is Elon · almighty three.js', 'dim');
+      L("Nothing solid — try find pizza, or a place name.", 'dim');
   }
 
   global.SNSearch = {

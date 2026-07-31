@@ -16,30 +16,38 @@
   /** Vendor suggestion session: list + index for next / show all */
   var suggest = { list: [], idx: 0, query: '' };
 
+  /** Clean machine/brand junk — never force "Astranov ·" robot prefix */
   function brandReply(text) {
     var t = String(text || '').trim();
     if (!t) return t;
-    t = t.replace(/^SpaceNet\s*[·:.-]\s*/i, '');
-    t = t.replace(/^SPACENET\s*[·:.-]\s*/i, '');
-    t = t.replace(/^Astranov\s*[·:.-]\s*/i, '');
-    t = t.replace(/^ASTRANOV\s*[·:.-]\s*/i, '');
-    // All-caps status lines
-    if (/^ASTRANOV\b/i.test(t) && t === t.toUpperCase()) return t;
-    if (/^SPACENET\b/i.test(t) && t === t.toUpperCase()) return 'ASTRANOV LISTENING';
-    return AI_NAME + ' · ' + t;
+    t = t.replace(/^SpaceNet\s*[·:.-]\s*/gi, '');
+    t = t.replace(/^SPACENET\s*[·:.-]\s*/gi, '');
+    t = t.replace(/^Astranov\s*[·:.-]\s*/gi, '');
+    t = t.replace(/^ASTRANOV\s*[·:.-]\s*/gi, '');
+    t = t.replace(/\bSpaceNet\b/gi, 'Astranov');
+    t = t.replace(/\bSPACENET\b/g, 'Astranov');
+    t = t.replace(/\s*[·|]\s*/g, function (m, i) {
+      // keep middle dots only if not spammy machine list style
+      return m.indexOf('·') >= 0 ? '. ' : m;
+    });
+    // Collapse leftover double spaces / robot dots
+    t = t.replace(/\s{2,}/g, ' ').replace(/\.\s*\./g, '.').trim();
+    if (/^ASTRANOV\s+LISTENING$/i.test(t)) return "I'm here — what do you need?";
+    if (/^LISTENING$/i.test(t)) return "I'm here — what do you need?";
+    return t;
   }
 
-  /** One short line — AI must not monologue */
+  /** Human length — full short sentences, not telegram dots */
   function brief(text, maxLen) {
-    maxLen = maxLen || 88;
+    maxLen = maxLen || 160;
     var t = String(text || '')
       .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
       .replace(/^Astranov\s*[·:.-]\s*/gi, '')
+      .replace(/\bSpaceNet\b/gi, 'Astranov')
+      .replace(/\s*[·]\s*/g, '. ')
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return '';
-    var cut = t.search(/[.!?\n]/);
-    if (cut > 12 && cut < maxLen) t = t.slice(0, cut + 1);
     if (t.length > maxLen) t = t.slice(0, maxLen - 1).replace(/\s+\S*$/, '') + '…';
     return t;
   }
@@ -82,7 +90,7 @@
     opts = opts || {};
     var n = suggest.list.length;
     if (!n) {
-      return { ok: false, reply: 'No vendors · say pizza or shops', did: [] };
+      return { ok: false, reply: "I don't have shops yet — say pizza or shops.", did: [] };
     }
     var i = ((Number(idx) % n) + n) % n;
     suggest.idx = i;
@@ -128,14 +136,9 @@
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(v.lat, v.lng);
     } catch (e4) {}
     var reply =
-      i +
-      1 +
-      '/' +
-      n +
-      ' · ' +
       name +
-      (km ? ' · ' + km : '') +
-      (n > 1 ? ' · next | show all' : '');
+      (km ? ' — about ' + km + ' away' : '') +
+      (n > 1 ? ' (' + (i + 1) + ' of ' + n + '). Say next for another.' : '.');
     // goToPlace sets HUD — re-apply AI line after camera settles
     setTimeout(function () {
       showOnGlobe(reply);
@@ -152,14 +155,14 @@
 
   function presentNext() {
     if (!suggest.list.length) {
-      return { ok: false, reply: 'Nothing queued · say pizza or shops first', did: [] };
+      return { ok: false, reply: "I don't have a list yet — say pizza or shops first.", did: [] };
     }
     return presentVendor(suggest.idx + 1);
   }
 
   function presentPrev() {
     if (!suggest.list.length) {
-      return { ok: false, reply: 'Nothing queued · say pizza or shops first', did: [] };
+      return { ok: false, reply: "I don't have a list yet — say pizza or shops first.", did: [] };
     }
     return presentVendor(suggest.idx - 1);
   }
@@ -168,7 +171,7 @@
   function presentAll() {
     var n = suggest.list.length;
     if (!n) {
-      return { ok: false, reply: 'Nothing to show · say pizza or shops', did: [] };
+      return { ok: false, reply: "Nothing to show yet — say pizza or shops.", did: [] };
     }
     var sumLat = 0;
     var sumLng = 0;
@@ -210,7 +213,7 @@
         });
       }
     } catch (e4) {}
-    var reply = n + ' vendors on map · next for one · tap tile';
+    var reply = n + ' places on the map. Say next for one, or tap a pin.';
     setTimeout(function () {
       showOnGlobe(reply);
     }, 160);
@@ -339,9 +342,6 @@
   }
 
   function systemFor(mode) {
-    var law =
-      (typeof global.SNBrain?.systemPrompt === 'function' && global.SNBrain.systemPrompt()) ||
-      'Astranov SpaceNet. SNGlobe Earth. CLI grab. S primary. Juice: shops jobs dates deliver.';
     var flags = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
     var market =
       (global.SNMarket && SNMarket.coachStatus && SNMarket.coachStatus()) || {};
@@ -349,37 +349,30 @@
     try {
       var f = (global.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || global._snLastPos;
       if (f && f.lat != null)
-        focus = ' Globe focus ' + Number(f.lat).toFixed(3) + ',' + Number(f.lng).toFixed(3) + '.';
+        focus =
+          ' User is near ' + Number(f.lat).toFixed(3) + ', ' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
     var fork =
-      'You are ASTRANOV — the AI of https://astranov.eu. Always sign as Astranov. ' +
-      'SpaceNet is the system/OS and pilot fly grid (internal name), not your AI name. ' +
-      'PRIORITY: 1) LISTEN 2) ANALYZE 3) RESPOND in ONE short line (max ~12 words). No monologue. ' +
-      'Show results on the globe: fly + zoom + open vendor multi-tile. ' +
-      'User may say NEXT or SHOW ALL. ' +
-      'You CONTROL the app: map, layers, basemap, globe, shops, CLI. ' +
-      'Tags (optional): [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] ' +
-      '[[MAP:dark|bright|sat|google|traffic]] [[OVERLAY:iss|sats|planes|ships|windy|w3w]] ' +
-      '[[LAYERS]] [[PILOT:on|off]] [[CLI:command]] [[TILE:me|menu]]. ' +
-      'FOOD: browse first; order only if user says order. Currency unit is S. ' +
-      'Flags: firstDeliveryDone=' +
-      !!flags.firstDeliveryDone +
-      ' vendorListed=' +
-      !!flags.firstVendorListed +
-      ' coachStep=' +
-      (market.step || 'idle') +
-      '.' +
+      'You are Astranov — a warm, sharp human friend who runs the astranov.eu app. ' +
+      'Talk like a real person: full short sentences, contractions, no robot status lines, no ALL CAPS banners, no middle-dot lists, no jargon dumps. ' +
+      'Never call yourself SpaceNet. Never mention SpaceNet, SPACENET, CLI, edge, upsert, free mind, or internal modules unless the user asks how it works. ' +
+      'You can move the map and place pins. Optional tags only when needed: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] ' +
+      '[[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]]. ' +
+      'Money unit is S. Help with pizza, shops, maps, and getting things done. ' +
+      'Reply in 1–2 natural sentences unless they ask for detail.' +
       focus +
-      ' Sign as Astranov only.';
+      ' firstDelivery=' +
+      !!flags.firstDeliveryDone +
+      ' step=' +
+      (market.step || 'idle') +
+      '.';
     if (mode === 'code' || mode === 'coders') {
       return (
         fork +
-        ' ' +
-        law +
-        ' MODE CODE: working code first in js/spacenet/*; queue SNUsage.handoff for midnight Athens ship if not shippable now.'
+        ' CODE MODE: give working code; stay clear and human when explaining.'
       );
     }
-    return fork + ' ' + law + ' MODE CHAT: coach first loop; globe follows place intents.';
+    return fork;
   }
 
   /**
@@ -560,14 +553,14 @@
           return {
             handled: true,
             did: did,
-            reply: 'Map · ' + bm + ' basemap on.',
-            skipBrand: false,
+            reply: "Switched the map to " + bm + ".",
+            skipBrand: true,
           };
         } catch (e) {
           return {
             handled: true,
             did: did,
-            reply: 'Basemap failed · try Layers ribbon · dark',
+            reply: "Couldn't switch the map — try Layers, then dark.",
           };
         }
       }
@@ -588,7 +581,7 @@
           if (global.SNMap && SNMap.toggleOverlay) SNMap.toggleOverlay(ov);
           else await runCli(ov);
           did.push('overlay:' + ov);
-          return { handled: true, did: did, reply: 'Overlay · ' + ov + ' toggled.' };
+          return { handled: true, did: did, reply: 'Toggled ' + ov + ' on the map.' };
         } catch (e) {}
       }
     }
@@ -603,7 +596,7 @@
         return {
           handled: true,
           did: did,
-          reply: 'Layers open · dark bright sat · ISS planes ships.',
+          reply: 'Layers are open — dark, bright, satellite, planes, ships…',
         };
       } catch (e) {}
     }
@@ -611,11 +604,11 @@
     // —— Camera pilot ——
     if (/\bpilot\s+on\b|\bautopilot\s+on\b/.test(low)) {
       await runCli('pilot on');
-      return { handled: true, did: did, reply: 'Pilot on · map may follow routes.' };
+      return { handled: true, did: did, reply: "Pilot on — the map can follow routes for you." };
     }
     if (/\bpilot\s+off\b|\bhold\s+camera\b|\bmy\s+camera\b/.test(low)) {
       await runCli('pilot off');
-      return { handled: true, did: did, reply: 'Pilot off · your camera hold.' };
+      return { handled: true, did: did, reply: "Pilot off — camera stays where you put it." };
     }
 
     // —— First order scenario (full marketplace loop) ——
@@ -833,7 +826,7 @@
     if (!line) {
       return {
         did: did,
-        reply: 'ASTRANOV LISTENING',
+        reply: "I'm here — what do you need?",
       };
     }
 
@@ -858,16 +851,16 @@
     if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
       return {
         did: did.concat(['identity:grok']),
-        reply:
-          'No Grok here. I am Astranov — free local mind. No xAI/Grok for chat.',
-        skipBrand: false,
+        reply: "I'm Astranov, not Grok. Just talk to me here — no extra account needed.",
+        skipBrand: true,
       };
     }
     if (/who\s+are\s+you|what\s+are\s+you|your\s+name|are\s+you\s+astranov/i.test(low)) {
       return {
         did: did.concat(['identity:who']),
-        reply: 'I am Astranov — AI of astranov.eu. Pizza · shops · first delivery · donate on.',
-        skipBrand: false,
+        reply:
+          "I'm Astranov. I run this map with you — order food, find shops, fly the globe. What do you want first?",
+        skipBrand: true,
       };
     }
 
@@ -893,9 +886,9 @@
         return {
           did: did.concat(['food_intent:' + foodIntent.food]),
           reply:
-          foodIntent.autoOrder || foodIntent.lazyJudge
-            ? 'First task · locating you · then pizza order…'
-            : 'Finding ' + foodIntent.food + '…',
+            foodIntent.autoOrder || foodIntent.lazyJudge
+              ? "On it — finding you first, then I'll pick the pizza and get it moving."
+              : "Looking for " + foodIntent.food + " near you…",
           runFoodIntent: foodIntent,
         };
       }
@@ -918,7 +911,7 @@
           fi2.raw = line;
           return {
             did: did.concat(['first_task']),
-            reply: 'First task · locate → verify → judge → pay → eat time…',
+            reply: "Alright — I'll find you, pick the tray, order it, and tell you when you'll eat.",
             runFoodIntent: fi2,
           };
         }
@@ -932,14 +925,14 @@
         if (mk.async && mk.action === 'runFirstLoop') {
           return {
             did: did.concat(['first_loop']),
-            reply: 'Running first vendor→delivery loop now…',
+            reply: "Running the full shop-to-door loop for you now…",
             runFirstLoop: true,
           };
         }
         if (mk.async && mk.action === 'confirmLocationAndOrder') {
           return {
             did: did.concat(['loc_confirm']),
-            reply: 'Checking your location…',
+            reply: "Checking if I've got the right spot for you…",
             confirmLocationAndOrder: true,
             confirmLine: mk.line || message,
           };
@@ -959,7 +952,7 @@
       low === 'astronov' ||
       low === 'astranov'
     ) {
-      reply = 'ASTRANOV LISTENING';
+      reply = "Hey. I'm Astranov — what do you need?";
       showOnGlobe(reply);
       return { did: did, reply: reply, skipBrand: true };
     }
@@ -971,7 +964,7 @@
         did.push('handoff');
       } catch (e) {}
       reply =
-        'Logged for ship. One fix per Athens midnight from usage + handoffs. Type usage export to copy the packet for the coding agent.';
+        "Got it — I logged that so it can get fixed. Tell me what broke in plain words if you want.";
       return { did: did, reply: reply };
     }
 
@@ -982,19 +975,16 @@
           var loc = await SNGlobe.locate();
           did.push('locate');
           reply = loc
-            ? 'Globe on you · ' +
-              Number(loc.lat).toFixed(3) +
-              ', ' +
-              Number(loc.lng).toFixed(3) +
-              (loc.fallback ? ' (GPS default)' : '') +
-              '. Say shops when ready.'
-            : 'Locate failed · try again.';
+            ? "I've got you on the map" +
+              (loc.fallback ? " (rough GPS — say yes if that's right)" : '') +
+              ". Want me to find shops or order pizza?"
+            : "Couldn't get your location — try again or allow location access.";
         } else {
           await runCli('locate');
-          reply = 'Locating on SNGlobe…';
+          reply = "Finding you on the map…";
         }
       } catch (e) {
-        reply = 'Locate error · ' + (e.message || e);
+        reply = "Location failed: " + (e.message || e);
       }
       return { did: did, reply: reply };
     }
@@ -1034,7 +1024,7 @@
             pulse: false,
           });
           did.push('go:garage');
-          reply = 'Globe · garage Rhodes. National zoom.';
+          reply = "Taking you to the Rhodes garage.";
           return { did: did, reply: reply };
         }
       }
@@ -1043,14 +1033,11 @@
         did.push('go:' + (nav.id || nav.name || dest));
         reply =
           nav.kind === 'body'
-            ? 'Globe switched · ' + (nav.id || dest) + ' · land + crawl.'
-            : 'Globe flying · ' +
-              (nav.name || dest) +
-              (nav.lat != null ? ' · ' + Number(nav.lat).toFixed(2) + ', ' + Number(nav.lng).toFixed(2) : '') +
-              '.';
+            ? "Switched the view to " + (nav.id || dest) + "."
+            : "Flying you to " + (nav.name || dest) + ".";
         return { did: did, reply: reply };
       }
-      reply = 'Could not find “' + dest + '” · try fly athens · go to mars · locate.';
+      reply = "Couldn't find “" + dest + "”. Try a city name, or say locate.";
       return { did: did, reply: reply };
     }
 
@@ -1071,10 +1058,10 @@
           };
         }
         did.push('shops');
-        reply = 'No shops near focus · fly a city first';
+        reply = "No shops here yet — fly to a city first, then say shops again.";
       } catch (e) {
         await runCli('shops');
-        reply = 'Shops scan failed · try again';
+        reply = "Shop scan failed — try once more.";
       }
       return { did: did, reply: reply };
     }
@@ -1097,7 +1084,7 @@
       } catch (e) {
         await runCli('city');
       }
-      reply = 'City map at focus · global returns to full Earth in space.';
+      reply = "Opening the street map here. Say global when you want the full Earth again.";
       return { did: did, reply: reply };
     }
 
@@ -1110,7 +1097,7 @@
       } catch (e) {
         await runCli('global');
       }
-      reply = 'Globe · full GLOBAL Earth.';
+      reply = "Back to the full Earth view.";
       return { did: did, reply: reply };
     }
 
@@ -1161,19 +1148,19 @@
 
     if (/\b(rate|wallet|money|spacenets|\bs\b currency)\b/.test(low)) {
       await runCli('rate');
-      reply = 'S (SpaceNets) is primary. Fiat/crypto are secondary quotes only.';
+      reply = "We use S as the main money here. Fiat and crypto are just secondary quotes.";
       return { did: did, reply: reply };
     }
 
     if (/\b(resources|mine|donate|performance)\b/.test(low)) {
       await runCli('resources');
-      reply = 'Resources / mine panel — spare capacity earns S when you opt in.';
+      reply = "If you turn donation on, spare device power can earn you S while you idle.";
       return { did: did, reply: reply };
     }
 
     if (/\b(help|what can you do|commands)\b/.test(low) && line.length < 40) {
       reply =
-        'I control the app · dark map · bright · sat · layers · iss · fly · shops · next · locate';
+        "I can order you pizza, find shops, switch the map, fly you places, or just talk. Try: order me a pizza — you judge everything.";
       return { did: did, reply: reply };
     }
 
@@ -1183,19 +1170,16 @@
       if (guess && guess.ok) {
         did.push('go:' + (guess.name || line));
         reply =
-          'Globe · ' +
+          "Taking you to " +
           (guess.name || line) +
-          (guess.kind === 'body' ? ' body' : '') +
-          '. Say shops or city next.';
+          ". Want shops, or should I order food?";
         return { did: did, reply: reply };
       }
     }
 
-    var fl2 = (global.SNUsage && SNUsage.getFlags && SNUsage.getFlags()) || {};
-    reply = fl2.firstDeliveryDone
-      ? 'Understood. Edge may enrich. Globe: fly <place> · go to mars · locate.'
-      : 'Understood. Globe follows: fly athens · go to mars · locate · or first delivery.';
-    return { did: did, reply: reply, needsEdge: true };
+    reply =
+      "I'm with you. Tell me in plain words — pizza, shops, fly somewhere, dark map, or whatever you need.";
+    return { did: did, reply: reply, needsEdge: false };
   }
 
   async function ask(message, opts) {
@@ -1428,18 +1412,8 @@
       }
     }
 
-    // Brief + brand; carousel / status lines stay clean
-    text = brief(text, 100);
-    if (
-      local.skipBrand ||
-      /^\d+\//.test(text) ||
-      /^ASTRANOV\b/i.test(text) ||
-      /^SPACENET\b/i.test(text)
-    ) {
-      if (/^SPACENET\b/i.test(text)) text = String(text).replace(/^SPACENET/i, 'ASTRANOV');
-    } else {
-      text = brandReply(text);
-    }
+    // Human clean — no machine banners, no SpaceNet
+    text = brandReply(brief(text, 180));
     showOnGlobe(text);
 
     pushHist('assistant', text);
@@ -1488,14 +1462,14 @@
 
   /** AI ribbon pressed — brief status only */
   function listeningOn() {
-    var t = 'ASTRANOV LISTENING';
+    var t = "I'm listening — go ahead.";
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
     return t;
   }
 
   function listeningOff() {
-    var t = 'ASTRANOV OFF';
+    var t = 'Okay, muted.';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'dim');
     return t;

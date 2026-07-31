@@ -303,7 +303,7 @@
         'Arrived ' +
           body.name +
           (lat != null ? ' · ' + lat.toFixed(3) + ', ' + lng.toFixed(3) : '') +
-          ' · scanning SpaceNet…'
+          '…'
       );
     }
 

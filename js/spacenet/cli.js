@@ -34,15 +34,21 @@
       .replace(/\bOverpass\b/gi, 'map search')
       .replace(/\bOpenSky\b/gi, 'air traffic')
       .replace(/\bCarto\b/gi, 'map style')
-      .replace(/\bSPACENET\b/g, 'ASTRANOV')
+      .replace(/\bSPACENET\b/g, 'Astranov')
       .replace(/\bSpaceNet\b/g, 'Astranov')
       .replace(/\bspacenet\b/g, 'astranov')
+      .replace(/\bAlmighty crawl\b/gi, 'Looking around')
+      .replace(/\bAlmighty\b/gi, 'Search')
+      .replace(/\bEdge vendors upsert\b/gi, 'Shops found')
+      .replace(/\bEdge vendors\b/gi, 'Shops')
+      .replace(/\bfree mind\b/gi, 'me')
       .replace(/https?:\/\/[a-z0-9-]+\.supabase\.co[^\s]*/gi, 'astranov.eu')
       .replace(/\bsupabase(?:\.co)?\b/gi, 'astranov.eu')
       .replace(/\bSNGlobe\b/g, 'globe')
       .replace(/\bGIS path\b/gi, 'Google sign-in')
       .replace(/\bDB shops\b/gi, 'shops')
       .replace(/\b thrash\b/gi, '')
+      .replace(/\s*[·]\s*/g, '. ')
       .trim();
   }
 
@@ -373,34 +379,12 @@
   }
 
   function help() {
-    log('── FIRST TASK ──', 'ok');
-    log(
-      'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT',
-      'ok'
-    );
-    log('Then: YES/NO if I ask about location · map shows vendor + courier · I tell eat time', 'dim');
-    log('── Also ──', 'ok');
-    log('MAP   fly <city> · city · global · locate · pilot on|off (camera)', 'ok');
-    log('ADD   ribbon ➕ · pin · targets · video · vendor · social · emergency', 'ok');
-    log('TOPO  measure · measure topo · clear targets · clear pin', 'dim');
-    log('EARTH g_satellite · g_hybrid · g_terrain · google key in SN_CONFIG.layers', 'dim');
-    log('SPACE go to mars|moon|jupiter|europa · thesis · vault · cosmos', 'ok');
-    log('SPACENET  GLOBAL → NATIONAL → REGIONAL → CITY (tap globe to dive)', 'ok');
-    log('ZOOM  solar · global · national · regional · city · spacenet', 'ok');
-    log('GLOBE  single-tap dive · double-tap zoom out · no blue rings', 'dim');
-    log('FIND  crawl <poi> · fly athens · fly rhodes', 'ok');
-    log('TILE  me · vendors · cart · order', 'ok');
-    log('FIRST list shop · menu add · order me · drive on · deliver me · first delivery', 'ok');
-    log('DATA  usage · usage export · handoff', 'dim');
-    log('FIELD radar · resources · mine on|off · donate on|off', 'ok');
-    log('MONEY S · rate · wallet · finance  (primary; fiat/crypto secondary)', 'ok');
-    log('WORK  job · date · deliver · task list', 'dim');
-    log('SYS   login · clear · verify · help', 'dim');
-    log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
-    log('TASK  task list · task open · task fit · task map · advise · claim · deliver', 'ok');
-    log('FEED  scroll up/down · type / or ? to search text history', 'ok');
-    log('TILE  multi-tile on map · tap map target · not CLI buttons', 'dim');
-    preview('scroll feed · /search · talk');
+    log('Hey — I\'m Astranov. Talk normally.', 'ok');
+    log('Try: order me a pizza — you judge type, size, shop, courier, eat time', 'ok');
+    log('Or: locate · shops · fly athens · dark map · bright map', 'dim');
+    log('Map: tap the globe to zoom in. Say global for full Earth.', 'dim');
+    log('Money unit is S. Type help anytime.', 'dim');
+    preview('Just talk — pizza, shops, fly…');
   }
 
   function moneyStatus() {
@@ -569,21 +553,15 @@
         low === 'mind'
       ) {
         const st = global.SNFreeMind?.status?.() || {};
-        log('── Astranov free mind ──', 'ok');
+        log("I'm good.", 'ok');
         log(
-          'Learned ' +
+          'Remembered ' +
             (st.learned || 0) +
-            ' · seeds ' +
-            (st.seeds || 0) +
-            ' · answers ' +
-            (st.stats && st.stats.answers != null ? st.stats.answers : 0),
-          'ok'
+            ' notes. If I sound weird, type mind wipe.',
+          'dim'
         );
-        log('No paid xAI required · grow me: teach FACT or teach Q => A', 'dim');
-        log('Junk replies? type: mind wipe', 'dim');
-        log('Export: free export · open fine-tune later', 'dim');
-        preview('Astranov · teach to grow');
-        global.SNGlobe?.setHud?.('ASTRANOV');
+        preview("I'm here");
+        global.SNGlobe?.setHud?.('Astranov');
         return;
       }
       if (
@@ -595,11 +573,11 @@
       ) {
         try {
           const w = global.SNFreeMind?.wipe?.('cli');
-          log('Mind wiped · poisoned memory gone · first-task reloaded', 'ok');
-          log('Learned now: ' + (w && w.learned != null ? w.learned : '?'), 'dim');
-          preview('Mind clean');
+          log('Memory cleared. Fresh start — talk normally.', 'ok');
+          log('Notes kept: ' + (w && w.learned != null ? w.learned : '?'), 'dim');
+          preview('Fresh');
         } catch (eW) {
-          log('Wipe failed · hard refresh site', 'err');
+          log('Could not clear memory — hard refresh the page.', 'err');
         }
         return;
       }

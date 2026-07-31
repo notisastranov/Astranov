@@ -5,22 +5,22 @@
 (function (global) {
   'use strict';
 
-  // v3: wipe poisoned stores (Elizabeth Candy / climb / random OUT lines)
-  var LEARN_KEY = 'sn:free-mind-learn-v3';
-  var STATS_KEY = 'sn:free-mind-stats-v3';
-  var MAX_LEARN = 200;
+  // v4: human voice seeds (wipe machine · / SpaceNet sludge)
+  var LEARN_KEY = 'sn:free-mind-learn-v4';
+  var STATS_KEY = 'sn:free-mind-stats-v4';
+  var MAX_LEARN = 120;
   var NAME = 'Astranov';
   var LEGACY_KEYS = [
     'sn:free-mind-learn-v1',
     'sn:free-mind-learn-v2',
+    'sn:free-mind-learn-v3',
     'sn:free-mind-stats-v1',
     'sn:free-mind-stats-v2',
+    'sn:free-mind-stats-v3',
   ];
 
   /**
-   * Seed corpus — FIRST TASK is P0 (lazy pizza order).
-   * Task law: locate → verify if soft GPS → research likes/temper/company →
-   * judge type/size/vendor/courier → pay S → map route → tell eat time.
+   * Seed corpus — human talk only. Never robot lists or SpaceNet branding.
    */
   var SEED = [
     {
@@ -29,194 +29,184 @@
         'first task first order lazy order me a pizza you judge type size vendor delivery guy ' +
         'what time i eat order me pizza judge whatever else retsina soda greek special',
       a:
-        'FIRST TASK · type: ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT · ' +
-        'I locate you · if GPS soft I ask YES/NO · I use your likes (feisty Greek · company · Super Greek 13 · retsina · 1.5L soda) · ' +
-        'pick vendor + Astranov courier · pay S · map shows route · I tell when you eat.',
+        "Sure — I'll find you, pick a Super Greek special for about three people with retsina and a big soda, " +
+        "order it with our courier, show the route, and tell you when you'll eat.",
       tags: ['market', 'food', 'p0', 'first'],
     },
     {
       id: 'first_task_steps',
       q: 'how first order pizza steps locate verify yes no eat time eta',
       a:
-        '1 locate · 2 if location soft I ask YES or NO · 3 research your temper/company/likes · ' +
-        '4 Super Greek special 13 pieces + retsina + 1.5L soda for feisty Greek company · ' +
-        '5 vendor + courier on map · 6 pay S · 7 you eat at HH:MM.',
+        "I pin you, confirm if GPS is fuzzy, use your tastes, pick the shop and courier, you pay in S, then I give you the eat time.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'first_task_yes',
       q: 'yes correct here location ok go proceed confirm location',
-      a: 'YES continues the paused pizza order from your confirmed pin on the map.',
+      a: "Great — I'll keep going from that pin.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'first_task_no',
       q: 'no wrong not me location false relocate',
-      a: 'NO cancels that pin · type locate or fly city · then paste the pizza order again.',
+      a: "Okay, dropping that pin. Say locate, then ask me for pizza again.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'owner_likes',
       q: 'girlfriends cats dogs feisty greek retsina soda super greek special 13 pieces company temper',
       a:
-        'Owner tray: feisty Greek guy · company ~3 (you + 2 girlfriends) · pets noted · ' +
-        'Super Greek special 13 pieces · retsina · big soda 1.5L · Astranov delivery not Wolt/eFood.',
+        "I know your style — feisty Greek, company of about three, Super Greek special with retsina and a big soda. Not Wolt or eFood.",
       tags: ['market', 'prefs', 'p0'],
     },
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name',
-      a:
-        'I am Astranov — AI of astranov.eu. First task: order me a pizza you judge… · also locate · shops · donate on.',
+      a: "I'm Astranov. I run this map with you — food, shops, flying places. What do you want?",
       tags: ['identity', 'ai'],
     },
     {
       id: 'spacenet_name',
       q: 'what is spacenet system grid os net',
-      a: 'I am Astranov. The live grid runs under ASTRANOV on the globe.',
+      a: "I'm Astranov — that's the name you talk to. The app is astranov.eu.",
       tags: ['identity', 'system'],
     },
     {
       id: 'listen',
       q: 'ai listen handsfree voice mic',
-      a: 'ASTRANOV LISTENING · first task: order me a pizza you judge… · or locate · shops',
+      a: "I'm listening. Say what you need.",
       tags: ['ai', 'voice'],
     },
     {
       id: 'currency',
       q: 'money currency s spacenets wallet rate pay',
-      a: 'S (SpaceNets) is the only primary currency. Fiat and crypto are secondary quotes.',
+      a: "We use S here as the main money. Other currencies are just secondary quotes.",
       tags: ['money'],
     },
     {
       id: 'grid',
       q: 'spacenet grid global national regional city zoom dive',
-      a: 'Zoom grid: GLOBAL → NATIONAL → REGIONAL → CITY. Tap the globe to dive.',
+      a: "Tap the globe to dive closer — from full Earth down to the city streets.",
       tags: ['globe'],
     },
     {
       id: 'pizza',
       q: 'pizza food hungry eat order sushi coffee burger order me a pizza',
-      a:
-        'Lazy first task: ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT · ' +
-        'I run locate → verify → judge → pay → eat time.',
+      a: "Hungry? Tell me to order you a pizza and I'll judge the rest — size, shop, courier, eat time.",
       tags: ['market', 'food', 'p0'],
     },
     {
       id: 'next',
       q: 'next vendor show all prev previous shops',
-      a: 'next = next vendor · show all = all on map · prev = previous · shops = nearest first',
+      a: "Say next for the next shop, show all to see them on the map, or shops to start over.",
       tags: ['market'],
     },
     {
       id: 'locate',
       q: 'locate gps where am i find me',
-      a: 'locate · map on you · first step before pizza. If soft GPS I ask YES/NO.',
+      a: "I'll put you on the map. If the pin looks off, just say no.",
       tags: ['globe', 'p0'],
     },
     {
       id: 'fly',
       q: 'fly go to athens rhodes mars moon globe place',
-      a: 'fly athens · go to mars · fly rhodes · globe follows Astranov',
+      a: "Say a place — Athens, Rhodes, Mars — and I'll take the globe there.",
       tags: ['globe'],
     },
     {
       id: 'vendor',
       q: 'vendor shop list menu cart order seller',
-      a: 'Lazy order pizza first · or list shop Name · menu add Item 5 · shops for tiles',
+      a: "Want food? I can order pizza, or you can open a shop from the map.",
       tags: ['market'],
     },
     {
       id: 'roles',
       q: 'roles driver vendor worker client dating multi tile',
-      a: 'One multi-tile: client · vendor worker · driver · social · dating. Tap User when logged in.',
+      a: "When you're logged in, tap User for your profile tile — shopping, driving, work, social.",
       tags: ['tile'],
     },
     {
       id: 'free',
       q: 'free ai model paid public fork train mind local',
-      a: 'I am Astranov free mind — local + learn. First task is pizza lazy order. teach FACT to grow me.',
+      a: "I'm Astranov, right here in the app. Talk normally — no paid bot account needed.",
       tags: ['free', 'ai'],
     },
     {
       id: 'grok',
       q: 'grok xai elon paid grok is grok here is grok there do you have grok are you grok',
-      a: 'No Grok here. I am Astranov — free local mind on astranov.eu. No xAI/Grok key required.',
+      a: "I'm not Grok — I'm Astranov. Just chat with me here.",
       tags: ['identity', 'ai', 'grok'],
     },
     {
       id: 'openai',
       q: 'openai chatgpt gpt claude gemini anthropic which model',
-      a: 'I am Astranov free mind — not ChatGPT/Claude/Gemini. Local first; no paid API required for chat.',
+      a: "I'm Astranov, not ChatGPT or Claude. I'm built into this app.",
       tags: ['identity', 'ai'],
     },
     {
       id: 'architect',
       q: 'architect owner notis who owns brand',
-      a: 'I am Astranov AI. Owner operates astranov.eu. S is the currency. First task is pizza order.',
+      a: "I'm Astranov on astranov.eu. Money unit is S. Want pizza, or something else?",
       tags: ['identity'],
     },
     {
       id: 'help',
       q: 'help commands what can you do',
-      a:
-        'FIRST: order me a pizza you judge type size vendor delivery… · locate · shops · donate on · me · rate · teach',
+      a: "I can order pizza, find shops, fly the map, switch dark or bright, or just talk. What do you need?",
       tags: ['help', 'p0'],
     },
     {
       id: 's_mine',
       q: 'mine resources donate compute mesh s per hour',
-      a: 'resources · mine on · spare capacity can earn S when you opt in',
+      a: "Turn donation on if you want spare power on this device to earn S while idle.",
       tags: ['money', 'mine'],
     },
     {
       id: 'layers',
       q: 'layers map satellite windy planes ships google earth dark bright basemap night',
-      a: 'Say dark map · bright map · sat · layers · iss · planes · ships — I switch them',
+      a: "Say dark map, bright map, satellite, or open layers — I'll switch it.",
       tags: ['map'],
     },
     {
       id: 'dark_map',
       q: 'dark map night map switch dark basemap black map dark mode',
-      a: 'Switching dark basemap now · city map dark tiles',
+      a: "Dark map coming on.",
       tags: ['map', 'control'],
     },
     {
       id: 'bright_map',
       q: 'bright map light map day map switch bright basemap',
-      a: 'Switching bright basemap now',
+      a: "Bright map on.",
       tags: ['map', 'control'],
     },
     {
       id: 'greek',
       q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα',
-      a:
-        'Είμαι Astranov. Πρώτη αποστολή: παράγγειλε πίτσα · κρίνω τύπο μέγεθος μαγαζί κούριερ · πες τι ώρα τρως · locate · YES/NO αν ρωτήσω',
+      a: "Είμαι Astranov. Πες μου να σου παραγγείλω πίτσα και τα κανονίζω — τύπο, μαγαζί, κούριερ, ώρα.",
       tags: ['el', 'p0'],
     },
     {
       id: 'first',
       q: 'first delivery first loop list shop complete self delivery train',
-      a:
-        'Self-loop: first delivery (you = shop + buyer + driver). Real first food task: order me a pizza you judge…',
+      a: "If you want food, just say order me a pizza and I'll handle the whole thing.",
       tags: ['market'],
     },
     {
       id: 'donate_mesh',
       q: 'donate mesh seti mine spare cpu resources earn s network',
-      a: 'donate on · SETI-style mesh · spare CPU earns S while idle',
+      a: "Say donate on if you want spare CPU time to earn S quietly in the background.",
       tags: ['mine'],
     },
     {
       id: 'handoff',
       q: 'broken bug pain handoff fix ship',
-      a: 'Say what broke · handoff queues for midnight Athens ship · type usage export',
+      a: "Tell me what broke in plain words and I'll log it so it gets fixed.",
       tags: ['support'],
     },
     {
       id: 'wolt_efood',
       q: 'wolt efood delivery app uber eats box',
-      a: 'We do not use Wolt or eFood. Courier is Astranov mesh delivery on the map · pay in S.',
+      a: "We don't use Wolt or eFood here — delivery is on this map, paid in S.",
       tags: ['market', 'food'],
     },
   ];
@@ -332,42 +322,43 @@
     stats.purged = (stats.purged || 0) + 1;
     try {
       localStorage.removeItem(LEARN_KEY);
-      localStorage.setItem('sn:free-mind-first-task-v2', '0');
+      localStorage.removeItem('sn:free-mind-first-task-v4');
+      localStorage.removeItem('sn:free-mind-first-task-v2');
     } catch (e) {}
     trainFirstTask();
     save();
     try {
-      think('mind wiped · ' + (reason || 'clean'), 'wipe');
+      think('cleared memory', 'wipe');
     } catch (e2) {}
     return { ok: true, learned: learned.length };
   }
 
   /** Hard-wire first task facts into learned memory (idempotent) */
   function trainFirstTask() {
-    var FLAG = 'sn:free-mind-first-task-v2';
+    var FLAG = 'sn:free-mind-first-task-v4';
     try {
       if (localStorage.getItem(FLAG) === '1') return;
     } catch (e0) {}
     var drills = [
       [
         'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT',
-        'FIRST TASK: locate → verify soft GPS (YES/NO) → research feisty Greek company likes → Super Greek special 13 pieces + retsina + 1.5L soda → vendor + Astranov courier → pay S → map route → eat time HH:MM',
+        "I'll find you, pick Super Greek for about three with retsina and a big soda, order with our courier, show the route, and tell you when you'll eat.",
       ],
       [
         'first task',
-        'First task is the lazy pizza order. Paste the full ORDER ME A PIZZA YOU JUDGE… line. I run it on the map.',
+        "Your first job for me is pizza — say order me a pizza and I'll judge the rest.",
       ],
       [
         'what do I like to eat',
-        'Owner tray: Super Greek special 13 pieces · retsina · big soda 1.5L · company ~3 · feisty Greek temper · not Wolt/eFood',
+        "You like Super Greek special, retsina, big soda, company of about three — not Wolt or eFood.",
       ],
       [
         'yes',
-        'If a pizza order is paused on location check, YES means continue from this pin.',
+        "Perfect — I'll continue from that pin.",
       ],
       [
         'no',
-        'If a pizza order is paused on location check, NO cancels — locate again then re-order.',
+        "Okay, wrong pin. Say locate, then ask for pizza again.",
       ],
     ];
     drills.forEach(function (d) {
@@ -375,6 +366,7 @@
     });
     try {
       localStorage.setItem(FLAG, '1');
+      localStorage.removeItem('sn:free-mind-first-task-v2');
     } catch (e1) {}
     try {
       if (global.SNUsage && SNUsage.track) SNUsage.track('free_mind_train_first_task', {});
@@ -536,12 +528,11 @@
     opts = opts || {};
     var msg = String(message || '').trim();
     if (!msg) {
-      return { text: 'ASTRANOV LISTENING', score: 1, via: 'free-mind', source: 'status' };
+      return { text: "I'm here — what do you need?", score: 1, via: 'free-mind', source: 'status' };
     }
     var low = msg.toLowerCase();
 
     // —— Hard intents (never fuzzy-wrong) ——
-    // P0 FIRST TASK — always point at the live market path (not a chat monologue)
     if (
       /\border\s+me\s+(a\s+)?pizza\b/i.test(low) ||
       (/\bpizza\b/i.test(low) &&
@@ -551,9 +542,8 @@
     ) {
       return {
         text:
-          'FIRST TASK live · I locate you · verify if GPS soft (YES/NO) · ' +
-          'use your likes (feisty Greek · Super Greek 13 · retsina · 1.5L soda) · ' +
-          'vendor + courier on map · pay S · tell you when you eat. Running that path now.',
+          "On it — finding you, picking Super Greek with retsina and a big soda for the company, " +
+          "ordering with our courier, and I'll tell you when you'll eat.",
         score: 1,
         via: 'free-mind',
         source: 'intent-first-task',
@@ -562,8 +552,7 @@
     }
     if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
       return {
-        text:
-          'No Grok here. I am Astranov — free local mind on astranov.eu. No xAI/Grok required for chat.',
+        text: "I'm Astranov, not Grok. Just talk to me here.",
         score: 1,
         via: 'free-mind',
         source: 'intent-grok',
@@ -571,8 +560,7 @@
     }
     if (/\b(chatgpt|openai|gpt-?\d|claude|gemini|anthropic)\b/i.test(low)) {
       return {
-        text:
-          'I am Astranov free mind — not ChatGPT/Claude/Gemini. Local first; no paid API for chat.',
+        text: "I'm Astranov — not ChatGPT or Claude. Built into this app.",
         score: 1,
         via: 'free-mind',
         source: 'intent-model',
@@ -584,8 +572,7 @@
       )
     ) {
       return {
-        text:
-          'I am Astranov — AI of astranov.eu. First task: ORDER ME A PIZZA YOU JUDGE TYPE SIZE VENDOR DELIVERY… · locate · donate on.',
+        text: "I'm Astranov. I help with the map, food, and whatever you need — say it plainly.",
         score: 1,
         via: 'free-mind',
         source: 'intent-who',
@@ -596,12 +583,9 @@
     if (/^(free\s*ai|free\s*mind|mind\s*status|spacenet\s*free)$/i.test(low)) {
       return {
         text:
-          NAME +
-          ' · ' +
+          "I'm good — " +
           learned.length +
-          ' learned · ' +
-          stats.answers +
-          ' answers · teach to grow · mind wipe if junk',
+          ' things learned. Say mind wipe if I ever sound weird.',
         score: 1,
         via: 'free-mind',
         source: 'status',
@@ -614,7 +598,7 @@
     ) {
       wipe('user');
       return {
-        text: 'Mind wiped · junk gone · first-task drills reloaded · teach only product facts',
+        text: "Memory cleared. Fresh start — just talk to me normally.",
         score: 1,
         via: 'free-mind',
         source: 'wipe',
@@ -670,8 +654,7 @@
     // Too little signal after stopwords → honest fallback, no random seed
     if (qTok.length < 1) {
       return {
-        text:
-          'Astranov · first task: order me a pizza you judge… · or locate · who are you',
+        text: "I'm with you — pizza, shops, fly somewhere, or just say what you need.",
         score: 0.2,
         via: 'free-mind',
         source: 'fallback',
@@ -752,8 +735,8 @@
     stats.misses = (stats.misses || 0) + 1;
     save();
     var fallback = opts.localReply
-      ? brief(opts.localReply, 88)
-      : 'Astranov · not sure · try: who are you · pizza · shops · first delivery · donate on';
+      ? brief(opts.localReply, 140)
+      : "Not sure I got that — try pizza, shops, locate, or say it another way.";
     return {
       text: fallback,
       score: opts.localReply ? 0.45 : 0.22,

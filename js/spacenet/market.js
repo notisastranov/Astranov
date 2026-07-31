@@ -349,7 +349,7 @@
     var del = claimAndComplete();
     if (del.ok) {
       say(
-        'FIRST ORDER DONE · shop → menu → pay S → drive → you. Type donate on for mesh S.',
+        "Order done — shop, pay in S, driver to you. Want pizza next time? Just ask.",
         'ok'
       );
       track('first_loop_ok', { shop: shop, item: item, total: ord.total });
@@ -363,7 +363,7 @@
         if (global.SNUsage && SNUsage.flag) SNUsage.flag('firstVendorListed', true);
       } catch (_) {}
       try {
-        if (global.SNCli && SNCli.preview) SNCli.preview('FIRST ORDER DONE · type usage');
+        if (global.SNCli && SNCli.preview) SNCli.preview('Order done');
       } catch (_) {}
     } else {
       say('Delivery: ' + (del.error || 'claim failed') + ' · try claim · complete', 'err');
@@ -881,7 +881,7 @@
     var steps = [];
 
     // 1) Locate you FIRST
-    log('step 1 · locating you…', 'dim', 'work', { label: 'Locate' });
+    log('Finding where you are…', 'dim', 'work', { label: 'Locate' });
     var pos = intent.confirmedPos || null;
     if (!pos || pos.lat == null) {
       try {
@@ -1000,7 +1000,7 @@
     steps.push('loc_ok');
 
     // 2) Research likings / temper / company → judge meal
-    log('research · ' + judged.researchNote, 'ok');
+    log(judged.researchNote || 'Picking what fits you…', 'ok');
     log(
       'judging · ' +
         judged.itemName +
@@ -1016,16 +1016,26 @@
     );
     steps.push('judge_meal');
 
-    // 3) Find places
-    log('finding ' + food + ' near you…', 'dim', 'food', {
+    // 3) Find places — wait for search if still loading, then Overpass + sector
+    log('Looking for ' + food + ' near you…', 'dim', 'food', {
       lat: pos.lat,
       lng: pos.lng,
       label: food,
     });
     var pois = [];
     try {
+      var waited = 0;
+      while ((!global.SNSearch || !SNSearch.nearby) && waited < 6000) {
+        await new Promise(function (r) {
+          setTimeout(r, 200);
+        });
+        waited += 200;
+      }
       if (global.SNSearch && SNSearch.nearby) {
-        pois = (await SNSearch.nearby(pos.lat, pos.lng, 3500, intent.overpass || food)) || [];
+        pois = (await SNSearch.nearby(pos.lat, pos.lng, 4500, intent.overpass || food)) || [];
+        if ((!pois || !pois.length) && food === 'pizza') {
+          pois = (await SNSearch.nearby(pos.lat, pos.lng, 5000, 'restaurant food')) || [];
+        }
       }
     } catch (_) {}
     try {
@@ -1033,7 +1043,7 @@
         await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
       }
     } catch (_) {}
-    (pois || []).slice(0, 24).forEach(function (p) {
+    (pois || []).slice(0, 36).forEach(function (p) {
       if (p.lat == null) return;
       try {
         global.SNProfiles.fromCrawlPlace(
@@ -1044,57 +1054,66 @@
             kind: p.kind || food,
             real: true,
             source: p.source || 'overpass',
+            hours: p.hours,
           },
           pos
         );
       } catch (_) {}
     });
+    log(
+      (pois && pois.length ? pois.length + ' places found · painting vendors…' : 'live map quiet · planting kitchen…'),
+      pois && pois.length ? 'ok' : 'dim'
+    );
     steps.push('find');
 
-    // 4) Vendors on map
-    log('vendors on map…', 'dim', 'shops', {
+    // 4) Vendors on map — wide net, then force-visible kitchen if empty
+    log('Putting shops on the map…', 'dim', 'shops', {
       lat: pos.lat,
       lng: pos.lng,
       label: food,
     });
-    var vendors = (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
-      if (v.lat == null) return false;
-      var km = haversineKm(pos, v);
-      if (km > 8) return false;
-      var blob = (v.shopName || '') + ' ' + (v.name || '') + ' ' + (v.shopKind || '');
-      if (food === 'food') return true;
-      return (
-        blob.toLowerCase().indexOf(food) >= 0 ||
-        km < 2.5 ||
-        (pois || []).some(function (p) {
-          return p.name && v.name && p.name.indexOf(v.name.slice(0, 8)) >= 0;
-        })
-      );
-    });
-    if (vendors.length < 2) {
-      vendors = (global.SNProfiles.list({ role: 'vendor' }) || [])
-        .filter(function (v) {
-          return v.lat != null && haversineKm(pos, v) < 6;
-        })
-        .slice(0, 12);
+    function collectVendors(maxKm) {
+      return (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
+        if (!v || v.lat == null) return false;
+        // never treat pure "me" client pin as the only shop unless named kitchen
+        if (v.id && String(v.id).indexOf('me') === 0 && !/kitchen|shop|pizza/i.test(v.shopName || v.name || '')) {
+          return false;
+        }
+        return haversineKm(pos, v) <= maxKm;
+      });
     }
-    // Zero vendors → kitchen NEAR you (offset so vendor→you polygon is visible)
+    var vendors = collectVendors(10);
+    if (vendors.length < 1) vendors = collectVendors(20);
+    if (vendors.length < 1) {
+      vendors = (global.SNProfiles.list() || []).filter(function (v) {
+        return v && v.lat != null && v.roles && v.roles.vendor && haversineKm(pos, v) < 25;
+      });
+    }
+    // Always ensure at least one orderable kitchen near you (visible polygon)
     if (!vendors.length && global.SNProfiles) {
       try {
-        var selfP = me();
-        if (selfP) {
-          selfP.roles = selfP.roles || {};
-          selfP.roles.vendor = true;
-          selfP.roles.client = true;
-          selfP.shopName = selfP.shopName || 'Astranov Kitchen';
-          selfP.shopKind = food;
-          // ~400m NE of you so map shows a real route corridor
-          selfP.lat = Number(pos.lat) + 0.0038;
-          selfP.lng = Number(pos.lng) + 0.0032;
-          global.SNProfiles.upsert(selfP);
-          vendors = [selfP];
-          log('no shops in sector · Astranov Kitchen nearby on map', 'dim');
-        }
+        var kid =
+          'kitchen_' +
+          String(Number(pos.lat).toFixed(3)).replace(/\./g, 'p') +
+          '_' +
+          String(Number(pos.lng).toFixed(3)).replace(/\./g, 'p');
+        var kitchen = global.SNProfiles.upsert({
+          id: kid,
+          name: 'Astranov Kitchen',
+          shopName: 'Astranov Kitchen',
+          shopKind: food === 'pizza' ? 'pizza' : food,
+          handle: '@kitchen',
+          bio: 'Astranov fulfillment · map pin · pay in S',
+          roles: { vendor: true, client: false, social: true, driver: false },
+          lat: Number(pos.lat) + 0.0038,
+          lng: Number(pos.lng) + 0.0032,
+          real: true,
+          source: 'astranov-kitchen',
+          hours: '24/7',
+          menu: [],
+        });
+        vendors = [kitchen];
+        log('Astranov Kitchen planted on map · green pickup pin', 'ok');
       } catch (_) {}
     }
     vendors = vendors.map(function (v) {
@@ -1105,17 +1124,46 @@
     vendors.sort(function (a, b) {
       return (b._score || 0) - (a._score || 0);
     });
-    vendors = vendors.slice(0, 8);
+    vendors = vendors.slice(0, 12);
+
+    // Force map scene: you + all vendor pins + fit bounds
     try {
-      if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
+      if (global.SNMap && SNMap.open) {
+        await SNMap.open(pos.lat, pos.lng);
+        if (SNMap.ensure) await SNMap.ensure();
+        if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · delivery stop');
+        if (SNMap.showProfiles) SNMap.showProfiles();
+        var pins = [{ lat: pos.lat, lng: pos.lng }].concat(
+          vendors.map(function (v) {
+            return { lat: v.lat, lng: v.lng };
+          })
+        );
+        if (SNMap.fitLatLngs) SNMap.fitLatLngs(pins, { padding: 56, maxZoom: 15, force: true });
+      }
+      if (global.SNGlobe && SNGlobe.pulse) {
+        SNGlobe.pulse(pos.lat, pos.lng, 0x3d9eff, 'YOU', 20000);
+        vendors.slice(0, 6).forEach(function (v, i) {
+          try {
+            SNGlobe.pulse(v.lat, v.lng, i === 0 ? 0x00ff99 : 0xffcc44, v.shopName || v.name, 16000);
+          } catch (_) {}
+        });
+      }
       if (global.SNField && SNField.refreshBlips) SNField.refreshBlips();
     } catch (_) {}
+    log(
+      vendors.length +
+        ' vendor' +
+        (vendors.length === 1 ? '' : 's') +
+        ' on map · pick ' +
+        (vendors[0] && (vendors[0].shopName || vendors[0].name)),
+      'ok'
+    );
     steps.push('tiles');
 
     if (!vendors.length) {
       return {
         ok: false,
-        error: 'No ' + food + ' near you · try locate · open city · or list shop',
+        error: 'No vendor pin could be placed · hard refresh · try locate then order again',
         steps: steps,
         pos: pos,
         judged: judged,
@@ -1224,7 +1272,7 @@
         });
         orderResult = global.SNProfiles.placeOrder();
         if (orderResult && orderResult.ok) {
-          log('paid · ' + fmt(orderResult.total), 'ok');
+          log('Paid ' + fmt(orderResult.total) + '.', 'ok');
           steps.push('order');
         } else {
           log((orderResult && orderResult.error) || 'order failed', 'err');
@@ -1241,7 +1289,7 @@
     var claim = null;
     var courierNote = judged.service;
     if (orderResult && orderResult.ok && orderResult.task) {
-      log('assigning courier on map…', 'dim', 'delivery', {
+      log('Assigning a courier…', 'dim', 'delivery', {
         lat: best.lat,
         lng: best.lng,
         label: 'Courier',

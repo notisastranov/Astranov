@@ -1589,7 +1589,7 @@
     try {
       if (g.SNCli && SNCli.log) {
         SNCli.log(
-          'MAP ROUTE · polygon ON · green=VENDOR · yellow=DRIVER · red=YOU · ' +
+          'Route on the map — green shop, yellow driver, red you · ' +
             (row.km != null ? row.km.toFixed(2) + ' km' : '') +
             ' · ETA ' +
             (row.eta || '?'),
@@ -1597,7 +1597,7 @@
         );
       }
       if (g.SNCli && SNCli.preview)
-        SNCli.preview('VENDOR PREP · then driver moves on polygon');
+        SNCli.preview('Kitchen prep — then the driver moves');
       if (g.SNCli && SNCli.setActivity) g.SNCli.setActivity('prep');
     } catch (e2) {}
 

@@ -233,7 +233,7 @@
 
   function hardReset() {
     var ok = global.confirm(
-      'Hard reset Astranov SpaceNet on this device?\n\nClears local profiles, cart, places, usage, device role, CLI position.\nDoes not sign you out of Google unless you sign out separately.'
+      'Hard reset Astranov on this device?\n\nClears local profiles, cart, places, usage, device role, and chat position.\nDoes not sign you out of Google unless you sign out separately.'
     );
     if (!ok) return;
     var keys = [];
