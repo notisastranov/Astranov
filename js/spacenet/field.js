@@ -737,9 +737,14 @@
       });
       var d = list[0];
       var live = now - (d.t || 0) < STALE_MS;
-      // Simulated residual load for remote peers from last harvest snapshot
       var load = live
-        ? Math.min(100, Math.max(12, (d.harvest || 0.3) * 100 + (d.mining ? 18 : 0)))
+        ? Math.min(
+            100,
+            Math.max(
+              8,
+              d.load != null ? d.load : (d.harvest || 0.3) * 100 + (d.mining ? 18 : 0)
+            )
+          )
         : 4;
       return {
         id: d.id,
@@ -748,8 +753,8 @@
         live: live,
         self: d.id === thisId,
         load: load,
-        mining: !!d.mining || (live && (d.harvest || 0) > 0.2),
-        rate: d.rate != null ? d.rate : live ? (d.harvest || 0.2) * 0.02 : 0,
+        mining: !!d.mining,
+        rate: d.rate != null ? d.rate : 0,
         t: d.t || 0,
         count: list.length,
       };
