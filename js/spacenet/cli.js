@@ -445,6 +445,7 @@
     log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
     log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
     log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
+    log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
     log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
     log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
     log('Plans: plan list · plan status · claim · task list · task map', 'dim');
@@ -1400,7 +1401,47 @@
         low === 'space nets'
       ) {
         moneyStatus();
-        // No ribbon money/finance buttons — finance UI = top-right S HUD only
+        // No ribbon money/finance buttons — finance UI = top-right strands HUD only
+        return;
+      }
+      if (
+        low === 'test ready' ||
+        low === 'prepare orders' ||
+        low === 'prepare test' ||
+        low === 'first test' ||
+        low === 'ready orders' ||
+        low === 'test prep'
+      ) {
+        if (!global.SNMarket?.prepareFirstTest) {
+          log('Market offline · hard refresh', 'err');
+          return;
+        }
+        log('Preparing system for first test orders…', 'dim');
+        const prep = await global.SNMarket.prepareFirstTest({});
+        preview(prep.ready ? 'TEST READY' : 'TEST PREP INCOMPLETE');
+        return;
+      }
+      if (
+        low === 'test order' ||
+        low === 'test pizza' ||
+        low === 'run test order' ||
+        low.startsWith('test order ')
+      ) {
+        if (!global.SNMarket?.runTestOrder) {
+          log('Market offline · hard refresh', 'err');
+          return;
+        }
+        log('First test order · prepare + pizza pipeline…', 'ok');
+        const line = low.startsWith('test order ')
+          ? raw.slice(raw.toLowerCase().indexOf('test order') + 'test order'.length).trim()
+          : '';
+        const r = await global.SNMarket.runTestOrder({
+          force: true,
+          line: line || undefined,
+        });
+        if (r.ok) log(r.reply || 'Test order OK', 'ok');
+        else log(r.reply || r.error || 'Test order failed', 'err');
+        preview(r.ok ? 'TEST ORDER OK' : 'TEST ORDER FAIL');
         return;
       }
       if (low === 'wallet' || low === 'balance' || low === 'fees' || low === 'platform') {

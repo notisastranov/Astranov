@@ -1412,7 +1412,11 @@
           ' · ' +
           (v._km != null ? v._km.toFixed(1) + ' km' : '?') +
           ' · ' +
-          (v._price != null ? Number(v._price).toFixed(2) + ' S' : '?') +
+          (v._price != null
+            ? global.SNCurrency
+              ? SNCurrency.format(v._price)
+              : Number(v._price).toFixed(2) + ' strands'
+            : '?') +
           (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '') +
           (v._open === false ? ' · closed?' : ' · open'),
         i === 0 ? 'ok' : 'dim',
@@ -2126,6 +2130,381 @@
     };
   }
 
+  /**
+   * Seed a local testing sector around pos — real-shaped vendors + drivers
+   * so first orders work without waiting on Overpass.
+   */
+  function seedTestSector(pos, opts) {
+    opts = opts || {};
+    if (!pos || pos.lat == null || !global.SNProfiles) {
+      return { ok: false, error: 'need position' };
+    }
+    var lat = Number(pos.lat);
+    var lng = Number(pos.lng);
+    var shops = [
+      {
+        id: 'test_v_pizza_a',
+        name: 'Test · Nonna Fires',
+        shopName: 'Nonna Fires',
+        shopKind: 'pizza',
+        dlat: 0.0042,
+        dlng: 0.0028,
+        rating: 4.7,
+        hours: '10:00-24:00',
+        menu: [
+          { id: 'm1', name: 'Margherita medium', price: 9.5 },
+          { id: 'm2', name: 'Diavola medium', price: 11.0 },
+          { id: 'm3', name: 'Greek village large', price: 13.5 },
+        ],
+      },
+      {
+        id: 'test_v_pizza_b',
+        name: 'Test · Oven 23',
+        shopName: 'Oven 23',
+        shopKind: 'pizza',
+        dlat: -0.0031,
+        dlng: 0.0045,
+        rating: 4.4,
+        hours: '11:00-23:30',
+        menu: [
+          { id: 'm1', name: 'Pepperoni medium', price: 10.5 },
+          { id: 'm2', name: 'Four cheese large', price: 14.0 },
+          { id: 'm3', name: 'Capricciosa medium', price: 12.0 },
+        ],
+      },
+      {
+        id: 'test_v_grill',
+        name: 'Test · Gyros Corner',
+        shopName: 'Gyros Corner',
+        shopKind: 'grill',
+        dlat: 0.0018,
+        dlng: -0.0036,
+        rating: 4.5,
+        hours: '24/7',
+        menu: [
+          { id: 'm1', name: 'Pitogyro portion', price: 4.5 },
+          { id: 'm2', name: 'Mpyronia plate', price: 8.0 },
+          { id: 'm3', name: 'Souvlaki mix', price: 9.5 },
+        ],
+      },
+      {
+        id: 'test_v_cafe',
+        name: 'Test · Mesh Cafe',
+        shopName: 'Mesh Cafe',
+        shopKind: 'cafe',
+        dlat: -0.0024,
+        dlng: -0.0019,
+        rating: 4.3,
+        hours: '07:00-22:00',
+        menu: [
+          { id: 'm1', name: 'Freddo espresso', price: 3.2 },
+          { id: 'm2', name: 'Club sandwich', price: 6.5 },
+          { id: 'm3', name: 'Orange juice', price: 3.0 },
+        ],
+      },
+    ];
+    var vendors = shops.map(function (s) {
+      return global.SNProfiles.upsert({
+        id: s.id,
+        name: s.name,
+        shopName: s.shopName,
+        shopKind: s.shopKind,
+        roles: { vendor: true },
+        lat: lat + s.dlat,
+        lng: lng + s.dlng,
+        real: true,
+        source: 'test-sector',
+        hours: s.hours,
+        rating: s.rating,
+        menu: s.menu,
+        menuReady: true,
+        online: true,
+      });
+    });
+    var drivers = [
+      {
+        id: 'test_d_alpha',
+        name: 'Test Driver Alpha',
+        vehicle: 'Scooter',
+        dlat: 0.0012,
+        dlng: 0.0009,
+      },
+      {
+        id: 'test_d_beta',
+        name: 'Test Driver Beta',
+        vehicle: 'Bike',
+        dlat: -0.0015,
+        dlng: 0.0021,
+      },
+    ].map(function (d) {
+      return global.SNProfiles.upsert({
+        id: d.id,
+        name: d.name,
+        roles: { driver: true },
+        driverOnline: true,
+        vehicle: d.vehicle,
+        lat: lat + d.dlat,
+        lng: lng + d.dlng,
+        real: true,
+        source: 'test-sector',
+        maxCargo: 3,
+      });
+    });
+    try {
+      var meP = me();
+      if (meP) {
+        meP.lat = lat;
+        meP.lng = lng;
+        meP.roles = meP.roles || {};
+        meP.roles.client = true;
+        global.SNProfiles.upsert(meP);
+      }
+    } catch (_) {}
+    return {
+      ok: true,
+      vendors: vendors,
+      drivers: drivers,
+      pos: { lat: lat, lng: lng },
+    };
+  }
+
+  /**
+   * Prepare system for first testing orders.
+   * Wallet · location · sector shops · drivers · mining · map.
+   */
+  async function prepareFirstTest(opts) {
+    opts = opts || {};
+    var log = function (m, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
+      } catch (_) {}
+    };
+    var report = {
+      ok: false,
+      checks: [],
+      pos: null,
+      wallet: null,
+      vendors: 0,
+      drivers: 0,
+      mining: false,
+      ready: false,
+    };
+
+    log('═══ FIRST TEST ORDERS · preparing system ═══', 'ok');
+
+    try {
+      var meP = me();
+      if (!meP && global.SNProfiles && SNProfiles.ensureMe) meP = SNProfiles.ensureMe();
+      if (meP) {
+        meP.roles = meP.roles || {};
+        meP.roles.client = true;
+        global.SNProfiles.upsert(meP);
+        report.checks.push({ id: 'profile', ok: true, detail: meP.name || meP.id });
+        log('✓ Profile · ' + (meP.name || meP.id) + ' · client role', 'ok');
+      } else {
+        report.checks.push({ id: 'profile', ok: false, detail: 'no me' });
+        log('✗ Profile missing', 'err');
+      }
+    } catch (e) {
+      report.checks.push({ id: 'profile', ok: false, detail: String(e.message || e) });
+    }
+
+    try {
+      var C = global.SNCurrency;
+      if (C) {
+        var bal = C.balance();
+        var TARGET = opts.wallet != null ? Number(opts.wallet) : 50;
+        if (bal < TARGET) {
+          var add = Math.round((TARGET - bal) * 100) / 100;
+          C.credit(add, 'test-orders top-up');
+          log(
+            '✓ Wallet top-up · ' +
+              (C.format ? C.format(add) : add + ' strands') +
+              ' → ' +
+              (C.format ? C.format(C.balance()) : C.balance()),
+            'ok'
+          );
+        } else {
+          log('✓ Wallet · ' + (C.format ? C.format(bal) : bal + ' strands'), 'ok');
+        }
+        report.wallet = C.balance();
+        report.checks.push({ id: 'wallet', ok: true, detail: report.wallet });
+      }
+    } catch (eW) {
+      report.checks.push({ id: 'wallet', ok: false, detail: String(eW.message || eW) });
+      log('✗ Wallet · ' + (eW.message || eW), 'err');
+    }
+
+    var pos = opts.pos || null;
+    if (!pos || pos.lat == null) {
+      try {
+        if (global.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate();
+      } catch (_) {}
+    }
+    if ((!pos || pos.lat == null) && global._snPhysPos) pos = global._snPhysPos;
+    if ((!pos || pos.lat == null) && global._snLastPos) pos = global._snLastPos;
+    if (!pos || pos.lat == null) {
+      pos = {
+        lat: 37.9315,
+        lng: 23.755,
+        fallback: true,
+        reason: 'test default · Athens Ilioupoli sector',
+      };
+      log('· GPS quiet · using test sector pin (Ilioupoli) · type locate to override', 'dim');
+    }
+    global._snLastPos = { lat: pos.lat, lng: pos.lng, reason: 'test-ready' };
+    global._snPhysPos = global._snPhysPos || { lat: pos.lat, lng: pos.lng };
+    try {
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
+    } catch (_) {}
+    try {
+      var pr = loadPrefs();
+      pr.verifiedLoc = { lat: pos.lat, lng: pos.lng, t: Date.now() };
+      savePrefs(pr);
+    } catch (_) {}
+    report.pos = { lat: pos.lat, lng: pos.lng, fallback: !!pos.fallback, reason: pos.reason };
+    report.checks.push({
+      id: 'location',
+      ok: true,
+      detail: pos.lat.toFixed(4) + ',' + pos.lng.toFixed(4),
+    });
+    log(
+      '✓ Location · ' +
+        pos.lat.toFixed(5) +
+        ', ' +
+        pos.lng.toFixed(5) +
+        (pos.fallback ? ' · soft' : ' · GPS'),
+      'ok'
+    );
+
+    try {
+      if (global.SNMap && SNMap.open) {
+        await SNMap.open(pos.lat, pos.lng);
+        if (SNMap.ensure) await SNMap.ensure();
+        if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · test drop');
+      }
+      report.checks.push({ id: 'map', ok: true });
+      log('✓ City map open on your pin', 'ok');
+    } catch (eM) {
+      report.checks.push({ id: 'map', ok: false, detail: String(eM.message || eM) });
+      log('· Map · ' + (eM.message || eM), 'dim');
+    }
+
+    var seed = seedTestSector(pos, { food: opts.food || 'pizza' });
+    report.vendors = (seed.vendors || []).length;
+    report.drivers = (seed.drivers || []).length;
+    report.checks.push({
+      id: 'sector',
+      ok: seed.ok,
+      detail: report.vendors + ' shops · ' + report.drivers + ' drivers',
+    });
+    log(
+      '✓ Test sector · ' +
+        report.vendors +
+        ' shops · ' +
+        report.drivers +
+        ' drivers online within ~0.5 km',
+      'ok'
+    );
+    try {
+      if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
+    } catch (_) {}
+
+    try {
+      if (global.SNResources) {
+        if (SNResources.checkTerms && SNResources.checkTerms()) {
+          if (SNResources.setDonate) SNResources.setDonate(true);
+          if (SNResources.setMining) SNResources.setMining(true);
+          report.mining = true;
+          log('✓ Mining · ON (mesh terms already accepted)', 'ok');
+        } else {
+          report.mining = false;
+          log('· Mining · accept terms via ASTRANOV hub or mine on', 'dim');
+        }
+        report.checks.push({
+          id: 'mining',
+          ok: true,
+          detail: report.mining ? 'on' : 'pending terms',
+        });
+      }
+    } catch (_) {}
+
+    try {
+      clearPending('test-ready');
+    } catch (_) {}
+
+    report.ready =
+      report.wallet != null &&
+      report.wallet >= 5 &&
+      report.vendors >= 2 &&
+      report.drivers >= 1 &&
+      report.pos != null;
+    report.ok = report.ready;
+
+    log('───────────────────────────────────', 'dim');
+    if (report.ready) {
+      log('READY FOR FIRST TEST ORDERS', 'ok');
+      log('Try:  order me a pizza', 'ok');
+      log('Try:  order pitogyra mpyronia', 'ok');
+      log('Try:  test order', 'ok');
+      log('After paid:  deliver me  · or watch courier on map', 'dim');
+      log('Cancel stuck:  cancel', 'dim');
+    } else {
+      log('Not fully ready · check ✗ lines above', 'err');
+    }
+
+    try {
+      if (global.SNCli && SNCli.preview)
+        SNCli.preview(
+          report.ready
+            ? 'Test ready · ' + report.vendors + ' shops · wallet ' + Number(report.wallet).toFixed(0)
+            : 'Test prep incomplete'
+        );
+      if (global.SNField && SNField.paint) SNField.paint();
+    } catch (_) {}
+
+    track('test_orders_ready', {
+      ready: report.ready,
+      vendors: report.vendors,
+      drivers: report.drivers,
+      wallet: report.wallet,
+    });
+    return report;
+  }
+
+  /**
+   * One-shot: prepare + auto pizza order for first live test.
+   */
+  async function runTestOrder(opts) {
+    opts = opts || {};
+    var prep = await prepareFirstTest(opts);
+    if (!prep.ready && !opts.force) {
+      return {
+        ok: false,
+        prep: prep,
+        error: 'system not ready · fix checks then retry',
+        reply: 'Test prep incomplete. Type test ready and check CLI.',
+      };
+    }
+    var line =
+      opts.line ||
+      'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT';
+    var result = await fulfillFoodIntent(line, {
+      autoOrder: true,
+      skipLocConfirm: true,
+      quiet: false,
+    });
+    return {
+      ok: !!(result && result.ok),
+      prep: prep,
+      order: result,
+      reply:
+        (result && (result.eatLine || result.reply || result.summary)) ||
+        (result && result.error) ||
+        'test order finished',
+    };
+  }
+
   load();
 
   global.SNMarket = {
@@ -2151,6 +2530,9 @@
     parseDatingIntent: parseDatingIntent,
     fulfillDatingIntent: fulfillDatingIntent,
     verifySchedule: verifySchedule,
+    seedTestSector: seedTestSector,
+    prepareFirstTest: prepareFirstTest,
+    runTestOrder: runTestOrder,
     get step() {
       return W.step;
     },
