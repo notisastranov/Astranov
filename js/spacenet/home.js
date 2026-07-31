@@ -1,6 +1,6 @@
-/* SNHome — ASTRANOV technical settings (hardcore only)
- * Device resource donation roles · version · hard reset.
- * No marketplace clutter. Ribbon menus only on ➕ and Layers.
+/* SNHome — ASTRANOV central science hub (top ASTRANOV button)
+ * Device roles · RAID fleet · SETI mesh mining · topo routing · system
+ * Universal OS: products · services · all activities (not food-only).
  */
 (function (global) {
   'use strict';
@@ -14,10 +14,10 @@
 
   function esc(s) {
     return String(s || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"');
   }
 
   function currentRole() {
@@ -51,6 +51,53 @@
     );
   }
 
+  function fleetHtml() {
+    var fleet = null;
+    try {
+      fleet = global.SNResources && SNResources.fleet && SNResources.fleet();
+    } catch (_) {}
+    if (!fleet || !fleet.devices || !fleet.devices.length) {
+      return (
+        '<p class="sn-home-hint">No fleet yet · pick a role below to register this device. Open the same Astranov on other machines and assign Main / Hot-swap / RAID.</p>'
+      );
+    }
+    var rows = fleet.devices
+      .slice()
+      .sort(function (a, b) {
+        return (b.t || 0) - (a.t || 0);
+      })
+      .map(function (d) {
+        var age = d.t ? Math.round((Date.now() - d.t) / 60000) : '?';
+        var roleLab =
+          d.role === 'raid' ? 'RAID' : d.role === 'secondary' ? 'HOT-SWAP' : 'MAIN';
+        return (
+          '<div class="sn-home-fleet-row">' +
+          '<span class="sn-home-fleet-role ' +
+          esc(d.role || 'main') +
+          '">' +
+          roleLab +
+          '</span>' +
+          '<span class="sn-home-fleet-name">' +
+          esc(d.name || d.id) +
+          '</span>' +
+          '<span class="sn-home-fleet-meta">' +
+          (d.mining ? 'MINING' : 'idle') +
+          (d.rate ? ' · ' + Number(d.rate).toFixed(3) + ' S/h' : '') +
+          ' · ' +
+          age +
+          'm ago</span></div>'
+        );
+      })
+      .join('');
+    return (
+      '<div class="sn-home-fleet-sum">' +
+      esc(fleet.line) +
+      '</div>' +
+      rows +
+      '<p class="sn-home-hint">RAID nodes stay home on always-on boxes. Main = your phone/PC. Hot-swap = spare ready when main dies.</p>'
+    );
+  }
+
   function build() {
     var meta = document.querySelector('meta[name="astranov-build"]');
     var ver = (meta && meta.content) || 'dev';
@@ -61,14 +108,27 @@
     } catch (_) {}
     var statusLine = (rep && rep.line) || 'Resources offline until shell mine is ready';
     var rates = (rep && rep.rates) || {};
+    var cond = null;
+    try {
+      cond = global.SNResources && SNResources.routeConditions && SNResources.routeConditions();
+    } catch (_) {}
+    var condLine = cond
+      ? 'Traffic load +' +
+        Math.round((cond.traffic || 0) * 100) +
+        '% · weather +' +
+        Math.round((cond.weather || 0) * 100) +
+        '% · ETA mult ×' +
+        Number(cond.mult || 1).toFixed(2)
+      : 'Street routing · OSRM multi-stop · traffic/weather aware';
 
     return (
-      '<div class="sn-home-card" role="dialog" aria-label="ASTRANOV technical settings">' +
+      '<div class="sn-home-card" role="dialog" aria-label="ASTRANOV science hub">' +
       '<div class="sn-home-head">' +
-      '<b>ASTRANOV · TECHNICAL</b>' +
+      '<b>ASTRANOV · SCIENCE HUB</b>' +
       '<button type="button" class="sn-home-x" id="sn-home-close" aria-label="Close">×</button>' +
       '</div>' +
       '<div class="sn-home-body">' +
+      '<p class="sn-home-mission">Universal mesh OS · products · services · activities · topo routing · SETI mining. Destined beyond single apps.</p>' +
       '<div class="sn-home-row sn-home-meta">' +
       '<span>Build</span><code id="sn-home-ver">' +
       esc(ver) +
@@ -79,38 +139,66 @@
       '</div>' +
       '<div class="sn-home-status-sub">CPU ' +
       esc(rates.cpu != null ? rates.cpu : '—') +
-      '% · RAM load units ' +
+      '% · RAM units ' +
       esc(rates.ram != null ? rates.ram : '—') +
       ' · BW ' +
       esc(rates.bandwidth != null ? rates.bandwidth : '—') +
+      ' · ops ' +
+      esc(rep && rep.workerOps != null ? rep.workerOps : '0') +
+      '</div>' +
+      '<div class="sn-home-status-sub">Session mined ' +
+      esc(
+        rep && rep.sessionMined != null
+          ? Number(rep.sessionMined).toFixed(4) + ' S'
+          : '0 S'
+      ) +
+      ' · peers ~' +
+      esc(rep && rep.meshPeers != null ? rep.meshPeers : 1) +
       '</div></div>' +
-      '<div class="sn-home-section">Device resource donation</div>' +
-      '<p class="sn-home-hint">Pick how this hardware donates spare capacity to the mesh. One role per device. Swap roles when you hot-swap machines.</p>' +
+      '<div class="sn-home-section">Device roles · this machine</div>' +
+      '<p class="sn-home-hint">Assign how THIS hardware serves the mesh. Open Astranov on each device and pick its role.</p>' +
       roleCard(
         'main',
-        'Main device',
-        'Primary daily machine. Conservative harvest of spare CPU/RAM/bandwidth. Keeps the UI smooth. Mesh on, low thermal stress.',
+        'Main device · PRIMARY',
+        'Daily phone or PC. Conservative spare CPU/RAM/BW harvest. Keeps UI smooth. You carry this one.',
         role === 'main'
       ) +
       roleCard(
         'secondary',
-        'Secondary device',
-        'Hot-swap / monitor unit. Low harvest to protect battery. Best when tab is idle or screen off. Ready for you to swap roles when this becomes main.',
+        'Hot-swap · SECONDARY',
+        'Spare / monitor unit. Low harvest to protect battery. Ready to become Main when you swap.',
         role === 'secondary'
       ) +
       roleCard(
         'raid',
-        'RAID device',
-        'Inexpensive array node for heavy harvest — always below TJ max (thermal junction ceiling ~92%). Mesh donate worker aggressive, never full throttle.',
+        'RAID array · HOME MINER',
+        'Always-on cheap box at home. Aggressive harvest under TJ max ~92%. Part of your RAID fleet that funds the mesh in S.',
         role === 'raid'
       ) +
-      '<div class="sn-home-section">Mesh</div>' +
+      '<div class="sn-home-section">Your device fleet</div>' +
+      fleetHtml() +
+      '<div class="sn-home-name-row">' +
+      '<input id="sn-home-devname" class="sn-home-input" maxlength="40" placeholder="Name this device (e.g. Living-room RAID)" />' +
+      '<button type="button" class="sn-home-btn sn-home-btn-sm" data-act="name-device">Save name</button>' +
+      '</div>' +
+      '<div class="sn-home-section">SETI mesh · mine in S</div>' +
+      '<p class="sn-home-hint">Spare CPU (Web Worker) · RAM · storage · bandwidth when idle — SETI-style donation. Rewards in S. Users power users.</p>' +
       '<button type="button" class="sn-home-btn" data-act="mine-on">Mine on · accept terms if needed</button>' +
       '<button type="button" class="sn-home-btn" data-act="mine-off">Mine off</button>' +
-      '<button type="button" class="sn-home-btn" data-act="resources">Refresh resource status</button>' +
+      '<button type="button" class="sn-home-btn" data-act="resources">Refresh mesh status</button>' +
+      '<button type="button" class="sn-home-btn" data-act="finance">Open S finance panel</button>' +
+      '<div class="sn-home-section">Topo routing engine</div>' +
+      '<div class="sn-home-status">' +
+      '<div class="sn-home-status-line">Polygon · multi-stop OSRM streets</div>' +
+      '<div class="sn-home-status-sub">' +
+      esc(condLine) +
+      '</div>' +
+      '<div class="sn-home-status-sub">Combines tasks · traffic hour curve · weather hints · channel jobs</div></div>' +
+      '<button type="button" class="sn-home-btn" data-act="routes">Refresh live routes on radar</button>' +
+      '<button type="button" class="sn-home-btn" data-act="global">Back to GLOBAL Earth</button>' +
       '<div class="sn-home-section">Danger</div>' +
       '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset this device</button>' +
-      '<p class="sn-home-hint">Login / profile = ribbon 👤. Map tools = ➕ and Layers only. No junk menus here.</p>' +
+      '<p class="sn-home-hint">Login = ribbon User. Map tools = Add / Layers. Channels = type channels. This hub = weird science only.</p>' +
       '</div></div>'
     );
   }
@@ -121,34 +209,48 @@
     st.id = 'sn-home-css';
     st.textContent =
       '#sn-home-menu{position:fixed;inset:0;z-index:95;display:none;align-items:flex-start;justify-content:center;' +
-      'padding:56px 12px 24px;background:rgba(0,0,0,.55);pointer-events:auto}' +
+      'padding:56px 12px 24px;background:rgba(0,4,12,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}' +
       '#sn-home-menu.open{display:flex}' +
-      '#sn-home-menu .sn-home-card{width:min(400px,100%);max-height:min(82vh,720px);overflow:auto;border-radius:12px;' +
-      'background:rgba(0,8,18,.97);border:1px solid rgba(61,158,255,.5);' +
-      'box-shadow:0 12px 40px rgba(0,0,0,.75),0 0 28px rgba(26,111,212,.25);color:#e0f0ff}' +
-      '#sn-home-menu .sn-home-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;' +
-      'border-bottom:1px solid rgba(26,111,212,.35);font:700 12px ui-monospace,monospace;letter-spacing:.06em;color:#3d9eff;' +
-      'text-shadow:0 0 12px rgba(61,158,255,.55)}' +
+      '#sn-home-menu .sn-home-card{width:min(420px,100%);max-height:min(86vh,780px);overflow:auto;border-radius:16px;' +
+      'background:linear-gradient(165deg,rgba(4,18,40,.98),rgba(1,6,16,.99));border:1px solid rgba(76,201,255,.45);' +
+      'box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 40px rgba(11,111,212,.28);color:#e0f0ff}' +
+      '#sn-home-menu .sn-home-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;' +
+      'border-bottom:1px solid rgba(26,111,212,.35);font:700 11px Orbitron,ui-monospace,monospace;letter-spacing:.14em;color:#4cc9ff;' +
+      'text-shadow:0 0 14px rgba(76,201,255,.55)}' +
       '#sn-home-menu .sn-home-x{border:0;background:transparent;color:#7a9ab8;font-size:22px;cursor:pointer;line-height:1}' +
-      '#sn-home-menu .sn-home-body{padding:10px 14px 18px}' +
-      '#sn-home-menu .sn-home-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font:12px ui-monospace,monospace}' +
+      '#sn-home-menu .sn-home-body{padding:10px 14px 20px}' +
+      '#sn-home-menu .sn-home-mission{font:500 12px/1.45 Rajdhani,system-ui,sans-serif;color:#8ab4d0;margin:0 0 12px}' +
+      '#sn-home-menu .sn-home-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font:12px JetBrains Mono,ui-monospace,monospace}' +
       '#sn-home-menu .sn-home-row span{color:#5a7a9a}' +
-      '#sn-home-menu .sn-home-row code{color:#9ec8ff;text-align:right}' +
-      '#sn-home-menu .sn-home-status{margin:8px 0 12px;padding:10px;border-radius:8px;background:rgba(0,16,36,.85);border:1px solid rgba(26,111,212,.35)}' +
-      '#sn-home-menu .sn-home-status-line{font:600 12px/1.4 ui-monospace,monospace;color:#e0f0ff}' +
-      '#sn-home-menu .sn-home-status-sub{font:11px ui-monospace,monospace;color:#7a9ab8;margin-top:4px}' +
-      '#sn-home-menu .sn-home-section{margin:14px 0 8px;font:700 10px ui-monospace,monospace;letter-spacing:.1em;color:#3d9eff;text-transform:uppercase}' +
-      '#sn-home-menu .sn-home-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;margin:0 0 8px;padding:12px;' +
-      'border-radius:10px;cursor:pointer;text-align:left;border:1px solid rgba(26,111,212,.3);background:rgba(0,12,28,.9);color:#e0f0ff}' +
-      '#sn-home-menu .sn-home-role:hover{border-color:rgba(61,158,255,.55);box-shadow:0 0 12px rgba(26,111,212,.2)}' +
-      '#sn-home-menu .sn-home-role.on{border-color:#3d9eff;background:rgba(26,111,212,.18);box-shadow:0 0 18px rgba(61,158,255,.3)}' +
-      '#sn-home-menu .sn-home-role-t{font:700 13px system-ui;color:#e8f4ff}' +
-      '#sn-home-menu .sn-home-role-d{font:11px/1.4 system-ui;color:#7a9ab8}' +
-      '#sn-home-menu .sn-home-btn{display:block;width:100%;margin:6px 0;padding:10px 12px;border-radius:10px;' +
-      'border:1px solid rgba(26,111,212,.4);background:rgba(0,16,36,.9);color:#e0f0ff;font:600 13px system-ui;cursor:pointer;text-align:left}' +
-      '#sn-home-menu .sn-home-btn:hover{border-color:#3d9eff;box-shadow:0 0 12px rgba(26,111,212,.25)}' +
+      '#sn-home-menu .sn-home-row code{color:#9ec8ff;text-align:right;font-size:10px}' +
+      '#sn-home-menu .sn-home-status{margin:8px 0 12px;padding:12px;border-radius:12px;background:rgba(0,16,36,.85);border:1px solid rgba(61,184,255,.32);' +
+      'box-shadow:inset 0 0 20px rgba(11,111,212,.08)}' +
+      '#sn-home-menu .sn-home-status-line{font:600 12px/1.4 JetBrains Mono,ui-monospace,monospace;color:#e0f0ff}' +
+      '#sn-home-menu .sn-home-status-sub{font:11px JetBrains Mono,ui-monospace,monospace;color:#7a9ab8;margin-top:4px}' +
+      '#sn-home-menu .sn-home-section{margin:16px 0 8px;font:700 10px Orbitron,ui-monospace,monospace;letter-spacing:.14em;color:#4cc9ff;text-transform:uppercase}' +
+      '#sn-home-menu .sn-home-role{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;margin:0 0 8px;padding:12px 14px;' +
+      'border-radius:12px;cursor:pointer;text-align:left;border:1px solid rgba(26,111,212,.32);' +
+      'background:linear-gradient(165deg,rgba(8,28,56,.75),rgba(2,10,24,.9));color:#e0f0ff;transition:border-color .15s,box-shadow .15s}' +
+      '#sn-home-menu .sn-home-role:hover{border-color:rgba(76,201,255,.55);box-shadow:0 0 16px rgba(26,111,212,.25)}' +
+      '#sn-home-menu .sn-home-role.on{border-color:#4cc9ff;background:linear-gradient(165deg,rgba(20,70,130,.45),rgba(6,24,52,.92));box-shadow:0 0 22px rgba(61,184,255,.35)}' +
+      '#sn-home-menu .sn-home-role-t{font:700 13px Rajdhani,system-ui;color:#e8f4ff;letter-spacing:.04em}' +
+      '#sn-home-menu .sn-home-role-d{font:500 12px/1.4 Rajdhani,system-ui;color:#7a9ab8}' +
+      '#sn-home-menu .sn-home-fleet-sum{font:600 11px JetBrains Mono,monospace;color:#4cc9ff;margin:0 0 8px}' +
+      '#sn-home-menu .sn-home-fleet-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(26,111,212,.18)}' +
+      '#sn-home-menu .sn-home-fleet-role{font:700 9px Orbitron,monospace;letter-spacing:.08em;padding:3px 7px;border-radius:6px;border:1px solid rgba(61,184,255,.4);color:#4cc9ff}' +
+      '#sn-home-menu .sn-home-fleet-role.raid{border-color:rgba(0,232,160,.45);color:#00e8a0}' +
+      '#sn-home-menu .sn-home-fleet-role.secondary{border-color:rgba(255,200,87,.4);color:#ffc857}' +
+      '#sn-home-menu .sn-home-fleet-name{font:600 12px Rajdhani,system-ui;color:#e8f4ff;flex:1;min-width:80px}' +
+      '#sn-home-menu .sn-home-fleet-meta{font:10px JetBrains Mono,monospace;color:#6a8aaa;width:100%}' +
+      '#sn-home-menu .sn-home-name-row{display:flex;gap:6px;margin:8px 0 4px}' +
+      '#sn-home-menu .sn-home-input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(61,184,255,.3);' +
+      'background:rgba(0,12,28,.9);color:#e0f0ff;font:600 12px Rajdhani,system-ui}' +
+      '#sn-home-menu .sn-home-btn{display:block;width:100%;margin:6px 0;padding:11px 12px;border-radius:10px;' +
+      'border:1px solid rgba(26,111,212,.4);background:rgba(0,16,36,.9);color:#e0f0ff;font:600 13px Rajdhani,system-ui;cursor:pointer;text-align:left;letter-spacing:.03em}' +
+      '#sn-home-menu .sn-home-btn:hover{border-color:#4cc9ff;box-shadow:0 0 14px rgba(26,111,212,.28)}' +
+      '#sn-home-menu .sn-home-btn-sm{width:auto;flex-shrink:0;margin:0;padding:10px 12px}' +
       '#sn-home-menu .sn-home-btn.danger{border-color:rgba(255,107,122,.4);color:#ff9aa5;background:rgba(80,20,28,.25)}' +
-      '#sn-home-menu .sn-home-hint{font:11px/1.45 system-ui;color:#5a7a9a;margin:8px 0 10px}';
+      '#sn-home-menu .sn-home-hint{font:500 11px/1.45 Rajdhani,system-ui;color:#5a7a9a;margin:8px 0 10px}';
     document.head.appendChild(st);
   }
 
@@ -185,6 +287,15 @@
             global.SNResources.setDeviceRole(id);
             if (global.SNResources.setMining) global.SNResources.setMining(true);
             if (global.SNResources.setDonate) global.SNResources.setDonate(true);
+            if (global.SNResources.touchFleet) global.SNResources.touchFleet();
+          }
+          if (global.SNCli && SNCli.log) {
+            SNCli.log(
+              'Device role · ' +
+                id +
+                (id === 'raid' ? ' · home RAID miner under TJ max' : id === 'secondary' ? ' · hot-swap' : ' · primary'),
+              'ok'
+            );
           }
         } catch (err) {
           console.error('[SNHome] role', err);
@@ -208,6 +319,9 @@
 
   function openMenu() {
     var el = ensure();
+    try {
+      if (global.SNResources && SNResources.touchFleet) SNResources.touchFleet();
+    } catch (_) {}
     paint();
     el.classList.add('open');
     el.setAttribute('aria-hidden', 'false');
@@ -233,7 +347,7 @@
 
   function hardReset() {
     var ok = global.confirm(
-      'Hard reset Astranov on this device?\n\nClears local profiles, cart, places, usage, device role, and chat position.\nDoes not sign you out of Google unless you sign out separately.'
+      'Hard reset Astranov on this device?\n\nClears local profiles, cart, places, usage, device role, fleet slot, and chat position.\nDoes not sign you out of Google unless you sign out separately.'
     );
     if (!ok) return;
     var keys = [];
@@ -275,6 +389,47 @@
       return;
     }
     if (name === 'resources') {
+      try {
+        if (global.SNResources && SNResources.touchFleet) SNResources.touchFleet();
+        if (global.SNCli && SNCli.run) await SNCli.run('resources');
+      } catch (_) {}
+      paint();
+      return;
+    }
+    if (name === 'finance') {
+      try {
+        if (global.SNField && SNField.openFinance) SNField.openFinance('mining');
+      } catch (_) {}
+      close();
+      return;
+    }
+    if (name === 'routes') {
+      try {
+        if (global.SNField && SNField.refreshRoutes) await SNField.refreshRoutes(true);
+        if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
+        if (global.SNCli && SNCli.log) SNCli.log('Routes refreshed · radar expanded', 'ok');
+      } catch (_) {}
+      return;
+    }
+    if (name === 'global') {
+      try {
+        if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+        else if (global.SNCli && SNCli.run) await SNCli.run('global');
+      } catch (_) {}
+      close();
+      return;
+    }
+    if (name === 'name-device') {
+      var inp = $('sn-home-devname');
+      var label = inp && inp.value ? inp.value.trim() : '';
+      if (!label) {
+        if (global.SNCli && SNCli.log) SNCli.log('Type a device name first', 'dim');
+        return;
+      }
+      try {
+        if (global.SNResources && SNResources.registerName) SNResources.registerName(label);
+        if (global.SNCli && SNCli.log) SNCli.log('Device named · ' + label, 'ok');
+      } catch (_) {}
       paint();
       return;
     }
@@ -284,7 +439,6 @@
     }
   }
 
-  /** Ambassador support queue (kept for CLI commands · not in home UI) */
   function supportList() {
     try {
       var raw = JSON.parse(localStorage.getItem(SUPPORT_KEY) || '[]');
@@ -348,7 +502,7 @@
         if (e) e.preventDefault();
         toggle();
       };
-      btn.title = 'ASTRANOV · technical · device harvest roles';
+      btn.title = 'ASTRANOV · science hub · device roles · RAID · mesh · routing';
       if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     var logo = $('astranov-logo');

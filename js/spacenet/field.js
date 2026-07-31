@@ -662,9 +662,10 @@
   }
 
   function tickMine(dt) {
+    noteFrame();
     if (!mine.on || !mine.terms) {
       mine.rate = 0;
-      stopMineWorker();
+      if (!mine.on) stopMineWorker();
       return;
     }
     var prof = roleProfile();
@@ -678,7 +679,7 @@
     // Stop if approaching role load cap (protect battery / TJ)
     if (load > (prof.loadCap != null ? prof.loadCap : 0.85)) {
       mine.rate = 0;
-      mine.rates.cpu = 0;
+      mine.rates.cpu = Math.round(load * 100);
       return;
     }
     var budget = Math.max(0.02, 1 - load) * (prof.harvest || 0.3);
@@ -715,6 +716,17 @@
     } else {
       mine.meshPeers = 1;
     }
+    // Fleet RAID array multiplies when this node is raid and other raid peers registered
+    try {
+      var fleet = loadFleet();
+      var raidN = fleet.filter(function (d) {
+        return d.role === 'raid' && d.id !== deviceId();
+      }).length;
+      if (mine.deviceRole === 'raid' && raidN > 0) {
+        mine.rate *= 1 + Math.min(0.6, raidN * 0.12);
+        mine.meshPeers = Math.min(99, mine.meshPeers + raidN);
+      }
+    } catch (_) {}
     try {
       var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
       if (me && me.roles && me.roles.ambassador && me.ambassadorOnline !== false) {
@@ -723,9 +735,120 @@
     } catch (e) {}
     if (mine.rate > 0) {
       var earn = mine.rate * (dt / 3600000);
+      // Floor so HUD doesn't show 0 forever on short ticks
+      if (earn < 1e-9) earn = mine.rate / 3600;
       mine.session += earn;
-      g.SNCurrency && SNCurrency.creditMined(earn);
+      if (g.SNCurrency && SNCurrency.creditMined) SNCurrency.creditMined(earn);
+      try {
+        localStorage.setItem('sn:mine-session-v1', String(mine.session));
+      } catch (_) {}
     }
+    touchFleetHeartbeat();
+  }
+
+  var FLEET_KEY = 'sn:device-fleet-v1';
+
+  function deviceId() {
+    try {
+      var id = localStorage.getItem('sn:device-id-v1');
+      if (id) return id;
+      id = 'dev_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem('sn:device-id-v1', id);
+      return id;
+    } catch (_) {
+      return 'dev_local';
+    }
+  }
+
+  function loadFleet() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(FLEET_KEY) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveFleet(list) {
+    try {
+      localStorage.setItem(FLEET_KEY, JSON.stringify(list.slice(0, 24)));
+    } catch (_) {}
+  }
+
+  function touchFleetHeartbeat() {
+    var id = deviceId();
+    var list = loadFleet();
+    var name = 'This device';
+    try {
+      name =
+        (navigator.userAgentData && navigator.userAgentData.platform) ||
+        (navigator.platform || 'Device') +
+          ' · ' +
+          (navigator.hardwareConcurrency || '?') +
+          'c';
+    } catch (_) {}
+    var row = {
+      id: id,
+      name: name,
+      role: mine.deviceRole,
+      mining: !!(mine.on && mine.terms),
+      donate: !!mine.donate,
+      rate: mine.rate,
+      cores: navigator.hardwareConcurrency || 4,
+      mem: navigator.deviceMemory || null,
+      t: Date.now(),
+    };
+    var ix = list.findIndex(function (d) {
+      return d.id === id;
+    });
+    if (ix >= 0) list[ix] = row;
+    else list.unshift(row);
+    // Drop stale (> 7 days)
+    var cut = Date.now() - 7 * 864e5;
+    list = list.filter(function (d) {
+      return d.t > cut;
+    });
+    saveFleet(list);
+    return list;
+  }
+
+  function registerFleetName(label) {
+    var list = touchFleetHeartbeat();
+    var id = deviceId();
+    list.forEach(function (d) {
+      if (d.id === id) d.name = String(label || d.name).slice(0, 40);
+    });
+    saveFleet(list);
+    return list.find(function (d) {
+      return d.id === id;
+    });
+  }
+
+  function fleetSummary() {
+    var list = loadFleet();
+    var primary = list.filter(function (d) {
+      return d.role === 'main';
+    });
+    var hot = list.filter(function (d) {
+      return d.role === 'secondary';
+    });
+    var raid = list.filter(function (d) {
+      return d.role === 'raid';
+    });
+    return {
+      devices: list,
+      primary: primary,
+      hotswap: hot,
+      raid: raid,
+      line:
+        list.length +
+        ' devices · main ' +
+        primary.length +
+        ' · hot-swap ' +
+        hot.length +
+        ' · RAID ' +
+        raid.length,
+    };
   }
 
   function radarSizePx() {
@@ -1342,26 +1465,63 @@
   }
 
   /**
-   * OSRM driving geometry + distance/duration when available.
-   * Returns { points, km, durationS, speedKmh } or throws.
+   * Traffic + weather multipliers for ETA (universal activities — not only food).
+   * Uses local hour congestion + optional mesh weather hint.
    */
-  async function fetchOsrmRoute(aLat, aLng, bLat, bLng) {
+  function routeConditionFactors() {
+    var hour = new Date().getHours();
+    // Urban congestion curve (0–1 extra load)
+    var traffic =
+      hour >= 7 && hour <= 9
+        ? 0.38
+        : hour >= 16 && hour <= 19
+          ? 0.42
+          : hour >= 12 && hour <= 14
+            ? 0.18
+            : hour >= 22 || hour <= 5
+              ? -0.12
+              : 0.08;
+    var weather = 0;
+    try {
+      var w = g._snWeatherHint;
+      if (w && typeof w === 'object') {
+        if (w.rain) weather += 0.15;
+        if (w.wind && w.wind > 40) weather += 0.08;
+        if (w.snow) weather += 0.25;
+      }
+    } catch (_) {}
+    // Role harvest doesn't affect road ETA
+    return {
+      traffic: traffic,
+      weather: weather,
+      mult: Math.max(0.75, 1 + traffic + weather),
+    };
+  }
+
+  /**
+   * OSRM driving geometry for 2+ waypoints. Real streets.
+   * Returns { points, km, durationS, speedKmh, conditions }
+   */
+  async function fetchOsrmRouteMulti(waypoints) {
+    var pts = (waypoints || []).filter(function (p) {
+      return p && isFinite(p.lat) && isFinite(p.lng);
+    });
+    if (pts.length < 2) throw new Error('need 2 points');
+    var path = pts
+      .map(function (p) {
+        return Number(p.lng) + ',' + Number(p.lat);
+      })
+      .join(';');
     var url =
       'https://router.project-osrm.org/route/v1/driving/' +
-      Number(aLng) +
-      ',' +
-      Number(aLat) +
-      ';' +
-      Number(bLng) +
-      ',' +
-      Number(bLat) +
-      '?overview=full&geometries=geojson';
+      path +
+      '?overview=full&geometries=geojson&steps=false';
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var to = setTimeout(function () {
       try {
         if (ctrl) ctrl.abort();
       } catch (_) {}
-    }, 8000);
+    }, 10000);
     try {
       var res = await fetch(url, {
         signal: ctrl ? ctrl.signal : undefined,
@@ -1377,11 +1537,30 @@
       });
       var km = rt.distance != null ? Number(rt.distance) / 1000 : pathLengthKm(points);
       var durationS = rt.duration != null ? Number(rt.duration) : (km / 28) * 3600;
+      var cond = routeConditionFactors();
+      durationS = durationS * cond.mult;
       var speedKmh = durationS > 0 ? (km / durationS) * 3600 : 28;
-      return { points: points, km: km, durationS: durationS, speedKmh: speedKmh };
+      return {
+        points: points,
+        km: km,
+        durationS: durationS,
+        speedKmh: speedKmh,
+        conditions: cond,
+      };
     } finally {
       clearTimeout(to);
     }
+  }
+
+  /**
+   * OSRM driving geometry + distance/duration when available.
+   * Returns { points, km, durationS, speedKmh } or throws.
+   */
+  async function fetchOsrmRoute(aLat, aLng, bLat, bLng) {
+    return fetchOsrmRouteMulti([
+      { lat: aLat, lng: aLng },
+      { lat: bLat, lng: bLng },
+    ]);
   }
 
   /**
@@ -1474,55 +1653,83 @@
     return routes;
   }
 
-  /** Public: set a route from waypoints (lat/lng array or OSRM fetch between first/last) */
+  /** Public: set a route from waypoints — multi-stop OSRM streets + traffic/weather ETA */
   async function showRoute(waypoints, opts) {
     opts = opts || {};
     var pts = [];
     var km = 0;
     var durationS = 0;
     var speedKmh = opts.speedKmh || 28;
+    var cond = null;
     if (Array.isArray(waypoints) && waypoints.length >= 2) {
-      if (waypoints[0].lat != null && waypoints.length > 2 && !opts.osrm) {
-        pts = waypoints.map(function (w) {
-          return { lat: Number(w.lat), lng: Number(w.lng) };
-        });
-        km = pathLengthKm(pts);
-        durationS = opts.durationS != null ? opts.durationS : (km / speedKmh) * 3600;
-      } else {
-        var a = waypoints[0];
-        var b = waypoints[waypoints.length - 1];
+      var wantOsrm = opts.osrm !== false;
+      if (wantOsrm) {
         try {
-          var meta = await fetchOsrmRoute(a.lat, a.lng, b.lat, b.lng);
+          var meta = await fetchOsrmRouteMulti(waypoints);
           pts = meta.points;
           km = meta.km;
           durationS = meta.durationS;
           speedKmh = meta.speedKmh;
+          cond = meta.conditions;
         } catch (_) {
-          pts = straightRoute(a.lat, a.lng, b.lat, b.lng, 16);
-          km = pathLengthKm(pts);
-          durationS = (km / speedKmh) * 3600;
+          wantOsrm = false;
         }
+      }
+      if (!wantOsrm || pts.length < 2) {
+        if (waypoints.length > 2) {
+          // stitch straight segments for multi-stop fallback
+          pts = [];
+          for (var wi = 0; wi < waypoints.length - 1; wi++) {
+            var seg = straightRoute(
+              waypoints[wi].lat,
+              waypoints[wi].lng,
+              waypoints[wi + 1].lat,
+              waypoints[wi + 1].lng,
+              10
+            );
+            if (wi > 0) seg = seg.slice(1);
+            pts = pts.concat(seg);
+          }
+        } else {
+          pts = straightRoute(
+            waypoints[0].lat,
+            waypoints[0].lng,
+            waypoints[waypoints.length - 1].lat,
+            waypoints[waypoints.length - 1].lng,
+            16
+          );
+        }
+        km = pathLengthKm(pts);
+        cond = routeConditionFactors();
+        durationS = ((km / speedKmh) * 3600) * cond.mult;
+        speedKmh = durationS > 0 ? (km / durationS) * 3600 : speedKmh;
       }
     }
     if (pts.length < 2) return null;
     var eta = fmtEta(durationS);
     var baseLabel = opts.label || 'Route';
+    var condBit =
+      cond && (cond.traffic > 0.2 || cond.weather > 0)
+        ? ' · traf+' + Math.round(cond.traffic * 100) + '%'
+        : '';
     var row = {
       id: opts.id || 'route_' + Date.now().toString(36),
       points: pts,
       color: opts.color || ROUTE_COLORS[0],
-      label: baseLabel + ' · ' + eta + ' · ' + Math.round(speedKmh) + 'km/h',
+      label: baseLabel + ' · ' + eta + ' · ' + Math.round(speedKmh) + 'km/h' + condBit,
       kind: opts.kind || 'custom',
       km: km,
       durationS: durationS,
       speedKmh: speedKmh,
       eta: eta,
+      conditions: cond,
       progress: opts.progress != null ? opts.progress : 0,
       driver: opts.driver || null,
       vendorLat: opts.vendorLat,
       vendorLng: opts.vendorLng,
       dropLat: opts.dropLat,
       dropLng: opts.dropLng,
+      stops: opts.stops || [],
     };
     routes = routes.filter(function (r) {
       return r.id !== row.id;
@@ -1934,12 +2141,17 @@
   function acceptTerms() {
     try {
       localStorage.setItem('astranov:spacenet-miner-v2', String(Date.now()));
+      localStorage.setItem('astranov_donate_compute', '1');
+      localStorage.setItem('sn:mine-on-v1', '1');
     } catch (e) {}
     mine.terms = true;
     mine.on = true;
+    mine.donate = true;
+    ensureMineWorker();
+    touchFleetHeartbeat();
     var m = $('sn-miner-terms');
     if (m) m.hidden = true;
-    g.SNCli && SNCli.log('Mesh on · mining S', 'ok');
+    g.SNCli && SNCli.log('Mesh on · SETI donate · mining S', 'ok');
     setTask('mine');
     paint();
   }
@@ -2001,6 +2213,7 @@
 
   function report() {
     var prof = roleProfile();
+    var fleet = fleetSummary();
     return {
       fps: mine.fps,
       spareScore: mine.spare,
@@ -2013,6 +2226,8 @@
       roleLabel: prof.label,
       harvest: prof.harvest,
       tjMax: prof.tjMax != null ? prof.tjMax : null,
+      deviceId: deviceId(),
+      fleet: fleet,
       line:
         (prof.label || 'Device') +
         ' · FPS ~' +
@@ -2021,7 +2236,7 @@
         mine.spare +
         '%' +
         (mine.donate ? ' · mesh' : '') +
-        (mine.on ? ' · ' + mine.rate.toFixed(3) + ' S/h' : ' · mine off'),
+        (mine.on && mine.terms ? ' · ' + mine.rate.toFixed(3) + ' S/h' : ' · mine off'),
       workerOps: mine.workerOps,
       meshPeers: mine.meshPeers || 1,
     };
@@ -2032,10 +2247,17 @@
     init.done = true;
     try {
       mine.terms = !!localStorage.getItem('astranov:spacenet-miner-v2');
-      mine.on = mine.terms;
-      mine.donate = localStorage.getItem('astranov_donate_compute') === '1';
+      var wantMine = localStorage.getItem('sn:mine-on-v1');
+      mine.on = mine.terms && wantMine !== '0';
+      mine.donate =
+        localStorage.getItem('astranov_donate_compute') === '1' ||
+        mine.terms;
       loadDeviceRole();
+      var sess = parseFloat(localStorage.getItem('sn:mine-session-v1') || '0');
+      if (isFinite(sess) && sess > 0) mine.session = sess;
     } catch (e) {}
+    if (mine.on && mine.terms && mine.donate) ensureMineWorker();
+    touchFleetHeartbeat();
     paint();
     refreshBlips();
     bindRadarTap();
@@ -2175,8 +2397,12 @@
         return false;
       }
       mine.on = !!on;
+      try {
+        localStorage.setItem('sn:mine-on-v1', on ? '1' : '0');
+      } catch (_) {}
       if (!on) stopMineWorker();
       else if (mine.donate) ensureMineWorker();
+      touchFleetHeartbeat();
       paint();
       return true;
     },
@@ -2191,11 +2417,15 @@
           showTerms();
         } else {
           mine.on = true;
+          try {
+            localStorage.setItem('sn:mine-on-v1', '1');
+          } catch (_) {}
           ensureMineWorker();
         }
       } else {
         stopMineWorker();
       }
+      touchFleetHeartbeat();
       paint();
     },
     setDeviceRole: setDeviceRole,
@@ -2203,6 +2433,13 @@
       return mine.deviceRole;
     },
     deviceRoles: DEVICE_ROLES,
+    deviceId: deviceId,
+    fleet: fleetSummary,
+    registerName: registerFleetName,
+    touchFleet: touchFleetHeartbeat,
+    noteFrame: noteFrame,
+    routeConditions: routeConditionFactors,
+    fetchOsrmMulti: fetchOsrmRouteMulti,
     get mining() {
       return mine.on && mine.terms;
     },
