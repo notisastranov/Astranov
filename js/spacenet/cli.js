@@ -128,51 +128,9 @@
     return wrap;
   }
 
-  /** Tile card in feed order (not a strip) */
-  function appendTilePost(meta) {
-    const box = feedBox();
-    if (!box || !meta || !meta.id) return null;
-    const id = String(meta.id);
-    const wrap = document.createElement('div');
-    wrap.className = 'cli-feed-item cli-tile-block';
-    wrap.dataset.tileId = id;
-    const title = String(meta.title || id).slice(0, 48);
-    const emoji = meta.emoji || (meta.kind === 'task' ? '📦' : meta.kind === 'me' ? '👤' : '▣');
-    const price = meta.priceLabel ? String(meta.priceLabel) : '';
-    const search = title + ' ' + (meta.kind || '') + ' ' + price + ' ' + (meta.extraSearch || '');
-    wrap.setAttribute('data-search', search);
-    function esc(s) {
-      return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/"/g, '&quot;');
-    }
-    wrap.innerHTML =
-      '<button type="button" class="cli-tile-head">' +
-      '<span class="e" aria-hidden="true">' +
-      esc(emoji) +
-      '</span>' +
-      '<span class="t">' +
-      esc(title) +
-      '</span>' +
-      (price ? '<span class="s">' + esc(price) + '</span>' : '') +
-      '<span class="h">tile · tap</span></button>' +
-      '<div class="cli-tile-body"></div>';
-    if (feedFilter) {
-      wrap.classList.toggle('match', search.toLowerCase().indexOf(feedFilter) >= 0);
-    }
-    box.appendChild(wrap);
-    trimFeed(box);
-    scrollFeedToEnd(box);
-    const head = wrap.querySelector('.cli-tile-head');
-    if (head) {
-      head.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (global.SNTile?.openFromFeed) SNTile.openFromFeed(id, wrap);
-      });
-    }
-    return wrap;
+  /** Dead API — tiles never inject into CLI (map multi-tile only) */
+  function appendTilePost() {
+    return null;
   }
 
   function preview(text) {
@@ -201,8 +159,8 @@
     log('SYS   login · clear · verify · help', 'dim');
     log('FREE  free mind · teach Q => A · free export  (own AI · no paid xAI)', 'ok');
     log('TASK  task list · task open · task fit · task map · advise · claim · deliver', 'ok');
-    log('FEED  scroll up/down · type / or ? + words to search history', 'ok');
-    log('TILE  appear in this feed · tap expand menu/order · tap out to minimize', 'dim');
+    log('FEED  scroll up/down · type / or ? to search text history', 'ok');
+    log('TILE  multi-tile on map · tap map target · not CLI buttons', 'dim');
     preview('scroll feed · /search · talk');
   }
 
@@ -722,18 +680,17 @@
           await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: false });
         }
         const list = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
-        if (global.SNTile?.offerMany) SNTile.offerMany(list.slice(0, 16));
         list.slice(0, 12).forEach((v) => {
-          log('🏪 ' + (v.shopName || v.name) + ' · ' + (v.menu?.length || 0) + ' items · tap chip', 'ok');
+          log('🏪 ' + (v.shopName || v.name) + ' · ' + (v.menu?.length || 0) + ' items', 'ok');
         });
         const first = list[0];
         if (first) {
           global.SNMap?.showProfiles?.();
           global.SNTile?.open?.(first, { tab: 'menu' });
         } else {
-          log('No vendors · shops or long-press map · menu is inside the tile', 'dim');
+          log('No vendors · shops or long-press map · multi-tile on map', 'dim');
         }
-        preview((list.length || 0) + ' vendor tiles · Menu tab');
+        preview((list.length || 0) + ' vendors · multi-tile on map');
         return;
       }
       if (low === 'drivers' || low === 'driver') {
@@ -2109,8 +2066,12 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     feedBox();
-    log('Feed ready · scroll · /search · first delivery · donate on', 'dim');
+    log('CLI text feed · scroll · /search · multi-tile on map only', 'dim');
     preview('Talk · first delivery · donate on');
+    // Purge any leftover button-tiles from old builds
+    try {
+      document.querySelectorAll('#cli-log .cli-tile-block').forEach((el) => el.remove());
+    } catch (_) {}
     warmVoices();
     // If AI already loaded (race), ensure presence
     setTimeout(() => {

@@ -236,7 +236,7 @@
       return listed;
     }
     try {
-      if (global.SNTile && SNTile.offer) SNTile.offer(listed.profile || global.SNProfiles.me());
+      global.SNMap?.showProfiles?.();
     } catch (_) {}
     say('Shop live: ' + listed.shop + ' · menu…', 'ok');
     var menu = addMenuItem(item, price);
@@ -275,7 +275,7 @@
       try {
         if (ord.task && global.SNTaskBoard && SNTaskBoard.enrich && global.SNTile) {
           var en = SNTaskBoard.enrich(ord.task);
-          if (en) SNTile.offer(en);
+          if (en) SNTile.openTask(en);
         } else if (global.SNTile && SNTile.openMe) {
           SNTile.openMe('cart');
         }

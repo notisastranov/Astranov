@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260730470000-fast-shell-mesh-first" />
-<meta name="astranov-continuity" content="20260730470000-fast-shell-mesh-first" />
+<meta name="astranov-build" content="20260730480000-cli-text-tiles-map" />
+<meta name="astranov-continuity" content="20260730480000-cli-text-tiles-map" />
 <meta name="astranov-ip" content="(c) Astranov SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet AI. Astranov is the Architect of SpaceNet. Auth brand astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=SpaceNet. Astranov=Architect of SpaceNet. Google must not show supabase project id." />
@@ -233,8 +233,8 @@
   #panel.mid { max-height: 28vh; }
   #panel.expanded { max-height: 33.333vh; }
   #panel.collapsed #cli-log { display: none; }
-  /* Kill any leftover strip chrome */
-  #cli-tile-strip, #cli-tile-expand, .cli-chip { display: none !important; }
+  /* CLI is text-only — kill strip / button-tile experiments */
+  #cli-tile-strip, #cli-tile-expand, .cli-chip, .cli-tile-block { display: none !important; }
   #cli-drag {
     cursor: grab; padding: 10px 12px 6px; border-bottom: 1px solid rgba(26,111,212,0.25);
     user-select: none; touch-action: none; flex-shrink: 0;
@@ -272,27 +272,6 @@
   .cli-line .cli-feed-meta {
     display: block; font: 600 10px system-ui; color: #5a8aaa; margin-bottom: 4px; letter-spacing: 0.04em;
   }
-  /* Tile posts in feed order (not a strip) */
-  .cli-tile-block {
-    margin: 0; border: 1px solid rgba(61,158,255,0.35); border-radius: 14px;
-    background: rgba(0,10,24,0.82); overflow: hidden;
-  }
-  .cli-tile-block.expanded {
-    border-color: rgba(61,158,255,0.7);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.35), 0 0 16px rgba(26,111,212,0.2);
-  }
-  .cli-tile-head {
-    display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
-    border: 0; background: transparent; color: #d0e8ff; padding: 10px 12px;
-    font: 600 13px system-ui, sans-serif; cursor: pointer; touch-action: manipulation;
-  }
-  .cli-tile-head:hover { background: rgba(26,111,212,0.16); }
-  .cli-tile-head .e { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
-  .cli-tile-head .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cli-tile-head .s { font: 700 12px ui-monospace, monospace; color: #6dffb0; flex-shrink: 0; }
-  .cli-tile-head .h { font: 10px system-ui; color: #6a8aaa; flex-shrink: 0; }
-  .cli-tile-body { display: none; border-top: 1px solid rgba(26,111,212,0.25); max-height: min(48vh, 420px); overflow: auto; }
-  .cli-tile-block.expanded .cli-tile-body { display: block; }
   #cli-form {
     display: flex; align-items: stretch; flex-shrink: 0;
     border: 0; margin: 0; padding: 0 8px 10px; background: transparent;
@@ -531,7 +510,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260730470000-fast-shell-mesh-first"></script>
+<script src="/js/spacenet/boot.js?v=20260730480000-cli-text-tiles-map"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

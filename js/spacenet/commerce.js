@@ -136,11 +136,6 @@
       } catch (_) {}
     });
 
-    // Always put vendor tiles on CLI scroll strip (menu/order inside expanded tile)
-    try {
-      if (tiles.length && global.SNTile?.offerMany) SNTile.offerMany(tiles);
-    } catch (_) {}
-
     if (openMap || global.SNMap?.active) {
       try {
         if (!global.SNMap?.active) await global.SNMap?.open?.(pos.lat, pos.lng);
@@ -155,15 +150,12 @@
       global.SNMap?.plotCrawl?.(toPlaces());
       if (tiles.length) {
         global.SNCli?.log?.(
-          'Marketplace · ' + tiles.length + ' shops in feed · scroll · tap tile → Menu',
+          'Marketplace · ' + tiles.length + ' shops on map · tap target for multi-tile Menu',
           'ok'
         );
       }
     } else if (tiles.length) {
-      global.SNCli?.log?.(
-        tiles.length + ' shops posted to feed · scroll · tap to open Menu',
-        'dim'
-      );
+      global.SNCli?.log?.(tiles.length + ' shops ready · open city map · tap targets', 'dim');
     }
 
     // Globe pulses keep full-Earth default useful without stealing the view
