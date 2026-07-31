@@ -130,6 +130,8 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | OV-15 | 2026-07-31 | **CLI top shortcut ribbon back** (Locate·User·Add·Layers·AI·Send). **No ☰ burger.** Former burger items move to **ASTRANOV** home menu. Supersedes OV-04 “no ribbon”. Multi-tile still on map; no feed chip tiles. |
 | OV-16 | 2026-07-31 | Ribbon: **only ➕ + Layers expand**. User = login / profile. **ASTRANOV home = technical device harvest only** (Main · Secondary · RAID below TJ max). No junk tool menus on home. |
 
+*Agent note 2026-07-31 (not owner OV): multi-user **coord** plans live in `js/spacenet/tasks.js` — `coord …` · `assign …` · `plan list` · `plan status`. Build `20260731160000-coord-plans`. Owner may promote to OV when verified live.*
+
 ---
 
 ## VOID (do not implement from these)
