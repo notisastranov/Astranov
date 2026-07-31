@@ -208,3 +208,4 @@ js/spacenet/auth.js          → Google GIS preferred
 *Thin CORE. Owner log is truth of what you locked. SpaceNet runs the grid. Astranov is the AI. Push is not ship.*
 *Agent note 2026-07-31 (not owner OV): **Google invalid_client / no registered origin** = GCP OAuth client missing JS origin for live site. Code cannot invent Google allow-list. Type `auth setup` for checklist. Client `73846897360-…0vd4ts11`. Build `20260731171000-auth-origin-fix`.*
 *Agent note 2026-07-31: **Pizza business pipeline** — locate GPS first (never globe/USA/Rhodes silent default) · shops ≤6km only · rank price+rating+distance · suggest 1·2·3 · pay · driver · multi-stop polygon · ETA · notify ~5m before. Build `20260731172000-pizza-local-pipeline`.*
+*Agent note 2026-07-31: **Sci-fi chrome** — deep glowing blue system, Orbitron/Rajdhani/JetBrains Mono, custom SVG ribbon glyphs + tech codes (no Atari emoji). Build `20260731174000-scifi-ui`.*

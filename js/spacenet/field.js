@@ -162,46 +162,66 @@
   /** Leaflet polylines on city map — independent of camera hold */
   var mapRouteLayers = [];
   /**
-   * SPECS CLI top ribbon — ALWAYS visible permanent basics:
-   * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
+   * SPECS CLI top ribbon — custom high-tech SVG glyphs + short labels.
+   * Locate · User · Add · Layers · AI · Send
    */
+  var ICO = {
+    locate:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2"/><circle cx="12" cy="12" r="7.5" opacity=".45"/></svg>',
+    user:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 19.5c1.2-3.4 3.5-5 6.5-5s5.3 1.6 6.5 5"/><path d="M4 12h1.5M18.5 12H20" opacity=".5"/></svg>',
+    add:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5 20.5 12 12 20.5 3.5 12 12 3.5Z" opacity=".55"/><path d="M12 8v8M8 12h8"/></svg>',
+    layers:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4 3.5 8.5 12 13l8.5-4.5L12 4Z"/><path d="M3.5 12.5 12 17l8.5-4.5" opacity=".75"/><path d="M3.5 16 12 20.5 20.5 16" opacity=".45"/></svg>',
+    ai:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.8" r="1.4"/><circle cx="12" cy="19.2" r="1.4"/><circle cx="4.8" cy="12" r="1.4"/><circle cx="19.2" cy="12" r="1.4"/><path d="M12 6.4v3M12 14.6v3M6.4 12h3M14.6 12h3" opacity=".7"/></svg>',
+    send:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h12"/><path d="M12.5 6.5 18.5 12l-6 5.5"/><path d="M4.5 8.5v7" opacity=".4"/></svg>',
+  };
   var RIBBON_CORE = [
     {
       act: 'locate',
-      emoji: '🎯',
+      icon: ICO.locate,
       text: 'Locate',
       title: 'Locate me · GPS recenter',
       id: 'sn-rib-locate',
     },
     {
       act: 'user',
-      emoji: '👤',
+      icon: ICO.user,
       text: 'User',
       title: 'Sign in · or your profile when logged in',
       id: 'sn-rib-user',
     },
     {
       act: 'add',
-      emoji: '➕',
+      icon: ICO.add,
       text: 'Add',
       title: 'Add · expands upward',
       id: 'sn-rib-add',
     },
     {
       act: 'layers',
-      emoji: '🗺',
+      icon: ICO.layers,
       text: 'Layers',
       title: 'Layers · basemap + windy ISS planes ships · expands upward',
       id: 'sn-rib-layers',
     },
     {
       act: 'handsfree',
-      emoji: '🎧',
+      icon: ICO.ai,
       text: 'AI',
       title: 'AI · ASTRANOV LISTENING · pizza · next · show all',
       id: 'sn-rib-hf',
     },
-    { act: 'send', emoji: '➤', text: 'Send', title: 'Send to Astranov', id: 'sn-rib-send' },
+    {
+      act: 'send',
+      icon: ICO.send,
+      text: 'Send',
+      title: 'Send to Astranov',
+      id: 'sn-rib-send',
+    },
   ];
   /**
    * Context task buttons REMOVED from CLI ribbon.
@@ -233,23 +253,29 @@
     st.textContent = [
       '#sn-rib-fly{position:fixed;inset:0;z-index:135;display:none;pointer-events:none}',
       '#sn-rib-fly.open{display:block;pointer-events:auto}',
-      '#sn-rib-fly .sn-rib-fly-bg{position:absolute;inset:0;background:rgba(0,0,0,.3)}',
-      '#sn-rib-fly .sn-rib-fly-sheet{position:fixed;z-index:136;width:min(300px,calc(100vw - 16px));',
-      'max-height:min(58vh,440px);overflow:auto;padding:8px;',
-      'background:rgba(0,6,16,.98);border:1px solid rgba(61,158,255,.55);border-radius:14px;',
-      'box-shadow:0 -10px 36px rgba(0,0,0,.7),0 0 20px rgba(26,111,212,.25);color:#c8e4ff}',
-      '#sn-rib-fly .sn-rib-fly-head{font:700 11px system-ui;color:#3d9eff;letter-spacing:.1em;',
-      'text-transform:uppercase;padding:6px 8px 8px;border-bottom:1px solid rgba(26,111,212,.28);margin-bottom:4px}',
-      '#sn-rib-fly .sn-rib-fly-opt{border:0;border-radius:10px;background:transparent;color:#e0f0ff;',
-      'padding:10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;width:100%;',
-      'font:600 13px system-ui}',
-      '#sn-rib-fly .sn-rib-fly-opt:hover,#sn-rib-fly .sn-rib-fly-opt:active{background:rgba(26,111,212,.28)}',
-      '#sn-rib-fly .sn-rib-fly-opt .e{font-size:20px;width:28px;text-align:center;flex-shrink:0}',
+      '#sn-rib-fly .sn-rib-fly-bg{position:absolute;inset:0;background:rgba(0,4,12,.45);backdrop-filter:blur(4px)}',
+      '#sn-rib-fly .sn-rib-fly-sheet{position:fixed;z-index:136;width:min(320px,calc(100vw - 16px));',
+      'max-height:min(58vh,460px);overflow:auto;padding:10px;',
+      'background:linear-gradient(165deg,rgba(6,24,48,.98),rgba(2,10,24,.99));',
+      'border:1px solid rgba(76,201,255,.5);border-radius:16px;',
+      'box-shadow:0 -12px 40px rgba(0,0,0,.7),0 0 32px rgba(11,111,212,.35);color:#c8e4ff;',
+      'font-family:Rajdhani,system-ui,sans-serif}',
+      '#sn-rib-fly .sn-rib-fly-head{font:700 11px Orbitron,Rajdhani,system-ui;color:#4cc9ff;letter-spacing:.16em;',
+      'text-transform:uppercase;padding:8px 10px 10px;border-bottom:1px solid rgba(26,111,212,.3);margin-bottom:6px;',
+      'text-shadow:0 0 12px rgba(76,201,255,.45)}',
+      '#sn-rib-fly .sn-rib-fly-opt{border:0;border-radius:12px;background:transparent;color:#e0f0ff;',
+      'padding:11px 10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;width:100%;',
+      'font:600 14px Rajdhani,system-ui;transition:background .12s}',
+      '#sn-rib-fly .sn-rib-fly-opt:hover,#sn-rib-fly .sn-rib-fly-opt:active{background:rgba(26,111,212,.3)}',
+      '#sn-rib-fly .sn-rib-fly-opt .e{font-size:11px;width:36px;height:28px;flex-shrink:0;display:grid;place-items:center;',
+      'border:1px solid rgba(76,201,255,.35);border-radius:8px;color:#4cc9ff;font-family:JetBrains Mono,monospace;',
+      'letter-spacing:.04em;background:rgba(8,28,56,.6);text-shadow:0 0 8px rgba(76,201,255,.5)}',
       '#sn-rib-fly .sn-rib-fly-opt .meta{display:flex;flex-direction:column;gap:2px;min-width:0}',
-      '#sn-rib-fly .sn-rib-fly-opt .t{font-weight:700;color:#e8f4ff}',
-      '#sn-rib-fly .sn-rib-fly-opt .d{font:10px/1.25 system-ui;color:#6a8aaa}',
-      '#sn-rib-fly .sn-rib-fly-cancel{margin-top:4px;width:100%;border:1px solid rgba(61,158,255,.3);',
-      'border-radius:10px;background:rgba(0,12,28,.85);color:#8ab4d0;padding:10px;font:600 12px system-ui;cursor:pointer}',
+      '#sn-rib-fly .sn-rib-fly-opt .t{font-weight:700;color:#eaf4ff;letter-spacing:.03em}',
+      '#sn-rib-fly .sn-rib-fly-opt .d{font:500 11px/1.3 Rajdhani,system-ui;color:#6a8aaa}',
+      '#sn-rib-fly .sn-rib-fly-cancel{margin-top:6px;width:100%;border:1px solid rgba(61,184,255,.35);',
+      'border-radius:12px;background:rgba(0,12,28,.85);color:#8ab4d0;padding:11px;font:600 12px Rajdhani,system-ui;',
+      'cursor:pointer;letter-spacing:.08em}',
     ].join('');
     document.head.appendChild(st);
   }
@@ -387,14 +413,14 @@
       openRibbonFlyout(
         'sn-rib-add',
         {
-          title: '➕ Add',
+          title: 'ADD',
           items: [
-            { id: 'pin', e: '📍', t: 'Pin', d: 'Single location on the map' },
-            { id: 'targets', e: '◎', t: 'Polygon / targets', d: 'Multi points · measure land size' },
-            { id: 'video', e: '📹', t: 'Video call', d: 'Live video call request' },
-            { id: 'vendor', e: '🏪', t: 'Vendor', d: 'List shop · sell in S' },
-            { id: 'social', e: '🎬', t: 'Social video post', d: 'Post video to the field' },
-            { id: 'emergency', e: '🆘', t: 'Emergency help', d: 'Urgent help on the map' },
+            { id: 'pin', e: 'PIN', t: 'Pin', d: 'Single location on the map' },
+            { id: 'targets', e: 'POLY', t: 'Polygon / targets', d: 'Multi points · measure land size' },
+            { id: 'video', e: 'VID', t: 'Video call', d: 'Live video call request' },
+            { id: 'vendor', e: 'SHOP', t: 'Vendor', d: 'List shop · sell in S' },
+            { id: 'social', e: 'CAST', t: 'Social video post', d: 'Post video to the field' },
+            { id: 'emergency', e: 'SOS', t: 'Emergency help', d: 'Urgent help on the map' },
           ],
         },
         function (id) {
@@ -417,25 +443,25 @@
       openRibbonFlyout(
         'sn-rib-layers',
         {
-          title: '🗺 Layers',
+          title: 'LAYERS',
           items: [
-            { id: 'panel', e: '🗺', t: 'Full layers panel', d: 'Open map · all providers' },
-            { id: 'dark', e: '🌑', t: 'Dark', d: 'Carto free' },
-            { id: 'bright', e: '☀️', t: 'Bright', d: 'Carto free' },
-            { id: 'satellite', e: '🛰', t: 'Satellite free', d: 'Esri imagery' },
-            { id: 'g_satellite', e: '🌍', t: 'Google Earth sat', d: 'Full Google satellite' },
-            { id: 'g_hybrid', e: '🗺', t: 'Google hybrid', d: 'Imagery + labels' },
-            { id: 'g_terrain', e: '⛰', t: 'Google topo', d: 'Terrain / topographic' },
-            { id: 'g_roadmap', e: '🛣', t: 'Google roads', d: 'Roadmap' },
+            { id: 'panel', e: 'ALL', t: 'Full layers panel', d: 'Open map · all providers' },
+            { id: 'dark', e: 'DARK', t: 'Dark', d: 'Carto free' },
+            { id: 'bright', e: 'LITE', t: 'Bright', d: 'Carto free' },
+            { id: 'satellite', e: 'SAT', t: 'Satellite free', d: 'Esri imagery' },
+            { id: 'g_satellite', e: 'GE', t: 'Google Earth sat', d: 'Full Google satellite' },
+            { id: 'g_hybrid', e: 'HYB', t: 'Google hybrid', d: 'Imagery + labels' },
+            { id: 'g_terrain', e: 'TOPO', t: 'Google topo', d: 'Terrain / topographic' },
+            { id: 'g_roadmap', e: 'ROAD', t: 'Google roads', d: 'Roadmap' },
             { id: 'google', e: 'G', t: 'Google-style free', d: 'OSM HOT stand-in' },
-            { id: 'traffic', e: '🚗', t: 'Traffic roads', d: 'Roads basemap' },
-            { id: 'windy', e: '🌬', t: 'Windy weather', d: 'Wind overlay' },
+            { id: 'traffic', e: 'TRAF', t: 'Traffic roads', d: 'Roads basemap' },
+            { id: 'windy', e: 'WIND', t: 'Windy weather', d: 'Wind overlay' },
             { id: 'w3w', e: '///', t: 'what3words', d: '/// address on map' },
-            { id: 'iss', e: '🛸', t: 'ISS', d: 'Live station' },
-            { id: 'planes', e: '✈', t: 'Airplanes', d: 'OpenSky traffic' },
-            { id: 'ships', e: '🚢', t: 'Ships', d: 'OpenSeaMap marks' },
-            { id: 'sats', e: '📡', t: 'Satellites', d: 'ISS + LEO marks' },
-            { id: 'topo', e: '📐', t: 'Topo measure', d: 'Area · elev · 3D path' },
+            { id: 'iss', e: 'ISS', t: 'ISS', d: 'Live station' },
+            { id: 'planes', e: 'AIR', t: 'Airplanes', d: 'OpenSky traffic' },
+            { id: 'ships', e: 'SEA', t: 'Ships', d: 'OpenSeaMap marks' },
+            { id: 'sats', e: 'LEO', t: 'Satellites', d: 'ISS + LEO marks' },
+            { id: 'topo', e: 'MESH', t: 'Topo measure', d: 'Area · elev · 3D path' },
           ],
         },
         function (id) {
@@ -530,8 +556,8 @@
         ' title="' +
         title +
         '">' +
-        '<span class="sn-rib-emoji" aria-hidden="true">' +
-        (b.emoji || '') +
+        '<span class="sn-rib-icon" aria-hidden="true">' +
+        (b.icon || '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
         label +
