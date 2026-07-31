@@ -47,7 +47,7 @@
   function sizePx(mode) {
     var h = window.innerHeight || 700;
     var def = defaultMaxCliPx();
-    if (mode === 'collapsed') return Math.min(120, Math.round(h * 0.16), def);
+    if (mode === 'collapsed') return Math.max(120, Math.min(176, Math.round(h * 0.18))); // bottom scroll min
     // Expand button → default 1/3 (drag can override higher)
     if (mode === 'expanded') return def;
     return Math.min(Math.round(h * 0.28), def);
@@ -235,7 +235,7 @@
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
         // Drag overrides default 1/3 — up to 72vh absolute
-        var next = Math.max(88, Math.min(dragMaxCliPx(), startH - dy));
+        var next = Math.max(120, Math.min(dragMaxCliPx(), startH - dy)); // bottom scroll floor
         panel.style.maxHeight = next + 'px';
         panel.style.height = next + 'px';
         panel.classList.remove('expanded', 'collapsed', 'mid');

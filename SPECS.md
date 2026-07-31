@@ -230,3 +230,4 @@ js/spacenet/auth.js          → Google GIS preferred
 - Rounded tall type: Comfortaa + Nunito · no free-float HUD overlap lock
 - Radar expands chrome not free screen · production path on main*
 *Agent note 2026-07-31: Device multi-line graph CPU/RAM/BAT/CPU°/BAT° + battery≤33% sound+text alerts; expanded detail tiles under radar/device/money. ASTRANOV opens extreme menu. Build `20260731223000-device-metrics-alerts`.*
+*Agent note 2026-07-31: Top + bottom **scrolls** — min height floors so gadgets never clip (top ≥92px, bottom ≥120px). Labels TOP SCROLL / BOTTOM SCROLL. Build `20260731224000-top-bottom-scrolls`.*

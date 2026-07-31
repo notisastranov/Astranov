@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731223000-device-metrics-alerts" />
-<meta name="astranov-continuity" content="20260731223000-device-metrics-alerts" />
+<meta name="astranov-build" content="20260731224000-top-bottom-scrolls" />
+<meta name="astranov-continuity" content="20260731224000-top-bottom-scrolls" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -92,7 +92,7 @@
   }
   #sn-topchrome-panel.stc-anim { transition: max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1), height 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
   #sn-topchrome-panel.dragging { transition: none !important; user-select: none; cursor: grabbing; }
-  #sn-topchrome-panel.collapsed { max-height: 64px; }
+  #sn-topchrome-panel.collapsed { max-height: none; min-height: var(--top-scroll-min); height: auto; }
   #sn-topchrome-panel.mid { max-height: min(160px, 22vh); }
   #sn-topchrome-panel.expanded { max-height: min(320px, 42vh); }
   #sn-topchrome-panel.collapsed .stc-detail { display: none !important; }
@@ -214,7 +214,8 @@
     height: 28px;
   }
   #sn-topchrome-panel.collapsed {
-    max-height: 64px;
+    max-height: none;
+    min-height: var(--top-scroll-min);
   }
 
   #sn-topchrome #field-balance-hud {
@@ -1405,6 +1406,76 @@
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
+
+  /* SCROLLS — top scroll + bottom scroll (CLI twin) */
+  #sn-topchrome {
+    /* top scroll dock */
+  }
+  #sn-topchrome-panel {
+    min-height: var(--top-scroll-min) !important;
+    max-height: none;
+    height: auto;
+  }
+  #sn-topchrome-panel.collapsed {
+    max-height: max(var(--top-scroll-min), 92px) !important;
+    min-height: var(--top-scroll-min) !important;
+    height: auto !important;
+    overflow: visible;
+  }
+  #sn-topchrome-panel.collapsed #stc-body {
+    overflow: visible;
+  }
+  #sn-topchrome-panel.collapsed #stc-compact {
+    min-height: 64px;
+    padding-bottom: 2px;
+  }
+  #sn-topchrome-panel.mid {
+    max-height: min(300px, 40vh) !important;
+    min-height: var(--top-scroll-min) !important;
+  }
+  #sn-topchrome-panel.expanded {
+    max-height: min(440px, 54vh) !important;
+    min-height: var(--top-scroll-min) !important;
+  }
+  /* never clip compact gadgets */
+  #sn-topchrome-panel.collapsed #field-radar {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 34px !important;
+    min-height: 34px;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s {
+    font-size: 12px !important;
+    line-height: 1.2;
+  }
+  #sn-topchrome-drag span::before {
+    content: none;
+  }
+  #sn-topchrome-drag .stc-scroll-label {
+    font: 700 8px/1 var(--font-display);
+    letter-spacing: 0.16em;
+    color: rgba(140, 200, 255, 0.7);
+    text-transform: uppercase;
+  }
+  /* Bottom scroll = CLI panel */
+  #panel {
+    min-height: var(--bottom-scroll-min) !important;
+  }
+  #panel.collapsed {
+    max-height: min(176px, 26vh);
+    min-height: var(--bottom-scroll-min) !important;
+  }
+  #cli-drag .cli-scroll-label {
+    font: 700 8px/1 var(--font-display);
+    letter-spacing: 0.16em;
+    color: rgba(140, 200, 255, 0.65);
+    text-transform: uppercase;
+    text-align: center;
+    margin-top: 2px;
+  }
+
 </style>
 </head>
 <body>
@@ -1419,8 +1490,8 @@
 <div id="city-map" aria-hidden="true"></div>
 
 
-<div id="sn-topchrome" aria-label="Astranov top chrome">
-  <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Status · drag down to expand">
+<div id="sn-topchrome" aria-label="Top scroll">
+  <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Top scroll · drag down to expand">
     <div id="stc-body">
       <div id="stc-compact">
         <div class="stc-col stc-col-radar">
@@ -1527,8 +1598,8 @@
         </div>
       </div>
     </div>
-    <div id="sn-topchrome-drag" title="Drag down to expand · up to retract" aria-label="Drag to expand or retract top bar">
-      <span>pull</span>
+    <div id="sn-topchrome-drag" title="Top scroll · drag down expand · up retract" aria-label="Top scroll · drag to expand or retract">
+      <span class="stc-scroll-label">top scroll</span>
     </div>
   </div>
 </div>
@@ -1582,7 +1653,8 @@
 <div id="dock">
   <div id="panel" class="collapsed">
     <div id="sn-task-ribbon" aria-label="CLI shortcuts: locate user add layers AI send"></div>
-    <div id="cli-drag">
+    <div id="cli-drag" title="Bottom scroll · drag to expand or retract">
+      <div class="cli-scroll-label">bottom scroll</div>
       <div class="cli-titlebar">
         <span class="cli-live-dot" aria-hidden="true"></span>
         <span class="cli-brand">Astranov</span>
@@ -1634,7 +1706,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731223000-device-metrics-alerts"></script>
+<script src="/js/spacenet/boot.js?v=20260731224000-top-bottom-scrolls"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

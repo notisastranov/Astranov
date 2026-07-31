@@ -1507,9 +1507,11 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      if (mode === 'collapsed') return 72;
-      if (mode === 'expanded') return Math.min(420, Math.round(h * 0.52));
-      return Math.min(280, Math.round(h * 0.36));
+      // Floor = top-scroll min — never cut gadgets (CLI twin rule)
+      var MIN = 92;
+      if (mode === 'collapsed') return MIN;
+      if (mode === 'expanded') return Math.max(MIN, Math.min(440, Math.round(h * 0.52)));
+      return Math.max(MIN, Math.min(300, Math.round(h * 0.36)));
     }
 
     function setMode(mode, animate, freeH) {
@@ -1517,9 +1519,19 @@
       panel.classList.add(mode);
       if (animate !== false) panel.classList.add('stc-anim');
       else panel.classList.remove('stc-anim');
+      var MIN = sizePx('collapsed');
       var px = freeH != null ? freeH : sizePx(mode);
-      panel.style.maxHeight = px + 'px';
-      panel.style.height = '';
+      if (!(px >= MIN)) px = MIN;
+      // Collapsed: auto height so gadgets never clip; still floor min-height
+      if (mode === 'collapsed') {
+        panel.style.maxHeight = '';
+        panel.style.height = '';
+        panel.style.minHeight = MIN + 'px';
+      } else {
+        panel.style.maxHeight = px + 'px';
+        panel.style.height = '';
+        panel.style.minHeight = MIN + 'px';
+      }
       try {
         localStorage.setItem(KEY, mode);
       } catch (_) {}
@@ -1572,11 +1584,12 @@
       if (!moved && Math.abs(dy) < 6) return;
       moved = true;
       // Drag DOWN expands (opposite of CLI which expands upward)
-      var next = Math.max(48, Math.min(sizePx('expanded') + 40, startH + dy));
+      var MIN = sizePx('collapsed');
+      var next = Math.max(MIN, Math.min(sizePx('expanded') + 40, startH + dy));
       panel.style.maxHeight = next + 'px';
       panel.style.height = next + 'px';
       panel.classList.remove('collapsed', 'mid', 'expanded');
-      if (next < 80) panel.classList.add('collapsed');
+      if (next <= MIN + 8) panel.classList.add('collapsed');
       else if (next > sizePx('expanded') - 24) panel.classList.add('expanded');
       else panel.classList.add('mid');
       if (e.cancelable) e.preventDefault();
@@ -1593,7 +1606,7 @@
       if (!moved) return;
       var h = panel.getBoundingClientRect().height || startH;
       var pick = 'mid';
-      if (h < 90) pick = 'collapsed';
+      if (h <= sizePx('collapsed') + 12) pick = 'collapsed';
       else if (h > sizePx('expanded') - 30) pick = 'expanded';
       setMode(pick, true, null);
     }
