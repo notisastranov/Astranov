@@ -128,6 +128,11 @@
       '<button type="button" class="sn-home-x" id="sn-home-close" aria-label="Close">×</button>' +
       '</div>' +
       '<div class="sn-home-body">' +
+      '<div class="sn-home-section sn-home-recovery-title">Stuck? · recover now</div>' +
+      '<p class="sn-home-hint">Use these first if the app covers the browser and you cannot refresh.</p>' +
+      '<button type="button" class="sn-home-btn sn-home-btn-primary" data-act="hard-reload">① Hard reload · clear cache · restart</button>' +
+      '<button type="button" class="sn-home-btn" data-act="clear-cache">② Clear cache only · keep data · reload</button>' +
+      '<button type="button" class="sn-home-btn danger" data-act="hard-reset">③ Hard reset · wipe local data · reload</button>' +
       '<p class="sn-home-mission">Universal mesh OS · products · services · activities · topo routing · SETI mining. Destined beyond single apps.</p>' +
       '<div class="sn-home-row sn-home-meta">' +
       '<span>Build</span><code id="sn-home-ver">' +
@@ -251,8 +256,8 @@
       '<button type="button" class="sn-home-btn" data-act="gfx-pulse">Think pulse demo</button>' +
       '<button type="button" class="sn-home-btn" data-act="global">Back to GLOBAL Earth</button>' +
       '<div class="sn-home-section">Danger</div>' +
-      '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset this device</button>' +
-      '<p class="sn-home-hint">Login = ribbon User. Map tools = Add / Layers. Channels = type channels. This hub = weird science only.</p>' +
+      '<button type="button" class="sn-home-btn danger" data-act="hard-reset">Hard reset this device (same as ③ above)</button>' +
+      '<p class="sn-home-hint">Login = ribbon User. Map tools = Add / Layers. Channels = type channels. Recovery = top of this menu.</p>' +
       '</div></div>'
     );
   }
@@ -262,8 +267,8 @@
     var st = document.createElement('style');
     st.id = 'sn-home-css';
     st.textContent =
-      '#sn-home-menu{position:fixed;inset:0;z-index:95;display:none;align-items:flex-start;justify-content:center;' +
-      'padding:56px 12px 24px;background:rgba(0,4,12,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}' +
+      '#sn-home-menu{position:fixed;inset:0;z-index:2147483000;display:none;align-items:flex-start;justify-content:center;' +
+      'padding:max(12px,env(safe-area-inset-top)) 12px 24px;background:rgba(0,4,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);pointer-events:auto}' +
       '#sn-home-menu.open{display:flex}' +
       '#sn-home-menu .sn-home-card{width:min(420px,100%);max-height:min(86vh,780px);overflow:auto;border-radius:16px;' +
       'background:linear-gradient(165deg,rgba(4,18,40,.98),rgba(1,6,16,.99));border:1px solid rgba(76,201,255,.45);' +
@@ -409,6 +414,85 @@
     else openMenu();
   }
 
+  function clearAppCaches() {
+    var n = 0;
+    try {
+      if (global.caches && caches.keys) {
+        return caches.keys().then(function (names) {
+          return Promise.all(
+            names.map(function (name) {
+              n++;
+              return caches.delete(name);
+            })
+          ).then(function () {
+            return n;
+          });
+        });
+      }
+    } catch (_) {}
+    return Promise.resolve(0);
+  }
+
+  function unregisterServiceWorkers() {
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+        return navigator.serviceWorker.getRegistrations().then(function (regs) {
+          return Promise.all(
+            regs.map(function (r) {
+              return r.unregister();
+            })
+          );
+        });
+      }
+    } catch (_) {}
+    return Promise.resolve();
+  }
+
+  /** Hard reload: bust SW + HTTP cache, keep localStorage (wallet/profile). */
+  function hardReload() {
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('Hard reload · clearing cache…', 'dim');
+    } catch (_) {}
+    Promise.resolve()
+      .then(function () {
+        return unregisterServiceWorkers();
+      })
+      .then(function () {
+        return clearAppCaches();
+      })
+      .catch(function () {})
+      .then(function () {
+        try {
+          sessionStorage.clear();
+        } catch (_) {}
+        // Cache-bust reload — works when browser chrome is covered
+        var u = new URL(location.href);
+        u.searchParams.set('_sn_reload', String(Date.now()));
+        // strip old bust param noise next time is fine
+        location.replace(u.toString());
+      });
+  }
+
+  /** Clear Cache API + SW only, keep all local data, then hard reload. */
+  function clearCacheReload() {
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('Clear cache · reloading…', 'dim');
+    } catch (_) {}
+    Promise.resolve()
+      .then(function () {
+        return unregisterServiceWorkers();
+      })
+      .then(function () {
+        return clearAppCaches();
+      })
+      .catch(function () {})
+      .then(function () {
+        var u = new URL(location.href);
+        u.searchParams.set('_sn_reload', String(Date.now()));
+        location.replace(u.toString());
+      });
+  }
+
   function hardReset() {
     var ok = global.confirm(
       'Hard reset Astranov on this device?\n\nClears local profiles, cart, places, usage, device role, fleet slot, and chat position.\nDoes not sign you out of Google unless you sign out separately.'
@@ -428,7 +512,19 @@
     try {
       sessionStorage.clear();
     } catch (_) {}
-    location.reload();
+    Promise.resolve()
+      .then(function () {
+        return unregisterServiceWorkers();
+      })
+      .then(function () {
+        return clearAppCaches();
+      })
+      .catch(function () {})
+      .then(function () {
+        var u = new URL(location.href);
+        u.searchParams.set('_sn_reload', String(Date.now()));
+        location.replace(u.toString());
+      });
   }
 
   async function act(name) {
@@ -513,6 +609,14 @@
       paint();
       return;
     }
+    if (name === 'hard-reload') {
+      hardReload();
+      return;
+    }
+    if (name === 'clear-cache') {
+      clearCacheReload();
+      return;
+    }
     if (name === 'hard-reset') {
       hardReset();
       return;
@@ -582,7 +686,7 @@
         if (e) e.preventDefault();
         toggle();
       };
-      btn.title = 'ASTRANOV · science hub · device roles · RAID · mesh · routing';
+      btn.title = 'ASTRANOV · hard reload first · science hub · device roles';
       if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     var logo = $('astranov-logo');
@@ -598,6 +702,9 @@
     close: close,
     toggle: toggle,
     paint: paint,
+    hardReload: hardReload,
+    clearCacheReload: clearCacheReload,
+    hardReset: hardReset,
     supportRequest: supportRequest,
     supportList: supportList,
     supportClaim: supportClaim,
