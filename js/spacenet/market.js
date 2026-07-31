@@ -1420,7 +1420,7 @@
           (v._price != null
             ? global.SNCurrency
               ? SNCurrency.format(v._price)
-              : Number(v._price).toFixed(2) + ' strands'
+              : Number(v._price).toFixed(2) + ' AC'
             : '?') +
           (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '') +
           (v._open === false ? ' · closed?' : ' · open'),
@@ -2338,13 +2338,13 @@
           C.credit(add, 'test-orders top-up');
           log(
             '✓ Wallet top-up · ' +
-              (C.format ? C.format(add) : add + ' strands') +
+              (C.format ? C.format(add) : add + ' AC') +
               ' → ' +
               (C.format ? C.format(C.balance()) : C.balance()),
             'ok'
           );
         } else {
-          log('✓ Wallet · ' + (C.format ? C.format(bal) : bal + ' strands'), 'ok');
+          log('✓ Wallet · ' + (C.format ? C.format(bal) : bal + ' AC'), 'ok');
         }
         report.wallet = C.balance();
         report.checks.push({ id: 'wallet', ok: true, detail: report.wallet });

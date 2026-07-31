@@ -1,16 +1,16 @@
 /**
- * Strand of coins — primary wallet unit (was SpaceNets / S).
- * Fiat/crypto remain secondary quotes only.
+ * Astranov Coins — primary wallet unit (mine Astranov coins).
+ * Fiat/crypto remain secondary quotes only. No "strands".
  */
 (function (g) {
   'use strict';
   var QK = 'spacenet_currency_v1';
   var WK = 'spacenet_wallet_v1';
-  /** Primary currency: a strand of coins */
-  var SYM = 'strands';
-  var NAME = 'strand of coins';
-  var NAME_PL = 'strands';
-  var GLYPH = '◎';
+  /** Primary currency: Astranov Coins */
+  var SYM = 'AC';
+  var NAME = 'Astranov coin';
+  var NAME_PL = 'Astranov coins';
+  var GLYPH = '◈';
   var st = {
     networkIndex: 1,
     quotes: { EUR: 1, USD: 1.08, BTC: 0.000015, ETH: 0.00025 },
@@ -58,10 +58,10 @@
   function fmt(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
-    return n.toFixed(2) + ' ' + NAME_PL;
+    return n.toFixed(2) + ' AC';
   }
 
-  /** Compact HUD: ◎ 12.50 */
+  /** Compact HUD: ◈ 12.50 */
   function fmtCompact(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
@@ -72,7 +72,7 @@
     var n = Number(perUnit);
     if (!isFinite(n)) n = 0;
     unit = unit || 'day';
-    return n.toFixed(2) + ' ' + NAME_PL + '/' + unit;
+    return n.toFixed(2) + ' AC/' + unit;
   }
 
   function credit(a, why) {
@@ -86,7 +86,7 @@
   }
 
   /**
-   * Architect platform revenue — 3% of every marketplace transaction in strands.
+   * Architect platform revenue — 3% of every marketplace transaction in Astranov coins.
    * platformFees vault ONLY GROWS (never spent by sim/client debit).
    */
   function notePlatformFee(a, meta) {
@@ -138,8 +138,9 @@
     GLYPH: GLYPH,
     NAME: NAME,
     NAME_PL: NAME_PL,
-    /** @deprecated alias — was SpaceNets / S */
+    /** @deprecated aliases */
     LEGACY: 'SpaceNets',
+    STRAND_LEGACY: 'strands',
     format: fmt,
     formatCompact: fmtCompact,
     formatRate: fmtRate,
@@ -194,12 +195,13 @@
     fees: { platformPct: 3, driverPct: 15 },
     status: function () {
       return [
-        NAME.toUpperCase() + ' PRIMARY · index ' + st.networkIndex.toFixed(4),
+        'ASTRANOV COINS PRIMARY · index ' + st.networkIndex.toFixed(4),
         'Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined),
         'Platform fees (your 3%) ' + fmt(st.platformFees || 0) + ' lifetime',
-        '1 strand ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
+        '1 AC ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
         'EUR/USD/BTC/ETH = secondary quotes only',
-        'Fees 3% platform → Architect · 15% driver (in strands)',
+        'Fees 3% platform → Architect · 15% driver (in AC)',
+        'Mine Astranov coins · no strands',
       ];
     },
   };

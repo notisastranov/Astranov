@@ -614,7 +614,7 @@
         ? C.formatCompact
           ? C.formatCompact(bal)
           : C.format(bal)
-        : '◎ ' + bal.toFixed(2);
+        : '◈ ' + bal.toFixed(2);
     }
     var fe = $('fbh-fees');
     if (fe) {
@@ -624,7 +624,7 @@
           ? C.formatCompact(fees)
           : C && C.format
             ? C.format(fees)
-            : '◎ ' + Number(fees).toFixed(2));
+            : '◈ ' + Number(fees).toFixed(2));
       fe.hidden = false;
     }
     var mr = $('fbh-mine-rate');
@@ -632,7 +632,7 @@
       var perDay = (mine.rate || 0) * 24;
       mr.textContent = C && C.formatRate
         ? C.formatRate(perDay, 'day')
-        : perDay.toFixed(2) + ' strands/day';
+        : perDay.toFixed(2) + ' AC/day';
       if (mine.on && mine.terms) {
         mr.textContent += ' · ON';
       } else {
@@ -646,9 +646,9 @@
     if (hud) {
       hud.classList.toggle('mining-active', !!mine.on && !!mine.terms);
       hud.title =
-        'Strand of coins · mining ' +
+        'Astranov coins · mining ' +
         ((mine.rate || 0) * 24).toFixed(2) +
-        '/day · live economy · tap finance';
+        ' AC/day · live economy · tap finance';
     }
     paintNavMeta();
     paintRibbon();
@@ -845,7 +845,7 @@
         (raidNodes ? ' · RAID×' + raidNodes : '') +
         ' · ' +
         ((mine.rate || 0) * 24).toFixed(2) +
-        '◎/d here';
+        'AC/d here';
     }
 
     // Tap → open science hub
@@ -1009,7 +1009,7 @@
     var dSign = delta >= 0 ? '+' : '';
     var C = g.SNCurrency;
     var fmt = function (n) {
-      return C && C.formatCompact ? C.formatCompact(n) : '◎ ' + Number(n).toFixed(2);
+      return C && C.formatCompact ? C.formatCompact(n) : '◈ ' + Number(n).toFixed(2);
     };
     if (lab) {
       lab.textContent =
@@ -2932,7 +2932,7 @@
           ? ' · ' +
             (g.SNCurrency && SNCurrency.formatRate
               ? SNCurrency.formatRate(mine.rate, 'h')
-              : mine.rate.toFixed(3) + ' strands/h')
+              : mine.rate.toFixed(3) + ' AC/h')
           : ' · mine off'),
       workerOps: mine.workerOps,
       meshPeers: mine.meshPeers || 1,

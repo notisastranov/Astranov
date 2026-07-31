@@ -184,6 +184,7 @@
   function bindSizeButtons() {
     const minus = $('sn-tile-smaller');
     const plus = $('sn-tile-bigger');
+    const xBtn = $('sn-tile-close-grip') || $('sn-tile-close');
     if (minus && !minus._snBound) {
       minus._snBound = true;
       minus.addEventListener('click', (e) => {
@@ -200,14 +201,22 @@
         stepScale(1);
       });
     }
+    if (xBtn && !xBtn._snBound) {
+      xBtn._snBound = true;
+      xBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+      });
+    }
   }
 
   function gripHtml() {
     return (
-      '<div class="sn-tile-grip" id="sn-tile-grip" title="Drag with one finger to move">' +
-      '<button type="button" class="sn-tile-size-btn" id="sn-tile-smaller" aria-label="Make tile smaller">−</button>' +
-      '<span class="sn-tile-grip-label">drag · − + · tap Open</span>' +
-      '<button type="button" class="sn-tile-size-btn" id="sn-tile-bigger" aria-label="Make tile larger">+</button>' +
+      '<div class="sn-tile-grip" id="sn-tile-grip" title="Drag empty space to move · − yellow · X red close · + green">' +
+      '<button type="button" class="sn-tile-size-btn sn-tile-btn-minus" id="sn-tile-smaller" aria-label="Make tile smaller" title="Smaller">−</button>' +
+      '<button type="button" class="sn-tile-size-btn sn-tile-btn-close" id="sn-tile-close-grip" aria-label="Close tile" title="Close">×</button>' +
+      '<button type="button" class="sn-tile-size-btn sn-tile-btn-plus" id="sn-tile-bigger" aria-label="Make tile larger" title="Larger">+</button>' +
       '</div>'
     );
   }
@@ -269,7 +278,7 @@
       // Don't steal clicks from interactive controls / body scroll
       if (
         t.closest(
-          '.sn-tile-size-btn, .sn-tile-x, .sn-tile-edit-cover, .sn-tile-edit-av, .sn-tile-body, .sn-tile-foot, .sn-tile-roles, .sn-tile-tabs, .sn-role, .sn-tab, a, input, select, textarea, label, .sn-btn, .sn-add'
+          '.sn-tile-size-btn, .sn-tile-btn-close, .sn-tile-x, .sn-tile-edit-cover, .sn-tile-edit-av, .sn-tile-body, .sn-tile-foot, .sn-tile-roles, .sn-tile-tabs, .sn-role, .sn-tab, a, input, select, textarea, label, .sn-btn, .sn-add'
         )
       ) {
         // Grip label/empty grip area is OK — size buttons excluded above
@@ -373,7 +382,13 @@
   function ensureGripControls() {
     const grip = $('sn-tile-grip');
     if (!grip) return;
-    if ($('sn-tile-smaller') && $('sn-tile-bigger')) {
+    // Force top-row layout: yellow − · red X · green +
+    if (
+      $('sn-tile-smaller') &&
+      $('sn-tile-bigger') &&
+      $('sn-tile-close-grip') &&
+      grip.querySelector('.sn-tile-btn-minus')
+    ) {
       bindSizeButtons();
       return;
     }
@@ -390,13 +405,14 @@
       'sn-tile-css-v5',
       'sn-tile-css-v6',
       'sn-tile-css-v7',
+      'sn-tile-css-v8',
     ].forEach((id) => {
       const old = document.getElementById(id);
       if (old) old.remove();
     });
-    if (document.getElementById('sn-tile-css-v8')) return;
+    if (document.getElementById('sn-tile-css-v9')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v8';
+    st.id = 'sn-tile-css-v9';
     st.textContent = [
       /* Peek: map stays clickable under transparent root · card only captures events */
       '#sn-tile{position:fixed;inset:0;z-index:130;display:none;pointer-events:none;',
@@ -417,24 +433,32 @@
       '#sn-tile.sn-tile-peek .sn-tile-roles,#sn-tile.sn-tile-peek .sn-tile-tabs{display:none!important}',
       '#sn-tile.sn-tile-peek .sn-tile-body{font-size:11px;padding:4px 10px 6px!important;overflow:hidden}',
       '#sn-tile.sn-tile-peek .sn-photo-row{display:none!important}',
-      '#sn-tile.sn-tile-peek .sn-tile-grip{min-height:36px;padding:6px 8px}',
-      '#sn-tile.sn-tile-peek .sn-tile-grip-label{font-size:10px}',
+      '#sn-tile.sn-tile-peek .sn-tile-grip{min-height:40px;padding:6px 10px}',
       '#sn-tile .sn-tile-grip{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;',
-      'gap:8px;padding:12px 12px 8px;font:11px system-ui;color:#7ab0d8;user-select:none;',
+      'gap:10px;padding:10px 12px 8px;font:11px system-ui;color:#7ab0d8;user-select:none;',
       'cursor:grab;touch-action:none;-webkit-user-select:none;',
       'background:linear-gradient(180deg,rgba(26,111,212,.22),transparent);',
       'border-bottom:1px solid rgba(26,111,212,.25);min-height:44px}',
       '#sn-tile .sn-tile-grip:active,#sn-tile .sn-tile-card.sn-dragging .sn-tile-grip{cursor:grabbing}',
       '#sn-tile .sn-tile-card.sn-dragging{opacity:.96;box-shadow:0 20px 56px rgba(0,0,0,.85),0 0 40px rgba(61,158,255,.4)!important}',
-      '#sn-tile .sn-tile-grip-label{flex:1;text-align:center;letter-spacing:.04em;pointer-events:none;color:#9ec8ff;',
-      'font-weight:700}',
-      '#sn-tile .sn-tile-size-btn{flex-shrink:0;width:36px;height:32px;border-radius:10px;',
-      'border:1px solid rgba(61,158,255,.55);background:rgba(26,111,212,.28);color:#e8f4ff;',
-      'font:800 20px/1 system-ui,sans-serif;cursor:pointer;padding:0;',
-      'box-shadow:0 0 10px rgba(26,111,212,.25);touch-action:manipulation}',
-      '#sn-tile .sn-tile-size-btn:hover{border-color:#3d9eff;background:rgba(26,111,212,.45);color:#fff}',
+      '#sn-tile .sn-tile-size-btn{flex-shrink:0;width:40px;height:34px;border-radius:10px;',
+      'border:1px solid transparent;color:#fff;font:800 20px/1 system-ui,sans-serif;',
+      'cursor:pointer;padding:0;touch-action:manipulation}',
       '#sn-tile .sn-tile-size-btn:active{transform:scale(0.96)}',
       '#sn-tile .sn-tile-size-btn:disabled{opacity:.35;cursor:default;box-shadow:none}',
+      /* Yellow − left · Red X middle · Green + right */
+      '#sn-tile .sn-tile-btn-minus{',
+      'background:linear-gradient(180deg,#f5d76e,#c9a227);border-color:#e6c200;',
+      'color:#2a2200;box-shadow:0 0 12px rgba(255,200,60,.45)}',
+      '#sn-tile .sn-tile-btn-minus:hover{filter:brightness(1.08)}',
+      '#sn-tile .sn-tile-btn-close{',
+      'background:linear-gradient(180deg,#ff6b6b,#c62828);border-color:#ff4444;',
+      'color:#fff;font-size:22px;box-shadow:0 0 14px rgba(255,60,60,.5)}',
+      '#sn-tile .sn-tile-btn-close:hover{filter:brightness(1.1)}',
+      '#sn-tile .sn-tile-btn-plus{',
+      'background:linear-gradient(180deg,#5dff9a,#1a9e4a);border-color:#2ecc71;',
+      'color:#041a0c;box-shadow:0 0 12px rgba(46,204,113,.45)}',
+      '#sn-tile .sn-tile-btn-plus:hover{filter:brightness(1.08)}',
       '#sn-tile .sn-tile-resize{position:absolute;right:2px;bottom:2px;width:22px;height:22px;',
       'cursor:nwse-resize;border:0;background:transparent;padding:0;z-index:5}',
       '#sn-tile .sn-tile-resize::after{content:"";display:block;width:12px;height:12px;margin:6px 0 0 6px;',
@@ -442,9 +466,10 @@
       'box-shadow:2px 2px 0 rgba(61,158,255,.35)}',
       '#sn-tile .sn-tile-cover{position:relative;height:96px;background:#061428 center/cover no-repeat;flex-shrink:0;',
       'cursor:pointer}',
-      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;border:0;border-radius:10px;',
+      /* Cover X hidden — close lives in top row (red) */
+      '#sn-tile .sn-tile-x{display:none!important}',
+      '#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;right:8px;border:0;border-radius:10px;',
       'background:rgba(0,0,0,.55);color:#fff;width:34px;height:34px;cursor:pointer;font-size:16px;z-index:2}',
-      '#sn-tile .sn-tile-x{right:8px}#sn-tile .sn-tile-edit-cover{right:48px}',
       '#sn-tile .sn-tile-head{display:flex;gap:12px;padding:0 14px 10px;margin-top:-28px;align-items:flex-end}',
       '#sn-tile .sn-tile-av-wrap{position:relative;flex-shrink:0;cursor:pointer}',
       '#sn-tile .sn-tile-av{width:64px;height:64px;border-radius:50%;border:3px solid #1a6fd4;object-fit:cover;',

@@ -1402,7 +1402,7 @@
         low === 'space nets'
       ) {
         moneyStatus();
-        // No ribbon money/finance buttons — finance UI = top-right strands HUD only
+        // No ribbon money/finance buttons — finance UI = top-right Astranov coins HUD only
         return;
       }
       if (
