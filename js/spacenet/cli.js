@@ -647,12 +647,17 @@
         !/^(list\s+shop|menu\s+add|order\s+me\s*$|drive\s+on|first\s+delivery)/i.test(low)
       ) {
         const fi = global.SNMarket.parseFoodIntent(line);
+        // Lazy first order: order me a pizza you judge… → always pay + ETA
         const wantOrder =
           fi.autoOrder === true ||
-          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|buy|pay)\b/i.test(low);
+          fi.lazyJudge === true ||
+          /\b(order|order\s+me|bring|get\s+me|παράγγειλ|buy|pay|judge|what\s+time\s+i\s+eat)\b/i.test(
+            low
+          );
         fi.autoOrder = wantOrder;
+        fi.lazyJudge = wantOrder || fi.lazyJudge;
         fi.raw = line;
-        activity('finding ' + (fi.food || 'food') + ' on the map…', 'food', {
+        activity('ordering ' + (fi.food || 'food') + ' · map live…', 'food', {
           label: fi.food || 'food',
         });
         const r = await global.SNMarket.fulfillFoodIntent(fi, {
@@ -671,12 +676,13 @@
           String(r.summary)
             .split('\n')
             .forEach((ln) => {
-              if (ln.trim()) log(ln.trim(), r.ok ? 'ok' : 'err');
+              if (ln.trim()) log(ln.trim(), /failed|error|PAY · failed/i.test(ln) ? 'err' : 'ok');
             });
         } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
         else log(r?.error || 'Could not complete food request', 'err');
         preview(r?.eatLine || r?.reply || (r?.ok ? 'done' : 'failed'));
-        if (r?.reply) replyOut(r.reply);
+        if (r?.eatLine) replyOut(r.eatLine);
+        else if (r?.reply) replyOut(r.reply);
         return;
       }
       // First marketplace loop + usage (SpaceNet coaches the same path)

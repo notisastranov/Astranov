@@ -465,15 +465,14 @@
   }
 
   /**
-   * Food keywords → what to hunt on map / Overpass / crawl
-   * "pizza" | "I want sushi" | "order coffee" | Greek equivalents
+   * Food keywords → hunt on map.
+   * Lazy first order: "order me a pizza you judge type size vendor…"
    */
   function parseFoodIntent(line) {
     var low = String(line || '')
       .toLowerCase()
       .trim();
     if (!low) return null;
-    // Skip pure place navigation
     if (/^(go\s+to|fly|locate|mars|moon)/i.test(low)) return null;
     var map = [
       { re: /\b(pizza|πίτσα|πιτσα|pizzeria)\b/i, food: 'pizza', overpass: 'pizza restaurant' },
@@ -488,16 +487,87 @@
     ];
     for (var i = 0; i < map.length; i++) {
       if (map[i].re.test(low)) {
+        var auto =
+          /\b(order|order\s+me|order\s+me\s+a|bring|get\s+me|buy|pay|παράγγειλ|παράγγειλε)\b/i.test(
+            low
+          ) || /\b(judge|you\s+pick|you\s+choose|whatever|decide)\b/i.test(low);
         return {
           food: map[i].food,
           overpass: map[i].overpass,
           raw: line,
-          // Auto-order only on explicit buy words — browse is default (AI shows tile · next · show all)
-          autoOrder: /\b(order|order\s+me|bring|get\s+me|παράγγειλ|παράγγειλε)\b/i.test(low),
+          autoOrder: auto,
+          lazyJudge:
+            /\b(judge|you\s+pick|you\s+choose|whatever|type|size|vendor|delivery\s+guy|what\s+time\s+i\s+eat)\b/i.test(
+              low
+            ) || auto,
         };
       }
     }
     return null;
+  }
+
+  /**
+   * Astranov judges pizza (or meal) type + size when user says "you judge".
+   * Honest defaults — not Wolt/eFood; Astranov mesh delivery.
+   */
+  function judgeMeal(food, rawLine) {
+    var low = String(rawLine || '').toLowerCase();
+    var f = String(food || 'food').toLowerCase();
+    var size = 'Large';
+    if (/\b(small|personal|μικρ)\b/i.test(low)) size = 'Small';
+    else if (/\b(medium|med|μεσα)\b/i.test(low)) size = 'Medium';
+    else if (/\b(family|xl|extra\s*large|οικογεν)\b/i.test(low)) size = 'Family';
+    // Lazy judge: default Large for pizza, Medium otherwise
+    if (f !== 'pizza' && !/\b(large|small|medium|family)\b/i.test(low)) size = 'Medium';
+
+    var type = null;
+    if (f === 'pizza') {
+      if (/pepperoni|πεπερόνι/i.test(low)) type = 'Pepperoni';
+      else if (/margherita|μαργαρίτα/i.test(low)) type = 'Margherita';
+      else if (/four\s*cheese|4\s*cheese|τετρατύρ|τετρατυρ/i.test(low)) type = 'Four cheese';
+      else if (/special|house/i.test(low)) type = 'House special';
+      else type = 'Margherita'; // Astranov default pick
+    } else if (f === 'sushi') type = 'Chef set';
+    else if (f === 'burger') type = 'Classic';
+    else if (f === 'coffee') {
+      size = 'Regular';
+      type = 'Espresso';
+    } else type = f.charAt(0).toUpperCase() + f.slice(1);
+
+    var price = defaultFoodPrice(f);
+    if (size === 'Small') price *= 0.75;
+    if (size === 'Large' || size === 'Family') price *= size === 'Family' ? 1.45 : 1.15;
+    price = Math.round(price * 100) / 100;
+
+    var itemName =
+      f === 'coffee' ? type : size + ' ' + type + (f === 'pizza' ? ' pizza' : f !== type.toLowerCase() ? '' : '');
+    if (f === 'pizza' && itemName.indexOf('pizza') < 0) itemName = size + ' ' + type + ' pizza';
+
+    return {
+      food: f,
+      size: size,
+      type: type,
+      itemName: itemName,
+      price: price,
+      service: 'Astranov delivery', // not Wolt/eFood — mesh courier on the map
+    };
+  }
+
+  function etaEat(km) {
+    var prep = 16; // kitchen minutes
+    var drive = Math.max(8, Math.round(Number(km) * 4 + 6));
+    var total = prep + drive;
+    var eatAt = new Date(Date.now() + total * 60000);
+    var hh = String(eatAt.getHours()).padStart(2, '0');
+    var mm = String(eatAt.getMinutes()).padStart(2, '0');
+    return {
+      prepMin: prep,
+      driveMin: drive,
+      totalMin: total,
+      eatAt: eatAt,
+      eatClock: hh + ':' + mm,
+      eatLine: 'You eat at ' + hh + ':' + mm + ' · ~' + total + ' min (prep ' + prep + ' + ride ' + drive + ')',
+    };
   }
 
   function haversineKm(a, b) {
@@ -542,29 +612,47 @@
     return { score: score, km: km };
   }
 
-  function ensureFoodMenu(vendor, food) {
+  function ensureFoodMenu(vendor, food, judged) {
     if (!vendor || !global.SNProfiles) return vendor;
     var menu = vendor.menu || [];
+    var wantName = judged && judged.itemName ? judged.itemName : String(food || 'Food');
     var f = String(food || 'Food');
     var has = menu.some(function (m) {
-      return String(m.name || '')
-        .toLowerCase()
-        .indexOf(f.toLowerCase()) >= 0;
+      var n = String(m.name || '').toLowerCase();
+      return (
+        n.indexOf(String(wantName).toLowerCase()) >= 0 ||
+        n.indexOf(f.toLowerCase()) >= 0 ||
+        (judged && judged.type && n.indexOf(String(judged.type).toLowerCase()) >= 0)
+      );
     });
     if (!has) {
-      // User-requested line item on a real place (not NPC shop invent) — honest custom order in S
       global.SNProfiles.setMenuItem(vendor.id, {
-        name: f.charAt(0).toUpperCase() + f.slice(1),
-        price: defaultFoodPrice(food),
-        desc: 'Ordered via SpaceNet AI · pay in S · confirm with kitchen',
+        name: wantName.charAt(0).toUpperCase() + wantName.slice(1),
+        price: judged && judged.price != null ? judged.price : defaultFoodPrice(food),
+        desc: 'Ordered via Astranov · pay in S · kitchen confirms',
       });
       vendor = global.SNProfiles.get(vendor.id) || vendor;
     }
     return vendor;
   }
 
-  function pickMenuItem(vendor, food) {
+  function pickMenuItem(vendor, food, judged) {
     var menu = (vendor && vendor.menu) || [];
+    if (judged && judged.itemName) {
+      var want = String(judged.itemName).toLowerCase();
+      var exact = menu.find(function (m) {
+        return String(m.name || '').toLowerCase().indexOf(want) >= 0;
+      });
+      if (exact) return exact;
+      if (judged.type) {
+        var byType = menu.find(function (m) {
+          return String(m.name || '')
+            .toLowerCase()
+            .indexOf(String(judged.type).toLowerCase()) >= 0;
+        });
+        if (byType) return byType;
+      }
+    }
     var f = String(food || '').toLowerCase();
     var hit = menu.find(function (m) {
       return String(m.name || '')
@@ -584,6 +672,12 @@
     var intent = typeof query === 'object' ? query : parseFoodIntent(query);
     if (!intent) return { ok: false, error: 'not a food intent' };
     var food = intent.food || 'food';
+    var rawLine = intent.raw || (typeof query === 'string' ? query : '');
+    // Lazy first order always pays when user said order / judge
+    if (opts.autoOrder === true || intent.autoOrder || intent.lazyJudge) {
+      intent.autoOrder = true;
+    }
+    var judged = judgeMeal(food, rawLine);
     var log = function (m, c, mapKind, mapOpts) {
       if (quiet) return;
       try {
@@ -596,15 +690,22 @@
     };
     var steps = [];
 
-    // 1) Prefer globe/city focus (dive place) — locate only if none
-    log('locating you on the globe…', 'dim', 'work', { label: 'Locate' });
+    // 1) Locate you (GPS if possible)
+    log('locating you…', 'dim', 'work', { label: 'Locate' });
     var pos = null;
     try {
-      if (global.SNGlobe && SNGlobe.focusPos) {
-        var fp = SNGlobe.focusPos();
-        if (fp && fp.lat != null) pos = { lat: fp.lat, lng: fp.lng };
+      if (global.SNCli && SNCli.gpsLocate) {
+        pos = await SNCli.gpsLocate();
       }
     } catch (_) {}
+    if (!pos || pos.lat == null) {
+      try {
+        if (global.SNGlobe && SNGlobe.focusPos) {
+          var fp = SNGlobe.focusPos();
+          if (fp && fp.lat != null) pos = { lat: fp.lat, lng: fp.lng };
+        }
+      } catch (_) {}
+    }
     if (!pos || pos.lat == null) {
       pos = global._snLastPos || (global.SNTasks && SNTasks.pos) || null;
     }
@@ -614,11 +715,11 @@
       } catch (_) {}
     }
     if (!pos || pos.lat == null) {
-      pos = { lat: 36.4341, lng: 28.2176 };
+      pos = { lat: 36.4341, lng: 28.2176, fallback: true };
       log('default focus · map still moves', 'dim');
     } else {
       log(
-        'focus · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3),
+        'you · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3),
         'dim',
         'locate',
         { lat: pos.lat, lng: pos.lng, label: 'You' }
@@ -630,7 +731,14 @@
     } catch (_) {}
     steps.push('locate');
 
-    // 2) Find pizza (etc.) places — Overpass + sector DB
+    // 2) Astranov judges meal BEFORE hunt (lazy path)
+    log(
+      'judging · ' + judged.size + ' ' + judged.type + (food === 'pizza' ? ' pizza' : '') + ' · ' + judged.service,
+      'ok'
+    );
+    steps.push('judge_meal');
+
+    // 3) Find places
     log('finding ' + food + ' near you…', 'dim', 'food', {
       lat: pos.lat,
       lng: pos.lng,
@@ -647,7 +755,6 @@
         await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
       }
     } catch (_) {}
-    // Paint crawl places as vendor tiles
     (pois || []).slice(0, 24).forEach(function (p) {
       if (p.lat == null) return;
       try {
@@ -666,8 +773,8 @@
     });
     steps.push('find');
 
-    // 3) Collect + show vendor tiles
-    log('painting vendors on map…', 'dim', 'shops', {
+    // 4) Vendors on map
+    log('vendors on map…', 'dim', 'shops', {
       lat: pos.lat,
       lng: pos.lng,
       label: food,
@@ -686,7 +793,6 @@
         })
       );
     });
-    // If filter too tight, fall back to nearest vendors
     if (vendors.length < 2) {
       vendors = (global.SNProfiles.list({ role: 'vendor' }) || [])
         .filter(function (v) {
@@ -694,8 +800,26 @@
         })
         .slice(0, 12);
     }
+    // Zero vendors → temporary kitchen at your pin so lazy path still completes
+    if (!vendors.length && global.SNProfiles) {
+      try {
+        var selfP = me();
+        if (selfP) {
+          selfP.roles = selfP.roles || {};
+          selfP.roles.vendor = true;
+          selfP.roles.client = true;
+          selfP.shopName = selfP.shopName || 'Astranov Kitchen';
+          selfP.shopKind = food;
+          selfP.lat = pos.lat;
+          selfP.lng = pos.lng;
+          global.SNProfiles.upsert(selfP);
+          vendors = [selfP];
+          log('no shops in sector · using Astranov Kitchen at your pin', 'dim');
+        }
+      } catch (_) {}
+    }
     vendors = vendors.map(function (v) {
-      v = ensureFoodMenu(v, food);
+      v = ensureFoodMenu(v, food, judged);
       var sc = scoreVendor(v, pos, food);
       return Object.assign({}, v, { _score: sc.score, _km: sc.km });
     });
@@ -709,72 +833,75 @@
     } catch (_) {}
     steps.push('tiles');
 
-    // 4) Judge — best pick flies the map; stream is short not a button list
-    log('judging vendors…', 'dim');
-    var lines = [];
-    vendors.forEach(function (v, idx) {
-      var item = pickMenuItem(v, food);
-      var price = item
-        ? global.SNCurrency
-          ? SNCurrency.format(item.price)
-          : item.price + ' S'
-        : '—';
-      var line =
-        (v.shopName || v.name) +
-        ' · ' +
-        (v._km != null ? v._km.toFixed(1) + ' km' : '?') +
-        ' · ' +
-        (item ? item.name + ' ' + price : 'no menu');
-      lines.push(line);
-      if (idx === 0) {
-        log('pick · ' + line, 'ok', 'fly', {
-          lat: v.lat,
-          lng: v.lng,
-          label: v.shopName || v.name,
-          tier: 'city',
-          openMap: true,
-        });
-      }
-    });
     if (!vendors.length) {
       return {
         ok: false,
-        error: 'No ' + food + ' vendors near you · try fly another city or long-press to list your shop',
+        error: 'No ' + food + ' near you · try locate · open city · or list shop',
         steps: steps,
         pos: pos,
+        judged: judged,
       };
     }
-    steps.push('judge');
+
     var best = vendors[0];
-    best = ensureFoodMenu(best, food);
-    var menuItem = pickMenuItem(best, food);
+    best = ensureFoodMenu(best, food, judged);
+    var menuItem = pickMenuItem(best, food, judged);
+    // Force judged line on cart if menu still generic
+    if (menuItem && judged && judged.itemName) {
+      menuItem = {
+        id: menuItem.id,
+        name: judged.itemName,
+        price: judged.price != null ? judged.price : menuItem.price,
+        desc: menuItem.desc || 'Astranov pick',
+      };
+    }
+    var kmBest = best._km != null ? best._km : haversineKm(pos, best);
+    log(
+      'vendor · ' +
+        (best.shopName || best.name) +
+        ' · ' +
+        (kmBest != null ? kmBest.toFixed(1) + ' km' : '?'),
+      'ok',
+      'fly',
+      {
+        lat: best.lat,
+        lng: best.lng,
+        label: best.shopName || best.name,
+        tier: 'city',
+        openMap: true,
+      }
+    );
+    steps.push('judge');
+
     try {
-      // Never auto-open vendor tile — user taps map target
       if (global.SNGlobe && SNGlobe.goToPlace && best.lat != null) {
         SNGlobe.goToPlace(best.lat, best.lng, {
           tier: 'city',
           body: 'earth',
-          pulse: false,
-          openMap: false,
+          pulse: true,
+          openMap: true,
           label: best.shopName || best.name,
         });
       }
       if (global.SNMap && SNMap.open && best.lat != null) {
-        if (SNMap.active && SNMap.ensure) {
-          void SNMap.ensure().then(function (map) {
-            try {
-              map.setView([best.lat, best.lng], map.getZoom() || 14);
-            } catch (e) {}
-          });
+        await SNMap.open(best.lat, best.lng);
+        if (SNMap.ensure) {
+          var map = await SNMap.ensure();
+          try {
+            map.setView([best.lat, best.lng], Math.max(map.getZoom() || 14, 14));
+          } catch (e) {}
         }
       }
     } catch (_) {}
 
-    // 5) Order (auto when intent is order-like or single food word)
+    // 5) Pay
     var orderResult = null;
+    var fmt = function (n) {
+      return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
+    };
     if (opts.autoOrder !== false && intent.autoOrder !== false && menuItem) {
       log(
-        'ordering · ' + (best.shopName || best.name) + '…',
+        'ordering · ' + menuItem.name + ' from ' + (best.shopName || best.name) + '…',
         'ok',
         'order',
         { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
@@ -784,11 +911,7 @@
         global.SNProfiles.cartAdd(best.id, menuItem, 1);
         orderResult = global.SNProfiles.placeOrder();
         if (orderResult && orderResult.ok) {
-          log(
-            'paid · ' +
-              (global.SNCurrency ? SNCurrency.format(orderResult.total) : orderResult.total + ' S'),
-            'ok'
-          );
+          log('paid · ' + fmt(orderResult.total), 'ok');
           steps.push('order');
         } else {
           log((orderResult && orderResult.error) || 'order failed', 'err');
@@ -800,19 +923,19 @@
       log('best pick on map · say order to buy', 'dim');
     }
 
-    // 6) Assign driver from available online, else you go online
+    // 6) Courier (Astranov mesh — not Wolt/eFood)
     var driver = null;
     var claim = null;
+    var courierNote = judged.service;
     if (orderResult && orderResult.ok && orderResult.task) {
-      log('assigning driver · routes on map…', 'dim', 'delivery', {
+      log('assigning courier on map…', 'dim', 'delivery', {
         lat: best.lat,
         lng: best.lng,
-        label: 'Driver',
+        label: 'Courier',
       });
       var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
         return d.driverOnline && d.id !== (global.SNProfiles.me() && global.SNProfiles.me().id);
       });
-      // Prefer nearest online driver
       drivers.sort(function (a, b) {
         return haversineKm(pos, a) - haversineKm(pos, b);
       });
@@ -824,16 +947,24 @@
             claim.task.driverId = driver.id;
             claim.task.status = 'in_progress';
           }
-          log('Driver · ' + driver.name + ' · claimed delivery', 'ok');
+          courierNote =
+            'Astranov courier · ' +
+            (driver.name || 'driver') +
+            (driver.vehicle ? ' · ' + driver.vehicle : '');
+          log(courierNote, 'ok');
         } catch (_) {}
       } else {
-        // Self as courier so path completes (real user, not NPC)
         goDriverOnline('Scooter');
         driver = global.SNProfiles.me();
         try {
           claim = global.SNTasks.claim(orderResult.task.id);
-          log('No other drivers online · you are ONLINE as driver · claim ready', 'dim');
+          if (claim && claim.ok && claim.task) {
+            claim.task.driverId = driver && driver.id;
+            claim.task.status = 'in_progress';
+          }
         } catch (_) {}
+        courierNote = 'Astranov courier · you online as driver (no other drivers near)';
+        log(courierNote, 'ok');
       }
       try {
         if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
@@ -842,17 +973,12 @@
       steps.push('driver');
     }
 
-    // Schedule check (hours / 24-7 marketplace law)
     var sched = verifySchedule(best);
-    log(
-      'Schedule · ' +
-        (best.shopName || best.name) +
-        ' · ' +
-        sched.label +
-        (sched.hours ? ' · ' + sched.hours : ''),
-      sched.open ? 'ok' : 'dim'
-    );
-    steps.push('schedule');
+    var eta = etaEat(kmBest);
+    if (orderResult && orderResult.ok) {
+      log(eta.eatLine, 'ok');
+    }
+    steps.push('eta');
 
     track('food_intent', {
       food: food,
@@ -860,24 +986,35 @@
       best: best && best.id,
       ordered: !!(orderResult && orderResult.ok),
       driver: driver && driver.id,
-      schedule: sched.open,
+      judged: judged.itemName,
+      eatAt: eta.eatClock,
     });
 
-    var fmt = function (n) {
-      return global.SNCurrency ? SNCurrency.format(n) : Number(n).toFixed(2) + ' S';
-    };
-    // Brief by default — AI presents on globe; user says next / show all
-    var reply =
-      (best.shopName || best.name || 'Shop') +
-      (best._km != null ? ' · ' + best._km.toFixed(1) + ' km' : '') +
-      (menuItem ? ' · ' + menuItem.name + ' ' + fmt(menuItem.price) : '') +
-      ' · 1/' +
-      vendors.length +
-      (orderResult && orderResult.ok
-        ? ' · ordered ' + fmt(orderResult.total)
-        : ' · next | show all');
+    // Full lazy summary for CLI
+    var summaryLines = [
+      'TYPE · ' + judged.type + (food === 'pizza' ? ' pizza' : ''),
+      'SIZE · ' + judged.size,
+      'VENDOR · ' + (best.shopName || best.name) + (kmBest != null ? ' · ' + kmBest.toFixed(1) + ' km' : ''),
+      'ITEM · ' + (menuItem ? menuItem.name : judged.itemName) + ' · ' + fmt(menuItem ? menuItem.price : judged.price),
+      'COURIER · ' + courierNote,
+      'SERVICE · Astranov delivery (not Wolt / eFood)',
+    ];
+    if (orderResult && orderResult.ok) {
+      summaryLines.push('PAID · ' + fmt(orderResult.total));
+      summaryLines.push(eta.eatLine);
+    } else if (orderResult && !orderResult.ok) {
+      summaryLines.push('PAY · failed · ' + (orderResult.error || 'retry'));
+    } else {
+      summaryLines.push('PAY · not placed · say order me pizza');
+    }
 
-    // Register for AI carousel (next / show all)
+    var reply =
+      (orderResult && orderResult.ok ? 'Ordered · ' : 'Ready · ') +
+      judged.itemName +
+      ' · ' +
+      (best.shopName || best.name) +
+      (orderResult && orderResult.ok ? ' · ' + eta.eatLine : '');
+
     try {
       if (global.SNAi && SNAi.setSuggestList) {
         SNAi.setSuggestList(vendors, { query: food, idx: 0 });
@@ -885,18 +1022,23 @@
     } catch (_) {}
 
     return {
-      ok: true,
+      ok: !!(orderResult && orderResult.ok) || (!intent.autoOrder && !!best),
       food: food,
       pos: pos,
       vendors: vendors,
       best: best,
       menuItem: menuItem,
+      judged: judged,
       order: orderResult,
       driver: driver,
       claim: claim,
       schedule: sched,
+      eta: eta,
+      eatLine: eta.eatLine,
+      summary: summaryLines.join('\n'),
+      courierNote: courierNote,
       steps: steps,
-      lines: lines,
+      lines: summaryLines,
       reply: reply,
     };
   }
@@ -907,7 +1049,7 @@
     if (!hours || /24\s*[\/7]|24h|always|open/i.test(hours)) {
       return {
         open: true,
-        label: 'OPEN · SpaceNet 24/7',
+        label: 'OPEN · 24/7',
         hours: hours || '24/7',
         alwaysOn: true,
       };
