@@ -38,11 +38,8 @@
           ? '· [' + a + '] SYS · ' + t
           : '  [' + a + '] OUT · ' + t;
     log(line, cls || (d === 'IN' ? 'cmd' : d === 'SYS' ? 'dim' : 'ok'));
-    try {
-      if (global.SNFreeMind && SNFreeMind.learnInteraction && d === 'OUT' && t.length > 8) {
-        SNFreeMind.learnInteraction(a + ' ' + d, t, { source: 'market-live', score: 0.7 });
-      }
-    } catch (e) {}
+    // Do NOT auto-learn every OUT line — that poisoned free mind with
+    // random names / log spam (e.g. "Elizabeth Candy"). Teach only deliberate product facts.
     return line;
   }
 

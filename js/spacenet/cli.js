@@ -580,9 +580,27 @@
           'ok'
         );
         log('No paid xAI required · grow me: teach FACT or teach Q => A', 'dim');
+        log('Junk replies? type: mind wipe', 'dim');
         log('Export: free export · open fine-tune later', 'dim');
         preview('Astranov · teach to grow');
         global.SNGlobe?.setHud?.('ASTRANOV');
+        return;
+      }
+      if (
+        low === 'mind wipe' ||
+        low === 'wipe mind' ||
+        low === 'forget all' ||
+        low === 'clear mind' ||
+        low === 'mind reset'
+      ) {
+        try {
+          const w = global.SNFreeMind?.wipe?.('cli');
+          log('Mind wiped · poisoned memory gone · first-task reloaded', 'ok');
+          log('Learned now: ' + (w && w.learned != null ? w.learned : '?'), 'dim');
+          preview('Mind clean');
+        } catch (eW) {
+          log('Wipe failed · hard refresh site', 'err');
+        }
         return;
       }
       if (low === 'free export' || low === 'mind export' || low === 'export mind') {

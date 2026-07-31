@@ -5,10 +5,17 @@
 (function (global) {
   'use strict';
 
-  var LEARN_KEY = 'sn:free-mind-learn-v1';
-  var STATS_KEY = 'sn:free-mind-stats-v1';
-  var MAX_LEARN = 400;
+  // v3: wipe poisoned stores (Elizabeth Candy / climb / random OUT lines)
+  var LEARN_KEY = 'sn:free-mind-learn-v3';
+  var STATS_KEY = 'sn:free-mind-stats-v3';
+  var MAX_LEARN = 200;
   var NAME = 'Astranov';
+  var LEGACY_KEYS = [
+    'sn:free-mind-learn-v1',
+    'sn:free-mind-learn-v2',
+    'sn:free-mind-stats-v1',
+    'sn:free-mind-stats-v2',
+  ];
 
   /**
    * Seed corpus — FIRST TASK is P0 (lazy pizza order).
@@ -215,12 +222,97 @@
   ];
 
   var learned = [];
-  var stats = { answers: 0, teaches: 0, learns: 0, misses: 0 };
+  var stats = { answers: 0, teaches: 0, learns: 0, misses: 0, purged: 0 };
+
+  /** Product-shaped text only — random names / dating spam / OUT logs never stick */
+  function isProductish(t) {
+    return /\b(astranov|spacenet|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|yes|no)\b/i.test(
+      String(t || '')
+    );
+  }
+
+  function isJunkAnswer(a) {
+    var t = String(a || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (t.length < 12) return true;
+    if (/^(climb|yes|no|ok|idk|lol|test|asdf|null|undefined|out|in|sys)$/i.test(t)) return true;
+    // Proper-name spam (e.g. "Elizabeth Candy")
+    if (/^[A-Z][a-z]{1,20}(\s+[A-Z][a-z]{1,20}){1,3}$/.test(t) && t.length < 48) return true;
+    // Log lines / actor OUT junk auto-stored by market-live
+    if (/^\s*\[?.{0,28}\]?\s*(OUT|IN|SYS)\b/i.test(t)) return true;
+    if (/\bOUT\s*·|\bIN\s*·|\bSYS\s*·/i.test(t)) return true;
+    var words = t.split(/\s+/).filter(Boolean);
+    if (words.length < 3) return true;
+    if (words.length <= 4 && !isProductish(t)) return true;
+    // High ratio of Title Case tokens with no product words = celebrity/name sludge
+    var titleish = 0;
+    words.forEach(function (w) {
+      if (/^[A-Z][a-z]+$/.test(w)) titleish++;
+    });
+    if (titleish >= 2 && titleish / words.length >= 0.6 && !isProductish(t)) return true;
+    return false;
+  }
+
+  function isJunkQuestion(q) {
+    var t = String(q || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (t.length < 3) return true;
+    // Keys like "SpaceNet OUT" / "Vendor OUT" poisoned the mind
+    if (/\b(OUT|IN|SYS)\b/i.test(t) && t.length < 40) return true;
+    if (/^[A-Z][a-z]{1,20}(\s+[A-Z][a-z]{1,20}){1,3}$/.test(t) && !isProductish(t)) return true;
+    return false;
+  }
+
+  function purgeLegacy() {
+    try {
+      LEGACY_KEYS.forEach(function (k) {
+        localStorage.removeItem(k);
+      });
+    } catch (e) {}
+  }
+
+  function sanitizeLearned(rows) {
+    if (!Array.isArray(rows)) return [];
+    var out = [];
+    var i;
+    for (i = 0; i < rows.length; i++) {
+      var L = rows[i];
+      if (!L || typeof L !== 'object') continue;
+      var q = String(L.q || '').trim();
+      var a = String(L.a || '').trim();
+      if (isJunkQuestion(q) || isJunkAnswer(a)) {
+        stats.purged = (stats.purged || 0) + 1;
+        continue;
+      }
+      // Auto market-live rows without product shape — drop
+      var tags = L.tags || [];
+      if (
+        tags.indexOf('auto') >= 0 &&
+        (String(L.source || tags.join(' ')).indexOf('market') >= 0 ||
+          /\bOUT\b/i.test(q)) &&
+        !isProductish(a)
+      ) {
+        stats.purged = (stats.purged || 0) + 1;
+        continue;
+      }
+      out.push({
+        q: q.slice(0, 200),
+        a: a.slice(0, 280),
+        tags: tags,
+        hits: L.hits || 0,
+        t: L.t || Date.now(),
+      });
+    }
+    return out.slice(-MAX_LEARN);
+  }
 
   function load() {
+    purgeLegacy();
     try {
       var raw = JSON.parse(localStorage.getItem(LEARN_KEY) || '[]');
-      if (Array.isArray(raw)) learned = raw.slice(-MAX_LEARN);
+      learned = sanitizeLearned(raw);
     } catch (e) {
       learned = [];
     }
@@ -230,6 +322,24 @@
     } catch (e2) {}
     // Install first-task training once per browser (owner law)
     trainFirstTask();
+    // Persist cleaned set (drops poison left from partial v3)
+    if (learned.length) save();
+  }
+
+  /** Nuclear: wipe learned memory (keeps seeds; re-trains first task) */
+  function wipe(reason) {
+    learned = [];
+    stats.purged = (stats.purged || 0) + 1;
+    try {
+      localStorage.removeItem(LEARN_KEY);
+      localStorage.setItem('sn:free-mind-first-task-v2', '0');
+    } catch (e) {}
+    trainFirstTask();
+    save();
+    try {
+      think('mind wiped · ' + (reason || 'clean'), 'wipe');
+    } catch (e2) {}
+    return { ok: true, learned: learned.length };
   }
 
   /** Hard-wire first task facts into learned memory (idempotent) */
@@ -362,14 +472,6 @@
     return score;
   }
 
-  function isJunkAnswer(a) {
-    var t = String(a || '').trim();
-    if (t.length < 8) return true;
-    if (/^(climb|yes|no|ok|idk|lol|test|asdf|null|undefined)$/i.test(t)) return true;
-    if (t.split(/\s+/).length < 3 && t.length < 24) return true;
-    return false;
-  }
-
   function allDocs() {
     var out = SEED.map(function (s) {
       return {
@@ -499,10 +601,23 @@
           learned.length +
           ' learned · ' +
           stats.answers +
-          ' answers · teach to grow',
+          ' answers · teach to grow · mind wipe if junk',
         score: 1,
         via: 'free-mind',
         source: 'status',
+      };
+    }
+
+    // Kill poisoned memory
+    if (
+      /^(mind\s*wipe|wipe\s*mind|forget\s*all|clear\s*mind|mind\s*reset)$/i.test(low)
+    ) {
+      wipe('user');
+      return {
+        text: 'Mind wiped · junk gone · first-task drills reloaded · teach only product facts',
+        score: 1,
+        via: 'free-mind',
+        source: 'wipe',
       };
     }
 
@@ -513,15 +628,15 @@
       var parts = body.split(/\s*=>\s*|\s*\|\s*/);
       if (parts.length >= 2) {
         var ans = parts.slice(1).join(' | ');
-        if (isJunkAnswer(ans)) {
+        if (isJunkAnswer(ans) || isJunkQuestion(parts[0])) {
           return {
-            text: 'Teach rejected · answer too short/junk',
+            text: 'Teach rejected · looks like junk (names/logs/too short)',
             score: 1,
             via: 'free-mind',
             source: 'teach-reject',
           };
         }
-        teach(parts[0], ans);
+        teach(parts[0], ans, ['user', 'teach']);
         return {
           text: 'Learned · ' + brief(parts[0], 40),
           score: 1,
@@ -529,7 +644,15 @@
           source: 'teach',
         };
       }
-      teach(body, body);
+      if (isJunkAnswer(body) && !isProductish(body)) {
+        return {
+          text: 'Teach rejected · not product-shaped · use: teach Q => A',
+          score: 1,
+          via: 'free-mind',
+          source: 'teach-reject',
+        };
+      }
+      teach(body, body, ['user', 'teach']);
       return { text: 'Noted · ' + brief(body, 50), score: 1, via: 'free-mind', source: 'teach' };
     }
 
@@ -569,11 +692,14 @@
           if (low.indexOf(String(tg).toLowerCase()) >= 0) sc += 0.18;
         });
       }
-      // Prefer seeds over junk learned when close
-      if (d.source === 'seed') sc += 0.02;
+      // Prefer seeds; learned must earn it
+      if (d.source === 'seed') sc += 0.05;
+      if (d.source === 'brain') sc += 0.03;
       if (d.source === 'learned') {
-        if (isJunkAnswer(d.a)) continue;
-        sc *= 0.85;
+        if (isJunkAnswer(d.a) || isJunkQuestion(d.q)) continue;
+        // Auto-learned without product shape never surfaces
+        if ((d.tags || []).indexOf('auto') >= 0 && !isProductish(d.a)) continue;
+        sc *= 0.72;
       }
       if (sc > bestScore) {
         bestScore = sc;
@@ -581,9 +707,21 @@
       }
     }
 
-    // Stricter accept bar — short questions need a real hit
-    var need = qTok.length <= 2 ? 0.55 : 0.42;
-    if (best && best.source === 'learned') need = Math.max(need, 0.55);
+    // High bar — random name sludge must never win a weak token hit
+    var need = qTok.length <= 2 ? 0.72 : 0.58;
+    if (best && best.source === 'learned') need = Math.max(need, 0.78);
+    // Require at least 2 content-token hits for learned rows
+    if (best && best.source === 'learned') {
+      var learnHits = 0;
+      var bset = {};
+      tokens(best.q + ' ' + (best.tags || []).join(' ')).forEach(function (t) {
+        bset[t] = 1;
+      });
+      qTok.forEach(function (t) {
+        if (bset[t]) learnHits++;
+      });
+      if (learnHits < 2 && qTok.length >= 2) need = 9;
+    }
 
     if (best && bestScore >= need && !isJunkAnswer(best.a)) {
       if (best.source === 'learned') {
@@ -654,6 +792,10 @@
       .trim()
       .slice(0, 280);
     if (!q || !a) return { ok: false };
+    tags = tags || ['user'];
+    // Hard reject poison (unless explicit p0 train drills)
+    var train = tags.indexOf('train') >= 0 || tags.indexOf('first-task') >= 0;
+    if (!train && (isJunkQuestion(q) || isJunkAnswer(a))) return { ok: false, junk: true };
     try {
       think('learned · ' + q.slice(0, 40) + ' → ' + a.slice(0, 50), 'teach');
     } catch (eT) {}
@@ -665,6 +807,7 @@
         learned[i].a = a;
         learned[i].hits = (learned[i].hits || 0) + 1;
         learned[i].t = Date.now();
+        learned[i].tags = tags;
         stats.teaches = (stats.teaches || 0) + 1;
         save();
         return { ok: true, updated: true };
@@ -673,7 +816,7 @@
     learned.push({
       q: q,
       a: a,
-      tags: tags || ['user'],
+      tags: tags,
       hits: 1,
       t: Date.now(),
     });
@@ -687,19 +830,28 @@
     return { ok: true };
   }
 
-  /** Grow from real conversations (successful free answers) */
+  /**
+   * Grow from real conversations — STRICT.
+   * Never from market-live OUT spam, fallback, weak fuzzy, or name sludge.
+   */
   function learnInteraction(userMsg, assistantMsg, meta) {
     meta = meta || {};
     var u = String(userMsg || '').trim();
     var a = String(assistantMsg || '').trim();
-    if (u.length < 3 || a.length < 4) return;
+    if (u.length < 6 || a.length < 12) return;
     if (a.length > 160) a = brief(a, 120);
-    // Only store actionable / product lines — not noise
-    if (/error|failed|undefined|null/i.test(a)) return;
-    if (meta.score != null && meta.score < 0.35 && meta.source === 'fallback') return;
-    teach(u.slice(0, 120), a, ['auto', meta.source || 'chat']);
-    stats.learns = (stats.learns || 0) + 1;
-    save();
+    var src = String(meta.source || 'chat');
+    // Never ingest log actors / market I/O as mind facts
+    if (/market-live|live-io|out|radar/i.test(src)) return;
+    if (/\b(OUT|IN|SYS)\b/i.test(u)) return;
+    if (/error|failed|undefined|null|listening/i.test(a)) return;
+    if (src === 'fallback' || src === 'learned') return;
+    if (meta.score != null && meta.score < 0.7) return;
+    // Only hard intents / seeds / explicit act — not random fuzzy
+    if (!/^(intent|seed|act|teach|status|brain)/i.test(src) && !isProductish(a)) return;
+    if (isJunkAnswer(a) || isJunkQuestion(u)) return;
+    if (!isProductish(a) && !isProductish(u)) return;
+    teach(u.slice(0, 120), a, ['auto', src]);
   }
 
   /** Export dataset for future open-model fine-tune (user-owned) */
@@ -739,9 +891,11 @@
     answer: answer,
     teach: teach,
     think: think,
+    wipe: wipe,
     learnInteraction: learnInteraction,
     exportTrainset: exportTrainset,
     status: status,
+    isJunkAnswer: isJunkAnswer,
     get learnedCount() {
       return learned.length;
     },

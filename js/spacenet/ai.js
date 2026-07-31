@@ -1334,11 +1334,16 @@
             did: local.did,
             needsEdge: !!local.needsEdge,
           });
-          // Raise bar: weak fuzzy matches produced garbage (e.g. "climb")
-          if (freeHit && freeHit.text && freeHit.score >= 0.42) {
+          // High bar — weak fuzzy produced garbage ("climb", "Elizabeth Candy")
+          if (freeHit && freeHit.text && freeHit.score >= 0.55) {
             text = freeHit.text;
             try {
-              if (SNFreeMind.learnInteraction)
+              // Only grow from solid intents/seeds — never re-store fuzzy/learned junk
+              var okLearn =
+                freeHit.source &&
+                /^(intent|seed|act|teach|status|brain)/i.test(String(freeHit.source)) &&
+                freeHit.score >= 0.85;
+              if (okLearn && SNFreeMind.learnInteraction)
                 SNFreeMind.learnInteraction(msg, text, {
                   score: freeHit.score,
                   source: freeHit.source,
