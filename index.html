@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260731090000-locate-verify-prefs" />
-<meta name="astranov-continuity" content="20260731090000-locate-verify-prefs" />
+<meta name="astranov-build" content="20260731100000-ribbon-readable" />
+<meta name="astranov-continuity" content="20260731100000-ribbon-readable" />
 <meta name="astranov-ip" content="(c) ASTRANOV / SpaceNet. All rights reserved. S SpaceNets primary." />
 <meta name="astranov-mission" content="SpaceNet=system/grid. AI=Astranov. Domain astranov.eu only." />
 <meta name="astranov-ai-handoff" content="AI=Astranov. SpaceNet=OS+grid. Google must not show supabase project id." />
@@ -138,35 +138,36 @@
   /* Burger removed (OV-15) — tools under ASTRANOV home */
   #sn-burger-btn, #sn-burger-panel { display: none !important; }
 
-  /* Ribbon — flat live tool row (not fat buttons) */
+  /* Ribbon — big readable shortcuts (deep blue glow) */
   #sn-task-ribbon {
-    display: flex !important; flex-wrap: nowrap; align-items: center; justify-content: space-around;
-    gap: 2px; padding: 4px 6px; flex-shrink: 0; min-height: 36px; overflow-x: auto; overflow-y: hidden;
+    display: flex !important; flex-wrap: nowrap; align-items: stretch; justify-content: space-between;
+    gap: 6px; padding: 8px 8px 8px; flex-shrink: 0; min-height: 64px; overflow-x: auto; overflow-y: hidden;
     cursor: default; touch-action: manipulation;
-    background: transparent; border-bottom: 1px solid rgba(26, 111, 212, 0.22);
+    background: rgba(0, 10, 22, 0.55); border-bottom: 1px solid rgba(26, 111, 212, 0.28);
   }
   #sn-task-ribbon[hidden] { display: flex !important; }
   .sn-rib-btn {
-    display: inline-flex; flex-direction: row; align-items: center; justify-content: center;
-    gap: 4px; flex: 1 1 0; min-width: 0; min-height: 32px; padding: 4px 6px;
-    border: 0; background: transparent; color: #9ec8ff;
-    border-radius: 6px; cursor: pointer; white-space: nowrap;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; flex: 1 1 0; min-width: 52px; min-height: 56px; padding: 8px 6px;
+    border: 1px solid rgba(61, 158, 255, 0.35); background: rgba(0, 16, 36, 0.75); color: #e0f0ff;
+    border-radius: 12px; cursor: pointer; white-space: nowrap;
   }
-  .sn-rib-emoji { font-size: 15px; line-height: 1; display: block; opacity: 0.95; }
+  .sn-rib-emoji { font-size: 22px; line-height: 1; display: block; opacity: 1; }
   .sn-rib-txt {
-    font: 600 10px/1 ui-monospace, Menlo, Consolas, monospace;
-    letter-spacing: 0.04em; color: #6a9cc8; text-transform: lowercase;
+    font: 700 12px/1.15 system-ui, ui-sans-serif, sans-serif;
+    letter-spacing: 0.02em; color: #c8e4ff; text-transform: none;
   }
   .sn-rib-btn:hover, .sn-rib-btn:active {
-    background: rgba(26, 111, 212, 0.18);
-    box-shadow: 0 0 12px rgba(61, 158, 255, 0.2);
+    border-color: #3d9eff; background: rgba(26, 111, 212, 0.32);
+    box-shadow: 0 0 16px rgba(61, 158, 255, 0.35);
   }
-  .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #e8f4ff; }
+  .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #fff; }
   .sn-rib-btn#sn-rib-hf.on, .sn-rib-btn#sn-rib-add.on, .sn-rib-btn.on {
-    color: #3d9eff; text-shadow: 0 0 10px rgba(61, 158, 255, 0.55);
+    border-color: #3d9eff; background: rgba(26, 111, 212, 0.38);
+    box-shadow: 0 0 18px rgba(61, 158, 255, 0.4);
   }
   .sn-rib-btn#sn-rib-hf.on .sn-rib-txt, .sn-rib-btn#sn-rib-add.on .sn-rib-txt, .sn-rib-btn.on .sn-rib-txt {
-    color: #3d9eff;
+    color: #fff; text-shadow: 0 0 10px rgba(61, 158, 255, 0.55);
   }
   .sn-rib-btn.sn-rib-task { display: none !important; }
 
@@ -318,33 +319,32 @@
   .cli-line.err .cli-body { color: var(--cli-err); }
   .cli-line.err .cli-body::before { content: '! '; color: var(--cli-err); }
 
-  /* Prompt — live terminal line */
+  /* Input = same line style as feed (seamless · no bar · no border · no tinted box) */
   #cli-form {
-    display: flex; align-items: center; gap: 0; flex-shrink: 0;
-    margin: 0; padding: 0; border: 0;
-    border-top: 1px solid rgba(26, 111, 212, 0.22);
-    background: rgba(0, 8, 20, 0.5);
-    touch-action: manipulation; cursor: default;
+    display: flex; align-items: baseline; gap: 0; flex-shrink: 0;
+    margin: 0; padding: 2px 14px 12px; border: 0 !important;
+    background: transparent !important; box-shadow: none !important;
+    touch-action: manipulation; cursor: text;
   }
   #cli-form:focus-within {
-    border-top-color: rgba(61, 158, 255, 0.55);
-    box-shadow: 0 0 24px rgba(26, 111, 212, 0.18);
+    border: 0 !important; box-shadow: none !important; background: transparent !important;
   }
   .cli-prompt-prefix {
-    flex-shrink: 0; padding: 11px 0 11px 14px;
-    font: 700 15px/1.4 var(--cli-mono); color: var(--cli-glow);
-    text-shadow: 0 0 12px rgba(61, 158, 255, 0.8);
+    flex-shrink: 0; padding: 0; margin: 0 6px 0 0;
+    font: 700 13px/1.55 var(--cli-mono); color: var(--cli-glow);
+    text-shadow: 0 0 8px rgba(61, 158, 255, 0.7);
     user-select: none; pointer-events: none;
   }
   #cli-in {
-    flex: 1; border: 0; border-radius: 0; background: transparent;
-    color: var(--cli-text); caret-color: var(--cli-glow);
-    padding: 11px 14px 11px 8px;
-    font: 14px/1.45 var(--cli-mono); outline: none;
-    min-height: 42px; min-width: 0; box-shadow: none;
+    flex: 1; border: 0 !important; border-radius: 0; background: transparent !important;
+    color: #e8f4ff; caret-color: var(--cli-glow);
+    padding: 0; margin: 0;
+    font: 13px/1.55 var(--cli-mono); outline: none !important;
+    min-height: 0; min-width: 0; box-shadow: none !important;
+    -webkit-appearance: none; appearance: none;
   }
-  #cli-in::placeholder { color: var(--cli-dim); }
-  #cli-in:focus { outline: none; }
+  #cli-in::placeholder { color: var(--cli-dim); opacity: 0.75; }
+  #cli-in:focus { outline: none !important; box-shadow: none !important; background: transparent !important; }
   #cli-in.searching { color: var(--cli-glow); }
   #btn-handsfree, #btn-send, #btn-expand { display: none !important; }
 
@@ -449,10 +449,10 @@
     #field-radar { width: 96px; height: 96px; }
     #btn-home { font-size: 11px; padding: 7px 12px; max-width: min(220px, 56vw);
       overflow: hidden; text-overflow: ellipsis; }
-    #sn-task-ribbon { min-height: 52px; padding: 6px 6px; gap: 4px; }
-    .sn-rib-btn { min-height: 46px; padding: 4px 2px; }
-    .sn-rib-emoji { font-size: 18px; }
-    .sn-rib-txt { font-size: 9px; }
+    #sn-task-ribbon { min-height: 60px; padding: 6px; gap: 4px; }
+    .sn-rib-btn { min-height: 52px; min-width: 44px; padding: 6px 4px; }
+    .sn-rib-emoji { font-size: 20px; }
+    .sn-rib-txt { font-size: 11px; font-weight: 700; }
   }
 </style>
 </head>
@@ -576,7 +576,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731090000-locate-verify-prefs"></script>
+<script src="/js/spacenet/boot.js?v=20260731100000-ribbon-readable"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
