@@ -1295,15 +1295,93 @@
     }
   }
 
+  /**
+   * Metric tracks: deep glowing blue when OK.
+   * Soft off-limit → yellow · hard critical → red.
+   * Layout per row: NAME | sparkline | value
+   */
   var METRIC_LINES = [
-    { key: 'cpu', color: '#4cc9ff', label: 'CPU', limit: 85 },
-    { key: 'ram', color: '#a78bfa', label: 'RAM', limit: 85 },
-    { key: 'bat', color: '#5dffb0', label: 'BAT', limit: 33, invert: true }, // low is bad
-    { key: 'cpuT', color: '#ff8c42', label: 'CPU°', limit: 75 },
-    { key: 'batT', color: '#ff6b7a', label: 'BAT°', limit: 70 },
+    {
+      key: 'cpu',
+      label: 'CPU',
+      invert: false,
+      warn: 72,
+      crit: 90,
+      display: function (s) {
+        return Math.round(s.cpu) + '%';
+      },
+    },
+    {
+      key: 'ram',
+      label: 'RAM',
+      invert: false,
+      warn: 72,
+      crit: 90,
+      display: function (s) {
+        return Math.round(s.ram) + '%';
+      },
+    },
+    {
+      key: 'bat',
+      label: 'BAT',
+      invert: true,
+      warn: 45,
+      crit: 33,
+      display: function (s) {
+        return Math.round(s.bat) + '%' + (s.charging ? '⚡' : '');
+      },
+    },
+    {
+      key: 'cpuT',
+      label: 'CPU°',
+      invert: false,
+      warn: 62,
+      crit: 78,
+      display: function (s) {
+        return '~' + s.cpuTempC + '°C';
+      },
+      valueOf: function (s) {
+        return s.cpuTempC;
+      },
+    },
+    {
+      key: 'batT',
+      label: 'BAT°',
+      invert: false,
+      warn: 36,
+      crit: 45,
+      display: function (s) {
+        return '~' + s.batTempC + '°C';
+      },
+      valueOf: function (s) {
+        return s.batTempC;
+      },
+    },
   ];
 
-  /** Device multi-line graph under ASTRANOV — horizontal time series per metric */
+  function metricSeverity(m, sample) {
+    var raw =
+      m.valueOf && sample
+        ? Number(m.valueOf(sample))
+        : Number(sample && sample[m.key]);
+    if (!isFinite(raw)) return 'ok';
+    if (m.invert) {
+      if (raw <= m.crit) return 'crit';
+      if (raw <= m.warn) return 'warn';
+      return 'ok';
+    }
+    if (raw >= m.crit) return 'crit';
+    if (raw >= m.warn) return 'warn';
+    return 'ok';
+  }
+
+  function metricColor(sev) {
+    if (sev === 'crit') return '#ff4d5e';
+    if (sev === 'warn') return '#ffc857';
+    return '#1a8cff';
+  }
+
+  /** One device graph under ASTRANOV — labeled rows · expands with top scroll */
   function paintStcPerf() {
     var c = $('stc-perf');
     var wrap = $('stc-perf-wrap');
@@ -1311,17 +1389,27 @@
     var ctx = c.getContext('2d');
     if (!ctx) return;
     if (!devHist.length) sampleDeviceMetrics();
+    var last = devHist.length ? devHist[devHist.length - 1] : sampleDeviceMetrics();
 
-    var cssW = 160;
-    var cssH = 32;
+    var cssW = 200;
+    var cssH = 92;
     if (wrap) {
       var r = wrap.getBoundingClientRect();
       if (r.width > 20) cssW = Math.round(r.width);
-      if (r.height > 8) cssH = Math.round(r.height);
+      if (r.height > 20) cssH = Math.round(r.height);
     }
+    try {
+      var panel = $('sn-topchrome-panel');
+      if (panel) {
+        if (panel.classList.contains('expanded')) cssH = Math.max(cssH, 160);
+        else if (panel.classList.contains('mid')) cssH = Math.max(cssH, 120);
+        else cssH = Math.max(cssH, 88);
+      }
+    } catch (_) {}
+
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var needW = Math.max(40, Math.round(cssW * dpr));
-    var needH = Math.max(20, Math.round(cssH * dpr));
+    var needW = Math.max(80, Math.round(cssW * dpr));
+    var needH = Math.max(60, Math.round(cssH * dpr));
     if (c.width !== needW || c.height !== needH) {
       c.width = needW;
       c.height = needH;
@@ -1331,130 +1419,99 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // limit guides (33% battery band, 85% load)
-    ctx.strokeStyle = 'rgba(255,107,122,0.22)';
-    ctx.lineWidth = dpr;
-    ctx.setLineDash([4 * dpr, 4 * dpr]);
-    // 33% from bottom for battery low zone
-    var y33 = h - 2 * dpr - 0.33 * (h - 4 * dpr);
-    ctx.beginPath();
-    ctx.moveTo(0, y33);
-    ctx.lineTo(w, y33);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,200,87,0.18)';
-    var y85 = h - 2 * dpr - 0.85 * (h - 4 * dpr);
-    ctx.beginPath();
-    ctx.moveTo(0, y85);
-    ctx.lineTo(w, y85);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    var nRows = METRIC_LINES.length;
+    var padX = 4 * dpr;
+    var padY = 3 * dpr;
+    var gap = 3 * dpr;
+    var rowH = (h - padY * 2 - gap * (nRows - 1)) / nRows;
+    var labelW = Math.max(28 * dpr, Math.min(44 * dpr, w * 0.14));
+    var valueW = Math.max(36 * dpr, Math.min(56 * dpr, w * 0.18));
+    var sparkL = padX + labelW + 4 * dpr;
+    var sparkR = w - padX - valueW - 4 * dpr;
+    var sparkW = Math.max(20 * dpr, sparkR - sparkL);
 
-    if (devHist.length < 2) return;
+    var fontPx = Math.max(8 * dpr, Math.min(11 * dpr, rowH * 0.42));
+    ctx.textBaseline = 'middle';
+    ctx.font =
+      '700 ' + fontPx + 'px "Nunito", "Comfortaa", system-ui, sans-serif';
 
-    function drawSeries(key, color) {
-      var i;
-      var n = devHist.length;
+    var hist = devHist.length ? devHist : [last];
+    var iRow;
+    for (iRow = 0; iRow < nRows; iRow++) {
+      var m = METRIC_LINES[iRow];
+      var y0 = padY + iRow * (rowH + gap);
+      var yMid = y0 + rowH * 0.5;
+      var sev = metricSeverity(m, last);
+      var col = metricColor(sev);
+      var glow =
+        sev === 'ok'
+          ? 'rgba(26,140,255,0.55)'
+          : sev === 'warn'
+            ? 'rgba(255,200,87,0.55)'
+            : 'rgba(255,77,94,0.6)';
+
+      ctx.fillStyle = 'rgba(8, 30, 70, 0.28)';
       ctx.beginPath();
-      for (i = 0; i < n; i++) {
-        var v = Number(devHist[i][key]);
-        if (!isFinite(v)) v = 0;
-        var x = (i / (n - 1)) * (w - 2 * dpr) + dpr;
-        var y = h - 2 * dpr - (v / 100) * (h - 4 * dpr);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1.35 * dpr;
-      ctx.lineJoin = 'round';
-      ctx.lineCap = 'round';
-      ctx.stroke();
-      // tip
-      var last = Number(devHist[n - 1][key]);
-      var lx = w - 2 * dpr;
-      var ly = h - 2 * dpr - (last / 100) * (h - 4 * dpr);
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(lx, ly, 1.8 * dpr, 0, Math.PI * 2);
+      if (ctx.roundRect) ctx.roundRect(padX, y0, w - padX * 2, rowH, 3 * dpr);
+      else ctx.rect(padX, y0, w - padX * 2, rowH);
       ctx.fill();
-    }
 
-    METRIC_LINES.forEach(function (m) {
-      drawSeries(m.key, m.color);
-    });
+      ctx.fillStyle = col;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = sev === 'ok' ? 6 * dpr : 8 * dpr;
+      ctx.textAlign = 'left';
+      ctx.fillText(m.label, padX + 3 * dpr, yMid);
+      ctx.shadowBlur = 0;
+
+      var sparkTop = y0 + 3 * dpr;
+      var sparkBot = y0 + rowH - 3 * dpr;
+      var sparkH = Math.max(4 * dpr, sparkBot - sparkTop);
+      if (hist.length >= 1) {
+        var j;
+        var n = hist.length;
+        ctx.beginPath();
+        for (j = 0; j < n; j++) {
+          var v = Number(hist[j][m.key]);
+          if (!isFinite(v)) v = 0;
+          v = Math.max(0, Math.min(100, v));
+          var x = sparkL + (j / Math.max(n - 1, 1)) * sparkW;
+          var y = sparkBot - (v / 100) * sparkH;
+          if (j === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = col;
+        ctx.lineWidth = Math.max(1.2 * dpr, 1.4 * dpr);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 5 * dpr;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        var lastV = Number(hist[n - 1][m.key]);
+        if (!isFinite(lastV)) lastV = 0;
+        lastV = Math.max(0, Math.min(100, lastV));
+        var lx = sparkL + sparkW;
+        var ly = sparkBot - (lastV / 100) * sparkH;
+        ctx.fillStyle = col;
+        ctx.shadowColor = glow;
+        ctx.shadowBlur = 6 * dpr;
+        ctx.beginPath();
+        ctx.arc(lx, ly, 1.8 * dpr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+
+      ctx.fillStyle = col;
+      ctx.shadowColor = glow;
+      ctx.shadowBlur = sev === 'ok' ? 5 * dpr : 7 * dpr;
+      ctx.textAlign = 'right';
+      ctx.fillText(m.display(last), w - padX - 2 * dpr, yMid);
+      ctx.shadowBlur = 0;
+    }
   }
 
   function paintGadgetDetails() {
-    var last = devHist.length ? devHist[devHist.length - 1] : sampleDeviceMetrics();
-    function setRow(id, label, val, cls) {
-      var el = $(id);
-      if (!el) return;
-      el.className = 'stc-g-row' + (cls ? ' ' + cls : '');
-      el.innerHTML = '<span>' + label + '</span><span>' + val + '</span>';
-    }
-    var cpuCls = last.cpu >= 85 ? 'crit' : last.cpu >= 70 ? 'warn' : '';
-    var ramCls = last.ram >= 85 ? 'crit' : last.ram >= 70 ? 'warn' : '';
-    var batCls = last.bat <= 33 ? 'crit' : last.bat <= 45 ? 'warn' : '';
-    var ctCls = last.cpuTempC >= 78 ? 'crit' : last.cpuTempC >= 65 ? 'warn' : '';
-    var btCls = last.batTempC >= 42 ? 'crit' : last.batTempC >= 36 ? 'warn' : '';
-    setRow('stc-m-cpu', 'CPU', Math.round(last.cpu) + '%', cpuCls);
-    setRow('stc-m-ram', 'RAM', Math.round(last.ram) + '%', ramCls);
-    setRow(
-      'stc-m-bat',
-      'Battery',
-      Math.round(last.bat) + '%' + (last.charging ? ' ⚡' : ''),
-      batCls
-    );
-    setRow('stc-m-cput', 'CPU temp', '~' + last.cpuTempC + '°C', ctCls);
-    setRow('stc-m-batt', 'Bat temp', '~' + last.batTempC + '°C', btCls);
-
-    // detail canvas = larger multi-line
-    var dc = $('stc-perf-detail');
-    if (dc && dc.getContext) {
-      var ctx = dc.getContext('2d');
-      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      var wrap = dc.parentElement;
-      var cssW = wrap ? wrap.clientWidth || 200 : 200;
-      var cssH = 56;
-      var nw = Math.round(cssW * dpr);
-      var nh = Math.round(cssH * dpr);
-      if (dc.width !== nw || dc.height !== nh) {
-        dc.width = nw;
-        dc.height = nh;
-      }
-      // reuse paint by temp swap
-      var hold = $('stc-perf');
-      // draw inline
-      var w = dc.width;
-      var h = dc.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.strokeStyle = 'rgba(255,107,122,0.25)';
-      ctx.setLineDash([3 * dpr, 3 * dpr]);
-      var y33 = h - 2 * dpr - 0.33 * (h - 4 * dpr);
-      ctx.beginPath();
-      ctx.moveTo(0, y33);
-      ctx.lineTo(w, y33);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      if (devHist.length >= 2) {
-        METRIC_LINES.forEach(function (m) {
-          var i;
-          var n = devHist.length;
-          ctx.beginPath();
-          for (i = 0; i < n; i++) {
-            var v = Number(devHist[i][m.key]);
-            var x = (i / (n - 1)) * (w - 2 * dpr) + dpr;
-            var y = h - 2 * dpr - (v / 100) * (h - 4 * dpr);
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.strokeStyle = m.color;
-          ctx.lineWidth = 1.5 * dpr;
-          ctx.stroke();
-        });
-      }
-    }
-
-    // Radar detail
+    // Device numbers live on the single expanding graph (paintStcPerf)
     var rn = $('stc-radar-rng');
     if (rn) rn.textContent = radarZoom.toFixed(1) + '×';
     var rN = $('stc-radar-n');
@@ -1467,7 +1524,6 @@
       rS.textContent = Math.round(spd.v) + ' km/h';
     }
 
-    // Money detail
     var C = g.SNCurrency;
     var bal = C && C.balance ? C.balance() : 0;
     var vault = C && C.platformFees ? C.platformFees() : 0;
@@ -1485,10 +1541,6 @@
     if (mm) mm.textContent = fmt(mined);
   }
 
-  /**
-   * Unified top chrome — same width language as CLI.
-   * Drag handle down = expand · up = retract (one finger).
-   */
   function bindTopChrome() {
     var panel = $('sn-topchrome-panel');
     var handle = $('sn-topchrome-drag');
@@ -1508,7 +1560,7 @@
     function sizePx(mode) {
       var h = window.innerHeight || 700;
       // Floor = top-scroll min — never cut gadgets (CLI twin rule)
-      var MIN = 92;
+      var MIN = 148;
       if (mode === 'collapsed') return MIN;
       if (mode === 'expanded') return Math.max(MIN, Math.min(440, Math.round(h * 0.52)));
       return Math.max(MIN, Math.min(300, Math.round(h * 0.36)));
@@ -1534,6 +1586,11 @@
       }
       try {
         localStorage.setItem(KEY, mode);
+      } catch (_) {}
+      try {
+        requestAnimationFrame(function () {
+          paintStcPerf();
+        });
       } catch (_) {}
       // Resize radar canvas after layout
       setTimeout(function () {

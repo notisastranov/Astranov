@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731231000-scrolls-starry-input" />
-<meta name="astranov-continuity" content="20260731231000-scrolls-starry-input" />
+<meta name="astranov-build" content="20260731233000-device-labeled-graph" />
+<meta name="astranov-continuity" content="20260731233000-device-labeled-graph" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1650,6 +1650,45 @@
   }
 
 
+
+  /* Single device graph — expands with top scroll (no second canvas) */
+  #stc-perf-wrap {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 92px !important;
+    min-height: 92px !important;
+    border-radius: 10px !important;
+    padding: 4px 2px !important;
+    box-sizing: border-box !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 92px !important;
+    min-height: 92px !important;
+  }
+  #sn-topchrome-panel.mid #stc-perf-wrap {
+    height: 128px !important;
+    min-height: 128px !important;
+  }
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 168px !important;
+    min-height: 168px !important;
+  }
+  #stc-perf {
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+  }
+  #stc-perf-legend { display: none !important; }
+  #stc-perf-detail { display: none !important; }
+  #stc-d-device .stc-g-note {
+    margin: 0; font: 500 10px/1.4 var(--font-ui); color: #7aa8d8;
+  }
+  /* top scroll taller when collapsed so 5 labeled rows fit */
+  :root { --top-scroll-min: 148px; }
+  #sn-topchrome-panel.collapsed {
+    min-height: 148px !important;
+  }
+
 </style>
 </head>
 <body>
@@ -1694,24 +1733,12 @@
         </div>
         <div class="stc-col stc-col-device" id="stc-center">
           <button type="button" id="btn-home" title="ASTRANOV · extreme menu · tools · account">ASTRANOV</button>
-          <div id="stc-perf-wrap" title="CPU · RAM · battery · temps">
-            <canvas id="stc-perf" width="320" height="64" aria-label="Device metrics graph"></canvas>
-          </div>
-          <div id="stc-perf-legend" aria-hidden="true">
-            <span><i style="background:#4cc9ff"></i>CPU</span>
-            <span><i style="background:#a78bfa"></i>RAM</span>
-            <span><i style="background:#5dffb0"></i>BAT</span>
-            <span><i style="background:#ff8c42"></i>CPU°C</span>
-            <span><i style="background:#ff6b7a"></i>BAT°C</span>
+          <div id="stc-perf-wrap" title="Device · CPU · RAM · battery · temps">
+            <canvas id="stc-perf" width="360" height="120" aria-label="Device metrics graph"></canvas>
           </div>
           <div class="stc-g-detail" id="stc-d-device">
             <div class="stc-g-title">DEVICE · LOAD</div>
-            <div class="stc-g-row" id="stc-m-cpu"><span>CPU</span><span>—</span></div>
-            <div class="stc-g-row" id="stc-m-ram"><span>RAM</span><span>—</span></div>
-            <div class="stc-g-row" id="stc-m-bat"><span>Battery</span><span>—</span></div>
-            <div class="stc-g-row" id="stc-m-cput"><span>CPU temp</span><span>—</span></div>
-            <div class="stc-g-row" id="stc-m-batt"><span>Bat temp</span><span>—</span></div>
-            <canvas id="stc-perf-detail" width="280" height="72" aria-hidden="true"></canvas>
+            <p class="stc-g-note">One graph · expands with top scroll · deep blue = OK · yellow = soft limit · red = critical</p>
           </div>
         </div>
         <div class="stc-col stc-col-money">
@@ -1880,7 +1907,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731231000-scrolls-starry-input"></script>
+<script src="/js/spacenet/boot.js?v=20260731233000-device-labeled-graph"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
