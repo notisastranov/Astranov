@@ -223,3 +223,9 @@ js/spacenet/auth.js          → Google GIS preferred
 *Agent note 2026-07-31: Globe drag anti-shake — deadzone, fling-only inertia, no frame-skip while dragging, no double pointerup, soft delta filter. Build `20260731210000-globe-smooth-drag`.*
 *Agent note 2026-07-31: Tile top row − yellow · **X red close** · + green. Close in middle of ±. Build `20260731211000-tile-xyz-buttons`.*
 *Agent note 2026-07-31: **Unified top chrome** — radar · local · ASTRANOV · device graph · money in one CLI-width bar; drag down expand / up retract. Collapsed = amount + name + local + mini radar/graph. Build `20260731213000-topchrome`.*
+*Agent note 2026-07-31 day ship `20260731220000-day-ship`:
+- Unified top chrome (radar·local·ASTRANOV·device graph·AC) CLI-width drag expand
+- Astranov coins (not strands) · tile − yellow / X red / + green
+- Globe smooth drag · HELPER · AI graphics · fleet · economy
+- Rounded tall type: Comfortaa + Nunito · no free-float HUD overlap lock
+- Radar expands chrome not free screen · production path on main*

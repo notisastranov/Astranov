@@ -1591,8 +1591,13 @@
   }
 
   function radarSizePx() {
-    if (!radarBig) return RADAR_SM;
-    return Math.min(RADAR_LG, (typeof window !== 'undefined' ? window.innerWidth : 400) - 24);
+    var wrap = $('field-radar');
+    if (wrap) {
+      var r = wrap.getBoundingClientRect();
+      if (r.width >= 28) return Math.round(Math.min(r.width, r.height) || r.width);
+    }
+    if (!radarBig) return 40;
+    return 120;
   }
 
   function syncRadarCanvas() {
@@ -1600,8 +1605,8 @@
     var wrap = $('field-radar');
     if (!c || !wrap) return;
     var px = radarSizePx();
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var need = Math.round(px * dpr);
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var need = Math.max(40, Math.round(px * dpr));
     if (c.width !== need || c.height !== need) {
       c.width = need;
       c.height = need;
@@ -1615,11 +1620,17 @@
       wrap.classList.toggle('expanded', radarBig);
       wrap.setAttribute('aria-expanded', radarBig ? 'true' : 'false');
       wrap.title = radarBig
-        ? 'Double-tap to shrink · two-finger scroll = range zoom'
-        : 'Tap expand · two-finger scroll = range · friends green · competitors red';
+        ? 'Radar expanded · hold zoom out · pinch range'
+        : 'Tap zoom in · hold zoom out · expand top bar for detail';
     }
     try {
-      document.body.classList.toggle('radar-expanded', radarBig);
+      document.body.classList.remove('radar-expanded'); // never free-float takeover
+    } catch (_) {}
+    // Grow unified top chrome instead of floating radar
+    try {
+      if (g.SNTopChrome && g.SNTopChrome.set) {
+        g.SNTopChrome.set(radarBig ? 'expanded' : 'collapsed', true);
+      }
     } catch (_) {}
     syncRadarCanvas();
     paintRadarZoomLabel();

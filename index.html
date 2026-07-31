@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#020814" />
-<meta name="astranov-build" content="20260731213000-topchrome" />
-<meta name="astranov-continuity" content="20260731213000-topchrome" />
+<meta name="astranov-build" content="20260731220000-day-ship" />
+<meta name="astranov-continuity" content="20260731220000-day-ship" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -14,7 +14,7 @@
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Comfortaa:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     --bg: #020814;
@@ -38,10 +38,10 @@
     --border-strong: rgba(76, 201, 255, 0.65);
     --glow-soft: 0 0 24px rgba(11, 111, 212, 0.35);
     --glow-hot: 0 0 36px rgba(61, 184, 255, 0.45);
-    --font-ui: "Rajdhani", system-ui, sans-serif;
-    --font-display: "Orbitron", "Rajdhani", system-ui, sans-serif;
+    --font-ui: "Nunito", "Varela Round", system-ui, sans-serif;
+    --font-display: "Comfortaa", "Nunito", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
-    --zone-top: 42px;
+    --zone-top: 64px;
     --r-sm: 10px;
     --r-md: 14px;
     --r-lg: 18px;
@@ -78,6 +78,7 @@
     max-height: 56px;
     overflow: hidden;
     display: flex; flex-direction: column;
+    min-height: 52px;
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.94), rgba(2, 8, 18, 0.96));
     backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
     border: 1px solid rgba(61, 184, 255, 0.35);
@@ -119,6 +120,7 @@
     gap: 8px;
     padding: 6px 10px 4px;
     min-height: 44px;
+    overflow: hidden;
   }
   #stc-detail {
     flex: 1; min-height: 0; overflow: auto;
@@ -1170,6 +1172,99 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* ROUND TALL TYPE — rounded edges, slightly taller */
+  html, body {
+    font-feature-settings: "kern" 1, "liga" 1;
+    letter-spacing: 0.01em;
+  }
+  body {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  button, input, .cli-brand, #btn-home, #stc-local, #fbh-s,
+  .sn-rib-label, .sfm-title, .sfm-role, #cli-preview, #cli-activity {
+    font-family: var(--font-display), var(--font-ui), system-ui, sans-serif;
+  }
+  #cli-preview, #cli-in, #cli-log, .fnm-row, #fbh-mine-rate, #fbh-fees, #fbh-econ-label {
+    font-family: var(--font-ui), system-ui, sans-serif;
+    letter-spacing: 0.02em;
+  }
+  .cli-brand, #btn-home, #stc-local {
+    letter-spacing: 0.18em;
+    font-weight: 700;
+  }
+  #btn-home {
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+  }
+  #fbh-s {
+    font-size: 13px !important;
+    letter-spacing: 0.04em;
+    font-weight: 800;
+  }
+  #stc-local {
+    font-size: 10px !important;
+    letter-spacing: 0.04em !important;
+    font-family: var(--font-ui) !important;
+    font-weight: 700 !important;
+  }
+  #cli-in {
+    font-size: 15px;
+    letter-spacing: 0.02em;
+  }
+  #cli-log {
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .sn-rib-label {
+    font-size: 10px !important;
+    letter-spacing: 0.06em !important;
+  }
+
+  /* FINAL NO-OVERLAP LOCK — gadgets only inside top chrome */
+  #sn-topchrome #field-radar,
+  #sn-topchrome #field-balance-hud,
+  #sn-topchrome #field-nav-meta,
+  #sn-topchrome #sn-fleet-monitor,
+  #sn-topchrome #btn-home {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    float: none !important;
+    margin: 0 !important;
+  }
+  #sn-topchrome #field-balance-hud {
+    animation: none !important;
+    max-width: 110px !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 2px 4px !important;
+    min-width: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s {
+    font-size: 12px !important;
+  }
+  /* Hide any orphaned free-float if DOM ever duplicates */
+  body > #field-radar,
+  body > #field-balance-hud,
+  body > #field-nav-meta,
+  body > #sn-fleet-monitor,
+  body > #btn-home {
+    display: none !important;
+  }
+  /* Top chrome never covers CLI */
+  #sn-topchrome { z-index: 92; }
+  #dock { z-index: 100; }
+  /* Breathing room under chrome for globe taps */
+  #globe, #city-map { padding-top: 0; }
+
 </style>
 </head>
 <body>
@@ -1334,7 +1429,7 @@
 
 <div id="spacenet-finance-panel" hidden>
   <div class="sfp-head">
-    <b>S FINANCE</b>
+    <b>AC FINANCE</b>
     <button type="button" id="sfp-close">Close</button>
   </div>
   <div class="sfp-tabs">
@@ -1349,7 +1444,7 @@
 
 <div id="sn-miner-terms" hidden>
   <div class="mtm-panel">
-    <div style="color:#4cc9ff;font-weight:700;margin-bottom:8px;font-family:Orbitron,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
+    <div style="color:#4cc9ff;font-weight:700;margin-bottom:8px;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
     <p>SETI-style mesh: spare <b>CPU · RAM · storage · bandwidth</b> powers routing, indexes, and multi-stop topo when idle. Mine <b>Astranov coins</b>. Assign this device as Main · Hot-swap · or home RAID under ASTRANOV.</p>
     <button type="button" id="sn-miner-accept">I AGREE · JOIN MESH · MINE ASTRANOV COINS</button>
   </div>
@@ -1357,13 +1452,13 @@
 
 <div id="coach" hidden>
   <div class="card">
-    <b style="color:#4cc9ff;font-family:Orbitron,sans-serif;letter-spacing:.14em;font-size:13px">ASTRANOV</b>
+    <b style="color:#4cc9ff;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.14em;font-size:13px">ASTRANOV</b>
     <p style="font-size:13px;color:#8ab4d0;margin:10px 0 0;line-height:1.5">Real-Earth OS. Radar left · S wallet right · ribbon below. Type help · locate · order pizza.</p>
     <button type="button" id="coach-ok">ENTER</button>
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731213000-topchrome"></script>
+<script src="/js/spacenet/boot.js?v=20260731220000-day-ship"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
