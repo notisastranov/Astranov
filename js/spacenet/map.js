@@ -1470,6 +1470,8 @@
     setBasemap,
     toggleOverlay,
     softSetView,
+    fitLatLngs,
+    markYou,
     canAutopilot,
     userHoldCamera,
     releasePilot: releasePilot,
