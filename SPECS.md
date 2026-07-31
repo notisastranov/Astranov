@@ -231,3 +231,4 @@ js/spacenet/auth.js          → Google GIS preferred
 - Radar expands chrome not free screen · production path on main*
 *Agent note 2026-07-31: Device multi-line graph CPU/RAM/BAT/CPU°/BAT° + battery≤33% sound+text alerts; expanded detail tiles under radar/device/money. ASTRANOV opens extreme menu. Build `20260731223000-device-metrics-alerts`.*
 *Agent note 2026-07-31: Top + bottom **scrolls** — min height floors so gadgets never clip (top ≥92px, bottom ≥120px). Labels TOP SCROLL / BOTTOM SCROLL. Build `20260731224000-top-bottom-scrolls`.*
+*Agent note 2026-07-31: Google Access blocked = **GCP Authorized JavaScript origins** missing https://astranov.eu on client `73846897360-…0vd4ts11`. Code uses GIS only (no supabase host face). api.astranov.eu still CF 403. Owner must Save origins in Google Cloud. Build `20260731225000-auth-google-fix-help`.*

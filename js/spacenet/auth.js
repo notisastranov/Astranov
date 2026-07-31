@@ -201,15 +201,14 @@
     const cid = googleClientId();
     const short = cid.replace('.apps.googleusercontent.com', '');
     return (
-      'Google blocked origin ' +
-      origin +
-      '. Fix (5 min): Google Cloud → Credentials → OAuth 2.0 Client ID ending …' +
+      'Google blocked this site origin. ONLY fix is Google Cloud (not our code): ' +
+      'Credentials → OAuth client …' +
       short.slice(-12) +
-      ' → type Web application → Authorized JavaScript origins ADD exactly: ' +
+      ' → Web application → Authorized JavaScript origins ADD exactly ' +
       origin +
-      ' and https://www.astranov.eu → Save → wait 2–10 min → hard refresh. ' +
-      'Also Supabase → Authentication → Providers → Google → same Client ID + Secret. ' +
-      'Full client: ' +
+      ' and https://www.astranov.eu → Save → wait 5 min → Ctrl+F5. ' +
+      'Same Client ID + Secret in Supabase → Authentication → Providers → Google. ' +
+      'Client: ' +
       cid
     );
   }
@@ -218,23 +217,45 @@
     const origin = pageOrigin();
     const cid = googleClientId();
     return [
-      'AUTH SETUP · Google must allow THIS origin on THIS client',
-      '1) Open: https://console.cloud.google.com/apis/credentials',
-      '2) OAuth 2.0 Client IDs → open client: ' + cid,
-      '3) Application type must be: Web application',
-      '4) Authorized JavaScript origins — add ALL of:',
+      '══════════════════════════════════════',
+      'GOOGLE LOGIN BLOCKED — 5 MINUTE FIX',
+      'Code already uses ASTRANOV face on astranov.eu only.',
+      'Google Cloud must ALLOW this origin on the OAuth client.',
+      '══════════════════════════════════════',
+      'A) Google Cloud Console (REQUIRED)',
+      '1) Open this exact client:',
+      '   https://console.cloud.google.com/apis/credentials/oauthclient/' + cid,
+      '2) Application type: Web application',
+      '3) Authorized JavaScript origins — ADD exactly (no path, no slash at end):',
       '   · ' + origin,
       '   · https://astranov.eu',
       '   · https://www.astranov.eu',
-      '5) Authorized redirect URIs (for later custom domain / fallback):',
+      '4) Authorized redirect URIs (keep for Supabase):',
       '   · https://lkoatrkhuigdolnjsbie.supabase.co/auth/v1/callback',
       '   · https://api.astranov.eu/auth/v1/callback',
-      '6) Save. Wait 2–10 minutes (Google cache).',
-      '7) Supabase Dashboard → Authentication → Providers → Google ON',
-      '   Client ID = same · Client Secret = from that Google client',
-      '8) OAuth consent screen → App name ASTRANOV · Authorized domain astranov.eu · Publish',
-      '9) Hard refresh astranov.eu (Ctrl+F5) · login again',
-      'If you created a NEW client, set SN_CONFIG.googleClientId in config.js to its full *.apps.googleusercontent.com id and redeploy.',
+      '5) SAVE. Wait 2–10 minutes (Google cache is slow).',
+      '',
+      'B) OAuth consent screen',
+      '1) https://console.cloud.google.com/apis/credentials/consent',
+      '2) App name: ASTRANOV',
+      '3) User support email: yours',
+      '4) Authorized domains: astranov.eu',
+      '5) App homepage: https://astranov.eu',
+      '6) Privacy: https://astranov.eu/privacy.html',
+      '7) Publishing status: In production (or add your Gmail as Test user)',
+      '',
+      'C) Supabase (same Google client)',
+      '1) https://supabase.com/dashboard/project/lkoatrkhuigdolnjsbie/auth/providers',
+      '2) Google ON · Client ID = same · Client Secret = from Google client',
+      '3) (Optional later) Custom domain api.astranov.eu — currently Cloudflare 403',
+      '',
+      'D) Test',
+      '1) Hard refresh https://astranov.eu (Ctrl+F5)',
+      '2) Tap User → Sign in with Google',
+      'You must see ASTRANOV / astranov.eu — never a supabase project name.',
+      '',
+      'If you made a NEW OAuth client, put its full *.apps.googleusercontent.com id in',
+      'js/spacenet/config.js → googleClientId and push main.',
     ];
   }
 
@@ -294,12 +315,19 @@
       '#sn-auth-card .sn-auth-copy{font-size:13px;line-height:1.45;color:#a8c4dc;margin:0 0 20px}' +
       '#sn-auth-gsi{display:flex;justify-content:center;min-height:44px;margin:0 0 14px}' +
       '#sn-auth-card .sn-auth-note{font-size:11px;color:#6a8aaa;margin:0 0 12px;line-height:1.4}' +
+      '#sn-auth-card .sn-auth-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 10px}' +
+      '#sn-auth-card .sn-auth-link{display:inline-block;background:rgba(26,111,212,.35);border:1px solid rgba(61,158,255,.55);color:#cfe8ff;' +
+      'border-radius:999px;padding:10px 14px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}' +
+      '#sn-auth-card .sn-auth-link:hover{background:rgba(61,158,255,.45);color:#fff}' +
+      '#sn-auth-card .sn-auth-link.hot{background:linear-gradient(180deg,#c62828,#8b0000);border-color:#ff6b7a;color:#fff}' +
+      '#sn-auth-card .sn-auth-warn{font-size:12px;line-height:1.4;color:#ffc857;background:rgba(80,40,0,.35);border:1px solid rgba(255,200,87,.35);' +
+      'border-radius:12px;padding:10px 12px;margin:0 0 14px;text-align:left}' +
       '#sn-auth-card .sn-auth-close{background:transparent;border:1px solid rgba(138,180,217,.25);color:#8ab4d9;' +
       'border-radius:999px;padding:8px 18px;font-size:12px;cursor:pointer;margin:0 6px}' +
       '#sn-auth-card .sn-auth-close:hover{border-color:#3d9eff;color:#cfe8ff}' +
       '#sn-auth-card .sn-auth-err{font-size:12px;color:#ff8a8a;margin:10px 0 0;min-height:1.2em;text-align:left;white-space:pre-wrap;word-break:break-word}' +
       '#sn-auth-card .sn-auth-setup{display:none;text-align:left;font-size:11px;line-height:1.45;color:#9ec0dc;background:rgba(0,0,0,.35);' +
-      'border:1px solid rgba(61,158,255,.2);border-radius:12px;padding:12px;margin:12px 0 0;max-height:220px;overflow:auto}' +
+      'border:1px solid rgba(61,158,255,.2);border-radius:12px;padding:12px;margin:12px 0 0;max-height:280px;overflow:auto}' +
       '#sn-auth-card.show-setup .sn-auth-setup{display:block}' +
       '#sn-auth-card .sn-auth-cid{font-size:10px;color:#5a7a96;margin:8px 0 0;word-break:break-all}';
     document.head.appendChild(st);
@@ -323,6 +351,11 @@
     ensureModalStyles();
     const b = brand();
     const origin = pageOrigin();
+    const cid = googleClientId();
+    const gLink =
+      'https://console.cloud.google.com/apis/credentials/oauthclient/' + encodeURIComponent(cid);
+    const sbLink =
+      'https://supabase.com/dashboard/project/lkoatrkhuigdolnjsbie/auth/providers';
     if (!A._modal) {
       const root = document.createElement('div');
       root.id = 'sn-auth-modal';
@@ -338,15 +371,30 @@
         ' · ' +
         origin +
         '</p>' +
-        '<p class="sn-auth-copy">You are signing in to <b>ASTRANOV</b> on <b>' +
+        '<p class="sn-auth-copy">You sign in to <b>ASTRANOV</b> on <b>' +
         b.domain +
-        '</b>. Google only sees this site — never a third-party project host.</p>' +
+        '</b> only. Google Identity stays on this site.</p>' +
+        '<div class="sn-auth-warn" id="sn-auth-warn">' +
+        '<b>If Google says Access blocked</b> — that is Google Cloud blocking our origin, not a bug in the app. ' +
+        'Open the red button → add <b>' +
+        origin +
+        '</b> under <b>Authorized JavaScript origins</b> → Save → wait a few minutes → hard refresh.' +
+        '</div>' +
+        '<div class="sn-auth-actions">' +
+        '<a class="sn-auth-link hot" id="sn-auth-open-gcp" href="' +
+        gLink +
+        '" target="_blank" rel="noopener">Open Google OAuth client → fix origins</a>' +
+        '<a class="sn-auth-link" id="sn-auth-open-sb" href="' +
+        sbLink +
+        '" target="_blank" rel="noopener">Supabase Google provider</a>' +
+        '</div>' +
         '<div id="sn-auth-gsi"></div>' +
-        '<p class="sn-auth-note">Secure Google · stays on ' +
+        '<p class="sn-auth-note">Secure Google · brand face ' +
         b.domain +
-        '</p>' +
+        ' · never a third-party project host</p>' +
         '<div>' +
-        '<button type="button" class="sn-auth-close" id="sn-auth-setup-btn">Setup help</button>' +
+        '<button type="button" class="sn-auth-close" id="sn-auth-setup-btn">Full checklist</button>' +
+        '<button type="button" class="sn-auth-close" id="sn-auth-copy-btn">Copy fix steps</button>' +
         '<button type="button" class="sn-auth-close" id="sn-auth-close">Cancel</button>' +
         '</div>' +
         '<p class="sn-auth-err" id="sn-auth-err"></p>' +
@@ -360,16 +408,38 @@
       A._modal = root;
       root.querySelector('#sn-auth-close')?.addEventListener('click', closeModal);
       root.querySelector('#sn-auth-setup-btn')?.addEventListener('click', showSetupInModal);
+      root.querySelector('#sn-auth-copy-btn')?.addEventListener('click', function () {
+        const text = setupLines().join('\n');
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            void navigator.clipboard.writeText(text).then(function () {
+              say('Auth fix steps copied · paste anywhere', 'ok');
+            });
+          } else {
+            say('Copy failed · use Full checklist', 'err');
+          }
+        } catch (_) {
+          say('Copy failed · use Full checklist', 'err');
+        }
+        showSetupInModal();
+      });
       document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape' && A._modal && !A._modal.hidden) closeModal();
       });
     }
     A._modal.hidden = false;
+    // Keep warn always visible — blocked state is the default owner pain
     A._modal.querySelector('#sn-auth-card')?.classList.remove('show-setup');
     const errEl = document.getElementById('sn-auth-err');
     if (errEl) errEl.textContent = errText ? scrub(errText) : '';
+    if (errText && isOriginError(errText)) showSetupInModal();
     const cidEl = document.getElementById('sn-auth-cid');
-    if (cidEl) cidEl.textContent = 'OAuth client · ' + googleClientId();
+    if (cidEl) cidEl.textContent = 'OAuth client · ' + cid + ' · origin ' + origin;
+    // refresh deep links (origin may change on www)
+    const aG = document.getElementById('sn-auth-open-gcp');
+    if (aG) aG.href = gLink;
+    const aS = document.getElementById('sn-auth-open-sb');
+    if (aS) aS.href = sbLink;
     return document.getElementById('sn-auth-gsi');
   }
 
