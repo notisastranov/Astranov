@@ -94,6 +94,9 @@
     try {
       if (global.SNHome && SNHome.openState && SNHome.paint) SNHome.paint();
     } catch (_) {}
+    try {
+      if (global.SNField && SNField.paintRibbon) SNField.paintRibbon();
+    } catch (_) {}
   }
 
   function loadGsi() {

@@ -88,7 +88,7 @@
       act: 'user',
       emoji: '👤',
       text: 'User',
-      title: 'User · expands upward',
+      title: 'Sign in · or your profile when logged in',
       id: 'sn-rib-user',
     },
     {
@@ -277,34 +277,20 @@
       } catch (e) {}
       return;
     }
-    // Multi-option buttons: expand upward (SPECS)
+    // User = straight login when out · profile tile when in (no submenu)
     if (act === 'user') {
       var signed = !!(g.SNAuth && SNAuth.user);
-      openRibbonFlyout(
-        'sn-rib-user',
-        {
-          title: '👤 User',
-          items: [
-            { id: 'me', e: '👤', t: 'My multi-tile', d: 'Roles · photo · in feed' },
-            {
-              id: 'auth',
-              e: signed ? '🚪' : '🔐',
-              t: signed ? 'Sign out' : 'Sign in with Google',
-              d: 'astranov.eu · Astranov SpaceNet',
-            },
-            { id: 'home', e: '🏠', t: 'Home menu', d: 'Version · clocks · roles' },
-          ],
-        },
-        function (id) {
-          if (id === 'me') {
-            if (g.SNTile && SNTile.openMe) SNTile.openMe();
-            else if (g.SNCli && SNCli.run) void SNCli.run('me');
-          } else if (id === 'auth') {
-            if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
-            else if (g.SNCli && SNCli.run) void SNCli.run(signed ? 'logout' : 'login');
-          } else if (id === 'home' && g.SNHome && SNHome.toggle) SNHome.toggle();
+      try {
+        if (!signed) {
+          if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
+          else if (g.SNCli && SNCli.run) void SNCli.run('login');
+        } else {
+          if (g.SNTile && SNTile.openMe) SNTile.openMe();
+          else if (g.SNCli && SNCli.run) void SNCli.run('me');
         }
-      );
+      } catch (eUser) {
+        console.error('[SNField] user', eUser);
+      }
       return;
     }
     // ➕ Add → upward menu ONLY
@@ -432,9 +418,19 @@
     bar.setAttribute('aria-label', 'CLI shortcuts: locate user add layers AI send');
     var h = '';
     var i;
+    var signedIn = !!(g.SNAuth && SNAuth.user);
     for (i = 0; i < RIBBON_CORE.length; i++) {
       var b = RIBBON_CORE[i];
       var onCls = b.act === 'add' && g.SNTopo && SNTopo.active ? ' on' : '';
+      var label = b.text || b.act;
+      var title = b.title || b.text;
+      if (b.act === 'user') {
+        label = signedIn ? 'You' : 'Login';
+        title = signedIn
+          ? 'Your profile tile'
+          : 'Sign in · astranov.eu';
+        if (signedIn) onCls += ' on';
+      }
       h +=
         '<button type="button" class="sn-rib-btn sn-rib-core' +
         onCls +
@@ -443,13 +439,13 @@
         '"' +
         (b.id ? ' id="' + b.id + '"' : '') +
         ' title="' +
-        (b.title || b.text) +
+        title +
         '">' +
         '<span class="sn-rib-emoji" aria-hidden="true">' +
         (b.emoji || '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
-        (b.text || b.act) +
+        label +
         '</span>' +
         '</button>';
     }
