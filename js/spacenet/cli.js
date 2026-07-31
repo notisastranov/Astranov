@@ -1,6 +1,7 @@
-/* SpaceNet CLI — YOUR interaction with the system only
- * Feed = your lines + answers/progress for that turn.
- * No boot spam · no background status · no free-floating noise.
+/* Astranov live activity CLI
+ * Feed = your turn only · lines stream like a living terminal.
+ * Map / globe depict what the system is doing (camera · pulse · routes).
+ * No boot spam · no left-bar chat cards · no free-floating noise.
  */
 (function (global) {
   'use strict';
@@ -12,13 +13,29 @@
   let stickBottom = true;
   /** >0 while handling user send — only then may feed write */
   let turnOpen = 0;
+  let activityLabel = 'idle';
 
   function $(id) {
     return document.getElementById(id);
   }
 
+  function setActivity(label) {
+    activityLabel = String(label || 'idle').slice(0, 28);
+    const el = $('cli-activity');
+    if (el) el.textContent = activityLabel;
+  }
+
+  function setLive(on) {
+    try {
+      const panel = $('panel');
+      if (panel) panel.classList.toggle('cli-live', !!on);
+    } catch (_) {}
+  }
+
   function beginTurn() {
     turnOpen++;
+    setLive(true);
+    setActivity('working');
     try {
       const panel = $('panel');
       if (panel && panel.classList.contains('collapsed')) {
@@ -30,10 +47,117 @@
 
   function endTurn() {
     turnOpen = Math.max(0, turnOpen - 1);
+    if (turnOpen === 0) {
+      setLive(false);
+      setActivity('idle');
+    }
   }
 
   function inTurn() {
     return turnOpen > 0;
+  }
+
+  /**
+   * Depict CLI activity on map / globe — the world is the UI.
+   * kind: locate|fly|shops|order|delivery|global|city|food|pulse|work
+   */
+  function depict(kind, opts) {
+    opts = opts || {};
+    const G = global.SNGlobe;
+    const M = global.SNMap;
+    const pos =
+      opts.lat != null
+        ? { lat: Number(opts.lat), lng: Number(opts.lng) }
+        : global._snLastPos ||
+          (global.SNTasks && SNTasks.pos) ||
+          (G && G.focusPos && G.focusPos()) ||
+          null;
+    try {
+      if (kind === 'locate' || kind === 'pulse') {
+        if (pos && G && G.pulse) G.pulse(pos.lat, pos.lng, 0x3d9eff, opts.label || 'You', 14000);
+        if (pos && G && G.flyNear) G.flyNear(pos.lat, pos.lng, opts.tier || 'national');
+        if (G && G.setHud) G.setHud(opts.label || 'Locate');
+        setActivity(kind === 'locate' ? 'locate' : 'pulse');
+        return;
+      }
+      if (kind === 'global') {
+        if (G && G.goToTier) G.goToTier('global');
+        if (M && M.close) M.close();
+        if (G && G.setHud) G.setHud('GLOBAL Earth');
+        setActivity('global');
+        return;
+      }
+      if (kind === 'city' || kind === 'map') {
+        if (pos && M && M.open) void M.open(pos.lat, pos.lng);
+        if (G && G.setHud) G.setHud(opts.label || 'City map');
+        setActivity('city');
+        return;
+      }
+      if (kind === 'fly' || kind === 'go') {
+        if (pos && G && G.goToPlace) {
+          G.goToPlace(pos.lat, pos.lng, {
+            tier: opts.tier || 'national',
+            body: opts.body || 'earth',
+            pulse: true,
+            label: opts.label || '',
+            openMap: !!opts.openMap,
+          });
+        } else if (pos && G && G.flyNear) {
+          G.flyNear(pos.lat, pos.lng, opts.tier || 'national');
+        }
+        if (G && G.setHud) G.setHud(opts.label || 'Fly');
+        setActivity('fly');
+        return;
+      }
+      if (kind === 'shops' || kind === 'food' || kind === 'vendors') {
+        if (pos && G && G.goToPlace) {
+          G.goToPlace(pos.lat, pos.lng, {
+            tier: 'city',
+            body: 'earth',
+            pulse: true,
+            label: opts.label || 'Vendors',
+            openMap: true,
+          });
+        } else if (pos && M && M.open) {
+          void M.open(pos.lat, pos.lng);
+        }
+        if (M && M.showProfiles) M.showProfiles();
+        if (pos && G && G.pulse) G.pulse(pos.lat, pos.lng, 0xffcc44, opts.label || 'Shop', 16000);
+        if (G && G.setHud) G.setHud(opts.label || 'Shops');
+        setActivity(kind === 'food' ? 'food' : 'shops');
+        return;
+      }
+      if (kind === 'order' || kind === 'delivery' || kind === 'tasks') {
+        if (pos && M && M.open) void M.open(pos.lat, pos.lng);
+        if (M && M.showTasks) M.showTasks();
+        if (M && M.showProfiles) M.showProfiles();
+        try {
+          if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
+        } catch (_) {}
+        if (pos && G && G.pulse) G.pulse(pos.lat, pos.lng, 0x00dcff, opts.label || 'Route', 18000);
+        if (G && G.setHud) G.setHud(opts.label || 'Delivery');
+        setActivity(kind === 'order' ? 'order' : 'route');
+        return;
+      }
+      if (kind === 'work') {
+        setActivity(opts.label || 'work');
+        if (G && G.setHud) G.setHud(opts.label || 'Working…');
+        return;
+      }
+    } catch (e) {
+      console.warn('[SNCli.depict]', e);
+    }
+  }
+
+  /** Stream a progress line + optional map depict in one call */
+  function activity(text, mapKind, mapOpts) {
+    if (mapKind) depict(mapKind, mapOpts || {});
+    if (text) {
+      setActivity(String(text).slice(0, 24));
+      preview(text);
+      return log(text, 'dim');
+    }
+    return null;
   }
 
   function feedBox() {
@@ -114,8 +238,8 @@
   }
 
   /**
-   * Write to feed ONLY during an active user turn (or force:true).
-   * Outside a turn: silence. Errors may update the title bar only.
+   * Live stream line — ONLY during user turn (or force).
+   * No card chrome · map may already be moving via depict().
    */
   function log(text, cls, force) {
     if (!force && !inTurn()) {
@@ -128,25 +252,18 @@
     }
     const box = feedBox();
     if (!box) return null;
+    box.querySelectorAll('.cli-feed-item.is-latest').forEach((el) => {
+      el.classList.remove('is-latest');
+    });
     const wrap = document.createElement('div');
-    wrap.className = 'cli-feed-item';
+    wrap.className = 'cli-feed-item is-latest';
+    if (cls === 'dim' || cls === 'progress') wrap.classList.add('cli-act');
     const line = document.createElement('div');
-    line.className = 'cli-line' + (cls ? ' ' + cls : '');
-    const meta = document.createElement('span');
-    meta.className = 'cli-feed-meta';
-    const t = new Date();
-    const role =
-      cls === 'cmd' ? 'you' : cls === 'ok' ? 'astranov' : cls === 'err' ? 'error' : 'progress';
-    meta.textContent =
-      role +
-      '  ' +
-      String(t.getHours()).padStart(2, '0') +
-      ':' +
-      String(t.getMinutes()).padStart(2, '0');
+    const kind = cls === 'dim' ? 'progress' : cls || 'ok';
+    line.className = 'cli-line' + (kind ? ' ' + kind : '');
     const body = document.createElement('div');
     body.className = 'cli-body';
     body.textContent = text;
-    line.appendChild(meta);
     line.appendChild(body);
     wrap.appendChild(line);
     wrap.setAttribute('data-search', String(text || ''));
@@ -161,6 +278,7 @@
     box.appendChild(wrap);
     trimFeed(box);
     scrollFeedToEnd(box);
+    if (cls === 'ok' || cls === 'cmd') preview(String(text || '').slice(0, 90));
     return wrap;
   }
 
@@ -172,7 +290,9 @@
   function preview(text) {
     const el = $('cli-preview');
     if (el) el.textContent = text || '';
-    if (global.SNGlobe?.setHud) SNGlobe.setHud(text || '');
+    try {
+      if (global.SNGlobe?.setHud) SNGlobe.setHud(String(text || '').slice(0, 72));
+    } catch (_) {}
   }
 
   function help() {
@@ -455,11 +575,21 @@
           /\b(order|order\s+me|bring|get\s+me|παράγγειλ|buy|pay)\b/i.test(low);
         fi.autoOrder = wantOrder;
         fi.raw = line;
+        activity('finding ' + (fi.food || 'food') + ' on the map…', 'food', {
+          label: fi.food || 'food',
+        });
         const r = await global.SNMarket.fulfillFoodIntent(fi, {
           autoOrder: wantOrder,
           quiet: false,
           judgeAll: true,
         });
+        if (r?.best) {
+          depict(wantOrder ? 'order' : 'food', {
+            lat: r.best.lat,
+            lng: r.best.lng,
+            label: r.best.shopName || r.best.name || fi.food,
+          });
+        }
         if (r?.summary) {
           String(r.summary)
             .split('\n')
@@ -479,15 +609,17 @@
         low === 'first order' ||
         low === 'πρώτη παράδοση'
       ) {
-        log('── First order (CLI path) ──', 'ok');
-        log('1 list shop · 2 menu · 3 order S · 4 drive · 5 deliver', 'dim');
-        preview('first delivery');
+        activity('first order · reshaping map…', 'work', { label: 'First order' });
+        depict('shops', { label: 'First order' });
+        log('first order · shop → menu → pay → drive → you', 'ok');
         if (global.SNMarket?.runFirstLoop) {
           const r = await global.SNMarket.runFirstLoop({ skipLocate: true });
           if (r?.ok) {
-            log('✓ Shop · ' + (r.listed?.shop || 'ok'), 'ok');
+            const p = global._snLastPos || global.SNTasks?.pos;
+            if (p) depict('delivery', { lat: p.lat, lng: p.lng, label: 'Delivered' });
+            log('shop live · ' + (r.listed?.shop || 'ok'), 'ok');
             log(
-              '✓ Menu · ' +
+              'menu · ' +
                 (r.menu?.item?.name || 'item') +
                 ' · ' +
                 (global.SNCurrency?.format?.(r.menu?.item?.price ?? r.total) ||
@@ -495,17 +627,17 @@
               'ok'
             );
             log(
-              '✓ Order · ' +
+              'paid · ' +
                 (global.SNCurrency?.format?.(r.total ?? r.order?.total) ||
-                  (r.order?.total != null ? r.order.total + ' S' : 'paid')),
+                  (r.order?.total != null ? r.order.total + ' S' : 'S')),
               'ok'
             );
-            log('✓ Driver online · claimed · delivered to you', 'ok');
-            log('FIRST ORDER COMPLETE · type usage · donate on', 'ok');
-            preview('FIRST ORDER DONE');
+            log('driver claimed · delivered to you', 'ok');
+            log('FIRST ORDER COMPLETE', 'ok');
+            preview('FIRST ORDER DONE · on map');
           } else {
             log(
-              'First order FAILED · ' +
+              'first order failed · ' +
                 (r?.error ||
                   r?.order?.error ||
                   r?.delivery?.error ||
@@ -514,10 +646,9 @@
                   'unknown'),
               'err'
             );
-            log('Manual: list shop My Cafe → menu add Special 5 → order me → drive on → deliver me', 'dim');
           }
         } else {
-          log('Market not loaded · hard refresh · stamp must include market on shell', 'err');
+          log('Market not loaded · hard refresh', 'err');
         }
         return;
       }
@@ -1219,33 +1350,25 @@
         return;
       }
       if (low === 'locate' || low === 'gps' || low === 'where am i') {
-        preview('Locating…');
+        activity('locating on globe…', 'work', { label: 'Locate' });
         const pos = await Globe?.locate?.();
         if (pos) {
           Tasks?.setPos?.(pos.lat, pos.lng);
           global._snLastPos = { lat: pos.lat, lng: pos.lng };
-          // User intent: force recenter even if hold
           try {
             if (global.SNMap?.active) {
               global.SNMap.softSetView?.(pos.lat, pos.lng, Math.max(14, 14), { force: true });
               const map = await SNMap.ensure?.();
               map?.setView?.([pos.lat, pos.lng], Math.max(map.getZoom?.() || 14, 14));
-            } else if (Globe?.goToPlace) {
-              Globe.goToPlace(pos.lat, pos.lng, {
-                tier: 'city',
-                body: 'earth',
-                pulse: false,
-                label: 'You',
-              });
             }
           } catch (_) {}
+          depict('locate', { lat: pos.lat, lng: pos.lng, label: 'You', tier: 'city' });
           log(
             pos.fallback
-              ? 'Default position (GPS off) · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4)
-              : 'Located · GPS recenter · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4),
+              ? 'default focus · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4)
+              : 'you · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) + ' · map recentered',
             'ok'
           );
-          preview('Located · recentered');
         } else {
           log('Locate failed · allow location · try again', 'err');
         }
@@ -1267,34 +1390,29 @@
           Globe?.setBody?.('earth');
           Globe?.goToTier?.('global');
         } catch (_) {}
-        log('Surface · GLOBAL · full Earth in space · ISS · sats', 'ok');
-        preview('GLOBAL · full Earth in space');
+        depict('global');
+        log('GLOBAL · full Earth in space · map closed', 'ok');
         return;
       }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {
-        // City map at last focus — GPS/last pos only (no hard-coded training city)
         const p =
           Tasks?.pos ||
           global._snLastPos ||
           { lat: 37.9838, lng: 23.7275 };
         if (p.lat) Tasks?.setPos?.(p.lat, p.lng);
+        depict('city', { lat: p.lat, lng: p.lng, label: 'City' });
         try {
-          Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', body: 'earth', pulse: false });
+          Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', body: 'earth', pulse: true });
         } catch (_) {}
         await global.SNMap?.open?.(p.lat, p.lng);
         log(
-          'City map · ' +
-            Number(p.lat).toFixed(3) +
-            ',' +
-            Number(p.lng).toFixed(3) +
-            ' · global to leave',
+          'city map · ' + Number(p.lat).toFixed(3) + ',' + Number(p.lng).toFixed(3),
           'ok'
         );
-        preview('City map');
         return;
       }
       if (low === 'shops' || low === 'vendors' || low === 'stores') {
-        // AI presents first vendor on globe + tile; next / show all continue
+        activity('shops on map…', 'shops', { label: 'Shops' });
         if (global.SNAi?.ask) {
           const reply = await SNAi.ask(line);
           if (reply) {
@@ -2175,8 +2293,10 @@
     $('btn-help')?.addEventListener('click', () => void run('help'));
     $('btn-earth')?.addEventListener('click', () => void run('earth'));
     feedBox();
-    // Empty feed until YOU speak — no boot crap
-    preview('›');
+    // Empty feed until YOU speak — live idle
+    setActivity('idle');
+    setLive(false);
+    preview('type · map follows');
     try {
       document.querySelectorAll('#cli-log .cli-tile-block').forEach((el) => el.remove());
     } catch (_) {}
@@ -2200,6 +2320,10 @@
     beginTurn,
     endTurn,
     inTurn,
+    activity,
+    depict,
+    setActivity,
+    setLive,
     toggleHandsfree,
     speakAi,
     stopHandsfree,

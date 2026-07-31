@@ -584,16 +584,20 @@
     var intent = typeof query === 'object' ? query : parseFoodIntent(query);
     if (!intent) return { ok: false, error: 'not a food intent' };
     var food = intent.food || 'food';
-    var log = function (m, c) {
+    var log = function (m, c, mapKind, mapOpts) {
       if (quiet) return;
       try {
-        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim');
+        if (global.SNCli && SNCli.activity && mapKind) {
+          global.SNCli.activity(m, mapKind, mapOpts || {});
+        } else if (global.SNCli && SNCli.log) {
+          SNCli.log(m, c || 'dim');
+        }
       } catch (_) {}
     };
     var steps = [];
 
     // 1) Prefer globe/city focus (dive place) — locate only if none
-    log('1/6 · Locating you…', 'dim');
+    log('locating you on the globe…', 'dim', 'work', { label: 'Locate' });
     var pos = null;
     try {
       if (global.SNGlobe && SNGlobe.focusPos) {
@@ -611,9 +615,14 @@
     }
     if (!pos || pos.lat == null) {
       pos = { lat: 36.4341, lng: 28.2176 };
-      log('GPS soft · using default focus', 'dim');
+      log('default focus · map still moves', 'dim');
     } else {
-      log('Focus · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3), 'dim');
+      log(
+        'focus · ' + pos.lat.toFixed(3) + ', ' + pos.lng.toFixed(3),
+        'dim',
+        'locate',
+        { lat: pos.lat, lng: pos.lng, label: 'You' }
+      );
     }
     global._snLastPos = { lat: pos.lat, lng: pos.lng };
     try {
@@ -622,7 +631,11 @@
     steps.push('locate');
 
     // 2) Find pizza (etc.) places — Overpass + sector DB
-    log('2/6 · Finding ' + food + ' places near you…', 'dim');
+    log('finding ' + food + ' near you…', 'dim', 'food', {
+      lat: pos.lat,
+      lng: pos.lng,
+      label: food,
+    });
     var pois = [];
     try {
       if (global.SNSearch && SNSearch.nearby) {
@@ -654,7 +667,11 @@
     steps.push('find');
 
     // 3) Collect + show vendor tiles
-    log('3/6 · Building vendor tiles · menus · prices in S…', 'dim');
+    log('painting vendors on map…', 'dim', 'shops', {
+      lat: pos.lat,
+      lng: pos.lng,
+      label: food,
+    });
     var vendors = (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
       if (v.lat == null) return false;
       var km = haversineKm(pos, v);
@@ -692,8 +709,8 @@
     } catch (_) {}
     steps.push('tiles');
 
-    // 4) Judge
-    log('4/6 · Judging vendors…', 'ok');
+    // 4) Judge — best pick flies the map; stream is short not a button list
+    log('judging vendors…', 'dim');
     var lines = [];
     vendors.forEach(function (v, idx) {
       var item = pickMenuItem(v, food);
@@ -703,18 +720,21 @@
           : item.price + ' S'
         : '—';
       var line =
-        idx +
-        1 +
-        '. ' +
         (v.shopName || v.name) +
         ' · ' +
         (v._km != null ? v._km.toFixed(1) + ' km' : '?') +
-        ' · score ' +
-        Math.round(v._score || 0) +
         ' · ' +
         (item ? item.name + ' ' + price : 'no menu');
       lines.push(line);
-      log(line, idx === 0 ? 'ok' : 'dim');
+      if (idx === 0) {
+        log('pick · ' + line, 'ok', 'fly', {
+          lat: v.lat,
+          lng: v.lng,
+          label: v.shopName || v.name,
+          tier: 'city',
+          openMap: true,
+        });
+      }
     });
     if (!vendors.length) {
       return {
@@ -753,14 +773,19 @@
     // 5) Order (auto when intent is order-like or single food word)
     var orderResult = null;
     if (opts.autoOrder !== false && intent.autoOrder !== false && menuItem) {
-      log('5/6 · Ordering from ' + (best.shopName || best.name) + '…', 'ok');
+      log(
+        'ordering · ' + (best.shopName || best.name) + '…',
+        'ok',
+        'order',
+        { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
+      );
       try {
         global.SNProfiles.cartClear();
         global.SNProfiles.cartAdd(best.id, menuItem, 1);
         orderResult = global.SNProfiles.placeOrder();
         if (orderResult && orderResult.ok) {
           log(
-            'Order placed · ' +
+            'paid · ' +
               (global.SNCurrency ? SNCurrency.format(orderResult.total) : orderResult.total + ' S'),
             'ok'
           );
@@ -769,17 +794,21 @@
           log((orderResult && orderResult.error) || 'order failed', 'err');
         }
       } catch (e) {
-        log('Order error · ' + (e.message || e), 'err');
+        log('order error · ' + (e.message || e), 'err');
       }
     } else {
-      log('5/6 · Best pick open · say order me or + on menu to buy', 'dim');
+      log('best pick on map · say order to buy', 'dim');
     }
 
     // 6) Assign driver from available online, else you go online
     var driver = null;
     var claim = null;
     if (orderResult && orderResult.ok && orderResult.task) {
-      log('6/6 · Assigning driver…', 'dim');
+      log('assigning driver · routes on map…', 'dim', 'delivery', {
+        lat: best.lat,
+        lng: best.lng,
+        label: 'Driver',
+      });
       var drivers = (global.SNProfiles.list({ role: 'driver' }) || []).filter(function (d) {
         return d.driverOnline && d.id !== (global.SNProfiles.me() && global.SNProfiles.me().id);
       });
