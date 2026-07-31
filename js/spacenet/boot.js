@@ -171,6 +171,7 @@
     '/js/spacenet/google-earth.js',
     '/js/spacenet/places-business.js',
     '/js/spacenet/ai-graphics.js',
+    '/js/spacenet/helper.js',
     '/js/spacenet/topo.js',
   ];
 
@@ -197,6 +198,9 @@
       function () {
         if (window.SNAIGraphics && SNAIGraphics.init) SNAIGraphics.init();
         else if (window.AIGraphics && AIGraphics.init) AIGraphics.init();
+      },
+      function () {
+        if (window.SNHelper && SNHelper.init) SNHelper.init();
       },
     ].forEach(function (fn) {
       try {

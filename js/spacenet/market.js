@@ -1253,6 +1253,11 @@
       'shops',
       { lat: pos.lat, lng: pos.lng, label: food }
     );
+    try {
+      if (global.SNHelper && SNHelper.find) {
+        SNHelper.find(food || 'shops', pos, { log: true });
+      }
+    } catch (_) {}
     var pois = [];
     try {
       var waited = 0;
@@ -1526,6 +1531,20 @@
         lng: best.lng,
         label: 'Courier',
       });
+      try {
+        if (global.SNHelper && SNHelper.flyTo) {
+          SNHelper.flyTo(
+            { lat: best.lat, lng: best.lng },
+            {
+              kind: 'order',
+              label: 'ORDER · ' + String(best.shopName || best.name || 'shop').slice(0, 16),
+              detail: 'vendor pickup',
+              status: 'pickup',
+              dur: 2400,
+            }
+          );
+        }
+      } catch (_) {}
       var meP = global.SNProfiles && SNProfiles.me && SNProfiles.me();
       var pick =
         global.SNChannel && SNChannel.pickBestDriver

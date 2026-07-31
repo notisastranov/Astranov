@@ -1386,6 +1386,27 @@
         if (Gx.showNeural) Gx.showNeural(true);
       }
     } catch (_) {}
+    try {
+      // HELPER flies when user asks to find / order / do tasks
+      if (
+        global.SNHelper &&
+        /\b(find|search|order|shop|pizza|deliver|task|where|locate|help)\b/i.test(msg)
+      ) {
+        if (SNHelper.init) SNHelper.init();
+        var posH = global._snLastPos || global._snPhysPos;
+        if (/order|pizza|food|deliver/i.test(msg)) {
+          SNHelper.flyTo?.(posH || { lat: 37.93, lng: 23.75 }, {
+            kind: 'assist',
+            label: 'HELPER · ORDER',
+            detail: msg.slice(0, 40),
+            status: 'assist',
+            log: false,
+          });
+        } else {
+          SNHelper.find?.(msg.slice(0, 28), posH, { log: false });
+        }
+      }
+    } catch (_) {}
     pushHist('user', msg);
     try {
       if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });

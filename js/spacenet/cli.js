@@ -446,6 +446,7 @@
     log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
     log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
     log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
+    log('HELPER: helper · helper find pizza · helper patrol · helper off', 'ok');
     log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
     log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
     log('Plans: plan list · plan status · claim · task list · task map', 'dim');
@@ -1779,6 +1780,54 @@
           );
         });
         preview('cargo');
+        return;
+      }
+      if (
+        low === 'helper' ||
+        low === 'ironman' ||
+        low === 'iron man' ||
+        low === 'robot helper' ||
+        low.startsWith('helper ')
+      ) {
+        const H = global.SNHelper;
+        if (!H) {
+          log('HELPER loading · hard refresh', 'err');
+          return;
+        }
+        if (H.init) H.init();
+        const arg = low.replace(/^(helper|ironman|iron man|robot helper)\s*/, '').trim();
+        if (arg === 'off' || arg === 'sleep' || arg === 'hide') {
+          H.sleep?.();
+          log('HELPER · standby off-screen', 'dim');
+          preview('helper off');
+          return;
+        }
+        if (arg === 'patrol' || arg === 'sweep') {
+          H.patrol?.();
+          preview('helper patrol');
+          return;
+        }
+        if (arg === 'on' || arg === 'wake' || arg === 'come' || arg === '') {
+          H.wake?.({ label: 'HELPER' });
+          if (arg === '' || arg === 'on' || arg === 'wake') {
+            const pos = global._snLastPos || global._snPhysPos;
+            if (pos) H.flyTo?.(pos, { kind: 'summon', label: 'HELPER', detail: 'at your call', status: 'inbound' });
+            else H.patrol?.();
+          }
+          log('HELPER · winged silvery-blue suit · AI graphics engine', 'ok');
+          preview('helper on');
+          return;
+        }
+        // helper find pizza / helper shops
+        if (arg.startsWith('find ') || arg.startsWith('search ')) {
+          const q = arg.replace(/^(find|search)\s+/, '');
+          const pos = global._snLastPos || global._snPhysPos || { lat: 37.93, lng: 23.75 };
+          H.find?.(q, pos);
+          preview('helper find ' + q);
+          return;
+        }
+        H.find?.(arg || 'target', global._snLastPos || global._snPhysPos);
+        preview('helper');
         return;
       }
       if (
