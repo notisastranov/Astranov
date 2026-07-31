@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260731240000-home-hard-reload-first" />
-<meta name="astranov-continuity" content="20260731240000-home-hard-reload-first" />
+<meta name="astranov-build" content="20260731241000-side-gadgets-full" />
+<meta name="astranov-continuity" content="20260731241000-side-gadgets-full" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -117,7 +117,7 @@
   #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-row { display: none !important; }
   #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-head { margin: 0; }
   #sn-topchrome-panel.collapsed #field-nav-meta .fnm-row:not(#fnm-phys):not(#fnm-mode) { display: none !important; }
-  #sn-topchrome-panel.collapsed #field-radar { width: 40px !important; height: 40px !important; }
+  #sn-topchrome-panel.collapsed #field-radar { width: 56px !important; height: 56px !important; }
   #sn-topchrome-panel.collapsed #field-radar-zoom,
   #sn-topchrome-panel.collapsed .fr-label,
   #sn-topchrome-panel.collapsed #field-radar-legend { display: none !important; }
@@ -129,12 +129,28 @@
   #stc-compact {
     flex-shrink: 0;
     display: grid;
+    /* sides = full gadget size · center narrow */
     grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px 12px;
-    padding: 8px 12px 6px;
-    min-height: 52px;
+    gap: 8px 10px;
+    padding: 6px 10px 4px;
+    min-height: 56px;
     overflow: hidden;
+  }
+  .stc-col-radar {
+    flex-shrink: 0;
+    width: auto;
+  }
+  .stc-col-device {
+    min-width: 0;
+    max-width: 100%;
+    /* center stays a bit narrow so sides keep room */
+    justify-self: stretch;
+  }
+  .stc-col-money {
+    flex-shrink: 0;
+    width: auto;
+    min-width: 96px;
   }
   #stc-detail {
     flex: 1; min-height: 0; overflow: auto;
@@ -1467,8 +1483,8 @@
   }
   /* never clip compact gadgets */
   #sn-topchrome-panel.collapsed #field-radar {
-    width: 44px !important;
-    height: 44px !important;
+    width: 56px !important;
+    height: 56px !important;
   }
   #sn-topchrome-panel.collapsed #stc-perf-wrap {
     height: 34px !important;
@@ -1721,10 +1737,10 @@
     padding: 0 4px !important;
   }
   #sn-topchrome-panel.collapsed #field-radar {
-    width: 36px !important; height: 36px !important;
+    width: 56px !important; height: 56px !important;
   }
   #sn-topchrome-panel.collapsed #stc-perf-wrap {
-    height: 48px !important; min-height: 48px !important;
+    height: 36px !important; min-height: 36px !important;
   }
   #sn-topchrome-panel.mid #stc-perf-wrap {
     height: 84px !important; min-height: 84px !important;
@@ -1839,6 +1855,79 @@
   }
   html.theme-light #cli-in { color: #0c1e36 !important; }
   html.theme-light .cli-line { color: #0c1e36 !important; }
+
+
+  /* Minimized top scroll: left + right gadgets FULL size · center narrow */
+  #sn-topchrome-panel.collapsed #stc-compact {
+    grid-template-columns: auto minmax(72px, 1fr) auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 6px 10px 4px !important;
+    min-height: 64px !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    max-width: min(42vw, 200px) !important;
+    min-width: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home {
+    font-size: 11px !important;
+    letter-spacing: 0.16em !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+  /* Radar — full ribbon height even minimized (readable) */
+  #sn-topchrome-panel.collapsed #field-radar,
+  #sn-topchrome #field-radar {
+    width: 56px !important;
+    height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+  }
+  #sn-topchrome-panel.collapsed #field-radar {
+    width: 56px !important;
+    height: 56px !important;
+  }
+  #sn-topchrome-panel.mid #field-radar {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  #sn-topchrome-panel.expanded #field-radar {
+    width: 88px !important;
+    height: 88px !important;
+  }
+  /* Money — full readable size when minimized */
+  #sn-topchrome-panel.collapsed #field-balance-hud {
+    max-width: none !important;
+    min-width: 100px !important;
+    padding: 8px 10px !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+    display: block !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-mine-rate {
+    display: block !important;
+    font-size: 9px !important;
+    opacity: 0.9;
+  }
+  #sn-topchrome #field-balance-hud {
+    max-width: none !important;
+    min-width: 100px;
+    padding: 8px 10px;
+  }
+  #sn-topchrome #fbh-s {
+    font-size: 14px !important;
+  }
+  #sn-topchrome-panel.collapsed {
+    max-height: 96px !important;
+    min-height: 72px !important;
+  }
 
 </style>
 </head>
@@ -2058,7 +2147,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731240000-home-hard-reload-first"></script>
+<script src="/js/spacenet/boot.js?v=20260731241000-side-gadgets-full"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
