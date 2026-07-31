@@ -9,12 +9,20 @@
     profileId: null,
     tab: 'about', // about | menu | dating | drive | social | cart | task
     /** Visual scale of card (pinch / wheel) — 0.55–1.35 */
-    scale: 0.78,
+    scale: 0.9,
+    /** Free position on screen (px) — middle by default */
+    left: null,
+    top: null,
+    w: null,
+    h: null,
     /** SNTaskBoard enrich payload when showing a delivery task multi-tile */
     taskBoard: null,
     lastCardTap: 0,
+    dragging: false,
+    resizing: false,
   };
   const SIZE_KEY = 'sn:tile-scale-v1';
+  const GEOM_KEY = 'sn:tile-geom-v1';
 
   function $(id) {
     return document.getElementById(id);
@@ -33,41 +41,73 @@
       const n = parseFloat(localStorage.getItem(SIZE_KEY) || '');
       if (n >= 0.55 && n <= 1.35) T.scale = n;
     } catch (_) {}
+    try {
+      const g = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null');
+      if (g && typeof g === 'object') {
+        if (g.w >= 280 && g.w <= 900) T.w = g.w;
+        if (g.h >= 280 && g.h <= 900) T.h = g.h;
+        if (g.left != null) T.left = g.left;
+        if (g.top != null) T.top = g.top;
+      }
+    } catch (_) {}
   }
 
   function saveScale() {
     try {
       localStorage.setItem(SIZE_KEY, String(T.scale));
     } catch (_) {}
+    try {
+      localStorage.setItem(
+        GEOM_KEY,
+        JSON.stringify({ left: T.left, top: T.top, w: T.w, h: T.h })
+      );
+    } catch (_) {}
   }
 
   function applyScale() {
     const card = document.querySelector('#sn-tile .sn-tile-card');
     if (!card) return;
-    const s = Math.max(0.55, Math.min(1.35, T.scale || 0.78));
+    const s = Math.max(0.55, Math.min(1.35, T.scale || 0.9));
     T.scale = s;
-    card.style.setProperty('--sn-tile-scale', String(s));
-    card.style.width = 'min(' + Math.round(320 * s) + 'px, calc(100vw - 24px))';
-    card.style.maxHeight = 'min(' + Math.round(42 * s) + 'vh, ' + Math.round(420 * s) + 'px)';
-    card.style.transform = 'scale(1)';
-    // Dim +/− at min/max so users know the limits
+    const baseW = T.w != null ? T.w : Math.round(400 * s);
+    const baseH = T.h != null ? T.h : Math.round(520 * s);
+    const maxW = Math.min(baseW, window.innerWidth - 24);
+    const maxH = Math.min(baseH, window.innerHeight - 24);
+    card.style.width = maxW + 'px';
+    card.style.height = maxH + 'px';
+    card.style.maxWidth = 'calc(100vw - 24px)';
+    card.style.maxHeight = 'calc(100vh - 24px)';
+    card.style.transform = 'none';
+    // Center if never dragged
+    if (T.left == null || T.top == null) {
+      T.left = Math.max(12, Math.round((window.innerWidth - maxW) / 2));
+      T.top = Math.max(12, Math.round((window.innerHeight - maxH) / 2));
+    }
+    // Keep on-screen
+    T.left = Math.max(0, Math.min(T.left, window.innerWidth - 80));
+    T.top = Math.max(0, Math.min(T.top, window.innerHeight - 80));
+    card.style.left = T.left + 'px';
+    card.style.top = T.top + 'px';
     const minus = $('sn-tile-smaller');
     const plus = $('sn-tile-bigger');
     if (minus) {
-      minus.disabled = s <= 0.55 + 0.001;
+      minus.disabled = maxW <= 280;
       minus.setAttribute('aria-disabled', minus.disabled ? 'true' : 'false');
     }
     if (plus) {
-      plus.disabled = s >= 1.35 - 0.001;
+      plus.disabled = maxW >= Math.min(900, window.innerWidth - 24);
       plus.setAttribute('aria-disabled', plus.disabled ? 'true' : 'false');
     }
   }
 
   /** Click + / − to resize (also pinch / wheel still work) */
   function stepScale(dir) {
-    const step = 0.1;
-    const next = (T.scale || 0.78) + (dir < 0 ? -step : step);
-    T.scale = Math.max(0.55, Math.min(1.35, Math.round(next * 100) / 100));
+    const step = 40;
+    const card = document.querySelector('#sn-tile .sn-tile-card');
+    const curW = T.w != null ? T.w : (card && card.offsetWidth) || 400;
+    const curH = T.h != null ? T.h : (card && card.offsetHeight) || 520;
+    T.w = Math.max(280, Math.min(900, curW + (dir < 0 ? -step : step)));
+    T.h = Math.max(280, Math.min(900, curH + (dir < 0 ? -step : step)));
     applyScale();
     saveScale();
   }
@@ -95,12 +135,169 @@
 
   function gripHtml() {
     return (
-      '<div class="sn-tile-grip" id="sn-tile-grip" title="Resize tile">' +
+      '<div class="sn-tile-grip" id="sn-tile-grip" title="Drag with one finger to move">' +
       '<button type="button" class="sn-tile-size-btn" id="sn-tile-smaller" aria-label="Make tile smaller">−</button>' +
-      '<span class="sn-tile-grip-label">pinch to resize</span>' +
+      '<span class="sn-tile-grip-label">⋮⋮ drag me · − + size</span>' +
       '<button type="button" class="sn-tile-size-btn" id="sn-tile-bigger" aria-label="Make tile larger">+</button>' +
       '</div>'
     );
+  }
+
+  /**
+   * One-finger (or mouse) drag to move tile + corner resize.
+   * Drag from top grip or cover. Resize from bottom-right handle.
+   */
+  function bindDragAndResize(root) {
+    if (!root || root._snDragBound) return;
+    root._snDragBound = true;
+    const card = root.querySelector('.sn-tile-card');
+    if (!card) return;
+    // Ensure resize handle exists
+    if (!$('sn-tile-resize')) {
+      const rh = document.createElement('button');
+      rh.type = 'button';
+      rh.className = 'sn-tile-resize';
+      rh.id = 'sn-tile-resize';
+      rh.setAttribute('aria-label', 'Resize tile');
+      rh.title = 'Drag to resize';
+      card.appendChild(rh);
+    }
+
+    let mode = null; // 'drag' | 'resize'
+    let startX = 0;
+    let startY = 0;
+    let origL = 0;
+    let origT = 0;
+    let origW = 0;
+    let origH = 0;
+    let moved = false;
+
+    function point(e) {
+      if (e.touches && e.touches.length) return e.touches[0];
+      if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0];
+      return e;
+    }
+
+    function syncGeomFromCard() {
+      const r = card.getBoundingClientRect();
+      if (T.left == null || T.top == null) {
+        T.left = Math.round(r.left);
+        T.top = Math.round(r.top);
+      }
+      if (T.w == null) T.w = Math.round(r.width);
+      if (T.h == null) T.h = Math.round(r.height);
+      card.style.left = T.left + 'px';
+      card.style.top = T.top + 'px';
+      card.style.transform = 'none';
+    }
+
+    function onDown(e) {
+      if (!T.open) return;
+      // One finger only
+      if (e.touches && e.touches.length > 1) return;
+      const t = e.target;
+      if (!t || !card.contains(t)) return;
+      // Don't steal clicks from interactive controls / body scroll
+      if (
+        t.closest(
+          '.sn-tile-size-btn, .sn-tile-x, .sn-tile-edit-cover, .sn-tile-edit-av, .sn-tile-body, .sn-tile-foot, .sn-tile-roles, .sn-tile-tabs, .sn-role, .sn-tab, a, input, select, textarea, label, .sn-btn, .sn-add'
+        )
+      ) {
+        // Grip label/empty grip area is OK — size buttons excluded above
+        if (!t.closest('.sn-tile-grip') || t.closest('button')) return;
+      }
+      const isResize = !!t.closest('.sn-tile-resize');
+      const isDragZone = !!(
+        t.closest('.sn-tile-grip') ||
+        t.closest('.sn-tile-cover') ||
+        t.closest('.sn-tile-head') ||
+        isResize
+      );
+      if (!isDragZone && !isResize) return;
+
+      syncGeomFromCard();
+      const pt = point(e);
+      mode = isResize ? 'resize' : 'drag';
+      T.dragging = mode === 'drag';
+      T.resizing = mode === 'resize';
+      moved = false;
+      startX = pt.clientX;
+      startY = pt.clientY;
+      origL = T.left;
+      origT = T.top;
+      origW = T.w != null ? T.w : card.offsetWidth;
+      origH = T.h != null ? T.h : card.offsetHeight;
+      card.classList.add(mode === 'drag' ? 'sn-dragging' : 'sn-resizing');
+      try {
+        if (e.cancelable) e.preventDefault();
+      } catch (_) {}
+      e.stopPropagation();
+    }
+
+    function onMove(e) {
+      if (!mode) return;
+      if (e.touches && e.touches.length > 1) {
+        mode = null;
+        return;
+      }
+      const pt = point(e);
+      const dx = pt.clientX - startX;
+      const dy = pt.clientY - startY;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      if (mode === 'drag') {
+        T.left = Math.max(0, Math.min(window.innerWidth - 64, origL + dx));
+        T.top = Math.max(0, Math.min(window.innerHeight - 64, origT + dy));
+        card.style.left = T.left + 'px';
+        card.style.top = T.top + 'px';
+      } else if (mode === 'resize') {
+        T.w = Math.max(280, Math.min(window.innerWidth - 16, origW + dx));
+        T.h = Math.max(280, Math.min(window.innerHeight - 16, origH + dy));
+        card.style.width = T.w + 'px';
+        card.style.height = T.h + 'px';
+      }
+      try {
+        if (e.cancelable) e.preventDefault();
+      } catch (_) {}
+    }
+
+    function onUp(e) {
+      if (!mode) return;
+      card.classList.remove('sn-dragging', 'sn-resizing');
+      if (moved) {
+        saveScale();
+        // Prevent the click that follows a drag from closing the tile
+        T.lastCardTap = 0;
+        try {
+          if (e && e.preventDefault) e.preventDefault();
+        } catch (_) {}
+      }
+      mode = null;
+      T.dragging = false;
+      T.resizing = false;
+    }
+
+    // Pointer events cover mouse + one finger when available
+    const usePointer = typeof window.PointerEvent === 'function';
+    if (usePointer) {
+      card.addEventListener('pointerdown', onDown, { passive: false });
+      window.addEventListener(
+        'pointermove',
+        (e) => {
+          if (mode) onMove(e);
+        },
+        { passive: false }
+      );
+      window.addEventListener('pointerup', onUp, { passive: false });
+      window.addEventListener('pointercancel', onUp, { passive: false });
+    } else {
+      card.addEventListener('mousedown', onDown, { passive: false });
+      card.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('mousemove', onMove, { passive: false });
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('mouseup', onUp, { passive: false });
+      window.addEventListener('touchend', onUp, { passive: false });
+      window.addEventListener('touchcancel', onUp, { passive: false });
+    }
   }
 
   /** Upgrade old grip bar if tile already in DOM without +/− */
@@ -116,27 +313,44 @@
   }
 
   function ensureCss() {
-    // Full multi-tile over map (above CLI dock) — NEVER fake buttons in CLI feed
-    ['sn-tile-css', 'sn-tile-css-v2', 'sn-tile-css-v3', 'sn-tile-css-v4', 'sn-tile-css-v5'].forEach((id) => {
+    // Full multi-tile · center of screen · above CLI · owner drag/resize
+    [
+      'sn-tile-css',
+      'sn-tile-css-v2',
+      'sn-tile-css-v3',
+      'sn-tile-css-v4',
+      'sn-tile-css-v5',
+      'sn-tile-css-v6',
+    ].forEach((id) => {
       const old = document.getElementById(id);
       if (old) old.remove();
     });
-    if (document.getElementById('sn-tile-css-v6')) return;
+    if (document.getElementById('sn-tile-css-v7')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v6';
+    st.id = 'sn-tile-css-v7';
     st.textContent = [
-      '#sn-tile{position:fixed;inset:0;z-index:95;display:none;align-items:flex-end;justify-content:center;',
-      'padding:8px 10px calc(148px + env(safe-area-inset-bottom));background:rgba(0,0,0,.35);pointer-events:auto;',
-      'touch-action:none}',
-      '#sn-tile.open{display:flex}',
+      /* Above CLI dock (z=100) · full viewport · card free in the middle */
+      '#sn-tile{position:fixed;inset:0;z-index:130;display:none;pointer-events:auto;',
+      'background:rgba(0,4,12,.42);touch-action:none}',
+      '#sn-tile.open{display:block}',
       '#sn-tile .sn-tile-card{',
-      'width:min(300px,calc(100vw - 24px));max-height:min(42vh,400px);overflow:auto;border-radius:14px;',
-      'background:rgba(0,8,20,.97);border:1px solid rgba(61,158,255,.45);box-shadow:0 10px 32px rgba(0,0,0,.6);',
+      'position:absolute;left:50%;top:50%;',
+      'width:min(420px,calc(100vw - 24px));height:min(70vh,560px);',
+      'overflow:hidden;border-radius:16px;',
+      'background:rgba(0,8,20,.98);border:1px solid rgba(61,158,255,.55);',
+      'box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 32px rgba(26,111,212,.28);',
       'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto;',
-      'touch-action:none;transform-origin:bottom center;transition:width .12s ease,max-height .12s ease}',
+      'touch-action:none;-webkit-touch-callout:none;',
+      'min-width:280px;min-height:280px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}',
       '#sn-tile .sn-tile-grip{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;',
-      'gap:8px;padding:8px 10px 4px;font:10px system-ui;color:#5a8aaa;user-select:none}',
-      '#sn-tile .sn-tile-grip-label{flex:1;text-align:center;letter-spacing:.04em;pointer-events:none}',
+      'gap:8px;padding:12px 12px 8px;font:11px system-ui;color:#7ab0d8;user-select:none;',
+      'cursor:grab;touch-action:none;-webkit-user-select:none;',
+      'background:linear-gradient(180deg,rgba(26,111,212,.22),transparent);',
+      'border-bottom:1px solid rgba(26,111,212,.25);min-height:44px}',
+      '#sn-tile .sn-tile-grip:active,#sn-tile .sn-tile-card.sn-dragging .sn-tile-grip{cursor:grabbing}',
+      '#sn-tile .sn-tile-card.sn-dragging{opacity:.96;box-shadow:0 20px 56px rgba(0,0,0,.85),0 0 40px rgba(61,158,255,.4)!important}',
+      '#sn-tile .sn-tile-grip-label{flex:1;text-align:center;letter-spacing:.04em;pointer-events:none;color:#9ec8ff;',
+      'font-weight:700}',
       '#sn-tile .sn-tile-size-btn{flex-shrink:0;width:36px;height:32px;border-radius:10px;',
       'border:1px solid rgba(61,158,255,.55);background:rgba(26,111,212,.28);color:#e8f4ff;',
       'font:800 20px/1 system-ui,sans-serif;cursor:pointer;padding:0;',
@@ -144,18 +358,32 @@
       '#sn-tile .sn-tile-size-btn:hover{border-color:#3d9eff;background:rgba(26,111,212,.45);color:#fff}',
       '#sn-tile .sn-tile-size-btn:active{transform:scale(0.96)}',
       '#sn-tile .sn-tile-size-btn:disabled{opacity:.35;cursor:default;box-shadow:none}',
-      '#sn-tile .sn-tile-cover{position:relative;height:72px;background:#061428 center/cover no-repeat;flex-shrink:0}',
-      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:6px;border:0;border-radius:10px;',
-      'background:rgba(0,0,0,.55);color:#fff;width:32px;height:32px;cursor:pointer;font-size:15px}',
-      '#sn-tile .sn-tile-x{right:6px}#sn-tile .sn-tile-edit-cover{right:44px}',
-      '#sn-tile .sn-tile-head{display:flex;gap:10px;padding:0 12px 8px;margin-top:-22px;align-items:flex-end}',
-      '#sn-tile .sn-tile-av-wrap{position:relative;flex-shrink:0}',
-      '#sn-tile .sn-tile-av{width:48px;height:48px;border-radius:50%;border:2px solid #1a6fd4;object-fit:cover;background:#0a1a30}',
-      '#sn-tile .sn-tile-edit-av{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;',
-      'border:0;background:#1a6fd4;color:#fff;cursor:pointer;font-weight:700;font-size:12px}',
-      '#sn-tile .sn-tile-name{font:700 14px system-ui;color:#e8f4ff}',
-      '#sn-tile .sn-tile-handle{font:11px ui-monospace,monospace;color:#5a8aaa}',
-      '#sn-tile .sn-tile-bio{font:11px system-ui;color:#8a9bb0;margin-top:2px;max-height:2.6em;overflow:hidden}',
+      '#sn-tile .sn-tile-resize{position:absolute;right:2px;bottom:2px;width:22px;height:22px;',
+      'cursor:nwse-resize;border:0;background:transparent;padding:0;z-index:5}',
+      '#sn-tile .sn-tile-resize::after{content:"";display:block;width:12px;height:12px;margin:6px 0 0 6px;',
+      'border-right:2px solid #3d9eff;border-bottom:2px solid #3d9eff;opacity:.85;',
+      'box-shadow:2px 2px 0 rgba(61,158,255,.35)}',
+      '#sn-tile .sn-tile-cover{position:relative;height:96px;background:#061428 center/cover no-repeat;flex-shrink:0;',
+      'cursor:pointer}',
+      '#sn-tile .sn-tile-x,#sn-tile .sn-tile-edit-cover{position:absolute;top:8px;border:0;border-radius:10px;',
+      'background:rgba(0,0,0,.55);color:#fff;width:34px;height:34px;cursor:pointer;font-size:16px;z-index:2}',
+      '#sn-tile .sn-tile-x{right:8px}#sn-tile .sn-tile-edit-cover{right:48px}',
+      '#sn-tile .sn-tile-head{display:flex;gap:12px;padding:0 14px 10px;margin-top:-28px;align-items:flex-end}',
+      '#sn-tile .sn-tile-av-wrap{position:relative;flex-shrink:0;cursor:pointer}',
+      '#sn-tile .sn-tile-av{width:64px;height:64px;border-radius:50%;border:3px solid #1a6fd4;object-fit:cover;',
+      'background:#0a1a30;box-shadow:0 0 16px rgba(26,111,212,.4)}',
+      '#sn-tile .sn-tile-edit-av{position:absolute;right:-2px;bottom:-2px;width:24px;height:24px;border-radius:50%;',
+      'border:0;background:#1a6fd4;color:#fff;cursor:pointer;font-weight:700;font-size:13px;',
+      'box-shadow:0 0 10px rgba(26,111,212,.5)}',
+      '#sn-tile .sn-tile-name{font:700 16px system-ui;color:#e8f4ff;outline:none;border-radius:6px;padding:1px 4px;margin:-1px -4px}',
+      '#sn-tile .sn-tile-handle{font:12px ui-monospace,monospace;color:#5a8aaa;outline:none;border-radius:6px;padding:1px 4px}',
+      '#sn-tile .sn-tile-bio{font:12px system-ui;color:#8a9bb0;margin-top:4px;max-height:4.5em;overflow:auto;',
+      'outline:none;border-radius:6px;padding:2px 4px;white-space:pre-wrap}',
+      '#sn-tile .sn-tile-editable{cursor:text}',
+      '#sn-tile .sn-tile-editable:hover{background:rgba(26,111,212,.15);box-shadow:0 0 0 1px rgba(61,158,255,.35)}',
+      '#sn-tile .sn-tile-editable:focus{background:rgba(26,111,212,.22);box-shadow:0 0 0 2px rgba(61,158,255,.55);color:#fff}',
+      '#sn-tile.owner-me .sn-tile-card{border-color:rgba(61,158,255,.75);',
+      'box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 40px rgba(61,158,255,.35)}',
       '#sn-tile .sn-tile-roles,#sn-tile .sn-tile-tabs{display:flex;flex-wrap:wrap;gap:5px;padding:6px 12px}',
       '#sn-tile .sn-role,#sn-tile .sn-tab{border:1px solid rgba(61,158,255,.35);background:rgba(0,12,28,.8);',
       'color:#b8c4d4;border-radius:999px;padding:5px 9px;font:600 10px system-ui;cursor:pointer}',
@@ -330,6 +558,7 @@
     if ($('sn-tile')) {
       ensureGripControls();
       bindResize($('sn-tile'));
+      bindDragAndResize($('sn-tile'));
       bindCardDoubleTap($('sn-tile'));
       applyScale();
       return;
@@ -361,6 +590,7 @@
       '  <div class="sn-tile-tabs" id="sn-tile-tabs"></div>' +
       '  <div class="sn-tile-body" id="sn-tile-body"></div>' +
       '  <div class="sn-tile-foot" id="sn-tile-foot"></div>' +
+      '  <button type="button" class="sn-tile-resize" id="sn-tile-resize" aria-label="Resize tile" title="Drag to resize"></button>' +
       '</div>';
     document.body.appendChild(el);
     bindSizeButtons();
@@ -369,13 +599,14 @@
       close();
     });
     el.addEventListener('click', (e) => {
-      if (e.target === el) close();
+      if (e.target === el && !T.dragging && !T.resizing) close();
     });
     $('sn-tile-edit-cover')?.addEventListener('click', () => $('sn-tile-cover-file')?.click());
     $('sn-tile-edit-av')?.addEventListener('click', () => $('sn-tile-av-file')?.click());
     $('sn-tile-cover-file')?.addEventListener('change', (e) => onFile(e, 'cover'));
     $('sn-tile-av-file')?.addEventListener('change', (e) => onFile(e, 'avatar'));
     bindResize(el);
+    bindDragAndResize(el);
     bindCardDoubleTap(el);
     applyScale();
   }
@@ -1025,7 +1256,19 @@
   }
 
   function openMe(tab) {
-    open(global.SNProfiles?.me?.(), { tab: tab || 'about' });
+    // Owner tile: always re-center if never placed; enable drag
+    if (T.left == null || T.top == null) {
+      /* applyScale will center */
+    }
+    open(global.SNProfiles?.me?.(), { tab: tab || 'about', quiet: true });
+    try {
+      const root = $('sn-tile');
+      if (root) {
+        root.classList.add('owner-me');
+        bindDragAndResize(root);
+        applyScale();
+      }
+    } catch (_) {}
   }
 
   /**
