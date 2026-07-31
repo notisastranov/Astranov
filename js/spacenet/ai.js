@@ -128,7 +128,7 @@
     // Never auto-open tiles — user opens multi-tile by tapping map targets
     try {
       if (opts.openTile === true && global.SNTile && SNTile.open) {
-        SNTile.open(v, { tab: opts.tab || 'menu' });
+        SNTile.open(v, { tab: opts.tab || 'about', forcePeek: true });
       }
     } catch (e3) {}
     try {

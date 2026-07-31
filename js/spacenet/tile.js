@@ -8,8 +8,10 @@
     open: false,
     profileId: null,
     tab: 'about', // about | menu | dating | drive | social | cart | task
+    /** peek = small basics (map stays usable) · full = order / edit */
+    sizeMode: 'peek',
     /** Visual scale of card (pinch / wheel) — 0.55–1.35 */
-    scale: 0.9,
+    scale: 0.72,
     /** Free position on screen (px) — middle by default */
     left: null,
     top: null,
@@ -21,8 +23,13 @@
     dragging: false,
     resizing: false,
   };
-  const SIZE_KEY = 'sn:tile-scale-v1';
-  const GEOM_KEY = 'sn:tile-geom-v1';
+  const SIZE_KEY = 'sn:tile-scale-v2';
+  const GEOM_KEY = 'sn:tile-geom-v2';
+  /** Peek defaults — never dominate the map (≤ ~28% viewport) */
+  const PEEK_W = 260;
+  const PEEK_H = 220;
+  const FULL_W = 340;
+  const FULL_H = 420;
 
   function $(id) {
     return document.getElementById(id);
@@ -36,19 +43,28 @@
       .replace(/"/g, '&quot;');
   }
 
+  function maxPeekW() {
+    return Math.min(PEEK_W, Math.round(window.innerWidth * 0.33));
+  }
+  function maxPeekH() {
+    return Math.min(PEEK_H, Math.round(window.innerHeight * 0.28));
+  }
+  function maxFullW() {
+    return Math.min(FULL_W, Math.round(window.innerWidth * 0.42));
+  }
+  function maxFullH() {
+    return Math.min(FULL_H, Math.round(window.innerHeight * 0.55));
+  }
+
   function loadScale() {
     try {
       const n = parseFloat(localStorage.getItem(SIZE_KEY) || '');
       if (n >= 0.55 && n <= 1.35) T.scale = n;
     } catch (_) {}
+    // Do not restore huge legacy geom — peek is always the open default
     try {
-      const g = JSON.parse(localStorage.getItem(GEOM_KEY) || 'null');
-      if (g && typeof g === 'object') {
-        if (g.w >= 280 && g.w <= 900) T.w = g.w;
-        if (g.h >= 280 && g.h <= 900) T.h = g.h;
-        if (g.left != null) T.left = g.left;
-        if (g.top != null) T.top = g.top;
-      }
+      localStorage.removeItem('sn:tile-geom-v1');
+      localStorage.removeItem('sn:tile-scale-v1');
     } catch (_) {}
   }
 
@@ -59,57 +75,110 @@
     try {
       localStorage.setItem(
         GEOM_KEY,
-        JSON.stringify({ left: T.left, top: T.top, w: T.w, h: T.h })
+        JSON.stringify({
+          left: T.left,
+          top: T.top,
+          w: T.w,
+          h: T.h,
+          sizeMode: T.sizeMode,
+        })
       );
     } catch (_) {}
   }
 
   function applyScale() {
     const card = document.querySelector('#sn-tile .sn-tile-card');
+    const root = $('sn-tile');
     if (!card) return;
-    const s = Math.max(0.55, Math.min(1.35, T.scale || 0.9));
+    const peek = T.sizeMode !== 'full';
+    if (root) {
+      root.classList.toggle('sn-tile-peek', peek);
+      root.classList.toggle('sn-tile-full', !peek);
+    }
+    const capW = peek ? maxPeekW() : maxFullW();
+    const capH = peek ? maxPeekH() : maxFullH();
+    const s = Math.max(0.55, Math.min(1.35, T.scale || 0.72));
     T.scale = s;
-    const baseW = T.w != null ? T.w : Math.round(400 * s);
-    const baseH = T.h != null ? T.h : Math.round(520 * s);
-    const maxW = Math.min(baseW, window.innerWidth - 24);
-    const maxH = Math.min(baseH, window.innerHeight - 24);
+    let baseW = T.w != null ? T.w : peek ? PEEK_W : Math.round(FULL_W * s);
+    let baseH = T.h != null ? T.h : peek ? PEEK_H : Math.round(FULL_H * s);
+    // Hard caps so tile never eats the map
+    const maxW = Math.min(baseW, capW, window.innerWidth - 24);
+    const maxH = Math.min(baseH, capH, window.innerHeight - 24);
+    T.w = maxW;
+    T.h = maxH;
     card.style.width = maxW + 'px';
     card.style.height = maxH + 'px';
-    card.style.maxWidth = 'calc(100vw - 24px)';
-    card.style.maxHeight = 'calc(100vh - 24px)';
+    card.style.maxWidth = Math.round(window.innerWidth * 0.42) + 'px';
+    card.style.maxHeight = Math.round(window.innerHeight * 0.55) + 'px';
+    card.style.minWidth = peek ? '200px' : '240px';
+    card.style.minHeight = peek ? '160px' : '280px';
     card.style.transform = 'none';
-    // Center if never dragged
+    // Peek: lower-right above CLI · full: center if never placed
     if (T.left == null || T.top == null) {
-      T.left = Math.max(12, Math.round((window.innerWidth - maxW) / 2));
-      T.top = Math.max(12, Math.round((window.innerHeight - maxH) / 2));
+      if (peek) {
+        T.left = Math.max(8, window.innerWidth - maxW - 12);
+        T.top = Math.max(8, window.innerHeight - maxH - 120);
+      } else {
+        T.left = Math.max(12, Math.round((window.innerWidth - maxW) / 2));
+        T.top = Math.max(12, Math.round((window.innerHeight - maxH) / 2));
+      }
     }
-    // Keep on-screen
-    T.left = Math.max(0, Math.min(T.left, window.innerWidth - 80));
-    T.top = Math.max(0, Math.min(T.top, window.innerHeight - 80));
+    T.left = Math.max(0, Math.min(T.left, window.innerWidth - 64));
+    T.top = Math.max(0, Math.min(T.top, window.innerHeight - 64));
     card.style.left = T.left + 'px';
     card.style.top = T.top + 'px';
     const minus = $('sn-tile-smaller');
     const plus = $('sn-tile-bigger');
     if (minus) {
-      minus.disabled = maxW <= 280;
+      minus.disabled = maxW <= 200;
       minus.setAttribute('aria-disabled', minus.disabled ? 'true' : 'false');
     }
     if (plus) {
-      plus.disabled = maxW >= Math.min(900, window.innerWidth - 24);
+      plus.disabled = maxW >= maxFullW();
       plus.setAttribute('aria-disabled', plus.disabled ? 'true' : 'false');
     }
   }
 
-  /** Click + / − to resize (also pinch / wheel still work) */
+  /** Click + / − to resize (also pinch / wheel). Growing past peek flips to full. */
   function stepScale(dir) {
-    const step = 40;
+    const step = 36;
     const card = document.querySelector('#sn-tile .sn-tile-card');
-    const curW = T.w != null ? T.w : (card && card.offsetWidth) || 400;
-    const curH = T.h != null ? T.h : (card && card.offsetHeight) || 520;
-    T.w = Math.max(280, Math.min(900, curW + (dir < 0 ? -step : step)));
-    T.h = Math.max(280, Math.min(900, curH + (dir < 0 ? -step : step)));
+    const curW = T.w != null ? T.w : (card && card.offsetWidth) || PEEK_W;
+    const curH = T.h != null ? T.h : (card && card.offsetHeight) || PEEK_H;
+    T.w = Math.max(200, Math.min(maxFullW() + 40, curW + (dir < 0 ? -step : step)));
+    T.h = Math.max(160, Math.min(maxFullH() + 40, curH + (dir < 0 ? -step : step)));
+    if (dir > 0 && (T.w > maxPeekW() + 20 || T.h > maxPeekH() + 20)) {
+      T.sizeMode = 'full';
+    }
+    if (dir < 0 && T.w <= maxPeekW() && T.h <= maxPeekH()) {
+      T.sizeMode = 'peek';
+    }
     applyScale();
     saveScale();
+    if (T.sizeMode === 'full') render();
+  }
+
+  function expandToFull() {
+    if (T.sizeMode === 'full') return;
+    T.sizeMode = 'full';
+    T.w = maxFullW();
+    T.h = maxFullH();
+    T.left = Math.max(12, Math.round((window.innerWidth - T.w) / 2));
+    T.top = Math.max(12, Math.round((window.innerHeight - T.h) / 2));
+    applyScale();
+    saveScale();
+    render();
+  }
+
+  function collapseToPeek() {
+    T.sizeMode = 'peek';
+    T.w = maxPeekW();
+    T.h = maxPeekH();
+    T.left = Math.max(8, window.innerWidth - T.w - 12);
+    T.top = Math.max(8, window.innerHeight - T.h - 120);
+    applyScale();
+    saveScale();
+    render();
   }
 
   function bindSizeButtons() {
@@ -137,7 +206,7 @@
     return (
       '<div class="sn-tile-grip" id="sn-tile-grip" title="Drag with one finger to move">' +
       '<button type="button" class="sn-tile-size-btn" id="sn-tile-smaller" aria-label="Make tile smaller">−</button>' +
-      '<span class="sn-tile-grip-label">⋮⋮ drag me · − + size</span>' +
+      '<span class="sn-tile-grip-label">drag · − + · tap Open</span>' +
       '<button type="button" class="sn-tile-size-btn" id="sn-tile-bigger" aria-label="Make tile larger">+</button>' +
       '</div>'
     );
@@ -313,7 +382,6 @@
   }
 
   function ensureCss() {
-    // Full multi-tile · center of screen · above CLI · owner drag/resize
     [
       'sn-tile-css',
       'sn-tile-css-v2',
@@ -321,27 +389,36 @@
       'sn-tile-css-v4',
       'sn-tile-css-v5',
       'sn-tile-css-v6',
+      'sn-tile-css-v7',
     ].forEach((id) => {
       const old = document.getElementById(id);
       if (old) old.remove();
     });
-    if (document.getElementById('sn-tile-css-v7')) return;
+    if (document.getElementById('sn-tile-css-v8')) return;
     const st = document.createElement('style');
-    st.id = 'sn-tile-css-v7';
+    st.id = 'sn-tile-css-v8';
     st.textContent = [
-      /* Above CLI dock (z=100) · full viewport · card free in the middle */
-      '#sn-tile{position:fixed;inset:0;z-index:130;display:none;pointer-events:auto;',
-      'background:rgba(0,4,12,.42);touch-action:none}',
+      /* Peek: map stays clickable under transparent root · card only captures events */
+      '#sn-tile{position:fixed;inset:0;z-index:130;display:none;pointer-events:none;',
+      'background:transparent;touch-action:none}',
       '#sn-tile.open{display:block}',
+      '#sn-tile.sn-tile-full{background:rgba(0,4,12,.28);pointer-events:auto}',
       '#sn-tile .sn-tile-card{',
-      'position:absolute;left:50%;top:50%;',
-      'width:min(420px,calc(100vw - 24px));height:min(70vh,560px);',
-      'overflow:hidden;border-radius:16px;',
-      'background:rgba(0,8,20,.98);border:1px solid rgba(61,158,255,.55);',
-      'box-shadow:0 16px 48px rgba(0,0,0,.75),0 0 32px rgba(26,111,212,.28);',
-      'color:#c8e4ff;display:flex;flex-direction:column;pointer-events:auto;',
+      'position:absolute;pointer-events:auto;',
+      'width:min(260px,33vw);height:min(220px,28vh);',
+      'overflow:hidden;border-radius:14px;',
+      'background:rgba(0,8,20,.97);border:1px solid rgba(61,158,255,.55);',
+      'box-shadow:0 12px 32px rgba(0,0,0,.7),0 0 20px rgba(26,111,212,.25);',
+      'color:#c8e4ff;display:flex;flex-direction:column;',
       'touch-action:none;-webkit-touch-callout:none;',
-      'min-width:280px;min-height:280px;max-width:calc(100vw - 16px);max-height:calc(100vh - 16px)}',
+      'min-width:200px;min-height:160px;max-width:42vw;max-height:55vh}',
+      '#sn-tile.sn-tile-peek .sn-tile-cover{height:48px!important}',
+      '#sn-tile.sn-tile-peek .sn-tile-av{width:40px!important;height:40px!important}',
+      '#sn-tile.sn-tile-peek .sn-tile-roles,#sn-tile.sn-tile-peek .sn-tile-tabs{display:none!important}',
+      '#sn-tile.sn-tile-peek .sn-tile-body{font-size:11px;padding:4px 10px 6px!important;overflow:hidden}',
+      '#sn-tile.sn-tile-peek .sn-photo-row{display:none!important}',
+      '#sn-tile.sn-tile-peek .sn-tile-grip{min-height:36px;padding:6px 8px}',
+      '#sn-tile.sn-tile-peek .sn-tile-grip-label{font-size:10px}',
       '#sn-tile .sn-tile-grip{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;',
       'gap:8px;padding:12px 12px 8px;font:11px system-ui;color:#7ab0d8;user-select:none;',
       'cursor:grab;touch-action:none;-webkit-user-select:none;',
@@ -518,8 +595,10 @@
     if (root.parentElement !== document.body) document.body.appendChild(root);
     root.classList.add('open');
     root.classList.remove('cli-docked', 'overlay-mode');
+    root.classList.toggle('sn-tile-peek', T.sizeMode !== 'full');
+    root.classList.toggle('sn-tile-full', T.sizeMode === 'full');
     root.setAttribute('aria-hidden', 'false');
-    root.style.display = 'flex';
+    root.style.display = 'block';
   }
 
   function hideOverlay() {
@@ -675,9 +754,44 @@
       if (Prof?.upsert && profileOrId && typeof profileOrId === 'object' && !T.taskBoard)
         Prof.upsert(p);
     } catch (_) {}
+
+    // Second click same user while peek → expand for order / full use
+    if (
+      T.open &&
+      T.profileId === p.id &&
+      T.sizeMode === 'peek' &&
+      opts.expand !== false &&
+      opts.forcePeek !== true
+    ) {
+      expandToFull();
+      if (opts.tab) {
+        T.tab = opts.tab;
+        render();
+      }
+      global.SNCli?.preview?.((p.name || 'Tile') + ' · full');
+      return p;
+    }
+
     T.profileId = p.id;
     T.open = true;
-    T.tab = T.taskBoard ? 'task' : opts.tab || defaultTab(p);
+    // Map pins open PEAK (small). Explicit full/openMe can request full.
+    const wantFull = opts.full === true || opts.sizeMode === 'full' || opts.expand === true;
+    T.sizeMode = wantFull ? 'full' : 'peek';
+    if (T.sizeMode === 'peek') {
+      T.w = maxPeekW();
+      T.h = maxPeekH();
+      T.left = null;
+      T.top = null;
+      // Peek always shows basics first — not huge menu
+      T.tab = opts.tab === 'menu' && !wantFull ? 'about' : opts.tab || 'about';
+      if (T.taskBoard) T.tab = 'task';
+    } else {
+      T.w = maxFullW();
+      T.h = maxFullH();
+      T.left = null;
+      T.top = null;
+      T.tab = T.taskBoard ? 'task' : opts.tab || defaultTab(p);
+    }
     purgeCliTileJunk();
     showOverlay();
     applyScale();
@@ -699,7 +813,9 @@
       });
     }
     if (!opts.quiet) {
-      global.SNCli?.preview?.(p.name || 'Tile');
+      global.SNCli?.preview?.(
+        (p.name || 'Tile') + (T.sizeMode === 'peek' ? ' · tap again to expand' : '')
+      );
     }
     return p;
   }
@@ -715,6 +831,11 @@
     T.taskBoard = enriched;
     T.profileId = 'task:' + enriched.task.id;
     T.open = true;
+    T.sizeMode = 'peek';
+    T.w = maxPeekW();
+    T.h = maxPeekH();
+    T.left = null;
+    T.top = null;
     T.tab = 'task';
     const priceLabel =
       enriched.price != null
@@ -726,7 +847,7 @@
     showOverlay();
     applyScale();
     render();
-    global.SNCli?.log?.('Task multi-tile · ' + String(enriched.task.title || '').slice(0, 40), 'ok');
+    global.SNCli?.preview?.('Task · tap Open for full');
     global.SNCli?.preview?.(priceLabel || 'Task');
     return enriched;
   }
@@ -891,82 +1012,110 @@
     if (T.tab === 'about') {
       const hours = p.hours || p.opening_hours || '';
       const sched = global.SNMarket?.verifySchedule?.(p);
-      const photos = Array.isArray(p.photos) ? p.photos.slice(0, 6) : [];
       const phone = p.phone || '';
       const web = p.website || '';
       const gmap = p.googleMapsUrl || p.googleUrl || '';
-      body.innerHTML =
-        '<div class="sn-about">' +
-        (photos.length
-          ? '<div class="sn-photo-row">' +
-            photos
-              .map(
-                (u) =>
-                  '<img class="sn-photo-thumb" src="' +
-                  esc(u) +
-                  '" alt="" loading="lazy" />'
-              )
-              .join('') +
-            '</div>'
-          : '') +
-        (p.address ? '<div>📍 ' + esc(p.address) + '</div>' : '') +
-        '<div>📍 ' +
-        (p.lat != null ? p.lat.toFixed(4) + ', ' + p.lng.toFixed(4) : 'no pin yet') +
-        '</div>' +
-        (p.shopName
-          ? '<div>🏪 ' + esc(p.shopName) + (p.shopKind ? ' · ' + esc(p.shopKind) : '') + '</div>'
-          : '') +
-        (p.rating != null
-          ? '<div>★ ' +
-            esc(String(p.rating)) +
-            (p.ratingCount ? ' (' + esc(String(p.ratingCount)) + ')' : '') +
-            (p.priceBand ? ' · ' + esc(p.priceBand) : '') +
-            '</div>'
-          : p.priceBand
-            ? '<div>Price band · ' + esc(p.priceBand) + '</div>'
+      const peek = T.sizeMode !== 'full';
+      if (peek) {
+        // Compact basics only — map stays free
+        body.innerHTML =
+          '<div class="sn-about sn-about-peek">' +
+          (p.shopName || p.name
+            ? '<div><b>' + esc(p.shopName || p.name) + '</b></div>'
             : '') +
-        '<div>🕒 ' +
-        esc(sched?.label || hours || (p.openNow === true ? 'Open now' : p.openNow === false ? 'Closed now' : 'Hours not listed')) +
-        '</div>' +
-        (phone
-          ? '<div>📞 <a class="sn-link" href="tel:' +
-            esc(phone.replace(/\s+/g, '')) +
-            '">' +
-            esc(phone) +
-            '</a></div>'
-          : '') +
-        (web
-          ? '<div>🌐 <a class="sn-link" href="' +
-            esc(web) +
-            '" target="_blank" rel="noopener">' +
-            esc(web.replace(/^https?:\/\//, '').slice(0, 42)) +
-            '</a></div>'
-          : '') +
-        (gmap
-          ? '<div>🗺️ <a class="sn-link" href="' +
-            esc(gmap) +
-            '" target="_blank" rel="noopener">Google Business / Maps</a></div>'
-          : '') +
-        (p.source ? '<div class="sn-empty">Source · ' + esc(p.source) + '</div>' : '') +
-        (p.vehicle ? '<div>🛵 ' + esc(p.vehicle) + (p.driverOnline ? ' · ONLINE' : '') + '</div>' : '') +
-        (p.roles?.worker
-          ? '<div>🧰 Worker · ' + esc(p.jobTitle || p.workerRole || 'available') + '</div>'
-          : '') +
-        (p.lookingFor ? '<div>💕 ' + esc(p.lookingFor) + '</div>' : '') +
-        '</div>';
-      foot.innerHTML =
-        '<button type="button" class="sn-btn" data-act="fly">Fly map</button>' +
-        (phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '') +
-        (web ? '<button type="button" class="sn-btn" data-act="website">Website</button>' : '') +
-        (isMe(p)
-          ? '<button type="button" class="sn-btn primary" data-act="scan">Scan live shops</button>'
-          : p.roles?.worker
-            ? '<button type="button" class="sn-btn primary" data-act="hire">Send work offer</button>'
-            : p.roles?.dating
-              ? '<button type="button" class="sn-btn primary" data-act="date">Dating request</button>'
-              : p.roles?.vendor
-                ? '<button type="button" class="sn-btn primary" data-act="menu">Menu</button>'
-                : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
+          (p.rating != null
+            ? '<div>★ ' + esc(String(p.rating)) + (p.priceBand ? ' · ' + esc(p.priceBand) : '') + '</div>'
+            : '') +
+          '<div>🕒 ' +
+          esc(
+            sched?.label ||
+              hours ||
+              (p.openNow === true ? 'Open now' : p.openNow === false ? 'Closed' : 'Hours —')
+          ).slice(0, 48) +
+          '</div>' +
+          (phone ? '<div>📞 ' + esc(phone) + '</div>' : '') +
+          '<div class="sn-empty">Tap Open or + to order / full tile</div>' +
+          '</div>';
+        foot.innerHTML =
+          '<button type="button" class="sn-btn primary" data-act="expand">Open</button>' +
+          (p.roles?.vendor
+            ? '<button type="button" class="sn-btn" data-act="menu">Menu</button>'
+            : '') +
+          (phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '');
+      } else {
+        const photos = Array.isArray(p.photos) ? p.photos.slice(0, 6) : [];
+        body.innerHTML =
+          '<div class="sn-about">' +
+          (photos.length
+            ? '<div class="sn-photo-row">' +
+              photos
+                .map(
+                  (u) =>
+                    '<img class="sn-photo-thumb" src="' +
+                    esc(u) +
+                    '" alt="" loading="lazy" />'
+                )
+                .join('') +
+              '</div>'
+            : '') +
+          (p.address ? '<div>📍 ' + esc(p.address) + '</div>' : '') +
+          (p.shopName
+            ? '<div>🏪 ' + esc(p.shopName) + (p.shopKind ? ' · ' + esc(p.shopKind) : '') + '</div>'
+            : '') +
+          (p.rating != null
+            ? '<div>★ ' +
+              esc(String(p.rating)) +
+              (p.ratingCount ? ' (' + esc(String(p.ratingCount)) + ')' : '') +
+              (p.priceBand ? ' · ' + esc(p.priceBand) : '') +
+              '</div>'
+            : '') +
+          '<div>🕒 ' +
+          esc(
+            sched?.label ||
+              hours ||
+              (p.openNow === true ? 'Open now' : p.openNow === false ? 'Closed now' : 'Hours not listed')
+          ) +
+          '</div>' +
+          (phone
+            ? '<div>📞 <a class="sn-link" href="tel:' +
+              esc(phone.replace(/\s+/g, '')) +
+              '">' +
+              esc(phone) +
+              '</a></div>'
+            : '') +
+          (web
+            ? '<div>🌐 <a class="sn-link" href="' +
+              esc(web) +
+              '" target="_blank" rel="noopener">' +
+              esc(web.replace(/^https?:\/\//, '').slice(0, 42)) +
+              '</a></div>'
+            : '') +
+          (gmap
+            ? '<div>🗺️ <a class="sn-link" href="' +
+              esc(gmap) +
+              '" target="_blank" rel="noopener">Google Maps</a></div>'
+            : '') +
+          (p.vehicle ? '<div>🛵 ' + esc(p.vehicle) + (p.driverOnline ? ' · ONLINE' : '') + '</div>' : '') +
+          (p.roles?.worker
+            ? '<div>🧰 Worker · ' + esc(p.jobTitle || p.workerRole || 'available') + '</div>'
+            : '') +
+          (p.lookingFor ? '<div>💕 ' + esc(p.lookingFor) + '</div>' : '') +
+          '</div>';
+        foot.innerHTML =
+          '<button type="button" class="sn-btn" data-act="peek">Small</button>' +
+          '<button type="button" class="sn-btn" data-act="fly">Fly map</button>' +
+          (phone ? '<button type="button" class="sn-btn" data-act="call">Call</button>' : '') +
+          (web ? '<button type="button" class="sn-btn" data-act="website">Website</button>' : '') +
+          (isMe(p)
+            ? '<button type="button" class="sn-btn primary" data-act="scan">Scan shops</button>'
+            : p.roles?.worker
+              ? '<button type="button" class="sn-btn primary" data-act="hire">Work offer</button>'
+              : p.roles?.dating
+                ? '<button type="button" class="sn-btn primary" data-act="date">Date</button>'
+                : p.roles?.vendor
+                  ? '<button type="button" class="sn-btn primary" data-act="menu">Menu</button>'
+                  : '<button type="button" class="sn-btn primary" data-act="message">Message</button>');
+      }
     } else if (T.tab === 'menu') {
       const menu = p.menu || [];
       const hours = p.hours || p.opening_hours || '';
@@ -1209,8 +1358,19 @@
       return;
     }
     if (name === 'menu') {
+      if (T.sizeMode !== 'full') expandToFull();
       T.tab = 'menu';
       render();
+      return;
+    }
+    if (name === 'expand') {
+      expandToFull();
+      if (p.roles?.vendor) T.tab = 'menu';
+      render();
+      return;
+    }
+    if (name === 'peek') {
+      collapseToPeek();
       return;
     }
     if (name === 'fly') {
@@ -1356,11 +1516,12 @@
   }
 
   function openMe(tab) {
-    // Owner tile: always re-center if never placed; enable drag
-    if (T.left == null || T.top == null) {
-      /* applyScale will center */
-    }
-    open(global.SNProfiles?.me?.(), { tab: tab || 'about', quiet: true });
+    open(global.SNProfiles?.me?.(), {
+      tab: tab || 'about',
+      quiet: true,
+      full: true,
+      sizeMode: 'full',
+    });
     try {
       const root = $('sn-tile');
       if (root) {
@@ -1445,6 +1606,11 @@
     offer,
     offerMany,
     seedMe,
+    expandToFull,
+    collapseToPeek,
+    get sizeMode() {
+      return T.sizeMode;
+    },
     get openId() {
       return T.profileId;
     },

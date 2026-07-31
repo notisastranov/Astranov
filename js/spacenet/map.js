@@ -1237,14 +1237,8 @@
         } catch (_) {}
         try {
           const full = global.SNProfiles?.get?.(p.id) || p;
-          const tab = full.roles?.vendor
-            ? 'menu'
-            : full.roles?.dating
-              ? 'dating'
-              : full.roles?.driver
-                ? 'drive'
-                : 'about';
-          global.SNTile?.open?.(full, { tab: tab });
+          // Always open small peek first — second tap expands for order
+          global.SNTile?.open?.(full, { tab: 'about', forcePeek: false });
         } catch (err) {
           global.SNCli?.log?.('Tile open failed · ' + (err.message || err), 'err');
         }
