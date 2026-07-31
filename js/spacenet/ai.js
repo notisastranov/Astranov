@@ -892,9 +892,36 @@
       if (foodIntent) {
         return {
           did: did.concat(['food_intent:' + foodIntent.food]),
-          reply: 'Finding ' + foodIntent.food + '…',
+          reply:
+          foodIntent.autoOrder || foodIntent.lazyJudge
+            ? 'First task · locating you · then pizza order…'
+            : 'Finding ' + foodIntent.food + '…',
           runFoodIntent: foodIntent,
         };
+      }
+    }
+
+    // Explicit first-task phrase without food parser edge case
+    if (
+      /\bfirst\s+task\b/i.test(low) ||
+      (/\border\s+me\s+(a\s+)?pizza\b/i.test(low) && /\bjudge\b/i.test(low))
+    ) {
+      if (global.SNMarket && SNMarket.parseFoodIntent) {
+        var fi2 =
+          SNMarket.parseFoodIntent(line) ||
+          SNMarket.parseFoodIntent(
+            'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT'
+          );
+        if (fi2) {
+          fi2.autoOrder = true;
+          fi2.lazyJudge = true;
+          fi2.raw = line;
+          return {
+            did: did.concat(['first_task']),
+            reply: 'First task · locate → verify → judge → pay → eat time…',
+            runFoodIntent: fi2,
+          };
+        }
       }
     }
 

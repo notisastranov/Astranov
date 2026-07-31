@@ -10,12 +10,57 @@
   var MAX_LEARN = 400;
   var NAME = 'Astranov';
 
-  /** Seed corpus — product law (grows via teach / use) */
+  /**
+   * Seed corpus — FIRST TASK is P0 (lazy pizza order).
+   * Task law: locate → verify if soft GPS → research likes/temper/company →
+   * judge type/size/vendor/courier → pay S → map route → tell eat time.
+   */
   var SEED = [
+    {
+      id: 'first_task',
+      q:
+        'first task first order lazy order me a pizza you judge type size vendor delivery guy ' +
+        'what time i eat order me pizza judge whatever else retsina soda greek special',
+      a:
+        'FIRST TASK · type: ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT · ' +
+        'I locate you · if GPS soft I ask YES/NO · I use your likes (feisty Greek · company · Super Greek 13 · retsina · 1.5L soda) · ' +
+        'pick vendor + Astranov courier · pay S · map shows route · I tell when you eat.',
+      tags: ['market', 'food', 'p0', 'first'],
+    },
+    {
+      id: 'first_task_steps',
+      q: 'how first order pizza steps locate verify yes no eat time eta',
+      a:
+        '1 locate · 2 if location soft I ask YES or NO · 3 research your temper/company/likes · ' +
+        '4 Super Greek special 13 pieces + retsina + 1.5L soda for feisty Greek company · ' +
+        '5 vendor + courier on map · 6 pay S · 7 you eat at HH:MM.',
+      tags: ['market', 'food', 'p0'],
+    },
+    {
+      id: 'first_task_yes',
+      q: 'yes correct here location ok go proceed confirm location',
+      a: 'YES continues the paused pizza order from your confirmed pin on the map.',
+      tags: ['market', 'food', 'p0'],
+    },
+    {
+      id: 'first_task_no',
+      q: 'no wrong not me location false relocate',
+      a: 'NO cancels that pin · type locate or fly city · then paste the pizza order again.',
+      tags: ['market', 'food', 'p0'],
+    },
+    {
+      id: 'owner_likes',
+      q: 'girlfriends cats dogs feisty greek retsina soda super greek special 13 pieces company temper',
+      a:
+        'Owner tray: feisty Greek guy · company ~3 (you + 2 girlfriends) · pets noted · ' +
+        'Super Greek special 13 pieces · retsina · big soda 1.5L · Astranov delivery not Wolt/eFood.',
+      tags: ['market', 'prefs', 'p0'],
+    },
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name',
-      a: 'I am Astranov — AI of astranov.eu. Ask pizza · shops · first delivery · donate on · locate.',
+      a:
+        'I am Astranov — AI of astranov.eu. First task: order me a pizza you judge… · also locate · shops · donate on.',
       tags: ['identity', 'ai'],
     },
     {
@@ -27,7 +72,7 @@
     {
       id: 'listen',
       q: 'ai listen handsfree voice mic',
-      a: 'ASTRANOV LISTENING · say pizza · shops · next · show all · fly · locate',
+      a: 'ASTRANOV LISTENING · first task: order me a pizza you judge… · or locate · shops',
       tags: ['ai', 'voice'],
     },
     {
@@ -44,9 +89,11 @@
     },
     {
       id: 'pizza',
-      q: 'pizza food hungry eat order sushi coffee burger',
-      a: 'Say pizza · globe flies · vendor tile opens · next · show all · order only if you say order',
-      tags: ['market', 'food'],
+      q: 'pizza food hungry eat order sushi coffee burger order me a pizza',
+      a:
+        'Lazy first task: ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT · ' +
+        'I run locate → verify → judge → pay → eat time.',
+      tags: ['market', 'food', 'p0'],
     },
     {
       id: 'next',
@@ -57,8 +104,8 @@
     {
       id: 'locate',
       q: 'locate gps where am i find me',
-      a: 'locate · globe on you · then shops or pizza near focus',
-      tags: ['globe'],
+      a: 'locate · map on you · first step before pizza. If soft GPS I ask YES/NO.',
+      tags: ['globe', 'p0'],
     },
     {
       id: 'fly',
@@ -69,19 +116,19 @@
     {
       id: 'vendor',
       q: 'vendor shop list menu cart order seller',
-      a: 'list shop Name · menu add Item 5 · order me · or say shops for live tiles',
+      a: 'Lazy order pizza first · or list shop Name · menu add Item 5 · shops for tiles',
       tags: ['market'],
     },
     {
       id: 'roles',
       q: 'roles driver vendor worker client dating multi tile',
-      a: 'One multi-tile: client · vendor worker · driver · social · dating. Open User or me.',
+      a: 'One multi-tile: client · vendor worker · driver · social · dating. Tap User when logged in.',
       tags: ['tile'],
     },
     {
       id: 'free',
       q: 'free ai model paid public fork train mind local',
-      a: 'I am Astranov free mind — local + learn. teach FACT to grow me.',
+      a: 'I am Astranov free mind — local + learn. First task is pizza lazy order. teach FACT to grow me.',
       tags: ['free', 'ai'],
     },
     {
@@ -99,14 +146,15 @@
     {
       id: 'architect',
       q: 'architect owner notis who owns brand',
-      a: 'I am Astranov AI. Owner operates astranov.eu. S is the currency.',
+      a: 'I am Astranov AI. Owner operates astranov.eu. S is the currency. First task is pizza order.',
       tags: ['identity'],
     },
     {
       id: 'help',
       q: 'help commands what can you do',
-      a: 'pizza · shops · next · show all · locate · fly · me · rate · teach · free mind',
-      tags: ['help'],
+      a:
+        'FIRST: order me a pizza you judge type size vendor delivery… · locate · shops · donate on · me · rate · teach',
+      tags: ['help', 'p0'],
     },
     {
       id: 's_mine',
@@ -134,14 +182,16 @@
     },
     {
       id: 'greek',
-      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι',
-      a: 'Είμαι Astranov. Πες πίτσα · shops · next · locate · fly',
-      tags: ['el'],
+      q: 'ελληνικά γεια βοήθεια φαγητό πίτσα πού είμαι παράγγειλε πίτσα',
+      a:
+        'Είμαι Astranov. Πρώτη αποστολή: παράγγειλε πίτσα · κρίνω τύπο μέγεθος μαγαζί κούριερ · πες τι ώρα τρως · locate · YES/NO αν ρωτήσω',
+      tags: ['el', 'p0'],
     },
     {
       id: 'first',
-      q: 'first delivery first loop list shop first order complete order',
-      a: 'Say first delivery — I run shop → menu → order → drive → you',
+      q: 'first delivery first loop list shop complete self delivery train',
+      a:
+        'Self-loop: first delivery (you = shop + buyer + driver). Real first food task: order me a pizza you judge…',
       tags: ['market'],
     },
     {
@@ -155,6 +205,12 @@
       q: 'broken bug pain handoff fix ship',
       a: 'Say what broke · handoff queues for midnight Athens ship · type usage export',
       tags: ['support'],
+    },
+    {
+      id: 'wolt_efood',
+      q: 'wolt efood delivery app uber eats box',
+      a: 'We do not use Wolt or eFood. Courier is Astranov mesh delivery on the map · pay in S.',
+      tags: ['market', 'food'],
     },
   ];
 
@@ -171,6 +227,47 @@
     try {
       var st = JSON.parse(localStorage.getItem(STATS_KEY) || '{}');
       if (st && typeof st === 'object') stats = Object.assign(stats, st);
+    } catch (e2) {}
+    // Install first-task training once per browser (owner law)
+    trainFirstTask();
+  }
+
+  /** Hard-wire first task facts into learned memory (idempotent) */
+  function trainFirstTask() {
+    var FLAG = 'sn:free-mind-first-task-v2';
+    try {
+      if (localStorage.getItem(FLAG) === '1') return;
+    } catch (e0) {}
+    var drills = [
+      [
+        'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT',
+        'FIRST TASK: locate → verify soft GPS (YES/NO) → research feisty Greek company likes → Super Greek special 13 pieces + retsina + 1.5L soda → vendor + Astranov courier → pay S → map route → eat time HH:MM',
+      ],
+      [
+        'first task',
+        'First task is the lazy pizza order. Paste the full ORDER ME A PIZZA YOU JUDGE… line. I run it on the map.',
+      ],
+      [
+        'what do I like to eat',
+        'Owner tray: Super Greek special 13 pieces · retsina · big soda 1.5L · company ~3 · feisty Greek temper · not Wolt/eFood',
+      ],
+      [
+        'yes',
+        'If a pizza order is paused on location check, YES means continue from this pin.',
+      ],
+      [
+        'no',
+        'If a pizza order is paused on location check, NO cancels — locate again then re-order.',
+      ],
+    ];
+    drills.forEach(function (d) {
+      teach(d[0], d[1], ['p0', 'first-task', 'train']);
+    });
+    try {
+      localStorage.setItem(FLAG, '1');
+    } catch (e1) {}
+    try {
+      if (global.SNUsage && SNUsage.track) SNUsage.track('free_mind_train_first_task', {});
     } catch (e2) {}
   }
 
@@ -342,6 +439,25 @@
     var low = msg.toLowerCase();
 
     // —— Hard intents (never fuzzy-wrong) ——
+    // P0 FIRST TASK — always point at the live market path (not a chat monologue)
+    if (
+      /\border\s+me\s+(a\s+)?pizza\b/i.test(low) ||
+      (/\bpizza\b/i.test(low) &&
+        /\b(judge|type|size|vendor|delivery|eat|time)\b/i.test(low)) ||
+      /\bfirst\s+task\b/i.test(low) ||
+      (/\bfirst\s+order\b/i.test(low) && !/\bfirst\s+delivery\b/i.test(low))
+    ) {
+      return {
+        text:
+          'FIRST TASK live · I locate you · verify if GPS soft (YES/NO) · ' +
+          'use your likes (feisty Greek · Super Greek 13 · retsina · 1.5L soda) · ' +
+          'vendor + courier on map · pay S · tell you when you eat. Running that path now.',
+        score: 1,
+        via: 'free-mind',
+        source: 'intent-first-task',
+        runFood: true,
+      };
+    }
     if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
       return {
         text:
@@ -366,7 +482,8 @@
       )
     ) {
       return {
-        text: 'I am Astranov — AI of astranov.eu. Say pizza · shops · first delivery · donate on.',
+        text:
+          'I am Astranov — AI of astranov.eu. First task: ORDER ME A PIZZA YOU JUDGE TYPE SIZE VENDOR DELIVERY… · locate · donate on.',
         score: 1,
         via: 'free-mind',
         source: 'intent-who',
@@ -430,7 +547,8 @@
     // Too little signal after stopwords → honest fallback, no random seed
     if (qTok.length < 1) {
       return {
-        text: 'Astranov · ask clearly: pizza · shops · first delivery · who are you',
+        text:
+          'Astranov · first task: order me a pizza you judge… · or locate · who are you',
         score: 0.2,
         via: 'free-mind',
         source: 'fallback',

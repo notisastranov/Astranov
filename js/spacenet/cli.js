@@ -373,7 +373,13 @@
   }
 
   function help() {
-    log('── Astranov SpaceNet (full chrome) ──', 'ok');
+    log('── FIRST TASK ──', 'ok');
+    log(
+      'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT',
+      'ok'
+    );
+    log('Then: YES/NO if I ask about location · map shows vendor + courier · I tell eat time', 'dim');
+    log('── Also ──', 'ok');
     log('MAP   fly <city> · city · global · locate · pilot on|off (camera)', 'ok');
     log('ADD   ribbon ➕ · pin · targets · video · vendor · social · emergency', 'ok');
     log('TOPO  measure · measure topo · clear targets · clear pin', 'dim');
