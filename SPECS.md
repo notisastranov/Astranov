@@ -216,3 +216,4 @@ js/spacenet/auth.js          → Google GIS preferred
 *Agent note 2026-07-31: **Strands + radar meta** — currency face = strand of coins (◎); money HUD load graph + mine rate; mining auto-on after terms; upper-left nav meta = speed · UTC/local · PHYS/VIEW; radar two-finger range zoom. Build `20260731192000-strands-radar-meta`.*
 *Agent note 2026-07-31: **First test orders ready** — `test ready` seeds wallet (50 strands), Ilioupoli/GPS pin, 4 local shops + 2 drivers; `test order` runs full pizza pipeline. Build `20260731194000-first-test-orders`.*
 *Agent note 2026-07-31: **Fleet monitor** under ASTRANOV replaces GLOBAL pill — Main / Hot-swap / RAID load graphs + state. Tap opens science hub. Build `20260731195500-fleet-monitor`.*
+*Agent note 2026-07-31: Money button deep space-blue glow + live economy graph (balance/vault/total) at 1 Hz. Build `20260731200500-money-blue-econ`.*

@@ -149,6 +149,10 @@
   var radarZoom = 1;
   var loadHist = [];
   var LOAD_HIST_N = 36;
+  /** Economy performance samples (balance + vault) · 1 Hz */
+  var econHist = [];
+  var ECON_HIST_N = 60;
+  var econTimer = 0;
   var physPos = null;
   /** Per-role load histories for fleet monitor under ASTRANOV */
   var fleetHist = { main: [], secondary: [], raid: [] };
@@ -636,6 +640,7 @@
       }
     }
     paintLoadGraph();
+    paintEconGraph();
     paintFleetMonitor();
     var hud = $('field-balance-hud');
     if (hud) {
@@ -643,7 +648,7 @@
       hud.title =
         'Strand of coins · mining ' +
         ((mine.rate || 0) * 24).toFixed(2) +
-        '/day · device load · tap finance';
+        '/day · live economy · tap finance';
     }
     paintNavMeta();
     paintRibbon();
@@ -857,60 +862,165 @@
   }
 
   function paintLoadGraph() {
-    var c = $('fbh-load-graph');
-    var lab = $('fbh-load-label');
+    // Device load still tracked for fleet; money button shows economy graph
+    var cpu = mine.rates && mine.rates.cpu != null ? mine.rates.cpu : 0;
+    var spare = mine.spare != null ? mine.spare : 0;
+    var loadPct =
+      mine.on && mine.terms
+        ? Math.max(cpu, 100 - spare)
+        : Math.max(8, (100 - spare) * 0.35);
+    loadHist.push(Math.max(0, Math.min(100, loadPct)));
+    if (loadHist.length > LOAD_HIST_N) loadHist.shift();
+  }
+
+  /** Economy performance samples (balance + vault) · called at 1 Hz */
+  function sampleEconomy() {
+    var C = g.SNCurrency;
+    var bal = C && C.balance ? C.balance() : 0;
+    var vault =
+      C && C.platformFees
+        ? C.platformFees()
+        : C && C.snapshot
+          ? C.snapshot().platformFees || 0
+          : 0;
+    var mined = C && C.mined ? C.mined() : 0;
+    var rateDay = (mine.rate || 0) * 24;
+    econHist.push({
+      t: Date.now(),
+      bal: bal,
+      vault: vault,
+      mined: mined,
+      rate: rateDay,
+      total: bal + vault,
+    });
+    if (econHist.length > ECON_HIST_N) econHist.shift();
+  }
+
+  /**
+   * Live economic performance on money button — balance + vault, 1 Hz samples.
+   */
+  function paintEconGraph() {
+    var c = $('fbh-econ-graph');
+    var lab = $('fbh-econ-label');
     if (!c) return;
     var ctx = c.getContext('2d');
     if (!ctx) return;
+    if (!econHist.length) sampleEconomy();
     var w = c.width;
     var h = c.height;
-    // CPU load 0–100 from rates; spare inverted
-    var cpu = mine.rates && mine.rates.cpu != null ? mine.rates.cpu : 0;
-    var spare = mine.spare != null ? mine.spare : 0;
-    var loadPct = mine.on && mine.terms ? Math.max(cpu, 100 - spare) : Math.max(8, 100 - spare) * 0.35;
-    loadHist.push(Math.max(0, Math.min(100, loadPct)));
-    if (loadHist.length > LOAD_HIST_N) loadHist.shift();
     ctx.clearRect(0, 0, w, h);
-    // grid
-    ctx.strokeStyle = 'rgba(0,232,160,0.12)';
+
+    ctx.strokeStyle = 'rgba(76,201,255,0.12)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, h * 0.5);
-    ctx.lineTo(w, h * 0.5);
-    ctx.stroke();
-    if (loadHist.length < 2) return;
+    var gy;
+    for (gy = 1; gy < 3; gy++) {
+      ctx.beginPath();
+      ctx.moveTo(0, (h * gy) / 3);
+      ctx.lineTo(w, (h * gy) / 3);
+      ctx.stroke();
+    }
+
+    if (econHist.length < 2) {
+      if (lab) lab.textContent = 'economy · waiting samples…';
+      return;
+    }
+
     var i;
-    // fill
+    var minV = Infinity;
+    var maxV = -Infinity;
+    for (i = 0; i < econHist.length; i++) {
+      var tot = econHist[i].total;
+      if (tot < minV) minV = tot;
+      if (tot > maxV) maxV = tot;
+      if (econHist[i].vault < minV) minV = econHist[i].vault;
+      if (econHist[i].vault > maxV) maxV = econHist[i].vault;
+    }
+    if (!isFinite(minV) || !isFinite(maxV)) {
+      minV = 0;
+      maxV = 1;
+    }
+    if (maxV - minV < 0.05) {
+      minV -= 0.25;
+      maxV += 0.25;
+    }
+    var span = maxV - minV || 1;
+
+    function yOf(v) {
+      return h - 3 - ((v - minV) / span) * (h - 6);
+    }
+    function xOf(idx) {
+      return (idx / (ECON_HIST_N - 1)) * (w - 2) + 1;
+    }
+
+    // vault (gold)
     ctx.beginPath();
-    for (i = 0; i < loadHist.length; i++) {
-      var x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
-      var y = h - 2 - (loadHist[i] / 100) * (h - 4);
+    for (i = 0; i < econHist.length; i++) {
+      var x = xOf(i);
+      var y = yOf(econHist[i].vault);
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.lineTo(w - 1, h - 1);
-    ctx.lineTo(1, h - 1);
-    ctx.closePath();
-    ctx.fillStyle = mine.on && mine.terms ? 'rgba(0,255,176,0.18)' : 'rgba(76,201,255,0.1)';
-    ctx.fill();
-    // line
-    ctx.beginPath();
-    for (i = 0; i < loadHist.length; i++) {
-      x = (i / (LOAD_HIST_N - 1)) * (w - 2) + 1;
-      y = h - 2 - (loadHist[i] / 100) * (h - 4);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = mine.on && mine.terms ? '#00ffb0' : '#4cc9ff';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,200,87,0.85)';
+    ctx.lineWidth = 1.3;
     ctx.stroke();
+
+    // total economy cyan
+    ctx.beginPath();
+    for (i = 0; i < econHist.length; i++) {
+      x = xOf(i);
+      y = yOf(econHist[i].total);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = '#4cc9ff';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+    ctx.lineTo(xOf(econHist.length - 1), h - 1);
+    ctx.lineTo(xOf(0), h - 1);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(61,184,255,0.14)';
+    ctx.fill();
+
+    // wallet balance (ice)
+    ctx.beginPath();
+    for (i = 0; i < econHist.length; i++) {
+      x = xOf(i);
+      y = yOf(econHist[i].bal);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = 'rgba(168,236,255,0.9)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    var last = econHist[econHist.length - 1];
+    var first = econHist[0];
+    var lx = xOf(econHist.length - 1);
+    var ly = yOf(last.total);
+    ctx.fillStyle = '#4cc9ff';
+    ctx.shadowColor = '#4cc9ff';
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(lx, ly, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    var delta = last.total - first.total;
+    var dSign = delta >= 0 ? '+' : '';
+    var C = g.SNCurrency;
+    var fmt = function (n) {
+      return C && C.formatCompact ? C.formatCompact(n) : '◎ ' + Number(n).toFixed(2);
+    };
     if (lab) {
-      var role = (roleProfile() && roleProfile().label) || mine.deviceRole || 'device';
       lab.textContent =
-        (mine.on && mine.terms ? 'mining · ' : 'idle · ') +
-        Math.round(loadPct) +
-        '% load · ' +
-        role.replace(/\s*device/i, '');
+        'eco ' +
+        dSign +
+        Number(delta).toFixed(2) +
+        ' · ' +
+        fmt(last.total) +
+        ' · vault ' +
+        Number(last.vault).toFixed(2) +
+        ' · 1s';
     }
   }
 
@@ -2817,6 +2927,7 @@
       var n = performance.now();
       tickMine(n - last);
       last = n;
+      sampleEconomy();
       paint();
     }, 1000);
 
