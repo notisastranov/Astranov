@@ -501,25 +501,25 @@
     "id": 84,
     "domain": "shops",
     "text": "fromCrawlPlace never marks demo/npc",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 85,
     "domain": "shops",
     "text": "Google Places enrich when key set only",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 86,
     "domain": "shops",
     "text": "Places details: phone hours website rating photos",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 87,
     "domain": "shops",
     "text": "Price-band menu slots honest not fake dish names",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 88,
@@ -537,13 +537,13 @@
     "id": 90,
     "domain": "shops",
     "text": "Vendor photo urls stored https only",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 91,
     "domain": "shops",
     "text": "Opening hours parse OSM + Google formats",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 92,
@@ -561,55 +561,55 @@
     "id": 94,
     "domain": "shops",
     "text": "Shop rating null \u2192 neutral score not zero",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 95,
     "domain": "shops",
     "text": "Dedupe vendors by name+50m proximity",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 96,
     "domain": "shops",
     "text": "Vendor id stable hash of source+ref",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 97,
     "domain": "shops",
     "text": "Menu items availability flag in_stock",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 98,
     "domain": "shops",
     "text": "Menu photo optional per item",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 99,
     "domain": "shops",
     "text": "Force-fill empty menus via menu-request edge",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 100,
     "domain": "shops",
     "text": "vendor-crawler edge schedule sector jobs",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 101,
     "domain": "shops",
     "text": "Commerce.ensureSector idempotent",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 102,
     "domain": "shops",
     "text": "Sector grid 1km cells",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 103,
@@ -627,97 +627,97 @@
     "id": 105,
     "domain": "shops",
     "text": "Language names el/en dual fields",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 106,
     "domain": "shops",
     "text": "Phone normalize E.164 when possible",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 107,
     "domain": "shops",
     "text": "Website normalize https",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 108,
     "domain": "shops",
     "text": "Cuisine tags for ranking food match",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 109,
     "domain": "shops",
     "text": "Search.nearby race with timeout promise",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 110,
     "domain": "shops",
     "text": "Fallback restaurant search if pizza empty",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 111,
     "domain": "shops",
     "text": "Shop density metric for readiness",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 112,
     "domain": "shops",
     "text": "Blacklist ghost OSM nodes without name",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 113,
     "domain": "shops",
     "text": "Prefer shops with phone+hours for orderable",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 114,
     "domain": "shops",
     "text": "Vendor tile data model full even if UI later",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 115,
     "domain": "shops",
     "text": "Export vendors JSON CLI: vendors export",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 116,
     "domain": "shops",
     "text": "Import vendor CSV admin CLI",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 117,
     "domain": "shops",
     "text": "Business profile claim flow data-only",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 118,
     "domain": "shops",
     "text": "Verify vendor role on listShop",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 119,
     "domain": "shops",
     "text": "list shop creates vendor role profile",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 120,
     "domain": "shops",
     "text": "menu add price validation >0",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 121,
@@ -1383,13 +1383,13 @@
     "id": 231,
     "domain": "ai",
     "text": "Fallback help when unknown",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 232,
     "domain": "ai",
     "text": "Agent bridge phrases early in cli",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 233,

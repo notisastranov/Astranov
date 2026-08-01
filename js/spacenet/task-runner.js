@@ -65,30 +65,35 @@
       p = loc.pos;
     }
     await ensureMap(p.lat, p.lng);
+    if (g.SNVendorCrawl && SNVendorCrawl.populate) {
+      var pop = await SNVendorCrawl.populate({
+        lat: p.lat,
+        lng: p.lng,
+        query: query || 'restaurant pizza cafe food',
+        openMap: true,
+        force: true,
+      });
+      return {
+        ok: !!(pop && pop.ok),
+        vendors: (pop && pop.count) || 0,
+        samples: (pop && pop.samples) || [],
+        sources: (pop && pop.sources) || [],
+        pos: p,
+        populate: pop,
+      };
+    }
+    // fallback commerce only
     try {
       if (g.SNCommerce && SNCommerce.ensureSector) {
         await SNCommerce.ensureSector(p.lat, p.lng, { openMap: true });
       }
-    } catch (_) {}
-    try {
-      if (g.SNPlacesBusiness && SNPlacesBusiness.fillSector) {
-        await SNPlacesBusiness.fillSector(p.lat, p.lng, { query: query || 'restaurant' });
-      }
-    } catch (_) {}
-    try {
-      if (g.SNSearch && SNSearch.nearby) {
-        await SNSearch.nearby(p.lat, p.lng, 6000, query || 'restaurant food');
-      }
-    } catch (_) {}
-    try {
-      if (g.SNMap && SNMap.showProfiles) SNMap.showProfiles();
     } catch (_) {}
     var n = 0;
     try {
       n = (g.SNProfiles.list({ role: 'vendor' }) || []).length;
     } catch (_) {}
     log('Shops · sector · vendors~' + n, 'ok');
-    return { ok: true, vendors: n, pos: p };
+    return { ok: n > 0, vendors: n, pos: p };
   }
 
   async function doOrder(line, opts) {

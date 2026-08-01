@@ -1323,6 +1323,18 @@
       { lat: pos.lat, lng: pos.lng, label: food }
     );
     try {
+      if (global.SNVendorCrawl && SNVendorCrawl.populate) {
+        await SNVendorCrawl.populate({
+          lat: pos.lat,
+          lng: pos.lng,
+          query: (intent.overpass || food || 'restaurant') + ' food',
+          openMap: true,
+          force: false,
+          quiet: false,
+        });
+      }
+    } catch (_vc) {}
+    try {
       if (global.SNHelper && SNHelper.find) {
         SNHelper.find(food || 'shops', pos, { log: true });
       }

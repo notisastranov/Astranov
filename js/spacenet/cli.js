@@ -1895,7 +1895,51 @@
       }
 
 
+      
       if (
+        low === 'fill shops' ||
+        low === 'google shops' ||
+        low === 'crawl shops' ||
+        low === 'scan shops' ||
+        low === 'populate shops' ||
+        low === 'shops crawl' ||
+        /^crawl\s+(shops|vendors|map)/i.test(low)
+      ) {
+        try {
+          if (!global.SNVendorCrawl || !SNVendorCrawl.populate) {
+            log('Vendor crawl loading · hard refresh', 'err');
+            return;
+          }
+          log('Crawling OSM + Places + edge for vendor tiles…', 'dim');
+          let pos = global._snLastPos;
+          if (!pos || pos.lat == null) {
+            if (global.SNTaskRunner && SNTaskRunner.locate) {
+              const L = await SNTaskRunner.locate();
+              pos = L && L.pos;
+            }
+          }
+          const r = await SNVendorCrawl.populate({
+            lat: pos && pos.lat,
+            lng: pos && pos.lng,
+            query: line.replace(/^(fill|google|crawl|scan|populate)\s+shops?/i, '').trim() ||
+              'restaurant pizza cafe food',
+            openMap: true,
+            force: true,
+          });
+          log(
+            r && r.ok
+              ? 'Map ready · ' + r.count + ' vendors · order me a pizza'
+              : 'Few/no shops · try locate then crawl shops again',
+            r && r.ok ? 'ok' : 'err'
+          );
+          preview(r && r.count ? r.count + ' shops' : 'crawl');
+        } catch (e) {
+          log('Crawl · ' + (e.message || e), 'err');
+        }
+        return;
+      }
+
+if (
         low === 'mission' ||
         low.startsWith('mission ') ||
         low === 'do task' ||

@@ -395,3 +395,17 @@ Build: `cd deploy/osrm && ./prepare.sh && docker compose up -d`
 | **Progress** | 159/333 SHIPPED_CORE · UI still frozen |
 
 Test: `mission locate and order pizza` · AI: first delivery · order me a pizza you judge…
+
+## OWNER LOG · 2026-08-01 vendor crawl for marketplace tiles
+
+| Item | Law |
+|------|-----|
+| **SNVendorCrawl** | `js/spacenet/vendor-crawl.js` — Overpass+Nominatim+Google+edge+DB → vendor tiles |
+| **Tile fields** | name · phone · hours · website · address · cuisine · photos · menu/prices · rating · source |
+| **AI** | `fill shops` / `crawl shops` / order path auto-crawls before ranking |
+| **CLI** | `crawl shops` · `fill shops` · `google shops` · `mission locate and fill shops` |
+| **Menus** | `ensureOrderableMenu` after crawl (price-band honest slots if no dish list) |
+| **Zero dummy** | Real OSM/Places only · no NPC shops |
+| **Progress** | 192/333 · UI frozen |
+
+Google photos/ratings need `SN_CONFIG.layers.googleMapsKey`. OSM always free.

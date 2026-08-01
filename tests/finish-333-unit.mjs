@@ -112,3 +112,20 @@ assert.ok(plan.steps.indexOf('order') >= 0 || plan.steps.indexOf('browse') >= 0)
 const full = g.SNTaskRunner.planFromText('first delivery');
 assert.deepEqual(full.steps, ['locate', 'shops', 'order', 'drive', 'deliver']);
 console.log('PASS task-runner plan', plan.steps, full.steps);
+
+
+loadIife('js/spacenet/vendor-crawl.js', g);
+assert.ok(g.SNVendorCrawl);
+const norm = g.SNVendorCrawl.normalizePoi({
+  name: 'Test Pizza',
+  lat: 36.43,
+  lng: 28.22,
+  phone: '+30 22410',
+  hours: '10:00-23:00',
+  website: 'https://example.com',
+  photos: ['https://example.com/a.jpg'],
+  cuisine: 'pizza',
+}, 'test');
+assert.equal(norm.phone.includes('22410'), true);
+assert.ok(norm.photos.length >= 1);
+console.log('PASS vendor-crawl normalize', norm.name);

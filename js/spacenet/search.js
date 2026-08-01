@@ -170,15 +170,20 @@
         .map((el) => {
           const tags = el.tags || {};
           return {
-            name: tags.name || tags.brand || tags.amenity || tags.shop || 'place',
+            name: tags.name || tags.brand || tags['name:en'] || tags.amenity || tags.shop || 'place',
             lat: el.lat || el.center?.lat,
             lng: el.lon || el.center?.lon,
             kind: tags.amenity || tags.shop || tags.tourism || tags.leisure || 'poi',
             source: 'overpass',
             cuisine: tags.cuisine || '',
-            phone: tags.phone || tags['contact:phone'] || '',
-            website: tags.website || tags['contact:website'] || '',
+            phone: tags.phone || tags['contact:phone'] || tags['contact:mobile'] || '',
+            website: tags.website || tags['contact:website'] || tags.url || '',
             hours: tags.opening_hours || '',
+            email: tags.email || tags['contact:email'] || '',
+            address: [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']]
+              .filter(Boolean)
+              .join(' '),
+            image: tags.image || tags.wikimedia_commons || '',
           };
         })
         .filter((p) => p.lat != null && p.name);

@@ -1110,10 +1110,15 @@
     if (/^(deliver me|complete delivery|mark delivered|finish delivery)\b/i.test(low)) {
       return { did: did.concat(['deliver']), reply: 'Completing delivery…', runDeliver: true, skipBrand: true };
     }
-    if (/^(fill shops|google shops|shops near me|find shops)\b/i.test(low)) {
+    if (
+      /^(fill shops|google shops|shops near me|find shops|crawl shops|scan shops|populate shops)\b/i.test(
+        low
+      ) ||
+      /\b(find|search|crawl)\b.*\b(shops|restaurants|vendors|pizza places)\b/i.test(low)
+    ) {
       return {
         did: did.concat(['fill_shops']),
-        reply: 'Filling real shops near you on the map…',
+        reply: 'Crawling internet + maps for real shops · phone · hours · menus…',
         runMission: { steps: ['locate', 'shops'], foodLine: line, autoOrder: false },
         skipBrand: true,
       };

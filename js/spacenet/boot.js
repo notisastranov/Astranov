@@ -212,6 +212,7 @@
     '/js/spacenet/home.js',
     '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/search.js',
+    '/js/spacenet/vendor-crawl.js',
     '/js/spacenet/greeklish.js',
     '/js/spacenet/order-engine.js',
     '/js/spacenet/market.js',
