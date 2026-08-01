@@ -1,0 +1,20 @@
+# Astranov self-hosted OSRM — Greece (expand extract later)
+# Requires: Docker + ~4–8 GB RAM for extract, ~1–2 GB to serve
+# Usage: see README.md
+
+services:
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:latest
+    container_name: astranov-osrm
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+    # After data is prepared (see README), serve:
+    command: osrm-routed --algorithm mld /data/greece-latest.osrm
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:5000/route/v1/driving/23.72,37.98;23.73,37.99?overview=false"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

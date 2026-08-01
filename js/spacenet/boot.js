@@ -206,6 +206,7 @@
     '/js/spacenet/profiles.js',
     '/js/spacenet/tasks.js',
     '/js/spacenet/usage.js',
+    '/js/spacenet/routing.js',
     '/js/spacenet/field.js',
     '/js/spacenet/scrolls.js',
     '/js/spacenet/home.js',

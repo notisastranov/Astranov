@@ -55,6 +55,20 @@
       // googleTiles: 'https://…{z}/{x}/{y}…',  // alternate tile template
       // w3wKey: 'your-what3words-api-key',
     },
+    /**
+     * Street routing (OSRM)
+     * 1) osrmBase — your self-hosted OSRM (https://osrm.astranov.eu) when VPS is up
+     * 2) useGateway — Supabase edge osrm-route (set secret OSRM_URL to same host)
+     * 3) publicFallback — router.project-osrm.org
+     * See deploy/osrm/README.md
+     */
+    routing: {
+      osrmBase: '', // e.g. 'https://osrm.astranov.eu'
+      useGateway: true,
+      publicFallback: 'https://router.project-osrm.org',
+      profile: 'driving',
+      timeoutMs: 10000,
+    },
   };
   g.SB_URL = g.SN_CONFIG.sbUrl;
   g.SB_KEY = g.SN_CONFIG.sbKey;

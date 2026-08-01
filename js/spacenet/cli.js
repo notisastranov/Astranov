@@ -1820,6 +1820,59 @@
         return;
       }
 
+      // ── Street routing self-test (OSRM self-host / gateway / public) ──
+      if (
+        low === 'route test' ||
+        low === 'osrm test' ||
+        low === 'routing test' ||
+        low === 'test route' ||
+        low === 'osrm'
+      ) {
+        try {
+          const R = global.SNRouting;
+          if (!R || !R.selfTest) {
+            log('Routing module loading · hard refresh', 'err');
+            return;
+          }
+          log('Routing · probing self-host → gateway → public…', 'dim');
+          const r = await R.selfTest();
+          if (r && r.ok) {
+            log(
+              'OSRM OK · ' +
+                (r.engine || '?') +
+                ' · ' +
+                r.km +
+                ' km · ' +
+                r.durationS +
+                's · ' +
+                r.points +
+                ' pts · ' +
+                r.ms +
+                'ms',
+              'ok'
+            );
+            if (r.engineRoot) log('Engine · ' + r.engineRoot, 'dim');
+            const st = R.status && R.status();
+            if (st && st.cfg) {
+              log(
+                'Config · base ' +
+                  (st.cfg.osrmBase || '(none)') +
+                  ' · gateway ' +
+                  (st.cfg.useGateway ? 'on' : 'off'),
+                'dim'
+              );
+            }
+            preview('OSRM ' + (r.engine || 'ok'));
+          } else {
+            log('OSRM FAIL · ' + (r && r.error ? r.error : 'unknown'), 'err');
+            preview('OSRM fail');
+          }
+        } catch (e) {
+          log('OSRM · ' + (e.message || e), 'err');
+        }
+        return;
+      }
+
       // ── Live bridge · agent notes (owner → Grok Build coding agent) ──
       if (
         /^(bridge|live bridge|rockbridge|rock bridge|grok bridge|coding bridge)(\s|$)/i.test(

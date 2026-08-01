@@ -330,3 +330,16 @@ CLI → Grok Build channel:
 - Publishes to Supabase `debug-pub/live-bridge.json` (notes + cmds)
 - Agent poll: `node scripts/poll-bridge.mjs`
 - Early CLI handler that swallowed `bridge test` was removed
+
+## OWNER LOG · 2026-08-01 self-hosted OSRM routing
+
+| Item | Law |
+|------|-----|
+| **Client** | `js/spacenet/routing.js` · chain **self-host → Supabase `osrm-route` gateway → public OSRM** |
+| **Config** | `SN_CONFIG.routing.osrmBase` · `useGateway` · `publicFallback` |
+| **VPS pack** | `deploy/osrm/` · Greece extract · Docker OSRM |
+| **Gateway secret** | `OSRM_URL=https://osrm.astranov.eu` on Supabase edge `osrm-route` |
+| **CLI** | `route test` / `osrm test` |
+| **Delivery** | `SNField.showRoute` / `startDeliveryRoute` use same chain |
+
+Until VPS is live, gateway/public serve streets. Point `osrmBase` + secret when host is up.

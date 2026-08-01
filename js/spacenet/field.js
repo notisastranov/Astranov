@@ -3438,13 +3438,38 @@
       return p && isFinite(p.lat) && isFinite(p.lng);
     });
     if (pts.length < 2) throw new Error('need 2 points');
+    var cond = routeConditionFactors();
+    // Prefer SNRouting (self-host → gateway → public)
+    if (g.SNRouting && typeof SNRouting.route === 'function') {
+      var r = await SNRouting.route(pts);
+      var durationS = Number(r.durationS) || 0;
+      durationS = durationS * cond.mult;
+      var km = Number(r.km) || pathLengthKm(r.points || pts);
+      var speedKmh = durationS > 0 ? (km / durationS) * 3600 : 28;
+      return {
+        points: r.points,
+        km: km,
+        durationS: durationS,
+        speedKmh: speedKmh,
+        conditions: cond,
+        engine: r.engine,
+        engineRoot: r.engineRoot,
+      };
+    }
+    // Legacy direct public OSRM
     var path = pts
       .map(function (p) {
         return Number(p.lng) + ',' + Number(p.lat);
       })
       .join(';');
+    var root =
+      (g.SN_CONFIG && SN_CONFIG.routing && SN_CONFIG.routing.osrmBase) ||
+      (g.SN_CONFIG && SN_CONFIG.routing && SN_CONFIG.routing.publicFallback) ||
+      'https://router.project-osrm.org';
+    root = String(root).replace(/\/$/, '');
     var url =
-      'https://router.project-osrm.org/route/v1/driving/' +
+      root +
+      '/route/v1/driving/' +
       path +
       '?overview=full&geometries=geojson&steps=false';
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
@@ -3466,17 +3491,18 @@
       var points = coords.map(function (c) {
         return { lat: c[1], lng: c[0] };
       });
-      var km = rt.distance != null ? Number(rt.distance) / 1000 : pathLengthKm(points);
-      var durationS = rt.duration != null ? Number(rt.duration) : (km / 28) * 3600;
-      var cond = routeConditionFactors();
-      durationS = durationS * cond.mult;
-      var speedKmh = durationS > 0 ? (km / durationS) * 3600 : 28;
+      var km2 = rt.distance != null ? Number(rt.distance) / 1000 : pathLengthKm(points);
+      var durationS2 = rt.duration != null ? Number(rt.duration) : (km2 / 28) * 3600;
+      durationS2 = durationS2 * cond.mult;
+      var speedKmh2 = durationS2 > 0 ? (km2 / durationS2) * 3600 : 28;
       return {
         points: points,
-        km: km,
-        durationS: durationS,
-        speedKmh: speedKmh,
+        km: km2,
+        durationS: durationS2,
+        speedKmh: speedKmh2,
         conditions: cond,
+        engine: root.indexOf('project-osrm') >= 0 ? 'osrm-public' : 'osrm-selfhosted',
+        engineRoot: root,
       };
     } finally {
       clearTimeout(to);
@@ -4364,6 +4390,16 @@
     updateRadarSpeed: updateRadarSpeed,
     SPEED: SPEED,
     EARTH_KMH: EARTH,
+    routeConditions: routeConditionFactors,
+    fetchOsrmMulti: fetchOsrmRouteMulti,
+    routeSelfTest: function () {
+      return g.SNRouting && SNRouting.selfTest
+        ? SNRouting.selfTest()
+        : Promise.resolve({ ok: false, error: 'no SNRouting' });
+    },
+    routingStatus: function () {
+      return g.SNRouting && SNRouting.status ? SNRouting.status() : { lastEngine: 'none' };
+    },
   };
 
   // Compat thin aliases (boot/cli may call old names)
@@ -4450,8 +4486,6 @@
     registerName: registerFleetName,
     touchFleet: touchFleetHeartbeat,
     noteFrame: noteFrame,
-    routeConditions: routeConditionFactors,
-    fetchOsrmMulti: fetchOsrmRouteMulti,
     get mining() {
       return mine.on && mine.terms;
     },
