@@ -631,26 +631,16 @@
     }
     var fe = $('fbh-fees');
     if (fe) {
-      fe.textContent =
-        '3% vault ' +
-        (C && C.formatCompact
-          ? C.formatCompact(fees)
-          : C && C.format
-            ? C.format(fees)
-            : '◈ ' + Number(fees).toFixed(2));
+      fe.textContent = 'vault ' + Number(fees).toFixed(2);
       fe.hidden = false;
     }
     var mr = $('fbh-mine-rate');
     if (mr) {
       var perDay = (mine.rate || 0) * 24;
-      mr.textContent = C && C.formatRate
-        ? C.formatRate(perDay, 'day')
-        : perDay.toFixed(2) + ' AC/day';
-      if (mine.on && mine.terms) {
-        mr.textContent += ' · ON';
-      } else {
-        mr.textContent += ' · off';
-      }
+      mr.textContent =
+        (perDay >= 10 ? perDay.toFixed(1) : perDay.toFixed(2)) +
+        ' AC/d' +
+        (mine.on && mine.terms ? ' · on' : '');
     }
     paintLoadGraph();
     paintEconGraph();
@@ -1084,7 +1074,7 @@
         '-' +
         String(now.getDate()).padStart(2, '0');
       timeEl.textContent =
-        d + ' · UTC ' + fmtClock(now, true) + ' · L ' + fmtClock(now, false);
+        d + '  UTC ' + fmtClock(now, true) + '  L ' + fmtClock(now, false);
     }
     // Physical: GPS / last known body position
     var p =
@@ -1629,9 +1619,9 @@
     }
 
     try {
-      var sz = localStorage.getItem(KEY);
-      if (sz === 'collapsed' || sz === 'mid' || sz === 'expanded') setMode(sz, false);
-      else setMode('collapsed', false);
+      // v8 clean: always boot collapsed so chrome is never a tall mess
+      setMode('collapsed', false);
+      localStorage.setItem(KEY, 'collapsed');
     } catch (_) {
       setMode('collapsed', false);
     }

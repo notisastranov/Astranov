@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801114500-flush-pizza-local" />
-<meta name="astranov-continuity" content="20260801114500-flush-pizza-local" />
+<meta name="astranov-build" content="20260801120500-clean-top-verified" />
+<meta name="astranov-continuity" content="20260801120500-clean-top-verified" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -117,7 +117,7 @@
   #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-row { display: none !important; }
   #sn-topchrome-panel.collapsed #sn-fleet-monitor .sfm-head { margin: 0; }
   #sn-topchrome-panel.collapsed #field-nav-meta .fnm-row:not(#fnm-phys):not(#fnm-mode) { display: none !important; }
-  #sn-topchrome-panel.collapsed #field-radar { width: 56px !important; height: 56px !important; }
+  /* old collapsed radar size removed */
   #sn-topchrome-panel.collapsed #field-radar-zoom,
   #sn-topchrome-panel.collapsed .fr-label,
   #sn-topchrome-panel.collapsed #field-radar-legend { display: none !important; }
@@ -1890,29 +1890,14 @@
     justify-content: center !important;
     align-self: center !important;
   }
-  #sn-topchrome-panel.collapsed #btn-home {
-    font-size: 10px !important;
-    letter-spacing: 0.12em !important;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding: 0 !important;
-  }
+  /* collapsed name size owned by SCROLL v8 FINAL */
   #sn-topchrome-panel.collapsed #stc-perf-wrap {
     height: 40px !important;
     min-height: 40px !important;
     max-height: 40px !important;
   }
   /* Radar fills ribbon height when minimized */
-  #sn-topchrome-panel.collapsed #field-radar {
-    width: 64px !important;
-    height: 64px !important;
-    min-width: 64px !important;
-    min-height: 64px !important;
-    max-height: none !important;
-    flex: 0 0 auto;
-    align-self: center;
-  }
+  /* collapsed radar size owned by SCROLL v8 FINAL */
   #sn-topchrome-panel.mid #field-radar {
     width: 72px !important;
     height: 72px !important;
@@ -1971,314 +1956,340 @@
   
   
   
-  /* ═══ SCROLL v7 — flush blend · empty thin sides · bottom tools · no labels ═══ */
+  
+  /* ═══ SCROLL v8 CLEAN — verify before ship ═══
+     Collapsed: one thin strip · radar disc | meta | ASTRANOV | big money
+     Expanded: same strip + device graph only (no radar/money card tables)
+     No floating cards. No scroll labels. Sides thin empty.
+  */
   :root {
-    --scroll-bg: rgba(0, 0, 0, 0.67);
+    --scroll-bg: rgba(0, 0, 0, 0.72);
     --e-blue: #0066ff;
-    --edge-collapsed: 14px;
-    --top-scroll-min: 52px;
-    --bottom-scroll-min: 92px;
-    --zone-top: 56px;
+    --top-scroll-min: 50px;
+    --bottom-scroll-min: 96px;
+    --zone-top: 54px;
   }
-  .stc-scroll-label, .cli-scroll-label, .cli-titlebar, .cli-brand, .cli-sep, .cli-live-dot,
-  #cli-preview, #cli-activity { display: none !important; }
+
+  /* kill labels / junk always */
+  .stc-scroll-label, .cli-scroll-label, .cli-titlebar, .cli-brand, .cli-sep,
+  .cli-live-dot, #cli-preview, #cli-activity,
+  #stc-d-radar, #stc-d-money, .stc-g-detail { display: none !important; }
+
+  #sn-topchrome {
+    padding: calc(4px + env(safe-area-inset-top)) 8px 0 !important;
+    z-index: 80;
+    pointer-events: none;
+  }
+  #sn-topchrome * { pointer-events: auto; }
 
   #sn-topchrome-panel, #panel {
     background: var(--scroll-bg) !important;
-    border: 1px solid rgba(0, 85, 255, 0.45) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 18px rgba(0, 70, 220, 0.25) !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(0, 90, 255, 0.4) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.45), 0 0 20px rgba(0, 60, 200, 0.2) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
     animation: none !important;
-    overflow: hidden !important;
   }
 
-  /* TOP collapsed: one blended strip — radar+meta | name | money+stats */
-  #sn-topchrome { padding: calc(3px + env(safe-area-inset-top)) 6px 0 !important; z-index: 80; }
-  #sn-topchrome-panel.collapsed {
-    max-height: 56px !important;
-    min-height: 52px !important;
-  }
-  #sn-topchrome-panel.collapsed #stc-detail,
-  #sn-topchrome-panel.collapsed #stc-device-block,
-  #sn-topchrome-panel.collapsed #sn-hub-host,
-  #sn-topchrome-panel.collapsed .stc-g-detail,
-  #sn-topchrome-panel.collapsed #sn-device-alert,
-  #sn-topchrome-panel.collapsed #sn-fleet-monitor {
-    display: none !important;
-  }
-  #sn-topchrome-panel.collapsed #stc-compact {
+  /* ── COMPACT ROW: always the only top chrome row ── */
+  #stc-compact {
     display: grid !important;
-    grid-template-columns: minmax(120px, 1.15fr) minmax(0, 1fr) minmax(110px, 1.05fr) !important;
-    align-items: stretch !important;
-    gap: 0 !important;
-    padding: 0 !important;
+    grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 0 8px !important;
+    padding: 6px 10px !important;
     min-height: 48px !important;
     background: transparent !important;
+    border: 0 !important;
   }
-  #sn-topchrome-panel.collapsed .stc-col-radar,
-  #sn-topchrome-panel.collapsed .stc-col-money,
-  #sn-topchrome-panel.collapsed .stc-col-device {
+  .stc-col-radar, .stc-col-device, .stc-col-money {
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    min-height: 48px !important;
-    display: flex !important;
-    align-items: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-width: 0 !important;
   }
-  #sn-topchrome-panel.collapsed .stc-col-radar {
-    border-right: 1px solid rgba(0, 85, 255, 0.2) !important;
-    justify-content: flex-start !important;
-    padding: 0 4px 0 6px !important;
-  }
-  #sn-topchrome-panel.collapsed .stc-col-money {
-    border-left: 1px solid rgba(0, 85, 255, 0.2) !important;
-    justify-content: flex-end !important;
-    padding: 0 6px 0 4px !important;
-  }
-  #sn-topchrome-panel.collapsed .stc-col-device {
-    justify-content: center !important;
-  }
+  .stc-col-radar { justify-self: start; }
+  .stc-col-device { justify-self: center; max-width: 42vw; }
+  .stc-col-money { justify-self: end; }
 
   .stc-radar-blend {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 6px !important;
-    width: 100% !important;
-    min-height: 48px !important;
-  }
-
-  /* Radar = square disc that scales with scroll height — NO card chrome */
-  #sn-topchrome #field-radar,
-  #sn-topchrome-panel.collapsed #field-radar {
-    position: relative !important;
-    top: auto !important; left: auto !important; right: auto !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-    flex: 0 0 44px !important;
-    border: 0 !important;
-    border-radius: 50% !important;
-    background: transparent !important;
-    box-shadow: inset 0 0 0 1px rgba(0, 85, 255, 0.35) !important;
-    animation: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  #sn-topchrome #field-radar::before { display: none !important; }
-  #sn-topchrome #field-radar-canvas {
-    width: 100% !important; height: 100% !important;
-    border-radius: 50% !important;
-  }
-  #sn-topchrome-panel.collapsed #field-radar-zoom,
-  #sn-topchrome-panel.collapsed .fr-label,
-  #sn-topchrome-panel.collapsed #field-radar-legend {
-    display: none !important;
-  }
-  #sn-topchrome-panel.collapsed #field-radar-speed {
-    position: absolute !important;
-    inset: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-    pointer-events: none !important;
-    background: transparent !important;
-  }
-  #sn-topchrome-panel.collapsed #fsh-value {
-    font-size: 9px !important;
-    font-weight: 800 !important;
-    color: #0066ff !important;
-    text-shadow: 0 0 8px rgba(0, 100, 255, 0.9) !important;
-    line-height: 1 !important;
-  }
-  #sn-topchrome-panel.collapsed #fsh-unit {
-    font-size: 6px !important;
-    color: #4d7fff !important;
-  }
-
-  /* Time / location to the RIGHT of radar — glowing blue */
-  #sn-topchrome-panel.collapsed #field-nav-meta.stc-meta-side {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    gap: 1px !important;
-    min-width: 0 !important;
-    flex: 1 1 auto !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    gap: 8px !important;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    max-width: none !important;
+    padding: 0 !important;
   }
-  #sn-topchrome-panel.collapsed .fnm-row {
-    display: block !important;
-    font: 700 8px/1.15 var(--font-mono) !important;
+
+  /* Radar disc — plain, no card */
+  #sn-topchrome #field-radar {
+    position: relative !important;
+    top: auto !important; left: auto !important; right: auto !important;
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    flex: 0 0 42px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: inset 0 0 0 1.5px rgba(0, 100, 255, 0.45) !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    animation: none !important;
+    overflow: hidden !important;
+  }
+  #sn-topchrome #field-radar::before { display: none !important; content: none !important; }
+  #sn-topchrome #field-radar-canvas { width: 100% !important; height: 100% !important; border-radius: 50% !important; display: block !important; }
+  #sn-topchrome #field-radar-zoom,
+  #sn-topchrome .fr-label,
+  #sn-topchrome #field-radar-legend { display: none !important; }
+  #sn-topchrome #field-radar-speed {
+    position: absolute !important; inset: 0 !important;
+    display: flex !important; flex-direction: column !important;
+    align-items: center !important; justify-content: center !important;
+    pointer-events: none !important; background: transparent !important;
+    border: 0 !important; box-shadow: none !important;
+  }
+  #sn-topchrome #fsh-value {
+    font: 800 9px/1 var(--font-mono) !important;
     color: #0066ff !important;
-    text-shadow: 0 0 8px rgba(0, 100, 255, 0.75) !important;
+    text-shadow: 0 0 6px rgba(0,100,255,0.8) !important;
+  }
+  #sn-topchrome #fsh-unit {
+    font: 600 6px/1 var(--font-mono) !important;
+    color: #3d70cc !important;
+  }
+
+  /* Meta text right of radar — compact 3 lines */
+  #sn-topchrome #field-nav-meta.stc-meta-side {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: min(42vw, 200px) !important;
+    min-width: 0 !important;
+  }
+  #sn-topchrome #field-nav-meta .fnm-row {
+    display: block !important;
+    font: 600 9px/1.15 var(--font-mono) !important;
+    color: #1a6fff !important;
+    text-shadow: 0 0 8px rgba(0, 90, 255, 0.65) !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    border: 0 !important;
   }
-  #sn-topchrome-panel.collapsed #fnm-mode { display: none !important; }
+  #fnm-virt, #fnm-mode { display: none !important; }
 
-  /* Money flush blend — stats LEFT of big number */
-  #sn-topchrome #field-balance-hud,
-  #sn-topchrome-panel.collapsed #field-balance-hud {
+  /* ASTRANOV — single line, never wrap */
+  #sn-topchrome #btn-home {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    font: 800 15px/1 var(--font-display) !important;
+    letter-spacing: 0.18em !important;
+    color: #0066ff !important;
+    text-shadow: 0 0 10px rgba(0, 100, 255, 0.95), 0 0 22px rgba(0, 70, 255, 0.7) !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 8px 4px !important;
+    margin: 0 auto !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+  }
+
+  /* Money — flush, stats left, number right big */
+  #sn-topchrome #field-balance-hud {
     position: relative !important;
     top: auto !important; right: auto !important; left: auto !important;
-    width: 100% !important;
-    max-width: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    width: auto !important;
+    max-width: 100% !important;
     min-width: 0 !important;
-    height: 48px !important;
-    min-height: 48px !important;
-    padding: 0 2px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
     animation: none !important;
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: flex-end !important;
-    gap: 6px !important;
   }
-  #sn-topchrome #field-balance-hud::before { display: none !important; }
-  #sn-topchrome-panel.collapsed .fbh-side {
+  #sn-topchrome #field-balance-hud::before { display: none !important; content: none !important; }
+  #sn-topchrome .fbh-side {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-end !important;
     gap: 1px !important;
-    order: 1 !important;
   }
-  #sn-topchrome-panel.collapsed #fbh-mine-rate,
-  #sn-topchrome-panel.collapsed #fbh-fees {
+  #sn-topchrome #fbh-mine-rate,
+  #sn-topchrome #fbh-fees {
     display: block !important;
-    font: 600 7px/1.1 var(--font-mono) !important;
-    color: #4d7fff !important;
+    font: 600 8px/1.15 var(--font-mono) !important;
+    color: #3d70cc !important;
     background: none !important;
     border: 0 !important;
-    text-align: right !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
   }
-  #sn-topchrome-panel.collapsed #fbh-s {
-    order: 2 !important;
-    font-size: 16px !important;
-    font-weight: 800 !important;
-    line-height: 1 !important;
+  #sn-topchrome #fbh-s {
+    font: 800 18px/1 var(--font-mono) !important;
     letter-spacing: 0.02em !important;
     background: none !important;
     border: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
     text-shadow: 0 0 12px currentColor !important;
+    white-space: nowrap !important;
   }
-  /* Money sign colors */
   #field-balance-hud.bal-pos #fbh-s { color: #00e070 !important; }
   #field-balance-hud.bal-zero #fbh-s { color: #ffcc00 !important; }
   #field-balance-hud.bal-neg #fbh-s { color: #ff3355 !important; }
+  #sn-topchrome #fbh-econ-graph,
+  #sn-topchrome #fbh-econ-label,
+  #sn-topchrome #fbh-load-graph,
+  #sn-topchrome #fbh-load-label { display: none !important; }
 
-  #sn-topchrome #btn-home {
-    font-size: 16px !important;
-    letter-spacing: 0.26em !important;
-    font-weight: 800 !important;
-    color: #0066ff !important;
-    text-shadow: 0 0 10px rgba(0, 100, 255, 1), 0 0 24px rgba(0, 70, 255, 0.8) !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    width: 100% !important;
-    height: 100% !important;
-    padding: 0 !important;
+  /* Collapsed: only compact row + drag grip */
+  #sn-topchrome-panel.collapsed {
+    max-height: 58px !important;
+    min-height: 50px !important;
+    height: auto !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-detail,
+  #sn-topchrome-panel.collapsed #stc-device-block,
+  #sn-topchrome-panel.collapsed #sn-hub-host,
+  #sn-topchrome-panel.collapsed #sn-device-alert,
+  #sn-topchrome-panel.collapsed #sn-fleet-monitor,
+  #sn-topchrome-panel.collapsed #stc-detail-row {
+    display: none !important;
   }
 
-  #sn-topchrome-drag { padding: 1px 0 2px !important; min-height: 10px; cursor: grab; }
-  #sn-topchrome-drag::before {
-    content: ''; display: block; width: 28px; height: 3px; margin: 0 auto;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #0055ff, transparent);
-    box-shadow: 0 0 8px rgba(0, 85, 255, 0.75);
+  /* Expanded: compact stays clean; only device + hub below */
+  #sn-topchrome-panel.mid,
+  #sn-topchrome-panel.expanded {
+    max-height: min(48vh, 420px) !important;
   }
-
-  #sn-topchrome-panel.mid { max-height: min(42vh, 360px) !important; }
-  #sn-topchrome-panel.expanded { max-height: min(72vh, 640px) !important; }
   #sn-topchrome-panel.mid #stc-detail,
   #sn-topchrome-panel.expanded #stc-detail {
-    display: flex !important; flex-direction: column !important;
-    overflow: auto !important; flex: 1 !important; padding: 6px 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 4px 10px 10px !important;
+    border-top: 1px solid rgba(0, 85, 255, 0.2) !important;
+    overflow: auto !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    background: transparent !important;
   }
   #sn-topchrome-panel.mid #stc-device-block,
   #sn-topchrome-panel.expanded #stc-device-block,
   #sn-topchrome-panel.mid #sn-hub-host,
-  #sn-topchrome-panel.expanded #sn-hub-host { display: block !important; }
-  #sn-topchrome-panel.mid #field-nav-meta,
-  #sn-topchrome-panel.expanded #field-nav-meta {
-    display: flex !important; flex-direction: column !important;
+  #sn-topchrome-panel.expanded #sn-hub-host {
+    display: block !important;
+  }
+  #stc-perf-wrap {
+    height: 96px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(0, 85, 255, 0.3) !important;
+    background: rgba(0, 8, 24, 0.45) !important;
+  }
+  .stc-expand-block {
+    border: 1px solid rgba(0, 85, 255, 0.25) !important;
+    border-radius: 8px !important;
+    padding: 8px !important;
+    background: rgba(0, 6, 20, 0.35) !important;
+  }
+  .stc-g-title {
+    color: #0066ff !important;
+    font: 700 10px var(--font-display) !important;
+    letter-spacing: 0.12em !important;
+    margin: 0 0 6px !important;
+  }
+  .stc-g-note { color: #4a6a90 !important; font-size: 10px !important; margin: 6px 0 0 !important; }
+
+  #sn-topchrome-drag {
+    padding: 2px 0 4px !important;
+    min-height: 12px !important;
+    cursor: grab;
+    background: transparent !important;
+  }
+  #sn-topchrome-drag::before {
+    content: '' !important;
+    display: block !important;
+    width: 32px !important;
+    height: 3px !important;
+    margin: 0 auto !important;
+    border-radius: 2px !important;
+    background: linear-gradient(90deg, transparent, #0055ff, transparent) !important;
+    box-shadow: 0 0 8px rgba(0, 85, 255, 0.7) !important;
   }
 
-  /* BOTTOM: ribbon + 1 log + input — no chrome text */
+  /* BOTTOM */
   #dock {
-    padding: 0 8px calc(5px + env(safe-area-inset-bottom)) !important;
+    padding: 0 8px calc(6px + env(safe-area-inset-bottom)) !important;
     z-index: 80;
   }
   #panel.collapsed {
-    max-height: min(120px, 18vh) !important;
-    min-height: 92px !important;
+    max-height: min(118px, 18vh) !important;
+    min-height: 94px !important;
   }
   #sn-task-ribbon {
     display: flex !important;
     gap: 3px !important;
-    padding: 3px 4px 2px !important;
-    justify-content: space-between !important;
+    padding: 4px 4px 2px !important;
   }
-  #sn-task-ribbon.sn-rib-to-sides { display: flex !important; } /* force show */
   .sn-rib-btn {
     flex: 1 1 0 !important;
-    min-height: 38px !important;
-    min-width: 0 !important;
-    padding: 2px 1px !important;
+    min-height: 40px !important;
+    padding: 3px 2px !important;
     border-radius: 8px !important;
-    gap: 0 !important;
     border: 0 !important;
-    background: rgba(0, 30, 90, 0.25) !important;
+    background: rgba(0, 40, 100, 0.2) !important;
   }
   .sn-rib-icon { display: none !important; }
-  .sn-rib-emoji {
-    display: block !important;
-    font-size: 14px !important;
-    line-height: 1 !important;
-    filter: none !important;
-  }
+  .sn-rib-emoji { display: block !important; font-size: 15px !important; line-height: 1 !important; }
   .sn-rib-txt {
     display: block !important;
-    font-size: 10px !important;
-    font-weight: 800 !important;
-    letter-spacing: 0.02em !important;
+    font: 800 10px/1.1 var(--font-ui) !important;
     text-transform: uppercase !important;
-    color: #4d8fff !important;
+    letter-spacing: 0.03em !important;
   }
-  #sn-rib-locate .sn-rib-txt, #sn-rib-locate .sn-rib-emoji { color: #00cc88 !important; }
+  #sn-rib-locate .sn-rib-txt { color: #00cc88 !important; }
   #sn-rib-user .sn-rib-txt { color: #4d8fff !important; }
   #sn-rib-add .sn-rib-txt { color: #ffaa00 !important; }
   #sn-rib-layers .sn-rib-txt { color: #9966ff !important; }
   #sn-rib-hf .sn-rib-txt { color: #0066ff !important; }
   #sn-rib-send .sn-rib-txt { color: #ff4477 !important; }
 
-  #cli-drag {
-    padding: 2px 0 !important;
-    min-height: 8px !important;
-    cursor: grab;
-  }
+  #cli-drag { padding: 2px 0 !important; min-height: 10px !important; cursor: grab; }
   #cli-drag::before {
     content: ''; display: block; width: 28px; height: 3px; margin: 0 auto;
     border-radius: 2px;
     background: linear-gradient(90deg, transparent, #0055ff, transparent);
-    box-shadow: 0 0 8px rgba(0, 85, 255, 0.75);
+    box-shadow: 0 0 8px rgba(0, 85, 255, 0.7);
   }
   #cli-log {
     display: block !important;
@@ -2288,30 +2299,25 @@
     padding: 0 10px !important;
     font-size: 11px !important;
   }
-  #panel.collapsed #cli-log {
-    display: block !important;
-    max-height: 22px !important;
-  }
   #cli-form {
     display: flex !important;
     margin: 0 6px 6px !important;
-    padding: 5px 10px !important;
-    min-height: 32px !important;
+    padding: 6px 10px !important;
+    min-height: 34px !important;
     border-radius: 8px !important;
-    border: 1px solid rgba(0, 85, 255, 0.45) !important;
-    background: rgba(0, 10, 28, 0.5) !important;
-    box-shadow: 0 0 12px rgba(0, 70, 220, 0.28) !important;
+    border: 1px solid rgba(0, 85, 255, 0.4) !important;
+    background: rgba(0, 10, 28, 0.55) !important;
   }
   #cli-in { font-size: 13px !important; color: #e8f0ff !important; caret-color: #0066ff !important; }
-  .cli-prompt-prefix { color: #0066ff !important; text-shadow: 0 0 8px rgba(0,100,255,0.9) !important; }
+  .cli-prompt-prefix { color: #0066ff !important; }
 
-  /* LEFT / RIGHT — empty thin grips only */
+  /* empty thin side rails */
   .sn-edgescroll {
     position: fixed;
-    top: calc(56px + env(safe-area-inset-top));
-    bottom: calc(96px + env(safe-area-inset-bottom));
-    z-index: 70;
-    width: 14px !important;
+    top: calc(54px + env(safe-area-inset-top));
+    bottom: calc(100px + env(safe-area-inset-bottom));
+    width: 12px !important;
+    z-index: 60;
     pointer-events: none;
   }
   #sn-leftscroll { left: 0; }
@@ -2320,40 +2326,100 @@
     pointer-events: auto;
     height: 100%;
     width: 100%;
-    background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(0, 85, 255, 0.3) !important;
-    border-radius: 0 6px 6px 0 !important;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: rgba(0,0,0,0.35) !important;
+    border: 1px solid rgba(0, 85, 255, 0.22) !important;
+    border-radius: 0 5px 5px 0 !important;
   }
-  #sn-rightscroll .sn-edge-panel { border-radius: 6px 0 0 6px !important; }
+  #sn-rightscroll .sn-edge-panel { border-radius: 5px 0 0 5px !important; }
   .sn-edge-rail { display: none !important; }
-  .sn-edge-drag {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: ew-resize;
-    background: transparent;
-  }
+  .sn-edge-drag { width: 100%; height: 100%; cursor: ew-resize; }
   .sn-edge-label {
-    font: 800 8px var(--font-display);
-    color: rgba(0, 100, 255, 0.55);
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font: 700 7px var(--font-display);
+    color: rgba(0, 100, 255, 0.4);
     writing-mode: vertical-rl;
   }
-  #sn-leftscroll .sn-edge-label { transform: rotate(180deg); }
-
+  #sn-leftscroll .sn-edge-label { transform: translate(-50%, -50%) rotate(180deg); }
   #sn-recover { display: none !important; }
 
+  /* Override any leftover card styles inside topchrome */
+  #sn-topchrome .stc-col,
+  #sn-topchrome #field-radar,
+  #sn-topchrome #field-balance-hud,
+  #sn-topchrome #field-nav-meta {
+    background-image: none !important;
+  }
+
   @media (max-width: 420px) {
-    #sn-topchrome-panel.collapsed #stc-compact {
-      grid-template-columns: minmax(100px, 1.2fr) minmax(0, 0.9fr) minmax(90px, 1fr) !important;
+    #sn-topchrome #btn-home {
+      font-size: 12px !important;
+      letter-spacing: 0.1em !important;
     }
+    #sn-topchrome #fbh-s { font-size: 15px !important; }
+    #sn-topchrome #field-nav-meta.stc-meta-side { max-width: 36vw !important; }
+    #sn-topchrome #field-nav-meta .fnm-row { font-size: 8px !important; }
+    .sn-rib-txt { font-size: 9px !important; }
+  }
+
+
+  /* ═══ FINAL TOP CHROME LOCK (highest specificity — verify) ═══ */
+  #sn-topchrome-panel.collapsed #btn-home,
+  #sn-topchrome #btn-home {
+    font-size: 15px !important;
+    letter-spacing: 0.16em !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    color: #0066ff !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 6px 2px !important;
+  }
+  #sn-topchrome-panel.collapsed #field-radar,
+  #sn-topchrome #field-radar {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    min-height: 42px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: inset 0 0 0 1.5px rgba(0,100,255,0.45) !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud,
+  #sn-topchrome #field-balance-hud {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s,
+  #sn-topchrome #fbh-s {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud.bal-pos #fbh-s,
+  #sn-topchrome #field-balance-hud.bal-pos #fbh-s { color: #00e070 !important; }
+  #sn-topchrome-panel.collapsed #field-balance-hud.bal-zero #fbh-s,
+  #sn-topchrome #field-balance-hud.bal-zero #fbh-s { color: #ffcc00 !important; }
+  #sn-topchrome-panel.collapsed #field-balance-hud.bal-neg #fbh-s,
+  #sn-topchrome #field-balance-hud.bal-neg #fbh-s { color: #ff3355 !important; }
+  #stc-d-radar, #stc-d-money, .stc-g-detail { display: none !important; height: 0 !important; overflow: hidden !important; }
+  #sn-topchrome-panel.collapsed {
+    max-height: 56px !important;
+    min-height: 50px !important;
+  }
+  @media (max-width: 420px) {
+    #sn-topchrome-panel.collapsed #btn-home,
     #sn-topchrome #btn-home {
       font-size: 13px !important;
-      letter-spacing: 0.14em !important;
+      letter-spacing: 0.12em !important;
     }
-    #sn-topchrome-panel.collapsed #fbh-s { font-size: 14px !important; }
-    .sn-rib-txt { font-size: 9px !important; }
   }
 
 </style>
@@ -2387,14 +2453,14 @@
               <div id="field-radar-legend" hidden aria-hidden="true"></div>
             </div>
             <div id="field-nav-meta" class="stc-meta-side" aria-live="polite">
-              <span class="fnm-row" id="fnm-time">UTC — · Local —</span>
-              <span class="fnm-row" id="fnm-phys">locating…</span>
-              <span class="fnm-row" id="fnm-virt"></span>
-              <span class="fnm-row" id="fnm-speed">— km/h</span>
-              <span class="fnm-row" id="fnm-mode"></span>
+              <span class="fnm-row" id="fnm-time">—</span>
+              <span class="fnm-row" id="fnm-phys">—</span>
+              <span class="fnm-row" id="fnm-speed">—</span>
+              <span class="fnm-row" id="fnm-virt" hidden></span>
+              <span class="fnm-row" id="fnm-mode" hidden></span>
             </div>
           </div>
-          <div class="stc-g-detail" id="stc-d-radar" hidden>
+          <div class="stc-g-detail" id="stc-d-radar" hidden style="display:none!important">
             <div class="stc-g-title">RADAR</div>
             <div class="stc-g-row"><span>Range</span><span id="stc-radar-rng">1.0×</span></div>
             <div class="stc-g-row"><span>Contacts</span><span id="stc-radar-n">0</span></div>
@@ -2417,7 +2483,7 @@
             <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
             <span id="fbh-load-label" hidden>device load</span>
           </div>
-          <div class="stc-g-detail" id="stc-d-money" hidden>
+          <div class="stc-g-detail" id="stc-d-money" hidden style="display:none!important">
             <div class="stc-g-title">MONEY · AC</div>
             <div class="stc-g-row"><span>Wallet</span><span id="stc-money-bal">◈ 0.00</span></div>
             <div class="stc-g-row"><span>Mine rate</span><span id="stc-money-rate">0 AC/d</span></div>
@@ -2559,7 +2625,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801114500-flush-pizza-local"></script>
+<script src="/js/spacenet/boot.js?v=20260801120500-clean-top-verified"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
