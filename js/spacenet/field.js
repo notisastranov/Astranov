@@ -898,6 +898,10 @@
    * Live economic performance on money button — balance + vault, 1 Hz samples.
    */
   function paintEconGraph() {
+    try {
+      var panel = $('sn-topchrome-panel');
+      if (panel && panel.classList.contains('collapsed')) return;
+    } catch (_) {}
     var c = $('fbh-econ-graph');
     var lab = $('fbh-econ-label');
     if (!c) return;
