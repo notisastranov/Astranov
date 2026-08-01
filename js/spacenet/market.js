@@ -1120,6 +1120,11 @@
     var log = function (m, c, mapKind, mapOpts) {
       if (quiet) return;
       try {
+        // NEVER globe-tour during food orders (flyNear/national/global)
+        // Stay on city map only — order/delivery kinds open map without flying Earth
+        if (mapKind === 'locate' || mapKind === 'shops' || mapKind === 'food' || mapKind === 'vendors' || mapKind === 'fly' || mapKind === 'global') {
+          mapKind = 'order';
+        }
         if (global.SNCli && SNCli.activity && mapKind) {
           global.SNCli.activity(m, mapKind, mapOpts || {});
         } else if (global.SNCli && SNCli.log) {
@@ -1178,6 +1183,7 @@
         if (SNMap.fitLatLngs)
           SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], { zoom: 15, force: true });
       }
+      // Do not call SNGlobe.flyNear / goToTier during order
     } catch (_) {}
     log(
       'YOU · ' +

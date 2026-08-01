@@ -218,8 +218,14 @@
           null;
     try {
       if (kind === 'locate' || kind === 'pulse') {
-        if (pos && G && G.pulse) G.pulse(pos.lat, pos.lng, 0x3d9eff, opts.label || 'You', 14000);
-        if (pos && G && G.flyNear) G.flyNear(pos.lat, pos.lng, opts.tier || 'national');
+        // Stay local: open city map at you — do NOT fly globe around the planet
+        if (pos && M && M.open) void M.open(pos.lat, pos.lng);
+        if (pos && M && M.markYou) try { M.markYou(pos.lat, pos.lng, opts.label || 'YOU'); } catch (_) {}
+        if (pos && G && G.pulse) G.pulse(pos.lat, pos.lng, 0x3d9eff, opts.label || 'You', 8000);
+        // Only soft-focus if already on globe and nearby — never national world tour
+        if (pos && G && G.flyNear && opts.allowGlobe === true) {
+          G.flyNear(pos.lat, pos.lng, opts.tier || 'city');
+        }
         if (G && G.setHud) G.setHud(opts.label || 'Locate');
         setActivity(kind === 'locate' ? 'locate' : 'pulse');
         return;

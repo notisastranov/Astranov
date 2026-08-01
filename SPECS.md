@@ -287,3 +287,15 @@ Build `20260801111500-scroll-v5-delivery`.
 | **Scroll bg** | Black · 33% transparent · deep electric blue details |
 
 Build `20260801113000-four-scrolls-layout-edit`.
+
+## OWNER LOG · 2026-08-01 flush + local pizza
+
+| Law | Meaning |
+|-----|---------|
+| **Left/right** | Empty thin grips only (no tools, no advanced gfx yet) |
+| **Tools** | Back on **bottom** ribbon · emoji + text, compact |
+| **No labels** | No "top scroll" / "bottom scroll" / idle·ms chrome |
+| **Top blend** | Radar + meta + name + money **flush in one bar** |
+| **Collapsed top** | Meta (date·UTC·local·loc) right of radar · money stats left of big number |
+| **Money color** | green >0 · yellow =0 · red <0 |
+| **Pizza** | City map only · no globe fly tour · `order me a pizza` |

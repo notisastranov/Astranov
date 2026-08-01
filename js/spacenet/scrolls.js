@@ -65,93 +65,20 @@
   }
 
   /** Split tools: left = locate/user/layers · right = add/AI/send */
+  /** Left/right rails stay EMPTY (thin grips only) until advanced graphics ready */
   function paintSideRails() {
     var left = $('sn-left-rail');
     var right = $('sn-right-rail');
-    if (!left || !right) return;
-
-    var ICO = null;
-    try {
-      // reuse live ribbon buttons if present
-      var bar = $('sn-task-ribbon');
-      if (bar && bar.children.length) {
-        // clone into sides
-      }
-    } catch (_) {}
-
-    // Build from known acts
-    var leftActs = [
-      { act: 'locate', text: 'Locate', id: 'sn-side-locate' },
-      { act: 'user', text: 'User', id: 'sn-side-user' },
-      { act: 'layers', text: 'Layers', id: 'sn-side-layers' },
-    ];
-    var rightActs = [
-      { act: 'add', text: 'Add', id: 'sn-side-add' },
-      { act: 'handsfree', text: 'AI', id: 'sn-side-hf' },
-      { act: 'send', text: 'Send', id: 'sn-side-send' },
-    ];
-
-    function mk(list) {
-      var h = '';
-      list.forEach(function (b) {
-        h +=
-          '<button type="button" class="sn-edge-btn sn-gadget" data-act="' +
-          b.act +
-          '" id="' +
-          b.id +
-          '" data-gadget="' +
-          b.id +
-          '" title="' +
-          b.text +
-          '"><span class="sn-edge-btn-t">' +
-          b.text +
-          '</span></button>';
-      });
-      return h;
-    }
-
-    left.innerHTML = mk(leftActs);
-    right.innerHTML = mk(rightActs);
-
-    function wire(root) {
-      root.querySelectorAll('[data-act]').forEach(function (btn) {
-        btn.onclick = function (e) {
-          if (edit) return;
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          var act = btn.getAttribute('data-act');
-          try {
-            if (global.SNField && SNField.ribbonAct) SNField.ribbonAct(act);
-            else if (global.SNField && SNField._ribbonAct) SNField._ribbonAct(act);
-            else {
-              // fall through to field internal via synthetic click on bottom ribbon
-              var m = document.querySelector('#sn-task-ribbon [data-act="' + act + '"]');
-              if (m) m.click();
-              else if (global.SNCli && SNCli.run) {
-                if (act === 'locate') SNCli.run('locate');
-                else if (act === 'send') {
-                  var form = $('cli-form');
-                  if (form) form.requestSubmit();
-                } else if (act === 'handsfree' && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
-              }
-            }
-          } catch (err) {
-            console.warn('[SNScrolls] act', act, err);
-          }
-        };
-      });
-    }
-    wire(left);
-    wire(right);
-
-    // Hide bottom ribbon tools (moved to sides) — keep container for compatibility
+    if (left) left.innerHTML = '';
+    if (right) right.innerHTML = '';
+    // Buttons live on BOTTOM scroll again
     try {
       var bar = $('sn-task-ribbon');
       if (bar) {
-        bar.classList.add('sn-rib-to-sides');
-        bar.setAttribute('aria-hidden', 'true');
+        bar.classList.remove('sn-rib-to-sides');
+        bar.hidden = false;
+        bar.removeAttribute('hidden');
+        bar.setAttribute('aria-hidden', 'false');
       }
     } catch (_) {}
   }
@@ -170,9 +97,9 @@
 
       function sizePx(mode) {
         var w = window.innerWidth || 360;
-        if (mode === 'collapsed') return 48;
-        if (mode === 'expanded') return Math.min(160, Math.round(w * 0.28));
-        return Math.min(100, Math.round(w * 0.18));
+        if (mode === 'collapsed') return 18;
+        if (mode === 'expanded') return Math.min(56, Math.round(w * 0.12));
+        return Math.min(36, Math.round(w * 0.08));
       }
 
       function setMode(mode, freeW) {

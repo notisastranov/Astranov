@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801113000-four-scrolls-layout-edit" />
-<meta name="astranov-continuity" content="20260801113000-four-scrolls-layout-edit" />
+<meta name="astranov-build" content="20260801114500-flush-pizza-local" />
+<meta name="astranov-continuity" content="20260801114500-flush-pizza-local" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1970,46 +1970,32 @@
   
   
   
-  /* ═══════════════════════════════════════════════════════════════
-     FOUR SCROLLS + INTEGRATED GADGETS + LAYOUT EDIT (v6)
-     Top/Bottom/Left/Right · black 33% transparent · deep electric blue
-     Gadgets FLUSH in scroll (not floating cards)
-     Long-press 1s → resize/rearrange handles
-     ═══════════════════════════════════════════════════════════════ */
+  
+  /* ═══ SCROLL v7 — flush blend · empty thin sides · bottom tools · no labels ═══ */
   :root {
     --scroll-bg: rgba(0, 0, 0, 0.67);
-    --e-blue: #0055ff;
-    --e-blue-hot: #0066ff;
-    --zone-top: 58px;
-    --top-scroll-min: 54px;
-    --bottom-scroll-min: 88px;
-    --edge-collapsed: 48px;
+    --e-blue: #0066ff;
+    --edge-collapsed: 14px;
+    --top-scroll-min: 52px;
+    --bottom-scroll-min: 92px;
+    --zone-top: 56px;
   }
+  .stc-scroll-label, .cli-scroll-label, .cli-titlebar, .cli-brand, .cli-sep, .cli-live-dot,
+  #cli-preview, #cli-activity { display: none !important; }
 
-  /* ── shared scroll shell ── */
-  #sn-topchrome-panel,
-  #panel,
-  .sn-edgescroll .sn-edge-panel {
+  #sn-topchrome-panel, #panel {
     background: var(--scroll-bg) !important;
-    border: 1px solid rgba(0, 85, 255, 0.5) !important;
-    box-shadow:
-      0 0 20px rgba(0, 70, 220, 0.28),
-      inset 0 0 0 1px rgba(0, 50, 160, 0.25) !important;
+    border: 1px solid rgba(0, 85, 255, 0.45) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 18px rgba(0, 70, 220, 0.25) !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
     animation: none !important;
-    color: #dce8ff !important;
-  }
-
-  /* ── TOP: integrated row, NO card gadgets ── */
-  #sn-topchrome {
-    padding: calc(4px + env(safe-area-inset-top)) 8px 0 !important;
-    z-index: 80;
-  }
-  #sn-topchrome-panel {
-    border-radius: 10px !important;
     overflow: hidden !important;
   }
+
+  /* TOP collapsed: one blended strip — radar+meta | name | money+stats */
+  #sn-topchrome { padding: calc(3px + env(safe-area-inset-top)) 6px 0 !important; z-index: 80; }
   #sn-topchrome-panel.collapsed {
     max-height: 56px !important;
     min-height: 52px !important;
@@ -2019,14 +2005,12 @@
   #sn-topchrome-panel.collapsed #sn-hub-host,
   #sn-topchrome-panel.collapsed .stc-g-detail,
   #sn-topchrome-panel.collapsed #sn-device-alert,
-  #sn-topchrome-panel.collapsed #stc-perf-wrap,
-  #sn-topchrome-panel.collapsed #field-nav-meta,
   #sn-topchrome-panel.collapsed #sn-fleet-monitor {
     display: none !important;
   }
   #sn-topchrome-panel.collapsed #stc-compact {
     display: grid !important;
-    grid-template-columns: 56px 1fr 56px !important;
+    grid-template-columns: minmax(120px, 1.15fr) minmax(0, 1fr) minmax(110px, 1.05fr) !important;
     align-items: stretch !important;
     gap: 0 !important;
     padding: 0 !important;
@@ -2036,48 +2020,57 @@
   #sn-topchrome-panel.collapsed .stc-col-radar,
   #sn-topchrome-panel.collapsed .stc-col-money,
   #sn-topchrome-panel.collapsed .stc-col-device {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    min-height: 48px !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: center !important;
-    min-height: 48px !important;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
   }
   #sn-topchrome-panel.collapsed .stc-col-radar {
-    border-right: 1px solid rgba(0, 85, 255, 0.25) !important;
+    border-right: 1px solid rgba(0, 85, 255, 0.2) !important;
+    justify-content: flex-start !important;
+    padding: 0 4px 0 6px !important;
   }
   #sn-topchrome-panel.collapsed .stc-col-money {
-    border-left: 1px solid rgba(0, 85, 255, 0.25) !important;
+    border-left: 1px solid rgba(0, 85, 255, 0.2) !important;
+    justify-content: flex-end !important;
+    padding: 0 6px 0 4px !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    justify-content: center !important;
   }
 
-  /* Kill floating-card look on radar + money — flush cells */
+  .stc-radar-blend {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    min-height: 48px !important;
+  }
+
+  /* Radar = square disc that scales with scroll height — NO card chrome */
   #sn-topchrome #field-radar,
-  #sn-topchrome-panel.collapsed #field-radar,
-  #sn-topchrome #field-radar.expanded {
+  #sn-topchrome-panel.collapsed #field-radar {
     position: relative !important;
     top: auto !important; left: auto !important; right: auto !important;
-    width: 100% !important;
-    height: 48px !important;
-    min-width: 0 !important;
-    min-height: 48px !important;
-    max-width: none !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    flex: 0 0 44px !important;
     border: 0 !important;
-    border-radius: 0 !important;
+    border-radius: 50% !important;
     background: transparent !important;
-    box-shadow: none !important;
+    box-shadow: inset 0 0 0 1px rgba(0, 85, 255, 0.35) !important;
     animation: none !important;
     padding: 0 !important;
     margin: 0 !important;
   }
-  #sn-topchrome #field-radar::before,
-  #sn-topchrome #field-balance-hud::before {
-    display: none !important;
-  }
+  #sn-topchrome #field-radar::before { display: none !important; }
   #sn-topchrome #field-radar-canvas {
-    width: 40px !important;
-    height: 40px !important;
-    margin: 0 auto !important;
+    width: 100% !important; height: 100% !important;
     border-radius: 50% !important;
   }
   #sn-topchrome-panel.collapsed #field-radar-zoom,
@@ -2086,9 +2079,55 @@
     display: none !important;
   }
   #sn-topchrome-panel.collapsed #field-radar-speed {
-    display: none !important;
+    position: absolute !important;
+    inset: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: none !important;
+    background: transparent !important;
+  }
+  #sn-topchrome-panel.collapsed #fsh-value {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    color: #0066ff !important;
+    text-shadow: 0 0 8px rgba(0, 100, 255, 0.9) !important;
+    line-height: 1 !important;
+  }
+  #sn-topchrome-panel.collapsed #fsh-unit {
+    font-size: 6px !important;
+    color: #4d7fff !important;
   }
 
+  /* Time / location to the RIGHT of radar — glowing blue */
+  #sn-topchrome-panel.collapsed #field-nav-meta.stc-meta-side {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    max-width: none !important;
+  }
+  #sn-topchrome-panel.collapsed .fnm-row {
+    display: block !important;
+    font: 700 8px/1.15 var(--font-mono) !important;
+    color: #0066ff !important;
+    text-shadow: 0 0 8px rgba(0, 100, 255, 0.75) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-mode { display: none !important; }
+
+  /* Money flush blend — stats LEFT of big number */
   #sn-topchrome #field-balance-hud,
   #sn-topchrome-panel.collapsed #field-balance-hud {
     position: relative !important;
@@ -2096,9 +2135,9 @@
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
-    height: 100% !important;
+    height: 48px !important;
     min-height: 48px !important;
-    padding: 2px 4px !important;
+    padding: 0 2px !important;
     margin: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
@@ -2106,51 +2145,64 @@
     box-shadow: none !important;
     animation: none !important;
     display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
+    flex-direction: row !important;
     align-items: center !important;
-    cursor: pointer;
+    justify-content: flex-end !important;
+    gap: 6px !important;
   }
-  #sn-topchrome #fbh-s {
-    font-size: 11px !important;
-    font-weight: 800 !important;
-    color: #0066ff !important;
-    text-shadow: 0 0 10px rgba(0, 85, 255, 0.85) !important;
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0 !important;
-    line-height: 1.1 !important;
+  #sn-topchrome #field-balance-hud::before { display: none !important; }
+  #sn-topchrome-panel.collapsed .fbh-side {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 1px !important;
+    order: 1 !important;
   }
-  #sn-topchrome-panel.collapsed #fbh-mine-rate {
+  #sn-topchrome-panel.collapsed #fbh-mine-rate,
+  #sn-topchrome-panel.collapsed #fbh-fees {
     display: block !important;
-    font-size: 7px !important;
+    font: 600 7px/1.1 var(--font-mono) !important;
     color: #4d7fff !important;
     background: none !important;
     border: 0 !important;
+    text-align: right !important;
   }
-  #sn-topchrome-panel.collapsed #fbh-econ-graph,
-  #sn-topchrome-panel.collapsed #fbh-econ-label,
-  #sn-topchrome-panel.collapsed #fbh-fees {
-    display: none !important;
+  #sn-topchrome-panel.collapsed #fbh-s {
+    order: 2 !important;
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    letter-spacing: 0.02em !important;
+    background: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    text-shadow: 0 0 12px currentColor !important;
   }
+  /* Money sign colors */
+  #field-balance-hud.bal-pos #fbh-s { color: #00e070 !important; }
+  #field-balance-hud.bal-zero #fbh-s { color: #ffcc00 !important; }
+  #field-balance-hud.bal-neg #fbh-s { color: #ff3355 !important; }
 
-  /* Name — pure text, not a chrome button */
   #sn-topchrome #btn-home {
-    font-size: 17px !important;
-    letter-spacing: 0.28em !important;
+    font-size: 16px !important;
+    letter-spacing: 0.26em !important;
     font-weight: 800 !important;
     color: #0066ff !important;
-    text-shadow:
-      0 0 8px rgba(0, 100, 255, 1),
-      0 0 22px rgba(0, 70, 255, 0.85) !important;
+    text-shadow: 0 0 10px rgba(0, 100, 255, 1), 0 0 24px rgba(0, 70, 255, 0.8) !important;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
-    border-radius: 0 !important;
     width: 100% !important;
     height: 100% !important;
     padding: 0 !important;
-    margin: 0 !important;
+  }
+
+  #sn-topchrome-drag { padding: 1px 0 2px !important; min-height: 10px; cursor: grab; }
+  #sn-topchrome-drag::before {
+    content: ''; display: block; width: 28px; height: 3px; margin: 0 auto;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #0055ff, transparent);
+    box-shadow: 0 0 8px rgba(0, 85, 255, 0.75);
   }
 
   #sn-topchrome-panel.mid { max-height: min(42vh, 360px) !important; }
@@ -2158,235 +2210,150 @@
   #sn-topchrome-panel.mid #stc-detail,
   #sn-topchrome-panel.expanded #stc-detail {
     display: flex !important; flex-direction: column !important;
-    overflow: auto !important; flex: 1 !important; min-height: 0 !important;
-    padding: 6px 10px !important;
+    overflow: auto !important; flex: 1 !important; padding: 6px 10px !important;
   }
   #sn-topchrome-panel.mid #stc-device-block,
   #sn-topchrome-panel.expanded #stc-device-block,
   #sn-topchrome-panel.mid #sn-hub-host,
   #sn-topchrome-panel.expanded #sn-hub-host { display: block !important; }
-
-  #sn-topchrome-drag {
-    padding: 2px 0 3px !important;
-    cursor: grab;
-  }
-  #sn-topchrome-drag::before {
-    content: '';
-    display: block;
-    width: 32px; height: 3px; margin: 0 auto 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #0055ff, transparent);
-    box-shadow: 0 0 8px rgba(0, 85, 255, 0.8);
+  #sn-topchrome-panel.mid #field-nav-meta,
+  #sn-topchrome-panel.expanded #field-nav-meta {
+    display: flex !important; flex-direction: column !important;
   }
 
-  /* ── BOTTOM: log line + input always; ribbon moved to sides ── */
+  /* BOTTOM: ribbon + 1 log + input — no chrome text */
   #dock {
-    padding: 0 56px calc(5px + env(safe-area-inset-bottom)) !important;
+    padding: 0 8px calc(5px + env(safe-area-inset-bottom)) !important;
     z-index: 80;
   }
-  #panel {
-    border-radius: 10px !important;
-    overflow: hidden !important;
-  }
   #panel.collapsed {
-    max-height: min(108px, 16vh) !important;
-    min-height: 88px !important;
+    max-height: min(120px, 18vh) !important;
+    min-height: 92px !important;
   }
-  #sn-task-ribbon.sn-rib-to-sides {
-    display: none !important;
+  #sn-task-ribbon {
+    display: flex !important;
+    gap: 3px !important;
+    padding: 3px 4px 2px !important;
+    justify-content: space-between !important;
+  }
+  #sn-task-ribbon.sn-rib-to-sides { display: flex !important; } /* force show */
+  .sn-rib-btn {
+    flex: 1 1 0 !important;
+    min-height: 38px !important;
+    min-width: 0 !important;
+    padding: 2px 1px !important;
+    border-radius: 8px !important;
+    gap: 0 !important;
+    border: 0 !important;
+    background: rgba(0, 30, 90, 0.25) !important;
+  }
+  .sn-rib-icon { display: none !important; }
+  .sn-rib-emoji {
+    display: block !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+    filter: none !important;
+  }
+  .sn-rib-txt {
+    display: block !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase !important;
+    color: #4d8fff !important;
+  }
+  #sn-rib-locate .sn-rib-txt, #sn-rib-locate .sn-rib-emoji { color: #00cc88 !important; }
+  #sn-rib-user .sn-rib-txt { color: #4d8fff !important; }
+  #sn-rib-add .sn-rib-txt { color: #ffaa00 !important; }
+  #sn-rib-layers .sn-rib-txt { color: #9966ff !important; }
+  #sn-rib-hf .sn-rib-txt { color: #0066ff !important; }
+  #sn-rib-send .sn-rib-txt { color: #ff4477 !important; }
+
+  #cli-drag {
+    padding: 2px 0 !important;
+    min-height: 8px !important;
+    cursor: grab;
+  }
+  #cli-drag::before {
+    content: ''; display: block; width: 28px; height: 3px; margin: 0 auto;
+    border-radius: 2px;
+    background: linear-gradient(90deg, transparent, #0055ff, transparent);
+    box-shadow: 0 0 8px rgba(0, 85, 255, 0.75);
   }
   #cli-log {
     display: block !important;
-    max-height: 28px !important;
-    min-height: 22px !important;
+    max-height: 22px !important;
+    min-height: 18px !important;
     overflow: hidden !important;
-    padding: 2px 10px !important;
+    padding: 0 10px !important;
     font-size: 11px !important;
   }
   #panel.collapsed #cli-log {
     display: block !important;
-    max-height: 26px !important;
+    max-height: 22px !important;
   }
   #cli-form {
     display: flex !important;
     margin: 0 6px 6px !important;
     padding: 5px 10px !important;
-    min-height: 34px !important;
+    min-height: 32px !important;
     border-radius: 8px !important;
     border: 1px solid rgba(0, 85, 255, 0.45) !important;
     background: rgba(0, 10, 28, 0.5) !important;
-    box-shadow: 0 0 12px rgba(0, 70, 220, 0.3) !important;
+    box-shadow: 0 0 12px rgba(0, 70, 220, 0.28) !important;
   }
-  #cli-in { color: #e8f0ff !important; caret-color: #0066ff !important; font-size: 13px !important; }
-  .cli-prompt-prefix { color: #0066ff !important; text-shadow: 0 0 8px rgba(0, 100, 255, 0.9) !important; }
-  .cli-titlebar .cli-brand { color: #0066ff !important; font-size: 9px !important; }
-  #cli-drag { padding: 3px 10px 2px !important; }
-  #cli-drag::before {
-    content: ''; display: block; width: 32px; height: 3px; margin: 0 auto 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #0055ff, transparent);
-    box-shadow: 0 0 8px rgba(0, 85, 255, 0.8);
-  }
+  #cli-in { font-size: 13px !important; color: #e8f0ff !important; caret-color: #0066ff !important; }
+  .cli-prompt-prefix { color: #0066ff !important; text-shadow: 0 0 8px rgba(0,100,255,0.9) !important; }
 
-  /* ── LEFT / RIGHT edge scrolls ── */
+  /* LEFT / RIGHT — empty thin grips only */
   .sn-edgescroll {
     position: fixed;
-    top: calc(58px + env(safe-area-inset-top));
-    bottom: calc(100px + env(safe-area-inset-bottom));
-    z-index: 78;
-    width: var(--edge-collapsed);
+    top: calc(56px + env(safe-area-inset-top));
+    bottom: calc(96px + env(safe-area-inset-bottom));
+    z-index: 70;
+    width: 14px !important;
     pointer-events: none;
-    transition: width 0.2s ease;
   }
-  .sn-edgescroll.dragging { transition: none; }
-  #sn-leftscroll { left: 0; padding-left: 4px; }
-  #sn-rightscroll { right: 0; padding-right: 4px; }
+  #sn-leftscroll { left: 0; }
+  #sn-rightscroll { right: 0; }
   .sn-edge-panel {
     pointer-events: auto;
     height: 100%;
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    border-radius: 0 10px 10px 0 !important;
-    overflow: hidden;
-  }
-  #sn-rightscroll .sn-edge-panel {
-    border-radius: 10px 0 0 10px !important;
-    flex-direction: row-reverse;
-  }
-  .sn-edge-drag {
-    width: 14px;
-    flex-shrink: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(0, 85, 255, 0.3) !important;
+    border-radius: 0 6px 6px 0 !important;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  #sn-rightscroll .sn-edge-panel { border-radius: 6px 0 0 6px !important; }
+  .sn-edge-rail { display: none !important; }
+  .sn-edge-drag {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
     cursor: ew-resize;
-    background: rgba(0, 40, 120, 0.35);
-    border: 0;
+    background: transparent;
   }
   .sn-edge-label {
-    font: 800 9px var(--font-display);
-    color: #0066ff;
-    text-shadow: 0 0 8px rgba(0, 85, 255, 0.9);
+    font: 800 8px var(--font-display);
+    color: rgba(0, 100, 255, 0.55);
     writing-mode: vertical-rl;
-    letter-spacing: 0.12em;
   }
   #sn-leftscroll .sn-edge-label { transform: rotate(180deg); }
-  .sn-edge-rail {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px 4px;
-    overflow: auto;
-  }
-  .sn-edgescroll.collapsed .sn-edge-rail {
-    padding: 6px 2px;
-  }
-  .sn-edge-btn {
-    flex: 0 0 auto;
-    min-height: 44px;
-    border: 0;
-    border-radius: 8px;
-    background: rgba(0, 30, 90, 0.35);
-    color: #4d8fff;
-    font: 700 9px/1.1 var(--font-ui);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    cursor: pointer;
-    padding: 6px 2px;
-    box-shadow: none;
-  }
-  .sn-edge-btn:active {
-    background: rgba(0, 70, 200, 0.45);
-    color: #fff;
-  }
-  .sn-edgescroll.collapsed .sn-edge-btn-t {
-    font-size: 7px;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    letter-spacing: 0.08em;
-  }
-  .sn-edgescroll.mid .sn-edge-btn-t,
-  .sn-edgescroll.expanded .sn-edge-btn-t {
-    writing-mode: horizontal-tb;
-    transform: none;
-    font-size: 10px;
-  }
-  #sn-side-locate { color: #00cc88 !important; }
-  #sn-side-user { color: #4d8fff !important; }
-  #sn-side-layers { color: #9966ff !important; }
-  #sn-side-add { color: #ffaa00 !important; }
-  #sn-side-hf { color: #0066ff !important; }
-  #sn-side-send { color: #ff4477 !important; }
-
-  /* Layout edit mode */
-  body.sn-layout-edit .sn-gadget {
-    outline: 1px dashed rgba(0, 100, 255, 0.7) !important;
-    outline-offset: -1px;
-  }
-  body.sn-layout-edit .sn-g-handle {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 5;
-  }
-  body.sn-layout-edit .sn-g-move {
-    pointer-events: auto;
-    position: absolute;
-    top: 2px; left: 2px;
-    width: 22px; height: 22px;
-    border-radius: 6px;
-    background: rgba(0, 60, 180, 0.85);
-    color: #fff;
-    font-size: 12px;
-    display: grid;
-    place-items: center;
-    cursor: grab;
-    box-shadow: 0 0 10px rgba(0, 85, 255, 0.6);
-  }
-  body.sn-layout-edit .sn-g-resize {
-    pointer-events: auto;
-    position: absolute;
-    right: 0; bottom: 0;
-    width: 16px; height: 16px;
-    background: linear-gradient(135deg, transparent 50%, #0066ff 50%);
-    cursor: nwse-resize;
-  }
-  .sn-gadget { position: relative; }
-  .sn-gadget-free {
-    position: fixed !important;
-    z-index: 90 !important;
-    background: rgba(0, 0, 0, 0.75) !important;
-    border: 1px solid rgba(0, 85, 255, 0.55) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 20px rgba(0, 70, 220, 0.4) !important;
-  }
-  .sn-gadget-free.sn-dragging { opacity: 0.92; }
 
   #sn-recover { display: none !important; }
 
-  /* Expand mid top still integrated */
-  #sn-topchrome-panel.mid #field-radar,
-  #sn-topchrome-panel.expanded #field-radar {
-    height: 64px !important;
-  }
-  #stc-perf-wrap {
-    border: 1px solid rgba(0, 85, 255, 0.35) !important;
-    background: rgba(0, 10, 30, 0.4) !important;
-    border-radius: 8px !important;
-  }
-  .stc-expand-block {
-    border: 1px solid rgba(0, 85, 255, 0.3);
-    border-radius: 8px;
-    padding: 8px;
-    background: rgba(0, 8, 24, 0.4);
-  }
-  .stc-g-title {
-    color: #0066ff;
-    font: 700 10px var(--font-display);
-    letter-spacing: 0.12em;
+  @media (max-width: 420px) {
+    #sn-topchrome-panel.collapsed #stc-compact {
+      grid-template-columns: minmax(100px, 1.2fr) minmax(0, 0.9fr) minmax(90px, 1fr) !important;
+    }
+    #sn-topchrome #btn-home {
+      font-size: 13px !important;
+      letter-spacing: 0.14em !important;
+    }
+    #sn-topchrome-panel.collapsed #fbh-s { font-size: 14px !important; }
+    .sn-rib-txt { font-size: 9px !important; }
   }
 
 </style>
@@ -2408,22 +2375,26 @@
     <div id="stc-body">
       <div id="stc-compact">
         <div class="stc-col stc-col-radar">
-          <div id="field-radar" aria-label="Radar · tap zoom in · hold zoom out" title="Tap zoom in · hold zoom out" role="button" tabindex="0">
-            <canvas id="field-radar-canvas" width="120" height="120"></canvas>
-            <div id="field-radar-zoom">rng 1.0×</div>
-            <div id="field-radar-speed" class="earth" aria-hidden="true">
-              <span id="fsh-value">1671</span>
-              <span id="fsh-unit">km/h</span>
+          <div class="stc-radar-blend">
+            <div id="field-radar" aria-label="Radar" title="Radar · tap zoom in · hold zoom out" role="button" tabindex="0">
+              <canvas id="field-radar-canvas" width="120" height="120"></canvas>
+              <div id="field-radar-zoom" hidden>rng 1.0×</div>
+              <div id="field-radar-speed" class="earth" aria-hidden="true">
+                <span id="fsh-value">—</span>
+                <span id="fsh-unit">km/h</span>
+              </div>
+              <span class="fr-label" hidden>RADAR</span>
+              <div id="field-radar-legend" hidden aria-hidden="true"></div>
             </div>
-            <span class="fr-label">RADAR</span>
-            <div id="field-radar-legend" aria-hidden="true">
-              <b class="f">● friends</b>
-              · <b class="c">● competitors</b>
-              · <b class="v">● vendor workers & clients</b>
-              · <b class="r">━ routes</b>
+            <div id="field-nav-meta" class="stc-meta-side" aria-live="polite">
+              <span class="fnm-row" id="fnm-time">UTC — · Local —</span>
+              <span class="fnm-row" id="fnm-phys">locating…</span>
+              <span class="fnm-row" id="fnm-virt"></span>
+              <span class="fnm-row" id="fnm-speed">— km/h</span>
+              <span class="fnm-row" id="fnm-mode"></span>
             </div>
           </div>
-          <div class="stc-g-detail" id="stc-d-radar">
+          <div class="stc-g-detail" id="stc-d-radar" hidden>
             <div class="stc-g-title">RADAR</div>
             <div class="stc-g-row"><span>Range</span><span id="stc-radar-rng">1.0×</span></div>
             <div class="stc-g-row"><span>Contacts</span><span id="stc-radar-n">0</span></div>
@@ -2432,19 +2403,21 @@
           </div>
         </div>
         <div class="stc-col stc-col-device" id="stc-center">
-          <button type="button" id="btn-home" title="ASTRANOV · hard reload · clear cache · reset">ASTRANOV</button>
+          <button type="button" id="btn-home" title="ASTRANOV · hard reload">ASTRANOV</button>
         </div>
         <div class="stc-col stc-col-money">
-          <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
+          <div id="field-balance-hud" class="bal-zero" role="button" tabindex="0" title="Astranov coins" aria-label="Astranov coins">
+            <div class="fbh-side">
+              <span id="fbh-mine-rate">0 AC/d</span>
+              <span id="fbh-fees">vault 0</span>
+            </div>
             <span id="fbh-s">◈ 0.00</span>
-            <span id="fbh-mine-rate">0.00 AC/day</span>
-            <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true"></canvas>
-            <span id="fbh-econ-label">economy · live 1s</span>
+            <canvas id="fbh-econ-graph" width="160" height="40" aria-hidden="true" hidden></canvas>
+            <span id="fbh-econ-label" hidden>economy</span>
             <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
             <span id="fbh-load-label" hidden>device load</span>
-            <span id="fbh-fees">3% vault ◈ 0.00</span>
           </div>
-          <div class="stc-g-detail" id="stc-d-money">
+          <div class="stc-g-detail" id="stc-d-money" hidden>
             <div class="stc-g-title">MONEY · AC</div>
             <div class="stc-g-row"><span>Wallet</span><span id="stc-money-bal">◈ 0.00</span></div>
             <div class="stc-g-row"><span>Mine rate</span><span id="stc-money-rate">0 AC/d</span></div>
@@ -2464,13 +2437,6 @@
         </div>
         <div id="sn-hub-host" class="stc-expand-block" aria-label="Science hub · roles · RAID · mining"></div>
         <div id="stc-detail-row">
-          <div id="field-nav-meta" aria-live="polite">
-            <span class="fnm-row" id="fnm-speed">— km/h</span>
-            <span class="fnm-row" id="fnm-mode">—</span>
-            <span class="fnm-row" id="fnm-time">UTC — · Local —</span>
-            <span class="fnm-row" id="fnm-phys">PHYS · locating…</span>
-            <span class="fnm-row" id="fnm-virt">VIEW · GLOBAL</span>
-          </div>
           <div id="sn-fleet-monitor" aria-label="Fleet resource monitor" title="Device fleet · ASTRANOV hub for roles">
             <div class="sfm-head">
               <span class="sfm-title">FLEET · RESOURCES</span>
@@ -2501,7 +2467,7 @@
       </div>
     </div>
     <div id="sn-topchrome-drag" title="Top scroll · drag down expand · up retract" aria-label="Top scroll · drag to expand or retract">
-      <span class="stc-scroll-label">top scroll</span>
+      
     </div>
   </div>
 </div>
@@ -2547,16 +2513,9 @@
 <div id="dock">
   <div id="panel" class="collapsed">
     <div id="sn-task-ribbon" aria-label="CLI shortcuts: locate user add layers AI send"></div>
-    <div id="cli-drag" title="Bottom scroll · drag to expand or retract">
-      <div class="cli-scroll-label">bottom scroll</div>
-      <div class="cli-titlebar">
-        <span class="cli-live-dot" aria-hidden="true"></span>
-        <span class="cli-brand">Astranov</span>
-        <span class="cli-sep">·</span>
-        <span id="cli-activity">idle</span>
-        <span class="cli-sep">·</span>
-        <div id="cli-preview">type to reshape the map</div>
-      </div>
+    <div id="cli-drag" title="Drag expand" aria-label="Drag expand">
+      <span id="cli-activity" hidden>idle</span>
+      <div id="cli-preview" hidden></div>
     </div>
     <div id="cli-log"></div>
     <form id="cli-form" autocomplete="off">
@@ -2600,7 +2559,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801113000-four-scrolls-layout-edit"></script>
+<script src="/js/spacenet/boot.js?v=20260801114500-flush-pizza-local"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

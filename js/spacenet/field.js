@@ -227,48 +227,12 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h12"/><path d="M12.5 6.5 18.5 12l-6 5.5"/><path d="M4.5 8.5v7" opacity=".4"/></svg>',
   };
   var RIBBON_CORE = [
-    {
-      act: 'locate',
-      icon: ICO.locate,
-      text: 'Locate',
-      title: 'Locate me · GPS recenter',
-      id: 'sn-rib-locate',
-    },
-    {
-      act: 'user',
-      icon: ICO.user,
-      text: 'User',
-      title: 'Sign in · or your profile when logged in',
-      id: 'sn-rib-user',
-    },
-    {
-      act: 'add',
-      icon: ICO.add,
-      text: 'Add',
-      title: 'Add · expands upward',
-      id: 'sn-rib-add',
-    },
-    {
-      act: 'layers',
-      icon: ICO.layers,
-      text: 'Layers',
-      title: 'Layers · basemap + windy ISS planes ships · expands upward',
-      id: 'sn-rib-layers',
-    },
-    {
-      act: 'handsfree',
-      icon: ICO.ai,
-      text: 'AI',
-      title: 'AI · ASTRANOV LISTENING · pizza · next · show all',
-      id: 'sn-rib-hf',
-    },
-    {
-      act: 'send',
-      icon: ICO.send,
-      text: 'Send',
-      title: 'Send to Astranov',
-      id: 'sn-rib-send',
-    },
+    { act: 'locate', icon: ICO.locate, emoji: '📍', text: 'Locate', title: 'Locate me', id: 'sn-rib-locate' },
+    { act: 'user', icon: ICO.user, emoji: '👤', text: 'User', title: 'Sign in / profile', id: 'sn-rib-user' },
+    { act: 'add', icon: ICO.add, emoji: '➕', text: 'Add', title: 'Add', id: 'sn-rib-add' },
+    { act: 'layers', icon: ICO.layers, emoji: '🗺', text: 'Layers', title: 'Layers', id: 'sn-rib-layers' },
+    { act: 'handsfree', icon: ICO.ai, emoji: '🎧', text: 'AI', title: 'AI listening', id: 'sn-rib-hf' },
+    { act: 'send', icon: ICO.send, emoji: '➤', text: 'Send', title: 'Send', id: 'sn-rib-send' },
   ];
   /**
    * Context task buttons REMOVED from CLI ribbon.
@@ -603,7 +567,10 @@
         ' title="' +
         title +
         '">' +
-        '<span class="sn-rib-icon" aria-hidden="true">' +
+        '<span class="sn-rib-emoji" aria-hidden="true">' +
+        (b.emoji || '') +
+        '</span>' +
+        '<span class="sn-rib-icon" aria-hidden="true" hidden>' +
         (b.icon || '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
@@ -652,7 +619,15 @@
         ? C.formatCompact
           ? C.formatCompact(bal)
           : C.format(bal)
-        : '◈ ' + bal.toFixed(2);
+        : '◈ ' + Number(bal).toFixed(2);
+    }
+    var hudBal = $('field-balance-hud');
+    if (hudBal) {
+      hudBal.classList.remove('bal-pos', 'bal-zero', 'bal-neg');
+      var bn = Number(bal) || 0;
+      if (bn > 0.0001) hudBal.classList.add('bal-pos');
+      else if (bn < -0.0001) hudBal.classList.add('bal-neg');
+      else hudBal.classList.add('bal-zero');
     }
     var fe = $('fbh-fees');
     if (fe) {
@@ -1102,7 +1077,14 @@
     }
     if (modeEl) modeEl.textContent = spd.mode || '—';
     if (timeEl) {
-      timeEl.textContent = 'UTC ' + fmtClock(now, true) + ' · Local ' + fmtClock(now, false);
+      var d =
+        now.getFullYear() +
+        '-' +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(now.getDate()).padStart(2, '0');
+      timeEl.textContent =
+        d + ' · UTC ' + fmtClock(now, true) + ' · L ' + fmtClock(now, false);
     }
     // Physical: GPS / last known body position
     var p =

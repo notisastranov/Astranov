@@ -111,24 +111,26 @@
           ? Number(v.km).toFixed(1) + ' km'
           : '';
     try {
-      if (opts.closeMap !== false && global.SNMap && SNMap.active && SNMap.close) {
+      // Stay on street map near you — never close map / globe-tour for shop picks
+      if (opts.closeMap === true && global.SNMap && SNMap.active && SNMap.close) {
         try {
           SNMap.close();
         } catch (e0) {}
       }
     } catch (e1) {}
     try {
-      // Respect user camera hold — no thrashing map
       if (global.SNMap && SNMap.canAutopilot && !SNMap.canAutopilot()) {
         /* user pilot */
-      } else if (global.SNMap && SNMap.softSetView && v.lat != null) {
-        SNMap.softSetView(v.lat, v.lng, null, {});
-      } else if (global.SNGlobe && SNGlobe.goToPlace && v.lat != null) {
+      } else if (v.lat != null && global.SNMap) {
+        if (SNMap.open && !SNMap.active) void SNMap.open(v.lat, v.lng);
+        if (SNMap.softSetView) SNMap.softSetView(v.lat, v.lng, null, {});
+        else if (SNMap.fitLatLngs) SNMap.fitLatLngs([{ lat: v.lat, lng: v.lng }], { zoom: 15 });
+      } else if (global.SNGlobe && SNGlobe.goToPlace && v.lat != null && opts.allowGlobe === true) {
         SNGlobe.goToPlace(v.lat, v.lng, {
           tier: opts.tier || 'city',
           body: 'earth',
           pulse: false,
-          openMap: false,
+          openMap: true,
           label: name,
         });
       }
