@@ -15,7 +15,7 @@
 
   var lastSeq = 0;
   var timer = null;
-  var pollMs = 5000;
+  var pollMs = 3000;
 
   function log(m, c) {
     try {
@@ -72,6 +72,34 @@
         SNField.setNotice(String(cmd.text || '').slice(0, 48));
       } else if (op === 'preview' && global.SNCli && SNCli.preview) {
         SNCli.preview(String(cmd.text || ''));
+      } else if (op === 'locate' && global.SNCli && SNCli.run) {
+        void SNCli.run('locate');
+      } else if (op === 'me' || op === 'user') {
+        if (global.SNField && SNField.openLoggedInUser) SNField.openLoggedInUser();
+        else if (global.SNCli && SNCli.run) void SNCli.run('me');
+      } else if (op === 'reload' || op === 'hard_reload') {
+        try {
+          if (global.SNHome && SNHome.hardReload) SNHome.hardReload();
+          else location.reload();
+        } catch (_) {
+          location.reload();
+        }
+      } else if (op === 'order' || op === 'pizza') {
+        if (global.SNCli && SNCli.run)
+          void SNCli.run(String(cmd.text || 'order me a pizza'));
+      } else if (op === 'timeline' && global.SNTimeline) {
+        if (cmd.offset != null) SNTimeline.setOffset(cmd.offset, { freeze: !!cmd.freeze });
+        else if (cmd.present) SNTimeline.present();
+      } else if (op === 'owner_note' || op === 'note' || op === 'fix') {
+        var note = String(cmd.text || cmd.msg || '').slice(0, 500);
+        try {
+          var bag = JSON.parse(localStorage.getItem('sn:owner-notes-v1') || '[]');
+          if (!Array.isArray(bag)) bag = [];
+          bag.unshift({ t: Date.now(), text: note });
+          localStorage.setItem('sn:owner-notes-v1', JSON.stringify(bag.slice(0, 40)));
+        } catch (_) {}
+        log('Owner note saved · ' + note.slice(0, 80), 'ok');
+        if (global.SNCli && SNCli.preview) SNCli.preview('Note saved for agent');
       } else {
         log('Bridge · unknown op ' + op, 'err');
       }
@@ -151,7 +179,18 @@
     });
   }
 
-  setTimeout(start, 4000);
+  setTimeout(start, 1500);
+
+  function ownerNote(text) {
+    var note = String(text || '').trim().slice(0, 500);
+    if (!note) return Promise.resolve({ ok: false, error: 'empty' });
+    applyCmd({ op: 'owner_note', text: note });
+    // Publish so remote agent / other sessions can pick it up
+    return publish([{ op: 'owner_note', text: note, from: 'cli' }]).catch(function (e) {
+      log('Bridge publish soft-fail · note kept local · ' + (e && e.message ? e.message : e), 'dim');
+      return { ok: true, local: true };
+    });
+  }
 
   global.SNLiveBridge = {
     start: start,
@@ -160,6 +199,7 @@
     inject: inject,
     publish: publish,
     applyCmd: applyCmd,
+    ownerNote: ownerNote,
     bridgeUrl: bridgeUrl,
     get lastSeq() {
       return lastSeq;

@@ -1247,9 +1247,15 @@
         else log(r?.error || 'claim failed', 'err');
         return;
       }
-      if (low === 'me' || low === 'profile' || low === 'tile' || low === 'plus' || low === 'my tile') {
-        global.SNTile?.openMe?.();
-        log('Your tile · or Astranov SpaceNet menu for vendor/driver/ambassador', 'ok');
+      if (low === 'me' || low === 'profile' || low === 'tile' || low === 'plus' || low === 'my tile' || low === 'user') {
+        if (global.SNField && SNField.openLoggedInUser) {
+          const r = SNField.openLoggedInUser();
+          if (r && r.signed) log('Logged in · ' + (r.name || 'you') + ' · tile + map', 'ok');
+          else log('Opening sign-in…', 'dim');
+        } else {
+          global.SNTile?.openMe?.();
+          log('Your tile', 'ok');
+        }
         return;
       }
       if (low === 'roles' || low === 'role') {
@@ -1763,6 +1769,73 @@
         else log('Overlays · windy · w3w · iss · sats · planes · ships · roads', 'dim');
         return;
       }
+
+      // ── Live bridge · agent notes (owner → remote fix channel) ──
+      if (
+        low === 'bridge' ||
+        low === 'bridge status' ||
+        low === 'live bridge' ||
+        low === 'bridge poll'
+      ) {
+        try {
+          const B = global.SNLiveBridge;
+          if (!B) {
+            log('Bridge loading · try again in a second', 'dim');
+            return;
+          }
+          B.start && B.start();
+          if (low.includes('poll')) await B.poll();
+          log(
+            'Bridge · on · seq ' +
+              (B.lastSeq || 0) +
+              ' · poll live · agent notes: agent <text> · fix <text>',
+            'ok'
+          );
+          try {
+            const bag = JSON.parse(localStorage.getItem('sn:owner-notes-v1') || '[]');
+            if (Array.isArray(bag) && bag[0])
+              log('Last note · ' + String(bag[0].text || '').slice(0, 100), 'dim');
+          } catch (_) {}
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
+      if (
+        /^(agent|fix|note|for agent|tell agent|ask agent)\b/i.test(low) ||
+        /^bridge\s+(note|fix|agent)\b/i.test(low)
+      ) {
+        const text = line
+          .replace(/^(agent|fix|note|for agent|tell agent|ask agent)\s*/i, '')
+          .replace(/^bridge\s+(note|fix|agent)\s*/i, '')
+          .trim();
+        if (!text) {
+          log('Usage · agent <what to fix>  · e.g. agent top bar money is cut off', 'dim');
+          return;
+        }
+        try {
+          if (global.SNLiveBridge && SNLiveBridge.ownerNote) {
+            log('Sending note to bridge · ' + text.slice(0, 80), 'ok');
+            const r = await SNLiveBridge.ownerNote(text);
+            log(
+              r && r.local
+                ? 'Note saved on this device · bridge publish soft'
+                : 'Note on bridge · agent can pick up',
+              'ok'
+            );
+          } else {
+            const bag = JSON.parse(localStorage.getItem('sn:owner-notes-v1') || '[]');
+            bag.unshift({ t: Date.now(), text: text.slice(0, 500) });
+            localStorage.setItem('sn:owner-notes-v1', JSON.stringify(bag.slice(0, 40)));
+            log('Note saved local · bridge offline', 'dim');
+          }
+          preview('Agent note saved');
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
+
       if (low === 'login' || low === 'signin' || low === 'sign in') {
         try {
           if (!global.SNAuth) {
@@ -1770,13 +1843,13 @@
             return;
           }
           if (global.SNAuth.user) {
-            log(
-              'Already signed in · ' +
-                (global.SNAuth.user.user_metadata?.full_name ||
-                  global.SNAuth.user.email ||
-                  'user'),
-              'ok'
-            );
+            const who =
+              global.SNAuth.user.user_metadata?.full_name ||
+              global.SNAuth.user.email ||
+              'user';
+            log('Already signed in · ' + who + ' · opening your tile', 'ok');
+            if (global.SNField && SNField.openLoggedInUser) SNField.openLoggedInUser();
+            else global.SNTile?.openMe?.();
             return;
           }
           log('Sign in · ASTRANOV · astranov.eu (Google on this site only)', 'ok');

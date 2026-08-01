@@ -638,6 +638,84 @@
     return (g.SNMap && SNMap.open ? SNMap.open(p.lat, p.lng) : Promise.resolve()).catch(function () {});
   }
 
+
+  function userDisplayName() {
+    try {
+      var u = g.SNAuth && SNAuth.user;
+      if (!u) return '';
+      return (
+        (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) ||
+        (u.email && u.email.split('@')[0]) ||
+        'you'
+      );
+    } catch (_) {
+      return 'you';
+    }
+  }
+
+  /**
+   * Logged-in user button / "me":
+   * 1) CLI: clearly signed in as …
+   * 2) Open user tile
+   * 3) Pin location on city map
+   */
+  function openLoggedInUser(opts) {
+    opts = opts || {};
+    var signed = !!(g.SNAuth && SNAuth.user);
+    if (!signed) {
+      try {
+        if (g.SNCli && SNCli.log) SNCli.log('Not signed in · opening Google login…', 'dim');
+        if (g.SNCli && SNCli.run) void SNCli.run('login');
+        else if (g.SNAuth && SNAuth.signInGoogle) void SNAuth.signInGoogle();
+      } catch (e) {
+        console.error('[SNField] login', e);
+      }
+      return { ok: false, signed: false };
+    }
+    var name = userDisplayName();
+    try {
+      if (g.SNCli && SNCli.log)
+        SNCli.log('Logged in · ' + name + ' · your tile + map pin', 'ok');
+      if (g.SNCli && SNCli.preview) SNCli.preview('Logged in · ' + name);
+      if (g.SNField && SNField.setNotice) SNField.setNotice('In · ' + String(name).slice(0, 24));
+    } catch (_) {}
+
+    // Profile tile
+    try {
+      if (g.SNTile && SNTile.openMe) SNTile.openMe(opts.tab || 'about');
+    } catch (e2) {
+      console.warn('[SNField] openMe', e2);
+    }
+
+    // Map at user / last known location
+    try {
+      var me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
+      var pos =
+        (me && me.lat != null && { lat: me.lat, lng: me.lng }) ||
+        g._snLastPos ||
+        g._snPhysPos ||
+        (g.SNTasks && SNTasks.pos) ||
+        null;
+      if (pos && pos.lat != null && g.SNMap && SNMap.open) {
+        void SNMap.open(pos.lat, pos.lng).then(function () {
+          try {
+            if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, name || 'YOU');
+            if (SNMap.fitLatLngs)
+              SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], { zoom: 15, force: true });
+            if (SNMap.showProfiles) SNMap.showProfiles();
+          } catch (_) {}
+        });
+      } else if (g.SNCli && SNCli.run) {
+        // No pin yet — soft locate without globe tour
+        void SNCli.run('locate');
+      }
+    } catch (e3) {
+      console.warn('[SNField] user map', e3);
+    }
+    return { ok: true, signed: true, name: name };
+  }
+
+
   function ribbonAct(act) {
     // Locate = single action (GPS recenter) — no submenu
     if (act === 'locate') {
@@ -646,17 +724,10 @@
       } catch (e) {}
       return;
     }
-    // User = straight login when out · profile tile when in (no submenu)
+    // User = login when out · when in: announce login + tile + map location
     if (act === 'user') {
-      var signed = !!(g.SNAuth && SNAuth.user);
       try {
-        if (!signed) {
-          if (g.SNCli && SNCli.run) void SNCli.run('login');
-          else if (g.SNAuth && SNAuth.toggle) void SNAuth.toggle();
-        } else {
-          if (g.SNTile && SNTile.openMe) SNTile.openMe();
-          else if (g.SNCli && SNCli.run) void SNCli.run('me');
-        }
+        openLoggedInUser();
       } catch (eUser) {
         console.error('[SNField] user', eUser);
       }
@@ -796,7 +867,7 @@
       if (b.act === 'user') {
         label = signedIn ? 'You' : 'Login';
         title = signedIn
-          ? 'Your profile tile'
+          ? 'Logged in · open your tile + map pin'
           : 'Sign in · astranov.eu';
         if (signedIn) onCls += ' on';
       }
@@ -3937,6 +4008,7 @@
     paint: paint,
     paintRibbon: paintRibbon,
     ribbonAct: ribbonAct,
+    openLoggedInUser: openLoggedInUser,
     openRibbonFlyout: openRibbonFlyout,
     closeRibbonFlyout: closeRibbonFlyout,
     setTask: setTask,
