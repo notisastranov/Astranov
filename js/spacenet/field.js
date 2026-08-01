@@ -2058,11 +2058,11 @@
     function sizePx(mode) {
       var h = window.innerHeight || 700;
       var MIN = 54;
-      // Detail dump removed — top scroll stays compact row only
-      var FULL = 64;
+      // Expand enough for device + fleet graph gadgets (hub text stays hidden in CSS)
+      var FULL = Math.max(MIN + 80, Math.min(Math.round(h * 0.55), h - oppositeReserve()));
       if (mode === 'collapsed') return 54;
       if (mode === 'expanded') return FULL;
-      return FULL;
+      return Math.max(MIN, Math.min(Math.round(h * 0.38), FULL));
     }
     function recapBottomForTop(topPx) {
       try {
@@ -2116,13 +2116,16 @@
         panel.style.setProperty('height', px + 'px', 'important');
         panel.style.setProperty('min-height', px + 'px', 'important');
         // height+min-height forced — max-height cascade is polluted with 58px caps
-        // Compact-only top scroll (no detail text dump)
-        px = Math.min(px, 72);
         law.textContent =
           'html body #sn-topchrome #sn-topchrome-panel.mid,' +
           'html body #sn-topchrome #sn-topchrome-panel.expanded{' +
-          'max-height:72px !important;height:auto !important;min-height:56px !important;overflow:hidden !important;}' +
-          'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}';
+          'max-height:' +
+          px +
+          'px !important;height:' +
+          px +
+          'px !important;min-height:56px !important;overflow:hidden !important;}' +
+          'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}' +
+          'html body #sn-hub-host{display:none !important;}';
         try {
           document.head.appendChild(law);
         } catch (_) {}

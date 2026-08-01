@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801183900-top-scroll-clean" />
-<meta name="astranov-continuity" content="20260801183900-top-scroll-clean" />
+<meta name="astranov-build" content="20260801184500-restore-graphs-hide-hub-text" />
+<meta name="astranov-continuity" content="20260801184500-restore-graphs-hide-hub-text" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -4683,68 +4683,106 @@ html body #field-radar {
 
 
 <style id="sn-top-scroll-clean">
-/* Top scroll: ONLY compact row — timeline scanner · ASTRANOV · money · power */
-#stc-detail,
-#sn-topchrome-panel.mid #stc-detail,
-#sn-topchrome-panel.expanded #stc-detail,
-#stc-device-block,
-#stc-detail-row,
-#sn-fleet-monitor,
-#stc-timeline-machine,
+/* Top scroll: KEEP resource GRAPH gadgets. Hide only text walls below last graph. */
+/* Hide pure text dump / science hub walls — NOT the device/fleet graphs */
 #sn-hub-host,
-#stc-perf-wrap,
-#stc-perf,
-#sn-device-alert,
-#sn-topchrome .stc-expand-block,
-#sn-topchrome .stc-g-detail,
-#stc-d-radar,
-#stc-d-money {
+#sn-topchrome #sn-hub-host,
+#sn-topchrome-panel.mid #sn-hub-host,
+#sn-topchrome-panel.expanded #sn-hub-host {
   display: none !important;
-  visibility: hidden !important;
   height: 0 !important;
   max-height: 0 !important;
-  min-height: 0 !important;
   overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
   margin: 0 !important;
   padding: 0 !important;
-  border: 0 !important;
+  pointer-events: none !important;
 }
+/* Gadget label walls under compact (not graphs) */
+#stc-d-radar,
+#stc-d-money,
+#sn-topchrome .stc-g-detail {
+  display: none !important;
+}
+/* RESTORE detail area for graphs */
+#stc-detail,
+#sn-topchrome-panel.mid #stc-detail,
+#sn-topchrome-panel.expanded #stc-detail {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  overflow-y: auto !important;
+  max-height: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+  padding: 4px 10px 10px !important;
+}
+#sn-topchrome-panel.collapsed #stc-detail {
+  display: none !important;
+}
+/* Device load graph gadget */
+#stc-device-block,
+#stc-perf-wrap,
+#stc-perf {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+#stc-perf-wrap {
+  height: 88px !important;
+  min-height: 72px !important;
+}
+#stc-perf {
+  width: 100% !important;
+  height: 88px !important;
+}
+/* Fleet resources graph gadget */
+#stc-detail-row,
+#sn-fleet-monitor {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+#sn-fleet-monitor .sfm-row {
+  display: flex !important;
+}
+/* Timeline machine gadget (last graph-ish control) — keep */
+#stc-timeline-machine {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+/* Expand allowed again so graphs fit */
 #sn-topchrome-panel.mid,
 #sn-topchrome-panel.expanded,
 html body #sn-topchrome #sn-topchrome-panel.mid,
 html body #sn-topchrome #sn-topchrome-panel.expanded {
-  max-height: 72px !important;
+  max-height: calc(100dvh - 130px) !important;
   height: auto !important;
   min-height: 56px !important;
   overflow: hidden !important;
 }
-/* kill JS style laws that force 700px expanded dump */
-html body #sn-topchrome #sn-topchrome-panel.mid,
-html body #sn-topchrome #sn-topchrome-panel.expanded {
-  min-height: 56px !important;
-}
-#sn-topchrome-panel.mid #stc-compact,
-#sn-topchrome-panel.expanded #stc-compact {
-  display: grid !important;
-  grid-template-columns: 1fr auto 1fr !important;
-}
-
-/* Extra compact junk off (speed tier labels / economy side text) */
-#sn-topchrome #fnm-speed,
-#sn-topchrome #fnm-mode,
-#sn-topchrome #fnm-virt,
-#sn-topchrome #fbh-mine-rate,
-#sn-topchrome #fbh-fees,
-#sn-topchrome #fbh-econ-label,
-#sn-topchrome #fbh-load-label,
-#sn-topchrome #fbh-econ-graph,
-#sn-topchrome #fbh-load-graph,
-#sn-topchrome .fbh-side {
+/* Compact junk labels still off on collapsed only */
+#sn-topchrome-panel.collapsed #fnm-speed,
+#sn-topchrome-panel.collapsed #fnm-mode,
+#sn-topchrome-panel.collapsed #fnm-virt {
   display: none !important;
 }
-
 </style>
 
 </head>
@@ -4977,7 +5015,7 @@ html body #sn-topchrome #sn-topchrome-panel.expanded {
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801183900-top-scroll-clean"></script>
+<script src="/js/spacenet/boot.js?v=20260801184500-restore-graphs-hide-hub-text"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
