@@ -3203,9 +3203,18 @@ if (
    * Auto-send transcribed voice into CLI conversation (always run — never leave only in input).
    */
   function commitVoice(raw) {
-    const t = String(raw || '')
+    let t = String(raw || '')
       .replace(/\s+/g, ' ')
       .trim();
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.repairTranscript) {
+        t = ArcangeloDialect.repairTranscript(t) || t;
+      }
+      if (global.SNGreeklish && SNGreeklish.toEnglishCommand) {
+        const eng = SNGreeklish.toEnglishCommand(t);
+        if (eng) t = eng;
+      }
+    } catch (_) {}
     if (!t) return false;
     if (Date.now() < hfMutedUntil) return false;
     if (hfBusy) return false;
@@ -3329,7 +3338,20 @@ if (
 
     speechRec = new SR();
     const nav = navigator.language || 'en-US';
-    speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
+    // Prefer Greek recognizer when OS is el OR user often speaks Greek/Greeklish
+    try {
+      if (global.ArcangeloDialect && ArcangeloDialect.listenLang) {
+        speechRec.lang = ArcangeloDialect.listenLang(hfPending || nav) || 'el-GR';
+      } else if (global.SNGreeklish && SNGreeklish.looksGreekish && SNGreeklish.looksGreekish(hfPending || '')) {
+        speechRec.lang = 'el-GR';
+      } else {
+        speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
+      }
+      // Rhodes / GR owner default: also try el-GR if not set
+      if (!speechRec.lang) speechRec.lang = 'el-GR';
+    } catch (_) {
+      speechRec.lang = /^el/i.test(nav) ? 'el-GR' : 'el-GR';
+    }
     // interim helps fill the box; we commit on final OR onend with pending
     speechRec.interimResults = true;
     speechRec.continuous = false;

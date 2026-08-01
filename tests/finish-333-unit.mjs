@@ -143,3 +143,11 @@ const c = g.SNSpartan.compress('Driver is approximately six minutes late. You sh
 assert.ok(c.length < 60, c);
 assert.ok(/min|Door|Driver/i.test(c), c);
 console.log('PASS spartan compress', c);
+
+loadIife('js/spacenet/greeklish.js', g);
+assert.ok(g.SNGreeklish.toEnglishCommand('πιτσα').includes('pizza'));
+assert.ok(g.SNGreeklish.toEnglishCommand('θέλω πίτσα').includes('order'));
+assert.ok(g.SNGreeklish.toEnglishCommand('pou eimai').includes('locate'));
+assert.ok(g.SNGreeklish.toEnglishCommand('βρες με').includes('locate'));
+assert.ok(g.SNGreeklish.toEnglishCommand('πεινάω').includes('order'));
+console.log('PASS greeklish pizza', g.SNGreeklish.toEnglishCommand('πιτσα'));

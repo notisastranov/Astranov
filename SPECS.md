@@ -450,3 +450,14 @@ Train forever: every feature answers to Spartan expansion, not multi-step babysi
 
 System accent/details: **neon blue** (`#00d4ff` / `#00e8ff` / `#00f0ff`).
 Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar cascade in `index.html`.
+
+## OWNER LAW · Hear Greek (2026-08-01)
+
+| Item | Law |
+|------|-----|
+| **Not deaf** | Greek · Greeklish · Archangelos · Cretan · ancient slang all route |
+| **Bug fixed** | JS `\b` fails on Greek — use letter-edge regex in `SNGreeklish` |
+| **Chain** | voice repair → SNGreeklish → Arcangelo → Spartan → actLocal |
+| **Examples** | `πιτσα` `thelo pizza` `θέλω πίτσα` `pou eimai` `βρες με` `magazia` `πεινάω` `ela re` |
+| **Mic** | Prefer `el-GR` when Greekish; repair transcript before commit |
+

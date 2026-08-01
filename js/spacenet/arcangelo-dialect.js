@@ -174,6 +174,29 @@
       [/\b(ευχαριστω|ευχαριστώ|efharisto)\b/i, 'thanks'],
       [/\b(βοηθεια|βοήθεια|voitheia)\b/i, 'help'],
       [/\b(μαγαζια|μαγαζιά|magazia)\b/i, 'shops'],
+
+      [/^\s*(πιτσα|πίτσα|pitza|pitsa)\s*[!.?]*$/i, 'order me a pizza'],
+      [/^\s*(πιτογυρα|πιτογύρα|pitogyra)\s*[!.?]*$/i, 'order pitogyra'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(fagito|φαγητό|φαγητο|food)\b/i, 'order food'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(kafes|kafe|καφέ|καφε)\b/i, 'order coffee'],
+      [/\b(thelo|thelw|θέλω|θελω)\s+(souvlaki|σουβλάκι)\b/i, 'order souvlaki'],
+      [/\b(fere|φέρε|φερε)\s+(pizza|πιτσα|πίτσα)\b/i, 'order me a pizza'],
+      [/\b(fere|φέρε)\s+(pitogyra|πιτογυρ)\b/i, 'order pitogyra'],
+      [/\b(kane|κάνε|κανε)\s+(paraggelia|παραγγελία|order)\b/i, 'order'],
+      [/\b(pou\s*eimai|πού\s*είμαι|pou\s*ime)\b/i, 'locate me'],
+      [/\b(vres\s*me|βρες\s*με)\b/i, 'locate me'],
+      [/\b(magazia|μαγαζιά|μαγαζια)\b/i, 'shops'],
+      [/\b(odigos|οδηγός|οδηγος)\b/i, 'drive on'],
+      [/\b(paradosi|παράδοση)\b/i, 'deliver me'],
+      [/\b(akyrose|ακύρωσε|ακυρωσε)\b/i, 'cancel'],
+      [/\b(pame\s+spiti|πάμε\s+σπίτι|πάμε\s+σπιτι)\b/i, 'pilot home'],
+      [/\b(peinao|πεινάω|πειναω)\b/i, 'order food'],
+      [/\b(ntouleia|douleia|δουλειά)\b/i, 'work'],
+      [/\b(grigora\s+pizza|γρήγορα\s+πιτσα)\b/i, 'order me a pizza'],
+      // Cretan / village
+      [/\b(kame|κάμε)\s+(mia\s+)?(pizza|πιτσα)\b/i, 'order me a pizza'],
+      [/\b(pre|πρε)\b/i, ''],
+      [/\b(ente|έντε|nte)\b/i, ''],
     ],
 
     _brandRules: [
@@ -325,10 +348,26 @@
       var s = this.repairTranscript(text);
       if (!s) return s;
       this.ingest(s);
+      // Full Greeklish / Greek phrase map first
+      try {
+        if (global.SNGreeklish && SNGreeklish.toEnglishCommand) {
+          var eng = SNGreeklish.toEnglishCommand(s);
+          if (eng && eng.length >= 2) s = eng;
+        } else if (global.SNGreeklish && SNGreeklish.normalize) {
+          s = SNGreeklish.normalize(s) || s;
+        }
+      } catch (_) {}
       var i;
       for (i = 0; i < this._routeMap.length; i++) {
         if (this._routeMap[i][0].test(s)) s = s.replace(this._routeMap[i][0], this._routeMap[i][1]).trim();
       }
+      // second greeklish pass after route map
+      try {
+        if (global.SNGreeklish && SNGreeklish.toEnglishCommand) {
+          var eng2 = SNGreeklish.toEnglishCommand(s);
+          if (eng2) s = eng2;
+        }
+      } catch (_) {}
       return s.replace(/\s+/g, ' ').trim();
     },
 
@@ -375,9 +414,17 @@
       if (/\b(tsigareta|tsigara|τσιγάρ|cigar)\b/i.test(low + raw)) {
         out.foods.push('tsigareta');
       }
-      if (/\b(pizza|πιτσα|πίτσα)\b/i.test(low + raw) && /\b(order|thelo|θελω|θέλω|want|hungry)\b/i.test(folded)) {
+      if (/\b(pizza|πιτσα|πίτσα|pitza|pitsa)\b/i.test(low + raw)) {
         if (!out.food) out.food = 'pizza';
         if (out.foods.indexOf('pizza') < 0) out.foods.push('pizza');
+      }
+      if (/\b(coffee|καφέ|καφε|kafes)\b/i.test(low + raw)) {
+        if (!out.food) out.food = 'coffee';
+        if (out.foods.indexOf('coffee') < 0) out.foods.push('coffee');
+      }
+      if (/\b(souvlaki|σουβλάκι)\b/i.test(low + raw)) {
+        if (!out.food) out.food = 'souvlaki';
+        if (out.foods.indexOf('souvlaki') < 0) out.foods.push('souvlaki');
       }
       if (out.foods.length && !out.food) out.food = out.foods[0];
       return out;

@@ -229,6 +229,16 @@
   function expand(message) {
     var raw = String(message || '').trim();
     if (!raw) return null;
+    // Greek / Greeklish / Archangelos → English command first
+    try {
+      if (g.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+        var routed = ArcangeloDialect.normalizeForRouting(raw);
+        if (routed) raw = routed;
+      } else if (g.SNGreeklish && SNGreeklish.toEnglishCommand) {
+        var eng0 = SNGreeklish.toEnglishCommand(raw);
+        if (eng0) raw = eng0;
+      }
+    } catch (_) {}
     var low = norm(raw).toLowerCase();
     var tok = tokens(raw);
 

@@ -833,13 +833,35 @@
       };
     }
 
-    // Dialect normalize FIRST so Greeklish maps to English act paths
+    // Dialect normalize FIRST — Greek · Greeklish · Archangelos · Cretan · ancient
     try {
+      if (global.SNGreeklish && SNGreeklish.toEnglishCommand) {
+        var engEarly = SNGreeklish.toEnglishCommand(line);
+        if (engEarly && engEarly !== line.toLowerCase()) {
+          line = engEarly;
+          low = line.toLowerCase();
+        }
+      }
       if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
         var normEarly = ArcangeloDialect.normalizeForRouting(line);
         if (normEarly) {
           line = normEarly;
           low = line.toLowerCase();
+        }
+      }
+      if (global.ArcangeloDialect && ArcangeloDialect.expandIntent) {
+        var exI = ArcangeloDialect.expandIntent(message);
+        if (exI && exI.food && !/order|pizza|pitogyra|food/.test(low)) {
+          line = 'order me ' + (exI.food === 'beer' ? 'beer' : exI.food);
+          low = line.toLowerCase();
+        }
+        if (exI && exI.locate) {
+          line = 'locate me';
+          low = line;
+        }
+        if (exI && exI.pilot) {
+          line = 'pilot home';
+          low = line;
         }
       }
     } catch (eDialEarly) {}
