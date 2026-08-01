@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801182200-deep-electric-blue" />
-<meta name="astranov-continuity" content="20260801182200-deep-electric-blue" />
+<meta name="astranov-build" content="20260801182600-deep-electric-blue" />
+<meta name="astranov-continuity" content="20260801182600-deep-electric-blue" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1852,7 +1852,7 @@
     animation: none !important;
     color: #0c1e36 !important;
   }
-  html.theme-light #sn-topchrome #btn-home { color: #0a5ec4 !important; }
+  html.theme-light #sn-topchrome #btn-home { color: #0066ff !important; text-shadow: 0 0 14px rgba(0,100,255,0.9) !important; }
   html.theme-light #cli-form {
     background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(232,242,255,0.92)) !important;
     animation: none !important;
@@ -3626,16 +3626,18 @@
     animation: none !important;
   }
 
-  /* Name — deep blue, readable on white glass */
+  /* Name — deep electric on light too (no pale Amiga ice) */
   html.theme-light #sn-topchrome #btn-home,
   html:not(.theme-dark) #sn-topchrome #btn-home {
-    color: #0050d0 !important;
-    text-shadow: 0 0 10px rgba(0, 90, 220, 0.35) !important;
-    background: rgba(255, 255, 255, 0.92) !important;
-    box-shadow:
-      0 0 0 1px rgba(0, 80, 200, 0.28),
-      0 2px 10px rgba(0, 40, 120, 0.12) !important;
-    border-radius: 10px !important;
+    color: #0066ff !important;
+    -webkit-text-fill-color: #0066ff !important;
+    text-shadow:
+      0 0 8px #00a0ff,
+      0 0 18px rgba(0, 80, 255, 0.95),
+      0 0 32px rgba(0, 50, 255, 0.8) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
   /* Time / date / city — dark green on light (still “present”) */
@@ -4604,9 +4606,74 @@
   html .cli-prompt-prefix {
     color: #0080ff !important;
     text-shadow: 0 0 12px rgba(0, 120, 255, 0.95) !important;
-  }
+  
 
 </style>
+
+<style id="sn-electric-blue-law">
+/* Deep glowing electric blue — final cascade */
+html body #btn-home,
+html body #sn-topchrome #btn-home {
+  color: #0088ff !important;
+  -webkit-text-fill-color: #0088ff !important;
+  text-shadow:
+    0 0 6px #00b0ff,
+    0 0 16px #0066ff,
+    0 0 32px rgba(0, 70, 255, 1),
+    0 0 56px rgba(0, 40, 255, 0.9) !important;
+  background: transparent !important;
+}
+html body #sn-topchrome-panel,
+html body #panel {
+  border: 1px solid rgba(0, 100, 255, 0.7) !important;
+  box-shadow:
+    0 0 0 1px rgba(0, 50, 200, 0.45) inset,
+    0 0 36px rgba(0, 80, 255, 0.45) !important;
+  background: rgba(0, 4, 16, 0.82) !important;
+}
+html body #sn-task-ribbon .sn-rib-btn {
+  border-color: rgba(0, 90, 255, 0.55) !important;
+  background: rgba(0, 16, 48, 0.55) !important;
+  color: #8ab8ff !important;
+}
+html body #sn-task-ribbon .sn-rib-label {
+  color: #3d8aff !important;
+  text-shadow: 0 0 10px rgba(0, 90, 255, 0.7) !important;
+}
+html body #cli-form,
+html.theme-light body #cli-form,
+html:not(.theme-dark) body #cli-form {
+  border: 1px solid rgba(0, 120, 255, 0.9) !important;
+  box-shadow: 0 0 22px rgba(0, 100, 255, 0.65) !important;
+  background: rgba(0, 8, 28, 0.88) !important;
+}
+html body #cli-in,
+html.theme-light body #cli-in {
+  color: #e0ecff !important;
+  caret-color: #0088ff !important;
+  background: transparent !important;
+}
+html body .cli-prompt-prefix {
+  color: #0088ff !important;
+  text-shadow: 0 0 14px rgba(0, 120, 255, 1) !important;
+}
+html body #sn-task-launch.mode-standby {
+  color: #0088ff !important;
+  border-color: rgba(0, 120, 255, 0.9) !important;
+  box-shadow: 0 0 0 2px rgba(0, 60, 220, 0.5), 0 0 24px rgba(0, 100, 255, 0.8) !important;
+}
+html body #field-radar {
+  box-shadow: inset 0 0 0 1.5px rgba(0, 100, 255, 0.85), 0 0 16px rgba(0, 90, 255, 0.65) !important;
+}
+:root {
+  --accent: #0040ff;
+  --bright: #0066ff;
+  --glow: #0088ff;
+  --cli-glow: #0066ff;
+  --border: rgba(0, 90, 255, 0.6);
+}
+</style>
+
 </head>
 <body>
 <div id="boot" aria-label="ASTRANOV loading" aria-busy="true">
@@ -4837,7 +4904,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801182200-deep-electric-blue"></script>
+<script src="/js/spacenet/boot.js?v=20260801182600-deep-electric-blue"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
