@@ -2165,6 +2165,89 @@
         } else lastTap = now;
       });
 
+
+    // Overscroll past end of inner content → retract whole top scroll
+    (function bindTopOverscrollRetract() {
+      var accum = 0;
+      var lastTY = null;
+      var THRESH = 56;
+      function expanded() {
+        return panel.classList.contains('expanded') || panel.classList.contains('mid');
+      }
+      function scroller() {
+        return $('stc-detail') || panel;
+      }
+      function atEnd(el, dir) {
+        // dir > 0 = scrolling content down (toward end); dir < 0 = toward start
+        if (!el) return true;
+        var max = Math.max(0, el.scrollHeight - el.clientHeight);
+        if (max < 4) return true; // no inner scroll room — any continue retracts
+        if (dir > 0) return el.scrollTop >= max - 2;
+        return el.scrollTop <= 1;
+      }
+      function tick(dir, amount) {
+        if (!expanded()) {
+          accum = 0;
+          return false;
+        }
+        if (!atEnd(scroller(), dir)) {
+          accum = 0;
+          return false;
+        }
+        accum += Math.abs(amount || 0);
+        if (accum >= THRESH) {
+          accum = 0;
+          setMode('collapsed', true);
+          return true;
+        }
+        return true; // consume overscroll
+      }
+      panel.addEventListener(
+        'wheel',
+        function (e) {
+          if (!expanded()) return;
+          var dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+          if (!dir) return;
+          if (tick(dir, e.deltaY)) {
+            if (e.cancelable) e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+      panel.addEventListener(
+        'touchstart',
+        function (e) {
+          if (!expanded() || !e.touches || !e.touches[0]) return;
+          lastTY = e.touches[0].clientY;
+          accum = 0;
+        },
+        { passive: true }
+      );
+      panel.addEventListener(
+        'touchmove',
+        function (e) {
+          if (!expanded() || lastTY == null || !e.touches || !e.touches[0]) return;
+          var y = e.touches[0].clientY;
+          var dy = lastTY - y; // positive = finger up = content scroll down
+          lastTY = y;
+          if (Math.abs(dy) < 1) return;
+          var dir = dy > 0 ? 1 : -1;
+          if (tick(dir, dy * 1.4) && atEnd(scroller(), dir)) {
+            if (e.cancelable) e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+      panel.addEventListener(
+        'touchend',
+        function () {
+          lastTY = null;
+          accum = Math.min(accum, THRESH * 0.4);
+        },
+        { passive: true }
+      );
+    })();
+
     g.SNTopChrome = {
       set: setMode,
       expand: function () {

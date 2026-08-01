@@ -154,6 +154,97 @@
    * - horizontal / free → move dock (persist)
    * - taps on buttons/input still work if finger barely moves
    */
+
+  /** Keep scrolling past end of CLI log → retract whole bottom scroll */
+  function bindCliOverscrollRetract() {
+    var panel = $('panel');
+    if (!panel || panel._snOverscrollBound) return;
+    panel._snOverscrollBound = true;
+    var accum = 0;
+    var lastTY = null;
+    var THRESH = 56;
+    function expanded() {
+      return !panel.classList.contains('collapsed');
+    }
+    function scroller() {
+      return $('cli-log') || panel;
+    }
+    function atEnd(el, dir) {
+      if (!el) return true;
+      var max = Math.max(0, el.scrollHeight - el.clientHeight);
+      if (max < 4) return true;
+      if (dir > 0) return el.scrollTop >= max - 2;
+      return el.scrollTop <= 1;
+    }
+    function tick(dir, amount) {
+      if (!expanded()) {
+        accum = 0;
+        return false;
+      }
+      // Only retract when mid/expanded (not tiny collapsed)
+      var mode = currentMode(panel);
+      if (mode === 'collapsed') {
+        accum = 0;
+        return false;
+      }
+      if (!atEnd(scroller(), dir)) {
+        accum = 0;
+        return false;
+      }
+      accum += Math.abs(amount || 0);
+      if (accum >= THRESH) {
+        accum = 0;
+        setSize('collapsed', true);
+        return true;
+      }
+      return true;
+    }
+    panel.addEventListener(
+      'wheel',
+      function (e) {
+        if (!expanded()) return;
+        var dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+        if (!dir) return;
+        if (tick(dir, e.deltaY)) {
+          if (e.cancelable) e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+    panel.addEventListener(
+      'touchstart',
+      function (e) {
+        if (!expanded() || !e.touches || !e.touches[0]) return;
+        lastTY = e.touches[0].clientY;
+        accum = 0;
+      },
+      { passive: true }
+    );
+    panel.addEventListener(
+      'touchmove',
+      function (e) {
+        if (!expanded() || lastTY == null || !e.touches || !e.touches[0]) return;
+        var y = e.touches[0].clientY;
+        var dy = lastTY - y;
+        lastTY = y;
+        if (Math.abs(dy) < 1) return;
+        var dir = dy > 0 ? 1 : -1;
+        if (tick(dir, dy * 1.4) && atEnd(scroller(), dir)) {
+          if (e.cancelable) e.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+    panel.addEventListener(
+      'touchend',
+      function () {
+        lastTY = null;
+        accum = Math.min(accum, THRESH * 0.4);
+      },
+      { passive: true }
+    );
+  }
+
   function bindCliDrag() {
     var dock = $('dock');
     var panel = $('panel');
@@ -327,6 +418,7 @@
         expandPanel();
       });
     bindCliDrag();
+    bindCliOverscrollRetract();
     setTimeout(showCoach, 700);
     var badge = $('perf-badge');
     if (badge) {
@@ -340,6 +432,7 @@
     showCoach: showCoach,
     expandPanel: expandPanel,
     bindCliDrag: bindCliDrag,
+    bindCliOverscrollRetract: bindCliOverscrollRetract,
     setSize: setSize,
     resetChrome: resetChrome,
   };
