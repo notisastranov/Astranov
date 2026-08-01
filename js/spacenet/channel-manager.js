@@ -85,12 +85,28 @@
    * Pick closest online driver with lightest cargo.
    * score = distanceKm * 10 + cargo * 28 + overload penalty
    */
+  function driverFresh(d) {
+    if (!d) return false;
+    if (!d.driverOnline) return false;
+    var hb = d.driverHb || d.lastSeen || d.onlineAt || 0;
+    if (hb && Date.now() - hb > 5 * 60 * 1000) return false;
+    return true;
+  }
+  function touchDriverHb(d) {
+    if (!d) return;
+    d.driverHb = Date.now();
+    d.driverOnline = true;
+  }
   function pickBestDriver(nearPos, opts) {
     opts = opts || {};
     var maxKm = opts.maxKm != null ? opts.maxKm : 20;
     var meP = global.SNProfiles && SNProfiles.me && SNProfiles.me();
     var drivers = (global.SNProfiles && SNProfiles.list && SNProfiles.list({ role: 'driver' })) || [];
     drivers = drivers.filter(function (d) {
+      if (!driverFresh(d) && d.driverOnline) {
+        /* stale hb still online flag — allow if no hb yet */
+      }
+
       if (!d || !d.driverOnline) return false;
       if (meP && d.id === meP.id && opts.excludeMe) return false;
       if (d.lat == null || d.lng == null) {
@@ -400,6 +416,8 @@
     ingestJob: ingestJob,
     orchestrate: orchestrate,
     pickBestDriver: pickBestDriver,
+    driverFresh: driverFresh,
+    touchDriverHb: touchDriverHb,
     cargoLoad: cargoLoad,
     listJobs: loadJobs,
     statusLines: statusLines,

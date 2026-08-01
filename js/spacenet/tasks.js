@@ -243,6 +243,12 @@
   }
 
   function claim(taskId, who) {
+    try {
+      if (global.SNOrderEngine && SNOrderEngine.transition) {
+        /* after successful claim below */
+      }
+    } catch (_) {}
+
     let task = taskId ? T.tasks.get(taskId) : null;
     if (!task) {
       task =
@@ -257,6 +263,7 @@
     }
     if (task.status === 'open') {
       task.status = 'claimed';
+    try { if (global.SNOrderEngine) SNOrderEngine.transition(task, 'assigned', { who: who && who.id }); } catch (_e) {};
       task.claimedAt = Date.now();
     } else if (task.status === 'claimed') {
       task.status = 'in_progress';
@@ -299,6 +306,13 @@
     task.status = 'done';
     task.doneAt = Date.now();
     if (settled && settled.ok) task.settled = true;
+    try {
+      if (global.SNOrderEngine && SNOrderEngine.transition) {
+        SNOrderEngine.transition(task, settled && settled.ok ? 'settled' : 'delivered', {
+          settled: !!(settled && settled.ok),
+        });
+      }
+    } catch (_) {}
     T.tasks.set(task.id, task);
     refreshPlan(task.planId);
     save();

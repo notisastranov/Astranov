@@ -4,6 +4,27 @@
  */
 (function (g) {
   'use strict';
+
+  var LEDGER_K = 'sn:ledger-v1';
+  function ledgerLoad() {
+    try {
+      return JSON.parse(localStorage.getItem(LEDGER_K) || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+  function ledgerPush(entry) {
+    var a = ledgerLoad();
+    a.push(
+      Object.assign({ t: Date.now() }, entry || {})
+    );
+    if (a.length > 800) a = a.slice(-800);
+    try {
+      localStorage.setItem(LEDGER_K, JSON.stringify(a));
+    } catch (_) {}
+    return entry;
+  }
+
   var QK = 'spacenet_currency_v1';
   var WK = 'spacenet_wallet_v1';
   /** Primary currency: Astranov Coins */
@@ -205,4 +226,24 @@
       ];
     },
   };
+
+  var _debit = debit;
+  debit = function (amount, why) {
+    var r = _debit(amount, why);
+    if (r && r.ok) ledgerPush({ kind: 'debit', amount: amount, why: why || '', bal: typeof balance === 'function' ? balance() : null });
+    return r;
+  };
+  var _credit = credit;
+  credit = function (amount, why) {
+    var r = _credit(amount, why);
+    if (r && (r.ok !== false)) ledgerPush({ kind: 'credit', amount: amount, why: why || '', bal: typeof balance === 'function' ? balance() : null });
+    return r;
+  };
+  if (global.SNCurrency) {
+    global.SNCurrency.debit = debit;
+    global.SNCurrency.credit = credit;
+    global.SNCurrency.ledger = ledgerLoad;
+    global.SNCurrency.ledgerPush = ledgerPush;
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
+

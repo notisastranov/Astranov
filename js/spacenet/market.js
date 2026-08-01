@@ -393,6 +393,13 @@
 
   /** Same user goes driver online — real capability, not NPC */
   function goDriverOnline(vehicle) {
+    try {
+      if (global.SNChannel && SNChannel.touchDriverHb && global.SNProfiles) {
+        var me0 = SNProfiles.me && SNProfiles.me();
+        if (me0) SNChannel.touchDriverHb(me0);
+      }
+    } catch (_) {}
+
     var p = me();
     if (!p) return { ok: false, error: 'no me' };
     p.roles = p.roles || {};
@@ -766,6 +773,12 @@
    * Lazy first order: "order me a pizza you judge type size vendor…"
    */
   function parseFoodIntent(line) {
+    try {
+      if (global.SNGreeklish && SNGreeklish.normalize) {
+        line = SNGreeklish.normalize(line);
+      }
+    } catch (_) {}
+
     var low = String(line || '')
       .toLowerCase()
       .trim();
@@ -1574,10 +1587,43 @@
             1
           );
         });
+        var idem =
+          'ord_' +
+          (best.id || 'v') +
+          '_' +
+          (menuItem && menuItem.name ? menuItem.name : food) +
+          '_' +
+          Math.floor(Date.now() / 60000);
+        if (global.SNOrderEngine && SNOrderEngine.preflightOrder) {
+          var pre = SNOrderEngine.preflightOrder({
+            pos: pos,
+            vendor: best,
+            testMode: testMode,
+            idempotencyKey: idem,
+          });
+          if (pre.replay && pre.result) {
+            orderResult = { ok: true, total: pre.result.total, task: { id: pre.result.taskId }, replay: true };
+            log('PAID · replay idempotent · ' + fmt(pre.result.total), 'ok');
+          } else if (!pre.ok) {
+            log(pre.error || 'preflight fail', 'err');
+            orderResult = { ok: false, error: pre.error };
+          }
+        }
+        if (!orderResult) {
         orderResult = global.SNProfiles.placeOrder({
           testMode: testMode,
           allowTopUp: testMode,
+          idempotencyKey: idem,
         });
+        }
+        if (orderResult && orderResult.ok && global.SNOrderEngine && SNOrderEngine.afterPaid) {
+          orderResult = SNOrderEngine.afterPaid(orderResult, {
+            seeking: false,
+            idempotencyKey: idem,
+            vendor: best,
+            pos: pos,
+          });
+        }
         if (orderResult && orderResult.ok) {
           log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
           try {
@@ -1788,7 +1834,27 @@
       }
       steps.push('driver');
 
-      // 8 + 9 ETA + pre-arrival notify
+      // 8 + 9 ETA from OSRM when possible + pre-arrival notify
+      try {
+        if (global.SNOrderEngine && SNOrderEngine.etaForWaypoints && waypts && waypts.length >= 2) {
+          var oeta = await SNOrderEngine.etaForWaypoints(waypts);
+          if (oeta && oeta.ok) {
+            eta = {
+              totalMin: Math.max(1, Math.round((oeta.durationS || 0) / 60)),
+              eatClock: oeta.eatClock,
+              eatLine:
+                'ETA · ' +
+                Math.max(1, Math.round((oeta.durationS || 0) / 60)) +
+                ' min · eat ~' +
+                oeta.eatClock +
+                ' · ' +
+                (oeta.engine || 'route'),
+              engine: oeta.engine,
+              km: oeta.km,
+            };
+          }
+        }
+      } catch (_) {}
       log(eta.eatLine, 'ok');
       scheduleArrivalNotify(eta, best.shopName || best.name);
       log('Notify armed · alert ~5 min before arrival', 'dim');
@@ -2773,6 +2839,7 @@
   load();
 
   global.SNMarket = {
+    isShopOpenNow: isShopOpenNow,
     listShop: listShop,
     addMenuItem: addMenuItem,
     orderFromMyShop: orderFromMyShop,

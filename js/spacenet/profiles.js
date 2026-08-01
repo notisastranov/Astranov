@@ -367,6 +367,10 @@
 
   function placeOrder(opts) {
     opts = opts || {};
+    if (opts.idempotencyKey && global.SNOrderEngine) {
+      /* market handles replay; keep key on task */
+    }
+
     // SPECS: 24/7/365 · platform 3% vault · driver 15% · vendor rest · Astranov coins
     if (!P.cart.length) return { ok: false, error: 'cart empty' };
     const vendorId = P.cart[0].vendorId;
@@ -458,6 +462,7 @@
       lng: client.lng,
     };
     const t = global.SNTasks?.create?.({
+      client_request_id: opts.idempotencyKey || null,
       kind: 'delivery',
       role: 'driver',
       title:

@@ -213,6 +213,24 @@
   /**
    * After local placeOrder — announce on mesh + best-effort network intake.
    */
+  async function fetchIntakeRetry(url, init, tries) {
+    tries = tries || 3;
+    var lastErr = null;
+    for (var a = 0; a < tries; a++) {
+      try {
+        var r = await fetch(url, init);
+        if (r.ok || r.status < 500) return r;
+        lastErr = new Error('HTTP ' + r.status);
+      } catch (e) {
+        lastErr = e;
+      }
+      await new Promise(function (res) {
+        setTimeout(res, 400 * Math.pow(2, a));
+      });
+    }
+    throw lastErr || new Error('intake fail');
+  }
+
   async function afterLocalOrder(orderResult, meta) {
     meta = meta || {};
     if (!orderResult || !orderResult.ok) return { ok: false };
@@ -267,7 +285,7 @@
           },
           pay_with_balance: false,
         };
-        var r = await fetch(base() + '/functions/v1/order-intake', {
+        var r = await fetchIntakeRetry(base() + '/functions/v1/order-intake', {
           method: 'POST',
           headers: headers(true),
           body: JSON.stringify(body),

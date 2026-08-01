@@ -212,6 +212,8 @@
     '/js/spacenet/home.js',
     '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/search.js',
+    '/js/spacenet/greeklish.js',
+    '/js/spacenet/order-engine.js',
     '/js/spacenet/market.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/telemachos.js',

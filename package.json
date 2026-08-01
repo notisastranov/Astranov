@@ -16,7 +16,10 @@
     "e2e:locate": "node scripts/e2e-locate.mjs https://astranov.eu",
     "e2e:locate:snap": "node scripts/e2e-locate.mjs https://astranov.eu --snap",
     "e2e": "node scripts/e2e-prod.mjs https://astranov.eu && node scripts/e2e-locate.mjs https://astranov.eu",
-    "live-check": "node scripts/live-check.mjs https://astranov.eu"
+    "live-check": "node scripts/live-check.mjs https://astranov.eu",
+    "test:unit": "node tests/finish-333-unit.mjs",
+    "test:delivery": "node scripts/delivery-engine-smoke.mjs",
+    "test:engine": "npm run test:unit && npm run test:delivery"
   },
   "repository": {
     "type": "git",

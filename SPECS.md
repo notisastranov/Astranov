@@ -357,3 +357,15 @@ Until VPS is live, gateway/public serve streets. Point `osrmBase` + secret when 
 | **Serve** | `GRAPH_STEM=astranov-rhodes` docker compose · MLD · memory limit 2g |
 
 Build: `cd deploy/osrm && ./prepare.sh && docker compose up -d`
+
+## OWNER LOG · 2026-08-01 FINISH-333 non-UI program
+
+| Item | Law |
+|------|-----|
+| **Backlog** | `support/FINISH-333-NON-UI.md` · 333 engine suggestions · **UI freeze** |
+| **Status** | `support/FINISH-333-STATUS.json` |
+| **Order engine** | `SNOrderEngine` preflight · geo fence · rate limit · kill switch · events · OSRM ETA · mesh afterPaid |
+| **Greeklish** | `SNGreeklish` into parseFoodIntent |
+| **Ledger** | `SNCurrency.ledger` |
+| **CLI** | `ready score` · `orders pause/resume` · `ledger` · `order events` |
+| **Tests** | `npm run test:engine` |

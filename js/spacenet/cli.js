@@ -1820,6 +1820,80 @@
         return;
       }
 
+
+      if (
+        low === 'ready score' ||
+        low === 'readiness' ||
+        low === 'go live status' ||
+        low === 'market ready'
+      ) {
+        try {
+          const R = global.SNOrderEngine && SNOrderEngine.readiness && SNOrderEngine.readiness();
+          if (!R) {
+            log('Order engine loading · hard refresh', 'err');
+            return;
+          }
+          log('READY · ' + R.score + '/100', R.score >= 80 ? 'ok' : 'err');
+          (R.checks || []).forEach(function (c) {
+            log((c.ok ? '✓ ' : '✗ ') + c.id + (c.detail ? ' · ' + c.detail : ''), c.ok ? 'dim' : 'err');
+          });
+          preview('Ready ' + R.score + '%');
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
+      if (low === 'orders pause' || low === 'pause orders') {
+        if (global.SNOrderEngine) SNOrderEngine.setOrdersPaused(true);
+        log('Orders PAUSED (kill switch)', 'err');
+        return;
+      }
+      if (low === 'orders resume' || low === 'resume orders') {
+        if (global.SNOrderEngine) SNOrderEngine.setOrdersPaused(false);
+        log('Orders accepting', 'ok');
+        return;
+      }
+      if (low === 'ledger' || low === 'wallet ledger') {
+        try {
+          const rows =
+            (global.SNCurrency && SNCurrency.ledger && SNCurrency.ledger()) || [];
+          log('Ledger · ' + rows.length + ' lines', 'ok');
+          rows.slice(-12).forEach(function (r) {
+            log(
+              (r.kind || '?') +
+                ' · ' +
+                (r.amount != null ? r.amount : '') +
+                (r.why ? ' · ' + r.why : ''),
+              'dim'
+            );
+          });
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
+      if (low === 'order events' || low === 'order log') {
+        try {
+          const ev = (global.SNOrderEngine && SNOrderEngine.events && SNOrderEngine.events()) || [];
+          log('Order events · ' + ev.length, 'ok');
+          ev.slice(-15).forEach(function (e) {
+            log(
+              (e.id || '') +
+                ' · ' +
+                (e.from || '∅') +
+                '→' +
+                (e.to || '') +
+                ' · ' +
+                new Date(e.t).toLocaleTimeString(),
+              'dim'
+            );
+          });
+        } catch (e2) {
+          log(String(e2.message || e2), 'err');
+        }
+        return;
+      }
+
       // ── Street routing self-test (OSRM self-host / gateway / public) ──
       if (
         low === 'route test' ||
