@@ -207,6 +207,7 @@
     '/js/spacenet/tasks.js',
     '/js/spacenet/usage.js',
     '/js/spacenet/field.js',
+    '/js/spacenet/scrolls.js',
     '/js/spacenet/home.js',
     '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/search.js',
@@ -252,8 +253,12 @@
         SNField && SNField.init && SNField.init();
       },
       function () {
+        SNScrolls && SNScrolls.init && SNScrolls.init();
+      },
+      function () {
         SNHome && SNHome.init && SNHome.init();
       },
+
       function () {
         SNCli && SNCli.init && SNCli.init();
       },

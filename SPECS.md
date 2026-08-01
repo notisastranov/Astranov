@@ -271,3 +271,19 @@ Build `20260801110000-scroll-law-v4-fast`.
 | **Delivery P0** | `test ready` · `order me a pizza` · `live mode` for public |
 
 Build `20260801111500-scroll-v5-delivery`.
+
+## OWNER LOG · 2026-08-01 four scrolls + layout edit
+
+| Law | Meaning |
+|-----|---------|
+| **4 scrolls** | Top · Bottom · **Left** · **Right** — all retractable, always a visible grip when collapsed |
+| **Collapsed top** | Radar · ASTRANOV · money — **flush integrated** (not floating cards) |
+| **Collapsed bottom** | ≥1 log line + input always |
+| **Collapsed left/right** | One button column visible · expand with finger |
+| **Left tools** | Locate · User · Layers |
+| **Right tools** | Add · AI · Send |
+| **Layout edit** | **Long-press 1s** any gadget → handles · resize · drag · free float · dock to any scroll |
+| **Name click** | Instant hard reload (no menu) |
+| **Scroll bg** | Black · 33% transparent · deep electric blue details |
+
+Build `20260801113000-four-scrolls-layout-edit`.

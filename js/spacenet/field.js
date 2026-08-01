@@ -632,6 +632,9 @@
         setTimeout(paintRibbon, 50);
       };
     });
+    try {
+      if (g.SNScrolls && SNScrolls.paintSideRails) SNScrolls.paintSideRails();
+    } catch (_) {}
   }
 
   function paint() {
@@ -3698,6 +3701,7 @@
     init: init,
     paint: paint,
     paintRibbon: paintRibbon,
+    ribbonAct: ribbonAct,
     openRibbonFlyout: openRibbonFlyout,
     closeRibbonFlyout: closeRibbonFlyout,
     setTask: setTask,
