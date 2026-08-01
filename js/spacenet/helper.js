@@ -75,7 +75,7 @@
     if (kind === 'glow') {
       var rg = ctx.createRadialGradient(cx, cy, 2, cx, cy, size * 0.4);
       rg.addColorStop(0, 'rgba(200,240,255,0.95)');
-      rg.addColorStop(0.35, 'rgba(76,201,255,0.7)');
+      rg.addColorStop(0.35, 'rgba(0,232,255,0.7)');
       rg.addColorStop(1, 'rgba(11,111,212,0)');
       ctx.fillStyle = rg;
       ctx.beginPath();
@@ -90,7 +90,7 @@
       ctx.translate(cx, cy);
       for (var side = -1; side <= 1; side += 2) {
         ctx.fillStyle = 'rgba(160,210,255,0.55)';
-        ctx.strokeStyle = 'rgba(76,201,255,0.9)';
+        ctx.strokeStyle = 'rgba(0,232,255,0.9)';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(side * 8, -4);
@@ -146,7 +146,7 @@
     // chest arc reactor
     var ar = ctx.createRadialGradient(cx, cy + 2, 1, cx, cy + 2, 12);
     ar.addColorStop(0, '#ffffff');
-    ar.addColorStop(0.4, '#4cc9ff');
+    ar.addColorStop(0.4, '#00e8ff');
     ar.addColorStop(1, 'rgba(11,111,212,0.2)');
     ctx.fillStyle = ar;
     ctx.beginPath();
@@ -514,7 +514,7 @@ function loop(now) {
     for (i = 0; i < H.trail.length; i++) {
       var tr = H.trail[i];
       tr.a *= 0.88;
-      ctx.fillStyle = 'rgba(76,201,255,' + tr.a * 0.35 + ')';
+      ctx.fillStyle = 'rgba(0,232,255,' + tr.a * 0.35 + ')';
       ctx.beginPath();
       ctx.arc(tr.x, tr.y, 2 + i * 0.15, 0, Math.PI * 2);
       ctx.fill();
@@ -527,7 +527,7 @@ function loop(now) {
       ctx.rotate(H.angle + Math.PI / 2);
       var plume = ctx.createLinearGradient(0, 10, 0, 40 + H.boost * 30);
       plume.addColorStop(0, 'rgba(200,240,255,0.85)');
-      plume.addColorStop(0.4, 'rgba(76,201,255,0.45)');
+      plume.addColorStop(0.4, 'rgba(0,232,255,0.45)');
       plume.addColorStop(1, 'rgba(11,111,212,0)');
       ctx.fillStyle = plume;
       ctx.beginPath();
@@ -567,7 +567,7 @@ function loop(now) {
     ctx.save();
     ctx.font = '700 10px Rajdhani,Orbitron,system-ui,sans-serif';
     ctx.fillStyle = 'rgba(4,16,36,0.75)';
-    ctx.strokeStyle = 'rgba(76,201,255,0.55)';
+    ctx.strokeStyle = 'rgba(0,232,255,0.55)';
     ctx.lineWidth = 1;
     var text = H.label || 'HELPER';
     var tw = ctx.measureText(text).width;

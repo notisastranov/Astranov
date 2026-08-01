@@ -639,19 +639,19 @@
       '#sn-rib-fly .sn-rib-fly-sheet{position:fixed;z-index:136;width:min(320px,calc(100vw - 16px));',
       'max-height:min(58vh,460px);overflow:auto;padding:10px;',
       'background:linear-gradient(165deg,rgba(6,24,48,.98),rgba(2,10,24,.99));',
-      'border:1px solid rgba(76,201,255,.5);border-radius:16px;',
+      'border:1px solid rgba(0,232,255,.5);border-radius:16px;',
       'box-shadow:0 -12px 40px rgba(0,0,0,.7),0 0 32px rgba(11,111,212,.35);color:#c8e4ff;',
       'font-family:Rajdhani,system-ui,sans-serif}',
-      '#sn-rib-fly .sn-rib-fly-head{font:700 11px Orbitron,Rajdhani,system-ui;color:#4cc9ff;letter-spacing:.16em;',
+      '#sn-rib-fly .sn-rib-fly-head{font:700 11px Orbitron,Rajdhani,system-ui;color:#00e8ff;letter-spacing:.16em;',
       'text-transform:uppercase;padding:8px 10px 10px;border-bottom:1px solid rgba(26,111,212,.3);margin-bottom:6px;',
-      'text-shadow:0 0 12px rgba(76,201,255,.45)}',
+      'text-shadow:0 0 12px rgba(0,232,255,.45)}',
       '#sn-rib-fly .sn-rib-fly-opt{border:0;border-radius:12px;background:transparent;color:#e0f0ff;',
       'padding:11px 10px;cursor:pointer;text-align:left;display:flex;align-items:center;gap:12px;width:100%;',
       'font:600 14px Rajdhani,system-ui;transition:background .12s}',
       '#sn-rib-fly .sn-rib-fly-opt:hover,#sn-rib-fly .sn-rib-fly-opt:active{background:rgba(26,111,212,.3)}',
       '#sn-rib-fly .sn-rib-fly-opt .e{font-size:11px;width:36px;height:28px;flex-shrink:0;display:grid;place-items:center;',
-      'border:1px solid rgba(76,201,255,.35);border-radius:8px;color:#4cc9ff;font-family:JetBrains Mono,monospace;',
-      'letter-spacing:.04em;background:rgba(8,28,56,.6);text-shadow:0 0 8px rgba(76,201,255,.5)}',
+      'border:1px solid rgba(0,232,255,.35);border-radius:8px;color:#00e8ff;font-family:JetBrains Mono,monospace;',
+      'letter-spacing:.04em;background:rgba(8,28,56,.6);text-shadow:0 0 8px rgba(0,232,255,.5)}',
       '#sn-rib-fly .sn-rib-fly-opt .meta{display:flex;flex-direction:column;gap:2px;min-width:0}',
       '#sn-rib-fly .sn-rib-fly-opt .t{font-weight:700;color:#eaf4ff;letter-spacing:.03em}',
       '#sn-rib-fly .sn-rib-fly-opt .d{font:500 11px/1.3 Rajdhani,system-ui;color:#6a8aaa}',
@@ -1110,7 +1110,7 @@
     var w = c.width;
     var h = c.height;
     ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(76,201,255,0.12)';
+    ctx.strokeStyle = 'rgba(0,232,255,0.12)';
     ctx.beginPath();
     ctx.moveTo(0, h * 0.5);
     ctx.lineTo(w, h * 0.5);
@@ -1124,17 +1124,17 @@
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = color || '#4cc9ff';
+    ctx.strokeStyle = color || '#00e8ff';
     ctx.lineWidth = 1.4;
     ctx.stroke();
     // fill under
     ctx.lineTo(w - 1, h - 1);
     ctx.lineTo(1, h - 1);
     ctx.closePath();
-    ctx.fillStyle = (color || '#4cc9ff').replace(')', ',0.12)').replace('rgb', 'rgba').replace('#', '');
+    ctx.fillStyle = (color || '#00e8ff').replace(')', ',0.12)').replace('rgb', 'rgba').replace('#', '');
     // simple alpha fill
     ctx.globalAlpha = 0.15;
-    ctx.fillStyle = color || '#4cc9ff';
+    ctx.fillStyle = color || '#00e8ff';
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -1214,7 +1214,7 @@
     }
 
     var roles = [
-      { id: 'main', color: '#4cc9ff', label: 'Main' },
+      { id: 'main', color: '#00e8ff', label: 'Main' },
       { id: 'secondary', color: '#88aaff', label: 'Hot-swap' },
       { id: 'raid', color: '#ffc857', label: 'RAID' },
     ];
@@ -1354,7 +1354,7 @@
     var h = c.height;
     ctx.clearRect(0, 0, w, h);
 
-    ctx.strokeStyle = 'rgba(76,201,255,0.12)';
+    ctx.strokeStyle = 'rgba(0,232,255,0.12)';
     ctx.lineWidth = 1;
     var gy;
     for (gy = 1; gy < 3; gy++) {
@@ -1416,7 +1416,7 @@
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     }
-    ctx.strokeStyle = '#4cc9ff';
+    ctx.strokeStyle = '#00e8ff';
     ctx.lineWidth = 1.6;
     ctx.stroke();
     ctx.lineTo(xOf(econHist.length - 1), h - 1);
@@ -1441,8 +1441,8 @@
     var first = econHist[0];
     var lx = xOf(econHist.length - 1);
     var ly = yOf(last.total);
-    ctx.fillStyle = '#4cc9ff';
-    ctx.shadowColor = '#4cc9ff';
+    ctx.fillStyle = '#00e8ff';
+    ctx.shadowColor = '#00e8ff';
     ctx.shadowBlur = 8;
     ctx.beginPath();
     ctx.arc(lx, ly, 2.4, 0, Math.PI * 2);
@@ -1843,10 +1843,10 @@
       if (document.documentElement.classList.contains('theme-light') ||
           (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches &&
             !document.documentElement.classList.contains('theme-dark'))) {
-        return '#0055ff';
+        return '#00d4ff';
       }
     } catch (_) {}
-    return '#0055ff';
+    return '#00d4ff';
   }
 
   /** One device graph under ASTRANOV — labeled rows · expands with top scroll */
