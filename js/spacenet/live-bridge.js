@@ -28,6 +28,11 @@
     return base.replace(/\/$/, '') + '/storage/v1/object/public/debug-pub/live-bridge.json';
   }
 
+  function inboxUrl() {
+    var base = (global.SN_CONFIG && SN_CONFIG.sbUrl) || global.SB_URL || '';
+    return base.replace(/\/$/, '') + '/storage/v1/object/public/debug-pub/owner-inbox.json';
+  }
+
   function applyCmd(cmd) {
     if (!cmd || !cmd.op) return;
     var op = String(cmd.op).toLowerCase();
@@ -265,11 +270,37 @@
             Authorization: 'Bearer ' + (cfg.sbKey || global.SB_KEY || ''),
           },
           body: JSON.stringify(body),
-        }).then(function (r) {
-          return r.json().catch(function () {
-            return { ok: r.ok };
+        })
+          .then(function (r) {
+            return r.json().catch(function () {
+              return { ok: r.ok };
+            });
+          })
+          .then(function (res) {
+            // Second channel: durable owner-inbox (best-effort)
+            return fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                apikey: cfg.sbKey || global.SB_KEY || '',
+                Authorization: 'Bearer ' + (cfg.sbKey || global.SB_KEY || ''),
+              },
+              body: JSON.stringify({
+                kind: 'owner_inbox',
+                seq: seq,
+                note: note,
+                notes: notes.slice(0, 20),
+                from: entry.from,
+                build: entry.build,
+              }),
+            })
+              .then(function () {
+                return res;
+              })
+              .catch(function () {
+                return res;
+              });
           });
-        });
       })
       .then(function (res) {
         var ok = !!(res && (res.ok === true || res.file));
@@ -306,6 +337,18 @@
     } catch (e) {
       st.error = String(e && e.message ? e.message : e);
     }
+    try {
+      var ir = await fetch(inboxUrl() + '?t=' + Date.now(), { cache: 'no-store' });
+      if (ir.ok) {
+        var ib = await ir.json();
+        st.inbox = {
+          notes: Array.isArray(ib.notes) ? ib.notes.length : 0,
+          lastNote:
+            (Array.isArray(ib.notes) && ib.notes[0] && (ib.notes[0].text || ib.notes[0].note)) ||
+            '',
+        };
+      }
+    } catch (_) {}
     return st;
   }
 
@@ -343,6 +386,7 @@
     applyCmd: applyCmd,
     ownerNote: ownerNote,
     bridgeUrl: bridgeUrl,
+    inboxUrl: inboxUrl,
     status: status,
     selfTest: selfTest,
     fetchRemote: fetchRemote,

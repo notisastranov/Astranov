@@ -47,6 +47,34 @@ serve(async (req) => {
       const { error } = await sb.storage
         .from('debug-pub')
         .upload('live-bridge.json', blob, { contentType: 'application/json', upsert: true })
+
+      // Also mirror owner notes into durable inbox for coding agents
+      try {
+        const notes = Array.isArray(payload.notes) ? payload.notes : []
+        const noteText = String(payload.note || '').trim()
+        if (notes.length || noteText) {
+          const inboxBody = JSON.stringify(
+            {
+              received_at,
+              seq: payload.seq || Date.now(),
+              notes: notes.length
+                ? notes
+                : [{ text: noteText, from: payload.from || 'client', at: received_at }],
+              from: payload.from || 'client',
+              build: payload.build || '',
+            },
+            null,
+            2,
+          )
+          await sb.storage
+            .from('debug-pub')
+            .upload('owner-inbox.json', new Blob([inboxBody], { type: 'application/json' }), {
+              contentType: 'application/json',
+              upsert: true,
+            })
+        }
+      } catch (_) {}
+
       return new Response(
         JSON.stringify({
           ok: !error,
@@ -57,6 +85,45 @@ serve(async (req) => {
           error: error?.message ?? null,
         }),
         { headers: cors }
+      )
+    }
+
+    // —— Durable owner inbox for Grok Build / coding agents ——
+    if (kind === 'owner_inbox' || kind === 'owner-inbox' || kind === 'agent_inbox') {
+      let prev: { notes?: unknown[] } = {}
+      try {
+        const { data } = await sb.storage.from('debug-pub').download('owner-inbox.json')
+        if (data) prev = JSON.parse(await data.text())
+      } catch (_) {}
+      const prevNotes = Array.isArray(prev.notes) ? prev.notes : []
+      const incoming = Array.isArray(payload.notes)
+        ? payload.notes
+        : payload.note
+          ? [{ text: payload.note, from: payload.from || 'client', at: received_at }]
+          : []
+      const notes = [...incoming, ...prevNotes].slice(0, 80)
+      const body = JSON.stringify(
+        { received_at, seq: payload.seq || Date.now(), notes, from: payload.from || 'client' },
+        null,
+        2,
+      )
+      const { error } = await sb.storage
+        .from('debug-pub')
+        .upload('owner-inbox.json', new Blob([body], { type: 'application/json' }), {
+          contentType: 'application/json',
+          upsert: true,
+        })
+      return new Response(
+        JSON.stringify({
+          ok: !error,
+          file: 'owner-inbox.json',
+          public:
+            (Deno.env.get('SUPABASE_URL') || '') +
+            '/storage/v1/object/public/debug-pub/owner-inbox.json',
+          count: notes.length,
+          error: error?.message ?? null,
+        }),
+        { headers: cors },
       )
     }
 

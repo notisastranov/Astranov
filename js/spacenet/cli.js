@@ -683,24 +683,7 @@
         else log('Super deck loading · hard refresh', 'err');
         return;
       }
-      if (/^bridge\b/.test(low)) {
-        const rest = line.replace(/^bridge\s*/i, '').trim();
-        if (!rest || rest === 'status') {
-          log(
-            'Bridge · ' +
-              (global.SNLiveBridge?.bridgeUrl?.() || 'n/a') +
-              ' · seq ' +
-              (global.SNLiveBridge?.lastSeq || 0),
-            'dim'
-          );
-          return;
-        }
-        if (global.SNLiveBridge?.inject) {
-          SNLiveBridge.inject([{ op: 'cli', text: rest }]);
-          log('Bridge inject · cli ' + rest, 'ok');
-        }
-        return;
-      }
+      // early bridge handler removed — full bridge block later
       // Astranov Mind — permanent owner memory
       if (
         low === 'free mind' ||

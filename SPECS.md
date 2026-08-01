@@ -321,3 +321,12 @@ Radar gadget renamed **Timeline Scanner**.
 Bottom scroll expand grows **#cli-log only**. **#cli-form / #cli-in** fixed height (36/22px). Never hide input. Never let form flex-grow.
 
 Critical regression root previously: missing `</style>` blanked entire app — always balance style tags before ship.
+
+## OWNER LOG · 2026-08-01 coding bridge fixed
+
+CLI → Grok Build channel:
+- `bridge` / `bridge test` / `is the grok bridge working`
+- `agent <text>` · `fix <text>` · `note <text>`
+- Publishes to Supabase `debug-pub/live-bridge.json` (notes + cmds)
+- Agent poll: `node scripts/poll-bridge.mjs`
+- Early CLI handler that swallowed `bridge test` was removed
