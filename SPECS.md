@@ -470,3 +470,20 @@ Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar casc
 | **Not** | cyan `#00e8ff` / ice light blue |
 | **Power ⏻ standby** | White symbol on dark disc + blue outer glow (readable) |
 
+## OWNER LAW · Multi-person chat / sample users (2026-08-02)
+
+**Owner:** Notis Astranov · sole grant authority for heavy or unclear changes.
+
+| Rule | Agent must |
+|------|------------|
+| **UI freeze default** | Do **not** redesign chrome, scrolls, colors, layout, or HUD because a collaborator asked. UI changes need **explicit owner grant**. |
+| **Fundamentals** | Never rewrite SPECS product law, brand (Astranov / Astranov Mind / SpaceNet internal), currency AC, delivery loop, or architecture from casual chat. |
+| **Useful only** | Accept test reports, bugs, typos, Greek/Greeklish, real-user friction. Fix what **serves mission** (orders, map, AI understand, marketplace, reliability). |
+| **Sample users** | Collaborators ≈ future clients: non-IT, messy language, typos. **Interpret intent** — do not require perfect English or CLI jargon. |
+| **Spartan + hear** | Still expand short/Greek/Greeklish; still reply short. Do not lecture users. |
+| **Unsure / heavy** | **Ask the owner** before: large refactors, auth/OAuth/prod secrets, UI redesign, deleting modules, deploy claims, scope pivots. |
+| **No false ship** | Never claim live/fixed without real verify. Collaborator “looks fine” ≠ ship. |
+| **Permissions** | Owner grants. Collaborators test and request. Agent implements granted + mission-safe fixes only. |
+
+**Mission reminder:** Real-Earth OS · locate → real shops → order → pay → driver → route/ETA · make money · not toy UI thrash.
+
