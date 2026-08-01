@@ -684,6 +684,73 @@
         return;
       }
       // early bridge handler removed — full bridge block later
+
+      // ── Coding bridge (early — before AI fallthrough) ──
+      if (
+        /^(bridge|live bridge|rockbridge|rock bridge|grok bridge|coding bridge)(\s|$)/i.test(low) ||
+        /^(is the )?(grok |coding |live )?bridge\b/.test(low) ||
+        /\bbridge\b.*\b(work|working|status|ok|test|poll)\b/.test(low) ||
+        /\b(work|working|status|ok|test)\b.*\bbridge\b/.test(low) ||
+        low === 'bridge test' ||
+        low === 'test bridge' ||
+        /^(agent|fix|note|for agent|tell agent|ask agent)\b/i.test(low)
+      ) {
+        // handled in dedicated block below — jump by re-checking after mind block is slow;
+        // call bridge ops inline for reliability
+        try {
+          const B = global.SNLiveBridge;
+          if (!B) {
+            log('Bridge loading · try again in a second', 'dim');
+            return;
+          }
+          B.start && B.start();
+          if (/^(agent|fix|note|for agent|tell agent|ask agent)\b/i.test(low)) {
+            const text = line
+              .replace(/^(agent|fix|note|for agent|tell agent|ask agent)\s*/i, '')
+              .trim();
+            if (!text) {
+              log('Usage · agent <what to fix>', 'dim');
+              return;
+            }
+            log('Sending note to coding agent · ' + text.slice(0, 80), 'ok');
+            const r = await SNLiveBridge.ownerNote(text, { from: 'cli' });
+            log(
+              r && r.remote
+                ? 'Note on live bridge · Grok Build can pick it up'
+                : 'Note saved · try bridge test',
+              'ok'
+            );
+            preview('Agent note saved');
+            return;
+          }
+          const wantTest = /\btest\b/.test(low) || low === 'bridge test' || low === 'test bridge';
+          if (wantTest && B.selfTest) {
+            const r = await B.selfTest();
+            preview(r && r.ok ? 'Bridge OK' : 'Bridge weak');
+            return;
+          }
+          if (/\bpoll\b/.test(low) && B.poll) await B.poll();
+          const st = B.status ? await B.status() : null;
+          if (st && st.ok) {
+            log(
+              'Bridge LIVE · seq ' +
+                (st.lastSeq || st.remote?.seq || 0) +
+                ' · notes ' +
+                (st.remote?.notes || st.localNotes || 0),
+              'ok'
+            );
+            if (st.remote?.lastNote)
+              log('Last · ' + String(st.remote.lastNote).slice(0, 100), 'dim');
+            log('agent <text> · bridge test', 'dim');
+          } else {
+            log('Bridge warming · ' + (st && st.error ? st.error : '…'), 'dim');
+          }
+          preview(st && st.ok ? 'Bridge live' : 'Bridge warming');
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
       // Astranov Mind — permanent owner memory
       if (
         low === 'free mind' ||
@@ -2974,18 +3041,18 @@
     try {
       if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
       else {
-        log('ASTRANOV LISTENING', 'ok');
-        preview('ASTRANOV LISTENING');
-        global.SNGlobe?.setHud?.('ASTRANOV LISTENING');
+        log("I'm here.", 'ok');
+        preview("I'm here");
+        global.SNGlobe?.setHud?.("I'm here");
       }
     } catch (_) {
-      log('ASTRANOV LISTENING', 'ok');
-      preview('ASTRANOV LISTENING');
+      log("I'm here.", 'ok');
+      preview("I'm here");
     }
-    // Spoken open so user knows conversation is live
+    // One short cue only — no monologue
     setTimeout(function () {
-        speakAi('I am Astranov. I am listening. Tell me what you need.', true);
-    }, 200);
+      speakAi("I'm here.", true);
+    }, 120);
     if (!global.isSecureContext && location.hostname !== 'localhost') {
       log('Mic needs HTTPS · type to talk · I can still reply in text', 'dim');
       return;

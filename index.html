@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801180800-home-center-restored" />
-<meta name="astranov-continuity" content="20260801180800-home-center-restored" />
+<meta name="astranov-build" content="20260801181500-cli-stable-ai-here-bridge" />
+<meta name="astranov-continuity" content="20260801181500-cli-stable-ai-here-bridge" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -4373,6 +4373,75 @@
     text-align: center !important;
   }
 
+
+  /* ═══ BOTTOM CLI · input never clipped · grip strip only ═══ */
+  #panel {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    min-height: 118px !important;
+  }
+  #panel.collapsed {
+    min-height: 118px !important;
+    max-height: 140px !important;
+    height: auto !important;
+  }
+  #panel.collapsed #cli-form,
+  #panel.mid #cli-form,
+  #panel.expanded #cli-form,
+  #cli-form {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+    order: 99 !important;
+    margin: 4px 8px 8px !important;
+    padding: 8px 12px !important;
+    min-height: 40px !important;
+    max-height: 44px !important;
+    height: 42px !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    z-index: 5 !important;
+    border: 1px solid rgba(0, 120, 255, 0.55) !important;
+    box-shadow: 0 0 14px rgba(0, 90, 255, 0.35) !important;
+    background: rgba(0, 12, 32, 0.72) !important;
+  }
+  #cli-in,
+  #panel.collapsed #cli-in {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-height: 24px !important;
+    height: 24px !important;
+    max-height: 28px !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    font-size: 14px !important;
+    color: #eaf4ff !important;
+  }
+  #panel.collapsed #sn-task-ribbon {
+    flex-shrink: 0 !important;
+    min-height: 40px !important;
+  }
+  #panel.collapsed #cli-log {
+    flex: 0 0 20px !important;
+    max-height: 20px !important;
+    min-height: 18px !important;
+    overflow: hidden !important;
+  }
+  /* Visible drag grip at top of bottom scroll */
+  #panel::before {
+    content: '' !important;
+    display: block !important;
+    width: 40px !important;
+    height: 4px !important;
+    margin: 6px auto 2px !important;
+    border-radius: 99px !important;
+    background: linear-gradient(90deg, transparent, #0066ff, transparent) !important;
+    box-shadow: 0 0 8px rgba(0, 100, 255, 0.7) !important;
+    flex-shrink: 0 !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4604,7 +4673,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801180800-home-center-restored"></script>
+<script src="/js/spacenet/boot.js?v=20260801181500-cli-stable-ai-here-bridge"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

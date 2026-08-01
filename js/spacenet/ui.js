@@ -250,7 +250,7 @@
     panel._snOverscrollBound = true;
     var accum = 0;
     var lastTY = null;
-    var THRESH = 56;
+    var THRESH = 120;
     function expanded() {
       return !panel.classList.contains('collapsed');
     }
@@ -280,9 +280,12 @@
         return false;
       }
       accum += Math.abs(amount || 0);
+      // Only full collapse from expanded — mid stays mid (globe use must not kill CLI)
       if (accum >= THRESH) {
         accum = 0;
-        setSize('collapsed', true);
+        var m = currentMode(panel);
+        if (m === 'expanded') setSize('mid', true);
+        else if (m === 'mid') setSize('collapsed', true);
         return true;
       }
       return true;
@@ -367,6 +370,28 @@
       startedOnInteractive = isInteractive(e.target);
       // Never steal clicks from 🎙 / send / inputs — capture breaks hands-free & buttons
       if (startedOnInteractive) {
+        dragging = false;
+        return;
+      }
+      // ONLY resize from the top grip / ribbon — not from log/map bleed / full panel.
+      // Whole-panel drag was collapsing the CLI when using the globe.
+      var tgt = e.target;
+      var onGrip =
+        tgt &&
+        (tgt.closest('#cli-drag') ||
+          tgt.closest('#sn-cli-grip') ||
+          tgt.closest('#sn-task-ribbon') ||
+          tgt.closest('.sn-panel-grip') ||
+          tgt.id === 'panel');
+      // Allow drag if started in top 28px of the panel (grip strip)
+      var prect = panel.getBoundingClientRect();
+      var inTopStrip = t.clientY >= prect.top && t.clientY <= prect.top + 28;
+      if (!onGrip && !inTopStrip) {
+        dragging = false;
+        return;
+      }
+      // Never start drag from the input form
+      if (tgt && tgt.closest('#cli-form, #cli-in, #cli-log')) {
         dragging = false;
         return;
       }

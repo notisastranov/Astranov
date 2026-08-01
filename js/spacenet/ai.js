@@ -1769,7 +1769,7 @@
 
   /** AI ribbon pressed — brief status only */
   function listeningOn() {
-    var t = "I'm listening — go ahead.";
+    var t = "I'm here.";
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
     return t;
