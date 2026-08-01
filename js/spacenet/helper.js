@@ -265,6 +265,7 @@
     H.busy = false;
     H.mission = null;
     H.status = 'idle';
+    try { parkAtMoon(); } catch (_) {}
     if (H.ctx && H.canvas) {
       var w = window.innerWidth || 1;
       var h = window.innerHeight || 1;
@@ -275,6 +276,40 @@
   /**
    * Fly to a geographic or screen target with a mission label.
    */
+
+  /** Park HELPER above the moon — only visible at SOLAR / far zoom */
+  function parkAtMoon() {
+    H.mission = { kind: 'park', label: 'PARKED · MOON', status: 'parked' };
+    H.label = 'HELPER · MOON';
+    H.status = 'parked';
+    H.busy = false;
+    H.boost = 0.15;
+    // Screen park: upper-right "lunar" station until true lunar body view
+    var w = window.innerWidth || 360;
+    var h = window.innerHeight || 640;
+    H.tx = w * 0.78;
+    H.ty = h * 0.18;
+    H.x = H.tx;
+    H.y = H.ty;
+    // Only show when solar / very zoomed out
+    var tier = '';
+    try {
+      if (global.SNGlobe && SNGlobe.tier) tier = SNGlobe.tier();
+      else if (global.SPACENET && SPACENET.tier) tier = SPACENET.tier();
+    } catch (_) {}
+    var show = tier === 'solar' || tier === 'SOLAR';
+    H.visible = !!show;
+    if (H.canvas) H.canvas.style.opacity = show ? '1' : '0';
+    return { ok: true, parked: true, tier: tier, visible: show };
+  }
+
+  function syncParkVisibility() {
+    if (H.busy && H.mission && H.mission.kind !== 'park') return;
+    if (!H.mission || H.mission.kind === 'park' || H.status === 'idle' || H.status === 'parked') {
+      parkAtMoon();
+    }
+  }
+
   function flyTo(target, opts) {
     opts = opts || {};
     wake(opts);
@@ -564,6 +599,10 @@ function loop(now) {
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
+    try { parkAtMoon(); } catch (_) {}
+    try {
+      setInterval(function () { try { syncParkVisibility(); } catch (_) {} }, 2000);
+    } catch (_) {}
     window.addEventListener('resize', resize, { passive: true });
     var auto = opts.autoWake;
     if (auto == null) auto = true;
@@ -615,6 +654,8 @@ function loop(now) {
     wake: wake,
     sleep: sleep,
     flyTo: flyTo,
+    parkAtMoon: parkAtMoon,
+    syncParkVisibility: syncParkVisibility,
     find: find,
     assistTask: assistTask,
     patrol: patrol,

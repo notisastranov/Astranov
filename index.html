@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801104000-gaming-gfx-v3" />
-<meta name="astranov-continuity" content="20260801104000-gaming-gfx-v3" />
+<meta name="astranov-build" content="20260801110000-scroll-law-v4-fast" />
+<meta name="astranov-continuity" content="20260801110000-scroll-law-v4-fast" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1967,403 +1967,380 @@
 
 
   
+  
   /* ═══════════════════════════════════════════════════════════════
-     ASTRANOV GAMING GRAPHICS HUD v3 — denser · sharper · sci-fi
-     High visual density · minimal wasted chrome · big brand name
+     TOP/BOTTOM SCROLL LAW v4 (owner 2026-08-01)
+     Collapsed top: RADAR | big ASTRANOV | MONEY only
+     Expand top: full height · device · RAID · science hub
+     Name click = recovery only (reload/cache/reset) — no science menu
+     Deep blue glow · high transparency · dense bottom
      ═══════════════════════════════════════════════════════════════ */
   :root {
-    --top-scroll-min: 58px;
-    --bottom-scroll-min: 100px;
-    --zone-top: 62px;
-    --g-cyan: #2ec8ff;
-    --g-blue: #0a6fff;
-    --g-deep: #041428;
-    --g-edge: rgba(46, 200, 255, 0.55);
-    --g-edge-soft: rgba(46, 200, 255, 0.22);
-    --g-fill: rgba(4, 16, 40, 0.55);
-    --g-fill-lite: rgba(255, 255, 255, 0.78);
+    --top-scroll-min: 56px;
+    --bottom-scroll-min: 96px;
+    --zone-top: 60px;
+    --deep-blue: #0a4fff;
+    --deep-glow: rgba(10, 90, 255, 0.55);
+    --deep-edge: rgba(20, 100, 255, 0.65);
   }
 
-  /* Micro hex texture overlay on scrolls */
-  #sn-topchrome-panel,
-  #panel {
-    position: relative;
-    isolation: isolate;
-  }
-  #sn-topchrome-panel::before,
-  #panel::before {
-    content: '' !important;
-    pointer-events: none !important;
-    position: absolute !important;
-    inset: 0 !important;
-    z-index: 0 !important;
-    opacity: 0.14 !important;
-    border-radius: inherit !important;
-    background-image:
-      linear-gradient(rgba(46, 200, 255, 0.07) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(46, 200, 255, 0.07) 1px, transparent 1px) !important;
-    background-size: 10px 10px !important;
-    mix-blend-mode: screen !important;
-  }
-  /* Corner brackets — gaming panel language */
-  #sn-topchrome-panel::after,
-  #panel::after {
-    content: '' !important;
-    pointer-events: none !important;
-    position: absolute !important;
-    inset: 3px !important;
-    z-index: 0 !important;
-    border-radius: 10px !important;
-    border: 1px solid transparent !important;
-    border-image: none !important;
-    box-shadow:
-      inset 10px 0 0 -9px var(--g-edge),
-      inset -10px 0 0 -9px var(--g-edge),
-      inset 0 10px 0 -9px var(--g-edge-soft),
-      inset 0 -10px 0 -9px var(--g-edge-soft) !important;
-    opacity: 0.85 !important;
-  }
-
-  /* ── TOP SCROLL dense ── */
-  #sn-topchrome {
-    padding: calc(3px + env(safe-area-inset-top)) 6px 0 !important;
-  }
-  #sn-topchrome-panel {
-    border-radius: 11px !important;
-    border: 1px solid var(--g-edge) !important;
-    background:
-      radial-gradient(ellipse 90% 120% at 50% -30%, rgba(46, 200, 255, 0.16) 0%, transparent 55%),
-      linear-gradient(165deg, rgba(6, 22, 52, 0.72) 0%, rgba(2, 10, 28, 0.68) 100%) !important;
-    backdrop-filter: blur(18px) saturate(1.35) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(1.35) !important;
-    box-shadow:
-      0 0 0 1px rgba(10, 40, 100, 0.4),
-      0 6px 22px rgba(0, 0, 0, 0.35),
-      0 0 32px rgba(20, 100, 255, 0.2),
-      inset 0 1px 0 rgba(160, 220, 255, 0.2) !important;
-    animation: none !important;
+  /* Collapsed top: only radar · name · money */
+  #sn-topchrome-panel.collapsed #stc-perf-wrap,
+  #sn-topchrome-panel.collapsed #stc-device-block,
+  #sn-topchrome-panel.collapsed #sn-hub-host,
+  #sn-topchrome-panel.collapsed #stc-detail,
+  #sn-topchrome-panel.collapsed .stc-g-detail,
+  #sn-topchrome-panel.collapsed #sn-device-alert,
+  #sn-topchrome-panel.collapsed #field-nav-meta,
+  #sn-topchrome-panel.collapsed #sn-fleet-monitor {
+    display: none !important;
   }
   #sn-topchrome-panel.collapsed {
-    max-height: 62px !important;
-    min-height: 56px !important;
-  }
-  #sn-topchrome-panel.mid {
-    max-height: min(150px, 22vh) !important;
-  }
-  #sn-topchrome-panel.expanded {
-    max-height: min(220px, 32vh) !important;
-  }
-  #stc-body, #stc-compact, #sn-topchrome-drag,
-  #stc-center, .stc-col {
-    position: relative;
-    z-index: 1;
-  }
-  #stc-compact {
-    padding: 2px 6px 1px !important;
-    gap: 3px 5px !important;
-    min-height: 0 !important;
-    align-items: stretch !important;
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    max-height: 58px !important;
+    min-height: 52px !important;
+    height: auto !important;
   }
   #sn-topchrome-panel.collapsed #stc-compact {
+    display: grid !important;
+    grid-template-columns: 52px 1fr 96px !important;
+    align-items: center !important;
+    gap: 6px 8px !important;
+    padding: 4px 8px !important;
     min-height: 48px !important;
-    grid-template-columns: auto minmax(0, 1fr) auto !important;
-  }
-  /* BIG brand name */
-  #sn-topchrome #btn-home {
-    font-size: 16px !important;
-    letter-spacing: 0.28em !important;
-    font-weight: 800 !important;
-    line-height: 1 !important;
-    color: #4db8ff !important;
-    text-shadow:
-      0 0 4px rgba(80, 190, 255, 1),
-      0 0 12px rgba(40, 140, 255, 0.95),
-      0 0 24px rgba(20, 100, 255, 0.7),
-      0 0 40px rgba(10, 70, 220, 0.4) !important;
-    padding: 0 2px !important;
-  }
-  #sn-topchrome-panel.collapsed #btn-home {
-    font-size: 16px !important;
-    letter-spacing: 0.26em !important;
   }
   #sn-topchrome-panel.collapsed .stc-col-device {
-    max-width: min(36vw, 150px) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: none !important;
+    width: 100% !important;
   }
-  #sn-topchrome-panel.collapsed #stc-perf-wrap {
-    height: 28px !important;
-    min-height: 28px !important;
-    max-height: 28px !important;
-    border-radius: 5px !important;
-    border: 1px solid rgba(46, 200, 255, 0.3) !important;
-    background: linear-gradient(180deg, rgba(4, 20, 48, 0.7), rgba(0, 8, 24, 0.8)) !important;
-    box-shadow: inset 0 0 12px rgba(20, 100, 255, 0.15) !important;
+  /* BIG beautiful centered name */
+  #sn-topchrome #btn-home {
+    font-size: 18px !important;
+    letter-spacing: 0.32em !important;
+    font-weight: 800 !important;
+    color: #1a7cff !important;
+    text-shadow:
+      0 0 8px rgba(20, 100, 255, 1),
+      0 0 20px rgba(10, 70, 255, 0.9),
+      0 0 40px rgba(8, 50, 200, 0.6) !important;
+    width: 100%;
+    text-align: center;
+    padding: 6px 4px !important;
   }
-  #sn-topchrome-panel.mid #stc-perf-wrap {
-    height: 64px !important; min-height: 64px !important;
+  #sn-topchrome-panel.collapsed #btn-home {
+    font-size: 18px !important;
+    letter-spacing: 0.3em !important;
   }
-  #sn-topchrome-panel.expanded #stc-perf-wrap {
-    height: 92px !important; min-height: 92px !important;
+  @media (max-width: 420px) {
+    #sn-topchrome-panel.collapsed #btn-home {
+      font-size: 15px !important;
+      letter-spacing: 0.2em !important;
+    }
+    #sn-topchrome-panel.collapsed #stc-compact {
+      grid-template-columns: 46px 1fr 84px !important;
+    }
   }
   #sn-topchrome-panel.collapsed #field-radar {
-    width: 48px !important;
-    height: 48px !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-    border: 1px solid var(--g-edge) !important;
-    box-shadow: 0 0 14px rgba(30, 120, 255, 0.35), inset 0 0 10px rgba(20, 100, 255, 0.15) !important;
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    min-height: 46px !important;
   }
   #sn-topchrome-panel.collapsed #field-balance-hud {
-    min-width: 84px !important;
-    min-height: 48px !important;
-    padding: 4px 7px !important;
-    border-radius: 9px !important;
-    border: 1px solid rgba(46, 200, 255, 0.4) !important;
-    background:
-      radial-gradient(ellipse 100% 80% at 100% 0%, rgba(30, 100, 220, 0.25) 0%, transparent 60%),
-      linear-gradient(155deg, rgba(6, 28, 64, 0.75), rgba(2, 12, 36, 0.8)) !important;
-    box-shadow: 0 0 14px rgba(20, 100, 255, 0.25) !important;
+    min-width: 88px !important;
+    min-height: 44px !important;
+    padding: 5px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
   }
   #sn-topchrome-panel.collapsed #fbh-s {
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    color: #5ec0ff !important;
-    text-shadow: 0 0 10px rgba(40, 140, 255, 0.7) !important;
+    font-size: 14px !important;
+    color: #1a7cff !important;
+    text-shadow: 0 0 12px rgba(20, 100, 255, 0.8) !important;
   }
   #sn-topchrome-panel.collapsed #fbh-mine-rate {
+    display: block !important;
     font-size: 8px !important;
-    color: #7ab8e8 !important;
   }
-  #sn-topchrome-drag {
-    padding: 0 0 2px !important;
-  }
-  #sn-topchrome-drag::before {
-    width: 28px !important;
-    height: 2px !important;
-    background: linear-gradient(90deg, transparent, #2ec8ff, transparent) !important;
-    box-shadow: 0 0 8px rgba(46, 200, 255, 0.7) !important;
-  }
-  #sn-topchrome-drag .stc-scroll-label {
-    font-size: 6px !important;
-    letter-spacing: 0.16em !important;
-    color: rgba(100, 180, 255, 0.65) !important;
+  #sn-topchrome-panel.collapsed #fbh-econ-graph,
+  #sn-topchrome-panel.collapsed #fbh-econ-label,
+  #sn-topchrome-panel.collapsed #fbh-fees {
+    display: none !important;
   }
 
-  /* ── BOTTOM SCROLL dense gaming CLI ── */
-  #dock {
-    padding: 0 6px calc(5px + env(safe-area-inset-bottom)) !important;
+  /* Expand top scroll — almost full like CLI */
+  #sn-topchrome-panel.mid {
+    max-height: min(42vh, 360px) !important;
   }
+  #sn-topchrome-panel.expanded {
+    max-height: min(72vh, 640px) !important;
+  }
+  #sn-topchrome-panel.mid #stc-detail,
+  #sn-topchrome-panel.expanded #stc-detail {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    overflow: auto !important;
+    max-height: none !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    padding: 6px 10px 8px !important;
+  }
+  #sn-topchrome-panel.mid #stc-device-block,
+  #sn-topchrome-panel.expanded #stc-device-block,
+  #sn-topchrome-panel.mid #sn-hub-host,
+  #sn-topchrome-panel.expanded #sn-hub-host {
+    display: block !important;
+  }
+  #stc-perf-wrap {
+    height: 88px !important;
+    min-height: 72px !important;
+    width: 100% !important;
+    border-radius: 8px !important;
+  }
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 110px !important;
+  }
+  .stc-expand-block {
+    border: 1px solid rgba(20, 100, 255, 0.35);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: rgba(4, 16, 48, 0.35);
+  }
+  .stc-g-title {
+    font: 700 10px/1 var(--font-display);
+    letter-spacing: 0.14em;
+    color: #1a7cff;
+    text-shadow: 0 0 10px rgba(20, 100, 255, 0.6);
+    margin: 0 0 6px;
+  }
+  .stc-g-note {
+    font: 500 10px/1.35 var(--font-ui);
+    color: #6a90b8;
+    margin: 6px 0 0;
+  }
+  #sn-hub-host .sn-home-section {
+    margin: 10px 0 6px;
+    font: 700 10px var(--font-display);
+    letter-spacing: 0.12em;
+    color: #1a7cff;
+    text-transform: uppercase;
+  }
+  #sn-hub-host .sn-home-btn {
+    display: block;
+    width: 100%;
+    margin: 4px 0;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid rgba(20, 100, 255, 0.4);
+    background: rgba(6, 24, 64, 0.5);
+    color: #d8ecff;
+    font: 600 12px var(--font-ui);
+    cursor: pointer;
+  }
+  #sn-hub-host .sn-home-btn.danger {
+    border-color: rgba(255, 80, 100, 0.5);
+    color: #ff9aa5;
+  }
+  #sn-hub-host .sn-home-btn-primary {
+    border-color: rgba(20, 120, 255, 0.7);
+    background: linear-gradient(180deg, rgba(20, 80, 200, 0.45), rgba(8, 36, 100, 0.6));
+    font-weight: 700;
+  }
+  #sn-hub-host .sn-home-hint {
+    font: 500 11px/1.4 var(--font-ui);
+    color: #6a90b8;
+    margin: 4px 0 8px;
+  }
+  #sn-hub-host .sn-home-role {
+    display: block;
+    width: 100%;
+    text-align: left;
+    margin: 0 0 6px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    border: 1px solid rgba(20, 100, 255, 0.35);
+    background: rgba(4, 18, 48, 0.45);
+    color: #e0f0ff;
+    cursor: pointer;
+  }
+  #sn-hub-host .sn-home-role.on {
+    border-color: #1a7cff;
+    box-shadow: 0 0 16px rgba(20, 100, 255, 0.35);
+  }
+  #sn-hub-host .sn-home-role-t {
+    display: block;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  #sn-hub-host .sn-home-role-d {
+    display: block;
+    font-size: 11px;
+    color: #7a9ab8;
+    margin-top: 2px;
+  }
+
+  /* Deep blue transparent scrolls — not pale ice */
+  #sn-topchrome {
+    padding: calc(4px + env(safe-area-inset-top)) 8px 0 !important;
+  }
+  #sn-topchrome-panel,
   #panel {
-    border-radius: 12px !important;
-    border: 1px solid var(--g-edge) !important;
-    max-height: 40vh !important;
     background:
-      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(46, 200, 255, 0.1) 0%, transparent 50%),
-      linear-gradient(180deg, rgba(4, 18, 44, 0.7) 0%, rgba(2, 10, 28, 0.68) 100%) !important;
-    backdrop-filter: blur(20px) saturate(1.4) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+      radial-gradient(ellipse 100% 80% at 50% 0%, rgba(20, 80, 220, 0.12) 0%, transparent 50%),
+      linear-gradient(165deg, rgba(4, 14, 40, 0.42) 0%, rgba(2, 8, 24, 0.38) 100%) !important;
+    border: 1px solid rgba(20, 100, 255, 0.5) !important;
     box-shadow:
-      0 0 0 1px rgba(10, 40, 100, 0.35),
-      0 -4px 24px rgba(0, 0, 0, 0.4),
-      0 0 36px rgba(20, 100, 255, 0.18),
-      inset 0 1px 0 rgba(160, 220, 255, 0.15) !important;
+      0 0 0 1px rgba(8, 40, 120, 0.3),
+      0 0 28px rgba(10, 70, 220, 0.28),
+      0 0 48px rgba(8, 40, 160, 0.12),
+      inset 0 1px 0 rgba(80, 140, 255, 0.12) !important;
+    backdrop-filter: blur(16px) saturate(1.3) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.3) !important;
     animation: none !important;
+    border-radius: 12px !important;
+  }
+  #sn-topchrome-panel::before,
+  #panel::before,
+  #sn-topchrome-panel::after,
+  #panel::after {
+    opacity: 0.08 !important;
+    box-shadow:
+      inset 8px 0 0 -7px rgba(20, 100, 255, 0.7),
+      inset -8px 0 0 -7px rgba(20, 100, 255, 0.7) !important;
+  }
+
+  /* Bottom scroll denser */
+  #dock {
+    padding: 0 8px calc(5px + env(safe-area-inset-bottom)) !important;
   }
   #panel.collapsed {
-    max-height: min(132px, 20vh) !important;
-    min-height: var(--bottom-scroll-min) !important;
-  }
-  #cli-drag, #cli-log, #cli-form, #sn-ribbon, .cli-titlebar {
-    position: relative;
-    z-index: 1;
+    max-height: min(118px, 18vh) !important;
+    min-height: 96px !important;
   }
   #cli-drag {
-    padding: 5px 10px 3px !important;
-    gap: 3px !important;
-    background: linear-gradient(180deg, rgba(8, 40, 80, 0.35) 0%, transparent 100%) !important;
-    border-bottom: 1px solid rgba(46, 200, 255, 0.18) !important;
+    padding: 4px 10px 3px !important;
   }
   #cli-drag::before {
-    width: 28px !important;
+    background: linear-gradient(90deg, transparent, #0a5fff, transparent) !important;
+    box-shadow: 0 0 10px rgba(10, 90, 255, 0.7) !important;
     height: 2px !important;
-    background: linear-gradient(90deg, transparent, #2ec8ff, transparent) !important;
-    box-shadow: 0 0 8px rgba(46, 200, 255, 0.7) !important;
+    width: 28px !important;
   }
-  .cli-scroll-label {
-    font-size: 6px !important;
-    letter-spacing: 0.16em !important;
-    color: rgba(100, 180, 255, 0.65) !important;
+  #sn-topchrome-drag::before {
+    background: linear-gradient(90deg, transparent, #0a5fff, transparent) !important;
+    box-shadow: 0 0 10px rgba(10, 90, 255, 0.7) !important;
   }
-  .cli-titlebar .cli-brand {
-    font-size: 9px !important;
-    letter-spacing: 0.18em !important;
-    color: #2ec8ff !important;
-    text-shadow: 0 0 10px rgba(46, 200, 255, 0.7) !important;
-  }
-  .cli-live-dot {
-    width: 6px !important;
-    height: 6px !important;
-    box-shadow: 0 0 10px rgba(46, 200, 255, 0.9) !important;
-  }
-  #cli-preview { font-size: 11px !important; color: #9ec8ff !important; }
-  #cli-activity { font-size: 8px !important; letter-spacing: 0.1em !important; }
-  #cli-log {
-    padding: 4px 10px 6px !important;
-    min-height: 32px !important;
-    font-size: 11px !important;
-  }
-  .cli-line .cli-body {
-    font-size: 11px !important;
-    line-height: 1.35 !important;
-  }
-  .cli-line.cmd .cli-body::before {
-    color: #2ec8ff !important;
-    text-shadow: 0 0 8px rgba(46, 200, 255, 0.8) !important;
-  }
-
-  /* Ribbon — smaller, denser, neon */
-  #sn-ribbon {
+  #sn-task-ribbon {
+    display: flex !important;
     gap: 2px !important;
-    padding: 3px 4px 4px !important;
+    padding: 2px 4px 2px !important;
+    justify-content: space-between !important;
   }
   .sn-rib-btn {
-    min-height: 42px !important;
-    min-width: 40px !important;
-    padding: 3px 1px !important;
-    border-radius: 9px !important;
+    min-height: 40px !important;
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    padding: 2px 1px !important;
+    border-radius: 8px !important;
     gap: 1px !important;
-    border: 1px solid transparent !important;
-    background: transparent !important;
-    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s !important;
-  }
-  .sn-rib-btn:hover, .sn-rib-btn:focus-visible, .sn-rib-btn.on {
-    border-color: rgba(46, 200, 255, 0.45) !important;
-    background: rgba(20, 80, 160, 0.25) !important;
-    box-shadow: 0 0 12px rgba(40, 140, 255, 0.3), inset 0 0 12px rgba(46, 200, 255, 0.08) !important;
   }
   .sn-rib-icon {
     width: 18px !important;
     height: 18px !important;
-    color: #7ec8ff !important;
-    filter: drop-shadow(0 0 4px rgba(46, 200, 255, 0.5)) !important;
   }
   .sn-rib-icon svg {
     width: 16px !important;
     height: 16px !important;
   }
-  .sn-rib-txt, .sn-rib-label {
+  .sn-rib-txt {
     font-size: 8px !important;
-    letter-spacing: 0.05em !important;
     font-weight: 700 !important;
-    color: #9ec8ff !important;
+    letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
   }
+  /* Colored ribbon glyphs */
+  #sn-rib-locate .sn-rib-icon { color: #00e8a0 !important; filter: drop-shadow(0 0 6px rgba(0, 232, 160, 0.7)) !important; }
+  #sn-rib-locate .sn-rib-txt { color: #00e8a0 !important; }
+  #sn-rib-user .sn-rib-icon { color: #4da6ff !important; filter: drop-shadow(0 0 6px rgba(77, 166, 255, 0.7)) !important; }
+  #sn-rib-user .sn-rib-txt { color: #7ec0ff !important; }
+  #sn-rib-add .sn-rib-icon { color: #ffc857 !important; filter: drop-shadow(0 0 6px rgba(255, 200, 87, 0.7)) !important; }
+  #sn-rib-add .sn-rib-txt { color: #ffc857 !important; }
+  #sn-rib-layers .sn-rib-icon { color: #a78bfa !important; filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.7)) !important; }
+  #sn-rib-layers .sn-rib-txt { color: #c4b5fd !important; }
+  #sn-rib-hf .sn-rib-icon { color: #1a7cff !important; filter: drop-shadow(0 0 8px rgba(26, 124, 255, 0.85)) !important; }
+  #sn-rib-hf .sn-rib-txt { color: #4da6ff !important; }
+  #sn-rib-send .sn-rib-icon { color: #ff6b9a !important; filter: drop-shadow(0 0 6px rgba(255, 107, 154, 0.7)) !important; }
+  #sn-rib-send .sn-rib-txt { color: #ff8fb3 !important; }
 
-  /* Input bar — compact neon field */
   #cli-form {
     margin: 0 6px 6px !important;
-    padding: 6px 10px !important;
-    min-height: 36px !important;
-    border-radius: 9px !important;
-    border: 1px solid rgba(46, 200, 255, 0.45) !important;
-    background: linear-gradient(180deg, rgba(8, 36, 80, 0.55), rgba(4, 16, 44, 0.5)) !important;
-    box-shadow:
-      0 0 0 1px rgba(20, 80, 180, 0.2),
-      0 0 16px rgba(30, 120, 255, 0.28),
-      inset 0 0 16px rgba(20, 100, 255, 0.1) !important;
+    padding: 5px 10px !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(20, 100, 255, 0.5) !important;
+    background: rgba(4, 18, 52, 0.4) !important;
+    box-shadow: 0 0 14px rgba(10, 80, 220, 0.3) !important;
     animation: none !important;
   }
-  #cli-form:focus-within {
-    border-color: rgba(100, 210, 255, 0.85) !important;
-    box-shadow:
-      0 0 0 1px rgba(80, 180, 255, 0.5),
-      0 0 24px rgba(40, 140, 255, 0.45),
-      inset 0 0 20px rgba(40, 140, 255, 0.15) !important;
-  }
-  #cli-in {
-    font-size: 13px !important;
-    min-height: 20px !important;
-    color: #e8f6ff !important;
-    caret-color: #2ec8ff !important;
-  }
-  #cli-in::placeholder {
-    color: rgba(120, 180, 255, 0.55) !important;
-    font-size: 12px !important;
-  }
+  #cli-in { font-size: 13px !important; }
   .cli-prompt-prefix {
-    font-size: 13px !important;
-    color: #2ec8ff !important;
-    text-shadow: 0 0 10px rgba(46, 200, 255, 0.85) !important;
+    color: #1a7cff !important;
+    text-shadow: 0 0 10px rgba(20, 100, 255, 0.9) !important;
+  }
+  #cli-log { padding: 3px 10px 4px !important; min-height: 28px !important; font-size: 11px !important; }
+  .cli-titlebar .cli-brand {
+    color: #1a7cff !important;
+    text-shadow: 0 0 10px rgba(20, 100, 255, 0.7) !important;
+    font-size: 9px !important;
   }
 
-  /* Boot splash gaming */
-  #boot {
-    background:
-      radial-gradient(ellipse 80% 50% at 50% 30%, rgba(20, 80, 180, 0.35) 0%, transparent 55%),
-      radial-gradient(120% 100% at 50% 100%, #020814 0%, #000408 100%) !important;
+  /* Recovery sheet (name button only) */
+  #sn-recover {
+    position: fixed; inset: 0; z-index: 2147483000;
+    display: none; align-items: flex-start; justify-content: center;
+    padding: max(48px, env(safe-area-inset-top)) 12px 24px;
+    background: rgba(0, 4, 16, 0.55);
+    backdrop-filter: blur(8px);
   }
-  .boot-title {
-    font-size: clamp(22px, 6vw, 32px) !important;
-    letter-spacing: 0.32em !important;
-    color: #4db8ff !important;
-    text-shadow:
-      0 0 12px rgba(46, 200, 255, 0.9),
-      0 0 36px rgba(20, 100, 255, 0.6) !important;
+  #sn-recover.open { display: flex; }
+  #sn-recover .sn-rec-card {
+    width: min(360px, 100%);
+    border-radius: 14px;
+    border: 1px solid rgba(20, 100, 255, 0.55);
+    background: linear-gradient(165deg, rgba(6, 20, 56, 0.95), rgba(2, 8, 24, 0.97));
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 32px rgba(10, 80, 220, 0.3);
+    padding: 14px 16px 16px;
+    color: #e0f0ff;
   }
-  .boot-loader {
-    height: 3px !important;
-    border-radius: 99px !important;
-    background: rgba(20, 60, 120, 0.5) !important;
-    overflow: hidden !important;
-    box-shadow: 0 0 12px rgba(46, 200, 255, 0.3) !important;
+  #sn-recover .sn-rec-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font: 700 11px var(--font-display); letter-spacing: 0.14em; color: #1a7cff;
+    margin-bottom: 10px;
   }
-  .boot-loader-bar {
-    background: linear-gradient(90deg, transparent, #2ec8ff, #7ae0ff, #2ec8ff, transparent) !important;
-    box-shadow: 0 0 12px #2ec8ff !important;
+  #sn-recover .sn-rec-x {
+    border: 0; background: transparent; color: #8ab4d0; font-size: 22px; cursor: pointer;
   }
-
-  /* Peek tiles denser gaming */
-  .sn-tile, .sn-peek, [class*="tile-card"], #sn-tile-host .tile {
-    border: 1px solid rgba(46, 200, 255, 0.4) !important;
-    box-shadow: 0 0 20px rgba(20, 100, 255, 0.2), inset 0 1px 0 rgba(160, 220, 255, 0.12) !important;
-    backdrop-filter: blur(14px) !important;
+  #sn-recover button.sn-rec-btn {
+    display: block; width: 100%; margin: 6px 0; padding: 12px;
+    border-radius: 10px; border: 1px solid rgba(20, 100, 255, 0.45);
+    background: rgba(10, 40, 100, 0.45); color: #eaf4ff;
+    font: 700 13px var(--font-ui); cursor: pointer;
   }
-
-  /* Light theme keep readable */
-  html.theme-light #sn-topchrome-panel,
-  html.theme-light #panel {
-    background:
-      radial-gradient(ellipse 90% 100% at 50% -20%, rgba(80, 160, 255, 0.12) 0%, transparent 50%),
-      linear-gradient(165deg, rgba(255, 255, 255, 0.9) 0%, rgba(232, 242, 255, 0.86) 100%) !important;
-    border-color: rgba(20, 110, 220, 0.4) !important;
-    box-shadow: 0 4px 18px rgba(20, 50, 100, 0.1), inset 0 1px 0 #fff !important;
+  #sn-recover button.sn-rec-primary {
+    border-color: rgba(20, 120, 255, 0.75);
+    background: linear-gradient(180deg, rgba(20, 80, 200, 0.55), rgba(8, 40, 120, 0.7));
+    box-shadow: 0 0 18px rgba(20, 100, 255, 0.35);
   }
-  html.theme-light #sn-topchrome #btn-home {
-    color: #0a62d4 !important;
-    text-shadow: 0 0 10px rgba(40, 130, 255, 0.4) !important;
+  #sn-recover button.sn-rec-danger {
+    border-color: rgba(255, 80, 100, 0.5); color: #ff9aa5;
   }
-  html.theme-light #cli-form {
-    background: linear-gradient(180deg, #fff, rgba(236, 246, 255, 0.95)) !important;
-    border-color: rgba(20, 110, 220, 0.4) !important;
-  }
-  html.theme-light #cli-in { color: #0c1e36 !important; }
-  html.theme-light .sn-rib-txt { color: #1a3a58 !important; }
-
-  @media (max-width: 420px) {
-    #sn-topchrome-panel.collapsed #btn-home {
-      font-size: 13px !important;
-      letter-spacing: 0.18em !important;
-    }
-    .sn-rib-btn {
-      min-height: 40px !important;
-      min-width: 36px !important;
-    }
-    .sn-rib-txt { font-size: 7px !important; }
-  }
-
-  #sn-helper-canvas {
-    z-index: 40 !important;
-    pointer-events: none !important;
+  #sn-recover p {
+    font: 500 12px/1.4 var(--font-ui); color: #7a9ab8; margin: 0 0 10px;
   }
 
 </style>
@@ -2409,14 +2386,7 @@
           </div>
         </div>
         <div class="stc-col stc-col-device" id="stc-center">
-          <button type="button" id="btn-home" title="ASTRANOV · extreme menu · tools · account">ASTRANOV</button>
-          <div id="stc-perf-wrap" title="Device · CPU · RAM · battery · temps">
-            <canvas id="stc-perf" width="360" height="120" aria-label="Device metrics graph"></canvas>
-          </div>
-          <div class="stc-g-detail" id="stc-d-device">
-            <div class="stc-g-title">DEVICE · LOAD</div>
-            <p class="stc-g-note">One graph · expands with top scroll · deep blue = OK · yellow = soft limit · red = critical</p>
-          </div>
+          <button type="button" id="btn-home" title="ASTRANOV · hard reload · clear cache · reset">ASTRANOV</button>
         </div>
         <div class="stc-col stc-col-money">
           <div id="field-balance-hud" role="button" tabindex="0" title="Astranov coins · tap finance" aria-label="Astranov coins">
@@ -2439,6 +2409,14 @@
       </div>
       <div id="sn-device-alert" role="alert" aria-live="assertive"></div>
       <div id="stc-detail" class="stc-detail">
+        <div id="stc-device-block" class="stc-expand-block">
+          <div class="stc-g-title">DEVICE · LOAD</div>
+          <div id="stc-perf-wrap" title="Device · CPU · RAM · battery · temps">
+            <canvas id="stc-perf" width="360" height="120" aria-label="Device metrics graph"></canvas>
+          </div>
+          <p class="stc-g-note">Deep blue = OK · yellow = soft limit · red = critical</p>
+        </div>
+        <div id="sn-hub-host" class="stc-expand-block" aria-label="Science hub · roles · RAID · mining"></div>
         <div id="stc-detail-row">
           <div id="field-nav-meta" aria-live="polite">
             <span class="fnm-row" id="fnm-speed">— km/h</span>
@@ -2486,27 +2464,6 @@
   <p id="fsh-explain"></p>
 </div>
 
-  <div class="sfm-row">
-    <div class="sfm-card" id="sfm-main" data-role="main">
-      <div class="sfm-role">Main</div>
-      <div class="sfm-state" id="sfm-main-state">—</div>
-      <canvas id="sfm-main-g" width="120" height="28" aria-hidden="true"></canvas>
-      <div class="sfm-meta" id="sfm-main-meta">load · mine</div>
-    </div>
-    <div class="sfm-card" id="sfm-secondary" data-role="secondary">
-      <div class="sfm-role">Hot-swap</div>
-      <div class="sfm-state" id="sfm-secondary-state">—</div>
-      <canvas id="sfm-secondary-g" width="120" height="28" aria-hidden="true"></canvas>
-      <div class="sfm-meta" id="sfm-secondary-meta">load · mine</div>
-    </div>
-    <div class="sfm-card raid" id="sfm-raid" data-role="raid">
-      <div class="sfm-role">RAID</div>
-      <div class="sfm-state" id="sfm-raid-state">—</div>
-      <canvas id="sfm-raid-g" width="120" height="28" aria-hidden="true"></canvas>
-      <div class="sfm-meta" id="sfm-raid-meta">array · harvest</div>
-    </div>
-  </div>
-</div>
 
 <div id="sn-national-hud" hidden aria-hidden="true"></div>
 <div id="sn-city-labels" aria-hidden="true"></div>
@@ -2527,6 +2484,19 @@
   <button type="button" id="sn-plus" title="Multi-tile add">ADD</button>
 </div>
 <button type="button" id="btn-city-close" hidden title="Globe">GLOBE</button>
+
+
+<div id="sn-recover" aria-hidden="true">
+  <div class="sn-rec-card" role="dialog" aria-label="ASTRANOV recovery">
+    <div class="sn-rec-head"><span>ASTRANOV · RECOVER</span>
+      <button type="button" class="sn-rec-x" id="sn-rec-close" aria-label="Close">×</button>
+    </div>
+    <p>Science · RAID · mining live in the <b>top scroll</b> — drag it down. This name button is recovery only.</p>
+    <button type="button" class="sn-rec-btn sn-rec-primary" data-rec="hard-reload">① Hard reload · clear cache · restart</button>
+    <button type="button" class="sn-rec-btn" data-rec="clear-cache">② Clear cache only · keep data</button>
+    <button type="button" class="sn-rec-btn sn-rec-danger" data-rec="hard-reset">③ Hard reset · wipe local data</button>
+  </div>
+</div>
 
 <div id="dock">
   <div id="panel" class="collapsed">
@@ -2584,7 +2554,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801104000-gaming-gfx-v3"></script>
+<script src="/js/spacenet/boot.js?v=20260801110000-scroll-law-v4-fast"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

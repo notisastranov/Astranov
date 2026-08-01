@@ -175,19 +175,19 @@
       navigator.maxTouchPoints > 0 ||
       (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
       (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-    if (isLite) window._snLite = true;
+    window._snLite = true; isLite = true;
   } catch (e) {}
 
   // Global performance governor
   window.SNPerf = {
-    lite: isLite,
-    dprCap: isLite ? 1 : 1.25,
-    globeSegs: isLite ? 32 : 48,
-    starN: isLite ? 280 : 700,
-    radarMs: isLite ? 250 : 180,
-    idleSkip: isLite ? 4 : 3,
-    hudHz: isLite ? 12 : 20,
-    helperAuto: true,
+    lite: true, // street-first: always prefer speed over max fidelity
+    dprCap: 1,
+    globeSegs: isLite ? 24 : 32,
+    starN: isLite ? 160 : 320,
+    radarMs: isLite ? 320 : 220,
+    idleSkip: isLite ? 5 : 4,
+    hudHz: isLite ? 8 : 12,
+    helperAuto: false, // HELPER parked on moon; wake on order / helper cmd
     t0: t0,
     mark: function (name) {
       try {
@@ -392,7 +392,7 @@
           },
           function () {
             // HELPER on demand only — continuous RAF was sticky
-            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: true });
+            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false });
           },
           function () {
             SNLiveBridge && SNLiveBridge.start && SNLiveBridge.start();

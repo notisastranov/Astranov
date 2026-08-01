@@ -1421,6 +1421,10 @@
     var c = $('stc-perf');
     var wrap = $('stc-perf-wrap');
     if (!c) return;
+    try {
+      var panel = $('sn-topchrome-panel');
+      if (panel && panel.classList.contains('collapsed')) return;
+    } catch (_) {}
     var ctx = c.getContext('2d');
     if (!ctx) return;
     if (!devHist.length) sampleDeviceMetrics();
@@ -1597,10 +1601,11 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      var MIN = 58;
-      if (mode === 'collapsed') return 58;
-      if (mode === 'expanded') return Math.max(MIN, Math.min(280, Math.round(h * 0.36)));
-      return Math.max(MIN, Math.min(200, Math.round(h * 0.26)));
+      var MIN = 54;
+      if (mode === 'collapsed') return 54;
+      // Full expand like bottom scroll
+      if (mode === 'expanded') return Math.max(MIN, Math.min(Math.round(h * 0.72), h - 100));
+      return Math.max(MIN, Math.min(Math.round(h * 0.42), h - 140));
     }
 
     function setMode(mode, animate, freeH) {
@@ -1626,10 +1631,10 @@
       } catch (_) {}
       try {
         requestAnimationFrame(function () {
-          paintStcPerf();
+          if (mode !== 'collapsed') paintStcPerf();
+          if (mode !== 'collapsed' && global.SNHome && SNHome.paintHub) SNHome.paintHub();
         });
       } catch (_) {}
-      // Resize radar canvas after layout
       setTimeout(function () {
         try {
           syncRadarCanvas();

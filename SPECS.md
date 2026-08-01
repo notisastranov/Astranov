@@ -242,3 +242,19 @@ js/spacenet/auth.js          → Google GIS preferred
 Build `20260731230000-go-live-delivery`.*
 
 *Agent note 2026-08-01: **Gaming HUD v2** dense scrolls · big ASTRANOV name · smaller CLI ribbon. **SNAIGraphics** generative engine + **SNHelper** winged Iron-Man flyer active (autoWake on orders/find). Delivery: pay→vault→assign/seeking→route→ETA. Build `20260801103000-gaming-hud-delivery`.*
+
+
+## OWNER LOG · 2026-08-01 top/bottom scroll law (verify)
+
+| Law | Meaning |
+|-----|---------|
+| **Collapsed top** | **Radar · big ASTRANOV name · money only.** No device graph. No fleet. |
+| **Expand top** | Drag down fully (like bottom). Device load · RAID fleet · science hub (roles · mine · routes · graphics). |
+| **ASTRANOV name click** | **Recovery only**: hard reload · clear cache · hard reset. **No science menu.** |
+| **Bottom scroll** | Dense ribbon · colored glyphs · glowing input always visible · space-saving. |
+| **Scroll art** | High transparency · **deep blue** glow (not pale ice). |
+| **HELPER** | Parked above **moon** · visible at SOLAR zoom only until AI graphics supreme. Wakes on order/`helper`. |
+| **Speed** | Street-first: lite globe · low DPR · less stars · frame skip. Must feel faster than driver reflexes. |
+| **Money path** | Delivery marketplace P0 — locate → shops → pay AC → vault 3% → driver/seeking → route → ETA. |
+
+Build `20260801110000-scroll-law-v4-fast`.

@@ -381,23 +381,20 @@
   }
 
   function paint() {
-    var el = ensure();
-    el.innerHTML = build();
-    bind(el);
+    try {
+      paintHub();
+    } catch (_) {}
+    // Full-screen menu kept for legacy ensure() but not opened
+    var el = $('sn-home-menu');
+    if (el && el.classList.contains('open')) {
+      el.innerHTML = build();
+      bind(el);
+    }
   }
 
   function openMenu() {
-    var el = ensure();
-    try {
-      if (global.SNResources && SNResources.touchFleet) SNResources.touchFleet();
-    } catch (_) {}
-    paint();
-    el.classList.add('open');
-    el.setAttribute('aria-hidden', 'false');
-    open = true;
-    try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('home_tech_open', {});
-    } catch (_) {}
+    // Legacy full menu disabled — science lives in top scroll (#sn-hub-host)
+    openRecovery();
   }
 
   function close() {
@@ -407,11 +404,77 @@
       el.classList.remove('open');
       el.setAttribute('aria-hidden', 'true');
     }
+    closeRecovery();
   }
 
   function toggle() {
-    if (open) close();
-    else openMenu();
+    openRecovery();
+  }
+
+  function openRecovery() {
+    var el = $('sn-recover');
+    if (!el) return;
+    el.classList.add('open');
+    el.setAttribute('aria-hidden', 'false');
+    open = true;
+  }
+
+  function closeRecovery() {
+    var el = $('sn-recover');
+    if (el) {
+      el.classList.remove('open');
+      el.setAttribute('aria-hidden', 'true');
+    }
+    open = false;
+  }
+
+  /** Science hub body for TOP SCROLL expand (not full-screen menu) */
+  function paintHub() {
+    var host = $('sn-hub-host');
+    if (!host) return;
+    try {
+      if (global.SNResources && SNResources.touchFleet) SNResources.touchFleet();
+    } catch (_) {}
+    var html = build();
+    // Prefer body content
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var body = tmp.querySelector('.sn-home-body');
+    host.innerHTML =
+      '<div class="sn-home-head"><b>SCIENCE · ROLES · RAID · MINE</b></div>' +
+      (body ? body.innerHTML : html);
+    // Remove stuck recovery block copy (name button owns recovery)
+    var recTitle = null;
+    host.querySelectorAll('.sn-home-section, .sn-home-recovery-title, .sn-home-hint').forEach(function (n) {
+      if (/Stuck|recover/i.test(n.textContent || '')) {
+        var p = n;
+        // remove following recovery buttons
+      }
+    });
+    bind(host);
+  }
+
+  function bindRecovery() {
+    var el = $('sn-recover');
+    if (!el || el._bound) return;
+    el._bound = true;
+    var x = $('sn-rec-close');
+    if (x) x.onclick = function (e) {
+      e.preventDefault();
+      closeRecovery();
+    };
+    el.addEventListener('click', function (e) {
+      if (e.target === el) closeRecovery();
+    });
+    el.querySelectorAll('[data-rec]').forEach(function (btn) {
+      btn.onclick = function (e) {
+        e.stopPropagation();
+        var a = btn.getAttribute('data-rec');
+        if (a === 'hard-reload') hardReload();
+        else if (a === 'clear-cache') clearCacheReload();
+        else if (a === 'hard-reset') hardReset();
+      };
+    });
   }
 
   function clearAppCaches() {
@@ -680,28 +743,37 @@
   function init() {
     if (init._done) return;
     init._done = true;
+    bindRecovery();
     var btn = $('btn-home');
     if (btn) {
       btn.onclick = function (e) {
         if (e) e.preventDefault();
-        toggle();
+        e.stopPropagation();
+        openRecovery();
       };
-      btn.title = 'ASTRANOV · hard reload first · science hub · device roles';
+      btn.title = 'ASTRANOV · hard reload · clear cache · reset';
       if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     var logo = $('astranov-logo');
     if (logo)
       logo.onclick = function () {
-        toggle();
+        openRecovery();
       };
+    // Initial hub paint for when user expands top scroll
+    try {
+      paintHub();
+    } catch (_) {}
   }
 
   global.SNHome = {
     init: init,
-    open: openMenu,
+    open: openRecovery,
     close: close,
-    toggle: toggle,
+    toggle: openRecovery,
     paint: paint,
+    paintHub: paintHub,
+    openRecovery: openRecovery,
+    closeRecovery: closeRecovery,
     hardReload: hardReload,
     clearCacheReload: clearCacheReload,
     hardReset: hardReset,
