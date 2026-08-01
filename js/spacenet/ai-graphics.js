@@ -38,7 +38,7 @@
   var MODES = {
     supreme: {
       id: 'supreme',
-      label: 'Supreme AI · HELPER ready',
+      label: 'Supreme AI · Imagine refine · HELPER',
       dpr: 1.25,
       hudHz: 30,
       fieldDetail: 1,
@@ -198,8 +198,15 @@
       drawRouteArc(ctx, w, h, R, pal);
     } else if (/fx|burst|pulse|energy|spark/.test(p)) {
       drawBurst(ctx, w, h, R, pal);
+    } else if (/helper|iron|robot|suit|hero|wing/.test(p)) {
+      drawHeroSuit(ctx, w, h, R, pal);
     } else {
       drawSoftNoise(ctx, w, h, R, pal, detail);
+    }
+
+    // Second pass — "imagine" refine: electric bloom + edge energy (Grok-Imagine-like polish)
+    if (detail >= 0.5) {
+      refineImaginePass(ctx, w, h, R, pal, detail);
     }
 
     // Film grain / micro detail (sells "rendered" without triangles)
@@ -236,13 +243,104 @@
     return out;
   }
 
+
+  /** Winged silvery-blue hero silhouette — generative, not 3D mesh */
+  function drawHeroSuit(ctx, w, h, R, pal) {
+    var cx = w * 0.5;
+    var cy = h * 0.48;
+    // thruster wings
+    ctx.save();
+    ctx.translate(cx, cy);
+    var wing;
+    for (wing = -1; wing <= 1; wing += 2) {
+      ctx.beginPath();
+      ctx.moveTo(wing * w * 0.06, -h * 0.02);
+      ctx.quadraticCurveTo(wing * w * 0.42, -h * 0.28, wing * w * 0.38, h * 0.08);
+      ctx.quadraticCurveTo(wing * w * 0.18, h * 0.02, wing * w * 0.06, h * 0.06);
+      ctx.closePath();
+      var wg = ctx.createLinearGradient(0, -h * 0.2, wing * w * 0.35, h * 0.1);
+      wg.addColorStop(0, withAlpha(pal[4] || '#1a66ff', 0.85));
+      wg.addColorStop(0.5, withAlpha(pal[3] || '#0055ff', 0.55));
+      wg.addColorStop(1, withAlpha(pal[1] || '#001a4d', 0.1));
+      ctx.fillStyle = wg;
+      ctx.fill();
+      ctx.strokeStyle = withAlpha('#0066ff', 0.7);
+      ctx.lineWidth = Math.max(1, w * 0.008);
+      ctx.stroke();
+    }
+    // body plates
+    ctx.beginPath();
+    ctx.ellipse(0, 0, w * 0.12, h * 0.2, 0, 0, Math.PI * 2);
+    var bg = ctx.createRadialGradient(0, -h * 0.05, 2, 0, 0, w * 0.16);
+    bg.addColorStop(0, '#c8d8f0');
+    bg.addColorStop(0.35, pal[3] || '#0055ff');
+    bg.addColorStop(1, pal[0] || '#000814');
+    ctx.fillStyle = bg;
+    ctx.fill();
+    // arc reactor
+    var ar = ctx.createRadialGradient(0, -h * 0.02, 1, 0, -h * 0.02, w * 0.05);
+    ar.addColorStop(0, '#e8f4ff');
+    ar.addColorStop(0.4, '#0066ff');
+    ar.addColorStop(1, 'rgba(0,40,160,0)');
+    ctx.fillStyle = ar;
+    ctx.beginPath();
+    ctx.arc(0, -h * 0.02, w * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    // helmet
+    ctx.beginPath();
+    ctx.ellipse(0, -h * 0.14, w * 0.08, h * 0.09, 0, 0, Math.PI * 2);
+    ctx.fillStyle = withAlpha(pal[2] || '#0033cc', 0.95);
+    ctx.fill();
+    ctx.restore();
+    // thruster trail
+    var tr = ctx.createLinearGradient(cx, cy + h * 0.15, cx, h);
+    tr.addColorStop(0, withAlpha('#0066ff', 0.55));
+    tr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = tr;
+    ctx.fillRect(cx - w * 0.04, cy + h * 0.12, w * 0.08, h * 0.4);
+  }
+
+  /**
+   * Imagine-style refine pass — bloom + electric filaments.
+   * Inspired by latent polish: no triangles, pure field synthesis.
+   */
+  function refineImaginePass(ctx, w, h, R, pal, detail) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    var filaments = Math.floor(4 + detail * 8);
+    var i;
+    for (i = 0; i < filaments; i++) {
+      ctx.beginPath();
+      var x0 = R() * w;
+      var y0 = R() * h;
+      ctx.moveTo(x0, y0);
+      var s;
+      for (s = 0; s < 5; s++) {
+        x0 += (R() - 0.5) * w * 0.2;
+        y0 += (R() - 0.5) * h * 0.2;
+        ctx.lineTo(x0, y0);
+      }
+      ctx.strokeStyle = withAlpha(pal[3] || '#0055ff', 0.12 + R() * 0.18);
+      ctx.lineWidth = 0.5 + R() * 1.5;
+      ctx.stroke();
+    }
+    // central electric bloom
+    var bloom = ctx.createRadialGradient(w * 0.5, h * 0.45, 2, w * 0.5, h * 0.45, Math.min(w, h) * 0.35);
+    bloom.addColorStop(0, withAlpha('#0066ff', 0.22));
+    bloom.addColorStop(0.5, withAlpha('#0033cc', 0.08));
+    bloom.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = bloom;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
   function paletteFor(p, R) {
-    // Deep sci-fi cyan default
-    var base = ['#041428', '#0b6fd4', '#4cc9ff', '#00e8a0', '#e8f6ff'];
+    // Deep electric blue default — no pale ice
+    var base = ['#000814', '#001a4d', '#0033cc', '#0055ff', '#1a66ff'];
     if (/fire|lava|alert|danger/.test(p)) base = ['#1a0505', '#ff3344', '#ff8844', '#ffcc33', '#fff0e0'];
     else if (/nature|park|green|forest/.test(p)) base = ['#041a10', '#0a8040', '#44ff99', '#a8ffd0', '#e8fff4'];
-    else if (/gold|money|s\b|wallet|vault/.test(p)) base = ['#1a1400', '#c9a227', '#ffd86b', '#fff3c4', '#ffffff'];
-    else if (/night|dark|void/.test(p)) base = ['#02040a', '#0a1a30', '#1a4a80', '#3d9eff', '#a8d4ff'];
+    else if (/gold|money|s\b|wallet|vault|coin/.test(p)) base = ['#0a0810', '#0033aa', '#0055ff', '#3377ff', '#c9a227'];
+    else if (/night|dark|void/.test(p)) base = ['#00040a', '#000d28', '#002080', '#0055ff', '#3377ff'];
     else if (/warm|sunset|love|date/.test(p)) base = ['#1a0810', '#ff4466', '#ff88aa', '#ffc8d8', '#ffffff'];
     // shuffle lightly
     if (R() > 0.5) {

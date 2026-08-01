@@ -1410,10 +1410,10 @@
       if (document.documentElement.classList.contains('theme-light') ||
           (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches &&
             !document.documentElement.classList.contains('theme-dark'))) {
-        return '#0a5ec4';
+        return '#0055ff';
       }
     } catch (_) {}
-    return '#1a8cff';
+    return '#0055ff';
   }
 
   /** One device graph under ASTRANOV — labeled rows · expands with top scroll */

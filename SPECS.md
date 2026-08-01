@@ -258,3 +258,16 @@ Build `20260731230000-go-live-delivery`.*
 | **Money path** | Delivery marketplace P0 — locate → shops → pay AC → vault 3% → driver/seeking → route → ETA. |
 
 Build `20260801110000-scroll-law-v4-fast`.
+
+## OWNER LOG · 2026-08-01 scroll v5 + name reload + AI Imagine
+
+| Law | Meaning |
+|-----|---------|
+| **Scroll bg** | Black · **33% transparent** (`rgba(0,0,0,0.67)`) so bright map cannot wash text |
+| **Color** | **Deep electric blue only** for letters/glows — no pale ice cyan |
+| **Collapsed gadgets** | Radar + money **same size**, integrated cells — not floating external cards |
+| **ASTRANOV name** | Instant **hard reload** (cache+SW clear) — **no popup / no menu** |
+| **AI Graphics** | Generative canvas · Imagine refine pass · hero suit for HELPER — not 3D mesh |
+| **Delivery P0** | `test ready` · `order me a pizza` · `live mode` for public |
+
+Build `20260801111500-scroll-v5-delivery`.

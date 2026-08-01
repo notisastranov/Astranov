@@ -393,8 +393,8 @@
   }
 
   function openMenu() {
-    // Legacy full menu disabled — science lives in top scroll (#sn-hub-host)
-    openRecovery();
+    // Name button = instant recover (clear cache + SW + reload). No popup.
+    hardReload();
   }
 
   function close() {
@@ -408,7 +408,7 @@
   }
 
   function toggle() {
-    openRecovery();
+    hardReload();
   }
 
   function openRecovery() {
@@ -749,15 +749,15 @@
       btn.onclick = function (e) {
         if (e) e.preventDefault();
         e.stopPropagation();
-        openRecovery();
+        hardReload();
       };
-      btn.title = 'ASTRANOV · hard reload · clear cache · reset';
+      btn.title = 'ASTRANOV · hard reload · clear cache';
       if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
     }
     var logo = $('astranov-logo');
     if (logo)
       logo.onclick = function () {
-        openRecovery();
+        hardReload();
       };
     // Initial hub paint for when user expands top scroll
     try {
@@ -767,9 +767,9 @@
 
   global.SNHome = {
     init: init,
-    open: openRecovery,
+    open: hardReload,
     close: close,
-    toggle: openRecovery,
+    toggle: hardReload,
     paint: paint,
     paintHub: paintHub,
     openRecovery: openRecovery,
