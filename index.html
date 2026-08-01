@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801175500-bridge-fixed" />
-<meta name="astranov-continuity" content="20260801175500-bridge-fixed" />
+<meta name="astranov-build" content="20260801180000-top-meta-no-clip" />
+<meta name="astranov-continuity" content="20260801180000-top-meta-no-clip" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -4110,6 +4110,191 @@
     max-height: calc(100dvh - 150px) !important;
   }
 
+
+  /* ═══ TOP META TEXT · never clip next to radar / money ═══ */
+  #sn-topchrome-panel.collapsed {
+    overflow: visible !important;
+    max-height: none !important;
+    min-height: 56px !important;
+    height: auto !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-body,
+  #sn-topchrome-panel.collapsed #stc-compact {
+    overflow: visible !important;
+  }
+  /* Left: radar + readable 3-line stack; right: money + power */
+  #sn-topchrome-panel.collapsed #stc-compact {
+    display: grid !important;
+    grid-template-columns: minmax(132px, 1.4fr) auto minmax(118px, 1.1fr) !important;
+    align-items: center !important;
+    gap: 4px 6px !important;
+    padding: 4px 8px 6px !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-col-radar {
+    max-width: none !important;
+    min-width: 128px !important;
+    overflow: visible !important;
+    z-index: 5 !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-radar-blend {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+  #sn-topchrome-panel.collapsed #field-radar {
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+  #sn-topchrome #field-radar-canvas {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  /* Time / date / city — full width of remaining column, no dark mask */
+  #sn-topchrome #field-nav-meta.stc-meta-side,
+  #sn-topchrome-panel.collapsed #field-nav-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    flex: 1 1 auto !important;
+    min-width: 72px !important;
+    max-width: none !important;
+    width: auto !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    mask: none !important;
+    -webkit-mask: none !important;
+    z-index: 6 !important;
+    pointer-events: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  #sn-topchrome #field-nav-meta .fnm-row,
+  #sn-topchrome-panel.collapsed #fnm-time,
+  #sn-topchrome-panel.collapsed #fnm-date,
+  #sn-topchrome-panel.collapsed #fnm-phys {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    font: 700 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: 0.01em !important;
+    color: #00e070 !important;
+    text-shadow: 0 0 6px rgba(0, 224, 112, 0.55) !important;
+    background: transparent !important;
+    filter: none !important;
+    -webkit-text-fill-color: #00e070 !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-time {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-date {
+    font-size: 9px !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-phys {
+    font-size: 9px !important;
+    max-width: 18vw !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  /* hide extra meta that steals space */
+  #sn-topchrome-panel.collapsed #fnm-speed,
+  #sn-topchrome-panel.collapsed #fnm-mode,
+  #sn-topchrome-panel.collapsed #fnm-virt {
+    display: none !important;
+  }
+  /* Money + power: balance fully visible, no clip under launch button */
+  #sn-topchrome-panel.collapsed .stc-col-money {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    max-width: none !important;
+    min-width: 110px !important;
+    overflow: visible !important;
+    z-index: 5 !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    overflow: visible !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s {
+    display: block !important;
+    overflow: visible !important;
+    white-space: nowrap !important;
+    font: 800 15px/1 var(--font-display), system-ui, sans-serif !important;
+    letter-spacing: 0.02em !important;
+    text-shadow: 0 0 8px rgba(0, 224, 112, 0.45) !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s.bal-pos,
+  #sn-topchrome-panel.collapsed .bal-pos #fbh-s { color: #00e070 !important; -webkit-text-fill-color: #00e070 !important; }
+  #sn-topchrome-panel.collapsed #fbh-s.bal-zero,
+  #sn-topchrome-panel.collapsed .bal-zero #fbh-s { color: #e0c000 !important; -webkit-text-fill-color: #e0c000 !important; }
+  #sn-topchrome-panel.collapsed #fbh-s.bal-neg,
+  #sn-topchrome-panel.collapsed .bal-neg #fbh-s { color: #ff4d5a !important; -webkit-text-fill-color: #ff4d5a !important; }
+  /* side stats off when collapsed — they were dark-shading / crowding the number */
+  #sn-topchrome-panel.collapsed #field-balance-hud .fbh-side,
+  #sn-topchrome-panel.collapsed #fbh-mine-rate,
+  #sn-topchrome-panel.collapsed #fbh-fees,
+  #sn-topchrome-panel.collapsed #fbh-econ-label,
+  #sn-topchrome-panel.collapsed #fbh-load-label {
+    display: none !important;
+  }
+  #sn-topchrome-panel.collapsed #sn-task-launch {
+    flex: 0 0 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+  /* Home stays clear in the middle — never paint dark over side text */
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    z-index: 4 !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home {
+    pointer-events: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  /* kill any leftover dark veil on compact gadgets */
+  #sn-topchrome-panel.collapsed .stc-col::before,
+  #sn-topchrome-panel.collapsed .stc-col::after,
+  #sn-topchrome-panel.collapsed #field-nav-meta::before,
+  #sn-topchrome-panel.collapsed #field-nav-meta::after,
+  #sn-topchrome-panel.collapsed #field-balance-hud::before,
+  #sn-topchrome-panel.collapsed #field-balance-hud::after {
+    display: none !important;
+    content: none !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4341,7 +4526,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801175500-bridge-fixed"></script>
+<script src="/js/spacenet/boot.js?v=20260801180000-top-meta-no-clip"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
