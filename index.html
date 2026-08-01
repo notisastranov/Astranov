@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801154000-overscroll-retract" />
-<meta name="astranov-continuity" content="20260801154000-overscroll-retract" />
+<meta name="astranov-build" content="20260801162000-scrolls-edge-locked" />
+<meta name="astranov-continuity" content="20260801162000-scrolls-edge-locked" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -3897,6 +3897,135 @@
     transform: none !important;
   }
 
+
+
+
+  /* ═══ SCROLL PAIR LAW · equal width · full-screen expand ═══ */
+  :root {
+    --scroll-gutter: 10px;
+    --scroll-width: min(700px, calc(100vw - (var(--scroll-gutter) * 2)));
+  }
+  #sn-topchrome {
+    padding-left: var(--scroll-gutter) !important;
+    padding-right: var(--scroll-gutter) !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-items: stretch !important;
+  }
+  #dock {
+    padding-left: var(--scroll-gutter) !important;
+    padding-right: var(--scroll-gutter) !important;
+  }
+  #sn-topchrome-panel,
+  #panel {
+    width: var(--scroll-width) !important;
+    max-width: var(--scroll-width) !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  /* Collapsed only: short chrome */
+  #sn-topchrome-panel.collapsed {
+    max-height: 58px !important;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+  /* Mid + expanded: allow full screen (JS sets exact height with !important) */
+  #sn-topchrome-panel.mid,
+  #sn-topchrome-panel.expanded {
+    max-height: calc(100dvh - 8px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #panel.mid,
+  #panel.expanded {
+    max-height: calc(100dvh - 8px) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #sn-topchrome-panel.mid #stc-body,
+  #sn-topchrome-panel.expanded #stc-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #sn-topchrome-panel.mid #stc-detail,
+  #sn-topchrome-panel.expanded #stc-detail {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    height: auto !important;
+  }
+  #panel.mid #cli-log,
+  #panel.expanded #cli-log {
+    flex: 1 1 auto !important;
+    min-height: 48px !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+  }
+
+
+  /* ═══ SCROLLS EDGE-LOCKED · never free-float ═══ */
+  #sn-topchrome {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+  #sn-topchrome-panel {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+  }
+  #dock {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+    justify-content: center !important;
+  }
+  #dock.free {
+    /* free mode disabled — keep bottom dock */
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    transform: none !important;
+    justify-content: center !important;
+    width: auto !important;
+    padding-left: var(--scroll-gutter, 10px) !important;
+    padding-right: var(--scroll-gutter, 10px) !important;
+  }
+  #panel {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4128,7 +4257,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801154000-overscroll-retract"></script>
+<script src="/js/spacenet/boot.js?v=20260801162000-scrolls-edge-locked"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

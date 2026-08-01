@@ -2024,6 +2024,23 @@
     try {
       document.body.classList.add('stc-on');
     } catch (_) {}
+    // Top scroll stays at top edge — clear any stray positioning
+    try {
+      var host = $('sn-topchrome');
+      if (host) {
+        host.style.top = '';
+        host.style.left = '';
+        host.style.right = '';
+        host.style.bottom = '';
+        host.style.transform = '';
+      }
+      panel.style.left = '';
+      panel.style.top = '';
+      panel.style.right = '';
+      panel.style.bottom = '';
+      panel.style.transform = '';
+      panel.style.position = '';
+    } catch (_) {}
 
     var KEY = 'sn:topchrome-size-v1';
     var startY = 0;
@@ -2035,10 +2052,11 @@
     function sizePx(mode) {
       var h = window.innerHeight || 700;
       var MIN = 54;
+      // Full-screen ceiling — user can drag all the way to the other edge
+      var FULL = Math.max(MIN + 40, h - 8);
       if (mode === 'collapsed') return 54;
-      // Full expand like bottom scroll
-      if (mode === 'expanded') return Math.max(MIN, Math.min(Math.round(h * 0.72), h - 100));
-      return Math.max(MIN, Math.min(Math.round(h * 0.42), h - 140));
+      if (mode === 'expanded') return FULL;
+      return Math.max(MIN, Math.round(h * 0.45));
     }
 
     function setMode(mode, animate, freeH) {
@@ -2051,12 +2069,13 @@
       if (!(px >= MIN)) px = MIN;
       // Collapsed: auto height so gadgets never clip; still floor min-height
       if (mode === 'collapsed') {
-        panel.style.maxHeight = '';
-        panel.style.height = '';
+        panel.style.removeProperty('max-height');
+        panel.style.removeProperty('height');
         panel.style.minHeight = MIN + 'px';
       } else {
-        panel.style.maxHeight = px + 'px';
-        panel.style.height = '';
+        // !important beats leftover CSS caps so expand can fill the screen
+        panel.style.setProperty('max-height', px + 'px', 'important');
+        panel.style.setProperty('height', px + 'px', 'important');
         panel.style.minHeight = MIN + 'px';
       }
       try {
@@ -2118,8 +2137,8 @@
       // Drag DOWN expands (opposite of CLI which expands upward)
       var MIN = sizePx('collapsed');
       var next = Math.max(MIN, Math.min(sizePx('expanded') + 40, startH + dy));
-      panel.style.maxHeight = next + 'px';
-      panel.style.height = next + 'px';
+      panel.style.setProperty('max-height', next + 'px', 'important');
+      panel.style.setProperty('height', next + 'px', 'important');
       panel.classList.remove('collapsed', 'mid', 'expanded');
       if (next <= MIN + 8) panel.classList.add('collapsed');
       else if (next > sizePx('expanded') - 24) panel.classList.add('expanded');

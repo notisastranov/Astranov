@@ -35,22 +35,23 @@
   /** Default expand target: 1/3 viewport (button/AI — no drag needed) */
   function defaultMaxCliPx() {
     var h = window.innerHeight || 700;
-    return Math.round(h / 3);
+    // Default expand lands at ~45vh; drag can go full screen
+    return Math.round(h * 0.45);
   }
 
-  /** User drag may go taller than default — absolute ceiling */
+  /** Absolute ceiling — other end of the screen */
   function dragMaxCliPx() {
     var h = window.innerHeight || 700;
-    return Math.round(h * 0.72);
+    return Math.max(120, h - 8);
   }
 
   function sizePx(mode) {
     var h = window.innerHeight || 700;
     var def = defaultMaxCliPx();
-    if (mode === 'collapsed') return Math.max(92, Math.min(120, Math.round(h * 0.15))); // denser bottom scroll
-    // Expand button → default 1/3 (drag can override higher)
-    if (mode === 'expanded') return def;
-    return Math.min(Math.round(h * 0.28), def);
+    if (mode === 'collapsed') return Math.max(92, Math.min(120, Math.round(h * 0.15)));
+    // expanded snap = full height available; mid = half
+    if (mode === 'expanded') return dragMaxCliPx();
+    return Math.min(Math.round(h * 0.4), def);
   }
 
   function currentMode(panel) {
@@ -68,8 +69,14 @@
     else panel.classList.add('mid');
     // Default sizes (1/3 max for expanded) — drag can leave a taller height via free style
     var px = sizePx(mode === 'expanded' ? 'expanded' : mode === 'collapsed' ? 'collapsed' : 'mid');
-    panel.style.maxHeight = px + 'px';
-    panel.style.height = '';
+    if (mode === 'collapsed') {
+      panel.style.removeProperty('max-height');
+      panel.style.removeProperty('height');
+      panel.style.maxHeight = px + 'px';
+    } else {
+      panel.style.setProperty('max-height', px + 'px', 'important');
+      panel.style.setProperty('height', px + 'px', 'important');
+    }
     if (animate !== false) panel.classList.add('sn-size-anim');
     try {
       localStorage.setItem(SIZE_KEY, mode);
@@ -93,10 +100,7 @@
     var dock = $('dock');
     var panel = $('panel');
     if (!dock || !panel) return;
-    try {
-      localStorage.removeItem(POS_KEY);
-    } catch (_) {}
-    dock.classList.remove('free');
+    pinDockBottom();
     dock.style.left = '';
     dock.style.top = '';
     dock.style.right = '';
@@ -115,7 +119,34 @@
     } catch (_) {}
   }
 
+  /** Scrolls stay edge-locked — never free-float on the map */
+  function pinDockBottom() {
+    var dock = $('dock');
+    var panel = $('panel');
+    if (!dock) return;
+    try {
+      localStorage.removeItem(POS_KEY);
+    } catch (_) {}
+    dock.classList.remove('free');
+    dock.style.left = '';
+    dock.style.top = '';
+    dock.style.right = '';
+    dock.style.bottom = '';
+    dock.style.transform = '';
+    dock.style.width = '';
+    dock.style.padding = '';
+    if (panel) {
+      panel.style.margin = '';
+      panel.style.maxWidth = '';
+      panel.style.width = '';
+    }
+  }
+
   function applyPos(dock, panel, left, top) {
+    // DISABLED — bottom scroll stays docked at screen bottom
+    pinDockBottom();
+    return;
+
     var padTop = 56;
     var padSide = 8;
     var pw = panel.offsetWidth || Math.min(540, window.innerWidth - 16);
@@ -263,12 +294,7 @@
       startedOnInteractive = false;
 
     try {
-      var raw = localStorage.getItem(POS_KEY);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (typeof p.left === 'number' && typeof p.top === 'number')
-          applyPos(dock, panel, p.left, p.top);
-      }
+      pinDockBottom();
       var sz = localStorage.getItem(SIZE_KEY);
       if (sz === 'collapsed' || sz === 'expanded' || sz === 'mid') setSize(sz, false);
       else setSize('collapsed', false);
@@ -319,19 +345,18 @@
       var thresh = startedOnInteractive ? 14 : 6;
       if (!moved && dist < thresh) return;
       moved = true;
-      if (mode === 'none') {
-        mode = Math.abs(dy) > Math.abs(dx) * 1.05 ? 'size' : 'move';
-      }
-      if (mode === 'move') {
+      // Vertical only — expand/retract. Never drag scroll off the bottom edge.
+      mode = 'size';
+      if (false) {
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
         // Drag overrides default 1/3 — up to 72vh absolute
         var next = Math.max(92, Math.min(dragMaxCliPx(), startH - dy)); // bottom scroll floor
-        panel.style.maxHeight = next + 'px';
-        panel.style.height = next + 'px';
+        panel.style.setProperty('max-height', next + 'px', 'important');
+        panel.style.setProperty('height', next + 'px', 'important');
         panel.classList.remove('expanded', 'collapsed', 'mid');
         if (next < sizePx('collapsed') + 16) panel.classList.add('collapsed');
-        else if (next > defaultMaxCliPx() - 8) panel.classList.add('expanded');
+        else if (next > dragMaxCliPx() * 0.82) panel.classList.add('expanded');
         else panel.classList.add('mid');
       }
       if (e.cancelable) e.preventDefault();
@@ -352,15 +377,7 @@
         return;
       }
       if (mode === 'move') {
-        try {
-          localStorage.setItem(
-            POS_KEY,
-            JSON.stringify({
-              left: parseFloat(dock.style.left) || 0,
-              top: parseFloat(dock.style.top) || 0,
-            })
-          );
-        } catch (_) {}
+        pinDockBottom();
       } else if (mode === 'size') {
         // Keep user-dragged height — do NOT snap back to 1/3 if they overrode
         var h = panel.getBoundingClientRect().height || startH;
@@ -373,8 +390,9 @@
         panel.classList.add(pick);
         // Preserve free height when user dragged past default max
         if (h > def + 4) {
-          panel.style.maxHeight = Math.min(dragMaxCliPx(), Math.round(h)) + 'px';
-          panel.style.height = panel.style.maxHeight;
+          var fh = Math.min(dragMaxCliPx(), Math.round(h));
+          panel.style.setProperty('max-height', fh + 'px', 'important');
+          panel.style.setProperty('height', fh + 'px', 'important');
         } else {
           setSize(pick, true);
         }
@@ -417,6 +435,7 @@
       $('btn-expand').addEventListener('click', function () {
         expandPanel();
       });
+    pinDockBottom();
     bindCliDrag();
     bindCliOverscrollRetract();
     setTimeout(showCoach, 700);
@@ -432,6 +451,7 @@
     showCoach: showCoach,
     expandPanel: expandPanel,
     bindCliDrag: bindCliDrag,
+    pinDockBottom: pinDockBottom,
     bindCliOverscrollRetract: bindCliOverscrollRetract,
     setSize: setSize,
     resetChrome: resetChrome,
