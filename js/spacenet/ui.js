@@ -250,7 +250,7 @@
     panel._snOverscrollBound = true;
     var accum = 0;
     var lastTY = null;
-    var THRESH = 120;
+    var THRESH = 160; // need clear overscroll intent to retract
     function expanded() {
       return !panel.classList.contains('collapsed');
     }
@@ -373,28 +373,30 @@
         dragging = false;
         return;
       }
-      // ONLY resize from the top grip / ribbon — not from log/map bleed / full panel.
-      // Whole-panel drag was collapsing the CLI when using the globe.
+      // Resize from grip · ribbon · top strip · or log edge (one finger minimize)
       var tgt = e.target;
+      // Never start drag from the input form / buttons
+      if (tgt && tgt.closest('#cli-form, #cli-in, #btn-send, #btn-handsfree, button, a, input')) {
+        dragging = false;
+        return;
+      }
+      var prect = panel.getBoundingClientRect();
       var onGrip =
         tgt &&
         (tgt.closest('#cli-drag') ||
           tgt.closest('#sn-cli-grip') ||
           tgt.closest('#sn-task-ribbon') ||
           tgt.closest('.sn-panel-grip') ||
-          tgt.id === 'panel');
-      // Allow drag if started in top 28px of the panel (grip strip)
-      var prect = panel.getBoundingClientRect();
-      var inTopStrip = t.clientY >= prect.top && t.clientY <= prect.top + 28;
-      if (!onGrip && !inTopStrip) {
+          tgt.id === 'cli-drag');
+      var inTopStrip = t.clientY >= prect.top && t.clientY <= prect.top + 52;
+      var onLog = tgt && tgt.closest && tgt.closest('#cli-log');
+      // Log: allow start — onMove decides scroll vs resize
+      if (!onGrip && !inTopStrip && !onLog && tgt.id !== 'panel') {
         dragging = false;
         return;
       }
-      // Never start drag from the input form
-      if (tgt && tgt.closest('#cli-form, #cli-in, #cli-log')) {
-        dragging = false;
-        return;
-      }
+      // stash log mode for move
+      panel._snDragFromLog = !!onLog && !onGrip && !inTopStrip;
       var rect = dock.getBoundingClientRect();
       if (!dock.classList.contains('free')) {
         origL = rect.left;
@@ -427,13 +429,38 @@
       var thresh = startedOnInteractive ? 14 : 6;
       if (!moved && dist < thresh) return;
       moved = true;
-      // Vertical only — expand/retract. Never drag scroll off the bottom edge.
+      // If started on log and log can scroll that way, prefer content scroll (don't resize yet)
+      if (panel._snDragFromLog) {
+        var logEl = $('cli-log');
+        if (logEl) {
+          var maxS = Math.max(0, logEl.scrollHeight - logEl.clientHeight);
+          var canUp = logEl.scrollTop > 1; // finger down → content up needs scrollTop
+          var canDown = logEl.scrollTop < maxS - 1;
+          // dy > 0 finger down → expand panel (reduce height? bottom: startH - dy)
+          // Finger up (dy < 0) → expand CLI; finger down (dy > 0) → minimize
+          if (maxS > 8) {
+            if (dy < 0 && canDown) {
+              // scrolling content down — don't steal
+              logEl.scrollTop = Math.min(maxS, logEl.scrollTop - dy);
+              if (e.cancelable) e.preventDefault();
+              return;
+            }
+            if (dy > 0 && canUp) {
+              logEl.scrollTop = Math.max(0, logEl.scrollTop - dy);
+              if (e.cancelable) e.preventDefault();
+              return;
+            }
+            // at edge → fall through to resize
+          }
+        }
+      }
+      // Vertical only — expand/retract. Never drag dock off the bottom edge.
       mode = 'size';
       if (false) {
         applyPos(dock, panel, origL + dx, origT + dy);
       } else {
-        // Drag overrides default 1/3 — up to 72vh absolute
-        var next = Math.max(92, Math.min(dragMaxCliPx(), startH - dy)); // bottom scroll floor
+        // Drag free height · floor collapsed · ceiling keep gap to top scroll
+        var next = Math.max(92, Math.min(dragMaxCliPx(), startH - dy));
         panel.style.setProperty('max-height', next + 'px', 'important');
         panel.style.setProperty('height', next + 'px', 'important');
         panel.classList.remove('expanded', 'collapsed', 'mid');
@@ -553,6 +580,7 @@
     init: init,
     showCoach: showCoach,
     expandPanel: expandPanel,
+    setCliSize: setSize,
     bindCliDrag: bindCliDrag,
     pinDockBottom: pinDockBottom,
     bindCliOverscrollRetract: bindCliOverscrollRetract,

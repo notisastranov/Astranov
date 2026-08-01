@@ -409,3 +409,14 @@ Test: `mission locate and order pizza` · AI: first delivery · order me a pizza
 | **Progress** | 192/333 · UI frozen |
 
 Google photos/ratings need `SN_CONFIG.layers.googleMapsKey`. OSM always free.
+
+## OWNER LOG · 2026-08-01 CLI 1/3 law + one-word pizza + door ETA
+
+| Item | Law |
+|------|-----|
+| **CLI auto-expand** | Never expand when height ≥ 1/3 viewport; never force `.expanded` on turn |
+| **CLI drag** | One finger: grip/ribbon/top strip/log-edge → resize; log scrolls when content allows |
+| **One-word food** | `pizza` (etc.) = full locate→best open rated→order prefs→driver→pay→eat ETA |
+| **ETA monitor** | Interval updates · 5 min heads-up · **3 min door peel** beep+notify |
+| **Reply** | "You're eating at HH:MM · … · ping at 5m and door at 3m" |
+

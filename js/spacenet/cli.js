@@ -180,11 +180,25 @@
     turnOpen++;
     setLive(true);
     setActivity('working');
+    // Never auto-expand CLI when already ≥ 1/3 of viewport (owner law 2026-08-01)
+    // Never force .expanded — that blocked one-finger minimize mid-task.
     try {
       const panel = $('panel');
-      if (panel && panel.classList.contains('collapsed')) {
-        panel.classList.remove('collapsed', 'mid');
-        panel.classList.add('expanded');
+      if (!panel) return;
+      const h = panel.getBoundingClientRect().height || 0;
+      const third = Math.floor((window.innerHeight || 700) / 3);
+      if (h >= third - 2) return; // already tall enough — leave user size alone
+      // Collapsed only: ensure log line + input visible, cap at mid ≤ 1/3
+      if (panel.classList.contains('collapsed') && h < 100) {
+        if (global.SNUi && typeof SNUi.setCliSize === 'function') {
+          SNUi.setCliSize('mid', false);
+        } else {
+          panel.classList.remove('collapsed', 'expanded');
+          panel.classList.add('mid');
+          const cap = Math.min(third, Math.max(120, Math.round((window.innerHeight || 700) * 0.28)));
+          panel.style.setProperty('max-height', cap + 'px', 'important');
+          panel.style.setProperty('height', cap + 'px', 'important');
+        }
       }
     } catch (_) {}
   }

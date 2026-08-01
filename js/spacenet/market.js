@@ -247,30 +247,130 @@
     };
   }
 
-  function scheduleArrivalNotify(eta, vendorName) {
+  function beepDoor() {
     try {
-      var mins = Math.max(1, (eta && eta.totalMin) || 20);
-      var warnAt = Math.max(30, (mins - 5) * 60 * 1000);
-      if (global._snArrivalNotify) clearTimeout(global._snArrivalNotify);
-      global._snArrivalNotify = setTimeout(function () {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var o = ctx.createOscillator();
+      var g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 880;
+      g.gain.value = 0.04;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      setTimeout(function () {
         try {
-          var msg =
-            'Driver ~5 min out · ' +
-            (vendorName || 'order') +
-            ' · be ready at drop pin';
-          if (global.SNCli && SNCli.log) SNCli.log(msg, 'ok');
-          if (global.SNCli && SNCli.preview) SNCli.preview('Driver ~5 min');
-          if (global.SNField && SNField.setNotice) SNField.setNotice('Driver ~5 min');
-          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            new Notification('Astranov', { body: msg });
-          } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
-            Notification.requestPermission().then(function (p) {
-              if (p === 'granted') new Notification('Astranov', { body: msg });
-            });
-          }
+          o.stop();
+          ctx.close();
         } catch (_) {}
-      }, warnAt);
+      }, 180);
     } catch (_) {}
+  }
+
+  function notifyLine(msg, short) {
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log(msg, 'ok');
+      if (global.SNCli && SNCli.preview) SNCli.preview(short || msg.slice(0, 28));
+      if (global.SNField && SNField.setNotice) SNField.setNotice(short || msg.slice(0, 40));
+      if (global.SNAi && SNAi.showOnGlobe) SNAi.showOnGlobe(String(short || msg).slice(0, 72));
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Astranov', { body: msg });
+      } else if (typeof Notification !== 'undefined' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * Live ETA monitor: re-check remaining minutes, notify on changes,
+   * 5-min heads-up + 3-min door peel alert.
+   */
+  function scheduleArrivalNotify(eta, vendorName, meta) {
+    meta = meta || {};
+    try {
+      if (global._snArrivalTimer) clearInterval(global._snArrivalTimer);
+      if (global._snArrivalNotify) clearTimeout(global._snArrivalNotify);
+      if (global._snDoorNotify) clearTimeout(global._snDoorNotify);
+    } catch (_) {}
+    var totalMin = Math.max(1, (eta && eta.totalMin) || 20);
+    var start = Date.now();
+    var endAt = start + totalMin * 60 * 1000;
+    var lastBucket = totalMin;
+    var fired5 = false;
+    var fired3 = false;
+    var firedEat = false;
+    global._snEtaWatch = {
+      vendor: vendorName || 'order',
+      endAt: endAt,
+      totalMin: totalMin,
+      taskId: meta.taskId || null,
+      eatClock: (eta && eta.eatClock) || '',
+    };
+
+    function remainMin() {
+      return Math.max(0, Math.ceil((endAt - Date.now()) / 60000));
+    }
+
+    function tick() {
+      var left = remainMin();
+      try {
+        if (global.SNField && SNField.setNotice && left > 0) {
+          SNField.setNotice('ETA ' + left + 'm · door@3');
+        }
+      } catch (_) {}
+      // announce significant ETA changes (±2 min bucket)
+      if (Math.abs(left - lastBucket) >= 2 && left > 0) {
+        lastBucket = left;
+        notifyLine(
+          'ETA update · ~' + left + ' min · ' + (vendorName || 'order'),
+          'ETA ~' + left + 'm'
+        );
+      }
+      if (!fired5 && left <= 5 && left > 3) {
+        fired5 = true;
+        notifyLine(
+          'Driver ~5 min out · ' + (vendorName || 'order') + ' · almost there',
+          'Driver ~5 min'
+        );
+      }
+      if (!fired3 && left <= 3 && left > 0) {
+        fired3 = true;
+        beepDoor();
+        notifyLine(
+          '🚪 Door · driver ~' + left + ' min away · peel the door',
+          'Door · ' + left + 'm'
+        );
+      }
+      if (!firedEat && left <= 0) {
+        firedEat = true;
+        notifyLine('You should be eating now · ' + (vendorName || 'order'), 'Eating now');
+        try {
+          clearInterval(global._snArrivalTimer);
+        } catch (_) {}
+      }
+    }
+
+    // immediate 5/3 schedule as backup timeouts
+    var ms5 = Math.max(500, (totalMin - 5) * 60 * 1000);
+    var ms3 = Math.max(500, (totalMin - 3) * 60 * 1000);
+    global._snArrivalNotify = setTimeout(function () {
+      if (!fired5) {
+        fired5 = true;
+        notifyLine('Driver ~5 min out · be ready', 'Driver ~5 min');
+      }
+    }, ms5);
+    global._snDoorNotify = setTimeout(function () {
+      if (!fired3) {
+        fired3 = true;
+        beepDoor();
+        notifyLine('🚪 Door · driver ~3 min · peel the door', 'Door · 3m');
+      }
+    }, ms3);
+
+    global._snArrivalTimer = setInterval(tick, 20000);
+    tick();
   }
 
   function track(n, p) {
@@ -840,7 +940,7 @@
     }
     if (!food) return null;
 
-    // Full lazy order only when user clearly asks to order / judge the tray
+    // Full lazy order: order verbs OR single food word (owner: "pizza" is enough)
     var auto =
       /\border(\s+me)?(\s+a)?\b/i.test(low) ||
       /\b(bring|get\s+me|buy\s+me|παράγγειλ|παράγγειλε)\b/i.test(low) ||
@@ -848,8 +948,16 @@
       /\b(you\s+judge|judge\s+the|you\s+pick|you\s+choose|whatever\s+else|what\s+time\s+i\s+eat)\b/i.test(
         low
       );
+    // One token / short food phrase = full marketplace loop (locate→best open→pay→driver→ETA)
+    var tokens = low.replace(/[^a-zα-ωά-ώ0-9\s]/gi, ' ').trim().split(/\s+/).filter(Boolean);
+    var singleFood =
+      !!food &&
+      tokens.length <= 3 &&
+      !/\b(where|what|who|how|map|go|fly|help|shops?|find\s+only|browse|list)\b/i.test(low);
+    if (singleFood) auto = true;
     var lazyJudge =
       auto ||
+      singleFood ||
       /\b(you\s+judge|judge\s+type|judge\s+the|what\s+time\s+i\s+eat)\b/i.test(low);
 
     return {
@@ -858,8 +966,8 @@
       raw: line,
       autoOrder: !!auto,
       lazyJudge: !!lazyJudge,
-      // Weak: just "pizza" / "coffee" → browse, don't auto-pay loop
       browseOnly: !auto && !lazyJudge,
+      oneWord: !!singleFood && tokens.length <= 2,
     };
   }
 
@@ -869,6 +977,9 @@
    */
   function judgeMeal(food, rawLine) {
     var prefs = loadPrefs();
+    // remembered likes
+    if (!prefs.size && prefs.lastOrder && prefs.lastOrder.size) prefs.size = prefs.lastOrder.size;
+    if (!prefs.drinks && prefs.drink) prefs.drinks = prefs.drink;
     var low = String(rawLine || '').toLowerCase();
     var f = String(food || 'food').toLowerCase();
     var company = (prefs.company && prefs.company.people) || 3;
@@ -1674,7 +1785,11 @@
               item: menuItem && menuItem.name,
               t: Date.now(),
               food: food,
+              size: judged && judged.size,
+              drinks: judged && judged.drinks,
             };
+            if (judged && judged.size) prefM.size = judged.size;
+            if (judged && judged.drinks) prefM.drinks = judged.drinks;
             if (!prefM.favorites) prefM.favorites = [];
             if (best.id && prefM.favorites.indexOf(best.id) < 0) {
               prefM.favorites.unshift(best.id);
@@ -1914,7 +2029,10 @@
         }
       } catch (_) {}
       log(eta.eatLine, 'ok');
-      scheduleArrivalNotify(eta, best.shopName || best.name);
+      scheduleArrivalNotify(eta, best.shopName || best.name, {
+        taskId: orderResult && orderResult.task && orderResult.task.id,
+        driver: driver && (driver.name || driver.id),
+      });
       log('Notify armed · alert ~5 min before arrival', 'dim');
       steps.push('eta');
     } else {
@@ -1988,15 +2106,22 @@
     }
 
     var reply =
-      (completeRes && completeRes.ok
-        ? 'Delivered · '
-        : orderResult && orderResult.ok
-          ? 'Ordered · '
-          : 'Options · ') +
-      judged.itemName +
-      ' · ' +
-      (best.shopName || best.name) +
-      (orderResult && orderResult.ok ? ' · ' + eta.eatLine : ' · pick 1–3 above');
+      orderResult && orderResult.ok
+        ? "You're eating at " +
+          (eta.eatClock || '~soon') +
+          ' · ' +
+          judged.itemName +
+          ' · ' +
+          (best.shopName || best.name) +
+          (driver ? ' · driver on the way' : '') +
+          ' · I will ping at 5m and door at 3m'
+        : (completeRes && completeRes.ok
+            ? 'Delivered · '
+            : 'Options · ') +
+          judged.itemName +
+          ' · ' +
+          (best.shopName || best.name) +
+          (orderResult && orderResult.ok ? ' · ' + eta.eatLine : ' · pick 1–3 above');
 
     try {
       if (global.SNAi && SNAi.setSuggestList) {

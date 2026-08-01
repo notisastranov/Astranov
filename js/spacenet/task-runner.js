@@ -192,7 +192,11 @@
     var wantsShops =
       /\b(shops|fill shops|google shops|vendors|stores|near me)\b/i.test(low) ||
       /\b(find|search)\b.*\b(shop|restaurant|pizza|food)\b/i.test(low);
-    var wantsOrder =
+    // one word food
+    var oneFood = /^(pizza|sushi|burger|coffee|souvlaki|pitogyra|food|πιτσα|καφε)$/i.test(
+      low.trim()
+    );
+    var wantsOrder = oneFood ||
       /\b(order|bring|get me|buy me|παράγγειλ|deliver me a|i want|i need|hungry)\b/i.test(low) ||
       /\b(pizza|pitogyra|sushi|burger|souvlaki|coffee|food)\b/i.test(low);
     var wantsDrive = /\b(drive on|go driver|courier on|i'?m a driver)\b/i.test(low);
