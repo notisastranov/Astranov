@@ -38,7 +38,7 @@
   var MODES = {
     supreme: {
       id: 'supreme',
-      label: 'Supreme AI',
+      label: 'Supreme AI · HELPER ready',
       dpr: 1.25,
       hudHz: 30,
       fieldDetail: 1,
@@ -672,6 +672,8 @@
   }
 
   function report() {
+    var helperOn = !!(global.SNHelper && SNHelper.visible);
+
     var m = modeProfile();
     return {
       ready: GFX.ready,

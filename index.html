@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260731241000-top-sides-full" />
-<meta name="astranov-continuity" content="20260731241000-top-sides-full" />
+<meta name="astranov-build" content="20260801103000-gaming-hud-delivery" />
+<meta name="astranov-continuity" content="20260801103000-gaming-hud-delivery" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1965,6 +1965,235 @@
     max-width: none !important;
   }
 
+
+  /* ═══════════════════════════════════════════════════════════════
+     ASTRANOV GAMING HUD v2 — high-res · dense · no wasted space
+     Top scroll: big name · thin chrome · sharp glass
+     Bottom scroll: compact ribbon · glowing input always on
+     ═══════════════════════════════════════════════════════════════ */
+  :root {
+    --hud-line: rgba(40, 140, 255, 0.45);
+    --hud-glow: rgba(30, 120, 255, 0.35);
+    --hud-text: #d8ecff;
+    --top-scroll-min: 64px;
+    --bottom-scroll-min: 108px;
+    --zone-top: 68px;
+  }
+
+  /* TOP SCROLL — thin bar, sharp, high density */
+  #sn-topchrome {
+    padding: calc(4px + env(safe-area-inset-top)) 8px 0 !important;
+  }
+  #sn-topchrome-panel {
+    border-radius: 12px !important;
+    border-width: 1px !important;
+  }
+  #sn-topchrome-panel.collapsed {
+    max-height: 70px !important;
+    min-height: 62px !important;
+  }
+  #sn-topchrome-panel.mid {
+    max-height: min(168px, 24vh) !important;
+  }
+  #sn-topchrome-panel.expanded {
+    max-height: min(240px, 34vh) !important;
+  }
+  #stc-compact {
+    padding: 3px 8px 2px !important;
+    gap: 4px 6px !important;
+    min-height: 0 !important;
+    align-items: stretch !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-compact {
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    min-height: 54px !important;
+    gap: 4px 6px !important;
+  }
+  /* NAME stays BIG */
+  #sn-topchrome #btn-home {
+    font-size: 15px !important;
+    letter-spacing: 0.26em !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+    color: #3d9eff !important;
+    text-shadow:
+      0 0 6px rgba(40, 130, 255, 0.95),
+      0 0 16px rgba(20, 100, 255, 0.75),
+      0 0 32px rgba(10, 70, 220, 0.5) !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home {
+    font-size: 15px !important;
+    letter-spacing: 0.24em !important;
+  }
+  /* Center: name big, graph slim */
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    max-width: min(38vw, 160px) !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-perf-wrap {
+    height: 32px !important;
+    min-height: 32px !important;
+    max-height: 32px !important;
+    border-radius: 6px !important;
+    padding: 1px !important;
+  }
+  #sn-topchrome-panel.mid #stc-perf-wrap {
+    height: 72px !important;
+    min-height: 72px !important;
+  }
+  #sn-topchrome-panel.expanded #stc-perf-wrap {
+    height: 100px !important;
+    min-height: 100px !important;
+  }
+  /* Side gadgets — dense but readable full column height */
+  #sn-topchrome-panel.collapsed #field-radar {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud {
+    min-width: 88px !important;
+    min-height: 52px !important;
+    padding: 5px 8px !important;
+    border-radius: 10px !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-s {
+    font-size: 13px !important;
+  }
+  #sn-topchrome-panel.collapsed #fbh-mine-rate {
+    font-size: 8px !important;
+  }
+  #sn-topchrome-drag {
+    padding: 1px 0 3px !important;
+  }
+  #sn-topchrome-drag .stc-scroll-label {
+    font-size: 7px !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  /* BOTTOM SCROLL — compact gaming CLI */
+  #dock {
+    padding: 0 8px calc(6px + env(safe-area-inset-bottom)) !important;
+  }
+  #panel {
+    border-radius: 14px !important;
+    max-height: 42vh !important;
+  }
+  #panel.collapsed {
+    max-height: min(148px, 22vh) !important;
+    min-height: var(--bottom-scroll-min) !important;
+  }
+  #cli-drag {
+    padding: 6px 12px 4px !important;
+    gap: 4px !important;
+  }
+  #cli-drag .cli-scroll-label {
+    font-size: 7px !important;
+    letter-spacing: 0.14em !important;
+    margin-top: 0 !important;
+  }
+  .cli-titlebar .cli-brand {
+    font-size: 10px !important;
+    letter-spacing: 0.16em !important;
+  }
+  #cli-preview {
+    font-size: 12px !important;
+  }
+  #cli-activity {
+    font-size: 9px !important;
+  }
+  /* Ribbon buttons — slightly smaller, denser */
+  #sn-ribbon {
+    gap: 3px !important;
+    padding: 4px 6px 5px !important;
+    min-height: 0 !important;
+  }
+  .sn-rib-btn {
+    min-height: 48px !important;
+    min-width: 44px !important;
+    padding: 4px 2px !important;
+    border-radius: 10px !important;
+    gap: 2px !important;
+  }
+  .sn-rib-icon {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .sn-rib-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .sn-rib-txt,
+  .sn-rib-label {
+    font-size: 9px !important;
+    letter-spacing: 0.04em !important;
+    line-height: 1.1 !important;
+  }
+  @media (max-width: 520px) {
+    .sn-rib-btn {
+      min-height: 44px !important;
+      min-width: 40px !important;
+      padding: 3px 1px !important;
+    }
+    .sn-rib-icon svg { width: 16px !important; height: 16px !important; }
+    .sn-rib-txt { font-size: 8px !important; }
+    #sn-topchrome-panel.collapsed #btn-home {
+      font-size: 13px !important;
+      letter-spacing: 0.18em !important;
+    }
+  }
+  /* Input — compact glow, always visible */
+  #cli-form {
+    margin: 0 8px 8px !important;
+    padding: 7px 12px !important;
+    min-height: 40px !important;
+    border-radius: 10px !important;
+  }
+  #cli-in {
+    font-size: 14px !important;
+    min-height: 22px !important;
+  }
+  .cli-prompt-prefix {
+    font-size: 14px !important;
+  }
+  #cli-log {
+    padding: 6px 12px 8px !important;
+    font-size: 12px !important;
+    min-height: 40px !important;
+  }
+  .cli-line .cli-body {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Sharp glass both scrolls — gaming HUD edge */
+  #sn-topchrome-panel,
+  #panel {
+    box-shadow:
+      0 0 0 1px rgba(60, 150, 255, 0.25),
+      0 4px 24px rgba(0, 0, 0, 0.28),
+      0 0 28px rgba(30, 100, 220, 0.18),
+      inset 0 1px 0 rgba(180, 220, 255, 0.12) !important;
+  }
+  html.theme-light #sn-topchrome-panel,
+  html.theme-light #panel {
+    box-shadow:
+      0 0 0 1px rgba(30, 100, 200, 0.22),
+      0 4px 20px rgba(20, 50, 100, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Helper layer above map, below scrolls */
+  #sn-helper-canvas {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 40 !important;
+    image-rendering: auto;
+  }
+
 </style>
 </head>
 <body>
@@ -2183,7 +2412,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260731241000-top-sides-full"></script>
+<script src="/js/spacenet/boot.js?v=20260801103000-gaming-hud-delivery"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

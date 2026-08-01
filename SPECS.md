@@ -240,3 +240,5 @@ js/spacenet/auth.js          → Google GIS preferred
 - cancel / cancel order refunds · test ready enables TEST MODE · live mode for public
 - CLI: go live · live mode · test mode · cancel order
 Build `20260731230000-go-live-delivery`.*
+
+*Agent note 2026-08-01: **Gaming HUD v2** dense scrolls · big ASTRANOV name · smaller CLI ribbon. **SNAIGraphics** generative engine + **SNHelper** winged Iron-Man flyer active (autoWake on orders/find). Delivery: pay→vault→assign/seeking→route→ETA. Build `20260801103000-gaming-hud-delivery`.*

@@ -1436,9 +1436,9 @@
     try {
       var panel = $('sn-topchrome-panel');
       if (panel) {
-        if (panel.classList.contains('expanded')) cssH = Math.max(cssH, 118);
-        else if (panel.classList.contains('mid')) cssH = Math.max(cssH, 82);
-        else cssH = Math.max(cssH, 46);
+        if (panel.classList.contains('expanded')) cssH = Math.max(cssH, 96);
+        else if (panel.classList.contains('mid')) cssH = Math.max(cssH, 68);
+        else cssH = Math.max(cssH, 30);
       }
     } catch (_) {}
 
@@ -1597,8 +1597,8 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      var MIN = 80;
-      if (mode === 'collapsed') return 80;
+      var MIN = 64;
+      if (mode === 'collapsed') return 64;
       if (mode === 'expanded') return Math.max(MIN, Math.min(280, Math.round(h * 0.36)));
       return Math.max(MIN, Math.min(200, Math.round(h * 0.26)));
     }

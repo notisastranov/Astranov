@@ -43,7 +43,7 @@
 
   /** Generative suit art via AI Graphics or local painter */
   function paintSuit(kind, size) {
-    size = size || 128;
+    size = size || 160;
     var prompt =
       kind === 'wings'
         ? 'winged thruster silvery cyan energy wings iron hero arc field'
@@ -392,7 +392,24 @@
     next();
   }
 
-  function loop(now) {
+  
+  function resizeCanvas() {
+    if (!H.canvas) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = window.innerWidth || 360;
+    var h = window.innerHeight || 640;
+    var bw = Math.round(w * dpr);
+    var bh = Math.round(h * dpr);
+    if (H.canvas.width !== bw || H.canvas.height !== bh) {
+      H.canvas.width = bw;
+      H.canvas.height = bh;
+      H.canvas.style.width = w + 'px';
+      H.canvas.style.height = h + 'px';
+      H._dpr = dpr;
+    }
+  }
+
+function loop(now) {
     if (!H.visible) {
       H.raf = 0;
       return;
@@ -549,7 +566,8 @@
     H.ready = true;
     window.addEventListener('resize', resize, { passive: true });
     var auto = opts.autoWake;
-    if (auto == null) auto = !(global.SNPerf && SNPerf.helperAuto === false);
+    if (auto == null) auto = true;
+    if (global.SNPerf && SNPerf.helperAuto === false) auto = false;
     if (auto && !(global.SNPerf && global.SNPerf.lite)) {
       setTimeout(function () {
         if (!H.visible) {

@@ -1529,6 +1529,20 @@
         });
         if (orderResult && orderResult.ok) {
           log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
+          try {
+            if (global.SNHelper && SNHelper.flyTo && best) {
+              SNHelper.flyTo(
+                { lat: best.lat, lng: best.lng },
+                {
+                  kind: 'order',
+                  label: 'ORDER · ' + String(best.shopName || best.name || 'shop').slice(0, 14),
+                  detail: 'pickup',
+                  status: 'delivery',
+                  dur: 2800,
+                }
+              );
+            }
+          } catch (_) {}
           steps.push('order');
         } else {
           log((orderResult && orderResult.error) || 'order failed', 'err');

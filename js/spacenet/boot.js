@@ -187,7 +187,7 @@
     radarMs: isLite ? 250 : 180,
     idleSkip: isLite ? 4 : 3,
     hudHz: isLite ? 12 : 20,
-    helperAuto: false,
+    helperAuto: true,
     t0: t0,
     mark: function (name) {
       try {
@@ -392,7 +392,7 @@
           },
           function () {
             // HELPER on demand only — continuous RAF was sticky
-            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false });
+            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: true });
           },
           function () {
             SNLiveBridge && SNLiveBridge.start && SNLiveBridge.start();
