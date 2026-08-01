@@ -15,8 +15,13 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
+<<<<<<< HEAD
 <meta name="astranov-build" content="20260801150000-mesh-peers-ops" />
 <meta name="astranov-continuity" content="20260801150000-mesh-peers-ops" />
+=======
+<meta name="astranov-build" content="20260801152000-fleet-device-top" />
+<meta name="astranov-continuity" content="20260801152000-fleet-device-top" />
+>>>>>>> f84bea8 (fix(hud): device load + fleet monitors first under top row)
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -3804,6 +3809,99 @@
     max-height: 36px !important;
   }
 
+
+  /* ═══ DEVICE + FLEET monitors · first under top row ═══ */
+  #stc-detail {
+    display: none;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 6px 10px 8px !important;
+    order: 2;
+  }
+  #sn-topchrome-panel.mid #stc-detail,
+  #sn-topchrome-panel.expanded #stc-detail {
+    display: flex !important;
+  }
+  /* Compact top row always first — never share space with monitors */
+  #stc-compact {
+    order: 1 !important;
+    position: relative !important;
+    z-index: 6 !important;
+    flex-shrink: 0 !important;
+  }
+  #stc-device-block {
+    order: 1 !important;
+    flex-shrink: 0 !important;
+  }
+  #stc-detail-row {
+    order: 2 !important;
+    flex-shrink: 0 !important;
+    display: block !important;
+    width: 100% !important;
+  }
+  #sn-fleet-monitor {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  #stc-timeline-machine { order: 3 !important; }
+  #sn-hub-host { order: 4 !important; }
+
+  /* Collapsed: hide ALL expand content — only compact row (radar/home/money/power) */
+  #sn-topchrome-panel.collapsed #stc-detail,
+  #sn-topchrome-panel.collapsed #stc-device-block,
+  #sn-topchrome-panel.collapsed #stc-detail-row,
+  #sn-topchrome-panel.collapsed #sn-fleet-monitor,
+  #sn-topchrome-panel.collapsed #stc-timeline-machine,
+  #sn-topchrome-panel.collapsed #sn-hub-host,
+  #sn-topchrome-panel.collapsed #stc-perf-wrap,
+  #sn-topchrome-panel.collapsed #sn-device-alert {
+    display: none !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Expanded: show device load + fleet right under compact row */
+  #sn-topchrome-panel.mid #stc-device-block,
+  #sn-topchrome-panel.expanded #stc-device-block,
+  #sn-topchrome-panel.mid #stc-detail-row,
+  #sn-topchrome-panel.expanded #stc-detail-row,
+  #sn-topchrome-panel.mid #sn-fleet-monitor,
+  #sn-topchrome-panel.expanded #sn-fleet-monitor {
+    display: block !important;
+    height: auto !important;
+    max-height: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+  }
+  #sn-topchrome-panel.mid #sn-fleet-monitor .sfm-row,
+  #sn-topchrome-panel.expanded #sn-fleet-monitor .sfm-row {
+    display: grid !important;
+  }
+
+  /* Keep compact row free of fleet/device fragments */
+  #sn-topchrome-panel.collapsed #stc-compact {
+    z-index: 8 !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-col-device #btn-home {
+    z-index: 10 !important;
+  }
+  /* Never let fleet cards float over the name in any state */
+  #sn-fleet-monitor,
+  #stc-device-block,
+  #stc-perf-wrap {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    transform: none !important;
+  }
+
 </style>
 </head>
 <body>
@@ -3886,24 +3984,6 @@
       </div>
       <div id="sn-device-alert" role="alert" aria-live="assertive"></div>
       <div id="stc-detail" class="stc-detail">
-        <div id="stc-timeline-machine" class="stc-expand-block" aria-label="Timeline Scanner · time machine">
-          <div class="stc-g-title">TIMELINE SCANNER · TIME MACHINE</div>
-          <div class="tl-status" id="tl-status">PRESENT · live now</div>
-          <div class="tl-joystick-wrap">
-            <span class="tl-end tl-past">PAST</span>
-            <div class="tl-stick" id="tl-stick">
-              <input type="range" id="tl-year" min="-80" max="40" value="0" step="1" aria-label="Time machine joystick · left past · right future" />
-              <div class="tl-knob-label" id="tl-year-label">NOW</div>
-            </div>
-            <span class="tl-end tl-future">FUTURE</span>
-          </div>
-          <div class="tl-actions">
-            <button type="button" class="tl-btn" id="tl-present" title="Return to present">PRESENT</button>
-            <button type="button" class="tl-btn" id="tl-freeze" title="Freeze timeline">FREEZE</button>
-            <input type="date" id="tl-date" class="tl-date" title="Jump to date" />
-          </div>
-          <p class="stc-g-note">Left = past Earth imagery · Center = now · Right = projected future. Green = present · Red = frozen / past.</p>
-        </div>
         <div id="stc-device-block" class="stc-expand-block">
           <div class="stc-g-title">DEVICE · LOAD</div>
           <div id="stc-perf-wrap" title="Device · CPU · RAM · battery · temps">
@@ -3911,7 +3991,6 @@
           </div>
           <p class="stc-g-note">Deep blue = OK · yellow = soft limit · red = critical</p>
         </div>
-        <div id="sn-hub-host" class="stc-expand-block" aria-label="Science hub · roles · RAID · mining"></div>
         <div id="stc-detail-row">
           <div id="sn-fleet-monitor" aria-label="Fleet resource monitor" title="Device fleet · ASTRANOV hub for roles">
             <div class="sfm-head">
@@ -3940,6 +4019,25 @@
             </div>
           </div>
         </div>
+        <div id="stc-timeline-machine" class="stc-expand-block" aria-label="Timeline Scanner · time machine">
+          <div class="stc-g-title">TIMELINE SCANNER · TIME MACHINE</div>
+          <div class="tl-status" id="tl-status">PRESENT · live now</div>
+          <div class="tl-joystick-wrap">
+            <span class="tl-end tl-past">PAST</span>
+            <div class="tl-stick" id="tl-stick">
+              <input type="range" id="tl-year" min="-80" max="40" value="0" step="1" aria-label="Time machine joystick · left past · right future" />
+              <div class="tl-knob-label" id="tl-year-label">NOW</div>
+            </div>
+            <span class="tl-end tl-future">FUTURE</span>
+          </div>
+          <div class="tl-actions">
+            <button type="button" class="tl-btn" id="tl-present" title="Return to present">PRESENT</button>
+            <button type="button" class="tl-btn" id="tl-freeze" title="Freeze timeline">FREEZE</button>
+            <input type="date" id="tl-date" class="tl-date" title="Jump to date" />
+          </div>
+          <p class="stc-g-note">Left = past Earth imagery · Center = now · Right = projected future. Green = present · Red = frozen / past.</p>
+        </div>
+        <div id="sn-hub-host" class="stc-expand-block" aria-label="Science hub · roles · RAID · mining"></div>
       </div>
     </div>
     <div id="sn-topchrome-drag" title="Top scroll · drag down expand · up retract" aria-label="Top scroll · drag to expand or retract">
@@ -4035,7 +4133,11 @@
   </div>
 </div>
 
+<<<<<<< HEAD
 <script src="/js/spacenet/boot.js?v=20260801150000-mesh-peers-ops"></script>
+=======
+<script src="/js/spacenet/boot.js?v=20260801152000-fleet-device-top"></script>
+>>>>>>> f84bea8 (fix(hud): device load + fleet monitors first under top row)
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
