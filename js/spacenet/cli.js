@@ -3076,6 +3076,10 @@ if (
    * Never speaks on cold boot — only after user taps AI or says voice on.
    */
   function speakAi(text, force) {
+    try {
+      if (global.SNSpartan && SNSpartan.compress) text = SNSpartan.compress(text, { max: 90 });
+    } catch (_) {}
+
     if (force !== 'test' && !talking() && force !== true) return;
     try {
       const synth = global.speechSynthesis;
@@ -3225,6 +3229,18 @@ if (
     preview('…');
     void (async () => {
       try {
+        // Spartan: think before reply
+        try {
+          if (global.SNSpartan && SNSpartan.wait) {
+            await SNSpartan.wait(
+              typeof SNSpartan.thinkDelay === 'function' ? SNSpartan.thinkDelay() : 450
+            );
+          } else {
+            await new Promise(function (r) {
+              setTimeout(r, 450);
+            });
+          }
+        } catch (_) {}
         // Clear field like form submit, then run freeform/AI path (run → replyOut speaks)
         if (input) input.value = '';
         await run(t);
@@ -3290,7 +3306,7 @@ if (
     }
     // One short cue only — no monologue
     setTimeout(function () {
-      speakAi("I'm here.", true);
+      speakAi("Listening.", true);
     }, 120);
     if (!global.isSecureContext && location.hostname !== 'localhost') {
       log('Mic needs HTTPS · type to talk · I can still reply in text', 'dim');
@@ -3343,10 +3359,33 @@ if (
           if (input) input.value = shown;
           preview('🎙 ' + shown.slice(0, 48));
         }
-        // Final chunk → auto-send immediately
+        // Spartan listen-first: hold after final if user may still speak
         const fin = String(finalText || '').trim();
         if (fin) {
-          commitVoice(fin);
+          hfPending = fin;
+          try {
+            if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
+          } catch (_) {}
+          const hold =
+            global.SNSpartan && typeof SNSpartan.listenHoldMs === 'function'
+              ? SNSpartan.listenHoldMs()
+              : 1400;
+          const maybeMore =
+            (global.SNSpartan && SNSpartan.mayStillSpeak
+              ? SNSpartan.mayStillSpeak(fin, !!interimText)
+              : !!interimText) || !!interimText;
+          const waitMs = maybeMore ? hold + 600 : hold;
+          preview('…');
+          global._snVoiceHoldT = setTimeout(function () {
+            const send = String(hfPending || '').trim();
+            if (send && handsfreeOn && !hfBusy) commitVoice(send);
+          }, waitMs);
+        } else if (interimText) {
+          // still talking — cancel any commit
+          try {
+            if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
+          } catch (_) {}
+          preview('…');
         }
       } catch (e) {
         log('Voice result · ' + (e.message || e), 'err');
@@ -3373,11 +3412,24 @@ if (
     };
 
     speechRec.onend = () => {
-      // Many browsers only settle transcript at end — force auto-send then
+      // Spartan: give trailing silence for more words before commit
       if (handsfreeOn && !hfBusy && hfPending) {
-        const pending = hfPending;
-        hfPending = '';
-        if (commitVoice(pending)) return;
+        try {
+          if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
+        } catch (_) {}
+        const hold =
+          global.SNSpartan && typeof SNSpartan.listenHoldMs === 'function'
+            ? SNSpartan.listenHoldMs()
+            : 1400;
+        global._snVoiceHoldT = setTimeout(function () {
+          const pending = String(hfPending || '').trim();
+          hfPending = '';
+          if (pending && handsfreeOn && !hfBusy) {
+            if (commitVoice(pending)) return;
+          }
+          if (handsfreeOn && !hfBusy && Date.now() >= hfMutedUntil) scheduleListenRestart(400);
+        }, hold);
+        return;
       }
       if (handsfreeOn && !hfBusy && Date.now() >= hfMutedUntil) scheduleListenRestart(500);
     };

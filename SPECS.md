@@ -436,3 +436,13 @@ Google photos/ratings need `SN_CONFIG.layers.googleMapsKey`. OSM always free.
 
 Train forever: every feature answers to Spartan expansion, not multi-step babysitting.
 
+## OWNER LAW · Spartan voice (reply + listen)
+
+| Rule | Example |
+|------|---------|
+| **Least words** | `Driver 6 min late. 3 min to eat. Door.` |
+| **Listen first** | No monologue on AI tap — `Listening.` |
+| **May still speak** | Hold ~1.4s after speech; cancel commit if more words |
+| **Think then reply** | ~450ms think pulse before act/speak |
+| **Compress** | `SNSpartan.compress` on all AI/CLI/TTS/notify lines |
+

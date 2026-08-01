@@ -138,3 +138,8 @@ assert.ok(pizza.autoOrder || pizza.runFood);
 const shops = g.SNSpartan.expand('shops');
 assert.ok(shops && shops.domain === 'shops');
 console.log('PASS spartan', pizza.steps && pizza.steps.join('>'), shops.intent);
+
+const c = g.SNSpartan.compress('Driver is approximately six minutes late. You should go to the door and peel it.');
+assert.ok(c.length < 60, c);
+assert.ok(/min|Door|Driver/i.test(c), c);
+console.log('PASS spartan compress', c);

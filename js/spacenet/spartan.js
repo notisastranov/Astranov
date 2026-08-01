@@ -15,11 +15,19 @@
       'Expand short input into the full mission the user would need if they wrote a paragraph.',
       'Research: locate · crawl · rank · choose · act · pay/route/assign when the domain needs it.',
       'Prefer doing over asking; only ask when GPS is soft or money is missing.',
-      'Reply short: result + time/ETA + next watch — never essays.',
+      'Reply Spartan: least words. Example: Driver 6 min late. 3 min to eat. Door.',
+      'Always listen first. If user may still speak — stop, wait, think, then reply.',
       'Same law for food, map, driver, shops, pilot, money, bridge, cancel — everything.',
       'Never invent shops or drivers; use crawlers and live mesh.',
       'Remember prefs (size, drinks, home, favorites) so next one-word is smarter.',
     ],
+    listenFirst: true,
+    /** ms to wait after final speech when user may continue */
+    listenHoldMs: 1400,
+    /** ms think pause before speaking/reply after input commits */
+    thinkMs: 450,
+    maxReplyChars: 72,
+    maxReplySentences: 3,
   };
 
   function norm(s) {
@@ -317,6 +325,11 @@
         ['spartan', 'identity']
       );
       M.teach(
+        'spartan replies how you speak',
+        'Least words. Driver 6 min late. 3 min to eat. Door. Listen first. Wait if more coming. Think then reply.',
+        ['spartan', 'reply', 'listen']
+      );
+      M.teach(
         'spartan mode how you think',
         'Spartan: expand one word into full real-Earth action chain. Research then act. Short answer with ETA/result.',
         ['spartan', 'think']
@@ -324,14 +337,105 @@
     } catch (_) {}
   }
 
-  function briefResult(plan, resultText) {
-    var t = String(resultText || plan.replySeed || 'Done').trim();
-    // keep spartan: one breath
-    if (t.length > 140) t = t.slice(0, 137) + '…';
-    if (plan && plan.spartan && t.indexOf('Spartan') < 0 && t.length < 100) {
-      /* don't prefix every time — clean human */
+
+  /**
+   * Spartan compress — least words that still carry the mission.
+   * "Driver is approximately six minutes late. You should go to the door."
+   * → "Driver 6 min late. Door."
+   */
+  function compress(text, opts) {
+    opts = opts || {};
+    var max = opts.max != null ? opts.max : LAW.maxReplyChars || 72;
+    var maxS = opts.sentences != null ? opts.sentences : LAW.maxReplySentences || 3;
+    var t = String(text || '').trim();
+    if (!t) return '';
+    // strip brand fluff
+    t = t
+      .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
+      .replace(/^Astranov\s*[·:.-]\s*/gi, '')
+      .replace(/^Spartan\s*[·:.-]\s*/gi, '')
+      .replace(/\bSpaceNet\b/gi, '')
+      .replace(/\bI will (ping|notify|alert)[^.!]*[.!]?/gi, '')
+      .replace(/\bI(?:'m| am) (going to|gonna)\b/gi, '')
+      .replace(/\bPlease\b/gi, '')
+      .replace(/\bAlright[,.]?\s*/gi, '')
+      .replace(/\bOkay[,.]?\s*/gi, '')
+      .replace(/\bOn it[,.—-]*\s*/gi, '')
+      .replace(/\bLooking for\b/gi, '')
+      .replace(/\bfinding you now\b/gi, 'Locate')
+      .replace(/\byou(?:'re| are) eating at\b/gi, 'Eat')
+      .replace(/\bYou eat\s*~/gi, 'Eat ')
+      .replace(/\byou should (?:go to )?(?:the )?door\b/gi, 'Door')
+      .replace(/\bgo to the door\b/gi, 'Door')
+      .replace(/\bpeel(?: the)? door\b/gi, 'Door')
+      .replace(/\bbe ready at drop pin\b/gi, 'Door')
+      .replace(/\bdriver is (?:approximately |about |roughly )?(\d+)\s*minutes?\s*(late)?/gi, 'Driver $1 min$2')
+      .replace(/\bapproximately\b/gi, '')
+      .replace(/\babout\b/gi, '')
+      .replace(/\broughly\b/gi, '')
+      .replace(/\bminutes?\b/gi, 'min')
+      .replace(/\bminute\b/gi, 'min')
+      .replace(/\bseconds?\b/gi, 's')
+      .replace(/\bdriver is\b/gi, 'Driver')
+      .replace(/\bthe driver\b/gi, 'Driver')
+      .replace(/\band peel it\.?/gi, '')
+      .replace(/\byou should\b/gi, '')
+      .replace(/\balmost there\b/gi, '')
+      .replace(/\bon the way\b/gi, 'en route')
+      .replace(/\s*[·|]\s*/g, '. ')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\.+\s*\./g, '.')
+      .trim();
+
+    // Prefer short sentences
+    var parts = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+    if (parts.length > maxS) parts = parts.slice(0, maxS);
+    t = parts.join(' ');
+    // Drop filler words
+    t = t
+      .replace(/\b(just|really|actually|basically|currently|simply|please|kind of|sort of)\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/\s+([,.!])/g, '$1')
+      .trim();
+    if (t.length > max) {
+      t = t.slice(0, max).replace(/\s+\S*$/, '').replace(/[,:;]+$/, '') + '.';
     }
+    // Ensure end punctuation if multi-word
+    if (t && !/[.!?]$/.test(t) && t.length > 12) t += '.';
     return t;
+  }
+
+  function thinkDelay() {
+    return Math.max(0, Number(LAW.thinkMs) || 450);
+  }
+
+  function listenHoldMs() {
+    return Math.max(400, Number(LAW.listenHoldMs) || 1400);
+  }
+
+  /** Suspicion user may still speak: trailing filler, incomplete, or short pause pattern */
+  function mayStillSpeak(text, interim) {
+    var t = String(text || '').trim();
+    if (interim) return true;
+    if (!t) return true;
+    // trailing connectors
+    if (/\b(and|or|with|to|for|the|a|uh|um|ε|και|να|θέλω)\s*$/i.test(t)) return true;
+    if (/[,;…]\s*$/.test(t)) return true;
+    // very short mid-thought
+    if (t.split(/\s+/).length <= 1 && t.length < 12 && !/^(pizza|cancel|locate|shops|drive|deliver|help|stop)$/i.test(t))
+      return true;
+    return false;
+  }
+
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, Math.max(0, ms || 0));
+    });
+  }
+
+
+  function briefResult(plan, resultText) {
+    return compress(resultText || (plan && plan.replySeed) || 'Done');
   }
 
   // boot train once
@@ -346,6 +450,11 @@
     expand: expand,
     teachMind: teachMind,
     briefResult: briefResult,
+    compress: compress,
+    thinkDelay: thinkDelay,
+    listenHoldMs: listenHoldMs,
+    mayStillSpeak: mayStillSpeak,
+    wait: wait,
     domains: function () {
       return DOMAINS.map(function (d) {
         return d.id;

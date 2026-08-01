@@ -11,7 +11,6 @@
   var hist = [];
   var greeted = false;
   var busy = false;
-    clearThinkGfx();
 
   function clearThinkGfx() {
     try {
@@ -24,39 +23,30 @@
   /** Vendor suggestion session: list + index for next / show all */
   var suggest = { list: [], idx: 0, query: '' };
 
-  /** Clean machine/brand junk — never force "Astranov ·" robot prefix */
+  /** Spartan reply — least words · no brand fluff */
   function brandReply(text) {
     var t = String(text || '').trim();
     if (!t) return t;
+    if (/^ASTRANOV\s+LISTENING$/i.test(t) || /^LISTENING$/i.test(t)) return 'Listening.';
+    try {
+      if (global.SNSpartan && SNSpartan.compress) return SNSpartan.compress(t, { max: 72 });
+    } catch (_) {}
     t = t.replace(/^SpaceNet\s*[·:.-]\s*/gi, '');
-    t = t.replace(/^SPACENET\s*[·:.-]\s*/gi, '');
     t = t.replace(/^Astranov\s*[·:.-]\s*/gi, '');
-    t = t.replace(/^ASTRANOV\s*[·:.-]\s*/gi, '');
-    t = t.replace(/\bSpaceNet\b/gi, 'Astranov');
-    t = t.replace(/\bSPACENET\b/g, 'Astranov');
-    t = t.replace(/\s*[·|]\s*/g, function (m, i) {
-      // keep middle dots only if not spammy machine list style
-      return m.indexOf('·') >= 0 ? '. ' : m;
-    });
-    // Collapse leftover double spaces / robot dots
-    t = t.replace(/\s{2,}/g, ' ').replace(/\.\s*\./g, '.').trim();
-    if (/^ASTRANOV\s+LISTENING$/i.test(t)) return "I'm here — what do you need?";
-    if (/^LISTENING$/i.test(t)) return "I'm here — what do you need?";
+    t = t.replace(/\bSpaceNet\b/gi, '');
+    t = t.replace(/\s*[·|]\s*/g, '. ').replace(/\s{2,}/g, ' ').trim();
+    if (t.length > 72) t = t.slice(0, 71).replace(/\s+\S*$/, '') + '.';
     return t;
   }
 
-  /** Human length — full short sentences, not telegram dots */
+  /** Spartan brief — hard cap */
   function brief(text, maxLen) {
-    maxLen = maxLen || 160;
-    var t = String(text || '')
-      .replace(/^SpaceNet\s*[·:.-]\s*/gi, '')
-      .replace(/^Astranov\s*[·:.-]\s*/gi, '')
-      .replace(/\bSpaceNet\b/gi, 'Astranov')
-      .replace(/\s*[·]\s*/g, '. ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!t) return '';
-    if (t.length > maxLen) t = t.slice(0, maxLen - 1).replace(/\s+\S*$/, '') + '…';
+    maxLen = maxLen || 72;
+    try {
+      if (global.SNSpartan && SNSpartan.compress) return SNSpartan.compress(text, { max: maxLen });
+    } catch (_) {}
+    var t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (t.length > maxLen) t = t.slice(0, maxLen - 1).replace(/\s+\S*$/, '') + '.';
     return t;
   }
 
@@ -1544,6 +1534,16 @@
       if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });
     } catch (e) {}
 
+    // Spartan: listen already happened · wait · think · then act
+    try {
+      if (global.SNSpartan && SNSpartan.wait) {
+        var td =
+          typeof SNSpartan.thinkDelay === 'function' ? SNSpartan.thinkDelay() : 450;
+        if (global.SNAIGraphics && SNAIGraphics.setThinkPulse) SNAIGraphics.setThinkPulse(true);
+        await SNSpartan.wait(td);
+      }
+    } catch (_th) {}
+
     var local = await actLocal(msg);
     var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
     var text = null;
@@ -1983,14 +1983,14 @@
 
   /** AI ribbon pressed — brief status only */
   function listeningOn() {
-    var t = "I'm here.";
+    var t = 'Listening.';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
     return t;
   }
 
   function listeningOff() {
-    var t = 'Okay, muted.';
+    var t = 'Muted.';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'dim');
     return t;

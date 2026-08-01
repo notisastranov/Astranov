@@ -271,6 +271,10 @@
 
   function notifyLine(msg, short) {
     try {
+      if (global.SNSpartan && SNSpartan.compress) {
+        msg = SNSpartan.compress(msg, { max: 64 });
+        if (short) short = SNSpartan.compress(short, { max: 28 });
+      }
       if (global.SNCli && SNCli.log) SNCli.log(msg, 'ok');
       if (global.SNCli && SNCli.preview) SNCli.preview(short || msg.slice(0, 28));
       if (global.SNField && SNField.setNotice) SNField.setNotice(short || msg.slice(0, 40));
@@ -323,29 +327,20 @@
       // announce significant ETA changes (±2 min bucket)
       if (Math.abs(left - lastBucket) >= 2 && left > 0) {
         lastBucket = left;
-        notifyLine(
-          'ETA update · ~' + left + ' min · ' + (vendorName || 'order'),
-          'ETA ~' + left + 'm'
-        );
+        notifyLine('ETA ' + left + ' min.', 'ETA ' + left + 'm');
       }
       if (!fired5 && left <= 5 && left > 3) {
         fired5 = true;
-        notifyLine(
-          'Driver ~5 min out · ' + (vendorName || 'order') + ' · almost there',
-          'Driver ~5 min'
-        );
+        notifyLine('Driver 5 min. ' + (vendorName || ''), 'Driver 5 min');
       }
       if (!fired3 && left <= 3 && left > 0) {
         fired3 = true;
         beepDoor();
-        notifyLine(
-          '🚪 Door · driver ~' + left + ' min away · peel the door',
-          'Door · ' + left + 'm'
-        );
+        notifyLine('Door. Driver ' + left + ' min.', 'Door ' + left + 'm');
       }
       if (!firedEat && left <= 0) {
         firedEat = true;
-        notifyLine('You should be eating now · ' + (vendorName || 'order'), 'Eating now');
+        notifyLine('Eat now. ' + (vendorName || ''), 'Eat now');
         try {
           clearInterval(global._snArrivalTimer);
         } catch (_) {}
@@ -358,14 +353,14 @@
     global._snArrivalNotify = setTimeout(function () {
       if (!fired5) {
         fired5 = true;
-        notifyLine('Driver ~5 min out · be ready', 'Driver ~5 min');
+        notifyLine('Driver 5 min.', 'Driver 5 min');
       }
     }, ms5);
     global._snDoorNotify = setTimeout(function () {
       if (!fired3) {
         fired3 = true;
         beepDoor();
-        notifyLine('🚪 Door · driver ~3 min · peel the door', 'Door · 3m');
+        notifyLine('Door. 3 min.', 'Door 3m');
       }
     }, ms3);
 
@@ -2107,14 +2102,13 @@
 
     var reply =
       orderResult && orderResult.ok
-        ? "You're eating at " +
-          (eta.eatClock || '~soon') +
-          ' · ' +
+        ? 'Eat ' +
+          (eta.eatClock || 'soon') +
+          '. ' +
           judged.itemName +
-          ' · ' +
+          '. ' +
           (best.shopName || best.name) +
-          (driver ? ' · driver on the way' : '') +
-          ' · I will ping at 5m and door at 3m'
+          (eta.totalMin ? '. Driver ' + eta.totalMin + ' min.' : '.')
         : (completeRes && completeRes.ok
             ? 'Delivered · '
             : 'Options · ') +
