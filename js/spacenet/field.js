@@ -28,6 +28,243 @@
     },
   };
   var EARTH = SPEED.rotate.v;
+
+  /** Timeline Scanner — time machine (past imagery · present · future projection) */
+  var TL_KEY = 'sn:timeline-v1';
+  var timeline = {
+    offset: 0, // years from present (neg=past, pos=future)
+    frozen: false,
+    year: new Date().getFullYear(),
+    mode: 'present', // present | past | future
+  };
+  try {
+    var _tls = JSON.parse(localStorage.getItem(TL_KEY) || 'null');
+    if (_tls && typeof _tls.offset === 'number') {
+      timeline.offset = Math.max(-80, Math.min(40, _tls.offset));
+      timeline.frozen = !!_tls.frozen;
+    }
+  } catch (_) {}
+
+  function timelineNowYear() {
+    return new Date().getFullYear();
+  }
+  function timelineTargetYear() {
+    return timelineNowYear() + (timeline.offset || 0);
+  }
+  function timelineMode() {
+    if (timeline.offset < 0) return 'past';
+    if (timeline.offset > 0) return 'future';
+    return 'present';
+  }
+  function saveTimeline() {
+    try {
+      localStorage.setItem(
+        TL_KEY,
+        JSON.stringify({ offset: timeline.offset, frozen: timeline.frozen })
+      );
+    } catch (_) {}
+  }
+  function applyTimelineBody() {
+    timeline.mode = timelineMode();
+    timeline.year = timelineTargetYear();
+    document.body.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
+    document.body.classList.add('tl-' + timeline.mode);
+    // Frozen red only in past; future stays cyan even when frozen
+    if (timeline.frozen && timeline.mode === 'past') document.body.classList.add('tl-frozen');
+    var te = $('fnm-time');
+    if (te) {
+      te.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
+      te.classList.add('tl-' + timeline.mode);
+      if (timeline.frozen && timeline.mode === 'past') te.classList.add('tl-frozen');
+    }
+    var st = $('tl-status');
+    if (st) {
+      if (timeline.mode === 'present' && !timeline.frozen) {
+        st.textContent = 'PRESENT · live now · green timeline';
+      } else if (timeline.mode === 'past') {
+        st.textContent =
+          (timeline.frozen ? 'FROZEN PAST · ' : 'PAST · ') +
+          timeline.year +
+          ' · historical imagery';
+      } else {
+        st.textContent =
+          (timeline.frozen ? 'FROZEN FUTURE · ' : 'FUTURE · ') +
+          timeline.year +
+          ' · projected imagery';
+      }
+    }
+    var lab = $('tl-year-label');
+    if (lab) {
+      lab.textContent =
+        timeline.offset === 0
+          ? 'NOW'
+          : (timeline.offset > 0 ? '+' : '') + timeline.offset + 'y · ' + timeline.year;
+    }
+    var range = $('tl-year');
+    if (range && Number(range.value) !== timeline.offset) range.value = String(timeline.offset);
+    // Globe HUD
+    try {
+      if (g.SNGlobe && SNGlobe.setHud) {
+        if (timeline.mode === 'present') SNGlobe.setHud('PRESENT · ' + timeline.year);
+        else if (timeline.mode === 'past')
+          SNGlobe.setHud('PAST · ' + timeline.year + ' imagery');
+        else SNGlobe.setHud('FUTURE · ' + timeline.year + ' projection');
+      }
+    } catch (_) {}
+    applyTimelineImagery();
+  }
+
+  /**
+   * Dress map/globe for era:
+   * past → satellite / wayback-style historical look
+   * future → hybrid + cool projection
+   * present → restore user basemap preference if possible
+   */
+  function applyTimelineImagery() {
+    try {
+      if (!g.SNMap || !SNMap.setBasemap) return;
+      if (!SNMap.active) {
+        // still tag for when map opens
+        g._snTimelineBasemap = timeline.mode;
+        return;
+      }
+      if (timeline.mode === 'past') {
+        // Historical-class satellite (Google satellite if key, else Esri/satellite basemap)
+        try {
+          SNMap.setBasemap('g_satellite', { log: false });
+        } catch (_) {
+          try {
+            SNMap.setBasemap('satellite', { log: false });
+          } catch (__) {}
+        }
+        g._snTimelineBasemap = 'past';
+      } else if (timeline.mode === 'future') {
+        try {
+          SNMap.setBasemap('g_hybrid', { log: false });
+        } catch (_) {
+          try {
+            SNMap.setBasemap('satellite', { log: false });
+          } catch (__) {}
+        }
+        g._snTimelineBasemap = 'future';
+      } else {
+        // present — leave user's basemap
+        g._snTimelineBasemap = 'present';
+      }
+    } catch (_) {}
+  }
+
+  function setTimelineOffset(years, opts) {
+    opts = opts || {};
+    timeline.offset = Math.max(-80, Math.min(40, Math.round(Number(years) || 0)));
+    if (opts.freeze != null) timeline.frozen = !!opts.freeze;
+    else if (timeline.offset !== 0) timeline.frozen = true;
+    else timeline.frozen = false;
+    saveTimeline();
+    applyTimelineBody();
+    paintNavMeta();
+    try {
+      if (g.SNCli && SNCli.log && opts.log !== false) {
+        if (timeline.mode === 'present')
+          SNCli.log('Timeline · PRESENT · live', 'ok');
+        else if (timeline.mode === 'past')
+          SNCli.log('Timeline · PAST ' + timeline.year + ' · historical scan', 'ok');
+        else SNCli.log('Timeline · FUTURE ' + timeline.year + ' · projection', 'ok');
+      }
+    } catch (_) {}
+  }
+
+  function setTimelineDate(iso) {
+    if (!iso) return;
+    var d = new Date(iso + 'T12:00:00');
+    if (isNaN(d.getTime())) return;
+    var y = d.getFullYear();
+    setTimelineOffset(y - timelineNowYear(), { freeze: true });
+    try {
+      var de = $('tl-date');
+      if (de) de.value = iso;
+    } catch (_) {}
+  }
+
+  function bindTimeline() {
+    applyTimelineBody();
+    var range = $('tl-year');
+    if (range && !range._tlBound) {
+      range._tlBound = true;
+      range.addEventListener('input', function () {
+        setTimelineOffset(range.value, { log: false });
+      });
+      range.addEventListener('change', function () {
+        setTimelineOffset(range.value, { log: true });
+      });
+    }
+    var present = $('tl-present');
+    if (present && !present._tlBound) {
+      present._tlBound = true;
+      present.onclick = function (e) {
+        if (e) e.preventDefault();
+        setTimelineOffset(0, { freeze: false, log: true });
+      };
+    }
+    var freeze = $('tl-freeze');
+    if (freeze && !freeze._tlBound) {
+      freeze._tlBound = true;
+      freeze.onclick = function (e) {
+        if (e) e.preventDefault();
+        timeline.frozen = !timeline.frozen;
+        if (!timeline.frozen) setTimelineOffset(0, { freeze: false, log: true });
+        else {
+          saveTimeline();
+          applyTimelineBody();
+          try {
+            if (g.SNCli && SNCli.log)
+              SNCli.log(
+                timeline.frozen ? 'Timeline FROZEN · ' + timeline.year : 'Timeline unfrozen',
+                'ok'
+              );
+          } catch (_) {}
+        }
+      };
+    }
+    var date = $('tl-date');
+    if (date && !date._tlBound) {
+      date._tlBound = true;
+      date.addEventListener('change', function () {
+        setTimelineDate(date.value);
+      });
+    }
+    var te = $('fnm-time');
+    if (te && !te._tlBound) {
+      te._tlBound = true;
+      te.onclick = function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        // Expand top scroll + focus time machine; toggle freeze if already expanded past
+        try {
+          if (g.SNField && SNField.topChrome && SNField.topChrome.set)
+            SNField.topChrome.set('expanded');
+          else {
+            var panel = $('sn-topchrome-panel');
+            if (panel) {
+              panel.classList.remove('collapsed', 'mid');
+              panel.classList.add('expanded');
+            }
+          }
+        } catch (_) {}
+        // If present, freeze at now-10 as entry to past; else open controls
+        if (timeline.mode === 'present' && !timeline.frozen) {
+          // just expand — user drives joystick
+          try {
+            if (g.SNCli && SNCli.preview)
+              SNCli.preview('Timeline Scanner · slide joystick for past / future');
+          } catch (_) {}
+        }
+      };
+    }
+  }
+
   var task = 'idle';
   var notice = '';
   var speedMode = 'rotate';
@@ -1071,16 +1308,24 @@
     }
     if (modeEl) modeEl.textContent = spd.mode || '—';
     if (timeEl) {
+      var show = now;
+      if (timeline.offset !== 0) {
+        show = new Date(now.getTime());
+        show.setFullYear(timelineTargetYear());
+        // keep month/day of "today" for display continuity
+      }
       var d =
-        now.getFullYear() +
+        show.getFullYear() +
         '-' +
-        String(now.getMonth() + 1).padStart(2, '0') +
+        String(show.getMonth() + 1).padStart(2, '0') +
         '-' +
-        String(now.getDate()).padStart(2, '0');
-      timeEl.textContent =
-        d + '  UTC ' + fmtClock(now, true) + '  L ' + fmtClock(now, false);
+        String(show.getDate()).padStart(2, '0');
+      timeEl.textContent = d + '  ' + fmtClock(show, false);
+      timeEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
+      var md = timelineMode();
+      timeEl.classList.add('tl-' + md);
+      if (timeline.frozen && md === 'past') timeEl.classList.add('tl-frozen');
     }
-    // Physical: GPS / last known body position
     var p =
       physPos ||
       g._snPhysPos ||
@@ -1091,12 +1336,8 @@
     var pName = pLat != null ? placeNameNear(pLat, pLng) : null;
     if (physEl) {
       physEl.textContent =
-        'PHYS · ' +
-        (pName ? pName + ' · ' : '') +
-        fmtLL(pLat, pLng) +
-        (p && p.fallback ? ' · soft' : '');
+        (pName ? pName + ' · ' : '') + fmtLL(pLat, pLng);
     }
-    // Virtual: where camera/focus is looking (may differ when flying)
     var v =
       (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
       (g.SNMap && SNMap.active && g.SNMap.center && SNMap.center()) ||
@@ -1115,22 +1356,15 @@
       }
     }
     var vName = vLat != null ? placeNameNear(vLat, vLng) : null;
-    var same =
-      pLat != null &&
-      vLat != null &&
-      Math.abs(pLat - vLat) < 0.02 &&
-      Math.abs(pLng - vLng) < 0.02;
     if (virtEl) {
       virtEl.textContent =
-        'VIEW · ' +
         String(tier).toUpperCase() +
         (vName ? ' · ' + vName : '') +
         ' · ' +
-        fmtLL(vLat, vLng) +
-        (same ? '' : ' · flying');
+        fmtLL(vLat, vLng);
     }
-    // Device metrics painted in paint() — avoid double sample
   }
+
 
   function ensureBattery() {
     if (batteryApi || !navigator.getBattery) return;
@@ -3670,9 +3904,20 @@
         bPanel.style.display = 'none';
       }
     } catch (eB) {}
+    bindTimeline();
     paintRibbon();
   }
 
+  g.SNTimeline = {
+    get offset() { return timeline.offset; },
+    get year() { return timelineTargetYear(); },
+    get mode() { return timelineMode(); },
+    get frozen() { return timeline.frozen; },
+    setOffset: setTimelineOffset,
+    setDate: setTimelineDate,
+    present: function () { setTimelineOffset(0, { freeze: false }); },
+    apply: applyTimelineBody,
+  };
   g.SNField = {
     init: init,
     paint: paint,

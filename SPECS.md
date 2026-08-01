@@ -299,3 +299,19 @@ Build `20260801113000-four-scrolls-layout-edit`.
 | **Collapsed top** | Meta (date·UTC·local·loc) right of radar · money stats left of big number |
 | **Money color** | green >0 · yellow =0 · red <0 |
 | **Pizza** | City map only · no globe fly tour · `order me a pizza` |
+
+## OWNER LOG · 2026-08-01 Timeline Scanner
+
+| Law | Meaning |
+|-----|---------|
+| **Name** | ASTRANOV always **center** of top scroll |
+| **Collapsed left** | Timeline Scanner · **date + time only** (readable) |
+| **Collapsed right** | **Money balance only** |
+| **Present** | Date/time text **green** |
+| **Past / frozen** | Date/time text **red** · historical satellite imagery |
+| **Future** | Date/time text **cyan** · projected imagery look |
+| **Tap date** | Expand top scroll → time machine |
+| **Joystick** | Left past · center now · right future (−80y … +40y) |
+| **Freeze / date input** | Lock era · jump to calendar date |
+
+Radar gadget renamed **Timeline Scanner**.
