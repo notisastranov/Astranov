@@ -34,8 +34,11 @@ serve(async (req) => {
           received_at,
           seq: payload.seq || Date.now(),
           cmds: payload.cmds || payload.commands || [],
+          notes: payload.notes || [],
           from: payload.from || 'agent',
           note: payload.note || '',
+          build: payload.build || '',
+          at: payload.at || received_at,
         },
         null,
         2

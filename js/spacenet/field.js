@@ -2051,14 +2051,38 @@
     var moved = false;
     var ptrId = null;
 
+    function oppositeReserve() {
+      // Collapsed bottom footprint + air gap (~20px) so scrolls never touch
+      return 150;  // bottom collapsed ~118 + gap ~32
+    }
     function sizePx(mode) {
       var h = window.innerHeight || 700;
       var MIN = 54;
-      // Full-screen ceiling — user can drag all the way to the other edge
-      var FULL = Math.max(MIN + 40, h - 8);
+      var FULL = Math.max(MIN + 80, h - oppositeReserve());
       if (mode === 'collapsed') return 54;
       if (mode === 'expanded') return FULL;
-      return Math.max(MIN, Math.round(h * 0.45));
+      return Math.max(MIN, Math.min(Math.round(h * 0.42), FULL));
+    }
+    function recapBottomForTop(topPx) {
+      try {
+        var bot = document.getElementById('panel');
+        if (!bot || bot.classList.contains('collapsed')) return;
+        var h = window.innerHeight || 700;
+        var maxB = Math.max(96, h - topPx - 20);
+        var bh = bot.getBoundingClientRect().height;
+        if (bh > maxB + 2) {
+          bot.style.setProperty('max-height', maxB + 'px', 'important');
+          bot.style.setProperty('height', maxB + 'px', 'important');
+          var law = document.getElementById('sn-bot-scroll-law');
+          if (law)
+            law.textContent =
+              '#panel.mid,#panel.expanded{max-height:' +
+              maxB +
+              'px!important;height:' +
+              maxB +
+              'px!important}';
+        }
+      } catch (_) {}
     }
 
     function setMode(mode, animate, freeH) {
@@ -2070,15 +2094,42 @@
       var px = freeH != null ? freeH : sizePx(mode);
       if (!(px >= MIN)) px = MIN;
       // Collapsed: auto height so gadgets never clip; still floor min-height
+      var law = document.getElementById('sn-top-scroll-law');
+      if (!law) {
+        law = document.createElement('style');
+        law.id = 'sn-top-scroll-law';
+        document.head.appendChild(law);
+      }
       if (mode === 'collapsed') {
         panel.style.removeProperty('max-height');
         panel.style.removeProperty('height');
+        panel.style.removeProperty('min-height');
         panel.style.minHeight = MIN + 'px';
+        law.textContent =
+          'html body #sn-topchrome #sn-topchrome-panel.collapsed{max-height:58px !important;height:auto !important;min-height:54px !important;}';
+        try {
+          document.head.appendChild(law);
+        } catch (_) {}
       } else {
-        // !important beats leftover CSS caps so expand can fill the screen
         panel.style.setProperty('max-height', px + 'px', 'important');
         panel.style.setProperty('height', px + 'px', 'important');
-        panel.style.minHeight = MIN + 'px';
+        panel.style.setProperty('min-height', px + 'px', 'important');
+        // height+min-height forced — max-height cascade is polluted with 58px caps
+        law.textContent =
+          'html body #sn-topchrome #sn-topchrome-panel.mid,' +
+          'html body #sn-topchrome #sn-topchrome-panel.expanded{' +
+          'max-height:' +
+          px +
+          'px !important;height:' +
+          px +
+          'px !important;min-height:' +
+          px +
+          'px !important;overflow:hidden !important;}' +
+          'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}';
+        try {
+          document.head.appendChild(law);
+        } catch (_) {}
+        recapBottomForTop(px);
       }
       try {
         localStorage.setItem(KEY, mode);
@@ -2138,13 +2189,33 @@
       moved = true;
       // Drag DOWN expands (opposite of CLI which expands upward)
       var MIN = sizePx('collapsed');
-      var next = Math.max(MIN, Math.min(sizePx('expanded') + 40, startH + dy));
+      var next = Math.max(MIN, Math.min(sizePx('expanded'), startH + dy));
       panel.style.setProperty('max-height', next + 'px', 'important');
       panel.style.setProperty('height', next + 'px', 'important');
+      panel.style.setProperty('min-height', next + 'px', 'important');
       panel.classList.remove('collapsed', 'mid', 'expanded');
       if (next <= MIN + 8) panel.classList.add('collapsed');
       else if (next > sizePx('expanded') - 24) panel.classList.add('expanded');
       else panel.classList.add('mid');
+      try {
+        var law = document.getElementById('sn-top-scroll-law');
+        if (!law) {
+          law = document.createElement('style');
+          law.id = 'sn-top-scroll-law';
+          document.head.appendChild(law);
+        }
+        if (next <= MIN + 8) {
+          law.textContent =
+            '#sn-topchrome-panel.collapsed{max-height:58px!important;height:auto!important}';
+        } else {
+          law.textContent =
+            '#sn-topchrome-panel.mid,#sn-topchrome-panel.expanded{max-height:' +
+            next +
+            'px!important;height:' +
+            next +
+            'px!important}';
+        }
+      } catch (_) {}
       if (e.cancelable) e.preventDefault();
     }
 

@@ -425,14 +425,14 @@
         if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody('earth');
         if (global.SNGlobe && SNGlobe.goToPlace) {
           SNGlobe.goToPlace(p.lat, p.lng, {
-            tier: opts.tier || 'national',
+            tier: opts.tier || 'city',
             label: String(p.name || raw).slice(0, 40),
             body: 'earth',
             pulse: false,
             openMap: !!opts.openMap,
           });
         } else if (global.SNGlobe && SNGlobe.flyNear) {
-          SNGlobe.flyNear(p.lat, p.lng, opts.tier || 'national');
+          SNGlobe.flyNear(p.lat, p.lng, opts.tier || 'city');
         }
         try {
           if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(p.lat, p.lng);
@@ -925,11 +925,29 @@
       return { did: did.concat(al.did || []), reply: al.reply, skipBrand: true };
     }
 
+    // —— Bridge status (before identity so "grok bridge" is not deflected) ——
+    if (
+      /\bbridge\b/.test(low) ||
+      /rockbridge|rock\s*bridge|coding\s*agent|grok\s*build/i.test(low)
+    ) {
+      try {
+        if (global.SNCli && SNCli.run) {
+          await SNCli.run(/\btest\b/.test(low) ? 'bridge test' : 'bridge status');
+        }
+      } catch (_) {}
+      return {
+        did: did.concat(['bridge']),
+        reply:
+          'Coding bridge is the channel from this CLI to the desktop agent. Say bridge test · or agent <fix text>.',
+        skipBrand: true,
+      };
+    }
+
     // —— Direct identity (never free-mind fuzzy junk) ——
-    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low)) {
+    if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(low) && !/\bbridge\b/.test(low)) {
       return {
         did: did.concat(['identity:grok']),
-        reply: "I'm Astranov Mind, not Grok. English or Greek — just talk here.",
+        reply: "I'm Astranov Mind on this app. For code fixes use: agent <what to fix> or bridge test.",
         skipBrand: true,
       };
     }
@@ -1183,12 +1201,13 @@
     }
 
     var placeIntent = parsePlaceIntent(line);
+    // Only navigate on EXPLICIT travel verbs — never because a city word appears in chat
     if (
       placeIntent ||
-      /\b(thesis|vault|mars|cydonia|jupiter|moon|europa|titan|pluto|saturn|venus|mercury|neptune)\b/.test(
+      /^(go\s+to|goto|fly(\s+to)?|take\s+me(\s+to)?|show\s+me)\b/.test(low) ||
+      /^(earth|mars|moon|luna|jupiter|europa|titan|venus|mercury|saturn|neptune|uranus|pluto|cydonia)$/i.test(
         low
-      ) ||
-      /^go\s+to\b|^fly\b|^take\s+me\b/.test(low)
+      )
     ) {
       var dest = placeIntent;
       if (!dest) {
@@ -1357,21 +1376,11 @@
       return { did: did, reply: reply, skipBrand: true };
     }
 
-    // Conversational — still try place-ish free text as geocode (short phrases)
-    if (line.length < 48 && !/\?$/.test(line) && /^[a-zA-Zα-ωΑ-Ω\s\-']+$/u.test(line)) {
-      var guess = await globeGo(line, { closeMap: true });
-      if (guess && guess.ok) {
-        did.push('go:' + (guess.name || line));
-        reply =
-          "Taking you to " +
-          (guess.name || line) +
-          ". Want shops, or should I order food?";
-        return { did: did, reply: reply };
-      }
-    }
+    // NEVER geocode free text — that flew users to random countries.
+    // Places only via explicit go/fly/take me (parsePlaceIntent above).
 
     reply =
-      "I'm with you — not stuck on any scenario. Say what you need: map, shops, fly a place, dark map, order food, or cancel if an order is hanging.";
+      "I'm with you. Stay local: locate · shops · order pizza · go to <city> only when you mean travel. Or cancel if something is stuck.";
     return { did: did, reply: reply, needsEdge: false };
   }
 

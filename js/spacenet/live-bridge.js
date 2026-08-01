@@ -181,15 +181,157 @@
 
   setTimeout(start, 1500);
 
-  function ownerNote(text) {
-    var note = String(text || '').trim().slice(0, 500);
+  function localNotes() {
+    try {
+      var bag = JSON.parse(localStorage.getItem('sn:owner-notes-v1') || '[]');
+      return Array.isArray(bag) ? bag : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveLocalNote(note, meta) {
+    try {
+      var bag = localNotes();
+      bag.unshift({
+        t: Date.now(),
+        text: note,
+        meta: meta || {},
+      });
+      localStorage.setItem('sn:owner-notes-v1', JSON.stringify(bag.slice(0, 60)));
+    } catch (_) {}
+  }
+
+  /** Read current remote bridge file */
+  async function fetchRemote() {
+    var url = bridgeUrl() + '?t=' + Date.now();
+    var r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('poll HTTP ' + r.status);
+    return r.json();
+  }
+
+  /**
+   * Owner → coding agent note.
+   * Dual path: localStorage + Supabase live-bridge.json (public) so Grok Build can fetch it.
+   */
+  function ownerNote(text, meta) {
+    var note = String(text || '').trim().slice(0, 800);
     if (!note) return Promise.resolve({ ok: false, error: 'empty' });
+    saveLocalNote(note, meta);
     applyCmd({ op: 'owner_note', text: note });
-    // Publish so remote agent / other sessions can pick it up
-    return publish([{ op: 'owner_note', text: note, from: 'cli' }]).catch(function (e) {
-      log('Bridge publish soft-fail · note kept local · ' + (e && e.message ? e.message : e), 'dim');
-      return { ok: true, local: true };
+
+    var seq = Date.now();
+    var entry = {
+      op: 'owner_note',
+      text: note,
+      from: (meta && meta.from) || 'cli',
+      at: new Date().toISOString(),
+      build:
+        ((document.querySelector('meta[name="astranov-build"]') || {}).content || '').slice(0, 80),
+    };
+
+    // Merge with existing remote notes so history is not wiped
+    return fetchRemote()
+      .catch(function () {
+        return { notes: [], cmds: [] };
+      })
+      .then(function (cur) {
+        var notes = Array.isArray(cur.notes) ? cur.notes.slice(0, 80) : [];
+        notes.unshift(entry);
+        var cmds = [{ op: 'owner_note', text: note, from: entry.from }];
+        // Keep non-note cmds from remote if fresh
+        if (Array.isArray(cur.cmds)) {
+          cur.cmds.forEach(function (c) {
+            if (c && c.op && c.op !== 'owner_note') cmds.push(c);
+          });
+        }
+        var cfg = global.SN_CONFIG || {};
+        var url = (cfg.sbUrl || global.SB_URL || '').replace(/\/$/, '') + '/functions/v1/debug-write';
+        var body = {
+          kind: 'live_bridge',
+          seq: seq,
+          cmds: cmds,
+          notes: notes.slice(0, 40),
+          note: note,
+          from: 'client',
+          at: entry.at,
+          build: entry.build,
+        };
+        return fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: cfg.sbKey || global.SB_KEY || '',
+            Authorization: 'Bearer ' + (cfg.sbKey || global.SB_KEY || ''),
+          },
+          body: JSON.stringify(body),
+        }).then(function (r) {
+          return r.json().catch(function () {
+            return { ok: r.ok };
+          });
+        });
+      })
+      .then(function (res) {
+        var ok = !!(res && (res.ok === true || res.file));
+        if (ok) log('Bridge OUT · note live for coding agent', 'ok');
+        else log('Bridge OUT · soft · note kept local', 'dim');
+        return { ok: ok, local: true, remote: ok, res: res, text: note };
+      })
+      .catch(function (e) {
+        log('Bridge publish soft-fail · note kept local · ' + (e && e.message ? e.message : e), 'dim');
+        return { ok: true, local: true, remote: false, error: String(e && e.message ? e.message : e) };
+      });
+  }
+
+  async function status() {
+    var st = {
+      polling: !!timer,
+      lastSeq: lastSeq,
+      url: bridgeUrl(),
+      localNotes: localNotes().length,
+      remote: null,
+      ok: false,
+    };
+    try {
+      var j = await fetchRemote();
+      st.remote = {
+        seq: j.seq,
+        from: j.from,
+        received_at: j.received_at,
+        cmds: (j.cmds || []).length,
+        notes: Array.isArray(j.notes) ? j.notes.length : j.note ? 1 : 0,
+        lastNote: (Array.isArray(j.notes) && j.notes[0] && j.notes[0].text) || j.note || '',
+      };
+      st.ok = true;
+    } catch (e) {
+      st.error = String(e && e.message ? e.message : e);
+    }
+    return st;
+  }
+
+  /** Round-trip self-test for owner */
+  async function selfTest() {
+    var token = 'bridge-test-' + Date.now().toString(36);
+    log('Bridge test · publishing…', 'dim');
+    var pub = await ownerNote('SELFTEST ' + token, { from: 'selftest' });
+    await new Promise(function (r) {
+      setTimeout(r, 600);
     });
+    var st = await status();
+    var hit = false;
+    try {
+      var j = await fetchRemote();
+      var blob = JSON.stringify(j);
+      hit = blob.indexOf(token) >= 0;
+    } catch (_) {}
+    var ok = !!(pub && (pub.remote || pub.ok) && (hit || st.ok));
+    log(
+      ok
+        ? 'Bridge OK · coding agent channel live · ' + token
+        : 'Bridge WEAK · note local · remote ' + (hit ? 'hit' : 'miss'),
+      ok ? 'ok' : 'err'
+    );
+    return { ok: ok, token: token, pub: pub, status: st, hit: hit };
   }
 
   global.SNLiveBridge = {
@@ -201,6 +343,10 @@
     applyCmd: applyCmd,
     ownerNote: ownerNote,
     bridgeUrl: bridgeUrl,
+    status: status,
+    selfTest: selfTest,
+    fetchRemote: fetchRemote,
+    localNotes: localNotes,
     get lastSeq() {
       return lastSeq;
     },

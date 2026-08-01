@@ -67,7 +67,7 @@
     flyGen: 0,
     velX: 0,
     velY: 0,
-    damp: 0.92,
+    damp: 0.86,
     lastUserControl: 0,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
@@ -1605,11 +1605,11 @@
       // Accumulated path length to distinguish tap vs rotate
       pathLen = 0;
 
-    // Sensitivity: lower + distance-scaled so near-surface rotates slower (less shake)
+    // Sensitivity: calm + distance-scaled (near surface much slower — no flip chaos)
     function rotScale() {
       var z = G.camera && G.camera.position ? G.camera.position.z : 5;
       // closer → smaller spin per pixel
-      return Math.max(0.0014, Math.min(0.0032, 0.0022 * (z / 4.5)));
+      return Math.max(0.0007, Math.min(0.0018, 0.00115 * (z / 4.5)));
     }
 
     function clearHold() {
@@ -1714,7 +1714,7 @@
       var distFromDown = Math.hypot(t.clientX - downX, t.clientY - downY);
       // Deadzone: ignore micro jitter (stops shake on click)
       if (!dragActive) {
-        if (distFromDown < 8 && pathLen < 12) {
+        if (distFromDown < 12 && pathLen < 16) {
           if (e.cancelable) e.preventDefault();
           return;
         }
@@ -1736,9 +1736,9 @@
         return;
       }
 
-      // Soft low-pass on deltas (anti-shake)
-      var sx = dx * 0.72;
-      var sy = dy * 0.72;
+      // Soft low-pass on deltas (anti-shake / anti-flip)
+      var sx = dx * 0.55;
+      var sy = dy * 0.55;
       var k = rotScale();
 
       if (G.spin && G.tilt) {
@@ -1778,15 +1778,13 @@
       } catch (_) {}
 
       var holdMs = performance.now() - downAt;
-      // Soft fling only if user flicked (fast + was dragging)
+      // Almost no fling — sphere stops where the finger leaves (no wild spin)
       var flickSpeed = Math.hypot(smVx, smVy);
-      if (wasDrag && flickSpeed > 0.45 && holdMs < 900) {
+      if (wasDrag && flickSpeed > 1.1 && holdMs < 420) {
         var k = rotScale();
-        // Convert px/ms → rad/frame-ish, heavily damped
-        G.velX = Math.max(-0.018, Math.min(0.018, smVx * k * 9));
-        G.velY = Math.max(-0.012, Math.min(0.012, smVy * k * 8));
+        G.velX = Math.max(-0.006, Math.min(0.006, smVx * k * 3.2));
+        G.velY = Math.max(-0.004, Math.min(0.004, smVy * k * 2.8));
       } else {
-        // Stop where you left it — no bounce / shake after slow rotate
         G.velX = 0;
         G.velY = 0;
       }
@@ -2178,8 +2176,8 @@
       G.spin.rotation.z = 0;
       G.tilt.rotation.y = 0;
       G.tilt.rotation.z = 0;
-      G.velX *= G.damp;
-      G.velY *= G.damp;
+      G.velX *= Math.min(0.86, G.damp || 0.86);
+      G.velY *= Math.min(0.86, G.damp || 0.86);
       if (Math.abs(G.velX) < 0.00005) G.velX = 0;
       if (Math.abs(G.velY) < 0.00005) G.velY = 0;
     } else if (
@@ -2191,7 +2189,9 @@
       G.spin &&
       Math.abs(G.velX) < 0.00005
     ) {
-      G.spin.rotation.y += G._lite ? 0.00028 : 0.0004;
+      // Idle drift OFF while user has touched recently; otherwise microscopic
+      if (Date.now() - (G.lastUserControl || 0) > 8000)
+        G.spin.rotation.y += G._lite ? 0.00008 : 0.00012;
     }
     if (G.clouds && !G._lite) G.clouds.rotation.y += 0.00035;
     if (G.issHalo && G.issHalo.visible) {

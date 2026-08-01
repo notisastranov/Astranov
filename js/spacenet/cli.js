@@ -1770,12 +1770,16 @@
         return;
       }
 
-      // ── Live bridge · agent notes (owner → remote fix channel) ──
+      // ── Live bridge · agent notes (owner → Grok Build coding agent) ──
       if (
-        low === 'bridge' ||
-        low === 'bridge status' ||
-        low === 'live bridge' ||
-        low === 'bridge poll'
+        /^(bridge|live bridge|rockbridge|rock bridge|grok bridge|coding bridge)(\s|$)/i.test(
+          low
+        ) ||
+        /^(is the )?(grok |coding |live )?bridge\b/.test(low) ||
+        /\bbridge\b.*\b(work|working|status|ok|test|poll)\b/.test(low) ||
+        /\b(work|working|status|ok|test)\b.*\bbridge\b/.test(low) ||
+        low === 'bridge test' ||
+        low === 'test bridge'
       ) {
         try {
           const B = global.SNLiveBridge;
@@ -1784,18 +1788,36 @@
             return;
           }
           B.start && B.start();
-          if (low.includes('poll')) await B.poll();
-          log(
-            'Bridge · on · seq ' +
-              (B.lastSeq || 0) +
-              ' · poll live · agent notes: agent <text> · fix <text>',
-            'ok'
-          );
-          try {
-            const bag = JSON.parse(localStorage.getItem('sn:owner-notes-v1') || '[]');
-            if (Array.isArray(bag) && bag[0])
-              log('Last note · ' + String(bag[0].text || '').slice(0, 100), 'dim');
-          } catch (_) {}
+          const wantTest =
+            /\btest\b/.test(low) || low === 'bridge test' || low === 'test bridge';
+          if (wantTest && B.selfTest) {
+            const r = await B.selfTest();
+            preview(r && r.ok ? 'Bridge OK' : 'Bridge weak');
+            return;
+          }
+          if (/\bpoll\b/.test(low) && B.poll) await B.poll();
+          const st = B.status ? await B.status() : null;
+          if (st && st.ok) {
+            log(
+              'Bridge LIVE · coding agent channel · seq ' +
+                (st.lastSeq || st.remote?.seq || 0) +
+                ' · notes ' +
+                (st.remote?.notes || st.localNotes || 0),
+              'ok'
+            );
+            if (st.remote?.lastNote)
+              log('Last remote note · ' + String(st.remote.lastNote).slice(0, 100), 'dim');
+            log('Send fixes · agent <text>  ·  fix <text>  ·  note <text>', 'dim');
+            log('Self-check · bridge test', 'dim');
+          } else {
+            log(
+              'Bridge · polling · ' +
+                (st && st.error ? st.error : 'warming') +
+                ' · still save notes with agent <text>',
+              'dim'
+            );
+          }
+          preview(st && st.ok ? 'Bridge live' : 'Bridge warming');
         } catch (e) {
           log(String(e.message || e), 'err');
         }
@@ -1803,11 +1825,15 @@
       }
       if (
         /^(agent|fix|note|for agent|tell agent|ask agent)\b/i.test(low) ||
-        /^bridge\s+(note|fix|agent)\b/i.test(low)
+        /^bridge\s+(note|fix|agent)\b/i.test(low) ||
+        /^(tell|ask)\s+(the\s+)?(coding\s+)?agent\b/i.test(low) ||
+        /^(send to|message)\s+(agent|bridge|grok build)\b/i.test(low)
       ) {
         const text = line
           .replace(/^(agent|fix|note|for agent|tell agent|ask agent)\s*/i, '')
           .replace(/^bridge\s+(note|fix|agent)\s*/i, '')
+          .replace(/^(tell|ask)\s+(the\s+)?(coding\s+)?agent\s*/i, '')
+          .replace(/^(send to|message)\s+(agent|bridge|grok build)\s*/i, '')
           .trim();
         if (!text) {
           log('Usage · agent <what to fix>  · e.g. agent top bar money is cut off', 'dim');
@@ -1815,12 +1841,14 @@
         }
         try {
           if (global.SNLiveBridge && SNLiveBridge.ownerNote) {
-            log('Sending note to bridge · ' + text.slice(0, 80), 'ok');
-            const r = await SNLiveBridge.ownerNote(text);
+            log('Sending note to coding agent · ' + text.slice(0, 80), 'ok');
+            const r = await SNLiveBridge.ownerNote(text, { from: 'cli' });
             log(
-              r && r.local
-                ? 'Note saved on this device · bridge publish soft'
-                : 'Note on bridge · agent can pick up',
+              r && r.remote
+                ? 'Note on live bridge · Grok Build can pick it up'
+                : r && r.local
+                  ? 'Note saved on device · remote publish soft — try bridge test'
+                  : 'Note saved',
               'ok'
             );
           } else {

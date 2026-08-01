@@ -33,16 +33,41 @@
   }
 
   /** Default expand target: 1/3 viewport (button/AI — no drag needed) */
-  function defaultMaxCliPx() {
-    var h = window.innerHeight || 700;
-    // Default expand lands at ~45vh; drag can go full screen
-    return Math.round(h * 0.45);
+  function oppositeTopReserve() {
+    // Collapsed top chrome + air gap so bottom never kisses the top scroll
+    return 100;  // top collapsed ~62 + gap ~38
+  }
+  function recapTopForBottom(botPx) {
+    try {
+      var top = document.getElementById('sn-topchrome-panel');
+      if (!top || top.classList.contains('collapsed')) return;
+      var h = window.innerHeight || 700;
+      var maxT = Math.max(54, h - botPx - 20);
+      var th = top.getBoundingClientRect().height;
+      if (th > maxT + 2) {
+        top.style.setProperty('max-height', maxT + 'px', 'important');
+        top.style.setProperty('height', maxT + 'px', 'important');
+        var law = document.getElementById('sn-top-scroll-law');
+        if (law)
+          law.textContent =
+            '#sn-topchrome-panel.mid,#sn-topchrome-panel.expanded{max-height:' +
+            maxT +
+            'px!important;height:' +
+            maxT +
+            'px!important}';
+      }
+    } catch (_) {}
   }
 
-  /** Absolute ceiling — other end of the screen */
+  function defaultMaxCliPx() {
+    var h = window.innerHeight || 700;
+    return Math.min(Math.round(h * 0.45), h - oppositeTopReserve());
+  }
+
+  /** Absolute ceiling — stop before the top scroll */
   function dragMaxCliPx() {
     var h = window.innerHeight || 700;
-    return Math.max(120, h - 8);
+    return Math.max(120, h - oppositeTopReserve());
   }
 
   function sizePx(mode) {
@@ -67,15 +92,36 @@
     if (mode === 'collapsed') panel.classList.add('collapsed');
     else if (mode === 'expanded') panel.classList.add('expanded');
     else panel.classList.add('mid');
-    // Default sizes (1/3 max for expanded) — drag can leave a taller height via free style
     var px = sizePx(mode === 'expanded' ? 'expanded' : mode === 'collapsed' ? 'collapsed' : 'mid');
+    // Cap: never cover the top scroll
+    var cap = dragMaxCliPx();
+    if (px > cap) px = cap;
+    var law = document.getElementById('sn-bot-scroll-law');
+    if (!law) {
+      law = document.createElement('style');
+      law.id = 'sn-bot-scroll-law';
+      document.head.appendChild(law);
+    }
     if (mode === 'collapsed') {
       panel.style.removeProperty('max-height');
       panel.style.removeProperty('height');
       panel.style.maxHeight = px + 'px';
+      law.textContent = '';
     } else {
       panel.style.setProperty('max-height', px + 'px', 'important');
       panel.style.setProperty('height', px + 'px', 'important');
+      panel.style.setProperty('min-height', Math.min(px, 120) + 'px', 'important');
+      law.textContent =
+        'html body #dock #panel.mid,html body #dock #panel.expanded{max-height:' +
+        px +
+        'px !important;height:' +
+        px +
+        'px !important;}' +
+        'html body #dock{top:auto !important;bottom:0 !important;justify-content:flex-end !important;}';
+      try {
+        document.head.appendChild(law);
+      } catch (_) {}
+      recapTopForBottom(px);
     }
     if (animate !== false) panel.classList.add('sn-size-anim');
     try {
@@ -369,6 +415,20 @@
         if (next < sizePx('collapsed') + 16) panel.classList.add('collapsed');
         else if (next > dragMaxCliPx() * 0.82) panel.classList.add('expanded');
         else panel.classList.add('mid');
+        try {
+          var lawD = document.getElementById('sn-bot-scroll-law');
+          if (!lawD) {
+            lawD = document.createElement('style');
+            lawD.id = 'sn-bot-scroll-law';
+            document.head.appendChild(lawD);
+          }
+          lawD.textContent =
+            '#panel.mid,#panel.expanded{max-height:' +
+            next +
+            'px!important;height:' +
+            next +
+            'px!important}';
+        } catch (_) {}
       }
       if (e.cancelable) e.preventDefault();
     }
