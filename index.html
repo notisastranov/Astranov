@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801180000-top-meta-no-clip" />
-<meta name="astranov-continuity" content="20260801180000-top-meta-no-clip" />
+<meta name="astranov-build" content="20260801180800-home-center-restored" />
+<meta name="astranov-continuity" content="20260801180800-home-center-restored" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -2684,13 +2684,9 @@
     min-height: 48px !important;
   }
   .stc-col-device {
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 3 !important;
-    pointer-events: none !important;
-  }
+    position: relative !important;
+    left: auto !important; top: auto !important; transform: none !important; z-index: 3 !important;
+    pointer-events: auto !important; }
   .stc-col-device #btn-home { pointer-events: auto !important; }
   .stc-col-timeline {
     position: relative !important;
@@ -2922,19 +2918,15 @@
 
   /* CENTER name — middle of bar width AND height */
   .stc-col-device {
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 4 !important;
+    position: relative !important;
+    left: auto !important; top: auto !important; transform: none !important; z-index: 4 !important;
     width: auto !important;
     max-width: min(46vw, 200px) !important;
     height: auto !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    pointer-events: none !important;
-    background: transparent !important;
+    pointer-events: auto !important; background: transparent !important;
     border: 0 !important;
   }
   #sn-topchrome #btn-home,
@@ -3271,20 +3263,8 @@
   }
 
   /* CENTER name — true mid of collapsed bar height + width; reserved lane */
-  #sn-topchrome-panel.collapsed .stc-col-device {
-    position: absolute !important;
-    left: 50% !important;
-    top: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    z-index: 5 !important;
-    width: auto !important;
-    max-width: min(40vw, 160px) !important;
-    height: auto !important;
-    pointer-events: none !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-  }
+  /* absolute home killed — see DEAD CENTER */
+  #sn-topchrome-panel.collapsed .stc-col-device { position: relative !important; transform: none !important; left: auto !important; }
   #sn-topchrome-panel.collapsed #btn-home {
     pointer-events: auto !important;
     padding: 4px 6px !important;
@@ -3535,8 +3515,7 @@
   /* Center name always on top, clear lane */
   #sn-topchrome-panel.collapsed .stc-col-device {
     z-index: 20 !important;
-    pointer-events: none !important;
-  }
+    pointer-events: auto !important; }
   #sn-topchrome-panel.collapsed #btn-home {
     pointer-events: auto !important;
     position: relative !important;
@@ -4125,7 +4104,7 @@
   /* Left: radar + readable 3-line stack; right: money + power */
   #sn-topchrome-panel.collapsed #stc-compact {
     display: grid !important;
-    grid-template-columns: minmax(132px, 1.4fr) auto minmax(118px, 1.1fr) !important;
+    grid-template-columns: 1fr auto 1fr !important;
     align-items: center !important;
     gap: 4px 6px !important;
     padding: 4px 8px 6px !important;
@@ -4272,12 +4251,7 @@
     min-width: 36px !important;
     min-height: 36px !important;
   }
-  /* Home stays clear in the middle — never paint dark over side text */
-  #sn-topchrome-panel.collapsed .stc-col-device {
-    z-index: 4 !important;
-    overflow: visible !important;
-    pointer-events: none !important;
-  }
+  /* Home is handled by DEAD CENTER block below */
   #sn-topchrome-panel.collapsed #btn-home {
     pointer-events: auto !important;
     overflow: visible !important;
@@ -4293,6 +4267,110 @@
   #sn-topchrome-panel.collapsed #field-balance-hud::after {
     display: none !important;
     content: none !important;
+  }
+
+
+  /* ═══ ASTRANOV DEAD CENTER · never drift right ═══ */
+  #sn-topchrome-panel.collapsed #stc-compact {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center !important;
+    justify-items: stretch !important;
+    gap: 4px 6px !important;
+    padding: 4px 8px 6px !important;
+    position: relative !important;
+  }
+  /* Center column = home only — always true middle of the bar */
+  #sn-topchrome-panel.collapsed .stc-col-device,
+  #sn-topchrome-panel.mid .stc-col-device,
+  #sn-topchrome-panel.expanded .stc-col-device,
+  #sn-topchrome .stc-col-device {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    max-width: none !important;
+    width: auto !important;
+    min-width: 0 !important;
+    justify-self: center !important;
+    align-self: center !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 8 !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+    grid-column: 2 !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home,
+  #sn-topchrome #btn-home {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    display: block !important;
+    text-align: center !important;
+    pointer-events: auto !important;
+  }
+  /* Left column flush left */
+  #sn-topchrome-panel.collapsed .stc-col-radar {
+    grid-column: 1 !important;
+    justify-self: start !important;
+    position: relative !important;
+    left: auto !important;
+    transform: none !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    z-index: 5 !important;
+  }
+  /* Right column flush right */
+  #sn-topchrome-panel.collapsed .stc-col-money {
+    grid-column: 3 !important;
+    justify-self: end !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    max-width: none !important;
+    z-index: 5 !important;
+  }
+
+
+  /* ═══ ASTRANOV DEAD CENTER v2 ═══ */
+  #stc-compact {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr !important;
+    align-items: center !important;
+  }
+  .stc-col-device {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    justify-self: center !important;
+    align-self: center !important;
+    grid-column: 2 !important;
+    z-index: 8 !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+  .stc-col-radar { grid-column: 1 !important; justify-self: start !important; position: relative !important; left: auto !important; transform: none !important; }
+  .stc-col-money { grid-column: 3 !important; justify-self: end !important; position: relative !important; left: auto !important; transform: none !important; }
+  #btn-home {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    text-align: center !important;
   }
 
 </style>
@@ -4526,7 +4604,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801180000-top-meta-no-clip"></script>
+<script src="/js/spacenet/boot.js?v=20260801180800-home-center-restored"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
