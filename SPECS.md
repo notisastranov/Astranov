@@ -315,3 +315,9 @@ Build `20260801113000-four-scrolls-layout-edit`.
 | **Freeze / date input** | Lock era · jump to calendar date |
 
 Radar gadget renamed **Timeline Scanner**.
+
+## OWNER LOG · 2026-08-01 CLI input fixed size
+
+Bottom scroll expand grows **#cli-log only**. **#cli-form / #cli-in** fixed height (36/22px). Never hide input. Never let form flex-grow.
+
+Critical regression root previously: missing `</style>` blanked entire app — always balance style tags before ship.
