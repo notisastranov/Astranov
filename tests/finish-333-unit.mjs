@@ -102,3 +102,13 @@ console.log('PASS finish-333-unit' , {
   path,
   readiness: g.SNOrderEngine.readiness().score,
 });
+
+// task-runner plan
+loadIife('js/spacenet/task-runner.js', g);
+assert.ok(g.SNTaskRunner);
+const plan = g.SNTaskRunner.planFromText('locate me and order pizza and fill shops');
+assert.ok(plan && plan.steps.indexOf('locate') >= 0);
+assert.ok(plan.steps.indexOf('order') >= 0 || plan.steps.indexOf('browse') >= 0);
+const full = g.SNTaskRunner.planFromText('first delivery');
+assert.deepEqual(full.steps, ['locate', 'shops', 'order', 'drive', 'deliver']);
+console.log('PASS task-runner plan', plan.steps, full.steps);

@@ -2,7 +2,7 @@
 
 **UI freeze:** no scrolls/chrome/HUD work in this program.  
 **Count:** 333 suggestions  
-**Implemented this ship (core engine):** **132/333** marked `SHIPPED_CORE` in `FINISH-333-STATUS.json`  
+**Implemented this ship (core engine):** **159/333** marked `SHIPPED_CORE` in `FINISH-333-STATUS.json`  
 **Remaining:** platform/VPS/Places keys/multi-device live mesh still need ops + more code passes  
 
 **New modules:** `js/spacenet/order-engine.js` · `js/spacenet/greeklish.js`  

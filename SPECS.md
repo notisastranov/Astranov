@@ -384,3 +384,14 @@ Build: `cd deploy/osrm && ./prepare.sh && docker compose up -d`
 | **Route** | persist meta on task.route when taskId |
 | **UI** | still frozen |
 
+## OWNER LOG · 2026-08-01 AI full tasks + FINISH-333 pass 3
+
+| Item | Law |
+|------|-----|
+| **SNTaskRunner** | `js/spacenet/task-runner.js` · plan+run locate→shops→order→drive→deliver |
+| **AI** | Multi-step missions via `runMission` · map paint · mind learn |
+| **CLI** | `mission …` · `do order pizza` · full loop phrases |
+| **Food** | `i need/want` auto-order · map summary after fulfill |
+| **Progress** | 159/333 SHIPPED_CORE · UI still frozen |
+
+Test: `mission locate and order pizza` · AI: first delivery · order me a pizza you judge…

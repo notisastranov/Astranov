@@ -165,19 +165,19 @@
     "id": 28,
     "domain": "delivery",
     "text": "Browse-only pizza must not auto-pay",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 29,
     "domain": "delivery",
     "text": "autoOrder only on explicit order me / ORDER ME / first delivery",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 30,
     "domain": "delivery",
     "text": "Soft home Rhodes only when softHome/test flags set",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 31,
@@ -201,13 +201,13 @@
     "id": 34,
     "domain": "delivery",
     "text": "Store network order id on task when intake succeeds",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 35,
     "domain": "delivery",
     "text": "Map route startDeliveryRoute only after paid+task",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 36,
@@ -219,13 +219,13 @@
     "id": 37,
     "domain": "delivery",
     "text": "deliver me requires claimed/in_progress by me or assigned driver",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 38,
     "domain": "delivery",
     "text": "Partial refund support for missing items (ledger reason codes)",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 39,
@@ -525,13 +525,13 @@
     "id": 88,
     "domain": "shops",
     "text": "fill shops CLI forces sector ensure + Places",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 89,
     "domain": "shops",
     "text": "google shops alias fill",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 90,
@@ -1257,7 +1257,7 @@
     "id": 210,
     "domain": "ai",
     "text": "Mind memory permanent SNAstranovMind",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 211,
@@ -1305,49 +1305,49 @@
     "id": 218,
     "domain": "ai",
     "text": "English food synonyms",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 219,
     "domain": "ai",
     "text": "Reject junk fuzzy answers (Grok climb class)",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 220,
     "domain": "ai",
     "text": "Brain law inject into free-ai prompts",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 221,
     "domain": "ai",
     "text": "Usage flag firstDeliveryDone",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 222,
     "domain": "ai",
     "text": "Handoff packet midnight Athens job data",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 223,
     "domain": "ai",
     "text": "AI control: only SPECS commands",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 224,
     "domain": "ai",
     "text": "Suggest list setSuggestList after food search",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 225,
     "domain": "ai",
     "text": "Voice STT result route to same CLI parser",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 226,
@@ -1365,19 +1365,19 @@
     "id": 228,
     "domain": "ai",
     "text": "AI never claim shipped",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 229,
     "domain": "ai",
     "text": "AI never invent shops",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 230,
     "domain": "ai",
     "text": "Confidence score on intents",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 231,
@@ -1497,19 +1497,19 @@
     "id": 250,
     "domain": "tasks",
     "text": "Coordination plan object versioned",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 251,
     "domain": "tasks",
     "text": "Role slots client vendor driver",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 252,
     "domain": "tasks",
     "text": "Fill slot with nearest matching profile",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 253,
@@ -1527,13 +1527,13 @@
     "id": 255,
     "domain": "tasks",
     "text": "Always_on delivery tasks",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 256,
     "domain": "tasks",
     "text": "Task board advise traffic best-effort",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 257,
@@ -1959,7 +1959,7 @@
     "id": 327,
     "domain": "integrity_ops",
     "text": "FINISH-333 checklist auto tick when tests pass",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 328,

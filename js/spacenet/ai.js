@@ -1080,6 +1080,45 @@
       };
     }
 
+    // —— Full multi-step missions (locate→shops→order→drive→deliver) ——
+    try {
+      if (global.SNTaskRunner && SNTaskRunner.planFromText) {
+        var missionPlan = SNTaskRunner.planFromText(line);
+        // Only intercept multi-step or explicit full loops — single food still uses food intent
+        if (
+          missionPlan &&
+          missionPlan.steps &&
+          (missionPlan.steps.length >= 2 ||
+            missionPlan.steps.indexOf('deliver') >= 0 ||
+            missionPlan.steps.indexOf('drive') >= 0 ||
+            /first delivery|full (order|loop|delivery)|end to end|shop to door/i.test(low))
+        ) {
+          return {
+            did: did.concat(['mission:' + missionPlan.steps.join('+')]),
+            reply: 'On it — ' + missionPlan.steps.join(' → ') + '…',
+            runMission: missionPlan,
+            skipBrand: true,
+          };
+        }
+      }
+    } catch (_mp) {}
+
+    // Explicit delivery verbs for AI
+    if (/^(drive on|go driver|i am driver|i'?m a driver)\b/i.test(low)) {
+      return { did: did.concat(['drive_on']), reply: 'Going driver online…', runDriveOn: true, skipBrand: true };
+    }
+    if (/^(deliver me|complete delivery|mark delivered|finish delivery)\b/i.test(low)) {
+      return { did: did.concat(['deliver']), reply: 'Completing delivery…', runDeliver: true, skipBrand: true };
+    }
+    if (/^(fill shops|google shops|shops near me|find shops)\b/i.test(low)) {
+      return {
+        did: did.concat(['fill_shops']),
+        reply: 'Filling real shops near you on the map…',
+        runMission: { steps: ['locate', 'shops'], foodLine: line, autoOrder: false },
+        skipBrand: true,
+      };
+    }
+
     // Family call
     if (/^(aksaki|αξάκι|aksas|αξάς|ela\s+re|έλα\s+ρε)\s*[!.?]*$/i.test(low)) {
       return {
@@ -1182,7 +1221,13 @@
     // —— Globe follows AI (priority navigation) ——
     if (/\b(locate|where am i|gps|find me|βρες\s+με)\b/.test(low)) {
       try {
-        if (global.SNGlobe && SNGlobe.locate) {
+        if (global.SNTaskRunner && SNTaskRunner.locate) {
+          var locR = await SNTaskRunner.locate();
+          did.push('locate');
+          reply = locR && locR.ok
+            ? "I've got you on the map. Want shops or order pizza?"
+            : (locR && locR.error) || "Couldn't get location — allow GPS.";
+        } else if (global.SNGlobe && SNGlobe.locate) {
           var loc = await SNGlobe.locate();
           did.push('locate');
           reply = loc
@@ -1473,6 +1518,65 @@
       return text;
     }
 
+    // Full mission runner (map + CLI side effects)
+    if (local.runMission && global.SNTaskRunner && SNTaskRunner.runPlan) {
+      try {
+        var miss = await SNTaskRunner.runPlan(local.runMission, {
+          testMode: /\btest\b/i.test(msg),
+          softHome: false,
+        });
+        text = (miss && (miss.reply || miss.summary)) || local.reply || 'Mission done';
+        if (miss && miss.order && miss.order.summary && global.SNCli && SNCli.log) {
+          String(miss.order.summary)
+            .split('\n')
+            .slice(0, 12)
+            .forEach(function (ln) {
+              if (ln.trim()) SNCli.log(ln.trim(), 'dim');
+            });
+        }
+        showOnGlobe(brief(text, 80));
+        try {
+          if (global.SNAstranovMind && SNAstranovMind.learnInteraction) {
+            SNAstranovMind.learnInteraction(msg, text, { source: 'mission', score: 0.9 });
+          }
+        } catch (_lm) {}
+      } catch (eM) {
+        text = 'Mission failed · ' + (eM && eM.message ? eM.message : eM);
+        showOnGlobe(text);
+      }
+      text = brandReply(text);
+      pushHist('assistant', text);
+      busy = false;
+      clearThinkGfx();
+      return text;
+    }
+    if (local.runDriveOn && global.SNTaskRunner) {
+      try {
+        var dr = await SNTaskRunner.driveOn();
+        text = dr && dr.ok ? 'You are online as courier · claim open tasks or wait for orders' : (dr && dr.error) || 'Drive on failed';
+      } catch (eD) {
+        text = 'Drive on failed';
+      }
+      showOnGlobe(brief(text, 72));
+      pushHist('assistant', text);
+      busy = false;
+      clearThinkGfx();
+      return brandReply(text);
+    }
+    if (local.runDeliver && global.SNTaskRunner) {
+      try {
+        var dl = await SNTaskRunner.deliver();
+        text = dl && dl.ok ? 'Delivery complete · settled in AC' : (dl && dl.error) || 'Deliver failed';
+      } catch (eL) {
+        text = 'Deliver failed';
+      }
+      showOnGlobe(brief(text, 72));
+      pushHist('assistant', text);
+      busy = false;
+      clearThinkGfx();
+      return brandReply(text);
+    }
+
     // Food intent: locate → verify if soft → judge prefs → order → ETA
     if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
       try {
@@ -1492,6 +1596,26 @@
         } else if (foodR && foodR.summary) {
           text = foodR.eatLine || foodR.reply || 'Order done';
           showOnGlobe(brief(text, 72));
+          try {
+            if (foodR.pos && global.SNTaskRunner && SNTaskRunner.ensureMap) {
+              await SNTaskRunner.ensureMap(foodR.pos.lat, foodR.pos.lng);
+            }
+            if (global.SNMap) {
+              if (SNMap.showTasks) SNMap.showTasks();
+              if (SNMap.showProfiles) SNMap.showProfiles();
+            }
+            if (foodR.summary && global.SNCli && SNCli.log) {
+              String(foodR.summary)
+                .split('\n')
+                .slice(0, 10)
+                .forEach(function (ln) {
+                  if (ln.trim()) SNCli.log(ln.trim(), foodR.ok ? 'ok' : 'dim');
+                });
+            }
+            if (global.SNAstranovMind && SNAstranovMind.learnInteraction) {
+              SNAstranovMind.learnInteraction(msg, text, { source: 'food_order', score: 0.85 });
+            }
+          } catch (_fp) {}
         } else if (foodR && foodR.vendors && foodR.vendors.length) {
           setSuggestList(foodR.vendors, { query: foodR.food || local.runFoodIntent.food, idx: 0 });
           var shown = presentVendor(0);
@@ -1797,6 +1921,12 @@
     bootPresence: bootPresence,
     listeningOn: listeningOn,
     listeningOff: listeningOff,
+    runMission: function (text, opts) {
+      return global.SNTaskRunner && SNTaskRunner.runText
+        ? SNTaskRunner.runText(text, opts || {})
+        : Promise.resolve({ ok: false, error: 'no runner' });
+    },
+
     actLocal: actLocal,
     controlApp: controlApp,
     globeGo: globeGo,

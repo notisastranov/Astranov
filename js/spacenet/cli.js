@@ -1894,6 +1894,41 @@
         return;
       }
 
+
+      if (
+        low === 'mission' ||
+        low.startsWith('mission ') ||
+        low === 'do task' ||
+        low.startsWith('do ') && /\b(order|locate|shops|deliver)\b/.test(low)
+      ) {
+        try {
+          if (!global.SNTaskRunner || !SNTaskRunner.runText) {
+            log('Task runner loading · hard refresh', 'err');
+            return;
+          }
+          const payload =
+            low === 'mission' || low === 'do task'
+              ? 'locate and order me a pizza you judge'
+              : line.replace(/^mission\s+/i, '').replace(/^do\s+/i, '');
+          log('Mission · running…', 'dim');
+          const r = await SNTaskRunner.runText(payload, {});
+          if (r && r.summary) {
+            String(r.summary)
+              .split('\n')
+              .slice(0, 14)
+              .forEach(function (ln) {
+                if (ln.trim()) log(ln.trim(), r.ok ? 'ok' : 'dim');
+              });
+          } else {
+            log((r && r.reply) || (r && r.error) || 'done', r && r.ok ? 'ok' : 'err');
+          }
+          preview(r && r.ok ? 'Mission OK' : 'Mission');
+        } catch (e) {
+          log('Mission · ' + (e.message || e), 'err');
+        }
+        return;
+      }
+
       // ── Street routing self-test (OSRM self-host / gateway / public) ──
       if (
         low === 'route test' ||

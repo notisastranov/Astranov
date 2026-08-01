@@ -844,6 +844,7 @@
     var auto =
       /\border(\s+me)?(\s+a)?\b/i.test(low) ||
       /\b(bring|get\s+me|buy\s+me|παράγγειλ|παράγγειλε)\b/i.test(low) ||
+      /\b(i\s+need|i\s+want|send\s+me|deliver\s+me\s+a)\b/i.test(low) ||
       /\b(you\s+judge|judge\s+the|you\s+pick|you\s+choose|whatever\s+else|what\s+time\s+i\s+eat)\b/i.test(
         low
       );
