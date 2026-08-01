@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801130000-meta-stack-v10" />
-<meta name="astranov-continuity" content="20260801130000-meta-stack-v10" />
+<meta name="astranov-build" content="20260801131200-task-launcher" />
+<meta name="astranov-continuity" content="20260801131200-task-launcher" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1194,7 +1194,7 @@
     display: flex; align-items: center; justify-content: center; padding: 20px;
     backdrop-filter: blur(10px);
   }
-  #coach[hidden] { display: none !important; }
+  #coach[hidden] { display: none !important; pointer-events: none !important; visibility: hidden !important; }
   #coach .card {
     max-width: 360px; background: var(--panel); border: 1px solid var(--border);
     border-radius: 16px; padding: 22px; color: var(--text);
@@ -3289,7 +3289,148 @@
     #sn-topchrome-panel.collapsed #fnm-phys { font-size: 8px !important; }
   }
 
-</style>
+
+  /* ═══ TASK LAUNCHER · 3-state circular power (right of money) ═══ */
+  #sn-topchrome-panel.collapsed .stc-col-money {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    height: 100% !important;
+  }
+  #sn-task-launch {
+    position: relative !important;
+    z-index: 90 !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    aspect-ratio: 1 / 1 !important;
+    border-radius: 50% !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    cursor: pointer !important;
+    align-self: center !important;
+    background: radial-gradient(circle at 35% 30%, rgba(80,140,255,0.35), rgba(0,20,60,0.9) 62%, #000) !important;
+    box-shadow:
+      inset 0 0 0 1.5px rgba(0, 120, 255, 0.65),
+      0 0 14px rgba(0, 100, 255, 0.55),
+      0 0 28px rgba(0, 80, 255, 0.25) !important;
+    overflow: hidden !important;
+    z-index: 3 !important;
+  }
+  #sn-task-launch .sn-launch-core {
+    position: absolute;
+    inset: 28%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #8ec8ff, #0066ff 55%, #003399);
+    box-shadow: 0 0 12px rgba(0, 140, 255, 0.9);
+  }
+  #sn-task-launch .sn-launch-ring {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(100, 180, 255, 0.55);
+    box-shadow: inset 0 0 8px rgba(0, 120, 255, 0.35);
+    pointer-events: none;
+  }
+  /* STANDBY default = glowing blue */
+  #sn-task-launch.mode-standby {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(0, 140, 255, 0.75),
+      0 0 16px rgba(0, 120, 255, 0.7),
+      0 0 32px rgba(0, 90, 255, 0.35) !important;
+    animation: sn-launch-pulse-blue 2.2s ease-in-out infinite;
+  }
+  #sn-task-launch.mode-standby .sn-launch-core {
+    background: radial-gradient(circle at 40% 35%, #a8d8ff, #0070ff 50%, #0044bb);
+    box-shadow: 0 0 14px rgba(0, 150, 255, 1);
+  }
+  /* ON = glowing green — tasks thrown */
+  #sn-task-launch.mode-on {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(0, 255, 140, 0.8),
+      0 0 16px rgba(0, 230, 120, 0.75),
+      0 0 32px rgba(0, 200, 100, 0.4) !important;
+    animation: sn-launch-pulse-green 1.6s ease-in-out infinite;
+  }
+  #sn-task-launch.mode-on .sn-launch-core {
+    background: radial-gradient(circle at 40% 35%, #b8ffd0, #00e070 50%, #008844);
+    box-shadow: 0 0 14px rgba(0, 255, 140, 1);
+  }
+  #sn-task-launch.mode-on .sn-launch-ring {
+    border-color: rgba(100, 255, 180, 0.65);
+  }
+  /* OFF = glowing red — silence */
+  #sn-task-launch.mode-off {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(255, 60, 90, 0.85),
+      0 0 16px rgba(255, 40, 80, 0.7),
+      0 0 28px rgba(200, 20, 50, 0.35) !important;
+    animation: sn-launch-pulse-red 2.4s ease-in-out infinite;
+  }
+  #sn-task-launch.mode-off .sn-launch-core {
+    background: radial-gradient(circle at 40% 35%, #ffb0c0, #ff3355 50%, #990020);
+    box-shadow: 0 0 14px rgba(255, 50, 90, 1);
+  }
+  #sn-task-launch.mode-off .sn-launch-ring {
+    border-color: rgba(255, 120, 140, 0.65);
+  }
+  @keyframes sn-launch-pulse-blue {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.18); }
+  }
+  @keyframes sn-launch-pulse-green {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.22); }
+  }
+  @keyframes sn-launch-pulse-red {
+    0%, 100% { filter: brightness(0.95); }
+    50% { filter: brightness(1.12); }
+  }
+  @media (max-width: 380px) {
+    #sn-task-launch {
+      flex: 0 0 34px !important;
+      width: 34px !important;
+      height: 34px !important;
+      min-width: 34px !important;
+      min-height: 34px !important;
+      max-width: 34px !important;
+      max-height: 34px !important;
+    }
+  }
+  @media (min-width: 700px) {
+    #sn-task-launch {
+      flex: 0 0 44px !important;
+      width: 44px !important;
+      height: 44px !important;
+      min-width: 44px !important;
+      min-height: 44px !important;
+      max-width: 44px !important;
+      max-height: 44px !important;
+    }
+  }
+  /* expanded: keep same control visible in money row */
+  #sn-topchrome-panel.mid .stc-col-money,
+  #sn-topchrome-panel.expanded .stc-col-money {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+
+  /* TOPCHROME ABOVE COACH — launcher must be clickable */
+  #sn-topchrome { z-index: 120 !important; pointer-events: none !important; }
+  #sn-topchrome #sn-topchrome-panel,
+  #sn-topchrome #sn-topchrome-panel * { pointer-events: auto !important; }
+  #coach { z-index: 90 !important; }
+
 </head>
 <body>
 <div id="boot" aria-label="ASTRANOV loading" aria-busy="true">
@@ -3352,6 +3493,10 @@
             <canvas id="fbh-load-graph" width="140" height="32" aria-hidden="true" hidden></canvas>
             <span id="fbh-load-label" hidden>device load</span>
           </div>
+          <button type="button" id="sn-task-launch" class="sn-launch mode-standby" title="Task launcher · standby · mild news only" aria-label="Task launcher · cycle standby on off" aria-pressed="mixed">
+            <span class="sn-launch-core" aria-hidden="true"></span>
+            <span class="sn-launch-ring" aria-hidden="true"></span>
+          </button>
           <div class="stc-g-detail" id="stc-d-money" hidden style="display:none!important">
             <div class="stc-g-title">MONEY · AC</div>
             <div class="stc-g-row"><span>Wallet</span><span id="stc-money-bal">◈ 0.00</span></div>
@@ -3512,7 +3657,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801130000-meta-stack-v10"></script>
+<script src="/js/spacenet/boot.js?v=20260801131200-task-launcher"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

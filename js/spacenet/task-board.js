@@ -388,6 +388,14 @@
   }
 
   function listCompatibleOnCli() {
+    try {
+      if (global.SNLaunch && SNLaunch.allows && !SNLaunch.allows('task')) {
+        if (global.SNCli && SNCli.log)
+          SNCli.log('Launcher off/standby · open tasks not thrown · set launcher green', 'dim');
+        return [];
+      }
+    } catch (_) {}
+
     var scored = suggestCompatible(10);
     if (!scored.length) {
       log('No open delivery tasks · place an order or wait for jobs', 'dim');

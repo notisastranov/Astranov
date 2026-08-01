@@ -273,6 +273,131 @@
 
   var task = 'idle';
   var notice = '';
+
+  /** Task launcher: standby (blue) · on (green) · off (red) */
+  var LAUNCH_KEY = 'sn:task-launch-v1';
+  var launchMode = 'standby'; // standby | on | off
+  try {
+    var _lm = localStorage.getItem(LAUNCH_KEY);
+    if (_lm === 'standby' || _lm === 'on' || _lm === 'off') launchMode = _lm;
+    else launchMode = 'standby';
+  } catch (_) {
+    launchMode = 'standby';
+  }
+
+  function launchLabels() {
+    return {
+      standby: {
+        title: 'Task launcher · STANDBY · mild news & warnings only',
+        cli: 'Launcher · STANDBY · mild news only (blue)',
+        pressed: 'mixed',
+      },
+      on: {
+        title: 'Task launcher · ON · tasks will be thrown to you',
+        cli: 'Launcher · ON · tasks active (green)',
+        pressed: 'true',
+      },
+      off: {
+        title: 'Task launcher · OFF · no tasks · no news · no warnings',
+        cli: 'Launcher · OFF · silence (red)',
+        pressed: 'false',
+      },
+    };
+  }
+
+  function paintLaunchBtn() {
+    var btn = $('sn-task-launch');
+    if (!btn) return;
+    btn.classList.remove('mode-standby', 'mode-on', 'mode-off');
+    btn.classList.add('mode-' + launchMode);
+    var L = launchLabels()[launchMode] || launchLabels().standby;
+    btn.title = L.title;
+    btn.setAttribute('aria-label', L.title);
+    btn.setAttribute('aria-pressed', L.pressed);
+    btn.dataset.mode = launchMode;
+  }
+
+  function setLaunchMode(mode, opts) {
+    opts = opts || {};
+    if (mode !== 'standby' && mode !== 'on' && mode !== 'off') mode = 'standby';
+    launchMode = mode;
+    try {
+      localStorage.setItem(LAUNCH_KEY, launchMode);
+    } catch (_) {}
+    paintLaunchBtn();
+    try {
+      document.body.classList.remove('launch-standby', 'launch-on', 'launch-off');
+      document.body.classList.add('launch-' + launchMode);
+    } catch (_) {}
+    if (opts.quiet) return launchMode;
+    try {
+      var L = launchLabels()[launchMode];
+      if (g.SNCli && SNCli.log) SNCli.log(L.cli, launchMode === 'off' ? 'dim' : 'ok');
+      if (g.SNCli && SNCli.preview) SNCli.preview(L.cli);
+    } catch (_) {}
+    return launchMode;
+  }
+
+  function cycleLaunchMode() {
+    var next = launchMode === 'standby' ? 'on' : launchMode === 'on' ? 'off' : 'standby';
+    return setLaunchMode(next, { quiet: false });
+  }
+
+  /**
+   * Gate tasks / news / warnings by launcher mode.
+   * standby → mild only · on → all · off → nothing
+   */
+  function launchAllows(kind) {
+    kind = String(kind || 'task').toLowerCase();
+    if (launchMode === 'off') return false;
+    if (launchMode === 'on') return true;
+    // standby: mild news + warnings only — no full tasks thrown
+    if (kind === 'task' || kind === 'throw' || kind === 'assign' || kind === 'offer') return false;
+    if (kind === 'news' || kind === 'warn' || kind === 'warning' || kind === 'mild' || kind === 'notice')
+      return true;
+    return false;
+  }
+
+  function bindTaskLaunch() {
+    var btn = $('sn-task-launch');
+    if (!btn) {
+      try {
+        var moneyCol = document.querySelector('#sn-topchrome .stc-col-money');
+        var hud = $('field-balance-hud');
+        if (moneyCol) {
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.id = 'sn-task-launch';
+          btn.className = 'sn-launch mode-standby';
+          btn.innerHTML =
+            '<span class="sn-launch-core" aria-hidden="true"></span>' +
+            '<span class="sn-launch-ring" aria-hidden="true"></span>';
+          if (hud && hud.parentNode === moneyCol) moneyCol.insertBefore(btn, hud.nextSibling);
+          else moneyCol.appendChild(btn);
+        }
+      } catch (_) {}
+    }
+    paintLaunchBtn();
+    try {
+      document.body.classList.add('launch-' + launchMode);
+    } catch (_) {}
+    btn = $('sn-task-launch');
+    if (btn && !btn._snLaunchBound) {
+      btn._snLaunchBound = true;
+      btn.addEventListener(
+        'click',
+        function (e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          cycleLaunchMode();
+        },
+        true
+      );
+    }
+  }
+
   var speedMode = 'rotate';
   /**
    * Device harvest roles (ASTRANOV technical settings):
@@ -3998,9 +4123,17 @@
       }
     } catch (eB) {}
     bindTimeline();
+    bindTaskLaunch();
     paintRibbon();
   }
 
+  g.SNLaunch = {
+    get mode() { return launchMode; },
+    setMode: setLaunchMode,
+    cycle: cycleLaunchMode,
+    allows: launchAllows,
+    paint: paintLaunchBtn,
+  };
   g.SNTimeline = {
     get offset() { return timeline.offset; },
     get year() { return timelineTargetYear(); },
@@ -4021,10 +4154,17 @@
     closeRibbonFlyout: closeRibbonFlyout,
     setTask: setTask,
     infer: infer,
-    setNotice: function (t) {
+    setNotice: function (t, kind) {
+      if (!launchAllows(kind || 'notice')) return;
       notice = String(t || '').slice(0, 60);
       paintRibbon();
     },
+    launchMode: function () {
+      return launchMode;
+    },
+    setLaunchMode: setLaunchMode,
+    launchAllows: launchAllows,
+    cycleLaunch: cycleLaunchMode,
     showTerms: showTerms,
     openFinance: openFinance,
     closeFinance: function () {
