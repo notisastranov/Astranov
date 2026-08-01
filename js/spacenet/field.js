@@ -30,7 +30,7 @@
   var EARTH = SPEED.rotate.v;
 
   /** Timeline Scanner — time machine (past imagery · present · future projection) */
-  var TL_KEY = 'sn:timeline-v1';
+  var TL_KEY = 'sn:timeline-v2';
   var timeline = {
     offset: 0, // years from present (neg=past, pos=future)
     frozen: false,
@@ -42,8 +42,14 @@
     if (_tls && typeof _tls.offset === 'number') {
       timeline.offset = Math.max(-80, Math.min(40, _tls.offset));
       timeline.frozen = !!_tls.frozen;
+    } else {
+      timeline.offset = 0;
+      timeline.frozen = false;
     }
-  } catch (_) {}
+  } catch (_) {
+    timeline.offset = 0;
+    timeline.frozen = false;
+  }
 
   function timelineNowYear() {
     return new Date().getFullYear();
@@ -1312,7 +1318,6 @@
       if (timeline.offset !== 0) {
         show = new Date(now.getTime());
         show.setFullYear(timelineTargetYear());
-        // keep month/day of "today" for display continuity
       }
       var d =
         show.getFullYear() +
@@ -1320,7 +1325,8 @@
         String(show.getMonth() + 1).padStart(2, '0') +
         '-' +
         String(show.getDate()).padStart(2, '0');
-      timeEl.textContent = d + '  ' + fmtClock(show, false);
+      // date + local time (readable)
+      timeEl.textContent = d + ' · ' + fmtClock(show, false);
       timeEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
       var md = timelineMode();
       timeEl.classList.add('tl-' + md);
@@ -1335,8 +1341,16 @@
     var pLng = p && p.lng != null ? p.lng : null;
     var pName = pLat != null ? placeNameNear(pLat, pLng) : null;
     if (physEl) {
-      physEl.textContent =
-        (pName ? pName + ' · ' : '') + fmtLL(pLat, pLng);
+      // location only — short readable
+      var loc =
+        pName ||
+        (pLat != null ? Number(pLat).toFixed(3) + '°, ' + Number(pLng).toFixed(3) + '°' : 'locating…');
+      physEl.textContent = loc;
+      physEl.hidden = false;
+      physEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
+      var md2 = timelineMode();
+      physEl.classList.add('tl-' + md2);
+      if (timeline.frozen && md2 === 'past') physEl.classList.add('tl-frozen');
     }
     var v =
       (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
