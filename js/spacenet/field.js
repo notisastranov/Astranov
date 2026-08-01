@@ -1597,8 +1597,8 @@
 
     function sizePx(mode) {
       var h = window.innerHeight || 700;
-      var MIN = 64;
-      if (mode === 'collapsed') return 64;
+      var MIN = 58;
+      if (mode === 'collapsed') return 58;
       if (mode === 'expanded') return Math.max(MIN, Math.min(280, Math.round(h * 0.36)));
       return Math.max(MIN, Math.min(200, Math.round(h * 0.26)));
     }

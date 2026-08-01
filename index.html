@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801103000-gaming-hud-delivery" />
-<meta name="astranov-continuity" content="20260801103000-gaming-hud-delivery" />
+<meta name="astranov-build" content="20260801104000-gaming-gfx-v3" />
+<meta name="astranov-continuity" content="20260801104000-gaming-gfx-v3" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -1966,232 +1966,404 @@
   }
 
 
+  
   /* ═══════════════════════════════════════════════════════════════
-     ASTRANOV GAMING HUD v2 — high-res · dense · no wasted space
-     Top scroll: big name · thin chrome · sharp glass
-     Bottom scroll: compact ribbon · glowing input always on
+     ASTRANOV GAMING GRAPHICS HUD v3 — denser · sharper · sci-fi
+     High visual density · minimal wasted chrome · big brand name
      ═══════════════════════════════════════════════════════════════ */
   :root {
-    --hud-line: rgba(40, 140, 255, 0.45);
-    --hud-glow: rgba(30, 120, 255, 0.35);
-    --hud-text: #d8ecff;
-    --top-scroll-min: 64px;
-    --bottom-scroll-min: 108px;
-    --zone-top: 68px;
+    --top-scroll-min: 58px;
+    --bottom-scroll-min: 100px;
+    --zone-top: 62px;
+    --g-cyan: #2ec8ff;
+    --g-blue: #0a6fff;
+    --g-deep: #041428;
+    --g-edge: rgba(46, 200, 255, 0.55);
+    --g-edge-soft: rgba(46, 200, 255, 0.22);
+    --g-fill: rgba(4, 16, 40, 0.55);
+    --g-fill-lite: rgba(255, 255, 255, 0.78);
   }
 
-  /* TOP SCROLL — thin bar, sharp, high density */
+  /* Micro hex texture overlay on scrolls */
+  #sn-topchrome-panel,
+  #panel {
+    position: relative;
+    isolation: isolate;
+  }
+  #sn-topchrome-panel::before,
+  #panel::before {
+    content: '' !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    opacity: 0.14 !important;
+    border-radius: inherit !important;
+    background-image:
+      linear-gradient(rgba(46, 200, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(46, 200, 255, 0.07) 1px, transparent 1px) !important;
+    background-size: 10px 10px !important;
+    mix-blend-mode: screen !important;
+  }
+  /* Corner brackets — gaming panel language */
+  #sn-topchrome-panel::after,
+  #panel::after {
+    content: '' !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    inset: 3px !important;
+    z-index: 0 !important;
+    border-radius: 10px !important;
+    border: 1px solid transparent !important;
+    border-image: none !important;
+    box-shadow:
+      inset 10px 0 0 -9px var(--g-edge),
+      inset -10px 0 0 -9px var(--g-edge),
+      inset 0 10px 0 -9px var(--g-edge-soft),
+      inset 0 -10px 0 -9px var(--g-edge-soft) !important;
+    opacity: 0.85 !important;
+  }
+
+  /* ── TOP SCROLL dense ── */
   #sn-topchrome {
-    padding: calc(4px + env(safe-area-inset-top)) 8px 0 !important;
+    padding: calc(3px + env(safe-area-inset-top)) 6px 0 !important;
   }
   #sn-topchrome-panel {
-    border-radius: 12px !important;
-    border-width: 1px !important;
+    border-radius: 11px !important;
+    border: 1px solid var(--g-edge) !important;
+    background:
+      radial-gradient(ellipse 90% 120% at 50% -30%, rgba(46, 200, 255, 0.16) 0%, transparent 55%),
+      linear-gradient(165deg, rgba(6, 22, 52, 0.72) 0%, rgba(2, 10, 28, 0.68) 100%) !important;
+    backdrop-filter: blur(18px) saturate(1.35) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.35) !important;
+    box-shadow:
+      0 0 0 1px rgba(10, 40, 100, 0.4),
+      0 6px 22px rgba(0, 0, 0, 0.35),
+      0 0 32px rgba(20, 100, 255, 0.2),
+      inset 0 1px 0 rgba(160, 220, 255, 0.2) !important;
+    animation: none !important;
   }
   #sn-topchrome-panel.collapsed {
-    max-height: 70px !important;
-    min-height: 62px !important;
+    max-height: 62px !important;
+    min-height: 56px !important;
   }
   #sn-topchrome-panel.mid {
-    max-height: min(168px, 24vh) !important;
+    max-height: min(150px, 22vh) !important;
   }
   #sn-topchrome-panel.expanded {
-    max-height: min(240px, 34vh) !important;
+    max-height: min(220px, 32vh) !important;
+  }
+  #stc-body, #stc-compact, #sn-topchrome-drag,
+  #stc-center, .stc-col {
+    position: relative;
+    z-index: 1;
   }
   #stc-compact {
-    padding: 3px 8px 2px !important;
-    gap: 4px 6px !important;
+    padding: 2px 6px 1px !important;
+    gap: 3px 5px !important;
     min-height: 0 !important;
     align-items: stretch !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
   }
   #sn-topchrome-panel.collapsed #stc-compact {
+    min-height: 48px !important;
     grid-template-columns: auto minmax(0, 1fr) auto !important;
-    min-height: 54px !important;
-    gap: 4px 6px !important;
   }
-  /* NAME stays BIG */
+  /* BIG brand name */
   #sn-topchrome #btn-home {
-    font-size: 15px !important;
-    letter-spacing: 0.26em !important;
+    font-size: 16px !important;
+    letter-spacing: 0.28em !important;
     font-weight: 800 !important;
-    line-height: 1.05 !important;
-    color: #3d9eff !important;
+    line-height: 1 !important;
+    color: #4db8ff !important;
     text-shadow:
-      0 0 6px rgba(40, 130, 255, 0.95),
-      0 0 16px rgba(20, 100, 255, 0.75),
-      0 0 32px rgba(10, 70, 220, 0.5) !important;
+      0 0 4px rgba(80, 190, 255, 1),
+      0 0 12px rgba(40, 140, 255, 0.95),
+      0 0 24px rgba(20, 100, 255, 0.7),
+      0 0 40px rgba(10, 70, 220, 0.4) !important;
+    padding: 0 2px !important;
   }
   #sn-topchrome-panel.collapsed #btn-home {
-    font-size: 15px !important;
-    letter-spacing: 0.24em !important;
+    font-size: 16px !important;
+    letter-spacing: 0.26em !important;
   }
-  /* Center: name big, graph slim */
   #sn-topchrome-panel.collapsed .stc-col-device {
-    max-width: min(38vw, 160px) !important;
+    max-width: min(36vw, 150px) !important;
   }
   #sn-topchrome-panel.collapsed #stc-perf-wrap {
-    height: 32px !important;
-    min-height: 32px !important;
-    max-height: 32px !important;
-    border-radius: 6px !important;
-    padding: 1px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    max-height: 28px !important;
+    border-radius: 5px !important;
+    border: 1px solid rgba(46, 200, 255, 0.3) !important;
+    background: linear-gradient(180deg, rgba(4, 20, 48, 0.7), rgba(0, 8, 24, 0.8)) !important;
+    box-shadow: inset 0 0 12px rgba(20, 100, 255, 0.15) !important;
   }
   #sn-topchrome-panel.mid #stc-perf-wrap {
-    height: 72px !important;
-    min-height: 72px !important;
+    height: 64px !important; min-height: 64px !important;
   }
   #sn-topchrome-panel.expanded #stc-perf-wrap {
-    height: 100px !important;
-    min-height: 100px !important;
+    height: 92px !important; min-height: 92px !important;
   }
-  /* Side gadgets — dense but readable full column height */
   #sn-topchrome-panel.collapsed #field-radar {
-    width: 52px !important;
-    height: 52px !important;
-    min-width: 52px !important;
-    min-height: 52px !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border: 1px solid var(--g-edge) !important;
+    box-shadow: 0 0 14px rgba(30, 120, 255, 0.35), inset 0 0 10px rgba(20, 100, 255, 0.15) !important;
   }
   #sn-topchrome-panel.collapsed #field-balance-hud {
-    min-width: 88px !important;
-    min-height: 52px !important;
-    padding: 5px 8px !important;
-    border-radius: 10px !important;
+    min-width: 84px !important;
+    min-height: 48px !important;
+    padding: 4px 7px !important;
+    border-radius: 9px !important;
+    border: 1px solid rgba(46, 200, 255, 0.4) !important;
+    background:
+      radial-gradient(ellipse 100% 80% at 100% 0%, rgba(30, 100, 220, 0.25) 0%, transparent 60%),
+      linear-gradient(155deg, rgba(6, 28, 64, 0.75), rgba(2, 12, 36, 0.8)) !important;
+    box-shadow: 0 0 14px rgba(20, 100, 255, 0.25) !important;
   }
   #sn-topchrome-panel.collapsed #fbh-s {
     font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #5ec0ff !important;
+    text-shadow: 0 0 10px rgba(40, 140, 255, 0.7) !important;
   }
   #sn-topchrome-panel.collapsed #fbh-mine-rate {
     font-size: 8px !important;
+    color: #7ab8e8 !important;
   }
   #sn-topchrome-drag {
-    padding: 1px 0 3px !important;
+    padding: 0 0 2px !important;
+  }
+  #sn-topchrome-drag::before {
+    width: 28px !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, transparent, #2ec8ff, transparent) !important;
+    box-shadow: 0 0 8px rgba(46, 200, 255, 0.7) !important;
   }
   #sn-topchrome-drag .stc-scroll-label {
-    font-size: 7px !important;
-    letter-spacing: 0.14em !important;
+    font-size: 6px !important;
+    letter-spacing: 0.16em !important;
+    color: rgba(100, 180, 255, 0.65) !important;
   }
 
-  /* BOTTOM SCROLL — compact gaming CLI */
+  /* ── BOTTOM SCROLL dense gaming CLI ── */
   #dock {
-    padding: 0 8px calc(6px + env(safe-area-inset-bottom)) !important;
+    padding: 0 6px calc(5px + env(safe-area-inset-bottom)) !important;
   }
   #panel {
-    border-radius: 14px !important;
-    max-height: 42vh !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--g-edge) !important;
+    max-height: 40vh !important;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(46, 200, 255, 0.1) 0%, transparent 50%),
+      linear-gradient(180deg, rgba(4, 18, 44, 0.7) 0%, rgba(2, 10, 28, 0.68) 100%) !important;
+    backdrop-filter: blur(20px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+    box-shadow:
+      0 0 0 1px rgba(10, 40, 100, 0.35),
+      0 -4px 24px rgba(0, 0, 0, 0.4),
+      0 0 36px rgba(20, 100, 255, 0.18),
+      inset 0 1px 0 rgba(160, 220, 255, 0.15) !important;
+    animation: none !important;
   }
   #panel.collapsed {
-    max-height: min(148px, 22vh) !important;
+    max-height: min(132px, 20vh) !important;
     min-height: var(--bottom-scroll-min) !important;
   }
-  #cli-drag {
-    padding: 6px 12px 4px !important;
-    gap: 4px !important;
+  #cli-drag, #cli-log, #cli-form, #sn-ribbon, .cli-titlebar {
+    position: relative;
+    z-index: 1;
   }
-  #cli-drag .cli-scroll-label {
-    font-size: 7px !important;
-    letter-spacing: 0.14em !important;
-    margin-top: 0 !important;
+  #cli-drag {
+    padding: 5px 10px 3px !important;
+    gap: 3px !important;
+    background: linear-gradient(180deg, rgba(8, 40, 80, 0.35) 0%, transparent 100%) !important;
+    border-bottom: 1px solid rgba(46, 200, 255, 0.18) !important;
+  }
+  #cli-drag::before {
+    width: 28px !important;
+    height: 2px !important;
+    background: linear-gradient(90deg, transparent, #2ec8ff, transparent) !important;
+    box-shadow: 0 0 8px rgba(46, 200, 255, 0.7) !important;
+  }
+  .cli-scroll-label {
+    font-size: 6px !important;
+    letter-spacing: 0.16em !important;
+    color: rgba(100, 180, 255, 0.65) !important;
   }
   .cli-titlebar .cli-brand {
-    font-size: 10px !important;
-    letter-spacing: 0.16em !important;
-  }
-  #cli-preview {
-    font-size: 12px !important;
-  }
-  #cli-activity {
     font-size: 9px !important;
+    letter-spacing: 0.18em !important;
+    color: #2ec8ff !important;
+    text-shadow: 0 0 10px rgba(46, 200, 255, 0.7) !important;
   }
-  /* Ribbon buttons — slightly smaller, denser */
+  .cli-live-dot {
+    width: 6px !important;
+    height: 6px !important;
+    box-shadow: 0 0 10px rgba(46, 200, 255, 0.9) !important;
+  }
+  #cli-preview { font-size: 11px !important; color: #9ec8ff !important; }
+  #cli-activity { font-size: 8px !important; letter-spacing: 0.1em !important; }
+  #cli-log {
+    padding: 4px 10px 6px !important;
+    min-height: 32px !important;
+    font-size: 11px !important;
+  }
+  .cli-line .cli-body {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+  .cli-line.cmd .cli-body::before {
+    color: #2ec8ff !important;
+    text-shadow: 0 0 8px rgba(46, 200, 255, 0.8) !important;
+  }
+
+  /* Ribbon — smaller, denser, neon */
   #sn-ribbon {
-    gap: 3px !important;
-    padding: 4px 6px 5px !important;
-    min-height: 0 !important;
+    gap: 2px !important;
+    padding: 3px 4px 4px !important;
   }
   .sn-rib-btn {
-    min-height: 48px !important;
-    min-width: 44px !important;
-    padding: 4px 2px !important;
-    border-radius: 10px !important;
-    gap: 2px !important;
+    min-height: 42px !important;
+    min-width: 40px !important;
+    padding: 3px 1px !important;
+    border-radius: 9px !important;
+    gap: 1px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s !important;
+  }
+  .sn-rib-btn:hover, .sn-rib-btn:focus-visible, .sn-rib-btn.on {
+    border-color: rgba(46, 200, 255, 0.45) !important;
+    background: rgba(20, 80, 160, 0.25) !important;
+    box-shadow: 0 0 12px rgba(40, 140, 255, 0.3), inset 0 0 12px rgba(46, 200, 255, 0.08) !important;
   }
   .sn-rib-icon {
-    width: 20px !important;
-    height: 20px !important;
-  }
-  .sn-rib-icon svg {
     width: 18px !important;
     height: 18px !important;
+    color: #7ec8ff !important;
+    filter: drop-shadow(0 0 4px rgba(46, 200, 255, 0.5)) !important;
   }
-  .sn-rib-txt,
-  .sn-rib-label {
-    font-size: 9px !important;
-    letter-spacing: 0.04em !important;
-    line-height: 1.1 !important;
+  .sn-rib-icon svg {
+    width: 16px !important;
+    height: 16px !important;
   }
-  @media (max-width: 520px) {
-    .sn-rib-btn {
-      min-height: 44px !important;
-      min-width: 40px !important;
-      padding: 3px 1px !important;
-    }
-    .sn-rib-icon svg { width: 16px !important; height: 16px !important; }
-    .sn-rib-txt { font-size: 8px !important; }
+  .sn-rib-txt, .sn-rib-label {
+    font-size: 8px !important;
+    letter-spacing: 0.05em !important;
+    font-weight: 700 !important;
+    color: #9ec8ff !important;
+    text-transform: uppercase !important;
+  }
+
+  /* Input bar — compact neon field */
+  #cli-form {
+    margin: 0 6px 6px !important;
+    padding: 6px 10px !important;
+    min-height: 36px !important;
+    border-radius: 9px !important;
+    border: 1px solid rgba(46, 200, 255, 0.45) !important;
+    background: linear-gradient(180deg, rgba(8, 36, 80, 0.55), rgba(4, 16, 44, 0.5)) !important;
+    box-shadow:
+      0 0 0 1px rgba(20, 80, 180, 0.2),
+      0 0 16px rgba(30, 120, 255, 0.28),
+      inset 0 0 16px rgba(20, 100, 255, 0.1) !important;
+    animation: none !important;
+  }
+  #cli-form:focus-within {
+    border-color: rgba(100, 210, 255, 0.85) !important;
+    box-shadow:
+      0 0 0 1px rgba(80, 180, 255, 0.5),
+      0 0 24px rgba(40, 140, 255, 0.45),
+      inset 0 0 20px rgba(40, 140, 255, 0.15) !important;
+  }
+  #cli-in {
+    font-size: 13px !important;
+    min-height: 20px !important;
+    color: #e8f6ff !important;
+    caret-color: #2ec8ff !important;
+  }
+  #cli-in::placeholder {
+    color: rgba(120, 180, 255, 0.55) !important;
+    font-size: 12px !important;
+  }
+  .cli-prompt-prefix {
+    font-size: 13px !important;
+    color: #2ec8ff !important;
+    text-shadow: 0 0 10px rgba(46, 200, 255, 0.85) !important;
+  }
+
+  /* Boot splash gaming */
+  #boot {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 30%, rgba(20, 80, 180, 0.35) 0%, transparent 55%),
+      radial-gradient(120% 100% at 50% 100%, #020814 0%, #000408 100%) !important;
+  }
+  .boot-title {
+    font-size: clamp(22px, 6vw, 32px) !important;
+    letter-spacing: 0.32em !important;
+    color: #4db8ff !important;
+    text-shadow:
+      0 0 12px rgba(46, 200, 255, 0.9),
+      0 0 36px rgba(20, 100, 255, 0.6) !important;
+  }
+  .boot-loader {
+    height: 3px !important;
+    border-radius: 99px !important;
+    background: rgba(20, 60, 120, 0.5) !important;
+    overflow: hidden !important;
+    box-shadow: 0 0 12px rgba(46, 200, 255, 0.3) !important;
+  }
+  .boot-loader-bar {
+    background: linear-gradient(90deg, transparent, #2ec8ff, #7ae0ff, #2ec8ff, transparent) !important;
+    box-shadow: 0 0 12px #2ec8ff !important;
+  }
+
+  /* Peek tiles denser gaming */
+  .sn-tile, .sn-peek, [class*="tile-card"], #sn-tile-host .tile {
+    border: 1px solid rgba(46, 200, 255, 0.4) !important;
+    box-shadow: 0 0 20px rgba(20, 100, 255, 0.2), inset 0 1px 0 rgba(160, 220, 255, 0.12) !important;
+    backdrop-filter: blur(14px) !important;
+  }
+
+  /* Light theme keep readable */
+  html.theme-light #sn-topchrome-panel,
+  html.theme-light #panel {
+    background:
+      radial-gradient(ellipse 90% 100% at 50% -20%, rgba(80, 160, 255, 0.12) 0%, transparent 50%),
+      linear-gradient(165deg, rgba(255, 255, 255, 0.9) 0%, rgba(232, 242, 255, 0.86) 100%) !important;
+    border-color: rgba(20, 110, 220, 0.4) !important;
+    box-shadow: 0 4px 18px rgba(20, 50, 100, 0.1), inset 0 1px 0 #fff !important;
+  }
+  html.theme-light #sn-topchrome #btn-home {
+    color: #0a62d4 !important;
+    text-shadow: 0 0 10px rgba(40, 130, 255, 0.4) !important;
+  }
+  html.theme-light #cli-form {
+    background: linear-gradient(180deg, #fff, rgba(236, 246, 255, 0.95)) !important;
+    border-color: rgba(20, 110, 220, 0.4) !important;
+  }
+  html.theme-light #cli-in { color: #0c1e36 !important; }
+  html.theme-light .sn-rib-txt { color: #1a3a58 !important; }
+
+  @media (max-width: 420px) {
     #sn-topchrome-panel.collapsed #btn-home {
       font-size: 13px !important;
       letter-spacing: 0.18em !important;
     }
-  }
-  /* Input — compact glow, always visible */
-  #cli-form {
-    margin: 0 8px 8px !important;
-    padding: 7px 12px !important;
-    min-height: 40px !important;
-    border-radius: 10px !important;
-  }
-  #cli-in {
-    font-size: 14px !important;
-    min-height: 22px !important;
-  }
-  .cli-prompt-prefix {
-    font-size: 14px !important;
-  }
-  #cli-log {
-    padding: 6px 12px 8px !important;
-    font-size: 12px !important;
-    min-height: 40px !important;
-  }
-  .cli-line .cli-body {
-    font-size: 12px !important;
-    line-height: 1.4 !important;
+    .sn-rib-btn {
+      min-height: 40px !important;
+      min-width: 36px !important;
+    }
+    .sn-rib-txt { font-size: 7px !important; }
   }
 
-  /* Sharp glass both scrolls — gaming HUD edge */
-  #sn-topchrome-panel,
-  #panel {
-    box-shadow:
-      0 0 0 1px rgba(60, 150, 255, 0.25),
-      0 4px 24px rgba(0, 0, 0, 0.28),
-      0 0 28px rgba(30, 100, 220, 0.18),
-      inset 0 1px 0 rgba(180, 220, 255, 0.12) !important;
-  }
-  html.theme-light #sn-topchrome-panel,
-  html.theme-light #panel {
-    box-shadow:
-      0 0 0 1px rgba(30, 100, 200, 0.22),
-      0 4px 20px rgba(20, 50, 100, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-  }
-
-  /* Helper layer above map, below scrolls */
   #sn-helper-canvas {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    pointer-events: none !important;
     z-index: 40 !important;
-    image-rendering: auto;
+    pointer-events: none !important;
   }
 
 </style>
@@ -2412,7 +2584,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801103000-gaming-hud-delivery"></script>
+<script src="/js/spacenet/boot.js?v=20260801104000-gaming-gfx-v3"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
