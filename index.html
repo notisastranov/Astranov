@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801181500-cli-stable-ai-here-bridge" />
-<meta name="astranov-continuity" content="20260801181500-cli-stable-ai-here-bridge" />
+<meta name="astranov-build" content="20260801182200-deep-electric-blue" />
+<meta name="astranov-continuity" content="20260801182200-deep-electric-blue" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -27,27 +27,31 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Comfortaa:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #020814;
-    --bg-deep: #01040c;
-    --void: #00040a;
-    --text: #c8e0f8;
-    --text-bright: #eaf4ff;
-    --dim: #5a7a9a;
-    --muted: #7a9aba;
-    --accent: #0b6fd4;
-    --bright: #3db8ff;
-    --glow: #4cc9ff;
-    --ice: #a8ecff;
+    /* Deep glowing electric blue — not pale 60s ice */
+    --bg: #01060f;
+    --bg-deep: #00040a;
+    --void: #000208;
+    --text: #b8d4ff;
+    --text-bright: #e6f0ff;
+    --dim: #3a5a9a;
+    --muted: #4a78c8;
+    --accent: #0040ff;
+    --bright: #0066ff;
+    --glow: #0080ff;
+    --ice: #1a6aff;
+    --electric: #0055ff;
+    --electric-hot: #0077ff;
+    --electric-deep: #0033cc;
     --mint: #00e8a0;
     --mint-glow: rgba(0, 232, 160, 0.45);
     --warn: #ffc857;
     --err: #ff5e7a;
-    --panel: rgba(2, 12, 28, 0.88);
-    --panel-solid: #041020;
-    --border: rgba(61, 184, 255, 0.38);
-    --border-strong: rgba(76, 201, 255, 0.65);
-    --glow-soft: 0 0 24px rgba(11, 111, 212, 0.35);
-    --glow-hot: 0 0 36px rgba(61, 184, 255, 0.45);
+    --panel: rgba(0, 8, 24, 0.9);
+    --panel-solid: #020c1c;
+    --border: rgba(0, 85, 255, 0.55);
+    --border-strong: rgba(0, 120, 255, 0.85);
+    --glow-soft: 0 0 22px rgba(0, 70, 255, 0.55);
+    --glow-hot: 0 0 40px rgba(0, 100, 255, 0.7);
     --font-ui: "Nunito", "Varela Round", system-ui, sans-serif;
     --font-display: "Comfortaa", "Nunito", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -928,17 +932,17 @@
     50% { opacity: 1; transform: scale(1.2); }
   }
   #dock {
-    --cli-bg: rgba(2, 8, 28, 0.42);
-    --cli-bg-solid: #020814;
-    --cli-text: #d4ecff;
-    --cli-muted: #6a90b0;
-    --cli-dim: #4a6a90;
-    --cli-glow: #1a8cff;
-    --cli-blue: #0a4fd4;
-    --scroll-deep: rgba(4, 16, 48, 0.38);
-    --scroll-edge: rgba(30, 120, 255, 0.55);
-    --scroll-glow: rgba(20, 100, 255, 0.45);
-    --star-name: #3d9eff;
+    --cli-bg: rgba(0, 6, 22, 0.55);
+    --cli-bg-solid: #01060f;
+    --cli-text: #d0e4ff;
+    --cli-muted: #4a78c8;
+    --cli-dim: #2a4a9a;
+    --cli-glow: #0066ff;
+    --cli-blue: #0033cc;
+    --scroll-deep: rgba(0, 10, 32, 0.55);
+    --scroll-edge: rgba(0, 85, 255, 0.75);
+    --scroll-glow: rgba(0, 80, 255, 0.65);
+    --star-name: #0066ff;
     --cli-err: #ff6b7a;
     --cli-mono: var(--font-mono);
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
@@ -1964,7 +1968,7 @@
   */
   :root {
     --scroll-bg: rgba(0, 0, 0, 0.72);
-    --e-blue: #0066ff;
+    --e-blue: #0055ff;
     --top-scroll-min: 50px;
     --bottom-scroll-min: 96px;
     --zone-top: 54px;
@@ -4442,6 +4446,166 @@
     flex-shrink: 0 !important;
   }
 
+
+  /* ═══ DEEP ELECTRIC BLUE UI · no pale 60s ice ═══ */
+  :root {
+    --accent: #0040ff !important;
+    --bright: #0066ff !important;
+    --glow: #0080ff !important;
+    --ice: #1a6aff !important;
+    --border: rgba(0, 85, 255, 0.55) !important;
+    --border-strong: rgba(0, 120, 255, 0.9) !important;
+    --cli-glow: #0066ff !important;
+    --cli-blue: #0033cc !important;
+    --star-name: #0066ff !important;
+    --scroll-edge: rgba(0, 85, 255, 0.8) !important;
+    --scroll-glow: rgba(0, 80, 255, 0.7) !important;
+  }
+  /* Top + bottom scrolls: deep black glass + electric edge glow */
+  #sn-topchrome-panel,
+  #panel {
+    background: rgba(0, 4, 16, 0.78) !important;
+    border: 1px solid rgba(0, 80, 255, 0.55) !important;
+    box-shadow:
+      0 0 0 1px rgba(0, 40, 160, 0.35) inset,
+      0 0 28px rgba(0, 70, 255, 0.35),
+      0 8px 32px rgba(0, 0, 0, 0.55) !important;
+  }
+  /* ASTRANOV name — deep starry electric, not pale */
+  #btn-home,
+  #sn-topchrome #btn-home {
+    color: #0066ff !important;
+    -webkit-text-fill-color: #0066ff !important;
+    text-shadow:
+      0 0 8px rgba(0, 100, 255, 1),
+      0 0 18px rgba(0, 70, 255, 0.95),
+      0 0 36px rgba(0, 40, 255, 0.75) !important;
+  }
+  /* Ribbon buttons */
+  #sn-task-ribbon .sn-rib-btn,
+  .sn-rib-btn {
+    border: 1px solid rgba(0, 80, 255, 0.45) !important;
+    background: rgba(0, 20, 60, 0.45) !important;
+    color: #7eb0ff !important;
+    box-shadow: 0 0 12px rgba(0, 70, 255, 0.25) inset !important;
+  }
+  #sn-task-ribbon .sn-rib-btn .sn-rib-label,
+  .sn-rib-label {
+    color: #5a9aff !important;
+  }
+  #sn-task-ribbon .sn-rib-btn:active,
+  #sn-task-ribbon .sn-rib-btn.on {
+    border-color: rgba(0, 120, 255, 0.9) !important;
+    box-shadow: 0 0 18px rgba(0, 100, 255, 0.55) !important;
+    color: #a8cfff !important;
+  }
+  /* CLI input glow electric */
+  #cli-form,
+  #panel.collapsed #cli-form,
+  #panel.mid #cli-form,
+  #panel.expanded #cli-form {
+    border: 1px solid rgba(0, 100, 255, 0.7) !important;
+    background: rgba(0, 10, 32, 0.78) !important;
+    box-shadow:
+      0 0 16px rgba(0, 90, 255, 0.45),
+      0 0 0 1px rgba(0, 50, 180, 0.4) inset !important;
+  }
+  #cli-in,
+  .cli-prompt-prefix {
+    color: #d0e8ff !important;
+    caret-color: #0066ff !important;
+  }
+  .cli-prompt-prefix,
+  .cli-line.cmd .cli-body::before,
+  .cli-line.ok .cli-body::before {
+    color: #0066ff !important;
+    text-shadow: 0 0 10px rgba(0, 100, 255, 0.85) !important;
+  }
+  .cli-line .cli-body { color: #c8dcff !important; }
+  .cli-line.dim .cli-body { color: #4a78c8 !important; }
+  /* Radar / timeline ring electric */
+  #sn-topchrome #field-radar,
+  #field-radar {
+    box-shadow:
+      inset 0 0 0 1.5px rgba(0, 90, 255, 0.75),
+      0 0 14px rgba(0, 80, 255, 0.55) !important;
+  }
+  /* Power / launch standby = deep electric blue (not pale) */
+  #sn-task-launch.mode-standby {
+    border-color: rgba(0, 100, 255, 0.85) !important;
+    box-shadow:
+      0 0 0 2px rgba(0, 60, 220, 0.45),
+      0 0 22px rgba(0, 90, 255, 0.75) !important;
+    color: #0066ff !important;
+  }
+  #sn-task-launch.mode-standby .sn-launch-power {
+    color: #0066ff !important;
+    filter: drop-shadow(0 0 8px rgba(0, 100, 255, 0.95)) !important;
+  }
+  /* Grip lines electric */
+  #panel::before,
+  #sn-topchrome-drag::before {
+    background: linear-gradient(90deg, transparent, #0066ff, transparent) !important;
+    box-shadow: 0 0 10px rgba(0, 100, 255, 0.85) !important;
+  }
+  /* Kill pale ice text leftovers on chrome */
+  #sn-topchrome,
+  #panel,
+  #sn-task-ribbon {
+    --cli-glow: #0066ff;
+    --glow: #0080ff;
+  }
+  /* City labels / HUD accents if any pale */
+  .sn-city-label,
+  #sn-city-labels span {
+    border-color: rgba(0, 90, 255, 0.55) !important;
+    color: #9ec4ff !important;
+    background: rgba(0, 12, 36, 0.72) !important;
+    box-shadow: 0 0 12px rgba(0, 70, 255, 0.35) !important;
+  }
+
+
+  /* ═══ ELECTRIC BLUE LOCK · last word ═══ */
+  html #btn-home,
+  html body #sn-topchrome #btn-home,
+  html.theme-light #btn-home,
+  html.theme-dark #btn-home {
+    color: #0080ff !important;
+    -webkit-text-fill-color: #0080ff !important;
+    text-shadow:
+      0 0 6px #00a0ff,
+      0 0 14px #0066ff,
+      0 0 28px rgba(0, 80, 255, 1),
+      0 0 48px rgba(0, 40, 255, 0.85) !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+  html #sn-topchrome-panel,
+  html #panel,
+  html.theme-light #sn-topchrome-panel,
+  html.theme-light #panel {
+    border-color: rgba(0, 100, 255, 0.65) !important;
+    box-shadow:
+      0 0 0 1px rgba(0, 50, 200, 0.4) inset,
+      0 0 32px rgba(0, 80, 255, 0.4) !important;
+  }
+  html #sn-task-ribbon .sn-rib-btn {
+    border-color: rgba(0, 90, 255, 0.5) !important;
+    color: #80b4ff !important;
+  }
+  html #sn-task-ribbon .sn-rib-label {
+    color: #4a90ff !important;
+    text-shadow: 0 0 8px rgba(0, 90, 255, 0.6) !important;
+  }
+  html #cli-form {
+    border-color: rgba(0, 120, 255, 0.85) !important;
+    box-shadow: 0 0 20px rgba(0, 100, 255, 0.55) !important;
+  }
+  html .cli-prompt-prefix {
+    color: #0080ff !important;
+    text-shadow: 0 0 12px rgba(0, 120, 255, 0.95) !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4673,7 +4837,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801181500-cli-stable-ai-here-bridge"></script>
+<script src="/js/spacenet/boot.js?v=20260801182200-deep-electric-blue"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
