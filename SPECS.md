@@ -369,3 +369,18 @@ Build: `cd deploy/osrm && ./prepare.sh && docker compose up -d`
 | **Ledger** | `SNCurrency.ledger` |
 | **CLI** | `ready score` · `orders pause/resume` · `ledger` · `order events` |
 | **Tests** | `npm run test:engine` |
+
+## OWNER LOG · 2026-08-01 FINISH-333 pass 2
+
+| Item | Detail |
+|------|--------|
+| **Score** | 132/333 SHIPPED_CORE |
+| **Claim** | No-steal driver claims · same-driver re-claim → en_route |
+| **Mesh** | pullOpenOrders 15s debounce |
+| **Menu** | price_band synthetic slots · prefer real menu items |
+| **Mind** | wipe double-confirm · train prefs/favorites/home on paid order |
+| **Vault CLI** | `vault` · `ledgerVerify` |
+| **Tasks** | getByShort · expire 24h open · delivery geo fill |
+| **Route** | persist meta on task.route when taskId |
+| **UI** | still frozen |
+

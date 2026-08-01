@@ -131,7 +131,51 @@
     return { kind: kind, role: role, title: title, dur: dur, raw: raw };
   }
 
+  function getByShort(id) {
+    if (!id) return null;
+    var s = String(id);
+    if (T.tasks.has(s)) return T.tasks.get(s);
+    var low = s.toLowerCase();
+    for (var pair of T.tasks) {
+      var task = pair[1];
+      if (!task) continue;
+      if (String(task.id) === s) return task;
+      if (String(task.id).toLowerCase().indexOf(low) === 0) return task;
+      if (task.short_id && String(task.short_id) === s) return task;
+    }
+    return null;
+  }
+  function expireOldTasks(maxAgeMs) {
+    maxAgeMs = maxAgeMs || 24 * 3600 * 1000;
+    var n = 0;
+    var now = Date.now();
+    list({ all: true }).forEach(function (task) {
+      if (!task || task.status === 'done' || task.status === 'cancelled') return;
+      var age = now - (task.created || task.t || task.claimedAt || 0);
+      if (task.created || task.t) {
+        if (age > maxAgeMs && (task.status === 'open' || task.status === 'seeking_driver')) {
+          task.status = 'cancelled';
+          task.cancelReason = 'expired_24h';
+          T.tasks.set(task.id, task);
+          n++;
+        }
+      }
+    });
+    if (n) save();
+    return { expired: n };
+  }
   function create(spec) {
+    spec = spec || {};
+    if (spec.kind === 'delivery' && (spec.lat == null || spec.lng == null)) {
+      var pp = global._snLastPos || (global.SNTasks && SNTasks.pos) || {};
+      if (spec.drop_lat != null) {
+        spec.lat = spec.drop_lat;
+        spec.lng = spec.drop_lng;
+      } else if (pp.lat != null) {
+        spec.lat = pp.lat;
+        spec.lng = pp.lng;
+      }
+    }
     const p = typeof spec === 'string' ? parse(spec) : Object.assign({}, parse(spec.raw || ''), spec);
     const meta = KINDS[p.kind] || KINDS.job;
     const task = {
@@ -257,18 +301,38 @@
         }) || list()[0];
     }
     if (!task) return { ok: false, error: 'no open tasks' };
-    // Allow re-claim of claimed/in_progress to attach driver / continue delivery
-    if (task.status === 'done') {
-      return { ok: false, error: 'task already done' };
+    if (task.status === 'done' || task.status === 'settled' || task.status === 'cancelled') {
+      return { ok: false, error: 'task already ' + task.status };
     }
-    if (task.status === 'open') {
+    // Steal claim forbidden unless force or same driver re-claim
+    var whoId = who && (who.id || who.assigneeId);
+    if (
+      (task.status === 'claimed' || task.status === 'in_progress' || task.status === 'assigned') &&
+      task.driverId &&
+      whoId &&
+      task.driverId !== whoId &&
+      !(who && who.force)
+    ) {
+      return {
+        ok: false,
+        error: 'already claimed by ' + (task.driverName || task.driverId) + ' · no steal',
+      };
+    }
+    if (task.status === 'open' || task.status === 'seeking_driver') {
       task.status = 'claimed';
-    try { if (global.SNOrderEngine) SNOrderEngine.transition(task, 'assigned', { who: who && who.id }); } catch (_e) {};
+      try {
+        if (global.SNOrderEngine) SNOrderEngine.transition(task, 'assigned', { who: whoId });
+      } catch (_e) {}
       task.claimedAt = Date.now();
     } else if (task.status === 'claimed') {
-      task.status = 'in_progress';
+      // same driver continues → en route
+      if (!whoId || !task.driverId || task.driverId === whoId) {
+        task.status = 'in_progress';
+        try {
+          if (global.SNOrderEngine) SNOrderEngine.transition(task, 'en_route', { who: whoId });
+        } catch (_e2) {}
+      }
     }
-    // in_progress: keep status, refresh assignee
     if (who) {
       task.assigneeId = who.id || who.assigneeId || task.assigneeId;
       task.assigneeName = who.name || who.shopName || who.assigneeName || task.assigneeName;
@@ -895,10 +959,19 @@
 
   load();
 
+  try {
+    setInterval(function () {
+      try {
+        expireOldTasks(24 * 3600 * 1000);
+      } catch (_) {}
+    }, 10 * 60 * 1000);
+  } catch (_) {}
   global.SNTasks = {
     create: create,
     get: get,
     list: list,
+    getByShort: getByShort,
+    expireOldTasks: expireOldTasks,
     claim: claim,
     complete: complete,
     search: search,

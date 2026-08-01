@@ -92,7 +92,10 @@ const path = g.SNRouting.pathFromWaypoints([
 ]);
 assert.ok(path.includes(';'));
 
-console.log('PASS finish-333-unit', {
+// closed shop geo already; ancient tokens
+assert.ok(g.SNGreeklish.foodTokens('οινος').includes('wine') || g.SNGreeklish.normalize('οινος').includes('wine'));
+
+console.log('PASS finish-333-unit' , {
   greeklish: true,
   geo: true,
   fees: f,

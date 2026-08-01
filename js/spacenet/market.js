@@ -1024,8 +1024,10 @@
       global.SNProfiles.setMenuItem(vendor.id, {
         name: wantName.charAt(0).toUpperCase() + wantName.slice(1),
         price: judged && judged.price != null ? judged.price : defaultFoodPrice(food),
-        desc: 'Ordered via Astranov · pay in S · kitchen confirms',
+        desc: 'Price-band order slot · kitchen confirms real dish',
         available: true,
+        source: 'price_band',
+        synthetic: true,
         photo: (vendor.photos && vendor.photos[0]) || vendor.cover || vendor.avatar || '',
       });
       vendor = (global.SNProfiles.get && global.SNProfiles.get(vendor.id)) || vendor;
@@ -1035,6 +1037,14 @@
 
   function pickMenuItem(vendor, food, judged) {
     var menu = (vendor && vendor.menu) || [];
+    // Prefer real (non price_band) items first
+    try {
+      var real = menu.filter(function (x) {
+        return x && !x.synthetic && x.source !== 'price_band';
+      });
+      if (real.length) menu = real.concat(menu.filter(function (x) { return real.indexOf(x) < 0; }));
+    } catch (_) {}
+
     if (judged && judged.itemName) {
       var want = String(judged.itemName).toLowerCase();
       var exact = menu.find(function (m) {
@@ -1577,7 +1587,12 @@
         'order',
         { lat: best.lat, lng: best.lng, label: best.shopName || best.name }
       );
+      if (best && !isShopOpenNow(best) && !testMode) {
+        log('Vendor closed now · pick another or try later', 'err');
+        orderResult = { ok: false, error: 'vendor closed' };
+      }
       try {
+        if (orderResult && orderResult.error === 'vendor closed') throw new Error('vendor closed');
         global.SNProfiles.cartClear();
         global.SNProfiles.cartAdd(best.id, menuItem, 1);
         (judged.extras || []).forEach(function (ex) {
@@ -1626,6 +1641,36 @@
         }
         if (orderResult && orderResult.ok) {
           log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
+          try {
+            if (global.SNAstranovMind && SNAstranovMind.teach) {
+              SNAstranovMind.teach(
+                'favorite vendor last order',
+                (best.shopName || best.name || '') + ' · ' + (menuItem && menuItem.name) + ' · ' + fmt(orderResult.total),
+                ['order', 'memory', 'vendor']
+              );
+            }
+            if (global.SNOrderEngine) {
+              SNOrderEngine.pushEvent(orderResult.task && orderResult.task.id, 'paid', 'memory', {
+                vendor: best.id,
+              });
+            }
+            var prefM = loadPrefs();
+            prefM.lastOrder = {
+              vendorId: best.id,
+              vendorName: best.shopName || best.name,
+              item: menuItem && menuItem.name,
+              t: Date.now(),
+              food: food,
+            };
+            if (!prefM.favorites) prefM.favorites = [];
+            if (best.id && prefM.favorites.indexOf(best.id) < 0) {
+              prefM.favorites.unshift(best.id);
+              prefM.favorites = prefM.favorites.slice(0, 12);
+            }
+            if (pos && pos.lat != null) prefM.homePin = { lat: pos.lat, lng: pos.lng, t: Date.now() };
+            savePrefs(prefM);
+          } catch (_mem) {}
+
           try {
             if (global.SNHelper && SNHelper.flyTo && best) {
               SNHelper.flyTo(
@@ -1889,7 +1934,9 @@
           (v._km != null ? v._km.toFixed(1) + ' km' : '') +
           ' · ' +
           (v._price != null ? Number(v._price).toFixed(2) + ' S' : '') +
-          (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '')
+          (v._rating != null ? ' · ★' + Number(v._rating).toFixed(1) : '') +
+          (v._score != null ? ' · SCORE ' + Math.round(v._score) : '') +
+          (v._open === false ? ' · CLOSED' : '')
       );
     });
     summaryLines.push('CHOSEN · #1 ' + (best.shopName || best.name));

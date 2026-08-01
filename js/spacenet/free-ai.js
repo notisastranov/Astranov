@@ -1044,7 +1044,25 @@
     }
 
     if (/^(mind\s*wipe|wipe\s*mind|forget\s*all|clear\s*mind|mind\s*reset)$/i.test(rawLow)) {
+      if (!global._snMindWipeArmed) {
+        global._snMindWipeArmed = Date.now();
+        return {
+          ok: true,
+          reply: 'Mind wipe armed · type mind wipe again within 20s to confirm · permanent',
+          source: 'wipe-confirm',
+        };
+      }
+      if (Date.now() - global._snMindWipeArmed > 20000) {
+        global._snMindWipeArmed = Date.now();
+        return {
+          ok: true,
+          reply: 'Mind wipe re-armed · type mind wipe again to confirm',
+          source: 'wipe-confirm',
+        };
+      }
+      global._snMindWipeArmed = 0;
       wipe('user');
+
       return {
         text: 'Memory cleared and re-trained. English, Greek, Greeklish ready. Talk normally.',
         score: 1,

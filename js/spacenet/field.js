@@ -3613,6 +3613,8 @@
   /** Public: set a route from waypoints — multi-stop OSRM streets + traffic/weather ETA */
   async function showRoute(waypoints, opts) {
     opts = opts || {};
+    // FINISH-333: route will be attached to task if opts.taskId
+
     var pts = [];
     var km = 0;
     var durationS = 0;
@@ -3664,6 +3666,23 @@
     }
     if (pts.length < 2) return null;
     var eta = fmtEta(durationS);
+    try {
+      if (opts.taskId && g.SNTasks) {
+        var tk = SNTasks.getByShort ? SNTasks.getByShort(opts.taskId) : SNTasks.get && SNTasks.get(opts.taskId);
+        if (tk) {
+          tk.route = {
+            km: km,
+            durationS: durationS,
+            speedKmh: speedKmh,
+            eta: eta,
+            n: pts.length,
+            t: Date.now(),
+          };
+          if (SNTasks.save) SNTasks.save();
+        }
+      }
+    } catch (_tr) {}
+
     var baseLabel = opts.label || 'Route';
     var condBit =
       cond && (cond.traffic > 0.2 || cond.weather > 0)

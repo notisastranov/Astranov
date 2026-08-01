@@ -93,7 +93,7 @@
     "id": 16,
     "domain": "delivery",
     "text": "Reject order if vendor closed (opening_hours now)",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 17,
@@ -135,31 +135,31 @@
     "id": 23,
     "domain": "delivery",
     "text": "Lazy judge meal uses prefs + last orders not random",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 24,
     "domain": "delivery",
     "text": "Menu ensureFoodMenu marks synthetic slots source=price_band",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 25,
     "domain": "delivery",
     "text": "Prefer real menu items when Places/crawl filled",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 26,
     "domain": "delivery",
     "text": "Rank vendors: open \u00d7 rating \u00d7 price \u00d7 distance weighted SPECS",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 27,
     "domain": "delivery",
     "text": "Suggest top-3 always with scores in CLI summary",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 28,
@@ -309,25 +309,25 @@
     "id": 52,
     "domain": "driver_mesh",
     "text": "Re-claim same driver allowed; steal claim forbidden without force",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 53,
     "domain": "driver_mesh",
     "text": "Mesh pullOpenOrders debounce 15s",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 54,
     "domain": "driver_mesh",
     "text": "Mesh pull filter maxKm default 40 configurable",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 55,
     "domain": "driver_mesh",
     "text": "Import network orders as net_* task ids stable",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 56,
@@ -375,7 +375,7 @@
     "id": 63,
     "domain": "driver_mesh",
     "text": "Driver capacity maxCargo default 4",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 64,
@@ -495,7 +495,7 @@
     "id": 83,
     "domain": "shops",
     "text": "Cache Overpass sector 10 min by geohash",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 84,
@@ -813,7 +813,7 @@
     "id": 136,
     "domain": "routing",
     "text": "Persist last route on task.route",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 137,
@@ -909,7 +909,7 @@
     "id": 152,
     "domain": "currency",
     "text": "Balance recompute from ledger option verify",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 153,
@@ -939,13 +939,13 @@
     "id": 157,
     "domain": "currency",
     "text": "Vault balance separate from user wallet",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 158,
     "domain": "currency",
     "text": "Architect vault report CLI vault",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 159,
@@ -1263,43 +1263,43 @@
     "id": 211,
     "domain": "ai",
     "text": "mind wipe confirmation double",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 212,
     "domain": "ai",
     "text": "Memory write on successful order prefs",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 213,
     "domain": "ai",
     "text": "Memory: favorite vendors",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 214,
     "domain": "ai",
     "text": "Memory: home pin",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 215,
     "domain": "ai",
     "text": "Memory: diet prefs",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 216,
     "domain": "ai",
     "text": "Greeklish normalizer shared module",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 217,
     "domain": "ai",
     "text": "Ancient Greek food words map small",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 218,
@@ -1479,19 +1479,19 @@
     "id": 247,
     "domain": "tasks",
     "text": "Task geo required for delivery",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 248,
     "domain": "tasks",
     "text": "Task list filter status",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 249,
     "domain": "tasks",
     "text": "Task get by id short",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 250,
@@ -1521,7 +1521,7 @@
     "id": 254,
     "domain": "tasks",
     "text": "Expire open tasks 24h option",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 255,
@@ -1659,13 +1659,13 @@
     "id": 277,
     "domain": "bridge",
     "text": "notes[] required shape {text,from,at}",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 278,
     "domain": "bridge",
     "text": "cmds[] executed safely allowlist",
-    "status": "BACKLOG"
+    "status": "SHIPPED_CORE"
   },
   {
     "id": 279,

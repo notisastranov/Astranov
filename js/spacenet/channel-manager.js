@@ -66,6 +66,12 @@
   }
 
   /** Active cargo count for a driver (claimed / in progress deliveries) */
+  var DEFAULT_MAX_CARGO = 4;
+  function maxCargoOf(d) {
+    if (!d) return DEFAULT_MAX_CARGO;
+    var m = d.maxCargo != null ? Number(d.maxCargo) : DEFAULT_MAX_CARGO;
+    return m > 0 ? m : DEFAULT_MAX_CARGO;
+  }
   function cargoLoad(driverId) {
     if (!driverId || !global.SNTasks || !SNTasks.list) return 0;
     try {
@@ -416,6 +422,8 @@
     ingestJob: ingestJob,
     orchestrate: orchestrate,
     pickBestDriver: pickBestDriver,
+    maxCargoOf: maxCargoOf,
+    DEFAULT_MAX_CARGO: DEFAULT_MAX_CARGO,
     driverFresh: driverFresh,
     touchDriverHb: touchDriverHb,
     cargoLoad: cargoLoad,

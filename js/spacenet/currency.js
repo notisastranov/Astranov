@@ -102,6 +102,9 @@
     st.balance += a;
     if (why === 'mine') st.mined += a;
     saveW();
+    try {
+      ledgerPush({ kind: 'credit', amount: a, why: why || 'credit', bal: st.balance });
+    } catch (_) {}
     g.SNField && g.SNField.paint && g.SNField.paint();
     return st.balance;
   }
@@ -205,13 +208,35 @@
     },
     notePlatformFee: notePlatformFee,
     takePlatformFeeFrom: takePlatformFeeFrom,
-    debit: function (a) {
+    debit: function (a, why) {
       a = Number(a);
       if (!(a > 0) || a > st.balance) return { ok: false, balance: st.balance };
       st.balance -= a;
       saveW();
+      try {
+        ledgerPush({ kind: 'debit', amount: a, why: why || 'debit', bal: st.balance });
+      } catch (_) {}
       g.SNField && g.SNField.paint && g.SNField.paint();
       return { ok: true, balance: st.balance };
+    },
+    vault: function () {
+      return st.platformFees || 0;
+    },
+    ledgerVerify: function () {
+      var rows = ledgerLoad();
+      var sum = 0;
+      rows.forEach(function (r) {
+        var x = Number(r.amount) || 0;
+        if (r.kind === 'credit') sum += x;
+        else if (r.kind === 'debit') sum -= x;
+      });
+      return {
+        ok: rows.length === 0 || Math.abs(sum - st.balance) < 0.05,
+        ledgerSum: Math.round(sum * 100) / 100,
+        balance: st.balance,
+        lines: rows.length,
+        vault: st.platformFees || 0,
+      };
     },
     fees: { platformPct: 3, driverPct: 15 },
     status: function () {
@@ -240,10 +265,31 @@
     return r;
   };
   if (global.SNCurrency) {
-    global.SNCurrency.debit = debit;
-    global.SNCurrency.credit = credit;
     global.SNCurrency.ledger = ledgerLoad;
     global.SNCurrency.ledgerPush = ledgerPush;
+    if (!global.SNCurrency.vault) {
+      global.SNCurrency.vault = function () {
+        return st.platformFees || 0;
+      };
+    }
+    if (!global.SNCurrency.ledgerVerify) {
+      global.SNCurrency.ledgerVerify = function () {
+        var rows = ledgerLoad();
+        var sum = 0;
+        rows.forEach(function (r) {
+          var x = Number(r.amount) || 0;
+          if (r.kind === 'credit') sum += x;
+          else if (r.kind === 'debit') sum -= x;
+        });
+        return {
+          ok: rows.length === 0 || Math.abs(sum - st.balance) < 0.05,
+          ledgerSum: Math.round(sum * 100) / 100,
+          balance: st.balance,
+          lines: rows.length,
+          vault: st.platformFees || 0,
+        };
+      };
+    }
   }
 })(typeof window !== 'undefined' ? window : globalThis);
 

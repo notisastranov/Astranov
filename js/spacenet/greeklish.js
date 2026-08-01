@@ -12,6 +12,9 @@
     [/σουσι|sushi/gi, 'sushi'],
     [/σαλατ|salat|salad/gi, 'salad'],
     [/νερο|nero|water|soda|αναψυκ/gi, 'drink'],
+    [/οινος|οίνος|oinos|οίνον/gi, 'wine'],
+    [/αρτος|άρτος|artos|bread/gi, 'bread'],
+    [/τυρος|τυρός|tyros|cheese/gi, 'cheese'],
   ];
   function normalize(s) {
     var t = String(s || '');

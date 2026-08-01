@@ -7,7 +7,7 @@
 
   const UA = 'AstranovSpaceNet/2.0 (https://astranov.eu; almighty-crawl)';
   const CACHE = new Map();
-  const CACHE_MS = 5 * 60 * 1000;
+  const CACHE_MS = 10 * 60 * 1000;
 
   function cacheGet(k) {
     const hit = CACHE.get(k);

@@ -108,8 +108,15 @@
   /**
    * Pull open network orders near focus into SNTasks (driver marketplace).
    */
+  var lastPullAt = 0;
   async function pullOpenOrders(opts) {
     opts = opts || {};
+    // debounce 15s unless force
+    if (!opts.force && Date.now() - lastPullAt < 15000) {
+      return { ok: true, debounced: true, count: 0 };
+    }
+    lastPullAt = Date.now();
+
     var p = opts.pos || pos();
     var url =
       base() +

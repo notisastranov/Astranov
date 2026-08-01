@@ -12,6 +12,27 @@
  */
 (function (global) {
   'use strict';
+  var ALLOW_CMDS = {
+    reload: 1,
+    hard_reload: 1,
+    locate: 1,
+    'fill shops': 1,
+    'route test': 1,
+    'ready score': 1,
+    'test ready': 1,
+    'go live': 1,
+  };
+  function cmdAllowed(c) {
+    var s = String(c || '')
+      .trim()
+      .toLowerCase();
+    if (!s) return false;
+    if (ALLOW_CMDS[s]) return true;
+    // allow agent notes style no exec
+    if (s.indexOf('agent ') === 0) return false;
+    return false;
+  }
+
 
   var lastSeq = 0;
   var timer = null;
