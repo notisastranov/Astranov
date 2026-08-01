@@ -343,3 +343,17 @@ CLI → Grok Build channel:
 | **Delivery** | `SNField.showRoute` / `startDeliveryRoute` use same chain |
 
 Until VPS is live, gateway/public serve streets. Point `osrmBase` + secret when host is up.
+
+## OWNER LOG · 2026-08-01 OSRM graph extraction optimized
+
+| Opt | Detail |
+|-----|--------|
+| **Default region** | `rhodes` bbox (not full Greece) — minutes not hours |
+| **Filter** | `osmium tags-filter` highways + restrictions + ferry only |
+| **Threads** | `osrm-extract -t $(nproc)` |
+| **Pipeline** | One container: extract → partition → customize |
+| **Regions** | `rhodes` · `aegean` · `greece` · `custom` BBOX |
+| **Scripts** | `deploy/osrm/prepare.sh` · `update.sh` · `Makefile` |
+| **Serve** | `GRAPH_STEM=astranov-rhodes` docker compose · MLD · memory limit 2g |
+
+Build: `cd deploy/osrm && ./prepare.sh && docker compose up -d`
