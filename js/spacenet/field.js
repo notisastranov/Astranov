@@ -371,7 +371,10 @@
           btn.className = 'sn-launch mode-standby';
           btn.innerHTML =
             '<span class="sn-launch-core" aria-hidden="true"></span>' +
-            '<span class="sn-launch-ring" aria-hidden="true"></span>';
+            '<svg class="sn-launch-power" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+            '<path d="M12 3.2 v8.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>' +
+            '<path d="M7.05 6.55a7.2 7.2 0 1 0 9.9 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>' +
+            '</svg>';
           if (hud && hud.parentNode === moneyCol) moneyCol.insertBefore(btn, hud.nextSibling);
           else moneyCol.appendChild(btn);
         }

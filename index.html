@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801140000-style-close-fix" />
-<meta name="astranov-continuity" content="20260801140000-style-close-fix" />
+<meta name="astranov-build" content="20260801140500-power-symbol" />
+<meta name="astranov-continuity" content="20260801140500-power-symbol" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -3431,6 +3431,41 @@
   #sn-topchrome #sn-topchrome-panel * { pointer-events: auto !important; }
   #coach { z-index: 90 !important; }
 
+
+  /* Power symbol (⏻) on task launcher */
+  #sn-task-launch .sn-launch-power {
+    position: absolute !important;
+    inset: 18% !important;
+    width: 64% !important;
+    height: 64% !important;
+    z-index: 2 !important;
+    display: block !important;
+    pointer-events: none !important;
+    color: #d0e8ff !important;
+    filter: drop-shadow(0 0 6px currentColor);
+  }
+  #sn-task-launch .sn-launch-core {
+    /* keep soft glow disc behind icon */
+    inset: 22% !important;
+    opacity: 0.55 !important;
+  }
+  #sn-task-launch.mode-standby .sn-launch-power {
+    color: #7ec8ff !important;
+    filter: drop-shadow(0 0 8px rgba(0, 140, 255, 0.95));
+  }
+  #sn-task-launch.mode-on .sn-launch-power {
+    color: #7dffb0 !important;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 140, 1));
+  }
+  #sn-task-launch.mode-off .sn-launch-power {
+    color: #ff8aa0 !important;
+    filter: drop-shadow(0 0 10px rgba(255, 60, 90, 1));
+  }
+  #sn-task-launch .sn-pwr-line,
+  #sn-task-launch .sn-pwr-arc {
+    stroke: currentColor;
+  }
+
 </style>
 </head>
 <body>
@@ -3496,7 +3531,11 @@
           </div>
           <button type="button" id="sn-task-launch" class="sn-launch mode-standby" title="Task launcher · standby · mild news only" aria-label="Task launcher · cycle standby on off" aria-pressed="mixed">
             <span class="sn-launch-core" aria-hidden="true"></span>
-            <span class="sn-launch-ring" aria-hidden="true"></span>
+            <svg class="sn-launch-power" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <!-- Universal power: vertical line + open ring -->
+              <path class="sn-pwr-line" d="M12 3.2 v8.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+              <path class="sn-pwr-arc" d="M7.05 6.55a7.2 7.2 0 1 0 9.9 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
           </button>
           <div class="stc-g-detail" id="stc-d-money" hidden style="display:none!important">
             <div class="stc-g-title">MONEY · AC</div>
@@ -3658,7 +3697,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801140000-style-close-fix"></script>
+<script src="/js/spacenet/boot.js?v=20260801140500-power-symbol"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
