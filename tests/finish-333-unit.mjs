@@ -129,3 +129,12 @@ const norm = g.SNVendorCrawl.normalizePoi({
 assert.equal(norm.phone.includes('22410'), true);
 assert.ok(norm.photos.length >= 1);
 console.log('PASS vendor-crawl normalize', norm.name);
+
+loadIife('js/spacenet/spartan.js', g);
+assert.ok(g.SNSpartan);
+const pizza = g.SNSpartan.expand('pizza');
+assert.ok(pizza && pizza.spartan && pizza.domain === 'food');
+assert.ok(pizza.autoOrder || pizza.runFood);
+const shops = g.SNSpartan.expand('shops');
+assert.ok(shops && shops.domain === 'shops');
+console.log('PASS spartan', pizza.steps && pizza.steps.join('>'), shops.intent);

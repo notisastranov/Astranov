@@ -420,3 +420,19 @@ Google photos/ratings need `SN_CONFIG.layers.googleMapsKey`. OSM always free.
 | **ETA monitor** | Interval updates · 5 min heads-up · **3 min door peel** beep+notify |
 | **Reply** | "You're eating at HH:MM · … · ping at 5m and door at 3m" |
 
+## OWNER LAW · Spartan intelligence (2026-08-01)
+
+**Definition:** Minimal signal · maximal action. One word is enough when context is the real-Earth OS.
+
+| Rule | Meaning |
+|------|---------|
+| **Expand** | Short input → full mission the user would need in a paragraph |
+| **Research** | Locate · crawl · rank · choose before acting |
+| **Act** | Pay / assign / route / notify when domain needs it — not endless options |
+| **Reply** | Result + ETA/time + what we watch next — no essays |
+| **Everywhere** | Food · map · shops · driver · deliver · pilot · money · bridge · cancel |
+| **Memory** | Prefs make the next one-word smarter |
+| **Module** | `js/spacenet/spartan.js` · `SNSpartan.expand` · CLI `spartan` |
+
+Train forever: every feature answers to Spartan expansion, not multi-step babysitting.
+

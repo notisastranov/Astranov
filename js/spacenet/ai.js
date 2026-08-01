@@ -854,6 +854,77 @@
       }
     } catch (eDialEarly) {}
 
+    // ── SPARTAN INTELLIGENCE: one word → full chain for every domain ──
+    try {
+      if (global.SNSpartan && SNSpartan.expand) {
+        var sp = SNSpartan.expand(line);
+        if (sp && sp.spartan) {
+          // Meta / help only
+          if (sp.replyOnly) {
+            return {
+              did: did.concat(['spartan:' + sp.domain]),
+              reply: sp.replySeed || SNSpartan.LAW.creed,
+              skipBrand: true,
+            };
+          }
+          if (sp.cli) {
+            return {
+              did: did.concat(['spartan:' + sp.domain, 'cli:' + sp.cli]),
+              reply: sp.replySeed || 'On it.',
+              runCliCmd: sp.cli,
+              skipBrand: true,
+            };
+          }
+          if (sp.runDriveOn) {
+            return {
+              did: did.concat(['spartan:drive']),
+              reply: sp.replySeed || 'Courier online…',
+              runDriveOn: true,
+              skipBrand: true,
+            };
+          }
+          if (sp.runDeliver) {
+            return {
+              did: did.concat(['spartan:deliver']),
+              reply: sp.replySeed || 'Completing…',
+              runDeliver: true,
+              skipBrand: true,
+            };
+          }
+          if (sp.runFood || sp.domain === 'food') {
+            var fi =
+              sp.foodIntent ||
+              (global.SNMarket && SNMarket.parseFoodIntent && SNMarket.parseFoodIntent(line)) || {
+                food: sp.food || 'food',
+                overpass: (sp.food || 'food') + ' restaurant',
+                raw: line,
+                autoOrder: true,
+                lazyJudge: true,
+                browseOnly: false,
+              };
+            fi.autoOrder = true;
+            fi.lazyJudge = true;
+            fi.browseOnly = false;
+            fi.spartan = true;
+            return {
+              did: did.concat(['spartan:food', 'food_intent:' + (fi.food || 'food')]),
+              reply: sp.replySeed || ('Spartan · ' + (fi.food || 'food') + '…'),
+              runFoodIntent: fi,
+              skipBrand: true,
+            };
+          }
+          if (sp.mission && sp.mission.steps && sp.mission.steps.length) {
+            return {
+              did: did.concat(['spartan:mission', 'mission:' + sp.mission.steps.join('+')]),
+              reply: sp.replySeed || ('Spartan · ' + sp.mission.steps.join(' → ')),
+              runMission: sp.mission,
+              skipBrand: true,
+            };
+          }
+        }
+      }
+    } catch (_sp) {}
+
     // —— Chat / language (hard) — must answer English greetings ——
     if (
       /^(hello|hi|hey|yo|hiya|good\s*(morning|afternoon|evening)|greetings)[\s!.?]*$/i.test(line) ||
@@ -1523,6 +1594,20 @@
       return text;
     }
 
+    if (local.runCliCmd && global.SNCli && SNCli.run) {
+      try {
+        await SNCli.run(local.runCliCmd);
+        text = local.reply || 'Done.';
+      } catch (eC) {
+        text = 'Failed · ' + (eC && eC.message ? eC.message : eC);
+      }
+      showOnGlobe(brief(text, 72));
+      pushHist('assistant', text);
+      busy = false;
+      clearThinkGfx();
+      return brandReply(text);
+    }
+
     // Full mission runner (map + CLI side effects)
     if (local.runMission && global.SNTaskRunner && SNTaskRunner.runPlan) {
       try {
@@ -1926,6 +2011,10 @@
     bootPresence: bootPresence,
     listeningOn: listeningOn,
     listeningOff: listeningOff,
+    spartan: function (msg) {
+      return global.SNSpartan && SNSpartan.expand ? SNSpartan.expand(msg) : null;
+    },
+
     runMission: function (text, opts) {
       return global.SNTaskRunner && SNTaskRunner.runText
         ? SNTaskRunner.runText(text, opts || {})

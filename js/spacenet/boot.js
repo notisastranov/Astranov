@@ -217,6 +217,7 @@
     '/js/spacenet/order-engine.js',
     '/js/spacenet/market.js',
     '/js/spacenet/task-runner.js',
+    '/js/spacenet/spartan.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/telemachos.js',
     '/js/spacenet/cli.js',

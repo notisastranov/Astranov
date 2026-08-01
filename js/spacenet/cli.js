@@ -1910,7 +1910,26 @@
 
 
       
-      if (
+      
+      if (low === 'spartan' || low === 'spartan law' || low === 'spartan intelligence') {
+        try {
+          const L = global.SNSpartan && SNSpartan.LAW;
+          if (!L) {
+            log('Spartan module loading · hard refresh', 'err');
+            return;
+          }
+          log(L.name + ' · ' + L.creed, 'ok');
+          (L.rules || []).forEach(function (r) {
+            log('· ' + r, 'dim');
+          });
+          log('Domains · ' + (SNSpartan.domains() || []).join(' · '), 'dim');
+          preview('Spartan');
+        } catch (e) {
+          log(String(e.message || e), 'err');
+        }
+        return;
+      }
+if (
         low === 'fill shops' ||
         low === 'google shops' ||
         low === 'crawl shops' ||
