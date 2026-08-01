@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801125500-user-bridge-cli" />
-<meta name="astranov-continuity" content="20260801125500-user-bridge-cli" />
+<meta name="astranov-build" content="20260801130000-meta-stack-v10" />
+<meta name="astranov-continuity" content="20260801130000-meta-stack-v10" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -3095,6 +3095,200 @@
     max-height: 56px !important;
   }
 
+
+  /* ═══ TOP META v10 — radar left · time/date/loc stack · name mid-height ═══ */
+  #sn-topchrome-panel.collapsed {
+    max-height: 58px !important;
+    min-height: 54px !important;
+  }
+  #sn-topchrome-panel.collapsed #stc-compact,
+  #stc-compact {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    padding: 3px 10px 3px 6px !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  /* LEFT: radar flush left + 3-line stack (no overlap into center name) */
+  #sn-topchrome-panel.collapsed .stc-col-timeline,
+  #sn-topchrome-panel.collapsed .stc-col-radar {
+    position: relative !important;
+    flex: 0 1 auto !important;
+    max-width: calc(50% - 72px) !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    z-index: 2 !important;
+    overflow: hidden !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-radar-blend {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #field-radar {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    margin: 0 !important;
+    order: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #field-nav-meta {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    gap: 1px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    overflow: hidden !important;
+    flex: 1 1 auto !important;
+  }
+  /* Top→bottom: TIME · DATE · LOCATION */
+  #sn-topchrome-panel.collapsed #fnm-time {
+    display: block !important;
+    order: 1 !important;
+    font: 700 10px/1.15 ui-monospace, monospace !important;
+    color: #00e070 !important;
+    text-shadow: 0 0 8px rgba(0, 224, 112, 0.7) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    text-align: left !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-date {
+    display: block !important;
+    order: 2 !important;
+    font: 600 9px/1.15 ui-monospace, monospace !important;
+    color: #00e070 !important;
+    text-shadow: 0 0 6px rgba(0, 224, 112, 0.55) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-phys {
+    display: block !important;
+    order: 3 !important;
+    font: 600 9px/1.15 ui-monospace, monospace !important;
+    color: #00e070 !important;
+    text-shadow: 0 0 6px rgba(0, 224, 112, 0.55) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body.tl-past #sn-topchrome-panel.collapsed #fnm-time,
+  body.tl-past #sn-topchrome-panel.collapsed #fnm-date,
+  body.tl-past #sn-topchrome-panel.collapsed #fnm-phys,
+  body.tl-frozen #sn-topchrome-panel.collapsed #fnm-time,
+  body.tl-frozen #sn-topchrome-panel.collapsed #fnm-date,
+  body.tl-frozen #sn-topchrome-panel.collapsed #fnm-phys {
+    color: #ff3355 !important;
+    text-shadow: 0 0 8px rgba(255, 50, 85, 0.75) !important;
+  }
+  body.tl-future #sn-topchrome-panel.collapsed #fnm-time,
+  body.tl-future #sn-topchrome-panel.collapsed #fnm-date,
+  body.tl-future #sn-topchrome-panel.collapsed #fnm-phys {
+    color: #00ccff !important;
+    text-shadow: 0 0 8px rgba(0, 200, 255, 0.75) !important;
+  }
+
+  /* CENTER name — true mid of collapsed bar height + width; reserved lane */
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    position: absolute !important;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 5 !important;
+    width: auto !important;
+    max-width: min(40vw, 160px) !important;
+    height: auto !important;
+    pointer-events: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home {
+    pointer-events: auto !important;
+    padding: 4px 6px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
+    font-size: clamp(12px, 3.6vw, 15px) !important;
+    letter-spacing: 0.14em !important;
+    /* soft scrim so left/right text never reads through the name */
+    background: rgba(0, 0, 0, 0.45) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  /* RIGHT money — stays clear of name */
+  #sn-topchrome-panel.collapsed .stc-col-money {
+    flex: 0 0 auto !important;
+    max-width: calc(50% - 72px) !important;
+    z-index: 2 !important;
+    height: 100% !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+  #sn-topchrome-panel.collapsed #field-balance-hud {
+    height: auto !important;
+    max-height: 40px !important;
+  }
+
+  @media (max-width: 380px) {
+    #sn-topchrome-panel.collapsed #field-radar {
+      flex: 0 0 34px !important;
+      width: 34px !important;
+      height: 34px !important;
+      min-width: 34px !important;
+      min-height: 34px !important;
+      max-width: 34px !important;
+      max-height: 34px !important;
+    }
+    #sn-topchrome-panel.collapsed .stc-col-timeline {
+      max-width: calc(50% - 56px) !important;
+    }
+    #sn-topchrome-panel.collapsed #fnm-time { font-size: 9px !important; }
+    #sn-topchrome-panel.collapsed #fnm-date,
+    #sn-topchrome-panel.collapsed #fnm-phys { font-size: 8px !important; }
+  }
+
 </style>
 </head>
 <body>
@@ -3126,7 +3320,8 @@
               <div id="field-radar-legend" hidden aria-hidden="true"></div>
             </div>
             <div id="field-nav-meta" class="stc-meta-side" aria-live="polite">
-              <button type="button" class="fnm-row fnm-time-btn" id="fnm-time" title="Date · time · tap for time machine">—</button>
+              <button type="button" class="fnm-row fnm-time-btn" id="fnm-time" title="Time · tap for time machine">—</button>
+              <span class="fnm-row" id="fnm-date">—</span>
               <span class="fnm-row" id="fnm-phys">—</span>
               <span class="fnm-row" id="fnm-speed" hidden>—</span>
               <span class="fnm-row" id="fnm-virt" hidden></span>
@@ -3317,7 +3512,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801125500-user-bridge-cli"></script>
+<script src="/js/spacenet/boot.js?v=20260801130000-meta-stack-v10"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

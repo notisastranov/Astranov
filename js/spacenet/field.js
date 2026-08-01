@@ -1396,12 +1396,20 @@
         String(show.getMonth() + 1).padStart(2, '0') +
         '-' +
         String(show.getDate()).padStart(2, '0');
-      // date + local time (readable)
-      timeEl.textContent = d + ' · ' + fmtClock(show, false);
+      // Stack: TIME (top) · DATE (middle line via #fnm-date) · LOCATION bottom
+      timeEl.textContent = fmtClock(show, false);
       timeEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
       var md = timelineMode();
       timeEl.classList.add('tl-' + md);
       if (timeline.frozen && md === 'past') timeEl.classList.add('tl-frozen');
+      var dateEl = $('fnm-date');
+      if (dateEl) {
+        dateEl.textContent = d;
+        dateEl.hidden = false;
+        dateEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
+        dateEl.classList.add('tl-' + md);
+        if (timeline.frozen && md === 'past') dateEl.classList.add('tl-frozen');
+      }
     }
     var p =
       physPos ||
