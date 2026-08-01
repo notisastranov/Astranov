@@ -461,3 +461,12 @@ Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar casc
 | **Examples** | `πιτσα` `thelo pizza` `θέλω πίτσα` `pou eimai` `βρες με` `magazia` `πεινάω` `ela re` |
 | **Mic** | Prefer `el-GR` when Greekish; repair transcript before commit |
 
+## OWNER LAW · Deep electric starry blue (not cyan)
+
+| Item | Value |
+|------|--------|
+| **Accent** | `#0040ff` deep electric |
+| **Bright/name** | `#1a5cff` / `#2a6aff` |
+| **Not** | cyan `#00e8ff` / ice light blue |
+| **Power ⏻ standby** | White symbol on dark disc + blue outer glow (readable) |
+
