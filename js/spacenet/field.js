@@ -2058,10 +2058,11 @@
     function sizePx(mode) {
       var h = window.innerHeight || 700;
       var MIN = 54;
-      var FULL = Math.max(MIN + 80, h - oppositeReserve());
+      // Detail dump removed — top scroll stays compact row only
+      var FULL = 64;
       if (mode === 'collapsed') return 54;
       if (mode === 'expanded') return FULL;
-      return Math.max(MIN, Math.min(Math.round(h * 0.42), FULL));
+      return FULL;
     }
     function recapBottomForTop(topPx) {
       try {
@@ -2115,16 +2116,12 @@
         panel.style.setProperty('height', px + 'px', 'important');
         panel.style.setProperty('min-height', px + 'px', 'important');
         // height+min-height forced — max-height cascade is polluted with 58px caps
+        // Compact-only top scroll (no detail text dump)
+        px = Math.min(px, 72);
         law.textContent =
           'html body #sn-topchrome #sn-topchrome-panel.mid,' +
           'html body #sn-topchrome #sn-topchrome-panel.expanded{' +
-          'max-height:' +
-          px +
-          'px !important;height:' +
-          px +
-          'px !important;min-height:' +
-          px +
-          'px !important;overflow:hidden !important;}' +
+          'max-height:72px !important;height:auto !important;min-height:56px !important;overflow:hidden !important;}' +
           'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}';
         try {
           document.head.appendChild(law);
