@@ -1160,6 +1160,32 @@
         reason: 'last map pin',
       };
     }
+    // Soft home: profile / verified prefs / Rhodes test sector (never USA)
+    if (!pos || pos.lat == null) {
+      try {
+        var me = global.SNProfiles && SNProfiles.me && SNProfiles.me();
+        if (me && me.lat != null && me.lng != null) {
+          pos = { lat: me.lat, lng: me.lng, fallback: true, reason: 'profile home' };
+        }
+      } catch (_) {}
+    }
+    if (!pos || pos.lat == null) {
+      try {
+        var pr = loadPrefs();
+        if (pr && pr.verifiedLoc && pr.verifiedLoc.lat != null) {
+          pos = {
+            lat: pr.verifiedLoc.lat,
+            lng: pr.verifiedLoc.lng,
+            fallback: true,
+            reason: 'verified home',
+          };
+        }
+      } catch (_) {}
+    }
+    if ((!pos || pos.lat == null) && (opts.softHome || opts.allowSoftHome || intent.softHome)) {
+      // Rhodes Archangelos sector — owner test default (not USA)
+      pos = { lat: 36.4341, lng: 28.2176, fallback: true, reason: 'soft home Rhodes' };
+    }
     if (!pos || pos.lat == null) {
       log('GPS off · type locate then allow location · or fly to your city first', 'err');
       return {
@@ -1280,27 +1306,45 @@
     var pois = [];
     try {
       var waited = 0;
-      while ((!global.SNSearch || !SNSearch.nearby) && waited < 5000) {
+      while ((!global.SNSearch || !SNSearch.nearby) && waited < 2500) {
         await new Promise(function (r) {
           setTimeout(r, 200);
         });
         waited += 200;
       }
       if (global.SNSearch && SNSearch.nearby) {
+        var nearP = SNSearch.nearby(
+          pos.lat,
+          pos.lng,
+          MAX_SHOP_KM * 1000,
+          intent.overpass || food
+        );
         pois =
-          (await SNSearch.nearby(
-            pos.lat,
-            pos.lng,
-            MAX_SHOP_KM * 1000,
-            intent.overpass || food
-          )) || [];
-        if ((!pois || !pois.length) && food === 'pizza') {
+          (await Promise.race([
+            Promise.resolve(nearP),
+            new Promise(function (resolve) {
+              setTimeout(function () {
+                resolve([]);
+              }, opts.testMode || opts.softHome ? 3500 : 8000);
+            }),
+          ])) || [];
+        if ((!pois || !pois.length) && food === 'pizza' && !opts.testMode) {
           pois =
-            (await SNSearch.nearby(pos.lat, pos.lng, MAX_SHOP_KM * 1000, 'restaurant food')) ||
-            [];
+            (await Promise.race([
+              Promise.resolve(
+                SNSearch.nearby(pos.lat, pos.lng, MAX_SHOP_KM * 1000, 'restaurant food')
+              ),
+              new Promise(function (resolve) {
+                setTimeout(function () {
+                  resolve([]);
+                }, 5000);
+              }),
+            ])) || [];
         }
       }
-    } catch (_) {}
+    } catch (_) {
+      pois = [];
+    }
     try {
       if (global.SNCommerce && SNCommerce.ensureSector) {
         await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
@@ -1354,6 +1398,7 @@
     try {
       testMode =
         !!opts.testMode ||
+        !!opts.softHome ||
         (typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1');
     } catch (_) {}
     if (!vendors.length && global.SNProfiles && testMode) {
@@ -2213,11 +2258,22 @@
    */
   function seedTestSector(pos, opts) {
     opts = opts || {};
-    if (!pos || pos.lat == null || !global.SNProfiles) {
-      return { ok: false, error: 'need position' };
+    if (!pos || pos.lat == null) {
+      pos = global._snLastPos || { lat: 36.4341, lng: 28.2176 };
+    }
+    if (!global.SNProfiles) {
+      return { ok: false, error: 'profiles not ready' };
     }
     var lat = Number(pos.lat);
     var lng = Number(pos.lng);
+    try {
+      global._snLastPos = { lat: lat, lng: lng, reason: 'test seed' };
+      global._snPhysPos = { lat: lat, lng: lng };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(lat, lng);
+      var pr = loadPrefs();
+      pr.verifiedLoc = { lat: lat, lng: lng, t: Date.now() };
+      savePrefs(pr);
+    } catch (_) {}
     var shops = [
       {
         id: 'test_v_pizza_a',
@@ -2571,6 +2627,7 @@
       opts.line ||
       'ORDER ME A PIZZA YOU JUDGE THE TYPE SIZE VENDOR DELIVERY GUY AND WHATEVER ELSE AND TELL ME WHAT TIME I EAT';
     var result = await fulfillFoodIntent(line, {
+      softHome: true,
       autoOrder: true,
       skipLocConfirm: true,
       quiet: false,
