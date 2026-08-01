@@ -2024,22 +2024,24 @@
     try {
       document.body.classList.add('stc-on');
     } catch (_) {}
-    // Top scroll stays at top edge — clear any stray positioning
+    // Top scroll stays at top edge — hard pin
     try {
       var host = $('sn-topchrome');
       if (host) {
-        host.style.top = '';
-        host.style.left = '';
-        host.style.right = '';
-        host.style.bottom = '';
-        host.style.transform = '';
+        host.style.setProperty('position', 'fixed', 'important');
+        host.style.setProperty('top', '0px', 'important');
+        host.style.setProperty('left', '0px', 'important');
+        host.style.setProperty('right', '0px', 'important');
+        host.style.setProperty('bottom', 'auto', 'important');
+        host.style.setProperty('transform', 'none', 'important');
+        host.style.setProperty('margin', '0px', 'important');
       }
-      panel.style.left = '';
-      panel.style.top = '';
-      panel.style.right = '';
-      panel.style.bottom = '';
-      panel.style.transform = '';
-      panel.style.position = '';
+      panel.style.setProperty('position', 'relative', 'important');
+      panel.style.setProperty('left', 'auto', 'important');
+      panel.style.setProperty('top', 'auto', 'important');
+      panel.style.setProperty('right', 'auto', 'important');
+      panel.style.setProperty('bottom', 'auto', 'important');
+      panel.style.setProperty('transform', 'none', 'important');
     } catch (_) {}
 
     var KEY = 'sn:topchrome-size-v1';

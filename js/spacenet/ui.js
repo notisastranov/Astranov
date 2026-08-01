@@ -128,17 +128,28 @@
       localStorage.removeItem(POS_KEY);
     } catch (_) {}
     dock.classList.remove('free');
-    dock.style.left = '';
-    dock.style.top = '';
-    dock.style.right = '';
-    dock.style.bottom = '';
-    dock.style.transform = '';
-    dock.style.width = '';
-    dock.style.padding = '';
+    // Force fixed bottom edge (beats any leftover free-drag inline styles)
+    dock.style.setProperty('position', 'fixed', 'important');
+    dock.style.setProperty('left', '0px', 'important');
+    dock.style.setProperty('right', '0px', 'important');
+    dock.style.setProperty('bottom', '0px', 'important');
+    dock.style.setProperty('top', 'auto', 'important');
+    dock.style.setProperty('transform', 'none', 'important');
+    dock.style.setProperty('margin', '0px', 'important');
+    dock.style.setProperty('width', '100%', 'important');
+    dock.style.removeProperty('padding');
     if (panel) {
-      panel.style.margin = '';
-      panel.style.maxWidth = '';
-      panel.style.width = '';
+      panel.style.removeProperty('margin');
+      panel.style.removeProperty('margin-left');
+      panel.style.removeProperty('margin-right');
+      panel.style.removeProperty('margin-top');
+      panel.style.removeProperty('margin-bottom');
+      panel.style.setProperty('position', 'relative', 'important');
+      panel.style.setProperty('left', 'auto', 'important');
+      panel.style.setProperty('top', 'auto', 'important');
+      panel.style.setProperty('right', 'auto', 'important');
+      panel.style.setProperty('bottom', 'auto', 'important');
+      panel.style.setProperty('transform', 'none', 'important');
     }
   }
 
@@ -415,11 +426,18 @@
     window.addEventListener(
       'resize',
       function () {
-        if (!dock.classList.contains('free')) return;
-        applyPos(dock, panel, parseFloat(dock.style.left) || 8, parseFloat(dock.style.top) || 8);
+        pinDockBottom();
       },
       { passive: true }
     );
+    // Keep pinned if anything re-adds free class
+    try {
+      var mo = new MutationObserver(function () {
+        if (dock.classList.contains('free')) pinDockBottom();
+      });
+      mo.observe(dock, { attributes: true, attributeFilter: ['class', 'style'] });
+    } catch (_) {}
+    setInterval(pinDockBottom, 2000);
   }
 
   function init() {

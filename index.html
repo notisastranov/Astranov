@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801162000-scrolls-edge-locked" />
-<meta name="astranov-continuity" content="20260801162000-scrolls-edge-locked" />
+<meta name="astranov-build" content="20260801163000-edge-flush" />
+<meta name="astranov-continuity" content="20260801163000-edge-flush" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -4026,6 +4026,69 @@
     margin-right: auto !important;
   }
 
+
+  /* ═══ EDGE LOCK v2 · top flush top · bottom flush bottom ═══ */
+  html, body {
+    transform: none !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    width: 100% !important;
+  }
+  #sn-topchrome {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    transform: none !important;
+    margin: 0 !important;
+    z-index: 120 !important;
+  }
+  #dock,
+  #dock.free {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-top: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    z-index: 120 !important;
+    pointer-events: none !important;
+  }
+  #dock #panel,
+  #panel {
+    pointer-events: auto !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+    width: min(700px, 100%) !important;
+    max-width: min(700px, 100%) !important;
+    align-self: center !important;
+  }
+  #sn-topchrome-panel {
+    width: min(700px, 100%) !important;
+    max-width: min(700px, 100%) !important;
+    margin: 0 auto !important;
+  }
+
 </style>
 </head>
 <body>
@@ -4257,7 +4320,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801162000-scrolls-edge-locked"></script>
+<script src="/js/spacenet/boot.js?v=20260801163000-edge-flush"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}
