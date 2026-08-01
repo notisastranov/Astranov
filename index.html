@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801213000-spartan-voice-listen" />
-<meta name="astranov-continuity" content="20260801213000-spartan-voice-listen" />
+<meta name="astranov-build" content="20260801220000-neon-blue" />
+<meta name="astranov-continuity" content="20260801220000-neon-blue" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -27,31 +27,31 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=Comfortaa:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    /* Deep glowing electric blue — not pale 60s ice */
+    /* Neon blue accents — system details & edges */
     --bg: #01060f;
     --bg-deep: #00040a;
     --void: #000208;
-    --text: #b8d4ff;
-    --text-bright: #e6f0ff;
-    --dim: #3a5a9a;
-    --muted: #4a78c8;
-    --accent: #0040ff;
-    --bright: #0066ff;
-    --glow: #0080ff;
-    --ice: #1a6aff;
-    --electric: #0055ff;
-    --electric-hot: #0077ff;
-    --electric-deep: #0033cc;
+    --text: #c8f4ff;
+    --text-bright: #e8fcff;
+    --dim: #2a7a9a;
+    --muted: #40b8e0;
+    --accent: #00d4ff;
+    --bright: #00f0ff;
+    --glow: #00e8ff;
+    --ice: #40f0ff;
+    --electric: #00d4ff;
+    --electric-hot: #39f0ff;
+    --electric-deep: #0090cc;
     --mint: #00e8a0;
     --mint-glow: rgba(0, 232, 160, 0.45);
     --warn: #ffc857;
     --err: #ff5e7a;
-    --panel: rgba(0, 8, 24, 0.9);
-    --panel-solid: #020c1c;
-    --border: rgba(0, 85, 255, 0.55);
-    --border-strong: rgba(0, 120, 255, 0.85);
-    --glow-soft: 0 0 22px rgba(0, 70, 255, 0.55);
-    --glow-hot: 0 0 40px rgba(0, 100, 255, 0.7);
+    --panel: rgba(0, 10, 22, 0.9);
+    --panel-solid: #020c18;
+    --border: rgba(0, 220, 255, 0.55);
+    --border-strong: rgba(0, 240, 255, 0.9);
+    --glow-soft: 0 0 22px rgba(0, 220, 255, 0.55);
+    --glow-hot: 0 0 42px rgba(0, 240, 255, 0.75);
     --font-ui: "Nunito", "Varela Round", system-ui, sans-serif;
     --font-display: "Comfortaa", "Nunito", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
@@ -234,7 +234,7 @@
     border-radius: 8px;
     background:
       linear-gradient(180deg, rgba(6, 24, 48, 0.75), rgba(0, 8, 20, 0.85));
-    border: 1px solid rgba(76, 201, 255, 0.28);
+    border: 1px solid rgba(0, 232, 255, 0.28);
     box-shadow: inset 0 0 12px rgba(11, 111, 212, 0.12), 0 0 10px rgba(11, 111, 212, 0.08);
     overflow: hidden;
     position: relative;
@@ -308,8 +308,8 @@
   }
   #sn-topchrome-drag::before {
     content: ''; display: block; width: 36px; height: 3px; border-radius: 99px;
-    background: linear-gradient(90deg, transparent, rgba(76, 201, 255, 0.65), transparent);
-    box-shadow: 0 0 10px rgba(76, 201, 255, 0.4);
+    background: linear-gradient(90deg, transparent, rgba(0, 232, 255, 0.65), transparent);
+    box-shadow: 0 0 10px rgba(0, 232, 255, 0.4);
   }
   #sn-topchrome-drag span {
     font: 600 8px/1 var(--font-mono); letter-spacing: 0.12em; color: rgba(140, 180, 220, 0.55);
@@ -331,11 +331,11 @@
     position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 90;
     font: 700 10px/1 var(--font-display); letter-spacing: 0.28em;
     color: #a8ecff; background: linear-gradient(180deg, rgba(12, 40, 80, 0.55), rgba(4, 12, 28, 0.7));
-    border: 1px solid rgba(76, 201, 255, 0.45);
+    border: 1px solid rgba(0, 232, 255, 0.45);
     border-radius: 999px; padding: 7px 16px 6px;
     box-shadow: 0 0 16px rgba(11, 111, 212, 0.28), inset 0 1px 0 rgba(168, 236, 255, 0.12);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    text-shadow: 0 0 12px rgba(76, 201, 255, 0.5);
+    text-shadow: 0 0 12px rgba(0, 232, 255, 0.5);
   }
   #btn-home:hover, #btn-home:focus-visible {
     border-color: rgba(120, 220, 255, 0.75);
@@ -351,8 +351,8 @@
     font-family: var(--font-mono);
     padding: 5px 7px 4px; border-radius: 8px;
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.88), rgba(2, 8, 18, 0.92));
-    border: 1px solid rgba(76, 201, 255, 0.3);
-    box-shadow: 0 0 10px rgba(11, 111, 212, 0.15), inset 0 1px 0 rgba(76, 201, 255, 0.06);
+    border: 1px solid rgba(0, 232, 255, 0.3);
+    box-shadow: 0 0 10px rgba(11, 111, 212, 0.15), inset 0 1px 0 rgba(0, 232, 255, 0.06);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
   #field-nav-meta .fnm-row {
@@ -361,7 +361,7 @@
     overflow: hidden; text-overflow: ellipsis;
   }
   #field-nav-meta .fnm-row + .fnm-row { margin-top: 1px; }
-  #fnm-speed { color: #4cc9ff; text-shadow: 0 0 8px rgba(76, 201, 255, 0.4); font-size: 9px; }
+  #fnm-speed { color: #00e8ff; text-shadow: 0 0 8px rgba(0, 232, 255, 0.4); font-size: 9px; }
   #fnm-time { color: #8ab4d0; }
   #fnm-phys { color: #6dffb0; }
   #fnm-virt { color: #ffc857; }
@@ -371,7 +371,7 @@
   @keyframes fbh-blue-pulse {
     0%, 100% {
       box-shadow:
-        0 0 0 1px rgba(76, 201, 255, 0.3),
+        0 0 0 1px rgba(0, 232, 255, 0.3),
         0 0 10px rgba(11, 111, 212, 0.28),
         inset 0 0 10px rgba(40, 120, 255, 0.08),
         inset 0 1px 0 rgba(168, 236, 255, 0.14);
@@ -380,7 +380,7 @@
       box-shadow:
         0 0 0 1px rgba(120, 220, 255, 0.55),
         0 0 16px rgba(61, 184, 255, 0.42),
-        inset 0 0 14px rgba(76, 201, 255, 0.12),
+        inset 0 0 14px rgba(0, 232, 255, 0.12),
         inset 0 1px 0 rgba(200, 240, 255, 0.22);
     }
   }
@@ -391,9 +391,9 @@
     background:
       radial-gradient(ellipse 120% 80% at 80% 0%, rgba(40, 100, 200, 0.22) 0%, transparent 55%),
       linear-gradient(155deg, rgba(6, 24, 56, 0.94) 0%, rgba(2, 10, 28, 0.96) 55%, rgba(4, 16, 40, 0.95) 100%);
-    border: 1px solid rgba(76, 201, 255, 0.5);
+    border: 1px solid rgba(0, 232, 255, 0.5);
     box-shadow:
-      0 0 0 1px rgba(76, 201, 255, 0.2),
+      0 0 0 1px rgba(0, 232, 255, 0.2),
       0 0 12px rgba(11, 111, 212, 0.3),
       inset 0 0 10px rgba(40, 120, 255, 0.08),
       inset 0 1px 0 rgba(168, 236, 255, 0.16);
@@ -411,7 +411,7 @@
   }
   #fbh-s {
     display: block; font-size: 12px; font-weight: 700; color: #a8ecff;
-    text-shadow: 0 0 10px rgba(76, 201, 255, 0.65);
+    text-shadow: 0 0 10px rgba(0, 232, 255, 0.65);
     letter-spacing: 0.03em;
   }
   #fbh-mine-rate {
@@ -420,7 +420,7 @@
   #fbh-econ-graph {
     display: block; width: 100%; height: 22px; margin-top: 4px;
     border-radius: 4px; background: rgba(0, 8, 22, 0.65);
-    border: 1px solid rgba(76, 201, 255, 0.22);
+    border: 1px solid rgba(0, 232, 255, 0.22);
     box-shadow: inset 0 0 8px rgba(11, 111, 212, 0.12);
   }
   #fbh-econ-label {
@@ -444,7 +444,7 @@
     pointer-events: auto; cursor: pointer; border-radius: 50%;
     background:
       radial-gradient(circle at 50% 50%, rgba(8, 40, 80, 0.35) 0%, rgba(0, 10, 24, 0.72) 70%);
-    border: 1px solid rgba(76, 201, 255, 0.4);
+    border: 1px solid rgba(0, 232, 255, 0.4);
     box-shadow:
       0 0 0 1px rgba(11, 111, 212, 0.18),
       0 0 16px rgba(11, 111, 212, 0.22),
@@ -455,7 +455,7 @@
   }
   #field-radar::before {
     content: ''; position: absolute; inset: -2px; border-radius: inherit; pointer-events: none;
-    border: 1px solid rgba(76, 201, 255, 0.12);
+    border: 1px solid rgba(0, 232, 255, 0.12);
     animation: sn-ring-pulse 3.2s ease-in-out infinite;
   }
   @keyframes sn-ring-pulse {
@@ -479,7 +479,7 @@
   #field-radar.expanded #field-radar-speed { display: none; }
   #fsh-value {
     font: 700 14px/1 var(--font-mono); color: var(--glow);
-    text-shadow: 0 0 10px rgba(76, 201, 255, 0.75);
+    text-shadow: 0 0 10px rgba(0, 232, 255, 0.75);
   }
   #field-radar.expanded #fsh-value { font-size: 18px; }
   #fsh-unit {
@@ -490,12 +490,12 @@
   .fr-label {
     position: absolute; bottom: 4px; left: 0; right: 0; text-align: center;
     font: 600 7px/1 var(--font-display); letter-spacing: 0.16em;
-    color: rgba(76, 201, 255, 0.55); pointer-events: none;
+    color: rgba(0, 232, 255, 0.55); pointer-events: none;
   }
   #field-radar.expanded .fr-label { bottom: 22px; font-size: 9px; }
   #field-radar-zoom {
     position: absolute; top: 4px; left: 0; right: 0; text-align: center;
-    font: 600 7px/1 var(--font-mono); color: rgba(76, 201, 255, 0.7);
+    font: 600 7px/1 var(--font-mono); color: rgba(0, 232, 255, 0.7);
     pointer-events: none; letter-spacing: 0.04em;
   }
   #field-radar-legend {
@@ -518,8 +518,8 @@
     padding: 4px 6px 5px;
     border-radius: 8px;
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.9), rgba(2, 8, 18, 0.92));
-    border: 1px solid rgba(76, 201, 255, 0.3);
-    box-shadow: 0 0 12px rgba(11, 111, 212, 0.16), inset 0 1px 0 rgba(76, 201, 255, 0.06);
+    border: 1px solid rgba(0, 232, 255, 0.3);
+    box-shadow: 0 0 12px rgba(11, 111, 212, 0.16), inset 0 1px 0 rgba(0, 232, 255, 0.06);
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
     font-family: var(--font-mono);
   }
@@ -529,7 +529,7 @@
   }
   #sn-fleet-monitor .sfm-title {
     font: 700 7px/1 var(--font-display); letter-spacing: 0.14em;
-    color: #4cc9ff; text-shadow: 0 0 8px rgba(76, 201, 255, 0.4);
+    color: #00e8ff; text-shadow: 0 0 8px rgba(0, 232, 255, 0.4);
   }
   #sn-fleet-monitor .sfm-sum {
     font: 600 7px/1 var(--font-mono); color: #8ab4d0;
@@ -581,7 +581,7 @@
     padding: 10px 22px; border-radius: 999px;
     box-shadow: var(--glow-soft), inset 0 1px 0 rgba(168, 236, 255, 0.18);
     white-space: nowrap;
-    text-shadow: 0 0 18px rgba(76, 201, 255, 0.7);
+    text-shadow: 0 0 18px rgba(0, 232, 255, 0.7);
     transition: border-color .18s, box-shadow .18s, color .18s;
   }
   #btn-home:hover, #btn-home:focus-visible {
@@ -599,8 +599,8 @@
     font-family: var(--font-mono);
     padding: 8px 10px; border-radius: var(--r-md);
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.88), rgba(2, 8, 18, 0.92));
-    border: 1px solid rgba(76, 201, 255, 0.35);
-    box-shadow: 0 0 18px rgba(11, 111, 212, 0.2), inset 0 1px 0 rgba(76, 201, 255, 0.08);
+    border: 1px solid rgba(0, 232, 255, 0.35);
+    box-shadow: 0 0 18px rgba(11, 111, 212, 0.2), inset 0 1px 0 rgba(0, 232, 255, 0.08);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
   #field-nav-meta .fnm-row {
@@ -609,7 +609,7 @@
     overflow: hidden; text-overflow: ellipsis;
   }
   #field-nav-meta .fnm-row + .fnm-row { margin-top: 3px; }
-  #fnm-speed { color: #4cc9ff; text-shadow: 0 0 10px rgba(76, 201, 255, 0.45); font-size: 11px; }
+  #fnm-speed { color: #00e8ff; text-shadow: 0 0 10px rgba(0, 232, 255, 0.45); font-size: 11px; }
   #fnm-time { color: #8ab4d0; }
   #fnm-phys { color: #6dffb0; }
   #fnm-virt { color: #ffc857; }
@@ -619,7 +619,7 @@
   @keyframes fbh-blue-pulse {
     0%, 100% {
       box-shadow:
-        0 0 0 1px rgba(76, 201, 255, 0.35),
+        0 0 0 1px rgba(0, 232, 255, 0.35),
         0 0 18px rgba(11, 111, 212, 0.35),
         0 0 36px rgba(30, 90, 200, 0.22),
         inset 0 0 18px rgba(40, 120, 255, 0.1),
@@ -630,7 +630,7 @@
         0 0 0 1px rgba(120, 220, 255, 0.65),
         0 0 28px rgba(61, 184, 255, 0.55),
         0 0 48px rgba(40, 120, 255, 0.35),
-        inset 0 0 24px rgba(76, 201, 255, 0.16),
+        inset 0 0 24px rgba(0, 232, 255, 0.16),
         inset 0 1px 0 rgba(200, 240, 255, 0.28);
     }
   }
@@ -641,9 +641,9 @@
     background:
       radial-gradient(ellipse 120% 80% at 80% 0%, rgba(40, 100, 200, 0.28) 0%, transparent 55%),
       linear-gradient(155deg, rgba(6, 24, 56, 0.94) 0%, rgba(2, 10, 28, 0.96) 55%, rgba(4, 16, 40, 0.95) 100%);
-    border: 1px solid rgba(76, 201, 255, 0.55);
+    border: 1px solid rgba(0, 232, 255, 0.55);
     box-shadow:
-      0 0 0 1px rgba(76, 201, 255, 0.25),
+      0 0 0 1px rgba(0, 232, 255, 0.25),
       0 0 22px rgba(11, 111, 212, 0.4),
       0 0 40px rgba(30, 90, 200, 0.22),
       inset 0 0 20px rgba(40, 120, 255, 0.1),
@@ -663,7 +663,7 @@
   }
   #fbh-s {
     display: block; font-size: 15px; font-weight: 700; color: #a8ecff;
-    text-shadow: 0 0 14px rgba(76, 201, 255, 0.75), 0 0 28px rgba(11, 111, 212, 0.45);
+    text-shadow: 0 0 14px rgba(0, 232, 255, 0.75), 0 0 28px rgba(11, 111, 212, 0.45);
     letter-spacing: 0.04em;
   }
   #fbh-mine-rate {
@@ -672,7 +672,7 @@
   #fbh-econ-graph {
     display: block; width: 100%; height: 40px; margin-top: 7px;
     border-radius: 7px; background: rgba(0, 8, 22, 0.65);
-    border: 1px solid rgba(76, 201, 255, 0.28);
+    border: 1px solid rgba(0, 232, 255, 0.28);
     box-shadow: inset 0 0 12px rgba(11, 111, 212, 0.15);
   }
   #fbh-econ-label {
@@ -699,7 +699,7 @@
     pointer-events: auto; cursor: pointer; border-radius: 50%;
     background:
       radial-gradient(circle at 50% 50%, rgba(8, 40, 80, 0.35) 0%, rgba(0, 10, 24, 0.72) 70%);
-    border: 1px solid rgba(76, 201, 255, 0.4);
+    border: 1px solid rgba(0, 232, 255, 0.4);
     box-shadow:
       0 0 0 1px rgba(11, 111, 212, 0.2),
       0 0 28px rgba(11, 111, 212, 0.28),
@@ -710,7 +710,7 @@
   }
   #field-radar::before {
     content: ''; position: absolute; inset: -3px; border-radius: inherit; pointer-events: none;
-    border: 1px solid rgba(76, 201, 255, 0.15);
+    border: 1px solid rgba(0, 232, 255, 0.15);
     animation: sn-ring-pulse 3.2s ease-in-out infinite;
   }
   @keyframes sn-ring-pulse {
@@ -735,7 +735,7 @@
   #field-radar.expanded #field-radar-speed { display: none; }
   #fsh-value {
     font: 700 16px/1 var(--font-mono); color: var(--glow);
-    text-shadow: 0 0 14px rgba(76, 201, 255, 0.85);
+    text-shadow: 0 0 14px rgba(0, 232, 255, 0.85);
   }
   #field-radar.expanded #fsh-value { font-size: 24px; }
   #fsh-unit {
@@ -746,12 +746,12 @@
   .fr-label {
     position: absolute; bottom: 6px; left: 0; right: 0; text-align: center;
     font: 600 8px/1 var(--font-display); letter-spacing: 0.22em;
-    color: rgba(76, 201, 255, 0.6); pointer-events: none;
+    color: rgba(0, 232, 255, 0.6); pointer-events: none;
   }
   #field-radar.expanded .fr-label { bottom: 28px; font-size: 10px; }
   #field-radar-zoom {
     position: absolute; top: 6px; left: 0; right: 0; text-align: center;
-    font: 600 8px/1 var(--font-mono); color: rgba(76, 201, 255, 0.75);
+    font: 600 8px/1 var(--font-mono); color: rgba(0, 232, 255, 0.75);
     pointer-events: none; letter-spacing: 0.06em;
   }
   #field-radar-legend {
@@ -774,8 +774,8 @@
     padding: 8px 10px 9px;
     border-radius: var(--r-md);
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.92), rgba(2, 8, 18, 0.94));
-    border: 1px solid rgba(76, 201, 255, 0.38);
-    box-shadow: 0 0 22px rgba(11, 111, 212, 0.22), inset 0 1px 0 rgba(76, 201, 255, 0.08);
+    border: 1px solid rgba(0, 232, 255, 0.38);
+    box-shadow: 0 0 22px rgba(11, 111, 212, 0.22), inset 0 1px 0 rgba(0, 232, 255, 0.08);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     font-family: var(--font-mono);
   }
@@ -785,7 +785,7 @@
   }
   #sn-fleet-monitor .sfm-title {
     font: 700 9px/1 var(--font-display); letter-spacing: 0.18em;
-    color: #4cc9ff; text-shadow: 0 0 10px rgba(76, 201, 255, 0.45);
+    color: #00e8ff; text-shadow: 0 0 10px rgba(0, 232, 255, 0.45);
   }
   #sn-fleet-monitor .sfm-sum {
     font: 600 9px/1 var(--font-mono); color: #8ab4d0;
@@ -887,7 +887,7 @@
   .sn-rib-icon {
     width: 26px; height: 26px; display: grid; place-items: center;
     color: var(--glow);
-    filter: drop-shadow(0 0 6px rgba(76, 201, 255, 0.65));
+    filter: drop-shadow(0 0 6px rgba(0, 232, 255, 0.65));
   }
   .sn-rib-icon svg { width: 22px; height: 22px; display: block; }
   .sn-rib-emoji { display: none !important; }
@@ -901,7 +901,7 @@
     box-shadow: 0 0 20px rgba(61, 184, 255, 0.4), inset 0 0 18px rgba(61, 184, 255, 0.12);
     transform: translateY(-1px);
   }
-  .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #fff; text-shadow: 0 0 10px rgba(76, 201, 255, 0.5); }
+  .sn-rib-btn:hover .sn-rib-txt, .sn-rib-btn:active .sn-rib-txt { color: #fff; text-shadow: 0 0 10px rgba(0, 232, 255, 0.5); }
   .sn-rib-btn:hover .sn-rib-icon { color: var(--ice); filter: drop-shadow(0 0 10px rgba(168, 236, 255, 0.85)); }
   .sn-rib-btn#sn-rib-hf.on, .sn-rib-btn#sn-rib-add.on, .sn-rib-btn.on {
     border-color: var(--glow);
@@ -909,7 +909,7 @@
     box-shadow: 0 0 24px rgba(61, 184, 255, 0.5), inset 0 0 20px rgba(61, 184, 255, 0.15);
   }
   .sn-rib-btn#sn-rib-hf.on .sn-rib-txt, .sn-rib-btn#sn-rib-add.on .sn-rib-txt, .sn-rib-btn.on .sn-rib-txt {
-    color: #fff; text-shadow: 0 0 12px rgba(76, 201, 255, 0.65);
+    color: #fff; text-shadow: 0 0 12px rgba(0, 232, 255, 0.65);
   }
   .sn-rib-btn.sn-rib-task { display: none !important; }
 
@@ -974,7 +974,7 @@
     background-size: 100% 200%; opacity: 0; transition: opacity 0.3s;
   }
   #panel.cli-live {
-    border-color: rgba(76, 201, 255, 0.6);
+    border-color: rgba(0, 232, 255, 0.6);
     box-shadow:
       0 -8px 48px rgba(0, 0, 0, 0.55),
       0 0 56px rgba(61, 184, 255, 0.32),
@@ -998,9 +998,9 @@
   }
   #cli-drag::before {
     content: ''; display: block; width: 36px; height: 3px; border-radius: 99px;
-    background: linear-gradient(90deg, transparent, rgba(76, 201, 255, 0.65), transparent);
+    background: linear-gradient(90deg, transparent, rgba(0, 232, 255, 0.65), transparent);
     margin: 0 auto 2px;
-    box-shadow: 0 0 10px rgba(76, 201, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 232, 255, 0.4);
   }
   .cli-titlebar { display: flex; align-items: center; gap: 8px; min-height: 18px; }
   .cli-live-dot {
@@ -1167,8 +1167,8 @@
   .boot-card .boot-title {
     display: block;
     font: 700 18px/1.15 var(--font-display);
-    letter-spacing: 0.36em; text-transform: uppercase; color: #4cc9ff;
-    text-shadow: 0 0 28px rgba(76, 201, 255, 0.75), 0 0 60px rgba(11, 111, 212, 0.45);
+    letter-spacing: 0.36em; text-transform: uppercase; color: #00e8ff;
+    text-shadow: 0 0 28px rgba(0, 232, 255, 0.75), 0 0 60px rgba(11, 111, 212, 0.45);
   }
   .boot-card p, .boot-card .boot-status { display: none !important; }
   .boot-loader {
@@ -1180,7 +1180,7 @@
   .boot-loader-bar {
     display: block; height: 100%; width: 38%; border-radius: 999px;
     background: linear-gradient(90deg, #0a4a9e 0%, #1a9cff 40%, #7ad8ff 100%);
-    box-shadow: 0 0 16px #1a9cff, 0 0 32px rgba(76, 201, 255, 0.9);
+    box-shadow: 0 0 16px #1a9cff, 0 0 32px rgba(0, 232, 255, 0.9);
     animation: sn-boot-slide 1.05s ease-in-out infinite;
   }
   @keyframes sn-boot-slide {
@@ -1396,7 +1396,7 @@
     padding: 6px 7px;
     border-radius: 10px;
     background: linear-gradient(165deg, rgba(4, 18, 40, 0.88), rgba(2, 8, 18, 0.92));
-    border: 1px solid rgba(76, 201, 255, 0.28);
+    border: 1px solid rgba(0, 232, 255, 0.28);
     box-shadow: inset 0 0 12px rgba(11, 111, 212, 0.08);
     font: 600 9px/1.35 var(--font-ui);
     color: #9ec8ff;
@@ -1409,7 +1409,7 @@
   .stc-g-detail .stc-g-title {
     font: 700 9px/1 var(--font-display);
     letter-spacing: 0.14em;
-    color: #4cc9ff;
+    color: #00e8ff;
     margin-bottom: 4px;
   }
   .stc-g-detail .stc-g-row {
@@ -1763,7 +1763,7 @@
       --border: rgba(20,90,180,0.32); --border-strong: rgba(20,90,180,0.55);
       --cli-bg: rgba(255,255,255,0.78); --cli-text: #0c1e36; --cli-muted: #3a5a7a;
       --cli-dim: #5a7a9a; --cli-glow: #0b6fd4; --cli-blue: #0a4fd4;
-      --bright: #0a62c4; --glow: #1a7ae8; --ice: #0b4a8a;
+      --bright: #00b8e8; --glow: #00d4ff; --ice: #00a0cc;
     }
     html:not(.theme-dark) body {
       background: radial-gradient(120% 80% at 50% -10%, #f5f9ff 0%, #e4edf8 45%, #d0e0f2 100%);
@@ -1968,7 +1968,7 @@
   */
   :root {
     --scroll-bg: rgba(0, 0, 0, 0.72);
-    --e-blue: #0055ff;
+    --e-blue: #00d4ff;
     --top-scroll-min: 50px;
     --bottom-scroll-min: 96px;
     --zone-top: 54px;
@@ -2247,7 +2247,7 @@
     height: 3px !important;
     margin: 0 auto !important;
     border-radius: 2px !important;
-    background: linear-gradient(90deg, transparent, #0055ff, transparent) !important;
+    background: linear-gradient(90deg, transparent, #00e8ff, transparent) !important;
     box-shadow: 0 0 8px rgba(0, 85, 255, 0.7) !important;
   }
 
@@ -2292,7 +2292,7 @@
   #cli-drag::before {
     content: ''; display: block; width: 28px; height: 3px; margin: 0 auto;
     border-radius: 2px;
-    background: linear-gradient(90deg, transparent, #0055ff, transparent);
+    background: linear-gradient(90deg, transparent, #00e8ff, transparent);
     box-shadow: 0 0 8px rgba(0, 85, 255, 0.7);
   }
   /* Bottom scroll: LOG grows on expand · INPUT fixed size always */
@@ -2351,7 +2351,7 @@
     min-height: 22px !important;
     max-height: 22px !important;
     color: #e8f0ff !important;
-    caret-color: #0066ff !important;
+    caret-color: #00f0ff !important;
     flex: 1 1 auto !important;
   }
   .cli-prompt-prefix { color: #0066ff !important; }
@@ -3778,7 +3778,7 @@
   html.theme-light .cli-line.dim .cli-body { color: #4a6888 !important; }
   html.theme-light #cli-preview { color: #1a3a60 !important; }
   html.theme-light #cli-drag::before {
-    background: linear-gradient(90deg, transparent, #0066ff, transparent) !important;
+    background: linear-gradient(90deg, transparent, #00e8ff, transparent) !important;
     box-shadow: 0 0 8px rgba(0, 100, 255, 0.35) !important;
   }
 
@@ -4443,85 +4443,85 @@
     height: 4px !important;
     margin: 6px auto 2px !important;
     border-radius: 99px !important;
-    background: linear-gradient(90deg, transparent, #0066ff, transparent) !important;
+    background: linear-gradient(90deg, transparent, #00e8ff, transparent) !important;
     box-shadow: 0 0 8px rgba(0, 100, 255, 0.7) !important;
     flex-shrink: 0 !important;
   }
 
 
-  /* ═══ DEEP ELECTRIC BLUE UI · no pale 60s ice ═══ */
+  /* ═══ NEON BLUE UI accents & details ═══ */
   :root {
-    --accent: #0040ff !important;
-    --bright: #0066ff !important;
-    --glow: #0080ff !important;
-    --ice: #1a6aff !important;
-    --border: rgba(0, 85, 255, 0.55) !important;
-    --border-strong: rgba(0, 120, 255, 0.9) !important;
-    --cli-glow: #0066ff !important;
-    --cli-blue: #0033cc !important;
-    --star-name: #0066ff !important;
-    --scroll-edge: rgba(0, 85, 255, 0.8) !important;
-    --scroll-glow: rgba(0, 80, 255, 0.7) !important;
+    --accent: #00d4ff !important;
+    --bright: #00f0ff !important;
+    --glow: #00e8ff !important;
+    --ice: #40f0ff !important;
+    --border: rgba(0, 220, 255, 0.55) !important;
+    --border-strong: rgba(0, 240, 255, 0.95) !important;
+    --cli-glow: #00e8ff !important;
+    --cli-blue: #00a8d8 !important;
+    --star-name: #00f0ff !important;
+    --scroll-edge: rgba(0, 230, 255, 0.85) !important;
+    --scroll-glow: rgba(0, 220, 255, 0.75) !important;
   }
-  /* Top + bottom scrolls: deep black glass + electric edge glow */
+  /* Top + bottom scrolls: deep black glass + neon edge glow */
   #sn-topchrome-panel,
   #panel {
-    background: rgba(0, 4, 16, 0.78) !important;
-    border: 1px solid rgba(0, 80, 255, 0.55) !important;
+    background: rgba(0, 6, 16, 0.78) !important;
+    border: 1px solid rgba(0, 220, 255, 0.55) !important;
     box-shadow:
-      0 0 0 1px rgba(0, 40, 160, 0.35) inset,
-      0 0 28px rgba(0, 70, 255, 0.35),
+      0 0 0 1px rgba(0, 160, 220, 0.35) inset,
+      0 0 28px rgba(0, 220, 255, 0.4),
       0 8px 32px rgba(0, 0, 0, 0.55) !important;
   }
-  /* ASTRANOV name — deep starry electric, not pale */
+  /* ASTRANOV name — neon blue */
   #btn-home,
   #sn-topchrome #btn-home {
-    color: #0066ff !important;
-    -webkit-text-fill-color: #0066ff !important;
+    color: #00f0ff !important;
+    -webkit-text-fill-color: #00f0ff !important;
     text-shadow:
-      0 0 8px rgba(0, 100, 255, 1),
-      0 0 18px rgba(0, 70, 255, 0.95),
-      0 0 36px rgba(0, 40, 255, 0.75) !important;
+      0 0 8px rgba(0, 240, 255, 1),
+      0 0 18px rgba(0, 200, 255, 0.95),
+      0 0 36px rgba(0, 160, 255, 0.75) !important;
   }
   /* Ribbon buttons */
   #sn-task-ribbon .sn-rib-btn,
   .sn-rib-btn {
-    border: 1px solid rgba(0, 80, 255, 0.45) !important;
-    background: rgba(0, 20, 60, 0.45) !important;
-    color: #7eb0ff !important;
-    box-shadow: 0 0 12px rgba(0, 70, 255, 0.25) inset !important;
+    border: 1px solid rgba(0, 220, 255, 0.45) !important;
+    background: rgba(0, 30, 48, 0.5) !important;
+    color: #80f0ff !important;
+    box-shadow: 0 0 12px rgba(0, 220, 255, 0.28) inset !important;
   }
   #sn-task-ribbon .sn-rib-btn .sn-rib-label,
   .sn-rib-label {
-    color: #5a9aff !important;
+    color: #40e8ff !important;
   }
   #sn-task-ribbon .sn-rib-btn:active,
   #sn-task-ribbon .sn-rib-btn.on {
-    border-color: rgba(0, 120, 255, 0.9) !important;
-    box-shadow: 0 0 18px rgba(0, 100, 255, 0.55) !important;
-    color: #a8cfff !important;
+    border-color: rgba(0, 240, 255, 0.9) !important;
+    box-shadow: 0 0 18px rgba(0, 230, 255, 0.55) !important;
+    color: #b8fbff !important;
   }
   /* CLI input glow electric */
   #cli-form,
   #panel.collapsed #cli-form,
   #panel.mid #cli-form,
   #panel.expanded #cli-form {
-    border: 1px solid rgba(0, 100, 255, 0.7) !important;
-    background: rgba(0, 10, 32, 0.78) !important;
+    border: 1px solid rgba(0, 220, 255, 0.75) !important;
+    background: rgba(0, 14, 28, 0.82) !important;
     box-shadow:
-      0 0 16px rgba(0, 90, 255, 0.45),
-      0 0 0 1px rgba(0, 50, 180, 0.4) inset !important;
+      0 0 16px rgba(0, 220, 255, 0.5),
+      0 0 0 1px rgba(0, 160, 220, 0.4) inset !important;
   }
   #cli-in,
   .cli-prompt-prefix {
     color: #d0e8ff !important;
-    caret-color: #0066ff !important;
+    caret-color: #00f0ff !important;
   }
   .cli-prompt-prefix,
   .cli-line.cmd .cli-body::before,
   .cli-line.ok .cli-body::before {
-    color: #0066ff !important;
-    text-shadow: 0 0 10px rgba(0, 100, 255, 0.85) !important;
+    color: #00e8ff !important;
+    text-shadow: 0 0 10px rgba(0, 230, 255, 0.9) !important;
   }
   .cli-line .cli-body { color: #c8dcff !important; }
   .cli-line.dim .cli-body { color: #4a78c8 !important; }
@@ -4529,8 +4529,8 @@
   #sn-topchrome #field-radar,
   #field-radar {
     box-shadow:
-      inset 0 0 0 1.5px rgba(0, 90, 255, 0.75),
-      0 0 14px rgba(0, 80, 255, 0.55) !important;
+      inset 0 0 0 1.5px rgba(0, 220, 255, 0.8),
+      0 0 14px rgba(0, 220, 255, 0.6) !important;
   }
   /* Power / launch standby = deep electric blue (not pale) */
   #sn-task-launch.mode-standby {
@@ -4547,7 +4547,7 @@
   /* Grip lines electric */
   #panel::before,
   #sn-topchrome-drag::before {
-    background: linear-gradient(90deg, transparent, #0066ff, transparent) !important;
+    background: linear-gradient(90deg, transparent, #00e8ff, transparent) !important;
     box-shadow: 0 0 10px rgba(0, 100, 255, 0.85) !important;
   }
   /* Kill pale ice text leftovers on chrome */
@@ -4611,34 +4611,34 @@
 </style>
 
 <style id="sn-electric-blue-law">
-/* Deep glowing electric blue — final cascade */
+/* Neon blue — final cascade accents & details */
 html body #btn-home,
 html body #sn-topchrome #btn-home {
-  color: #0088ff !important;
-  -webkit-text-fill-color: #0088ff !important;
+  color: #00f0ff !important;
+  -webkit-text-fill-color: #00f0ff !important;
   text-shadow:
-    0 0 6px #00b0ff,
-    0 0 16px #0066ff,
-    0 0 32px rgba(0, 70, 255, 1),
-    0 0 56px rgba(0, 40, 255, 0.9) !important;
+    0 0 6px #00f0ff,
+    0 0 16px #00d4ff,
+    0 0 32px rgba(0, 220, 255, 1),
+    0 0 56px rgba(0, 180, 255, 0.9) !important;
   background: transparent !important;
 }
 html body #sn-topchrome-panel,
 html body #panel {
-  border: 1px solid rgba(0, 100, 255, 0.7) !important;
+  border: 1px solid rgba(0, 230, 255, 0.7) !important;
   box-shadow:
-    0 0 0 1px rgba(0, 50, 200, 0.45) inset,
-    0 0 36px rgba(0, 80, 255, 0.45) !important;
-  background: rgba(0, 4, 16, 0.82) !important;
+    0 0 0 1px rgba(0, 160, 220, 0.45) inset,
+    0 0 36px rgba(0, 220, 255, 0.5) !important;
+  background: rgba(0, 6, 16, 0.82) !important;
 }
 html body #sn-task-ribbon .sn-rib-btn {
-  border-color: rgba(0, 90, 255, 0.55) !important;
-  background: rgba(0, 16, 48, 0.55) !important;
-  color: #8ab8ff !important;
+  border-color: rgba(0, 220, 255, 0.55) !important;
+  background: rgba(0, 24, 40, 0.55) !important;
+  color: #90f4ff !important;
 }
 html body #sn-task-ribbon .sn-rib-label {
-  color: #3d8aff !important;
-  text-shadow: 0 0 10px rgba(0, 90, 255, 0.7) !important;
+  color: #00e8ff !important;
+  text-shadow: 0 0 10px rgba(0, 230, 255, 0.8) !important;
 }
 html body #dock #panel #cli-form,
 html.theme-light body #dock #panel #cli-form,
@@ -4646,40 +4646,50 @@ html.theme-dark body #dock #panel #cli-form,
 html body #panel.collapsed #cli-form,
 html body #panel.mid #cli-form,
 html body #panel.expanded #cli-form {
-  border: 1px solid rgba(0, 120, 255, 0.95) !important;
-  box-shadow: 0 0 24px rgba(0, 100, 255, 0.7) !important;
-  background: rgba(0, 8, 28, 0.92) !important;
-  background-color: rgba(0, 8, 28, 0.92) !important;
+  border: 1px solid rgba(0, 240, 255, 0.95) !important;
+  box-shadow: 0 0 24px rgba(0, 230, 255, 0.7) !important;
+  background: rgba(0, 10, 22, 0.92) !important;
+  background-color: rgba(0, 10, 22, 0.92) !important;
 }
 html body #dock #panel #cli-in,
 html.theme-light body #dock #panel #cli-in,
 html body #panel #cli-in {
-  color: #e8f0ff !important;
-  -webkit-text-fill-color: #e8f0ff !important;
-  caret-color: #0088ff !important;
+  color: #e8fcff !important;
+  -webkit-text-fill-color: #e8fcff !important;
+  caret-color: #00f0ff !important;
   background: transparent !important;
   background-color: transparent !important;
 }
 html body .cli-prompt-prefix {
-  color: #0088ff !important;
-  text-shadow: 0 0 14px rgba(0, 120, 255, 1) !important;
+  color: #00f0ff !important;
+  text-shadow: 0 0 14px rgba(0, 240, 255, 1) !important;
 }
 html body #sn-task-launch.mode-standby {
-  color: #0088ff !important;
-  border-color: rgba(0, 120, 255, 0.9) !important;
-  box-shadow: 0 0 0 2px rgba(0, 60, 220, 0.5), 0 0 24px rgba(0, 100, 255, 0.8) !important;
+  color: #00e8ff !important;
+  border-color: rgba(0, 230, 255, 0.95) !important;
+  box-shadow: 0 0 0 2px rgba(0, 180, 240, 0.5), 0 0 24px rgba(0, 230, 255, 0.85) !important;
 }
 html body #field-radar {
-  box-shadow: inset 0 0 0 1.5px rgba(0, 100, 255, 0.85), 0 0 16px rgba(0, 90, 255, 0.65) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(0, 230, 255, 0.9), 0 0 16px rgba(0, 220, 255, 0.7) !important;
 }
+html body #field-balance-hud,
+html body #sn-topchrome #field-balance-hud {
+  border-color: rgba(0, 220, 255, 0.55) !important;
+  box-shadow: 0 0 14px rgba(0, 220, 255, 0.4) !important;
+}
+html body .cli-line.ok .cli-body { color: #80f8ff !important; }
+html body .cli-line.cmd .cli-body { color: #c8fbff !important; }
 :root {
-  --accent: #0040ff;
-  --bright: #0066ff;
-  --glow: #0088ff;
-  --cli-glow: #0066ff;
-  --border: rgba(0, 90, 255, 0.6);
+  --accent: #00d4ff;
+  --bright: #00f0ff;
+  --glow: #00e8ff;
+  --electric: #00d4ff;
+  --electric-hot: #39f0ff;
+  --cli-glow: #00e8ff;
+  --border: rgba(0, 220, 255, 0.6);
 }
 </style>
+
 
 
 <style id="sn-top-scroll-clean">
@@ -5001,7 +5011,7 @@ html body #sn-topchrome #sn-topchrome-panel.expanded {
 
 <div id="sn-miner-terms" hidden>
   <div class="mtm-panel">
-    <div style="color:#4cc9ff;font-weight:700;margin-bottom:8px;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
+    <div style="color:#00e8ff;font-weight:700;margin-bottom:8px;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
     <p>SETI-style mesh: spare <b>CPU · RAM · storage · bandwidth</b> powers routing, indexes, and multi-stop topo when idle. Mine <b>Astranov coins</b>. Assign this device as Main · Hot-swap · or home RAID under ASTRANOV.</p>
     <button type="button" id="sn-miner-accept">I AGREE · JOIN MESH · MINE ASTRANOV COINS</button>
   </div>
@@ -5009,13 +5019,13 @@ html body #sn-topchrome #sn-topchrome-panel.expanded {
 
 <div id="coach" hidden>
   <div class="card">
-    <b style="color:#4cc9ff;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.14em;font-size:13px">ASTRANOV</b>
+    <b style="color:#00e8ff;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.14em;font-size:13px">ASTRANOV</b>
     <p style="font-size:13px;color:#8ab4d0;margin:10px 0 0;line-height:1.5">Real-Earth OS. Radar left · S wallet right · ribbon below. Type help · locate · order pizza.</p>
     <button type="button" id="coach-ok">ENTER</button>
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801213000-spartan-voice-listen"></script>
+<script src="/js/spacenet/boot.js?v=20260801220000-neon-blue"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

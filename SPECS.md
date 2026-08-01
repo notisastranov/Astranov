@@ -446,3 +446,7 @@ Train forever: every feature answers to Spartan expansion, not multi-step babysi
 | **Think then reply** | ~450ms think pulse before act/speak |
 | **Compress** | `SNSpartan.compress` on all AI/CLI/TTS/notify lines |
 
+## OWNER LAW · Neon blue accents (2026-08-01)
+
+System accent/details: **neon blue** (`#00d4ff` / `#00e8ff` / `#00f0ff`).
+Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar cascade in `index.html`.
