@@ -15,8 +15,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#e8f2ff" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#020814" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260801140500-power-symbol" />
-<meta name="astranov-continuity" content="20260801140500-power-symbol" />
+<meta name="astranov-build" content="20260801141000-no-overlap-city" />
+<meta name="astranov-continuity" content="20260801141000-no-overlap-city" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -3466,6 +3466,73 @@
     stroke: currentColor;
   }
 
+
+  /* ═══ NO OVERLAP ON ASTRANOV NAME ═══ */
+  #sn-topchrome-panel.collapsed .stc-col-timeline,
+  #sn-topchrome-panel.collapsed .stc-col-radar {
+    max-width: calc(50% - 88px) !important;
+    overflow: hidden !important;
+    z-index: 2 !important;
+  }
+  #sn-topchrome-panel.collapsed #field-nav-meta {
+    max-width: min(28vw, 112px) !important;
+    overflow: hidden !important;
+  }
+  #sn-topchrome-panel.collapsed #fnm-time,
+  #sn-topchrome-panel.collapsed #fnm-date,
+  #sn-topchrome-panel.collapsed #fnm-phys {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #sn-topchrome-panel.collapsed .stc-col-money {
+    max-width: calc(50% - 88px) !important;
+    overflow: hidden !important;
+    z-index: 2 !important;
+  }
+  /* Center name always on top, clear lane */
+  #sn-topchrome-panel.collapsed .stc-col-device {
+    z-index: 20 !important;
+    pointer-events: none !important;
+  }
+  #sn-topchrome-panel.collapsed #btn-home {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 21 !important;
+    background: rgba(0, 0, 0, 0.55) !important;
+    box-shadow:
+      0 0 0 6px rgba(0, 0, 0, 0.35),
+      0 0 18px rgba(0, 0, 0, 0.45) !important;
+  }
+  /* Hide any secondary blue HUD that can float over the name */
+  #sn-topchrome-panel.collapsed #fnm-virt,
+  #sn-topchrome-panel.collapsed #fnm-mode,
+  #sn-topchrome-panel.collapsed #fnm-speed,
+  #sn-topchrome-panel.collapsed #fnm-era,
+  #sn-topchrome-panel.collapsed #field-radar-caption,
+  #sn-topchrome-panel.collapsed #fsh-mode-title,
+  #sn-topchrome-panel.collapsed #fsh-explain,
+  #field-radar-caption,
+  #hud:not([hidden]),
+  #hud #tier-label,
+  #hud #hud-line,
+  #sn-national-hud:not(.on) {
+    display: none !important;
+  }
+  body.stc-on #hud,
+  body.stc-on #tier-label,
+  body.stc-on #hud-line,
+  body.stc-on #astranov-logo {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  body.stc-on #field-radar-caption {
+    display: none !important;
+  }
+
 </style>
 </head>
 <body>
@@ -3697,7 +3764,7 @@
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260801140500-power-symbol"></script>
+<script src="/js/spacenet/boot.js?v=20260801141000-no-overlap-city"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

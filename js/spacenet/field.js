@@ -1548,10 +1548,11 @@
     var pLng = p && p.lng != null ? p.lng : null;
     var pName = pLat != null ? placeNameNear(pLat, pLng) : null;
     if (physEl) {
-      // location only — short readable
-      var loc =
-        pName ||
-        (pLat != null ? Number(pLat).toFixed(3) + '°, ' + Number(pLng).toFixed(3) + '°' : 'locating…');
+      // City name only — never coordinates / GLOBAL / tier junk
+      var loc = pName || (g._snCityLabel || '');
+      if (loc && loc.length > 22) loc = loc.slice(0, 20) + '…';
+      if (!loc) loc = '…';
+      else g._snCityLabel = pName || g._snCityLabel;
       physEl.textContent = loc;
       physEl.hidden = false;
       physEl.classList.remove('tl-present', 'tl-past', 'tl-future', 'tl-frozen');
@@ -1578,11 +1579,9 @@
     }
     var vName = vLat != null ? placeNameNear(vLat, vLng) : null;
     if (virtEl) {
-      virtEl.textContent =
-        String(tier).toUpperCase() +
-        (vName ? ' · ' + vName : '') +
-        ' · ' +
-        fmtLL(vLat, vLng);
+      // Never show virtual/tier/coords in collapsed chrome (overlaps ASTRANOV)
+      virtEl.textContent = '';
+      virtEl.hidden = true;
     }
   }
 
