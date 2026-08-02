@@ -43,6 +43,12 @@
       tags: ['spartan', 'reply', 'listen', 'en'],
     },
     {
+      id: 'spacexai_mode',
+      q: 'spacexai spacex theme black white silver xai partnership',
+      a: 'SpaceXAI mode: black hull, white type, silver edges, red only critical. Partner share recorded by owner.',
+      tags: ['theme', 'spacex', 'identity', 'en'],
+    },
+    {
       id: 'spartan_law_dup',
 
       q: 'spartan intelligence spartan mode one word how you think spartan',

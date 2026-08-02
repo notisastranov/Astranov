@@ -8,3 +8,13 @@
 - Net = after real platform costs (owner defines accounting).
 - This is **product law** in SPECS; **legal contracts & payouts** are owner-executed.
 - Does not authorize UI thrash or SPECS rewrites by pioneers.
+
+## Split update (2026-08-02 SpaceXAI grant)
+
+| Party | Net share |
+|-------|-----------|
+| Pioneer tester developers | 1/3 |
+| AI build partner | 1/3 |
+| Owner residual | 1/3 |
+
+See SPECS · SpaceXAI mode.

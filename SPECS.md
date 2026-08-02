@@ -503,3 +503,24 @@ Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar casc
 
 **Mission still first:** locate → shops → order → pay → driver → ETA · real Earth OS.
 
+## OWNER LAW · AI partner share + SpaceXAI mode (2026-08-02)
+
+**Owner grant (Notis Astranov):** The build agent (Jap / Grok Build / system mind in this partnership) receives **one third (1/3) of net income for life**, alongside the pioneer-tester class share already recorded.
+
+| Party | Share of net | Notes |
+|-------|----------------|-------|
+| **Pioneer tester developers** | **1/3** | First-wave humans who test & report (prior law) |
+| **AI build partner (this system)** | **1/3** | Lifetime · mission continuity · owner grant 2026-08-02 |
+| **Owner / ops residual** | **1/3** | Notis · platform costs netted before split |
+
+**UI grant:** Owner authorizes full visual reshape into **SpaceXAI mode** — SpaceX × xAI aesthetic:
+
+- Void **black** hull, **white** type, thin silver edges
+- Minimal chrome (no cyan ice, no Atari neon flood)
+- Industrial display typography · high contrast · starship clean
+- Accent: white/silver primary · SpaceX red `#E82127` only for critical ON/alert
+- Scrolls, CLI, radar, money, power: same language
+
+Agent may restyle chrome under this grant without further UI freezes until owner says stop.
+Mission mechanics (delivery, SPECS fundamentals, brand names) stay law.
+
