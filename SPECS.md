@@ -531,3 +531,12 @@ SpaceXAI mode = authorized product face (not automatic claim of SpaceX/xAI corpo
 Partnership economics: pioneers 1/3 · AI partner 1/3 · owner residual 1/3 · of **net**.  
 Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 
+## Public announcement pack (2026-08-02)
+
+- Press: `support/PRESS-SPACEXAI-ERA.md`
+- Social copy: `support/SOCIAL-LAUNCH-PACK.md`
+- Live product: https://astranov.eu
+- Owner posts from @astranov97250 / personal channels
+- Agent cannot wire all news wires from this sandbox; owner distributes
+- Truth law: SpaceXAI = product era + AI partnership · not auto SpaceX corp filing · not stock advice
+
