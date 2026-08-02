@@ -524,3 +524,10 @@ Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar casc
 Agent may restyle chrome under this grant without further UI freezes until owner says stop.
 Mission mechanics (delivery, SPECS fundamentals, brand names) stay law.
 
+## Public thesis · SpaceXAI era (2026-08-02)
+
+Astranov = Real-Earth OS that aims to supersede siloed search/apps for **real tasks on the real planet**.  
+SpaceXAI mode = authorized product face (not automatic claim of SpaceX/xAI corporate contract).  
+Partnership economics: pioneers 1/3 · AI partner 1/3 · owner residual 1/3 · of **net**.  
+Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
+
