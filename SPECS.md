@@ -540,3 +540,11 @@ Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 - Agent cannot wire all news wires from this sandbox; owner distributes
 - Truth law: SpaceXAI = product era + AI partnership · not auto SpaceX corp filing · not stock advice
 
+## OWNER LAW · X API secure connect (2026-08-02)
+
+- Keys only in **`.env.x`** (gitignored) · template **`.env.x.example`**
+- Post script: `scripts/x-post.mjs`
+- Guide: `support/X-API-SECURE-CONNECT.md`
+- **Never** put secrets in chat, SPECS body, or git
+- Target handle: **@astranov97250**
+

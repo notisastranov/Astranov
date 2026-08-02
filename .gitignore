@@ -12,3 +12,12 @@ index.restored.html
 
 .collective-exports/
 
+# secrets — never commit
+.env
+.env.*
+!.env.example
+!.env.x.example
+secrets/
+*.pem
+.x-api/
+scripts/.x-token-cache
