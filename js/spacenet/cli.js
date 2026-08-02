@@ -1483,7 +1483,62 @@
       }
 
 
+      // Product skin: SpaceXAI default · Astranov electric kept in memory only
+      if (
+        low === 'skin' ||
+        low === 'skin spacex' ||
+        low === 'skin spacexai' ||
+        low === 'skin sx' ||
+        low === 'skin astranov' ||
+        low === 'skin classic' ||
+        low === 'skin electric' ||
+        low === 'mode spacex' ||
+        low === 'mode spacexai' ||
+        low === 'mode astranov' ||
+        low === 'spacexai' ||
+        low === 'astranov mode'
+      ) {
+        let id = 'spacex';
+        if (/astranov|classic|electric/.test(low) && !/spacex/.test(low)) id = 'astranov';
+        if (low === 'skin' || low === 'spacexai') {
+          const cur =
+            (global.SNSkin && SNSkin.read && SNSkin.read()) ||
+            localStorage.getItem('sn:skin-v1') ||
+            'spacex';
+          if (low === 'skin') {
+            log(
+              'Skin · ' +
+                cur +
+                ' · SpaceXAI default · Astranov palette in memory · skin spacex | skin astranov',
+              'ok'
+            );
+            return;
+          }
+        }
+        try {
+          if (global.SNSkin && SNSkin.apply) SNSkin.apply(id);
+          else {
+            localStorage.setItem('sn:skin-v1', id);
+            document.documentElement.classList.remove('skin-spacex', 'skin-astranov');
+            document.documentElement.classList.add(id === 'astranov' ? 'skin-astranov' : 'skin-spacex');
+          }
+        } catch (_) {}
+        log(id === 'spacex' ? 'SpaceXAI face' : 'Astranov electric (memory restore)', 'ok');
+        return;
+      }
+
       if (low === 'theme' || low === 'theme light' || low === 'theme dark' || low === 'theme auto' || low === 'light mode' || low === 'dark mode') {
+        // Under SpaceX skin, light/dark color-codes are disabled (black hull only)
+        try {
+          const skin =
+            (global.SNSkin && SNSkin.read && SNSkin.read()) ||
+            localStorage.getItem('sn:skin-v1') ||
+            'spacex';
+          if (skin === 'spacex' || skin === 'spacexai' || !skin) {
+            log('SpaceXAI · black hull · no light color codes · skin astranov to restore electric', 'dim');
+            return;
+          }
+        } catch (_) {}
         let mode = 'auto';
         if (/dark/.test(low)) mode = 'dark';
         else if (/light/.test(low)) mode = 'light';
@@ -1501,7 +1556,7 @@
             else root.classList.add('theme-dark');
           } else root.classList.add('theme-' + mode);
         } catch (_) {}
-        log('Theme · ' + mode + ' · follows device when auto', 'ok');
+        log('Theme · ' + mode + ' · Astranov skin only', 'ok');
         return;
       }
 

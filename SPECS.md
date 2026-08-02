@@ -548,3 +548,13 @@ Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 - **Never** put secrets in chat, SPECS body, or git
 - Target handle: **@astranov97250**
 
+## OWNER LAW · SpaceX face · Astranov palette memory (2026-08-02)
+
+| Item | Law |
+|------|-----|
+| **Default UI** | **SpaceXAI** — black / white / silver · no color-code chrome |
+| **Astranov colors** | Kept in **memory** (`SNSkin.MEMORY.astranov` + `html.skin-astranov` CSS) |
+| **Restore** | CLI only: `skin astranov` · back: `skin spacex` |
+| **Storage** | `localStorage sn:skin-v1` |
+| **No** | Color picker UI · hex labels for users · light-mode recolor under SpaceX |
+

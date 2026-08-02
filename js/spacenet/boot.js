@@ -201,6 +201,7 @@
    * Deferred: tile (heavy), market bulk still needed for first order
    */
   var WAVE_SHELL = [
+    '/js/spacenet/skin.js',
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
     '/js/spacenet/profiles.js',

@@ -2,11 +2,24 @@
 <html lang="en">
 <head>
 <script>
+/* SpaceXAI default face · Astranov palette only if sn:skin-v1=astranov (memory) */
 (function(){try{
-  var f=localStorage.getItem('sn:theme-v1');
-  var light=f==='light'||(!f&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches);
-  document.documentElement.classList.add(light?'theme-light':'theme-dark');
-  if(f==='dark'){document.documentElement.classList.remove('theme-light');document.documentElement.classList.add('theme-dark');}
+  var skin=localStorage.getItem('sn:skin-v1')||'spacex';
+  if(skin==='classic'||skin==='electric') skin='astranov';
+  if(skin!=='astranov') skin='spacex';
+  var root=document.documentElement;
+  root.classList.add(skin==='astranov'?'skin-astranov':'skin-spacex');
+  root.setAttribute('data-sn-skin', skin);
+  // No color-code UI: SpaceX always dark hull; Astranov may follow saved theme
+  if(skin==='spacex'){
+    root.classList.remove('theme-light');
+    root.classList.add('theme-dark');
+  } else {
+    var f=localStorage.getItem('sn:theme-v1');
+    var light=f==='light'||(!f&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches);
+    root.classList.add(light?'theme-light':'theme-dark');
+    if(f==='dark'){root.classList.remove('theme-light');root.classList.add('theme-dark');}
+  }
 }catch(e){}})();
 </script>
 
@@ -15,8 +28,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260802173500-spacexai-final" />
-<meta name="astranov-continuity" content="20260802173500-spacexai-final" />
+<meta name="astranov-build" content="20260802180000-skin-spacex-memory" />
+<meta name="astranov-continuity" content="20260802180000-skin-spacex-memory" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -4966,6 +4979,74 @@ html body {
 }
 </style>
 
+
+<style id="sn-astranov-skin-memory">
+/* ASTRANOV PALETTE MEMORY — inactive unless html.skin-astranov
+   SpaceXAI is default product face. Restore: CLI `skin astranov` */
+html.skin-astranov {
+  --bg: #01040e !important;
+  --bg-deep: #000208 !important;
+  --void: #000105 !important;
+  --text: #b8cfff !important;
+  --text-bright: #e8eeff !important;
+  --dim: #3a5a9a !important;
+  --muted: #4a78c8 !important;
+  --accent: #0040ff !important;
+  --bright: #1a5cff !important;
+  --glow: #2a6aff !important;
+  --ice: #3d7bff !important;
+  --electric: #0050ff !important;
+  --electric-hot: #3377ff !important;
+  --electric-deep: #0022aa !important;
+  --err: #ff5e7a !important;
+  --border: rgba(0, 70, 255, 0.55) !important;
+  --border-strong: rgba(30, 100, 255, 0.9) !important;
+  --glow-soft: 0 0 22px rgba(0, 60, 255, 0.55) !important;
+  --glow-hot: 0 0 42px rgba(20, 90, 255, 0.75) !important;
+  --cli-glow: #1a5cff !important;
+  --star-name: #2a6aff !important;
+}
+html.skin-astranov body {
+  background: radial-gradient(120% 80% at 50% -10%, #0a1e3a 0%, #000208 42%, #000105 100%) !important;
+  color: #b8cfff !important;
+}
+html.skin-astranov #btn-home,
+html.skin-astranov #sn-topchrome #btn-home {
+  color: #2a6aff !important;
+  -webkit-text-fill-color: #2a6aff !important;
+  text-shadow:
+    0 0 6px #1a5cff,
+    0 0 16px #0040ff,
+    0 0 32px rgba(0, 50, 255, 0.95) !important;
+}
+html.skin-astranov #sn-topchrome-panel,
+html.skin-astranov #panel {
+  border-color: rgba(0, 80, 255, 0.65) !important;
+  box-shadow: 0 0 0 1px rgba(0, 40, 160, 0.45) inset, 0 0 36px rgba(0, 60, 255, 0.4) !important;
+}
+html.skin-astranov #cli-form {
+  border-color: rgba(30, 100, 255, 0.9) !important;
+  box-shadow: 0 0 24px rgba(0, 70, 255, 0.65) !important;
+}
+html.skin-astranov .cli-prompt-prefix,
+html.skin-astranov #cli-in {
+  caret-color: #2a6aff !important;
+}
+html.skin-astranov .cli-prompt-prefix {
+  color: #2a6aff !important;
+}
+/* SpaceX default: no light-mode color-code recolor of hull */
+html.skin-spacex,
+html.skin-spacex body {
+  color-scheme: dark;
+}
+html.skin-spacex.theme-light,
+html.skin-spacex.theme-light body {
+  background: #000 !important;
+  color: #e8e8e8 !important;
+}
+</style>
+
 </head>
 <body>
 <div id="boot" aria-label="ASTRANOV loading" aria-busy="true">
@@ -5196,7 +5277,7 @@ html body {
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260802173500-spacexai-final"></script>
+<script src="/js/spacenet/boot.js?v=20260802180000-skin-spacex-memory"></script>
 <script>
 document.getElementById('astranov-logo')?.addEventListener('click',function(){
   try{ localStorage.removeItem('sn:coach-v1'); }catch(e){}

@@ -49,6 +49,12 @@
       tags: ['theme', 'spacex', 'identity', 'en'],
     },
     {
+      id: 'skin_memory',
+      q: 'skin spacex skin astranov color codes palette memory electric',
+      a: 'Default face SpaceXAI black white silver. No color-code UI. Astranov electric palette stays in memory — restore only with skin astranov.',
+      tags: ['theme', 'skin', 'en'],
+    },
+    {
       id: 'spartan_law_dup',
 
       q: 'spartan intelligence spartan mode one word how you think spartan',
