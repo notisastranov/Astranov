@@ -1,82 +1,52 @@
 {
-  "url": "http://127.0.0.1:8767/",
-  "t": "2026-08-02T14:34:22.504Z",
-  "fails": [],
+  "url": "https://astranov-astranov.vercel.app/",
+  "t": "2026-08-02T14:42:58.271Z",
+  "fails": [
+    "modules not ready in 45s",
+    "CLI missing",
+    "SNMarket missing",
+    "greeklish pizza: undefined",
+    "cmd locate me: locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('#cli-in')\n",
+    "cmd pizza: locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('#cli-in')\n",
+    "cmd thelo pizza: locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('#cli-in')\n",
+    "cmd pou eimai: locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('#cli-in')\n"
+  ],
   "ok": [
-    "cli",
-    "market",
-    "greeklish",
-    "cmd:locate me",
-    "cmd:pizza",
-    "cmd:thelo pizza",
-    "cmd:pou eimai",
     "frames"
   ],
   "metrics": {
     "http": 200,
-    "domMs": 162,
-    "readyMs": 358,
+    "domMs": 41,
+    "readyMs": null,
     "hitch": {
-      "avg": 32.9,
-      "p95": 33.4,
+      "avg": 16.4,
+      "p95": 16.8,
       "n": 90
     },
-    "errorCount": 5
+    "errorCount": 1
   },
   "snap": {
     "mods": {
-      "SNCli": true,
-      "SNAi": true,
-      "SNMarket": true,
-      "SNSpartan": true,
-      "SNGreeklish": true,
-      "SNVendorCrawl": true,
-      "SNTaskRunner": true,
-      "SNRouting": true,
-      "SNOrderEngine": true,
-      "SNGlobe": true,
-      "SNField": true,
-      "SNSkin": true,
-      "skin": "spacex",
-      "build": "20260802183000-game-engine",
-      "cliIn": true,
-      "panel": true
-    },
-    "greeklish": "order me pizza",
-    "spartan": {
-      "domain": "food",
-      "steps": [
-        "locate",
-        "crawl_shops",
-        "rank_open_rated",
-        "judge_prefs",
-        "pay",
-        "driver",
-        "route",
-        "eta_watch"
-      ]
-    },
-    "food": {
-      "food": "pizza",
-      "overpass": "pizza restaurant",
-      "raw": "pizza",
-      "autoOrder": true,
-      "lazyJudge": true,
-      "browseOnly": false,
-      "oneWord": false
+      "SNCli": false,
+      "SNAi": false,
+      "SNMarket": false,
+      "SNSpartan": false,
+      "SNGreeklish": false,
+      "SNVendorCrawl": false,
+      "SNTaskRunner": false,
+      "SNRouting": false,
+      "SNOrderEngine": false,
+      "SNGlobe": false,
+      "SNField": false,
+      "SNSkin": false,
+      "skin": "",
+      "build": "vercel-stable-d340002",
+      "cliIn": false,
+      "panel": false
     }
   },
-  "cmdLogs": {
-    "locate me": "er pizza\nBridge IN. owner_note SELFTEST bridge-test-msag2ags\nOwner note saved. SELFTEST bridge-test-msag2ags\nMission. locate\nMesh peers. 10 nodes. type: peers\nshops. 80 real. 141ms. db\nMarketplace. 40 shops on map. tap target for multi-tile Menu\nSector live. 80 shop tiles. db. tap target for menu\nCITY. 🏪80 vendors. 🛵0 drivers. 🧰0 workers. 💕0 dating. tasks 0\nTap target → tile (menu. hours. roles). pizza. job barman. date coffee. long-press create\nLOC. 36.43410, 28.21760. GPS\nMission. locate✓.",
-    "pizza": "r menu\nCITY. 🏪80 vendors. 🛵0 drivers. 🧰0 workers. 💕0 dating. tasks 0\nTap target → tile (menu. hours. roles). pizza. job barman. date coffee. long-press create\nYOU. 36.43410, 28.21760. ±0m. live GPS. search radius 6 km only\nDelivery pin. 36.4341, 28.2176 (looks like default Rhodes pin). Is this YOU? Reply YES to shop near here. NO to stop (then type locate).\nDelivery pin. 36.4341, 28.2176 (looks like default Rhodes pin). Is this YOU? Reply YES to shop near here. NO to stop (then type locate).",
-    "thelo pizza": "r menu\nCITY. 🏪80 vendors. 🛵0 drivers. 🧰0 workers. 💕0 dating. tasks 0\nTap target → tile (menu. hours. roles). pizza. job barman. date coffee. long-press create\nYOU. 36.43410, 28.21760. ±0m. live GPS. search radius 6 km only\nDelivery pin. 36.4341, 28.2176 (looks like default Rhodes pin). Is this YOU? Reply YES to shop near here. NO to stop (then type locate).\nDelivery pin. 36.4341, 28.2176 (looks like default Rhodes pin). Is this YOU? Reply YES to shop near here. NO to stop (then type locate).",
-    "pou eimai": "very pin. 36.4341, 28.2176 (looks like default Rhodes pin). Is this YOU? Reply YES to shop near here. NO to stop (then type locate).\nlocate me\nMission. locate\nshops. 80 real. 121ms. db\nMarketplace. 40 shops on map. tap target for multi-tile Menu\nSector live. 80 shop tiles. db. tap target for menu\nCITY. 🏪80 vendors. 🛵0 drivers. 🧰0 workers. 💕0 dating. tasks 0\nTap target → tile (menu. hours. roles). pizza. job barman. date coffee. long-press create\nLOC. 36.43410, 28.21760. GPS\nMission. locate✓."
-  },
+  "cmdLogs": {},
   "errors": [
-    "Access to fetch at 'https://api.astranov.eu/auth/v1/health' from origin 'http://127.0.0.1:8767' has been blocked by CORS policy: Response to preflight request doesn't pass access c",
-    "Failed to load resource: net::ERR_FAILED",
-    "Access to fetch at 'https://api.astranov.eu/auth/v1/health' from origin 'http://127.0.0.1:8767' has been blocked by CORS policy: Response to preflight request doesn't pass access c",
-    "Failed to load resource: net::ERR_FAILED",
-    "Failed to load resource: the server responded with a status of 400 ()"
+    "PAGE:Invalid regular expression flags"
   ]
 }

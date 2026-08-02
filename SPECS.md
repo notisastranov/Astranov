@@ -568,3 +568,12 @@ Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 | **Perf** | `SNPerf.lite` street-first · DPR/globe segs capped on mobile |
 | **Mission** | Shell (CLI+order) before globe cosmetics |
 
+## Stable runtime (2026-08-02 game engine)
+
+| Surface | Status |
+|---------|--------|
+| **Engine** | Multi-origin boot · SNGameLoop · currency debit fix · CDN-first |
+| **Verified** | Local shell ready ~350ms · Vercel stable CLI+market+greeklish |
+| **Stable URL** | https://astranov-astranov.vercel.app (SSO off · CDN assets) |
+| **astranov.eu** | CF worker still GitHub-sha (429/403 intermittent) — point edge to Vercel or deploy multi-origin worker |
+
