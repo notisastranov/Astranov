@@ -487,3 +487,19 @@ Tokens: `--accent` `--bright` `--glow` `--electric` + scroll/CLI/name/radar casc
 
 **Mission reminder:** Real-Earth OS · locate → real shops → order → pay → driver → route/ETA · make money · not toy UI thrash.
 
+## OWNER LAW · Pioneer tester developers — lifetime share (2026-08-02)
+
+**Grant (owner: Notis Astranov):** All **pioneer tester developers** who help prove and ship Astranov in this early phase receive **one third (1/3) of net income for life**, as a class of pioneers — not a one-off tip.
+
+| Item | Law |
+|------|-----|
+| **Share** | **1/3 of net income** · lifetime |
+| **Who** | Pioneer tester developers (first wave: real users + builders testing on [astranov.eu](https://astranov.eu), reporting failures, completing tasks) |
+| **Net** | After real costs of running the platform (define operationally with owner; not “gross vanity”) |
+| **Purpose** | Align early humans who break the path with the money machine forever |
+| **Not** | UI redesign rights · SPECS rewrite rights · automatic legal entity without owner paperwork |
+| **Ops later** | Wallet/ledger/vault may record pioneer pool · **owner signs contracts/payouts** outside chat folklore |
+| **Agent** | Document + protect this law · do **not** invent payout without owner · do **not** dilute without owner grant |
+
+**Mission still first:** locate → shops → order → pay → driver → ETA · real Earth OS.
+
