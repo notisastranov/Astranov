@@ -28,8 +28,8 @@
 <title>Astranov</title>
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260802183000-game-engine" />
-<meta name="astranov-continuity" content="20260802183000-game-engine" />
+<meta name="astranov-build" content="20260802184500-cdn-first" />
+<meta name="astranov-continuity" content="20260802184500-cdn-first" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -5277,7 +5277,20 @@ html.skin-spacex.theme-light body {
   </div>
 </div>
 
-<script src="/js/spacenet/boot.js?v=20260802183000-game-engine"></script>
+
+<script>
+/* Prefer jsDelivr assets when on flaky GitHub-proxy edge (astranov.eu) */
+(function(){
+  try{
+    var h=location.hostname||'';
+    if(/astranov\.eu$/i.test(h) || /pages\.dev$/i.test(h)){
+      window.SN_ASSET_BASE='https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
+    }
+  }catch(e){}
+})();
+</script>
+
+<script src="/js/spacenet/boot.js?v=20260802184500-cdn-first"></script>
 
 <script>
 /* Emergency: if edge serves HTML but JS 429s — pull boot from jsDelivr within 6s */
@@ -5290,4 +5303,4 @@ html.skin-spacex.theme-light body {
     if(n===1){
       window.__snBooting=1;
       var s=document.createElement('script');
-      s.src=CDN+'/js/spacenet/boot.js?v=20260802183000-game-engine
+      s.src=CDN+'/js/spacenet/boot.js?v=20260802184500-cdn-first

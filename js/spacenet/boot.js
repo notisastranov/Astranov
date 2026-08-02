@@ -28,12 +28,26 @@
     if (/^https?:\/\//i.test(src)) return [src];
     var path = barePath(src);
     var local = v(src);
-    var list = [local];
-    // Only mirror our tree — not three.js etc.
+    var list = [];
+    var base = '';
+    try {
+      base = String(window.SN_ASSET_BASE || '').replace(/\/$/, '');
+    } catch (_) {}
+    // CDN-first when shell declares asset base (stable edge)
+    if (base && (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0)) {
+      list.push(base + '/' + path + '?v=' + encodeURIComponent(BUILD));
+    }
+    list.push(local);
     if (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0) {
       list.push(CDN_GH + '/' + path + '?v=' + encodeURIComponent(BUILD));
     }
-    return list;
+    // dedupe
+    var seen = {};
+    return list.filter(function (u) {
+      if (seen[u]) return false;
+      seen[u] = 1;
+      return true;
+    });
   }
 
   function loadUrl(url, timeoutMs, async) {
