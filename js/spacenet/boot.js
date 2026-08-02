@@ -7,18 +7,42 @@
   var finished = false;
   var shellReady = false;
 
+  var CDN_GH = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
+  var loadStats = { ok: 0, fail: 0, cdn: 0 };
+
   function v(src) {
     if (/^https?:\/\//i.test(src)) return src;
     return src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
   }
 
-  function load(src, timeoutMs) {
+  /** Absolute path without query for CDN mirror */
+  function barePath(src) {
+    return String(src || '').split('?')[0].replace(/^\//, '');
+  }
+
+  /**
+   * Game-grade multi-origin load: same-origin first, then jsDelivr (beats GitHub 429 edge).
+   * Never leave the player on a dead black screen because one origin rate-limited.
+   */
+  function originsFor(src) {
+    if (/^https?:\/\//i.test(src)) return [src];
+    var path = barePath(src);
+    var local = v(src);
+    var list = [local];
+    // Only mirror our tree — not three.js etc.
+    if (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0) {
+      list.push(CDN_GH + '/' + path + '?v=' + encodeURIComponent(BUILD));
+    }
+    return list;
+  }
+
+  function loadUrl(url, timeoutMs, async) {
     timeoutMs = timeoutMs || 10000;
     return new Promise(function (resolve, reject) {
       var s = document.createElement('script');
-      // Parallel loads for app wave; sequential shell keeps order for deps
-      s.async = true;
-      s.src = v(src);
+      s.async = async !== false;
+      s.src = url;
+      s.crossOrigin = 'anonymous';
       var done = false;
       var to = setTimeout(function () {
         if (done) return;
@@ -26,22 +50,41 @@
         try {
           s.remove();
         } catch (e) {}
-        reject(new Error('timeout ' + src));
+        reject(new Error('timeout ' + url));
       }, timeoutMs);
       s.onload = function () {
         if (done) return;
         done = true;
         clearTimeout(to);
-        resolve();
+        loadStats.ok++;
+        if (url.indexOf('jsdelivr') >= 0) loadStats.cdn++;
+        resolve(url);
       };
       s.onerror = function () {
         if (done) return;
         done = true;
         clearTimeout(to);
-        reject(new Error('load fail ' + src));
+        try {
+          s.remove();
+        } catch (e2) {}
+        loadStats.fail++;
+        reject(new Error('load fail ' + url));
       };
       document.head.appendChild(s);
     });
+  }
+
+  function load(src, timeoutMs) {
+    var urls = originsFor(src);
+    var i = 0;
+    function next() {
+      if (i >= urls.length) return Promise.reject(new Error('all origins fail ' + src));
+      var u = urls[i++];
+      return loadUrl(u, timeoutMs || 10000, true).catch(function () {
+        return next();
+      });
+    }
+    return next();
   }
 
   function loadSoft(src, timeoutMs) {
@@ -70,34 +113,17 @@
   }
 
   function loadOrdered(src, timeoutMs) {
-    timeoutMs = timeoutMs || 10000;
-    return new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.async = false;
-      s.src = v(src);
-      var done = false;
-      var to = setTimeout(function () {
-        if (done) return;
-        done = true;
-        try {
-          s.remove();
-        } catch (e) {}
-        reject(new Error('timeout ' + src));
-      }, timeoutMs);
-      s.onload = function () {
-        if (done) return;
-        done = true;
-        clearTimeout(to);
-        resolve();
-      };
-      s.onerror = function () {
-        if (done) return;
-        done = true;
-        clearTimeout(to);
-        reject(new Error('load fail ' + src));
-      };
-      document.head.appendChild(s);
-    });
+    var urls = originsFor(src);
+    var i = 0;
+    function next() {
+      if (i >= urls.length) return Promise.reject(new Error('all origins fail ' + src));
+      var u = urls[i++];
+      // ordered: async false for dependency chain
+      return loadUrl(u, timeoutMs || 9000, false).catch(function () {
+        return next();
+      });
+    }
+    return next();
   }
 
   function whenIdle(fn, timeout) {
@@ -189,6 +215,8 @@
     hudHz: isLite ? 8 : 12,
     helperAuto: false, // HELPER parked on moon; wake on order / helper cmd
     t0: t0,
+    get loadStats() { return loadStats; },
+    cdn: CDN_GH,
     mark: function (name) {
       try {
         performance.mark('sn:' + name);
@@ -202,6 +230,7 @@
    */
   var WAVE_SHELL = [
     '/js/spacenet/skin.js',
+    '/js/spacenet/game-loop.js',
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
     '/js/spacenet/profiles.js',
@@ -320,7 +349,7 @@
   window.SNPerf.mark('three_start');
 
   // —— START: shell first ——
-  seq(WAVE_SHELL, 7000)
+  seq(WAVE_SHELL, 6000)
     .then(function () {
       initShell();
       shellReady = true;

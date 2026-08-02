@@ -252,44 +252,8 @@
     },
   };
 
-  var _debit = debit;
-  debit = function (amount, why) {
-    var r = _debit(amount, why);
-    if (r && r.ok) ledgerPush({ kind: 'debit', amount: amount, why: why || '', bal: typeof balance === 'function' ? balance() : null });
-    return r;
-  };
-  var _credit = credit;
-  credit = function (amount, why) {
-    var r = _credit(amount, why);
-    if (r && (r.ok !== false)) ledgerPush({ kind: 'credit', amount: amount, why: why || '', bal: typeof balance === 'function' ? balance() : null });
-    return r;
-  };
-  if (global.SNCurrency) {
-    global.SNCurrency.ledger = ledgerLoad;
-    global.SNCurrency.ledgerPush = ledgerPush;
-    if (!global.SNCurrency.vault) {
-      global.SNCurrency.vault = function () {
-        return st.platformFees || 0;
-      };
-    }
-    if (!global.SNCurrency.ledgerVerify) {
-      global.SNCurrency.ledgerVerify = function () {
-        var rows = ledgerLoad();
-        var sum = 0;
-        rows.forEach(function (r) {
-          var x = Number(r.amount) || 0;
-          if (r.kind === 'credit') sum += x;
-          else if (r.kind === 'debit') sum -= x;
-        });
-        return {
-          ok: rows.length === 0 || Math.abs(sum - st.balance) < 0.05,
-          ledgerSum: Math.round(sum * 100) / 100,
-          balance: st.balance,
-          lines: rows.length,
-          vault: st.platformFees || 0,
-        };
-      };
-    }
-  }
+  // ledger helpers on API (debit/credit already push ledger inside)
+  g.SNCurrency.ledger = ledgerLoad;
+  g.SNCurrency.ledgerPush = ledgerPush;
 })(typeof window !== 'undefined' ? window : globalThis);
 

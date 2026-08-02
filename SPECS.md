@@ -558,3 +558,13 @@ Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 | **Storage** | `localStorage sn:skin-v1` |
 | **No** | Color picker UI · hex labels for users · light-mode recolor under SpaceX |
 
+## OWNER LAW · Game engine runtime (2026-08-02)
+
+| System | Behavior |
+|--------|----------|
+| **Boot** | Multi-origin script load (origin → jsDelivr) — survive GitHub 429 |
+| **Emergency** | If shell not up in 6s, inject boot from CDN |
+| **Frame** | `SNGameLoop` clamps dt · no spiral of death after tab freeze |
+| **Perf** | `SNPerf.lite` street-first · DPR/globe segs capped on mobile |
+| **Mission** | Shell (CLI+order) before globe cosmetics |
+

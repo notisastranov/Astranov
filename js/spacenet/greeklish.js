@@ -35,7 +35,7 @@
     [re('fagito|faghto|φαγητό|φαγητο|food|trofi|τροφή'), ' food '],
     [re('peinao|πεινάω|πειναω|πεινώ|hungry'), ' hungry '],
     [re('tsigareta|tsigara|τσιγάρα|τσιγαρα'), ' cigarettes '],
-    [re('retsina|ρετσίνα|ρετσινα|krasi|κρασί|κρασι|wine|oinos|οίνος'), ' wine '],
+    [re('retsina|ρετσίνα|ρετσινα|krasi|κρασί|κρασι|wine|oinos|οίνος|οινος|οίνον|οινον'), ' wine '],
     [re('nero|νερό|νερο|water|anapsyktiko|αναψυκτικό|soda|cola'), ' drink '],
     [re('magazia|magazi|μαγαζιά|μαγαζια|shops|stores|εστιατόρια|estiatoria'), ' shops '],
     [re('xarti|χάρτη|χαρτη'), ' map '],
@@ -69,6 +69,7 @@
   var FOOD = [
     'pizza',
     'pitogyra',
+    'gyros',
     'souvlaki',
     'burger',
     'sushi',
@@ -110,6 +111,11 @@
     FOOD.forEach(function (f) {
       if (n.indexOf(f) >= 0) found.push(f);
     });
+    // aliases market/tests expect
+    if (n.indexOf('pitogyra') >= 0 && found.indexOf('gyros') < 0) found.push('gyros');
+    if (n.indexOf('gyros') >= 0 && found.indexOf('pitogyra') < 0 && n.indexOf('pitogyra') < 0) {
+      /* keep gyros alone */
+    }
     return found;
   }
 

@@ -1,85 +1,21 @@
 {
   "version": 2,
-  "outputDirectory": ".",
-  "installCommand": "echo no-install",
-  "buildCommand": "echo spacenet-static-20260726",
-  "framework": null,
-  "cleanUrls": false,
+  "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
     {
-      "source": "/astranov-(.*).js",
+      "source": "/js/(.*)",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript; charset=utf-8"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=120, must-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
-      "source": "/js/(.*).js",
+      "source": "/",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript; charset=utf-8"
-        }
-      ]
-    },
-    {
-      "source": "/index.html",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "SAMEORIGIN"
-        },
-        {
-          "key": "Permissions-Policy",
-          "value": "geolocation=(self), microphone=(self)"
-        }
+        { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" }
       ]
     }
   ],
-  "rewrites": []
+  "rewrites": [{ "source": "/((?!js/|icon|manifest|assets/).*)", "destination": "/index.html" }]
 }
