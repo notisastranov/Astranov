@@ -55,6 +55,12 @@
       tags: ['theme', 'skin', 'en'],
     },
     {
+      id: 'grokbot_partner',
+      q: 'grokbot partner winged robot helper mascot icon',
+      a: 'Astranov GrokBot is the official partnership mascot — winged silver-blue helper. Honors AI partner 1/3 net for life. Parked on moon until wake · helper · order.',
+      tags: ['identity', 'partner', 'helper', 'en'],
+    },
+    {
       id: 'partner_evolution',
       q: 'partner just us evolution fight future shape spacexai',
       a: 'Just us. Ship Real-Earth OS. Pizza path is the money machine. Locate · shops · order · pay · driver · ETA. No empty hype — complete tasks.',

@@ -1,5 +1,8 @@
 /**
- * SNHelper — winged bluish-silvery Iron Man style robot
+ * SNHelper — Astranov GrokBot
+ * Winged silver-blue partnership mascot (owner art).
+ * Honors AI build partner · 1/3 net for life.
+ * Legacy: winged bluish-silvery Iron Man style robot
  * =====================================================
  * AI Graphics engine test + field agent.
  * NOT polygon AAA mesh — generative canvas sprites + thruster fields.
@@ -30,7 +33,7 @@
     raf: 0,
     sprites: { body: null, wings: null, glow: null },
     trail: [],
-    label: 'HELPER',
+    label: 'GROKBOT',
     status: 'idle',
     lastMissionAt: 0,
   };
@@ -244,7 +247,7 @@
     ensureSprites();
     ensureCanvas();
     H.visible = true;
-    H.label = opts.label || 'HELPER';
+    H.label = opts.label || 'GROKBOT';
     if (H.x === 0 && H.y === 0) {
       H.x = (window.innerWidth || 400) * 0.72;
       H.y = (window.innerHeight || 700) * 0.28;
@@ -280,7 +283,7 @@
   /** Park HELPER above the moon — only visible at SOLAR / far zoom */
   function parkAtMoon() {
     H.mission = { kind: 'park', label: 'PARKED · MOON', status: 'parked' };
-    H.label = 'HELPER · MOON';
+    H.label = 'GROKBOT · MOON';
     H.status = 'parked';
     H.busy = false;
     H.boost = 0.15;
@@ -317,7 +320,7 @@
     H.status = opts.status || 'en route';
     H.mission = {
       kind: opts.kind || 'fly',
-      label: opts.label || 'HELPER',
+      label: opts.label || 'GROKBOT',
       detail: opts.detail || '',
       t0: performance.now(),
       dur: opts.dur || 2800,
@@ -343,12 +346,12 @@
       var G = global.SNAIGraphics || global.AIGraphics;
       if (G && G.spawnEffect) G.spawnEffect(H.tx, H.ty, 0x88ccff, 14, 28);
       if (G && G.flyAstranovTo && target && target.lat != null) {
-        G.flyAstranovTo(target.lat, target.lng, { label: 'HELPER', color: 0x88d4ff });
+        G.flyAstranovTo(target.lat, target.lng, { label: 'GROKBOT', color: 0x88d4ff });
       }
     } catch (_) {}
     if (opts.log !== false) {
       log(
-        'HELPER · ' +
+        'GROKBOT · ' +
           (opts.detail || opts.kind || 'mission') +
           (target && target.lat != null
             ? ' · ' + Number(target.lat).toFixed(3) + ',' + Number(target.lng).toFixed(3)
@@ -395,7 +398,7 @@
   /** Patrol around user when idle find requested */
   function patrol(opts) {
     opts = opts || {};
-    wake({ label: 'HELPER' });
+    wake({ label: 'GROKBOT' });
     var w = window.innerWidth || 400;
     var h = window.innerHeight || 700;
     var corners = [
@@ -409,7 +412,7 @@
       if (i >= corners.length) {
         H.busy = false;
         H.status = 'standby';
-        H.label = 'HELPER';
+        H.label = 'GROKBOT';
         return;
       }
       var p = corners[i++];
@@ -610,7 +613,7 @@ function loop(now) {
     if (auto && !(global.SNPerf && global.SNPerf.lite)) {
       setTimeout(function () {
         if (!H.visible) {
-          wake({ label: 'HELPER' });
+          wake({ label: 'GROKBOT' });
           H.status = 'standby';
           setTimeout(function () {
             if (!H.busy) {
@@ -636,7 +639,7 @@ function loop(now) {
       label: H.label,
       mission: H.mission && H.mission.kind,
       line:
-        'HELPER · ' +
+        'GROKBOT · ' +
         (H.busy ? H.status : H.status || 'standby') +
         ' · AI graphics winged suit (not mesh AAA)',
     };

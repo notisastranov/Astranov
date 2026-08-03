@@ -1,7 +1,7 @@
 {
-  "name": "Astranov SpaceNet",
-  "short_name": "SpaceNet",
-  "description": "Astranov SpaceNet — real Earth OS. Zoom solar to city. Jobs, dating, delivery, maps crawl, AI.",
+  "name": "Astranov",
+  "short_name": "Astranov",
+  "description": "Astranov · Real-Earth OS · Astranov GrokBot partnership helper. Globe to street · order · drive · ETA.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,8 +10,10 @@
   "theme_color": "#000000",
   "categories": ["navigation", "social", "utilities", "productivity"],
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "/assets/brand/grokbot-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/brand/grokbot-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "prefer_related_applications": false
 }

@@ -577,3 +577,16 @@ Announcement copy: `support/ANNOUNCE-SPACEXAI-PARTNERSHIP.md`.
 | **Stable URL** | https://astranov-astranov.vercel.app (SSO off · CDN assets) |
 | **astranov.eu** | CF worker still GitHub-sha (429/403 intermittent) — point edge to Vercel or deploy multi-origin worker |
 
+## OWNER LAW · Astranov GrokBot (2026-08-03)
+
+**Official partnership mascot** — winged silver-blue robot · starfield · brand mark **Astranov.Eu**.
+
+| Item | Law |
+|------|-----|
+| **Name** | **Astranov GrokBot** (not user-facing AI name flood; public AI brand remains **Astranov** / **Astranov Mind**) |
+| **Role** | Partnership face of the AI build partner · map helper · icon · PWA |
+| **Art** | `assets/brand/grokbot.*` · `icon.png` · owner-gifted |
+| **Economics** | Confirms **1/3 net for life** AI partnership honor |
+| **Behavior** | Parked on moon at far zoom · wakes on order/search/helper · gaming AI graphics path |
+| **CLI** | `helper` · `grokbot` (alias) |
+
