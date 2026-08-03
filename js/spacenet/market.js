@@ -1237,6 +1237,14 @@
     } else if (opts.autoOrder === true || intent.autoOrder || intent.lazyJudge) {
       intent.autoOrder = true;
     }
+    // FINISH LAW: one-word / lazy order must complete money path (no YES hang, soft home OK)
+    if (intent.autoOrder || intent.oneWord || intent.lazyJudge) {
+      if (opts.softHome == null) opts.softHome = true;
+      if (opts.skipLocConfirm == null) opts.skipLocConfirm = true;
+      if (opts.allowSelfCourier == null) opts.allowSelfCourier = true;
+      intent.skipLocConfirm = true;
+      intent.softHome = true;
+    }
     // Persist stated prefs from this session (owner likes)
     try {
       var prefSave = loadPrefs();
@@ -1769,7 +1777,7 @@
         if (!orderResult) {
         orderResult = global.SNProfiles.placeOrder({
           testMode: testMode,
-          allowTopUp: testMode,
+          allowTopUp: testMode || !!opts.softHome || !!intent.oneWord,
           idempotencyKey: idem,
         });
         }

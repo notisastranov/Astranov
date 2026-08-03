@@ -962,6 +962,9 @@
             autoOrder: wantOrder,
             quiet: false,
             judgeAll: wantOrder,
+            softHome: wantOrder,
+            skipLocConfirm: wantOrder,
+            allowSelfCourier: wantOrder,
           });
           if (r?.best) {
             depict(wantOrder ? 'order' : 'food', {

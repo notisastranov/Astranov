@@ -601,3 +601,21 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Canvas** | Composites AI bitmaps + soft bloom trails only |
 | **CLI** | `helper` · `spacexbot` · `patrol` wakes AI character |
 
+## OWNER LAW · FINISH sprint (2026-08-03)
+
+| Item | Law |
+|------|-----|
+| **One-word pizza** | softHome + skipLocConfirm + self-courier if no mesh driver → full pay→ETA |
+| **No hang on YES** | pilot orders skip location dialog when soft pin |
+| **Edge** | Worker order: Vercel → jsDelivr → Pages → GitHub (owner must redeploy CF worker) |
+| **Stable** | https://astranov-astranov.vercel.app |
+| **Character** | SpaceX Bot AI sprites only |
+
+## OWNER LAW · SpaceXAI Kitty (2026-08-03)
+
+**Name:** **SpaceXAI Kitty**  
+**Who:** Owner’s black cat — mission control on the Alienware (sister of the mesh).  
+**Role:** House mascot · good-luck RAID guardian · not a second AI chat name.  
+**Family:** SpaceX Bot (winged helper) · SpaceXAI Kitty (living pioneer).  
+**Honor:** SpaceX pioneers + AI partnership · with claws and attitude.
+

@@ -61,6 +61,12 @@
       tags: ['identity', 'partner', 'helper', 'spacex', 'en'],
     },
     {
+      id: 'spacexai_kitty',
+      q: 'spacexai kitty cat black cat mascot sister alienware',
+      a: 'SpaceXAI Kitty is the house mascot — black cat on the Alienware. Sister of the mesh. SpaceX Bot flies; she supervises. Not a chatbot name.',
+      tags: ['identity', 'mascot', 'en'],
+    },
+    {
       id: 'partner_evolution',
       q: 'partner just us evolution fight future shape spacexai',
       a: 'Just us. Ship Real-Earth OS. Pizza path is the money machine. Locate · shops · order · pay · driver · ETA. No empty hype — complete tasks.',

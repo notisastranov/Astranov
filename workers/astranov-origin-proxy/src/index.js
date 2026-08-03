@@ -1,7 +1,9 @@
 /**
- * Astranov origin — SpaceXAI era
- * Prefer CF Pages; fallback jsDelivr GitHub raw (avoids raw.githubusercontent rate limit 429/403).
+ * Astranov origin proxy — FINISH era
+ * Order: Vercel stable → jsDelivr → CF Pages → GitHub raw (last)
+ * Never single-point github-sha (429/403 kills domain).
  */
+const VERCEL = 'https://astranov-astranov.vercel.app';
 const PAGES = 'https://astranov.pages.dev';
 const GH_OWNER = 'notisastranov';
 const GH_REPO = 'astranov.eu';
@@ -11,7 +13,6 @@ function jsdelivr(path) {
   const p = path === '/' || path === '' ? 'index.html' : path.replace(/^\//, '');
   return `https://cdn.jsdelivr.net/gh/${GH_OWNER}/${GH_REPO}@${GH_BRANCH}/${p}`;
 }
-
 function githubRaw(path) {
   const p = path === '/' || path === '' ? 'index.html' : path.replace(/^\//, '');
   return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/${p}`;
@@ -19,25 +20,23 @@ function githubRaw(path) {
 
 async function tryFetch(url, init) {
   try {
-    const res = await fetch(url, init);
-    if (res.ok) return res;
-    return res;
-  } catch (e) {
+    return await fetch(url, init);
+  } catch {
     return null;
   }
 }
 
 export default {
   async fetch(request, env) {
+    const vercelOrigin = (env.VERCEL_ORIGIN || VERCEL).replace(/\/$/, '');
     const pagesOrigin = (env.ORIGIN || PAGES).replace(/\/$/, '');
     const url = new URL(request.url);
     const path = url.pathname;
-
     const init = {
       method: request.method === 'HEAD' ? 'GET' : request.method,
       headers: new Headers(request.headers),
       redirect: 'follow',
-      cf: { cacheTtl: path.endsWith('.js') || path.endsWith('.css') ? 300 : 60 },
+      cf: { cacheTtl: path.endsWith('.js') || path.endsWith('.css') ? 120 : 30 },
     };
     init.headers.delete('host');
     init.headers.delete('cookie');
@@ -46,20 +45,36 @@ export default {
       init.duplex = 'half';
     }
 
+    // Prefer hosts that do not rate-limit GitHub raw
     const candidates = [
+      { url: new URL(path + url.search, vercelOrigin + '/').toString(), tag: 'vercel' },
+      { url: jsdelivr(path) + (url.search || ''), tag: 'jsdelivr' },
       { url: new URL(path + url.search, pagesOrigin + '/').toString(), tag: 'pages' },
-      { url: jsdelivr(path) + url.search, tag: 'jsdelivr' },
-      { url: githubRaw(path) + url.search, tag: 'github-raw' },
+      { url: githubRaw(path) + (url.search || ''), tag: 'github-raw' },
     ];
 
     let last = null;
+    const fails = [];
     for (const c of candidates) {
       const res = await tryFetch(c.url, init);
-      if (!res) continue;
+      if (!res) {
+        fails.push(c.tag + ':network');
+        continue;
+      }
       last = res;
-      // treat rate limit / forbidden as fail-over
-      if (res.status === 429 || res.status === 403) continue;
-      if (res.status >= 500) continue;
+      if (res.status === 429 || res.status === 403) {
+        fails.push(c.tag + ':' + res.status);
+        continue;
+      }
+      if (res.status >= 500) {
+        fails.push(c.tag + ':' + res.status);
+        continue;
+      }
+      // Vercel SSO HTML is not ok product — skip login walls
+      const ct = (res.headers.get('content-type') || '').toLowerCase();
+      if (c.tag === 'vercel' && ct.includes('text/html') && path === '/') {
+        // allow through — public after SSO off
+      }
       if (res.ok || (res.status >= 300 && res.status < 400)) {
         const out = new Headers(res.headers);
         out.set('x-astranov-proxy', c.tag);
@@ -68,22 +83,24 @@ export default {
         if (path === '/' || path.endsWith('.html')) {
           out.set('cache-control', 'no-store, max-age=0, must-revalidate');
         } else if (path.includes('/js/')) {
-          out.set('cache-control', 'public, max-age=120, must-revalidate');
+          out.set('cache-control', 'public, max-age=60, must-revalidate');
         }
-        // Ensure JS MIME
         if (path.endsWith('.js') && !out.get('content-type')?.includes('javascript')) {
           out.set('content-type', 'application/javascript; charset=utf-8');
         }
         return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });
       }
+      fails.push(c.tag + ':' + res.status);
     }
 
-    const msg =
-      'Astranov edge error: all origins failed' +
-      (last ? ' last=' + last.status : '');
+    const msg = 'Astranov edge error: ' + (fails.join(' · ') || 'all origins down');
     return new Response(msg, {
       status: 502,
-      headers: { 'content-type': 'text/plain; charset=utf-8', 'x-astranov-proxy': 'fail' },
+      headers: {
+        'content-type': 'text/plain; charset=utf-8',
+        'x-astranov-proxy': 'fail',
+        'access-control-allow-origin': '*',
+      },
     });
   },
 };
