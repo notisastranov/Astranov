@@ -636,3 +636,13 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Grandfather** | Memorial from short https://youtube.com/shorts/4jyoUDZfFfk — Manowar Klistiotis / Mana Raos Klesioti |
 | **Film** | `assets/brand/videos/grandfather-memory-life-story.mp4` |
 
+## OWNER LAW · Grandfather Mano (2026-08-03)
+
+| Fact | Law |
+|------|-----|
+| **Name** | **Mano** |
+| **Place** | **Rousa Eklisia** |
+| **Age 8** | Stole ammunition from **German and Italian** troops as **opposition fighter** |
+| **Script** | `support/MANO-ROUSA-EKLISIA-SCRIPT.md` |
+| **Film** | `assets/brand/videos/mano-rousa-eklisia-8-ammo.mp4` |
+
