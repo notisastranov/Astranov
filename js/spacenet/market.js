@@ -98,7 +98,7 @@
     var low = String(line || '')
       .toLowerCase()
       .trim();
-    return /^(yes|y|yeah|yep|ok|okay|correct|here|confirm|go|proceed|no|nope|wrong|ν|ναι|όχι|oxi)$/i.test(
+    return /^(yes|y|yeah|yep|ok|okay|correct|here|confirm|go|proceed|sure|ναι|ναί|ne|neh|no|nope|wrong|ν|όχι|οχι|oxi|oxi\.?)$/i.test(
       low
     );
   }
@@ -1280,6 +1280,16 @@
       try {
         if (global.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate();
       } catch (_) {}
+    }
+    // Confirmed pin from YES (location check) — highest trust
+    if (intent.confirmedPos && intent.confirmedPos.lat != null) {
+      pos = {
+        lat: intent.confirmedPos.lat,
+        lng: intent.confirmedPos.lng,
+        fallback: !!(intent.confirmedPos.fallback),
+        reason: 'user confirmed pin',
+        accuracy: intent.confirmedPos.accuracy,
+      };
     }
     // Do NOT use globe focus (often another city/continent from flying)
     if ((!pos || pos.lat == null) && global._snLastPos && global._snLastPos.lat != null) {

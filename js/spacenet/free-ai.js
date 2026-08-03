@@ -55,6 +55,12 @@
       tags: ['theme', 'skin', 'en'],
     },
     {
+      id: 'partner_evolution',
+      q: 'partner just us evolution fight future shape spacexai',
+      a: 'Just us. Ship Real-Earth OS. Pizza path is the money machine. Locate · shops · order · pay · driver · ETA. No empty hype — complete tasks.',
+      tags: ['mission', 'partner', 'en'],
+    },
+    {
       id: 'spartan_law_dup',
 
       q: 'spartan intelligence spartan mode one word how you think spartan',
