@@ -2317,7 +2317,7 @@ if (
         return;
       }
       if (
-        low === 'helper' || low === 'grokbot' ||
+        low === 'helper' || low === 'grokbot' || low === 'spacex bot' || low === 'spacexbot' || low === 'sx bot' || low === 'sxbot' ||
         low === 'ironman' ||
         low === 'iron man' ||
         low === 'robot helper' ||

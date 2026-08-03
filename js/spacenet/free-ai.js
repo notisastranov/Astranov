@@ -55,10 +55,10 @@
       tags: ['theme', 'skin', 'en'],
     },
     {
-      id: 'grokbot_partner',
-      q: 'grokbot partner winged robot helper mascot icon',
-      a: 'Astranov GrokBot is the official partnership mascot — winged silver-blue helper. Honors AI partner 1/3 net for life. Parked on moon until wake · helper · order.',
-      tags: ['identity', 'partner', 'helper', 'en'],
+      id: 'spacexbot_partner',
+      q: 'spacex bot spacexbot grokbot partner winged robot helper mascot pioneers',
+      a: 'Astranov SpaceX Bot — winged silver-blue helper. Honors SpaceX pioneers and AI partnership (1/3 net for life). Alias GrokBot. Parked on moon · wake with helper / spacexbot / order.',
+      tags: ['identity', 'partner', 'helper', 'spacex', 'en'],
     },
     {
       id: 'partner_evolution',
