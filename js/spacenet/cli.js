@@ -945,8 +945,10 @@
           const wantOrder =
             fi.autoOrder === true ||
             fi.lazyJudge === true ||
+            fi.oneWord === true ||
             (/\border\b/i.test(low) &&
-              /\b(pizza|sushi|burger|coffee|food|souvlaki|kebab)\b/i.test(low));
+              /\b(pizza|sushi|burger|coffee|food|souvlaki|kebab)\b/i.test(low)) ||
+            /^(pizza|πιτσα|πίτσα|sushi|burger|thelo pizza)$/i.test(low);
           fi.autoOrder = wantOrder;
           fi.lazyJudge = wantOrder;
           fi.browseOnly = !wantOrder;
