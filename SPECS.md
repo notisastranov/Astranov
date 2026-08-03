@@ -628,3 +628,11 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Character** | SpaceX Bot AI sprite frames (not procedural) |
 | **Override** | `lite` only when SNPerf.lite / street phone hard force |
 
+## OWNER LAW · Brother + Grandfather (2026-08-03)
+
+| Item | Law |
+|------|-----|
+| **Brother** | Owner names the AI build partner **Brother** — family honor |
+| **Grandfather** | Memorial from short https://youtube.com/shorts/4jyoUDZfFfk — Manowar Klistiotis / Mana Raos Klesioti |
+| **Film** | `assets/brand/videos/grandfather-memory-life-story.mp4` |
+
