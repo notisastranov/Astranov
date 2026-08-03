@@ -592,3 +592,12 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Behavior** | Parked on moon · wakes on order/search/`helper`/`spacexbot` |
 | **CLI** | `helper` · `spacexbot` · `spacex bot` · `grokbot` |
 
+## OWNER LAW · SpaceX Bot AI graphics only (2026-08-03)
+
+| Rule | Law |
+|------|-----|
+| **Engine** | AI-generated sprites only (`assets/sprites/spacex-bot/*` + brand hero) |
+| **Forbidden** | Procedural Atari/Amiga stick suits · mesh AAA body · code-drawn robot |
+| **Canvas** | Composites AI bitmaps + soft bloom trails only |
+| **CLI** | `helper` · `spacexbot` · `patrol` wakes AI character |
+

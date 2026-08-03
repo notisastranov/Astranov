@@ -1,18 +1,27 @@
 /**
  * SNHelper — Astranov SpaceX Bot
- * Winged silver-blue partnership mascot (owner art).
- * Honors SpaceX pioneers + AI build partner · 1/3 net for life.
- * Aliases: GrokBot · SpaceXBot · HELPER
- * Legacy: winged bluish-silvery Iron Man style robot
  * =====================================================
- * AI Graphics engine test + field agent.
- * NOT polygon AAA mesh — generative canvas sprites + thruster fields.
- * Flies when user finds shops, runs tasks, orders, or says helper.
+ * GAMING CHARACTER · AI GRAPHICS ONLY
+ * - Real AI-generated sprite frames (assets/sprites/spacex-bot/*)
+ * - Brand hero (assets/brand/grokbot-512.png)
+ * - NO mesh / THREE body · NO procedural Amiga/Atari stick suits
+ * - Canvas only composites AI bitmaps + soft glow
  *
+ * Honors SpaceX pioneers + AI partner 1/3 net.
+ * Aliases: GrokBot · SpaceXBot · HELPER
  * Mechanical: window.SNHelper
  */
 (function (global) {
   'use strict';
+
+  var FRAME_URLS = [
+    '/assets/sprites/spacex-bot/spacex-bot-1.png',
+    '/assets/sprites/spacex-bot/spacex-bot-2.png',
+    '/assets/sprites/spacex-bot/spacex-bot-3.png',
+    '/assets/sprites/spacex-bot/spacex-bot-4.png',
+  ];
+  var HERO_URL = '/assets/brand/grokbot-512.png';
+  var SHEET_URL = '/assets/sprites/spacex-bot/sheet-transparent.png';
 
   var H = {
     ready: false,
@@ -26,17 +35,24 @@
     vx: 0,
     vy: 0,
     angle: 0,
-    wingPhase: 0,
     boost: 0,
     frame: 0,
+    animT: 0,
     canvas: null,
     ctx: null,
     raf: 0,
-    sprites: { body: null, wings: null, glow: null },
+    /** AI bitmaps only */
+    frames: [],
+    hero: null,
+    sheet: null,
+    loaded: false,
+    loadFailed: false,
     trail: [],
     label: 'SPACEX BOT',
     status: 'idle',
     lastMissionAt: 0,
+    _lastPaint: 0,
+    _dpr: 1,
   };
 
   function log(m, c) {
@@ -45,148 +61,49 @@
     } catch (_) {}
   }
 
-  /** Generative suit art via AI Graphics or local painter */
-  function paintSuit(kind, size) {
-    size = size || 160;
-    var prompt =
-      kind === 'wings'
-        ? 'winged thruster silvery cyan energy wings iron hero arc field'
-        : kind === 'glow'
-          ? 'arc reactor core cyan silver pulse energy sphere'
-          : 'winged bluish silvery iron man robot hero suit chest reactor cyan glow';
-    try {
-      if (global.SNAIGraphics && SNAIGraphics.generateCanvas) {
-        return SNAIGraphics.generateCanvas(prompt, size, size, {
-          style: 'helper-' + kind,
-          detail: 1,
-        }).canvas;
-      }
-      if (global.AIGraphics && AIGraphics.generateCanvas) {
-        return AIGraphics.generateCanvas(prompt, size, size, {
-          style: 'helper-' + kind,
-        }).canvas;
-      }
-    } catch (_) {}
-    // Local fallback painter — bluish silvery Iron Man silhouette
-    var c = document.createElement('canvas');
-    c.width = size;
-    c.height = size;
-    var ctx = c.getContext('2d');
-    var cx = size / 2;
-    var cy = size / 2;
-    ctx.clearRect(0, 0, size, size);
-
-    if (kind === 'glow') {
-      var rg = ctx.createRadialGradient(cx, cy, 2, cx, cy, size * 0.4);
-      rg.addColorStop(0, 'rgba(200,240,255,0.95)');
-      rg.addColorStop(0.35, 'rgba(255,255,255,0.7)');
-      rg.addColorStop(1, 'rgba(11,111,212,0)');
-      ctx.fillStyle = rg;
-      ctx.beginPath();
-      ctx.arc(cx, cy, size * 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      return c;
-    }
-
-    if (kind === 'wings') {
-      // energy wing blades
-      ctx.save();
-      ctx.translate(cx, cy);
-      for (var side = -1; side <= 1; side += 2) {
-        ctx.fillStyle = 'rgba(160,210,255,0.55)';
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(side * 8, -4);
-        ctx.quadraticCurveTo(side * size * 0.42, -size * 0.18, side * size * 0.46, size * 0.08);
-        ctx.quadraticCurveTo(side * size * 0.28, size * 0.02, side * 10, 10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        // feather lines
-        ctx.strokeStyle = 'rgba(200,240,255,0.5)';
-        for (var f = 0; f < 5; f++) {
-          ctx.beginPath();
-          ctx.moveTo(side * 12, -2 + f * 3);
-          ctx.lineTo(side * (size * 0.35 - f * 4), -8 + f * 6);
-          ctx.stroke();
-        }
-      }
-      ctx.restore();
-      return c;
-    }
-
-    // body suit
-    // helmet
-    var hg = ctx.createLinearGradient(cx - 18, cy - 40, cx + 18, cy - 10);
-    hg.addColorStop(0, '#d8eefc');
-    hg.addColorStop(0.5, '#7ec8ff');
-    hg.addColorStop(1, '#3a7ec0');
-    ctx.fillStyle = hg;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy - 28, 16, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // visor slit
-    ctx.fillStyle = 'rgba(20,40,80,0.85)';
-    ctx.fillRect(cx - 12, cy - 32, 24, 5);
-    ctx.fillStyle = 'rgba(120,220,255,0.7)';
-    ctx.fillRect(cx - 10, cy - 31, 20, 2);
-    // torso
-    var tg = ctx.createLinearGradient(cx - 22, cy - 12, cx + 22, cy + 28);
-    tg.addColorStop(0, '#e8f4ff');
-    tg.addColorStop(0.35, '#8ec8f0');
-    tg.addColorStop(0.7, '#4a90c8');
-    tg.addColorStop(1, '#2a5080');
-    ctx.fillStyle = tg;
-    ctx.beginPath();
-    ctx.moveTo(cx - 18, cy - 12);
-    ctx.lineTo(cx + 18, cy - 12);
-    ctx.lineTo(cx + 20, cy + 18);
-    ctx.lineTo(cx + 10, cy + 32);
-    ctx.lineTo(cx - 10, cy + 32);
-    ctx.lineTo(cx - 20, cy + 18);
-    ctx.closePath();
-    ctx.fill();
-    // chest arc reactor
-    var ar = ctx.createRadialGradient(cx, cy + 2, 1, cx, cy + 2, 12);
-    ar.addColorStop(0, '#ffffff');
-    ar.addColorStop(0.4, '#ffffff');
-    ar.addColorStop(1, 'rgba(11,111,212,0.2)');
-    ctx.fillStyle = ar;
-    ctx.beginPath();
-    ctx.arc(cx, cy + 2, 11, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(200,240,255,0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    // shoulders / plates
-    ctx.fillStyle = 'rgba(180,220,255,0.85)';
-    ctx.beginPath();
-    ctx.ellipse(cx - 20, cy - 6, 10, 7, -0.4, 0, Math.PI * 2);
-    ctx.ellipse(cx + 20, cy - 6, 10, 7, 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    // legs
-    ctx.fillStyle = '#6aa8d8';
-    ctx.fillRect(cx - 12, cy + 30, 8, 22);
-    ctx.fillRect(cx + 4, cy + 30, 8, 22);
-    // boots thrusters glow
-    ctx.fillStyle = 'rgba(100,200,255,0.8)';
-    ctx.beginPath();
-    ctx.ellipse(cx - 8, cy + 54, 5, 3, 0, 0, Math.PI * 2);
-    ctx.ellipse(cx + 8, cy + 54, 5, 3, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // rim light
-    ctx.strokeStyle = 'rgba(160,220,255,0.55)';
-    ctx.lineWidth = 1;
-    try { ctx.strokeRect(cx - 22, cy - 40, 44, 96); } catch (_sr) {}
-    return c;
+  function loadImg(src) {
+    return new Promise(function (resolve) {
+      var im = new Image();
+      im.decoding = 'async';
+      im.onload = function () {
+        resolve(im);
+      };
+      im.onerror = function () {
+        resolve(null);
+      };
+      im.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=ai1';
+    });
   }
 
+  /**
+   * Load ONLY AI-generated art. Never invent Atari/Amiga polygons.
+   */
   function ensureSprites() {
-    if (H.sprites.body) return;
-    H.sprites.body = paintSuit('body', 128);
-    H.sprites.wings = paintSuit('wings', 160);
-    H.sprites.glow = paintSuit('glow', 96);
+    if (H.loaded || H._loading) return H._loading || Promise.resolve();
+    H._loading = Promise.all([
+      Promise.all(FRAME_URLS.map(loadImg)),
+      loadImg(HERO_URL),
+      loadImg(SHEET_URL),
+    ]).then(function (pack) {
+      var frames = (pack[0] || []).filter(Boolean);
+      H.frames = frames;
+      H.hero = pack[1] || null;
+      H.sheet = pack[2] || null;
+      H.loaded = frames.length > 0 || !!H.hero;
+      H.loadFailed = !H.loaded;
+      H._loading = null;
+      if (H.loaded) {
+        try {
+          log('SPACEX BOT · AI frames ' + frames.length + ' · graphics online', 'ok');
+        } catch (_) {}
+      } else {
+        try {
+          log('SPACEX BOT · AI art missing · no procedural fallback', 'err');
+        } catch (_) {}
+      }
+      return H.loaded;
+    });
+    return H._loading;
   }
 
   function ensureCanvas() {
@@ -205,20 +122,20 @@
 
   function resize() {
     if (!H.canvas) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.75);
     var w = window.innerWidth || 1;
     var h = window.innerHeight || 1;
     H.canvas.width = Math.floor(w * dpr);
     H.canvas.height = Math.floor(h * dpr);
     H.canvas.style.width = w + 'px';
     H.canvas.style.height = h + 'px';
+    H._dpr = dpr;
     if (H.ctx) H.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   function screenFromLatLng(lat, lng) {
     var w = window.innerWidth || 400;
     var h = window.innerHeight || 700;
-    // Prefer map projection if available
     try {
       if (global.SNMap && SNMap.active && SNMap.latLngToContainerPoint) {
         var p = SNMap.latLngToContainerPoint(lat, lng);
@@ -231,16 +148,10 @@
         if (s && s.x != null) return { x: s.x, y: s.y };
       }
     } catch (_) {}
-    // Soft equirectangular fallback
     return {
       x: w * (0.5 + (Number(lng) || 0) / 360),
       y: h * (0.42 - (Number(lat) || 0) / 180),
     };
-  }
-
-  function setPos(x, y) {
-    H.x = x;
-    H.y = y;
   }
 
   function wake(opts) {
@@ -249,18 +160,12 @@
     ensureCanvas();
     H.visible = true;
     H.label = opts.label || 'SPACEX BOT';
+    if (H.canvas) H.canvas.style.opacity = '1';
     if (H.x === 0 && H.y === 0) {
       H.x = (window.innerWidth || 400) * 0.72;
       H.y = (window.innerHeight || 700) * 0.28;
     }
     if (!H.raf) H.raf = requestAnimationFrame(loop);
-    try {
-      var G = global.SNAIGraphics || global.AIGraphics;
-      if (G) {
-        if (G.showNeural) G.showNeural(true);
-        if (G.spawnEffect) G.spawnEffect(H.x, H.y, 0x4cc9ff, 18, 30);
-      }
-    } catch (_) {}
     return true;
   }
 
@@ -269,7 +174,9 @@
     H.busy = false;
     H.mission = null;
     H.status = 'idle';
-    try { parkAtMoon(); } catch (_) {}
+    try {
+      parkAtMoon();
+    } catch (_) {}
     if (H.ctx && H.canvas) {
       var w = window.innerWidth || 1;
       var h = window.innerHeight || 1;
@@ -277,25 +184,18 @@
     }
   }
 
-  /**
-   * Fly to a geographic or screen target with a mission label.
-   */
-
-  /** Park HELPER above the moon — only visible at SOLAR / far zoom */
   function parkAtMoon() {
     H.mission = { kind: 'park', label: 'PARKED · MOON', status: 'parked' };
     H.label = 'SPACEX BOT · MOON';
     H.status = 'parked';
     H.busy = false;
-    H.boost = 0.15;
-    // Screen park: upper-right "lunar" station until true lunar body view
+    H.boost = 0.12;
     var w = window.innerWidth || 360;
     var h = window.innerHeight || 640;
     H.tx = w * 0.78;
     H.ty = h * 0.18;
     H.x = H.tx;
     H.y = H.ty;
-    // Only show when solar / very zoomed out
     var tier = '';
     try {
       if (global.SNGlobe && SNGlobe.tier) tier = SNGlobe.tier();
@@ -304,6 +204,10 @@
     var show = tier === 'solar' || tier === 'SOLAR';
     H.visible = !!show;
     if (H.canvas) H.canvas.style.opacity = show ? '1' : '0';
+    if (show) {
+      ensureCanvas();
+      if (!H.raf) H.raf = requestAnimationFrame(loop);
+    }
     return { ok: true, parked: true, tier: tier, visible: show };
   }
 
@@ -343,13 +247,6 @@
     }
     H.boost = 1;
     H.lastMissionAt = Date.now();
-    try {
-      var G = global.SNAIGraphics || global.AIGraphics;
-      if (G && G.spawnEffect) G.spawnEffect(H.tx, H.ty, 0x88ccff, 14, 28);
-      if (G && G.flyAstranovTo && target && target.lat != null) {
-        G.flyAstranovTo(target.lat, target.lng, { label: 'SPACEX BOT', color: 0x88d4ff });
-      }
-    } catch (_) {}
     if (opts.log !== false) {
       log(
         'SPACEX BOT · ' +
@@ -363,11 +260,10 @@
     return H.mission;
   }
 
-  /** High-level: help user find things */
   function find(what, pos, opts) {
     opts = opts || {};
     var label = String(what || 'target').slice(0, 28);
-    return flyTo(pos || global._snLastPos || { lat: 37.93, lng: 23.75 }, {
+    return flyTo(pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 }, {
       kind: 'find',
       label: 'FIND · ' + label,
       detail: 'scanning for ' + label,
@@ -378,13 +274,12 @@
     });
   }
 
-  /** High-level: assist a task / order */
   function assistTask(task, opts) {
     opts = opts || {};
     var t = task || {};
     var pos = {
-      lat: t.lat != null ? t.lat : (global._snLastPos && global._snLastPos.lat) || 37.93,
-      lng: t.lng != null ? t.lng : (global._snLastPos && global._snLastPos.lng) || 23.75,
+      lat: t.lat != null ? t.lat : (global._snLastPos && global._snLastPos.lat) || 36.4341,
+      lng: t.lng != null ? t.lng : (global._snLastPos && global._snLastPos.lng) || 28.2176,
     };
     return flyTo(pos, {
       kind: 'task',
@@ -396,7 +291,6 @@
     });
   }
 
-  /** Patrol around user when idle find requested */
   function patrol(opts) {
     opts = opts || {};
     wake({ label: 'SPACEX BOT' });
@@ -427,28 +321,24 @@
         onArrive: next,
       });
     }
-    log('HELPER · patrol sweep', 'ok');
+    log('SPACEX BOT · patrol · AI character', 'ok');
     next();
   }
 
-  
-  function resizeCanvas() {
-    if (!H.canvas) return;
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var w = window.innerWidth || 360;
-    var h = window.innerHeight || 640;
-    var bw = Math.round(w * dpr);
-    var bh = Math.round(h * dpr);
-    if (H.canvas.width !== bw || H.canvas.height !== bh) {
-      H.canvas.width = bw;
-      H.canvas.height = bh;
-      H.canvas.style.width = w + 'px';
-      H.canvas.style.height = h + 'px';
-      H._dpr = dpr;
+  /** Pick AI frame by motion */
+  function currentFrame(now) {
+    if (!H.frames.length) return H.hero;
+    var n = H.frames.length;
+    // hover cycle 1-2 · boost uses 3-4
+    if (H.boost > 0.45 || H.busy) {
+      var i = 2 + (Math.floor(now / 140) % Math.max(1, n - 2));
+      return H.frames[Math.min(i, n - 1)];
     }
+    var j = Math.floor(now / 220) % Math.min(2, n);
+    return H.frames[j];
   }
 
-function loop(now) {
+  function loop(now) {
     if (!H.visible) {
       H.raf = 0;
       return;
@@ -456,24 +346,25 @@ function loop(now) {
     H.raf = requestAnimationFrame(loop);
     if (!H.ctx) return;
     if (document.hidden) return;
-    // ~30fps cap — smooth without sticky main thread
-    if (H._lastPaint && now - H._lastPaint < 32) return;
+    // ~36fps — game feel without sticky
+    if (H._lastPaint && now - H._lastPaint < 28) return;
     H._lastPaint = now;
+
     var w = window.innerWidth || 1;
     var h = window.innerHeight || 1;
     var ctx = H.ctx;
     ctx.clearRect(0, 0, w, h);
 
-    // Steer toward target
+    // Motion
     if (H.busy && H.mission) {
       var dx = H.tx - H.x;
       var dy = H.ty - H.y;
       var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      var speed = 4.2 + H.boost * 6;
-      if (dist < 12) {
+      var speed = 5.2 + H.boost * 7;
+      if (dist < 14) {
         H.x = H.tx;
         H.y = H.ty;
-        H.boost *= 0.85;
+        H.boost *= 0.86;
         var elapsed = now - H.mission.t0;
         if (elapsed > (H.mission.dur || 2000) * 0.55) {
           var arrive = H.mission.onArrive;
@@ -482,10 +373,6 @@ function loop(now) {
           H.status = 'arrived';
           H.label = H.label.replace(/^FIND · /, 'FOUND · ').replace(/^TASK · /, 'ON · ');
           H.boost = 0.2;
-          try {
-            var G = global.SNAIGraphics || global.AIGraphics;
-            if (G && G.spawnEffect) G.spawnEffect(H.x, H.y, 0x00e8a0, 22, 36);
-          } catch (_) {}
           if (typeof arrive === 'function') {
             try {
               arrive();
@@ -498,97 +385,87 @@ function loop(now) {
         H.x += H.vx;
         H.y += H.vy;
         H.angle = Math.atan2(H.vy, H.vx);
-        H.boost = Math.min(1.5, H.boost * 0.98 + 0.02);
+        H.boost = Math.min(1.5, H.boost * 0.98 + 0.03);
       }
     } else {
-      // idle hover bob
-      H.y += Math.sin(now * 0.003) * 0.15;
-      H.x += Math.cos(now * 0.0022) * 0.08;
-      H.angle *= 0.92;
-      H.boost *= 0.96;
+      H.y += Math.sin(now * 0.0028) * 0.22;
+      H.x += Math.cos(now * 0.0019) * 0.1;
+      H.angle *= 0.9;
+      H.boost *= 0.95;
     }
 
-    H.wingPhase = now * 0.008;
     H.frame++;
 
-    // Trail
-    H.trail.push({ x: H.x, y: H.y, a: 1 });
-    if (H.trail.length > 18) H.trail.shift();
+    // Soft thruster trail — light particles only (not retro blocks)
+    H.trail.push({ x: H.x, y: H.y + 18, a: 0.7 });
+    if (H.trail.length > 14) H.trail.shift();
     var i;
     for (i = 0; i < H.trail.length; i++) {
       var tr = H.trail[i];
-      tr.a *= 0.88;
-      ctx.fillStyle = 'rgba(255,255,255,' + tr.a * 0.35 + ')';
+      tr.a *= 0.86;
+      var rg = ctx.createRadialGradient(tr.x, tr.y, 0, tr.x, tr.y, 6 + i * 0.4);
+      rg.addColorStop(0, 'rgba(255,255,255,' + tr.a * 0.55 + ')');
+      rg.addColorStop(1, 'rgba(180,200,255,0)');
+      ctx.fillStyle = rg;
       ctx.beginPath();
-      ctx.arc(tr.x, tr.y, 2 + i * 0.15, 0, Math.PI * 2);
+      ctx.arc(tr.x, tr.y, 5 + i * 0.25, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Thruster plume
-    if (H.boost > 0.15) {
+    // Draw AI character bitmap only
+    var img = currentFrame(now);
+    if (!img && H.hero) img = H.hero;
+    if (img) {
       ctx.save();
       ctx.translate(H.x, H.y);
-      ctx.rotate(H.angle + Math.PI / 2);
-      var plume = ctx.createLinearGradient(0, 10, 0, 40 + H.boost * 30);
-      plume.addColorStop(0, 'rgba(200,240,255,0.85)');
-      plume.addColorStop(0.4, 'rgba(255,255,255,0.45)');
-      plume.addColorStop(1, 'rgba(11,111,212,0)');
-      ctx.fillStyle = plume;
+      ctx.rotate(H.angle * 0.28);
+      var scale = H.busy ? 1.08 : 1 + Math.sin(now * 0.004) * 0.03;
+      var bw = 88 * scale;
+      var bh = 88 * scale;
+      // soft AI bloom under feet/body
+      var bloom = ctx.createRadialGradient(0, 8, 4, 0, 8, bw * 0.55);
+      bloom.addColorStop(0, 'rgba(255,255,255,0.22)');
+      bloom.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bloom;
       ctx.beginPath();
-      ctx.moveTo(-6, 12);
-      ctx.lineTo(6, 12);
-      ctx.lineTo(2, 36 + H.boost * 28);
-      ctx.lineTo(-2, 36 + H.boost * 28);
-      ctx.closePath();
+      ctx.arc(0, 10, bw * 0.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.drawImage(img, -bw / 2, -bh / 2 - 6, bw, bh);
       ctx.restore();
-    }
-
-    // Draw wings + body
-    ensureSprites();
-    ctx.save();
-    ctx.translate(H.x, H.y);
-    ctx.rotate(H.angle * 0.35);
-    var flap = 1 + Math.sin(H.wingPhase) * 0.08;
-    ctx.globalAlpha = 0.9;
-    if (H.sprites.wings) {
+    } else if (!H.loaded && !H.loadFailed) {
+      // loading AI frames — minimal text, no fake robot
       ctx.save();
-      ctx.scale(flap, 1);
-      ctx.drawImage(H.sprites.wings, -48, -36, 96, 72);
+      ctx.font = '600 11px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.fillText('SPACEX BOT · loading AI art…', H.x - 70, H.y);
       ctx.restore();
     }
-    if (H.sprites.glow) {
-      ctx.globalAlpha = 0.55 + 0.25 * Math.sin(now * 0.01);
-      ctx.drawImage(H.sprites.glow, -28, -24, 56, 56);
-      ctx.globalAlpha = 1;
-    }
-    if (H.sprites.body) {
-      ctx.drawImage(H.sprites.body, -32, -40, 64, 80);
-    }
-    ctx.restore();
 
-    // Label plate
+    // Label — SpaceXAI white plate (not cyan Atari)
     ctx.save();
-    ctx.font = '700 10px Rajdhani,Orbitron,system-ui,sans-serif';
-    ctx.fillStyle = 'rgba(4,16,36,0.75)';
+    ctx.font = '700 11px system-ui,Segoe UI,sans-serif';
+    var text = H.label || 'SPACEX BOT';
+    var tw = ctx.measureText(text).width;
+    var lx = H.x - tw / 2 - 10;
+    var ly = H.y + 46;
+    ctx.fillStyle = 'rgba(0,0,0,0.72)';
     ctx.strokeStyle = 'rgba(255,255,255,0.55)';
     ctx.lineWidth = 1;
-    var text = H.label || 'HELPER';
-    var tw = ctx.measureText(text).width;
-    var lx = H.x - tw / 2 - 8;
-    var ly = H.y + 48;
-    ctx.beginPath();
-    ctx.roundRect
-      ? ctx.roundRect(lx, ly, tw + 16, 16, 6)
-      : ctx.rect(lx, ly, tw + 16, 16);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#a8ecff';
-    ctx.fillText(text, H.x - tw / 2, ly + 12);
-    if (H.status && H.status !== 'idle') {
-      ctx.font = '600 9px JetBrains Mono,monospace';
-      ctx.fillStyle = 'rgba(140,200,255,0.8)';
-      ctx.fillText(H.status, H.x - 24, ly + 28);
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(lx, ly, tw + 20, 18, 8);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      ctx.fillRect(lx, ly, tw + 20, 18);
+      ctx.strokeRect(lx, ly, tw + 20, 18);
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(text, H.x - tw / 2, ly + 13);
+    if (H.status && H.status !== 'idle' && H.status !== 'parked') {
+      ctx.font = '600 9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(220,220,220,0.85)';
+      ctx.fillText(String(H.status), H.x - 28, ly + 30);
     }
     ctx.restore();
   }
@@ -597,37 +474,22 @@ function loop(now) {
     opts = opts || {};
     if (H.ready) return true;
     ensureSprites();
-    // Don't attach full-screen canvas until first wake (boot speed)
     H.x = (window.innerWidth || 400) * 0.78;
     H.y = (window.innerHeight || 700) * 0.22;
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
-    try { parkAtMoon(); } catch (_) {}
     try {
-      setInterval(function () { try { syncParkVisibility(); } catch (_) {} }, 2000);
+      parkAtMoon();
+    } catch (_) {}
+    try {
+      setInterval(function () {
+        try {
+          syncParkVisibility();
+        } catch (_) {}
+      }, 2000);
     } catch (_) {}
     window.addEventListener('resize', resize, { passive: true });
-    var auto = opts.autoWake;
-    if (auto == null) auto = true;
-    if (global.SNPerf && SNPerf.helperAuto === false) auto = false;
-    if (auto && !(global.SNPerf && global.SNPerf.lite)) {
-      setTimeout(function () {
-        if (!H.visible) {
-          wake({ label: 'SPACEX BOT' });
-          H.status = 'standby';
-          setTimeout(function () {
-            if (!H.busy) {
-              H.status = 'ready';
-              // Park after 8s idle — stop burning RAF
-              setTimeout(function () {
-                if (!H.busy && H.visible) sleep();
-              }, 8000);
-            }
-          }, 1200);
-        }
-      }, 4000);
-    }
     return true;
   }
 
@@ -638,15 +500,18 @@ function loop(now) {
       busy: H.busy,
       status: H.status,
       label: H.label,
+      aiFrames: H.frames.length,
+      aiLoaded: H.loaded,
+      engine: 'AI-sprite-only · no mesh · no Atari painter',
       mission: H.mission && H.mission.kind,
       line:
         'SPACEX BOT · ' +
         (H.busy ? H.status : H.status || 'standby') +
-        ' · AI graphics winged suit (not mesh AAA)',
+        ' · ' +
+        (H.loaded ? H.frames.length + ' AI frames' : 'loading AI art'),
     };
   }
 
-  // Auto-hook common find/task moments
   function hookMarketFind(pos, label) {
     try {
       find(label || 'shops', pos, { log: true });
@@ -665,6 +530,7 @@ function loop(now) {
     patrol: patrol,
     report: report,
     hookMarketFind: hookMarketFind,
+    ensureSprites: ensureSprites,
     get busy() {
       return H.busy;
     },

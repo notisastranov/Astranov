@@ -198,8 +198,15 @@
       drawRouteArc(ctx, w, h, R, pal);
     } else if (/fx|burst|pulse|energy|spark/.test(p)) {
       drawBurst(ctx, w, h, R, pal);
-    } else if (/helper|iron|robot|suit|hero|wing/.test(p)) {
-      drawHeroSuit(ctx, w, h, R, pal);
+    } else if (/helper|iron|robot|suit|hero|wing|spacex.?bot|grokbot/.test(p)) {
+      // LAW: SpaceX Bot body is AI sprite assets only — no procedural Amiga/Atari suit
+      // Soft void + bloom; real character comes from /assets/sprites/spacex-bot/
+      ctx.clearRect(0, 0, w, h);
+      var voidG = ctx.createRadialGradient(w/2, h/2, 2, w/2, h/2, Math.min(w,h)*0.45);
+      voidG.addColorStop(0, 'rgba(255,255,255,0.12)');
+      voidG.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = voidG;
+      ctx.fillRect(0, 0, w, h);
     } else {
       drawSoftNoise(ctx, w, h, R, pal, detail);
     }
