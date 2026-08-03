@@ -55,7 +55,7 @@
     try {
       var s = localStorage.getItem(KEY);
       if (s === 'astranov' || s === 'classic' || s === 'electric') return 'astranov';
-      if (s === 'spacex' || s === 'sx' || s === 'spacexai') return 'spacex';
+      if (s === 'spacex' || s === 'sx' || s === 'spacexai' || s === 'imagine') return 'spacex';
     } catch (_) {}
     return DEFAULT;
   }
@@ -75,6 +75,12 @@
   function apply(id, opts) {
     opts = opts || {};
     id = id === 'astranov' ? 'astranov' : 'spacex';
+    // Imagine version auto-enables AI graphics engine
+    try {
+      if (opts.imagine !== false && global.SNAIGraphics && SNAIGraphics.setMode) {
+        SNAIGraphics.setMode('imagine');
+      }
+    } catch (_) {}
     try {
       localStorage.setItem(KEY, id);
     } catch (_) {}

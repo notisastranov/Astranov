@@ -440,8 +440,17 @@
               // Prefer balanced/lite on constrained devices
               try {
                 if (isLite && SNAIGraphics.setMode) SNAIGraphics.setMode('lite');
-                else if (SNAIGraphics.setMode && !localStorage.getItem('sn:ai-gfx-mode-v1'))
-                  SNAIGraphics.setMode('balanced');
+                else if (SNAIGraphics.setMode) {
+                  // Auto Imagine version (AI sprites / Grok Imagine path)
+                  try {
+                    var locked = localStorage.getItem('sn:ai-gfx-mode-v1');
+                    if (!locked || locked === 'balanced' || locked === 'supreme')
+                      SNAIGraphics.setMode('imagine');
+                    else SNAIGraphics.setMode(locked);
+                  } catch (_im) {
+                    SNAIGraphics.setMode('imagine');
+                  }
+                }
               } catch (_) {}
               SNAIGraphics.init();
             }

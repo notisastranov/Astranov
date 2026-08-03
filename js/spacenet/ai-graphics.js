@@ -16,7 +16,7 @@
 
   var GFX = {
     ready: false,
-    mode: 'supreme', // supreme | balanced | lite
+    mode: 'imagine', // imagine | supreme | balanced | lite
     think: false,
     neural: false,
     hud: null,
@@ -36,6 +36,14 @@
   };
 
   var MODES = {
+    imagine: {
+      id: 'imagine',
+      label: 'Imagine',
+      dpr: 2,
+      fieldDetail: 1.15,
+      hudHz: 30,
+      describe: 'Grok Imagine path · AI sprite characters · max generative polish',
+    },
     supreme: {
       id: 'supreme',
       label: 'Supreme AI · Imagine refine · HELPER',
@@ -94,11 +102,12 @@
   }
 
   function setMode(name) {
-    var id = String(name || 'supreme').toLowerCase();
-    if (id === 'full' || id === 'gaming' || id === 'aaa') id = 'supreme';
+    var id = String(name || 'imagine').toLowerCase();
+    if (id === 'full' || id === 'gaming' || id === 'aaa' || id === 'grok' || id === 'ai') id = 'imagine';
+    if (id === 'supreme' || id === 'max') id = 'imagine'; // auto-prefer Imagine
     if (id === 'mid') id = 'balanced';
     if (id === 'low' || id === 'mobile') id = 'lite';
-    if (!MODES[id]) id = 'supreme';
+    if (!MODES[id]) id = 'imagine';
     GFX.mode = id;
     try {
       localStorage.setItem(MODE_KEY, id);
@@ -112,6 +121,11 @@
     try {
       var m = localStorage.getItem(MODE_KEY);
       if (m && MODES[m]) GFX.mode = m;
+      else if (!m) {
+        // LAW: auto Imagine version (no Atari procedural default)
+        GFX.mode = 'imagine';
+        try { localStorage.setItem(MODE_KEY, 'imagine'); } catch (_s) {}
+      }
     } catch (_) {}
     return GFX.mode;
   }
@@ -642,7 +656,7 @@
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
       // soft scan lines (cinema, not mesh)
-      if (GFX.mode === 'supreme') {
+      if (GFX.mode === 'supreme' || GFX.mode === 'imagine') {
         ctx.globalAlpha = 0.04;
         ctx.fillStyle = '#ffffff';
         for (var sy = 0; sy < h; sy += 4) {
@@ -699,7 +713,7 @@
     }
 
     // Corner brand micro-glyph (supreme only)
-    if (GFX.mode === 'supreme') {
+    if (GFX.mode === 'supreme' || GFX.mode === 'imagine') {
       ctx.save();
       ctx.globalAlpha = 0.25;
       ctx.strokeStyle = '#ffffff';
@@ -754,11 +768,17 @@
   function init() {
     if (GFX.ready) return true;
     loadMode();
-    // Auto lite/balanced from SNPerf when no user preference
+    // LAW: default Imagine version always unless user locked lite
+    try {
+      if (!localStorage.getItem(MODE_KEY) || localStorage.getItem(MODE_KEY) === 'balanced' || localStorage.getItem(MODE_KEY) === 'supreme') {
+        setMode('imagine');
+      }
+    } catch (_) { setMode('imagine'); }
+    // Auto lite only when SNPerf.lite hard-forces (street phone)
     try {
       if (!localStorage.getItem(MODE_KEY) && global.SNPerf) {
         if (SNPerf.lite) GFX.mode = 'lite';
-        else GFX.mode = 'balanced';
+        else if (!localStorage.getItem(MODE_KEY)) GFX.mode = 'imagine';
       }
     } catch (_) {}
     // Don't create full-screen HUD until think/neural/effect needed

@@ -1505,7 +1505,24 @@
       ) {
         let id = 'spacex';
         if (/astranov|classic|electric/.test(low) && !/spacex/.test(low)) id = 'astranov';
-        if (low === 'skin' || low === 'spacexai') {
+        if (low === 'imagine' || low === 'ai graphics' || low === 'imagine on' || low === 'gfx imagine') {
+        try {
+          if (global.SNAIGraphics && SNAIGraphics.setMode) {
+            SNAIGraphics.setMode('imagine');
+            try { localStorage.setItem('sn:ai-gfx-mode-v1', 'imagine'); } catch (_) {}
+          }
+          if (global.SNHelper && SNHelper.wake) {
+            SNHelper.wake({ label: 'SPACEX BOT · IMAGINE' });
+            if (SNHelper.patrol) SNHelper.patrol();
+          }
+          log('IMAGINE · AI graphics online · SpaceX Bot frames', 'ok');
+          preview('imagine · on');
+        } catch (e) {
+          log('imagine fail · ' + (e.message || e), 'err');
+        }
+        return;
+      }
+      if (low === 'skin' || low === 'spacexai') {
           const cur =
             (global.SNSkin && SNSkin.read && SNSkin.read()) ||
             localStorage.getItem('sn:skin-v1') ||

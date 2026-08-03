@@ -619,3 +619,12 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 **Family:** SpaceX Bot (winged helper) · SpaceXAI Kitty (living pioneer).  
 **Honor:** SpaceX pioneers + AI partnership · with claws and attitude.
 
+## OWNER LAW · Imagine version auto (2026-08-03)
+
+| Item | Law |
+|------|-----|
+| **Default GFX** | `sn:ai-gfx-mode-v1` = **imagine** (auto on boot) |
+| **CLI** | `imagine` · `imagine on` · `ai graphics` |
+| **Character** | SpaceX Bot AI sprite frames (not procedural) |
+| **Override** | `lite` only when SNPerf.lite / street phone hard force |
+
