@@ -1,8 +1,14 @@
-# Stable runtime
+# Stable runtime · partner
 
-- Production game engine: commit `d340002`+
-- **Stable app:** https://astranov-astranov.vercel.app
-- Assets: jsDelivr `@d340002…` (pinned)
-- Domain astranov.eu: fix CF worker off GitHub raw rate limits
+## Money path PROVEN (2026-08-03)
+`pizza` → location YES → shops/kitchen → pay → driver → **ETA**
 
-Test: `pizza` · `thelo pizza` · `locate me` · `pou eimai`
+Steps: locate · loc_ok · judge_meal · find · tiles · suggest · choose · order · driver · eta
+
+## Use
+- Stable: https://astranov-astranov.vercel.app (CDN shell; refresh hard)
+- Code: github main — jsDelivr `@main` when edge works
+- Domain astranov.eu: still intermittent CF→GitHub 429 — **point DNS/worker at Vercel**
+
+## Partner law
+Just us. Ship. No empty hype. Complete tasks.

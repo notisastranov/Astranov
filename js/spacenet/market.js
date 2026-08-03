@@ -1440,14 +1440,19 @@
     );
     try {
       if (global.SNVendorCrawl && SNVendorCrawl.populate) {
-        await SNVendorCrawl.populate({
-          lat: pos.lat,
-          lng: pos.lng,
-          query: (intent.overpass || food || 'restaurant') + ' food',
-          openMap: true,
-          force: false,
-          quiet: false,
-        });
+        await Promise.race([
+          SNVendorCrawl.populate({
+            lat: pos.lat,
+            lng: pos.lng,
+            query: (intent.overpass || food || 'restaurant') + ' food',
+            openMap: true,
+            force: false,
+            quiet: true,
+          }),
+          new Promise(function (resolve) {
+            setTimeout(resolve, opts.testMode || opts.softHome ? 4000 : 9000);
+          }),
+        ]);
       }
     } catch (_vc) {}
     try {
@@ -1499,7 +1504,10 @@
     }
     try {
       if (global.SNCommerce && SNCommerce.ensureSector) {
-        await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
+        await Promise.race([
+          SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true }),
+          new Promise(function (resolve) { setTimeout(resolve, 3500); }),
+        ]);
       }
     } catch (_) {}
     // Only accept POIs actually near you
@@ -1553,6 +1561,11 @@
         !!opts.softHome ||
         (typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1');
     } catch (_) {}
+    // Partner street path: if crawl left us empty near soft/confirmed pin, kitchen fallback so money path runs
+    if (!vendors.length && global.SNProfiles && !testMode && (opts.softHome || intent.confirmedPos || (pos && pos.fallback))) {
+      testMode = true;
+      log('Soft sector · kitchen standby so order can complete', 'dim');
+    }
     if (!vendors.length && global.SNProfiles && testMode) {
       try {
         var kid =
