@@ -1,5 +1,5 @@
 /**
- * SNLiveBridge — runtime control without redeploy
+ * SNLiveBridge — runtime control without redeploy · eternal coding-agent channel
  *
  * Browser polls public JSON on Supabase storage:
  *   {sbUrl}/storage/v1/object/public/debug-pub/live-bridge.json
@@ -8,7 +8,11 @@
  *   POST /functions/v1/debug-write
  *   { "kind": "live_bridge", "seq": 1, "cmds": [ { "op": "sim_speed", "ms": 5500 } ] }
  *
- * Ops: sim_start|sim_stop|sim_speed|sim_burst|cli|credit_fee|super_show|notice
+ * Ops: first_loop|cli|ai|credit_fee|super_show|notice|reload|owner_note|…
+ *
+ * Forever law: heartbeat every ~6 min ships a short usage snapshot +
+ * open handoffs so Grok (coding agent) can keep improving code while
+ * the app is used by owner and all users. Specs (ASTRANOV LAW) always win.
  */
 (function (global) {
   'use strict';
@@ -33,10 +37,12 @@
     return false;
   }
 
-
   var lastSeq = 0;
   var timer = null;
+  var heartbeatTimer = null;
   var pollMs = 3000;
+  var HEARTBEAT_MS = 6 * 60 * 1000; // ~6 min
+  var lastHeartbeat = 0;
 
   function log(m, c) {
     try {
@@ -126,6 +132,12 @@
         } catch (_) {}
         log('Owner note saved · ' + note.slice(0, 80), 'ok');
         if (global.SNCli && SNCli.preview) SNCli.preview('Note saved for agent');
+      } else if (op === 'usage_ship' || op === 'ship') {
+        if (global.SNUsage && SNUsage.shipToBridge) {
+          void SNUsage.shipToBridge(true).then(function (r) {
+            log(r && r.remote ? 'Usage shipped to agent' : 'Usage ship local', r && r.remote ? 'ok' : 'dim');
+          });
+        }
       } else {
         log('Bridge · unknown op ' + op, 'err');
       }
@@ -164,11 +176,13 @@
       void poll();
     }, pollMs);
     log('Live bridge · polling for remote cmds', 'dim');
+    startHeartbeat();
   }
 
   function stop() {
     if (timer) clearInterval(timer);
     timer = null;
+    stopHeartbeat();
   }
 
   /** Local inject (console / agent shell eval in page) */
@@ -241,10 +255,10 @@
    * Dual path: localStorage + Supabase live-bridge.json (public) so Grok Build can fetch it.
    */
   function ownerNote(text, meta) {
-    var note = String(text || '').trim().slice(0, 800);
+    var note = String(text || '').trim().slice(0, 1800);
     if (!note) return Promise.resolve({ ok: false, error: 'empty' });
     saveLocalNote(note, meta);
-    applyCmd({ op: 'owner_note', text: note });
+    applyCmd({ op: 'owner_note', text: note.slice(0, 500) });
 
     var seq = Date.now();
     var entry = {
@@ -254,6 +268,7 @@
       at: new Date().toISOString(),
       build:
         ((document.querySelector('meta[name="astranov-build"]') || {}).content || '').slice(0, 80),
+      meta: meta || {},
     };
 
     // Merge with existing remote notes so history is not wiped
@@ -264,7 +279,7 @@
       .then(function (cur) {
         var notes = Array.isArray(cur.notes) ? cur.notes.slice(0, 80) : [];
         notes.unshift(entry);
-        var cmds = [{ op: 'owner_note', text: note, from: entry.from }];
+        var cmds = [{ op: 'owner_note', text: note.slice(0, 500), from: entry.from }];
         // Keep non-note cmds from remote if fresh
         if (Array.isArray(cur.cmds)) {
           cur.cmds.forEach(function (c) {
@@ -278,10 +293,11 @@
           seq: seq,
           cmds: cmds,
           notes: notes.slice(0, 40),
-          note: note,
+          note: note.slice(0, 800),
           from: 'client',
           at: entry.at,
           build: entry.build,
+          meta: meta || {},
         };
         return fetch(url, {
           method: 'POST',
@@ -309,10 +325,11 @@
               body: JSON.stringify({
                 kind: 'owner_inbox',
                 seq: seq,
-                note: note,
+                note: note.slice(0, 800),
                 notes: notes.slice(0, 20),
                 from: entry.from,
                 build: entry.build,
+                meta: meta || {},
               }),
             })
               .then(function () {
@@ -335,10 +352,47 @@
       });
   }
 
+  /** Heartbeat: light usage snapshot so agent always has a live pulse */
+  function heartbeat() {
+    if (document.hidden) return;
+    if (Date.now() - lastHeartbeat < HEARTBEAT_MS - 30000) return;
+    lastHeartbeat = Date.now();
+    var s = null;
+    try {
+      if (global.SNUsage && SNUsage.summary) s = SNUsage.summary(3);
+    } catch (_) {}
+    var build =
+      ((document.querySelector('meta[name="astranov-build"]') || {}).content || '').slice(0, 40);
+    var line =
+      '[HEARTBEAT] ' +
+      new Date().toISOString() +
+      ' · build=' +
+      build +
+      (s
+        ? ' · events3d=' + s.events + ' · handoffs=' + s.openHandoffs
+        : '') +
+      ' · bridge forever';
+    // Soft publish — does not spam full ship packet
+    void ownerNote(line, { from: 'heartbeat', heartbeat: true }).catch(function () {});
+  }
+
+  function startHeartbeat() {
+    if (heartbeatTimer) return;
+    setTimeout(heartbeat, 120 * 1000); // first after 2 min
+    heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
+  }
+
+  function stopHeartbeat() {
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+
   async function status() {
     var st = {
       polling: !!timer,
+      heartbeat: !!heartbeatTimer,
       lastSeq: lastSeq,
+      lastHeartbeat: lastHeartbeat,
       url: bridgeUrl(),
       localNotes: localNotes().length,
       remote: null,
@@ -412,6 +466,9 @@
     selfTest: selfTest,
     fetchRemote: fetchRemote,
     localNotes: localNotes,
+    heartbeat: heartbeat,
+    startHeartbeat: startHeartbeat,
+    stopHeartbeat: stopHeartbeat,
     get lastSeq() {
       return lastSeq;
     },
