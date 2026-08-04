@@ -212,14 +212,16 @@
   function afterFulfill(r) {
     if (!r) return;
     if (r.best) pushVendor(r.best, { item: r.judged && r.judged.itemName });
-    if (r.vendors && r.vendors.length) r.vendors.slice(0, 3).forEach(function (v) { pushVendor(v, {}); });
-    if (r.orderResult && r.orderResult.task) onOrderResult(r.orderResult, { eatLine: r.eatLine, vendor: r.best, driver: r.driver });
+    if (r.top3 && r.top3.length) r.top3.forEach(function (v) { pushVendor(v, {}); });
+    else if (r.vendors && r.vendors.length) r.vendors.slice(0, 3).forEach(function (v) { pushVendor(v, {}); });
+    var ord = r.order || r.orderResult;
+    if (ord && ord.ok && ord.task) onOrderResult(ord, { eatLine: r.eatLine || (r.eta && r.eta.eatLine), vendor: r.best, driver: r.driver, item: r.judged && r.judged.itemName });
     else if (r.task) onOrderResult({ ok: true, task: r.task }, { eatLine: r.eatLine, vendor: r.best });
-    else if (r.ok && r.eatLine && global.SNTasks && SNTasks.list) {
+    else if (r.ok && (r.eatLine || (r.eta && r.eta.eatLine)) && global.SNTasks && SNTasks.list) {
       var open = (SNTasks.list({ all: true }) || []).filter(function (t) {
         return t && t.kind === 'delivery' && t.status !== 'cancelled' && t.status !== 'done';
       }).sort(function (a, b) { return (b.created || b.t || 0) - (a.created || a.t || 0); });
-      if (open[0]) pushTask(open[0], { eta: r.eatLine });
+      if (open[0]) pushTask(open[0], { eta: r.eatLine || (r.eta && r.eta.eatLine) });
     }
   }
   function installHooks() {
