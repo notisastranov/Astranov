@@ -826,55 +826,82 @@
   }
 
   async function ensure() {
+    // Single-flight: concurrent open/city/test-ready must not double L.map
     if (M.map) return M.map;
-    loadBasemapPref();
-    loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
-    await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
-    const el = document.getElementById('city-map');
-    if (!el || typeof L === 'undefined') throw new Error('map container');
-    const pos = global.SNTasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
-    M.map = L.map(el, {
-      zoomControl: false, // no +/− corner controls — pinch/wheel only
-      attributionControl: true,
-      minZoom: 3,
-      maxZoom: 20,
-      preferCanvas: true, // lighter target drawing when many markers
-    }).setView([pos.lat, pos.lng], 14);
-    bindUserCameraLock(M.map);
-
-    // Basemap + full Layers panel (basemaps + multi overlays)
-    setBasemap(M.basemapId || 'dark', { log: false });
-    buildLayerControl(M.map);
-    restoreOverlays();
-
-    // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
-    M._lastZ = 14;
-    M.map.on('zoomend', () => {
-      if (!M.active) return;
-      const z = M.map.getZoom();
-      if (z < M._lastZ && z <= M.map.getMinZoom()) {
-        backToGlobe();
-        return;
-      }
-      M._lastZ = z;
-    });
-    // Wheel zoom-out past min also returns to globe
-    M.map.getContainer().addEventListener(
-      'wheel',
-      (e) => {
-        if (!M.active || e.deltaY <= 0) return;
-        if (M.map.getZoom() <= M.map.getMinZoom()) {
-          e.preventDefault();
-          backToGlobe();
+    if (M._ensureP) return M._ensureP;
+    M._ensureP = (async () => {
+      try {
+        if (M.map) return M.map;
+        loadBasemapPref();
+        loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+        await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+        const el = document.getElementById('city-map');
+        if (!el || typeof L === 'undefined') throw new Error('map container');
+        // Recover half-init (Leaflet left _leaflet_id after throw / race)
+        if (el._leaflet_id) {
+          try {
+            if (M.map && M.map.remove) {
+              M.map.remove();
+            }
+          } catch (_) {}
+          M.map = null;
+          try {
+            el._leaflet_id = undefined;
+            el.innerHTML = '';
+          } catch (_) {}
         }
-      },
-      { passive: false }
-    );
+        const pos = global.SNTasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
+        const la = Number(pos.lat);
+        const lo = Number(pos.lng);
+        const safeLat = Number.isFinite(la) ? la : 36.4341;
+        const safeLng = Number.isFinite(lo) ? lo : 28.2176;
+        M.map = L.map(el, {
+          zoomControl: false, // no +/− corner controls — pinch/wheel only
+          attributionControl: true,
+          minZoom: 3,
+          maxZoom: 20,
+          preferCanvas: true, // lighter target drawing when many markers
+        }).setView([safeLat, safeLng], 14);
+        bindUserCameraLock(M.map);
 
-    // LONG-PRESS empty map → multi-tile create (never short accidental click)
-    bindLongPressCreate(M.map);
+        // Basemap + full Layers panel (basemaps + multi overlays)
+        setBasemap(M.basemapId || 'dark', { log: false });
+        buildLayerControl(M.map);
+        restoreOverlays();
 
-    return M.map;
+        // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
+        M._lastZ = 14;
+        M.map.on('zoomend', () => {
+          if (!M.active) return;
+          const z = M.map.getZoom();
+          if (z < M._lastZ && z <= M.map.getMinZoom()) {
+            backToGlobe();
+            return;
+          }
+          M._lastZ = z;
+        });
+        // Wheel zoom-out past min also returns to globe
+        M.map.getContainer().addEventListener(
+          'wheel',
+          (e) => {
+            if (!M.active || e.deltaY <= 0) return;
+            if (M.map.getZoom() <= M.map.getMinZoom()) {
+              e.preventDefault();
+              backToGlobe();
+            }
+          },
+          { passive: false }
+        );
+
+        // LONG-PRESS empty map → multi-tile create (never short accidental click)
+        bindLongPressCreate(M.map);
+
+        return M.map;
+      } finally {
+        M._ensureP = null;
+      }
+    })();
+    return M._ensureP;
   }
 
   function bindLongPressCreate(map) {
