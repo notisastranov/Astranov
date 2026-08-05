@@ -1,63 +1,502 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="skin-astranov theme-dark">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="theme-color" content="#000000" />
-<meta name="astranov-build" content="20260805155600-simple-ux" />
-<meta name="astranov-continuity" content="20260805164500-tile-chrome" />
+<meta name="theme-color" content="#000105" />
+<meta name="astranov-build" content="20260805163100-clean-rebuild" />
+<meta name="astranov-continuity" content="20260805163100-specs-guard" />
+<meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root { --bg:#000; --text:#e8e8e8; --glow:#3d9eff; --font-ui:Inter,system-ui,sans-serif; --font-display:"Space Grotesk",system-ui,sans-serif; --font-mono:"JetBrains Mono",monospace; }
-  * { box-sizing:border-box; }
-  html,body { margin:0; height:100%; background:#000; color:var(--text); font:500 14px/1.45 var(--font-ui); overflow:hidden; }
-  #globe { position:fixed; inset:0; z-index:1; }
-  #city-map { position:fixed; inset:0; z-index:2; display:none; }
-  #city-map.active { display:block; }
-  #boot { position:fixed; inset:0; z-index:100; background:#000; display:flex; align-items:center; justify-content:center; transition:opacity .4s; }
-  #boot.hide { opacity:0; pointer-events:none; }
-  .boot-title { font:700 18px var(--font-display); letter-spacing:.36em; color:#fff; text-shadow:0 0 28px rgba(61,158,255,.75); }
-  .boot-loader { width:140px; height:5px; margin-top:26px; border-radius:99px; overflow:hidden; background:rgba(10,40,80,.55); }
-  .boot-loader-bar { display:block; height:100%; width:38%; background:linear-gradient(90deg,#0a4a9e,#1a9cff,#7ad8ff); animation:slide 1.05s ease-in-out infinite; }
-  @keyframes slide { 0%{transform:translateX(-120%)} 100%{transform:translateX(340%)} }
-  #dock { position:fixed; left:0; right:0; bottom:0; z-index:100; display:flex; justify-content:center; padding:0 10px calc(10px + env(safe-area-inset-bottom)); pointer-events:none; }
-  #panel { pointer-events:auto; width:min(700px,100%); max-height:48vh; background:rgba(0,6,22,.55); backdrop-filter:blur(18px); border:1px solid rgba(61,184,255,.32); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
-  #panel.collapsed { max-height:min(176px,26vh); }
-  #cli-log { flex:1; overflow-y:auto; padding:10px 16px; min-height:56px; font:500 13px/1.55 var(--font-mono); }
-  #cli-form { display:flex; align-items:center; gap:8px; padding:8px 14px 12px; }
-  #cli-in { flex:1; border:0; background:transparent; color:#eaf4ff; font:500 14px var(--font-mono); outline:none; }
-  .cli-prompt-prefix { color:#3d9eff; font:700 14px var(--font-mono); }
-  #sn-topchrome { position:fixed; top:0; left:0; right:0; z-index:95; display:flex; justify-content:center; padding:calc(6px + env(safe-area-inset-top)) 10px 0; pointer-events:none; }
-  #sn-topchrome-panel { pointer-events:auto; width:min(700px,100%); min-height:52px; background:rgba(4,20,56,.42); backdrop-filter:blur(22px); border:1px solid rgba(40,130,255,.42); border-radius:22px; }
-  #btn-home { display:block; margin:0 auto; font:800 16px/1.1 var(--font-display); letter-spacing:.3em; color:#3d9eff; background:transparent; border:0; padding:10px 12px; text-shadow:0 0 14px rgba(20,100,255,.95); }
-  #coach,#sn-miner-terms,#spacenet-finance-panel,#sn-game-dock,.sn-game-dock,#edge { display:none!important; }
+/* ═══════════════════════════════════════════════════════════
+   ASTRANOV CLEAN SHELL — single CSS source · SPECS law
+   Neon deep electric blue · rounded · spacious · no white chibi
+   Top: radar | name | money+power · Bottom: CLI
+   Games / docks / miner terms / coach = killed
+═══════════════════════════════════════════════════════════ */
+:root {
+  --bg: #000105;
+  --text: #e8eeff;
+  --dim: #6a8ab8;
+  --glow: #3d9eff;
+  --glow-hot: #7ec8ff;
+  --mint: #3dd68c;
+  --err: #e82127;
+  --panel: rgba(4, 16, 42, 0.72);
+  --border: rgba(50, 140, 255, 0.45);
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 22px;
+  --r-pill: 999px;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  background: #000105;
+  color: var(--text);
+  font: 500 14px/1.45 var(--font-ui);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+button, [role="button"] { cursor: pointer; font-family: inherit; }
+
+/* ── Boot ── */
+#boot {
+  position: fixed; inset: 0; z-index: 200;
+  background: #000105;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.35s ease;
+}
+#boot.hide { opacity: 0; pointer-events: none; }
+.boot-card { text-align: center; }
+.boot-title {
+  font: 800 20px/1 var(--font-display);
+  letter-spacing: 0.36em;
+  color: #3d9eff;
+  text-shadow: 0 0 8px rgba(40,140,255,1), 0 0 28px rgba(20,100,255,0.85);
+}
+.boot-loader {
+  width: 148px; height: 5px; margin: 22px auto 0;
+  border-radius: var(--r-pill); overflow: hidden;
+  background: rgba(10,40,90,0.55);
+}
+.boot-loader-bar {
+  display: block; height: 100%; width: 40%;
+  background: linear-gradient(90deg, #0a4a9e, #1a9cff, #7ad8ff);
+  animation: slide 1.05s ease-in-out infinite;
+}
+@keyframes slide {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
+
+/* ── Globe + map ── */
+#globe { position: fixed; inset: 0; z-index: 1; }
+#city-map {
+  position: fixed; inset: 0; z-index: 2; display: none;
+  background: radial-gradient(ellipse at 50% 40%, #061830 0%, #020814 70%);
+}
+#city-map.active { display: block; }
+
+/* ── TOP SCROLL ── */
+#sn-topchrome {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 95;
+  display: flex; justify-content: center;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 0;
+  pointer-events: none;
+}
+#sn-topchrome-panel {
+  pointer-events: auto;
+  width: min(720px, 100%);
+  min-height: 64px;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(40,100,255,0.2) 0%, transparent 55%),
+    linear-gradient(165deg, rgba(4,20,56,0.55) 0%, rgba(2,8,28,0.5) 100%);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow:
+    0 8px 36px rgba(0,0,0,0.4),
+    0 0 32px rgba(20,90,255,0.25),
+    inset 0 1px 0 rgba(100,180,255,0.15);
+  overflow: hidden;
+}
+#stc-body { display: flex; flex-direction: column; }
+#stc-compact {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  min-height: 64px;
+}
+
+/* Left · radar */
+.stc-col-radar {
+  display: flex; align-items: center; gap: 8px;
+  min-width: 0;
+}
+#field-radar {
+  position: relative;
+  width: 52px; height: 52px;
+  min-width: 52px; min-height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #0a1e40, #000814);
+  box-shadow:
+    inset 0 0 0 2px rgba(61,158,255,0.55),
+    0 0 16px rgba(40,120,255,0.35);
+  overflow: hidden;
+  flex: 0 0 52px;
+}
+#field-radar-canvas {
+  width: 100% !important; height: 100% !important;
+  display: block; border-radius: 50%;
+  pointer-events: none;
+}
+#field-nav-meta {
+  display: flex; flex-direction: column; gap: 1px;
+  font: 600 10px/1.25 var(--font-mono);
+  color: var(--dim);
+  min-width: 0;
+}
+#field-nav-meta .fnm-row {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 72px;
+}
+#fnm-time {
+  background: none; border: 0; color: var(--glow-hot);
+  font: 700 11px/1.2 var(--font-mono); padding: 0; text-align: left;
+}
+
+/* Center · ASTRANOV name */
+.stc-col-device {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 0;
+}
+#btn-home {
+  font: 800 15px/1.1 var(--font-display) !important;
+  letter-spacing: 0.28em !important;
+  color: #3d9eff !important;
+  -webkit-text-fill-color: #3d9eff !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: var(--r-pill);
+  padding: 8px 10px;
+  text-shadow:
+    0 0 6px rgba(40,140,255,1),
+    0 0 16px rgba(20,100,255,0.95),
+    0 0 32px rgba(10,70,255,0.7) !important;
+  white-space: nowrap;
+}
+#btn-home:hover, #btn-home:focus-visible {
+  color: #7ec8ff !important;
+  -webkit-text-fill-color: #7ec8ff !important;
+}
+
+/* Right · money + power */
+.stc-col-money {
+  display: flex; align-items: center; gap: 10px;
+  justify-content: flex-end;
+}
+#field-balance-hud {
+  display: flex; flex-direction: column; align-items: flex-end;
+  min-width: 64px;
+  padding: 4px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(61,158,255,0.35);
+  background: rgba(6,20,48,0.55);
+}
+#fbh-s {
+  font: 800 14px/1.15 var(--font-mono);
+  color: #7ec8ff;
+  text-shadow: 0 0 10px rgba(60,160,255,0.7);
+}
+#fbh-fees, #fbh-mine-rate {
+  font: 600 9px/1.2 var(--font-mono);
+  color: var(--dim);
+}
+#sn-task-launch {
+  position: relative;
+  width: 48px; height: 48px;
+  min-width: 48px; min-height: 48px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: radial-gradient(circle at 35% 30%, #0c2448, #000814 70%);
+  box-shadow:
+    inset 0 0 0 2px rgba(61,158,255,0.55),
+    0 0 18px rgba(40,120,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  flex: 0 0 48px;
+}
+#sn-task-launch .sn-launch-core {
+  position: absolute; inset: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #0a1834, #000);
+  opacity: 0.9;
+}
+#sn-task-launch .sn-launch-power {
+  position: relative; z-index: 1;
+  width: 22px; height: 22px;
+  color: #7ec8ff;
+  filter: drop-shadow(0 0 6px rgba(60,160,255,0.9));
+}
+/* Power states */
+#sn-task-launch.mode-standby {
+  box-shadow:
+    inset 0 0 0 2px rgba(200,220,255,0.7),
+    0 0 20px rgba(180,200,255,0.35);
+}
+#sn-task-launch.mode-standby .sn-launch-power { color: #e8eeff; }
+#sn-task-launch.mode-on {
+  box-shadow:
+    inset 0 0 0 2.5px rgba(61,214,140,0.95),
+    0 0 22px rgba(61,214,140,0.5);
+}
+#sn-task-launch.mode-on .sn-launch-power {
+  color: #3dd68c;
+  filter: drop-shadow(0 0 8px rgba(61,214,140,0.95));
+}
+#sn-task-launch.mode-off {
+  box-shadow:
+    inset 0 0 0 2.5px rgba(232,33,39,0.95),
+    0 0 22px rgba(232,33,39,0.45);
+}
+#sn-task-launch.mode-off .sn-launch-power {
+  color: #e82127;
+  filter: drop-shadow(0 0 8px rgba(232,33,39,0.9));
+}
+
+/* Drag handle under top chrome */
+#sn-topchrome-drag {
+  height: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+}
+#sn-topchrome-drag::before {
+  content: '';
+  width: 36px; height: 4px;
+  border-radius: 99px;
+  background: rgba(80,150,255,0.45);
+}
+
+/* Expanded detail (hidden when collapsed) */
+#stc-detail { display: none; }
+#sn-topchrome-panel.mid #stc-detail,
+#sn-topchrome-panel.expanded #stc-detail { display: block; padding: 0 12px 10px; }
+
+/* ── BOTTOM CLI ── */
+#dock {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+  display: flex; justify-content: center;
+  padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+#panel {
+  pointer-events: auto;
+  width: min(720px, 100%);
+  max-height: 42vh;
+  background: var(--panel);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow:
+    0 -6px 32px rgba(0,0,0,0.4),
+    0 0 28px rgba(20,90,255,0.2);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+#panel.collapsed { max-height: min(168px, 28vh); }
+#cli-drag {
+  height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab; flex: 0 0 auto;
+}
+#cli-drag::before {
+  content: '';
+  width: 40px; height: 4px;
+  border-radius: 99px;
+  background: rgba(80,150,255,0.5);
+}
+#sn-task-ribbon {
+  display: flex; gap: 6px; padding: 0 12px 4px;
+  overflow-x: auto; flex: 0 0 auto;
+}
+#cli-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 6px 14px;
+  min-height: 40px;
+  max-height: 28vh;
+  font: 500 12.5px/1.5 var(--font-mono);
+  color: #c8d8f0;
+  -webkit-overflow-scrolling: touch;
+}
+#cli-log .cli-line { margin: 2px 0; word-break: break-word; }
+#cli-log .cli-line.ok .cli-body { color: #e8eeff; }
+#cli-log .cli-line.cmd .cli-body { color: #7ec8ff; }
+#cli-log .cli-line.dim .cli-body { color: #6a8ab8; }
+#cli-log .cli-line.err .cli-body { color: #ff8a9a; }
+#cli-form {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid rgba(40,100,200,0.25);
+  flex: 0 0 auto;
+}
+.cli-prompt-prefix {
+  color: #3d9eff;
+  font: 700 15px/1 var(--font-mono);
+  text-shadow: 0 0 8px rgba(40,140,255,0.7);
+}
+#cli-in {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: #eaf4ff;
+  font: 500 14px/1.3 var(--font-mono);
+  outline: none;
+  caret-color: #3d9eff;
+  min-width: 0;
+}
+#cli-in::placeholder { color: rgba(120,160,210,0.55); }
+
+/* ── Kill junk ── */
+#coach,
+#sn-miner-terms,
+#spacenet-finance-panel,
+#sn-game-dock,
+.sn-game-dock,
+#sn-space-hud,
+#sn-earth-ops-canvas,
+#edge,
+#bar-left,
+#hud,
+#sn-burger-btn,
+#sn-burger-panel,
+.sn-game-overlay {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+/* Hidden utility nodes field may look for */
+#field-radar-zoom,
+#field-radar-legend,
+#field-radar-speed,
+#field-radar-caption,
+.fr-label,
+#stc-perf-wrap,
+#sn-fleet-monitor,
+#stc-timeline-machine,
+#sn-hub-host,
+#fbh-econ-graph,
+#fbh-econ-label {
+  display: none !important;
+}
+
+/* Soft touch targets on phone */
+@media (max-width: 480px) {
+  #field-radar { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex-basis: 48px; }
+  #sn-task-launch { width: 46px; height: 46px; min-width: 46px; min-height: 46px; flex-basis: 46px; }
+  #btn-home { font-size: 13px !important; letter-spacing: 0.22em !important; }
+  #stc-compact { gap: 6px 8px; padding: 6px 10px; }
+  #field-nav-meta { display: none; }
+}
 </style>
+<script>
+/* Prefer jsDelivr when on astranov.eu edge */
+(function () {
+  try {
+    var h = location.hostname || '';
+    if (/astranov\.eu$/i.test(h) || /pages\.dev$/i.test(h)) {
+      window.SN_ASSET_BASE = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
+    }
+  } catch (e) {}
+})();
+/* Force Astranov neon skin · never SpaceX white */
+(function () {
+  try {
+    localStorage.setItem('sn:skin-v1', 'astranov');
+    document.documentElement.classList.add('skin-astranov', 'theme-dark');
+    document.documentElement.classList.remove('skin-spacex', 'theme-light');
+  } catch (e) {}
+})();
+/* Purge fake Rhodes GPS */
+(function () {
+  try {
+    var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
+    if (g && Math.abs(g.lat - 36.4341) < 0.02 && Math.abs(g.lng - 28.2176) < 0.02) {
+      localStorage.removeItem('sn:last-good-gps');
+    }
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
-<div id="boot" aria-busy="true"><div class="boot-card"><span class="boot-title">ASTRANOV</span><div class="boot-loader"><span class="boot-loader-bar"></span></div></div></div>
-<div id="globe"></div>
-<div id="city-map"></div>
-<div id="sn-topchrome"><div id="sn-topchrome-panel" class="collapsed"><button type="button" id="btn-home">ASTRANOV</button></div></div>
-<div id="dock"><div id="panel" class="collapsed">
-  <div id="sn-task-ribbon"></div>
-  <div id="cli-drag"></div>
-  <div id="cli-log"></div>
-  <form id="cli-form" autocomplete="off">
-    <span class="cli-prompt-prefix">›</span>
-    <input id="cli-in" autocomplete="off" spellcheck="false" placeholder="Talk to Astranov…" aria-label="Message Astranov" />
-  </form>
-</div></div>
-<script>
-(function(){ try {
-  var h=location.hostname||'';
-  if(/astranov\.eu$/i.test(h)||/pages\.dev$/i.test(h)){
-    window.SN_ASSET_BASE='https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
-  }
-} catch(e){} })();
-</script>
-<script src="/js/spacenet/boot.js?v=20260805155600-simple-ux"></script>
+<div id="boot" aria-label="ASTRANOV loading" aria-busy="true">
+  <div class="boot-card">
+    <span class="boot-title">ASTRANOV</span>
+    <div class="boot-loader" aria-hidden="true"><span class="boot-loader-bar"></span></div>
+  </div>
+</div>
+
+<div id="globe" aria-label="Earth"></div>
+<div id="city-map" aria-hidden="true"></div>
+
+<!-- TOP SCROLL · radar | ASTRANOV | money + power -->
+<div id="sn-topchrome" aria-label="Top scroll">
+  <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Top scroll">
+    <div id="stc-body">
+      <div id="stc-compact">
+        <div class="stc-col stc-col-radar">
+          <div id="field-radar" aria-label="Radar" role="button" tabindex="0">
+            <canvas id="field-radar-canvas" width="104" height="104"></canvas>
+          </div>
+          <div id="field-nav-meta" aria-live="polite">
+            <button type="button" class="fnm-row fnm-time-btn" id="fnm-time" title="Time">—</button>
+            <span class="fnm-row" id="fnm-date">—</span>
+            <span class="fnm-row" id="fnm-phys">—</span>
+          </div>
+        </div>
+        <div class="stc-col stc-col-device">
+          <button type="button" id="btn-home" title="ASTRANOV · hard reload">ASTRANOV</button>
+        </div>
+        <div class="stc-col stc-col-money">
+          <div id="field-balance-hud" class="bal-zero" role="button" tabindex="0" title="Astranov coins" aria-label="Wallet">
+            <span id="fbh-s">◈ 0</span>
+            <span id="fbh-fees" hidden></span>
+            <span id="fbh-mine-rate" hidden></span>
+          </div>
+          <button type="button" id="sn-task-launch" class="sn-launch mode-standby"
+            title="Task launcher · standby · tap for market ON"
+            aria-label="Task launcher · cycle standby on off"
+            aria-pressed="mixed">
+            <span class="sn-launch-core" aria-hidden="true"></span>
+            <svg class="sn-launch-power" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 3.2 v8.2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M7.05 6.55a7.2 7.2 0 1 0 9.9 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="stc-detail" hidden></div>
+    </div>
+    <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
+  </div>
+</div>
+
+<!-- BOTTOM CLI -->
+<div id="dock">
+  <div id="panel" class="collapsed">
+    <div id="cli-drag" title="Drag to expand CLI" aria-label="CLI handle"></div>
+    <div id="sn-task-ribbon" aria-label="Quick actions"></div>
+    <div id="cli-log" aria-live="polite"></div>
+    <form id="cli-form" autocomplete="off">
+      <span class="cli-prompt-prefix" aria-hidden="true">›</span>
+      <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
+        placeholder="power on · locate · marina · help"
+        aria-label="Message Astranov" />
+    </form>
+  </div>
+</div>
+
+<!-- Hidden shells modules may probe -->
+<div id="coach" hidden></div>
+<div id="sn-miner-terms" hidden></div>
+<div id="spacenet-finance-panel" hidden></div>
+<div id="hud" hidden></div>
+<div id="bar-left" hidden></div>
+<div id="edge" hidden></div>
+
+<script src="/js/spacenet/boot.js?v=20260805163100-clean-rebuild"></script>
 </body>
 </html>
