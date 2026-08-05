@@ -235,10 +235,6 @@
       ' · top=' +
       (s.top[0] ? s.top[0].name + ':' + s.top[0].n : 'none');
 
-    try {
-      localStorage.setItem(LAST_SHIP, String(Date.now()));
-    } catch (_) {}
-
     track('usage_ship', { events: s.events, open: s.openHandoffs });
 
     if (!global.SNLiveBridge || !SNLiveBridge.ownerNote) {
@@ -253,9 +249,16 @@
       top: s.top.slice(0, 5),
     })
       .then(function (res) {
+        var remote = !!(res && res.remote);
+        // Only stamp throttle after remote success so soft-fails retry sooner
+        if (remote) {
+          try {
+            localStorage.setItem(LAST_SHIP, String(Date.now()));
+          } catch (_) {}
+        }
         return {
           ok: !!(res && (res.ok || res.local)),
-          remote: !!(res && res.remote),
+          remote: remote,
           local: true,
           note: note,
           res: res,
