@@ -465,6 +465,7 @@
     log("Hey — I'm Astranov Mind · full INTERNET OS + 3D globe browser.", 'ok');
     log('Media: youtube <query> · yt cats · watch <url> · play 2 · yt close', 'ok');
     log('Game: invaders · space invaders · cockpit · close invaders (tilt phone · no stick)', 'ok');
+    log('Engine: engine · engine high|balanced|lite|ultra|auto · fps  (gaming power for whole OS)', 'dim');
     log('Map: locate · shops · fly athens · fly archangelos · dark map · pilot home', 'ok');
     log('Search: crawl X · find X · research X · code write …', 'ok');
     log('Order: order me a pizza · order pitogyra mpyronia · shops · claim', 'ok');
@@ -574,6 +575,40 @@
       }
       if (low === 'brain' || low === 'memory') {
         dumpBrain('summary');
+        return;
+      }
+      if (
+        low === 'engine' ||
+        low === 'fps' ||
+        low === 'quality' ||
+        /^engine\b/.test(low) ||
+        /^quality\b/.test(low)
+      ) {
+        const E = global.SNGameLoop || global.SNEngine;
+        if (!E) {
+          log('Engine loading · hard refresh', 'err');
+          return;
+        }
+        const arg = line.replace(/^(engine|fps|quality)\s*/i, '').trim().toLowerCase();
+        if (arg && arg !== 'fps' && arg !== 'status' && E.setQuality) {
+          if (/^(ultra|high|balanced|lite|auto)$/.test(arg)) {
+            const q = E.setQuality(arg, { auto: arg === 'auto', reason: 'cli' });
+            try {
+              localStorage.setItem('sn:engine-quality-v1', arg === 'auto' ? '' : arg);
+              if (arg === 'auto') localStorage.removeItem('sn:engine-quality-v1');
+            } catch (_) {}
+            log('Engine quality · ' + (q && q.label ? q.label : arg) + (arg === 'auto' ? ' · auto' : ' · locked'), 'ok');
+            preview('Engine ' + arg);
+            return;
+          }
+        }
+        const lines = E.reportLines ? E.reportLines() : [];
+        if (lines.length) lines.forEach((ln) => log(ln, /──|Quality|FPS/.test(ln) ? 'ok' : 'dim'));
+        else {
+          const s = E.stats ? E.stats() : {};
+          log('Engine · fps ' + (s.fps || '?') + ' · q ' + (s.quality || '?') + ' · frame ' + (s.avgFrameMs || '?') + 'ms', 'ok');
+        }
+        preview('FPS ' + ((E.stats && E.stats().fps) || '?'));
         return;
       }
       // ── YouTube tile (CLI / voice) ──
