@@ -69,10 +69,11 @@
     flyGen: 0,
     velX: 0,
     velY: 0,
-    damp: 0.90,
+    damp: 0.945,
+
     lastUserControl: 0,
     /** Space game scene owns camera/input when true */
-    gameMode: false,
+    gameMode: false, // sacred: never steal trackball unless space-scene armed
     frameCbs: [],
     lastLoopT: 0,
     _pinchCoolUntil: 0,
@@ -1992,16 +1993,21 @@
 
       var holdMs = performance.now() - downAt;
       // Natural trackball inertia — one-finger turn + fling (PRODUCT sacred)
+      // Strong fling so the sphere keeps turning after release
       var flickSpeed = Math.hypot(smVx, smVy);
-      if (wasDrag && flickSpeed > 0.18 && holdMs < 900) {
+      if (wasDrag && flickSpeed > 0.12 && holdMs < 1200) {
         var k = rotScale();
-        G.velX = Math.max(-0.012, Math.min(0.012, smVx * k * 4.5));
-        G.velY = Math.max(-0.008, Math.min(0.008, smVy * k * 3.6));
-      } else if (wasDrag && flickSpeed > 0.06) {
+        G.velX = Math.max(-0.022, Math.min(0.022, smVx * k * 7.2));
+        G.velY = Math.max(-0.014, Math.min(0.014, smVy * k * 5.5));
+      } else if (wasDrag && flickSpeed > 0.04) {
         // Soft residual coast for slower releases
         var k2 = rotScale();
-        G.velX = Math.max(-0.004, Math.min(0.004, smVx * k2 * 2.2));
-        G.velY = Math.max(-0.003, Math.min(0.003, smVy * k2 * 1.8));
+        G.velX = Math.max(-0.008, Math.min(0.008, smVx * k2 * 3.4));
+        G.velY = Math.max(-0.005, Math.min(0.005, smVy * k2 * 2.6));
+      } else if (wasDrag) {
+        // Micro residual so it never feels glued
+        G.velX = Math.max(-0.002, Math.min(0.002, smVx * rotScale() * 1.2));
+        G.velY = Math.max(-0.0015, Math.min(0.0015, smVy * rotScale() * 1.0));
       } else {
         G.velX = 0;
         G.velY = 0;
@@ -2421,10 +2427,11 @@
       if (G.frame % skip !== 0) return;
     }
     var userCool = Date.now() - (G.lastUserControl || 0) < 650;
+    // Apply trackball inertia immediately on release (do NOT wait out userCool —
+    // that was killing the fling feel). Only idle drift respects cool-down.
     if (
       !G.dragging &&
       !G.flying &&
-      !userCool &&
       G.spin &&
       G.tilt &&
       (Math.abs(G.velX) > 0.00005 || Math.abs(G.velY) > 0.00005)
@@ -2438,10 +2445,11 @@
       G.spin.rotation.z = 0;
       G.tilt.rotation.y = 0;
       G.tilt.rotation.z = 0;
-      G.velX *= Math.min(0.90, G.damp || 0.90);
-      G.velY *= Math.min(0.90, G.damp || 0.90);
-      if (Math.abs(G.velX) < 0.00005) G.velX = 0;
-      if (Math.abs(G.velY) < 0.00005) G.velY = 0;
+      var dampN = Math.min(0.96, Math.max(0.92, G.damp || 0.945));
+      G.velX *= dampN;
+      G.velY *= dampN;
+      if (Math.abs(G.velX) < 0.00004) G.velX = 0;
+      if (Math.abs(G.velY) < 0.00004) G.velY = 0;
     } else if (
       !G.dragging &&
       !G.flying &&
