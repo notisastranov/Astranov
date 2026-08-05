@@ -1,5 +1,5 @@
 {
-  "buildId": "20260805040000-audit-fix",
+  "buildId": "20260805043000-invaders",
   "files": [
     "index.html",
     "sw.js",
@@ -53,7 +53,8 @@
     "js/spacenet/vendor-crawl.js",
     "js/spacenet/youtube.js",
     "manifest.webmanifest",
-    "icon.svg"
+    "icon.svg",
+    "js/spacenet/invaders.js"
   ],
   "note": "Lightning spacenet path \u2014 push js/spacenet/* + index shell"
 }
