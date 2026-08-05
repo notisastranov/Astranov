@@ -5,20 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#000105" />
-<meta name="astranov-build" content="20260805163100-clean-rebuild" />
-<meta name="astranov-continuity" content="20260805163100-specs-guard" />
+<meta name="astranov-build" content="20260805170000-finish" />
+<meta name="astranov-continuity" content="20260805170000-finish" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-/* ═══════════════════════════════════════════════════════════
-   ASTRANOV CLEAN SHELL — single CSS source · SPECS law
-   Neon deep electric blue · rounded · spacious · no white chibi
-   Top: radar | name | money+power · Bottom: CLI
-   Games / docks / miner terms / coach = killed
-═══════════════════════════════════════════════════════════ */
 :root {
   --bg: #000105;
   --text: #e8eeff;
@@ -46,8 +40,6 @@ html, body {
   touch-action: manipulation;
 }
 button, [role="button"] { cursor: pointer; font-family: inherit; }
-
-/* ── Boot ── */
 #boot {
   position: fixed; inset: 0; z-index: 200;
   background: #000105;
@@ -76,16 +68,12 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   0% { transform: translateX(-120%); }
   100% { transform: translateX(340%); }
 }
-
-/* ── Globe + map ── */
 #globe { position: fixed; inset: 0; z-index: 1; }
 #city-map {
   position: fixed; inset: 0; z-index: 2; display: none;
   background: radial-gradient(ellipse at 50% 40%, #061830 0%, #020814 70%);
 }
 #city-map.active { display: block; }
-
-/* ── TOP SCROLL ── */
 #sn-topchrome {
   position: fixed; top: 0; left: 0; right: 0; z-index: 95;
   display: flex; justify-content: center;
@@ -118,8 +106,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   padding: 8px 12px;
   min-height: 64px;
 }
-
-/* Left · radar */
 .stc-col-radar {
   display: flex; align-items: center; gap: 8px;
   min-width: 0;
@@ -155,8 +141,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   background: none; border: 0; color: var(--glow-hot);
   font: 700 11px/1.2 var(--font-mono); padding: 0; text-align: left;
 }
-
-/* Center · ASTRANOV name */
 .stc-col-device {
   display: flex; align-items: center; justify-content: center;
   min-width: 0;
@@ -180,8 +164,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   color: #7ec8ff !important;
   -webkit-text-fill-color: #7ec8ff !important;
 }
-
-/* Right · money + power */
 .stc-col-money {
   display: flex; align-items: center; gap: 10px;
   justify-content: flex-end;
@@ -229,7 +211,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   color: #7ec8ff;
   filter: drop-shadow(0 0 6px rgba(60,160,255,0.9));
 }
-/* Power states */
 #sn-task-launch.mode-standby {
   box-shadow:
     inset 0 0 0 2px rgba(200,220,255,0.7),
@@ -254,8 +235,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   color: #e82127;
   filter: drop-shadow(0 0 8px rgba(232,33,39,0.9));
 }
-
-/* Drag handle under top chrome */
 #sn-topchrome-drag {
   height: 14px;
   display: flex; align-items: center; justify-content: center;
@@ -267,13 +246,9 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   border-radius: 99px;
   background: rgba(80,150,255,0.45);
 }
-
-/* Expanded detail (hidden when collapsed) */
 #stc-detail { display: none; }
 #sn-topchrome-panel.mid #stc-detail,
 #sn-topchrome-panel.expanded #stc-detail { display: block; padding: 0 12px 10px; }
-
-/* ── BOTTOM CLI ── */
 #dock {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
   display: flex; justify-content: center;
@@ -348,8 +323,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   min-width: 0;
 }
 #cli-in::placeholder { color: rgba(120,160,210,0.55); }
-
-/* ── Kill junk ── */
 #coach,
 #sn-miner-terms,
 #spacenet-finance-panel,
@@ -367,8 +340,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   pointer-events: none !important;
   visibility: hidden !important;
 }
-
-/* Hidden utility nodes field may look for */
 #field-radar-zoom,
 #field-radar-legend,
 #field-radar-speed,
@@ -382,8 +353,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
 #fbh-econ-label {
   display: none !important;
 }
-
-/* Soft touch targets on phone */
 @media (max-width: 480px) {
   #field-radar { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex-basis: 48px; }
   #sn-task-launch { width: 46px; height: 46px; min-width: 46px; min-height: 46px; flex-basis: 46px; }
@@ -393,7 +362,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
 }
 </style>
 <script>
-/* Prefer jsDelivr when on astranov.eu edge */
 (function () {
   try {
     var h = location.hostname || '';
@@ -402,7 +370,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
     }
   } catch (e) {}
 })();
-/* Force Astranov neon skin · never SpaceX white */
 (function () {
   try {
     localStorage.setItem('sn:skin-v1', 'astranov');
@@ -410,7 +377,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
     document.documentElement.classList.remove('skin-spacex', 'theme-light');
   } catch (e) {}
 })();
-/* Purge fake Rhodes GPS */
 (function () {
   try {
     var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
@@ -432,7 +398,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
 <div id="globe" aria-label="Earth"></div>
 <div id="city-map" aria-hidden="true"></div>
 
-<!-- TOP SCROLL · radar | ASTRANOV | money + power -->
 <div id="sn-topchrome" aria-label="Top scroll">
   <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Top scroll">
     <div id="stc-body">
@@ -474,7 +439,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   </div>
 </div>
 
-<!-- BOTTOM CLI -->
 <div id="dock">
   <div id="panel" class="collapsed">
     <div id="cli-drag" title="Drag to expand CLI" aria-label="CLI handle"></div>
@@ -489,7 +453,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
   </div>
 </div>
 
-<!-- Hidden shells modules may probe -->
 <div id="coach" hidden></div>
 <div id="sn-miner-terms" hidden></div>
 <div id="spacenet-finance-panel" hidden></div>
@@ -497,6 +460,6 @@ button, [role="button"] { cursor: pointer; font-family: inherit; }
 <div id="bar-left" hidden></div>
 <div id="edge" hidden></div>
 
-<script src="/js/spacenet/boot.js?v=20260805163100-clean-rebuild"></script>
+<script src="/js/spacenet/boot.js?v=20260805170000-finish"></script>
 </body>
 </html>
