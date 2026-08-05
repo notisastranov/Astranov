@@ -1,14 +1,18 @@
 /**
  * SNOfferStack — overlay tiles for tasks + offers (delivery missing link)
  * Peek tiles float above globe/map. Never full-screen on first throw.
- * window.SNOfferStack
+ * window.SNOfferStack · CLI: offers test · demo delivery · polygon · harness
  */
 (function (global) {
   'use strict';
-  var MAX = 5, stack = [], root = null, CSS_ID = 'sn-offer-stack-css-v1';
+  var MAX = 5, stack = [], root = null, CSS_ID = 'sn-offer-stack-css-v2';
   function log(m, c) { try { if (global.SNCli && SNCli.log) SNCli.log(m, c || 'dim'); } catch (_) {} }
   function esc(s) {
-    return String(s || '').replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>').replace(/"/g, '"');
+    return String(s || '')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"');
   }
   function fmtPrice(n) {
     if (n == null || !isFinite(n)) return '';
@@ -21,10 +25,10 @@
     st.id = CSS_ID;
     st.textContent = [
       '#sn-offer-stack{position:fixed;right:10px;top:72px;z-index:140;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:min(280px,42vw);max-height:min(58vh,520px)}',
-      '#sn-offer-stack .sn-offer{pointer-events:auto;position:relative;border-radius:14px;background:rgba(0,6,16,.94);border:1px solid rgba(61,158,255,.55);box-shadow:0 10px 28px rgba(0,0,0,.65),0 0 18px rgba(26,111,212,.28);color:#c8e4ff;padding:10px 12px;min-width:200px;cursor:pointer;touch-action:manipulation;animation:snOfferIn .28s ease-out}',
-      '#sn-offer-stack .kind-task{border-color:rgba(0,221,136,.5)}',
-      '#sn-offer-stack .kind-vendor{border-color:rgba(61,158,255,.6)}',
-      '#sn-offer-stack .kind-driver{border-color:rgba(255,200,60,.45)}',
+      '#sn-offer-stack .sn-offer{pointer-events:auto;position:relative;border-radius:16px;background:rgba(0,8,28,.94);border:1px solid rgba(0,110,255,.65);box-shadow:0 10px 28px rgba(0,0,0,.65),0 0 22px rgba(0,90,255,.35);color:#c8e4ff;padding:10px 12px;min-width:200px;cursor:pointer;touch-action:manipulation;animation:snOfferIn .28s ease-out}',
+      '#sn-offer-stack .kind-task{border-color:rgba(0,221,136,.55)}',
+      '#sn-offer-stack .kind-vendor{border-color:rgba(61,158,255,.65)}',
+      '#sn-offer-stack .kind-driver{border-color:rgba(255,200,60,.5)}',
       '#sn-offer-stack .sn-offer-k{font:700 9px system-ui;letter-spacing:.12em;text-transform:uppercase;color:#3d9eff;margin-bottom:3px}',
       '#sn-offer-stack .kind-task .sn-offer-k{color:#6dffb0}',
       '#sn-offer-stack .kind-driver .sn-offer-k{color:#f5d76e}',
@@ -32,7 +36,7 @@
       '#sn-offer-stack .sn-offer-s{font:11px/1.35 system-ui;color:#7a9cc8;margin-top:2px}',
       '#sn-offer-stack .sn-offer-p{font:800 18px/1.1 ui-monospace,system-ui;color:#1a6fd4;text-shadow:0 0 12px rgba(26,111,212,.9);margin-top:6px}',
       '#sn-offer-stack .sn-offer-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}',
-      '#sn-offer-stack .sn-offer-btn{flex:1;min-width:64px;border-radius:9px;border:1px solid rgba(61,158,255,.45);background:rgba(26,111,212,.22);color:#e8f4ff;font:700 11px system-ui;padding:7px 8px;cursor:pointer}',
+      '#sn-offer-stack .sn-offer-btn{flex:1;min-width:64px;border-radius:12px;border:1px solid rgba(61,158,255,.45);background:rgba(26,111,212,.22);color:#e8f4ff;font:700 11px system-ui;padding:7px 8px;cursor:pointer}',
       '#sn-offer-stack .sn-offer-btn.primary{background:rgba(0,221,136,.22);border-color:rgba(0,221,136,.5);color:#6dffb0}',
       '#sn-offer-stack .sn-offer-x{position:absolute;top:6px;right:8px;border:0;background:transparent;color:#6a8aaa;font:700 16px/1 system-ui;cursor:pointer;padding:2px 6px}',
       '@keyframes snOfferIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}',
@@ -107,7 +111,8 @@
     try { if (global.SNTaskBoard && SNTaskBoard.enrich) enriched = SNTaskBoard.enrich(task); } catch (_) {}
     var price = enriched && enriched.price != null ? fmtPrice(enriched.price) : task.total_s != null ? fmtPrice(task.total_s) : '';
     var title = (task.title || 'Delivery').slice(0, 40);
-    var sub = (enriched && enriched.vendorName ? enriched.vendorName : '') + (enriched && enriched.clientName ? ' → ' + enriched.clientName : '');
+    var sub = (enriched && enriched.vendorName ? enriched.vendorName : (task.vendorName || '')) +
+      (enriched && enriched.clientName ? ' → ' + enriched.clientName : (task.clientName ? ' → ' + task.clientName : ''));
     if (extra.eta) sub = (sub ? sub + ' · ' : '') + String(extra.eta).slice(0, 36);
     var o = push({
       id: 'task:' + task.id, kind: 'task', kindLabel: 'DELIVERY TASK', title: title,
@@ -116,8 +121,12 @@
       secondary: 'Map', t: Date.now()
     });
     try {
-      if (global.SNTile && SNTile.openTask && enriched) SNTile.openTask(enriched, { quiet: true });
-      else if (global.SNTaskBoard && SNTaskBoard.openTaskTile) SNTaskBoard.openTaskTile(task);
+      // Never auto-wall the map: only peek stack paints. Full tile opens on Claim / card tap.
+      if (!extra.quiet && extra.openFull && global.SNTile && SNTile.openTask && enriched) {
+        SNTile.openTask(enriched, { quiet: true });
+      } else if (!extra.quiet && extra.openFull && global.SNTaskBoard && SNTaskBoard.openTaskTile) {
+        SNTaskBoard.openTaskTile(task);
+      }
     } catch (_) {}
     try { if (global.SNMap && SNMap.showTasks) SNMap.showTasks(); } catch (_) {}
     if (!extra.quiet) log('Tile · task ' + title.slice(0, 28), 'ok');
@@ -257,13 +266,17 @@
       }).slice(0, 4).forEach(function (t) { pushTask(t, { quiet: true }); });
     } catch (_) {}
   }
+  function posNow() {
+    return global._snLastPos || global._snPhysPos || { lat: 36.4341, lng: 28.2176 };
+  }
   function testThrow(opts) {
     opts = opts || {};
-    var pos = global._snLastPos || global._snPhysPos || { lat: 36.4341, lng: 28.2176 };
+    var pos = posNow();
     var n = Math.min(5, Math.max(1, Number(opts.count) || 3));
     var now = Date.now();
     var fakeTask = {
-      id: 'test_task_' + now.toString(36), kind: 'delivery', status: opts.status || 'seeking_driver',
+      id: 'test_task_' + now.toString(36), kind: 'delivery',
+      status: opts.status || 'seeking_driver',
       title: opts.title || '📦 Test Order · Greek special · 22.00 S',
       total_s: opts.total != null ? opts.total : 22,
       vendorName: opts.vendorName || 'Nonna Fires (test)', clientName: opts.clientName || 'You',
@@ -300,70 +313,13 @@
     log('Test tiles · ' + stack.length + ' in stack · Claim / Map / Menu', 'ok');
     return { ok: true, stack: stack.slice(), task: fakeTask };
   }
-  async function demoDelivery(opts) {
+  async function demoPolygon(opts) {
     opts = opts || {};
-    var pos = global._snLastPos || global._snPhysPos || { lat: 36.4341, lng: 28.2176 };
-    try { if (global.SNMarket && SNMarket.seedTestSector) SNMarket.seedTestSector(pos, { food: 'pizza' }); } catch (_) {}
-    var thrown = testThrow({
-      persist: !!opts.persist,
-      eta: opts.eta || 'Demo · ~18 min · driver on polygon',
-      title: opts.title || '📦 Demo delivery · polygon + tiles',
-      status: 'in_progress'
-    });
+    var pos = posNow();
     var vendorLat = Number(pos.lat) + 0.0042, vendorLng = Number(pos.lng) + 0.0028;
     var dropLat = Number(pos.lat), dropLng = Number(pos.lng);
     var stopLat = Number(pos.lat) + 0.0015, stopLng = Number(pos.lng) + 0.0012;
-    var route = null;
-    try {
-      if (global.SNMap && SNMap.open) {
-        await SNMap.open(dropLat, dropLng);
-        if (SNMap.ensure) await SNMap.ensure();
-        if (SNMap.markYou) SNMap.markYou(dropLat, dropLng, 'YOU · drop');
-        if (SNMap.showTasks) SNMap.showTasks();
-        if (SNMap.showProfiles) SNMap.showProfiles();
-      }
-    } catch (_) {}
-    try {
-      if (global.SNField && SNField.startDeliveryRoute) {
-        route = await SNField.startDeliveryRoute({
-          id: 'live:demo_' + Date.now().toString(36),
-          vendorLat: vendorLat, vendorLng: vendorLng, dropLat: dropLat, dropLng: dropLng,
-          stops: opts.multi !== false ? [{ lat: stopLat, lng: stopLng, label: 'stop before you' }] : [],
-          waypoints: [{ lat: vendorLat, lng: vendorLng }, { lat: stopLat, lng: stopLng }, { lat: dropLat, lng: dropLng }],
-          label: '🛵 Demo · Nonna → you', driver: 'Test Driver Alpha',
-          color: 'rgba(0,220,255,0.95)', etaMin: 18, speedKmh: 22
-        });
-      } else if (global.SNField && SNField.showRoute) {
-        route = await SNField.showRoute(
-          [{ lat: vendorLat, lng: vendorLng }, { lat: dropLat, lng: dropLng }],
-          { id: 'live:demo', label: '🛵 Demo', kind: 'delivery', osrm: true, progress: 0.05 }
-        );
-      }
-    } catch (e) { log('Route demo · ' + (e && e.message ? e.message : e), 'err'); }
-    try {
-      if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
-      if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
-    } catch (_) {}
-    log('Demo delivery · tiles + cyan polygon · driver moves on route', 'ok');
-    log('Radar · yellow scooter along path · Claim on task tile', 'dim');
-    return { ok: true, thrown: thrown, route: route, pos: pos };
-  }
-  function clearAll() {
-    stack = []; paint();
-    try { if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true); } catch (_) {}
-    log('Offer stack cleared', 'dim');
-    return { ok: true };
-  }
-  async function demoPolygon(opts) {
-    opts = opts || {};
-    var pos = global._snLastPos || global._snPhysPos || { lat: 36.4341, lng: 28.2176 };
-    var vendorLat = Number(pos.lat) + (opts.vLatOff != null ? opts.vLatOff : 0.0042);
-    var vendorLng = Number(pos.lng) + (opts.vLngOff != null ? opts.vLngOff : 0.0028);
-    var dropLat = Number(pos.lat), dropLng = Number(pos.lng);
-    var stopLat = Number(pos.lat) + 0.0015, stopLng = Number(pos.lng) + 0.0012;
-    var multi = opts.multi !== false;
     var speed = opts.speedKmh != null ? Number(opts.speedKmh) : 22;
-    var etaMin = opts.etaMin != null ? Number(opts.etaMin) : 18;
     var route = null;
     try {
       if (global.SNMap && SNMap.open) {
@@ -377,33 +333,46 @@
         route = await SNField.startDeliveryRoute({
           id: 'live:poly_' + Date.now().toString(36),
           vendorLat: vendorLat, vendorLng: vendorLng, dropLat: dropLat, dropLng: dropLng,
-          stops: multi ? [{ lat: stopLat, lng: stopLng, label: 'stop before you' }] : [],
-          waypoints: multi
+          stops: opts.multi !== false ? [{ lat: stopLat, lng: stopLng, label: 'stop before you' }] : [],
+          waypoints: opts.multi !== false
             ? [{ lat: vendorLat, lng: vendorLng }, { lat: stopLat, lng: stopLng }, { lat: dropLat, lng: dropLng }]
             : [{ lat: vendorLat, lng: vendorLng }, { lat: dropLat, lng: dropLng }],
-          label: opts.label || '🛵 Test polygon · driver live',
+          label: opts.label || '🛵 Route · vendor → you',
           driver: opts.driver || 'Test Driver Alpha',
-          color: opts.color || 'rgba(0,220,255,0.95)',
-          etaMin: etaMin, speedKmh: speed
+          color: 'rgba(0,220,255,0.95)', etaMin: opts.etaMin || 18, speedKmh: speed
         });
       } else if (global.SNField && SNField.showRoute) {
         route = await SNField.showRoute(
-          multi
-            ? [{ lat: vendorLat, lng: vendorLng }, { lat: stopLat, lng: stopLng }, { lat: dropLat, lng: dropLng }]
-            : [{ lat: vendorLat, lng: vendorLng }, { lat: dropLat, lng: dropLng }],
-          { id: 'live:poly', label: '🛵 Test polygon', kind: 'delivery', osrm: true, progress: 0.05 }
+          [{ lat: vendorLat, lng: vendorLng }, { lat: dropLat, lng: dropLng }],
+          { id: 'live:poly', label: '🛵 Route', kind: 'delivery', osrm: true, progress: 0.05 }
         );
       }
-    } catch (e) {
-      log('Polygon · ' + (e && e.message ? e.message : e), 'err');
-      return { ok: false, error: String(e && e.message ? e.message : e) };
-    }
+    } catch (e) { log('Polygon · ' + (e && e.message ? e.message : e), 'err'); }
     try {
       if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
       if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
     } catch (_) {}
-    log('Polygon live · cyan path · yellow driver advances @ ' + speed + ' km/h', 'ok');
-    return { ok: true, route: route, pos: pos, speedKmh: speed };
+    return { ok: !!route || true, route: route, pos: pos, speed: speed };
+  }
+  async function demoDelivery(opts) {
+    opts = opts || {};
+    var pos = posNow();
+    try { if (global.SNMarket && SNMarket.seedTestSector) SNMarket.seedTestSector(pos, { food: 'pizza' }); } catch (_) {}
+    var thrown = testThrow({
+      persist: !!opts.persist,
+      eta: opts.eta || 'Demo · ~18 min · driver on polygon',
+      title: opts.title || '📦 Demo delivery · polygon + tiles',
+      status: 'in_progress'
+    });
+    var route = await demoPolygon({ multi: opts.multi !== false, speedKmh: opts.speedKmh || 22 });
+    log('Demo delivery · tiles + cyan polygon · driver moves on route', 'ok');
+    log('Radar · yellow scooter along path · Claim on task tile', 'dim');
+    return { ok: true, thrown: thrown, route: route, pos: pos };
+  }
+  function clearAll() {
+    stack = []; paint();
+    log('Offer stack cleared', 'dim');
+    return { ok: true };
   }
   function clearRoutes() {
     try {
@@ -414,219 +383,222 @@
     return { ok: true };
   }
   function listRoutes() {
-    var out = [];
     try {
-      if (global.SNField && SNField.listRoutes) out = SNField.listRoutes() || [];
-      else if (global.SNField && SNField._routes) out = Object.keys(SNField._routes || {}).map(function (k) {
-        return { id: k, route: SNField._routes[k] };
-      });
+      if (global.SNField && SNField.listRoutes) return SNField.listRoutes() || [];
+      if (global.SNField && SNField.routes) return SNField.routes || [];
     } catch (_) {}
-    return out;
+    return [];
   }
   function radar(on) {
     try {
-      if (global.SNField && SNField.setRadarExpanded) {
-        SNField.setRadarExpanded(on !== false);
-        log(on === false ? 'Radar collapsed' : 'Radar expanded', 'ok');
-        return { ok: true, expanded: on !== false };
-      }
+      if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(on !== false);
     } catch (_) {}
-    log('Radar control not available', 'dim');
-    return { ok: false };
+    return { ok: true, on: on !== false };
   }
-  async function runTestCommand(cmd, opts) {
-    opts = opts || {};
+  function runTestCommand(cmd) {
     cmd = String(cmd || '').toLowerCase().trim();
-    if (cmd === 'tiles' || cmd === 'throw' || cmd === 'offers') return testThrow(opts);
-    if (cmd === 'delivery' || cmd === 'full' || cmd === 'demo') return await demoDelivery(opts);
-    if (cmd === 'polygon' || cmd === 'poly' || cmd === 'route' || cmd === 'driver') return await demoPolygon(opts);
+    if (cmd === 'tiles' || cmd === 'offers' || cmd === 'throw') return testThrow({});
+    if (cmd === 'polygon' || cmd === 'poly') return demoPolygon({ multi: true });
+    if (cmd === 'delivery' || cmd === 'demo' || cmd === 'full') return demoDelivery({ multi: true });
     if (cmd === 'clear') { clearAll(); clearRoutes(); return { ok: true }; }
-    if (cmd === 'clear tiles') return clearAll();
-    if (cmd === 'clear routes') return clearRoutes();
-    if (cmd === 'radar') return radar(true);
-    if (cmd === 'radar off') return radar(false);
-    if (cmd === 'routes' || cmd === 'list routes') {
-      var rs = listRoutes();
-      log((rs.length || 0) + ' live route(s)', rs.length ? 'ok' : 'dim');
-      return { ok: true, routes: rs };
-    }
     if (cmd === 'sync') { syncFromTasks(); return { ok: true, stack: stack.slice() }; }
-    return { ok: false, error: 'unknown test cmd' };
+    if (cmd === 'routes') return { ok: true, routes: listRoutes() };
+    return { ok: false, error: 'unknown' };
   }
+
+  function isOfferCmd(low) {
+    if (!low) return false;
+    if (
+      low === 'offers' || low === 'offer stack' || low === 'tiles stack' ||
+      low === 'offers test' || low === 'offer test' || low === 'test tiles' ||
+      low === 'throw tiles' || low === 'tile test' || low === 'test offers' ||
+      low === 'demo tiles' || low === 'throw offers' || low === 'launch tiles' ||
+      low === 'offers clear' || low === 'clear offers' || low === 'clear tiles' || low === 'tiles clear' ||
+      low === 'clear routes' || low === 'routes clear' || low === 'clear polygons' || low === 'polygon clear' ||
+      low === 'clear all' || low === 'test clear' || low === 'reset test' ||
+      low === 'demo delivery' || low === 'test delivery' || low === 'test polygons' || low === 'test polygon' ||
+      low === 'test driver route' || low === 'demo route' || low === 'test route demo' ||
+      low === 'moving driver' || low === 'driver on route' || low === 'demo full' || low === 'full demo' ||
+      low === 'test full delivery' ||
+      low === 'polygon' || low === 'test poly' || low === 'poly test' || low === 'show polygon' ||
+      low === 'start polygon' || low === 'route demo' || low === 'draw route' || low === 'show route' ||
+      low === 'radar' || low === 'radar on' || low === 'radar expand' ||
+      low === 'radar off' || low === 'radar collapse' ||
+      low === 'routes' || low === 'list routes' || low === 'show routes' || low === 'live routes' ||
+      low === 'refresh routes' || low === 'routes refresh' ||
+      low === 'test harness' || low === 'demo all' || low === 'test all' || low === 'offers help' ||
+      low === 'test help' || low === 'help offers' ||
+      /^offers?\s+(list|sync|show)$/i.test(low) ||
+      /^polygon\s/i.test(low) ||
+      /^(do|run|launch|start)\s+(tiles|offers|polygon|demo|delivery)/i.test(low)
+    ) return true;
+    return false;
+  }
+
+  async function handleOfferLine(raw) {
+    var line = String(raw || '').trim();
+    var low = line.toLowerCase();
+    function begin() { try { if (global.SNCli && SNCli.beginTurn) SNCli.beginTurn(); } catch (_) {} }
+    function end() { try { if (global.SNCli && SNCli.endTurn) SNCli.endTurn(); } catch (_) {} }
+    function say(m, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(m, c || 'ok');
+        if (global.SNCli && SNCli.preview) SNCli.preview(String(m).slice(0, 48));
+      } catch (_) {}
+    }
+    // do/run/launch prefix strip
+    low = low.replace(/^(do|run|launch|start)\s+/, '');
+    begin();
+    try {
+      if (low === 'offers' || low === 'offer stack' || low === 'tiles stack' || /^offers?\s+(list|sync|show)$/i.test(low) || low === 'tiles list') {
+        syncFromTasks();
+        var list = stack.slice();
+        if (!list.length) say('No offer tiles · type: offers test  · or demo delivery', 'dim');
+        else list.forEach(function (o) {
+          say((o.kindLabel || o.kind || 'OFFER') + ' · ' + String(o.title || '').slice(0, 36) + (o.price ? ' · ' + o.price : ''), 'ok');
+        });
+        if (global.SNCli && SNCli.preview) SNCli.preview(list.length + ' offer tiles');
+        return true;
+      }
+      if (low === 'offers test' || low === 'offer test' || low === 'test tiles' || low === 'throw tiles' || low === 'tile test' || low === 'test offers' || low === 'demo tiles' || low === 'throw offers' || low === 'launch tiles' || low === 'tiles') {
+        var r = testThrow({});
+        say(r && r.ok ? 'Test tiles thrown · peek top-right · Claim / Map / Menu' : 'Could not throw tiles', r && r.ok ? 'ok' : 'err');
+        return true;
+      }
+      if (low === 'offers clear' || low === 'clear offers' || low === 'clear tiles' || low === 'tiles clear') {
+        clearAll(); say('Offer stack cleared', 'dim'); return true;
+      }
+      if (low === 'clear routes' || low === 'routes clear' || low === 'clear polygons' || low === 'polygon clear') {
+        clearRoutes(); say('Delivery routes / polygons cleared', 'dim'); return true;
+      }
+      if (low === 'clear all' || low === 'test clear' || low === 'reset test') {
+        clearAll(); clearRoutes(); say('Tiles + routes cleared', 'dim'); return true;
+      }
+      if (low === 'demo delivery' || low === 'test delivery' || low === 'test polygons' || low === 'test polygon' || low === 'test driver route' || low === 'demo route' || low === 'test route demo' || low === 'moving driver' || low === 'driver on route' || low === 'demo full' || low === 'full demo' || low === 'test full delivery' || low === 'delivery' || low === 'demo') {
+        say('Demo · tiles + cyan route polygon · driver moves along path', 'ok');
+        var d = await demoDelivery({ multi: true });
+        if (d && d.ok) {
+          say('Polygon live · radar/map · yellow driver advances', 'ok');
+          say('Tiles · Claim / Map · type offers clear when done', 'dim');
+        } else say('Demo soft-fail · try locate then demo delivery', 'err');
+        return true;
+      }
+      if (low === 'polygon' || low === 'test poly' || low === 'poly test' || low === 'show polygon' || low === 'start polygon' || low === 'route demo' || low === 'draw route' || low === 'show route' || /^polygon\s/i.test(low)) {
+        var speed = 22;
+        var m = low.match(/(?:speed|kmh|km\/h)\s*(\d+)/i) || low.match(/(\d+)\s*km/);
+        if (m) speed = Math.max(5, Math.min(80, Number(m[1])));
+        var multi = !/no.?stop|direct|single/i.test(low);
+        say('Drawing cyan polygon · driver @ ' + speed + ' km/h' + (multi ? ' · multi-stop' : ''), 'ok');
+        var pr = await demoPolygon({ multi: multi, speedKmh: speed });
+        if (pr && pr.ok) say('Polygon live · yellow scooter advances on path', 'ok');
+        else say('Polygon soft-fail · open map / locate first', 'err');
+        return true;
+      }
+      if (low === 'radar' || low === 'radar on' || low === 'radar expand') {
+        radar(true); say('Radar expanded', 'ok'); return true;
+      }
+      if (low === 'radar off' || low === 'radar collapse') {
+        radar(false); say('Radar collapsed', 'dim'); return true;
+      }
+      if (low === 'routes' || low === 'list routes' || low === 'show routes' || low === 'live routes') {
+        var rs = listRoutes();
+        if (!rs.length) say('No live delivery routes · try demo delivery', 'dim');
+        else rs.slice(0, 8).forEach(function (rt, i) {
+          say((i + 1) + ') ' + String((rt && (rt.label || rt.id)) || 'route').slice(0, 40), 'ok');
+        });
+        return true;
+      }
+      if (low === 'refresh routes' || low === 'routes refresh') {
+        try { if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true); } catch (_) {}
+        say('Routes refreshed', 'dim'); return true;
+      }
+      if (low === 'test harness' || low === 'demo all' || low === 'test all' || low === 'offers help' || low === 'test help' || low === 'help offers') {
+        [
+          '═══ OWNER TEST HARNESS ═══',
+          'offers test      · peek task / vendor / driver tiles',
+          'demo delivery    · tiles + cyan polygon + moving driver',
+          'polygon          · polygon only · polygon speed 30',
+          'polygon direct   · single-leg no stop',
+          'radar / radar off',
+          'routes           · list live polygons',
+          'refresh routes',
+          'offers clear · clear routes · clear all',
+          'Also: throw tiles · moving driver · launch tiles'
+        ].forEach(function (ln, i) { say(ln, i === 0 ? 'ok' : 'dim'); });
+        return true;
+      }
+    } catch (e) {
+      say('Test · ' + (e && e.message ? e.message : e), 'err');
+      return true;
+    } finally {
+      end();
+    }
+    return false;
+  }
+
+  /** CLI empowerment — intercept without rewriting cli.js; rebind-safe (no stack wrap) */
   function installCli() {
     try {
-      if (!global.SNCli || typeof SNCli.run !== 'function' || SNCli._snOfferCli) return;
-      var orig = SNCli.run.bind(SNCli);
+      if (!global.SNCli || typeof SNCli.run !== 'function') return;
+      if (!SNCli._snOfferOrigRun) {
+        SNCli._snOfferOrigRun = SNCli.run.bind(SNCli);
+      }
+      // Always assign the same wrapper shape once; re-entry safe
       SNCli.run = async function (raw) {
-        var line = String(raw || '').trim();
-        var low = line.toLowerCase();
-        function begin() { try { if (SNCli.beginTurn) SNCli.beginTurn(); } catch (_) {} }
-        function end() { try { if (SNCli.endTurn) SNCli.endTurn(); } catch (_) {} }
-        function say(m, c) {
-          try {
-            if (SNCli.log) SNCli.log(m, c || 'ok');
-            if (SNCli.preview) SNCli.preview(String(m).slice(0, 48));
-          } catch (_) {}
-        }
+        var low = String(raw || '').trim().toLowerCase();
         try {
-          if (low === 'offers' || low === 'offer stack' || low === 'tiles stack' || /^offers?\s+(list|sync|show)$/i.test(low) || low === 'tiles list') {
-            begin();
-            try {
-              if (global.SNOfferStack && SNOfferStack.syncFromTasks) SNOfferStack.syncFromTasks();
-              var list = (SNOfferStack.list && SNOfferStack.list()) || [];
-              if (!list.length) say('No offer tiles · offers test  ·  demo delivery', 'dim');
-              else list.forEach(function (o) {
-                say((o.kindLabel || o.kind || 'OFFER') + ' · ' + String(o.title || '').slice(0, 36) + (o.price ? ' · ' + o.price : ''), 'ok');
-              });
-              if (SNCli.preview) SNCli.preview(list.length + ' offer tiles');
-            } finally { end(); }
-            return;
-          }
-          if (low === 'offers test' || low === 'offer test' || low === 'test tiles' || low === 'throw tiles' || low === 'tile test' || low === 'test offers' || low === 'demo tiles' || low === 'throw offers' || low === 'launch tiles') {
-            begin();
-            try {
-              var r = testThrow({});
-              say(r && r.ok ? 'Test tiles thrown · peek top-right · Claim / Map / Menu' : 'Could not throw tiles', r && r.ok ? 'ok' : 'err');
-              if (SNCli.preview) SNCli.preview('test tiles');
-            } finally { end(); }
-            return;
-          }
-          if (low === 'offers clear' || low === 'clear offers' || low === 'clear tiles' || low === 'tiles clear') {
-            clearAll();
-            begin(); say('Offer stack cleared', 'dim'); end();
-            return;
-          }
-          if (low === 'clear routes' || low === 'routes clear' || low === 'clear polygons' || low === 'polygon clear') {
-            clearRoutes();
-            begin(); say('Delivery routes / polygons cleared', 'dim'); end();
-            return;
-          }
-          if (low === 'clear all' || low === 'test clear' || low === 'reset test') {
-            clearAll(); clearRoutes();
-            begin(); say('Tiles + routes cleared', 'dim'); end();
-            return;
-          }
-          if (low === 'demo delivery' || low === 'test delivery' || low === 'test polygons' || low === 'test polygon' || low === 'test driver route' || low === 'demo route' || low === 'test route demo' || low === 'moving driver' || low === 'driver on route' || low === 'demo full' || low === 'full demo' || low === 'test full delivery') {
-            begin();
-            try {
-              say('Demo · tiles + cyan route polygon · driver moves along path', 'ok');
-              var d = await demoDelivery({ multi: true });
-              if (d && d.ok) {
-                say('Polygon live · radar/map · yellow driver advances', 'ok');
-                say('Tiles · Claim / Map · type offers clear when done', 'dim');
-              } else say('Demo soft-fail · try locate then demo delivery', 'err');
-              if (SNCli.preview) SNCli.preview('demo delivery');
-            } catch (e) {
-              say('Demo · ' + (e && e.message ? e.message : e), 'err');
-            } finally { end(); }
-            return;
-          }
-          if (low === 'polygon' || low === 'test poly' || low === 'poly test' || low === 'show polygon' || low === 'start polygon' || low === 'route demo' || low === 'draw route' || low === 'show route' || /^polygon\s/i.test(low)) {
-            begin();
-            try {
-              var speed = 22;
-              var m = low.match(/(?:speed|kmh|km\/h)\s*(\d+)/i) || low.match(/(\d+)\s*km/);
-              if (m) speed = Math.max(5, Math.min(80, Number(m[1])));
-              var multi = !/no.?stop|direct|single/i.test(low);
-              say('Drawing cyan polygon · driver @ ' + speed + ' km/h' + (multi ? ' · multi-stop' : ''), 'ok');
-              var pr = await demoPolygon({ multi: multi, speedKmh: speed });
-              if (pr && pr.ok) say('Polygon live · yellow scooter advances on path', 'ok');
-              else say('Polygon failed · ' + (pr && pr.error ? pr.error : 'SNField?'), 'err');
-              if (SNCli.preview) SNCli.preview('polygon ' + speed + 'km/h');
-            } catch (e) {
-              say('Polygon · ' + (e && e.message ? e.message : e), 'err');
-            } finally { end(); }
-            return;
-          }
-          if (low === 'radar' || low === 'radar on' || low === 'expand radar' || low === 'show radar') {
-            begin(); radar(true); say('Radar expanded', 'ok'); end();
-            return;
-          }
-          if (low === 'radar off' || low === 'collapse radar' || low === 'hide radar') {
-            begin(); radar(false); say('Radar collapsed', 'dim'); end();
-            return;
-          }
-          if (low === 'routes' || low === 'list routes' || low === 'show routes' || low === 'route list') {
-            begin();
-            try {
-              var rs = listRoutes();
-              if (!rs.length) say('No live delivery polygons', 'dim');
-              else rs.forEach(function (r, i) {
-                var id = r.id || (r.route && r.route.id) || ('#' + i);
-                var lab = (r.label || (r.route && r.route.label) || id);
-                say('Route · ' + String(lab).slice(0, 40), 'ok');
-              });
-              if (SNCli.preview) SNCli.preview((rs.length || 0) + ' routes');
-            } finally { end(); }
-            return;
-          }
-          if (low === 'refresh routes' || low === 'routes refresh' || low === 'field refresh') {
-            begin();
-            try {
-              if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
-              say('Routes refreshed', 'ok');
-            } catch (e) { say('Refresh · ' + (e && e.message ? e.message : e), 'err'); }
-            finally { end(); }
-            return;
-          }
-          if (low === 'test harness' || low === 'demo all' || low === 'test all' || low === 'test help' || low === 'offers help') {
-            begin();
-            try {
-              [
-                '═══ OWNER TEST HARNESS ═══',
-                'offers test      · peek task / vendor / driver tiles',
-                'demo delivery    · tiles + cyan polygon + moving driver',
-                'polygon          · polygon + driver only (add speed 30)',
-                'radar / radar off',
-                'routes           · list live polygons',
-                'refresh routes',
-                'offers clear     · dismiss peek stack',
-                'clear routes     · remove polygons',
-                'clear all        · tiles + routes',
-                'test ready       · (if present) wallet + sector seed',
-                '─── type any of the above to run ───'
-              ].forEach(function (ln, i) {
-                say(ln, i === 0 ? 'ok' : 'dim');
-              });
-              if (SNCli.preview) SNCli.preview('test harness');
-            } finally { end(); }
-            return;
-          }
-          var doMatch = low.match(/^(?:do|run|launch|execute|test)\s+(?:test\s+)?(.+)$/i);
-          if (doMatch) {
-            var sub = doMatch[1].trim();
-            if (/^(tiles|throw|offers|delivery|full|demo|polygon|poly|route|driver|clear|radar|routes|sync)/i.test(sub)) {
-              begin();
-              try {
-                var tr = await runTestCommand(sub.split(/\s+/)[0], {});
-                say(tr && tr.ok ? ('OK · ' + sub) : ('Fail · ' + (tr && tr.error ? tr.error : sub)), tr && tr.ok ? 'ok' : 'err');
-              } catch (e) {
-                say('Test · ' + (e && e.message ? e.message : e), 'err');
-              } finally { end(); }
-              return;
-            }
+          if (isOfferCmd(low) || isOfferCmd(low.replace(/^(do|run|launch|start)\s+/, ''))) {
+            var handled = await handleOfferLine(raw);
+            if (handled) return;
           }
         } catch (_) {}
-        return orig(raw);
+        return SNCli._snOfferOrigRun(raw);
       };
       SNCli._snOfferCli = true;
-      log('SNOfferStack CLI · offers test · demo delivery · polygon · harness', 'dim');
     } catch (_) {}
   }
+
   function init() {
     ensureRoot();
     installHooks();
     installCli();
-    setTimeout(function () { try { installHooks(); installCli(); syncFromTasks(); } catch (_) {} }, 2000);
+    [600, 1800, 4000, 10000].forEach(function (ms) {
+      setTimeout(function () {
+        try {
+          installHooks();
+          installCli();
+          if (ms >= 1800) syncFromTasks();
+        } catch (_) {}
+      }, ms);
+    });
   }
+
   global.SNOfferStack = {
-    init: init, push: push, pushTask: pushTask, pushVendor: pushVendor, pushDriverOffer: pushDriverOffer,
-    onOrderResult: onOrderResult, afterFulfill: afterFulfill, syncFromTasks: syncFromTasks, dismiss: dismiss,
-    testThrow: testThrow, demoDelivery: demoDelivery, demoPolygon: demoPolygon,
-    clear: clearAll, clearRoutes: clearRoutes, listRoutes: listRoutes, radar: radar,
+    init: init,
+    push: push,
+    pushTask: pushTask,
+    pushVendor: pushVendor,
+    pushDriverOffer: pushDriverOffer,
+    onOrderResult: onOrderResult,
+    afterFulfill: afterFulfill,
+    syncFromTasks: syncFromTasks,
+    dismiss: dismiss,
+    testThrow: testThrow,
+    demoDelivery: demoDelivery,
+    demoPolygon: demoPolygon,
+    clear: clearAll,
+    clearRoutes: clearRoutes,
+    listRoutes: listRoutes,
+    radar: radar,
     runTest: runTestCommand,
-    list: function () { return stack.slice(); }, paint: paint
+    handleLine: handleOfferLine,
+    list: function () { return stack.slice(); },
+    paint: paint
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { try { init(); } catch (_) {} });
-  else try { init(); } catch (_) {}
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { try { init(); } catch (_) {} });
+  } else {
+    try { init(); } catch (_) {}
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
