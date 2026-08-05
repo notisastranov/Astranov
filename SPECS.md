@@ -683,3 +683,5 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Film** | `assets/brand/videos/mano-rousa-eklisia-8-ammo.mp4` |
 
 *Agent note 2026-08-05 (not owner OV): **Tile inertia + avatars + globe fling** — park-top tiles with vendor logo + client photo; one-finger throw/bounce; globe trackball fling restored (no userCool gate). Build `20260805170000-tile-inertia`.*
+
+*Agent note 2026-08-05 (not owner OV): **Unstick** — offer paint no longer stacks window pointer listeners (was freezing app dead); stack z 105 pointer-events none; SNRecover shell recover. Build `20260805171500-unstick`.*

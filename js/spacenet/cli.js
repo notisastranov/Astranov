@@ -2980,6 +2980,7 @@ if (
         try {
           Globe?.setBody?.('earth');
           Globe?.goToTier?.('global');
+          try { if (global.SNRecover) SNRecover({ closeMap: true }); } catch (_) {}
         } catch (_) {}
         depict('global');
         log('GLOBAL · full Earth in space · map closed', 'ok');

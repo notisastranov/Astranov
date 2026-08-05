@@ -217,8 +217,8 @@
     var st = document.createElement('style');
     st.id = CSS_ID;
     st.textContent = [
-      '#sn-offer-stack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:140;',
-      'pointer-events:none;overflow:visible}',
+      '#sn-offer-stack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:105;',
+      'pointer-events:none!important;overflow:visible}',
       '#sn-offer-stack .sn-queue-hint{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);',
       'pointer-events:none;font:700 9px/1 "Space Grotesk",system-ui,sans-serif;',
       'letter-spacing:.14em;text-transform:uppercase;color:rgba(90,160,255,.75);',
@@ -691,9 +691,12 @@
       // Labels on map markers if available
       try {
         if (global.SNMap && SNMap.open && stops[0]) {
-          void SNMap.open(stops[0].lat, stops[0].lng);
+          // Open map once for route; never block shell if map fails
+          void Promise.resolve(SNMap.open(stops[0].lat, stops[0].lng)).catch(function () {});
           if (SNMap.markYou && stops[stops.length - 1]) {
-            SNMap.markYou(stops[stops.length - 1].lat, stops[stops.length - 1].lng, 'YOU · ' + names.client);
+            try {
+              SNMap.markYou(stops[stops.length - 1].lat, stops[stops.length - 1].lng, 'YOU · ' + names.client);
+            } catch (_) {}
           }
         }
       } catch (_) {}
@@ -776,122 +779,117 @@
     paint();
   }
 
-  function bindDrag(card, o) {
-    if (!card || !o || card._snPhysBound) return;
-    card._snPhysBound = true;
-    ensureParked(o, card);
-    var handle = card; // whole tile throwable with one finger
-    var startX = 0,
-      startY = 0,
-      origL = 0,
-      origT = 0,
-      dragging = false,
-      lastT = 0,
-      lastX = 0,
-      lastY = 0,
-      vx = 0,
-      vy = 0,
-      samples = [];
-    function onDown(ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('button,a,input,.mv,.sn-chrome-btn,.sn-pill-btn,.sn-offer-btn'))
-        return;
-      var pe = ev.pointerType != null ? ev : ev.touches ? ev.touches[0] : ev;
-      // stop any coast
-      if (physTiles[o.id]) delete physTiles[o.id];
-      dragging = true;
-      card.classList.add('dragging');
-      startX = pe.clientX;
-      startY = pe.clientY;
-      lastX = pe.clientX;
-      lastY = pe.clientY;
-      lastT = performance.now();
-      samples = [];
-      vx = 0;
-      vy = 0;
-      var rect = card.getBoundingClientRect();
-      card.style.left = rect.left + 'px';
-      card.style.top = rect.top + 'px';
-      card.style.bottom = 'auto';
-      card.style.transform = 'none';
-      card.classList.remove('park-top');
-      origL = rect.left;
-      origT = rect.top;
-      o.uiX = origL;
-      o.uiY = origT;
-      try {
-        if (ev.pointerId != null && card.setPointerCapture) card.setPointerCapture(ev.pointerId);
-      } catch (_) {}
-      if (ev.cancelable) ev.preventDefault();
-    }
+  /** Singleton drag/throw — NEVER add window listeners per paint (that froze the app) */
+  var dragState = null; // { card, o, startX, startY, origL, origT, lastT, lastX, lastY, vx, vy }
+  var dragBound = false;
+
+  function ensureDragGlobals() {
+    if (dragBound) return;
+    dragBound = true;
     function onMove(ev) {
-      if (!dragging) return;
-      var pe = ev.pointerType != null ? ev : ev.touches ? ev.touches[0] : ev;
+      if (!dragState) return;
+      var pe = ev.touches && ev.touches[0] ? ev.touches[0] : ev;
+      var st = dragState;
       var now = performance.now();
-      var dx = pe.clientX - startX;
-      var dy = pe.clientY - startY;
+      var dx = pe.clientX - st.startX;
+      var dy = pe.clientY - st.startY;
       var w = window.innerWidth || 390;
       var h = window.innerHeight || 844;
-      var cw = card.offsetWidth;
-      var ch = card.offsetHeight;
-      var nl = origL + dx;
-      var nt = origT + dy;
-      // soft clamp while dragging (allow slight overshoot for throw feel)
+      var cw = st.card.offsetWidth || 200;
+      var ch = st.card.offsetHeight || 100;
+      var nl = st.origL + dx;
+      var nt = st.origT + dy;
       nl = Math.max(-cw * 0.35, Math.min(w - cw * 0.65, nl));
       nt = Math.max(-ch * 0.2, Math.min(h - ch * 0.5, nt));
-      card.style.left = nl + 'px';
-      card.style.top = nt + 'px';
-      o.uiX = nl;
-      o.uiY = nt;
-      var dt = Math.max(1, now - lastT);
-      var ivx = (pe.clientX - lastX) / dt;
-      var ivy = (pe.clientY - lastY) / dt;
-      samples.push({ vx: ivx, vy: ivy, t: now });
-      if (samples.length > 6) samples.shift();
-      // EMA velocity px/ms
-      vx = vx * 0.35 + ivx * 0.65;
-      vy = vy * 0.35 + ivy * 0.65;
-      lastX = pe.clientX;
-      lastY = pe.clientY;
-      lastT = now;
+      st.card.style.left = nl + 'px';
+      st.card.style.top = nt + 'px';
+      st.o.uiX = nl;
+      st.o.uiY = nt;
+      var dt = Math.max(1, now - st.lastT);
+      var ivx = (pe.clientX - st.lastX) / dt;
+      var ivy = (pe.clientY - st.lastY) / dt;
+      st.vx = st.vx * 0.35 + ivx * 0.65;
+      st.vy = st.vy * 0.35 + ivy * 0.65;
+      st.lastX = pe.clientX;
+      st.lastY = pe.clientY;
+      st.lastT = now;
       if (ev.cancelable) ev.preventDefault();
     }
     function onUp(ev) {
-      if (!dragging) return;
-      dragging = false;
-      card.classList.remove('dragging');
-      // Fling: px/ms → px/frame (~16ms)
-      var speed = Math.hypot(vx, vy);
-      var throwVx = vx * 18; // lots of inertia
-      var throwVy = vy * 18;
+      if (!dragState) return;
+      var st = dragState;
+      dragState = null;
+      st.card.classList.remove('dragging');
+      var speed = Math.hypot(st.vx, st.vy);
+      var throwVx = st.vx * 18;
+      var throwVy = st.vy * 18;
       if (speed > 0.08) {
-        // cap wild throws
         var mag = Math.hypot(throwVx, throwVy);
         var max = 48;
         if (mag > max) {
           throwVx = (throwVx / mag) * max;
           throwVy = (throwVy / mag) * max;
         }
-        startPhys(o.id, card, o, throwVx, throwVy);
+        startPhys(st.o.id, st.card, st.o, throwVx, throwVy);
       } else {
-        // settle inside bounds
         var w = window.innerWidth || 390;
         var h = window.innerHeight || 844;
-        var cw = card.offsetWidth;
-        var ch = card.offsetHeight;
-        o.uiX = Math.max(4, Math.min(w - cw - 4, o.uiX));
-        o.uiY = Math.max(4, Math.min(h - ch - 4, o.uiY));
-        card.style.left = Math.round(o.uiX) + 'px';
-        card.style.top = Math.round(o.uiY) + 'px';
+        var cw = st.card.offsetWidth || 200;
+        var ch = st.card.offsetHeight || 100;
+        st.o.uiX = Math.max(4, Math.min(w - cw - 4, st.o.uiX));
+        st.o.uiY = Math.max(4, Math.min(h - ch - 4, st.o.uiY));
+        st.card.style.left = Math.round(st.o.uiX) + 'px';
+        st.card.style.top = Math.round(st.o.uiY) + 'px';
       }
     }
-    card.addEventListener('pointerdown', onDown);
     window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  }
+
+  function bindDrag(card, o) {
+    if (!card || !o) return;
+    ensureDragGlobals();
+    ensureParked(o, card);
+    // Only one pointerdown per element (recreated each paint — fine, no window leak)
+    card.onpointerdown = function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('button,a,input,.mv,.sn-chrome-btn,.sn-pill-btn,.sn-offer-btn'))
+        return;
+      if (physTiles[o.id]) delete physTiles[o.id];
+      var pe = ev;
+      var rect = card.getBoundingClientRect();
+      card.style.left = rect.left + 'px';
+      card.style.top = rect.top + 'px';
+      card.style.bottom = 'auto';
+      card.style.transform = 'none';
+      card.classList.remove('park-top');
+      card.classList.add('dragging');
+      o.uiX = rect.left;
+      o.uiY = rect.top;
+      dragState = {
+        card: card,
+        o: o,
+        startX: pe.clientX,
+        startY: pe.clientY,
+        origL: rect.left,
+        origT: rect.top,
+        lastT: performance.now(),
+        lastX: pe.clientX,
+        lastY: pe.clientY,
+        vx: 0,
+        vy: 0,
+      };
+      try {
+        if (ev.pointerId != null && card.setPointerCapture) card.setPointerCapture(ev.pointerId);
+      } catch (_) {}
+      if (ev.cancelable) ev.preventDefault();
+    };
   }
 
   function paint() {
-
+    try {
     var el = ensureRoot();
     if (!stack.length && !queue.length) {
       el.innerHTML = '';
@@ -1286,7 +1284,8 @@
     el.querySelectorAll('.sn-offer').forEach(function (card) {
       var oid = card.getAttribute('data-oid');
       var o = find(oid);
-      if (o) {
+      if (!o) return;
+      try {
         ensureParked(o, card);
         if (o.uiX != null && o.uiY != null) {
           card.style.left = Math.round(o.uiX) + 'px';
@@ -1295,9 +1294,22 @@
           card.style.transform = 'none';
         }
         bindDrag(card, o);
+        // Keep physics bound to new DOM node after repaint
+        if (physTiles[oid]) {
+          physTiles[oid].el = card;
+          physTiles[oid].o = o;
+        }
+      } catch (eBind) {
+        try {
+          console.warn('[SNOfferStack] bind', eBind);
+        } catch (_) {}
       }
     });
+      } catch (ePaint) {
+      try { console.warn('[SNOfferStack] paint', ePaint); } catch (_) {}
+    }
   }
+
 
   function previewRoute(task, offer) {
     if (!task && !offer) return;

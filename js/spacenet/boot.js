@@ -4,6 +4,32 @@
  */
 (function () {
   'use strict';
+
+  /** Unstick dead UI: game mode off · hide game dock · clear offer paint thrash · optional map close */
+  function recoverShell(opts) {
+    opts = opts || {};
+    try {
+      if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
+    } catch (_) {}
+    try {
+      var gd = document.getElementById('sn-game-dock');
+      if (gd) gd.remove();
+    } catch (_) {}
+    try {
+      document.body.classList.remove('sn-space-scene-on', 'sn-game-on');
+    } catch (_) {}
+    try {
+      if (opts.closeMap && window.SNMap && SNMap.close) SNMap.close();
+    } catch (_) {}
+    try {
+      if (window.SNOfferStack && SNOfferStack.paint) SNOfferStack.paint();
+    } catch (_) {}
+    return true;
+  }
+  try {
+    window.SNRecover = recoverShell;
+  } catch (_) {}
+
   if (window.__snBootDone) return;
   window.__snBootDone = 1;
   window.__snBooting = 1;
@@ -463,6 +489,7 @@
           // Kill any leftover game chrome / dock / gameMode
           try {
             if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
+            try { if (window.SNRecover) SNRecover({ closeMap: false }); } catch (_r) {}
             document.body.classList.remove('sn-space-scene-on', 'sn-game-dock-on');
             var gd = document.getElementById('sn-game-dock');
             if (gd) gd.remove();
