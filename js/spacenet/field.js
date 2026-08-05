@@ -4290,7 +4290,24 @@
     syncRadarCanvas();
     drawRadar();
     var radarMs = (g.SNPerf && SNPerf.radarMs) || 200;
-    setInterval(drawRadar, radarMs);
+    if (g.SNGameLoop && SNGameLoop.subscribe) {
+      var _radarAcc = 0;
+      g.SNGameLoop.subscribe(
+        function (dt) {
+          _radarAcc += dt;
+          var need = (g.SNPerf && SNPerf.radarMs) || radarMs;
+          if (_radarAcc >= need) {
+            _radarAcc = 0;
+            try {
+              drawRadar();
+            } catch (_) {}
+          }
+        },
+        { lane: 'ambient', name: 'engine_radar' }
+      );
+    } else {
+      setInterval(drawRadar, radarMs);
+    }
     setInterval(refreshBlips, 10000);
     setInterval(function () {
       void refreshRoutes(false);
