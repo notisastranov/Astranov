@@ -685,3 +685,24 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 *Agent note 2026-08-05 (not owner OV): **Tile inertia + avatars + globe fling** — park-top tiles with vendor logo + client photo; one-finger throw/bounce; globe trackball fling restored (no userCool gate). Build `20260805170000-tile-inertia`.*
 
 *Agent note 2026-08-05 (not owner OV): **Unstick** — offer paint no longer stacks window pointer listeners (was freezing app dead); stack z 105 pointer-events none; SNRecover shell recover. Build `20260805171500-unstick`.*
+
+
+---
+
+## Rebuild 2026-08-05 — Polygon task scheduler (agent)
+
+**Focus:** delivery task scheduling on real Earth polygons. Everything else deferred.
+
+| Module | Role |
+|--------|------|
+| `poly-scheduler.js` | Sole money path: power ON · tiles · pricing · polygon · 3× seal · Rai · wallet |
+| `globe.js` + `spacenet-grid.js` | GLOBAL Earth trackball |
+| `map.js` + `field.js` | CITY map + route corridor polygons |
+| `cli.js` + ribbon | locate · global · power verbs |
+| `home.js` | ASTRANOV hard reload |
+| `helper.js` | Rai drone only when commissioned |
+
+**Not preloaded:** youtube, invaders, space-scene, game-dock, mesh, market crawl thrash, topo, dialects.
+
+**Build:** `20260805180000-poly-rebuild`
+

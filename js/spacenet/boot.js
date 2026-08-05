@@ -239,123 +239,60 @@
     }
   } catch (_) {}
 
-  // ========== WAVE DEFINITIONS ==========
-  // CRITICAL: only what is required for interactive CLI + AI + basic chrome. Parallel load.
+  // ========== WAVE DEFINITIONS (REBUILD: polygon scheduler only) ==========
+  // CRITICAL: shell + CLI + AI identity
   var WAVE_CRITICAL = [
     '/js/spacenet/skin.js',
     '/js/spacenet/config.js',
     '/js/spacenet/currency.js',
     '/js/spacenet/game-loop.js',
     '/js/spacenet/profiles.js',
-    '/js/spacenet/usage.js',
-    '/js/spacenet/routing.js',
     '/js/spacenet/cli.js',
-    '/js/spacenet/brain.js',
-    '/js/spacenet/ai.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/ui.js',
   ];
 
-  // GLOBE: Earth must appear right after shell is usable
+  // GLOBE: Earth in space (SPECS boot GLOBAL)
   var WAVE_GLOBE = [
     '/js/spacenet/spacenet-grid.js',
     '/js/spacenet/globe.js',
-    '/js/spacenet/cosmos.js',
   ];
 
-  // ARSENAL: everything else. Preloaded in background so CLI/AI can use it instantly when asked.
-  // Money path only — no youtube/invaders/game dummies
+  // MONEY PATH ONLY — map + radar routes + poly scheduler + home + helper
+  // No market crawl thrash, no youtube/game/mesh/topo dummies
   var WAVE_ARSENAL_A = [
-    '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
-    '/js/spacenet/commerce.js',
-    '/js/spacenet/market.js',
     '/js/spacenet/tasks.js',
-    '/js/spacenet/search.js',
     '/js/spacenet/field.js',
-    '/js/spacenet/delivery-rules.js',
-    '/js/spacenet/offer-stack.js',
-    '/js/spacenet/money.js',
+    '/js/spacenet/poly-scheduler.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
-    '/js/spacenet/vendor-crawl.js',
-    '/js/spacenet/order-engine.js',
   ];
 
-  // Optional extras — NOT preloaded when lean (CLI SNLoader.ensure only)
-  // Dummy / heavy / not money-path: youtube, invaders, space-scene, game-dock,
-  // ai-graphics, mesh-*, live-bridge, google-earth, topo, telemachos, dialect packs.
+  // Nothing else preloaded — full mode opt-in only
   var WAVE_ARSENAL_B = LEAN
-    ? [
-        '/js/spacenet/scrolls.js',
-        '/js/spacenet/places-business.js',
-        '/js/spacenet/task-board.js',
-      ]
+    ? []
     : [
         '/js/spacenet/scrolls.js',
-        '/js/spacenet/order-engine.js',
-        '/js/spacenet/market-live.js',
-        '/js/spacenet/task-board.js',
-        '/js/spacenet/task-runner.js',
-        '/js/spacenet/places-business.js',
         '/js/spacenet/vendor-crawl.js',
-        '/js/spacenet/helper.js',
-        '/js/spacenet/space-scene.js',
-        '/js/spacenet/earth-ops.js',
-        '/js/spacenet/game-dock.js',
-        '/js/spacenet/ai-graphics.js',
-        '/js/spacenet/live-bridge.js',
-        '/js/spacenet/channel-manager.js',
-        '/js/spacenet/mesh-orders.js',
-        '/js/spacenet/mesh-peers.js',
-        '/js/spacenet/spatial.js',
-        '/js/spacenet/topo.js',
-        '/js/spacenet/google-earth.js',
-        '/js/spacenet/super.js',
-        '/js/spacenet/spartan.js',
-        '/js/spacenet/arcangelo-dialect.js',
-        '/js/spacenet/greeklish.js',
-        '/js/spacenet/telemachos.js',
-        '/js/spacenet/youtube.js',
-        '/js/spacenet/invaders.js',
+        '/js/spacenet/task-board.js',
       ];
 
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
-    youtube: { src: '/js/spacenet/youtube.js', global: 'SNYoutube' },
-    invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
-    game: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
-    tile: { src: '/js/spacenet/tile.js', global: 'SNTile' },
-    offers: { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
-    money: { src: '/js/spacenet/money.js', global: 'SNMoney' },
-    market: { src: '/js/spacenet/market.js', global: 'SNMarket' },
-    'offer-stack': { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
+    poly: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
+    scheduler: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
+    money: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
+    offers: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
+    'offer-stack': { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     map: { src: '/js/spacenet/map.js', global: 'SNMap' },
-    commerce: { src: '/js/spacenet/commerce.js', global: 'SNCommerce' },
-    
     tasks: { src: '/js/spacenet/tasks.js', global: 'SNTasks' },
-    search: { src: '/js/spacenet/search.js', global: 'SNSearch' },
     field: { src: '/js/spacenet/field.js', global: 'SNField' },
     home: { src: '/js/spacenet/home.js', global: 'SNHome' },
     helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
-    delivery: { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
-    'delivery-rules': { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
-    earthops: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    'earth-ops': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    ops: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    gaming: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
-    'game-dock': { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
-    gamedock: { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
-    'ai-graphics': { src: '/js/spacenet/ai-graphics.js', global: 'SNAIGraphics' },
-    'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
-    topo: { src: '/js/spacenet/topo.js', global: 'SNTopo' },
-    'google-earth': { src: '/js/spacenet/google-earth.js', global: 'SNGoogleEarth' },
+    delivery: { src: '/js/spacenet/poly-scheduler.js', global: 'SNDeliveryRules' },
     'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
-    spartan: { src: '/js/spacenet/spartan.js', global: 'SNSpartan' },
-    telemachos: { src: '/js/spacenet/telemachos.js', global: 'SNTelemachos' },
   };
 
   window.SNLoader = {
@@ -469,7 +406,7 @@
 
       whenIdle(function () {
         loadParallel(WAVE_ARSENAL_A, 14000).then(function () {
-          // MONEY PATH ONLY — no youtube/invaders/game/mesh auto-init
+          // POLYGON SCHEDULER PATH ONLY
           try {
             if (window.SNField && SNField.init && !SNField._inited) {
               SNField.init();
@@ -477,12 +414,10 @@
             }
           } catch (eF) { console.warn('[Astranov] field init', eF); }
           try {
-            if (window.SNOfferStack && SNOfferStack.init) SNOfferStack.init();
-            if (window.SNMoney && SNMoney.init) SNMoney.init();
-            if (window.SNMoney && SNMoney.clearBlockers) SNMoney.clearBlockers();
+            if (window.SNPolyScheduler && SNPolyScheduler.init) SNPolyScheduler.init();
             if (window.SNHome && SNHome.init) SNHome.init();
-          } catch (eM) { console.warn('[Astranov] money path init', eM); }
-          // Helper ready but SILENT — no showcase flyby (wakes only for drone orders)
+          } catch (eM) { console.warn('[Astranov] poly scheduler init', eM); }
+          // Helper silent until drone
           try {
             if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
           } catch (_) {}
@@ -497,38 +432,28 @@
             if (ops) ops.style.display = 'none';
             var scHud = document.getElementById('sn-space-hud');
             if (scHud) scHud.remove();
+            var oldStack = document.getElementById('sn-offer-stack');
+            if (oldStack) {
+              oldStack.innerHTML = '';
+              oldStack.style.display = 'none';
+            }
           } catch (_) {}
           whenIdle(function () {
-            // Lean: tiny optional wave (scrolls/places). Full mode loads heavy arsenal.
             loadParallel(WAVE_ARSENAL_B, 12000).then(function () {
-              try {
-                if (window.SNMoney && SNMoney.clearBlockers) SNMoney.clearBlockers();
-              } catch (_) {}
-              // FULL mode only: optional extras (still no forced game showcase)
-              if (!LEAN) {
-                try {
-                  if (window.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
-                } catch (_) {}
-                try {
-                  if (window.SNMeshPeers && SNMeshPeers.init) SNMeshPeers.init();
-                } catch (_) {}
-              }
               var total = Math.round(performance.now() - t0);
               window.SNPerf.bootMs = total;
               try {
                 if (window.SNCli && SNCli.log) {
                   SNCli.log(
-                    'Earth OS · ' +
+                    'ASTRANOV · ' +
                       total +
-                      'ms · ' +
-                      (LEAN ? 'LEAN money path · dummies off' : 'full arsenal') +
-                      ' · power ON for offers',
+                      'ms · poly scheduler · power ON for tasks',
                     'dim'
                   );
                 }
               } catch (_) {}
             });
-          }, LEAN ? 800 : 400);
+          }, 400);
         });
       }, 200);
 
