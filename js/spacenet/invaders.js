@@ -958,16 +958,16 @@
     ctx.restore();
   }
 
-  function frame(now) {
+  var engineUnsub = null;
+  function frame(now, dtMs) {
     if (!open) return;
-    raf = requestAnimationFrame(frame);
+    if (!engineUnsub) raf = requestAnimationFrame(function (t) { frame(t); });
     if (!lastT) lastT = now;
-    var dt = (now - lastT) / 1000;
+    var dt = dtMs != null ? dtMs / 1000 : (now - lastT) / 1000;
     lastT = now;
     if (dt > 0.1) dt = 0.1;
     if (phase === 'play') update(dt);
     else if (phase === 'boot' || phase === 'pause' || phase === 'over' || phase === 'win') {
-      // idle starfield
       if (player) {
         var i, s;
         for (i = 0; i < stars.length; i++) {
@@ -1004,7 +1004,18 @@
     }
     showBoot();
     lastT = 0;
-    if (!raf) raf = requestAnimationFrame(frame);
+    if (global.SNGameLoop && SNGameLoop.subscribe && !engineUnsub) {
+      engineUnsub = SNGameLoop.subscribe(
+        function (dtMs, now) {
+          frame(now || performance.now(), dtMs);
+        },
+        { lane: 'critical', name: 'invaders' }
+      );
+    } else if (!raf) {
+      raf = requestAnimationFrame(function (t) {
+        frame(t);
+      });
+    }
     log('Invaders cockpit · tilt phone · tap guns · hold laser · 2-finger missile', 'ok');
     preview('ENTER COCKPIT');
     track('invaders_open');
@@ -1037,6 +1048,12 @@
     document.body.classList.remove('sn-invaders-on');
     var root = document.getElementById(ROOT_ID);
     if (root) root.classList.remove('open');
+    if (engineUnsub) {
+      try {
+        engineUnsub();
+      } catch (_) {}
+      engineUnsub = null;
+    }
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     lastT = 0;
