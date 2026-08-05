@@ -271,6 +271,8 @@
     invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
     game: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
     tile: { src: '/js/spacenet/tile.js', global: 'SNTile' },
+    offers: { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
+    'offer-stack': { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
     map: { src: '/js/spacenet/map.js', global: 'SNMap' },
     commerce: { src: '/js/spacenet/commerce.js', global: 'SNCommerce' },
     market: { src: '/js/spacenet/market.js', global: 'SNMarket' },
@@ -403,6 +405,7 @@
           whenIdle(function () {
             loadParallel(WAVE_ARSENAL_B, 16000).then(function () {
               [
+                function () { if (window.SNOfferStack && SNOfferStack.init) SNOfferStack.init(); },
                 function () { if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false }); },
                 function () {
                   if (window.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
@@ -428,7 +431,7 @@
               window.SNPerf.bootMs = total;
               try {
                 if (window.SNCli && SNCli.log) {
-                  SNCli.log('Arsenal ready · ' + total + 'ms · SNEngine power · invaders · youtube · map', 'dim');
+                  SNCli.log('Deep neon · ' + total + 'ms · offers test · demo delivery · pizza', 'dim');
                 }
               } catch (_) {}
             });
