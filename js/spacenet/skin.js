@@ -1,15 +1,15 @@
 /**
  * SNSkin — product face
- * Default: SpaceXAI (black / white / silver)
- * Memory: Astranov electric palette kept offline until restored via CLI
+ * Default: Astranov deep neon electric blue (gaming hull)
+ * SpaceXAI void face available via CLI: skin spacex
  * No color-picker UI. No hex codes on chrome.
  */
 (function (g) {
   'use strict';
   var KEY = 'sn:skin-v1';
-  var DEFAULT = 'spacex';
+  var DEFAULT = 'astranov';
 
-  /** Frozen memory — Astranov era tokens (not active UI unless skin astranov) */
+  /** Product faces */
   var MEMORY = {
     spacex: {
       id: 'spacex',
@@ -33,7 +33,7 @@
     astranov: {
       id: 'astranov',
       label: 'Astranov electric',
-      note: 'Deep electric starry blue — archived palette, restore only on command',
+      note: 'Deep neon glowing blue — gaming hull',
       tokens: {
         '--bg': '#01040e',
         '--bg-deep': '#000208',
@@ -54,14 +54,15 @@
   function read() {
     try {
       var s = localStorage.getItem(KEY);
-      if (s === 'astranov' || s === 'classic' || s === 'electric') return 'astranov';
+      if (s === 'astranov' || s === 'classic' || s === 'electric' || s === 'deep' || s === 'neon')
+        return 'astranov';
       if (s === 'spacex' || s === 'sx' || s === 'spacexai' || s === 'imagine') return 'spacex';
     } catch (_) {}
     return DEFAULT;
   }
 
   function applyTokens(id) {
-    var pack = MEMORY[id] || MEMORY.spacex;
+    var pack = MEMORY[id] || MEMORY.astranov;
     var root = document.documentElement;
     if (!root || !root.style) return;
     var t = pack.tokens || {};
@@ -74,7 +75,7 @@
 
   function apply(id, opts) {
     opts = opts || {};
-    id = id === 'astranov' ? 'astranov' : 'spacex';
+    id = id === 'spacex' ? 'spacex' : 'astranov';
     // Imagine version auto-enables AI graphics engine
     try {
       if (opts.imagine !== false && global.SNAIGraphics && SNAIGraphics.setMode) {
@@ -89,16 +90,14 @@
       root.classList.remove('skin-spacex', 'skin-astranov');
       root.classList.add(id === 'astranov' ? 'skin-astranov' : 'skin-spacex');
       root.setAttribute('data-sn-skin', id);
-      // SpaceX face: no device light recolor of chrome
-      if (id === 'spacex') {
-        root.classList.remove('theme-light');
-        root.classList.add('theme-dark');
-      }
+      // Gaming hull: always dark chrome (no pale wash)
+      root.classList.remove('theme-light');
+      root.classList.add('theme-dark');
     }
     applyTokens(id);
     try {
       if (g.SNAi && SNAi.showOnGlobe && !opts.silent) {
-        SNAi.showOnGlobe(id === 'spacex' ? 'SpaceXAI' : 'Astranov skin');
+        SNAi.showOnGlobe(id === 'spacex' ? 'SpaceXAI' : 'Deep neon blue');
       }
     } catch (_) {}
     return MEMORY[id];
