@@ -4,6 +4,9 @@
  */
 (function () {
   'use strict';
+  if (window.__snBootDone) return;
+  window.__snBootDone = 1;
+  window.__snBooting = 1;
   var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '1';
   var bootEl = document.getElementById('boot');
   var t0 = performance.now();
@@ -31,10 +34,11 @@
     try {
       base = String(window.SN_ASSET_BASE || '').replace(/\/$/, '');
     } catch (_) {}
-    if (base && (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0)) {
+    // Prefer same-origin first (correct deploy), then optional base, then CDN fallback
+    list.push(local);
+    if (base && base.indexOf(location.origin) !== 0 && (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0)) {
       list.push(base + '/' + path + '?v=' + encodeURIComponent(BUILD));
     }
-    list.push(local);
     if (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0) {
       list.push(CDN_GH + '/' + path + '?v=' + encodeURIComponent(BUILD));
     }
@@ -101,6 +105,15 @@
     return Promise.all(list.map(function (src) { return loadSoft(src, timeoutMs || 10000); }));
   }
 
+  /** Hard load — reject if every origin fails (critical modules) */
+  function loadHard(src, timeoutMs) {
+    return load(src, timeoutMs);
+  }
+
+  function loadParallelHard(list, timeoutMs) {
+    return Promise.all(list.map(function (src) { return loadHard(src, timeoutMs || 10000); }));
+  }
+
   function whenIdle(fn, timeout) {
     if (typeof requestIdleCallback === 'function') {
       requestIdleCallback(function () { try { fn(); } catch (e) { console.warn('[Astranov] idle', e); } }, { timeout: timeout || 2000 });
@@ -138,13 +151,17 @@
 
   // Watchdog — never leave user staring at spinner
   setTimeout(function () {
-    if (!finished) {
-      console.error('[Astranov] boot watchdog 6s');
-      try { if (window.SNCli && SNCli.init) SNCli.init(); } catch (e) {}
-      hideBoot('watchdog · partial');
-      try { if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err'); } catch (e2) {}
+    if (finished) return;
+    if (!shellReady) {
+      console.error('[Astranov] boot watchdog 8s · critical still loading');
+      fail('timeout · shell not ready');
+      return;
     }
-  }, 6000);
+    console.error('[Astranov] boot watchdog · partial');
+    try { if (window.SNCli && SNCli.init) SNCli.init(); } catch (e) {}
+    hideBoot('watchdog · partial');
+    try { if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err'); } catch (e2) {}
+  }, 8000);
 
   // Real device capability (do NOT force lite)
   var isLite = false;
@@ -185,6 +202,7 @@
     '/js/spacenet/cli.js',
     '/js/spacenet/brain.js',
     '/js/spacenet/ai.js',
+    '/js/spacenet/free-ai.js',
     '/js/spacenet/ui.js',
   ];
 
@@ -228,7 +246,6 @@
     '/js/spacenet/google-earth.js',
     '/js/spacenet/super.js',
     '/js/spacenet/spartan.js',
-    '/js/spacenet/free-ai.js',
     '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/greeklish.js',
     '/js/spacenet/telemachos.js',
@@ -236,20 +253,24 @@
 
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
-    youtube: '/js/spacenet/youtube.js',
-    tile: '/js/spacenet/tile.js',
-    map: '/js/spacenet/map.js',
-    commerce: '/js/spacenet/commerce.js',
-    market: '/js/spacenet/market.js',
-    tasks: '/js/spacenet/tasks.js',
-    search: '/js/spacenet/search.js',
-    field: '/js/spacenet/field.js',
-    home: '/js/spacenet/home.js',
-    helper: '/js/spacenet/helper.js',
-    'ai-graphics': '/js/spacenet/ai-graphics.js',
-    'live-bridge': '/js/spacenet/live-bridge.js',
-    topo: '/js/spacenet/topo.js',
-    'google-earth': '/js/spacenet/google-earth.js',
+    youtube: { src: '/js/spacenet/youtube.js', global: 'SNYoutube' },
+    tile: { src: '/js/spacenet/tile.js', global: 'SNTile' },
+    map: { src: '/js/spacenet/map.js', global: 'SNMap' },
+    commerce: { src: '/js/spacenet/commerce.js', global: 'SNCommerce' },
+    market: { src: '/js/spacenet/market.js', global: 'SNMarket' },
+    tasks: { src: '/js/spacenet/tasks.js', global: 'SNTasks' },
+    search: { src: '/js/spacenet/search.js', global: 'SNSearch' },
+    field: { src: '/js/spacenet/field.js', global: 'SNField' },
+    home: { src: '/js/spacenet/home.js', global: 'SNHome' },
+    helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
+    'ai-graphics': { src: '/js/spacenet/ai-graphics.js', global: 'SNAIGraphics' },
+    'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
+    topo: { src: '/js/spacenet/topo.js', global: 'SNTopo' },
+    'google-earth': { src: '/js/spacenet/google-earth.js', global: 'SNGoogleEarth' },
+    'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
+    freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
+    spartan: { src: '/js/spacenet/spartan.js', global: 'SNSpartan' },
+    telemachos: { src: '/js/spacenet/telemachos.js', global: 'SNTelemachos' },
   };
 
   window.SNLoader = {
@@ -260,18 +281,26 @@
       return Promise.all(list.map(function (n) {
         var key = String(n || '').toLowerCase().replace(/^sn/, '');
         if (self._p[key]) return self._p[key];
-        var src = MODULE_MAP[key];
-        if (!src) return Promise.resolve();
-        var globalName = 'SN' + key.charAt(0).toUpperCase() + key.slice(1).replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); });
-        if (window[globalName]) return Promise.resolve();
-        self._p[key] = loadSoft(src, 12000).then(function () {
+        var entry = MODULE_MAP[key];
+        if (!entry) return Promise.resolve();
+        var src = typeof entry === 'string' ? entry : entry.src;
+        var globalName = (typeof entry === 'object' && entry.global) ||
+          ('SN' + key.charAt(0).toUpperCase() + key.slice(1).replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); }));
+        if (window[globalName]) return Promise.resolve(window[globalName]);
+        self._p[key] = load(src, 12000).then(function () {
+          var mod = window[globalName];
+          if (!mod) throw new Error('no global ' + globalName);
           try {
-            var mod = window[globalName];
             if (mod && typeof mod.init === 'function' && !mod._inited) {
               mod.init();
               mod._inited = true;
             }
           } catch (_) {}
+          return mod;
+        }).catch(function (e) {
+          delete self._p[key]; // allow retry after failed load
+          console.warn('[Astranov] ensure fail', key, e && e.message);
+          throw e;
         });
         return self._p[key];
       }));
@@ -312,7 +341,7 @@
   window.SNPerf.mark('three_start');
 
   // ========== MAIN SEQUENCE ==========
-  loadParallel(WAVE_CRITICAL, 9000)
+  loadParallelHard(WAVE_CRITICAL, 12000)
     .then(function () {
       shellReady = true;
       var ms = Math.round(performance.now() - t0);
@@ -343,13 +372,20 @@
         loadParallel(WAVE_ARSENAL_A, 14000).then(function () {
           try {
             if (window.SNYoutube && SNYoutube.init) SNYoutube.init();
-            if (window.SNMap && SNMap.active && SNMap.close) SNMap.close();
+            // Never force-close map — user may have opened city during preload
           } catch (_) {}
           whenIdle(function () {
             loadParallel(WAVE_ARSENAL_B, 16000).then(function () {
               [
                 function () { if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false }); },
-                function () { if (window.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start(); },
+                function () {
+                  if (window.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
+                  try {
+                    if (window.SNUsage && SNUsage.shipToBridge) {
+                      setTimeout(function () { void SNUsage.shipToBridge(true); }, 2500);
+                    }
+                  } catch (_) {}
+                },
                 function () { if (window.SNMeshPeers && SNMeshPeers.init) SNMeshPeers.init(); },
                 function () {
                   try {
