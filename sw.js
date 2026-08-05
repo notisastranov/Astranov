@@ -1,5 +1,5 @@
-﻿/* Astranov service worker â€” never serve stale app HTML/core */
-const CACHE = 'astranov-v47';
+/* Astranov service worker — never serve stale app HTML/core or spacenet modules */
+const CACHE = 'astranov-v48-audit';
 const SHELL = ['/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (e) => {
@@ -21,12 +21,18 @@ function isCoreJs(url) {
   return /^\/astranov-/.test(url.pathname) && url.pathname.endsWith('.js');
 }
 
+function isSpaceNetJs(url) {
+  return (url.pathname.indexOf('/js/spacenet/') === 0 || url.pathname === '/js/spacenet/boot.js') &&
+    url.pathname.endsWith('.js');
+}
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (isAppHtml(url) || isCoreJs(url)) {
+  // Always network for HTML + lightning modules + core bundles (no sticky logic)
+  if (isAppHtml(url) || isCoreJs(url) || isSpaceNetJs(url)) {
     e.respondWith(fetch(e.request));
     return;
   }
