@@ -265,6 +265,7 @@
     '/js/spacenet/tasks.js',
     '/js/spacenet/field.js',
     '/js/spacenet/poly-scheduler.js',
+    '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
   ];
@@ -285,6 +286,8 @@
     money: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     offers: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     'offer-stack': { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
+    marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
+    berths: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
     map: { src: '/js/spacenet/map.js', global: 'SNMap' },
     tasks: { src: '/js/spacenet/tasks.js', global: 'SNTasks' },
     field: { src: '/js/spacenet/field.js', global: 'SNField' },
@@ -415,6 +418,7 @@
           } catch (eF) { console.warn('[Astranov] field init', eF); }
           try {
             if (window.SNPolyScheduler && SNPolyScheduler.init) SNPolyScheduler.init();
+            if (window.SNMarina && SNMarina.init) SNMarina.init();
             if (window.SNHome && SNHome.init) SNHome.init();
           } catch (eM) { console.warn('[Astranov] poly scheduler init', eM); }
           // Helper silent until drone
