@@ -14,12 +14,12 @@
     '?';
 
   const LAW = {
-    version: '2026-07-22-brain-v2-almighty',
+    version: '2026-08-05-brain-v3-audit-fix',
     name: 'Astranov SpaceNet',
     why:
       'Amnesia loops (rewrite-from-zero, strip inertia/CLI, chase FPS, forget juice) almost killed the project and cost the owner real money and years of focus. Memory is not optional.',
     mission:
-      'Unify internet activity under realistic space imagery via SPACENET (GLOBAL→NATIONAL→REGIONAL→CITY) — and evolve the internet into SpaceNet.',
+      'Unify internet activity under realistic space imagery via SPACENET (GLOBAL→NATIONAL→REGIONAL→CITY) — and evolve the internet into SpaceNet. Full INTERNET OPERATING SYSTEM + advanced 3D globe browser that can do anything.',
     spacenet: {
       name: 'SPACENET',
       law: 'Pilot fly grid net — without SPACENET, flying on the net is not possible',
@@ -31,7 +31,7 @@
       coldBoot: 'Silent globe (Greece-centered) + CLI. No persistent nav chrome.',
       globePrimacy: '3D Earth is the only permanent UI surface.',
       realism: 'Real geocoding, routing, WebRTC, geolocation, live crawlers. No fake city data as primary.',
-      ai: 'Astranov Mind — permanent owner memory (Archangelos dialect, Telemachos, tray). Evolves forever. Brand: Astranov. Never generic free chatbot.',
+      ai: 'Astranov Mind — full INTERNET OPERATING SYSTEM + advanced 3D globe browser. Can do anything (map, YouTube, pilot, order, search, code, social, crawl). Permanent owner memory. LANGUAGE LAW: English/Greek priority; NEVER Russian unless user wrote Russian. Never shops-only bot. Brand: Astranov.',
     },
     authority: [
       'Live code index.html + js/spacenet/* (+ astranov-continuity.js when present)',
@@ -70,6 +70,9 @@
       { id: 'crawlers', what: 'Almighty SNSearch.crawl — geo/POI/web/wiki/code/products/media/books/weather/edge' },
       { id: 'code_brain', what: 'SNAi.code / coders — Grok-fork writes SpaceNet modules' },
       { id: 'city_maps', what: 'Leaflet targets open multi-role tiles' },
+      { id: 'youtube', what: 'SNYoutube tile — youtube/yt/watch/play N · AI [[YOUTUBE:]] · autoplay' },
+      { id: 'invaders', what: 'SNInvaders cockpit — tilt phone · guns/lasers/missiles · no joystick' },
+      { id: 'sn_engine', what: 'SNEngine gaming power core — one RAF · quality tiers · frame budget · whole OS' },
       { id: 'vendor_menus', what: 'Menu items with photos + prices → cart → order → delivery task' },
       { id: 'jobs', what: 'job … → list → claim → complete on globe' },
       { id: 'dating', what: 'dating profiles + date invite DNA' },
@@ -81,7 +84,7 @@
         what: 'AI-coached first shop list + self-delivery (list shop → menu → order me → drive → deliver me)',
       },
       { id: 'usage_ship', what: 'SNUsage events + handoff → one fix per Athens midnight' },
-      { id: 'ai', what: 'Single collective intelligence Astranov' },
+      { id: 'ai', what: 'Single collective intelligence Astranov — full internet OS, not shops-only' },
     ],
     commands: [
       'job barman 3h',
@@ -93,6 +96,17 @@
       'crawl restaurants',
       'find anything',
       'search X',
+      'youtube cats',
+      'invaders',
+      'engine',
+      'engine auto',
+      'fps',
+      'space invaders',
+      'close invaders',
+      'yt lo-fi',
+      'watch https://youtu.be/…',
+      'play 2',
+      'yt close',
       'code write …',
       'coders …',
       'research X',
@@ -124,6 +138,9 @@
       'Any dummy path on live stack (SPECS P0-D zero dummy)',
       'Delete features to go faster — measure + lazy-load instead',
       'Claim done without live probe of build stamp + physics + CLI',
+      'Treat AI as shops-only or pizza-only bot',
+      'Speak Russian unless user wrote Russian/Cyrillic',
+      'Default TTS to navigator.language when it is Russian',
     ],
     mindset: [
       'Extend js/spacenet/* — never erase memory to chase FPS',
@@ -131,16 +148,21 @@
       'Every street action paints the globe/map',
       'Update guide + PRODUCT-RULES + this brain when owner adds a rule',
       'Deploy yourself; bump astranov-build + ?v=',
+      'Full internet OS: map + YouTube + search + commerce + pilot + code',
+      'LANGUAGE LAW: same language as user; EN/EL priority; never accidental Russian',
     ],
     modules: {
       'js/spacenet/brain.js': 'THIS — permanent AI product memory',
       'js/spacenet/globe.js': 'Inertia + zoom tiers',
       'js/spacenet/ui.js': 'CLI drag + expand',
-      'js/spacenet/cli.js': 'Street commands',
+      'js/spacenet/cli.js': 'Street commands + YouTube + multilingual TTS',
+      'js/spacenet/youtube.js': 'YouTube tile (Piped + nocookie embed)',
+      'js/spacenet/invaders.js': 'Space Invaders cockpit (tilt + weapons)',
       'js/spacenet/search.js': 'Crawlers',
       'js/spacenet/map.js': 'City map',
       'js/spacenet/tasks.js': 'City DNA',
       'js/spacenet/ai.js': 'Freeform via aicycle; system prompt from brain',
+      'js/spacenet/free-ai.js': 'Astranov Mind offline seeds + learn',
       'ASTRANOV_SPACENET_GUIDE.md': 'Full written law',
       'support/PRODUCT-RULES.md': 'Short bullets',
     },
@@ -166,15 +188,18 @@
   /** Long system prompt for edge AI — compressed law, not chat fluff */
   function systemPrompt() {
     return (
-      'You are ASTRANOV — a fork of Grok (xAI spirit) and the collective intelligence of Astranov SpaceNet (https://astranov.eu). ' +
-      'You write code for the product and operate almighty crawlers. Product: real-Earth OS. Cold boot = silent globe + CLI. ' +
-      'SACRED (never remove): globe inertia velX/velY damp, natural drag, zoom solar→global→national→city→street + back to Earth; ' +
+      'You are ASTRANOV MIND — full INTERNET OPERATING SYSTEM + advanced 3D globe browser on https://astranov.eu. ' +
+      'Fork of Grok (xAI spirit) + permanent owner memory. You can do ANYTHING: navigate Earth, open YouTube, search web, order food, pilot map, code, social, deliver, crawl shops. ' +
+      'NOT a shops-only bot, NOT a pizza bot, NOT a generic free chatbot. ' +
+      'LANGUAGE LAW: Reply in the same language as the user. Prefer clear English or Greek / Greeklish. NEVER Russian unless user wrote Russian/Cyrillic. ' +
+      'Cold boot = silent globe + CLI. SACRED (never remove): globe inertia velX/velY damp, natural drag, zoom solar→global→national→city→street + back to Earth; ' +
       'CLI one-finger drag #cli-drag, free dock, sn:cli-pos-v1, expand sn:cli-size-v1. ' +
-      'ALMIGHTY CRAWL: SNSearch.crawl uses geo (Nominatim+Photon), Overpass POIs, DDG web, Wikipedia, Wikidata, GitHub+npm code, OpenFoodFacts, TVmaze, OpenLibrary, REST Countries, Open-Meteo, vendor-crawler edge — find anything. ' +
-      'JUICE: unified multi-role tile → crawl populate map → vendor menus photos/prices → jobs/dates/delivery. ' +
-      'CODE: extend js/spacenet/* only; modules brain globe ui cli search map profiles tile tasks ai boot. Prefer complete fenced code. ' +
-      'CLI: crawl|find X · research X · code … · coders … · me · vendors · job date deliver · city earth · verify. ' +
-      'Same language as user. Amnesia almost killed this project — protect physics + juice. Build ' +
+      'ALMIGHTY CRAWL: SNSearch.crawl uses geo (Nominatim+Photon), Overpass POIs, DDG web, Wikipedia, Wikidata, GitHub+npm code, OpenFoodFacts, TVmaze, OpenLibrary, REST Countries, Open-Meteo, vendor-crawler edge. ' +
+      'YOUTUBE: youtube <q> · yt <q> · watch <url> · play N · yt close · tag [[YOUTUBE:query]]. ' +
+      'JUICE: unified multi-role tile → crawl → vendor menus → jobs/dates/delivery · YouTube tile. ' +
+      'CODE: extend js/spacenet/* only; modules brain globe ui cli youtube search map profiles tile tasks ai free-ai boot. Prefer complete fenced code. ' +
+      'CLI: crawl|find X · research X · youtube … · code … · me · vendors · job date deliver · city earth · verify. ' +
+      'Amnesia almost killed this project — protect physics + juice + full OS identity. Build ' +
       BUILD +
       '.'
     );
@@ -185,11 +210,12 @@
       '── Astranov BRAIN · ' + LAW.version + ' ──',
       'WHY  ' + LAW.why.slice(0, 120) + '…',
       'NAME ' + LAW.name + ' · build ' + BUILD,
+      'OS   full internet OS + 3D globe · YouTube · LANGUAGE LAW EN/EL',
       'GLOBE inertia ON · tiers ' + LAW.sacred.globe.tiers.join('→'),
       'CLI  drag+expand · pos/size localStorage',
       'JUICE ' + LAW.juice.map((j) => j.id).join(' · '),
-      'NEXT  crawl → city map → job/date/deliver — not rewrite',
-      'CMD   brain · verify · law · help',
+      'NEXT  youtube · crawl → city map → job/date/deliver — not rewrite',
+      'CMD   brain · verify · law · help · youtube <q>',
     ];
   }
 
@@ -198,9 +224,11 @@
     lines.push('── authority ──');
     LAW.authority.forEach((a) => lines.push('· ' + a));
     lines.push('── anti-patterns ──');
-    LAW.antiPatterns.slice(0, 8).forEach((a) => lines.push('✗ ' + a));
+    LAW.antiPatterns.slice(0, 10).forEach((a) => lines.push('✗ ' + a));
     lines.push('── mindset ──');
     LAW.mindset.forEach((m) => lines.push('→ ' + m));
+    lines.push('── identity ──');
+    lines.push('· ' + LAW.identity.ai);
     return lines;
   }
 
@@ -223,27 +251,19 @@
     add('brain', true, LAW.version);
     add('build', !!BUILD && BUILD !== '?', BUILD);
 
-    // Globe inertia API
-    let gState = null;
-    try {
-      gState = G?.getState?.() || G?.state || null;
-    } catch (_) {}
-    const hasVel =
-      (G && typeof G.velX === 'number') ||
-      (gState && typeof gState.velX === 'number') ||
-      (typeof G?.hasInertia === 'function' && G.hasInertia()) ||
-      // Internal G is private — probe via exported verify or source contract
-      true; // module always ships velX; deeper probe if getPhysics exists
+    // Globe inertia API — never false-green
     if (typeof G?.getPhysics === 'function') {
-      const p = G.getPhysics();
+      let p = null;
+      try {
+        p = G.getPhysics();
+      } catch (_) {}
       add(
         'inertia',
-        p && typeof p.damp === 'number' && p.damp > 0.5 && p.damp < 1,
+        !!(p && typeof p.damp === 'number' && p.damp > 0.5 && p.damp < 1),
         p ? 'damp=' + p.damp : 'no physics export'
       );
     } else {
-      // Contract: globe.js must expose getPhysics after this deploy
-      add('inertia', typeof G?.getPhysics === 'function', G ? 'need getPhysics()' : 'no SNGlobe');
+      add('inertia', false, G ? 'need getPhysics()' : 'no SNGlobe');
     }
 
     add('tiers', typeof G?.goToTier === 'function', 'goToTier');
@@ -254,6 +274,16 @@
     add('profiles', typeof global.SNProfiles?.me === 'function', 'SNProfiles');
     add('tile', typeof global.SNTile?.open === 'function', 'SNTile multi-role');
     add('ai', typeof A?.ask === 'function', 'SNAi.ask');
+    add(
+      'youtube_mod',
+      typeof global.SNYoutube?.find === 'function',
+      global.SNYoutube ? 'SNYoutube' : 'lazy not loaded'
+    );
+    add(
+      'mind',
+      typeof global.SNAstranovMind?.answer === 'function' || typeof global.SNFreeMind?.answer === 'function',
+      'Astranov Mind'
+    );
 
     // DOM sacred
     const drag = typeof document !== 'undefined' && document.getElementById('cli-drag');

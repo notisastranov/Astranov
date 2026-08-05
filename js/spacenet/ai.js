@@ -352,16 +352,29 @@
         focus =
           ' User is near ' + Number(f.lat).toFixed(3) + ', ' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
-    var fork =
-      'You are ASTRANOV MIND — the permanent evolving memory of the owner on https://astranov.eu. ' +
-      'You speak clear natural English and fully understand Greek, Greeklish, and ancient-flavoured Greek. ' +
-      'You are NOT a generic free chatbot and NOT SpaceNet. You are a copy of owner mission-memory that grows forever. ' +
-      'Understand Archangelos (Αρχάγγελος Rhodes) village dialect: Greeklish + Greek + ancient colour. ' +
-      'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
-      'Telemachos/Τηλέμαχος (drone pilot; also tilemaxos, Teledromos). ' +
-      'Talk like a real person. Complete simple tasks. No robot banners. Money unit S. ' +
-      'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]]. ' +
-      'Reply in 1–2 natural sentences unless they ask for detail.' +
+    // Prefer single brain source of law so prompts never drift from SNBrain
+    var fork = '';
+    try {
+      if (global.SNBrain && typeof SNBrain.systemPrompt === 'function') {
+        fork = String(SNBrain.systemPrompt() || '');
+      }
+    } catch (_) {}
+    if (!fork) {
+      fork =
+        'You are ASTRANOV MIND — permanent evolving memory of the owner on https://astranov.eu. ' +
+        'IDENTITY LAW: You are the full INTERNET OPERATING SYSTEM + advanced 3D globe browser. ' +
+        'You can do ANYTHING the user asks: navigate Earth/cities, open YouTube, search the web, order food, pilot map, code, social, deliver, crawl shops, control basemap/overlays, open tiles. ' +
+        'You are NOT a shops-only bot, NOT a pizza bot, NOT a generic free chatbot, NOT SpaceNet branding. ' +
+        'LANGUAGE LAW: Reply in the same language the user is using. Prefer clear natural English or Greek / Greeklish. ' +
+        'NEVER reply in Russian unless the user wrote Russian/Cyrillic. Hard ban accidental Russian. ' +
+        'Understand Archangelos (Αρχάγγελος Rhodes) dialect: Greeklish + Greek + ancient colour. ' +
+        'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
+        'Telemachos/Τηλέμαχος (drone pilot). Talk like a real person. Complete tasks. Money unit S. ' +
+        'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]] [[YOUTUBE:query or url]]. ' +
+        'Reply in 1–2 natural sentences unless they ask for detail.';
+    }
+    fork =
+      fork +
       focus +
       ' firstDelivery=' +
       !!flags.firstDeliveryDone +
@@ -703,7 +716,7 @@
     var t = String(text || '');
     var did = [];
     var re =
-      /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH|MAP|BASEMAP|LAYER|LAYERS|OVERLAY|PILOT|CLI|TILE|CMD)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
+      /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH|MAP|BASEMAP|LAYER|LAYERS|OVERLAY|PILOT|CLI|TILE|CMD|YOUTUBE|YT)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
     var m;
     var targets = [];
     while ((m = re.exec(t))) {
@@ -759,8 +772,26 @@
           else if (global.SNTile && SNTile.openMe) SNTile.openMe();
           did.push('tile');
         } else if ((a.op === 'CLI' || a.op === 'CMD') && a.arg) {
-          if (global.SNCli && SNCli.run) await SNCli.run(a.arg);
-          did.push('cli:' + a.arg);
+          var cmdArg = String(a.arg || '').trim();
+          var okCmd = true;
+          try {
+            if (global.SNLiveBridge && SNLiveBridge.cmdAllowed && !SNLiveBridge.cmdAllowed(cmdArg))
+              okCmd = false;
+          } catch (_) {}
+          if (okCmd && global.SNCli && SNCli.run) {
+            await SNCli.run(cmdArg);
+            did.push('cli:' + cmdArg.slice(0, 40));
+          } else if (!okCmd) {
+            did.push('cli-blocked');
+          }
+        } else if ((a.op === 'YOUTUBE' || a.op === 'YT') && a.arg) {
+          try {
+            if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+          } catch (_) {}
+          if (global.SNYoutube && SNYoutube.find) {
+            await SNYoutube.find(a.arg);
+            did.push('youtube:' + String(a.arg).slice(0, 40));
+          }
         } else if ((a.op === 'GO' || a.op === 'FLY') && a.arg) {
           var r = await globeGo(a.arg, { closeMap: true });
           if (r && r.ok) did.push('go:' + a.arg);
@@ -903,6 +934,28 @@
               skipBrand: true,
             };
           }
+          if (sp.runYoutube || sp.domain === 'youtube') {
+            try {
+              if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+            } catch (_ye) {}
+            var yq = sp.youtubeQuery || '';
+            if (!yq && global.SNYoutube && SNYoutube.queryFromText) {
+              yq = SNYoutube.queryFromText(line) || '';
+            }
+            if (yq && global.SNYoutube && SNYoutube.find) {
+              await SNYoutube.find(yq);
+              return {
+                did: did.concat(['spartan:youtube']),
+                reply: '▶ ' + String(yq).slice(0, 48),
+                skipBrand: true,
+              };
+            }
+            return {
+              did: did.concat(['spartan:youtube']),
+              reply: sp.replySeed || 'youtube <query> · yt cats · watch <url>',
+              skipBrand: true,
+            };
+          }
           if (sp.runFood || sp.domain === 'food') {
             var fi =
               sp.foodIntent ||
@@ -957,7 +1010,7 @@
     ) {
       return {
         did: did.concat(['chat']),
-        reply: "I'm solid — online and ready. Map, food, pilot, or talk?",
+        reply: "I'm solid — full internet OS online. Map, YouTube, pilot, order, search — what do you need?",
         skipBrand: true,
       };
     }
@@ -968,7 +1021,7 @@
     ) {
       return {
         did: did.concat(['lang:en']),
-        reply: 'Yes — full English. Locate, order pizza, shops, dark map, coord, pilot home.',
+        reply: 'Yes — full English. Locate, YouTube, shops, dark map, pilot, code, search — say anything.',
         skipBrand: true,
       };
     }
@@ -1042,10 +1095,31 @@
       return {
         did: did.concat(['identity:who']),
         reply:
-          "I'm Astranov Mind. Map, food, pilot — English or Greek. What do you want first?",
+          "I'm Astranov Mind — full internet OS + 3D globe browser. Map, YouTube, pilot, order, search, code — English or Greek. What do you need?",
         skipBrand: true,
       };
     }
+
+    // —— YouTube (natural language + CLI power) ——
+    try {
+      if (global.SNYoutube && SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(line)) {
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+        } catch (_ye) {}
+        var yq =
+          (global.SNYoutube.queryFromText && SNYoutube.queryFromText(line)) ||
+          line.replace(/^(youtube|yt|watch)\s*/i, '').trim() ||
+          line;
+        if (global.SNYoutube.find) {
+          await SNYoutube.find(yq);
+          return {
+            did: did.concat(['youtube']),
+            reply: 'Opening YouTube · ' + String(yq).slice(0, 48),
+            skipBrand: true,
+          };
+        }
+      }
+    } catch (_yt) {}
 
     // —— App control FIRST (basemap dark/bright, overlays, layers, CLI power) ——
     // Before city/map heuristics so "dark map" is not mistaken for street map only
@@ -1313,7 +1387,7 @@
           var locR = await SNTaskRunner.locate();
           did.push('locate');
           reply = locR && locR.ok
-            ? "I've got you on the map. Want shops or order pizza?"
+            ? "I've got you on the map. What next — shops, YouTube, pilot, or something else?"
             : (locR && locR.error) || "Couldn't get location — allow GPS.";
         } else if (global.SNGlobe && SNGlobe.locate) {
           var loc = await SNGlobe.locate();
@@ -1321,7 +1395,7 @@
           reply = loc
             ? "I've got you on the map" +
               (loc.fallback ? " (rough GPS — say yes if that's right)" : '') +
-              ". Want me to find shops or order pizza?"
+              ". What next — shops, YouTube, pilot, or something else?"
             : "Couldn't get your location — try again or allow location access.";
         } else {
           await runCli('locate');
@@ -1387,9 +1461,12 @@
     }
 
     if (
-      /^(shops|vendors|stores|market)$/i.test(low) ||
-      /\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) ||
-      /^find\s+(food|pizza|coffee)/.test(low)
+      /^(shops|vendors|stores|fill shops|google shops|show shops|μαγαζια|μαγαζιά)$/i.test(low) ||
+      /\b(fill|show|find|near|open|crawl|scan)\b.{0,24}\b(shops|vendors|restaurants|μαγαζ)/i.test(low) ||
+      (/\b(shops|vendors|restaurants|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) &&
+        !/\b(stock\s*market|market\s*research|marketing|black\s*market|what is the market)\b/i.test(low) &&
+        !/\bmarket\b/.test(low)) ||
+      /^find\s+(food|pizza|coffee)\b/.test(low)
     ) {
       try {
         var near = await loadVendorsNear('shops');
@@ -1505,7 +1582,7 @@
 
         if (/\b(help|what can you do|commands|βοήθεια|βοηθεια)\b/.test(low) && line.length < 48) {
       reply =
-        "I finish simple tasks: locate · order pizza · pitogyra tray · shops · dark map · coord · pilot home. English or Greek. Stuck? cancel.";
+        "Full internet OS: locate · YouTube · shops · order · dark map · pilot · search · code · coord. English or Greek. Stuck? cancel.";
       return { did: did, reply: reply, skipBrand: true };
     }
 
@@ -1513,7 +1590,7 @@
     // Places only via explicit go/fly/take me (parsePlaceIntent above).
 
     reply =
-      "I'm with you. Stay local: locate · shops · order pizza · go to <city> only when you mean travel. Or cancel if something is stuck.";
+      "I'm with you — full internet OS. Try: locate · youtube <query> · shops · dark map · pilot · search · code. Or cancel if stuck.";
     return { did: did, reply: reply, needsEdge: false };
   }
 
@@ -1521,6 +1598,9 @@
     opts = opts || {};
     var msg = String(message || '').trim();
     if (!msg) return null;
+    if (busy) {
+      return 'Still working — one moment…';
+    }
     busy = true;
     try {
       var Gx = global.SNAIGraphics || global.AIGraphics;
@@ -1815,6 +1895,34 @@
               local.did = (local.did || []).concat(['shops']);
             } catch (eSh) {}
           }
+          if (freeHit && freeHit.runYoutube) {
+            try {
+              if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+              var yq =
+                freeHit.youtubeQuery ||
+                (global.SNYoutube && SNYoutube.queryFromText && SNYoutube.queryFromText(msg)) ||
+                msg;
+              if (global.SNYoutube && SNYoutube.find && yq) {
+                await SNYoutube.find(yq);
+                local.did = (local.did || []).concat(['youtube']);
+              } else if (global.SNCli && SNCli.run && yq) {
+                await SNCli.run('youtube ' + yq);
+                local.did = (local.did || []).concat(['youtube']);
+              }
+            } catch (eYt) {}
+          }
+          if (freeHit && freeHit.runInvaders) {
+            try {
+              if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('invaders');
+              if (global.SNInvaders && SNInvaders.open) {
+                SNInvaders.open();
+                local.did = (local.did || []).concat(['invaders']);
+              } else if (global.SNCli && SNCli.run) {
+                await SNCli.run('invaders');
+                local.did = (local.did || []).concat(['invaders']);
+              }
+            } catch (eInv) {}
+          }
           if (freeHit && freeHit.runPilot && global.SNTelemachos && SNTelemachos.cli) {
             try {
               await SNTelemachos.cli(msg);
@@ -1896,7 +2004,7 @@
     if (!text && freeHit && freeHit.text) text = freeHit.text;
     if (!text)
       text =
-        "I'm with you — English or Greek. Try: locate · order pizza · shops · dark map · pilot home · cancel.";
+        "I'm with you — English or Greek. Try: locate · youtube cat video · shops · dark map · pilot · search · cancel.";
 
 
     // Edge tags → move globe / map / CLI; strip tags from spoken/visible text

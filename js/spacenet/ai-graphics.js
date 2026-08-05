@@ -747,7 +747,7 @@
       }
       return;
     }
-    GFX.raf = requestAnimationFrame(loop);
+    if (!GFX._engine) GFX.raf = requestAnimationFrame(loop);
     if (!GFX.lastF) GFX.lastF = now;
     var dt = now - GFX.lastF;
     var hz = (global.SNPerf && SNPerf.hudHz) || modeProfile().hudHz;
@@ -790,6 +790,20 @@
   }
 
   function ensureLoop() {
+    if (GFX._engine) {
+      ensureHud();
+      return;
+    }
+    if (global.SNGameLoop && SNGameLoop.subscribe) {
+      ensureHud();
+      GFX._engine = SNGameLoop.subscribe(
+        function (dt, now) {
+          loop(now);
+        },
+        { lane: 'ambient', name: 'ai-graphics' }
+      );
+      return;
+    }
     if (!GFX.raf) {
       ensureHud();
       GFX.raf = requestAnimationFrame(loop);

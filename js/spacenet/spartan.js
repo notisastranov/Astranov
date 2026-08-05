@@ -17,7 +17,7 @@
       'Prefer doing over asking; only ask when GPS is soft or money is missing.',
       'Reply Spartan: least words. Example: Driver 6 min late. 3 min to eat. Door.',
       'Always listen first. If user may still speak — stop, wait, think, then reply.',
-      'Same law for food, map, driver, shops, pilot, money, bridge, cancel — everything.',
+      'Same law for food, map, YouTube, search, driver, shops, pilot, money, bridge, cancel — full internet OS.',
       'Never invent shops or drivers; use crawlers and live mesh.',
       'Remember prefs (size, drinks, home, favorites) so next one-word is smarter.',
     ],
@@ -104,6 +104,22 @@
           steps: ['locate', 'crawl_osm_places', 'menus', 'map_tiles'],
           mission: { steps: ['locate', 'shops'], foodLine: raw },
           replySeed: 'Spartan · fill real shops on the map',
+        };
+      },
+    },
+    {
+      id: 'youtube',
+      re: /^(youtube|yt|video|videos|βιντεο|βίντεο)$/i,
+      words: ['youtube', 'yt', 'video'],
+      expand: function (raw) {
+        return {
+          domain: 'youtube',
+          intent: 'open_youtube',
+          spartan: true,
+          steps: ['ensure_module', 'search_or_hint'],
+          runYoutube: true,
+          youtubeQuery: '',
+          replySeed: 'Spartan · youtube · say youtube <query> or yt cats',
         };
       },
     },
@@ -331,7 +347,7 @@
       M.teach(
         'what is spartan intelligence',
         LAW.creed +
-          ' Example: say pizza → I locate you, crawl open shops, pick best rated, order your likes, assign nearest driver, pay, tell eat time, watch ETA, door at 3 min.',
+          ' Full OS: youtube cats · pizza → locate → shops → order → driver · locate · dark map · pilot · search. One word expands to full chain.',
         ['spartan', 'identity']
       );
       M.teach(
@@ -432,7 +448,7 @@
     if (/\b(and|or|with|to|for|the|a|uh|um|ε|και|να|θέλω)\s*$/i.test(t)) return true;
     if (/[,;…]\s*$/.test(t)) return true;
     // very short mid-thought
-    if (t.split(/\s+/).length <= 1 && t.length < 12 && !/^(pizza|cancel|locate|shops|drive|deliver|help|stop)$/i.test(t))
+    if (t.split(/\s+/).length <= 1 && t.length < 12 && !/^(pizza|cancel|locate|shops|drive|deliver|help|stop|youtube|yt|video)$/i.test(t))
       return true;
     return false;
   }

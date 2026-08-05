@@ -3,7 +3,7 @@
  * Not a disposable "free mind" chatbot. Copy of owner memories + mission law.
  * Alias: SNFreeMind (legacy API). Brand: Astranov.
  *
- * v6: English chat + Greeklish + modern/ancient Greek hard paths · simple task intents · retrain
+ * v7: full INTERNET OS identity · YouTube · LANGUAGE LAW (no accidental Russian) · not shops-only · retrain
  */
 (function (global) {
   'use strict';
@@ -16,12 +16,14 @@
 
 
   // v6: talk English · Greeklish · Greek · ancient · complete simple tasks
-  var LEARN_KEY = 'sn:astranov-mind-v6';
-  var STATS_KEY = 'sn:astranov-mind-stats-v6';
+  var LEARN_KEY = 'sn:astranov-mind-v7';
+  var STATS_KEY = 'sn:astranov-mind-stats-v7';
   var MAX_LEARN = 500;
   var NAME = 'Astranov';
   var MIND_NAME = 'Astranov Mind';
   var LEGACY_KEYS = [
+    'sn:astranov-mind-v6',
+    'sn:astranov-mind-stats-v6',
     'sn:astranov-mind-v5',
     'sn:astranov-mind-stats-v5',
     'sn:astranov-mind-train-v5',
@@ -41,7 +43,16 @@
    */
   var SEED = [
     {
+      id: 'invaders_game',
+      q: 'space invaders invaders game cockpit space war shoot aliens play game',
+      a: 'Say invaders or space invaders — cockpit mode, tilt phone to fly, guns lasers missiles, no joystick.',
+      tags: ['game', 'invaders', 'en'],
+    },
+    {
       id: 'spartan_law',
+      q: 'spartan law least words listen wait think act door driver eta late',
+      a: 'Spartan law: listen · wait · think · act. Few words. Door. ETA. If late — say so once.',
+      tags: ['spartan', 'law', 'en'],
     },
     {
       id: 'spartan_reply',
@@ -76,29 +87,77 @@
     {
       id: 'partner_evolution',
       q: 'partner just us evolution fight future shape spacexai',
-      a: 'Just us. Ship Real-Earth OS. Pizza path is the money machine. Locate · shops · order · pay · driver · ETA. No empty hype — complete tasks.',
-      tags: ['mission', 'partner', 'en'],
+      a: 'Just us. Ship the full Real-Earth Internet OS — globe, map, YouTube, social, commerce, delivery. Money path is live. Complete tasks. No empty hype.',
+      tags: ['mission', 'partner', 'en', 'os'],
     },
     {
       id: 'spartan_law_dup',
 
       q: 'spartan intelligence spartan mode one word how you think spartan',
-      a: 'Spartan intelligence: one word is enough. I expand it into the full real-Earth chain — locate, research, choose, act, ETA — and answer short. Pizza · shops · drive · deliver · locate · cancel.',
-      tags: ['spartan', 'law', 'identity', 'en'],
+      a: 'Spartan intelligence: one word is enough. Full real-Earth OS chain — locate, research, YouTube, shops, drive, deliver, code — short answers. Cancel unsticks.',
+      tags: ['spartan', 'law', 'identity', 'en', 'os'],
     },
     {
       id: 'mind_who',
       q: 'who are you what is astranov mind free mind your name memory ποιος είσαι τι είσαι',
       a:
-        "I'm Astranov Mind — your permanent memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. Not a generic chatbot.",
-      tags: ['identity', 'mind', 'owner', 'en'],
+        "I'm Astranov Mind — full INTERNET OPERATING SYSTEM + advanced 3D globe browser. Permanent memory. Not a shops bot. Not a generic chatbot.",
+      tags: ['identity', 'mind', 'owner', 'en', 'os'],
+    },
+    {
+      id: 'youtube_os',
+      q: 'youtube yt watch video play clip film movie βίντεο βιντεο open youtube',
+      a: 'YouTube is wired. Say: youtube <query> · yt cats · watch <url> · play 2 · yt close. Or ask me in plain words.',
+      tags: ['youtube', 'media', 'os', 'en'],
+    },
+    {
+      id: 'full_os_identity',
+      q: 'what can you do capabilities full os browser internet operating system anything',
+      a: 'Full internet OS + 3D globe: navigate Earth, open YouTube, search web, shops, order, pilot map, dark map, code, coord, social tiles. Not a pizza-only bot.',
+      tags: ['identity', 'os', 'help', 'en'],
+    },
+    {
+      id: 'no_russian',
+      q: 'russian language speak russian why russian wrong language',
+      a: 'I answer in your language — English or Greek by default. I never speak Russian unless you write Russian.',
+      tags: ['lang', 'law', 'en'],
+    },
+    {
+      id: 'no_russian_el',
+      q: 'ρωσικά ρωσικα russian γιατί ρωσικά λάθος γλώσσα',
+      a: 'Απαντώ στη γλώσσα σου — αγγλικά ή ελληνικά. Ποτέ ρωσικά αν δεν έγραψες ρωσικά.',
+      tags: ['lang', 'law', 'el'],
+    },
+    {
+      id: 'search_os',
+      q: 'search the web find information research look up google crawl',
+      a: 'Search is live. Say: search X · crawl restaurants · find anything · research X.',
+      tags: ['search', 'os', 'en'],
+    },
+    {
+      id: 'code_os',
+      q: 'write code coders program module spacenet script fix bug',
+      a: 'Code mode ready. Say: code write … or coders … — I extend js/spacenet/* only.',
+      tags: ['code', 'os', 'en'],
+    },
+    {
+      id: 'youtube_el',
+      q: 'άνοιξε youtube ανοιξε youtube δες βίντεο παρακολούθησε βιντεο',
+      a: 'YouTube έτοιμο. Πες: youtube <τι θες> ή watch <link>. play 2 για δεύτερο αποτέλεσμα.',
+      tags: ['youtube', 'el', 'os'],
+    },
+    {
+      id: 'voice_test_os',
+      q: 'voice test test voice say test tts language russian voice',
+      a: 'Voice: voice test · voice test greek · lang en · lang el. LANGUAGE LAW — never accidental Russian.',
+      tags: ['voice', 'lang', 'os', 'en'],
     },
     {
       id: 'speak_english',
       q: 'speak english talk english english please can you english do you speak language',
       a:
-        "Yes — full English, no problem. Say what you need: locate, order pizza, shops, dark map, coord, pilot home.",
-      tags: ['lang', 'en', 'chat'],
+        "Yes — full English. Anything: locate, YouTube, shops, dark map, pilot, search, code, order. Not stuck on pizza.",
+      tags: ['lang', 'en', 'chat', 'os'],
     },
     {
       id: 'speak_greek',
@@ -110,7 +169,7 @@
     {
       id: 'hello_en',
       q: 'hello hi hey good morning good afternoon good evening greetings yo hiya',
-      a: "Hey — Astranov here. What do you need: map, food, pilot, or just talk?",
+      a: "Hey — Astranov here. Full internet OS: map, YouTube, search, order, pilot, code — or just talk.",
       tags: ['chat', 'en', 'greet'],
     },
     {
@@ -128,7 +187,7 @@
     {
       id: 'thanks',
       q: 'thanks thank you thx merci ευχαριστώ ευχαριστω efharisto sefharisto',
-      a: "Anytime. Say cancel if something sticks, or keep going — pizza, shops, locate.",
+      a: "Anytime. Say cancel if something sticks, or keep going — youtube, map, shops, locate.",
       tags: ['chat', 'en', 'el'],
     },
     {
@@ -141,8 +200,8 @@
       id: 'simple_task_list',
       q: 'simple tasks what can you do help me do something complete task list capabilities',
       a:
-        "Simple tasks I finish: locate you, dark/bright map, shops, order pizza or pitogyra tray, coord driver+vendor, pilot home, fly Archangelos, claim tasks. Say it plain.",
-      tags: ['help', 'task', 'en', 'p0'],
+        "Full OS tasks: locate, youtube <query>, dark/bright map, shops, order pizza or pitogyra, search, code, coord, pilot home, fly Archangelos, claim. Say it plain.",
+      tags: ['help', 'task', 'en', 'p0', 'os'],
     },
     {
       id: 'archangelos',
@@ -262,8 +321,8 @@
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name identity bot',
-      a: "I'm Astranov Mind — evolving memory on astranov.eu. Map, orders, Archangelos dialect, Telemachos. What do you need?",
-      tags: ['identity', 'ai', 'mind', 'en'],
+      a: "I'm Astranov Mind — full internet OS + 3D globe browser on astranov.eu. Map, YouTube, pilot, order, search, code. English or Greek. What do you need?",
+      tags: ['identity', 'ai', 'mind', 'en', 'os'],
     },
     {
       id: 'spacenet_name',
@@ -391,7 +450,7 @@
       id: 'mission',
       q: 'mission purpose why astranov evolve forever memory owner',
       a:
-        'Mission: Astranov Mind keeps owner memory, runs real-Earth map OS, orders (pizza or pitogyra), Telemachos, multi-user plans — evolves forever, not a reset bot.',
+        'Mission: Astranov Mind = full internet OS + 3D globe. Owner memory forever. Map, YouTube, search, order, pilot, code, Telemachos — evolves forever, not a reset bot.',
       tags: ['mission', 'mind', 'owner'],
     },
     {
@@ -422,7 +481,7 @@
       id: 'understand_me',
       q: 'do you understand me can you hear me you broken dumb stupid not working understand english greek',
       a:
-        "I understand English, Greek, Greeklish, and ancient colour. Short commands work best: locate, order pizza, dark map, coord, pilot home. If stuck: cancel · mind wipe.",
+        "I understand English, Greek, Greeklish, and ancient colour. Full OS: locate · youtube · shops · dark map · pilot · search · code. If stuck: cancel · mind wipe.",
       tags: ['chat', 'support', 'en', 'el'],
     },
     {
@@ -462,7 +521,7 @@
 
   /** Product + owner-memory shaped text */
   function isProductish(t) {
-    return /\b(astranov|mind|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|pitogyra|mpyronia|mpironia|tsigareta|aksaki|aksas|archangelos|arcangelo|telemachos|tilemaxos|teledromos|drone|pilot|greeklish|english|hello|thanks|αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ)\b/i.test(
+    return /\b(astranov|mind|pizza|order|locate|map|vendor|courier|delivery|shop|donate|mine|grid|globe|wallet|pay|retsina|greek|soda|first\s*task|basemap|layers|driver|tile|s\b|eat\s*time|pitogyra|mpyronia|mpironia|tsigareta|aksaki|aksas|archangelos|arcangelo|telemachos|tilemaxos|teledromos|drone|pilot|greeklish|english|hello|thanks|youtube|yt\b|video|watch|browser|internet|os|search|code|αξάκι|πιτογύρ|μπυρόν|τηλεμαχ|αρχάγγελ|βίντεο)\b/i.test(
       String(t || '')
     );
   }
@@ -559,6 +618,7 @@
     stats.purged = (stats.purged || 0) + 1;
     try {
       localStorage.removeItem(LEARN_KEY);
+      localStorage.removeItem('sn:astranov-mind-train-v7');
       localStorage.removeItem('sn:astranov-mind-train-v6');
       localStorage.removeItem('sn:astranov-mind-train-v5');
       localStorage.removeItem('sn:free-mind-first-task-v4');
@@ -576,7 +636,7 @@
    * Hard-wire English + dialect + simple tasks (idempotent; force=true on wipe)
    */
   function trainOwnerMind(force) {
-    var FLAG = 'sn:astranov-mind-train-v6';
+    var FLAG = 'sn:astranov-mind-train-v7';
     try {
       if (!force && localStorage.getItem(FLAG) === '1') return;
     } catch (e0) {}
@@ -591,15 +651,15 @@
       ],
       ['hello', "Hey — Astranov here. English, Greek, Greeklish all fine. What do you need?"],
       ['hi', "Hi — map, food, pilot, or talk. Your call."],
-      ['hey', "Hey. I'm with you — say locate, order pizza, or just chat."],
-      ['how are you', "I'm good — online and ready. Want pizza, shops, or the map?"],
+      ['hey', "Hey. I'm with you — say locate, youtube cats, shops, or just chat."],
+      ['how are you', "I'm good — full internet OS online. YouTube, map, shops, pilot — what do you need?"],
       ['can you speak english', 'Yes, full English. Tell me the task in plain words.'],
-      ['speak english', 'English mode — clear. Locate, order, shops, dark map, coord, pilot home.'],
+      ['speak english', 'English mode — clear. Locate, YouTube, shops, dark map, pilot, search, code.'],
       ['do you understand me', 'Yes. English, Greek, Greeklish, ancient colour. Short tasks work best.'],
       ['thanks', 'Anytime. Cancel if something sticks.'],
       ['thank you', 'You got it.'],
-      ['help', 'I finish: locate · order pizza · pitogyra tray · shops · dark map · coord · pilot home · claim.'],
-      ['what can you do', 'Order food, coordinate driver+vendor, fly the globe, dark map, Telemachos, talk Greeklish.'],
+      ['help', 'Full OS: locate · youtube · shops · order · dark map · pilot · search · code · claim.'],
+      ['what can you do', 'Full internet OS: YouTube, map, shops, order, pilot, search, code, dark map, Telemachos, Greeklish.'],
       ['locate me', "Putting you on the map. Say no if the pin is wrong."],
       ['where am i', "Locating you now."],
       ['dark map', 'Switching to dark map.'],
@@ -632,7 +692,7 @@
       ['cancel', 'Cleared. What next?'],
       ['coord need driver and vendor for pizza for 3', 'Plan: vendor + driver + you. Nearest real profiles. plan status · claim.'],
       ['good morning', 'Good morning — globe is ready. Food, map, or talk?'],
-      ['i need help', 'Here. Try: locate · order pizza · shops · dark map · coord · pilot home.'],
+      ['i need help', 'Here. Try: locate · youtube · shops · dark map · pilot · search · cancel.'],
       ['please order food', 'Say order me a pizza or order pitogyra mpyronia — I complete the loop.'],
       ['μίλα ελληνικά', 'Μιλάω ελληνικά και Greeklish. Πες εντολή καθαρά.'],
       ['καταλαβαίνεις ελληνικά', 'Ναι — ελληνικά, Greeklish, αρχαία χροιά. Πες τι θες.'],
@@ -904,7 +964,7 @@
       )
     ) {
       return {
-        text: "Yes — full English. Locate, order pizza, shops, dark map, coord, pilot home — say it plain.",
+        text: "Yes — full English. Locate, YouTube, shops, dark map, pilot, search, code — say it plain.",
         score: 1,
         via: 'astranov-mind',
         source: 'intent-lang-en',
@@ -934,7 +994,7 @@
     if (/\b(do you understand|can you hear me|you broken|not working|dumb|stupid ai)\b/i.test(rawLow)) {
       return {
         text:
-          'I understand English, Greek, Greeklish, and ancient colour. Short tasks: locate · order pizza · dark map · coord · pilot home. Stuck? cancel or mind wipe.',
+          'I understand English, Greek, Greeklish, and ancient colour. Full OS: locate · youtube · shops · dark map · pilot · search · code. Stuck? cancel or mind wipe.',
         score: 1,
         via: 'astranov-mind',
         source: 'intent-understand',
@@ -989,10 +1049,59 @@
     ) {
       return {
         text:
-          'I complete: locate · order pizza · pitogyra tray · shops · dark map · coord driver+vendor · pilot home · claim. English or Greeklish. Stuck? cancel.',
+          'Full internet OS: locate · youtube · shops · order · dark map · pilot · search · code · claim. English or Greeklish. Stuck? cancel.',
         score: 1,
         via: 'astranov-mind',
         source: 'intent-help',
+      };
+    }
+    // YouTube / video hard intent
+    if (
+      /\b(youtube|youtu\.be|\byt\b|watch\s+.*video|play\s+(me\s+)?(a\s+)?video|show\s+me\s+.*video|find\s+(me\s+)?(a\s+)?videos?|βίντεο|βιντεο|άνοιξε\s+youtube|ανοιξε\s+youtube)\b/i.test(
+        rawLow
+      ) ||
+      /^(youtube|yt|watch)\b/i.test(rawLow)
+    ) {
+      var yq = rawMsg
+        .replace(
+          /^(youtube|yt|watch|find\s+videos?\s+(about|on|for)?|play\s+(me\s+)?(a\s+)?video\s+(about|on|for)?|show\s+me\s+(a\s+)?video\s+(about|on|for)?|άνοιξε\s+youtube|ανοιξε\s+youtube)\s*/i,
+          ''
+        )
+        .trim();
+      return {
+        text: yq
+          ? 'Opening YouTube · ' + yq.slice(0, 48)
+          : 'YouTube ready. Say: youtube <query> · yt cats · watch <url> · play 2 · yt close.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-youtube',
+        runYoutube: !!yq,
+        youtubeQuery: yq || '',
+      };
+    }
+
+    if (/^(engine|fps|quality)[\s!.?]*$/i.test(rawLow) || /\b(game\s*engine|gaming\s*graphics|make\s*it\s*faster)\b/i.test(rawLow)) {
+      return {
+        text: 'SNEngine is the gaming power core — type engine · engine high · engine auto · fps. Whole OS runs on one frame loop.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-engine',
+      };
+    }
+
+    // Space Invaders cockpit
+    if (
+      /\b(space\s*invaders?|invaders?|play\s+(the\s+)?game|cockpit|space\s*war|space\s*battle|shoot\s*aliens?)\b/i.test(
+        rawLow
+      ) ||
+      /^(game|play game|start game)\b/i.test(rawLow)
+    ) {
+      return {
+        text: 'Entering spaceship cockpit — tilt your phone to fly, tap for guns, hold for lasers, two fingers for missiles.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-invaders',
+        runInvaders: true,
       };
     }
 
@@ -1149,16 +1258,18 @@
       if (!global._snMindWipeArmed) {
         global._snMindWipeArmed = Date.now();
         return {
-          ok: true,
-          reply: 'Mind wipe armed · type mind wipe again within 20s to confirm · permanent',
+          text: 'Mind wipe armed · type mind wipe again within 20s to confirm · permanent',
+          score: 1,
+          via: 'astranov-mind',
           source: 'wipe-confirm',
         };
       }
       if (Date.now() - global._snMindWipeArmed > 20000) {
         global._snMindWipeArmed = Date.now();
         return {
-          ok: true,
-          reply: 'Mind wipe re-armed · type mind wipe again to confirm',
+          text: 'Mind wipe re-armed · type mind wipe again to confirm',
+          score: 1,
+          via: 'astranov-mind',
           source: 'wipe-confirm',
         };
       }
@@ -1219,7 +1330,7 @@
     var qTok = tokens(msg);
     if (qTok.length < 1) {
       return {
-        text: "I'm with you — English or Greek. Try: locate, order pizza, shops, dark map, pilot home.",
+        text: "I'm with you — English or Greek. Try: locate, youtube, shops, dark map, pilot, search.",
         score: 0.55,
         via: 'free-mind',
         source: 'fallback',
@@ -1310,7 +1421,7 @@
     save();
     var fallback = opts.localReply
       ? brief(opts.localReply, 160)
-      : "I hear you — say it plain in English or Greek: locate · order pizza · shops · dark map · pilot home · cancel.";
+      : "I hear you — English or Greek: locate · youtube · shops · dark map · pilot · search · cancel.";
     return {
       text: fallback,
       score: opts.localReply ? 0.5 : 0.4,
@@ -1398,12 +1509,13 @@
   function exportTrainset() {
     var rows = [];
     SEED.forEach(function (s) {
+      if (!s || !s.q) return;
       rows.push({ input: s.q, output: s.a, source: 'seed', tags: s.tags });
     });
     learned.forEach(function (L) {
       rows.push({ input: L.q, output: L.a, source: 'learned', hits: L.hits || 0, tags: L.tags });
     });
-    return rows;
+    return { count: rows.length, rows: rows };
   }
 
   function status() {
@@ -1415,12 +1527,18 @@
       stats: Object.assign({}, stats),
       paidXaiRequired: false,
       evolves: true,
-      train: 'v6',
-      note: 'Astranov Mind v6 — English · Greek · Greeklish · ancient · simple tasks · evolves forever',
+      train: 'v7',
+      note: 'Astranov Mind v7 — full INTERNET OS · YouTube · LANGUAGE LAW EN/EL · evolves forever',
     };
   }
 
   load();
+  // One-shot retrain when LEARN_KEY is v7 but train flag still old/missing
+  try {
+    if (localStorage.getItem('sn:astranov-mind-train-v7') !== '1') {
+      trainOwnerMind(true);
+    }
+  } catch (_) {}
 
   var API = {
     NAME: NAME,

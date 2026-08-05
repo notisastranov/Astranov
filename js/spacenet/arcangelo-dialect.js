@@ -174,6 +174,10 @@
       [/\b(ευχαριστω|ευχαριστώ|efharisto)\b/i, 'thanks'],
       [/\b(βοηθεια|βοήθεια|voitheia)\b/i, 'help'],
       [/\b(μαγαζια|μαγαζιά|magazia)\b/i, 'shops'],
+      [/\b(anoi(k)?se|anoixe|άνοιξε|ανοιξε)\s+(youtube|yt|video)\b/i, 'youtube'],
+      [/\b(thelo|thelw)\s+(youtube|yt|video)\b/i, 'youtube'],
+      [/\b(des\s+video|show\s+video|watch\s+video)\b/i, 'youtube'],
+      [/^\s*(youtube|yt)\s*$/i, 'youtube'],
 
       [/^\s*(πιτσα|πίτσα|pitza|pitsa)\s*[!.?]*$/i, 'order me a pizza'],
       [/^\s*(πιτογυρα|πιτογύρα|pitogyra)\s*[!.?]*$/i, 'order pitogyra'],

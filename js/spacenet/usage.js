@@ -1,6 +1,8 @@
 /* SNUsage — product usage + handoff bridge (first-loop → midnight ship)
- * Local-first events. CLI: usage · handoff · usage export
- * Midnight Greek ship reads export / handoff queue (SPECS P4-U).
+ * Local-first events. CLI: usage · handoff · usage export · usage ship
+ * Eternal bridge: auto-ships summaries + open handoffs to SNLiveBridge
+ * so coding agent (Grok) can improve code forever while users run the app.
+ * Recommendations always obey ASTRANOV LAW / SPECS. One fix per Athens day.
  */
 (function (global) {
   'use strict';
@@ -8,9 +10,12 @@
   var KEY = 'sn:usage-v1';
   var HAND = 'sn:handoff-v1';
   var FLAGS = 'sn:usage-flags-v1';
+  var LAST_SHIP = 'sn:usage-last-ship-v1';
   var MAX = 400;
+  var SHIP_EVERY_MS = 45 * 60 * 1000; // 45 min soft auto-ship
 
   var U = { events: [], handoff: [], flags: {} };
+  var shipTimer = null;
 
   function load() {
     try {
@@ -82,7 +87,9 @@
     return Object.assign({}, U.flags);
   }
 
-  /** Queue a code/product request for the coding agent (bridge from AI chat) */
+  /** Queue a code/product request for the coding agent (bridge from AI chat)
+   * Always dual-writes to SNLiveBridge so Grok can see it forever.
+   */
   function handoff(note, meta) {
     var row = {
       t: Date.now(),
@@ -96,6 +103,16 @@
     U.handoff = U.handoff.slice(0, 80);
     save();
     track('handoff', { note: row.note.slice(0, 120) });
+
+    // Eternal bridge: push to remote so agent can read without user present
+    try {
+      if (global.SNLiveBridge && SNLiveBridge.ownerNote) {
+        void SNLiveBridge.ownerNote(
+          '[HANDOFF] ' + row.note,
+          Object.assign({ from: 'usage-handoff', handoff: true }, meta || {})
+        );
+      }
+    } catch (_) {}
     return row;
   }
 
@@ -149,6 +166,9 @@
       'Athens date: ' + s.athensToday,
       'Generated: ' + nowIso(),
       '',
+      '## Law',
+      'Recommendations must obey ASTRANOV LAW / SPECS. One highest-pain fix only. js/spacenet/* only. Probe live. Push main.',
+      '',
       '## Flags',
       '```json',
       JSON.stringify(s.flags, null, 2),
@@ -171,7 +191,7 @@
     lines.push(
       '',
       '## Ship rule',
-      'Pick **one** highest-pain fix. Implement in `js/spacenet/*` only. Probe live. Push main. One fix per Athens midnight.'
+      'Pick **one** highest-pain fix. Implement in `js/spacenet/*` only. Probe live. Push main. One fix per Athens midnight. Bridge stays forever.'
     );
     return lines.join('\n');
   }
@@ -191,7 +211,88 @@
     );
   }
 
+  /**
+   * Push current ship packet + open handoffs to live-bridge / owner-inbox.
+   * Returns promise. Soft-fails to local if remote down.
+   */
+  function shipToBridge(force) {
+    var last = 0;
+    try {
+      last = parseInt(localStorage.getItem(LAST_SHIP) || '0', 10) || 0;
+    } catch (_) {}
+    if (!force && Date.now() - last < SHIP_EVERY_MS) {
+      return Promise.resolve({ ok: true, skipped: true, reason: 'throttle' });
+    }
+    var packet = shipPacket();
+    var s = summary(14);
+    var note =
+      '[USAGE SHIP] ' +
+      s.athensToday +
+      ' · events=' +
+      s.events +
+      ' · openHandoffs=' +
+      s.openHandoffs +
+      ' · top=' +
+      (s.top[0] ? s.top[0].name + ':' + s.top[0].n : 'none');
+
+    track('usage_ship', { events: s.events, open: s.openHandoffs });
+
+    if (!global.SNLiveBridge || !SNLiveBridge.ownerNote) {
+      return Promise.resolve({ ok: true, local: true, remote: false, note: note });
+    }
+
+    return SNLiveBridge.ownerNote(note + '\n\n' + packet.slice(0, 1600), {
+      from: 'usage-ship',
+      usage: true,
+      events: s.events,
+      openHandoffs: s.openHandoffs,
+      top: s.top.slice(0, 5),
+    })
+      .then(function (res) {
+        var remote = !!(res && res.remote);
+        // Only stamp throttle after remote success so soft-fails retry sooner
+        if (remote) {
+          try {
+            localStorage.setItem(LAST_SHIP, String(Date.now()));
+          } catch (_) {}
+        }
+        return {
+          ok: !!(res && (res.ok || res.local)),
+          remote: remote,
+          local: true,
+          note: note,
+          res: res,
+        };
+      })
+      .catch(function (e) {
+        return { ok: true, local: true, remote: false, error: String(e && e.message ? e.message : e) };
+      });
+  }
+
+  function startAutoShip() {
+    if (shipTimer) return;
+    // First ship after shell is warm
+    setTimeout(function () {
+      void shipToBridge(false);
+    }, 90 * 1000);
+    shipTimer = setInterval(function () {
+      if (document.hidden) return;
+      void shipToBridge(false);
+    }, SHIP_EVERY_MS);
+  }
+
+  function stopAutoShip() {
+    if (shipTimer) clearInterval(shipTimer);
+    shipTimer = null;
+  }
+
   load();
+  // Boot auto-ship once modules are present
+  setTimeout(function () {
+    try {
+      startAutoShip();
+    } catch (_) {}
+  }, 4000);
 
   global.SNUsage = {
     track: track,
@@ -204,6 +305,9 @@
     shipPacket: shipPacket,
     exportJson: exportJson,
     athensDate: athensDate,
+    shipToBridge: shipToBridge,
+    startAutoShip: startAutoShip,
+    stopAutoShip: stopAutoShip,
     get events() {
       return U.events.slice();
     },
