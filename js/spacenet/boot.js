@@ -216,6 +216,7 @@
   // ARSENAL: everything else. Preloaded in background so CLI/AI can use it instantly when asked.
   var WAVE_ARSENAL_A = [
     '/js/spacenet/youtube.js',
+    '/js/spacenet/invaders.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
     '/js/spacenet/commerce.js',
@@ -254,6 +255,8 @@
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
     youtube: { src: '/js/spacenet/youtube.js', global: 'SNYoutube' },
+    invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
+    game: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
     tile: { src: '/js/spacenet/tile.js', global: 'SNTile' },
     map: { src: '/js/spacenet/map.js', global: 'SNMap' },
     commerce: { src: '/js/spacenet/commerce.js', global: 'SNCommerce' },
