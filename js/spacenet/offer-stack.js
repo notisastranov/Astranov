@@ -10,7 +10,7 @@
   var stack = [];   // visible (max 1) + active underways kept
   var queue = [];   // waiting offers — thrown one-by-one
   var root = null;
-  var CSS_ID = 'sn-offer-stack-css-v9-chrome';
+  var CSS_ID = 'sn-offer-stack-css-v10-inertia';
   var throwTimer = null;
 
   function log(m, c) {
@@ -225,7 +225,7 @@
       'text-shadow:0 0 12px rgba(40,120,255,.5);z-index:141}',
       /* Floating tile — free drag position */
       '#sn-offer-stack .sn-offer{pointer-events:auto;position:fixed;',
-      'left:50%;bottom:86px;transform:translateX(-50%);',
+      'left:50%;top:72px;bottom:auto;transform:translateX(-50%);',
       'display:flex;flex-direction:column;align-items:stretch;gap:0;',
       'width:min(92vw,300px);max-width:min(94vw,360px);',
       'padding:0;color:#eaf4ff;cursor:grab;touch-action:none;user-select:none;',
@@ -269,8 +269,11 @@
       '#sn-offer-stack .sn-pill-line{font:600 10px/1.25 "Inter",system-ui,sans-serif;color:#9ec4ee;',
       'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}',
       /* Vendor + client always visible */
-      '#sn-offer-stack .sn-parties{padding:0 14px 8px;display:flex;flex-direction:column;gap:4px}',
+      '#sn-offer-stack .sn-parties{padding:0 14px 10px;display:flex;flex-direction:column;gap:6px}',
       '#sn-offer-stack .sn-party{display:flex;align-items:center;gap:8px;min-width:0}',
+      '#sn-offer-stack .sn-party .av{width:36px;height:36px;border-radius:50%;flex:0 0 auto;object-fit:cover;',
+      'border:1.5px solid rgba(100,180,255,.55);box-shadow:0 0 12px rgba(40,120,255,.35);background:#0a1e40}',
+      '#sn-offer-stack .sn-party.vendor .av{border-color:rgba(255,190,60,.65);box-shadow:0 0 12px rgba(255,180,40,.35);border-radius:12px}',
       '#sn-offer-stack .sn-party .tag{font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.1em;',
       'text-transform:uppercase;padding:4px 7px;border-radius:999px;flex:0 0 auto}',
       '#sn-offer-stack .sn-party.vendor .tag{background:rgba(255,180,40,.18);border:1px solid rgba(255,190,60,.5);color:#ffd080}',
@@ -278,6 +281,9 @@
       '#sn-offer-stack .sn-party .nm{font:700 12px/1.2 "Inter",system-ui,sans-serif;color:#eaf4ff;',
       'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
       '#sn-offer-stack .sn-party .role{font:500 9px/1.2 "Inter",system-ui,sans-serif;color:#6a94c4;margin-left:auto;flex:0 0 auto}',
+      '#sn-offer-stack .sn-offer.physics{will-change:left,top;transition:none}',
+      /* default park: top band so polygon map is free below */
+      '#sn-offer-stack .sn-offer.park-top{left:50%;top:72px;bottom:auto;transform:translateX(-50%)}',
       '#sn-offer-stack .sn-pill-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto}',
       '#sn-offer-stack .sn-pill-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(80,160,255,.45);',
       'background:rgba(10,40,90,.55);color:#b8d8ff;font:700 13px/1 system-ui;cursor:pointer;',
@@ -389,6 +395,168 @@
       t.buyerName ||
       'You';
     return { vendor: String(vendor).slice(0, 28), client: String(client).slice(0, 28) };
+  }
+
+  function hashHue(str) {
+    var h = 0;
+    var s = String(str || 'x');
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h % 360;
+  }
+
+  function initials(name) {
+    var p = String(name || '?')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!p.length) return '?';
+    if (p.length === 1) return p[0].slice(0, 2).toUpperCase();
+    return (p[0][0] + p[p.length - 1][0]).toUpperCase();
+  }
+
+  function avatarUrl(kind, name, url) {
+    if (url && /^https?:\/\//i.test(String(url))) return String(url);
+    if (url && String(url).indexOf('data:image') === 0) return String(url);
+    var hue = kind === 'vendor' ? (hashHue(name) + 30) % 360 : (hashHue(name) + 200) % 360;
+    var ini = initials(name);
+    var r = kind === 'vendor' ? 14 : 48;
+    var svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="hsl(' +
+      hue +
+      ',85%,62%)"/><stop offset="100%" stop-color="hsl(' +
+      ((hue + 40) % 360) +
+      ',70%,38%)"/></linearGradient></defs>' +
+      '<rect width="72" height="72" rx="' +
+      r +
+      '" fill="#061428"/>' +
+      '<rect x="3" y="3" width="66" height="66" rx="' +
+      Math.max(8, r - 4) +
+      '" fill="url(#g)" opacity="0.92"/>' +
+      '<text x="36" y="42" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="22" fill="#eaf4ff">' +
+      String(ini).replace(/&/g, '').replace(/</g, '').replace(/>/g, '') +
+      '</text></svg>';
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  function partyAvatars(o) {
+    var names = partyNames(o);
+    var t = (o && o.task) || {};
+    var en = (o && o.enriched) || {};
+    var vUrl =
+      (o && o.vendorLogo) ||
+      t.vendorLogo ||
+      t.shopLogo ||
+      t.logo ||
+      (en && (en.vendorLogo || en.logo)) ||
+      (o.profile && (o.profile.logo || o.profile.photo || o.profile.image));
+    var cUrl =
+      (o && o.clientPhoto) ||
+      t.clientPhoto ||
+      t.clientAvatar ||
+      t.customerPhoto ||
+      t.photo ||
+      (en && (en.clientPhoto || en.avatar));
+    return {
+      vendor: avatarUrl('vendor', names.vendor, vUrl),
+      client: avatarUrl('client', names.client, cUrl),
+      vendorName: names.vendor,
+      clientName: names.client,
+    };
+  }
+
+  function defaultParkPos(cardW, cardH) {
+    var w = window.innerWidth || 390;
+    var h = window.innerHeight || 844;
+    cardW = cardW || Math.min(w * 0.92, 300);
+    cardH = cardH || 120;
+    var topChrome = 64;
+    var x = Math.round((w - cardW) / 2);
+    var y = Math.round(topChrome + 8);
+    if (y + cardH > h - 130) y = Math.max(8, h - 130 - cardH);
+    return { x: x, y: y };
+  }
+
+  function ensureParked(o, card) {
+    if (!o) return;
+    if (o.uiX != null && o.uiY != null) return;
+    var w = card ? card.offsetWidth : Math.min((window.innerWidth || 390) * 0.92, 300);
+    var h = card ? card.offsetHeight : 120;
+    var p = defaultParkPos(w, h);
+    o.uiX = p.x;
+    o.uiY = p.y;
+    if (card) {
+      card.style.left = p.x + 'px';
+      card.style.top = p.y + 'px';
+      card.style.bottom = 'auto';
+      card.style.transform = 'none';
+      card.classList.add('park-top');
+    }
+  }
+
+  var physRaf = null;
+  var physTiles = Object.create(null);
+
+  function physLoop() {
+    physRaf = null;
+    var w = window.innerWidth || 390;
+    var h = window.innerHeight || 844;
+    var any = false;
+    var damp = 0.935;
+    var bounce = 0.72;
+    Object.keys(physTiles).forEach(function (oid) {
+      var ph = physTiles[oid];
+      if (!ph || !ph.el || !document.body.contains(ph.el)) {
+        delete physTiles[oid];
+        return;
+      }
+      var el = ph.el;
+      var o = ph.o;
+      var cw = el.offsetWidth || 200;
+      var ch = el.offsetHeight || 100;
+      var x = o.uiX != null ? o.uiX : el.getBoundingClientRect().left;
+      var y = o.uiY != null ? o.uiY : el.getBoundingClientRect().top;
+      ph.vx *= damp;
+      ph.vy *= damp;
+      x += ph.vx;
+      y += ph.vy;
+      if (x < 4) {
+        x = 4;
+        ph.vx = Math.abs(ph.vx) * bounce;
+      } else if (x + cw > w - 4) {
+        x = w - 4 - cw;
+        ph.vx = -Math.abs(ph.vx) * bounce;
+      }
+      if (y < 4) {
+        y = 4;
+        ph.vy = Math.abs(ph.vy) * bounce;
+      } else if (y + ch > h - 4) {
+        y = h - 4 - ch;
+        ph.vy = -Math.abs(ph.vy) * bounce;
+      }
+      o.uiX = x;
+      o.uiY = y;
+      el.style.left = Math.round(x) + 'px';
+      el.style.top = Math.round(y) + 'px';
+      el.style.bottom = 'auto';
+      el.style.transform = 'none';
+      if (Math.hypot(ph.vx, ph.vy) > 0.35) any = true;
+      else {
+        ph.vx = 0;
+        ph.vy = 0;
+        delete physTiles[oid];
+      }
+    });
+    if (any || Object.keys(physTiles).length) {
+      physRaf = requestAnimationFrame(physLoop);
+    }
+  }
+
+  function startPhys(oid, el, o, vx, vy) {
+    physTiles[oid] = { el: el, o: o, vx: vx, vy: vy };
+    el.classList.add('physics');
+    if (!physRaf) physRaf = requestAnimationFrame(physLoop);
   }
 
   function isRouteLocked(o) {
@@ -609,65 +777,117 @@
   }
 
   function bindDrag(card, o) {
-    if (!card || !o) return;
-    var handle = card.querySelector('.sn-chrome') || card;
+    if (!card || !o || card._snPhysBound) return;
+    card._snPhysBound = true;
+    ensureParked(o, card);
+    var handle = card; // whole tile throwable with one finger
     var startX = 0,
       startY = 0,
       origL = 0,
       origT = 0,
-      dragging = false;
+      dragging = false,
+      lastT = 0,
+      lastX = 0,
+      lastY = 0,
+      vx = 0,
+      vy = 0,
+      samples = [];
     function onDown(ev) {
-      if (ev.target && ev.target.closest && ev.target.closest('button,a,input')) return;
-      var pe = ev.touches ? ev.touches[0] : ev;
+      if (ev.target && ev.target.closest && ev.target.closest('button,a,input,.mv,.sn-chrome-btn,.sn-pill-btn,.sn-offer-btn'))
+        return;
+      var pe = ev.pointerType != null ? ev : ev.touches ? ev.touches[0] : ev;
+      // stop any coast
+      if (physTiles[o.id]) delete physTiles[o.id];
       dragging = true;
       card.classList.add('dragging');
       startX = pe.clientX;
       startY = pe.clientY;
+      lastX = pe.clientX;
+      lastY = pe.clientY;
+      lastT = performance.now();
+      samples = [];
+      vx = 0;
+      vy = 0;
       var rect = card.getBoundingClientRect();
-      // switch from bottom/transform to left/top fixed
       card.style.left = rect.left + 'px';
       card.style.top = rect.top + 'px';
       card.style.bottom = 'auto';
       card.style.transform = 'none';
+      card.classList.remove('park-top');
       origL = rect.left;
       origT = rect.top;
-      ev.preventDefault();
+      o.uiX = origL;
+      o.uiY = origT;
+      try {
+        if (ev.pointerId != null && card.setPointerCapture) card.setPointerCapture(ev.pointerId);
+      } catch (_) {}
+      if (ev.cancelable) ev.preventDefault();
     }
     function onMove(ev) {
       if (!dragging) return;
-      var pe = ev.touches ? ev.touches[0] : ev;
+      var pe = ev.pointerType != null ? ev : ev.touches ? ev.touches[0] : ev;
+      var now = performance.now();
       var dx = pe.clientX - startX;
       var dy = pe.clientY - startY;
-      var nl = Math.max(4, Math.min(window.innerWidth - card.offsetWidth - 4, origL + dx));
-      var nt = Math.max(4, Math.min(window.innerHeight - card.offsetHeight - 4, origT + dy));
+      var w = window.innerWidth || 390;
+      var h = window.innerHeight || 844;
+      var cw = card.offsetWidth;
+      var ch = card.offsetHeight;
+      var nl = origL + dx;
+      var nt = origT + dy;
+      // soft clamp while dragging (allow slight overshoot for throw feel)
+      nl = Math.max(-cw * 0.35, Math.min(w - cw * 0.65, nl));
+      nt = Math.max(-ch * 0.2, Math.min(h - ch * 0.5, nt));
       card.style.left = nl + 'px';
       card.style.top = nt + 'px';
       o.uiX = nl;
       o.uiY = nt;
+      var dt = Math.max(1, now - lastT);
+      var ivx = (pe.clientX - lastX) / dt;
+      var ivy = (pe.clientY - lastY) / dt;
+      samples.push({ vx: ivx, vy: ivy, t: now });
+      if (samples.length > 6) samples.shift();
+      // EMA velocity px/ms
+      vx = vx * 0.35 + ivx * 0.65;
+      vy = vy * 0.35 + ivy * 0.65;
+      lastX = pe.clientX;
+      lastY = pe.clientY;
+      lastT = now;
+      if (ev.cancelable) ev.preventDefault();
     }
-    function onUp() {
+    function onUp(ev) {
       if (!dragging) return;
       dragging = false;
       card.classList.remove('dragging');
+      // Fling: px/ms → px/frame (~16ms)
+      var speed = Math.hypot(vx, vy);
+      var throwVx = vx * 18; // lots of inertia
+      var throwVy = vy * 18;
+      if (speed > 0.08) {
+        // cap wild throws
+        var mag = Math.hypot(throwVx, throwVy);
+        var max = 48;
+        if (mag > max) {
+          throwVx = (throwVx / mag) * max;
+          throwVy = (throwVy / mag) * max;
+        }
+        startPhys(o.id, card, o, throwVx, throwVy);
+      } else {
+        // settle inside bounds
+        var w = window.innerWidth || 390;
+        var h = window.innerHeight || 844;
+        var cw = card.offsetWidth;
+        var ch = card.offsetHeight;
+        o.uiX = Math.max(4, Math.min(w - cw - 4, o.uiX));
+        o.uiY = Math.max(4, Math.min(h - ch - 4, o.uiY));
+        card.style.left = Math.round(o.uiX) + 'px';
+        card.style.top = Math.round(o.uiY) + 'px';
+      }
     }
-    handle.addEventListener('pointerdown', onDown);
-    window.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove, { passive: false });
     window.addEventListener('pointerup', onUp);
-    handle.addEventListener(
-      'touchstart',
-      function (e) {
-        onDown(e);
-      },
-      { passive: false }
-    );
-    window.addEventListener(
-      'touchmove',
-      function (e) {
-        if (dragging) onMove(e);
-      },
-      { passive: false }
-    );
-    window.addEventListener('touchend', onUp);
+    window.addEventListener('pointercancel', onUp);
   }
 
   function paint() {
@@ -813,14 +1033,19 @@
                 .join('') +
               '</div>';
           }
+          var av = partyAvatars(o);
           var parties =
             isTask || o.kind === 'vendor'
               ? '<div class="sn-parties">' +
-                '<div class="sn-party vendor"><span class="tag">Vendor</span><span class="nm">' +
+                '<div class="sn-party vendor"><img class="av" alt="" src="' +
+                esc(av.vendor) +
+                '" width="36" height="36" decoding="async"/><span class="tag">Vendor</span><span class="nm">' +
                 esc(names.vendor) +
                 '</span><span class="role">pickup</span></div>' +
                 (isTask
-                  ? '<div class="sn-party client"><span class="tag">Client</span><span class="nm">' +
+                  ? '<div class="sn-party client"><img class="av" alt="" src="' +
+                    esc(av.client) +
+                    '" width="36" height="36" decoding="async"/><span class="tag">Client</span><span class="nm">' +
                     esc(names.client) +
                     '</span><span class="role">drop</span></div>'
                   : '') +
@@ -1061,7 +1286,16 @@
     el.querySelectorAll('.sn-offer').forEach(function (card) {
       var oid = card.getAttribute('data-oid');
       var o = find(oid);
-      if (o) bindDrag(card, o);
+      if (o) {
+        ensureParked(o, card);
+        if (o.uiX != null && o.uiY != null) {
+          card.style.left = Math.round(o.uiX) + 'px';
+          card.style.top = Math.round(o.uiY) + 'px';
+          card.style.bottom = 'auto';
+          card.style.transform = 'none';
+        }
+        bindDrag(card, o);
+      }
     });
   }
 

@@ -87,6 +87,28 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | **No training sim** | Sim-33 / driver-day / sim-task train / Rodos training default = **deleted**. |
 | **Marketplace** | 24/7/365 all locations — no platform curfew. |
 
+
+
+### Task offer tiles (driver OS)
+
+| Law | Meaning |
+|-----|---------|
+| **Park top** | Default tile sits in the **top band** under chrome so the **city polygon route stays fully visible** below |
+| **Vendor + client** | Names **and** faces: **vendor logo** (square mark) · **client profile photo** (circle). Real URL when present; neon monogram otherwise |
+| **Chrome** | Traditional window: **− minimize (left)** · **× close (center)** · **+ maximize (right)** |
+| **One-finger throw** | Drag whole tile · release flings with **inertia** · **bounce** off screen edges · settle |
+| **Polygon** | Connects vendor → mid stops → client; private/straight paid deals **route-locked** |
+| **Rearrange** | Driver may reorder mid-stops unless deal priority locks the polygon |
+
+### Globe trackball (sacred)
+
+| Law | Meaning |
+|-----|---------|
+| **One-finger spin** | Drag Earth · release **flings** with long coast (damp ≈ 0.945) |
+| **Inertia always after fling** | Do **not** gate velocity on “user cool” — cool only blocks idle drift |
+| **Polar axis** | Y longitude · X latitude tilt · no clock-face Z |
+| **No game steal** | Lean boot keeps `setGameMode(false)` unless owner arms space-scene |
+
 ### Minimum CLI commands
 
 `help` · `locate` · `city` · `global` · `fly <city>` · `shops` · `first delivery` · `list shop` · `menu add` · `order me` · `drive on` · `deliver me` · `task list` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `layers` · basemap words (`dark` …) · `go to mars|moon|…` · `usage`
@@ -660,3 +682,4 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 | **Script** | `support/MANO-ROUSA-EKLISIA-SCRIPT.md` |
 | **Film** | `assets/brand/videos/mano-rousa-eklisia-8-ammo.mp4` |
 
+*Agent note 2026-08-05 (not owner OV): **Tile inertia + avatars + globe fling** — park-top tiles with vendor logo + client photo; one-finger throw/bounce; globe trackball fling restored (no userCool gate). Build `20260805170000-tile-inertia`.*
