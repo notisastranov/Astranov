@@ -165,7 +165,9 @@
       H.x = (window.innerWidth || 400) * 0.72;
       H.y = (window.innerHeight || 700) * 0.28;
     }
-    if (!H.raf) H.raf = requestAnimationFrame(loop);
+    if (!H._engine && global.SNGameLoop && SNGameLoop.subscribe) {
+      H._engine = SNGameLoop.subscribe(function (dt, now) { loop(now); }, { lane: 'ambient', name: 'helper' });
+    } else if (!H.raf && !H._engine) H.raf = requestAnimationFrame(loop);
     return true;
   }
 
@@ -206,7 +208,9 @@
     if (H.canvas) H.canvas.style.opacity = show ? '1' : '0';
     if (show) {
       ensureCanvas();
-      if (!H.raf) H.raf = requestAnimationFrame(loop);
+      if (!H._engine && global.SNGameLoop && SNGameLoop.subscribe) {
+      H._engine = SNGameLoop.subscribe(function (dt, now) { loop(now); }, { lane: 'ambient', name: 'helper' });
+    } else if (!H.raf && !H._engine) H.raf = requestAnimationFrame(loop);
     }
     return { ok: true, parked: true, tier: tier, visible: show };
   }
@@ -343,7 +347,8 @@
       H.raf = 0;
       return;
     }
-    H.raf = requestAnimationFrame(loop);
+    // Own RAF only when not on SNEngine
+    if (!H._engine) H.raf = requestAnimationFrame(loop);
     if (!H.ctx) return;
     if (document.hidden) return;
     // ~36fps — game feel without sticky
