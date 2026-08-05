@@ -100,6 +100,19 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | **Polygon** | Connects vendor → mid stops → client; private/straight paid deals **route-locked** |
 | **Rearrange** | Driver may reorder mid-stops unless deal priority locks the polygon |
 
+
+
+### Marina berth parking (captain + vendor)
+
+| Law | Meaning |
+|-----|---------|
+| **Zoom in** | City map zoom ≥ 16 inside marina footprint → **berth grid overlay** on the map (not a full-screen panel) |
+| **Cells** | Each berth: code · length m · **price Æ/night** · status free/held/occupied/maintenance |
+| **Colors** | Free green (price) · held amber · occupied blue-grey · maintenance muted |
+| **Captain** | Tap **free** cell → hold berth · parking offer tile (poly-scheduler) |
+| **Vendor** | Banner **Vendor** mode · tap cell → set status + price + length · saved locally (later mesh/API) |
+| **CLI** | `marina` · `marina <name>` · `vendor marina` · `captain marina` |
+
 ### Globe trackball (sacred)
 
 | Law | Meaning |
@@ -706,3 +719,4 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 
 **Build:** `20260805180000-poly-rebuild`
 
+*Agent note 2026-08-05: marina berth grid overlay + vendor price edit. Build `20260805182000-marina-berths`.*
