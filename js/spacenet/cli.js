@@ -464,6 +464,7 @@
     function help() {
     log("Hey — I'm Astranov Mind · full INTERNET OS + 3D globe browser.", 'ok');
     log('Media: youtube <query> · yt cats · watch <url> · play 2 · yt close', 'ok');
+    log('Game: invaders · space invaders · cockpit · close invaders (tilt phone · no stick)', 'ok');
     log('Map: locate · shops · fly athens · fly archangelos · dark map · pilot home', 'ok');
     log('Search: crawl X · find X · research X · code write …', 'ok');
     log('Order: order me a pizza · order pitogyra mpyronia · shops · claim', 'ok');
@@ -617,6 +618,43 @@
         activity('youtube…', 'work', { label: 'YouTube' });
         if (Y.find) await Y.find(q);
         else log('YouTube ready · hard refresh if needed', 'err');
+        return;
+      }
+      // ── Space Invaders cockpit (tilt phone · no joystick) ──
+      if (
+        /^(invaders?|space\s*invaders?|play\s+invaders?|cockpit|space\s*war|space\s*battle|play\s+(the\s+)?game|start\s+game)\b/.test(
+          low
+        ) ||
+        low === 'game' ||
+        low === 'invader' ||
+        low === 'invaders close' ||
+        low === 'close invaders' ||
+        low === 'exit game' ||
+        low === 'quit game'
+      ) {
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('invaders');
+        } catch (_) {}
+        const I = global.SNInvaders;
+        if (!I) {
+          log('Invaders loading · try again in a moment', 'dim');
+          return;
+        }
+        if (
+          low === 'invaders close' ||
+          low === 'close invaders' ||
+          low === 'exit game' ||
+          low === 'quit game' ||
+          /\bclose\b/.test(low)
+        ) {
+          if (I.close) I.close();
+          log('Cockpit closed', 'dim');
+          return;
+        }
+        if (I.open) I.open();
+        else if (I.start) I.start();
+        log('Cockpit · tilt to fly · tap guns · hold laser · two fingers missile · EXIT top-right', 'ok');
+        preview('INVADERS');
         return;
       }
       // Real use: task board · route-compatible jobs
