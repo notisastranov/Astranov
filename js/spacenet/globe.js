@@ -1449,7 +1449,7 @@
     }
     setSpaceLive(true);
     setTierLabel();
-    loop();
+    ensureGlobeEngine();
     return true;
   }
 
@@ -2132,8 +2132,29 @@
     G.renderer.setSize(w, h, false);
   }
 
-  function loop() {
-    requestAnimationFrame(loop);
+
+  var _globeUnsub = null;
+  function ensureGlobeEngine() {
+    if (G._engineHooked) return;
+    G._engineHooked = true;
+    if (global.SNGameLoop && SNGameLoop.subscribe) {
+      _globeUnsub = SNGameLoop.subscribe(
+        function (dt, now) {
+          loop(dt, now);
+        },
+        { lane: 'visual', name: 'globe' }
+      );
+    } else {
+      function rafLoop(now) {
+        requestAnimationFrame(rafLoop);
+        loop(16, now);
+      }
+      requestAnimationFrame(rafLoop);
+    }
+  }
+
+  function loop(dtMs, now) {
+    // When called from RAF fallback, no args — when from SNEngine, dtMs is set
     if (!G.ready || document.hidden) return;
     // City map open: freeze Earth almost completely
     if (global.SNMap && SNMap.active) {
