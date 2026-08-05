@@ -1024,6 +1024,15 @@
       };
     }
 
+    if (/^(engine|fps|quality)[\s!.?]*$/i.test(rawLow) || /\b(game\s*engine|gaming\s*graphics|make\s*it\s*faster)\b/i.test(rawLow)) {
+      return {
+        text: 'SNEngine is the gaming power core — type engine · engine high · engine auto · fps. Whole OS runs on one frame loop.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-engine',
+      };
+    }
+
     // Space Invaders cockpit
     if (
       /\b(space\s*invaders?|invaders?|play\s+(the\s+)?game|cockpit|space\s*war|space\s*battle|shoot\s*aliens?)\b/i.test(
