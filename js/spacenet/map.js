@@ -665,7 +665,7 @@
   }
 
   async function refreshIss() {
-    if (!M.map || !M.overlayOn.iss && !M.overlayOn.sats) return;
+    if (!M.map || (!M.overlayOn.iss && !M.overlayOn.sats)) return;
     try {
       const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
       const j = await r.json();
