@@ -20,7 +20,14 @@
     reload: 1,
     hard_reload: 1,
     locate: 1,
+    shops: 1,
     'fill shops': 1,
+    city: 1,
+    earth: 1,
+    global: 1,
+    help: 1,
+    'dark map': 1,
+    'bright map': 1,
     'route test': 1,
     'ready score': 1,
     'test ready': 1,
@@ -28,6 +35,12 @@
     'yt close': 1,
     'youtube close': 1,
     'close youtube': 1,
+    'bridge status': 1,
+    'usage ship': 1,
+    'mind status': 1,
+    verify: 1,
+    brain: 1,
+    law: 1,
   };
   function cmdAllowed(c) {
     var s = String(c || '')
@@ -37,8 +50,12 @@
     if (ALLOW_CMDS[s]) return true;
     // YouTube / media CLI safe prefixes
     if (/^(youtube|yt)\b/.test(s) || /^watch\b/.test(s) || /^play\s+\d+$/.test(s)) return true;
-    // allow agent notes style no exec
+    // Safe read-only / map nav prefixes
+    if (/^(fly|go)\s+\S/.test(s)) return true;
+    if (/^(crawl|find|research|search)\s+\S/.test(s)) return true;
+    // Never agent notes as exec; never fee / wallet mutations from remote
     if (s.indexOf('agent ') === 0) return false;
+    if (/\b(credit|fee|take_fee|wallet|pay|mine on|donate)\b/.test(s)) return false;
     return false;
   }
 
@@ -96,13 +113,30 @@
       } else if (op === 'task_fit' && global.SNTaskBoard && SNTaskBoard.listCompatibleOnCli) {
         SNTaskBoard.listCompatibleOnCli();
       } else if (op === 'cli' && global.SNCli && SNCli.run) {
-        void SNCli.run(String(cmd.text || cmd.cmd || ''));
+        var ct = String(cmd.text || cmd.cmd || '').trim();
+        if (!cmdAllowed(ct)) {
+          log('Bridge · CLI blocked · ' + ct.slice(0, 48), 'err');
+        } else {
+          void SNCli.run(ct);
+        }
       } else if (op === 'ai' && global.SNAi && SNAi.ask) {
-        void SNAi.ask(String(cmd.text || cmd.msg || ''));
-      } else if (op === 'credit_fee' && global.SNCurrency && SNCurrency.notePlatformFee) {
-        SNCurrency.notePlatformFee(Number(cmd.amount) || 0.01, { why: 'bridge' });
-      } else if (op === 'take_fee' && global.SNCurrency && SNCurrency.takePlatformFeeFrom) {
-        SNCurrency.takePlatformFeeFrom(Number(cmd.gross) || 10, 'bridge');
+        // AI freeform is high-impact — only allow short product phrases
+        var at = String(cmd.text || cmd.msg || '').trim();
+        if (!at || at.length > 200 || !cmdAllowed(at)) {
+          log('Bridge · AI blocked · ' + at.slice(0, 48), 'err');
+        } else {
+          void SNAi.ask(at);
+        }
+      } else if (op === 'credit_fee' || op === 'take_fee') {
+        // Money ops never from public poll — owner/console inject only with force
+        if (cmd.force === true && global.SNCurrency) {
+          if (op === 'credit_fee' && SNCurrency.notePlatformFee)
+            SNCurrency.notePlatformFee(Number(cmd.amount) || 0.01, { why: 'bridge' });
+          else if (op === 'take_fee' && SNCurrency.takePlatformFeeFrom)
+            SNCurrency.takePlatformFeeFrom(Number(cmd.gross) || 10, 'bridge');
+        } else {
+          log('Bridge · fee op blocked (public)', 'err');
+        }
       } else if (op === 'super_show' && global.SNSuper) {
         SNSuper.show();
       } else if (op === 'notice' && global.SNField && SNField.setNotice) {
@@ -224,7 +258,10 @@
     });
   }
 
-  setTimeout(start, 1500);
+  // Soft self-start if boot arsenal path never calls start (degraded)
+  setTimeout(function () {
+    if (!timer) start();
+  }, 8000);
 
   function localNotes() {
     try {
@@ -284,13 +321,8 @@
       .then(function (cur) {
         var notes = Array.isArray(cur.notes) ? cur.notes.slice(0, 80) : [];
         notes.unshift(entry);
+        // CRITICAL: never re-broadcast old executable cmds — new seq would re-run them on every heartbeat/ship
         var cmds = [{ op: 'owner_note', text: note.slice(0, 500), from: entry.from }];
-        // Keep non-note cmds from remote if fresh
-        if (Array.isArray(cur.cmds)) {
-          cur.cmds.forEach(function (c) {
-            if (c && c.op && c.op !== 'owner_note') cmds.push(c);
-          });
-        }
         var cfg = global.SN_CONFIG || {};
         var url = (cfg.sbUrl || global.SB_URL || '').replace(/\/$/, '') + '/functions/v1/debug-write';
         var body = {
@@ -464,6 +496,7 @@
     inject: inject,
     publish: publish,
     applyCmd: applyCmd,
+    cmdAllowed: cmdAllowed,
     ownerNote: ownerNote,
     bridgeUrl: bridgeUrl,
     inboxUrl: inboxUrl,
