@@ -464,7 +464,8 @@
     function help() {
     log("Hey — I'm Astranov Mind · full INTERNET OS + 3D globe browser.", 'ok');
     log('Media: youtube <query> · yt cats · watch <url> · play 2 · yt close', 'ok');
-    log('Game: invaders · space invaders · cockpit · close invaders (tilt phone · no stick)', 'ok');
+    log('Game: invaders · earth ops · ops · play levels · gaming (HELPER wingman)', 'ok');
+    log('Earth Ops: high-end orbital levels on Real Earth · silver-wing HELPER AI', 'dim');
     log('Engine: engine · engine high|balanced|lite|ultra|auto · fps  (gaming power for whole OS)', 'dim');
     log('Map: locate · shops · fly athens · fly archangelos · dark map · pilot home', 'ok');
     log('Search: crawl X · find X · research X · code write …', 'ok');
@@ -656,6 +657,32 @@
         return;
       }
       // ── Space Invaders cockpit (tilt phone · no joystick) ──
+
+      // Earth Ops — high-end gaming levels on Real Earth + HELPER
+      if (
+        (global.SNEarthOps && SNEarthOps.wants && SNEarthOps.wants(low)) ||
+        low === 'earth ops' ||
+        low === 'ops' ||
+        low === 'play levels' ||
+        low === 'gaming' ||
+        low === 'levels' ||
+        low === 'game mode'
+      ) {
+        if (low === 'ops close' || low === 'close ops' || low === 'earth ops close') {
+          if (global.SNEarthOps && SNEarthOps.close) SNEarthOps.close();
+          return true;
+        }
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('earthops');
+        } catch (_) {}
+        if (global.SNEarthOps && SNEarthOps.start) {
+          SNEarthOps.start();
+          return true;
+        }
+        log('Earth Ops module loading…', 'dim');
+        return true;
+      }
+
       if (
         /^(invaders?|space\s*invaders?|play\s+invaders?|cockpit|space\s*war|space\s*battle|play\s+(the\s+)?game|start\s+game)\b/.test(
           low
