@@ -188,37 +188,97 @@
     }
   }
 
+  const INVIDIOUS = [
+    'https://invidious.fdn.fr',
+    'https://vid.puffyan.us',
+    'https://invidious.privacyredirect.com',
+    'https://yt.artemislena.eu',
+  ];
+  const LAST_PIPED = 'sn:yt-piped-base-v1';
+
+  async function fetchJson(url, ms) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms || 4500);
+    try {
+      const r = await fetch(url, {
+        signal: c.signal,
+        headers: { Accept: 'application/json' },
+      });
+      if (!r.ok) throw new Error(r.status + ' ' + url);
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function mapPipedItems(items) {
+    return items
+      .slice(0, 8)
+      .map((it, i) => {
+        const url = it.url || '';
+        const id = it.id || parseId(url) || parseId('https://youtube.com' + url);
+        return {
+          id,
+          title: it.title || 'Video ' + (i + 1),
+          channel: it.uploaderName || it.uploader || '',
+          duration: it.duration || 0,
+          thumbnail: it.thumbnail,
+        };
+      })
+      .filter((v) => v.id);
+  }
+
+  function mapInvidiousItems(items) {
+    return (Array.isArray(items) ? items : [])
+      .filter((it) => it && (it.type === 'video' || it.videoId || it.video_id))
+      .slice(0, 8)
+      .map((it, i) => ({
+        id: it.videoId || it.video_id || parseId(it.videoId),
+        title: it.title || 'Video ' + (i + 1),
+        channel: it.author || it.uploaderName || '',
+        duration: it.lengthSeconds || it.duration || 0,
+        thumbnail: (it.videoThumbnails && it.videoThumbnails[0] && it.videoThumbnails[0].url) || it.thumbnail || '',
+      }))
+      .filter((v) => v.id);
+  }
+
   async function pipedSearch(query) {
     const q = encodeURIComponent(query);
     let lastErr = '';
-    for (const base of PIPED) {
+    let bases = PIPED.slice();
+    try {
+      const last = localStorage.getItem(LAST_PIPED);
+      if (last && bases.indexOf(last) >= 0) {
+        bases = [last].concat(bases.filter((b) => b !== last));
+      }
+    } catch (_) {}
+    for (const base of bases) {
       try {
-        const r = await fetch(base + '/search?q=' + q + '&filter=videos', {
-          headers: { Accept: 'application/json' },
-        });
-        if (!r.ok) {
-          lastErr = r.status + ' ' + base;
-          continue;
-        }
-        const items = await r.json();
+        const items = await fetchJson(base + '/search?q=' + q + '&filter=videos', 4500);
         if (!Array.isArray(items) || !items.length) {
           lastErr = 'empty ' + base;
           continue;
         }
-        return items
-          .slice(0, 8)
-          .map((it, i) => {
-            const url = it.url || '';
-            const id = it.id || parseId(url) || parseId('https://youtube.com' + url);
-            return {
-              id,
-              title: it.title || 'Video ' + (i + 1),
-              channel: it.uploaderName || it.uploader || '',
-              duration: it.duration || 0,
-              thumbnail: it.thumbnail,
-            };
-          })
-          .filter((v) => v.id);
+        const mapped = mapPipedItems(items);
+        if (!mapped.length) {
+          lastErr = 'no ids ' + base;
+          continue;
+        }
+        try {
+          localStorage.setItem(LAST_PIPED, base);
+        } catch (_) {}
+        return mapped;
+      } catch (e) {
+        lastErr = String(e.message || e);
+      }
+    }
+    // Invidious fallback
+    for (const base of INVIDIOUS) {
+      try {
+        const items = await fetchJson(base + '/api/v1/search?q=' + q + '&type=video', 4500);
+        const mapped = mapInvidiousItems(items);
+        if (mapped.length) return mapped;
+        lastErr = 'empty inv ' + base;
       } catch (e) {
         lastErr = String(e.message || e);
       }
