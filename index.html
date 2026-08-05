@@ -4,11 +4,60 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
+<meta name="theme-color" content="#000000" />
 <meta name="astranov-build" content="20260805155600-simple-ux" />
-<meta http-equiv="refresh" content="0;url=https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/index.html">
-<script>location.replace('https://astranov.eu/?v=20260805155600-simple-ux');</script>
+<meta name="astranov-continuity" content="20260805164500-tile-chrome" />
+<link rel="icon" href="/icon.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --bg:#000; --text:#e8e8e8; --glow:#3d9eff; --font-ui:Inter,system-ui,sans-serif; --font-display:"Space Grotesk",system-ui,sans-serif; --font-mono:"JetBrains Mono",monospace; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:#000; color:var(--text); font:500 14px/1.45 var(--font-ui); overflow:hidden; }
+  #globe { position:fixed; inset:0; z-index:1; }
+  #city-map { position:fixed; inset:0; z-index:2; display:none; }
+  #city-map.active { display:block; }
+  #boot { position:fixed; inset:0; z-index:100; background:#000; display:flex; align-items:center; justify-content:center; transition:opacity .4s; }
+  #boot.hide { opacity:0; pointer-events:none; }
+  .boot-title { font:700 18px var(--font-display); letter-spacing:.36em; color:#fff; text-shadow:0 0 28px rgba(61,158,255,.75); }
+  .boot-loader { width:140px; height:5px; margin-top:26px; border-radius:99px; overflow:hidden; background:rgba(10,40,80,.55); }
+  .boot-loader-bar { display:block; height:100%; width:38%; background:linear-gradient(90deg,#0a4a9e,#1a9cff,#7ad8ff); animation:slide 1.05s ease-in-out infinite; }
+  @keyframes slide { 0%{transform:translateX(-120%)} 100%{transform:translateX(340%)} }
+  #dock { position:fixed; left:0; right:0; bottom:0; z-index:100; display:flex; justify-content:center; padding:0 10px calc(10px + env(safe-area-inset-bottom)); pointer-events:none; }
+  #panel { pointer-events:auto; width:min(700px,100%); max-height:48vh; background:rgba(0,6,22,.55); backdrop-filter:blur(18px); border:1px solid rgba(61,184,255,.32); border-radius:16px; display:flex; flex-direction:column; overflow:hidden; }
+  #panel.collapsed { max-height:min(176px,26vh); }
+  #cli-log { flex:1; overflow-y:auto; padding:10px 16px; min-height:56px; font:500 13px/1.55 var(--font-mono); }
+  #cli-form { display:flex; align-items:center; gap:8px; padding:8px 14px 12px; }
+  #cli-in { flex:1; border:0; background:transparent; color:#eaf4ff; font:500 14px var(--font-mono); outline:none; }
+  .cli-prompt-prefix { color:#3d9eff; font:700 14px var(--font-mono); }
+  #sn-topchrome { position:fixed; top:0; left:0; right:0; z-index:95; display:flex; justify-content:center; padding:calc(6px + env(safe-area-inset-top)) 10px 0; pointer-events:none; }
+  #sn-topchrome-panel { pointer-events:auto; width:min(700px,100%); min-height:52px; background:rgba(4,20,56,.42); backdrop-filter:blur(22px); border:1px solid rgba(40,130,255,.42); border-radius:22px; }
+  #btn-home { display:block; margin:0 auto; font:800 16px/1.1 var(--font-display); letter-spacing:.3em; color:#3d9eff; background:transparent; border:0; padding:10px 12px; text-shadow:0 0 14px rgba(20,100,255,.95); }
+  #coach,#sn-miner-terms,#spacenet-finance-panel,#sn-game-dock,.sn-game-dock,#edge { display:none!important; }
+</style>
 </head>
 <body>
-<p>Loading Astranov…</p>
+<div id="boot" aria-busy="true"><div class="boot-card"><span class="boot-title">ASTRANOV</span><div class="boot-loader"><span class="boot-loader-bar"></span></div></div></div>
+<div id="globe"></div>
+<div id="city-map"></div>
+<div id="sn-topchrome"><div id="sn-topchrome-panel" class="collapsed"><button type="button" id="btn-home">ASTRANOV</button></div></div>
+<div id="dock"><div id="panel" class="collapsed">
+  <div id="sn-task-ribbon"></div>
+  <div id="cli-drag"></div>
+  <div id="cli-log"></div>
+  <form id="cli-form" autocomplete="off">
+    <span class="cli-prompt-prefix">›</span>
+    <input id="cli-in" autocomplete="off" spellcheck="false" placeholder="Talk to Astranov…" aria-label="Message Astranov" />
+  </form>
+</div></div>
+<script>
+(function(){ try {
+  var h=location.hostname||'';
+  if(/astranov\.eu$/i.test(h)||/pages\.dev$/i.test(h)){
+    window.SN_ASSET_BASE='https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
+  }
+} catch(e){} })();
+</script>
+<script src="/js/spacenet/boot.js?v=20260805155600-simple-ux"></script>
 </body>
 </html>
