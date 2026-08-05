@@ -913,12 +913,61 @@
         source: 'identity',
       };
     }
+    // Zoom / scroll / globe controls — plain language
+    if (
+      /\b(zoom|scroll|mouse wheel|trackpad|spinning|turns? around|globe (spin|turn)|can't zoom|cannot zoom)\b/i.test(
+        rawLow
+      )
+    ) {
+      return {
+        text:
+          'Scroll / mouse wheel = zoom in-out. Drag = spin globe. Two-finger pinch also zooms. Type global to reset view · marina for berths.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'controls-help',
+      };
+    }
+    if (/\b(marina|berth|yacht park|parking spot|mooring)\b/i.test(rawLow)) {
+      try {
+        if (global.SNMarina && SNMarina.openMarina) SNMarina.openMarina(rawMsg);
+        else if (global.SNCli && SNCli.run) void SNCli.run('marina');
+      } catch (_) {}
+      return {
+        text:
+          'Opening marina berth grid — free cells show Æ/night. Tap free to book · Vendor button edits prices.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'marina',
+      };
+    }
+    if (/\b(cancel|stop|unstick|reset ai|clear busy)\b/i.test(rawLow)) {
+      try {
+        if (global.SNAi) {
+          /* force via busy clear is internal */ 
+        }
+        if (global.SNCli && SNCli.endTurn) {
+          try {
+            SNCli.endTurn();
+            SNCli.endTurn();
+          } catch (_) {}
+        }
+        if (global.SNRecover) SNRecover({ closeMap: false });
+      } catch (_) {}
+      return {
+        text: 'Cleared. Ready — power on · locate · marina · help.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'cancel',
+      };
+    }
     if (
       /\b(market on|power on|tasks on|go live|money|throw offers|crawl shops|first delivery|order pizza)\b/i.test(rawLow) ||
       /\b(αγορα|παραδοση|παραγγελια)\b/i.test(rawLow)
     ) {
       try {
-        if (global.SNMoney && SNMoney.handleLine) {
+        if (global.SNPolyScheduler && SNPolyScheduler.handleLine) {
+          void SNPolyScheduler.handleLine(rawMsg);
+        } else if (global.SNMoney && SNMoney.handleLine) {
           void SNMoney.handleLine(rawMsg);
         } else if (global.SNCli && SNCli.run) {
           void SNCli.run(rawMsg);

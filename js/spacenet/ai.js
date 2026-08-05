@@ -1598,103 +1598,146 @@
     opts = opts || {};
     var msg = String(message || '').trim();
     if (!msg) return null;
+    // Stale busy lock kills all interaction — force-clear after 6s
     if (busy) {
-      return 'Still working — one moment…';
+      if (!ask._busySince) ask._busySince = Date.now();
+      if (Date.now() - ask._busySince < 6000) {
+        return 'Still working — try cancel or wait a second…';
+      }
+      busy = false;
+      clearThinkGfx();
     }
+    ask._busySince = Date.now();
     busy = true;
-    try {
-      var Gx = global.SNAIGraphics || global.AIGraphics;
-      if (Gx) {
-        if (Gx.init) Gx.init();
-        if (Gx.setThinkPulse) Gx.setThinkPulse(true);
-        if (Gx.showNeural) Gx.showNeural(true);
-      }
-    } catch (_) {}
-    try {
-      // HELPER flies when user asks to find / order / do tasks
-      if (
-        global.SNHelper &&
-        /\b(find|search|order|shop|pizza|deliver|task|where|locate|help)\b/i.test(msg)
-      ) {
-        if (SNHelper.init) SNHelper.init();
-        var posH = global._snLastPos || global._snPhysPos;
-        if (/order|pizza|food|deliver/i.test(msg)) {
-          SNHelper.flyTo?.(posH || { lat: 37.93, lng: 23.75 }, {
-            kind: 'assist',
-            label: 'HELPER · ORDER',
-            detail: msg.slice(0, 40),
-            status: 'assist',
-            log: false,
-          });
-        } else {
-          SNHelper.find?.(msg.slice(0, 28), posH, { log: false });
-        }
-      }
-    } catch (_) {}
-    pushHist('user', msg);
-    try {
-      if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });
-    } catch (e) {}
 
-    // Spartan: listen already happened · wait · think · then act
-    try {
-      if (global.SNSpartan && SNSpartan.wait) {
-        var td =
-          typeof SNSpartan.thinkDelay === 'function' ? SNSpartan.thinkDelay() : 450;
-        if (global.SNAIGraphics && SNAIGraphics.setThinkPulse) SNAIGraphics.setThinkPulse(true);
-        await SNSpartan.wait(td);
-      }
-    } catch (_th) {}
-
-    var local = await actLocal(msg);
-    var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
-    var text = null;
-
-    // Run first marketplace loop when requested
-    if (local.runFirstLoop && global.SNMarket && SNMarket.runFirstLoop) {
-      try {
-        var fr = await SNMarket.runFirstLoop({});
-        text =
-          fr && fr.ok
-            ? 'First delivery complete. You listed, ordered, drove, and delivered to yourself in S. Type usage · or tell me what was painful.'
-            : 'First loop partial: ' +
-              ((fr && fr.delivery && fr.delivery.error) ||
-                (fr && fr.order && fr.order.error) ||
-                'check CLI') +
-              '. Try steps: list shop · menu add X 5 · order me · drive on · deliver me';
-      } catch (e) {
-        text = 'First loop error: ' + (e && e.message ? e.message : e);
-      }
-      text = brandReply(text);
-      pushHist('assistant', text);
-      say(text, 'ok');
+    var timedOut = false;
+    var watchdog = setTimeout(function () {
+      timedOut = true;
       busy = false;
-    clearThinkGfx();
-      return text;
-    }
+      clearThinkGfx();
+    }, 7000);
 
-    // Location confirm after soft GPS (lazy pizza)
-    if (local.confirmLocationAndOrder && global.SNMarket && SNMarket.confirmLocationAndOrder) {
+    try {
+      // Fast free mind first — never wait on network for simple intents
       try {
-        var conf = await SNMarket.confirmLocationAndOrder(local.confirmLine || msg);
-        text = conf.eatLine || conf.reply || conf.summary || (conf.ok ? 'Order continuing' : 'Stopped');
-        if (conf.summary && global.SNCli && SNCli.log) {
-          String(conf.summary)
-            .split('\n')
-            .forEach(function (ln) {
-              if (ln.trim()) SNCli.log(ln.trim(), conf.ok ? 'ok' : 'dim');
+        var mind = global.SNAstranovMind || global.SNFreeMind;
+        if (mind && mind.answer) {
+          var quick = mind.answer(msg, opts);
+          if (quick && quick.text && (quick.score == null || quick.score >= 0.55)) {
+            var qt = brandReply(quick.text);
+            pushHist('assistant', qt);
+            showOnGlobe(qt);
+            try {
+              if (global.SNCli && SNCli.preview) SNCli.preview(qt.slice(0, 80));
+            } catch (_) {}
+            busy = false;
+            clearThinkGfx();
+            clearTimeout(watchdog);
+            ask._busySince = 0;
+            return qt;
+          }
+        }
+      } catch (_) {}
+
+      try {
+        var Gx = global.SNAIGraphics || global.AIGraphics;
+        if (Gx) {
+          if (Gx.init) Gx.init();
+          if (Gx.setThinkPulse) Gx.setThinkPulse(true);
+          if (Gx.showNeural) Gx.showNeural(true);
+        }
+      } catch (_) {}
+      try {
+        // HELPER flies when user asks to find / order / do tasks
+        if (
+          global.SNHelper &&
+          /\b(find|search|order|shop|pizza|deliver|task|where|locate|help)\b/i.test(msg)
+        ) {
+          if (SNHelper.init) SNHelper.init();
+          var posH = global._snLastPos || global._snPhysPos;
+          if (/order|pizza|food|deliver/i.test(msg)) {
+            SNHelper.flyTo?.(posH || { lat: 37.93, lng: 23.75 }, {
+              kind: 'assist',
+              label: 'HELPER · ORDER',
+              detail: msg.slice(0, 40),
+              status: 'assist',
+              log: false,
             });
+          } else {
+            SNHelper.find?.(msg.slice(0, 28), posH, { log: false });
+          }
         }
-        showOnGlobe(brief(text, 72));
-      } catch (eC) {
-        text = 'Location confirm failed · try order again';
-        showOnGlobe(text);
+      } catch (_) {}
+      pushHist('user', msg);
+      try {
+        if (global.SNUsage && SNUsage.track) SNUsage.track('ai_ask', { len: msg.length });
+      } catch (e) {}
+
+      // Skip artificial think delay when free mind already answered path
+      try {
+        if (global.SNSpartan && SNSpartan.wait) {
+          var td =
+            typeof SNSpartan.thinkDelay === 'function' ? Math.min(280, SNSpartan.thinkDelay()) : 180;
+          if (global.SNAIGraphics && SNAIGraphics.setThinkPulse) SNAIGraphics.setThinkPulse(true);
+          await SNSpartan.wait(td);
+        }
+      } catch (_th) {}
+
+      if (timedOut) return 'Timed out — say again · power on · locate · marina';
+
+      var local = await actLocal(msg);
+      var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
+      var text = null;
+
+      // Run first marketplace loop when requested
+      if (local.runFirstLoop && global.SNMarket && SNMarket.runFirstLoop) {
+        try {
+          var fr = await SNMarket.runFirstLoop({});
+          text =
+            fr && fr.ok
+              ? 'First delivery complete. You listed, ordered, drove, and delivered to yourself in S. Type usage · or tell me what was painful.'
+              : 'First loop partial: ' +
+                ((fr && fr.delivery && fr.delivery.error) ||
+                  (fr && fr.order && fr.order.error) ||
+                  'check CLI') +
+                '. Try steps: list shop · menu add X 5 · order me · drive on · deliver me';
+        } catch (e) {
+          text = 'First loop error: ' + (e && e.message ? e.message : e);
+        }
+        text = brandReply(text);
+        pushHist('assistant', text);
+        say(text, 'ok');
+        busy = false;
+        clearThinkGfx();
+        clearTimeout(watchdog);
+        ask._busySince = 0;
+        return text;
       }
-      pushHist('assistant', text);
-      busy = false;
-    clearThinkGfx();
-      return text;
-    }
+
+      // Location confirm after soft GPS (lazy pizza)
+      if (local.confirmLocationAndOrder && global.SNMarket && SNMarket.confirmLocationAndOrder) {
+        try {
+          var conf = await SNMarket.confirmLocationAndOrder(local.confirmLine || msg);
+          text = conf.eatLine || conf.reply || conf.summary || (conf.ok ? 'Order continuing' : 'Stopped');
+          if (conf.summary && global.SNCli && SNCli.log) {
+            String(conf.summary)
+              .split('\n')
+              .forEach(function (ln) {
+                if (ln && ln.trim()) SNCli.log(ln, 'dim');
+              });
+          }
+        } catch (eC) {
+          text = 'Location confirm failed · try locate first';
+        }
+        text = brandReply(text);
+        pushHist('assistant', text);
+        say(text, 'ok');
+        busy = false;
+        clearThinkGfx();
+        clearTimeout(watchdog);
+        ask._busySince = 0;
+        return text;
+      }
 
     if (local.runCliCmd && global.SNCli && SNCli.run) {
       try {
@@ -2062,7 +2105,30 @@
       var Gx2 = global.SNAIGraphics || global.AIGraphics;
       if (Gx2 && Gx2.setThinkPulse) Gx2.setThinkPulse(false);
     } catch (_) {}
+    clearTimeout(watchdog);
+    ask._busySince = 0;
     return text;
+  } catch (eAsk) {
+    busy = false;
+    clearThinkGfx();
+    try {
+      clearTimeout(watchdog);
+    } catch (_) {}
+    ask._busySince = 0;
+    var errT =
+      'I stalled — try again. Commands: power on · locate · marina · global · help';
+    try {
+      showOnGlobe(errT);
+    } catch (_) {}
+    return errT;
+  } finally {
+    busy = false;
+    clearThinkGfx();
+    try {
+      clearTimeout(watchdog);
+    } catch (_) {}
+    ask._busySince = 0;
+  }
   }
 
   async function code(message) {
