@@ -2,7 +2,7 @@
  * SNSkin — product face
  * Default: Astranov deep neon electric blue (gaming hull)
  * SpaceXAI void face available via CLI: skin spacex
- * No color-picker UI. No hex codes on chrome.
+ * Light/dark owned by SNTheme (day/night + brightness + accent dials)
  */
 (function (g) {
   'use strict';
@@ -76,7 +76,6 @@
   function apply(id, opts) {
     opts = opts || {};
     id = id === 'spacex' ? 'spacex' : 'astranov';
-    // Imagine version auto-enables AI graphics engine
     try {
       if (opts.imagine !== false && global.SNAIGraphics && SNAIGraphics.setMode) {
         SNAIGraphics.setMode('imagine');
@@ -90,9 +89,10 @@
       root.classList.remove('skin-spacex', 'skin-astranov');
       root.classList.add(id === 'astranov' ? 'skin-astranov' : 'skin-spacex');
       root.setAttribute('data-sn-skin', id);
-      // Gaming hull: always dark chrome (no pale wash)
-      root.classList.remove('theme-light');
-      root.classList.add('theme-dark');
+      // Theme light/dark owned by SNTheme (day/night + user dial) — do not force dark
+      try {
+        if (window.SNTheme && SNTheme.boot) SNTheme.boot();
+      } catch (_) {}
     }
     applyTokens(id);
     try {
@@ -119,10 +119,9 @@
     },
   };
 
-  // Early if DOM ready
-  if (document.documentElement) {
-    try {
-      boot();
-    } catch (_) {}
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })(typeof window !== 'undefined' ? window : globalThis);
