@@ -10,7 +10,7 @@
   var stack = [];   // visible (max 1) + active underways kept
   var queue = [];   // waiting offers — thrown one-by-one
   var root = null;
-  var CSS_ID = 'sn-offer-stack-css-v8-pill';
+  var CSS_ID = 'sn-offer-stack-css-v9-chrome';
   var throwTimer = null;
 
   function log(m, c) {
@@ -21,10 +21,10 @@
 
   function esc(s) {
     return String(s || '')
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
-      .replace(/"/g, '"');
+      .replace(/&/g, '&' + 'amp;')
+      .replace(/</g, '&' + 'lt;')
+      .replace(/>/g, '&' + 'gt;')
+      .replace(/"/g, '&' + 'quot;');
   }
 
   function fmtPrice(n) {
@@ -217,54 +217,92 @@
     var st = document.createElement('style');
     st.id = CSS_ID;
     st.textContent = [
-      /* Soft pill peek — map-label size, never a wall · deep neon electric blue */
-      '#sn-offer-stack{position:fixed;left:50%;bottom:78px;transform:translateX(-50%);z-index:140;',
-      'display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;',
-      'width:auto;max-width:min(92vw,340px);overflow:visible}',
-      '#sn-offer-stack .sn-queue-hint{pointer-events:none;font:700 9px/1 "Space Grotesk",system-ui,sans-serif;',
-      'letter-spacing:.14em;text-transform:uppercase;color:rgba(90,160,255,.75);text-shadow:0 0 12px rgba(40,120,255,.5)}',
-      /* PILL shell */
-      '#sn-offer-stack .sn-offer{pointer-events:auto;position:relative;',
+      '#sn-offer-stack{position:fixed;left:0;top:0;right:0;bottom:0;z-index:140;',
+      'pointer-events:none;overflow:visible}',
+      '#sn-offer-stack .sn-queue-hint{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);',
+      'pointer-events:none;font:700 9px/1 "Space Grotesk",system-ui,sans-serif;',
+      'letter-spacing:.14em;text-transform:uppercase;color:rgba(90,160,255,.75);',
+      'text-shadow:0 0 12px rgba(40,120,255,.5);z-index:141}',
+      /* Floating tile — free drag position */
+      '#sn-offer-stack .sn-offer{pointer-events:auto;position:fixed;',
+      'left:50%;bottom:86px;transform:translateX(-50%);',
       'display:flex;flex-direction:column;align-items:stretch;gap:0;',
-      'min-width:168px;max-width:min(92vw,320px);',
-      'padding:0;color:#eaf4ff;cursor:default;touch-action:manipulation;',
-      'border-radius:999px;',
+      'width:min(92vw,300px);max-width:min(94vw,360px);',
+      'padding:0;color:#eaf4ff;cursor:grab;touch-action:none;user-select:none;',
+      'border-radius:22px;',
       'background:radial-gradient(ellipse 120% 100% at 50% 0%,rgba(30,100,255,.28),transparent 55%),',
-      'linear-gradient(165deg,rgba(2,18,52,.92) 0%,rgba(0,10,32,.94) 100%);',
-      'border:1.5px solid rgba(50,150,255,.7);',
-      'box-shadow:0 10px 28px rgba(0,0,0,.45),0 0 22px rgba(20,100,255,.4),0 0 48px rgba(10,60,220,.2),inset 0 1px 0 rgba(120,190,255,.22);',
-      'animation:snOfferIn .3s cubic-bezier(.22,1,.36,1);',
-      '-webkit-font-smoothing:antialiased;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}',
-      '#sn-offer-stack .sn-offer.hero{box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 28px rgba(40,130,255,.5),0 0 60px rgba(20,90,255,.25),inset 0 1px 0 rgba(140,200,255,.28)}',
-      /* Expanded (underway / confirm) — still soft, not sharp card */
-      '#sn-offer-stack .sn-offer.is-open{border-radius:28px;padding:0;min-width:220px}',
-      '#sn-offer-stack .sn-pill-main{display:flex;align-items:center;gap:10px;padding:10px 14px 10px 16px}',
+      'linear-gradient(165deg,rgba(2,18,52,.94) 0%,rgba(0,10,32,.96) 100%);',
+      'border:1.5px solid rgba(50,150,255,.72);',
+      'box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 24px rgba(20,100,255,.42),inset 0 1px 0 rgba(120,190,255,.22);',
+      'animation:snOfferIn .28s cubic-bezier(.22,1,.36,1);',
+      'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}',
+      '#sn-offer-stack .sn-offer.dragging{cursor:grabbing;opacity:.97;z-index:160;',
+      'box-shadow:0 18px 40px rgba(0,0,0,.55),0 0 32px rgba(40,140,255,.5)}',
+      '#sn-offer-stack .sn-offer.size-min{width:min(72vw,200px);border-radius:999px}',
+      '#sn-offer-stack .sn-offer.size-min .sn-pill-tray,#sn-offer-stack .sn-offer.size-min .sn-parties,',
+      '#sn-offer-stack .sn-offer.size-min .sn-stops{display:none!important}',
+      '#sn-offer-stack .sn-offer.size-min .sn-pill-line{display:none}',
+      '#sn-offer-stack .sn-offer.size-max{width:min(94vw,360px);border-radius:26px;bottom:auto}',
+      '#sn-offer-stack .sn-offer.size-max .sn-pill-tray{display:flex}',
+      /* Traditional chrome: − left · × middle · + right */
+      '#sn-offer-stack .sn-chrome{display:flex;align-items:center;justify-content:center;gap:10px;',
+      'padding:8px 12px 4px;cursor:grab;touch-action:none}',
+      '#sn-offer-stack .sn-chrome-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(80,160,255,.5);',
+      'background:rgba(8,28,64,.75);color:#b8d8ff;font:700 15px/1 system-ui;cursor:pointer;',
+      'display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;',
+      'box-shadow:0 0 10px rgba(30,100,255,.25);touch-action:manipulation}',
+      '#sn-offer-stack .sn-chrome-btn:active{transform:scale(.92)}',
+      '#sn-offer-stack .sn-chrome-btn.min{color:#9ec4ee}',
+      '#sn-offer-stack .sn-chrome-btn.close{color:#ffb0b0;border-color:rgba(255,120,120,.45)}',
+      '#sn-offer-stack .sn-chrome-btn.max{color:#8fffd4;border-color:rgba(0,220,160,.5)}',
+      '#sn-offer-stack .sn-chrome-title{flex:1;text-align:center;font:700 9px/1 "Space Grotesk",system-ui,sans-serif;',
+      'letter-spacing:.14em;text-transform:uppercase;color:rgba(120,180,255,.75);pointer-events:none}',
+      '#sn-offer-stack .sn-pill-main{display:flex;align-items:center;gap:10px;padding:6px 14px 10px 16px}',
       '#sn-offer-stack .sn-pill-dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;',
       'background:radial-gradient(circle at 35% 30%,#9ad4ff,#1a6fd4 55%,#0a3a8a);',
-      'box-shadow:0 0 10px rgba(60,160,255,.9),0 0 20px rgba(30,100,255,.5)}',
-      '#sn-offer-stack .phase-underway .sn-pill-dot{background:radial-gradient(circle at 35% 30%,#9fffd4,#00c88a 55%,#066);box-shadow:0 0 12px rgba(0,220,160,.9)}',
-      '#sn-offer-stack .phase-confirming .sn-pill-dot{background:radial-gradient(circle at 35% 30%,#ffe9a0,#e0a020 55%,#664);box-shadow:0 0 12px rgba(255,200,60,.85)}',
-      '#sn-offer-stack .phase-done .sn-pill-dot{background:radial-gradient(circle at 35% 30%,#fff,#7ec8ff);opacity:.85}',
+      'box-shadow:0 0 10px rgba(60,160,255,.9)}',
+      '#sn-offer-stack .phase-underway .sn-pill-dot{background:radial-gradient(circle at 35% 30%,#9fffd4,#00c88a 55%,#066)}',
+      '#sn-offer-stack .phase-confirming .sn-pill-dot{background:radial-gradient(circle at 35% 30%,#ffe9a0,#e0a020 55%,#664)}',
       '#sn-offer-stack .sn-pill-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}',
-      '#sn-offer-stack .sn-pill-price{font:800 18px/1.05 "JetBrains Mono",ui-monospace,Menlo,monospace;color:#7ec8ff;',
-      'text-shadow:0 0 12px rgba(60,160,255,.95),0 0 28px rgba(30,100,255,.55);letter-spacing:-.02em;white-space:nowrap}',
-      '#sn-offer-stack .sn-pill-line{font:600 11px/1.25 "Inter",system-ui,sans-serif;color:#9ec4ee;',
-      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}',
+      '#sn-offer-stack .sn-pill-price{font:800 17px/1.05 "JetBrains Mono",ui-monospace,Menlo,monospace;color:#7ec8ff;',
+      'text-shadow:0 0 12px rgba(60,160,255,.95);letter-spacing:-.02em;white-space:nowrap}',
+      '#sn-offer-stack .sn-pill-line{font:600 10px/1.25 "Inter",system-ui,sans-serif;color:#9ec4ee;',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}',
+      /* Vendor + client always visible */
+      '#sn-offer-stack .sn-parties{padding:0 14px 8px;display:flex;flex-direction:column;gap:4px}',
+      '#sn-offer-stack .sn-party{display:flex;align-items:center;gap:8px;min-width:0}',
+      '#sn-offer-stack .sn-party .tag{font:800 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.1em;',
+      'text-transform:uppercase;padding:4px 7px;border-radius:999px;flex:0 0 auto}',
+      '#sn-offer-stack .sn-party.vendor .tag{background:rgba(255,180,40,.18);border:1px solid rgba(255,190,60,.5);color:#ffd080}',
+      '#sn-offer-stack .sn-party.client .tag{background:rgba(40,160,255,.18);border:1px solid rgba(80,170,255,.5);color:#9ad4ff}',
+      '#sn-offer-stack .sn-party .nm{font:700 12px/1.2 "Inter",system-ui,sans-serif;color:#eaf4ff;',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}',
+      '#sn-offer-stack .sn-party .role{font:500 9px/1.2 "Inter",system-ui,sans-serif;color:#6a94c4;margin-left:auto;flex:0 0 auto}',
       '#sn-offer-stack .sn-pill-acts{display:flex;align-items:center;gap:6px;flex:0 0 auto}',
-      '#sn-offer-stack .sn-pill-btn{width:36px;height:36px;border-radius:50%;border:1px solid rgba(80,160,255,.45);',
+      '#sn-offer-stack .sn-pill-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(80,160,255,.45);',
       'background:rgba(10,40,90,.55);color:#b8d8ff;font:700 13px/1 system-ui;cursor:pointer;',
-      'display:flex;align-items:center;justify-content:center;padding:0;',
-      'box-shadow:0 0 12px rgba(30,100,255,.25);transition:transform .12s ease,box-shadow .12s}',
-      '#sn-offer-stack .sn-pill-btn:active{transform:scale(.94)}',
-      '#sn-offer-stack .sn-pill-btn.ok{border-color:rgba(0,230,160,.65);color:#8fffd4;background:rgba(0,100,70,.4);box-shadow:0 0 14px rgba(0,200,140,.35)}',
-      '#sn-offer-stack .sn-pill-btn.no{border-color:rgba(140,160,190,.4);color:#a0bdd8;background:rgba(10,24,48,.65)}',
-      '#sn-offer-stack .sn-pill-btn.map{font-size:11px;letter-spacing:.04em}',
-      '#sn-offer-stack .sn-pill-x{position:absolute;top:-4px;right:-4px;width:26px;height:26px;border-radius:50%;',
-      'border:1px solid rgba(80,140,220,.4);background:rgba(4,16,40,.9);color:#7a9ab8;',
-      'font:700 14px/1 system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}',
-      /* open tray — soft rounded, not sharp */
+      'display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation}',
+      '#sn-offer-stack .sn-pill-btn.ok{border-color:rgba(0,230,160,.65);color:#8fffd4;background:rgba(0,100,70,.4)}',
+      '#sn-offer-stack .sn-pill-btn.no{border-color:rgba(140,160,190,.4);color:#a0bdd8}',
+      '#sn-offer-stack .sn-pill-btn.map{font-size:11px}',
+      /* stops / rearrange */
+      '#sn-offer-stack .sn-stops{padding:0 12px 8px;display:flex;flex-direction:column;gap:5px}',
+      '#sn-offer-stack .sn-stop{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:14px;',
+      'background:rgba(8,28,64,.65);border:1px solid rgba(50,120,220,.35)}',
+      '#sn-offer-stack .sn-stop.locked{border-color:rgba(255,190,60,.45);opacity:.95}',
+      '#sn-offer-stack .sn-stop .ord{font:800 10px/1 ui-monospace,Menlo,monospace;color:#7ec8ff;width:16px;text-align:center}',
+      '#sn-offer-stack .sn-stop .lab{flex:1;min-width:0;font:600 11px/1.2 system-ui,sans-serif;color:#d8ecff;',
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#sn-offer-stack .sn-stop .lock{font:700 8px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.06em;',
+      'color:#ffd080;text-transform:uppercase}',
+      '#sn-offer-stack .sn-stop .mv{width:26px;height:26px;border-radius:50%;border:1px solid rgba(80,160,255,.4);',
+      'background:rgba(10,40,90,.5);color:#b8d8ff;font:700 12px/1 system-ui;cursor:pointer;padding:0}',
+      '#sn-offer-stack .sn-stop .mv:disabled{opacity:.3;pointer-events:none}',
+      '#sn-offer-stack .sn-route-note{font:600 9px/1.3 "Inter",system-ui,sans-serif;color:#6a94c4;text-align:center;padding:0 12px 6px}',
+      '#sn-offer-stack .sn-route-note.lock{color:#ffd080}',
+      /* tray */
       '#sn-offer-stack .sn-pill-tray{padding:0 14px 12px;display:none;flex-direction:column;gap:8px}',
-      '#sn-offer-stack .sn-offer.is-open .sn-pill-tray{display:flex}',
+      '#sn-offer-stack .sn-offer.size-max .sn-pill-tray,#sn-offer-stack .sn-offer.is-open:not(.size-min) .sn-pill-tray{display:flex}',
       '#sn-offer-stack .sn-pill-meta{font:500 10px/1.35 "Inter",system-ui,sans-serif;color:#7aa8d8;text-align:center}',
       '#sn-offer-stack .sn-pill-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}',
       '#sn-offer-stack .sn-chip{font:700 9px/1 "Space Grotesk",system-ui,sans-serif;letter-spacing:.04em;',
@@ -303,15 +341,9 @@
       '#sn-offer-stack .sn-offer-drone{font:700 9px/1.2 "Space Grotesk",system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;',
       'color:#7ad4ff;text-align:center;text-shadow:0 0 10px rgba(50,180,255,.6)}',
       '@keyframes snOfferIn{from{opacity:0;transform:translateY(10px) scale(.94)}to{opacity:1;transform:none}}',
-      '@media (max-width:420px){',
-      '#sn-offer-stack{bottom:70px}',
-      '#sn-offer-stack .sn-pill-price{font-size:16px}',
-      '#sn-offer-stack .sn-pill-btn{width:34px;height:34px}',
-      '}',
+      '@media (max-width:420px){#sn-offer-stack .sn-offer{bottom:78px}#sn-offer-stack .sn-pill-price{font-size:15px}}',
       '@media (prefers-reduced-motion:reduce){#sn-offer-stack .sn-offer{animation:none}}',
       '#sn-game-dock,.sn-game-dock,#sn-earth-ops-chip{display:none!important;pointer-events:none!important;opacity:0!important}',
-      /* Soft global corners helper class for offer-driven chrome */
-      '.sn-soft-ui,#cli-panel,#cli-dock{border-radius:22px!important}',
     ].join('');
     try {
       if (!document.getElementById('sn-city-lab-pe')) {
@@ -337,14 +369,316 @@
     return root;
   }
 
+
+  function partyNames(o) {
+    var t = (o && o.task) || {};
+    var en = (o && o.enriched) || {};
+    var vendor =
+      (o && o.vendorName) ||
+      en.vendorName ||
+      t.vendorName ||
+      t.shopName ||
+      t.shop ||
+      (o && o.kind === 'vendor' ? o.title || o.nature : '') ||
+      'Vendor';
+    var client =
+      (o && o.clientName) ||
+      en.clientName ||
+      t.clientName ||
+      t.customerName ||
+      t.buyerName ||
+      'You';
+    return { vendor: String(vendor).slice(0, 28), client: String(client).slice(0, 28) };
+  }
+
+  function isRouteLocked(o) {
+    if (!o) return false;
+    if (o.routeLocked === true) return true;
+    if (o.quote && (o.quote.private || (o.quote.nature && o.quote.nature.id === 'frozen'))) return true;
+    if (o.task && (o.task.routeLocked || o.task.privateStraight || o.task.straightShot)) return true;
+    // Paid private straight deal
+    if (o.task && o.task.paid && o.quote && o.quote.privateFee > 0) return true;
+    return false;
+  }
+
+  function buildStops(o) {
+    if (o.stops && o.stops.length >= 2) return o.stops;
+    var names = partyNames(o);
+    var t = o.task || {};
+    var locked = isRouteLocked(o);
+    var stops = [];
+    if (t.lat != null && t.lng != null) {
+      stops.push({
+        id: 'v:' + (t.vendorId || o.id),
+        role: 'vendor',
+        name: names.vendor,
+        lat: Number(t.lat),
+        lng: Number(t.lng),
+        locked: locked || true, // pickup order fixed first by default
+        fixedEnd: false,
+      });
+    }
+    (t.stops || t.waypoints || []).forEach(function (s, i) {
+      if (!s || s.lat == null) return;
+      stops.push({
+        id: s.id || 'mid:' + i,
+        role: s.role || 'stop',
+        name: s.label || s.name || 'Stop ' + (i + 1),
+        lat: Number(s.lat),
+        lng: Number(s.lng),
+        locked: !!s.locked || locked,
+      });
+    });
+    if (t.drop_lat != null && t.drop_lng != null) {
+      stops.push({
+        id: 'c:' + o.id,
+        role: 'client',
+        name: names.client,
+        lat: Number(t.drop_lat),
+        lng: Number(t.drop_lng),
+        locked: locked || true, // drop fixed last by default
+        fixedEnd: true,
+      });
+    }
+    // Private straight: only vendor → client, all locked
+    if (locked && stops.length >= 2) {
+      stops = [stops[0], stops[stops.length - 1]].map(function (s) {
+        return Object.assign({}, s, { locked: true });
+      });
+    }
+    o.stops = stops;
+    o.routeLocked = locked;
+    return stops;
+  }
+
+  /** Multi-task polygon: all active vendor/client pins in driver order */
+  function collectNetworkStops() {
+    var list = [];
+    stack.forEach(function (o) {
+      if (!o || o.kind !== 'task') return;
+      if (o.phase === 'done') return;
+      var st = buildStops(o);
+      st.forEach(function (s) {
+        list.push(Object.assign({ offerId: o.id, private: isRouteLocked(o) }, s));
+      });
+    });
+    return list;
+  }
+
+  function drawAllPolygons(focusOffer) {
+    try {
+      var stops = [];
+      if (focusOffer && focusOffer.kind === 'task') {
+        stops = buildStops(focusOffer).slice();
+      }
+      // Merge other active tasks' vendor/client (not locked mid-reorder of others)
+      stack.forEach(function (o) {
+        if (!o || o.kind !== 'task' || o.phase === 'done') return;
+        if (focusOffer && o.id === focusOffer.id) return;
+        var st = buildStops(o);
+        // For multi-run: insert other pickups before final client of focus
+        if (st.length >= 2) {
+          // vendor of other task as intermediate if not private
+          if (!isRouteLocked(o) && st[0]) {
+            var mid = Object.assign({}, st[0], { id: 'net:' + o.id, role: 'vendor', locked: false });
+            if (stops.length >= 2) stops.splice(stops.length - 1, 0, mid);
+            else stops.push(mid);
+          }
+        }
+      });
+      if (stops.length < 2 && focusOffer && focusOffer.task) {
+        return previewRoute(focusOffer.task, focusOffer);
+      }
+      if (stops.length < 2) return;
+      var wps = stops.map(function (s) {
+        return { lat: s.lat, lng: s.lng, label: s.name };
+      });
+      var locked = focusOffer ? isRouteLocked(focusOffer) : false;
+      var names = focusOffer ? partyNames(focusOffer) : { vendor: 'Vendor', client: 'Client' };
+      if (global.SNField && SNField.startDeliveryRoute) {
+        void SNField.startDeliveryRoute({
+          id: 'live:poly_' + ((focusOffer && focusOffer.id) || 'net'),
+          vendorLat: wps[0].lat,
+          vendorLng: wps[0].lng,
+          dropLat: wps[wps.length - 1].lat,
+          dropLng: wps[wps.length - 1].lng,
+          waypoints: wps,
+          stops: wps.slice(1, -1),
+          label: String(names.vendor + ' → ' + names.client).slice(0, 28),
+          driver: locked ? 'private' : 'route',
+          color: locked ? 'rgba(255,200,80,0.95)' : 'rgba(50,150,255,0.95)',
+          etaMin: (focusOffer && focusOffer.quote && focusOffer.quote.etaMin) || 18,
+          speedKmh: locked ? 28 : 22,
+          preview: true,
+        });
+      }
+      if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
+      if (global.SNGlobe && SNGlobe.pulse) {
+        stops.forEach(function (s, i) {
+          var col =
+            s.role === 'vendor' ? (locked ? 0xffc83d : 0x3d9eff) : s.role === 'client' ? 0x7ec8ff : 0x9ad4ff;
+          SNGlobe.pulse(s.lat, s.lng, col, String(s.name || s.role).slice(0, 14), 12000);
+        });
+      }
+      // Labels on map markers if available
+      try {
+        if (global.SNMap && SNMap.open && stops[0]) {
+          void SNMap.open(stops[0].lat, stops[0].lng);
+          if (SNMap.markYou && stops[stops.length - 1]) {
+            SNMap.markYou(stops[stops.length - 1].lat, stops[stops.length - 1].lng, 'YOU · ' + names.client);
+          }
+        }
+      } catch (_) {}
+    } catch (e) {
+      try {
+        log('Polygon · ' + (e && e.message ? e.message : e), 'dim');
+      } catch (_) {}
+    }
+  }
+
+  function moveStop(oid, stopId, dir) {
+    var o = find(oid);
+    if (!o) return;
+    if (isRouteLocked(o)) {
+      log('Route locked · private/straight deal — cannot rearrange', 'err');
+      return;
+    }
+    var stops = buildStops(o);
+    var idx = -1;
+    for (var i = 0; i < stops.length; i++) {
+      if (stops[i].id === stopId) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx < 0) return;
+    var j = idx + (dir < 0 ? -1 : 1);
+    // Cannot move first vendor or last client out of ends
+    if (idx === 0 || idx === stops.length - 1) {
+      log('Pickup/drop ends are fixed · only mid stops move', 'dim');
+      return;
+    }
+    if (j <= 0 || j >= stops.length - 1) return;
+    if (stops[j].locked || stops[idx].locked) {
+      log('Stop locked by deal priority', 'err');
+      return;
+    }
+    var tmp = stops[idx];
+    stops[idx] = stops[j];
+    stops[j] = tmp;
+    o.stops = stops;
+    // Recompute km if both ends known
+    try {
+      var km = 0;
+      for (var k = 0; k < stops.length - 1; k++) {
+        km += haversineKm(stops[k].lat, stops[k].lng, stops[k + 1].lat, stops[k + 1].lng) || 0;
+      }
+      if (km > 0 && o.task) {
+        o.task._km = km;
+        o.km = km;
+        o.quote = rulesQuote({
+          km: km,
+          nature: o.natureId || o.nature,
+          title: o.title,
+          night: o.quote && o.quote.night,
+          heavy: o.quote && o.quote.heavy,
+          vip: o.quote && o.quote.vip,
+          private: o.quote && o.quote.private,
+        });
+        o.priceNum = o.quote.total;
+        o.price = fmtPrice(o.quote.total);
+        o.meta = o.quote.metaLine;
+      }
+    } catch (_) {}
+    log('Route rearranged · polygon updated', 'ok');
+    drawAllPolygons(o);
+    paint();
+  }
+
+  function setTileSize(oid, size) {
+    var o = find(oid);
+    if (!o) return;
+    if (size === 'close') {
+      dismiss(oid);
+      return;
+    }
+    if (size === 'min') o.uiSize = 'min';
+    else if (size === 'max') o.uiSize = 'max';
+    else o.uiSize = 'mid';
+    paint();
+  }
+
+  function bindDrag(card, o) {
+    if (!card || !o) return;
+    var handle = card.querySelector('.sn-chrome') || card;
+    var startX = 0,
+      startY = 0,
+      origL = 0,
+      origT = 0,
+      dragging = false;
+    function onDown(ev) {
+      if (ev.target && ev.target.closest && ev.target.closest('button,a,input')) return;
+      var pe = ev.touches ? ev.touches[0] : ev;
+      dragging = true;
+      card.classList.add('dragging');
+      startX = pe.clientX;
+      startY = pe.clientY;
+      var rect = card.getBoundingClientRect();
+      // switch from bottom/transform to left/top fixed
+      card.style.left = rect.left + 'px';
+      card.style.top = rect.top + 'px';
+      card.style.bottom = 'auto';
+      card.style.transform = 'none';
+      origL = rect.left;
+      origT = rect.top;
+      ev.preventDefault();
+    }
+    function onMove(ev) {
+      if (!dragging) return;
+      var pe = ev.touches ? ev.touches[0] : ev;
+      var dx = pe.clientX - startX;
+      var dy = pe.clientY - startY;
+      var nl = Math.max(4, Math.min(window.innerWidth - card.offsetWidth - 4, origL + dx));
+      var nt = Math.max(4, Math.min(window.innerHeight - card.offsetHeight - 4, origT + dy));
+      card.style.left = nl + 'px';
+      card.style.top = nt + 'px';
+      o.uiX = nl;
+      o.uiY = nt;
+    }
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+    }
+    handle.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    handle.addEventListener(
+      'touchstart',
+      function (e) {
+        onDown(e);
+      },
+      { passive: false }
+    );
+    window.addEventListener(
+      'touchmove',
+      function (e) {
+        if (dragging) onMove(e);
+      },
+      { passive: false }
+    );
+    window.addEventListener('touchend', onUp);
+  }
+
   function paint() {
+
     var el = ensureRoot();
     if (!stack.length && !queue.length) {
       el.innerHTML = '';
       el.style.display = 'none';
       return;
     }
-    el.style.display = 'flex';
+    el.style.display = 'block';
     var hint =
       queue.length > 0
         ? '<div class="sn-queue-hint">' + queue.length + ' queued</div>'
@@ -355,30 +689,36 @@
         .map(function (o, idx) {
           var isTask = o.kind === 'task';
           var phase = o.phase || 'offered';
-          var isOpen =
-            phase === 'claimed' ||
-            phase === 'underway' ||
-            phase === 'confirming' ||
-            phase === 'done' ||
-            (o.menu && o.menu.length);
+          var size = o.uiSize || (phase === 'offered' ? 'mid' : 'max');
+          if (phase === 'claimed' || phase === 'underway' || phase === 'confirming') {
+            if (!o.uiSize) size = 'max';
+          }
+          var isOpen = size === 'max' || phase === 'confirming' || (o.menu && o.menu.length && size !== 'min');
           var q = o.quote || null;
           var priceTxt = o.price || (o.priceNum != null ? fmtPrice(o.priceNum) : '—');
+          var names = partyNames(o);
           var line =
             o.meta ||
             (q && q.metaLine) ||
             o.nature ||
             o.title ||
             'Task';
-          // short line for pill
-          if (line.length > 36) line = line.slice(0, 34) + '…';
+          if (line.length > 40) line = line.slice(0, 38) + '…';
+          var stops = isTask ? buildStops(o) : [];
+          var locked = isRouteLocked(o);
           var chips = '';
           if (q) {
             var ch = [];
-            if (q.nature) ch.push({ t: (q.nature.emoji || '') + ' ' + (q.nature.label || ''), c: q.nature.id === 'frozen' ? 'ice' : q.nature.id === 'hot_food' ? 'hot' : '' });
+            if (q.nature)
+              ch.push({
+                t: (q.nature.emoji || '') + ' ' + (q.nature.label || ''),
+                c: q.nature.id === 'frozen' ? 'ice' : q.nature.id === 'hot_food' ? 'hot' : '',
+              });
             if (q.night) ch.push({ t: 'Night +3', c: 'night' });
             if (q.heavy) ch.push({ t: 'Heavy +3', c: 'warn' });
             if (q.vip) ch.push({ t: 'VIP +3', c: 'ice' });
             if (q.private) ch.push({ t: 'Private +3', c: 'priv' });
+            if (locked) ch.push({ t: 'Route lock', c: 'priv' });
             if (q.windowMin) ch.push({ t: '≤' + q.windowMin + 'm', c: '' });
             chips =
               '<div class="sn-pill-chips">' +
@@ -414,8 +754,7 @@
               esc(o.id) +
               '">Driver ' +
               (conf.driver ? '✓' : '○') +
-              '</button>' +
-              '</div>';
+              '</button></div>';
           }
           var lim = o.limitsCheck || null;
           var canComplete =
@@ -474,9 +813,75 @@
                 .join('') +
               '</div>';
           }
+          var parties =
+            isTask || o.kind === 'vendor'
+              ? '<div class="sn-parties">' +
+                '<div class="sn-party vendor"><span class="tag">Vendor</span><span class="nm">' +
+                esc(names.vendor) +
+                '</span><span class="role">pickup</span></div>' +
+                (isTask
+                  ? '<div class="sn-party client"><span class="tag">Client</span><span class="nm">' +
+                    esc(names.client) +
+                    '</span><span class="role">drop</span></div>'
+                  : '') +
+                '</div>'
+              : '';
+          var stopsHtml = '';
+          if (isTask && size === 'max' && stops.length) {
+            stopsHtml =
+              '<div class="sn-stops">' +
+              stops
+                .map(function (s, si) {
+                  var canUp = !locked && si > 1 && si < stops.length - 1;
+                  var canDn = !locked && si > 0 && si < stops.length - 2;
+                  // mid stops only: index 1..len-2
+                  var isMid = si > 0 && si < stops.length - 1;
+                  return (
+                    '<div class="sn-stop' +
+                    (s.locked || locked ? ' locked' : '') +
+                    '">' +
+                    '<span class="ord">' +
+                    (si + 1) +
+                    '</span>' +
+                    '<span class="lab">' +
+                    esc((s.role === 'vendor' ? '🏪 ' : s.role === 'client' ? '📍 ' : '• ') + s.name) +
+                    '</span>' +
+                    (s.locked || locked
+                      ? '<span class="lock">lock</span>'
+                      : isMid
+                        ? '<button type="button" class="mv" data-move="up" data-sid="' +
+                          esc(s.id) +
+                          '" data-oid="' +
+                          esc(o.id) +
+                          '" ' +
+                          (si <= 1 ? 'disabled' : '') +
+                          ' aria-label="Move up">↑</button>' +
+                          '<button type="button" class="mv" data-move="down" data-sid="' +
+                          esc(s.id) +
+                          '" data-oid="' +
+                          esc(o.id) +
+                          '" ' +
+                          (si >= stops.length - 2 ? 'disabled' : '') +
+                          ' aria-label="Move down">↓</button>'
+                        : '') +
+                    '</div>'
+                  );
+                })
+                .join('') +
+              '</div>' +
+              '<div class="sn-route-note' +
+              (locked ? ' lock' : '') +
+              '">' +
+              esc(
+                locked
+                  ? 'Straight private deal · polygon fixed · cannot rearrange'
+                  : 'Drag tile · rearrange mid-stops if multi · ends fixed'
+              ) +
+              '</div>';
+          }
           var tray =
             '<div class="sn-pill-tray">' +
-            (o.sub ? '<div class="sn-pill-meta">' + esc(o.sub) + '</div>' : '') +
+            (o.sub && !isTask ? '<div class="sn-pill-meta">' + esc(o.sub) + '</div>' : '') +
             chips +
             (o.drone ? '<div class="sn-offer-drone">RAI DRONE · polygon live</div>' : '') +
             (phase === 'underway' || phase === 'claimed' || phase === 'confirming'
@@ -520,7 +925,6 @@
                 '</div>') +
             '</div>';
 
-          // Compact pill row always visible
           var pillActs = '';
           if (isTask && phase === 'offered') {
             pillActs =
@@ -533,8 +937,7 @@
               '" aria-label="Map route">↻</button>' +
               '<button type="button" class="sn-pill-btn no" data-act="reject" data-oid="' +
               esc(o.id) +
-              '" aria-label="Reject">×</button>' +
-              '</div>';
+              '" aria-label="Reject">×</button></div>';
           } else if (isTask) {
             pillActs =
               '<div class="sn-pill-acts">' +
@@ -554,23 +957,56 @@
               '</button></div>';
           }
 
+          var posStyle = '';
+          if (o.uiX != null && o.uiY != null) {
+            posStyle =
+              'left:' +
+              Math.round(o.uiX) +
+              'px;top:' +
+              Math.round(o.uiY) +
+              'px;bottom:auto;transform:none;';
+          }
+
           return (
             '<div class="sn-offer kind-' +
             esc(o.kind || 'task') +
             (idx === 0 ? ' hero' : '') +
             (isOpen ? ' is-open' : '') +
+            ' size-' +
+            esc(size) +
             ' phase-' +
             esc(phase) +
             '" data-oid="' +
             esc(o.id) +
             '" data-phase="' +
             esc(phase) +
+            '" data-size="' +
+            esc(size) +
             '" role="status" aria-label="Task offer ' +
+            esc(names.vendor) +
+            ' to ' +
+            esc(names.client) +
+            ' ' +
             esc(priceTxt) +
+            '" style="' +
+            posStyle +
             '">' +
-            '<button type="button" class="sn-pill-x" data-dismiss="' +
+            '<div class="sn-chrome" data-drag="' +
             esc(o.id) +
-            '" aria-label="Dismiss">×</button>' +
+            '">' +
+            '<button type="button" class="sn-chrome-btn min" data-size="min" data-oid="' +
+            esc(o.id) +
+            '" aria-label="Minimize" title="Minimize">−</button>' +
+            '<button type="button" class="sn-chrome-btn close" data-size="close" data-oid="' +
+            esc(o.id) +
+            '" aria-label="Close" title="Close">×</button>' +
+            '<span class="sn-chrome-title">' +
+            esc(phase === 'offered' ? 'OFFER' : phase.toUpperCase()) +
+            '</span>' +
+            '<button type="button" class="sn-chrome-btn max" data-size="max" data-oid="' +
+            esc(o.id) +
+            '" aria-label="Maximize" title="Maximize">+</button>' +
+            '</div>' +
             '<div class="sn-pill-main">' +
             '<span class="sn-pill-dot" aria-hidden="true"></span>' +
             '<div class="sn-pill-body">' +
@@ -579,24 +1015,27 @@
             '</div>' +
             '<div class="sn-pill-line">' +
             esc(line) +
-            '</div>' +
-            '</div>' +
+            '</div></div>' +
             pillActs +
             '</div>' +
-            (isOpen ? tray : '') +
+            (size === 'min' ? '' : parties) +
+            (size === 'min' ? '' : stopsHtml) +
+            (size === 'min' ? '' : isOpen || size === 'max' ? tray : '') +
             '</div>'
           );
         })
         .join('');
-    el.querySelectorAll('[data-dismiss]').forEach(function (btn) {
+    el.querySelectorAll('[data-size]').forEach(function (btn) {
       btn.onclick = function (ev) {
         ev.preventDefault();
-        dismiss(btn.getAttribute('data-dismiss'));
+        ev.stopPropagation();
+        setTileSize(btn.getAttribute('data-oid'), btn.getAttribute('data-size'));
       };
     });
     el.querySelectorAll('[data-act]').forEach(function (btn) {
       btn.onclick = function (ev) {
         ev.preventDefault();
+        ev.stopPropagation();
         runAct(btn.getAttribute('data-oid'), btn.getAttribute('data-act'), {
           itemId: btn.getAttribute('data-item'),
         });
@@ -608,15 +1047,36 @@
         setConfirm(btn.getAttribute('data-oid'), btn.getAttribute('data-confirm'));
       };
     });
+    el.querySelectorAll('[data-move]').forEach(function (btn) {
+      btn.onclick = function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        moveStop(
+          btn.getAttribute('data-oid'),
+          btn.getAttribute('data-sid'),
+          btn.getAttribute('data-move') === 'up' ? -1 : 1
+        );
+      };
+    });
+    el.querySelectorAll('.sn-offer').forEach(function (card) {
+      var oid = card.getAttribute('data-oid');
+      var o = find(oid);
+      if (o) bindDrag(card, o);
+    });
   }
 
   function previewRoute(task, offer) {
-    if (!task) return;
+    if (!task && !offer) return;
     try {
-      focusTaskOnGlobe(task);
+      if (task) focusTaskOnGlobe(task);
     } catch (_) {}
     try {
-      var priv = offer && offer.quote && offer.quote.private;
+      if (offer) {
+        buildStops(offer);
+        drawAllPolygons(offer);
+        return;
+      }
+      var priv = false;
       var vLat = task.lat != null ? Number(task.lat) : null;
       var vLng = task.lng != null ? Number(task.lng) : null;
       var dLat = task.drop_lat != null ? Number(task.drop_lat) : null;
@@ -629,18 +1089,22 @@
           vendorLng: vLng,
           dropLat: dLat,
           dropLng: dLng,
-          label: String((offer && offer.price) || task.title || 'Preview').slice(0, 16),
-          driver: priv ? 'private' : 'preview',
-          color: priv ? 'rgba(255,200,80,0.9)' : 'rgba(50,150,255,0.95)',
-          etaMin: (offer && offer.quote && offer.quote.etaMin) || task.etaMin || 18,
-          speedKmh: priv ? 28 : 22,
+          waypoints: [
+            { lat: vLat, lng: vLng, label: task.vendorName || 'Vendor' },
+            { lat: dLat, lng: dLng, label: task.clientName || 'Client' },
+          ],
+          label: String((task.vendorName || 'Vendor') + ' → ' + (task.clientName || 'You')).slice(0, 28),
+          driver: 'preview',
+          color: 'rgba(50,150,255,0.95)',
+          etaMin: task.etaMin || 18,
+          speedKmh: 22,
           preview: true,
         });
       }
       if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
       if (global.SNGlobe && SNGlobe.pulse) {
-        SNGlobe.pulse(vLat, vLng, priv ? 0xffc83d : 0x3d9eff, 'Pickup', 10000);
-        SNGlobe.pulse(dLat, dLng, 0x7ec8ff, 'You', 10000);
+        SNGlobe.pulse(vLat, vLng, 0x3d9eff, String(task.vendorName || 'Vendor').slice(0, 14), 10000);
+        SNGlobe.pulse(dLat, dLng, 0x7ec8ff, String(task.clientName || 'You').slice(0, 14), 10000);
       }
     } catch (_) {}
   }
@@ -796,6 +1260,23 @@
       if (global.SNDeliveryRules && SNDeliveryRules.newConfirms) conf = SNDeliveryRules.newConfirms();
     } catch (_) {}
     conf = conf || { client: false, vendor: false, driver: false, at: {} };
+    var vName =
+      (enriched && enriched.vendorName) ||
+      task.vendorName ||
+      task.shopName ||
+      extra.vendorName ||
+      'Vendor';
+    var cName =
+      (enriched && enriched.clientName) ||
+      task.clientName ||
+      task.customerName ||
+      extra.clientName ||
+      'You';
+    // Ensure task carries names for polygon labels
+    try {
+      task.vendorName = vName;
+      task.clientName = cName;
+    } catch (_) {}
     var o = push({
       id: 'task:' + task.id,
       kind: 'task',
@@ -806,7 +1287,9 @@
       natureId: q.nature && q.nature.id,
       title: meta.nature,
       meta: q.metaLine || meta.line,
-      sub: route || st || '',
+      sub: route || (vName + ' → ' + cName),
+      vendorName: vName,
+      clientName: cName,
       price: price,
       priceNum: rawPrice,
       quote: q,
@@ -816,6 +1299,8 @@
       taskId: task.id,
       task: task,
       enriched: enriched,
+      uiSize: extra.uiSize || 'mid',
+      routeLocked: !!(q.private || extra.routeLocked || task.routeLocked || task.straightShot),
       primary:
         phase === 'offered'
           ? 'Accept'
@@ -828,6 +1313,9 @@
                 : 'Done',
       t: Date.now(),
     });
+    try {
+      buildStops(o);
+    } catch (_) {}
     if (!extra.quiet) {
       try {
         previewRoute(task, o);
@@ -1686,6 +2174,8 @@
     var total = opts.total != null ? Number(opts.total) : q0.total;
     var vLat = opts.vendorLat != null ? Number(opts.vendorLat) : Number(pos.lat) + dLat;
     var vLng = opts.vendorLng != null ? Number(opts.vendorLng) : Number(pos.lng) + dLng;
+    var midLat = (vLat + Number(pos.lat)) / 2 + 0.0008;
+    var midLng = (vLng + Number(pos.lng)) / 2 - 0.0006;
     var fakeTask = {
       id: 'test_task_' + now.toString(36) + '_' + Math.random().toString(36).slice(2, 6),
       kind: 'delivery',
@@ -1699,6 +2189,15 @@
       lng: vLng,
       drop_lat: pos.lat,
       drop_lng: pos.lng,
+      // Optional mid stop for multi-leg rearrange demos (not on private)
+      stops:
+        opts.private || (q0 && q0.private)
+          ? []
+          : opts.noMid
+            ? []
+            : [{ lat: midLat, lng: midLng, label: opts.midLabel || 'Hub stop', id: 'mid1' }],
+      routeLocked: !!(opts.private || opts.routeLocked || (q0 && q0.private)),
+      straightShot: !!(opts.private || opts.straightShot),
       created: now,
       paid: true,
       night: q0.night,
@@ -1962,6 +2461,10 @@
     dismiss: dismiss,
     focusTask: focusTaskOnGlobe,
     previewRoute: previewRoute,
+    drawAllPolygons: drawAllPolygons,
+    moveStop: moveStop,
+    setTileSize: setTileSize,
+    partyNames: partyNames,
     testThrow: testThrow,
     startUnderway: function (id) {
       var o = find(id) || stack[0];

@@ -584,12 +584,21 @@
         }
       }
       if (!o || !o.task) return;
+      // Prefer multi-stop polygon with vendor/client labels
+      try {
+        if (global.SNOfferStack && SNOfferStack.drawAllPolygons) {
+          SNOfferStack.drawAllPolygons(o);
+          return;
+        }
+      } catch (_) {}
       var t = o.task;
       var p = pos();
       var vLat = t.lat != null ? Number(t.lat) : p.lat + 0.004;
       var vLng = t.lng != null ? Number(t.lng) : p.lng + 0.003;
       var dLat = t.drop_lat != null ? Number(t.drop_lat) : p.lat;
       var dLng = t.drop_lng != null ? Number(t.drop_lng) : p.lng;
+      var vName = o.vendorName || t.vendorName || 'Vendor';
+      var cName = o.clientName || t.clientName || 'You';
       if (global.SNField && SNField.startDeliveryRoute) {
         void SNField.startDeliveryRoute({
           id: 'live:money_' + (t.id || Date.now()),
@@ -597,7 +606,11 @@
           vendorLng: vLng,
           dropLat: dLat,
           dropLng: dLng,
-          label: String(t.title || o.nature || 'Delivery').slice(0, 20),
+          waypoints: [
+            { lat: vLat, lng: vLng, label: vName },
+            { lat: dLat, lng: dLng, label: cName },
+          ],
+          label: String(vName + ' → ' + cName).slice(0, 28),
           driver: 'route',
           color: 'rgba(40,160,255,0.95)',
           etaMin: t.etaMin || 18,

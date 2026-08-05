@@ -141,6 +141,8 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-05 (not owner OV): **Delivery rules + compact queue tiles** — SNDeliveryRules: 1€/km as ceil(km/3)×3€ · +3 night 21–09 · +3 heavy · +3 VIP/temp · +3 private. Capacity by product nature (envelopes batch / frozen private 1 / hot food multi-hub). Tiles: ONE at a time compact queue. Lifecycle Accept→Start→Arrive→Client+Vendor+Driver OK→Settle. No call/msg unless off-limits. Rai drone animates pickup→drop. Build `20260805154500-delivery-rules`.*
 *Agent note 2026-08-05 (not owner OV): **Pill peeks + soft neon UI** — offers are small map-label pills (price · km · ✓/map/×), polygon preview on throw; soft rounded chrome; ASTRANOV neon deep electric blue; 3× anti-fraud seal settle. Build `20260805160000-pill-peek`.*
 *Agent note 2026-08-05 (not owner OV): **Real GPS locate** — no Rhodes fake-you; pipeline high-acc → low-acc → watch → IP approx (honest soft); Locate ribbon/CLI uses SNCli.gpsLocate; Globe.locate no longer invents Archangelos pin. Build `20260805162000-real-gps`.*
+*Agent note 2026-08-05 (not owner OV): **Offer tile chrome v9** — vendor+client names on peek; drag tile; traditional − / × / + (min · close · max); multi-stop polygon vendor→client network; driver can rearrange mid-stops unless private/straight paid lock. Build `20260805164500-tile-chrome`.*
+
 *Agent note 2026-08-05 (not owner OV): **SPECS gate run** — 24/24 green (boot GLOBAL, ASTRANOV neon, ribbon, lean no game dock, real GPS, delivery rules, pill peeks, 3× seal settle). Build `20260805162000-real-gps`. Live device GPS still needs owner allow-location once. Not owner OV.*
 
 
