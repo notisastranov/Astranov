@@ -888,6 +888,15 @@
         help();
         return;
       }
+      if (low === 'cancel' || low === 'stop' || low === 'unstick' || low === 'reset ai') {
+        try { turnOpen = 0; setLive(false); setActivity('idle'); } catch (_) {}
+        try { if (global.SNAi) { /* busy cleared on next ask via watchdog */ } } catch (_) {}
+        try { if (global.SNRecover) SNRecover({ closeMap: false }); } catch (_) {}
+        log('Cleared · ready', 'ok');
+        preview('ready');
+        return;
+      }
+
       // Owner test harness — offer tiles / polygons (before dialect/AI freeform)
       if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
         const offerKeys =
@@ -3452,13 +3461,41 @@ if (
         return;
       }
 
-      // Freeform → Astranov (same turn only)
+      // Freeform → free mind first (instant), then SNAi with hard timeout
       preview('…');
+      try {
+        const mind = global.SNAstranovMind || global.SNFreeMind;
+        if (mind && typeof mind.answer === 'function') {
+          const quick = mind.answer(line, { mode: 'chat' });
+          if (quick && quick.text && (quick.score == null || quick.score >= 0.55)) {
+            String(quick.text)
+              .split('\n')
+              .forEach((ln) => {
+                if (ln.trim()) log(ln, 'ok');
+              });
+            preview(String(quick.text).replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
+            replyOut(quick.text);
+            return;
+          }
+        }
+      } catch (_) {}
       if (!global.SNAi?.ask) {
-        await new Promise((r) => setTimeout(r, 600));
+        await new Promise((r) => setTimeout(r, 200));
       }
       if (global.SNAi?.ask) {
-        const reply = await SNAi.ask(line);
+        let reply = null;
+        try {
+          reply = await Promise.race([
+            SNAi.ask(line),
+            new Promise((resolve) =>
+              setTimeout(function () {
+                resolve('Still loading · try: power on · locate · marina · help · cancel');
+              }, 5000)
+            ),
+          ]);
+        } catch (eAsk) {
+          reply = 'Error · try cancel then help';
+        }
         if (reply) {
           String(reply)
             .split('\n')
@@ -3470,8 +3507,8 @@ if (
           return;
         }
       }
-      log('System loading · try again in a moment', 'err');
-      preview('loading…');
+      log('Try: power on · locate · marina · global · help · cancel', 'ok');
+      preview('ready');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');
     } finally {

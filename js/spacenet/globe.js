@@ -1854,6 +1854,16 @@
 
     function onMove(e) {
       if (G.gameMode) return;
+      // Mouse released but browser skipped pointerup → never spin without button
+      if (e.pointerType === 'mouse' && e.buttons === 0 && down) {
+        down = false;
+        dragActive = false;
+        moved = false;
+        G.dragging = false;
+        clearHold();
+        ptrId = null;
+        return;
+      }
       var id = e.pointerId != null ? e.pointerId : 'm';
       if (pointers[id]) {
         pointers[id].x = e.clientX;
@@ -2062,29 +2072,50 @@
     canvas.addEventListener(
       'wheel',
       function (e) {
-        e.preventDefault();
+        // Mouse / trackpad scroll = ZOOM only — never spin the globe
+        if (e.cancelable) e.preventDefault();
         if (G.gameMode) return;
-        G.lastAct = Date.now();
-        G.lastUserControl = Date.now();
+
+        // Kill any stuck drag so scroll never becomes a spin
+        down = false;
+        dragActive = false;
+        moved = false;
+        holdFired = false;
+        clearHold();
+        ptrId = null;
+        pointers = Object.create(null);
+        endPinch();
+        G.dragging = false;
         G.velX = 0;
         G.velY = 0;
+        G.lastAct = Date.now();
+        G.lastUserControl = Date.now();
+
         var under = pickLatLng(e.clientX, e.clientY);
         if (under) setFocus(under.lat, under.lng);
 
-        G._wheelAcc = (G._wheelAcc || 0) + e.deltaY;
+        // Normalize delta (lines vs pixels vs page)
+        var dy = e.deltaY;
+        if (e.deltaMode === 1) dy *= 16; // lines
+        if (e.deltaMode === 2) dy *= 32; // pages
+        // Trackpads often send small pixel deltas — accumulate
+        G._wheelAcc = (G._wheelAcc || 0) + dy;
         var now = Date.now();
-        if (G.zoomAnim || G.flying) return;
+        if (G.zoomAnim || G.flying) {
+          // still accumulate; apply after cool
+          return;
+        }
         if (now < (G._wheelCoolUntil || 0)) return;
-        if (Math.abs(G._wheelAcc) < 48) return;
+        // Responsive: ~1 notch or gentle trackpad flick
+        if (Math.abs(G._wheelAcc) < 18) return;
         var zoomOut = G._wheelAcc > 0;
         G._wheelAcc = 0;
-        G._wheelCoolUntil = now + 480;
+        G._wheelCoolUntil = now + 200;
 
         if (zoomOut) {
           doZoomOutStep();
           return;
         }
-
         var p = under || focusPos();
         if (p && p.lat != null) {
           diveInAt(p.lat, p.lng);
