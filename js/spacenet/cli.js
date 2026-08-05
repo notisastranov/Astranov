@@ -673,13 +673,13 @@
           return true;
         }
         try {
-          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('earthops');
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure(['helper', 'earthops']);
         } catch (_) {}
         if (global.SNEarthOps && SNEarthOps.start) {
           SNEarthOps.start();
           return true;
         }
-        log('Earth Ops module loading…', 'dim');
+        log('Earth Ops module loading… · HELPER wingman', 'dim');
         return true;
       }
 

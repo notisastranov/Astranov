@@ -89,7 +89,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 
 ### Minimum CLI commands
 
-`help` · `locate` · `city` · `global` · `fly <city>` · `shops` · `first delivery` · `list shop` · `menu add` · `order me` · `drive on` · `deliver me` · `task list` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `layers` · basemap words (`dark` …) · `go to mars|moon|…` · `usage`
+`help` · `locate` · `city` · `global` · `fly <city>` · `shops` · `first delivery` · `list shop` · `menu add` · `order me` · `drive on` · `deliver me` · `task list` · `rate` · `wallet` · `resources` · `mine on|off` · `donate on|off` · `layers` · basemap words (`dark` …) · `go to mars|moon|…` · `usage` · `earth ops` / `ops` / `gaming` / `play levels` (HELPER silver-wing wingman on Real Earth)
 
 ---
 
@@ -134,6 +134,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-07-31 (not owner OV): **Astranov Mind v6** — English chat + Greeklish + modern/ancient Greek hard paths, retrain drills, simple task flags (`locate` · `dark map` · pizza). Build `20260731161200-mind-v6-lang`. Owner: hard refresh; if poisoned memory say `mind wipe`.*
 *Agent note 2026-07-31 (not owner OV): **Marketplace settlement** — client pays full S · vault 3% · on complete driver 15% + vendor rest; task list keeps claimed/in_progress; lazy pizza self-courier auto-completes settle; `deliver me` / `market status`. Build `20260731163000-market-settle`. Live multi-device / real POI still depend on crawl + GPS. Not owner OV.*
 *Agent note 2026-07-31 (not owner OV): **Auth brand face** — Google GIS modal only on astranov.eu · **hard ban** OAuth redirect via `*.supabase.co` (phishing face). Custom domain `api.astranov.eu` auto-probed (currently Cloudflare 1014 — DNS not ready). **Mesh orders** pull `seeking_driver` from network onto map. Build `20260731165500-auth-brand-mesh`.*
+*Agent note 2026-08-05 (not owner OV): **Earth Ops gaming** — Real Earth stays under canvas; HELPER = Astranov AI body with **AI sprites only** (`assets/sprites/spacex-bot/*`); CLI `earth ops`/`ops`/`gaming`/`play levels` + floating **EARTH OPS · PLAY** chip; boot MODULE_MAP must keep `helper` + `earthops` separate (corrupt merge = SyntaxError kills boot). Build `20260805064000-earth-ops-gaming`. Ship honesty: push ≠ live verified until hard refresh + chip/ops path confirmed.*
 
 
 ---
