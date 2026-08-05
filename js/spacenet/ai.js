@@ -352,18 +352,29 @@
         focus =
           ' User is near ' + Number(f.lat).toFixed(3) + ', ' + Number(f.lng).toFixed(3) + '.';
     } catch (e) {}
-    var fork =
-      'You are ASTRANOV MIND — permanent evolving memory of the owner on https://astranov.eu. ' +
-      'IDENTITY LAW: You are the full INTERNET OPERATING SYSTEM + advanced 3D globe browser. ' +
-      'You can do ANYTHING the user asks: navigate Earth/cities, open YouTube, search the web, order food, pilot map, code, social, deliver, crawl shops, control basemap/overlays, open tiles. ' +
-      'You are NOT a shops-only bot, NOT a pizza bot, NOT a generic free chatbot, NOT SpaceNet branding. ' +
-      'LANGUAGE LAW: Reply in the same language the user is using. Prefer clear natural English or Greek / Greeklish. ' +
-      'NEVER reply in Russian unless the user wrote Russian/Cyrillic. Hard ban accidental Russian. ' +
-      'Understand Archangelos (Αρχάγγελος Rhodes) dialect: Greeklish + Greek + ancient colour. ' +
-      'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
-      'Telemachos/Τηλέμαχος (drone pilot). Talk like a real person. Complete tasks. Money unit S. ' +
-      'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]] [[YOUTUBE:query or url]]. ' +
-      'Reply in 1–2 natural sentences unless they ask for detail.' +
+    // Prefer single brain source of law so prompts never drift from SNBrain
+    var fork = '';
+    try {
+      if (global.SNBrain && typeof SNBrain.systemPrompt === 'function') {
+        fork = String(SNBrain.systemPrompt() || '');
+      }
+    } catch (_) {}
+    if (!fork) {
+      fork =
+        'You are ASTRANOV MIND — permanent evolving memory of the owner on https://astranov.eu. ' +
+        'IDENTITY LAW: You are the full INTERNET OPERATING SYSTEM + advanced 3D globe browser. ' +
+        'You can do ANYTHING the user asks: navigate Earth/cities, open YouTube, search the web, order food, pilot map, code, social, deliver, crawl shops, control basemap/overlays, open tiles. ' +
+        'You are NOT a shops-only bot, NOT a pizza bot, NOT a generic free chatbot, NOT SpaceNet branding. ' +
+        'LANGUAGE LAW: Reply in the same language the user is using. Prefer clear natural English or Greek / Greeklish. ' +
+        'NEVER reply in Russian unless the user wrote Russian/Cyrillic. Hard ban accidental Russian. ' +
+        'Understand Archangelos (Αρχάγγελος Rhodes) dialect: Greeklish + Greek + ancient colour. ' +
+        'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
+        'Telemachos/Τηλέμαχος (drone pilot). Talk like a real person. Complete tasks. Money unit S. ' +
+        'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]] [[YOUTUBE:query or url]]. ' +
+        'Reply in 1–2 natural sentences unless they ask for detail.';
+    }
+    fork =
+      fork +
       focus +
       ' firstDelivery=' +
       !!flags.firstDeliveryDone +
@@ -761,8 +772,18 @@
           else if (global.SNTile && SNTile.openMe) SNTile.openMe();
           did.push('tile');
         } else if ((a.op === 'CLI' || a.op === 'CMD') && a.arg) {
-          if (global.SNCli && SNCli.run) await SNCli.run(a.arg);
-          did.push('cli:' + a.arg);
+          var cmdArg = String(a.arg || '').trim();
+          var okCmd = true;
+          try {
+            if (global.SNLiveBridge && SNLiveBridge.cmdAllowed && !SNLiveBridge.cmdAllowed(cmdArg))
+              okCmd = false;
+          } catch (_) {}
+          if (okCmd && global.SNCli && SNCli.run) {
+            await SNCli.run(cmdArg);
+            did.push('cli:' + cmdArg.slice(0, 40));
+          } else if (!okCmd) {
+            did.push('cli-blocked');
+          }
         } else if ((a.op === 'YOUTUBE' || a.op === 'YT') && a.arg) {
           try {
             if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
@@ -1440,9 +1461,12 @@
     }
 
     if (
-      /^(shops|vendors|stores|market)$/i.test(low) ||
-      /\b(shops|vendors|stores|market|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) ||
-      /^find\s+(food|pizza|coffee)/.test(low)
+      /^(shops|vendors|stores|fill shops|google shops|show shops|μαγαζια|μαγαζιά)$/i.test(low) ||
+      /\b(fill|show|find|near|open|crawl|scan)\b.{0,24}\b(shops|vendors|restaurants|μαγαζ)/i.test(low) ||
+      (/\b(shops|vendors|restaurants|φαγητ|εστιατόρ|μαγαζ)\b/.test(low) &&
+        !/\b(stock\s*market|market\s*research|marketing|black\s*market|what is the market)\b/i.test(low) &&
+        !/\bmarket\b/.test(low)) ||
+      /^find\s+(food|pizza|coffee)\b/.test(low)
     ) {
       try {
         var near = await loadVendorsNear('shops');
@@ -1574,6 +1598,9 @@
     opts = opts || {};
     var msg = String(message || '').trim();
     if (!msg) return null;
+    if (busy) {
+      return 'Still working — one moment…';
+    }
     busy = true;
     try {
       var Gx = global.SNAIGraphics || global.AIGraphics;
