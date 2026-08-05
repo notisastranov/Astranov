@@ -37,6 +37,9 @@
   var SEED = [
     {
       id: 'spartan_law',
+      q: 'spartan law least words listen wait think act door driver eta late',
+      a: 'Spartan law: listen · wait · think · act. Few words. Door. ETA. If late — say so once.',
+      tags: ['spartan', 'law', 'en'],
     },
     {
       id: 'spartan_reply',
@@ -602,6 +605,7 @@
     stats.purged = (stats.purged || 0) + 1;
     try {
       localStorage.removeItem(LEARN_KEY);
+      localStorage.removeItem('sn:astranov-mind-train-v7');
       localStorage.removeItem('sn:astranov-mind-train-v6');
       localStorage.removeItem('sn:astranov-mind-train-v5');
       localStorage.removeItem('sn:free-mind-first-task-v4');
@@ -619,7 +623,7 @@
    * Hard-wire English + dialect + simple tasks (idempotent; force=true on wipe)
    */
   function trainOwnerMind(force) {
-    var FLAG = 'sn:astranov-mind-train-v6';
+    var FLAG = 'sn:astranov-mind-train-v7';
     try {
       if (!force && localStorage.getItem(FLAG) === '1') return;
     } catch (e0) {}
@@ -1009,7 +1013,7 @@
         score: 1,
         via: 'astranov-mind',
         source: 'intent-youtube',
-        runYoutube: true,
+        runYoutube: !!yq,
         youtubeQuery: yq || '',
       };
     }
@@ -1167,16 +1171,18 @@
       if (!global._snMindWipeArmed) {
         global._snMindWipeArmed = Date.now();
         return {
-          ok: true,
-          reply: 'Mind wipe armed · type mind wipe again within 20s to confirm · permanent',
+          text: 'Mind wipe armed · type mind wipe again within 20s to confirm · permanent',
+          score: 1,
+          via: 'astranov-mind',
           source: 'wipe-confirm',
         };
       }
       if (Date.now() - global._snMindWipeArmed > 20000) {
         global._snMindWipeArmed = Date.now();
         return {
-          ok: true,
-          reply: 'Mind wipe re-armed · type mind wipe again to confirm',
+          text: 'Mind wipe re-armed · type mind wipe again to confirm',
+          score: 1,
+          via: 'astranov-mind',
           source: 'wipe-confirm',
         };
       }
@@ -1416,12 +1422,13 @@
   function exportTrainset() {
     var rows = [];
     SEED.forEach(function (s) {
+      if (!s || !s.q) return;
       rows.push({ input: s.q, output: s.a, source: 'seed', tags: s.tags });
     });
     learned.forEach(function (L) {
       rows.push({ input: L.q, output: L.a, source: 'learned', hits: L.hits || 0, tags: L.tags });
     });
-    return rows;
+    return { count: rows.length, rows: rows };
   }
 
   function status() {
@@ -1433,12 +1440,18 @@
       stats: Object.assign({}, stats),
       paidXaiRequired: false,
       evolves: true,
-      train: 'v6',
-      note: 'Astranov Mind v6 — English · Greek · Greeklish · ancient · simple tasks · evolves forever',
+      train: 'v7',
+      note: 'Astranov Mind v7 — full INTERNET OS · YouTube · LANGUAGE LAW EN/EL · evolves forever',
     };
   }
 
   load();
+  // One-shot retrain when LEARN_KEY is v7 but train flag still old/missing
+  try {
+    if (localStorage.getItem('sn:astranov-mind-train-v7') !== '1') {
+      trainOwnerMind(true);
+    }
+  } catch (_) {}
 
   var API = {
     NAME: NAME,
