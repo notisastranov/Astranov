@@ -14,7 +14,7 @@
     '?';
 
   const LAW = {
-    version: '2026-08-05-brain-v3-mind-os',
+    version: '2026-08-05-brain-v3-audit-fix',
     name: 'Astranov SpaceNet',
     why:
       'Amnesia loops (rewrite-from-zero, strip inertia/CLI, chase FPS, forget juice) almost killed the project and cost the owner real money and years of focus. Memory is not optional.',
@@ -242,27 +242,19 @@
     add('brain', true, LAW.version);
     add('build', !!BUILD && BUILD !== '?', BUILD);
 
-    // Globe inertia API
-    let gState = null;
-    try {
-      gState = G?.getState?.() || G?.state || null;
-    } catch (_) {}
-    const hasVel =
-      (G && typeof G.velX === 'number') ||
-      (gState && typeof gState.velX === 'number') ||
-      (typeof G?.hasInertia === 'function' && G.hasInertia()) ||
-      // Internal G is private — probe via exported verify or source contract
-      true; // module always ships velX; deeper probe if getPhysics exists
+    // Globe inertia API — never false-green
     if (typeof G?.getPhysics === 'function') {
-      const p = G.getPhysics();
+      let p = null;
+      try {
+        p = G.getPhysics();
+      } catch (_) {}
       add(
         'inertia',
-        p && typeof p.damp === 'number' && p.damp > 0.5 && p.damp < 1,
+        !!(p && typeof p.damp === 'number' && p.damp > 0.5 && p.damp < 1),
         p ? 'damp=' + p.damp : 'no physics export'
       );
     } else {
-      // Contract: globe.js must expose getPhysics after this deploy
-      add('inertia', typeof G?.getPhysics === 'function', G ? 'need getPhysics()' : 'no SNGlobe');
+      add('inertia', false, G ? 'need getPhysics()' : 'no SNGlobe');
     }
 
     add('tiers', typeof G?.goToTier === 'function', 'goToTier');
@@ -275,8 +267,13 @@
     add('ai', typeof A?.ask === 'function', 'SNAi.ask');
     add(
       'youtube_mod',
-      typeof global.SNYoutube === 'undefined' || typeof global.SNYoutube?.find === 'function',
-      'SNYoutube lazy'
+      typeof global.SNYoutube?.find === 'function',
+      global.SNYoutube ? 'SNYoutube' : 'lazy not loaded'
+    );
+    add(
+      'mind',
+      typeof global.SNAstranovMind?.answer === 'function' || typeof global.SNFreeMind?.answer === 'function',
+      'Astranov Mind'
     );
 
     // DOM sacred
