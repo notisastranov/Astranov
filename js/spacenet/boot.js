@@ -12,11 +12,17 @@
       if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
     } catch (_) {}
     try {
-      var gd = document.getElementById('sn-game-dock');
-      if (gd) gd.remove();
+      document.querySelectorAll('#sn-game-dock,.sn-game-dock,#sn-space-hud,#sn-earth-ops-canvas,.sn-game-overlay').forEach(function (n) {
+        try { n.remove(); } catch (_) {}
+      });
     } catch (_) {}
     try {
-      document.body.classList.remove('sn-space-scene-on', 'sn-game-on');
+      document.body.classList.remove('sn-space-scene-on', 'sn-game-on', 'sn-game-dock-on');
+    } catch (_) {}
+    try {
+      if (window.speechSynthesis) {
+        speechSynthesis.cancel();
+      }
     } catch (_) {}
     try {
       if (opts.closeMap && window.SNMap && SNMap.close) SNMap.close();
@@ -407,6 +413,36 @@
             if (window.SNMarina && SNMarina.init) SNMarina.init();
             if (window.SNHome && SNHome.init) SNHome.init();
           } catch (eM) { console.warn('[Astranov] poly scheduler init', eM); }
+          /* HARD power wire — always throw tiles on green, independent of field race */
+          try {
+            function hardWirePower() {
+              var btn = document.getElementById('sn-task-launch');
+              if (!btn || btn._snHardPower) return;
+              btn._snHardPower = true;
+              btn.addEventListener('click', function (e) {
+                try {
+                  setTimeout(function () {
+                    try {
+                      var m = window.SNField && SNField.launchMode ? SNField.launchMode() : null;
+                      if (!m) {
+                        if (btn.classList.contains('mode-on')) m = 'on';
+                        else if (btn.classList.contains('mode-off')) m = 'off';
+                        else m = 'standby';
+                      }
+                      if (m === 'on' && window.SNPolyScheduler && SNPolyScheduler.activate) {
+                        SNPolyScheduler.activate({ offers: 1 });
+                      } else if (m === 'off' && window.SNPolyScheduler && SNPolyScheduler.deactivate) {
+                        SNPolyScheduler.deactivate();
+                      }
+                    } catch (_) {}
+                  }, 40);
+                } catch (_) {}
+              }, true);
+            }
+            hardWirePower();
+            setTimeout(hardWirePower, 500);
+            setTimeout(hardWirePower, 1500);
+          } catch (eP) { console.warn('[Astranov] hard power', eP); }
           try {
             if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
           } catch (_) {}
