@@ -869,10 +869,15 @@
         low === 'mind reset'
       ) {
         try {
-          const w = global.SNFreeMind?.wipe?.('cli');
-          log('Memory cleared. Fresh start — talk normally.', 'ok');
-          log('Notes kept: ' + (w && w.learned != null ? w.learned : '?'), 'dim');
-          preview('Fresh');
+          // Confirm path via Mind.answer (armed wipe) — never bypass double-confirm
+          const hit = global.SNFreeMind?.answer?.(line);
+          if (hit && (hit.text || hit.reply)) {
+            log(hit.text || hit.reply, hit.source === 'wipe' ? 'ok' : 'dim');
+            preview(String(hit.text || hit.reply).slice(0, 48));
+          } else {
+            log('Mind wipe · type mind wipe again to confirm', 'dim');
+            preview('Confirm wipe');
+          }
         } catch (eW) {
           log('Could not clear memory — hard refresh the page.', 'err');
         }
@@ -885,17 +890,18 @@
             log('Free mind loading · hard refresh', 'err');
             return;
           }
+          const n = Array.isArray(pack) ? pack.length : pack.count != null ? pack.count : (pack.rows || []).length;
           const json = JSON.stringify(pack, null, 2);
           if (navigator.clipboard?.writeText) {
             void navigator.clipboard.writeText(json).then(
-              () => log('Trainset copied · ' + pack.count + ' rows', 'ok'),
+              () => log('Trainset copied · ' + n + ' rows', 'ok'),
               () => log('Copy failed · see console', 'err')
             );
           } else {
-            log('Trainset ' + pack.count + ' rows · clipboard unavailable', 'dim');
+            log('Trainset ' + n + ' rows · clipboard unavailable', 'dim');
           }
           console.log('[SNFreeMind trainset]', pack);
-          preview(pack.count + ' train rows');
+          preview(n + ' train rows');
         } catch (e) {
           log('Export fail · ' + (e.message || e), 'err');
         }
@@ -3028,6 +3034,7 @@ if (
           return;
         }
         const t = Tasks?.create?.(line);
+        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Date open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3035,6 +3042,7 @@ if (
       }
       if (/^deliver|^delivery\b|food\s*order|\bpackage\b/.test(low)) {
         const t = Tasks?.create?.(line.includes('deliver') || line.includes('delivery') ? line : 'delivery ' + line);
+        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Delivery open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3042,6 +3050,7 @@ if (
       }
       if (/^errand\b|pharmacy|grocery\s*run/.test(low)) {
         const t = Tasks?.create?.(line);
+        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Errand open · ' + t.title, 'ok');
         preview(t.title);
         return;
@@ -3059,6 +3068,7 @@ if (
           return;
         }
         const t = Tasks?.create?.(line);
+        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Job open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3083,6 +3093,7 @@ if (
         }
         if (low !== 'help' && low !== '?') {
           const t = Tasks?.create?.({ kind: 'help', title: '🤝 ' + line.slice(0, 50), raw: line });
+          if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
           log('Help open · ' + t.title, 'ok');
           preview(t.title);
           return;
@@ -3090,6 +3101,7 @@ if (
       }
       if (line.length < 100 && /\b(need|want|looking|work|job|date|deliver)\b/i.test(line)) {
         const t = Tasks?.create?.(line);
+        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Posted · ' + t.title, 'ok');
         preview(t.title);
         return;
@@ -3098,7 +3110,9 @@ if (
       // Freeform → Astranov (same turn only)
       preview('…');
       if (!global.SNAi?.ask) {
-        await new Promise((r) => setTimeout(r, 600));
+        for (let i = 0; i < 8 && !global.SNAi?.ask; i++) {
+          await new Promise((r) => setTimeout(r, 400));
+        }
       }
       if (global.SNAi?.ask) {
         const reply = await SNAi.ask(line);
@@ -3203,13 +3217,23 @@ if (
     const s = String(text || '');
     try {
       const pref = localStorage.getItem('sn:tts-lang-v1');
+      if (pref && /^ru/i.test(pref) && /[\u0400-\u04FF]/.test(s)) return pref;
       if (pref && /^(el|en|ar|zh|ja|ko|th|hi|de|fr|es|it|pt)/i.test(pref)) {
         if (/^el/i.test(pref) && /[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return pref;
         if (/^en/i.test(pref) && !/[\u0370-\u03FF\u0400-\u04FF]/.test(s)) return pref;
       }
     } catch (_) {}
     if (/[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return 'el-GR';
-    if (/[\u0400-\u04FF]/.test(s)) return 'ru-RU'; // only when text is Cyrillic
+    // Cyrillic: only Russian if user opted in OR clear Russian markers; else en-US (LANGUAGE LAW)
+    if (/[\u0400-\u04FF]/.test(s)) {
+      try {
+        const prefRu = localStorage.getItem('sn:tts-lang-v1');
+        if (prefRu && /^ru/i.test(prefRu)) return 'ru-RU';
+      } catch (_) {}
+      if (/\b(привет|пожалуйста|спасибо|что|это|как|да|нет)\b/i.test(s) || /[ыэъё]/i.test(s))
+        return 'ru-RU';
+      return 'en-US';
+    }
     if (/[\u0600-\u06FF]/.test(s)) return 'ar-SA';
     if (/[\u4E00-\u9FFF]/.test(s)) return 'zh-CN';
     if (/[\u3040-\u30FF]/.test(s)) return 'ja-JP';
@@ -3219,9 +3243,10 @@ if (
     const nav = navigator.language || 'en-US';
     if (/^el/i.test(nav)) return 'el-GR';
     if (/^en/i.test(nav)) return 'en-US';
-    // Never default to Russian from navigator alone
+    // Never default to Russian (or random OS lang) from navigator for Latin text
     if (/^ru/i.test(nav)) return 'en-US';
-    return nav.length >= 2 ? nav : 'en-US';
+    // Latin / unknown script → English (product LANGUAGE LAW priority)
+    return 'en-US';
   }
 
   /**
@@ -3542,18 +3567,24 @@ if (
     speechRec = new SR();
     const nav = navigator.language || 'en-US';
     // Prefer Greek recognizer when OS is el OR user often speaks Greek/Greeklish
+    // LANGUAGE LAW: never lock STT to Russian from navigator alone
     try {
       if (global.ArcangeloDialect && ArcangeloDialect.listenLang) {
-        speechRec.lang = ArcangeloDialect.listenLang(hfPending || nav) || 'el-GR';
+        speechRec.lang = ArcangeloDialect.listenLang(hfPending || nav) || 'en-US';
       } else if (global.SNGreeklish && SNGreeklish.looksGreekish && SNGreeklish.looksGreekish(hfPending || '')) {
         speechRec.lang = 'el-GR';
+      } else if (/^el/i.test(nav)) {
+        speechRec.lang = 'el-GR';
+      } else if (/^ru/i.test(nav)) {
+        speechRec.lang = 'en-US';
+      } else if (/^en/i.test(nav)) {
+        speechRec.lang = 'en-US';
       } else {
-        speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
+        speechRec.lang = 'en-US';
       }
-      // Rhodes / GR owner default: also try el-GR if not set
-      if (!speechRec.lang) speechRec.lang = 'el-GR';
+      if (!speechRec.lang || /^ru/i.test(speechRec.lang)) speechRec.lang = 'en-US';
     } catch (_) {
-      speechRec.lang = /^el/i.test(nav) ? 'el-GR' : 'el-GR';
+      speechRec.lang = /^el/i.test(nav) ? 'el-GR' : 'en-US';
     }
     // interim helps fill the box; we commit on final OR onend with pending
     speechRec.interimResults = true;
