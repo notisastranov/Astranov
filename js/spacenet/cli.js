@@ -462,17 +462,16 @@
   }
 
     function help() {
-    log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
-    log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
-    log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
-    log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
-    log('HELPER: helper · helper find pizza · helper patrol · helper off', 'ok');
-    log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
-    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
-    log('Plans: plan list · plan status · claim · task list · task map', 'dim');
-    log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
-    log('Mind: mind · mind wipe · cancel · pilot home', 'dim');
-    preview('Astranov Mind · talk Greeklish or English');
+    log("Hey — I'm Astranov Mind · full INTERNET OS + 3D globe browser.", 'ok');
+    log('Media: youtube <query> · yt cats · watch <url> · play 2 · yt close', 'ok');
+    log('Map: locate · shops · fly athens · fly archangelos · dark map · pilot home', 'ok');
+    log('Search: crawl X · find X · research X · code write …', 'ok');
+    log('Order: order me a pizza · order pitogyra mpyronia · shops · claim', 'ok');
+    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'dim');
+    log('Village: aksaki · Archangelos · Telemachos pilot · Greeklish OK', 'dim');
+    log('Mind: who are you · help · brain · verify · law · cancel · mind wipe', 'dim');
+    log('Bridge: bridge status · bridge test · agent <task>', 'dim');
+    preview('Full OS · YouTube · map · order · English or Greek');
   }
 
   function moneyStatus() {
@@ -574,6 +573,50 @@
       }
       if (low === 'brain' || low === 'memory') {
         dumpBrain('summary');
+        return;
+      }
+      // ── YouTube tile (CLI / voice) ──
+      if (
+        /^(youtube|yt)\b/.test(low) ||
+        /^watch\b/.test(low) ||
+        /^play\s+\d+$/.test(low) ||
+        low === 'yt close' ||
+        low === 'youtube close' ||
+        low === 'close youtube' ||
+        low === 'close yt'
+      ) {
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+        } catch (_) {}
+        const Y = global.SNYoutube;
+        if (!Y) {
+          log('YouTube module loading · try again in a moment', 'dim');
+          return;
+        }
+        if (
+          low === 'yt close' ||
+          low === 'youtube close' ||
+          low === 'close youtube' ||
+          low === 'close yt'
+        ) {
+          if (Y.close) Y.close();
+          log('YouTube closed', 'dim');
+          return;
+        }
+        if (/^play\s+\d+$/.test(low)) {
+          const n = parseInt(low.replace(/^play\s+/, ''), 10);
+          if (Y.playIndex) await Y.playIndex(n);
+          else log('Search first · youtube <query>', 'dim');
+          return;
+        }
+        const q = line.replace(/^(youtube|yt|watch)\s*/i, '').trim();
+        if (!q) {
+          log('youtube <query> · yt <query> · watch <url> · play 1 · yt close', 'dim');
+          return;
+        }
+        activity('youtube…', 'work', { label: 'YouTube' });
+        if (Y.find) await Y.find(q);
+        else log('YouTube ready · hard refresh if needed', 'err');
         return;
       }
       // Real use: task board · route-compatible jobs
@@ -3112,7 +3155,37 @@ if (
   }
 
   /**
-   * Prefer natural / neural / female voices; avoid classic robotic male (David, etc.).
+   * Detect BCP-47 speak language from text content (not only navigator.language).
+   * Greek script → el-GR, Latin → en-US priority, Cyrillic only if user wrote Cyrillic.
+   * Hard ban accidental Russian when text is not Russian.
+   */
+  function detectSpeakLang(text) {
+    const s = String(text || '');
+    try {
+      const pref = localStorage.getItem('sn:tts-lang-v1');
+      if (pref && /^(el|en|ar|zh|ja|ko|th|hi|de|fr|es|it|pt)/i.test(pref)) {
+        if (/^el/i.test(pref) && /[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return pref;
+        if (/^en/i.test(pref) && !/[\u0370-\u03FF\u0400-\u04FF]/.test(s)) return pref;
+      }
+    } catch (_) {}
+    if (/[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return 'el-GR';
+    if (/[\u0400-\u04FF]/.test(s)) return 'ru-RU'; // only when text is Cyrillic
+    if (/[\u0600-\u06FF]/.test(s)) return 'ar-SA';
+    if (/[\u4E00-\u9FFF]/.test(s)) return 'zh-CN';
+    if (/[\u3040-\u30FF]/.test(s)) return 'ja-JP';
+    if (/[\uAC00-\uD7AF]/.test(s)) return 'ko-KR';
+    if (/[\u0E00-\u0E7F]/.test(s)) return 'th-TH';
+    if (/[\u0900-\u097F]/.test(s)) return 'hi-IN';
+    const nav = navigator.language || 'en-US';
+    if (/^el/i.test(nav)) return 'el-GR';
+    if (/^en/i.test(nav)) return 'en-US';
+    // Never default to Russian from navigator alone
+    if (/^ru/i.test(nav)) return 'en-US';
+    return nav.length >= 2 ? nav : 'en-US';
+  }
+
+  /**
+   * Prefer natural / neural / female voices; HARD BAN Russian unless lang is ru.
    */
   function pickVoice(lang) {
     try {
@@ -3120,28 +3193,40 @@ if (
       if (!voices.length) return null;
       const want = String(lang || 'en-US').toLowerCase();
       const want2 = want.slice(0, 2);
+      const allowRu = want2 === 'ru';
       function score(v) {
         let s = 0;
         const n = String(v.name || '').toLowerCase();
         const l = String(v.lang || '').toLowerCase();
+        // Hard ban Russian voices unless user wrote Russian
+        if (!allowRu && (l.indexOf('ru') === 0 || /russian|русский|milena|yuri|irina/.test(n))) {
+          return -9999;
+        }
         if (l === want) s += 12;
         else if (l.indexOf(want2) === 0) s += 6;
         else if (/en/.test(l) && want2 === 'en') s += 3;
+        else if (/el/.test(l) && want2 === 'el') s += 3;
         else s -= 4;
-        // Quality signals
         if (/natural|neural|online|premium|enhanced|wavenet|studio|google/.test(n)) s += 18;
-        if (/aria|jenny|sara|susan|samantha|zira|moira|karen|victoria|linda|emma|sonia|catherine|hazel/.test(n))
+        if (/aria|jenny|sara|susan|samantha|zira|moira|karen|victoria|linda|emma|sonia|catherine|hazel|melina|nikos/.test(n))
           s += 16;
         if (/female|woman/.test(n)) s += 14;
-        // Penalize robotic defaults
         if (/david|mark|george|daniel|ravi|microsoft david|espeak|robot|sam\b|fred/.test(n)) s -= 25;
         if (/male/.test(n) && !/female/.test(n)) s -= 6;
-        if (v.localService === false) s += 8; // often cloud / higher quality
+        if (v.localService === false) s += 8;
         return s;
       }
-      const ranked = voices.slice().sort(function (a, b) {
-        return score(b) - score(a);
-      });
+      const ranked = voices
+        .slice()
+        .filter(function (v) {
+          if (allowRu) return true;
+          const l = String(v.lang || '').toLowerCase();
+          const n = String(v.name || '').toLowerCase();
+          return !(l.indexOf('ru') === 0 || /russian|русский|milena|yuri|irina/.test(n));
+        })
+        .sort(function (a, b) {
+          return score(b) - score(a);
+        });
       return ranked[0] || null;
     } catch (_) {
       return null;
@@ -3181,7 +3266,8 @@ if (
       try {
         if (speechRec) speechRec.abort();
       } catch (_) {}
-      const lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
+      // LANGUAGE LAW: detect from spoken text; never force Russian
+      const lang = detectSpeakLang(clean);
       const u = new SpeechSynthesisUtterance(clean);
       u.lang = lang;
       u.rate = 0.98;
@@ -3674,6 +3760,8 @@ if (
     toggleHandsfree,
     speakAi,
     stopHandsfree,
+    detectSpeakLang,
+    pickVoice,
     get handsfreeOn() {
       return handsfreeOn;
     },
