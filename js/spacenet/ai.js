@@ -1911,6 +1911,18 @@
               }
             } catch (eYt) {}
           }
+          if (freeHit && freeHit.runInvaders) {
+            try {
+              if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('invaders');
+              if (global.SNInvaders && SNInvaders.open) {
+                SNInvaders.open();
+                local.did = (local.did || []).concat(['invaders']);
+              } else if (global.SNCli && SNCli.run) {
+                await SNCli.run('invaders');
+                local.did = (local.did || []).concat(['invaders']);
+              }
+            } catch (eInv) {}
+          }
           if (freeHit && freeHit.runPilot && global.SNTelemachos && SNTelemachos.cli) {
             try {
               await SNTelemachos.cli(msg);
