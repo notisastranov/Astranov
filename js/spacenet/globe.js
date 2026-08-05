@@ -11,7 +11,9 @@
  * SPECS click law:
  *   single tap  → zoom in / dive one cell deeper (same place)
  *   hold press  → zoom out (repeat while held)
- *   drag        → spin / tilt globe
+ *   drag        → spin / tilt globe (trackball + inertia fling)
+ *   two-finger  → pinch / vertical drag zoom (one-hand friendly)
+ *   zoom out    → always returns to 3D globe (never stuck on linear street map)
  *   never place huge blue rings on click
  */
 (function (global) {
@@ -67,8 +69,13 @@
     flyGen: 0,
     velX: 0,
     velY: 0,
-    damp: 0.86,
+    damp: 0.90,
     lastUserControl: 0,
+    /** Space game scene owns camera/input when true */
+    gameMode: false,
+    frameCbs: [],
+    lastLoopT: 0,
+    _pinchCoolUntil: 0,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
     diveTier: null,
@@ -456,6 +463,8 @@
     if (el) return el;
     el = document.createElement('div');
     el.id = 'sn-city-labels';
+    el.style.pointerEvents = 'none';
+    el.style.userSelect = 'none';
     document.body.appendChild(el);
     return el;
   }
@@ -1551,7 +1560,7 @@
     }
     if (!on) return;
     void refreshIssGlobe();
-    G._issTimer = setInterval(function () {
+    if (global.SNPerf && SNPerf.lean) { /* lean: no ISS network poll */ } else G._issTimer = setInterval(function () {
       void refreshIssGlobe();
     }, 12000);
   }
@@ -1603,7 +1612,14 @@
       smVx = 0,
       smVy = 0,
       // Accumulated path length to distinguish tap vs rotate
-      pathLen = 0;
+      pathLen = 0,
+      // Multi-touch: two-finger pinch / vertical-drag zoom (one-hand friendly)
+      pointers = Object.create(null),
+      pinchMode = false,
+      pinchStartDist = 0,
+      pinchStartMidY = 0,
+      pinchAcc = 0,
+      pinchMoved = false;
 
     // Sensitivity: calm + distance-scaled (near surface much slower — no flip chaos)
     function rotScale() {
@@ -1623,6 +1639,29 @@
       }
     }
 
+    function ptrCount() {
+      var n = 0;
+      for (var k in pointers) if (Object.prototype.hasOwnProperty.call(pointers, k)) n++;
+      return n;
+    }
+
+    function ptrList() {
+      var a = [];
+      for (var k in pointers) {
+        if (Object.prototype.hasOwnProperty.call(pointers, k)) a.push(pointers[k]);
+      }
+      return a;
+    }
+
+    function distOf(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function midOf(a, b) {
+      return { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 };
+    }
+
+    /** Zoom OUT always leaves linear street map → 3D globe */
     function doZoomOutStep() {
       G.lastAct = Date.now();
       G.lastUserControl = Date.now();
@@ -1636,21 +1675,140 @@
         try {
           SNMap.close();
         } catch (_) {}
-        G.diveTier = 'city';
-        syncDiveStepFromTier('city');
-        animateZ(TIERS.city.z, 420);
+        // Land on REGIONAL 3D globe — never leave user on flat linear map
+        G.diveTier = 'regional';
+        syncDiveStepFromTier('regional');
+        var f = focusPos() || G.diveAnchor;
+        if (f && f.lat != null) {
+          try {
+            flyNear(f.lat, f.lng, 'regional');
+          } catch (_) {
+            animateZ(TIERS.regional.z, 480);
+          }
+        } else {
+          animateZ(TIERS.regional.z, 480);
+        }
         setTierLabel();
         syncSpaceLayerVis();
         syncNationalLayer();
+        try {
+          setHud('REGIONAL · 3D globe');
+          if (global.SNCli && SNCli.log) SNCli.log('Zoom out · 3D globe · REGIONAL', 'dim');
+        } catch (_) {}
         return;
       }
       zoomOutOne();
     }
 
+    function doZoomInStep(cx, cy) {
+      G.lastAct = Date.now();
+      G.lastUserControl = Date.now();
+      G.velX = 0;
+      G.velY = 0;
+      var under = null;
+      try {
+        if (cx != null && cy != null) under = pickLatLng(cx, cy);
+      } catch (_) {}
+      var p = under || focusPos();
+      if (p && p.lat != null) {
+        diveInAt(p.lat, p.lng);
+      } else {
+        var cur = currentTier();
+        var idx = ladderIndex(cur);
+        if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
+      }
+    }
+
+    function beginPinch() {
+      var list = ptrList();
+      if (list.length < 2) return;
+      pinchMode = true;
+      pinchMoved = false;
+      pinchAcc = 0;
+      pinchStartDist = distOf(list[0], list[1]) || 1;
+      pinchStartMidY = midOf(list[0], list[1]).y;
+      clearHold();
+      down = false;
+      dragActive = false;
+      moved = true;
+      holdFired = false;
+      G.dragging = false;
+      G.velX = 0;
+      G.velY = 0;
+      G.zoomAnim = false;
+      G.flying = false;
+      G.flyGen = (G.flyGen || 0) + 1;
+      smVx = 0;
+      smVy = 0;
+    }
+
+    function applyPinch(e) {
+      var list = ptrList();
+      if (list.length < 2 || !pinchMode) return;
+      var d = distOf(list[0], list[1]) || 1;
+      var mid = midOf(list[0], list[1]);
+      var ratio = d / (pinchStartDist || 1);
+      var dy = mid.y - pinchStartMidY;
+      // Combine pinch scale + vertical two-finger drag (drag down = out, up = in)
+      var score = (1 - ratio) * 220 + dy * 0.55;
+      pinchAcc = score;
+      if (Math.abs(score) > 28 || Math.abs(1 - ratio) > 0.08 || Math.abs(dy) > 36) {
+        pinchMoved = true;
+      }
+      var now = Date.now();
+      if (G.zoomAnim || G.flying) {
+        if (e && e.cancelable) e.preventDefault();
+        return;
+      }
+      if (now < (G._pinchCoolUntil || 0)) {
+        if (e && e.cancelable) e.preventDefault();
+        return;
+      }
+      // Threshold for discrete tier step — feels like ladder, not free-fly
+      if (score > 72) {
+        G._pinchCoolUntil = now + 420;
+        pinchStartDist = d;
+        pinchStartMidY = mid.y;
+        pinchAcc = 0;
+        doZoomOutStep();
+      } else if (score < -72) {
+        G._pinchCoolUntil = now + 420;
+        pinchStartDist = d;
+        pinchStartMidY = mid.y;
+        pinchAcc = 0;
+        doZoomInStep(mid.x, mid.y);
+      }
+      if (e && e.cancelable) e.preventDefault();
+    }
+
+    function endPinch() {
+      pinchMode = false;
+      pinchStartDist = 0;
+      pinchAcc = 0;
+      pinchMoved = false;
+    }
+
     function onDown(e) {
+      if (G.gameMode) return; // space-scene owns pointer
+      // Ignore secondary mouse buttons
+      if (e.button != null && e.button !== 0 && e.pointerType === 'mouse') return;
+
+      var id = e.pointerId != null ? e.pointerId : 'm';
+      pointers[id] = { id: id, x: e.clientX, y: e.clientY };
+
+      try {
+        if (e.pointerId != null) canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
+
+      // Second finger → enter two-finger zoom mode (no spin)
+      if (ptrCount() >= 2) {
+        beginPinch();
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+
+      // Single finger trackball
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
-      // Ignore secondary buttons
-      if (e.button != null && e.button !== 0) return;
       down = true;
       moved = false;
       dragActive = false;
@@ -1670,25 +1828,21 @@
       G.lastUserControl = Date.now();
       lastT = performance.now();
       downAt = lastT;
-      var t = e.touches ? e.touches[0] : e;
-      lx = t.clientX;
-      ly = t.clientY;
-      downX = t.clientX;
-      downY = t.clientY;
-      ptrId = e.pointerId != null ? e.pointerId : 'm';
-      try {
-        if (e.pointerId != null) canvas.setPointerCapture(e.pointerId);
-      } catch (_) {}
+      lx = e.clientX;
+      ly = e.clientY;
+      downX = e.clientX;
+      downY = e.clientY;
+      ptrId = id;
 
       // Hold-zoom only if truly still (not rotating) — longer delay
       holdTimer = setTimeout(function () {
         holdTimer = null;
-        if (!down || moved || dragActive) return;
+        if (!down || moved || dragActive || pinchMode) return;
         holdFired = true;
         G.dragging = false;
         doZoomOutStep();
         holdRepeat = setInterval(function () {
-          if (!down || moved) {
+          if (!down || moved || pinchMode) {
             clearHold();
             return;
           }
@@ -1698,20 +1852,33 @@
     }
 
     function onMove(e) {
+      if (G.gameMode) return;
+      var id = e.pointerId != null ? e.pointerId : 'm';
+      if (pointers[id]) {
+        pointers[id].x = e.clientX;
+        pointers[id].y = e.clientY;
+      }
+
+      // Two-finger pinch / drag zoom
+      if (pinchMode || ptrCount() >= 2) {
+        if (!pinchMode && ptrCount() >= 2) beginPinch();
+        applyPinch(e);
+        return;
+      }
+
       if (!down) return;
       // Only track the pointer we captured
       if (ptrId != null && e.pointerId != null && e.pointerId !== ptrId) return;
-      var t = e.touches ? e.touches[0] : e;
       var now = performance.now();
       var dt = Math.max(8, Math.min(48, now - lastT)); // clamp dt → no velocity spikes
       lastT = now;
-      var dx = t.clientX - lx;
-      var dy = t.clientY - ly;
-      lx = t.clientX;
-      ly = t.clientY;
+      var dx = e.clientX - lx;
+      var dy = e.clientY - ly;
+      lx = e.clientX;
+      ly = e.clientY;
       pathLen += Math.abs(dx) + Math.abs(dy);
 
-      var distFromDown = Math.hypot(t.clientX - downX, t.clientY - downY);
+      var distFromDown = Math.hypot(e.clientX - downX, e.clientY - downY);
       // Deadzone: ignore micro jitter (stops shake on click)
       if (!dragActive) {
         if (distFromDown < 12 && pathLen < 16) {
@@ -1722,8 +1889,8 @@
         moved = true;
         clearHold();
         // Re-seed last point so first real frame has no jump
-        lx = t.clientX;
-        ly = t.clientY;
+        lx = e.clientX;
+        ly = e.clientY;
         if (e.cancelable) e.preventDefault();
         return;
       }
@@ -1762,6 +1929,55 @@
     }
 
     function onUp(e) {
+      if (G.gameMode) return;
+      var id = e.pointerId != null ? e.pointerId : 'm';
+      var wasPinch = pinchMode;
+      var hadPinchMove = pinchMoved;
+      if (pointers[id]) delete pointers[id];
+
+      try {
+        if (e.pointerId != null) canvas.releasePointerCapture(e.pointerId);
+      } catch (_) {}
+
+      // Still two fingers? keep pinch
+      if (ptrCount() >= 2) {
+        beginPinch();
+        return;
+      }
+      // Dropped from 2→1 or 2→0: end pinch, no tap zoom
+      if (wasPinch) {
+        endPinch();
+        down = false;
+        G.dragging = false;
+        clearHold();
+        holdFired = false;
+        ptrId = null;
+        dragActive = false;
+        moved = false;
+        smVx = 0;
+        smVy = 0;
+        // If one finger remains, re-seed single drag without spin jump
+        if (ptrCount() === 1) {
+          var rem = ptrList()[0];
+          down = true;
+          ptrId = rem.id;
+          lx = rem.x;
+          ly = rem.y;
+          downX = rem.x;
+          downY = rem.y;
+          downAt = performance.now();
+          lastT = downAt;
+          G.dragging = true;
+          // suppress accidental fling/tap after pinch
+          moved = true;
+          dragActive = false;
+          pathLen = 0;
+        }
+        G.lastAct = Date.now();
+        G.lastUserControl = Date.now();
+        if (hadPinchMove) return;
+      }
+
       if (!down) return;
       if (ptrId != null && e.pointerId != null && e.pointerId !== ptrId && e.type !== 'pointercancel')
         return;
@@ -1773,17 +1989,19 @@
       var wasDrag = dragActive || moved;
       clearHold();
       holdFired = false;
-      try {
-        if (e.pointerId != null) canvas.releasePointerCapture(e.pointerId);
-      } catch (_) {}
 
       var holdMs = performance.now() - downAt;
-      // Almost no fling — sphere stops where the finger leaves (no wild spin)
+      // Natural trackball inertia — one-finger turn + fling (PRODUCT sacred)
       var flickSpeed = Math.hypot(smVx, smVy);
-      if (wasDrag && flickSpeed > 1.1 && holdMs < 420) {
+      if (wasDrag && flickSpeed > 0.18 && holdMs < 900) {
         var k = rotScale();
-        G.velX = Math.max(-0.006, Math.min(0.006, smVx * k * 3.2));
-        G.velY = Math.max(-0.004, Math.min(0.004, smVy * k * 2.8));
+        G.velX = Math.max(-0.012, Math.min(0.012, smVx * k * 4.5));
+        G.velY = Math.max(-0.008, Math.min(0.008, smVy * k * 3.6));
+      } else if (wasDrag && flickSpeed > 0.06) {
+        // Soft residual coast for slower releases
+        var k2 = rotScale();
+        G.velX = Math.max(-0.004, Math.min(0.004, smVx * k2 * 2.2));
+        G.velY = Math.max(-0.003, Math.min(0.003, smVy * k2 * 1.8));
       } else {
         G.velX = 0;
         G.velY = 0;
@@ -1792,27 +2010,25 @@
       smVy = 0;
       bakePivotEuler();
 
-      // Single tap zoom-in only: short, still, not hold
-      if (!wasDrag && !wasHold && holdMs < 320) {
-        var t = e.changedTouches ? e.changedTouches[0] : e;
-        if (t) {
-          var cx = t.clientX;
-          var cy = t.clientY;
-          var ll = pickLatLng(cx, cy) || focusPos();
-          if (ll && ll.lat != null) {
-            G.velX = 0;
-            G.velY = 0;
-            diveInAt(ll.lat, ll.lng);
-          } else {
-            var cur = currentTier();
-            var idx = ladderIndex(cur);
-            if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
-          }
+      // Single tap zoom-in only: short, still, not hold, not after pinch
+      if (!wasDrag && !wasHold && !wasPinch && holdMs < 320) {
+        var cx = e.clientX;
+        var cy = e.clientY;
+        var ll = pickLatLng(cx, cy) || focusPos();
+        if (ll && ll.lat != null) {
+          G.velX = 0;
+          G.velY = 0;
+          diveInAt(ll.lat, ll.lng);
+        } else {
+          var cur = currentTier();
+          var idx = ladderIndex(cur);
+          if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
         }
       }
       ptrId = null;
       dragActive = false;
       moved = false;
+      if (pointers[id]) delete pointers[id];
     }
 
     canvas.addEventListener('pointerdown', onDown);
@@ -1822,8 +2038,11 @@
     // Do NOT also bind window pointerup — double-fire caused jumps
     canvas.addEventListener(
       'lostpointercapture',
-      function () {
-        if (down) {
+      function (e) {
+        var id = e && e.pointerId != null ? e.pointerId : null;
+        if (id != null && pointers[id]) delete pointers[id];
+        if (ptrCount() < 2) endPinch();
+        if (down && (id == null || id === ptrId)) {
           down = false;
           G.dragging = false;
           clearHold();
@@ -1838,6 +2057,7 @@
       'wheel',
       function (e) {
         e.preventDefault();
+        if (G.gameMode) return;
         G.lastAct = Date.now();
         G.lastUserControl = Date.now();
         G.velX = 0;
@@ -1873,6 +2093,7 @@
 
     canvas.addEventListener('dblclick', function (e) {
       e.preventDefault();
+      if (G.gameMode) return;
       doZoomOutStep();
     });
 
@@ -2135,6 +2356,26 @@
   function loop() {
     requestAnimationFrame(loop);
     if (!G.ready || document.hidden) return;
+    // Full-rate game scene: frame callbacks own tick/render
+    if (G.gameMode) {
+      var nowGm = performance.now();
+      var dtGm = G.lastLoopT ? (nowGm - G.lastLoopT) / 1000 : 0.016;
+      G.lastLoopT = nowGm;
+      if (dtGm > 0.05) dtGm = 0.05;
+      G.frame++;
+      try {
+        var cbs = G.frameCbs || [];
+        for (var fi = 0; fi < cbs.length; fi++) {
+          try {
+            cbs[fi](dtGm);
+          } catch (_) {}
+        }
+      } catch (_) {}
+      try {
+        G.renderer.render(G.scene, G.camera);
+      } catch (_) {}
+      return;
+    }
     // City map open: freeze Earth almost completely
     if (global.SNMap && SNMap.active) {
       if (++G.frame % 90 === 0) {
@@ -2176,8 +2417,8 @@
       G.spin.rotation.z = 0;
       G.tilt.rotation.y = 0;
       G.tilt.rotation.z = 0;
-      G.velX *= Math.min(0.86, G.damp || 0.86);
-      G.velY *= Math.min(0.86, G.damp || 0.86);
+      G.velX *= Math.min(0.90, G.damp || 0.90);
+      G.velY *= Math.min(0.90, G.damp || 0.90);
       if (Math.abs(G.velX) < 0.00005) G.velX = 0;
       if (Math.abs(G.velY) < 0.00005) G.velY = 0;
     } else if (
@@ -2389,15 +2630,52 @@
 
   function locate() {
     return new Promise(function (resolve) {
+      // Prefer shared real GPS pipeline — never invent Rhodes as "you"
+      if (global.SNCli && typeof SNCli.gpsLocate === 'function') {
+        SNCli.gpsLocate({ allowIp: true, allowSoft: true })
+          .then(function (row) {
+            if (!row || row.lat == null) {
+              resolve({ lat: null, lng: null, fallback: true, reason: (row && row.reason) || 'failed', demo: false });
+              return;
+            }
+            try {
+              goToPlace(row.lat, row.lng, {
+                tier: 'city',
+                pulse: true,
+                color: row.fallback ? 0xffc83d : 0x3d9eff,
+                label: row.fallback ? (row.source === 'ip' ? 'You (approx)' : 'You (soft)') : 'You',
+                skipScan: false,
+                openMap: true,
+              });
+            } catch (_) {}
+            resolve({
+              lat: row.lat,
+              lng: row.lng,
+              fallback: !!row.fallback,
+              demo: false,
+              reason: row.reason || null,
+              accuracy: row.accuracy,
+              source: row.source,
+            });
+          })
+          .catch(function () {
+            resolve({ lat: null, lng: null, fallback: true, reason: 'error', demo: false });
+          });
+        return;
+      }
       function finish(lat, lng, fallback, reason) {
+        if (lat == null) {
+          resolve({ lat: null, lng: null, fallback: true, demo: false, reason: reason || 'failed' });
+          return;
+        }
         try {
           goToPlace(lat, lng, {
-            tier: fallback ? 'national' : 'city',
+            tier: 'city',
             pulse: true,
-            color: 0x3d9eff,
-            label: fallback ? 'You (default)' : 'You',
+            color: fallback ? 0xffc83d : 0x3d9eff,
+            label: fallback ? 'You (soft)' : 'You',
             skipScan: false,
-            openMap: !fallback,
+            openMap: true,
           });
         } catch (_) {}
         resolve({
@@ -2408,9 +2686,9 @@
           reason: reason || null,
         });
       }
-      if (!navigator.geolocation) return finish(36.4341, 28.2176, true, 'unsupported');
+      if (!navigator.geolocation) return finish(null, null, true, 'unsupported');
       if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
-        return finish(36.4341, 28.2176, true, 'insecure');
+        return finish(null, null, true, 'insecure');
       }
       navigator.geolocation.getCurrentPosition(
         function (pos) {
@@ -2420,9 +2698,9 @@
           var code = err && err.code;
           var reason =
             code === 1 ? 'denied' : code === 2 ? 'unavailable' : code === 3 ? 'timeout' : 'error';
-          finish(36.4341, 28.2176, true, reason);
+          finish(null, null, true, reason);
         },
-        { enableHighAccuracy: true, timeout: 14000, maximumAge: 20000 }
+        { enableHighAccuracy: true, timeout: 16000, maximumAge: 0 }
       );
     });
   }
@@ -2448,6 +2726,31 @@
     };
   }
 
+  function onFrame(fn) {
+    if (typeof fn !== 'function') return function () {};
+    G.frameCbs = G.frameCbs || [];
+    G.frameCbs.push(fn);
+    return function unsubscribe() {
+      G.frameCbs = (G.frameCbs || []).filter(function (x) {
+        return x !== fn;
+      });
+    };
+  }
+
+  function setGameMode(on) {
+    G.gameMode = !!on;
+    if (on) {
+      G.velX = 0;
+      G.velY = 0;
+      G.dragging = false;
+      G.flying = false;
+      G.zoomAnim = false;
+      G.lastAct = Date.now();
+      G.lastLoopT = 0;
+    }
+    return G.gameMode;
+  }
+
   global.SNGlobe = {
     init: init,
     pulse: pulse,
@@ -2471,6 +2774,16 @@
     DIVE: DIVE,
     /** SPACENET pilot fly grid (alias of window.SPACENET) */
     SPACENET: SN || null,
+    /** Real-Earth game scene API — entities live in Three.js world */
+    onFrame: onFrame,
+    setGameMode: setGameMode,
+    getScene: function () { return G.scene; },
+    getCamera: function () { return G.camera; },
+    getRenderer: function () { return G.renderer; },
+    getEarth: function () { return G.earth; },
+    getPivot: function () { return G.pivot; },
+    getSpin: function () { return G.spin; },
+    getTilt: function () { return G.tilt; },
     get tier() {
       return G.tier;
     },
@@ -2479,6 +2792,9 @@
     },
     get ready() {
       return G.ready;
+    },
+    get gameMode() {
+      return !!G.gameMode;
     },
     get lastPos() {
       return focusPos();

@@ -1,5 +1,5 @@
 /**
- * Astranov Coins — primary wallet unit (mine Astranov coins).
+ * Astranov Coins (Æ) — primary wallet unit, 1:1 with Euro. Display: "9 € / Æ".
  * Fiat/crypto remain secondary quotes only. No "strands".
  */
 (function (g) {
@@ -28,10 +28,10 @@
   var QK = 'spacenet_currency_v1';
   var WK = 'spacenet_wallet_v1';
   /** Primary currency: Astranov Coins */
-  var SYM = 'AC';
+  var SYM = 'Æ';
   var NAME = 'Astranov coin';
   var NAME_PL = 'Astranov coins';
-  var GLYPH = '◈';
+  var GLYPH = 'Æ';
   var st = {
     networkIndex: 1,
     quotes: { EUR: 1, USD: 1.08, BTC: 0.000015, ETH: 0.00025 },
@@ -70,19 +70,22 @@
 
   function recompute() {
     var n = st.networkIndex;
-    st.quotes.EUR = n;
-    st.quotes.USD = n * 1.08;
+    /* Æ is 1:1 with Euro always */
+    st.quotes.EUR = 1;
+    st.quotes.USD = 1.08;
     st.quotes.BTC = n * 0.000015;
     st.quotes.ETH = n * 0.00025;
   }
 
+  /** Display: 9.00 € / Æ  (1 Æ = 1 EUR) */
   function fmt(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
-    return n.toFixed(2) + ' AC';
+    var s = Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : n.toFixed(2);
+    return s + ' € / Æ';
   }
 
-  /** Compact HUD: ◈ 12.50 */
+  /** Compact HUD: Æ 12.50 */
   function fmtCompact(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
@@ -93,7 +96,7 @@
     var n = Number(perUnit);
     if (!isFinite(n)) n = 0;
     unit = unit || 'day';
-    return n.toFixed(2) + ' AC/' + unit;
+    return n.toFixed(2) + ' € / Æ/' + unit;
   }
 
   function credit(a, why) {
@@ -165,6 +168,7 @@
     /** @deprecated aliases */
     LEGACY: 'SpaceNets',
     STRAND_LEGACY: 'strands',
+    EUR_PEG: 1,
     format: fmt,
     formatCompact: fmtCompact,
     formatRate: fmtRate,

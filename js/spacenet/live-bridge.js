@@ -205,7 +205,7 @@
     });
   }
 
-  setTimeout(start, 1500);
+  setTimeout(function(){ try{ if(global.SNPerf&&SNPerf.dummyOff)return; start(); }catch(_){ } }, 1500);
 
   function localNotes() {
     try {

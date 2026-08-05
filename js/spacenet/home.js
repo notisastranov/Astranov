@@ -516,24 +516,36 @@
     try {
       if (global.SNCli && SNCli.log) SNCli.log('Hard reload · clearing cache…', 'dim');
     } catch (_) {}
-    Promise.resolve()
-      .then(function () {
-        return unregisterServiceWorkers();
-      })
-      .then(function () {
-        return clearAppCaches();
-      })
-      .catch(function () {})
-      .then(function () {
-        try {
-          sessionStorage.clear();
-        } catch (_) {}
-        // Cache-bust reload — works when browser chrome is covered
+    try {
+      if (global.SNMoney && SNMoney.clearBlockers) SNMoney.clearBlockers();
+      if (global.SNUi && SNUi.dismissCoach) SNUi.dismissCoach();
+    } catch (_) {}
+    try {
+      document.body.style.opacity = '0.55';
+      document.body.style.pointerEvents = 'none';
+    } catch (_) {}
+    var done = false;
+    function go() {
+      if (done) return;
+      done = true;
+      try { sessionStorage.clear(); } catch (_) {}
+      try {
+        try { delete window.__snBootDone; delete window.__snBooting; } catch (_) {}
         var u = new URL(location.href);
+        u.searchParams.delete('_sn_reload');
+        u.searchParams.delete('v');
         u.searchParams.set('_sn_reload', String(Date.now()));
-        // strip old bust param noise next time is fine
+        u.searchParams.set('v', String(Date.now()));
         location.replace(u.toString());
-      });
+      } catch (_) {
+        try { location.reload(); } catch (_) {}
+      }
+    }
+    try { unregisterServiceWorkers(); } catch (_) {}
+    try { clearAppCaches(); } catch (_) {}
+    setTimeout(go, 120);
+    setTimeout(go, 350);
+    setTimeout(go, 700);
   }
 
   /** Clear Cache API + SW only, keep all local data, then hard reload. */
@@ -744,22 +756,53 @@
     if (init._done) return;
     init._done = true;
     bindRecovery();
-    var btn = $('btn-home');
-    if (btn) {
-      btn.onclick = function (e) {
-        if (e) e.preventDefault();
-        e.stopPropagation();
+    function bindHard(el) {
+      if (!el) return;
+      el._snHardBound = true;
+      el.style.pointerEvents = 'auto';
+      el.style.cursor = 'pointer';
+      el.style.zIndex = '5000';
+      // Brand law: neon deep electric blue · soft pill
+      try {
+        el.style.setProperty('color', '#3d9eff', 'important');
+        el.style.setProperty('-webkit-text-fill-color', '#3d9eff', 'important');
+        el.style.setProperty('border-radius', '999px', 'important');
+        el.style.setProperty(
+          'text-shadow',
+          '0 0 6px rgba(40,140,255,1),0 0 16px rgba(20,110,255,.95),0 0 32px rgba(10,80,255,.75),0 0 56px rgba(8,50,220,.45)',
+          'important'
+        );
+      } catch (_) {}
+      el.title = 'ASTRANOV · tap = hard reload · clear cache · restart';
+      el.setAttribute('aria-label', 'ASTRANOV hard reload');
+      if (el.textContent && /SpaceNet/i.test(el.textContent)) el.textContent = 'ASTRANOV';
+      function fire(e) {
+        if (e) {
+          try {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+          } catch (_) {}
+        }
         hardReload();
-      };
-      btn.title = 'ASTRANOV · hard reload · clear cache';
-      if (btn.textContent && /SpaceNet/i.test(btn.textContent)) btn.textContent = 'ASTRANOV';
+        return false;
+      }
+      el.addEventListener('pointerdown', fire, true);
+      el.addEventListener('click', fire, true);
+      el.onclick = fire;
+      el.onpointerdown = fire;
     }
-    var logo = $('astranov-logo');
-    if (logo)
-      logo.onclick = function () {
-        hardReload();
-      };
-    // Initial hub paint for when user expands top scroll
+    function bindAll() {
+      bindHard(document.getElementById('btn-home'));
+      bindHard(document.getElementById('astranov-logo'));
+      try {
+        document.querySelectorAll('[data-home="astranov"], .sn-astranov-home, #stc-brand').forEach(bindHard);
+      } catch (_) {}
+    }
+    bindAll();
+    [300, 900, 2000, 4500].forEach(function (ms) {
+      setTimeout(bindAll, ms);
+    });
     try {
       paintHub();
     } catch (_) {}

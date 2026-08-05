@@ -57,116 +57,346 @@
       .trim();
   }
 
-  /**
-   * GPS locate that does NOT require the 3D globe module.
-   * Never invents a foreign city when GPS fails — caller must confirm soft pins.
-   * Returns { lat, lng, fallback, reason?, accuracy? }
-   */
-  function gpsLocate() {
-    return new Promise(function (resolve) {
-      // Soft fallbacks: verified order pin → last good GPS → last focus (still marked soft)
-      var soft = null;
-      try {
-        var pref = global.SNMarket && SNMarket.loadPrefs && SNMarket.loadPrefs();
-        if (pref && pref.verifiedLoc && pref.verifiedLoc.lat != null) {
-          soft = {
+  /** Rhodes demo pin — NEVER treat as real "you" */
+  var FAKE_DEMO = { lat: 36.4341, lng: 28.2176 };
+
+  function isFakeDemoPin(lat, lng) {
+    if (lat == null || lng == null) return true;
+    return Math.abs(Number(lat) - FAKE_DEMO.lat) < 0.02 && Math.abs(Number(lng) - FAKE_DEMO.lng) < 0.02;
+  }
+
+  function commitRealGps(row) {
+    if (!row || row.lat == null) return row;
+    try {
+      global._snLastPos = {
+        lat: row.lat,
+        lng: row.lng,
+        accuracy: row.accuracy,
+        source: row.source || (row.fallback ? 'soft' : 'gps'),
+        real: !row.fallback,
+        t: Date.now(),
+      };
+      if (!row.fallback) {
+        global._snPhysPos = {
+          lat: row.lat,
+          lng: row.lng,
+          accuracy: row.accuracy,
+          t: Date.now(),
+          source: 'gps',
+        };
+      }
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(row.lat, row.lng);
+      if (!row.fallback) {
+        localStorage.setItem(
+          'sn:last-good-gps',
+          JSON.stringify({
+            lat: row.lat,
+            lng: row.lng,
+            accuracy: row.accuracy,
+            t: Date.now(),
+            source: 'gps',
+          })
+        );
+      }
+    } catch (_) {}
+    return row;
+  }
+
+  function readSoftPin() {
+    // Soft only: verified pin / last REAL gps / last non-demo map pin
+    try {
+      var pref = global.SNMarket && SNMarket.loadPrefs && SNMarket.loadPrefs();
+      if (pref && pref.verifiedLoc && pref.verifiedLoc.lat != null) {
+        if (!isFakeDemoPin(pref.verifiedLoc.lat, pref.verifiedLoc.lng)) {
+          return {
             lat: pref.verifiedLoc.lat,
             lng: pref.verifiedLoc.lng,
             fallback: true,
+            source: 'verified',
             reason: 'last verified delivery pin',
           };
         }
-      } catch (_) {}
-      if (!soft) {
-        try {
-          var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
-          if (g && g.lat != null && g.lng != null && Date.now() - (g.t || 0) < 7 * 864e5) {
-            soft = {
-              lat: g.lat,
-              lng: g.lng,
-              fallback: true,
-              reason: 'last good GPS',
-              accuracy: g.accuracy,
-            };
-          }
-        } catch (_) {}
       }
-      if (!soft && global._snLastPos && global._snLastPos.lat != null) {
-        soft = {
+    } catch (_) {}
+    try {
+      var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
+      if (g && g.lat != null && g.lng != null && Date.now() - (g.t || 0) < 7 * 864e5) {
+        if (!isFakeDemoPin(g.lat, g.lng)) {
+          return {
+            lat: g.lat,
+            lng: g.lng,
+            fallback: true,
+            accuracy: g.accuracy,
+            source: 'cache',
+            reason: 'last good GPS',
+          };
+        }
+      }
+    } catch (_) {}
+    try {
+      var phys = global._snPhysPos;
+      if (phys && phys.lat != null && !isFakeDemoPin(phys.lat, phys.lng)) {
+        return {
+          lat: phys.lat,
+          lng: phys.lng,
+          fallback: true,
+          accuracy: phys.accuracy,
+          source: 'phys',
+          reason: 'last physical fix',
+        };
+      }
+    } catch (_) {}
+    if (global._snLastPos && global._snLastPos.lat != null && !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng)) {
+      if (global._snLastPos.real || global._snLastPos.source === 'gps' || global._snLastPos.source === 'ip') {
+        return {
           lat: global._snLastPos.lat,
           lng: global._snLastPos.lng,
           fallback: true,
+          source: global._snLastPos.source || 'pin',
           reason: 'last map pin',
         };
       }
-      if (!soft) {
-        soft = { lat: null, lng: null, fallback: true, reason: 'unavailable' };
-      }
+    }
+    return { lat: null, lng: null, fallback: true, reason: 'unavailable' };
+  }
 
+  function browserGpsOnce(opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
       if (!navigator.geolocation) {
-        resolve(Object.assign({}, soft, { reason: soft.reason || 'unsupported' }));
+        resolve({ ok: false, reason: 'unsupported' });
         return;
       }
       if (typeof window.isSecureContext === 'boolean' && !window.isSecureContext) {
-        resolve(Object.assign({}, soft, { reason: 'insecure context · need https' }));
+        resolve({ ok: false, reason: 'insecure' });
         return;
       }
-      let done = false;
-      const finish = function (r) {
-        if (done) return;
-        done = true;
-        resolve(r);
-      };
-      const t = setTimeout(function () {
-        finish(Object.assign({}, soft, { reason: soft.lat != null ? soft.reason || 'timeout' : 'timeout' }));
-      }, 12000);
+      var finished = false;
+      var to = setTimeout(function () {
+        if (finished) return;
+        finished = true;
+        resolve({ ok: false, reason: 'timeout' });
+      }, opts.waitMs || 16000);
       try {
         navigator.geolocation.getCurrentPosition(
           function (pos) {
-            clearTimeout(t);
-            var row = {
+            if (finished) return;
+            finished = true;
+            clearTimeout(to);
+            resolve({
+              ok: true,
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
-              fallback: false,
               accuracy: pos.coords.accuracy,
-            };
-            try {
-              localStorage.setItem(
-                'sn:last-good-gps',
-                JSON.stringify({
-                  lat: row.lat,
-                  lng: row.lng,
-                  accuracy: row.accuracy,
-                  t: Date.now(),
-                })
-              );
-            } catch (_) {}
-            finish(row);
+              fallback: false,
+              source: 'gps',
+              reason: null,
+            });
           },
           function (err) {
-            clearTimeout(t);
-            const code = err && err.code;
-            finish(
-              Object.assign({}, soft, {
-                reason:
-                  code === 1
-                    ? 'denied'
-                    : code === 2
-                      ? 'unavailable'
-                      : code === 3
-                        ? 'timeout'
-                        : soft.reason || 'error',
-                code: code,
-              })
-            );
+            if (finished) return;
+            finished = true;
+            clearTimeout(to);
+            var code = err && err.code;
+            resolve({
+              ok: false,
+              reason:
+                code === 1 ? 'denied' : code === 2 ? 'unavailable' : code === 3 ? 'timeout' : 'error',
+              code: code,
+            });
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+          {
+            enableHighAccuracy: opts.high !== false,
+            timeout: opts.timeout != null ? opts.timeout : 14000,
+            maximumAge: opts.maximumAge != null ? opts.maximumAge : 0,
+          }
         );
       } catch (e) {
-        clearTimeout(t);
-        finish(Object.assign({}, soft, { reason: 'error' }));
+        clearTimeout(to);
+        resolve({ ok: false, reason: 'error' });
       }
     });
+  }
+
+  function browserGpsWatch(ms) {
+    ms = ms || 10000;
+    return new Promise(function (resolve) {
+      if (!navigator.geolocation || !navigator.geolocation.watchPosition) {
+        resolve({ ok: false, reason: 'unsupported' });
+        return;
+      }
+      var done = false;
+      var wid = null;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        try {
+          if (wid != null) navigator.geolocation.clearWatch(wid);
+        } catch (_) {}
+        resolve({ ok: false, reason: 'timeout' });
+      }, ms);
+      try {
+        wid = navigator.geolocation.watchPosition(
+          function (pos) {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            try {
+              navigator.geolocation.clearWatch(wid);
+            } catch (_) {}
+            resolve({
+              ok: true,
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              accuracy: pos.coords.accuracy,
+              fallback: false,
+              source: 'gps-watch',
+              reason: null,
+            });
+          },
+          function (err) {
+            // keep watching until timeout unless denied
+            if (err && err.code === 1) {
+              if (done) return;
+              done = true;
+              clearTimeout(to);
+              try {
+                navigator.geolocation.clearWatch(wid);
+              } catch (_) {}
+              resolve({ ok: false, reason: 'denied', code: 1 });
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 0, timeout: ms }
+        );
+      } catch (e) {
+        clearTimeout(to);
+        resolve({ ok: false, reason: 'error' });
+      }
+    });
+  }
+
+  async function ipApproxLocate() {
+    var endpoints = [
+      {
+        url: 'https://ipapi.co/json/',
+        parse: function (j) {
+          if (j && j.latitude != null && j.longitude != null)
+            return { lat: Number(j.latitude), lng: Number(j.longitude), city: j.city, country: j.country_name };
+          return null;
+        },
+      },
+      {
+        url: 'https://ipwho.is/',
+        parse: function (j) {
+          if (j && j.success !== false && j.latitude != null)
+            return { lat: Number(j.latitude), lng: Number(j.longitude), city: j.city, country: j.country };
+          return null;
+        },
+      },
+      {
+        url: 'https://get.geojs.io/v1/ip/geo.json',
+        parse: function (j) {
+          if (j && j.latitude != null && j.longitude != null)
+            return {
+              lat: Number(j.latitude),
+              lng: Number(j.longitude),
+              city: j.city,
+              country: j.country,
+            };
+          return null;
+        },
+      },
+    ];
+    for (var i = 0; i < endpoints.length; i++) {
+      try {
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var to = setTimeout(function () {
+          try {
+            if (ctrl) ctrl.abort();
+          } catch (_) {}
+        }, 4500);
+        var res = await fetch(endpoints[i].url, {
+          signal: ctrl ? ctrl.signal : undefined,
+          credentials: 'omit',
+          cache: 'no-store',
+        });
+        clearTimeout(to);
+        if (!res || !res.ok) continue;
+        var j = await res.json();
+        var p = endpoints[i].parse(j);
+        if (p && isFinite(p.lat) && isFinite(p.lng) && !isFakeDemoPin(p.lat, p.lng)) {
+          return {
+            ok: true,
+            lat: p.lat,
+            lng: p.lng,
+            fallback: true,
+            source: 'ip',
+            reason: 'ip approx' + (p.city ? ' · ' + p.city : ''),
+            city: p.city,
+            accuracy: 5000,
+          };
+        }
+      } catch (_) {}
+    }
+    return { ok: false, reason: 'ip unavailable' };
+  }
+
+  /**
+   * Real locate pipeline:
+   * 1) GPS high accuracy  2) GPS low accuracy  3) watch GPS  4) IP approx (soft)
+   * Never returns Rhodes demo as "you".
+   * Returns { lat, lng, fallback, reason?, accuracy?, source?, real? }
+   */
+  async function gpsLocate(opts) {
+    opts = opts || {};
+    var allowIp = opts.allowIp !== false;
+    var allowSoft = opts.allowSoft !== false;
+
+    // 1 high accuracy fresh
+    var r = await browserGpsOnce({ high: true, timeout: 14000, waitMs: 16000, maximumAge: 0 });
+    if (r.ok) return commitRealGps(r);
+
+    // 2 low accuracy, slightly stale ok
+    r = await browserGpsOnce({ high: false, timeout: 10000, waitMs: 12000, maximumAge: 60000 });
+    if (r.ok) return commitRealGps(r);
+
+    // 3 watch for a moving fix (phones often need this)
+    if (r.reason !== 'denied' && r.reason !== 'insecure' && r.reason !== 'unsupported') {
+      r = await browserGpsWatch(12000);
+      if (r.ok) return commitRealGps(r);
+    }
+
+    var failReason = r.reason || 'unavailable';
+
+    // 4 IP city-level soft (honest · not Rhodes)
+    if (allowIp && failReason !== 'insecure') {
+      try {
+        var ip = await ipApproxLocate();
+        if (ip && ip.ok) {
+          ip.fallback = true;
+          ip.gpsFailed = failReason;
+          commitRealGps(ip);
+          return ip;
+        }
+      } catch (_) {}
+    }
+
+    // 5 soft cache — never demo Rhodes
+    if (allowSoft) {
+      var soft = readSoftPin();
+      if (soft.lat != null) {
+        soft.gpsFailed = failReason;
+        return soft;
+      }
+    }
+
+    return {
+      lat: null,
+      lng: null,
+      fallback: true,
+      reason: failReason,
+      source: 'none',
+    };
   }
 
   function setLive(on) {
@@ -524,6 +754,105 @@
   async function run(raw) {
     let line = String(raw || '').trim();
     if (!line) return;
+    // Owner test commands FIRST (before dialect rewrites "demo delivery" → deliver)
+    try {
+      const rawLow = line.toLowerCase();
+      if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
+        const offerKeys =
+          /^(offers?|tiles?|throw tiles|launch tiles|demo delivery|demo route|demo full|full demo|test tiles|test offers|test delivery|test polygons?|test poly|poly test|polygon|moving driver|driver on route|clear offers|clear tiles|clear routes|clear polygons|clear all|routes|radar|refresh routes|test harness|demo all|test all|offers help|test help|help offers|task complete|complete task|finish task|offers complete|complete offer)\b/i;
+        if (offerKeys.test(rawLow) || /^(do|run|launch|start)\s+(tiles|offers|polygon|demo|delivery)/i.test(rawLow)) {
+          beginTurn();
+          hist.push(line);
+          histIdx = hist.length;
+          log(line, 'cmd');
+          try {
+            const handled = await SNOfferStack.handleLine(line);
+            if (handled) return;
+          } catch (eOff) {
+            log('Offers · ' + (eOff && eOff.message ? eOff.message : eOff), 'err');
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+    // GAME MODES before dialect (prevents "earth ops" → earth tier rewrite)
+    try {
+      const gLow = line.toLowerCase();
+      const isGame =
+        /^(earth\s*ops|earthops|ops|play\s*levels?|levels?|gaming|game\s*mode|orbital|high\s*end|space\s*scene|orbit(\s*game)?|space\s*ops|invaders|space\s*invaders|play\s*invaders|cockpit|space\s*war|arcade|play\s*game|start\s*game|game|play|games|game\s*help|play\s*help|invaders\s*close|close\s*game|game\s*off|ops\s*close|earth\s*ops\s*close|close\s*ops|space\s*scene\s*exit|exit\s*scene|stop\s*orbit)\b/i.test(
+          gLow
+        ) || /^(play|start)\s+(levels?|ops|earth|space|orbit|the\s+)?(game|invaders|cockpit|levels?|scene)/i.test(gLow);
+      if (isGame) {
+        beginTurn();
+        hist.push(line);
+        histIdx = hist.length;
+        log(line, 'cmd');
+        try {
+          if (
+            /^(earth\s*ops|earthops|ops|play\s*levels?|levels?|gaming|game\s*mode|orbital|high\s*end|space\s*scene|orbit(\s*game)?|space\s*ops)\b/i.test(gLow) ||
+            /^(play|start)\s+(levels?|ops|earth|space|orbit)/i.test(gLow)
+          ) {
+            try {
+              if (global.SNLoader?.ensure) await SNLoader.ensure(['spacescene', 'space-scene', 'earthops', 'helper', 'gaming', 'ops']);
+            } catch (_) {}
+            const E = global.SNSpaceScene || global.SNEarthOps;
+            if (!E) {
+              log('Space scene loading · hard refresh', 'err');
+              return;
+            }
+            E.mount?.();
+            E.start?.() || E.open?.();
+            log('SPACE SCENE · real Earth + outer space ARE the theater', 'ok');
+            log('WASD fly · Space fire · Esc exit · orbit beacons · levels Athens → Lunar', 'dim');
+            preview('space scene');
+            return;
+          }
+          if (
+            /^(invaders|space\s*invaders|play\s*invaders|cockpit|space\s*war|arcade|play\s*game|start\s*game|game)\b/i.test(
+              gLow
+            ) ||
+            /^(play|start)\s+(the\s+)?(game|invaders|cockpit)/i.test(gLow)
+          ) {
+            try {
+              if (global.SNLoader?.ensure) await SNLoader.ensure(['invaders', 'game']);
+            } catch (_) {}
+            const I = global.SNInvaders;
+            if (!I) {
+              log('Invaders loading · hard refresh', 'err');
+              return;
+            }
+            I.init?.();
+            I.open?.() || I.start?.();
+            log('INVADERS · cockpit · tilt/arrows · guns lasers missiles', 'ok');
+            preview('invaders');
+            return;
+          }
+          if (/close|off/.test(gLow)) {
+            try { global.SNInvaders?.close?.(); } catch (_) {}
+            try { if (global.SNSpaceScene) { SNSpaceScene.stop?.(); SNSpaceScene.close?.(); } } catch (_) {}
+            try { global.SNEarthOps?.close?.(); } catch (_) {}
+            log('Game modes closed · Earth online', 'dim');
+            preview('Earth');
+            return;
+          }
+          if (gLow === 'play' || gLow === 'games' || gLow === 'game help' || gLow === 'play help') {
+            [
+              '═══ ASTRANOV GAME MODES ═══',
+              'helper · silver-wing SpaceX Bot',
+              'helper patrol · wing sweep',
+              'space scene · Earth + outer space theater',
+              'invaders · cockpit arcade',
+              'ops close · leave theater',
+            ].forEach((ln, i) => log(ln, i ? 'dim' : 'ok'));
+            preview('games');
+            return;
+          }
+        } catch (eG) {
+          log('Game · ' + (eG && eG.message ? eG.message : eG), 'err');
+          return;
+        }
+      }
+    } catch (_) {}
     // Astranov Mind — Archangelos / Greeklish before routing
     try {
       if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
@@ -558,6 +887,20 @@
       if (low === 'help' || low === '?' || low === 'commands') {
         help();
         return;
+      }
+      // Owner test harness — offer tiles / polygons (before dialect/AI freeform)
+      if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
+        const offerKeys =
+          /^(offers?|tiles?|throw tiles|launch tiles|demo delivery|demo route|demo full|full demo|test tiles|test offers|test delivery|test polygons?|test poly|poly test|polygon|moving driver|driver on route|clear offers|clear tiles|clear routes|clear polygons|clear all|routes|radar|refresh routes|test harness|demo all|test all|offers help|test help|help offers|task complete|complete task|finish task|offers complete|complete offer)\b/i;
+        if (offerKeys.test(low) || /^(do|run|launch|start)\s+(tiles|offers|polygon|demo|delivery)/i.test(low)) {
+          try {
+            const handled = await SNOfferStack.handleLine(line);
+            if (handled) return;
+          } catch (eOff) {
+            log('Offers · ' + (eOff && eOff.message ? eOff.message : eOff), 'err');
+            return;
+          }
+        }
       }
       if (low === 'clear' || low === 'clear feed') {
         const box = feedBox();
@@ -2368,7 +2711,7 @@ if (
             if (pos) H.flyTo?.(pos, { kind: 'summon', label: 'HELPER', detail: 'at your call', status: 'inbound' });
             else H.patrol?.();
           }
-          log('HELPER · winged silvery-blue suit · AI graphics engine', 'ok');
+          log('SPACEX BOT · silver wings online · gaming character', 'ok');
           preview('helper on');
           return;
         }
@@ -2529,39 +2872,34 @@ if (
         global.SNMap?.userHoldCamera?.('cli');
         return;
       }
-      if (low === 'locate' || low === 'gps' || low === 'where am i') {
+      if (low === 'locate' || low === 'gps' || low === 'where am i' || low === 'find me') {
         activity('locating you…', 'work', { label: 'Locate' });
-        let pos = await gpsLocate();
-        try {
-          if (Globe?.locate && Globe.ready) {
-            const gpos = await Promise.race([
-              Globe.locate(),
-              new Promise(function (r) {
-                setTimeout(function () {
-                  r(null);
-                }, 12000);
-              }),
-            ]);
-            if (gpos && gpos.lat != null && !gpos.fallback) pos = gpos;
-            else if (gpos && gpos.lat != null && pos.fallback) pos = gpos;
-          }
-        } catch (_) {}
+        preview('GPS…');
+        // Real GPS only path — never accept Globe Rhodes demo overwrite
+        let pos = await gpsLocate({ allowIp: true, allowSoft: true });
+        if (pos && pos.lat != null && isFakeDemoPin(pos.lat, pos.lng)) {
+          pos = { lat: null, lng: null, fallback: true, reason: pos.reason || 'fake demo pin rejected' };
+        }
         if (pos && pos.lat != null) {
-          Tasks?.setPos?.(pos.lat, pos.lng);
-          global._snLastPos = { lat: pos.lat, lng: pos.lng };
+          commitRealGps(pos);
+          const youLabel = pos.fallback
+            ? pos.source === 'ip'
+              ? 'YOU · approx'
+              : 'YOU · soft'
+            : 'YOU · GPS';
           try {
             if (global.SNMap?.open) {
               await global.SNMap.open(pos.lat, pos.lng);
               await global.SNMap.ensure?.();
-              if (global.SNMap.markYou) global.SNMap.markYou(pos.lat, pos.lng, 'YOU · here');
+              if (global.SNMap.markYou) global.SNMap.markYou(pos.lat, pos.lng, youLabel);
               if (global.SNMap.fitLatLngs) {
                 global.SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], {
-                  zoom: 15,
+                  zoom: pos.fallback ? 12 : 16,
                   force: true,
                 });
               } else {
                 const map = await global.SNMap.ensure?.();
-                map?.setView?.([pos.lat, pos.lng], 15);
+                map?.setView?.([pos.lat, pos.lng], pos.fallback ? 12 : 16);
               }
             }
           } catch (_) {}
@@ -2571,39 +2909,59 @@ if (
                 tier: 'city',
                 body: 'earth',
                 pulse: true,
-                label: 'You',
+                label: youLabel,
                 openMap: true,
+                color: pos.fallback ? 0xffc83d : 0x3d9eff,
               });
             } else if (Globe?.pulse) {
-              Globe.pulse(pos.lat, pos.lng, 0x3d9eff, 'You', 16000);
+              Globe.pulse(pos.lat, pos.lng, pos.fallback ? 0xffc83d : 0x3d9eff, youLabel, 16000);
             }
           } catch (_) {}
-          depict('locate', { lat: pos.lat, lng: pos.lng, label: 'You', tier: 'city' });
-          if (pos.fallback) {
-            const why =
-              pos.reason === 'denied'
-                ? 'location permission denied · allow location for this site and try again'
-                : pos.reason === 'timeout'
-                  ? 'GPS timed out · try outdoors or enable precise location'
-                  : pos.reason === 'insecure'
-                    ? 'location needs secure site (https)'
-                    : pos.reason === 'unsupported'
-                      ? 'this browser has no GPS'
-                      : 'GPS soft · blue YOU pin is best estimate · type YES if ok';
-            log(why + ' · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4), 'err');
-          } else {
+          depict('locate', { lat: pos.lat, lng: pos.lng, label: youLabel, tier: 'city' });
+          if (!pos.fallback) {
             log(
-              'you · ' +
+              'YOU · GPS · ' +
+                pos.lat.toFixed(5) +
+                ', ' +
+                pos.lng.toFixed(5) +
+                (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + ' m' : '') +
+                ' · map centered',
+              'ok'
+            );
+            preview('YOU · GPS');
+          } else {
+            const why =
+              pos.source === 'ip'
+                ? 'GPS blocked/unavailable · IP city approx (not street-precise)'
+                : pos.gpsFailed === 'denied' || pos.reason === 'denied'
+                  ? 'location permission denied · allow Location for this site, then Locate again'
+                  : pos.gpsFailed === 'timeout' || pos.reason === 'timeout'
+                    ? 'GPS timed out · turn on Precise Location · try outdoors'
+                    : pos.reason === 'insecure'
+                      ? 'location needs https'
+                      : 'soft pin · confirm if this is you';
+            log(
+              why +
+                ' · ' +
                 pos.lat.toFixed(4) +
                 ', ' +
                 pos.lng.toFixed(4) +
-                (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + 'm' : '') +
-                ' · blue YOU pin on city map',
-              'ok'
+                (pos.city ? ' · ' + pos.city : ''),
+              pos.source === 'ip' ? 'dim' : 'err'
             );
+            preview(pos.source === 'ip' ? 'YOU · approx' : 'GPS soft');
           }
         } else {
-          log('Locate failed · allow location in browser · try again', 'err');
+          const why =
+            pos && pos.reason === 'denied'
+              ? 'Location DENIED · open site settings → allow Location · tap Locate again'
+              : pos && pos.reason === 'insecure'
+                ? 'Need secure https for GPS'
+                : pos && pos.reason === 'unsupported'
+                  ? 'This browser has no geolocation'
+                  : 'Locate failed · allow Location permission · enable GPS · try again';
+          log(why, 'err');
+          preview('GPS failed');
         }
         return;
       }
@@ -3009,6 +3367,87 @@ if (
         const t = Tasks?.create?.(line);
         log('Posted · ' + t.title, 'ok');
         preview(t.title);
+        return;
+      }
+
+      // ═══ GAME MODES · Real-Earth theater + cockpit ═══
+      if (
+        low === 'earth ops' ||
+        low === 'earthops' ||
+        low === 'ops' ||
+        low === 'play levels' ||
+        low === 'play level' ||
+        low === 'levels' ||
+        low === 'gaming' ||
+        low === 'game mode' ||
+        low === 'orbital' ||
+        low === 'high end' ||
+        low === 'space scene' ||
+        low === 'orbit' ||
+        low === 'orbit game' ||
+        low === 'space ops' ||
+        /^(play|start)\s+(levels?|ops|earth|space|orbit)/i.test(low)
+      ) {
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure(['spacescene', 'space-scene', 'earthops', 'helper']);
+        } catch (_) {}
+        const E = global.SNSpaceScene || global.SNEarthOps;
+        if (!E) {
+          log('Space scene loading · hard refresh', 'err');
+          return;
+        }
+        if (E.mount) E.mount();
+        E.start?.() || E.open?.();
+        log('SPACE SCENE · real Earth + outer space ARE the theater', 'ok');
+        log('WASD fly · Space fire · Esc exit · orbit beacons · levels Athens → Lunar', 'dim');
+        preview('space scene');
+        return;
+      }
+      if (
+        low === 'invaders' ||
+        low === 'space invaders' ||
+        low === 'play invaders' ||
+        low === 'cockpit' ||
+        low === 'space war' ||
+        low === 'arcade' ||
+        low === 'play game' ||
+        low === 'start game' ||
+        low === 'game' ||
+        /^(play|start)\s+(the\s+)?(game|invaders|cockpit)/i.test(low)
+      ) {
+        try {
+          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure(['invaders', 'game']);
+        } catch (_) {}
+        const I = global.SNInvaders;
+        if (!I) {
+          log('Invaders loading · hard refresh', 'err');
+          return;
+        }
+        I.init?.();
+        I.open?.() || I.start?.();
+        log('INVADERS · cockpit mode · tilt / arrows · guns lasers missiles', 'ok');
+        preview('invaders');
+        return;
+      }
+      if (low === 'invaders close' || low === 'close game' || low === 'game off' || low === 'ops close' || low === 'earth ops close' || low === 'close ops') {
+        try { global.SNInvaders?.close?.(); } catch (_) {}
+        try { if (global.SNSpaceScene) { SNSpaceScene.stop?.(); SNSpaceScene.close?.(); } } catch (_) {}
+            try { global.SNEarthOps?.close?.(); } catch (_) {}
+        log('Game modes closed · Earth online', 'dim');
+        preview('Earth');
+        return;
+      }
+      if (low === 'play' || low === 'games' || low === 'game help' || low === 'play help') {
+        [
+          '═══ ASTRANOV GAME MODES ═══',
+          'helper · wake silver-wing SpaceX Bot',
+          'helper patrol · wing sweep',
+          'space scene / earth ops · orbit theater on real Earth',
+          'invaders · cockpit arcade',
+          'play game · start invaders',
+          'ops close · leave game theater'
+        ].forEach((ln, i) => log(ln, i ? 'dim' : 'ok'));
+        preview('games');
         return;
       }
 
@@ -3567,7 +4006,9 @@ if (
       const v = input.value;
       input.value = '';
       input.classList.remove('searching');
-      void run(v);
+      // Always go through SNCli.run so arsenal intercepts (offers/demo) can wrap
+      const runner = (global.SNCli && typeof SNCli.run === 'function') ? SNCli.run.bind(SNCli) : run;
+      void runner(v);
     });
     $('btn-send')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -3671,6 +4112,9 @@ if (
     setLive,
     userFace,
     gpsLocate,
+    commitRealGps,
+    isFakeDemoPin,
+    ipApproxLocate,
     toggleHandsfree,
     speakAi,
     stopHandsfree,

@@ -34,24 +34,39 @@
   async function doLocate() {
     var pos = null;
     try {
-      if (g.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate();
+      if (g.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate({ allowIp: true, allowSoft: true });
     } catch (_) {}
     if ((!pos || pos.lat == null) && g.SNGlobe && SNGlobe.locate) {
       try {
         pos = await SNGlobe.locate();
       } catch (_) {}
     }
-    if (!pos || pos.lat == null) pos = posNow();
-    if (!pos || pos.lat == null) {
-      return { ok: false, error: 'need GPS · type locate · allow location' };
+    // Never accept Rhodes demo as located user
+    if (pos && pos.lat != null && g.SNCli && SNCli.isFakeDemoPin && SNCli.isFakeDemoPin(pos.lat, pos.lng)) {
+      if (!(pos.source === 'gps' || pos.source === 'gps-watch') && pos.fallback !== false) {
+        pos = null;
+      }
     }
-    g._snLastPos = { lat: pos.lat, lng: pos.lng, reason: pos.reason || 'task-runner' };
+    if (!pos || pos.lat == null) {
+      return { ok: false, error: 'need GPS · tap Locate · allow Location permission' };
+    }
+    g._snLastPos = {
+      lat: pos.lat,
+      lng: pos.lng,
+      reason: pos.reason || 'task-runner',
+      source: pos.source,
+      real: !pos.fallback,
+    };
     try {
       if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
     } catch (_) {}
     await ensureMap(pos.lat, pos.lng);
     log(
-      'LOC · ' + pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5) + (pos.fallback ? ' · soft' : ' · GPS'),
+      'LOC · ' +
+        pos.lat.toFixed(5) +
+        ', ' +
+        pos.lng.toFixed(5) +
+        (pos.fallback ? ' · soft/' + (pos.source || 'cache') : ' · GPS'),
       pos.fallback ? 'dim' : 'ok'
     );
     return { ok: true, pos: pos };

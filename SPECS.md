@@ -134,6 +134,18 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-07-31 (not owner OV): **Astranov Mind v6** — English chat + Greeklish + modern/ancient Greek hard paths, retrain drills, simple task flags (`locate` · `dark map` · pizza). Build `20260731161200-mind-v6-lang`. Owner: hard refresh; if poisoned memory say `mind wipe`.*
 *Agent note 2026-07-31 (not owner OV): **Marketplace settlement** — client pays full S · vault 3% · on complete driver 15% + vendor rest; task list keeps claimed/in_progress; lazy pizza self-courier auto-completes settle; `deliver me` / `market status`. Build `20260731163000-market-settle`. Live multi-device / real POI still depend on crawl + GPS. Not owner OV.*
 *Agent note 2026-07-31 (not owner OV): **Auth brand face** — Google GIS modal only on astranov.eu · **hard ban** OAuth redirect via `*.supabase.co` (phishing face). Custom domain `api.astranov.eu` auto-probed (currently Cloudflare 1014 — DNS not ready). **Mesh orders** pull `seeking_driver` from network onto map. Build `20260731165500-auth-brand-mesh`.*
+*Agent note 2026-08-05 (not owner OV): **Money path live** — power ON throws glowing offers instantly (local kitchen until live POI); Accept→Start→Complete; ASTRANOV wordmark hard-reloads; polygon routes with OSRM fallback; AI identity Astranov only (no Russian). Build `20260805130000-money-live`.*
+*Agent note 2026-08-05 (not owner OV): **Two-finger globe zoom + grower menus + Rai drone** — two-finger pinch/vertical-drag zooms SPACENET ladder; zoom-out always returns to 3D globe (not linear map, exit ≤z11). Power ON grows vendor tiles with menu items + prices; Order commissions Rai silver helper in drone mode on polygon routes when no human drivers. Build `20260805144000-twofinger-growers-drone`.*
+
+*Agent note 2026-08-05 (not owner OV): **LEAN money path** — dummy/game modules (youtube, invaders, space-scene, game-dock, mesh, ai-graphics, live-bridge) NOT preloaded; helper sleeps until drone order; no auto miner terms / map populate / ISS poll; radar/paint throttled. Full arsenal via CLI `SNLoader.ensure` or `localStorage sn:full-mode=1`. Build `20260805150000-lean-money`.*
+*Agent note 2026-08-05 (not owner OV): **Delivery rules + compact queue tiles** — SNDeliveryRules: 1€/km as ceil(km/3)×3€ · +3 night 21–09 · +3 heavy · +3 VIP/temp · +3 private. Capacity by product nature (envelopes batch / frozen private 1 / hot food multi-hub). Tiles: ONE at a time compact queue. Lifecycle Accept→Start→Arrive→Client+Vendor+Driver OK→Settle. No call/msg unless off-limits. Rai drone animates pickup→drop. Build `20260805154500-delivery-rules`.*
+*Agent note 2026-08-05 (not owner OV): **Pill peeks + soft neon UI** — offers are small map-label pills (price · km · ✓/map/×), polygon preview on throw; soft rounded chrome; ASTRANOV neon deep electric blue; 3× anti-fraud seal settle. Build `20260805160000-pill-peek`.*
+*Agent note 2026-08-05 (not owner OV): **Real GPS locate** — no Rhodes fake-you; pipeline high-acc → low-acc → watch → IP approx (honest soft); Locate ribbon/CLI uses SNCli.gpsLocate; Globe.locate no longer invents Archangelos pin. Build `20260805162000-real-gps`.*
+*Agent note 2026-08-05 (not owner OV): **SPECS gate run** — 24/24 green (boot GLOBAL, ASTRANOV neon, ribbon, lean no game dock, real GPS, delivery rules, pill peeks, 3× seal settle). Build `20260805162000-real-gps`. Live device GPS still needs owner allow-location once. Not owner OV.*
+
+
+
+
 
 
 ---

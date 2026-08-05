@@ -68,5 +68,7 @@
     return { frames: frames, dropped: dropped, subs: subs.length, running: running };
   }
 
-  g.SNGameLoop = { start: start, stop: stop, subscribe: subscribe, stats: stats, MAX_DT: MAX_DT };
+  function power() { start(); return stats(); }
+  function setQuality() { /* compat no-op for earth-ops */ return 'auto'; }
+  g.SNGameLoop = { start: start, stop: stop, subscribe: subscribe, stats: stats, power: power, setQuality: setQuality, MAX_DT: MAX_DT };
 })(typeof window !== 'undefined' ? window : globalThis);
