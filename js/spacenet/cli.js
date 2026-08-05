@@ -1275,10 +1275,50 @@
         log('Voice OFF · AI stays silent', 'ok');
         return;
       }
-      if (low === 'voice test' || low === 'test voice' || low === 'say test') {
+      if (
+        low === 'voice test' ||
+        low === 'test voice' ||
+        low === 'say test' ||
+        low === 'voice test el' ||
+        low === 'voice test greek' ||
+        low === 'δοκιμή φωνής'
+      ) {
         warmVoices();
-        speakAi('Astranov voice test.', 'test');
-        log('Voice test · one short line only', 'ok');
+        const greek =
+          /\b(el|greek|ελλην|φωνή|φωνη)\b/i.test(low) || low === 'δοκιμή φωνής';
+        const phrase = greek
+          ? 'Δοκιμή φωνής Astranov. Ελληνικά, όχι ρωσικά.'
+          : 'Astranov voice test. Full internet OS. English, never Russian by accident.';
+        const lang = detectSpeakLang(phrase);
+        const voice = pickVoice(lang);
+        const vName = voice ? voice.name + ' · ' + (voice.lang || '') : 'default';
+        const banned =
+          voice &&
+          (/^ru/i.test(String(voice.lang || '')) || /russian|milena|yuri|irina/i.test(String(voice.name || '')));
+        speakAi(phrase, 'test');
+        log(
+          'Voice test · lang ' +
+            lang +
+            ' · ' +
+            vName +
+            (banned ? ' · WARN Russian voice' : ' · RU ban OK') +
+            (greek ? ' · Greek' : ' · English'),
+          banned ? 'err' : 'ok'
+        );
+        return;
+      }
+      if (low === 'lang en' || low === 'tts en' || low === 'speak lang en') {
+        try {
+          localStorage.setItem('sn:tts-lang-v1', 'en-US');
+        } catch (_) {}
+        log('TTS prefer English', 'ok');
+        return;
+      }
+      if (low === 'lang el' || low === 'tts el' || low === 'speak lang el' || low === 'lang greek') {
+        try {
+          localStorage.setItem('sn:tts-lang-v1', 'el-GR');
+        } catch (_) {}
+        log('TTS prefer Greek', 'ok');
         return;
       }
       if (low === 'handoff' || low === 'handoffs') {
