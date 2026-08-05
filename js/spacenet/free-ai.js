@@ -36,6 +36,12 @@
    */
   var SEED = [
     {
+      id: 'invaders_game',
+      q: 'space invaders invaders game cockpit space war shoot aliens play game',
+      a: 'Say invaders or space invaders — cockpit mode, tilt phone to fly, guns lasers missiles, no joystick.',
+      tags: ['game', 'invaders', 'en'],
+    },
+    {
       id: 'spartan_law',
       q: 'spartan law least words listen wait think act door driver eta late',
       a: 'Spartan law: listen · wait · think · act. Few words. Door. ETA. If late — say so once.',
@@ -1015,6 +1021,22 @@
         source: 'intent-youtube',
         runYoutube: !!yq,
         youtubeQuery: yq || '',
+      };
+    }
+
+    // Space Invaders cockpit
+    if (
+      /\b(space\s*invaders?|invaders?|play\s+(the\s+)?game|cockpit|space\s*war|space\s*battle|shoot\s*aliens?)\b/i.test(
+        rawLow
+      ) ||
+      /^(game|play game|start game)\b/i.test(rawLow)
+    ) {
+      return {
+        text: 'Entering spaceship cockpit — tilt your phone to fly, tap for guns, hold for lasers, two fingers for missiles.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'intent-invaders',
+        runInvaders: true,
       };
     }
 
