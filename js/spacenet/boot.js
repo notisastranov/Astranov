@@ -176,18 +176,30 @@
 
   window.SNPerf = {
     lite: isLite,
-    dprCap: isLite ? 1.25 : 2,
+    engine: true,
+    quality: isLite ? 'lite' : 'high',
+    dprCap: isLite ? 1.1 : 1.75,
     globeSegs: isLite ? 24 : 48,
-    starN: isLite ? 180 : 420,
-    radarMs: isLite ? 280 : 180,
-    idleSkip: isLite ? 4 : 3,
-    hudHz: isLite ? 10 : 15,
+    starN: isLite ? 180 : 480,
+    radarMs: isLite ? 280 : 140,
+    idleSkip: isLite ? 4 : 2,
+    hudHz: isLite ? 12 : 24,
+    fxScale: isLite ? 0.45 : 0.85,
+    budgetMs: isLite ? 9 : 14,
+    fps: 0,
+    frameMs: 0,
     helperAuto: false,
     t0: t0,
     get loadStats() { return loadStats; },
     cdn: CDN_GH,
     mark: function (name) { try { performance.mark('sn:' + name); } catch (_) {} },
   };
+  // Align with SNEngine if already loaded (game-loop is critical wave)
+  try {
+    if (window.SNGameLoop && SNGameLoop.setQuality) {
+      SNGameLoop.setQuality(isLite ? 'lite' : 'auto', { auto: true, reason: 'boot' });
+    }
+  } catch (_) {}
 
   // ========== WAVE DEFINITIONS ==========
   // CRITICAL: only what is required for interactive CLI + AI + basic chrome. Parallel load.
@@ -350,6 +362,12 @@
       var ms = Math.round(performance.now() - t0);
       window.SNPerf.shellMs = ms;
       initShell();
+      try {
+        if (window.SNGameLoop) {
+          if (SNGameLoop.power) SNGameLoop.power();
+          else if (SNGameLoop.start) SNGameLoop.start();
+        }
+      } catch (_) {}
       hideBoot('shell ' + ms + 'ms');
       try {
         if (window.SNCli && SNCli.log) {
@@ -405,7 +423,7 @@
               window.SNPerf.bootMs = total;
               try {
                 if (window.SNCli && SNCli.log) {
-                  SNCli.log('Arsenal ready · ' + total + 'ms · speak any language · youtube · map · market live', 'dim');
+                  SNCli.log('Arsenal ready · ' + total + 'ms · SNEngine power · invaders · youtube · map', 'dim');
                 }
               } catch (_) {}
             });
