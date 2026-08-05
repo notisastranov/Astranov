@@ -462,19 +462,17 @@
   }
 
     function help() {
-    log("Hey — I'm Astranov Mind · full INTERNET OS + 3D globe browser.", 'ok');
-    log('Media: youtube <query> · yt cats · watch <url> · play 2 · yt close', 'ok');
-    log('Game: invaders · earth ops · ops · play levels · gaming (HELPER wingman)', 'ok');
-    log('Earth Ops: high-end orbital levels on Real Earth · silver-wing HELPER AI', 'dim');
-    log('Engine: engine · engine high|balanced|lite|ultra|auto · fps  (gaming power for whole OS)', 'dim');
-    log('Map: locate · shops · fly athens · fly archangelos · dark map · pilot home', 'ok');
-    log('Search: crawl X · find X · research X · code write …', 'ok');
-    log('Order: order me a pizza · order pitogyra mpyronia · shops · claim', 'ok');
-    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'dim');
-    log('Village: aksaki · Archangelos · Telemachos pilot · Greeklish OK', 'dim');
-    log('Mind: who are you · help · brain · verify · law · cancel · mind wipe', 'dim');
-    log('Bridge: bridge status · bridge test · agent <task>', 'dim');
-    preview('Full OS · YouTube · map · order · English or Greek');
+    log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
+    log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
+    log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
+    log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
+    log('HELPER: helper · helper find pizza · helper patrol · helper off', 'ok');
+    log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
+    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
+    log('Plans: plan list · plan status · claim · task list · task map', 'dim');
+    log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
+    log('Mind: mind · mind wipe · cancel · pilot home', 'dim');
+    preview('Astranov Mind · talk Greeklish or English');
   }
 
   function moneyStatus() {
@@ -526,6 +524,27 @@
   async function run(raw) {
     let line = String(raw || '').trim();
     if (!line) return;
+    // Owner test commands FIRST (before dialect rewrites "demo delivery" → deliver)
+    try {
+      const rawLow = line.toLowerCase();
+      if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
+        const offerKeys =
+          /^(offers?|tiles?|throw tiles|launch tiles|demo delivery|demo route|demo full|full demo|test tiles|test offers|test delivery|test polygons?|test poly|poly test|polygon|moving driver|driver on route|clear offers|clear tiles|clear routes|clear polygons|clear all|routes|radar|refresh routes|test harness|demo all|test all|offers help|test help|help offers)\b/i;
+        if (offerKeys.test(rawLow) || /^(do|run|launch|start)\s+(tiles|offers|polygon|demo|delivery)/i.test(rawLow)) {
+          beginTurn();
+          hist.push(line);
+          histIdx = hist.length;
+          log(line, 'cmd');
+          try {
+            const handled = await SNOfferStack.handleLine(line);
+            if (handled) return;
+          } catch (eOff) {
+            log('Offers · ' + (eOff && eOff.message ? eOff.message : eOff), 'err');
+            return;
+          }
+        }
+      }
+    } catch (_) {}
     // Astranov Mind — Archangelos / Greeklish before routing
     try {
       if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
@@ -561,6 +580,20 @@
         help();
         return;
       }
+      // Owner test harness — offer tiles / polygons (before dialect/AI freeform)
+      if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
+        const offerKeys =
+          /^(offers?|tiles?|throw tiles|launch tiles|demo delivery|demo route|demo full|full demo|test tiles|test offers|test delivery|test polygons?|test poly|poly test|polygon|moving driver|driver on route|clear offers|clear tiles|clear routes|clear polygons|clear all|routes|radar|refresh routes|test harness|demo all|test all|offers help|test help|help offers)\b/i;
+        if (offerKeys.test(low) || /^(do|run|launch|start)\s+(tiles|offers|polygon|demo|delivery)/i.test(low)) {
+          try {
+            const handled = await SNOfferStack.handleLine(line);
+            if (handled) return;
+          } catch (eOff) {
+            log('Offers · ' + (eOff && eOff.message ? eOff.message : eOff), 'err');
+            return;
+          }
+        }
+      }
       if (low === 'clear' || low === 'clear feed') {
         const box = feedBox();
         if (box) {
@@ -576,147 +609,6 @@
       }
       if (low === 'brain' || low === 'memory') {
         dumpBrain('summary');
-        return;
-      }
-      if (
-        low === 'engine' ||
-        low === 'fps' ||
-        low === 'quality' ||
-        /^engine\b/.test(low) ||
-        /^quality\b/.test(low)
-      ) {
-        const E = global.SNGameLoop || global.SNEngine;
-        if (!E) {
-          log('Engine loading · hard refresh', 'err');
-          return;
-        }
-        const arg = line.replace(/^(engine|fps|quality)\s*/i, '').trim().toLowerCase();
-        if (arg && arg !== 'fps' && arg !== 'status' && E.setQuality) {
-          if (/^(ultra|high|balanced|lite|auto)$/.test(arg)) {
-            const q = E.setQuality(arg, { auto: arg === 'auto', reason: 'cli' });
-            try {
-              localStorage.setItem('sn:engine-quality-v1', arg === 'auto' ? '' : arg);
-              if (arg === 'auto') localStorage.removeItem('sn:engine-quality-v1');
-            } catch (_) {}
-            log('Engine quality · ' + (q && q.label ? q.label : arg) + (arg === 'auto' ? ' · auto' : ' · locked'), 'ok');
-            preview('Engine ' + arg);
-            return;
-          }
-        }
-        const lines = E.reportLines ? E.reportLines() : [];
-        if (lines.length) lines.forEach((ln) => log(ln, /──|Quality|FPS/.test(ln) ? 'ok' : 'dim'));
-        else {
-          const s = E.stats ? E.stats() : {};
-          log('Engine · fps ' + (s.fps || '?') + ' · q ' + (s.quality || '?') + ' · frame ' + (s.avgFrameMs || '?') + 'ms', 'ok');
-        }
-        preview('FPS ' + ((E.stats && E.stats().fps) || '?'));
-        return;
-      }
-      // ── YouTube tile (CLI / voice) ──
-      if (
-        /^(youtube|yt)\b/.test(low) ||
-        /^watch\b/.test(low) ||
-        /^play\s+\d+$/.test(low) ||
-        low === 'yt close' ||
-        low === 'youtube close' ||
-        low === 'close youtube' ||
-        low === 'close yt'
-      ) {
-        try {
-          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
-        } catch (_) {}
-        const Y = global.SNYoutube;
-        if (!Y) {
-          log('YouTube module loading · try again in a moment', 'dim');
-          return;
-        }
-        if (
-          low === 'yt close' ||
-          low === 'youtube close' ||
-          low === 'close youtube' ||
-          low === 'close yt'
-        ) {
-          if (Y.close) Y.close();
-          log('YouTube closed', 'dim');
-          return;
-        }
-        if (/^play\s+\d+$/.test(low)) {
-          const n = parseInt(low.replace(/^play\s+/, ''), 10);
-          if (Y.playIndex) await Y.playIndex(n);
-          else log('Search first · youtube <query>', 'dim');
-          return;
-        }
-        const q = line.replace(/^(youtube|yt|watch)\s*/i, '').trim();
-        if (!q) {
-          log('youtube <query> · yt <query> · watch <url> · play 1 · yt close', 'dim');
-          return;
-        }
-        activity('youtube…', 'work', { label: 'YouTube' });
-        if (Y.find) await Y.find(q);
-        else log('YouTube ready · hard refresh if needed', 'err');
-        return;
-      }
-      // ── Space Invaders cockpit (tilt phone · no joystick) ──
-
-      // Earth Ops — high-end gaming levels on Real Earth + HELPER
-      if (
-        (global.SNEarthOps && SNEarthOps.wants && SNEarthOps.wants(low)) ||
-        low === 'earth ops' ||
-        low === 'ops' ||
-        low === 'play levels' ||
-        low === 'gaming' ||
-        low === 'levels' ||
-        low === 'game mode'
-      ) {
-        if (low === 'ops close' || low === 'close ops' || low === 'earth ops close') {
-          if (global.SNEarthOps && SNEarthOps.close) SNEarthOps.close();
-          return true;
-        }
-        try {
-          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure(['helper', 'earthops']);
-        } catch (_) {}
-        if (global.SNEarthOps && SNEarthOps.start) {
-          SNEarthOps.start();
-          return true;
-        }
-        log('Earth Ops module loading… · HELPER wingman', 'dim');
-        return true;
-      }
-
-      if (
-        /^(invaders?|space\s*invaders?|play\s+invaders?|cockpit|space\s*war|space\s*battle|play\s+(the\s+)?game|start\s+game)\b/.test(
-          low
-        ) ||
-        low === 'game' ||
-        low === 'invader' ||
-        low === 'invaders close' ||
-        low === 'close invaders' ||
-        low === 'exit game' ||
-        low === 'quit game'
-      ) {
-        try {
-          if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('invaders');
-        } catch (_) {}
-        const I = global.SNInvaders;
-        if (!I) {
-          log('Invaders loading · try again in a moment', 'dim');
-          return;
-        }
-        if (
-          low === 'invaders close' ||
-          low === 'close invaders' ||
-          low === 'exit game' ||
-          low === 'quit game' ||
-          /\bclose\b/.test(low)
-        ) {
-          if (I.close) I.close();
-          log('Cockpit closed', 'dim');
-          return;
-        }
-        if (I.open) I.open();
-        else if (I.start) I.start();
-        log('Cockpit · tilt to fly · tap guns · hold laser · two fingers missile · EXIT top-right', 'ok');
-        preview('INVADERS');
         return;
       }
       // Real use: task board · route-compatible jobs
@@ -969,15 +861,10 @@
         low === 'mind reset'
       ) {
         try {
-          // Confirm path via Mind.answer (armed wipe) — never bypass double-confirm
-          const hit = global.SNFreeMind?.answer?.(line);
-          if (hit && (hit.text || hit.reply)) {
-            log(hit.text || hit.reply, hit.source === 'wipe' ? 'ok' : 'dim');
-            preview(String(hit.text || hit.reply).slice(0, 48));
-          } else {
-            log('Mind wipe · type mind wipe again to confirm', 'dim');
-            preview('Confirm wipe');
-          }
+          const w = global.SNFreeMind?.wipe?.('cli');
+          log('Memory cleared. Fresh start — talk normally.', 'ok');
+          log('Notes kept: ' + (w && w.learned != null ? w.learned : '?'), 'dim');
+          preview('Fresh');
         } catch (eW) {
           log('Could not clear memory — hard refresh the page.', 'err');
         }
@@ -990,18 +877,17 @@
             log('Free mind loading · hard refresh', 'err');
             return;
           }
-          const n = Array.isArray(pack) ? pack.length : pack.count != null ? pack.count : (pack.rows || []).length;
           const json = JSON.stringify(pack, null, 2);
           if (navigator.clipboard?.writeText) {
             void navigator.clipboard.writeText(json).then(
-              () => log('Trainset copied · ' + n + ' rows', 'ok'),
+              () => log('Trainset copied · ' + pack.count + ' rows', 'ok'),
               () => log('Copy failed · see console', 'err')
             );
           } else {
-            log('Trainset ' + n + ' rows · clipboard unavailable', 'dim');
+            log('Trainset ' + pack.count + ' rows · clipboard unavailable', 'dim');
           }
           console.log('[SNFreeMind trainset]', pack);
-          preview(n + ' train rows');
+          preview(pack.count + ' train rows');
         } catch (e) {
           log('Export fail · ' + (e.message || e), 'err');
         }
@@ -1381,50 +1267,10 @@
         log('Voice OFF · AI stays silent', 'ok');
         return;
       }
-      if (
-        low === 'voice test' ||
-        low === 'test voice' ||
-        low === 'say test' ||
-        low === 'voice test el' ||
-        low === 'voice test greek' ||
-        low === 'δοκιμή φωνής'
-      ) {
+      if (low === 'voice test' || low === 'test voice' || low === 'say test') {
         warmVoices();
-        const greek =
-          /\b(el|greek|ελλην|φωνή|φωνη)\b/i.test(low) || low === 'δοκιμή φωνής';
-        const phrase = greek
-          ? 'Δοκιμή φωνής Astranov. Ελληνικά, όχι ρωσικά.'
-          : 'Astranov voice test. Full internet OS. English, never Russian by accident.';
-        const lang = detectSpeakLang(phrase);
-        const voice = pickVoice(lang);
-        const vName = voice ? voice.name + ' · ' + (voice.lang || '') : 'default';
-        const banned =
-          voice &&
-          (/^ru/i.test(String(voice.lang || '')) || /russian|milena|yuri|irina/i.test(String(voice.name || '')));
-        speakAi(phrase, 'test');
-        log(
-          'Voice test · lang ' +
-            lang +
-            ' · ' +
-            vName +
-            (banned ? ' · WARN Russian voice' : ' · RU ban OK') +
-            (greek ? ' · Greek' : ' · English'),
-          banned ? 'err' : 'ok'
-        );
-        return;
-      }
-      if (low === 'lang en' || low === 'tts en' || low === 'speak lang en') {
-        try {
-          localStorage.setItem('sn:tts-lang-v1', 'en-US');
-        } catch (_) {}
-        log('TTS prefer English', 'ok');
-        return;
-      }
-      if (low === 'lang el' || low === 'tts el' || low === 'speak lang el' || low === 'lang greek') {
-        try {
-          localStorage.setItem('sn:tts-lang-v1', 'el-GR');
-        } catch (_) {}
-        log('TTS prefer Greek', 'ok');
+        speakAi('Astranov voice test.', 'test');
+        log('Voice test · one short line only', 'ok');
         return;
       }
       if (low === 'handoff' || low === 'handoffs') {
@@ -3134,7 +2980,6 @@ if (
           return;
         }
         const t = Tasks?.create?.(line);
-        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Date open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3142,7 +2987,6 @@ if (
       }
       if (/^deliver|^delivery\b|food\s*order|\bpackage\b/.test(low)) {
         const t = Tasks?.create?.(line.includes('deliver') || line.includes('delivery') ? line : 'delivery ' + line);
-        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Delivery open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3150,7 +2994,6 @@ if (
       }
       if (/^errand\b|pharmacy|grocery\s*run/.test(low)) {
         const t = Tasks?.create?.(line);
-        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Errand open · ' + t.title, 'ok');
         preview(t.title);
         return;
@@ -3168,7 +3011,6 @@ if (
           return;
         }
         const t = Tasks?.create?.(line);
-        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Job open · ' + t.title, 'ok');
         preview(t.title);
         if (global.SNMap?.active) global.SNMap.showTasks?.();
@@ -3193,7 +3035,6 @@ if (
         }
         if (low !== 'help' && low !== '?') {
           const t = Tasks?.create?.({ kind: 'help', title: '🤝 ' + line.slice(0, 50), raw: line });
-          if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
           log('Help open · ' + t.title, 'ok');
           preview(t.title);
           return;
@@ -3201,7 +3042,6 @@ if (
       }
       if (line.length < 100 && /\b(need|want|looking|work|job|date|deliver)\b/i.test(line)) {
         const t = Tasks?.create?.(line);
-        if (!t) { log('Tasks offline · hard refresh', 'err'); return; }
         log('Posted · ' + t.title, 'ok');
         preview(t.title);
         return;
@@ -3210,9 +3050,7 @@ if (
       // Freeform → Astranov (same turn only)
       preview('…');
       if (!global.SNAi?.ask) {
-        for (let i = 0; i < 8 && !global.SNAi?.ask; i++) {
-          await new Promise((r) => setTimeout(r, 400));
-        }
+        await new Promise((r) => setTimeout(r, 600));
       }
       if (global.SNAi?.ask) {
         const reply = await SNAi.ask(line);
@@ -3309,48 +3147,7 @@ if (
   }
 
   /**
-   * Detect BCP-47 speak language from text content (not only navigator.language).
-   * Greek script → el-GR, Latin → en-US priority, Cyrillic only if user wrote Cyrillic.
-   * Hard ban accidental Russian when text is not Russian.
-   */
-  function detectSpeakLang(text) {
-    const s = String(text || '');
-    try {
-      const pref = localStorage.getItem('sn:tts-lang-v1');
-      if (pref && /^ru/i.test(pref) && /[\u0400-\u04FF]/.test(s)) return pref;
-      if (pref && /^(el|en|ar|zh|ja|ko|th|hi|de|fr|es|it|pt)/i.test(pref)) {
-        if (/^el/i.test(pref) && /[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return pref;
-        if (/^en/i.test(pref) && !/[\u0370-\u03FF\u0400-\u04FF]/.test(s)) return pref;
-      }
-    } catch (_) {}
-    if (/[\u0370-\u03FF\u1F00-\u1FFF]/.test(s)) return 'el-GR';
-    // Cyrillic: only Russian if user opted in OR clear Russian markers; else en-US (LANGUAGE LAW)
-    if (/[\u0400-\u04FF]/.test(s)) {
-      try {
-        const prefRu = localStorage.getItem('sn:tts-lang-v1');
-        if (prefRu && /^ru/i.test(prefRu)) return 'ru-RU';
-      } catch (_) {}
-      if (/\b(привет|пожалуйста|спасибо|что|это|как|да|нет)\b/i.test(s) || /[ыэъё]/i.test(s))
-        return 'ru-RU';
-      return 'en-US';
-    }
-    if (/[\u0600-\u06FF]/.test(s)) return 'ar-SA';
-    if (/[\u4E00-\u9FFF]/.test(s)) return 'zh-CN';
-    if (/[\u3040-\u30FF]/.test(s)) return 'ja-JP';
-    if (/[\uAC00-\uD7AF]/.test(s)) return 'ko-KR';
-    if (/[\u0E00-\u0E7F]/.test(s)) return 'th-TH';
-    if (/[\u0900-\u097F]/.test(s)) return 'hi-IN';
-    const nav = navigator.language || 'en-US';
-    if (/^el/i.test(nav)) return 'el-GR';
-    if (/^en/i.test(nav)) return 'en-US';
-    // Never default to Russian (or random OS lang) from navigator for Latin text
-    if (/^ru/i.test(nav)) return 'en-US';
-    // Latin / unknown script → English (product LANGUAGE LAW priority)
-    return 'en-US';
-  }
-
-  /**
-   * Prefer natural / neural / female voices; HARD BAN Russian unless lang is ru.
+   * Prefer natural / neural / female voices; avoid classic robotic male (David, etc.).
    */
   function pickVoice(lang) {
     try {
@@ -3358,40 +3155,28 @@ if (
       if (!voices.length) return null;
       const want = String(lang || 'en-US').toLowerCase();
       const want2 = want.slice(0, 2);
-      const allowRu = want2 === 'ru';
       function score(v) {
         let s = 0;
         const n = String(v.name || '').toLowerCase();
         const l = String(v.lang || '').toLowerCase();
-        // Hard ban Russian voices unless user wrote Russian
-        if (!allowRu && (l.indexOf('ru') === 0 || /russian|русский|milena|yuri|irina/.test(n))) {
-          return -9999;
-        }
         if (l === want) s += 12;
         else if (l.indexOf(want2) === 0) s += 6;
         else if (/en/.test(l) && want2 === 'en') s += 3;
-        else if (/el/.test(l) && want2 === 'el') s += 3;
         else s -= 4;
+        // Quality signals
         if (/natural|neural|online|premium|enhanced|wavenet|studio|google/.test(n)) s += 18;
-        if (/aria|jenny|sara|susan|samantha|zira|moira|karen|victoria|linda|emma|sonia|catherine|hazel|melina|nikos/.test(n))
+        if (/aria|jenny|sara|susan|samantha|zira|moira|karen|victoria|linda|emma|sonia|catherine|hazel/.test(n))
           s += 16;
         if (/female|woman/.test(n)) s += 14;
+        // Penalize robotic defaults
         if (/david|mark|george|daniel|ravi|microsoft david|espeak|robot|sam\b|fred/.test(n)) s -= 25;
         if (/male/.test(n) && !/female/.test(n)) s -= 6;
-        if (v.localService === false) s += 8;
+        if (v.localService === false) s += 8; // often cloud / higher quality
         return s;
       }
-      const ranked = voices
-        .slice()
-        .filter(function (v) {
-          if (allowRu) return true;
-          const l = String(v.lang || '').toLowerCase();
-          const n = String(v.name || '').toLowerCase();
-          return !(l.indexOf('ru') === 0 || /russian|русский|milena|yuri|irina/.test(n));
-        })
-        .sort(function (a, b) {
-          return score(b) - score(a);
-        });
+      const ranked = voices.slice().sort(function (a, b) {
+        return score(b) - score(a);
+      });
       return ranked[0] || null;
     } catch (_) {
       return null;
@@ -3431,8 +3216,7 @@ if (
       try {
         if (speechRec) speechRec.abort();
       } catch (_) {}
-      // LANGUAGE LAW: detect from spoken text; never force Russian
-      const lang = detectSpeakLang(clean);
+      const lang = /^el/i.test(navigator.language || '') ? 'el-GR' : navigator.language || 'en-US';
       const u = new SpeechSynthesisUtterance(clean);
       u.lang = lang;
       u.rate = 0.98;
@@ -3667,24 +3451,18 @@ if (
     speechRec = new SR();
     const nav = navigator.language || 'en-US';
     // Prefer Greek recognizer when OS is el OR user often speaks Greek/Greeklish
-    // LANGUAGE LAW: never lock STT to Russian from navigator alone
     try {
       if (global.ArcangeloDialect && ArcangeloDialect.listenLang) {
-        speechRec.lang = ArcangeloDialect.listenLang(hfPending || nav) || 'en-US';
+        speechRec.lang = ArcangeloDialect.listenLang(hfPending || nav) || 'el-GR';
       } else if (global.SNGreeklish && SNGreeklish.looksGreekish && SNGreeklish.looksGreekish(hfPending || '')) {
         speechRec.lang = 'el-GR';
-      } else if (/^el/i.test(nav)) {
-        speechRec.lang = 'el-GR';
-      } else if (/^ru/i.test(nav)) {
-        speechRec.lang = 'en-US';
-      } else if (/^en/i.test(nav)) {
-        speechRec.lang = 'en-US';
       } else {
-        speechRec.lang = 'en-US';
+        speechRec.lang = /^el/i.test(nav) ? 'el-GR' : nav;
       }
-      if (!speechRec.lang || /^ru/i.test(speechRec.lang)) speechRec.lang = 'en-US';
+      // Rhodes / GR owner default: also try el-GR if not set
+      if (!speechRec.lang) speechRec.lang = 'el-GR';
     } catch (_) {
-      speechRec.lang = /^el/i.test(nav) ? 'el-GR' : 'en-US';
+      speechRec.lang = /^el/i.test(nav) ? 'el-GR' : 'el-GR';
     }
     // interim helps fill the box; we commit on final OR onend with pending
     speechRec.interimResults = true;
@@ -3824,7 +3602,9 @@ if (
       const v = input.value;
       input.value = '';
       input.classList.remove('searching');
-      void run(v);
+      // Always go through SNCli.run so arsenal intercepts (offers/demo) can wrap
+      const runner = (global.SNCli && typeof SNCli.run === 'function') ? SNCli.run.bind(SNCli) : run;
+      void runner(v);
     });
     $('btn-send')?.addEventListener('click', (e) => {
       e.preventDefault();
@@ -3931,8 +3711,6 @@ if (
     toggleHandsfree,
     speakAi,
     stopHandsfree,
-    detectSpeakLang,
-    pickVoice,
     get handsfreeOn() {
       return handsfreeOn;
     },
