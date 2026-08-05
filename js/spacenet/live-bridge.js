@@ -41,6 +41,10 @@
     verify: 1,
     brain: 1,
     law: 1,
+    invaders: 1,
+    'space invaders': 1,
+    cockpit: 1,
+    'close invaders': 1,
   };
   function cmdAllowed(c) {
     var s = String(c || '')
@@ -50,6 +54,7 @@
     if (ALLOW_CMDS[s]) return true;
     // YouTube / media CLI safe prefixes
     if (/^(youtube|yt)\b/.test(s) || /^watch\b/.test(s) || /^play\s+\d+$/.test(s)) return true;
+    if (/^(invaders?|space\s*invaders?|cockpit|play\s+game|close\s+invaders)\b/.test(s)) return true;
     // Safe read-only / map nav prefixes
     if (/^(fly|go)\s+\S/.test(s)) return true;
     if (/^(crawl|find|research|search)\s+\S/.test(s)) return true;
