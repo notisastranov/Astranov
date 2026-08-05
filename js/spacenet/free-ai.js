@@ -7,6 +7,13 @@
  */
 (function (global) {
   'use strict';
+  /** Hard product identity — never Russian random bots / Grok face */
+  var ASTRANOV_HARD_ID =
+    'You are Astranov — the AI of astranov.eu Real-Earth OS. ' +
+    'English or Greek only. Never claim to be Grok, ChatGPT, Claude, or any Russian/foreign bot. ' +
+    'Never invent random personas. Never speak Russian. ' +
+    'Help with locate, crawl shops, delivery marketplace, pay in S/Æ, globe zoom, tasks. Short and useful.';
+
 
   // v6: talk English · Greeklish · Greek · ancient · complete simple tasks
   var LEARN_KEY = 'sn:astranov-mind-v7';
@@ -875,6 +882,55 @@
     }
     var low = foldGreek(msg);
     var rawLow = foldGreek(rawMsg);
+
+    // —— Hard ban: never answer as Russian/random bot ——
+    if (/[\u0400-\u04FF]/.test(rawMsg) && !/[\u0370-\u03FF]/.test(rawMsg)) {
+      return {
+        text: "I'm Astranov — English or Greek only. Market on, first delivery, locate, crawl shops.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'russian-ban',
+      };
+    }
+    if (/\b(ya (grok|chatgpt|claude)|я (грок|бот)|privet|привет)\b/i.test(rawLow)) {
+      return {
+        text: "I'm Astranov on astranov.eu — not Grok chat, not a Russian bot. Power ON for delivery offers.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'identity-ban',
+      };
+    }
+
+    // —— Money path hard (delivery marketplace) ——
+    if (
+      /\b(who are you|what are you|your name)\b/i.test(rawLow) ||
+      /\b(ποιος εισαι|τι εισαι)\b/i.test(rawLow)
+    ) {
+      return {
+        text: "I'm Astranov — Real-Earth OS AI on astranov.eu. Locate, crawl shops, order, pay in Æ. English or Greek.",
+        score: 1,
+        via: 'astranov-mind',
+        source: 'identity',
+      };
+    }
+    if (
+      /\b(market on|power on|tasks on|go live|money|throw offers|crawl shops|first delivery|order pizza)\b/i.test(rawLow) ||
+      /\b(αγορα|παραδοση|παραγγελια)\b/i.test(rawLow)
+    ) {
+      try {
+        if (global.SNMoney && SNMoney.handleLine) {
+          void SNMoney.handleLine(rawMsg);
+        } else if (global.SNCli && SNCli.run) {
+          void SNCli.run(rawMsg);
+        }
+      } catch (_) {}
+      return {
+        text: 'Market path running — power ON throws offers; Accept → Start → Complete. first delivery orders pizza.',
+        score: 1,
+        via: 'astranov-mind',
+        source: 'money-path',
+      };
+    }
 
     // —— Language / chat hard paths (never empty fallback) ——
     if (

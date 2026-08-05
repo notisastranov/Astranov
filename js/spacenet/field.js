@@ -320,6 +320,7 @@
   function setLaunchMode(mode, opts) {
     opts = opts || {};
     if (mode !== 'standby' && mode !== 'on' && mode !== 'off') mode = 'standby';
+    var prev = launchMode;
     launchMode = mode;
     try {
       localStorage.setItem(LAUNCH_KEY, launchMode);
@@ -329,6 +330,50 @@
       document.body.classList.remove('launch-standby', 'launch-on', 'launch-off');
       document.body.classList.add('launch-' + launchMode);
     } catch (_) {}
+    // Money path: power ON → INSTANT offers (sync inside activate) then background crawl
+    if (mode === 'on' && prev !== 'on' && !opts.skipMoney) {
+      try {
+        if (g.SNMoney && typeof SNMoney.activate === 'function') {
+          void SNMoney.activate({ offers: 2 });
+        } else if (g.SNOfferStack && SNOfferStack.testThrow) {
+          try {
+            if (g.SNLoader && SNLoader.ensure) void SNLoader.ensure(['offers', 'tasks', 'money']);
+          } catch (_) {}
+          SNOfferStack.testThrow({
+            km: 6, total: 9, night: true, persist: true,
+            nature: 'Local delivery', skipModeFlip: true
+          });
+          SNOfferStack.testThrow({
+            km: 3.2, total: 7, night: false, persist: true,
+            nature: 'Grocery run', title: 'Grocery run · 3 km', mins: 14, skipModeFlip: true
+          });
+          if (g.SNCli && SNCli.log) SNCli.log('Offers thrown · Accept → Start → Complete', 'ok');
+        } else {
+          setTimeout(function () {
+            try {
+              if (g.SNMoney && SNMoney.activate) void SNMoney.activate({ offers: 2 });
+              else if (g.SNOfferStack && SNOfferStack.testThrow) {
+                SNOfferStack.testThrow({ persist: true, km: 6, total: 9, skipModeFlip: true });
+              }
+            } catch (_) {}
+          }, 500);
+          setTimeout(function () {
+            try {
+              if (g.SNMoney && SNMoney.activate) void SNMoney.activate({ offers: 2 });
+            } catch (_) {}
+          }, 1500);
+        }
+      } catch (eM) {
+        try {
+          if (g.SNCli && SNCli.log) SNCli.log('Market · ' + (eM && eM.message ? eM.message : eM), 'err');
+        } catch (_) {}
+      }
+    }
+    if (mode === 'off' && prev === 'on' && !opts.skipMoney) {
+      try {
+        if (g.SNMoney && SNMoney.deactivate) SNMoney.deactivate();
+      } catch (_) {}
+    }
     if (opts.quiet) return launchMode;
     try {
       var L = launchLabels()[launchMode];
@@ -2137,7 +2182,7 @@
       try {
         requestAnimationFrame(function () {
           if (mode !== 'collapsed') paintStcPerf();
-          if (mode !== 'collapsed' && global.SNHome && SNHome.paintHub) SNHome.paintHub();
+          if (mode !== 'collapsed' && g.SNHome && SNHome.paintHub) SNHome.paintHub();
         });
       } catch (_) {}
       setTimeout(function () {
@@ -2927,10 +2972,17 @@
 
   /** Local meters relative to focus (north-up) */
   function toLocalM(lat, lng, focus) {
+    focus = focus || focusPos() || { lat: 36.4341, lng: 28.2176 };
     var lat0 = Number(focus.lat);
     var lng0 = Number(focus.lng);
-    var north = (Number(lat) - lat0) * 111320;
-    var east = (Number(lng) - lng0) * 111320 * Math.cos((lat0 * Math.PI) / 180);
+    if (!isFinite(lat0)) lat0 = 36.4341;
+    if (!isFinite(lng0)) lng0 = 28.2176;
+    var la = Number(lat);
+    var lo = Number(lng);
+    if (!isFinite(la)) la = lat0;
+    if (!isFinite(lo)) lo = lng0;
+    var north = (la - lat0) * 111320;
+    var east = (lo - lng0) * 111320 * Math.cos((lat0 * Math.PI) / 180);
     return { x: east, y: north };
   }
 
@@ -2941,6 +2993,7 @@
    * - start/end markers
    */
   function drawRoutes(ctx, cx, cy, R) {
+    try {
     if (!routes || !routes.length) return;
     var focus = focusPos();
     var maxD = 80; // meters floor so short routes still show
@@ -2952,7 +3005,9 @@
     for (i = 0; i < routes.length; i++) {
       pts = routes[i].points || [];
       for (j = 0; j < pts.length; j++) {
+        if (!pts[j] || !isFinite(pts[j].lat) || !isFinite(pts[j].lng)) continue;
         loc = toLocalM(pts[j].lat, pts[j].lng, focus);
+        if (!loc) continue;
         var d = Math.sqrt(loc.x * loc.x + loc.y * loc.y);
         if (d > maxD) maxD = d;
       }
@@ -3059,6 +3114,7 @@
         ctx.fillText(String(route.label).slice(0, 28), a1.x + 6, a1.y - 4);
       }
     }
+      } catch (_dr) {}
   }
 
   function setRoutes(list) {
@@ -3611,6 +3667,29 @@
   }
 
   /** Public: set a route from waypoints — multi-stop OSRM streets + traffic/weather ETA */
+  /** Coerce OSRM / gateway points into {lat,lng} objects */
+  function normalizeRoutePoints(raw) {
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var p = raw[i];
+      if (!p) continue;
+      if (typeof p.lat === 'number' && typeof p.lng === 'number' && isFinite(p.lat) && isFinite(p.lng)) {
+        out.push({ lat: p.lat, lng: p.lng });
+        continue;
+      }
+      if (Array.isArray(p) && p.length >= 2) {
+        var a = Number(p[0]), b = Number(p[1]);
+        if (isFinite(a) && isFinite(b)) out.push({ lat: b, lng: a }); // geojson [lng,lat]
+        continue;
+      }
+      if (p.latitude != null && p.longitude != null) {
+        out.push({ lat: Number(p.latitude), lng: Number(p.longitude) });
+      }
+    }
+    return out;
+  }
+
   async function showRoute(waypoints, opts) {
     opts = opts || {};
     // FINISH-333: route will be attached to task if opts.taskId
@@ -3664,6 +3743,8 @@
         speedKmh = durationS > 0 ? (km / durationS) * 3600 : speedKmh;
       }
     }
+    if (pts.length < 2) return null;
+    pts = normalizeRoutePoints(pts);
     if (pts.length < 2) return null;
     var eta = fmtEta(durationS);
     try {
@@ -3918,32 +3999,37 @@
   }
 
   function pointAlong(points, progress) {
-    if (!points || points.length < 2) return null;
-    var u = Math.max(0, Math.min(1, progress || 0));
-    if (u <= 0) return points[0];
-    if (u >= 1) return points[points.length - 1];
+    points = normalizeRoutePoints(points || []);
+    if (!points.length) return null;
+    progress = Math.max(0, Math.min(1, Number(progress) || 0));
+    if (points.length === 1) return { lat: points[0].lat, lng: points[0].lng };
     var total = 0;
     var segs = [];
     var i;
     for (i = 0; i < points.length - 1; i++) {
-      var d = haversineKm(points[i].lat, points[i].lng, points[i + 1].lat, points[i + 1].lng);
-      segs.push(d);
+      var a = points[i], b = points[i + 1];
+      if (!a || !b || !isFinite(a.lat) || !isFinite(b.lat)) continue;
+      var dLat = (b.lat - a.lat) * 111320;
+      var dLng = (b.lng - a.lng) * 111320 * Math.cos((a.lat * Math.PI) / 180);
+      var d = Math.sqrt(dLat * dLat + dLng * dLng) || 0.001;
+      segs.push({ a: a, b: b, d: d });
       total += d;
     }
-    if (total <= 0) return points[0];
-    var target = total * u;
+    if (!segs.length || total <= 0) return { lat: points[0].lat, lng: points[0].lng };
+    var target = total * progress;
     var acc = 0;
     for (i = 0; i < segs.length; i++) {
-      if (acc + segs[i] >= target) {
-        var f = segs[i] > 0 ? (target - acc) / segs[i] : 0;
+      if (acc + segs[i].d >= target) {
+        var u = (target - acc) / segs[i].d;
         return {
-          lat: points[i].lat + (points[i + 1].lat - points[i].lat) * f,
-          lng: points[i].lng + (points[i + 1].lng - points[i].lng) * f,
+          lat: segs[i].a.lat + (segs[i].b.lat - segs[i].a.lat) * u,
+          lng: segs[i].a.lng + (segs[i].b.lng - segs[i].a.lng) * u,
         };
       }
-      acc += segs[i];
+      acc += segs[i].d;
     }
-    return points[points.length - 1];
+    var last = points[points.length - 1];
+    return { lat: last.lat, lng: last.lng };
   }
 
   /**
@@ -4271,18 +4357,12 @@
       if (isFinite(sess) && sess > 0) mine.session = sess;
     } catch (e) {}
     if (mine.on && mine.terms && mine.donate) ensureMineWorker();
-    else if (!mine.terms) {
-      // Soft-prompt terms so mining can activate
-      setTimeout(function () {
-        try {
-          if (!mine.terms) showTerms();
-        } catch (_) {}
-      }, 1800);
-    }
+    // Lean: do NOT auto-popup miner terms (dummy modal lag). User opens via money HUD.
+
     touchFleetHeartbeat();
     paintRadarZoomLabel();
     refreshPhysPos();
-    setInterval(refreshPhysPos, 45000);
+    setInterval(refreshPhysPos, (g.SNPerf && SNPerf.lean) ? 90000 : 45000);
     bindTopChrome();
     paint();
     refreshBlips();
@@ -4308,14 +4388,12 @@
     } else {
       setInterval(drawRadar, radarMs);
     }
-    setInterval(refreshBlips, 10000);
+    setInterval(refreshBlips, (g.SNPerf && SNPerf.lean) ? 25000 : 10000);
     setInterval(function () {
       void refreshRoutes(false);
     }, 28000);
-    // Warm routes shortly after boot (delivery polygons)
-    setTimeout(function () {
-      void refreshRoutes(true);
-    }, 4000);
+    // Lean: no warm routes on boot — power ON / Accept draws routes on demand
+
     var last = performance.now();
     setInterval(function () {
       var n = performance.now();
@@ -4323,7 +4401,7 @@
       last = n;
       sampleEconomy();
       paint();
-    }, 1000);
+    }, (g.SNPerf && SNPerf.lean) ? 2000 : 1000);
 
     $('field-balance-hud') &&
       ($('field-balance-hud').onclick = function () {

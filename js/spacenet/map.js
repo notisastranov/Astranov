@@ -314,13 +314,16 @@
     close();
     // Animate 3D Earth only after map is closed (do not call goToTier before close —
     // goToTier also calls close; recursion-safe via M.active false).
+    // Prefer REGIONAL so user clearly leaves linear street map for the sphere.
     try {
-      if (global.SNGlobe?.goToTier) global.SNGlobe.goToTier('global');
-      else if (global.SNGlobe?.animateZ) global.SNGlobe.animateZ?.(2.75, 700);
+      if (global.SNGlobe?.goToTier) global.SNGlobe.goToTier('regional');
+      else if (global.SNGlobe?.goToPlace && M.lat != null) {
+        global.SNGlobe.goToPlace(M.lat, M.lng, { tier: 'regional', openMap: false, quiet: true });
+      } else if (global.SNGlobe?.animateZ) global.SNGlobe.animateZ?.(1.95, 700);
     } catch (_) {}
     try {
-      global.SNCli?.log?.('3D Earth · SNGlobe imaging', 'ok');
-      global.SNCli?.preview?.('GLOBAL Earth');
+      global.SNCli?.log?.('3D globe · left street map', 'ok');
+      global.SNCli?.preview?.('REGIONAL Earth');
     } catch (_) {}
   }
 
@@ -665,7 +668,7 @@
   }
 
   async function refreshIss() {
-    if (!M.map || (!M.overlayOn.iss && !M.overlayOn.sats)) return;
+    if (!M.map || !M.overlayOn.iss && !M.overlayOn.sats) return;
     try {
       const r = await fetch('https://api.wheretheiss.at/v1/satellites/25544');
       const j = await r.json();
@@ -826,82 +829,109 @@
   }
 
   async function ensure() {
-    // Single-flight: concurrent open/city/test-ready must not double L.map
     if (M.map) return M.map;
+    // Serialize concurrent open/ensure so Leaflet is not double-inited
     if (M._ensureP) return M._ensureP;
     M._ensureP = (async () => {
-      try {
-        if (M.map) return M.map;
-        loadBasemapPref();
-        loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
-        await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
-        const el = document.getElementById('city-map');
-        if (!el || typeof L === 'undefined') throw new Error('map container');
-        // Recover half-init (Leaflet left _leaflet_id after throw / race)
-        if (el._leaflet_id) {
-          try {
-            if (M.map && M.map.remove) {
-              M.map.remove();
-            }
-          } catch (_) {}
-          M.map = null;
-          try {
-            el._leaflet_id = undefined;
-            el.innerHTML = '';
-          } catch (_) {}
-        }
-        const pos = global.SNTasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
-        const la = Number(pos.lat);
-        const lo = Number(pos.lng);
-        const safeLat = Number.isFinite(la) ? la : 36.4341;
-        const safeLng = Number.isFinite(lo) ? lo : 28.2176;
-        M.map = L.map(el, {
-          zoomControl: false, // no +/− corner controls — pinch/wheel only
-          attributionControl: true,
-          minZoom: 3,
-          maxZoom: 20,
-          preferCanvas: true, // lighter target drawing when many markers
-        }).setView([safeLat, safeLng], 14);
-        bindUserCameraLock(M.map);
-
-        // Basemap + full Layers panel (basemaps + multi overlays)
-        setBasemap(M.basemapId || 'dark', { log: false });
-        buildLayerControl(M.map);
-        restoreOverlays();
-
-        // Zoom OUT at min → real 3D globe (never leave user on flat map forever)
-        M._lastZ = 14;
-        M.map.on('zoomend', () => {
-          if (!M.active) return;
-          const z = M.map.getZoom();
-          if (z < M._lastZ && z <= M.map.getMinZoom()) {
-            backToGlobe();
-            return;
-          }
-          M._lastZ = z;
-        });
-        // Wheel zoom-out past min also returns to globe
-        M.map.getContainer().addEventListener(
-          'wheel',
-          (e) => {
-            if (!M.active || e.deltaY <= 0) return;
-            if (M.map.getZoom() <= M.map.getMinZoom()) {
-              e.preventDefault();
-              backToGlobe();
-            }
-          },
-          { passive: false }
-        );
-
-        // LONG-PRESS empty map → multi-tile create (never short accidental click)
-        bindLongPressCreate(M.map);
-
-        return M.map;
-      } finally {
-        M._ensureP = null;
+    if (M.map) return M.map;
+    loadBasemapPref();
+    loadCss('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css');
+    await loadScript('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js');
+    const el = document.getElementById('city-map');
+    if (!el || typeof L === 'undefined') throw new Error('map container');
+    if (M.map) return M.map;
+    // If Leaflet already bound to container (stale), tear down gently
+    try {
+      if (el._leaflet_id && !M.map) {
+        try { el._leaflet_id = null; el.innerHTML = ''; } catch (_) {}
       }
+    } catch (_) {}
+    const pos = global.SNTasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
+    M.map = L.map(el, {
+      zoomControl: false, // no +/− corner controls — pinch/wheel only
+      attributionControl: true,
+      minZoom: 3,
+      maxZoom: 20,
+      preferCanvas: true, // lighter target drawing when many markers
+    }).setView([pos.lat, pos.lng], 14);
+    bindUserCameraLock(M.map);
+
+    // Basemap + full Layers panel (basemaps + multi overlays)
+    setBasemap(M.basemapId || 'dark', { log: false });
+    buildLayerControl(M.map);
+    restoreOverlays();
+
+    // Zoom OUT toward city edge → real 3D globe (never leave user on flat map forever)
+    // Exit threshold ~11: pinch/wheel out past neighborhood returns to sphere (not minZoom=3)
+    M._lastZ = 14;
+    M._exitZoom = 11;
+    M.map.on('zoomend', () => {
+      if (!M.active) return;
+      const z = M.map.getZoom();
+      if (z < M._lastZ && z <= (M._exitZoom || 11)) {
+        backToGlobe();
+        return;
+      }
+      M._lastZ = z;
+    });
+    // Wheel zoom-out past exit also returns to globe
+    M.map.getContainer().addEventListener(
+      'wheel',
+      (e) => {
+        if (!M.active || e.deltaY <= 0) return;
+        if (M.map.getZoom() <= (M._exitZoom || 11)) {
+          e.preventDefault();
+          backToGlobe();
+        }
+      },
+      { passive: false }
+    );
+    // Two-finger pinch-out on street map → back to 3D globe once under exit zoom
+    const mapEl = M.map.getContainer();
+    let mapPinch0 = 0;
+    mapEl.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!M.active || !e.touches || e.touches.length !== 2) {
+          mapPinch0 = 0;
+          return;
+        }
+        const a = e.touches[0],
+          b = e.touches[1];
+        mapPinch0 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+      },
+      { passive: true }
+    );
+    mapEl.addEventListener(
+      'touchmove',
+      (e) => {
+        if (!M.active || !e.touches || e.touches.length !== 2 || !mapPinch0) return;
+        const a = e.touches[0],
+          b = e.touches[1];
+        const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) || 1;
+        const ratio = d / mapPinch0;
+        // Pinch-in (fingers closer) while already zoomed out enough → leave linear map
+        if (ratio < 0.78 && M.map.getZoom() <= (M._exitZoom || 11) + 1.5) {
+          e.preventDefault();
+          mapPinch0 = 0;
+          backToGlobe();
+        }
+      },
+      { passive: false }
+    );
+
+    // LONG-PRESS empty map → multi-tile create (never short accidental click)
+    bindLongPressCreate(M.map);
+
+    return M.map;
     })();
-    return M._ensureP;
+    try {
+      const m = await M._ensureP;
+      return m;
+    } catch (e) {
+      M._ensureP = null;
+      throw e;
+    }
   }
 
   function bindLongPressCreate(map) {
@@ -942,7 +972,10 @@
       if (M._markerHit) return;
       cancelled = false;
       startLL = e.latlng;
-      startPt = e.containerPoint;
+      startPt = e.containerPoint || (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches[0]
+        ? { x: e.originalEvent.touches[0].clientX, y: e.originalEvent.touches[0].clientY }
+        : null);
+      if (!startPt) return;
       timer = setTimeout(() => {
         timer = null;
         if (cancelled || !startLL || !M.active) return;

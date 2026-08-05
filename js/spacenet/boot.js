@@ -163,32 +163,44 @@
     try { if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err'); } catch (e2) {}
   }, 8000);
 
-  // Real device capability (do NOT force lite)
-  var isLite = false;
+  // LEAN MONEY PATH: kill dummy/game chrome by default (games via CLI ensure only)
+  var LEAN = true;
   try {
-    isLite =
-      matchMedia('(pointer:coarse)').matches ||
-      (navigator.maxTouchPoints > 1 && window.innerWidth < 900) ||
-      (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
-      (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+    if (localStorage.getItem('sn:full-mode') === '1') LEAN = false;
+  } catch (_) {}
+  window._snLean = LEAN;
+
+  // Real device capability — lean always prefers lite budgets
+  var isLite = LEAN;
+  try {
+    if (!LEAN) {
+      isLite =
+        matchMedia('(pointer:coarse)').matches ||
+        (navigator.maxTouchPoints > 1 && window.innerWidth < 900) ||
+        (navigator.deviceMemory && navigator.deviceMemory <= 4) ||
+        (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
+    }
   } catch (e) {}
   window._snLite = isLite;
 
   window.SNPerf = {
     lite: isLite,
+    lean: LEAN,
     engine: true,
     quality: isLite ? 'lite' : 'high',
-    dprCap: isLite ? 1.1 : 1.75,
-    globeSegs: isLite ? 24 : 48,
-    starN: isLite ? 180 : 480,
-    radarMs: isLite ? 280 : 140,
-    idleSkip: isLite ? 4 : 2,
-    hudHz: isLite ? 12 : 24,
-    fxScale: isLite ? 0.45 : 0.85,
-    budgetMs: isLite ? 9 : 14,
+    dprCap: isLite ? 1.05 : 1.5,
+    globeSegs: isLite ? 20 : 40,
+    starN: isLite ? 90 : 280,
+    radarMs: isLite ? 360 : 200,
+    idleSkip: isLite ? 5 : 3,
+    hudHz: isLite ? 8 : 16,
+    fxScale: isLite ? 0.3 : 0.6,
+    budgetMs: isLite ? 8 : 12,
     fps: 0,
     frameMs: 0,
     helperAuto: false,
+    /** dummy modules NOT preloaded when lean */
+    dummyOff: LEAN,
     t0: t0,
     get loadStats() { return loadStats; },
     cdn: CDN_GH,
@@ -226,9 +238,8 @@
   ];
 
   // ARSENAL: everything else. Preloaded in background so CLI/AI can use it instantly when asked.
+  // Money path only — no youtube/invaders/game dummies
   var WAVE_ARSENAL_A = [
-    '/js/spacenet/youtube.js',
-    '/js/spacenet/invaders.js',
     '/js/spacenet/tile.js',
     '/js/spacenet/map.js',
     '/js/spacenet/commerce.js',
@@ -236,34 +247,52 @@
     '/js/spacenet/tasks.js',
     '/js/spacenet/search.js',
     '/js/spacenet/field.js',
+    '/js/spacenet/delivery-rules.js',
+    '/js/spacenet/offer-stack.js',
+    '/js/spacenet/money.js',
+    '/js/spacenet/home.js',
+    '/js/spacenet/helper.js',
+    '/js/spacenet/vendor-crawl.js',
+    '/js/spacenet/order-engine.js',
   ];
 
-  var WAVE_ARSENAL_B = [
-    '/js/spacenet/home.js',
-    '/js/spacenet/scrolls.js',
-    '/js/spacenet/order-engine.js',
-    '/js/spacenet/market-live.js',
-    '/js/spacenet/offer-stack.js',
-    '/js/spacenet/task-board.js',
-    '/js/spacenet/task-runner.js',
-    '/js/spacenet/places-business.js',
-    '/js/spacenet/vendor-crawl.js',
-    '/js/spacenet/helper.js',
-    '/js/spacenet/earth-ops.js',
-    '/js/spacenet/ai-graphics.js',
-    '/js/spacenet/live-bridge.js',
-    '/js/spacenet/channel-manager.js',
-    '/js/spacenet/mesh-orders.js',
-    '/js/spacenet/mesh-peers.js',
-    '/js/spacenet/spatial.js',
-    '/js/spacenet/topo.js',
-    '/js/spacenet/google-earth.js',
-    '/js/spacenet/super.js',
-    '/js/spacenet/spartan.js',
-    '/js/spacenet/arcangelo-dialect.js',
-    '/js/spacenet/greeklish.js',
-    '/js/spacenet/telemachos.js',
-  ];
+  // Optional extras — NOT preloaded when lean (CLI SNLoader.ensure only)
+  // Dummy / heavy / not money-path: youtube, invaders, space-scene, game-dock,
+  // ai-graphics, mesh-*, live-bridge, google-earth, topo, telemachos, dialect packs.
+  var WAVE_ARSENAL_B = LEAN
+    ? [
+        '/js/spacenet/scrolls.js',
+        '/js/spacenet/places-business.js',
+        '/js/spacenet/task-board.js',
+      ]
+    : [
+        '/js/spacenet/scrolls.js',
+        '/js/spacenet/order-engine.js',
+        '/js/spacenet/market-live.js',
+        '/js/spacenet/task-board.js',
+        '/js/spacenet/task-runner.js',
+        '/js/spacenet/places-business.js',
+        '/js/spacenet/vendor-crawl.js',
+        '/js/spacenet/helper.js',
+        '/js/spacenet/space-scene.js',
+        '/js/spacenet/earth-ops.js',
+        '/js/spacenet/game-dock.js',
+        '/js/spacenet/ai-graphics.js',
+        '/js/spacenet/live-bridge.js',
+        '/js/spacenet/channel-manager.js',
+        '/js/spacenet/mesh-orders.js',
+        '/js/spacenet/mesh-peers.js',
+        '/js/spacenet/spatial.js',
+        '/js/spacenet/topo.js',
+        '/js/spacenet/google-earth.js',
+        '/js/spacenet/super.js',
+        '/js/spacenet/spartan.js',
+        '/js/spacenet/arcangelo-dialect.js',
+        '/js/spacenet/greeklish.js',
+        '/js/spacenet/telemachos.js',
+        '/js/spacenet/youtube.js',
+        '/js/spacenet/invaders.js',
+      ];
 
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
@@ -272,19 +301,27 @@
     game: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
     tile: { src: '/js/spacenet/tile.js', global: 'SNTile' },
     offers: { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
+    money: { src: '/js/spacenet/money.js', global: 'SNMoney' },
+    market: { src: '/js/spacenet/market.js', global: 'SNMarket' },
     'offer-stack': { src: '/js/spacenet/offer-stack.js', global: 'SNOfferStack' },
     map: { src: '/js/spacenet/map.js', global: 'SNMap' },
     commerce: { src: '/js/spacenet/commerce.js', global: 'SNCommerce' },
-    market: { src: '/js/spacenet/market.js', global: 'SNMarket' },
+    
     tasks: { src: '/js/spacenet/tasks.js', global: 'SNTasks' },
     search: { src: '/js/spacenet/search.js', global: 'SNSearch' },
     field: { src: '/js/spacenet/field.js', global: 'SNField' },
     home: { src: '/js/spacenet/home.js', global: 'SNHome' },
     helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
-    earthops: { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
-    'earth-ops': { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
-    ops: { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
-    gaming: { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
+    delivery: { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
+    'delivery-rules': { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
+    earthops: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    'earth-ops': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    ops: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    gaming: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+    'game-dock': { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
+    gamedock: { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
     'ai-graphics': { src: '/js/spacenet/ai-graphics.js', global: 'SNAIGraphics' },
     'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
     topo: { src: '/js/spacenet/topo.js', global: 'SNTopo' },
@@ -338,9 +375,11 @@
       try { fn(); } catch (e) { console.warn('[Astranov] shell init', e); }
     });
     try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e0) {}
-    whenIdle(function () {
-      try { if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence(); } catch (e1) {}
-    }, 800);
+    if (!LEAN) {
+      whenIdle(function () {
+        try { if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence(); } catch (e1) {}
+      }, 800);
+    }
   }
 
   function initGlobe() {
@@ -370,6 +409,12 @@
       window.SNPerf.shellMs = ms;
       initShell();
       try {
+        if (window.SNUi && SNUi.dismissCoach) SNUi.dismissCoach();
+        var coach = document.getElementById('coach');
+        if (coach) { coach.hidden = true; coach.style.display = 'none'; coach.style.pointerEvents = 'none'; }
+        try { localStorage.setItem('sn:coach-v1', '1'); } catch (_) {}
+      } catch (_) {}
+      try {
         if (window.SNGameLoop) {
           if (SNGameLoop.power) SNGameLoop.power();
           else if (SNGameLoop.start) SNGameLoop.start();
@@ -378,7 +423,7 @@
       hideBoot('shell ' + ms + 'ms');
       try {
         if (window.SNCli && SNCli.log) {
-          SNCli.log('ASTRANOV · shell ' + ms + 'ms · ' + (isLite ? 'lite' : 'full') + ' · ready · type help or speak', 'ok');
+          SNCli.log('ASTRANOV · shell ' + ms + 'ms · ' + (LEAN ? 'LEAN' : isLite ? 'lite' : 'full') + ' · ready · power ON for market', 'ok');
         }
       } catch (_) {}
 
@@ -398,65 +443,78 @@
 
       whenIdle(function () {
         loadParallel(WAVE_ARSENAL_A, 14000).then(function () {
+          // MONEY PATH ONLY — no youtube/invaders/game/mesh auto-init
           try {
-            if (window.SNYoutube && SNYoutube.init) SNYoutube.init();
-            // Never force-close map — user may have opened city during preload
+            if (window.SNField && SNField.init && !SNField._inited) {
+              SNField.init();
+              SNField._inited = true;
+            }
+          } catch (eF) { console.warn('[Astranov] field init', eF); }
+          try {
+            if (window.SNOfferStack && SNOfferStack.init) SNOfferStack.init();
+            if (window.SNMoney && SNMoney.init) SNMoney.init();
+            if (window.SNMoney && SNMoney.clearBlockers) SNMoney.clearBlockers();
+            if (window.SNHome && SNHome.init) SNHome.init();
+          } catch (eM) { console.warn('[Astranov] money path init', eM); }
+          // Helper ready but SILENT — no showcase flyby (wakes only for drone orders)
+          try {
+            if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
+          } catch (_) {}
+          // Kill any leftover game chrome / dock / gameMode
+          try {
+            if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
+            document.body.classList.remove('sn-space-scene-on', 'sn-game-dock-on');
+            var gd = document.getElementById('sn-game-dock');
+            if (gd) gd.remove();
+            var ops = document.getElementById('sn-earth-ops-canvas');
+            if (ops) ops.style.display = 'none';
+            var scHud = document.getElementById('sn-space-hud');
+            if (scHud) scHud.remove();
           } catch (_) {}
           whenIdle(function () {
-            loadParallel(WAVE_ARSENAL_B, 16000).then(function () {
-              [
-                function () { if (window.SNOfferStack && SNOfferStack.init) SNOfferStack.init(); },
-                function () { if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false }); },
-                function () {
+            // Lean: tiny optional wave (scrolls/places). Full mode loads heavy arsenal.
+            loadParallel(WAVE_ARSENAL_B, 12000).then(function () {
+              try {
+                if (window.SNMoney && SNMoney.clearBlockers) SNMoney.clearBlockers();
+              } catch (_) {}
+              // FULL mode only: optional extras (still no forced game showcase)
+              if (!LEAN) {
+                try {
                   if (window.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
-                  try {
-                    if (window.SNUsage && SNUsage.shipToBridge) {
-                      setTimeout(function () { void SNUsage.shipToBridge(true); }, 2500);
-                    }
-                  } catch (_) {}
-                },
-                function () { if (window.SNMeshPeers && SNMeshPeers.init) SNMeshPeers.init(); },
-                function () {
-                  try {
-                    if (window.SNAIGraphics) {
-                      if (isLite && SNAIGraphics.setMode) SNAIGraphics.setMode('lite');
-                      else if (SNAIGraphics.setMode) SNAIGraphics.setMode('imagine');
-                      SNAIGraphics.init && SNAIGraphics.init();
-                    }
-                  } catch (_) {}
-                },
-              ].forEach(function (fn) { try { fn(); } catch (e) {} });
-
+                } catch (_) {}
+                try {
+                  if (window.SNMeshPeers && SNMeshPeers.init) SNMeshPeers.init();
+                } catch (_) {}
+              }
               var total = Math.round(performance.now() - t0);
               window.SNPerf.bootMs = total;
               try {
                 if (window.SNCli && SNCli.log) {
-                  SNCli.log('Deep neon · ' + total + 'ms · offers test · demo delivery · pizza', 'dim');
+                  SNCli.log(
+                    'Earth OS · ' +
+                      total +
+                      'ms · ' +
+                      (LEAN ? 'LEAN money path · dummies off' : 'full arsenal') +
+                      ' · power ON for offers',
+                    'dim'
+                  );
                 }
               } catch (_) {}
             });
-          }, 400);
+          }, LEAN ? 800 : 400);
         });
       }, 200);
 
+      // Auth soft — later, non-blocking
       setTimeout(function () {
         loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000)
           .then(function () { return loadSoft('/js/spacenet/auth.js', 8000); })
           .then(function () {
             try { if (window.SNAuth && SNAuth.init) SNAuth.init(); } catch (e) {}
           });
-      }, isLite ? 3200 : 1800);
+      }, LEAN ? 6000 : 2200);
 
-      setTimeout(function () {
-        try {
-          if (document.hidden) return;
-          var p = window._snLastPos || window._snPhysPos;
-          if (!p || p.lat == null) return;
-          if (window.SNCommerce && SNCommerce.populateMap) {
-            SNCommerce.populateMap(p.lat, p.lng, { openMap: false }).catch(function () {});
-          }
-        } catch (e) {}
-      }, isLite ? 9000 : 6000);
+      // NO auto populateMap crawl on boot when lean (power ON / market on does it)
     })
     .catch(function (e) {
       console.error('[Astranov] boot', e);

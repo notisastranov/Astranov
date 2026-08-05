@@ -1,5 +1,5 @@
 /**
- * SNLiveBridge — runtime control without redeploy · eternal coding-agent channel
+ * SNLiveBridge — runtime control without redeploy
  *
  * Browser polls public JSON on Supabase storage:
  *   {sbUrl}/storage/v1/object/public/debug-pub/live-bridge.json
@@ -8,11 +8,7 @@
  *   POST /functions/v1/debug-write
  *   { "kind": "live_bridge", "seq": 1, "cmds": [ { "op": "sim_speed", "ms": 5500 } ] }
  *
- * Ops: first_loop|cli|ai|credit_fee|super_show|notice|reload|owner_note|…
- *
- * Forever law: heartbeat every ~6 min ships a short usage snapshot +
- * open handoffs so Grok (coding agent) can keep improving code while
- * the app is used by owner and all users. Specs (ASTRANOV LAW) always win.
+ * Ops: sim_start|sim_stop|sim_speed|sim_burst|cli|credit_fee|super_show|notice
  */
 (function (global) {
   'use strict';
@@ -20,31 +16,11 @@
     reload: 1,
     hard_reload: 1,
     locate: 1,
-    shops: 1,
     'fill shops': 1,
-    city: 1,
-    earth: 1,
-    global: 1,
-    help: 1,
-    'dark map': 1,
-    'bright map': 1,
     'route test': 1,
     'ready score': 1,
     'test ready': 1,
     'go live': 1,
-    'yt close': 1,
-    'youtube close': 1,
-    'close youtube': 1,
-    'bridge status': 1,
-    'usage ship': 1,
-    'mind status': 1,
-    verify: 1,
-    brain: 1,
-    law: 1,
-    invaders: 1,
-    'space invaders': 1,
-    cockpit: 1,
-    'close invaders': 1,
   };
   function cmdAllowed(c) {
     var s = String(c || '')
@@ -52,24 +28,15 @@
       .toLowerCase();
     if (!s) return false;
     if (ALLOW_CMDS[s]) return true;
-    // YouTube / media CLI safe prefixes
-    if (/^(youtube|yt)\b/.test(s) || /^watch\b/.test(s) || /^play\s+\d+$/.test(s)) return true;
-    if (/^(invaders?|space\s*invaders?|cockpit|play\s+game|close\s+invaders)\b/.test(s)) return true;
-    // Safe read-only / map nav prefixes
-    if (/^(fly|go)\s+\S/.test(s)) return true;
-    if (/^(crawl|find|research|search)\s+\S/.test(s)) return true;
-    // Never agent notes as exec; never fee / wallet mutations from remote
+    // allow agent notes style no exec
     if (s.indexOf('agent ') === 0) return false;
-    if (/\b(credit|fee|take_fee|wallet|pay|mine on|donate)\b/.test(s)) return false;
     return false;
   }
 
+
   var lastSeq = 0;
   var timer = null;
-  var heartbeatTimer = null;
   var pollMs = 3000;
-  var HEARTBEAT_MS = 6 * 60 * 1000; // ~6 min
-  var lastHeartbeat = 0;
 
   function log(m, c) {
     try {
@@ -118,30 +85,13 @@
       } else if (op === 'task_fit' && global.SNTaskBoard && SNTaskBoard.listCompatibleOnCli) {
         SNTaskBoard.listCompatibleOnCli();
       } else if (op === 'cli' && global.SNCli && SNCli.run) {
-        var ct = String(cmd.text || cmd.cmd || '').trim();
-        if (!cmdAllowed(ct)) {
-          log('Bridge · CLI blocked · ' + ct.slice(0, 48), 'err');
-        } else {
-          void SNCli.run(ct);
-        }
+        void SNCli.run(String(cmd.text || cmd.cmd || ''));
       } else if (op === 'ai' && global.SNAi && SNAi.ask) {
-        // AI freeform is high-impact — only allow short product phrases
-        var at = String(cmd.text || cmd.msg || '').trim();
-        if (!at || at.length > 200 || !cmdAllowed(at)) {
-          log('Bridge · AI blocked · ' + at.slice(0, 48), 'err');
-        } else {
-          void SNAi.ask(at);
-        }
-      } else if (op === 'credit_fee' || op === 'take_fee') {
-        // Money ops never from public poll — owner/console inject only with force
-        if (cmd.force === true && global.SNCurrency) {
-          if (op === 'credit_fee' && SNCurrency.notePlatformFee)
-            SNCurrency.notePlatformFee(Number(cmd.amount) || 0.01, { why: 'bridge' });
-          else if (op === 'take_fee' && SNCurrency.takePlatformFeeFrom)
-            SNCurrency.takePlatformFeeFrom(Number(cmd.gross) || 10, 'bridge');
-        } else {
-          log('Bridge · fee op blocked (public)', 'err');
-        }
+        void SNAi.ask(String(cmd.text || cmd.msg || ''));
+      } else if (op === 'credit_fee' && global.SNCurrency && SNCurrency.notePlatformFee) {
+        SNCurrency.notePlatformFee(Number(cmd.amount) || 0.01, { why: 'bridge' });
+      } else if (op === 'take_fee' && global.SNCurrency && SNCurrency.takePlatformFeeFrom) {
+        SNCurrency.takePlatformFeeFrom(Number(cmd.gross) || 10, 'bridge');
       } else if (op === 'super_show' && global.SNSuper) {
         SNSuper.show();
       } else if (op === 'notice' && global.SNField && SNField.setNotice) {
@@ -176,12 +126,6 @@
         } catch (_) {}
         log('Owner note saved · ' + note.slice(0, 80), 'ok');
         if (global.SNCli && SNCli.preview) SNCli.preview('Note saved for agent');
-      } else if (op === 'usage_ship' || op === 'ship') {
-        if (global.SNUsage && SNUsage.shipToBridge) {
-          void SNUsage.shipToBridge(true).then(function (r) {
-            log(r && r.remote ? 'Usage shipped to agent' : 'Usage ship local', r && r.remote ? 'ok' : 'dim');
-          });
-        }
       } else {
         log('Bridge · unknown op ' + op, 'err');
       }
@@ -220,13 +164,11 @@
       void poll();
     }, pollMs);
     log('Live bridge · polling for remote cmds', 'dim');
-    startHeartbeat();
   }
 
   function stop() {
     if (timer) clearInterval(timer);
     timer = null;
-    stopHeartbeat();
   }
 
   /** Local inject (console / agent shell eval in page) */
@@ -263,10 +205,7 @@
     });
   }
 
-  // Soft self-start if boot arsenal path never calls start (degraded)
-  setTimeout(function () {
-    if (!timer) start();
-  }, 8000);
+  setTimeout(function(){ try{ if(global.SNPerf&&SNPerf.dummyOff)return; start(); }catch(_){ } }, 1500);
 
   function localNotes() {
     try {
@@ -302,10 +241,10 @@
    * Dual path: localStorage + Supabase live-bridge.json (public) so Grok Build can fetch it.
    */
   function ownerNote(text, meta) {
-    var note = String(text || '').trim().slice(0, 1800);
+    var note = String(text || '').trim().slice(0, 800);
     if (!note) return Promise.resolve({ ok: false, error: 'empty' });
     saveLocalNote(note, meta);
-    applyCmd({ op: 'owner_note', text: note.slice(0, 500) });
+    applyCmd({ op: 'owner_note', text: note });
 
     var seq = Date.now();
     var entry = {
@@ -315,7 +254,6 @@
       at: new Date().toISOString(),
       build:
         ((document.querySelector('meta[name="astranov-build"]') || {}).content || '').slice(0, 80),
-      meta: meta || {},
     };
 
     // Merge with existing remote notes so history is not wiped
@@ -326,8 +264,13 @@
       .then(function (cur) {
         var notes = Array.isArray(cur.notes) ? cur.notes.slice(0, 80) : [];
         notes.unshift(entry);
-        // CRITICAL: never re-broadcast old executable cmds — new seq would re-run them on every heartbeat/ship
-        var cmds = [{ op: 'owner_note', text: note.slice(0, 500), from: entry.from }];
+        var cmds = [{ op: 'owner_note', text: note, from: entry.from }];
+        // Keep non-note cmds from remote if fresh
+        if (Array.isArray(cur.cmds)) {
+          cur.cmds.forEach(function (c) {
+            if (c && c.op && c.op !== 'owner_note') cmds.push(c);
+          });
+        }
         var cfg = global.SN_CONFIG || {};
         var url = (cfg.sbUrl || global.SB_URL || '').replace(/\/$/, '') + '/functions/v1/debug-write';
         var body = {
@@ -335,11 +278,10 @@
           seq: seq,
           cmds: cmds,
           notes: notes.slice(0, 40),
-          note: note.slice(0, 800),
+          note: note,
           from: 'client',
           at: entry.at,
           build: entry.build,
-          meta: meta || {},
         };
         return fetch(url, {
           method: 'POST',
@@ -367,11 +309,10 @@
               body: JSON.stringify({
                 kind: 'owner_inbox',
                 seq: seq,
-                note: note.slice(0, 800),
+                note: note,
                 notes: notes.slice(0, 20),
                 from: entry.from,
                 build: entry.build,
-                meta: meta || {},
               }),
             })
               .then(function () {
@@ -394,47 +335,10 @@
       });
   }
 
-  /** Heartbeat: light usage snapshot so agent always has a live pulse */
-  function heartbeat() {
-    if (document.hidden) return;
-    if (Date.now() - lastHeartbeat < HEARTBEAT_MS - 30000) return;
-    lastHeartbeat = Date.now();
-    var s = null;
-    try {
-      if (global.SNUsage && SNUsage.summary) s = SNUsage.summary(3);
-    } catch (_) {}
-    var build =
-      ((document.querySelector('meta[name="astranov-build"]') || {}).content || '').slice(0, 40);
-    var line =
-      '[HEARTBEAT] ' +
-      new Date().toISOString() +
-      ' · build=' +
-      build +
-      (s
-        ? ' · events3d=' + s.events + ' · handoffs=' + s.openHandoffs
-        : '') +
-      ' · bridge forever';
-    // Soft publish — does not spam full ship packet
-    void ownerNote(line, { from: 'heartbeat', heartbeat: true }).catch(function () {});
-  }
-
-  function startHeartbeat() {
-    if (heartbeatTimer) return;
-    setTimeout(heartbeat, 120 * 1000); // first after 2 min
-    heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS);
-  }
-
-  function stopHeartbeat() {
-    if (heartbeatTimer) clearInterval(heartbeatTimer);
-    heartbeatTimer = null;
-  }
-
   async function status() {
     var st = {
       polling: !!timer,
-      heartbeat: !!heartbeatTimer,
       lastSeq: lastSeq,
-      lastHeartbeat: lastHeartbeat,
       url: bridgeUrl(),
       localNotes: localNotes().length,
       remote: null,
@@ -501,7 +405,6 @@
     inject: inject,
     publish: publish,
     applyCmd: applyCmd,
-    cmdAllowed: cmdAllowed,
     ownerNote: ownerNote,
     bridgeUrl: bridgeUrl,
     inboxUrl: inboxUrl,
@@ -509,9 +412,6 @@
     selfTest: selfTest,
     fetchRemote: fetchRemote,
     localNotes: localNotes,
-    heartbeat: heartbeat,
-    startHeartbeat: startHeartbeat,
-    stopHeartbeat: stopHeartbeat,
     get lastSeq() {
       return lastSeq;
     },

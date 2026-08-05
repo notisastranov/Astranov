@@ -9,27 +9,72 @@
     return document.getElementById(id);
   }
 
-  function showCoach() {
-    try {
-      if (localStorage.getItem('sn:coach-v1')) return;
-    } catch (_) {
-      return;
-    }
+  function dismissCoach() {
     var el = $('coach');
     if (!el) return;
+    el.hidden = true;
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+    try {
+      localStorage.setItem('sn:coach-v1', '1');
+    } catch (_) {}
+  }
+  function showCoach() {
+    /* SPECS: never full-screen wall on cold boot — Earth must be free immediately */
+    dismissCoach();
+    return;
+    var el = $('coach');
+    try {
+      if (localStorage.getItem('sn:coach-v1')) {
+        dismissCoach();
+        return;
+      }
+    } catch (_) {
+      dismissCoach();
+      return;
+    }
+    if (!el) return;
     el.hidden = false;
-    $('coach-ok') &&
-      $('coach-ok').addEventListener(
-        'click',
-        function () {
-          el.hidden = true;
-          try {
-            localStorage.setItem('sn:coach-v1', '1');
-          } catch (_) {}
-          $('cli-in') && $('cli-in').focus();
+    el.style.display = '';
+    el.style.pointerEvents = 'auto';
+    function ok() {
+      dismissCoach();
+      try {
+        $('cli-in') && $('cli-in').focus();
+      } catch (_) {}
+    }
+    var btn = $('coach-ok');
+    if (btn && !btn._snCoachBound) {
+      btn._snCoachBound = true;
+      btn.addEventListener('click', function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        ok();
+      });
+    }
+    // Backdrop click + Esc also dismiss so Earth trackball is never stuck
+    if (!el._snCoachBound) {
+      el._snCoachBound = true;
+      el.addEventListener('click', function (e) {
+        if (e.target === el) ok();
+      });
+      document.addEventListener(
+        'keydown',
+        function (e) {
+          if (el.hidden) return;
+          if (e.key === 'Escape' || e.key === 'Enter') {
+            ok();
+          }
         },
-        { once: true }
+        true
       );
+    }
+    // Hard ceiling: never block the globe forever
+    setTimeout(function () {
+      if (el && !el.hidden) ok();
+    }, 12000);
   }
 
   /** Default expand target: 1/3 viewport (button/AI — no drag needed) */
@@ -549,10 +594,14 @@
       });
       mo.observe(dock, { attributes: true, attributeFilter: ['class', 'style'] });
     } catch (_) {}
-    setInterval(pinDockBottom, 2000);
+    setInterval(pinDockBottom, (window.SNPerf&&SNPerf.lean)?8000:2000);
   }
 
   function init() {
+    try {
+      if (localStorage.getItem('sn:coach-v1')) dismissCoach();
+    } catch (_) {}
+
     if (init._done) return;
     init._done = true;
     // Focus expands mid so field is usable, without fighting grab
@@ -568,7 +617,9 @@
     pinDockBottom();
     bindCliDrag();
     bindCliOverscrollRetract();
-    setTimeout(showCoach, 700);
+    setTimeout(function(){ dismissCoach(); }, 0);
+    setTimeout(dismissCoach, 400);
+    setTimeout(dismissCoach, 1200);
     var badge = $('perf-badge');
     if (badge) {
       badge.textContent = 'AS';
@@ -579,6 +630,7 @@
   global.SNUi = {
     init: init,
     showCoach: showCoach,
+    dismissCoach: dismissCoach,
     expandPanel: expandPanel,
     setCliSize: setSize,
     bindCliDrag: bindCliDrag,

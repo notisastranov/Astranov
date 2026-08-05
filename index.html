@@ -2,34 +2,39 @@
 <html lang="en">
 <head>
 <script>
-/* Astranov deep neon blue default · SpaceXAI only if sn:skin-v1=spacex */
+/* SpaceXAI default face · Astranov palette only if sn:skin-v1=astranov (memory) */
 (function(){try{
   try{
     var gx=localStorage.getItem('sn:ai-gfx-mode-v1');
     if(!gx||gx==='balanced'||gx==='supreme') localStorage.setItem('sn:ai-gfx-mode-v1','imagine');
   }catch(e){}
-  var skin=localStorage.getItem('sn:skin-v1')||'astranov';
-  if(skin==='classic'||skin==='electric'||skin==='deep'||skin==='neon') skin='astranov';
-  if(skin==='sx'||skin==='spacexai'||skin==='imagine') skin='spacex';
-  if(skin!=='spacex') skin='astranov';
-  try{ localStorage.setItem('sn:skin-v1', skin); }catch(e){}
+  var skin=localStorage.getItem('sn:skin-v1')||'spacex';
+  if(skin==='classic'||skin==='electric') skin='astranov';
+  if(skin!=='astranov') skin='spacex';
   var root=document.documentElement;
   root.classList.add(skin==='astranov'?'skin-astranov':'skin-spacex');
   root.setAttribute('data-sn-skin', skin);
-  // Deep neon face stays dark hull (no pale light wash on chrome)
-  root.classList.remove('theme-light');
-  root.classList.add('theme-dark');
-  try{ localStorage.setItem('sn:theme-v1','dark'); }catch(e){}
+  // No color-code UI: SpaceX always dark hull; Astranov may follow saved theme
+  if(skin==='spacex'){
+    root.classList.remove('theme-light');
+    root.classList.add('theme-dark');
+  } else {
+    var f=localStorage.getItem('sn:theme-v1');
+    var light=f==='light'||(!f&&window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches);
+    root.classList.add(light?'theme-light':'theme-dark');
+    if(f==='dark'){root.classList.remove('theme-light');root.classList.add('theme-dark');}
+  }
 }catch(e){}})();
 </script>
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov</title>
-<meta name="theme-color" content="#01040e" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#000208" media="(prefers-color-scheme: dark)" />
-<meta name="astranov-build" content="20260805063000-deep-neon-game" />
-<meta name="astranov-continuity" content="20260805063000-deep-neon-game" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(), microphone=()" />
+<meta name="astranov-build" content="20260805162000-real-gps" />
+<meta name="astranov-continuity" content="20260805160000-pill-peek" />
 <meta name="astranov-ip" content="(c) ASTRANOV. All rights reserved. Astranov coins primary currency. Mine Astranov coins." />
 <meta name="astranov-mission" content="AI=Astranov Mind — owner memory forever. Archangelos · Telemachos · tray." />
 <meta name="astranov-ai-handoff" content="AI=Astranov Mind not free-mind chatbot. Dialect+pilot+mission memory." />
@@ -43,47 +48,45 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
-    /* Astranov deep neon blue — gaming-grade electric hull */
-    --bg: #01040e;
-    --bg-deep: #000208;
-    --void: #000105;
-    --text: #b8cfff;
-    --text-bright: #e8eeff;
-    --dim: #4a6a9a;
-    --muted: #7a9cc8;
-    --accent: #0040ff;
-    --bright: #1a5cff;
-    --glow: #2a6aff;
-    --ice: #3d7bff;
-    --electric: #0050ff;
-    --electric-hot: #3d9eff;
-    --electric-deep: #001a66;
-    --mint: #00dd88;
-    --mint-glow: rgba(0, 221, 136, 0.45);
+    /* SpaceXAI — void black · white type · silver edge · red critical */
+    --bg: #000000;
+    --bg-deep: #000000;
+    --void: #000000;
+    --text: #e8e8e8;
+    --text-bright: #ffffff;
+    --dim: #6b6b6b;
+    --muted: #9a9a9a;
+    --accent: #ffffff;
+    --bright: #ffffff;
+    --glow: #c8c8c8;
+    --ice: #a8a8a8;
+    --electric: #ffffff;
+    --electric-hot: #ffffff;
+    --electric-deep: #3a3a3a;
+    --mint: #3dd68c;
+    --mint-glow: rgba(61, 214, 140, 0.4);
     --warn: #f5a623;
-    --err: #ff5e7a;
+    --err: #e82127;
     --sx-red: #e82127;
     --sx-silver: #b0b0b0;
-    --panel: rgba(0, 8, 28, 0.9);
-    --panel-solid: #020814;
-    --border: rgba(0, 80, 255, 0.55);
-    --border-strong: rgba(61, 158, 255, 0.75);
-    --glow-soft: 0 0 20px rgba(0, 80, 255, 0.35);
-    --glow-hot: 0 0 36px rgba(26, 111, 255, 0.55);
+    --panel: rgba(0, 0, 0, 0.88);
+    --panel-solid: #050505;
+    --border: rgba(255, 255, 255, 0.22);
+    --border-strong: rgba(255, 255, 255, 0.55);
+    --glow-soft: 0 0 18px rgba(255, 255, 255, 0.12);
+    --glow-hot: 0 0 28px rgba(255, 255, 255, 0.22);
     --font-ui: "Inter", "Space Grotesk", system-ui, sans-serif;
     --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
     --zone-top: 72px;
-    --r-sm: 10px;
-    --r-md: 14px;
-    --r-lg: 18px;
-    --r-xl: 22px;
-    --r-pill: 999px;
+    --r-sm: 12px;
+    --r-md: 18px;
+    --r-lg: 28px;
   }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; height: 100%;
-    background: radial-gradient(120% 80% at 50% -10%, #0a1e3a 0%, #000208 42%, #000105 100%);
+    background: #000000;
     color: var(--text);
     font: 500 14px/1.45 var(--font-ui);
     overflow: hidden;
@@ -118,7 +121,7 @@
       linear-gradient(165deg, rgba(4, 20, 56, 0.42) 0%, rgba(2, 8, 28, 0.38) 100%);
     backdrop-filter: blur(22px) saturate(1.35); -webkit-backdrop-filter: blur(22px) saturate(1.35);
     border: 1px solid rgba(40, 130, 255, 0.42);
-    border-radius: 16px;
+    border-radius: 22px;
     box-shadow:
       0 8px 40px rgba(0, 0, 0, 0.35),
       0 0 36px rgba(20, 90, 255, 0.28),
@@ -218,40 +221,44 @@
     text-align: center;
   }
   #stc-local { display: none !important; } /* no earth-rotation junk above name */
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     position: relative !important; top: auto !important; left: auto !important;
     transform: none !important;
     align-self: center;
     font: 800 16px/1.1 var(--font-display) !important;
     letter-spacing: 0.3em !important;
-    color: #4da6ff !important;
+    color: #3d9eff !important;
     background: transparent;
     border: 0;
-    border-radius: 0;
-    padding: 2px 6px 0;
+    border-radius: 999px;
+    padding: 4px 12px 2px;
     margin: 0;
     box-shadow: none;
     text-shadow:
-      0 0 8px rgba(30, 120, 255, 0.95),
-      0 0 18px rgba(20, 90, 255, 0.85),
-      0 0 36px rgba(10, 60, 220, 0.65),
-      0 0 56px rgba(8, 40, 180, 0.4);
+      0 0 6px rgba(40, 140, 255, 1),
+      0 0 14px rgba(20, 100, 255, 0.95),
+      0 0 28px rgba(10, 70, 255, 0.8),
+      0 0 48px rgba(8, 50, 220, 0.55),
+      0 0 72px rgba(0, 40, 200, 0.35);
     backdrop-filter: none;
     white-space: nowrap;
   }
   #sn-topchrome #btn-home:hover {
     color: #7ec8ff !important;
     text-shadow:
-      0 0 10px rgba(80, 160, 255, 1),
-      0 0 24px rgba(40, 120, 255, 0.95),
-      0 0 48px rgba(20, 90, 255, 0.7);
+      0 0 10px rgba(100, 180, 255, 1),
+      0 0 24px rgba(50, 140, 255, 1),
+      0 0 48px rgba(30, 110, 255, 0.85),
+      0 0 72px rgba(20, 90, 255, 0.55);
   }
 
   #stc-perf-wrap {
     width: 100%;
     min-width: 0;
     height: 52px;
-    border-radius: 8px;
+    border-radius: 16px;
     background:
       linear-gradient(180deg, rgba(6, 24, 48, 0.75), rgba(0, 8, 20, 0.85));
     border: 1px solid rgba(255, 255, 255, 0.28);
@@ -270,7 +277,7 @@
     width: 100% !important;
     height: 100% !important;
     border: 0;
-    border-radius: 8px;
+    border-radius: 16px;
     background: transparent;
   }
   #sn-topchrome-panel.mid #stc-perf-wrap,
@@ -316,7 +323,9 @@
   @media (max-width: 520px) {
     #stc-detail-row { grid-template-columns: 1fr; }
     #stc-compact { gap: 8px; padding: 6px 8px 4px; }
-    #sn-topchrome #btn-home { font-size: 13px !important; letter-spacing: 0.2em !important; }
+    #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+ font-size: 13px !important; letter-spacing: 0.2em !important; }
     #stc-perf-wrap { height: 18px; }
   }
 
@@ -606,7 +615,7 @@
   }
   #btn-home:hover, #btn-home:focus-visible {
     border-color: var(--glow);
-    color: #fff;
+    color: #3d9eff;
     box-shadow: var(--glow-hot), inset 0 0 20px rgba(61, 184, 255, 0.2);
   }
   #hud, #bar-left, #edge, #btn-city-close, #field-radar-caption,
@@ -1219,6 +1228,9 @@
     backdrop-filter: blur(10px);
   }
   #coach[hidden] { display: none !important; pointer-events: none !important; visibility: hidden !important; }
+  /* Product law: never block globe with coach wall */
+  #coach { display: none !important; pointer-events: none !important; visibility: hidden !important; opacity: 0 !important; }
+  /* coach permanently off */
   #coach .card {
     max-width: 360px; background: var(--panel); border: 1px solid var(--border);
     border-radius: 16px; padding: 22px; color: var(--text);
@@ -1295,7 +1307,9 @@
     letter-spacing: 0.18em;
     font-weight: 700;
   }
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     font-size: 15px !important;
     line-height: 1.15 !important;
   }
@@ -1328,7 +1342,9 @@
   #sn-topchrome #field-balance-hud,
   #sn-topchrome #field-nav-meta,
   #sn-topchrome #sn-fleet-monitor,
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     position: relative !important;
     top: auto !important;
     left: auto !important;
@@ -1755,7 +1771,9 @@
     padding: 4px 10px 2px !important;
     gap: 6px 10px !important;
   }
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     font-size: 13px !important;
     letter-spacing: 0.22em !important;
     padding: 0 4px !important;
@@ -1803,7 +1821,9 @@
       animation: none !important;
       color: #0c1e36 !important;
     }
-    html:not(.theme-dark) #sn-topchrome #btn-home {
+    html:not(.theme-dark) #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
       color: #0a5ec4 !important;
       text-shadow: 0 0 10px rgba(40,120,255,0.4), 0 0 20px rgba(30,100,220,0.25) !important;
     }
@@ -1872,7 +1892,9 @@
     animation: none !important;
     color: #0c1e36 !important;
   }
-  html.theme-light #sn-topchrome #btn-home { color: #ffffff !important; text-shadow: 0 0 14px rgba(255,255,255,0.9) !important; }
+  html.theme-light #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+ color: #3d9eff !important; text-shadow: 0 0 14px rgba(255,255,255,0.9) !important; }
   html.theme-light #cli-form {
     background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(232,242,255,0.92)) !important;
     animation: none !important;
@@ -1988,7 +2010,7 @@
   */
   :root {
     --scroll-bg: rgba(0, 0, 0, 0.72);
-    --e-blue: #1a5cff;
+    --e-blue: #ffffff;
     --top-scroll-min: 50px;
     --bottom-scroll-min: 96px;
     --zone-top: 54px;
@@ -2120,13 +2142,15 @@
   #fnm-virt, #fnm-mode { display: none !important; }
 
   /* ASTRANOV — single line, never wrap */
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     display: block !important;
     width: auto !important;
     max-width: 100% !important;
     font: 800 15px/1 var(--font-display) !important;
     letter-spacing: 0.18em !important;
-    color: #ffffff !important;
+    color: #3d9eff !important;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 22px rgba(255, 255, 255, 0.7) !important;
     background: transparent !important;
     border: 0 !important;
@@ -2417,7 +2441,9 @@
   }
 
   @media (max-width: 420px) {
-    #sn-topchrome #btn-home {
+    #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
       font-size: 12px !important;
       letter-spacing: 0.1em !important;
     }
@@ -2430,12 +2456,14 @@
 
   /* ═══ FINAL TOP CHROME LOCK (highest specificity — verify) ═══ */
   #sn-topchrome-panel.collapsed #btn-home,
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     font-size: 15px !important;
     letter-spacing: 0.16em !important;
     line-height: 1 !important;
     white-space: nowrap !important;
-    color: #ffffff !important;
+    color: #3d9eff !important;
     background: transparent !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -2486,7 +2514,9 @@
   }
   @media (max-width: 420px) {
     #sn-topchrome-panel.collapsed #btn-home,
-    #sn-topchrome #btn-home {
+    #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
       font-size: 13px !important;
       letter-spacing: 0.12em !important;
     }
@@ -2509,7 +2539,9 @@
   .stc-col-timeline { justify-self: start !important; grid-column: 1 !important; min-width: 0 !important; }
   .stc-col-money { justify-self: end !important; grid-column: 3 !important; min-width: 0 !important; }
 
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     font-size: 16px !important;
     letter-spacing: 0.2em !important;
     white-space: nowrap !important;
@@ -2959,7 +2991,7 @@
     display: block !important;
     font: 800 clamp(12px, 3.8vw, 16px)/1 var(--font-display) !important;
     letter-spacing: 0.16em !important;
-    color: #ffffff !important;
+    color: #3d9eff !important;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.95), 0 0 22px rgba(255, 255, 255, 0.7) !important;
     background: transparent !important;
     border: 0 !important;
@@ -3056,7 +3088,9 @@
     #sn-topchrome #field-radar-canvas { width: 34px !important; height: 34px !important; }
     #sn-topchrome-panel.collapsed #fnm-time { font-size: 10px !important; }
     #sn-topchrome-panel.collapsed #fnm-phys { font-size: 9px !important; }
-    #sn-topchrome #btn-home { letter-spacing: 0.1em !important; }
+    #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+ letter-spacing: 0.1em !important; }
   }
   @media (min-width: 700px) {
     #sn-topchrome-panel.collapsed { max-height: 60px !important; }
@@ -3344,7 +3378,9 @@
     gap: 8px !important;
     height: 100% !important;
   }
-  #sn-task-launch {
+  #sn-task-launch { /* task-launch-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     position: relative !important;
     z-index: 90 !important;
     flex: 0 0 40px !important;
@@ -3439,7 +3475,9 @@
     50% { filter: brightness(1.12); }
   }
   @media (max-width: 380px) {
-    #sn-task-launch {
+    #sn-task-launch { /* task-launch-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
       flex: 0 0 34px !important;
       width: 34px !important;
       height: 34px !important;
@@ -3450,7 +3488,9 @@
     }
   }
   @media (min-width: 700px) {
-    #sn-task-launch {
+    #sn-task-launch { /* task-launch-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
       flex: 0 0 44px !important;
       width: 44px !important;
       height: 44px !important;
@@ -3671,9 +3711,11 @@
 
   /* Name — deep electric on light too (no pale Amiga ice) */
   html.theme-light #sn-topchrome #btn-home,
-  html:not(.theme-dark) #sn-topchrome #btn-home {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
+  html:not(.theme-dark) #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
+    color: #3d9eff !important;
+    -webkit-text-fill-color: #3d9eff !important;
     text-shadow:
       0 0 8px #00a0ff,
       0 0 18px rgba(255, 255, 255, 0.95),
@@ -4293,7 +4335,9 @@
   #sn-topchrome-panel.collapsed #fbh-load-label {
     display: none !important;
   }
-  #sn-topchrome-panel.collapsed #sn-task-launch {
+  #sn-topchrome-panel.collapsed #sn-task-launch { /* task-launch-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     flex: 0 0 36px !important;
     width: 36px !important;
     height: 36px !important;
@@ -4355,7 +4399,9 @@
     grid-column: 2 !important;
   }
   #sn-topchrome-panel.collapsed #btn-home,
-  #sn-topchrome #btn-home {
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
     position: relative !important;
     left: auto !important;
     right: auto !important;
@@ -4492,76 +4538,70 @@
   }
 
 
-  /* ═══ DEEP NEON BLUE tokens (mid cascade · gaming hull) ═══ */
+  /* ═══ SPACEXAI tokens (mid cascade) ═══ */
   :root {
-    --accent: #0040ff !important;
-    --bright: #1a5cff !important;
-    --glow: #2a6aff !important;
-    --ice: #3d7bff !important;
-    --border: rgba(0, 80, 255, 0.55) !important;
-    --border-strong: rgba(61, 158, 255, 0.75) !important;
-    --cli-glow: #3d9eff !important;
-    --cli-blue: #1a6fd4 !important;
-    --star-name: #e8f4ff !important;
-    --scroll-edge: rgba(0, 100, 255, 0.55) !important;
-    --scroll-glow: rgba(26, 111, 255, 0.45) !important;
-    --e-blue: #1a5cff !important;
-    --r-sm: 10px !important;
-    --r-md: 14px !important;
-    --r-lg: 18px !important;
+    --accent: #ffffff !important;
+    --bright: #ffffff !important;
+    --glow: #c8c8c8 !important;
+    --ice: #a8a8a8 !important;
+    --border: rgba(255,255,255,0.22) !important;
+    --border-strong: rgba(255,255,255,0.55) !important;
+    --cli-glow: #ffffff !important;
+    --cli-blue: #888888 !important;
+    --star-name: #ffffff !important;
+    --scroll-edge: rgba(255,255,255,0.35) !important;
+    --scroll-glow: rgba(255,255,255,0.2) !important;
   }
-  /* Top + bottom scrolls: deep navy glass + neon blue edge glow · rounded */
+  /* Top + bottom scrolls: deep black glass + neon edge glow */
   #sn-topchrome-panel,
   #panel {
-    background: rgba(0, 8, 28, 0.82) !important;
-    border: 1px solid rgba(0, 110, 255, 0.65) !important;
-    border-radius: 18px !important;
+    background: rgba(0, 6, 16, 0.78) !important;
+    border: 1px solid rgba(255, 255, 255, 0.55) !important;
     box-shadow:
-      0 0 0 1px rgba(0, 50, 180, 0.45) inset,
-      0 0 32px rgba(0, 90, 255, 0.45),
-      0 0 48px rgba(0, 60, 220, 0.22),
-      0 10px 36px rgba(0, 0, 0, 0.55) !important;
+      0 0 0 1px rgba(0, 50, 180, 0.35) inset,
+      0 0 28px rgba(255, 255, 255, 0.4),
+      0 8px 32px rgba(0, 0, 0, 0.55) !important;
   }
-  /* ASTRANOV name — deep electric blue glow */
+  /* ASTRANOV name — deep electric blue */
   #btn-home,
-  #sn-topchrome #btn-home {
-    color: #2a6aff !important;
-    -webkit-text-fill-color: #2a6aff !important;
+  #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
+    color: #3d9eff !important;
+    -webkit-text-fill-color: #3d9eff !important;
     text-shadow:
-      0 0 8px rgba(26, 92, 255, 1),
-      0 0 18px rgba(0, 70, 255, 0.95),
-      0 0 36px rgba(0, 50, 220, 0.8) !important;
+      0 0 8px rgba(40, 100, 255, 1),
+      0 0 18px rgba(20, 80, 255, 0.95),
+      0 0 36px rgba(0, 60, 220, 0.75) !important;
   }
   /* Ribbon buttons */
   #sn-task-ribbon .sn-rib-btn,
   .sn-rib-btn {
-    border: 1px solid rgba(0, 110, 255, 0.55) !important;
-    background: rgba(0, 24, 64, 0.55) !important;
-    color: #a8c8ff !important;
-    border-radius: 14px !important;
-    box-shadow: 0 0 14px rgba(0, 90, 255, 0.28) inset !important;
+    border: 1px solid rgba(255, 255, 255, 0.45) !important;
+    background: rgba(0, 30, 48, 0.5) !important;
+    color: #c8c8c8 !important;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.28) inset !important;
   }
   #sn-task-ribbon .sn-rib-btn .sn-rib-label,
   .sn-rib-label {
-    color: #7ab0ff !important;
+    color: #c8c8c8 !important;
   }
   #sn-task-ribbon .sn-rib-btn:active,
   #sn-task-ribbon .sn-rib-btn.on {
-    border-color: rgba(61, 158, 255, 0.95) !important;
-    box-shadow: 0 0 22px rgba(20, 100, 255, 0.65) !important;
-    color: #d0e4ff !important;
+    border-color: rgba(40, 100, 255, 0.9) !important;
+    box-shadow: 0 0 18px rgba(20, 90, 255, 0.55) !important;
+    color: #c8d8ff !important;
   }
-  /* CLI input glow electric blue */
+  /* CLI input glow electric */
   #cli-form,
   #panel.collapsed #cli-form,
   #panel.mid #cli-form,
   #panel.expanded #cli-form {
-    border: 1px solid rgba(30, 120, 255, 0.85) !important;
-    background: rgba(0, 14, 40, 0.88) !important;
-    border-radius: 16px !important;
+    border: 1px solid rgba(255, 255, 255, 0.75) !important;
+    background: rgba(0, 14, 28, 0.82) !important;
     box-shadow:
-      0 0 20px rgba(0, 100, 255, 0.55),
-      0 0 0 1px rgba(0, 60, 200, 0.45) inset !important;
+      0 0 16px rgba(255, 255, 255, 0.5),
+      0 0 0 1px rgba(0, 50, 180, 0.4) inset !important;
   }
   #cli-in,
   .cli-prompt-prefix {
@@ -4662,68 +4702,67 @@
     text-shadow: 0 0 12px rgba(0, 120, 255, 0.95) !important;
   
 
+
 </style>
 
-<style id="sn-deep-neon-law">
-/* Deep neon blue law — gaming hull · rounded · final cascade */
+<style id="sn-spacexai-law">
+/* SpaceXAI mode — final cascade · black / white / silver · red critical only */
 :root {
-  --accent: #0040ff !important;
-  --bright: #1a5cff !important;
-  --glow: #2a6aff !important;
-  --ice: #3d7bff !important;
-  --electric: #0050ff !important;
-  --electric-hot: #3d9eff !important;
-  --electric-deep: #001a66 !important;
-  --cli-glow: #3d9eff !important;
-  --star-name: #e8f4ff !important;
-  --border: rgba(0,80,255,0.55) !important;
-  --border-strong: rgba(61,158,255,0.75) !important;
-  --text: #b8cfff !important;
-  --text-bright: #e8eeff !important;
-  --panel: rgba(0,8,28,0.9) !important;
-  --r-sm: 10px !important;
-  --r-md: 14px !important;
-  --r-lg: 18px !important;
-  --e-blue: #1a5cff !important;
+  --accent: #ffffff !important;
+  --bright: #ffffff !important;
+  --glow: #c8c8c8 !important;
+  --ice: #a8a8a8 !important;
+  --electric: #ffffff !important;
+  --electric-hot: #ffffff !important;
+  --electric-deep: #2a2a2a !important;
+  --cli-glow: #ffffff !important;
+  --star-name: #ffffff !important;
+  --border: rgba(255,255,255,0.22) !important;
+  --border-strong: rgba(255,255,255,0.55) !important;
+  --sx-red: #e82127 !important;
+  --text: #e8e8e8 !important;
+  --text-bright: #ffffff !important;
+  --panel: rgba(0,0,0,0.9) !important;
 }
 html, body {
-  background: radial-gradient(120% 80% at 50% -10%, #0a1e3a 0%, #000208 42%, #000105 100%) !important;
-  color: #b8cfff !important;
+  background: #000 !important;
+  color: #e8e8e8 !important;
 }
 html body #btn-home,
-html body #sn-topchrome #btn-home {
-  color: #2a6aff !important;
-  -webkit-text-fill-color: #2a6aff !important;
+html body #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
+  color: #3d9eff !important;
+  -webkit-text-fill-color: #3d9eff !important;
   font-family: "Space Grotesk", Inter, system-ui, sans-serif !important;
   font-weight: 700 !important;
   letter-spacing: 0.28em !important;
   text-transform: uppercase !important;
   text-shadow:
-    0 0 8px #1a5cff,
-    0 0 18px #0040ff,
-    0 0 36px rgba(0,50,255,0.85) !important;
+    0 0 1px #fff,
+    0 0 12px rgba(255,255,255,0.35),
+    0 0 28px rgba(255,255,255,0.15) !important;
   background: transparent !important;
 }
 html body #sn-topchrome-panel,
 html body #panel {
-  background: rgba(0, 8, 28, 0.9) !important;
-  border: 1px solid rgba(0, 110, 255, 0.7) !important;
+  background: rgba(0,0,0,0.9) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
   box-shadow:
-    0 0 0 1px rgba(0, 50, 180, 0.45) inset,
-    0 0 32px rgba(0, 90, 255, 0.5),
-    0 10px 36px rgba(0, 0, 0, 0.55) !important;
-  border-radius: 18px !important;
+    0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 8px 32px rgba(0,0,0,0.8) !important;
+  border-radius: 2px !important;
 }
 html body #sn-task-ribbon .sn-rib-btn {
-  border: 1px solid rgba(0, 110, 255, 0.55) !important;
-  background: rgba(0, 24, 64, 0.6) !important;
-  color: #c8e0ff !important;
-  border-radius: 14px !important;
-  box-shadow: 0 0 14px rgba(0, 90, 255, 0.28) inset !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  background: rgba(10,10,10,0.85) !important;
+  color: #ffffff !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
 }
 html body #sn-task-ribbon .sn-rib-label {
-  color: #7ab0ff !important;
-  text-shadow: 0 0 8px rgba(0, 90, 255, 0.55) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
   font-family: "Space Grotesk", Inter, system-ui, sans-serif !important;
   letter-spacing: 0.06em !important;
   text-transform: uppercase !important;
@@ -4731,9 +4770,9 @@ html body #sn-task-ribbon .sn-rib-label {
 }
 html body #sn-task-ribbon .sn-rib-btn.on,
 html body #sn-task-ribbon .sn-rib-btn:active {
-  border-color: rgba(61, 158, 255, 0.95) !important;
-  background: rgba(0, 50, 140, 0.35) !important;
-  box-shadow: 0 0 20px rgba(20, 100, 255, 0.55) !important;
+  border-color: #ffffff !important;
+  background: rgba(255,255,255,0.08) !important;
+  box-shadow: 0 0 16px rgba(255,255,255,0.12) !important;
 }
 html body #dock #panel #cli-form,
 html.theme-light body #dock #panel #cli-form,
@@ -4741,24 +4780,127 @@ html.theme-dark body #dock #panel #cli-form,
 html body #panel.collapsed #cli-form,
 html body #panel.mid #cli-form,
 html body #panel.expanded #cli-form {
-  border: 1px solid rgba(30, 120, 255, 0.85) !important;
-  box-shadow: 0 0 20px rgba(0, 100, 255, 0.55) !important;
-  background: rgba(0, 14, 40, 0.92) !important;
-  background-color: rgba(0, 14, 40, 0.92) !important;
-  border-radius: 16px !important;
+  border: 1px solid rgba(255,255,255,0.45) !important;
+  box-shadow: 0 0 20px rgba(255,255,255,0.08) !important;
+  background: rgba(0,0,0,0.94) !important;
+  background-color: rgba(0,0,0,0.94) !important;
+  border-radius: 2px !important;
 }
 html body #dock #panel #cli-in,
 html.theme-light body #dock #panel #cli-in,
 html body #panel #cli-in {
-  color: #e8f4ff !important;
-  -webkit-text-fill-color: #e8f4ff !important;
-  caret-color: #2a6aff !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
   background: transparent !important;
   font-family: "JetBrains Mono", ui-monospace, monospace !important;
 }
-html body #panel::before {
-  background: linear-gradient(90deg, transparent, #2a6aff, transparent) !important;
-  box-shadow: 0 0 10px rgba(42, 106, 255, 0.9) !important;
+html body .cli-prompt-prefix {
+  color: #ffffff !important;
+  text-shadow: 0 0 8px rgba(255,255,255,0.35) !important;
+}
+html body .cli-line .cli-body { color: #d0d0d0 !important; }
+html body .cli-line.ok .cli-body { color: #ffffff !important; }
+html body .cli-line.cmd .cli-body { color: #ffffff !important; }
+html body .cli-line.dim .cli-body { color: #777 !important; }
+html body .cli-line.err .cli-body { color: #e82127 !important; }
+/* Timeline / radar — silver ring */
+html body #field-radar {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255,255,255,0.55),
+    0 0 14px rgba(255,255,255,0.12) !important;
+  background: radial-gradient(circle at 40% 35%, #1a1a1a, #000) !important;
+}
+html body #field-balance-hud,
+html body #sn-topchrome #field-balance-hud {
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: #fff !important;
+}
+/* Power ⏻ — SpaceX: white mark · black core · red = off · green = on · white standby */
+html body #sn-task-launch { /* task-launch-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
+  background: radial-gradient(circle at 35% 30%, #222, #000 70%) !important;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255,255,255,0.45),
+    0 0 16px rgba(255,255,255,0.15) !important;
+  border-radius: 50% !important;
+}
+html body #sn-task-launch .sn-launch-core {
+  background: radial-gradient(circle at 40% 35%, #1a1a1a, #000) !important;
+  opacity: 1 !important;
+}
+html body #sn-task-launch .sn-launch-power {
+  color: #ffffff !important;
+  filter:
+    drop-shadow(0 0 2px #000)
+    drop-shadow(0 0 6px rgba(255,255,255,0.7)) !important;
+}
+html body #sn-task-launch.mode-standby {
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,0.65),
+    0 0 22px rgba(255,255,255,0.25) !important;
+  animation: sn-sx-pulse 2.4s ease-in-out infinite !important;
+}
+html body #sn-task-launch.mode-standby .sn-launch-power {
+  color: #ffffff !important;
+}
+html body #sn-task-launch.mode-on {
+  box-shadow:
+    inset 0 0 0 2px rgba(61,214,140,0.9),
+    0 0 22px rgba(61,214,140,0.45) !important;
+}
+html body #sn-task-launch.mode-on .sn-launch-power {
+  color: #3dd68c !important;
+  filter: drop-shadow(0 0 8px rgba(61,214,140,0.9)) !important;
+}
+html body #sn-task-launch.mode-off {
+  box-shadow:
+    inset 0 0 0 2px rgba(232,33,39,0.95),
+    0 0 22px rgba(232,33,39,0.5) !important;
+}
+html body #sn-task-launch.mode-off .sn-launch-power {
+  color: #e82127 !important;
+  filter: drop-shadow(0 0 8px rgba(232,33,39,0.95)) !important;
+}
+@keyframes sn-sx-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.15); }
+}
+/* Grip lines white */
+html body #panel::before,
+html body #sn-topchrome-drag::before {
+  background: linear-gradient(90deg, transparent, #ffffff, transparent) !important;
+  box-shadow: 0 0 8px rgba(255,255,255,0.35) !important;
+}
+/* Money positive green / zero silver / negative red — keep semantic */
+html body #fbh-s,
+html body #field-balance-hud .fbh-bal {
+  color: #ffffff !important;
+}
+/* Kill leftover blue cascade */
+html body #sn-topchrome,
+html body #panel,
+html body #sn-task-ribbon {
+  --cli-glow: #ffffff;
+  --glow: #c8c8c8;
+  --accent: #ffffff;
+}
+/* Light theme still SpaceX black-first (device light: slightly lifted black) */
+html.theme-light body {
+  background: #0a0a0a !important;
+  color: #f0f0f0 !important;
+}
+html.theme-light #sn-topchrome-panel,
+html.theme-light #panel {
+  background: rgba(8,8,8,0.94) !important;
+  border-color: rgba(255,255,255,0.28) !important;
+}
+html.theme-light #btn-home {
+  color: #3d9eff !important;
+  text-shadow: 0 0 12px rgba(255,255,255,0.3) !important;
 }
 </style>
 
@@ -4870,7 +5012,32 @@ html body #sn-topchrome #sn-topchrome-panel.expanded {
 </style>
 
 
-<!-- sn-spacexai-final removed: deep neon is product face -->
+<style id="sn-spacexai-final">
+/* SpaceXAI FINAL — beats every prior cascade including theme-light blues */
+html body #btn-home,
+html body #sn-topchrome #btn-home,
+html.theme-light body #btn-home,
+html.theme-light body #sn-topchrome #btn-home,
+html.theme-dark body #btn-home,
+html.theme-dark body #sn-topchrome #btn-home,
+html:not(.theme-dark) #btn-home,
+html:not(.theme-dark) #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
+  color: #3d9eff !important;
+  -webkit-text-fill-color: #3d9eff !important;
+  text-shadow: 0 0 1px #fff, 0 0 18px rgba(255,255,255,0.35) !important;
+  background: transparent !important;
+  background-image: none !important;
+  -webkit-background-clip: unset !important;
+  background-clip: unset !important;
+}
+html.theme-light body,
+html.theme-dark body,
+html body {
+  background: #000000 !important;
+}
+</style>
 
 
 <style id="sn-astranov-skin-memory">
@@ -4904,7 +5071,9 @@ html.skin-astranov body {
   color: #b8cfff !important;
 }
 html.skin-astranov #btn-home,
-html.skin-astranov #sn-topchrome #btn-home {
+html.skin-astranov #sn-topchrome #btn-home { /* btn-home-money-z */
+    position: relative; z-index: 200 !important; pointer-events: auto !important;
+
   color: #2a6aff !important;
   -webkit-text-fill-color: #2a6aff !important;
   text-shadow:
@@ -4939,163 +5108,54 @@ html.skin-spacex.theme-light body {
   color: #e8e8e8 !important;
 }
 
-/* ═══ GAME FINISH · deep neon · rounded · no chrome trash ═══
-   Surgical only: radii + glow + accent. Layout/scrolls/graphs untouched. */
-html, body {
-  background: radial-gradient(120% 80% at 50% -10%, #0a1e3a 0%, #000208 42%, #000105 100%) !important;
-}
-#sn-topchrome-panel,
-#panel,
-#sn-offer-stack .sn-offer,
-.sn-tile-card,
-.sn-modal,
-#sn-tile-host > *,
-.stc-card {
-  border-radius: 18px !important;
-}
-#cli-form,
-#panel.collapsed #cli-form {
-  border-radius: 16px !important;
-}
-#sn-task-ribbon .sn-rib-btn,
-.sn-rib-btn,
-button.primary,
-.sn-offer-btn {
-  border-radius: 14px !important;
-}
-#panel::before {
-  background: linear-gradient(90deg, transparent, #2a6aff, transparent) !important;
-  box-shadow: 0 0 10px rgba(42, 106, 255, 0.9) !important;
-  border-radius: 99px !important;
-}
-#sn-topchrome-panel::after {
-  content: '' !important;
-  position: absolute !important;
-  left: 50% !important;
-  bottom: 4px !important;
-  transform: translateX(-50%) !important;
-  width: 40px !important;
-  height: 3px !important;
-  border-radius: 99px !important;
-  background: linear-gradient(90deg, transparent, #1a5cff, transparent) !important;
-  box-shadow: 0 0 10px rgba(26, 92, 255, 0.85) !important;
-  pointer-events: none !important;
-  opacity: 0.85 !important;
-}
-#sn-topchrome-panel { position: relative !important; }
-/* Money + radar keep circular / pill */
-#field-radar,
-#sn-topchrome #field-radar,
-#field-balance-hud,
-.stc-money-pill {
-  border-radius: 50% !important;
-}
-/* Deep neon text accents (graphs stay) */
-#field-balance-hud,
-.stc-money-val,
-#stc-balance,
-.cli-ok {
-  text-shadow: 0 0 12px rgba(0, 100, 255, 0.55) !important;
-}
-/* Soft pulse on active neon edges — gaming juice, not layout thrash */
-@keyframes snNeonPulse {
-  0%, 100% { box-shadow: 0 0 0 1px rgba(0, 50, 180, 0.45) inset, 0 0 28px rgba(0, 90, 255, 0.4), 0 8px 32px rgba(0,0,0,0.5); }
-  50% { box-shadow: 0 0 0 1px rgba(0, 80, 220, 0.55) inset, 0 0 40px rgba(26, 111, 255, 0.55), 0 8px 32px rgba(0,0,0,0.5); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  #sn-topchrome-panel.collapsed,
-  #panel.collapsed {
-    animation: snNeonPulse 4.5s ease-in-out infinite !important;
+  /* ═══ FINAL brand law · neon deep electric blue · soft only ═══ */
+  #sn-topchrome #btn-home,
+  #sn-topchrome-panel #btn-home,
+  #sn-topchrome-panel.collapsed #btn-home,
+  body #btn-home,
+  html #btn-home {
+    color: #3d9eff !important;
+    border-radius: 999px !important;
+    border: 0 !important;
+    background: transparent !important;
+    text-shadow:
+      0 0 6px rgba(40, 140, 255, 1),
+      0 0 14px rgba(20, 110, 255, 0.95),
+      0 0 28px rgba(10, 80, 255, 0.8),
+      0 0 48px rgba(8, 50, 220, 0.55),
+      0 0 72px rgba(0, 40, 200, 0.35) !important;
+    -webkit-text-fill-color: #3d9eff !important;
   }
-}
-/* Offer peek tiles stack — never wall the map */
-#sn-offer-stack {
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-
-/* ═══ FORCE ROUNDED + DEEP NEON (final cascade · never trash layout) ═══ */
-html #sn-topchrome-panel,
-html #panel,
-html.skin-astranov #sn-topchrome-panel,
-html.skin-astranov #panel,
-html.theme-dark #sn-topchrome-panel,
-html.theme-dark #panel {
-  border-radius: 18px !important;
-}
-html #cli-form,
-html #panel.collapsed #cli-form,
-html #panel.mid #cli-form,
-html #panel.expanded #cli-form {
-  border-radius: 16px !important;
-}
-html #sn-task-ribbon .sn-rib-btn,
-html .sn-rib-btn {
-  border-radius: 14px !important;
-}
-html #btn-home,
-html #sn-topchrome #btn-home {
-  color: #2a6aff !important;
-  -webkit-text-fill-color: #2a6aff !important;
-  text-shadow: 0 0 8px #1a5cff, 0 0 18px #0040ff, 0 0 36px rgba(0,50,255,0.85) !important;
-}
-html #sn-topchrome-panel,
-html #panel {
-  border: 1px solid rgba(0, 110, 255, 0.7) !important;
-  box-shadow:
-    0 0 0 1px rgba(0, 50, 180, 0.45) inset,
-    0 0 32px rgba(0, 90, 255, 0.5),
-    0 10px 36px rgba(0, 0, 0, 0.55) !important;
-}
-
+  #sn-topchrome #btn-home:hover,
+  #sn-topchrome #btn-home:focus-visible,
+  body #btn-home:hover {
+    color: #7ec8ff !important;
+    -webkit-text-fill-color: #7ec8ff !important;
+  }
+  /* Soft chrome — no sharp corners */
+  #sn-topchrome-panel,
+  #cli, #cli-dock, #cli-panel, #cli-bar, #sn-cli,
+  #stc-perf-wrap, #field-balance-hud, #fbh-card {
+    border-radius: 22px !important;
+  }
+  #cli-input, #cli-send, .cli-chip, .ribbon-btn,
+  #sn-ribbon button, .sn-pill-btn {
+    border-radius: 999px !important;
+  }
 </style>
 
 
-<style id="sn-home-neon-force">
-html body #btn-home,
-html body #sn-topchrome #btn-home,
-html.skin-astranov #btn-home,
-html.skin-astranov #sn-topchrome #btn-home,
-#sn-topchrome #btn-home,
-#btn-home {
-  color: #2a6aff !important;
-  -webkit-text-fill-color: #2a6aff !important;
-  text-shadow: 0 0 8px #1a5cff, 0 0 18px #0040ff, 0 0 36px rgba(0,50,255,0.9) !important;
-}
-</style>
-
-<script id="sn-neon-runtime-paint">
+<script>
+/* Purge Rhodes demo pin masquerading as last-good GPS */
 (function(){
-  function paint(){
-    try{
-      var root=document.documentElement;
-      root.classList.add('skin-astranov','theme-dark');
-      root.classList.remove('theme-light');
-      root.setAttribute('data-sn-skin','astranov');
-      var st=document.getElementById('sn-neon-runtime-css');
-      if(!st){ st=document.createElement('style'); st.id='sn-neon-runtime-css'; document.head.appendChild(st); }
-      st.textContent=[
-        'html body #btn-home,html body #sn-topchrome #btn-home,#btn-home{',
-        'color:#2a6aff!important;-webkit-text-fill-color:#2a6aff!important;',
-        'text-shadow:0 0 8px #1a5cff,0 0 18px #0040ff,0 0 36px rgba(0,50,255,.9)!important}',
-        'html body #sn-topchrome-panel,html body #panel{border-radius:18px!important;',
-        'border:1px solid rgba(0,110,255,.7)!important;',
-        'box-shadow:0 0 0 1px rgba(0,50,180,.45) inset,0 0 32px rgba(0,90,255,.5),0 10px 36px rgba(0,0,0,.55)!important}',
-        'html body #cli-form{border-radius:16px!important;border-color:rgba(30,120,255,.85)!important;',
-        'box-shadow:0 0 20px rgba(0,100,255,.55)!important}'
-      ].join('');
-    }catch(e){}
-  }
-  paint();
-  document.addEventListener('DOMContentLoaded', paint);
-  setTimeout(paint, 50);
-  setTimeout(paint, 500);
-  setTimeout(paint, 2000);
+  try {
+    var g = JSON.parse(localStorage.getItem('sn:last-good-gps')||'null');
+    if (g && Math.abs(g.lat-36.4341)<0.02 && Math.abs(g.lng-28.2176)<0.02) {
+      localStorage.removeItem('sn:last-good-gps');
+    }
+  } catch(e){}
 })();
 </script>
-
 </head>
 <body>
 <div id="boot" aria-label="ASTRANOV loading" aria-busy="true">
@@ -5315,6 +5375,7 @@ html.skin-astranov #sn-topchrome #btn-home,
     <div style="color:#ffffff;font-weight:700;margin-bottom:8px;font-family:Comfortaa,Nunito,sans-serif;letter-spacing:.12em;font-size:12px">MESH PARTICIPATION</div>
     <p>SETI-style mesh: spare <b>CPU · RAM · storage · bandwidth</b> powers routing, indexes, and multi-stop topo when idle. Mine <b>Astranov coins</b>. Assign this device as Main · Hot-swap · or home RAID under ASTRANOV.</p>
     <button type="button" id="sn-miner-accept">I AGREE · JOIN MESH · MINE ASTRANOV COINS</button>
+    <button type="button" id="sn-miner-later" style="margin-top:8px;width:100%;padding:10px;border-radius:12px;border:1px solid rgba(120,160,220,0.35);background:rgba(0,12,32,0.5);color:#b8d0f0;font:600 12px system-ui,sans-serif;cursor:pointer">NOT NOW · USE EARTH</button>
   </div>
 </div>
 
@@ -5339,7 +5400,7 @@ html.skin-astranov #sn-topchrome #btn-home,
 })();
 </script>
 
-<script src="/js/spacenet/boot.js?v=20260803154500-imagine-auto"></script>
+<script src="/js/spacenet/boot.js?v=20260805150000-lean-money"></script>
 
 <script>
 /* Emergency: if edge serves HTML but JS 429s — pull boot from jsDelivr within 6s */
@@ -5352,4 +5413,37 @@ html.skin-astranov #sn-topchrome #btn-home,
     if(n===1){
       window.__snBooting=1;
       var s=document.createElement('script');
-      s.src=CDN+'/js/spacenet/boot.js?v=20260803154500-imagine-auto
+      s.src=CDN+'/js/spacenet/boot.js?v=20260805150000-lean-money';
+      document.head.appendChild(s);
+    }
+  }
+  setTimeout(poke, 2500);
+  setTimeout(poke, 6000);
+})();
+</script>
+
+<style id="astranov-brand-neon-v2">
+html body #sn-topchrome #btn-home,
+html body #sn-topchrome-panel #btn-home,
+html body #sn-topchrome-panel.collapsed #btn-home,
+html.theme-light body #sn-topchrome #btn-home,
+html.skin-spacex body #sn-topchrome #btn-home,
+html.skin-astranov body #sn-topchrome #btn-home,
+html body #btn-home {
+  color: #3d9eff !important;
+  -webkit-text-fill-color: #3d9eff !important;
+  border-radius: 999px !important;
+  text-shadow:
+    0 0 6px rgba(40,140,255,1),
+    0 0 16px rgba(20,110,255,.95),
+    0 0 32px rgba(10,80,255,.8),
+    0 0 56px rgba(8,50,220,.5) !important;
+}
+html body #sn-topchrome #btn-home:hover,
+html body #btn-home:hover {
+  color: #7ec8ff !important;
+  -webkit-text-fill-color: #7ec8ff !important;
+}
+</style>
+</body>
+</html>
