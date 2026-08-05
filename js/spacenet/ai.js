@@ -913,6 +913,28 @@
               skipBrand: true,
             };
           }
+          if (sp.runYoutube || sp.domain === 'youtube') {
+            try {
+              if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+            } catch (_ye) {}
+            var yq = sp.youtubeQuery || '';
+            if (!yq && global.SNYoutube && SNYoutube.queryFromText) {
+              yq = SNYoutube.queryFromText(line) || '';
+            }
+            if (yq && global.SNYoutube && SNYoutube.find) {
+              await SNYoutube.find(yq);
+              return {
+                did: did.concat(['spartan:youtube']),
+                reply: '▶ ' + String(yq).slice(0, 48),
+                skipBrand: true,
+              };
+            }
+            return {
+              did: did.concat(['spartan:youtube']),
+              reply: sp.replySeed || 'youtube <query> · yt cats · watch <url>',
+              skipBrand: true,
+            };
+          }
           if (sp.runFood || sp.domain === 'food') {
             var fi =
               sp.foodIntent ||

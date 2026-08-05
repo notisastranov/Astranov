@@ -25,6 +25,9 @@
     'ready score': 1,
     'test ready': 1,
     'go live': 1,
+    'yt close': 1,
+    'youtube close': 1,
+    'close youtube': 1,
   };
   function cmdAllowed(c) {
     var s = String(c || '')
@@ -32,6 +35,8 @@
       .toLowerCase();
     if (!s) return false;
     if (ALLOW_CMDS[s]) return true;
+    // YouTube / media CLI safe prefixes
+    if (/^(youtube|yt)\b/.test(s) || /^watch\b/.test(s) || /^play\s+\d+$/.test(s)) return true;
     // allow agent notes style no exec
     if (s.indexOf('agent ') === 0) return false;
     return false;
