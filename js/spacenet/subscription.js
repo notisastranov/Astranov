@@ -121,13 +121,13 @@
   }
 
   function isOwner() {
+    try {
+      if (global.SNAuth && typeof SNAuth.isOwner === 'function' && SNAuth.isOwner()) return true;
+    } catch (_) {}
     var em = userEmail();
     if (em === ARCHITECT_EMAIL) return true;
     try {
-      if (global.SNAuth && SNAuth.isOwner && SNAuth.isOwner()) return true;
-    } catch (_) {}
-    try {
-      if (localStorage.getItem('sn:owner-session') === '1') return true;
+      if (localStorage.getItem('sn:owner-session') === '1' && em === ARCHITECT_EMAIL) return true;
     } catch (_) {}
     return false;
   }
@@ -588,11 +588,29 @@
       return true;
     }
     if (low === 'owner session' || low === 'i am owner') {
-      // Local demo flag only — real owner is auth email
-      try {
-        localStorage.setItem('sn:owner-session', '1');
-      } catch (_) {}
-      log('Local owner flag set · paid Grok path open (demo). Real owner = Google login.', 'ok');
+      if (userEmail() === ARCHITECT_EMAIL) {
+        try { localStorage.setItem('sn:owner-session', '1'); } catch (_) {}
+        log('Architect confirmed · paid Grok path ON (server XAI_API_KEY)', 'ok');
+      } else {
+        log('Owner path requires Google login as ' + ARCHITECT_EMAIL, 'err');
+      }
+      return true;
+    }
+    if (low === 'xai status' || low === 'api key status' || low === 'grok key') {
+      log(status().label + ' · mode=' + status().mode, 'ok');
+      Promise.resolve()
+        .then(function () {
+          return fetch((location.origin || '') + '/api/health').then(function (r) {
+            return r.json();
+          });
+        })
+        .then(function (h) {
+          if (h && h.xai) log('Server proxy: XAI key present', 'ok');
+          else log('Server proxy: no XAI key here · set Supabase secret XAI_API_KEY', 'dim');
+        })
+        .catch(function () {
+          log('Set XAI_API_KEY on Supabase → Edge Functions → Secrets for aicycle', 'dim');
+        });
       return true;
     }
     return false;
