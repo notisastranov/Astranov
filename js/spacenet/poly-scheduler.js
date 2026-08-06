@@ -158,44 +158,46 @@
     st.id = CSS_ID;
     st.textContent = [
       '#sn-poly-root{position:fixed;inset:0;z-index:105;pointer-events:none!important;overflow:visible}',
-      '#sn-poly-root .sn-pt{pointer-events:auto;position:fixed;left:50%;top:72px;transform:translateX(-50%);',
-      'width:min(92vw,300px);border-radius:22px;color:#eaf4ff;cursor:grab;touch-action:none;user-select:none;',
-      'background:linear-gradient(165deg,rgba(2,18,52,.95),rgba(0,10,32,.97));',
+      /* Compact default tile — leaves map/polygon visible */
+      '#sn-poly-root .sn-pt{pointer-events:auto;position:fixed;left:50%;top:58px;transform:translateX(-50%);',
+      'width:min(72vw,210px);border-radius:18px;color:#eaf4ff;cursor:grab;touch-action:none;user-select:none;',
+      'background:linear-gradient(165deg,rgba(2,18,52,.93),rgba(0,10,32,.96));',
       'border:1.5px solid rgba(50,150,255,.72);',
-      'box-shadow:0 12px 32px rgba(0,0,0,.5),0 0 24px rgba(20,100,255,.4);',
-      'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}',
+      'box-shadow:0 8px 22px rgba(0,0,0,.45),0 0 16px rgba(20,100,255,.35);',
+      'backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);max-height:min(34vh,220px);overflow:hidden}',
       '#sn-poly-root .sn-pt.dragging{cursor:grabbing;z-index:160}',
-      '#sn-poly-root .sn-pt.size-min{width:min(70vw,190px);border-radius:999px}',
+      '#sn-poly-root .sn-pt.size-min{width:min(58vw,150px);border-radius:999px;max-height:none}',
       '#sn-poly-root .sn-pt.size-min .sn-pt-body,#sn-poly-root .sn-pt.size-min .sn-pt-tray{display:none!important}',
-      '#sn-poly-root .sn-pt.size-max{width:min(94vw,360px)}',
-      '#sn-poly-root .sn-pt-chrome{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px 12px 4px}',
-      '#sn-poly-root .sn-pt-cbtn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(80,160,255,.5);',
-      'background:rgba(8,28,64,.75);color:#b8d8ff;font:700 15px/1 system-ui;cursor:pointer;',
+      '#sn-poly-root .sn-pt.size-min .sn-pt-main{padding:2px 10px 6px 12px}',
+      '#sn-poly-root .sn-pt.size-max{width:min(88vw,300px);max-height:min(52vh,360px);overflow:auto}',
+      '#sn-poly-root .sn-pt-chrome{display:flex;align-items:center;justify-content:center;gap:6px;padding:4px 8px 2px}',
+      '#sn-poly-root .sn-pt-cbtn{width:22px;height:22px;border-radius:50%;border:1px solid rgba(80,160,255,.5);',
+      'background:rgba(8,28,64,.75);color:#b8d8ff;font:700 13px/1 system-ui;cursor:pointer;',
       'display:flex;align-items:center;justify-content:center;padding:0}',
       '#sn-poly-root .sn-pt-cbtn.close{color:#ffb0b0;border-color:rgba(255,120,120,.45)}',
       '#sn-poly-root .sn-pt-cbtn.max{color:#8fffd4;border-color:rgba(0,220,160,.5)}',
-      '#sn-poly-root .sn-pt-title{flex:1;text-align:center;font:700 9px/1 system-ui;letter-spacing:.14em;',
+      '#sn-poly-root .sn-pt-title{flex:1;text-align:center;font:700 8px/1 system-ui;letter-spacing:.12em;',
       'text-transform:uppercase;color:rgba(120,180,255,.75)}',
-      '#sn-poly-root .sn-pt-main{display:flex;align-items:center;gap:10px;padding:4px 14px 10px 16px}',
-      '#sn-poly-root .sn-pt-price{font:800 17px/1.05 ui-monospace,Menlo,monospace;color:#7ec8ff;',
-      'text-shadow:0 0 12px rgba(60,160,255,.95)}',
-      '#sn-poly-root .sn-pt-line{font:600 10px/1.25 system-ui;color:#9ec4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}',
-      '#sn-poly-root .sn-pt-acts{display:flex;gap:6px;margin-left:auto}',
-      '#sn-poly-root .sn-pt-btn{width:34px;height:34px;border-radius:50%;border:1px solid rgba(80,160,255,.45);',
-      'background:rgba(10,40,90,.55);color:#b8d8ff;font:700 13px/1 system-ui;cursor:pointer;',
+      '#sn-poly-root .sn-pt-main{display:flex;align-items:center;gap:6px;padding:2px 10px 6px 12px}',
+      '#sn-poly-root .sn-pt-price{font:800 14px/1.05 ui-monospace,Menlo,monospace;color:#7ec8ff;',
+      'text-shadow:0 0 10px rgba(60,160,255,.95)}',
+      '#sn-poly-root .sn-pt-line{font:600 9px/1.2 system-ui;color:#9ec4ee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}',
+      '#sn-poly-root .sn-pt-acts{display:flex;gap:4px;margin-left:auto}',
+      '#sn-poly-root .sn-pt-btn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(80,160,255,.45);',
+      'background:rgba(10,40,90,.55);color:#b8d8ff;font:700 12px/1 system-ui;cursor:pointer;',
       'display:flex;align-items:center;justify-content:center;padding:0}',
       '#sn-poly-root .sn-pt-btn.ok{border-color:rgba(0,230,160,.65);color:#8fffd4;background:rgba(0,100,70,.4)}',
       '#sn-poly-root .sn-pt-btn.no{color:#a0bdd8}',
-      '#sn-poly-root .sn-pt-body{padding:0 14px 8px;display:flex;flex-direction:column;gap:6px}',
-      '#sn-poly-root .sn-pt-party{display:flex;align-items:center;gap:8px}',
-      '#sn-poly-root .sn-pt-av{width:36px;height:36px;border-radius:50%;object-fit:cover;flex:0 0 auto;',
-      'border:1.5px solid rgba(100,180,255,.55);box-shadow:0 0 10px rgba(40,120,255,.35);background:#0a1e40}',
-      '#sn-poly-root .sn-pt-party.v .sn-pt-av{border-radius:12px;border-color:rgba(255,190,60,.65)}',
-      '#sn-poly-root .sn-pt-tag{font:800 8px/1 system-ui;letter-spacing:.1em;text-transform:uppercase;',
-      'padding:4px 7px;border-radius:999px;border:1px solid rgba(80,160,255,.45);color:#9ad4ff}',
+      '#sn-poly-root .sn-pt-body{padding:0 10px 6px;display:flex;flex-direction:column;gap:3px}',
+      '#sn-poly-root .sn-pt-party{display:flex;align-items:center;gap:5px}',
+      '#sn-poly-root .sn-pt-av{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:0 0 auto;',
+      'border:1.5px solid rgba(100,180,255,.55);box-shadow:0 0 8px rgba(40,120,255,.3);background:#0a1e40}',
+      '#sn-poly-root .sn-pt-party.v .sn-pt-av{border-radius:8px;border-color:rgba(255,190,60,.65)}',
+      '#sn-poly-root .sn-pt-tag{font:800 7px/1 system-ui;letter-spacing:.08em;text-transform:uppercase;',
+      'padding:2px 5px;border-radius:999px;border:1px solid rgba(80,160,255,.45);color:#9ad4ff}',
       '#sn-poly-root .sn-pt-party.v .sn-pt-tag{border-color:rgba(255,190,60,.5);color:#ffd080}',
-      '#sn-poly-root .sn-pt-nm{font:700 12px/1.2 system-ui;color:#eaf4ff;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      '#sn-poly-root .sn-pt-role{font:500 9px/1.2 system-ui;color:#6a94c4;margin-left:auto}',
+      '#sn-poly-root .sn-pt-nm{font:700 11px/1.15 system-ui;color:#eaf4ff;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      '#sn-poly-root .sn-pt-role{font:500 8px/1.15 system-ui;color:#6a94c4;margin-left:auto}',
       '#sn-poly-root .sn-pt-stops{padding:0 12px 6px;display:flex;flex-direction:column;gap:4px}',
       '#sn-poly-root .sn-pt-stop{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:14px;',
       'background:rgba(8,28,64,.65);border:1px solid rgba(50,120,220,.35);font:600 11px/1.2 system-ui;color:#d8ecff}',
@@ -512,12 +514,60 @@
     };
   }
 
+  /** Collapse chrome so map + polygon stay visible under the offer */
+  function focusChrome(on) {
+    try {
+      document.body.classList.toggle('sn-offer-focus', !!on);
+    } catch (_) {}
+    try {
+      var panel = document.getElementById('sn-topchrome-panel');
+      if (panel) {
+        if (on) {
+          panel.dataset.preFocus = panel.classList.contains('expanded')
+            ? 'expanded'
+            : panel.classList.contains('mid')
+              ? 'mid'
+              : 'collapsed';
+          panel.classList.remove('mid', 'expanded');
+          panel.classList.add('collapsed');
+        } else if (panel.dataset.preFocus) {
+          panel.classList.remove('collapsed', 'mid', 'expanded');
+          panel.classList.add(panel.dataset.preFocus || 'collapsed');
+          delete panel.dataset.preFocus;
+        }
+      }
+    } catch (_) {}
+    try {
+      var bot = document.getElementById('panel');
+      if (bot) {
+        if (on) {
+          bot.dataset.preFocus = bot.classList.contains('expanded')
+            ? 'expanded'
+            : bot.classList.contains('mid')
+              ? 'mid'
+              : 'collapsed';
+          bot.classList.remove('mid', 'expanded');
+          bot.classList.add('collapsed');
+        } else if (bot.dataset.preFocus) {
+          bot.classList.remove('collapsed', 'mid', 'expanded');
+          bot.classList.add(bot.dataset.preFocus || 'collapsed');
+          delete bot.dataset.preFocus;
+        }
+      }
+    } catch (_) {}
+    try {
+      if (global.SNField && SNField.topChrome && SNField.topChrome.set && on)
+        SNField.topChrome.set('collapsed');
+    } catch (_) {}
+  }
+
   /* ── Paint ── */
   function paint() {
     try {
       var el = ensureRoot();
       if (!stack.length && !queue.length) {
         el.innerHTML = '';
+        focusChrome(false);
         return;
       }
       var hint = queue.length ? '<div class="sn-qhint">' + queue.length + ' queued</div>' : '';
@@ -527,8 +577,8 @@
           .map(function (o) {
             var size = o.uiSize || 'mid';
             var phase = o.phase || 'offered';
-            if ((phase === 'underway' || phase === 'confirming' || phase === 'claimed') && !o.uiSize)
-              size = 'max';
+            /* Keep compact by default so polygon stays visible; max only if user hits + */
+            if (!o.uiSize && phase === 'offered') size = 'mid';
             var q = o.quote || {};
             var conf = o.confirms || { client: false, vendor: false, driver: false };
             var canPay = phase === 'confirming' && conf.client && conf.vendor && conf.driver;
@@ -1005,6 +1055,7 @@
     }
     paint();
     drawPolygon(o);
+    focusChrome(true);
     return o;
   }
 
@@ -1063,6 +1114,7 @@
     stack = [];
     queue = [];
     paint();
+    focusChrome(false);
     try {
       if (global.SNField && SNField.setLaunchMode) SNField.setLaunchMode('off', { quiet: true, skipMoney: true });
       if (global.SNField && SNField.clearRoutes) SNField.clearRoutes();

@@ -1900,8 +1900,7 @@
     var wrap = $('stc-perf-wrap');
     if (!c) return;
     try {
-      var panel = $('sn-topchrome-panel');
-      if (panel && panel.classList.contains('collapsed')) return;
+      if (document.body.classList.contains('sn-offer-focus')) return;
     } catch (_) {}
     var ctx = c.getContext('2d');
     if (!ctx) return;
@@ -2181,7 +2180,7 @@
       } catch (_) {}
       try {
         requestAnimationFrame(function () {
-          if (mode !== 'collapsed') paintStcPerf();
+          try { paintStcPerf(); } catch (_) {}
           if (mode !== 'collapsed' && g.SNHome && SNHome.paintHub) SNHome.paintHub();
         });
       } catch (_) {}

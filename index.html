@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260806170000-finish" />
-<meta name="astranov-continuity" content="20260806170000-finish" />
+<meta name="astranov-build" content="20260806172000-tile-chrome" />
+<meta name="astranov-continuity" content="20260806172000-tile-chrome" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -431,9 +431,116 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   visibility: hidden !important;
 }
 #field-radar-zoom, #field-radar-legend, #field-radar-speed,
-#field-radar-caption, .fr-label, #stc-perf-wrap, #sn-fleet-monitor,
-#stc-timeline-machine, #sn-hub-host, #fbh-econ-graph, #fbh-econ-label {
+#field-radar-caption, .fr-label, #sn-fleet-monitor,
+#sn-hub-host, #fbh-econ-graph, #fbh-econ-label {
   display: none !important;
+}
+/* Performance + map timeline — live on top ribbon */
+#stc-gadgets {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 0 12px 8px;
+  flex-wrap: wrap;
+}
+#stc-perf-wrap {
+  display: block !important;
+  flex: 1 1 120px;
+  min-width: 100px;
+  max-width: 200px;
+  height: 40px;
+  border-radius: 14px;
+  background: rgba(4, 16, 40, 0.72);
+  border: 1px solid rgba(61, 158, 255, 0.35);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+#stc-perf-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#stc-timeline-machine {
+  display: flex !important;
+  flex: 1 1 160px;
+  min-width: 140px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 5px 10px 6px;
+  border-radius: 14px;
+  background: rgba(4, 16, 40, 0.72);
+  border: 1px solid rgba(0, 224, 112, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+}
+#stc-timeline-machine .tl-head {
+  font: 700 8px/1 var(--font-ui);
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+#stc-timeline-machine #tl-year-label {
+  font: 800 11px/1.1 var(--font-mono);
+  color: #00e070;
+  text-shadow: 0 0 10px rgba(0,224,112,0.55);
+}
+#stc-timeline-machine #tl-year {
+  width: 100%;
+  accent-color: #00e070;
+  height: 14px;
+}
+#stc-timeline-machine .tl-btns {
+  display: flex;
+  gap: 4px;
+}
+#stc-timeline-machine .tl-btns button {
+  flex: 1;
+  min-height: 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 220, 140, 0.4);
+  background: rgba(0, 40, 30, 0.55);
+  color: #9fffd0;
+  font: 700 9px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+#stc-timeline-machine #tl-status {
+  font: 600 8px/1.2 var(--font-mono);
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#stc-timeline-machine #tl-date {
+  font: 500 9px/1 var(--font-mono);
+  color: var(--text-soft);
+  background: transparent;
+  border: 1px solid rgba(80,140,220,0.3);
+  border-radius: 8px;
+  padding: 2px 4px;
+  color-scheme: dark;
+}
+#sn-topchrome-panel.collapsed #stc-gadgets {
+  display: flex;
+}
+#sn-topchrome-panel.collapsed #stc-perf-wrap { height: 32px; }
+#sn-topchrome-panel.collapsed #stc-timeline-machine #tl-date,
+#sn-topchrome-panel.collapsed #stc-timeline-machine #tl-status {
+  display: none;
+}
+/* Offer focus: minimize chrome so polygon/map dominate */
+body.sn-offer-focus #stc-theme,
+body.sn-offer-focus #stc-gadgets {
+  display: none !important;
+}
+body.sn-offer-focus #sn-topchrome-panel {
+  max-height: 54px !important;
+}
+body.sn-offer-focus #dock #panel.collapsed {
+  opacity: 0.72;
+}
+body.sn-offer-focus #sn-poly-root .sn-pt {
+  top: 56px;
 }
 @media (max-width: 480px) {
   #field-radar { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex-basis: 48px; }
@@ -540,6 +647,22 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
               <path d="M7.05 6.55a7.2 7.2 0 1 0 9.9 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
             </svg>
           </button>
+        </div>
+      </div>
+      <div id="stc-gadgets" class="stc-gadgets" aria-label="Performance and map timeline">
+        <div id="stc-perf-wrap" title="Device performance">
+          <canvas id="stc-perf" width="200" height="48" aria-label="Performance monitor"></canvas>
+        </div>
+        <div id="stc-timeline-machine" aria-label="Map timeline">
+          <span class="tl-head">Map time</span>
+          <span id="tl-year-label">NOW</span>
+          <input type="range" id="tl-year" min="-80" max="40" value="0" step="1" aria-label="Timeline years from now" />
+          <div class="tl-btns">
+            <button type="button" id="tl-present" title="Return to live present">NOW</button>
+            <button type="button" id="tl-freeze" title="Hold timeline year">HOLD</button>
+          </div>
+          <span id="tl-status">PRESENT · live</span>
+          <input type="date" id="tl-date" aria-label="Jump to date" />
         </div>
       </div>
       <div id="stc-theme" aria-label="Theme controls">
@@ -699,6 +822,6 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   }
 })();
 </script>
-<script src="/js/spacenet/boot.js?v=20260806170000-finish"></script>
+<script src="/js/spacenet/boot.js?v=20260806172000-tile-chrome"></script>
 </body>
 </html>
