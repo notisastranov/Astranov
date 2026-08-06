@@ -12,17 +12,11 @@
       if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
     } catch (_) {}
     try {
-      document.querySelectorAll('#sn-game-dock,.sn-game-dock,#sn-space-hud,#sn-earth-ops-canvas,.sn-game-overlay').forEach(function (n) {
-        try { n.remove(); } catch (_) {}
-      });
+      var gd = document.getElementById('sn-game-dock');
+      if (gd) gd.remove();
     } catch (_) {}
     try {
-      document.body.classList.remove('sn-space-scene-on', 'sn-game-on', 'sn-game-dock-on');
-    } catch (_) {}
-    try {
-      if (window.speechSynthesis) {
-        speechSynthesis.cancel();
-      }
+      document.body.classList.remove('sn-space-scene-on', 'sn-game-on');
     } catch (_) {}
     try {
       if (opts.closeMap && window.SNMap && SNMap.close) SNMap.close();
@@ -66,6 +60,7 @@
     try {
       base = String(window.SN_ASSET_BASE || '').replace(/\/$/, '');
     } catch (_) {}
+    // Prefer same-origin first (correct deploy), then optional base, then CDN fallback
     list.push(local);
     if (base && base.indexOf(location.origin) !== 0 && (path.indexOf('js/') === 0 || path.indexOf('vendor/') === 0)) {
       list.push(base + '/' + path + '?v=' + encodeURIComponent(BUILD));
@@ -136,6 +131,7 @@
     return Promise.all(list.map(function (src) { return loadSoft(src, timeoutMs || 10000); }));
   }
 
+  /** Hard load — reject if every origin fails (critical modules) */
   function loadHard(src, timeoutMs) {
     return load(src, timeoutMs);
   }
@@ -179,6 +175,7 @@
     console.error('[Astranov] boot fail', msg);
   }
 
+  // Watchdog — never leave user staring at spinner
   setTimeout(function () {
     if (finished) return;
     if (!shellReady) {
@@ -192,12 +189,14 @@
     try { if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err'); } catch (e2) {}
   }, 8000);
 
+  // LEAN MONEY PATH: kill dummy/game chrome by default (games via CLI ensure only)
   var LEAN = true;
   try {
     if (localStorage.getItem('sn:full-mode') === '1') LEAN = false;
   } catch (_) {}
   window._snLean = LEAN;
 
+  // Real device capability — lean always prefers lite budgets
   var isLite = LEAN;
   try {
     if (!LEAN) {
@@ -226,18 +225,22 @@
     fps: 0,
     frameMs: 0,
     helperAuto: false,
+    /** dummy modules NOT preloaded when lean */
     dummyOff: LEAN,
     t0: t0,
     get loadStats() { return loadStats; },
     cdn: CDN_GH,
     mark: function (name) { try { performance.mark('sn:' + name); } catch (_) {} },
   };
+  // Align with SNEngine if already loaded (game-loop is critical wave)
   try {
     if (window.SNGameLoop && SNGameLoop.setQuality) {
       SNGameLoop.setQuality(isLite ? 'lite' : 'auto', { auto: true, reason: 'boot' });
     }
   } catch (_) {}
 
+  // ========== WAVE DEFINITIONS (REBUILD: polygon scheduler only) ==========
+  // CRITICAL: shell + CLI + AI identity
   var WAVE_CRITICAL = [
     '/js/spacenet/skin.js',
     '/js/spacenet/config.js',
@@ -246,15 +249,18 @@
     '/js/spacenet/profiles.js',
     '/js/spacenet/cli.js',
     '/js/spacenet/free-ai.js',
-    '/js/spacenet/simple-ux.js',
+    '/js/spacenet/subscription.js',
     '/js/spacenet/ui.js',
   ];
 
+  // GLOBE: Earth in space (SPECS boot GLOBAL)
   var WAVE_GLOBE = [
     '/js/spacenet/spacenet-grid.js',
     '/js/spacenet/globe.js',
   ];
 
+  // MONEY PATH ONLY — map + radar routes + poly scheduler + home + helper
+  // No market crawl thrash, no youtube/game/mesh/topo dummies
   var WAVE_ARSENAL_A = [
     '/js/spacenet/map.js',
     '/js/spacenet/tasks.js',
@@ -265,6 +271,7 @@
     '/js/spacenet/helper.js',
   ];
 
+  // Nothing else preloaded — full mode opt-in only
   var WAVE_ARSENAL_B = LEAN
     ? []
     : [
@@ -273,6 +280,7 @@
         '/js/spacenet/task-board.js',
       ];
 
+  // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
     poly: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     scheduler: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
@@ -289,6 +297,7 @@
     delivery: { src: '/js/spacenet/poly-scheduler.js', global: 'SNDeliveryRules' },
     'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
+    subscription: { src: '/js/spacenet/subscription.js', global: 'SNSubscription' },
   };
 
   window.SNLoader = {
@@ -316,7 +325,7 @@
           } catch (_) {}
           return mod;
         }).catch(function (e) {
-          delete self._p[key];
+          delete self._p[key]; // allow retry after failed load
           console.warn('[Astranov] ensure fail', key, e && e.message);
           throw e;
         });
@@ -330,7 +339,6 @@
       function () { if (window.SNProfiles && SNProfiles.me) SNProfiles.me(); },
       function () { if (window.SNCli && SNCli.init) SNCli.init(); },
       function () { if (window.SNUi && SNUi.init) SNUi.init(); },
-      function () { if (window.SNSimpleUX && SNSimpleUX.init) SNSimpleUX.init(); },
     ].forEach(function (fn) {
       try { fn(); } catch (e) { console.warn('[Astranov] shell init', e); }
     });
@@ -361,6 +369,7 @@
   var threePromise = loadThree().catch(function (e) { console.warn('[Astranov] THREE early', e); });
   window.SNPerf.mark('three_start');
 
+  // ========== MAIN SEQUENCE ==========
   loadParallelHard(WAVE_CRITICAL, 12000)
     .then(function () {
       shellReady = true;
@@ -402,6 +411,7 @@
 
       whenIdle(function () {
         loadParallel(WAVE_ARSENAL_A, 14000).then(function () {
+          // POLYGON SCHEDULER PATH ONLY
           try {
             if (window.SNField && SNField.init && !SNField._inited) {
               SNField.init();
@@ -413,39 +423,11 @@
             if (window.SNMarina && SNMarina.init) SNMarina.init();
             if (window.SNHome && SNHome.init) SNHome.init();
           } catch (eM) { console.warn('[Astranov] poly scheduler init', eM); }
-          /* HARD power wire — always throw tiles on green, independent of field race */
-          try {
-            function hardWirePower() {
-              var btn = document.getElementById('sn-task-launch');
-              if (!btn || btn._snHardPower) return;
-              btn._snHardPower = true;
-              btn.addEventListener('click', function (e) {
-                try {
-                  setTimeout(function () {
-                    try {
-                      var m = window.SNField && SNField.launchMode ? SNField.launchMode() : null;
-                      if (!m) {
-                        if (btn.classList.contains('mode-on')) m = 'on';
-                        else if (btn.classList.contains('mode-off')) m = 'off';
-                        else m = 'standby';
-                      }
-                      if (m === 'on' && window.SNPolyScheduler && SNPolyScheduler.activate) {
-                        SNPolyScheduler.activate({ offers: 1 });
-                      } else if (m === 'off' && window.SNPolyScheduler && SNPolyScheduler.deactivate) {
-                        SNPolyScheduler.deactivate();
-                      }
-                    } catch (_) {}
-                  }, 40);
-                } catch (_) {}
-              }, true);
-            }
-            hardWirePower();
-            setTimeout(hardWirePower, 500);
-            setTimeout(hardWirePower, 1500);
-          } catch (eP) { console.warn('[Astranov] hard power', eP); }
+          // Helper silent until drone
           try {
             if (window.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
           } catch (_) {}
+          // Kill any leftover game chrome / dock / gameMode
           try {
             if (window.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
             try { if (window.SNRecover) SNRecover({ closeMap: false }); } catch (_r) {}
@@ -468,7 +450,12 @@
               window.SNPerf.bootMs = total;
               try {
                 if (window.SNCli && SNCli.log) {
-                  SNCli.log('Ready · power on · locate · marina · help', 'dim');
+                  SNCli.log(
+                    'ASTRANOV · ' +
+                      total +
+                      'ms · poly scheduler · power ON for tasks',
+                    'dim'
+                  );
                 }
               } catch (_) {}
             });
@@ -476,6 +463,7 @@
         });
       }, 200);
 
+      // Auth soft — later, non-blocking
       setTimeout(function () {
         loadSoft('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', 12000)
           .then(function () { return loadSoft('/js/spacenet/auth.js', 8000); })
@@ -483,6 +471,8 @@
             try { if (window.SNAuth && SNAuth.init) SNAuth.init(); } catch (e) {}
           });
       }, LEAN ? 6000 : 2200);
+
+      // NO auto populateMap crawl on boot when lean (power ON / market on does it)
     })
     .catch(function (e) {
       console.error('[Astranov] boot', e);

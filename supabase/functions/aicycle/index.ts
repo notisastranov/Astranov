@@ -191,14 +191,22 @@ serve(async (req) => {
     const SERVICE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
-    // Paid XAI_API_KEY = architect only (notisastranov@gmail.com). Guests use free providers.
+    // Paid XAI_API_KEY lives only in secrets. Owner always; subscribers within monthly API budget (markup 3×).
     const ARCHITECT_EMAIL = (Deno.env.get('ARCHITECT_EMAIL') || 'notisastranov@gmail.com').toLowerCase()
+    const MARKUP = 3
     let profileId: string | null = null
     let isOwner = false
     let userEmail: string | null = null
+    let subActive = false
+    let apiBudgetEur = 0
+    let apiSpentEur = 0
     const authHeader = req.headers.get('Authorization') || ''
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+    // Client may send local subscription snapshot (demo / pre-auth); never trust for owner flag alone
+    const clientSub = (body.subscription && typeof body.subscription === 'object') ? body.subscription as Record<string, unknown> : {}
+    const forcePaid = body.force_paid === true
+    const allowPaidClient = body.allow_paid === true
     if (token && token !== anonKey) {
       const { data: ud } = await supabase.auth.getUser(token)
       if (ud?.user) {
@@ -215,9 +223,33 @@ serve(async (req) => {
           const { data: prof } = await supabase.from('profiles').select('is_owner').eq('id', profileId).single()
           isOwner = prof?.is_owner === true
         }
+        // Load subscription ledger for this period
+        try {
+          const period = new Date().toISOString().slice(0, 7)
+          const { data: sub } = await supabase.from('ai_subscriptions')
+            .select('active, price_eur, api_budget_eur, api_spent_eur, period')
+            .eq('profile_id', profileId).eq('period', period).maybeSingle()
+          if (sub?.active) {
+            subActive = true
+            apiBudgetEur = Number(sub.api_budget_eur) || 0
+            apiSpentEur = Number(sub.api_spent_eur) || 0
+            if (sub.period !== period) { apiSpentEur = 0 }
+          }
+        } catch { /* table may not exist yet */ }
       }
     }
-    const mayUsePaidXai = isOwner && userEmail === ARCHITECT_EMAIL
+    // Demo/local: honor client allow_paid when body says subscriber with remaining budget
+    if (!isOwner && allowPaidClient && clientSub) {
+      const rem = Number(clientSub.remainingApiEur)
+      if (clientSub.active && isFinite(rem) && rem > 0) {
+        subActive = true
+        apiBudgetEur = Number(clientSub.apiBudgetEur) || rem
+        apiSpentEur = Number(clientSub.spentApiEur) || 0
+      }
+    }
+    const remainingApi = Math.max(0, apiBudgetEur - apiSpentEur)
+    // Owner: always paid Grok. Subscriber: paid while budget remains. Never expose key to client.
+    const mayUsePaidXai = isOwner || (subActive && remainingApi > 0.0001 && (allowPaidClient || forcePaid || true))
 
     const GEMINI = Deno.env.get('GEMINI_API_KEY')
 
@@ -265,8 +297,9 @@ serve(async (req) => {
     const ANTHROPIC  = Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')
     const OPENROUTER = Deno.env.get('OPENROUTER_API_KEY') || Deno.env.get('OPENROUTER') || Deno.env.get('OPENROUTER.AI')
     const GROQ       = Deno.env.get('GROQ_API_KEY')
-    // Paid XAI: architect only, and only AFTER free tier fails
+    // Paid XAI secret — never returned to client. Owner + subscribed users within budget.
     const XAI_SECRET = mayUsePaidXai ? Deno.env.get('XAI_API_KEY') : undefined
+    const ownerImmediatePaid = isOwner && !!XAI_SECRET
     const coderEngine = String(body.coder_engine || '').toLowerCase()
 
     let raw: string | null = null
@@ -350,14 +383,26 @@ serve(async (req) => {
       if (!raw && GEMINI)       raw = await withTimeout(callGemini(GEMINI, system, messages))
     }
 
-    // Paid XAI only after free tier exhausted (architect only) + notify
-    if (!raw) {
+    // Owner: use paid Grok immediately when force_paid / default owner path
+    if (!raw && ownerImmediatePaid && (forcePaid || body.owner === true || isOwner)) {
       const paid = await tryPaidXaiFallback()
       if (paid.text) {
         raw = paid.text
-        via = paid.via
+        via = paid.via || 'xai/owner'
         paidFallback = true
-        paidNotice = '⚠ Free/SuperGrok tier limit reached — using your paid XAI_API_KEY now (architect only)'
+        paidNotice = 'Architect · paid Grok (owner key)'
+      }
+    }
+    // Subscribers / owner: paid XAI after free chain exhausted (within budget)
+    if (!raw && mayUsePaidXai && XAI_SECRET) {
+      const paid = await tryPaidXaiFallback()
+      if (paid.text) {
+        raw = paid.text
+        via = paid.via || 'xai/sub'
+        paidFallback = true
+        paidNotice = isOwner
+          ? 'Architect · paid Grok'
+          : ('Paid Grok · €' + remainingApi.toFixed(2) + ' API budget remaining this month (3× markup plan)')
       }
     }
 
@@ -411,20 +456,52 @@ serve(async (req) => {
       : mode === 'coders'
         ? (isCodersFallback ? `Astranov Coders · Fallback (${via || 'llm'})` : 'Astranov Coders · Grok')
         : 'Astranov'
+    // Meter paid usage (estimate) + transcript for training
+    let meterApiEur = 0
+    if (paidFallback && /xai|grok/i.test(via)) {
+      meterApiEur = 0.004 // floor per call when usage tokens unavailable
+      if (!isOwner && profileId && subActive) {
+        try {
+          const period = new Date().toISOString().slice(0, 7)
+          await supabase.from('ai_subscriptions').upsert({
+            profile_id: profileId,
+            period,
+            active: true,
+            api_budget_eur: apiBudgetEur,
+            api_spent_eur: apiSpentEur + meterApiEur,
+            price_eur: Number(clientSub.priceEur) || apiBudgetEur * MARKUP,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'profile_id,period' })
+        } catch (e) { console.error('sub meter:', e) }
+      }
+    }
     try {
       await supabase.from('cic_logs').insert({
         profile_id: profileId, query: prompt.slice(0, 2000), response: raw.slice(0, 4000),
         provider, via, latency_ms: latencyMs,
       })
     } catch (e) { console.error('cic_log:', e) }
+    try {
+      await supabase.from('ai_transcripts').insert({
+        profile_id: profileId,
+        user_email: userEmail,
+        is_owner: isOwner,
+        query: prompt.slice(0, 2000),
+        response: raw.slice(0, 4000),
+        via, paid: paidFallback, api_eur: meterApiEur,
+      })
+    } catch (e) { /* optional table */ }
     return json({
       response: raw, text: raw, provider, via, label,
       mode: mode || 'adaptive',
       coder_engine: mode === 'coders' ? (coderEngine || null) : undefined,
       recalled: { creator: creatorMind.length, user: userMemory.length },
+      paid: paidFallback,
       paid_fallback: paidFallback,
       paid_notice: paidNotice || undefined,
       notify: paidFallback ? paidNotice : undefined,
+      meter: { api_eur: meterApiEur, markup: MARKUP, remaining_api_eur: isOwner ? null : Math.max(0, remainingApi - meterApiEur) },
+      subscription: { active: isOwner || subActive, owner: isOwner, budget: apiBudgetEur, spent: apiSpentEur },
     })
   } catch (e) {
     console.error('aicycle error:', e)

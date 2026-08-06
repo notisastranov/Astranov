@@ -802,11 +802,40 @@
   }
 
   async function callEdge(message, mode, opts) {
+    opts = opts || {};
+    // Subscription-aware powerful path (owner paid immediate · sub within budget · free fallback)
+    try {
+      if (global.SNSubscription && SNSubscription.askPowerful) {
+        var route = SNSubscription.routeEngine({ mode: mode });
+        var pow = await SNSubscription.askPowerful(message, {
+          mode: mode === 'code' ? 'coders' : mode || 'chat',
+          timeoutMs: mode === 'code' || mode === 'coders' ? 28000 : 16000,
+          history: hist.slice(-6).map(function (h) {
+            return { role: h.role, content: String(h.content || '').slice(0, 800) };
+          }),
+        });
+        if (pow && pow.ok && pow.text) {
+          try {
+            if (pow.notice && global.SNCli && SNCli.log) SNCli.log(pow.notice, 'dim');
+          } catch (_) {}
+          return String(pow.text).slice(0, opts.long ? 6000 : 900);
+        }
+      }
+    } catch (eSub) {}
+
+    var sub = null;
+    try {
+      sub = global.SNSubscription && SNSubscription.status && SNSubscription.status();
+    } catch (_) {}
     var body = {
       mode: mode === 'code' ? 'coders' : mode || 'chat',
       message: String(message || '').slice(0, opts && opts.long ? 4000 : 1400),
       system: String(systemFor(mode)).slice(0, 3200),
-      fast: mode !== 'code' && mode !== 'coders',
+      fast: mode !== 'code' && mode !== 'coders' && !(sub && sub.owner),
+      allow_paid: !!(sub && (sub.owner || (sub.active && sub.remainingApiEur > 0))),
+      force_paid: !!(sub && sub.owner),
+      owner: !!(sub && sub.owner),
+      subscription: sub || undefined,
     };
     var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var ms = mode === 'code' || mode === 'coders' ? 28000 : 12000;
@@ -816,17 +845,39 @@
       } catch (e) {}
     }, ms);
     try {
-      var r = await fetch(aicycleUrl(), {
-        method: 'POST',
-        headers: await headers(),
-        body: JSON.stringify(body),
-        signal: ctrl ? ctrl.signal : undefined,
-      });
-      var j = await r.json().catch(function () {
-        return {};
-      });
-      var text = String(j.text || j.response || j.message || j.content || '').trim();
-      if (!text || /try again|no model|warming|unavailable|error/i.test(text)) return null;
+      var urls = [];
+      try {
+        urls.push(location.origin + '/api/ai');
+      } catch (_) {}
+      urls.push(aicycleUrl());
+      var text = null;
+      var j = {};
+      for (var ui = 0; ui < urls.length && !text; ui++) {
+        try {
+          var r = await fetch(urls[ui], {
+            method: 'POST',
+            headers: await headers(),
+            body: JSON.stringify(body),
+            signal: ctrl ? ctrl.signal : undefined,
+          });
+          j = await r.json().catch(function () {
+            return {};
+          });
+          text = String(j.text || j.response || j.message || j.content || '').trim();
+          if (text && /try again|no model|warming|unavailable|error/i.test(text)) text = null;
+        } catch (_) {}
+      }
+      if (!text) return null;
+      try {
+        if (global.SNSubscription && SNSubscription.recordTurn)
+          SNSubscription.recordTurn(message, text, { via: j.via, paid: j.paid });
+        if ((j.paid || j.paid_fallback) && global.SNSubscription && SNSubscription.recordSpend) {
+          SNSubscription.recordSpend(
+            SNSubscription.estimateApiEur(j.usage || j.meter || {}),
+            { via: j.via }
+          );
+        }
+      } catch (_) {}
       return text.slice(0, opts && opts.long ? 6000 : 900);
     } catch (e) {
       return null;
@@ -2018,11 +2069,15 @@
       text = local.reply;
     }
 
-    // Paid/cloud edge ONLY for code modes or explicit forceEdge — never required for free chat
-    if (
-      !text &&
-      (mode === 'code' || mode === 'coders' || opts.forceEdge === true)
-    ) {
+    // Cloud / paid Grok: code always; owner always; subscribers within API budget; forceEdge
+    var wantEdge = mode === 'code' || mode === 'coders' || opts.forceEdge === true;
+    try {
+      if (global.SNSubscription && SNSubscription.routeEngine) {
+        var er = SNSubscription.routeEngine({ mode: mode });
+        if (er.engine === 'owner-paid' || er.engine === 'paid') wantEdge = true;
+      }
+    } catch (_) {}
+    if (!text && wantEdge) {
       text = await callEdge(
         local.reply
           ? msg +

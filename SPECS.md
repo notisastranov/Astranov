@@ -187,6 +187,9 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 
 ---
 
+
+*Agent note 2026-08-06 (owner law): **AI subscription cycle** — tiers €3 / €13 / €33 / €300 per month. Markup **3×** (user pays €3 for €1 real Grok API). Base €3 includes €1 paid API then free models. Owner (notisastranov@gmail.com) uses paid Grok immediately; owner server key funds all paid subscribers within budget. Key never in client. Transcript stored for Astranov Mind training. CLI: `plans` · `subscribe 3` · `plan status` · `transcript`. Module `js/spacenet/subscription.js` · aicycle meter · `/api/ai` proxy. Build `20260806143000-ai-sub`.*
+
 ## VOID (do not implement from these)
 
 The following older SPECS ideas are **void** if they conflict with CORE or OWNER LOG above. Full text archived in `support/SPECS-LEGACY-before-rebuild-20260730.md`.

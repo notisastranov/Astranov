@@ -754,7 +754,14 @@
   async function run(raw) {
     let line = String(raw || '').trim();
     if (!line) return;
-    // Owner test commands FIRST (before dialect rewrites "demo delivery" → deliver)
+    // AI subscription plans
+      try {
+        if (global.SNSubscription && SNSubscription.handleLine) {
+          const subHit = await SNSubscription.handleLine(line);
+          if (subHit) return true;
+        }
+      } catch (_) {}
+      // Owner test commands FIRST (before dialect rewrites "demo delivery" → deliver)
     try {
       const rawLow = line.toLowerCase();
       if (global.SNOfferStack && typeof SNOfferStack.handleLine === 'function') {
