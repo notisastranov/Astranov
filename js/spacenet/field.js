@@ -2236,7 +2236,7 @@
           px +
           'px !important;height:' +
           px +
-          'px !important;min-height:56px !important;overflow:hidden !important;}' +
+          'px !important;min-height:56px !important;overflow-y:auto !important;overflow-x:hidden !important;-webkit-overflow-scrolling:touch !important;}' +
           'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}' +
           'html body #sn-hub-host{display:none !important;}';
         try {
@@ -2250,6 +2250,7 @@
       try {
         requestAnimationFrame(function () {
           try { paintStcPerf(); } catch (_) {}
+          try { if (mode !== 'collapsed') paintGadgetDetails(); } catch (_) {}
           if (mode !== 'collapsed' && g.SNHome && SNHome.paintHub) SNHome.paintHub();
         });
       } catch (_) {}
@@ -4290,6 +4291,154 @@
     paint();
   }
 
+  var GADGET_ORDER_KEY = 'sn:gadget-order-v1';
+  var DEFAULT_GADGET_ORDER = ['money', 'perf', 'timeline', 'theme', 'data'];
+
+  function applyGadgetOrder(order) {
+    var host = $('stc-gadgets');
+    if (!host) return;
+    order = order || DEFAULT_GADGET_ORDER.slice();
+    order.forEach(function (id) {
+      var el = host.querySelector('.stc-gadget[data-gadget="' + id + '"]');
+      if (el) host.appendChild(el);
+    });
+    // append any unknown gadgets at end
+    Array.prototype.slice.call(host.querySelectorAll('.stc-gadget')).forEach(function (el) {
+      var id = el.getAttribute('data-gadget');
+      if (order.indexOf(id) < 0) host.appendChild(el);
+    });
+  }
+  function saveGadgetOrder() {
+    var host = $('stc-gadgets');
+    if (!host) return;
+    var order = Array.prototype.slice
+      .call(host.querySelectorAll('.stc-gadget'))
+      .map(function (el) {
+        return el.getAttribute('data-gadget');
+      })
+      .filter(Boolean);
+    try {
+      localStorage.setItem(GADGET_ORDER_KEY, JSON.stringify(order));
+    } catch (_) {}
+  }
+  function loadGadgetOrder() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(GADGET_ORDER_KEY) || 'null');
+      if (Array.isArray(raw) && raw.length) applyGadgetOrder(raw);
+      else applyGadgetOrder(DEFAULT_GADGET_ORDER);
+    } catch (_) {
+      applyGadgetOrder(DEFAULT_GADGET_ORDER);
+    }
+  }
+  function expandTopForGadgets(mode) {
+    mode = mode || 'expanded';
+    try {
+      if (g.SNTopChrome && SNTopChrome.set) {
+        SNTopChrome.set(mode, true);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (g.SNField && SNField.topChrome && SNField.topChrome.set) {
+        SNField.topChrome.set(mode);
+        return;
+      }
+    } catch (_) {}
+    var panel = $('sn-topchrome-panel');
+    if (!panel) return;
+    panel.classList.remove('collapsed', 'mid', 'expanded');
+    panel.classList.add(mode);
+    // Tall enough to show vertical gadget stack
+    try {
+      var h = Math.round((window.innerHeight || 700) * (mode === 'expanded' ? 0.55 : 0.38));
+      panel.style.setProperty('max-height', h + 'px', 'important');
+      panel.style.setProperty('height', h + 'px', 'important');
+    } catch (_) {}
+  }
+  function openMoneyGadget() {
+    expandTopForGadgets('expanded');
+    try {
+      paintGadgetDetails();
+      paintStcPerf();
+    } catch (_) {}
+    var card = $('stc-g-money');
+    if (card) {
+      try {
+        card.classList.remove('flash');
+        void card.offsetWidth;
+        card.classList.add('flash');
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (_) {
+        try {
+          card.scrollIntoView();
+        } catch (__) {}
+      }
+    }
+    try {
+      if (g.SNCli && SNCli.preview) SNCli.preview('money · top scroll');
+    } catch (_) {}
+  }
+  function bindGadgetDrag() {
+    var host = $('stc-gadgets');
+    if (!host || host._gdragBound) return;
+    host._gdragBound = true;
+    loadGadgetOrder();
+    var dragEl = null;
+    var startY = 0;
+    var placeholder = null;
+
+    function onDown(ev) {
+      var head = ev.target && ev.target.closest ? ev.target.closest('[data-gdrag]') : null;
+      if (!head || !host.contains(head)) return;
+      // don't start drag from inputs/buttons inside body
+      if (ev.target.closest && ev.target.closest('input, button, a, select, textarea')) return;
+      dragEl = head.closest('.stc-gadget');
+      if (!dragEl) return;
+      startY = (ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev.clientY) || 0;
+      dragEl.classList.add('dragging');
+      try {
+        if (ev.pointerId != null && dragEl.setPointerCapture)
+          dragEl.setPointerCapture(ev.pointerId);
+      } catch (_) {}
+      if (ev.cancelable) ev.preventDefault();
+    }
+    function onMove(ev) {
+      if (!dragEl) return;
+      var y = (ev.touches && ev.touches[0] ? ev.touches[0].clientY : ev.clientY) || 0;
+      var siblings = Array.prototype.slice.call(host.querySelectorAll('.stc-gadget'));
+      var over = null;
+      for (var i = 0; i < siblings.length; i++) {
+        var r = siblings[i].getBoundingClientRect();
+        var mid = r.top + r.height / 2;
+        if (y < mid) {
+          over = siblings[i];
+          break;
+        }
+      }
+      if (over && over !== dragEl) {
+        var dragRect = dragEl.getBoundingClientRect();
+        if (y < over.getBoundingClientRect().top + over.getBoundingClientRect().height / 2) {
+          host.insertBefore(dragEl, over);
+        } else {
+          host.insertBefore(dragEl, over.nextSibling);
+        }
+      } else if (!over) {
+        host.appendChild(dragEl);
+      }
+      if (ev.cancelable) ev.preventDefault();
+    }
+    function onUp() {
+      if (!dragEl) return;
+      dragEl.classList.remove('dragging');
+      dragEl = null;
+      saveGadgetOrder();
+    }
+    host.addEventListener('pointerdown', onDown, { passive: false });
+    window.addEventListener('pointermove', onMove, { passive: false });
+    window.addEventListener('pointerup', onUp, { passive: true });
+    window.addEventListener('pointercancel', onUp, { passive: true });
+  }
+
   function openFinance(tab) {
     var p = $('spacenet-finance-panel');
     if (!p) return;
@@ -4472,9 +4621,16 @@
     }, (g.SNPerf && SNPerf.lean) ? 2000 : 1000);
 
     $('field-balance-hud') &&
-      ($('field-balance-hud').onclick = function () {
-        openFinance('mining');
+      ($('field-balance-hud').onclick = function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        openMoneyGadget();
       });
+    try {
+      bindGadgetDrag();
+    } catch (_) {}
     // Home button owned by SNHome menu (menu has Back to Earth GLOBAL)
     if (g.SNHome && SNHome.init) SNHome.init();
     else if ($('btn-home')) {
@@ -4530,6 +4686,7 @@
     apply: applyTimelineBody,
   };
   g.SNField = {
+    get topChrome() { return g.SNTopChrome; },
     init: init,
     paint: paint,
     paintRibbon: paintRibbon,
@@ -4552,6 +4709,7 @@
     cycleLaunch: cycleLaunchMode,
     showTerms: showTerms,
     openFinance: openFinance,
+    openMoneyGadget: openMoneyGadget,
     closeFinance: function () {
       var p = $('spacenet-finance-panel');
       if (p) p.hidden = true;
