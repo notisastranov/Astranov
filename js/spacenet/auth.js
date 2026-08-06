@@ -135,6 +135,14 @@
     A.client.auth.onAuthStateChange((_e, session) => {
       A.user = session?.user || null;
       paint();
+      try {
+        if (A.user) armOwnerPaidGrok();
+        else {
+          try {
+            localStorage.removeItem('sn:owner-session');
+          } catch (_) {}
+        }
+      } catch (_) {}
     });
     const { data } = await A.client.auth.getSession();
     A.user = data?.session?.user || null;
@@ -259,10 +267,60 @@
     ];
   }
 
+  var ARCHITECT_EMAIL = 'notisastranov@gmail.com';
+
+  function isOwner() {
+    try {
+      var em = (A.user && A.user.email ? String(A.user.email) : '').toLowerCase();
+      if (em === ARCHITECT_EMAIL) return true;
+      if (A.user && A.user.user_metadata && A.user.user_metadata.is_owner === true) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  /** When Architect signs in → arm paid Grok (server XAI_API_KEY). Never store the key client-side. */
+  function armOwnerPaidGrok() {
+    if (!isOwner()) {
+      try {
+        localStorage.removeItem('sn:owner-session');
+      } catch (_) {}
+      return false;
+    }
+    try {
+      localStorage.setItem('sn:owner-session', '1');
+      localStorage.setItem('sn:architect-email', ARCHITECT_EMAIL);
+    } catch (_) {}
+    try {
+      if (global.SNUsage && SNUsage.track) SNUsage.track('owner_login_paid_arm', { t: Date.now() });
+    } catch (_) {}
+    try {
+      if (global.SNSubscription && SNSubscription.status) {
+        var st = SNSubscription.status();
+        say(
+          'Architect · paid Grok path ON · mode ' + (st.mode || 'owner-paid-unlimited') +
+            ' · key stays on server (XAI_API_KEY)',
+          'ok'
+        );
+      } else {
+        say('Architect signed in · paid Grok armed (server key)', 'ok');
+      }
+    } catch (_) {
+      try {
+        say('Architect signed in · paid Grok armed', 'ok');
+      } catch (__) {}
+    }
+    return true;
+  }
+
   function applyUser(user) {
     A.user = user || null;
     paint();
-    if (!A.user) return;
+    if (!A.user) {
+      try {
+        localStorage.removeItem('sn:owner-session');
+      } catch (_) {}
+      return;
+    }
     try {
       const me = global.SNProfiles?.me?.();
       if (me) {
@@ -271,8 +329,12 @@
         if (A.user.user_metadata?.avatar_url) me.avatar = A.user.user_metadata.avatar_url;
         if (A.user.email) me.handle = '@' + A.user.email.split('@')[0];
         me.authUid = A.user.id;
+        if (isOwner()) me.isOwner = true;
         global.SNProfiles.upsert(me);
       }
+    } catch (_) {}
+    try {
+      armOwnerPaidGrok();
     } catch (_) {}
   }
 
@@ -723,6 +785,9 @@
     closeModal,
     probeCustomAuth,
     googleClientId,
+    isOwner,
+    armOwnerPaidGrok,
+    ARCHITECT_EMAIL,
     get GOOGLE_CLIENT_ID() {
       return googleClientId();
     },
@@ -734,6 +799,9 @@
     },
     get session() {
       return null;
+    },
+    get owner() {
+      return isOwner();
     },
   };
 })(window);
