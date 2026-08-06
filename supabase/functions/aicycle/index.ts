@@ -167,9 +167,41 @@ async function callGemini(key: string, system: string, messages: Msg[]): Promise
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  // Safe presence check — never returns secret values
+  if (req.method === 'GET' || (req.method === 'POST' && (req.headers.get('x-astranov-diag') === '1'))) {
+    const url = new URL(req.url)
+    if (req.method === 'GET' || url.searchParams.get('diag') === '1') {
+      return json({
+        ok: true,
+        service: 'aicycle',
+        secrets: {
+          XAI_API_KEY: !!Deno.env.get('XAI_API_KEY'),
+          ARCHITECT_EMAIL: !!(Deno.env.get('ARCHITECT_EMAIL') || 'notisastranov@gmail.com'),
+          OPENROUTER: !!(Deno.env.get('OPENROUTER_API_KEY') || Deno.env.get('OPENROUTER')),
+          GROQ: !!Deno.env.get('GROQ_API_KEY'),
+          GEMINI: !!Deno.env.get('GEMINI_API_KEY'),
+          ANTHROPIC: !!(Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')),
+        },
+        architect: (Deno.env.get('ARCHITECT_EMAIL') || 'notisastranov@gmail.com').toLowerCase(),
+      })
+    }
+  }
   const t0 = Date.now()
   try {
     const body = await req.json()
+    if (body && body.diag === true) {
+      return json({
+        ok: true,
+        service: 'aicycle',
+        secrets: {
+          XAI_API_KEY: !!Deno.env.get('XAI_API_KEY'),
+          OPENROUTER: !!(Deno.env.get('OPENROUTER_API_KEY') || Deno.env.get('OPENROUTER')),
+          GROQ: !!Deno.env.get('GROQ_API_KEY'),
+          GEMINI: !!Deno.env.get('GEMINI_API_KEY'),
+          ANTHROPIC: !!(Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')),
+        },
+      })
+    }
 
     let prompt: string = (body.prompt || body.text || body.message || body.task || '').trim()
     let history: Msg[] = Array.isArray(body.history) ? body.history : []
@@ -356,12 +388,24 @@ serve(async (req) => {
       return { text: t, via: 'xai-paid-fallback' }
     }
 
-    if (mode === 'coders_team') {
+    // Owner (Architect JWT): paid XAI_API_KEY FIRST — no free detour when key present
+    if (ownerImmediatePaid && (forcePaid || body.owner === true || isOwner)) {
+      const paid = await tryPaidXaiFallback()
+      if (paid.text) {
+        raw = paid.text
+        via = paid.via || 'xai/owner'
+        paidFallback = true
+        paidNotice = 'Architect · paid Grok (owner key)'
+        provider = 'astranov-owner-grok'
+      }
+    }
+
+    if (!raw && mode === 'coders_team') {
       provider = 'astranov-coders-team'
       const hit = await tryFreeChain()
       raw = hit.text
       via = hit.via || 'team/none'
-    } else if (mode === 'coders') {
+    } else if (!raw && mode === 'coders') {
       const isFallback = body.fallback === true || coderEngine === 'fallback'
       provider = isFallback ? 'astranov-coders-fallback' : 'astranov-coders-grok'
       if (coderEngine === 'composer' && !isFallback) {
@@ -372,28 +416,18 @@ serve(async (req) => {
         raw = hit.text
         via = hit.via
       }
-    } else if (fast) {
+    } else if (!raw && fast) {
       const hit = await tryFreeChain()
       raw = hit.text
       via = hit.via || 'fast/none'
-    } else {
-      if (isOwner && ANTHROPIC) raw = await withTimeout(callAnthropic(ANTHROPIC, system, messages))
-      if (!raw && GROQ)         raw = await withTimeout(callGroq(GROQ, system, messages))
-      if (!raw && OPENROUTER)   raw = await withTimeout(callOpenRouter(OPENROUTER, system, messages))
-      if (!raw && GEMINI)       raw = await withTimeout(callGemini(GEMINI, system, messages))
+    } else if (!raw) {
+      if (isOwner && ANTHROPIC) { raw = await withTimeout(callAnthropic(ANTHROPIC, system, messages)); if (raw) via = 'anthropic' }
+      if (!raw && GROQ)         { raw = await withTimeout(callGroq(GROQ, system, messages)); if (raw) via = 'groq' }
+      if (!raw && OPENROUTER)   { raw = await withTimeout(callOpenRouter(OPENROUTER, system, messages)); if (raw) via = 'openrouter' }
+      if (!raw && GEMINI)       { raw = await withTimeout(callGemini(GEMINI, system, messages)); if (raw) via = 'gemini' }
     }
 
-    // Owner: use paid Grok immediately when force_paid / default owner path
-    if (!raw && ownerImmediatePaid && (forcePaid || body.owner === true || isOwner)) {
-      const paid = await tryPaidXaiFallback()
-      if (paid.text) {
-        raw = paid.text
-        via = paid.via || 'xai/owner'
-        paidFallback = true
-        paidNotice = 'Architect · paid Grok (owner key)'
-      }
-    }
-    // Subscribers / owner: paid XAI after free chain exhausted (within budget)
+    // Subscribers (or owner if free-only failed): paid XAI within budget
     if (!raw && mayUsePaidXai && XAI_SECRET) {
       const paid = await tryPaidXaiFallback()
       if (paid.text) {

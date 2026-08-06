@@ -1,5 +1,5 @@
 /**
- * Astranov origin proxy — FINISH era
+ * Astranov origin proxy — multi-origin failover
  * Order: Vercel stable → jsDelivr → CF Pages → GitHub raw (last)
  * Never single-point github-sha (429/403 kills domain).
  */
@@ -32,6 +32,14 @@ export default {
     const pagesOrigin = (env.ORIGIN || PAGES).replace(/\/$/, '');
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // Health for ops — does not depend on origins
+    if (path === '/__edge_health') {
+      return new Response(JSON.stringify({ ok: true, worker: 'astranov-origin-proxy', v: 3 }), {
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+      });
+    }
+
     const init = {
       method: request.method === 'HEAD' ? 'GET' : request.method,
       headers: new Headers(request.headers),
@@ -69,11 +77,6 @@ export default {
       if (res.status >= 500) {
         fails.push(c.tag + ':' + res.status);
         continue;
-      }
-      // Vercel SSO HTML is not ok product — skip login walls
-      const ct = (res.headers.get('content-type') || '').toLowerCase();
-      if (c.tag === 'vercel' && ct.includes('text/html') && path === '/') {
-        // allow through — public after SSO off
       }
       if (res.ok || (res.status >= 300 && res.status < 400)) {
         const out = new Headers(res.headers);
