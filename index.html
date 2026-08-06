@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260806180000-gadget-stack" />
-<meta name="astranov-continuity" content="20260806180000-gadget-stack" />
+<meta name="astranov-build" content="20260806183000-cli-law" />
+<meta name="astranov-continuity" content="20260806183000-cli-law" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -362,7 +362,17 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   overflow: hidden;
   transition: background 0.4s ease, border-color 0.4s ease;
 }
-#panel.collapsed { max-height: min(168px, 28vh); }
+#panel.collapsed { max-height: min(108px, 14vh); }
+#panel.mid { max-height: min(22vh, 180px) !important; }
+#panel.expanded { max-height: 33.333vh !important; }
+/* Empty log: hide dead space — ribbon + input only */
+#panel.collapsed #cli-log:empty { display: none; }
+#panel.cli-quiet #cli-log { max-height: 0; overflow: hidden; padding: 0; margin: 0; min-height: 0; }
+#cli-log .cli-ops .cli-body { color: #8fd4ff; }
+#sn-task-ribbon {
+  /* Single strip inside CLI — not a second panel */
+  flex-shrink: 0;
+}
 #cli-drag {
   height: 18px;
   display: flex; align-items: center; justify-content: center;

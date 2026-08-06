@@ -410,26 +410,9 @@
     turnOpen++;
     setLive(true);
     setActivity('working');
-    // Never auto-expand CLI when already ≥ 1/3 of viewport (owner law 2026-08-01)
-    // Never force .expanded — that blocked one-finger minimize mid-task.
+    // Owner law: only peek mid if quiet; never force full expand; never > 1/3
     try {
-      const panel = $('panel');
-      if (!panel) return;
-      const h = panel.getBoundingClientRect().height || 0;
-      const third = Math.floor((window.innerHeight || 700) / 3);
-      if (h >= third - 2) return; // already tall enough — leave user size alone
-      // Collapsed only: ensure log line + input visible, cap at mid ≤ 1/3
-      if (panel.classList.contains('collapsed') && h < 100) {
-        if (global.SNUi && typeof SNUi.setCliSize === 'function') {
-          SNUi.setCliSize('mid', false);
-        } else {
-          panel.classList.remove('collapsed', 'expanded');
-          panel.classList.add('mid');
-          const cap = Math.min(third, Math.max(120, Math.round((window.innerHeight || 700) * 0.28)));
-          panel.style.setProperty('max-height', cap + 'px', 'important');
-          panel.style.setProperty('height', cap + 'px', 'important');
-        }
-      }
+      fitCliHeight();
     } catch (_) {}
   }
 
@@ -635,8 +618,42 @@
    * Live stream line — ONLY during user turn (or force).
    * No card chrome · map may already be moving via depict().
    */
+  /** Noise filter — machine chatter never enters the CLI */
+  function isNoiseLine(text, cls) {
+    const t = String(text || '');
+    if (!t.trim()) return true;
+    if (cls === 'noise' || cls === 'debug' || cls === 'trace') return true;
+    // Drop raw stack / module spam
+    if (/^\[SN|TypeError|undefined is not|Failed to load|CORS|net::ERR/i.test(t)) return true;
+    if (/loading module|webpack|vite|hydration|devtools/i.test(t)) return true;
+    return false;
+  }
+
+  function usefulLineCount() {
+    const box = feedBox();
+    if (!box) return 0;
+    return box.querySelectorAll('.cli-feed-item').length;
+  }
+
+  function fitCliHeight() {
+    try {
+      if (global.SNUi && typeof SNUi.fitCliToContent === 'function') {
+        SNUi.fitCliToContent(usefulLineCount());
+        return;
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * Live stream line.
+   * force=true or cls='ops'/'err'/'cmd' may write outside a turn (app health / driver events).
+   * No machine noise. Fit CLI height after write.
+   */
   function log(text, cls, force) {
-    if (!force && !inTurn()) {
+    if (isNoiseLine(text, cls)) return null;
+    const allowOutside =
+      !!force || cls === 'err' || cls === 'ops' || cls === 'cmd' || cls === 'health';
+    if (!allowOutside && !inTurn()) {
       if (cls === 'err') {
         try {
           preview(String(text || '').slice(0, 90));
@@ -652,8 +669,11 @@
     const wrap = document.createElement('div');
     wrap.className = 'cli-feed-item is-latest';
     if (cls === 'dim' || cls === 'progress') wrap.classList.add('cli-act');
+    if (cls === 'ops' || cls === 'health') wrap.classList.add('cli-ops');
     const line = document.createElement('div');
-    const kind = cls === 'dim' ? 'progress' : cls || 'ok';
+    let kind = cls || 'ok';
+    if (cls === 'dim') kind = 'progress';
+    if (cls === 'ops' || cls === 'health') kind = 'ok';
     line.className = 'cli-line' + (kind ? ' ' + kind : '');
     const face = userFace(text);
     const body = document.createElement('div');
@@ -673,8 +693,17 @@
     box.appendChild(wrap);
     trimFeed(box);
     scrollFeedToEnd(box);
-    if (cls === 'ok' || cls === 'cmd') preview(String(face || '').slice(0, 90));
+    if (cls === 'ok' || cls === 'cmd' || cls === 'ops' || cls === 'health')
+      preview(String(face || '').slice(0, 90));
+    try {
+      fitCliHeight();
+    } catch (_) {}
     return wrap;
+  }
+
+  /** Useful app-status line (health, delivery, checks) — not debug */
+  function ops(text) {
+    return log(String(text || '').slice(0, 160), 'ops', true);
   }
 
   /** Dead API — tiles never inject into CLI (map multi-tile only) */
@@ -4198,6 +4227,7 @@ if (
     init,
     run,
     log,
+    ops,
     help,
     preview,
     appendTilePost,

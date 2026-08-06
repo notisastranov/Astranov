@@ -104,24 +104,30 @@
     } catch (_) {}
   }
 
-  function defaultMaxCliPx() {
+  /** Owner law: CLI + ribbon never more than 1/3 of screen height */
+  function thirdCeilPx() {
     var h = window.innerHeight || 700;
-    return Math.min(Math.round(h * 0.45), h - oppositeTopReserve());
+    return Math.max(120, Math.floor(h / 3));
   }
 
-  /** Absolute ceiling — stop before the top scroll */
+  function defaultMaxCliPx() {
+    return thirdCeilPx();
+  }
+
+  /** Absolute ceiling — 1/3 screen (ribbon + log + input included) */
   function dragMaxCliPx() {
-    var h = window.innerHeight || 700;
-    return Math.max(120, h - oppositeTopReserve());
+    return thirdCeilPx();
   }
 
   function sizePx(mode) {
     var h = window.innerHeight || 700;
-    var def = defaultMaxCliPx();
-    if (mode === 'collapsed') return Math.max(92, Math.min(120, Math.round(h * 0.15)));
-    // expanded snap = full height available; mid = half
-    if (mode === 'expanded') return dragMaxCliPx();
-    return Math.min(Math.round(h * 0.4), def);
+    var third = thirdCeilPx();
+    // Collapsed: ribbon + one peek line + input only — stay compact when quiet
+    if (mode === 'collapsed') return Math.max(88, Math.min(108, Math.round(h * 0.13)));
+    // Mid: small useful log peek — not a wall of chrome
+    if (mode === 'mid') return Math.min(third, Math.max(120, Math.round(h * 0.22)));
+    // "Expanded" is still capped at 1/3 — never half-screen CLI
+    return third;
   }
 
   function currentMode(panel) {
@@ -400,9 +406,11 @@
 
     try {
       pinDockBottom();
-      var sz = localStorage.getItem(SIZE_KEY);
-      if (sz === 'collapsed' || sz === 'expanded' || sz === 'mid') setSize(sz, false);
-      else setSize('collapsed', false);
+      // Quiet boot: always collapsed. Auto-fit grows only when useful lines arrive.
+      setSize('collapsed', false);
+      try {
+        localStorage.setItem(SIZE_KEY, 'collapsed');
+      } catch (_) {}
     } catch (_) {
       setSize('collapsed', false);
     }
@@ -557,12 +565,14 @@
         panel.classList.remove('expanded', 'collapsed', 'mid');
         panel.classList.add(pick);
         // Preserve free height when user dragged past default max
-        if (h > def + 4) {
-          var fh = Math.min(dragMaxCliPx(), Math.round(h));
+        // Hard cap 1/3 even if user dragged hard
+        var fh = Math.min(thirdCeilPx(), Math.round(h));
+        if (pick === 'collapsed') setSize('collapsed', true);
+        else {
           panel.style.setProperty('max-height', fh + 'px', 'important');
           panel.style.setProperty('height', fh + 'px', 'important');
-        } else {
-          setSize(pick, true);
+          panel.classList.remove('expanded', 'collapsed', 'mid');
+          panel.classList.add(fh >= thirdCeilPx() - 4 ? 'expanded' : 'mid');
         }
         try {
           localStorage.setItem(SIZE_KEY, pick);
@@ -633,6 +643,19 @@
     dismissCoach: dismissCoach,
     expandPanel: expandPanel,
     setCliSize: setSize,
+    /** Grow/shrink CLI from useful log lines only — never > 1/3, collapse if empty */
+    fitCliToContent: function (lineCount) {
+      var n = Number(lineCount) || 0;
+      var panel = $('panel');
+      if (!panel) return;
+      if (n <= 0) {
+        setSize('collapsed', true);
+        return;
+      }
+      // 1–2 useful lines → mid peek; more still capped at 1/3
+      if (n <= 3) setSize('mid', true);
+      else setSize('expanded', true); // still ≤ 1/3 via sizePx
+    },
     bindCliDrag: bindCliDrag,
     pinDockBottom: pinDockBottom,
     bindCliOverscrollRetract: bindCliOverscrollRetract,

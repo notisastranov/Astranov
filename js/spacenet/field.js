@@ -3248,6 +3248,28 @@
   /**
    * Draw ROUTE POLYGON + vendor / driver / you + live progress on city map.
    */
+  /** Tap polygon/route → open order tile on map (CLI stays free for ops) */
+  function bindRouteOpenTile(layer, routeId) {
+    if (!layer || !layer.on) return;
+    try {
+      layer.on('click', function (ev) {
+        try {
+          if (ev && ev.originalEvent) L.DomEvent.stopPropagation(ev.originalEvent);
+        } catch (_) {}
+        var id = String(routeId || '');
+        var oid = id.replace(/^live:poly_/, '').replace(/^past_/, '');
+        try {
+          if (g.SNPolyScheduler && SNPolyScheduler.openOrderTile) {
+            if (SNPolyScheduler.openOrderTile(oid) || SNPolyScheduler.openOrderTile(id)) return;
+          }
+        } catch (_) {}
+        try {
+          if (g.SNCli && SNCli.ops) SNCli.ops('Order · open tile for route');
+        } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
   function paintRouteOnCityMap(row) {
     if (!row || !row.points || row.points.length < 2) return;
     if (!g.SNMap || typeof L === 'undefined') return;
@@ -3298,6 +3320,7 @@
           fillOpacity: 0.14,
         }).addTo(map);
         corridor._snRouteId = row.id;
+        bindRouteOpenTile(corridor, row.id);
         mapRouteLayers.push(corridor);
       }
 
@@ -3309,11 +3332,11 @@
         lineJoin: 'round',
       }).addTo(map);
       poly._snRouteId = row.id;
+      bindRouteOpenTile(poly, row.id);
+      // Popup only if tile open fails — prefer task tile on click
       poly.bindPopup(
         (row.label || 'Delivery route') +
-          (row.phase ? '<br/>' + row.phase : '') +
-          (row.eta ? '<br/>ETA ' + row.eta : '') +
-          (row.speedKmh != null ? '<br/>' + Math.round(row.speedKmh) + ' km/h' : '')
+          '<br/><small>Tap again for order tile</small>'
       );
       mapRouteLayers.push(poly);
 
@@ -3954,15 +3977,13 @@
       paintRouteOnCityMap(row);
     } catch (eT) {}
     try {
-      if (g.SNCli && SNCli.log) {
-        SNCli.log(
-          'Route · vendor' +
-            (stopCount ? ' → ' + stopCount + ' stop' + (stopCount > 1 ? 's' : '') : '') +
-            ' → you · ' +
-            (row.km != null ? row.km.toFixed(2) + ' km' : '') +
-            ' · ETA ' +
-            (opts.etaMin != null ? opts.etaMin + ' min' : row.eta || '?'),
-          'ok'
+      if (g.SNCli && SNCli.ops) {
+        SNCli.ops(
+          'Route live · ' +
+            (row.km != null ? row.km.toFixed(1) + ' km · ' : '') +
+            'ETA ' +
+            (opts.etaMin != null ? opts.etaMin + ' min' : row.eta || '?') +
+            ' · tap polygon for order tile'
         );
       }
       if (g.SNCli && SNCli.preview)

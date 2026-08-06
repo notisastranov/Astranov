@@ -723,3 +723,60 @@ Product honor name (Astranov brand). Not a SpaceX Inc. corporate filing or trade
 **Build:** `20260805180000-poly-rebuild`
 
 *Agent note 2026-08-05: marina berth grid overlay + vendor price edit. Build `20260805182000-marina-berths`.*
+
+---
+
+## OWNER LAW · UI shell (2026-08-06) — crystal clear
+
+**Chat is not law. This section is.** Do not re-ask the owner to restate these.
+
+### Top scroll
+
+| Law | Meaning |
+|-----|---------|
+| **Compact row** | Radar · ASTRANOV · money pill · power launch. Always visible when not offer-focus. |
+| **Gadgets vertical** | When expanded: **one gadget per row**, full width. **Never** two gadgets side-by-side. |
+| **Gadget set** | Money · Performance · Map timeline · Look (day/night/brightness/accent) · Data (past orders / export / live now). |
+| **Drag reorder** | Grip on gadget header · reorder · persist `sn:gadget-order-v1`. |
+| **Money pill** | Tap coin → expand top scroll → **Money gadget** (wallet · mine · vault · mined). Not a detached finance wall. |
+| **Map timeline** | Past = settled orders on map + satellite-era imagery. Present = live. Future = projection. Graphical history, not DB tables. |
+| **Data strip** | Only if needed — at **end** of gadget stack (Past orders · Export · Live now). |
+| **Offer focus** | Power throws offer → collapse top/bottom chrome so **polygon + tile** dominate. |
+
+### Offer tiles + polygons
+
+| Law | Meaning |
+|-----|---------|
+| **Compact tile** | Small by default (~210px) so **map polygon stays visible**. − / × / + chrome. |
+| **Park top band** | Default under chrome; drag + inertia + bounce. |
+| **One at a time** | Max one offered tile; queue the rest. |
+| **Polygon click** | Driver taps **polygon / route on map** → open **order detail on the task tile** over the map. **Not** a dump into CLI. |
+| **Detail on map** | Vendor · client · price · stops · 3× seal · accept/skip — tile is the detail surface. |
+
+### Bottom CLI (sacred log)
+
+| Law | Meaning |
+|-----|---------|
+| **One surface** | Ribbon + log + input are **one CLI dock**. Do not segment into extra floating panels on top of CLI. |
+| **Quiet collapsed** | If **nothing useful** to show → stay **minimized** (ribbon + input). Empty log takes no space. |
+| **Grow only when needed** | Useful lines arrive → open a **small mid peek**. Never jump to half-screen. |
+| **Hard ceiling ⅓** | CLI dock height (ribbon + log + input + buttons) **never exceeds one third** of viewport height. |
+| **Useful only** | Log = application life: health checks, delivery events, user commands, clear errors. **No machine noise** (stack traces, module load spam, CORS, webpack, debug). |
+| **Ops channel** | `SNCli.ops(text)` for short driver-facing status. Prefer ops over multi-line debug. |
+| **No order essays** | Do not paste full order payloads into CLI. Point to map tile / polygon instead. |
+| **Boot** | Always start collapsed. Do not restore a tall empty expanded CLI. |
+
+### Interaction map (where things live)
+
+```
+Globe / city map     → place, polygon, order tile detail
+Top scroll gadgets   → money, perf, timeline past, look, data export
+CLI                  → command + short status of what the app is doing
+Offer tile           → accept / rearrange / pay / 3× seal
+```
+
+### Build stamp for this law
+
+`20260806183000-cli-law`
+
+*Agent note 2026-08-06: CLI ⅓ cap · quiet collapse · ops-only status · polygon→tile · vertical gadgets · money expand · SPECS UI law locked.*

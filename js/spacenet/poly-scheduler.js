@@ -24,7 +24,9 @@
 
   function log(m, c) {
     try {
-      if (global.SNCli && SNCli.log) SNCli.log(m, c || 'ok');
+      // Useful driver events → ops (always visible, not machine noise)
+      if (global.SNCli && SNCli.ops) SNCli.ops(String(m || '').slice(0, 140));
+      else if (global.SNCli && SNCli.log) SNCli.log(m, c || 'ops', true);
     } catch (_) {}
   }
   function preview(m) {
@@ -297,6 +299,41 @@
     o.stops = stops;
     o.routeLocked = locked;
     return stops;
+  }
+
+  function openOrderTile(id) {
+    var o = find(id);
+    if (!o) {
+      // try archive / past_ prefix
+      var raw = String(id || '').replace(/^live:poly_/, '').replace(/^past_/, '');
+      o = find(raw);
+      if (!o && global.SNPolyScheduler && SNPolyScheduler.archive) {
+        var arch = SNPolyScheduler.archive().find(function (x) {
+          return x.id === raw || x.id === id;
+        });
+        if (arch) {
+          o = Object.assign({}, arch, { phase: 'done', uiSize: 'max' });
+          // temporary stack view for archive detail
+          if (!stack.some(function (x) { return x.id === o.id; })) {
+            stack.unshift(o);
+          }
+        }
+      }
+    }
+    if (!o) return false;
+    o.uiSize = 'max';
+    // Park tile above polygon (upper band, not covering whole map)
+    try {
+      o.uiY = 56;
+      o.uiX = Math.round(((window.innerWidth || 390) - 220) / 2);
+    } catch (_) {}
+    paint();
+    drawPolygon(o);
+    try {
+      if (global.SNCli && SNCli.ops)
+        SNCli.ops('Order detail · ' + (o.vendorName || '') + ' → ' + (o.clientName || ''));
+    } catch (_) {}
+    return true;
   }
 
   function drawPolygon(o) {
@@ -1534,6 +1571,7 @@
     makeOffer: makeOffer,
     pushOffer: pushOffer,
     drawPolygon: drawPolygon,
+    openOrderTile: openOrderTile,
     paint: paint,
     list: function () {
       return stack.slice();
