@@ -3468,40 +3468,95 @@ if (
         return;
       }
 
-      // Freeform → free mind first (instant), then SNAi with hard timeout
+      // Freeform → free mind for short intents · cloud Grok for development / chat
       preview('…');
-      try {
-        const mind = global.SNAstranovMind || global.SNFreeMind;
-        if (mind && typeof mind.answer === 'function') {
-          const quick = mind.answer(line, { mode: 'chat' });
-          if (quick && quick.text && (quick.score == null || quick.score >= 0.55)) {
-            String(quick.text)
-              .split('\n')
-              .forEach((ln) => {
-                if (ln.trim()) log(ln, 'ok');
-              });
-            preview(String(quick.text).replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
-            replyOut(quick.text);
-            return;
-          }
-        }
-      } catch (_) {}
-      if (!global.SNAi?.ask) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
-      if (global.SNAi?.ask) {
-        let reply = null;
+      const isDevIntent =
+        /\b(coders?|code|fix|build|implement|refactor|debug|deploy|github|api|function|module|class|typescript|javascript|sql|css|html|rewrite|patch|merge)\b/i.test(
+          line
+        ) ||
+        /^coders\b/i.test(line) ||
+        line.length > 100;
+      let usedQuick = false;
+      if (!isDevIntent) {
         try {
-          reply = await Promise.race([
-            SNAi.ask(line),
-            new Promise((resolve) =>
-              setTimeout(function () {
-                resolve('Still loading · try: power on · locate · marina · help · cancel');
-              }, 5000)
-            ),
-          ]);
-        } catch (eAsk) {
-          reply = 'Error · try cancel then help';
+          const mind = global.SNAstranovMind || global.SNFreeMind;
+          if (mind && typeof mind.answer === 'function') {
+            const quick = mind.answer(line, { mode: 'chat' });
+            // High-confidence product intents only (power/locate/help) — do not block Grok chat
+            if (
+              quick &&
+              quick.text &&
+              quick.score != null &&
+              quick.score >= 0.85 &&
+              quick.via &&
+              /power|locate|marina|help|plan|subscribe|wallet|skin/i.test(String(quick.via) + String(quick.source || ''))
+            ) {
+              String(quick.text)
+                .split('\n')
+                .forEach((ln) => {
+                  if (ln.trim()) log(ln, 'ok');
+                });
+              preview(String(quick.text).replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
+              replyOut(quick.text);
+              usedQuick = true;
+            }
+          }
+        } catch (_) {}
+      }
+      if (usedQuick) {
+        /* done */
+      } else {
+        let reply = null;
+        // 1) Subscription-aware cloud (owner paid Grok · sub budget · free cloud)
+        try {
+          if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+            const mode = isDevIntent || /^coders\b/i.test(line) ? 'coders' : 'chat';
+            const pow = await Promise.race([
+              SNSubscription.askPowerful(line, { mode: mode, timeoutMs: 22000 }),
+              new Promise((resolve) =>
+                setTimeout(function () {
+                  resolve({ ok: false, text: null, timeout: true });
+                }, 23000)
+              ),
+            ]);
+            if (pow && pow.ok && pow.text) {
+              reply = String(pow.text);
+              try {
+                if (pow.via) log('via ' + pow.via + (pow.paid ? ' · paid' : ''), 'dim');
+              } catch (_) {}
+            }
+          }
+        } catch (ePow) {
+          try {
+            log('Cloud AI · ' + (ePow.message || ePow), 'dim');
+          } catch (_) {}
+        }
+        // 2) Full SNAi path when loaded
+        if (!reply && global.SNAi && SNAi.ask) {
+          try {
+            reply = await Promise.race([
+              isDevIntent && SNAi.coders
+                ? SNAi.coders(line)
+                : isDevIntent && SNAi.code
+                  ? SNAi.code(line)
+                  : SNAi.ask(line, { mode: isDevIntent ? 'coders' : 'chat' }),
+              new Promise((resolve) =>
+                setTimeout(function () {
+                  resolve(null);
+                }, 20000)
+              ),
+            ]);
+          } catch (_) {}
+        }
+        // 3) Free mind fallback
+        if (!reply) {
+          try {
+            const mind = global.SNAstranovMind || global.SNFreeMind;
+            if (mind && mind.answer) {
+              const q = mind.answer(line, { mode: 'chat' });
+              if (q && q.text) reply = q.text;
+            }
+          } catch (_) {}
         }
         if (reply) {
           String(reply)
@@ -3509,13 +3564,13 @@ if (
             .forEach((ln) => {
               if (ln.trim()) log(ln, 'ok');
             });
-          preview(reply.replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
+          preview(String(reply).replace(/^(SpaceNet|Astranov)\s*[·:.-]\s*/i, '').slice(0, 80));
           replyOut(reply);
-          return;
+        } else {
+          log('Try: power on · locate · marina · plans · subscribe 3 · help', 'ok');
+          preview('ready');
         }
       }
-      log('Try: power on · locate · marina · global · help · cancel', 'ok');
-      preview('ready');
     } catch (e) {
       log('Error: ' + (e.message || e), 'err');
     } finally {

@@ -250,6 +250,7 @@
     '/js/spacenet/cli.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
+    '/js/spacenet/ai.js',
     '/js/spacenet/ui.js',
   ];
 
@@ -298,6 +299,8 @@
     'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     subscription: { src: '/js/spacenet/subscription.js', global: 'SNSubscription' },
+    ai: { src: '/js/spacenet/ai.js', global: 'SNAi' },
+    coders: { src: '/js/spacenet/ai.js', global: 'SNAi' },
   };
 
   window.SNLoader = {
