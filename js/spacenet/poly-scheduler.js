@@ -485,7 +485,7 @@
     if (o.uiX == null || o.uiY == null) {
       var w = Math.min((window.innerWidth || 390) * 0.92, 300);
       o.uiX = Math.round(((window.innerWidth || 390) - w) / 2);
-      o.uiY = 72;
+      o.uiY = 56;
     }
     card.style.left = Math.round(o.uiX) + 'px';
     card.style.top = Math.round(o.uiY) + 'px';
