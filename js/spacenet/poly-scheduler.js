@@ -874,7 +874,11 @@
     } catch (_) {}
     o.phase = 'done';
     o.progress = 100;
-    log('Settled · ' + fmt(total) + ' · vault 3% ' + vault + ' · driver 15% ' + driver, 'ok');
+    o.doneAt = Date.now();
+    try {
+      archiveOrder(o);
+    } catch (_) {}
+    log('Settled · ' + fmt(total) + ' · vault 3% ' + vault + ' · driver 15% ' + driver + ' · archived for map timeline', 'ok');
     preview('paid');
     paint();
     setTimeout(function () {
@@ -1057,6 +1061,307 @@
     drawPolygon(o);
     focusChrome(true);
     return o;
+  }
+
+
+  var ARCHIVE_KEY = 'sn:order-archive-v1';
+  var MAX_ARCHIVE = 100;
+  var archiveLayerOn = false;
+
+  function loadArchive() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(ARCHIVE_KEY) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch (_) {
+      return [];
+    }
+  }
+  function saveArchive(list) {
+    try {
+      localStorage.setItem(ARCHIVE_KEY, JSON.stringify((list || []).slice(0, MAX_ARCHIVE)));
+    } catch (_) {}
+  }
+  function snapOrder(o) {
+    return {
+      id: o.id,
+      title: o.title || o.nature,
+      vendorName: o.vendorName,
+      clientName: o.clientName,
+      vLat: o.vLat,
+      vLng: o.vLng,
+      dLat: o.dLat,
+      dLng: o.dLng,
+      mids: o.mids || [],
+      price: o.price,
+      priceTxt: o.priceTxt,
+      km: o.km,
+      nature: o.nature,
+      routeLocked: !!o.routeLocked,
+      drone: !!o.drone,
+      doneAt: o.doneAt || Date.now(),
+      year: new Date(o.doneAt || Date.now()).getFullYear(),
+    };
+  }
+  function archiveOrder(o) {
+    if (!o) return;
+    o.doneAt = o.doneAt || Date.now();
+    var list = loadArchive().filter(function (x) {
+      return x.id !== o.id;
+    });
+    list.unshift(snapOrder(o));
+    saveArchive(list);
+  }
+  /** Seed a few demo past orders so timeline past is never empty on first use */
+  function ensureDemoArchive() {
+    var list = loadArchive();
+    if (list.length) return list;
+    var now = Date.now();
+    var y = new Date().getFullYear();
+    var demos = [
+      { vendorName: 'Nonna Fires', clientName: 'Marina Villa', nature: 'Hot pizza', km: 2.1, yearsAgo: 0, daysAgo: 3 },
+      { vendorName: 'Gelato Blu', clientName: 'Hotel Nike', nature: 'ice cream', km: 1.4, yearsAgo: 0, daysAgo: 40 },
+      { vendorName: 'City Post', clientName: 'Port Office', nature: 'Paper envelopes', km: 3.8, yearsAgo: 1, daysAgo: 20 },
+      { vendorName: 'Oven 23', clientName: 'Yacht berth 12', nature: 'Hot pizza', km: 4.2, yearsAgo: 2, daysAgo: 60 },
+      { vendorName: 'Gyros Corner', clientName: 'Old Town', nature: 'Hot food', km: 1.1, yearsAgo: 5, daysAgo: 10 },
+    ];
+    var base = { lat: 36.4341, lng: 28.2176 };
+    demos.forEach(function (d, i) {
+      var doneAt = now - d.yearsAgo * 365.25 * 864e5 - d.daysAgo * 864e5;
+      var vLat = base.lat + 0.008 + i * 0.003;
+      var vLng = base.lng + 0.006 - i * 0.002;
+      var dLat = base.lat - 0.004 + i * 0.001;
+      var dLng = base.lng - 0.003 - i * 0.0015;
+      var q = quote({ km: d.km, nature: d.nature, night: false });
+      list.push({
+        id: 'arch:demo:' + i,
+        title: d.nature,
+        vendorName: d.vendorName,
+        clientName: d.clientName,
+        vLat: vLat,
+        vLng: vLng,
+        dLat: dLat,
+        dLng: dLng,
+        mids: [],
+        price: q.total,
+        priceTxt: fmt(q.total),
+        km: d.km,
+        nature: d.nature,
+        routeLocked: false,
+        drone: i % 2 === 0,
+        doneAt: doneAt,
+        year: new Date(doneAt).getFullYear(),
+        demo: true,
+      });
+    });
+    saveArchive(list);
+    return list;
+  }
+  function archiveForYear(year) {
+    ensureDemoArchive();
+    var list = loadArchive();
+    if (year == null) return list;
+    return list.filter(function (o) {
+      return Number(o.year) === Number(year);
+    });
+  }
+  function clearArchiveMap() {
+    archiveLayerOn = false;
+    try {
+      if (global.SNField && SNField.clearRoutes) SNField.clearRoutes();
+    } catch (_) {}
+    try {
+      var root = document.getElementById('sn-arch-layer');
+      if (root) root.remove();
+    } catch (_) {}
+  }
+  function paintArchiveLayer(orders, year) {
+    clearArchiveMap();
+    archiveLayerOn = true;
+    ensureCss();
+    var host = document.getElementById('sn-arch-layer');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'sn-arch-layer';
+      host.style.cssText =
+        'position:fixed;left:8px;right:8px;bottom:calc(110px + env(safe-area-inset-bottom));' +
+        'z-index:120;pointer-events:auto;display:flex;flex-direction:column;gap:6px;max-height:28vh;overflow:auto';
+      document.body.appendChild(host);
+    }
+    var head =
+      '<div style="font:700 9px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;color:rgba(0,224,112,.9);' +
+      'text-shadow:0 0 10px rgba(0,224,112,.4);padding:2px 4px">' +
+      'PAST ORDERS · ' +
+      (year || 'ALL') +
+      ' · ' +
+      orders.length +
+      ' · tap to draw polygon</div>';
+    if (!orders.length) {
+      host.innerHTML =
+        head +
+        '<div style="font:600 11px system-ui;color:#8ab4d0;padding:8px 10px;border-radius:14px;' +
+        'background:rgba(2,16,40,.88);border:1px solid rgba(0,200,120,.35)">No settled deliveries in this year yet. ' +
+        'Complete tasks in present — they land here for map review.</div>';
+      return;
+    }
+    host.innerHTML =
+      head +
+      orders
+        .slice(0, 24)
+        .map(function (o) {
+          var d = new Date(o.doneAt || Date.now());
+          var ds =
+            d.getFullYear() +
+            '-' +
+            String(d.getMonth() + 1).padStart(2, '0') +
+            '-' +
+            String(d.getDate()).padStart(2, '0');
+          return (
+            '<button type="button" data-arch="' +
+            esc(o.id) +
+            '" style="text-align:left;pointer-events:auto;border-radius:16px;border:1px solid rgba(0,200,140,.4);' +
+            'background:linear-gradient(165deg,rgba(2,28,48,.92),rgba(0,12,28,.95));color:#e8fff4;padding:8px 12px;' +
+            'font:600 11px/1.25 system-ui;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.35)">' +
+            '<span style="font:800 12px ui-monospace,Menlo,monospace;color:#7ec8ff">' +
+            esc(o.priceTxt || fmt(o.price)) +
+            '</span> · ' +
+            esc(ds) +
+            '<br/><span style="color:#c8e8ff">' +
+            esc(o.vendorName || 'Vendor') +
+            ' → ' +
+            esc(o.clientName || 'Client') +
+            '</span><br/><span style="font:500 9px system-ui;color:#6a94c4">' +
+            esc(o.nature || o.title || 'delivery') +
+            (o.km != null ? ' · ' + Number(o.km).toFixed(1) + ' km' : '') +
+            (o.drone ? ' · Rai' : '') +
+            '</span></button>'
+          );
+        })
+        .join('');
+    host.onclick = function (ev) {
+      var t = ev.target && ev.target.closest ? ev.target.closest('[data-arch]') : null;
+      if (!t) return;
+      var id = t.getAttribute('data-arch');
+      var o = loadArchive().find(function (x) {
+        return x.id === id;
+      });
+      if (!o) return;
+      // Open city map + draw past polygon
+      try {
+        if (global.SNMap && SNMap.open) SNMap.open({ lat: o.vLat, lng: o.vLng, zoom: 14 });
+      } catch (_) {}
+      drawPolygon({
+        id: o.id,
+        vendorName: o.vendorName,
+        clientName: o.clientName,
+        vLat: o.vLat,
+        vLng: o.vLng,
+        dLat: o.dLat,
+        dLng: o.dLng,
+        mids: o.mids,
+        drone: o.drone,
+        routeLocked: o.routeLocked,
+        quote: { etaMin: 0 },
+      });
+      try {
+        if (global.SNCli && SNCli.log)
+          SNCli.log(
+            'Past order · ' +
+              (o.vendorName || '') +
+              ' → ' +
+              (o.clientName || '') +
+              ' · ' +
+              (o.priceTxt || ''),
+            'ok'
+          );
+      } catch (_) {}
+    };
+    // Auto-draw first few as radar routes (ghost)
+    orders.slice(0, 4).forEach(function (o, i) {
+      setTimeout(function () {
+        try {
+          drawPolygon({
+            id: 'past_' + o.id,
+            vendorName: o.vendorName,
+            clientName: o.clientName,
+            vLat: o.vLat,
+            vLng: o.vLng,
+            dLat: o.dLat,
+            dLng: o.dLng,
+            mids: o.mids,
+            drone: o.drone,
+            routeLocked: o.routeLocked,
+            quote: { etaMin: 0 },
+          });
+        } catch (_) {}
+      }, i * 120);
+    });
+  }
+  /**
+   * Called by SNTimeline when map time slider moves.
+   * past → show settled orders for that year + open map imagery mode
+   * present → clear archive layer
+   * future → empty projection strip
+   */
+  function showTimeline(tl) {
+    tl = tl || {};
+    var mode = tl.mode || 'present';
+    var year = tl.year || new Date().getFullYear();
+    if (mode === 'present') {
+      clearArchiveMap();
+      return { ok: true, mode: mode, count: 0 };
+    }
+    if (mode === 'future') {
+      clearArchiveMap();
+      var host = document.getElementById('sn-arch-layer');
+      if (!host) {
+        host = document.createElement('div');
+        host.id = 'sn-arch-layer';
+        host.style.cssText =
+          'position:fixed;left:8px;right:8px;bottom:calc(110px + env(safe-area-inset-bottom));z-index:120;pointer-events:none';
+        document.body.appendChild(host);
+      }
+      host.innerHTML =
+        '<div style="font:700 10px system-ui;color:#7ad4ff;padding:8px 12px;border-radius:14px;' +
+        'background:rgba(4,20,48,.9);border:1px solid rgba(80,160,255,.4)">FUTURE · ' +
+        year +
+        ' · projected routes appear as orders settle forward in time</div>';
+      return { ok: true, mode: mode, count: 0 };
+    }
+    // PAST — graphical history
+    try {
+      if (global.SNMap && SNMap.open) {
+        var home = (global.SNCli && SNCli._lastGps) || { lat: 36.4341, lng: 28.2176 };
+        SNMap.open({ lat: home.lat || 36.4341, lng: home.lng || 28.2176, zoom: 13 });
+      }
+    } catch (_) {}
+    var orders = archiveForYear(year);
+    // If year has none, show nearby years (±1) then all past
+    if (!orders.length) {
+      var all = ensureDemoArchive().filter(function (o) {
+        return Number(o.year) <= Number(year);
+      });
+      orders = all.filter(function (o) {
+        return Math.abs(Number(o.year) - Number(year)) <= 1;
+      });
+      if (!orders.length) orders = all.slice(0, 12);
+    }
+    paintArchiveLayer(orders, year);
+    try {
+      if (global.SNCli && SNCli.log)
+        SNCli.log('Timeline PAST · ' + year + ' · ' + orders.length + ' orders on map', 'ok');
+      if (global.SNCli && SNCli.preview) SNCli.preview('past ' + year);
+    } catch (_) {}
+    return { ok: true, mode: mode, year: year, count: orders.length };
+  }
+  function exportArchive() {
+    var list = ensureDemoArchive();
+    var pack = { exportedAt: new Date().toISOString(), count: list.length, orders: list };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        void navigator.clipboard.writeText(JSON.stringify(pack, null, 2));
+      }
+    } catch (_) {}
+    return pack;
   }
 
   var KITCHENS = [
@@ -1250,6 +1555,12 @@
     runAct: runAct,
     setConfirm: setConfirm,
     find: find,
+    archive: loadArchive,
+    archiveForYear: archiveForYear,
+    showTimeline: showTimeline,
+    exportArchive: exportArchive,
+    ensureDemoArchive: ensureDemoArchive,
+    clearArchiveMap: clearArchiveMap,
   };
 
   global.SNPolyScheduler = api;

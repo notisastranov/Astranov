@@ -118,6 +118,25 @@
       }
     } catch (_) {}
     applyTimelineImagery();
+    // Graphical past/future order review on the map
+    try {
+      if (g.SNPolyScheduler && typeof SNPolyScheduler.showTimeline === 'function') {
+        SNPolyScheduler.showTimeline({
+          mode: timeline.mode,
+          year: timeline.year,
+          offset: timeline.offset,
+          frozen: timeline.frozen,
+        });
+      }
+    } catch (_) {}
+    // Map era class for imagery tint
+    try {
+      var cm = document.getElementById('city-map');
+      if (cm) {
+        cm.classList.remove('tl-map-past', 'tl-map-future', 'tl-map-present');
+        cm.classList.add('tl-map-' + timeline.mode);
+      }
+    } catch (_) {}
   }
 
   /**
@@ -129,13 +148,16 @@
   function applyTimelineImagery() {
     try {
       if (!g.SNMap || !SNMap.setBasemap) return;
-      if (!SNMap.active) {
-        // still tag for when map opens
-        g._snTimelineBasemap = timeline.mode;
-        return;
+      g._snTimelineBasemap = timeline.mode;
+      // Open map when reviewing past/future so imagery + orders are visible
+      if (timeline.mode !== 'present' && !SNMap.active && SNMap.open) {
+        try {
+          SNMap.open({ lat: 36.4341, lng: 28.2176, zoom: 13 });
+        } catch (_) {}
       }
+      if (!SNMap.active) return;
       if (timeline.mode === 'past') {
-        // Historical-class satellite (Google satellite if key, else Esri/satellite basemap)
+        // Historical-class satellite (best available public imagery)
         try {
           SNMap.setBasemap('g_satellite', { log: false });
         } catch (_) {
@@ -143,7 +165,10 @@
             SNMap.setBasemap('satellite', { log: false });
           } catch (__) {}
         }
-        g._snTimelineBasemap = 'past';
+        try {
+          if (g.SNCli && SNCli.preview)
+            SNCli.preview('past map · ' + timeline.year);
+        } catch (_) {}
       } else if (timeline.mode === 'future') {
         try {
           SNMap.setBasemap('g_hybrid', { log: false });
@@ -152,10 +177,11 @@
             SNMap.setBasemap('satellite', { log: false });
           } catch (__) {}
         }
-        g._snTimelineBasemap = 'future';
       } else {
-        // present — leave user's basemap
-        g._snTimelineBasemap = 'present';
+        // present — restore dark street map default for delivery work
+        try {
+          SNMap.setBasemap('dark', { log: false });
+        } catch (_) {}
       }
     } catch (_) {}
   }
@@ -247,7 +273,6 @@
           e.preventDefault();
           e.stopPropagation();
         }
-        // Expand top scroll + focus time machine; toggle freeze if already expanded past
         try {
           if (g.SNField && SNField.topChrome && SNField.topChrome.set)
             SNField.topChrome.set('expanded');
@@ -259,14 +284,58 @@
             }
           }
         } catch (_) {}
-        // If present, freeze at now-10 as entry to past; else open controls
         if (timeline.mode === 'present' && !timeline.frozen) {
-          // just expand — user drives joystick
           try {
             if (g.SNCli && SNCli.preview)
-              SNCli.preview('Timeline Scanner · slide joystick for past / future');
+              SNCli.preview('Map timeline · slide for past orders & imagery');
           } catch (_) {}
         }
+      };
+    }
+    // Top-scroll Data strip (end of ribbon) — archives without deep menus
+    var pastBtn = $('stc-data-past');
+    if (pastBtn && !pastBtn._tlBound) {
+      pastBtn._tlBound = true;
+      pastBtn.onclick = function (e) {
+        if (e) e.preventDefault();
+        try {
+          if (g.SNField && SNField.topChrome && SNField.topChrome.set)
+            SNField.topChrome.set('mid');
+        } catch (_) {}
+        // Jump one year back and open archive map review
+        setTimelineOffset(timeline.offset === 0 ? -1 : timeline.offset, { freeze: true, log: true });
+      };
+    }
+    var expBtn = $('stc-data-export');
+    if (expBtn && !expBtn._tlBound) {
+      expBtn._tlBound = true;
+      expBtn.onclick = function (e) {
+        if (e) e.preventDefault();
+        try {
+          var pack =
+            g.SNPolyScheduler && SNPolyScheduler.exportArchive
+              ? SNPolyScheduler.exportArchive()
+              : null;
+          if (g.SNCli && SNCli.log)
+            SNCli.log(
+              pack
+                ? 'Archive exported · ' + pack.count + ' orders · clipboard'
+                : 'No archive yet',
+              'ok'
+            );
+        } catch (err) {
+          try {
+            if (g.SNCli && SNCli.log) SNCli.log('Export failed', 'err');
+          } catch (_) {}
+        }
+      };
+    }
+    var liveBtn = $('stc-data-present');
+    if (liveBtn && !liveBtn._tlBound) {
+      liveBtn._tlBound = true;
+      liveBtn.onclick = function (e) {
+        if (e) e.preventDefault();
+        setTimelineOffset(0, { freeze: false, log: true });
       };
     }
   }
