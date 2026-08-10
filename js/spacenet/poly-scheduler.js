@@ -992,6 +992,18 @@
     driveTimer = setInterval(driveLoop, 900);
   }
 
+  var autoScanTimer = null;
+  function ensureAutoScan() {
+    if (autoScanTimer) return;
+    autoScanTimer = setInterval(function () {
+      if (!active) return;
+      try {
+        scanAutoAccept();
+        promoteQueue();
+      } catch (_) {}
+    }, 2800);
+  }
+
   function commissionRai(o) {
     o.drone = true;
     try {
@@ -1696,6 +1708,7 @@
     log('MARKET ON · multi-tour engine · pool + offers · 3× seal · Rai', 'ok');
     preview('market on');
     ensureDriveLoop();
+    ensureAutoScan();
     return { ok: true, gen: gen };
   }
 
@@ -1948,6 +1961,13 @@
     if (low === 'demo delivery' || low === 'demo polygon' || low === 'engine demo' || low === 'demo full' || low === 'full demo') {
       return demoFullLifecycle();
     }
+    if (low === 'help market' || low === 'market help' || low === 'delivery help' || low === 'help delivery' || low === 'help poly') {
+      log('MARKET · power ON/OFF · throw tiles · take → start → arrive · 3× seal', 'ok');
+      log('TOUR · multi-accept builds one polygon · ⬠ Poly = fit tour · tap again = GPS drive', 'ok');
+      log('CLI · tour · rest · pool · engine demo · auto accept on min 5 · prefer long east', 'ok');
+      log('PRICE · ceil(km/3)×3€ · +3 night · +3 heavy · +3 VIP · +3 private', 'ok');
+      return true;
+    }
     if (low === 'polygon' || low === 'poly' || low === 'poly nav' || low === 'drive mode' || low === 'gps drive') {
       try {
         if (global.SNField && SNField.cyclePolyNav) {
@@ -2002,7 +2022,7 @@
         var low = String(raw || '').trim().toLowerCase();
         try {
           if (
-            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|polygon|poly|drive mode|wallet|rate|pool)\b/i.test(
+            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|help market|market help|delivery help|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|polygon|poly|drive mode|wallet|rate|pool)\b/i.test(
               low
             )
           ) {
@@ -2049,6 +2069,7 @@
     installCli();
     wireFieldPower();
     ensureDriveLoop();
+    ensureAutoScan();
     [400, 1200, 3000].forEach(function (ms) {
       setTimeout(function () {
         installCli();
