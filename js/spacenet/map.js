@@ -1543,6 +1543,12 @@
       renderLayerPanel();
       return true;
     },
+    getMap: function () {
+      return M.map || null;
+    },
+    get map() {
+      return M.map || null;
+    },
     getBasemap: function () {
       return M.basemapId;
     },

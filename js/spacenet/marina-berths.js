@@ -260,11 +260,18 @@
 
   function getMap() {
     var api = mapApi();
-    if (api && api.getMap) return api.getMap();
-    if (api && api.map) return api.map;
-    // internal fallback
+    if (!api) return null;
     try {
-      if (api && api._map) return api._map;
+      if (typeof api.getMap === 'function') {
+        var m0 = api.getMap();
+        if (m0) return m0;
+      }
+    } catch (_) {}
+    try {
+      if (api.map && typeof api.map.addLayer === 'function') return api.map;
+    } catch (_) {}
+    try {
+      if (api._map) return api._map;
     } catch (_) {}
     return null;
   }
@@ -668,31 +675,59 @@
     var q = String(idOrName || '').toLowerCase();
     Object.keys(M.marinas).forEach(function (id) {
       var x = M.marinas[id];
-      if (id === idOrName || x.name.toLowerCase().indexOf(q) >= 0) m = x;
+      if (
+        id === idOrName ||
+        (x.name && x.name.toLowerCase().indexOf(q) >= 0) ||
+        id.toLowerCase().indexOf(q) >= 0
+      )
+        m = x;
     });
     if (!m) m = M.marinas['marina-rhodes-mandraki'] || Object.values(M.marinas)[0];
     if (!m) return false;
+    if (!m.berths || !m.berths.length) m.berths = buildBerths(m);
+    function paintWhenReady(attempt) {
+      attempt = attempt || 0;
+      try {
+        bindMap();
+        var map = getMap();
+        if (map && leaflet()) {
+          try {
+            if (map.setView) map.setView([m.lat, m.lng], 18, { animate: false });
+          } catch (_) {}
+          var ok = showOverlay(m);
+          if (ok) {
+            log(
+              'Marina · ' +
+                m.name +
+                ' · ' +
+                freeCount(m) +
+                ' free / ' +
+                (m.berths || []).length +
+                ' berths',
+              'ok'
+            );
+            return;
+          }
+        }
+      } catch (e) {
+        try {
+          console.warn('[SNMarina]', e);
+        } catch (_) {}
+      }
+      if (attempt < 10) setTimeout(function () { paintWhenReady(attempt + 1); }, 250 + attempt * 100);
+      else log('Marina · map not ready · try CLI: marina', 'err');
+    }
     try {
       if (global.SNMap && SNMap.open) {
         void Promise.resolve(SNMap.open(m.lat, m.lng, { zoom: 18 })).then(function () {
-          setTimeout(function () {
-            try {
-              if (SNMap.map && SNMap.map.setZoom) SNMap.map.setZoom(18);
-              if (SNMap.softSetView) SNMap.softSetView(m.lat, m.lng, 18);
-            } catch (_) {}
-            bindMap();
-            showOverlay(m);
-          }, 500);
+          paintWhenReady(0);
         });
-      } else if (global.SNGlobe && SNGlobe.goToPlace) {
-        SNGlobe.goToPlace(m.lat, m.lng, { tier: 'city' });
-        setTimeout(function () {
-          bindMap();
-          showOverlay(m);
-        }, 800);
+      } else {
+        paintWhenReady(0);
       }
-    } catch (_) {}
-    log('Marina · ' + m.name + ' · berth grid + prices', 'ok');
+    } catch (_) {
+      paintWhenReady(0);
+    }
     return true;
   }
 
