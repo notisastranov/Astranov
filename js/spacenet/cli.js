@@ -727,6 +727,8 @@
     log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
     log('HELPER: helper · helper find pizza · helper patrol · helper off', 'ok');
     log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
+    log('OS will: will · reshape · day · night · open gadgets · rename to …', 'ok');
+    log('You are a developer · every user forges their own Astranov version', 'ok');
     log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
     log('Plans: plan list · plan status · claim · task list · task map', 'dim');
     log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
@@ -788,6 +790,13 @@
         if (global.SNSubscription && SNSubscription.handleLine) {
           const subHit = await SNSubscription.handleLine(line);
           if (subHit) return true;
+        }
+      } catch (_) {}
+      // Dynamic OS will (every user is a developer)
+      try {
+        if (global.SNOsWill && SNOsWill.handleLine) {
+          const willHit = await SNOsWill.handleLine(line);
+          if (willHit) return true;
         }
       } catch (_) {}
       // Owner test commands FIRST (before dialect rewrites "demo delivery" → deliver)
@@ -3497,10 +3506,35 @@ if (
         return;
       }
 
-      // Freeform → free mind for short intents · cloud Grok for development / chat
+      // Freeform → OS will reshape first (every user is a developer) · then AI co-dev
       preview('…');
+      try {
+        if (global.SNOsWill && typeof SNOsWill.reshape === 'function') {
+          const willish =
+            /\b(theme|dark|light|night|day|accent|color|cli|gadget|power|globe|map|rename|compact|spacious|neon|brightness|prefer|reshape|will|version|fork|density|os)\b/i.test(
+              line
+            ) ||
+            /^(make |set |change |turn |switch |i want |please |can you |let'?s )/i.test(line);
+          if (willish) {
+            const wr = await SNOsWill.reshape(line, { forceAi: true });
+            if (wr && wr.ok && ((wr.ops && wr.ops.length) || wr.meta || wr.forked)) {
+              preview('OS reshaped');
+              return;
+            }
+            // if AI text already logged by reshape, still continue for pure chat answers
+            if (wr && wr.text && wr.ops && wr.ops.length) {
+              preview('OS reshaped');
+              return;
+            }
+          }
+        }
+      } catch (eWill) {
+        try {
+          log('WILL · ' + (eWill && eWill.message ? eWill.message : eWill), 'dim');
+        } catch (_) {}
+      }
       const isDevIntent =
-        /\b(coders?|code|fix|build|implement|refactor|debug|deploy|github|api|function|module|class|typescript|javascript|sql|css|html|rewrite|patch|merge)\b/i.test(
+        /\b(coders?|code|fix|build|implement|refactor|debug|deploy|github|api|function|module|class|typescript|javascript|sql|css|html|rewrite|patch|merge|operating system|os will)\b/i.test(
           line
         ) ||
         /^coders\b/i.test(line) ||

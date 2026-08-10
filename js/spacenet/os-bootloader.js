@@ -291,6 +291,7 @@
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',
+    '/js/spacenet/os-will.js',
   ];
 
   function loadThree() {
@@ -445,6 +446,13 @@
       recordCheck('SNAi', !!global.SNAi, 'present', null);
     } catch (e) {
       recordCheck('SNAi', false, e.message || e, null);
+    }
+    try {
+      if (global.SNOsWill && SNOsWill.init) SNOsWill.init();
+      if (global.SNOsWill && SNOsWill.rehydrate) SNOsWill.rehydrate();
+      recordCheck('SNOsWill', !!global.SNOsWill, 'dynamic OS · every user is a developer', null);
+    } catch (e) {
+      recordCheck('SNOsWill', false, e.message || e, null);
     }
     try {
       recordCheck('SNAstranovMind', !!(global.SNAstranovMind || global.SNFreeMind), 'free mind', null);
@@ -619,7 +627,8 @@
         } else {
           SNCli.log('All critical checks passed', 'ok', true);
         }
-        SNCli.log('Commands: diagnostics · repair · boot · plan status · power on', 'dim', true);
+        SNCli.log('Commands: will · reshape · diagnostics · power on · plan status', 'dim', true);
+        SNCli.log('You are a developer · speak changes · the OS reshapes to your will', 'ok', true);
         SNCli.log('══════════════════════════════════════', 'ok', true);
       }
     } catch (_) {}
@@ -817,6 +826,8 @@
       globe: { src: '/js/spacenet/globe.js', global: 'SNGlobe' },
       ai: { src: '/js/spacenet/ai.js', global: 'SNAi' },
       subscription: { src: '/js/spacenet/subscription.js', global: 'SNSubscription' },
+      will: { src: '/js/spacenet/os-will.js', global: 'SNOsWill' },
+      'os-will': { src: '/js/spacenet/os-will.js', global: 'SNOsWill' },
       auth: { src: '/js/spacenet/auth.js', global: 'SNAuth' },
       helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
       marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },

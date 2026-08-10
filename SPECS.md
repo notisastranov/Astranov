@@ -864,3 +864,18 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **Never** | Claim READY without verified canvas. Never game splash. |
 
 *Build: `20260810140000-os-bootloader`*
+
+---
+
+## OWNER LAW · Dynamic OS will (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Every user is a developer** | CLI is the control plane — speak changes; the OS reshapes. |
+| **Personal version** | Mutations stored as `sn:user-os-version-v1` · fork · export · reset |
+| **Local ops** | theme · accent · brightness · cli · gadgets · power · globe · map · rename · density · drive · repair |
+| **AI co-dev** | Complex will → Grok/mind proposes `OPS:[...]` → executed for real |
+| **CLI** | `will` · `reshape …` · `day` · `night` · `open gadgets` · `fork` · `export os` · freeform English |
+| **Not a game shell** | Professional delivery OS that evolves with each operator |
+
+*Build: `20260810150000-os-will`*
