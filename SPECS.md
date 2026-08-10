@@ -962,3 +962,18 @@ Automated proof of money-path OS:
 - `node scripts/full-ready.mjs` → `screenshots/READY.json`
 
 Product focus locked: multi-tour polygon delivery marketplace + ⬠ nav + marina berths + OS will + AI sub cycle.
+
+---
+
+## OWNER LAW · LANGUAGE CORE (2026-08-10)
+
+| Rule | Spec |
+|------|------|
+| **Start** | Perfect **English** — default STT/TTS/replies |
+| **Greek** | Understand **any** Greek: modern, Greeklish, Archangelos village, ancient colour |
+| **All languages** | Understand every human language + playful non-language (meow, mixed scripts); act on intent |
+| **Reply** | English by default; Greek when user writes Greek; match other languages when user stays in them |
+| **Never** | Accidental Russian monologue / self-listen loops |
+| **CLI** | `lang en` · `lang el` · `lang auto` |
+
+*Build: `20260810190000-lang-core`*

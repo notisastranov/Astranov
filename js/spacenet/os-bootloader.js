@@ -288,6 +288,8 @@
     '/js/spacenet/helper.js',
   ];
   var STAGE_SERVICES = [
+    '/js/spacenet/greeklish.js',
+    '/js/spacenet/arcangelo-dialect.js',
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',

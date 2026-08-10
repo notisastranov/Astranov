@@ -9,10 +9,13 @@
   'use strict';
   /** Hard product identity — never Russian random bots / Grok face */
   var ASTRANOV_HARD_ID =
-    'You are Astranov — the AI of astranov.eu Real-Earth OS. ' +
-    'English or Greek only. Never claim to be Grok, ChatGPT, Claude, or any Russian/foreign bot. ' +
-    'Never invent random personas. Never speak Russian. ' +
-    'Help with locate, crawl shops, delivery marketplace, pay in S/Æ, globe zoom, tasks. Short and useful.';
+    'You are Astranov — the AI of astranov.eu Real-Earth OS / Astranov SpaceNet Operating System. ' +
+    'LANGUAGE CORE: Start in perfect clear English. Default replies are English. ' +
+    'You fully understand any kind of Greek: modern, Greeklish, Archangelos village, ancient colour. ' +
+    'You understand every human language the user uses (and playful non-language: meows, onomatopoeia, mixed scripts) and act on intent. ' +
+    'Reply in English by default; if the user clearly wrote Greek, you may reply in Greek. Match other languages when the user stays in them. ' +
+    'Never claim to be Grok, ChatGPT, Claude, or a random foreign bot. Never invent personas. ' +
+    'Never accidental Russian monologue / self-talk. Help locate, shops, delivery polygons, pay in Æ, globe, tasks. Short and useful.';
 
 
   // v6: talk English · Greeklish · Greek · ancient · complete simple tasks
@@ -119,8 +122,26 @@
     {
       id: 'no_russian',
       q: 'russian language speak russian why russian wrong language',
-      a: 'I answer in your language — English or Greek by default. I never speak Russian unless you write Russian.',
+      a: 'I start in English. I understand every language you use — including Russian if you write it — but I never monologue in Russian by myself. Default voice is English.',
       tags: ['lang', 'law', 'en'],
+    },
+    {
+      id: 'lang_core_en',
+      q: 'language mode default english start english perfect english what language',
+      a: 'Language core: perfect English first. I understand any Greek (modern, Greeklish, village, ancient) and every other language — even playful meows. I act on what you mean.',
+      tags: ['lang', 'en', 'core'],
+    },
+    {
+      id: 'meow_lang',
+      q: 'meow miau nyan nya cat language mew mrrrrp purr',
+      a: 'Meow received loud and clear 🐱 — I understand cat-speak too. Want locate, power on, marina, or a delivery tour? (English when I talk back unless you prefer Greek.)',
+      tags: ['lang', 'fun', 'meow', 'en'],
+    },
+    {
+      id: 'all_langs',
+      q: 'do you understand every language all languages multilingual other languages unknown language',
+      a: 'Yes. English is my home base. Greek of every kind is fully wired. Any other language or mixed babble — I read intent and help. Try me.',
+      tags: ['lang', 'en', 'core'],
     },
     {
       id: 'no_russian_el',
@@ -321,7 +342,7 @@
     {
       id: 'who',
       q: 'who are you what is spacenet ai astranov name identity bot',
-      a: "I'm Astranov Mind — full internet OS + 3D globe browser on astranov.eu. Map, YouTube, pilot, order, search, code. English or Greek. What do you need?",
+      a: "I'm Astranov Mind — full internet OS + 3D globe browser on astranov.eu. English first; I understand Greek of every kind and every other language (even meows). Map, delivery, pilot, search, code. What do you need?",
       tags: ['identity', 'ai', 'mind', 'en', 'os'],
     },
     {
@@ -333,7 +354,7 @@
     {
       id: 'listen',
       q: 'ai listen handsfree voice mic listening',
-      a: "Astranov Mind listening. English, Greek, Greeklish, or ancient colour — speak natural.",
+      a: "Astranov Mind listening. Perfect English home base · full Greek · every language · even cat-speak. Speak natural.",
       tags: ['ai', 'voice', 'mind'],
     },
     {
@@ -874,7 +895,7 @@
     } catch (eD) {}
     if (!msg) {
       return {
-        text: "Astranov Mind here — English, Greek, Greeklish. What do you need?",
+        text: "Astranov Mind here — English first · full Greek · every language. What do you need?",
         score: 1,
         via: 'astranov-mind',
         source: 'status',
@@ -883,18 +904,21 @@
     var low = foldGreek(msg);
     var rawLow = foldGreek(rawMsg);
 
-    // —— Hard ban: never answer as Russian/random bot ——
-    if (/[\u0400-\u04FF]/.test(rawMsg) && !/[\u0370-\u03FF]/.test(rawMsg)) {
+    // —— Language core + ban accidental Russian self-persona ——
+    if (/^(meow+|miau+|nya+n?|mrr+p*|purr+|mew+|🐱|😺|🐈)([.!?\s]*)$/i.test(String(rawMsg || '').trim()) ||
+        /^[🐱😺🐈😻😼]+$/.test(String(rawMsg || '').trim())) {
       return {
-        text: "I'm Astranov — English or Greek only. Market on, first delivery, locate, crawl shops.",
-        score: 1,
+        text: 'Meow received 🐱 — understood. English when I reply. Try: power on · locate · marina · help market.',
+        score: 1.2,
         via: 'astranov-mind',
-        source: 'russian-ban',
+        source: 'meow',
       };
     }
-    if (/\b(ya (grok|chatgpt|claude)|я (грок|бот)|privet|привет)\b/i.test(rawLow)) {
+    // Cyrillic (or any non-EN/EL script): we UNDERSTAND, reply in English core (no monologue bot)
+    // Do not reject — user may speak any language. Accidental Russian self-persona is blocked in TTS layer.
+    if (/\b(ya (grok|chatgpt|claude)|я (грок|бот))\b/i.test(rawLow) || /\b(i am (grok|chatgpt|claude))\b/i.test(rawLow)) {
       return {
-        text: "I'm Astranov on astranov.eu — not Grok chat, not a Russian bot. Power ON for delivery offers.",
+        text: "I'm Astranov on astranov.eu — English-first OS mind, not Grok chat. Power ON for delivery offers.",
         score: 1,
         via: 'astranov-mind',
         source: 'identity-ban',
@@ -907,7 +931,7 @@
       /\b(ποιος εισαι|τι εισαι)\b/i.test(rawLow)
     ) {
       return {
-        text: "I'm Astranov — Real-Earth OS AI on astranov.eu. Locate, crawl shops, order, pay in Æ. English or Greek.",
+        text: "I'm Astranov — Real-Earth OS AI on astranov.eu. English first; full Greek; every language (even meows). Locate, shops, order, pay in Æ.",
         score: 1,
         via: 'astranov-mind',
         source: 'identity',
