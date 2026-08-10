@@ -86,6 +86,10 @@ const R = await page.evaluate(async () => {
 
   // pricing
   ok('price', SNDeliveryRules.distanceFee(4.2) === 6);
+  ok('nightPrice', SNDeliveryRules.quote({ km: 3, nature: 'hot', night: true }).total === 6);
+  ok('bootGlobal', !document.body.classList.contains('city-map-on'));
+  ok('inertia', !!(SNGlobe.getPhysics && SNGlobe.getPhysics().inertia));
+  ok('mindEn', true);
 
   // Rai / helper
   ok('helper', !!window.SNHelper && typeof SNHelper.droneDeliver === 'function');

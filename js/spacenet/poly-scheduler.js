@@ -1086,6 +1086,16 @@
       o.phase = 'claimed';
       o.progress = 15;
       o.uiSize = 'max';
+      try {
+        if (global.SNDeliveryRules && SNDeliveryRules.registerHubOrder) {
+          SNDeliveryRules.registerHubOrder(
+            o.vendorName || o.vendorId || 'vendor',
+            o.vLat,
+            o.vLng,
+            o.id
+          );
+        }
+      } catch (_) {}
       commissionRai(o);
       try {
         if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
