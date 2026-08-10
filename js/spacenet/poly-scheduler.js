@@ -1655,6 +1655,18 @@
 
   function activate(opts) {
     opts = opts || {};
+    var already = active && stack.some(function (x) {
+      return x.phase === 'offered' || x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
+    });
+    // Re-tap power while market live: do not flood more tiles unless force
+    if (already && !opts.force && opts.offers == null) {
+      log('MARKET already ON · ' + stack.length + ' live · accept or rest', 'dim');
+      preview('market on');
+      try {
+        if (global.SNField && SNField.setLaunchMode) SNField.setLaunchMode('on', { quiet: true, skipMoney: true });
+      } catch (_) {}
+      return { ok: true, gen: gen, already: true };
+    }
     active = true;
     gen++;
     try {
@@ -1669,9 +1681,11 @@
     try {
       fromPool = claimFromPool(1);
     } catch (_) {}
-    if (!fromPool.length) throwOffers({ count: opts.offers != null ? opts.offers : 1 });
+    var want = opts.offers != null ? Number(opts.offers) : 1;
+    if (!fromPool.length && want > 0) throwOffers({ count: want });
     log('MARKET ON · multi-tour engine · pool + offers · 3× seal · Rai', 'ok');
     preview('market on');
+    ensureDriveLoop();
     return { ok: true, gen: gen };
   }
 
