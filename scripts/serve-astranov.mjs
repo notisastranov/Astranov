@@ -248,6 +248,210 @@ async function handleAi(req, res) {
   });
 }
 
+
+// ── PayPal (AI subscriptions) ─────────────────────────────────
+const PAYPAL_API =
+  (process.env.PAYPAL_MODE || 'sandbox').toLowerCase() === 'live'
+    ? 'https://api-m.paypal.com'
+    : 'https://api-m.sandbox.paypal.com';
+
+async function paypalAccessToken() {
+  const id = process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENTID || '';
+  const secret = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '';
+  if (!id || !secret) return null;
+  const auth = Buffer.from(id + ':' + secret).toString('base64');
+  const r = await fetch(PAYPAL_API + '/v1/oauth2/token', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + auth,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    console.warn('[paypal] token', r.status, t.slice(0, 200));
+    return null;
+  }
+  const j = await r.json();
+  return j.access_token || null;
+}
+
+async function handlePaypal(req, res, pathOnly) {
+  const cors = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, cors);
+    res.end();
+    return;
+  }
+  if (pathOnly === '/api/paypal/config' || pathOnly === '/api/paypal/config/') {
+    const clientId = process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENTID || '';
+    json(
+      res,
+      {
+        ok: true,
+        clientId: clientId || null,
+        mode: (process.env.PAYPAL_MODE || 'sandbox').toLowerCase(),
+        configured: !!(clientId && (process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET)),
+        tiers: [
+          { id: 'spark', priceEur: 3 },
+          { id: 'pulse', priceEur: 13 },
+          { id: 'orbit', priceEur: 33 },
+          { id: 'nova', priceEur: 300 },
+        ],
+      },
+      200,
+      cors
+    );
+    return;
+  }
+
+  async function readBody() {
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    try {
+      return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+
+  if (pathOnly === '/api/paypal/create-order' || pathOnly === '/api/paypal/create-order/') {
+    if (req.method !== 'POST') {
+      res.writeHead(405, cors);
+      res.end('POST only');
+      return;
+    }
+    const body = await readBody();
+    const price = Number(body.priceEur || body.amount || 0);
+    const tierId = String(body.tierId || body.tier || 'spark');
+    if (!(price > 0)) {
+      json(res, { ok: false, error: 'bad_amount' }, 400, cors);
+      return;
+    }
+    const token = await paypalAccessToken();
+    if (!token) {
+      json(
+        res,
+        {
+          ok: false,
+          error: 'paypal_not_configured',
+          hint: 'Set PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET (+ PAYPAL_MODE=sandbox|live)',
+        },
+        503,
+        cors
+      );
+      return;
+    }
+    const returnBase = String(body.returnUrl || body.origin || 'https://astranov.eu').replace(/\/$/, '');
+    const orderBody = {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: 'EUR',
+            value: price.toFixed(2),
+          },
+          description: 'Astranov AI · ' + tierId + ' · €' + price + '/mo quota',
+          custom_id: 'astranov-sub:' + tierId + ':' + Date.now(),
+        },
+      ],
+      application_context: {
+        brand_name: 'Astranov',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',
+        return_url: returnBase + '/?paypal=success&tier=' + encodeURIComponent(tierId),
+        cancel_url: returnBase + '/?paypal=cancel',
+      },
+    };
+    const r = await fetch(PAYPAL_API + '/v2/checkout/orders', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(orderBody),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      console.warn('[paypal] create-order', r.status, JSON.stringify(j).slice(0, 300));
+      json(res, { ok: false, error: 'create_failed', detail: j }, 502, cors);
+      return;
+    }
+    const approve = (j.links || []).find((l) => l.rel === 'approve');
+    json(
+      res,
+      {
+        ok: true,
+        orderId: j.id,
+        status: j.status,
+        approveUrl: approve && approve.href,
+        tierId: tierId,
+        priceEur: price,
+      },
+      200,
+      cors
+    );
+    return;
+  }
+
+  if (pathOnly === '/api/paypal/capture-order' || pathOnly === '/api/paypal/capture-order/') {
+    if (req.method !== 'POST') {
+      res.writeHead(405, cors);
+      res.end('POST only');
+      return;
+    }
+    const body = await readBody();
+    const orderId = String(body.orderId || body.token || '').trim();
+    if (!orderId) {
+      json(res, { ok: false, error: 'missing_order' }, 400, cors);
+      return;
+    }
+    const token = await paypalAccessToken();
+    if (!token) {
+      json(res, { ok: false, error: 'paypal_not_configured' }, 503, cors);
+      return;
+    }
+    const r = await fetch(PAYPAL_API + '/v2/checkout/orders/' + encodeURIComponent(orderId) + '/capture', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json',
+      },
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      console.warn('[paypal] capture', r.status, JSON.stringify(j).slice(0, 300));
+      json(res, { ok: false, error: 'capture_failed', detail: j }, 502, cors);
+      return;
+    }
+    const unit = (j.purchase_units && j.purchase_units[0]) || {};
+    const cap = (unit.payments && unit.payments.captures && unit.payments.captures[0]) || {};
+    json(
+      res,
+      {
+        ok: true,
+        orderId: j.id,
+        status: j.status,
+        captureId: cap.id || null,
+        amount: cap.amount || null,
+        customId: unit.custom_id || null,
+        payer: j.payer || null,
+      },
+      200,
+      cors
+    );
+    return;
+  }
+
+  res.writeHead(404, cors);
+  res.end('Not found');
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = req.url || '/';
@@ -257,11 +461,16 @@ const server = http.createServer(async (req, res) => {
       await handleAi(req, res);
       return;
     }
+    if (pathOnly.indexOf('/api/paypal') === 0) {
+      await handlePaypal(req, res, pathOnly);
+      return;
+    }
     if (pathOnly === '/api/health') {
       json(res, {
         ok: true,
         service: 'astranov',
         xai: !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY),
+        paypal: !!(process.env.PAYPAL_CLIENT_ID || process.env.PAYPAL_CLIENTID),
         markup: MARKUP,
       });
       return;

@@ -831,3 +831,19 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **CLI** | `reassign demo` · `pool status` · `rebalance` · `drivers` · `rest` |
 
 *Build: `20260810124000-reassign` · `reassign-engine.js`*
+
+---
+
+## OWNER LAW · AI subscription + PayPal (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Normal users** | Must **buy a monthly plan via PayPal** to use paid Grok through the app. |
+| **Tiers** | €3 Spark · €13 Pulse · €33 Orbit · €300 Nova |
+| **Markup** | **3×** — user €3 sub → €1 real API budget, then free models |
+| **Owner** | Login as **notisastranov@gmail.com** → **paid Grok ON immediately** (server `XAI_API_KEY`). No PayPal. Build inside the app. |
+| **CLI** | `plans` · `subscribe 3` (PayPal) · `subscribe demo 3` (owner only) · `plan status` · `paypal status` · `owner session` |
+| **Key** | Never ship XAI/PayPal secrets in client. Server only. |
+| **Why** | Owner develops **from inside Astranov** with full Grok; users fund the pool via PayPal subs. |
+
+*Build: `20260810130000-paypal-sub`*

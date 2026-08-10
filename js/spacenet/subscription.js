@@ -10,8 +10,11 @@
  *  - Owner API key (server-side only) funds every paid subscriber within budget.
  *  - Transcript of app AI use is stored to train Astranov Mind.
  *
- * CLI: plan · plans · subscribe 3|13|33|300 · plan status · usage ai · transcript
- * Never put XAI_API_KEY in this file.
+ * CLI: plan · plans · subscribe 3|13|33|300 (PayPal) · subscribe demo 3 (owner test)
+ *      plan status · usage ai · transcript · paypal status
+ * Normal users: PayPal required for AI subscription.
+ * Owner (notisastranov@gmail.com) logged in: paid Grok via server XAI_API_KEY instantly.
+ * Never put XAI_API_KEY or PayPal secret in this file.
  */
 (function (global) {
   'use strict';
@@ -237,8 +240,22 @@
     opts = opts || {};
     var t = tierByPrice(priceOrId) || tierById(priceOrId);
     if (!t) {
-      log('Plans: 3 · 13 · 33 · 300 €/mo', 'err');
+      log('Plans: 3 · 13 · 33 · 300 €/mo · pay with PayPal', 'err');
       return { ok: false, error: 'unknown_tier' };
+    }
+    // Owner never pays for own development seat
+    if (isOwner() && !opts.paymentRef) {
+      opts.paymentRef = 'owner-comp';
+      opts.demo = false;
+    }
+    // Real users: must have PayPal (or owner) payment ref — no free activate
+    if (!isOwner() && opts.demo && !opts.paymentRef) {
+      log('AI plans require PayPal · type: subscribe ' + t.priceEur, 'err');
+      return { ok: false, error: 'paypal_required' };
+    }
+    if (!isOwner() && !opts.paymentRef && !opts.forceLocal) {
+      log('Complete PayPal checkout to activate · type: subscribe ' + t.priceEur, 'err');
+      return { ok: false, error: 'paypal_required' };
     }
     var st = {
       tierId: t.id,
@@ -248,8 +265,9 @@
       spentApiEur: 0,
       subscribedAt: now(),
       active: true,
-      paymentRef: opts.paymentRef || 'local-demo-' + t.id + '-' + now(),
-      demo: opts.demo !== false,
+      paymentRef: opts.paymentRef || (isOwner() ? 'owner-comp' : null),
+      demo: !!opts.demo && isOwner(),
+      provider: opts.provider || (String(opts.paymentRef || '').indexOf('paypal') === 0 ? 'paypal' : 'local'),
     };
     saveState(st);
     log(
@@ -259,14 +277,158 @@
         t.priceEur +
         '/mo · API budget €' +
         t.apiBudgetEur +
-        ' (3× markup) · then free models',
+        ' (3× markup) · then free · via ' +
+        (st.provider || 'local'),
       'ok'
     );
     try {
       if (global.SNUsage && SNUsage.track)
-        SNUsage.track('subscribe', { tier: t.id, price: t.priceEur, api: t.apiBudgetEur });
+        SNUsage.track('subscribe', {
+          tier: t.id,
+          price: t.priceEur,
+          api: t.apiBudgetEur,
+          provider: st.provider,
+          ref: st.paymentRef,
+        });
     } catch (_) {}
     return { ok: true, tier: t, state: st };
+  }
+
+  /**
+   * Start PayPal checkout for a tier. Normal path for all non-owner users.
+   * Owner skips PayPal and arms paid Grok immediately.
+   */
+  async function startPayPalCheckout(priceOrId, opts) {
+    opts = opts || {};
+    var t = tierByPrice(priceOrId) || tierById(priceOrId);
+    if (!t) {
+      log('Unknown plan · use 3 · 13 · 33 · 300', 'err');
+      return { ok: false, error: 'unknown_tier' };
+    }
+    if (isOwner()) {
+      log('Architect · no PayPal needed · paid Grok ON (server key)', 'ok');
+      return subscribe(t.priceEur, { paymentRef: 'owner-comp', provider: 'owner' });
+    }
+    try {
+      var origin = location.origin || 'https://astranov.eu';
+      var cfgR = await fetch(origin + '/api/paypal/config');
+      var cfg = await cfgR.json().catch(function () {
+        return {};
+      });
+      if (!cfg.configured && !cfg.clientId) {
+        log('PayPal not configured on server yet · set PAYPAL_CLIENT_ID + SECRET', 'err');
+        log('Owner can still develop when logged in as ' + ARCHITECT_EMAIL, 'dim');
+        return { ok: false, error: 'paypal_not_configured' };
+      }
+      log('PayPal · creating €' + t.priceEur + ' order for ' + t.label + '…', 'ok');
+      var cr = await fetch(origin + '/api/paypal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tierId: t.id,
+          priceEur: t.priceEur,
+          returnUrl: origin,
+          origin: origin,
+        }),
+      });
+      var order = await cr.json().catch(function () {
+        return {};
+      });
+      if (!order.ok || !order.approveUrl) {
+        log('PayPal create failed · ' + (order.error || order.hint || cr.status), 'err');
+        return { ok: false, error: order.error || 'create_failed', detail: order };
+      }
+      try {
+        sessionStorage.setItem(
+          'sn:paypal-pending',
+          JSON.stringify({
+            orderId: order.orderId,
+            tierId: t.id,
+            priceEur: t.priceEur,
+            at: now(),
+          })
+        );
+      } catch (_) {}
+      log('Opening PayPal · complete payment to unlock Grok', 'ok');
+      // Redirect to PayPal approval
+      location.href = order.approveUrl;
+      return { ok: true, redirect: true, orderId: order.orderId };
+    } catch (e) {
+      log('PayPal error · ' + (e && e.message ? e.message : e), 'err');
+      return { ok: false, error: String(e && e.message ? e.message : e) };
+    }
+  }
+
+  /** After return from PayPal (?paypal=success&token=ORDERID&tier=spark) */
+  async function completePayPalReturn() {
+    try {
+      var q = new URLSearchParams(location.search || '');
+      var flag = q.get('paypal');
+      if (!flag) return null;
+      if (flag === 'cancel') {
+        log('PayPal cancelled · no subscription change', 'dim');
+        cleanPayPalUrl();
+        return { ok: false, cancelled: true };
+      }
+      if (flag !== 'success') return null;
+      var orderId = q.get('token') || q.get('orderId') || '';
+      var tierId = q.get('tier') || '';
+      try {
+        var pending = JSON.parse(sessionStorage.getItem('sn:paypal-pending') || 'null');
+        if (pending) {
+          if (!orderId) orderId = pending.orderId;
+          if (!tierId) tierId = pending.tierId;
+        }
+      } catch (_) {}
+      if (!orderId) {
+        log('PayPal return missing order id', 'err');
+        cleanPayPalUrl();
+        return { ok: false, error: 'missing_order' };
+      }
+      log('PayPal · capturing payment…', 'ok');
+      var origin = location.origin || '';
+      var r = await fetch(origin + '/api/paypal/capture-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: orderId, tierId: tierId }),
+      });
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      if (!j.ok) {
+        log('PayPal capture failed · ' + (j.error || r.status), 'err');
+        cleanPayPalUrl();
+        return { ok: false, error: j.error || 'capture_failed' };
+      }
+      var ref = 'paypal:' + (j.captureId || j.orderId || orderId);
+      var sub = subscribe(tierId || 'spark', {
+        paymentRef: ref,
+        provider: 'paypal',
+        demo: false,
+      });
+      try {
+        sessionStorage.removeItem('sn:paypal-pending');
+      } catch (_) {}
+      cleanPayPalUrl();
+      log('PayPal paid · Grok budget active · ' + ref, 'ok');
+      return { ok: true, subscribe: sub, capture: j };
+    } catch (e) {
+      log('PayPal return error · ' + (e && e.message ? e.message : e), 'err');
+      return { ok: false, error: String(e && e.message ? e.message : e) };
+    }
+  }
+
+  function cleanPayPalUrl() {
+    try {
+      var u = new URL(location.href);
+      if (!u.searchParams.has('paypal')) return;
+      u.searchParams.delete('paypal');
+      u.searchParams.delete('token');
+      u.searchParams.delete('orderId');
+      u.searchParams.delete('tier');
+      u.searchParams.delete('PayerID');
+      history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+    } catch (_) {}
   }
 
   function cancel() {
@@ -307,7 +469,8 @@
     });
     var s = status();
     log('You: ' + s.label + ' · mode=' + s.mode, s.active || s.owner ? 'ok' : 'dim');
-    if (s.owner) log('Owner path: paid Grok ON immediately (your key, server-side)', 'ok');
+    if (s.owner) log('Owner path: paid Grok ON immediately (your key, server-side) · build inside the app', 'ok');
+    else log('Pay with PayPal to unlock Grok · type: subscribe 3', 'dim');
   }
 
   /* ── Transcript (training fuel) ── */
@@ -540,14 +703,44 @@
       if (!s.owner && !s.active) log('Type: subscribe 3  · or subscribe 13|33|300', 'ok');
       return true;
     }
+    var mDemo = low.match(/^subscribe\s+demo\s+(\d+|spark|pulse|orbit|nova)\b/);
+    if (mDemo) {
+      if (!isOwner()) {
+        log('Demo subscribe is owner-only · pay with PayPal: subscribe 3', 'err');
+        return true;
+      }
+      subscribe(mDemo[1], { demo: true, paymentRef: 'owner-demo', provider: 'owner' });
+      return true;
+    }
     var mSub = low.match(/^subscribe\s+(\d+|spark|pulse|orbit|nova)\b/);
     if (mSub || low === 'subscribe') {
       if (!mSub) {
         printPlans();
-        log('Example: subscribe 3', 'ok');
+        log('Pay with PayPal: subscribe 3 · or 13 · 33 · 300', 'ok');
+        log('Owner login (' + ARCHITECT_EMAIL + ') → paid Grok free for building', 'dim');
         return true;
       }
-      subscribe(mSub[1], { demo: true });
+      // Fire async PayPal (or owner free)
+      Promise.resolve(startPayPalCheckout(mSub[1])).catch(function (e) {
+        log('Subscribe failed · ' + e, 'err');
+      });
+      return true;
+    }
+    if (low === 'paypal' || low === 'paypal status' || low === 'pay status') {
+      Promise.resolve()
+        .then(function () {
+          return fetch((location.origin || '') + '/api/paypal/config').then(function (r) {
+            return r.json();
+          });
+        })
+        .then(function (c) {
+          if (c && c.configured) log('PayPal ready · mode ' + (c.mode || '?'), 'ok');
+          else log('PayPal not configured · set PAYPAL_CLIENT_ID + PAYPAL_CLIENT_SECRET on server', 'dim');
+          printPlans();
+        })
+        .catch(function () {
+          log('PayPal config unreachable', 'err');
+        });
       return true;
     }
     if (low === 'unsubscribe' || low === 'cancel plan' || low === 'plan cancel') {
@@ -616,6 +809,25 @@
     return false;
   }
 
+  function init() {
+    // Complete PayPal return if present
+    try {
+      if (/[?&]paypal=/.test(location.search || '')) {
+        setTimeout(function () {
+          completePayPalReturn();
+        }, 400);
+      }
+    } catch (_) {}
+    // Owner arm reminder
+    try {
+      if (isOwner()) {
+        try {
+          localStorage.setItem('sn:owner-session', '1');
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
   global.SNSubscription = {
     MARKUP: MARKUP,
     TIERS: TIERS,
@@ -623,6 +835,8 @@
     status: status,
     canUsePaid: canUsePaid,
     subscribe: subscribe,
+    startPayPalCheckout: startPayPalCheckout,
+    completePayPalReturn: completePayPalReturn,
     cancel: cancel,
     listPlans: listPlans,
     printPlans: printPlans,
@@ -635,5 +849,9 @@
     handleLine: handleLine,
     isOwner: isOwner,
     loadTx: loadTx,
+    init: init,
   };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })(typeof window !== 'undefined' ? window : globalThis);
