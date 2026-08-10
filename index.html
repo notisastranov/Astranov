@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260810140000-os-bootloader" />
-<meta name="astranov-continuity" content="20260810140000-os-bootloader" />
+<meta name="astranov-build" content="20260810143000-top-handle-zoom" />
+<meta name="astranov-continuity" content="20260810143000-top-handle-zoom" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -134,7 +134,17 @@ html.theme-light #city-map {
   border-radius: var(--r);
   box-shadow: var(--shadow), 0 0 28px rgba(var(--glow-rgb), 0.18);
   overflow: hidden;
-  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, max-height 0.25s ease;
+}
+#sn-topchrome-panel.collapsed {
+  max-height: 96px !important;
+  min-height: 88px !important;
+}
+#sn-topchrome-panel.mid,
+#sn-topchrome-panel.expanded {
+  max-height: min(72vh, 560px) !important;
 }
 #stc-body { display: flex; flex-direction: column; }
 #stc-compact {
@@ -250,33 +260,36 @@ html.theme-light #sn-task-launch.mode-standby {
   filter: drop-shadow(0 0 8px rgba(232, 33, 39, 0.85));
 }
 #sn-topchrome-drag {
-  height: 28px;
-  min-height: 28px;
+  height: 32px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
   touch-action: none;
   flex-shrink: 0;
-  border-top: 1px solid rgba(61, 158, 255, 0.22);
-  background: linear-gradient(180deg, rgba(8, 28, 64, 0.35), rgba(4, 14, 36, 0.55));
+  z-index: 5;
+  position: relative;
+  border-top: 1px solid rgba(61, 158, 255, 0.35);
+  background: linear-gradient(180deg, rgba(12, 40, 88, 0.55), rgba(4, 14, 36, 0.85));
   border-radius: 0 0 18px 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 #sn-topchrome-drag::before {
   content: '';
-  width: 48px;
-  height: 5px;
+  width: 56px;
+  height: 6px;
   border-radius: 999px;
-  background: rgba(61, 158, 255, 0.75);
-  box-shadow: 0 0 12px rgba(61, 158, 255, 0.55);
+  background: rgba(61, 158, 255, 0.9);
+  box-shadow: 0 0 14px rgba(61, 158, 255, 0.7);
 }
 #sn-topchrome-drag::after {
-  content: 'gadgets';
-  font: 700 9px/1 var(--font-ui);
-  letter-spacing: 0.16em;
+  content: 'gadgets · tap';
+  font: 700 10px/1 var(--font-ui);
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(160, 200, 255, 0.75);
+  color: rgba(180, 220, 255, 0.9);
 }
 #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 #sn-topchrome-panel.mid #sn-topchrome-drag::after {
@@ -1058,6 +1071,6 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   }
 })();
 </script>
-<script src="/js/spacenet/os-bootloader.js?v=20260810140000-os-bootloader"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260810143000-top-handle-zoom"></script>
 </body>
 </html>

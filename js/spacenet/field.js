@@ -2173,7 +2173,7 @@
       var MIN = 54;
       // Expand enough for device + fleet graph gadgets (hub text stays hidden in CSS)
       var FULL = Math.max(MIN + 80, Math.min(Math.round(h * 0.55), h - oppositeReserve()));
-      if (mode === 'collapsed') return 54;
+      if (mode === 'collapsed') return 92; // compact row + gadgets handle
       if (mode === 'expanded') return FULL;
       return Math.max(MIN, Math.min(Math.round(h * 0.38), FULL));
     }
@@ -2220,7 +2220,7 @@
         panel.style.removeProperty('min-height');
         panel.style.minHeight = MIN + 'px';
         law.textContent =
-          'html body #sn-topchrome #sn-topchrome-panel.collapsed{max-height:58px !important;height:auto !important;min-height:54px !important;}';
+          'html body #sn-topchrome #sn-topchrome-panel.collapsed{max-height:96px !important;height:auto !important;min-height:88px !important;}';
         try {
           document.head.appendChild(law);
         } catch (_) {}
@@ -2320,7 +2320,7 @@
         }
         if (next <= MIN + 8) {
           law.textContent =
-            '#sn-topchrome-panel.collapsed{max-height:58px!important;height:auto!important}';
+            '#sn-topchrome-panel.collapsed{max-height:96px!important;height:auto!important;min-height:88px!important}';
         } else {
           law.textContent =
             '#sn-topchrome-panel.mid,#sn-topchrome-panel.expanded{max-height:' +
@@ -2349,24 +2349,62 @@
       setMode(pick, true, null);
     }
 
-    handle && handle.addEventListener('pointerdown', onDown);
-    panel.addEventListener('pointerdown', onDown);
-    panel.addEventListener('pointermove', onMove, { passive: false });
-    panel.addEventListener('pointerup', onUp);
-    panel.addEventListener('pointercancel', onUp);
+    var fromHandle = false;
+    var handleDownY = 0;
+    var handleDownT = 0;
 
-    // Single tap on handle expands/collapses gadgets (drag still resizes)
+    function onDownWrap(e) {
+      fromHandle = !!(e && e.target && e.target.closest && e.target.closest('#sn-topchrome-drag'));
+      handleDownY = e.clientY;
+      handleDownT = performance.now();
+      onDown(e);
+    }
+
+    function onUpWrap(e) {
+      var wasHandle = fromHandle;
+      var dy = e && e.clientY != null ? e.clientY - handleDownY : 0;
+      var dt = performance.now() - handleDownT;
+      var wasMoved = moved;
+      onUp(e);
+      // Tap on handle (small motion) → toggle gadgets — drag still resizes via onUp
+      if (wasHandle && Math.abs(dy) < 22 && dt < 700) {
+        // If user did not drag enough to resize, toggle open/closed
+        if (!wasMoved || Math.abs(dy) < 12) {
+          var m = panel.classList.contains('collapsed') ? 'expanded' : 'collapsed';
+          panel.dataset.stcToggleAt = String(performance.now());
+          setMode(m, true);
+          try {
+            if (g.SNCli && SNCli.ops)
+              SNCli.ops(m === 'expanded' ? 'Gadgets open · tap handle' : 'Gadgets closed');
+          } catch (_) {}
+        }
+      }
+      fromHandle = false;
+    }
+
+    handle && handle.addEventListener('pointerdown', onDownWrap);
+    panel.addEventListener('pointerdown', onDownWrap);
+    panel.addEventListener('pointermove', onMove, { passive: false });
+    panel.addEventListener('pointerup', onUpWrap);
+    panel.addEventListener('pointercancel', onUpWrap);
+    // Fallback click (mouse / accessibility)
     handle &&
       handle.addEventListener('click', function (ev) {
-        // ignore if just finished a drag
-        if (moved) return;
         try {
           if (ev && ev.preventDefault) ev.preventDefault();
         } catch (_) {}
+        // Only if not a drag end already handled
+        if (Math.abs((ev.clientY || 0) - handleDownY) > 22) return;
         var m = panel.classList.contains('collapsed') ? 'expanded' : 'collapsed';
+        // avoid double-toggle if pointerup already switched within 50ms
+        if (performance.now() - handleDownT < 50) return;
+        if (panel.dataset.stcToggleAt && performance.now() - Number(panel.dataset.stcToggleAt) < 350)
+          return;
+        panel.dataset.stcToggleAt = String(performance.now());
         setMode(m, true);
         try {
-          if (m === 'expanded' && g.SNCli && SNCli.ops) SNCli.ops('Top scroll · gadgets open');
+          if (g.SNCli && SNCli.ops)
+            SNCli.ops(m === 'expanded' ? 'Gadgets open' : 'Gadgets closed');
         } catch (_) {}
       });
 

@@ -627,17 +627,14 @@
     // Install CLI intercepts for OS commands
     installCliHooks();
 
-    // Remove boot overlay after brief read time if success, or keep with actions if fail
+    // Bootloader becomes the CLI — not a discarded splash
     if (success) {
-      info('bringing up UI in 1.2s · report stays in CLI');
-      setTimeout(function () {
-        killOverlay();
-      }, 1200);
+      info('minimizing bootloader → CLI');
       setActions([
         {
-          label: 'Enter system',
+          label: 'Continue',
           fn: function () {
-            killOverlay();
+            minimizeBootToCli();
           },
         },
         {
@@ -647,6 +644,9 @@
           },
         },
       ]);
+      setTimeout(function () {
+        minimizeBootToCli();
+      }, 900);
     } else {
       setActions([
         {
@@ -673,9 +673,9 @@
           },
         },
         {
-          label: 'Enter degraded',
+          label: 'Open CLI degraded',
           fn: function () {
-            killOverlay();
+            minimizeBootToCli();
           },
         },
       ]);
@@ -689,11 +689,57 @@
     } catch (_) {}
   }
 
+  /**
+   * Morph full-screen bootloader into the dock CLI (OS continues in CLI).
+   * Report lines are already seeded; expand CLI mid so user can read.
+   */
+  function minimizeBootToCli() {
+    try {
+      // Ensure map not covering globe
+      try {
+        if (global.SNMap && SNMap.active && SNMap.close) SNMap.close();
+      } catch (_) {}
+      // Ensure globe at GLOBAL if stuck deep without canvas sense
+      try {
+        if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+      } catch (_) {}
+
+      // Expand CLI with boot transcript
+      try {
+        if (global.SNCli && SNCli.init) SNCli.init();
+      } catch (_) {}
+      try {
+        if (global.SNUi && SNUi.setSize) SNUi.setSize('mid');
+        else {
+          var panel = document.getElementById('panel');
+          if (panel) {
+            panel.classList.remove('collapsed', 'cli-quiet');
+            panel.classList.add('mid');
+            panel.style.maxHeight = '32vh';
+          }
+        }
+      } catch (_) {}
+      try {
+        if (global.SNCli && SNCli.log) {
+          SNCli.log('ASTRANOV OS · bootloader → CLI · system online', 'ok', true);
+          SNCli.log('Top: tap gadgets handle · Globe: wheel zoom (no spin) · power ON for tasks', 'dim', true);
+        }
+      } catch (_) {}
+      // Focus CLI input
+      try {
+        var inp = document.getElementById('cli-in');
+        if (inp) inp.placeholder = 'diagnostics · repair · power on · help';
+      } catch (_) {}
+    } catch (_) {}
+    killOverlay();
+  }
+
   function killOverlay() {
     try {
       var el = document.getElementById('boot');
       if (!el) return;
       el.classList.add('hide');
+      el.style.setProperty('opacity', '0', 'important');
       el.style.setProperty('display', 'none', 'important');
       el.style.setProperty('pointer-events', 'none', 'important');
       el.setAttribute('aria-busy', 'false');
@@ -701,7 +747,7 @@
         try {
           el.remove();
         } catch (_) {}
-      }, 200);
+      }, 180);
     } catch (_) {}
   }
 
@@ -835,6 +881,18 @@
 
       await loadStage('drivers', STAGE_DRIVERS, { soft: true });
       initDrivers();
+      // Never boot into truncated street map
+      try {
+        if (global.SNMap && SNMap.active && SNMap.close) {
+          SNMap.close();
+          warn('closed street map on boot · stay on 3D globe');
+        }
+      } catch (_) {}
+      try {
+        document.body.classList.remove('city-map-on');
+        var cm = document.getElementById('city-map');
+        if (cm) cm.classList.remove('active');
+      } catch (_) {}
 
       // Services non-blocking parallel with auth
       var svc = loadStage('services', STAGE_SERVICES, { soft: true }).then(function () {
@@ -905,6 +963,7 @@
     repairKernel: repairKernel,
     repairDrivers: repairDrivers,
     killOverlay: killOverlay,
+    minimizeBootToCli: minimizeBootToCli,
     out: out,
   };
   global.SNOsBoot = api;

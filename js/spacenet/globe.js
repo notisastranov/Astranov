@@ -2074,9 +2074,10 @@
       function (e) {
         // Mouse / trackpad scroll = ZOOM only — never spin the globe
         if (e.cancelable) e.preventDefault();
+        if (e.stopPropagation) e.stopPropagation();
         if (G.gameMode) return;
 
-        // Kill any stuck drag so scroll never becomes a spin
+        // Hard stop any trackball / inertia / fly — wheel must never fling the sphere
         down = false;
         dragActive = false;
         moved = false;
@@ -2088,41 +2089,70 @@
         G.dragging = false;
         G.velX = 0;
         G.velY = 0;
+        smVx = 0;
+        smVy = 0;
+        // Abort in-flight camera so stacked wheel events cannot fight each other
+        G.flyGen = (G.flyGen || 0) + 1;
+        G.flying = false;
+        G.zoomAnim = false;
         G.lastAct = Date.now();
         G.lastUserControl = Date.now();
 
-        var under = pickLatLng(e.clientX, e.clientY);
-        if (under) setFocus(under.lat, under.lng);
-
-        // Normalize delta (lines vs pixels vs page)
+        // Ignore horizontal trackpad pan (that was misread as chaos)
         var dy = e.deltaY;
-        if (e.deltaMode === 1) dy *= 16; // lines
-        if (e.deltaMode === 2) dy *= 32; // pages
-        // Trackpads often send small pixel deltas — accumulate
+        var dx = e.deltaX || 0;
+        if (e.deltaMode === 1) dy *= 16;
+        if (e.deltaMode === 2) dy *= 32;
+        // If mostly horizontal, ignore (trackpad scroll sideways)
+        if (Math.abs(dx) > Math.abs(dy) * 1.4 && Math.abs(dy) < 12) return;
+
         G._wheelAcc = (G._wheelAcc || 0) + dy;
         var now = Date.now();
-        if (G.zoomAnim || G.flying) {
-          // still accumulate; apply after cool
+        // Longer cool-down: one discrete tier step per gesture, not a spin storm
+        if (now < (G._wheelCoolUntil || 0)) {
+          G._wheelAcc = 0;
           return;
         }
-        if (now < (G._wheelCoolUntil || 0)) return;
-        // Responsive: ~1 notch or gentle trackpad flick
-        if (Math.abs(G._wheelAcc) < 18) return;
+        if (Math.abs(G._wheelAcc) < 28) return;
         var zoomOut = G._wheelAcc > 0;
         G._wheelAcc = 0;
-        G._wheelCoolUntil = now + 200;
+        G._wheelCoolUntil = now + 480;
+
+        // Close truncated street map if open — zoom returns to 3D globe
+        try {
+          if (global.SNMap && SNMap.active && SNMap.close) SNMap.close();
+        } catch (_) {}
 
         if (zoomOut) {
           doZoomOutStep();
           return;
         }
-        var p = under || focusPos();
+        // Zoom in: ladder step only (no openMap). Prefer focus under cursor without wild re-aim every tick.
+        var under = null;
+        try {
+          under = pickLatLng(e.clientX, e.clientY);
+        } catch (_) {}
+        var p = under || focusPos() || G.diveAnchor;
         if (p && p.lat != null) {
-          diveInAt(p.lat, p.lng);
-        } else {
+          // Soft focus once — goToTier path without fly fight
+          setFocus(p.lat, p.lng);
           var cur = currentTier();
-          var idx = ladderIndex(cur);
-          if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
+          if (cur === 'city' || cur === 'regional') {
+            // already deep: gentle Z only
+            animateZ(TIERS.regional ? TIERS.regional.z : 2.2, 420);
+            G.diveTier = 'regional';
+            setTierLabel();
+          } else {
+            diveInAt(p.lat, p.lng);
+          }
+        } else {
+          var cur2 = currentTier();
+          var idx = ladderIndex(cur2);
+          if (idx < LADDER.length - 1) {
+            var next = LADDER[idx + 1];
+            if (next === 'city') next = 'regional';
+            goToTier(next);
+          }
         }
       },
       { passive: false }
@@ -2167,16 +2197,29 @@
     G.velX = 0;
     G.velY = 0;
 
-    var openMap =
-      n.openMap === true || (cell === 'city' && (G.bodyId === 'earth' || !G.bodyId));
+    // Street map is OPT-IN only (CLI "city map" / locate path) — zoom never truncates to flat map
+    var openMap = false;
+    try {
+      if (global.SNMap && SNMap.active) {
+        // already on map · keep 3D path for zoom-out
+      }
+    } catch (_) {}
 
     var ok = goToPlace(lat, lng, {
-      tier: cell,
-      openMap: openMap,
+      tier: cell === 'city' ? 'regional' : cell, // keep 3D globe; city tier label via diveTier below
+      openMap: false,
       pulse: false,
       body: G.bodyId || 'earth',
       skipScan: cell === 'city' ? false : cell === 'global',
     });
+    // Remember intended cell without forcing Leaflet
+    G.diveTier = cell === 'city' ? 'regional' : cell;
+    if (cell === 'city') {
+      try {
+        setHud('CITY · 3D · type city map for streets');
+        if (global.SNCli && SNCli.log) SNCli.log('City depth · 3D globe (no truncated map) · city map for streets', 'dim');
+      } catch (_) {}
+    }
 
     try {
       var path = (SN && SN.pathString && SN.pathString()) || 'GLOBAL → NATIONAL → REGIONAL → CITY';
@@ -2355,11 +2398,8 @@
         SNCli.preview(label + nextHint);
       }
     } catch (_) {}
-    // Earth street map only at CITY (or openMap:true) — not at national/regional
-    if (
-      (opts.openMap === true || (opts.openMap !== false && tier === 'city')) &&
-      (bodyId === 'earth' || G.bodyId === 'earth')
-    ) {
+    // Street map ONLY when caller explicitly sets openMap:true (never from wheel/zoom)
+    if (opts.openMap === true && (bodyId === 'earth' || G.bodyId === 'earth')) {
       try {
         if (global.SNMap && SNMap.open) void SNMap.open(lat, lng);
       } catch (_) {}
