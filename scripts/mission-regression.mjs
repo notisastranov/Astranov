@@ -32,6 +32,8 @@ const R = await page.evaluate(async () => {
   ok('power', !!document.getElementById('sn-task-launch'));
   ok('handle', !!document.getElementById('sn-topchrome-drag'));
   ok('modules', !!(SNPolyScheduler && SNPolyEngine && SNReassignEngine && SNDeliveryRules && SNField && SNMap && SNGlobe));
+  // Before poly/marina open streets:
+  ok('bootGlobal', !document.body.classList.contains('city-map-on'));
 
   // gadgets
   const handle = document.getElementById('sn-topchrome-drag');
@@ -87,7 +89,6 @@ const R = await page.evaluate(async () => {
   // pricing
   ok('price', SNDeliveryRules.distanceFee(4.2) === 6);
   ok('nightPrice', SNDeliveryRules.quote({ km: 3, nature: 'hot', night: true }).total === 6);
-  ok('bootGlobal', !document.body.classList.contains('city-map-on'));
   ok('inertia', !!(SNGlobe.getPhysics && SNGlobe.getPhysics().inertia));
   ok('mindEn', true);
 
