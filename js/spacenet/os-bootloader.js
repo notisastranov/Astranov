@@ -51,9 +51,9 @@
     bootEl.innerHTML =
       '<div id="sn-os-head" style="flex:0 0 auto;margin-bottom:10px">' +
       '<div style="font:800 13px/1.2 Space Grotesk,system-ui,sans-serif;letter-spacing:0.22em;color:#3d9eff;' +
-      'text-shadow:0 0 12px rgba(61,158,255,0.7)">ASTRANOV OS</div>' +
+      'text-shadow:0 0 12px rgba(61,158,255,0.7)">ASTRANOV SPACENET</div>' +
       '<div id="sn-os-sub" style="font:600 10px/1.4 JetBrains Mono,monospace;color:#6a8ab8;margin-top:6px">' +
-      'BOOTLOADER · build ' +
+      'OPERATING SYSTEM · BOOTLOADER · build ' +
       esc(BUILD) +
       '</div></div>' +
       '<pre id="sn-os-console" style="flex:1 1 auto;margin:0;overflow:auto;white-space:pre-wrap;word-break:break-word;' +
@@ -612,7 +612,7 @@
           }
         } catch (_) {}
         SNCli.log('══════════════════════════════════════', 'ok', true);
-        SNCli.log('ASTRANOV OS · boot ' + ms + 'ms · ' + (success ? 'READY' : 'DEGRADED'), success ? 'ok' : 'err', true);
+        SNCli.log('Astranov SpaceNet Operating System · boot ' + ms + 'ms · ' + (success ? 'READY' : 'DEGRADED'), success ? 'ok' : 'err', true);
         SNCli.log('build ' + BUILD, 'dim', true);
         var fails = report.checks.filter(function (c) {
           return !c.pass;
@@ -730,7 +730,7 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('ASTRANOV OS · bootloader → CLI · system online', 'ok', true);
+          SNCli.log('Astranov SpaceNet Operating System · bootloader → CLI · system online', 'ok', true);
           SNCli.log('Top: tap gadgets handle · Globe: wheel zoom (no spin) · power ON for tasks', 'dim', true);
         }
       } catch (_) {}
@@ -786,7 +786,7 @@
             if (SNCli.log) SNCli.log(String(raw).trim(), 'cmd');
           } catch (_) {}
           if (low === 'boot' || low === 'boot report' || low === 'kernel status' || low === 'os status') {
-            SNCli.log('ASTRANOV OS · ' + (report.ready ? 'READY' : 'NOT READY') + ' · ' + (report.bootMs || '?') + 'ms · build ' + BUILD, report.ready ? 'ok' : 'err');
+            SNCli.log('Astranov SpaceNet Operating System · ' + (report.ready ? 'READY' : 'NOT READY') + ' · ' + (report.bootMs || '?') + 'ms · build ' + BUILD, report.ready ? 'ok' : 'err');
             report.checks.slice(-20).forEach(function (c) {
               SNCli.log((c.pass ? '✓ ' : '✗ ') + c.id + (c.detail ? ' · ' + c.detail : ''), c.pass ? 'ok' : 'err');
             });
@@ -866,10 +866,11 @@
   async function boot() {
     ensureConsole();
     installLoader();
-    hdr('ASTRANOV OS BOOTLOADER');
+    hdr('Astranov SpaceNet Operating System');
+    info('Astranov SpaceNet Operating System');
     info('build ' + BUILD);
     info('time ' + new Date().toISOString());
-    info('professional delivery OS · not a game shell');
+    info('professional delivery OS · every user is a developer');
 
     try {
       checkDom();
