@@ -261,7 +261,17 @@
 
   function find(id) {
     for (var i = 0; i < stack.length; i++) if (stack[i].id === id) return stack[i];
+    for (var j = 0; j < queue.length; j++) if (queue[j].id === id) return queue[j];
     return null;
+  }
+
+  /** Ensure order is on active stack (pull from queue if needed) */
+  function ensureOnStack(o) {
+    if (!o) return null;
+    if (stack.some(function (x) { return x.id === o.id; })) return o;
+    queue = queue.filter(function (x) { return x.id !== o.id; });
+    stack.unshift(o);
+    return o;
   }
 
   function buildStops(o) {
@@ -898,6 +908,12 @@
     o.confirms.at[party] = Date.now();
     log('Confirm · ' + party + ' OK', 'ok');
     paint();
+    // All three parties OK → settle automatically (anti-fraud 3× seal)
+    var c = o.confirms;
+    if (o.phase === 'confirming' && c.client && c.vendor && c.driver) {
+      log('3× seal complete · settling', 'ok');
+      settle(o);
+    }
   }
 
   function settle(o) {
@@ -951,18 +967,26 @@
       return;
     }
     if (act === 'accept') {
+      ensureOnStack(o);
       var activeLoad = stack.filter(function (x) {
         return x.id !== o.id && (x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming');
       });
       try {
-        if (global.SNPolyEngine && SNPolyEngine.evaluateJoin) {
+        if (global.SNPolyEngine && SNPolyEngine.evaluateJoin && activeLoad.length) {
           var join = SNPolyEngine.evaluateJoin(activeLoad, o);
-          if (!join.ok && activeLoad.length) {
-            log('Cannot combine · ' + (join.reason || 'capacity'), 'err');
-            return;
-          }
-          if (join.ok && join.tour) {
-            o._joinPreview = { extraKm: join.extraKm, extraWait: join.extraWait, score: join.score };
+          if (!join.ok) {
+            // Soft: warn but still claim if capacity hard-fail only for exclusive private
+            var hard =
+              join.capacity && join.capacity.ok === false &&
+              /private|frozen|full|exclusive|slots/i.test(String(join.reason || join.capacity.reason || ''));
+            if (hard) {
+              log('Cannot combine · ' + (join.reason || 'capacity'), 'err');
+              return;
+            }
+            log('Tour note · ' + (join.reason || 'suboptimal combine') + ' · still claimed', 'dim');
+            o._joinPreview = { ok: false, reason: join.reason };
+          } else if (join.tour) {
+            o._joinPreview = { extraKm: join.extraKm, extraWait: join.extraWait, score: join.score, ok: true };
           }
         }
       } catch (_) {}
@@ -1039,14 +1063,28 @@
       paint();
       return;
     }
-    if (act === 'settle') {
+    if (act === 'settle' || act === 'complete' || act === 'done' || act === 'pay') {
+      if (o.phase === 'underway' || o.phase === 'claimed') {
+        // shortcut: arrive first
+        o.phase = 'confirming';
+        o.progress = 90;
+        o.confirms = o.confirms || { client: false, vendor: false, driver: false, at: {} };
+      }
       var c = o.confirms || {};
+      // Demo / CLI: complete can force the three seals if already confirming
+      if (act === 'complete' || act === 'done') {
+        c.client = true;
+        c.vendor = true;
+        c.driver = true;
+        o.confirms = c;
+      }
       if (!(c.client && c.vendor && c.driver)) {
-        log('Need 3× seal first', 'err');
+        log('Need 3× seal first · client + vendor + driver', 'err');
         paint();
         return;
       }
       settle(o);
+      return;
     }
   }
 
@@ -1058,10 +1096,20 @@
     var dLng = 0.003 + km * 0.001;
     var vLat = opts.vLat != null ? Number(opts.vLat) : p.lat + dLat;
     var vLng = opts.vLng != null ? Number(opts.vLng) : p.lng + dLng;
-    var dropLat = opts.dLat != null ? Number(opts.dLat) : p.lat;
-    var dropLng = opts.dLng != null ? Number(opts.dLng) : p.lng;
-    var vendorName = opts.vendorName || 'Night Kitchen';
-    var clientName = opts.clientName || 'You';
+    var dropLat =
+      opts.dLat != null
+        ? Number(opts.dLat)
+        : opts.cLat != null
+          ? Number(opts.cLat)
+          : p.lat;
+    var dropLng =
+      opts.dLng != null
+        ? Number(opts.dLng)
+        : opts.cLng != null
+          ? Number(opts.cLng)
+          : p.lng;
+    var vendorName = opts.vendorName || opts.vendor || 'Night Kitchen';
+    var clientName = opts.clientName || opts.client || 'You';
     var title = opts.title || opts.nature || 'Local delivery';
     var q = quote({
       km: km,
@@ -1137,10 +1185,11 @@
   }
 
   function pushOffer(o) {
-    var hasOpen = stack.some(function (x) {
-      return x.phase === 'offered' || x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
+    // One offered tile at a time so map polygon stays visible; claimed multi-tour can stack
+    var hasOffered = stack.some(function (x) {
+      return x.phase === 'offered';
     });
-    if (hasOpen && o.phase === 'offered') {
+    if (hasOffered && o.phase === 'offered') {
       queue.push(o);
       if (queue.length > MAX_Q) queue = queue.slice(0, MAX_Q);
       log('Queued · ' + o.vendorName, 'dim');
@@ -1716,6 +1765,76 @@
     return { ok: true, reassigned: re.count || 0 };
   }
 
+
+  /**
+   * End-to-end polygon marketplace demo — one job fully sealed + multi-tour seed
+   */
+  function demoFullLifecycle() {
+    try {
+      // Cancel any pending throwOffers timers from prior activate
+      gen++;
+      active = true;
+      stack = [];
+      queue = [];
+      try {
+        if (global.SNField && SNField.setLaunchMode)
+          SNField.setLaunchMode('on', { quiet: true, skipMoney: true });
+      } catch (_) {}
+      var a = makeOffer({
+        vendorName: 'Nonna Demo',
+        clientName: 'Captain You',
+        nature: 'hot_food',
+        product: 'pizza box',
+        km: 2.1,
+      });
+      var b = makeOffer({
+        vendorName: 'Harbor Docs',
+        clientName: 'Marina Desk',
+        nature: 'documents',
+        product: 'envelopes',
+        km: 1.4,
+      });
+      pushOffer(a);
+      pushOffer(b);
+      runAct(a.id, 'accept');
+      try { promoteQueue(); } catch (_) {}
+      runAct(b.id, 'accept');
+      try {
+        if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+      } catch (_) {}
+      // Start both legs of the multi-tour; seal only the first to prove 3× settle
+      stack.forEach(function (o) {
+        if (o.phase === 'claimed') runAct(o.id, 'start');
+      });
+      var seal = stack.find(function (x) {
+        return x.vendorName === 'Nonna Demo';
+      }) || stack[0];
+      if (seal) {
+        runAct(seal.id, 'arrive');
+        setConfirm(seal.id, 'client');
+        setConfirm(seal.id, 'vendor');
+        setConfirm(seal.id, 'driver');
+      }
+      var live = stack.filter(function (x) {
+        return x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
+      });
+      log(
+        'DEMO · multi-tour ' +
+          live.length +
+          ' live · 3× seal on ' +
+          (seal ? seal.vendorName : '?') +
+          ' · market engine live',
+        'ok'
+      );
+      preview('demo multi-tour');
+      paint();
+      return true;
+    } catch (e) {
+      log('Demo fail · ' + (e && e.message ? e.message : e), 'err');
+      return true;
+    }
+  }
+
   async function handleLine(raw) {
     var low = String(raw || '').trim().toLowerCase();
     if (!low) return false;
@@ -1739,12 +1858,42 @@
       claimFromPool(1);
       return true;
     }
-    if (low === 'offers test' || low === 'throw offers' || /^offers?\s+test/.test(low)) {
+    if (
+      low === 'offers test' ||
+      low === 'throw offers' ||
+      low === 'throw tiles' ||
+      low === 'test tiles' ||
+      low === 'test offers' ||
+      /^offers?\s+test/.test(low) ||
+      /^throw\s+(tiles|offers)/.test(low)
+    ) {
+      if (!active) activate({ offers: 0 });
       throwOffers({ count: 1 });
       return true;
     }
-    if (low === 'demo delivery' || low === 'demo polygon') {
-      activate({ offers: 1 });
+    if (low === 'demo delivery' || low === 'demo polygon' || low === 'engine demo' || low === 'demo full' || low === 'full demo') {
+      return demoFullLifecycle();
+    }
+    if (low === 'tour' || low === 'tour status') {
+      try {
+        if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
+          var t = SNPolyEngine.syncTourFromStack(stack);
+          if (t)
+            log(
+              'Tour · ' +
+                (t.orders ? t.orders.length : 0) +
+                ' orders · ' +
+                (t.km || '?') +
+                ' km · wait ' +
+                (t.waitMin || 0) +
+                'm',
+              'ok'
+            );
+          else log('Tour · empty · power on + accept offers', 'dim');
+        }
+      } catch (eT) {
+        log('Tour · ' + (eT && eT.message ? eT.message : eT), 'err');
+      }
       return true;
     }
     if (low === 'wallet' || low === 'rate') {
@@ -1766,7 +1915,7 @@
         var low = String(raw || '').trim().toLowerCase();
         try {
           if (
-            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|demo delivery|demo polygon|wallet|rate|pool)\b/i.test(
+            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|wallet|rate|pool)\b/i.test(
               low
             )
           ) {
@@ -1825,6 +1974,9 @@
     activate: activate,
     deactivate: deactivate,
     throwOffers: throwOffers,
+    demoFullLifecycle: demoFullLifecycle,
+    runAct: runAct,
+    setConfirm: setConfirm,
     makeOffer: makeOffer,
     pushOffer: pushOffer,
     drawPolygon: drawPolygon,
@@ -1878,6 +2030,10 @@
   global.SNOfferStack.list = api.list;
   global.SNOfferStack.clear = api.clear;
   global.SNOfferStack.paint = paint;
+  global.SNOfferStack.handleLine = handleLine;
+  global.SNOfferStack.accept = function (id) {
+    runAct(id, 'accept');
+  };
   global.SNOfferStack.testThrow = function (o) {
     return pushOffer(makeOffer(o || {}));
   };

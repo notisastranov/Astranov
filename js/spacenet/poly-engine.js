@@ -542,9 +542,7 @@
    */
   function evaluateJoin(activeOrders, candidate) {
     var profile = getProfile();
-    var sched = inSchedule(profile);
-    if (!sched.ok) return { ok: false, reason: sched.reason };
-
+    // Schedule is enforced in shouldAutoAccept only — manual Accept always tries capacity
     var cap = capacityCheck(activeOrders, candidate, profile);
     if (!cap.ok) return { ok: false, reason: cap.reason, capacity: cap };
 
@@ -582,6 +580,8 @@
   function shouldAutoAccept(candidate, activeOrders) {
     var profile = getProfile();
     if (!profile.autoAccept || !profile.autoAccept.on) return { ok: false, reason: 'auto off' };
+    var sched = inSchedule(profile);
+    if (!sched.ok) return { ok: false, reason: sched.reason };
     var ev = evaluateJoin(activeOrders || [], candidate);
     if (!ev.ok) return ev;
     if (ev.score < 40) return { ok: false, reason: 'score low ' + Math.round(ev.score), ev: ev };

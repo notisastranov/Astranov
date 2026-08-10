@@ -879,3 +879,19 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **Not a game shell** | Professional delivery OS that evolves with each operator |
 
 *Build: `20260810150000-os-will`*
+
+---
+
+## Agent note 2026-08-10 · Polygon engine hardened (not owner OV)
+
+| Fix | Detail |
+|-----|--------|
+| **find()** | Searches stack **and** queue · ensureOnStack on accept |
+| **Multi-tour** | pushOffer only queues when another is **offered** (claimed stack freely) |
+| **Join soft** | Manual Accept softens suboptimal combine; hard block only private/capacity |
+| **3× seal** | setConfirm auto-settles when client+vendor+driver all OK |
+| **complete** | `complete`/`done`/`pay` alias settle after seals |
+| **CLI** | `throw tiles` · `engine demo` · `demo full` · `tour` |
+| **demoFullLifecycle** | Accept A+B · multi-tour · start · 3× seal first |
+
+*Build: `20260810160000-poly-engine-hard`*
