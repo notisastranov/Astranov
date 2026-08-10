@@ -81,6 +81,15 @@ const R = await page.evaluate(async () => {
   out.detail.drive = { p0, p1 };
   out.checks.driveProgress = p1 > p0;
 
+  // Private ice cream cannot combine with pizza
+  const ice = D.capacityCheck([{ nature: 'hot', title: 'pizza' }], {
+    nature: 'ice cream',
+    title: 'ice cream',
+    private: true,
+  });
+  out.detail.privateExclusive = ice;
+  out.checks.privateExclusive = ice && ice.ok === false;
+
   return out;
 });
 

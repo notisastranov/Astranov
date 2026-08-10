@@ -296,6 +296,26 @@
         quote: q,
       };
     }
+    // Private / VIP frozen: never combine with anything else on the bike
+    if (q.private && load.length > 0) {
+      return {
+        ok: false,
+        reason: 'Private straight-line · exclusive capacity · empty tour only',
+        maxParallel: 1,
+        quote: q,
+      };
+    }
+    if (load.some(function (j) {
+      var n = detectNature(j.nature || j.title || j.product);
+      return j.private || n.privateDefault || (j.quote && j.quote.private);
+    }) && load.length) {
+      return {
+        ok: false,
+        reason: 'Already carrying a private/exclusive order',
+        maxParallel: 1,
+        quote: q,
+      };
+    }
     if (q.private && privateN > 1) {
       return {
         ok: false,

@@ -584,7 +584,12 @@
     if (!sched.ok) return { ok: false, reason: sched.reason };
     var ev = evaluateJoin(activeOrders || [], candidate);
     if (!ev.ok) return ev;
-    if (ev.score < 40) return { ok: false, reason: 'score low ' + Math.round(ev.score), ev: ev };
+    // Prefer empty-tour auto-accept when min price + schedule OK (score floors softer)
+    var floor = (activeOrders && activeOrders.length) ? 40 : -20;
+    if (ev.score < floor) return { ok: false, reason: 'score low ' + Math.round(ev.score), ev: ev };
+    var minP = (profile.autoAccept && profile.autoAccept.minPrice) || 0;
+    var price = Number(candidate.price) || Number(candidate.quote && candidate.quote.total) || 0;
+    if (price < minP) return { ok: false, reason: 'below min ' + minP, ev: ev };
     return { ok: true, ev: ev };
   }
 
