@@ -950,3 +950,15 @@ Implemented & regression-green without babysitting:
 | mission-regression + poly-regression | PASS |
 
 *Build: `20260810183000-full-backlog`*
+
+---
+
+## Agent note 2026-08-10 · READY gate (not owner OV)
+
+Automated proof of money-path OS:
+
+- `node scripts/poly-regression.mjs`
+- `node scripts/mission-regression.mjs`
+- `node scripts/full-ready.mjs` → `screenshots/READY.json`
+
+Product focus locked: multi-tour polygon delivery marketplace + ⬠ nav + marina berths + OS will + AI sub cycle.

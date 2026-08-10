@@ -223,7 +223,7 @@
       '#sn-poly-root .sn-pt-wide button.ok{border-color:rgba(0,230,160,.65);background:linear-gradient(180deg,rgba(0,200,140,.35),rgba(0,100,70,.4));color:#8fffd4}',
       '#sn-poly-root .sn-pt-wide button.pay{border-color:rgba(255,210,80,.7);background:linear-gradient(180deg,rgba(200,160,20,.4),rgba(100,70,0,.4));color:#ffe9a0}',
       '#sn-poly-root .sn-pt-conf{display:flex;gap:6px}',
-      '#sn-poly-root .sn-pt-conf button{flex:1;min-height:34px;border-radius:999px;font:700 10px/1 system-ui;',
+      '#sn-poly-root .sn-pt-conf button{min-height:36px;min-width:62px;border-radius:999px;flex:1;min-height:34px;border-radius:999px;font:700 10px/1 system-ui;',
       'border:1px solid rgba(0,220,180,.45);background:rgba(0,60,50,.4);color:#9fffe0;cursor:pointer}',
       '#sn-poly-root .sn-pt-conf button.on{border-color:rgba(0,255,180,.8);box-shadow:0 0 12px rgba(0,220,160,.35)}',
       '#sn-poly-root .sn-pt-seal{font:700 9px/1.2 system-ui;letter-spacing:.08em;text-transform:uppercase;',
