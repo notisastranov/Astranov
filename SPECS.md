@@ -780,3 +780,38 @@ Offer tile           → accept / rearrange / pay / 3× seal
 `20260806183000-cli-law`
 
 *Agent note 2026-08-06: CLI ⅓ cap · quiet collapse · ops-only status · polygon→tile · vertical gadgets · money expand · SPECS UI law locked.*
+
+---
+
+## OWNER LAW · Multi-tour delivery engine (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Unified tour polygon** | All accepted orders for one driver form **one** multi-stop polygon (pickups + drops). |
+| **Prep-aware** | Vendor prep times gate pickup ETA · minimize wait · non-stop cycle. |
+| **Capacity** | Stack weight + private/frozen exclusive · supermarket bulk = straight solo. |
+| **Priority** | Hot / cold / frozen first · sooner prep first · spiral angular insertion · max profit density. |
+| **Prefs** | City/long · bearing (E/W…) · goods · areas · shift start/end · breaks — via **CLI/AI**, not menu maze. |
+| **Auto-accept** | Rules: min price, max km, natures, prefs · `auto accept on/off`. |
+| **Pin reorder** | Driver may drag/reorder unlocked stops; locked private/straight cannot. |
+| **Power OFF / rest** | Stops tour building · **reassigns** open+queued orders to **other-driver pool** · clears local polygon. |
+| **Power ON** | Claims from reassignment pool first, then new offers. |
+| **CLI** | `tour` · `drive prefs` · `prefer long east` · `auto accept on min 5` · `rest` · `engine demo` · `pool` |
+
+## OWNER LAW · Wish inbox (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Say it** | User types/speaks desire on CLI/AI → stored for owner (`notisastranov@gmail.com`). |
+| **Commands** | `wish …` · `request …` · `feature …` · `please add …` · `I want …` · `wishes` |
+| **In-scope auto** | Product-scope items tagged `in_scope` for immediate agent implement when judged useful. |
+| **No babysitting** | Agent implements in-spec useful work without waiting for re-confirmation. |
+
+## OWNER LAW · Top scroll handle (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Visible handle** | Bottom of top scroll always shows a grab pill + **gadgets** label. |
+| **Single tap** | Expands/collapses gadget stack. Drag still resizes. |
+
+*Build: `20260810120000-poly-engine` · modules `poly-engine.js` · `wish-inbox.js` · `delivery-rules.js`*

@@ -266,6 +266,9 @@
     '/js/spacenet/map.js',
     '/js/spacenet/tasks.js',
     '/js/spacenet/field.js',
+    '/js/spacenet/delivery-rules.js',
+    '/js/spacenet/poly-engine.js',
+    '/js/spacenet/wish-inbox.js',
     '/js/spacenet/poly-scheduler.js',
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
@@ -283,6 +286,10 @@
 
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
+    engine: { src: '/js/spacenet/poly-engine.js', global: 'SNPolyEngine' },
+    'poly-engine': { src: '/js/spacenet/poly-engine.js', global: 'SNPolyEngine' },
+    'delivery-rules': { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
+    wish: { src: '/js/spacenet/wish-inbox.js', global: 'SNWishInbox' },
     poly: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     scheduler: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
     money: { src: '/js/spacenet/poly-scheduler.js', global: 'SNPolyScheduler' },
@@ -295,7 +302,7 @@
     field: { src: '/js/spacenet/field.js', global: 'SNField' },
     home: { src: '/js/spacenet/home.js', global: 'SNHome' },
     helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
-    delivery: { src: '/js/spacenet/poly-scheduler.js', global: 'SNDeliveryRules' },
+    delivery: { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
     'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     subscription: { src: '/js/spacenet/subscription.js', global: 'SNSubscription' },

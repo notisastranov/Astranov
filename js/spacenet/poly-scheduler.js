@@ -951,20 +951,51 @@
       return;
     }
     if (act === 'accept') {
+      var activeLoad = stack.filter(function (x) {
+        return x.id !== o.id && (x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming');
+      });
+      try {
+        if (global.SNPolyEngine && SNPolyEngine.evaluateJoin) {
+          var join = SNPolyEngine.evaluateJoin(activeLoad, o);
+          if (!join.ok && activeLoad.length) {
+            log('Cannot combine · ' + (join.reason || 'capacity'), 'err');
+            return;
+          }
+          if (join.ok && join.tour) {
+            o._joinPreview = { extraKm: join.extraKm, extraWait: join.extraWait, score: join.score };
+          }
+        }
+      } catch (_) {}
       o.phase = 'claimed';
       o.progress = 15;
       o.uiSize = 'max';
       commissionRai(o);
-      drawPolygon(o);
-      log('Claimed · ' + o.vendorName + ' → ' + o.clientName, 'ok');
+      try {
+        if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+        else drawPolygon(o);
+      } catch (_) {
+        drawPolygon(o);
+      }
+      log(
+        'Claimed · ' + o.vendorName + ' → ' + o.clientName +
+          (o._joinPreview ? ' · +' + o._joinPreview.extraKm + ' km tour' : ''),
+        'ok'
+      );
       paint();
+      try { promoteQueue(); } catch (_) {}
+      try { scanAutoAccept(); } catch (_) {}
       return;
     }
     if (act === 'start') {
       o.phase = 'underway';
       o.progress = 45;
-      drawPolygon(o);
-      log('Underway · polygon live', 'ok');
+      try {
+        if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+        else drawPolygon(o);
+      } catch (_) {
+        drawPolygon(o);
+      }
+      log('Underway · multi-tour polygon live', 'ok');
       paint();
       return;
     }
@@ -1064,7 +1095,18 @@
       uiSize: 'mid',
       drone: false,
       t: Date.now(),
+      prepMin: opts.prepMin != null ? Number(opts.prepMin) : null,
+      prepReadyAt: opts.prepReadyAt || null,
     };
+    try {
+      if (o.prepMin == null && global.SNPolyEngine && SNPolyEngine.prepMin)
+        o.prepMin = SNPolyEngine.prepMin(o);
+      if (o.prepMin == null) o.prepMin = 10;
+      if (!o.prepReadyAt) o.prepReadyAt = Date.now() + o.prepMin * 60000;
+    } catch (_) {
+      if (o.prepMin == null) o.prepMin = 10;
+      if (!o.prepReadyAt) o.prepReadyAt = Date.now() + o.prepMin * 60000;
+    }
     buildStops(o);
     return o;
   }
@@ -1097,6 +1139,7 @@
     paint();
     drawPolygon(o);
     focusChrome(true);
+    try { scanAutoAccept(); } catch (_) {}
     return o;
   }
 
@@ -1409,6 +1452,60 @@
     { vendorName: 'City Post', nature: 'Paper envelopes', product: 'mail', km: 4.2 },
   ];
 
+
+  function promoteQueue() {
+    if (!queue.length) return;
+    var hasOffered = stack.some(function (x) {
+      return x.phase === 'offered';
+    });
+    if (hasOffered) return;
+    var next = queue.shift();
+    if (!next) return;
+    var activeLoad = stack.filter(function (x) {
+      return x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
+    });
+    try {
+      if (global.SNPolyEngine && SNPolyEngine.evaluateJoin && activeLoad.length) {
+        var ev = SNPolyEngine.evaluateJoin(activeLoad, next);
+        next._joinPreview = ev.ok
+          ? { extraKm: ev.extraKm, extraWait: ev.extraWait, score: ev.score, ok: true }
+          : { ok: false, reason: ev.reason };
+      }
+    } catch (_) {}
+    stack.unshift(next);
+    paint();
+    try {
+      if (next._joinPreview && next._joinPreview.ok === false)
+        log('Next offer · may not combine · ' + (next._joinPreview.reason || ''), 'dim');
+      else if (next._joinPreview && next._joinPreview.ok)
+        log('Next offer · combine +' + next._joinPreview.extraKm + ' km', 'ok');
+    } catch (_) {}
+  }
+
+  function scanAutoAccept() {
+    try {
+      if (!global.SNPolyEngine || !SNPolyEngine.shouldAutoAccept) return;
+      var activeLoad = stack.filter(function (x) {
+        return x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
+      });
+      stack.filter(function (x) { return x.phase === 'offered'; }).forEach(function (o) {
+        var r = SNPolyEngine.shouldAutoAccept(o, activeLoad);
+        if (r.ok) {
+          log('Auto-accept · ' + o.vendorName, 'ok');
+          runAct(o.id, 'accept');
+        }
+      });
+      if (queue[0]) {
+        var r2 = SNPolyEngine.shouldAutoAccept(queue[0], activeLoad);
+        if (r2.ok) {
+          var o2 = queue.shift();
+          stack.unshift(o2);
+          runAct(o2.id, 'accept');
+        }
+      }
+    } catch (_) {}
+  }
+
   function throwOffers(opts) {
     opts = opts || {};
     var n = Math.min(3, Number(opts.count) || 1);
@@ -1444,15 +1541,124 @@
       if (global.SNCurrency && SNCurrency.ensure) SNCurrency.ensure(80);
     } catch (_) {}
     wallet.s = Math.max(wallet.s, 80);
-    throwOffers({ count: opts.offers != null ? opts.offers : 1 });
-    log('MARKET ON · polygon scheduler · one tile · 3× seal · Rai drone', 'ok');
+    // Prefer reassigned pool orders from resting drivers
+    var fromPool = [];
+    try {
+      fromPool = claimFromPool(1);
+    } catch (_) {}
+    if (!fromPool.length) throwOffers({ count: opts.offers != null ? opts.offers : 1 });
+    log('MARKET ON · multi-tour engine · pool + offers · 3× seal · Rai', 'ok');
     preview('market on');
     return { ok: true, gen: gen };
   }
 
-  function deactivate() {
+  /**
+   * Driver rest / power OFF:
+   *  - stop accepting new tour building
+   *  - open + queued + non-settled orders reassigned to mesh pool for other drivers
+   *  - clear local polygon
+   */
+  function reassignOpenOrders(reason) {
+    reason = reason || 'driver rest · power off';
+    var open = stack
+      .filter(function (o) {
+        return o && o.phase !== 'done' && o.phase !== 'settled';
+      })
+      .concat(queue.slice());
+    if (!open.length) return { ok: true, count: 0, pool: [] };
+    var pool = [];
+    try {
+      pool = JSON.parse(localStorage.getItem('sn:open-order-pool-v1') || '[]');
+      if (!Array.isArray(pool)) pool = [];
+    } catch (_) {
+      pool = [];
+    }
+    open.forEach(function (o) {
+      var snap = {
+        id: o.id,
+        vendorName: o.vendorName,
+        clientName: o.clientName,
+        vLat: o.vLat,
+        vLng: o.vLng,
+        dLat: o.dLat,
+        dLng: o.dLng,
+        nature: o.nature,
+        price: o.price,
+        km: o.km,
+        prepMin: o.prepMin,
+        prepReadyAt: o.prepReadyAt,
+        quote: o.quote,
+        phaseWas: o.phase,
+        reassignedAt: Date.now(),
+        reason: reason,
+        routeLocked: !!o.routeLocked,
+      };
+      // de-dupe by id
+      pool = pool.filter(function (x) {
+        return x && x.id !== snap.id;
+      });
+      pool.unshift(snap);
+    });
+    pool = pool.slice(0, 40);
+    try {
+      localStorage.setItem('sn:open-order-pool-v1', JSON.stringify(pool));
+    } catch (_) {}
+    try {
+      if (global.SNPolyEngine && SNPolyEngine.broadcastReassign)
+        SNPolyEngine.broadcastReassign(open, reason);
+    } catch (_) {}
+    log(
+      'Rest · reassigned ' + open.length + ' order' + (open.length === 1 ? '' : 's') + ' to other drivers',
+      'ok'
+    );
+    return { ok: true, count: open.length, pool: pool };
+  }
+
+  function claimFromPool(maxN) {
+    maxN = maxN || 1;
+    var pool = [];
+    try {
+      pool = JSON.parse(localStorage.getItem('sn:open-order-pool-v1') || '[]');
+      if (!Array.isArray(pool)) pool = [];
+    } catch (_) {
+      pool = [];
+    }
+    if (!pool.length) return [];
+    var taken = pool.slice(0, maxN);
+    pool = pool.slice(maxN);
+    try {
+      localStorage.setItem('sn:open-order-pool-v1', JSON.stringify(pool));
+    } catch (_) {}
+    taken.forEach(function (snap) {
+      var o = makeOffer({
+        vendorName: snap.vendorName,
+        clientName: snap.clientName,
+        nature: snap.nature,
+        km: snap.km,
+        vLat: snap.vLat,
+        vLng: snap.vLng,
+        dLat: snap.dLat,
+        dLng: snap.dLng,
+        private: snap.routeLocked,
+        prepMin: snap.prepMin,
+        prepReadyAt: snap.prepReadyAt,
+      });
+      o.id = snap.id || o.id;
+      o.fromPool = true;
+      pushOffer(o);
+    });
+    if (taken.length) log('Pool · claimed ' + taken.length + ' reassigned order(s)', 'ok');
+    return taken;
+  }
+
+  function deactivate(opts) {
+    opts = opts || {};
     active = false;
     gen++;
+    var re = { count: 0 };
+    try {
+      re = reassignOpenOrders(opts.reason || 'driver rest · power off');
+    } catch (_) {}
     stack = [];
     queue = [];
     paint();
@@ -1461,9 +1667,9 @@
       if (global.SNField && SNField.setLaunchMode) SNField.setLaunchMode('off', { quiet: true, skipMoney: true });
       if (global.SNField && SNField.clearRoutes) SNField.clearRoutes();
     } catch (_) {}
-    log('MARKET OFF', 'dim');
-    preview('market off');
-    return { ok: true };
+    log('MARKET OFF · polygon stopped · pool ' + (re.count || 0), 'dim');
+    preview('market off · rest');
+    return { ok: true, reassigned: re.count || 0 };
   }
 
   async function handleLine(raw) {
@@ -1481,8 +1687,12 @@
       activate({});
       return true;
     }
-    if (low === 'market off' || low === 'power off' || low === 'tasks off' || low === 'money off') {
-      deactivate();
+    if (low === 'market off' || low === 'power off' || low === 'tasks off' || low === 'money off' || low === 'rest') {
+      deactivate({ reason: low === 'rest' ? 'driver rest' : 'power off' });
+      return true;
+    }
+    if (low === 'pool' || low === 'pool claim') {
+      claimFromPool(1);
       return true;
     }
     if (low === 'offers test' || low === 'throw offers' || /^offers?\s+test/.test(low)) {
@@ -1497,6 +1707,9 @@
       log('Wallet · ' + fmt(wallet.s) + ' · vault ' + (wallet.vault || 0).toFixed(2), 'ok');
       return true;
     }
+    try {
+      if (global.SNPolyEngine && SNPolyEngine.handleLine && SNPolyEngine.handleLine(raw)) return true;
+    } catch (_) {}
     return false;
   }
 
@@ -1509,7 +1722,7 @@
         var low = String(raw || '').trim().toLowerCase();
         try {
           if (
-            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|offers?\s+test|throw offers|demo delivery|demo polygon|wallet|rate)\b/i.test(
+            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|demo delivery|demo polygon|wallet|rate|pool)\b/i.test(
               low
             )
           ) {
@@ -1571,6 +1784,10 @@
     makeOffer: makeOffer,
     pushOffer: pushOffer,
     drawPolygon: drawPolygon,
+    reassignOpenOrders: reassignOpenOrders,
+    claimFromPool: claimFromPool,
+    promoteQueue: promoteQueue,
+    scanAutoAccept: scanAutoAccept,
     openOrderTile: openOrderTile,
     paint: paint,
     list: function () {

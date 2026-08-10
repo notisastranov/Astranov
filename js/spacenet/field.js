@@ -2355,20 +2355,19 @@
     panel.addEventListener('pointerup', onUp);
     panel.addEventListener('pointercancel', onUp);
 
-    // Double-tap handle toggles collapsed/expanded
-    var lastTap = 0;
+    // Single tap on handle expands/collapses gadgets (drag still resizes)
     handle &&
-      handle.addEventListener('click', function () {
-        var now = Date.now();
-        if (now - lastTap < 320) {
-          var m = panel.classList.contains('expanded')
-            ? 'collapsed'
-            : panel.classList.contains('collapsed')
-              ? 'expanded'
-              : 'collapsed';
-          setMode(m, true);
-          lastTap = 0;
-        } else lastTap = now;
+      handle.addEventListener('click', function (ev) {
+        // ignore if just finished a drag
+        if (moved) return;
+        try {
+          if (ev && ev.preventDefault) ev.preventDefault();
+        } catch (_) {}
+        var m = panel.classList.contains('collapsed') ? 'expanded' : 'collapsed';
+        setMode(m, true);
+        try {
+          if (m === 'expanded' && g.SNCli && SNCli.ops) SNCli.ops('Top scroll · gadgets open');
+        } catch (_) {}
       });
 
 

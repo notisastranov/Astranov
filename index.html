@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260806183000-cli-law" />
-<meta name="astranov-continuity" content="20260806183000-cli-law" />
+<meta name="astranov-build" content="20260810120000-poly-engine" />
+<meta name="astranov-continuity" content="20260810120000-poly-engine" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -244,15 +244,40 @@ html.theme-light #sn-task-launch.mode-standby {
   filter: drop-shadow(0 0 8px rgba(232, 33, 39, 0.85));
 }
 #sn-topchrome-drag {
-  height: 16px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: grab;
+  height: 28px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  touch-action: none;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(61, 158, 255, 0.22);
+  background: linear-gradient(180deg, rgba(8, 28, 64, 0.35), rgba(4, 14, 36, 0.55));
+  border-radius: 0 0 18px 18px;
 }
 #sn-topchrome-drag::before {
   content: '';
-  width: 40px; height: 4px;
-  border-radius: var(--r-pill);
-  background: rgba(var(--glow-rgb), 0.4);
+  width: 48px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(61, 158, 255, 0.75);
+  box-shadow: 0 0 12px rgba(61, 158, 255, 0.55);
+}
+#sn-topchrome-drag::after {
+  content: 'gadgets';
+  font: 700 9px/1 var(--font-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(160, 200, 255, 0.75);
+}
+#sn-topchrome-panel.expanded #sn-topchrome-drag::after,
+#sn-topchrome-panel.mid #sn-topchrome-drag::after {
+  content: 'pull up';
+}
+#sn-topchrome-drag:active {
+  background: rgba(20, 60, 120, 0.45);
 }
 #stc-theme {
   display: flex;
@@ -1027,6 +1052,6 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   }
 })();
 </script>
-<script src="/js/spacenet/boot.js?v=20260806180000-gadget-stack"></script>
+<script src="/js/spacenet/boot.js?v=20260810120000-poly-engine"></script>
 </body>
 </html>
