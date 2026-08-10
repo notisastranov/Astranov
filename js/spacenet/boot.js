@@ -148,46 +148,87 @@
     }
   }
 
+  function killBootOverlay() {
+    try {
+      var el = document.getElementById('boot') || bootEl;
+      if (!el) return;
+      el.classList.add('hide');
+      el.setAttribute('aria-busy', 'false');
+      el.style.setProperty('opacity', '0', 'important');
+      el.style.setProperty('pointer-events', 'none', 'important');
+      el.style.setProperty('display', 'none', 'important');
+      el.style.setProperty('visibility', 'hidden', 'important');
+      try {
+        el.remove();
+      } catch (_) {}
+      bootEl = null;
+    } catch (_) {}
+  }
+
   function hideBoot(msg) {
-    if (finished) return;
     finished = true;
-    if (bootEl) {
-      bootEl.classList.add('hide');
-      bootEl.setAttribute('aria-busy', 'false');
-      setTimeout(function () { try { bootEl.remove(); } catch (e) {} }, 220);
-    }
+    killBootOverlay();
     if (msg) console.info('[Astranov]', msg);
   }
 
   function fail(msg) {
-    if (finished) return;
+    // Never permanent black wall — always surface Earth + Retry chip
     finished = true;
-    if (bootEl) {
-      bootEl.innerHTML =
-        '<div class="boot-card">' +
-        '<span class="boot-title">ASTRANOV</span>' +
-        '<div class="boot-loader" aria-hidden="true"><span class="boot-loader-bar"></span></div>' +
-        '<button type="button" class="boot-retry" id="sn-boot-retry">Retry</button>' +
-        '</div>';
-      var b = document.getElementById('sn-boot-retry');
-      if (b) b.onclick = function () { location.reload(); };
-    }
     console.error('[Astranov] boot fail', msg);
+    try {
+      if (window.SNCli && SNCli.init) SNCli.init();
+    } catch (_) {}
+    killBootOverlay();
+    try {
+      if (!document.getElementById('sn-boot-retry-fab')) {
+        var fab = document.createElement('button');
+        fab.id = 'sn-boot-retry-fab';
+        fab.type = 'button';
+        fab.textContent = 'Retry';
+        fab.setAttribute(
+          'style',
+          'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:300;' +
+            'border-radius:999px;border:1px solid rgba(61,158,255,0.6);background:rgba(6,16,40,0.9);' +
+            'color:#7ec8ff;font:700 12px/1 Inter,system-ui,sans-serif;padding:10px 18px;cursor:pointer;'
+        );
+        fab.onclick = function () {
+          location.reload();
+        };
+        document.body.appendChild(fab);
+      }
+    } catch (_) {}
   }
 
-  // Watchdog — never leave user staring at spinner
+  // Watchdogs — never leave spinner over a live globe
   setTimeout(function () {
-    if (finished) return;
-    if (!shellReady) {
-      console.error('[Astranov] boot watchdog 8s · critical still loading');
-      fail('timeout · shell not ready');
-      return;
+    if (!finished) {
+      try {
+        if (window.SNCli && SNCli.init) SNCli.init();
+      } catch (_) {}
+      hideBoot('watchdog 2.5s');
+    } else {
+      killBootOverlay();
     }
-    console.error('[Astranov] boot watchdog · partial');
-    try { if (window.SNCli && SNCli.init) SNCli.init(); } catch (e) {}
-    hideBoot('watchdog · partial');
-    try { if (window.SNCli && SNCli.log) SNCli.log('Boot slow · shell ready · type help', 'err'); } catch (e2) {}
-  }, 8000);
+  }, 2500);
+  setTimeout(function () {
+    killBootOverlay();
+    if (!window.SNGlobe || !document.querySelector('#globe canvas')) {
+      try {
+        loadThree()
+          .then(function () {
+            return loadParallel(WAVE_GLOBE, 10000);
+          })
+          .then(function () {
+            try {
+              initGlobe();
+            } catch (_) {}
+          });
+      } catch (_) {}
+    }
+  }, 6000);
+  setTimeout(function () {
+    killBootOverlay();
+  }, 10000);
 
   // LEAN MONEY PATH: kill dummy/game chrome by default (games via CLI ensure only)
   var LEAN = true;
@@ -241,6 +282,7 @@
 
   // ========== WAVE DEFINITIONS (REBUILD: polygon scheduler only) ==========
   // CRITICAL: shell + CLI + AI identity
+  // HARD critical only — if AI modules hang, shell + globe must still start
   var WAVE_CRITICAL = [
     '/js/spacenet/skin.js',
     '/js/spacenet/config.js',
@@ -248,10 +290,12 @@
     '/js/spacenet/game-loop.js',
     '/js/spacenet/profiles.js',
     '/js/spacenet/cli.js',
+    '/js/spacenet/ui.js',
+  ];
+  var WAVE_AI = [
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',
-    '/js/spacenet/ui.js',
   ];
 
   // GLOBE: Earth in space (SPECS boot GLOBAL)
@@ -408,14 +452,36 @@
         }
       } catch (_) {}
 
+      // AI / subscription soft — never blocks Earth
+      whenIdle(function () {
+        loadParallel(WAVE_AI, 14000).then(function () {
+          try {
+            if (window.SNSubscription && SNSubscription.init) SNSubscription.init();
+          } catch (_) {}
+          try {
+            if (window.SNAi && SNAi.bootPresence) SNAi.bootPresence();
+          } catch (_) {}
+        });
+      }, 100);
+
       return threePromise.then(function () {
         return loadParallel(WAVE_GLOBE, 10000);
       });
     })
     .then(function () {
       var globeOk = initGlobe();
+      killBootOverlay();
       var ms = Math.round(performance.now() - t0);
       window.SNPerf.globeMs = ms;
+      // Retry once if canvas missing
+      if (!document.querySelector('#globe canvas')) {
+        setTimeout(function () {
+          try {
+            initGlobe();
+            killBootOverlay();
+          } catch (_) {}
+        }, 800);
+      }
       try {
         if (window.SNCli && SNCli.log) {
           SNCli.log(globeOk ? 'Earth online · ' + ms + 'ms' : 'Globe soft · ' + ms + 'ms', globeOk ? 'ok' : 'dim');
