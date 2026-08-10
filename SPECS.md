@@ -847,3 +847,20 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **Why** | Owner develops **from inside Astranov** with full Grok; users fund the pool via PayPal subs. |
 
 *Build: `20260810130000-paypal-sub`*
+
+---
+
+## OWNER LAW · OS BOOTLOADER (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Entry** | `os-bootloader.js` is the only cold-start kernel after `index.html`. |
+| **Console** | Full-screen **text diagnostics** during boot (CLI-style). No silent spinner. |
+| **Stages** | preflight → kernel → THREE → display/Earth → drivers → services → health gate → handoff |
+| **Checks** | Every stage logs `[ OK ]` / `[WARN]` / `[FAIL]` with fix hints. |
+| **Health gate** | READY only if CLI host + globe canvas + critical DOM pass. |
+| **Repair** | Auto-repair display once; buttons + CLI: `repair` · `repair display` · `repair kernel` · `diagnostics` · `boot` |
+| **Report** | Stored `sn:os-boot-report` · echoed into CLI on handoff |
+| **Never** | Claim READY without verified canvas. Never game splash. |
+
+*Build: `20260810140000-os-bootloader`*
