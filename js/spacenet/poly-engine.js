@@ -615,11 +615,39 @@
       }
     } catch (_) {}
     try {
-      if (global.SNGlobe && SNGlobe.pulse) {
-        tour.stops.forEach(function (s, i) {
-          if (i > 6) return;
-          SNGlobe.pulse(s.lat, s.lng, s.role === 'pickup' ? 0x00e070 : 0x3d9eff, String(s.name || '').slice(0, 10), 8000);
-        });
+      if (global.SNGlobe) {
+        var gpts = tour.stops
+          .filter(function (s) {
+            return s && s.lat != null && s.lng != null;
+          })
+          .map(function (s) {
+            return { lat: s.lat, lng: s.lng };
+          });
+        if (SNGlobe.drawTourLine && gpts.length >= 2) {
+          SNGlobe.drawTourLine(gpts, { color: 0x00e090 });
+        } else if (SNGlobe.pulse) {
+          gpts.forEach(function (s, i) {
+            if (i > 8) return;
+            SNGlobe.pulse(s.lat, s.lng, i === 0 ? 0x00e070 : 0x3d9eff, String((tour.stops[i] && tour.stops[i].name) || '').slice(0, 10), 12000);
+          });
+        }
+        // Orient globe toward tour center so polygon is in view without opening streets
+        if (SNGlobe.flyNear && gpts.length) {
+          var clat = 0,
+            clng = 0;
+          gpts.forEach(function (p) {
+            clat += p.lat;
+            clng += p.lng;
+          });
+          clat /= gpts.length;
+          clng /= gpts.length;
+          // Soft fly only when city map is not covering
+          var mapOn = false;
+          try {
+            mapOn = !!(document.body && document.body.classList.contains('city-map-on'));
+          } catch (_) {}
+          if (!mapOn) SNGlobe.flyNear(clat, clng);
+        }
       }
     } catch (_) {}
     return tour;

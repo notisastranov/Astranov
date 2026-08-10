@@ -453,7 +453,9 @@
   }
 
   function cycleLaunchMode() {
-    var next = launchMode === 'standby' ? 'on' : launchMode === 'on' ? 'off' : 'standby';
+    // Market-first: one tap ON (throw offers) · next tap OFF (rest + reassign).
+    // Standby is still reachable via CLI "standby" if needed — not on the power toggle.
+    var next = launchMode === 'on' ? 'off' : 'on';
     return setLaunchMode(next, { quiet: false });
   }
 

@@ -895,3 +895,16 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **demoFullLifecycle** | Accept A+B · multi-tour · start · 3× seal first |
 
 *Build: `20260810160000-poly-engine-hard`*
+
+---
+
+## Agent note 2026-08-10 · Mission green gate (not owner OV)
+
+| Surface | Law |
+|---------|-----|
+| **CLI ribbon ⬠** | Locate · **Poly** · User · Add · Layers · AI · Send |
+| **Poly cycle** | Overview (GPS + fit whole tour) ↔ Drive (GPS follow) |
+| **Globe tour** | `SNGlobe.drawTourLine` paints multi-tour on 3D Earth when streets closed |
+| **Regression** | `scripts/poly-regression.mjs` · `scripts/mission-regression.mjs` |
+
+*Build: `20260810170000-mission-green`*

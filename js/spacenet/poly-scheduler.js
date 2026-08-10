@@ -891,11 +891,21 @@
     queue = queue.filter(function (o) {
       return o.id !== id;
     });
-    if (!stack.some(function (o) {
-      return o.phase === 'offered';
-    }) && queue.length) {
-      stack.push(queue.shift());
+    try {
+      promoteQueue();
+    } catch (_) {
+      if (
+        !stack.some(function (o) {
+          return o.phase === 'offered';
+        }) &&
+        queue.length
+      ) {
+        stack.unshift(queue.shift());
+      }
     }
+    try {
+      if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+    } catch (_) {}
     paint();
   }
 
@@ -1822,6 +1832,7 @@
     try {
       if (global.SNField && SNField.setLaunchMode) SNField.setLaunchMode('off', { quiet: true, skipMoney: true });
       if (global.SNField && SNField.clearRoutes) SNField.clearRoutes();
+      if (global.SNGlobe && SNGlobe.clearTourLines) SNGlobe.clearTourLines();
     } catch (_) {}
     log('MARKET OFF · polygon stopped · pool ' + (re.count || 0), 'dim');
     preview('market off · rest');

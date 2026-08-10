@@ -2851,10 +2851,77 @@
     return G.gameMode;
   }
 
+
+  /** Clear previous multi-tour lines on the globe */
+  function clearTourLines() {
+    if (!G.tourLines) G.tourLines = [];
+    G.tourLines.forEach(function (m) {
+      try {
+        if (G.pivot) G.pivot.remove(m);
+        if (m.geometry) m.geometry.dispose();
+        if (m.material) m.material.dispose();
+      } catch (_) {}
+    });
+    G.tourLines = [];
+  }
+
+  /**
+   * Draw great-circle segments for delivery multi-tour on the 3D globe.
+   * points: [{lat,lng}, ...]
+   */
+  function drawTourLine(points, opts) {
+    opts = opts || {};
+    if (!G.ready || !G.pivot || typeof THREE === 'undefined') return null;
+    if (!points || points.length < 2) return null;
+    clearTourLines();
+    var color = opts.color != null ? opts.color : 0x00e090;
+    var segs = [];
+    var i, j, a, b, steps, t, lat, lng, v;
+    for (i = 0; i < points.length - 1; i++) {
+      a = points[i];
+      b = points[i + 1];
+      if (!a || !b || a.lat == null || b.lat == null) continue;
+      steps = 18;
+      var verts = [];
+      for (j = 0; j <= steps; j++) {
+        t = j / steps;
+        // simple lerp in lat/lng (good enough for city tours)
+        lat = a.lat + (b.lat - a.lat) * t;
+        lng = a.lng + (b.lng - a.lng) * t;
+        v = latLngToVec(lat, lng, 1.014);
+        verts.push(v.x, v.y, v.z);
+      }
+      try {
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+        var mat = new THREE.LineBasicMaterial({
+          color: color,
+          transparent: true,
+          opacity: 0.92,
+          depthWrite: false,
+        });
+        var line = new THREE.Line(geo, mat);
+        line.renderOrder = 9;
+        G.pivot.add(line);
+        G.tourLines.push(line);
+        segs.push(line);
+      } catch (_) {}
+    }
+    // Endpoint pulses
+    try {
+      pulse(points[0].lat, points[0].lng, 0x44ff88, 'PICK', 14000);
+      pulse(points[points.length - 1].lat, points[points.length - 1].lng, 0x3d9eff, 'DROP', 14000);
+    } catch (_) {}
+    G.lastAct = Date.now();
+    return segs;
+  }
+
   global.SNGlobe = {
     init: init,
     pulse: pulse,
     clearMarkers: clearMarkers,
+    clearTourLines: clearTourLines,
+    drawTourLine: drawTourLine,
     locate: locate,
     flyNear: flyNear,
     goToTier: goToTier,
