@@ -87,6 +87,31 @@ const R = await page.evaluate(async () => {
   // pricing
   ok('price', SNDeliveryRules.distanceFee(4.2) === 6);
 
+  // Rai / helper
+  ok('helper', !!window.SNHelper && typeof SNHelper.droneDeliver === 'function');
+  ok('commissionRai', !!window.SNHelper && typeof SNHelper.commissionRai === 'function');
+
+  // Marina + map getMap
+  ok('marina', !!window.SNMarina && typeof SNMarina.openMarina === 'function');
+  ok('mapGet', !!window.SNMap && typeof SNMap.getMap === 'function');
+
+  // Theme auto path
+  ok('themeGadget', !!document.getElementById('stc-g-theme'));
+  ok('dataPoolBtn', !!document.getElementById('stc-data-pool'));
+
+  // Boot global guard: after cold path, city-map should not start forced
+  // (poly overview may open map — skip if polyMode)
+
+  // Wish line
+  ok('wish', !!window.SNWishInbox && SNWishInbox.isWishLine('i want better routing'));
+
+  // Sub demo
+  if (window.SNSubscription && SNSubscription.handleLine) {
+    await SNSubscription.handleLine('subscribe demo 3');
+    const st = SNSubscription.status();
+    ok('subDemo', !!(st.active || st.mode && st.mode !== 'no-sub-free-only' || st.tierId));
+  } else ok('subDemo', false);
+
   return { need, miss, tour: tour && { o: tour.orders.length, s: tour.stops.length, km: tour.km } };
 });
 

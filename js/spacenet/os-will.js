@@ -91,6 +91,54 @@
 
   /* ── Executors: real system mutations ── */
   var EXEC = {
+    market_on: function () {
+      try {
+        if (global.SNPolyScheduler && SNPolyScheduler.activate) SNPolyScheduler.activate({});
+        return { ok: true, detail: 'market on' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
+    market_off: function () {
+      try {
+        if (global.SNPolyScheduler && SNPolyScheduler.deactivate) SNPolyScheduler.deactivate({});
+        return { ok: true, detail: 'market off' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
+    poly_overview: function () {
+      try {
+        if (global.SNField && SNField.enterPolygonOverview) void SNField.enterPolygonOverview();
+        return { ok: true, detail: 'polygon overview' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
+    poly_drive: function () {
+      try {
+        if (global.SNField && SNField.enterDriveMode) void SNField.enterDriveMode();
+        return { ok: true, detail: 'gps drive' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
+    marina: function (arg) {
+      try {
+        if (global.SNMarina && SNMarina.openMarina) SNMarina.openMarina(arg || 'mandraki');
+        return { ok: true, detail: 'marina' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
+    throw_tiles: function () {
+      try {
+        if (global.SNPolyScheduler && SNPolyScheduler.throwOffers) SNPolyScheduler.throwOffers({ count: 1 });
+        return { ok: true, detail: 'throw tiles' };
+      } catch (e) {
+        return { ok: false, detail: String(e.message || e) };
+      }
+    },
     theme: function (arg) {
       arg = String(arg || '').toLowerCase();
       if (global.SNTheme && SNTheme.setMode) {
@@ -401,7 +449,10 @@
     var opsList = [];
 
     // strip will/reshape/make/set prefixes
-    var body = line.replace(/^(will|reshape|make|set|os|please|i want|i need|can you|could you)\s+/i, '');
+    var body = line.replace(
+      /^(will|reshape|make|set|os|please|i want|i need|can you|could you)\s+/i,
+      ''
+    );
     var b = body.toLowerCase();
 
     if (/^(day|light|bright)\b/.test(b) || /\bday mode\b|\blight theme\b|\bbright theme\b|\bmake it (day|light|bright)\b/.test(b))
@@ -422,8 +473,14 @@
       opsList.push({ op: 'gadgets', arg: 'open' });
     if (/close gadgets|hide gadgets|gadgets close/.test(b)) opsList.push({ op: 'gadgets', arg: 'close' });
 
-    if (/power on|market on|go live|start market|tasks on/.test(b)) opsList.push({ op: 'power', arg: 'on' });
-    if (/power off|market off|rest|tasks off/.test(b)) opsList.push({ op: 'power', arg: 'off' });
+    if (/power on|market on|go live|start market|tasks on/.test(b)) opsList.push({ op: 'market_on' });
+    if (/power off|market off|rest|tasks off|stop market/.test(b)) opsList.push({ op: 'market_off' });
+    // legacy power op still supported via EXEC.power if present
+    if (/show (my )?tour|polygon overview|fit (the )?tour|poly overview|show polygon/.test(b))
+      opsList.push({ op: 'poly_overview' });
+    if (/gps drive|drive mode|start driving/.test(b)) opsList.push({ op: 'poly_drive' });
+    if (/\bmarina\b|berths|parking spots/.test(b)) opsList.push({ op: 'marina', arg: 'mandraki' });
+    if (/throw tiles|test offers|demo tiles/.test(b)) opsList.push({ op: 'throw_tiles' });
 
     if (/global globe|zoom out full|earth home|reset globe|full earth/.test(b))
       opsList.push({ op: 'globe', arg: 'global' });

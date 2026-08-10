@@ -101,6 +101,9 @@
   }
 
   function isWishLine(raw) {
+    var t0 = String(raw || '').trim().toLowerCase();
+    if (/^(i want|i need|i wish|please add|feature request|can we have|it would be nice|i would like|make it so|we need)/.test(t0))
+      return true;
     var low = String(raw || '').trim().toLowerCase();
     if (!low) return false;
     if (/^(wish|request|feature|feedback)\b/.test(low)) return true;

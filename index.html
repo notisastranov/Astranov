@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260810172000-mission-power" />
-<meta name="astranov-continuity" content="20260810172000-mission-power" />
+<meta name="astranov-build" content="20260810183000-full-backlog" />
+<meta name="astranov-continuity" content="20260810183000-full-backlog" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -741,6 +741,11 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #sn-topchrome-panel.collapsed #stc-gadgets { display: none !important; }
 
 /* Offer focus */
+/* Offer-focus collapses chrome, but expanded handle must still show gadgets */
+body.sn-offer-focus #sn-topchrome-panel.expanded #stc-gadgets,
+body.sn-offer-focus #sn-topchrome-panel.mid #stc-gadgets {
+  display: flex !important;
+}
 body.sn-offer-focus #stc-gadgets {
   display: none !important;
 }
@@ -953,6 +958,12 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
               <button type="button" id="stc-data-past" title="Review past orders on the map timeline">Past orders</button>
               <button type="button" id="stc-data-export" title="Export order archive JSON">Export archive</button>
               <button type="button" id="stc-data-present" title="Return timeline to live present">Live now</button>
+              <button type="button" id="stc-data-pool" title="Open order reassignment pool">Pool</button>
+              <button type="button" id="stc-data-tour" title="Show multi-tour status">Tour</button>
+              <button type="button" id="stc-data-plans" title="AI subscription plans">AI plans</button>
+              <button type="button" id="stc-data-market" title="Market help">Market</button>
+              <button type="button" id="stc-data-marina" title="Open marina berths">Marina</button>
+              <button type="button" id="stc-data-wish" title="List wishes sent to owner">Wishes</button>
             </div>
           </div>
         </div>
@@ -970,7 +981,7 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
     <form id="cli-form" autocomplete="off">
       <span class="cli-prompt-prefix" aria-hidden="true">›</span>
       <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-        placeholder="power on · locate · marina · help"
+        placeholder="power on · throw tiles · tour · marina · help market · plans"
         aria-label="Message Astranov" />
     </form>
   </div>
@@ -1098,6 +1109,6 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   }
 })();
 </script>
-<script src="/js/spacenet/os-bootloader.js?v=20260810172000-mission-power"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260810183000-full-backlog"></script>
 </body>
 </html>

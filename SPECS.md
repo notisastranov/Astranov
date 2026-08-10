@@ -928,3 +928,25 @@ Verified green (automated):
 | `mission-regression.mjs` · `poly-regression.mjs` | PASS |
 
 *Commands: `help market` · `engine demo` · `throw tiles` · `tour` · `marina` · `rest`*
+
+---
+
+## Agent note 2026-08-10 · Full backlog continuous pass (not owner OV)
+
+Implemented & regression-green without babysitting:
+
+| Item | Status |
+|------|--------|
+| Power ON↔OFF one-tap market | green |
+| Multi-tour + 3× seal + archive + rest pool | green |
+| ⬠ Poly overview ↔ GPS drive | green |
+| Globe tour line (no stolen GLOBAL boot) | green |
+| Rai `commissionRai` + drone demo auto-seal | green |
+| Marina berth grid prices | green |
+| Data gadget: pool · tour · plans · market · marina · wishes | green |
+| Theme auto day/night + fader + accent | green |
+| OS-will market/poly/marina/throw ops | green |
+| subscribe demo · wish lines · GPS on power | green |
+| mission-regression + poly-regression | PASS |
+
+*Build: `20260810183000-full-backlog`*

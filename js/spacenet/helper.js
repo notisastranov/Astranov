@@ -1019,6 +1019,35 @@
     escortOrder: escortOrder,
     droneDeliver: droneDeliver,
     drone: droneDeliver,
+    /** Rai silver robot — polygon courier when no human drivers */
+    commissionRai: function (opts) {
+      opts = opts || {};
+      try {
+        wake(true);
+      } catch (_) {}
+      var order = {
+        vendorName: (opts.vendor && opts.vendor.name) || opts.vendorName || 'Pickup',
+        title: opts.title || 'Rai drone delivery',
+        lat: opts.vendor && opts.vendor.lat,
+        lng: opts.vendor && opts.vendor.lng,
+        drop_lat: opts.drop && opts.drop.lat,
+        drop_lng: opts.drop && opts.drop.lng,
+        id: opts.offerId,
+      };
+      return droneDeliver(order, Object.assign({ forceVisible: true }, opts));
+    },
+    droneMode: function (on) {
+      try {
+        if (on) {
+          H.forceVisible = true;
+          wake(true);
+          H.status = 'drone mode';
+        } else {
+          H.forceVisible = false;
+          H.status = 'idle';
+        }
+      } catch (_) {}
+    },
     patrol: patrol,
     showcase: showcase,
     report: report,

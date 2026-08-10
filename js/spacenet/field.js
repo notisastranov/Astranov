@@ -218,6 +218,63 @@
     } catch (_) {}
   }
 
+
+  function bindDataGadget() {
+    function go(fn) {
+      return function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        try {
+          fn();
+        } catch (err) {
+          try {
+            if (g.SNCli && SNCli.log) SNCli.log(String(err.message || err), 'err');
+          } catch (_) {}
+        }
+      };
+    }
+    var pool = $('stc-data-pool');
+    if (pool)
+      pool.onclick = go(function () {
+        if (g.SNCli && SNCli.run) void SNCli.run('pool');
+        else if (g.SNPolyScheduler && SNPolyScheduler.claimFromPool) SNPolyScheduler.claimFromPool(1);
+      });
+    var tour = $('stc-data-tour');
+    if (tour)
+      tour.onclick = go(function () {
+        if (g.SNPolyScheduler && SNPolyScheduler.handleLine) void SNPolyScheduler.handleLine('tour');
+        if (g.SNField && SNField.enterPolygonOverview) void SNField.enterPolygonOverview();
+      });
+    var plans = $('stc-data-plans');
+    if (plans)
+      plans.onclick = go(function () {
+        if (g.SNSubscription && SNSubscription.printPlans) SNSubscription.printPlans();
+        else if (g.SNCli && SNCli.run) void SNCli.run('plans');
+      });
+    var market = $('stc-data-market');
+    if (market)
+      market.onclick = go(function () {
+        if (g.SNPolyScheduler && SNPolyScheduler.handleLine) void SNPolyScheduler.handleLine('help market');
+      });
+    var marina = $('stc-data-marina');
+    if (marina)
+      marina.onclick = go(function () {
+        if (g.SNMarina && SNMarina.openMarina) SNMarina.openMarina('mandraki');
+        else if (g.SNCli && SNCli.run) void SNCli.run('marina');
+      });
+    var wish = $('stc-data-wish');
+    if (wish)
+      wish.onclick = go(function () {
+        if (g.SNWishInbox && SNWishInbox.list) {
+          var list = SNWishInbox.list() || [];
+          if (g.SNCli && SNCli.log)
+            SNCli.log('Wishes · ' + list.length + ' · latest: ' + (list[0] ? list[0].text || list[0].id : 'none'), 'ok');
+        } else if (g.SNCli && SNCli.run) void SNCli.run('wish list');
+      });
+  }
+
   function bindTimeline() {
     applyTimelineBody();
     var range = $('tl-year');
@@ -635,6 +692,24 @@
   /** Radar range zoom (1 = default). Two-finger scroll / pinch adjusts. */
   var radarZoom = 1;
 
+  function autoDayNightTheme() {
+    // Owner law: bright day · dark night · user override via theme gadget sticks
+    try {
+      if (localStorage.getItem('sn:theme-lock-v1') === '1') return;
+      var forced = localStorage.getItem('sn:theme-v1') || '';
+      if (forced === 'light' || forced === 'dark') return; // explicit user choice
+      var h = new Date().getHours();
+      var wantLight = h >= 7 && h < 20; // day 07–20
+      var root = document.documentElement;
+      root.classList.remove('theme-light', 'theme-dark');
+      root.classList.add(wantLight ? 'theme-light' : 'theme-dark');
+      try {
+        if (g.SNCli && SNCli.ops)
+          SNCli.ops(wantLight ? 'Theme · day bright' : 'Theme · night dark');
+      } catch (_) {}
+    } catch (_) {}
+  }
+
   function applyDeviceTheme() {
     try {
       var root = document.documentElement;
@@ -654,6 +729,8 @@
   }
   try {
     applyDeviceTheme();
+    autoDayNightTheme();
+    setInterval(autoDayNightTheme, 60000);
     if (window.matchMedia) {
       var mq = matchMedia('(prefers-color-scheme: light)');
       if (mq.addEventListener) mq.addEventListener('change', applyDeviceTheme);
@@ -1105,6 +1182,10 @@
   async function enterPolygonOverview() {
     stopPolyDriveFollow();
     polyNavMode = 'polygon';
+    try {
+      document.body.classList.add('sn-poly-nav-overview');
+      document.body.classList.remove('sn-poly-nav-drive');
+    } catch (_) {}
     var gps = await readGpsOnce();
     var pts = collectTourPoints();
     if (gps && gps.lat != null) pts.push({ lat: gps.lat, lng: gps.lng });
@@ -1175,6 +1256,10 @@
    */
   async function enterDriveMode() {
     polyNavMode = 'drive';
+    try {
+      document.body.classList.add('sn-poly-nav-drive');
+      document.body.classList.remove('sn-poly-nav-overview');
+    } catch (_) {}
     var gps = await readGpsOnce();
     var p = gps || focusPos();
 
@@ -1258,6 +1343,18 @@
       try {
         if (g.SNCli && SNCli.run) void SNCli.run('locate');
       } catch (e) {}
+      try {
+        void readGpsOnce().then(function (pp) {
+          if (!pp) return;
+          try {
+            if (g.SNMap && SNMap.markYou) SNMap.markYou(pp.lat, pp.lng, 'YOU');
+          } catch (_) {}
+          try {
+            if (g.SNGlobe && SNGlobe.pulse) SNGlobe.pulse(pp.lat, pp.lng, 0x44ffaa, 'YOU', 12000);
+            if (g.SNGlobe && SNGlobe.flyNear) SNGlobe.flyNear(pp.lat, pp.lng);
+          } catch (_) {}
+        });
+      } catch (_) {}
       return;
     }
     // ⬠ Polygon = cycle: fit whole tour + GPS  ↔  GPS drive follow
@@ -2513,6 +2610,10 @@
     }
 
     function setMode(mode, animate, freeH) {
+      try {
+        if (mode === 'expanded' || mode === 'mid')
+          document.body.classList.remove('sn-offer-focus');
+      } catch (_) {}
       panel.classList.remove('collapsed', 'mid', 'expanded');
       panel.classList.add(mode);
       if (animate !== false) panel.classList.add('stc-anim');
@@ -5049,6 +5150,9 @@
       }
     } catch (eB) {}
     bindTimeline();
+    try {
+      bindDataGadget();
+    } catch (_) {}
     bindTaskLaunch();
     paintRibbon();
   }
@@ -5109,6 +5213,7 @@
     cyclePolyNav: cyclePolyNav,
     enterPolygonOverview: enterPolygonOverview,
     enterDriveMode: enterDriveMode,
+    stopPolyDriveFollow: stopPolyDriveFollow,
     get polyNavMode() {
       return polyNavMode;
     },

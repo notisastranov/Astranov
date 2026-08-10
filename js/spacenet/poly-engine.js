@@ -631,22 +631,25 @@
             SNGlobe.pulse(s.lat, s.lng, i === 0 ? 0x00e070 : 0x3d9eff, String((tour.stops[i] && tour.stops[i].name) || '').slice(0, 10), 12000);
           });
         }
-        // Orient globe toward tour center so polygon is in view without opening streets
+        // Only re-center globe when user asked for polygon overview (⬠) — never steal GLOBAL boot
         if (SNGlobe.flyNear && gpts.length) {
-          var clat = 0,
-            clng = 0;
-          gpts.forEach(function (p) {
-            clat += p.lat;
-            clng += p.lng;
-          });
-          clat /= gpts.length;
-          clng /= gpts.length;
-          // Soft fly only when city map is not covering
-          var mapOn = false;
+          var wantFly = false;
           try {
-            mapOn = !!(document.body && document.body.classList.contains('city-map-on'));
+            wantFly =
+              (global.SNField && SNField.polyNavMode === 'polygon') ||
+              !!(document.body && document.body.classList.contains('sn-poly-nav-overview'));
           } catch (_) {}
-          if (!mapOn) SNGlobe.flyNear(clat, clng);
+          if (wantFly) {
+            var clat = 0,
+              clng = 0;
+            gpts.forEach(function (p) {
+              clat += p.lat;
+              clng += p.lng;
+            });
+            clat /= gpts.length;
+            clng /= gpts.length;
+            SNGlobe.flyNear(clat, clng);
+          }
         }
       }
     } catch (_) {}

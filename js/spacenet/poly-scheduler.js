@@ -639,6 +639,9 @@
             if (q.vip) ch.push({ t: 'VIP +3', c: '' });
             if (q.private) ch.push({ t: 'Private +3', c: 'priv' });
             if (locked) ch.push({ t: 'Route lock', c: 'priv' });
+            if (o.prepMin != null) ch.push({ t: 'Prep ' + o.prepMin + 'm', c: '' });
+            if (o.tourKm != null) ch.push({ t: 'Tour ' + o.tourKm + 'km', c: '' });
+            if (o.drone) ch.push({ t: 'Rai drone', c: '' });
             chips =
               '<div class="sn-pt-chips">' +
               ch
@@ -946,6 +949,16 @@
     paint();
     setTimeout(function () {
       dismiss(o.id);
+      try {
+        if (active) {
+          promoteQueue();
+          scanAutoAccept();
+          // Keep market fed if empty
+          if (!stack.some(function (x) { return x.phase === 'offered' || x.phase === 'claimed' || x.phase === 'underway'; }) && !queue.length) {
+            throwOffers({ count: 1 });
+          }
+        }
+      } catch (_) {}
     }, 900);
   }
 
@@ -1012,12 +1025,27 @@
           vendor: { lat: o.vLat, lng: o.vLng, name: o.vendorName },
           drop: { lat: o.dLat, lng: o.dLng, name: o.clientName },
           offerId: o.id,
+          title: o.title || o.vendorName,
         });
+      } else if (global.SNHelper && SNHelper.droneDeliver) {
+        SNHelper.droneDeliver(
+          {
+            id: o.id,
+            vendorName: o.vendorName,
+            title: o.title,
+            lat: o.vLat,
+            lng: o.vLng,
+            drop_lat: o.dLat,
+            drop_lng: o.dLng,
+          },
+          { forceVisible: true }
+        );
       } else if (global.SNHelper && SNHelper.droneMode) {
         SNHelper.droneMode(true);
       }
+      if (global.SNHelper && SNHelper.wake) SNHelper.wake(true);
     } catch (_) {}
-    log('Rai drone · polygon courier', 'ok');
+    log('Rai silver · drone courier · no human drivers yet', 'ok');
   }
 
   function runAct(id, act) {
@@ -1065,6 +1093,9 @@
       } catch (_) {
         drawPolygon(o);
       }
+      try {
+        if (global.SNField && SNField.setRadarExpanded) SNField.setRadarExpanded(true);
+      } catch (_) {}
       log(
         'Claimed · ' + o.vendorName + ' → ' + o.clientName +
           (o._joinPreview ? ' · +' + o._joinPreview.extraKm + ' km tour' : ''),
@@ -1126,7 +1157,12 @@
       setTimeout(function () {
         if (o.phase === 'confirming' && o.confirms && !o.confirms.vendor) setConfirm(o.id, 'vendor');
       }, 1200);
-      log('Arrived · need client + vendor + driver OK', 'ok');
+      // Demo / drone: client seal after a short pause (no human client app yet)
+      setTimeout(function () {
+        if (o.phase === 'confirming' && o.drone && o.confirms && !o.confirms.client)
+          setConfirm(o.id, 'client');
+      }, 1800);
+      log('Arrived · 3× seal · client+vendor+driver (Rai auto-helps demo)', 'ok');
       paint();
       return;
     }
@@ -1709,6 +1745,28 @@
     preview('market on');
     ensureDriveLoop();
     ensureAutoScan();
+    // Soft GPS so polygons price from real position
+    try {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            global._snLastPos = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              real: true,
+              source: 'gps',
+              acc: pos.coords.accuracy,
+            };
+            try {
+              if (global.SNTasks && SNTasks.setPos)
+                SNTasks.setPos(pos.coords.latitude, pos.coords.longitude);
+            } catch (_) {}
+          },
+          function () {},
+          { enableHighAccuracy: true, maximumAge: 15000, timeout: 5000 }
+        );
+      }
+    } catch (_) {}
     return { ok: true, gen: gen };
   }
 
@@ -1846,6 +1904,12 @@
       if (global.SNField && SNField.setLaunchMode) SNField.setLaunchMode('off', { quiet: true, skipMoney: true });
       if (global.SNField && SNField.clearRoutes) SNField.clearRoutes();
       if (global.SNGlobe && SNGlobe.clearTourLines) SNGlobe.clearTourLines();
+      try {
+        document.body.classList.remove('sn-poly-nav-overview', 'sn-poly-nav-drive');
+      } catch (_) {}
+      try {
+        if (global.SNField && SNField.stopPolyDriveFollow) SNField.stopPolyDriveFollow();
+      } catch (_) {}
     } catch (_) {}
     log('MARKET OFF · polygon stopped · pool ' + (re.count || 0), 'dim');
     preview('market off · rest');

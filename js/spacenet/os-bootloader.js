@@ -893,7 +893,17 @@
 
       await loadStage('drivers', STAGE_DRIVERS, { soft: true });
       initDrivers();
-      // Never boot into truncated street map
+      // Guard: boot must be GLOBAL globe, not a random city dive
+    try {
+      if (global.SNGlobe && SNGlobe.goToTier && SNGlobe.currentTier) {
+        var tier = SNGlobe.currentTier();
+        if (tier && tier !== 'global' && tier !== 'orbit' && tier !== 'planet') {
+          SNGlobe.goToTier('global');
+          warn('boot guard · returned to GLOBAL globe');
+        }
+      }
+    } catch (_) {}
+    // Never boot into truncated street map
       try {
         if (global.SNMap && SNMap.active && SNMap.close) {
           SNMap.close();

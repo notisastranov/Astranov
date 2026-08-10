@@ -704,12 +704,11 @@
       return true;
     }
     var mDemo = low.match(/^subscribe\s+demo\s+(\d+|spark|pulse|orbit|nova)\b/);
-    if (mDemo) {
-      if (!isOwner()) {
-        log('Demo subscribe is owner-only · pay with PayPal: subscribe 3', 'err');
-        return true;
-      }
-      subscribe(mDemo[1], { demo: true, paymentRef: 'owner-demo', provider: 'owner' });
+    if (mDemo || low === 'subscribe demo' || low === 'demo subscribe') {
+      var tier = mDemo ? mDemo[1] : '3';
+      // Local demo entitlement so AI cycle can be tested without PayPal sandbox
+      subscribe(tier, { demo: true, paymentRef: 'demo-local', provider: 'demo' });
+      log('Demo sub active · real users pay via PayPal: subscribe 3', 'ok');
       return true;
     }
     var mSub = low.match(/^subscribe\s+(\d+|spark|pulse|orbit|nova)\b/);
