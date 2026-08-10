@@ -710,9 +710,19 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.8" r="1.4"/><circle cx="12" cy="19.2" r="1.4"/><circle cx="4.8" cy="12" r="1.4"/><circle cx="19.2" cy="12" r="1.4"/><path d="M12 6.4v3M12 14.6v3M6.4 12h3M14.6 12h3" opacity=".7"/></svg>',
     send:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h12"/><path d="M12.5 6.5 18.5 12l-6 5.5"/><path d="M4.5 8.5v7" opacity=".4"/></svg>',
+    polygon:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.2 9.1 17.1 18.8H6.9L3.8 9.1 12 3.2Z"/><path d="M12 8.2v5.2M9.6 11.2h4.8" opacity=".55"/></svg>',
   };
   var RIBBON_CORE = [
     { act: 'locate', icon: ICO.locate, emoji: '📍', text: 'Locate', title: 'Locate me', id: 'sn-rib-locate' },
+    {
+      act: 'polygon',
+      icon: ICO.polygon,
+      emoji: '⬠',
+      text: 'Poly',
+      title: 'Polygon tour · fit whole route · tap again for GPS drive',
+      id: 'sn-rib-poly',
+    },
     { act: 'user', icon: ICO.user, emoji: '👤', text: 'User', title: 'Sign in / profile', id: 'sn-rib-user' },
     { act: 'add', icon: ICO.add, emoji: '➕', text: 'Add', title: 'Add', id: 'sn-rib-add' },
     { act: 'layers', icon: ICO.layers, emoji: '🗺', text: 'Layers', title: 'Layers', id: 'sn-rib-layers' },
@@ -722,7 +732,7 @@
   /**
    * Context task buttons REMOVED from CLI ribbon.
    * Menu / cart / order / claim live inside expanded CLI tiles only.
-   * Ribbon stays permanent 6: Locate · User · Add · Layers · AI · Send.
+   * Ribbon: Locate · ⬠ Poly · User · Add · Layers · AI · Send
    */
   var TASKS = {
     idle: [],
@@ -958,12 +968,299 @@
   }
 
 
+  /** Polygon ribbon: overview (fit whole tour) ↔ GPS drive follow */
+  var polyNavMode = 'off'; // off | polygon | drive
+  var polyNavWatch = null;
+  var polyNavGeoWatch = null;
+
+  function polyNavOps(msg) {
+    try {
+      if (g.SNCli && SNCli.ops) SNCli.ops(String(msg).slice(0, 140));
+      else if (g.SNCli && SNCli.log) SNCli.log(String(msg).slice(0, 140), 'ops', true);
+    } catch (_) {}
+  }
+
+  function stopPolyDriveFollow() {
+    if (polyNavWatch) {
+      try {
+        clearInterval(polyNavWatch);
+      } catch (_) {}
+      polyNavWatch = null;
+    }
+    if (polyNavGeoWatch != null && navigator.geolocation && navigator.geolocation.clearWatch) {
+      try {
+        navigator.geolocation.clearWatch(polyNavGeoWatch);
+      } catch (_) {}
+      polyNavGeoWatch = null;
+    }
+  }
+
+  function readGpsOnce() {
+    return new Promise(function (resolve) {
+      var fallback =
+        g._snLastPos ||
+        (g.SNTasks && SNTasks.pos) ||
+        focusPos();
+      if (!navigator.geolocation) {
+        resolve(fallback);
+        return;
+      }
+      var done = false;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        resolve(fallback);
+      }, 4500);
+      try {
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            var p = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              acc: pos.coords.accuracy,
+            };
+            g._snLastPos = p;
+            try {
+              if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(p.lat, p.lng);
+            } catch (_) {}
+            resolve(p);
+          },
+          function () {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            resolve(fallback);
+          },
+          { enableHighAccuracy: true, maximumAge: 8000, timeout: 4000 }
+        );
+      } catch (_) {
+        clearTimeout(to);
+        resolve(fallback);
+      }
+    });
+  }
+
+  function collectTourPoints() {
+    var pts = [];
+    var seen = {};
+    function add(lat, lng) {
+      if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
+      var k = lat.toFixed(5) + ',' + lng.toFixed(5);
+      if (seen[k]) return;
+      seen[k] = 1;
+      pts.push({ lat: Number(lat), lng: Number(lng) });
+    }
+    try {
+      if (g.SNPolyScheduler && SNPolyScheduler.list) {
+        var active = SNPolyScheduler.list().filter(function (o) {
+          return (
+            o &&
+            (o.phase === 'claimed' ||
+              o.phase === 'underway' ||
+              o.phase === 'confirming' ||
+              o.phase === 'offered')
+          );
+        });
+        active.forEach(function (o) {
+          add(o.vLat, o.vLng);
+          add(o.dLat, o.dLng);
+          (o.mids || []).forEach(function (m) {
+            add(m.lat, m.lng);
+          });
+          (o.stops || []).forEach(function (st) {
+            add(st.lat, st.lng);
+          });
+        });
+        try {
+          if (g.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
+            var tour = SNPolyEngine.syncTourFromStack(active.length ? active : SNPolyScheduler.list());
+            if (tour && tour.stops) {
+              tour.stops.forEach(function (st) {
+                add(st.lat, st.lng);
+              });
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    // Radar routes fallback
+    try {
+      (routes || []).forEach(function (r) {
+        (r.points || []).forEach(function (p) {
+          add(p.lat, p.lng);
+        });
+      });
+    } catch (_) {}
+    return pts;
+  }
+
+  /**
+   * Polygon mode: GPS recenter + fit entire tour polygon on map (any prior view).
+   */
+  async function enterPolygonOverview() {
+    stopPolyDriveFollow();
+    polyNavMode = 'polygon';
+    var gps = await readGpsOnce();
+    var pts = collectTourPoints();
+    if (gps && gps.lat != null) pts.push({ lat: gps.lat, lng: gps.lng });
+
+    // Always redraw tour when we have active orders
+    try {
+      if (g.SNPolyScheduler && g.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
+        SNPolyEngine.syncTourFromStack(SNPolyScheduler.list());
+      }
+    } catch (_) {}
+
+    if (!pts.length) {
+      polyNavOps('POLYGON · no active tour · locate only');
+      try {
+        if (g.SNCli && SNCli.run) void SNCli.run('locate');
+      } catch (_) {}
+      paintRibbon();
+      return { ok: true, mode: 'polygon', empty: true };
+    }
+
+    var mid = pts[Math.floor(pts.length / 2)] || gps || focusPos();
+    try {
+      if (g.SNMap && SNMap.open) {
+        await SNMap.open(mid.lat, mid.lng, { force: true });
+      }
+    } catch (_) {}
+
+    try {
+      if (g.SNMap && SNMap.fitLatLngs) {
+        SNMap.fitLatLngs(pts, { force: true, padding: 56, maxZoom: 15, animate: true });
+      }
+    } catch (_) {}
+
+    try {
+      if (g.SNMap && SNMap.markYou && gps) SNMap.markYou(gps.lat, gps.lng, 'YOU');
+    } catch (_) {}
+
+    // Expand first live order tile so driver sees the job
+    try {
+      var live =
+        g.SNPolyScheduler &&
+        SNPolyScheduler.list().find(function (o) {
+          return o.phase === 'underway' || o.phase === 'claimed' || o.phase === 'offered';
+        });
+      if (live && SNPolyScheduler.openOrderTile) SNPolyScheduler.openOrderTile(live.id);
+      else if (live) {
+        live.uiSize = 'mid';
+        if (SNPolyScheduler.paint) SNPolyScheduler.paint();
+      }
+    } catch (_) {}
+
+    // Radar expanded for polygon on globe view if map failed
+    try {
+      setRadarExpanded(true);
+    } catch (_) {}
+
+    polyNavOps(
+      'POLYGON · fit ' +
+        pts.length +
+        ' pts · GPS recentered · tap ⬠ again for DRIVE'
+    );
+    paintRibbon();
+    return { ok: true, mode: 'polygon', points: pts.length };
+  }
+
+  /**
+   * Drive mode: GPS follow, higher zoom, keep you centered on the route.
+   */
+  async function enterDriveMode() {
+    polyNavMode = 'drive';
+    var gps = await readGpsOnce();
+    var p = gps || focusPos();
+
+    try {
+      if (g.SNMap && SNMap.open) await SNMap.open(p.lat, p.lng, { force: true });
+    } catch (_) {}
+
+    try {
+      if (g.SNMap && SNMap.map) {
+        g.SNMap.map.setView([p.lat, p.lng], 17, { animate: true });
+      }
+    } catch (_) {}
+
+    try {
+      if (g.SNMap && SNMap.markYou) SNMap.markYou(p.lat, p.lng, 'DRIVE');
+    } catch (_) {}
+
+    // Keep tour polygon painted under the follow camera
+    try {
+      if (g.SNPolyScheduler && g.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
+        SNPolyEngine.syncTourFromStack(SNPolyScheduler.list());
+      }
+    } catch (_) {}
+
+    stopPolyDriveFollow();
+    function follow(lat, lng) {
+      try {
+        g._snLastPos = { lat: lat, lng: lng };
+        if (g.SNTasks && SNTasks.setPos) SNTasks.setPos(lat, lng);
+        if (g.SNMap && SNMap.map) {
+          g.SNMap.map.setView([lat, lng], Math.max(16, g.SNMap.map.getZoom() || 17), {
+            animate: false,
+          });
+        }
+        if (g.SNMap && SNMap.markYou) SNMap.markYou(lat, lng, 'DRIVE');
+      } catch (_) {}
+    }
+
+    if (navigator.geolocation && navigator.geolocation.watchPosition) {
+      try {
+        polyNavGeoWatch = navigator.geolocation.watchPosition(
+          function (pos) {
+            if (polyNavMode !== 'drive') return;
+            follow(pos.coords.latitude, pos.coords.longitude);
+          },
+          function () {},
+          { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+        );
+      } catch (_) {}
+    }
+    // Fallback poll
+    polyNavWatch = setInterval(function () {
+      if (polyNavMode !== 'drive') return;
+      void readGpsOnce().then(function (pp) {
+        if (pp && pp.lat != null) follow(pp.lat, pp.lng);
+      });
+    }, 4000);
+
+    polyNavOps('DRIVE · GPS follow · tap ⬠ for full polygon overview');
+    paintRibbon();
+    return { ok: true, mode: 'drive' };
+  }
+
+  async function cyclePolyNav() {
+    try {
+      if (polyNavMode === 'polygon') {
+        return await enterDriveMode();
+      }
+      // off or drive → polygon overview (recenter + fit)
+      return await enterPolygonOverview();
+    } catch (e) {
+      polyNavOps('Polygon nav · ' + (e && e.message ? e.message : e));
+      return { ok: false };
+    }
+  }
+
+
   function ribbonAct(act) {
     // Locate = single action (GPS recenter) — no submenu
     if (act === 'locate') {
       try {
         if (g.SNCli && SNCli.run) void SNCli.run('locate');
       } catch (e) {}
+      return;
+    }
+    // ⬠ Polygon = cycle: fit whole tour + GPS  ↔  GPS drive follow
+    if (act === 'polygon' || act === 'poly' || act === 'tour') {
+      void cyclePolyNav();
       return;
     }
     // User = login when out · when in: announce login + tile + map location
@@ -1097,7 +1394,7 @@
     bar.hidden = false;
     bar.removeAttribute('hidden');
     bar.setAttribute('aria-hidden', 'false');
-    bar.setAttribute('aria-label', 'CLI shortcuts: locate user add layers AI send');
+    bar.setAttribute('aria-label', 'CLI shortcuts: locate polygon user add layers AI send');
     var h = '';
     var i;
     var signedIn = !!(g.SNAuth && SNAuth.user);
@@ -1112,6 +1409,20 @@
           ? 'Logged in · open your tile + map pin'
           : 'Sign in · astranov.eu';
         if (signedIn) onCls += ' on';
+      }
+      if (b.act === 'polygon') {
+        if (polyNavMode === 'drive') {
+          label = 'Drive';
+          title = 'GPS drive mode · tap for full polygon overview';
+          onCls += ' on';
+        } else if (polyNavMode === 'polygon') {
+          label = 'Poly';
+          title = 'Polygon overview · tap for GPS drive follow';
+          onCls += ' on';
+        } else {
+          label = 'Poly';
+          title = 'Show tour polygon · GPS recenter · fit whole route';
+        }
       }
       h +=
         '<button type="button" class="sn-rib-btn sn-rib-core' +
@@ -4793,6 +5104,12 @@
     startDeliveryRoute: startDeliveryRoute,
     setRoutes: setRoutes,
     clearRoutes: clearRoutes,
+    cyclePolyNav: cyclePolyNav,
+    enterPolygonOverview: enterPolygonOverview,
+    enterDriveMode: enterDriveMode,
+    get polyNavMode() {
+      return polyNavMode;
+    },
     setRouteProgress: function (id, p) {
       try {
         routes.forEach(function (r) {

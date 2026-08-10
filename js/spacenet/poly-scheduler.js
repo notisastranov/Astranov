@@ -1937,6 +1937,19 @@
     if (low === 'demo delivery' || low === 'demo polygon' || low === 'engine demo' || low === 'demo full' || low === 'full demo') {
       return demoFullLifecycle();
     }
+    if (low === 'polygon' || low === 'poly' || low === 'poly nav' || low === 'drive mode' || low === 'gps drive') {
+      try {
+        if (global.SNField && SNField.cyclePolyNav) {
+          if (low === 'drive mode' || low === 'gps drive') {
+            if (SNField.enterDriveMode) void SNField.enterDriveMode();
+            else void SNField.cyclePolyNav();
+          } else if (SNField.enterPolygonOverview) void SNField.enterPolygonOverview();
+          else void SNField.cyclePolyNav();
+          return true;
+        }
+      } catch (_) {}
+      return true;
+    }
     if (low === 'tour' || low === 'tour status') {
       try {
         if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
@@ -1978,7 +1991,7 @@
         var low = String(raw || '').trim().toLowerCase();
         try {
           if (
-            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|wallet|rate|pool)\b/i.test(
+            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|polygon|poly|drive mode|wallet|rate|pool)\b/i.test(
               low
             )
           ) {

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260810160000-poly-engine-hard" />
-<meta name="astranov-continuity" content="20260810160000-poly-engine-hard" />
+<meta name="astranov-build" content="20260810162000-poly-ribbon" />
+<meta name="astranov-continuity" content="20260810162000-poly-ribbon" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -480,6 +480,11 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #sn-poly-root .sn-pt-conf button,
 #sn-poly-root .sn-pt-chip,
 #sn-poly-root .sn-pt-stop,
+#sn-rib-poly.on {
+  border-color: rgba(0, 220, 160, 0.65);
+  box-shadow: 0 0 14px rgba(0, 220, 160, 0.35);
+  color: #9ff5d0;
+}
 .sn-rib-btn,
 .cli-chip { border-radius: var(--r-pill) !important; }
 #sn-poly-root .sn-pt { border-radius: var(--r) !important; }
@@ -1093,6 +1098,6 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   }
 })();
 </script>
-<script src="/js/spacenet/os-bootloader.js?v=20260810160000-poly-engine-hard"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260810162000-poly-ribbon"></script>
 </body>
 </html>
