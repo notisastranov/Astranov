@@ -908,3 +908,23 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **Regression** | `scripts/poly-regression.mjs` · `scripts/mission-regression.mjs` |
 
 *Build: `20260810170000-mission-green`*
+
+---
+
+## Agent note 2026-08-10 · Continuous mission pass (not owner OV)
+
+Verified green (automated):
+
+| Gate | Result |
+|------|--------|
+| Boot OS name + globe + CLI | OK |
+| Top handle · gadgets scroll | OK |
+| Power ON one-tap · offer tile · vendor/client | OK |
+| Multi-tour 2 orders · 4 stops · pricing | OK |
+| 3× seal · archive · rest pool | OK |
+| ⬠ Poly overview ↔ GPS drive | OK |
+| Globe `drawTourLine` multi-tour | OK |
+| Marina berth grid + prices | OK |
+| `mission-regression.mjs` · `poly-regression.mjs` | PASS |
+
+*Commands: `help market` · `engine demo` · `throw tiles` · `tour` · `marina` · `rest`*
