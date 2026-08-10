@@ -2236,7 +2236,9 @@
           px +
           'px !important;height:' +
           px +
-          'px !important;min-height:56px !important;overflow-y:auto !important;overflow-x:hidden !important;-webkit-overflow-scrolling:touch !important;}' +
+          'px !important;min-height:56px !important;overflow:hidden !important;}' +
+          'html body #sn-topchrome #stc-gadgets{overflow-y:auto !important;overflow-x:hidden !important;' +
+          '-webkit-overflow-scrolling:touch !important;touch-action:pan-y !important;flex:1 1 auto !important;min-height:0 !important;}' +
           'html body #sn-topchrome{max-height:none !important;height:auto !important;overflow:visible !important;}' +
           'html body #sn-hub-host{display:none !important;}';
         try {
@@ -2273,16 +2275,9 @@
     function onDown(e) {
       if (e.pointerType === 'touch' && e.isPrimary === false) return;
       if (e.button != null && e.button !== 0) return;
-      // Prefer handle; allow vertical drag on panel chrome not buttons
       var t = e.target;
-      if (
-        t &&
-        t.closest &&
-        t.closest('button, a, input, #field-balance-hud, #field-radar, #btn-home')
-      ) {
-        // still allow handle
-        if (!t.closest('#sn-topchrome-drag')) return;
-      }
+      // RESIZE only from the bottom handle — never steal one-finger scroll inside gadgets
+      if (!(t && t.closest && t.closest('#sn-topchrome-drag'))) return;
       startY = e.clientY;
       startH = panel.getBoundingClientRect().height || sizePx('collapsed');
       dragging = true;
@@ -2291,7 +2286,9 @@
       panel.classList.add('dragging');
       panel.classList.remove('stc-anim');
       try {
-        panel.setPointerCapture(e.pointerId);
+        // Capture on handle only so gadget list keeps native pan-y scroll
+        if (handle && handle.setPointerCapture) handle.setPointerCapture(e.pointerId);
+        else panel.setPointerCapture(e.pointerId);
       } catch (_) {}
     }
 
@@ -2418,7 +2415,8 @@
         return panel.classList.contains('expanded') || panel.classList.contains('mid');
       }
       function scroller() {
-        return $('stc-detail') || panel;
+        // One-finger scroll lives on the gadgets stack, not the whole panel
+        return $('stc-gadgets') || $('stc-detail') || panel;
       }
       function atEnd(el, dir) {
         // dir > 0 = scrolling content down (toward end); dir < 0 = toward start
@@ -2451,6 +2449,14 @@
           if (!expanded()) return;
           var dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
           if (!dir) return;
+          var sc = scroller();
+          // Prefer scrolling gadgets; only collapse when already at end
+          if (sc && sc !== panel && sc.scrollHeight > sc.clientHeight + 4) {
+            if (!atEnd(sc, dir)) {
+              // let the event reach #stc-gadgets
+              return;
+            }
+          }
           if (tick(dir, e.deltaY)) {
             if (e.cancelable) e.preventDefault();
           }
@@ -2470,13 +2476,21 @@
         'touchmove',
         function (e) {
           if (!expanded() || lastTY == null || !e.touches || !e.touches[0]) return;
+          // If finger is on gadgets list, let native one-finger scroll run unless at edge
           var y = e.touches[0].clientY;
           var dy = lastTY - y; // positive = finger up = content scroll down
           lastTY = y;
           if (Math.abs(dy) < 1) return;
           var dir = dy > 0 ? 1 : -1;
-          if (tick(dir, dy * 1.4) && atEnd(scroller(), dir)) {
-            if (e.cancelable) e.preventDefault();
+          var sc = scroller();
+          // Mid-list: never preventDefault — browser pans the gadgets
+          if (!atEnd(sc, dir)) {
+            accum = 0;
+            return;
+          }
+          // At edge: accumulate toward collapse; only then block bounce
+          if (tick(dir, dy * 1.4)) {
+            if (accum >= THRESH * 0.5 && e.cancelable) e.preventDefault();
           }
         },
         { passive: false }
