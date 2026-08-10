@@ -939,6 +939,49 @@
     }, 900);
   }
 
+  /* ── Live drive progress on multi-tour ── */
+  var driveTimer = null;
+  function driveLoop() {
+    var dirty = false;
+    stack.forEach(function (o) {
+      if (!o || o.phase !== 'underway') return;
+      var eta = (o.quote && o.quote.etaMin) || 18;
+      // ~ progress to 92% over eta minutes (accelerated for demo: 1 real sec ≈ 12s trip)
+      var step = Math.max(0.4, 55 / Math.max(8, eta));
+      o.progress = Math.min(92, (o.progress || 40) + step);
+      dirty = true;
+      if (o.progress >= 92) {
+        // Auto-arrive at drop — still need 3× seal for pay
+        o.phase = 'confirming';
+        o.progress = 90;
+        o.confirms = o.confirms || { client: false, vendor: false, driver: false, at: {} };
+        log('Arrived · ' + o.vendorName + ' · 3× seal to settle', 'ok');
+        setTimeout(function () {
+          if (o.phase === 'confirming') setConfirm(o.id, 'driver');
+        }, 500);
+        try {
+          if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+        } catch (_) {}
+      }
+    });
+    if (dirty) {
+      try {
+        paint();
+      } catch (_) {}
+      // Move radar route progress
+      try {
+        stack.forEach(function (o) {
+          if (o.phase === 'underway' && global.SNField && SNField.setRouteProgress)
+            SNField.setRouteProgress('live:tour_active', (o.progress || 0) / 100);
+        });
+      } catch (_) {}
+    }
+  }
+  function ensureDriveLoop() {
+    if (driveTimer) return;
+    driveTimer = setInterval(driveLoop, 900);
+  }
+
   function commissionRai(o) {
     o.drone = true;
     try {
@@ -1038,13 +1081,15 @@
     if (act === 'start') {
       o.phase = 'underway';
       o.progress = 45;
+      o.startedAt = Date.now();
       try {
         if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
         else drawPolygon(o);
       } catch (_) {
         drawPolygon(o);
       }
-      log('Underway · multi-tour polygon live', 'ok');
+      ensureDriveLoop();
+      log('Underway · multi-tour polygon live · progress running', 'ok');
       paint();
       return;
     }
@@ -1583,10 +1628,14 @@
   function throwOffers(opts) {
     opts = opts || {};
     var n = Math.min(3, Number(opts.count) || 1);
+    if (n <= 0) return { ok: true, count: 0 };
     var first = null;
+    var myGen = gen;
     for (var i = 0; i < n; i++) {
       (function (sample, delay) {
         setTimeout(function () {
+          // Cancel stale throws after power off / clear / new activate gen
+          if (myGen !== gen || !active) return;
           var o = makeOffer({
             vendorName: sample.vendorName,
             clientName: opts.clientName || 'You',
@@ -1961,6 +2010,7 @@
     ensureRoot();
     installCli();
     wireFieldPower();
+    ensureDriveLoop();
     [400, 1200, 3000].forEach(function (ms) {
       setTimeout(function () {
         installCli();
@@ -1993,6 +2043,7 @@
       return queue.slice();
     },
     clear: function () {
+      gen++;
       stack = [];
       queue = [];
       paint();

@@ -68,6 +68,19 @@ const R = await page.evaluate(async () => {
   out.checks.powerOffer = S.list().some((x) => x.phase === 'offered') || document.querySelectorAll('.sn-pt').length >= 1;
   out.checks.tileNames = /VENDOR|CLIENT|pickup|drop/i.test(document.querySelector('.sn-pt')?.innerText || '');
 
+  // Drive progress advances while underway
+  S.clear();
+  await new Promise((r) => setTimeout(r, 200));
+  const d = S.makeOffer({ vendorName: 'Drive', clientName: 'You', km: 2, nature: 'hot' });
+  S.pushOffer(d);
+  S.runAct(d.id, 'accept');
+  S.runAct(d.id, 'start');
+  const p0 = (S.list().find((x) => x.id === d.id) || {}).progress || 0;
+  await new Promise((r) => setTimeout(r, 2000));
+  const p1 = (S.list().find((x) => x.id === d.id) || {}).progress || 0;
+  out.detail.drive = { p0, p1 };
+  out.checks.driveProgress = p1 > p0;
+
   return out;
 });
 

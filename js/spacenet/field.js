@@ -4793,6 +4793,14 @@
     startDeliveryRoute: startDeliveryRoute,
     setRoutes: setRoutes,
     clearRoutes: clearRoutes,
+    setRouteProgress: function (id, p) {
+      try {
+        routes.forEach(function (r) {
+          if (!id || r.id === id || (r.id && String(r.id).indexOf('tour') >= 0))
+            r.progress = Math.max(0, Math.min(1, Number(p) || 0));
+        });
+      } catch (_) {}
+    },
     get routes() {
       return routes.slice();
     },
