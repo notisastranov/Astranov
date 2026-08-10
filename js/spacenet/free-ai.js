@@ -1122,7 +1122,7 @@
     ) {
       return {
         text:
-          'Full internet OS: locate · youtube · shops · order · dark map · pilot · search · code · claim. English or Greeklish. Stuck? cancel.',
+          'Full internet OS: locate · youtube · shops · order · dark map · pilot · search · code · claim. English first · full Greek · any language. Stuck? cancel.',
         score: 1,
         via: 'astranov-mind',
         source: 'intent-help',
@@ -1286,7 +1286,7 @@
     }
     if (/\bgrok\b|\bxai\b|\bx\.?ai\b/i.test(rawLow)) {
       return {
-        text: "I'm Astranov Mind, not Grok. Talk to me here in English or Greek.",
+        text: "I'm Astranov Mind, not Grok. Talk to me here — English first; Greek and every language welcome.",
         score: 1,
         via: 'free-mind',
         source: 'intent-grok',
@@ -1403,7 +1403,7 @@
     var qTok = tokens(msg);
     if (qTok.length < 1) {
       return {
-        text: "I'm with you — English or Greek. Try: locate, youtube, shops, dark map, pilot, search.",
+        text: "I'm with you — English first · full Greek · any language. Try: locate, youtube, shops, dark map, pilot, search.",
         score: 0.55,
         via: 'free-mind',
         source: 'fallback',
@@ -1494,7 +1494,7 @@
     save();
     var fallback = opts.localReply
       ? brief(opts.localReply, 160)
-      : "I hear you — English or Greek: locate · youtube · shops · dark map · pilot · search · cancel.";
+      : "I hear you — English first · full Greek · any language: locate · youtube · shops · dark map · pilot · search · cancel.";
     return {
       text: fallback,
       score: opts.localReply ? 0.5 : 0.4,
