@@ -929,6 +929,14 @@
     });
   }
 
+  function broadcastReassign(orders, reason) {
+    try {
+      if (global.SNReassignEngine && SNReassignEngine.reassignFromDriver)
+        return SNReassignEngine.reassignFromDriver(orders, reason || 'broadcast', { excludeSelf: true });
+    } catch (_) {}
+    return { ok: false };
+  }
+
   global.SNPolyEngine = {
     init: init,
     getProfile: getProfile,
@@ -945,6 +953,7 @@
     moveTourStop: moveTourStop,
     handleLine: handleLine,
     demoMulti: demoMulti,
+    broadcastReassign: broadcastReassign,
     detectNature: detectNature,
     prepMin: prepMin,
   };

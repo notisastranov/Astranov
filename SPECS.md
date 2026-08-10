@@ -815,3 +815,19 @@ Offer tile           → accept / rearrange / pay / 3× seal
 | **Single tap** | Expands/collapses gadget stack. Drag still resizes. |
 
 *Build: `20260810120000-poly-engine` · modules `poly-engine.js` · `wish-inbox.js` · `delivery-rules.js`*
+
+---
+
+## OWNER LAW · Dynamic reassignment (2026-08-10)
+
+| Law | Meaning |
+|-----|---------|
+| **Trigger** | Power OFF / rest · capacity overflow · mid-flight abandon · periodic pool rebalance |
+| **Urgency rank** | Temp (frozen>hot>cold) · window remaining · pool age · prep ready · mid-flight rescue · price |
+| **Match score** | Profit − detour − wait − reverse prefs + drone fitness |
+| **Algorithm** | **Regret-based sequential assignment** (largest best−secondBest first) + soft auction claim |
+| **Rest** | Local tour cleared · orders snapshotted to pool · mesh drivers + Rai matched · leftovers stay pool |
+| **Power ON** | **Score auction** claim from pool (not FIFO) · then new offers |
+| **CLI** | `reassign demo` · `pool status` · `rebalance` · `drivers` · `rest` |
+
+*Build: `20260810124000-reassign` · `reassign-engine.js`*

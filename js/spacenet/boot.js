@@ -268,6 +268,7 @@
     '/js/spacenet/field.js',
     '/js/spacenet/delivery-rules.js',
     '/js/spacenet/poly-engine.js',
+    '/js/spacenet/reassign-engine.js',
     '/js/spacenet/wish-inbox.js',
     '/js/spacenet/poly-scheduler.js',
     '/js/spacenet/marina-berths.js',
@@ -287,6 +288,8 @@
   // ========== SNLoader — arsenal on demand ==========
   var MODULE_MAP = {
     engine: { src: '/js/spacenet/poly-engine.js', global: 'SNPolyEngine' },
+    reassign: { src: '/js/spacenet/reassign-engine.js', global: 'SNReassignEngine' },
+    'reassign-engine': { src: '/js/spacenet/reassign-engine.js', global: 'SNReassignEngine' },
     'poly-engine': { src: '/js/spacenet/poly-engine.js', global: 'SNPolyEngine' },
     'delivery-rules': { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
     wish: { src: '/js/spacenet/wish-inbox.js', global: 'SNWishInbox' },

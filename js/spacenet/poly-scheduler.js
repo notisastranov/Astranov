@@ -984,6 +984,31 @@
       paint();
       try { promoteQueue(); } catch (_) {}
       try { scanAutoAccept(); } catch (_) {}
+      try {
+        if (global.SNReassignEngine && SNReassignEngine.peelOverflow) {
+          var actives = stack.filter(function (x) {
+            return x.phase === 'claimed' || x.phase === 'underway';
+          });
+          if (actives.length >= 3 && global.SNPolyEngine && SNPolyEngine.capacityCheck) {
+            var last = actives[actives.length - 1];
+            var others = actives.slice(0, -1);
+            var ck = SNPolyEngine.capacityCheck(others, last);
+            if (ck && ck.ok === false) {
+              SNReassignEngine.peelOverflow(actives);
+              // remove peeled lowest from local stack if in pool
+              var poolIds = {};
+              try {
+                (SNReassignEngine.loadPool() || []).forEach(function (p) { poolIds[p.id] = 1; });
+              } catch (_) {}
+              stack = stack.filter(function (x) {
+                return !(poolIds[x.id] && x.phase !== 'offered');
+              });
+              if (global.SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
+              paint();
+            }
+          }
+        }
+      } catch (_) {}
       return;
     }
     if (act === 'start') {
@@ -1566,6 +1591,23 @@
       })
       .concat(queue.slice());
     if (!open.length) return { ok: true, count: 0, pool: [] };
+    // Dynamic reassignment algorithms (regret matching → mesh + pool)
+    try {
+      if (global.SNReassignEngine && SNReassignEngine.reassignFromDriver) {
+        var r = SNReassignEngine.reassignFromDriver(open, reason, { excludeSelf: true });
+        log(
+          'Rest · dynamic reassign · ' +
+            (r.assignments ? r.assignments.length : 0) +
+            ' matched · ' +
+            (r.unassigned ? r.unassigned.length : 0) +
+            ' pool · ' +
+            (r.algorithm || 'engine'),
+          'ok'
+        );
+        return { ok: true, count: open.length, pool: r.pool || [], reassign: r };
+      }
+    } catch (_) {}
+    // Fallback: durable pool only
     var pool = [];
     try {
       pool = JSON.parse(localStorage.getItem('sn:open-order-pool-v1') || '[]');
@@ -1593,7 +1635,6 @@
         reason: reason,
         routeLocked: !!o.routeLocked,
       };
-      // de-dupe by id
       pool = pool.filter(function (x) {
         return x && x.id !== snap.id;
       });
@@ -1603,32 +1644,34 @@
     try {
       localStorage.setItem('sn:open-order-pool-v1', JSON.stringify(pool));
     } catch (_) {}
-    try {
-      if (global.SNPolyEngine && SNPolyEngine.broadcastReassign)
-        SNPolyEngine.broadcastReassign(open, reason);
-    } catch (_) {}
-    log(
-      'Rest · reassigned ' + open.length + ' order' + (open.length === 1 ? '' : 's') + ' to other drivers',
-      'ok'
-    );
+    log('Rest · reassigned ' + open.length + ' to pool', 'ok');
     return { ok: true, count: open.length, pool: pool };
   }
 
   function claimFromPool(maxN) {
     maxN = maxN || 1;
-    var pool = [];
+    var taken = [];
+    // Score-auction claim (not FIFO)
     try {
-      pool = JSON.parse(localStorage.getItem('sn:open-order-pool-v1') || '[]');
-      if (!Array.isArray(pool)) pool = [];
-    } catch (_) {
-      pool = [];
-    }
-    if (!pool.length) return [];
-    var taken = pool.slice(0, maxN);
-    pool = pool.slice(maxN);
-    try {
-      localStorage.setItem('sn:open-order-pool-v1', JSON.stringify(pool));
+      if (global.SNReassignEngine && SNReassignEngine.claimBestForSelf) {
+        taken = SNReassignEngine.claimBestForSelf(maxN) || [];
+      }
     } catch (_) {}
+    if (!taken.length) {
+      var pool = [];
+      try {
+        pool = JSON.parse(localStorage.getItem('sn:open-order-pool-v1') || '[]');
+        if (!Array.isArray(pool)) pool = [];
+      } catch (_) {
+        pool = [];
+      }
+      if (!pool.length) return [];
+      taken = pool.slice(0, maxN);
+      pool = pool.slice(maxN);
+      try {
+        localStorage.setItem('sn:open-order-pool-v1', JSON.stringify(pool));
+      } catch (_) {}
+    }
     taken.forEach(function (snap) {
       var o = makeOffer({
         vendorName: snap.vendorName,
@@ -1645,9 +1688,10 @@
       });
       o.id = snap.id || o.id;
       o.fromPool = true;
+      o.claimScore = snap.claimScore;
       pushOffer(o);
     });
-    if (taken.length) log('Pool · claimed ' + taken.length + ' reassigned order(s)', 'ok');
+    if (taken.length) log('Pool · claimed ' + taken.length + ' (score auction)', 'ok');
     return taken;
   }
 
