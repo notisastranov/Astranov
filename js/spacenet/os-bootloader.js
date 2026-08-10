@@ -9,6 +9,7 @@
  * - CLI commands after handoff: boot · diagnostics · repair · kernel status
  *
  * This is the sole entry after index.html. Professional path — not a game splash.
+ * Build: 20260810210000-ribbon-rtc-paypal
  */
 (function (global) {
   'use strict';
@@ -35,7 +36,6 @@
   var consoleEl = null;
   var bootEl = document.getElementById('boot');
 
-  /* ───────── Boot console UI ───────── */
   function ensureConsole() {
     if (!bootEl) {
       bootEl = document.createElement('div');
@@ -82,16 +82,8 @@
         else if (L.lvl === 'hdr') c = '#7ec8ff';
         else if (L.lvl === 'dim') c = '#6a8ab8';
         return (
-          '<span style="color:' +
-          c +
-          '">' +
-          esc(L.tag) +
-          '</span> ' +
-          '<span style="color:' +
-          c +
-          '">' +
-          esc(L.msg) +
-          '</span>'
+          '<span style="color:' + c + '">' + esc(L.tag) + '</span> ' +
+          '<span style="color:' + c + '">' + esc(L.msg) + '</span>'
         );
       })
       .join('\n');
@@ -105,27 +97,17 @@
     paint();
     try {
       if (global.SNCli && SNCli.log) {
-        var cls = lvl === 'fail' ? 'err' : lvl === 'ok' ? 'ok' : lvl === 'warn' ? 'dim' : 'dim';
+        var cls = lvl === 'fail' ? 'err' : lvl === 'ok' ? 'ok' : 'dim';
         SNCli.log(tag + ' ' + msg, cls, true);
       }
     } catch (_) {}
   }
 
-  function hdr(msg) {
-    out('──', msg, 'hdr');
-  }
-  function ok(msg) {
-    out('[ OK ]', msg, 'ok');
-  }
-  function warn(msg) {
-    out('[WARN]', msg, 'warn');
-  }
-  function fail(msg) {
-    out('[FAIL]', msg, 'fail');
-  }
-  function info(msg) {
-    out('[....]', msg, 'dim');
-  }
+  function hdr(msg) { out('──', msg, 'hdr'); }
+  function ok(msg) { out('[ OK ]', msg, 'ok'); }
+  function warn(msg) { out('[WARN]', msg, 'warn'); }
+  function fail(msg) { out('[FAIL]', msg, 'fail'); }
+  function info(msg) { out('[....]', msg, 'dim'); }
   function fix(msg) {
     out('[FIX ]', msg, 'warn');
     report.fixes.push({ t: Date.now(), msg: String(msg) });
@@ -154,21 +136,16 @@
         'border-radius:999px;border:1px solid rgba(61,158,255,0.55);background:rgba(8,24,56,0.9);' +
         'color:#7ec8ff;font:700 11px/1 Inter,system-ui,sans-serif;padding:10px 14px;cursor:pointer';
       el.onclick = function () {
-        try {
-          b.fn();
-        } catch (e) {
-          fail('action · ' + (e && e.message ? e.message : e));
-        }
+        try { b.fn(); } catch (e) { fail('action · ' + (e && e.message ? e.message : e)); }
       };
       box.appendChild(el);
     });
   }
 
-  /* ───────── Script loader ───────── */
   function originsFor(src) {
     if (/^https?:\/\//i.test(src)) return [src];
     var path = String(src || '').replace(/^\//, '').split('?')[0];
-    var local = '/' + path + (src.indexOf('?') >= 0 ? src.slice(src.indexOf('?')) : '') ;
+    var local = '/' + path + (src.indexOf('?') >= 0 ? src.slice(src.indexOf('?')) : '');
     if (local.indexOf('?') < 0) local += '?v=' + encodeURIComponent(BUILD);
     else local += '&v=' + encodeURIComponent(BUILD);
     var list = [local];
@@ -196,9 +173,7 @@
       var to = setTimeout(function () {
         if (done) return;
         done = true;
-        try {
-          s.remove();
-        } catch (_) {}
+        try { s.remove(); } catch (_) {}
         reject(new Error('timeout'));
       }, timeoutMs);
       s.onload = function () {
@@ -213,9 +188,7 @@
         if (done) return;
         done = true;
         clearTimeout(to);
-        try {
-          s.remove();
-        } catch (_) {}
+        try { s.remove(); } catch (_) {}
         report.loadStats.fail++;
         reject(new Error('load fail'));
       };
@@ -229,9 +202,7 @@
     function next() {
       if (i >= urls.length) return Promise.reject(new Error('all origins fail · ' + src));
       var u = urls[i++];
-      return loadUrl(u, timeoutMs || 12000).catch(function () {
-        return next();
-      });
+      return loadUrl(u, timeoutMs || 12000).catch(function () { return next(); });
     }
     return next();
   }
@@ -263,7 +234,6 @@
     );
   }
 
-  /* ───────── Stages ───────── */
   var STAGE_KERNEL = [
     '/js/spacenet/skin.js',
     '/js/spacenet/config.js',
@@ -286,6 +256,8 @@
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
+    '/js/spacenet/ribbon.js',
+    '/js/spacenet/webrtc.js',
   ];
   var STAGE_SERVICES = [
     '/js/spacenet/greeklish.js',
@@ -362,7 +334,6 @@
     } catch (e) {
       recordCheck('SNGameLoop', false, e.message || e, null);
     }
-    // Kill game chrome forever on money path
     try {
       document.body.classList.remove('sn-space-scene-on', 'sn-game-dock-on', 'sn-game-on');
       var gd = document.getElementById('sn-game-dock');
@@ -391,7 +362,6 @@
       'initGlobe failed · type: repair display'
     );
     recordCheck('globe-init', okG || !!(canvas && cw > 8), okG ? 'init true' : canvas ? 'canvas without init flag' : 'failed', 'repair display');
-    // Physics probe
     try {
       if (global.SNGlobe && SNGlobe.getPhysics) {
         var ph = SNGlobe.getPhysics();
@@ -424,6 +394,8 @@
     softInit('SNWishInbox', global.SNWishInbox, 'init');
     softInit('SNMarina', global.SNMarina, 'init');
     softInit('SNHome', global.SNHome, 'init');
+    softInit('SNRibbon', global.SNRibbon, 'init');
+    softInit('SNWebRTC', global.SNWebRTC, 'init');
     try {
       if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
       recordCheck('SNHelper', !!global.SNHelper, 'sleep', null);
@@ -482,7 +454,6 @@
       });
   }
 
-  /* ───────── Health gate ───────── */
   function runHealthGate() {
     hdr('STAGE · health gate');
     var critical = ['document', 'cli-host', 'globe-host', 'SNCli', 'globe-canvas'];
@@ -506,7 +477,6 @@
       });
       return false;
     }
-    // globe required for ready
     var canvas = document.querySelector('#globe canvas');
     if (!canvas) {
       report.degraded = true;
@@ -521,7 +491,6 @@
     return true;
   }
 
-  /* ───────── Repair ───────── */
   function repairDisplay() {
     hdr('REPAIR · display');
     return loadThree()
@@ -567,6 +536,8 @@
       ['SNAi', !!global.SNAi],
       ['SNAuth', !!global.SNAuth],
       ['SNMap', !!global.SNMap],
+      ['SNRibbon', !!global.SNRibbon],
+      ['SNWebRTC', !!global.SNWebRTC],
       ['power-btn', !!document.getElementById('sn-task-launch')],
     ];
     items.forEach(function (it) {
@@ -575,9 +546,7 @@
     });
     try {
       fetch('/api/health')
-        .then(function (r) {
-          return r.json();
-        })
+        .then(function (r) { return r.json(); })
         .then(function (h) {
           ok('api/health · xai=' + !!h.xai + ' · paypal=' + !!h.paypal);
         })
@@ -588,7 +557,6 @@
     return items;
   }
 
-  /* ───────── Handoff ───────── */
   function handoff(success) {
     hdr(success ? 'HANDOFF · operational' : 'HANDOFF · degraded');
     var ms = Math.round(performance.now() - t0);
@@ -598,11 +566,9 @@
       localStorage.setItem('sn:os-boot-report', JSON.stringify(report));
     } catch (_) {}
 
-    // Seed CLI with boot summary
     try {
       if (global.SNCli) {
         if (SNCli.init) SNCli.init();
-        // expand CLI enough to read
         try {
           if (global.SNUi && SNUi.setSize) SNUi.setSize('mid');
           else {
@@ -616,79 +582,40 @@
         SNCli.log('══════════════════════════════════════', 'ok', true);
         SNCli.log('Astranov SpaceNet Operating System · boot ' + ms + 'ms · ' + (success ? 'READY' : 'DEGRADED'), success ? 'ok' : 'err', true);
         SNCli.log('build ' + BUILD, 'dim', true);
-        var fails = report.checks.filter(function (c) {
-          return !c.pass;
-        });
+        var fails = report.checks.filter(function (c) { return !c.pass; });
         if (fails.length) {
-          SNCli.log('Failures: ' + fails.map(function (f) {
-            return f.id;
-          }).join(', '), 'err', true);
+          SNCli.log('Failures: ' + fails.map(function (f) { return f.id; }).join(', '), 'err', true);
           fails.slice(0, 6).forEach(function (f) {
             if (f.fix) SNCli.log('FIX · ' + f.fix, 'dim', true);
           });
         } else {
           SNCli.log('All critical checks passed', 'ok', true);
         }
-        SNCli.log('Commands: will · reshape · diagnostics · power on · plan status', 'dim', true);
+        SNCli.log('Commands: will · reshape · diagnostics · power on · plan status · button list', 'dim', true);
         SNCli.log('You are a developer · speak changes · the OS reshapes to your will', 'ok', true);
         SNCli.log('══════════════════════════════════════', 'ok', true);
       }
     } catch (_) {}
 
-    // Install CLI intercepts for OS commands
     installCliHooks();
 
-    // Bootloader becomes the CLI — not a discarded splash
     if (success) {
       info('minimizing bootloader → CLI');
       setActions([
-        {
-          label: 'Continue',
-          fn: function () {
-            minimizeBootToCli();
-          },
-        },
-        {
-          label: 'Diagnostics',
-          fn: function () {
-            fullDiagnostics();
-          },
-        },
+        { label: 'Continue', fn: function () { minimizeBootToCli(); } },
+        { label: 'Diagnostics', fn: function () { fullDiagnostics(); } },
       ]);
-      setTimeout(function () {
-        minimizeBootToCli();
-      }, 900);
+      setTimeout(function () { minimizeBootToCli(); }, 900);
     } else {
       setActions([
-        {
-          label: 'Retry boot',
-          fn: function () {
-            location.reload();
-          },
-        },
-        {
-          label: 'Repair display',
-          fn: function () {
-            repairDisplay().then(function (okC) {
-              if (okC) {
-                report.ready = true;
-                handoff(true);
-              }
-            });
-          },
-        },
-        {
-          label: 'Repair kernel',
-          fn: function () {
-            repairKernel();
-          },
-        },
-        {
-          label: 'Open CLI degraded',
-          fn: function () {
-            minimizeBootToCli();
-          },
-        },
+        { label: 'Retry boot', fn: function () { location.reload(); } },
+        { label: 'Repair display', fn: function () {
+          repairDisplay().then(function (okC) {
+            if (okC) { report.ready = true; handoff(true); }
+          });
+        } },
+        { label: 'Repair kernel', fn: function () { repairKernel(); } },
+        { label: 'Open CLI degraded', fn: function () { minimizeBootToCli(); } },
       ]);
       warn('System did not pass health gate · choose a fix above');
     }
@@ -700,22 +627,14 @@
     } catch (_) {}
   }
 
-  /**
-   * Morph full-screen bootloader into the dock CLI (OS continues in CLI).
-   * Report lines are already seeded; expand CLI mid so user can read.
-   */
   function minimizeBootToCli() {
     try {
-      // Ensure map not covering globe
       try {
         if (global.SNMap && SNMap.active && SNMap.close) SNMap.close();
       } catch (_) {}
-      // Ensure globe at GLOBAL if stuck deep without canvas sense
       try {
         if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
       } catch (_) {}
-
-      // Expand CLI with boot transcript
       try {
         if (global.SNCli && SNCli.init) SNCli.init();
       } catch (_) {}
@@ -733,13 +652,12 @@
       try {
         if (global.SNCli && SNCli.log) {
           SNCli.log('Astranov SpaceNet Operating System · bootloader → CLI · system online', 'ok', true);
-          SNCli.log('Top: tap gadgets handle · Globe: wheel zoom (no spin) · power ON for tasks', 'dim', true);
+          SNCli.log('Top: tap gadgets handle · Globe: wheel zoom (no spin) · power ON for tasks · button list', 'dim', true);
         }
       } catch (_) {}
-      // Focus CLI input
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'diagnostics · repair · power on · help';
+        if (inp) inp.placeholder = 'diagnostics · repair · power on · button list · help';
       } catch (_) {}
     } catch (_) {}
     killOverlay();
@@ -755,9 +673,7 @@
       el.style.setProperty('pointer-events', 'none', 'important');
       el.setAttribute('aria-busy', 'false');
       setTimeout(function () {
-        try {
-          el.remove();
-        } catch (_) {}
+        try { el.remove(); } catch (_) {}
       }, 180);
     } catch (_) {}
   }
@@ -781,12 +697,8 @@
           low === 'os status' ||
           low === 'boot report'
         ) {
-          try {
-            if (SNCli.beginTurn) SNCli.beginTurn();
-          } catch (_) {}
-          try {
-            if (SNCli.log) SNCli.log(String(raw).trim(), 'cmd');
-          } catch (_) {}
+          try { if (SNCli.beginTurn) SNCli.beginTurn(); } catch (_) {}
+          try { if (SNCli.log) SNCli.log(String(raw).trim(), 'cmd'); } catch (_) {}
           if (low === 'boot' || low === 'boot report' || low === 'kernel status' || low === 'os status') {
             SNCli.log('Astranov SpaceNet Operating System · ' + (report.ready ? 'READY' : 'NOT READY') + ' · ' + (report.bootMs || '?') + 'ms · build ' + BUILD, report.ready ? 'ok' : 'err');
             report.checks.slice(-20).forEach(function (c) {
@@ -804,9 +716,7 @@
           } else if (low === 'repair drivers') {
             await repairDrivers();
           }
-          try {
-            if (SNCli.endTurn) SNCli.endTurn();
-          } catch (_) {}
+          try { if (SNCli.endTurn) SNCli.endTurn(); } catch (_) {}
           return;
         }
         return orig(raw);
@@ -815,7 +725,6 @@
     } catch (_) {}
   }
 
-  /* ───────── SNLoader bridge (compat) ───────── */
   function installLoader() {
     var MODULE_MAP = {
       engine: { src: '/js/spacenet/poly-engine.js', global: 'SNPolyEngine' },
@@ -833,6 +742,8 @@
       auth: { src: '/js/spacenet/auth.js', global: 'SNAuth' },
       helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
       marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
+      ribbon: { src: '/js/spacenet/ribbon.js', global: 'SNRibbon' },
+      webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
     };
     global.SNLoader = {
       _p: {},
@@ -864,7 +775,6 @@
     global.SNPerf = global.SNPerf || {};
   }
 
-  /* ───────── MAIN SEQUENCE ───────── */
   async function boot() {
     ensureConsole();
     installLoader();
@@ -895,17 +805,15 @@
 
       await loadStage('drivers', STAGE_DRIVERS, { soft: true });
       initDrivers();
-      // Guard: boot must be GLOBAL globe, not a random city dive
-    try {
-      if (global.SNGlobe && SNGlobe.goToTier && SNGlobe.currentTier) {
-        var tier = SNGlobe.currentTier();
-        if (tier && tier !== 'global' && tier !== 'orbit' && tier !== 'planet') {
-          SNGlobe.goToTier('global');
-          warn('boot guard · returned to GLOBAL globe');
+      try {
+        if (global.SNGlobe && SNGlobe.goToTier && SNGlobe.currentTier) {
+          var tier = SNGlobe.currentTier();
+          if (tier && tier !== 'global' && tier !== 'orbit' && tier !== 'planet') {
+            SNGlobe.goToTier('global');
+            warn('boot guard · returned to GLOBAL globe');
+          }
         }
-      }
-    } catch (_) {}
-    // Never boot into truncated street map
+      } catch (_) {}
       try {
         if (global.SNMap && SNMap.active && SNMap.close) {
           SNMap.close();
@@ -918,22 +826,16 @@
         if (cm) cm.classList.remove('active');
       } catch (_) {}
 
-      // Services non-blocking parallel with auth
       var svc = loadStage('services', STAGE_SERVICES, { soft: true }).then(function () {
         initServices();
       });
       var auth = softAuth();
       await Promise.race([
         Promise.all([svc, auth]),
-        new Promise(function (r) {
-          setTimeout(r, 8000);
-        }),
+        new Promise(function (r) { setTimeout(r, 8000); }),
       ]);
-      // don't wait forever on services
       setTimeout(function () {
-        try {
-          initServices();
-        } catch (_) {}
+        try { initServices(); } catch (_) {}
       }, 100);
 
       var healthy = runHealthGate();
@@ -941,7 +843,6 @@
       global.SNPerf.shellMs = global.SNPerf.bootMs;
       handoff(healthy);
 
-      // Late service finish
       svc.then(function () {
         initServices();
         installCliHooks();
@@ -953,18 +854,8 @@
       fail('BOOTLOADER EXCEPTION · ' + (e && e.message ? e.message : e));
       fix('Retry boot');
       setActions([
-        {
-          label: 'Retry boot',
-          fn: function () {
-            location.reload();
-          },
-        },
-        {
-          label: 'Enter degraded',
-          fn: function () {
-            killOverlay();
-          },
-        },
+        { label: 'Retry boot', fn: function () { location.reload(); } },
+        { label: 'Enter degraded', fn: function () { killOverlay(); } },
       ]);
       report.ready = false;
       report.degraded = true;
@@ -976,12 +867,8 @@
 
   var api = {
     boot: boot,
-    report: function () {
-      return report;
-    },
-    lines: function () {
-      return lines.slice();
-    },
+    report: function () { return report; },
+    lines: function () { return lines.slice(); },
     diagnostics: fullDiagnostics,
     repairDisplay: repairDisplay,
     repairKernel: repairKernel,
@@ -993,11 +880,8 @@
   global.SNOsBoot = api;
   global.SNOsBootloader = api;
 
-  // Start
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      boot();
-    });
+    document.addEventListener('DOMContentLoaded', function () { boot(); });
   } else {
     boot();
   }
