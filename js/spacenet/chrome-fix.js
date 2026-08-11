@@ -1,15 +1,22 @@
-/* Astranov chrome-fix — slim glowing handles, CLI always usable, user photo, radar act glow, fast globe
- * Build: 20260811131000-chrome-fix-v2
+/* Astranov chrome-fix — ONLY what owner ordered
+ * Build: 20260811132000-chrome-fix-v3
+ * - slim matching blue-glow handles
+ * - CLI input always usable
+ * - radar act-low/med/high
+ * - user profile PHOTO on the ribbon ABOVE CLI (not top chrome)
+ * - do NOT move power button, do NOT inject top-chrome buttons, do NOT shift ASTRANOV center
+ * - parallel globe fling boost
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811131000-chrome-fix-v2';
+  var BUILD = '20260811132000-chrome-fix-v3';
 
   function injectCss() {
     if (document.getElementById('sn-chrome-fix-css')) return;
     var css = document.createElement('style');
     css.id = 'sn-chrome-fix-css';
     css.textContent = [
+      '/* handles only */',
       '#sn-topchrome-drag, #cli-drag {',
       '  height: 22px !important; min-height: 22px !important;',
       '  display: flex !important; align-items: center !important; justify-content: center !important;',
@@ -48,12 +55,14 @@
       '  background: rgba(11,107,203,0.9) !important; box-shadow: 0 0 12px rgba(11,107,203,0.55) !important;',
       '}',
       'html.theme-light #sn-topchrome-drag::after, html.theme-light #cli-drag::after { color: rgba(15,23,42,0.6) !important; }',
+      '/* CLI usable */',
       '#panel.collapsed { max-height: min(128px, 16vh) !important; min-height: 96px !important; }',
       '#cli-form { display: flex !important; align-items: center !important; gap: 8px !important;',
       '  padding: 8px 14px 12px !important; border-top: 1px solid rgba(50,140,255,0.42) !important;',
       '  flex: 0 0 auto !important; min-height: 44px !important; }',
       '#cli-in { min-height: 28px !important; font-size: 14px !important; }',
       '#panel.collapsed #cli-log:empty { display: none !important; }',
+      '/* radar only */',
       '#field-radar.act-low {',
       '  box-shadow: inset 0 0 0 2px rgba(232,33,39,0.9), 0 0 18px rgba(232,33,39,0.55) !important;',
       '  background: radial-gradient(circle at 40% 35%, rgba(232,33,39,0.35), #060d1c) !important;',
@@ -66,50 +75,63 @@
       '  box-shadow: inset 0 0 0 2px rgba(61,214,140,0.95), 0 0 22px rgba(61,214,140,0.6) !important;',
       '  background: radial-gradient(circle at 40% 35%, rgba(61,214,140,0.4), #060d1c) !important;',
       '}',
-      '.sn-user-btn, #sn-user-btn {',
-      '  width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important;',
+      '/* ribbon user photo — ONLY on ribbon above CLI */',
+      '#sn-task-ribbon .sn-user-btn, #sn-task-ribbon #sn-user-btn {',
+      '  width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important;',
       '  border-radius: 50% !important; border: 2px solid rgba(61,158,255,0.7) !important;',
       '  background: radial-gradient(circle at 35% 30%, rgba(61,158,255,0.35), #060d1c) !important;',
-      '  color: #7ec8ff !important; font: 800 14px/1 system-ui !important;',
+      '  color: #7ec8ff !important; font: 800 12px/1 system-ui !important;',
       '  display: inline-flex !important; align-items: center !important; justify-content: center !important;',
       '  overflow: hidden !important; padding: 0 !important; cursor: pointer !important;',
-      '  box-shadow: 0 0 14px rgba(61,158,255,0.4) !important; flex-shrink: 0 !important;',
+      '  box-shadow: 0 0 10px rgba(61,158,255,0.35) !important; flex-shrink: 0 !important;',
       '}',
-      '.sn-user-btn.has-photo, #sn-user-btn.has-photo {',
-      '  border-color: rgba(61,214,140,0.9) !important; box-shadow: 0 0 16px rgba(61,214,140,0.45) !important;',
+      '#sn-task-ribbon .sn-user-btn.has-photo {',
+      '  border-color: rgba(61,214,140,0.9) !important; box-shadow: 0 0 12px rgba(61,214,140,0.4) !important;',
       '}',
-      '.sn-user-btn img, #sn-user-btn img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; display: block !important; }',
+      '#sn-task-ribbon .sn-user-btn img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; display: block !important; }',
+      '/* kill any stray top-chrome user btn from earlier bad inject */',
+      '#stc-compact > #sn-user-btn, .stc-col-money > #sn-user-btn, .stc-col-device > #sn-user-btn { display: none !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }
 
-  function ensureUserBtn() {
-    var existing = document.getElementById('sn-user-btn');
+  function removeStrayTopUser() {
+    try {
+      var nodes = document.querySelectorAll('#stc-compact #sn-user-btn, .stc-col-money #sn-user-btn, .stc-col-device #sn-user-btn, #sn-topchrome #sn-user-btn');
+      for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i] && nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
+      }
+    } catch (_) {}
+  }
+
+  function ensureRibbonUser() {
+    var ribbon = document.getElementById('sn-task-ribbon');
+    if (!ribbon) return null;
+    var existing = ribbon.querySelector('#sn-user-btn, .sn-user-btn[data-ribbon-user]');
     if (existing) return existing;
-    var money = document.querySelector('.stc-col-money') || document.getElementById('field-balance-hud');
-    if (!money) return null;
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.id = 'sn-user-btn';
     btn.className = 'sn-user-btn';
+    btn.setAttribute('data-ribbon-user', '1');
     btn.title = 'Account · profile';
     btn.setAttribute('aria-label', 'User profile');
     btn.innerHTML = '<span aria-hidden="true">·</span>';
-    if (money.parentNode) money.parentNode.insertBefore(btn, money);
-    else money.appendChild(btn);
+    if (ribbon.firstChild) ribbon.insertBefore(btn, ribbon.firstChild);
+    else ribbon.appendChild(btn);
     btn.addEventListener('click', function () {
       try {
         if (global.SNAuth && SNAuth.openProfile) return SNAuth.openProfile();
         if (global.SNProfiles && SNProfiles.openMe) return SNProfiles.openMe();
         if (global.SNCli && SNCli.run) SNCli.run('user');
-        else if (global.SNCli && SNCli.log) SNCli.log('Tap User · login or profile', 'dim');
+        else if (global.SNCli && SNCli.log) SNCli.log('user · login or profile', 'dim');
       } catch (_) {}
     });
     return btn;
   }
 
   function paintUser() {
-    var btn = ensureUserBtn();
+    var btn = ensureRibbonUser();
     if (!btn) return;
     var me = null;
     try {
@@ -156,30 +178,6 @@
     if (n >= 5) setRadarAct('high');
     else if (n >= 1) setRadarAct('med');
     else setRadarAct('low');
-  }
-
-  function ensureWebrtcButton() {
-    var ribbon = document.getElementById('sn-task-ribbon');
-    if (ribbon && !ribbon.querySelector('[data-act="call"], .sn-call-btn')) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'sn-call-btn';
-      b.setAttribute('data-act', 'call');
-      b.title = 'WebRTC call';
-      b.textContent = '📞';
-      b.style.cssText = 'min-width:36px;height:32px;border-radius:999px;border:1px solid rgba(61,158,255,0.55);background:rgba(61,158,255,0.15);color:#7ec8ff;font-size:14px;';
-      b.addEventListener('click', function () {
-        try {
-          if (global.SNWebRTC && SNWebRTC.start) return SNWebRTC.start();
-          if (global.SNWebRTC && SNWebRTC.call) return SNWebRTC.call();
-          if (global.SNCli && SNCli.run) SNCli.run('call');
-          else if (global.SNCli && SNCli.log) SNCli.log('call · WebRTC · need peer or number', 'dim');
-        } catch (e) {
-          if (global.SNCli && SNCli.log) SNCli.log('call failed · ' + (e && e.message), 'err');
-        }
-      });
-      ribbon.appendChild(b);
-    }
   }
 
   var boost = { vx: 0, vy: 0, lastX: 0, lastY: 0, down: false, hooked: false };
@@ -245,24 +243,19 @@
       function raf() { applyBoostFrame(); requestAnimationFrame(raf); }
       requestAnimationFrame(raf);
     }
-    if (global.SNCli && SNCli.log && !global.__snSpeedLogged) {
-      global.__snSpeedLogged = true;
-      SNCli.log('Chrome-fix v2 · handles · CLI · radar · user · call · globe boost ON', 'dim');
-    }
   }
 
   function boot() {
     injectCss();
-    ensureUserBtn();
+    removeStrayTopUser();
+    ensureRibbonUser();
     paintUser();
     radarFromLive();
-    ensureWebrtcButton();
     hookGlobeBoost();
+    setTimeout(removeStrayTopUser, 800);
     setTimeout(paintUser, 1200);
     setTimeout(paintUser, 3500);
     setTimeout(radarFromLive, 2000);
-    setTimeout(radarFromLive, 8000);
-    setTimeout(ensureWebrtcButton, 1500);
     setTimeout(hookGlobeBoost, 2000);
     setTimeout(hookGlobeBoost, 5000);
     setInterval(radarFromLive, 12000);
