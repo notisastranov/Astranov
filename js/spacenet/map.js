@@ -1326,9 +1326,18 @@
     document.body.classList.add('city-map-on');
     const wasActive = M.active;
     M.active = true;
-    // Recenter only if autopilot OR forced (user CLI / first open)
+    // Recenter only if autopilot OR forced (user CLI / first open / locate)
     if (force || canAutopilot() || !wasActive) {
-      map.setView([p.lat, p.lng], wasActive ? map.getZoom() || 15 : 15);
+      var z =
+        opts.zoom != null
+          ? Number(opts.zoom)
+          : force
+            ? 15
+            : wasActive
+              ? map.getZoom() || 15
+              : 15;
+      if (!isFinite(z)) z = 15;
+      map.setView([p.lat, p.lng], z, { animate: true });
     }
     setTimeout(() => map.invalidateSize(), 80);
 

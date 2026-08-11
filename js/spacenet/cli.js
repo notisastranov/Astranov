@@ -2952,36 +2952,47 @@ if (
       if (low === 'locate' || low === 'gps' || low === 'where am i' || low === 'find me') {
         activity('locating you…', 'work', { label: 'Locate' });
         preview('GPS…');
-        // Real GPS only path — never accept Globe Rhodes demo overwrite
+        // Real GPS → NATIONAL globe → CITY map zoom → nearby offers/shops
         let pos = await gpsLocate({ allowIp: true, allowSoft: true });
         if (pos && pos.lat != null && isFakeDemoPin(pos.lat, pos.lng)) {
           pos = { lat: null, lng: null, fallback: true, reason: pos.reason || 'fake demo pin rejected' };
         }
         if (pos && pos.lat != null) {
           commitRealGps(pos);
+          try {
+            if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
+            global._snLastPos = { lat: pos.lat, lng: pos.lng, at: Date.now() };
+          } catch (_) {}
           const youLabel = pos.fallback
             ? pos.source === 'ip'
               ? 'YOU · approx'
               : 'YOU · soft'
             : 'YOU · GPS';
+          const cityZoom = pos.fallback ? 13 : 16;
+          const sleep = (ms) => new Promise(function (r) { setTimeout(r, ms); });
+
+          // 1) NATIONAL on globe so you see country context
           try {
-            if (global.SNMap?.open) {
-              await global.SNMap.open(pos.lat, pos.lng);
-              await global.SNMap.ensure?.();
-              if (global.SNMap.markYou) global.SNMap.markYou(pos.lat, pos.lng, youLabel);
-              if (global.SNMap.fitLatLngs) {
-                global.SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], {
-                  zoom: pos.fallback ? 12 : 16,
-                  force: true,
-                });
-              } else {
-                const map = await global.SNMap.ensure?.();
-                map?.setView?.([pos.lat, pos.lng], pos.fallback ? 12 : 16);
-              }
+            if (Globe && Globe.goToPlace) {
+              Globe.goToPlace(pos.lat, pos.lng, {
+                tier: 'national',
+                body: 'earth',
+                pulse: true,
+                label: 'NATIONAL · ' + youLabel,
+                openMap: false,
+                color: pos.fallback ? 0xffc83d : 0x3d9eff,
+              });
+            } else if (Globe && Globe.flyNear) {
+              Globe.flyNear(pos.lat, pos.lng, 'national');
             }
+            log('NATIONAL · ' + pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4), 'ok');
+            preview('NATIONAL');
           } catch (_) {}
+          await sleep(650);
+
+          // 2) CITY tier + open street map forced zoom on you
           try {
-            if (Globe?.goToPlace) {
+            if (Globe && Globe.goToPlace) {
               Globe.goToPlace(pos.lat, pos.lng, {
                 tier: 'city',
                 body: 'earth',
@@ -2990,11 +3001,112 @@ if (
                 openMap: true,
                 color: pos.fallback ? 0xffc83d : 0x3d9eff,
               });
-            } else if (Globe?.pulse) {
-              Globe.pulse(pos.lat, pos.lng, pos.fallback ? 0xffc83d : 0x3d9eff, youLabel, 16000);
             }
           } catch (_) {}
-          depict('locate', { lat: pos.lat, lng: pos.lng, label: youLabel, tier: 'city' });
+          try {
+            if (global.SNMap && SNMap.open) {
+              await SNMap.open(pos.lat, pos.lng, { force: true, zoom: cityZoom });
+              await SNMap.ensure?.();
+              if (SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, youLabel);
+              if (SNMap.fitLatLngs) {
+                SNMap.fitLatLngs([{ lat: pos.lat, lng: pos.lng }], {
+                  zoom: cityZoom,
+                  force: true,
+                });
+              } else {
+                const map = await SNMap.ensure?.();
+                map?.setView?.([pos.lat, pos.lng], cityZoom, { animate: true });
+              }
+            }
+          } catch (_) {}
+          log(
+            'CITY · map zoom ' +
+              cityZoom +
+              ' · ' +
+              pos.lat.toFixed(5) +
+              ', ' +
+              pos.lng.toFixed(5),
+            'ok'
+          );
+          preview('CITY map');
+
+          // 3) Load real sector + nearby shops/offers around you
+          let nearCount = 0;
+          try {
+            if (global.SNCommerce && SNCommerce.ensureSector) {
+              await SNCommerce.ensureSector(pos.lat, pos.lng, { openMap: true });
+            } else if (global.SNCommerce && SNCommerce.populateMap) {
+              await SNCommerce.populateMap(pos.lat, pos.lng, { openMap: true });
+            }
+          } catch (eSec) {
+            try {
+              log('Sector · ' + (eSec && eSec.message ? eSec.message : eSec), 'dim');
+            } catch (_) {}
+          }
+          try {
+            if (global.SNSearch && SNSearch.nearby) {
+              const near = await SNSearch.nearby(
+                pos.lat,
+                pos.lng,
+                4500,
+                'restaurant food cafe shop market'
+              );
+              nearCount = Array.isArray(near) ? near.length : near && near.length ? near.length : 0;
+              if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
+              if (global.SNMap && SNMap.showTasks) SNMap.showTasks();
+            } else if (global.SNSearch && SNSearch.crawl) {
+              const crawled = await SNSearch.crawl('shops near me', {
+                lat: pos.lat,
+                lng: pos.lng,
+                openMap: true,
+                mode: 'map',
+                radiusM: 4500,
+              });
+              nearCount =
+                (crawled && crawled.nearby && crawled.nearby.length) ||
+                (crawled && crawled.count) ||
+                0;
+            }
+          } catch (eNear) {
+            try {
+              log('Nearby scan · ' + (eNear && eNear.message ? eNear.message : eNear), 'dim');
+            } catch (_) {}
+          }
+          try {
+            if (global.SNField && SNField.refreshBlips) SNField.refreshBlips();
+            if (global.SNField && SNField.refreshRoutes) void SNField.refreshRoutes(true);
+            if (global.SNRadarPulse && SNRadarPulse.refresh) SNRadarPulse.refresh();
+          } catch (_) {}
+
+          // 4) Surface open offers near you (CLI, map clear)
+          let offerN = 0;
+          try {
+            if (global.SNOfferStack && SNOfferStack.list) {
+              const offs = SNOfferStack.list() || [];
+              offerN = offs.filter(function (o) {
+                if (!o) return false;
+                const ph = String(o.phase || o.status || '').toLowerCase();
+                if (ph && ph !== 'offered' && ph !== 'open' && ph !== 'claimed' && ph !== 'underway')
+                  return false;
+                const olat = o.lat != null ? o.lat : o.vendor && o.vendor.lat;
+                const olng = o.lng != null ? o.lng : o.vendor && o.vendor.lng;
+                if (olat == null || olng == null) return true; // keep global open offers
+                return (
+                  Math.abs(Number(olat) - pos.lat) < 0.08 &&
+                  Math.abs(Number(olng) - pos.lng) < 0.1
+                );
+              }).length;
+            }
+          } catch (_) {}
+
+          depict('locate', {
+            lat: pos.lat,
+            lng: pos.lng,
+            label: youLabel,
+            tier: 'city',
+            allowGlobe: false,
+          });
+
           if (!pos.fallback) {
             log(
               'YOU · GPS · ' +
@@ -3002,10 +3114,9 @@ if (
                 ', ' +
                 pos.lng.toFixed(5) +
                 (pos.accuracy != null ? ' · ±' + Math.round(pos.accuracy) + ' m' : '') +
-                ' · map centered',
+                ' · national→city · map on you',
               'ok'
             );
-            preview('YOU · GPS');
           } else {
             const why =
               pos.source === 'ip'
@@ -3026,8 +3137,22 @@ if (
                 (pos.city ? ' · ' + pos.city : ''),
               pos.source === 'ip' ? 'dim' : 'err'
             );
-            preview(pos.source === 'ip' ? 'YOU · approx' : 'GPS soft');
           }
+          log(
+            'Around you · shops/POI ~' +
+              nearCount +
+              ' · open offers ' +
+              offerN +
+              (offerN || nearCount
+                ? ' · power ON to take live offers'
+                : ' · quiet sector · power ON when activity rises'),
+            nearCount || offerN ? 'ok' : 'dim'
+          );
+          preview(
+            nearCount || offerN
+              ? 'YOU · ' + (nearCount || offerN) + ' nearby'
+              : youLabel
+          );
         } else {
           const why =
             pos && pos.reason === 'denied'
