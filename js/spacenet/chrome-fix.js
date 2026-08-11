@@ -1,58 +1,98 @@
-/* Astranov chrome-fix v10
- * Build: 20260811215000-even-chrome-power-only
- * Top + bottom panels IDENTICAL width/handles
- * Power standby = neon blue (independent of radar)
- * Radar colors live in chrome-radar + field (real activity)
+/* Astranov chrome-fix v11
+ * Build: 20260811220000-stable-chrome
+ * STOP panel left/right jump · equal top/bottom width · kill side rails flash
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811215000-even-chrome-power-only';
+  var BUILD = '20260811220000-stable-chrome';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     var css = document.createElement('style');
     css.id = 'sn-chrome-fix-css';
-    /* Shared panel width — top and bottom use THE SAME formula */
+    /* Same fixed formula for TOP and BOTTOM — no left/transform centering */
     css.textContent = [
-      ':root { --sn-chrome-w: min(960px, calc(100vw - 24px)); }',
-      '@media (min-width: 1100px) { :root { --sn-chrome-w: min(1100px, calc(100vw - 48px)); } }',
-      '@media (min-width: 1400px) { :root { --sn-chrome-w: min(1280px, calc(100vw - 64px)); } }',
-      '@media (min-width: 1800px) { :root { --sn-chrome-w: min(1480px, calc(100vw - 80px)); } }',
+      ':root { --sn-chrome-w: min(720px, calc(100vw - 24px)); }',
 
-      /* transparent everything */
+      /* Kill unauthorized edge scrolls (left/right flashing tools) */
+      '#sn-leftscroll, #sn-rightscroll, .sn-edgescroll,',
+      '#sn-left-panel, #sn-right-panel, #sn-left-rail, #sn-right-rail {',
+      '  display: none !important; visibility: hidden !important;',
+      '  pointer-events: none !important; opacity: 0 !important;',
+      '  width: 0 !important; height: 0 !important; overflow: hidden !important;',
+      '}',
+
+      /* Kill game dock / earth-ops chrome noise */
+      '#sn-game-dock, .sn-game-dock, #sn-earth-ops-chip, #sn-space-hud {',
+      '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
+      '}',
+      '#sn-arch-layer, #sn-device-alert, #sn-device-alert.show, #sn-silver-rive {',
+      '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
+      '}',
+
+      /* transparent surfaces */
       '#sn-topchrome, #sn-topchrome-panel, #stc-body, #stc-compact, #dock, #panel,',
       '#cli-log, #cli-form, #sn-task-ribbon, #stc-gadgets, .stc-gadget, .stc-g-body {',
       '  background: transparent !important; background-color: transparent !important; background-image: none !important;',
       '}',
 
-      /* IDENTICAL glass shell for top + bottom */
-      '#sn-topchrome-panel, #panel {',
+      /* TOP chrome host — full width flex center, no transform games */
+      '#sn-topchrome {',
+      '  position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;',
+      '  width: 100% !important; transform: none !important;',
+      '  display: flex !important; justify-content: center !important; align-items: flex-start !important;',
+      '  padding: 8px 12px 0 !important; box-sizing: border-box !important;',
+      '  pointer-events: none !important; z-index: 95 !important;',
+      '}',
+      '#sn-topchrome-panel {',
+      '  pointer-events: auto !important;',
+      '  position: relative !important;',
+      '  left: auto !important; right: auto !important; top: auto !important;',
+      '  transform: none !important;',
       '  width: var(--sn-chrome-w) !important;',
       '  max-width: var(--sn-chrome-w) !important;',
       '  min-width: 0 !important;',
-      '  left: 50% !important;',
-      '  right: auto !important;',
-      '  transform: translateX(-50%) !important;',
-      '  margin-left: 0 !important;',
-      '  margin-right: 0 !important;',
+      '  margin: 0 !important;',
+      '  box-sizing: border-box !important;',
       '  background: rgba(0, 2, 8, 0.2) !important;',
       '  backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  border: 1px solid rgba(61, 158, 255, 0.16) !important;',
       '  border-radius: 18px !important;',
       '  box-shadow: none !important;',
-      '  box-sizing: border-box !important;',
       '}',
-      '#sn-topchrome {',
-      '  left: 0 !important; right: 0 !important; width: 100% !important;',
-      '  display: flex !important; justify-content: center !important;',
-      '  pointer-events: none;',
-      '}',
-      '#sn-topchrome-panel { pointer-events: auto; top: 8px !important; }',
-      '#panel { bottom: 10px !important; }',
 
-      /* IDENTICAL drag handles (top + bottom) */
+      /* BOTTOM dock — same flex center pattern as top */
+      '#dock {',
+      '  position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important;',
+      '  width: 100% !important; transform: none !important;',
+      '  display: flex !important; justify-content: center !important; align-items: flex-end !important;',
+      '  padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important;',
+      '  box-sizing: border-box !important;',
+      '  pointer-events: none !important; z-index: 100 !important;',
+      '}',
+      '#panel {',
+      '  pointer-events: auto !important;',
+      '  position: relative !important;',
+      '  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;',
+      '  transform: none !important;',
+      '  width: var(--sn-chrome-w) !important;',
+      '  max-width: var(--sn-chrome-w) !important;',
+      '  min-width: 0 !important;',
+      '  margin: 0 !important;',
+      '  flex: 0 1 auto !important;',
+      '  box-sizing: border-box !important;',
+      '  background: rgba(0, 2, 8, 0.2) !important;',
+      '  backdrop-filter: blur(14px) saturate(1.15) !important;',
+      '  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;',
+      '  border: 1px solid rgba(61, 158, 255, 0.16) !important;',
+      '  border-radius: 18px !important;',
+      '  box-shadow: none !important;',
+      '}',
+      '#panel.collapsed { max-height: min(120px, 15vh) !important; min-height: 88px !important; }',
+
+      /* IDENTICAL handles */
       '#sn-topchrome-drag, #cli-drag {',
       '  height: 18px !important; min-height: 18px !important; max-height: 18px !important;',
       '  display: flex !important; align-items: center !important; justify-content: center !important;',
@@ -61,10 +101,8 @@
       '  padding: 0 !important; margin: 0 !important;',
       '}',
       '#sn-topchrome-drag::before, #cli-drag::before {',
-      '  content: \"\" !important;',
-      '  display: block !important;',
-      '  width: 44px !important; height: 3px !important;',
-      '  border-radius: 999px !important;',
+      '  content: \"\" !important; display: block !important;',
+      '  width: 44px !important; height: 3px !important; border-radius: 999px !important;',
       '  background: rgba(61, 158, 255, 0.9) !important;',
       '  box-shadow: 0 0 10px rgba(61, 158, 255, 0.75) !important;',
       '}',
@@ -81,11 +119,15 @@
       '  background: transparent !important; color: #b8d9ff !important;',
       '  border: 1px solid rgba(61, 158, 255, 0.2) !important; border-radius: 12px !important;',
       '}',
-      '#panel.collapsed { max-height: min(120px, 15vh) !important; min-height: 88px !important; }',
-      '#sn-device-alert, #sn-device-alert.show { display: none !important; }',
-      '#sn-arch-layer { display: none !important; visibility: hidden !important; pointer-events: none !important; }',
 
-      /* POWER STANDBY = neon blue (default) */
+      /* ribbon stays inside CLI — multi-row ok, no overflow hide */
+      '#sn-task-ribbon {',
+      '  display: flex !important; flex-wrap: wrap !important; gap: 6px !important;',
+      '  overflow: visible !important; max-height: none !important;',
+      '  padding: 0 10px 4px !important;',
+      '}',
+
+      /* POWER STANDBY blue (independent of radar) */
       '@keyframes sn-standby-pulse {',
       '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 14px rgba(40,140,255,0.55), 0 0 32px rgba(20,100,255,0.3); }',
       '  50% { box-shadow: inset 0 0 0 2.5px rgba(100,200,255,1), 0 0 26px rgba(70,180,255,0.9), 0 0 54px rgba(40,140,255,0.5); }',
@@ -98,10 +140,8 @@
       '  border: none !important;',
       '  animation: sn-standby-pulse 2.4s ease-in-out infinite !important;',
       '  box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 20px rgba(40,140,255,0.65) !important;',
-      '  filter: none !important;',
       '}',
       '#sn-task-launch.mode-standby .sn-launch-power,',
-      '#sn-task-launch.sn-launch.mode-standby .sn-launch-power,',
       'body.launch-standby #sn-task-launch .sn-launch-power,',
       '#sn-task-launch:not(.mode-on):not(.mode-off) .sn-launch-power {',
       '  color: #6ec0ff !important;',
@@ -112,45 +152,22 @@
       '  background: radial-gradient(circle at 35% 30%, rgba(40,200,120,0.35), rgba(0,12,8,0.95)) !important;',
       '  box-shadow: inset 0 0 0 2.5px rgba(61,214,140,0.95), 0 0 22px rgba(61,214,140,0.55) !important;',
       '}',
-      '#sn-task-launch.mode-on .sn-launch-power { color: #5ef0a0 !important; filter: drop-shadow(0 0 8px rgba(61,214,140,0.9)) !important; }',
+      '#sn-task-launch.mode-on .sn-launch-power { color: #5ef0a0 !important; }',
       '#sn-task-launch.mode-off {',
       '  animation: none !important;',
       '  background: radial-gradient(circle at 35% 30%, rgba(200,40,50,0.3), rgba(12,0,4,0.95)) !important;',
       '  box-shadow: inset 0 0 0 2.5px rgba(232,33,39,0.95), 0 0 22px rgba(232,33,39,0.45) !important;',
       '}',
-      '#sn-task-launch.mode-off .sn-launch-power { color: #ff6a6e !important; }',
 
-      /* RADAR: standby + med = blue; low = red; high = green */
-      '@keyframes sn-radar-blue-pulse {',
-      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 12px rgba(40,140,255,0.55), 0 0 26px rgba(20,100,255,0.32); }',
-      '  50% { box-shadow: inset 0 0 0 2.5px rgba(100,200,255,1), 0 0 22px rgba(70,180,255,0.9), 0 0 42px rgba(40,140,255,0.5); }',
-      '}',
-      '@keyframes sn-radar-green-pulse {',
-      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,230,140,0.9), 0 0 12px rgba(40,220,120,0.55); }',
-      '  50% { box-shadow: inset 0 0 0 2.5px rgba(80,255,170,1), 0 0 22px rgba(60,255,150,0.9); }',
-      '}',
-      '#field-radar { border-radius: 50% !important; transition: box-shadow 0.35s ease !important; }',
-      '#field-radar.act-standby, #field-radar.act-med {',
-      '  animation: sn-radar-blue-pulse 2.4s ease-in-out infinite !important;',
-      '  box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 16px rgba(40,140,255,0.65) !important;',
-      '}',
-      '#field-radar.act-low {',
-      '  animation: none !important;',
-      '  box-shadow: inset 0 0 0 2.5px rgba(232,33,39,0.95), 0 0 14px rgba(232,33,39,0.55) !important;',
-      '}',
-      '#field-radar.act-high {',
-      '  animation: sn-radar-green-pulse 1.6s ease-in-out infinite !important;',
-      '  box-shadow: inset 0 0 0 2.5px rgba(40,230,140,0.95), 0 0 20px rgba(40,220,120,0.7) !important;',
-      '}',
-
-      /* hide broken rive canvas leftovers */
-      '#sn-silver-rive { display: none !important; visibility: hidden !important; }',
+      /* radar ring CSS is owned by chrome-radar — do not redefine here */
 
       '#sn-task-ribbon .sn-user-btn, #sn-task-ribbon #sn-user-btn {',
       '  width: 32px !important; height: 32px !important; border-radius: 50% !important;',
       '  border: 2px solid rgba(61,158,255,0.55) !important; overflow: hidden !important;',
       '}',
-      '#stc-compact > #sn-user-btn, .stc-col-money > #sn-user-btn, .stc-col-device > #sn-user-btn, #sn-topchrome #sn-user-btn { display: none !important; }',
+      '#stc-compact > #sn-user-btn, .stc-col-money > #sn-user-btn, .stc-col-device > #sn-user-btn, #sn-topchrome #sn-user-btn {',
+      '  display: none !important;',
+      '}',
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -175,67 +192,88 @@
     } catch (_) {}
   }
 
-  /** Force power button to standby (blue) unless explicitly ON for tasks */
+  function killSideRails() {
+    try {
+      ['sn-leftscroll', 'sn-rightscroll'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    } catch (_) {}
+    try {
+      if (global.SNScrolls) {
+        global.SNScrolls.paintSideRails = function () {};
+        global.SNScrolls.ensureEdges = function () {};
+      }
+    } catch (_) {}
+  }
+
+  function killGameDock() {
+    try {
+      ['sn-game-dock', 'sn-earth-ops-chip', 'sn-space-hud'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+      document.querySelectorAll('.sn-game-dock').forEach(function (el) {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      });
+    } catch (_) {}
+  }
+
+  /** Strip any inline left/transform that causes jump */
+  function stabilizePanels() {
+    try {
+      var top = document.getElementById('sn-topchrome-panel');
+      var bot = document.getElementById('panel');
+      var dock = document.getElementById('dock');
+      var chrome = document.getElementById('sn-topchrome');
+      [top, bot].forEach(function (el) {
+        if (!el) return;
+        el.style.removeProperty('left');
+        el.style.removeProperty('right');
+        el.style.removeProperty('transform');
+        el.style.setProperty('left', 'auto', 'important');
+        el.style.setProperty('right', 'auto', 'important');
+        el.style.setProperty('transform', 'none', 'important');
+        el.style.setProperty('width', 'min(720px, calc(100vw - 24px))', 'important');
+        el.style.setProperty('max-width', 'min(720px, calc(100vw - 24px))', 'important');
+        el.style.setProperty('margin', '0', 'important');
+      });
+      if (dock) {
+        dock.style.setProperty('left', '0', 'important');
+        dock.style.setProperty('right', '0', 'important');
+        dock.style.setProperty('transform', 'none', 'important');
+        dock.style.setProperty('justify-content', 'center', 'important');
+      }
+      if (chrome) {
+        chrome.style.setProperty('left', '0', 'important');
+        chrome.style.setProperty('right', '0', 'important');
+        chrome.style.setProperty('transform', 'none', 'important');
+        chrome.style.setProperty('justify-content', 'center', 'important');
+      }
+    } catch (_) {}
+  }
+
   function forceStandbyBlue() {
     try {
       var btn = document.getElementById('sn-task-launch');
       if (!btn) return;
-
-      // Prefer field API
       try {
         if (global.SNField && typeof SNField.setLaunchMode === 'function') {
-          var m = (typeof SNField.launchMode === 'function') ? SNField.launchMode() : null;
-          // If off or missing → standby (default product law)
+          var m = typeof SNField.launchMode === 'function' ? SNField.launchMode() : null;
           if (m === 'off' || m === null || m === undefined || m === 'idle') {
             SNField.setLaunchMode('standby', { quiet: true });
           }
         }
       } catch (_) {}
-
-      // Class paint (always ensure blue if not mode-on)
       if (!btn.classList.contains('mode-on')) {
         btn.classList.remove('mode-off');
         btn.classList.add('mode-standby');
         try {
           document.body.classList.remove('launch-off', 'launch-on');
           document.body.classList.add('launch-standby');
-        } catch (_) {}
-        try {
           localStorage.setItem('sn-launch-mode', 'standby');
         } catch (_) {}
       }
-    } catch (_) {}
-  }
-
-  /* Radar activity is owned by chrome-radar.js + field.js — do NOT couple to power */
-  function setRadarAct(level) {
-    try {
-      if (global.SNRadarPulse && SNRadarPulse.set) SNRadarPulse.set(level);
-    } catch (_) {}
-  }
-
-  function radarFromLive() {
-    try {
-      if (global.SNRadarPulse && SNRadarPulse.refresh) return SNRadarPulse.refresh();
-    } catch (_) {}
-  }
-
-  function evenPanels() {
-    // runtime reassert equal widths if base CSS fights
-    try {
-      var top = document.getElementById('sn-topchrome-panel');
-      var bot = document.getElementById('panel');
-      if (!top || !bot) return;
-      var w = getComputedStyle(document.documentElement).getPropertyValue('--sn-chrome-w').trim();
-      if (!w) w = 'min(960px, calc(100vw - 24px))';
-      top.style.setProperty('width', w, 'important');
-      bot.style.setProperty('width', w, 'important');
-      top.style.setProperty('left', '50%', 'important');
-      bot.style.setProperty('left', '50%', 'important');
-      top.style.setProperty('transform', 'translateX(-50%)', 'important');
-      bot.style.setProperty('transform', 'translateX(-50%)', 'important');
-      top.style.setProperty('right', 'auto', 'important');
-      bot.style.setProperty('right', 'auto', 'important');
     } catch (_) {}
   }
 
@@ -243,20 +281,28 @@
     injectCss();
     silenceBeeps();
     killArch();
+    killSideRails();
+    killGameDock();
+    stabilizePanels();
     forceStandbyBlue();
-    radarFromLive();
-    evenPanels();
-    setTimeout(forceStandbyBlue, 600);
-    setTimeout(forceStandbyBlue, 2000);
+    setTimeout(function () {
+      killSideRails();
+      killGameDock();
+      stabilizePanels();
+      forceStandbyBlue();
+    }, 800);
+    setTimeout(function () {
+      killSideRails();
+      killGameDock();
+      stabilizePanels();
+    }, 2500);
     setTimeout(forceStandbyBlue, 5000);
-    setTimeout(radarFromLive, 1000);
-    setTimeout(evenPanels, 800);
-    setTimeout(evenPanels, 2500);
     setInterval(silenceBeeps, 20000);
     setInterval(killArch, 5000);
-    setInterval(forceStandbyBlue, 10000);
-    setInterval(radarFromLive, 5000);
-    setInterval(evenPanels, 4000);
+    setInterval(killSideRails, 6000);
+    setInterval(killGameDock, 8000);
+    setInterval(stabilizePanels, 8000);
+    setInterval(forceStandbyBlue, 12000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -266,8 +312,7 @@
 
   global.SNChromeFix = {
     build: BUILD,
-    setRadarAct: setRadarAct,
-    radarFromLive: radarFromLive,
-    forceStandbyBlue: forceStandbyBlue,
+    stabilizePanels: stabilizePanels,
+    killSideRails: killSideRails,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
