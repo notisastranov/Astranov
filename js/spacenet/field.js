@@ -763,7 +763,47 @@
     v: 'rgba(255,204,68,0.95)',
     s: 'rgba(255,204,68,0.95)', // shop = vendor yellow
     p: 'rgba(100,180,255,0.75)',
+    t: 'rgba(100,180,255,0.9)', // task
+    o: 'rgba(120,190,255,0.9)', // offer
   };
+  /** Radar activity band — independent of power button.
+   *  low (few real dots) → red → user should power OFF / rest
+   *  med (moderate real activity) → blue pulse → radar standby activity
+   *  high (many real dots) → green → user should power ON
+   */
+  var radarActivityBand = 'med'; // low | med | high
+  var BAND_RING = {
+    low: { grid: 'rgba(232,33,39,0.35)', self: 'rgba(255,100,110,0.95)', sweep: 'rgba(232,33,39,0.18)', beam: 'rgba(255,80,90,0.9)' },
+    med: { grid: 'rgba(40,140,255,0.3)', self: 'rgba(120,220,255,0.95)', sweep: 'rgba(40,140,255,0.14)', beam: 'rgba(80,190,255,0.9)' },
+    high: { grid: 'rgba(40,230,140,0.35)', self: 'rgba(80,255,170,0.95)', sweep: 'rgba(40,230,140,0.16)', beam: 'rgba(60,255,150,0.9)' },
+  };
+  var BAND_DOT = {
+    low: 'rgba(255,70,80,0.95)',
+    med: 'rgba(90,180,255,0.95)',
+    high: 'rgba(60,240,140,0.95)',
+  };
+  function computeRadarActivityBand(n) {
+    n = Number(n) || 0;
+    if (n <= 2) return 'low';
+    if (n >= 10) return 'high';
+    return 'med';
+  }
+  function applyRadarActivityClass(band) {
+    radarActivityBand = band || 'med';
+    try {
+      var wrap = $('field-radar');
+      if (!wrap) return;
+      wrap.classList.remove('act-low', 'act-med', 'act-high', 'act-standby');
+      wrap.classList.add(band === 'high' ? 'act-high' : band === 'low' ? 'act-low' : 'act-med');
+      wrap.dataset.activity = band;
+      wrap.title =
+        band === 'high'
+          ? 'Radar · high activity · turn power ON'
+          : band === 'low'
+            ? 'Radar · low activity · power OFF / rest'
+            : 'Radar · moderate activity';
+    } catch (_) {}
+  }
   var ROUTE_COLORS = [
     'rgba(0,220,255,0.95)',
     'rgba(255,180,60,0.95)',
@@ -3440,8 +3480,11 @@
       cy = h / 2,
       R = Math.min(w, h) / 2 - (radarBig ? 10 : 4);
     var blipR = radarBig ? 4 : 2.2;
+    var band = radarActivityBand || computeRadarActivityBand(blips.length);
+    var ring = BAND_RING[band] || BAND_RING.med;
+    var dotCol = BAND_DOT[band] || BAND_DOT.med;
     ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(0,180,255,0.25)';
+    ctx.strokeStyle = ring.grid;
     ctx.lineWidth = radarBig ? 1.5 : 1;
     for (var n = 1; n <= 3; n++) {
       ctx.beginPath();
@@ -3457,19 +3500,19 @@
     // Route polygons / polylines under sweep (delivery & active paths)
     drawRoutes(ctx, cx, cy, R);
     // self (center ring)
-    ctx.strokeStyle = 'rgba(120,220,255,0.9)';
+    ctx.strokeStyle = ring.self;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, radarBig ? 5 : 3, 0, Math.PI * 2);
     ctx.stroke();
     sweep = (sweep + (radarBig ? 0.05 : 0.07)) % (Math.PI * 2);
-    ctx.fillStyle = 'rgba(0,180,255,0.12)';
+    ctx.fillStyle = ring.sweep;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, R, sweep - 0.45, sweep);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = 'rgba(80,200,255,0.85)';
+    ctx.strokeStyle = ring.beam;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -3481,7 +3524,8 @@
       var rr = Math.min(0.98, (t.r || 0) / radarZoom);
       var x = cx + Math.cos(t.a) * rr * R;
       var y = cy + Math.sin(t.a) * rr * R;
-      ctx.fillStyle = BLIP_COLOR[t.k] || BLIP_COLOR.p;
+      // Activity band paints the dots (real positions; color = density signal)
+      ctx.fillStyle = dotCol;
       ctx.beginPath();
       ctx.arc(x, y, blipR, 0, Math.PI * 2);
       ctx.fill();
@@ -4686,12 +4730,24 @@
       me = g.SNProfiles && SNProfiles.me && SNProfiles.me();
     } catch (e) {}
 
-    // Profiles → friends / competitors / vendors & clients
+    function nearEnough(lat, lng) {
+      // ~0.08 deg ~ 8–9 km — only real nearby activity
+      try {
+        var dLat = Math.abs(Number(lat) - Number(focus.lat));
+        var dLng = Math.abs(Number(lng) - Number(focus.lng));
+        return dLat < 0.09 && dLng < 0.12;
+      } catch (_) {
+        return true;
+      }
+    }
+
+    // Profiles → friends / competitors / vendors & clients (nearby only)
     try {
       var list = (g.SNProfiles && SNProfiles.list && SNProfiles.list()) || [];
       for (var i = 0; i < list.length && blips.length < 28; i++) {
         var p = list[i];
         if (!p || p.lat == null || p.lng == null) continue;
+        if (!nearEnough(p.lat, p.lng)) continue;
         var kind = classifyProfile(p, me);
         if (!kind) continue;
         blips.push({
@@ -4703,11 +4759,64 @@
       }
     } catch (e2) {}
 
-    // DB / commerce vendors → yellow (vendors)
+    // Live tasks around user (pickup / drop coords)
+    try {
+      if (g.SNTasks && SNTasks.list) {
+        var tasks = SNTasks.list() || [];
+        for (var ti = 0; ti < tasks.length && blips.length < 40; ti++) {
+          var tk = tasks[ti];
+          if (!tk) continue;
+          var st = String(tk.status || '').toLowerCase();
+          if (st === 'done' || st === 'cancelled' || st === 'complete') continue;
+          var coords = [];
+          if (tk.lat != null && tk.lng != null) coords.push({ lat: tk.lat, lng: tk.lng, lab: tk.title || tk.id || 'task' });
+          if (tk.pickup && tk.pickup.lat != null) coords.push({ lat: tk.pickup.lat, lng: tk.pickup.lng, lab: 'pickup' });
+          if (tk.dropoff && tk.dropoff.lat != null) coords.push({ lat: tk.dropoff.lat, lng: tk.dropoff.lng, lab: 'drop' });
+          if (tk.from && tk.from.lat != null) coords.push({ lat: tk.from.lat, lng: tk.from.lng, lab: 'from' });
+          if (tk.to && tk.to.lat != null) coords.push({ lat: tk.to.lat, lng: tk.to.lng, lab: 'to' });
+          for (var ci = 0; ci < coords.length && blips.length < 40; ci++) {
+            var c0 = coords[ci];
+            if (!nearEnough(c0.lat, c0.lng)) continue;
+            blips.push({
+              a: bearingFromFocus(c0.lat, c0.lng, focus),
+              r: distRing(c0.lat, c0.lng, focus),
+              k: 't',
+              label: c0.lab,
+            });
+          }
+        }
+      }
+    } catch (eT) {}
+
+    // Open offers (real market activity)
+    try {
+      if (g.SNOfferStack && SNOfferStack.list) {
+        var offs = SNOfferStack.list() || [];
+        for (var oi = 0; oi < offs.length && blips.length < 44; oi++) {
+          var of = offs[oi];
+          if (!of) continue;
+          var ph = String(of.phase || of.status || '').toLowerCase();
+          if (ph && ph !== 'offered' && ph !== 'open' && ph !== 'claimed' && ph !== 'underway' && ph !== 'paid') continue;
+          var olat = of.lat != null ? of.lat : of.vendor && of.vendor.lat;
+          var olng = of.lng != null ? of.lng : of.vendor && of.vendor.lng;
+          if (olat == null || olng == null) continue;
+          if (!nearEnough(olat, olng)) continue;
+          blips.push({
+            a: bearingFromFocus(olat, olng, focus),
+            r: distRing(olat, olng, focus),
+            k: 'o',
+            label: of.title || of.cargo || 'offer',
+          });
+        }
+      }
+    } catch (eO) {}
+
+    // DB / commerce vendors nearby
     var vs = (g.SNCommerce && SNCommerce.vendors) || [];
     for (var j = 0; j < Math.min(14, vs.length); j++) {
       var v = vs[j];
       if (!v || v.lat == null) continue;
+      if (!nearEnough(v.lat, v.lng)) continue;
       blips.push({
         a: bearingFromFocus(v.lat, v.lng, focus),
         r: distRing(v.lat, v.lng, focus),
@@ -4716,10 +4825,11 @@
       });
     }
 
-    // Spatial places — neutral (blue) only if room
+    // Spatial places — only if room
     var ps = (g.SNSpatial && SNSpatial.list && SNSpatial.list()) || [];
-    for (var k = 0; k < Math.min(4, ps.length) && blips.length < 36; k++) {
+    for (var k = 0; k < Math.min(6, ps.length) && blips.length < 48; k++) {
       if (ps[k].lat == null) continue;
+      if (!nearEnough(ps[k].lat, ps[k].lng)) continue;
       blips.push({
         a: bearingFromFocus(ps[k].lat, ps[k].lng, focus),
         r: distRing(ps[k].lat, ps[k].lng, focus),
@@ -4727,6 +4837,25 @@
         label: ps[k].name || '',
       });
     }
+
+    // Route waypoints count as activity
+    try {
+      for (var ri = 0; ri < routes.length && blips.length < 52; ri++) {
+        var rt = routes[ri];
+        if (!rt || !rt.points || !rt.points.length) continue;
+        var mid = rt.points[Math.floor(rt.points.length / 2)];
+        if (!mid || mid.lat == null) continue;
+        blips.push({
+          a: bearingFromFocus(mid.lat, mid.lng, focus),
+          r: distRing(mid.lat, mid.lng, focus),
+          k: 't',
+          label: rt.label || 'route',
+        });
+      }
+    } catch (eR) {}
+
+    // Activity band from REAL blip count — not power button
+    applyRadarActivityClass(computeRadarActivityBand(blips.length));
 
     // Keep delivery route polygons in sync (throttled)
     void refreshRoutes(false);
@@ -5253,6 +5382,12 @@
     updateSpeed: updateRadarSpeed,
     EARTH_KMH: EARTH,
     SPEED: SPEED,
+    activity: function () {
+      return radarActivityBand;
+    },
+    blipCount: function () {
+      return blips.length;
+    },
   };
   g.SNResources = {
     init: function () {},

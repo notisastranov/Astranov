@@ -1,12 +1,12 @@
 /* Astranov chrome-fix v10
- * Build: 20260811214000-even-chrome-blue
+ * Build: 20260811215000-even-chrome-power-only
  * Top + bottom panels IDENTICAL width/handles
- * Power standby + radar med = neon blue pulse
- * Force standby (blue) on boot — kill stuck mode-off red
+ * Power standby = neon blue (independent of radar)
+ * Radar colors live in chrome-radar + field (real activity)
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811214000-even-chrome-blue';
+  var BUILD = '20260811215000-even-chrome-power-only';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
@@ -207,38 +207,17 @@
     } catch (_) {}
   }
 
+  /* Radar activity is owned by chrome-radar.js + field.js — do NOT couple to power */
   function setRadarAct(level) {
-    var el = document.getElementById('field-radar');
-    if (!el) return;
-    el.classList.remove('act-low', 'act-med', 'act-high', 'act-standby');
-    if (level === 'high' || level === 2) el.classList.add('act-high');
-    else if (level === 'med' || level === 'medium' || level === 1) el.classList.add('act-med');
-    else if (level === 'standby' || level === 'blue') el.classList.add('act-standby');
-    else el.classList.add('act-low');
+    try {
+      if (global.SNRadarPulse && SNRadarPulse.set) SNRadarPulse.set(level);
+    } catch (_) {}
   }
 
   function radarFromLive() {
-    var n = 0;
     try {
-      if (global.SNTasks && SNTasks.list) {
-        n += (SNTasks.list() || []).filter(function (t) {
-          return t && t.status !== 'done' && t.status !== 'cancelled' && t.status !== 'complete';
-        }).length;
-      }
+      if (global.SNRadarPulse && SNRadarPulse.refresh) return SNRadarPulse.refresh();
     } catch (_) {}
-    try {
-      if (global.SNOfferStack && SNOfferStack.peekCount) n += Number(SNOfferStack.peekCount()) || 0;
-      else if (global.SNOfferStack && SNOfferStack.list) {
-        n += (SNOfferStack.list() || []).filter(function (o) {
-          var ph = String((o && o.phase) || '').toLowerCase();
-          return ph === 'offered' || ph === 'open' || ph === 'claimed' || ph === 'underway';
-        }).length;
-      }
-    } catch (_) {}
-
-    if (n >= 4) setRadarAct('high');
-    else if (n >= 1) setRadarAct('med');
-    else setRadarAct('standby'); // no activity + standby power → blue (not red)
   }
 
   function evenPanels() {
