@@ -10,11 +10,12 @@
 <meta name="apple-mobile-web-app-title" content="SpaceNet" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="apple-touch-icon" href="/icon.png" />
-<meta name="astranov-build" content="20260811140000-install-os" />
+<meta name="astranov-build" content="20260811140500-silent-glass" />
 <style>
 html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.4 system-ui,sans-serif}
 #boot-msg{position:fixed;inset:0;display:grid;place-items:center;z-index:9999}
 </style>
+<script src="/js/spacenet/chrome-mute.js?v=20260811140500"></script>
 </head>
 <body>
 <div id="boot-msg">ASTRANOV · SpaceNet OS…</div>
@@ -33,7 +34,8 @@ html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.
     } catch (_) {}
   }
   function injectAll() {
-    inject('/js/spacenet/chrome-fix.js?v=20260811140000');
+    inject('/js/spacenet/chrome-mute.js?v=20260811140500');
+    inject('/js/spacenet/chrome-fix.js?v=20260811140500');
     inject('/js/spacenet/chrome-daynight.js?v=20260811140000');
     inject('/js/spacenet/chrome-install.js?v=20260811140000');
   }
@@ -42,8 +44,8 @@ html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.
       document.open();
       document.write(html);
       document.close();
-      setTimeout(injectAll, 800);
-      setTimeout(injectAll, 2800);
+      setTimeout(injectAll, 600);
+      setTimeout(injectAll, 2200);
     } catch (e) {
       var el = document.getElementById('boot-msg');
       if (el) el.textContent = 'Restore failed · hard refresh';
