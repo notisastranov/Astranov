@@ -2237,9 +2237,14 @@
 
   /** AI ribbon pressed — brief status only */
   function listeningOn() {
-    var t = 'Listening.';
+    var t =
+      'Astranov Mind online · collective memory · type in CLI or tap Silver';
     showOnGlobe(t);
     if (global.SNCli && SNCli.log) SNCli.log(t, 'ok');
+    try {
+      if (global.SNChromeHelper && SNChromeHelper.speak)
+        SNChromeHelper.speak('Mind online. How can I help?', { voice: false, ms: 5000 });
+    } catch (_) {}
     return t;
   }
 

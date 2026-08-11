@@ -1630,11 +1630,40 @@
       );
       return;
     }
-    // AI = single action for now (no submenu) — silent hands-free toggle
+    // AI ribbon = wake Astranov Mind + optional listen (beeps muted)
     if (act === 'handsfree') {
       try {
-        if (g.SNCli && SNCli.toggleHandsfree) SNCli.toggleHandsfree();
-      } catch (e) {}
+        if (g.SNChromeHelper && SNChromeHelper.activate) {
+          // Silver is the face of the AI
+          SNChromeHelper.activate();
+        } else if (g.SNAi) {
+          if (SNAi.listeningOn) SNAi.listeningOn();
+          if (SNAi.say)
+            SNAi.say(
+              'Astranov Mind online. Type in the CLI or tap Silver. Collective memory on device · Grok-class when connected.',
+              'ok'
+            );
+        }
+        // Voice optional — only toggle if already wanted; prefer text to avoid Android beeps
+        if (g.SNCli && SNCli.toggleHandsfree && g.__SN_FORCE_VOICE) {
+          SNCli.toggleHandsfree();
+        } else {
+          var panel = document.getElementById('panel');
+          if (panel) {
+            panel.classList.remove('collapsed');
+            panel.classList.add('mid');
+          }
+          var inp = document.getElementById('cli-in');
+          if (inp) {
+            inp.focus({ preventScroll: true });
+            inp.placeholder = 'Talk to Astranov Mind…';
+          }
+          if (g.SNCli && SNCli.log)
+            SNCli.log('AI ready · type here · tap Silver · voice: say "voice on"', 'ok');
+        }
+      } catch (e) {
+        console.error('[SNField] ai', e);
+      }
       return;
     }
     // Send = single action (no submenu)

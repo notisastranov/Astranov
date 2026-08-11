@@ -1,27 +1,38 @@
-/* Astranov — Silver helper · vector bone model
- * Build: 20260811214000-silver-vector-fix
- * Quiet silver winged robot top-right. Tap → sim game.
- * Rive community asset removed (red faces blob).
+/* Astranov — Silver helper · living AI companion
+ * Build: 20260811223000-silver-ai
+ * Standby: quiet hover top-right. Tap → wake AI, talk, fly to help, take orders.
+ * Collective memory: SNAstranovMind learn + SNAi history (local + shared when online).
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811214000-silver-vector-fix';
-  var MODE = 'standby';
+  var BUILD = '20260811223000-silver-ai';
+  var MODE = 'standby'; // standby | active | fly | talk
   var canvas = null;
   var ctx = null;
   var hit = null;
   var raf = 0;
   var t0 = 0;
   var ready = false;
-  var pose = { flap: 0, bob: 0, lean: 0, thrust: 0, glow: 0.3, size: 36 };
+  var activeUntil = 0;
+  var flyTarget = null;
+  var pose = { flap: 0, bob: 0, lean: 0, thrust: 0, glow: 0.35, size: 34 };
+  var home = { x: 0, y: 0 };
+  var pos = { x: 0, y: 0 };
+  var bubble = null;
+  var bubbleUntil = 0;
+  var lastSpoke = '';
 
   function log(msg, kind) {
-    try { if (global.SNCli && SNCli.log) SNCli.log(msg, kind || 'ok'); } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log(msg, kind || 'ok');
+    } catch (_) {}
   }
 
   function topChromeBottom() {
     try {
-      var el = document.getElementById('sn-topchrome-panel') || document.getElementById('sn-topchrome');
+      var el =
+        document.getElementById('sn-topchrome-panel') ||
+        document.getElementById('sn-topchrome');
       if (el) return Math.max(48, Math.round(el.getBoundingClientRect().bottom + 4));
     } catch (_) {}
     return 64;
@@ -29,15 +40,16 @@
 
   function killBroken() {
     try {
-      ['sn-silver-rive', 'sn-helper-fx', 'sn-helper-canvas', 'sn-silver-calm'].forEach(function (id) {
+      ['sn-silver-rive', 'sn-helper-fx', 'sn-silver-calm'].forEach(function (id) {
         var el = document.getElementById(id);
-        if (!el) return;
-        if (id === 'sn-helper-canvas') {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-          el.style.visibility = 'hidden';
-        } else if (el.parentNode) el.parentNode.removeChild(el);
+        if (el && el.parentNode) el.parentNode.removeChild(el);
       });
+      var old = document.getElementById('sn-helper-canvas');
+      if (old) {
+        old.style.opacity = '0';
+        old.style.pointerEvents = 'none';
+        old.style.visibility = 'hidden';
+      }
     } catch (_) {}
   }
 
@@ -71,40 +83,151 @@
     }
   }
 
-  function anchor() {
+  function homeAnchor() {
     var w = window.innerWidth || 400;
     var h = window.innerHeight || 700;
-    var x = Math.round(w - 44);
-    var y = topChromeBottom() + 28;
+    var x = Math.round(w - 48);
+    var y = topChromeBottom() + 30;
     y = Math.min(Math.max(y, 56), Math.round(h * 0.18));
-    x = Math.min(Math.max(x, 32), w - 28);
+    x = Math.min(Math.max(x, 36), w - 30);
     return { x: x, y: y };
   }
 
   function tickPose(now) {
     var t = (now - t0) / 1000;
     if (MODE === 'standby') {
-      pose.flap = Math.sin(t * 1.4) * 0.18;
-      pose.bob = Math.sin(t * 0.8) * 0.9;
-      pose.lean = 0;
+      pose.flap = Math.sin(t * 1.1) * 0.12;
+      pose.bob = Math.sin(t * 0.9) * 2.2;
+      pose.lean = Math.sin(t * 0.45) * 0.04;
       pose.thrust = 0;
-      pose.glow = 0.28 + Math.sin(t * 1.0) * 0.03;
+      pose.glow = 0.28 + Math.sin(t * 0.7) * 0.04;
+      pose.size = 32;
+    } else if (MODE === 'fly') {
+      pose.flap = Math.sin(t * 8) * 0.55;
+      pose.bob = Math.sin(t * 5) * 3;
+      pose.lean = 0.2;
+      pose.thrust = 0.7 + Math.sin(t * 12) * 0.15;
+      pose.glow = 0.75;
       pose.size = 36;
-    } else if (MODE === 'active') {
-      pose.flap = Math.sin(t * 2.8) * 0.35;
-      pose.bob = Math.sin(t * 1.8) * 2.0;
-      pose.lean = Math.sin(t * 1.2) * 0.06;
-      pose.thrust = 0.12 + Math.sin(t * 5) * 0.04;
-      pose.glow = 0.55;
-      pose.size = 40;
     } else {
-      pose.flap = Math.sin(t * 7) * 0.5;
-      pose.bob = Math.sin(t * 3.5) * 2.5;
-      pose.lean = 0.12;
-      pose.thrust = 0.65 + Math.sin(t * 10) * 0.12;
-      pose.glow = 0.72;
-      pose.size = 42;
+      // active / talk
+      pose.flap = Math.sin(t * 3.2) * 0.28;
+      pose.bob = Math.sin(t * 2.1) * 2.6;
+      pose.lean = Math.sin(t * 1.4) * 0.1;
+      pose.thrust = 0.15;
+      pose.glow = 0.55 + Math.sin(t * 2.5) * 0.12;
+      pose.size = 36;
     }
+  }
+
+  function drawRobot(c, x, y) {
+    var s = pose.size;
+    c.save();
+    c.translate(x, y + pose.bob);
+    c.rotate(pose.lean);
+
+    // soft aura (no red corners)
+    var g = c.createRadialGradient(0, 0, 2, 0, 0, s * 1.6);
+    g.addColorStop(0, 'rgba(180,220,255,' + (0.12 + pose.glow * 0.12) + ')');
+    g.addColorStop(1, 'rgba(80,140,255,0)');
+    c.fillStyle = g;
+    c.beginPath();
+    c.arc(0, 0, s * 1.6, 0, Math.PI * 2);
+    c.fill();
+
+    // wings
+    function wing(side) {
+      c.save();
+      c.scale(side, 1);
+      c.rotate(-0.35 + pose.flap * side);
+      var wg = c.createLinearGradient(0, 0, s * 1.4, 0);
+      wg.addColorStop(0, 'rgba(210,230,255,0.95)');
+      wg.addColorStop(1, 'rgba(120,160,210,0.35)');
+      c.fillStyle = wg;
+      c.beginPath();
+      c.moveTo(s * 0.15, -s * 0.1);
+      c.quadraticCurveTo(s * 0.9, -s * 0.55, s * 1.35, -s * 0.1);
+      c.quadraticCurveTo(s * 0.85, s * 0.15, s * 0.2, s * 0.2);
+      c.closePath();
+      c.fill();
+      c.restore();
+    }
+    wing(-1);
+    wing(1);
+
+    // body
+    var bg = c.createLinearGradient(-s * 0.35, -s * 0.5, s * 0.4, s * 0.55);
+    bg.addColorStop(0, '#eef6ff');
+    bg.addColorStop(0.45, '#b8cce0');
+    bg.addColorStop(1, '#6a849e');
+    c.fillStyle = bg;
+    c.beginPath();
+    c.ellipse(0, s * 0.05, s * 0.32, s * 0.48, 0, 0, Math.PI * 2);
+    c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.55)';
+    c.lineWidth = 1.2;
+    c.stroke();
+
+    // head
+    c.fillStyle = '#d8e8f8';
+    c.beginPath();
+    c.ellipse(0, -s * 0.38, s * 0.28, s * 0.26, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // visor
+    var vg = c.createLinearGradient(-s * 0.18, -s * 0.45, s * 0.18, -s * 0.3);
+    if (MODE === 'standby') {
+      vg.addColorStop(0, 'rgba(40,140,255,0.85)');
+      vg.addColorStop(1, 'rgba(20,80,180,0.9)');
+    } else {
+      vg.addColorStop(0, 'rgba(80,255,180,0.9)');
+      vg.addColorStop(1, 'rgba(40,200,255,0.95)');
+    }
+    c.fillStyle = vg;
+    c.beginPath();
+    c.ellipse(0, -s * 0.38, s * 0.18, s * 0.1, 0, 0, Math.PI * 2);
+    c.fill();
+
+    // thrust only when flying
+    if (pose.thrust > 0.05) {
+      c.fillStyle = 'rgba(120,200,255,' + (0.25 + pose.thrust * 0.35) + ')';
+      c.beginPath();
+      c.moveTo(-s * 0.12, s * 0.5);
+      c.lineTo(0, s * 0.5 + s * 0.55 * pose.thrust);
+      c.lineTo(s * 0.12, s * 0.5);
+      c.closePath();
+      c.fill();
+    }
+
+    // speech bubble
+    if (bubble && nowBubble()) {
+      drawBubble(c, 0, -s * 0.95, bubble);
+    }
+
+    c.restore();
+  }
+
+  function nowBubble() {
+    return performance.now() < bubbleUntil;
+  }
+
+  function drawBubble(c, x, y, text) {
+    var lines = String(text || '').slice(0, 72);
+    c.save();
+    c.font = '600 11px system-ui,sans-serif';
+    var w = Math.min(180, Math.max(70, c.measureText(lines).width + 16));
+    var h = 28;
+    c.fillStyle = 'rgba(0,12,28,0.82)';
+    c.strokeStyle = 'rgba(100,190,255,0.65)';
+    c.lineWidth = 1;
+    roundRect(c, x - w / 2, y - h - 6, w, h, 10);
+    c.fill();
+    c.stroke();
+    c.fillStyle = '#cfe8ff';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    c.fillText(lines, x, y - h / 2 - 6);
+    c.restore();
   }
 
   function roundRect(c, x, y, w, h, r) {
@@ -117,147 +240,23 @@
     c.closePath();
   }
 
-  function drawRobot(c, x, y) {
-    var s = pose.size;
-    var flap = pose.flap;
-    var bob = pose.bob;
-    var lean = pose.lean;
-    c.save();
-    c.translate(x, y + bob);
-    c.rotate(lean);
-
-    // soft ground shadow
-    c.fillStyle = 'rgba(0,0,0,0.25)';
-    c.beginPath();
-    c.ellipse(0, s * 0.52, s * 0.28, 2.8, 0, 0, Math.PI * 2);
-    c.fill();
-
-    function wing(side) {
-      c.save();
-      c.translate(side * s * 0.1, -s * 0.06);
-      c.rotate(side * (0.32 + side * flap));
-      var g = c.createLinearGradient(0, 0, side * s * 0.65, -s * 0.3);
-      g.addColorStop(0, 'rgba(180,215,245,' + (0.4 + pose.glow * 0.15) + ')');
-      g.addColorStop(0.55, 'rgba(100,160,220,0.16)');
-      g.addColorStop(1, 'rgba(40,80,140,0)');
-      c.fillStyle = g;
-      c.beginPath();
-      c.moveTo(0, 0);
-      c.quadraticCurveTo(side * s * 0.32, -s * 0.4, side * s * 0.68, -s * 0.1);
-      c.quadraticCurveTo(side * s * 0.36, s * 0.1, 0, s * 0.06);
-      c.closePath();
-      c.fill();
-      c.strokeStyle = 'rgba(200,230,255,' + (0.5 + pose.glow * 0.2) + ')';
-      c.lineWidth = 1.1;
-      c.beginPath();
-      c.moveTo(0, -1);
-      c.quadraticCurveTo(side * s * 0.32, -s * 0.4, side * s * 0.66, -s * 0.1);
-      c.stroke();
-      c.restore();
-    }
-    wing(-1);
-    wing(1);
-
-    // body
-    var bodyG = c.createLinearGradient(-s * 0.18, -s * 0.25, s * 0.18, s * 0.3);
-    bodyG.addColorStop(0, '#d4e0ec');
-    bodyG.addColorStop(0.5, '#a8b8c8');
-    bodyG.addColorStop(1, '#788898');
-    c.fillStyle = bodyG;
-    roundRect(c, -s * 0.18, -s * 0.2, s * 0.36, s * 0.44, s * 0.1);
-    c.fill();
-    c.fillStyle = 'rgba(220,235,250,0.92)';
-    roundRect(c, -s * 0.1, -s * 0.12, s * 0.2, s * 0.16, 3);
-    c.fill();
-    var core = c.createRadialGradient(0, -s * 0.02, 0, 0, -s * 0.02, s * 0.09);
-    core.addColorStop(0, 'rgba(200,240,255,' + (0.85 * pose.glow + 0.2) + ')');
-    core.addColorStop(0.55, 'rgba(70,150,255,0.65)');
-    core.addColorStop(1, 'rgba(20,60,120,0)');
-    c.fillStyle = core;
-    c.beginPath();
-    c.arc(0, -s * 0.02, s * 0.08, 0, Math.PI * 2);
-    c.fill();
-
-    // head
-    var headG = c.createLinearGradient(-s * 0.14, -s * 0.5, s * 0.14, -s * 0.18);
-    headG.addColorStop(0, '#e4eef8');
-    headG.addColorStop(1, '#90a0b0');
-    c.fillStyle = headG;
-    c.beginPath();
-    c.arc(0, -s * 0.34, s * 0.16, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = 'rgba(15,40,80,0.95)';
-    roundRect(c, -s * 0.1, -s * 0.4, s * 0.2, s * 0.09, 2.5);
-    c.fill();
-    c.fillStyle = 'rgba(80,180,255,' + (0.55 + pose.glow * 0.35) + ')';
-    roundRect(c, -s * 0.085, -s * 0.38, s * 0.17, s * 0.05, 2);
-    c.fill();
-    c.strokeStyle = '#a0b0c0';
-    c.lineWidth = 1.3;
-    c.beginPath();
-    c.moveTo(0, -s * 0.5);
-    c.lineTo(0, -s * 0.6);
-    c.stroke();
-    c.fillStyle = 'rgba(100,200,255,0.95)';
-    c.beginPath();
-    c.arc(0, -s * 0.62, 2.2, 0, Math.PI * 2);
-    c.fill();
-
-    // arms
-    c.strokeStyle = '#a0b0c0';
-    c.lineWidth = 3;
-    c.lineCap = 'round';
-    c.beginPath();
-    c.moveTo(-s * 0.16, -s * 0.04);
-    c.lineTo(-s * 0.3, s * 0.15);
-    c.moveTo(s * 0.16, -s * 0.04);
-    c.lineTo(s * 0.3, s * 0.15);
-    c.stroke();
-    c.fillStyle = '#8898a8';
-    c.beginPath();
-    c.arc(-s * 0.3, s * 0.17, 3, 0, Math.PI * 2);
-    c.arc(s * 0.3, s * 0.17, 3, 0, Math.PI * 2);
-    c.fill();
-
-    // legs
-    c.fillStyle = '#90a0b0';
-    roundRect(c, -s * 0.12, s * 0.2, s * 0.09, s * 0.16, 2.5);
-    roundRect(c, s * 0.03, s * 0.2, s * 0.09, s * 0.16, 2.5);
-    c.fill();
-
-    if (pose.thrust > 0.05) {
-      for (var side = -1; side <= 1; side += 2) {
-        var th = pose.thrust;
-        var jet = c.createLinearGradient(0, s * 0.36, 0, s * 0.36 + 14 * th);
-        jet.addColorStop(0, 'rgba(200,240,255,' + (0.65 * th) + ')');
-        jet.addColorStop(0.45, 'rgba(60,160,255,' + (0.35 * th) + ')');
-        jet.addColorStop(1, 'rgba(0,40,120,0)');
-        c.fillStyle = jet;
-        c.beginPath();
-        c.moveTo(side * s * 0.075 - 2.5, s * 0.36);
-        c.lineTo(side * s * 0.075 + 2.5, s * 0.36);
-        c.lineTo(side * s * 0.075, s * 0.36 + 14 * th);
-        c.closePath();
-        c.fill();
-      }
-    }
-    c.restore();
-  }
-
   function ensureHit() {
     if (hit && document.body.contains(hit)) return hit;
     hit = document.createElement('button');
     hit.id = 'sn-helper-hit';
     hit.type = 'button';
-    hit.title = 'Silver helper · tap to activate';
-    hit.setAttribute('aria-label', 'Silver helper');
+    hit.title = 'Silver · tap to talk · AI companion';
+    hit.setAttribute('aria-label', 'Silver AI helper');
     hit.style.cssText =
-      'position:fixed;z-index:130;width:44px;height:44px;border:none;padding:0;' +
+      'position:fixed;z-index:130;width:52px;height:52px;border:none;padding:0;' +
       'background:transparent;cursor:pointer;border-radius:50%;outline:none;' +
       '-webkit-tap-highlight-color:transparent;';
     document.body.appendChild(hit);
     hit.addEventListener('click', function (e) {
-      try { e.preventDefault(); e.stopPropagation(); } catch (_) {}
+      try {
+        e.preventDefault();
+        e.stopPropagation();
+      } catch (_) {}
       activate();
     });
     return hit;
@@ -265,8 +264,236 @@
 
   function placeHit(x, y) {
     var h = ensureHit();
-    h.style.left = Math.round(x - 22) + 'px';
-    h.style.top = Math.round(y - 22) + 'px';
+    h.style.left = Math.round(x - 26) + 'px';
+    h.style.top = Math.round(y - 26) + 'px';
+  }
+
+  function setMode(m) {
+    MODE = m;
+    t0 = performance.now();
+    if (m === 'active' || m === 'talk' || m === 'fly') {
+      activeUntil = performance.now() + 90000;
+    }
+  }
+
+  function speak(text, opts) {
+    opts = opts || {};
+    var t = String(text || '').trim();
+    if (!t) return;
+    lastSpoke = t;
+    bubble = t.length > 64 ? t.slice(0, 61) + '…' : t;
+    bubbleUntil = performance.now() + (opts.ms || 6500);
+    log('Silver · ' + t, opts.kind || 'ok');
+    try {
+      if (global.SNCli && SNCli.preview) SNCli.preview('🤖 ' + t.slice(0, 72));
+    } catch (_) {}
+    try {
+      if (global.SNAi && SNAi.showOnGlobe) SNAi.showOnGlobe(t.slice(0, 80));
+    } catch (_) {}
+    // Voice: ONLY when user explicitly activated helper (no boot beeps)
+    if (opts.voice !== false && MODE !== 'standby') {
+      try {
+        if (global.speechSynthesis) {
+          global.speechSynthesis.cancel();
+          // Prefer quiet text unless speakOut already on
+          var speakOut = false;
+          try {
+            speakOut = !!(global.SNCli && SNCli.handsfreeOn && global.__SN_SILVER_VOICE);
+          } catch (_) {}
+          if (speakOut || opts.forceVoice) {
+            var u = new SpeechSynthesisUtterance(t.slice(0, 160));
+            u.rate = 1.02;
+            u.pitch = 1.05;
+            u.volume = 0.85;
+            global.speechSynthesis.speak(u);
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  function openCliForTalk() {
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.remove('collapsed');
+        panel.classList.add('mid');
+      }
+      var inp = document.getElementById('cli-in');
+      if (inp) {
+        inp.focus({ preventScroll: true });
+        inp.placeholder = 'Talk to Silver / Astranov Mind…';
+      }
+    } catch (_) {}
+  }
+
+  function wakeAiStack() {
+    try {
+      if (global.SNAi) {
+        if (SNAi.bootPresence) SNAi.bootPresence();
+        if (SNAi.listeningOn) SNAi.listeningOn();
+      }
+    } catch (_) {}
+    try {
+      // Text CLI for chat — do NOT auto-start speech recognition (Android beeps)
+      if (global.SNCli) {
+        global.__SN_SILVER_ACTIVE = true;
+        global.__SN_SILVER_VOICE = false;
+      }
+    } catch (_) {}
+    // Collective mind: mark session
+    try {
+      var key = 'sn:silver-sessions';
+      var n = Number(localStorage.getItem(key) || 0) + 1;
+      localStorage.setItem(key, String(n));
+      localStorage.setItem('sn:silver-last', String(Date.now()));
+    } catch (_) {}
+  }
+
+  function flyToScreen(x, y, ms) {
+    setMode('fly');
+    flyTarget = { x: x, y: y, until: performance.now() + (ms || 1600) };
+  }
+
+  function flyHelpTask(kind) {
+    var a = homeAnchor();
+    var w = window.innerWidth || 400;
+    var h = window.innerHeight || 700;
+    if (kind === 'map') flyToScreen(w * 0.5, h * 0.42, 1800);
+    else if (kind === 'cli') flyToScreen(w * 0.5, h - 120, 1400);
+    else flyToScreen(a.x - 40, a.y + 80, 1200);
+    setTimeout(function () {
+      if (MODE === 'fly') setMode('active');
+      flyTarget = null;
+    }, 1700);
+  }
+
+  async function askMind(message) {
+    var msg = String(message || '').trim();
+    if (!msg) return;
+    setMode('talk');
+    speak('Thinking…', { voice: false, ms: 2000 });
+    try {
+      // Prefer full SNAi (Grok-backed aicycle + local mind + memory)
+      if (global.SNAi && typeof SNAi.ask === 'function') {
+        var ans = await SNAi.ask(msg, { mode: 'chat', source: 'silver' });
+        if (ans) {
+          speak(String(ans).slice(0, 220), { kind: 'ok', ms: 9000 });
+          // teach collective local mind
+          try {
+            if (global.SNAstranovMind && SNAstranovMind.learnInteraction) {
+              SNAstranovMind.learnInteraction(msg, ans, { source: 'silver' });
+            } else if (global.SNFreeMind && SNFreeMind.teach) {
+              SNFreeMind.teach(msg, String(ans).slice(0, 400), ['silver', 'user']);
+            }
+          } catch (_) {}
+          // fly if task-ish
+          if (/\b(find|locate|order|shop|deliver|map|pizza|call|route)\b/i.test(msg)) {
+            flyHelpTask(/locate|map|route/i.test(msg) ? 'map' : 'cli');
+            try {
+              if (global.SNHelper) {
+                if (SNHelper.init) SNHelper.init();
+                var posH = global._snLastPos || global._snPhysPos;
+                if (SNHelper.flyTo)
+                  SNHelper.flyTo(posH || { lat: 36.43, lng: 28.22 }, {
+                    kind: 'assist',
+                    label: 'SILVER',
+                    detail: msg.slice(0, 36),
+                    status: 'assist',
+                    log: false,
+                  });
+              }
+            } catch (_) {}
+          }
+          return ans;
+        }
+      }
+      // Free mind offline
+      if (global.SNAstranovMind && SNAstranovMind.answer) {
+        var r = SNAstranovMind.answer(msg);
+        var text = (r && (r.text || r.a || r.answer)) || (typeof r === 'string' ? r : null);
+        if (text) {
+          speak(String(text).slice(0, 220), { kind: 'ok', ms: 9000 });
+          return text;
+        }
+      }
+      if (global.SNCli && SNCli.run) {
+        await SNCli.run(msg);
+        speak('On it · check the CLI', { ms: 4000 });
+        return;
+      }
+      speak("I'm here. Type in the CLI — locate, power on, call, shops…", { ms: 7000 });
+    } catch (e) {
+      speak('Glitch · ' + (e && e.message ? e.message : 'try again'), {
+        kind: 'err',
+        ms: 5000,
+      });
+    }
+  }
+
+  function activate() {
+    killBroken();
+    setMode('active');
+    wakeAiStack();
+    openCliForTalk();
+    flyHelpTask('cli');
+
+    var greet =
+      'Silver online. I am your Astranov companion — collective memory on this device, Grok-class mind when the net is up. Tell me what to do.';
+    speak(greet, { kind: 'ok', ms: 9000, voice: false });
+    log('──────── SILVER AI ────────', 'dim');
+    log('Tap me anytime · type in CLI · I fly for tasks · memory grows with you', 'ok');
+    log('Examples: locate · power on · find pizza · call · polygon · help', 'dim');
+
+    // Hook next CLI submits as Silver conversation while active
+    try {
+      installCliHook();
+    } catch (_) {}
+
+    // Auto-run a light presence through free mind
+    try {
+      if (global.SNAstranovMind && SNAstranovMind.think) {
+        SNAstranovMind.think('silver activated · user session', 'status');
+      }
+    } catch (_) {}
+  }
+
+  function installCliHook() {
+    if (global.__SN_SILVER_CLI_HOOK) return;
+    global.__SN_SILVER_CLI_HOOK = true;
+    if (!global.SNCli || typeof SNCli.run !== 'function') return;
+    var prev = SNCli.run.bind(SNCli);
+    SNCli.run = function (raw) {
+      var line = String(raw || '').trim();
+      var low = line.toLowerCase();
+      // While silver active, conversational lines go through mind first
+      if (
+        global.__SN_SILVER_ACTIVE &&
+        line &&
+        !/^(locate|gps|power|call|video|hang|polygon|poly|global|city|map|shops|layers|send|help money|market)\b/i.test(
+          low
+        ) &&
+        line.length > 2 &&
+        !/^\//.test(line)
+      ) {
+        // Parallel: still allow command-like, but chat gets askMind
+        if (
+          /^(hi|hello|hey|silver|helper|who are you|what can you|help|find |order |where |how |why |can you)/i.test(
+            low
+          ) ||
+          /\?$/.test(line) ||
+          line.split(/\s+/).length >= 3
+        ) {
+          setMode('talk');
+          return askMind(line).then(function (ans) {
+            // If mind returned nothing useful, fall through
+            if (!ans) return prev(raw);
+            return ans;
+          });
+        }
+      }
+      return prev(raw);
+    };
   }
 
   function frame(now) {
@@ -274,44 +501,45 @@
     if (document.hidden) return;
     var c = ensureCanvas();
     if (!c) return;
-    var minDt = MODE === 'standby' ? 36 : 24;
+    var minDt = MODE === 'standby' ? 40 : 22;
     if (frame._last && now - frame._last < minDt) return;
     frame._last = now;
+
+    // expire active
+    if (MODE !== 'standby' && activeUntil && now > activeUntil) {
+      setMode('standby');
+      flyTarget = null;
+      global.__SN_SILVER_ACTIVE = false;
+      speak('Standing by. Tap me when you need me.', { voice: false, ms: 3500, kind: 'dim' });
+    }
+
+    var a = homeAnchor();
+    home.x = a.x;
+    home.y = a.y;
+    if (!pos.x) {
+      pos.x = a.x;
+      pos.y = a.y;
+    }
+
+    var tx = a.x;
+    var ty = a.y;
+    if (flyTarget && now < flyTarget.until) {
+      tx = flyTarget.x;
+      ty = flyTarget.y;
+    } else if (MODE === 'active' || MODE === 'talk') {
+      tx = a.x - 8;
+      ty = a.y + 10;
+    }
+    // smooth follow
+    pos.x += (tx - pos.x) * (MODE === 'fly' ? 0.14 : 0.08);
+    pos.y += (ty - pos.y) * (MODE === 'fly' ? 0.14 : 0.08);
+
     var w = window.innerWidth || 1;
     var h = window.innerHeight || 1;
     c.clearRect(0, 0, w, h);
     tickPose(now);
-    var a = anchor();
-    drawRobot(c, a.x, a.y);
-    placeHit(a.x, a.y);
-  }
-
-  function setMode(m) {
-    MODE = m;
-    t0 = performance.now();
-  }
-
-  function activate() {
-    setMode('active');
-    log('──────── SILVER ────────', 'dim');
-    log('Helper active · simulation game', 'ok');
-    log('  simulate pizza order', 'ok');
-    log('  simulate delivery', 'ok');
-    log('  simulate payment', 'ok');
-    try {
-      if (global.SNCli && SNCli.preview) SNCli.preview('Silver active');
-      var panel = document.getElementById('panel');
-      if (panel) {
-        panel.classList.remove('collapsed');
-        panel.classList.add('mid');
-      }
-    } catch (_) {}
-    setTimeout(function () {
-      if (MODE === 'active') {
-        setMode('standby');
-        log('Silver · standby', 'dim');
-      }
-    }, 25000);
+    drawRobot(c, pos.x, pos.y);
+    placeHit(pos.x, pos.y);
   }
 
   function boot() {
@@ -319,25 +547,47 @@
     t0 = performance.now();
     ensureCanvas();
     ensureHit();
+    var a = homeAnchor();
+    pos.x = a.x;
+    pos.y = a.y;
     if (!raf) raf = requestAnimationFrame(frame);
     if (!ready) {
       ready = true;
-      log('Silver · standby · tap to activate', 'ok');
+      // Quiet boot — no beep, no TTS
+      try {
+        if (global.SNCli && SNCli.preview) SNCli.preview('Silver standby');
+      } catch (_) {}
     }
+    try {
+      installCliHook();
+    } catch (_) {}
   }
 
   window.addEventListener('resize', resize, { passive: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
-  setTimeout(boot, 1200);
-  setTimeout(boot, 3500);
+  setTimeout(boot, 1000);
+  setTimeout(boot, 3200);
 
   global.SNChromeHelper = {
     build: BUILD,
     activate: activate,
     setMode: setMode,
-    mode: function () { return MODE; },
-    fly: function () { setMode('fly'); },
-    standby: function () { setMode('standby'); },
+    mode: function () {
+      return MODE;
+    },
+    fly: function () {
+      flyHelpTask('map');
+    },
+    speak: speak,
+    ask: askMind,
+    standby: function () {
+      setMode('standby');
+      global.__SN_SILVER_ACTIVE = false;
+    },
   };
+  // Alias so SNAi helper paths can find silver
+  if (!global.SNHelper || !global.SNHelper.flyTo) {
+    global.SNSilver = global.SNChromeHelper;
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
