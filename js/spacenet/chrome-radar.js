@@ -1,9 +1,9 @@
-/* Astranov radar states · Build 20260811171000-radar-pulse
- * standby: pulsing neon blue · no activity: red · activity: green · high: pulsing green
+/* Astranov radar · Build 20260811210000
+ * standby + medium = neon blue pulse · none = red · high = green pulse
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811171000-radar-pulse';
+  var BUILD = '20260811210000-radar-blue-med';
 
   function injectCss() {
     var id = 'sn-radar-pulse-css';
@@ -13,30 +13,20 @@
     st.id = id;
     st.textContent = [
       '@keyframes sn-radar-blue-pulse {',
-      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,140,255,0.9), 0 0 10px rgba(40,140,255,0.5), 0 0 22px rgba(20,100,255,0.3); }',
-      '  50% { box-shadow: inset 0 0 0 2.5px rgba(80,190,255,1), 0 0 18px rgba(60,170,255,0.85), 0 0 36px rgba(40,140,255,0.45); }',
+      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,140,255,0.9), 0 0 12px rgba(40,140,255,0.5), 0 0 26px rgba(20,100,255,0.3); }',
+      '  50% { box-shadow: inset 0 0 0 2.5px rgba(90,190,255,1), 0 0 20px rgba(60,170,255,0.85), 0 0 40px rgba(40,140,255,0.45); }',
       '}',
       '@keyframes sn-radar-green-pulse {',
-      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,230,140,0.9), 0 0 12px rgba(40,220,120,0.55), 0 0 24px rgba(20,180,90,0.3); }',
-      '  50% { box-shadow: inset 0 0 0 2.5px rgba(80,255,170,1), 0 0 22px rgba(60,255,150,0.9), 0 0 42px rgba(40,220,120,0.5); }',
+      '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,230,140,0.9), 0 0 12px rgba(40,220,120,0.55); }',
+      '  50% { box-shadow: inset 0 0 0 2.5px rgba(80,255,170,1), 0 0 22px rgba(60,255,150,0.9); }',
       '}',
       '#field-radar { border-radius: 50% !important; transition: box-shadow 0.35s ease !important; }',
-      '#field-radar.act-standby {',
+      '#field-radar.act-standby, #field-radar.act-med {',
       '  animation: sn-radar-blue-pulse 2.4s ease-in-out infinite !important;',
-      '  box-shadow: inset 0 0 0 2px rgba(40,140,255,0.9), 0 0 14px rgba(40,140,255,0.55) !important;',
+      '  box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 16px rgba(40,140,255,0.6) !important;',
       '}',
-      '#field-radar.act-low {',
-      '  animation: none !important;',
-      '  box-shadow: inset 0 0 0 2.5px rgba(232,33,39,0.95), 0 0 14px rgba(232,33,39,0.55), 0 0 28px rgba(200,20,40,0.3) !important;',
-      '}',
-      '#field-radar.act-med {',
-      '  animation: none !important;',
-      '  box-shadow: inset 0 0 0 2.5px rgba(61,214,140,0.95), 0 0 16px rgba(61,214,140,0.55) !important;',
-      '}',
-      '#field-radar.act-high {',
-      '  animation: sn-radar-green-pulse 1.6s ease-in-out infinite !important;',
-      '  box-shadow: inset 0 0 0 2.5px rgba(40,230,140,0.95), 0 0 20px rgba(40,220,120,0.7) !important;',
-      '}',
+      '#field-radar.act-low { animation: none !important; box-shadow: inset 0 0 0 2.5px rgba(232,33,39,0.95), 0 0 14px rgba(232,33,39,0.55) !important; }',
+      '#field-radar.act-high { animation: sn-radar-green-pulse 1.6s ease-in-out infinite !important; box-shadow: inset 0 0 0 2.5px rgba(40,230,140,0.95), 0 0 20px rgba(40,220,120,0.7) !important; }',
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -54,7 +44,6 @@
   function launchModeNow() {
     try {
       if (global.SNField && typeof SNField.launchMode === 'function') return SNField.launchMode() || 'standby';
-      if (global.SNLaunch && SNLaunch.mode) return SNLaunch.mode;
       var btn = document.getElementById('sn-task-launch');
       if (btn) {
         if (btn.classList.contains('mode-on')) return 'on';
@@ -69,8 +58,7 @@
     var n = 0;
     try {
       if (global.SNTasks && SNTasks.list) {
-        var list = SNTasks.list() || [];
-        n += list.filter(function (t) {
+        n += (SNTasks.list() || []).filter(function (t) {
           return t && t.status !== 'done' && t.status !== 'cancelled' && t.status !== 'complete';
         }).length;
       }
@@ -84,18 +72,9 @@
         }).length;
       }
     } catch (_) {}
-    try {
-      if (global.SNPolyScheduler && SNPolyScheduler.list) {
-        n += (SNPolyScheduler.list() || []).filter(function (o) {
-          return o && (o.phase === 'offered' || o.phase === 'claimed' || o.phase === 'underway');
-        }).length;
-      }
-    } catch (_) {}
-
-    var mode = launchModeNow();
     if (n >= 4) setRadarAct('high');
     else if (n >= 1) setRadarAct('med');
-    else if (mode === 'standby') setRadarAct('standby');
+    else if (launchModeNow() === 'standby') setRadarAct('standby');
     else setRadarAct('low');
   }
 
@@ -103,7 +82,6 @@
     injectCss();
     radarFromLive();
     setTimeout(radarFromLive, 1500);
-    setTimeout(radarFromLive, 4000);
     setInterval(radarFromLive, 4000);
   }
 
