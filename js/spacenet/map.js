@@ -1127,7 +1127,7 @@
     }
   }
 
-  /** Blue “YOU” marker on city map */
+  /** Blue “YOU” marker on city map — tap opens YOUR profile tile (not empty junk) */
   function markYou(lat, lng, label) {
     if (lat == null || lng == null || !M.map || typeof L === 'undefined') return null;
     try {
@@ -1137,17 +1137,52 @@
         } catch (_) {}
         M._youMark = null;
       }
-      M._youMark = L.circleMarker([Number(lat), Number(lng)], {
-        radius: 10,
-        color: '#3d9eff',
-        fillColor: '#1a6fd4',
-        fillOpacity: 0.95,
-        weight: 3,
-      })
-        .addTo(M.map)
-        .bindPopup(label || 'YOU · delivery stop');
+      // Keep profile pin current
       try {
-        M._youMark.openPopup();
+        if (global.SNProfiles && SNProfiles.me) {
+          var me = SNProfiles.me();
+          if (me && SNProfiles.upsert) {
+            me.lat = Number(lat);
+            me.lng = Number(lng);
+            SNProfiles.upsert(me);
+          }
+        }
+      } catch (_) {}
+      M._youMark = L.circleMarker([Number(lat), Number(lng)], {
+        radius: 11,
+        color: '#ffffff',
+        fillColor: '#3d9eff',
+        fillOpacity: 1,
+        weight: 3,
+      }).addTo(M.map);
+      M._youMark.bindPopup(
+        '<b>' +
+          (label || 'YOU') +
+          '</b><br/><span style="opacity:.85">Tap pin · open your tile</span>',
+        { closeButton: true, autoClose: true }
+      );
+      M._youMark.off('click');
+      M._youMark.on('click', function (e) {
+        markMarkerHit();
+        try {
+          L.DomEvent.stopPropagation(e);
+          if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
+        } catch (_) {}
+        try {
+          if (global.SNTile && SNTile.openMe) SNTile.openMe('about');
+          else if (global.SNField && SNField.openLoggedInUser)
+            SNField.openLoggedInUser({ tab: 'about' });
+        } catch (err) {
+          try {
+            global.SNCli && SNCli.log && SNCli.log('Me tile · ' + (err.message || err), 'err');
+          } catch (_) {}
+        }
+      });
+      // Sync legacy _me marker to same spot + same openMe handler
+      try {
+        if (M._me) {
+          M._me.setLatLng([Number(lat), Number(lng)]);
+        }
       } catch (_) {}
       return M._youMark;
     } catch (e) {
@@ -1386,7 +1421,11 @@
           L.DomEvent.stopPropagation(e);
           if (e.originalEvent) L.DomEvent.stop(e.originalEvent);
         } catch (_) {}
-        global.SNTile?.openMe?.();
+        try {
+          if (global.SNTile?.openMe) global.SNTile.openMe('about');
+          else if (global.SNField?.openLoggedInUser)
+            global.SNField.openLoggedInUser({ tab: 'about' });
+        } catch (_) {}
       });
     } else {
       M._me.setLatLng([p.lat, p.lng]);

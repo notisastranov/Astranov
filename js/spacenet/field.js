@@ -1227,26 +1227,90 @@
       document.body.classList.remove('sn-poly-nav-drive');
     } catch (_) {}
     var gps = await readGpsOnce();
-    var pts = collectTourPoints();
-    if (gps && gps.lat != null) pts.push({ lat: gps.lat, lng: gps.lng });
-
-    // Always redraw tour when we have active orders
+    // Tour points ONLY from accepted/active work — do not count "you" as a tour
+    var tourPts = collectTourPoints() || [];
     try {
       if (g.SNPolyScheduler && g.SNPolyEngine && SNPolyEngine.syncTourFromStack) {
         SNPolyEngine.syncTourFromStack(SNPolyScheduler.list());
+        tourPts = collectTourPoints() || tourPts;
       }
     } catch (_) {}
 
-    if (!pts.length) {
-      polyNavOps('POLYGON · no active tour · locate only');
+    var offerN = 0;
+    var acceptedN = 0;
+    var scheduleN = 0;
+    try {
+      if (g.SNOfferStack && SNOfferStack.list) {
+        (SNOfferStack.list() || []).forEach(function (o) {
+          if (!o) return;
+          var ph = String(o.phase || o.status || '').toLowerCase();
+          if (ph === 'offered' || ph === 'open') offerN++;
+          if (ph === 'claimed' || ph === 'underway' || ph === 'accepted' || ph === 'paid')
+            acceptedN++;
+        });
+      }
+    } catch (_) {}
+    try {
+      if (g.SNTasks && SNTasks.list) {
+        scheduleN = (SNTasks.list() || []).filter(function (t) {
+          if (!t) return false;
+          var st = String(t.status || '').toLowerCase();
+          return st !== 'done' && st !== 'cancelled' && st !== 'complete';
+        }).length;
+      }
+    } catch (_) {}
+    try {
+      if (g.SNPolyScheduler && SNPolyScheduler.list) {
+        var sch = SNPolyScheduler.list() || [];
+        if (sch.length) scheduleN = Math.max(scheduleN, sch.length);
+      }
+    } catch (_) {}
+
+    // No real tour polygon yet
+    if (!tourPts.length) {
+      polyNavOps('POLYGON · no routing yet');
       try {
-        if (g.SNCli && SNCli.run) void SNCli.run('locate');
+        if (g.SNCli && SNCli.log) {
+          SNCli.log('POLYGON · no tour route right now', 'dim');
+          SNCli.log(
+            'You have not accepted any offers yet · no polygon routing for activities',
+            'dim'
+          );
+          SNCli.log(
+            'Schedule · not set up · accept an offer or create a plan to build the tour',
+            'dim'
+          );
+          SNCli.log(
+            'Open offers nearby: ' +
+              offerN +
+              ' · active tasks: ' +
+              scheduleN +
+              ' · accepted routes: ' +
+              acceptedN,
+            offerN || scheduleN ? 'ok' : 'dim'
+          );
+          SNCli.log('Tip · power ON · accept an offer · then ⬠ shows the full tour polygon', 'ok');
+          if (SNCli.preview) SNCli.preview('POLYGON · empty');
+        }
       } catch (_) {}
+      // Still put you on the city map so you can tap YOU → me tile
+      try {
+        var here = gps || focusPos();
+        if (here && here.lat != null && g.SNMap && SNMap.open) {
+          await SNMap.open(here.lat, here.lng, { force: true, zoom: 15 });
+          if (SNMap.markYou) SNMap.markYou(here.lat, here.lng, 'YOU');
+          if (SNMap.fitLatLngs)
+            SNMap.fitLatLngs([{ lat: here.lat, lng: here.lng }], { zoom: 15, force: true });
+        }
+      } catch (_) {}
+      // Never open empty order tiles when there is no tour
       paintRibbon();
-      return { ok: true, mode: 'polygon', empty: true };
+      return { ok: true, mode: 'polygon', empty: true, tour: 0 };
     }
 
-    var mid = pts[Math.floor(pts.length / 2)] || gps || focusPos();
+    var pts = tourPts.slice();
+    if (gps && gps.lat != null) pts.push({ lat: gps.lat, lng: gps.lng });
+    var mid = tourPts[Math.floor(tourPts.length / 2)] || gps || focusPos();
     try {
       if (g.SNMap && SNMap.open) {
         await SNMap.open(mid.lat, mid.lng, { force: true });
@@ -1263,32 +1327,49 @@
       if (g.SNMap && SNMap.markYou && gps) SNMap.markYou(gps.lat, gps.lng, 'YOU');
     } catch (_) {}
 
-    // Expand first live order tile so driver sees the job
+    // Only open a real live order tile (never empty shell)
     try {
       var live =
         g.SNPolyScheduler &&
         SNPolyScheduler.list().find(function (o) {
-          return o.phase === 'underway' || o.phase === 'claimed' || o.phase === 'offered';
+          return (
+            o &&
+            (o.phase === 'underway' ||
+              o.phase === 'claimed' ||
+              o.phase === 'offered' ||
+              o.phase === 'accepted')
+          );
         });
-      if (live && SNPolyScheduler.openOrderTile) SNPolyScheduler.openOrderTile(live.id);
-      else if (live) {
+      if (live && live.id && SNPolyScheduler.openOrderTile) {
+        SNPolyScheduler.openOrderTile(live.id);
+      } else if (live) {
         live.uiSize = 'mid';
         if (SNPolyScheduler.paint) SNPolyScheduler.paint();
       }
     } catch (_) {}
 
-    // Radar expanded for polygon on globe view if map failed
     try {
       setRadarExpanded(true);
     } catch (_) {}
 
     polyNavOps(
-      'POLYGON · fit ' +
-        pts.length +
-        ' pts · GPS recentered · tap ⬠ again for DRIVE'
+      'POLYGON · tour ' +
+        tourPts.length +
+        ' pts · GPS on map · tap ⬠ again for DRIVE'
     );
+    try {
+      if (g.SNCli && SNCli.log) {
+        SNCli.log(
+          'POLYGON · active tour · ' +
+            tourPts.length +
+            ' points · schedule items ' +
+            scheduleN,
+          'ok'
+        );
+      }
+    } catch (_) {}
     paintRibbon();
-    return { ok: true, mode: 'polygon', points: pts.length };
+    return { ok: true, mode: 'polygon', points: tourPts.length, empty: false };
   }
 
   /**

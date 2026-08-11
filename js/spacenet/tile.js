@@ -1085,6 +1085,22 @@
               '</div>'
             : '') +
           (p.address ? '<div>📍 ' + esc(p.address) + '</div>' : '') +
+          (isMe(p)
+            ? '<div>📍 ' +
+              (p.lat != null
+                ? Number(p.lat).toFixed(5) + ', ' + Number(p.lng).toFixed(5)
+                : 'position · tap Locate') +
+              '</div>' +
+              '<div style="margin-top:6px;padding:8px 10px;border-radius:10px;border:1px solid rgba(61,158,255,0.25);background:rgba(0,20,40,0.45)">' +
+              '<b>Status</b><br/>' +
+              'Polygon routing · none (no accepted offers yet)<br/>' +
+              'Schedule · not set up<br/>' +
+              'Roles · client' +
+              (p.roles?.driver ? ' · driver' : '') +
+              (p.roles?.vendor ? ' · vendor' : '') +
+              '<br/>Accept an offer or set a plan to build your polygon tour.' +
+              '</div>'
+            : '') +
           (p.shopName
             ? '<div>🏪 ' + esc(p.shopName) + (p.shopKind ? ' · ' + esc(p.shopKind) : '') + '</div>'
             : '') +
@@ -1571,20 +1587,70 @@
   }
 
   function openMe(tab) {
-    open(global.SNProfiles?.me?.(), {
+    const Prof = global.SNProfiles;
+    if (!Prof) {
+      global.SNCli?.log?.('Profiles offline · cannot open your tile', 'err');
+      return null;
+    }
+    // Always ensure a real me profile exists and is geo-synced
+    let me = Prof.me?.();
+    if (!me || !me.id) {
+      global.SNCli?.log?.('No me profile · try Login or hard refresh', 'err');
+      return null;
+    }
+    try {
+      const pos =
+        global._snLastPos ||
+        global.SNTasks?.pos ||
+        (me.lat != null ? { lat: me.lat, lng: me.lng } : null);
+      if (pos && pos.lat != null) {
+        me.lat = Number(pos.lat);
+        me.lng = Number(pos.lng);
+      }
+      if (!me.name || me.name === 'Astranov User') {
+        me.name =
+          global.SNAuth?.user?.user_metadata?.full_name ||
+          global.SNAuth?.user?.email?.split?.('@')?.[0] ||
+          me.name ||
+          'You';
+      }
+      if (!me.bio) me.bio = 'SpaceNet citizen · client · marketplace in S';
+      if (!me.roles) me.roles = { social: true, client: true };
+      me.roles.client = true;
+      me.roles.social = true;
+      if (Prof.upsert) me = Prof.upsert(me) || me;
+    } catch (_) {}
+
+    const opened = open(me, {
       tab: tab || 'about',
-      quiet: true,
+      quiet: false,
       full: true,
       sizeMode: 'full',
+      expand: true,
     });
     try {
+      // Center full me tile — never empty strip on the side
+      T.sizeMode = 'full';
+      T.w = maxFullW();
+      T.h = maxFullH();
+      T.left = Math.max(12, Math.round((window.innerWidth - T.w) / 2));
+      T.top = Math.max(48, Math.round((window.innerHeight - T.h) / 3));
       const root = $('sn-tile');
       if (root) {
         root.classList.add('owner-me');
+        root.classList.remove('sn-tile-peek');
+        root.classList.add('sn-tile-full');
         bindDragAndResize(root);
-        applyScale();
       }
+      applyScale();
+      render();
+      global.SNCli?.log?.(
+        'YOU · ' + (me.name || 'You') + ' · profile tile open',
+        'ok'
+      );
+      global.SNCli?.preview?.('YOU · me tile');
     } catch (_) {}
+    return opened || me;
   }
 
   /**
