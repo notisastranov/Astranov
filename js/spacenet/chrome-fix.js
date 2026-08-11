@@ -1,17 +1,15 @@
-/* Astranov chrome-fix — slim glowing handles, CLI always usable, user photo, radar act glow, globe speed
- * Build: 20260811130000-chrome-fix
- * Loads after any full index and forces the owner-required chrome physics.
+/* Astranov chrome-fix — slim glowing handles, CLI always usable, user photo, radar act glow, fast globe
+ * Build: 20260811131000-chrome-fix-v2
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811130000-chrome-fix';
+  var BUILD = '20260811131000-chrome-fix-v2';
 
   function injectCss() {
     if (document.getElementById('sn-chrome-fix-css')) return;
     var css = document.createElement('style');
     css.id = 'sn-chrome-fix-css';
     css.textContent = [
-      '/* === HANDLES: both 22px + permanent electric blue glow === */',
       '#sn-topchrome-drag, #cli-drag {',
       '  height: 22px !important; min-height: 22px !important;',
       '  display: flex !important; align-items: center !important; justify-content: center !important;',
@@ -35,9 +33,9 @@
       '  border-radius: 999px !important; background: rgba(61,158,255,0.95) !important;',
       '  box-shadow: 0 0 14px rgba(61,158,255,0.85), 0 0 28px rgba(61,158,255,0.4) !important;',
       '}',
-      '#sn-topchrome-drag::after { content: "gadgets · tap" !important; font: 700 9px/1 var(--font-ui, system-ui) !important;',
+      '#sn-topchrome-drag::after { content: "gadgets · tap" !important; font: 700 9px/1 system-ui !important;',
       '  letter-spacing: 0.12em !important; text-transform: uppercase !important; color: rgba(180,220,255,0.95) !important; }',
-      '#cli-drag::after { content: "cli · drag" !important; font: 700 9px/1 var(--font-ui, system-ui) !important;',
+      '#cli-drag::after { content: "cli · drag" !important; font: 700 9px/1 system-ui !important;',
       '  letter-spacing: 0.12em !important; text-transform: uppercase !important; color: rgba(180,220,255,0.95) !important; }',
       '#panel.mid #cli-drag::after, #panel.expanded #cli-drag::after { content: "pull down" !important; }',
       '#sn-topchrome-panel.expanded #sn-topchrome-drag::after, #sn-topchrome-panel.mid #sn-topchrome-drag::after { content: "pull up" !important; }',
@@ -50,38 +48,29 @@
       '  background: rgba(11,107,203,0.9) !important; box-shadow: 0 0 12px rgba(11,107,203,0.55) !important;',
       '}',
       'html.theme-light #sn-topchrome-drag::after, html.theme-light #cli-drag::after { color: rgba(15,23,42,0.6) !important; }',
-
-      '/* === CLI always visible / not over-minimized === */',
       '#panel.collapsed { max-height: min(128px, 16vh) !important; min-height: 96px !important; }',
       '#cli-form { display: flex !important; align-items: center !important; gap: 8px !important;',
-      '  padding: 8px 14px 12px !important; border-top: 1px solid var(--border, rgba(50,140,255,0.42)) !important;',
+      '  padding: 8px 14px 12px !important; border-top: 1px solid rgba(50,140,255,0.42) !important;',
       '  flex: 0 0 auto !important; min-height: 44px !important; }',
       '#cli-in { min-height: 28px !important; font-size: 14px !important; }',
       '#panel.collapsed #cli-log:empty { display: none !important; }',
-
-      '/* === RADAR activity glow === */',
       '#field-radar.act-low {',
       '  box-shadow: inset 0 0 0 2px rgba(232,33,39,0.9), 0 0 18px rgba(232,33,39,0.55) !important;',
-      '  background: radial-gradient(circle at 40% 35%, rgba(232,33,39,0.35), var(--bg-elev, #060d1c)) !important;',
+      '  background: radial-gradient(circle at 40% 35%, rgba(232,33,39,0.35), #060d1c) !important;',
       '}',
       '#field-radar.act-med {',
       '  box-shadow: inset 0 0 0 2px rgba(61,158,255,0.95), 0 0 20px rgba(61,158,255,0.55) !important;',
-      '  background: radial-gradient(circle at 40% 35%, rgba(61,158,255,0.35), var(--bg-elev, #060d1c)) !important;',
+      '  background: radial-gradient(circle at 40% 35%, rgba(61,158,255,0.35), #060d1c) !important;',
       '}',
       '#field-radar.act-high {',
       '  box-shadow: inset 0 0 0 2px rgba(61,214,140,0.95), 0 0 22px rgba(61,214,140,0.6) !important;',
-      '  background: radial-gradient(circle at 40% 35%, rgba(61,214,140,0.4), var(--bg-elev, #060d1c)) !important;',
+      '  background: radial-gradient(circle at 40% 35%, rgba(61,214,140,0.4), #060d1c) !important;',
       '}',
-      'html.theme-light #field-radar.act-low { box-shadow: inset 0 0 0 2px rgba(214,31,38,0.85), 0 0 14px rgba(214,31,38,0.35) !important; }',
-      'html.theme-light #field-radar.act-med { box-shadow: inset 0 0 0 2px rgba(11,107,203,0.85), 0 0 14px rgba(11,107,203,0.35) !important; }',
-      'html.theme-light #field-radar.act-high { box-shadow: inset 0 0 0 2px rgba(13,159,110,0.85), 0 0 14px rgba(13,159,110,0.35) !important; }',
-
-      '/* === USER BUTTON === */',
       '.sn-user-btn, #sn-user-btn {',
       '  width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important;',
       '  border-radius: 50% !important; border: 2px solid rgba(61,158,255,0.7) !important;',
-      '  background: radial-gradient(circle at 35% 30%, rgba(61,158,255,0.35), var(--bg-elev, #060d1c)) !important;',
-      '  color: var(--glow-hot, #7ec8ff) !important; font: 800 14px/1 var(--font-display, system-ui) !important;',
+      '  background: radial-gradient(circle at 35% 30%, rgba(61,158,255,0.35), #060d1c) !important;',
+      '  color: #7ec8ff !important; font: 800 14px/1 system-ui !important;',
       '  display: inline-flex !important; align-items: center !important; justify-content: center !important;',
       '  overflow: hidden !important; padding: 0 !important; cursor: pointer !important;',
       '  box-shadow: 0 0 14px rgba(61,158,255,0.4) !important; flex-shrink: 0 !important;',
@@ -90,10 +79,6 @@
       '  border-color: rgba(61,214,140,0.9) !important; box-shadow: 0 0 16px rgba(61,214,140,0.45) !important;',
       '}',
       '.sn-user-btn img, #sn-user-btn img { width: 100% !important; height: 100% !important; object-fit: cover !important; border-radius: 50% !important; display: block !important; }',
-      'html.theme-light .sn-user-btn, html.theme-light #sn-user-btn {',
-      '  background: radial-gradient(circle at 35% 30%, #fff, #e8eef5) !important;',
-      '  border-color: rgba(11,107,203,0.55) !important; color: #0b6bcb !important;',
-      '}',
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -109,12 +94,9 @@
     btn.className = 'sn-user-btn';
     btn.title = 'Account · profile';
     btn.setAttribute('aria-label', 'User profile');
-    btn.innerHTML = '<span class="sn-user-init" aria-hidden="true">·</span>';
-    if (money.parentNode) {
-      money.parentNode.insertBefore(btn, money);
-    } else {
-      money.appendChild(btn);
-    }
+    btn.innerHTML = '<span aria-hidden="true">·</span>';
+    if (money.parentNode) money.parentNode.insertBefore(btn, money);
+    else money.appendChild(btn);
     btn.addEventListener('click', function () {
       try {
         if (global.SNAuth && SNAuth.openProfile) return SNAuth.openProfile();
@@ -143,7 +125,7 @@
       btn.innerHTML = '<img src="' + String(photo).replace(/"/g, '') + '" alt="" referrerpolicy="no-referrer" />';
     } else {
       btn.classList.remove('has-photo');
-      btn.innerHTML = '<span class="sn-user-init" aria-hidden="true">' + init + '</span>';
+      btn.innerHTML = '<span aria-hidden="true">' + init + '</span>';
     }
   }
 
@@ -161,15 +143,11 @@
     try {
       if (global.SNTasks && SNTasks.list) {
         var list = SNTasks.list() || [];
-        n += list.filter(function (t) {
-          return t && t.status !== 'done' && t.status !== 'cancelled';
-        }).length;
+        n += list.filter(function (t) { return t && t.status !== 'done' && t.status !== 'cancelled'; }).length;
       }
     } catch (_) {}
     try {
-      if (global.SNMeshOrders && SNMeshOrders.listLocal) {
-        n += (SNMeshOrders.listLocal() || []).length;
-      }
+      if (global.SNMeshOrders && SNMeshOrders.listLocal) n += (SNMeshOrders.listLocal() || []).length;
     } catch (_) {}
     try {
       if (global.SNOfferStack && SNOfferStack.peekCount) n += Number(SNOfferStack.peekCount()) || 0;
@@ -180,38 +158,9 @@
     else setRadarAct('low');
   }
 
-  function speedGlobe() {
-    try {
-      if (!global.SNGlobe) return;
-      var g = SNGlobe;
-      if (typeof g._setDamp === 'function') g._setDamp(0.92);
-      if (global._SNGlobeG) {
-        global._SNGlobeG.damp = 0.92;
-      }
-      if (g.getPhysics && !g.__speedPatched) {
-        g.__speedPatched = true;
-      }
-      if (global.SNCli && SNCli.log) {
-        if (!global.__snSpeedLogged) {
-          global.__snSpeedLogged = true;
-          SNCli.log('Chrome-fix · handles slim+glow · CLI visible · radar act · globe speed patch', 'dim');
-        }
-      }
-    } catch (_) {}
-  }
-
-  function forceGlobeFeel() {
-    try {
-      if (!global.SNGlobe || !global.SNGlobe.getPhysics) return;
-      if (global.SNGlobe.onFrame && !global.__snFeelHook) {
-        global.__snFeelHook = true;
-      }
-    } catch (_) {}
-  }
-
   function ensureWebrtcButton() {
     var ribbon = document.getElementById('sn-task-ribbon');
-    if (ribbon && !ribbon.querySelector('[data-act="call"], [data-act="webrtc"], .sn-call-btn')) {
+    if (ribbon && !ribbon.querySelector('[data-act="call"], .sn-call-btn')) {
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'sn-call-btn';
@@ -233,28 +182,94 @@
     }
   }
 
+  var boost = { vx: 0, vy: 0, lastX: 0, lastY: 0, down: false, hooked: false };
+  var TILT_MAX = 1.05;
+  var DAMP = 0.918;
+  var SCALE = 0.0024;
+
+  function applyBoostFrame() {
+    try {
+      if (!global.SNGlobe || !SNGlobe.getSpin || !SNGlobe.getTilt) return;
+      var phys = SNGlobe.getPhysics && SNGlobe.getPhysics();
+      if (phys && phys.dragging) { boost.vx = 0; boost.vy = 0; return; }
+      if (Math.abs(boost.vx) < 1e-5 && Math.abs(boost.vy) < 1e-5) return;
+      var spin = SNGlobe.getSpin();
+      var tilt = SNGlobe.getTilt();
+      if (!spin || !tilt) return;
+      spin.rotation.y += boost.vx;
+      var nx = tilt.rotation.x + boost.vy;
+      if (nx > TILT_MAX) nx = TILT_MAX;
+      if (nx < -TILT_MAX) nx = -TILT_MAX;
+      tilt.rotation.x = nx;
+      boost.vx *= DAMP;
+      boost.vy *= DAMP;
+      if (Math.abs(boost.vx) < 1e-5) boost.vx = 0;
+      if (Math.abs(boost.vy) < 1e-5) boost.vy = 0;
+    } catch (_) {}
+  }
+
+  function hookGlobeBoost() {
+    if (boost.hooked) return;
+    var canvas = document.querySelector('#globe canvas') || document.querySelector('#globe');
+    if (!canvas || !global.SNGlobe) return;
+    boost.hooked = true;
+    canvas.addEventListener('pointerdown', function (e) {
+      if (e.button != null && e.button !== 0) return;
+      boost.down = true;
+      boost.lastX = e.clientX;
+      boost.lastY = e.clientY;
+      boost.vx = 0;
+      boost.vy = 0;
+    }, { passive: true });
+    canvas.addEventListener('pointermove', function (e) {
+      if (!boost.down) return;
+      var dx = e.clientX - boost.lastX;
+      var dy = e.clientY - boost.lastY;
+      boost.lastX = e.clientX;
+      boost.lastY = e.clientY;
+      boost.vx = boost.vx * 0.55 + dx * SCALE * 0.45;
+      boost.vy = boost.vy * 0.55 + dy * SCALE * 0.38;
+    }, { passive: true });
+    function endPtr() {
+      if (!boost.down) return;
+      boost.down = false;
+      boost.vx *= 2.8;
+      boost.vy *= 2.4;
+      if (Math.abs(boost.vx) > 0.04) boost.vx = boost.vx > 0 ? 0.04 : -0.04;
+      if (Math.abs(boost.vy) > 0.028) boost.vy = boost.vy > 0 ? 0.028 : -0.028;
+    }
+    canvas.addEventListener('pointerup', endPtr, { passive: true });
+    canvas.addEventListener('pointercancel', endPtr, { passive: true });
+    if (SNGlobe.onFrame) SNGlobe.onFrame(applyBoostFrame);
+    else {
+      function raf() { applyBoostFrame(); requestAnimationFrame(raf); }
+      requestAnimationFrame(raf);
+    }
+    if (global.SNCli && SNCli.log && !global.__snSpeedLogged) {
+      global.__snSpeedLogged = true;
+      SNCli.log('Chrome-fix v2 · handles · CLI · radar · user · call · globe boost ON', 'dim');
+    }
+  }
+
   function boot() {
     injectCss();
     ensureUserBtn();
     paintUser();
     radarFromLive();
     ensureWebrtcButton();
-    speedGlobe();
-    forceGlobeFeel();
+    hookGlobeBoost();
     setTimeout(paintUser, 1200);
     setTimeout(paintUser, 3500);
     setTimeout(radarFromLive, 2000);
     setTimeout(radarFromLive, 8000);
     setTimeout(ensureWebrtcButton, 1500);
-    setTimeout(speedGlobe, 2500);
+    setTimeout(hookGlobeBoost, 2000);
+    setTimeout(hookGlobeBoost, 5000);
     setInterval(radarFromLive, 12000);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
   setTimeout(boot, 4000);
   setTimeout(boot, 9000);
 
