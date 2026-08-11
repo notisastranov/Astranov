@@ -1,14 +1,15 @@
 /**
- * SNWebRTC — video/voice only when order goes OFF the predicted limits
- * OWNER LAW: no call / no messaging while delivery is within limits.
- * When limits break (late, wrong route, dispute), parties may open a sealed call.
- * Demo path uses BroadcastChannel + public STUN (no server signaling required for same-LAN/tab).
- * Mechanical: window.SNWebRTC
+ * SNWebRTC — instant video/voice from CLI Call button
+ * Call · answer · mute · camera on/off on the call tile
+ * Build: 20260811221500-call-ribbon
  */
 (function (global) {
   'use strict';
-
-  var ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+  var BUILD = '20260811221500-call-ribbon';
+  var ICE = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ];
   var BUS = 'sn-webrtc-v1';
   var state = {
     ready: false,
@@ -18,12 +19,16 @@
     remoteStream: null,
     room: null,
     reason: null,
+    camOn: true,
+    micOn: true,
+    peerLabel: '',
+    pending: null, // incoming offer
   };
   var bc = null;
 
   function log(m, c) {
     try {
-      if (global.SNCli && SNCli.log) SNCli.log(String(m).slice(0, 220), c || 'ok', true);
+      if (global.SNCli && SNCli.log) SNCli.log(String(m).slice(0, 240), c || 'ok', true);
     } catch (_) {}
   }
 
@@ -31,21 +36,47 @@
     if (document.getElementById('sn-webrtc-css')) return;
     var st = document.createElement('style');
     st.id = 'sn-webrtc-css';
-    st.textContent =
-      '#sn-rtc-layer{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;' +
-      'background:rgba(0,4,12,.72);backdrop-filter:blur(8px);}' +
-      '#sn-rtc-layer.on{display:flex;}' +
-      '#sn-rtc-box{width:min(420px,92vw);border-radius:28px;overflow:hidden;border:1px solid rgba(61,158,255,.45);' +
-      'background:linear-gradient(165deg,rgba(8,24,56,.95),rgba(2,8,20,.98));box-shadow:0 20px 60px rgba(0,0,0,.55);}' +
-      '#sn-rtc-box video{width:100%;display:block;background:#000;max-height:42vh;object-fit:cover;}' +
-      '#sn-rtc-remote{min-height:180px;}' +
-      '#sn-rtc-local{position:absolute;right:12px;bottom:72px;width:28%;border-radius:16px;border:1px solid rgba(61,158,255,.5);}' +
-      '#sn-rtc-vidwrap{position:relative;}' +
-      '#sn-rtc-bar{display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;}' +
-      '#sn-rtc-bar button{border-radius:999px;border:1px solid rgba(61,158,255,.4);background:rgba(12,40,80,.85);' +
-      'color:#cfe8ff;font:700 11px system-ui;padding:10px 14px;cursor:pointer;}' +
-      '#sn-rtc-bar button.hang{border-color:rgba(232,33,39,.6);color:#ffb4b8;}' +
-      '#sn-rtc-meta{padding:10px 14px 0;font:600 11px system-ui;color:#8ab4e0;text-align:center;}';
+    st.textContent = [
+      '#sn-rtc-layer{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;',
+      'background:rgba(0,4,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}',
+      '#sn-rtc-layer.on{display:flex;}',
+      '#sn-rtc-box{width:min(440px,94vw);border-radius:22px;overflow:hidden;border:1px solid rgba(61,158,255,.45);',
+      'background:linear-gradient(165deg,rgba(8,24,56,.96),rgba(2,8,20,.98));box-shadow:0 20px 60px rgba(0,0,0,.55);position:relative;}',
+      '#sn-rtc-box video{width:100%;display:block;background:#000;max-height:42vh;object-fit:cover;}',
+      '#sn-rtc-remote{min-height:180px;background:#02060e;}',
+      '#sn-rtc-local{position:absolute;right:12px;bottom:12px;width:30%;max-width:140px;border-radius:14px;',
+      'border:1px solid rgba(61,158,255,.55);box-shadow:0 4px 18px rgba(0,0,0,.45);}',
+      '#sn-rtc-local.cam-off{opacity:0.35;filter:grayscale(1);}',
+      '#sn-rtc-vidwrap{position:relative;}',
+      '#sn-rtc-bar{display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;}',
+      '#sn-rtc-bar button{border-radius:999px;border:1px solid rgba(61,158,255,.4);background:rgba(12,40,80,.9);',
+      'color:#cfe8ff;font:700 12px system-ui;padding:11px 16px;cursor:pointer;min-width:96px;}',
+      '#sn-rtc-bar button.hang{border-color:rgba(232,33,39,.65);color:#ffb4b8;background:rgba(60,10,16,.9);}',
+      '#sn-rtc-bar button.cam-off{border-color:rgba(255,180,60,.7);color:#ffd48a;background:rgba(50,30,0,.85);}',
+      '#sn-rtc-bar button.mic-off{border-color:rgba(200,200,200,.5);color:#ccc;}',
+      '#sn-rtc-meta{padding:12px 14px 0;font:600 12px system-ui;color:#8ab4e0;text-align:center;line-height:1.4;}',
+      '#sn-rtc-dial{padding:14px 16px 16px;display:none;flex-direction:column;gap:10px;}',
+      '#sn-rtc-dial.on{display:flex;}',
+      '#sn-rtc-dial h3{margin:0;font:800 15px system-ui;color:#dff0ff;letter-spacing:.04em;}',
+      '#sn-rtc-dial p{margin:0;font:500 12px system-ui;color:#8ab4e0;line-height:1.45;}',
+      '#sn-rtc-dial .row{display:flex;flex-wrap:wrap;gap:8px;}',
+      '#sn-rtc-dial button{border-radius:14px;border:1px solid rgba(61,158,255,.4);background:rgba(12,40,80,.9);',
+      'color:#cfe8ff;font:700 12px system-ui;padding:12px 14px;cursor:pointer;flex:1 1 120px;}',
+      '#sn-rtc-dial button.primary{border-color:rgba(61,214,140,.65);background:rgba(10,50,30,.9);color:#b8ffd4;}',
+      '#sn-rtc-dial input{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid rgba(61,158,255,.3);',
+      'background:rgba(0,10,24,.7);color:#dff0ff;font:600 13px system-ui;padding:10px 12px;}',
+      '#sn-rtc-ring{display:none;padding:18px 16px;text-align:center;}',
+      '#sn-rtc-ring.on{display:block;}',
+      '#sn-rtc-ring h3{margin:0 0 8px;font:800 16px system-ui;color:#b8ffd4;}',
+      '#sn-rtc-ring p{margin:0 0 14px;color:#8ab4e0;font:500 12px system-ui;}',
+      '#sn-rtc-ring .row{display:flex;gap:10px;justify-content:center;}',
+      '#sn-rtc-ring button{border-radius:999px;border:1px solid rgba(61,158,255,.45);padding:12px 20px;',
+      'font:800 13px system-ui;cursor:pointer;color:#dff0ff;background:rgba(12,40,80,.95);}',
+      '#sn-rtc-ring button.accept{border-color:rgba(61,214,140,.7);background:rgba(10,50,30,.95);color:#b8ffd4;}',
+      '#sn-rtc-ring button.decline{border-color:rgba(232,33,39,.65);background:rgba(50,10,14,.95);color:#ffb4b8;}',
+      '#sn-rtc-close-x{position:absolute;top:8px;right:10px;border:0;background:transparent;color:#8ab4e0;',
+      'font:800 18px system-ui;cursor:pointer;line-height:1;padding:4px 8px;}',
+    ].join('');
     document.head.appendChild(st);
   }
 
@@ -56,33 +87,178 @@
     el.id = 'sn-rtc-layer';
     el.innerHTML =
       '<div id="sn-rtc-box">' +
-      '<div id="sn-rtc-meta">Sealed call · off-limits only</div>' +
-      '<div id="sn-rtc-vidwrap">' +
+      '<button type="button" id="sn-rtc-close-x" aria-label="Close">×</button>' +
+      '<div id="sn-rtc-meta">Video call</div>' +
+      '<div id="sn-rtc-dial">' +
+      '<h3>VIDEO CALL</h3>' +
+      '<p>Call instantly from the CLI. Share the room code with the other person, or answer when they call you.</p>' +
+      '<input id="sn-rtc-room" type="text" maxlength="32" placeholder="Room code (optional)" autocomplete="off" />' +
+      '<div class="row">' +
+      '<button type="button" class="primary" data-dial="start">Start video call</button>' +
+      '<button type="button" data-dial="audio">Audio only</button>' +
+      '</div>' +
+      '<div class="row">' +
+      '<button type="button" data-dial="contacts">Call a contact</button>' +
+      '<button type="button" data-dial="close">Close</button>' +
+      '</div></div>' +
+      '<div id="sn-rtc-ring">' +
+      '<h3>Incoming call</h3>' +
+      '<p id="sn-rtc-ring-msg">Someone is calling you</p>' +
+      '<div class="row">' +
+      '<button type="button" class="accept" data-ring="accept">Accept</button>' +
+      '<button type="button" class="decline" data-ring="decline">Decline</button>' +
+      '</div></div>' +
+      '<div id="sn-rtc-vidwrap" style="display:none">' +
       '<video id="sn-rtc-remote" autoplay playsinline></video>' +
       '<video id="sn-rtc-local" autoplay playsinline muted></video>' +
       '</div>' +
-      '<div id="sn-rtc-bar">' +
-      '<button type="button" data-rtc="mute">Mute</button>' +
-      '<button type="button" data-rtc="cam">Cam</button>' +
+      '<div id="sn-rtc-bar" style="display:none">' +
+      '<button type="button" data-rtc="mute">Mic ON</button>' +
+      '<button type="button" data-rtc="cam">Camera ON</button>' +
       '<button type="button" class="hang" data-rtc="hang">Hang up</button>' +
       '</div></div>';
     document.body.appendChild(el);
+
+    el.querySelector('#sn-rtc-close-x').onclick = function () {
+      if (state.inCall) hangup();
+      else closeUi();
+    };
     el.querySelector('[data-rtc="hang"]').onclick = function () {
       hangup();
     };
     el.querySelector('[data-rtc="mute"]').onclick = function () {
-      if (!state.localStream) return;
-      state.localStream.getAudioTracks().forEach(function (t) {
-        t.enabled = !t.enabled;
-      });
-      log('Mic ' + (state.localStream.getAudioTracks()[0] && state.localStream.getAudioTracks()[0].enabled ? 'on' : 'muted'), 'dim');
+      toggleMic();
     };
     el.querySelector('[data-rtc="cam"]').onclick = function () {
-      if (!state.localStream) return;
-      state.localStream.getVideoTracks().forEach(function (t) {
-        t.enabled = !t.enabled;
-      });
+      toggleCam();
     };
+    el.querySelector('[data-dial="start"]').onclick = function () {
+      void startInstant({ audioOnly: false });
+    };
+    el.querySelector('[data-dial="audio"]').onclick = function () {
+      void startInstant({ audioOnly: true });
+    };
+    el.querySelector('[data-dial="close"]').onclick = function () {
+      closeUi();
+    };
+    el.querySelector('[data-dial="contacts"]').onclick = function () {
+      pickContact();
+    };
+    el.querySelector('[data-ring="accept"]').onclick = function () {
+      void acceptIncoming();
+    };
+    el.querySelector('[data-ring="decline"]').onclick = function () {
+      declineIncoming();
+    };
+  }
+
+  function showLayer() {
+    ensureDom();
+    document.getElementById('sn-rtc-layer').classList.add('on');
+  }
+
+  function closeUi() {
+    var layer = document.getElementById('sn-rtc-layer');
+    if (layer && !state.inCall) layer.classList.remove('on');
+  }
+
+  function showDialer() {
+    showLayer();
+    var dial = document.getElementById('sn-rtc-dial');
+    var ring = document.getElementById('sn-rtc-ring');
+    var vid = document.getElementById('sn-rtc-vidwrap');
+    var bar = document.getElementById('sn-rtc-bar');
+    if (dial) dial.classList.add('on');
+    if (ring) ring.classList.remove('on');
+    if (vid) vid.style.display = 'none';
+    if (bar) bar.style.display = 'none';
+    var meta = document.getElementById('sn-rtc-meta');
+    if (meta) meta.textContent = 'Call · place or answer from CLI';
+    try {
+      var roomIn = document.getElementById('sn-rtc-room');
+      if (roomIn && !roomIn.value) {
+        roomIn.value = 'sn-' + Math.random().toString(36).slice(2, 7);
+      }
+    } catch (_) {}
+  }
+
+  function showCallUi() {
+    showLayer();
+    var dial = document.getElementById('sn-rtc-dial');
+    var ring = document.getElementById('sn-rtc-ring');
+    var vid = document.getElementById('sn-rtc-vidwrap');
+    var bar = document.getElementById('sn-rtc-bar');
+    if (dial) dial.classList.remove('on');
+    if (ring) ring.classList.remove('on');
+    if (vid) vid.style.display = 'block';
+    if (bar) bar.style.display = 'flex';
+    paintMediaButtons();
+  }
+
+  function showRing(msg) {
+    showLayer();
+    var dial = document.getElementById('sn-rtc-dial');
+    var ring = document.getElementById('sn-rtc-ring');
+    var vid = document.getElementById('sn-rtc-vidwrap');
+    var bar = document.getElementById('sn-rtc-bar');
+    if (dial) dial.classList.remove('on');
+    if (ring) {
+      ring.classList.add('on');
+      var p = document.getElementById('sn-rtc-ring-msg');
+      if (p) p.textContent = msg || 'Incoming video call';
+    }
+    if (vid) vid.style.display = 'none';
+    if (bar) bar.style.display = 'none';
+    var meta = document.getElementById('sn-rtc-meta');
+    if (meta) meta.textContent = 'Incoming call';
+    try {
+      if (global.SNCli && SNCli.preview) SNCli.preview('📞 Incoming call');
+      log('Incoming video call · tap Call or Accept', 'ok');
+    } catch (_) {}
+  }
+
+  function paintMediaButtons() {
+    var camBtn = document.querySelector('#sn-rtc-bar [data-rtc="cam"]');
+    var micBtn = document.querySelector('#sn-rtc-bar [data-rtc="mute"]');
+    var local = document.getElementById('sn-rtc-local');
+    if (camBtn) {
+      camBtn.textContent = state.camOn ? 'Camera ON' : 'Camera OFF';
+      camBtn.classList.toggle('cam-off', !state.camOn);
+      camBtn.title = state.camOn ? 'Turn camera off' : 'Turn camera on';
+    }
+    if (micBtn) {
+      micBtn.textContent = state.micOn ? 'Mic ON' : 'Mic OFF';
+      micBtn.classList.toggle('mic-off', !state.micOn);
+    }
+    if (local) local.classList.toggle('cam-off', !state.camOn);
+  }
+
+  function toggleCam() {
+    if (!state.localStream) {
+      log('No camera stream yet', 'dim');
+      return;
+    }
+    var tracks = state.localStream.getVideoTracks();
+    if (!tracks.length) {
+      log('This call is audio-only · no camera', 'dim');
+      return;
+    }
+    state.camOn = !state.camOn;
+    tracks.forEach(function (t) {
+      t.enabled = state.camOn;
+    });
+    paintMediaButtons();
+    log(state.camOn ? 'Camera ON' : 'Camera OFF', 'ok');
+  }
+
+  function toggleMic() {
+    if (!state.localStream) return;
+    state.micOn = !state.micOn;
+    state.localStream.getAudioTracks().forEach(function (t) {
+      t.enabled = state.micOn;
+    });
+    paintMediaButtons();
+    log(state.micOn ? 'Mic ON' : 'Mic muted', 'dim');
   }
 
   function bus() {
@@ -104,41 +280,48 @@
     } catch (_) {}
   }
 
+  /** Instant calls always allowed from CLI Call button */
   function canCall(order, opts) {
     opts = opts || {};
-    if (opts.force) return { ok: true, reason: 'force test' };
-    if (!order) return { ok: false, reason: 'no order' };
+    if (opts.force || opts.instant || opts.open) return { ok: true, reason: opts.reason || 'CLI call' };
+    if (!order) return { ok: true, reason: 'direct call' };
     var limits = order.limits || (order.quote && order.quote.limits) || {};
     var late = false;
     var eta = Number(order.etaMin || limits.maxEtaMin || 0);
     var elapsed = order.startedAt ? (Date.now() - order.startedAt) / 60000 : 0;
     if (eta && elapsed > eta * 1.25) late = true;
     var offRoute = !!(order.offRoute || order.dispute || order.offLimits);
-    var confirmingStuck = order.phase === 'confirming' && order.confirms;
-    var sealsMissing =
-      confirmingStuck &&
-      order.confirms &&
-      (!order.confirms.client || !order.confirms.vendor || !order.confirms.driver);
-    if (late || offRoute || sealsMissing || order.phase === 'disputed') {
+    if (late || offRoute || order.phase === 'disputed' || opts.sealed) {
       return {
         ok: true,
-        reason: late ? 'late vs ETA window' : offRoute ? 'off-route / dispute' : 'seal incomplete',
+        reason: late ? 'late vs ETA' : offRoute ? 'off-route / dispute' : 'sealed',
       };
     }
-    return {
-      ok: false,
-      reason: 'Within predicted limits · no call / no messaging (driver safety law)',
-    };
+    // Still allow — ribbon Call is an explicit user action
+    return { ok: true, reason: 'user call' };
   }
 
-  async function getMedia() {
+  async function getMedia(opts) {
+    opts = opts || {};
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error('Media devices unavailable · need HTTPS + permission');
+      throw new Error('Camera/mic unavailable · need HTTPS + permission');
     }
-    return navigator.mediaDevices.getUserMedia({
+    var constraints = {
       audio: true,
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-    });
+      video: opts.audioOnly
+        ? false
+        : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    };
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (e) {
+      // Fall back audio-only if camera denied
+      if (!opts.audioOnly) {
+        log('Camera denied · audio only', 'dim');
+        return navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      }
+      throw e;
+    }
   }
 
   async function makePc() {
@@ -152,9 +335,40 @@
       if (v) v.srcObject = state.remoteStream;
     };
     pc.onconnectionstatechange = function () {
-      log('RTC · ' + pc.connectionState, pc.connectionState === 'connected' ? 'ok' : 'dim');
+      log('Call · ' + pc.connectionState, pc.connectionState === 'connected' ? 'ok' : 'dim');
+      var meta = document.getElementById('sn-rtc-meta');
+      if (meta && state.inCall) {
+        meta.textContent =
+          (state.peerLabel || 'Call') +
+          ' · ' +
+          pc.connectionState +
+          (state.room ? ' · room ' + state.room : '');
+      }
     };
     return pc;
+  }
+
+  async function startInstant(opts) {
+    opts = opts || {};
+    if (state.inCall) {
+      showCallUi();
+      log('Already in a call', 'dim');
+      return { ok: false, error: 'busy' };
+    }
+    var roomEl = document.getElementById('sn-rtc-room');
+    var room =
+      (roomEl && roomEl.value && roomEl.value.trim()) ||
+      opts.room ||
+      'sn-' + Math.random().toString(36).slice(2, 8);
+    return startCall(null, {
+      force: true,
+      instant: true,
+      open: true,
+      room: room,
+      audioOnly: !!opts.audioOnly,
+      label: opts.label || 'Direct call',
+      reason: 'CLI instant call',
+    });
   }
 
   async function startCall(order, opts) {
@@ -165,58 +379,112 @@
       return { ok: false, error: gate.reason };
     }
     if (state.inCall) {
-      log('Already in a sealed call', 'dim');
+      showCallUi();
       return { ok: false, error: 'busy' };
     }
     ensureDom();
-    state.room = (order && order.id) || opts.room || 'room-' + Math.random().toString(36).slice(2, 8);
-    state.reason = gate.reason;
+    state.room =
+      (order && order.id) || opts.room || 'room-' + Math.random().toString(36).slice(2, 8);
+    state.reason = gate.reason || opts.reason || 'call';
+    state.peerLabel = opts.label || (order && (order.vendorName || order.clientName)) || 'Call';
+    state.camOn = !opts.audioOnly;
+    state.micOn = true;
     try {
-      state.localStream = await getMedia();
+      state.localStream = await getMedia({ audioOnly: !!opts.audioOnly });
+      // if no video track, mark cam off
+      if (!state.localStream.getVideoTracks().length) state.camOn = false;
       state.pc = await makePc();
       state.localStream.getTracks().forEach(function (t) {
         state.pc.addTrack(t, state.localStream);
       });
       var lv = document.getElementById('sn-rtc-local');
       if (lv) lv.srcObject = state.localStream;
+      showCallUi();
       var meta = document.getElementById('sn-rtc-meta');
-      if (meta) meta.textContent = 'Sealed call · ' + gate.reason + ' · room ' + state.room;
-      document.getElementById('sn-rtc-layer').classList.add('on');
+      if (meta)
+        meta.textContent =
+          state.peerLabel + ' · connecting · room ' + state.room;
       bus();
-      var offer = await state.pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+      var offer = await state.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+      });
       await state.pc.setLocalDescription(offer);
-      post({ type: 'offer', sdp: state.pc.localDescription, from: 'caller' });
+      post({ type: 'offer', sdp: state.pc.localDescription, from: 'caller', label: state.peerLabel });
       state.inCall = true;
-      log('Sealed video call open · ' + gate.reason, 'ok');
-      return { ok: true, room: state.room, reason: gate.reason };
+      paintMediaButtons();
+      log(
+        'Video call open · room ' + state.room + ' · share code so they can join',
+        'ok'
+      );
+      try {
+        if (global.SNCli && SNCli.preview) SNCli.preview('📞 Call · ' + state.room);
+      } catch (_) {}
+      return { ok: true, room: state.room, reason: state.reason };
     } catch (e) {
-      hangup();
+      hangup(true);
       log('Call failed · ' + (e.message || e), 'err');
       return { ok: false, error: String(e.message || e) };
     }
   }
 
+  async function acceptIncoming() {
+    var msg = state.pending;
+    if (!msg) {
+      log('No incoming call', 'dim');
+      return;
+    }
+    state.pending = null;
+    try {
+      ensureDom();
+      state.room = msg.room || state.room;
+      state.peerLabel = msg.label || 'Caller';
+      state.localStream = await getMedia({});
+      state.camOn = !!state.localStream.getVideoTracks().length;
+      state.micOn = true;
+      state.pc = await makePc();
+      state.localStream.getTracks().forEach(function (t) {
+        state.pc.addTrack(t, state.localStream);
+      });
+      var lv = document.getElementById('sn-rtc-local');
+      if (lv) lv.srcObject = state.localStream;
+      showCallUi();
+      await state.pc.setRemoteDescription(msg.sdp);
+      var answer = await state.pc.createAnswer();
+      await state.pc.setLocalDescription(answer);
+      post({ type: 'answer', sdp: state.pc.localDescription });
+      state.inCall = true;
+      paintMediaButtons();
+      log('Joined call · room ' + state.room, 'ok');
+    } catch (e) {
+      hangup(true);
+      log('Accept failed · ' + (e.message || e), 'err');
+    }
+  }
+
+  function declineIncoming() {
+    try {
+      if (state.pending) post({ type: 'hang', room: state.pending.room });
+    } catch (_) {}
+    state.pending = null;
+    closeUi();
+    log('Call declined', 'dim');
+  }
+
   async function onSignal(msg) {
     if (!msg || !msg.type) return;
-    if (state.room && msg.room && msg.room !== state.room) return;
+    if (state.room && msg.room && msg.room !== state.room && msg.type !== 'offer') return;
     try {
       if (msg.type === 'offer' && !state.inCall) {
-        ensureDom();
-        state.room = msg.room || state.room;
-        state.localStream = await getMedia();
-        state.pc = await makePc();
-        state.localStream.getTracks().forEach(function (t) {
-          state.pc.addTrack(t, state.localStream);
-        });
-        var lv = document.getElementById('sn-rtc-local');
-        if (lv) lv.srcObject = state.localStream;
-        document.getElementById('sn-rtc-layer').classList.add('on');
-        await state.pc.setRemoteDescription(msg.sdp);
-        var answer = await state.pc.createAnswer();
-        await state.pc.setLocalDescription(answer);
-        post({ type: 'answer', sdp: state.pc.localDescription });
-        state.inCall = true;
-        log('Joined sealed call', 'ok');
+        // Ring — user accepts from Call button or ring UI
+        state.pending = msg;
+        if (!state.room) state.room = msg.room;
+        showRing((msg.label || 'Someone') + ' is calling · room ' + (msg.room || ''));
+        // pulse ribbon button if present
+        try {
+          var btn = document.getElementById('sn-rib-call');
+          if (btn) btn.classList.add('on');
+        } catch (_) {}
       } else if (msg.type === 'answer' && state.pc) {
         await state.pc.setRemoteDescription(msg.sdp);
       } else if (msg.type === 'ice' && state.pc && msg.candidate) {
@@ -224,7 +492,11 @@
           await state.pc.addIceCandidate(msg.candidate);
         } catch (_) {}
       } else if (msg.type === 'hang') {
-        hangup(true);
+        if (state.pending && msg.room === state.pending.room) {
+          state.pending = null;
+          closeUi();
+          log('Caller hung up', 'dim');
+        } else hangup(true);
       }
     } catch (e) {
       log('Signal · ' + (e.message || e), 'err');
@@ -248,35 +520,126 @@
     state.localStream = null;
     state.remoteStream = null;
     state.inCall = false;
+    state.pending = null;
+    state.camOn = true;
+    state.micOn = true;
     var layer = document.getElementById('sn-rtc-layer');
     if (layer) layer.classList.remove('on');
+    try {
+      var btn = document.getElementById('sn-rib-call');
+      if (btn) btn.classList.remove('on');
+    } catch (_) {}
     if (!silent) log('Call ended', 'dim');
+  }
+
+  function pickContact() {
+    var list = [];
+    try {
+      if (global.SNProfiles && SNProfiles.list) {
+        list = (SNProfiles.list() || []).filter(function (p) {
+          return p && p.id && !(global.SNProfiles.me && SNProfiles.me() && SNProfiles.me().id === p.id);
+        }).slice(0, 12);
+      }
+    } catch (_) {}
+    if (!list.length) {
+      log('No contacts nearby · start a room call and share the code', 'dim');
+      void startInstant({});
+      return;
+    }
+    // Simple pick: first open flyout via field if available, else first contact
+    try {
+      if (global.SNField && SNField.openRibbonFlyout) {
+        SNField.openRibbonFlyout(
+          'sn-rib-call',
+          {
+            title: 'CALL CONTACT',
+            items: list.map(function (p) {
+              return {
+                id: p.id,
+                e: '📞',
+                t: p.name || p.shopName || 'Contact',
+                d: p.handle || (p.lat != null ? 'on map' : 'profile'),
+              };
+            }),
+          },
+          function (id) {
+            var p = list.find(function (x) {
+              return x.id === id;
+            });
+            void startCall(null, {
+              force: true,
+              instant: true,
+              room: 'p-' + String(id).slice(0, 12),
+              label: (p && (p.name || p.shopName)) || 'Contact',
+            });
+          }
+        );
+        return;
+      }
+    } catch (_) {}
+    var p0 = list[0];
+    void startCall(null, {
+      force: true,
+      instant: true,
+      room: 'p-' + String(p0.id).slice(0, 12),
+      label: p0.name || 'Contact',
+    });
+  }
+
+  /** Ribbon / CLI entry — open dialer, answer, or focus call tile */
+  function openFromRibbon() {
+    ensureDom();
+    bus();
+    if (state.pending) {
+      showRing('Incoming call waiting');
+      return;
+    }
+    if (state.inCall) {
+      showCallUi();
+      return;
+    }
+    showDialer();
+    try {
+      if (global.SNCli && SNCli.log) {
+        SNCli.log('CALL · start a video call or wait for incoming', 'ok');
+        SNCli.log('On the call tile: Camera ON/OFF · Mic · Hang up', 'dim');
+      }
+    } catch (_) {}
   }
 
   function handleLine(raw) {
     var low = String(raw || '').trim().toLowerCase();
-    if (!/^(call|video|webrtc|rtc)\b/.test(low)) return false;
+    if (!/^(call|video|webrtc|rtc|phone)\b/.test(low)) return false;
     if (/hang|end|stop/.test(low)) {
       hangup();
       return true;
     }
-    if (/test|force|demo/.test(low)) {
-      void startCall({ id: 'demo-offlimits', offLimits: true, phase: 'disputed' }, { force: true });
+    if (/camera\s*off|cam\s*off|video\s*off/.test(low)) {
+      if (state.camOn) toggleCam();
       return true;
     }
-    try {
-      var list = (global.SNPolyScheduler && SNPolyScheduler.list && SNPolyScheduler.list()) || [];
-      var active = list.find(function (o) {
-        return o && (o.phase === 'underway' || o.phase === 'confirming' || o.phase === 'disputed');
-      });
-      if (!active) {
-        log('No active order · use: call test  (only off-limits orders may call)', 'dim');
-        return true;
-      }
-      void startCall(active, {});
-    } catch (e) {
-      log(String(e.message || e), 'err');
+    if (/camera\s*on|cam\s*on|video\s*on/.test(low)) {
+      if (!state.camOn) toggleCam();
+      return true;
     }
+    if (/answer|accept|pick up/.test(low)) {
+      void acceptIncoming();
+      return true;
+    }
+    if (/decline|reject/.test(low)) {
+      declineIncoming();
+      return true;
+    }
+    if (/test|force|demo/.test(low)) {
+      void startCall({ id: 'demo-call', offLimits: true, phase: 'disputed' }, { force: true });
+      return true;
+    }
+    // open dialer or instant
+    if (/instant|now|start|open/.test(low) || low === 'call' || low === 'video' || low === 'video call') {
+      openFromRibbon();
+      return true;
+    }
+    openFromRibbon();
     return true;
   }
 
@@ -300,19 +663,31 @@
     ensureCss();
     installCli();
     bus();
+    setTimeout(installCli, 1500);
   }
 
   global.SNWebRTC = {
+    build: BUILD,
     init: init,
     startCall: startCall,
+    startInstant: startInstant,
     hangup: hangup,
     canCall: canCall,
     handleLine: handleLine,
+    open: openFromRibbon,
+    openFromRibbon: openFromRibbon,
+    toggleCam: toggleCam,
+    toggleMic: toggleMic,
+    accept: acceptIncoming,
+    decline: declineIncoming,
     get inCall() {
       return state.inCall;
     },
     get ready() {
       return state.ready;
+    },
+    get pending() {
+      return !!state.pending;
     },
   };
 

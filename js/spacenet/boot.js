@@ -318,6 +318,7 @@
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
+    '/js/spacenet/webrtc.js',
   ];
 
   // Nothing else preloaded — full mode opt-in only
@@ -349,6 +350,9 @@
     field: { src: '/js/spacenet/field.js', global: 'SNField' },
     home: { src: '/js/spacenet/home.js', global: 'SNHome' },
     helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
+    webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+    call: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+    video: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
     delivery: { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
     'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
     freemind: { src: '/js/spacenet/free-ai.js', global: 'SNAstranovMind' },
@@ -395,6 +399,7 @@
     [
       function () { if (window.SNProfiles && SNProfiles.me) SNProfiles.me(); },
       function () { if (window.SNCli && SNCli.init) SNCli.init(); },
+      function () { if (window.SNWebRTC && SNWebRTC.init) SNWebRTC.init(); },
       function () { if (window.SNUi && SNUi.init) SNUi.init(); },
     ].forEach(function (fn) {
       try { fn(); } catch (e) { console.warn('[Astranov] shell init', e); }

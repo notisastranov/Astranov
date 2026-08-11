@@ -831,6 +831,8 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12h12"/><path d="M12.5 6.5 18.5 12l-6 5.5"/><path d="M4.5 8.5v7" opacity=".4"/></svg>',
     polygon:
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.2 9.1 17.1 18.8H6.9L3.8 9.1 12 3.2Z"/><path d="M12 8.2v5.2M9.6 11.2h4.8" opacity=".55"/></svg>',
+    call:
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 5.5h3.2l1 3.2-2 1.2a11 11 0 0 0 4.4 4.4l1.2-2 3.2 1v3.2c0 .9-.7 1.6-1.6 1.6C10.2 18.1 5.9 13.8 5.9 7.1c0-.9.7-1.6 1.6-1.6Z"/><circle cx="17.5" cy="7" r="2.2" opacity=".75"/><path d="M16.2 5.2 18.8 7.8" opacity=".55"/></svg>',
   };
   var RIBBON_CORE = [
     { act: 'locate', icon: ICO.locate, emoji: '📍', text: 'Locate', title: 'Locate me', id: 'sn-rib-locate' },
@@ -843,6 +845,14 @@
       id: 'sn-rib-poly',
     },
     { act: 'user', icon: ICO.user, emoji: '👤', text: 'User', title: 'Sign in / profile', id: 'sn-rib-user' },
+    {
+      act: 'call',
+      icon: ICO.call,
+      emoji: '📹',
+      text: 'Call',
+      title: 'Video call · place or answer instantly',
+      id: 'sn-rib-call',
+    },
     { act: 'add', icon: ICO.add, emoji: '➕', text: 'Add', title: 'Add', id: 'sn-rib-add' },
     { act: 'layers', icon: ICO.layers, emoji: '🗺', text: 'Layers', title: 'Layers', id: 'sn-rib-layers' },
     { act: 'handsfree', icon: ICO.ai, emoji: '🎧', text: 'AI', title: 'AI listening', id: 'sn-rib-hf' },
@@ -1492,6 +1502,42 @@
       }
       return;
     }
+    // 📹 Call = first-class CLI ribbon · instant place / answer
+    if (act === 'call' || act === 'video' || act === 'webrtc' || act === 'phone') {
+      try {
+        function openCall() {
+          if (g.SNWebRTC && (SNWebRTC.openFromRibbon || SNWebRTC.open)) {
+            (SNWebRTC.openFromRibbon || SNWebRTC.open)();
+            return true;
+          }
+          return false;
+        }
+        if (!openCall()) {
+          // Lazy-load webrtc module then open
+          var src = '/js/spacenet/webrtc.js?v=20260811221500';
+          var s = document.createElement('script');
+          s.src = src;
+          s.onload = function () {
+            try {
+              if (g.SNWebRTC && SNWebRTC.init) SNWebRTC.init();
+              openCall();
+            } catch (e2) {
+              console.error('[SNField] call load', e2);
+            }
+          };
+          s.onerror = function () {
+            try {
+              if (g.SNCli && SNCli.run) void SNCli.run('call');
+              else if (g.SNCli && SNCli.log) SNCli.log('Call module missing · hard refresh', 'err');
+            } catch (_) {}
+          };
+          document.head.appendChild(s);
+        }
+      } catch (eCall) {
+        console.error('[SNField] call', eCall);
+      }
+      return;
+    }
     // ➕ Add → upward menu ONLY
     if (act === 'place' || act === 'add' || act === 'target' || act === 'pin') {
       openRibbonFlyout(
@@ -1501,7 +1547,7 @@
           items: [
             { id: 'pin', e: 'PIN', t: 'Pin', d: 'Single location on the map' },
             { id: 'targets', e: 'POLY', t: 'Polygon / targets', d: 'Multi points · measure land size' },
-            { id: 'video', e: 'VID', t: 'Video call', d: 'Live video call request' },
+            /* video call is on main ribbon as Call */
             { id: 'vendor', e: 'SHOP', t: 'Vendor', d: 'List shop · sell in S' },
             { id: 'social', e: 'CAST', t: 'Social video post', d: 'Post video to the field' },
             { id: 'emergency', e: 'SOS', t: 'Emergency help', d: 'Urgent help on the map' },
@@ -1614,7 +1660,7 @@
     bar.hidden = false;
     bar.removeAttribute('hidden');
     bar.setAttribute('aria-hidden', 'false');
-    bar.setAttribute('aria-label', 'CLI shortcuts: locate polygon user add layers AI send');
+    bar.setAttribute('aria-label', 'CLI shortcuts: locate polygon user call add layers AI send');
     var h = '';
     var i;
     var signedIn = !!(g.SNAuth && SNAuth.user);
