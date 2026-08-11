@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet</title>
 <meta name="theme-color" content="#000105" />
-<meta name="astranov-build" content="20260811124500-bootstrap-full" />
+<meta name="astranov-build" content="20260811130000-chrome-fix-boot" />
 <style>
 html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.4 system-ui,sans-serif}
 #boot-msg{position:fixed;inset:0;display:grid;place-items:center;z-index:9999}
@@ -25,14 +25,30 @@ html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.
       document.open();
       document.write(html);
       document.close();
+      setTimeout(function () {
+        try {
+          var s = document.createElement('script');
+          s.src = '/js/spacenet/chrome-fix.js?v=20260811130000';
+          (document.head || document.documentElement).appendChild(s);
+        } catch (_) {}
+      }, 800);
+      setTimeout(function () {
+        try {
+          var s2 = document.createElement('script');
+          s2.src = '/js/spacenet/chrome-fix.js?v=20260811130000';
+          (document.head || document.documentElement).appendChild(s2);
+        } catch (_) {}
+      }, 2800);
     } catch (e) {
-      document.getElementById('boot-msg').textContent = 'Restore failed · hard refresh';
+      var el = document.getElementById('boot-msg');
+      if (el) el.textContent = 'Restore failed · hard refresh';
       console.error(e);
     }
   }
   function tryFetch(i) {
     if (i >= URLS.length) {
-      document.getElementById('boot-msg').textContent = 'Could not load index · check network';
+      var el = document.getElementById('boot-msg');
+      if (el) el.textContent = 'Could not load index · check network';
       return;
     }
     fetch(URLS[i], { cache: 'no-store' })
