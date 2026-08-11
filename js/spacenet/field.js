@@ -1630,39 +1630,38 @@
       );
       return;
     }
-    // AI ribbon = wake Astranov Mind + optional listen (beeps muted)
+    // AI ribbon = ALWAYS wake Silver hardwire (never silent no-op)
     if (act === 'handsfree') {
       try {
-        if (g.SNChromeHelper && SNChromeHelper.activate) {
-          // Silver is the face of the AI
+        var woke = false;
+        if (g.SNChromeHelper && typeof SNChromeHelper.activate === 'function') {
           SNChromeHelper.activate();
-        } else if (g.SNAi) {
-          if (SNAi.listeningOn) SNAi.listeningOn();
-          if (SNAi.say)
-            SNAi.say(
-              'Astranov Mind online. Type in the CLI or tap Silver. Collective memory on device · Grok-class when connected.',
-              'ok'
-            );
+          woke = true;
+        } else if (g.SNSilver && typeof SNSilver.activate === 'function') {
+          SNSilver.activate();
+          woke = true;
         }
-        // Voice optional — only toggle if already wanted; prefer text to avoid Android beeps
-        if (g.SNCli && SNCli.toggleHandsfree && g.__SN_FORCE_VOICE) {
-          SNCli.toggleHandsfree();
-        } else {
-          var panel = document.getElementById('panel');
-          if (panel) {
-            panel.classList.remove('collapsed');
-            panel.classList.add('mid');
-          }
-          var inp = document.getElementById('cli-in');
-          if (inp) {
-            inp.focus({ preventScroll: true });
-            inp.placeholder = 'Talk to Astranov Mind…';
-          }
-          if (g.SNCli && SNCli.log)
-            SNCli.log('AI ready · type here · tap Silver · voice: say "voice on"', 'ok');
+        if (!woke) {
+          // load helper then activate
+          var s = document.createElement('script');
+          s.src = '/js/spacenet/chrome-helper.js?v=20260811224500';
+          s.onload = function () {
+            try {
+              if (g.SNChromeHelper && SNChromeHelper.activate) SNChromeHelper.activate();
+            } catch (e2) {
+              console.error(e2);
+            }
+          };
+          document.head.appendChild(s);
+          if (g.SNCli && SNCli.log) SNCli.log('Loading Silver AI…', 'dim');
         }
+        if (g.SNCli && SNCli.log && woke)
+          SNCli.log('AI · Silver active · type in CLI', 'ok');
       } catch (e) {
         console.error('[SNField] ai', e);
+        try {
+          if (g.SNCli && SNCli.log) SNCli.log('AI button error · ' + (e.message || e), 'err');
+        } catch (_) {}
       }
       return;
     }
