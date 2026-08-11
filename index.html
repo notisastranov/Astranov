@@ -3,16 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Astranov SpaceNet</title>
+<title>Astranov SpaceNet OS</title>
 <meta name="theme-color" content="#000105" />
-<meta name="astranov-build" content="20260811134500-daynight-glass" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="SpaceNet" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon.png" />
+<meta name="astranov-build" content="20260811140000-install-os" />
 <style>
 html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.4 system-ui,sans-serif}
 #boot-msg{position:fixed;inset:0;display:grid;place-items:center;z-index:9999}
 </style>
 </head>
 <body>
-<div id="boot-msg">ASTRANOV · loading…</div>
+<div id="boot-msg">ASTRANOV · SpaceNet OS…</div>
 <script>
 (function () {
   var URLS = [
@@ -27,19 +32,18 @@ html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.
       (document.head || document.documentElement).appendChild(s);
     } catch (_) {}
   }
+  function injectAll() {
+    inject('/js/spacenet/chrome-fix.js?v=20260811140000');
+    inject('/js/spacenet/chrome-daynight.js?v=20260811140000');
+    inject('/js/spacenet/chrome-install.js?v=20260811140000');
+  }
   function go(html) {
     try {
       document.open();
       document.write(html);
       document.close();
-      setTimeout(function () {
-        inject('/js/spacenet/chrome-fix.js?v=20260811134500');
-        inject('/js/spacenet/chrome-daynight.js?v=20260811134500');
-      }, 800);
-      setTimeout(function () {
-        inject('/js/spacenet/chrome-fix.js?v=20260811134500');
-        inject('/js/spacenet/chrome-daynight.js?v=20260811134500');
-      }, 2800);
+      setTimeout(injectAll, 800);
+      setTimeout(injectAll, 2800);
     } catch (e) {
       var el = document.getElementById('boot-msg');
       if (el) el.textContent = 'Restore failed · hard refresh';
@@ -63,6 +67,9 @@ html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.
       })
       .catch(function () { tryFetch(i + 1); });
   }
+  try {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () {});
+  } catch (_) {}
   tryFetch(0);
 })();
 </script>

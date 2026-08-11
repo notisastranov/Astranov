@@ -1,19 +1,19 @@
 {
-  "name": "Astranov",
-  "short_name": "Astranov",
-  "description": "Astranov · Real-Earth OS · Astranov GrokBot partnership helper. Globe to street · order · drive · ETA.",
+  "name": "Astranov SpaceNet OS",
+  "short_name": "SpaceNet",
+  "description": "SpaceNet browser OS · globe to street · search · order · drive · install on device.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#000000",
-  "theme_color": "#000000",
+  "background_color": "#000105",
+  "theme_color": "#000105",
   "categories": ["navigation", "social", "utilities", "productivity"],
   "icons": [
-    { "src": "/assets/brand/grokbot-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/assets/brand/grokbot-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "lang": "en"
 }
