@@ -1,4 +1,4 @@
-// === PERF LAZY — defer 574KB pack; never freeze first paint ===
+// === PERF LAZY + TURBO — defer 574KB pack · adaptive boot · no duplicate RAF load ===
 // AI HANDOFF: astranov-continuity.js → features.perfLazyBoot
 (function perfLazyBoot() {
   const LM = window.LazyModules;
@@ -8,19 +8,17 @@
   const mobile = () => /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
     || (navigator.maxTouchPoints > 1 && window.innerWidth < 960);
 
-  if (mobile()) window._globePerfLite = true;
-
-  // Long defaults so boot never races the 574KB pack
   const delayMs = () => {
-    const base = window.SlumberManager?.deferredDelay?.() ?? 2800;
-    return mobile() ? Math.max(base, 7000) : Math.max(base, 4000);
+    const base = window.SlumberManager?.deferredDelay?.() ?? 1400;
+    // Longer defer on phone so first interactions stay smooth
+    return mobile() ? Math.max(base, 6500) : Math.max(base, 1800);
   };
   const bootAt = () => window._bootAt || Date.now();
 
   if (!window._lazyUserReady) {
     const mark = () => { window._lazyUserReady = true; };
     ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev => {
-      window.addEventListener(ev, mark, { passive: true, once: false });
+      window.addEventListener(ev, mark, { passive: true });
     });
   }
 
@@ -34,15 +32,10 @@
 
   function deferRun(fn) {
     const w = shouldDefer() ? waitMs() : 0;
-    if (w <= 0) {
-      return new Promise(resolve => {
-        // Always yield a macrotask so boot/animation frames stay free
-        setTimeout(() => Promise.resolve().then(fn).then(resolve).catch(() => resolve()), 0);
-      });
-    }
+    if (w <= 0) return Promise.resolve().then(fn);
     return new Promise(resolve => {
-      const go = () => Promise.resolve().then(fn).then(resolve).catch(() => resolve());
-      if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: w + 1200 });
+      const go = () => Promise.resolve().then(fn).then(resolve);
+      if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: w + 800 });
       else setTimeout(go, w);
     });
   }
@@ -59,16 +52,12 @@
   LM.whenReady = function(fn) {
     if (window._deferredBootDone) return Promise.resolve().then(() => fn?.());
     return deferRun(() => origLoad().then(() => {
-      if (!window._deferredBootDone && window.DeferredBoot?.run) {
-        // Yield before running huge DeferredBoot so UI stays responsive
-        return new Promise(res => setTimeout(() => {
-          try { window.DeferredBoot.run(); } catch (e) { console.error('[DeferredBoot]', e); }
-          res(fn?.());
-        }, 30));
-      }
+      if (!window._deferredBootDone && window.DeferredBoot?.run) window.DeferredBoot.run();
       return fn?.();
     }).catch((err) => {
       console.error('[perf-lazy] deferred load failed', err);
+      window.MissionSupportReporter?.recordProblem?.('deferred_load', String(err?.message || err));
+      window.GlobeDeck?.setPreview?.('Fleet pack loading — tap or retry refresh');
       return fn?.();
     }));
   };
@@ -84,13 +73,13 @@
   if (origSchedule) {
     LM.schedule = function() {
       if (shouldDefer()) {
-        const w = Math.max(waitMs(), mobile() ? 8000 : 5000);
+        const w = Math.max(waitMs(), mobile() ? 5000 : 2200);
         setTimeout(() => {
-          if (window._lazyUserReady || Date.now() - bootAt() > w) origSchedule();
+          if (window._lazyUserReady || window._deferredBootDone) origSchedule();
         }, w);
         return;
       }
-      setTimeout(() => origSchedule(), 50);
+      origSchedule();
     };
   }
 
@@ -110,22 +99,20 @@
     };
   }
 
-  function capDprHard() {
+  function capMobileDpr() {
     const r = window.renderer;
-    if (!r?.setPixelRatio) return;
-    const cap = mobile()
-      ? Math.min(window.SlumberManager?.quality?.pixelRatio ?? 0.85, 0.9)
-      : Math.min(window.SlumberManager?.quality?.pixelRatio ?? 1.25, 1.25);
+    if (!r?.setPixelRatio || r._perfDprCapped) return;
+    if (!mobile()) return;
+    r._perfDprCapped = true;
+    const cap = Math.min(window.SlumberManager?.quality?.pixelRatio ?? 0.75, 0.85);
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
   }
 
-  setTimeout(capDprHard, 100);
   let hookN = 0;
   const hookIv = setInterval(() => {
     hookN++;
     wrapBrainBoot();
-    if (mobile()) window._globePerfLite = true;
-    if (window.SlumberManager?._inited) capDprHard();
-    if (hookN > 15) clearInterval(hookIv);
-  }, 400);
+    if (window.SlumberManager?._inited) capMobileDpr();
+    if (hookN > 25) clearInterval(hookIv);
+  }, 200);
 })();
