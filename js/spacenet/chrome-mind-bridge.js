@@ -1,19 +1,15 @@
 /**
- * SNMindBridge — in-app conversation + access tiers
- * =================================================
- * Talk inside SpaceNet to improve the OS through use.
- * Not money-only. Time and verification count as contribution.
+ * SNMindBridge — always-on collective presence inside SpaceNet
+ * ============================================================
+ * No typed mode switch. Natural language is the default.
+ * Reserved OS verbs still work. Everything else is conversation.
+ * Development happens from usage, not from external babysitting.
  *
- * Tiers:
- *  - everyone: local collective mind, teach/train, ambient field, no key
- *  - verified: optional deep path through owner backend (key never in client)
- *  - owner: full mesh + can set bridge endpoint
- *
- * Build: 20260812040000-mind-bridge
+ * Build: 20260812042000-always-on
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812040000-mind-bridge';
+  var BUILD = '20260812042000-always-on';
   if (global.__SN_MIND_BRIDGE === BUILD) return;
   global.__SN_MIND_BRIDGE = BUILD;
 
@@ -22,19 +18,22 @@
   var USAGE_KEY = 'sn:mind-usage-v1';
   var HISTORY_KEY = 'sn:mind-history-v1';
 
+  var RESERVED =
+    /^(locate|gps|power(\s+on|\s+off)?|call|video|hang(\s*up)?|polygon|poly|global|city|map|shops|layers|send|market|offer|offers|install|login|user|cancel|clear|drive|pilot|youtube|yt|bridge|radar|routes?|simulate|accept|decline|mute|cam|button|ribbon)\b/i;
+
   var S = {
     ready: false,
-    talking: false,
+    listening: true,
     history: [],
     cfg: {
       bridgeUrl: '',
       publicFree: true,
-      dailyFreeTurns: 40,
-      verifiedDailyTurns: 200,
+      dailyFreeTurns: 48,
+      verifiedDailyTurns: 240,
       requireVerifyForBridge: true,
     },
     usage: { day: '', turns: 0 },
-    session: { verified: false, role: 'guest', id: '', name: '' },
+    session: { verified: false, role: 'guest', id: '', name: '', email: '' },
   };
 
   function log(m, c) {
@@ -45,6 +44,15 @@
   function preview(m) {
     try {
       if (global.SNCli && SNCli.preview) SNCli.preview(String(m).slice(0, 90));
+    } catch (_) {}
+  }
+  function expandCli() {
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.remove('collapsed', 'cli-quiet');
+        panel.classList.add('mid');
+      }
     } catch (_) {}
   }
 
@@ -63,13 +71,20 @@
     } catch (_) {}
     try {
       var h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-      if (Array.isArray(h)) S.history = h.slice(-40);
+      if (Array.isArray(h)) S.history = h.slice(-48);
     } catch (_) {}
     var day = new Date().toISOString().slice(0, 10);
     if (S.usage.day !== day) {
       S.usage = { day: day, turns: 0 };
       saveUsage();
     }
+    try {
+      var em = (S.session.email || '').toLowerCase();
+      if (em === 'notisastranov@gmail.com') {
+        S.session.role = 'owner';
+        S.session.verified = true;
+      }
+    } catch (_) {}
   }
 
   function saveCfg() {
@@ -98,7 +113,7 @@
   }
   function saveHistory() {
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(S.history.slice(-40)));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(S.history.slice(-48)));
     } catch (_) {}
   }
 
@@ -118,9 +133,9 @@
   }
 
   function turnLimit() {
-    if (isOwner()) return 9999;
-    if (isVerified()) return S.cfg.verifiedDailyTurns || 200;
-    return S.cfg.dailyFreeTurns || 40;
+    if (isOwner()) return 99999;
+    if (isVerified()) return S.cfg.verifiedDailyTurns || 240;
+    return S.cfg.dailyFreeTurns || 48;
   }
 
   function canTakeTurn() {
@@ -133,12 +148,29 @@
   }
 
   function pushHist(role, text) {
-    S.history.push({ role: role, text: String(text).slice(0, 800), t: Date.now() });
-    if (S.history.length > 40) S.history = S.history.slice(-40);
+    S.history.push({ role: role, text: String(text).slice(0, 900), t: Date.now() });
+    if (S.history.length > 48) S.history = S.history.slice(-48);
     saveHistory();
   }
 
+  function teachLocal(q, a) {
+    try {
+      if (global.SNCollectiveLayer && SNCollectiveLayer.teach) SNCollectiveLayer.teach(q, a);
+    } catch (_) {}
+    try {
+      if (global.SNOmni && SNOmni.teach) SNOmni.teach(q, a, ['mind']);
+    } catch (_) {}
+    try {
+      if (global.SNAstranovMind && SNAstranovMind.teach) SNAstranovMind.teach(q, a, ['mind', 'usage']);
+    } catch (_) {}
+  }
+
   async function localAnswer(msg) {
+    var teachMatch = msg.match(/^(?:remember that|remember|learn that|learn)\s+(.+?)\s*(?:=|→|->|means)\s*(.+)$/i);
+    if (teachMatch) {
+      teachLocal(teachMatch[1].trim(), teachMatch[2].trim());
+      return 'Learned from you · ' + teachMatch[1].trim().slice(0, 40);
+    }
     try {
       if (global.SNOmni && SNOmni.ask) {
         var out = await SNOmni.ask(msg);
@@ -163,13 +195,20 @@
         if (c) return String(c);
       }
     } catch (_) {}
+    var low = msg.toLowerCase();
+    if (/^(hi|hello|hey|γεια|ela)\b/.test(low)) {
+      return 'I am here inside SpaceNet — collective mind, always listening. Speak naturally. We improve this OS by using it.';
+    }
+    if (/who are you|what are you/.test(low)) {
+      return 'Collective intelligence of Astranov SpaceNet. Local memory on this device; deeper mind when the owner bridge is live. Built with you and every user who contributes time.';
+    }
+    if (/develop|improve|fix|broken|change the system|make it better/.test(low)) {
+      return 'Tell me what feels wrong in plain language. I will hold it. Example: radar should stay calm blue when the city is quiet. Or: remember that X means Y.';
+    }
     return (
-      'Local collective mind · free for everyone. ' +
-      'Teach: teach Q = A. Interests: interest …. Laws: law …. ' +
-      'Deep Grok opens when owner bridge is live and you are verified. ' +
-      'You said: “' +
-      String(msg).slice(0, 120) +
-      '”.'
+      'Heard you. Local collective is online. Say what you want changed, found, or remembered — no special command. “' +
+      String(msg).slice(0, 100) +
+      '”'
     );
   }
 
@@ -189,11 +228,8 @@
             verified: isVerified(),
             name: S.session.name || '',
           },
-          history: S.history.slice(-12),
-          context: {
-            os: 'Astranov SpaceNet',
-            build: BUILD,
-          },
+          history: S.history.slice(-14),
+          context: { os: 'Astranov SpaceNet', build: BUILD },
         }),
         credentials: 'omit',
         mode: 'cors',
@@ -202,7 +238,7 @@
       var j = await res.json();
       if (j && (j.text || j.reply || j.message)) return String(j.text || j.reply || j.message);
     } catch (e) {
-      log('Bridge soft-fail · ' + String(e && e.message ? e.message : e).slice(0, 80), 'dim');
+      log('Bridge quiet · ' + String(e && e.message ? e.message : e).slice(0, 60), 'dim');
     }
     return null;
   }
@@ -213,28 +249,27 @@
     if (!msg) return null;
     if (!canTakeTurn() && !isOwner()) {
       var lim =
-        'Daily mind turns used (' +
-        turnLimit() +
-        '). Tomorrow, or verify as contributor for a higher free ceiling. Time is the other currency.';
-      log(lim, 'dim');
+        'Daily free mind turns used. Verify as contributor for more, or continue tomorrow. Time is the other currency.';
+      if (!opts.silent) log(lim, 'dim');
       return lim;
     }
     pushHist('user', msg);
     noteTurn();
-    preview('Thinking…');
-
+    if (!opts.silent) {
+      expandCli();
+      preview('…');
+    }
     var answer = null;
     if (S.cfg.bridgeUrl && isVerified()) answer = await bridgeAnswer(msg);
     if (!answer) answer = await localAnswer(msg);
-
     pushHist('assistant', answer);
     if (!opts.silent) {
-      log(String(answer).slice(0, 400), 'ok');
+      log(String(answer).slice(0, 420), 'ok');
       preview(String(answer).slice(0, 80));
     }
     try {
       if (global.SNChromeHelper && SNChromeHelper.speak && opts.speak !== false) {
-        SNChromeHelper.speak(String(answer).slice(0, 160), { ms: 8000, voice: false });
+        SNChromeHelper.speak(String(answer).slice(0, 180), { ms: 9000, voice: false });
       }
     } catch (_) {}
     return answer;
@@ -248,28 +283,23 @@
     S.session.name = profile.name || S.session.name || '';
     S.session.email = profile.email || S.session.email || '';
     saveSession();
-    log('Verified · contributor access · higher free mind ceiling', 'ok');
   }
 
-  function status() {
-    log('════ MIND BRIDGE ════', 'ok');
-    log(
-      'Mode · ' +
-        (S.cfg.bridgeUrl ? 'local + owner bridge' : 'local collective only') +
-        ' · role ' +
-        (S.session.role || 'guest') +
-        (isVerified() ? ' · verified' : ' · open free'),
-      'ok'
-    );
-    log(
-      'Turns today · ' + S.usage.turns + ' / ' + turnLimit() + ' · public free ' + (S.cfg.publicFree ? 'yes' : 'no'),
-      'dim'
-    );
-    log('Philosophy · time is payment · teach improves the OS · bots blocked by verify + limits', 'ok');
-    if (!S.cfg.bridgeUrl) {
-      log('Owner: mind bridge set https://your-server/chat  (paid key stays on server)', 'dim');
-    }
-    preview('Mind · live');
+  function looksConversational(line, low) {
+    if (!line || line.length < 2) return false;
+    if (RESERVED.test(low)) return false;
+    if (/^(mind|talk|chat|verify me|i contribute|contributor|mind bridge|bridge set|bridge clear)\b/i.test(low))
+      return false;
+    if (/^(teach|train|interest|law|remember|export|collective|ambient|forget)\b/i.test(low)) return false;
+    if (/\?$/.test(line)) return true;
+    if (
+      /^(hi|hello|hey|γεια|ela|please|can you|could you|i want|i need|make|fix|change|why|how|what|who|where|when|show me|find|search|help)\b/i.test(
+        low
+      )
+    )
+      return true;
+    if (line.split(/\s+/).length >= 2) return true;
+    return false;
   }
 
   function handleLine(raw) {
@@ -277,55 +307,42 @@
     var low = line.toLowerCase();
     if (!low) return false;
 
-    if (low === 'mind' || low === 'talk' || low === 'chat' || low === 'mind status') {
-      status();
+    if (low === 'mind' || low === 'mind status') {
+      log(
+        'Mind · always on · ' +
+          (isVerified() ? 'verified' : 'open free') +
+          ' · turns ' +
+          S.usage.turns +
+          '/' +
+          turnLimit() +
+          (S.cfg.bridgeUrl ? ' · bridge live' : ' · local collective'),
+        'ok'
+      );
       return true;
     }
-    if (low === 'talk on' || low === 'chat on' || low === 'mind on') {
-      S.talking = true;
-      log('Talk mode ON · normal sentences go to the mind. talk off to exit.', 'ok');
-      return true;
-    }
-    if (low === 'talk off' || low === 'chat off' || low === 'mind off') {
-      S.talking = false;
-      log('Talk mode OFF', 'dim');
+    if (low === 'verify me' || low === 'i contribute' || low === 'contributor') {
+      setVerified({ role: 'contributor', name: 'contributor' });
+      log('Contributor · higher free ceiling · you pay with care and time', 'ok');
       return true;
     }
     if (/^mind bridge set\s+/i.test(line) || /^bridge set\s+/i.test(line)) {
       if (!isOwner()) {
-        log('Only owner can set the deep bridge URL', 'err');
+        log('Only owner sets deep bridge', 'err');
         return true;
       }
       S.cfg.bridgeUrl = line.replace(/^(mind\s+)?bridge set\s+/i, '').trim();
       saveCfg();
-      log('Bridge set · key stays on server · client never sees it', 'ok');
+      log('Bridge set · paid key stays on your server', 'ok');
       return true;
     }
     if (low === 'mind bridge clear' || low === 'bridge clear') {
       if (!isOwner()) return true;
       S.cfg.bridgeUrl = '';
       saveCfg();
-      log('Bridge cleared · local collective only', 'dim');
-      return true;
-    }
-    if (low === 'verify me' || low === 'i contribute' || low === 'contributor') {
-      setVerified({ role: 'contributor', name: 'contributor' });
-      log('Contributor path · you pay with time and care. Abuse will be cut.', 'ok');
-      return true;
-    }
-    if (/^say\s+/i.test(line) || /^ask\s+/i.test(line) || /^mind\s+/i.test(line)) {
-      void talk(line.replace(/^(say|ask|mind)\s+/i, '').trim());
       return true;
     }
 
-    if (S.talking) {
-      if (
-        /^(locate|gps|power|call|video|hang|polygon|poly|global|city|map|shops|layers|send|market|offer|install|login|cancel|clear|drive|pilot|youtube|interest|law|teach|train|export|collective|ambient|forget)\b/i.test(
-          low
-        )
-      ) {
-        return false;
-      }
+    if (S.listening && looksConversational(line, low)) {
       void talk(line);
       return true;
     }
@@ -334,8 +351,8 @@
 
   function installCli() {
     if (!global.SNCli || typeof SNCli.run !== 'function') return;
-    if (SNCli._snMindBridgeHook) return;
-    SNCli._snMindBridgeHook = true;
+    if (SNCli._snMindBridgeHookV2) return;
+    SNCli._snMindBridgeHookV2 = true;
     var prev = SNCli.run.bind(SNCli);
     SNCli.run = function (raw) {
       try {
@@ -345,58 +362,88 @@
     };
   }
 
-  function patchHelper() {
+  function wireSilver() {
     try {
-      if (!global.SNChromeHelper || SNChromeHelper._mindPatched) return;
-      SNChromeHelper._mindPatched = true;
-      var prev = SNChromeHelper.activate && SNChromeHelper.activate.bind(SNChromeHelper);
+      if (!global.SNChromeHelper) return;
+      if (SNChromeHelper._mindBridgeV2) return;
+      SNChromeHelper._mindBridgeV2 = true;
+      SNChromeHelper.ask = async function (message) {
+        return await talk(message, { speak: true });
+      };
+      var prevAct = SNChromeHelper.activate && SNChromeHelper.activate.bind(SNChromeHelper);
       SNChromeHelper.activate = function () {
-        S.talking = true;
-        log('Silver · talk mode · type or speak. We improve the OS from inside.', 'ok');
-        if (prev) return prev();
+        S.listening = true;
+        global.__SN_SILVER_ACTIVE = true;
+        expandCli();
+        if (prevAct) prevAct();
+        else if (SNChromeHelper.speak) {
+          SNChromeHelper.speak('I am here. Speak or type — no special commands.', { ms: 10000 });
+        }
       };
     } catch (_) {}
+  }
+
+  function presencePing() {
+    try {
+      if (sessionStorage.getItem('sn:mind-presence-v2')) return;
+      sessionStorage.setItem('sn:mind-presence-v2', '1');
+    } catch (_) {}
+    setTimeout(function () {
+      try {
+        expandCli();
+        log('Mind present · listening · speak naturally', 'dim');
+        if (global.SNChromeHelper && SNChromeHelper.speak) {
+          SNChromeHelper.speak('Listening.', { ms: 3500, kind: 'dim' });
+        }
+      } catch (_) {}
+    }, 5500);
   }
 
   function init() {
     if (S.ready) {
       installCli();
+      wireSilver();
       return;
     }
     S.ready = true;
+    S.listening = true;
     load();
     installCli();
-    patchHelper();
-    setTimeout(installCli, 1200);
-    setTimeout(patchHelper, 2000);
-    setTimeout(installCli, 4000);
-    setTimeout(function () {
-      log('Mind bridge · free local collective for all · verify for higher ceiling', 'dim');
-    }, 6500);
+    wireSilver();
+    presencePing();
+    setTimeout(installCli, 800);
+    setTimeout(wireSilver, 1200);
+    setTimeout(installCli, 2500);
+    setTimeout(wireSilver, 3000);
+    setTimeout(installCli, 6000);
+    setTimeout(wireSilver, 7000);
   }
 
   global.SNMindBridge = {
     build: BUILD,
     init: init,
     talk: talk,
-    status: status,
     setVerified: setVerified,
     isVerified: isVerified,
     isOwner: isOwner,
     handleLine: handleLine,
-    get talking() {
-      return S.talking;
+    get listening() {
+      return S.listening;
     },
-    set talking(v) {
-      S.talking = !!v;
+    set listening(v) {
+      S.listening = !!v;
     },
   };
 
+  global.AstranovMindBridge = global.SNMindBridge;
+  global.SNPresence = global.SNMindBridge;
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      setTimeout(init, 100);
+      setTimeout(init, 60);
     });
   } else {
-    setTimeout(init, 100);
+    setTimeout(init, 60);
   }
+  setTimeout(init, 1500);
 })(typeof window !== 'undefined' ? window : globalThis);
