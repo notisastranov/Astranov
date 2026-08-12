@@ -1,6 +1,311 @@
 /**
- * SNAgentOrbit — Multi-Agent Orchestration + Astranov Planet
- * Build: 20260812183000-orbit-planet-finish
- * See artifacts for full source - loading via secondary push
+ * SNAgentOrbit - Multi-Agent + Astranov Planet
+ * Build: 20260812184000-orbit-live
  */
-(function(g){'use strict';g.SNAgentOrbit={BUILD:'pending-restore'};})(window);
+(function (global) {
+  'use strict';
+  var BUILD = '20260812184000-orbit-live';
+  if (global.__SN_AGENT_ORBIT === BUILD) return;
+  global.__SN_AGENT_ORBIT = BUILD;
+
+  var CREDS_KEY = 'sn:agent-creds-v1';
+  var PROVIDERS = {
+    astranov: { id: 'astranov', name: 'Astranov Mind', hex: 0x3d9eff, role: 'orchestrator', needsKey: false, icon: '\u25ce' },
+    gemini: { id: 'gemini', name: 'Gemini', hex: 0x8ab4f8, role: 'reasoner', needsKey: true, icon: '\u2726',
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent' },
+    chatgpt: { id: 'chatgpt', name: 'ChatGPT', hex: 0x10a37f, role: 'coder', needsKey: true, icon: '\u2b21',
+      endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
+    claude: { id: 'claude', name: 'Claude', hex: 0xd4a27f, role: 'reviewer', needsKey: true, icon: '\u25c8',
+      endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-3-5-sonnet-20241022' },
+  };
+  var PLANET = { lat: 36.43, lng: 28.22, altitude: 1.22, color: 0x3d9eff };
+  var SAT = {
+    astranov: { dLat: 0, dLng: 0, alt: 1.22 },
+    gemini: { dLat: 2.4, dLng: 3.1, alt: 1.18 },
+    chatgpt: { dLat: -2.1, dLng: 2.8, alt: 1.19 },
+    claude: { dLat: 1.6, dLng: -3.4, alt: 1.17 },
+  };
+  var S = { ready: false, creds: {}, entityIds: [], planetVisible: false };
+
+  function log(m, c) {
+    m = String(m).slice(0, 360);
+    try { if (global.SNCli && SNCli.log) return SNCli.log(m, c || 'ok'); } catch (_) {}
+    try { if (global.AciCli && AciCli.print) return AciCli.print(m, c === 'err' ? 'err' : 'ok'); } catch (_) {}
+    try { if (global.ACIControl && ACIControl.reply) ACIControl.reply(m); } catch (_) {}
+  }
+  function loadCreds() {
+    try { S.creds = JSON.parse(localStorage.getItem(CREDS_KEY) || '{}') || {}; } catch (_) { S.creds = {}; }
+  }
+  function saveCreds() {
+    try { localStorage.setItem(CREDS_KEY, JSON.stringify(S.creds)); } catch (_) {}
+  }
+  function hasKey(id) {
+    if (id === 'astranov') return true;
+    return !!(S.creds[id] && String(S.creds[id]).length > 8);
+  }
+  function clearPlanet() {
+    S.entityIds.forEach(function (id) {
+      try { if (global.GlobeEntity) GlobeEntity.unregister(id); } catch (_) {}
+    });
+    S.entityIds = [];
+    S.planetVisible = false;
+  }
+  function paintPlanet() {
+    if (!global.GlobeEntity || !GlobeEntity.register) {
+      log('GlobeEntity not ready', 'dim');
+      return;
+    }
+    clearPlanet();
+    var core = GlobeEntity.register({
+      id: 'agent-planet-core', type: 'place', lat: PLANET.lat, lng: PLANET.lng,
+      altitude: PLANET.altitude, title: '\u25ce ASTRANOV',
+      description: 'Multi-agent orbit · collab · keys local',
+      urgency: 3, color: PLANET.color, icon: '\u25ce', radius: 0.042, persist: true,
+      data: { alwaysShowLabel: true, agentOrbit: true },
+      onTap: function () { listAgents(); }
+    });
+    if (core) S.entityIds.push('agent-planet-core');
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var p = PROVIDERS[id], off = SAT[id], online = hasKey(id), eid = 'agent-sat-' + id;
+      var ent = GlobeEntity.register({
+        id: eid, type: 'place',
+        lat: PLANET.lat + off.dLat, lng: PLANET.lng + off.dLng, altitude: off.alt,
+        title: p.icon + ' ' + p.name,
+        description: p.role + ' · ' + (online ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'),
+        urgency: online ? 3 : 1, color: online ? p.hex : 0x445566, icon: p.icon,
+        radius: id === 'astranov' ? 0.028 : 0.022, persist: true,
+        data: { alwaysShowLabel: true, agentOrbit: true, agentId: id },
+        onTap: function () {
+          log(online || !p.needsKey ? (p.name + ' ready') : (p.name + ' · agents key ' + id + ' <KEY>'), online ? 'ok' : 'dim');
+        }
+      });
+      if (ent) S.entityIds.push(eid);
+    });
+    S.planetVisible = true;
+  }
+  function flyToOrbit() {
+    try {
+      if (typeof latLngToPos === 'function' && typeof flyToPoint === 'function' && global.THREE) {
+        var fp = latLngToPos(PLANET.lat, PLANET.lng, 1.24);
+        var z = (global.GlobeControl && GlobeControl.Z && GlobeControl.Z.global) || 2.55;
+        flyToPoint(new THREE.Vector3(fp.x, fp.y, fp.z), z);
+        return;
+      }
+    } catch (_) {}
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(PLANET.lat, PLANET.lng, { tier: 'global', label: 'Astranov Orbit', openMap: false });
+      }
+    } catch (_) {}
+  }
+  function listAgents() {
+    log('-- AGENTS · ASTRANOV ORBIT --', 'ok');
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var p = PROVIDERS[id];
+      log((hasKey(id) ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'), hasKey(id) ? 'ok' : 'dim');
+    });
+    log('collab <task> · agent <name> <prompt> · orbit', 'dim');
+  }
+  function goOrbit() {
+    log('\u25ce ASTRANOV PLANET · high orbit · multi-agent station', 'ok');
+    flyToOrbit();
+    paintPlanet();
+    listAgents();
+    log('agents key gemini|chatgpt|claude <KEY>  (local only)', 'dim');
+  }
+  function setKey(provider, key) {
+    var id = String(provider || '').toLowerCase();
+    if (id === 'openai' || id === 'gpt') id = 'chatgpt';
+    if (id === 'anthropic') id = 'claude';
+    if (id === 'google') id = 'gemini';
+    if (!PROVIDERS[id] || id === 'astranov') { log('use gemini|chatgpt|claude', 'err'); return; }
+    key = String(key || '').trim();
+    if (key.length < 8) { log('key too short', 'err'); return; }
+    S.creds[id] = key; saveCreds();
+    log(PROVIDERS[id].name + ' key stored locally', 'ok');
+    if (S.planetVisible) paintPlanet();
+  }
+  function clearKey(id) {
+    id = String(id || '').toLowerCase();
+    if (id === 'all') { S.creds = {}; saveCreds(); log('keys cleared', 'ok'); }
+    else if (S.creds[id]) { delete S.creds[id]; saveCreds(); log(id + ' cleared', 'ok'); }
+    if (S.planetVisible) paintPlanet();
+  }
+
+  async function callAstranov(prompt) {
+    try {
+      var base = (global.SB_URL || (global.SN_CONFIG && SN_CONFIG.sbUrl) || 'https://lkoatrkhuigdolnjsbie.supabase.co').replace(/\/$/, '');
+      var headers = { 'Content-Type': 'application/json' };
+      var k = global.SB_KEY || (global.SN_CONFIG && SN_CONFIG.sbKey) || '';
+      if (k) { headers.apikey = k; headers.Authorization = 'Bearer ' + k; }
+      try {
+        var tok = (global.Auth && Auth.session && Auth.session.access_token) || (global.SNAuth && SNAuth.session && SNAuth.session.access_token) || '';
+        if (tok) headers.Authorization = 'Bearer ' + tok;
+      } catch (_) {}
+      var res = await fetch(base + '/functions/v1/ai-router', {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ text: prompt, preferred_provider: 'astranov' })
+      });
+      var j = await res.json().catch(function () { return {}; });
+      return { ok: res.ok, text: j.text || j.reply || j.message || JSON.stringify(j).slice(0, 600), provider: 'astranov' };
+    } catch (e) {
+      return { ok: false, text: 'astranov fail · ' + (e && e.message), provider: 'astranov' };
+    }
+  }
+  async function callGemini(prompt) {
+    var key = S.creds.gemini;
+    if (!key) return { ok: false, text: 'no gemini key', provider: 'gemini' };
+    try {
+      var res = await fetch(PROVIDERS.gemini.endpoint + '?key=' + encodeURIComponent(key), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+      });
+      var j = await res.json().catch(function () { return {}; });
+      var text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
+      return { ok: res.ok, text: text, provider: 'gemini' };
+    } catch (e) { return { ok: false, text: 'gemini fail · ' + e.message, provider: 'gemini' }; }
+  }
+  async function callChatGPT(prompt) {
+    var key = S.creds.chatgpt;
+    if (!key) return { ok: false, text: 'no chatgpt key', provider: 'chatgpt' };
+    try {
+      var res = await fetch(PROVIDERS.chatgpt.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({ model: PROVIDERS.chatgpt.model, messages: [{ role: 'user', content: prompt }], max_tokens: 1000 })
+      });
+      var j = await res.json().catch(function () { return {}; });
+      var text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
+      return { ok: res.ok, text: text, provider: 'chatgpt' };
+    } catch (e) { return { ok: false, text: 'chatgpt fail (CORS?) · ' + e.message, provider: 'chatgpt' }; }
+  }
+  async function callClaude(prompt) {
+    var key = S.creds.claude;
+    if (!key) return { ok: false, text: 'no claude key', provider: 'claude' };
+    try {
+      var res = await fetch(PROVIDERS.claude.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: JSON.stringify({ model: PROVIDERS.claude.model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+      });
+      var j = await res.json().catch(function () { return {}; });
+      var text = (j.content && j.content[0] && j.content[0].text) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
+      return { ok: res.ok, text: text, provider: 'claude' };
+    } catch (e) { return { ok: false, text: 'claude fail · ' + e.message, provider: 'claude' }; }
+  }
+  async function callProvider(id, prompt) {
+    id = String(id || '').toLowerCase();
+    if (id === 'openai' || id === 'gpt') id = 'chatgpt';
+    if (id === 'google') id = 'gemini';
+    if (id === 'anthropic') id = 'claude';
+    if (id === 'astranov') return callAstranov(prompt);
+    if (id === 'gemini') return callGemini(prompt);
+    if (id === 'chatgpt') return callChatGPT(prompt);
+    if (id === 'claude') return callClaude(prompt);
+    return { ok: false, text: 'unknown ' + id, provider: id };
+  }
+  async function collab(task) {
+    task = String(task || '').trim();
+    if (!task) { log('usage: collab <task>', 'dim'); return; }
+    if (!S.planetVisible) goOrbit();
+    log('\u25ce COLLAB · ' + task.slice(0, 100), 'ok');
+    var online = Object.keys(PROVIDERS).filter(hasKey);
+    log('crew: ' + online.map(function (i) { return PROVIDERS[i].name; }).join(' · '), 'dim');
+    var plan = await callAstranov('SpaceNet multi-agent orchestrator. Task: ' + task + '\nOnline: ' + online.join(', ') + '\nShort plan max 6 lines.');
+    log('PLAN · ' + String(plan.text || '').slice(0, 240), plan.ok ? 'ok' : 'err');
+    var targets = online.filter(function (i) { return i !== 'astranov'; });
+    if (!targets.length) targets = ['astranov'];
+    var results = [];
+    await Promise.all(targets.slice(0, 3).map(async function (id) {
+      var r = await callProvider(id, 'Task: ' + task + '\nPlan: ' + String(plan.text || '').slice(0, 400) + '\nConcise actionable answer max 300 words.');
+      results.push(r);
+      log((PROVIDERS[id] ? PROVIDERS[id].name : id) + ' · ' + (r.ok ? 'ok' : 'fail') + ' · ' + String(r.text || '').slice(0, 120), r.ok ? 'ok' : 'err');
+    }));
+    var final = await callAstranov('Merge into ONE final answer.\nTask: ' + task + '\n\n' + results.map(function (r) { return '### ' + r.provider + '\n' + String(r.text || '').slice(0, 700); }).join('\n\n'));
+    log('-- FINAL --', 'ok');
+    String(final.text || '').split(/\n+/).slice(0, 20).forEach(function (ln) { if (ln.trim()) log(ln.trim(), 'ok'); });
+  }
+  async function singleAgent(name, prompt) {
+    var id = String(name || '').toLowerCase();
+    if (id === 'openai' || id === 'gpt') id = 'chatgpt';
+    if (id === 'google') id = 'gemini';
+    if (id === 'anthropic') id = 'claude';
+    if (id === 'mind') id = 'astranov';
+    prompt = String(prompt || '').trim();
+    if (!prompt) { log('usage: agent <name> <prompt>', 'dim'); return; }
+    log('-> ' + ((PROVIDERS[id] && PROVIDERS[id].name) || id) + '...', 'dim');
+    var r = await callProvider(id, prompt);
+    log((r.ok ? '\u2713 ' : '\u2717 ') + String(r.text || '').slice(0, 400), r.ok ? 'ok' : 'err');
+  }
+
+  function handleLine(line) {
+    var raw = String(line || '').trim();
+    var low = raw.toLowerCase();
+    if (!low) return false;
+    if (low === 'agents' || low === 'orbit' || low === 'planet' || low === 'astranov planet') { goOrbit(); return true; }
+    if (low === 'agents off' || low === 'orbit off' || low === 'planet off') { clearPlanet(); log('orbit cleared', 'ok'); return true; }
+    if (low === 'agents help') {
+      log('orbit | agents key <p> <KEY> | collab <task> | agent <name> <prompt>', 'dim');
+      return true;
+    }
+    var mKey = raw.match(/^agents?\s+key\s+(\w+)\s+(.+)$/i);
+    if (mKey) { setKey(mKey[1], mKey[2]); return true; }
+    var mClear = low.match(/^agents?\s+clear\s+(\w+)$/);
+    if (mClear) { clearKey(mClear[1]); return true; }
+    if (low.indexOf('collab ') === 0) { collab(raw.slice(7).trim()); return true; }
+    var mA = raw.match(/^agent\s+(astranov|mind|gemini|google|chatgpt|openai|gpt|claude|anthropic)\s+(.+)$/i);
+    if (mA) { singleAgent(mA[1], mA[2]); return true; }
+    return false;
+  }
+  function installCli() {
+    try {
+      if (global.SNCli && SNCli.run && !SNCli.__agentOrbitWrapped) {
+        var p = SNCli.run.bind(SNCli);
+        SNCli.run = function (line) { if (handleLine(line)) return true; return p(line); };
+        SNCli.__agentOrbitWrapped = true;
+      }
+    } catch (_) {}
+    try {
+      if (global.SuperCli && SuperCli.run && !SuperCli.__agentOrbitWrapped) {
+        var p2 = SuperCli.run.bind(SuperCli);
+        SuperCli.run = function (line) { if (handleLine(line)) return true; return p2(line); };
+        SuperCli.__agentOrbitWrapped = true;
+      }
+    } catch (_) {}
+    try {
+      if (global.AciCli && AciCli.submit && !AciCli.__agentOrbitWrapped) {
+        var p3 = AciCli.submit.bind(AciCli);
+        AciCli.submit = function (line) { if (handleLine(line)) return true; return p3(line); };
+        AciCli.__agentOrbitWrapped = true;
+      }
+    } catch (_) {}
+    try {
+      var form = document.getElementById('aci-cli-form') || document.getElementById('cli-form');
+      if (form && !form.__agentOrbit) {
+        form.__agentOrbit = true;
+        form.addEventListener('submit', function () {
+          var inp = document.getElementById('aci-cli-in') || document.getElementById('cli-in');
+          if (inp && inp.value) handleLine(inp.value);
+        }, true);
+      }
+    } catch (_) {}
+  }
+  function init() {
+    if (S.ready) return;
+    loadCreds();
+    installCli();
+    S.ready = true;
+  }
+  global.SNAgentOrbit = global.SNAgents = global.AstranovOrbit = {
+    BUILD: BUILD, init: init, goOrbit: goOrbit, list: listAgents, setKey: setKey,
+    clearKey: clearKey, collab: collab, ask: singleAgent, handleLine: handleLine,
+    hasKey: hasKey, clearPlanet: clearPlanet, providers: PROVIDERS, planet: PLANET
+  };
+  function boot() {
+    init();
+    [500, 1500, 4000].forEach(function (ms) { setTimeout(installCli, ms); });
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 80);
+  else document.addEventListener('DOMContentLoaded', function () { setTimeout(boot, 80); });
+  window.addEventListener('load', function () { setTimeout(boot, 500); });
+})(typeof window !== 'undefined' ? window : globalThis);
