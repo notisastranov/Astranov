@@ -312,6 +312,16 @@ var MarketplaceDeliveryEngine = window.MarketplaceDeliveryEngine || {
 };
 window.MarketplaceDeliveryEngine = MarketplaceDeliveryEngine;
 
+// Globe entities — real module in features; keep safe until loaded
+var GlobeEntity = window.GlobeEntity || {
+  register() {},
+  remove() {},
+  clear() {},
+  tick() {},
+  init() {},
+};
+window.GlobeEntity = GlobeEntity;
+
 const CoinPortal = { syncGlobe() {} };
 window.CoinPortal = CoinPortal;
 
