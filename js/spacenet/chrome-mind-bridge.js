@@ -1,15 +1,16 @@
 /**
- * SNMindBridge — always-on collective presence inside SpaceNet
+ * SNMindBridge — always-on · wired to owner backend (ai-router)
  * ============================================================
- * No typed mode switch. Natural language is the default.
- * Reserved OS verbs still work. Everything else is conversation.
- * Development happens from usage, not from external babysitting.
+ * Default deep path: Supabase functions/v1/ai-router
+ * Keys never leave the server. Free providers first.
+ * Paid XAI only when server says architect + free tier exhausted.
+ * Client rate limits + identity so bots cannot drain.
  *
- * Build: 20260812042000-always-on
+ * Build: 20260812043000-backend-wired
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812042000-always-on';
+  var BUILD = '20260812043000-backend-wired';
   if (global.__SN_MIND_BRIDGE === BUILD) return;
   global.__SN_MIND_BRIDGE = BUILD;
 
@@ -17,9 +18,45 @@
   var SESSION_KEY = 'sn:mind-session-v1';
   var USAGE_KEY = 'sn:mind-usage-v1';
   var HISTORY_KEY = 'sn:mind-history-v1';
+  var COOLDOWN_KEY = 'sn:mind-cooldown-v1';
 
   var RESERVED =
-    /^(locate|gps|power(\s+on|\s+off)?|call|video|hang(\s*up)?|polygon|poly|global|city|map|shops|layers|send|market|offer|offers|install|login|user|cancel|clear|drive|pilot|youtube|yt|bridge|radar|routes?|simulate|accept|decline|mute|cam|button|ribbon)\b/i;
+    /^(locate|gps|power(\s+on|\s+off)?|call|video|hang(\s*up)?|polygon|poly|global|city|map|shops|layers|send|market|offer|offers|install|login|user|cancel|clear|drive|pilot|youtube|yt|radar|routes?|simulate|accept|decline|mute|cam|button|ribbon)\b/i;
+
+  function defaultBridgeUrl() {
+    try {
+      var base =
+        (global.SN_CONFIG && SN_CONFIG.sbUrl) ||
+        global.SB_URL ||
+        'https://lkoatrkhuigdolnjsbie.supabase.co';
+      return String(base).replace(/\/$/, '') + '/functions/v1/ai-router';
+    } catch (_) {
+      return 'https://lkoatrkhuigdolnjsbie.supabase.co/functions/v1/ai-router';
+    }
+  }
+
+  function anonKey() {
+    try {
+      return (global.SN_CONFIG && SN_CONFIG.sbKey) || global.SB_KEY || '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function userAccessToken() {
+    try {
+      if (global.SNAuth && SNAuth.session && SNAuth.session.access_token)
+        return SNAuth.session.access_token;
+      var raw = localStorage.getItem('sb-lkoatrkhuigdolnjsbie-auth-token');
+      if (raw) {
+        var j = JSON.parse(raw);
+        if (j && j.access_token) return j.access_token;
+        if (j && j.currentSession && j.currentSession.access_token)
+          return j.currentSession.access_token;
+      }
+    } catch (_) {}
+    return '';
+  }
 
   var S = {
     ready: false,
@@ -29,11 +66,14 @@
       bridgeUrl: '',
       publicFree: true,
       dailyFreeTurns: 48,
-      verifiedDailyTurns: 240,
-      requireVerifyForBridge: true,
+      verifiedDailyTurns: 200,
+      ownerDailyTurns: 2000,
+      minGapMs: 1200,
+      requireVerifyForBridge: false,
     },
     usage: { day: '', turns: 0 },
     session: { verified: false, role: 'guest', id: '', name: '', email: '' },
+    lastCallAt: 0,
   };
 
   function log(m, c) {
@@ -61,6 +101,7 @@
       var c = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
       S.cfg = Object.assign(S.cfg, c || {});
     } catch (_) {}
+    if (!S.cfg.bridgeUrl) S.cfg.bridgeUrl = defaultBridgeUrl();
     try {
       var u = JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
       S.usage = Object.assign(S.usage, u || {});
@@ -73,18 +114,14 @@
       var h = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
       if (Array.isArray(h)) S.history = h.slice(-48);
     } catch (_) {}
+    try {
+      S.lastCallAt = Number(localStorage.getItem(COOLDOWN_KEY) || 0) || 0;
+    } catch (_) {}
     var day = new Date().toISOString().slice(0, 10);
     if (S.usage.day !== day) {
       S.usage = { day: day, turns: 0 };
       saveUsage();
     }
-    try {
-      var em = (S.session.email || '').toLowerCase();
-      if (em === 'notisastranov@gmail.com') {
-        S.session.role = 'owner';
-        S.session.verified = true;
-      }
-    } catch (_) {}
   }
 
   function saveCfg() {
@@ -96,6 +133,8 @@
           publicFree: !!S.cfg.publicFree,
           dailyFreeTurns: S.cfg.dailyFreeTurns,
           verifiedDailyTurns: S.cfg.verifiedDailyTurns,
+          ownerDailyTurns: S.cfg.ownerDailyTurns,
+          minGapMs: S.cfg.minGapMs,
           requireVerifyForBridge: !!S.cfg.requireVerifyForBridge,
         })
       );
@@ -133,18 +172,25 @@
   }
 
   function turnLimit() {
-    if (isOwner()) return 99999;
-    if (isVerified()) return S.cfg.verifiedDailyTurns || 240;
+    if (isOwner()) return S.cfg.ownerDailyTurns || 2000;
+    if (isVerified()) return S.cfg.verifiedDailyTurns || 200;
     return S.cfg.dailyFreeTurns || 48;
   }
 
   function canTakeTurn() {
-    return S.usage.turns < turnLimit();
+    if (S.usage.turns >= turnLimit()) return false;
+    var gap = S.cfg.minGapMs || 1200;
+    if (Date.now() - S.lastCallAt < gap) return false;
+    return true;
   }
 
   function noteTurn() {
     S.usage.turns = (S.usage.turns || 0) + 1;
+    S.lastCallAt = Date.now();
     saveUsage();
+    try {
+      localStorage.setItem(COOLDOWN_KEY, String(S.lastCallAt));
+    } catch (_) {}
   }
 
   function pushHist(role, text) {
@@ -161,15 +207,18 @@
       if (global.SNOmni && SNOmni.teach) SNOmni.teach(q, a, ['mind']);
     } catch (_) {}
     try {
-      if (global.SNAstranovMind && SNAstranovMind.teach) SNAstranovMind.teach(q, a, ['mind', 'usage']);
+      if (global.SNAstranovMind && SNAstranovMind.teach)
+        SNAstranovMind.teach(q, a, ['mind', 'usage']);
     } catch (_) {}
   }
 
   async function localAnswer(msg) {
-    var teachMatch = msg.match(/^(?:remember that|remember|learn that|learn)\s+(.+?)\s*(?:=|→|->|means)\s*(.+)$/i);
+    var teachMatch = msg.match(
+      /^(?:remember that|remember|learn that|learn)\s+(.+?)\s*(?:=|→|->|means)\s*(.+)$/i
+    );
     if (teachMatch) {
       teachLocal(teachMatch[1].trim(), teachMatch[2].trim());
-      return 'Learned from you · ' + teachMatch[1].trim().slice(0, 40);
+      return 'Learned · ' + teachMatch[1].trim().slice(0, 40);
     }
     try {
       if (global.SNOmni && SNOmni.ask) {
@@ -189,56 +238,56 @@
         if (b) return String(b);
       }
     } catch (_) {}
-    try {
-      if (global.SNFreeAI && SNFreeAI.reply) {
-        var c = await SNFreeAI.reply(msg);
-        if (c) return String(c);
-      }
-    } catch (_) {}
     var low = msg.toLowerCase();
-    if (/^(hi|hello|hey|γεια|ela)\b/.test(low)) {
-      return 'I am here inside SpaceNet — collective mind, always listening. Speak naturally. We improve this OS by using it.';
-    }
-    if (/who are you|what are you/.test(low)) {
-      return 'Collective intelligence of Astranov SpaceNet. Local memory on this device; deeper mind when the owner bridge is live. Built with you and every user who contributes time.';
-    }
-    if (/develop|improve|fix|broken|change the system|make it better/.test(low)) {
-      return 'Tell me what feels wrong in plain language. I will hold it. Example: radar should stay calm blue when the city is quiet. Or: remember that X means Y.';
-    }
-    return (
-      'Heard you. Local collective is online. Say what you want changed, found, or remembered — no special command. “' +
-      String(msg).slice(0, 100) +
-      '”'
-    );
+    if (/^(hi|hello|hey|γεια|ela)\b/.test(low))
+      return 'I am here inside SpaceNet. Listening. Speak naturally.';
+    if (/who are you|what are you/.test(low))
+      return 'Astranov collective mind — free cycle for everyone, deeper path protected on the server.';
+    return 'Local collective · backend quiet this turn. “' + String(msg).slice(0, 100) + '”;';
   }
 
   async function bridgeAnswer(msg) {
-    var url = (S.cfg.bridgeUrl || '').trim();
+    var url = (S.cfg.bridgeUrl || defaultBridgeUrl()).trim();
     if (!url) return null;
-    if (S.cfg.requireVerifyForBridge && !isVerified()) return null;
+    var key = anonKey();
+    var tok = userAccessToken() || key;
     try {
       var res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          apikey: key,
+          Authorization: 'Bearer ' + tok,
+        },
         body: JSON.stringify({
-          message: msg,
-          session: {
-            id: S.session.id || '',
-            role: S.session.role || 'guest',
-            verified: isVerified(),
-            name: S.session.name || '',
-          },
-          history: S.history.slice(-14),
-          context: { os: 'Astranov SpaceNet', build: BUILD },
+          text: msg,
+          preferred_provider: 'astranov',
+          level: 'personal',
+          source: 'sn-mind-bridge',
+          build: BUILD,
         }),
         credentials: 'omit',
         mode: 'cors',
       });
-      if (!res.ok) throw new Error('bridge ' + res.status);
+      if (res.status === 429) {
+        log('Mind · rate limited · protecting the pool', 'dim');
+        return 'Slow down a moment — the collective pool is protected.';
+      }
+      if (!res.ok) {
+        var errT = await res.text().catch(function () {
+          return '';
+        });
+        console.warn('[mind-bridge]', res.status, errT.slice(0, 120));
+        return null;
+      }
       var j = await res.json();
+      if (j && j.paid_fallback && j.paid_notice) {
+        log(String(j.paid_notice).slice(0, 120), 'dim');
+      }
       if (j && (j.text || j.reply || j.message)) return String(j.text || j.reply || j.message);
     } catch (e) {
-      log('Bridge quiet · ' + String(e && e.message ? e.message : e).slice(0, 60), 'dim');
+      console.warn('[mind-bridge]', e);
     }
     return null;
   }
@@ -247,21 +296,29 @@
     opts = opts || {};
     msg = String(msg || '').trim();
     if (!msg) return null;
-    if (!canTakeTurn() && !isOwner()) {
-      var lim =
-        'Daily free mind turns used. Verify as contributor for more, or continue tomorrow. Time is the other currency.';
-      if (!opts.silent) log(lim, 'dim');
-      return lim;
+
+    if (!canTakeTurn()) {
+      if (S.usage.turns >= turnLimit() && !isOwner()) {
+        var lim =
+          'Daily mind turns used. Contribute for a higher free ceiling, or continue tomorrow.';
+        if (!opts.silent) log(lim, 'dim');
+        return lim;
+      }
+      await new Promise(function (r) {
+        setTimeout(r, Math.max(50, (S.cfg.minGapMs || 1200) - (Date.now() - S.lastCallAt)));
+      });
     }
+
     pushHist('user', msg);
     noteTurn();
     if (!opts.silent) {
       expandCli();
       preview('…');
     }
-    var answer = null;
-    if (S.cfg.bridgeUrl && isVerified()) answer = await bridgeAnswer(msg);
+
+    var answer = await bridgeAnswer(msg);
     if (!answer) answer = await localAnswer(msg);
+
     pushHist('assistant', answer);
     if (!opts.silent) {
       log(String(answer).slice(0, 420), 'ok');
@@ -288,9 +345,10 @@
   function looksConversational(line, low) {
     if (!line || line.length < 2) return false;
     if (RESERVED.test(low)) return false;
-    if (/^(mind|talk|chat|verify me|i contribute|contributor|mind bridge|bridge set|bridge clear)\b/i.test(low))
+    if (/^(mind|verify me|i contribute|contributor|mind bridge|bridge set|bridge clear)\b/i.test(low))
       return false;
-    if (/^(teach|train|interest|law|remember|export|collective|ambient|forget)\b/i.test(low)) return false;
+    if (/^(teach|train|interest|law|remember|export|collective|ambient|forget)\b/i.test(low))
+      return false;
     if (/\?$/.test(line)) return true;
     if (
       /^(hi|hello|hey|γεια|ela|please|can you|could you|i want|i need|make|fix|change|why|how|what|who|where|when|show me|find|search|help)\b/i.test(
@@ -309,35 +367,36 @@
 
     if (low === 'mind' || low === 'mind status') {
       log(
-        'Mind · always on · ' +
-          (isVerified() ? 'verified' : 'open free') +
+        'Mind · backend ' +
+          (S.cfg.bridgeUrl ? 'wired' : 'off') +
+          ' · ' +
+          (isOwner() ? 'architect' : isVerified() ? 'verified' : 'open free') +
           ' · turns ' +
           S.usage.turns +
           '/' +
-          turnLimit() +
-          (S.cfg.bridgeUrl ? ' · bridge live' : ' · local collective'),
+          turnLimit(),
         'ok'
       );
       return true;
     }
     if (low === 'verify me' || low === 'i contribute' || low === 'contributor') {
       setVerified({ role: 'contributor', name: 'contributor' });
-      log('Contributor · higher free ceiling · you pay with care and time', 'ok');
+      log('Contributor · higher free ceiling', 'ok');
       return true;
     }
     if (/^mind bridge set\s+/i.test(line) || /^bridge set\s+/i.test(line)) {
       if (!isOwner()) {
-        log('Only owner sets deep bridge', 'err');
+        log('Only architect sets bridge URL', 'err');
         return true;
       }
       S.cfg.bridgeUrl = line.replace(/^(mind\s+)?bridge set\s+/i, '').trim();
       saveCfg();
-      log('Bridge set · paid key stays on your server', 'ok');
+      log('Bridge URL updated', 'ok');
       return true;
     }
     if (low === 'mind bridge clear' || low === 'bridge clear') {
       if (!isOwner()) return true;
-      S.cfg.bridgeUrl = '';
+      S.cfg.bridgeUrl = defaultBridgeUrl();
       saveCfg();
       return true;
     }
@@ -351,8 +410,8 @@
 
   function installCli() {
     if (!global.SNCli || typeof SNCli.run !== 'function') return;
-    if (SNCli._snMindBridgeHookV2) return;
-    SNCli._snMindBridgeHookV2 = true;
+    if (SNCli._snMindBridgeHookV3) return;
+    SNCli._snMindBridgeHookV3 = true;
     var prev = SNCli.run.bind(SNCli);
     SNCli.run = function (raw) {
       try {
@@ -365,8 +424,8 @@
   function wireSilver() {
     try {
       if (!global.SNChromeHelper) return;
-      if (SNChromeHelper._mindBridgeV2) return;
-      SNChromeHelper._mindBridgeV2 = true;
+      if (SNChromeHelper._mindBridgeV3) return;
+      SNChromeHelper._mindBridgeV3 = true;
       SNChromeHelper.ask = async function (message) {
         return await talk(message, { speak: true });
       };
@@ -376,27 +435,21 @@
         global.__SN_SILVER_ACTIVE = true;
         expandCli();
         if (prevAct) prevAct();
-        else if (SNChromeHelper.speak) {
-          SNChromeHelper.speak('I am here. Speak or type — no special commands.', { ms: 10000 });
-        }
       };
     } catch (_) {}
   }
 
   function presencePing() {
     try {
-      if (sessionStorage.getItem('sn:mind-presence-v2')) return;
-      sessionStorage.setItem('sn:mind-presence-v2', '1');
+      if (sessionStorage.getItem('sn:mind-presence-v3')) return;
+      sessionStorage.setItem('sn:mind-presence-v3', '1');
     } catch (_) {}
     setTimeout(function () {
       try {
         expandCli();
-        log('Mind present · listening · speak naturally', 'dim');
-        if (global.SNChromeHelper && SNChromeHelper.speak) {
-          SNChromeHelper.speak('Listening.', { ms: 3500, kind: 'dim' });
-        }
+        log('Mind · backend live · listening', 'dim');
       } catch (_) {}
-    }, 5500);
+    }, 5000);
   }
 
   function init() {
@@ -408,6 +461,10 @@
     S.ready = true;
     S.listening = true;
     load();
+    if (!S.cfg.bridgeUrl) {
+      S.cfg.bridgeUrl = defaultBridgeUrl();
+      saveCfg();
+    }
     installCli();
     wireSilver();
     presencePing();
@@ -416,7 +473,6 @@
     setTimeout(installCli, 2500);
     setTimeout(wireSilver, 3000);
     setTimeout(installCli, 6000);
-    setTimeout(wireSilver, 7000);
   }
 
   global.SNMindBridge = {
@@ -433,8 +489,10 @@
     set listening(v) {
       S.listening = !!v;
     },
+    get bridgeUrl() {
+      return S.cfg.bridgeUrl || defaultBridgeUrl();
+    },
   };
-
   global.AstranovMindBridge = global.SNMindBridge;
   global.SNPresence = global.SNMindBridge;
 
@@ -442,8 +500,6 @@
     document.addEventListener('DOMContentLoaded', function () {
       setTimeout(init, 60);
     });
-  } else {
-    setTimeout(init, 60);
-  }
+  } else setTimeout(init, 60);
   setTimeout(init, 1500);
 })(typeof window !== 'undefined' ? window : globalThis);
