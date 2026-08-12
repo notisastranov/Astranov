@@ -1,42 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="skin-astranov theme-dark">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Astranov</title>
-<meta name="astranov-build" content="20260812183300" />
-<script>
-// Force multi-agent orbit planet load before full shell
-(function(){
-  var s=document.createElement('script');
-  s.defer=true;
-  s.src='/astranov-orbit-boot.js?v=20260812183300';
-  document.head.appendChild(s);
-})();
-</script>
-<script>
-// Restore full SpaceNet shell from last good commit (pre-truncate)
-(async function(){
-  try {
-    var r = await fetch('https://raw.githubusercontent.com/notisastranov/astranov.eu/e0e29d90aacd9e7e275eda6841389fda23fb86dd/index.html');
-    var html = await r.text();
-    // inject orbit-boot into the restored markup
-    html = html.replace(
-      /<script defer src="\/astranov-continuity\.js\?v=[^"]*"><\/script>/,
-      '<script defer src="/astranov-continuity.js?v=20260812183300"><\/script>\n<script defer src="/astranov-orbit-boot.js?v=20260812183300"><\/script>'
-    );
-    html = html.replace(/content="20260812151903"/, 'content="20260812183300"');
-    document.open();
-    document.write(html);
-    document.close();
-  } catch (e) {
-    document.body.innerHTML = '<div style="color:#8cf;font:14px system-ui;padding:24px">Astranov restoring shell… hard refresh if this stays. '+ (e&&e.message) +'</div>';
-    console.error(e);
-  }
-})();
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Astranov SpaceNet OS</title>
+<meta name="theme-color" content="#000105" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="SpaceNet" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon.png" />
+<meta name="astranov-build" content="20260812190000-chrome-orbit-restore" />
+<style>
+html,body{margin:0;height:100%;background:#000105;color:#7ec8ff;font:600 14px/1.4 system-ui,sans-serif}
+#boot-msg{position:fixed;inset:0;display:grid;place-items:center;z-index:9999;letter-spacing:.18em}
+</style>
+<script src="/js/spacenet/chrome-mute.js?v=20260812190000"></script>
 </head>
-<body style="background:#000;color:#8cf;font:14px system-ui;padding:24px">
-Astranov · loading SpaceNet shell + multi-agent orbit…
+<body>
+<div id="boot-msg">ASTRANOV · restoring SpaceNet chrome…</div>
+<script>
+(function () {
+  var BUILD = '20260812190000-chrome-orbit-restore';
+  /* Modern chrome only. Never pull the ancient phase-deck shell. */
+  var URLS = [
+    '/index-full.html?v=' + BUILD,
+    'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@f566673ec1be82d87cba409e8e41ff0a8aa447bd/index.html',
+    'https://raw.githubusercontent.com/notisastranov/astranov.eu/f566673ec1be82d87cba409e8e41ff0a8aa447bd/index.html'
+  ];
+  var CHROME = [
+    'chrome-mute',
+    'chrome-fix',
+    'chrome-radar',
+    'chrome-helper',
+    'chrome-daynight',
+    'chrome-install',
+    'chrome-market',
+    'chrome-cli-offers',
+    'chrome-marina-discipline',
+    'chrome-mind-bridge',
+    'webrtc',
+    'sn-event',
+    'sn-mesh',
+    'sn-connectivity',
+    'agent-orbit'
+  ];
+
+  function inject(src) {
+    try {
+      var s = document.createElement('script');
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      s.src = src;
+      (document.head || document.documentElement).appendChild(s);
+    } catch (_) {}
+  }
+
+  function injectAll() {
+    CHROME.forEach(function (name) {
+      inject('/js/spacenet/' + name + '.js?v=' + BUILD);
+    });
+  }
+
+  function isModern(html) {
+    return html &&
+      html.indexOf('sn-topchrome') >= 0 &&
+      html.indexOf('sn-task-ribbon') >= 0 &&
+      html.indexOf('os-bootloader') >= 0 &&
+      html.indexOf('globe-deck') < 0;
+  }
+
+  function go(html) {
+    try {
+      html = html.replace(/20260810190500-lang-core/g, BUILD);
+      html = html.replace(/20260812151903/g, BUILD);
+      document.open();
+      document.write(html);
+      document.close();
+      setTimeout(injectAll, 400);
+      setTimeout(injectAll, 1800);
+      setTimeout(injectAll, 4500);
+    } catch (e) {
+      var el = document.getElementById('boot-msg');
+      if (el) el.textContent = 'Restore failed · hard refresh';
+      console.error(e);
+    }
+  }
+
+  function tryFetch(i) {
+    if (i >= URLS.length) {
+      var el = document.getElementById('boot-msg');
+      if (el) el.textContent = 'Could not load modern chrome · hard refresh';
+      return;
+    }
+    fetch(URLS[i], { cache: 'no-store' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (html) {
+        if (!isModern(html)) throw new Error('ancient shell rejected');
+        go(html);
+      })
+      .catch(function () { tryFetch(i + 1); });
+  }
+
+  try {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        regs.forEach(function (r) { r.unregister().catch(function () {}); });
+      }).catch(function () {});
+    }
+  } catch (_) {}
+  tryFetch(0);
+})();
+</script>
 </body>
 </html>
