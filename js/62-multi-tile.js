@@ -40,8 +40,6 @@ var MultiTile = {
   },
 
   init() {
-    // Always ensure CSS (idempotent) — missing styles left tile off-screen (only pulses)
-    try { this._injectCss(); } catch (_) {}
     if (this._bound) return;
     this._bound = true;
     this._ensureDom();
@@ -76,250 +74,6 @@ var MultiTile = {
         this.openFromPlus();
       }, true);
     }
-  },
-
-
-  /* SPECS: MultiTile must be visible; was missing CSS so long-press looked broken */
-  _injectCss() {
-    if (document.getElementById('multi-tile-css')) return;
-    const st = document.createElement('style');
-    st.id = 'multi-tile-css';
-    st.textContent = `
-#mt-backdrop{position:fixed;inset:0;z-index:240;background:rgba(0,4,16,.55);opacity:0;pointer-events:none;transition:opacity .18s}
-#mt-backdrop.open{opacity:1;pointer-events:auto}
-#multi-tile{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translate(-50%,110%);width:min(420px,96vw);max-height:min(78vh,720px);z-index:260;display:flex;flex-direction:column;background:rgba(2,8,16,.97);border:1px solid rgba(48,88,140,.5);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.65),0 0 24px rgba(24,64,120,.35);color:#b8c4d4;font:12px/1.35 system-ui,sans-serif;overflow:hidden;transition:transform .22s ease;pointer-events:none;visibility:hidden}
-#multi-tile.open{transform:translate(-50%,0)!important;pointer-events:auto!important;visibility:visible!important;z-index:260!important}
-#mt-backdrop.open{z-index:255!important;opacity:1!important;pointer-events:auto!important}
-#mt-cover{position:relative;min-height:88px;background:linear-gradient(135deg,rgba(0,40,90,.9),rgba(0,12,36,.95));border-bottom:1px solid rgba(61,158,255,.25)}
-#mt-cover.has-img{background-size:cover;background-position:center}
-#mt-cover-btn,#mt-close,#mt-clear{position:absolute;top:8px;border:1px solid rgba(61,158,255,.4);background:rgba(0,20,48,.75);color:#cfe;border-radius:999px;padding:6px 10px;cursor:pointer;font:11px system-ui}
-#mt-cover-btn{left:8px}
-#mt-clear{right:48px}
-#mt-close{right:8px}
-#mt-tier-chip{position:absolute;left:8px;bottom:8px;font-size:10px;padding:3px 8px;border-radius:999px;background:rgba(26,111,212,.35);border:1px solid rgba(61,158,255,.5);color:#9fd0ff}
-#mt-head{display:flex;gap:10px;align-items:center;padding:10px 12px}
-#mt-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(0,28,64,.7);border:1px solid rgba(61,158,255,.4);box-shadow:0 0 12px rgba(26,111,212,.3)}
-#mt-name{font-weight:700;font-size:14px;color:#e8f4ff}
-#mt-place{font-size:11px;color:#8ab;margin-top:2px}
-#mt-place-id{font-size:10px;color:#6a9;margin-top:2px}
-.mt-roles{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
-.mt-role-tog{border:1px solid rgba(61,158,255,.35);background:rgba(0,16,40,.5);color:#bcd;border-radius:999px;padding:6px 10px;cursor:pointer;font:11px system-ui}
-.mt-role-tog.active{background:rgba(26,111,212,.35);color:#fff;box-shadow:0 0 10px rgba(26,111,212,.35)}
-#mt-scroll{flex:1;min-height:0;overflow:auto;padding:0 12px 10px}
-.mt-sec{margin-bottom:10px}
-.mt-label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#7ab;margin:8px 0 6px}
-.mt-field{display:block;margin:6px 0;color:#9bb;font-size:11px}
-.mt-field input,.mt-field textarea,select#mt-kind,input#mt-coins,input#mt-radius,input#mt-duration,.mt-wp-label,.mt-wp-info,.mt-wp-coins,#mt-place-name,#mt-lat,#mt-lng{width:100%;margin-top:4px;box-sizing:border-box;border-radius:12px;border:1px solid rgba(61,158,255,.3);background:rgba(0,12,32,.75);color:#e8f4ff;padding:8px 10px;font:12px system-ui}
-.mt-hint{font-size:10px;color:#789;margin:4px 0}
-.mt-task-row{display:flex;gap:8px;align-items:center;margin:6px 0}
-.mt-task-row > *{flex:1}
-.mt-inline{font-size:10px;color:#9bb}
-#mt-actions{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px;border-top:1px solid rgba(61,158,255,.22);background:rgba(0,8,22,.9)}
-#mt-actions button{border:1px solid rgba(61,158,255,.4);background:rgba(0,24,56,.7);color:#def;border-radius:12px;padding:8px 10px;cursor:pointer;font:11px system-ui}
-#mt-actions .mt-primary{background:linear-gradient(180deg,rgba(26,111,212,.55),rgba(0,40,90,.85));font-weight:600}
-#mt-nudge{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-#mt-nudge button{min-width:40px;border-radius:10px;border:1px solid rgba(61,158,255,.4);background:rgba(0,24,56,.65);color:#9fd0ff;padding:8px;cursor:pointer}
-.mt-wp-btn,.mt-launch{border:1px solid rgba(61,158,255,.4);background:rgba(0,28,64,.7);color:#def;border-radius:12px;padding:8px 10px;cursor:pointer}
-.mt-launch{width:100%;margin-top:8px;background:linear-gradient(180deg,rgba(26,111,212,.5),rgba(0,36,80,.9));font-weight:600}
-.mt-wp-btn.ghost{opacity:.75}
-`;
-    document.head.appendChild(st);
-  },
-
-  PLACES_KEY: 'astranov:places-v1',
-
-  _loadPlaces() {
-    try { return JSON.parse(localStorage.getItem(this.PLACES_KEY) || '[]'); }
-    catch (_) { return []; }
-  },
-  _savePlaces(list) {
-    try { localStorage.setItem(this.PLACES_KEY, JSON.stringify((list || []).slice(-80))); } catch (_) {}
-  },
-
-  /** Unique place id */
-  _newPlaceId() {
-    return 'pl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
-  },
-
-  /** Reverse-geocode → real-state name like "Rodos Island · street" */
-  async resolvePlaceName(lat, lng) {
-    try {
-      const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat='
-        + encodeURIComponent(lat) + '&lon=' + encodeURIComponent(lng)
-        + '&zoom=16&addressdetails=1';
-      const r = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'Astranov/1.0' } });
-      if (!r.ok) throw new Error('geo');
-      const j = await r.json();
-      const a = j.address || {};
-      const island = a.island || a.archipelago || '';
-      const city = a.city || a.town || a.village || a.municipality || a.county || '';
-      const road = a.road || a.pedestrian || a.neighbourhood || a.suburb || '';
-      const state = a.state || a.region || '';
-      const country = a.country || '';
-      const bits = [];
-      if (island) bits.push(island);
-      else if (city) bits.push(city);
-      if (road && road !== city) bits.push(road);
-      if (!bits.length && state) bits.push(state);
-      if (!bits.length && j.name) bits.push(j.name);
-      if (!bits.length && country) bits.push(country);
-      if (!bits.length) bits.push((+lat).toFixed(3) + ',' + (+lng).toFixed(3));
-      // Office-style label if vendor role later
-      return bits.join(' · ');
-    } catch (_) {
-      return (+lat).toFixed(4) + ', ' + (+lng).toFixed(4);
-    }
-  },
-
-  async _refreshPlaceLabel() {
-    const pin = this._pin;
-    if (!pin) return;
-    const base = await this.resolvePlaceName(pin.lat, pin.lng);
-    const roleTag = this._roles?.vendor ? ' Astranov Office'
-      : this._roles?.driver ? ' Driver base'
-      : this._roles?.public ? ' Public'
-      : '';
-    const name = (pin.customName || (base + roleTag)).trim();
-    pin.placeName = name;
-    pin.geoBase = base;
-    const pl = document.getElementById('mt-place');
-    if (pl) pl.textContent = name;
-    const idEl = document.getElementById('mt-place-id');
-    if (idEl) idEl.textContent = pin.id || 'unsaved';
-    const nameIn = document.getElementById('mt-place-name');
-    if (nameIn && !nameIn.matches(':focus')) nameIn.value = name;
-    const latIn = document.getElementById('mt-lat');
-    const lngIn = document.getElementById('mt-lng');
-    if (latIn && !latIn.matches(':focus')) latIn.value = (+pin.lat).toFixed(6);
-    if (lngIn && !lngIn.matches(':focus')) lngIn.value = (+pin.lng).toFixed(6);
-  },
-
-  nudge(dLat, dLng) {
-    if (!this._pin) return;
-    this._pin.lat = +this._pin.lat + dLat;
-    this._pin.lng = +this._pin.lng + dLng;
-    window._pendingShopLatLng = { lat: this._pin.lat, lng: this._pin.lng };
-    try {
-      CityMap?.map?.panTo?.([this._pin.lat, this._pin.lng]);
-      MapDepict?.pulse?.(this._pin.lat, this._pin.lng, 0x3d9eff, 'adjust', 2500);
-    } catch (_) {}
-    void this._refreshPlaceLabel();
-  },
-
-  applyLatLngInputs() {
-    const lat = parseFloat(document.getElementById('mt-lat')?.value);
-    const lng = parseFloat(document.getElementById('mt-lng')?.value);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    if (!this._pin) this._pin = { lat, lng, source: 'manual' };
-    this._pin.lat = lat;
-    this._pin.lng = lng;
-    window._pendingShopLatLng = { lat, lng };
-    void this._refreshPlaceLabel();
-  },
-
-  clearPlace() {
-    this._waypoints = [];
-    this._renderWaypoints?.();
-    try { CityMap?.clearTaskGeometry?.(); } catch (_) {}
-    if (this._pin?.id) {
-      const list = this._loadPlaces().filter((p) => p.id !== this._pin.id);
-      this._savePlaces(list);
-    }
-    if (this._pin) {
-      this._pin.customName = '';
-      this._pin.id = null;
-      this._pin.placeName = '';
-    }
-    const note = document.getElementById('mt-task-note');
-    const title = document.getElementById('mt-task-title');
-    if (note) note.value = '';
-    if (title) title.value = '';
-    void this._refreshPlaceLabel();
-    const zl = document.getElementById('zoom-label');
-    if (zl) zl.textContent = 'Place cleared';
-    AciCli?.print?.('place cleared', 'dim');
-  },
-
-  _bindPlaceControls() {
-    if (this._placeBound) return;
-    this._placeBound = true;
-    document.getElementById('mt-clear')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      this.clearPlace();
-    });
-    document.getElementById('mt-nudge-n')?.addEventListener('click', () => this.nudge(0.00015, 0));
-    document.getElementById('mt-nudge-s')?.addEventListener('click', () => this.nudge(-0.00015, 0));
-    document.getElementById('mt-nudge-e')?.addEventListener('click', () => this.nudge(0, 0.00015));
-    document.getElementById('mt-nudge-w')?.addEventListener('click', () => this.nudge(0, -0.00015));
-    document.getElementById('mt-apply-ll')?.addEventListener('click', () => this.applyLatLngInputs());
-    document.getElementById('mt-place-name')?.addEventListener('change', () => {
-      const v = document.getElementById('mt-place-name')?.value?.trim();
-      if (this._pin && v) {
-        this._pin.customName = v;
-        this._pin.placeName = v;
-        const pl = document.getElementById('mt-place');
-        if (pl) pl.textContent = v;
-      }
-    });
-  },
-
-  listPlaces() {
-    return this._loadPlaces();
-  },
-
-  findPlace(q) {
-    const s = String(q || '').trim().toLowerCase();
-    if (!s) return null;
-    const list = this._loadPlaces();
-    return list.find((p) => p.id === s || p.id?.toLowerCase() === s
-      || (p.name && p.name.toLowerCase() === s)
-      || (p.name && p.name.toLowerCase().includes(s))) || null;
-  },
-
-  openPlace(q) {
-    const p = this.findPlace(q);
-    if (!p) {
-      AciCli?.print?.('place not found · try place list', 'err');
-      return false;
-    }
-    this.openAt(p.lat, p.lng, {
-      source: 'cli-recover',
-      tier: p.tier || this.currentTier(),
-      label: p.name,
-      placeId: p.id,
-      placeName: p.name,
-    });
-    return true;
-  },
-
-  wantsCli(line) {
-    return /^\s*place(s)?(\s|$)/i.test(String(line || ''));
-  },
-
-  handleCli(line) {
-    const raw = String(line || '').trim();
-    const low = raw.toLowerCase();
-    if (/^places?\s*$|^place\s+list$/.test(low)) {
-      const list = this._loadPlaces();
-      if (!list.length) {
-        const msg = 'No saved places · long-press map → Save';
-        AciCli?.print?.(msg, 'dim');
-        return msg;
-      }
-      list.slice().reverse().forEach((p) => {
-        AciCli?.print?.(
-          (p.name || p.id) + ' · ' + (+p.lat).toFixed(4) + ',' + (+p.lng).toFixed(4) + ' · ' + p.id,
-          'ok'
-        );
-      });
-      return list.length + ' places';
-    }
-    const open = raw.match(/^place\s+open\s+(.+)$/i) || raw.match(/^place\s+(.+)$/i);
-    if (open) {
-      const ok = this.openPlace(open[1].trim());
-      return ok ? 'opened' : 'not found';
-    }
-    return null;
   },
 
   _ensureDom() {
@@ -676,40 +430,9 @@ var MultiTile = {
     this.openAt(pos.lat, pos.lng, { source: 'plus', tier: this.currentTier() });
   },
 
-  /** Force panel on screen — never leave only globe dots */
-  _showPanel() {
-    try { this._injectCss(); } catch (_) {}
-    try { this._ensureDom(); } catch (_) {}
-    const tile = document.getElementById('multi-tile');
-    const back = document.getElementById('mt-backdrop');
-    if (tile) {
-      tile.classList.add('open');
-      tile.style.cssText = [
-        'position:fixed', 'left:50%', 'bottom:max(12px, env(safe-area-inset-bottom))',
-        'transform:translate(-50%,0)', 'width:min(420px,96vw)', 'max-height:min(78vh,720px)',
-        'z-index:260', 'display:flex', 'flex-direction:column',
-        'background:rgba(2,8,16,0.97)', 'border:1px solid rgba(48,88,140,0.55)',
-        'border-radius:14px', 'box-shadow:0 16px 48px rgba(0,0,0,0.65)',
-        'color:#b8c4d4', 'font:12px/1.35 system-ui,sans-serif',
-        'overflow:hidden', 'pointer-events:auto', 'visibility:visible', 'opacity:1',
-      ].join(';');
-    }
-    if (back) {
-      back.classList.add('open');
-      back.style.cssText = 'position:fixed;inset:0;z-index:255;background:rgba(0,4,12,0.55);opacity:1;pointer-events:auto';
-    }
-    // Keep root above globe/CLI
-    const root = document.getElementById('multi-tile-root');
-    if (root) {
-      root.style.position = 'relative';
-      root.style.zIndex = '260';
-    }
-  },
-
   /** Open self / place tile at any zoom level */
   openAt(lat, lng, opts) {
     opts = opts || {};
-    try { this._injectCss(); } catch (_) {}
     this.init();
     // Stellar / space: still allow tile — pin may be symbolic (last pos or facing Earth)
     let la = lat;
@@ -744,27 +467,22 @@ var MultiTile = {
         driver: arr.includes('driver'),
       };
     }
-    try { this._syncRoleButtons(); } catch (_) {}
-    try { this._render(); } catch (e) { console.warn('[MultiTile render]', e); }
-    try { this._syncTaskCriteria(); } catch (_) {}
-    try { this._refreshCoinsBal(); } catch (_) {}
-    try { this._renderWaypoints(); } catch (_) {}
-    this._showPanel();
+    this._syncRoleButtons();
+    this._render();
+    this._syncTaskCriteria();
+    this._refreshCoinsBal();
+    this._renderWaypoints();
+    document.getElementById('multi-tile')?.classList.add('open');
+    document.getElementById('mt-backdrop')?.classList.add('open');
     document.getElementById('multi-tile')?.setAttribute('data-tier', this._tier);
     try {
-      MapDepict?.pulse?.(la, ln, 0x3d6eb0, opts.label || 'tile', 4000);
-    } catch (_) {}
-    try {
-      GlobeDeck?.ensureCliVisible?.('ok');
-      AciCli?.print?.('◆ multi-tile · ' + (+la).toFixed(3) + ', ' + (+ln).toFixed(3), 'ok');
+      MapDepict?.pulse?.(la, ln, 0x3d9eff, opts.label || 'tile', 6000);
     } catch (_) {}
     const zl = document.getElementById('zoom-label');
     if (zl) {
       zl.textContent = this.tierLabel(this._tier) + ' · '
         + (+la).toFixed(3) + ', ' + (+ln).toFixed(3);
     }
-    // Place name async (non-blocking)
-    try { this._refreshPlaceLabel?.(); } catch (_) {}
   },
 
   /** Profile of another player / vendor marker (any level) */
@@ -789,19 +507,8 @@ var MultiTile = {
 
   close() {
     this._open = false;
-    const tile = document.getElementById('multi-tile');
-    const back = document.getElementById('mt-backdrop');
-    tile?.classList.remove('open');
-    back?.classList.remove('open');
-    if (tile) {
-      tile.style.transform = 'translate(-50%,110%)';
-      tile.style.visibility = 'hidden';
-      tile.style.pointerEvents = 'none';
-    }
-    if (back) {
-      back.style.opacity = '0';
-      back.style.pointerEvents = 'none';
-    }
+    document.getElementById('multi-tile')?.classList.remove('open');
+    document.getElementById('mt-backdrop')?.classList.remove('open');
   },
 
   toggleRole(role) {
@@ -1021,25 +728,6 @@ var MultiTile = {
     } catch (_) {}
   },
 };
-// CLI recovery: place list | place open <name>
-(function bindPlaceCli() {
-  const hook = () => {
-    const sc = window.SuperCli;
-    if (!sc || sc._placeCli) return;
-    sc._placeCli = true;
-    const orig = sc.exec?.bind(sc);
-    if (!orig) return;
-    sc.exec = async function (line, opts) {
-      if (MultiTile.wantsCli?.(line)) {
-        const msg = MultiTile.handleCli(line);
-        if (msg != null) return { handled: true, msg };
-      }
-      return orig(line, opts);
-    };
-  };
-  setTimeout(hook, 600);
-  setTimeout(hook, 2000);
-})();
 window.MultiTile = MultiTile;
 
 // Radar: single-click map — search around place via CLI
