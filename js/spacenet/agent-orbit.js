@@ -1,6 +1,6 @@
 /**
  * SNAgentOrbit — Multi-agent orchestration + Astranov planet
- * Build: 20260812190000-chrome-orbit-restore
+ * Build: 20260812210000-live-planet
  *
  * Planet high above Earth. Tap a satellite to paste a key (CLI sheet,
  * never a map tile). collab / agent commands orchestrate Gemini,
@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812190000-chrome-orbit-restore';
+  var BUILD = '20260812210000-live-planet';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
@@ -28,7 +28,7 @@
       endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-3-5-sonnet-20241022'
     }
   };
-  var PLANET = { lat: 36.43, lng: 28.22, altitude: 1.22, color: 0x3d9eff };
+  var PLANET = { lat: 36.43, lng: 28.22, altitude: 1.48, color: 0x3d9eff };
   var SAT = {
     astranov: { dLat: 0, dLng: 0, alt: 1.22 },
     gemini: { dLat: 2.4, dLng: 3.1, alt: 1.18 },
@@ -156,6 +156,168 @@
     hideKeySheet();
   }
 
+  var orbitGroup = null;
+  var orbitSats = [];
+  var orbitLabel = null;
+  var orbitFrameOn = false;
+  var hudRafOn = false;
+
+  function llVec(lat, lng, r) {
+    if (global.SNGlobe && SNGlobe.latLngToVec) return SNGlobe.latLngToVec(lat, lng, r);
+    r = r == null ? 1 : r;
+    var phi = ((90 - lat) * Math.PI) / 180;
+    var theta = ((lng + 180) * Math.PI) / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function projectToScreen(vec) {
+    try {
+      var cam = global.SNGlobe && SNGlobe.getCamera && SNGlobe.getCamera();
+      var renderer = global.SNGlobe && SNGlobe.getRenderer && SNGlobe.getRenderer();
+      if (!cam || !renderer || !vec) return null;
+      var v = vec.clone();
+      if (orbitGroup && orbitGroup.parent && orbitGroup.parent.localToWorld) {
+        v = orbitGroup.parent.localToWorld(vec.clone());
+      }
+      v.project(cam);
+      var w = renderer.domElement.clientWidth || window.innerWidth;
+      var h = renderer.domElement.clientHeight || window.innerHeight;
+      return { x: (v.x * 0.5 + 0.5) * w, y: (-v.y * 0.5 + 0.5) * h, z: v.z };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function fallbackHudPos() {
+    var w = window.innerWidth || 390;
+    var h = window.innerHeight || 844;
+    var dx = Math.max(88, Math.min(210, w * 0.18));
+    return { x: w * 0.5 + dx, y: h * 0.30 };
+  }
+
+  function placeHud(el) {
+    if (!el) return;
+    var pos = fallbackHudPos();
+    try {
+      if (orbitGroup && global.SNGlobe && SNGlobe.getCamera) {
+        var world = new THREE.Vector3();
+        orbitGroup.getWorldPosition(world);
+        var scr = projectToScreen(world);
+        if (scr && scr.z > -1 && scr.z < 1 && scr.x > 40 && scr.x < window.innerWidth - 40) {
+          pos = { x: scr.x, y: scr.y };
+        }
+      }
+    } catch (_) {}
+    el.style.left = Math.round(pos.x) + 'px';
+    el.style.top = Math.round(pos.y) + 'px';
+    el.style.opacity = '1';
+  }
+
+  function ensurePlanetHud() {
+    var el = document.getElementById('sn-collective-hud');
+    if (el) {
+      el.removeAttribute('hidden');
+      el.style.display = 'block';
+      el.style.opacity = '1';
+      placeHud(el);
+      return el;
+    }
+    var style = document.getElementById('sn-collective-hud-css');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'sn-collective-hud-css';
+      style.textContent =
+        '#sn-collective-hud{position:fixed;left:50%;top:30%;z-index:48;width:168px;height:168px;' +
+        'transform:translate(-50%,-50%);pointer-events:none;opacity:1;' +
+        'filter:drop-shadow(0 0 18px rgba(61,158,255,.55))}' +
+        '#sn-collective-hud[hidden]{display:none!important}' +
+        '#sn-collective-hud .sn-cp-stage{position:relative;width:100%;height:100%}' +
+        '#sn-collective-hud .sn-cp-ring{position:absolute;left:50%;top:50%;width:128px;height:46px;' +
+        'margin:-23px 0 0 -64px;border:2px solid rgba(210,236,255,.9);border-radius:50%;' +
+        'box-shadow:0 0 14px rgba(120,190,255,.75),inset 0 0 10px rgba(160,210,255,.25);' +
+        'transform:rotateX(66deg) rotateZ(-16deg);animation:sn-cp-spin 9s linear infinite}' +
+        '#sn-collective-hud .sn-cp-core{position:absolute;left:50%;top:50%;width:82px;height:82px;' +
+        'margin:-41px 0 0 -41px;border-radius:50%;pointer-events:auto;cursor:pointer;border:0;' +
+        'background:radial-gradient(circle at 32% 28%,#f2f9ff 0%,#7ec8ff 28%,#2b8cff 58%,#0a3a9a 82%,#031018 100%);' +
+        'box-shadow:0 0 0 2px rgba(190,230,255,.55),0 0 28px 10px rgba(61,158,255,.6),0 0 64px 18px rgba(40,140,255,.32)}' +
+        '#sn-collective-hud .sn-cp-core:focus{outline:2px solid #7ec8ff}' +
+        '#sn-collective-hud .sn-cp-name{position:absolute;left:50%;top:calc(50% + 52px);transform:translateX(-50%);' +
+        'font:800 10px/1 Space Grotesk,system-ui,sans-serif;letter-spacing:.18em;color:#d8f0ff;' +
+        'text-shadow:0 0 10px rgba(61,158,255,.95);white-space:nowrap;pointer-events:none}' +
+        '#sn-collective-hud .sn-cp-orbit{position:absolute;inset:8px;animation:sn-cp-orbit 12s linear infinite}' +
+        '#sn-collective-hud .sn-cp-sat{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;' +
+        'border-radius:50%;border:1px solid rgba(255,255,255,.55);pointer-events:auto;cursor:pointer;padding:0;' +
+        'box-shadow:0 0 10px currentColor}' +
+        '#sn-collective-hud .sn-cp-sat[data-id="astranov"]{background:#3d9eff;color:#3d9eff;left:50%;top:0}' +
+        '#sn-collective-hud .sn-cp-sat[data-id="gemini"]{background:#8ab4f8;color:#8ab4f8;left:100%;top:50%}' +
+        '#sn-collective-hud .sn-cp-sat[data-id="chatgpt"]{background:#10a37f;color:#10a37f;left:50%;top:100%}' +
+        '#sn-collective-hud .sn-cp-sat[data-id="claude"]{background:#d4a27f;color:#d4a27f;left:0;top:50%}' +
+        '#sn-collective-hud .sn-cp-sat span{position:absolute;left:50%;top:20px;transform:translateX(-50%);' +
+        'font:700 8px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;color:#cfe8ff;white-space:nowrap;' +
+        'text-shadow:0 0 6px #000}' +
+        '@keyframes sn-cp-spin{to{transform:rotateX(66deg) rotateZ(344deg)}}' +
+        '@keyframes sn-cp-orbit{to{transform:rotate(360deg)}}' +
+        '@media (max-width:520px){#sn-collective-hud{width:132px;height:132px}' +
+        '#sn-collective-hud .sn-cp-core{width:64px;height:64px;margin:-32px 0 0 -32px}' +
+        '#sn-collective-hud .sn-cp-ring{width:104px;height:38px;margin:-19px 0 0 -52px}' +
+        '#sn-collective-hud .sn-cp-name{top:calc(50% + 42px);font-size:9px}}';
+      document.head.appendChild(style);
+    }
+    el = document.createElement('div');
+    el.id = 'sn-collective-hud';
+    el.setAttribute('aria-label', 'Collective AI planet');
+    el.innerHTML =
+      '<div class="sn-cp-stage">' +
+      '<div class="sn-cp-ring" aria-hidden="true"></div>' +
+      '<button type="button" class="sn-cp-core" title="Collective AI · tap for agents"></button>' +
+      '<div class="sn-cp-name">COLLECTIVE AI</div>' +
+      '<div class="sn-cp-orbit">' +
+      '<button type="button" class="sn-cp-sat" data-id="astranov" title="Astranov Mind"><span>MIND</span></button>' +
+      '<button type="button" class="sn-cp-sat" data-id="gemini" title="Gemini"><span>GEMINI</span></button>' +
+      '<button type="button" class="sn-cp-sat" data-id="chatgpt" title="ChatGPT"><span>GPT</span></button>' +
+      '<button type="button" class="sn-cp-sat" data-id="claude" title="Claude"><span>CLAUDE</span></button>' +
+      '</div></div>';
+    document.body.appendChild(el);
+    el.querySelector('.sn-cp-core').addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      goOrbit();
+    });
+    el.querySelectorAll('.sn-cp-sat').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var id = btn.getAttribute('data-id');
+        var p = PROVIDERS[id];
+        if (!p) return;
+        if (p.needsKey && !hasKey(id)) showKeySheet(id);
+        else {
+          expandCli();
+          log(p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : 'READY'), hasKey(id) ? 'ok' : 'dim');
+        }
+      });
+    });
+    placeHud(el);
+    if (!hudRafOn) {
+      hudRafOn = true;
+      function tickHud() {
+        var hud = document.getElementById('sn-collective-hud');
+        if (hud && !hud.hasAttribute('hidden')) placeHud(hud);
+        requestAnimationFrame(tickHud);
+      }
+      requestAnimationFrame(tickHud);
+    }
+    return el;
+  }
+
+  function ensureOrbitLabel() {
+    return ensurePlanetHud();
+  }
+
   function clearPlanet() {
     S.entityIds.forEach(function (id) {
       try { if (global.GlobeEntity) GlobeEntity.unregister(id); } catch (_) {}
@@ -163,14 +325,115 @@
     S.entityIds = [];
     S.planetVisible = false;
     hideKeySheet();
+    try {
+      if (orbitGroup && orbitGroup.parent) orbitGroup.parent.remove(orbitGroup);
+    } catch (_) {}
+    orbitGroup = null;
+    orbitSats = [];
+    var hud = document.getElementById('sn-collective-hud');
+    if (hud) hud.setAttribute('hidden', '');
+    if (orbitLabel) orbitLabel.style.opacity = '0';
+  }
+
+  function paintPlanet3d() {
+    if (!global.THREE || !global.SNGlobe || !SNGlobe.ready) return false;
+    var scene = SNGlobe.getScene && SNGlobe.getScene();
+    if (!scene) return false;
+    if (orbitGroup && orbitGroup.parent) {
+      S.planetVisible = true;
+      return true;
+    }
+    var T = THREE;
+    var group = new T.Group();
+    group.name = 'sn-collective-planet';
+    // Sit in front-right of Earth so the 3D body is also in the pixels.
+    group.position.set(1.35, 0.62, 1.55);
+
+    var core = new T.Mesh(
+      new T.SphereGeometry(0.28, 32, 32),
+      new T.MeshBasicMaterial({ color: 0x4db3ff, depthTest: false })
+    );
+    core.renderOrder = 99;
+    group.add(core);
+
+    var halo = new T.Mesh(
+      new T.SphereGeometry(0.40, 24, 24),
+      new T.MeshBasicMaterial({
+        color: 0x9ad4ff,
+        transparent: true,
+        opacity: 0.28,
+        depthTest: false,
+        depthWrite: false,
+      })
+    );
+    halo.renderOrder = 98;
+    group.add(halo);
+
+    var ring = new T.Mesh(
+      new T.TorusGeometry(0.46, 0.018, 12, 56),
+      new T.MeshBasicMaterial({ color: 0xd8f0ff, transparent: true, opacity: 0.95, depthTest: false })
+    );
+    ring.rotation.x = Math.PI / 2.4;
+    ring.renderOrder = 100;
+    group.add(ring);
+
+    orbitSats = [];
+    Object.keys(PROVIDERS).forEach(function (id, i) {
+      var p = PROVIDERS[id];
+      var sat = new T.Mesh(
+        new T.SphereGeometry(id === 'astranov' ? 0.048 : 0.036, 12, 12),
+        new T.MeshBasicMaterial({ color: p.hex, depthTest: false })
+      );
+      sat.renderOrder = 101;
+      sat.userData = { id: id, phase: (i / 4) * Math.PI * 2, radius: 0.42 + (i % 2) * 0.05 };
+      sat.position.set(
+        Math.cos(sat.userData.phase) * sat.userData.radius,
+        Math.sin(sat.userData.phase * 0.7) * 0.05,
+        Math.sin(sat.userData.phase) * sat.userData.radius
+      );
+      group.add(sat);
+      orbitSats.push(sat);
+    });
+
+    scene.add(group);
+    orbitGroup = group;
+    S.planetVisible = true;
+    try { if (global.SNGlobe) SNGlobe.lastAct = Date.now(); } catch (_) {}
+    if (!orbitFrameOn) {
+      orbitFrameOn = true;
+      function spin() {
+        if (orbitGroup) {
+          orbitGroup.rotation.y += 0.008;
+          orbitSats.forEach(function (sat) {
+            sat.userData.phase += 0.02;
+            sat.position.set(
+              Math.cos(sat.userData.phase) * sat.userData.radius,
+              Math.sin(sat.userData.phase * 0.7) * 0.05,
+              Math.sin(sat.userData.phase) * sat.userData.radius
+            );
+          });
+        }
+        requestAnimationFrame(spin);
+      }
+      requestAnimationFrame(spin);
+      if (SNGlobe.onFrame) {
+        SNGlobe.onFrame(function () {});
+      }
+    }
+    return true;
   }
 
   function paintPlanet() {
-    if (!global.GlobeEntity || !GlobeEntity.register) {
-      log('GlobeEntity not ready — wait a second then type orbit', 'dim');
-      return;
-    }
-    clearPlanet();
+    ensurePlanetHud();
+    S.planetVisible = true;
+    var ok3d = false;
+    try { ok3d = paintPlanet3d(); } catch (e) { ok3d = false; }
+    if (ok3d) return;
+    if (!global.GlobeEntity || !GlobeEntity.register) return;
+    S.entityIds.forEach(function (id) {
+      try { if (global.GlobeEntity) GlobeEntity.unregister(id); } catch (_) {}
+    });
+    S.entityIds = [];
     var core = GlobeEntity.register({
       id: 'agent-planet-core', type: 'place', lat: PLANET.lat, lng: PLANET.lng,
       altitude: PLANET.altitude, title: '\u25ce ASTRANOV',
@@ -197,7 +460,6 @@
       });
       if (ent) S.entityIds.push(eid);
     });
-    S.planetVisible = true;
   }
 
   function flyToOrbit() {
@@ -225,12 +487,22 @@
     log('tap a satellite to paste a key · collab <task> · agent <name> <prompt>', 'dim');
   }
 
-  function goOrbit() {
-    expandCli();
-    log('\u25ce ASTRANOV PLANET · high orbit · multi-agent station', 'ok');
-    flyToOrbit();
+  function goOrbit(opts) {
+    opts = opts || {};
+    if (!opts.quiet) {
+      expandCli();
+      log('\u25ce ASTRANOV PLANET · collective AI · multi-agent station', 'ok');
+      listAgents();
+    }
     paintPlanet();
-    listAgents();
+    if (!opts.noFly) flyToOrbit();
+    else {
+      try {
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(PLANET.lat, PLANET.lng, { tier: 'global', label: 'Collective AI', openMap: false });
+        }
+      } catch (_) {}
+    }
   }
 
   function setKey(provider, key) {
@@ -479,10 +751,8 @@
   }
 
   function silentPaintWhenReady() {
-    if (S.planetVisible) return;
-    if (global.GlobeEntity && GlobeEntity.register) {
-      paintPlanet();
-    }
+    if (S.planetVisible && orbitGroup) return;
+    paintPlanet();
   }
 
   function init() {
@@ -490,6 +760,8 @@
     loadCreds();
     installCli();
     ensureRibbonBtn();
+    ensurePlanetHud();
+    S.planetVisible = true;
     S.ready = true;
   }
 
@@ -502,13 +774,14 @@
 
   function boot() {
     init();
-    [400, 1400, 3200, 7000].forEach(function (ms) {
+    paintPlanet();
+    [400, 1400, 3200, 6000, 10000].forEach(function (ms) {
       setTimeout(function () {
         installCli();
         ensureRibbonBtn();
+        silentPaintWhenReady();
       }, ms);
     });
-    setTimeout(silentPaintWhenReady, 5000);
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(boot, 80);

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260812190000-chrome-orbit-restore" />
-<meta name="astranov-continuity" content="20260812190000-chrome-orbit-restore" />
+<meta name="astranov-build" content="20260812210000-live-planet" />
+<meta name="astranov-continuity" content="20260812210000-live-planet" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
 <link rel="icon" href="/icon.png" type="image/png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -413,7 +413,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   overflow: hidden;
   transition: background 0.4s ease, border-color 0.4s ease;
 }
-#panel.collapsed { max-height: min(108px, 14vh); }
+#panel.collapsed { max-height: min(200px, 28vh); min-height: 148px; }
 #panel.mid { max-height: min(22vh, 180px) !important; }
 #panel.expanded { max-height: 33.333vh !important; }
 /* Empty log: hide dead space — ribbon + input only */
@@ -436,8 +436,75 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   background: rgba(var(--glow-rgb), 0.45);
 }
 #sn-task-ribbon {
-  display: flex; gap: 6px; padding: 0 12px 4px;
+  display: flex; gap: 6px; padding: 4px 10px 6px;
   overflow-x: auto; flex: 0 0 auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+#sn-task-ribbon::-webkit-scrollbar { display: none; }
+.sn-rib-btn {
+  position: relative;
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; flex: 1 1 0; min-width: 40px; min-height: 52px; padding: 6px 3px;
+  border: 1px solid rgba(61, 184, 255, 0.45);
+  background: linear-gradient(165deg, rgba(12, 40, 78, 0.92) 0%, rgba(3, 14, 32, 0.96) 100%);
+  color: #d4ecff;
+  border-radius: 14px; cursor: pointer; white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(168, 236, 255, 0.14), 0 0 12px rgba(61, 158, 255, 0.18);
+}
+.sn-rib-emoji { font-size: 16px; line-height: 1; }
+.sn-rib-icon { display: none; }
+.sn-rib-txt {
+  font: 700 9px/1.1 var(--font-ui);
+  letter-spacing: 0.04em; color: #b8dcff; text-transform: uppercase;
+}
+.sn-rib-btn:active, .sn-rib-btn.on {
+  border-color: #3d9eff;
+  box-shadow: 0 0 18px rgba(61, 184, 255, 0.45);
+}
+#sn-orb-ring {
+  position: fixed; inset: 0; z-index: 40;
+  pointer-events: none;
+}
+.sn-orb {
+  pointer-events: auto;
+  position: absolute;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(61, 158, 255, 0.65);
+  background: radial-gradient(circle at 35% 30%, rgba(30, 80, 160, 0.85), rgba(0, 8, 24, 0.92));
+  color: #7ec8ff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 0 18px rgba(61, 158, 255, 0.35), inset 0 0 12px rgba(61, 158, 255, 0.2);
+  cursor: pointer;
+}
+.sn-orb[data-act="power"] { top: 22%; left: 8%; }
+.sn-orb[data-act="locate"] { top: 22%; right: 8%; }
+.sn-orb[data-act="plans"] { bottom: 28%; left: 8%; }
+.sn-orb[data-act="chat"] { bottom: 28%; right: 8%; }
+.sn-orb:active { transform: scale(0.94); }
+#sn-topchrome-panel {
+  background: rgba(0, 4, 14, 0.78) !important;
+  border: 1px solid rgba(61, 158, 255, 0.42) !important;
+  min-height: 96px !important;
+}
+#panel {
+  background: rgba(0, 4, 14, 0.82) !important;
+  border: 1px solid rgba(61, 158, 255, 0.42) !important;
+  min-height: 148px !important;
+}
+#panel.collapsed { max-height: min(200px, 28vh) !important; min-height: 148px !important; }
+#sn-topchrome-drag::after { content: 'gadgets · tap'; }
+#cli-in {
+  border: 1px solid rgba(61, 158, 255, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  color: #d4ecff !important;
+}
+@media (max-width: 480px) {
+  .sn-orb { width: 50px; height: 50px; font-size: 20px; }
+  .sn-rib-btn { min-width: 36px; min-height: 48px; }
 }
 #cli-log {
   flex: 1 1 auto;
@@ -750,7 +817,8 @@ body.sn-offer-focus #stc-gadgets {
   display: none !important;
 }
 body.sn-offer-focus #sn-topchrome-panel {
-  max-height: 54px !important;
+  max-height: none !important;
+  min-height: 96px !important;
 }
 body.sn-offer-focus #dock #panel.collapsed {
   opacity: 0.72;
@@ -831,6 +899,12 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   </div>
 </div>
 <div id="globe" aria-label="Earth"></div>
+<div id="sn-orb-ring" aria-label="Command buttons">
+  <button type="button" class="sn-orb" data-act="power" title="Power">⚡</button>
+  <button type="button" class="sn-orb" data-act="locate" title="Locate">📡</button>
+  <button type="button" class="sn-orb" data-act="plans" title="Plans">📦</button>
+  <button type="button" class="sn-orb" data-act="chat" title="Help">💬</button>
+</div>
 <div id="city-map" aria-hidden="true"></div>
 <div id="sn-topchrome" aria-label="Top scroll">
   <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Top scroll">
@@ -976,7 +1050,16 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
 <div id="dock">
   <div id="panel" class="collapsed">
     <div id="cli-drag" title="Drag to expand CLI" aria-label="CLI handle"></div>
-    <div id="sn-task-ribbon" aria-label="Quick actions"></div>
+    <div id="sn-task-ribbon" aria-label="Quick actions">
+      <button type="button" class="sn-rib-btn" data-act="locate" id="sn-rib-locate"><span class="sn-rib-emoji">📍</span><span class="sn-rib-txt">Locate</span></button>
+      <button type="button" class="sn-rib-btn" data-act="polygon" id="sn-rib-poly"><span class="sn-rib-emoji">⬠</span><span class="sn-rib-txt">Poly</span></button>
+      <button type="button" class="sn-rib-btn" data-act="user" id="sn-rib-user"><span class="sn-rib-emoji">👤</span><span class="sn-rib-txt">Login</span></button>
+      <button type="button" class="sn-rib-btn" data-act="call" id="sn-rib-call"><span class="sn-rib-emoji">📹</span><span class="sn-rib-txt">Call</span></button>
+      <button type="button" class="sn-rib-btn" data-act="add" id="sn-rib-add"><span class="sn-rib-emoji">➕</span><span class="sn-rib-txt">Add</span></button>
+      <button type="button" class="sn-rib-btn" data-act="layers" id="sn-rib-layers"><span class="sn-rib-emoji">🗺</span><span class="sn-rib-txt">Layers</span></button>
+      <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf"><span class="sn-rib-emoji">🎧</span><span class="sn-rib-txt">AI</span></button>
+      <button type="button" class="sn-rib-btn" data-act="send" id="sn-rib-send"><span class="sn-rib-emoji">➤</span><span class="sn-rib-txt">Send</span></button>
+    </div>
     <div id="cli-log" aria-live="polite"></div>
     <form id="cli-form" autocomplete="off">
       <span class="cli-prompt-prefix" aria-hidden="true">›</span>
@@ -1109,6 +1192,44 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   }
 })();
 </script>
-<script src="/js/spacenet/os-bootloader.js?v=20260812190000-chrome-orbit-restore"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260812210000-live-planet"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260812210000-live-planet"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260812210000-live-planet"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260812210000-live-planet"></script>
+<script src="/js/spacenet/agent-orbit.js?v=20260812210000-live-planet"></script>
+<script>
+(function () {
+  function wireOrbs() {
+    document.querySelectorAll('#sn-orb-ring .sn-orb').forEach(function (btn) {
+      if (btn._snOrb) return;
+      btn._snOrb = 1;
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var act = btn.getAttribute('data-act');
+        try {
+          if (act === 'power' && window.SNField && SNField.cycleLaunch) SNField.cycleLaunch();
+          else if (act === 'locate' && window.SNField && SNField.ribbonAct) SNField.ribbonAct('locate');
+          else if (act === 'plans' && window.SNCli && SNCli.run) SNCli.run('plans');
+          else if (act === 'chat') {
+            var inp = document.getElementById('cli-in');
+            if (inp) { inp.focus(); inp.placeholder = 'ask Astranov…'; }
+            if (window.SNCli && SNCli.run) SNCli.run('help');
+          }
+        } catch (_) {}
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireOrbs);
+  else wireOrbs();
+  setTimeout(wireOrbs, 2000);
+  try {
+    var es = new EventSource('/__reload');
+    es.onmessage = function (ev) {
+      if (ev.data === 'reload') location.reload();
+    };
+  } catch (_) {}
+})();
+</script>
 </body>
 </html>

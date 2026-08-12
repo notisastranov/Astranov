@@ -2567,6 +2567,18 @@
       }
     }
     try {
+      var cbsN = G.frameCbs || [];
+      if (cbsN.length) {
+        var nowCb = performance.now();
+        var dtCb = G.lastLoopT ? (nowCb - G.lastLoopT) / 1000 : 0.016;
+        G.lastLoopT = nowCb;
+        if (dtCb > 0.05) dtCb = 0.05;
+        for (var fi = 0; fi < cbsN.length; fi++) {
+          try { cbsN[fi](dtCb); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    try {
       G.renderer.render(G.scene, G.camera);
     } catch (_) {}
   }
@@ -2969,5 +2981,6 @@
     get diveAnchor() {
       return G.diveAnchor;
     },
+    latLngToVec: latLngToVec,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
