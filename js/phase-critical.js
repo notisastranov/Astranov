@@ -1,91 +1,3 @@
-
-// SPECS: never sticky red bars — all errors/activity go to CLI scroll log
-(function astranovCliErrorSink() {
-  /* SPECS: USE THE CLI — single activity stream */
-  function cliLog(msg, kind) {
-    kind = kind || 'err';
-    var text = String(msg || 'unknown').slice(0, 500);
-    try { document.getElementById('astranov-hard-error')?.remove?.(); } catch (_) {}
-    try {
-      if (window.GlobeDeck) {
-        if (GlobeDeck.ensureCliVisible) GlobeDeck.ensureCliVisible(kind);
-        else {
-          var d = document.getElementById('globe-deck');
-          if (d) { d.classList.remove('collapsed'); d.classList.add('expanded', 'size-third'); }
-          var body = document.getElementById('globe-deck-body');
-          if (body) { body.style.display = 'flex'; body.style.minHeight = '100px'; body.style.maxHeight = '42vh'; }
-        }
-        if (GlobeDeck.expand) GlobeDeck.expand(kind === 'err' ? 'Activity' : 'CLI');
-        if (GlobeDeck.log) { GlobeDeck.log(text, kind); return; }
-      }
-    } catch (_) {}
-    try {
-      if (window.AciCli && AciCli.print) { AciCli.print(text, kind); return; }
-    } catch (_) {}
-    try {
-      var out = document.getElementById('globe-deck-log');
-      var deck = document.getElementById('globe-deck');
-      if (deck) { deck.classList.remove('collapsed'); deck.classList.add('expanded', 'size-third'); }
-      var body = document.getElementById('globe-deck-body');
-      if (body) { body.style.display = 'flex'; body.style.minHeight = '100px'; body.style.maxHeight = '42vh'; body.style.overflow = 'hidden'; }
-      if (out) {
-        out.style.display = 'block'; out.style.overflowY = 'auto'; out.style.minHeight = '72px';
-        var row = document.createElement('div');
-        row.className = 'deck-line deck-' + (kind === 'err' ? 'err' : kind === 'ok' ? 'ok' : 'dim');
-        row.textContent = text;
-        out.appendChild(row);
-        while (out.children.length > 80) out.removeChild(out.firstChild);
-        out.scrollTop = out.scrollHeight;
-      }
-    } catch (_) {}
-    try { console[kind === 'err' ? 'error' : 'log']('[CLI]', text); } catch (_) {}
-  }
-  window.AstranovCliLog = function (msg, kind) { cliLog(msg, kind || 'dim'); };
-  window.ActivityLog = {
-    push: function (msg, kind) { cliLog(msg, kind || 'dim'); },
-    error: function (msg) { cliLog('⚠ ' + msg, 'err'); },
-    ok: function (msg) { cliLog(msg, 'ok'); },
-    task: function (msg) { cliLog('task · ' + msg, 'ok'); },
-    activity: function (msg) { cliLog(msg, 'dim'); },
-  };
-  function killStickyBars() {
-    try {
-      var el = document.getElementById('astranov-hard-error');
-      if (el) el.remove();
-      document.querySelectorAll('[id*="hard-error"],.astranov-fatal-error,.boot-fatal').forEach(function (n) {
-        try { n.remove(); } catch (_) {}
-      });
-    } catch (_) {}
-  }
-  window.addEventListener('error', function (e) {
-    try {
-      var m = String((e && (e.message || (e.error && e.error.message))) || 'script error');
-      if (/sessionHeld|Script error|ResizeObserver/i.test(m)) { console.warn('[soft]', m); return; }
-      if (window._astranovCriticalReady && /is not defined/i.test(m)) { console.warn('[soft post-boot]', m); return; }
-      killStickyBars();
-      var src = e && e.filename ? (' · ' + String(e.filename).split('/').pop()) : '';
-      var line = e && e.lineno ? (':' + e.lineno) : '';
-      cliLog('⚠ ' + m + src + line, 'err');
-    } catch (_) {}
-  }, true);
-  window.addEventListener('unhandledrejection', function (e) {
-    try {
-      var r = e && e.reason;
-      var m = r && (r.message || r) ? String(r.message || r) : 'promise rejection';
-      if (/sessionHeld|Script error|ResizeObserver/i.test(m)) return;
-      killStickyBars();
-      cliLog('⚠ ' + m.slice(0, 400), 'err');
-    } catch (_) {}
-  });
-  setTimeout(killStickyBars, 0);
-  setTimeout(killStickyBars, 500);
-  setTimeout(killStickyBars, 2000);
-  // Boot line so CLI is known alive
-  setTimeout(function () {
-    try { cliLog('CLI ready · activity & errors log here', 'dim'); } catch (_) {}
-  }, 1200);
-})();
-
 /* === 00-globe.js === */
 // Globe host — must exist before WebGL. Never leave user with CLI-only black stage.
 let container = document.getElementById('globe');
@@ -111,7 +23,30 @@ try {
   document.body?.classList?.remove?.('site-shell-open');
 } catch (_) {}
 
-/* sticky error bar removed → CLI sink below */
+// Error guard — do NOT spam fatal red bars for soft refs; only real render killers
+window.addEventListener('error', function(e) {
+  try {
+    const m = String(e.message || e.error?.message || '');
+    // sessionHeld etc. are soft — already stubbed; never blank the globe over them
+    if (/sessionHeld|Script error|ResizeObserver/i.test(m)) {
+      console.warn('[soft]', m);
+      return;
+    }
+    if (window._astranovCriticalReady && /is not defined/i.test(m)) {
+      console.warn('[soft post-boot]', m);
+      return;
+    }
+    let msg = document.getElementById('astranov-hard-error');
+    if (!msg) {
+      msg = document.createElement('div');
+      msg.id = 'astranov-hard-error';
+      msg.style.cssText = 'position:fixed;bottom:8px;left:8px;right:8px;padding:6px 10px;background:rgba(20,0,0,0.85);color:#f88;font:11px/1.3 monospace;z-index:99999;pointer-events:none;border-radius:8px';
+      document.body.appendChild(msg);
+    }
+    msg.textContent = 'Error: ' + (m || 'unknown').slice(0, 180);
+  } catch(_) {}
+});
+
 // Mobile / low-power first — never wait for SlumberManager probe
 window._isMobileUA = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '')
   || ((navigator.maxTouchPoints || 0) > 1 && window.innerWidth < 960);
@@ -367,7 +302,7 @@ const GlobeControl = {
     this._lastAutoFly = Date.now();
   },
 
-  Z: { global: 3.65, national: 2.15, regional: 1.78, city: 1.45 },
+  Z: { global: 3.65, national: 2.05, regional: 1.72, city: 1.42 },
 
   /** Z depth that activates the flat city map (explicit city entry only) */
   cityEntryZ() {
@@ -1054,15 +989,15 @@ const SlumberManager = {
       presence: true,
     },
     conserve: {
-      pixelRatio: 0.75,
+      pixelRatio: 0.9,
       earthHd: false,
-      earthTickMs: 750,
-      entityTickMs: 640,
-      newsIntervalMs: 60000,
-      newsMax: 2,
+      earthTickMs: 650,
+      entityTickMs: 520,
+      newsIntervalMs: 45000,
+      newsMax: 3,
       cityMaxZoom: 16,
-      cityDriverMs: 14000,
-      deferredDelayMs: 4800,
+      cityDriverMs: 12000,
+      deferredDelayMs: 3200,
       anim: { orbital: 6, entity: 12, earth: 8, celestial: 12, cosmic: 16 },
       codersPing: false,
       labOrbs: false,
@@ -1793,17 +1728,17 @@ const ZoomTiers = {
     { id: 'solar', z: 7.2, label: 'Space', cosmic: 'system' },
     // Start further out — 2.55 felt like a face-plant on the planet
     { id: 'global', z: 3.65, label: 'Earth', cosmic: 'earth' },
-    { id: 'national', z: 2.15, label: 'Country', cosmic: 'earth', national: true },
-    { id: 'regional', z: 1.78, label: 'Region', cosmic: 'earth', national: true },
-    { id: 'city', z: 1.45, label: 'City', cosmic: 'earth', city: true },
-    { id: 'neighborhood', z: 1.15, label: 'Streets', cosmic: 'earth', city: true },
+    { id: 'national', z: 2.05, label: 'Country', cosmic: 'earth', national: true },
+    { id: 'regional', z: 1.72, label: 'Region', cosmic: 'earth', national: true },
+    { id: 'city', z: 1.42, label: 'City', cosmic: 'earth', city: true },
+    { id: 'neighborhood', z: 1.12, label: 'Streets', cosmic: 'earth', city: true },
   ],
   START_ID: 'global',
   _index: 0,
   _wheelAccum: 0,
   _pinchAccum: 0,
-  WHEEL_THRESH: 18,
-  PINCH_THRESH: 10,
+  WHEEL_THRESH: 28,
+  PINCH_THRESH: 14,
 
   init() {
     const i = this.TIERS.findIndex(t => t.id === this.START_ID);
@@ -1827,7 +1762,7 @@ const ZoomTiers = {
     let bestDist = Infinity;
     const enterZ = CityMap?.ENTER_Z ?? 1.4;
     this.TIERS.forEach((t, i) => {
-      if (t.city && camZ > enterZ + 0.12) return;
+      if (t.city && camZ > enterZ + 0.06) return;
       const d = Math.abs(t.z - camZ);
       if (d < bestDist) { bestDist = d; best = i; }
     });
@@ -1923,17 +1858,6 @@ const ZoomTiers = {
     CosmicZoom.update(camera.position.z, { tier: tier.id, label: tier.label, cosmic });
     CityMap?.onCamera?.(camera.position.z, cosmic);
     cityLevel = !!tier.city;
-    /* SPECS: handoff city map */
-    try {
-      if (tier.city && window.CityMap && !CityMap.active) {
-        const pos = window._lastPos || CityMap.globeCenterLatLng?.() || TrackballGuard?.facingLatLng?.();
-        if (pos?.lat != null) CityMap.openAt?.(pos.lat, pos.lng, { camZ: tier.z });
-        else CityMap.onCamera?.(tier.z, 'earth');
-      }
-      if (!tier.city && CityMap?.active && (tier.national || tier.id === 'global' || tier.id === 'solar')) {
-        CityMap.returnToGlobe?.({ tier: tier.national ? 'national' : 'global' });
-      }
-    } catch (_) {}
     const zl = document.getElementById('zoom-label');
     if (zl && !window.DrivingView?.active && !CityMap?.active) {
       const pc = window.PublicCopy;
@@ -1965,7 +1889,7 @@ window.ZoomTiers = ZoomTiers;
 // Globe gestures — primary UI (Google Earth / Maps style). CLI is secondary.
 const canvas = renderer.domElement;
 // Stronger drag — 0.0028 felt like the globe was glued down
-const TRACK_SENS = 0.0026;
+const TRACK_SENS = 0.0062;
 const ZOOM_MIN = 1.05;
 const ZOOM_MAX = 18;
 const ZOOM_SMOOTH = 0.11;
@@ -1993,50 +1917,6 @@ function trackballMove(clientX, clientY) {
   trackVelY = dy * TRACK_SENS * 0.88;
 }
 
-
-function openMultiTileAtPoint(clientX, clientY, source) {
-  /* SPECS: long-press any point solar/global/national/city → MultiTile */
-  const open = (lat, lng, tier) => {
-    try {
-      if (!window.MultiTile || typeof MultiTile.openAt !== 'function') {
-        const s = document.createElement('script');
-        s.src = '/js/62-multi-tile.js?v=' + encodeURIComponent(
-          (document.querySelector('meta[name="astranov-build"]') || {}).content || Date.now()
-        );
-        s.onload = () => {
-          try { MultiTile.init?.(); MultiTile.openAt?.(lat, lng, { source: source || 'long-press', tier }); } catch (e) { console.warn('[MultiTile]', e); try { window.AstranovAddOffer?.noteAddFail?.(e.message || 'MultiTile open failed'); } catch (_) {} }
-        };
-        document.head.appendChild(s);
-        return;
-      }
-      MultiTile.init?.();
-      MultiTile.openAt?.(lat, lng, {
-        source: source || 'long-press',
-        tier: tier || MultiTile.currentTier?.() || ZoomTiers?.current?.()?.id || 'global',
-      });
-    } catch (e) { console.warn('[long-press MultiTile]', e); try { window.AstranovAddOffer?.noteAddFail?.(e.message || 'long-press add failed'); } catch (_) {} }
-  };
-  let pin = null;
-  try { pin = (typeof latLngFromScreen === 'function') ? latLngFromScreen(clientX, clientY) : null; } catch (_) {}
-  if (!pin || pin.lat == null) {
-    try { pin = TrackballGuard?.facingLatLng?.() || null; } catch (_) {}
-  }
-  if (!pin || pin.lat == null) pin = window._lastPos || null;
-  if (!pin || pin.lat == null) {
-    // Solar / miss: still open tile at last known or equator facing
-    pin = { lat: 0, lng: 0 };
-  }
-  const tier = ZoomTiers?.current?.()?.id
-    || (CityMap?.active ? 'city' : null)
-    || MultiTile?.currentTier?.()
-    || 'global';
-  open(+pin.lat, +pin.lng, tier);
-  try {
-    MapDepict?.setHud?.('Multi-tile · hold', 'long-press');
-    GlobeDeck?.setPreview?.('Place tile · ' + (+pin.lat).toFixed(3) + ', ' + (+pin.lng).toFixed(3));
-  } catch (_) {}
-}
-
 function trackballStart(clientX, clientY) {
   window._globeFly = null;
   GlobeControl?.userTookGlobe?.('drag');
@@ -2049,14 +1929,21 @@ function trackballStart(clientX, clientY) {
   canvas.classList.add('dragging');
   clearTimeout(pressTimer);
   window._globeLongPressFired = false;
-  // SPECS: long-press ANY tier (solar → city) → MultiTile creation
+  // Long-press globe (any tier: stellar → city) → MultiTile profile
   pressTimer = setTimeout(() => {
     if (!drag) return;
-    if (Math.hypot(px - pressStartX, py - pressStartY) > 22) return;
+    // Only if finger barely moved
+    if (Math.hypot(px - pressStartX, py - pressStartY) > 14) return;
     window._globeLongPressFired = true;
-    try { drag = false; dragging = false; canvas.classList.remove('dragging'); } catch (_) {}
-    openMultiTileAtPoint(pressStartX, pressStartY, 'long-press-globe');
-  }, 420);
+    const pin = latLngFromScreen?.(clientX, clientY)
+      || TrackballGuard?.facingLatLng?.()
+      || window._lastPos
+      || { lat: 0, lng: 0 };
+    MultiTile?.openAt?.(pin.lat, pin.lng, {
+      source: 'long-press',
+      tier: MultiTile?.currentTier?.() || 'global',
+    });
+  }, 480);
 }
 
 function trackballEnd(clientX, clientY, opts) {
@@ -2136,7 +2023,7 @@ function bindTrackballEvents(targetCanvas) {
   c.addEventListener('mousedown', e => { if (e.button === 0) trackballStart(e.clientX, e.clientY); });
   c.addEventListener('mousemove', e => {
     if (!drag) return;
-    if (Math.hypot(e.clientX - pressStartX, e.clientY - pressStartY) > 22) clearTimeout(pressTimer);
+    if (Math.hypot(e.clientX - pressStartX, e.clientY - pressStartY) > 12) clearTimeout(pressTimer);
     trackballMove(e.clientX, e.clientY);
   });
   c.addEventListener('wheel', onWheelZoom, { passive: false });
@@ -2955,8 +2842,6 @@ function globePerfActive() {
 });
 
 function animate() {
-  // Single rAF chain — never stack loops (Firefox freeze if BootCritical runs twice)
-  if (window.__ASTRANOV_ANIM_STOP) return;
   requestAnimationFrame(animate);
   if (window._cycleTurbo) return;
   if (typeof renderer === 'undefined' || !renderer || !scene || !camera) return;
@@ -2979,17 +2864,12 @@ function animate() {
     return;
   }
 
-  const isFF = !!(window._isFirefox || (typeof navigator !== 'undefined' && /firefox/i.test(navigator.userAgent || '')));
-  const lite = !!window._globePerfLite || isFF;
+  const lite = !!window._globePerfLite;
   const idleMs = Date.now() - (window._lastUserAct || 0);
   const dragging = !!(typeof drag !== 'undefined' && (drag || window._globeFly || trackVelX || trackVelY));
 
-  // Firefox: cap frame work hard — full-res WebGL every frame freezes FF
-  if (isFF && !dragging) {
-    if (frame % 3 !== 0) return;
-  } else if (!dragging && idleMs > 20000) {
-    if (frame % 2 !== 0) return;
-  } else if (lite && !dragging && idleMs > 4000) {
+  // Never skip frames while spinning Earth — skip made spin look frozen
+  if (!dragging && idleMs > 20000) {
     if (frame % 2 !== 0) return;
   }
 
@@ -3030,23 +2910,11 @@ function animate() {
 
 window.__astranovBootCritical = function __astranovBootCritical() {
   window._bootEarthLock = true;
-  try {
-    window._isFirefox = /firefox/i.test(navigator.userAgent || '');
-    if (window._isFirefox) {
-      window._globePerfLite = true;
-      // Cap DPR on Firefox or high-DPR freezes the main thread
-      try {
-        if (renderer && renderer.setPixelRatio) {
-          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
-        }
-      } catch (_) {}
-    }
-  } catch (_) {}
   // Always start the render loop first — never leave a black void if init soft-fails
-  // Global guard: only ONE animate() rAF chain for the whole page
+  let started = false;
   const startLoop = () => {
-    if (window.__ASTRANOV_RAF_STARTED) return;
-    window.__ASTRANOV_RAF_STARTED = true;
+    if (started) return;
+    started = true;
     try { animate(); } catch (e) { console.error('[boot] animate', e); }
   };
 
