@@ -139,11 +139,7 @@ const AciCli = {
     GlobeDeck?.clearLog?.();
   },
 
-  print(t, cls) {
-    try { GlobeDeck?.ensureCliVisible?.(cls || 'out'); } catch (_) {}
-    try { GlobeDeck?.expand?.('CLI'); } catch (_) {}
-    GlobeDeck?.log?.(t, cls);
-  },
+  print(t, cls) { GlobeDeck?.log?.(t, cls); },
 
   async handle(line) {
     const parts = line.trim().split(/\s+/);
