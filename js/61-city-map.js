@@ -10,8 +10,8 @@ var CityMap = {
   _demoPhase: 0,
   _forceOpen: false,
   active: false,
-  ENTER_Z: 1.50,
-  EXIT_Z: 1.90,
+  ENTER_Z: 1.58,
+  EXIT_Z: 1.72,
 
   init() {
     const el = document.getElementById('city-map');
@@ -66,61 +66,44 @@ var CityMap = {
     if (!this.map || this.map._placeClickBound) return;
     this.map._placeClickBound = true;
     // Single click → radar search around place (CLI guides e.g. pharmacy)
-    
-    /* SPECS: long-press city map → MultiTile any time map active */
+    // Long press → MultiTile (profile / vendor / driver / post)
     let pressTimer = null;
     let pressLatLng = null;
-    let pressXY = null;
     let longFired = false;
     const clearPress = () => {
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     };
-    const fireLong = (latlng, src) => {
-      longFired = true;
-      clearPress();
-      if (!latlng) return;
-      const open = () => {
-        try {
-          MultiTile.init?.();
-          MultiTile.openAt?.(latlng.lat, latlng.lng, { source: src || 'long-press-city', tier: 'city' });
-        } catch (e) { console.warn('[city long-press]', e); }
-      };
-      if (!window.MultiTile?.openAt) {
-        const sc = document.createElement('script');
-        sc.src = '/js/62-multi-tile.js?v=' + Date.now();
-        sc.onload = open;
-        document.head.appendChild(sc);
-      } else open();
-    };
     this.map.on('mousedown', (e) => {
-      if (!this.active || (e.originalEvent && e.originalEvent.button !== 0)) return;
+      if (!this.active) return;
       longFired = false;
       pressLatLng = e.latlng;
-      pressXY = e.containerPoint || null;
       clearPress();
-      pressTimer = setTimeout(() => fireLong(pressLatLng, 'long-press-city-mouse'), 420);
+      pressTimer = setTimeout(() => {
+        longFired = true;
+        if (pressLatLng) {
+          MultiTile?.openAt?.(pressLatLng.lat, pressLatLng.lng, { source: 'long-press' });
+        }
+      }, 480);
     });
     this.map.on('mouseup', () => clearPress());
-    this.map.on('mousemove', (e) => {
-      if (!pressTimer || !pressXY || !e.containerPoint) return;
-      if (e.containerPoint.distanceTo(pressXY) > 18) clearPress();
-    });
+    this.map.on('mousemove', () => { /* drag cancels long-press */ });
     this.map.on('dragstart', () => { clearPress(); longFired = false; });
     this.map.on('touchstart', (e) => {
       if (!this.active) return;
-      const tch = e.originalEvent?.touches?.[0];
-      if (!tch || (e.originalEvent.touches.length > 1)) return;
+      const t = e.originalEvent?.touches?.[0];
+      if (!t || (e.originalEvent.touches.length > 1)) return;
       longFired = false;
       pressLatLng = e.latlng;
-      pressXY = e.containerPoint || null;
       clearPress();
-      pressTimer = setTimeout(() => fireLong(pressLatLng, 'long-press-city-touch'), 420);
+      pressTimer = setTimeout(() => {
+        longFired = true;
+        if (pressLatLng) {
+          MultiTile?.openAt?.(pressLatLng.lat, pressLatLng.lng, { source: 'long-press' });
+        }
+      }, 480);
     }, { passive: true });
     this.map.on('touchend', () => clearPress());
-    this.map.on('touchmove', (e) => {
-      if (!pressTimer || !pressXY || !e.containerPoint) return;
-      if (e.containerPoint.distanceTo(pressXY) > 18) clearPress();
-    });
+    this.map.on('touchmove', () => clearPress());
     this.map.on('click', (e) => {
       if (!this.active) return;
       if (longFired) {
