@@ -1,7 +1,7 @@
 /** Astranov / SpaceNet continuity — machine contract. SPECS.md is sole law. */
 const AstranovContinuity = {
-  version: '20260731160000-coord-plans',
-  updated: '2026-07-31',
+  version: '20260812184500-orbit-wire',
+  updated: '2026-08-12',
   live: 'https://astranov.eu',
   repo: 'notisastranov/astranov.eu',
   ownerEmail: 'notisastranov@gmail.com',
@@ -140,3 +140,31 @@ const AstranovContinuity = {
 
 if (typeof window !== 'undefined') window.AstranovContinuity = AstranovContinuity;
 if (typeof module !== 'undefined' && module.exports) module.exports = AstranovContinuity;
+
+/* OWNER soft-load 20260812184500 — must run even if Vercel caches perf-lazy */
+(function ownerSoftLoad() {
+  if (typeof window === 'undefined' || window.__SN_OWNER_SOFTLOAD) return;
+  window.__SN_OWNER_SOFTLOAD = 1;
+  var B = '20260812184500';
+  function load(name) {
+    var s = document.createElement('script');
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    s.src = '/js/spacenet/' + name + '.js?v=' + B;
+    s.onerror = function () {
+      try {
+        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/' + name + '.js?v=' + B;
+      } catch (_) {}
+    };
+    (document.head || document.documentElement).appendChild(s);
+  }
+  function run() {
+    ['chrome-marina-discipline', 'chrome-mind-bridge', 'agent-orbit'].forEach(load);
+  }
+  if (document.readyState === 'complete') setTimeout(run, 300);
+  else if (typeof window !== 'undefined') {
+    window.addEventListener('load', function () { setTimeout(run, 300); });
+  }
+  setTimeout(run, 1200);
+  setTimeout(run, 3500);
+})();
