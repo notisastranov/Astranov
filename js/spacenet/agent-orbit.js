@@ -1,10 +1,10 @@
 /**
  * SNAgentOrbit - Multi-Agent + Astranov Planet
- * Build: 20260812184000-orbit-live
+ * Build: 20260812183300-orbit-live
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812184000-orbit-live';
+  var BUILD = '20260812183300-orbit-live';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
@@ -29,9 +29,20 @@
 
   function log(m, c) {
     m = String(m).slice(0, 360);
-    try { if (global.SNCli && SNCli.log) return SNCli.log(m, c || 'ok'); } catch (_) {}
-    try { if (global.AciCli && AciCli.print) return AciCli.print(m, c === 'err' ? 'err' : 'ok'); } catch (_) {}
+    c = c || 'ok';
+    try { if (global.SNCli && SNCli.log) SNCli.log(m, c); } catch (_) {}
+    try { if (global.AciCli && AciCli.print) AciCli.print(m, c === 'err' ? 'err' : 'ok'); } catch (_) {}
     try { if (global.ACIControl && ACIControl.reply) ACIControl.reply(m); } catch (_) {}
+    try {
+      var el = document.getElementById('globe-deck-log');
+      if (el) {
+        var line = document.createElement('div');
+        line.className = 'deck-' + (c === 'err' ? 'err' : c === 'dim' ? 'dim' : 'ok');
+        line.textContent = m;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+      }
+    } catch (_) {}
   }
   function loadCreds() {
     try { S.creds = JSON.parse(localStorage.getItem(CREDS_KEY) || '{}') || {}; } catch (_) { S.creds = {}; }
@@ -52,14 +63,14 @@
   }
   function paintPlanet() {
     if (!global.GlobeEntity || !GlobeEntity.register) {
-      log('GlobeEntity not ready', 'dim');
+      log('GlobeEntity not ready — wait a second then type orbit again', 'dim');
       return;
     }
     clearPlanet();
     var core = GlobeEntity.register({
       id: 'agent-planet-core', type: 'place', lat: PLANET.lat, lng: PLANET.lng,
       altitude: PLANET.altitude, title: '\u25ce ASTRANOV',
-      description: 'Multi-agent orbit · collab · keys local',
+      description: 'Multi-agent orbit \u00b7 collab \u00b7 keys local',
       urgency: 3, color: PLANET.color, icon: '\u25ce', radius: 0.042, persist: true,
       data: { alwaysShowLabel: true, agentOrbit: true },
       onTap: function () { listAgents(); }
@@ -71,12 +82,12 @@
         id: eid, type: 'place',
         lat: PLANET.lat + off.dLat, lng: PLANET.lng + off.dLng, altitude: off.alt,
         title: p.icon + ' ' + p.name,
-        description: p.role + ' · ' + (online ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'),
+        description: p.role + ' \u00b7 ' + (online ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'),
         urgency: online ? 3 : 1, color: online ? p.hex : 0x445566, icon: p.icon,
         radius: id === 'astranov' ? 0.028 : 0.022, persist: true,
         data: { alwaysShowLabel: true, agentOrbit: true, agentId: id },
         onTap: function () {
-          log(online || !p.needsKey ? (p.name + ' ready') : (p.name + ' · agents key ' + id + ' <KEY>'), online ? 'ok' : 'dim');
+          log(online || !p.needsKey ? (p.name + ' ready') : (p.name + ' \u00b7 agents key ' + id + ' <KEY>'), online ? 'ok' : 'dim');
         }
       });
       if (ent) S.entityIds.push(eid);
@@ -99,15 +110,15 @@
     } catch (_) {}
   }
   function listAgents() {
-    log('-- AGENTS · ASTRANOV ORBIT --', 'ok');
+    log('-- AGENTS \u00b7 ASTRANOV ORBIT --', 'ok');
     Object.keys(PROVIDERS).forEach(function (id) {
       var p = PROVIDERS[id];
-      log((hasKey(id) ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'), hasKey(id) ? 'ok' : 'dim');
+      log((hasKey(id) ? '\u25cf ' : '\u25cb ') + p.name + ' \u00b7 ' + p.role + ' \u00b7 ' + (hasKey(id) ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'), hasKey(id) ? 'ok' : 'dim');
     });
-    log('collab <task> · agent <name> <prompt> · orbit', 'dim');
+    log('collab <task> \u00b7 agent <name> <prompt> \u00b7 orbit', 'dim');
   }
   function goOrbit() {
-    log('\u25ce ASTRANOV PLANET · high orbit · multi-agent station', 'ok');
+    log('\u25ce ASTRANOV PLANET \u00b7 high orbit \u00b7 multi-agent station', 'ok');
     flyToOrbit();
     paintPlanet();
     listAgents();
@@ -149,7 +160,7 @@
       var j = await res.json().catch(function () { return {}; });
       return { ok: res.ok, text: j.text || j.reply || j.message || JSON.stringify(j).slice(0, 600), provider: 'astranov' };
     } catch (e) {
-      return { ok: false, text: 'astranov fail · ' + (e && e.message), provider: 'astranov' };
+      return { ok: false, text: 'astranov fail \u00b7 ' + (e && e.message), provider: 'astranov' };
     }
   }
   async function callGemini(prompt) {
@@ -163,7 +174,7 @@
       var j = await res.json().catch(function () { return {}; });
       var text = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
       return { ok: res.ok, text: text, provider: 'gemini' };
-    } catch (e) { return { ok: false, text: 'gemini fail · ' + e.message, provider: 'gemini' }; }
+    } catch (e) { return { ok: false, text: 'gemini fail \u00b7 ' + e.message, provider: 'gemini' }; }
   }
   async function callChatGPT(prompt) {
     var key = S.creds.chatgpt;
@@ -177,7 +188,7 @@
       var j = await res.json().catch(function () { return {}; });
       var text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
       return { ok: res.ok, text: text, provider: 'chatgpt' };
-    } catch (e) { return { ok: false, text: 'chatgpt fail (CORS?) · ' + e.message, provider: 'chatgpt' }; }
+    } catch (e) { return { ok: false, text: 'chatgpt fail (CORS?) \u00b7 ' + e.message, provider: 'chatgpt' }; }
   }
   async function callClaude(prompt) {
     var key = S.creds.claude;
@@ -191,7 +202,7 @@
       var j = await res.json().catch(function () { return {}; });
       var text = (j.content && j.content[0] && j.content[0].text) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
       return { ok: res.ok, text: text, provider: 'claude' };
-    } catch (e) { return { ok: false, text: 'claude fail · ' + e.message, provider: 'claude' }; }
+    } catch (e) { return { ok: false, text: 'claude fail \u00b7 ' + e.message, provider: 'claude' }; }
   }
   async function callProvider(id, prompt) {
     id = String(id || '').toLowerCase();
@@ -208,18 +219,18 @@
     task = String(task || '').trim();
     if (!task) { log('usage: collab <task>', 'dim'); return; }
     if (!S.planetVisible) goOrbit();
-    log('\u25ce COLLAB · ' + task.slice(0, 100), 'ok');
+    log('\u25ce COLLAB \u00b7 ' + task.slice(0, 100), 'ok');
     var online = Object.keys(PROVIDERS).filter(hasKey);
-    log('crew: ' + online.map(function (i) { return PROVIDERS[i].name; }).join(' · '), 'dim');
+    log('crew: ' + online.map(function (i) { return PROVIDERS[i].name; }).join(' \u00b7 '), 'dim');
     var plan = await callAstranov('SpaceNet multi-agent orchestrator. Task: ' + task + '\nOnline: ' + online.join(', ') + '\nShort plan max 6 lines.');
-    log('PLAN · ' + String(plan.text || '').slice(0, 240), plan.ok ? 'ok' : 'err');
+    log('PLAN \u00b7 ' + String(plan.text || '').slice(0, 240), plan.ok ? 'ok' : 'err');
     var targets = online.filter(function (i) { return i !== 'astranov'; });
     if (!targets.length) targets = ['astranov'];
     var results = [];
     await Promise.all(targets.slice(0, 3).map(async function (id) {
       var r = await callProvider(id, 'Task: ' + task + '\nPlan: ' + String(plan.text || '').slice(0, 400) + '\nConcise actionable answer max 300 words.');
       results.push(r);
-      log((PROVIDERS[id] ? PROVIDERS[id].name : id) + ' · ' + (r.ok ? 'ok' : 'fail') + ' · ' + String(r.text || '').slice(0, 120), r.ok ? 'ok' : 'err');
+      log((PROVIDERS[id] ? PROVIDERS[id].name : id) + ' \u00b7 ' + (r.ok ? 'ok' : 'fail') + ' \u00b7 ' + String(r.text || '').slice(0, 120), r.ok ? 'ok' : 'err');
     }));
     var final = await callAstranov('Merge into ONE final answer.\nTask: ' + task + '\n\n' + results.map(function (r) { return '### ' + r.provider + '\n' + String(r.text || '').slice(0, 700); }).join('\n\n'));
     log('-- FINAL --', 'ok');

@@ -1,43 +1,35 @@
 /**
- * Astranov Orbit Boot — force-loads multi-agent planet
- * Build: 20260812185000-orbit-boot
+ * Astranov Orbit Boot — forces multi-agent planet + soft modules
+ * Build: 20260812183300-orbit-boot-force
+ * Loads even when Vercel caches old continuity / perf-lazy.
  */
 (function () {
+  'use strict';
   if (window.__SN_ORBIT_BOOT) return;
-  window.__SN_ORBIT_BOOT = '20260812185000';
-  var B = '20260812185000';
-  function load(path, cdnName) {
+  window.__SN_ORBIT_BOOT = 1;
+  var BUILD = '20260812183300';
+  var MODS = ['agent-orbit', 'chrome-marina-discipline', 'chrome-mind-bridge'];
+
+  function load(name) {
     var s = document.createElement('script');
     s.async = true;
     s.crossOrigin = 'anonymous';
-    s.src = path + '?v=' + B;
+    s.src = '/js/spacenet/' + name + '.js?v=' + BUILD;
     s.onerror = function () {
-      if (cdnName) {
-        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/' + cdnName + '?v=' + B;
-      }
+      try {
+        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/' + name + '.js?v=' + BUILD;
+      } catch (_) {}
     };
     (document.head || document.documentElement).appendChild(s);
   }
+
   function run() {
-    load('/js/spacenet/chrome-marina-discipline.js', 'js/spacenet/chrome-marina-discipline.js');
-    load('/js/spacenet/chrome-mind-bridge.js', 'js/spacenet/chrome-mind-bridge.js');
-    load('/js/spacenet/agent-orbit.js', 'js/spacenet/agent-orbit.js');
-    load('/js/spacenet/chrome-fix.js', 'js/spacenet/chrome-fix.js');
+    MODS.forEach(load);
   }
+
   if (document.readyState === 'complete') setTimeout(run, 200);
   else window.addEventListener('load', function () { setTimeout(run, 200); });
-  setTimeout(run, 900);
-  setTimeout(run, 2500);
-  var tries = 0;
-  var iv = setInterval(function () {
-    tries++;
-    if (window.SNAgentOrbit && typeof window.SNAgentOrbit.goOrbit === 'function') {
-      clearInterval(iv);
-      try {
-        if (window.SNCli && SNCli.log) SNCli.log('\u25ce Astranov Orbit ready · type: orbit', 'ok');
-        else if (window.AciCli && AciCli.print) AciCli.print('\u25ce Astranov Orbit ready · type: orbit', 'ok');
-      } catch (_) {}
-    }
-    if (tries > 40) clearInterval(iv);
-  }, 500);
+  setTimeout(run, 800);
+  setTimeout(run, 2200);
+  setTimeout(run, 5000);
 })();
