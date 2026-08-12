@@ -10,7 +10,6 @@
 
   const delayMs = () => {
     const base = window.SlumberManager?.deferredDelay?.() ?? 1400;
-    // Longer defer on phone so first interactions stay smooth
     return mobile() ? Math.max(base, 6500) : Math.max(base, 1800);
   };
   const bootAt = () => window._bootAt || Date.now();
@@ -115,4 +114,29 @@
     if (window.SlumberManager?._inited) capMobileDpr();
     if (hookN > 25) clearInterval(hookIv);
   }, 200);
+})();
+
+/* OWNER soft-load: multi-agent orbit + marina discipline + mind bridge */
+(function ownerSoftLoad() {
+  if (window.__SN_OWNER_SOFTLOAD) return;
+  window.__SN_OWNER_SOFTLOAD = 1;
+  var B = (document.querySelector('meta[name="astranov-build"]') || {}).content || Date.now();
+  function load(name) {
+    var s = document.createElement('script');
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    s.src = '/js/spacenet/' + name + '.js?v=' + encodeURIComponent(B);
+    s.onerror = function () {
+      try {
+        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/' + name + '.js?v=' + encodeURIComponent(B);
+      } catch (_) {}
+    };
+    document.head.appendChild(s);
+  }
+  function run() {
+    ['chrome-marina-discipline', 'chrome-mind-bridge', 'agent-orbit'].forEach(load);
+  }
+  if (document.readyState === 'complete') setTimeout(run, 700);
+  else window.addEventListener('load', function () { setTimeout(run, 700); });
+  setTimeout(run, 2800);
 })();
