@@ -21,15 +21,12 @@ window.__astranovBootApp = function __astranovBootApp() {
     } catch (_) {
       GlobeDeck?.bootCollapsed?.();
     }
-    GlobeDeck?.setTitle?.(PublicCopy?.deckTitle?.() || 'SpaceNet');
-    GlobeDeck?.setPreview?.('SpaceNet · drag Earth · 🎯 locate · type job · date · deliver');
+    GlobeDeck?.setTitle?.(PublicCopy?.deckTitle?.() || 'Astranov');
+    GlobeDeck?.setPreview?.('Earth · drag · scroll country · tap city · 🎯 locate');
   });
 
   soft('SuperCli', () => SuperCli?.init?.());
-  soft('AciCli', () => {
-    AciCli?.init?.();
-    try { SpaceNetGrokCli?.init?.(); } catch (_) {}
-  });
+  soft('AciCli', () => AciCli?.init?.());
   soft('ClassifiedTriangles', () => ClassifiedTriangles?.init?.());
 
   // MAP — core product after Earth
@@ -50,19 +47,8 @@ window.__astranovBootApp = function __astranovBootApp() {
     }
   });
 
-  // Astranov OS + Browser — chrome as soon as map/CLI layer is up
-  soft('AstranovOS', () => {
-    try { AstranovOS?.init?.(); } catch (e) { console.warn('[OS]', e); }
-    try { AstranovBrowser?.init?.(); } catch (e) { console.warn('[Browser]', e); }
-  });
-
-  // Deferred pack only after map path is up (longer on lite/mobile)
-  try {
-    const delay = window._globePerfLite ? 2800 : 900;
-    setTimeout(() => { try { LazyModules?.schedule?.(); } catch (_) {} }, delay);
-  } catch (_) {
-    try { LazyModules?.schedule?.(); } catch (_) {}
-  }
+  // Deferred pack only after map path is up
+  try { LazyModules?.schedule?.(); } catch (_) {}
 
   // Unlock earth after short settle
   setTimeout(() => {
@@ -73,7 +59,7 @@ window.__astranovBootApp = function __astranovBootApp() {
         ZoomTiers?.goTo?.('global', false);
       }
     } catch (_) {}
-    const ready = 'SpaceNet · Earth OS · CLI: job · date · deliver · search · locate';
+    const ready = 'Ready · drag Earth · country · city · 🎯 locate';
     try { CliRibbon?.setNotice?.(ready, 'ready'); } catch (_) {}
     try { GlobeDeck?.setPreview?.(ready); } catch (_) {}
     const zl = document.getElementById('zoom-label');
@@ -82,5 +68,5 @@ window.__astranovBootApp = function __astranovBootApp() {
 
   window._astranovAppReady = true;
   document.documentElement.dataset.astranovPhase = 'app';
-  console.log('%c[Spartan] OS · map · CLI ready', 'color:#00dd77;font-weight:700');
+  console.log('%c[Spartan] map + CLI ready', 'color:#00dd77;font-weight:700');
 };
