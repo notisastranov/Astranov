@@ -296,6 +296,10 @@
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',
+    '/js/spacenet/brain.js',
+    '/js/spacenet/ai-graphics.js',
+    '/js/spacenet/search.js',
+    '/js/spacenet/omni-engine.js',
   ];
 
   // GLOBE: Earth in space (SPECS boot GLOBAL)
@@ -319,6 +323,8 @@
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
     '/js/spacenet/webrtc.js',
+    '/js/spacenet/search.js',
+    '/js/spacenet/omni-engine.js',
   ];
 
   // Nothing else preloaded — full mode opt-in only
@@ -351,6 +357,11 @@
     home: { src: '/js/spacenet/home.js', global: 'SNHome' },
     helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
     webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+    omni: { src: '/js/spacenet/omni-engine.js', global: 'SNOmni' },
+    power: { src: '/js/spacenet/omni-engine.js', global: 'SNOmni' },
+    search: { src: '/js/spacenet/search.js', global: 'SNSearch' },
+    brain: { src: '/js/spacenet/brain.js', global: 'SNBrain' },
+    'ai-graphics': { src: '/js/spacenet/ai-graphics.js', global: 'SNAIGraphics' },
     call: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
     video: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
     delivery: { src: '/js/spacenet/delivery-rules.js', global: 'SNDeliveryRules' },
@@ -400,6 +411,8 @@
       function () { if (window.SNProfiles && SNProfiles.me) SNProfiles.me(); },
       function () { if (window.SNCli && SNCli.init) SNCli.init(); },
       function () { if (window.SNWebRTC && SNWebRTC.init) SNWebRTC.init(); },
+      function () { if (window.SNOmni && SNOmni.init) SNOmni.init(); },
+      function () { if (window.SNAIGraphics && SNAIGraphics.init) SNAIGraphics.init(); },
       function () { if (window.SNUi && SNUi.init) SNUi.init(); },
     ].forEach(function (fn) {
       try { fn(); } catch (e) { console.warn('[Astranov] shell init', e); }

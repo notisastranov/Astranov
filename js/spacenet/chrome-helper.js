@@ -225,6 +225,17 @@
     }
 
     try {
+      if (global.SNOmni && /\b(search|find|where|what is|who is|near|wiki|weather|map)\b/i.test(msg)) {
+        var om = await SNOmni.search(msg, { graphics: true });
+        if (om && om.items && om.items[0]) {
+          var top = om.items[0];
+          speak(top.title + (top.detail ? ' — ' + String(top.detail).slice(0, 160) : '') + ' · ' + om.items.length + ' omni hits', { ms: 12000 });
+          return top.title;
+        }
+      }
+    } catch (_) {}
+
+    try {
       if (global.SNAstranovMind && SNAstranovMind.answer) {
         var r = SNAstranovMind.answer(msg);
         var text = r && (r.text || r.a || r.answer);
@@ -312,6 +323,8 @@
       );
       forceCliLine('──────── SILVER AI ACTIVE ────────', 'dim');
       forceCliLine('Type below · or say: locate · power on · call · help', 'ok');
+      forceCliLine('Power: omni · elevate · omni <query> · power search <q>', 'dim');
+      try { if (global.SNOmni && SNOmni.init) SNOmni.init(); } catch (_o) {}
       installCliHook();
       bindAiButton(true);
       // Prove mind path immediately
