@@ -1,194 +1,340 @@
-/* split-lite moved from astranov-app.js
- * AI HANDOFF: astranov-continuity.js — Commerce, MapComms, CodersHub, DeferredBoot,
- * BrainNeurons full impl. CodersHub: _pingLabs on panel open only (not init).
- * Marketplace: Commerce.placeCart, MarketplaceDeliveryEngine in app.js stub + here. */
-// === BRAIN NEURONS — autonomous collective memory · globe pins · never stops growing ===
-const BrainNeurons = {
-  _principles: [],
-  _spawned: new Set(),
-  _activity: [],
-  _evolving: false,
-  _flushTimer: null,
-  _booted: false,
-  EVOLVE_EVERY: 3,
-  MAX_GLOBE: 56,
-  MAX_EPHEMERAL: 28,
+/* === 17-architect-bridge.js === */
+// === ARCHITECT BRIDGE — phone street-fix → desktop Grok Build agent ===
+// Owner only: notisastranov@gmail.com after Google sign-in on astranov.eu
+// In-app coding path: fix | dev | code | edit | bridge → cic_queue reason architect_bridge
+// Desktop: npm run bridge-watch  ·  answer: node scripts/architect-bridge-answer.mjs <id> "…"
+var ArchitectBridge = {
+  armed: false,
+  lastTaskId: null,
+  _pollTimer: null,
+  _watchIds: new Set(),
+  _delivered: new Set(),
+  BRIDGE_URL: null,
 
-  count() { return this._principles.length + (ACI?.neurons?.length || 0); },
-
-  _hash(s) {
-    let h = 0;
-    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-    return h;
+  bridgeUrl() {
+    if (this.BRIDGE_URL) return this.BRIDGE_URL;
+    const fn = typeof resolveAstranovFunctionsUrl === 'function'
+      ? resolveAstranovFunctionsUrl()
+      : (SB_URL + '/functions/v1');
+    this.BRIDGE_URL = fn + '/coders-bridge';
+    return this.BRIDGE_URL;
   },
 
-  _seedLatLng(idx, text) {
-    const h = this._hash(String(text || idx));
-    const lat = ((Math.abs(h) % 11000) / 100) - 55 + ((idx * 13) % 15) / 10;
-    const lng = (((h >> 10) % 36000) / 100) - 180;
-    return { lat: Math.max(-70, Math.min(70, lat)), lng };
+  isActive() {
+    return !!(Auth?.isArchitect || AciCoders?.isArchitect?.());
   },
 
-  _activityLatLng() {
-    const p = window._lastPos || CityMap?.mapViewCenter?.() || TrackballGuard?.facingLatLng?.() || {};
-    if (p.lat != null && p.lng != null) {
-      return { lat: p.lat + (Math.random() - 0.5) * 0.08, lng: p.lng + (Math.random() - 0.5) * 0.08 };
+  fieldContext() {
+    const pos = window._lastPos || null;
+    let build = '';
+    try { build = document.querySelector('meta[name="astranov-build"]')?.content || ''; } catch (_) { /* */ }
+    return {
+      lat: pos?.lat ?? null,
+      lng: pos?.lng ?? null,
+      build,
+      page: location.pathname + location.search,
+      active_task: GlobeDeck?.activeTask || 'idle',
+      ua: navigator.userAgent?.slice(0, 120) || '',
+      engine: 'grok_build',
+    };
+  },
+
+  async api(body) {
+    const headers = await Auth.authHeaders();
+    return fetchJson(this.bridgeUrl(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body || {}),
+    }, 28000);
+  },
+
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+    this._bindUi();
+    if (this.isActive()) this.arm({ quiet: true });
+  },
+
+  _bindUi() {
+    const btn = document.getElementById('aci-bridge');
+    if (!btn || btn._bridgeBound) return;
+    btn._bridgeBound = true;
+    btn.onclick = e => {
+      e.preventDefault();
+      e.stopPropagation();
+      void this.openQuickFix();
+    };
+  },
+
+  openQuickFix() {
+    if (!Auth?.user) {
+      Auth?.openLoginModal?.('Sign in as architect to use dev bridge');
+      return;
     }
-    return this._seedLatLng(this._principles.length + Date.now() % 97, 'field');
-  },
-
-  _ingest(list, source) {
-    if (!Array.isArray(list)) return 0;
-    let n = 0;
-    list.forEach((row, i) => {
-      const content = typeof row === 'string' ? row : (row?.content || '');
-      if (!content || content.length < 6) return;
-      if (this._principles.some(p => p.content === content)) return;
-      const strength = typeof row === 'object' ? (row.strength || row.importance || 1.2) : 1.2;
-      this._principles.push({ content, strength, source: source || 'server' });
-      const ll = this._seedLatLng(this._principles.length + i, content);
-      this._spawnGlobe(ll.lat, ll.lng, strength, content);
-      n++;
-    });
-    this._syncChip();
-    return n;
-  },
-
-  _trimPermanent() {
-    const ents = [...(GlobeEntity?.entities?.values?.() || [])].filter(e => e.type === 'neuron' && !e.data?.ephemeral);
-    if (ents.length <= this.MAX_GLOBE) return;
-    ents.sort((a, b) => (a.data?.strength || 1) - (b.data?.strength || 1));
-    ents.slice(0, ents.length - this.MAX_GLOBE).forEach(e => GlobeEntity?.unregister?.(e.id));
-  },
-
-  _spawnGlobe(lat, lng, strength, principle, opts) {
-    opts = opts || {};
-    if (lat == null || lng == null) return;
-    if (!opts.ephemeral) this._trimPermanent();
-    const key = (opts.ephemeral ? 'e:' : '') + (principle || '').slice(0, 120) + ':' + Date.now();
-    if (!opts.ephemeral && this._spawned.has((principle || '').slice(0, 120))) return;
-    if (!opts.ephemeral) this._spawned.add((principle || '').slice(0, 120));
-    const id = 'neuron-' + (opts.ephemeral ? 'e-' : '') + this._hash(key + lat + lng);
-    GlobeEntity?.unregister?.(id);
-    GlobeEntity?.register?.({
-      id,
-      type: 'neuron',
-      lat,
-      lng,
-      title: '🧠 ' + (principle || 'Neuron').slice(0, 48),
-      description: (principle || '') + (opts.ephemeral ? '\n· live field signal' : '\n· collective principle'),
-      urgency: opts.ephemeral ? 1 : (strength > 1.3 ? 2 : 1),
-      data: { principle, strength, ephemeral: !!opts.ephemeral, ts: Date.now() },
-      onTap: () => this._showHud(principle, strength),
-    });
-    if (!opts.ephemeral) ACI?.spawnNeuron?.(lat, lng, strength, principle);
-    if (opts.ephemeral) this._trimEphemeral();
-    CityMap?._syncMarkers?.();
-  },
-
-  _trimEphemeral() {
-    const ents = [...(GlobeEntity?.entities?.values?.() || [])].filter(e => e.type === 'neuron' && e.data?.ephemeral);
-    if (ents.length <= this.MAX_EPHEMERAL) return;
-    ents.sort((a, b) => (a.data?.ts || 0) - (b.data?.ts || 0));
-    ents.slice(0, ents.length - this.MAX_EPHEMERAL).forEach(e => GlobeEntity?.unregister?.(e.id));
-  },
-
-  _showHud(principle, strength) {
-    const hud = document.getElementById('globe-entity-hud');
-    if (!hud) return;
-    hud.classList.add('open');
-    document.getElementById('ge-hud-type').textContent = '▸ neuron · strength ' + (strength || 1).toFixed(1);
-    document.getElementById('ge-hud-title').textContent = 'Collective memory';
-    document.getElementById('ge-hud-desc').textContent = principle || 'Astranov brain principle';
-    const actions = document.getElementById('ge-hud-actions');
-    if (actions) actions.style.display = 'none';
-    GlobeDeck?.setPreview?.('◎ ' + this.count() + ' neurons · Justice → Truth → Freedom');
-  },
-
-  _syncChip() {
-    const n = this.count();
-    const guide = document.getElementById('cosmic-guide');
-    if (guide && n > 0) guide.textContent = '◎ ' + n + ' neurons · every action grows the brain';
-    const deck = document.getElementById('globe-deck-title');
-    if (deck && !GlobeDeck?.thinking) deck.dataset.neurons = String(n);
-  },
-
-  recordActivity(action, detail, opts) {
-    opts = opts || {};
-    this._activity.push({ action, detail: String(detail || '').slice(0, 160), role: opts.role, ts: Date.now() });
-    ACI?.feed?.(action, detail);
-    const sig = /think|teach|order|delivery|work|drive|vendor|evolve|explore|location|commerce|route|claim|city|post/i.test(action);
-    if (sig) {
-      const ll = this._activityLatLng();
-      this._spawnGlobe(ll.lat, ll.lng, 0.95, (detail || action).slice(0, 90), { ephemeral: true });
-      if (this._activity.length >= 8) void this._flush();
+    if (!this.isActive()) {
+      ACIControl?.reply('Dev bridge is architect-only — sign in as notisastranov@gmail.com');
+      return;
     }
+    this.arm({ quiet: true });
+    GlobeDeck?.expand?.('Bridge — code from the street');
+    GlobeDeck.activeTask = 'coders';
+    CliRibbon?.setActive?.('Bridge');
+    CliRibbon?.setNotice?.('Bridge · fix · code · dev', 'ready');
+    const input = document.getElementById('aci-cli-in');
+    if (input) {
+      input.value = 'fix ';
+      input.placeholder = 'fix … · code … · dev … — Grok Build on desktop';
+      input.focus();
+      try { input.setSelectionRange(4, 4); } catch (_) { /* */ }
+      window.resizeCliInput?.(input);
+    }
+    ACIControl?.reply('🛠 Bridge armed — type fix/code/dev or speak after 🎧');
+    AciCli?.print('Bridge ready — Grok Build picks up on desktop. Commands: fix | code | dev | bridge status', 'ok');
   },
 
-  async _flush() {
-    if (!this._activity.length) return;
-    const batch = this._activity.splice(0, 16);
-    const digest = batch.map(b => b.action + ':' + b.detail).join('; ').slice(0, 520);
-    try {
-      await ACI?.api?.({ mode: 'log', action: 'field_batch', detail: digest, role: batch[0]?.role || 'client' });
-    } catch (_) {}
-    if (batch.length >= 6) void this._maybeEvolve('field x' + batch.length);
+  arm(opts = {}) {
+    if (!this.isActive()) return { error: 'architect_only' };
+    this.armed = true;
+    window._architectBridgeArmed = true;
+    this.startWatch();
+    if (!opts.quiet) {
+      AciCli?.print('Bridge armed — fix/code/dev reach Grok Build (in-app → desktop)', 'ok');
+      ACIControl?.reply('Bridge armed · say fix <issue> or code <change>');
+    }
+    CliRibbon?.setNotice?.('Bridge armed · in-app coding', 'ready');
+    return { ok: true, armed: true };
   },
 
-  async _maybeEvolve(reason) {
-    if (this._evolving) return;
-    this._evolving = true;
-    try {
-      const r = await ACI?.api?.({ mode: 'evolve', activity: reason || 'spacenet' });
-      const fresh = (r?.principles || []).filter(p => !this._principles.some(x => x.content === p));
-      if (fresh.length) this._ingest(fresh, 'evolved');
-      const births = Math.max(1, Math.min(4, Number(r?.brain?.inserted) || (fresh.length ? 2 : 1)));
-      for (let i = 0; i < births; i++) {
-        const ll = this._activityLatLng();
-        this._spawnGlobe(ll.lat, ll.lng, 1.15 + Math.random() * 0.25, 'collective · ' + (reason || 'grow').slice(0, 60), { ephemeral: true });
+  disarm() {
+    this.armed = false;
+    window._architectBridgeArmed = false;
+    this.stopWatch();
+    this._watchIds.clear();
+  },
+
+  stopWatch() {
+    if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+  },
+
+  startWatch() {
+    if (!this.isActive()) return;
+    this.stopWatch();
+    let ticks = 0;
+    this._pollTimer = setInterval(async () => {
+      if (!this.isActive() || document.hidden) return;
+      ticks++;
+      if (this.lastTaskId) await this.poll(this.lastTaskId, true);
+      // Also poll any watched open ids for multi-task street sessions
+      if (ticks % 2 === 0 && this._watchIds.size) {
+        for (const id of [...this._watchIds]) {
+          if (id !== this.lastTaskId) await this.poll(id, true);
+        }
       }
-      ACI?.pulse?.(1.9);
-      MissionSupportReporter?.recordProgress?.('brain', 'evolve · +' + births + ' · total ' + this.count(), { reason, total: this.count() });
-      if (!document.hidden) GlobeDeck?.setPreview?.('Brain +' + births + ' neurons · ' + this.count() + ' total', 'dim');
-    } catch (_) {}
-    finally { this._evolving = false; }
+      if (ticks % 4 === 0) await this.refreshOpen();
+    }, 4000);
   },
 
-  onCycle(n) {
-    void this._flush();
-    if (n % this.EVOLVE_EVERY === 0) void this._maybeEvolve('cycle ' + n);
+  async refreshOpen() {
+    const r = await this.api({ mode: 'architect_poll', limit: 8 }).catch(() => ({}));
+    const rows = r.summons || [];
+    const open = rows.filter(s => s.status === 'open' || s.status === 'in_progress');
+    if (open.length && !this.lastTaskId) this.lastTaskId = open[0].id;
+    open.forEach(s => this._watchIds.add(s.id));
+    // Deliver any newly answered while watching
+    for (const s of rows) {
+      if (s.status === 'answered' && s.answer && !this._delivered.has(s.id)) {
+        this._deliverAnswer(s.id, s.answer, s.question);
+      }
+    }
+    return r;
   },
 
-  tick() {
-    ACI?.tick?.();
-    const t = Date.now() / 550;
-    (ACI?.neurons || []).forEach((n, i) => {
-      const s = (n.userData?.strength || 1) * (0.82 + Math.sin(t + i * 0.65) * 0.18);
-      n.scale.setScalar(s);
+  /**
+   * Queue a street task for desktop Grok Build.
+   * Primary in-app coding path for the architect.
+   */
+  async push(task, opts = {}) {
+    if (!Auth?.user) {
+      ACIControl?.reply('Sign in with G as architect first');
+      Auth?.openLoginModal?.('Sign in to arm Architect Bridge');
+      return { error: 'login required' };
+    }
+    if (!this.isActive()) {
+      const msg = 'Bridge is architect-only — notisastranov@gmail.com';
+      AciCli?.print(msg, 'err');
+      return { error: 'architect_only', text: msg };
+    }
+    if (!(await AciCoders?.ensureSession?.())) return { error: 'session expired' };
+
+    const text = String(task || '').trim();
+    if (text.length < 3) return { error: 'task too short' };
+
+    const kind = opts.kind
+      || (/^code\b|^edit\b/i.test(text) ? 'code'
+        : /^dev\b/i.test(text) ? 'dev'
+        : /^bridge\b/i.test(text) ? 'bridge'
+        : 'fix');
+    const field = { ...this.fieldContext(), ...(opts.field || {}) };
+
+    GlobeDeck?.setThinking?.(true, 'Bridge → Grok Build…');
+    const r = await this.api({
+      mode: 'architect_push',
+      task: text,
+      kind,
+      ...field,
+      context: field,
     });
+    GlobeDeck?.setThinking?.(false);
+
+    if (r.error) {
+      AciCli?.print('Bridge error: ' + r.error, 'err');
+      ACIControl?.reply('Bridge error: ' + r.error);
+      return r;
+    }
+
+    this.armed = true;
+    this.lastTaskId = r.summon_id;
+    if (r.summon_id) this._watchIds.add(r.summon_id);
+
+    const msg = 'Bridge #' + r.summon_id + ' queued — Grok Build coding on desktop · stays in this chat when done';
+    AciCli?.print(msg, 'ok');
+    ACIControl?.reply(msg);
+    GlobeDeck?.expand?.('Bridge #' + r.summon_id);
+    GlobeDeck?.setPreview?.(text.slice(0, 120));
+    CliRibbon?.setNotice?.('Bridge #' + r.summon_id + ' → Grok Build', 'ready');
+    this.startWatch();
+    return { ...r, text: msg, bridge: true, summon_id: r.summon_id };
   },
 
-  async boot() {
-    if (this._booted) return;
-    this._booted = true;
-    try {
-      const ensured = await ACI?.api?.({ mode: 'ensure_neurons' });
-      if (ensured?.principles?.length) this._ingest(ensured.principles, 'seed');
-      const stats = await ACI?.api?.({ mode: 'stats' });
-      if (stats?.principles?.length) this._ingest(stats.principles, 'memory');
-    } catch (_) {}
-    this._syncChip();
-    if (!this._flushTimer) this._flushTimer = setInterval(() => this._flush(), 28000);
-    setTimeout(() => this._maybeEvolve('boot warm'), 90000);
-    setTimeout(() => this._maybeEvolve('session digest'), 300000);
+  /**
+   * Queue a natural-language build task from chat (architect only).
+   * Returns null if not applicable so chat can continue.
+   */
+  async queueBuildFromChat(message, opts = {}) {
+    if (!this.isActive()) return null;
+    const m = String(message || '').trim();
+    if (m.length < 6) return null;
+    if (this.wantsBridgeCmd(m)) return this.handleCommand(m);
+    if (!AciCoders?.isBuildTask?.(m) && !opts.force) return null;
+    // Skip pure questions that are not implementation asks
+    if (/^(why|what is|how does|explain|do we have)\b/i.test(m) && !opts.force) return null;
+    return this.push(m, { kind: opts.kind || 'fix' });
+  },
+
+  async poll(summonId, quiet) {
+    const id = summonId || this.lastTaskId;
+    if (!id) {
+      if (!quiet) AciCli?.print('usage: bridge poll <id>', 'err');
+      return { error: 'no id' };
+    }
+    const r = await this.api({ mode: 'architect_poll', summon_id: id });
+    if (!quiet) {
+      if (r.pending) AciCli?.print('#' + id + ' pending — Grok Build working…', 'dim');
+      else if (r.text) AciCli?.print('Bridge #' + id + ': ' + r.text.slice(0, 900), 'out');
+    }
+    if (r.text && !r.pending) {
+      this._deliverAnswer(id, r.text, r.question);
+    }
+    return r;
+  },
+
+  _deliverAnswer(id, text, question) {
+    if (this._delivered.has(id)) return;
+    this._delivered.add(id);
+    // Keep set bounded
+    if (this._delivered.size > 80) {
+      const first = this._delivered.values().next().value;
+      this._delivered.delete(first);
+    }
+    const shown = 'Bridge #' + id + ' done: ' + String(text).slice(0, 280);
+    AciCli?.print(shown, 'reply');
+    ACIControl?.reply(shown);
+    GlobeDeck?.expand?.('Bridge fix #' + id);
+    GlobeDeck?.setPreview?.(String(text).slice(0, 140));
+    CliRibbon?.setNotice?.('Bridge #' + id + ' fixed', 'ready');
+    if (AciCoders?._recordReply) AciCoders._recordReply(id, text);
+    if (AciCoders?.history) {
+      AciCoders.history.push({ role: 'assistant', text: shown, via: 'architect_bridge', summon_id: id });
+      if (AciCoders.history.length > 40) AciCoders.history = AciCoders.history.slice(-40);
+    }
+    if (Voice?.maySpeak?.() && Voice?.shouldSpeak?.(text)) {
+      speak('Bridge fix ready. ' + String(text).slice(0, 100), () => {}, false);
+    }
+    this._watchIds.delete(id);
+    if (this.lastTaskId === id) this.lastTaskId = null;
+  },
+
+  async status() {
+    if (!this.isActive()) return { error: 'architect_only' };
+    const r = await this.api({ mode: 'architect_poll', limit: 6 });
+    const open = (r.summons || []).filter(s => s.status === 'open' || s.status === 'in_progress');
+    const msg = this.armed
+      ? 'Bridge armed · ' + open.length + ' open · last #' + (this.lastTaskId || '—')
+      : 'Bridge idle — say bridge to arm';
+    AciCli?.print(msg, 'ok');
+    ACIControl?.reply(msg);
+    return { ok: true, armed: this.armed, open: open.length, last: this.lastTaskId, text: msg };
+  },
+
+  async list() {
+    if (!this.isActive()) return { error: 'architect_only' };
+    const r = await this.api({ mode: 'architect_poll', limit: 12 });
+    const rows = r.summons || [];
+    if (!rows.length) {
+      AciCli?.print('no bridge tasks yet — say fix <issue> or code <change>', 'dim');
+      return r;
+    }
+    AciCli?.print('── architect bridge · Grok Build ──', 'dim');
+    rows.forEach(s => {
+      AciCli?.print('#' + s.id + ' [' + s.status + '] ' + String(s.question || '').slice(0, 100),
+        s.status === 'answered' ? 'ok' : 'dim');
+    });
+    return r;
+  },
+
+  wantsBridgeCmd(raw) {
+    return /^(bridge|dev|fix|code|edit)\b/i.test(String(raw || '').trim());
+  },
+
+  async handleCommand(raw) {
+    const line = String(raw || '').trim();
+    const parts = line.split(/\s+/);
+    const cmd = (parts[0] || '').toLowerCase();
+    const rest = parts.slice(1).join(' ').trim();
+
+    if (cmd === 'bridge') {
+      const sub = (parts[1] || '').toLowerCase();
+      if (!sub || sub === 'arm' || sub === 'on') return this.arm();
+      if (sub === 'off' || sub === 'disarm') { this.disarm(); AciCli?.print('Bridge disarmed', 'dim'); return { ok: true }; }
+      if (sub === 'status' || sub === 'stat') return this.status();
+      if (sub === 'list') return this.list();
+      if (sub === 'poll') {
+        const id = parts[2] ? parseInt(parts[2], 10) : this.lastTaskId;
+        return this.poll(id, false);
+      }
+      if (rest) return this.push(rest, { kind: 'bridge' });
+      return this.status();
+    }
+
+    if (cmd === 'dev' || cmd === 'fix' || cmd === 'code' || cmd === 'edit') {
+      if (!rest) {
+        AciCli?.print('usage: ' + cmd + ' <what to change>', 'err');
+        return { error: 'usage' };
+      }
+      const kind = (cmd === 'code' || cmd === 'edit') ? 'code' : cmd;
+      return this.push(cmd + ' ' + rest, { kind });
+    }
+
+    return null;
   },
 };
-window.BrainNeurons = BrainNeurons;
 
+window.ArchitectBridge = ArchitectBridge;
 
+/* === 18-aci-coders.js === */
 // === ASTRANOV CODERS — always online for all users ===
 // Justice → Truth → Freedom (exact order) is the immutable boundary.
-const AciCoders = {
+var AciCoders = {
   ready: false,
   alwaysOn: true,
   teamActive: true,
@@ -233,6 +379,22 @@ const AciCoders = {
     return !!(Auth?.isOwner || Auth?.isArchitect);
   },
 
+  /** Paid XAI_API_KEY path — only architect notisastranov@gmail.com after Google login */
+  isArchitect() {
+    const email = (Auth?.user?.email || '').toLowerCase();
+    return !!(Auth?.isArchitect || email === (Auth?.OWNER_EMAIL || 'notisastranov@gmail.com').toLowerCase());
+  },
+
+  /**
+   * Free tier first (OpenRouter/Groq/Gemini). Never force paid XAI from client.
+   * Server uses XAI_API_KEY only after free fails — architect only + notify.
+   */
+  freeTierPrefs() {
+    const p = { force: 'groq', skip: ['xai'] };
+    if (this.fallbackPrefs?.causeJudge && this.isArchitect()) p.causeJudge = this.fallbackPrefs.causeJudge;
+    return p;
+  },
+
   isExplicitRef(raw) {
     const s = String(raw || '').trim();
     return /^(coders|composer|cursor|summon\s+coders?)\b/i.test(s) || /^@coders\b/i.test(s);
@@ -270,7 +432,6 @@ const AciCoders = {
     this._activityBuffer.push({ source: String(source || 'field'), detail: d, ts: Date.now(), props: props || {} });
     if (this._activityBuffer.length > 48) this._activityBuffer = this._activityBuffer.slice(-48);
     this._activityCount++;
-    MissionSupportReporter?.recordProgress?.(String(source || 'field'), d, props);
     this.updateHud();
   },
 
@@ -405,35 +566,38 @@ const AciCoders = {
     this.startListening();
   },
 
-  /** Open live Coders chat — expanded CLI, mic ready, replies visible */
+  /** Open live Coders chat — expanded CLI, replies always visible in ribbon */
   async enterSession(opts = {}) {
     opts = opts || {};
     await this.autoStart();
     if (GlobeDeck) GlobeDeck.activeTask = 'coders';
-    if (opts.expand) {
-      GlobeDeck?.onUserMessage?.('Coders');
-      GlobeDeck?.expand?.('Coders');
+    // Default expand so replies are not hidden under collapsed deck
+    const doExpand = opts.expand !== false;
+    if (doExpand) {
+      GlobeDeck?.onUserMessage?.('Grok');
+      GlobeDeck?.expand?.('Grok');
     } else {
-      GlobeDeck?.setTitle?.('Coders');
-      GlobeDeck?.setPreview?.('Coders ready — type below');
-      CliRibbon?.setActive?.('Coders');
+      GlobeDeck?.setTitle?.('Grok');
+      GlobeDeck?.setPreview?.('Grok ready — type below');
     }
-    AppShortcuts?.track?.('coders', 'Coders');
+    CliRibbon?.setActive?.('Grok');
+    AppShortcuts?.track?.('coders', 'Grok');
     if (window.AciCli) AciCli.open = true;
 
     const input = document.getElementById('aci-cli-in');
     if (input) {
-      input.placeholder = 'Talk to Astranov — type or tap 🎧 · Enter to send';
+      input.placeholder = 'Talk to Grok — type or tap 🎧 · Enter to send';
       input.classList.remove('voice-live');
       if (opts.focus !== false) {
         setTimeout(() => input.focus(), 60);
       }
     }
 
+    // Only auto-start mic when explicitly from voice / hands-free already on
     if (opts.fromVoice || window._handsFreeVoice || voiceSessionActive) {
-      if (!window._handsFreeVoice && typeof startVoiceOptions === 'function') {
+      if (!window._handsFreeVoice && opts.fromVoice && typeof startVoiceOptions === 'function') {
         startVoiceOptions();
-      } else {
+      } else if (window._handsFreeVoice || voiceSessionActive) {
         scheduleVoiceResume?.();
       }
     }
@@ -444,11 +608,13 @@ const AciCoders = {
       if (!this._sessionWelcomed) this._sessionWelcomed = true;
       const line = opts.ping
         ? 'Grok still here — keep talking (type or 🎧)'
-        : 'talk hands-free to Astranov — type or tap 🎧 and speak. I reply in ribbon + voice.';
+        : 'Grok here — type below or tap 🎧 to speak. Replies show in the ribbon.';
       AciCli?.print(line, 'ok');
       ACIControl?.reply(line.slice(0, 200));
+      CliRibbon?.setNotice?.(line.slice(0, 120), 'ready');
+      GlobeDeck?.setPreview?.(line.slice(0, 120));
       if (opts.fromVoice && window._handsFreeVoice && Voice?.maySpeak?.()) {
-        speak('Coders ready. Talk normally.', () => resumeListening?.(), false);
+        speak('Grok ready. Talk normally.', () => resumeListening?.(), false);
       }
     }
 
@@ -469,6 +635,11 @@ const AciCoders = {
 
     const parts = raw.split(/\s+/);
     const sub = (parts[0] || '').toLowerCase();
+
+    if (ArchitectBridge?.wantsBridgeCmd?.(raw)) {
+      const br = await ArchitectBridge.handleCommand(raw);
+      if (br) return br;
+    }
 
     if (/^coders\b/i.test(raw)) {
       if (sub === 'list') return this.listSummons();
@@ -516,6 +687,12 @@ const AciCoders = {
 
   async executeOrder(task, raw, opts) {
     await this.autoStart();
+    if (!this.isArchitect()) {
+      const msg = 'Owner orders + paid Grok are for notisastranov@gmail.com only — sign in with Google as architect';
+      AciCli?.print(msg, 'err');
+      ACIControl?.reply(msg);
+      return { error: 'architect_only', text: msg };
+    }
     if (!(await this.ensureSession())) return { error: 'session expired' };
 
     const judge = this.parseCauseJudge(raw);
@@ -669,10 +846,34 @@ const AciCoders = {
     this.history.push({ role: 'assistant', content: reply });
     if (this.history.length > 20) this.history = this.history.slice(-20);
 
+    // Notify architect when server switches to paid XAI_API_KEY after free limit
+    if (r.paid_fallback || r.notify || /xai-paid-fallback|xai-owner/.test(String(r.via || ''))) {
+      const note = String(r.paid_notice || r.notify || '⚠ Free/SuperGrok limit — using paid XAI_API_KEY');
+      AciCli?.print(note, 'err');
+      ACIControl?.reply(note);
+      CliRibbon?.setNotice?.(note.slice(0, 120), 'err');
+      try {
+        if (!sessionStorage.getItem('astranov:paid-xai-notified')) {
+          sessionStorage.setItem('astranov:paid-xai-notified', '1');
+          if (this.isArchitect() && Voice?.maySpeak?.()) {
+            speak('Paid API key activated after free limit.', () => {}, false);
+          }
+        }
+      } catch (_) { /* */ }
+    }
+
     const prefix = r.explicit_order || r.order_executed ? 'ORDER: ' : '';
     const kind = r.error && !raw ? 'err' : 'reply';
-    AciCli?.print(prefix + reply, kind);
-    ACIControl?.reply(prefix + reply.slice(0, 260));
+    const shown = prefix + reply;
+    AciCli?.print(shown, kind);
+    ACIControl?.reply(shown.slice(0, 260));
+    // Always surface where users look (trust contract)
+    GlobeDeck?.expand?.('Grok');
+    GlobeDeck?.setPreview?.(shown.slice(0, 140));
+    if (!(r.paid_fallback || r.notify)) {
+      CliRibbon?.setNotice?.(shown.slice(0, 120), kind === 'err' ? 'err' : 'ready');
+    }
+    CliRibbon?.setActive?.('Grok');
 
     const composerQueued = r.composer_queued || (r.pending && r.summon_id);
     if (composerQueued && AciCli) AciCli.print('Composer also queued #' + composerQueued, 'dim');
@@ -704,7 +905,7 @@ const AciCoders = {
   isPing(m) {
     const s = String(m || '').trim();
     if (!s || s.length > 80) return false;
-    return /^(are you there|you there|hello|hi|hey|ping|online|listening|composer|grok|coders|γεια|είσαι|ακούς|π��ρών|εδώ|μου ακούς)/i.test(s)
+    return /^(are you there|you there|hello|hi|hey|ping|online|listening|composer|grok|coders|γεια|είσαι|ακούς|παρών|εδώ|μου ακούς)/i.test(s)
       || /^(composer|grok|coders)\s+(are you there|online|there)/i.test(s);
   },
 
@@ -713,12 +914,10 @@ const AciCoders = {
   },
 
   isLocalGlobeCmd(m) {
+    // Strict match only — avoid voice noise triggering locate/zoom
     const s = String(m || '').trim();
-    return /^locate\s*(me|button)?$/i.test(s)
-      || /^zoom\s+to\s+me$/i.test(s)
-      || /^where\s+am\s+i\??$/i.test(s)
-      || /^find\s+me$/i.test(s)
-      || /^🎯|📍$/.test(s);
+    if (s.length > 48) return false;
+    return /^(locate(\s+me)?|zoom\s+to\s+me|where\s+am\s+i\??|find\s+me|locate\s+button|🎯|📍)$/i.test(s);
   },
 
   runLocalGlobeCmd(m) {
@@ -818,19 +1017,14 @@ const AciCoders = {
       YachtMatcher?.openBooking?.(null, { tab: 'booker' });
       return 'Opened yachts.astranov.eu Booker';
     }
-    if (/audit|auditor|accountant|λογιστ|λογιστή|λογιστές|ισολογισμ|ισοζύγι|καθολικ/.test(low) && /open|άνοιξε|show|δείξε|πήγαινε|go|start|^audit|^λογιστ/.test(low)) {
-      const tab = /ισολογισμ/.test(low) ? 'balance' : /ισοζύγι/.test(low) ? 'trial' : /καθολικ|ledger/.test(low) ? 'ledger' : /μισθοδοσ/.test(low) ? 'payroll' : /φόρ|tax/.test(low) ? 'tax' : 'company';
-      AuditorPortal?.open?.({ tab });
-      return 'Άνοιγμα auditors.astranov.eu · ' + tab;
+    if (/audit|invoice|accountant|λογιστ/.test(low)) {
+      AuditorPortal?.open?.({ tab: 'dashboard' });
+      return 'Opened auditors.astranov.eu';
     }
-    if (/^(audit|auditors|λογιστ)/.test(low)) {
-      AuditorPortal?.open?.({ tab: 'company' });
-      return 'Άνοιγμα auditors.astranov.eu';
-    }
-    if (/avc|coin|ledger|justice|wallet|κρυπτο|νόμισμα/.test(low) && /balance|ledger|open|show|wallet|δείξε/.test(low)) {
+    if (/Coins|coin|ledger|justice|wallet|κρυπτο|νόμισμα/.test(low) && /balance|ledger|open|show|wallet|δείξε/.test(low)) {
       if (/open|wallet|show|δείξε/.test(low)) CoinPortal?.open?.(/ledger|transparen/.test(low) ? 'transparency' : 'wallet');
-      else AvcJustice?.cli?.(['avc', /ledger|διαφάν|transparen/.test(low) ? 'ledger' : 'balance']);
-      return 'coin.astranov.eu — AVC wallet · 1 AVC = 1 EUR · work-mint only';
+      else CoinsJustice?.cli?.(['Coins', /ledger|διαφάν|transparen/.test(low) ? 'ledger' : 'balance']);
+      return 'coin.astranov.eu — Coins wallet · 1 Coin = 1 EUR · work-mint only';
     }
     return null;
   },
@@ -838,11 +1032,12 @@ const AciCoders = {
   formatHonestReply(r, userMsg) {
     const text = String(r.text || r.response || '').trim();
     if (!text) return '';
-    const id = r.summon_id || r.composer_queued;
+    const id = r.summon_id || r.composer_queued || r.bridge_id;
     if (id && this.isBuildTask(userMsg)) {
       const stripped = text.replace(/\b(done|fixed|implemented|completed|applied)\b/gi, '').trim();
+      const agent = r.bridge ? 'Grok Build (Architect Bridge)' : 'desktop agent';
       return (stripped ? stripped.slice(0, 280) + '\n\n' : '')
-        + 'Build queued #' + id + ' — Composer applies code. Say: coders poll ' + id;
+        + 'Build queued #' + id + ' — ' + agent + '. Stay in app; reply lands here. bridge poll ' + id;
     }
     return text;
   },
@@ -854,15 +1049,20 @@ const AciCoders = {
 
   async queueCoder(task, engine) {
     if (!Auth?.user) return { error: 'sign in with G for build queue' };
+    // Build / paid Grok queue — architect only
+    if (!this.isArchitect() && (engine === 'composer' || this.isBuildTask(task))) {
+      return { error: 'architect_only', text: 'Build queue is owner-only — sign in as notisastranov@gmail.com' };
+    }
     const eng = engine || (this.wantsComposer(task) ? 'composer' : 'grok');
     const q = await AciCli.api({
       mode: 'coders',
       task: task,
       coder_engine: eng,
       history: this.history.slice(-6),
-      fallback_prefs: this.fallbackPrefs,
+      fallback_prefs: this.freeTierPrefs(),
     });
     if (q.error && AciCli) AciCli.print('coders error: ' + q.error, 'err');
+    if (q.paid_fallback || q.notify) this._applyResponse(q, task);
     if (q.summon_id) {
       this.lastSummonId = q.summon_id;
       if (q.composer_queued) this.startPoll(q.composer_queued);
@@ -874,13 +1074,24 @@ const AciCoders = {
     const m = String((window.fixVoiceHotwords || (x => x))(String(message || ''))).trim();
     if (m.length < 1) return this.enterSession({ fromVoice: !!opts.fromVoice });
 
+    // Rebuild path: Core Brain owns freeform + globe tools (local-first, <14s AI)
+    if (window.AstranovCoreBrain?.handle && !opts.forceLegacy && !this.wantsComposer(m)
+      && !ArchitectBridge?.wantsBridgeCmd?.(m) && !this.isExplicitRef(m)) {
+      return AstranovCoreBrain.handle(m, opts);
+    }
+
     const localFix = this.tryLocalFix(m);
     if (localFix) {
       AciCli?.print(localFix, 'ok');
       ACIControl?.reply(localFix.slice(0, 260));
       if (Auth?.user && this.isBuildTask(m)) {
-        const q = await this.queueCoder(m, 'grok').catch(() => ({}));
-        if (q.summon_id) AciCli?.print('Also queued #' + q.summon_id + ' for Composer', 'dim');
+        if (this.isArchitect() && !this.wantsComposer(m)) {
+          const br = await ArchitectBridge?.queueBuildFromChat?.(m, { kind: 'fix' }).catch(() => null);
+          if (br?.summon_id) AciCli?.print('Also Bridge #' + br.summon_id + ' → Grok Build', 'dim');
+        } else {
+          const q = await this.queueCoder(m, 'grok').catch(() => ({}));
+          if (q.summon_id) AciCli?.print('Also queued #' + q.summon_id + ' for desktop agent', 'dim');
+        }
       }
       if (opts.fromVoice || window._handsFreeVoice) scheduleVoiceResume?.();
       return { ok: true, local: true, text: localFix };
@@ -950,6 +1161,37 @@ const AciCoders = {
         return this._guaranteeReply(m, { text: msg, via: 'local/city' });
       }
 
+      // Architect + build: primary path is Architect Bridge → Grok Build desktop (in-app coding)
+      if (this.isArchitect() && build && !this.wantsComposer(m)) {
+        const br = await ArchitectBridge?.queueBuildFromChat?.(m, { kind: 'fix' }).catch(() => null);
+        if (br?.summon_id) {
+          // Still give a short Grok chat ack so phone feels live
+          let ack = '';
+          try {
+            const gr = await AciCli.api({
+              mode: 'coders_chat',
+              message: 'Confirm you queued this street fix for Grok Build (one short sentence): ' + m.slice(0, 400),
+              fast: true,
+              history: this.history.slice(-4),
+              fallback_prefs: this.freeTierPrefs(),
+            }, { timeoutMs: 18000 });
+            ack = String(gr.text || gr.response || '').trim();
+          } catch (_) { /* */ }
+          const text = (ack && !this.isFailedReply(ack) ? ack + '\n\n' : '')
+            + 'Bridge #' + br.summon_id + ' → Grok Build. Stay in the app — answer returns here.';
+          GlobeDeck?.setThinking(false);
+          return this._applyResponse({
+            text,
+            response: text,
+            summon_id: br.summon_id,
+            bridge: true,
+            bridge_id: br.summon_id,
+            via: 'architect_bridge',
+            team: true,
+          }, m);
+        }
+      }
+
       if (Auth?.user && this.wantsComposer(m) && build) {
         const q = await this.queueCoder(m, 'composer');
         GlobeDeck?.setThinking(false);
@@ -974,7 +1216,8 @@ const AciCoders = {
         return this._applyResponse({ text: pingReply, via: 'local/ping' }, m);
       }
 
-      const grokPrefs = { ...this.fallbackPrefs, force: this.fallbackPrefs.force || 'xai' };
+      // Free tier first — server may paid-fallback for architect only after limit
+      const grokPrefs = this.freeTierPrefs();
       let r = await AciCli.api({
         mode: 'coders_chat',
         message: m,
@@ -991,13 +1234,13 @@ const AciCoders = {
           task: m,
           coder_engine: 'fallback',
           fallback: true,
-          fallback_prefs: { ...this.fallbackPrefs, force: 'groq' },
+          fallback_prefs: { force: 'groq', skip: ['xai'] },
           history: this.history.slice(-4),
         }, { timeoutMs: 22000 });
         const fbText = String(fb.text || fb.response || '').trim();
         if (fbText && !this.isFailedReply(fbText)) {
           GlobeDeck?.setThinking(false);
-          return this._applyResponse({ ...fb, text: fbText, team: true }, m);
+          return this._applyResponse({ ...fb, text: fbText, team: true, via: fb.via || 'coder/groq' }, m);
         }
         if (Auth?.user && build) {
           const q = await this.queueCoder(m, 'grok');
@@ -1015,11 +1258,24 @@ const AciCoders = {
       }
 
       if (Auth?.user && build && !r.summon_id) {
-        const q = await this.queueCoder(m, this.wantsComposer(m) ? 'composer' : 'grok');
-        if (q.summon_id) {
-          r.summon_id = q.summon_id;
-          r.composer_queued = q.composer_queued;
-          if (!r.text && q.text) { r.text = q.text; r.response = q.text; }
+        // Prefer Architect Bridge for architect (Grok Build); Composer only when forced
+        if (this.isArchitect() && !this.wantsComposer(m)) {
+          const br = await ArchitectBridge?.queueBuildFromChat?.(m, { kind: 'fix' }).catch(() => null);
+          if (br?.summon_id) {
+            r.summon_id = br.summon_id;
+            r.bridge = true;
+            r.bridge_id = br.summon_id;
+            const note = 'Bridge #' + br.summon_id + ' → Grok Build (desktop). Reply returns in this chat.';
+            r.text = (r.text ? r.text + '\n\n' : '') + note;
+            r.response = r.text;
+          }
+        } else {
+          const q = await this.queueCoder(m, this.wantsComposer(m) ? 'composer' : 'grok');
+          if (q.summon_id) {
+            r.summon_id = q.summon_id;
+            r.composer_queued = q.composer_queued;
+            if (!r.text && q.text) { r.text = q.text; r.response = q.text; }
+          }
         }
       }
 
@@ -1062,139 +1318,210 @@ const AciCoders = {
 };
 window.AciCoders = AciCoders;
 
+/* === 19-session-hold.js === */
+// === SESSION HOLD — pause mic/tasks in noisy places, resume later ===
+// Prefer phase bridge / critical stub; never redeclare with let (co-bundle safe)
+sessionHeld = false;
+window.sessionHeld = false;
 
-// === MISSION SUPPORT REPORTER — daily problems + progression → support digest ===
-const MissionSupportReporter = {
-  LS_DAY: 'astranov:support-digest-day',
-  LS_PROBLEMS: 'astranov:support-problems',
-  LS_WINS: 'astranov:support-wins',
-  CHECK_MS: 60 * 60 * 1000,
-  _bootAt: Date.now(),
-  _timer: null,
-  _submitting: false,
+var SessionHold = {
+  STORAGE_KEY: 'astranov-session-hold-v1',
+  _snapshot: null,
 
-  utcDay() {
-    return new Date().toISOString().slice(0, 10);
+  storageKey() {
+    const uid = Auth?.user?.id || 'guest';
+    return this.STORAGE_KEY + '_' + uid;
   },
 
-  buildStamp() {
-    return document.querySelector('meta[name="astranov-build"]')?.content || '';
-  },
-
-  _load(key) {
-    try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { return []; }
-  },
-
-  _save(key, arr) {
-    try { localStorage.setItem(key, JSON.stringify(arr.slice(-80))); } catch (_) {}
-  },
-
-  recordProblem(type, message, context) {
-    const row = { type: String(type || 'problem'), message: String(message || '').slice(0, 400), ts: Date.now(), context: context || {} };
-    const buf = this._load(this.LS_PROBLEMS);
-    buf.push(row);
-    this._save(this.LS_PROBLEMS, buf);
-    if (buf.length >= 3) this._maybeSubmit('problem_threshold');
-  },
-
-  recordProgress(subsystem, detail, props) {
-    const s = String(subsystem || 'field');
-    if (!/order|commerce|route|delivery|vendor|driver|globe|city|mission|claim|evolve|crawler|channel|chat|coders|think|voice|grok|xai|brain/i.test(s + ' ' + (detail || ''))) return;
-    const row = { subsystem: s, detail: String(detail || '').slice(0, 200), ts: Date.now(), props: props || {} };
-    const buf = this._load(this.LS_WINS);
-    buf.push(row);
-    this._save(this.LS_WINS, buf);
-  },
-
-  collectStats() {
-    const missions = MarketplaceDeliveryEngine?.missions || [];
-    const active = missions.filter(m => MarketplaceDeliveryEngine?.STATUS?.[m.status]?.active).length;
-    return {
-      build: this.buildStamp(),
-      globe_tier: ZoomTiers?.current || CosmicZoom?.level || 'earth',
-      active_missions: active,
-      total_missions: missions.length,
-      session_minutes: Math.round((Date.now() - this._bootAt) / 60000),
-      coders_events: AciCoders?._activityCount || 0,
-      user_logged_in: !!Auth?.user,
-      host: location.hostname || '',
-    };
-  },
-
-  async submitDaily(trigger) {
-    if (this._submitting) return;
-    const today = this.utcDay();
-    let lastDay = '';
-    try { lastDay = localStorage.getItem(this.LS_DAY) || ''; } catch (_) {}
-    if (lastDay === today && trigger !== 'force') return;
-
-    this._submitting = true;
-    const problems = this._load(this.LS_PROBLEMS);
-    const progression = this._load(this.LS_WINS);
-    const stats = this.collectStats();
-    const fnUrl = (typeof resolveAstranovFunctionsUrl === 'function' ? resolveAstranovFunctionsUrl() : SB_URL + '/functions/v1') + '/support-digest';
-    const key = ACI?.key || '';
-    const sessionId = window._sessionId || AiRouter?._sessionId || 'web';
-
-    try {
-      const r = await fetch(fnUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: key, Authorization: 'Bearer ' + key },
-        body: JSON.stringify({
-          action: 'client_report',
-          digest_date: today,
-          session_id: sessionId,
-          build: stats.build,
-          problems,
-          progression,
-          stats,
-          trigger: trigger || 'daily',
-          force_daily: true,
-        }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (j.ok) {
-        try { localStorage.setItem(this.LS_DAY, today); } catch (_) {}
-        this._save(this.LS_PROBLEMS, []);
-        this._save(this.LS_WINS, []);
-        if (j.notified) GlobeDeck?.log?.('Support digest sent · Astranov + xAI · ' + today, 'dim');
-        else if (!j.skipped) GlobeDeck?.log?.('Support digest stored · Astranov + xAI · ' + today, 'dim');
-      }
-    } catch (_) { /* retry next hour */ }
-    finally { this._submitting = false; }
-  },
-
-  _maybeSubmit(reason) {
-    const today = this.utcDay();
-    let lastDay = '';
-    try { lastDay = localStorage.getItem(this.LS_DAY) || ''; } catch (_) {}
-    if (lastDay !== today) void this.submitDaily(reason);
-  },
-
-  reportBootRegression(checks) {
-    const fails = (checks || []).filter(c => !c.ok);
-    if (!fails.length) return;
-    this.recordProblem('grok_build_regression', fails.map(f => f.id).join(', '), {
-      build: this.buildStamp(),
-      fails,
-      trackball: !!TrackballGuard?._ok,
-      cam_z: typeof camera !== 'undefined' ? camera?.position?.z : null,
-    });
-    void this.submitDaily('force');
+  clearForeignHold() {
+    const saved = this.loadPersisted();
+    if (!saved?.snapshot) return;
+    const cur = Auth?.user?.id || null;
+    if (saved.snapshot.userId && cur && saved.snapshot.userId !== cur) {
+      this.release();
+      AciCli?.print('cleared hold from another account — same login on all devices', 'dim');
+    }
   },
 
   init() {
-    setTimeout(() => this._maybeSubmit('boot'), 8000);
-    if (this._timer) clearInterval(this._timer);
-    this._timer = setInterval(() => this._maybeSubmit('hourly'), this.CHECK_MS);
-    this.recordProgress('mission', 'SpaceNet boot · build ' + this.buildStamp(), { subsystems: ['GlobeNavigate', 'MarketplaceDeliveryEngine', 'FieldWork', 'BrainNeurons', 'SpaceNetScenarioRunner', 'SpaceNetGeo', 'SpaceNetCycle', 'ClassifiedTriangles'] });
+    const btn = document.getElementById('aci-hold');
+    if (btn) btn.onclick = e => { e.preventDefault(); e.stopPropagation(); this.toggle(); };
+    this.restoreIfNeeded();
+    this.syncButton();
+  },
+
+  isHeld() { return sessionHeld; },
+
+  capture() {
+    const input = document.getElementById('aci-cli-in');
+    return {
+      savedAt: Date.now(),
+      voiceSessionActive: !!voiceSessionActive,
+      voiceEnabled: !!voiceEnabled,
+      deckExpanded: !!GlobeDeck?.expanded,
+      activeTask: GlobeDeck?.activeTask || null,
+      deckTitle: document.getElementById('globe-deck-title')?.textContent || '',
+      inputBuffer: input?.value || AciCli?.buffer || '',
+      context: SuperCli?._context || 'idle',
+      followMode: GlobeControl?.followMode || null,
+      batchId: window.AstranovNode?.batchId || null,
+      vhfActive: !!window.Comms?.vhfActive,
+      driving: !!window.DrivingView?.active,
+      userId: Auth?.user?.id || null,
+    };
+  },
+
+  persist(snapshot) {
+    try {
+      localStorage.setItem(this.storageKey(), JSON.stringify({ held: true, snapshot }));
+    } catch (_) {}
+  },
+
+  clearPersist() {
+    try { localStorage.removeItem(this.storageKey()); } catch (_) {}
+  },
+
+  pauseListening() {
+    if (recognition) { try { recognition.stop(); } catch (_) {} }
+    isListening = false;
+    Voice?.flush?.();
+  },
+
+  hold(opts = {}) {
+    if (sessionHeld) return;
+    const snap = this.capture();
+    this._snapshot = snap;
+    sessionHeld = true;
+    this.pauseListening();
+    this.persist(snap);
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.add('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = '⏸ held — tap ▶ to resume';
+    GlobeDeck?.setPreview('⏸ Session held — mic & tasks paused');
+    AciCli?.print('⏸ Session held — leave noisy area, tap ▶ to resume', 'dim');
+    if (!opts.quiet) ACIControl?.reply('Held — tap ▶ when ready to resume');
+    SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  },
+
+  async resume(opts = {}) {
+    if (!sessionHeld) return;
+    const snap = this._snapshot || this.loadPersisted()?.snapshot;
+    sessionHeld = false;
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.remove('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = 'type or tap 🎤 · Enter or ➡';
+
+    if (snap) {
+      if (snap.deckExpanded) GlobeDeck?.expand(snap.deckTitle || PublicCopy?.deckTitle?.() || 'Astranov');
+      if (snap.activeTask) GlobeDeck.activeTask = snap.activeTask;
+      if (snap.inputBuffer && input) {
+        input.value = snap.inputBuffer;
+        if (AciCli) AciCli.buffer = snap.inputBuffer;
+      }
+      if (snap.context) SuperCli?.setContext?.(snap.context);
+      if (snap.voiceSessionActive || snap.voiceEnabled) {
+        voiceSessionActive = true;
+        voiceEnabled = true;
+      }
+      if (window.AciCli) AciCli.open = !!snap.deckExpanded;
+    }
+
+    this.clearPersist();
+    this._snapshot = null;
+    AciCli?.print('▶ Session resumed', 'ok');
+    GlobeDeck?.setPreview('▶ Resumed');
+    if (!opts.quiet) ACIControl?.reply('Resumed — ready');
+
+    if (snap?.voiceSessionActive || snap?.voiceEnabled) {
+      setTimeout(() => startVoiceOptions?.(), 400);
+    } else {
+      scheduleVoiceResume?.();
+    }
+    SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  },
+
+  loadPersisted() {
+    try {
+      const raw = localStorage.getItem(this.storageKey());
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  },
+
+  restoreIfNeeded() {
+    const saved = this.loadPersisted();
+    if (!saved?.held || !saved.snapshot) return;
+    this._snapshot = saved.snapshot;
+    sessionHeld = true;
+    voiceSessionActive = false;
+    voiceEnabled = false;
+    this.pauseListening();
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.add('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = '⏸ held — tap ▶ to resume';
+    if (saved.snapshot.deckTitle) GlobeDeck?.setTitle(saved.snapshot.deckTitle);
+    GlobeDeck?.setPreview('⏸ Session held — tap ▶ to resume');
+    setTimeout(() => {
+      AciCli?.print('⏸ Restored held session — tap ▶ to resume', 'dim');
+    }, 600);
+  },
+
+  release() {
+    sessionHeld = false;
+    this._snapshot = null;
+    this.clearPersist();
+    this.pauseListening();
+    this.syncButton();
+    const deck = GlobeDeck?.deck?.();
+    if (deck) deck.classList.remove('session-held');
+    const input = document.getElementById('aci-cli-in');
+    if (input) input.placeholder = 'type or tap 🎤 · Enter or ➡';
+  },
+
+  toggle() {
+    if (sessionHeld) this.resume();
+    else this.hold();
+  },
+
+  syncButton() {
+    const btn = document.getElementById('aci-hold');
+    if (!btn) return;
+    if (sessionHeld) {
+      btn.textContent = '▶';
+      btn.title = 'Resume session — restore mic & tasks';
+      btn.classList.add('deck-btn-active');
+      btn.setAttribute('aria-pressed', 'true');
+    } else {
+      btn.textContent = '⏸';
+      btn.title = 'Hold session — pause mic & tasks for noisy places';
+      btn.classList.remove('deck-btn-active');
+      btn.setAttribute('aria-pressed', 'false');
+    }
   },
 };
-window.MissionSupportReporter = MissionSupportReporter;
+window.SessionHold = SessionHold;
+// Keep lexical alias in sync for modules that captured the stub name
+try { if (typeof globalThis !== 'undefined') globalThis.SessionHold = SessionHold; } catch (_) {}
 
-const ACI = {
-  name: 'Astranov Collective Intelligence',
-  url: SB_URL,
+/* === 20-aci.js === */
+// === ASTRANOV COLLECTIVE INTELLIGENCE (ACI) — FINAL ===
+// Synthesized from all AI specs: pure globe + three modes + council + self-evolving neurons.
+// Single API: /functions/v1/aci (think | evolve | log | teach | stats | seed)
+const SUPABASE_REF = 'lkoatrkhuigdolnjsbie';
+const SUPABASE_CUSTOM_URL = 'https://api.astranov.eu';
+const SUPABASE_DEFAULT_URL = 'https://' + SUPABASE_REF + '.supabase.co';
+// Flip true after api.astranov.eu is activated — removes random ref from Google OAuth
+const SUPABASE_USE_CUSTOM_DOMAIN = false;
+
+var ACI = {
+  name: 'Astranov',
+  url: SUPABASE_USE_CUSTOM_DOMAIN ? SUPABASE_CUSTOM_URL : SUPABASE_DEFAULT_URL,
   key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI',
   neurons: [],
   history: [],
@@ -1255,45 +1582,51 @@ const ACI = {
     });
   },
 
-  async think(prompt, opts = {}) {
+  async think(prompt) {
     if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} }
     window._aciAbort = new AbortController();
-    const fast = opts.fast !== false;
-    if (!opts._wrapped) {
-      GlobeDeck?.setMapStatus('ACI — thinking…');
-      GlobeDeck?.setThinking(true, '◎ 3D think…');
-    }
+    const up = window._lastPos || { lat: 36.22, lng: 28.12 };
+    GlobeDeck?.setMapStatus('ACI — thinking…');
+    GlobeDeck?.setThinking(true, 'ACI — thinking…');
     const h = await this.headers();
     let r;
     try {
+      // Monitor usage: limit history to reduce tokens (from logs ~210k prompt)
+      const limitedHistory = this.history.slice(-4);
       r = await fetchJson(this.url + '/functions/v1/aci', {
         method: 'POST', headers: h,
-        body: JSON.stringify({
-          mode: 'think', prompt, fast: true,
-          history: this.history.slice(-4),
-          aci_mode: this.thinkMode || undefined,
-        }),
-      }, Responsive3D?.FAST_MS || 8000);
+        body: JSON.stringify({ mode: 'think', prompt, history: limitedHistory, aci_mode: this.thinkMode || undefined }),
+      }, 55000);
     } catch (e) {
       r = { error: String(e.message || e) };
+      // Send complaint on error
+      this._sendComplaint('think_error', String(e));
     }
     GlobeDeck?.setThinking(false);
     if (r.aborted) return '';
     if (r.error) {
       const err = 'ACI error: ' + r.error + (r._httpStatus === 401 ? ' — tap G to sign in' : '');
       GlobeDeck?.showError(err);
+      this._sendComplaint('aci_error', err);
       return err;
     }
-    const raw = (r.text || r.response || '').trim() || 'Το Astranov συγκεντρώνεται — δοκίμασε ξανά.';
-    const text = ArcangeloDialect?.repairTranscript?.(raw) || raw;
+    const text = (r.text || r.response || '').trim() || 'Το Astranov συγκεντρώνεται — δοκίμασε ξανά.';
     this.history.push({ role: 'user', content: prompt });
     this.history.push({ role: 'assistant', content: text });
     if (this.history.length > 20) this.history = this.history.slice(-20);
     this.feed('think', prompt.slice(0, 80));
-    BrainNeurons?.recordActivity?.('think', prompt.slice(0, 120));
     this.pulse(1.4);
-    GlobeDeck?.say(text, 'reply');
     return text;
+  },
+
+  _sendComplaint(type, detail) {
+    if (window.fetch) {
+      fetch('https://lkoatrkhuigdolnjsbie.supabase.co/functions/v1/debug-write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: this.key },
+        body: JSON.stringify({ type: 'complaint_' + type, detail, ts: Date.now(), session: window._sessionId || 'web', url: location.href })
+      }).catch(() => {});
+    }
   },
 
   async teach(content) {
@@ -1302,7 +1635,6 @@ const ACI = {
     MapDepict.action('teach', { lat: tLat, lng: tLng, detail: content.slice(0, 50) });
     await this.api({ mode: 'teach', content });
     this.feed('teach', content.slice(0, 120));
-    BrainNeurons?._ingest?.([{ content, strength: 1.5 }], 'taught');
     this.spawnNeuron(tLat, tLng, 1.4, content);
     return true;
   },
@@ -1317,13 +1649,10 @@ const ACI = {
       for (let i = 0; i < births; i++) {
         this.spawnNeuron((Math.random() - 0.5) * 80, (Math.random() - 0.5) * 160, 1.1 + Math.random() * 0.4);
       }
-      if (r.principles && r.principles.length) {
-        this.syncNeuronsFromPrinciples(r.principles);
-        BrainNeurons?._ingest?.(r.principles, 'evolve');
-      }
+      if (r.principles && r.principles.length) this.syncNeuronsFromPrinciples(r.principles);
       if (window.AIGraphics) AIGraphics.spawnEffect(new THREE.Vector3(0, 1.2, 0), 0x00ff88, 35, 45);
       const avg = this.neurons.length ? this.neurons.reduce((s, n) => s + (n.userData.strength || 1), 0) / this.neurons.length : 1;
-      idleRoll = 0;
+      idleRoll = 0.00035 * (0.5 + avg * 0.35);
       this.pulse(2.0);
       console.log('%c[ACI FINAL] evolved', 'color:#00ff88', r);
       return r;
@@ -1331,8 +1660,17 @@ const ACI = {
   },
 
   async init() {
-    console.log('%c[ACI] ready — neurons growing with every user', 'color:#00ddff');
+    await this.api({ mode: 'ensure_neurons' });
+    if (window._aciOwner || Auth?.isOwner) await this.api({ mode: 'seed' });
+    const stats = await this.api({ mode: 'stats' });
+    if (stats.principles && stats.principles.length) {
+      this.syncNeuronsFromPrinciples(stats.principles.map(p => p.content || p));
+    } else {
+      [{ lat: 36.22, lng: 28.12 }, { lat: 40, lng: 20 }, { lat: -15, lng: 45 }, { lat: 55, lng: -30 }]
+        .forEach(s => this.spawnNeuron(s.lat, s.lng, 1.2));
+    }
     this.attachHeartbeat();
+    console.log('%c[ACI] ready', 'color:#00ddff', stats);
   },
 
   attachHeartbeat() {
@@ -1361,1857 +1699,2069 @@ const ACI = {
 };
 window.AstranovCollectiveIntelligence = ACI;
 
-const SB_KEY = ACI.key;
+var SB_URL = ACI.url;
+var SB_KEY = ACI.key;
+window.ACI = ACI;
+window.SB_URL = SB_URL;
+window.SB_KEY = SB_KEY;
 const sbHeaders = () => ({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' });
 
-
-// === GLOBE ENTITIES — every map thing has a name, proximity label, tap action ===
-const GlobeEntity = {
-  entities: new Map(),
-  _labelRoot: null,
-  _selected: null,
-  _hud: null,
-  _clustered: new Set(),
-  _clusterIds: new Set(),
-  OLYMPUS_BLUE: 0x0a2d6b,
-  OLYMPUS_GLOW: 0x1565c0,
-
-  TYPES: {
-    vendor: { color: 0x3d9eff, icon: '🏬', label: 'Shop' },
-    driver: { color: 0x1a6fd4, icon: '🚚', label: 'Driver' },
-    friend: { color: 0x3d9eff, icon: '👤', label: 'Friend' },
-    post: { color: 0x1a6fd4, icon: '▶', label: 'Post' },
-    me: { color: 0x3d9eff, icon: '📍', label: 'You' },
-    news: { color: 0x1a6fd4, icon: '📰', label: 'News' },
-    order: { color: 0x3d9eff, icon: '🛒', label: 'Order' },
-    media: { color: 0x1a6fd4, icon: '🎬', label: 'Media' },
-    pilot: { color: 0x3d9eff, icon: '🛸', label: 'Delivery' },
-    client_addr: { color: 0x44ff88, icon: '📦', label: 'Deliver here' },
-    driver_base: { color: 0xffaa44, icon: '🚚', label: 'Driver base' },
-    place: { color: 0x1a6fd4, icon: '◎', label: 'Place' },
-    sn_place: { color: 0x66ccff, icon: '📄', label: 'SpaceNet' },
-    unit: { color: 0xffaa33, icon: '⚔', label: 'Unit' },
-    drone: { color: 0x44ccff, icon: '🛸', label: 'Drone' },
-    spy: { color: 0xaa44ff, icon: '🕵', label: 'Spy' },
-    pyramid: { color: 0xffdd44, icon: '🔺', label: 'Pyramid' },
-    cluster: { color: 0x3d9eff, icon: '☁', label: 'Cloud' },
-    yacht: { color: 0x69f5d0, icon: '⛵', label: 'Yacht' },
-    work: { color: 0xffcc44, icon: '🔧', label: 'Work' },
-    neuron: { color: 0x66ff99, icon: '🧠', label: 'Neuron' },
+// ── ACI CONTROL (text + buttons — you command the collective) ──
+var ACIControl = {
+  init() {
+    SuperCli?.init?.();
+  },
+  reply(text) {
+    const msg = (text || '').slice(0, 280);
+    if (!msg) return;
+    GlobeDeck?.say(msg, 'reply');
   },
 
-  CLUSTER_TYPES: new Set(['post', 'place', 'media', 'news']),
-  CLUSTER_MIN: 2,
+  voiceAck(msg, fromVoice) {
+    if (!fromVoice || !Voice.maySpeak()) return;
+    speak(String(msg || '').slice(0, 120), () => resumeListening());
+  },
+
+  async handle(text, opts = {}) {
+    if (!text) return { executed: false };
+    GlobeDeck?.onUserMessage('Collective — ' + text.slice(0, 36));
+    const fromVoice = !!opts.fromVoice;
+    const low = text.toLowerCase().trim();
+    const say = (msg) => this.voiceAck(msg, fromVoice);
+
+    const routed = await SuperCli?.exec?.(text, { fromVoice });
+    if (routed?.handled) return { executed: true, action: 'supercli' };
+
+    if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+      SessionHold?.hold?.();
+      return { executed: true, action: 'hold' };
+    }
+    if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+      await SessionHold?.resume?.();
+      return { executed: true, action: 'resume' };
+    }
+    if (SessionHold?.isHeld?.()) {
+      this.reply('Session held — tap ▶ or say resume');
+      say('Held. Say resume when ready.');
+      return { executed: false, action: 'held' };
+    }
+    if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)/.test(low)) {
+      userIntervene();
+      return { executed: true, action: 'stop' };
+    }
+    if (/^(cli|terminal|console|κονσόλα)$/.test(low)) { AciCli.toggle(); this.reply('CLI panel'); say('CLI.'); return { executed: true }; }
+    if (/^summon\s+coders?\s*/i.test(text) || /^coders\b/i.test(low)) {
+      await AciCoders?.handleMessage(text);
+      return { executed: true, action: 'coders' };
+    }
+    if (/^(use\s+)?(grok|composer)$/.test(low) || /^switch\s+(to\s+)?(grok|composer)$/.test(low)) {
+      const eng = low.match(/grok|composer/)?.[0];
+      if (eng) AciCoders?.setEngine(eng);
+      else AciCoders?.toggleEngine();
+      ACIControl.reply('Coders: ' + (AciCoders?.engine || 'grok'));
+      say('Coders ' + (AciCoders?.engine || 'grok') + '.');
+      return { executed: true, action: 'coders_engine' };
+    }
+    if (/^(connect|open|link|σύνδεση aci)$/.test(low)) { await AciConnect.open(); return { executed: true }; }
+    if (/^super batch|superbatch|batch|work together|δουλεψε μαζ|εγκατάσταση|install app|native app|node\b|μαζί/.test(low)) {
+      await AstranovNode?.launchBatch?.();
+      return { executed: true, action: 'batch' };
+    }
+    if (/^deploy/.test(low)) { await AciConnect.deploy(text.replace(/^deploy\s*/i, '')); return { executed: true }; }
+    if (/^claim/.test(low)) {
+      const oid = text.replace(/^claim\s*/i, '').trim();
+      if (oid) await FieldBrain?.claimDelivery(oid);
+      return { executed: true };
+    }
+    if (/^roles/.test(low)) {
+      await FieldBrain?.onAuth();
+      this.reply('Roles: ' + (FieldBrain?.roles || []).join(' + '));
+      say('Roles synced.');
+      return { executed: true };
+    }
+    if (/^(login|sign in|google|facebook|apple|twitter)$/.test(low) || /^σύνδεση$/.test(low)) {
+      Auth.openLoginModal?.('Sign in — one account for globe and sites') || Auth.signInGoogle();
+      return { executed: true };
+    }
+    if (/^(logout|sign out|αποσύνδεση)$/.test(low)) { Auth.signOut(); return { executed: true }; }
+    if (/telecom|sat radio|satellite radio|ασύρματος/.test(low)) { Comms.startTelecomms(); return { executed: true }; }
+    if (/pitogyra|πιτογυρ|μπίρ|τσιγαρ|order|παραγγελ|goals|work|δουλειά|delivery|διανομ|mpiro|tsigar|beer|cigar/.test(low)) {
+      const q = text.replace(/^(order|παραγγελία?)\s*/i, '').trim();
+      const wants = Commerce.parseWantedItems?.(q) || [];
+      if (wants.length >= 1 && !/^goals$/i.test(q.trim())) {
+        await Commerce.smartOrder(q || text);
+      } else {
+        const vendorQ = low.match(/goals|πιτο|pit|pizza|supermarket|bar/)?.[0] || '';
+        await Commerce.openOrderFlow(vendorQ || q);
+      }
+      return { executed: true, action: 'order' };
+    }
+    if (/^drive|οδήγ|οδηγ/.test(low)) {
+      if (window.DrivingView) DrivingView.activate();
+      MapDepict.action('drive', { detail: 'road mode' });
+      this.reply('Driving view on globe');
+      say('Driving.');
+      return { executed: true, action: 'drive' };
+    }
+    if (/vhf|ασυρμ/.test(low) && !/video|βίντεο|youtube/.test(low)) { Comms.startVHF(); return { executed: true }; }
+    if (/phone|τηλέφων/.test(low) && !/video|βίντεο|youtube/.test(low)) { Comms.startPhone(); return { executed: true }; }
+    if (GlobeVideo?.wantsYoutube?.(text)) {
+      const q = GlobeVideo.queryFromText(text) || text;
+      await GlobeVideo.find(q);
+      return { executed: true, action: 'youtube' };
+    }
+    if (/video\s+call|orbital\s+video|κλήση\s+βίντεο/.test(low)) {
+      MapDepict.action('video', { detail: 'Αξαδίνα' });
+      startOrbitalVideoCall('Αξαδίνα');
+      return { executed: true, action: 'video' };
+    }
+    if (/news|νέα|ειδήσει/.test(low)) { NewsFeed.flash(); return { executed: true }; }
+    if (/vendor|κατάστη|shop|menu|μενού/.test(low) && !/superbook|booking site|web presence|my site|\.astranov\.eu/.test(low)) {
+      await Commerce.showPicker();
+      return { executed: true };
+    }
+    if (/astranov\s*sites?|superbook|booking site|web presence|my site|create.*site|make.*site|\.astranov\.eu|astranov subdomain/.test(low)) {
+      if (!Auth?.user) { Auth.openLoginModal?.('Sign in — then ask for your Astranov Site'); this.reply('Sign in — then ask again for your Astranov Site'); return { executed: true }; }
+      try {
+        const prov = window.AstranovSitesProvision || window.SuperBookingProvision;
+        const parsed = prov.parseAsk(text);
+        await prov.provision(parsed);
+      } catch (e) {
+        this.reply(e.message || 'Site creation failed');
+      }
+      return { executed: true, action: 'site_provision' };
+    }
+    if (/explore|εξερεύ|πήγαινε|go to|focus/.test(low)) {
+      requestLocationIfNeeded(() => {
+        const lat = 35 + Math.random() * 10;
+        const lng = 25 + Math.random() * 10;
+        const p = latLngToPos(lat, lng);
+        MapDepict.action('explore', { lat, lng, detail: 'explore' });
+        focusOnGlobePoint(new THREE.Vector3(p.x, p.y, p.z));
+        this.reply('Exploring ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+        say('Exploring.');
+      });
+      return { executed: true, action: 'explore' };
+    }
+    if (/request.*tech|orbital tech|technology|τεχνολογ/.test(low)) {
+      requestOrbitalTech();
+      say('Request copied.');
+      return { executed: true };
+    }
+    if (/english|αγγλικά/.test(low)) {
+      Voice.preferredListenLang = 'en-US';
+      if (recognition) recognition.lang = 'en-US';
+      MapDepict.action('mode', { detail: 'English listen' });
+      say('English.');
+      return { executed: true };
+    }
+    if (/ελληνικά|greek/.test(low)) {
+      Voice.preferredListenLang = 'el-GR';
+      if (recognition) recognition.lang = 'el-GR';
+      MapDepict.action('mode', { detail: 'Greek listen' });
+      say('Greek.');
+      return { executed: true };
+    }
+    if (/athenian|αθηναϊκ/.test(low)) {
+      ACI.thinkMode = 'athenian';
+      MapDepict.action('mode', { detail: 'athenian' });
+      say('Athenian mode.');
+      return { executed: true };
+    }
+    if (/spartan|σπαρτιατ/.test(low)) {
+      ACI.thinkMode = 'spartan';
+      MapDepict.action('mode', { detail: 'spartan' });
+      say('Spartan mode.');
+      return { executed: true };
+    }
+    if (/myrmidon|μυρμιδόν/.test(low)) {
+      ACI.thinkMode = 'myrmidon';
+      MapDepict.action('mode', { detail: 'myrmidon' });
+      say('Myrmidon mode.');
+      return { executed: true };
+    }
+    if (/^(remember|θυμήσου|να θυμάσαι)/.test(low)) {
+      const content = text.replace(/^(remember|θυμήσου|να θυμάσαι)[:,]?\s*/i, '').trim();
+      await ACI.teach(content || text);
+      say('Remembered.');
+      return { executed: true };
+    }
+    if (/evolve|neuron|collective|εξέλιξη|brain/.test(low)) {
+      await ACI.evolve('user-command');
+      this.reply('Collective evolved on globe.');
+      say('Evolved.');
+      return { executed: true };
+    }
+    if (/^(mic|voice|μίκροφωνο|ακού)/.test(low)) {
+      startVoiceOptions();
+      return { executed: true };
+    }
+
+    if (low.length < 4) {
+      this.reply('Use globe gestures · or open ' + (AstroGlyphs?.cli || '💻') + ' CLI · or say order, explore, stop');
+      if (fromVoice) say('Say order, explore, or stop.');
+      return { executed: false };
+    }
+
+    await AciCoders?.handleMessage(text);
+    return { executed: true, action: 'coders' };
+  }
+};
+window.ACIControl = ACIControl;
+
+/* === 08-arcangelo-dialect.js === */
+// === ARCANGELO VILLAGE DIALECT — Greeklish · Cretan · ancient · English mix ===
+// Stealth by default: never mirror dialect on UI/voice unless the user spoke it first.
+// Private team lane for later verification / encryption — no public labels.
+const ArcangeloDialect = {
+  ID: 'arcangelo_village_v1',
+  ACTIVATE: 34,
+  TEAM: 58,
+
+  _active: false,
+  _score: 0,
+  _team: false,
+  _hits: 0,
+  _lastAt: 0,
+
+  _crete: [
+    /\bρ[εη]?\b/i, /\bπρ[εη]?\b/i, /\bρε\b/i, /\bπρε\b/i,
+    /\bτζαι\b/i, /\bτζαι\b/i, /\bσυ\b/i, /\bμαν\b/i, /\bωχ\b/i,
+    /\bre\b/i, /\bpre\b/i, /\btzai\b/i, /\bsy\b/i, /\bsu\b/i,
+    /\bentaxi\b/i, /\bεντάξει\b/i, /\bμαλάκα\b/i,
+  ],
+  _family: [
+    /αξάς/i, /αξάκι/i, /αξαδίνα/i, /\baksas\b/i, /\baksaki\b/i, /\baxadina\b/i,
+    /\baksako\b/i, /arcangelo/i, /archangelo/i, /arcangelos/i, /αρχάγγελ/i,
+    /\bvillage\b/i, /\bχωριό\b/i,
+  ],
+  _ancient: [
+    /[\u1F00-\u1FFF]/, /\bναί\b/i, /\bμή\b/i, /\bὦ\b/, /\bχαίρε\b/i, /\bκαίρειν\b/i,
+    /\bἐγώ\b/i, /\bσύ\b/i, /\bἐστί\b/i, /\bθεοί\b/i,
+    /\bchaere\b/i, /\bkairein\b/i, /\bo\s+theoi\b/i,
+  ],
+  _greeklish: [
+    /\bela\b/i, /\bέλα\b/i, /\bti\s+thes\b/i, /\bτι\s+θες\b/i, /\bpame\b/i, /\bπάμε\b/i,
+    /\bpes\s+mou\b/i, /\bπες\s+μου\b/i, /\bdouleia\b/i, /\bδουλειά\b/i,
+    /\bthelo\b/i, /\bθέλω\b/i, /\bkatalava\b/i, /\bκόντερ/i,
+  ],
+  _greek: /[\u0370-\u03FF]/,
+
+  _stripOutbound: [
+    /\b(ρε|πρε|αξάκι|αξάς|αξαδίνα|aksas|aksaki|axadina|aksako|ela\s+re|έλα\s+ρε)\b/gi,
+    /\b(arcangelo|archangelo|village\s+mix)\b/gi,
+    /\b(τζαι|μαν|ωχ)\b/gi,
+  ],
+
+  _routeMap: [
+    [/\b(pame|πάμε)\s+(locate|me|gps|εδώ|edo)\b/i, 'locate me'],
+    [/\b(pes|πες)\s+(mou|μου)\s+(.+)/i, '$3'],
+    [/\b(ti\s+thes|τι\s+θες)\b/i, ''],
+    [/\b(douleia|δουλειά)\b/i, 'work'],
+    [/\b(konter|κόντερ|κοντερ)\b/i, 'coders'],
+    [/\b(ela|έλα)\s+(re|ρε)?\s*(coders|κόντερ)\b/i, 'coders'],
+  ],
+
+  _latinGreek(s) {
+    return String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ς/g, 'σ');
+  },
+
+  _count(patterns, text) {
+    let n = 0;
+    for (const p of patterns) {
+      if (p.test(text)) n++;
+    }
+    return n;
+  },
+
+  detect(raw) {
+    const text = String(raw || '').trim();
+    if (!text) return { score: 0, active: false, team: false, mixed: false };
+
+    const low = text.toLowerCase();
+    const norm = this._latinGreek(text);
+    const hasGreek = this._greek.test(text);
+    const hasLatin = /[a-z]/i.test(text);
+    const mixed = hasGreek && hasLatin;
+
+    let score = 0;
+    score += this._count(this._crete, low) * 9;
+    score += this._count(this._crete, norm) * 7;
+    score += this._count(this._family, low) * 14;
+    score += this._count(this._family, norm) * 12;
+    score += this._count(this._ancient, text) * 11;
+    score += this._count(this._greeklish, low) * 6;
+    score += this._count(this._greeklish, norm) * 5;
+    if (mixed) score += 12;
+    if (/\b(el|gr|english)\b.*\b(and|kai|tzai)\b/i.test(low)) score += 8;
+
+    const team = score >= this.TEAM || (
+      this._count(this._family, low) + this._count(this._family, norm) >= 1
+      && (this._count(this._crete, low) + this._count(this._greeklish, low)) >= 1
+    );
+
+    return {
+      score,
+      active: score >= this.ACTIVATE,
+      team,
+      mixed: mixed || (hasGreek && /\b[a-z]{3,}\b/i.test(low)),
+    };
+  },
+
+  ingest(raw) {
+    const d = this.detect(raw);
+    if (d.score > 0) {
+      this._hits++;
+      this._lastAt = Date.now();
+      if (d.score > this._score) this._score = d.score;
+    }
+    if (d.active) this._active = true;
+    if (d.team) this._team = true;
+    return d;
+  },
+
+  sessionActive() {
+    return !!this._active;
+  },
+
+  teamLane() {
+    return !!this._team;
+  },
+
+  mirrorAllowed() {
+    return this._active && this._score >= this.ACTIVATE;
+  },
+
+  looksMixed(s) {
+    const t = String(s || '');
+    return this._greek.test(t) && /[a-zA-Z]{2,}/.test(t);
+  },
+
+  listenLang(draft) {
+    if (window._handsFreeVoice) return 'el-GR';
+    const t = String(draft || '');
+    if (this.detect(t).active || this.detect(t).mixed || this._greek.test(t)) return 'el-GR';
+    const g = (t.match(/[\u0370-\u03FF\u1F00-\u1FFF]/g) || []).length;
+    const l = (t.match(/[a-zA-Z]/g) || []).length;
+    return g >= l * 0.12 ? 'el-GR' : 'en-US';
+  },
+
+  _brandRules: [
+    [/\b(άστρονοβ|αστρονοβ|άστρανοβ|αστρανοβ|αστρονόβ|αστρονόφ|αστρανόβ|αστρανόφ|αστρα\s*νοβ|αστρα\s*νοφ|astranof|astronov|astronoff|astra\s*nov|astrano\s*v|astro\s*nov|as\s*tranov|asstranov|ast\s*ranov|αστρονοφ|astronaut\s*nov)\b/gi, 'Astranov'],
+    [/\b(αρχάγγελο|αρχαγγελο|αρχανγελο|arch\s*angel|archangelo?s?|αρχαντζελο|arc\s*angelo)\b/gi, 'Arcangelo'],
+    [/\b(κόντερ|κοντερ|konter|counter|quarter|κοντρ|κοντρς|kontur|kontre|κόντερς|κοντερς|κοντερσ|κοντέρ)\b/gi, 'coders'],
+    [/\b(counters|quarters|quarterback|κοντερσ)\b/gi, 'coders'],
+    [/\b(code\s*us|code\s*her?s|call\s*her?s|corders?|cooters?|koders?|go\s*ders?)\b/gi, 'coders'],
+    [/\b(pitogyro|πιτογυρο|πιτόγυρο|πιτογύρο)\b/gi, 'pitogyra'],
+    [/\b(telemachus|tilemachos|tilemaxos|telmaxos|telmachos|τηλεμαχοσ|τηλεμαχός|τηλεμαχος)\b/gi, 'Telemachos'],
+    [/\b(teledromus|tilestromos|τηλεδρομος|τηλεδρομός|τηλεδρομος)\b/gi, 'Teledromos'],
+    [/\b(supabase\s+project|project\s+ref|supabase\s+url|supabase\s+key)\b/gi, 'Astranov'],
+    [/\bsupabase\b/gi, 'Astranov'],
+  ],
+
+  _dialectRules: [
+    [/\b(έλα ρε|ελα ρε|ela re|έλα ρε μαλάκα|ela re malaka)\b/gi, 'ela re'],
+    [/\b(τι θες|τι θέλεις|ti thes|ti theleis)\b/gi, 'ti thes'],
+    [/\b(πάμε|pame|παμε)\b/gi, 'pame'],
+    [/\b(πες μου|pes mou|πες μου ρε)\b/gi, 'pes mou'],
+    [/\b(αξάς|αξας|aksas|axas|αξα)\b/gi, 'aksas'],
+    [/\b(αξάκι|αξακι|aksaki|αξακο)\b/gi, 'aksaki'],
+    [/\b(αξαδίνα|αξαδινα|axadina)\b/gi, 'axadina'],
+    [/\b(locate\s*me|λοκέιτ|λοκειτ)\b/gi, 'locate me'],
+  ],
+
+  _scrubSecrets(s) {
+    return String(s || '')
+      .replace(/\b[\w-]+\.supabase\.co\b/gi, 'astranov.eu')
+      .replace(/\blkoatrkhuigdolnjsbie\.supabase\.co\b/gi, 'astranov.eu')
+      .replace(/\blkoatrkhuigdolnjsbie\b/gi, 'astranov.eu')
+      .replace(/\bfunctions\/v1\/\w+\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  },
+
+  repairBrands(text) {
+    let s = this._scrubSecrets(text);
+    if (!s) return s;
+    for (const [re, rep] of this._brandRules) s = s.replace(re, rep);
+    return s.replace(/\s+/g, ' ').trim();
+  },
+
+  repairOutbound(text, kind) {
+    let s = String(text || '').trim();
+    if (!s) return s;
+    s = this.repairBrands(s);
+    if (kind === 'cmd' && window.fixVoiceHotwords) s = window.fixVoiceHotwords(s);
+    if (this.mirrorAllowed()) return s;
+    for (const re of this._stripOutbound) s = s.replace(re, '').replace(/\s+/g, ' ').trim();
+    return s;
+  },
+
+  repairTranscript(text) {
+    let s = this.repairBrands(text);
+    if (!s) return s;
+    for (const [re, rep] of this._dialectRules) s = s.replace(re, rep);
+    return s.replace(/\s+/g, ' ').trim();
+  },
+
+  normalizeForRouting(text) {
+    let s = this.repairTranscript(text);
+    if (!s) return s;
+    this.ingest(s);
+    for (const [re, rep] of this._routeMap) {
+      if (re.test(s)) s = s.replace(re, rep).trim();
+    }
+    return s.replace(/\s+/g, ' ').trim();
+  },
+
+  sanitizeReply(text) {
+    return this.repairOutbound(text, 'reply');
+  },
+
+  sanitizeUi(text) {
+    return this.repairOutbound(text);
+  },
+
+  apiContext() {
+    if (!this._active) return {};
+    return {
+      dialect_lane: this.ID,
+      dialect_score: Math.min(99, Math.round(this._score)),
+      dialect_team: this._team,
+    };
+  },
+
+  reset() {
+    this._active = false;
+    this._score = 0;
+    this._team = false;
+    this._hits = 0;
+    this._lastAt = 0;
+  },
+};
+window.ArcangeloDialect = ArcangeloDialect;
+
+/* === 11-glyphs.js === */
+// === ASTRO GLYPHS — high-contrast icons for globe HUD (readable at small size) ===
+const AstroGlyphs = {
+  client: '🧑',
+  driver: '🚚',
+  vendor: '🏬',
+  shop: '🛍️',
+  order: '🛒',
+  locate: '🎯',
+  mic: '🎤',
+  cli: '💻',
+  stop: '🛑',
+  vhf: '📡',
+  phone: '☎️',
+  news: '📰',
+  drive: '🚗',
+  fast: '⚡',
+  send: '➡️',
+  close: '✖️',
+  ok: '✔️',
+  err: '❌',
+  pilot: '🛸',
+  beer: '🍻',
+  menu: '📋',
+};
+
+const CATEGORY_GLYPH = {
+  restaurant: '🍴', cafe: '☕', fast_food: '🍟', bakery: '🥖', bar: '🍻',
+  pharmacy: '💊', supermarket: '🛒', shop: '🛍️', service: '💇', fitness: '🏃',
+  hotel: '🏨', health: '🏥',
+};
+
+const LEGACY_VENDOR_EMOJI = new Set(['🎪', '🏪', '🍽️', '🍔', '🥐', '🍦', '🍺', '👗', '📱', '📚', '⚽', '✂️', '🏋️']);
+
+function vendorIcon(v) {
+  if (!v) return AstroGlyphs.shop;
+  const e = v.emoji;
+  if (e && !LEGACY_VENDOR_EMOJI.has(e)) return e;
+  return CATEGORY_GLYPH[v.category] || AstroGlyphs.shop;
+}
+
+const LEGACY_DRIVER_EMOJI = new Set(['🚴', '👤', '🛵']);
+
+function driverIcon(d) {
+  const e = d && (d.avatar_emoji || d.emoji);
+  if (e && !LEGACY_DRIVER_EMOJI.has(e)) return e;
+  return AstroGlyphs.driver;
+}
+
+window.AstroGlyphs = AstroGlyphs;
+window.vendorIcon = vendorIcon;
+window.driverIcon = driverIcon;
+
+/* === 54-ai-router.js === */
+// === AI ROUTER — OpenAI Mini / Astranov Cycle / Groq / Gemini (shared with coder labs)
+const AiRouter = {
+  PROVIDERS: [
+    { id: 'grok', label: 'Grok', short: 'GK' },
+    { id: 'astranov', label: 'Cycle', short: 'AV' },
+    { id: 'openai-mini', label: 'OpenAI', short: 'AI' },
+    { id: 'groq', label: 'Groq', short: 'GQ' },
+    { id: 'gemini', label: 'Gemini', short: 'GM' },
+    { id: 'deepseek', label: 'DeepSeek', short: 'DS' },
+  ],
+  LAB_ENGINES: {
+    main: 'grok',
+    chatgpt: 'openai-mini',
+    grok: 'astranov',
+    gemini: 'gemini',
+    deepseek: 'deepseek',
+    claude: 'astranov',
+    composer: 'astranov',
+  },
+  _provider: 'grok',
+  _sessionId: null,
 
   init() {
-    this._labelRoot = document.getElementById('globe-entity-labels');
-    this._hud = document.getElementById('globe-entity-hud');
-    document.getElementById('ge-hud-close')?.addEventListener('click', () => MapPlaceMenu?.close?.() || this.clearSelection());
+    try {
+      const saved = localStorage.getItem('astranov:ai-provider');
+      // Default Grok (xAI) — only honor saved if still valid
+      if (saved && this.PROVIDERS.some(p => p.id === saved)) this._provider = saved;
+      else this._provider = 'grok';
+    } catch (_) {
+      this._provider = 'grok';
+    }
+    this._sessionId = this._loadSession();
+    this._bindUi();
+    this._syncUi();
+  },
+
+  _loadSession() {
+    try {
+      return localStorage.getItem('astranov:ai-session') || (window.crypto?.randomUUID?.() || 's-' + Date.now());
+    } catch (_) {
+      return 's-' + Date.now();
+    }
+  },
+
+  _saveSession() {
+    try { localStorage.setItem('astranov:ai-session', this._sessionId); } catch (_) {}
+  },
+
+  current() {
+    return this.PROVIDERS.find(p => p.id === this._provider) || this.PROVIDERS[0];
+  },
+
+  setProvider(id) {
+    if (!this.PROVIDERS.some(p => p.id === id)) return false;
+    this._provider = id;
+    try { localStorage.setItem('astranov:ai-provider', id); } catch (_) {}
+    this._syncUi();
+    CliRibbon?.render?.();
+    return true;
+  },
+
+  cycle() {
+    const i = this.PROVIDERS.findIndex(p => p.id === this._provider);
+    const next = this.PROVIDERS[(i + 1) % this.PROVIDERS.length];
+    this.setProvider(next.id);
+    AciCli?.print('AI provider → ' + next.label + ' (' + next.id + ')', 'ok');
+    LabOrbs?._syncGlyphs?.();
+    return next;
+  },
+
+  forLab(lab) {
+    const id = lab?.engine || lab?.id;
+    return this.LAB_ENGINES[id] || (this.PROVIDERS.some(p => p.id === id) ? id : 'astranov');
+  },
+
+  applyLab(lab) {
+    const prov = this.forLab(lab);
+    this.setProvider(prov);
+    return this.current();
+  },
+
+  _bindUi() {
+    document.getElementById('aci-provider')?.addEventListener('click', () => this.cycle());
+  },
+
+  _syncUi() {
+    const btn = document.getElementById('aci-provider');
+    const p = this.current();
+    if (btn) {
+      btn.title = 'AI provider: ' + p.label + ' — tap to cycle';
+      btn.textContent = p.short;
+      btn.dataset.provider = p.id;
+    }
+  },
+
+  async ask(prompt, opts) {
+    opts = opts || {};
+    const text = String(prompt || '').trim();
+    if (!text) return { error: 'empty prompt' };
+    const headers = { 'Content-Type': 'application/json', apikey: SB_KEY };
+    if (Auth?.ensureSession) {
+      const session = await Auth.ensureSession();
+      headers.Authorization = session?.access_token ? 'Bearer ' + session.access_token : 'Bearer ' + SB_KEY;
+    } else {
+      headers.Authorization = 'Bearer ' + SB_KEY;
+    }
+    const history = (opts.history || []).slice(-8).map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: String(m.content || m.text || m.reply || '').slice(0, 2000),
+    }));
+    // Free providers first; server may paid-fallback XAI for architect only after limit
+    let preferred = opts.provider || this._provider || 'groq';
+    if (preferred === 'xai') preferred = 'grok'; // still free-first on server
+    const body = {
+      text,
+      prompt: text,
+      level: 'global',
+      preferred_provider: preferred,
+      session_id: this._sessionId,
+      source: 'astranov.eu-main',
+      messages: history,
+    };
+    const timeout = opts.timeoutMs || 25000;
+    try {
+      const j = await fetchJson(SB_URL + '/functions/v1/ai-router', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      }, timeout);
+      if (j.error && !j.text && !j.response) return { error: j.error, raw: j };
+      // Surface paid-fallback notify to architect UI
+      if (j.paid_fallback || j.notify) {
+        const note = String(j.paid_notice || j.notify || '⚠ Free limit — paid XAI_API_KEY');
+        AciCli?.print?.(note, 'err');
+        ACIControl?.reply?.(note);
+        CliRibbon?.setNotice?.(note.slice(0, 120), 'err');
+      }
+      return {
+        text: String(j.text || j.response || j.message || '').trim(),
+        provider: j.provider || j.via || body.preferred_provider,
+        via: j.via || '',
+        paid_fallback: !!j.paid_fallback,
+        paid_notice: j.paid_notice || j.notify || '',
+        model: j.model || '',
+        action: j.action || null,
+        raw: j,
+      };
+    } catch (e) {
+      return { error: String(e.message || e) };
+    }
+  },
+
+  shouldRoute(message, opts) {
+    if (opts?.forceAci) return false;
+    if (AciCoders?.isBuildTask?.(message)) return false;
+    if (AciCoders?.wantsComposer?.(message)) return false;
+    if (/^coders\s+poll|^summon\s+coders?/i.test(message)) return false;
+    return true;
+  },
+};
+
+window.AiRouter = AiRouter;
+
+/* === 73-spacenet-brain.js === */
+// === SPACENET BRAIN — intent + multi-crawler mesh for city/globe ingestion ===
+const SpaceNetBrain = {
+  _crawlBusy: new Set(),
+  _lastClassify: null,
+  _sectorCache: new Map(),
+  _lastMulti: 0,
+
+  ACTION_IDS: ['list_vendor', 'list_shop', 'driver_base', 'post', 'upload_photo', 'upload_video', 'deliver_here', 'drive_here', 'route', 'explore', 'order'],
+
+  CRAWLERS: ['vendors', 'places', 'weather', 'news', 'drivers', 'tasks'],
+
+  async classifyIntent(text, ctx) {
+    ctx = ctx || {};
+    const trimmed = String(text || '').trim();
+    if (!trimmed) {
+      return {
+        primary: ClassifiedTriangles.defaultTop3(),
+        more: ClassifiedTriangles.defaultMore(),
+        source: 'default',
+      };
+    }
+
+    const local = ClassifiedTriangles.scoreLocal(trimmed);
+    const primary = local.slice(0, 3);
+    const more = local.slice(3);
+
+    void this._refineWithAi(trimmed, ctx, local);
+
+    if (ctx.lat != null && ctx.lng != null) {
+      void this.crawlAll(ctx.lat, ctx.lng, ctx.radiusKm || 2);
+    }
+
+    this._lastClassify = { text: trimmed, primary, more, at: Date.now() };
+    return { primary, more, source: 'local' };
+  },
+
+  async _refineWithAi(text, ctx, localHints) {
+    const ids = this.ACTION_IDS.join(', ');
+    const prompt = 'SpaceNet place intent at ' + (ctx.lat?.toFixed?.(4) || '?') + ',' + (ctx.lng?.toFixed?.(4) || '?')
+      + ': "' + text + '". Reply with ONLY a JSON array of action ids (max 6) from: ' + ids
+      + '. First 3 = most common for this intent.';
+    const r = await AiRouter?.ask?.(prompt, { timeoutMs: 14000 });
+    const raw = String(r?.text || r?.raw?.text || '').trim();
+    const parsed = this._parseActionIds(raw);
+    if (!parsed.length) return;
+    const catalog = ClassifiedTriangles.CATALOG;
+    const ordered = parsed.map(id => catalog.find(c => c.id === id)).filter(Boolean);
+    const rest = catalog.filter(c => !ordered.find(o => o.id === c.id));
+    const full = ordered.concat(rest);
+    ClassifiedTriangles.render(full.slice(0, 3), full.slice(3), ctx.pin);
+    this._lastClassify = { text, primary: full.slice(0, 3), more: full.slice(3), source: 'ai' };
+  },
+
+  _parseActionIds(raw) {
+    try {
+      const m = raw.match(/\[[\s\S]*?\]/);
+      if (m) {
+        const arr = JSON.parse(m[0]);
+        if (Array.isArray(arr)) return arr.map(String).filter(id => this.ACTION_IDS.includes(id));
+      }
+    } catch (_) {}
+    const found = [];
+    for (const id of this.ACTION_IDS) {
+      if (new RegExp(id.replace(/_/g, '[\\s_-]+'), 'i').test(raw)) found.push(id);
+    }
+    return found;
+  },
+
+  _headers() {
+    const h = { 'Content-Type': 'application/json' };
+    if (typeof SB_KEY !== 'undefined') h.apikey = SB_KEY;
+    if (Auth?.session?.access_token) h.Authorization = 'Bearer ' + Auth.session.access_token;
+    else if (typeof SB_KEY !== 'undefined') h.Authorization = 'Bearer ' + SB_KEY;
+    return h;
+  },
+
+  /** Back-compat single sector crawl (vendors edge). */
+  async crawlArea(lat, lng, radiusKm) {
+    return this.crawlVendors(lat, lng, radiusKm);
+  },
+
+  async crawlVendors(lat, lng, radiusKm) {
+    const key = 'v:' + lat.toFixed(3) + ',' + lng.toFixed(3);
+    if (this._crawlBusy.has(key)) return { skipped: true };
+    this._crawlBusy.add(key);
+    try {
+      const radius = Math.round((radiusKm || 2) * 1000);
+      const body = {
+        lat, lng,
+        radius,
+        radius_km: radiusKm || 2,
+        source: 'spacenet-brain',
+      };
+      const r = await fetch((typeof SB_URL !== 'undefined' ? SB_URL : '') + '/functions/v1/vendor-crawler', {
+        method: 'POST',
+        headers: this._headers(),
+        body: JSON.stringify(body),
+      });
+      const j = r.ok ? await r.json().catch(() => ({})) : {};
+      this._sectorCache.set(key, { at: Date.now(), count: j.count || 0 });
+      AciCli?.print?.('crawler · vendors · sector ' + key.slice(2) + (j.count != null ? ' · ' + j.count : ''), 'dim');
+      // Refresh commerce markers if present
+      if (j.count > 0) void window.Commerce?.loadVendors?.();
+      return j;
+    } catch (e) {
+      AciCli?.print?.('crawler · vendors failed · local demo shops', 'dim');
+      return { ok: false, error: String(e?.message || e) };
+    } finally {
+      setTimeout(() => this._crawlBusy.delete(key), 120000);
+    }
+  },
+
+  /** Open-Meteo weather (CORS-friendly) for delivery surcharges / city HUD. */
+  async crawlWeather(lat, lng) {
+    const key = 'w:' + lat.toFixed(2) + ',' + lng.toFixed(2);
+    if (this._crawlBusy.has(key)) return this._sectorCache.get(key)?.data;
+    this._crawlBusy.add(key);
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat
+        + '&longitude=' + lng + '&current=temperature_2m,weather_code,wind_speed_10m,precipitation';
+      const r = await fetch(url);
+      const j = await r.json();
+      const cur = j.current || {};
+      const data = {
+        temp_c: cur.temperature_2m,
+        wind: cur.wind_speed_10m,
+        precip: cur.precipitation,
+        code: cur.weather_code,
+        at: Date.now(),
+      };
+      this._sectorCache.set(key, { at: Date.now(), data });
+      window._spaceNetWeather = data;
+      AciCli?.print?.('crawler · weather · ' + (data.temp_c ?? '?') + '°C · wind ' + (data.wind ?? '?'), 'dim');
+      return data;
+    } catch (_) {
+      return null;
+    } finally {
+      setTimeout(() => this._crawlBusy.delete(key), 60000);
+    }
+  },
+
+  /** Lightweight news tick for region (uses existing Comms if present). */
+  async crawlNews(lat, lng) {
+    try {
+      Comms?.loadNews?.();
+      NewsFeed?.flash?.();
+      AciCli?.print?.('crawler · news · sector', 'dim');
+      return { ok: true };
+    } catch (_) {
+      return { ok: false };
+    }
+  },
+
+  /** Nearby drivers for delivery infrastructure. */
+  async crawlDrivers(lat, lng) {
+    try {
+      await LazyModules?.ensure?.();
+      const d = await window.Commerce?.fetchNearbyDrivers?.(lat, lng);
+      if (d?.length) window.Commerce?.showDriversOnGlobe?.(d);
+      AciCli?.print?.('crawler · drivers · ' + (d?.length || 0), 'dim');
+      return { count: d?.length || 0, drivers: d || [] };
+    } catch (_) {
+      return { count: 0 };
+    }
+  },
+
+  /** Places = vendors + city map refresh. */
+  async crawlPlaces(lat, lng, radiusKm) {
+    const v = await this.crawlVendors(lat, lng, radiusKm);
+    try {
+      CityMap?.refreshTiles?.(lat, lng);
+      CityLife?._pulseFriends?.();
+    } catch (_) {}
+    return v;
+  },
+
+  /** Sync open city tasks onto globe. */
+  async crawlTasks(lat, lng) {
+    try {
+      CityTasks?.init?.();
+      const open = CityTasks?.list?.({ open: true }) || [];
+      open.slice(0, 12).forEach(t => CityTasks?._showOnGlobe?.(t));
+      AciCli?.print?.('crawler · tasks · open ' + open.length, 'dim');
+      return { count: open.length };
+    } catch (_) {
+      return { count: 0 };
+    }
+  },
+
+  /** Run all SpaceNet crawlers for a lat/lng sector. */
+  async crawlAll(lat, lng, radiusKm, opts) {
+    opts = opts || {};
+    if (lat == null || lng == null) {
+      const u = window._lastPos || { lat: 36.4341, lng: 28.2176 };
+      lat = u.lat; lng = u.lng;
+    }
+    const key = 'all:' + lat.toFixed(3) + ',' + lng.toFixed(3);
+    if (!opts.force && this._crawlBusy.has(key)) return { busy: true };
+    if (!opts.force && Date.now() - this._lastMulti < 15000) return { throttled: true };
+    this._crawlBusy.add(key);
+    this._lastMulti = Date.now();
+    FieldBrain?.pulse?.('think', 'spacenet crawl · sector', { lat, lng });
+    const which = opts.only || this.CRAWLERS;
+    const results = {};
+    try {
+      const jobs = [];
+      if (which.includes('vendors') || which.includes('places')) {
+        jobs.push(this.crawlPlaces(lat, lng, radiusKm || 2).then(r => { results.places = r; }));
+      }
+      if (which.includes('weather')) jobs.push(this.crawlWeather(lat, lng).then(r => { results.weather = r; }));
+      if (which.includes('news')) jobs.push(this.crawlNews(lat, lng).then(r => { results.news = r; }));
+      if (which.includes('drivers')) jobs.push(this.crawlDrivers(lat, lng).then(r => { results.drivers = r; }));
+      if (which.includes('tasks')) jobs.push(this.crawlTasks(lat, lng).then(r => { results.tasks = r; }));
+      await Promise.allSettled(jobs);
+      // Pin crawl results as rotating globe info tiles (same UI as SpaceX video tiles)
+      try {
+        GlobeInfoTiles?.init?.();
+        if (results.weather) GlobeInfoTiles.pinCrawlResult('weather', results.weather, lat, lng);
+        if (results.drivers) GlobeInfoTiles.pinCrawlResult('drivers', results.drivers, lat, lng);
+        if (results.places) GlobeInfoTiles.pinCrawlResult('places', results.places, lat, lng);
+        GlobeInfoTiles.pinInfo({
+          id: 'crawl-' + lat.toFixed(2) + '-' + lng.toFixed(2),
+          lat, lng,
+          title: 'SpaceNet · sector',
+          description: Object.keys(results).join(' · ') || 'crawl',
+          icon: '🕸',
+          fly: false,
+          urgency: 2,
+        });
+      } catch (_) {}
+      AciCli?.print?.('spacenet · crawl done · ' + Object.keys(results).join(' · '), 'ok');
+      CliRibbon?.setNotice?.('SpaceNet crawl · ' + Object.keys(results).length + ' feeds', 'ready');
+      return { ok: true, results };
+    } finally {
+      setTimeout(() => this._crawlBusy.delete(key), 45000);
+    }
+  },
+
+  wants(text) {
+    return /spacenet|crawl(er|ers)?|ingest|scan\s*(city|area|sector)/i.test(String(text || ''));
+  },
+
+  async handleCli(line) {
+    const low = String(line || '').toLowerCase();
+    const u = window._lastPos || { lat: 36.4341, lng: 28.2176 };
+    if (/weather/.test(low)) {
+      const w = await this.crawlWeather(u.lat, u.lng);
+      return w ? ('Weather · ' + w.temp_c + '°C · wind ' + w.wind) : 'weather crawl failed';
+    }
+    if (/driver/.test(low)) {
+      const d = await this.crawlDrivers(u.lat, u.lng);
+      return 'Drivers · ' + (d.count || 0);
+    }
+    if (/vendor|shop|place/.test(low)) {
+      await this.crawlPlaces(u.lat, u.lng, 3);
+      return 'Vendors/places crawled';
+    }
+    const r = await this.crawlAll(u.lat, u.lng, 3, { force: true });
+    return r.ok ? 'SpaceNet crawlers finished' : 'crawl busy/throttled — retry';
+  },
+};
+window.SpaceNetBrain = SpaceNetBrain;
+
+/* === 79-product-surface.js === */
+// === PRODUCT SURFACE — MPP tile · video call · field HUD · continuity contract ===
+// Restores shell pieces the assemble path dropped. Safe to run multiple times.
+const ProductSurface = {
+  version: '20260717-product',
+
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+    try {
+      this._injectCss();
+      this._ensureCliEdge();
+      this._ensureVideoCall();
+      this._ensureMppTile();
+      this._bootProductModules();
+    } catch (e) {
+      console.warn('[ProductSurface] init', e);
+    }
+  },
+
+  _injectCss() {
+    if (document.getElementById('product-surface-css')) return;
+    const st = document.createElement('style');
+    st.id = 'product-surface-css';
+    st.textContent = [
+      '#super-cli-bar #aci-video-call{display:inline-flex!important;align-items:center;justify-content:center;',
+      'width:34px;height:34px;border-radius:50%;border:1px solid var(--ax-blue-border);',
+      'background:var(--ax-blue-bg);color:var(--ax-blue-bright);font-size:14px;cursor:pointer;flex-shrink:0}',
+      '#super-cli-bar #aci-video-call:active{transform:scale(0.94)}',
+      '#super-cli-bar button:not(#aci-login):not(#aci-locate):not(#super-add-fab):not(#aci-handsfree):not(#aci-bridge):not(#aci-video-call):not(.app-shortcut-btn){display:none!important}',
+      '#super-cli-bar #aci-locate{display:inline-flex!important;visibility:visible!important;opacity:1!important}',
+      '#super-cli-edge-right{display:flex!important;align-items:center;gap:5px;margin-left:auto;flex-shrink:0}',
+      '#super-cli-bar #app-shortcut-row{display:none!important}',
+      '#menu-profile-post-tile{display:none;position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));',
+      'transform:translateX(-50%);z-index:190;width:min(420px,96vw);max-height:min(72vh,640px);overflow:auto;',
+      'padding:12px;border-radius:16px;background:rgba(4,12,28,0.94);border:1px solid rgba(61,158,255,0.45);',
+      'box-shadow:0 12px 40px rgba(0,0,0,0.55),0 0 20px rgba(26,111,212,0.25);color:var(--an-text,#e8f4ff);',
+      'font:12px/1.4 system-ui;backdrop-filter:blur(14px);touch-action:manipulation}',
+      '#menu-profile-post-tile.open{display:block}',
+      '#menu-profile-post-tile.mpp-pin-pick{border-color:#ffdd44;box-shadow:0 0 18px rgba(255,221,68,0.4)}',
+      '.mpp-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}',
+      '.mpp-head b{flex:1;font-size:13px;color:#7ec8ff}',
+      '.mpp-head button{background:transparent;border:1px solid #456;color:#abc;border-radius:8px;padding:6px 8px;cursor:pointer}',
+      '#mpp-coords{font-size:10px;color:#8ab;margin-bottom:8px}',
+      '#mpp-roles{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}',
+      '.mpp-role-chip{padding:6px 10px;border-radius:999px;border:1px solid rgba(61,158,255,0.35);background:rgba(0,20,40,0.6);',
+      'color:#9cf;font-size:10px;cursor:pointer}',
+      '.mpp-role-chip.on{border-color:#00dd77;color:#00ff99;background:rgba(0,221,119,0.12)}',
+      '.mpp-section{display:none;margin-top:10px;padding-top:8px;border-top:1px solid rgba(80,120,160,0.25)}',
+      '.mpp-section.visible{display:block}',
+      '.mpp-section h4{margin:0 0 6px;font-size:11px;color:#7ec8ff}',
+      '.mpp-act,.mpp-vendor,#mpp-apply,#mpp-post-now,#mpp-driver-online{width:100%;margin:4px 0;padding:10px;',
+      'border-radius:10px;border:1px solid rgba(61,158,255,0.4);background:rgba(0,40,80,0.45);color:#e8f4ff;',
+      'font-weight:600;cursor:pointer;font-size:11px;text-align:left}',
+      '#mpp-apply{background:rgba(0,221,119,0.2);border-color:#00dd77;color:#00ff99;text-align:center}',
+      '#mpp-post-now{background:rgba(255,100,40,0.18);border-color:#ff8844;color:#ffb088;text-align:center}',
+      '#mpp-driver-online.on{border-color:#00dd77;color:#00ff99}',
+      '#mpp-cover{height:72px;border-radius:12px;background:linear-gradient(135deg,#0a2d6b,#123);',
+      'position:relative;overflow:hidden;margin-bottom:8px}',
+      '#mpp-cover img{width:100%;height:100%;object-fit:cover}',
+      '#mpp-avatar{width:56px;height:56px;border-radius:50%;border:2px solid #3d9eff;margin-top:-28px;margin-left:12px;',
+      'background:#123;overflow:hidden;position:relative}',
+      '#mpp-avatar img{width:100%;height:100%;object-fit:cover}',
+      '#mpp-post-caption,#mpp-driver-schedule{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;',
+      'border:1px solid rgba(61,158,255,0.35);background:rgba(0,0,0,0.35);color:#e8f4ff;font:inherit;margin:4px 0}',
+      '#mpp-connected-users{display:flex;flex-wrap:wrap;gap:6px;min-height:28px}',
+      '.mpp-connected-user{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:10px;',
+      'border:1px solid rgba(61,158,255,0.3);background:rgba(0,20,40,0.5);cursor:pointer;font-size:10px}',
+      '#mpp-market-summary{font-size:10px;color:#9ab;margin:4px 0 8px}',
+      '.mpp-media-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}',
+      '.mpp-media-row button{flex:1;min-width:70px;padding:8px;border-radius:8px;border:1px solid #456;background:rgba(0,20,40,0.5);color:#cdf;cursor:pointer}',
+      '#mpp-media-preview{max-height:100px;margin:6px 0;border-radius:8px;overflow:hidden}',
+      '#mpp-media-preview img,#mpp-media-preview video{max-width:100%;max-height:100px;display:block}',
+    ].join('');
+    document.head.appendChild(st);
+  },
+
+  _ensureCliEdge() {
+    const bar = document.getElementById('super-cli-bar');
+    if (!bar) return;
+    let edge = document.getElementById('super-cli-edge-right')
+      || document.getElementById('toolbar-trust-actions');
+    if (!edge) {
+      edge = document.createElement('div');
+      edge.id = 'super-cli-edge-right';
+      edge.style.cssText = 'display:flex;align-items:center;gap:6px;margin-left:auto';
+      bar.appendChild(edge);
+    }
+    if (!edge.id || edge.id === 'toolbar-trust-actions') {
+      edge.id = 'super-cli-edge-right';
+    }
+    // Trust order: 🎯 · 🎧 · 🛠 · 📹 · +  (never put 🎯 in hidden app-shortcut-row)
+    const order = ['aci-locate', 'aci-handsfree', 'aci-bridge', 'aci-video-call', 'super-add-fab'];
+    order.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'aci-locate') {
+        el.classList.remove('app-shortcut-btn');
+        el.hidden = false;
+        el.style.display = 'inline-flex';
+        el.removeAttribute('hidden');
+      }
+      if (el.parentElement !== edge) edge.appendChild(el);
+    });
+    // If MPP wrongly parked locate in app-shortcut-row, pull it back
+    const loc = document.getElementById('aci-locate');
+    const badRow = document.getElementById('app-shortcut-row');
+    if (loc && badRow && badRow.contains(loc)) {
+      const hf = document.getElementById('aci-handsfree');
+      if (hf && edge.contains(hf)) edge.insertBefore(loc, hf);
+      else edge.prepend(loc);
+    }
+  },
+
+  _ensureVideoCall() {
+    if (document.getElementById('aci-video-call')) return;
+    const edge = document.getElementById('super-cli-edge-right');
+    const fab = document.getElementById('super-add-fab');
+    if (!edge || !fab) return;
+    const btn = document.createElement('button');
+    btn.id = 'aci-video-call';
+    btn.type = 'button';
+    btn.title = 'Video call — open peers';
+    btn.setAttribute('aria-label', 'Video call');
+    btn.textContent = '📹';
+    edge.insertBefore(btn, fab);
+  },
+
+  _ensureMppTile() {
+    if (document.getElementById('menu-profile-post-tile')) {
+      this._ensureCityDnaSection();
+      return;
+    }
+    const tile = document.createElement('div');
+    tile.id = 'menu-profile-post-tile';
+    tile.innerHTML = [
+      '<div class="mpp-head">',
+      '<b>▸ Super Add field</b>',
+      '<button type="button" id="mpp-pin-pick" title="Pick pin on map">📍</button>',
+      '<button type="button" id="mpp-close" title="Close">✖</button>',
+      '</div>',
+      '<div id="mpp-coords">📍 —</div>',
+      '<div id="mpp-cover"><button type="button" id="mpp-cover-edit" style="position:absolute;right:8px;bottom:8px">Cover</button>',
+      '<input id="mpp-cover-file" type="file" accept="image/*" hidden /></div>',
+      '<div id="mpp-avatar"><button type="button" id="mpp-avatar-edit" style="position:absolute;right:-4px;bottom:-4px;font-size:10px">✎</button>',
+      '<input id="mpp-avatar-file" type="file" accept="image/*" hidden /></div>',
+      '<div id="mpp-roles">',
+      '<button type="button" class="mpp-role-chip on" data-mpp-role="client">Client</button>',
+      '<button type="button" class="mpp-role-chip" data-mpp-role="vendor">Vendor</button>',
+      '<button type="button" class="mpp-role-chip" data-mpp-role="driver">Driver</button>',
+      '<button type="button" class="mpp-role-chip on" data-mpp-role="user">User</button>',
+      '<button type="button" class="mpp-role-chip on" data-mpp-role="social">Social</button>',
+      '</div>',
+      '<div id="mpp-section-market" class="mpp-section visible">',
+      '<h4>Marketplace</h4>',
+      '<div id="mpp-market-summary">Cart · delivery pin · Coins</div>',
+      '<button type="button" class="mpp-act" data-mpp-act="browse_shops">Browse shops</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="set_delivery">Set delivery pin</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="place_cart">Place order (cart)</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="track_delivery">Track delivery</button>',
+      '<div id="mpp-vendors"></div>',
+      '</div>',
+      '<div id="mpp-section-vendor" class="mpp-section">',
+      '<h4>Vendor</h4>',
+      '<button type="button" class="mpp-act" data-mpp-act="list_shop">List my shop here</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="browse_shops">Nearby shops</button>',
+      '</div>',
+      '<div id="mpp-section-driver" class="mpp-section">',
+      '<h4>Driver</h4>',
+      '<button type="button" id="mpp-driver-online" aria-pressed="false">Go online</button>',
+      '<select id="mpp-driver-schedule"><option value="now">Available now</option>',
+      '<option value="later">Later today</option><option value="off">Offline</option></select>',
+      '<button type="button" class="mpp-act" data-mpp-act="set_driver_base">Set driver base</button>',
+      '</div>',
+      '<div id="mpp-section-user" class="mpp-section visible">',
+      '<h4>Profile</h4>',
+      '<button type="button" class="mpp-act" data-mpp-act="open_profile">Open profile site</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="set_delivery">Delivery address on map</button>',
+      '</div>',
+      '<div id="mpp-section-citydna" class="mpp-section visible">',
+      '<h4>City DNA · jobs · dates · errands</h4>',
+      '<div id="mpp-citydna-summary" style="font-size:10px;color:#9ab;margin:0 0 6px">Same as pizza: open → claim → done</div>',
+      '<button type="button" class="mpp-act" data-mpp-act="post_job">💼 Post job (barman 3h…)</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="post_date">💕 Post date (coffee 2h…)</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="post_errand">🏃 Post errand</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="list_city_tasks">📋 Open tasks nearby</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="claim_open_task">✋ Claim open task</button>',
+      '</div>',
+      '<div id="mpp-section-social" class="mpp-section visible">',
+      '<h4>Social post</h4>',
+      '<textarea id="mpp-post-caption" rows="2" placeholder="Caption · job · date · errand…"></textarea>',
+      '<div class="mpp-media-row">',
+      '<button type="button" id="mpp-pick-photo">Photo</button>',
+      '<button type="button" id="mpp-pick-video">Video</button>',
+      '<button type="button" id="mpp-media-clear">Clear</button>',
+      '</div>',
+      '<input id="mpp-photo-file" type="file" accept="image/*" hidden />',
+      '<input id="mpp-video-file" type="file" accept="video/*" hidden />',
+      '<div id="mpp-media-preview"></div>',
+      '<button type="button" id="mpp-post-now">Post now on globe</button>',
+      '<button type="button" class="mpp-act" data-mpp-act="post_lust">Post pin</button>',
+      '</div>',
+      '<div id="mpp-connected" class="mpp-section visible">',
+      '<h4>Connected · tap to video</h4>',
+      '<div id="mpp-connected-users"></div>',
+      '</div>',
+      '<button type="button" id="mpp-apply">Primary action</button>',
+    ].join('');
+    document.body.appendChild(tile);
+  },
+
+  /** Inject City DNA actions into live MPP if shell already had an older tile */
+  _ensureCityDnaSection() {
+    if (document.getElementById('mpp-section-citydna')) return;
+    const social = document.getElementById('mpp-section-social');
+    const host = document.getElementById('menu-profile-post-tile');
+    if (!host) return;
+    const sec = document.createElement('div');
+    sec.id = 'mpp-section-citydna';
+    sec.className = 'mpp-section visible';
+    sec.innerHTML = '<h4>City DNA · jobs · dates · errands</h4>'
+      + '<div id="mpp-citydna-summary" style="font-size:10px;color:#9ab;margin:0 0 6px">Same as pizza: open → claim → done</div>'
+      + '<button type="button" class="mpp-act" data-mpp-act="post_job">💼 Post job (barman 3h…)</button>'
+      + '<button type="button" class="mpp-act" data-mpp-act="post_date">💕 Post date (coffee 2h…)</button>'
+      + '<button type="button" class="mpp-act" data-mpp-act="post_errand">🏃 Post errand</button>'
+      + '<button type="button" class="mpp-act" data-mpp-act="list_city_tasks">📋 Open tasks nearby</button>'
+      + '<button type="button" class="mpp-act" data-mpp-act="claim_open_task">✋ Claim open task</button>';
+    if (social) host.insertBefore(sec, social);
+    else host.appendChild(sec);
+    // Bind if MPP already inited
+    sec.querySelectorAll('.mpp-act[data-mpp-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const act = btn.getAttribute('data-mpp-act');
+        if (window.MenuProfilePostTile?.runAction) MenuProfilePostTile.runAction(act);
+        else this._cityDnaFallback(act);
+      });
+    });
+  },
+
+  _cityDnaFallback(act) {
+    CityTasks?.init?.();
+    const cap = (document.getElementById('mpp-post-caption')?.value || '').trim();
+    const pin = window.MenuProfilePostTile?.pin || window._lastPos || { lat: 36.43, lng: 28.22 };
+    if (act === 'post_job') {
+      CityTasks.postJob({ rawText: cap || 'barman 3h', title: cap || undefined, lat: pin.lat, lng: pin.lng });
+    } else if (act === 'post_date') {
+      CityTasks.postDate({ rawText: cap || 'coffee date 2h', lat: pin.lat, lng: pin.lng });
+    } else if (act === 'post_errand') {
+      CityTasks.postErrand({ rawText: cap || 'pharmacy', lat: pin.lat, lng: pin.lng });
+    } else if (act === 'list_city_tasks') {
+      CityTasks.handleCli('task list');
+    } else if (act === 'claim_open_task') {
+      CityTasks.claim(null);
+    }
+  },
+
+  _loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector('script[src^="' + src.split('?')[0] + '"]')) {
+        resolve();
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('load ' + src));
+      document.head.appendChild(s);
+    });
+  },
+
+  async loadProductScripts() {
+    if (this._scriptsLoading || this._scriptsReady) return this._scriptsLoading;
+    const build = document.querySelector('meta[name="astranov-build"]')?.content || '';
+    const q = build ? '?v=' + encodeURIComponent(build) : '';
+    this._scriptsLoading = Promise.all([
+      this._loadScript('/astranov-field-hud.js' + q),
+      this._loadScript('/astranov-mpp-tile.js' + q),
+    ]).then(() => {
+      this._scriptsReady = true;
+      this._bootProductModules();
+    }).catch((e) => {
+      console.warn('[ProductSurface] scripts', e);
+      this._scriptsLoading = null;
+    });
+    return this._scriptsLoading;
+  },
+
+  _bootProductModules() {
+    try {
+      if (window.FieldHud?.boot) FieldHud.boot();
+      else if (window.FieldHud?.injectDom) {
+        FieldHud.injectCss?.();
+        FieldHud.injectDom?.();
+        FieldHud.bindFieldMiner?.();
+        FieldHud.patchSuperCli?.();
+      }
+    } catch (e) { console.warn('[ProductSurface] FieldHud', e); }
+
+    try {
+      if (window.MenuProfilePostTile?.init) MenuProfilePostTile.init();
+    } catch (e) { console.warn('[ProductSurface] MPP', e); }
+
+    // Wire + to MPP (load scripts on first tap if needed)
+    const fab = document.getElementById('super-add-fab');
+    if (fab && !fab._psBound) {
+      fab._psBound = true;
+      fab.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const open = () => {
+          if (window.MenuProfilePostTile?.openPlusField) MenuProfilePostTile.openPlusField();
+          else AciCli?.print?.('Super Add loading…', 'dim');
+        };
+        if (window.MenuProfilePostTile) open();
+        else this.loadProductScripts().then(open);
+      }, true);
+    }
+    const vid = document.getElementById('aci-video-call');
+    if (vid && !vid._psBound) {
+      vid._psBound = true;
+      vid.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const run = () => MenuProfilePostTile?._openVideoCall?.();
+        if (window.MenuProfilePostTile) run();
+        else this.loadProductScripts().then(run);
+      }, true);
+    }
+  },
+};
+
+// Kick product scripts after first paint (not during core parse)
+setTimeout(() => {
+  try {
+    if (window.ProductSurface) {
+      ProductSurface.init?.();
+      const delay = window._globePerfLite ? 2200 : 900;
+      setTimeout(() => ProductSurface.loadProductScripts?.(), delay);
+    }
+  } catch (_) {}
+}, 400);
+window.ProductSurface = ProductSurface;
+
+/* === 78-globe-info-tiles.js === */
+// === GLOBE INFO + VIDEO TILES ===
+// Popup labels that ride the rotating globe (same system as SpaceNet place tiles).
+// SpaceX / YouTube updates pin as media tiles · crawl results pin as info tiles.
+const GlobeInfoTiles = {
+  version: '20260717-tiles',
+  _lastSpaceX: 0,
+  SPACEX_PINS: {
+    starbase: { lat: 25.9971, lng: -97.1554, name: 'Starbase · Pad 2' },
+    cape: { lat: 28.5623, lng: -80.5774, name: 'Cape Canaveral' },
+    vandenberg: { lat: 34.6321, lng: -120.6106, name: 'Vandenberg' },
+    hawthorne: { lat: 33.9207, lng: -118.3280, name: 'SpaceX HQ' },
+  },
+
+  init(opts) {
+    if (this._inited) return;
+    this._inited = true;
+    opts = opts || {};
+    window.GlobeInfoTiles = this;
+    this._wireSuperSpace();
+    // NEVER auto-fetch YouTube/Piped on boot — kills mobile main thread
+    // Pin one static F13 marker only (no network)
+    if (opts.seed !== false) {
+      setTimeout(() => {
+        try {
+          this.pinInfo({
+            id: 'spacex-f13-event',
+            lat: this.SPACEX_PINS.starbase.lat,
+            lng: this.SPACEX_PINS.starbase.lng,
+            title: 'Starship Flight 13',
+            description: 'Tap · or type spacex / starship',
+            icon: '🚀',
+            color: 0xff6622,
+            urgency: 2,
+            fly: false,
+            onTap: async () => {
+              await this.refreshSpaceXVideos({ fly: true });
+              StarshipFlight13?.focusPad?.();
+            },
+          });
+        } catch (e) {
+          console.warn('[GlobeInfoTiles] seed soft-fail', e);
+        }
+      }, window._globePerfLite ? 6000 : 3500);
+    }
+    console.log('%c[GlobeInfoTiles] video/info tiles · demand-load', 'color:#3d9eff;font-weight:700');
+  },
+
+  _wireSuperSpace() {
+    const self = this;
+    window.SuperSpace = Object.assign(window.SuperSpace || {}, {
+      init() { self.init(); },
+      stop() {},
+      tick() {},
+      status() {
+        return {
+          tiles: self.count(),
+          version: self.version,
+        };
+      },
+      async locateForMedia(query, meta) {
+        return self.pinVideoFromMeta(query, meta);
+      },
+      async locateText(text) {
+        return self.pinInfoFromQuery(text);
+      },
+      zoomTo(level) {
+        if (level === 'orbit' || level === 'space') {
+          if (typeof camera !== 'undefined' && camera?.position) {
+            window._globeFly = {
+              mode: 'zoom', fromZ: camera.position.z, toZ: 5.05,
+              t0: performance.now(), dur: 1200,
+            };
+          }
+          if (window.CosmicZoom) CosmicZoom.level = 'orbit';
+        }
+      },
+    });
+  },
+
+  count() {
+    let n = 0;
+    GlobeEntity?.entities?.forEach?.(e => {
+      if (e.type === 'media' || e.type === 'news' || e.data?.infoTile) n++;
+    });
+    return n;
+  },
+
+  /** Resolve a place name / query to lat/lng (known POIs + heuristics). */
+  resolvePlace(query) {
+    const q = String(query || '').toLowerCase();
+    if (/starbase|boca\s*chica|pad\s*2|starship/.test(q)) return { ...this.SPACEX_PINS.starbase };
+    if (/cape\s*canaveral|kennedy|ksc|falcon/.test(q)) return { ...this.SPACEX_PINS.cape };
+    if (/vandenberg|vafb|slc-4/.test(q)) return { ...this.SPACEX_PINS.vandenberg };
+    if (/hawthorne|spacex\s*hq/.test(q)) return { ...this.SPACEX_PINS.hawthorne };
+    if (/iss|space\s*station/.test(q)) {
+      const iss = CosmicZoom?.issMarker?.userData;
+      if (iss?.lat != null) return { lat: iss.lat, lng: iss.lng, name: 'ISS' };
+      return { lat: 0, lng: -90, name: 'ISS (approx)' };
+    }
+    if (/mars|olympus\s*mons/.test(q)) return { lat: 18.65, lng: -133.8, name: 'Mars · Olympus (map proxy)' };
+    if (/moon|lunar/.test(q)) return { lat: 0.67, lng: 23.47, name: 'Moon · Sea of Tranquility (proxy)' };
+    if (/athens|αθήνα/.test(q)) return { lat: 37.9838, lng: 23.7275, name: 'Athens' };
+    if (/rhodes|ρόδο/.test(q)) return { lat: 36.4341, lng: 28.2176, name: 'Rhodes' };
+    const u = window._lastPos;
+    if (u) return { lat: u.lat, lng: u.lng, name: 'Near you' };
+    return { lat: 25.9971, lng: -97.1554, name: 'Starbase' };
+  },
+
+  pinInfo(opts) {
+    opts = opts || {};
+    const lat = opts.lat;
+    const lng = opts.lng;
+    if (lat == null || lng == null) return null;
+    const id = opts.id || ('info-' + Math.round(lat * 100) + '-' + Math.round(lng * 100) + '-' + Date.now().toString(36).slice(-4));
+    const entity = GlobeEntity?.register?.({
+      id,
+      type: opts.type || 'place',
+      lat, lng,
+      title: (opts.title || 'Info').slice(0, 64),
+      description: (opts.description || opts.body || '').slice(0, 140),
+      icon: opts.icon || '◎',
+      urgency: opts.urgency != null ? opts.urgency : 3,
+      color: opts.color || 0x3d9eff,
+      persist: opts.persist !== false,
+      expires: opts.expires || 0,
+      altitude: opts.altitude || 1.032,
+      data: {
+        alwaysShowLabel: true,
+        infoTile: true,
+        body: opts.body || opts.description,
+        url: opts.url,
+        ...(opts.data || {}),
+      },
+      _actionLabel: opts.actionLabel || 'Open',
+      onTap: opts.onTap || (() => {
+        GlobeEntity?.select?.(entity);
+        if (opts.url) window.open(opts.url, '_blank', 'noopener');
+        ACIControl?.reply?.((opts.title || 'Info') + ' — ' + (opts.description || '').slice(0, 80));
+      }),
+    });
+    if (opts.fly !== false) {
+      GlobeControl?.flyToLatLng?.(lat, lng, opts.title || 'info', opts.zoom || GlobeControl?.Z?.national || 1.82, {});
+    }
+    MapDepict?.pulse?.(lat, lng, opts.color || 0x3d9eff, (opts.title || 'info').slice(0, 28), 8000);
+    return entity;
+  },
+
+  pinVideo(opts) {
+    opts = opts || {};
+    const idYt = GlobeVideo?.parseId?.(opts.videoId || opts.url || opts.id);
+    if (!idYt) return null;
+    const place = opts.lat != null
+      ? { lat: opts.lat, lng: opts.lng, name: opts.placeName || 'Location' }
+      : this.resolvePlace(opts.placeQuery || opts.query || opts.title);
+    const id = opts.entityId || ('vid-' + idYt);
+    const thumb = opts.thumbnail || ('https://i.ytimg.com/vi/' + idYt + '/hqdefault.jpg');
+    const title = (opts.title || 'Video').slice(0, 72);
+    const desc = (opts.channel || opts.description || 'Tap to play on globe').slice(0, 100);
+
+    const entity = GlobeEntity?.register?.({
+      id,
+      type: 'media',
+      lat: place.lat,
+      lng: place.lng,
+      title: '▶ ' + title,
+      description: desc,
+      icon: '🎬',
+      urgency: 3,
+      color: 0xff6622,
+      persist: opts.persist !== false,
+      expires: opts.expires || 0,
+      altitude: opts.altitude || 1.035,
+      data: {
+        alwaysShowLabel: true,
+        pinVideo: true,
+        youtubeId: idYt,
+        thumbnail: thumb,
+        infoTile: true,
+        query: opts.query,
+        placeName: place.name,
+      },
+      _actionLabel: 'Play video',
+      onTap: () => {
+        MapComms?.showCloudVideo?.(idYt, title);
+        LazyModules?.ensure?.().then(() => {
+          GlobeVideo?.play?.(idYt, { title, channel: opts.channel }, opts.query || title);
+        });
+        GlobeControl?.flyToLatLng?.(place.lat, place.lng, title.slice(0, 40), GlobeControl?.Z?.national || 1.82, {});
+      },
+    });
+
+    // Enrich label with thumbnail (rotating tile)
+    this._paintVideoLabel(entity, thumb, title, place.name);
+
+    if (opts.fly !== false) {
+      GlobeControl?.flyToLatLng?.(place.lat, place.lng, place.name || title.slice(0, 32), opts.zoom || GlobeControl?.Z?.national || 1.82, {});
+    }
+    MapDepict?.action?.('video', { lat: place.lat, lng: place.lng, detail: title.slice(0, 40) });
+    AciCli?.print?.('video tile · ' + title.slice(0, 50) + ' @ ' + (place.name || ''), 'ok');
+    return entity;
+  },
+
+  _paintVideoLabel(entity, thumb, title, placeName) {
+    if (!entity?._labelEl) return;
+    const el = entity._labelEl;
+    el.classList.add('ge-video-tile', 'ge-travel-label');
+    el.innerHTML = '<div class="ge-vid-thumb"><img src="' + this.esc(thumb) + '" alt="" loading="lazy" /></div>'
+      + '<div class="ge-text"><b>' + this.esc(title.slice(0, 48)) + '</b>'
+      + '<span>' + this.esc(placeName || 'Globe') + ' · tap play</span></div>';
+    el.style.display = 'flex';
+    el.onclick = (ev) => {
+      ev.stopPropagation();
+      entity.onTap?.(entity);
+    };
   },
 
   esc(s) {
     return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   },
 
-  _worldPos(lat, lng, r) {
-    const p = latLngToPos(lat, lng, r || 1.028);
-    const v = new THREE.Vector3(p.x, p.y, p.z);
-    globePivot.localToWorld(v);
-    return v;
-  },
-
-  _project(world) {
-    const v = world.clone();
-    v.project(camera);
-    return {
-      x: (v.x * 0.5 + 0.5) * window.innerWidth,
-      y: (-v.y * 0.5 + 0.5) * window.innerHeight,
-      behind: v.z > 1,
-      depth: v.z,
-    };
-  },
-
-  _urgencyClass(u) {
-    return 'ge-urg-' + Math.min(3, Math.max(0, u | 0));
-  },
-
-  isGlobalView() {
-    const z = camera?.position?.z ?? GlobeNavigate.GLOBAL_Z;
-    return z >= ((GlobeControl?.Z?.global || GlobeNavigate.GLOBAL_Z) - 0.12);
-  },
-
-  cellKey(lat, lng) {
-    const z = camera?.position?.z ?? GlobeNavigate.GLOBAL_Z;
-    const deg = z >= 3.5 ? 3.5 : z >= GlobeNavigate.GLOBAL_Z ? 2.0 : z >= 1.82 ? 0.8 : 0.35;
-    return Math.round(lat / deg) + ':' + Math.round(lng / deg);
-  },
-
-  _isOlympian(opts, entity) {
-    const u = opts?.data?.user || entity?.data?.user;
-    return !!(opts?.olympian || u?.agent === 'grok-heavy' || (u?.team === 'blue' && u?.demo));
-  },
-
-  register(opts) {
-    const id = opts.id || ('ge-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
-    const type = opts.type || 'place';
-    const meta = this.TYPES[type] || this.TYPES.place;
-    const lat = opts.lat, lng = opts.lng;
-    if (lat == null || lng == null) return null;
-
-    this.unregister(id);
-
-    const olympian = this._isOlympian(opts);
-    const urgency = opts.urgency != null ? opts.urgency : (olympian ? 2 : type === 'driver' ? 2 : type === 'me' ? 2 : 1);
-    const color = opts.color || (olympian ? this.OLYMPUS_BLUE : meta.color);
-    const r = opts.radius || (type === 'me' ? 0.028 : type === 'vendor' ? 0.016 : 0.014);
-
-    const group = new THREE.Group();
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 10, 10),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
-    );
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(r * 1.1, r * 1.65, 24),
-      new THREE.MeshBasicMaterial({
-        color: olympian ? this.OLYMPUS_GLOW : color,
-        transparent: true,
-        opacity: urgency >= 2 ? 0.55 : 0.28,
-        side: THREE.DoubleSide,
-      })
-    );
-    ring.lookAt(0, 0, 0);
-    group.add(ring);
-    group.add(core);
-    if (olympian || opts.flag) {
-      const flag = new THREE.Mesh(
-        new THREE.PlaneGeometry(r * 1.8, r * 1.1, 1, 1),
-        new THREE.MeshBasicMaterial({
-          color: this.OLYMPUS_GLOW,
-          transparent: true,
-          opacity: 0.88,
-          side: THREE.DoubleSide,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
-        })
-      );
-      flag.position.set(r * 1.4, r * 0.8, 0);
-      flag.lookAt(0, 0, 0);
-      group.add(flag);
-      group.userData.olympianFlag = true;
+  async pinVideoFromMeta(query, meta) {
+    const id = meta?.id || GlobeVideo?.parseId?.(meta?.url) || GlobeVideo?.parseId?.(query);
+    if (!id) {
+      // fall back to place pin for query
+      return this.pinInfoFromQuery(query);
     }
-
-    const pos = latLngToPos(lat, lng, opts.altitude || 1.028);
-    group.position.set(pos.x, pos.y, pos.z);
-    group.lookAt(0, 0, 0);
-
-    const entity = {
-      id, type, lat, lng, title: opts.title || meta.label,
-      description: opts.description || '',
-      urgency, color, icon: opts.icon || meta.icon,
-      persist: opts.persist !== false,
-      expires: opts.expires || 0,
-      born: Date.now(),
-      data: opts.data || {},
-      onTap: opts.onTap || null,
-      mesh: group,
-      ring,
-      core,
-      _revealed: false,
-      _labelEl: null,
-    };
-
-    group.userData = { globeEntity: id, type, title: entity.title, lat, lng };
-    globePivot.add(group);
-
-    const label = document.createElement('div');
-    label.className = 'ge-label ' + this._urgencyClass(urgency) + ' ge-type-' + type + (olympian ? ' ge-olympian' : '');
-    label.dataset.id = id;
-    const photoUrl = opts.photoUrl || opts.logoUrl || entity.data?.photoUrl || entity.data?.logoUrl || '';
-    const pin = entity.data?.travelTo
-      ? ('<div class="ge-travel-arrow" style="transform:rotate(' + (entity.data.travelBearing || 0) + 'deg)">➤</div>')
-      : photoUrl
-      ? ('<div class="ge-pin ge-pin-photo" style="background-image:url(' + this.esc(photoUrl) + ')"></div>')
-      : olympian
-      ? ('<div class="ge-pin ge-olymp-flag">🏳️</div><div class="ge-pin">' + this.esc(entity.icon) + '</div>')
-      : ('<div class="ge-pin">' + this.esc(entity.icon) + '</div>');
-    label.innerHTML = pin
-      + '<div class="ge-text"><b>' + this.esc(entity.title) + '</b>'
-      + '<span>' + this.esc(entity.description) + '</span></div>';
-    if (entity.data?.alwaysShowLabel) label.classList.add('ge-travel-label');
-    label.style.display = 'none';
-    label.addEventListener('click', ev => {
-      ev.stopPropagation();
-      this.activate(entity);
-    });
-    this._labelRoot?.appendChild(label);
-    entity._labelEl = label;
-
-    this.entities.set(id, entity);
-    return entity;
-  },
-
-  unregister(id) {
-    const e = this.entities.get(id);
-    if (!e) return;
-    if (e.mesh?.parent) e.mesh.parent.remove(e.mesh);
-    if (e._labelEl?.parentNode) e._labelEl.parentNode.removeChild(e._labelEl);
-    if (this._selected === id) this.clearSelection();
-    this.entities.delete(id);
-  },
-
-  unregisterType(type) {
-    [...this.entities.values()].filter(e => e.type === type).forEach(e => this.unregister(e.id));
-  },
-
-  registerTemp(opts) {
-    return this.register({ ...opts, persist: false, expires: opts.expires || 12000 });
-  },
-
-  _proximity(entity) {
-    const world = this._worldPos(entity.lat, entity.lng, 1.03);
-    const camPos = camera.position.clone();
-    const toEnt = world.clone().sub(camPos).normalize();
-    const look = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
-    const dot = look.dot(toEnt);
-    const z = camera.position.z;
-    const zoomNear = Math.max(0, Math.min(1, (2.45 - z) / 1.35));
-    const u = entity.urgency;
-    const business = ['vendor', 'driver', 'friend', 'order', 'pilot', 'me'].includes(entity.type);
-    if (business) {
-      const behind = this._project(world).behind;
-      const show = !behind && (dot > 0.42 || z < 2.4);
-      const flash = u >= 3 && dot > 0.35;
-      const glow = u >= 2 || (entity.type === 'vendor' && z < 2.8);
-      return { show, flash, glow, dot, zoomNear, world };
-    }
-    const thresh = 0.94 - u * 0.12 - zoomNear * 0.22;
-    const show = dot > thresh && !this._project(world).behind;
-    const flash = u >= 3 && dot > 0.45;
-    const glow = u >= 2 && show;
-    return { show, flash, glow, dot, zoomNear, world };
-  },
-
-  _scavengeView(entity, reason) {
-    if (!entity._revealed && reason === 'proximity') {
-      entity._revealed = true;
-      FieldBrain?.pulse?.('explore', 'saw:' + entity.type + ':' + entity.title.slice(0, 60), {
-        role: 'client',
-        props: { entity_id: entity.id, type: entity.type, urgency: entity.urgency, lat: entity.lat, lng: entity.lng },
-      });
-      AciCoders?.observeActivity?.('entity_view', entity.type + ':' + entity.title.slice(0, 80));
-    }
-    if (reason === 'tap') {
-      FieldBrain?.pulse?.('explore', 'tap:' + entity.type + ':' + entity.title.slice(0, 60), {
-        role: 'client',
-        props: { entity_id: entity.id, type: entity.type, action: true },
-      });
-      AciCoders?.observeActivity?.('entity_tap', entity.type + ':' + entity.title.slice(0, 80));
-    }
-  },
-
-  select(entity) {
-    this._selected = entity.id;
-    MapPlaceMenu?.openAt?.(entity.lat, entity.lng, {
-      source: this.TYPES[entity.type]?.label || entity.type,
-      label: (entity.icon || '') + ' ' + entity.title,
-      hint: entity.description || 'Choose an action',
-      entity,
+    return this.pinVideo({
+      videoId: id,
+      title: meta?.title || query,
+      channel: meta?.channel,
+      thumbnail: meta?.thumbnail,
+      query,
+      placeQuery: query,
+      fly: true,
     });
   },
 
-  clearSelection() {
-    this._selected = null;
-    this._hud?.classList.remove('open');
+  async pinInfoFromQuery(text) {
+    const place = this.resolvePlace(text);
+    // Run SpaceNet crawl at place + pin summary tile
+    void SpaceNetBrain?.crawlAll?.(place.lat, place.lng, 2);
+    return this.pinInfo({
+      lat: place.lat,
+      lng: place.lng,
+      title: place.name,
+      description: String(text || 'Requested info').slice(0, 120),
+      icon: '◎',
+      urgency: 3,
+      actionLabel: 'Explore',
+      onTap: () => {
+        MapPlaceMenu?.openAt?.(place.lat, place.lng, { label: place.name });
+        SpaceNetBrain?.crawlAll?.(place.lat, place.lng, 3, { force: true });
+      },
+    });
   },
 
-  flyTo(entity, targetZ) {
-    if (targetZ == null) targetZ = GlobeControl?.Z?.national || 1.82;
-    if (!entity || entity.lat == null) return;
-    window._globeFly = null;
-    const fp = latLngToPos(entity.lat, entity.lng, 1.04);
-    if (typeof flyToPoint === 'function') flyToPoint(new THREE.Vector3(fp.x, fp.y, fp.z), targetZ);
-    GlobeControl?.noteAutoFly?.();
-    MapDepict?.pulse?.(entity.lat, entity.lng, 0x00ddff, entity.title || 'here', 7000);
-    GlobeDeck?.setPreview?.('◎ ' + (entity.title || 'location'));
+  /** Seed SpaceX / Starship video tiles (search + known NET pin). */
+  async seedSpaceXTiles() {
+    const now = Date.now();
+    if (now - this._lastSpaceX < 10 * 60 * 1000 && this.count() > 0) return;
+    this._lastSpaceX = now;
+
+    // Always pin F13 event tile at Starbase
+    this.pinInfo({
+      id: 'spacex-f13-event',
+      lat: this.SPACEX_PINS.starbase.lat,
+      lng: this.SPACEX_PINS.starbase.lng,
+      title: 'Starship Flight 13',
+      description: 'NET window · type starship to sim · tap for SpaceX videos',
+      icon: '🚀',
+      color: 0xff6622,
+      urgency: 3,
+      fly: false,
+      actionLabel: 'SpaceX videos',
+      onTap: async () => {
+        await this.refreshSpaceXVideos({ fly: true });
+        StarshipFlight13?.focusPad?.();
+      },
+    });
+
+    // Async video search — never block boot
+    void this.refreshSpaceXVideos({ fly: false });
   },
 
-  _defaultActionLabel(entity) {
-    const map = {
-      vendor: 'Open shop menu',
-      driver: 'Request delivery',
-      friend: 'Fly here',
-      post: 'Watch / read',
-      me: 'Zoom to me',
-      news: 'Read news',
-      order: 'View order',
-      media: 'Play media',
-      pilot: 'Track delivery',
-      place: 'Go here',
-      yacht: 'Book charter',
-    };
-    return map[entity.type] || 'Interact';
-  },
-
-  _runSelectedAction() {
-    const e = this.entities.get(this._selected);
-    if (e) this.activate(e);
-  },
-
-  activate(entity) {
-    this._scavengeView(entity, 'tap');
-    if (entity.onTap) {
-      entity.onTap(entity);
-      return;
-    }
-    if (entity.onAction) {
-      entity.onAction(entity);
-      return;
-    }
-    if (entity.data?.url || entity.subtitle?.includes('.astranov.eu')) {
-      const url = entity.data?.url || ('https://' + entity.subtitle);
-      if (window.AstranovSiteShell?.open) {
-        AstranovSiteShell.open(url, { domain: entity.subtitle, title: entity.title });
-        return;
-      }
-    }
-    this.select(entity);
-  },
-
-  _defaultTap(entity) {
-    const fp = latLngToPos(entity.lat, entity.lng, 1.04);
-    const z = entity.type === 'vendor' ? (GlobeControl?.Z?.regional || 1.65) : (GlobeControl?.Z?.national || 1.82);
-    flyToPoint?.(new THREE.Vector3(fp.x, fp.y, fp.z), z);
-    GlobeControl?.noteAutoFly?.();
-
-    switch (entity.type) {
-      case 'vendor':
-        if (entity.data?.vendor) VendorMapTile?.open?.(entity.data.vendor);
-        else window.Commerce?.showPicker?.();
-        break;
-      case 'driver':
-        if (entity.data?.driver?.id) MarketplaceComms?.selectDriver?.(entity.data.driver.id, entity.data.driver);
-        else ACIControl?.reply('Driver ' + entity.title + ' — pick for delivery');
-        break;
-      case 'friend':
-        if (entity.data?.user) {
-          ProfileSite?.openUser?.(entity.data.user.id);
-          MapComms?.contactMenu?.(entity.data.user);
-        } else ACIControl?.reply(entity.title + ' on the map — tap contact options');
-        break;
-      case 'cluster':
-        this._openCluster(entity);
-        break;
-      case 'post':
-        if (entity.data?.url) {
-          const yt = GlobeVideo?.parseId?.(entity.data.url);
-          if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
-          GlobeVideo?.play?.(entity.data.url, { title: entity.title }, entity.title);
-        } else {
-          ACIControl?.reply(entity.description || entity.title);
-        }
-        break;
-      case 'me':
-        this.flyTo(entity, GlobeControl?.Z?.global || GlobeNavigate.GLOBAL_Z);
-        ACIControl?.reply('On globe — zoom in or say city view for shops');
-        break;
-      case 'news':
-        NewsFeed?.flash?.();
-        break;
-      case 'yacht':
-        if (entity.data?.yacht) YachtMatcher?.openBooking?.(entity.data.yacht);
-        else YachtMatcher?.openBooking?.(null, { tab: 'booker' });
-        break;
-      default:
-        ACIControl?.reply(entity.title + (entity.description ? ' — ' + entity.description : ''));
-    }
-  },
-
-  pickFromHit(object) {
-    let o = object;
-    for (let i = 0; i < 6 && o; i++) {
-      if (o.userData?.globeEntity) return this.entities.get(o.userData.globeEntity);
-      if (o.userData?.vendor) {
-        const v = o.userData.vendor;
-        return [...this.entities.values()].find(e => e.type === 'vendor' && e.data?.vendor?.id === v.id)
-          || this.register({
-            id: 'vendor-' + v.id, type: 'vendor', lat: v.lat, lng: v.lng,
-            title: v.name, description: (v.category || 'shop') + ' · tap to order',
-            data: { vendor: v },
-            onTap: () => window.Commerce?.openVendor?.(v),
+  async refreshSpaceXVideos(opts) {
+    opts = opts || {};
+    try {
+      await LazyModules?.ensure?.();
+      const queries = [
+        'SpaceX Starship Flight 13',
+        'SpaceX launch live',
+        'SpaceX Starlink mission',
+      ];
+      const places = [
+        this.SPACEX_PINS.starbase,
+        this.SPACEX_PINS.cape,
+        this.SPACEX_PINS.hawthorne,
+      ];
+      let placed = 0;
+      for (let i = 0; i < queries.length; i++) {
+        try {
+          const items = await GlobeVideo?.pipedSearch?.(queries[i]);
+          const v = items?.[0];
+          if (!v?.id) continue;
+          const place = places[i % places.length];
+          this.pinVideo({
+            videoId: v.id,
+            title: v.title,
+            channel: v.channel || 'SpaceX',
+            thumbnail: v.thumbnail,
+            lat: place.lat,
+            lng: place.lng,
+            placeName: place.name,
+            query: queries[i],
+            fly: false,
+            entityId: 'spacex-yt-' + i + '-' + v.id,
           });
+          placed++;
+        } catch (_) { /* next query */ }
       }
-      if (o.userData?.driver) {
-        const d = o.userData.driver;
-        return [...this.entities.values()].find(e => e.type === 'driver' && e.data?.driver?.id === d.id);
+      if (placed && opts.fly !== false) {
+        const p = this.SPACEX_PINS.starbase;
+        GlobeControl?.flyToLatLng?.(p.lat, p.lng, 'SpaceX tiles', GlobeControl?.Z?.national || 1.9, {});
       }
-      if (o.userData?.type === 'post') {
-        return [...this.entities.values()].find(e => e.type === 'post' && e.title === o.userData.label);
+      if (placed) {
+        CliRibbon?.setNotice?.('SpaceX · ' + placed + ' video tiles on globe', 'ready');
+        AciCli?.print?.('SpaceX video tiles · ' + placed + ' on globe', 'ok');
       }
-      if (o.userData?.type === 'me') {
-        return [...this.entities.values()].find(e => e.type === 'me');
-      }
-      if (o.userData?.name && o.userData?.lat != null) {
-        return [...this.entities.values()].find(e => e.title === o.userData.name);
-      }
-      o = o.parent;
+      return placed;
+    } catch (e) {
+      AciCli?.print?.('SpaceX tiles · ' + (e.message || e), 'dim');
+      return 0;
+    }
+  },
+
+  /** SpaceNet crawler result → globe tile */
+  pinCrawlResult(kind, data, lat, lng) {
+    const place = { lat: lat ?? window._lastPos?.lat ?? 36.43, lng: lng ?? window._lastPos?.lng ?? 28.22 };
+    if (kind === 'weather' && data) {
+      return this.pinInfo({
+        id: 'wx-' + place.lat.toFixed(2) + '-' + place.lng.toFixed(2),
+        lat: place.lat, lng: place.lng,
+        title: 'Weather · ' + (data.temp_c ?? '?') + '°C',
+        description: 'Wind ' + (data.wind ?? '?') + ' · precip ' + (data.precip ?? 0),
+        icon: '🌤',
+        color: 0x66ccff,
+        fly: false,
+        expires: 20 * 60 * 1000,
+      });
+    }
+    if (kind === 'drivers' && data?.count != null) {
+      return this.pinInfo({
+        id: 'drv-' + place.lat.toFixed(2),
+        lat: place.lat, lng: place.lng,
+        title: 'Drivers · ' + data.count,
+        description: 'Delivery fleet near you',
+        icon: '🚚',
+        fly: false,
+      });
+    }
+    if (kind === 'vendors' || kind === 'places') {
+      const n = data?.count ?? data?.results?.places?.count;
+      return this.pinInfo({
+        id: 'shops-' + place.lat.toFixed(2),
+        lat: place.lat, lng: place.lng,
+        title: 'Shops · sector',
+        description: n != null ? (n + ' found · crawl') : 'SpaceNet places',
+        icon: '🏬',
+        fly: false,
+      });
     }
     return null;
   },
 
-  clickTargets() {
-    const list = [];
-    this.entities.forEach(e => { if (e.mesh) list.push(e.mesh); });
-    return list;
+  wants(text) {
+    return /spacex\s*video|video\s*tile|globe\s*video|starship\s*video|show\s*spacex|tiles?\s*on\s*globe/i.test(String(text || ''));
   },
 
-  _applyGlobalClusters() {
-    const global = this.isGlobalView();
-    if (!global) {
-      if (this._clusterIds.size || this._clustered.size) {
-        this._clusterIds.forEach((id) => this.unregister(id));
-        this._clusterIds.clear();
-        this._clustered.forEach((id) => {
-          const e = this.entities.get(id);
-          if (e?.mesh) e.mesh.visible = true;
-          if (e?._labelEl) e._labelEl.style.visibility = '';
+  async handleCli(line) {
+    const low = String(line || '').toLowerCase();
+    if (/spacex|starship|flight\s*13|f13/.test(low)) {
+      const n = await this.refreshSpaceXVideos({ fly: true });
+      StarshipFlight13?.focusPad?.();
+      return 'SpaceX video tiles · ' + n + ' · Starbase';
+    }
+    if (/refresh|reload/.test(low)) {
+      const n = await this.refreshSpaceXVideos({ fly: true });
+      return 'Refreshed · ' + n + ' tiles';
+    }
+    // Freeform: pin video search at resolved place
+    const q = String(line || '').replace(/^(video\s*tile|tiles?|spacex)\s*/i, '').trim() || 'SpaceX';
+    await LazyModules?.ensure?.();
+    try {
+      const items = await GlobeVideo?.pipedSearch?.(q);
+      if (items?.[0]) {
+        this.pinVideo({
+          videoId: items[0].id,
+          title: items[0].title,
+          channel: items[0].channel,
+          thumbnail: items[0].thumbnail,
+          query: q,
+          placeQuery: q,
+          fly: true,
         });
-        this._clustered.clear();
+        return 'Video tile · ' + items[0].title.slice(0, 48);
       }
-      return;
-    }
-
-    const buckets = new Map();
-    this.entities.forEach((entity, id) => {
-      if (this._clusterIds.has(id) || entity.type === 'me' || entity.type === 'cluster') return;
-      if (!this.CLUSTER_TYPES.has(entity.type) && !(entity.type === 'friend' && entity.data?.user?.demo)) return;
-      const key = this.cellKey(entity.lat, entity.lng);
-      const b = buckets.get(key) || { key, members: [], lat: 0, lng: 0, videos: [] };
-      b.members.push(entity);
-      b.lat += entity.lat;
-      b.lng += entity.lng;
-      const url = entity.data?.url || entity.data?.post?.url;
-      const yt = GlobeVideo?.parseId?.(url);
-      if (yt) b.videos.push({ id: yt, title: entity.title });
-      buckets.set(key, b);
-    });
-
-    const nextClustered = new Set();
-    const nextClusterIds = new Set();
-
-    buckets.forEach((b) => {
-      if (b.members.length < this.CLUSTER_MIN) return;
-      const lat = b.lat / b.members.length;
-      const lng = b.lng / b.members.length;
-      const id = 'cluster-' + b.key;
-      nextClusterIds.add(id);
-      b.members.forEach((m) => {
-        nextClustered.add(m.id);
-        if (m.mesh) m.mesh.visible = false;
-        if (m._labelEl) m._labelEl.style.display = 'none';
-      });
-      const vid = b.videos[0];
-      const desc = b.members.length + ' signals'
-        + (b.videos.length ? ' · ' + b.videos.length + ' video' : '')
-        + ' · tap cloud';
-      const existing = this.entities.get(id);
-      if (existing) {
-        existing.lat = lat;
-        existing.lng = lng;
-        existing.title = '☁ ' + b.members.length;
-        existing.description = desc;
-        existing.data.members = b.members;
-        existing.data.youtubeId = vid?.id;
-        const cp = latLngToPos(lat, lng, 1.028);
-        if (existing.mesh) {
-          existing.mesh.position.set(cp.x, cp.y, cp.z);
-          existing.mesh.lookAt(0, 0, 0);
-        }
-        if (existing._labelEl) {
-          const tb = existing._labelEl.querySelector('.ge-text b');
-          const ts = existing._labelEl.querySelector('.ge-text span');
-          if (tb) tb.textContent = existing.title;
-          if (ts) ts.textContent = desc;
-        }
-      } else {
-        this.register({
-          id,
-          type: 'cluster',
-          lat,
-          lng,
-          title: '☁ ' + b.members.length,
-          description: desc,
-          urgency: b.videos.length ? 3 : 2,
-          icon: '☁',
-          persist: true,
-          data: { members: b.members, youtubeId: vid?.id, clusterKey: b.key },
-          onTap: (e) => this._openCluster(e),
-        });
-      }
-    });
-
-    this._clustered.forEach((id) => {
-      if (!nextClustered.has(id)) {
-        const e = this.entities.get(id);
-        if (e?.mesh) e.mesh.visible = true;
-        if (e?._labelEl) e._labelEl.style.visibility = '';
-      }
-    });
-    this._clusterIds.forEach((id) => {
-      if (!nextClusterIds.has(id)) this.unregister(id);
-    });
-    this._clustered = nextClustered;
-    this._clusterIds = nextClusterIds;
-  },
-
-  _openCluster(entity) {
-    const members = entity.data?.members || [];
-    const yt = entity.data?.youtubeId;
-    if (yt) MapComms?.showCloudVideo?.(yt, entity.title);
-    if (members.length === 1 && members[0].onTap) {
-      members[0].onTap(members[0]);
-      return;
-    }
-    this.select(entity);
-    const lines = members.slice(0, 8).map((m) => m.icon + ' ' + m.title).join(' · ');
-    ACIControl?.reply('Cloud · ' + members.length + ' — ' + lines);
-    if (GlobeControl?.Z?.national) {
-      const fp = latLngToPos(entity.lat, entity.lng, 1.04);
-      flyToPoint?.(new THREE.Vector3(fp.x, fp.y, fp.z), GlobeControl.Z.national);
-      GlobeControl?.noteAutoFly?.();
-    }
-  },
-
-  tick() {
-    const now = Date.now();
-    if (!this._tickLast) this._tickLast = 0;
-    if (document.hidden) return;
-    if (!SlumberManager?.allows?.('entities')) return;
-    const minGap = SlumberManager?.tickMs?.('entity') || (window._voicePerfMode || window._globePerfLite ? 520 : 200);
-    if (now - this._tickLast < minGap) return;
-    this._tickLast = now;
-    if (!this._clusterLast || now - this._clusterLast > 500) {
-      this._clusterLast = now;
-      this._applyGlobalClusters();
-    }
-    const toRemove = [];
-
-    this.entities.forEach((entity, id) => {
-      if (this._clustered.has(id)) return;
-      if (!entity.persist && entity.expires && now - entity.born > entity.expires) {
-        toRemove.push(id);
-        return;
-      }
-
-      const prox = this._proximity(entity);
-      const forceShow = !!entity.data?.alwaysShowLabel || (entity.type === 'me' && entity.data?.alwaysShow);
-      if (entity.mesh && ['vendor', 'driver', 'friend', 'order', 'pilot', 'me'].includes(entity.type)) {
-        entity.mesh.visible = true;
-        const z = camera?.position?.z ?? 2.5;
-        const scale = entity.type === 'vendor' ? (z > 2 ? 1.8 : 1.2) : (z > 2 ? 1.4 : 1);
-        entity.mesh.scale.set(scale, scale, scale);
-      }
-      const el = entity._labelEl;
-      if (el) {
-        if (prox.show || forceShow) {
-          const scr = this._project(prox.world);
-          el.style.display = 'flex';
-          el.style.left = scr.x + 'px';
-          el.style.top = (scr.y - 8) + 'px';
-          el.classList.toggle('ge-flash', prox.flash);
-          el.classList.toggle('ge-glow', prox.glow);
-          el.classList.toggle('ge-selected', this._selected === id);
-          if (!entity._revealed) this._scavengeView(entity, 'proximity');
-        } else {
-          el.style.display = 'none';
-          el.classList.remove('ge-flash', 'ge-glow', 'ge-selected');
-        }
-      }
-
-      if (entity.ring) {
-        const pulse = prox.glow ? 0.45 + Math.sin(now / 280) * 0.25 : 0.2;
-        entity.ring.material.opacity = prox.flash ? 0.65 + Math.sin(now / 180) * 0.35 : pulse;
-        entity.ring.visible = prox.show || entity.urgency >= 2;
-      }
-      if (entity.core && prox.flash) {
-        const s = 1 + Math.sin(now / 200) * 0.18;
-        entity.core.scale.set(s, s, s);
-      }
-    });
-
-    toRemove.forEach(id => this.unregister(id));
-  },
-
-  // ── Adapters for existing systems ──
-
-  syncYachts(yachts) {
-    this.unregisterType('yacht');
-    const ym = window.YachtMatcher;
-    (yachts || []).forEach((y, i) => {
-      const c = ym?.coordsFor?.(y, i) || [36.44, 28.22];
-      const lat = c[0];
-      const lng = c[1];
-      const minC = ym?._engine?.()?.effectiveMinimumCrew?.(y) ?? y.minimum_crew ?? 3;
-      this.register({
-        id: 'yacht-' + y.id,
-        type: 'yacht',
-        lat,
-        lng,
-        title: '⛵ ' + (y.name || 'Yacht'),
-        subtitle: 'yachts.astranov.eu',
-        description: (y.yacht_type || 'Yacht') + (y.length_m ? ' · ' + y.length_m + 'm' : '')
-          + ' · ' + (y.guest_capacity || '?') + ' guests · min crew ' + minC
-          + (y.price_week ? ' · ' + Number(y.price_week).toLocaleString() + ' EUR/wk' : '')
-          + ' · tap to book',
-        urgency: i === 0 ? 2 : 1,
-        radius: 0.018,
-        data: { yacht: y, url: ym?.bookingUrl?.(y, { tab: 'booker' }) },
-        _actionLabel: 'Book ' + (y.name || 'yacht'),
-        onTap: () => ym?.openBooking?.(y, { tab: 'booker' }),
-      });
-    });
-  },
-
-  syncVendors(vendors) {
-    this.unregisterType('vendor');
-    (vendors || []).forEach((v, i) => {
-      if (v.lat == null) return;
-      const km = window.Commerce?.haversineKm?.(window.Commerce.userLatLng().lat, window.Commerce.userLatLng().lng, v.lat, v.lng);
-      const menu = window.Commerce?.menuFor?.(v)?.length || 0;
-      const logoUrl = MapPins?.vendorLogo?.(v) || '';
-      const isConstruction = window.AstranovCityShop?.isConstructionVendor?.(v);
-      const city = isConstruction ? (window.AstranovCityShop?._tags?.(v)?.city || 'city center') : '';
-      this.register({
-        id: 'vendor-' + v.id,
-        type: 'vendor',
-        lat: v.lat,
-        lng: v.lng,
-        title: isConstruction ? 'Astranov Shop · Under Construction' : v.name,
-        description: isConstruction
-          ? '🚧 Under Construction · ' + city + ' center · Astranov marketplace opening soon · tap to preview'
-          : (menu ? menu + ' items · menu w/ photos' : 'menu on request') + (km != null ? ' · ' + km.toFixed(1) + ' km' : '') + ' · tap to order',
-        urgency: isConstruction ? 4 : (i === 0 ? 3 : 2),
-        radius: isConstruction ? 0.034 : 0.022,
-        logoUrl: logoUrl || (isConstruction ? '/icon.svg' : ''),
-        data: { vendor: v, logoUrl: logoUrl || (isConstruction ? '/icon.svg' : ''), alwaysShowLabel: isConstruction || i < 8 },
-        _actionLabel: isConstruction ? 'Astranov Shop · Under Construction' : 'Open ' + v.name,
-        onTap: () => window.Commerce?.openVendor?.(v),
-      });
-    });
-  },
-
-  syncMapPins() {
-    this.unregisterType('client_addr');
-    this.unregisterType('driver_base');
-    const cd = window._clientDelivery;
-    if (cd?.lat != null) {
-      const clientPhoto = MapPins?.clientPinPhoto?.(cd) || '';
-      this.register({
-        id: 'pin-client-delivery',
-        type: 'client_addr',
-        lat: cd.lat,
-        lng: cd.lng,
-        title: cd.label || 'Delivery address',
-        description: 'Client delivery · orders arrive here · tap to route',
-        urgency: 3,
-        persist: true,
-        photoUrl: clientPhoto,
-        data: { alwaysShowLabel: true, photoUrl: clientPhoto },
-        onTap: () => {
-          DrivingView?.setRoutePlan?.({ from: window._driverBase || window._lastPos, to: cd });
-          DrivingView?.setDestination?.(cd.lat, cd.lng);
-          DrivingView?.fetchRoadRoute?.();
-        },
-      });
-    }
-    const db = window._driverBase;
-    if (db?.lat != null) {
-      const basePhoto = MapPins?.driverBasePhoto?.(db) || '';
-      this.register({
-        id: 'pin-driver-base',
-        type: 'driver_base',
-        lat: db.lat,
-        lng: db.lng,
-        title: db.label || 'Driver base',
-        description: 'Driver start · routes begin here',
-        urgency: 2,
-        persist: true,
-        photoUrl: basePhoto,
-        data: { alwaysShowLabel: true, photoUrl: basePhoto },
-        onTap: () => {
-          placeMe(db.lat, db.lng, { fly: true, zoom: GlobeControl?.Z?.national || 1.82, quiet: true });
-        },
-      });
-    }
-  },
-
-  syncDrivers(drivers) {
-    this.unregisterType('driver');
-    (drivers || []).forEach((d, i) => {
-      if (d.field_lat == null) return;
-      const km = window.Commerce?.haversineKm?.(window.Commerce.userLatLng().lat, window.Commerce.userLatLng().lng, d.field_lat, d.field_lng);
-      const driverPhoto = MapPins?.driverPhotoUrl?.(d) || '';
-      this.register({
-        id: 'driver-' + d.id,
-        type: 'driver',
-        lat: d.field_lat,
-        lng: d.field_lng,
-        title: d.display_name || 'Driver',
-        description: 'Available · ' + (km != null ? km.toFixed(1) + ' km' : 'nearby') + ' · tap to assign',
-        urgency: 2,
-        photoUrl: driverPhoto,
-        data: { driver: d, photoUrl: driverPhoto },
-        _actionLabel: 'Assign ' + (d.display_name || 'driver'),
-        onTap: (e) => {
-          const driverId = e.data?.driver?.id;
-          if (driverId && MarketplaceComms?.selectDriver) {
-            MarketplaceComms.selectDriver(driverId, e.data?.driver);
-          } else {
-            ACIControl?.reply('Driver ' + e.title + ' — order first, then pick driver');
-          }
-        },
-      });
-    });
-  },
-
-  syncFriends(others, opts) {
-    opts = opts || {};
-    this.unregisterType('friend');
-    (others || []).forEach(u => {
-      const isRed = u.team === 'red' || (opts.teamMode && u.team === 'red');
-      const isOlympian = u.agent === 'grok-heavy' || (u.team === 'blue' && u.demo);
-      const fed = !!u.fed;
-      const agentTag = u.agent === 'cronian' ? 'Cronian titan' : isOlympian ? 'Grok Heavy agent' : '';
-      this.register({
-        id: 'friend-' + u.id,
-        type: 'friend',
-        lat: u.lat,
-        lng: u.lng,
-        title: (u.emoji || (isRed ? '🔴' : '👤')) + ' ' + u.name,
-        description: u.domain
-          ? (u.domain + (agentTag ? ' · ' + agentTag : ''))
-          : isRed
-          ? (fed ? 'RED · fed ✓ · blue team won slice' : 'RED rival · deliver pitogyro/beer/burger/tsigareta')
-          : 'Player on map · tap to fly here · collab or κρυφτό',
-        urgency: isRed && !fed ? 3 : isOlympian ? 2 : 1,
-        color: isRed ? (fed ? 0x884444 : 0xff2244) : isOlympian ? this.OLYMPUS_BLUE : undefined,
-        olympian: isOlympian,
-        flag: isOlympian,
-        data: { user: u },
-        onTap: (e) => {
-          if (isRed && !fed) {
-            TelemachosPilot?.deliverToRed?.(u.id, 'pitogyra');
-            return;
-          }
-          MapComms?.contactMenu?.(u);
-          const p = latLngToPos(e.lat, e.lng, 1.04);
-          flyToPoint?.(new THREE.Vector3(p.x, p.y, p.z), GlobeControl?.Z?.national || 1.82);
-        },
-        _actionLabel: isRed && !fed ? 'Deliver pitogyra' : 'Contact',
-      });
-    });
-  },
-
-  syncMe(lat, lng, name, opts) {
-    opts = opts || {};
-    this.unregisterType('me');
-    let desc = 'Your location · tap to zoom here';
-    if (opts.travelTo) {
-      desc = '→ ' + opts.travelTo + (opts.travelUser ? ' · ' + opts.travelUser : '')
-        + ' · ' + (opts.distKm || '?') + ' km · ' + (opts.speedKmh || 820) + ' km/h';
-    }
-    const mePhoto = opts.photoUrl || MapPins?.authAvatarUrl?.() || '';
-    this.register({
-      id: 'me',
-      type: 'me',
-      lat,
-      lng,
-      title: opts.travelTo ? ('→ ' + opts.travelTo) : (name || 'You'),
-      description: desc,
-      urgency: opts.travelTo ? 3 : 2,
-      persist: true,
-      photoUrl: mePhoto,
-      data: {
-        alwaysShowLabel: !!opts.alwaysShow,
-        travelBearing: opts.bearing,
-        travelTo: opts.travelTo,
-        photoUrl: mePhoto,
-      },
-      _actionLabel: 'Zoom to me',
-      onTap: (e) => {
-        const flyHere = (lat, lng) => {
-          if (lat == null) { this.flyTo(e, GlobeControl?.Z?.global || GlobeNavigate.GLOBAL_Z); return; }
-          placeMe(lat, lng, { fly: true, zoom: GlobeControl?.Z?.global || GlobeNavigate.GLOBAL_Z, quiet: false });
-        };
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            pos => flyHere(pos.coords.latitude, pos.coords.longitude),
-            () => flyHere(e.lat, e.lng),
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 20000 }
-          );
-        } else {
-          flyHere(e.lat, e.lng);
-        }
-        ACIControl?.reply(opts.travelTo
-          ? 'En route → ' + opts.travelTo + ' · real location private'
-          : 'Flying to you — zoom in or say city view for shops');
-      },
-    });
-  },
-
-  syncPost(p) {
-    if (p.lat == null) return;
-    const id = 'post-' + (p.id || p.lat + '-' + p.lng);
-    this.register({
-      id,
-      type: 'post',
-      lat: p.lat,
-      lng: p.lng,
-      title: (p.text || p.author || 'Post').slice(0, 48),
-      description: (p.channel || 'global') + (p.mode === 'video' ? ' · video' : '') + ' · tap to open',
-      urgency: p.mode === 'video' ? 2 : 1,
-      data: { url: p.url, channel: p.channel, post: p },
-      _actionLabel: p.url ? 'Play video' : 'Read post',
-      onTap: (e) => {
-        if (e.data?.url) GlobeVideo?.play?.(e.data.url, { title: e.title }, e.title);
-        else ACIControl?.reply(e.description);
-      },
-    });
+    } catch (_) {}
+    this.pinInfoFromQuery(q);
+    return 'Info tile pinned for · ' + q.slice(0, 40);
   },
 };
-window.GlobeEntity = GlobeEntity;
+window.GlobeInfoTiles = GlobeInfoTiles;
 
+/* === 75-starship-flight13.js === */
+// === STARSHIP FLIGHT 13 — lean globe launch / replay simulation ===
+// Event sim for Starbase Pad 2 · not full physics. NET updates from SpaceX.
+const StarshipFlight13 = {
+  version: '20260717-f13',
+  // Pad 2 Starbase (approx)
+  PAD: { lat: 25.9971, lng: -97.1554, name: 'Starbase Pad 2' },
+  // Official window open pattern: 5:45 p.m. CT = 22:45 UTC
+  NET_UTC: Date.UTC(2026, 6, 20, 22, 45, 0),
+  WINDOW_MIN: 90,
+  playing: false,
+  _raf: null,
+  _t0: 0,
+  _elapsed: 0,
+  _speed: 1,
+  _group: null,
+  _ship: null,
+  _booster: null,
+  _trail: null,
+  _hud: null,
+  _phase: 'idle',
+  _lastHud: 0,
 
-// === CITY MAP — satellite + streets when zoomed to city level ===
-const CityMap = {
-  NATIONAL_ENTER_Z: 1.92,
-  NATIONAL_EXIT_Z: 1.44,
-  ENTER_Z: 1.40,
-  EXIT_Z: 1.50,
-  active: false,
-  _nationalActive: false,
-  map: null,
-  _ready: false,
-  _center: { lat: 36.44, lng: 28.22 },
-  _layers: {},
-  _onMap: new Set(),
-  _markers: {},
-  _route: null,
-  _driverTimer: null,
-  _syncTimer: null,
-  _demoDrivers: [],
-  _demoPhase: 0,
-  _forceOpen: false,
-  _initAttempts: 0,
-  _blend: 0,
-  _mapStyle: 'satellite',
-  STYLE_KEY: 'astranov_map_style_v1',
-  _stackIdx: 0,
-  _tileStats: { ok: 0, err: 0, lastOk: 0 },
-  _healthTimer: null,
-  _lastEscalate: 0,
-  _leafletLoading: null,
+  // Approximate public test profile (suborbital ship · Gulf booster · Indian Ocean entry)
+  PHASES: [
+    { t: 0, id: 'liftoff', label: 'Liftoff', event: '33 engines · Pad 2' },
+    { t: 60, id: 'maxq', label: 'Max-Q', event: 'Peak aerodynamic pressure' },
+    { t: 160, id: 'hotstage', label: 'Hot-staging', event: 'Ship ignition · stage sep' },
+    { t: 180, id: 'boostback', label: 'Boostback', event: 'Booster flip · Gulf' },
+    { t: 400, id: 'boostland', label: 'Booster splash', event: 'Gulf of Mexico water landing' },
+    { t: 520, id: 'coast', label: 'Ship coast', event: 'Suborbital arc · Starlink V3 bay' },
+    { t: 900, id: 'deploy', label: 'Payload window', event: 'Starlink V3 deploy opportunity' },
+    { t: 2700, id: 'entry', label: 'Entry', event: 'Ship reentry · Indian Ocean' },
+    { t: 3300, id: 'splash', label: 'Splashdown', event: 'Controlled splash · end of test' },
+  ],
 
-  _globeZ() {
-    return ZoomTiers?.tierZ?.('global') ?? GlobeControl?.Z?.global ?? GlobeNavigate.GLOBAL_Z;
-  },
-
-  _nationalZ() {
-    return ZoomTiers?.tierZ?.('national') ?? GlobeControl?.Z?.national ?? 1.82;
-  },
-
-  _setGlobeSurfaceVisible(show) {
-    if (window.earth) window.earth.visible = !!show;
-    const g = window.AIGraphics;
-    if (!g) return;
-    ['atmosphere', 'clouds', 'cityLights', 'neuralLayer', 'idleNodes'].forEach((k) => {
-      if (g[k]) g[k].visible = !!show;
-    });
-  },
-
-  _applyGlobeMapCrossfade(camZ) {
-    if (this.active) {
-      document.documentElement.style.setProperty('--globe-opacity', '0');
-      document.documentElement.style.setProperty('--map-opacity', '1');
-      this._setGlobeSurfaceVisible(false);
-      return;
-    }
-    const z0 = this._globeZ();
-    const z1 = this._nationalZ();
-    let t = 0;
-    if (camZ <= z1) t = 1;
-    else if (camZ < z0) t = 1 - (camZ - z1) / (z0 - z1);
-    t = Math.max(0, Math.min(1, Math.pow(t, 0.65)));
-    this._blend = t;
-    document.documentElement.style.setProperty('--globe-opacity', String(1 - t));
-    document.documentElement.style.setProperty('--map-opacity', String(t));
-    this._setGlobeSurfaceVisible(t < 0.92);
-    const mapEl = document.getElementById('city-map');
-    if (mapEl && t > 0.04 && !this.active) {
-      if (!mapEl.classList.contains('national-active')) mapEl.classList.add('national-active');
-      if (this.map) {
-        const c = this.mapViewCenter();
-        this._center = c;
-        const lz = this.nationalLeafletZoom(camZ);
-        if (this.map.getZoom() !== lz) this.map.setZoom(lz, { animate: false });
-        const cur = this.map.getCenter();
-        if (Math.abs(cur.lat - c.lat) > 0.03 || Math.abs(cur.lng - c.lng) > 0.03) {
-          this.map.panTo([c.lat, c.lng], { animate: false });
-        }
-        this._applyBaseLayers();
-        this.syncMapPins();
-        this._invalidate();
-      }
-    } else if (mapEl && !this._nationalActive && t <= 0.04) {
-      mapEl.classList.remove('national-active');
-      mapEl.style.removeProperty('opacity');
-    }
-    this._updateStyleSwitchVisible();
-  },
-
-  async _loadLeaflet() {
-    if (window.L) return true;
-    if (this._leafletLoading) return this._leafletLoading;
-    this._leafletLoading = (async () => {
-      const sources = [
-        { css: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', js: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' },
-        { css: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css', js: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js' },
-        { css: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', js: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js' },
-      ];
-      for (const src of sources) {
-        const ok = await this._injectLeaflet(src.css, src.js);
-        if (ok) return true;
-      }
-      return false;
-    })();
-    try {
-      return await this._leafletLoading;
-    } finally {
-      this._leafletLoading = null;
-    }
-  },
-
-  _injectLeaflet(cssUrl, jsUrl) {
-    return new Promise(resolve => {
-      if (window.L) return resolve(true);
-      if (!document.querySelector('link[href*="leaflet"]')) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = cssUrl;
-        link.crossOrigin = '';
-        document.head.appendChild(link);
-      }
-      const existing = document.querySelector('script[src*="leaflet"]');
-      if (existing) {
-        const done = () => resolve(!!window.L);
-        if (window.L) return done();
-        existing.addEventListener('load', done, { once: true });
-        existing.addEventListener('error', () => resolve(false), { once: true });
-        setTimeout(() => resolve(!!window.L), 4500);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = jsUrl;
-      script.crossOrigin = '';
-      script.onload = () => resolve(!!window.L);
-      script.onerror = () => resolve(false);
-      document.head.appendChild(script);
-    });
-  },
-
-  async ensureReady() {
-    if (this._ready && this.map) return true;
-    const deadline = Date.now() + 14000;
-    while (Date.now() < deadline) {
-      if (!window.L) await this._loadLeaflet();
-      if (!this._ready && this._initAttempts < 8) {
-        this._initAttempts++;
-        this.init();
-      }
-      if (this._ready && this.map) return true;
-      await new Promise(r => setTimeout(r, 350));
-    }
-    return !!(this._ready && this.map);
-  },
+  // Great-circle samples: Starbase → Gulf → mid-Atlantic coast → Indian Ocean splash zone
+  PATH_SHIP: [
+    { t: 0, lat: 25.9971, lng: -97.1554, alt: 1.0 },
+    { t: 60, lat: 26.4, lng: -96.4, alt: 1.02 },
+    { t: 160, lat: 27.8, lng: -94.2, alt: 1.06 },
+    { t: 400, lat: 30.5, lng: -88.0, alt: 1.09 },
+    { t: 900, lat: 20.0, lng: -40.0, alt: 1.12 },
+    { t: 1800, lat: 0.0, lng: 20.0, alt: 1.10 },
+    { t: 2700, lat: -20.0, lng: 55.0, alt: 1.05 },
+    { t: 3300, lat: -30.0, lng: 75.0, alt: 1.0 },
+  ],
+  PATH_BOOSTER: [
+    { t: 0, lat: 25.9971, lng: -97.1554, alt: 1.0 },
+    { t: 160, lat: 27.8, lng: -94.2, alt: 1.06 },
+    { t: 250, lat: 27.2, lng: -94.8, alt: 1.04 },
+    { t: 400, lat: 26.5, lng: -95.5, alt: 1.0 },
+  ],
 
   init() {
-    if (!window.L) {
-      console.warn('[CityMap] Leaflet not loaded');
-      return;
+    if (this._inited) return;
+    this._inited = true;
+    window.StarshipFlight13 = this;
+    try {
+      this._ensureGroup();
+      this._ensureHud();
+    } catch (e) {
+      console.warn('[StarshipFlight13] init soft-fail', e);
     }
-    if (this._ready && this.map) return;
-    let el = document.getElementById('city-map');
+    console.log('%c[StarshipFlight13] F13 sim ready · say starship / flight 13', 'color:#ff8844;font-weight:700');
+  },
+
+  _ensureGroup() {
+    if (this._group || typeof THREE === 'undefined' || typeof globePivot === 'undefined') return;
+    this._group = new THREE.Group();
+    this._group.name = 'starship-f13';
+    this._group.visible = false;
+    globePivot.add(this._group);
+
+    const bodyGeo = new THREE.CylinderGeometry(0.008, 0.012, 0.055, 8);
+    const bodyMat = new THREE.MeshBasicMaterial({ color: 0xdde8f0 });
+    this._ship = new THREE.Mesh(bodyGeo, bodyMat.clone());
+    this._ship.userData = { kind: 'ship', name: 'Ship · F13' };
+    this._group.add(this._ship);
+
+    this._booster = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.016, 0.07, 8),
+      new THREE.MeshBasicMaterial({ color: 0xaabbcc })
+    );
+    this._booster.userData = { kind: 'booster', name: 'Booster · F13' };
+    this._group.add(this._booster);
+
+    const trailGeo = new THREE.BufferGeometry();
+    const trailPos = new Float32Array(90);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+    this._trail = new THREE.Line(
+      trailGeo,
+      new THREE.LineBasicMaterial({ color: 0xff6622, transparent: true, opacity: 0.75 })
+    );
+    this._trail.frustumCulled = false;
+    this._group.add(this._trail);
+    this._trailPts = [];
+  },
+
+  _ensureHud() {
+    if (this._hud || typeof document === 'undefined') return;
+    let el = document.getElementById('starship-f13-hud');
     if (!el) {
       el = document.createElement('div');
-      el.id = 'city-map';
+      el.id = 'starship-f13-hud';
+      el.setAttribute('aria-live', 'polite');
+      el.style.cssText = [
+        'position:fixed', 'left:50%', 'bottom:calc(88px + env(safe-area-inset-bottom,0px))',
+        'transform:translateX(-50%)', 'z-index:95', 'max-width:min(92vw,420px)',
+        'padding:8px 12px', 'border-radius:12px', 'pointer-events:none',
+        'background:rgba(8,12,20,0.82)', 'border:1px solid rgba(255,120,60,0.45)',
+        'color:#ffe8d8', 'font:600 12px/1.35 system-ui,sans-serif',
+        'box-shadow:0 8px 28px rgba(0,0,0,0.45)', 'display:none', 'text-align:center',
+      ].join(';');
       document.body.appendChild(el);
     }
-    this.map = L.map(el, {
-      zoomControl: false,
-      attributionControl: true,
-      preferCanvas: true,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
-      boxZoom: false,
-    });
-    this._buildLayers();
-    AstranovTheme?.registerMap?.(this);
-    this.map.setView([this._center.lat, this._center.lng], 14);
-    this.map.on('zoomend moveend', () => {
-      if (!this.active) return;
-      const c = this.map.getCenter();
-      this._center = { lat: c.lat, lng: c.lng };
-    });
-    this.map.on('click', (e) => {
-      if (!this.active && !this._nationalActive) return;
-      const dom = e.originalEvent;
-      if (MapOverlayDismiss.handleMapClick(dom || { target: document.getElementById('city-map') })) return;
-      if (window.MenuProfilePostTile?.consumeMapPick?.(e.latlng.lat, e.latlng.lng)) return;
-      if (this._nationalActive && !this.active) {
-        void GlobeNavigate?.handlePlaceClick?.(e.latlng.lat, e.latlng.lng, {});
-      } else {
-        MapPlaceMenu?.openAt?.(e.latlng.lat, e.latlng.lng, { source: 'City map', hint: '3 smart picks only', limited: true });
+    this._hud = el;
+  },
+
+  netMs() { return this.NET_UTC; },
+
+  countdownText(nowMs) {
+    const d = this.NET_UTC - (nowMs || Date.now());
+    if (d <= 0) return 'NET open · window ' + this.WINDOW_MIN + 'm · T+ live or replay';
+    const s = Math.floor(d / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return 'NET T−' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0')
+      + ' · 20 Jul 2026 22:45 UTC · Starbase';
+  },
+
+  phaseAt(t) {
+    let cur = this.PHASES[0];
+    for (const p of this.PHASES) {
+      if (t >= p.t) cur = p;
+      else break;
+    }
+    return cur;
+  },
+
+  _lerpPath(path, t) {
+    if (!path.length) return null;
+    if (t <= path[0].t) return { ...path[0] };
+    if (t >= path[path.length - 1].t) return { ...path[path.length - 1] };
+    for (let i = 0; i < path.length - 1; i++) {
+      const a = path[i];
+      const b = path[i + 1];
+      if (t >= a.t && t <= b.t) {
+        const u = (t - a.t) / Math.max(1e-6, b.t - a.t);
+        return {
+          lat: a.lat + (b.lat - a.lat) * u,
+          lng: a.lng + (b.lng - a.lng) * u,
+          alt: a.alt + (b.alt - a.alt) * u,
+        };
       }
-    });
-    window.addEventListener('resize', () => {
-      if (this.active) this._invalidate();
-    });
-    this._bindZoomBridge(el);
-    this._bindStyleSwitch();
-    this._loadMapStyle();
-    this._ready = true;
-    const driverMs = SlumberManager?.tickMs?.('cityDriver') || 4500;
-    this._driverTimer = setInterval(() => this._tickDrivers(), driverMs);
-    this._syncTimer = setInterval(() => { if (this.active) this._syncMarkers(); }, 2000);
-  },
-
-  _invalidate() {
-    if (!this.map) return;
-    try {
-      this.map.invalidateSize({ animate: false });
-    } catch (_) {}
-  },
-
-  _mapIsVisible() {
-    return !!(this.active || this._nationalActive || (this._blend || 0) > 0.06);
-  },
-
-  _onTileOk() {
-    this._tileStats.ok++;
-    this._tileStats.lastOk = Date.now();
-  },
-
-  _onTileErr(layerKey) {
-    this._tileStats.err++;
-    if (this._mapIsVisible()) this._maybeEscalateLayers('tileerror:' + (layerKey || '?'));
-  },
-
-  _wrapTileLayer(layer, key) {
-    if (!layer) return layer;
-    layer.on('tileload', () => this._onTileOk());
-    layer.on('tileerror', () => this._onTileErr(key));
-    return layer;
-  },
-
-  _getLayerStacks() {
-    const Lyr = this._layers;
-    if (!Lyr?.sat) return [];
-    return [
-      { id: 'sat_hd', label: 'Satellite HD', layers: [
-        { layer: Lyr.sat, opacity: 1 },
-        { layer: Lyr.streetLabels, opacity: 1 },
-        { layer: Lyr.placeLabels, opacity: 0.92 },
-      ]},
-      { id: 'sat_streets', label: 'Satellite + streets', layers: [
-        { layer: Lyr.sat, opacity: 1 },
-        { layer: Lyr.voyager, opacity: 0.44 },
-      ]},
-      { id: 'osm_labels', label: 'OSM + labels', layers: [
-        { layer: Lyr.satFallback, opacity: 1 },
-        { layer: Lyr.streetLabels, opacity: 0.86 },
-      ]},
-      { id: 'voyager', label: 'Street map', layers: [
-        { layer: Lyr.voyager, opacity: 1 },
-      ]},
-      { id: 'osm', label: 'OpenStreetMap', layers: [
-        { layer: Lyr.satFallback, opacity: 1 },
-      ]},
-      { id: 'osm_alt', label: 'OSM mirror', layers: [
-        { layer: Lyr.osmAlt, opacity: 1 },
-      ]},
-      { id: 'dark', label: 'Dark streets', layers: [
-        { layer: Lyr.darkStreets, opacity: 1 },
-      ]},
-    ];
-  },
-
-  _baseStackForStyle(style) {
-    if (style === 'bright') return 3;
-    if (style === 'dark') return 6;
-    return 0;
-  },
-
-  _preferredStackIdx() {
-    return this._baseStackForStyle(this.getMapStyle?.() || 'satellite');
-  },
-
-  _recoverPreferredStack() {
-    const pref = this._preferredStackIdx();
-    if (this._stackIdx <= pref || !this._tileStats?.ok || this._tileStats.ok < 6) return false;
-    this._applyLayerStack(pref);
-    this._tileStats = { ok: 0, err: 0, lastOk: Date.now() };
-    AciCli?.print?.('map · restored HD tiles', 'ok');
-    return true;
-  },
-
-  _applyLayerStack(idx) {
-    if (!this.map) return false;
-    const stacks = this._getLayerStacks();
-    if (!stacks.length) return false;
-    idx = Math.max(0, Math.min(stacks.length - 1, idx));
-    this._stackIdx = idx;
-    const stack = stacks[idx];
-    this._onMap.forEach(l => { try { this.map.removeLayer(l); } catch (_) {} });
-    this._onMap.clear();
-    stack.layers.forEach(entry => {
-      const layer = entry.layer;
-      if (!layer) return;
-      const op = entry.opacity != null ? entry.opacity : 1;
-      if (layer.setOpacity) layer.setOpacity(op);
-      layer.addTo(this.map);
-      this._onMap.add(layer);
-    });
-    const el = document.getElementById('city-map');
-    if (el) el.dataset.layerStack = stack.id;
-    this._syncStyleUi();
-    this._updateStyleSwitchVisible();
-    if (this._mapIsVisible()) this._invalidate();
-    return true;
-  },
-
-  _maybeEscalateLayers(reason) {
-    const stacks = this._getLayerStacks();
-    if (!stacks.length || this._stackIdx >= stacks.length - 1) return false;
-    const now = Date.now();
-    if (now - (this._lastEscalate || 0) < 1600) return false;
-    this._lastEscalate = now;
-    const next = this._stackIdx + 1;
-    console.warn('[CityMap] fallback layer →', stacks[next].id, reason || '');
-    this._applyLayerStack(next);
-    this._tileStats = { ok: 0, err: 0, lastOk: this._tileStats.lastOk || 0 };
-    AciCli?.print?.('map · fallback · ' + stacks[next].label, 'warn');
-    GlobeDeck?.setPreview?.('Map · ' + stacks[next].label);
-    return true;
-  },
-
-  _startHealthWatch() {
-    this._stopHealthWatch();
-    this._tileStats = { ok: 0, err: 0, lastOk: 0 };
-    let checks = 0;
-    this._healthTimer = setInterval(() => {
-      if (!this._mapIsVisible()) {
-        this._stopHealthWatch();
-        return;
-      }
-      checks++;
-      const stale = !this._tileStats.lastOk && checks >= 2;
-      const staleLong = this._tileStats.lastOk && Date.now() - this._tileStats.lastOk > 6000;
-      const noTiles = checks >= 2 && this._tileStats.ok === 0 && this._tileStats.err >= 2;
-      const errHeavy = this._tileStats.err >= 5 && this._tileStats.err > this._tileStats.ok * 1.5;
-      if (noTiles || errHeavy || stale || staleLong) {
-        if (!this._maybeEscalateLayers('health')) this._stopHealthWatch();
-        checks = 0;
-      }
-      if (this._tileStats.ok >= 10 && this._stackIdx > this._preferredStackIdx()) {
-        this._recoverPreferredStack();
-      }
-      if (checks > 10) this._stopHealthWatch();
-    }, 2800);
-  },
-
-  _stopHealthWatch() {
-    if (this._healthTimer) {
-      clearInterval(this._healthTimer);
-      this._healthTimer = null;
     }
+    return { ...path[path.length - 1] };
   },
 
-  _loadMapStyle() {
-    try {
-      const s = localStorage.getItem(this.STYLE_KEY);
-      if (s === 'satellite' || s === 'bright' || s === 'dark') this._mapStyle = s;
-    } catch (_) {}
-    return this._mapStyle;
+  _place(mesh, sample) {
+    if (!mesh || !sample || typeof latLngToPos !== 'function') return;
+    const p = latLngToPos(sample.lat, sample.lng, sample.alt);
+    mesh.position.set(p.x, p.y, p.z);
+    // Point roughly outward
+    mesh.lookAt(0, 0, 0);
+    mesh.rotateX(Math.PI / 2);
   },
 
-  getMapStyle() {
-    return this._mapStyle || 'satellite';
+  _pushTrail(sample) {
+    if (!sample || !this._trail) return;
+    const p = latLngToPos(sample.lat, sample.lng, sample.alt);
+    this._trailPts.push(p.x, p.y, p.z);
+    if (this._trailPts.length > 90) this._trailPts = this._trailPts.slice(-90);
+    const arr = this._trail.geometry.attributes.position.array;
+    for (let i = 0; i < 90; i++) arr[i] = this._trailPts[i] ?? this._trailPts[this._trailPts.length - 1] ?? 0;
+    this._trail.geometry.attributes.position.needsUpdate = true;
+    this._trail.geometry.setDrawRange(0, Math.floor(this._trailPts.length / 3));
   },
 
-  setMapStyle(style) {
-    const s = style === 'bright' || style === 'dark' ? style : 'satellite';
-    this._mapStyle = s;
-    this._stackIdx = this._baseStackForStyle(s);
-    try { localStorage.setItem(this.STYLE_KEY, s); } catch (_) {}
-    this._applyBaseLayers();
-    this._syncStyleUi();
-    const labels = { satellite: 'Satellite', bright: 'Bright streets', dark: 'Dark streets' };
-    GlobeDeck?.setPreview?.('Map · ' + (labels[s] || s));
-    AciCli?.print?.('map style → ' + s, 'ok');
-    return s;
+  _setHud(html, show) {
+    this._ensureHud();
+    if (!this._hud) return;
+    this._hud.style.display = show === false ? 'none' : 'block';
+    if (html != null) this._hud.innerHTML = html;
   },
 
-  cycleMapStyle() {
-    const order = ['satellite', 'bright', 'dark'];
-    const i = order.indexOf(this.getMapStyle());
-    return this.setMapStyle(order[(i + 1) % order.length]);
+  focusPad() {
+    this._ensureGroup();
+    GlobeControl?.flyToLatLng?.(this.PAD.lat, this.PAD.lng, 'Starbase · F13', GlobeControl?.Z?.national || 1.9, {});
+    MapDepict?.pulse?.(this.PAD.lat, this.PAD.lng, 0xff6622, 'Pad 2 · F13', 12000);
+    ZoomTiers?.goTo?.('national', true);
   },
 
-  _syncStyleUi() {},
-
-  _updateStyleSwitchVisible() {},
-
-  _bindStyleSwitch() {},
-
-  _buildLayers() {
-    const maxZ = Math.max(20, SlumberManager?.quality?.cityMaxZoom || 20);
-    const sat = this._wrapTileLayer(L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: maxZ, attribution: 'Esri · satellite' }
-    ), 'sat');
-    const satFallback = this._wrapTileLayer(L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { maxZoom: 19, attribution: '© OSM fallback' }
-    ), 'osm');
-    const osmAlt = this._wrapTileLayer(L.tileLayer(
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { maxZoom: 19, attribution: '© OSM mirror' }
-    ), 'osm_alt');
-    const streetLabels = this._wrapTileLayer(L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png',
-      { maxZoom: 20, opacity: 1, attribution: '© CARTO © OSM' }
-    ), 'labels');
-    const placeLabels = this._wrapTileLayer(L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-      { maxZoom: 20, minZoom: 10, opacity: 0.92, attribution: 'Esri · places' }
-    ), 'places');
-    const voyager = this._wrapTileLayer(L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      { maxZoom: 20, attribution: '© CARTO © OSM · streets & blocks' }
-    ), 'voyager');
-    const darkStreets = this._wrapTileLayer(L.tileLayer(
-      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-      { maxZoom: 20, attribution: '© CARTO © OSM · dark' }
-    ), 'dark');
-    this._layers = { sat, satFallback, osmAlt, streetLabels, placeLabels, voyager, brightStreets: voyager, darkStreets, streets: voyager };
-    this._loadMapStyle();
-    this._stackIdx = this._baseStackForStyle(this.getMapStyle());
-    this._applyBaseLayers();
+  start(opts) {
+    opts = opts || {};
+    this.init();
+    this._ensureGroup();
+    this._ensureHud();
+    // Snap camera once — don't spam fly every phase
+    if (!opts.silent) this.focusPad();
+    this._speed = Math.max(0.25, Math.min(60, opts.speed || (opts.realtime ? 1 : 12)));
+    this.playing = true;
+    this._elapsed = opts.fromT || 0;
+    this._t0 = performance.now();
+    this._trailPts = [];
+    this._phase = 'liftoff';
+    if (this._group) this._group.visible = true;
+    if (this._booster) this._booster.visible = true;
+    if (this._ship) this._ship.visible = true;
+    const mode = opts.realtime ? 'live clock' : ('×' + this._speed + ' replay');
+    AciCli?.print?.('starship f13 · ' + mode + ' · NET ' + new Date(this.NET_UTC).toISOString(), 'ok');
+    CliRibbon?.setNotice?.('F13 · ' + mode, 'ready');
+    GlobeDeck?.say?.('Starship Flight 13 sim — ' + mode, 'ok');
+    this._setHud('<b>F13</b> · ' + mode + '<br>' + this.countdownText(), true);
+    this._tick();
+    return { ok: true, mode, net: this.NET_UTC };
   },
 
-  _mapTheme() {
-    return AstranovTheme?.effectiveMode?.() || AstranovTheme?.systemMode?.() || AstranovTheme?.mode || 'dark';
+  stop() {
+    this.playing = false;
+    if (this._group) this._group.visible = false;
+    this._setHud(null, false);
+    AciCli?.print?.('starship f13 · stopped', 'dim');
   },
 
-  _applyBaseLayers() {
-    if (!this.map || !this._layers?.sat) return;
-    const uiTheme = this._mapTheme();
-    const el = document.getElementById('city-map');
-    let savedStyle = this.getMapStyle();
-    if (!this.active && (this._nationalActive || (this._blend || 0) > 0.2) && savedStyle === 'satellite') {
-      savedStyle = uiTheme === 'bright' ? 'bright' : 'dark';
+  _tick() {
+    if (!this.playing) return;
+    const now = performance.now();
+    const dt = (now - this._t0) / 1000;
+    this._t0 = now;
+    this._elapsed += dt * this._speed;
+    const t = this._elapsed;
+    const phase = this.phaseAt(t);
+    this._phase = phase.id;
+
+    const ship = this._lerpPath(this.PATH_SHIP, t);
+    const boost = this._lerpPath(this.PATH_BOOSTER, Math.min(t, 400));
+    this._place(this._ship, ship);
+    if (t < 160) {
+      this._place(this._booster, ship);
+      if (this._booster) this._booster.visible = true;
+    } else if (t < 420) {
+      this._place(this._booster, boost);
+      if (this._booster) this._booster.visible = true;
+    } else if (this._booster) {
+      this._booster.visible = false;
     }
-    const style = (this.active || this._nationalActive || (this._blend || 0) > 0.12) ? savedStyle : 'satellite';
-    if (el) {
-      el.dataset.theme = uiTheme;
-      el.dataset.mapStyle = style;
-    }
-    const preferred = this._baseStackForStyle(style);
-    if (this._stackIdx < preferred || !this._getLayerStacks()[this._stackIdx]) {
-      this._stackIdx = preferred;
-    }
-    this._applyLayerStack(this._stackIdx);
-  },
+    if (ship && t % 0.2 < 0.05) this._pushTrail(ship);
 
-  onThemeChange() {
-    const el = document.getElementById('city-map');
-    if (el) el.dataset.theme = this._mapTheme();
-    if (!this.active && (this._nationalActive || (this._blend || 0) > 0.12)) {
-      const uiTheme = this._mapTheme();
-      if (this.getMapStyle() === 'satellite') this.setMapStyle(uiTheme === 'bright' ? 'bright' : 'dark');
-      else this._applyBaseLayers();
-    }
-  },
-
-  camZToZoom(camZ) {
-    if (camZ <= 1.06) return 18;
-    if (camZ <= 1.12) return 17;
-    if (camZ <= 1.22) return 16;
-    if (camZ <= 1.32) return 15;
-    const z = Math.max(1.02, Math.min(1.48, camZ));
-    const t = (1.48 - z) / (1.48 - 1.02);
-    return Math.round(11 + t * 4);
-  },
-
-  nationalLeafletZoom(camZ) {
-    if (camZ >= 1.78) return 6;
-    if (camZ >= 1.62) return 8;
-    return 10;
-  },
-
-  _bindZoomBridge(el) {
-    if (!el || el._cityZoomBridge) return;
-    el._cityZoomBridge = true;
-    let pinchDist = 0;
-    let pinchLastT = 0;
-
-    el.addEventListener('wheel', e => {
-      if (!this.active && !this._nationalActive) return;
-      e.preventDefault();
-      e.stopPropagation();
-      GlobeZoom.impuls(e.clientX, e.clientY, e.deltaY, e.deltaMode);
-    }, { passive: false });
-
-    el.addEventListener('touchstart', e => {
-      if ((!this.active && !this._nationalActive) || e.touches.length !== 2) return;
-      pinchLastT = performance.now();
-      pinchDist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
+    if (now - this._lastHud > 400) {
+      this._lastHud = now;
+      const mm = Math.floor(t / 60);
+      const ss = Math.floor(t % 60);
+      this._setHud(
+        '<b>Starship F13</b> · T+' + String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0')
+        + ' · ×' + this._speed
+        + '<br><span style="color:#ffb088">' + phase.label + '</span> — ' + phase.event
+        + '<br><span style="opacity:.75">' + this.countdownText() + '</span>',
+        true
       );
-    }, { passive: true });
-
-    el.addEventListener('touchmove', e => {
-      if ((!this.active && !this._nationalActive) || e.touches.length !== 2 || !pinchDist) return;
-      e.preventDefault();
-      const d = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const now = performance.now();
-      const pdt = pinchLastT ? now - pinchLastT : 16;
-      pinchLastT = now;
-      const delta = pinchDist - d;
-      pinchDist = d;
-      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-      GlobeZoom.impuls(midX, midY, delta * 0.34, 0, pdt);
-    }, { passive: false });
-
-    el.addEventListener('touchend', () => { pinchDist = 0; pinchLastT = 0; });
-  },
-
-  globeCenterLatLng() {
-    globePivot.updateMatrixWorld(true);
-    const v = new THREE.Vector3(0, 0, 1);
-    const inv = new THREE.Matrix4().copy(globePivot.matrixWorld).invert();
-    v.applyMatrix4(inv);
-    const r = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) || 1;
-    const lat = 90 - Math.acos(Math.max(-1, Math.min(1, v.y / r))) * 180 / Math.PI;
-    let lng = Math.atan2(v.z, -v.x) * 180 / Math.PI - 180;
-    if (lng > 180) lng -= 360;
-    if (lng < -180) lng += 360;
-    return { lat, lng };
-  },
-
-  /** Map viewport — follows globe bearing, not stale GPS / delivery base */
-  mapViewCenter(opts) {
-    opts = opts || {};
-    if (opts.lat != null && opts.lng != null) return { lat: opts.lat, lng: opts.lng };
-    if (DrivingView?.active && window._lastPos?.lat != null) return window._lastPos;
-    if (GlobeControl?.followMode === 'locate' && window._lastPos?.lat != null && !GlobeControl?.userExploring) {
-      return window._lastPos;
-    }
-    return this.globeCenterLatLng();
-  },
-
-  flyTo(lat, lng, zoom) {
-    this._center = { lat, lng };
-    if (this.map) this.map.setView([lat, lng], zoom || 15, { animate: true });
-  },
-
-  /** Force-open city map at coordinates — bypasses camera threshold race conditions */
-  async openAt(lat, lng, opts) {
-    opts = opts || {};
-    let ready = await this.ensureReady();
-    if (!ready || !this.map) {
-      this._initAttempts = 0;
-      ready = await this.ensureReady();
-    }
-    if (!ready || !this.map) {
-      GlobeDeck?.setMapStatus('City map failed — retrying fallback tiles…');
-      AciCli?.print('city map init failed — trying OSM fallback', 'warn');
-      return false;
-    }
-    const c = lat != null && lng != null
-      ? { lat, lng }
-      : (window._lastPos || this._center);
-    if (!c?.lat) return false;
-
-    this._center = c;
-    window._lastPos = { lat: c.lat, lng: c.lng };
-    userLocated = true;
-
-    const camZ = opts.camZ ?? CityLife?.CITY_ZOOM ?? GlobeControl?.cityEntryZ?.() ?? 1.34;
-    if (typeof camera !== 'undefined' && camera) {
-      camera.position.z = camZ;
-      camera.lookAt(0, 0, 0);
-    }
-    CosmicZoom?.update?.(camZ, { tier: 'city', label: 'CITY', cosmic: 'earth' });
-    ZoomTiers?.goTo?.('city', false);
-    cityLevel = true;
-
-    this._forceOpen = true;
-    const lz = opts.zoom ?? this.camZToZoom(camZ);
-    if (!this.active) this._enter(camZ);
-    else {
-      this.map.setView([c.lat, c.lng], lz, { animate: false });
-      this._invalidate();
-      this._syncMarkers();
-      this._syncRoute();
-    }
-    if (this.map.getZoom() !== lz) this.map.setZoom(lz, { animate: false });
-    this.map.panTo([c.lat, c.lng], { animate: false });
-    setTimeout(() => { this._forceOpen = false; }, 4000);
-    setTimeout(() => this._invalidate(), 80);
-    setTimeout(() => this._invalidate(), 400);
-    this._startHealthWatch();
-    setTimeout(() => {
-      if (this._tileStats.ok === 0 && this._tileStats.err >= 1) this._maybeEscalateLayers('open');
-    }, 3200);
-    GlobeDeck?.setMapStatus('🏙 City map · ' + c.lat.toFixed(2) + ', ' + c.lng.toFixed(2));
-    return true;
-  },
-
-  async enter(lat, lng, opts) {
-    if (CityLife?.dropIn) return CityLife.dropIn(lat, lng, opts || {});
-    const c = lat != null && lng != null ? { lat, lng } : this.mapViewCenter();
-    if (!c?.lat) return { error: 'no location' };
-    const z = GlobeControl?.cityEntryZ?.() ?? this.ENTER_Z - 0.06;
-    const p = latLngToPos(c.lat, c.lng, 1.04);
-    if (typeof flyToPoint === 'function') {
-      flyToPoint(new THREE.Vector3(p.x, p.y, p.z), z);
-      if (typeof waitForGlobeFly === 'function') await waitForGlobeFly();
-    }
-    this.onCamera(z, 'earth');
-    return { lat: c.lat, lng: c.lng };
-  },
-
-  onCamera(camZ, level) {
-    if (!this._ready) return;
-    this._applyGlobeMapCrossfade(camZ);
-    const earth = window._cityDropLock || this._forceOpen
-      || (level || CosmicZoom?.level || 'earth') === 'earth';
-    const driving = !!DrivingView?.active;
-    const force = this._forceOpen || window._cityDropLock;
-    const h = 0.07;
-
-    if (force || driving) {
-      if (!this.active) {
-        if (this._nationalActive) this._exitNational();
-        this._enter(camZ);
-      } else {
-        this._syncView(camZ);
+      if (ship && t < 500) {
+        MapDepict?.pulse?.(ship.lat, ship.lng, 0xff8844, phase.label, 2500);
       }
+    }
+
+    if (t >= 3300) {
+      this._setHud('<b>F13 complete</b> · splashdown · type <code>starship</code> to replay', true);
+      this.playing = false;
+      setTimeout(() => this._setHud(null, false), 8000);
+      AciCli?.print?.('starship f13 · splashdown · replay: starship', 'ok');
       return;
     }
+    requestAnimationFrame(() => this._tick());
+  },
 
-    if (this.active) {
-      if (camZ > this.EXIT_Z + h) {
-        this._exit();
-        if (camZ <= this.NATIONAL_ENTER_Z && camZ > this.NATIONAL_EXIT_Z + h) this._enterNational(camZ);
-      } else {
-        this._syncView(camZ);
-      }
-      return;
+  status() {
+    return {
+      version: this.version,
+      playing: this.playing,
+      phase: this._phase,
+      t: Math.round(this._elapsed),
+      net: this.NET_UTC,
+      countdown: this.countdownText(),
+      pad: this.PAD,
+    };
+  },
+
+  wants(text) {
+    return /starship|flight\s*13|f13|starbase\s*launch|ift[\s-]*13/i.test(String(text || ''));
+  },
+
+  async handleCli(line) {
+    const low = String(line || '').toLowerCase().trim();
+    if (/stop|cancel|halt/.test(low)) { this.stop(); return 'F13 stopped'; }
+    if (/pad|focus|starbase/.test(low) && !/play|start|go|launch|replay/.test(low)) {
+      this.focusPad();
+      return 'Focused Starbase Pad 2 · ' + this.countdownText();
     }
-
-    if (this._nationalActive) {
-      if (camZ > this.NATIONAL_ENTER_Z + h) {
-        this._exitNational();
-      } else if (camZ <= this.NATIONAL_EXIT_Z - h) {
-        this._exitNational();
-        if (camZ <= this.ENTER_Z) this._enter(camZ);
-      } else {
-        this._syncNational(camZ);
-      }
-      return;
+    if (/status|net|when|countdown/.test(low)) {
+      const s = this.status();
+      return s.countdown + (s.playing ? ' · playing T+' + s.t + 's · ' + s.phase : '');
     }
-
-    if (!earth) return;
-    if (camZ <= this.ENTER_Z - h * 0.5) {
-      this._enter(camZ);
-    } else if (camZ <= this.NATIONAL_ENTER_Z && camZ > this.NATIONAL_EXIT_Z + h) {
-      this._enterNational(camZ);
-    }
-  },
-
-  _enter(camZ) {
-    if (!this.map) return;
-    SlumberManager?.wake?.('city_hd', 'city map');
-    this.active = true;
-    cityLevel = true;
-    this._applyBaseLayers();
-    const el = document.getElementById('city-map');
-    const globe = document.getElementById('globe');
-    if (el) el.classList.add('active');
-    if (globe) globe.classList.add('city-map-active');
-    document.body.classList.add('city-map-active');
-    this._applyGlobeMapCrossfade(camZ);
-    const c = this.mapViewCenter();
-    this._center = c;
-    this.map.setView([c.lat, c.lng], this.camZToZoom(camZ), { animate: false });
-    this._invalidate();
-    setTimeout(() => this._invalidate(), 120);
-    setTimeout(() => this._invalidate(), 500);
-    this._syncMarkers();
-    this._syncRoute();
-    this._seedDemoDrivers(c);
-    CityLife?._updateChip?.(
-      (CityLife?.nearbyVendors?.(c.lat, c.lng) || []).length,
-      Object.keys(this._markers).filter(k => k.startsWith('drv_')).length
-    );
-    this._updateStyleSwitchVisible();
-    this._startHealthWatch();
-  },
-
-  _enterNational(camZ) {
-    if (!this.map) return;
-    this._nationalActive = true;
-    const el = document.getElementById('city-map');
-    const globe = document.getElementById('globe');
-    if (el) { el.classList.add('national-active'); el.classList.remove('active'); }
-    if (globe) { globe.classList.add('national-map-active'); globe.classList.remove('city-map-active'); }
-    document.body.classList.add('national-map-active');
-    document.body.classList.remove('city-map-active');
-    this._applyGlobeMapCrossfade(camZ);
-    this._applyBaseLayers();
-    this.syncMapPins();
-    const c = this.mapViewCenter();
-    this._center = c;
-    this.map.setView([c.lat, c.lng], this.nationalLeafletZoom(camZ), { animate: false });
-    this._invalidate();
-    GlobeDeck?.setPreview?.('National · ' + (ZoomTiers?.countryHint?.() || 'region') + ' · pinch in for city');
-    this._updateStyleSwitchVisible();
-    this._startHealthWatch();
-  },
-
-  _syncNational(camZ) {
-    const c = this.mapViewCenter();
-    this._center = c;
-    const lz = this.nationalLeafletZoom(camZ);
-    if (this.map.getZoom() !== lz) this.map.setZoom(lz, { animate: false });
-    const cur = this.map.getCenter();
-    if (Math.abs(cur.lat - c.lat) > 0.02 || Math.abs(cur.lng - c.lng) > 0.02) {
-      this.map.panTo([c.lat, c.lng], { animate: false });
-    }
-  },
-
-  _exitNational() {
-    this._nationalActive = false;
-    this._stopHealthWatch();
-    const el = document.getElementById('city-map');
-    const globe = document.getElementById('globe');
-    if (el) el.classList.remove('national-active');
-    if (globe) globe.classList.remove('national-map-active');
-    document.body.classList.remove('national-map-active');
-    const camZ = camera?.position?.z ?? this._globeZ();
-    this._applyGlobeMapCrossfade(camZ);
-    this._updateStyleSwitchVisible();
-  },
-
-  _exit() {
-    this.active = false;
-    cityLevel = false;
-    this._stopHealthWatch();
-    const el = document.getElementById('city-map');
-    const globe = document.getElementById('globe');
-    if (el) { el.classList.remove('active'); el.classList.remove('national-active'); }
-    if (globe) { globe.classList.remove('city-map-active'); globe.classList.remove('national-map-active'); }
-    document.body.classList.remove('city-map-active');
-    document.body.classList.remove('national-map-active');
-    const camZ = camera?.position?.z ?? this._globeZ();
-    this._applyGlobeMapCrossfade(camZ);
-    EarthRealism?._hudTimer && (EarthRealism._hudTimer = 0);
-    const chip = document.getElementById('city-life-chip');
-    if (chip) chip.classList.remove('open');
-    CliRibbon?.clearGlobeHint?.();
-    this._updateStyleSwitchVisible();
-  },
-
-  _syncView(camZ) {
-    const c = this.mapViewCenter();
-    this._center = c;
-    const lz = this.camZToZoom(camZ);
-    if (this.map.getZoom() !== lz) this.map.setZoom(lz, { animate: false });
-    const cur = this.map.getCenter();
-    if (Math.abs(cur.lat - c.lat) > 0.0004 || Math.abs(cur.lng - c.lng) > 0.0004) {
-      this.map.panTo([c.lat, c.lng], { animate: false });
-    }
-  },
-
-  _icon(emoji, color, photoUrl, opts) {
-    opts = opts || {};
-    const size = photoUrl ? 36 : 28;
-    const ring = opts.ring || '#fff';
-    const inner = photoUrl
-      ? '<span class="city-map-pin-photo" style="background-image:url(' + photoUrl + ');border:2px solid ' + ring + ';width:' + size + 'px;height:' + size + 'px"></span>'
-      : '<span class="city-map-pin-fallback" style="background:' + color + ';border:2px solid ' + ring + ';width:' + size + 'px;height:' + size + 'px">' + (opts.initial || '') + '</span>';
-    return L.divIcon({
-      className: 'city-map-pin',
-      html: inner,
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2],
-    });
-  },
-
-  syncMapPins() {
-    if (!this.map) return;
-    const cd = window._clientDelivery;
-    if (cd?.lat != null) {
-      this._setMarker('pin_client', cd.lat, cd.lng, {
-        color: 'rgba(68,255,136,0.9)', ring: '#66ffaa',
-        logoUrl: MapPins?.clientPinPhoto?.(cd),
-        initial: MapPins?.initials?.(cd.label || 'Deliver'),
-        title: cd.label || 'Delivery',
-      });
-    } else if (this._markers.pin_client) {
-      this.map.removeLayer(this._markers.pin_client);
-      delete this._markers.pin_client;
-    }
-    const db = window._driverBase;
-    if (db?.lat != null) {
-      this._setMarker('pin_driver', db.lat, db.lng, {
-        color: 'rgba(255,170,68,0.92)', ring: '#ffb060',
-        logoUrl: MapPins?.driverBasePhoto?.(db),
-        initial: MapPins?.initials?.(db.label || 'Driver'),
-        title: db.label || 'Driver base',
-      });
-    } else if (this._markers.pin_driver) {
-      this.map.removeLayer(this._markers.pin_driver);
-      delete this._markers.pin_driver;
-    }
-    (window.Commerce?.vendors || []).forEach((v, i) => {
-      if (v.lat == null) return;
-      const logo = MapPins?.vendorLogo?.(v);
-      const id = 'shop_' + (v.id || i);
-      const prev = this._markers[id];
-      if (prev) this.map.removeLayer(prev);
-      const m = L.marker([v.lat, v.lng], {
-        icon: this._icon('', 'rgba(26,111,212,0.88)', logo, { ring: '#7ec8ff', initial: MapPins?.initials?.(v.name || 'Shop') }),
-        title: v.name || 'Shop',
-      });
-      m.on('click', () => VendorMapTile?.open?.(v));
-      m.addTo(this.map);
-      this._markers[id] = m;
-    });
-  },
-
-  _setMarker(id, lat, lng, opts) {
-    opts = opts || {};
-    if (lat == null || lng == null) return;
-    const prev = this._markers[id];
-    const icon = this._icon(opts.emoji || '', opts.color || 'rgba(0,140,220,0.9)', opts.logoUrl, {
-      ring: opts.ring || '#fff',
-      initial: opts.initial || MapPins?.initials?.(opts.title || id),
-    });
-    if (prev) {
-      prev.setLatLng([lat, lng]);
-      prev.setIcon(icon);
-      return prev;
-    }
-    const m = L.marker([lat, lng], {
-      icon,
-      title: opts.title || id,
-    });
-    if (opts.onClick) m.on('click', opts.onClick);
-    m.addTo(this.map);
-    this._markers[id] = m;
-    return m;
-  },
-
-  _syncMarkers() {
-    if (!this.active || !this.map) return;
-    const me = window._lastPos;
-    if (me) {
-      this._setMarker('me', me.lat, me.lng, {
-        color: 'rgba(26,111,212,0.92)', ring: '#7ec8ff',
-        logoUrl: MapPins?.authAvatarUrl?.(),
-        initial: MapPins?.initials?.(me?.name || 'You'),
-        title: me?.name || 'You',
-        onClick: () => GlobeEntity?.entities?.get('me') && GlobeEntity.activate(GlobeEntity.entities.get('me')),
-      });
-    }
-    (window.others || []).forEach((u, i) => {
-      this._setMarker('friend_' + (u.id || i), u.lat, u.lng, {
-        color: 'rgba(61,158,255,0.88)', ring: '#7ec8ff',
-        logoUrl: u.photo_url || u.avatar_url || '',
-        initial: MapPins?.initials?.(u.name || 'User'),
-        title: u.name,
-      });
-    });
-    this.syncMapPins();
-  },
-
-  _driverLatLng(d, u, i) {
-    const lat = d.field_lat ?? d.lat ?? d.latitude;
-    const lng = d.field_lng ?? d.lng ?? d.longitude;
-    if (lat != null && lng != null) return { lat: +lat, lng: +lng };
-    return { lat: u.lat + (Math.sin(i * 1.7) * 0.006), lng: u.lng + (Math.cos(i * 1.3) * 0.006) };
-  },
-
-  _seedDemoDrivers(u) {
-    if (this._demoDrivers.length) return;
-    this._demoDrivers = [
-      { id: 'demo1', display_name: 'Nikos · delivery', field_lat: u.lat + 0.004, field_lng: u.lng - 0.003 },
-      { id: 'demo2', display_name: 'Elena · courier', field_lat: u.lat - 0.003, field_lng: u.lng + 0.005 },
-      { id: 'demo3', display_name: 'Alex · ride', field_lat: u.lat + 0.002, field_lng: u.lng + 0.004 },
-    ];
-  },
-
-  _animateDemoDrivers() {
-    this._demoPhase += 0.0012;
-    const u = window._lastPos || this._center;
-    this._demoDrivers.forEach((d, i) => {
-      d.field_lat = u.lat + Math.sin(this._demoPhase + i * 2.1) * 0.008;
-      d.field_lng = u.lng + Math.cos(this._demoPhase + i * 1.6) * 0.008;
-    });
-  },
-
-  async _tickDrivers() {
-    if (!this.active) return;
-    const u = window._lastPos || this._center;
-    let drivers = window.Commerce?.fetchNearbyDrivers
-      ? await window.Commerce.fetchNearbyDrivers(u.lat, u.lng)
-      : [];
-    if (!drivers.length) {
-      this._seedDemoDrivers(u);
-      this._animateDemoDrivers();
-      drivers = this._demoDrivers;
-    }
-    window.Commerce?.showDriversOnGlobe?.(drivers);
-    const seen = new Set();
-    drivers.forEach((d, i) => {
-      const p = this._driverLatLng(d, u, i);
-      const id = 'drv_' + (d.id || i);
-      seen.add(id);
-      this._setMarker(id, p.lat, p.lng, {
-        color: 'rgba(80,180,255,0.92)', ring: '#ffb060',
-        logoUrl: MapPins?.driverPhotoUrl?.(d),
-        initial: MapPins?.initials?.(d.display_name || 'Driver'),
-        title: d.display_name || 'Driver',
-      });
-    });
-    Object.keys(this._markers).forEach(k => {
-      if (k.startsWith('drv_') && !seen.has(k)) {
-        this.map.removeLayer(this._markers[k]);
-        delete this._markers[k];
-      }
-    });
-  },
-
-  setRoute(coords) {
-    this._routeCoords = coords || [];
-    this._syncRoute();
-  },
-
-  _deliveryRoutes: {},
-
-  setDeliveryRoute(id, coords, opts) {
-    opts = opts || {};
-    if (!id) return;
-    this._deliveryRoutes[id] = { coords: coords || [], opts };
-    this._syncDeliveryRoutes();
-  },
-
-  removeDeliveryRoute(id) {
-    if (this._deliveryRoutes[id]) {
-      const rec = this._deliveryRoutes[id];
-      if (rec.layer && this.map) try { this.map.removeLayer(rec.layer); } catch (_) {}
-      if (rec.polyLayer && this.map) try { this.map.removeLayer(rec.polyLayer); } catch (_) {}
-      delete this._deliveryRoutes[id];
-    }
-  },
-
-  setDeliveryPolygon(id, stops, opts) {
-    opts = opts || {};
-    if (!id) return;
-    if (!this._deliveryRoutes[id]) this._deliveryRoutes[id] = { coords: [], opts: {} };
-    this._deliveryRoutes[id].polygon = stops || [];
-    this._deliveryRoutes[id].polyOpts = opts;
-    this._syncDeliveryRoutes();
-  },
-
-  _syncDeliveryRoutes() {
-    if (!this.map) return;
-    const show = this.active || this._nationalActive || (this._blend || 0) > 0.08;
-    Object.keys(this._deliveryRoutes).forEach(id => {
-      const rec = this._deliveryRoutes[id];
-      if (rec.layer) {
-        try { this.map.removeLayer(rec.layer); } catch (_) {}
-        rec.layer = null;
-      }
-      if (rec.polyLayer) {
-        try { this.map.removeLayer(rec.polyLayer); } catch (_) {}
-        rec.polyLayer = null;
-      }
-      if (!show) return;
-      if (rec.polygon?.length >= 3) {
-        const pOpts = rec.polyOpts || rec.opts || {};
-        const pColor = pOpts.color || '#00dd88';
-        rec.polyLayer = L.polygon(rec.polygon.map(s => [s.lat, s.lng]), {
-          color: pColor,
-          fillColor: pColor,
-          fillOpacity: pOpts.pending ? 0.08 : (pOpts.polygon ? 0.16 : 0.11),
-          weight: pOpts.pending ? 2 : 3,
-          dashArray: pOpts.pending ? '7 9' : null,
-          className: 'delivery-task-polygon',
-        }).addTo(this.map);
-        rec.polyLayer.on('click', (e) => {
-          L.DomEvent.stopPropagation(e);
-          pOpts.onClick?.();
-        });
-      }
-      if (!rec.coords?.length) return;
-      const latlngs = rec.coords.map(c => [c.lat, c.lng]);
-      const color = rec.opts?.color || ((AstranovTheme?.effectiveMode?.() || 'dark') === 'bright' ? '#00aa66' : '#00dd88');
-      rec.layer = L.polyline(latlngs, {
-        color,
-        weight: 6,
-        opacity: 0.9,
-        className: 'delivery-route-line',
-      }).addTo(this.map);
-      rec.layer.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        rec.opts?.onClick?.();
-      });
-    });
-  },
-
-  _syncRoute() {
-    if (!this.map) return;
-    if (this._route) {
-      this.map.removeLayer(this._route);
-      this._route = null;
-    }
-    const coords = this._routeCoords || DrivingView?.routeCoords || [];
-    const show = this.active || this._nationalActive || (this._blend || 0) > 0.08;
-    if (!coords.length || !show) {
-      this._syncDeliveryRoutes();
-      return;
-    }
-    const latlngs = coords.map(c => [c.lat, c.lng]);
-    this._route = L.polyline(latlngs, {
-      color: (AstranovTheme?.effectiveMode?.() || AstranovTheme?.mode) === 'bright' ? '#0066cc' : '#44ccff',
-      weight: 5,
-      opacity: 0.88,
-    }).addTo(this.map);
-    this._syncDeliveryRoutes();
+    const realtime = /live|real\s*time|realtime/.test(low);
+    const fast = /fast|turbo|×\s*30|x30/.test(low);
+    this.start({ realtime, speed: realtime ? 1 : (fast ? 30 : 12) });
+    return 'F13 sim started · ' + this.countdownText();
   },
 };
-window.CityMap = CityMap;
+window.StarshipFlight13 = StarshipFlight13;
 
+/* === 77-starlink-constellation.js === */
+// === STARLINK — TRUTH MODE ===
+// No analytic/fake dots around Earth. Optional live GP only if user forces "starlink live"
+// and CelesTrak succeeds; otherwise nothing is drawn.
+const StarlinkConstellation = {
+  version: '20260718-truth',
+  enabled: false,
+  maxSats: 0,
+  group: null,
+  meshes: [],
+  _elements: null,
+  _built: false,
+  _mode: 'off',
 
+  init() {
+    if (this._inited) return;
+    this._inited = true;
+    window.StarlinkConstellation = this;
+    this.enabled = false;
+    this._clearMeshes();
+    console.log('%c[Starlink] truth · no fake constellation dots', 'color:#66aaff');
+  },
+
+  ensureBuilt() {
+    // Never build analytic shells
+    this._clearMeshes();
+  },
+
+  _clearMeshes() {
+    if (this.group && this.group.parent) {
+      try { this.group.parent.remove(this.group); } catch (_) {}
+    }
+    this.group = null;
+    this.meshes = [];
+    this._elements = null;
+    this._built = false;
+    this._mode = 'off';
+  },
+
+  async refresh() {
+    return [];
+  },
+
+  update() {
+    // no-op — never paint fake sats
+    if (this.group) this.group.visible = false;
+  },
+
+  status() {
+    return { version: this.version, mode: 'off', count: 0, truth: true };
+  },
+
+  wants(text) {
+    return /starlink|constellation|leo\s*sat/i.test(String(text || ''));
+  },
+
+  async handleCli(line) {
+    this.init();
+    this._clearMeshes();
+    this.enabled = false;
+    AciCli?.print?.('No fake satellites · ISS only when live · no toy LEO dots', 'ok');
+    return 'Starlink fake dots disabled (truth mode)';
+  },
+};
+window.StarlinkConstellation = StarlinkConstellation;
+
+/* === 60-graphics.js === */
 // === ASTRANOV AI GRAPHICS ENGINE — WebGL gaming procedural layer (shader + particles) ===
 const AIGraphics = {
   atmosphere: null,
@@ -3247,7 +3797,9 @@ const AIGraphics = {
     this.addAtmosphere(this._parent, earthRadius);
     if (!lite) this.addClouds(this._parent, earthRadius);
     this.addCityLights(this._parent, earthRadius, lite ? 900 : 2200);
-    /* Space globe only — no idle waveform / neural overlay / gaming HUD scanlines */
+    this.addIdleAIEffects(this._parent, earthRadius, lite ? 40 : 80);
+    this.addNeuralField(this._parent, earthRadius);
+    this._mountGamingHud();
     if (SlumberManager?.quality?.gamingGraphics && !this._gamingLight) {
       this._gamingLight = new THREE.PointLight(0x00e8ff, 1.4, 4.5);
       this._gamingLight.position.set(0.3, 0.5, 1.2);
@@ -3258,17 +3810,21 @@ const AIGraphics = {
   },
 
   _isGaming() {
-    return !!(SlumberManager?.quality?.gamingGraphics || SlumberManager?.tier === 'gaming' || SlumberManager?.tier === 'full');
+    // Prefer high-end helper art unless device is in deep conserve
+    if (SlumberManager?.tier === 'slumber' || SlumberManager?.tier === 'conserve') return false;
+    return true;
   },
 
   _gamingVert() {
     return [
       'varying vec3 vN;',
       'varying vec3 vV;',
+      'varying vec3 vW;',
       'void main(){',
       '  vN = normalize(normalMatrix * normal);',
       '  vec4 mv = modelViewMatrix * vec4(position, 1.0);',
       '  vV = -mv.xyz;',
+      '  vW = (modelMatrix * vec4(position, 1.0)).xyz;',
       '  gl_Position = projectionMatrix * mv;',
       '}',
     ].join('\n');
@@ -3281,14 +3837,24 @@ const AIGraphics = {
       'uniform float uPulse;',
       'uniform float uRim;',
       'uniform float uAlpha;',
+      'uniform float uMetal;',
       'varying vec3 vN;',
       'varying vec3 vV;',
+      'varying vec3 vW;',
       'void main(){',
       '  vec3 n = normalize(vN);',
       '  vec3 v = normalize(vV);',
-      '  float rim = pow(1.0 - max(dot(n, v), 0.0), 2.4) * uRim;',
-      '  float pulse = 0.82 + 0.18 * sin(uPulse);',
-      '  vec3 col = uColor * 0.45 + uEmit * pulse + vec3(0.15, 0.75, 1.0) * rim;',
+      '  float ndv = max(dot(n, v), 0.0);',
+      '  float rim = pow(1.0 - ndv, 2.8) * uRim;',
+      '  float pulse = 0.78 + 0.22 * sin(uPulse * 1.7 + vW.y * 40.0);',
+      '  float fres = pow(1.0 - ndv, 3.4);',
+      '  vec3 base = uColor * (0.35 + uMetal * 0.4);',
+      '  vec3 emit = uEmit * pulse * (0.55 + fres * 0.9);',
+      '  vec3 rimCol = mix(vec3(0.2, 0.85, 1.0), uEmit, 0.45) * rim;',
+      '  vec3 col = base + emit + rimCol;',
+      '  // Hot core flecks',
+      '  float fleck = pow(max(sin(vW.x * 90.0 + uPulse) * sin(vW.z * 70.0), 0.0), 8.0) * 0.35;',
+      '  col += uEmit * fleck;',
       '  gl_FragColor = vec4(col, uAlpha);',
       '}',
     ].join('\n');
@@ -3300,14 +3866,16 @@ const AIGraphics = {
         uColor: { value: new THREE.Color(opts.color || 0x1a2838) },
         uEmit: { value: new THREE.Color(opts.emissive || 0x00c8ff) },
         uPulse: { value: 0 },
-        uRim: { value: opts.rim ?? 1.35 },
+        uRim: { value: opts.rim ?? 1.55 },
         uAlpha: { value: opts.opacity ?? 1 },
+        uMetal: { value: opts.metal ?? 0.55 },
       },
       vertexShader: this._gamingVert(),
       fragmentShader: this._gamingFrag(),
       transparent: !!opts.transparent || (opts.opacity != null && opts.opacity < 1),
       blending: opts.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
-      depthWrite: !opts.additive,
+      depthWrite: opts.additive ? false : (opts.depthWrite !== false),
+      side: opts.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
     });
     mat.userData._gaming = true;
     return mat;
@@ -3321,15 +3889,15 @@ const AIGraphics = {
   },
 
   _createJetVfx(group, side) {
-    const COUNT = 72;
+    const COUNT = this._isGaming() ? 110 : 56;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(COUNT * 3);
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const mat = new THREE.PointsMaterial({
-      size: this._isGaming() ? 0.022 : 0.014,
-      color: side < 0 ? 0x00e8ff : 0x44aaff,
+      size: this._isGaming() ? 0.028 : 0.016,
+      color: side < 0 ? 0x00f0ff : 0x66ccff,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.95,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -3395,18 +3963,76 @@ const AIGraphics = {
     return { canvas: c, tex, ctx };
   },
 
+  setThinkPulse(on) {
+    this.thinkPulse = !!on;
+    if (this.neuralLayer) this.neuralLayer.visible = !!on || this.superBatchActive;
+    if (this._hudCanvas) this._hudCanvas.style.opacity = on ? '0.5' : (this.superBatchActive ? '0.35' : '0');
+  },
+
+  showNeural(on) {
+    if (this.neuralLayer) this.neuralLayer.visible = !!on;
+  },
+
   addAtmosphere(parent, r) {
-    const geo = new THREE.SphereGeometry(r * 1.018, SlumberManager?.tier === 'full' ? 48 : 32, SlumberManager?.tier === 'full' ? 48 : 32);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0x2288cc,
+    // Remove boot-atmosphere duplicate if present
+    try {
+      const kids = parent && parent.children ? parent.children.slice() : [];
+      kids.forEach((c) => {
+        if (c.userData?.type === 'boot-atmosphere') parent.remove(c);
+      });
+    } catch (_) { /* */ }
+    const segs = SlumberManager?.tier === 'full' || SlumberManager?.tier === 'gaming' ? 64 : 48;
+    // Outer glow shell
+    const geo = new THREE.SphereGeometry(r * 1.045, segs, segs);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(0x3aa8ff) },
+        uPower: { value: 3.2 },
+        uIntensity: { value: 0.55 },
+      },
+      vertexShader: [
+        'varying vec3 vNormal;',
+        'varying vec3 vView;',
+        'void main(){',
+        '  vNormal = normalize(normalMatrix * normal);',
+        '  vec4 mv = modelViewMatrix * vec4(position,1.0);',
+        '  vView = normalize(-mv.xyz);',
+        '  gl_Position = projectionMatrix * mv;',
+        '}',
+      ].join('\n'),
+      fragmentShader: [
+        'uniform vec3 uColor;',
+        'uniform float uPower;',
+        'uniform float uIntensity;',
+        'varying vec3 vNormal;',
+        'varying vec3 vView;',
+        'void main(){',
+        '  float fres = pow(1.0 - max(dot(vNormal, vView), 0.0), uPower);',
+        '  float a = fres * uIntensity;',
+        '  gl_FragColor = vec4(uColor, a);',
+        '}',
+      ].join('\n'),
       transparent: true,
-      opacity: 0.06,
       blending: THREE.AdditiveBlending,
       side: THREE.BackSide,
       depthWrite: false,
     });
     this.atmosphere = new THREE.Mesh(geo, mat);
     parent.add(this.atmosphere);
+    // Thin bright rim
+    const rim = new THREE.Mesh(
+      new THREE.SphereGeometry(r * 1.012, segs, segs),
+      new THREE.MeshBasicMaterial({
+        color: 0x66ccff,
+        transparent: true,
+        opacity: 0.07,
+        blending: THREE.AdditiveBlending,
+        side: THREE.FrontSide,
+        depthWrite: false,
+      })
+    );
+    this._atmoRim = rim;
+    parent.add(rim);
   },
 
   addClouds(parent, r) {
@@ -3634,279 +4260,386 @@ const AIGraphics = {
     this.activeEffects.push({ points: pts, velocities: vel, life, maxLife: life });
   },
 
+  /** 2D HUD silhouette — gaming-grade mecha angel (used by overlay only) */
   _paintAstranovCharacter(ctx, w, h, frame, opts = {}) {
-    const t = frame * 0.12;
-    const flap = Math.sin(t) * 0.12;
+    const t = frame * 0.14;
     const cx = w * 0.5;
-    const cy = h * 0.46 + Math.sin(t * 0.65) * 2;
-    const cyan = opts.glow || '#00e8ff';
-    const silver = '#b8c8d8';
-    const dark = '#0a1420';
-
+    const cy = h * 0.44 + Math.sin(t * 0.7) * 3;
+    const cyan = opts.glow || '#00f0ff';
     ctx.clearRect(0, 0, w, h);
-
-    const bg = ctx.createRadialGradient(cx, cy, 8, cx, cy, w * 0.52);
-    bg.addColorStop(0, 'rgba(0,40,80,0.5)');
-    bg.addColorStop(0.6, 'rgba(0,10,24,0.25)');
+    const bg = ctx.createRadialGradient(cx, cy, 4, cx, cy, w * 0.48);
+    bg.addColorStop(0, 'rgba(0,80,140,0.55)');
+    bg.addColorStop(0.45, 'rgba(0,30,70,0.22)');
     bg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
-
-    for (let i = 0; i < 40; i++) {
-      const sx = (Math.sin(i * 2.17 + frame * 0.02) * 0.5 + 0.5) * w;
-      const sy = (Math.cos(i * 1.73) * 0.5 + 0.5) * h;
-      ctx.fillStyle = i % 5 === 0 ? 'rgba(180,220,255,0.9)' : 'rgba(100,160,255,0.45)';
-      ctx.fillRect(sx, sy, 1.2, 1.2);
-    }
-
     ctx.save();
     ctx.translate(cx, cy);
     ctx.globalCompositeOperation = 'lighter';
-
-    const drawMechWing = (side) => {
-      const s = side;
-      const tilt = flap * 8 * s;
-      const segs = [
-        [[6 * s, -4], [52 * s, -36 + tilt], [72 * s, -8 + tilt], [38 * s, 6]],
-        [[10 * s, 2], [58 * s, -18 + tilt], [78 * s, 8 + tilt], [42 * s, 14]],
-        [[14 * s, 10], [48 * s, 4 + tilt], [62 * s, 22 + tilt], [32 * s, 20]],
-      ];
-      segs.forEach((pts, i) => {
+    // Energy wings
+    [-1, 1].forEach((side) => {
+      for (let i = 0; i < 5; i++) {
+        const flap = Math.sin(t + i * 0.4) * 14 * side;
         ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        pts.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+        ctx.moveTo(8 * side, -6);
+        ctx.quadraticCurveTo(40 * side + flap, -40 - i * 6, 88 * side + flap * 0.4, -8 + i * 8);
+        ctx.quadraticCurveTo(50 * side, 10 + i * 4, 12 * side, 8);
         ctx.closePath();
-        const g = ctx.createLinearGradient(0, -30, 60 * s, 20);
-        g.addColorStop(0, silver);
-        g.addColorStop(0.45, '#4a5a6a');
-        g.addColorStop(1, dark);
-        ctx.fillStyle = g;
+        ctx.fillStyle = `rgba(0,${200 - i * 20},255,${0.22 - i * 0.03})`;
         ctx.fill();
-        ctx.strokeStyle = i === 0 ? cyan : 'rgba(0,200,255,0.35)';
-        ctx.lineWidth = i === 0 ? 1.8 : 1;
-        ctx.stroke();
-      });
-    };
-
-    if (opts.jet) {
-      const jetLen = 38 + Math.sin(t * 2) * 8;
-      [-1, 1].forEach((side) => {
-        const jg = ctx.createLinearGradient(side * 20, 8, side * 20, 8 + jetLen);
-        jg.addColorStop(0, cyan);
-        jg.addColorStop(0.4, 'rgba(0,180,255,0.55)');
-        jg.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = jg;
-        ctx.beginPath();
-        ctx.moveTo(side * 14, 10);
-        ctx.lineTo(side * 28, 10);
-        ctx.lineTo(side * 18, 10 + jetLen);
-        ctx.closePath();
-        ctx.fill();
-      });
-    }
-
-    drawMechWing(-1);
-    drawMechWing(1);
-
+      }
+    });
+    // Body silhouette
     ctx.globalCompositeOperation = 'source-over';
-    const torso = ctx.createLinearGradient(0, -20, 0, 32);
-    torso.addColorStop(0, silver);
-    torso.addColorStop(0.35, '#5a6a7a');
-    torso.addColorStop(0.7, dark);
-    torso.addColorStop(1, '#1a2838');
-    ctx.fillStyle = torso;
+    const body = ctx.createLinearGradient(0, -36, 0, 40);
+    body.addColorStop(0, '#e8f4ff');
+    body.addColorStop(0.35, '#7a90a8');
+    body.addColorStop(1, '#0a1520');
+    ctx.fillStyle = body;
     ctx.beginPath();
-    ctx.moveTo(-14, -12);
-    ctx.lineTo(14, -12);
-    ctx.lineTo(18, 8);
-    ctx.lineTo(12, 30);
-    ctx.lineTo(-12, 30);
-    ctx.lineTo(-18, 8);
+    ctx.moveTo(-16, -10);
+    ctx.lineTo(16, -10);
+    ctx.lineTo(20, 12);
+    ctx.lineTo(12, 36);
+    ctx.lineTo(-12, 36);
+    ctx.lineTo(-20, 12);
     ctx.closePath();
     ctx.fill();
     ctx.strokeStyle = cyan;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.6;
     ctx.stroke();
-
-    const corePulse = 0.75 + Math.sin(t * 1.6) * 0.25;
-    const core = ctx.createRadialGradient(0, 4, 1, 0, 4, 10);
-    core.addColorStop(0, '#ffffff');
-    core.addColorStop(0.35, cyan);
+    // Core
+    const core = ctx.createRadialGradient(0, 4, 1, 0, 4, 14);
+    core.addColorStop(0, '#fff');
+    core.addColorStop(0.4, cyan);
     core.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.globalAlpha = corePulse;
     ctx.fillStyle = core;
     ctx.beginPath();
-    ctx.arc(0, 4, 9, 0, Math.PI * 2);
+    ctx.arc(0, 4, 12, 0, Math.PI * 2);
     ctx.fill();
-    ctx.globalAlpha = 1;
-
-    [-1, 1].forEach((side) => {
-      ctx.fillStyle = '#6a7a8a';
-      ctx.fillRect(side * 10, -8, 8, 22);
-      ctx.fillStyle = cyan;
-      ctx.fillRect(side * 12, 2, 5, 8);
-      ctx.beginPath();
-      ctx.ellipse(side * 22, -2, 10, 6, side * 0.3, 0, Math.PI * 2);
-      ctx.fillStyle = '#7a8a9a';
-      ctx.fill();
-    });
-
-    const helm = ctx.createLinearGradient(-12, -34, 12, -18);
-    helm.addColorStop(0, '#e8f0ff');
-    helm.addColorStop(0.5, silver);
-    helm.addColorStop(1, '#4a5a68');
-    ctx.fillStyle = helm;
+    // Helmet
+    ctx.fillStyle = '#c8d8e8';
     ctx.beginPath();
-    ctx.ellipse(0, -24, 13, 15, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -26, 14, 16, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = cyan;
     ctx.shadowColor = cyan;
-    ctx.shadowBlur = 12;
-    ctx.fillRect(-11, -26, 22, 5);
+    ctx.shadowBlur = 16;
+    ctx.fillStyle = cyan;
+    ctx.fillRect(-12, -28, 24, 6);
     ctx.shadowBlur = 0;
-
-    ctx.fillStyle = '#5a6a78';
-    ctx.fillRect(-7, 28, 5, 14);
-    ctx.fillRect(2, 30, 5, 12);
-
+    // Halo
+    ctx.strokeStyle = 'rgba(0,240,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, -48, 22, 7, 0, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   },
 
+  /**
+   * Astranov Helper v2 — high-level gaming mecha-angel on the globe.
+   * Procedural THREE.js (no external models): energy wings, articulated armor,
+   * halo, core bloom, thruster jets, orbital micro-drones.
+   */
   _buildProceduralHumanoid(lat, lng, opts = {}) {
     const hi = this._isGaming();
-    const seg = hi ? 16 : 10;
+    const seg = hi ? 20 : 12;
     const g = new THREE.Group();
-    const torso = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.014, 0.018, 0.048, seg),
-      this._gamingMat({ color: 0x141e2a, emissive: 0x006688, rim: 1.1 }),
+    const mat = (o) => this._gamingMat(o);
+
+    // ── Root skeleton groups ──
+    const hips = new THREE.Group();
+    const spine = new THREE.Group();
+    const chestG = new THREE.Group();
+    const headG = new THREE.Group();
+    spine.add(chestG);
+    chestG.add(headG);
+    hips.add(spine);
+    g.add(hips);
+
+    // Pelvis / hip armor
+    const pelvis = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.016, 0.02, 0.018, seg),
+      mat({ color: 0x121c28, emissive: 0x004466, rim: 1.3, metal: 0.7 }),
     );
-    g.add(torso);
+    hips.add(pelvis);
+
+    // Torso stack
+    const abdomen = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.015, 0.017, 0.022, seg),
+      mat({ color: 0x1a2838, emissive: 0x006688, rim: 1.2, metal: 0.65 }),
+    );
+    abdomen.position.y = 0.018;
+    spine.add(abdomen);
+
     const chest = new THREE.Mesh(
-      new THREE.BoxGeometry(0.032, 0.028, 0.022),
-      this._gamingMat({ color: 0x2a3a4a, emissive: 0x00aacc, rim: 1.6 }),
+      new THREE.BoxGeometry(0.042, 0.036, 0.028),
+      mat({ color: 0x243848, emissive: 0x00aadd, rim: 1.85, metal: 0.75 }),
     );
-    chest.position.y = 0.008;
-    g.add(chest);
-    const head = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.014, hi ? 1 : 0),
-      this._gamingMat({ color: 0x8899aa, emissive: 0x224466, rim: 1.4 }),
+    chest.position.y = 0.04;
+    chestG.add(chest);
+
+    // Chest plate ridge
+    const plate = new THREE.Mesh(
+      new THREE.BoxGeometry(0.028, 0.03, 0.008),
+      mat({ color: 0x8899aa, emissive: 0x00e8ff, rim: 2.0, metal: 0.9 }),
     );
-    head.position.y = 0.036;
-    g.add(head);
+    plate.position.set(0, 0.04, 0.016);
+    chestG.add(plate);
+
+    // Pauldrons
+    const pauldrons = [];
+    [-1, 1].forEach((side) => {
+      const p = new THREE.Mesh(
+        new THREE.SphereGeometry(0.014, seg, seg * 0.5, 0, Math.PI * 2, 0, Math.PI * 0.55),
+        mat({ color: 0x3a4a5a, emissive: 0x0088cc, rim: 1.7, metal: 0.8 }),
+      );
+      p.position.set(side * 0.028, 0.052, 0);
+      p.rotation.z = side * -0.4;
+      chestG.add(p);
+      pauldrons.push(p);
+    });
+
+    // Energy core (multi-layer bloom)
+    const coreInner = new THREE.Mesh(
+      new THREE.SphereGeometry(0.009, seg, seg),
+      mat({ color: 0xffffff, emissive: 0xffffff, rim: 0.5, additive: true, transparent: true, opacity: 0.95 }),
+    );
+    coreInner.position.set(0, 0.038, 0.012);
+    chestG.add(coreInner);
+    const core = new THREE.Mesh(
+      new THREE.SphereGeometry(0.014, seg, seg),
+      mat({ color: 0x00e8ff, emissive: 0x00ffff, rim: 2.6, additive: true, transparent: true, opacity: 0.55 }),
+    );
+    core.position.set(0, 0.038, 0.012);
+    chestG.add(core);
+    const coreOuter = new THREE.Mesh(
+      new THREE.SphereGeometry(0.022, seg, seg),
+      mat({ color: 0x0088ff, emissive: 0x00aaff, rim: 1.2, additive: true, transparent: true, opacity: 0.18 }),
+    );
+    coreOuter.position.set(0, 0.038, 0.012);
+    chestG.add(coreOuter);
+
+    // Head + helm + visor
+    const skull = new THREE.Mesh(
+      new THREE.SphereGeometry(0.016, seg, seg),
+      mat({ color: 0xb8c8d8, emissive: 0x224466, rim: 1.5, metal: 0.85 }),
+    );
+    skull.position.y = 0.072;
+    headG.add(skull);
+    const helmCrest = new THREE.Mesh(
+      new THREE.BoxGeometry(0.006, 0.02, 0.028),
+      mat({ color: 0x00c8ff, emissive: 0x00e8ff, rim: 2.2, metal: 0.5 }),
+    );
+    helmCrest.position.set(0, 0.086, -0.002);
+    headG.add(helmCrest);
     const visor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.026, 0.008, 0.012),
-      this._gamingMat({ color: 0x001822, emissive: 0x00e8ff, rim: 2.2, transparent: true, opacity: 0.95 }),
+      new THREE.BoxGeometry(0.03, 0.01, 0.014),
+      mat({ color: 0x001018, emissive: 0x00f0ff, rim: 2.8, transparent: true, opacity: 0.92 }),
     );
-    visor.position.set(0, 0.038, 0.014);
-    g.add(visor);
+    visor.position.set(0, 0.072, 0.014);
+    headG.add(visor);
+
+    // Halo ring above head
+    const halo = new THREE.Mesh(
+      new THREE.TorusGeometry(0.028, 0.0022, 8, hi ? 48 : 24),
+      mat({ color: 0x00e8ff, emissive: 0x00ffff, rim: 2.5, additive: true, transparent: true, opacity: 0.75 }),
+    );
+    halo.position.y = 0.102;
+    halo.rotation.x = Math.PI / 2.4;
+    headG.add(halo);
+
+    // Arms (upper + lower + gauntlet)
     const arms = [];
     [-1, 1].forEach((side) => {
       const arm = new THREE.Group();
       const upper = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.005, 0.005, 0.02, seg),
-        this._gamingMat({ color: 0x4a5a6a, emissive: 0x0088aa, rim: 1.2 }),
+        new THREE.CylinderGeometry(0.006, 0.0055, 0.028, seg),
+        mat({ color: 0x4a5a6a, emissive: 0x0088aa, rim: 1.35, metal: 0.7 }),
       );
-      upper.rotation.z = side * 0.35;
+      upper.position.y = -0.012;
       arm.add(upper);
-      const gauntlet = new THREE.Mesh(
-        new THREE.BoxGeometry(0.01, 0.012, 0.01),
-        this._gamingMat({ color: 0x00c8ff, emissive: 0x00e8ff, rim: 1.8 }),
+      const lower = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.005, 0.0045, 0.024, seg),
+        mat({ color: 0x3a4a58, emissive: 0x006688, rim: 1.25, metal: 0.65 }),
       );
-      gauntlet.position.set(side * 0.014, -0.012, 0);
+      lower.position.y = -0.034;
+      arm.add(lower);
+      const gauntlet = new THREE.Mesh(
+        new THREE.BoxGeometry(0.012, 0.014, 0.012),
+        mat({ color: 0x00c8ff, emissive: 0x00e8ff, rim: 2.0, metal: 0.5 }),
+      );
+      gauntlet.position.y = -0.05;
       arm.add(gauntlet);
-      arm.position.set(side * 0.02, 0.014, 0);
-      g.add(arm);
+      // Energy blade idle
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.003, 0.028, 0.006),
+        mat({ color: 0x00ffff, emissive: 0x00ffff, rim: 2.4, additive: true, transparent: true, opacity: 0.55 }),
+      );
+      blade.position.set(side * 0.006, -0.062, 0);
+      arm.add(blade);
+      arm.position.set(side * 0.03, 0.05, 0);
+      arm.rotation.z = side * 0.25;
+      chestG.add(arm);
       arms.push(arm);
     });
+
+    // Legs
     const legs = [];
     [-1, 1].forEach((side) => {
       const leg = new THREE.Group();
       const thigh = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.005, 0.006, 0.018, seg),
-        this._gamingMat({ color: 0x3a4a58, emissive: 0x004466, rim: 1.0 }),
+        new THREE.CylinderGeometry(0.0065, 0.006, 0.026, seg),
+        mat({ color: 0x3a4a58, emissive: 0x004466, rim: 1.15, metal: 0.7 }),
       );
+      thigh.position.y = -0.014;
       leg.add(thigh);
-      const boot = new THREE.Mesh(
-        new THREE.BoxGeometry(0.011, 0.014, 0.014),
-        this._gamingMat({ color: 0x2a3848, emissive: 0x0066aa, rim: 1.3 }),
+      const shin = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0055, 0.005, 0.024, seg),
+        mat({ color: 0x2a3848, emissive: 0x003355, rim: 1.1, metal: 0.65 }),
       );
-      boot.position.y = -0.018;
+      shin.position.y = -0.038;
+      leg.add(shin);
+      const boot = new THREE.Mesh(
+        new THREE.BoxGeometry(0.014, 0.012, 0.02),
+        mat({ color: 0x1a2838, emissive: 0x0066aa, rim: 1.4, metal: 0.8 }),
+      );
+      boot.position.set(0, -0.054, 0.004);
       leg.add(boot);
-      leg.position.set(side * 0.011, -0.028, 0);
-      g.add(leg);
+      leg.position.set(side * 0.012, -0.008, 0);
+      hips.add(leg);
       legs.push(leg);
     });
+
+    // Energy wings — multi-vane, not boxes
     const wings = [];
+    const wingVanes = [];
     [-1, 1].forEach((side) => {
       const wing = new THREE.Group();
-      for (let s = 0; s < 3; s++) {
-        const segMesh = new THREE.Mesh(
-          new THREE.BoxGeometry(0.022 - s * 0.004, 0.003, 0.012 - s * 0.002),
-          this._gamingMat({
-            color: 0x6a7a8a,
-            emissive: s === 0 ? 0x00c8ff : 0x006688,
-            rim: 1.5 + s * 0.3,
-            transparent: s > 0,
-            opacity: s === 0 ? 1 : 0.82,
+      for (let s = 0; s < (hi ? 5 : 3); s++) {
+        const len = 0.055 - s * 0.007;
+        const vane = new THREE.Mesh(
+          new THREE.BoxGeometry(len, 0.0025 + s * 0.0004, 0.018 - s * 0.002),
+          mat({
+            color: 0x6a8aaa,
+            emissive: s === 0 ? 0x00e8ff : 0x0088cc,
+            rim: 1.8 + s * 0.25,
+            transparent: true,
+            opacity: 0.92 - s * 0.1,
+            metal: 0.4,
+            additive: s > 2,
           }),
         );
-        segMesh.position.set(side * (0.018 + s * 0.016), s * 0.006, -s * 0.003);
-        wing.add(segMesh);
+        vane.position.set(side * (0.02 + s * 0.018), 0.01 + s * 0.008, -0.012 - s * 0.004);
+        vane.rotation.z = side * (0.15 + s * 0.08);
+        vane.rotation.y = side * -0.12;
+        wing.add(vane);
+        wingVanes.push(vane);
+        // Soft energy membrane
+        if (s < 3) {
+          const membrane = new THREE.Mesh(
+            new THREE.PlaneGeometry(len * 0.9, 0.02),
+            mat({
+              color: 0x00aaff,
+              emissive: 0x00e8ff,
+              rim: 1.2,
+              additive: true,
+              transparent: true,
+              opacity: 0.22,
+              doubleSide: true,
+            }),
+          );
+          membrane.position.copy(vane.position);
+          membrane.position.z -= 0.002;
+          membrane.rotation.z = vane.rotation.z;
+          wing.add(membrane);
+        }
       }
-      wing.position.set(side * 0.016, 0.012, -0.01);
-      g.add(wing);
+      wing.position.set(side * 0.014, 0.045, -0.012);
+      chestG.add(wing);
       wings.push(wing);
     });
+
+    // Back thruster pods
     const thrusters = [];
     const jetVfx = [];
     [-1, 1].forEach((side) => {
       const pack = new THREE.Group();
       const housing = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.006, 0.008, 0.016, seg),
-        this._gamingMat({ color: 0x2a3848, emissive: 0x00aacc, rim: 1.4 }),
+        new THREE.CylinderGeometry(0.007, 0.01, 0.02, seg),
+        mat({ color: 0x1a2838, emissive: 0x00aacc, rim: 1.5, metal: 0.75 }),
       );
       pack.add(housing);
+      const nozzle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.005, 0.007, 0.01, seg),
+        mat({ color: 0x2a3848, emissive: 0x0088aa, rim: 1.3 }),
+      );
+      nozzle.position.y = -0.014;
+      pack.add(nozzle);
       const plume = new THREE.Mesh(
-        new THREE.ConeGeometry(0.007, hi ? 0.038 : 0.024, seg),
-        this._gamingMat({ color: 0x00e8ff, emissive: 0x00ffff, rim: 2.0, additive: true, transparent: true, opacity: 0.75 }),
+        new THREE.ConeGeometry(0.009, hi ? 0.05 : 0.032, seg),
+        mat({ color: 0x00e8ff, emissive: 0x00ffff, rim: 2.2, additive: true, transparent: true, opacity: 0.8 }),
       );
       plume.rotation.x = Math.PI;
-      plume.position.y = -0.022;
+      plume.position.y = -0.032;
       pack.add(plume);
-      pack.position.set(side * 0.014, -0.03, -0.016);
-      g.add(pack);
+      pack.position.set(side * 0.016, 0.02, -0.022);
+      chestG.add(pack);
       thrusters.push(plume);
       jetVfx.push(this._createJetVfx(g, side));
     });
-    const core = new THREE.Mesh(
-      new THREE.SphereGeometry(0.011, seg, seg),
-      this._gamingMat({ color: 0xffffff, emissive: 0x00e8ff, rim: 2.4, additive: true, transparent: true, opacity: 0.7 }),
-    );
-    core.position.y = 0.006;
-    g.add(core);
+
+    // Orbital micro-drones (gaming flair)
+    const orbiters = [];
+    if (hi) {
+      for (let i = 0; i < 3; i++) {
+        const orb = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.005, 0),
+          mat({ color: 0x00e8ff, emissive: 0x00ffff, rim: 2.0, additive: true, transparent: true, opacity: 0.85 }),
+        );
+        g.add(orb);
+        orbiters.push({ mesh: orb, phase: (i / 3) * Math.PI * 2, radius: 0.055 + i * 0.008 });
+      }
+    }
+
+    // Soft aura
     const aura = new THREE.Mesh(
-      new THREE.SphereGeometry(0.052, seg, seg),
+      new THREE.SphereGeometry(0.07, seg, seg),
       new THREE.MeshBasicMaterial({
         color: 0x00c8ff,
         transparent: true,
-        opacity: hi ? 0.12 : 0.08,
+        opacity: hi ? 0.1 : 0.07,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       }),
     );
     g.add(aura);
-    const alt = opts.alt || 1.09;
+
+    // Ground contact ring (reads as “helper present”)
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.04, 0.0018, 8, 40),
+      mat({ color: 0x00aaff, emissive: 0x00e8ff, rim: 1.5, additive: true, transparent: true, opacity: 0.45 }),
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = -0.06;
+    g.add(ring);
+
+    const alt = opts.alt || 1.095;
     const p = this._latLngToPos(lat ?? 36.44, lng ?? 28.22, alt);
     g.position.set(p.x, p.y, p.z);
     const n = new THREE.Vector3(p.x, p.y, p.z).normalize();
     g.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+
     g.userData = {
       type: 'astranov-flyer',
+      gen: 2,
       procedural3d: true,
       gaming: hi,
       name: opts.label || 'Astranov',
       lat, lng, alt,
-      wings, arms, legs, thrusters, core, aura, jetVfx,
+      wings, wingVanes, arms, legs, thrusters, core, coreInner, coreOuter,
+      aura, halo, visor, ring, orbiters, pauldrons, jetVfx,
+      hips, spine, chestG, headG,
       edition: opts.edition?.id || 'astranov',
     };
     return g;
@@ -3915,35 +4648,96 @@ const AIGraphics = {
   _animateFlyerPose(mesh, flying) {
     const ud = mesh?.userData;
     if (!ud?.procedural3d) return;
-    const t = this._flyerFrame * 0.12;
+    const t = this._flyerFrame * 0.11;
     this._pulseGamingMats(mesh, t);
-    const flap = Math.sin(t) * (flying ? 0.52 : 0.28);
+
+    // Body hover / lean
+    if (ud.spine) {
+      ud.spine.rotation.x = Math.sin(t * 0.7) * (flying ? 0.18 : 0.06) + (flying ? 0.12 : 0);
+      ud.spine.position.y = Math.sin(t * 1.4) * 0.002;
+    }
+    if (ud.headG) {
+      ud.headG.rotation.y = Math.sin(t * 0.55) * 0.15;
+      ud.headG.rotation.x = Math.sin(t * 0.4) * 0.05;
+    }
+    if (ud.halo) {
+      ud.halo.rotation.z = t * 0.9;
+      if (ud.halo.material?.uniforms?.uAlpha) {
+        ud.halo.material.uniforms.uAlpha.value = 0.55 + Math.sin(t * 2) * 0.25;
+      }
+    }
+    if (ud.visor?.material?.uniforms?.uEmit) {
+      const pulse = 0.7 + Math.sin(t * 2.2) * 0.3;
+      ud.visor.material.uniforms.uEmit.value.setRGB(0, pulse, 1);
+    }
+
+    // Wing flap + vane shimmer
+    const flap = Math.sin(t * (flying ? 1.6 : 1.0)) * (flying ? 0.62 : 0.32);
     ud.wings?.forEach((wing, i) => {
-      wing.rotation.z = (i === 0 ? 1 : -1) * flap;
-      wing.rotation.y = Math.sin(t * 0.8 + i) * 0.08;
+      const s = i === 0 ? 1 : -1;
+      wing.rotation.z = s * flap;
+      wing.rotation.y = Math.sin(t * 0.9 + i) * 0.1;
+      wing.rotation.x = flying ? -0.15 : Math.sin(t * 0.5) * 0.05;
     });
+    ud.wingVanes?.forEach((v, i) => {
+      if (v.material?.uniforms?.uAlpha) {
+        v.material.uniforms.uAlpha.value = 0.55 + Math.sin(t * 1.8 + i) * 0.25;
+      }
+    });
+
     ud.legs?.forEach((leg, i) => {
-      leg.rotation.x = Math.sin(t * 0.9 + i) * (flying ? 0.22 : 0.12);
+      leg.rotation.x = Math.sin(t * 0.95 + i) * (flying ? 0.28 : 0.1) + (flying ? 0.2 : 0);
     });
     ud.arms?.forEach((arm, i) => {
-      arm.rotation.z = (i === 0 ? 1 : -1) * (0.12 + Math.sin(t * 0.7) * 0.08);
+      const s = i === 0 ? 1 : -1;
+      arm.rotation.z = s * (0.18 + Math.sin(t * 0.75) * 0.1);
+      arm.rotation.x = flying ? -0.35 + Math.sin(t + i) * 0.08 : Math.sin(t * 0.6 + i) * 0.08;
     });
-    if (ud.core?.material?.uniforms?.uAlpha) {
-      ud.core.material.uniforms.uAlpha.value = 0.55 + Math.sin(t * 1.6) * 0.3;
-    }
+
+    // Core bloom
+    const coreA = 0.45 + Math.sin(t * 1.8) * 0.35;
+    [ud.core, ud.coreInner, ud.coreOuter].forEach((c, i) => {
+      if (!c) return;
+      if (c.material?.uniforms?.uAlpha) {
+        c.material.uniforms.uAlpha.value = coreA * (i === 0 ? 1 : i === 1 ? 1.1 : 0.45);
+      }
+      c.scale.setScalar(1 + Math.sin(t * 1.5 + i) * 0.08);
+    });
+
     if (ud.aura?.material) {
-      ud.aura.material.opacity = (flying ? 0.16 : 0.1) + Math.sin(t * 1.2) * 0.04;
-      ud.aura.scale.setScalar(1 + Math.sin(t * 0.9) * 0.06);
+      ud.aura.material.opacity = (flying ? 0.16 : 0.09) + Math.sin(t * 1.1) * 0.04;
+      ud.aura.scale.setScalar(1 + Math.sin(t * 0.85) * 0.08);
     }
+    if (ud.ring) {
+      ud.ring.rotation.z = t * 1.2;
+      if (ud.ring.material?.uniforms?.uAlpha) {
+        ud.ring.material.uniforms.uAlpha.value = flying ? 0.55 : 0.35;
+      }
+    }
+
+    // Orbiting drones
+    ud.orbiters?.forEach((o) => {
+      const a = t * 1.3 + o.phase;
+      o.mesh.position.set(
+        Math.cos(a) * o.radius,
+        0.04 + Math.sin(a * 1.7) * 0.02,
+        Math.sin(a) * o.radius * 0.7 - 0.01,
+      );
+      o.mesh.rotation.y = a;
+      o.mesh.rotation.x = a * 0.6;
+    });
+
+    // Thrusters + particle jets
     ud.thrusters?.forEach((thr, i) => {
       if (thr.material?.uniforms?.uAlpha) {
         thr.material.uniforms.uAlpha.value = flying
-          ? 0.65 + Math.sin(t * 2 + i) * 0.3
-          : 0.3 + Math.sin(t + i) * 0.12;
+          ? 0.7 + Math.sin(t * 2.4 + i) * 0.28
+          : 0.28 + Math.sin(t + i) * 0.12;
       }
-      thr.scale.y = flying ? 1.2 + Math.sin(t * 1.4 + i) * 0.45 : 0.65;
+      thr.scale.y = flying ? 1.35 + Math.sin(t * 1.6 + i) * 0.5 : 0.55 + Math.sin(t + i) * 0.1;
+      thr.scale.x = thr.scale.z = flying ? 1.1 : 0.75;
     });
-    const power = flying ? 0.014 : 0.006;
+    const power = flying ? 0.018 : 0.007;
     const worldDown = new THREE.Vector3(0, -1, 0).applyQuaternion(mesh.quaternion);
     ud.thrusters?.forEach((thr, i) => {
       const wp = new THREE.Vector3();
@@ -3951,8 +4745,11 @@ const AIGraphics = {
       this._emitJet(ud.jetVfx?.[i], wp, worldDown, power);
     });
     ud.jetVfx?.forEach((vfx) => this._tickJetVfx(vfx, flying));
+
+    // Follow light on helper
     if (this._gamingLight && mesh.position) {
-      this._gamingLight.position.copy(mesh.position).multiplyScalar(1.02);
+      this._gamingLight.position.copy(mesh.position).multiplyScalar(1.03);
+      this._gamingLight.intensity = flying ? 2.2 : 1.5;
     }
   },
 
@@ -3964,19 +4761,31 @@ const AIGraphics = {
 
   _scaleFlyer(mesh, camZ) {
     if (!mesh?.userData?.procedural3d) return;
-    const scale = Math.max(0.85, Math.min(2.4, 1.35 * (camZ / 2.2)));
+    // Larger, readable hero scale at global zoom — gaming presence
+    const base = mesh.userData.gaming ? 4.2 : 3.4;
+    const scale = Math.max(2.8, Math.min(8.5, base * (camZ / 2.15)));
     mesh.scale.setScalar(scale);
   },
 
   spawnAstranovFlyer(lat, lng, opts = {}) {
-    if (this._flyer?.parent) this._flyer.parent.remove(this._flyer);
+    if (this._flyer?.parent) {
+      try { this._flyer.parent.remove(this._flyer); } catch (_) { /* */ }
+    }
+    // Dispose old thruster particle systems lightly
+    this._flyer = null;
     const robot = this._buildProceduralHumanoid(lat, lng, opts);
     globePivot.add(robot);
     this._flyer = robot;
     window._astranovFlyer = robot;
     window._pilot = robot;
+    // Dedicated point light for cinematic helper
+    if (!this._gamingLight) {
+      this._gamingLight = new THREE.PointLight(0x00e8ff, 1.6, 5.5);
+      scene.add(this._gamingLight);
+    }
     this._animateFlyerPose(robot, false);
-    this.spawnEffect(robot.position, opts.color || 0x3d9eff, 22, 48);
+    this.spawnEffect(robot.position, opts.color || 0x00e8ff, 36, 55);
+    console.log('%c[Astranov Helper v2] gaming mecha-angel spawned', 'color:#00e8ff;font-weight:700');
     return robot;
   },
 
@@ -4076,7 +4885,7 @@ const AIGraphics = {
       p.mesh.position.copy(pt);
       const n = pt.clone().normalize();
       p.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
-      const camZ = camera?.position?.z ?? GlobeNavigate.GLOBAL_Z;
+      const camZ = camera?.position?.z ?? 2.55;
       if (p.isFlyer) {
         this._flyerFrame++;
         this._scaleFlyer(p.mesh, camZ);
@@ -4105,7 +4914,7 @@ const AIGraphics = {
     const p = this._latLngToPos(lat, lng, alt);
     this._flyer.position.set(p.x, p.y, p.z);
     this._orientFlyerOnGlobe(this._flyer, this._flyer.position);
-    const camZ = camera?.position?.z ?? GlobeNavigate.GLOBAL_Z;
+    const camZ = camera?.position?.z ?? 2.55;
     this._scaleFlyer(this._flyer, camZ);
     this._animateFlyerPose(this._flyer, false);
     if (this._flyerFrame % 18 === 0) {
@@ -4276,23 +5085,902 @@ const AIGraphics = {
 };
 
 window.AIGraphics = AIGraphics;
-AIGraphics.init(globePivot);
-
-setTimeout(() => {
-  try {
-    AIGraphics.spawnEffect(new THREE.Vector3(0.6, 0.3, 1.1), 0x00ffaa, 28, 32);
-    const u = window._lastPos || { lat: 36.44, lng: 28.22 };
-    AIGraphics.spawnAstranovFlyer(u.lat, u.lng, { label: 'Astranov' });
-  } catch (_) {}
-}, 480);
-
-window.AstranovFlyer = {
-  spawn: (lat, lng, opts) => AIGraphics.spawnAstranovFlyer(lat, lng, opts),
-  flyTo: (lat, lng, opts) => AIGraphics.flyAstranovTo(lat, lng, opts),
+// Graphics helpers only on demand — no auto-spawn flying character / orbiters (truth + perf)
+const _aiInit = () => {
+  try { AIGraphics.init(globePivot); } catch (e) { console.warn('[AIGraphics] init', e); }
 };
+setTimeout(_aiInit, window._globePerfLite ? 1500 : 600);
+
+// NO auto flyer / particle burst — was fake flying object around Earth
+window.AstranovFlyer = {
+  spawn(lat, lng, opts) {
+    try {
+      AIGraphics?.init?.(globePivot);
+      window._astranovFlyerActive = true;
+      return AIGraphics.spawnAstranovFlyer?.(lat, lng, opts);
+    } catch (_) { return null; }
+  },
+  flyTo(lat, lng, opts) {
+    try { return AIGraphics.flyAstranovTo?.(lat, lng, opts); } catch (_) { return null; }
+  },
+};
+window._astranovFlyerActive = false;
+
+/* === 90-voice-world.js === */
+// Flow
+let me = null;
+let others = [];
+let hidden = false;
 
 
 
+// Identity unified via AstranovSession (same user across devices when signed in)
+me = null;
+window.me = me;
+
+try { Voice.init(); initVoice(); } catch(e){ console.warn('Voice init skipped:', e.message); }
+
+// Silent init (no panels, all on the globe) - user can play freely first
+function initUser() {
+  AstranovSession?._applyIdentity?.();
+  if (!me) {
+    me = { id: 'guest-pending', name: 'Guest', isGuest: true };
+    window.me = me;
+  }
+  setTimeout(() => showOtherUsers(), 1500);
+
+  // No fake GPS marker — real position only after 🎯 Locate or GPS grant
+  userLocated = false;
+  window._lastPos = null;
+
+  // optional camera/storage only if ever needed later
+  // navigator.mediaDevices?.getUserMedia({video: true}).catch(() => {});
+  // navigator.storage?.persist?.();
+}
+
+try { initUser(); } catch(e){ console.warn('User init skipped:', e.message); }
+
+// Let user explore the globe freely first
+console.log('%c[Astranov] Globe UI: drag rotate · wheel/pinch zoom · tap/double-tap fly. 💻 CLI for tasks. 🎧 hands-free optional.', 'color:#00ddff');
+
+// Voice → Astranov (live transcript in input, same path as typing)
+let _voiceBusy = false;
+let _voiceGen = 0;
+let _voiceSilenceTimer = null;
+let _voiceCommitting = false;
+let _lastVoiceCommit = '';
+let _lastVoiceCommitT = 0;
+let _voiceDraft = '';
+window._handsFreeVoice = false;
+
+const VOICE_SILENCE_MS = 650;
+let _voiceLangLocked = false;
+let _recognitionPaused = false;
+let _listenRestartAt = 0;
+let _voiceResumeTimer = null;
+let _listenFailStreak = 0;
+const VOICE_RESTART_GAP_MS = 650;
+const VOICE_RESTART_GAP_MAX_MS = 5200;
+const EXECUTE_SUFFIX = /\s*(?:go(?:\s+(?:ahead|do(?:\s+it)?|now))?|do\s+it|execute(?:\s+it)?|run\s+it|send\s+it|now|πήγαινε|κάντο|καντο|εκτέλεσε|ξεκίνα|τρέξε)\s*$/i;
+const EXECUTE_PREFIX = /^(?:go(?:\s+(?:ahead|do|and))?|please\s+)?\s*/i;
+const CODERS_CANON = 'coders';
+
+function voiceEditDist(a, b) {
+  a = String(a || '').toLowerCase();
+  b = String(b || '').toLowerCase();
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const prev = new Array(n + 1);
+  const curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    for (let j = 0; j <= n; j++) prev[j] = curr[j];
+  }
+  return prev[n];
+}
+
+function cleanVoiceToken(tok) {
+  return String(tok || '').toLowerCase().replace(/[''´`]/g, '').replace(/[^\w\u0370-\u03FF]/g, '');
+}
+
+const CODERS_MISHEAR_EXACT = new Set([
+  'coders', 'coder', 'corders', 'corder', 'codas', 'coda', 'cooters', 'coaters',
+  'colders', 'colder', 'koders', 'koder', 'goders', 'gorder', 'couders', 'coderrs',
+  'codehers', 'codeus', 'quarters', 'quarter', 'κοντερ', 'κοντερς', 'κόντερ', 'κόντερς',
+  'κοντερσ', 'κοντρς', 'κοντρ', 'κοντερσ',
+]);
+
+function tokenSoundsLikeCoders(tok) {
+  const w = cleanVoiceToken(tok);
+  if (!w) return false;
+  if (CODERS_MISHEAR_EXACT.has(w)) return true;
+  if (w === 'coders' || w.startsWith('coder')) return true;
+  if (/^c[o0q][od][aeiou]*r/.test(w) && w.length <= 10) return true;
+  if (/^κ[oό]?ντ[εη]?ρ/.test(w)) return true;
+  if (w.length >= 4 && w.length <= 10 && voiceEditDist(w, 'coders') <= 2) return true;
+  if (w.length >= 4 && w.length <= 8 && voiceEditDist(w, 'coder') <= 1) return true;
+  return false;
+}
+
+function phraseIsCodersMishear(text) {
+  const core = String(text || '').trim().toLowerCase().replace(EXECUTE_SUFFIX, '').trim();
+  if (!core) return false;
+  if (tokenSoundsLikeCoders(core)) return true;
+  if (/^code\s+her?s$/i.test(core)) return true;
+  if (/^code\s+us$/i.test(core)) return true;
+  if (/^call\s+her?s$/i.test(core)) return true;
+  if (/^go\s+ders?$/i.test(core)) return true;
+  return false;
+}
+
+/** Suspect "coders" before other garbage — runs on every voice transcript */
+function fixVoiceHotwords(text) {
+  let s = String(text || '').trim();
+  if (!s) return s;
+
+  const suffix = EXECUTE_SUFFIX.test(s) ? (s.match(EXECUTE_SUFFIX)?.[0] || '') : '';
+  let core = suffix ? s.replace(EXECUTE_SUFFIX, '').trim() : s;
+
+  const summon = core.match(/^(summon)\s+(\S+)(?:\s+(.*))?$/i);
+  if (summon && tokenSoundsLikeCoders(summon[2])) {
+    core = 'summon coders' + (summon[3] ? ' ' + summon[3] : '');
+    return (core + suffix).trim();
+  }
+
+  const codeHer = core.match(/^code\s+(her|hers|us|errors?)\s+(.*)$/i);
+  if (codeHer) return (CODERS_CANON + ' ' + codeHer[2] + suffix).trim();
+
+  const parts = core.split(/\s+/);
+  const first = parts[0] || '';
+
+  if (tokenSoundsLikeCoders(first)) {
+    const rest = parts.slice(1).join(' ');
+    if (!rest || phraseIsCodersMishear(core)) return (CODERS_CANON + (rest ? ' ' + rest : '') + suffix).trim();
+    return (CODERS_CANON + (rest ? ' ' + rest : '') + suffix).trim();
+  }
+
+  if (parts.length <= 3 && phraseIsCodersMishear(core)) return (CODERS_CANON + suffix).trim();
+
+  if (parts.length >= 2 && parts.length <= 6 && tokenSoundsLikeCoders(parts[parts.length - 1])) {
+    parts[parts.length - 1] = CODERS_CANON;
+    return (parts.join(' ') + suffix).trim();
+  }
+
+  if (window.ArcangeloDialect) s = ArcangeloDialect.normalizeForRouting(s) || s;
+  return s;
+}
+window.fixVoiceHotwords = fixVoiceHotwords;
+
+function codersTranscriptScore(text) {
+  const fixed = fixVoiceHotwords(String(text || '').trim());
+  if (/^coders\b/i.test(fixed)) return 100;
+  const first = cleanVoiceToken(String(text || '').split(/\s+/)[0]);
+  if (tokenSoundsLikeCoders(first)) return 80 - voiceEditDist(first, 'coders');
+  return 0;
+}
+
+function pickVoiceTranscript(result, isFinal) {
+  let best = result[0]?.transcript || '';
+  if (isFinal && result.length > 1) {
+    let bestScore = codersTranscriptScore(best);
+    for (let j = 1; j < result.length; j++) {
+      const alt = result[j]?.transcript || '';
+      const score = codersTranscriptScore(alt);
+      if (score > bestScore) { bestScore = score; best = alt; }
+    }
+  }
+  if (!isFinal) return fixVoiceHotwords(best);
+  const repaired = ArcangeloDialect?.repairTranscript?.(best) || best;
+  ArcangeloDialect?.ingest?.(repaired);
+  return fixVoiceHotwords(repaired);
+}
+
+function defaultListenLang() {
+  const nav = (navigator.language || 'en-US').toLowerCase();
+  if (nav.startsWith('el')) return 'el-GR';
+  if (nav.startsWith('en')) return 'en-US';
+  return 'el-GR';
+}
+
+function normalizeVoiceCommand(text) {
+  let s = fixVoiceHotwords(String(text || '').trim());
+  if (!s) return '';
+  if (window.ArcangeloDialect) s = ArcangeloDialect.normalizeForRouting(s) || s;
+  if (EXECUTE_SUFFIX.test(s)) s = s.replace(EXECUTE_SUFFIX, '').trim();
+  if (/^(go|do|run|execute)\s+\S/i.test(s)) s = s.replace(EXECUTE_PREFIX, '').trim();
+  return s;
+}
+
+function voiceListenBlocked() {
+  return _recognitionPaused || Voice?.speaking || _voiceBusy || _voiceCommitting;
+}
+
+function setVoicePerfMode(on) {
+  window._voicePerfMode = !!on;
+  if (on) SlumberManager?.wake?.('voice', 'voice');
+  if (window.AIGraphics?.setVoicePerfMode) AIGraphics.setVoicePerfMode(!!on || !!window._globePerfLite);
+}
+window.setVoicePerfMode = setVoicePerfMode;
+
+function wantsExecuteNow(text) {
+  const s = String(text || '').trim();
+  if (!s) return false;
+  return EXECUTE_SUFFIX.test(s) || /^(go|do|run|execute)\s+\S/i.test(s);
+}
+
+function syncListenLang(draft) {
+  if (!recognition || !draft) return;
+  if (window._handsFreeVoice && _voiceLangLocked) return;
+  const lang = ArcangeloDialect?.listenLang?.(draft) || Voice?.detectLang?.(draft) || 'el-GR';
+  if (lang === recognition.lang) {
+    if (window._handsFreeVoice) _voiceLangLocked = true;
+    return;
+  }
+  if (window._handsFreeVoice) return;
+  recognition.lang = lang;
+  Voice.preferredListenLang = lang;
+}
+
+function pauseVoiceRecognition() {
+  if (!recognition) return;
+  _recognitionPaused = true;
+  if (!isListening) return;
+  isListening = false;
+  try { recognition.stop(); } catch (_) {}
+}
+window.pauseVoiceRecognition = pauseVoiceRecognition;
+
+function resumeVoiceRecognition() {
+  if (!_recognitionPaused) return;
+  _recognitionPaused = false;
+  if (window._handsFreeVoice || voiceSessionActive) scheduleVoiceResume();
+}
+window.resumeVoiceRecognition = resumeVoiceRecognition;
+
+function voiceInterrupt(opts) {
+  opts = opts || {};
+  _voiceGen++;
+  _voiceBusy = false;
+  _voiceCommitting = false;
+  if (_voiceResumeTimer) { clearTimeout(_voiceResumeTimer); _voiceResumeTimer = null; }
+  if (_voiceSilenceTimer) { clearTimeout(_voiceSilenceTimer); _voiceSilenceTimer = null; }
+  Voice?.flush?.();
+  GlobeDeck?.setThinking?.(false);
+  if (window._aciAbort) { try { window._aciAbort.abort(); } catch (_) {} window._aciAbort = null; }
+  if (!opts.keepHandsFree) return;
+  if (window._handsFreeVoice && !isListening) setTimeout(() => startListeningForOptions(), 80);
+}
+window.voiceInterrupt = voiceInterrupt;
+
+function syncHandsFreeBtn() {
+  const btn = document.getElementById('aci-handsfree');
+  if (!btn) return;
+  const on = voiceSessionActive || window._handsFreeVoice;
+  btn.classList.toggle('deck-btn-active', on);
+  btn.classList.toggle('listening', isListening);
+  btn.classList.toggle('speaking', !!Voice?.speaking);
+  if (isListening || on) AstranovLogo?.setMicActive?.(true);
+  else if (!Voice?.speaking) AstranovLogo?.setMicActive?.(false);
+}
+window.syncHandsFreeBtn = syncHandsFreeBtn;
+
+function openVoiceCli() {
+  const title = window.SuperCli?.title || 'Astranov';
+  GlobeDeck?.expand(title);
+  if (window.AciCli) AciCli.open = true;
+  SuperCli?.setContext?.(SuperCli.inferContext?.() || 'idle');
+  const input = document.getElementById('aci-cli-in');
+  if (input) input.classList.add('voice-live');
+  syncHandsFreeBtn();
+}
+
+function scheduleVoiceResume() {
+  if ((typeof sessionHeld !== 'undefined' && sessionHeld) || SessionHold?.isHeld?.()) return;
+  if (Voice?.speaking) return;
+  const active = voiceSessionActive || window._handsFreeVoice;
+  if (!active || !voiceEnabled || isListening || voiceListenBlocked()) return;
+  if (_voiceResumeTimer) return;
+  const wait = Math.max(
+    _listenRestartAt - Date.now(),
+    window._handsFreeVoice ? VOICE_RESTART_GAP_MS : 500
+  );
+  _voiceResumeTimer = setTimeout(() => {
+    _voiceResumeTimer = null;
+    if ((typeof sessionHeld !== 'undefined' && sessionHeld) || SessionHold?.isHeld?.()) return;
+    const on = voiceSessionActive || window._handsFreeVoice;
+    if (!on || !voiceEnabled || isListening || voiceListenBlocked()) return;
+    startListeningForOptions();
+  }, wait);
+}
+
+function scheduleSilenceSubmit(draft) {
+  if (!window._handsFreeVoice || !draft || _voiceCommitting) return;
+  if (_voiceSilenceTimer) clearTimeout(_voiceSilenceTimer);
+  _voiceSilenceTimer = setTimeout(() => {
+    _voiceSilenceTimer = null;
+    if (_voiceCommitting || _voiceBusy) return;
+    const input = document.getElementById('aci-cli-in');
+    const line = normalizeVoiceCommand((input?.value || draft).trim());
+    if (line.length >= 3) commitVoiceCommand(line);
+  }, VOICE_SILENCE_MS);
+}
+
+function commitVoiceCommand(raw) {
+  const line = normalizeVoiceCommand(raw);
+  const minLen = ArcangeloDialect?.sessionActive?.() ? 2 : 2;
+  if (!line || line.length < minLen || _voiceCommitting) return;
+  const now = Date.now();
+  const codersLine = /^coders?\b|fix\s|build\s|implement|call\s+coders?/i.test(line);
+  const dedupMs = codersLine ? 600 : 2200;
+  if (_lastVoiceCommit === line && now - _lastVoiceCommitT < dedupMs) return;
+  _lastVoiceCommit = line;
+  _lastVoiceCommitT = now;
+  _voiceCommitting = true;
+  if (_voiceSilenceTimer) { clearTimeout(_voiceSilenceTimer); _voiceSilenceTimer = null; }
+  GlobeDeck?.clearCompose?.();
+  if (!window._handsFreeVoice) {
+    isListening = false;
+    try { recognition?.stop(); } catch (_) {}
+  }
+  console.log('Voice commit:', line);
+  submitVoiceToCli(line).finally(() => { _voiceCommitting = false; });
+}
+
+function voiceWantsAciControl(line) {
+  const low = line.toLowerCase();
+  return /pitogyra|πιτογυρ|explore|εξερεύ|πήγαινε|go to|focus/.test(low)
+    || GlobeVideo?.wantsYoutube?.(line)
+    || /video\s+call|orbital\s+video|κλήση\s+βίντεο/.test(low)
+    || /telecom|sat radio|satellite radio|ασύρματος/.test(low)
+    || /αγγλικά|english|ελληνικά|greek|athenian|αθηναϊκ|spartan|σπαρτιατ|myrmidon|μυρμιδόν/.test(low)
+    || /^(remember|θυμήσου|να θυμάσαι)\b/.test(low)
+    || /evolve|neuron|collective|εξέλιξη|brain/.test(low)
+    || (/μπίρ|τσιγαρ|beer|cigar|delivery|διανομ|παραγγελ|goals|work|δουλειά/.test(low) && !/^order\b/i.test(line));
+}
+
+async function submitVoiceToCli(transcript) {
+  const line = normalizeVoiceCommand(transcript);
+  if (!line) return;
+  const gen = ++_voiceGen;
+  _voiceBusy = true;
+  openVoiceCli();
+
+  const low = line.toLowerCase();
+  if (gen !== _voiceGen) return;
+
+  if (/^(hold|pause session|quiet mode|κράτα|κρατα|σίγαση|σιγαση)\b/.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    SessionHold?.hold?.();
+    return;
+  }
+  if (/^(resume|unhold|continue|συνέχισε|συνεχισε|ξανα)\b/.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    await SessionHold?.resume?.();
+    return;
+  }
+  if ((typeof sessionHeld !== 'undefined' && sessionHeld) || SessionHold?.isHeld?.()) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('⏸ session held — say resume or tap ▶', 'dim');
+    return;
+  }
+  if (/^(stop|σταμάτα|σταματα|pause|διακοπή|quiet|σιωπή|mute)\b/.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    userIntervene();
+    return;
+  }
+  if (/^(mic|voice|handsfree|hands-free|μίκροφωνο|ακού)\b/.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    startVoiceOptions();
+    return;
+  }
+  if (AstranovPresence?.wantsKryftoStart?.(line)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('🎧 ' + line, 'cmd');
+    AstranovPresence?.startKryfto?.();
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
+  if (WillaGames?.wantsPyramid?.(line)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('🎧 ' + line, 'cmd');
+    WillaGames?.startPyramid?.();
+    return;
+  }
+  if (WillaGames?.wantsWilla?.(line)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    AciCli?.print('🎧 ' + line, 'cmd');
+    WillaGames?.startWilla?.();
+    return;
+  }
+  if (/^(dark|bright|light)\s*(theme|mode)?\b/.test(low) || /^theme\s+(dark|bright|light)\b/.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    const mode = /bright|light/.test(low) ? 'bright' : 'dark';
+    AstranovTheme?.set?.(mode);
+    AciCli?.print('theme → ' + mode, 'ok');
+    return;
+  }
+  if (/^(use\s+)?(openai|gpt|groq|gemini|deepseek|deep\s*seek|cycle|astranov)\b/i.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    const prov = /openai|gpt/.test(low) ? 'openai-mini'
+      : /groq/.test(low) ? 'groq'
+      : /gemini/.test(low) ? 'gemini'
+      : /deep/.test(low) ? 'deepseek'
+      : 'astranov';
+    AiRouter?.setProvider?.(prov);
+    LabOrbs?._syncGlyphs?.();
+    AciCli?.print('AI provider → ' + (AiRouter.current()?.label || prov), 'ok');
+    ACIControl?.reply('AI provider → ' + (AiRouter.current()?.label || prov));
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
+  if (/^summon\s+composer|^use\s+composer|^queue\s+composer/i.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    void CodersHub?.summonComposer?.();
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
+  if (/coders?\s*hub|open\s*labs?|ai\s*teams?/i.test(low)) {
+    if (gen === _voiceGen) _voiceBusy = false;
+    CodersHub?.toggle?.(true);
+    ACIControl?.reply('Coders Hub open');
+    if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    return;
+  }
+
+  try {
+    if (gen !== _voiceGen) return;
+    const low = line.toLowerCase();
+    const cliCmd = /^(order|locate|city|theme|dark|bright|batch|vhf|phone|drive|logout|login|sign|help|ping)\b/.test(low);
+    if (!cliCmd && !voiceWantsAciControl(line) && window.AciCoders) {
+      await AciCoders.chat(line, { fromVoice: true });
+    } else if (voiceWantsAciControl(line)) {
+      await ACIControl.handle(line, { fromVoice: true });
+    } else if (window.AciCli) {
+      await AciCli.run(line, { fromVoice: true });
+    } else if (window.AciCoders) {
+      await AciCoders.chat(line, { fromVoice: true });
+    } else {
+      await ACIControl.handle(line, { fromVoice: true });
+    }
+  } catch (e) {
+    if (gen === _voiceGen) AciCli?.print('voice error: ' + (e.message || e), 'err');
+  } finally {
+    if (gen === _voiceGen) {
+      _voiceBusy = false;
+      const input = document.getElementById('aci-cli-in');
+      if (input) input.classList.remove('voice-live');
+      syncHandsFreeBtn();
+      if (window._handsFreeVoice && !Voice?.speaking) scheduleVoiceResume();
+    }
+  }
+}
+window.submitVoiceToCli = submitVoiceToCli;
+window.scheduleVoiceResume = scheduleVoiceResume;
+
+function initVoice() {
+  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRec();
+    Voice.preferredListenLang = Voice.preferredListenLang || defaultListenLang();
+    recognition.lang = Voice.preferredListenLang;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = handleVoiceCommand;
+    recognition.onerror = (e) => {
+      isListening = false;
+      if (e.error === 'aborted' || _recognitionPaused) return;
+      if (e.error === 'no-speech') {
+        _listenFailStreak = Math.min(_listenFailStreak + 1, 6);
+        if (voiceSessionActive || window._handsFreeVoice) {
+          const gap = Math.min(
+            VOICE_RESTART_GAP_MS + _listenFailStreak * 400,
+            VOICE_RESTART_GAP_MAX_MS
+          );
+          _listenRestartAt = Date.now() + gap;
+          scheduleVoiceResume();
+        }
+        return;
+      }
+      console.log('Voice error', e.error || e);
+      if (e.error === 'not-allowed') {
+        ACIControl?.reply('Mic blocked — allow microphone in browser settings');
+        AciCli?.print('Mic blocked — enable microphone for astranov.eu', 'err');
+      } else if (e.error === 'network') {
+        ACIControl?.reply('Voice needs network — check connection');
+      }
+      _listenFailStreak = Math.min(_listenFailStreak + 1, 6);
+      if ((voiceSessionActive || window._handsFreeVoice) && !voiceListenBlocked()) {
+        const gap = Math.min(
+          VOICE_RESTART_GAP_MS + _listenFailStreak * 500,
+          VOICE_RESTART_GAP_MAX_MS
+        );
+        _listenRestartAt = Date.now() + gap;
+        scheduleVoiceResume();
+      }
+    };
+    recognition.onend = () => {
+      isListening = false;
+      if (_recognitionPaused || Voice?.speaking || voiceListenBlocked()) return;
+      if ((voiceSessionActive || window._handsFreeVoice) && voiceEnabled) {
+        const gap = _listenFailStreak > 0
+          ? Math.min(VOICE_RESTART_GAP_MS + _listenFailStreak * 350, VOICE_RESTART_GAP_MAX_MS)
+          : VOICE_RESTART_GAP_MS;
+        _listenRestartAt = Date.now() + gap;
+        scheduleVoiceResume();
+      }
+    };
+  } else {
+    console.log('Voice not supported, using console fallback.');
+  }
+}
+
+function startListeningForOptions() {
+  if ((typeof sessionHeld !== 'undefined' && sessionHeld) || SessionHold?.isHeld?.()) return;
+  if (!recognition || isListening || voiceListenBlocked()) return;
+  const wait = _listenRestartAt - Date.now();
+  if (wait > 0) {
+    if (!_voiceResumeTimer) {
+      _voiceResumeTimer = setTimeout(() => {
+        _voiceResumeTimer = null;
+        startListeningForOptions();
+      }, wait);
+    }
+    return;
+  }
+  openVoiceCli();
+  isListening = true;
+  syncHandsFreeBtn();
+  try {
+    recognition.start();
+    _listenFailStreak = 0;
+    _listenRestartAt = Date.now() + VOICE_RESTART_GAP_MS;
+  } catch (e) {
+    isListening = false;
+    _listenFailStreak = Math.min(_listenFailStreak + 1, 6);
+    if (e?.name === 'InvalidStateError') {
+      _listenRestartAt = Date.now() + Math.min(
+        VOICE_RESTART_GAP_MS * 2 + _listenFailStreak * 600,
+        VOICE_RESTART_GAP_MAX_MS
+      );
+      if (voiceSessionActive || window._handsFreeVoice) scheduleVoiceResume();
+    }
+  }
+}
+
+function handleVoiceCommand(event) {
+  const input = document.getElementById('aci-cli-in');
+  let interim = '';
+  let final = '';
+
+  let hasFinal = false;
+  for (let i = event.resultIndex; i < event.results.length; i++) {
+    const isFinal = !!event.results[i].isFinal;
+    const t = pickVoiceTranscript(event.results[i], isFinal);
+    if (isFinal) { final += t; hasFinal = true; }
+    else interim += t;
+  }
+
+  const draft = (final || interim).trim();
+  if (!draft) return;
+  if (Voice?.speaking && !hasFinal) return;
+
+  if (_voiceCommitting) {
+    if (input) {
+      input.value = draft;
+      input.classList.add('voice-live');
+      if (AciCli) AciCli.buffer = draft;
+      window.resizeCliInput?.(input);
+    }
+    _voiceDraft = draft;
+    return;
+  }
+  if (_voiceBusy && input) {
+    input.value = draft;
+    input.classList.add('voice-live');
+    if (AciCli) AciCli.buffer = draft;
+    window.resizeCliInput?.(input);
+    _voiceDraft = draft;
+    return;
+  }
+  if (Voice?.speaking && window._handsFreeVoice && draft.length > (_voiceDraft?.length || 0) + 8) {
+    voiceInterrupt({ keepHandsFree: true });
+  }
+  _voiceDraft = draft;
+
+  voiceSessionActive = true;
+  voiceEnabled = true;
+  syncListenLang(draft);
+  openVoiceCli();
+  if (input) {
+    input.value = draft;
+    input.classList.add('voice-live');
+    if (AciCli) AciCli.buffer = draft;
+    window.resizeCliInput?.(input);
+  }
+  syncHandsFreeBtn();
+
+  const live = (final || interim).trim();
+  if (final.trim()) {
+    if (window._handsFreeVoice) {
+      commitVoiceCommand(final.trim());
+    } else {
+      const input = document.getElementById('aci-cli-in');
+      if (input) {
+        input.value = normalizeVoiceCommand(final.trim());
+        input.classList.add('voice-live');
+        window.resizeCliInput?.(input);
+        input.focus();
+      }
+    }
+    return;
+  }
+  if (wantsExecuteNow(live)) {
+    const cmd = normalizeVoiceCommand(live);
+    if (cmd.length >= 2) commitVoiceCommand(cmd);
+    return;
+  }
+  scheduleSilenceSubmit(live);
+}
+
+function resumeListening() {
+  scheduleVoiceResume();
+}
+window.resumeListening = resumeListening;
+
+async function ensureMicPermission() {
+  if (!navigator.mediaDevices?.getUserMedia) return true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    stream.getTracks().forEach(t => t.stop());
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function startVoiceOptions() {
+  if ((typeof sessionHeld !== 'undefined' && sessionHeld) || SessionHold?.isHeld?.()) {
+    SessionHold?.resume?.();
+    return;
+  }
+  if (window._handsFreeVoice && isListening) {
+    userIntervene();
+    return;
+  }
+  if (!recognition) {
+    AciCli?.print('Voice not supported — type below or use Chrome/Safari on HTTPS', 'err');
+    ACIControl?.reply('Voice unavailable — type your message below');
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
+    document.getElementById('aci-cli-in')?.focus();
+    return;
+  }
+  Voice.flush();
+  _voiceLangLocked = false;
+  _recognitionPaused = false;
+  voiceSessionActive = true;
+  voiceEnabled = true;
+  window._handsFreeVoice = true;
+  setVoicePerfMode(true);
+  GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
+  AciCoders?.enterSession?.({ expand: true, focus: false, ping: false });
+  openVoiceCli();
+  _voiceDraft = '';
+  _lastVoiceCommit = '';
+  _listenFailStreak = 0;
+  _listenRestartAt = 0;
+  if (_voiceResumeTimer) { clearTimeout(_voiceResumeTimer); _voiceResumeTimer = null; }
+  const lang = defaultListenLang();
+  Voice.preferredListenLang = lang;
+  if (recognition) {
+    recognition.lang = lang;
+    _voiceLangLocked = true;
+  }
+  AciCli?.print('🎧 listening — speak, pause ~1s, I reply in ribbon', 'dim');
+  ACIControl?.reply('Grok listening — speak now');
+  CliRibbon?.setNotice?.('Grok listening…', 'thinking');
+  GlobeDeck?.setPreview?.('🎧 Listening — pause ~1s to send');
+  const input = document.getElementById('aci-cli-in');
+  if (input) input.placeholder = '🎧 Grok listening — pause to send';
+  AstranovSession?.push?.();
+  syncHandsFreeBtn();
+  // Mic first — never block recognition behind TTS (mobile was stuck on "listening" with no mic)
+  void ensureMicPermission().then(ok => {
+    if (!ok) {
+      AciCli?.print('Allow microphone for astranov.eu — then tap 🎧 again', 'err');
+      CliRibbon?.setNotice?.('Mic blocked — allow in browser', 'err');
+    }
+    scheduleVoiceResume();
+  });
+  const touchMobile = window.matchMedia?.('(max-width: 900px), (pointer: coarse)')?.matches;
+  if (!touchMobile && Voice?.maySpeak?.() && Voice?.shouldSpeak?.('listening')) {
+    speak('Listening.', () => {}, false);
+  }
+}
+
+function primeGrokVoice() {
+  if (window._handsFreeVoice || isListening) return;
+  const row = document.getElementById('globe-deck-input-row');
+  if (!row || row.dataset.grokPrimed) return;
+  row.dataset.grokPrimed = '1';
+  row.addEventListener('click', () => {
+    if (!window._handsFreeVoice && !isListening && !Voice?.speaking) startVoiceOptions();
+  }, { once: true, passive: true });
+}
+window.primeGrokVoice = primeGrokVoice;
+
+function stopHandsFree() {
+  window._handsFreeVoice = false;
+  voiceSessionActive = false;
+  _voiceLangLocked = false;
+  _recognitionPaused = false;
+  _listenFailStreak = 0;
+  _voiceDraft = '';
+  setVoicePerfMode(false);
+  if (_voiceResumeTimer) { clearTimeout(_voiceResumeTimer); _voiceResumeTimer = null; }
+  if (_voiceSilenceTimer) { clearTimeout(_voiceSilenceTimer); _voiceSilenceTimer = null; }
+  AstranovSession?.push?.();
+}
+window.stopHandsFree = stopHandsFree;
+
+function requestLocationIfNeeded(onLocated) {
+  if (userLocated || !navigator.geolocation) {
+    if (onLocated) onLocated();
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos => {
+    placeMe(pos.coords.latitude, pos.coords.longitude, { quiet: true, markerOnly: true });
+    window._lastPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    userLocated = true;
+    if (onLocated) onLocated();
+  }, () => {
+    if (onLocated) onLocated();
+  });
+}
+
+
+
+function placeMe(lat, lng, opts) {
+  opts = opts || {};
+  const quiet = !!opts.quiet;
+  const markerOnly = !!opts.markerOnly;
+  const shouldFly = !!opts.fly || (!markerOnly && GlobeControl?.shouldAutoFly?.());
+  if (GhostTravel?.active?.()) {
+    GhostTravel.setTruePos(lat, lng);
+    window._truePos = { lat, lng };
+    userLocated = true;
+    const g = GhostTravel.publicPos();
+    if (shouldFly && typeof flyToPoint === 'function') {
+      const pos = latLngToPos(g.lat, g.lng, 1.03);
+      flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), opts.zoom ?? (GlobeControl?.Z?.global || 2.55));
+    }
+    GhostTravel._applyVisual?.();
+    if (!quiet) FieldBrain?.pulse('location', 'ghost route · real GPS private', { role: 'client', props: { visual_truth: true } });
+    return;
+  }
+  window._lastPos = { lat, lng };
+  if (window._meMarker && window._meMarker.parent) window._meMarker.parent.remove(window._meMarker);
+  const pos = latLngToPos(lat, lng, 1.03);
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.028,8,8), new THREE.MeshBasicMaterial({color:0x3d9eff}));
+  m.position.set(pos.x,pos.y,pos.z);
+  m.userData = {type:'me', name: me ? me.name : 'You'};
+  globePivot.add(m);
+  window._meMarker = m;
+  userLocated = true;
+  GlobeEntity?.syncMe?.(lat, lng, me ? me.name : 'You');
+  if (quiet) {
+    try { MapDepict?.pulse?.(lat, lng, 0x3d9eff, 'You', 6000); } catch (_) {}
+    GlobeDeck?.setMapStatus?.('📍 ' + lat.toFixed(2) + ', ' + lng.toFixed(2));
+  } else {
+    try { MapDepict?.action?.('location', { lat, lng, detail: (typeof me !== 'undefined' && me?.name) || 'You' }); } catch (_) {}
+  }
+  if (shouldFly && typeof flyToPoint === 'function') {
+    const cz = CityLife?.CITY_ZOOM || GlobeControl?.Z?.city || 1.38;
+    const nz = GlobeControl?.Z?.national || 1.82;
+    const z = opts.zoom ?? (opts.cityDrop ? cz : nz);
+    if (ZoomTiers && !opts.cityDrop) ZoomTiers.goTo('national', true);
+    else if (ZoomTiers && opts.cityDrop) ZoomTiers.goTo('city', true);
+    flyToPoint(new THREE.Vector3(pos.x, pos.y, pos.z), z);
+    cityLevel = !!opts.cityDrop && z <= (GlobeControl?.Z?.regional || 1.65);
+    GlobeControl?.noteAutoFly?.();
+    CosmicZoom?.update?.(z);
+    CityMap?.onCamera?.(z, 'earth');
+    if (!window._globeFly) ZoomTiers?.syncFromCamZ?.(z, false);
+  }
+  if (!quiet) FieldBrain?.pulse('location', 'locate me', { role: 'client' });
+  AstranovPresence?.onMove?.(lat, lng);
+}
+
+function _gpsDeniedUi(reason) {
+  const msg = reason || 'Location denied — enable GPS in browser settings to open your city map';
+  GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
+  GlobeDeck?.showError?.(msg);
+  GlobeDeck?.setMapStatus?.(msg);
+  AciCli?.print(msg, 'err');
+  ACIControl?.reply(msg);
+  CliRibbon?.setNotice?.(msg.slice(0, 100), 'err');
+  // Trust rule: never silent-fly to Rhodes demo coords
+}
+
+function locateMe() {
+  // Prefer CityLife.safeLocate — self-contained, no undeclared deps
+  if (window.CityLife?.safeLocate) {
+    return void window.CityLife.safeLocate();
+  }
+  GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
+  GlobeDeck?.setMapStatus?.('Locating your city…');
+  GlobeControl?.engageFollow?.('locate');
+  ACIControl?.reply?.('Locating — need GPS for your city (no demo map)');
+  CliRibbon?.setNotice?.('Locating…', 'thinking');
+  if (!navigator.geolocation) {
+    _gpsDeniedUi('This browser has no geolocation — cannot open your city');
+    return;
+  }
+  if (window.CityLife?.locateAndDropIn) {
+    window.CityLife.locateAndDropIn()
+      .then((r) => {
+        if (r?.error) {
+          _gpsDeniedUi(r.message || r.error);
+          return;
+        }
+        CliRibbon?.setNotice?.('Located · city map', 'ready');
+      })
+      .catch((err) => {
+        _gpsDeniedUi(
+          err?.code === 1 || /denied/i.test(String(err?.message || err))
+            ? 'Location denied — enable GPS for this site, then tap 🎯 again'
+            : 'Location failed — check GPS / permissions, then tap 🎯 again'
+        );
+      });
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      try {
+        if (typeof enterCityView === 'function') await enterCityView(lat, lng);
+        else if (window.CityLife?.dropIn) await window.CityLife.dropIn(lat, lng, { label: 'Your city' });
+      } catch (e) {
+        _gpsDeniedUi(e?.message || 'City open failed');
+        return;
+      }
+      CliRibbon?.setNotice?.('Located · city map', 'ready');
+    },
+    () => {
+      _gpsDeniedUi('Location denied — enable GPS in browser settings');
+    },
+    { enableHighAccuracy: true, timeout: 14000, maximumAge: 30000 }
+  );
+}
+window.locateMe = locateMe;
+window.placeMe = placeMe;
+window._gpsDeniedUi = _gpsDeniedUi;
+
+function showOtherUsers() {
+  AstranovPresence?.refresh?.();
+}
+
+function toggleKryfto() {
+  return AstranovPresence?.toggleHide?.();
+}
+
+function groupOrder() {
+  console.log('%c[Order] Ζητάω pitogyra + μπίρες + τσιγάρα με drone...', 'color:#ffaa33');
+  TelemachosPilot?.runDemoDelivery?.();
+}
+
+function showPilotTelemachos() {
+  return TelemachosPilot?.showPilot?.();
+}
+
+/* === 21-super-cli-brain.js === */
 // === SUPER CLI BRAIN — full command of collective intelligence + UI ===
 Object.assign(SuperCli, {
   devMode: false,
@@ -4419,7 +6107,7 @@ Object.assign(SuperCli, {
 
   printHelp() {
     const owner = Auth?.isOwner;
-    this.out('── Astranov Command Line — brain + UI + dev ──', 'dim');
+    this.out('── Astranov — brain + UI + dev ──', 'dim');
     this.out('dev on|off · dev task <msg> · dev peers · dev deploy · dev status', 'ok');
     this.out('ui show batch|radio|vendor|youtube · ui hide · ui fly athens · ui zoom galaxy', 'ok');
     this.out('youtube <search> · watch <url> · play 2 (pick result)', 'ok');
@@ -4826,10 +6514,6 @@ Object.assign(SuperCli, {
         return { handled: true };
       }
       if (cmd === 'driver' && parts[1]) {
-        const sub = (parts[1] || '').toLowerCase();
-        if (sub === 'online' || sub === 'go' || sub === 'jobs' || sub === 'list' || sub === 'accept') {
-          return { handled: false };
-        }
         const q = parts.slice(1).join(' ').toLowerCase();
         const pool = MarketplaceComms?.state?.drivers || [];
         const hit = pool.find(d => (d.display_name || '').toLowerCase().includes(q));
@@ -4872,12 +6556,12 @@ Object.assign(SuperCli, {
         await CoinPortal?.cli?.(parts.length > 1 && cmd === 'coin' ? parts : ['coin', ...parts.slice(1)]);
         return { handled: true };
       }
-      if (cmd === 'avc') {
-        await AvcJustice?.cli?.(parts);
+      if (cmd === 'Coins') {
+        await CoinsJustice?.cli?.(parts);
         return { handled: true };
       }
       if (cmd === 'ledger' || cmd === 'justice') {
-        await AvcJustice?.cli?.(['avc', cmd, ...parts.slice(1)]);
+        await CoinsJustice?.cli?.(['Coins', cmd, ...parts.slice(1)]);
         return { handled: true };
       }
       if (cmd === 'hellenic' || cmd === 'hellas') {
@@ -4962,6 +6646,20 @@ Object.assign(SuperCli, {
         await this.devBrain(raw);
         return { handled: true };
       }
+
+      // Freeform natural language → Core Brain (local globe tools + fast AI)
+      // Critical: without this, SuperCli returns handled:false and AciCli said "unknown"
+      if (!this.isStructuredCmd(cmd)) {
+        GlobeDeck.activeTask = 'coders';
+        if (window.AstranovCoreBrain?.handle) {
+          await AstranovCoreBrain.handle(raw, opts);
+          return { handled: true, brain: true };
+        }
+        if (window.AciCoders?.handleMessage) {
+          await AciCoders.handleMessage(raw, opts);
+          return { handled: true, coders: true };
+        }
+      }
     } catch (e) {
       GlobeDeck?.setThinking(false);
       const msg = 'exec error: ' + (e.message || e);
@@ -4970,6 +6668,18 @@ Object.assign(SuperCli, {
       return { handled: true, error: msg };
     }
 
+    // Last-chance freeform (any leftover tokens)
+    if (raw.length >= 1) {
+      GlobeDeck.activeTask = 'coders';
+      if (window.AstranovCoreBrain?.handle) {
+        await AstranovCoreBrain.handle(raw, opts);
+        return { handled: true, brain: true };
+      }
+      if (window.AciCoders?.handleMessage) {
+        await AciCoders.handleMessage(raw, opts);
+        return { handled: true };
+      }
+    }
     return { handled: false };
   },
 });
@@ -4980,6 +6690,7 @@ SuperCli.init = function () {
   SuperCli.initBrain();
 };
 
+/* === 23-cli-hub.js === */
 // === CLI HUB — cloud transcripts · search users/chats · private cloud DM ===
 const CliHub = {
   _pending: [],
@@ -5276,6 +6987,7 @@ const CliHub = {
 
 window.CliHub = CliHub;
 
+/* === 24-context-truth.js === */
 // === CONTEXT TRUTH — visual mirror of auth · channel · game · compromise ===
 const ContextTruth = {
   compromised: null,
@@ -5396,7 +7108,7 @@ const ContextTruth = {
     if (!Auth?.user) {
       return { mode: 'guest', ctx: 'guest', label: 'Guest · sign in', detail: 'Not authenticated' };
     }
-    return { mode: 'cli', ctx: 'idle', label: 'CLI · central', detail: 'Astranov command line' };
+    return { mode: 'cli', ctx: 'idle', label: 'CLI · central', detail: 'Astranov' };
   },
 
   syncAuth() {
@@ -5497,6 +7209,7 @@ const ContextTruth = {
 };
 window.ContextTruth = ContextTruth;
 
+/* === 16-aci-connect.js === */
 // === ACI CONNECT — link architect to collective AI for deployment ===
 const AciConnect = {
   connected: false,
@@ -5569,10 +7282,10 @@ const AciConnect = {
 };
 window.AciConnect = AciConnect;
 
+/* === 29-delivery-pricing.js === */
 // === DELIVERY PRICING + WEATHER + GOOGLE WALLET ===
 const DeliveryPricing = {
   PLATFORM_RATE: 0.03,
-  DRIVER_GROSS_RATE: 0.15,
   BASE_DELIVERY_EUR: 3,
   BLOCK_EUR: 3,
   KM_BLOCK: 3,
@@ -5633,12 +7346,11 @@ const DeliveryPricing = {
     const deliveryEur = distanceFee + weightFee + surcharges.reduce((s, x) => s + x.eur, 0);
     const goodsEur = subtotal;
     const platformEur = Math.round((goodsEur + deliveryEur) * this.PLATFORM_RATE * 100) / 100;
-    const driverFromVendorEur = Math.round(goodsEur * this.DRIVER_GROSS_RATE * 100) / 100;
     const totalEur = Math.round((goodsEur + deliveryEur + platformEur) * 100) / 100;
-    const driverPayoutEur = Math.round((driverFromVendorEur + deliveryEur * 0.85) * 100) / 100;
+    const driverPayoutEur = Math.round(deliveryEur * 0.85 * 100) / 100;
 
     return {
-      currency: 'AVC',
+      currency: 'Coins',
       peg_eur: 1,
       km, kg,
       subtotal_eur: goodsEur,
@@ -5648,22 +7360,20 @@ const DeliveryPricing = {
       surcharges,
       platform_fee_eur: platformEur,
       platform_rate: this.PLATFORM_RATE,
-      driver_from_vendor_eur: driverFromVendorEur,
-      driver_gross_rate: this.DRIVER_GROSS_RATE,
       total_eur: totalEur,
       total_avc: totalEur,
       driver_payout_eur: driverPayoutEur,
       weather,
-      invoice_note: 'Platform 3% on all transactions · vendor pays driver 15% of gross instantly · all parties confirm realtime',
+      invoice_note: 'Monthly invoice · platform 3% · driver paid on delivery',
     };
   },
 
   formatQuote(q) {
     if (!q) return '';
-    let s = q.total_avc.toFixed(2) + ' AVC (= ' + q.total_eur.toFixed(2) + ' EUR)';
+    let s = q.total_avc.toFixed(2) + ' Coins (= ' + q.total_eur.toFixed(2) + ' EUR)';
     s += ' · delivery ' + q.delivery_eur.toFixed(2);
     if (q.surcharges?.length) s += ' · ' + q.surcharges.map(x => x.label).join(', ');
-    s += ' · platform 3% · driver 15% gross';
+    s += ' · fee 3%';
     return s;
   },
 };
@@ -5741,6 +7451,7 @@ function resizeCliInput(el) {
 }
 window.resizeCliInput = resizeCliInput;
 
+/* === 30-commerce.js === */
 // ── COMMERCE: real vendors, real menus only, smart order on globe ──
 const ORDER_ITEM_ALIASES = [
   { id: 'pita', label: 'Πιτογύρα', keys: ['πιτογυρ', 'πιτογύρα', 'pitogyra', 'pita', 'πιτο', 'gyro', 'γύρο', 'gyros', 'pitogyro'], match: /πιτο|pita|gyro|γύρο|pitogyra|pitogyro/i },
@@ -5752,135 +7463,10 @@ const ORDER_ITEM_ALIASES = [
 
 const TEAM_WIN_ITEM_IDS = new Set(['pita', 'beer', 'cigarettes', 'burger']);
 
-// === ASTRANOV CITY SHOP — virtual under-construction shop at each login city center ===
-const AstranovCityShop = {
-  LOGO: '/icon.svg',
-  _cache: new Map(),
-  _current: null,
-
-  _tags(v) {
-    let t = v?.tags;
-    if (typeof t === 'string') { try { t = JSON.parse(t); } catch { t = {}; } }
-    return (t && typeof t === 'object') ? t : {};
-  },
-
-  cityKey(city, lat, lng) {
-    const c = String(city || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return c || ('loc-' + lat.toFixed(2) + '-' + lng.toFixed(2));
-  },
-
-  async resolveCityCenter(lat, lng) {
-    const probe = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
-    if (this._cache.has(probe)) return this._cache.get(probe);
-    let out = null;
-    try {
-      const url = 'https://nominatim.openstreetmap.org/reverse?lat=' + encodeURIComponent(lat)
-        + '&lon=' + encodeURIComponent(lng) + '&format=json&addressdetails=1&zoom=10';
-      const r = await fetch(url, {
-        headers: { Accept: 'application/json', 'User-Agent': 'Astranov/1.0 (astranov.eu; city-shop)' },
-      });
-      if (r.ok) {
-        const data = await r.json();
-        const addr = data.address || {};
-        const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || data.name || 'Your city';
-        let cLat = lat;
-        let cLng = lng;
-        const bb = data.boundingbox;
-        if (bb && bb.length === 4) {
-          cLat = (parseFloat(bb[0]) + parseFloat(bb[1])) / 2;
-          cLng = (parseFloat(bb[2]) + parseFloat(bb[3])) / 2;
-        }
-        out = { lat: cLat, lng: cLng, city, cityKey: this.cityKey(city, cLat, cLng) };
-      }
-    } catch (_) {}
-    if (!out) out = { lat, lng, city: 'Your city', cityKey: this.cityKey('', lat, lng) };
-    this._cache.set(probe, out);
-    return out;
-  },
-
-  buildVendor(center) {
-    const city = center.city || 'Your city';
-    return {
-      id: 'astranov-city-' + center.cityKey,
-      name: 'Astranov Shop',
-      emoji: '🏬',
-      lat: center.lat,
-      lng: center.lng,
-      category: 'field_shop',
-      is_active: true,
-      delivery_enabled: false,
-      under_construction: true,
-      tags: {
-        profile_url: this.LOGO,
-        cover_url: this.LOGO,
-        about: 'Under Construction — Astranov marketplace opening soon in ' + city + '.',
-        construction: true,
-        city,
-      },
-      items: [],
-    };
-  },
-
-  ensureInVendorList() {
-    if (!this._current || !window.Commerce) return;
-    const v = this._current;
-    Commerce.vendors = (Commerce.vendors || []).filter(x => !String(x.id).startsWith('astranov-city-'));
-    Commerce.vendors.unshift(v);
-  },
-
-  injectCurrent() {
-    if (!this._current) return;
-    this.ensureInVendorList();
-    Commerce?.showOnGlobe?.();
-    CityMap?.syncMapPins?.();
-  },
-
-  async placeForUser(lat, lng, opts) {
-    opts = opts || {};
-    if (lat == null || lng == null) return null;
-    const center = await this.resolveCityCenter(lat, lng);
-    const prevKey = this._current?.id;
-    const vendor = this.buildVendor(center);
-    this._current = vendor;
-    try {
-      localStorage.setItem('astranov_city_shop_v1', JSON.stringify({
-        lat: center.lat, lng: center.lng, city: center.city, cityKey: center.cityKey, placedAt: Date.now(),
-      }));
-    } catch (_) {}
-    this.ensureInVendorList();
-    Commerce?.showOnGlobe?.();
-    CityMap?.syncMapPins?.();
-    const cityLabel = center.city || 'city center';
-    MapDepict?.pulse?.(center.lat, center.lng, 0x1a6fd4, 'Astranov Shop · Under Construction · ' + cityLabel, 16000);
-    GlobeDeck?.setPreview?.('🏬 Astranov Shop · Under Construction · ' + cityLabel);
-    if (opts.fly && Commerce?.flyToVendor) Commerce.flyToVendor(vendor);
-    if (prevKey !== vendor.id) {
-      AciCli?.print?.('Astranov Shop placed at ' + cityLabel + ' center · under construction', 'ok');
-    }
-    return vendor;
-  },
-
-  loadPersisted() {
-    try {
-      const raw = localStorage.getItem('astranov_city_shop_v1');
-      if (!raw) return;
-      const data = JSON.parse(raw);
-      if (data?.lat == null) return;
-      this._current = this.buildVendor(data);
-      this.ensureInVendorList();
-    } catch (_) {}
-  },
-
-  isConstructionVendor(v) {
-    return !!(v?.under_construction || this._tags(v).construction);
-  },
-};
-window.AstranovCityShop = AstranovCityShop;
-
 const DEMO_VENDORS = [
-  { id: 'demo-pitogyra', name: 'Πιτογύρα Rhodes', emoji: '🥙', lat: 36.4412, lng: 28.2225, category: 'food', is_active: true, delivery_enabled: true, tags: { cover_url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=640&h=200&fit=crop', profile_url: 'https://images.unsplash.com/photo-1529006557810-274db1b03838?w=128&h=128&fit=crop', about: 'Rhodes pitogyra · delivery 24/7 via Astranov drivers' }, items: [{ name: 'Πιτογύρα χοιρινό', price: 3.5, description: 'Classic pork gyro' }, { name: 'Μπύρα Alpha', price: 2.5, description: 'Cold 330ml' }, { name: 'Τσιγάρα Marlboro', price: 5.5 }, { name: 'Burger classic', price: 6, description: 'Beef burger meal' }] },
-  { id: 'demo-kafeneio', name: 'Kafeneio Astranov', emoji: '☕', lat: 36.4358, lng: 28.2188, category: 'cafe', is_active: true, delivery_enabled: true, tags: { cover_url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=640&h=200&fit=crop', profile_url: 'https://images.unsplash.com/photo-1511920170033-f8396924c10b?w=128&h=128&fit=crop', about: 'Greek café · frappe · beer · snacks' }, items: [{ name: 'Φραπέ', price: 2.2 }, { name: 'Μπύρα Fix', price: 2.8 }, { name: 'Νερό 500ml', price: 0.5 }] },
-  { id: 'demo-minimarket', name: 'Mini Market Kos', emoji: '🏪', lat: 36.8932, lng: 27.288, category: 'grocery', is_active: true, delivery_enabled: true, tags: { cover_url: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=640&h=200&fit=crop', profile_url: '/icon.svg', about: 'Neighborhood mini market · Kos island' }, items: [{ name: 'Μπύρα Heineken', price: 2.9 }, { name: 'Τσιγάρα Winston', price: 5.2 }, { name: 'Burger frozen', price: 4.5 }, { name: 'Νερό', price: 0.6 }] },
+  { id: 'demo-pitogyra', name: 'Πιτογύρα Rhodes', emoji: '🥙', lat: 36.4412, lng: 28.2225, category: 'food', is_active: true, delivery_enabled: true, items: [{ name: 'Πιτογύρα χοιρινό', price: 3.5 }, { name: 'Μπύρα Alpha', price: 2.5 }, { name: 'Τσιγάρα Marlboro', price: 5.5 }, { name: 'Burger classic', price: 6 }] },
+  { id: 'demo-kafeneio', name: 'Kafeneio Astranov', emoji: '☕', lat: 36.4358, lng: 28.2188, category: 'cafe', is_active: true, delivery_enabled: true, items: [{ name: 'Φραπέ', price: 2.2 }, { name: 'Μπύρα Fix', price: 2.8 }, { name: 'Νερό 500ml', price: 0.5 }] },
+  { id: 'demo-minimarket', name: 'Mini Market Kos', emoji: '🏪', lat: 36.8932, lng: 27.288, category: 'grocery', is_active: true, delivery_enabled: true, items: [{ name: 'Μπύρα Heineken', price: 2.9 }, { name: 'Τσιγάρα Winston', price: 5.2 }, { name: 'Burger frozen', price: 4.5 }, { name: 'Νερό', price: 0.6 }] },
 ];
 
 const Commerce = {
@@ -5913,7 +7499,6 @@ const Commerce = {
       if (m) return m;
       return GhostTravel.publicPos?.() || { lat: 36.4239, lng: 28.2245 };
     }
-    if (window._clientDelivery?.lat != null) return { lat: window._clientDelivery.lat, lng: window._clientDelivery.lng };
     if (userLocated && window._lastPos) return { lat: window._lastPos.lat, lng: window._lastPos.lng };
     return { lat: 36.4239, lng: 28.2245 };
   },
@@ -5924,176 +7509,36 @@ const Commerce = {
       try { raw = JSON.parse(raw); } catch { raw = []; }
     }
     const items = Array.isArray(raw) ? raw.filter(i => i && i.name) : [];
-    return items.map(i => ({
-      ...i,
-      image: i.image || i.photo || i.imageUrl || (typeof resolveMenuItemPhoto === 'function' ? resolveMenuItemPhoto(i) : ''),
-      price: Number(i.price) || 0,
-    }));
+    return items;
   },
 
   _normalizeVendor(v) {
     if (!v) return v;
-    if (v.owner_id || v.category === 'field_shop') return v;
     if (this.menuFor(v).length) return v;
-    // Never paste demo menus onto crawled OSM/Google POIs
-    const tid = String(v.id || v.osm_id || '');
-    const src = (typeof v.tags === 'object' && v.tags) ? (v.tags.profile_source || v.tags.source) : '';
-    if (/^(osm_|osm_w_|osm_r_|ggl_)/.test(tid) || /^(osm|google_places|hybrid)$/.test(String(src || ''))) {
-      return v;
-    }
     const demo = DEMO_VENDORS.find(d =>
       d.id === v.id
       || (v.name && d.name.toLowerCase().includes(String(v.name).toLowerCase().slice(0, 5)))
     );
-    if (!demo) return v;
-    const demoItems = (demo.items || []).map(di => ({
-      ...di,
-      image: di.image || (typeof resolveMenuItemPhoto === 'function' ? resolveMenuItemPhoto(di) : ''),
-    }));
-    let tags = v.tags;
-    if (typeof tags === 'string') { try { tags = JSON.parse(tags); } catch { tags = {}; } }
-    tags = { ...(demo.tags || {}), ...(tags || {}) };
-    return { ...v, items: demoItems, tags, delivery_enabled: v.delivery_enabled !== false };
+    return demo ? { ...v, items: demo.items, delivery_enabled: v.delivery_enabled !== false } : v;
   },
 
   hasMenu(vendor) {
     return this.menuFor(vendor).length > 0;
   },
 
-  async loadVendors(opts) {
-    opts = opts || {};
-    const u = (opts.lat != null && opts.lng != null)
-      ? { lat: Number(opts.lat), lng: Number(opts.lng) }
-      : this.userLatLng();
-    const radiusKm = Number(opts.radiusKm) > 0 ? Number(opts.radiusKm) : 40;
-    // Bbox filter so city maps get real crawled POIs instead of global first-80 demos
-    const dLat = radiusKm / 111;
-    const dLng = radiusKm / (111 * Math.max(0.2, Math.cos(u.lat * Math.PI / 180)));
-    const minLat = u.lat - dLat;
-    const maxLat = u.lat + dLat;
-    const minLng = u.lng - dLng;
-    const maxLng = u.lng + dLng;
-    const select = 'id,osm_id,name,emoji,lat,lng,category,items,tags,address,owner_id,is_active,delivery_enabled';
-    const qGeo = SB_URL + '/rest/v1/vendors?select=' + select
-      + '&is_active=eq.true'
-      + '&lat=gte.' + minLat + '&lat=lte.' + maxLat
-      + '&lng=gte.' + minLng + '&lng=lte.' + maxLng
-      + '&limit=150';
-    const qAll = SB_URL + '/rest/v1/vendors?select=' + select + '&is_active=eq.true&limit=100';
+  async loadVendors() {
     try {
-      let r = await fetch(qGeo, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
-      let rows = r.ok ? await r.json() : [];
-      if (!Array.isArray(rows) || !rows.length) {
-        r = await fetch(qAll, { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } });
-        rows = r.ok ? await r.json() : [];
-      }
-      this.vendors = Array.isArray(rows) ? rows : [];
-    } catch { this.vendors = []; }
-    // Keep any already-crawled client-side POIs (not yet in DB)
-    if (Array.isArray(this._crawledLocal) && this._crawledLocal.length) {
-      const ids = new Set(this.vendors.map(v => String(v.id || v.osm_id)));
-      this._crawledLocal.forEach(v => {
-        const id = String(v.id || v.osm_id);
-        if (id && !ids.has(id)) this.vendors.push(v);
+      const r = await fetch(SB_URL + '/rest/v1/vendors?select=id,name,emoji,lat,lng,category,items,is_active,delivery_enabled&is_active=eq.true&limit=80', {
+        headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
       });
-    }
-    // Mission rule: never drown real POIs in DEMO_VENDORS
-    if (Array.isArray(this.vendors) && this.vendors.length) {
-      this.vendors = this.vendors.map(v => this._normalizeVendor(v));
-      const real = this.vendors.filter(v => v && !String(v.id || '').startsWith('demo-'));
-      if (real.length >= 2) {
-        const construction = this.vendors.filter(v => AstranovCityShop?.isConstructionVendor?.(v));
-        this.vendors = real.concat(construction.filter(c => !real.some(r => r.id === c.id)));
-        this._usingDemoVendors = false;
-      }
-    }
-    if (!this.vendors.length) {
-      // Honest empty unless explicitly allowing demo (legacy / offline)
-      if (opts.allowDemo === true) {
-        this.vendors = DEMO_VENDORS.map(v => ({ ...v }));
-        this._usingDemoVendors = true;
-      } else {
-        this.vendors = [];
-        this._usingDemoVendors = false;
-      }
-    }
-    AstranovCityShop?.ensureInVendorList?.();
-    this.vendors.sort((a, b) => {
-      if (AstranovCityShop?.isConstructionVendor?.(a)) return -1;
-      if (AstranovCityShop?.isConstructionVendor?.(b)) return 1;
-      return this.haversineKm(u.lat, u.lng, a.lat, a.lng) - this.haversineKm(u.lat, u.lng, b.lat, b.lng);
-    });
+      this.vendors = r.ok ? await r.json() : [];
+    } catch { this.vendors = []; }
+    if (!this.vendors.length) this.vendors = DEMO_VENDORS.map(v => ({ ...v }));
+    else this.vendors = this.vendors.map(v => this._normalizeVendor(v));
+    const u = this.userLatLng();
+    this.vendors.sort((a, b) => this.haversineKm(u.lat, u.lng, a.lat, a.lng) - this.haversineKm(u.lat, u.lng, b.lat, b.lng));
     this.showOnGlobe();
     return this.vendors;
-  },
-
-  async enlistVendorAt(lat, lng, opts) {
-    opts = opts || {};
-    if (!Auth?.user) {
-      Auth?.openLoginModal?.('Sign in to list your vendor on the map');
-      return null;
-    }
-    lat = Number(lat);
-    lng = Number(lng);
-    if (!isFinite(lat) || !isFinite(lng)) return null;
-
-    window._lastPos = { lat, lng };
-    window._pendingShopLatLng = { lat, lng };
-
-    if (window.GlobeNavigate?.ensureCityAt) {
-      await GlobeNavigate.ensureCityAt(lat, lng);
-    }
-
-    const name = String(opts.name || '').trim() || Auth.user.user_metadata?.full_name || 'My shop';
-    const headers = await Auth.authHeaders();
-    let vendor = null;
-
-    try {
-      const r = await fetch(SB_URL + '/rest/v1/vendors?select=id,name,emoji,lat,lng,category,items,tags,owner_id,is_active,delivery_enabled&owner_id=eq.' + Auth.user.id + '&limit=20', { headers });
-      const owned = r.ok ? await r.json() : [];
-      vendor = owned.find(v => v.lat != null && this.haversineKm(lat, lng, v.lat, v.lng) < 0.5) || null;
-    } catch (_) {}
-
-    if (!vendor) {
-      const id = 'v-' + Auth.user.id.slice(0, 8) + '-' + Date.now().toString(36);
-      const body = {
-        id,
-        owner_id: Auth.user.id,
-        name,
-        emoji: '🏬',
-        lat,
-        lng,
-        country: 'GR',
-        city: 'field',
-        items: [],
-        tags: {},
-        is_active: true,
-        delivery_enabled: true,
-        category: opts.category || 'field_shop',
-      };
-      const ins = await fetch(SB_URL + '/rest/v1/vendors', { method: 'POST', headers, body: JSON.stringify(body) });
-      if (!ins.ok) {
-        const j = await ins.json().catch(() => ({}));
-        ACIControl?.reply?.('Vendor create failed: ' + (j.message || j.error || 'sign in & retry'));
-        AciCli?.print?.('vendor enlist failed · ' + (j.message || j.error || ''), 'err');
-        return null;
-      }
-      vendor = body;
-    }
-
-    await this.loadVendors();
-    await FieldBrain?.onAuth?.();
-    MapDepict?.pulse?.(lat, lng, 0xff8844, vendor.name, 16000);
-    GlobeEntity?.syncVendors?.(this.vendors || []);
-    MapPins?.syncGlobe?.();
-    CityMap?.syncMapPins?.();
-    FieldBrain.vendorIds = Array.from(new Set([...(FieldBrain?.vendorIds || []), vendor.id]));
-
-    const norm = this._normalizeVendor(vendor);
-    VendorMapTile?.open?.(norm, { preview: true, enlist: true, skipFly: false });
-    ACIControl?.reply?.('Vendor listed — fill menu photos & prices in the tile');
-    AciCli?.print?.('vendor enlisted · ' + norm.name + ' · + Add menu in tile', 'ok');
-    return norm;
   },
 
   async myVendors() {
@@ -6134,8 +7579,7 @@ const Commerce = {
     if (!this.vendors.length) return;
     GlobeEntity?.syncVendors?.(this.vendors);
     this.markers = [...(GlobeEntity?.entities?.values() || [])].filter(e => e.type === 'vendor').map(e => e.mesh);
-    MapDepict?.setHud?.('Καταστήματα', this.vendors.length + ' shops on globe · tap marker or deck commerce');
-    GlobeDeck?.setPreview?.(this.vendors.length + ' vendors · team · clients — tap 🏬 or marker to order');
+    MapDepict?.setHud?.('Καταστήματα', this.vendors.length + ' shops · zoom in · tap for menu');
   },
 
   initUI() {
@@ -6153,58 +7597,6 @@ const Commerce = {
     document.getElementById('vm-confirm-pay')?.addEventListener('click', () => this.confirmAndPay(false));
     document.getElementById('vm-wallet-pay')?.addEventListener('click', () => this.confirmAndPay(true));
     if (panel) panel.addEventListener('click', e => e.stopPropagation());
-    this.subscribeVendorOrders();
-  },
-
-  _vendorCh: false,
-  subscribeVendorOrders() {
-    if (this._vendorCh || !Auth?.client || !Auth?.user) return;
-    void (FieldBrain?.load?.() || Promise.resolve()).then(async () => {
-      const owned = await this.myVendors().catch(() => []);
-      const ids = [...new Set([...(FieldBrain?.vendorIds || []), ...owned.map(v => v.id)])];
-      ids.forEach((vid) => {
-        if (!vid) return;
-        const ch = Auth.client.channel('vendor-orders-' + vid);
-        ch.on('broadcast', { event: 'new_order' }, ({ payload }) => {
-          const sid = payload?.short_id || payload?.id || '';
-          AciCli?.print?.('📦 New order ' + sid + ' · tap route on globe', 'ok');
-          GlobeDeck?.setPreview?.('Vendor order ' + sid + ' · awaiting driver');
-          void MarketplaceDeliveryEngine?.refreshVendorPolygons?.(vid);
-        }).subscribe();
-      });
-      this._vendorCh = true;
-    });
-  },
-
-  async importChannelOrder(channel, payload) {
-    payload = payload || {};
-    const headers = Auth?.authHeaders ? await Auth.authHeaders() : sbHeaders();
-    const r = await fetch(SB_URL + '/functions/v1/order-intake', {
-      method: 'POST',
-      headers: { ...headers, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'channel_import',
-        channel: channel || 'custom',
-        external_id: payload.external_id || payload.externalId || ('ch-' + Date.now()),
-        vendor_id: payload.vendor_id,
-        items: payload.items,
-        calc: payload.calc,
-        delivery_lat: payload.delivery_lat,
-        delivery_lng: payload.delivery_lng,
-        delivery_address: payload.delivery_address,
-        notes: payload.notes,
-        pay_on_delivery: payload.pay_on_delivery,
-        pay_with_balance: payload.pay_with_balance,
-        preferred_driver_id: payload.preferred_driver_id,
-      }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (j.order) {
-      const vendor = this.vendors.find(v => v.id === j.order.vendor_id) || { id: j.order.vendor_id, name: j.order.vendor_name, lat: j.order.vendor_lat, lng: j.order.vendor_lng };
-      await MarketplaceDeliveryEngine?.importChannelOrder?.({ order: j.order, vendor, driver: j.driver, channel });
-      ACIControl?.reply?.('Channel ' + (channel || 'import') + ' · order ' + (j.order.short_id || j.order.id));
-    }
-    return j;
   },
 
   async buildQuote(suggestion) {
@@ -6232,7 +7624,7 @@ const Commerce = {
       + '<div class="muted">' + quote.km.toFixed(1) + ' km · ' + quote.kg + ' kg'
       + (sur ? ' · ' + sur : '')
       + (quote.weather?.bad ? ' · ⚠ weather' : '') + '</div>'
-      + '<div>Total <strong>' + quote.total_avc.toFixed(2) + ' AVC</strong> (= ' + quote.total_eur.toFixed(2) + ' EUR) · <a href="https://coin.astranov.eu" target="_blank" rel="noopener" style="color:#e8c547">coin.astranov.eu</a> · work-mint ledger</div>';
+      + '<div>Total <strong>' + quote.total_avc.toFixed(2) + ' Coins</strong> (= ' + quote.total_eur.toFixed(2) + ' EUR) · <a href="https://coin.astranov.eu" target="_blank" rel="noopener" style="color:#e8c547">coin.astranov.eu</a> · work-mint ledger</div>';
     if (walletBtn) {
       walletBtn.style.display = GoogleWalletPay?.supported?.() ? 'block' : 'none';
       walletBtn.textContent = 'Google Wallet · ' + quote.total_eur.toFixed(2) + '€';
@@ -6340,7 +7732,7 @@ const Commerce = {
   async fetchNearbyDrivers(lat, lng) {
     const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     try {
-      const r = await fetch(SB_URL + '/rest/v1/profiles?select=id,display_name,avatar_emoji,profile_page,field_lat,field_lng,field_seen_at&roles=cs.%5B%22driver%22%5D&field_seen_at=gte.' + since + '&field_lat=not.is.null&limit=25', {
+      const r = await fetch(SB_URL + '/rest/v1/profiles?select=id,display_name,avatar_emoji,field_lat,field_lng,field_seen_at&roles=cs.%5B%22driver%22%5D&field_seen_at=gte.' + since + '&field_lat=not.is.null&limit=25', {
         headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
       });
       const rows = r.ok ? await r.json() : [];
@@ -6349,8 +7741,18 @@ const Commerce = {
     } catch { return []; }
   },
 
+  demoDrivers(lat, lng) {
+    const u = { lat: lat ?? 36.44, lng: lng ?? 28.22 };
+    return [
+      { id: 'demo-drv-1', display_name: 'Nikos · delivery', field_lat: u.lat + 0.004, field_lng: u.lng - 0.003 },
+      { id: 'demo-drv-2', display_name: 'Elena · courier', field_lat: u.lat - 0.003, field_lng: u.lng + 0.005 },
+      { id: 'demo-drv-3', display_name: 'Alex · ride', field_lat: u.lat + 0.002, field_lng: u.lng + 0.004 },
+    ];
+  },
+
   async driversNear(lat, lng) {
-    return this.fetchNearbyDrivers(lat, lng);
+    const rows = await this.fetchNearbyDrivers(lat, lng);
+    return rows.length ? rows : this.demoDrivers(lat, lng);
   },
 
   async fetchBalance() {
@@ -6369,7 +7771,6 @@ const Commerce = {
         return this._balance;
       }
     } catch { /* */ }
-    window.AvcBalance?.render?.(this._balance ?? 0, !Auth?.user);
     return 0;
   },
 
@@ -6378,29 +7779,6 @@ const Commerce = {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-  },
-
-  _updateCompareBalance(balance, quote) {
-    const balBox = document.getElementById('vm-balance');
-    const confirmBtn = document.getElementById('vm-confirm-pay');
-    const need = quote?.total_avc ?? this._suggestion?.total ?? 0;
-    const b = balance != null ? balance : (this._balance ?? 0);
-    const ok = need <= 0 || b >= need;
-    if (balBox) {
-      balBox.innerHTML = '<div>Υπόλοιπο: <strong>' + b.toFixed(1) + ' AVC</strong>'
-        + (need ? ' · Σύνολο: <strong>' + need.toFixed(2) + ' AVC</strong>'
-          + (quote ? ' <span style="color:#9ab">(+' + (quote.delivery_eur || 0).toFixed(2) + '€ delivery · 3%)</span>' : '')
-          : '')
-        + (ok ? '' : ' · <span style="color:#ff3344">ανεπαρκές — <code>wallet recharge 50</code></span>')
-        + (!ok && need ? ' · <span style="color:#ffd633">ή πληρωμή στην παράδοση (COD)</span>' : '')
-        + '</div>';
-    }
-    if (confirmBtn && this._suggestion) {
-      confirmBtn.style.display = 'block';
-      confirmBtn.textContent = ok
-        ? 'Επιβεβαίωση & Πληρωμή · ' + need.toFixed(2) + ' AVC'
-        : 'Επιβεβαίωση · COD · ' + need.toFixed(2) + ' AVC';
-    }
   },
 
   renderCompare(matches, drivers, wants, balance) {
@@ -6424,19 +7802,16 @@ const Commerce = {
         const row = document.createElement('div');
         row.className = 'vm-match' + (i === 0 ? ' best' : '');
         const miss = m.wanted - m.matched;
-        const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' AVC').join(' · ');
-        row.innerHTML = '<div class="vm-match-head"><span>' + vendorIcon(m.vendor) + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' AVC goods</strong></div>'
-          + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#ffd633">-' + miss + '</span>' : '') + ' · +delivery</div>'
+        const detail = m.picks.map(p => p.item.name + ' ' + p.price + ' Coins').join(' · ');
+        row.innerHTML = '<div class="vm-match-head"><span>' + vendorIcon(m.vendor) + ' ' + m.vendor.name + '</span><strong>' + m.total.toFixed(1) + ' Coins</strong></div>'
+          + '<div class="vm-match-sub">' + m.km.toFixed(1) + ' km · ' + m.matched + '/' + m.wanted + ' είδη' + (miss ? ' · <span style="color:#ffd633">-' + miss + '</span>' : '') + '</div>'
           + '<div class="vm-match-items">' + detail + '</div>';
         row.onclick = () => {
           this._suggestion = m;
           matchBox.querySelectorAll('.vm-match').forEach(el => el.classList.remove('picked'));
           row.classList.add('picked');
+          if (confirmBtn) confirmBtn.textContent = 'Επιβεβαίωση & Πληρωμή · ' + m.vendor.name + ' · ' + m.total.toFixed(1) + ' Coins';
           this.flyToVendor(m.vendor);
-          this.buildQuote(m).then(q => {
-            this.renderPricing(q);
-            this._updateCompareBalance(balance, q);
-          }).catch(() => {});
         };
         if (i === 0) { row.classList.add('picked'); this._suggestion = m; }
         matchBox.appendChild(row);
@@ -6460,13 +7835,18 @@ const Commerce = {
         };
       });
     }
-    if (this._suggestion) {
-      this.buildQuote(this._suggestion).then(q => {
-        this.renderPricing(q);
-        this._updateCompareBalance(balance, q);
-      }).catch(() => this._updateCompareBalance(balance, null));
-    } else if (balBox) {
-      this._updateCompareBalance(balance, null);
+    if (balBox) {
+      const b = balance != null ? balance : 0;
+      const need = this._suggestion?.total || matches[0]?.total || 0;
+      const ok = b >= need;
+      balBox.innerHTML = '<div>Υπόλοιπο: <strong>' + b.toFixed(1) + ' Coins</strong>'
+        + (need ? ' · Παραγγελία: <strong>' + need.toFixed(1) + ' Coins</strong>' : '')
+        + (ok ? '' : ' · <span style="color:#ff3344">ανεπαρκές — recharge στο CLI</span>') + '</div>';
+    }
+    if (confirmBtn && this._suggestion) {
+      confirmBtn.style.display = 'block';
+      confirmBtn.textContent = 'Επιβεβαίωση & Πληρωμή · Coins balance';
+      this.buildQuote(this._suggestion).then(q => this.renderPricing(q)).catch(() => {});
     }
   },
 
@@ -6521,7 +7901,7 @@ const Commerce = {
       });
       const best = matches[0];
       const driverNames = drivers.slice(0, 2).map(d => d.display_name || 'Driver').join(', ');
-      const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' AVC · ' + best.km.toFixed(1) + ' km'
+      const msg = 'Πρόταση: ' + best.vendor.name + ' · ' + best.total.toFixed(1) + ' Coins · ' + best.km.toFixed(1) + ' km'
         + (driverNames ? ' · οδηγοί: ' + driverNames : ' · αναζήτηση οδηγού');
       ACIControl?.reply(msg);
       if (Voice.maySpeak()) speak(msg.slice(0, 140), () => resumeListening());
@@ -6541,7 +7921,6 @@ const Commerce = {
   },
 
   async confirmAndPay(useWallet) {
-    await LazyModules.ensure().catch(() => {});
     const sug = this._suggestion;
     if (!sug) { ACIControl?.reply('Διάλεξε πρόταση από τη λίστα'); return; }
     if (!Auth?.user) {
@@ -6556,46 +7935,31 @@ const Commerce = {
       try {
         walletPayment = await GoogleWalletPay.pay(total, sug.vendor.name + ' · Astranov', { test: location.hostname === 'localhost' });
       } catch (e) {
-        ACIControl?.reply('Wallet payment cancelled or unavailable — try AVC balance');
+        ACIControl?.reply('Wallet payment cancelled or unavailable — try Coins balance');
         return;
       }
     } else {
       const balance = await this.fetchBalance();
       if (balance < total) {
-        ACIControl?.reply('AVC balance ' + balance.toFixed(1) + ' · total ' + total.toFixed(2) + ' AVC — COD on delivery (recharge: wallet recharge 50)');
+        const msg = 'Ανεπαρκές υπόλοιπο (' + balance.toFixed(1) + ' EUR) — χρειάζεσαι ' + total.toFixed(2) + ' EUR ή Google Wallet';
+        ACIControl?.reply(msg);
+        return;
       }
     }
     const items = sug.picks.map(p => ({ name: p.item.name, qty: 1, price: p.item.price }));
     const vendor = sug.vendor;
-    const balance = await this.fetchBalance();
-    const payOnDelivery = !useWallet && balance < total;
     MapDepict?.action('pay', {
       lat: this.userLatLng().lat, lng: this.userLatLng().lng,
       vendorLat: vendor.lat, vendorLng: vendor.lng,
-      detail: vendor.name + ' · ' + total.toFixed(2) + ' EUR' + (payOnDelivery ? ' · COD' : ''),
+      detail: vendor.name + ' · ' + total.toFixed(2) + ' EUR',
     });
-    await this.placeOrder(vendor, items, 'Smart order · ' + sug.picks.map(p => p.want.label).join(' + '), !useWallet && !payOnDelivery, {
-      quote, walletPayment, payWithWallet: !!walletPayment, payOnDelivery,
+    await this.placeOrder(vendor, items, 'Smart order · ' + sug.picks.map(p => p.want.label).join(' + '), !useWallet, {
+      quote, walletPayment, payWithWallet: !!walletPayment,
     });
   },
 
   async showPicker(filter) {
-    const u0 = this.userLatLng();
-    // Mission: geo load real shops before picker (not bare global/demo)
-    try {
-      if (window.SpaceNetMission?.ensureOperatingPath) {
-        await Promise.race([
-          SpaceNetMission.ensureOperatingPath({
-            lat: u0.lat, lng: u0.lng, heavy: true, force: false, silent: true,
-          }),
-          new Promise((r) => setTimeout(r, 10000)),
-        ]);
-      } else {
-        await this.loadVendors({ lat: u0.lat, lng: u0.lng, radiusKm: 15, allowDemo: false });
-      }
-    } catch (_) {
-      try { await this.loadVendors({ lat: u0.lat, lng: u0.lng, radiusKm: 15, allowDemo: false }); } catch (__) {}
-    }
+    await this.loadVendors();
     if (!userLocated && navigator.geolocation) {
       await new Promise(resolve => {
         navigator.geolocation.getCurrentPosition(
@@ -6616,8 +7980,7 @@ const Commerce = {
     if (list) list.style.display = 'block';
     this._suggestion = null;
     const title = document.getElementById('vm-title');
-    const realN = (this.vendors || []).filter((v) => !String(v.id || '').startsWith('demo-')).length;
-    if (title) title.textContent = 'Shops · ' + realN + ' real · ' + this.vendors.length + ' listed';
+    if (title) title.textContent = 'Επίλεξε κατάστημα · ' + this.vendors.length;
 
     let rows = this.vendors;
     if (filter) {
@@ -6632,17 +7995,9 @@ const Commerce = {
     rows.slice(0, 24).forEach(v => {
       const km = this.haversineKm(u.lat, u.lng, v.lat, v.lng).toFixed(1);
       const hasMenu = this.hasMenu(v);
-      const under = AstranovCityShop?.isConstructionVendor?.(v);
-      const logo = window.MapPins?.vendorLogo?.(v) || '';
-      const icon = logo
-        ? '<img class="vm-vendor-logo" src="' + logo.replace(/"/g, '') + '" alt="" />'
-        : '<span style="font-size:22px">' + vendorIcon(v) + '</span>';
       const row = document.createElement('div');
-      row.className = 'vm-vendor' + (under ? ' vm-vendor-construction' : '');
-      const sub = under
-        ? '<span style="color:#ffd633">🚧 Under Construction · ' + (AstranovCityShop._tags(v).city || 'city center') + '</span>'
-        : (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#ffd633">χωρίς μενού</span>');
-      row.innerHTML = icon + '<div><div style="color:#3d9eff;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + sub + '</div></div>';
+      row.className = 'vm-vendor';
+      row.innerHTML = '<span style="font-size:22px">' + vendorIcon(v) + '</span><div><div style="color:#3d9eff;font-weight:600">' + v.name + '</div><div style="color:#9ab;font-size:10px">' + (v.category || 'shop') + ' · ' + km + ' km' + (hasMenu ? '' : ' · <span style="color:#ffd633">χωρίς μενού</span>') + '</div></div>';
       row.onclick = () => this.openVendor(v);
       list.appendChild(row);
     });
@@ -6651,45 +8006,8 @@ const Commerce = {
     ACIControl?.reply('Tap vendor on globe or list — ' + rows.length + ' shops · pick driver above');
   },
 
-  _renderUnderConstruction(vendor) {
-    const tags = AstranovCityShop?._tags?.(vendor) || {};
-    const city = tags.city || 'your city';
-    const logo = tags.profile_url || AstranovCityShop?.LOGO || '/icon.svg';
-    const box = document.getElementById('vm-items');
-    const empty = document.getElementById('vm-empty');
-    const placeBtn = document.getElementById('vm-place');
-    const requestBtn = document.getElementById('vm-request');
-    const drivers = document.getElementById('vm-drivers-pick');
-    if (placeBtn) placeBtn.style.display = 'none';
-    if (requestBtn) requestBtn.style.display = 'none';
-    if (drivers) { drivers.style.display = 'none'; drivers.innerHTML = ''; }
-    if (empty) empty.style.display = 'none';
-    if (box) {
-      box.innerHTML = ''
-        + '<div class="vm-construction">'
-        + '<div class="vm-construction-cover" style="background-image:url(' + logo + ')"></div>'
-        + '<img class="vm-construction-logo" src="' + logo + '" alt="Astranov" />'
-        + '<h3>Astranov Shop</h3>'
-        + '<p class="vm-construction-badge">🚧 Under Construction</p>'
-        + '<p class="vm-construction-city">City center · ' + city + '</p>'
-        + '<p class="vm-construction-about">' + (tags.about || 'Opening soon — marketplace, delivery &amp; local vendors.') + '</p>'
-        + '</div>';
-    }
-    const title = document.getElementById('vm-title');
-    if (title) title.textContent = 'Astranov Shop · Under Construction';
-    GlobeDeck?.setMapStatus('🚧 Astranov Shop · Under Construction · ' + city);
-    ACIControl?.reply('Astranov Shop is under construction at the center of ' + city + ' — opening soon.');
-  },
-
   async openVendor(vendor) {
     if (!vendor) return;
-    await LazyModules.ensure().catch(() => {});
-    const norm = this._normalizeVendor(vendor);
-    if (window.VendorMapTile?.open) {
-      VendorMapTile.open(norm);
-      this.selected = norm;
-      return;
-    }
     this.selected = vendor;
     this.cart = {};
     this._menuRequestSent = false;
@@ -6702,10 +8020,6 @@ const Commerce = {
     if (detail) detail.style.display = 'block';
     const compare = document.getElementById('vm-compare');
     if (compare) compare.style.display = 'none';
-    if (AstranovCityShop?.isConstructionVendor?.(vendor)) {
-      this._renderUnderConstruction(vendor);
-      return;
-    }
     const title = document.getElementById('vm-title');
     if (title) title.textContent = vendorIcon(vendor) + ' ' + vendor.name;
     this.renderCart();
@@ -6746,9 +8060,7 @@ const Commerce = {
       const qty = this.cart[key] || 0;
       const row = document.createElement('div');
       row.className = 'vm-item';
-      const img = item.image || item.photo || item.imageUrl || (typeof resolveMenuItemPhoto === 'function' ? resolveMenuItemPhoto(item) : '');
-      const imgHtml = img ? '<img class="vm-item-img" src="' + img.replace(/"/g, '') + '" alt="" onerror="this.src=\'/icon.svg\'" />' : '';
-      row.innerHTML = imgHtml + '<span class="vm-item-body">' + item.name + ' <small style="color:#9ab">' + (item.price || 0) + ' AVC</small></span>';
+      row.innerHTML = '<span>' + item.name + ' <small style="color:#9ab">' + (item.price || 0) + ' Coins</small></span>';
       const q = document.createElement('div');
       q.className = 'vm-qty';
       const minus = document.createElement('button');
@@ -6766,7 +8078,7 @@ const Commerce = {
       box.appendChild(row);
     });
     const total = menu.reduce((s, i) => s + (this.cart[i.name] || 0) * (i.price || 0), 0);
-    if (placeBtn) placeBtn.textContent = total > 0 ? 'Παραγγελία · ' + total.toFixed(1) + ' AVC' : 'Παραγγελία';
+    if (placeBtn) placeBtn.textContent = total > 0 ? 'Παραγγελία · ' + total.toFixed(1) + ' Coins' : 'Παραγγελία';
   },
 
   cartItems() {
@@ -6826,7 +8138,6 @@ const Commerce = {
   },
 
   async placeCart() {
-    await LazyModules.ensure().catch(() => {});
     const vendor = this.selected;
     if (!vendor) { ACIControl?.reply('Pick a vendor first'); return; }
     if (!this.hasMenu(vendor)) {
@@ -6840,32 +8151,7 @@ const Commerce = {
       Auth?.openLoginModal?.('Sign in to order');
       return;
     }
-    const del = window._clientDelivery;
-    const u = this.userLatLng();
-    const dLat = del?.lat ?? u.lat;
-    const dLng = del?.lng ?? u.lng;
-    if (!window._clientDelivery) {
-      window._clientDelivery = { lat: dLat, lng: dLng, label: 'Delivery', ts: Date.now() };
-    }
-    const subtotal = items.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0);
-    const km = this.haversineKm(dLat, dLng, vendor.lat, vendor.lng);
-    const quote = await DeliveryPricing?.quote?.({ km, kg: 3 + items.length, subtotal_eur: subtotal, lat: dLat, lng: dLng });
-    const total = quote?.total_avc ?? quote?.total_eur ?? subtotal;
-    const balance = await this.fetchBalance();
-    const payOnDelivery = balance < total;
-    const payWithBalance = !payOnDelivery;
-    if (payOnDelivery) {
-      ACIControl?.reply('AVC ' + balance.toFixed(1) + ' · total ' + Number(total).toFixed(2) + ' — COD on delivery');
-    }
-    MapDepict?.action('pay', {
-      lat: dLat, lng: dLng,
-      vendorLat: vendor.lat, vendorLng: vendor.lng,
-      detail: vendor.name + ' · ' + Number(total).toFixed(2) + ' AVC' + (payOnDelivery ? ' · COD' : ''),
-    });
-    await this.placeOrder(vendor, items, 'Cart · ' + vendor.name, payWithBalance, {
-      quote, payOnDelivery, deliveryLat: dLat, deliveryLng: dLng,
-    });
-    void window.MenuProfilePostTile?.refreshMarketplace?.();
+    await this.placeOrder(vendor, items);
   },
 
   async placeOrder(vendor, items, notes, payWithBalance, opts) {
@@ -6874,12 +8160,10 @@ const Commerce = {
       const u = this.userLatLng();
       let dLat = opts.deliveryLat ?? u.lat;
       let dLng = opts.deliveryLng ?? u.lng;
-      window._clientDelivery = { lat: dLat, lng: dLng, label: 'Delivery' };
-      try { localStorage.setItem('astranov_client_delivery', JSON.stringify(window._clientDelivery)); } catch (_) {}
       const subtotal = items.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0);
       const km = this.haversineKm(u.lat, u.lng, vendor.lat, vendor.lng);
       const quote = opts.quote || await DeliveryPricing?.quote?.({ km, kg: 3 + items.length, subtotal_eur: subtotal, lat: dLat, lng: dLng });
-      const total = quote?.total_avc ?? quote?.total_eur ?? subtotal;
+      const total = quote?.total_eur ?? subtotal;
       let orderResult = null;
       let errMsg = '';
       try {
@@ -6900,8 +8184,7 @@ const Commerce = {
               wallet_payment: opts.walletPayment || null,
               paid_via: opts.payWithWallet ? 'google_wallet' : (payWithBalance ? 'avc_balance' : null),
             },
-            pay_with_balance: !!payWithBalance && !opts.payWithWallet && !opts.payOnDelivery,
-            pay_on_delivery: !!opts.payOnDelivery,
+            pay_with_balance: !!payWithBalance && !opts.payWithWallet,
             pay_with_wallet: !!opts.payWithWallet,
             preferred_driver_id: this._preferredDriverId || null,
             target_user_id: opts.targetUserId || null,
@@ -6911,8 +8194,7 @@ const Commerce = {
         if (r.ok) orderResult = j;
         else {
           if (j.error === 'vendor_menu_empty') errMsg = 'Το κατάστημα δεν έχει μενού — ζήτησε μενού πρώτα';
-          else if (j.error === 'insufficient_balance') errMsg = 'Ανεπαρκές υπόλοιπο · έχεις ' + (j.balance || 0) + ' AVC, χρειάζεσαι ' + (j.needed || total);
-          else if (j.error === 'quote_mismatch') errMsg = 'Τιμή άλλαξε — ανανέωσε και δοκίμασε ξανά (server ' + (j.server_total || '?') + ' AVC)';
+          else if (j.error === 'insufficient_balance') errMsg = 'Ανεπαρκές υπόλοιπο · έχεις ' + (j.balance || 0) + ' Coins, χρειάζεσαι ' + (j.needed || total);
           else errMsg = j.error || j.message || ('HTTP ' + r.status);
         }
       } catch (e) { errMsg = String(e.message || e); }
@@ -6921,53 +8203,20 @@ const Commerce = {
       const driver = driverObj?.name || orderResult?.order?.driver_name || (orderResult?.seeking_driver ? 'seeking driver' : null);
       const ordId = orderResult?.order?.short_id || orderResult?.order?.id;
 
-      const clientAddr = window._clientDelivery || { lat: dLat, lng: dLng, label: 'Delivery' };
       MapDepict?.action('order', {
-        lat: clientAddr.lat, lng: clientAddr.lng,
+        lat: dLat, lng: dLng,
         vendorLat: vendor.lat, vendorLng: vendor.lng,
         detail: vendor.name + (ordId ? ' · ' + ordId : ''),
       });
-      if (orderResult?.order && window.MarketplaceDeliveryEngine) {
-        const prevMission = MarketplaceDeliveryEngine.missions?.find(m =>
-          m.active && m.order?.driver_id && m.order.driver_id === orderResult.order.driver_id && m.order.driver_accepted_at);
-        if (prevMission && orderResult.order.driver_accepted_at) {
-          await MarketplaceDeliveryEngine.addDeliveryToRoute(prevMission.id, {
-            order_id: orderResult.order.id,
-            vendor_lat: vendor.lat,
-            vendor_lng: vendor.lng,
-            vendor_name: vendor.name,
-            delivery_lat: dLat,
-            delivery_lng: dLng,
-            label: ordId || 'Stop',
-          });
-        } else {
-          void MarketplaceDeliveryEngine.onOrderPlaced(orderResult.order, vendor, driverObj);
-        }
-      } else if (window.DrivingView) {
-        const driverBase = window._driverBase || u;
-        DrivingView.setRoutePlan?.({
-          from: driverBase,
-          via: { lat: vendor.lat, lng: vendor.lng },
-          to: { lat: clientAddr.lat, lng: clientAddr.lng },
-        });
-        DrivingView.setDestination(clientAddr.lat, clientAddr.lng);
-        DrivingView.fetchRoadRoute?.().then?.(() => {
-          CityMap?.setRoute?.(DrivingView.routeCoords || []);
-        });
-      }
-      MapPins?.syncGlobe?.();
+      if (window.DrivingView) DrivingView.setDestination(vendor.lat, vendor.lng);
 
       let msg;
       if (orderResult?.order) {
-        const paid = orderResult.paid ? ' · Πληρώθηκε ' + (orderResult.paid_amount || total).toFixed(1) + ' AVC' : '';
-        const cod = orderResult.pay_on_delivery ? ' · πληρωμή στην παράδοση' : '';
+        const paid = orderResult.paid ? ' · Πληρώθηκε ' + (orderResult.paid_amount || total).toFixed(1) + ' Coins' : '';
         msg = orderResult.seeking_driver
-          ? 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + cod + '. Αναζητούμε οδηγό — πες driver jobs ή driver online.'
-          : orderResult.awaiting_accept
-          ? 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + '. Οδηγός ' + (driver || '') + ' — πρέπει να υπογράψει/αποδεχτεί για ενεργό triangle.'
+          ? 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + '. Αναζητούμε οδηγό — claim στο CLI.'
           : 'Παραγγελία ' + (ordId || '') + ' στο ' + vendor.name + paid + '. Οδηγός: ' + (driver || 'pending') + '.';
         if (orderResult.balance_after != null) this._balance = orderResult.balance_after;
-        window.AvcBalance?.render?.(this._balance, false);
         this.hideMenu();
         GlobeDeck?.completeTask('commerce');
         const nearDrivers = await this.fetchNearbyDrivers(dLat, dLng);
@@ -7000,7 +8249,6 @@ const Commerce = {
           });
         }
         OrderTracking?.onOrderPlaced?.(orderResult.order, vendor, driverObj);
-        if (vendor?.id) void MarketplaceDeliveryEngine?.refreshVendorPolygons?.(vendor.id);
       } else {
         msg = 'Παραγγελία απέτυχε: ' + (errMsg || 'server error') + '. Δοκίμασε ξανά.';
       }
@@ -7078,7 +8326,7 @@ const Commerce = {
       const items = this.menuFor(v).concat([{ name, price }]);
       const r = await this.updateVendorMenu(v.id, items);
       if (r.error) return r;
-      return { ok: true, message: 'added ' + name + ' @ ' + price + ' AVC to ' + v.name, items: items.length };
+      return { ok: true, message: 'added ' + name + ' @ ' + price + ' Coins to ' + v.name, items: items.length };
     }
     if (sub === 'clear') {
       const ref = args[1];
@@ -7127,6 +8375,7 @@ const Commerce = {
 };
 window.Commerce = Commerce;
 
+/* === 32-astranov-node.js === */
 // === ASTRANOV NODE — PWA/native install + decentralized batch work together ===
 const AstranovNode = {
   batchId: null,
@@ -7622,6 +8871,7 @@ const AstranovNode = {
 
 window.AstranovNode = AstranovNode;
 
+/* === 40-comms-news.js === */
 // ── COMMS: phone + EU PMR (real audio, no simulation) ──
 const Comms = {
   vhfActive: false,
@@ -7656,7 +8906,7 @@ const NewsFeed = {
       const titles = [...xml.matchAll(/<title>(?:<!\[CDATA\[)?([^\]<]+)/g)].map(m => m[1]).filter(t => t.length > 12 && !t.includes('BBC'));
       const max = SlumberManager?.quality?.newsMax ?? 8;
       this.items = max > 0 ? titles.slice(0, max) : [];
-    } catch { this.items = ['Astranov Collective Intelligence online', 'Globe trackball active', 'ACI ready for orders and comms']; }
+    } catch { this.items = ['Astranov online', 'Globe ready', 'Order · chat · post nearby']; }
     this.tick();
   },
   tick() {
@@ -7682,6 +8932,7 @@ const NewsFeed = {
 window.Comms = Comms;
 window.NewsFeed = NewsFeed;
 
+/* === 42-satradio.js === */
 // === PMR RADIO — REAL AUDIO ONLY (no simulation) ===
 // Browser cannot transmit 446.13125 MHz RF. Real: mic PTT + WebRTC voice mesh.
 // Physical PMR446 Ch11: tune YOUR handheld — app shows exact frequency.
@@ -7936,6 +9187,7 @@ const PmrRadio = {
 window.PmrRadio = PmrRadio;
 window.SatRadio = PmrRadio;
 
+/* === 46-super-add.js === */
 // === SUPER ADD (+) — camera video post · channels · vendor · driver · map pin ===
 const SuperAdd = {
   _stream: null,
@@ -7954,6 +9206,8 @@ const SuperAdd = {
   ],
 
   init() {
+    if (this._bound) return;
+    this._bound = true;
     document.getElementById('sa-close')?.addEventListener('click', () => this.hide());
     document.getElementById('sa-flip')?.addEventListener('click', () => this.flipCamera());
     document.getElementById('sa-record')?.addEventListener('click', () => this.toggleRecord());
@@ -7970,21 +9224,28 @@ const SuperAdd = {
         if (el) el.style.display = on ? 'block' : 'none';
       });
     });
-    document.getElementById('super-add-fab')?.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      if (window.MenuProfilePostTile?.openPlusField) window.MenuProfilePostTile.openPlusField();
-      else this.open();
-    }, { capture: true });
+    // FAB also bound in SuperCli — keep both for deferred-load safety
+    const fab = document.getElementById('super-add-fab');
+    if (fab && !fab._superAddBound) {
+      fab._superAddBound = true;
+      fab.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        this.open();
+      });
+    }
     this._syncChannelUi();
     this.loadPostsOnGlobe();
   },
 
   open() {
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+    if (!this._bound) this.init();
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
     this.showPanel();
     this.startCamera();
     SuperCli?.setContext?.('add');
     AciCli?.print('▸ super add · camera', 'cmd');
+    CliRibbon?.setNotice?.('Super Add · camera', 'ready');
+    GlobeDeck?.setPreview?.('Super Add — record or post on the globe');
   },
 
   hide() {
@@ -8152,8 +9413,23 @@ const SuperAdd = {
     if (!Auth?.user) return;
     const pos = window._lastPos || { lat: 36.44, lng: 28.22 };
     const vname = String(name || '').trim() || (Auth.user.user_metadata?.full_name || 'My shop');
-    const v = await Commerce?.enlistVendorAt?.(pos.lat, pos.lng, { name: vname, category: 'field_add' });
-    return v?.id || null;
+    const id = 'v-' + Auth.user.id.slice(0, 8) + '-' + Date.now().toString(36);
+    const headers = await Auth.authHeaders();
+    const body = {
+      id, owner_id: Auth.user.id, name: vname, emoji: '🏬',
+      lat: pos.lat, lng: pos.lng, country: 'GR', city: 'field',
+      items: [], is_active: true, delivery_enabled: true, category: 'field_add',
+    };
+    const r = await fetch(SB_URL + '/rest/v1/vendors', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      throw new Error(j.message || j.error || 'vendor create failed');
+    }
+    await FieldBrain?.onAuth?.();
+    await Commerce?.loadVendors?.();
+    MapDepict?.pulse?.(pos.lat, pos.lng, 0xff8844, vname, 16000);
+    AciCli?.print('vendor added on map · ' + vname, 'ok');
+    return body.id;
   },
 
   async pinMapDiscovery(caption, channel) {
@@ -8261,10 +9537,16 @@ const SuperAdd = {
   },
 
   async loadPostsOnGlobe() {
+    if (window._postsApiUnavailable) return;
+    if (!Auth?.user) return;
     try {
       const r = await fetch(SB_URL + '/rest/v1/posts?select=id,channel,author,url,mode,lat,lng,text&order=created_at.desc&limit=24', {
         headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY },
       });
+      if (r.status === 404) {
+        window._postsApiUnavailable = true;
+        return;
+      }
       const rows = r.ok ? await r.json() : [];
       rows.forEach(p => {
         if (p.lat == null) return;
@@ -8279,7 +9561,8 @@ const SuperAdd = {
 };
 window.SuperAdd = SuperAdd;
 
-// === YOUTUBE ON GLOBE — search + watch in Astranov Command Line deck ===
+/* === 43-youtube-globe.js === */
+// === YOUTUBE ON GLOBE — search + watch in Astranov deck ===
 const GlobeVideo = {
   _results: [],
   _currentId: null,
@@ -8390,7 +9673,11 @@ const GlobeVideo = {
     }
     this._currentId = id;
     const title = meta?.title || id;
-    await SuperSpace?.locateForMedia?.(searchQuery || title, meta);
+    try {
+      GlobeInfoTiles?.init?.();
+      await (GlobeInfoTiles?.pinVideoFromMeta?.(searchQuery || title, { ...meta, id })
+        || SuperSpace?.locateForMedia?.(searchQuery || title, { ...meta, id }));
+    } catch (_) {}
     window.MapComms?.showCloudVideo?.(id, title);
     this.showPanel(title.slice(0, 48));
     const frame = document.getElementById('yt-frame');
@@ -8473,6 +9760,7 @@ const GlobeVideo = {
 };
 window.GlobeVideo = GlobeVideo;
 
+/* === 51-celestial-nav.js === */
 // === CELESTIAL NAV — constellations visible at your position (global view) ===
 const CelestialNav = {
   SKY_R: 1.36,
@@ -8511,22 +9799,6 @@ const CelestialNav = {
     Gacrux:    { ra: 12.51943, dec: -57.11321 },
     Imai:      { ra: 12.69460, dec: -59.04143 },
     Antares:   { ra: 16.49013, dec: -26.43194, nav: true, label: 'Antares' },
-    Regulus:   { ra: 10.13956, dec: 11.96721 },
-    Denebola:  { ra: 11.81766, dec: 14.57206 },
-    Algieba:   { ra: 10.33299, dec: 19.84149 },
-    Castor:    { ra: 7.57664, dec: 31.88832 },
-    Pollux:    { ra: 7.75526, dec: 28.02624, nav: true, label: 'Pollux' },
-    Aldebaran: { ra: 4.59868, dec: 16.50931, nav: true, label: 'Aldebaran' },
-    Elnath:    { ra: 5.43825, dec: 28.60745 },
-    Vega:      { ra: 18.61563, dec: 38.78369, nav: true, label: 'Vega' },
-    Altair:    { ra: 19.84636, dec: 8.86832, nav: true, label: 'Altair' },
-    Deneb:     { ra: 20.69053, dec: 45.28034 },
-    Markab:    { ra: 23.07979, dec: 15.20531 },
-    Scheat:    { ra: 23.06289, dec: 28.08284 },
-    Shaula:    { ra: 17.56012, dec: -37.10388 },
-    Graffias:  { ra: 16.00563, dec: -19.80545 },
-    Spica:     { ra: 13.41988, dec: -11.16132, nav: true, label: 'Spica' },
-    Arcturus:  { ra: 14.26103, dec: 19.18241, nav: true, label: 'Arcturus' },
   },
 
   SETS: [
@@ -8560,41 +9832,7 @@ const CelestialNav = {
       nav: 'Long axis → south celestial pole',
       lines: [['Acrux','Mimosa'],['Mimosa','Gacrux'],['Gacrux','Imai'],['Imai','Acrux']],
     },
-    {
-      id: 'leo', name: 'Leo', short: 'Lion',
-      nav: 'Sickle asterism · spring sky',
-      lines: [['Regulus','Algieba'],['Algieba','Denebola'],['Regulus','Denebola']],
-    },
-    {
-      id: 'gem', name: 'Gemini', short: 'Twins',
-      nav: 'Castor & Pollux · winter hexagon',
-      lines: [['Castor','Pollux'],['Pollux','Betelgeuse']],
-    },
-    {
-      id: 'tau', name: 'Taurus', short: 'Bull',
-      nav: 'Aldebaran · Hyades region',
-      lines: [['Aldebaran','Elnath'],['Aldebaran','Betelgeuse']],
-    },
-    {
-      id: 'sco', name: 'Scorpius', short: 'Scorpion',
-      nav: 'Antares heart · summer south',
-      lines: [['Antares','Graffias'],['Antares','Shaula'],['Graffias','Shaula']],
-    },
-    {
-      id: 'summer', name: 'Summer Triangle', short: '△',
-      nav: 'Vega · Altair · Deneb navigation asterism',
-      lines: [['Vega','Altair'],['Altair','Deneb'],['Deneb','Vega']],
-    },
-    {
-      id: 'peg', name: 'Pegasus', short: 'Great Square',
-      nav: 'Autumn square · Markab corner',
-      lines: [['Markab','Scheat'],['Scheat','Vega']],
-    },
-    {
-      id: 'vir', name: 'Virgo',
-      nav: 'Spica harvest star · spring E',
-      lines: [['Spica','Arcturus'],['Arcturus','Regulus']],
-    },
+
   ],
 
   init() {
@@ -8711,8 +9949,7 @@ const CelestialNav = {
   isGlobalNavView(camZ) {
     const z = camZ ?? camera?.position?.z ?? 2.55;
     const level = CosmicZoom?.level || 'earth';
-    const skyLevel = level === 'earth' || level === 'orbit' || level === 'galactic';
-    return skyLevel && z >= 2.0 && z < 8.5 && !CityMap?.active;
+    return level === 'earth' && z >= 2.05 && z < 4.2 && !CityMap?.active;
   },
 
   compute(date) {
@@ -8790,9 +10027,6 @@ const CelestialNav = {
     });
 
     this._lastSky = sky;
-    if (show && window.GalacticSky?.syncGuide) {
-      window.GalacticSky.syncGuide(CosmicZoom?.level || 'earth', camZ);
-    }
   },
 
   summary() {
@@ -8800,25 +10034,34 @@ const CelestialNav = {
   },
 
   renderGuideHtml(camZ) {
-    const sky = this._lastSky || this.compute();
-    if (!sky.sets.length) {
-      return '<div class="cg-title">Celestial nav</div>'
-        + '<div class="cg-item"><i>No major constellations above ' + this.MIN_ALT + '° at your position</i></div>';
+    if (!this.isGlobalNavView(camZ)) return '';
+    const sky = this.summary();
+    const names = sky.sets.map(s => s.short || s.name).join(' · ') || 'none above horizon yet';
+    let html = '<div class="cg-title">Celestial navigation · your sky</div>';
+    html += '<div class="cg-item"><b>Sun</b> — live day/night terminator on globe</div>';
+    html += '<div class="cg-item"><b>Visible</b> — ' + names + '</div>';
+    if (sky.obs?.lat != null) {
+      html += '<div class="cg-item"><b>Observer</b> — ' + sky.obs.lat.toFixed(2) + '° · ' + sky.obs.lng.toFixed(2) + '°';
+      if (!userLocated) html += ' <i>(locate for your position)</i>';
+      html += '</div>';
     }
-    let html = '<div class="cg-title">Constellations · ' + sky.sets.length + ' above horizon</div>';
-    sky.sets.slice(0, 5).forEach(s => {
-      html += '<div class="cg-item"><b>' + (s.short || s.name) + '</b> — ' + s.nav + '</div>';
-    });
+    if (sky.obs.lat >= 5) {
+      const pol = sky.stars.Polaris;
+      if (pol?.visible) {
+        html += '<div class="cg-item"><b>Polaris</b> — ' + pol.bearing + ' · alt ' + pol.alt.toFixed(0) + '° ≈ latitude</div>';
+      }
+    }
+    if (sky.obs.lat < 5) {
+      const crux = sky.sets.find(s => s.id === 'cru');
+      if (crux) html += '<div class="cg-item"><b>Southern Cross</b> — long axis → south · ship heading reference</div>';
+    }
     sky.navStars.slice(0, 4).forEach(s => {
-      html += '<div class="cg-item"><b>' + (s.label || s.name) + '</b> ' + s.bearing + ' · alt ' + s.alt.toFixed(0) + '°</div>';
+      const tip = s.label || s.name;
+      html += '<div class="cg-item"><b>' + tip + '</b> — ' + s.bearing + ' · alt ' + s.alt.toFixed(0) + '°</div>';
     });
-    if (sky.obs.lat >= 5 && sky.stars.Polaris?.visible) {
-      html += '<div class="cg-item"><i>Polaris alt ' + sky.stars.Polaris.alt.toFixed(1) + '° ≈ latitude</i></div>';
-    }
-    const exoN = window.GalacticSky?.EXO_HOSTS?.length;
-    if (exoN && (camZ ?? 2.5) > 4.5) {
-      html += '<div class="cg-item"><i>Scroll out → ' + exoN + ' real exoplanet host stars</i></div>';
-    }
+    const uma = sky.sets.find(s => s.id === 'uma');
+    if (uma) html += '<div class="cg-item"><i>Big Dipper bowl → outer lip stars point to Polaris (north)</i></div>';
+    html += '<div class="cg-item"><i>CLI: stars · constellations · nav</i></div>';
     return html;
   },
 
@@ -8842,6 +10085,7 @@ const CelestialNav = {
 };
 window.CelestialNav = CelestialNav;
 
+/* === 53-coders-hub.js === */
 // === CODERS HUB — multi-team race board + cross-lab handoff
 const CodersHub = {
   CONTINUATION_KEY: 'astranov:job-continuation',
@@ -8867,6 +10111,7 @@ const CodersHub = {
     this.refreshJob();
     this._updateRaceBoard();
     this._maybeResumeFromQuery();
+    if (SlumberManager?.allows?.('coders_ping')) this._pingLabs();
   },
 
   _bind() {
@@ -9180,6 +10425,7 @@ const CodersHub = {
 window.CodersHub = CodersHub;
 window.openCodersHub = () => CodersHub.toggle(true);
 
+/* === 55-lab-orbs.js === */
 // === LAB ORBS — ChatGPT-lab affordances on real WebGL globe (no static Earth overlay)
 const LabOrbs = {
   ORBS: [
@@ -9337,6 +10583,7 @@ const LabOrbs = {
 
 window.LabOrbs = LabOrbs;
 
+/* === 70-routing.js === */
 // STRONG ROUTING FALLBACK PROVIDER CYCLING ENGINE
 // For safe deliveries to users & drivers (pilot/drones)
 // Cycles providers + fallbacks on risk
@@ -9423,34 +10670,19 @@ const RoutingEngine = {
   }
 };
 
-// Orbital Satellites for global connectivity visualization (illustrative, using real sphere math)
+// TRUTH: no fake orbiting balls around Earth (violated truth commitment).
+// Real sats: ISS live track + StarlinkConstellation when user asks. WebRTC uses stubs only.
 let orbitalSats = [];
 function addOrbitalSats() {
-  for (let i = 0; i < 6; i++) {
-    const sat = new THREE.Mesh(
-      new THREE.SphereGeometry(0.008, 4, 4),
-      new THREE.MeshBasicMaterial({ color: 0xaaaaff })
-    );
-    const angle = (i / 6) * Math.PI * 2;
-    sat.position.set(
-      Math.cos(angle) * 1.6,
-      Math.sin(i * 0.8) * 0.4,
-      Math.sin(angle) * 1.6
-    );
-    orbitalSats.push(sat);
-    scene.add(sat);
-  }
+  // intentionally empty — do not place decorative "planets/relays" next to Earth
+  orbitalSats = [];
 }
 function updateOrbitalSats() {
-  orbitalSats.forEach((sat, i) => {
-    const t = Date.now() * 0.0002 + i;
-    sat.position.x = Math.cos(t + i) * 1.6;
-    sat.position.z = Math.sin(t + i) * 1.6;
-    sat.position.y = Math.sin(t * 1.5 + i) * 0.3;
-  });
+  // no-op
 }
-addOrbitalSats();
+// do not call addOrbitalSats()
 
+/* === 72-driving.js === */
 // === DRIVING VIEW + OSRM ROAD ROUTING ===
 const DrivingView = {
   active: false,
@@ -9490,11 +10722,32 @@ const DrivingView = {
 
   setDestination(lat, lng) {
     this.destination = { lat, lng };
+    this.waypoints = null;
     if (this.active) this.fetchRoadRoute();
   },
 
-  setRoutePlan(plan) {
-    this._routePlan = plan || null;
+  /**
+   * Multi-stop road route via OSRM (ordered waypoints).
+   * waypoints: [{ lat, lng, label?, info?, coins? }, ...]
+   */
+  setWaypoints(waypoints, opts) {
+    opts = opts || {};
+    const list = (waypoints || [])
+      .filter((w) => w && w.lat != null && w.lng != null)
+      .map((w, i) => ({
+        lat: +w.lat,
+        lng: +w.lng,
+        label: w.label || ('Stop ' + (i + 1)),
+        info: w.info || w.note || '',
+        coins: Math.max(0, Math.round(Number(w.coins) || 0)),
+        id: w.id || ('wp' + i),
+      }));
+    this.waypoints = list;
+    if (list.length) {
+      this.destination = { lat: list[list.length - 1].lat, lng: list[list.length - 1].lng };
+      this.wpIdx = Math.max(0, Math.min(opts.startIndex || 0, list.length - 1));
+    }
+    if (this.active || opts.force) this.fetchMultiWaypointRoute();
   },
 
   onFix(pos) {
@@ -9513,6 +10766,8 @@ const DrivingView = {
     this.lastFix = { lat, lng };
     this.lastTime = now;
     window._lastPos = { lat, lng };
+    window._gpsSpeedMps = this.speed;
+    window._lastGpsFix = { lat, lng, speed: this.speed, t: now };
     if (typeof placeMe === 'function') placeMe(lat, lng, { quiet: true, markerOnly: true });
 
     const prev = this.mode;
@@ -9600,16 +10855,15 @@ const DrivingView = {
   },
 
   async fetchRoadRoute() {
-    const plan = this._routePlan;
-    const from = plan?.from || window._driverBase || window._lastPos || this.lastFix;
-    const via = plan?.via;
-    const to = plan?.to || this.destination;
+    if (this.waypoints?.length > 1) {
+      return this.fetchMultiWaypointRoute();
+    }
+    const from = window._lastPos || this.lastFix;
+    const to = this.destination;
     if (!from || !to) return;
     try {
-      const pts = [from, via, to].filter(p => p && p.lat != null && p.lng != null);
-      const coordStr = pts.map(p => p.lng + ',' + p.lat).join(';');
       const url = 'https://router.project-osrm.org/route/v1/driving/'
-        + coordStr
+        + from.lng + ',' + from.lat + ';' + to.lng + ',' + to.lat
         + '?overview=full&geometries=geojson&steps=true';
       const r = await fetch(url);
       const j = await r.json();
@@ -9628,33 +10882,106 @@ const DrivingView = {
       console.warn('[DrivingView] OSRM failed', e);
     }
     if ((this.routeCoords?.length || 0) < 2 && from && to) {
-      const fallback = [];
-      for (let i = 0; i <= 12; i++) {
-        const t = i / 12;
-        fallback.push({
-          lat: from.lat + (to.lat - from.lat) * t,
-          lng: from.lng + (to.lng - from.lng) * t,
-        });
-      }
-      this.routeCoords = fallback;
+      this.routeCoords = this._lerpPath(from, to, 12);
       this.drawRoute();
     }
   },
 
-  drawRoute() {
+  /** Multi-waypoint OSRM route + per-leg steps for task guidance */
+  async fetchMultiWaypointRoute() {
+    const from = window._lastPos || this.lastFix;
+    const wps = this.waypoints || [];
+    if (!wps.length) return this.fetchRoadRoute();
+    const nodes = [];
+    if (from) nodes.push({ lat: from.lat, lng: from.lng, label: 'You' });
+    wps.forEach((w) => nodes.push(w));
+    if (nodes.length < 2) return;
+
+    try {
+      const path = nodes.map((n) => n.lng + ',' + n.lat).join(';');
+      const url = 'https://router.project-osrm.org/route/v1/driving/'
+        + path + '?overview=full&geometries=geojson&steps=true';
+      const r = await fetch(url);
+      const j = await r.json();
+      if (j.code === 'Ok' && j.routes?.[0]) {
+        const route = j.routes[0];
+        this.routeCoords = route.geometry.coordinates.map((c) => ({ lng: c[0], lat: c[1] }));
+        this.legs = (route.legs || []).map((leg, i) => ({
+          index: i,
+          distance: leg.distance,
+          duration: leg.duration,
+          to: nodes[i + 1],
+          steps: (leg.steps || []).map((s) => ({
+            instruction: (s.maneuver?.type || 'continue') + ' ' + (s.name || ''),
+            dist: s.distance,
+            loc: { lat: s.maneuver.location[1], lng: s.maneuver.location[0] },
+          })),
+        }));
+        this.steps = this.legs.flatMap((leg) => leg.steps || []);
+        this.stepIdx = 0;
+        this.drawRoute({ waypoints: wps });
+        const cur = wps[this.wpIdx || 0];
+        if (cur) {
+          const line = '➤ Next: ' + (cur.label || 'stop')
+            + (cur.coins ? ' · ' + cur.coins + '🪙' : '');
+          GlobeDeck?.setPreview?.(line);
+          AciCli?.print?.(line, 'ok');
+        } else if (this.steps[0]) this.showStep(this.steps[0]);
+        return;
+      }
+    } catch (e) {
+      console.warn('[DrivingView] multi-OSRM failed', e);
+    }
+    // Fallback: straight segments between nodes
+    const fallback = [];
+    for (let i = 0; i < nodes.length - 1; i++) {
+      fallback.push(...this._lerpPath(nodes[i], nodes[i + 1], 8));
+    }
+    this.routeCoords = fallback;
+    this.drawRoute({ waypoints: wps });
+  },
+
+  _lerpPath(from, to, n) {
+    const out = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      out.push({
+        lat: from.lat + (to.lat - from.lat) * t,
+        lng: from.lng + (to.lng - from.lng) * t,
+      });
+    }
+    return out;
+  },
+
+  drawRoute(opts) {
+    opts = opts || {};
     if (this.routeLine?.parent) this.routeLine.parent.remove(this.routeLine);
-    const pts = this.routeCoords.map(c => {
+    const pts = (this.routeCoords || []).map(c => {
       const p = latLngToPos(c.lat, c.lng, 1.026);
       return new THREE.Vector3(p.x, p.y, p.z);
     });
-    if (pts.length < 2) return;
-    this.routeLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(pts),
-      new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.85 })
-    );
-    globePivot.add(this.routeLine);
-    CityMap?.setRoute?.(this.routeCoords);
-    MapDepict?.pulse(window._lastPos.lat, window._lastPos.lng, 0x44aaff, 'road route', 6000);
+    if (pts.length >= 2 && typeof THREE !== 'undefined' && typeof globePivot !== 'undefined') {
+      this.routeLine = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(pts),
+        new THREE.LineBasicMaterial({ color: 0x44aaff, transparent: true, opacity: 0.85 })
+      );
+      globePivot.add(this.routeLine);
+    }
+    const wps = opts.waypoints || this.waypoints || [];
+    if (wps.length >= 1 && CityMap?.setTaskGeometry) {
+      CityMap.setTaskGeometry({
+        route: this.routeCoords,
+        waypoints: wps.map((w, i) => ({
+          ...w,
+          current: i === (this.wpIdx || 0),
+          done: i < (this.wpIdx || 0),
+        })),
+      });
+    } else {
+      CityMap?.setRoute?.(this.routeCoords);
+    }
+    const me = window._lastPos;
+    if (me) MapDepict?.pulse?.(me.lat, me.lng, 0x44aaff, wps.length > 1 ? 'multi-stop route' : 'road route', 6000);
   },
 
   showStep(step) {
@@ -9678,6 +11005,7 @@ const DrivingView = {
 };
 window.DrivingView = DrivingView;
 
+/* === 67-map-comms.js === */
 // === MAP COMMS — team polygon · cloud chat · video/voice/phone/message ===
 const MapComms = {
   kind: 'team',
@@ -9736,7 +11064,10 @@ const MapComms = {
       : (window._lastPos || { lat: 36.22, lng: 28.12 });
     return {
       id: Auth?.user?.id || 'guest',
-      name: AstranovPresence?.displayName?.() || me?.name || 'You',
+      name: AstranovPresence?.displayName?.()
+        || Auth?.user?.user_metadata?.full_name
+        || Auth?.user?.email?.split?.('@')?.[0]
+        || 'You',
       lat: p.lat,
       lng: p.lng,
       emoji: '◎',
@@ -10473,6 +11804,7 @@ const MapComms = {
 
 window.MapComms = MapComms;
 
+/* === 74-telemachos-pilot.js === */
 (function(){
 // === TELEMACHOS PILOT — gaming · commercial · extreme takeover ===
 // ΤΗΛΕΜΑΧΟΣ (gaming) · ΤΗΛΕΔΡΟΜΟΣ (commercial) · tilemaxos (extreme tech / hostile takeover)
@@ -11901,6 +13233,7 @@ window.TelemachosPilot = Pilot;
 window.showPilotTelemachos = function () { return Pilot.showPilot(); };
 })();
 
+/* === 80-webrtc.js === */
 // WebRTC Video Calling + Orbital global compatibility
 // Real browser tech to reduce wireless pollution via orbital mesh
 let orbitalCallActive = false;
@@ -12043,65 +13376,21 @@ async function startOrbitalVideoCall(targetName = 'Αξαδίνα') {
       console.log('Offer copied to clipboard. Paste into remote (phone or another browser on orbital mesh).');
     });
 
-    // For demo in this file: if you paste an answer in console or modify, it works.
-    // In practice, exchange with phone via orbital internet for true global P2P.
-    // To complete demo here, we can wait for manual answer paste, but for now show self video and note.
-    // To make it work immediately in one file for testing, set a simple answer if needed, but this is the real API.
-
-    // 5. Orbital globe visualization using real positions
-    const myPos = window._meMarker ? window._meMarker.position : new THREE.Vector3();
-    const targetPos = latLngToPos(36.2, 28.1, 1.04);
-    showOrbitalSignal(myPos, targetPos);
-
-    console.log('%c[Orbital] Real WebRTC video call active. Request for orbital tech prepared.', 'color:#00ff00');
-
-    // Pollution reduction
-    reduceWirelessPollution();
-
+    // Video UI live; remote needs real offer/answer exchange (no fake sat paths).
   } catch (err) {
-    console.error('Orbital WebRTC error:', err);
-    if (Voice.maySpeak()) speak('Camera needed for video.');
+    console.error('WebRTC error:', err);
+    if (Voice?.maySpeak?.()) speak('Camera needed for video.');
     endRealOrbitalCall();
   }
 }
 
+/** TRUTH: no fake orbital sat beam lines on the globe */
 function showOrbitalSignal(from, to) {
-  // Real visualization using orbital sats + globe math (no simulation)
-  if (!orbitalSats || orbitalSats.length === 0) return;
-
-  const sat = orbitalSats[0];
-  // Draw real path lines on globe
-  const points1 = [from, sat.position.clone().multiplyScalar(0.9)];
-  const line1 = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(points1),
-    new THREE.LineBasicMaterial({ color: 0x00ff88, linewidth: 2 })
-  );
-  scene.add(line1);
-
-  const points2 = [sat.position.clone().multiplyScalar(0.9), to];
-  const line2 = new THREE.Line(
-    new THREE.BufferGeometry().setFromPoints(points2),
-    new THREE.LineBasicMaterial({ color: 0x00ff88, linewidth: 2 })
-  );
-  scene.add(line2);
-
-  setTimeout(() => {
-    if (line1.parent) line1.parent.remove(line1);
-    if (line2.parent) line2.parent.remove(line2);
-  }, 8000);
+  return;
 }
 
-// simulateOrbitalSignal removed - use real showOrbitalSignal only
-
 function reduceWirelessPollution() {
-  console.log('%c[Planet Save] Wireless pollution reduced! Orbital + WebRTC is the future.', 'color:#00ff00');
-  if (earth && earth.material) {
-    const orig = earth.material.color.getHex();
-    earth.material.color.setHex(0x00ffaa);
-    setTimeout(() => {
-      if (earth.material) earth.material.color.setHex(orig);
-    }, 4000);
-  }
+  // no globe color fakery
 }
 
 
@@ -12130,6 +13419,7 @@ function updateOrbital() {
 }
 window.updateOrbital = updateOrbital;
 
+/* === 64-astranov-session.js === */
 // === ASTRANOV SESSION — one user, one cloud session, no local copies ===
 const COLLECTIVE_SESSION_NAME = 'ASTRANOV COLLECTIVE INTELLIGENCE';
 const COLLECTIVE_BATCH_SHORT_ID = 'ACI';
@@ -12384,6 +13674,7 @@ const AstranovSession = {
 };
 window.AstranovSession = AstranovSession;
 
+/* === 65-astranov-wishlist.js === */
 // === ASTRANOV WISHLIST — recover requests across all devices ===
 const AstranovWishlist = {
   MAX: 48,
@@ -12392,6 +13683,10 @@ const AstranovWishlist = {
   SEED: [
     { text: 'Unify user + session across all computers (one ASTRANOV, one collective session)', status: 'done', tag: 'session' },
     { text: 'City map on zoom — satellite, streets, routing, friends, moving drivers', status: 'done', tag: 'globe' },
+    { text: 'Starship F13 launch sim on globe (Starbase timeline)', status: 'done', tag: 'globe' },
+    { text: 'Starlink LEO real-ish positions (CelesTrak + analytic shells)', status: 'done', tag: 'globe' },
+    { text: 'SpaceNet multi-crawlers (vendors/weather/drivers/news/tasks)', status: 'done', tag: 'spacenet' },
+    { text: 'City tasks + delivery claim/assign infrastructure', status: 'done', tag: 'commerce' },
     { text: 'Dark/bright theme toggle + CLI commands (dark, bright, theme)', status: 'done', tag: 'ui' },
     { text: 'Real Earth — day/night terminator, sun, moon', status: 'done', tag: 'globe' },
     { text: 'Super Add + inline in CLI bar, right edge, normal size', status: 'done', tag: 'ui' },
@@ -12574,6 +13869,7 @@ const AstranovWishlist = {
 };
 window.AstranovWishlist = AstranovWishlist;
 
+/* === 66-globe-presence.js === */
 // === GLOBE PRESENCE — logged-in users on map · collab · κρυφτό hide-and-seek ===
 const AstranovPresence = {
   CHANNEL: 'astranov-globe-live',
@@ -12727,6 +14023,18 @@ const AstranovPresence = {
   _onGpsFix(pos) {
     const lat = pos.coords.latitude;
     const lng = pos.coords.longitude;
+    const now = Date.now();
+    let speed = pos.coords.speed;
+    const prev = window._lastGpsFix;
+    if ((speed == null || speed < 0) && prev?.lat != null && prev.t) {
+      const dt = (now - prev.t) / 1000;
+      if (dt > 0.5 && dt < 30 && typeof FieldHud?.haversineKm === 'function') {
+        const dKm = FieldHud.haversineKm(prev.lat, prev.lng, lat, lng);
+        speed = (dKm * 1000) / dt;
+      }
+    }
+    window._gpsSpeedMps = (speed != null && speed >= 0) ? speed : (window._gpsSpeedMps || 0);
+    window._lastGpsFix = { lat, lng, speed: window._gpsSpeedMps, t: now };
     if (GhostTravel?.active?.()) {
       GhostTravel.setTruePos(lat, lng);
       window._truePos = { lat, lng };
@@ -12864,13 +14172,6 @@ const AstranovPresence = {
     if (typeof others !== 'undefined') others = users;
     GlobeEntity?.syncFriends?.(users);
     if (CityMap?.active) CityMap._syncMarkers?.();
-    // National SpaceNet hubs: cluster live users + shops
-    if (GlobeNavigate?.isNational?.() || CityMap?._nationalActive) {
-      SpaceNetCities?.refresh?.(true);
-      GlobeNavigate?._syncChip?.();
-    } else {
-      SpaceNetCities?.rebuild?.();
-    }
     const chip = document.getElementById('city-life-chip');
     if (chip?.classList.contains('open') && users.length) {
       const shops = (Commerce?.vendors || []).length;
@@ -12953,7 +14254,7 @@ const AstranovPresence = {
     const p = this.pos();
     MapDepict?.action?.('play', { lat: p.lat, lng: p.lng, detail: 'κρυφτό · hide and seek LIVE' });
     MapDepict?.pulse?.(p.lat, p.lng, 0x1a6fd4, 'ΚΡΥΦΤΟ', 18000);
-    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov Command Line');
+    GlobeDeck?.expand?.(SuperCli?.title || 'Astranov');
     GlobeDeck?.setTitle?.('ΚΡΥΦΤΟ');
     GlobeDeck?.setPreview?.('◎ ' + total + ' player(s) · say hide to vanish · players to seek');
     GlobeDeck.activeTask = 'game';
@@ -12992,6 +14293,7 @@ const AstranovPresence = {
 
 window.AstranovPresence = AstranovPresence;
 
+/* === 68-marketplace-comms.js === */
 // ═══════════════════════════════════════════════════════════════
 // ASTRANOV — Marketplace Comms (vendors · clients · drivers)
 // Same polygon + glowing lines + cloud chat as MapComms teams.
@@ -13133,7 +14435,7 @@ window.AstranovPresence = AstranovPresence;
     if (!Auth?.client || !orderId) return null;
     const { data } = await Auth.client
       .from('orders')
-      .select('id,status,driver_id,customer_id,vendor_id,driver_accepted_at,short_id,delivery_lat,delivery_lng,items,calc')
+      .select('id,status,driver_id,customer_id,vendor_id')
       .eq('id', orderId)
       .maybeSingle();
     return data;
@@ -13148,12 +14450,7 @@ window.AstranovPresence = AstranovPresence;
       if (o.driver_id && MC.preferredDriverId !== o.driver_id) {
         MC.preferredDriverId = o.driver_id;
         const d = MC.drivers.find((x) => x.id === o.driver_id);
-        window.MapComms?.postSystem?.(`${emojiFor('driver')} Driver ${displayName(d || { id: o.driver_id })} assigned — must accept to activate triangle`);
-        MC.awaitingAccept = !o.driver_accepted_at && o.status === 'assigned';
-      }
-      if (o.driver_accepted_at && o.status === 'active') {
-        MC.awaitingAccept = false;
-        void MarketplaceDeliveryEngine?.onDriverAccepted?.(o, MC.vendor, MC.drivers.find((x) => x.id === o.driver_id));
+        window.MapComms?.postSystem?.(`${emojiFor('driver')} Driver ${displayName(d || { id: o.driver_id })} assigned`);
       }
       if (!MC.seekingDriver) window.MapComms?.hideDriverPicker?.();
       syncCloud();
@@ -13211,16 +14508,11 @@ window.AstranovPresence = AstranovPresence;
     if (MC.orderId) {
       try {
         const headers = Auth?.authHeaders ? await Auth.authHeaders() : {};
-        const r = await fetch(SB_URL + '/functions/v1/order-intake', {
+        await fetch(SB_URL + '/functions/v1/order-intake', {
           method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ action: 'assign_driver', order_id: MC.orderId, driver_id: driverId }),
         });
-        const j = await r.json().catch(() => ({}));
-        if (j.awaiting_accept) {
-          MC.awaitingAccept = true;
-          window.MapComms?.postSystem?.('Driver must accept assignment — triangle activates on sign');
-        }
       } catch (e) {
         console.warn('[MarketplaceComms] assign_driver', e);
       }
@@ -13247,37 +14539,29 @@ window.AstranovPresence = AstranovPresence;
       .join('\n');
   }
 
-  async function acceptAssignment(orderId) {
-    const oid = orderId || MC.orderId;
-    if (!oid) return { error: 'no order' };
-    return FieldBrain?.claimDelivery?.(oid);
-  }
-
   function init() {
     window.MarketplaceComms = {
       openForBrowse,
       openForOrder,
       selectDriver,
-      acceptAssignment,
       hide,
       membersFromContext,
       get state() { return MC; },
       listDriversText,
     };
-    console.log('[MarketplaceComms] ready — vendor/client/driver polygon · P2P 24/7');
+    console.log('[MarketplaceComms] ready — vendor/client/driver polygon chats');
   }
 
   init();
 })();
 
+/* === 69-profile-site.js === */
 // === PROFILE SITE — every user & vendor fills their page; opens on tap ===
 const ProfileSite = {
   targetId: null,
   targetType: 'user',
   _vendor: null,
   _draft: null,
-  _shopMode: false,
-  _shopDraft: null,
 
   init() {
     this._bind();
@@ -13288,10 +14572,7 @@ const ProfileSite = {
     if (!panel || panel.dataset.bound) return;
     panel.dataset.bound = '1';
     document.getElementById('ps-close')?.addEventListener('click', () => this.close());
-    document.getElementById('ps-save')?.addEventListener('click', () => {
-      if (this._shopMode) this.saveShop();
-      else this.save();
-    });
+    document.getElementById('ps-save')?.addEventListener('click', () => this.save());
     document.getElementById('ps-site-req')?.addEventListener('click', () => this.requestSubdomain());
     document.getElementById('ps-open-site')?.addEventListener('click', () => this.openLiveSite());
     document.getElementById('ps-shop')?.addEventListener('click', () => {
@@ -13360,33 +14641,28 @@ const ProfileSite = {
   },
 
   _render(prof) {
+    // Prefer MultiTile as universal profile at all zoom levels
+    if (window.MultiTile?.openUser && prof) {
+      MultiTile.openUser(prof, {
+        lat: prof.field_lat ?? window._lastPos?.lat,
+        lng: prof.field_lng ?? window._lastPos?.lng,
+        source: 'profile',
+        tier: MultiTile.currentTier?.(),
+      });
+      return;
+    }
     const panel = document.getElementById('profile-site-panel');
     if (!panel) return;
     const page = this._page(prof);
     const self = this.isSelf(prof.id);
-    const meta = Auth?.user?.user_metadata || {};
-    const avatarUrl = page.avatar_url || page.profile_photo_url || meta.avatar_url || meta.picture || '';
-    const entranceUrl = page.entrance_photo_url || page.delivery_entrance_url || '';
+    const emoji = prof.avatar_emoji || '👤';
     const title = page.title || prof.display_name || prof.username || 'Profile';
     const subtitle = page.subtitle || prof.bio || '';
     const about = page.about || prof.bio || '';
     const services = Array.isArray(page.services) ? page.services : [];
     const contact = page.contact || {};
 
-    const titleEl = document.getElementById('ps-title');
-    if (titleEl) {
-      titleEl.textContent = title;
-      if (avatarUrl) {
-        titleEl.style.backgroundImage = 'url(' + avatarUrl + ')';
-        titleEl.style.backgroundSize = 'cover';
-        titleEl.style.backgroundPosition = 'center';
-        titleEl.style.paddingLeft = '36px';
-        titleEl.style.minHeight = '28px';
-      } else {
-        titleEl.style.backgroundImage = '';
-        titleEl.style.paddingLeft = '';
-      }
-    }
+    document.getElementById('ps-title').textContent = emoji + ' ' + title;
     document.getElementById('ps-sub').textContent = subtitle;
     const body = document.getElementById('ps-body');
     if (!body) return;
@@ -13400,18 +14676,8 @@ const ProfileSite = {
         phone: prof.phone || contact.phone || '',
         email: prof.public_email || contact.email || Auth?.user?.email || '',
         site_slug: prof.site_slug || '',
-        avatarUrl,
-        entranceUrl,
-        avatarFile: null,
-        entranceFile: null,
       };
-      const avStyle = avatarUrl ? ' style="background-image:url(' + this.esc(avatarUrl) + ')"' : '';
-      const enStyle = entranceUrl ? ' style="background-image:url(' + this.esc(entranceUrl) + ')"' : '';
       body.innerHTML = ''
-        + '<div class="ps-photo-row">'
-        + '<div class="ps-photo-card"><div class="ps-photo-thumb ps-photo-avatar"' + avStyle + '></div><button type="button" id="ps-avatar-pick">Profile photo</button><input type="file" id="ps-avatar-in" accept="image/*" hidden /></div>'
-        + '<div class="ps-photo-card"><div class="ps-photo-thumb ps-photo-entrance"' + enStyle + '></div><button type="button" id="ps-entrance-pick">House entrance</button><input type="file" id="ps-entrance-in" accept="image/*" hidden /></div>'
-        + '</div><div class="ps-hint">Photos appear on map pins — shop logo · driver face · delivery door</div>'
         + '<label class="ps-field">Title<input id="ps-in-title" value="' + this.esc(this._draft.title) + '" /></label>'
         + '<label class="ps-field">Subtitle<input id="ps-in-sub" value="' + this.esc(this._draft.subtitle) + '" /></label>'
         + '<label class="ps-field">About<textarea id="ps-in-about" rows="3">' + this.esc(this._draft.about) + '</textarea></label>'
@@ -13421,12 +14687,10 @@ const ProfileSite = {
         + '<label class="ps-field">Subdomain slug<input id="ps-in-slug" placeholder="my-yachts" value="' + this.esc(this._draft.site_slug) + '" /></label>'
         + '<div class="ps-hint">Subdomain needs admin approval · profile page is live now on tap</div>'
         + this._rolesHtml(prof.roles);
-      const saveBtn = document.getElementById('ps-save');
-      if (saveBtn) { saveBtn.style.display = 'inline-block'; saveBtn.textContent = 'Save profile'; }
+      document.getElementById('ps-save').style.display = 'inline-block';
       document.getElementById('ps-site-req').style.display = 'inline-block';
       document.getElementById('ps-logout').style.display = 'inline-block';
       this._bindRoleToggles();
-      this._bindProfilePhotos();
     } else {
       body.innerHTML = ''
         + (about ? '<div class="ps-about">' + this.esc(about) + '</div>' : '')
@@ -13458,35 +14722,8 @@ const ProfileSite = {
     }
   },
 
-  _bindProfilePhotos() {
-    const bindPick = (btnId, inputId, key, sel) => {
-      document.getElementById(btnId)?.addEventListener('click', () => document.getElementById(inputId)?.click());
-      document.getElementById(inputId)?.addEventListener('change', (e) => {
-        const f = e.target.files?.[0];
-        if (!f || !this._draft) return;
-        this._draft[key + 'File'] = f;
-        const url = URL.createObjectURL(f);
-        this._draft[key + 'Url'] = url;
-        const el = document.querySelector(sel);
-        if (el) el.style.backgroundImage = 'url(' + url + ')';
-      });
-    };
-    bindPick('ps-avatar-pick', 'ps-avatar-in', 'avatar', '.ps-photo-avatar');
-    bindPick('ps-entrance-pick', 'ps-entrance-in', 'entrance', '.ps-photo-entrance');
-  },
-
   _renderVendorOnly(vendor) {
-    const logo = window.MapPins?.vendorLogo?.(vendor) || '';
-    const titleEl = document.getElementById('ps-title');
-    if (titleEl) {
-      titleEl.textContent = vendor.name || 'Shop';
-      if (logo) {
-        titleEl.style.backgroundImage = 'url(' + logo + ')';
-        titleEl.style.backgroundSize = 'cover';
-        titleEl.style.backgroundPosition = 'center';
-        titleEl.style.paddingLeft = '36px';
-      } else titleEl.style.backgroundImage = '';
-    }
+    document.getElementById('ps-title').textContent = (vendor.emoji || '🏬') + ' ' + (vendor.name || 'Shop');
     document.getElementById('ps-sub').textContent = vendor.category || 'vendor';
     const body = document.getElementById('ps-body');
     if (body) {
@@ -13582,36 +14819,14 @@ const ProfileSite = {
   async save() {
     if (!Auth?.user || !this.isSelf(this.targetId)) return;
     const d = this._collectDraft();
-    let avatarUrl = this._draft?.avatarUrl || '';
-    let entranceUrl = this._draft?.entranceUrl || '';
-    try {
-      if (this._draft?.avatarFile) avatarUrl = await this._uploadShopImage(this._draft.avatarFile);
-      if (this._draft?.entranceFile) entranceUrl = await this._uploadShopImage(this._draft.entranceFile);
-    } catch (e) {
-      ACIControl?.reply('Photo upload failed: ' + (e.message || e));
-      return;
-    }
-    const prevPage = this._page(await this.loadProfile(Auth.user.id));
     const profile_page = {
-      ...prevPage,
       title: d.title,
       subtitle: d.subtitle,
       about: d.about,
       services: d.services,
       contact: { phone: d.phone, email: d.email },
-      avatar_url: avatarUrl && !avatarUrl.startsWith('blob:') ? avatarUrl : (prevPage.avatar_url || ''),
-      entrance_photo_url: entranceUrl && !entranceUrl.startsWith('blob:') ? entranceUrl : (prevPage.entrance_photo_url || ''),
       updated_at: new Date().toISOString(),
     };
-    Auth._profilePage = profile_page;
-    if (window._clientDelivery?.lat != null) {
-      window._clientDelivery.photo_url = profile_page.entrance_photo_url || profile_page.avatar_url || window._clientDelivery.photo_url;
-      MapPins?.persist?.();
-    }
-    if (window._driverBase?.lat != null) {
-      window._driverBase.photo_url = profile_page.avatar_url || window._driverBase.photo_url;
-      MapPins?.persist?.();
-    }
     try {
       const headers = await Auth.authHeaders();
       await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + Auth.user.id, {
@@ -13625,8 +14840,7 @@ const ProfileSite = {
           updated_at: new Date().toISOString(),
         }),
       });
-      MapPins?.syncGlobe?.();
-      ACIControl?.reply('Profile saved — photos live on map pins');
+      ACIControl?.reply('Profile saved — others see it when they tap you on the map');
       AciCli?.print('profile saved', 'ok');
       await this.openUser(Auth.user.id, { vendor: this._vendor });
     } catch (e) {
@@ -13665,377 +14879,9 @@ const ProfileSite = {
   },
 
   close() {
-    const panel = document.getElementById('profile-site-panel');
-    panel?.classList.remove('open', 'shop-mode');
+    document.getElementById('profile-site-panel')?.classList.remove('open');
     this.targetId = null;
     this._vendor = null;
-    this._shopMode = false;
-    this._shopDraft = null;
-  },
-
-  formatCoords(lat, lng) {
-    return Number(lat).toFixed(4) + ', ' + Number(lng).toFixed(4);
-  },
-
-  _vendorTags(vendor) {
-    const t = vendor?.tags;
-    return (t && typeof t === 'object') ? t : {};
-  },
-
-  async _fetchOwnedVendors() {
-    if (!Auth?.user) return [];
-    try {
-      const headers = await Auth.authHeaders();
-      const r = await fetch(SB_URL + '/rest/v1/vendors?select=id,name,emoji,lat,lng,items,tags,category,owner_id&owner_id=eq.' + Auth.user.id, { headers });
-      return r.ok ? await r.json() : [];
-    } catch { return []; }
-  },
-
-  async _vendorNear(lat, lng, owned) {
-    const list = owned || await this._fetchOwnedVendors();
-    let best = null;
-    let bestKm = 0.12;
-    list.forEach(v => {
-      if (v.lat == null || v.lng == null) return;
-      const km = Commerce?.haversineKm?.(lat, lng, v.lat, v.lng) ?? 999;
-      if (km < bestKm) { bestKm = km; best = v; }
-    });
-    return best;
-  },
-
-  async _uploadShopImage(file) {
-    if (!Auth?.user || !Auth?.client) throw new Error('login required — tap G');
-    const ext = String(file.name || '').split('.').pop()?.toLowerCase() || 'jpg';
-    const safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
-    const path = Auth.user.id + '/shop/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + safeExt;
-    const { error } = await Auth.client.storage.from('posts').upload(path, file, {
-      contentType: file.type || 'image/jpeg',
-      upsert: false,
-    });
-    if (error) throw new Error(error.message || 'upload failed');
-    const { data } = Auth.client.storage.from('posts').getPublicUrl(path);
-    return data?.publicUrl || (SB_URL + '/storage/v1/object/public/posts/' + path);
-  },
-
-  async openShopEditor(lat, lng) {
-    if (!Auth?.user) return Auth?.openLoginModal?.('Sign in to set up your shop');
-    lat = Number(lat);
-    lng = Number(lng);
-    if (!isFinite(lat) || !isFinite(lng)) return;
-    window._pendingShopLatLng = { lat, lng };
-
-    this._shopMode = true;
-    this.targetType = 'shop';
-    this.targetId = Auth.user.id;
-
-    const prof = await this.loadProfile(Auth.user.id);
-    const owned = await this._fetchOwnedVendors();
-    const vendor = await this._vendorNear(lat, lng, owned);
-    const tags = this._vendorTags(vendor);
-    const menu = vendor ? Commerce?.menuFor?.(vendor) || [] : [];
-
-    this._shopDraft = {
-      vendorId: vendor?.id || null,
-      lat,
-      lng,
-      name: vendor?.name || prof?.display_name || Auth.user.user_metadata?.full_name || 'My shop',
-      phone: tags.phone || prof?.phone || '',
-      email: tags.email || prof?.public_email || Auth.user.email || '',
-      about: tags.about || prof?.bio || '',
-      coverUrl: tags.cover_url || '',
-      profileUrl: tags.profile_url || '',
-      coverFile: null,
-      profileFile: null,
-      menuRows: menu.length
-        ? menu.map(i => ({ name: i.name || '', price: i.price ?? '', imageUrl: i.image || i.photo || '', imageFile: null }))
-        : [{ name: '', price: '', imageUrl: '', imageFile: null }],
-    };
-    this._vendor = vendor;
-    this._renderShopEditor();
-    document.getElementById('profile-site-panel')?.classList.add('open', 'shop-mode');
-    MapDepict?.pulse?.(lat, lng, 0xff8844, this._shopDraft.name, 12000);
-    Responsive3D?.visualReact?.('profile', { lat, lng });
-  },
-
-  _renderShopEditor() {
-    const d = this._shopDraft;
-    if (!d) return;
-    const panel = document.getElementById('profile-site-panel');
-    if (!panel) return;
-
-    document.getElementById('ps-title').textContent = '🏬 Shop profile';
-    document.getElementById('ps-sub').textContent = d.vendorId ? 'Edit your shop at this address' : 'New shop at this pin';
-    const body = document.getElementById('ps-body');
-    if (!body) return;
-
-    const coverStyle = d.coverUrl ? ' style="background-image:url(' + this.esc(d.coverUrl) + ')"' : '';
-    const avatarStyle = d.profileUrl ? ' style="background-image:url(' + this.esc(d.profileUrl) + ')"' : '';
-
-    body.innerHTML = ''
-      + '<div class="ps-shop-cover"' + coverStyle + '><button type="button" class="ps-shop-cover-btn" id="ps-shop-cover-pick">'
-      + (d.coverUrl ? 'Change cover' : '+ Cover photo') + '</button>'
-      + '<div class="ps-shop-avatar"' + avatarStyle + '><button type="button" class="ps-shop-avatar-btn" id="ps-shop-avatar-pick">'
-      + (d.profileUrl ? '' : '📷') + '</button></div></div>'
-      + '<input type="file" id="ps-shop-cover-in" accept="image/*" hidden />'
-      + '<input type="file" id="ps-shop-avatar-in" accept="image/*" hidden />'
-      + '<div class="ps-shop-addr">📍 ' + this.esc(this.formatCoords(d.lat, d.lng)) + '</div>'
-      + '<label class="ps-field">Shop name<input id="ps-shop-name" value="' + this.esc(d.name) + '" /></label>'
-      + '<label class="ps-field">Phone<input id="ps-shop-phone" type="tel" value="' + this.esc(d.phone) + '" /></label>'
-      + '<label class="ps-field">Email<input id="ps-shop-email" type="email" value="' + this.esc(d.email) + '" /></label>'
-      + '<label class="ps-field">About<textarea id="ps-shop-about" rows="2">' + this.esc(d.about) + '</textarea></label>'
-      + '<div class="ps-menu-title">Menu · photo + price</div>'
-      + '<div id="ps-menu-rows">' + this._shopMenuRowsHtml(d.menuRows) + '</div>'
-      + '<button type="button" id="ps-menu-add">+ Add menu item</button>'
-      + '<div class="ps-hint">Saved to map · customers order from your menu</div>';
-
-    document.getElementById('ps-save').style.display = 'inline-block';
-    document.getElementById('ps-save').textContent = 'Save shop';
-    document.getElementById('ps-site-req').style.display = 'none';
-    document.getElementById('ps-open-site').style.display = 'none';
-    document.getElementById('ps-shop').style.display = d.vendorId ? 'inline-block' : 'none';
-    document.getElementById('ps-logout').style.display = 'none';
-
-    const statusEl = document.getElementById('ps-status');
-    if (statusEl) statusEl.textContent = d.vendorId ? 'Editing existing shop' : 'Creates shop on save';
-
-    this._bindShopEditor();
-  },
-
-  _shopMenuRowsHtml(rows) {
-    return rows.map((row, i) => {
-      const thumbStyle = row.imageUrl ? ' style="background-image:url(' + this.esc(row.imageUrl) + ')"' : '';
-      return '<div class="ps-menu-row" data-menu-idx="' + i + '">'
-        + '<div class="ps-menu-thumb"' + thumbStyle + '><input type="file" accept="image/*" data-menu-photo="' + i + '" title="Photo" /></div>'
-        + '<input type="text" data-menu-name="' + i + '" placeholder="Item name" value="' + this.esc(row.name) + '" />'
-        + '<input type="number" step="0.1" min="0" data-menu-price="' + i + '" placeholder="AVC" value="' + (row.price === '' ? '' : this.esc(String(row.price))) + '" />'
-        + '<button type="button" class="ps-menu-rm" data-menu-rm="' + i + '" title="Remove">×</button>'
-        + '</div>';
-    }).join('');
-  },
-
-  _bindShopEditor() {
-    const pickCover = () => document.getElementById('ps-shop-cover-in')?.click();
-    const pickAvatar = () => document.getElementById('ps-shop-avatar-in')?.click();
-
-    document.getElementById('ps-shop-cover-pick')?.addEventListener('click', pickCover);
-    document.getElementById('ps-shop-avatar-pick')?.addEventListener('click', pickAvatar);
-
-    document.getElementById('ps-shop-cover-in')?.addEventListener('change', (e) => {
-      const f = e.target.files?.[0];
-      if (!f || !this._shopDraft) return;
-      this._shopDraft.coverFile = f;
-      const url = URL.createObjectURL(f);
-      this._shopDraft.coverUrl = url;
-      const el = document.querySelector('.ps-shop-cover');
-      if (el) { el.style.backgroundImage = 'url(' + url + ')'; el.querySelector('.ps-shop-cover-btn').textContent = 'Change cover'; }
-    });
-
-    document.getElementById('ps-shop-avatar-in')?.addEventListener('change', (e) => {
-      const f = e.target.files?.[0];
-      if (!f || !this._shopDraft) return;
-      this._shopDraft.profileFile = f;
-      const url = URL.createObjectURL(f);
-      this._shopDraft.profileUrl = url;
-      const el = document.querySelector('.ps-shop-avatar');
-      if (el) { el.style.backgroundImage = 'url(' + url + ')'; }
-    });
-
-    document.getElementById('ps-menu-add')?.addEventListener('click', () => {
-      if (!this._shopDraft) return;
-      this._collectShopMenuFromDom();
-      this._shopDraft.menuRows.push({ name: '', price: '', imageUrl: '', imageFile: null });
-      const box = document.getElementById('ps-menu-rows');
-      if (box) box.innerHTML = this._shopMenuRowsHtml(this._shopDraft.menuRows);
-      this._bindShopMenuRows();
-    });
-
-    this._bindShopMenuRows();
-  },
-
-  _bindShopMenuRows() {
-    document.querySelectorAll('[data-menu-photo]').forEach(inp => {
-      inp.onchange = (e) => {
-        const i = parseInt(inp.dataset.menuPhoto, 10);
-        const f = e.target.files?.[0];
-        if (!f || !this._shopDraft?.menuRows[i]) return;
-        this._shopDraft.menuRows[i].imageFile = f;
-        const url = URL.createObjectURL(f);
-        this._shopDraft.menuRows[i].imageUrl = url;
-        const thumb = inp.closest('.ps-menu-thumb');
-        if (thumb) thumb.style.backgroundImage = 'url(' + url + ')';
-      };
-    });
-    document.querySelectorAll('[data-menu-rm]').forEach(btn => {
-      btn.onclick = () => {
-        const i = parseInt(btn.dataset.menuRm, 10);
-        if (!this._shopDraft) return;
-        this._collectShopMenuFromDom();
-        this._shopDraft.menuRows.splice(i, 1);
-        if (!this._shopDraft.menuRows.length) {
-          this._shopDraft.menuRows.push({ name: '', price: '', imageUrl: '', imageFile: null });
-        }
-        const box = document.getElementById('ps-menu-rows');
-        if (box) box.innerHTML = this._shopMenuRowsHtml(this._shopDraft.menuRows);
-        this._bindShopMenuRows();
-      };
-    });
-  },
-
-  _collectShopMenuFromDom() {
-    if (!this._shopDraft) return;
-    this._shopDraft.menuRows.forEach((row, i) => {
-      row.name = document.querySelector('[data-menu-name="' + i + '"]')?.value?.trim() || row.name || '';
-      const p = document.querySelector('[data-menu-price="' + i + '"]')?.value;
-      row.price = p === '' || p == null ? row.price : parseFloat(p);
-    });
-  },
-
-  _collectShopDraft() {
-    const d = this._shopDraft;
-    if (!d) return null;
-    this._collectShopMenuFromDom();
-    d.name = document.getElementById('ps-shop-name')?.value?.trim() || d.name || 'My shop';
-    d.phone = document.getElementById('ps-shop-phone')?.value?.trim() || '';
-    d.email = document.getElementById('ps-shop-email')?.value?.trim() || '';
-    d.about = document.getElementById('ps-shop-about')?.value?.trim() || '';
-    return d;
-  },
-
-  async saveShop() {
-    if (!Auth?.user || !this._shopMode) return;
-    const d = this._collectShopDraft();
-    if (!d) return;
-
-    const statusEl = document.getElementById('ps-status');
-    if (statusEl) statusEl.textContent = 'Saving shop…';
-    GlobeDeck?.setThinking?.(true, 'Saving shop…');
-
-    try {
-      let coverUrl = d.coverUrl;
-      let profileUrl = d.profileUrl;
-      if (d.coverFile) coverUrl = await this._uploadShopImage(d.coverFile);
-      if (d.profileFile) profileUrl = await this._uploadShopImage(d.profileFile);
-
-      const items = [];
-      for (const row of d.menuRows) {
-        const name = String(row.name || '').trim();
-        if (!name) continue;
-        let image = row.imageUrl || '';
-        if (row.imageFile) image = await this._uploadShopImage(row.imageFile);
-        else if (image.startsWith('blob:')) image = '';
-        const price = parseFloat(row.price);
-        const item = { name, price: isNaN(price) ? 0 : price };
-        if (image && !image.startsWith('blob:')) item.image = image;
-        items.push(item);
-      }
-
-      const tags = {
-        cover_url: coverUrl && !coverUrl.startsWith('blob:') ? coverUrl : '',
-        profile_url: profileUrl && !profileUrl.startsWith('blob:') ? profileUrl : '',
-        phone: d.phone,
-        email: d.email,
-        about: d.about,
-        updated_at: new Date().toISOString(),
-      };
-
-      const headers = await Auth.authHeaders();
-      let vendorId = d.vendorId;
-
-      if (!vendorId) {
-        vendorId = 'v-' + Auth.user.id.slice(0, 8) + '-' + Date.now().toString(36);
-        const body = {
-          id: vendorId,
-          owner_id: Auth.user.id,
-          name: d.name,
-          emoji: '🏬',
-          lat: d.lat,
-          lng: d.lng,
-          country: 'GR',
-          city: 'field',
-          items,
-          tags,
-          is_active: true,
-          delivery_enabled: true,
-          category: 'field_shop',
-        };
-        const r = await fetch(SB_URL + '/rest/v1/vendors', { method: 'POST', headers, body: JSON.stringify(body) });
-        if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error(j.message || j.error || 'shop create failed');
-        }
-      } else {
-        const r = await fetch(SB_URL + '/rest/v1/vendors?id=eq.' + encodeURIComponent(vendorId), {
-          method: 'PATCH',
-          headers: { ...headers, Prefer: 'return=representation' },
-          body: JSON.stringify({
-            name: d.name,
-            lat: d.lat,
-            lng: d.lng,
-            items,
-            tags,
-            updated_at: new Date().toISOString(),
-          }),
-        });
-        if (!r.ok) {
-          const j = await r.json().catch(() => ({}));
-          throw new Error(j.message || j.error || 'shop update failed');
-        }
-      }
-
-      const profPage = {
-        contact: { phone: d.phone, email: d.email },
-        about: d.about,
-        updated_at: new Date().toISOString(),
-      };
-      await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + Auth.user.id, {
-        method: 'PATCH', headers,
-        body: JSON.stringify({
-          phone: d.phone || null,
-          public_email: d.email || null,
-          bio: d.about || undefined,
-          profile_page: profPage,
-          is_vendor: true,
-          updated_at: new Date().toISOString(),
-        }),
-      });
-
-      const roles = Array.from(new Set([...(FieldBrain?.roles || ['client']), 'vendor']));
-      if (!roles.includes('vendor')) roles.push('vendor');
-      await fetch(SB_URL + '/rest/v1/profiles?id=eq.' + Auth.user.id, {
-        method: 'PATCH', headers,
-        body: JSON.stringify({ roles, is_vendor: true }),
-      });
-      FieldBrain.roles = roles;
-      FieldBrain?.updateChip?.();
-
-      await Commerce?.loadVendors?.();
-      MapDepict?.pulse?.(d.lat, d.lng, 0xff8844, d.name, 16000);
-      GlobeEntity?.syncVendors?.(Commerce?.vendors || []);
-      MapPins?.syncGlobe?.();
-      CityMap?.syncMapPins?.();
-
-      d.vendorId = vendorId;
-      d.coverUrl = tags.cover_url;
-      d.profileUrl = tags.profile_url;
-      d.coverFile = null;
-      d.profileFile = null;
-      d.menuRows = items.length
-        ? items.map(i => ({ name: i.name, price: i.price, imageUrl: i.image || '', imageFile: null }))
-        : [{ name: '', price: '', imageUrl: '', imageFile: null }];
-
-      if (statusEl) statusEl.textContent = '✓ Shop saved on map';
-      ACIControl?.reply('Shop saved — cover, menu & prices live at ' + this.formatCoords(d.lat, d.lng));
-      AciCli?.print('shop profile saved · ' + d.name + ' · ' + items.length + ' items', 'ok');
-      document.getElementById('ps-shop').style.display = 'inline-block';
-      this._vendor = { id: vendorId, name: d.name, lat: d.lat, lng: d.lng, items, tags, owner_id: Auth.user.id, emoji: '🏬', delivery_enabled: true, category: 'shop' };
-      FieldBrain.vendorIds = Array.from(new Set([...(FieldBrain?.vendorIds || []), vendorId]));
-      VendorMapTile?.open?.(this._vendor, { preview: true, skipFly: false });
-    } catch (e) {
-      if (statusEl) statusEl.textContent = 'Save failed';
-      ACIControl?.reply('Shop save failed: ' + (e.message || e));
-    } finally {
-      GlobeDeck?.setThinking?.(false);
-    }
   },
 
   async openSelf() {
@@ -14046,16 +14892,7 @@ const ProfileSite = {
   async cmd(parts) {
     const sub = (parts[1] || 'me').toLowerCase();
     if (sub === 'me' || sub === 'edit') return this.openSelf();
-    if (sub === 'shop') {
-      const pos = window._pendingShopLatLng || window._lastPos;
-      if (pos?.lat != null) return this.openShopEditor(pos.lat, pos.lng);
-      ACIControl?.reply('Tap map · Shop address to pin your shop first');
-      return;
-    }
-    if (sub === 'save') {
-      if (this._shopMode) return this.saveShop();
-      return this.save();
-    }
+    if (sub === 'save') return this.save();
     const name = parts.slice(1).join(' ').toLowerCase();
     const hit = (window.others || []).find(u => (u.name || '').toLowerCase().includes(name));
     if (hit?.id) return this.openUser(hit.id);
@@ -14065,6 +14902,7 @@ const ProfileSite = {
 
 window.ProfileSite = ProfileSite;
 
+/* === 48-astranov-sites-provision.js === */
 // === ASTRANOV SITES PROVISION — instant {slug}.astranov.eu web presence ===
 const AstranovSitesProvision = {
   BASE_DOMAIN: 'astranov.eu',
@@ -14205,233 +15043,7 @@ const AstranovSitesProvision = {
 window.SuperBookingProvision = AstranovSitesProvision;
 window.AstranovSitesProvision = AstranovSitesProvision;
 
-// === AVC BALANCE — live wallet chip in top CLI row (1 AVC = 1 EUR · USD via live FX) ===
-const AvcBalance = {
-  _btn: null,
-  _timer: null,
-  _last: null,
-  _fx: null,
-  _fxAt: 0,
-  EUR_USD_FALLBACK: 1.08,
-
-  formatFiat(n, symbol) {
-    const v = Number(n);
-    if (!Number.isFinite(v)) return symbol + '…';
-    if (v >= 10000) return symbol + (v / 1000).toFixed(1) + 'k';
-    if (v >= 1000) return symbol + v.toFixed(0);
-    return symbol + v.toFixed(1);
-  },
-
-  async fetchFx() {
-    const now = Date.now();
-    if (this._fx && now - this._fxAt < 3600000) return this._fx;
-    try {
-      const r = await fetch('https://api.frankfurter.app/latest?from=EUR&to=USD', {
-        headers: { Accept: 'application/json' },
-      });
-      if (r.ok) {
-        const data = await r.json();
-        const rate = Number(data?.rates?.USD);
-        if (rate > 0) {
-          this._fx = rate;
-          this._fxAt = now;
-          return rate;
-        }
-      }
-    } catch (_) {}
-    return this._fx || this.EUR_USD_FALLBACK;
-  },
-
-  render(balance, guest, eurUsd) {
-    const btn = this._btn || document.getElementById('aci-avc');
-    if (!btn) return;
-    this._btn = btn;
-    const isGuest = guest || !Auth?.user;
-    const avc = Number(balance || 0);
-    const fx = eurUsd || this._fx || this.EUR_USD_FALLBACK;
-    const avcTxt = isGuest ? '— AVC' : (avc >= 10000 ? (avc / 1000).toFixed(1) + 'k AVC' : avc.toFixed(1) + ' AVC');
-    const eurTxt = isGuest ? '€—' : this.formatFiat(avc, '€');
-    const usdTxt = isGuest ? '$—' : this.formatFiat(avc * fx, '$');
-    let emoji = btn.querySelector('.avc-emoji');
-    let coreEl = btn.querySelector('.avc-core');
-    let eurEl = btn.querySelector('.avc-eur');
-    let usdEl = btn.querySelector('.avc-usd');
-    if (!emoji || !coreEl || !eurEl || !usdEl) {
-      btn.innerHTML = '<span class="avc-emoji">◎</span><span class="avc-core"></span><span class="avc-fiat"><span class="avc-eur"></span><span class="avc-usd"></span></span>';
-      btn.classList.add('app-shortcut-btn');
-      btn.hidden = false;
-      emoji = btn.querySelector('.avc-emoji');
-      coreEl = btn.querySelector('.avc-core');
-      eurEl = btn.querySelector('.avc-eur');
-      usdEl = btn.querySelector('.avc-usd');
-    }
-    if (emoji) emoji.textContent = '◎';
-    if (coreEl) coreEl.textContent = avcTxt;
-    if (eurEl) eurEl.textContent = eurTxt;
-    if (usdEl) usdEl.textContent = usdTxt;
-    btn.title = isGuest
-      ? 'AVC wallet · sign in to see € / $ balance'
-      : avc.toFixed(2) + ' AVC · €' + avc.toFixed(2) + ' · $' + (avc * fx).toFixed(2)
-        + ' · 1 AVC = 1 EUR · USD @ ' + fx.toFixed(4) + ' · tap for wallet';
-    btn.classList.toggle('avc-guest', isGuest);
-    btn.classList.toggle('avc-loaded', !isGuest);
-    if (!isGuest && this._last != null && balance != null && Math.abs(avc - this._last) > 0.001) {
-      btn.classList.add('avc-changed');
-      clearTimeout(btn._chgT);
-      btn._chgT = setTimeout(() => btn.classList.remove('avc-changed'), 1200);
-    }
-    if (!isGuest && balance != null) this._last = avc;
-  },
-
-  async refresh(opts) {
-    opts = opts || {};
-    if (opts.guest || !Auth?.user) {
-      this.render(null, true);
-      return 0;
-    }
-    const [bal, fx] = await Promise.all([
-      window.Commerce?.fetchBalance ? window.Commerce.fetchBalance() : Promise.resolve(0),
-      this.fetchFx(),
-    ]);
-    this.render(bal, false, fx);
-    return bal;
-  },
-
-  init() {
-    const btn = document.getElementById('aci-avc');
-    if (!btn || btn._avcInit) return;
-    btn._avcInit = true;
-    this._btn = btn;
-    btn.classList.add('app-shortcut-btn');
-    btn.hidden = false;
-    if (!btn._avcChipBound) {
-      btn._avcChipBound = true;
-      btn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        window.SuperCli?.run?.('wallet');
-      };
-    }
-    this.render(null, !Auth?.user);
-    void this.refresh({ quiet: true });
-    if (this._timer) clearInterval(this._timer);
-    this._timer = setInterval(() => void this.refresh({ quiet: true }), 45000);
-  },
-};
-window.AvcBalance = AvcBalance;
-
-if (window.AuditorPortal) {
-  Object.assign(window.AuditorPortal, {
-    open(opts) {
-      opts = opts || {};
-      const tab = opts.tab || 'company';
-      AstranovSiteShell?.close?.();
-      const sess = window.Auth?.session;
-      if (!sess?.access_token) {
-        AciCli?.print?.('Συνδεθείτε πρώτα στο Astranov — μετά Λογιστές', 'warn');
-        Auth?.openLoginModal?.('Σύνδεση για auditors.astranov.eu');
-        return;
-      }
-      const url = 'https://auditors.astranov.eu/?tab=' + encodeURIComponent(tab) + '&from_app=1';
-      let w = null;
-      try { w = window.open(url, 'astranov_auditors'); } catch (_) {}
-      if (!w) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.target = 'astranov_auditors';
-        a.rel = 'noopener';
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
-      const bridge = () => {
-        const s = window.Auth?.session;
-        if (!s?.access_token) return;
-        const payload = { type: 'astranov-auth', access_token: s.access_token, refresh_token: s.refresh_token };
-        try { if (w && !w.closed) w.postMessage(payload, 'https://auditors.astranov.eu'); } catch (_) {}
-      };
-      [400, 900, 1500, 3000, 5000, 8000].forEach((ms) => setTimeout(bridge, ms));
-      AppShortcuts?.track?.('auditors', 'Auditors');
-      SuperCli?.setContext?.('auditors');
-      GlobeDeck?.setPreview?.('📊 auditors.astranov.eu · λογιστική');
-      AciCli?.print?.('auditors.astranov.eu · πλήρης οθόνη · καθολικό Τ', 'ok');
-    },
-    async cli(parts) {
-      const sub = String(parts[1] || 'open').toLowerCase();
-      const tabMap = {
-        open: 'company', dashboard: 'dashboard', ledger: 'ledger', trial: 'trial',
-        balance: 'balance', invoices: 'invoices', tax: 'tax', mine: 'mine',
-        ισολογισμός: 'balance', ισοζύγιο: 'trial', καθολικό: 'ledger', λογιστική: 'company',
-      };
-      const tab = tabMap[sub] || 'company';
-      this.open({ tab });
-    },
-    syncGlobe() {},
-  });
-}
-
-if (window.CoinPortal) {
-  Object.assign(window.CoinPortal, {
-    open(tab) {
-      const path = tab === 'transparency' ? '/transparency' : '';
-      const url = 'https://coin.astranov.eu' + path;
-      if (window.AstranovSiteShell?.open) {
-        AstranovSiteShell.open(url, { domain: 'coin.astranov.eu', title: 'AVC · Astranov Coin' });
-      } else {
-        window.open(url, '_blank', 'noopener');
-      }
-      AppShortcuts?.track?.('coin', 'AVC');
-      SuperCli?.setContext?.('coin');
-    },
-    async cli(parts) {
-      const sub = String(parts[1] || 'balance').toLowerCase();
-      if (sub === 'open' || sub === 'wallet') {
-        this.open('wallet');
-        return;
-      }
-      if (sub === 'recharge' || sub === 'topup' || sub === 'top-up' || sub === 'add') {
-        const amount = Number(parts[2]);
-        if (!Auth?.user) {
-          AciCli?.print?.('Sign in first — tap G', 'warn');
-          Auth?.openLoginModal?.('Sign in to recharge AVC');
-          return;
-        }
-        if (!Number.isFinite(amount) || amount < 1) {
-          AciCli?.print?.('usage: wallet recharge <amount>  (min 1 AVC)', 'err');
-          return;
-        }
-        try {
-          const headers = await Auth.authHeaders();
-          const r = await fetch(SB_URL + '/functions/v1/astranov-api', {
-            method: 'POST',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path: '/balance/recharge', amount }),
-          });
-          const j = await r.json().catch(() => ({}));
-          if (!r.ok || j.error) {
-            AciCli?.print?.('recharge failed · ' + (j.error || 'HTTP ' + r.status), 'err');
-            return;
-          }
-          const bal = await AvcBalance.refresh();
-          AciCli?.print?.('◎ +' + amount.toFixed(2) + ' AVC credited · balance ' + Number(bal || 0).toFixed(2), 'ok');
-          GlobeDeck?.setPreview?.('◎ +' + amount.toFixed(2) + ' AVC · field-test top-up');
-        } catch (e) {
-          AciCli?.print?.('recharge error · ' + String(e.message || e), 'err');
-        }
-        return;
-      }
-      const bal = await AvcBalance.refresh();
-      const fx = await AvcBalance.fetchFx();
-      const eur = Number(bal || 0);
-      AciCli?.print?.('◎ ' + eur.toFixed(2) + ' AVC · €' + eur.toFixed(2) + ' · $' + (eur * fx).toFixed(2), 'ok');
-      AciCli?.print?.('wallet recharge 50 — instant AVC top-up for orders', 'dim');
-      GlobeDeck?.setPreview?.('◎ €' + eur.toFixed(2) + ' · $' + (eur * fx).toFixed(2));
-    },
-    syncGlobe() {},
-  });
-}
-
+/* === 49-astranov-site-shell.js === */
 // === ASTRANOV SITE SHELL — subdomains open over the globe (Earth browser) ===
 const AstranovSiteShell = {
   active: null,
@@ -14499,6 +15111,7 @@ const AstranovSiteShell = {
 };
 window.AstranovSiteShell = AstranovSiteShell;
 
+/* === 83-order-tracking.js === */
 // === ORDER TRACKING — live status on globe + CLI (delivery parity) ===
 const OrderTracking = {
   active: null,
@@ -14569,12 +15182,11 @@ const OrderTracking = {
     if (!order) return;
     this.active = order;
     this.showOnGlobe(order, vendor, driver);
-    void MarketplaceDeliveryEngine?.onOrderPlaced?.(order, vendor, driver);
     this.startPoll();
+    try { CityTasks?.init?.(); CityTasks?.fromOrder?.(order, vendor, driver); } catch (_) {}
     const m = this.meta(order.status);
     const msg = m.icon + ' Order ' + (order.short_id || order.id?.slice(0, 8)) + ' · ' + m.label
-      + (driver?.name ? ' · ' + driver.name : '')
-      + (order.driver_accepted_at ? '' : ' · tap route when driver accepts');
+      + (driver?.name ? ' · ' + driver.name : '');
     GlobeDeck?.say?.(msg, 'ok');
     Responsive3D?.visualReact?.('order', { order, vendor, lat: order.delivery_lat, lng: order.delivery_lng });
   },
@@ -14686,7 +15298,7 @@ const OrderTracking = {
     const total = order.calc?.total_avc ?? order.calc?.total_eur ?? items.reduce((s, i) => s + (i.qty || 1) * (i.price || 0), 0);
     const lines = [
       m.icon + ' ' + (order.short_id || order.id?.slice(0, 8)) + ' · ' + m.label,
-      (vendor?.name || order.vendor_id || 'vendor') + ' · ' + Number(total).toFixed(1) + ' AVC',
+      (vendor?.name || order.vendor_id || 'vendor') + ' · ' + Number(total).toFixed(1) + ' Coins',
     ];
     if (order.driver_name) lines.push('Driver: ' + order.driver_name);
     const step = m.step;
@@ -14723,12 +15335,6 @@ const OrderTracking = {
       } catch { /* */ }
     }
     this.showOnGlobe(order, vendor, driver);
-    const v = vendor || await this.resolveVendor(order.vendor_id);
-    if (order.driver_accepted_at && (order.status === 'active' || order.status === 'en_route' || order.status === 'picked_up')) {
-      void MarketplaceDeliveryEngine?.onDriverAccepted?.(order, v, driver);
-    } else if (order.status !== 'delivered' && order.status !== 'cancelled') {
-      void MarketplaceDeliveryEngine?.onOrderPlaced?.(order, v, driver);
-    }
     if (!opts.quiet && prev && prev !== order.status) {
       const m = this.meta(order.status);
       GlobeDeck?.say?.(m.icon + ' ' + (order.short_id || '') + ' → ' + m.label, 'ok');
@@ -14813,6 +15419,7 @@ const OrderTracking = {
 
 window.OrderTracking = OrderTracking;
 
+/* === 84-responsive-3d.js === */
 // === 3D RESPONSIVENESS — instant ack + parallel fast think (CLI · voice · globe) ===
 const Responsive3D = {
   FAST_MS: 8000,
@@ -14841,7 +15448,7 @@ const Responsive3D = {
     if (/order|παραγγελ|delivery|διανομ/.test(low)) return '🛒 Tracking on globe…';
     if (/locate|gps|where|που/.test(low)) return '📍 Flying to you…';
     if (/profile|login|account|ρόλ/.test(low)) return '👤 Profile orbit…';
-    if (/coin|wallet|avc|balance/.test(low)) return '◎ AVC pulse…';
+    if (/coin|wallet|Coins|balance/.test(low)) return '◎ Coins pulse…';
     return this.ACKS[this._pending % this.ACKS.length];
   },
 
@@ -14935,6 +15542,7 @@ const Responsive3D = {
 
 window.Responsive3D = Responsive3D;
 
+/* === 97-deferred-boot.js === */
 // === DEFERRED BOOT — init subsystems moved out of 99-boot.js ===
 const DeferredBoot = {
   _done: false,
@@ -14953,45 +15561,22 @@ const DeferredBoot = {
     go('presence', () => window.AstranovPresence?.init?.());
     go('cli', () => window.ProfileSite?.init?.());
     go('coders_ping', () => window.CodersHub?.init?.());
+
     go('lab_orbs', () => window.LabOrbs?.init?.());
     go('cli', () => window.SuperCli?.initBrain?.());
+    go('cli', () => window.SuperAdd?.init?.());
     go('globe', () => window.TelemachosPilot?.init?.());
-    go('globe', () => window.DrivingView?.init?.());
-    go('avc_balance', () => window.AvcBalance?.init?.());
-    void window.AvcBalance?.refresh?.();
 
     if (sl?.allows('commerce')) {
-      const bootCommerce = () => {
+      setTimeout(() => {
         const c = window.Commerce;
-        if (!c?.loadVendors) return;
-        c.loadVendors().then(() => {
-          c.initUI?.();
-          c.showOnGlobe?.();
-          window.AstranovPresence?.refresh?.();
-          MapDepict?.setHud?.('Business map', (c.vendors?.length || 0) + ' vendors · tap shop · order via deck');
-        }).catch(() => {});
-      };
-      const boot = () => {
-        bootCommerce();
-        AstranovCityShop?.loadPersisted?.();
-        AvcBalance?.init?.();
-        const u = window._lastPos;
-        if (u?.lat != null) void AstranovCityShop?.placeForUser?.(u.lat, u.lng);
-        void AvcBalance?.refresh?.();
-      };
-      boot();
-      setTimeout(boot, sl?.tier === 'slumber' ? 800 : 200);
-    }
-
-    const p = new URLSearchParams(location.search);
-    if (p.get('open') === 'auditors') {
-      const tab = p.get('tab') || 'company';
-      p.delete('open');
-      const qs = p.toString();
-      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
-      setTimeout(() => window.AuditorPortal?.open?.({ tab }), 900);
+        if (c?.loadVendors) {
+          c.loadVendors().then(() => c.initUI?.()).catch(() => {});
+        }
+      }, sl?.tier === 'slumber' ? 1200 : 400);
     }
   },
 };
 window.DeferredBoot = DeferredBoot;
-DeferredBoot.run();
+// Do NOT auto-run on script parse — LazyModules.schedule/ensure calls run().
+// Auto-run was freezing phones while the 360KB pack executed commerce+presence init.
