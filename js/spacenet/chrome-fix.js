@@ -1,43 +1,34 @@
-/* Astranov chrome-fix v11
- * Build: 20260811220000-stable-chrome
- * STOP panel left/right jump · equal top/bottom width · kill side rails flash
+/* Astranov chrome-fix v12
+ * Build: 20260812182000-agent-orbit-wire
+ * STOP panel jump · soft-load multi-agent orbit
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811220000-stable-chrome';
+  var BUILD = '20260812182000-agent-orbit-wire';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
     if (old && old.parentNode) old.parentNode.removeChild(old);
     var css = document.createElement('style');
     css.id = 'sn-chrome-fix-css';
-    /* Same fixed formula for TOP and BOTTOM — no left/transform centering */
     css.textContent = [
       ':root { --sn-chrome-w: min(720px, calc(100vw - 24px)); }',
-
-      /* Kill unauthorized edge scrolls (left/right flashing tools) */
       '#sn-leftscroll, #sn-rightscroll, .sn-edgescroll,',
       '#sn-left-panel, #sn-right-panel, #sn-left-rail, #sn-right-rail {',
       '  display: none !important; visibility: hidden !important;',
       '  pointer-events: none !important; opacity: 0 !important;',
       '  width: 0 !important; height: 0 !important; overflow: hidden !important;',
       '}',
-
-      /* Kill game dock / earth-ops chrome noise */
       '#sn-game-dock, .sn-game-dock, #sn-earth-ops-chip, #sn-space-hud {',
       '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
       '}',
       '#sn-arch-layer, #sn-device-alert, #sn-device-alert.show, #sn-silver-rive {',
       '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
       '}',
-
-      /* transparent surfaces */
       '#sn-topchrome, #sn-topchrome-panel, #stc-body, #stc-compact, #dock, #panel,',
       '#cli-log, #cli-form, #sn-task-ribbon, #stc-gadgets, .stc-gadget, .stc-g-body {',
       '  background: transparent !important; background-color: transparent !important; background-image: none !important;',
       '}',
-
-      /* TOP chrome host — full width flex center, no transform games */
       '#sn-topchrome {',
       '  position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;',
       '  width: 100% !important; transform: none !important;',
@@ -46,53 +37,35 @@
       '  pointer-events: none !important; z-index: 95 !important;',
       '}',
       '#sn-topchrome-panel {',
-      '  pointer-events: auto !important;',
-      '  position: relative !important;',
-      '  left: auto !important; right: auto !important; top: auto !important;',
-      '  transform: none !important;',
-      '  width: var(--sn-chrome-w) !important;',
-      '  max-width: var(--sn-chrome-w) !important;',
-      '  min-width: 0 !important;',
-      '  margin: 0 !important;',
-      '  box-sizing: border-box !important;',
+      '  pointer-events: auto !important; position: relative !important;',
+      '  left: auto !important; right: auto !important; top: auto !important; transform: none !important;',
+      '  width: var(--sn-chrome-w) !important; max-width: var(--sn-chrome-w) !important;',
+      '  min-width: 0 !important; margin: 0 !important; box-sizing: border-box !important;',
       '  background: rgba(0, 2, 8, 0.2) !important;',
       '  backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  border: 1px solid rgba(61, 158, 255, 0.16) !important;',
-      '  border-radius: 18px !important;',
-      '  box-shadow: none !important;',
+      '  border-radius: 18px !important; box-shadow: none !important;',
       '}',
-
-      /* BOTTOM dock — same flex center pattern as top */
       '#dock {',
       '  position: fixed !important; left: 0 !important; right: 0 !important; bottom: 0 !important;',
       '  width: 100% !important; transform: none !important;',
       '  display: flex !important; justify-content: center !important; align-items: flex-end !important;',
       '  padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px)) !important;',
-      '  box-sizing: border-box !important;',
-      '  pointer-events: none !important; z-index: 100 !important;',
+      '  box-sizing: border-box !important; pointer-events: none !important; z-index: 100 !important;',
       '}',
       '#panel {',
-      '  pointer-events: auto !important;',
-      '  position: relative !important;',
-      '  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important;',
-      '  transform: none !important;',
-      '  width: var(--sn-chrome-w) !important;',
-      '  max-width: var(--sn-chrome-w) !important;',
-      '  min-width: 0 !important;',
-      '  margin: 0 !important;',
-      '  flex: 0 1 auto !important;',
-      '  box-sizing: border-box !important;',
-      '  background: rgba(0, 2, 8, 0.2) !important;',
+      '  pointer-events: auto !important; position: relative !important;',
+      '  left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; transform: none !important;',
+      '  width: var(--sn-chrome-w) !important; max-width: var(--sn-chrome-w) !important;',
+      '  min-width: 0 !important; margin: 0 !important; flex: 0 1 auto !important;',
+      '  box-sizing: border-box !important; background: rgba(0, 2, 8, 0.2) !important;',
       '  backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;',
       '  border: 1px solid rgba(61, 158, 255, 0.16) !important;',
-      '  border-radius: 18px !important;',
-      '  box-shadow: none !important;',
+      '  border-radius: 18px !important; box-shadow: none !important;',
       '}',
       '#panel.collapsed { max-height: min(120px, 15vh) !important; min-height: 88px !important; }',
-
-      /* IDENTICAL handles */
       '#sn-topchrome-drag, #cli-drag {',
       '  height: 18px !important; min-height: 18px !important; max-height: 18px !important;',
       '  display: flex !important; align-items: center !important; justify-content: center !important;',
@@ -107,7 +80,6 @@
       '  box-shadow: 0 0 10px rgba(61, 158, 255, 0.75) !important;',
       '}',
       '#sn-topchrome-drag::after, #cli-drag::after { content: none !important; display: none !important; }',
-
       '#cli-form {',
       '  border-top: 1px solid rgba(61, 158, 255, 0.12) !important;',
       '  background: transparent !important;',
@@ -119,15 +91,11 @@
       '  background: transparent !important; color: #b8d9ff !important;',
       '  border: 1px solid rgba(61, 158, 255, 0.2) !important; border-radius: 12px !important;',
       '}',
-
-      /* ribbon stays inside CLI — multi-row ok, no overflow hide */
       '#sn-task-ribbon {',
       '  display: flex !important; flex-wrap: wrap !important; gap: 6px !important;',
       '  overflow: visible !important; max-height: none !important;',
       '  padding: 0 10px 4px !important;',
       '}',
-
-      /* POWER STANDBY blue (independent of radar) */
       '@keyframes sn-standby-pulse {',
       '  0%, 100% { box-shadow: inset 0 0 0 2px rgba(40,140,255,0.95), 0 0 14px rgba(40,140,255,0.55), 0 0 32px rgba(20,100,255,0.3); }',
       '  50% { box-shadow: inset 0 0 0 2.5px rgba(100,200,255,1), 0 0 26px rgba(70,180,255,0.9), 0 0 54px rgba(40,140,255,0.5); }',
@@ -158,9 +126,6 @@
       '  background: radial-gradient(circle at 35% 30%, rgba(200,40,50,0.3), rgba(12,0,4,0.95)) !important;',
       '  box-shadow: inset 0 0 0 2.5px rgba(232,33,39,0.95), 0 0 22px rgba(232,33,39,0.45) !important;',
       '}',
-
-      /* radar ring CSS is owned by chrome-radar — do not redefine here */
-
       '#sn-task-ribbon .sn-user-btn, #sn-task-ribbon #sn-user-btn {',
       '  width: 32px !important; height: 32px !important; border-radius: 50% !important;',
       '  border: 2px solid rgba(61,158,255,0.55) !important; overflow: hidden !important;',
@@ -219,7 +184,6 @@
     } catch (_) {}
   }
 
-  /** Strip any inline left/transform that causes jump */
   function stabilizePanels() {
     try {
       var top = document.getElementById('sn-topchrome-panel');
@@ -277,6 +241,26 @@
     } catch (_) {}
   }
 
+  function softLoadAgentOrbit() {
+    if (global.SNAgentOrbit || global.__SN_AGENT_ORBIT_LOADING) return;
+    global.__SN_AGENT_ORBIT_LOADING = 1;
+    try {
+      var s = document.createElement('script');
+      s.async = true;
+      s.crossOrigin = 'anonymous';
+      var b = (document.querySelector('meta[name="astranov-build"]') || {}).content || BUILD;
+      s.src = '/js/spacenet/agent-orbit.js?v=' + encodeURIComponent(b);
+      s.onerror = function () {
+        try {
+          s.src =
+            'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/agent-orbit.js?v=' +
+            encodeURIComponent(b);
+        } catch (_) {}
+      };
+      document.head.appendChild(s);
+    } catch (_) {}
+  }
+
   function boot() {
     injectCss();
     silenceBeeps();
@@ -285,16 +269,19 @@
     killGameDock();
     stabilizePanels();
     forceStandbyBlue();
+    softLoadAgentOrbit();
     setTimeout(function () {
       killSideRails();
       killGameDock();
       stabilizePanels();
       forceStandbyBlue();
+      softLoadAgentOrbit();
     }, 800);
     setTimeout(function () {
       killSideRails();
       killGameDock();
       stabilizePanels();
+      softLoadAgentOrbit();
     }, 2500);
     setTimeout(forceStandbyBlue, 5000);
     setInterval(silenceBeeps, 20000);
@@ -314,5 +301,6 @@
     build: BUILD,
     stabilizePanels: stabilizePanels,
     killSideRails: killSideRails,
+    softLoadAgentOrbit: softLoadAgentOrbit,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
