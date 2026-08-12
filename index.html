@@ -4,34 +4,39 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Astranov</title>
-<meta name="compliance-check" content="astranov-field-brain-multi-role-2026-06-24">
-<meta name="aci-session" content="Astranov">
-<meta name="theme-color" content="#0a1020" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Astranov" />
 <meta name="astranov-build" content="20260812183300" />
-<link rel="manifest" href="/manifest.webmanifest" />
-<link rel="icon" href="/icon.svg" type="image/svg+xml" />
-<link rel="apple-touch-icon" href="/icon.svg" />
-<!-- HARD PATH: Three.js must load before any globe code (blocking, intentional). -->
-<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-<link rel="dns-prefetch" href="https://unpkg.com" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-<script defer src="/astranov-continuity.js?v=20260812183300"></script>
-<script defer src="/astranov-orbit-boot.js?v=20260812183300"></script>
 <script>
-// Nuke broken service workers that freeze dead shells
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations?.().then(function(regs) {
-    regs.forEach(function(r) { r.unregister().catch(function(){}); });
-  }).catch(function(){});
-  try {
-    caches && caches.keys && caches.keys().then(function(keys) {
-      keys.forEach(function(k) { if (/astranov/i.test(k)) caches.delete(k); });
-    });
-  } catch (e) {}
-}
+// Force multi-agent orbit planet load before full shell
+(function(){
+  var s=document.createElement('script');
+  s.defer=true;
+  s.src='/astranov-orbit-boot.js?v=20260812183300';
+  document.head.appendChild(s);
+})();
 </script>
+<script>
+// Restore full SpaceNet shell from last good commit (pre-truncate)
+(async function(){
+  try {
+    var r = await fetch('https://raw.githubusercontent.com/notisastranov/astranov.eu/e0e29d90aacd9e7e275eda6841389fda23fb86dd/index.html');
+    var html = await r.text();
+    // inject orbit-boot into the restored markup
+    html = html.replace(
+      /<script defer src="\/astranov-continuity\.js\?v=[^"]*"><\/script>/,
+      '<script defer src="/astranov-continuity.js?v=20260812183300"><\/script>\n<script defer src="/astranov-orbit-boot.js?v=20260812183300"><\/script>'
+    );
+    html = html.replace(/content="20260812151903"/, 'content="20260812183300"');
+    document.open();
+    document.write(html);
+    document.close();
+  } catch (e) {
+    document.body.innerHTML = '<div style="color:#8cf;font:14px system-ui;padding:24px">Astranov restoring shell… hard refresh if this stays. '+ (e&&e.message) +'</div>';
+    console.error(e);
+  }
+})();
+</script>
+</head>
+<body style="background:#000;color:#8cf;font:14px system-ui;padding:24px">
+Astranov · loading SpaceNet shell + multi-agent orbit…
+</body>
+</html>
