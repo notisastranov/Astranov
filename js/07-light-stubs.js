@@ -312,15 +312,17 @@ var MarketplaceDeliveryEngine = window.MarketplaceDeliveryEngine || {
 };
 window.MarketplaceDeliveryEngine = MarketplaceDeliveryEngine;
 
-// Globe entities — real module in features; keep safe until loaded
-var GlobeEntity = window.GlobeEntity || {
-  register() {},
-  remove() {},
-  clear() {},
-  tick() {},
-  init() {},
-};
-window.GlobeEntity = GlobeEntity;
+// Globe entities — real module in features (const GlobeEntity).
+// Only attach window stub — do NOT `var GlobeEntity` (collides with features const).
+if (!window.GlobeEntity) {
+  window.GlobeEntity = {
+    register() {},
+    remove() {},
+    clear() {},
+    tick() {},
+    init() {},
+  };
+}
 
 const CoinPortal = { syncGlobe() {} };
 window.CoinPortal = CoinPortal;
