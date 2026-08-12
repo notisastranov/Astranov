@@ -3281,8 +3281,16 @@ const AstranovCoreBrain = {
       actions.push({ type: 'resources', query: m });
     }
 
+    // SpaceNet channel manager (field hub — no third-party brands)
+    if (/\b(channels?|spacenet\s*cm|field\s*kitchen|publish\s*place|catalog\s*sync)\b/i.test(low)
+      || /^cm\b/i.test(low)) {
+      intent = 'spacenet_cm';
+      actions.push({ type: 'spacenet_cm', query: m });
+    }
+
     // SpaceNet crawlers
-    if (/spacenet|crawl(er|ers)?|ingest|scan\s*(city|area|sector)/i.test(low)) {
+    if (/spacenet|crawl(er|ers)?|ingest|scan\s*(city|area|sector)/i.test(low)
+      && intent !== 'spacenet_cm') {
       intent = 'spacenet';
       actions.push({ type: 'spacenet', query: m });
     }
@@ -3374,6 +3382,10 @@ const AstranovCoreBrain = {
           ResourceMonitor?.init?.();
           const msg = ResourceMonitor?.handleCli?.(a.query || 'resources');
           results.push(msg || 'resources');
+        } else if (a.type === 'spacenet_cm') {
+          SpaceNetCM?.init?.();
+          const msg = SpaceNetCM?.handleCli?.(a.query || 'channels status');
+          results.push(msg || 'spacenet cm');
         } else if (a.type === 'spacenet') {
           const p = this.userPos();
           const msg = await SpaceNetBrain?.handleCli?.(a.query || 'crawl');
@@ -3712,8 +3724,8 @@ var AppShortcuts = {
     let row = document.getElementById('app-shortcut-row');
     if (!row) {
       row = document.createElement('div');
-      row.id = 'app-shortcut-row'; row.style.display = 'none'; row.hidden = true;
-      /* SPECS: no separate app-shortcut bar */ row.style.cssText='display:none!important'; row.setAttribute('role', 'toolbar');
+      row.id = 'app-shortcut-row';
+      row.setAttribute('role', 'toolbar');
       row.setAttribute('aria-label', 'Open applications');
       login.insertAdjacentElement('afterend', row);
     }
@@ -4080,12 +4092,6 @@ window.__astranovBootFeatures = function __astranovBootFeatures() {
     else setTimeout(run, Math.min(ms, 800));
   };
 
-  // OS may already be up from app boot — ensure once
-  soft('AstranovOS', () => {
-    try { AstranovOS?.init?.(); } catch (_) {}
-    try { AstranovBrowser?.init?.(); } catch (_) {}
-  });
-
   soft('GlobeEntity', () => GlobeEntity?.init?.());
   soft('CityTasks', () => {
     CityTasks?.init?.();
@@ -4126,17 +4132,27 @@ window.__astranovBootFeatures = function __astranovBootFeatures() {
     } catch (_) {}
   }
 
-  // SPECS / owner: no SpaceNet start popup — coach permanently off
-  window.showFirstRunCoach = function showFirstRunCoach() {
-    try {
+  if (!window.showFirstRunCoach) {
+    window.showFirstRunCoach = function showFirstRunCoach() {
+      try { if (localStorage.getItem('astranov:coach-v2')) return; } catch (_) { return; }
       const el = document.getElementById('first-run-coach');
-      if (el) { el.hidden = true; el.style.display = 'none'; el.innerHTML = ''; }
-      localStorage.setItem('astranov:coach-v3-os', '1');
-      localStorage.setItem('astranov:coach-disabled', '1');
-    } catch (_) {}
-  };
+      if (!el) return;
+      if (PublicCopy?.coachHtml) {
+        el.innerHTML = PublicCopy.coachHtml()
+          + '<button type="button" id="first-run-coach-ok">Got it</button>';
+      }
+      el.hidden = false;
+      document.getElementById('first-run-coach-ok')?.addEventListener('click', () => {
+        el.hidden = true;
+        try { localStorage.setItem('astranov:coach-v2', '1'); } catch (_) {}
+      });
+    };
+  }
+  setTimeout(() => {
+    try { showFirstRunCoach?.(); } catch (_) {}
+  }, 900);
 
   window._astranovFeaturesReady = true;
   document.documentElement.dataset.astranovPhase = 'features';
-  console.log('%c[Spartan] OS · browser · field hub · channels · tasks', 'color:#ffdd44;font-weight:700');
+  console.log('%c[Spartan] field hub · channels · tasks', 'color:#ffdd44;font-weight:700');
 };
