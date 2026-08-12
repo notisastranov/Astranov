@@ -268,42 +268,6 @@ const GlobeDeck = {
     if (window.AciCli) AciCli.buffer = '';
   },
 
-  ensureCliVisible(kind) {
-    /* SPECS: USE THE CLI — every log/error/task opens the scroll */
-    try {
-      this._userEngaged = true;
-      if (this._collapseTimer) { clearTimeout(this._collapseTimer); this._collapseTimer = null; }
-      if (this._size === 'collapsed' || !this.expanded) {
-        this._size = this._isMobileDeck?.() ? 'third' : 'third';
-        this.expanded = true;
-      }
-      this.applySize?.();
-      const d = this.deck?.() || document.getElementById('globe-deck');
-      if (d) {
-        d.classList.remove('collapsed');
-        d.classList.add('expanded', 'size-third');
-        d.style.maxHeight = '';
-        d.style.minHeight = '';
-      }
-      const body = document.getElementById('globe-deck-body');
-      if (body) {
-        body.style.display = 'flex';
-        body.style.flexDirection = 'column';
-        body.style.minHeight = '100px';
-        body.style.maxHeight = '42vh';
-        body.style.overflow = 'hidden';
-      }
-      const out = this.logEl?.() || document.getElementById('globe-deck-log');
-      if (out) {
-        out.style.display = 'block';
-        out.style.overflowY = 'auto';
-        out.style.minHeight = '72px';
-        out.style.flex = '1';
-      }
-      if (window.AciCli) AciCli.open = true;
-    } catch (_) {}
-  },
-
   log(text, cls) {
     const kind = cls || 'out';
     const repaired = this._repairLine(text, kind);
@@ -332,7 +296,7 @@ const GlobeDeck = {
     if (this._lastSay === key && now - this._lastSayT < 5000) return;
     this._lastSay = key;
     this._lastSayT = now;
-    if (kind === 'cmd' || kind === 'err' || kind === 'ok' || kind === 'reply' || kind === 'out' || kind === 'activity') this.expand(kind === 'err' ? 'Activity' : 'CLI');
+    if (kind === 'cmd' || kind === 'err') this.expand();
     else if (this._userEngaged && this.expanded && (kind === 'reply' || kind === 'out' || kind === 'ok')) { /* stay open */ }
     const row = document.createElement('div');
     row.className = 'deck-line deck-' + kind;
@@ -410,11 +374,10 @@ const GlobeDeck = {
 
   showError(msg) {
     this._userEngaged = true;
-    try { document.getElementById('astranov-hard-error')?.remove?.(); } catch (_) {}
-    this.ensureCliVisible('err');
-    this.expand('Activity');
-    this.log('⚠ ' + String(msg || 'error'), 'err');
-    this.setPreview(String(msg || 'error').slice(0, 80));
+    this.expand('Error');
+    this.log(msg, 'err');
+    this.setPreview(msg);
+    this.ping();
   },
 
   clearLog() {
