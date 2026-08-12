@@ -1,10 +1,10 @@
-/* Astranov Collective layer — Build 20260812034500
- * Ambient field (no omni keyword) + CLI train/teach/interest/law/export.
- * Soft-enhances SNOmni when present; stands alone if not.
+/* Astranov Collective layer — Build 20260812044000-no-chat-steal
+ * Ambient field + CLI train/teach/interest/law/export.
+ * Chat conversation is owned by SNMindBridge — this layer must not steal it as place-search.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812034500-chrome-collective';
+  var BUILD = '20260812044000-no-chat-steal';
   if (global.__SN_COLLECTIVE_LAYER === BUILD) return;
   global.__SN_COLLECTIVE_LAYER = BUILD;
 
@@ -114,12 +114,6 @@
     if (global.SNOmni && SNOmni.search) {
       return SNOmni.search(q, opts);
     }
-    try {
-      if (global.SNAstranovMind && SNAstranovMind.answer) {
-        var a = SNAstranovMind.answer(q);
-        if (a && a.text) log(a.text.slice(0, 200), 'ok');
-      }
-    } catch (_) {}
     return { ok: false };
   }
 
@@ -158,17 +152,7 @@
       if (global.SNOmni && SNOmni.exportMachine) return SNOmni.exportMachine();
     } catch (_) {}
     global.__SN_COLLECTIVE_EXPORT = payload;
-    try {
-      console.log('[Collective export]', payload);
-    } catch (_) {}
-    log(
-      'Machine export · trains ' +
-        trains.length +
-        ' · interests ' +
-        interests.length +
-        ' · window.__SN_COLLECTIVE_EXPORT',
-      'ok'
-    );
+    log('Machine export · trains ' + trains.length + ' · interests ' + interests.length, 'ok');
   }
 
   function handle(raw) {
@@ -183,7 +167,7 @@
         teach(sep[0], sep.slice(1).join(' = ').trim());
         return true;
       }
-      log('Usage: teach pizza near me = check marina first', 'dim');
+      log('Usage: teach Q = A', 'dim');
       return true;
     }
     if (/^remember\s+/i.test(line)) {
@@ -232,26 +216,18 @@
     }
     if (low === 'collective' || low === 'unity' || low === 'we') {
       log('════ COLLECTIVE OS ════', 'ok');
-      log('Ambient · ' + (ambient ? 'ON' : 'OFF') + ' · no omni keyword needed', 'ok');
+      log('Ambient · ' + (ambient ? 'ON' : 'OFF'), 'ok');
       log('Interests · ' + interests.join(' · '), 'dim');
-      log('Trains ' + trains.length + ' · laws ' + laws.length, 'dim');
-      log('teach Q = A · interest pizza · law … · export', 'ok');
       return true;
     }
     if (low === 'ambient on' || low === 'field on') {
       ambient = true;
-      try {
-        if (global.SNOmni && SNOmni.setAmbient) SNOmni.setAmbient(true);
-      } catch (_) {}
       log('Ambient field ON', 'ok');
       void ambientPulse('force');
       return true;
     }
     if (low === 'ambient off' || low === 'field off') {
       ambient = false;
-      try {
-        if (global.SNOmni && SNOmni.setAmbient) SNOmni.setAmbient(false);
-      } catch (_) {}
       log('Ambient field OFF', 'dim');
       return true;
     }
@@ -279,23 +255,7 @@
       return true;
     }
 
-    if (
-      /\b(find|search|where|what|who|near|around|map|wiki|weather|look\s*up|show\s+me)\b/i.test(low) ||
-      /\?$/.test(line) ||
-      (line.split(/\s+/).length >= 2 &&
-        line.split(/\s+/).length <= 8 &&
-        !/^(ok|yes|no|hi|hey|hello|thanks|thx)$/i.test(low))
-    ) {
-      void (async function () {
-        if (global.SNOmni && SNOmni.ask) {
-          var ans = await SNOmni.ask(line);
-          if (ans) log(String(ans).slice(0, 240), 'ok');
-        } else {
-          await runSearch(line, { graphics: true });
-        }
-      })();
-      return true;
-    }
+    // Natural chat is owned by SNMindBridge — do not steal as place-search
     return false;
   }
 
@@ -332,9 +292,6 @@
         }
       } catch (_) {}
     }, 14000);
-    setTimeout(function () {
-      log('Collective · ambient ON · type: teach · interest · law · collective', 'dim');
-    }, 7000);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
