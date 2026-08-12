@@ -1,5 +1,6 @@
 // === PERF LAZY + TURBO — defer 574KB pack · adaptive boot · no duplicate RAF load ===
 // AI HANDOFF: astranov-continuity.js → features.perfLazyBoot
+// FORCE-DEPLOY 20260812184500
 (function perfLazyBoot() {
   const LM = window.LazyModules;
   if (!LM || LM._perfLazy) return;
@@ -116,19 +117,19 @@
   }, 200);
 })();
 
-/* OWNER soft-load: multi-agent orbit + marina discipline + mind bridge */
+/* OWNER soft-load 20260812184500: agent-orbit + marina discipline + mind bridge */
 (function ownerSoftLoad() {
   if (window.__SN_OWNER_SOFTLOAD) return;
   window.__SN_OWNER_SOFTLOAD = 1;
-  var B = (document.querySelector('meta[name="astranov-build"]') || {}).content || Date.now();
+  var B = '20260812184500';
   function load(name) {
     var s = document.createElement('script');
     s.async = true;
     s.crossOrigin = 'anonymous';
-    s.src = '/js/spacenet/' + name + '.js?v=' + encodeURIComponent(B);
+    s.src = '/js/spacenet/' + name + '.js?v=' + B;
     s.onerror = function () {
       try {
-        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/' + name + '.js?v=' + encodeURIComponent(B);
+        s.src = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/' + name + '.js?v=' + B;
       } catch (_) {}
     };
     document.head.appendChild(s);
@@ -136,7 +137,8 @@
   function run() {
     ['chrome-marina-discipline', 'chrome-mind-bridge', 'agent-orbit'].forEach(load);
   }
-  if (document.readyState === 'complete') setTimeout(run, 700);
-  else window.addEventListener('load', function () { setTimeout(run, 700); });
-  setTimeout(run, 2800);
+  if (document.readyState === 'complete') setTimeout(run, 400);
+  else window.addEventListener('load', function () { setTimeout(run, 400); });
+  setTimeout(run, 1500);
+  setTimeout(run, 4000);
 })();
