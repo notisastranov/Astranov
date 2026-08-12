@@ -1,5 +1,6 @@
 // === GLOBE ENTITIES — every map thing has a name, proximity label, tap action ===
-const GlobeEntity = {
+// `var` (not const): critical may already have window.GlobeEntity; avoid TDZ/redeclare crash.
+var GlobeEntity = {
   entities: new Map(),
   _labelRoot: null,
   _selected: null,
