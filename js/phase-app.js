@@ -13,9 +13,7 @@ var CityLife = (typeof window !== 'undefined' && window.CityLife) || { locateAnd
 // Do not redeclare userLocated — critical owns it (var) for cross-script assigns.
 var CliRibbon = (typeof window !== 'undefined' && window.CliRibbon) || { setNotice:function(){}, render:function(){}, init:function(){} };
 var MarketplaceDeliveryEngine = (typeof window !== 'undefined' && window.MarketplaceDeliveryEngine) || { missions:[], STATUS:{}, _globeMeshes:[], init:function(){}, tick:function(){}, closeHud:function(){}, showHud:function(){}, pickFromGlobeHit:function(){return false}, onDriverAccepted:async function(){return null} };
-var MultiTile = (typeof window !== 'undefined' && window.MultiTile) || { init:function(){}, openAt:function(){}, openFromPlus:function(){}, close:function(){} };
-var CityTasks = (typeof window !== 'undefined' && window.CityTasks) || { init:function(){}, launch:function(){return {ok:false}}, claim:async function(){return {ok:false}}, coinsBalance:function(){return {balance:0,held:0,available:0}} };
-var TaskBoard = (typeof window !== 'undefined' && window.TaskBoard) || { init:function(){}, showOffer:function(){}, showActive:function(){}, dismiss:function(){} };
+// MultiTile / CityTasks / TaskBoard are defined with const/var in their modules — do not redeclare here.
 
 /* === 06-fetch-json.js === */
 // === FETCH JSON — timeout + visible errors for all ACI calls ===
