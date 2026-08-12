@@ -9,12 +9,6 @@ window.__astranovBootFeatures = function __astranovBootFeatures() {
     else setTimeout(run, Math.min(ms, 800));
   };
 
-  // OS may already be up from app boot — ensure once
-  soft('AstranovOS', () => {
-    try { AstranovOS?.init?.(); } catch (_) {}
-    try { AstranovBrowser?.init?.(); } catch (_) {}
-  });
-
   soft('GlobeEntity', () => GlobeEntity?.init?.());
   soft('CityTasks', () => {
     CityTasks?.init?.();
@@ -22,8 +16,6 @@ window.__astranovBootFeatures = function __astranovBootFeatures() {
   });
   soft('SpaceNetCM', () => SpaceNetCM?.init?.());
   soft('CoreBrain', () => AstranovCoreBrain?.init?.());
-  soft('DeliveryDNA', () => DeliveryDNA?.init?.());
-  soft('MultiTile', () => MultiTile?.init?.());
   soft('Logo', () => AstranovLogo?.init?.());
   soft('Shortcuts', () => {
     try { AppShortcuts?.init?.(); } catch (_) {}
@@ -57,17 +49,27 @@ window.__astranovBootFeatures = function __astranovBootFeatures() {
     } catch (_) {}
   }
 
-  // SPECS / owner: no SpaceNet start popup — coach permanently off
-  window.showFirstRunCoach = function showFirstRunCoach() {
-    try {
+  if (!window.showFirstRunCoach) {
+    window.showFirstRunCoach = function showFirstRunCoach() {
+      try { if (localStorage.getItem('astranov:coach-v2')) return; } catch (_) { return; }
       const el = document.getElementById('first-run-coach');
-      if (el) { el.hidden = true; el.style.display = 'none'; el.innerHTML = ''; }
-      localStorage.setItem('astranov:coach-v3-os', '1');
-      localStorage.setItem('astranov:coach-disabled', '1');
-    } catch (_) {}
-  };
+      if (!el) return;
+      if (PublicCopy?.coachHtml) {
+        el.innerHTML = PublicCopy.coachHtml()
+          + '<button type="button" id="first-run-coach-ok">Got it</button>';
+      }
+      el.hidden = false;
+      document.getElementById('first-run-coach-ok')?.addEventListener('click', () => {
+        el.hidden = true;
+        try { localStorage.setItem('astranov:coach-v2', '1'); } catch (_) {}
+      });
+    };
+  }
+  setTimeout(() => {
+    try { showFirstRunCoach?.(); } catch (_) {}
+  }, 900);
 
   window._astranovFeaturesReady = true;
   document.documentElement.dataset.astranovPhase = 'features';
-  console.log('%c[Spartan] OS · browser · field hub · channels · tasks', 'color:#ffdd44;font-weight:700');
+  console.log('%c[Spartan] field hub · channels · tasks', 'color:#ffdd44;font-weight:700');
 };
