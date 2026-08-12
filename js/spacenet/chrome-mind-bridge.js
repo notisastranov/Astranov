@@ -1,16 +1,11 @@
 /**
- * SNMindBridge — always-on · wired to owner backend (ai-router)
- * ============================================================
- * Default deep path: Supabase functions/v1/ai-router
- * Keys never leave the server. Free providers first.
- * Paid XAI only when server says architect + free tier exhausted.
- * Client rate limits + identity so bots cannot drain.
- *
- * Build: 20260812043000-backend-wired
+ * SNMindBridge — chat-first · backend-wired
+ * Build: 20260812044000-chat-first
+ * Conversation owns the CLI. Place-search must not steal chat.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812043000-backend-wired';
+  var BUILD = '20260812044000-chat-first';
   if (global.__SN_MIND_BRIDGE === BUILD) return;
   global.__SN_MIND_BRIDGE = BUILD;
 
@@ -68,7 +63,7 @@
       dailyFreeTurns: 48,
       verifiedDailyTurns: 200,
       ownerDailyTurns: 2000,
-      minGapMs: 1200,
+      minGapMs: 800,
       requireVerifyForBridge: false,
     },
     usage: { day: '', turns: 0 },
@@ -179,7 +174,7 @@
 
   function canTakeTurn() {
     if (S.usage.turns >= turnLimit()) return false;
-    var gap = S.cfg.minGapMs || 1200;
+    var gap = S.cfg.minGapMs || 800;
     if (Date.now() - S.lastCallAt < gap) return false;
     return true;
   }
@@ -204,9 +199,6 @@
       if (global.SNCollectiveLayer && SNCollectiveLayer.teach) SNCollectiveLayer.teach(q, a);
     } catch (_) {}
     try {
-      if (global.SNOmni && SNOmni.teach) SNOmni.teach(q, a, ['mind']);
-    } catch (_) {}
-    try {
       if (global.SNAstranovMind && SNAstranovMind.teach)
         SNAstranovMind.teach(q, a, ['mind', 'usage']);
     } catch (_) {}
@@ -220,12 +212,7 @@
       teachLocal(teachMatch[1].trim(), teachMatch[2].trim());
       return 'Learned · ' + teachMatch[1].trim().slice(0, 40);
     }
-    try {
-      if (global.SNOmni && SNOmni.ask) {
-        var out = await SNOmni.ask(msg);
-        if (out) return String(out);
-      }
-    } catch (_) {}
+    // NEVER route chat through SNOmni.ask — that is place-search (marina/POI), not conversation.
     try {
       if (global.SNAstranovMind && SNAstranovMind.answer) {
         var a = SNAstranovMind.answer(msg);
@@ -234,7 +221,7 @@
     } catch (_) {}
     try {
       if (global.SNAi && SNAi.ask) {
-        var b = await SNAi.ask(msg, { source: 'mind-bridge', local: true });
+        var b = await SNAi.ask(msg, { source: 'mind-bridge', local: true, noSearch: true });
         if (b) return String(b);
       }
     } catch (_) {}
@@ -243,7 +230,11 @@
       return 'I am here inside SpaceNet. Listening. Speak naturally.';
     if (/who are you|what are you/.test(low))
       return 'Astranov collective mind — free cycle for everyone, deeper path protected on the server.';
-    return 'Local collective · backend quiet this turn. “' + String(msg).slice(0, 100) + '”;';
+    return (
+      'I heard you. Backend was quiet that turn — try again in a second. “' +
+      String(msg).slice(0, 100) +
+      '”'
+    );
   }
 
   async function bridgeAnswer(msg) {
@@ -275,10 +266,7 @@
         return 'Slow down a moment — the collective pool is protected.';
       }
       if (!res.ok) {
-        var errT = await res.text().catch(function () {
-          return '';
-        });
-        console.warn('[mind-bridge]', res.status, errT.slice(0, 120));
+        console.warn('[mind-bridge]', res.status);
         return null;
       }
       var j = await res.json();
@@ -299,13 +287,12 @@
 
     if (!canTakeTurn()) {
       if (S.usage.turns >= turnLimit() && !isOwner()) {
-        var lim =
-          'Daily mind turns used. Contribute for a higher free ceiling, or continue tomorrow.';
+        var lim = 'Daily mind turns used. Continue tomorrow or verify as contributor.';
         if (!opts.silent) log(lim, 'dim');
         return lim;
       }
       await new Promise(function (r) {
-        setTimeout(r, Math.max(50, (S.cfg.minGapMs || 1200) - (Date.now() - S.lastCallAt)));
+        setTimeout(r, Math.max(50, (S.cfg.minGapMs || 800) - (Date.now() - S.lastCallAt)));
       });
     }
 
@@ -314,6 +301,7 @@
     if (!opts.silent) {
       expandCli();
       preview('…');
+      log('…', 'dim');
     }
 
     var answer = await bridgeAnswer(msg);
@@ -347,17 +335,10 @@
     if (RESERVED.test(low)) return false;
     if (/^(mind|verify me|i contribute|contributor|mind bridge|bridge set|bridge clear)\b/i.test(low))
       return false;
-    if (/^(teach|train|interest|law|remember|export|collective|ambient|forget)\b/i.test(low))
+    if (/^(teach|train|interest|law|export|collective|ambient|forget)\b/i.test(low))
       return false;
-    if (/\?$/.test(line)) return true;
-    if (
-      /^(hi|hello|hey|γεια|ela|please|can you|could you|i want|i need|make|fix|change|why|how|what|who|where|when|show me|find|search|help)\b/i.test(
-        low
-      )
-    )
-      return true;
-    if (line.split(/\s+/).length >= 2) return true;
-    return false;
+    if (/^(find places|search places|search near|map near|overpass)\b/i.test(low)) return false;
+    return true;
   }
 
   function handleLine(raw) {
@@ -367,10 +348,8 @@
 
     if (low === 'mind' || low === 'mind status') {
       log(
-        'Mind · backend ' +
-          (S.cfg.bridgeUrl ? 'wired' : 'off') +
-          ' · ' +
-          (isOwner() ? 'architect' : isVerified() ? 'verified' : 'open free') +
+        'Mind · chat-first · backend ' +
+          (S.cfg.bridgeUrl ? 'on' : 'off') +
           ' · turns ' +
           S.usage.turns +
           '/' +
@@ -391,13 +370,6 @@
       }
       S.cfg.bridgeUrl = line.replace(/^(mind\s+)?bridge set\s+/i, '').trim();
       saveCfg();
-      log('Bridge URL updated', 'ok');
-      return true;
-    }
-    if (low === 'mind bridge clear' || low === 'bridge clear') {
-      if (!isOwner()) return true;
-      S.cfg.bridgeUrl = defaultBridgeUrl();
-      saveCfg();
       return true;
     }
 
@@ -410,8 +382,7 @@
 
   function installCli() {
     if (!global.SNCli || typeof SNCli.run !== 'function') return;
-    if (SNCli._snMindBridgeHookV3) return;
-    SNCli._snMindBridgeHookV3 = true;
+    if (SNCli._snMindOuter === handleLine) return;
     var prev = SNCli.run.bind(SNCli);
     SNCli.run = function (raw) {
       try {
@@ -419,13 +390,13 @@
       } catch (_) {}
       return prev(raw);
     };
+    SNCli._snMindOuter = handleLine;
+    SNCli._snMindBridgeHookV3 = true;
   }
 
   function wireSilver() {
     try {
       if (!global.SNChromeHelper) return;
-      if (SNChromeHelper._mindBridgeV3) return;
-      SNChromeHelper._mindBridgeV3 = true;
       SNChromeHelper.ask = async function (message) {
         return await talk(message, { speak: true });
       };
@@ -435,21 +406,23 @@
         global.__SN_SILVER_ACTIVE = true;
         expandCli();
         if (prevAct) prevAct();
+        void talk('Hello — I am here inside SpaceNet. Talk to me.', { speak: true });
       };
+      SNChromeHelper._mindBridgeV3 = true;
     } catch (_) {}
   }
 
   function presencePing() {
     try {
-      if (sessionStorage.getItem('sn:mind-presence-v3')) return;
-      sessionStorage.setItem('sn:mind-presence-v3', '1');
+      if (sessionStorage.getItem('sn:mind-presence-v4')) return;
+      sessionStorage.setItem('sn:mind-presence-v4', '1');
     } catch (_) {}
     setTimeout(function () {
       try {
         expandCli();
-        log('Mind · backend live · listening', 'dim');
+        log('Mind · chat-first · backend live', 'dim');
       } catch (_) {}
-    }, 5000);
+    }, 4000);
   }
 
   function init() {
@@ -468,11 +441,12 @@
     installCli();
     wireSilver();
     presencePing();
-    setTimeout(installCli, 800);
-    setTimeout(wireSilver, 1200);
-    setTimeout(installCli, 2500);
-    setTimeout(wireSilver, 3000);
-    setTimeout(installCli, 6000);
+    setTimeout(installCli, 400);
+    setTimeout(wireSilver, 800);
+    setTimeout(installCli, 1500);
+    setTimeout(installCli, 4000);
+    setTimeout(installCli, 8000);
+    setInterval(installCli, 12000);
   }
 
   global.SNMindBridge = {
