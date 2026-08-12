@@ -1,10 +1,10 @@
-/* Astranov chrome-fix v12
- * Build: 20260812182000-agent-orbit-wire
- * STOP panel jump · soft-load multi-agent orbit
+/* Astranov chrome-fix v13
+ * Build: 20260812190000-chrome-orbit-restore
+ * STOP panel jump · hide ancient phase-deck · soft-load orbit
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812182000-agent-orbit-wire';
+  var BUILD = '20260812190000-chrome-orbit-restore';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
@@ -23,6 +23,11 @@
       '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
       '}',
       '#sn-arch-layer, #sn-device-alert, #sn-device-alert.show, #sn-silver-rive {',
+      '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
+      '}',
+      /* If modern chrome is present, kill the ancient phase deck so it never covers scrolls */
+      'body:has(#sn-topchrome) #globe-deck, body:has(#sn-topchrome) #aci-hud,',
+      'body:has(#sn-topchrome) #astranov-logo, body:has(#sn-topchrome) #news-ticker {',
       '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
       '}',
       '#sn-topchrome, #sn-topchrome-panel, #stc-body, #stc-compact, #dock, #panel,',
