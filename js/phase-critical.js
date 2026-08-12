@@ -672,6 +672,21 @@ window.AuditorPortal = AuditorPortal;
 const CoinsJustice = { loadConstitution() {}, syncGlobe() {} };
 window.AvcJustice = CoinsJustice;
 
+// Marketplace delivery — real engine lives in legacy monolith; keep lexical-safe stub
+// so classic `MarketplaceDeliveryEngine?.x` never throws ReferenceError.
+var MarketplaceDeliveryEngine = window.MarketplaceDeliveryEngine || {
+  missions: [],
+  STATUS: {},
+  _globeMeshes: [],
+  init() {},
+  tick() {},
+  closeHud() {},
+  showHud() {},
+  pickFromGlobeHit() { return false; },
+  async onDriverAccepted() { return null; },
+};
+window.MarketplaceDeliveryEngine = MarketplaceDeliveryEngine;
+
 const CoinPortal = { syncGlobe() {} };
 window.CoinPortal = CoinPortal;
 
