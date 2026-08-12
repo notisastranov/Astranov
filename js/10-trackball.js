@@ -1,7 +1,7 @@
 // Globe gestures — primary UI (Google Earth / Maps style). CLI is secondary.
 const canvas = renderer.domElement;
 // Stronger drag — 0.0028 felt like the globe was glued down
-const TRACK_SENS = 0.0026;
+const TRACK_SENS = 0.0062;
 const ZOOM_MIN = 1.05;
 const ZOOM_MAX = 18;
 const ZOOM_SMOOTH = 0.11;
@@ -29,55 +29,6 @@ function trackballMove(clientX, clientY) {
   trackVelY = dy * TRACK_SENS * 0.88;
 }
 
-
-function openMultiTileAtPoint(clientX, clientY, source) {
-  /* SPECS: long-press any point solar/global/national/city → MultiTile */
-  const open = (lat, lng, tier) => {
-    try {
-      if (!window.MultiTile || typeof MultiTile.openAt !== 'function') {
-        const s = document.createElement('script');
-        s.src = '/js/62-multi-tile.js?v=' + encodeURIComponent(
-          (document.querySelector('meta[name="astranov-build"]') || {}).content || Date.now()
-        );
-        s.onload = () => {
-          try { MultiTile.init?.(); MultiTile.openAt?.(lat, lng, { source: source || 'long-press', tier }); }
-          catch (e) { console.warn('[MultiTile]', e); try { window.AstranovAddOffer?.noteAddFail?.(e.message || 'MultiTile open failed'); } catch (_) {} }
-        };
-        s.onerror = () => { try { window.AstranovAddOffer?.noteAddFail?.('MultiTile script failed to load'); } catch (_) {} };
-        document.head.appendChild(s);
-        return;
-      }
-      MultiTile.init?.();
-      MultiTile.openAt?.(lat, lng, {
-        source: source || 'long-press',
-        tier: tier || MultiTile.currentTier?.() || ZoomTiers?.current?.()?.id || 'global',
-      });
-    } catch (e) {
-      console.warn('[long-press MultiTile]', e);
-      try { window.AstranovAddOffer?.noteAddFail?.(e.message || 'long-press add failed'); } catch (_) {}
-    }
-  };
-  let pin = null;
-  try { pin = (typeof latLngFromScreen === 'function') ? latLngFromScreen(clientX, clientY) : null; } catch (_) {}
-  if (!pin || pin.lat == null) {
-    try { pin = TrackballGuard?.facingLatLng?.() || null; } catch (_) {}
-  }
-  if (!pin || pin.lat == null) pin = window._lastPos || null;
-  if (!pin || pin.lat == null) {
-    // Solar / miss: still open tile at last known or equator facing
-    pin = { lat: 0, lng: 0 };
-  }
-  const tier = ZoomTiers?.current?.()?.id
-    || (CityMap?.active ? 'city' : null)
-    || MultiTile?.currentTier?.()
-    || 'global';
-  open(+pin.lat, +pin.lng, tier);
-  try {
-    MapDepict?.setHud?.('Multi-tile · hold', 'long-press');
-    GlobeDeck?.setPreview?.('Place tile · ' + (+pin.lat).toFixed(3) + ', ' + (+pin.lng).toFixed(3));
-  } catch (_) {}
-}
-
 function trackballStart(clientX, clientY) {
   window._globeFly = null;
   GlobeControl?.userTookGlobe?.('drag');
@@ -90,14 +41,21 @@ function trackballStart(clientX, clientY) {
   canvas.classList.add('dragging');
   clearTimeout(pressTimer);
   window._globeLongPressFired = false;
-  // SPECS: long-press ANY tier (solar → city) → MultiTile creation
+  // Long-press globe (any tier: stellar → city) → MultiTile profile
   pressTimer = setTimeout(() => {
     if (!drag) return;
-    if (Math.hypot(px - pressStartX, py - pressStartY) > 22) return;
+    // Only if finger barely moved
+    if (Math.hypot(px - pressStartX, py - pressStartY) > 14) return;
     window._globeLongPressFired = true;
-    try { drag = false; dragging = false; canvas.classList.remove('dragging'); } catch (_) {}
-    openMultiTileAtPoint(pressStartX, pressStartY, 'long-press-globe');
-  }, 420);
+    const pin = latLngFromScreen?.(clientX, clientY)
+      || TrackballGuard?.facingLatLng?.()
+      || window._lastPos
+      || { lat: 0, lng: 0 };
+    MultiTile?.openAt?.(pin.lat, pin.lng, {
+      source: 'long-press',
+      tier: MultiTile?.currentTier?.() || 'global',
+    });
+  }, 480);
 }
 
 function trackballEnd(clientX, clientY, opts) {
@@ -177,7 +135,7 @@ function bindTrackballEvents(targetCanvas) {
   c.addEventListener('mousedown', e => { if (e.button === 0) trackballStart(e.clientX, e.clientY); });
   c.addEventListener('mousemove', e => {
     if (!drag) return;
-    if (Math.hypot(e.clientX - pressStartX, e.clientY - pressStartY) > 22) clearTimeout(pressTimer);
+    if (Math.hypot(e.clientX - pressStartX, e.clientY - pressStartY) > 12) clearTimeout(pressTimer);
     trackballMove(e.clientX, e.clientY);
   });
   c.addEventListener('wheel', onWheelZoom, { passive: false });
