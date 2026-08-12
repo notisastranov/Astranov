@@ -12,6 +12,10 @@ var ArchitectBridge = (typeof window !== 'undefined' && window.ArchitectBridge) 
 var CityLife = (typeof window !== 'undefined' && window.CityLife) || { locateAndDropIn:async function(){return {error:'not ready'}}, safeLocate:async function(){return {error:'not ready'}}, dropIn:async function(){return {error:'not ready'}}, init:function(){} };
 // Do not redeclare userLocated — critical owns it (var) for cross-script assigns.
 var CliRibbon = (typeof window !== 'undefined' && window.CliRibbon) || { setNotice:function(){}, render:function(){}, init:function(){} };
+var MarketplaceDeliveryEngine = (typeof window !== 'undefined' && window.MarketplaceDeliveryEngine) || { missions:[], STATUS:{}, _globeMeshes:[], init:function(){}, tick:function(){}, closeHud:function(){}, showHud:function(){}, pickFromGlobeHit:function(){return false}, onDriverAccepted:async function(){return null} };
+var MultiTile = (typeof window !== 'undefined' && window.MultiTile) || { init:function(){}, openAt:function(){}, openFromPlus:function(){}, close:function(){} };
+var CityTasks = (typeof window !== 'undefined' && window.CityTasks) || { init:function(){}, launch:function(){return {ok:false}}, claim:async function(){return {ok:false}}, coinsBalance:function(){return {balance:0,held:0,available:0}} };
+var TaskBoard = (typeof window !== 'undefined' && window.TaskBoard) || { init:function(){}, showOffer:function(){}, showActive:function(){}, dismiss:function(){} };
 
 /* === 17-architect-bridge.js === */
 // === ARCHITECT BRIDGE — phone street-fix → desktop Grok Build agent ===
