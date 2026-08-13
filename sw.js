@@ -1,5 +1,5 @@
 /* Astranov service worker — never serve stale app HTML/core or spacenet modules */
-const CACHE = 'astranov-v52-beyond-moon';
+const CACHE = 'astranov-v53-one-orbit';
 const SHELL = ['/manifest.webmanifest', '/icon.svg'];
 
 self.addEventListener('install', (e) => {
