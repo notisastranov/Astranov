@@ -393,8 +393,12 @@
   }
 
   function openMenu() {
-    // Name button = instant recover (clear cache + SW + reload). No popup.
-    hardReload();
+    var el = ensure();
+    el.innerHTML = build();
+    el.classList.add('open');
+    el.setAttribute('aria-hidden', 'false');
+    open = true;
+    bind(el);
   }
 
   function close() {
@@ -408,7 +412,8 @@
   }
 
   function toggle() {
-    hardReload();
+    if (open) close();
+    else openMenu();
   }
 
   function openRecovery() {
@@ -773,8 +778,8 @@
           'important'
         );
       } catch (_) {}
-      el.title = 'ASTRANOV · tap = hard reload · clear cache · restart';
-      el.setAttribute('aria-label', 'ASTRANOV hard reload');
+      el.title = 'ASTRANOV · tap = device roles · harvest · hard reload inside';
+      el.setAttribute('aria-label', 'ASTRANOV home');
       if (el.textContent && /SpaceNet/i.test(el.textContent)) el.textContent = 'ASTRANOV';
       function fire(e) {
         if (e) {
@@ -784,7 +789,7 @@
             e.stopImmediatePropagation();
           } catch (_) {}
         }
-        hardReload();
+        toggle();
         return false;
       }
       el.addEventListener('pointerdown', fire, true);
@@ -810,9 +815,9 @@
 
   global.SNHome = {
     init: init,
-    open: hardReload,
+    open: openMenu,
     close: close,
-    toggle: hardReload,
+    toggle: toggle,
     paint: paint,
     paintHub: paintHub,
     openRecovery: openRecovery,
