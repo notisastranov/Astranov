@@ -1,6 +1,6 @@
 /**
  * SNAgentOrbit — Collective AI orchestrator (one menu, real council)
- * Build: 20260813124500-one-orbit
+ * Build: 20260813180000-ai-check
  *
  * Planet click opens ONE sheet only: Google + inline API keys + official
  * company login pages + council inspect (SOLVED / USEFUL / SHIP).
@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260813124500-one-orbit';
+  var BUILD = '20260813180000-ai-check';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
@@ -50,7 +50,7 @@
   var S = {
     ready: false, creds: {}, entityIds: [], planetVisible: false, awaitingKey: null,
     lastLinks: [], lastTask: '', lastCode: '', lastVerdict: null, sheetBound: false,
-    inspecting: false
+    inspecting: false, checks: {}, checking: {}, loginAway: null
   };
 
   function log(m, c) {
@@ -182,7 +182,7 @@
     if (global.SNAuth && typeof SNAuth.renderGoogleButton === 'function') {
       SNAuth.renderGoogleButton(mount, {
         errorEl: err,
-        onSuccess: function () { paintAuth(); paintRowStatus('astranov'); }
+        onSuccess: function () { paintAuth(); checkProvider('astranov', true); }
       });
     } else {
       mount.textContent = 'Google loading…';
@@ -194,13 +194,188 @@
     if (!st) return;
     var p = PROVIDERS[id];
     if (!p) return;
-    var online = hasKey(id);
-    st.textContent = online ? 'ONLINE · ' + p.role : (p.needsKey ? 'NEED KEY · ' + p.role : 'READY · ' + p.role);
-    st.className = 'ps-st' + (online ? ' on' : '');
+    if (S.checking[id]) {
+      st.textContent = 'CHECKING';
+      st.className = 'ps-st wait';
+      return;
+    }
+    var ck = S.checks[id];
+    if (ck) {
+      st.textContent = ck.badge;
+      st.className = 'ps-st' + (ck.ok ? ' on' : ck.need ? '' : ' bad');
+      return;
+    }
+    if (id === 'astranov') {
+      st.textContent = authUser() ? 'SIGNED IN · unproven' : 'GUEST · unproven';
+      st.className = 'ps-st';
+      return;
+    }
+    if (hasKey(id)) {
+      st.textContent = 'KEY STORED · unproven';
+      st.className = 'ps-st';
+      return;
+    }
+    st.textContent = 'NEED KEY · ' + p.role;
+    st.className = 'ps-st';
+  }
+
+  function paintCheck(id) {
+    var el = document.getElementById('ps-ck-' + id);
+    paintRowStatus(id);
+    if (!el) return;
+    if (S.checking[id]) {
+      el.textContent = 'checking whether I can use this…';
+      el.className = 'ps-check wait';
+      return;
+    }
+    var ck = S.checks[id];
+    if (ck) {
+      el.textContent = ck.line;
+      el.className = 'ps-check' + (ck.ok ? ' on' : ck.need ? ' need' : ' bad');
+      return;
+    }
+    if (id !== 'astranov' && !hasKey(id)) {
+      el.textContent = 'NEED API KEY · signing in on their website does not connect them here';
+      el.className = 'ps-check need';
+      return;
+    }
+    el.textContent = 'not checked yet';
+    el.className = 'ps-check';
   }
 
   function paintAllStatus() {
-    Object.keys(PROVIDERS).forEach(paintRowStatus);
+    Object.keys(PROVIDERS).forEach(function (id) {
+      paintRowStatus(id);
+      paintCheck(id);
+    });
+  }
+
+  function interpretCheck(id, r) {
+    var name = (PROVIDERS[id] && PROVIDERS[id].name) || id;
+    var text = String((r && r.text) || '');
+    if (r && r.ok) {
+      if (id === 'astranov') {
+        var signed = !!authUser();
+        return {
+          ok: true,
+          need: false,
+          at: Date.now(),
+          badge: signed ? 'USABLE · you' : 'USABLE · guest',
+          line: signed
+            ? 'ADMINISTRATOR USABLE · signed in as ' + authName() + '. I can use Astranov Mind.'
+            : 'ADMINISTRATOR USABLE · guest path works. Sign in with Google so I know it is you.'
+        };
+      }
+      return {
+        ok: true,
+        need: false,
+        at: Date.now(),
+        badge: 'USABLE · ' + PROVIDERS[id].role,
+        line: 'USABLE · I can call ' + name + ' from here.'
+      };
+    }
+    if (/failed to fetch|networkerror|load failed|cors/i.test(text)) {
+      return {
+        ok: false,
+        need: false,
+        at: Date.now(),
+        badge: 'BLOCKED',
+        line: 'BROWSER BLOCKED · ' + name + ' refuses direct browser calls. Their website login cannot fix this. I need an API key, and they must allow this site.'
+      };
+    }
+    if (/401|403|invalid api|incorrect api|api[_ ]?key|unauthorized|permission|no .+ key/i.test(text)) {
+      return {
+        ok: false,
+        need: true,
+        at: Date.now(),
+        badge: 'KEY REJECTED',
+        line: 'KEY REJECTED · ' + name + ' did not accept this. Open API KEYS, create a key, paste it here.'
+      };
+    }
+    return {
+      ok: false,
+      need: false,
+      at: Date.now(),
+      badge: 'DOWN',
+      line: name + ' did not answer · ' + text.slice(0, 140)
+    };
+  }
+
+  function normalizeId(id) {
+    id = String(id || '').toLowerCase();
+    if (id === 'openai' || id === 'gpt') return 'chatgpt';
+    if (id === 'google') return 'gemini';
+    if (id === 'anthropic') return 'claude';
+    if (id === 'mind') return 'astranov';
+    return id;
+  }
+
+  async function checkProvider(id, force) {
+    id = normalizeId(id);
+    var p = PROVIDERS[id];
+    if (!p) return null;
+    if (id !== 'astranov' && !hasKey(id)) {
+      S.checks[id] = {
+        ok: false,
+        need: true,
+        at: Date.now(),
+        badge: 'NEED KEY · ' + p.role,
+        line: 'NEED API KEY · their website login stays on their site. Paste a key from API KEYS so I can use ' + p.name + '.'
+      };
+      paintCheck(id);
+      return S.checks[id];
+    }
+    if (!force && S.checking[id]) return S.checks[id] || null;
+    var prev = S.checks[id];
+    if (!force && prev && prev.at && (Date.now() - prev.at) < 8000) {
+      paintCheck(id);
+      return prev;
+    }
+    S.checking[id] = true;
+    paintCheck(id);
+    var r;
+    try {
+      r = await callProvider(id, 'Reply with only the word PONG. Do not add anything else.');
+    } catch (e) {
+      r = { ok: false, text: String((e && e.message) || e), provider: id };
+    }
+    S.checking[id] = false;
+    S.checks[id] = interpretCheck(id, r);
+    paintCheck(id);
+    log(p.name + ' · ' + S.checks[id].line, S.checks[id].ok ? 'ok' : 'err');
+    return S.checks[id];
+  }
+
+  async function checkAll() {
+    var ids = Object.keys(PROVIDERS);
+    for (var i = 0; i < ids.length; i++) {
+      await checkProvider(ids[i]);
+    }
+  }
+
+  function bindLoginReturn() {
+    if (document.__snOrbitFocus) return;
+    document.__snOrbitFocus = true;
+    window.addEventListener('focus', function () {
+      if (!S.loginAway) return;
+      var id = S.loginAway;
+      S.loginAway = null;
+      var sheet = document.getElementById('sn-planet-sheet');
+      if (!sheet || sheet.hasAttribute('hidden')) return;
+      if (hasKey(id)) {
+        checkProvider(id);
+        return;
+      }
+      var p = PROVIDERS[id];
+      if (!p) return;
+      S.checks[id] = {
+        ok: false,
+        need: true,
+        badge: 'NEED KEY · ' + p.role,
+        line: 'You came back from ' + p.name + '. That website login stays on their site. Paste an API key from API KEYS so I can use them.'
+      };
+      paintCheck(id);
+    });
   }
 
   function saveInlineKey(id) {
@@ -209,6 +384,7 @@
     setKey(id, val);
     if (inp) inp.value = '';
     paintRowStatus(id);
+    checkProvider(id, true);
   }
 
   function showKeySheet(id) {
@@ -242,10 +418,12 @@
         return (
           '<article class="ps-card" data-id="astranov">' +
             '<div class="ps-card-h"><span class="ps-name">' + p.icon + ' ' + esc(p.name) + '</span>' +
-            '<span class="ps-st on" id="ps-st-astranov">READY · orchestrator</span></div>' +
-            '<p class="ps-who" id="ps-who">Guest · Google signs you into ASTRANOV</p>' +
+            '<span class="ps-st" id="ps-st-astranov">GUEST · unproven</span></div>' +
+            '<p class="ps-who" id="ps-who">Guest · Google signs you into ASTRANOV only</p>' +
             '<div id="ps-gsi"></div>' +
             '<p class="ps-err" id="ps-gsi-err"></p>' +
+            '<p class="ps-check" id="ps-ck-astranov">not checked yet</p>' +
+            '<button type="button" class="ps-glow" data-check="astranov">> check administrator</button>' +
             '<button type="button" class="ps-ghost" id="ps-signout" hidden>SIGN OUT</button>' +
           '</article>'
         );
@@ -259,9 +437,12 @@
             '<button type="button" class="ps-save" data-save="' + id + '">SAVE</button>' +
           '</div>' +
           '<div class="ps-links">' +
-            '<a class="ps-link" href="' + p.login + '" target="_blank" rel="noopener noreferrer">LOGIN</a>' +
+            '<a class="ps-link" href="' + p.login + '" target="_blank" rel="noopener noreferrer" data-login="' + id + '">THEIR SITE</a>' +
             '<a class="ps-link" href="' + p.console + '" target="_blank" rel="noopener noreferrer">API KEYS</a>' +
           '</div>' +
+          '<p class="ps-note">Their website login stays on their site. An API key is what lets me use them.</p>' +
+          '<p class="ps-check" id="ps-ck-' + id + '">NEED API KEY · not connected</p>' +
+          '<button type="button" class="ps-glow" data-check="' + id + '">> check ' + esc(String(p.name).toLowerCase()) + '</button>' +
         '</article>'
       );
     }).join('');
@@ -282,8 +463,24 @@
       '#sn-planet-sheet .ps-name{font:700 13px/1.2 Inter,system-ui,sans-serif;color:#d8ecff}' +
       '#sn-planet-sheet .ps-st{margin-left:auto;font:600 11px/1 Inter,system-ui,sans-serif;color:#8ab}' +
       '#sn-planet-sheet .ps-st.on{color:#7ef0b0}' +
+      '#sn-planet-sheet .ps-st.bad{color:#ff8a90}' +
+      '#sn-planet-sheet .ps-st.wait{color:#8ab}' +
       '#sn-planet-sheet .ps-who{margin:0 0 8px;font:600 12px/1.35 Inter,system-ui,sans-serif;color:#9ab}' +
       '#sn-planet-sheet .ps-err{margin:6px 0 0;min-height:0;font:600 11px/1.35 Inter,system-ui,sans-serif;color:#ff8a90}' +
+      '#sn-planet-sheet .ps-note{margin:6px 0 0;font:500 11px/1.4 Inter,system-ui,sans-serif;color:#8ab}' +
+      '#sn-planet-sheet .ps-check{margin:8px 0 0;font:600 12px/1.4 Inter,system-ui,sans-serif;color:#9ab}' +
+      '#sn-planet-sheet .ps-check.on{color:#7ef0b0}' +
+      '#sn-planet-sheet .ps-check.need{color:#ffc857}' +
+      '#sn-planet-sheet .ps-check.bad{color:#ff8a90}' +
+      '#sn-planet-sheet .ps-check.wait{color:#8ab}' +
+      '#sn-planet-sheet .ps-glow{display:block;width:100%;min-height:44px;margin-top:8px;padding:0 8px;' +
+      'border:0;background:transparent;text-align:left;cursor:pointer;' +
+      'font:700 14px/1.2 JetBrains Mono,ui-monospace,monospace;letter-spacing:.04em;' +
+      'color:#7ec8ff;text-shadow:0 0 14px rgba(61,158,255,.9);' +
+      'animation:ps-glow 1.5s ease-in-out infinite}' +
+      '#sn-planet-sheet .ps-glow:hover,#sn-planet-sheet .ps-glow:focus-visible{color:#d8ecff;outline:none}' +
+      '@keyframes ps-glow{0%,100%{opacity:.72}50%{opacity:1}}' +
+      '@media (prefers-reduced-motion:reduce){#sn-planet-sheet .ps-glow{animation:none}}' +
       '#sn-planet-sheet #ps-gsi{min-height:44px;display:flex;justify-content:flex-start}' +
       '#sn-planet-sheet .ps-keyrow{display:flex;gap:8px;margin:0 0 8px}' +
       '#sn-planet-sheet .ps-keyrow input{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:0 12px;' +
@@ -317,7 +514,8 @@
       '#sn-planet-sheet .ps-links{flex-direction:column}}' +
       '</style>' +
       '<h2>COLLECTIVE AI</h2>' +
-      '<p class="ps-sub">One menu. Google · API keys · company login · council inspect.</p>' +
+      '<p class="ps-sub">Google is for ASTRANOV. Gemini · ChatGPT · Claude need their own API keys. I check if I can actually use them.</p>' +
+      '<button type="button" class="ps-glow" id="ps-check-all">> check all connections</button>' +
       '<div id="ps-rows">' + cards + '</div>' +
       '<p class="ps-sec">COUNCIL</p>' +
       '<p class="ps-sub">Astranov Mind + Gemini + ChatGPT + Claude inspect produced code. They vote SOLVED · USEFUL · SHIP. Publish only if SHIP.</p>' +
@@ -340,13 +538,21 @@
       so.addEventListener('click', function () {
         try {
           if (global.SNAuth && SNAuth.signOut) {
-            SNAuth.signOut().then(function () { paintAuth(); }).catch(function () { paintAuth(); });
+            SNAuth.signOut().then(function () { paintAuth(); checkProvider('astranov', true); }).catch(function () { paintAuth(); });
           }
         } catch (_) { paintAuth(); }
       });
     }
     el.querySelectorAll('[data-save]').forEach(function (btn) {
       btn.addEventListener('click', function () { saveInlineKey(btn.getAttribute('data-save')); });
+    });
+    el.querySelectorAll('[data-check]').forEach(function (btn) {
+      btn.addEventListener('click', function () { checkProvider(btn.getAttribute('data-check')); });
+    });
+    var allBtn = el.querySelector('#ps-check-all');
+    if (allBtn) allBtn.addEventListener('click', function () { checkAll(); });
+    el.querySelectorAll('[data-login]').forEach(function (a) {
+      a.addEventListener('click', function () { S.loginAway = a.getAttribute('data-login'); });
     });
     Object.keys(PROVIDERS).forEach(function (id) {
       var inp = el.querySelector('#ps-key-' + id);
@@ -394,6 +600,7 @@
     if (back) back.removeAttribute('hidden');
     el.removeAttribute('hidden');
     paintAuth();
+    checkAll();
   }
 
   var orbitGroup = null;
@@ -585,7 +792,10 @@
     log('-- ASTRANOV ORBIT --', 'ok');
     Object.keys(PROVIDERS).forEach(function (id) {
       var p = PROVIDERS[id];
-      log((hasKey(id) ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'), hasKey(id) ? 'ok' : 'dim');
+      var ck = S.checks[id];
+      var face = ck ? ck.badge : (hasKey(id) ? 'KEY STORED · unproven' : (p.needsKey ? 'NEED KEY' : 'UNPROVEN'));
+      log((ck && ck.ok ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + face, ck && ck.ok ? 'ok' : 'dim');
+      if (ck && ck.line) log('  ' + ck.line, ck.ok ? 'ok' : 'dim');
     });
     log('planet sheet · Google · keys · company login · council inspect', 'dim');
   }
@@ -609,15 +819,16 @@
     if (key.length < 8) { log('key too short', 'err'); return; }
     S.creds[id] = key;
     saveCreds();
-    log('\u25cf ' + PROVIDERS[id].name + ' ONLINE · key stored on this device only', 'ok');
+    log('\u25cf ' + PROVIDERS[id].name + ' · key stored on this device · checking…', 'ok');
     paintRowStatus(id);
+    checkProvider(id, true);
     if (S.planetVisible) paintPlanet();
   }
 
   function clearKey(id) {
     id = String(id || '').toLowerCase();
-    if (id === 'all') { S.creds = {}; saveCreds(); log('keys cleared', 'ok'); }
-    else if (S.creds[id]) { delete S.creds[id]; saveCreds(); log(id + ' cleared', 'ok'); }
+    if (id === 'all') { S.creds = {}; S.checks = {}; saveCreds(); log('keys cleared', 'ok'); }
+    else if (S.creds[id]) { delete S.creds[id]; delete S.checks[id]; saveCreds(); log(id + ' cleared', 'ok'); }
     paintAllStatus();
     if (S.planetVisible) paintPlanet();
   }
@@ -644,11 +855,16 @@
   async function callAstranov(prompt) {
     try {
       var base = (global.SB_URL || (global.SN_CONFIG && SN_CONFIG.sbUrl) || 'https://lkoatrkhuigdolnjsbie.supabase.co').replace(/\/$/, '');
-      var headers = { 'Content-Type': 'application/json' };
-      var k = global.SB_KEY || (global.SN_CONFIG && SN_CONFIG.sbKey) || '';
-      if (k) { headers.apikey = k; headers.Authorization = 'Bearer ' + k; }
+      var headers;
+      if (global.SNAuth && typeof SNAuth.authHeaders === 'function') {
+        headers = await SNAuth.authHeaders();
+      } else {
+        headers = { 'Content-Type': 'application/json' };
+        var k = global.SB_KEY || (global.SN_CONFIG && SN_CONFIG.sbKey) || '';
+        if (k) { headers.apikey = k; headers.Authorization = 'Bearer ' + k; }
+      }
       try {
-        var tok = (global.Auth && Auth.session && Auth.session.access_token) || (global.SNAuth && SNAuth.session && SNAuth.session.access_token) || '';
+        var tok = (global.SNAuth && SNAuth.session && SNAuth.session.access_token) || '';
         if (tok) headers.Authorization = 'Bearer ' + tok;
       } catch (_) {}
       var res = await fetch(base + '/functions/v1/ai-router', {
@@ -959,9 +1175,15 @@
     if (low === 'agents' || low === 'orbit' || low === 'planet' || low === 'astranov planet') { goOrbit(); return true; }
     if (low === 'agents off' || low === 'orbit off' || low === 'planet off') { clearPlanet(); log('orbit cleared', 'ok'); return true; }
     if (low === 'agents help') {
-      log('orbit · one planet menu · agents key <p> <KEY> · collab <task> · agent <name> <prompt> · council inspect', 'dim');
+      log('orbit · check all connections · agents key <p> <KEY> · collab <task> · agent <name> <prompt> · council inspect', 'dim');
       return true;
     }
+    if (low === 'agents check' || low === 'check all' || low === 'check connections') {
+      openPlanetSheet();
+      return true;
+    }
+    var mCk = raw.match(/^check\s+(astranov|mind|gemini|google|chatgpt|openai|gpt|claude|anthropic)$/i);
+    if (mCk) { checkProvider(mCk[1]); return true; }
     var mKey = raw.match(/^agents?\s+key\s+(\w+)\s+(.+)$/i);
     if (mKey) { setKey(mKey[1], mKey[2]); return true; }
     var mClear = low.match(/^agents?\s+clear\s+(\w+)$/);
@@ -1104,6 +1326,7 @@
     destroyKeySheet();
     installCli();
     bindPlanetClick();
+    bindLoginReturn();
     S.planetVisible = true;
     S.ready = true;
   }
@@ -1114,6 +1337,7 @@
     hasKey: hasKey, clearPlanet: clearPlanet, showKeySheet: showKeySheet,
     openPlanetSheet: openPlanetSheet, hidePlanetSheet: hidePlanetSheet,
     paintAuth: paintAuth, inspect: inspectCouncil, publish: publishVerdict,
+    check: checkProvider, checkAll: checkAll, lastCheck: function (id) { return S.checks[normalizeId(id)]; },
     lastVerdict: function () { return S.lastVerdict; },
     providers: PROVIDERS, planet: PLANET
   };
