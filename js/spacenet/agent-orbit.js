@@ -1,31 +1,43 @@
 /**
- * SNAgentOrbit — Multi-agent orchestration + Astranov planet
- * Build: 20260812210000-live-planet
+ * SNAgentOrbit — Collective AI orchestrator (one menu, real council)
+ * Build: 20260813124500-one-orbit
  *
- * Planet high above Earth. Tap a satellite to paste a key (CLI sheet,
- * never a map tile). collab / agent commands orchestrate Gemini,
- * ChatGPT, Claude + Astranov Mind. Keys stay in localStorage only.
+ * Planet click opens ONE sheet only: Google + inline API keys + official
+ * company login pages + council inspect (SOLVED / USEFUL / SHIP).
+ * Never a second key sheet. Never a stacked auth modal. Never CLI expand.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260813091500-beyond-moon';
+  var BUILD = '20260813124500-one-orbit';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
   var CREDS_KEY = 'sn:agent-creds-v1';
+  var CODE_KEY = 'sn:council-code-v1';
+  var VERDICT_KEY = 'sn:council-verdict-v1';
+  var SHIP_KEY = 'sn:council-ship-ticket-v1';
   var PROVIDERS = {
-    astranov: { id: 'astranov', name: 'Astranov Mind', hex: 0x3d9eff, role: 'orchestrator', needsKey: false, icon: '\u25ce' },
+    astranov: {
+      id: 'astranov', name: 'Astranov Mind', hex: 0x3d9eff, role: 'orchestrator',
+      needsKey: false, icon: '\u25ce', login: '', console: 'https://astranov.eu'
+    },
     gemini: {
       id: 'gemini', name: 'Gemini', hex: 0x8ab4f8, role: 'reasoner', needsKey: true, icon: '\u2726',
-      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+      login: 'https://gemini.google.com/app',
+      console: 'https://aistudio.google.com/apikey'
     },
     chatgpt: {
       id: 'chatgpt', name: 'ChatGPT', hex: 0x10a37f, role: 'coder', needsKey: true, icon: '\u2b21',
-      endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini'
+      endpoint: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini',
+      login: 'https://chatgpt.com/auth/login',
+      console: 'https://platform.openai.com/api-keys'
     },
     claude: {
       id: 'claude', name: 'Claude', hex: 0xd4a27f, role: 'reviewer', needsKey: true, icon: '\u25c8',
-      endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-3-5-sonnet-20241022'
+      endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-3-5-sonnet-20241022',
+      login: 'https://claude.ai/login',
+      console: 'https://console.anthropic.com/settings/keys'
     }
   };
   var PLANET = { lat: 36.43, lng: 28.22, altitude: 4.28, color: 0x3d9eff };
@@ -35,7 +47,11 @@
     chatgpt: { dLat: -2.1, dLng: 2.8, alt: 1.19 },
     claude: { dLat: 1.6, dLng: -3.4, alt: 1.17 }
   };
-  var S = { ready: false, creds: {}, entityIds: [], planetVisible: false, awaitingKey: null, lastLinks: [] };
+  var S = {
+    ready: false, creds: {}, entityIds: [], planetVisible: false, awaitingKey: null,
+    lastLinks: [], lastTask: '', lastCode: '', lastVerdict: null, sheetBound: false,
+    inspecting: false
+  };
 
   function log(m, c) {
     m = String(m == null ? '' : m).slice(0, 420);
@@ -56,7 +72,11 @@
   }
 
   function esc(s) {
-    return String(s).replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
+    return String(s)
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"');
   }
 
   function loadCreds() {
@@ -70,90 +90,310 @@
     return !!(S.creds[id] && String(S.creds[id]).length > 8);
   }
 
-  function expandCli() {
+  function loadRemembered() {
     try {
-      var panel = document.getElementById('panel');
-      if (panel) {
-        panel.classList.remove('collapsed');
-        panel.classList.add('mid');
+      var j = JSON.parse(localStorage.getItem(CODE_KEY) || 'null');
+      if (j && (j.task || j.code)) {
+        S.lastTask = String(j.task || '');
+        S.lastCode = String(j.code || '');
       }
+    } catch (_) {}
+    try {
+      var v = JSON.parse(localStorage.getItem(VERDICT_KEY) || 'null');
+      if (v && v.majority) S.lastVerdict = v;
     } catch (_) {}
   }
 
-  function ensureKeySheet() {
-    var el = document.getElementById('sn-orbit-key');
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = 'sn-orbit-key';
-    el.setAttribute('hidden', '');
-    el.innerHTML =
-      '<style>' +
-      '#sn-orbit-key{position:fixed;left:50%;bottom:calc(118px + env(safe-area-inset-bottom,0px));' +
-      'transform:translateX(-50%);z-index:140;width:min(720px,calc(100vw - 24px));' +
-      'padding:14px 16px 16px;border-radius:18px;pointer-events:auto;' +
-      'background:rgba(0,4,14,0.28);backdrop-filter:blur(16px) saturate(1.2);' +
-      '-webkit-backdrop-filter:blur(16px) saturate(1.2);' +
-      'border:1px solid rgba(61,158,255,0.35);box-shadow:0 0 28px rgba(40,140,255,0.25);}' +
-      '#sn-orbit-key[hidden]{display:none!important}' +
-      '#sn-orbit-key .ok-title{font:800 18px/1.2 Space Grotesk,system-ui,sans-serif;' +
-      'letter-spacing:.14em;color:#7ec8ff;text-shadow:0 0 16px rgba(80,180,255,.85);margin:0 0 6px}' +
-      '#sn-orbit-key .ok-sub{font:600 12px/1.35 Inter,system-ui,sans-serif;color:#9ab;margin:0 0 10px}' +
-      '#sn-orbit-key input{width:100%;box-sizing:border-box;padding:12px 14px;border-radius:12px;' +
-      'border:1px solid rgba(61,158,255,.45);background:transparent;color:#d8ecff;' +
-      'font:600 15px/1.3 JetBrains Mono,ui-monospace,monospace;outline:none}' +
-      '#sn-orbit-key input:focus{box-shadow:0 0 0 2px rgba(61,158,255,.35),0 0 18px rgba(61,158,255,.3)}' +
-      '#sn-orbit-key .ok-row{display:flex;gap:8px;margin-top:10px}' +
-      '#sn-orbit-key button{flex:1;min-height:40px;border-radius:999px;border:1px solid rgba(61,158,255,.4);' +
-      'background:transparent;color:#9cf;font:800 13px/1 system-ui;letter-spacing:.08em;cursor:pointer}' +
-      '#sn-orbit-key .ok-save{border-color:rgba(61,214,140,.7);color:#7ef0b0;text-shadow:0 0 10px rgba(61,214,140,.7)}' +
-      '#sn-orbit-key .ok-cancel{border-color:rgba(232,33,39,.55);color:#ff8a90}' +
-      '</style>' +
-      '<p class="ok-title" id="ok-title">AGENT KEY</p>' +
-      '<p class="ok-sub" id="ok-sub">Stored only on this device. Never sent to our servers.</p>' +
-      '<input id="ok-input" type="password" autocomplete="off" spellcheck="false" placeholder="paste key · Enter to save" />' +
-      '<div class="ok-row">' +
-      '<button type="button" class="ok-save" id="ok-save">SAVE</button>' +
-      '<button type="button" class="ok-cancel" id="ok-cancel">CANCEL</button>' +
-      '</div>';
-    document.body.appendChild(el);
-    var inp = el.querySelector('#ok-input');
-    el.querySelector('#ok-save').addEventListener('click', function () { commitKeySheet(); });
-    el.querySelector('#ok-cancel').addEventListener('click', function () { hideKeySheet(); });
-    inp.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); commitKeySheet(); }
-      if (e.key === 'Escape') hideKeySheet();
-    });
-    return el;
+  function rememberCode(task, text, source) {
+    S.lastTask = String(task || S.lastTask || '');
+    S.lastCode = String(text || '');
+    try {
+      localStorage.setItem(CODE_KEY, JSON.stringify({
+        task: S.lastTask, code: S.lastCode, source: source || '', at: Date.now()
+      }));
+    } catch (_) {}
+    var taskEl = document.getElementById('ps-task');
+    var codeEl = document.getElementById('ps-code');
+    if (taskEl && S.lastTask && !String(taskEl.value || '').trim()) taskEl.value = S.lastTask;
+    if (codeEl && S.lastCode) codeEl.value = S.lastCode;
   }
 
-  function showKeySheet(id) {
-    var p = PROVIDERS[id];
-    if (!p || !p.needsKey) return;
-    S.awaitingKey = id;
-    expandCli();
-    var el = ensureKeySheet();
-    el.querySelector('#ok-title').textContent = p.icon + '  ' + p.name.toUpperCase() + '  KEY';
-    el.querySelector('#ok-sub').textContent = 'Paste your ' + p.name + ' key. Local only. Then we light the satellite.';
-    var inp = el.querySelector('#ok-input');
-    inp.value = '';
-    el.removeAttribute('hidden');
-    setTimeout(function () { try { inp.focus(); } catch (_) {} }, 80);
-    log(p.name + ' · paste key in the glowing field · Enter to save', 'ok');
+  function destroyKeySheet() {
+    S.awaitingKey = null;
+    var el = document.getElementById('sn-orbit-key');
+    if (el && el.parentNode) el.parentNode.removeChild(el);
   }
 
   function hideKeySheet() {
-    S.awaitingKey = null;
-    var el = document.getElementById('sn-orbit-key');
-    if (el) el.setAttribute('hidden', '');
+    destroyKeySheet();
   }
 
-  function commitKeySheet() {
-    var el = document.getElementById('sn-orbit-key');
-    var id = S.awaitingKey;
-    var val = el ? el.querySelector('#ok-input').value : '';
-    if (!id) { hideKeySheet(); return; }
+  function dismissForeignMenus() {
+    destroyKeySheet();
+    try { if (global.SNAuth && SNAuth.closeModal) SNAuth.closeModal(); } catch (_) {}
+    var auth = document.getElementById('sn-auth-modal');
+    if (auth) {
+      auth.setAttribute('hidden', '');
+      auth.style.display = 'none';
+    }
+  }
+
+  function hidePlanetSheet() {
+    var el = document.getElementById('sn-planet-sheet');
+    var back = document.getElementById('sn-planet-back');
+    if (el) el.setAttribute('hidden', '');
+    if (back) back.setAttribute('hidden', '');
+    S.awaitingKey = null;
+  }
+
+  function authUser() {
+    try { return (global.SNAuth && SNAuth.user) || null; } catch (_) { return null; }
+  }
+
+  function authName() {
+    var u = authUser();
+    if (!u) return '';
+    return (u.user_metadata && u.user_metadata.full_name) || (u.email && u.email.split('@')[0]) || 'signed in';
+  }
+
+  function paintAuth() {
+    var mount = document.getElementById('ps-gsi');
+    var err = document.getElementById('ps-gsi-err');
+    var out = document.getElementById('ps-signout');
+    var who = document.getElementById('ps-who');
+    if (!mount) return;
+    if (err) err.textContent = '';
+    if (authUser()) {
+      mount.innerHTML = '';
+      mount.setAttribute('hidden', '');
+      if (who) {
+        who.removeAttribute('hidden');
+        who.textContent = 'Signed in · ' + authName() + ' · astranov.eu';
+      }
+      if (out) out.removeAttribute('hidden');
+      return;
+    }
+    mount.removeAttribute('hidden');
+    if (who) {
+      who.textContent = 'Guest · Google signs you into ASTRANOV';
+      who.removeAttribute('hidden');
+    }
+    if (out) out.setAttribute('hidden', '');
+    if (global.SNAuth && typeof SNAuth.renderGoogleButton === 'function') {
+      SNAuth.renderGoogleButton(mount, {
+        errorEl: err,
+        onSuccess: function () { paintAuth(); paintRowStatus('astranov'); }
+      });
+    } else {
+      mount.textContent = 'Google loading…';
+    }
+  }
+
+  function paintRowStatus(id) {
+    var st = document.getElementById('ps-st-' + id);
+    if (!st) return;
+    var p = PROVIDERS[id];
+    if (!p) return;
+    var online = hasKey(id);
+    st.textContent = online ? 'ONLINE · ' + p.role : (p.needsKey ? 'NEED KEY · ' + p.role : 'READY · ' + p.role);
+    st.className = 'ps-st' + (online ? ' on' : '');
+  }
+
+  function paintAllStatus() {
+    Object.keys(PROVIDERS).forEach(paintRowStatus);
+  }
+
+  function saveInlineKey(id) {
+    var inp = document.getElementById('ps-key-' + id);
+    var val = inp ? inp.value : '';
     setKey(id, val);
-    hideKeySheet();
+    if (inp) inp.value = '';
+    paintRowStatus(id);
+  }
+
+  function showKeySheet(id) {
+    openPlanetSheet();
+    S.awaitingKey = id;
+    setTimeout(function () {
+      var inp = document.getElementById('ps-key-' + id);
+      if (inp) {
+        try { inp.focus(); inp.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+      }
+    }, 40);
+  }
+
+  function ensurePlanetSheet() {
+    var back = document.getElementById('sn-planet-back');
+    if (!back) {
+      back = document.createElement('div');
+      back.id = 'sn-planet-back';
+      back.setAttribute('hidden', '');
+      document.body.appendChild(back);
+    }
+    var el = document.getElementById('sn-planet-sheet');
+    if (el && S.sheetBound) return el;
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    el = document.createElement('div');
+    el.id = 'sn-planet-sheet';
+    el.setAttribute('hidden', '');
+    var cards = Object.keys(PROVIDERS).map(function (id) {
+      var p = PROVIDERS[id];
+      if (id === 'astranov') {
+        return (
+          '<article class="ps-card" data-id="astranov">' +
+            '<div class="ps-card-h"><span class="ps-name">' + p.icon + ' ' + esc(p.name) + '</span>' +
+            '<span class="ps-st on" id="ps-st-astranov">READY · orchestrator</span></div>' +
+            '<p class="ps-who" id="ps-who">Guest · Google signs you into ASTRANOV</p>' +
+            '<div id="ps-gsi"></div>' +
+            '<p class="ps-err" id="ps-gsi-err"></p>' +
+            '<button type="button" class="ps-ghost" id="ps-signout" hidden>SIGN OUT</button>' +
+          '</article>'
+        );
+      }
+      return (
+        '<article class="ps-card" data-id="' + id + '">' +
+          '<div class="ps-card-h"><span class="ps-name">' + p.icon + ' ' + esc(p.name) + '</span>' +
+          '<span class="ps-st" id="ps-st-' + id + '">NEED KEY · ' + esc(p.role) + '</span></div>' +
+          '<div class="ps-keyrow">' +
+            '<input id="ps-key-' + id + '" type="password" autocomplete="off" spellcheck="false" placeholder="paste ' + esc(p.name) + ' API key" />' +
+            '<button type="button" class="ps-save" data-save="' + id + '">SAVE</button>' +
+          '</div>' +
+          '<div class="ps-links">' +
+            '<a class="ps-link" href="' + p.login + '" target="_blank" rel="noopener noreferrer">LOGIN</a>' +
+            '<a class="ps-link" href="' + p.console + '" target="_blank" rel="noopener noreferrer">API KEYS</a>' +
+          '</div>' +
+        '</article>'
+      );
+    }).join('');
+    el.innerHTML =
+      '<style>' +
+      '#sn-planet-back{position:fixed;inset:0;z-index:460;background:rgba(0,2,10,.62);pointer-events:auto}' +
+      '#sn-planet-back[hidden],#sn-planet-sheet[hidden]{display:none!important}' +
+      '#sn-planet-sheet{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:470;' +
+      'width:min(560px,calc(100vw - 16px));max-height:min(88vh,calc(100vh - 24px));overflow:auto;' +
+      'padding:16px 16px 14px;border-radius:18px;pointer-events:auto;' +
+      'background:#050a14;backdrop-filter:blur(18px) saturate(1.2);' +
+      '-webkit-backdrop-filter:blur(18px) saturate(1.2);-webkit-overflow-scrolling:touch;' +
+      'border:1px solid rgba(61,158,255,.45);box-shadow:0 0 40px rgba(40,140,255,.28)}' +
+      '#sn-planet-sheet h2{margin:0;font:800 13px/1 Space Grotesk,system-ui,sans-serif;letter-spacing:.16em;color:#7ec8ff}' +
+      '#sn-planet-sheet .ps-sub{margin:6px 0 12px;font:600 12px/1.35 Inter,system-ui,sans-serif;color:#9ab}' +
+      '#sn-planet-sheet .ps-card{margin:8px 0;padding:12px;border:1px solid rgba(61,158,255,.22);border-radius:14px}' +
+      '#sn-planet-sheet .ps-card-h{display:flex;align-items:center;gap:8px;margin:0 0 8px}' +
+      '#sn-planet-sheet .ps-name{font:700 13px/1.2 Inter,system-ui,sans-serif;color:#d8ecff}' +
+      '#sn-planet-sheet .ps-st{margin-left:auto;font:600 11px/1 Inter,system-ui,sans-serif;color:#8ab}' +
+      '#sn-planet-sheet .ps-st.on{color:#7ef0b0}' +
+      '#sn-planet-sheet .ps-who{margin:0 0 8px;font:600 12px/1.35 Inter,system-ui,sans-serif;color:#9ab}' +
+      '#sn-planet-sheet .ps-err{margin:6px 0 0;min-height:0;font:600 11px/1.35 Inter,system-ui,sans-serif;color:#ff8a90}' +
+      '#sn-planet-sheet #ps-gsi{min-height:44px;display:flex;justify-content:flex-start}' +
+      '#sn-planet-sheet .ps-keyrow{display:flex;gap:8px;margin:0 0 8px}' +
+      '#sn-planet-sheet .ps-keyrow input{flex:1;min-width:0;min-height:44px;box-sizing:border-box;padding:0 12px;' +
+      'border-radius:12px;border:1px solid rgba(61,158,255,.45);background:transparent;color:#d8ecff;' +
+      'font:600 14px/1.3 JetBrains Mono,ui-monospace,monospace;outline:none}' +
+      '#sn-planet-sheet .ps-keyrow input:focus{box-shadow:0 0 0 2px rgba(61,158,255,.35)}' +
+      '#sn-planet-sheet .ps-save,#sn-planet-sheet .ps-ghost,#sn-planet-sheet .ps-go,' +
+      '#sn-planet-sheet .ps-close{min-height:44px;padding:0 14px;border-radius:999px;cursor:pointer;' +
+      'border:1px solid rgba(61,158,255,.4);background:transparent;color:#9cf;' +
+      'font:800 12px/1 system-ui;letter-spacing:.08em}' +
+      '#sn-planet-sheet .ps-save{border-color:rgba(61,214,140,.7);color:#7ef0b0}' +
+      '#sn-planet-sheet .ps-ghost{width:100%;margin-top:8px;color:#9ab}' +
+      '#sn-planet-sheet .ps-links{display:flex;gap:8px}' +
+      '#sn-planet-sheet .ps-link{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;' +
+      'border-radius:999px;border:1px solid rgba(61,158,255,.4);color:#9cf;text-decoration:none;' +
+      'font:800 11px/1 system-ui;letter-spacing:.08em}' +
+      '#sn-planet-sheet .ps-sec{margin:14px 0 8px;font:800 12px/1 Space Grotesk,system-ui,sans-serif;' +
+      'letter-spacing:.14em;color:#7ec8ff}' +
+      '#sn-planet-sheet label{display:block;margin:8px 0 4px;font:700 11px/1 Inter,system-ui,sans-serif;color:#8ab;letter-spacing:.06em}' +
+      '#sn-planet-sheet #ps-task,#sn-planet-sheet #ps-code{width:100%;box-sizing:border-box;background:transparent;color:#d8ecff;' +
+      'border:1px solid rgba(61,158,255,.35);border-radius:12px;padding:10px 12px;font:500 13px/1.4 Inter,system-ui,sans-serif}' +
+      '#sn-planet-sheet #ps-code{min-height:88px;resize:vertical}' +
+      '#sn-planet-sheet .ps-actions{display:flex;gap:8px;margin-top:10px}' +
+      '#sn-planet-sheet .ps-go{flex:1}' +
+      '#sn-planet-sheet #ps-publish{border-color:rgba(61,214,140,.7);color:#7ef0b0}' +
+      '#sn-planet-sheet #ps-publish[disabled]{opacity:.35;pointer-events:none}' +
+      '#sn-planet-sheet #ps-verdicts{margin:10px 0 0;font:600 12px/1.45 Inter,system-ui,sans-serif;color:#cfe8ff;white-space:pre-wrap}' +
+      '#sn-planet-sheet .ps-close{width:100%;margin-top:12px;color:#9ab;border-color:rgba(61,158,255,.3)}' +
+      '@media (max-width:520px){#sn-planet-sheet{top:max(8px,env(safe-area-inset-top));left:8px;right:8px;' +
+      'bottom:max(8px,env(safe-area-inset-bottom));transform:none;width:auto;max-height:none;border-radius:16px}' +
+      '#sn-planet-sheet .ps-links{flex-direction:column}}' +
+      '</style>' +
+      '<h2>COLLECTIVE AI</h2>' +
+      '<p class="ps-sub">One menu. Google · API keys · company login · council inspect.</p>' +
+      '<div id="ps-rows">' + cards + '</div>' +
+      '<p class="ps-sec">COUNCIL</p>' +
+      '<p class="ps-sub">Astranov Mind + Gemini + ChatGPT + Claude inspect produced code. They vote SOLVED · USEFUL · SHIP. Publish only if SHIP.</p>' +
+      '<label for="ps-task">TASK</label>' +
+      '<input id="ps-task" type="text" autocomplete="off" placeholder="what the code was asked to do" />' +
+      '<label for="ps-code">PRODUCED CODE</label>' +
+      '<textarea id="ps-code" spellcheck="false" placeholder="paste the produced code — last collab / agent output appears here"></textarea>' +
+      '<div class="ps-actions">' +
+        '<button type="button" class="ps-go" id="ps-inspect">INSPECT</button>' +
+        '<button type="button" class="ps-go" id="ps-publish" disabled>PUBLISH</button>' +
+      '</div>' +
+      '<div id="ps-verdicts"></div>' +
+      '<button type="button" class="ps-close" id="ps-close">CLOSE</button>';
+    document.body.appendChild(el);
+
+    back.onclick = function () { hidePlanetSheet(); };
+    el.querySelector('#ps-close').addEventListener('click', hidePlanetSheet);
+    var so = el.querySelector('#ps-signout');
+    if (so) {
+      so.addEventListener('click', function () {
+        try {
+          if (global.SNAuth && SNAuth.signOut) {
+            SNAuth.signOut().then(function () { paintAuth(); }).catch(function () { paintAuth(); });
+          }
+        } catch (_) { paintAuth(); }
+      });
+    }
+    el.querySelectorAll('[data-save]').forEach(function (btn) {
+      btn.addEventListener('click', function () { saveInlineKey(btn.getAttribute('data-save')); });
+    });
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var inp = el.querySelector('#ps-key-' + id);
+      if (!inp) return;
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveInlineKey(id); }
+      });
+    });
+    el.querySelector('#ps-inspect').addEventListener('click', function () { inspectCouncil(); });
+    el.querySelector('#ps-publish').addEventListener('click', function () { publishVerdict(); });
+    if (!document.__snPlanetEsc) {
+      document.__snPlanetEsc = true;
+      document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') return;
+        var sheet = document.getElementById('sn-planet-sheet');
+        if (sheet && !sheet.hasAttribute('hidden')) hidePlanetSheet();
+      });
+    }
+    S.sheetBound = true;
+    return el;
+  }
+
+  function paintCouncilBox() {
+    var taskEl = document.getElementById('ps-task');
+    var codeEl = document.getElementById('ps-code');
+    var box = document.getElementById('ps-verdicts');
+    var pub = document.getElementById('ps-publish');
+    if (taskEl && S.lastTask && !String(taskEl.value || '').trim()) taskEl.value = S.lastTask;
+    if (codeEl && S.lastCode && !String(codeEl.value || '').trim()) codeEl.value = S.lastCode;
+    if (box && S.lastVerdict) box.textContent = formatVerdict(S.lastVerdict);
+    if (pub) {
+      var ship = !!(S.lastVerdict && S.lastVerdict.majority && S.lastVerdict.majority.ship);
+      if (ship) pub.removeAttribute('disabled');
+      else pub.setAttribute('disabled', '');
+    }
+  }
+
+  function openPlanetSheet() {
+    dismissForeignMenus();
+    loadRemembered();
+    var el = ensurePlanetSheet();
+    var back = document.getElementById('sn-planet-back');
+    paintAllStatus();
+    paintCouncilBox();
+    if (back) back.removeAttribute('hidden');
+    el.removeAttribute('hidden');
+    paintAuth();
   }
 
   var orbitGroup = null;
@@ -235,7 +475,8 @@
     });
     S.entityIds = [];
     S.planetVisible = false;
-    hideKeySheet();
+    hidePlanetSheet();
+    destroyKeySheet();
     try {
       if (orbitGroup && orbitGroup.parent) orbitGroup.parent.remove(orbitGroup);
     } catch (_) {}
@@ -346,7 +587,7 @@
       var p = PROVIDERS[id];
       log((hasKey(id) ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : p.needsKey ? 'NEED KEY' : 'READY'), hasKey(id) ? 'ok' : 'dim');
     });
-    log('tap a satellite to paste a key · collab <task> · agent <name> <prompt>', 'dim');
+    log('planet sheet · Google · keys · company login · council inspect', 'dim');
   }
 
   function goOrbit(opts) {
@@ -369,6 +610,7 @@
     S.creds[id] = key;
     saveCreds();
     log('\u25cf ' + PROVIDERS[id].name + ' ONLINE · key stored on this device only', 'ok');
+    paintRowStatus(id);
     if (S.planetVisible) paintPlanet();
   }
 
@@ -376,6 +618,7 @@
     id = String(id || '').toLowerCase();
     if (id === 'all') { S.creds = {}; saveCreds(); log('keys cleared', 'ok'); }
     else if (S.creds[id]) { delete S.creds[id]; saveCreds(); log(id + ' cleared', 'ok'); }
+    paintAllStatus();
     if (S.planetVisible) paintPlanet();
   }
 
@@ -440,7 +683,7 @@
       var res = await fetch(PROVIDERS.chatgpt.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({ model: PROVIDERS.chatgpt.model, messages: [{ role: 'user', content: prompt }], max_tokens: 1000 })
+        body: JSON.stringify({ model: PROVIDERS.chatgpt.model, messages: [{ role: 'user', content: prompt }], max_tokens: 800 })
       });
       var j = await res.json().catch(function () { return {}; });
       var text = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
@@ -455,7 +698,7 @@
       var res = await fetch(PROVIDERS.claude.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-        body: JSON.stringify({ model: PROVIDERS.claude.model, max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+        body: JSON.stringify({ model: PROVIDERS.claude.model, max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
       });
       var j = await res.json().catch(function () { return {}; });
       var text = (j.content && j.content[0] && j.content[0].text) || (j.error && j.error.message) || JSON.stringify(j).slice(0, 400);
@@ -479,14 +722,191 @@
     return r;
   }
 
+  function parseVerdict(text) {
+    var raw = String(text || '');
+    var m = raw.match(/\{[\s\S]*\}/);
+    if (m) {
+      try {
+        var j = JSON.parse(m[0]);
+        return {
+          solved: j.solved === true,
+          useful: j.useful === true,
+          ship: j.ship === true,
+          reason: String(j.reason || '').slice(0, 240)
+        };
+      } catch (_) {}
+    }
+    return { solved: false, useful: false, ship: false, reason: raw.slice(0, 180) || 'no structured verdict' };
+  }
+
+  function majorityOf(votes, key) {
+    var n = votes.length;
+    if (!n) return false;
+    var yes = 0;
+    votes.forEach(function (v) { if (v[key]) yes++; });
+    return yes * 2 > n;
+  }
+
+  function formatVerdict(v) {
+    if (!v) return '';
+    var lines = [];
+    (v.votes || []).forEach(function (row) {
+      if (!row.ok) {
+        lines.push(row.name + '  FAIL · ' + String(row.error || 'no reply'));
+        return;
+      }
+      lines.push(
+        row.name +
+        '  SOLVED ' + (row.solved ? 'yes' : 'no') +
+        ' · USEFUL ' + (row.useful ? 'yes' : 'no') +
+        ' · SHIP ' + (row.ship ? 'yes' : 'no')
+      );
+      if (row.reason) lines.push('  ' + row.reason);
+    });
+    if (v.majority) {
+      lines.push('');
+      lines.push(
+        'MAJORITY  SOLVED ' + (v.majority.solved ? 'yes' : 'no') +
+        ' · USEFUL ' + (v.majority.useful ? 'yes' : 'no') +
+        ' · SHIP ' + (v.majority.ship ? 'yes' : 'HOLD')
+      );
+    } else {
+      lines.push('');
+      lines.push('No council member could inspect. Add keys or try again.');
+    }
+    return lines.join('\n');
+  }
+
+  function councilPrompt(task, code) {
+    return (
+      'You sit on the Astranov collective council with Gemini, ChatGPT, Claude and Astranov Mind. ' +
+      'The chief coder is Astranov. Inspect the produced code.\n\n' +
+      'Return ONLY a JSON object, no markdown:\n' +
+      '{"solved":true or false,"useful":true or false,"ship":true or false,"reason":"one sentence"}\n\n' +
+      'solved = the code actually addresses the stated problem\n' +
+      'useful = coherent, would run, not dummy or placeholder\n' +
+      'ship = vote YES to publish to astranov.eu — only if solved AND useful AND no critical defect\n\n' +
+      'TASK:\n' + String(task).slice(0, 1200) + '\n\nCODE:\n' + String(code).slice(0, 8000)
+    );
+  }
+
+  async function inspectCouncil(task, code) {
+    if (S.inspecting) return S.lastVerdict;
+    var taskEl = document.getElementById('ps-task');
+    var codeEl = document.getElementById('ps-code');
+    task = String(task != null ? task : (taskEl && taskEl.value) || S.lastTask || '').trim();
+    code = String(code != null ? code : (codeEl && codeEl.value) || S.lastCode || '').trim();
+    var box = document.getElementById('ps-verdicts');
+    var btn = document.getElementById('ps-inspect');
+    var pub = document.getElementById('ps-publish');
+    if (!task || !code) {
+      if (box) box.textContent = 'Paste the task and the produced code. Council will not invent either.';
+      return null;
+    }
+    rememberCode(task, code, 'inspect');
+    S.inspecting = true;
+    if (btn) btn.textContent = 'INSPECTING…';
+    if (pub) pub.setAttribute('disabled', '');
+    if (box) box.textContent = 'Council reading the code…';
+    var prompt = councilPrompt(task, code);
+    var ids = Object.keys(PROVIDERS).filter(function (id) {
+      return id === 'astranov' || hasKey(id);
+    });
+    var rows = await Promise.all(ids.map(async function (id) {
+      var r = await callProvider(id, prompt);
+      if (!r.ok) {
+        return { id: id, name: PROVIDERS[id].name, ok: false, error: String(r.text || 'fail') };
+      }
+      var v = parseVerdict(r.text);
+      return {
+        id: id, name: PROVIDERS[id].name, ok: true,
+        solved: v.solved, useful: v.useful, ship: v.ship, reason: v.reason, raw: String(r.text || '').slice(0, 400)
+      };
+    }));
+    var okVotes = rows.filter(function (r) { return r.ok; });
+    var verdict = {
+      at: Date.now(),
+      task: task,
+      votes: rows,
+      majority: okVotes.length
+        ? {
+            solved: majorityOf(okVotes, 'solved'),
+            useful: majorityOf(okVotes, 'useful'),
+            ship: majorityOf(okVotes, 'ship')
+          }
+        : null
+    };
+    S.lastVerdict = verdict;
+    try { localStorage.setItem(VERDICT_KEY, JSON.stringify(verdict)); } catch (_) {}
+    S.inspecting = false;
+    if (btn) btn.textContent = 'INSPECT';
+    if (box) box.textContent = formatVerdict(verdict);
+    if (pub) {
+      if (verdict.majority && verdict.majority.ship) pub.removeAttribute('disabled');
+      else pub.setAttribute('disabled', '');
+    }
+    log(
+      'council · ' +
+        (verdict.majority
+          ? ('SOLVED ' + (verdict.majority.solved ? 'yes' : 'no') +
+             ' · USEFUL ' + (verdict.majority.useful ? 'yes' : 'no') +
+             ' · SHIP ' + (verdict.majority.ship ? 'yes' : 'HOLD'))
+          : 'no votes'),
+      verdict.majority && verdict.majority.ship ? 'ok' : 'dim'
+    );
+    return verdict;
+  }
+
+  async function publishVerdict() {
+    var v = S.lastVerdict;
+    var box = document.getElementById('ps-verdicts');
+    if (!v || !v.majority || !v.majority.ship) {
+      if (box) box.textContent = (box.textContent || '') + '\n\nCouncil did not vote SHIP. Nothing published.';
+      return null;
+    }
+    var ticket = {
+      at: Date.now(),
+      build: BUILD,
+      task: v.task,
+      majority: v.majority,
+      votes: (v.votes || []).map(function (row) {
+        return { id: row.id, ok: row.ok, solved: row.solved, useful: row.useful, ship: row.ship, reason: row.reason, error: row.error };
+      })
+    };
+    try { localStorage.setItem(SHIP_KEY, JSON.stringify(ticket)); } catch (_) {}
+    var posted = false;
+    try {
+      var base = (global.SB_URL || (global.SN_CONFIG && SN_CONFIG.sbUrl) || 'https://lkoatrkhuigdolnjsbie.supabase.co').replace(/\/$/, '');
+      var headers = { 'Content-Type': 'application/json' };
+      var k = global.SB_KEY || (global.SN_CONFIG && SN_CONFIG.sbKey) || '';
+      if (k) { headers.apikey = k; headers.Authorization = 'Bearer ' + k; }
+      try {
+        var tok = (global.SNAuth && SNAuth.session && SNAuth.session.access_token) || '';
+        if (tok) headers.Authorization = 'Bearer ' + tok;
+      } catch (_) {}
+      var res = await fetch(base + '/functions/v1/ai-router', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          text: 'COUNCIL SHIP TICKET for chief coder.\n' + JSON.stringify(ticket).slice(0, 3500),
+          preferred_provider: 'astranov',
+          kind: 'council-ship'
+        })
+      });
+      posted = res.ok;
+    } catch (_) {}
+    var msg = posted
+      ? 'SHIP recorded · chief coder publishes this to astranov.eu'
+      : 'SHIP recorded on this device · chief coder publishes this to astranov.eu';
+    if (box) box.textContent = formatVerdict(v) + '\n\n' + msg;
+    log(msg, 'ok');
+    return ticket;
+  }
+
   async function collab(task) {
     task = String(task || '').trim();
     if (!task) { log('usage: collab <task>', 'dim'); return; }
-    expandCli();
-    if (!S.planetVisible) {
-      paintPlanet();
-      flyToOrbit();
-    }
+    if (!S.planetVisible) paintPlanet();
     log('\u25ce COLLAB · ' + task.slice(0, 120), 'ok');
     var online = Object.keys(PROVIDERS).filter(hasKey);
     log('link  ' + online.map(function (i) { return PROVIDERS[i].icon + ' ' + PROVIDERS[i].name; }).join('  \u2194  '), 'ok');
@@ -505,6 +925,10 @@
     pulseSat('astranov', 'think');
     var final = await callAstranov('Merge into ONE final answer.\nTask: ' + task + '\n\n' + results.map(function (r) { return '### ' + r.provider + '\n' + String(r.text || '').slice(0, 700); }).join('\n\n'));
     pulseSat('astranov', final.ok ? 'ok' : 'fail');
+    var artifact = results.map(function (r) {
+      return '### ' + r.provider + '\n' + String(r.text || '');
+    }).join('\n\n') + '\n\n### FINAL\n' + String(final.text || '');
+    rememberCode(task, artifact, 'collab');
     log('-- FINAL --', 'ok');
     String(final.text || '').split(/\n+/).slice(0, 22).forEach(function (ln) { if (ln.trim()) log(ln.trim(), 'ok'); });
   }
@@ -517,9 +941,9 @@
     if (id === 'mind') id = 'astranov';
     prompt = String(prompt || '').trim();
     if (!prompt) { log('usage: agent <name> <prompt>', 'dim'); return; }
-    expandCli();
     log('\u2192 ' + ((PROVIDERS[id] && PROVIDERS[id].name) || id) + '…', 'dim');
     var r = await callProvider(id, prompt);
+    rememberCode(prompt, String(r.text || ''), id);
     log((r.ok ? '\u2713 ' : '\u2717 ') + String(r.text || '').slice(0, 420), r.ok ? 'ok' : 'err');
   }
 
@@ -529,13 +953,13 @@
     if (!low) return false;
     if (S.awaitingKey && raw.length > 8 && raw.indexOf(' ') < 0) {
       setKey(S.awaitingKey, raw);
-      hideKeySheet();
+      S.awaitingKey = null;
       return true;
     }
     if (low === 'agents' || low === 'orbit' || low === 'planet' || low === 'astranov planet') { goOrbit(); return true; }
     if (low === 'agents off' || low === 'orbit off' || low === 'planet off') { clearPlanet(); log('orbit cleared', 'ok'); return true; }
     if (low === 'agents help') {
-      log('orbit · tap satellite for key · agents key <p> <KEY> · collab <task> · agent <name> <prompt>', 'dim');
+      log('orbit · one planet menu · agents key <p> <KEY> · collab <task> · agent <name> <prompt> · council inspect', 'dim');
       return true;
     }
     var mKey = raw.match(/^agents?\s+key\s+(\w+)\s+(.+)$/i);
@@ -545,6 +969,11 @@
     if (low.indexOf('collab ') === 0) { collab(raw.slice(7).trim()); return true; }
     var mA = raw.match(/^agent\s+(astranov|mind|gemini|google|chatgpt|openai|gpt|claude|anthropic)\s+(.+)$/i);
     if (mA) { singleAgent(mA[1], mA[2]); return true; }
+    if (low === 'council' || low === 'council inspect') {
+      openPlanetSheet();
+      if (low === 'council inspect') inspectCouncil();
+      return true;
+    }
     return false;
   }
 
@@ -584,71 +1013,6 @@
 
   function ensureRibbonBtn() {
     return;
-  }
-
-  function openPlanetSheet() {
-    var el = document.getElementById('sn-planet-sheet');
-    if (!el) {
-      el = document.createElement('div');
-      el.id = 'sn-planet-sheet';
-      el.innerHTML =
-        '<style>' +
-        '#sn-planet-sheet{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));' +
-        'transform:translateX(-50%);z-index:150;width:min(420px,calc(100vw - 20px));' +
-        'padding:14px 14px 12px;border-radius:18px;pointer-events:auto;' +
-        'background:rgba(0,4,14,0.88);backdrop-filter:blur(16px);' +
-        'border:1px solid rgba(61,158,255,.4);box-shadow:0 0 28px rgba(40,140,255,.3)}' +
-        '#sn-planet-sheet[hidden]{display:none!important}' +
-        '#sn-planet-sheet h2{margin:0 0 10px;font:800 13px/1 Space Grotesk,system-ui,sans-serif;' +
-        'letter-spacing:.16em;color:#7ec8ff}' +
-        '#sn-planet-sheet .ps-row{display:flex;align-items:center;gap:8px;margin:6px 0}' +
-        '#sn-planet-sheet .ps-name{flex:0 0 92px;font:700 12px/1.2 Inter,system-ui,sans-serif;color:#d8ecff}' +
-        '#sn-planet-sheet .ps-st{flex:1;font:600 11px/1 Inter,system-ui,sans-serif;color:#8ab}' +
-        '#sn-planet-sheet .ps-row button{min-height:34px;padding:0 10px;border-radius:999px;' +
-        'border:1px solid rgba(61,158,255,.45);background:transparent;color:#9cf;' +
-        'font:800 11px/1 system-ui;letter-spacing:.06em;cursor:pointer}' +
-        '#sn-planet-sheet .ps-close{width:100%;margin-top:8px;min-height:36px;border-radius:999px;' +
-        'border:1px solid rgba(61,158,255,.3);background:transparent;color:#9ab;font:700 12px/1 system-ui}' +
-        '</style>' +
-        '<h2>COLLECTIVE AI</h2>' +
-        '<div id="ps-rows"></div>' +
-        '<button type="button" class="ps-close" id="ps-close">CLOSE</button>';
-      document.body.appendChild(el);
-      el.querySelector('#ps-close').addEventListener('click', function () {
-        el.setAttribute('hidden', '');
-      });
-    }
-    var rows = el.querySelector('#ps-rows');
-    rows.innerHTML = '';
-    Object.keys(PROVIDERS).forEach(function (id) {
-      var p = PROVIDERS[id];
-      var online = hasKey(id);
-      var row = document.createElement('div');
-      row.className = 'ps-row';
-      row.innerHTML =
-        '<span class="ps-name">' +
-        p.icon +
-        ' ' +
-        p.name +
-        '</span><span class="ps-st">' +
-        (online ? 'ONLINE · ' + p.role : p.needsKey ? 'NEED KEY · ' + p.role : 'READY · ' + p.role) +
-        '</span>';
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = p.needsKey ? (online ? 'CHANGE' : 'LOGIN') : 'OPEN';
-      b.addEventListener('click', function () {
-        if (p.needsKey) showKeySheet(id);
-        else {
-          listAgents();
-          log(p.name + ' · orchestrator ready', 'ok');
-        }
-      });
-      row.appendChild(b);
-      rows.appendChild(row);
-    });
-    el.removeAttribute('hidden');
-    expandCli();
-    listAgents();
   }
 
   function hitPlanet(cx, cy) {
@@ -736,6 +1100,8 @@
   function init() {
     if (S.ready) return;
     loadCreds();
+    loadRemembered();
+    destroyKeySheet();
     installCli();
     bindPlanetClick();
     S.planetVisible = true;
@@ -746,7 +1112,9 @@
     BUILD: BUILD, init: init, goOrbit: goOrbit, list: listAgents, setKey: setKey,
     clearKey: clearKey, collab: collab, ask: singleAgent, handleLine: handleLine,
     hasKey: hasKey, clearPlanet: clearPlanet, showKeySheet: showKeySheet,
-    openPlanetSheet: openPlanetSheet,
+    openPlanetSheet: openPlanetSheet, hidePlanetSheet: hidePlanetSheet,
+    paintAuth: paintAuth, inspect: inspectCouncil, publish: publishVerdict,
+    lastVerdict: function () { return S.lastVerdict; },
     providers: PROVIDERS, planet: PLANET
   };
 
@@ -757,6 +1125,7 @@
       setTimeout(function () {
         installCli();
         bindPlanetClick();
+        destroyKeySheet();
         silentPaintWhenReady();
       }, ms);
     });
