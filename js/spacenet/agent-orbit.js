@@ -1,6 +1,6 @@
 /**
  * SNAgentOrbit — Collective AI orchestrator (one menu, real council)
- * Build: 20260813180000-ai-check
+ * Build: 20260813204000-plain-talk
  *
  * Planet click opens ONE sheet only: Google + inline API keys + official
  * company login pages + council inspect (SOLVED / USEFUL / SHIP).
@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260813180000-ai-check';
+  var BUILD = '20260813204000-plain-talk';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
@@ -168,14 +168,14 @@
       mount.setAttribute('hidden', '');
       if (who) {
         who.removeAttribute('hidden');
-        who.textContent = 'Signed in · ' + authName() + ' · astranov.eu';
+        who.textContent = 'Signed in · ' + authName() + ' · ASTRANOV (our system)';
       }
       if (out) out.removeAttribute('hidden');
       return;
     }
     mount.removeAttribute('hidden');
     if (who) {
-      who.textContent = 'Guest · Google signs you into ASTRANOV';
+      who.textContent = 'Not signed in · Google signs you into ASTRANOV only (our system)';
       who.removeAttribute('hidden');
     }
     if (out) out.setAttribute('hidden', '');
@@ -195,7 +195,7 @@
     var p = PROVIDERS[id];
     if (!p) return;
     if (S.checking[id]) {
-      st.textContent = 'CHECKING';
+      st.textContent = 'Checking…';
       st.className = 'ps-st wait';
       return;
     }
@@ -206,16 +206,16 @@
       return;
     }
     if (id === 'astranov') {
-      st.textContent = authUser() ? 'SIGNED IN · unproven' : 'GUEST · unproven';
+      st.textContent = authUser() ? 'Signed in · not proven yet' : 'Not signed in · not proven yet';
       st.className = 'ps-st';
       return;
     }
     if (hasKey(id)) {
-      st.textContent = 'KEY STORED · unproven';
+      st.textContent = 'Password saved · not proven yet';
       st.className = 'ps-st';
       return;
     }
-    st.textContent = 'NEED KEY · ' + p.role;
+    st.textContent = 'Needs their password';
     st.className = 'ps-st';
   }
 
@@ -235,11 +235,11 @@
       return;
     }
     if (id !== 'astranov' && !hasKey(id)) {
-      el.textContent = 'NEED API KEY · signing in on their website does not connect them here';
+      el.textContent = 'Signing in on their website does not connect them here. I need their secret password.';
       el.className = 'ps-check need';
       return;
     }
-    el.textContent = 'not checked yet';
+    el.textContent = 'Not checked yet';
     el.className = 'ps-check';
   }
 
@@ -260,18 +260,18 @@
           ok: true,
           need: false,
           at: Date.now(),
-          badge: signed ? 'USABLE · you' : 'USABLE · guest',
+          badge: signed ? 'Working · it is you' : 'Working · guest',
           line: signed
-            ? 'ADMINISTRATOR USABLE · signed in as ' + authName() + '. I can use Astranov Mind.'
-            : 'ADMINISTRATOR USABLE · guest path works. Sign in with Google so I know it is you.'
+            ? 'Our AI is working. Signed in as ' + authName() + '. I can use it.'
+            : 'Our AI is working. You are a guest. Sign in with Google so I know it is you.'
         };
       }
       return {
         ok: true,
         need: false,
         at: Date.now(),
-        badge: 'USABLE · ' + PROVIDERS[id].role,
-        line: 'USABLE · I can call ' + name + ' from here.'
+        badge: 'Working',
+        line: 'I can use ' + name + ' from here.'
       };
     }
     if (/failed to fetch|networkerror|load failed|cors/i.test(text)) {
@@ -279,8 +279,8 @@
         ok: false,
         need: false,
         at: Date.now(),
-        badge: 'BLOCKED',
-        line: 'BROWSER BLOCKED · ' + name + ' refuses direct browser calls. Their website login cannot fix this. I need an API key, and they must allow this site.'
+        badge: 'They blocked us',
+        line: name + ' will not talk from this browser. Their website login cannot fix this. Get a secret password from GET PASSWORD.'
       };
     }
     if (/401|403|invalid api|incorrect api|api[_ ]?key|unauthorized|permission|no .+ key/i.test(text)) {
@@ -288,16 +288,16 @@
         ok: false,
         need: true,
         at: Date.now(),
-        badge: 'KEY REJECTED',
-        line: 'KEY REJECTED · ' + name + ' did not accept this. Open API KEYS, create a key, paste it here.'
+        badge: 'Password refused',
+        line: name + ' refused this password. Open GET PASSWORD, create a new one, paste it here.'
       };
     }
     return {
       ok: false,
       need: false,
       at: Date.now(),
-      badge: 'DOWN',
-      line: name + ' did not answer · ' + text.slice(0, 140)
+      badge: 'No answer',
+      line: name + ' did not answer. ' + text.slice(0, 120)
     };
   }
 
@@ -319,8 +319,8 @@
         ok: false,
         need: true,
         at: Date.now(),
-        badge: 'NEED KEY · ' + p.role,
-        line: 'NEED API KEY · their website login stays on their site. Paste a key from API KEYS so I can use ' + p.name + '.'
+        badge: 'Needs their password',
+        line: 'Their website login stays on their site. Paste a secret password from GET PASSWORD so I can use ' + p.name + '.'
       };
       paintCheck(id);
       return S.checks[id];
@@ -371,8 +371,8 @@
       S.checks[id] = {
         ok: false,
         need: true,
-        badge: 'NEED KEY · ' + p.role,
-        line: 'You came back from ' + p.name + '. That website login stays on their site. Paste an API key from API KEYS so I can use them.'
+        badge: 'Needs their password',
+        line: 'You came back from ' + p.name + '. That website login stays on their site. Paste a secret password from GET PASSWORD so I can use them.'
       };
       paintCheck(id);
     });
@@ -418,12 +418,12 @@
         return (
           '<article class="ps-card" data-id="astranov">' +
             '<div class="ps-card-h"><span class="ps-name">' + p.icon + ' ' + esc(p.name) + '</span>' +
-            '<span class="ps-st" id="ps-st-astranov">GUEST · unproven</span></div>' +
-            '<p class="ps-who" id="ps-who">Guest · Google signs you into ASTRANOV only</p>' +
+            '<span class="ps-st" id="ps-st-astranov">Not signed in · not proven yet</span></div>' +
+            '<p class="ps-who" id="ps-who">Not signed in · Google signs you into ASTRANOV only (our system)</p>' +
             '<div id="ps-gsi"></div>' +
             '<p class="ps-err" id="ps-gsi-err"></p>' +
-            '<p class="ps-check" id="ps-ck-astranov">not checked yet</p>' +
-            '<button type="button" class="ps-glow" data-check="astranov">> check administrator</button>' +
+            '<p class="ps-check" id="ps-ck-astranov">Not checked yet</p>' +
+            '<button type="button" class="ps-glow" data-check="astranov">> check our AI</button>' +
             '<button type="button" class="ps-ghost" id="ps-signout" hidden>SIGN OUT</button>' +
           '</article>'
         );
@@ -431,17 +431,17 @@
       return (
         '<article class="ps-card" data-id="' + id + '">' +
           '<div class="ps-card-h"><span class="ps-name">' + p.icon + ' ' + esc(p.name) + '</span>' +
-          '<span class="ps-st" id="ps-st-' + id + '">NEED KEY · ' + esc(p.role) + '</span></div>' +
+          '<span class="ps-st" id="ps-st-' + id + '">Needs their password</span></div>' +
           '<div class="ps-keyrow">' +
-            '<input id="ps-key-' + id + '" type="password" autocomplete="off" spellcheck="false" placeholder="paste ' + esc(p.name) + ' API key" />' +
+            '<input id="ps-key-' + id + '" type="password" autocomplete="off" spellcheck="false" placeholder="paste ' + esc(p.name) + ' secret password" />' +
             '<button type="button" class="ps-save" data-save="' + id + '">SAVE</button>' +
           '</div>' +
           '<div class="ps-links">' +
             '<a class="ps-link" href="' + p.login + '" target="_blank" rel="noopener noreferrer" data-login="' + id + '">THEIR SITE</a>' +
-            '<a class="ps-link" href="' + p.console + '" target="_blank" rel="noopener noreferrer">API KEYS</a>' +
+            '<a class="ps-link" href="' + p.console + '" target="_blank" rel="noopener noreferrer">GET PASSWORD</a>' +
           '</div>' +
-          '<p class="ps-note">Their website login stays on their site. An API key is what lets me use them.</p>' +
-          '<p class="ps-check" id="ps-ck-' + id + '">NEED API KEY · not connected</p>' +
+          '<p class="ps-note">Their website login stays on their site. A secret password from GET PASSWORD is what lets me use them.</p>' +
+          '<p class="ps-check" id="ps-ck-' + id + '">Not connected. I need their secret password.</p>' +
           '<button type="button" class="ps-glow" data-check="' + id + '">> check ' + esc(String(p.name).toLowerCase()) + '</button>' +
         '</article>'
       );
@@ -514,11 +514,11 @@
       '#sn-planet-sheet .ps-links{flex-direction:column}}' +
       '</style>' +
       '<h2>COLLECTIVE AI</h2>' +
-      '<p class="ps-sub">Google is for ASTRANOV. Gemini · ChatGPT · Claude need their own API keys. I check if I can actually use them.</p>' +
+      '<p class="ps-sub">Google is for ASTRANOV (our system). Gemini, ChatGPT and Claude need their own secret passwords. I check if I can actually use them.</p>' +
       '<button type="button" class="ps-glow" id="ps-check-all">> check all connections</button>' +
       '<div id="ps-rows">' + cards + '</div>' +
       '<p class="ps-sec">COUNCIL</p>' +
-      '<p class="ps-sub">Astranov Mind + Gemini + ChatGPT + Claude inspect produced code. They vote SOLVED · USEFUL · SHIP. Publish only if SHIP.</p>' +
+      '<p class="ps-sub">Our AI plus Gemini, ChatGPT and Claude read the work. They say if it is solved, useful, and ready to publish. I only publish if they say yes.</p>' +
       '<label for="ps-task">TASK</label>' +
       '<input id="ps-task" type="text" autocomplete="off" placeholder="what the code was asked to do" />' +
       '<label for="ps-code">PRODUCED CODE</label>' +
@@ -793,7 +793,7 @@
     Object.keys(PROVIDERS).forEach(function (id) {
       var p = PROVIDERS[id];
       var ck = S.checks[id];
-      var face = ck ? ck.badge : (hasKey(id) ? 'KEY STORED · unproven' : (p.needsKey ? 'NEED KEY' : 'UNPROVEN'));
+      var face = ck ? ck.badge : (hasKey(id) ? 'Password saved · not proven yet' : (p.needsKey ? 'Needs their password' : 'Not proven yet'));
       log((ck && ck.ok ? '\u25cf ' : '\u25cb ') + p.name + ' · ' + face, ck && ck.ok ? 'ok' : 'dim');
       if (ck && ck.line) log('  ' + ck.line, ck.ok ? 'ok' : 'dim');
     });
@@ -819,7 +819,7 @@
     if (key.length < 8) { log('key too short', 'err'); return; }
     S.creds[id] = key;
     saveCreds();
-    log('\u25cf ' + PROVIDERS[id].name + ' · key stored on this device · checking…', 'ok');
+    log(PROVIDERS[id].name + ' · password saved on this device · checking…', 'ok');
     paintRowStatus(id);
     checkProvider(id, true);
     if (S.planetVisible) paintPlanet();
