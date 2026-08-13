@@ -2293,7 +2293,7 @@
       return true;
     }
     if (low === 'wallet' || low === 'rate') {
-      log('Wallet · ' + fmt(wallet.s) + ' · vault ' + (wallet.vault || 0).toFixed(2), 'ok');
+      log('Wallet. ' + Number(wallet.s || 0).toFixed(0) + ' euro (Astranov coins, 1 coin = 1 euro). Held fees ' + Number(wallet.vault || 0).toFixed(2) + '.', 'ok');
       return true;
     }
     try {
