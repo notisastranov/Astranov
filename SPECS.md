@@ -165,6 +165,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | OV-18 | 2026-08-13 | **Bootloader hard-purges the browser on every startup.** Wipe Cache Storage + update/claim the service worker + fetch the kernel `no-store`. If the live HTML build ≠ the document in hand, one hard reload (loop-guarded). Same-origin OS JS only — **no jsDelivr @main**. Does **not** wipe keys / Google session / wallet. Ask the browser for persistent storage so user data survives the purge. |
 | OV-19 | 2026-08-13 | **Boot waits for you.** One-screen human diagnostics (device · network · battery · heat · place · Earth · system). No machine dump. Stops until you tap glowing `> enter astranov` (or Enter). CLI: only useful clickable glowing lines — no boot spam. |
 | OV-20 | 2026-08-13 | **Care over muscle.** Smallest correct change. Verify live on astranov.eu before claiming. Do not invent chrome or ribbon buttons. Do not destroy existing ribbon pills. No drive-by refactors. Shell running ≠ operating. |
+| OV-21 | 2026-08-13 | **Planet login must prove use.** After Google or an API key, run a real ping and show USABLE / NEED KEY / KEY REJECTED / BLOCKED / DOWN. Company website login is not a connection. Google is ASTRANOV only. |
 
 ## VOID (do not implement from these)
 
@@ -177,3 +178,4 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-13 (not owner OV): **OV-18 hard-boot** — inline kernel purge before any module; fetch-inject chrome + bootloader `cache:no-store`; SW network-only + wipe all Cache Storage on activate; Vercel `Clear-Site-Data: "cache"` + `no-store` on `/` `/js/*`; jsDelivr @main dropped for OS modules. Build `20260813140000-hard-boot`.*
 *Agent note 2026-08-13 (not owner OV): **OV-19 boot-gate** — bootloader paints one human sheet then waits; `handoff` no longer auto-enters; CLI drops `[ OK ]` / STAGE / box-drawing dumps; lines with a command glow and run on tap. Build `20260813153000-boot-gate`.*
 *Agent note 2026-08-13 (not owner OV): **OV-20 user-burn** — auto theme no longer writes CLI; `help` is short operating lines; ASTRANOV wordmark opens existing science hub (hard reload stays inside); `first delivery` refuses Rhodes/Athens dummy pins and asks locate. Build `20260813170000-user-burn`.*
+*Agent note 2026-08-13 (not owner OV): **OV-21 ai-check** — planet sheet runs a real ping after Google / key save / open; `SNAuth.session` is the real session (was always null); administrator call uses `authHeaders()`. Website login is labelled as not a connection. Build `20260813180000-ai-check`.*
