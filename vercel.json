@@ -4,18 +4,37 @@
   "trailingSlash": false,
   "headers": [
     {
-      "source": "/js/(.*)",
+      "source": "/",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=120, must-revalidate" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" }
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Clear-Site-Data", "value": "\"cache\"" }
       ]
     },
     {
-      "source": "/",
+      "source": "/index.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, max-age=0, must-revalidate" }
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Clear-Site-Data", "value": "\"cache\"" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }
   ],
-  "rewrites": [{ "source": "/((?!js/|icon|manifest|assets/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/((?!js/|icon|manifest|assets/|sw\\.js).*)", "destination": "/index.html" }
+  ]
 }
