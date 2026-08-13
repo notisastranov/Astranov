@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260813140000-hard-boot" />
-<meta name="astranov-continuity" content="20260813140000-hard-boot" />
+<meta name="astranov-build" content="20260813153000-boot-gate" />
+<meta name="astranov-continuity" content="20260813153000-boot-gate" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -87,6 +87,104 @@ button, [role="button"], input, select {
   pointer-events: none !important;
   visibility: hidden !important;
   display: none !important;
+}
+#boot.os-human {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+#sn-os-sheet {
+  width: min(420px, 100%);
+  max-height: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+#sn-os-mark {
+  font: 800 20px/1 var(--font-display);
+  letter-spacing: 0.36em;
+  color: var(--glow);
+  text-shadow: 0 0 14px rgba(var(--glow-rgb), 0.75);
+  text-align: center;
+  margin: 0 0 4px;
+}
+#sn-os-sub {
+  font: 600 12px/1.4 var(--font-ui);
+  color: var(--dim);
+  text-align: center;
+  margin: 0 0 14px;
+}
+#sn-os-facts { display: flex; flex-direction: column; gap: 2px; }
+.sn-boot-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 6px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font: 500 13px/1.35 var(--font-ui);
+  border-radius: 10px;
+}
+.sn-boot-line:hover, .sn-boot-line:focus-visible {
+  background: rgba(var(--glow-rgb), 0.08);
+  outline: none;
+}
+.sn-boot-k {
+  flex: 0 0 86px;
+  font: 700 11px/1 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.sn-boot-v {
+  flex: 1 1 auto;
+  color: var(--text);
+  text-shadow: 0 0 10px rgba(var(--glow-rgb), 0.28);
+}
+.sn-boot-line.bad .sn-boot-v { color: var(--err); text-shadow: none; }
+.sn-boot-line.wait .sn-boot-v { color: var(--dim); text-shadow: none; }
+#sn-os-actions { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; }
+.sn-cli-glow {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 8px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: 700 16px/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--glow-hot);
+  text-shadow: 0 0 16px rgba(var(--glow-rgb), 0.95), 0 0 4px rgba(var(--glow-rgb), 0.7);
+  animation: sn-cli-glow 1.5s ease-in-out infinite;
+}
+.sn-cli-glow.alt {
+  font-size: 14px;
+  min-height: 44px;
+  color: var(--glow);
+}
+@keyframes sn-cli-glow {
+  0%, 100% { opacity: 0.72; text-shadow: 0 0 10px rgba(var(--glow-rgb), 0.55); }
+  50% { opacity: 1; text-shadow: 0 0 20px rgba(var(--glow-rgb), 1), 0 0 6px rgba(var(--glow-rgb), 0.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-cli-glow, .boot-loader-bar { animation: none; }
+}
+#cli-log .cli-feed-item { cursor: pointer; border-radius: 8px; padding: 2px 4px; }
+#cli-log .cli-feed-item:hover { background: rgba(var(--glow-rgb), 0.08); }
+#cli-log .cli-feed-item.is-latest .cli-body {
+  color: var(--glow-hot);
+  text-shadow: 0 0 12px rgba(var(--glow-rgb), 0.7);
+  animation: sn-cli-glow 1.5s ease-in-out 2;
 }
 .boot-card { text-align: center; }
 .boot-title {
