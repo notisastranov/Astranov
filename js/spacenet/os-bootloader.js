@@ -273,7 +273,12 @@
     '/js/spacenet/cli.js',
     '/js/spacenet/ui.js',
   ];
-  var STAGE_DISPLAY = ['/js/spacenet/spacenet-grid.js', '/js/spacenet/globe.js'];
+  var STAGE_DISPLAY = [
+    '/js/spacenet/spacenet-grid.js',
+    '/js/spacenet/globe.js',
+    '/js/spacenet/ephemeris.js',
+    '/js/spacenet/sky-bodies.js',
+  ];
   var STAGE_DRIVERS = [
     '/js/spacenet/map.js',
     '/js/spacenet/tasks.js',
@@ -399,6 +404,14 @@
         recordCheck('globe-physics', !!(ph && ph.inertia !== undefined), ph ? 'inertia=' + ph.inertia + ' tier=' + ph.tier : 'n/a', null);
       }
     } catch (_) {}
+    try {
+      if (global.SNSkyBodies && SNSkyBodies.init) {
+        SNSkyBodies.init();
+        recordCheck('SNSkyBodies', true, 'live sky · sun moon planets', null);
+      } else recordCheck('SNSkyBodies', !!global.SNSkyBodies, 'module', 'ephemeris.js + sky-bodies.js');
+    } catch (e) {
+      recordCheck('SNSkyBodies', false, e.message || e, null);
+    }
     return !!(canvas && cw > 8 && ch > 8);
   }
 
