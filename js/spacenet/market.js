@@ -587,11 +587,19 @@
     } catch (_) {}
     // Ensure focus exists for shop pin
     try {
-      if (!global._snLastPos) {
-        global._snLastPos = { lat: 37.9838, lng: 23.7275 };
-        if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(37.9838, 23.7275);
+      var pin = global._snLastPos;
+      var fake =
+        !pin ||
+        pin.lat == null ||
+        (Math.abs(Number(pin.lat) - 36.4341) < 0.02 && Math.abs(Number(pin.lng) - 28.2176) < 0.02) ||
+        (Math.abs(Number(pin.lat) - 37.9838) < 0.02 && Math.abs(Number(pin.lng) - 23.7275) < 0.02);
+      if (fake) {
+        say('Need your real place. Tap locate.', 'err');
+        return { ok: false, error: 'Need your place. Tap locate.' };
       }
-    } catch (_) {}
+    } catch (_) {
+      return { ok: false, error: 'Need your place. Tap locate.' };
+    }
     say('First order · listing your shop…', 'dim');
     if (!opts.skipLocate && global.SNGlobe && SNGlobe.locate) {
       try {
