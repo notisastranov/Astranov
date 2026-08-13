@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  var BUILD = '20260813091500-beyond-moon';
+  var BUILD = '20260813091800-beyond-moon';
   var MOON_MAP = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/moon_1024.jpg';
   var S = {
     ready: false,
@@ -201,8 +201,10 @@
     S.astranov.userData.id = 'astranov';
     S.astranov.userData.core = core;
     S.astranov.userData.ring = ring;
+    S.astranov.visible = false;
     g.add(S.astranov);
-    S.astOrbit = makeOrbitRing(2.18, 0x3d9eff, 18.2);
+    S.astOrbit = makeOrbitRing(4.28, 0x3d9eff, 18.2);
+    S.astOrbit.visible = false;
     g.add(S.astOrbit);
 
     var eph = Eph() && Eph().PLANETS;
@@ -228,11 +230,12 @@
     return true;
   }
 
-  function place(mesh, lat, lng, r) {
+  function place(mesh, lat, lng, r, show) {
     if (!mesh) return;
     var v = vecAt(lat, lng, r);
     mesh.position.set(v.x, v.y, v.z);
-    mesh.visible = true;
+    if (show === false) mesh.visible = false;
+    else if (show === true) mesh.visible = true;
   }
 
   function beyondMoonView() {
@@ -262,14 +265,15 @@
 
   function apply(snap) {
     if (!S.group || !snap) return;
-    place(S.sun, snap.sun.lat, snap.sun.lng, visOf('sun'));
+    place(S.sun, snap.sun.lat, snap.sun.lng, visOf('sun'), true);
     if (S.sun) S.sun.lookAt(0, 0, 0);
-    place(S.moon, snap.moon.lat, snap.moon.lng, visOf('moon'));
+    place(S.moon, snap.moon.lat, snap.moon.lng, visOf('moon'), true);
     if (S.moon) {
       var k = 0.55 + snap.moon.phase * 0.55;
       S.moon.scale.setScalar(k > 0.7 ? 1 : 0.92 + snap.moon.phase * 0.12);
     }
-    place(S.astranov, snap.astranov.lat, snap.astranov.lng, visOf('astranov'));
+    var deep = beyondMoonView();
+    place(S.astranov, snap.astranov.lat, snap.astranov.lng, visOf('astranov'), deep);
     if (S.astranov && S.astranov.userData.ring) {
       S.astranov.userData.ring.rotation.z += 0.004;
     }
