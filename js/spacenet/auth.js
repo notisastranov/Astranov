@@ -5,6 +5,7 @@
   const A = {
     client: null,
     user: null,
+    session: null,
     ready: false,
     _gsiReady: null,
     _gsiInit: false,
@@ -133,6 +134,7 @@
       },
     });
     A.client.auth.onAuthStateChange((_e, session) => {
+      A.session = session || null;
       A.user = session?.user || null;
       paint();
       try {
@@ -145,6 +147,7 @@
       } catch (_) {}
     });
     const { data } = await A.client.auth.getSession();
+    A.session = data?.session || null;
     A.user = data?.session?.user || null;
     A.ready = true;
     paint();
@@ -348,6 +351,7 @@
       throw new Error(scrub(error.message || error));
     }
     applyUser(data?.user || data?.session?.user || null);
+    A.session = data?.session || A.session;
     if (A.user) {
       say(
         'Signed in · ' +
@@ -742,6 +746,7 @@
   async function signOut() {
     if (!A.client) await ensureClient();
     await A.client.auth.signOut();
+    A.session = null;
     A.user = null;
     paint();
   }
@@ -817,6 +822,7 @@
         try {
           const { data, error } = await A.client.auth.getSession();
           if (error) throw error;
+          A.session = data?.session || null;
           A.user = data?.session?.user || null;
           if (A.user) applyUser(A.user);
           try {
@@ -877,7 +883,7 @@
       return A.ready;
     },
     get session() {
-      return null;
+      return A.session;
     },
     get owner() {
       return isOwner();
