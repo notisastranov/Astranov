@@ -161,6 +161,7 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | OV-14 | 2026-07-30 | **SPECS rebuilt** thin CORE + this log; legacy contradictions void |
 | OV-15 | 2026-07-31 | **CLI top shortcut ribbon back** (Locate·User·Add·Layers·AI·Send). **No ☰ burger.** Former burger items move to **ASTRANOV** home menu. Supersedes OV-04 “no ribbon”. Multi-tile still on map; no feed chip tiles. |
 | OV-16 | 2026-07-31 | Ribbon: **only ➕ + Layers expand**. User = login / profile. **ASTRANOV home = technical device harvest only** (Main · Secondary · RAID below TJ max). No junk tool menus on home. |
+| OV-17 | 2026-08-13 | Planet click = **one** orchestrator menu only. Google + inline API keys + official company login pages in that same sheet. **No** second key sheet, **no** stacked auth modal, **no** CLI expand on open. Council (Astranov Mind + Gemini + ChatGPT + Claude) inspects produced code and jointly votes **SOLVED / USEFUL / SHIP**. Publish only if SHIP. Chief coder publishes. |
 
 ## VOID (do not implement from these)
 
@@ -169,3 +170,4 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 | CLI must never show top ribbon (hard ban) | **OV-15** restores permanent 6 shortcuts |
 
 *Agent note 2026-08-13 (not owner OV): **Published site was stale** because sandbox edits were never pushed to `notisastranov/astranov.eu` (Vercel source). Live HTML was `20260812210000-live-planet` with `#sn-orb-ring` + jsDelivr `@main` override. **Planet law:** Astranov world hidden at GLOBAL (Moon-inclusive). Visible only after zoom-out past Moon (SOLAR / z≥8.2), farther than Moon (4.28 vs 3.2). Build `20260813091500-beyond-moon`.*
+*Agent note 2026-08-13 (not owner OV): **OV-17 one-orbit** — `#sn-orbit-key` destroyed; keys live inside `#sn-planet-sheet`; GIS mounts in `#ps-gsi` (no `#sn-auth` while the planet sheet is open); company LOGIN / API KEYS are official tabs; council inspects via real provider calls. Build `20260813124500-one-orbit`.*
