@@ -1,11 +1,10 @@
-/* Astranov chrome-fix v14
- * Build: 20260812196000-scrolls-restored
- * RESTORE visible top scroll · ribbon buttons · modern bottom CLI.
- * Never ghost chrome. Never pull the ancient globe-deck.
+/* Astranov chrome-fix v15
+ * Build: 20260813044500-owner-law
+ * Compact existing ribbon only. No invented globe buttons. No tall double-emoji pills.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812196000-scrolls-restored';
+  var BUILD = '20260813044500-owner-law';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
@@ -82,32 +81,36 @@
       '  box-shadow: 0 0 10px rgba(61, 158, 255, 0.75) !important;',
       '}',
       '#sn-task-ribbon {',
-      '  display: flex !important; flex-wrap: nowrap !important; gap: 6px !important;',
+      '  display: flex !important; flex-wrap: nowrap !important; gap: 5px !important;',
       '  overflow-x: auto !important; overflow-y: hidden !important;',
-      '  padding: 6px 10px 4px !important;',
+      '  padding: 4px 8px 2px !important;',
       '  visibility: visible !important; opacity: 1 !important;',
-      '  max-height: none !important;',
+      '  max-height: 40px !important;',
       '}',
       '#sn-task-ribbon .sn-rib-btn {',
-      '  display: inline-flex !important; flex-direction: column !important;',
+      '  display: inline-flex !important; flex-direction: row !important;',
       '  align-items: center !important; justify-content: center !important;',
-      '  gap: 4px !important; flex: 1 1 0 !important;',
-      '  min-width: 44px !important; min-height: 56px !important;',
-      '  padding: 6px 4px !important;',
+      '  gap: 4px !important; flex: 0 0 auto !important;',
+      '  min-width: 0 !important; min-height: 32px !important; height: 32px !important;',
+      '  padding: 4px 8px !important;',
       '  border: 1px solid rgba(61,184,255,0.4) !important;',
       '  background: linear-gradient(165deg, rgba(12,40,78,0.85), rgba(3,14,32,0.95)) !important;',
-      '  color: #d4ecff !important; border-radius: 14px !important;',
+      '  color: #d4ecff !important; border-radius: 999px !important;',
       '  visibility: visible !important; opacity: 1 !important;',
       '}',
+      '#sn-task-ribbon .sn-rib-emoji { display: none !important; }',
       '#sn-task-ribbon .sn-rib-icon {',
       '  display: grid !important; visibility: visible !important;',
-      '  width: 22px !important; height: 22px !important; color: #3d9eff !important;',
+      '  width: 16px !important; height: 16px !important; color: #3d9eff !important;',
       '}',
-      '#sn-task-ribbon .sn-rib-icon[hidden] { display: grid !important; }',
-      '#sn-task-ribbon .sn-rib-icon svg { width: 20px; height: 20px; display: block; }',
+      '#sn-task-ribbon .sn-rib-icon svg { width: 16px; height: 16px; display: block; }',
       '#sn-task-ribbon .sn-rib-txt {',
-      '  display: block !important; font: 700 10px/1.1 Inter,system-ui,sans-serif !important;',
-      '  letter-spacing: 0.05em !important; color: #b8dcff !important; text-transform: uppercase !important;',
+      '  display: block !important; font: 700 10px/1 Inter,system-ui,sans-serif !important;',
+      '  letter-spacing: 0.06em !important; color: #b8dcff !important; text-transform: uppercase !important;',
+      '}',
+      '#sn-orb-ring, .sn-orb, #sn-sky-caption, #sn-rib-orbit, #sn-collective-hud {',
+      '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
+      '  width: 0 !important; height: 0 !important; overflow: hidden !important;',
       '}',
       '#cli-form {',
       '  display: flex !important; align-items: center !important; gap: 8px !important;',
@@ -143,10 +146,26 @@
     try { if (global.speechSynthesis) global.speechSynthesis.cancel(); } catch (_) {}
   }
 
-  function killAncient() {
+  function killInvented() {
     try {
-      ['globe-deck', 'aci-hud', 'news-ticker', 'sn-arch-layer', 'sn-leftscroll', 'sn-rightscroll'].forEach(function (id) {
+      [
+        'sn-orb-ring',
+        'sn-sky-caption',
+        'sn-sky-caption-css',
+        'sn-collective-hud',
+        'sn-collective-hud-css',
+        'sn-rib-orbit',
+        'globe-deck',
+        'aci-hud',
+        'news-ticker',
+        'sn-arch-layer',
+        'sn-leftscroll',
+        'sn-rightscroll',
+      ].forEach(function (id) {
         var el = document.getElementById(id);
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+      document.querySelectorAll('.sn-orb').forEach(function (el) {
         if (el && el.parentNode) el.parentNode.removeChild(el);
       });
     } catch (_) {}
@@ -208,6 +227,9 @@
       if (!bar.children.length && global.SNField && typeof SNField.paintRibbon === 'function') {
         SNField.paintRibbon();
       }
+      bar.querySelectorAll('.sn-rib-emoji').forEach(function (el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
       bar.querySelectorAll('.sn-rib-icon[hidden]').forEach(function (el) {
         el.removeAttribute('hidden');
       });
@@ -217,18 +239,18 @@
   function boot() {
     injectCss();
     silenceBeeps();
-    killAncient();
+    killInvented();
     stabilizePanels();
     forceStandbyBlue();
     ensureRibbonVisible();
     setTimeout(function () {
-      killAncient();
+      killInvented();
       stabilizePanels();
       forceStandbyBlue();
       ensureRibbonVisible();
     }, 800);
     setTimeout(function () {
-      killAncient();
+      killInvented();
       stabilizePanels();
       ensureRibbonVisible();
     }, 2500);
@@ -242,5 +264,6 @@
     build: BUILD,
     stabilizePanels: stabilizePanels,
     ensureRibbonVisible: ensureRibbonVisible,
+    killInvented: killInvented,
   };
 })(typeof window !== 'undefined' ? window : globalThis);
