@@ -32,6 +32,17 @@
     degraded: false,
   };
 
+  var facts = {
+    device: { k: 'Device', text: 'Checking…', state: 'wait', cmd: 'device' },
+    network: { k: 'Network', text: 'Checking…', state: 'wait', cmd: 'network' },
+    battery: { k: 'Battery', text: 'Checking…', state: 'wait', cmd: 'battery' },
+    heat: { k: 'Heat', text: 'Checking…', state: 'wait', cmd: 'heat' },
+    place: { k: 'Place', text: 'Tap to locate you', state: 'wait', cmd: 'locate' },
+    graphics: { k: 'Earth', text: 'Waking…', state: 'wait', cmd: 'repair display' },
+    system: { k: 'System', text: 'Starting…', state: 'wait', cmd: 'hard boot' },
+  };
+  var entered = false;
+  var gateReady = false;
   var consoleEl = null;
   var bootEl = document.getElementById('boot');
 
@@ -44,22 +55,17 @@
       document.body.appendChild(bootEl);
     }
     bootEl.classList.remove('hide');
-    bootEl.style.cssText =
-      'position:fixed;inset:0;z-index:500;background:#000105;display:flex;flex-direction:column;' +
-      'padding:calc(12px + env(safe-area-inset-top,0px)) 14px 14px;box-sizing:border-box;' +
-      'font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;color:#9ec8ff;';
+    bootEl.classList.add('os-mode', 'os-human');
+    bootEl.style.cssText = '';
     bootEl.innerHTML =
-      '<div id="sn-os-head" style="flex:0 0 auto;margin-bottom:10px">' +
-      '<div style="font:800 13px/1.2 Space Grotesk,system-ui,sans-serif;letter-spacing:0.22em;color:#3d9eff;' +
-      'text-shadow:0 0 12px rgba(61,158,255,0.7)">ASTRANOV SPACENET</div>' +
-      '<div id="sn-os-sub" style="font:600 10px/1.4 JetBrains Mono,monospace;color:#6a8ab8;margin-top:6px">' +
-      'OPERATING SYSTEM · BOOTLOADER · build ' +
-      esc(BUILD) +
-      '</div></div>' +
-      '<pre id="sn-os-console" style="flex:1 1 auto;margin:0;overflow:auto;white-space:pre-wrap;word-break:break-word;' +
-      'font:500 11px/1.45 JetBrains Mono,ui-monospace,Menlo,monospace;color:#b8d4ff"></pre>' +
-      '<div id="sn-os-actions" style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>';
-    consoleEl = document.getElementById('sn-os-console');
+      '<div id="sn-os-sheet">' +
+      '<div id="sn-os-mark">ASTRANOV</div>' +
+      '<div id="sn-os-sub">Checking this device…</div>' +
+      '<div id="sn-os-facts"></div>' +
+      '<div id="sn-os-actions"></div>' +
+      '</div>';
+    consoleEl = document.getElementById('sn-os-facts');
+    paintFacts();
     return consoleEl;
   }
 
@@ -67,48 +73,84 @@
     return String(s == null ? '' : s)
       .replace(/&/g, '&')
       .replace(/</g, '<')
-      .replace(/>/g, '>');
+      .replace(/>/g, '>')
+      .replace(/"/g, '"');
+  }
+
+  function setFact(id, text, state) {
+    if (!facts[id]) return;
+    if (text != null) facts[id].text = String(text);
+    if (state) facts[id].state = state;
+    paintFacts();
+  }
+
+  function paintFacts() {
+    if (!consoleEl) {
+      var box = document.getElementById('sn-os-facts');
+      if (!box) return;
+      consoleEl = box;
+    }
+    var html = '';
+    Object.keys(facts).forEach(function (id) {
+      var f = facts[id];
+      html +=
+        '<button type="button" class="sn-boot-line ' +
+        esc(f.state || '') +
+        '" data-fact="' +
+        esc(id) +
+        '"><span class="sn-boot-k">' +
+        esc(f.k) +
+        '</span><span class="sn-boot-v">' +
+        esc(f.text) +
+        '</span></button>';
+    });
+    consoleEl.innerHTML = html;
+    consoleEl.querySelectorAll('[data-fact]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        runFact(btn.getAttribute('data-fact'));
+      });
+    });
+  }
+
+  function runFact(id) {
+    var f = facts[id];
+    if (!f) return;
+    if (id === 'place') {
+      probePlace(true);
+      return;
+    }
+    if (id === 'graphics' && f.state === 'bad') {
+      repairDisplay().then(function (okC) {
+        setFact('graphics', okC ? 'Earth ready' : 'Earth failed · tap to retry', okC ? 'ok' : 'bad');
+      });
+      return;
+    }
+    if (id === 'system') {
+      hardRestart();
+      return;
+    }
+    if (id === 'network') {
+      probeNetwork();
+      return;
+    }
+    if (id === 'battery' || id === 'heat' || id === 'device') {
+      probeDevice();
+    }
+  }
+
+  function setSub(t) {
+    var el = document.getElementById('sn-os-sub');
+    if (el) el.textContent = t;
   }
 
   function paint() {
-    if (!consoleEl) ensureConsole();
-    if (!consoleEl) return;
-    var html = lines
-      .map(function (L) {
-        var c = '#b8d4ff';
-        if (L.lvl === 'ok') c = '#3dd68c';
-        else if (L.lvl === 'fail') c = '#e82127';
-        else if (L.lvl === 'warn') c = '#e8c547';
-        else if (L.lvl === 'hdr') c = '#7ec8ff';
-        else if (L.lvl === 'dim') c = '#6a8ab8';
-        return (
-          '<span style="color:' +
-          c +
-          '">' +
-          esc(L.tag) +
-          '</span> ' +
-          '<span style="color:' +
-          c +
-          '">' +
-          esc(L.msg) +
-          '</span>'
-        );
-      })
-      .join('\n');
-    consoleEl.innerHTML = html;
-    consoleEl.scrollTop = consoleEl.scrollHeight;
+    paintFacts();
   }
 
   function out(tag, msg, lvl) {
     lines.push({ tag: tag, msg: String(msg || ''), lvl: lvl || 'dim', t: performance.now() - t0 });
     if (lines.length > 400) lines = lines.slice(-300);
-    paint();
-    try {
-      if (global.SNCli && SNCli.log) {
-        var cls = lvl === 'fail' ? 'err' : lvl === 'ok' ? 'ok' : lvl === 'warn' ? 'dim' : 'dim';
-        SNCli.log(tag + ' ' + msg, cls, true);
-      }
-    } catch (_) {}
+    /* never dump machine lines onto the boot screen or the CLI */
   }
 
   function hdr(msg) {
@@ -149,19 +191,129 @@
     (btns || []).forEach(function (b) {
       var el = document.createElement('button');
       el.type = 'button';
+      el.className = 'sn-cli-glow' + (b.enter ? '' : ' alt');
       el.textContent = b.label;
-      el.style.cssText =
-        'border-radius:999px;border:1px solid rgba(61,158,255,0.55);background:rgba(8,24,56,0.9);' +
-        'color:#7ec8ff;font:700 11px/1 Inter,system-ui,sans-serif;padding:10px 14px;cursor:pointer';
-      el.onclick = function () {
+      el.addEventListener('click', function () {
         try {
           b.fn();
         } catch (e) {
           fail('action · ' + (e && e.message ? e.message : e));
         }
-      };
+      });
       box.appendChild(el);
     });
+  }
+
+  function probeNetwork() {
+    var on = navigator.onLine !== false;
+    var c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    var kind = c && (c.effectiveType || c.type) ? String(c.effectiveType || c.type) : '';
+    var down = c && c.downlink ? Math.round(c.downlink * 10) / 10 + ' Mb/s' : '';
+    var bits = [on ? 'Online' : 'Offline'];
+    if (kind) bits.push(kind);
+    if (down) bits.push(down);
+    setFact('network', bits.join(' · '), on ? 'ok' : 'bad');
+    return on;
+  }
+
+  function probeDevice() {
+    var touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
+    var mem = navigator.deviceMemory;
+    var cores = navigator.hardwareConcurrency;
+    var bits = [touch ? 'Phone or tablet' : 'Computer'];
+    if (mem) bits.push(mem + ' GB');
+    if (cores) bits.push(cores + ' cores');
+    setFact('device', bits.join(' · '), 'ok');
+
+    if (navigator.getBattery) {
+      navigator.getBattery()
+        .then(function (b) {
+          var pct = Math.round((b.level || 0) * 100);
+          setFact('battery', pct + '% · ' + (b.charging ? 'charging' : 'on battery'), pct < 12 && !b.charging ? 'bad' : 'ok');
+        })
+        .catch(function () {
+          setFact('battery', 'This browser does not report battery', 'wait');
+        });
+    } else {
+      setFact('battery', 'This browser does not report battery', 'wait');
+    }
+
+    var heatSet = false;
+    try {
+      if (typeof PressureObserver === 'function') {
+        var po = new PressureObserver(function (list) {
+          var last = list && list[list.length - 1];
+          if (!last) return;
+          heatSet = true;
+          var st = String(last.state || '');
+          var human =
+            st === 'critical' ? 'Hot · give the device a rest' :
+            st === 'serious' ? 'Warm · heavy load' :
+            st === 'fair' ? 'Warming' : 'Normal';
+          setFact('heat', human, st === 'critical' || st === 'serious' ? 'bad' : 'ok');
+        });
+        po.observe('cpu');
+      }
+    } catch (_) {}
+    if (!heatSet) {
+      setTimeout(function () {
+        if (!heatSet) setFact('heat', 'This browser does not report temperature', 'wait');
+      }, 700);
+    }
+  }
+
+  function probePlace(forcePrompt) {
+    var last = null;
+    try {
+      last = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
+    } catch (_) {}
+    var fake = last && Math.abs(last.lat - 36.4341) < 0.02 && Math.abs(last.lng - 28.2176) < 0.02;
+    if (last && last.lat != null && !fake && !forcePrompt) {
+      setFact('place', last.lat.toFixed(3) + ' · ' + last.lng.toFixed(3) + ' · last good', 'ok');
+    }
+    if (!navigator.geolocation) {
+      setFact('place', 'No GPS on this device', 'bad');
+      return;
+    }
+    if (!forcePrompt && !last) {
+      setFact('place', 'Tap to share where you are', 'wait');
+      return;
+    }
+    setFact('place', 'Asking for location…', 'wait');
+    try {
+      navigator.geolocation.getCurrentPosition(
+        function (p) {
+          var lat = p.coords.latitude;
+          var lng = p.coords.longitude;
+          var acc = Math.round(p.coords.accuracy || 0);
+          setFact('place', lat.toFixed(3) + ' · ' + lng.toFixed(3) + (acc ? ' · ±' + acc + ' m' : ''), 'ok');
+          try {
+            if (global.SNCli && SNCli.commitRealGps) {
+              SNCli.commitRealGps({ lat: lat, lng: lng, accuracy: acc, source: 'gps' });
+            }
+          } catch (_) {}
+        },
+        function (err) {
+          var msg =
+            err && err.code === 1
+              ? 'Location blocked · tap to allow'
+              : 'Location not ready · tap to try';
+          setFact('place', msg, 'wait');
+        },
+        { enableHighAccuracy: false, timeout: 6000, maximumAge: 30000 }
+      );
+    } catch (_) {
+      setFact('place', 'Location not ready · tap to try', 'wait');
+    }
+  }
+
+  function collectHuman() {
+    probeNetwork();
+    probeDevice();
+    probePlace(false);
+    setFact('system', 'Loading a fresh kernel…', 'wait');
+    window.addEventListener('online', probeNetwork);
+    window.addEventListener('offline', probeNetwork);
   }
 
   /* ───────── Kernel cache claim (every boot) ───────── */
@@ -222,6 +374,7 @@
                 reg.update();
               } catch (_) {}
               ok('service worker · live · no-store kernel');
+              setFact('system', 'Live kernel · ready to enter', 'ok');
               return reg;
             })
             .catch(function (e) {
@@ -739,6 +892,42 @@
   }
 
   /* ───────── Handoff ───────── */
+  function enterSystem() {
+    if (entered) return;
+    entered = true;
+    minimizeBootToCli();
+  }
+
+  function showEnterGate(success) {
+    gateReady = true;
+    var canvas = document.querySelector('#globe canvas');
+    setFact('graphics', canvas ? 'Earth ready' : 'Earth not ready · tap to repair', canvas ? 'ok' : 'bad');
+    if (success) {
+      setSub('Review this screen · then enter');
+      setFact('system', 'Ready', 'ok');
+      setActions([
+        { label: '> enter astranov', enter: true, fn: enterSystem },
+      ]);
+    } else {
+      setSub('Something needs you · or enter anyway');
+      setFact('system', 'Not fully ready', 'bad');
+      setActions([
+        { label: '> repair graphics', enter: false, fn: function () { repairDisplay(); } },
+        { label: '> enter anyway', enter: true, fn: enterSystem },
+        { label: '> hard boot', enter: false, fn: hardRestart },
+      ]);
+    }
+    try {
+      document.addEventListener('keydown', function onKey(ev) {
+        if (!gateReady || entered) return;
+        if (ev.key === 'Enter' && !ev.altKey && !ev.ctrlKey && !ev.metaKey) {
+          ev.preventDefault();
+          enterSystem();
+        }
+      });
+    } catch (_) {}
+  }
+
   function handoff(success) {
     hdr(success ? 'HANDOFF · operational' : 'HANDOFF · degraded');
     var ms = Math.round(performance.now() - t0);
@@ -747,102 +936,11 @@
     try {
       localStorage.setItem('sn:os-boot-report', JSON.stringify(report));
     } catch (_) {}
-
-    // Seed CLI with boot summary
     try {
-      if (global.SNCli) {
-        if (SNCli.init) SNCli.init();
-        // expand CLI enough to read
-        try {
-          if (global.SNUi && SNUi.setSize) SNUi.setSize('mid');
-          else {
-            var panel = document.getElementById('panel');
-            if (panel) {
-              panel.classList.remove('collapsed');
-              panel.classList.add('mid');
-            }
-          }
-        } catch (_) {}
-        SNCli.log('══════════════════════════════════════', 'ok', true);
-        SNCli.log('Astranov SpaceNet Operating System · boot ' + ms + 'ms · ' + (success ? 'READY' : 'DEGRADED'), success ? 'ok' : 'err', true);
-        SNCli.log('build ' + BUILD, 'dim', true);
-        var fails = report.checks.filter(function (c) {
-          return !c.pass;
-        });
-        if (fails.length) {
-          SNCli.log('Failures: ' + fails.map(function (f) {
-            return f.id;
-          }).join(', '), 'err', true);
-          fails.slice(0, 6).forEach(function (f) {
-            if (f.fix) SNCli.log('FIX · ' + f.fix, 'dim', true);
-          });
-        } else {
-          SNCli.log('All critical checks passed', 'ok', true);
-        }
-        SNCli.log('Commands: will · reshape · diagnostics · power on · plan status', 'dim', true);
-        SNCli.log('You are a developer · speak changes · the OS reshapes to your will', 'ok', true);
-        SNCli.log('══════════════════════════════════════', 'ok', true);
-      }
+      if (global.SNCli && SNCli.init) SNCli.init();
     } catch (_) {}
-
-    // Install CLI intercepts for OS commands
     installCliHooks();
-
-    // Bootloader becomes the CLI — not a discarded splash
-    if (success) {
-      info('minimizing bootloader → CLI');
-      setActions([
-        {
-          label: 'Continue',
-          fn: function () {
-            minimizeBootToCli();
-          },
-        },
-        {
-          label: 'Diagnostics',
-          fn: function () {
-            fullDiagnostics();
-          },
-        },
-      ]);
-      setTimeout(function () {
-        minimizeBootToCli();
-      }, 900);
-    } else {
-      setActions([
-        {
-          label: 'Retry boot',
-          fn: function () {
-            location.reload();
-          },
-        },
-        {
-          label: 'Repair display',
-          fn: function () {
-            repairDisplay().then(function (okC) {
-              if (okC) {
-                report.ready = true;
-                handoff(true);
-              }
-            });
-          },
-        },
-        {
-          label: 'Repair kernel',
-          fn: function () {
-            repairKernel();
-          },
-        },
-        {
-          label: 'Open CLI degraded',
-          fn: function () {
-            minimizeBootToCli();
-          },
-        },
-      ]);
-      warn('System did not pass health gate · choose a fix above');
-    }
-
+    showEnterGate(success);
     global.SNOsBoot = api;
     global.__snBooting = 0;
     try {
@@ -851,8 +949,7 @@
   }
 
   /**
-   * Morph full-screen bootloader into the dock CLI (OS continues in CLI).
-   * Report lines are already seeded; expand CLI mid so user can read.
+   * Leave the boot sheet. CLI gets a few glowing clickable lines — no machine dump.
    */
   function minimizeBootToCli() {
     try {
@@ -882,14 +979,16 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('Astranov SpaceNet Operating System · bootloader → CLI · system online', 'ok', true);
-          SNCli.log('Top: tap gadgets handle · Globe: wheel zoom (no spin) · power ON for tasks', 'dim', true);
+          SNCli.log('ASTRANOV ready. Tap a glowing line.', 'ok', true);
+          SNCli.log('> locate me', 'cmd', true);
+          SNCli.log('> battery', 'cmd', true);
+          SNCli.log('> power on', 'cmd', true);
+          SNCli.log('> help', 'cmd', true);
         }
       } catch (_) {}
-      // Focus CLI input
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'diagnostics · repair · power on · help';
+        if (inp) inp.placeholder = 'locate · battery · power on · help';
       } catch (_) {}
     } catch (_) {}
     killOverlay();
@@ -933,7 +1032,14 @@
           low === 'purge' ||
           low === 'hard boot' ||
           low === 'hard reload' ||
-          low === 'clear cache'
+          low === 'clear cache' ||
+          low === 'enter' ||
+          low === 'enter astranov' ||
+          low === 'go' ||
+          low === 'battery' ||
+          low === 'heat' ||
+          low === 'device' ||
+          low === 'status'
         ) {
           try {
             if (SNCli.beginTurn) SNCli.beginTurn();
@@ -960,6 +1066,14 @@
           } else if (low === 'purge' || low === 'hard boot' || low === 'hard reload' || low === 'clear cache') {
             SNCli.log('Hard boot · wiping kernel cache · restart', 'ok');
             hardRestart();
+          } else if (low === 'enter' || low === 'enter astranov' || low === 'go') {
+            enterSystem();
+          } else if (low === 'battery' || low === 'heat' || low === 'device' || low === 'status') {
+            SNCli.log('Device. ' + facts.device.text, 'ok');
+            SNCli.log('Battery. ' + facts.battery.text, 'ok');
+            SNCli.log('Heat. ' + facts.heat.text, 'ok');
+            SNCli.log('Network. ' + facts.network.text, 'ok');
+            SNCli.log('Place. ' + facts.place.text, 'ok');
           }
           try {
             if (SNCli.endTurn) SNCli.endTurn();
@@ -1025,11 +1139,8 @@
   async function boot() {
     ensureConsole();
     installLoader();
-    hdr('Astranov SpaceNet Operating System');
-    info('Astranov SpaceNet Operating System');
-    info('build ' + BUILD);
-    info('time ' + new Date().toISOString());
-    info('professional delivery OS · every user is a developer');
+    collectHuman();
+    setSub('Checking this device…');
 
     try {
       try {
@@ -1056,6 +1167,7 @@
         await repairDisplay();
         displayOk = !!document.querySelector('#globe canvas');
       }
+      setFact('graphics', displayOk ? 'Earth ready' : 'Earth not ready · tap to repair', displayOk ? 'ok' : 'bad');
 
       await loadStage('drivers', STAGE_DRIVERS, { soft: true });
       initDrivers();
@@ -1117,18 +1229,8 @@
       fail('BOOTLOADER EXCEPTION · ' + (e && e.message ? e.message : e));
       fix('Retry boot');
       setActions([
-        {
-          label: 'Retry boot',
-          fn: function () {
-            location.reload();
-          },
-        },
-        {
-          label: 'Enter degraded',
-          fn: function () {
-            killOverlay();
-          },
-        },
+        { label: '> hard boot', enter: true, fn: function () { location.reload(); } },
+        { label: '> enter anyway', enter: false, fn: function () { entered = true; killOverlay(); } },
       ]);
       report.ready = false;
       report.degraded = true;
@@ -1152,6 +1254,7 @@
     repairDrivers: repairDrivers,
     killOverlay: killOverlay,
     minimizeBootToCli: minimizeBootToCli,
+    enterSystem: enterSystem,
     out: out,
   };
   global.SNOsBoot = api;
