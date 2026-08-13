@@ -703,10 +703,7 @@
       var root = document.documentElement;
       root.classList.remove('theme-light', 'theme-dark');
       root.classList.add(wantLight ? 'theme-light' : 'theme-dark');
-      try {
-        if (g.SNCli && SNCli.ops)
-          SNCli.ops(wantLight ? 'Theme · day bright' : 'Theme · night dark');
-      } catch (_) {}
+      /* no CLI line — auto theme is not a user turn */
     } catch (_) {}
   }
 
@@ -1728,10 +1725,7 @@
         ' title="' +
         title +
         '">' +
-        '<span class="sn-rib-emoji" aria-hidden="true">' +
-        (b.emoji || '') +
-        '</span>' +
-        '<span class="sn-rib-icon" aria-hidden="true" hidden>' +
+        '<span class="sn-rib-icon" aria-hidden="true">' +
         (b.icon || '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
