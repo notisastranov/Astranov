@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260812210000-live-planet';
+  var BUILD = '20260813091500-beyond-moon';
   if (global.__SN_AGENT_ORBIT === BUILD) return;
   global.__SN_AGENT_ORBIT = BUILD;
 
@@ -28,7 +28,7 @@
       endpoint: 'https://api.anthropic.com/v1/messages', model: 'claude-3-5-sonnet-20241022'
     }
   };
-  var PLANET = { lat: 36.43, lng: 28.22, altitude: 1.48, color: 0x3d9eff };
+  var PLANET = { lat: 36.43, lng: 28.22, altitude: 4.28, color: 0x3d9eff };
   var SAT = {
     astranov: { dLat: 0, dLng: 0, alt: 1.22 },
     gemini: { dLat: 2.4, dLng: 3.1, alt: 1.18 },
@@ -219,99 +219,10 @@
 
   function ensurePlanetHud() {
     var el = document.getElementById('sn-collective-hud');
-    if (el) {
-      el.removeAttribute('hidden');
-      el.style.display = 'block';
-      el.style.opacity = '1';
-      placeHud(el);
-      return el;
-    }
-    var style = document.getElementById('sn-collective-hud-css');
-    if (!style) {
-      style = document.createElement('style');
-      style.id = 'sn-collective-hud-css';
-      style.textContent =
-        '#sn-collective-hud{position:fixed;left:50%;top:30%;z-index:48;width:168px;height:168px;' +
-        'transform:translate(-50%,-50%);pointer-events:none;opacity:1;' +
-        'filter:drop-shadow(0 0 18px rgba(61,158,255,.55))}' +
-        '#sn-collective-hud[hidden]{display:none!important}' +
-        '#sn-collective-hud .sn-cp-stage{position:relative;width:100%;height:100%}' +
-        '#sn-collective-hud .sn-cp-ring{position:absolute;left:50%;top:50%;width:128px;height:46px;' +
-        'margin:-23px 0 0 -64px;border:2px solid rgba(210,236,255,.9);border-radius:50%;' +
-        'box-shadow:0 0 14px rgba(120,190,255,.75),inset 0 0 10px rgba(160,210,255,.25);' +
-        'transform:rotateX(66deg) rotateZ(-16deg);animation:sn-cp-spin 9s linear infinite}' +
-        '#sn-collective-hud .sn-cp-core{position:absolute;left:50%;top:50%;width:82px;height:82px;' +
-        'margin:-41px 0 0 -41px;border-radius:50%;pointer-events:auto;cursor:pointer;border:0;' +
-        'background:radial-gradient(circle at 32% 28%,#f2f9ff 0%,#7ec8ff 28%,#2b8cff 58%,#0a3a9a 82%,#031018 100%);' +
-        'box-shadow:0 0 0 2px rgba(190,230,255,.55),0 0 28px 10px rgba(61,158,255,.6),0 0 64px 18px rgba(40,140,255,.32)}' +
-        '#sn-collective-hud .sn-cp-core:focus{outline:2px solid #7ec8ff}' +
-        '#sn-collective-hud .sn-cp-name{position:absolute;left:50%;top:calc(50% + 52px);transform:translateX(-50%);' +
-        'font:800 10px/1 Space Grotesk,system-ui,sans-serif;letter-spacing:.18em;color:#d8f0ff;' +
-        'text-shadow:0 0 10px rgba(61,158,255,.95);white-space:nowrap;pointer-events:none}' +
-        '#sn-collective-hud .sn-cp-orbit{position:absolute;inset:8px;animation:sn-cp-orbit 12s linear infinite}' +
-        '#sn-collective-hud .sn-cp-sat{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;' +
-        'border-radius:50%;border:1px solid rgba(255,255,255,.55);pointer-events:auto;cursor:pointer;padding:0;' +
-        'box-shadow:0 0 10px currentColor}' +
-        '#sn-collective-hud .sn-cp-sat[data-id="astranov"]{background:#3d9eff;color:#3d9eff;left:50%;top:0}' +
-        '#sn-collective-hud .sn-cp-sat[data-id="gemini"]{background:#8ab4f8;color:#8ab4f8;left:100%;top:50%}' +
-        '#sn-collective-hud .sn-cp-sat[data-id="chatgpt"]{background:#10a37f;color:#10a37f;left:50%;top:100%}' +
-        '#sn-collective-hud .sn-cp-sat[data-id="claude"]{background:#d4a27f;color:#d4a27f;left:0;top:50%}' +
-        '#sn-collective-hud .sn-cp-sat span{position:absolute;left:50%;top:20px;transform:translateX(-50%);' +
-        'font:700 8px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;color:#cfe8ff;white-space:nowrap;' +
-        'text-shadow:0 0 6px #000}' +
-        '@keyframes sn-cp-spin{to{transform:rotateX(66deg) rotateZ(344deg)}}' +
-        '@keyframes sn-cp-orbit{to{transform:rotate(360deg)}}' +
-        '@media (max-width:520px){#sn-collective-hud{width:132px;height:132px}' +
-        '#sn-collective-hud .sn-cp-core{width:64px;height:64px;margin:-32px 0 0 -32px}' +
-        '#sn-collective-hud .sn-cp-ring{width:104px;height:38px;margin:-19px 0 0 -52px}' +
-        '#sn-collective-hud .sn-cp-name{top:calc(50% + 42px);font-size:9px}}';
-      document.head.appendChild(style);
-    }
-    el = document.createElement('div');
-    el.id = 'sn-collective-hud';
-    el.setAttribute('aria-label', 'Collective AI planet');
-    el.innerHTML =
-      '<div class="sn-cp-stage">' +
-      '<div class="sn-cp-ring" aria-hidden="true"></div>' +
-      '<button type="button" class="sn-cp-core" title="Collective AI · tap for agents"></button>' +
-      '<div class="sn-cp-name">COLLECTIVE AI</div>' +
-      '<div class="sn-cp-orbit">' +
-      '<button type="button" class="sn-cp-sat" data-id="astranov" title="Astranov Mind"><span>MIND</span></button>' +
-      '<button type="button" class="sn-cp-sat" data-id="gemini" title="Gemini"><span>GEMINI</span></button>' +
-      '<button type="button" class="sn-cp-sat" data-id="chatgpt" title="ChatGPT"><span>GPT</span></button>' +
-      '<button type="button" class="sn-cp-sat" data-id="claude" title="Claude"><span>CLAUDE</span></button>' +
-      '</div></div>';
-    document.body.appendChild(el);
-    el.querySelector('.sn-cp-core').addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      goOrbit();
-    });
-    el.querySelectorAll('.sn-cp-sat').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var id = btn.getAttribute('data-id');
-        var p = PROVIDERS[id];
-        if (!p) return;
-        if (p.needsKey && !hasKey(id)) showKeySheet(id);
-        else {
-          expandCli();
-          log(p.name + ' · ' + p.role + ' · ' + (hasKey(id) ? 'ONLINE' : 'READY'), hasKey(id) ? 'ok' : 'dim');
-        }
-      });
-    });
-    placeHud(el);
-    if (!hudRafOn) {
-      hudRafOn = true;
-      function tickHud() {
-        var hud = document.getElementById('sn-collective-hud');
-        if (hud && !hud.hasAttribute('hidden')) placeHud(hud);
-        requestAnimationFrame(tickHud);
-      }
-      requestAnimationFrame(tickHud);
-    }
-    return el;
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+    var st = document.getElementById('sn-collective-hud-css');
+    if (st && st.parentNode) st.parentNode.removeChild(st);
+    return null;
   }
 
   function ensureOrbitLabel() {
@@ -337,65 +248,53 @@
 
   function paintPlanet3d() {
     if (!global.THREE || !global.SNGlobe || !SNGlobe.ready) return false;
-    var scene = SNGlobe.getScene && SNGlobe.getScene();
-    if (!scene) return false;
-    if (orbitGroup && orbitGroup.parent) {
+    var host = null;
+    try {
+      if (global.SNSkyBodies && SNSkyBodies.getAstranovGroup) host = SNSkyBodies.getAstranovGroup();
+    } catch (_) {}
+    if (orbitGroup && orbitGroup.parent && host && orbitGroup.parent === host) {
       S.planetVisible = true;
       return true;
     }
+    if (orbitGroup && orbitGroup.parent) {
+      try { orbitGroup.parent.remove(orbitGroup); } catch (_) {}
+    }
+    if (!host) {
+      var scene = SNGlobe.getScene && SNGlobe.getScene();
+      if (!scene) return false;
+    }
     var T = THREE;
     var group = new T.Group();
-    group.name = 'sn-collective-planet';
-    // Sit in front-right of Earth so the 3D body is also in the pixels.
-    group.position.set(1.35, 0.62, 1.55);
-
-    var core = new T.Mesh(
-      new T.SphereGeometry(0.28, 32, 32),
-      new T.MeshBasicMaterial({ color: 0x4db3ff, depthTest: false })
-    );
-    core.renderOrder = 99;
-    group.add(core);
-
-    var halo = new T.Mesh(
-      new T.SphereGeometry(0.40, 24, 24),
-      new T.MeshBasicMaterial({
-        color: 0x9ad4ff,
-        transparent: true,
-        opacity: 0.28,
-        depthTest: false,
-        depthWrite: false,
-      })
-    );
-    halo.renderOrder = 98;
-    group.add(halo);
-
-    var ring = new T.Mesh(
-      new T.TorusGeometry(0.46, 0.018, 12, 56),
-      new T.MeshBasicMaterial({ color: 0xd8f0ff, transparent: true, opacity: 0.95, depthTest: false })
-    );
-    ring.rotation.x = Math.PI / 2.4;
-    ring.renderOrder = 100;
-    group.add(ring);
+    group.name = 'sn-collective-sats';
+    if (host) {
+      group.position.set(0, 0, 0);
+    } else {
+      group.position.set(1.35, 0.62, 1.55);
+    }
 
     orbitSats = [];
     Object.keys(PROVIDERS).forEach(function (id, i) {
       var p = PROVIDERS[id];
       var sat = new T.Mesh(
-        new T.SphereGeometry(id === 'astranov' ? 0.048 : 0.036, 12, 12),
-        new T.MeshBasicMaterial({ color: p.hex, depthTest: false })
+        new T.SphereGeometry(id === 'astranov' ? 0.038 : 0.028, 12, 12),
+        new T.MeshBasicMaterial({ color: p.hex })
       );
-      sat.renderOrder = 101;
-      sat.userData = { id: id, phase: (i / 4) * Math.PI * 2, radius: 0.42 + (i % 2) * 0.05 };
+      sat.userData = { id: id, phase: (i / 4) * Math.PI * 2, radius: 0.52 + (i % 2) * 0.06 };
       sat.position.set(
         Math.cos(sat.userData.phase) * sat.userData.radius,
-        Math.sin(sat.userData.phase * 0.7) * 0.05,
+        Math.sin(sat.userData.phase * 0.7) * 0.06,
         Math.sin(sat.userData.phase) * sat.userData.radius
       );
       group.add(sat);
       orbitSats.push(sat);
     });
 
-    scene.add(group);
+    if (host) host.add(group);
+    else {
+      var scene2 = SNGlobe.getScene && SNGlobe.getScene();
+      if (!scene2) return false;
+      scene2.add(group);
+    }
     orbitGroup = group;
     S.planetVisible = true;
     try { if (global.SNGlobe) SNGlobe.lastAct = Date.now(); } catch (_) {}
@@ -403,12 +302,11 @@
       orbitFrameOn = true;
       function spin() {
         if (orbitGroup) {
-          orbitGroup.rotation.y += 0.008;
           orbitSats.forEach(function (sat) {
-            sat.userData.phase += 0.02;
+            sat.userData.phase += 0.014;
             sat.position.set(
               Math.cos(sat.userData.phase) * sat.userData.radius,
-              Math.sin(sat.userData.phase * 0.7) * 0.05,
+              Math.sin(sat.userData.phase * 0.7) * 0.06,
               Math.sin(sat.userData.phase) * sat.userData.radius
             );
           });
@@ -416,50 +314,14 @@
         requestAnimationFrame(spin);
       }
       requestAnimationFrame(spin);
-      if (SNGlobe.onFrame) {
-        SNGlobe.onFrame(function () {});
-      }
     }
     return true;
   }
 
   function paintPlanet() {
-    ensurePlanetHud();
     S.planetVisible = true;
-    var ok3d = false;
-    try { ok3d = paintPlanet3d(); } catch (e) { ok3d = false; }
-    if (ok3d) return;
-    if (!global.GlobeEntity || !GlobeEntity.register) return;
-    S.entityIds.forEach(function (id) {
-      try { if (global.GlobeEntity) GlobeEntity.unregister(id); } catch (_) {}
-    });
-    S.entityIds = [];
-    var core = GlobeEntity.register({
-      id: 'agent-planet-core', type: 'place', lat: PLANET.lat, lng: PLANET.lng,
-      altitude: PLANET.altitude, title: '\u25ce ASTRANOV',
-      description: 'Multi-agent orbit · tap a satellite to enter a key · collab to think together',
-      urgency: 3, color: PLANET.color, icon: '\u25ce', radius: 0.046, persist: true,
-      data: { alwaysShowLabel: true, agentOrbit: true },
-      onTap: function () { listAgents(); expandCli(); }
-    });
-    if (core) S.entityIds.push('agent-planet-core');
-    Object.keys(PROVIDERS).forEach(function (id) {
-      var p = PROVIDERS[id], off = SAT[id], online = hasKey(id), eid = 'agent-sat-' + id;
-      var ent = GlobeEntity.register({
-        id: eid, type: 'place',
-        lat: PLANET.lat + off.dLat, lng: PLANET.lng + off.dLng, altitude: off.alt,
-        title: p.icon + ' ' + p.name,
-        description: p.role + ' · ' + (online ? 'ONLINE' : p.needsKey ? 'TAP TO ENTER KEY' : 'READY'),
-        urgency: online ? 3 : 1, color: online ? p.hex : 0x445566, icon: p.icon,
-        radius: id === 'astranov' ? 0.03 : 0.022, persist: true,
-        data: { alwaysShowLabel: true, agentOrbit: true, agentId: id },
-        onTap: function () {
-          if (p.needsKey && !online) showKeySheet(id);
-          else log(p.name + ' · ' + p.role + ' · ' + (online ? 'ONLINE' : 'READY'), online ? 'ok' : 'dim');
-        }
-      });
-      if (ent) S.entityIds.push(eid);
-    });
+    ensurePlanetHud();
+    try { paintPlanet3d(); } catch (_) {}
   }
 
   function flyToOrbit() {
@@ -489,20 +351,11 @@
 
   function goOrbit(opts) {
     opts = opts || {};
-    if (!opts.quiet) {
-      expandCli();
-      log('\u25ce ASTRANOV PLANET · collective AI · multi-agent station', 'ok');
-      listAgents();
-    }
     paintPlanet();
-    if (!opts.noFly) flyToOrbit();
-    else {
-      try {
-        if (global.SNGlobe && SNGlobe.goToPlace) {
-          SNGlobe.goToPlace(PLANET.lat, PLANET.lng, { tier: 'global', label: 'Collective AI', openMap: false });
-        }
-      } catch (_) {}
-    }
+    ensurePlanetHud();
+    if (!opts.quiet) openPlanetSheet();
+    if (opts.noFly) return;
+    if (opts.fly) flyToOrbit();
   }
 
   function setKey(provider, key) {
@@ -730,23 +583,148 @@
   }
 
   function ensureRibbonBtn() {
-    try {
-      var bar = document.getElementById('sn-task-ribbon');
-      if (!bar || document.getElementById('sn-rib-orbit')) return;
+    return;
+  }
+
+  function openPlanetSheet() {
+    var el = document.getElementById('sn-planet-sheet');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sn-planet-sheet';
+      el.innerHTML =
+        '<style>' +
+        '#sn-planet-sheet{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));' +
+        'transform:translateX(-50%);z-index:150;width:min(420px,calc(100vw - 20px));' +
+        'padding:14px 14px 12px;border-radius:18px;pointer-events:auto;' +
+        'background:rgba(0,4,14,0.88);backdrop-filter:blur(16px);' +
+        'border:1px solid rgba(61,158,255,.4);box-shadow:0 0 28px rgba(40,140,255,.3)}' +
+        '#sn-planet-sheet[hidden]{display:none!important}' +
+        '#sn-planet-sheet h2{margin:0 0 10px;font:800 13px/1 Space Grotesk,system-ui,sans-serif;' +
+        'letter-spacing:.16em;color:#7ec8ff}' +
+        '#sn-planet-sheet .ps-row{display:flex;align-items:center;gap:8px;margin:6px 0}' +
+        '#sn-planet-sheet .ps-name{flex:0 0 92px;font:700 12px/1.2 Inter,system-ui,sans-serif;color:#d8ecff}' +
+        '#sn-planet-sheet .ps-st{flex:1;font:600 11px/1 Inter,system-ui,sans-serif;color:#8ab}' +
+        '#sn-planet-sheet .ps-row button{min-height:34px;padding:0 10px;border-radius:999px;' +
+        'border:1px solid rgba(61,158,255,.45);background:transparent;color:#9cf;' +
+        'font:800 11px/1 system-ui;letter-spacing:.06em;cursor:pointer}' +
+        '#sn-planet-sheet .ps-close{width:100%;margin-top:8px;min-height:36px;border-radius:999px;' +
+        'border:1px solid rgba(61,158,255,.3);background:transparent;color:#9ab;font:700 12px/1 system-ui}' +
+        '</style>' +
+        '<h2>COLLECTIVE AI</h2>' +
+        '<div id="ps-rows"></div>' +
+        '<button type="button" class="ps-close" id="ps-close">CLOSE</button>';
+      document.body.appendChild(el);
+      el.querySelector('#ps-close').addEventListener('click', function () {
+        el.setAttribute('hidden', '');
+      });
+    }
+    var rows = el.querySelector('#ps-rows');
+    rows.innerHTML = '';
+    Object.keys(PROVIDERS).forEach(function (id) {
+      var p = PROVIDERS[id];
+      var online = hasKey(id);
+      var row = document.createElement('div');
+      row.className = 'ps-row';
+      row.innerHTML =
+        '<span class="ps-name">' +
+        p.icon +
+        ' ' +
+        p.name +
+        '</span><span class="ps-st">' +
+        (online ? 'ONLINE · ' + p.role : p.needsKey ? 'NEED KEY · ' + p.role : 'READY · ' + p.role) +
+        '</span>';
       var b = document.createElement('button');
       b.type = 'button';
-      b.id = 'sn-rib-orbit';
-      b.className = 'sn-rib-btn';
-      b.title = 'Astranov planet · multi-agent orbit';
-      b.setAttribute('aria-label', 'Astranov orbit planet');
-      b.textContent = '\u25ce';
-      b.style.cssText = 'min-width:34px;height:34px;border-radius:50%;border:1px solid rgba(61,158,255,.55);background:transparent;color:#7ec8ff;font:800 16px/1 system-ui;box-shadow:0 0 12px rgba(61,158,255,.35)';
-      b.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        goOrbit();
+      b.textContent = p.needsKey ? (online ? 'CHANGE' : 'LOGIN') : 'OPEN';
+      b.addEventListener('click', function () {
+        if (p.needsKey) showKeySheet(id);
+        else {
+          listAgents();
+          log(p.name + ' · orchestrator ready', 'ok');
+        }
       });
-      bar.appendChild(b);
+      row.appendChild(b);
+      rows.appendChild(row);
+    });
+    el.removeAttribute('hidden');
+    expandCli();
+    listAgents();
+  }
+
+  function hitPlanet(cx, cy) {
+    try {
+      if (global.SNSkyBodies && typeof SNSkyBodies.hitTest === 'function') {
+        if (SNSkyBodies.hitTest(cx, cy)) return true;
+      }
+    } catch (_) {}
+    try {
+      if (!global.THREE || !global.SNGlobe) return false;
+      var cam = SNGlobe.getCamera && SNGlobe.getCamera();
+      var renderer = SNGlobe.getRenderer && SNGlobe.getRenderer();
+      var host = null;
+      if (global.SNSkyBodies && SNSkyBodies.getAstranovGroup) host = SNSkyBodies.getAstranovGroup();
+      if (!host) host = orbitGroup;
+      if (!cam || !renderer || !host) return false;
+      var rect = renderer.domElement.getBoundingClientRect();
+      var x = ((cx - rect.left) / rect.width) * 2 - 1;
+      var y = -((cy - rect.top) / rect.height) * 2 + 1;
+      var ray = new THREE.Raycaster();
+      ray.params.Sprite = { threshold: 0.45 };
+      ray.setFromCamera(new THREE.Vector2(x, y), cam);
+      var hits = ray.intersectObject(host, true);
+      if (hits && hits.length) return true;
+      var world = new THREE.Vector3();
+      host.getWorldPosition(world);
+      world.project(cam);
+      var sx = (world.x * 0.5 + 0.5) * rect.width + rect.left;
+      var sy = (-world.y * 0.5 + 0.5) * rect.height + rect.top;
+      return Math.hypot(cx - sx, cy - sy) < 140 && world.z < 1;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function bindPlanetClick() {
+    try {
+      if (global.SNGlobe && SNGlobe.onClick && !SNGlobe.__orbitClick) {
+        SNGlobe.__orbitClick = true;
+        SNGlobe.onClick(function (cx, cy) {
+          if (hitPlanet(cx, cy)) {
+            try { if (global.SNGlobe) SNGlobe.consumeClick = true; } catch (_) {}
+            openPlanetSheet();
+            return true;
+          }
+          return false;
+        });
+      }
+    } catch (_) {}
+    try {
+      var canvas = null;
+      if (global.SNGlobe && SNGlobe.getRenderer) {
+        var r = SNGlobe.getRenderer();
+        canvas = r && r.domElement;
+      }
+      if (!canvas) canvas = document.querySelector('#globe canvas');
+      if (!canvas || canvas.__orbitPtr) return;
+      canvas.__orbitPtr = true;
+      canvas.addEventListener(
+        'pointerdown',
+        function (e) {
+          if (hitPlanet(e.clientX, e.clientY)) {
+            try { if (global.SNGlobe) SNGlobe.consumeClick = true; } catch (_) {}
+          }
+        },
+        true
+      );
+      canvas.addEventListener(
+        'pointerup',
+        function (e) {
+          if (!hitPlanet(e.clientX, e.clientY)) return;
+          try { if (global.SNGlobe) SNGlobe.consumeClick = true; } catch (_) {}
+          openPlanetSheet();
+        },
+        true
+      );
     } catch (_) {}
   }
 
@@ -759,8 +737,7 @@
     if (S.ready) return;
     loadCreds();
     installCli();
-    ensureRibbonBtn();
-    ensurePlanetHud();
+    bindPlanetClick();
     S.planetVisible = true;
     S.ready = true;
   }
@@ -769,6 +746,7 @@
     BUILD: BUILD, init: init, goOrbit: goOrbit, list: listAgents, setKey: setKey,
     clearKey: clearKey, collab: collab, ask: singleAgent, handleLine: handleLine,
     hasKey: hasKey, clearPlanet: clearPlanet, showKeySheet: showKeySheet,
+    openPlanetSheet: openPlanetSheet,
     providers: PROVIDERS, planet: PLANET
   };
 
@@ -778,7 +756,7 @@
     [400, 1400, 3200, 6000, 10000].forEach(function (ms) {
       setTimeout(function () {
         installCli();
-        ensureRibbonBtn();
+        bindPlanetClick();
         silentPaintWhenReady();
       }, ms);
     });
