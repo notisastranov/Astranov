@@ -618,6 +618,23 @@
    * Live stream line — ONLY during user turn (or force).
    * No card chrome · map may already be moving via depict().
    */
+  function inferCmd(text) {
+    const t = String(text || '')
+      .replace(/^>\s*/, '')
+      .trim()
+      .toLowerCase();
+    if (!t || t.length > 48) return '';
+    if (/^enter(\s+astranov)?$/.test(t) || t === 'go') return 'enter astranov';
+    if (/^locate/.test(t)) return 'locate';
+    if (/^power on/.test(t)) return 'power on';
+    if (t === 'help') return 'help';
+    if (t === 'battery' || t === 'heat' || t === 'device' || t === 'status') return t === 'heat' ? 'battery' : t;
+    if (/^network/.test(t)) return 'network';
+    if (/^hard boot|^purge|^clear cache/.test(t)) return 'hard boot';
+    if (/^repair/.test(t)) return 'repair display';
+    return '';
+  }
+
   /** Noise filter — machine chatter never enters the CLI */
   function isNoiseLine(text, cls) {
     const t = String(text || '');
@@ -626,6 +643,8 @@
     // Drop raw stack / module spam
     if (/^\[SN|TypeError|undefined is not|Failed to load|CORS|net::ERR/i.test(t)) return true;
     if (/loading module|webpack|vite|hydration|devtools/i.test(t)) return true;
+    if (/\[ OK \]|\[FAIL\]|\[WARN\]|\[FIX \]|\[....\]|STAGE ·|HANDOFF ·|load \w+\.js/i.test(t)) return true;
+    if (/═{3,}/.test(t)) return true;
     return false;
   }
 
@@ -682,6 +701,16 @@
     line.appendChild(body);
     wrap.appendChild(line);
     wrap.setAttribute('data-search', String(face || ''));
+    const cmd = inferCmd(face);
+    if (cmd) {
+      wrap.setAttribute('data-cmd', cmd);
+      wrap.title = 'Tap to run · ' + cmd;
+      wrap.addEventListener('click', function () {
+        try {
+          run(cmd);
+        } catch (_) {}
+      });
+    }
     if (feedFilter) {
       wrap.classList.toggle(
         'match',
@@ -3289,7 +3318,13 @@ if (
         preview('garage');
         return;
       }
-      if (low === 'cosmos' || low === 'bodies' || low === 'planets') {
+      if (low === 'cosmos' || low === 'bodies' || low === 'planets' || low === 'sky' || low === 'live sky') {
+        if (global.SNSkyBodies && SNSkyBodies.logSky) {
+          Globe?.goToTier?.('solar');
+          SNSkyBodies.logSky();
+          preview('live sky · sun moon planets · Astranov above Moon');
+          return;
+        }
         const list = global.SNCosmos?.list?.() || [];
         list.forEach((b) => log('◎ ' + b.name + ' · go to ' + b.id, 'ok'));
         preview('go to mars · moon · jupiter · earth');
