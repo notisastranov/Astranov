@@ -525,8 +525,65 @@
   }
 
   /**
+   * Mount Google GIS into an existing node. Never opens #sn-auth.
+   * Used by the one Collective AI sheet so planet click stays a single menu.
+   */
+  async function renderGoogleButton(mountEl, opts) {
+    opts = opts || {};
+    if (!mountEl) return null;
+    try {
+      await ensureClient();
+      await loadGsi();
+    } catch (e) {
+      mountEl.textContent = 'Google unavailable';
+      return null;
+    }
+    if (!global.google || !global.google.accounts || !global.google.accounts.id) {
+      mountEl.textContent = 'Google unavailable';
+      return null;
+    }
+    if (A.user) return A.user;
+    function onCredential(resp) {
+      if (!resp || !resp.credential) return;
+      completeIdToken(resp.credential)
+        .then(function (data) {
+          if (typeof opts.onSuccess === 'function') opts.onSuccess(data);
+        })
+        .catch(function (e) {
+          var msg = scrub((e && e.message) || e);
+          if (opts.errorEl) opts.errorEl.textContent = msg;
+          else say(msg, 'err');
+          if (typeof opts.onError === 'function') opts.onError(e);
+        });
+    }
+    try {
+      initGis(onCredential);
+    } catch (e) {
+      mountEl.textContent = scrub((e && e.message) || 'Google init failed');
+      return null;
+    }
+    mountEl.innerHTML = '';
+    var w = Math.max(200, Math.min(320, mountEl.clientWidth || 280));
+    try {
+      global.google.accounts.id.renderButton(mountEl, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'signin_with',
+        shape: 'pill',
+        logo_alignment: 'left',
+        width: w,
+      });
+    } catch (eBtn) {
+      mountEl.textContent = scrub((eBtn && eBtn.message) || 'Google button failed');
+    }
+    return null;
+  }
+
+  /**
    * Primary path: branded modal + Google button on THIS origin.
    * signInWithIdToken — never OAuth redirect via *.supabase.co.
+   * If the Collective AI sheet is already open, mount GIS there — never a second menu.
    */
   async function signInGoogleGis() {
     await ensureClient();
@@ -544,8 +601,11 @@
         settled = true;
         if (err) {
           if (isOriginError(err.message || err)) {
-            showSetupInModal();
-            const errEl = document.getElementById('sn-auth-err');
+            var planet = document.getElementById('sn-planet-sheet');
+            var planetOpen = planet && !planet.hasAttribute('hidden');
+            if (!planetOpen) showSetupInModal();
+            const errEl =
+              document.getElementById('ps-gsi-err') || document.getElementById('sn-auth-err');
             if (errEl) errEl.textContent = scrub(originHelp());
           } else {
             closeModal();
@@ -568,7 +628,8 @@
           if (isOriginError(raw)) {
             done(new Error(originHelp()));
           } else {
-            const errEl = document.getElementById('sn-auth-err');
+            const errEl =
+              document.getElementById('ps-gsi-err') || document.getElementById('sn-auth-err');
             if (errEl) errEl.textContent = scrub(raw);
             done(e);
           }
@@ -579,6 +640,23 @@
         initGis(onCredential);
       } catch (eInit) {
         done(eInit);
+        return;
+      }
+
+      var planet = document.getElementById('sn-planet-sheet');
+      var inline = document.getElementById('ps-gsi');
+      var useInline = planet && !planet.hasAttribute('hidden') && inline;
+      if (useInline) {
+        closeModal();
+        renderGoogleButton(inline, {
+          onSuccess: function (data) {
+            done(null, data);
+          },
+          onError: function (e) {
+            done(e);
+          },
+          errorEl: document.getElementById('ps-gsi-err'),
+        });
         return;
       }
 
@@ -771,6 +849,7 @@
   global.SNAuth = {
     init,
     toggle,
+    renderGoogleButton,
     signInGoogle,
     signInGoogleGis,
     signInGoogleOAuthFallback,
