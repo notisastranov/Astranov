@@ -649,7 +649,7 @@
     if (/loading module|webpack|vite|hydration|devtools/i.test(t)) return true;
     if (/\[ OK \]|\[FAIL\]|\[WARN\]|\[FIX \]|\[....\]|STAGE ·|HANDOFF ·|load \w+\.js/i.test(t)) return true;
     if (/═{3,}/.test(t)) return true;
-    if (/^Theme[.\s·]+(day bright|night)/i.test(t)) return true;
+    if (/^theme\b/i.test(t.trim())) return true;
     return false;
   }
 
@@ -1447,7 +1447,7 @@
         low === 'first order' ||
         low === 'πρώτη παράδοση'
       ) {
-        activity('first order · need your place', 'work', { label: 'First order' });
+        activity('Need your place first', 'work', { label: 'First order' });
         const here =
           global._snPhysPos ||
           (global._snLastPos &&
@@ -2212,7 +2212,7 @@
       }
       if (low === 'donate on' || low === 'mesh on' || low === 'seti on') {
         global.SNResources?.setDonate?.(true);
-        log('Mesh donate ON · SETI-style spare capacity → S', 'ok');
+        log('Donate is on. Spare power on this device can earn you SpaceNets (our money). Like the old SETI science project that used home computers.', 'ok');
         return;
       }
       if (low === 'donate off' || low === 'mesh off') {
