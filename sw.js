@@ -1,49 +1,64 @@
-/* Astranov service worker — never serve stale app HTML/core or spacenet modules */
-const CACHE = 'astranov-v53-one-orbit';
-const SHELL = ['/manifest.webmanifest', '/icon.svg'];
+/* Astranov service worker — network-only OS kernel. Never serve a stale build. */
+const CACHE = 'astranov-v54-hard-boot';
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+self.addEventListener('install', function (e) {
+  self.skipWaiting();
+  e.waitUntil(Promise.resolve());
 });
 
-self.addEventListener('activate', (e) => {
+self.addEventListener('activate', function (e) {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
-      .then(() => self.clients.claim())
+    caches
+      .keys()
+      .then(function (keys) {
+        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      })
+      .then(function () {
+        return self.clients.claim();
+      })
   );
 });
 
-function isAppHtml(url) {
-  return url.pathname === '/' || url.pathname === '/index.html';
+function isKernel(url) {
+  if (url.origin !== self.location.origin) return false;
+  var p = url.pathname;
+  return (
+    p === '/' ||
+    p === '/index.html' ||
+    p === '/sw.js' ||
+    p.indexOf('/js/') === 0 ||
+    /^\/astranov-/.test(p)
+  );
 }
 
-function isCoreJs(url) {
-  return /^\/astranov-/.test(url.pathname) && url.pathname.endsWith('.js');
-}
+self.addEventListener('message', function (e) {
+  var data = e.data || {};
+  if (data.type === 'SN_PURGE' || data === 'SN_PURGE') {
+    e.waitUntil(
+      caches.keys().then(function (keys) {
+        return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+      })
+    );
+  }
+});
 
-function isSpaceNetJs(url) {
-  return (url.pathname.indexOf('/js/spacenet/') === 0 || url.pathname === '/js/spacenet/boot.js') &&
-    url.pathname.endsWith('.js');
-}
-
-self.addEventListener('fetch', (e) => {
+self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
+  var url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Always network for HTML + lightning modules + core bundles (no sticky logic)
-  if (isAppHtml(url) || isCoreJs(url) || isSpaceNetJs(url)) {
-    e.respondWith(fetch(e.request));
+  if (isKernel(url)) {
+    e.respondWith(
+      fetch(e.request, { cache: 'no-store' }).catch(function () {
+        return fetch(e.request);
+      })
+    );
     return;
   }
 
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-      if (res.ok && url.pathname.endsWith('.html')) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-      }
-      return res;
-    }).catch(() => cached))
+    fetch(e.request).catch(function () {
+      return caches.match(e.request);
+    })
   );
 });
