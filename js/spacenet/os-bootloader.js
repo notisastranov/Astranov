@@ -18,7 +18,7 @@
 
   var BUILD =
     (document.querySelector('meta[name="astranov-build"]') || {}).content || 'os-1';
-  var CDN_GH = 'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main';
+  var CDN_GH = '';
   var t0 = performance.now();
   var lines = [];
   var report = {
@@ -164,62 +164,187 @@
     });
   }
 
+  /* ───────── Kernel cache claim (every boot) ───────── */
+  function hardRestart() {
+    try {
+      sessionStorage.removeItem('sn:os-hard-reload');
+    } catch (_) {}
+    var u = '/?boot=' + encodeURIComponent(BUILD) + '&t=' + Date.now();
+    try {
+      location.replace(u);
+    } catch (_) {
+      location.reload();
+    }
+  }
+
+  function claimBrowser() {
+    hdr('STAGE · kernel cache');
+    info('hard purge · this browser · build ' + BUILD);
+    var jobs = [];
+    try {
+      if (navigator.storage && navigator.storage.persist) {
+        jobs.push(
+          navigator.storage.persist().then(function (granted) {
+            if (granted) ok('browser persist · user data held');
+            else info('browser persist · not granted · keys still local');
+          })
+        );
+      }
+    } catch (_) {}
+    try {
+      if (window.caches && caches.keys) {
+        jobs.push(
+          caches.keys().then(function (keys) {
+            return Promise.all(
+              keys.map(function (k) {
+                return caches.delete(k);
+              })
+            ).then(function () {
+              ok('cache storage · ' + keys.length + ' wiped');
+            });
+          })
+        );
+      }
+    } catch (_) {}
+    try {
+      if (navigator.serviceWorker) {
+        jobs.push(
+          navigator.serviceWorker
+            .register('/sw.js?v=' + encodeURIComponent(BUILD), {
+              scope: '/',
+              updateViaCache: 'none',
+            })
+            .then(function (reg) {
+              try {
+                if (reg.active) reg.active.postMessage({ type: 'SN_PURGE', build: BUILD });
+              } catch (_) {}
+              try {
+                reg.update();
+              } catch (_) {}
+              ok('service worker · live · no-store kernel');
+              return reg;
+            })
+            .catch(function (e) {
+              warn('service worker · ' + (e && e.message ? e.message : e));
+            })
+        );
+      }
+    } catch (_) {}
+    try {
+      var u = new URL(location.href);
+      if (
+        u.searchParams.has('boot') ||
+        u.searchParams.has('sn-probe') ||
+        u.searchParams.has('_sn_reload') ||
+        u.searchParams.has('t')
+      ) {
+        u.searchParams.delete('boot');
+        u.searchParams.delete('sn-probe');
+        u.searchParams.delete('_sn_reload');
+        u.searchParams.delete('t');
+        u.searchParams.delete('v');
+        history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+      }
+    } catch (_) {}
+    return Promise.all(jobs).catch(function () {});
+  }
+
   /* ───────── Script loader ───────── */
   function originsFor(src) {
     if (/^https?:\/\//i.test(src)) return [src];
     var path = String(src || '').replace(/^\//, '').split('?')[0];
-    var local = '/' + path + (src.indexOf('?') >= 0 ? src.slice(src.indexOf('?')) : '') ;
+    var local = '/' + path + (src.indexOf('?') >= 0 ? src.slice(src.indexOf('?')) : '');
     if (local.indexOf('?') < 0) local += '?v=' + encodeURIComponent(BUILD);
-    else local += '&v=' + encodeURIComponent(BUILD);
+    else if (local.indexOf('v=') < 0) local += '&v=' + encodeURIComponent(BUILD);
     var list = [local];
     try {
       var base = String(global.SN_ASSET_BASE || '').replace(/\/$/, '');
-      if (base && base.indexOf(location.origin) !== 0)
+      if (base && base.indexOf(location.origin) !== 0 && base.indexOf('jsdelivr') < 0)
         list.push(base + '/' + path + '?v=' + encodeURIComponent(BUILD));
     } catch (_) {}
-    list.push(CDN_GH + '/' + path + '?v=' + encodeURIComponent(BUILD));
     var seen = {};
     return list.filter(function (u) {
-      if (seen[u]) return false;
+      if (seen[u] || /jsdelivr\.net/i.test(u)) return false;
       seen[u] = 1;
       return true;
     });
   }
 
+  function injectCode(code, url) {
+    var s = document.createElement('script');
+    s.text = code;
+    if (url) s.setAttribute('data-sn-src', String(url).slice(0, 180));
+    document.head.appendChild(s);
+  }
+
   function loadUrl(url, timeoutMs) {
     timeoutMs = timeoutMs || 12000;
     return new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.async = true;
-      s.src = url;
       var done = false;
       var to = setTimeout(function () {
         if (done) return;
         done = true;
-        try {
-          s.remove();
-        } catch (_) {}
         reject(new Error('timeout'));
       }, timeoutMs);
-      s.onload = function () {
+      function finish(ok, err) {
         if (done) return;
         done = true;
         clearTimeout(to);
-        report.loadStats.ok++;
-        if (url.indexOf('jsdelivr') >= 0) report.loadStats.cdn++;
-        resolve(url);
-      };
-      s.onerror = function () {
-        if (done) return;
-        done = true;
-        clearTimeout(to);
-        try {
-          s.remove();
-        } catch (_) {}
-        report.loadStats.fail++;
-        reject(new Error('load fail'));
-      };
-      document.head.appendChild(s);
+        if (ok) {
+          report.loadStats.ok++;
+          if (/jsdelivr|cdnjs|unpkg/i.test(url)) report.loadStats.cdn++;
+          resolve(url);
+        } else {
+          report.loadStats.fail++;
+          reject(err || new Error('load fail'));
+        }
+      }
+      var sameOrigin = url.indexOf('/') === 0 || (function () {
+        try { return new URL(url, location.href).origin === location.origin; } catch (_) { return false; }
+      })();
+      if (!sameOrigin) {
+        var s0 = document.createElement('script');
+        s0.async = true;
+        s0.src = url;
+        s0.onload = function () {
+          finish(true);
+        };
+        s0.onerror = function () {
+          try { s0.remove(); } catch (_) {}
+          finish(false, new Error('load fail'));
+        };
+        document.head.appendChild(s0);
+        return;
+      }
+      var fo = { cache: 'no-store', headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' } };
+      fetch(url, fo)
+        .then(function (r) {
+          if (!r.ok) throw new Error('http ' + r.status);
+          return r.text();
+        })
+        .then(function (code) {
+          try {
+            injectCode(code, url);
+            finish(true);
+          } catch (e) {
+            finish(false, e);
+          }
+        })
+        .catch(function () {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = url;
+          s.onload = function () {
+            finish(true);
+          };
+          s.onerror = function () {
+            try {
+              s.remove();
+            } catch (_) {}
+            finish(false, new Error('load fail'));
+          };
+          document.head.appendChild(s);
+        });
     });
   }
 
@@ -804,7 +929,11 @@
           low === 'repair drivers' ||
           low === 'kernel status' ||
           low === 'os status' ||
-          low === 'boot report'
+          low === 'boot report' ||
+          low === 'purge' ||
+          low === 'hard boot' ||
+          low === 'hard reload' ||
+          low === 'clear cache'
         ) {
           try {
             if (SNCli.beginTurn) SNCli.beginTurn();
@@ -828,6 +957,9 @@
             await repairKernel();
           } else if (low === 'repair drivers') {
             await repairDrivers();
+          } else if (low === 'purge' || low === 'hard boot' || low === 'hard reload' || low === 'clear cache') {
+            SNCli.log('Hard boot · wiping kernel cache · restart', 'ok');
+            hardRestart();
           }
           try {
             if (SNCli.endTurn) SNCli.endTurn();
@@ -900,6 +1032,13 @@
     info('professional delivery OS · every user is a developer');
 
     try {
+      try {
+        var purgeSt = await (global.__SN_BOOT_PURGE || Promise.resolve({}));
+        if (purgeSt && purgeSt.reloaded) return;
+        if (purgeSt && purgeSt.wiped != null) info('early purge · caches ' + purgeSt.wiped);
+      } catch (_) {}
+      await claimBrowser();
+
       checkDom();
 
       await loadStage('kernel', STAGE_KERNEL, { soft: false, timeout: 14000 }).catch(async function (e) {
