@@ -626,6 +626,10 @@
     if (!t || t.length > 48) return '';
     if (/^enter(\s+astranov)?$/.test(t) || t === 'go') return 'enter astranov';
     if (/^locate/.test(t)) return 'locate';
+    if (/^first (delivery|loop|order)/.test(t)) return 'first delivery';
+    if (t === 'wallet' || t === 'rate') return t;
+    if (/^shops/.test(t)) return 'shops';
+    if (/^donate on/.test(t)) return 'donate on';
     if (/^power on/.test(t)) return 'power on';
     if (t === 'help') return 'help';
     if (t === 'battery' || t === 'heat' || t === 'device' || t === 'status') return t === 'heat' ? 'battery' : t;
@@ -645,6 +649,7 @@
     if (/loading module|webpack|vite|hydration|devtools/i.test(t)) return true;
     if (/\[ OK \]|\[FAIL\]|\[WARN\]|\[FIX \]|\[....\]|STAGE ·|HANDOFF ·|load \w+\.js/i.test(t)) return true;
     if (/═{3,}/.test(t)) return true;
+    if (/^Theme[.\s·]+(day bright|night)/i.test(t)) return true;
     return false;
   }
 
@@ -749,20 +754,15 @@
     } catch (_) {}
   }
 
-    function help() {
-    log("Hey — I'm Astranov Mind. Your memory on this app.", 'ok');
-    log('Village: aksaki · pitogyra · mpyronia · Archangelos · Telemachos pilot', 'ok');
-    log('Order: order me a pizza you judge…  OR  order pitogyra mpyronia', 'ok');
-    log('First test: test ready  · then  test order  (or order me a pizza)', 'ok');
-    log('HELPER: helper · helper find pizza · helper patrol · helper off', 'ok');
-    log('Money loop: first delivery · order me · drive on · deliver me · market status', 'ok');
-    log('OS will: will · reshape · day · night · open gadgets · rename to …', 'ok');
-    log('You are a developer · every user forges their own Astranov version', 'ok');
-    log('Team: coord need driver and vendor for pizza for 3 · assign 2 drivers nearest', 'ok');
-    log('Plans: plan list · plan status · claim · task list · task map', 'dim');
-    log('Map: locate · shops · fly athens · fly archangelos · dark map', 'dim');
-    log('Mind: mind · mind wipe · cancel · pilot home', 'dim');
-    preview('Astranov Mind · talk Greeklish or English');
+  function help() {
+    log("I'm Astranov. Tap a glowing line or type it.", 'ok');
+    log('> locate me', 'cmd');
+    log('> first delivery', 'cmd');
+    log('> wallet', 'cmd');
+    log('> shops', 'cmd');
+    log('> donate on', 'cmd');
+    log('> hard boot', 'cmd');
+    preview('locate · first delivery · wallet');
   }
 
   function moneyStatus() {
@@ -928,10 +928,28 @@
       }
     } catch (_) {}
     // Astranov Mind — Archangelos / Greeklish before routing
+    // Keep exact operating phrases intact — dialect maps "delivery" → deliver me
     try {
-      if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
-        const n = ArcangeloDialect.normalizeForRouting(line);
-        if (n) line = n;
+      var keepRaw = String(line || '').toLowerCase().trim();
+      var keepExact = {
+        'first delivery': 1,
+        'first loop': 1,
+        'first order': 1,
+        'πρώτη παράδοση': 1,
+        shops: 1,
+        vendors: 1,
+        stores: 1,
+        wallet: 1,
+        'donate on': 1,
+        'donate off': 1,
+        'hard boot': 1,
+        help: 1,
+      };
+      if (!keepExact[keepRaw]) {
+        if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
+          const n = ArcangeloDialect.normalizeForRouting(line);
+          if (n) line = n;
+        }
       }
     } catch (_) {}
     // /search or ?query → filter feed only (does not pollute history)
@@ -1429,9 +1447,20 @@
         low === 'first order' ||
         low === 'πρώτη παράδοση'
       ) {
-        activity('first order · reshaping map…', 'work', { label: 'First order' });
+        activity('first order · need your place', 'work', { label: 'First order' });
+        const here =
+          global._snPhysPos ||
+          (global._snLastPos &&
+          !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng) &&
+          (global._snLastPos.real || global._snLastPos.source === 'gps')
+            ? global._snLastPos
+            : null);
+        if (!here || here.lat == null) {
+          log('I need your real place first. Tap locate, then say first delivery again.', 'ok');
+          return;
+        }
         depict('shops', { label: 'First order' });
-        log('first order · shop → menu → pay → drive → you', 'ok');
+        log('first order · from your place · shop → menu → pay → you', 'ok');
         if (global.SNMarket?.runFirstLoop) {
           const r = await global.SNMarket.runFirstLoop({ skipLocate: true });
           if (r?.ok) {
@@ -3218,10 +3247,11 @@ if (
         return;
       }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {
-        const p =
-          Tasks?.pos ||
-          global._snLastPos ||
-          { lat: 37.9838, lng: 23.7275 };
+        const p = Tasks?.pos || global._snLastPos;
+        if (!p || p.lat == null || isFakeDemoPin(p.lat, p.lng)) {
+          log('I need your real place first. Tap locate, then say city.', 'ok');
+          return;
+        }
         if (p.lat) Tasks?.setPos?.(p.lat, p.lng);
         depict('city', { lat: p.lat, lng: p.lng, label: 'City' });
         try {
@@ -3235,6 +3265,15 @@ if (
         return;
       }
       if (low === 'shops' || low === 'vendors' || low === 'stores') {
+        const shopPin = Tasks?.pos || global._snLastPos;
+        if (
+          !shopPin ||
+          shopPin.lat == null ||
+          isFakeDemoPin(shopPin.lat, shopPin.lng)
+        ) {
+          log('I need your real place first. Tap locate, then say shops again.', 'ok');
+          return;
+        }
         activity('shops on map…', 'shops', { label: 'Shops' });
         if (global.SNAi?.ask) {
           const reply = await SNAi.ask(line);
@@ -3244,9 +3283,8 @@ if (
           }
           return;
         }
-        const p = Tasks?.pos || global._snLastPos || { lat: 36.4341, lng: 28.2176 };
         Globe?.goToTier?.('city');
-        const r = await global.SNCommerce?.ensureSector?.(p.lat, p.lng, { openMap: true });
+        const r = await global.SNCommerce?.ensureSector?.(shopPin.lat, shopPin.lng, { openMap: true });
         const vendors = global.SNProfiles?.list?.({ role: 'vendor' }) || [];
         const n = vendors.length || r?.count || 0;
         log(n ? n + ' shops · tap map target for tile' : 'No shops near focus', n ? 'ok' : 'dim');
