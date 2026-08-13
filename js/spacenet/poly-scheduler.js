@@ -75,6 +75,149 @@
     return { lat: 37.9838, lng: 23.7275, soft: true };
   }
 
+  function activeLoad() {
+    return stack.filter(function (x) {
+      return x && (x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming');
+    });
+  }
+
+  function expandOfferCli() {
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.remove('collapsed');
+        panel.classList.add('expanded');
+        panel.classList.remove('mid');
+      }
+    } catch (_) {}
+    try {
+      if (global.SNTopChrome && SNTopChrome.expand) SNTopChrome.expand();
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.beginTurn) SNCli.beginTurn();
+    } catch (_) {}
+    try {
+      if (global.SNUi && SNUi.fitCliToContent) SNUi.fitCliToContent(12);
+    } catch (_) {}
+  }
+
+  function cliLine(text, cls) {
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log(String(text || '').slice(0, 220), cls || 'ok', true);
+    } catch (_) {}
+  }
+
+  function dumpOfferCli(o, gate) {
+    if (!o) return;
+    expandOfferCli();
+    var n = gate && gate.nature;
+    if (!n && global.SNPolyEngine && SNPolyEngine.detectNature) n = SNPolyEngine.detectNature(o);
+    var q = o.quote || {};
+    var driver = pos();
+    var pickKm =
+      o.vLat != null ? haversineKm(driver.lat, driver.lng, o.vLat, o.vLng) : null;
+    var ev = gate && gate.ev;
+    cliLine('── OFFER · ' + (o.vendorName || 'Vendor') + ' → ' + (o.clientName || 'You') + ' ──', 'ok');
+    cliLine(
+      'Nature  ' +
+        ((n && n.label) || o.nature || o.title || 'goods') +
+        (n && n.temp ? ' · ' + n.temp : '') +
+        (n && n.windowMin ? ' · window ' + n.windowMin + 'm' : ''),
+      'ok'
+    );
+    cliLine(
+      'Price   ' +
+        (o.priceTxt || fmt(o.price)) +
+        ' · ' +
+        (Number(o.km) || 0).toFixed(1) +
+        ' km' +
+        (q.night ? ' · night +3' : '') +
+        (q.heavy ? ' · heavy +3' : '') +
+        (q.vip ? ' · VIP +3' : '') +
+        (q.private || o.routeLocked ? ' · private exclusive' : ''),
+      'ok'
+    );
+    cliLine(
+      'Pickup  ' +
+        (o.vendorName || 'vendor') +
+        ' · ' +
+        (o.vLat != null ? o.vLat.toFixed(4) + ', ' + o.vLng.toFixed(4) : '—') +
+        (o.prepMin != null ? ' · prep ' + o.prepMin + 'm' : ''),
+      'ok'
+    );
+    cliLine(
+      'Drop    ' +
+        (o.clientName || 'client') +
+        ' · ' +
+        (o.dLat != null ? o.dLat.toFixed(4) + ', ' + o.dLng.toFixed(4) : '—'),
+      'ok'
+    );
+    cliLine(
+      'Driver  ' +
+        driver.lat.toFixed(4) +
+        ', ' +
+        driver.lng.toFixed(4) +
+        (pickKm != null ? ' · ' + pickKm.toFixed(1) + ' km to pickup' : ''),
+      'ok'
+    );
+    var load = activeLoad();
+    if (!load.length) {
+      cliLine('Combine starts your polygon · type accept or skip', 'ok');
+    } else if (ev && ev.ok) {
+      cliLine(
+        'Combine YES · +' +
+          (ev.extraKm != null ? ev.extraKm : '?') +
+          ' km · +' +
+          (ev.extraWait != null ? ev.extraWait : '?') +
+          'm wait · stays in live polygon',
+        'ok'
+      );
+      if (ev.tourWithout && ev.tour) {
+        cliLine(
+          'Tour now ' +
+            (ev.tourWithout.stops || []).length +
+            ' stops · ' +
+            (ev.tourWithout.km || 0) +
+            ' km  →  with offer ' +
+            (ev.tour.stops || []).length +
+            ' stops · ' +
+            (ev.tour.km || 0) +
+            ' km',
+          'ok'
+        );
+      }
+    } else {
+      cliLine('Combine ' + ((gate && gate.reason) || 'check'), 'dim');
+    }
+    preview((o.vendorName || 'offer') + ' · ' + (o.priceTxt || ''));
+  }
+
+  function presentOffer(o, gate) {
+    dumpOfferCli(o, gate);
+    try {
+      if (global.SNPolyEngine && SNPolyEngine.presentWorld) {
+        SNPolyEngine.presentWorld(o, activeLoad(), gate);
+      } else {
+        drawPolygon(o);
+      }
+    } catch (_) {
+      try {
+        drawPolygon(o);
+      } catch (e2) {}
+    }
+  }
+
+  function gateOffer(o) {
+    if (!global.SNPolyEngine || !SNPolyEngine.canPresent) {
+      return { ok: true, ev: null, first: !activeLoad().length };
+    }
+    try {
+      return SNPolyEngine.canPresent(activeLoad(), o);
+    } catch (e) {
+      return { ok: true, reason: 'gate error · allow', ev: null };
+    }
+  }
+
   /* ── Pricing (SPECS) ── */
   function natureOf(title) {
     var s = String(title || '').toLowerCase();
@@ -586,20 +729,9 @@
     } catch (_) {}
     try {
       var bot = document.getElementById('panel');
-      if (bot) {
-        if (on) {
-          bot.dataset.preFocus = bot.classList.contains('expanded')
-            ? 'expanded'
-            : bot.classList.contains('mid')
-              ? 'mid'
-              : 'collapsed';
-          bot.classList.remove('mid', 'expanded');
-          bot.classList.add('collapsed');
-        } else if (bot.dataset.preFocus) {
-          bot.classList.remove('collapsed', 'mid', 'expanded');
-          bot.classList.add(bot.dataset.preFocus || 'collapsed');
-          delete bot.dataset.preFocus;
-        }
+      if (bot && on) {
+        bot.classList.remove('collapsed', 'mid');
+        bot.classList.add('expanded');
       }
     } catch (_) {}
     try {
@@ -1100,6 +1232,9 @@
       try {
         if (global.SNPolyEngine && SNPolyEngine.syncTourFromStack) SNPolyEngine.syncTourFromStack(stack);
         else drawPolygon(o);
+        if (global.SNPolyEngine && SNPolyEngine.presentWorld) {
+          SNPolyEngine.presentWorld(null, activeLoad(), { ev: {}, first: false });
+        }
       } catch (_) {
         drawPolygon(o);
       }
@@ -1298,6 +1433,18 @@
   }
 
   function pushOffer(o) {
+    var gate = gateOffer(o);
+    o._joinPreview = gate.ev
+      ? gate.ev.ok
+        ? { extraKm: gate.ev.extraKm, extraWait: gate.ev.extraWait, score: gate.ev.score, ok: true }
+        : { ok: false, reason: gate.reason || gate.ev.reason }
+      : null;
+    if (!gate.ok) {
+      o.phase = 'withheld';
+      o._withheld = gate.reason || 'incompatible';
+      cliLine('Held · ' + (o.vendorName || 'offer') + ' · ' + (gate.reason || 'cannot combine'), 'dim');
+      return null;
+    }
     // One offered tile at a time so map polygon stays visible; claimed multi-tour can stack
     var hasOffered = stack.some(function (x) {
       return x.phase === 'offered';
@@ -1310,10 +1457,9 @@
       return o;
     }
     stack = stack.filter(function (x) {
-      return x.phase !== 'done';
+      return x.phase !== 'done' && x.phase !== 'withheld';
     });
     stack.unshift(o);
-    // only one offered visible
     var offered = stack.filter(function (x) {
       return x.phase === 'offered';
     });
@@ -1324,7 +1470,7 @@
       });
     }
     paint();
-    drawPolygon(o);
+    presentOffer(o, gate);
     focusChrome(true);
     try { scanAutoAccept(); } catch (_) {}
     return o;
@@ -1632,11 +1778,13 @@
   }
 
   var KITCHENS = [
-    { vendorName: 'Nonna Fires', nature: 'Hot pizza', product: 'margherita', km: 2.2 },
-    { vendorName: 'Oven 23', nature: 'Hot pizza', product: 'pepperoni', km: 3.1 },
-    { vendorName: 'Gyros Corner', nature: 'Hot food', product: 'pita', km: 1.6 },
-    { vendorName: 'Gelato Blu', nature: 'ice cream', product: 'gelato', km: 1.9, private: true },
-    { vendorName: 'City Post', nature: 'Paper envelopes', product: 'mail', km: 4.2 },
+    { vendorName: 'Nonna Fires', nature: 'Hot pizza', product: 'margherita', km: 1.6 },
+    { vendorName: 'Oven 23', nature: 'Hot pizza', product: 'pepperoni', km: 2.0 },
+    { vendorName: 'Gyros Corner', nature: 'Hot food', product: 'pita', km: 1.3 },
+    { vendorName: 'Bread Lab', nature: 'Hot food', product: 'pita wrap', km: 1.8 },
+    { vendorName: 'City Post', nature: 'Paper envelopes', product: 'mail', km: 3.4 },
+    { vendorName: 'Gelato Blu', nature: 'ice cream', product: 'gelato', km: 1.5, private: true },
+    { vendorName: 'Lindos Ferry Desk', nature: 'Paper envelopes', product: 'mail', km: 14.2 },
   ];
 
 
@@ -1648,25 +1796,20 @@
     if (hasOffered) return;
     var next = queue.shift();
     if (!next) return;
-    var activeLoad = stack.filter(function (x) {
-      return x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
-    });
-    try {
-      if (global.SNPolyEngine && SNPolyEngine.evaluateJoin && activeLoad.length) {
-        var ev = SNPolyEngine.evaluateJoin(activeLoad, next);
-        next._joinPreview = ev.ok
-          ? { extraKm: ev.extraKm, extraWait: ev.extraWait, score: ev.score, ok: true }
-          : { ok: false, reason: ev.reason };
-      }
-    } catch (_) {}
+    var gate = gateOffer(next);
+    if (!gate.ok) {
+      next.phase = 'withheld';
+      next._withheld = gate.reason;
+      cliLine('Held · ' + (next.vendorName || 'offer') + ' · ' + (gate.reason || 'cannot combine'), 'dim');
+      promoteQueue();
+      return;
+    }
+    next._joinPreview = gate.ev && gate.ev.ok
+      ? { extraKm: gate.ev.extraKm, extraWait: gate.ev.extraWait, score: gate.ev.score, ok: true }
+      : { ok: false, reason: gate.reason };
     stack.unshift(next);
     paint();
-    try {
-      if (next._joinPreview && next._joinPreview.ok === false)
-        log('Next offer · may not combine · ' + (next._joinPreview.reason || ''), 'dim');
-      else if (next._joinPreview && next._joinPreview.ok)
-        log('Next offer · combine +' + next._joinPreview.extraKm + ' km', 'ok');
-    } catch (_) {}
+    presentOffer(next, gate);
   }
 
   function scanAutoAccept() {
@@ -1693,32 +1836,86 @@
     } catch (_) {}
   }
 
+  function collectLiveOffers() {
+    var out = [];
+    function push(x) {
+      if (!x) return;
+      out.push(x);
+    }
+    try {
+      if (global.SNMarket && typeof SNMarket.liveOffers === 'function') {
+        (SNMarket.liveOffers() || []).forEach(push);
+      }
+    } catch (_) {}
+    try {
+      if (global.SNMeshOrders && typeof SNMeshOrders.seeking === 'function') {
+        (SNMeshOrders.seeking() || []).forEach(push);
+      }
+    } catch (_) {}
+    try {
+      if (global.SNTasks && typeof SNTasks.openOffers === 'function') {
+        (SNTasks.openOffers() || []).forEach(push);
+      }
+    } catch (_) {}
+    return out;
+  }
+
   function throwOffers(opts) {
     opts = opts || {};
-    var n = Math.min(3, Number(opts.count) || 1);
-    if (n <= 0) return { ok: true, count: 0 };
-    var first = null;
-    var myGen = gen;
-    for (var i = 0; i < n; i++) {
-      (function (sample, delay) {
-        setTimeout(function () {
-          // Cancel stale throws after power off / clear / new activate gen
-          if (myGen !== gen || !active) return;
-          var o = makeOffer({
-            vendorName: sample.vendorName,
-            clientName: opts.clientName || 'You',
-            nature: sample.nature,
-            product: sample.product,
-            km: sample.km,
-            private: sample.private,
-            night: isNight(),
-          });
-          pushOffer(o);
-          if (!first) first = o;
-        }, delay);
-      })(KITCHENS[i % KITCHENS.length], i * 700);
+    var want = Math.min(3, Number(opts.count) || 1);
+    if (want <= 0) return { ok: true, count: 0 };
+    var allowDemo = false;
+    try {
+      allowDemo = localStorage.getItem('sn:allow-demo-kitchens') === '1';
+    } catch (_) {}
+    var live = collectLiveOffers();
+    var pool = live.length ? live : allowDemo ? KITCHENS : [];
+    if (!pool.length) {
+      cliLine('No live combinable offers in this sector · real vendors only', 'dim');
+      return { ok: true, count: 0, empty: true };
     }
-    return { ok: true, count: n };
+    var myGen = gen;
+    var thrown = 0;
+    var held = 0;
+    var i = 0;
+    function next() {
+      if (myGen !== gen || !active) return;
+      if (thrown >= want || i >= pool.length) {
+        if (held) cliLine('Withheld ' + held + ' · nature/distance cannot join live polygon', 'dim');
+        return;
+      }
+      var sample = pool[i++];
+      var taken = {};
+      activeLoad().forEach(function (x) {
+        if (x && x.vendorName) taken[x.vendorName] = 1;
+      });
+      stack.forEach(function (x) {
+        if (x && x.phase === 'offered' && x.vendorName) taken[x.vendorName] = 1;
+      });
+      var vName = sample.vendorName || sample.name || sample.shopName;
+      if (vName && taken[vName]) {
+        next();
+        return;
+      }
+      var o = makeOffer({
+        vendorName: vName,
+        clientName: sample.clientName || opts.clientName || 'You',
+        nature: sample.nature,
+        product: sample.product,
+        km: sample.km,
+        private: sample.private,
+        night: isNight(),
+        lat: sample.lat,
+        lng: sample.lng,
+      });
+      var pushed = pushOffer(o);
+      if (pushed) thrown++;
+      else held++;
+      if (thrown < want && i < pool.length) setTimeout(next, 640);
+      else if (held && thrown >= want) cliLine('Withheld ' + held + ' · not thrown at you', 'dim');
+    }
+    next();
+    return { ok: true, count: want };
   }
 
   function activate(opts) {
@@ -2019,6 +2216,24 @@
       claimFromPool(1);
       return true;
     }
+    if (low === 'accept' || low === 'take' || low === 'take offer' || low === 'accept offer') {
+      var take = stack.filter(function (x) { return x.phase === 'offered'; })[0];
+      if (!take) {
+        log('No live offer to accept', 'dim');
+        return true;
+      }
+      runAct(take.id, 'accept');
+      return true;
+    }
+    if (low === 'skip' || low === 'reject' || low === 'skip offer') {
+      var skip = stack.filter(function (x) { return x.phase === 'offered'; })[0];
+      if (!skip) {
+        log('No live offer to skip', 'dim');
+        return true;
+      }
+      runAct(skip.id, 'reject');
+      return true;
+    }
     if (
       low === 'offers test' ||
       low === 'throw offers' ||
@@ -2096,7 +2311,7 @@
         var low = String(raw || '').trim().toLowerCase();
         try {
           if (
-            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|help market|market help|delivery help|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|polygon|poly|drive mode|wallet|rate|pool)\b/i.test(
+            /^(money|market on|power on|tasks on|launch on|go live|marketplace|market off|power off|tasks off|money off|rest|offers?\s+test|throw offers|help market|market help|delivery help|throw tiles|test tiles|test offers|demo delivery|demo polygon|demo full|full demo|engine demo|tour|polygon|poly|drive mode|wallet|rate|pool|accept|skip|take|reject|take offer|accept offer|skip offer)\b/i.test(
               low
             )
           ) {
