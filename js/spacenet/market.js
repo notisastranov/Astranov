@@ -381,12 +381,29 @@
     } catch (_) {}
   }
 
+  function isDemoPin(lat, lng, meta) {
+    if (lat == null || lng == null) return true;
+    if (meta && (meta.real === true || /^(gps|locate|phys)/i.test(String(meta.source || ''))))
+      return false;
+    // Exact old training pins only — not the town of Rhodes or downtown Athens
+    if (Math.abs(Number(lat) - 36.4341) < 0.0008 && Math.abs(Number(lng) - 28.2176) < 0.0008) return true;
+    if (Math.abs(Number(lat) - 37.9838) < 0.0008 && Math.abs(Number(lng) - 23.7275) < 0.0008) return true;
+    return false;
+  }
+
   function pos() {
-    return (
-      global._snLastPos ||
-      global.SNTasks?.pos ||
-      global.SNGlobe?.focusPos?.() || { lat: 36.4341, lng: 28.2176 }
-    );
+    try {
+      if (global._snPhysPos && global._snPhysPos.lat != null) return global._snPhysPos;
+    } catch (_) {}
+    try {
+      var last = global._snLastPos;
+      if (last && last.lat != null && !isDemoPin(last.lat, last.lng, last)) return last;
+    } catch (_) {}
+    try {
+      var t = global.SNTasks && SNTasks.pos;
+      if (t && t.lat != null && !isDemoPin(t.lat, t.lng, t)) return t;
+    } catch (_) {}
+    return { lat: null, lng: null };
   }
 
   function me() {
@@ -587,12 +604,8 @@
     } catch (_) {}
     // Ensure focus exists for shop pin
     try {
-      var pin = global._snLastPos;
-      var fake =
-        !pin ||
-        pin.lat == null ||
-        (Math.abs(Number(pin.lat) - 36.4341) < 0.02 && Math.abs(Number(pin.lng) - 28.2176) < 0.02) ||
-        (Math.abs(Number(pin.lat) - 37.9838) < 0.02 && Math.abs(Number(pin.lng) - 23.7275) < 0.02);
+      var pin = global._snLastPos || global._snPhysPos;
+      var fake = !pin || pin.lat == null || isDemoPin(pin.lat, pin.lng, pin);
       if (fake) {
         say('Need your real place. Tap locate.', 'err');
         return { ok: false, error: 'Need your place. Tap locate.' };
@@ -1289,65 +1302,33 @@
     // NEVER fly other continents. NEVER use globe focus as your address.
     // ═══════════════════════════════════════════════════════════
 
-    // 1) LOCATE YOU — GPS only as truth; soft pin only if confirmed / last good
-    log('Step 1 · locating you…', 'dim', 'locate', { label: 'You' });
+    // 1) LOCATE YOU — already-known real pin only. Never Rhodes. Never a 40s GPS hang.
+    log('Finding you…', 'dim', 'locate', { label: 'You' });
     var pos = intent.confirmedPos || null;
     if (!pos || pos.lat == null) {
       try {
-        if (global.SNCli && SNCli.gpsLocate) pos = await SNCli.gpsLocate();
-      } catch (_) {}
-    }
-    // Confirmed pin from YES (location check) — highest trust
-    if (intent.confirmedPos && intent.confirmedPos.lat != null) {
-      pos = {
-        lat: intent.confirmedPos.lat,
-        lng: intent.confirmedPos.lng,
-        fallback: !!(intent.confirmedPos.fallback),
-        reason: 'user confirmed pin',
-        accuracy: intent.confirmedPos.accuracy,
-      };
-    }
-    // Do NOT use globe focus (often another city/continent from flying)
-    if ((!pos || pos.lat == null) && global._snLastPos && global._snLastPos.lat != null) {
-      pos = {
-        lat: global._snLastPos.lat,
-        lng: global._snLastPos.lng,
-        fallback: true,
-        reason: 'last map pin',
-      };
-    }
-    // Soft home: profile / verified prefs / Rhodes test sector (never USA)
-    if (!pos || pos.lat == null) {
-      try {
-        var me = global.SNProfiles && SNProfiles.me && SNProfiles.me();
-        if (me && me.lat != null && me.lng != null) {
-          pos = { lat: me.lat, lng: me.lng, fallback: true, reason: 'profile home' };
-        }
+        if (global._snPhysPos && global._snPhysPos.lat != null) pos = global._snPhysPos;
       } catch (_) {}
     }
     if (!pos || pos.lat == null) {
       try {
-        var pr = loadPrefs();
-        if (pr && pr.verifiedLoc && pr.verifiedLoc.lat != null) {
-          pos = {
-            lat: pr.verifiedLoc.lat,
-            lng: pr.verifiedLoc.lng,
-            fallback: true,
-            reason: 'verified home',
-          };
+        var last = global._snLastPos;
+        if (
+          last &&
+          last.lat != null &&
+          !isDemoPin(last.lat, last.lng, last) &&
+          (last.real || last.source === 'gps' || last.source === 'locate')
+        ) {
+          pos = last;
         }
       } catch (_) {}
     }
-    if ((!pos || pos.lat == null) && (opts.softHome || opts.allowSoftHome || intent.softHome)) {
-      // Rhodes Archangelos sector — owner test default (not USA)
-      pos = { lat: 36.4341, lng: 28.2176, fallback: true, reason: 'soft home Rhodes' };
-    }
+    if (pos && isDemoPin(pos.lat, pos.lng, pos)) pos = null;
     if (!pos || pos.lat == null) {
-      log('GPS off · type locate then allow location · or fly to your city first', 'err');
       return {
         ok: false,
-        error: 'need your location · type locate · allow GPS · then order again',
-        reply: 'I need your real location first. Type locate, allow GPS, then order pizza again.',
+        error: 'need locate',
+        reply: 'I need your real place first. Tap Locate, then say pizza again.',
         steps: ['locate_fail'],
       };
     }
@@ -1473,7 +1454,7 @@
     } catch (_vc) {}
     try {
       if (global.SNHelper && SNHelper.find) {
-        SNHelper.find(food || 'shops', pos, { log: true });
+        SNHelper.find(food || 'shops', pos, { log: false });
       }
     } catch (_) {}
     var pois = [];
@@ -1555,11 +1536,32 @@
     );
     steps.push('find');
 
+    function isFoodShop(v, want) {
+      var blob = (
+        (v.shopKind || '') +
+        ' ' +
+        (v.shopName || '') +
+        ' ' +
+        (v.name || '') +
+        ' ' +
+        (v.cuisine || '') +
+        ' ' +
+        (v.kind || '') +
+        ' ' +
+        (v.source || '')
+      ).toLowerCase();
+      if (v.real && /overpass|nominatim|photon|osm/.test(String(v.source || ''))) return true;
+      if (want === 'pizza' && /pizza|πίτσα|πιτσα|pizzeria/.test(blob)) return true;
+      if (/restaurant|fast_food|cafe|pizza|food|kitchen|grill|souvlaki|gyro|kebab|sushi|burger/.test(blob))
+        return true;
+      return false;
+    }
     function collectVendors(maxKm) {
       return (global.SNProfiles.list({ role: 'vendor' }) || []).filter(function (v) {
         if (!v || v.lat == null || v.lng == null) return false;
         if (v.id && String(v.id).indexOf('me') === 0 && !/kitchen|shop|pizza/i.test(v.shopName || v.name || ''))
           return false;
+        if (!isFoodShop(v, food)) return false;
         // HARD: never a shop on another continent
         return haversineKm(pos, v) <= maxKm;
       });
@@ -1569,20 +1571,12 @@
       var wider = collectVendors(MAX_SHOP_KM + 2);
       if (wider.length > vendors.length) vendors = wider;
     }
-    // Last resort kitchen ONLY in test mode — live path never invents shops
+    // Live path never invents shops. Test mode only if the caller said so.
     var testMode = false;
     try {
-      testMode =
-        !!opts.testMode ||
-        !!opts.softHome ||
-        (typeof localStorage !== 'undefined' && localStorage.getItem('sn:test-mode-v1') === '1');
+      testMode = opts.testMode === true;
     } catch (_) {}
-    // Partner street path: if crawl left us empty near soft/confirmed pin, kitchen fallback so money path runs
-    if (!vendors.length && global.SNProfiles && !testMode && (opts.softHome || intent.confirmedPos || (pos && pos.fallback))) {
-      testMode = true;
-      log('Soft sector · kitchen standby so order can complete', 'dim');
-    }
-    if (!vendors.length && global.SNProfiles && testMode) {
+    if (!vendors.length && testMode && global.SNProfiles) {
       try {
         var kid =
           'kitchen_' +
@@ -1653,7 +1647,7 @@
         pos: pos,
         judged: judged,
         steps: steps,
-        reply: 'No shops near your pin. Type locate, then fill shops, then order again.',
+        reply: 'No pizza shops near you on the map yet. Tap Locate if this is the wrong place, or say shops to look again.',
       };
     }
 
@@ -1785,7 +1779,7 @@
         if (!orderResult) {
         orderResult = global.SNProfiles.placeOrder({
           testMode: testMode,
-          allowTopUp: testMode || !!opts.softHome || !!intent.oneWord,
+          allowTopUp: testMode || !!opts.softHome || !!intent.oneWord || !!intent.autoOrder,
           idempotencyKey: idem,
         });
         }
@@ -1948,7 +1942,7 @@
               claim.task.driverName = (driver && driver.name) || 'You';
               claim.task.status = 'in_progress';
             }
-            courierNote = 'TEST · you online as courier · say deliver me to finish';
+            courierNote = 'No other driver nearby — you are the courier. Say deliver me when it arrives.';
             log(courierNote, 'ok');
           } catch (_) {
             courierNote = 'TEST courier assign failed · say deliver me';
