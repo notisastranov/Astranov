@@ -57,12 +57,14 @@
       .trim();
   }
 
-  /** Rhodes demo pin — NEVER treat as real "you" */
+  /** Exact old training pin only — not the town of Rhodes. Real GPS is never fake. */
   var FAKE_DEMO = { lat: 36.4341, lng: 28.2176 };
 
-  function isFakeDemoPin(lat, lng) {
+  function isFakeDemoPin(lat, lng, meta) {
     if (lat == null || lng == null) return true;
-    return Math.abs(Number(lat) - FAKE_DEMO.lat) < 0.02 && Math.abs(Number(lng) - FAKE_DEMO.lng) < 0.02;
+    if (meta && (meta.real === true || /^(gps|locate|phys)/i.test(String(meta.source || ''))))
+      return false;
+    return Math.abs(Number(lat) - FAKE_DEMO.lat) < 0.0008 && Math.abs(Number(lng) - FAKE_DEMO.lng) < 0.0008;
   }
 
   function commitRealGps(row) {
@@ -107,7 +109,7 @@
     try {
       var pref = global.SNMarket && SNMarket.loadPrefs && SNMarket.loadPrefs();
       if (pref && pref.verifiedLoc && pref.verifiedLoc.lat != null) {
-        if (!isFakeDemoPin(pref.verifiedLoc.lat, pref.verifiedLoc.lng)) {
+        if (!isFakeDemoPin(pref.verifiedLoc.lat, pref.verifiedLoc.lng, pref.verifiedLoc)) {
           return {
             lat: pref.verifiedLoc.lat,
             lng: pref.verifiedLoc.lng,
@@ -121,7 +123,7 @@
     try {
       var g = JSON.parse(localStorage.getItem('sn:last-good-gps') || 'null');
       if (g && g.lat != null && g.lng != null && Date.now() - (g.t || 0) < 7 * 864e5) {
-        if (!isFakeDemoPin(g.lat, g.lng)) {
+        if (!isFakeDemoPin(g.lat, g.lng, g)) {
           return {
             lat: g.lat,
             lng: g.lng,
@@ -135,7 +137,7 @@
     } catch (_) {}
     try {
       var phys = global._snPhysPos;
-      if (phys && phys.lat != null && !isFakeDemoPin(phys.lat, phys.lng)) {
+      if (phys && phys.lat != null && !isFakeDemoPin(phys.lat, phys.lng, phys)) {
         return {
           lat: phys.lat,
           lng: phys.lng,
@@ -146,7 +148,7 @@
         };
       }
     } catch (_) {}
-    if (global._snLastPos && global._snLastPos.lat != null && !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng)) {
+    if (global._snLastPos && global._snLastPos.lat != null && !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos)) {
       if (global._snLastPos.real || global._snLastPos.source === 'gps' || global._snLastPos.source === 'ip') {
         return {
           lat: global._snLastPos.lat,
@@ -324,7 +326,7 @@
         if (!res || !res.ok) continue;
         var j = await res.json();
         var p = endpoints[i].parse(j);
-        if (p && isFinite(p.lat) && isFinite(p.lng) && !isFakeDemoPin(p.lat, p.lng)) {
+        if (p && isFinite(p.lat) && isFinite(p.lng) && !isFakeDemoPin(p.lat, p.lng, p)) {
           return {
             ok: true,
             lat: p.lat,
@@ -936,6 +938,11 @@
         'first loop': 1,
         'first order': 1,
         'πρώτη παράδοση': 1,
+        pizza: 1,
+        'order pizza': 1,
+        'order me pizza': 1,
+        'order me a pizza': 1,
+        πίτσα: 1,
         shops: 1,
         vendors: 1,
         stores: 1,
@@ -1397,6 +1404,17 @@
           fi.lazyJudge = wantOrder;
           fi.browseOnly = !wantOrder;
           fi.raw = line;
+          const here =
+            global._snPhysPos ||
+            (global._snLastPos &&
+            !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos) &&
+            (global._snLastPos.real || global._snLastPos.source === 'gps')
+              ? global._snLastPos
+              : null);
+          if (wantOrder && (!here || here.lat == null)) {
+            log('I need your real place first. Tap locate, then say pizza again.', 'ok');
+            return;
+          }
           activity(
             (wantOrder ? 'ordering ' : 'finding ') + (fi.food || 'food') + '…',
             'food',
@@ -1406,9 +1424,10 @@
             autoOrder: wantOrder,
             quiet: false,
             judgeAll: wantOrder,
-            softHome: wantOrder,
+            softHome: false,
             skipLocConfirm: wantOrder,
             allowSelfCourier: wantOrder,
+            testMode: false,
           });
           if (r?.best) {
             depict(wantOrder ? 'order' : 'food', {
@@ -1423,14 +1442,7 @@
             replyOut(r.reply || 'Is this your location?');
             return;
           }
-          if (r?.summary && wantOrder) {
-            String(r.summary)
-              .split('\n')
-              .forEach((ln) => {
-                if (ln.trim())
-                  log(ln.trim(), /failed|error|PAY · failed|reject/i.test(ln) ? 'err' : 'ok');
-              });
-          } else if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+          if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
           else if (r?.error) log(r.error, 'err');
           else if (!wantOrder && r?.best)
             log('Found ' + (r.best.shopName || r.best.name) + ' — say order to buy.', 'ok');
@@ -1451,7 +1463,7 @@
         const here =
           global._snPhysPos ||
           (global._snLastPos &&
-          !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng) &&
+          !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos) &&
           (global._snLastPos.real || global._snLastPos.source === 'gps')
             ? global._snLastPos
             : null);
@@ -3012,14 +3024,21 @@ if (
         preview('GPS…');
         // Real GPS → NATIONAL globe → CITY map zoom → nearby offers/shops
         let pos = await gpsLocate({ allowIp: true, allowSoft: true });
-        if (pos && pos.lat != null && isFakeDemoPin(pos.lat, pos.lng)) {
+        if (pos && pos.lat != null && isFakeDemoPin(pos.lat, pos.lng, pos)) {
           pos = { lat: null, lng: null, fallback: true, reason: pos.reason || 'fake demo pin rejected' };
         }
         if (pos && pos.lat != null) {
           commitRealGps(pos);
           try {
             if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(pos.lat, pos.lng);
-            global._snLastPos = { lat: pos.lat, lng: pos.lng, at: Date.now() };
+            global._snLastPos = {
+              lat: pos.lat,
+              lng: pos.lng,
+              at: Date.now(),
+              source: pos.source || (pos.fallback ? 'soft' : 'gps'),
+              real: !pos.fallback,
+              accuracy: pos.accuracy,
+            };
           } catch (_) {}
           const youLabel = pos.fallback
             ? pos.source === 'ip'
@@ -3248,7 +3267,7 @@ if (
       }
       if (low === 'city' || low === 'map' || low === 'street' || low === 'city map') {
         const p = Tasks?.pos || global._snLastPos;
-        if (!p || p.lat == null || isFakeDemoPin(p.lat, p.lng)) {
+        if (!p || p.lat == null || isFakeDemoPin(p.lat, p.lng, p)) {
           log('I need your real place first. Tap locate, then say city.', 'ok');
           return;
         }
@@ -3269,7 +3288,7 @@ if (
         if (
           !shopPin ||
           shopPin.lat == null ||
-          isFakeDemoPin(shopPin.lat, shopPin.lng)
+          isFakeDemoPin(shopPin.lat, shopPin.lng, shopPin)
         ) {
           log('I need your real place first. Tap locate, then say shops again.', 'ok');
           return;
