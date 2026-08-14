@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Astranov · Rodos restoration · Vodi</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #03070f;
+    --panel: #071320;
+    --line: rgba(80,160,255,.32);
+    --text: #e8eef8;
+    --soft: #9eb4cc;
+    --gold: #e0c36a;
+    --mint: #3dd68c;
+    --hot: #ff6b5a;
+    --glow: #3d9eff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font: 500 14px/1.4 Inter, system-ui, sans-serif; }
+  body { width: 1080px; min-height: 1920px; }
+  .page {
+    width: 1080px;
+    min-height: 1920px;
+    padding: 28px 32px 24px;
+    background:
+      radial-gradient(900px 420px at 90% 0%, rgba(61,158,255,.14), transparent 60%),
+      radial-gradient(700px 380px at 0% 100%, rgba(61,214,140,.08), transparent 55%),
+      var(--bg);
+  }
+  header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .mark { display: flex; gap: 12px; align-items: center; }
+  .seal {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 2px solid var(--glow);
+    display: grid; place-items: center;
+    font: 800 11px/1 Space Grotesk, sans-serif;
+    letter-spacing: .08em; color: var(--glow);
+    box-shadow: 0 0 18px rgba(61,158,255,.35);
+  }
+  h1 { font: 800 34px/1 Space Grotesk, sans-serif; letter-spacing: .02em; }
+  h1 small { display: block; font: 600 15px/1.3 Inter, sans-serif; color: var(--gold); letter-spacing: .08em; margin-top: 4px; }
+  .stamp { text-align: right; font-size: 12px; color: var(--soft); }
+  .stamp b { display: block; color: var(--text); font-size: 14px; }
+  .ba { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 10px; margin: 14px 0 16px; }
+  .shot {
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; min-height: 168px;
+    position: relative;
+  }
+  .shot .tag {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    font: 800 11px/1 Space Grotesk, sans-serif; letter-spacing: .14em;
+    padding: 5px 10px; border-radius: 999px;
+  }
+  .before .tag { background: var(--hot); color: #1a0504; }
+  .after .tag { background: var(--mint); color: #042214; }
+  .before {
+    background:
+      linear-gradient(180deg, rgba(80,20,10,.35), rgba(3,7,15,.2)),
+      repeating-linear-gradient(90deg, #1a2a22 0 8px, #24352c 8px 16px);
+  }
+  .after {
+    background:
+      linear-gradient(180deg, rgba(20,80,90,.15), rgba(3,7,15,.15)),
+      linear-gradient(180deg, #12384a 0%, #0a6a7a 40%, #0b4a58 100%);
+  }
+  .water { position: absolute; inset: 58% 0 0; }
+  .before .water { background: linear-gradient(180deg, #5a4030, #3a2818); opacity: .85; }
+  .after .water { background: linear-gradient(180deg, #2ec4d4, #0a5a6a); }
+  .plume {
+    position: absolute; left: 18%; top: 52%; width: 46%; height: 28%;
+    background: radial-gradient(ellipse, rgba(90,50,20,.85), transparent 70%);
+    filter: blur(2px);
+  }
+  .pipe { position: absolute; left: 8%; top: 38%; width: 70px; height: 28px; background: #4a5560; border-radius: 4px; }
+  .town { position: absolute; right: 8%; top: 18%; width: 42%; height: 36%;
+    background: repeating-linear-gradient(90deg, #c9b48a 0 10px, #8a7a5a 10px 14px);
+    clip-path: polygon(0 70%, 8% 40%, 16% 55%, 28% 20%, 40% 45%, 55% 15%, 70% 40%, 85% 25%, 100% 50%, 100% 100%, 0 100%);
+    opacity: .7;
+  }
+  .after .town { background: repeating-linear-gradient(90deg, #e8e0d0 0 10px, #b8c0a8 10px 14px); }
+  .cap { position: absolute; left: 10px; bottom: 8px; font-size: 11px; color: #dce8f4; text-shadow: 0 1px 4px #000; max-width: 90%; }
+  .arrow { display: grid; place-items: center; font: 800 28px Space Grotesk, sans-serif; color: var(--glow); }
+  .grid3 { display: grid; grid-template-columns: 220px 1fr 200px; gap: 10px; margin-bottom: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  h2 { font: 700 13px/1 Space Grotesk, sans-serif; letter-spacing: .12em; color: var(--gold); margin-bottom: 8px; }
+  .prob { display: flex; flex-direction: column; gap: 7px; }
+  .prob li { list-style: none; font-size: 13px; color: var(--soft); padding-left: 16px; position: relative; }
+  .prob li:before { content: ""; position: absolute; left: 0; top: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--hot); }
+  .tech { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: grid; grid-template-columns: 36px 1fr; gap: 10px;
+    background: #061018; border-radius: 10px; padding: 8px 10px; border: 1px solid rgba(61,158,255,.15);
+  }
+  .n {
+    width: 36px; height: 36px; border-radius: 8px; background: #10253a; color: var(--glow);
+    display: grid; place-items: center; font: 800 16px Space Grotesk, sans-serif;
+  }
+  .row h3 { font: 700 14px Space Grotesk, sans-serif; }
+  .row p { font-size: 12px; color: var(--soft); margin-top: 2px; }
+  .out { display: flex; flex-direction: column; gap: 6px; }
+  .out div { font-size: 13px; color: var(--soft); }
+  .out b { color: var(--mint); font-weight: 600; display: block; font-size: 12px; letter-spacing: .04em; }
+  .mid { display: grid; grid-template-columns: 1.1fr 1.2fr .9fr; gap: 10px; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; color: var(--gold); font-size: 11px; letter-spacing: .08em; padding: 4px 0; }
+  td { padding: 4px 6px 4px 0; color: var(--soft); border-top: 1px solid rgba(255,255,255,.06); }
+  td:last-child { color: var(--mint); }
+  .mon { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mon span { font-size: 12px; color: var(--soft); background: #061018; border-radius: 8px; padding: 7px 8px; }
+  .week {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;
+  }
+  .week .card h2 { color: var(--hot); }
+  .week .later h2 { color: var(--mint); }
+  .week li { list-style: none; font-size: 13px; color: var(--text); padding: 3px 0 3px 14px; position: relative; }
+  .week li:before { content: "→"; position: absolute; left: 0; color: var(--gold); }
+  .bens { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .ben { background: #061018; border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center; font-size: 12px; color: var(--soft); }
+  .ben b { display: block; color: var(--text); font-size: 13px; margin-bottom: 4px; }
+  footer {
+    margin-top: 12px; display: flex; justify-content: space-between; align-items: flex-end;
+    font-size: 11px; color: var(--soft); border-top: 1px solid var(--line); padding-top: 10px;
+  }
+  footer b { color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="mark">
+        <div class="seal">AN</div>
+        <h1>ASTRANOV<br>RODOS ISLAND RESTORATION
+          <small>VODI PLANT · PROBLEM + WASTE-TO-RESOURCE · 14 AUG 2026</small>
+        </h1>
+      </div>
+      <div class="stamp">
+        <b>Cape Vodi 36.387 N · 28.247 E</b>
+        Koskinou / Kalithea · Ε.Ε.Λ. Ρόδου
+        Coast Guard lab · DEYAR notice 13 Aug
+      </div>
+    </header>
+
+    <div class="ba">
+      <div class="shot before">
+        <div class="tag">NOW</div>
+        <div class="town"></div>
+        <div class="pipe"></div>
+        <div class="plume"></div>
+        <div class="water"></div>
+        <div class="cap">June–July 2026: 150 × 300 m dirty zone. E. coli + enterococci in the sea. Plant over 90% full.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="shot after">
+        <div class="tag">TARGET</div>
+        <div class="town"></div>
+        <div class="water"></div>
+        <div class="cap">Plant powered by its own gas. Clean outflow. Rubble becomes sidewalks. No raw dump when the grid dies.</div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <h2>PROBLEM</h2>
+        <ul class="prob">
+          <li>Human shit confirmed in the sea off the Vodi pipe (Port Authority, 16 July)</li>
+          <li>Plant over capacity since May · tankers banned 13 Aug</li>
+          <li>46.6 million euro upgrade signed Sept 2025 — not finished</li>
+          <li>~857,000 euro fines since 2019 for dirty operation</li>
+          <li>Illegal tanker dumps into manholes / streams</li>
+          <li>Summer tourist load + groundwater infiltration</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>TECHNOLOGY RESPONSE</h2>
+        <div class="tech">
+          <div class="row">
+            <div class="n">1</div>
+            <div>
+              <h3>Sewage → power, soil, wash-water</h3>
+              <p>Heat-and-pressure cook (thermal hydrolysis) + closed digestion. Biogas runs the plant. Sterile compost for parks. Cleaned water for streets. Phosphorus crystals for fertilizer. This is city-grade kit, not a lab.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="n">2</div>
+            <div>
+              <h3>Garbage → benches, kiln fuel, ash</h3>
+              <p>Food scraps join the gas tanks. Clean plastic becomes bins and decking. Dirty mixed plastic is kiln fuel (legal in the EU). Ash becomes road base. Do not bet the island on a plastic-to-oil toy.</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="n">3</div>
+            <div>
+              <h3>Concrete → new sidewalks</h3>
+              <p>Crush demolition rubble. Lock CO₂ from the biogas into the gravel. Mix a little sludge-char (2025 tests: 32 MPa, ~⅓ less climate load). Hotel wreckage becomes the next pavement.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>THE TOWN GETS</h2>
+        <div class="out">
+          <div><b>FROM SHIT</b>Plant electricity · park compost · street-wash water · fertilizer</div>
+          <div><b>FROM TRASH</b>Seafront benches · kiln money · road ash</div>
+          <div><b>FROM RUBBLE</b>Kerbs, sidewalks, tourist-road stone</div>
+          <div><b>FROM HONESTY</b>Daily “how full is the plant” · weekly sea tests posted</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mid">
+      <div class="card">
+        <h2>BURN · RECYCLE · TRANSFORM</h2>
+        <table>
+          <tr><th>Stream</th><th>Do</th><th>Becomes</th></tr>
+          <tr><td>Sewage</td><td>Transform</td><td>Clean water</td></tr>
+          <tr><td>Sludge</td><td>Transform</td><td>Biogas + compost</td></tr>
+          <tr><td>Food</td><td>Transform</td><td>More gas</td></tr>
+          <tr><td>Clean plastic</td><td>Recycle</td><td>Bins / benches</td></tr>
+          <tr><td>Dirty plastic</td><td>Energy last</td><td>Kiln fuel</td></tr>
+          <tr><td>Metal / glass</td><td>Recycle</td><td>New product</td></tr>
+          <tr><td>Concrete</td><td>Recycle</td><td>Aggregate / blocks</td></tr>
+          <tr><td>Leftovers</td><td>Burn last</td><td>Heat only</td></tr>
+        </table>
+      </div>
+      <div class="card week">
+        <div>
+          <h2>THIS WEEK</h2>
+          <ul>
+            <li>Keep the tanker ban. Appointment only: 22410 45300</li>
+            <li>Fine anyone emptying into manholes or streams</li>
+            <li>Publish daily inflow vs capacity</li>
+            <li>Independent sea test off Vodi every week until bacteria are gone</li>
+          </ul>
+        </div>
+        <div class="later">
+          <h2>INSIDE THE €46.6m WORKS</h2>
+          <ul>
+            <li>Finish inlet + real capacity before next August</li>
+            <li>Specify the heat-and-gas line — bigger tanks without gas still dump when they fill</li>
+            <li>Hold new north-triangle hotel sewer hookups until the plant can take them</li>
+            <li>One yard at Vodi: three lines in, four products out</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card">
+        <h2>WATCH</h2>
+        <div class="mon">
+          <span>Weekly sea lab off the pipe</span>
+          <span>Daily plant-full number</span>
+          <span>Tanker plate reports</span>
+          <span>Coast Guard repeat sample</span>
+        </div>
+        <p style="margin-top:10px;font-size:12px;color:var(--soft)">No secret. The July 2026 problem was that the board knew and the island did not.</p>
+      </div>
+    </div>
+
+    <div class="bens">
+      <div class="ben"><b>Cleaner sea</b>Beaches stay open. Blue flags stay honest.</div>
+      <div class="ben"><b>Less landfill</b>Rubble and plastic stop being a hole in the ground.</div>
+      <div class="ben"><b>Own power</b>The plant keeps treating when the grid dies.</div>
+      <div class="ben"><b>Own materials</b>Parks, bins, sidewalks from the island’s waste.</div>
+      <div class="ben"><b>Local work</b>Sort, crush, cook, test — jobs on Rhodes.</div>
+    </div>
+
+    <footer>
+      <div>
+        Sources: Rhodes Port Authority samples 3 Jun–12 Jul 2026 (E. coli, enterococci) ·
+        Dimokratiki 17 Jul 2026 · DEYAR / rhodes.gr tanker stop 13 Aug 2026 ·
+        Civil-protection alert to 7 Jan 2027 · fines record 2019–2025 ~857k €
+      </div>
+      <div>Illegal tanker? <b>22410 45300</b> · Astranov brief · not a ChatGPT postcard</div>
+    </footer>
+  </div>
+</body>
+</html>
