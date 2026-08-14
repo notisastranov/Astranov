@@ -560,6 +560,8 @@
   var STAGE_DRIVERS = [
     '/js/spacenet/map.js',
     '/js/spacenet/tasks.js',
+    '/js/spacenet/search.js',
+    '/js/spacenet/market.js',
     '/js/spacenet/field.js',
     '/js/spacenet/delivery-rules.js',
     '/js/spacenet/poly-engine.js',
@@ -716,6 +718,16 @@
     softInit('SNWishInbox', global.SNWishInbox, 'init');
     softInit('SNMarina', global.SNMarina, 'init');
     softInit('SNHome', global.SNHome, 'init');
+    try {
+      recordCheck('SNSearch', !!(global.SNSearch && SNSearch.nearby), global.SNSearch ? 'shops nearby' : 'missing', 'search.js');
+    } catch (e) {
+      recordCheck('SNSearch', false, e.message || e, 'search.js');
+    }
+    try {
+      recordCheck('SNMarket', !!(global.SNMarket && SNMarket.fulfillFoodIntent), global.SNMarket ? 'orders' : 'missing', 'market.js');
+    } catch (e) {
+      recordCheck('SNMarket', false, e.message || e, 'market.js');
+    }
     try {
       if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
       recordCheck('SNHelper', !!global.SNHelper, 'sleep', null);
