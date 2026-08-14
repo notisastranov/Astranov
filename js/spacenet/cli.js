@@ -795,11 +795,24 @@
     x.addEventListener('click', closeBrief);
     var frame = document.createElement('iframe');
     frame.title = 'Vodi restoration';
-    frame.src = '/briefings/vodi.html?v=20260814053000-vodi';
     frame.style.cssText = 'width:100%;height:100%;border:0;background:#03070f';
     wrap.appendChild(frame);
     wrap.appendChild(x);
     document.body.appendChild(wrap);
+    fetch('/briefings/vodi?v=20260814053000-vodi', { cache: 'no-store' })
+      .then(function (r) {
+        return r.text();
+      })
+      .then(function (html) {
+        if (html && /RODOS ISLAND RESTORATION/i.test(html)) {
+          frame.srcdoc = html;
+        } else {
+          frame.src = '/briefings/vodi?v=20260814053000-vodi';
+        }
+      })
+      .catch(function () {
+        frame.src = '/briefings/vodi?v=20260814053000-vodi';
+      });
   }
 
   function isVodiResearch(s) {
@@ -878,8 +891,6 @@
     athens: [37.9838, 23.7275],
     rhodes: [36.4341, 28.2176],
     rodos: [36.4341, 28.2176],
-    vodi: [36.38689, 28.24717],
-    βόδι: [36.38689, 28.24717],
     london: [51.5074, -0.1278],
     paris: [48.8566, 2.3522],
     berlin: [52.52, 13.405],
