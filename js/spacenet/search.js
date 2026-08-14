@@ -149,7 +149,50 @@
     return 'node["name"]["amenity"];node["name"]["shop"];node["name"]["tourism"]';
   }
 
-  async function nearby(lat, lng, radiusM, query) {
+  const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+  ];
+
+  function mapOverpassElements(data) {
+    return (data.elements || [])
+      .map((el) => {
+        const tags = el.tags || {};
+        return {
+          name: tags.name || tags.brand || tags['name:en'] || tags.amenity || tags.shop || 'place',
+          lat: el.lat || el.center?.lat,
+          lng: el.lon || el.center?.lon,
+          kind: tags.amenity || tags.shop || tags.tourism || tags.leisure || 'poi',
+          source: 'overpass',
+          cuisine: tags.cuisine || '',
+          phone: tags.phone || tags['contact:phone'] || tags['contact:mobile'] || '',
+          website: tags.website || tags['contact:website'] || tags.url || '',
+          hours: tags.opening_hours || '',
+          email: tags.email || tags['contact:email'] || '',
+          address: [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']]
+            .filter(Boolean)
+            .join(' '),
+          image: tags.image || tags.wikimedia_commons || '',
+        };
+      })
+      .filter((p) => p.lat != null && p.name);
+  }
+
+  function haversineKm(a, b) {
+    const R = 6371;
+    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+    const s =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((a.lat * Math.PI) / 180) *
+        Math.cos((b.lat * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+  }
+
+  async function nearbyOverpass(lat, lng, radiusM, query) {
     const r = radiusM || 2200;
     const filter = overpassFilter(query);
     const body =
@@ -160,36 +203,153 @@
         .map((f) => f + '(around:' + r + ',' + lat + ',' + lng + ');')
         .join('') +
       ');out center 40;';
+    const tryOne = async (url) => {
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const t = setTimeout(() => {
+        try {
+          ctrl && ctrl.abort();
+        } catch (_) {}
+      }, 7000);
+      try {
+        const data = await fetchJson(url, {
+          method: 'POST',
+          body,
+          headers: { 'Content-Type': 'text/plain' },
+          signal: ctrl ? ctrl.signal : undefined,
+        });
+        const rows = mapOverpassElements(data);
+        if (!rows.length) throw new Error('empty');
+        return rows;
+      } finally {
+        clearTimeout(t);
+      }
+    };
     try {
-      const data = await fetchJson('https://overpass-api.de/api/interpreter', {
-        method: 'POST',
-        body,
-        headers: { 'Content-Type': 'text/plain' },
-      });
-      return (data.elements || [])
-        .map((el) => {
-          const tags = el.tags || {};
-          return {
-            name: tags.name || tags.brand || tags['name:en'] || tags.amenity || tags.shop || 'place',
-            lat: el.lat || el.center?.lat,
-            lng: el.lon || el.center?.lon,
-            kind: tags.amenity || tags.shop || tags.tourism || tags.leisure || 'poi',
-            source: 'overpass',
-            cuisine: tags.cuisine || '',
-            phone: tags.phone || tags['contact:phone'] || tags['contact:mobile'] || '',
-            website: tags.website || tags['contact:website'] || tags.url || '',
-            hours: tags.opening_hours || '',
-            email: tags.email || tags['contact:email'] || '',
-            address: [tags['addr:street'], tags['addr:housenumber'], tags['addr:city']]
-              .filter(Boolean)
-              .join(' '),
-            image: tags.image || tags.wikimedia_commons || '',
-          };
-        })
-        .filter((p) => p.lat != null && p.name);
-    } catch (_) {
-      return [];
+      if (typeof Promise.any === 'function') {
+        return await Promise.any(OVERPASS_MIRRORS.map(tryOne));
+      }
+    } catch (_) {}
+    for (let i = 0; i < OVERPASS_MIRRORS.length; i++) {
+      try {
+        const rows = await tryOne(OVERPASS_MIRRORS[i]);
+        if (rows && rows.length) return rows;
+      } catch (_) {}
     }
+    return [];
+  }
+
+  async function nearbyPhoton(lat, lng, radiusM, query) {
+    const q = /pizza|πίτσα|πιτσα|pizzeria/i.test(String(query || ''))
+      ? 'pizza'
+      : String(query || 'restaurant').split(/\s+/)[0] || 'restaurant';
+    const url =
+      'https://photon.komoot.io/api/?limit=20&lat=' +
+      lat +
+      '&lon=' +
+      lng +
+      '&q=' +
+      encodeURIComponent(q);
+    const data = await fetchJson(url);
+    const maxKm = (radiusM || 6000) / 1000;
+    return (data.features || [])
+      .map((f) => {
+        const p = f.properties || {};
+        const c = f.geometry?.coordinates || [];
+        return {
+          name: p.name || p.street || q,
+          lat: c[1],
+          lng: c[0],
+          kind: p.osm_value || p.osm_key || 'place',
+          source: 'photon',
+          cuisine: p.cuisine || '',
+          city: p.city || '',
+        };
+      })
+      .filter((row) => row.lat != null && row.name && haversineKm({ lat, lng }, row) <= maxKm + 0.4);
+  }
+
+  async function nearbyNominatim(lat, lng, radiusM, query) {
+    const q = /pizza|πίτσα|πιτσα|pizzeria/i.test(String(query || ''))
+      ? 'pizza'
+      : String(query || 'restaurant').split(/\s+/)[0] || 'restaurant';
+    const dLat = ((radiusM || 6000) / 1000) / 111;
+    const dLng = dLat / Math.max(0.3, Math.cos((lat * Math.PI) / 180));
+    const viewbox = [lng - dLng, lat + dLat, lng + dLng, lat - dLat].join(',');
+    const url =
+      'https://nominatim.openstreetmap.org/search?format=json&limit=20&bounded=1&addressdetails=0&q=' +
+      encodeURIComponent(q) +
+      '&viewbox=' +
+      encodeURIComponent(viewbox);
+    const data = await fetchJson(url, { headers: { 'Accept-Language': 'en,el' } });
+    const maxKm = (radiusM || 6000) / 1000;
+    return (data || [])
+      .map((d) => ({
+        name: d.display_name ? String(d.display_name).split(',')[0] : q,
+        lat: parseFloat(d.lat),
+        lng: parseFloat(d.lon),
+        kind: d.type || d.class || 'place',
+        source: 'nominatim',
+      }))
+      .filter((row) => row.lat != null && row.name && haversineKm({ lat, lng }, row) <= maxKm + 0.4);
+  }
+
+  async function nearby(lat, lng, radiusM, query) {
+    const ck = 'near:' + Number(lat).toFixed(3) + ',' + Number(lng).toFixed(3) + ':' + (query || '');
+    const hit = cacheGet(ck);
+    if (hit) return hit;
+    const firstNonEmpty = (promises, capMs) =>
+      new Promise((resolve) => {
+        let left = promises.length;
+        let done = false;
+        const t = setTimeout(() => {
+          if (!done) {
+            done = true;
+            resolve([]);
+          }
+        }, capMs);
+        promises.forEach((p) => {
+          Promise.resolve(p)
+            .then((rows) => {
+              if (!done && rows && rows.length) {
+                done = true;
+                clearTimeout(t);
+                resolve(rows);
+              } else if (--left === 0 && !done) {
+                done = true;
+                clearTimeout(t);
+                resolve([]);
+              }
+            })
+            .catch(() => {
+              if (--left === 0 && !done) {
+                done = true;
+                clearTimeout(t);
+                resolve([]);
+              }
+            });
+        });
+      });
+    let rows = [];
+    try {
+      rows = await firstNonEmpty(
+        [
+          nearbyOverpass(lat, lng, radiusM, query),
+          nearbyPhoton(lat, lng, radiusM, query),
+        ],
+        7500
+      );
+    } catch (_) {
+      rows = [];
+    }
+    if (!rows.length) {
+      try {
+        rows = await nearbyNominatim(lat, lng, radiusM, query);
+      } catch (_) {
+        rows = [];
+      }
+    }
+    cacheSet(ck, rows);
+    return rows;
   }
 
   /** Edge vendor-crawler (Supabase) — bulk POIs when available */
