@@ -763,8 +763,83 @@
     log('> wallet', 'cmd');
     log('> shops', 'cmd');
     log('> donate on', 'cmd');
+    log('> vodi', 'cmd');
     log('> hard boot', 'cmd');
-    preview('locate · first delivery · wallet');
+    preview('locate · pizza · vodi');
+  }
+
+  function closeBrief() {
+    try {
+      var el = document.getElementById('sn-brief-sheet');
+      if (el) el.remove();
+    } catch (_) {}
+  }
+
+  function openVodiBrief() {
+    closeBrief();
+    var wrap = document.createElement('div');
+    wrap.id = 'sn-brief-sheet';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-label', 'Vodi restoration');
+    wrap.style.cssText =
+      'position:fixed;left:8px;right:8px;top:8px;bottom:76px;z-index:160;' +
+      'background:#03070f;border:1px solid rgba(61,158,255,.42);border-radius:16px;' +
+      'overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.55)';
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = 'close';
+    x.style.cssText =
+      'position:absolute;top:8px;right:8px;z-index:2;height:32px;padding:0 14px;' +
+      'border:1px solid rgba(61,158,255,.45);background:#061028;color:#e8eeff;' +
+      'border-radius:999px;font:600 12px Inter,system-ui,sans-serif';
+    x.addEventListener('click', closeBrief);
+    var frame = document.createElement('iframe');
+    frame.title = 'Vodi restoration';
+    frame.src = '/briefings/vodi.html?v=20260814053000-vodi';
+    frame.style.cssText = 'width:100%;height:100%;border:0;background:#03070f';
+    wrap.appendChild(frame);
+    wrap.appendChild(x);
+    document.body.appendChild(wrap);
+  }
+
+  function isVodiResearch(s) {
+    var t = String(s || '').toLowerCase();
+    if (/\b(vodi|βόδι|βιολογικ|viologik)\b/.test(t)) return true;
+    if (/\b(restoration|waste.to.resource)\b/.test(t)) return true;
+    if (
+      /\b(pollution|ρύπανσ|λύματα|sewage|fecal|kopranod)\b/.test(t) &&
+      /\b(rhodes|rodos|ρόδο|vodi|βόδι)\b/.test(t)
+    )
+      return true;
+    if (/shit/.test(t) && /\b(sea|θάλασσ|vodi|βόδι)\b/.test(t)) return true;
+    if (/zoom to vodi|fly vodi|go to vodi/.test(t)) return true;
+    return false;
+  }
+
+  async function runVodiResearch() {
+    activity('Vodi restoration…', 'work', { label: 'Vodi' });
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(36.38689, 28.24717, {
+          tier: 'city',
+          label: 'Vodi',
+          body: 'earth',
+          pulse: true,
+          openMap: false,
+        });
+      }
+    } catch (_) {}
+    try {
+      if (global.SNMap && SNMap.open) await SNMap.open(36.38689, 28.24717, { force: true });
+      if (global.SNMap && SNMap.markYou) SNMap.markYou(36.38689, 28.24717, 'VODI · plant');
+    } catch (_) {}
+    openVodiBrief();
+    log('Vodi · cape by Koskinou. The island sewage plant. 36.387 N, 28.247 E', 'ok');
+    log('Coast Guard, June–July 2026: human gut bacteria in the sea. Dirty patch about 150 by 300 metres.', 'ok');
+    log('Plant over 90% full. Tanker dumps stopped 13 August. Appointment only: 22410 45300', 'ok');
+    log('Plan: cook sludge for plant power and park compost. Trash to benches. Rubble to sidewalks.', 'ok');
+    log('Brief is open. Close it when you have read it.', 'dim');
+    preview('Vodi · restoration brief');
   }
 
   function moneyStatus() {
@@ -803,6 +878,8 @@
     athens: [37.9838, 23.7275],
     rhodes: [36.4341, 28.2176],
     rodos: [36.4341, 28.2176],
+    vodi: [36.38689, 28.24717],
+    βόδι: [36.38689, 28.24717],
     london: [51.5074, -0.1278],
     paris: [48.8566, 2.3522],
     berlin: [52.52, 13.405],
@@ -951,6 +1028,9 @@
         'donate off': 1,
         'hard boot': 1,
         help: 1,
+        vodi: 1,
+        βόδι: 1,
+        restoration: 1,
       };
       if (!keepExact[keepRaw]) {
         if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
@@ -1358,6 +1438,10 @@
         } catch (_) {}
         log("Cleared. Not stuck on pizza — say what you need.", 'ok');
         preview('ready');
+        return;
+      }
+      if (isVodiResearch(low) || isVodiResearch(line)) {
+        await runVodiResearch();
         return;
       }
       // Pending lazy-order location confirm — exact yes/no only
