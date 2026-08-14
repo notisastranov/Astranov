@@ -775,6 +775,32 @@
     } catch (_) {}
   }
 
+  function ensureShakeStyle() {
+    if (document.getElementById('sn-shake-css')) return;
+    var s = document.createElement('style');
+    s.id = 'sn-shake-css';
+    s.textContent =
+      '@keyframes snEarthShake{0%,100%{transform:translate3d(0,0,0)}12%{transform:translate3d(-11px,6px,0) rotate(-0.35deg)}26%{transform:translate3d(10px,-5px,0) rotate(0.3deg)}40%{transform:translate3d(-7px,4px,0)}58%{transform:translate3d(6px,-3px,0)}76%{transform:translate3d(-3px,2px,0)}}' +
+      '.sn-shaking{animation:snEarthShake .72s cubic-bezier(.36,.07,.19,.97) both}';
+    document.head.appendChild(s);
+  }
+
+  function shakeEarth() {
+    ensureShakeStyle();
+    var nodes = [document.getElementById('globe'), document.body];
+    nodes.forEach(function (n) {
+      if (!n) return;
+      n.classList.remove('sn-shaking');
+      void n.offsetWidth;
+      n.classList.add('sn-shaking');
+      setTimeout(function () {
+        try {
+          n.classList.remove('sn-shaking');
+        } catch (_) {}
+      }, 800);
+    });
+  }
+
   function openVodiBrief() {
     closeBrief();
     var wrap = document.createElement('div');
@@ -846,7 +872,9 @@
       if (global.SNMap && SNMap.open) await SNMap.open(36.38689, 28.24717, { force: true });
       if (global.SNMap && SNMap.markYou) SNMap.markYou(36.38689, 28.24717, 'VODI · plant');
     } catch (_) {}
+    shakeEarth();
     openVodiBrief();
+    log('The island flinched. That stain is 150 by 300 metres of us.', 'ok');
     log('Vodi · cape by Koskinou. The island sewage plant. 36.387 N, 28.247 E', 'ok');
     log('Coast Guard, June–July 2026: human gut bacteria in the sea. Dirty patch about 150 by 300 metres.', 'ok');
     log('Plant over 90% full. Tanker dumps stopped 13 August. Appointment only: 22410 45300', 'ok');
