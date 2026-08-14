@@ -35,6 +35,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/((?!js/|icon|manifest|assets/|sw\\.js).*)", "destination": "/index.html" }
+    { "source": "/((?!js/|icon|manifest|assets/|sw\\.js|briefings/).*)", "destination": "/index.html" }
   ]
 }
