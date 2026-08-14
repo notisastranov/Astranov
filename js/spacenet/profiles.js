@@ -398,10 +398,11 @@
         if (bal < total) {
           if (testMode) {
             const need = Math.ceil((total - bal + 0.001) * 100) / 100;
-            SNCurrency.credit(need, 'test-mode order top-up');
+            SNCurrency.credit(need, 'first order starter');
             global.SNCli?.log?.(
-              'TEST mode top-up · ' +
-                (SNCurrency.format ? SNCurrency.format(need) : need + ' AC'),
+              'Wallet added ' +
+                (Math.round(need * 100) / 100) +
+                ' euro so this order can pay.',
               'dim'
             );
           } else {
