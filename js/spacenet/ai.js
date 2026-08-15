@@ -1384,6 +1384,36 @@
       }
     }
 
+    // Vodi restoration is a real job, not chat
+    if (
+      /\b(vodi|βόδι|βιολογικ|viologik)\b/.test(low) ||
+      (/\b(pollution|sewage|λύματα|ρύπανσ)\b/.test(low) && /\b(rhodes|rodos|ρόδο)\b/.test(low))
+    ) {
+      return {
+        did: did.concat(['vodi']),
+        reply: 'Opening Vodi — the island plant and the sea.',
+        runCliCmd: 'vodi',
+        skipBrand: true,
+      };
+    }
+
+    // Crawlers paint Earth / cities / space — I do this, I do not chat it
+    if (
+      global.SNSearch &&
+      (SNSearch.looksVisual
+        ? SNSearch.looksVisual(line)
+        : /^(search|find|show\s+me|zoom\s+to|visualize|look\s+at|take\s+me\s+to|where\s+is|crawl)\b/i.test(
+            low
+          ))
+    ) {
+      return {
+        did: did.concat(['search']),
+        reply: 'Looking on Earth…',
+        runSearch: line,
+        skipBrand: true,
+      };
+    }
+
     // Marketplace coach — explicit coach commands only
     if (global.SNMarket && SNMarket.handleChat) {
       var mk = SNMarket.handleChat(line);
@@ -1648,6 +1678,138 @@
     return { did: did, reply: reply, needsEdge: false };
   }
 
+  function isHands(local) {
+    if (!local) return false;
+    if (
+      local.runSearch ||
+      local.runFoodIntent ||
+      local.runMission ||
+      local.runFirstLoop ||
+      local.confirmLocationAndOrder ||
+      local.runCliCmd ||
+      local.runDriveOn ||
+      local.runDeliver
+    )
+      return true;
+    var d = (local.did || []).join(' ');
+    return /\b(locate|go:|shops|youtube|food|mission|search|dating|work|city|global|vendor|fill_shops|drive|deliver|coord|telemachos|vodi|suggest)\b/.test(
+      d
+    );
+  }
+
+  async function fulfillHands(local, msg) {
+    var text = local && local.reply ? local.reply : null;
+
+    if (local.runSearch && global.SNSearch && SNSearch.crawl) {
+      try {
+        var crawled = await SNSearch.crawl(local.runSearch, {
+          visualize: true,
+          fly: true,
+          openMap: true,
+          quiet: false,
+        });
+        try {
+          if (SNSearch.report && global.SNCli && SNCli.log) SNSearch.report(crawled, SNCli.log);
+        } catch (_) {}
+        var focus = crawled && (crawled.focus || (crawled.places && crawled.places[0]));
+        if (crawled && crawled.body && crawled.body !== 'earth') {
+          text = 'On ' + crawled.body + (crawled.wiki && crawled.wiki.title ? ' · ' + crawled.wiki.title : '.');
+        } else if (focus && focus.name) {
+          text =
+            String(focus.name).slice(0, 56) +
+            (crawled.nearby && crawled.nearby.length ? ' · ' + crawled.nearby.length + ' pins. Tap one.' : ' · marked.');
+        } else {
+          text = text || 'Crawlers found no pin. Try a place name.';
+        }
+      } catch (eS) {
+        text = 'Search failed · ' + (eS && eS.message ? eS.message : eS);
+      }
+      text = brandReply(text);
+      pushHist('assistant', text);
+      showOnGlobe(text);
+      say(text, 'ok');
+      return text;
+    }
+
+    if (local.runFirstLoop && global.SNMarket && SNMarket.runFirstLoop) {
+      try {
+        var fr = await SNMarket.runFirstLoop({});
+        text =
+          fr && fr.ok
+            ? 'First delivery done. You listed, ordered, drove, and delivered.'
+            : 'First loop partial. Try: list shop · order me · drive on · deliver me';
+      } catch (e) {
+        text = 'First loop failed.';
+      }
+    } else if (local.confirmLocationAndOrder && global.SNMarket && SNMarket.confirmLocationAndOrder) {
+      try {
+        var conf = await SNMarket.confirmLocationAndOrder(local.confirmLine || msg);
+        text = conf.eatLine || conf.reply || conf.summary || (conf.ok ? 'Order continuing' : 'Stopped');
+      } catch (_) {
+        text = 'Location confirm failed · tap locate first.';
+      }
+    } else if (local.runCliCmd && global.SNCli && SNCli.run) {
+      try {
+        await SNCli.run(local.runCliCmd);
+        text = local.reply || 'Done.';
+      } catch (eC) {
+        text = 'Failed · ' + (eC && eC.message ? eC.message : eC);
+      }
+    } else if (local.runMission && global.SNTaskRunner && SNTaskRunner.runPlan) {
+      try {
+        var miss = await SNTaskRunner.runPlan(local.runMission, {
+          testMode: /\btest\b/i.test(String(msg || '')),
+          softHome: false,
+        });
+        text = (miss && (miss.reply || miss.summary)) || local.reply || 'Mission done';
+      } catch (eM) {
+        text = 'Mission failed.';
+      }
+    } else if (local.runDriveOn && global.SNTaskRunner) {
+      try {
+        var dr = await SNTaskRunner.driveOn();
+        text = dr && dr.ok ? 'You are online as courier.' : (dr && dr.error) || 'Drive on failed';
+      } catch (_) {
+        text = 'Drive on failed';
+      }
+    } else if (local.runDeliver && global.SNTaskRunner) {
+      try {
+        var dl = await SNTaskRunner.deliver();
+        text = dl && dl.ok ? 'Delivery complete.' : (dl && dl.error) || 'Deliver failed';
+      } catch (_) {
+        text = 'Deliver failed';
+      }
+    } else if (local.runFoodIntent && global.SNMarket && SNMarket.fulfillFoodIntent) {
+      try {
+        var wantOrder =
+          local.runFoodIntent.browseOnly !== true &&
+          (local.runFoodIntent.autoOrder === true || local.runFoodIntent.lazyJudge === true);
+        var foodR = await SNMarket.fulfillFoodIntent(local.runFoodIntent, {
+          autoOrder: wantOrder,
+          quiet: false,
+        });
+        text =
+          (foodR && (foodR.eatLine || foodR.reply || foodR.summary)) ||
+          local.reply ||
+          'Food path ran.';
+      } catch (eF) {
+        text = 'Order failed · ' + (eF && eF.message ? eF.message : eF);
+      }
+    }
+
+    text = brandReply(text || local.reply || 'Done.');
+    pushHist('assistant', text);
+    showOnGlobe(text);
+    say(text, 'ok');
+    return text;
+  }
+
+  async function doJob(message, opts) {
+    opts = opts || {};
+    opts.jobOnly = true;
+    return ask(message, opts);
+  }
+
   async function ask(message, opts) {
     opts = opts || {};
     var msg = String(message || '').trim();
@@ -1669,10 +1831,28 @@
       timedOut = true;
       busy = false;
       clearThinkGfx();
-    }, 7000);
+    }, 20000);
 
     try {
-      // Fast free mind first — never wait on network for simple intents
+      // HANDS FIRST — do the job, then talk. Chat never steals locate / search / pizza / fly.
+      var local = await actLocal(msg);
+      if (isHands(local)) {
+        var hands = await fulfillHands(local, msg);
+        busy = false;
+        clearThinkGfx();
+        clearTimeout(watchdog);
+        ask._busySince = 0;
+        return hands;
+      }
+      if (opts.jobOnly) {
+        busy = false;
+        clearThinkGfx();
+        clearTimeout(watchdog);
+        ask._busySince = 0;
+        return null;
+      }
+
+      // Fast free mind — only when there is no job to do
       try {
         var mind = global.SNAstranovMind || global.SNFreeMind;
         if (mind && mind.answer) {
@@ -1739,7 +1919,6 @@
 
       if (timedOut) return 'Timed out — say again · power on · locate · marina';
 
-      var local = await actLocal(msg);
       var mode = opts.mode || (isCodeIntent(msg) ? 'code' : 'chat');
       var text = null;
 
@@ -2263,6 +2442,8 @@
     brief: brief,
     showOnGlobe: showOnGlobe,
     ask: ask,
+    doJob: doJob,
+    isHands: isHands,
     code: code,
     coders: coders,
     research: research,
