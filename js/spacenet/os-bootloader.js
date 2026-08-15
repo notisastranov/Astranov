@@ -563,6 +563,7 @@
     '/js/spacenet/tasks.js',
     '/js/spacenet/search.js',
     '/js/spacenet/market.js',
+    '/js/spacenet/task-runner.js',
     '/js/spacenet/field.js',
     '/js/spacenet/delivery-rules.js',
     '/js/spacenet/poly-engine.js',
@@ -728,6 +729,11 @@
       recordCheck('SNMarket', !!(global.SNMarket && SNMarket.fulfillFoodIntent), global.SNMarket ? 'orders' : 'missing', 'market.js');
     } catch (e) {
       recordCheck('SNMarket', false, e.message || e, 'market.js');
+    }
+    try {
+      recordCheck('SNTaskRunner', !!(global.SNTaskRunner && SNTaskRunner.runText), global.SNTaskRunner ? 'missions' : 'missing', 'task-runner.js');
+    } catch (e) {
+      recordCheck('SNTaskRunner', false, e.message || e, 'task-runner.js');
     }
     try {
       if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
