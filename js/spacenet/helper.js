@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=wing20260805i';
+  var BUILD_Q = 'v=halo20260815a';
 
   var H = {
     ready: false,
@@ -46,12 +46,12 @@
     wingDust: [],
     ghosts: [],
     rings: [],
-    label: 'SPACEX BOT',
+    label: 'UNIT',
     status: 'idle',
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 1.95,
+    scale: 2.15,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -111,13 +111,7 @@
         } catch (_) {}
       } else {
         try {
-          log(
-            'SPACEX BOT · ' +
-              H.frames.length +
-              ' silver-wing frames · ' +
-              (H.frames[0] ? H.frames[0].naturalWidth + 'px' : 'ok'),
-            'ok'
-          );
+          log('UNIT · ' + H.frames.length + ' armor frames · ready', 'ok');
         } catch (_) {}
       }
       return H.loaded;
@@ -221,7 +215,7 @@
     H.visible = true;
     H.forceVisible = opts.force !== false;
     H.parkMode = false;
-    H.label = opts.label || 'SPACEX BOT';
+    H.label = opts.label || 'UNIT';
     if (opts.showcaseMs) H.showcaseUntil = Date.now() + opts.showcaseMs;
     if (H.canvas) {
       H.canvas.style.opacity = '1';
@@ -256,7 +250,7 @@
   function parkAtMoon() {
     // Keep presence on globe — gaming-visible moon perch (not a tiny speck)
     H.mission = { kind: 'park', label: 'PARKED · ORBIT', status: 'parked' };
-    H.label = 'SPACEX BOT · SILVER WINGS';
+    H.label = 'UNIT · STANDING BY';
     H.status = 'parked';
     H.busy = false;
     H.boost = 0.22;
@@ -541,7 +535,7 @@
       if (i >= corners.length) {
         H.busy = false;
         H.status = 'standby';
-        H.label = 'SPACEX BOT · SILVER WINGS';
+        H.label = 'UNIT · STANDING BY';
         emitSparks(18, 1.2);
         emitWingDust(12);
         pushRing();
@@ -656,7 +650,6 @@
             .replace(/^ESCORT · /, 'ESCORT OK · ');
           H.boost = 0.28;
           emitSparks(18, 1.5);
-          emitWingDust(10);
           pushRing();
           if (typeof arrive === 'function') {
             try {
@@ -672,12 +665,6 @@
         H.angle = Math.atan2(H.vy, H.vx);
         H.boost = Math.min(1.7, H.boost * 0.985 + 0.045);
         if (H.frame % 2 === 0) emitSparks(1, 0.55);
-        if (H.frame % 4 === 0) emitWingDust(1);
-        // motion ghosts
-        if (H.frame % 3 === 0) {
-          H.ghosts.push({ x: H.x, y: H.y, a: 0.35, ang: H.angle });
-          if (H.ghosts.length > 5) H.ghosts.shift();
-        }
       }
     } else {
       // gaming idle float + soft park seek
@@ -689,7 +676,6 @@
       }
       H.angle *= 0.88;
       H.boost *= 0.95;
-      if (H.frame % 28 === 0) emitWingDust(1);
     }
 
     H.frame++;
@@ -732,23 +718,6 @@
       ctx.fill();
     }
 
-    // Wing dust
-    for (i = H.wingDust.length - 1; i >= 0; i--) {
-      var wd = H.wingDust[i];
-      wd.x += wd.vx;
-      wd.y += wd.vy;
-      wd.life -= 0.025;
-      wd.a *= 0.94;
-      if (wd.life <= 0 || wd.a < 0.05) {
-        H.wingDust.splice(i, 1);
-        continue;
-      }
-      ctx.beginPath();
-      ctx.fillStyle = 'rgba(160,200,255,' + wd.a * 0.55 + ')';
-      ctx.arc(wd.x, wd.y, wd.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     // Sparks
     for (i = H.sparks.length - 1; i >= 0; i--) {
       var sp = H.sparks[i];
@@ -770,42 +739,7 @@
       ctx.fill();
     }
 
-    // Motion ghosts (afterimage)
-    for (i = 0; i < H.ghosts.length; i++) {
-      var gh = H.ghosts[i];
-      gh.a *= 0.9;
-      ctx.save();
-      ctx.globalAlpha = gh.a * 0.35;
-      ctx.translate(gh.x, gh.y);
-      ctx.rotate(gh.ang * 0.2);
-      ctx.fillStyle = 'rgba(100,170,255,0.35)';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 28, 36, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-    H.ghosts = H.ghosts.filter(function (g) {
-      return g.a > 0.05;
-    });
-
-    // Soft wing energy arcs
-    if (H.boost > 0.15 || H.busy || H.parkMode) {
-      ctx.save();
-      ctx.translate(H.x, H.y);
-      ctx.rotate(H.angle * 0.2);
-      var wingPulse = 0.4 + Math.sin(now * 0.008) * 0.18 + H.boost * 0.28;
-      ctx.strokeStyle = 'rgba(140,200,255,' + wingPulse * 0.5 + ')';
-      ctx.lineWidth = 1.8;
-      ctx.shadowColor = 'rgba(40,130,255,0.85)';
-      ctx.shadowBlur = 16;
-      ctx.beginPath();
-      ctx.ellipse(-48, -2, 36 + H.boost * 14, 16, -0.42, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(48, -2, 36 + H.boost * 14, 16, 0.42, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
+    H.ghosts = [];
 
     // AI character bitmap
     var img = currentFrame(now);
@@ -847,17 +781,10 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       // Clean chrome draw — no additive wash
-      ctx.shadowColor = 'rgba(70,160,255,0.7)';
-      ctx.shadowBlur = 26;
+      ctx.shadowColor = 'rgba(255,180,60,0.35)';
+      ctx.shadowBlur = 18;
       ctx.drawImage(img, -bw / 2, -bh / 2 - 12, bw, bh);
       ctx.shadowBlur = 0;
-      // secondary soft cyan rim (no white blowout)
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.strokeStyle = 'rgba(100,180,255,' + (0.12 + H.boost * 0.15) + ')';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(0, 4, bw * 0.38, bh * 0.42, 0, 0, Math.PI * 2);
-      ctx.stroke();
       // boot thruster jets
       if (H.boost > 0.12 || H.busy) {
         var jet = 12 + H.boost * 26 + Math.sin(now * 0.045) * 4;
@@ -893,14 +820,14 @@
       ctx.save();
       ctx.font = '600 11px system-ui,sans-serif';
       ctx.fillStyle = 'rgba(180,210,255,0.7)';
-      ctx.fillText('SPACEX BOT · loading silver wings…', H.x - 90, H.y);
+      ctx.fillText('UNIT · armor…', H.x - 48, H.y);
       ctx.restore();
     }
 
     // Gaming label plate — deep neon blue edge
     ctx.save();
     ctx.font = '700 12px "Space Grotesk",system-ui,sans-serif';
-    var text = H.label || 'SPACEX BOT';
+    var text = H.label || 'UNIT';
     var tw = ctx.measureText(text).width;
     var lx = H.x - tw / 2 - 14;
     var ly = H.y + 64 * (H.parkMode && !H.busy ? 0.95 : 1.0);
@@ -994,10 +921,10 @@
       engine: 'Rai silver-wing · drone + gaming juice · no mesh',
       mission: H.mission && H.mission.kind,
       line:
-        'SPACEX BOT · ' +
+        'UNIT · ' +
         (H.busy ? H.status : H.status || 'standby') +
         ' · ' +
-        (H.loaded ? H.frames.length + ' wing frames' : 'loading AI art'),
+        (H.loaded ? H.frames.length + ' armor frames' : 'loading armor'),
     };
   }
 
