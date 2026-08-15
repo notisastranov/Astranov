@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260815185000-fly" />
-<meta name="astranov-continuity" content="20260815185000-fly" />
+<meta name="astranov-build" content="20260815191000-align" />
+<meta name="astranov-continuity" content="20260815191000-align" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -987,6 +987,72 @@ body.spacexai #sn-topchrome-drag::after {
 body.spacexai #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   content: 'STOW';
+}
+
+/* Both CLIs — same width, same center, no overlap */
+#sn-topchrome,
+#dock {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  transform: none !important;
+}
+#sn-topchrome { align-items: flex-start !important; }
+#dock { align-items: flex-end !important; justify-content: center !important; }
+#sn-topchrome-panel,
+#panel {
+  width: min(720px, calc(100vw - 24px)) !important;
+  max-width: min(720px, calc(100vw - 24px)) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+}
+#sn-topchrome-panel.collapsed {
+  min-height: 114px !important;
+  max-height: 114px !important;
+  height: 114px !important;
+}
+#stc-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+#stc-compact {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 78px;
+  padding: 6px 12px 4px;
+  align-items: center;
+}
+#sn-topchrome-drag {
+  flex: 0 0 28px;
+  margin-top: 0;
+}
+#sn-task-ribbon {
+  justify-content: stretch !important;
+  gap: 6px !important;
+  padding: 6px 12px 8px !important;
+}
+#sn-task-ribbon .sn-rib-btn {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+}
+#cli-log {
+  padding: 10px 14px 8px !important;
+}
+#cli-form {
+  padding: 8px 14px 12px !important;
+}
+@media (max-width: 480px) {
+  #sn-task-ribbon .sn-rib-txt { font-size: 8px; letter-spacing: 0.04em; }
+  #sn-task-ribbon .sn-rib-btn { padding: 4px 4px !important; gap: 2px !important; }
 }
 </style>
 <script>
