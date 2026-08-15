@@ -4811,20 +4811,44 @@ if (
     } catch (_) {}
     const form = $('cli-form');
     const input = $('cli-in');
+    const topForm = $('stc-cmd');
+    const topIn = $('stc-cmd-in');
     if (!form || !input || form._snBound) return;
     form._snBound = true;
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const v = input.value;
-      input.value = '';
-      input.classList.remove('searching');
+    function syncInputs(from) {
+      var a = $('cli-in');
+      var b = $('stc-cmd-in');
+      if (!a || !b) return;
+      if (from === a && b.value !== a.value) b.value = a.value;
+      if (from === b && a.value !== b.value) a.value = b.value;
+    }
+    function submitLine(el) {
+      const v = (el && el.value) || '';
+      if (input) input.value = '';
+      if (topIn) topIn.value = '';
+      if (input) input.classList.remove('searching');
+      if (topIn) topIn.classList.remove('searching');
       try {
         noteUserLang(v);
       } catch (_) {}
-      // Always go through SNCli.run so arsenal intercepts (offers/demo) can wrap
       const runner = (global.SNCli && typeof SNCli.run === 'function') ? SNCli.run.bind(SNCli) : run;
       void runner(v);
+    }
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitLine(input);
     });
+    if (topForm && topIn && !topForm._snBound) {
+      topForm._snBound = true;
+      topForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        submitLine(topIn);
+      });
+      topIn.addEventListener('input', () => {
+        syncInputs(topIn);
+        input.dispatchEvent(new Event('input'));
+      });
+    }
     $('btn-send')?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -4846,6 +4870,10 @@ if (
     }
     // Live feed search while typing / or ?
     input.addEventListener('input', () => {
+      try {
+        const b = $('stc-cmd-in');
+        if (b && b.value !== input.value) b.value = input.value;
+      } catch (_) {}
       const v = input.value || '';
       if (/^[/？?]/.test(v) || /^search\s+/i.test(v)) {
         input.classList.add('searching');
