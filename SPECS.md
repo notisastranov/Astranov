@@ -188,4 +188,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-15 (not owner OV): **unit** — helper is a grounded armored combat machine (gold visor, plate, boots). Insect-wing ghost FX removed. Type `helper`. Build `20260815180000-unit`.*
 *Agent note 2026-08-15 (not owner OV): **wings** — same Halo unit now has solid silver metal wings (war-angel plates, not insect fog). Type `helper`. Build `20260815181000-wings`.*
 *Agent note 2026-08-15 (not owner OV): **live** — SNFluid live wire. After this shell, pulses in `fluid/live.json` apply to the open tab in seconds. No house rebuild for small changes. Type `live`. Build `20260815183000-live`.*
+*Agent note 2026-08-15 (not owner OV): **spacexai** — globe is the net. Words fly. Type a place. Build `20260815185000-fly`.*
 
