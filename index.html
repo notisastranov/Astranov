@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260815192000-cmd" />
-<meta name="astranov-continuity" content="20260815192000-cmd" />
+<meta name="astranov-build" content="20260815192500-cmdup" />
+<meta name="astranov-continuity" content="20260815192500-cmdup" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -1011,10 +1011,13 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   right: auto !important;
   transform: none !important;
 }
+#sn-topchrome-panel.collapsed #stc-body {
+  flex: 0 0 auto;
+}
 #sn-topchrome-panel.collapsed {
-  min-height: 114px !important;
-  max-height: 114px !important;
-  height: 114px !important;
+  min-height: 152px !important;
+  max-height: 152px !important;
+  height: 152px !important;
 }
 #stc-body {
   display: flex;
@@ -1057,18 +1060,24 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 
 #stc-cmd {
   pointer-events: auto;
-  width: min(720px, calc(100vw - 24px));
-  max-width: min(720px, calc(100vw - 24px));
-  margin: 6px auto 0;
-  display: flex;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 6px 12px 6px;
   box-sizing: border-box;
-  background: rgba(0, 4, 14, 0.88);
-  border: 1px solid rgba(61, 158, 255, 0.42);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  background: rgba(0, 8, 22, 0.55);
+  border: 0;
+  border-top: 1px solid rgba(61, 158, 255, 0.22);
+  border-radius: 0;
+  box-shadow: none;
+  z-index: 4;
+  position: relative;
 }
 #stc-cmd .stc-cmd-prefix {
   color: var(--glow);
@@ -1333,14 +1342,14 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       </div>
       <div id="stc-detail" hidden></div>
     </div>
+    <form id="stc-cmd" autocomplete="off" aria-label="Flight command">
+      <span class="stc-cmd-prefix" aria-hidden="true">›</span>
+      <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
+        placeholder="tokyo · mars · eiffel · vodi · pizza"
+        aria-label="Type a command" />
+    </form>
     <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
   </div>
-  <form id="stc-cmd" autocomplete="off" aria-label="Flight command">
-    <span class="stc-cmd-prefix" aria-hidden="true">›</span>
-    <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
-      placeholder="tokyo · mars · eiffel · vodi · pizza"
-      aria-label="Type a command" />
-  </form>
 </div>
 <div id="dock">
   <div id="panel" class="collapsed">
