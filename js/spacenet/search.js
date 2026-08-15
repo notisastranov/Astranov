@@ -707,6 +707,26 @@
     return { raw: raw, q: s, body: body, place: place, thing: thing, nearMe: nearMe };
   }
 
+  function looksVisual(q) {
+    var p = parseSearch(q);
+    if (!p || !p.q) return false;
+    if (p.body || p.place) return true;
+    if (p.nearMe) return false;
+    if (
+      /^(search|find|show\s+me|zoom\s+to|visualize|look\s+at|take\s+me\s+to|where\s+is|look\s+up|crawl)\b/i.test(
+        String(q || '')
+      )
+    )
+      return true;
+    if (
+      /\b(tower|island|cape|bridge|airport|harbor|harbour|temple|plaza|square|mountain|cathedral|statue)\b/i.test(
+        p.q
+      )
+    )
+      return true;
+    return false;
+  }
+
   function looksLikePlaceHit(p) {
     if (!p || p.lat == null) return false;
     var k = String(p.kind || p.type || '').toLowerCase();
@@ -1307,6 +1327,7 @@
     report,
     intentOf,
     parseSearch,
+    looksVisual,
     visualize,
     realFocus,
   };
