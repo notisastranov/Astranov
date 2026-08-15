@@ -556,6 +556,7 @@
     '/js/spacenet/globe.js',
     '/js/spacenet/ephemeris.js',
     '/js/spacenet/sky-bodies.js',
+    '/js/spacenet/cosmos.js',
   ];
   var STAGE_DRIVERS = [
     '/js/spacenet/map.js',
