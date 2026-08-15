@@ -644,6 +644,186 @@
     };
   }
 
+  function isExactDummyPin(lat, lng) {
+    if (lat == null || lng == null) return false;
+    var la = Number(lat);
+    var lo = Number(lng);
+    return (
+      (Math.abs(la - 36.4341) < 0.0008 && Math.abs(lo - 28.2176) < 0.0008) ||
+      (Math.abs(la - 37.9838) < 0.0008 && Math.abs(lo - 23.7275) < 0.0008)
+    );
+  }
+
+  function realFocus(opts) {
+    opts = opts || {};
+    function ok(p, allowDummyIfGps) {
+      if (!p || p.lat == null || p.lng == null || !isFinite(p.lat) || !isFinite(p.lng)) return null;
+      var src = String(p.source || '');
+      var gps = !!(p.real || src === 'gps' || src === 'phys' || src === 'locate' || src === 'real');
+      if (isExactDummyPin(p.lat, p.lng) && !(allowDummyIfGps && gps)) return null;
+      return { lat: Number(p.lat), lng: Number(p.lng), source: src || 'given' };
+    }
+    if (opts.pos) {
+      var given = ok(opts.pos, true);
+      if (given) return given;
+    }
+    var phys = ok(global._snPhysPos, true);
+    if (phys) return phys;
+    var last = global._snLastPos;
+    if (last && (last.real || last.source === 'gps' || last.source === 'phys' || last.source === 'locate')) {
+      var kept = ok(last, true);
+      if (kept) return kept;
+    }
+    return null;
+  }
+
+  function parseSearch(q) {
+    var raw = String(q || '').trim();
+    var s = raw
+      .replace(
+        /^(search|find|google|maps|crawl|almighty|where\s+is|look\s+up|show\s+me|zoom\s+to|visualize|look\s+at|take\s+me\s+to)\s+/i,
+        ''
+      )
+      .trim();
+    var low = s.toLowerCase();
+    var body = null;
+    var bm = low.match(/\b(mars|moon|luna|jupiter|saturn|venus|mercury|neptune|uranus|pluto|europa|titan|cydonia)\b/);
+    if (bm) body = bm[1] === 'luna' ? 'moon' : bm[1];
+    var nearMe = /\b(near me|nearby|around me|\bhere\b)\b/i.test(s);
+    var place = '';
+    var thing = s;
+    var m = s.match(/^(.*?)\s+(?:in|at|near|around|on)\s+(.+)$/i);
+    if (m && m[2] && !/^(me|here)$/i.test(m[2].trim())) {
+      thing = m[1].trim();
+      place = m[2].replace(/\b(earth|the earth|the world)\b/i, '').trim();
+    }
+    if (body) {
+      thing = s
+        .replace(new RegExp('\\b' + body + '\\b', 'ig'), '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      place = '';
+    }
+    return { raw: raw, q: s, body: body, place: place, thing: thing, nearMe: nearMe };
+  }
+
+  function looksLikePlaceHit(p) {
+    if (!p || p.lat == null) return false;
+    var k = String(p.kind || p.type || '').toLowerCase();
+    if (/amenity|shop|cuisine|fast_food/.test(k)) return false;
+    return true;
+  }
+
+  /**
+   * Paint crawler hits on globe + city map. The world is the result page.
+   */
+  function visualize(results, opts) {
+    opts = opts || {};
+    results = results || {};
+    var hits = [];
+    function add(p, color) {
+      if (!p || p.lat == null || p.lng == null || !isFinite(p.lat) || !isFinite(p.lng)) return;
+      hits.push({
+        lat: Number(p.lat),
+        lng: Number(p.lng),
+        name: String(p.name || p.title || 'hit').slice(0, 40),
+        color: color || 0xffaa44,
+        kind: p.kind || 'place',
+      });
+    }
+    (results.places || []).slice(0, 8).forEach(function (p) {
+      add(p, 0xffffff);
+    });
+    if (results.wiki && results.wiki.lat != null) {
+      add(
+        { lat: results.wiki.lat, lng: results.wiki.lng, name: results.wiki.title, kind: 'wiki' },
+        0x7ec8ff
+      );
+    }
+    (results.nearby || []).slice(0, 24).forEach(function (p) {
+      add(p, 0xffaa44);
+    });
+    (results.nations || []).slice(0, 4).forEach(function (p) {
+      add(p, 0x44ffaa);
+    });
+    results.hits = hits;
+    results.focus = hits[0] || null;
+
+    if (results.body && results.body !== 'earth') {
+      try {
+        if (global.SNCosmos && SNCosmos.go) void SNCosmos.go(results.body);
+        else if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody(results.body);
+      } catch (_) {}
+      try {
+        global.SNCli && SNCli.preview && SNCli.preview((results.body || 'space') + ' · crawlers');
+      } catch (_) {}
+      return hits;
+    }
+
+    if (!hits.length) return hits;
+
+    var focus = hits[0];
+    var street = (results.nearby || []).length >= 1;
+    var tier = street ? 'city' : hits.length > 5 ? 'regional' : 'national';
+
+    try {
+      if (global.SNGlobe && SNGlobe.clearMarkers) SNGlobe.clearMarkers();
+    } catch (_) {}
+
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(focus.lat, focus.lng, {
+          tier: tier,
+          body: 'earth',
+          pulse: false,
+          label: focus.name,
+          openMap: false,
+          skipScan: true,
+        });
+      }
+    } catch (_) {}
+
+    hits.forEach(function (h, i) {
+      try {
+        if (global.SNGlobe && SNGlobe.pulse)
+          SNGlobe.pulse(h.lat, h.lng, h.color, String(h.name).slice(0, 16), 14000 + i * 180);
+      } catch (_) {}
+    });
+
+    try {
+      if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud(focus.name);
+    } catch (_) {}
+
+    try {
+      global._snLastPos = {
+        lat: focus.lat,
+        lng: focus.lng,
+        source: 'search',
+        real: true,
+        label: focus.name,
+      };
+      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(focus.lat, focus.lng);
+    } catch (_) {}
+
+    if (street && opts.openMap !== false) {
+      try {
+        var opener = global.SNMap && SNMap.open && SNMap.open(focus.lat, focus.lng, { force: true });
+        if (opener && opener.then) {
+          opener.then(function () {
+            try {
+              if (results.nearby && results.nearby.length) global.SNMap.plotCrawl(results.nearby);
+              if (results.places && results.places.length)
+                global.SNMap.plotCrawl(results.places.slice(0, 6));
+              if (global.SNMap.markYou) global.SNMap.markYou(focus.lat, focus.lng, focus.name);
+            } catch (_) {}
+          });
+        }
+      } catch (_) {}
+    }
+
+    return hits;
+  }
+
   /**
    * Crawl modes — map default is SILENT nearby POIs only.
    * Never dumps TV/books/npm/random geocode cities into CLI.
@@ -654,12 +834,14 @@
     if (!q) {
       return emptyResult();
     }
-    const pos = opts.pos || global._snLastPos || global.SNTasks?.pos || { lat: 36.43, lng: 28.22 };
-    const intent = intentOf(q);
+    const parsed = parseSearch(q);
+    const gps = realFocus(opts);
+    const intent = intentOf(parsed.q || q);
     // opts.mode wins. opts.all only if mode not set. Never infer media from "show".
     var mode = opts.mode;
     if (!mode) {
       if (opts.all === true) mode = 'full';
+      else if (parsed.body) mode = 'space';
       else if (intent.code) mode = 'code';
       else if (intent.book) mode = 'books';
       else if (intent.media) mode = 'media';
@@ -670,93 +852,142 @@
     if (
       mode !== 'full' &&
       mode !== 'almighty' &&
-      /\b(restaurant|cafe|shop|food|pizza|vendor|delivery|hungry|eat)\b/i.test(q)
+      mode !== 'space' &&
+      /\b(restaurant|cafe|shop|food|pizza|vendor|delivery|hungry|eat)\b/i.test(parsed.q || q)
     ) {
       mode = 'map';
     }
     const full = mode === 'full' || mode === 'almighty';
     const wantMap = full || mode === 'map' || intent.map;
-    const wantKnowledge = full || mode === 'knowledge';
+    const wantKnowledge = full || mode === 'knowledge' || mode === 'space';
     const wantCode = full || mode === 'code';
     const wantBooks = full || mode === 'books';
     const wantMedia = full || mode === 'media';
     const wantProduct = full || (intent.product && mode !== 'map');
     const wantCountry = full || intent.country;
     const wantWeather = full || intent.weather;
-    // Geocode only real place names — never "vendor" / "pizza" → Kingstown / Nigerian films path
+    const doViz =
+      opts.visualize === true || (opts.fly === true && opts.quiet !== true && opts.silent !== true);
+
+    // Geocode a destination — never "shops near me" / bare pizza as a city
     const wantGeocode =
-      full ||
-      mode === 'knowledge' ||
-      (mode === 'map' && intent.placeName && !intent.map) ||
-      (opts.geocode === true);
+      opts.geocode === true ||
+      !!parsed.place ||
+      !!parsed.body ||
+      (doViz && !parsed.nearMe && !/^(shops?|vendors?|pizza|food|restaurants?)$/i.test(parsed.q)) ||
+      (mode === 'knowledge' && intent.placeName) ||
+      (mode === 'map' && intent.placeName && !intent.map && !gps);
 
     if (opts.quiet !== true && opts.silent !== true) {
-      if (mode === 'map') {
+      if (parsed.body) {
+        global.SNCli?.preview?.('Going · ' + parsed.body);
+      } else if (mode === 'map' && !doViz) {
         global.SNCli?.preview?.('Shops near you…');
       } else {
-        global.SNCli?.preview?.('Looking…');
+        global.SNCli?.preview?.('Looking on Earth…');
       }
     }
 
     const results = emptyResult();
-    results.query = q;
+    results.query = parsed.q || q;
     results.intent = intent;
     results.mode = mode;
-    results.pos = pos;
+    results.parsed = parsed;
+    if (parsed.body) results.body = parsed.body;
+
+    // Space first — switch globe, then wiki that world
+    if (parsed.body && parsed.body !== 'earth') {
+      if (doViz || opts.fly === true) {
+        try {
+          if (global.SNCosmos && SNCosmos.go) await SNCosmos.go(parsed.body);
+          else if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody(parsed.body);
+        } catch (_) {}
+      }
+      try {
+        var wSpace = await wiki(parsed.thing ? parsed.thing + ' ' + parsed.body : parsed.body);
+        if (wSpace) results.wiki = wSpace;
+      } catch (_) {}
+      results.pos = gps;
+      results.sources = summarizeSources(results);
+      results.score = scoreResult(results);
+      if (doViz) visualize(results, { openMap: false });
+      return results;
+    }
+
+    var dest = null;
+    if (wantGeocode) {
+      var geoQ = parsed.place || parsed.q || q;
+      try {
+        var places = await geocode(geoQ);
+        results.places = places || [];
+        if (places && places[0] && looksLikePlaceHit(places[0])) dest = places[0];
+      } catch (_) {
+        results.places = [];
+      }
+      if (!dest && !parsed.place) {
+        var words = String(parsed.q || q).split(/\s+/);
+        if (words.length >= 2) {
+          try {
+            var tail = words.slice(-2).join(' ');
+            var p2 = await geocode(tail);
+            if (p2 && p2[0] && looksLikePlaceHit(p2[0])) {
+              dest = p2[0];
+              results.places = (results.places || []).concat(p2);
+            }
+          } catch (_) {}
+        }
+      }
+    }
+
+    const pos = dest || gps;
+    results.pos = pos || null;
+    results.focusPlace = dest || null;
 
     const jobs = [];
 
-    if (wantGeocode) {
-      jobs.push(
-        geocode(q)
-          .then((p) => {
-            results.places = p;
-          })
-          .catch(() => {})
-      );
+    // Knowledge: wiki / web — NOT on silent map food scans
+    if (wantKnowledge || full || doViz) {
+      var kq = dest ? parsed.thing || dest.name : parsed.q || q;
+      if (kq && (doViz || wantKnowledge || full)) {
+        jobs.push(
+          webSearch(parsed.q || q)
+            .then((w) => {
+              results.web = w;
+            })
+            .catch(() => {})
+        );
+        jobs.push(
+          wiki(parsed.q || q)
+            .then((w) => {
+              results.wiki = w;
+            })
+            .catch(() => {})
+        );
+      }
     }
 
-    // Knowledge: wiki / web — NOT on map food scans
-    if (wantKnowledge || full) {
-      jobs.push(
-        webSearch(q)
-          .then((w) => {
-            results.web = w;
-          })
-          .catch(() => {})
-      );
-      jobs.push(
-        wiki(q)
-          .then((w) => {
-            results.wiki = w;
-          })
-          .catch(() => {})
-      );
-      jobs.push(
-        wikiSearch(q)
-          .then((w) => {
-            results.wikiHits = w;
-          })
-          .catch(() => {})
-      );
-      jobs.push(
-        wikidata(q)
-          .then((w) => {
-            results.wikidata = w;
-          })
-          .catch(() => {})
-      );
+    // Maps / POIs around destination or real GPS — never dummy Rhodes
+    var nearbyQ = parsed.thing || parsed.q || q;
+    if (
+      dest &&
+      nearbyQ &&
+      dest.name &&
+      String(dest.name)
+        .toLowerCase()
+        .indexOf(String(nearbyQ).toLowerCase().slice(0, 18)) >= 0
+    ) {
+      nearbyQ = '';
     }
-
-    // Maps / POIs
-    if (wantMap) {
-      jobs.push(
-        nearby(pos.lat, pos.lng, opts.radiusM || 2500, q)
-          .then((n) => {
-            results.nearby = n;
-          })
-          .catch(() => {})
-      );
+    if (wantMap && pos && pos.lat != null) {
+      if (nearbyQ && !/^(the|a|an)$/i.test(nearbyQ)) {
+        jobs.push(
+          nearby(pos.lat, pos.lng, opts.radiusM || (dest ? 4000 : 2500), nearbyQ)
+            .then((n) => {
+              results.nearby = n;
+            })
+            .catch(() => {})
+        );
+      }
       jobs.push(
         edgeVendors(pos.lat, pos.lng, opts.radiusM || 2500)
           .then((e) => {
@@ -818,8 +1049,21 @@
 
     await Promise.all(jobs);
 
+    // Wiki coordinates become a place if we still have none
+    if (!dest && results.wiki && results.wiki.lat != null) {
+      dest = {
+        name: results.wiki.title,
+        lat: results.wiki.lat,
+        lng: results.wiki.lng,
+        kind: 'wiki',
+        source: 'wikipedia',
+      };
+      results.places = [dest].concat(results.places || []);
+      results.pos = dest;
+    }
+
     // Weather at focus
-    const focus = results.places[0] || (results.wiki?.lat != null ? results.wiki : null) || pos;
+    const focus = dest || (results.wiki && results.wiki.lat != null ? results.wiki : null) || pos;
     if (wantWeather && focus && focus.lat != null) {
       results.weather = await weather(focus.lat, focus.lng).catch(() => null);
     }
@@ -831,31 +1075,35 @@
       results.localTasks = { tasks: [], roles: [] };
     }
 
-    // Map mode: only nearby POIs around user — never pulse random world geocode hits
+    // Map mode: only nearby POIs around the chosen focus — never pulse random world geocode hits
+    var focusLat = (dest || pos || {}).lat;
+    var focusLng = (dest || pos || {}).lng;
     const nearOnly =
-      mode === 'map'
+      mode === 'map' && focusLat != null
         ? (results.nearby || []).filter(function (p) {
             if (p.lat == null) return false;
-            var dLat = Math.abs(p.lat - pos.lat);
-            var dLng = Math.abs(p.lng - pos.lng);
-            return dLat < 0.12 && dLng < 0.15; // ~10–15 km
+            var dLat = Math.abs(p.lat - focusLat);
+            var dLng = Math.abs(p.lng - focusLng);
+            return dLat < 0.12 && dLng < 0.15;
           })
         : results.nearby || [];
     results.nearby = nearOnly;
 
-    if (mode !== 'map') {
-      (results.places || []).slice(0, 3).forEach(function (p, i) {
-        if (p.lat != null)
-          global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffffff, String(p.name).slice(0, 18), 12000 + i * 300);
+    if (!doViz) {
+      if (mode !== 'map') {
+        (results.places || []).slice(0, 3).forEach(function (p, i) {
+          if (p.lat != null)
+            global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffffff, String(p.name).slice(0, 18), 12000 + i * 300);
+        });
+      }
+      nearOnly.slice(0, 10).forEach(function (p) {
+        global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffaa44, String(p.name).slice(0, 14), 10000);
       });
     }
-    nearOnly.slice(0, 10).forEach(function (p) {
-      global.SNGlobe?.pulse?.(p.lat, p.lng, 0xffaa44, String(p.name).slice(0, 14), 10000);
-    });
 
     // Fly only when asked — never for silent map sector fills
     const doFly = opts.fly === true;
-    if (doFly && mode !== 'map') {
+    if (doFly && !doViz && mode !== 'map') {
       if (results.places[0]?.lat != null) {
         global.SNGlobe?.goToPlace?.(results.places[0].lat, results.places[0].lng, {
           tier: 'national',
@@ -867,27 +1115,31 @@
           global.SNTasks?.setPos?.(results.places[0].lat, results.places[0].lng);
         } catch (_) {}
       }
-    } else if (opts.pos?.lat != null) {
+    } else if (opts.pos?.lat != null && !doViz) {
       try {
         global.SNTasks?.setPos?.(opts.pos.lat, opts.pos.lng);
       } catch (_) {}
     }
 
     // City map: nearby POIs only (not world "The Vendor" geocode junk)
-    const mapStuff = nearOnly.slice();
-    if (mapStuff.length && opts.openMap !== false) {
-      void global.SNMap?.open?.(pos.lat, pos.lng)?.then?.(function () {
-        try {
-          global.SNMap?.plotCrawl?.(mapStuff);
-          global.SNMap?.showProfiles?.();
-        } catch (_) {}
-      });
+    if (!doViz) {
+      const mapStuff = nearOnly.slice();
+      if (mapStuff.length && opts.openMap !== false) {
+        void global.SNMap?.open?.(pos ? pos.lat : gps && gps.lat, pos ? pos.lng : gps && gps.lng)?.then?.(
+          function () {
+            try {
+              global.SNMap?.plotCrawl?.(mapStuff);
+              global.SNMap?.showProfiles?.();
+            } catch (_) {}
+          }
+        );
+      }
     }
 
     results.sources = summarizeSources(results);
     results.score = scoreResult(results);
-    // Strip junk sources from map results so nothing re-reports them
-    if (mode === 'map') {
+    // Strip junk sources from silent map fills so nothing re-reports them
+    if (mode === 'map' && !doViz) {
       results.web = [];
       results.wiki = null;
       results.wikiHits = [];
@@ -896,7 +1148,11 @@
       results.products = [];
       results.media = [];
       results.books = [];
-      results.places = [];
+      if (!dest) results.places = [];
+    }
+
+    if (doViz) {
+      visualize(results, { openMap: opts.openMap !== false });
     }
     return results;
   }
@@ -960,7 +1216,7 @@
     if (!results) return;
     reportOpts = reportOpts || {};
     const mode = results.mode || 'map';
-    if (reportOpts.silent || mode === 'map') {
+    if (reportOpts.silent || (mode === 'map' && !results.focus && !results.hits)) {
       const n = (results.nearby || []).length;
       if (n) {
         L(n + ' places near you — pins on the map. Tap one.', 'ok');
@@ -972,6 +1228,26 @@
       } else {
         L('No shops right here — try locate, then shops again.', 'dim');
       }
+      return;
+    }
+    if (results.body && results.body !== 'earth') {
+      L('On ' + results.body + (results.wiki?.title ? ' · ' + results.wiki.title : '') + '.', 'ok');
+      if (results.wiki?.text) L(results.wiki.text.slice(0, 140), 'dim');
+      return;
+    }
+    if (results.focus || (results.places && results.places[0])) {
+      var f = results.focus || results.places[0];
+      var n2 = (results.nearby || []).length;
+      L(
+        String(f.name || 'Place').slice(0, 48) +
+          (n2 ? ' · ' + n2 + ' pins on the map. Tap one.' : ' · on Earth. Crawlers marked it.'),
+        'ok'
+      );
+      (results.nearby || []).slice(0, 3).forEach(function (p) {
+        L('· ' + String(p.name || 'place').slice(0, 40), 'dim');
+      });
+      if (results.wiki?.text && n2 < 1)
+        L(results.wiki.text.slice(0, 140), 'dim');
       return;
     }
     if (mode === 'knowledge') {
@@ -1030,5 +1306,8 @@
     crawl,
     report,
     intentOf,
+    parseSearch,
+    visualize,
+    realFocus,
   };
 })(window);
