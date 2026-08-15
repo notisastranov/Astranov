@@ -759,19 +759,15 @@
   }
 
   function help() {
-    log("I'm Astranov. Tap a glowing line or type it.", 'ok');
-    log('> locate me', 'cmd');
-    log('> first delivery', 'cmd');
-    log('> wallet', 'cmd');
-    log('> shops', 'cmd');
-    log('> donate on', 'cmd');
-    log('> search tokyo ramen', 'cmd');
-    log('> go to mars', 'cmd');
+    log("I'm Astranov. The globe is the net. Name a place.", 'ok');
+    log('> tokyo ramen', 'cmd');
+    log('> eiffel tower', 'cmd');
+    log('> mars', 'cmd');
     log('> vodi', 'cmd');
-    log('> hard boot', 'cmd');
-    log('> omma', 'cmd');
+    log('> pizza', 'cmd');
+    log('> helper', 'cmd');
     log('> live', 'cmd');
-    preview('locate · pizza · search · live');
+    preview('fly · pizza · helper · live');
   }
 
   function closeBrief() {
@@ -1106,6 +1102,8 @@
         όμμα: 1,
         live: 1,
         fluid: 1,
+        fly: 1,
+        spacexai: 1,
         'live on': 1,
         'live off': 1,
         'live now': 1,
@@ -1173,6 +1171,11 @@
       }
       if (low === 'live now' || low === 'live apply' || low === 'fluid now') {
         if (global.SNFluid && SNFluid.pull) await SNFluid.pull({ speak: true, force: true });
+        return;
+      }
+      if (low === 'spacexai' || low === 'flight' || low === 'fly mode') {
+        if (global.SNSpaceXai && SNSpaceXai.enter) SNSpaceXai.enter();
+        else log('Flight computer not loaded. Hard refresh.', 'dim');
         return;
       }
       if (low === 'cancel' || low === 'stop' || low === 'unstick' || low === 'reset ai') {
@@ -3945,6 +3948,12 @@ if (
         ].forEach((ln, i) => log(ln, i ? 'dim' : 'ok'));
         preview('games');
         return;
+      }
+
+      // SpaceXai — words fly. Old pages do not.
+      if (global.SNSpaceXai && SNSpaceXai.wantsFly && SNSpaceXai.wantsFly(line)) {
+        const flew = await SNSpaceXai.fly(line);
+        if (flew && flew.ok) return;
       }
 
       // Any place-like line lands on Earth / a city / a body — not chat.
