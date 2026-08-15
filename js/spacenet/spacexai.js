@@ -111,6 +111,8 @@
     try {
       var inp = document.getElementById('cli-in');
       if (inp) inp.placeholder = 'tokyo · mars · eiffel · vodi · pizza';
+      var top = document.getElementById('stc-cmd-in');
+      if (top) top.placeholder = 'tokyo · mars · eiffel · vodi · pizza';
     } catch (_) {}
     try {
       if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('SPACEXAI · FLY');
