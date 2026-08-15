@@ -767,7 +767,8 @@
     log('> go to mars', 'cmd');
     log('> vodi', 'cmd');
     log('> hard boot', 'cmd');
-    preview('locate · pizza · search · vodi');
+    log('> omma', 'cmd');
+    preview('locate · pizza · search · omma');
   }
 
   function closeBrief() {
@@ -1098,6 +1099,8 @@
         restoration: 1,
         search: 1,
         visualize: 1,
+        omma: 1,
+        όμμα: 1,
       };
       if (!keepExact[keepRaw] && !/^(search|find|show me|zoom to|visualize|look at|take me to)\b/.test(keepRaw)) {
         if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
@@ -1132,6 +1135,14 @@
     try {
       if (low === 'help' || low === '?' || low === 'commands') {
         help();
+        return;
+      }
+      if (low === 'omma' || low === 'όμμα' || low === 'the eye' || low === 'new agent') {
+        if (global.SNOmma && SNOmma.introduce) {
+          await SNOmma.introduce();
+        } else {
+          log("Ómma is not loaded yet. Hard refresh.", 'dim');
+        }
         return;
       }
       if (low === 'cancel' || low === 'stop' || low === 'unstick' || low === 'reset ai') {
