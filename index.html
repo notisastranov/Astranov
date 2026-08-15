@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260815183000-live" />
-<meta name="astranov-continuity" content="20260815183000-live" />
+<meta name="astranov-build" content="20260815185000-fly" />
+<meta name="astranov-continuity" content="20260815185000-fly" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -969,6 +969,25 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   #field-nav-meta { display: none; }
   .stc-gadget { padding: 8px; }
 }
+
+/* SpaceXai flight — cockpit, no new buttons */
+body.spacexai #btn-home {
+  letter-spacing: 0.36em !important;
+}
+body.spacexai #sn-topchrome-panel,
+body.spacexai #panel {
+  box-shadow: 0 0 0 1px rgba(61, 158, 255, 0.28), 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+body.spacexai #cli-in::placeholder {
+  letter-spacing: 0.06em;
+}
+body.spacexai #sn-topchrome-drag::after {
+  content: 'FLIGHT';
+}
+body.spacexai #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
+body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
+  content: 'STOW';
+}
 </style>
 <script>
 (function () {
@@ -1236,7 +1255,7 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
     <form id="cli-form" autocomplete="off">
       <span class="cli-prompt-prefix" aria-hidden="true">›</span>
       <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-        placeholder="power on · throw tiles · tour · marina · help market · plans"
+        placeholder="tokyo · mars · eiffel · vodi · pizza"
         aria-label="Message Astranov" />
     </form>
   </div>
