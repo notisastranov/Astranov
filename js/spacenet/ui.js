@@ -168,7 +168,7 @@
         'px !important;height:' +
         px +
         'px !important;}' +
-        'html body #dock{top:auto !important;bottom:0 !important;justify-content:flex-end !important;}';
+        'html body #dock{top:auto !important;bottom:0 !important;justify-content:center !important;align-items:flex-end !important;}';
       try {
         document.head.appendChild(law);
       } catch (_) {}
@@ -234,6 +234,8 @@
     dock.style.setProperty('transform', 'none', 'important');
     dock.style.setProperty('margin', '0px', 'important');
     dock.style.setProperty('width', '100%', 'important');
+    dock.style.setProperty('justify-content', 'center', 'important');
+    dock.style.setProperty('align-items', 'flex-end', 'important');
     dock.style.removeProperty('padding');
     if (panel) {
       panel.style.removeProperty('margin');
