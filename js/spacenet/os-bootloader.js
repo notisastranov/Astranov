@@ -580,6 +580,7 @@
     '/js/spacenet/free-ai.js',
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',
+    '/js/spacenet/omma.js',
     '/js/spacenet/os-will.js',
     '/js/spacenet/agent-orbit.js',
   ];
@@ -759,6 +760,11 @@
       recordCheck('SNAi', !!global.SNAi, 'present', null);
     } catch (e) {
       recordCheck('SNAi', false, e.message || e, null);
+    }
+    try {
+      recordCheck('SNOmma', !!(global.SNOmma && SNOmma.introduce), global.SNOmma ? 'eye' : 'missing', 'omma.js');
+    } catch (e) {
+      recordCheck('SNOmma', false, e.message || e, 'omma.js');
     }
     try {
       if (global.SNAgentOrbit && SNAgentOrbit.init) SNAgentOrbit.init();
