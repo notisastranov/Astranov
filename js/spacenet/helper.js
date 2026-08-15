@@ -994,6 +994,19 @@
     report: report,
     hookMarketFind: hookMarketFind,
     ensureSprites: ensureSprites,
+    reloadArt: function (urls) {
+      urls = urls || {};
+      if (urls.frames && urls.frames.length) {
+        FRAME_URLS = urls.frames.slice();
+      }
+      if (urls.hero) HERO_URL = urls.hero;
+      H.loaded = false;
+      H.loadFailed = false;
+      H.frames = [];
+      H.hero = null;
+      H._loading = null;
+      return ensureSprites();
+    },
     get busy() {
       return H.busy;
     },
