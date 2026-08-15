@@ -1,7 +1,7 @@
 {
-  "rev": 2,
-  "at": "2026-08-15T14:52:00.000Z",
-  "note": "spacexai flight · globe is the net",
-  "css": "body.spacexai #btn-home{letter-spacing:.36em!important}body.spacexai #cli-in::placeholder{letter-spacing:.06em}",
-  "js": "try{document.body.classList.add('spacexai');if(window.SNSpaceXai&&SNSpaceXai.enter)SNSpaceXai.enter({quiet:true});if(window.SNGlobe&&SNGlobe.setHud)SNGlobe.setHud('SPACEXAI · FLY');}catch(e){}"
+  "rev": 3,
+  "at": "2026-08-15T15:05:00.000Z",
+  "note": "both CLIs same center line",
+  "css": "#dock{justify-content:center!important}#sn-topchrome,#dock{left:0!important;right:0!important;width:100%!important;display:flex!important;justify-content:center!important}#sn-topchrome-panel,#panel{width:min(720px,calc(100vw - 24px))!important;max-width:min(720px,calc(100vw - 24px))!important;margin-left:auto!important;margin-right:auto!important;left:auto!important;right:auto!important;transform:none!important}#sn-task-ribbon{justify-content:stretch!important}#sn-task-ribbon .sn-rib-btn{flex:1 1 0!important;min-width:0!important}",
+  "js": "try{var d=document.getElementById('dock');if(d){d.style.setProperty('justify-content','center','important');d.style.setProperty('left','0px','important');d.style.setProperty('right','0px','important');d.style.setProperty('width','100%','important');d.style.setProperty('transform','none','important');}var p=document.getElementById('panel');if(p){p.style.setProperty('margin-left','auto','important');p.style.setProperty('margin-right','auto','important');p.style.setProperty('left','auto','important');p.style.setProperty('transform','none','important');}}catch(e){}"
 }
