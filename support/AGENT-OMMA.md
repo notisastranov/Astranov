@@ -32,4 +32,6 @@ Never: shipped · live · fixed · done — unless the owner can tap it.
 
 Type **omma**. It tells you which build this page is, and whether that matches the live site.
 
+Type **live**. That is the live wire. After the shell is on, Ómma changes the running app with a pulse. No house rebuild.
+
 Type **who are you**. Astranov answers. Ómma is the eye behind it.
