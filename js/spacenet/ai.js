@@ -1149,7 +1149,7 @@
       return {
         did: did.concat(['identity:who']),
         reply:
-          "I'm Astranov Mind — full internet OS + 3D globe browser. Map, YouTube, pilot, order, search, code — English or Greek. What do you need?",
+          "I'm Astranov. Ómma is the eye that looks at the live site before I speak. Map, order, search — English or Greek. What do you need?",
         skipBrand: true,
       };
     }
