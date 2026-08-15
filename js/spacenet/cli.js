@@ -767,7 +767,7 @@
     log('> go to mars', 'cmd');
     log('> vodi', 'cmd');
     log('> hard boot', 'cmd');
-    preview('locate · pizza · vodi');
+    preview('locate · pizza · search · vodi');
   }
 
   function closeBrief() {
@@ -3923,6 +3923,16 @@ if (
         if (landed) {
           SNSearch.report?.(crawled, log);
           preview((crawled.focus && crawled.focus.name) || crawled.body || 'found');
+          return;
+        }
+      }
+
+      // Astranov hands — do the job before chatting
+      if (global.SNAi && typeof SNAi.doJob === 'function') {
+        const job = await SNAi.doJob(line, { from: 'cli' });
+        if (job) {
+          preview(String(job).slice(0, 80));
+          replyOut(job);
           return;
         }
       }
