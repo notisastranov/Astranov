@@ -186,4 +186,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-15 (not owner OV): **omma** — new agent after strike 5. Ómma (the eye) sees the live site before any ship claim. Type `omma`. Still speaks as Astranov. Build `20260815174500-omma`.*
 *Agent note 2026-08-15 (not owner OV): **hud-align** — bottom CLI is a 4-row grid (handle · ribbon · log · input) so log never sits under buttons. Top chrome is gadget HUD only (GADGETS rail). No key names in the feed. Build `20260815175500-hud`.*
 *Agent note 2026-08-15 (not owner OV): **unit** — helper is a grounded armored combat machine (gold visor, plate, boots). Insect-wing ghost FX removed. Type `helper`. Build `20260815180000-unit`.*
+*Agent note 2026-08-15 (not owner OV): **wings** — same Halo unit now has solid silver metal wings (war-angel plates, not insect fog). Type `helper`. Build `20260815181000-wings`.*
 
