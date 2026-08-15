@@ -763,6 +763,8 @@
     log('> wallet', 'cmd');
     log('> shops', 'cmd');
     log('> donate on', 'cmd');
+    log('> search tokyo ramen', 'cmd');
+    log('> go to mars', 'cmd');
     log('> vodi', 'cmd');
     log('> hard boot', 'cmd');
     preview('locate · pizza · vodi');
@@ -839,6 +841,30 @@
       .catch(function () {
         frame.src = '/briefings/vodi?v=20260814053000-vodi';
       });
+  }
+
+  function looksLikeWorldSearch(low, line) {
+    var t = String(low || '');
+    if (t.length < 2 || t.length > 80) return false;
+    if (
+      /^(help|locate|login|wallet|rate|mine|donate|layers|order|deliver|drive|task|code|coders|research|pizza|shops|vendors|hard boot|first delivery|play|games)\b/.test(
+        t
+      )
+    )
+      return false;
+    if (/\b(in|at|near|around)\s+[a-zα-ω]/i.test(line)) return true;
+    if (
+      /\b(earth|mars|moon|jupiter|saturn|venus|city|island|tower|harbour|harbor|beach|port|airport|mountain|cape|temple|bridge|square|plaza)\b/.test(
+        t
+      )
+    )
+      return true;
+    try {
+      if (CITIES[t.replace(/\s+/g, '')] || CITIES[t]) return true;
+    } catch (_) {}
+    if (/^[A-ZΑ-Ω][\wα-ω'’\-]+(\s+[A-ZΑ-Ω][\wα-ω'’\-]+){0,3}$/.test(String(line || '').trim()))
+      return true;
+    return false;
   }
 
   function isVodiResearch(s) {
@@ -1070,17 +1096,19 @@
         vodi: 1,
         βόδι: 1,
         restoration: 1,
+        search: 1,
+        visualize: 1,
       };
-      if (!keepExact[keepRaw]) {
+      if (!keepExact[keepRaw] && !/^(search|find|show me|zoom to|visualize|look at|take me to)\b/.test(keepRaw)) {
         if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
           const n = ArcangeloDialect.normalizeForRouting(line);
           if (n) line = n;
         }
       }
     } catch (_) {}
-    // /search or ?query → filter feed only (does not pollute history)
-    if (/^[/？?]/.test(line) || /^search\s+/i.test(line)) {
-      const q = line.replace(/^search\s+/i, '').replace(/^[/？?]\s*/, '');
+    // /query or ?query → filter the CLI feed only. "search tokyo" is Earth.
+    if (/^[/？?]/.test(line)) {
+      const q = line.replace(/^[/？?]\s*/, '');
       if (!q) {
         applyFeedFilter('');
         preview('Search off');
@@ -3644,35 +3672,44 @@ if (
         return;
       }
       if (
-        /^search\b|^find\b|^google\b|^maps\b|^crawl\b|^where\s+is\b|^look\s+up\b|^what\s+is\b|^who\s+is\b|^almighty\b/.test(
+        /^search\b|^find\b|^google\b|^maps\b|^crawl\b|^where\s+is\b|^look\s+up\b|^show\s+me\b|^zoom\s+to\b|^visualize\b|^look\s+at\b|^take\s+me\s+to\b/.test(
           low
         )
       ) {
         const q =
           line
             .replace(
-              /^(search|find|google|maps|crawl|almighty|where\s+is|look\s+up|what\s+is|who\s+is)\s+/i,
+              /^(search|find|google|maps|crawl|almighty|where\s+is|look\s+up|show\s+me|zoom\s+to|visualize|look\s+at|take\s+me\s+to)\s+/i,
               ''
             )
             .trim() || line;
-        // Map default. crawl/find/search = nearby only. Never full TV/books/npm dump.
         const wantFull = /^almighty\b/.test(low);
         const wantKnowledge = /^(who\s+is|what\s+is|look\s+up)\b/.test(low);
-        const crawlMode = wantFull ? 'knowledge' : wantKnowledge ? 'knowledge' : 'map';
+        const here =
+          global._snPhysPos ||
+          (global._snLastPos &&
+          !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos) &&
+          (global._snLastPos.real || global._snLastPos.source === 'gps')
+            ? global._snLastPos
+            : null);
         if (global.SNSearch?.crawl) {
+          preview('Looking on Earth…');
           const crawled = await SNSearch.crawl(q, {
-            pos: Tasks?.pos || global._snLastPos,
-            openMap: crawlMode === 'map',
-            all: false,
-            mode: crawlMode,
-            fly: false,
-            quiet: true,
+            pos: here || undefined,
+            openMap: true,
+            visualize: true,
+            fly: true,
+            quiet: false,
+            mode: wantFull ? 'full' : wantKnowledge ? 'knowledge' : undefined,
           });
-          SNSearch.report?.(crawled, log, { silent: crawlMode === 'map' });
+          SNSearch.report?.(crawled, log);
+          if (!crawled || (!(crawled.hits && crawled.hits.length) && !crawled.body && !crawled.focus)) {
+            log('Crawlers found no pin for that. Try a place name — tokyo, eiffel tower, mars.', 'dim');
+          }
         } else {
           log('Search still loading — try again in a second.', 'dim');
         }
-        preview(crawlMode === 'map' ? 'Nearby shops' : 'Lookup');
+        preview(q.slice(0, 40) || 'search');
         return;
       }
       if (/^research\b/.test(low)) {
@@ -3867,6 +3904,27 @@ if (
         ].forEach((ln, i) => log(ln, i ? 'dim' : 'ok'));
         preview('games');
         return;
+      }
+
+      // Any place-like line lands on Earth / a city / a body — not chat.
+      if (looksLikeWorldSearch(low, line) && global.SNSearch?.crawl) {
+        preview('Looking on Earth…');
+        const crawled = await SNSearch.crawl(line, {
+          visualize: true,
+          fly: true,
+          openMap: true,
+          quiet: false,
+        });
+        const landed =
+          (crawled && crawled.body) ||
+          (crawled && crawled.focus) ||
+          (crawled && crawled.hits && crawled.hits.length) ||
+          (crawled && crawled.places && crawled.places[0] && crawled.places[0].lat != null);
+        if (landed) {
+          SNSearch.report?.(crawled, log);
+          preview((crawled.focus && crawled.focus.name) || crawled.body || 'found');
+          return;
+        }
       }
 
       // Freeform → OS will reshape first (every user is a developer) · then AI co-dev
