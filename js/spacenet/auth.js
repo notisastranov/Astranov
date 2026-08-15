@@ -299,11 +299,7 @@
     try {
       if (global.SNSubscription && SNSubscription.status) {
         var st = SNSubscription.status();
-        say(
-          'Architect · paid Grok path ON · mode ' + (st.mode || 'owner-paid-unlimited') +
-            ' · key stays on server (XAI_API_KEY)',
-          'ok'
-        );
+        say('You are signed in. The paid mind is on. The key stays on the server.', 'ok');
       } else {
         say('Architect signed in · paid Grok armed (server key)', 'ok');
       }
