@@ -582,6 +582,7 @@
     '/js/spacenet/ai.js',
     '/js/spacenet/omma.js',
     '/js/spacenet/fluid.js',
+    '/js/spacenet/spacexai.js',
     '/js/spacenet/os-will.js',
     '/js/spacenet/agent-orbit.js',
   ];
@@ -772,6 +773,12 @@
       recordCheck('SNFluid', !!(global.SNFluid && SNFluid.pull), 'live wire', 'fluid.js');
     } catch (e) {
       recordCheck('SNFluid', false, e.message || e, 'fluid.js');
+    }
+    try {
+      if (global.SNSpaceXai && SNSpaceXai.enter) SNSpaceXai.enter({ quiet: true });
+      recordCheck('SNSpaceXai', !!(global.SNSpaceXai && SNSpaceXai.fly), 'flight', 'spacexai.js');
+    } catch (e) {
+      recordCheck('SNSpaceXai', false, e.message || e, 'spacexai.js');
     }
     try {
       if (global.SNAgentOrbit && SNAgentOrbit.init) SNAgentOrbit.init();
@@ -1011,7 +1018,7 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('ASTRANOV ready. Tap a glowing line.', 'ok', true);
+          SNCli.log('Flight computer ready. Name a place.', 'ok', true);
           SNCli.log('> locate me', 'cmd', true);
           SNCli.log('> battery', 'cmd', true);
           SNCli.log('> power on', 'cmd', true);
