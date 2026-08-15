@@ -158,7 +158,7 @@
       if (SNHelper.init) SNHelper.init({ autoWake: true });
       if (SNHelper.patrol) SNHelper.patrol();
       else if (SNHelper.showcase) SNHelper.showcase();
-      else if (SNHelper.wake) SNHelper.wake({ force: true, label: 'UNIT' });
+      else if (SNHelper.wake) SNHelper.wake({ force: true, label: 'UNIT · SILVER WINGS' });
     }
     log('SPACEX BOT · silver-wing patrol', 'ok');
     preview('helper patrol');
