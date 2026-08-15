@@ -191,4 +191,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-15 (not owner OV): **spacexai** — globe is the net. Words fly. Type a place. Build `20260815185000-fly`.*
 *Agent note 2026-08-15 (not owner OV): **align** — top HUD and bottom CLI same width, same center. Dock was `flex-end` (right). Now center. Build `20260815191000-align`.*
 *Agent note 2026-08-15 (not owner OV): **cmd** — editable command line under the top HUD, same wire as the bottom box. Build `20260815192000-cmd`.*
+*Agent note 2026-08-15 (not owner OV): **cmdup** — command line sits above the FLIGHT handle and stays visible when collapsed. Build `20260815192500-cmdup`.*
 
