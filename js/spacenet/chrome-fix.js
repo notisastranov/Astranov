@@ -97,6 +97,7 @@
       '  font: 700 9px/1 \"JetBrains Mono\", ui-monospace, monospace !important;',
       '  letter-spacing: 0.22em !important;',
       '}',
+      'body.spacexai #sn-topchrome-drag::after { content: \"FLIGHT\" !important; }',
       '#sn-task-ribbon {',
       '  display: flex !important; flex-wrap: nowrap !important; gap: 4px !important;',
       '  justify-content: space-between !important; align-items: center !important;',
