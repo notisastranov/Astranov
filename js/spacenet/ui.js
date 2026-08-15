@@ -431,7 +431,7 @@
       // Resize from grip · ribbon · top strip · or log edge (one finger minimize)
       var tgt = e.target;
       // Never start drag from the input form / buttons
-      if (tgt && tgt.closest('#cli-form, #cli-in, #btn-send, #btn-handsfree, button, a, input')) {
+      if (tgt && tgt.closest('#cli-form, #cli-in, #stc-cmd, #stc-cmd-in, #btn-send, #btn-handsfree, button, a, input')) {
         dragging = false;
         return;
       }
