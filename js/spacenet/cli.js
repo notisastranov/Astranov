@@ -770,7 +770,8 @@
     log('> vodi', 'cmd');
     log('> hard boot', 'cmd');
     log('> omma', 'cmd');
-    preview('locate · pizza · search · omma');
+    log('> live', 'cmd');
+    preview('locate · pizza · search · live');
   }
 
   function closeBrief() {
@@ -1103,6 +1104,11 @@
         visualize: 1,
         omma: 1,
         όμμα: 1,
+        live: 1,
+        fluid: 1,
+        'live on': 1,
+        'live off': 1,
+        'live now': 1,
       };
       if (!keepExact[keepRaw] && !/^(search|find|show me|zoom to|visualize|look at|take me to)\b/.test(keepRaw)) {
         if (global.ArcangeloDialect && ArcangeloDialect.normalizeForRouting) {
@@ -1145,6 +1151,28 @@
         } else {
           log("Ómma is not loaded yet. Hard refresh.", 'dim');
         }
+        return;
+      }
+      if (low === 'live' || low === 'fluid' || low === 'live wire') {
+        if (global.SNFluid && SNFluid.speakStatus) SNFluid.speakStatus();
+        else log('Live wire is not loaded yet. Hard refresh.', 'dim');
+        return;
+      }
+      if (low === 'live on' || low === 'fluid on') {
+        if (global.SNFluid) {
+          SNFluid.start();
+          SNFluid.pull({ speak: true, force: true });
+          log('Live wire listening.', 'ok');
+        }
+        return;
+      }
+      if (low === 'live off' || low === 'fluid off') {
+        if (global.SNFluid) SNFluid.stop();
+        log('Live wire off.', 'dim');
+        return;
+      }
+      if (low === 'live now' || low === 'live apply' || low === 'fluid now') {
+        if (global.SNFluid && SNFluid.pull) await SNFluid.pull({ speak: true, force: true });
         return;
       }
       if (low === 'cancel' || low === 'stop' || low === 'unstick' || low === 'reset ai') {
