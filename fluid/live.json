@@ -1,7 +1,7 @@
 {
-  "rev": 1,
-  "at": "2026-08-15T14:50:00.000Z",
-  "note": "live wire awake",
-  "css": "",
-  "js": ""
+  "rev": 2,
+  "at": "2026-08-15T14:52:00.000Z",
+  "note": "spacexai flight · globe is the net",
+  "css": "body.spacexai #btn-home{letter-spacing:.36em!important}body.spacexai #cli-in::placeholder{letter-spacing:.06em}",
+  "js": "try{document.body.classList.add('spacexai');if(window.SNSpaceXai&&SNSpaceXai.enter)SNSpaceXai.enter({quiet:true});if(window.SNGlobe&&SNGlobe.setHud)SNGlobe.setHud('SPACEXAI · FLY');}catch(e){}"
 }
