@@ -581,6 +581,7 @@
     '/js/spacenet/subscription.js',
     '/js/spacenet/ai.js',
     '/js/spacenet/omma.js',
+    '/js/spacenet/fluid.js',
     '/js/spacenet/os-will.js',
     '/js/spacenet/agent-orbit.js',
   ];
@@ -765,6 +766,12 @@
       recordCheck('SNOmma', !!(global.SNOmma && SNOmma.introduce), global.SNOmma ? 'eye' : 'missing', 'omma.js');
     } catch (e) {
       recordCheck('SNOmma', false, e.message || e, 'omma.js');
+    }
+    try {
+      if (global.SNFluid && SNFluid.init) SNFluid.init();
+      recordCheck('SNFluid', !!(global.SNFluid && SNFluid.pull), 'live wire', 'fluid.js');
+    } catch (e) {
+      recordCheck('SNFluid', false, e.message || e, 'fluid.js');
     }
     try {
       if (global.SNAgentOrbit && SNAgentOrbit.init) SNAgentOrbit.init();
