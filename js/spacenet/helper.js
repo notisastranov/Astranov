@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=halo20260815a';
+  var BUILD_Q = 'v=halowing20260815a';
 
   var H = {
     ready: false,
@@ -46,12 +46,12 @@
     wingDust: [],
     ghosts: [],
     rings: [],
-    label: 'UNIT',
+    label: 'UNIT · SILVER WINGS',
     status: 'idle',
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 2.15,
+    scale: 2.28,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -215,7 +215,7 @@
     H.visible = true;
     H.forceVisible = opts.force !== false;
     H.parkMode = false;
-    H.label = opts.label || 'UNIT';
+    H.label = opts.label || 'UNIT · SILVER WINGS';
     if (opts.showcaseMs) H.showcaseUntil = Date.now() + opts.showcaseMs;
     if (H.canvas) {
       H.canvas.style.opacity = '1';
@@ -250,7 +250,7 @@
   function parkAtMoon() {
     // Keep presence on globe — gaming-visible moon perch (not a tiny speck)
     H.mission = { kind: 'park', label: 'PARKED · ORBIT', status: 'parked' };
-    H.label = 'UNIT · STANDING BY';
+    H.label = 'UNIT · SILVER WINGS';
     H.status = 'parked';
     H.busy = false;
     H.boost = 0.22;
@@ -535,7 +535,7 @@
       if (i >= corners.length) {
         H.busy = false;
         H.status = 'standby';
-        H.label = 'UNIT · STANDING BY';
+        H.label = 'UNIT · SILVER WINGS';
         emitSparks(18, 1.2);
         emitWingDust(12);
         pushRing();
@@ -781,10 +781,24 @@
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
       // Clean chrome draw — no additive wash
-      ctx.shadowColor = 'rgba(255,180,60,0.35)';
-      ctx.shadowBlur = 18;
+      ctx.shadowColor = 'rgba(220,230,240,0.45)';
+      ctx.shadowBlur = 16;
       ctx.drawImage(img, -bw / 2, -bh / 2 - 12, bw, bh);
       ctx.shadowBlur = 0;
+      // metal wing gleam — plate, not ghost
+      if (H.boost > 0.08 || H.busy || H.parkMode) {
+        var gleam = 0.1 + Math.sin(now * 0.006) * 0.05 + H.boost * 0.08;
+        ctx.strokeStyle = 'rgba(210,220,230,' + gleam + ')';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-bw * 0.42, -bh * 0.06);
+        ctx.quadraticCurveTo(-bw * 0.28, -bh * 0.22, -bw * 0.08, -bh * 0.02);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(bw * 0.42, -bh * 0.06);
+        ctx.quadraticCurveTo(bw * 0.28, -bh * 0.22, bw * 0.08, -bh * 0.02);
+        ctx.stroke();
+      }
       // boot thruster jets
       if (H.boost > 0.12 || H.busy) {
         var jet = 12 + H.boost * 26 + Math.sin(now * 0.045) * 4;
