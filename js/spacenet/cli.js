@@ -652,6 +652,8 @@
     if (/\[ OK \]|\[FAIL\]|\[WARN\]|\[FIX \]|\[....\]|STAGE ·|HANDOFF ·|load \w+\.js/i.test(t)) return true;
     if (/═{3,}/.test(t)) return true;
     if (/^theme\b/i.test(t.trim())) return true;
+    if (/XAI_API_KEY|paid Grok path|Architect ·|Architect confirmed|key stays on server/i.test(t))
+      return true;
     return false;
   }
 
