@@ -184,4 +184,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-14 (not owner OV): **Vodi brief** — “vodi” / zoom-to-Vodi / sea-waste research flies to Cape Vodi (36.387 N, 28.247 E) and opens the restoration brief (sewage → power+compost, garbage → benches, concrete → sidewalks). Real Coast Guard + DEYAR facts, not a chat postcard. Build `20260814053000-vodi`.*
 *Agent note 2026-08-15 (not owner OV): **see-search** — `search X` is Earth, not a chat-log filter. Crawlers geocode the place, fly the globe, pulse real pins, open the city map when there are street hits, and switch body for mars/moon/…. Dummy Rhodes is never the silent search center. Build `20260815171500-see`.*
 *Agent note 2026-08-15 (not owner OV): **omma** — new agent after strike 5. Ómma (the eye) sees the live site before any ship claim. Type `omma`. Still speaks as Astranov. Build `20260815174500-omma`.*
+*Agent note 2026-08-15 (not owner OV): **hud-align** — bottom CLI is a 4-row grid (handle · ribbon · log · input) so log never sits under buttons. Top chrome is gadget HUD only (GADGETS rail). No key names in the feed. Build `20260815175500-hud`.*
 
