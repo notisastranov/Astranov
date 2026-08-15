@@ -2166,7 +2166,7 @@
             try { localStorage.setItem('sn:ai-gfx-mode-v1', 'imagine'); } catch (_) {}
           }
           if (global.SNHelper && SNHelper.wake) {
-            SNHelper.wake({ label: 'SPACEX BOT · IMAGINE' });
+            SNHelper.wake({ label: 'UNIT' });
             if (SNHelper.patrol) SNHelper.patrol();
           }
           log('IMAGINE · AI graphics online · SpaceX Bot frames', 'ok');
