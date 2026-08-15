@@ -189,4 +189,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-15 (not owner OV): **wings** — same Halo unit now has solid silver metal wings (war-angel plates, not insect fog). Type `helper`. Build `20260815181000-wings`.*
 *Agent note 2026-08-15 (not owner OV): **live** — SNFluid live wire. After this shell, pulses in `fluid/live.json` apply to the open tab in seconds. No house rebuild for small changes. Type `live`. Build `20260815183000-live`.*
 *Agent note 2026-08-15 (not owner OV): **spacexai** — globe is the net. Words fly. Type a place. Build `20260815185000-fly`.*
+*Agent note 2026-08-15 (not owner OV): **align** — top HUD and bottom CLI same width, same center. Dock was `flex-end` (right). Now center. Build `20260815191000-align`.*
 
