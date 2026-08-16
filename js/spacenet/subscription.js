@@ -897,7 +897,10 @@
     if (low === 'owner session' || low === 'i am owner') {
       if (userEmail() === ARCHITECT_EMAIL) {
         try { localStorage.setItem('sn:owner-session', '1'); } catch (_) {}
-        log('You are signed in. The paid mind is on.', 'ok');
+        if (!global.__snPaidMindSaid) {
+          global.__snPaidMindSaid = 1;
+          log('You are signed in. The paid mind is on.', 'ok');
+        }
       } else {
         log('Owner path requires Google login as ' + ARCHITECT_EMAIL, 'err');
       }
