@@ -759,15 +759,13 @@
   }
 
   function help() {
-    log("I'm Astranov. The globe is the net. Name a place.", 'ok');
+    log("I'm Astranov. SpaceNet is the net. Name anything — I research first.", 'ok');
     log('> tokyo ramen', 'cmd');
     log('> eiffel tower', 'cmd');
-    log('> mars', 'cmd');
+    log('> drum cam at sticky fingers', 'cmd');
     log('> vodi', 'cmd');
     log('> pizza', 'cmd');
-    log('> helper', 'cmd');
-    log('> live', 'cmd');
-    preview('fly · pizza · helper · live');
+    preview('research · fly · pizza · youtube');
   }
 
   function closeBrief() {
