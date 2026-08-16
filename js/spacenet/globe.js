@@ -2144,6 +2144,9 @@
         if (ll && ll.lat != null) {
           G.velX = 0;
           G.velY = 0;
+          try {
+            if (global.SNHelper && SNHelper.followTap) SNHelper.followTap(ll.lat, ll.lng, { x: cx, y: cy });
+          } catch (_) {}
           diveInAt(ll.lat, ll.lng);
         } else {
           var cur = currentTier();
