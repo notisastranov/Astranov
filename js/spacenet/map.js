@@ -46,11 +46,11 @@
     // Google-style roads (OSM HOT) — free stand-in when no Google key
     google: {
       id: 'google',
-      label: 'Google',
+      label: 'OSM roads',
       emoji: 'G',
       free: true,
       weight: 2,
-      note: 'OSM stand-in · or full Google Earth imaging with googleMapsKey',
+      note: 'OpenStreetMap HOT roads — not Google',
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       opts: { maxZoom: 20, maxNativeZoom: 19, subdomains: 'abc', attribution: '© OSM HOT' },
     },
@@ -281,6 +281,17 @@
     });
   }
 
+  function hasGoogleKey() {
+    try {
+      var k =
+        (global.SN_CONFIG && SN_CONFIG.layers && SN_CONFIG.layers.googleMapsKey) ||
+        (global.SN_CONFIG && SN_CONFIG.googleMapsKey);
+      return !!(k && String(k).length > 8);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function loadBasemapPref() {
     try {
       const v = localStorage.getItem(LAYER_KEY);
@@ -428,6 +439,7 @@
       '<div class="sn-ly-sec"><h4>Basemap · pick one</h4><div class="sn-ly-grid">';
     Object.keys(BASEMAPS).forEach((id) => {
       const d = BASEMAPS[id];
+      if (d.free === false && !hasGoogleKey()) return;
       h +=
         '<button type="button" class="sn-ly' +
         (M.basemapId === id ? ' on' : '') +
@@ -725,18 +737,7 @@
         .addTo(M.map)
         .bindTooltip('ISS · ' + lat.toFixed(2) + ', ' + lng.toFixed(2), { permanent: false });
       M.liveMarkers.iss = [m];
-      if (M.overlayOn.sats) {
-        // Second “sat” echo slightly offset for visual multi-sat feel until full TLE
-        const m2 = L.circleMarker([lat + 2, lng - 3], {
-          radius: 5,
-          color: '#88ccff',
-          fillColor: '#4488ff',
-          fillOpacity: 0.7,
-        })
-          .addTo(M.map)
-          .bindTooltip('LEO sample', { permanent: false });
-        M.liveMarkers.iss.push(m2);
-      }
+      // no fake second "LEO sample" marker
     } catch (e) {
       global.SNCli?.log?.('ISS feed quiet · ' + (e.message || e), 'dim');
     }
