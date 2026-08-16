@@ -103,7 +103,7 @@
       '  box-shadow: 0 0 12px rgba(61, 158, 255, 0.75) !important;',
       '}',
       '#sn-topchrome-drag::after {',
-      '  content: \"GADGETS\" !important;',
+      '  content: \"SEARCH\" !important;',
       '  font: 700 9px/1 \"JetBrains Mono\", ui-monospace, monospace !important;',
       '  letter-spacing: 0.22em !important;',
       '}',
