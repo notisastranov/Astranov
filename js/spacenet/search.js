@@ -1372,8 +1372,14 @@
     var shortPlace =
       q.split(/\s+/).length <= 3 &&
       !/\d{5,}/.test(q) &&
-      !/\b(cam|clip|video|song|lyrics|feat)\b/i.test(low);
-    if (explicitPlace || shortPlace) {
+      !/\b(cam|clip|video|song|lyrics|feat|drum|concert)\b/i.test(low);
+    var knownCity = false;
+    try {
+      if (global.SNCli && false) knownCity = false;
+    } catch (_) {}
+    if (/^(tokyo|paris|london|athens|rhodes|rodos|rome|eiffel|mars|moon|earth|vodi)$/i.test(low))
+      knownCity = true;
+    if (explicitPlace || knownCity || (shortPlace && !/\s/.test(q))) {
       jobs.push(
         geocode(q)
           .then(function (p) {
