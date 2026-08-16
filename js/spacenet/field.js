@@ -644,7 +644,21 @@
   }
 
   function roleProfile() {
-    return DEVICE_ROLES[mine.deviceRole] || DEVICE_ROLES.main;
+    var base = DEVICE_ROLES[mine.deviceRole] || DEVICE_ROLES.main;
+    var boot = 0;
+    try {
+      boot = Number(localStorage.getItem('sn:boot-mine-pct') || 0);
+    } catch (e) {
+      boot = 0;
+    }
+    if (boot >= 3 && boot <= 13 && mine.deviceRole === 'main') {
+      var copy = {};
+      for (var k in base) if (Object.prototype.hasOwnProperty.call(base, k)) copy[k] = base[k];
+      copy.harvest = boot / 100;
+      copy.bootJudged = true;
+      return copy;
+    }
+    return base;
   }
 
   function setDeviceRole(role) {
