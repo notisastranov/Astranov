@@ -3836,58 +3836,27 @@ if (
         try {
           await ensureYoutube();
         } catch (_) {}
-        if (
-          /\b(youtube|youtu\.be|clip|video|βίντεο|song|track|trailer|lyrics)\b/i.test(low) ||
-          (global.SNYoutube && SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(q))
-        ) {
-          await runYoutubeSearch(q);
-          return;
-        }
-        const wantFull = /^almighty\b/.test(low);
-        const wantKnowledge = /^(who\s+is|what\s+is|look\s+up)\b/.test(low);
-        const here =
-          global._snPhysPos ||
-          (global._snLastPos &&
-          !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos) &&
-          (global._snLastPos.real || global._snLastPos.source === 'gps')
-            ? global._snLastPos
-            : null);
-        if (global.SNSearch?.crawl) {
-          preview('Looking on Earth…');
+        if (global.SNSearch && SNSearch.researchFirst) {
+          await SNSearch.researchFirst(q, { log: log, preview: preview });
+        } else if (global.SNSearch && SNSearch.crawl) {
           const crawled = await SNSearch.crawl(q, {
-            pos: here || undefined,
-            openMap: true,
-            visualize: true,
-            fly: true,
+            visualize: false,
+            fly: false,
+            openMap: false,
             quiet: false,
-            mode: wantFull ? 'full' : wantKnowledge ? 'knowledge' : undefined,
+            mode: 'knowledge',
           });
           SNSearch.report?.(crawled, log);
-          if (!crawled || (!(crawled.hits && crawled.hits.length) && !crawled.body && !crawled.focus)) {
-            log('Crawlers found no pin for that. Try a place name — tokyo, eiffel tower, mars.', 'dim');
-          }
         } else {
           log('Search still loading — try again in a second.', 'dim');
         }
-        preview(q.slice(0, 40) || 'search');
+        preview(q.slice(0, 40) || 'research');
         return;
       }
       if (/^research\b/.test(low)) {
         const q = line.replace(/^research\s+/i, '').trim() || 'astranov';
-        preview('Research…');
-        if (global.SNSearch?.crawl) {
-          const crawled = await SNSearch.crawl(q, {
-            mode: 'knowledge',
-            all: false,
-            openMap: false,
-            fly: false,
-            quiet: true,
-          });
-          SNSearch.report?.(crawled, log);
-        }
-        if (global.SNAi?.ask) {
-          const tip = await SNAi.ask('Short plain answer about: ' + q, { mode: 'chat' });
-          if (tip) log(String(tip).slice(0, 200), 'ok');
+        if (global.SNSearch && SNSearch.researchFirst) {
+          await SNSearch.researchFirst(q, { log: log, preview: preview });
         }
         return;
       }
@@ -4066,10 +4035,14 @@ if (
         return;
       }
 
-      // SpaceXai — words fly. Old pages do not. Video titles do not fly.
+      // Research first. Fly / chat only after we know what it is.
       try {
         await ensureYoutube();
       } catch (_) {}
+      if (global.SNSearch && typeof SNSearch.researchFirst === 'function') {
+        const sensed = await SNSearch.researchFirst(line, { log: log, preview: preview });
+        if (sensed && (sensed.acted && sensed.acted.length || sensed.ask)) return;
+      }
       if (
         global.SNYoutube &&
         ((SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(line)) ||
