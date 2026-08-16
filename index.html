@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260816080000-sat" />
-<meta name="astranov-continuity" content="20260816080000-sat" />
+<meta name="astranov-build" content="20260816085000-layers" />
+<meta name="astranov-continuity" content="20260816085000-layers" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -209,14 +209,30 @@ button, [role="button"], input, select {
   100% { transform: translateX(340%); }
 }
 #globe { position: fixed; inset: 0; z-index: 1; }
+#globe.city-hidden {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 #city-map {
-  position: fixed; inset: 0; z-index: 2; display: none;
-  background: radial-gradient(ellipse at 50% 40%, #061830 0%, #020814 70%);
+  position: fixed !important; inset: 0 !important; z-index: 40 !important; display: none;
+  background: #020814;
 }
 html.theme-light #city-map {
-  background: radial-gradient(ellipse at 50% 40%, #e8eef6 0%, #d0d8e4 70%);
+  background: #d0d8e4;
 }
-#city-map.active { display: block; }
+#city-map.active,
+body.city-map-on #city-map {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+body.city-map-on #globe {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 #sn-topchrome {
   position: fixed; top: 0; left: 0; right: 0; z-index: 95;
   display: flex; justify-content: center;
