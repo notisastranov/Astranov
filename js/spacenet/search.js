@@ -1830,6 +1830,10 @@
     try {
       if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
         tip = await SNSubscription.askPowerful(prompt, { mode: 'chat' });
+        if (tip && typeof tip === 'object') {
+          if (tip.ok === false) tip = null;
+          else tip = tip.text || tip.reply || null;
+        }
       }
     } catch (_) {}
     if (!tip) {
