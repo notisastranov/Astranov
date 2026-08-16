@@ -50,6 +50,12 @@
 
   function ensureDom() {
     let root = document.getElementById('sn-yt-tile');
+    if (root && !root.querySelector('.sn-yt-lights')) {
+      try {
+        root.remove();
+      } catch (_) {}
+      root = null;
+    }
     if (root) return root;
     root = document.createElement('div');
     root.id = 'sn-yt-tile';
@@ -58,46 +64,121 @@
       '<div class="sn-yt-card">' +
       '<div class="sn-yt-bar">' +
       '<span class="sn-yt-title" id="sn-yt-title">YouTube</span>' +
-      '<div class="sn-yt-actions">' +
+      '<div class="sn-yt-lights">' +
+      '<button type="button" class="sn-win-min" id="sn-yt-min" title="Minimize">−</button>' +
+      '<button type="button" class="sn-win-x" id="sn-yt-close" title="Close">×</button>' +
+      '<button type="button" class="sn-win-max" id="sn-yt-max" title="Maximize">+</button>' +
+      '</div>' +
       '<button type="button" id="sn-yt-ext" title="Open on YouTube">↗</button>' +
-      '<button type="button" id="sn-yt-close" title="Close">×</button>' +
-      '</div></div>' +
+      '</div>' +
       '<div class="sn-yt-player"><iframe id="sn-yt-frame" title="YouTube" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>' +
       '<div class="sn-yt-results" id="sn-yt-results"></div>' +
-      '<div class="sn-yt-hint" id="sn-yt-hint">youtube &lt;search&gt; · watch &lt;url&gt; · play 2 · yt close</div>' +
+      '<div class="sn-yt-hint" id="sn-yt-hint">play 2 · yt close</div>' +
+      '<i class="sn-win-c nw" data-c="nw"></i><i class="sn-win-c ne" data-c="ne"></i>' +
+      '<i class="sn-win-c sw" data-c="sw"></i><i class="sn-win-c se" data-c="se"></i>' +
       '</div>';
     if (!document.getElementById('sn-yt-style')) {
       const st = document.createElement('style');
       st.id = 'sn-yt-style';
       st.textContent =
-        '#sn-yt-tile{position:fixed;z-index:12050;left:50%;top:12%;transform:translateX(-50%);width:min(420px,94vw);max-height:78vh;display:none;pointer-events:none}' +
+        '#sn-yt-tile{position:fixed;z-index:12050;left:50%;top:14%;transform:translateX(-50%);width:min(480px,94vw);display:none;pointer-events:none}' +
         '#sn-yt-tile.open{display:block;pointer-events:auto}' +
-        '#sn-yt-tile .sn-yt-card{background:rgba(8,10,14,.94);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.55);overflow:hidden;backdrop-filter:blur(10px);display:flex;flex-direction:column;max-height:78vh}' +
-        '#sn-yt-tile .sn-yt-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);cursor:grab;touch-action:none}' +
-        '#sn-yt-tile .sn-yt-title{flex:1;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#f2f2f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-        '#sn-yt-tile .sn-yt-actions{display:flex;gap:6px}' +
-        '#sn-yt-tile .sn-yt-actions button{width:32px;height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#eee;font-size:16px;line-height:1;cursor:pointer}' +
-        '#sn-yt-tile .sn-yt-actions button:hover{background:rgba(255,255,255,.14)}' +
-        '#sn-yt-tile .sn-yt-player{position:relative;width:100%;aspect-ratio:16/9;background:#000}' +
+        '#sn-yt-tile.min .sn-yt-player,#sn-yt-tile.min .sn-yt-results,#sn-yt-tile.min .sn-yt-hint{display:none!important}' +
+        '#sn-yt-tile.min{width:min(280px,90vw)}' +
+        '#sn-yt-tile.max{left:3vw!important;top:10vh!important;width:94vw!important;transform:none;height:78vh}' +
+        '#sn-yt-tile.max .sn-yt-card{max-height:78vh;height:78vh}' +
+        '#sn-yt-tile .sn-yt-card{position:relative;background:rgba(8,10,14,.94);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 18px 48px rgba(0,0,0,.55);overflow:visible;backdrop-filter:blur(10px);display:flex;flex-direction:column;max-height:78vh}' +
+        '#sn-yt-tile .sn-yt-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08);cursor:grab;touch-action:none;min-height:44px}' +
+        '#sn-yt-tile .sn-yt-title{justify-self:start;font:600 12px/1.2 Inter,system-ui,sans-serif;color:#f2f2f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        '#sn-yt-tile .sn-yt-lights{display:flex;gap:10px;justify-self:center;align-items:center}' +
+        '#sn-yt-tile .sn-yt-lights button{width:22px;height:22px;border-radius:50%;border:1px solid transparent;padding:0;cursor:pointer;font:800 12px/1 system-ui}' +
+        '#sn-yt-tile .sn-win-min{background:radial-gradient(circle at 35% 30%,#ffe58a,#e0b000 70%);border-color:#c9a000;color:#3a2c00}' +
+        '#sn-yt-tile .sn-win-x{background:radial-gradient(circle at 35% 30%,#ff8a8a,#c62828 70%);border-color:#ff4444;color:#fff}' +
+        '#sn-yt-tile .sn-win-max{background:radial-gradient(circle at 35% 30%,#8dffb4,#1a9e4a 70%);border-color:#2ecc71;color:#041a0c}' +
+        '#sn-yt-tile #sn-yt-ext{justify-self:end;width:28px;height:22px;border:0;background:transparent;color:#9aa;cursor:pointer}' +
+        '#sn-yt-tile .sn-yt-player{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;border-radius:0}' +
         '#sn-yt-tile .sn-yt-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}' +
-        '#sn-yt-tile .sn-yt-results{max-height:28vh;overflow:auto;padding:6px 8px;display:flex;flex-direction:column;gap:4px}' +
+        '#sn-yt-tile .sn-yt-results{max-height:22vh;overflow:auto;padding:6px 8px;display:flex;flex-direction:column;gap:4px}' +
         '#sn-yt-tile .sn-yt-row{display:flex;gap:8px;align-items:flex-start;text-align:left;padding:8px;border-radius:10px;border:0;background:transparent;color:#ddd;cursor:pointer;font:500 12px/1.35 Inter,system-ui,sans-serif}' +
         '#sn-yt-tile .sn-yt-row:hover,#sn-yt-tile .sn-yt-row.on{background:rgba(61,158,255,.14)}' +
         '#sn-yt-tile .sn-yt-n{min-width:18px;color:#3d9eff;font-weight:700}' +
         '#sn-yt-tile .sn-yt-meta b{display:block;color:#fff;font-weight:600}' +
         '#sn-yt-tile .sn-yt-meta small{color:#9aa;font-weight:400}' +
-        '#sn-yt-tile .sn-yt-hint{padding:6px 12px 10px;font:500 11px/1.3 Inter,system-ui,sans-serif;color:#888}';
+        '#sn-yt-tile .sn-yt-hint{padding:6px 12px 10px;font:500 11px/1.3 Inter,system-ui,sans-serif;color:#888}' +
+        '#sn-yt-tile .sn-win-c{position:absolute;width:22px;height:22px;z-index:3;background:transparent}' +
+        '#sn-yt-tile .sn-win-c.nw{top:-4px;left:-4px;cursor:nwse-resize}' +
+        '#sn-yt-tile .sn-win-c.ne{top:-4px;right:-4px;cursor:nesw-resize}' +
+        '#sn-yt-tile .sn-win-c.sw{bottom:-4px;left:-4px;cursor:nesw-resize}' +
+        '#sn-yt-tile .sn-win-c.se{bottom:-4px;right:-4px;cursor:nwse-resize}';
       document.head.appendChild(st);
     }
     document.body.appendChild(root);
     document.getElementById('sn-yt-close')?.addEventListener('click', () => close());
+    document.getElementById('sn-yt-min')?.addEventListener('click', () => {
+      root.classList.toggle('min');
+      root.classList.remove('max');
+    });
+    document.getElementById('sn-yt-max')?.addEventListener('click', () => {
+      root.classList.toggle('max');
+      root.classList.remove('min');
+    });
     document.getElementById('sn-yt-ext')?.addEventListener('click', () => {
       if (Y.currentId) {
         global.open('https://www.youtube.com/watch?v=' + Y.currentId, '_blank', 'noopener');
       }
     });
     bindDrag(root.querySelector('.sn-yt-bar'), root);
+    bindCorners(root);
     return root;
+  }
+
+  function bindCorners(root) {
+    if (!root || root._snYtCorners) return;
+    root._snYtCorners = true;
+    Array.prototype.forEach.call(root.querySelectorAll('.sn-win-c'), function (h) {
+      h.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var c = h.getAttribute('data-c');
+        var r = root.getBoundingClientRect();
+        var sx = e.clientX;
+        var sy = e.clientY;
+        var sl = r.left;
+        var st = r.top;
+        var sw = r.width;
+        var sh = r.height;
+        function move(ev) {
+          var dx = ev.clientX - sx;
+          var dy = ev.clientY - sy;
+          var l = sl;
+          var t = st;
+          var w = sw;
+          var ht = sh;
+          if (c.indexOf('e') >= 0) w = Math.max(240, sw + dx);
+          if (c.indexOf('s') >= 0) ht = Math.max(160, sh + dy);
+          if (c.indexOf('w') >= 0) {
+            w = Math.max(240, sw - dx);
+            l = sl + dx;
+          }
+          if (c.indexOf('n') >= 0) {
+            ht = Math.max(160, sh - dy);
+            t = st + dy;
+          }
+          root.style.left = l + 'px';
+          root.style.top = t + 'px';
+          root.style.width = w + 'px';
+          root.style.height = ht + 'px';
+          root.style.transform = 'none';
+          root.classList.remove('min', 'max');
+        }
+        function up() {
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+        }
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+      });
+    });
   }
 
   function bindDrag(handle, root) {
