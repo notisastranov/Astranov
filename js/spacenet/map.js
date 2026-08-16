@@ -380,7 +380,7 @@
     st.id = 'sn-map-layer-css';
     st.textContent = [
       /* Layers panel only — opened from CLI ribbon 🗺 Layers (no map-corner button; money HUD is top-right) */
-      '#sn-map-layers{position:fixed;left:50%;bottom:calc(168px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;',
+      '#sn-map-layers{position:fixed;left:50%;bottom:calc(248px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:140;display:flex;flex-direction:column;',
       'align-items:stretch;gap:8px;pointer-events:none;width:min(720px,calc(100vw - 24px))}',
       '#sn-layer-panel{display:none;pointer-events:auto;width:100%;max-height:min(52vh,420px);overflow:auto;',
       'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.5);border-radius:14px;',
@@ -1757,18 +1757,28 @@
       return M.userHold;
     },
     openLayersPanel: function () {
-      if (!document.getElementById('sn-layer-panel')) buildLayerControl(M.map);
-      M.panelOpen = true;
-      const p = document.getElementById('sn-layer-panel');
-      if (!p) return false;
-      const wrap = document.getElementById('sn-map-layers');
-      if (wrap && wrap.parentNode !== document.body) document.body.appendChild(wrap);
-      p.classList.add('open');
-      renderLayerPanel();
-      try {
-        if (M.map && M.map.invalidateSize) M.map.invalidateSize();
-      } catch (_) {}
-      return true;
+      var self = this;
+      function show() {
+        if (!document.getElementById('sn-layer-panel')) buildLayerControl(M.map);
+        M.panelOpen = true;
+        const p = document.getElementById('sn-layer-panel');
+        if (!p) return false;
+        const wrap = document.getElementById('sn-map-layers');
+        if (wrap && wrap.parentNode !== document.body) document.body.appendChild(wrap);
+        p.classList.add('open');
+        renderLayerPanel();
+        try {
+          if (M.map && M.map.invalidateSize) M.map.invalidateSize();
+        } catch (_) {}
+        return true;
+      }
+      if (!M.map && typeof self.open === 'function') {
+        var pin = global._snLastPos || global._snPhysPos || { lat: 37.9838, lng: 23.7275 };
+        return Promise.resolve(self.open(pin.lat, pin.lng))
+          .then(show)
+          .catch(show);
+      }
+      return show();
     },
     getMap: function () {
       return M.map || null;
