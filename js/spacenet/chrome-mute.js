@@ -76,16 +76,8 @@
       if (typeof SNCli.toggleHandsfree === 'function') {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
-          // If turning ON, warn once and mute beeps
           global.__SN_MUTE_BEEPS = true;
-          silenceSpeech();
-          var r = prev();
-          try {
-            if (SNCli.handsfreeOn && global.SNCli.log) {
-              SNCli.log('AI listening · text also works in CLI · beeps muted', 'dim');
-            }
-          } catch (_) {}
-          return r;
+          return prev();
         };
       }
     } catch (_) {}
@@ -104,7 +96,7 @@
     patchAudio();
     patchFieldAlerts();
     softGateHandsfree();
-    if (global.__SN_MUTE_ALERTS) silenceSpeech();
+    if (global.__SN_MUTE_ALERTS && !(global.SNCli && SNCli.handsfreeOn)) silenceSpeech();
   }, 4000);
 
   global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
