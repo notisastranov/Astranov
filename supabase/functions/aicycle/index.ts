@@ -239,6 +239,7 @@ serve(async (req) => {
     const clientSub = (body.subscription && typeof body.subscription === 'object') ? body.subscription as Record<string, unknown> : {}
     const forcePaid = body.force_paid === true
     const allowPaidClient = body.allow_paid === true
+    const gift = body.gift === true
     if (token && token !== anonKey) {
       const { data: ud } = await supabase.auth.getUser(token)
       if (ud?.user) {
@@ -281,7 +282,7 @@ serve(async (req) => {
     }
     const remainingApi = Math.max(0, apiBudgetEur - apiSpentEur)
     // Owner: always paid Grok. Subscriber: paid while budget remains. Never expose key to client.
-    const mayUsePaidXai = isOwner || (subActive && remainingApi > 0.0001 && (allowPaidClient || forcePaid || true))
+    const mayUsePaidXai = isOwner || gift || (subActive && remainingApi > 0.0001 && (allowPaidClient || forcePaid || true))
 
     const GEMINI = Deno.env.get('GEMINI_API_KEY')
 
