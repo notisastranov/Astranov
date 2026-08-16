@@ -1159,7 +1159,11 @@
     hist.push(line);
     histIdx = hist.length;
     if (feedFilter) applyFeedFilter('');
-    log(line, 'cmd');
+    if (global._snVoiceSaid && global._snVoiceSaid === line) {
+      global._snVoiceSaid = '';
+    } else {
+      log(line, 'cmd');
+    }
     global.SNRibbon?.infer?.(line);
 
     const low = line.toLowerCase();
@@ -4347,8 +4351,16 @@ if (
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return;
-    // Block accidental Russian monologue unless user last spoke Russian intentionally
+    transcript('ai', t);
     if (/[а-яА-ЯёЁ]/.test(t) && global._snLastUserLang !== 'ru') {
+      try {
+        log('Blocked accidental Russian TTS · English core', 'dim');
+      } catch (_) {}
+      speakAi("I'm Astranov. English first — I still understand you. How can I help?", true);
+      return;
+    }
+    if (!talking()) return;
+    speakAi(t);
       try {
         log('Blocked accidental Russian TTS · English core', 'dim');
       } catch (_) {}
@@ -4484,6 +4496,7 @@ if (
         .trim()
         .slice(0, 280);
       if (!clean) return;
+      transcript('ai', clean);
       // Abort mic BEFORE speaking — critical anti-echo
       try {
         if (speechRec) speechRec.abort();
@@ -4669,8 +4682,9 @@ if (
     if (input) {
       input.value = t;
     }
-    log('🎙 › ' + t, 'cmd');
-    preview('…');
+    log('YOU · ' + t, 'cmd');
+    preview('YOU · ' + t.slice(0, 48));
+    global._snVoiceSaid = t;
     void (async () => {
       try {
         try {
@@ -4876,7 +4890,7 @@ if (
     };
 
     setHandsfreeUi(true, 'LISTENING');
-    log('Listening · speak now', 'ok');
+    log('Listening · speak. Your words and my answers print here.', 'ok');
     preview('LISTENING');
     try {
       speechRec.start();
