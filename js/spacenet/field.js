@@ -1011,9 +1011,19 @@
     );
   }
 
-  function openCityMap() {
+  function openCityMap(opts) {
     var p = focusPos();
-    return (g.SNMap && SNMap.open ? SNMap.open(p.lat, p.lng) : Promise.resolve()).catch(function () {});
+    opts = opts || {};
+    if (!g.SNMap || !SNMap.open) return Promise.resolve();
+    return SNMap.open(p.lat, p.lng, {
+      force: true,
+      imagery: !!opts.imagery,
+      basemap: opts.basemap || undefined,
+    }).catch(function (e) {
+      try {
+        if (g.SNCli && SNCli.log) SNCli.log('Map failed · ' + (e && e.message ? e.message : e), 'err');
+      } catch (_) {}
+    });
   }
 
 
@@ -1572,31 +1582,31 @@
         {
           title: 'LAYERS',
           items: [
-            { id: 'panel', e: 'ALL', t: 'Full layers panel', d: 'Open map · all providers' },
-            { id: 'dark', e: 'DARK', t: 'Dark', d: 'Carto free' },
-            { id: 'bright', e: 'LITE', t: 'Bright', d: 'Carto free' },
-            { id: 'satellite', e: 'SAT', t: 'Satellite free', d: 'Esri imagery' },
-            { id: 'g_satellite', e: 'GE', t: 'Google Earth sat', d: 'Full Google satellite' },
-            { id: 'g_hybrid', e: 'HYB', t: 'Google hybrid', d: 'Imagery + labels' },
-            { id: 'g_terrain', e: 'TOPO', t: 'Google topo', d: 'Terrain / topographic' },
-            { id: 'g_roadmap', e: 'ROAD', t: 'Google roads', d: 'Roadmap' },
-            { id: 'google', e: 'G', t: 'Google-style free', d: 'OSM HOT stand-in' },
-            { id: 'traffic', e: 'TRAF', t: 'Traffic roads', d: 'Roads basemap' },
-            { id: 'windy', e: 'WIND', t: 'Windy weather', d: 'Wind overlay' },
-            { id: 'w3w', e: '///', t: 'what3words', d: '/// address on map' },
-            { id: 'iss', e: 'ISS', t: 'ISS', d: 'Live station' },
-            { id: 'planes', e: 'AIR', t: 'Airplanes', d: 'OpenSky traffic' },
-            { id: 'ships', e: 'SEA', t: 'Ships', d: 'OpenSeaMap marks' },
-            { id: 'sats', e: 'LEO', t: 'Satellites', d: 'ISS + LEO marks' },
-            { id: 'topo', e: 'MESH', t: 'Topo measure', d: 'Area · elev · 3D path' },
+            { id: 'panel', e: 'ALL', t: 'Full layers panel', d: 'Every map and overlay' },
+            { id: 'satellite', e: 'SAT', t: 'Satellite', d: 'Real photo · Esri' },
+            { id: 'gibs', e: 'NASA', t: 'Live NASA color', d: 'Yesterday from space' },
+            { id: 'chloro', e: 'SEA', t: 'Sea color', d: 'Chlorophyll · dirty water' },
+            { id: 'dark', e: 'DARK', t: 'Dark streets', d: 'Night streets' },
+            { id: 'bright', e: 'LITE', t: 'Bright streets', d: 'Day streets' },
+            { id: 'windy', e: 'WIND', t: 'Windy', d: 'Wind and rain' },
+            { id: 'planes', e: 'AIR', t: 'Planes', d: 'Live aircraft' },
+            { id: 'ships', e: 'SEA', t: 'Ships', d: 'Sea marks' },
+            { id: 'iss', e: 'ISS', t: 'ISS', d: 'Station now' },
+            { id: 'sats', e: 'LEO', t: 'Sats', d: 'ISS + orbit marks' },
+            { id: 'topo', e: 'MESH', t: 'Measure', d: 'Area · height · path' },
           ],
         },
         function (id) {
           void (async function () {
             try {
-              await openCityMap();
+              var wantSat = id === 'satellite' || id === 'gibs' || id === 'chloro' || id === 'sst';
+              await openCityMap({ imagery: wantSat, basemap: wantSat ? 'satellite' : undefined });
+              try {
+                if (g.SNMap && g.SNMap.map && g.SNMap.map.invalidateSize) g.SNMap.map.invalidateSize();
+              } catch (_) {}
               if (id === 'panel') {
                 if (g.SNMap && SNMap.openLayersPanel) SNMap.openLayersPanel();
+                if (g.SNCli && SNCli.log) SNCli.log('Layers panel open. Tap a map or an overlay.', 'ok');
                 return;
               }
               if (id === 'topo') {
@@ -1604,21 +1614,26 @@
                 else if (g.SNCli && SNCli.run) void SNCli.run('measure');
                 return;
               }
-              if (
-                id === 'dark' ||
-                id === 'bright' ||
-                id === 'satellite' ||
-                id === 'google' ||
-                id === 'traffic' ||
-                id === 'g_satellite' ||
-                id === 'g_hybrid' ||
-                id === 'g_terrain' ||
-                id === 'g_roadmap'
-              ) {
+              if (id === 'satellite' || id === 'dark' || id === 'bright' || id === 'google' || id === 'traffic') {
                 if (g.SNMap && SNMap.setBasemap) SNMap.setBasemap(id, { user: true, log: true });
+                if (g.SNCli && SNCli.log) SNCli.log('Map · ' + id + ' is on.', 'ok');
+                if (g.SNCli && SNCli.preview) SNCli.preview('map · ' + id);
                 return;
               }
-              if (g.SNMap && SNMap.toggleOverlay) g.SNMap.toggleOverlay(id);
+              if (id === 'gibs' && g.SNMap && SNMap.showLiveSat) {
+                var p = focusPos();
+                await SNMap.showLiveSat(p.lat, p.lng, { zoom: 11, pollution: false, trueColor: true, plume: false, label: 'NASA' });
+                return;
+              }
+              if (id === 'chloro' && g.SNMap && SNMap.showLiveSat) {
+                var p2 = focusPos();
+                await SNMap.showLiveSat(p2.lat, p2.lng, { zoom: 11, pollution: true, trueColor: true, plume: false, label: 'Sea color' });
+                return;
+              }
+              if (g.SNMap && SNMap.toggleOverlay) {
+                g.SNMap.toggleOverlay(id);
+                if (g.SNCli && SNCli.log) SNCli.log('Overlay · ' + id, 'ok');
+              }
             } catch (e) {
               if (g.SNCli && SNCli.log) SNCli.log('Layers · ' + (e.message || e), 'err');
             }
@@ -1751,7 +1766,7 @@
           ev.stopPropagation();
         }
         ribbonAct(act);
-        setTimeout(paintRibbon, 50);
+        if (act !== 'layers' && act !== 'layer' && act !== 'add') setTimeout(paintRibbon, 50);
       };
     });
     try {
