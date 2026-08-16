@@ -1259,8 +1259,14 @@
       depth: true,
     });
     G.renderer.setSize(w, h, false);
-    var dprCap = (global.SNPerf && SNPerf.dprCap) || (lite ? 1 : 1.25);
+    var dprCap = (global.SNPerf && SNPerf.dprCap) || (lite ? 1.25 : 2);
     G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
+    try {
+      if (THREE.sRGBEncoding) G.renderer.outputEncoding = THREE.sRGBEncoding;
+      if (THREE.ACESFilmicToneMapping) G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      else if (THREE.ReinhardToneMapping) G.renderer.toneMapping = THREE.ReinhardToneMapping;
+      G.renderer.toneMappingExposure = 1.18;
+    } catch (_) {}
     // Avoid auto-clear thrash
     try {
       G.renderer.sortObjects = false;
@@ -1268,12 +1274,16 @@
     el.innerHTML = '';
     el.appendChild(G.renderer.domElement);
 
-    var amb = new THREE.AmbientLight(0x334455, 0.28);
-    var sun = new THREE.DirectionalLight(0xfff5e6, 1.55);
-    sun.position.set(5, 1.2, 2.5);
+    var amb = new THREE.AmbientLight(0x1a2838, 0.22);
+    var sun = new THREE.DirectionalLight(0xfff3d6, 1.85);
+    sun.position.set(5.4, 1.6, 2.8);
+    var fill = new THREE.DirectionalLight(0x4a7cff, 0.35);
+    fill.position.set(-4.2, -0.6, -2.2);
+    var rim = new THREE.DirectionalLight(0x9ad4ff, 0.45);
+    rim.position.set(-1.2, 3.4, -4.5);
     G.ambLight = amb;
     G.sunLight = sun;
-    G.scene.add(amb, sun);
+    G.scene.add(amb, sun, fill, rim);
 
     // Dual-axis globe: tilt (lat / X) parent of spin (lon / Y) — real polar axis
     G.tilt = new THREE.Object3D();
@@ -1283,7 +1293,7 @@
     G.pivot = G.spin; // children (earth, markers, webbing) ride the polar spin
 
     var segs =
-      (global.SNPerf && SNPerf.globeSegs) || (lite ? 32 : 48);
+      (global.SNPerf && SNPerf.globeSegs) || (lite ? 40 : 80);
     var loader = new THREE.TextureLoader();
     // Lite: smaller day map first — less decode jank on phones
     var earthUrl = lite
@@ -1294,8 +1304,8 @@
 
     var mat = new THREE.MeshPhongMaterial({
       color: 0x1a4a78,
-      specular: 0x222222,
-      shininess: 10,
+      specular: 0x446688,
+      shininess: 28,
       // Instant solid Earth — textures stream in (no white stall)
       emissive: new THREE.Color(0x041018),
     });
@@ -1404,8 +1414,22 @@
         })
       )
     );
+    if (!lite) {
+      G.pivot.add(
+        new THREE.Mesh(
+          new THREE.SphereGeometry(1.09, 48, 48),
+          new THREE.MeshBasicMaterial({
+            color: 0x1a6dff,
+            transparent: true,
+            opacity: 0.07,
+            side: THREE.BackSide,
+            depthWrite: false,
+          })
+        )
+      );
+    }
 
-    var starN = (global.SNPerf && SNPerf.starN) || (lite ? 280 : 700);
+    var starN = (global.SNPerf && SNPerf.starN) || (lite ? 400 : 2200);
     var starPos = new Float32Array(starN * 3);
     for (var i = 0; i < starN; i++) {
       var r = 18 + Math.random() * 70;
