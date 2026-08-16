@@ -504,10 +504,10 @@
     const t = String(text || '')
       .replace(/^(search|find|look\s+up|google|show\s+me)\s+/i, '')
       .trim();
-    if (t.length < 6 || t.length > 90) return false;
+    if (t.length < 8 || t.length > 90) return false;
     if (/[?]/.test(t)) return false;
     const words = t.split(/\s+/);
-    if (words.length < 2 || words.length > 10) return false;
+    if (words.length < 4 || words.length > 12) return false;
     if (/^(who|what|where|why|how|when|can|please|make|build|fix|order|locate|fly|go)\b/i.test(t)) return false;
     if (
       /\b(tokyo|paris|london|athens|rhodes|rodos|mars|earth|moon|vodi|facility|street|road|harbour|harbor|airport|island|city)\b/i.test(
