@@ -2263,6 +2263,21 @@
         else log('Imagine is not loaded.', 'err');
         return;
       }
+      if (low === 'net close' || low === 'research close' || low === 'close net') {
+        if (global.SNSearch && SNSearch.closeResults) SNSearch.closeResults();
+        log('SpaceNet deck closed', 'dim');
+        return;
+      }
+      if (/^open\s+\d+$/.test(low) || /^watch\s+\d+$/.test(low)) {
+        const n = parseInt(low.split(/\s+/)[1], 10);
+        if (global.SNSearch && SNSearch.openResult) await SNSearch.openResult(n);
+        return;
+      }
+      if (/^fly\s+\d+$/.test(low)) {
+        const n = parseInt(low.split(/\s+/)[1], 10);
+        if (global.SNSearch && SNSearch.flyResult) await SNSearch.flyResult(n);
+        return;
+      }
       if (low === 'mind' || low === 'who are you' || low === 'full mind') {
         let sub = null;
         try {
