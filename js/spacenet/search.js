@@ -732,8 +732,19 @@
   function looksLikePlaceHit(p) {
     if (!p || p.lat == null) return false;
     var k = String(p.kind || p.type || '').toLowerCase();
-    if (/amenity|shop|cuisine|fast_food/.test(k)) return false;
-    return true;
+    if (/amenity|shop|cuisine|fast_food|office|building/.test(k)) return false;
+    if (/city|town|village|country|island|capital|suburb|administrative|hamlet|state|peak|mountain|sea|ocean|bay|lake/.test(k))
+      return true;
+    if (p.importance != null && Number(p.importance) > 0.5) return true;
+    return false;
+  }
+
+  function isQuestionQuery(q) {
+    var s = String(q || '').trim();
+    if (/\?$/.test(s)) return true;
+    return /^(what|who|why|how|when|which|whose|whom|is |are |can |do |does |did |will |would |could |should |weather|tell me|explain|define)\b/i.test(
+      s
+    );
   }
 
   /**
@@ -1415,7 +1426,7 @@
     }
 
     var hit = out.places && out.places[0];
-    if (hit && looksLikePlaceHit(hit) && out.kind !== 'video') {
+    if (hit && looksLikePlaceHit(hit) && out.kind !== 'video' && !isQuestionQuery(q)) {
       var k = String(hit.kind || hit.type || '').toLowerCase();
       var citylike = /city|town|village|country|island|capital|suburb|administrative|hamlet|state/.test(k);
       if (explicitPlace || citylike || (shortPlace && (hit.importance == null || hit.importance > 0.35))) {
@@ -1706,7 +1717,7 @@
         }
       } catch (_) {}
     }
-    if (pin) {
+    if (pin && !isQuestionQuery(q) && (s.kind === 'place' || /\b(go|fly|take me|show me|locate|near)\b/i.test(q))) {
       s.kind = 'place';
       await arriveVisual(pin, q, L, previewFn);
       s.acted.push('arrive');
