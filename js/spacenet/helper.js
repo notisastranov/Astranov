@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=halowing20260815a';
+  var BUILD_Q = 'v=haloclean20260816b';
 
   var H = {
     ready: false,
@@ -64,6 +64,41 @@
     } catch (_) {}
   }
 
+  function chromaKeyMagenta(im) {
+    try {
+      var w = im.naturalWidth || im.width || 0;
+      var h = im.naturalHeight || im.height || 0;
+      if (w < 8 || h < 8) return im;
+      var c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      var cx = c.getContext('2d');
+      cx.drawImage(im, 0, 0);
+      var data = cx.getImageData(0, 0, w, h);
+      var p = data.data;
+      var killed = 0;
+      for (var i = 0; i < p.length; i += 4) {
+        var r = p[i];
+        var g = p[i + 1];
+        var b = p[i + 2];
+        var magenta = r > 170 && b > 170 && g < 110 && Math.min(r, b) - g > 70;
+        var hot = r > 220 && g < 50 && b > 180;
+        if (magenta || hot) {
+          p[i + 3] = 0;
+          killed++;
+        } else if (r > 150 && b > 150 && g < 150 && Math.abs(r - b) < 50) {
+          p[i + 3] = Math.min(p[i + 3], 40);
+          killed++;
+        }
+      }
+      if (killed < 40) return im;
+      cx.putImageData(data, 0, 0);
+      return c;
+    } catch (_) {
+      return im;
+    }
+  }
+
   function loadImg(src) {
     return new Promise(function (resolve) {
       var im = new Image();
@@ -71,7 +106,7 @@
       var url = src + (src.indexOf('?') >= 0 ? '&' : '?') + BUILD_Q;
       im.onload = function () {
         var done = function () {
-          if (im.naturalWidth > 0) resolve(im);
+          if (im.naturalWidth > 0) resolve(chromaKeyMagenta(im));
           else resolve(null);
         };
         if (im.decode) {
@@ -95,13 +130,12 @@
       FRAME_URLS.map(loadImg).concat([loadImg(HERO_URL), loadImg(HERO_FALLBACK)])
     ).then(function (imgs) {
       H.frames = imgs.slice(0, 4).filter(function (im) {
-        return im && im.naturalWidth > 0;
+        return im && (im.naturalWidth > 0 || im.width > 0);
       });
-      H.hero =
-        (imgs[4] && imgs[4].naturalWidth ? imgs[4] : null) ||
-        (imgs[5] && imgs[5].naturalWidth ? imgs[5] : null) ||
-        H.frames[0] ||
-        null;
+      var heroRaw = imgs[4] && (imgs[4].naturalWidth || imgs[4].width) ? imgs[4] : null;
+      var fb = imgs[5] && (imgs[5].naturalWidth || imgs[5].width) ? imgs[5] : null;
+      // Prefer clean armor frames over a magenta hero plate
+      H.hero = H.frames[0] || heroRaw || fb || null;
       H.loaded = H.frames.length > 0 || !!H.hero;
       H.loadFailed = !H.loaded;
       H._loading = null;
