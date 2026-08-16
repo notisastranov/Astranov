@@ -1704,13 +1704,79 @@
         } catch (_) {}
       }
       previewFn((s.wiki && s.wiki.title) || q.slice(0, 40));
+      try {
+        await consultBrain(q, s, L, previewFn);
+      } catch (_) {}
       return s;
     }
 
-    s.ask = 'I could not get a clean read. Is that a place, a clip, a person, or something else?';
+    var mind = await consultBrain(q, s, L, previewFn);
+    if (mind) {
+      s.acted.push('mind');
+      return s;
+    }
+
+    s.ask = 'I looked. I still do not have a clean read. Say it another way — place, clip, shop, or question.';
     L(s.ask, 'dim');
     previewFn('Need a hint');
     return s;
+  }
+
+  async function consultBrain(q, s, L, previewFn) {
+    var ctx = '';
+    if (s && s.wiki && s.wiki.text)
+      ctx += 'Wiki: ' + s.wiki.title + ' — ' + String(s.wiki.text).slice(0, 240) + '\n';
+    if (s && s.web && s.web[0])
+      ctx += 'Web: ' + s.web[0].title + ' — ' + String(s.web[0].text || '').slice(0, 160) + '\n';
+    if (s && s.places && s.places[0] && s.places[0].name)
+      ctx += 'Place: ' + s.places[0].name + '\n';
+    var prompt =
+      'You are Astranov, SpaceNet brain. Understand ANY user input. Reply in 2 short sentences. ' +
+      'If it is a place say FLY:name. If a video say WATCH:title. If food/shop say ORDER:item.\n' +
+      'User: ' +
+      q +
+      '\nEvidence:\n' +
+      (ctx || '(none yet)');
+    var tip = null;
+    try {
+      if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+        tip = await SNSubscription.askPowerful(prompt, { mode: 'chat' });
+      }
+    } catch (_) {}
+    if (!tip) {
+      try {
+        var mind = global.SNAstranovMind || global.SNFreeMind;
+        if (mind && mind.answer) {
+          var quick = mind.answer(q, { mode: 'chat' });
+          if (quick && quick.text) tip = quick.text;
+        }
+      } catch (_) {}
+    }
+    if (!tip) return null;
+    tip = String(tip).replace(/\s+/g, ' ').trim();
+    if (!tip) return null;
+    L(tip.slice(0, 360), 'ok');
+    if (previewFn) previewFn(tip.slice(0, 72));
+    try {
+      if (global.SNAstranovMind && SNAstranovMind.teach)
+        SNAstranovMind.teach(q, tip.slice(0, 220), ['understand', (s && s.kind) || 'any']);
+    } catch (_) {}
+    if (/^FLY:/i.test(tip) && global.SNGlobe && SNGlobe.goToPlace === false) {
+      /* parsed below */
+    }
+    var fly = tip.match(/FLY:\s*([^\n.]+)/i);
+    if (fly && fly[1] && global.SNSpaceXai && SNSpaceXai.fly) {
+      try {
+        await SNSpaceXai.fly(String(fly[1]).trim());
+      } catch (_) {}
+    }
+    var watch = tip.match(/WATCH:\s*([^\n.]+)/i);
+    if (watch && watch[1] && global.SNYoutube && SNYoutube.find) {
+      try {
+        await SNYoutube.find(String(watch[1]).trim());
+      } catch (_) {}
+    }
+    return tip;
   }
 
   global.SNSearch = {
@@ -1737,6 +1803,7 @@
     realFocus,
     researchFirst,
     sense,
+    consultBrain,
     showResults: showNet,
     closeResults: closeNet,
     openResult: openNetIndex,
