@@ -1534,25 +1534,32 @@
           return false;
         }
         if (!openCall()) {
-          // Lazy-load webrtc module then open
-          var src = '/js/spacenet/webrtc.js?v=20260811221500';
-          var s = document.createElement('script');
-          s.src = src;
-          s.onload = function () {
-            try {
-              if (g.SNWebRTC && SNWebRTC.init) SNWebRTC.init();
-              openCall();
-            } catch (e2) {
-              console.error('[SNField] call load', e2);
+          var load = Promise.resolve();
+          try {
+            if (g.SNLoader && SNLoader.ensure) load = SNLoader.ensure('webrtc');
+            else {
+              var s = document.createElement('script');
+              s.src = '/js/spacenet/webrtc.js';
+              load = new Promise(function (res, rej) {
+                s.onload = res;
+                s.onerror = rej;
+                document.head.appendChild(s);
+              });
             }
-          };
-          s.onerror = function () {
-            try {
-              if (g.SNCli && SNCli.run) void SNCli.run('call');
-              else if (g.SNCli && SNCli.log) SNCli.log('Call module missing · hard refresh', 'err');
-            } catch (_) {}
-          };
-          document.head.appendChild(s);
+          } catch (_) {}
+          Promise.resolve(load)
+            .then(function () {
+              try {
+                if (g.SNWebRTC && SNWebRTC.init) SNWebRTC.init();
+                if (!openCall() && g.SNCli && SNCli.log)
+                  SNCli.log('Call is not ready. Hard refresh.', 'err');
+              } catch (e2) {
+                if (g.SNCli && SNCli.log) SNCli.log('Call · ' + (e2.message || e2), 'err');
+              }
+            })
+            .catch(function () {
+              if (g.SNCli && SNCli.log) SNCli.log('Call module missing.', 'err');
+            });
         }
       } catch (eCall) {
         console.error('[SNField] call', eCall);
@@ -1603,10 +1610,9 @@
             { id: 'dark', e: 'DARK', t: 'Dark streets', d: 'Night streets' },
             { id: 'bright', e: 'LITE', t: 'Bright streets', d: 'Day streets' },
             { id: 'windy', e: 'WIND', t: 'Windy', d: 'Wind and rain' },
+            { id: 'iss', e: 'ISS', t: 'ISS', d: 'Station now' },
             { id: 'planes', e: 'AIR', t: 'Planes', d: 'Live aircraft' },
             { id: 'ships', e: 'SEA', t: 'Ships', d: 'Sea marks' },
-            { id: 'iss', e: 'ISS', t: 'ISS', d: 'Station now' },
-            { id: 'sats', e: 'LEO', t: 'Sats', d: 'ISS + orbit marks' },
             { id: 'topo', e: 'MESH', t: 'Measure', d: 'Area · height · path' },
           ],
         },
