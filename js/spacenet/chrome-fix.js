@@ -137,10 +137,11 @@
       '  color: #d4ecff !important; border-radius: 999px !important;',
       '  visibility: visible !important; opacity: 1 !important;',
       '}',
-      '#sn-task-ribbon .sn-rib-emoji { display: none !important; }',
+      '#sn-task-ribbon .sn-rib-emoji { display:block !important; font-size:16px !important; line-height:1 !important; font-family:\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Noto Color Emoji\",sans-serif !important; font-variant-emoji:emoji !important; filter:none !important; color:initial !important; -webkit-text-fill-color:initial !important; }',
+      '#sn-task-ribbon .sn-rib-icon-svg { display: none !important; }',
       '#sn-task-ribbon .sn-rib-icon {',
       '  display: grid !important; visibility: visible !important;',
-      '  width: 16px !important; height: 16px !important; color: #3d9eff !important;',
+      '  width: 18px !important; height: 18px !important;',
       '}',
       '#sn-task-ribbon .sn-rib-icon svg { width: 16px; height: 16px; display: block; }',
       '#sn-task-ribbon .sn-rib-txt {',
@@ -267,12 +268,6 @@
       if (!bar.children.length && global.SNField && typeof SNField.paintRibbon === 'function') {
         SNField.paintRibbon();
       }
-      bar.querySelectorAll('.sn-rib-emoji').forEach(function (el) {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-      });
-      bar.querySelectorAll('.sn-rib-icon[hidden]').forEach(function (el) {
-        el.removeAttribute('hidden');
-      });
     } catch (_) {}
   }
 
