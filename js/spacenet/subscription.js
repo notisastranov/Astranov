@@ -21,8 +21,26 @@
 
   var KEY = 'sn:sub-v1';
   var TX_KEY = 'sn:ai-transcript-v1';
+  var GIFT_KEY = 'sn:ai-gift-v1';
+  var GIFT_MAX = 3;
   var MARKUP = 3;
   var ARCHITECT_EMAIL = 'notisastranov@gmail.com';
+
+  /** Live xAI flagship (grok-4.6, Aug 2026): $2 / $6 per 1M. Plans charge 3×. */
+  var RATES = {
+    usdInPerM: 2,
+    usdOutPerM: 6,
+    eurPerUsd: 0.92,
+    model: 'grok-4.6',
+    asof: '2026-08-16',
+  };
+
+  function eurIn() {
+    return RATES.usdInPerM * RATES.eurPerUsd;
+  }
+  function eurOut() {
+    return RATES.usdOutPerM * RATES.eurPerUsd;
+  }
 
   /** priceEur → realApiBudgetEur (price / 3) */
   var TIERS = [
@@ -31,34 +49,41 @@
       priceEur: 3,
       apiBudgetEur: 1,
       label: 'Spark',
-      note: 'Base · €1 real Grok · then free mind',
+      note: '€1 real mind · then free',
     },
     {
       id: 'pulse',
       priceEur: 13,
       apiBudgetEur: Math.round((13 / MARKUP) * 100) / 100,
       label: 'Pulse',
-      note: 'More power · ~€4.33 real Grok',
+      note: '~€4.33 real mind',
     },
     {
       id: 'orbit',
       priceEur: 33,
       apiBudgetEur: 11,
       label: 'Orbit',
-      note: 'Heavy use · €11 real Grok',
+      note: '€11 real mind',
     },
     {
       id: 'nova',
       priceEur: 300,
       apiBudgetEur: 100,
       label: 'Nova',
-      note: 'Pro · €100 real Grok on your sub',
+      note: '€100 real mind',
     },
   ];
 
+  function rebuildTiers() {
+    for (var i = 0; i < TIERS.length; i++) {
+      TIERS[i].apiBudgetEur = Math.round((TIERS[i].priceEur / MARKUP) * 100) / 100;
+    }
+  }
+  rebuildTiers();
+
   function log(m, c) {
     try {
-      if (global.SNCli && SNCli.log) SNCli.log(m, c || 'ok');
+      if (global.SNCli && SNCli.log) SNCli.log(m, c || 'ok', true);
     } catch (_) {}
   }
 
@@ -135,6 +160,39 @@
     return false;
   }
 
+  function loadGift() {
+    try {
+      var g = JSON.parse(localStorage.getItem(GIFT_KEY) || 'null');
+      if (g && typeof g.n === 'number') return { n: Math.max(0, Number(g.n) || 0), max: GIFT_MAX };
+    } catch (_) {}
+    return { n: 0, max: GIFT_MAX };
+  }
+
+  function saveGift(g) {
+    try {
+      localStorage.setItem(GIFT_KEY, JSON.stringify(g));
+    } catch (_) {}
+  }
+
+  function giftUsed() {
+    return loadGift().n;
+  }
+
+  function giftLeft() {
+    if (isOwner()) return 99;
+    var st = loadState();
+    if (st && st.active) return 0;
+    return Math.max(0, GIFT_MAX - giftUsed());
+  }
+
+  function consumeGift() {
+    if (isOwner()) return 99;
+    var g = loadGift();
+    g.n = Math.min(GIFT_MAX, (g.n || 0) + 1);
+    saveGift(g);
+    return Math.max(0, GIFT_MAX - g.n);
+  }
+
   function tierByPrice(n) {
     n = Number(n);
     for (var i = 0; i < TIERS.length; i++) {
@@ -165,18 +223,30 @@
       remainingApiEur: owner ? Infinity : remaining,
       period: st.period,
       markup: MARKUP,
+      giftLeft: owner ? 0 : giftLeft(),
+      giftUsed: giftUsed(),
+      giftMax: GIFT_MAX,
+      rates: {
+        model: RATES.model,
+        eurInPerM: Math.round(eurIn() * 100) / 100,
+        eurOutPerM: Math.round(eurOut() * 100) / 100,
+      },
       mode: owner
         ? 'owner-paid-unlimited'
         : remaining > 0 && st.active
           ? 'paid-grok'
           : st.active
             ? 'free-fallback'
-            : 'no-sub-free-only',
+            : giftLeft() > 0
+              ? 'gift-paid'
+              : 'paywall',
       label: owner
-        ? 'Architect · unlimited paid Grok'
+        ? 'Architect · unlimited paid mind'
         : st.active
           ? (st.tierId || 'sub') + ' · €' + remaining.toFixed(2) + ' API left'
-          : 'No subscription · free mind only',
+          : giftLeft() > 0
+            ? 'Taste ' + (giftUsed() + 1) + ' of ' + GIFT_MAX
+            : 'Three tastes done · pick a plan',
     };
   }
 
@@ -186,10 +256,11 @@
   function canUsePaid() {
     var s = status();
     if (s.owner) return { ok: true, reason: 'owner', remaining: Infinity };
-    if (!s.active) return { ok: false, reason: 'no_subscription', remaining: 0 };
-    if (s.remainingApiEur <= 0.0001)
-      return { ok: false, reason: 'quota_exhausted', remaining: 0 };
-    return { ok: true, reason: 'subscriber', remaining: s.remainingApiEur };
+    if (s.active && s.remainingApiEur > 0.0001)
+      return { ok: true, reason: 'subscriber', remaining: s.remainingApiEur };
+    if (s.giftLeft > 0) return { ok: true, reason: 'gift', remaining: 0, giftLeft: s.giftLeft };
+    if (s.active) return { ok: false, reason: 'quota_exhausted', remaining: 0 };
+    return { ok: false, reason: 'paywall', remaining: 0 };
   }
 
   /**
@@ -200,10 +271,8 @@
     usage = usage || {};
     var inTok = Number(usage.prompt_tokens || usage.input_tokens || 0);
     var outTok = Number(usage.completion_tokens || usage.output_tokens || 0);
-    // grok-class ~ $2/M in + $6/M out ≈ €1.85/M in + €5.55/M out — use €2/€6
-    var eur = (inTok / 1e6) * 2 + (outTok / 1e6) * 6;
+    var eur = (inTok / 1e6) * eurIn() + (outTok / 1e6) * eurOut();
     if (!eur || !isFinite(eur)) {
-      // flat estimate when provider omits usage
       eur = Number(usage.api_eur) || 0.004;
     }
     return Math.max(0.001, Math.round(eur * 10000) / 10000);
@@ -453,24 +522,36 @@
   }
 
   function printPlans() {
-    log('— Astranov AI plans (markup 3×) —', 'ok');
+    log('— AI plans · every euro I am billed, you pay three —', 'ok');
+    log(
+      'xAI now · ' +
+        RATES.model +
+        ' · €' +
+        eurIn().toFixed(2) +
+        '/M in · €' +
+        eurOut().toFixed(2) +
+        '/M out · as of ' +
+        RATES.asof,
+      'dim'
+    );
     TIERS.forEach(function (t) {
       log(
         '€' +
           t.priceEur +
           '/mo · ' +
           t.label +
-          ' · real Grok budget €' +
+          ' · real mind €' +
           t.apiBudgetEur +
-          ' · then free · ' +
+          ' · ' +
           t.note,
         'dim'
       );
     });
     var s = status();
-    log('You: ' + s.label + ' · mode=' + s.mode, s.active || s.owner ? 'ok' : 'dim');
-    if (s.owner) log('Owner path: paid Grok ON immediately (your key, server-side) · build inside the app', 'ok');
-    else log('Pay with PayPal to unlock Grok · type: subscribe 3', 'dim');
+    log('You: ' + s.label, s.active || s.owner ? 'ok' : 'dim');
+    if (s.owner) log('You are the architect. The paid mind is on.', 'ok');
+    else if (s.giftLeft > 0) log(s.giftLeft + ' tastes left on the paid mind. Then a plan.', 'ok');
+    else log('Type: subscribe 3   or   subscribe 13 · 33 · 300', 'ok');
   }
 
   /* ── Transcript (training fuel) ── */
@@ -551,35 +632,48 @@
         forcePaid: true,
         allowPaid: true,
         freeFirst: false,
-        notice: 'Architect · paid Grok',
+        notice: 'Architect · paid mind',
       };
     }
     var gate = canUsePaid();
+    if (gate.ok && gate.reason === 'gift') {
+      return {
+        engine: 'gift-paid',
+        forcePaid: true,
+        allowPaid: true,
+        gift: true,
+        giftLeft: gate.giftLeft,
+        freeFirst: false,
+        notice: 'Taste ' + (GIFT_MAX - gate.giftLeft + 1) + ' of ' + GIFT_MAX,
+      };
+    }
     if (gate.ok) {
       return {
         engine: 'paid',
         forcePaid: false,
         allowPaid: true,
-        freeFirst: true,
+        freeFirst: false,
         remaining: gate.remaining,
-        notice: 'Sub active · €' + gate.remaining.toFixed(2) + ' API left',
+        notice: 'Plan · €' + gate.remaining.toFixed(2) + ' real mind left',
       };
     }
     if (gate.reason === 'quota_exhausted') {
       return {
-        engine: 'free-cloud',
+        engine: 'paywall',
+        paywall: true,
         forcePaid: false,
         allowPaid: false,
-        freeFirst: true,
-        notice: 'API budget used · free models only · upgrade plan',
+        freeFirst: false,
+        notice: 'Plan budget used · type subscribe 13',
       };
     }
     return {
-      engine: 'free-mind',
+      engine: 'paywall',
+      paywall: true,
       forcePaid: false,
       allowPaid: false,
-      freeFirst: true,
-      notice: 'Subscribe from €3/mo for Grok · type plans',
+      freeFirst: false,
+      notice: 'Three tastes done · type plans',
     };
   }
 
@@ -589,6 +683,15 @@
   async function askPowerful(message, opts) {
     opts = opts || {};
     var route = routeEngine(opts);
+    if (route.paywall) {
+      printPlans();
+      log(
+        route.notice ||
+          'Three tastes are done. Subscribe. Every euro I am billed, the plan charges three.',
+        'ok'
+      );
+      return { ok: false, paywall: true, route: route, text: null };
+    }
     var headers = { 'Content-Type': 'application/json' };
     try {
       if (global.SNAuth && SNAuth.authHeaders) {
@@ -605,6 +708,8 @@
       allow_paid: !!route.allowPaid,
       force_paid: !!route.forcePaid,
       owner: isOwner(),
+      gift: !!route.gift,
+      gift_left: route.giftLeft || giftLeft(),
       subscription: status(),
       history: opts.history || [],
     };
@@ -649,21 +754,31 @@
           continue;
         }
         var apiEur = estimateApiEur(j.usage || j.meter || {});
-        if (j.paid || j.paid_fallback || j.via && /xai|grok/i.test(String(j.via))) {
+        if (j.paid || j.paid_fallback || (j.via && /xai|grok/i.test(String(j.via)))) {
           recordSpend(apiEur, { via: j.via, url: urls[i] });
+          if (route.gift) consumeGift();
         }
         recordTurn(message, text, {
           via: j.via || route.engine,
           paid: !!(j.paid || j.paid_fallback),
           route: route.engine,
+          gift: !!route.gift,
         });
+        var left = giftLeft();
+        var notice = j.paid_notice || route.notice;
+        if (route.gift && left <= 0) {
+          notice = 'That was the third taste. Type plans.';
+        } else if (route.gift) {
+          notice = 'Taste used · ' + left + ' left · then a plan';
+        }
         return {
           ok: true,
           text: text,
           via: j.via || route.engine,
           paid: !!(j.paid || j.paid_fallback),
           route: route,
-          notice: j.paid_notice || route.notice,
+          giftLeft: left,
+          notice: notice,
         };
       } catch (e) {
         lastErr = e && e.message ? e.message : String(e);
@@ -809,6 +924,22 @@
   }
 
   function init() {
+    try {
+      fetch((location.origin || '') + '/api/ai/pricing', { cache: 'no-store' })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (p) {
+          if (!p || !p.ok) return;
+          if (p.usdInPerM) RATES.usdInPerM = Number(p.usdInPerM);
+          if (p.usdOutPerM) RATES.usdOutPerM = Number(p.usdOutPerM);
+          if (p.eurPerUsd) RATES.eurPerUsd = Number(p.eurPerUsd);
+          if (p.model) RATES.model = String(p.model);
+          if (p.asof) RATES.asof = String(p.asof);
+          rebuildTiers();
+        })
+        .catch(function () {});
+    } catch (_) {}
     // Complete PayPal return if present
     try {
       if (/[?&]paypal=/.test(location.search || '')) {
@@ -847,6 +978,9 @@
     exportTranscript: exportTranscript,
     handleLine: handleLine,
     isOwner: isOwner,
+    giftLeft: giftLeft,
+    GIFT_MAX: GIFT_MAX,
+    RATES: RATES,
     loadTx: loadTx,
     init: init,
   };
