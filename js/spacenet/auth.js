@@ -154,6 +154,20 @@
     return A.client;
   }
 
+  function avatarUrl() {
+    const u = A.user;
+    if (!u) return '';
+    const md = u.user_metadata || {};
+    if (md.avatar_url) return md.avatar_url;
+    if (md.picture) return md.picture;
+    if (md.avatar) return md.avatar;
+    try {
+      const id0 = u.identities && u.identities[0] && u.identities[0].identity_data;
+      if (id0 && (id0.avatar_url || id0.picture)) return id0.avatar_url || id0.picture;
+    } catch (_) {}
+    return '';
+  }
+
   function paint() {
     const btn = document.getElementById('btn-login');
     const chip = document.getElementById('user-chip');
@@ -867,6 +881,7 @@
     probeCustomAuth,
     googleClientId,
     isOwner,
+    avatarUrl,
     armOwnerPaidGrok,
     ARCHITECT_EMAIL,
     get GOOGLE_CLIENT_ID() {
