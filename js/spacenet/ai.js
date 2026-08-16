@@ -373,7 +373,7 @@
         'Understand Archangelos (Αρχάγγελος Rhodes) dialect: Greeklish + Greek + ancient colour. ' +
         'Lexicon: aksaki/αξάκι (mate), pitogyra (pita gyro), mpyronia/μπυρόνια (beers), tsigareta (cigarettes), ' +
         'Telemachos/Τηλέμαχος (drone pilot). Talk like a real person. Complete tasks. Money unit S. ' +
-        'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]] [[YOUTUBE:query or url]]. ' +
+        'Optional tags: [[LOCATE]] [[GO:place]] [[CITY]] [[SHOPS]] [[GLOBAL]] [[MAP:dark|bright|sat]] [[LAYERS]] [[CLI:command]] [[YOUTUBE:query or url]] [[IMAGINE:picture]]. ' +
         'Reply in 1–2 natural sentences unless they ask for detail.';
     }
     fork =
@@ -719,7 +719,7 @@
     var t = String(text || '');
     var did = [];
     var re =
-      /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH|MAP|BASEMAP|LAYER|LAYERS|OVERLAY|PILOT|CLI|TILE|CMD|YOUTUBE|YT)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
+      /\[\[\s*(GO|FLY|LOCATE|CITY|SHOPS|GLOBAL|EARTH|MAP|BASEMAP|LAYER|LAYERS|OVERLAY|PILOT|CLI|TILE|CMD|YOUTUBE|YT|IMAGINE|IMAGE)\s*(?::\s*([^\]]+))?\s*\]\]/gi;
     var m;
     var targets = [];
     while ((m = re.exec(t))) {
@@ -795,6 +795,12 @@
             await SNYoutube.find(a.arg);
             did.push('youtube:' + String(a.arg).slice(0, 40));
           }
+        } else if ((a.op === 'IMAGINE' || a.op === 'IMAGE') && a.arg) {
+          try {
+            if (global.SNAi && SNAi.imagine) await SNAi.imagine(a.arg);
+            else if (global.SNCli && SNCli.run) await SNCli.run('imagine ' + a.arg);
+          } catch (_) {}
+          did.push('imagine');
         } else if ((a.op === 'GO' || a.op === 'FLY') && a.arg) {
           var r = await globeGo(a.arg, { closeMap: true });
           if (r && r.ok) did.push('go:' + a.arg);
@@ -824,7 +830,7 @@
           try {
             if (pow.notice && global.SNCli && SNCli.log) SNCli.log(pow.notice, 'dim');
           } catch (_) {}
-          return String(pow.text).slice(0, opts.long ? 6000 : 900);
+          return String(pow.text).slice(0, opts.long ? 12000 : 4000);
         }
       }
     } catch (eSub) {}
@@ -884,7 +890,7 @@
           );
         }
       } catch (_) {}
-      return text.slice(0, opts && opts.long ? 6000 : 900);
+      return text.slice(0, opts && opts.long ? 12000 : 4000);
     } catch (e) {
       return null;
     } finally {
@@ -2437,6 +2443,82 @@
     return t;
   }
 
+  async function imagine(prompt) {
+    var q = String(prompt || '').trim();
+    if (!q) return { ok: false, error: 'empty' };
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('Imagine · ' + q.slice(0, 80), 'ok');
+      if (global.SNCli && SNCli.preview) SNCli.preview('Imagine…');
+    } catch (_) {}
+    var h = await headers();
+    var sub = null;
+    try {
+      sub = global.SNSubscription && SNSubscription.status && SNSubscription.status();
+    } catch (_) {}
+    var body = {
+      imagine: true,
+      message: q,
+      allow_paid: true,
+      force_paid: !!(sub && sub.owner),
+      owner: !!(sub && sub.owner),
+      gift: !!(sub && sub.giftLeft > 0),
+      subscription: sub || undefined,
+    };
+    try {
+      var r = await fetch(aicycleUrl(), {
+        method: 'POST',
+        headers: h,
+        body: JSON.stringify(body),
+      });
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      var src = j.image || j.url || '';
+      if (!src) {
+        try {
+          if (global.SNCli && SNCli.log) SNCli.log('Imagine did not return a picture.', 'err');
+        } catch (_) {}
+        return { ok: false };
+      }
+      showImagineTile(src, q);
+      return { ok: true, image: src };
+    } catch (e) {
+      return { ok: false, error: String(e && e.message ? e.message : e) };
+    }
+  }
+
+  function showImagineTile(src, title) {
+    var el = document.getElementById('sn-imagine-tile');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sn-imagine-tile';
+      el.innerHTML =
+        '<div class="sn-im-card"><div class="sn-im-bar"><span id="sn-im-title">Imagine</span><button type="button" id="sn-im-close">×</button></div><img id="sn-im-img" alt=""/></div>';
+      if (!document.getElementById('sn-imagine-style')) {
+        var st = document.createElement('style');
+        st.id = 'sn-imagine-style';
+        st.textContent =
+          '#sn-imagine-tile{position:fixed;z-index:12060;left:50%;top:10%;transform:translateX(-50%);width:min(440px,94vw);display:none}' +
+          '#sn-imagine-tile.open{display:block}' +
+          '#sn-imagine-tile .sn-im-card{background:rgba(8,10,14,.94);border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden}' +
+          '#sn-imagine-tile .sn-im-bar{display:flex;align-items:center;padding:10px 12px;color:#fff;font:600 13px Inter,system-ui}' +
+          '#sn-imagine-tile .sn-im-bar span{flex:1}' +
+          '#sn-imagine-tile .sn-im-bar button{width:32px;height:28px;border:0;background:transparent;color:#eee;font-size:18px;cursor:pointer}' +
+          '#sn-imagine-tile img{display:block;width:100%;max-height:62vh;object-fit:contain;background:#000}';
+        document.head.appendChild(st);
+      }
+      document.body.appendChild(el);
+      document.getElementById('sn-im-close').onclick = function () {
+        el.classList.remove('open');
+      };
+    }
+    var img = document.getElementById('sn-im-img');
+    var tt = document.getElementById('sn-im-title');
+    if (img) img.src = src;
+    if (tt) tt.textContent = String(title || 'Imagine').slice(0, 64);
+    el.classList.add('open');
+  }
+
   loadHist();
 
   global.SNAi = {
@@ -2445,6 +2527,7 @@
     brief: brief,
     showOnGlobe: showOnGlobe,
     ask: ask,
+    imagine: imagine,
     doJob: doJob,
     isHands: isHands,
     code: code,
