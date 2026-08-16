@@ -836,6 +836,7 @@
     '/js/spacenet/omma.js',
     '/js/spacenet/fluid.js',
     '/js/spacenet/spacexai.js',
+    '/js/spacenet/youtube.js',
     '/js/spacenet/os-will.js',
     '/js/spacenet/agent-orbit.js',
   ];
@@ -1404,6 +1405,7 @@
       will: { src: '/js/spacenet/os-will.js', global: 'SNOsWill' },
       'os-will': { src: '/js/spacenet/os-will.js', global: 'SNOsWill' },
       auth: { src: '/js/spacenet/auth.js', global: 'SNAuth' },
+      youtube: { src: '/js/spacenet/youtube.js', global: 'SNYoutube' },
       helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
       marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
     };
