@@ -549,8 +549,10 @@
     });
     var s = status();
     log('You: ' + s.label, s.active || s.owner ? 'ok' : 'dim');
-    if (s.owner) log('You are the architect. The paid mind is on.', 'ok');
-    else if (s.giftLeft > 0) log(s.giftLeft + ' tastes left on the paid mind. Then a plan.', 'ok');
+    if (s.owner && !global.__snPaidMindSaid) {
+      global.__snPaidMindSaid = 1;
+      log('You are the architect. The paid mind is on.', 'ok');
+    } else if (!s.owner && s.giftLeft > 0) log(s.giftLeft + ' tastes left on the paid mind. Then a plan.', 'ok');
     else log('Type: subscribe 3   or   subscribe 13 · 33 · 300', 'ok');
   }
 
