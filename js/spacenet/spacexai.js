@@ -34,7 +34,8 @@
     var t = String(line || '').trim();
     var low = t.toLowerCase();
     if (t.length < 2 || t.length > 90) return false;
-    if (isSystem(low)) return false;
+    if (/\b(drum\s*cam|drumcam|concert|setlist|youtube|clip|video|βίντεο)\b/.test(low)) return false;
+    if (/\b\d{9,}\b/.test(low) && /\b(cam|drum|live|set|mix)\b/.test(low)) return false;
     try {
       if (global.SNYoutube) {
         if (SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(t)) return false;
