@@ -709,18 +709,32 @@
     var ctx = H.ctx;
     ctx.clearRect(0, 0, w, h);
 
-    // Motion
+    // Motion — spring + damper, dt seconds (not per-frame lerp)
+    var dt = H._physT ? (now - H._physT) / 1000 : 0.016;
+    H._physT = now;
+    if (dt > 0.033) dt = 0.033;
     if (H.busy && H.mission) {
       var dx = H.tx - H.x;
       var dy = H.ty - H.y;
+      var k = 20;
+      var dmp = 8.5;
+      H.vx += (k * dx - dmp * H.vx) * dt;
+      H.vy += (k * dy - dmp * H.vy) * dt;
+      H.x += H.vx * dt;
+      H.y += H.vy * dt;
       var dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      var speed = 7.2 + H.boost * 10;
-      if (dist < 14) {
+      var spd = Math.sqrt(H.vx * H.vx + H.vy * H.vy);
+      H.angle = Math.atan2(H.vy, H.vx);
+      H.boost = Math.min(1.7, 0.2 + spd / 420);
+      if (H.frame % 3 === 0) emitSparks(1, 0.45);
+      if (dist < 16 && spd < 40) {
         H.x = H.tx;
         H.y = H.ty;
+        H.vx *= 0.4;
+        H.vy *= 0.4;
         H.boost *= 0.84;
         var elapsed = now - H.mission.t0;
-        if (elapsed > (H.mission.dur || 2000) * 0.5) {
+        if (elapsed > (H.mission.dur || 2000) * 0.45) {
           var arrive = H.mission.onArrive;
           H.mission.onArrive = null;
           H.busy = false;
@@ -738,14 +752,6 @@
             } catch (_) {}
           }
         }
-      } else {
-        H.vx = (dx / dist) * speed;
-        H.vy = (dy / dist) * speed;
-        H.x += H.vx;
-        H.y += H.vy;
-        H.angle = Math.atan2(H.vy, H.vx);
-        H.boost = Math.min(1.7, H.boost * 0.985 + 0.045);
-        if (H.frame % 2 === 0) emitSparks(1, 0.55);
       }
     } else {
       // gaming idle float + soft park seek
