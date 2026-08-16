@@ -51,7 +51,7 @@
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 3.55,
+    scale: 4.2,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -164,7 +164,64 @@
     H.canvas = c;
     H.ctx = c.getContext('2d', { alpha: true });
     resize();
+    bindHit();
     return c;
+  }
+
+  function bindHit() {
+    var el = document.getElementById('sn-helper-hit');
+    if (!el) {
+      el = document.createElement('button');
+      el.id = 'sn-helper-hit';
+      el.type = 'button';
+      el.setAttribute('aria-label', 'SpaceX Bot · tap to talk');
+      el.title = 'Tap the unit · microphone on · it flies the result';
+      el.style.cssText =
+        'position:fixed;z-index:12080;width:150px;height:190px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        engage();
+      });
+      document.body.appendChild(el);
+    }
+    H.hit = el;
+    placeHit();
+  }
+
+  function placeHit() {
+    if (!H.hit) return;
+    H.hit.style.left = Math.max(0, H.x - 75) + 'px';
+    H.hit.style.top = Math.max(0, H.y - 100) + 'px';
+    H.hit.style.display = H.visible === false ? 'none' : 'block';
+  }
+
+  function engage() {
+    wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 24000 });
+    H.status = 'listening';
+    log('UNIT · listening · tap again to stop', 'ok');
+    try {
+      if (global.SNCli && typeof SNCli.toggleHandsfree === 'function') {
+        SNCli.toggleHandsfree();
+      }
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.speakAi) SNCli.speakAi('Listening.', true);
+    } catch (_) {}
+    var pin =
+      (global.SNSearch && SNSearch._lastPin) ||
+      global._snLastPos ||
+      global._snPhysPos;
+    if (pin && pin.lat != null) {
+      flyTo(pin, {
+        kind: 'listen',
+        label: 'UNIT · WITH YOU',
+        detail: 'on station',
+        status: 'inbound',
+        log: false,
+      });
+    }
+    return true;
   }
 
   function resize() {
@@ -274,6 +331,7 @@
     H.status = 'idle';
     H.parkMode = true;
     H.showcaseUntil = 0;
+    if (H.hit) H.hit.style.display = 'none';
     if (H.ctx && H.canvas) {
       var w = window.innerWidth || 1;
       var h = window.innerHeight || 1;
@@ -302,24 +360,13 @@
       H.tx = H.tx;
       H.ty = H.ty;
     }
-    var recent = Date.now() - (H.lastMissionAt || 0) < 90000;
-    var showcase = Date.now() < (H.showcaseUntil || 0);
-    var show = !!(H.forceVisible || recent || showcase); // lean: hidden until mission/drone
-    H.visible = !!show;
-    if (H.canvas) H.canvas.style.opacity = show ? '1' : '0';
-    if (show) {
-      ensureCanvas();
-      if (!H.raf) H.raf = requestAnimationFrame(loop);
-    } else {
-      // lean: stop RAF when parked invisible — zero GPU burn
-      H.raf = 0;
-      if (H.ctx && H.canvas) {
-        try {
-          H.ctx.clearRect(0, 0, window.innerWidth || 1, window.innerHeight || 1);
-        } catch (_) {}
-      }
-    }
-    return { ok: true, parked: true, visible: show };
+    var show = true;
+    H.visible = true;
+    if (H.canvas) H.canvas.style.opacity = '1';
+    ensureCanvas();
+    if (!H.raf) H.raf = requestAnimationFrame(loop);
+    placeHit();
+    return { ok: true, parked: true, visible: true };
   }
 
   function syncParkVisibility() {
@@ -713,6 +760,7 @@
     }
 
     H.frame++;
+    placeHit();
 
     // Energy rings
     var i, rg;
@@ -792,7 +840,7 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 1.05 : 1;
+      var parkScale = H.parkMode && !H.busy ? 1.12 : 1;
       var scale = (H.busy ? 1.32 : 1.22) * H.scale * breath * parkScale;
       if (H.boost > 0.6) scale *= 1.06;
       if (Date.now() < (H.showcaseUntil || 0) && !H.parkMode) scale *= 1.12;
@@ -916,32 +964,23 @@
       return true;
     }
     // Lean default: load sprites only when first mission needs them
-    H.autoWake = opts.autoWake === true;
+    H.autoWake = opts.autoWake !== false;
     H.x = (window.innerWidth || 400) * 0.72;
     H.y = (window.innerHeight || 700) * 0.26;
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
-    H.forceVisible = false;
-    H.visible = false;
+    H.forceVisible = true;
+    H.visible = true;
     H.parkMode = true;
     H.status = 'idle';
-    // No intro showcase / always-on wings (dummy lag). Wake only on drone/order.
-    if (opts.autoWake) {
-      try {
-        ensureSprites();
-        parkAtMoon();
-        setTimeout(function () {
-          try {
-            showcase({ ms: 10000, hold: 3000, dur: 2200 });
-          } catch (_) {}
-        }, 1800);
-      } catch (_) {}
-    } else if (opts.sleep !== false) {
-      try {
-        sleep();
-      } catch (_) {}
-    }
+    try {
+      ensureSprites();
+      ensureCanvas();
+      bindHit();
+      parkAtMoon();
+      wake({ force: true, label: 'UNIT · SILVER WINGS', showcaseMs: 16000 });
+    } catch (_) {}
     // Rare visibility sync only when something is running
     try {
       setInterval(function () {
@@ -1027,6 +1066,7 @@
     showcase: showcase,
     report: report,
     hookMarketFind: hookMarketFind,
+    engage: engage,
     ensureSprites: ensureSprites,
     reloadArt: function (urls) {
       urls = urls || {};
