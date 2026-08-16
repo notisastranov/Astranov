@@ -852,6 +852,8 @@
   function looksLikeWorldSearch(low, line) {
     var t = String(low || '');
     if (t.length < 2 || t.length > 80) return false;
+    if (/\?$/.test(String(line || '').trim())) return false;
+    if (/^(what|who|why|how|when|which|weather|tell me|explain|define)\b/i.test(t)) return false;
     if (
       /^(help|locate|login|wallet|rate|mine|donate|layers|order|deliver|drive|task|code|coders|research|pizza|shops|vendors|hard boot|first delivery|play|games|youtube|yt|watch|clip)\b/.test(
         t
@@ -4692,13 +4694,13 @@ if (
     }
     noteUserLang(t);
     const now = Date.now();
-    if (now - hfLastHeard < 900) return false;
+    if (now - hfLastHeard < 400) return false;
     hfLastHeard = now;
     if (runawayTrip()) return false;
 
     hfBusy = true;
     hfPending = '';
-    muteMic(8000);
+    muteMic(600);
     try {
       if (speechRec) speechRec.abort();
     } catch (_) {}
@@ -4728,10 +4730,7 @@ if (
         log('Voice send · ' + (e.message || e), 'err');
       } finally {
         hfBusy = false;
-        // Only restart listen if not speaking; speakAi onend handles restart when TTS used
-        if (handsfreeOn && !hfTtsActive && !synthSpeaking()) {
-          scheduleListenRestart(hfSpeakOut ? 1400 : 700);
-        }
+        if (handsfreeOn) scheduleListenRestart(hfTtsActive || synthSpeaking() ? 1600 : 500);
       }
     })();
     return true;
@@ -4741,7 +4740,7 @@ if (
     const now = Date.now();
     hfRunTimes = hfRunTimes.filter((t) => now - t < 15000);
     hfRunTimes.push(now);
-    if (hfRunTimes.length >= 8) {
+    if (hfRunTimes.length >= 14) {
       stopHandsfree('Hands-free auto-stopped (loop guard)');
       log('🎙 Auto-stopped self-loop · type in CLI or tap AI once to listen again', 'err');
       return true;
@@ -4856,23 +4855,19 @@ if (
           hfPending = shown;
           const input = $('cli-in');
           if (input) input.value = shown;
-          preview('🎙 ' + shown.slice(0, 48));
+          preview('… ' + shown.slice(0, 48));
         }
-        const fin = String(finalText || '').trim();
-        if (fin) {
-          if (isEchoGarbage(fin)) {
-            hfPending = '';
-            return;
-          }
+        try {
+          if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
+        } catch (_) {}
+        const fin = String(finalText || hfPending || '').trim();
+        if (fin && !isEchoGarbage(fin)) {
           hfPending = fin;
-          try {
-            if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
-          } catch (_) {}
           global._snVoiceHoldT = setTimeout(function () {
             if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) return;
             const send = String(hfPending || '').trim();
             if (send && handsfreeOn && !hfBusy) commitVoice(send);
-          }, 700);
+          }, 2000);
         }
       } catch (e) {
         log('Voice result · ' + (e.message || e), 'err');
@@ -4898,19 +4893,12 @@ if (
     };
 
     speechRec.onend = function () {
-      if (!handsfreeOn || hfBusy) return;
-      if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
-        scheduleListenRestart(800);
+      if (!handsfreeOn) return;
+      if (hfBusy || hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
+        scheduleListenRestart(900);
         return;
       }
-      if (hfPending) {
-        const pending = String(hfPending || '').trim();
-        hfPending = '';
-        if (pending && !hfBusy) {
-          if (commitVoice(pending)) return;
-        }
-      }
-      scheduleListenRestart(350);
+      scheduleListenRestart(450);
     };
 
     setHandsfreeUi(true, 'LISTENING');
