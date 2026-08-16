@@ -78,15 +78,14 @@
         real: !row.fallback,
         t: Date.now(),
       };
-      if (!row.fallback) {
-        global._snPhysPos = {
-          lat: row.lat,
-          lng: row.lng,
-          accuracy: row.accuracy,
-          t: Date.now(),
-          source: 'gps',
-        };
-      }
+      global._snPhysPos = {
+        lat: row.lat,
+        lng: row.lng,
+        accuracy: row.accuracy,
+        t: Date.now(),
+        source: row.fallback ? row.source || 'soft' : 'gps',
+        real: !row.fallback,
+      };
       if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(row.lat, row.lng);
       if (!row.fallback) {
         localStorage.setItem(
@@ -354,26 +353,35 @@
     var allowIp = opts.allowIp !== false;
     var allowSoft = opts.allowSoft !== false;
 
-    // 1 high accuracy fresh
-    var r = await browserGpsOnce({ high: true, timeout: 14000, waitMs: 16000, maximumAge: 0 });
+    var ipP = allowIp
+      ? ipApproxLocate().catch(function () {
+          return null;
+        })
+      : Promise.resolve(null);
+
+    var r = await browserGpsOnce({ high: true, timeout: 5000, waitMs: 6000, maximumAge: 15000 });
     if (r.ok) return commitRealGps(r);
 
-    // 2 low accuracy, slightly stale ok
-    r = await browserGpsOnce({ high: false, timeout: 10000, waitMs: 12000, maximumAge: 60000 });
+    r = await browserGpsOnce({ high: false, timeout: 4000, waitMs: 4500, maximumAge: 120000 });
     if (r.ok) return commitRealGps(r);
 
-    // 3 watch for a moving fix (phones often need this)
     if (r.reason !== 'denied' && r.reason !== 'insecure' && r.reason !== 'unsupported') {
-      r = await browserGpsWatch(12000);
+      r = await browserGpsWatch(4000);
       if (r.ok) return commitRealGps(r);
     }
 
     var failReason = r.reason || 'unavailable';
 
-    // 4 IP city-level soft (honest · not Rhodes)
     if (allowIp && failReason !== 'insecure') {
       try {
-        var ip = await ipApproxLocate();
+        var ip = await Promise.race([
+          ipP,
+          new Promise(function (res) {
+            setTimeout(function () {
+              res(null);
+            }, 2500);
+          }),
+        ]);
         if (ip && ip.ok) {
           ip.fallback = true;
           ip.gpsFailed = failReason;
@@ -652,7 +660,7 @@
     if (/\[ OK \]|\[FAIL\]|\[WARN\]|\[FIX \]|\[....\]|STAGE ·|HANDOFF ·|load \w+\.js/i.test(t)) return true;
     if (/═{3,}/.test(t)) return true;
     if (/^theme\b/i.test(t.trim())) return true;
-    if (/XAI_API_KEY|paid Grok path|Architect ·|Architect confirmed|key stays on server/i.test(t))
+    if (/XAI_API_KEY|paid mind|key stays on the server|Architect ·|Architect confirmed/i.test(t))
       return true;
     return false;
   }
@@ -2297,23 +2305,7 @@
       }
 
       // Product skin: SpaceXAI default · Astranov electric kept in memory only
-      if (
-        low === 'skin' ||
-        low === 'skin spacex' ||
-        low === 'skin spacexai' ||
-        low === 'skin sx' ||
-        low === 'skin astranov' ||
-        low === 'skin classic' ||
-        low === 'skin electric' ||
-        low === 'mode spacex' ||
-        low === 'mode spacexai' ||
-        low === 'mode astranov' ||
-        low === 'spacexai' ||
-        low === 'astranov mode'
-      ) {
-        let id = 'spacex';
-        if (/astranov|classic|electric/.test(low) && !/spacex/.test(low)) id = 'astranov';
-        if (low === 'imagine' || low === 'ai graphics' || low === 'imagine on' || low === 'gfx imagine') {
+      if (low === 'imagine' || low === 'ai graphics' || low === 'imagine on' || low === 'gfx imagine') {
         try {
           if (global.SNAIGraphics && SNAIGraphics.setMode) {
             SNAIGraphics.setMode('imagine');
@@ -2330,7 +2322,23 @@
         }
         return;
       }
-      if (low === 'skin' || low === 'spacexai') {
+      if (
+        low === 'skin' ||
+        low === 'skin spacex' ||
+        low === 'skin spacexai' ||
+        low === 'skin sx' ||
+        low === 'skin astranov' ||
+        low === 'skin classic' ||
+        low === 'skin electric' ||
+        low === 'mode spacex' ||
+        low === 'mode spacexai' ||
+        low === 'mode astranov' ||
+        low === 'spacexai' ||
+        low === 'astranov mode'
+      ) {
+        let id = 'spacex';
+        if (/astranov|classic|electric/.test(low) && !/spacex/.test(low)) id = 'astranov';
+        if (low === 'skin' || low === 'spacexai') {
           const cur =
             (global.SNSkin && SNSkin.read && SNSkin.read()) ||
             localStorage.getItem('sn:skin-v1') ||
@@ -4733,7 +4741,7 @@ if (
     const now = Date.now();
     hfRunTimes = hfRunTimes.filter((t) => now - t < 15000);
     hfRunTimes.push(now);
-    if (hfRunTimes.length >= 3) {
+    if (hfRunTimes.length >= 8) {
       stopHandsfree('Hands-free auto-stopped (loop guard)');
       log('🎙 Auto-stopped self-loop · type in CLI or tap AI once to listen again', 'err');
       return true;
@@ -5098,6 +5106,9 @@ if (
     stopHandsfree,
     get handsfreeOn() {
       return handsfreeOn;
+    },
+    get hfTtsActive() {
+      return hfTtsActive;
     },
   };
 })(window);
