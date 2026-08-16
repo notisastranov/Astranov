@@ -38,22 +38,6 @@
         }
       }
     } catch (_) {}
-    try {
-      if (global.Audio && !Audio.__snMuted) {
-        Audio.__snMuted = true;
-        var play = Audio.prototype.play;
-        Audio.prototype.play = function () {
-          if (global.__SN_MUTE_BEEPS) {
-            try {
-              this.muted = true;
-              this.volume = 0;
-            } catch (_) {}
-            return Promise.resolve();
-          }
-          return play.apply(this, arguments);
-        };
-      }
-    } catch (_) {}
   }
 
   function patchFieldAlerts() {
@@ -96,7 +80,11 @@
     patchAudio();
     patchFieldAlerts();
     softGateHandsfree();
-    if (global.__SN_MUTE_ALERTS && !(global.SNCli && SNCli.handsfreeOn)) silenceSpeech();
+    if (
+      global.__SN_MUTE_ALERTS &&
+      !(global.SNCli && (SNCli.handsfreeOn || SNCli.hfTtsActive))
+    )
+      silenceSpeech();
   }, 4000);
 
   global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
