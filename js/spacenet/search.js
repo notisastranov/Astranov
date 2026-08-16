@@ -1430,6 +1430,186 @@
     return out;
   }
 
+  var NET = { last: null, rows: [], open: false };
+
+  function escHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"');
+  }
+
+  function ensureNetDom() {
+    var root = document.getElementById('sn-net-tile');
+    if (root) return root;
+    root = document.createElement('div');
+    root.id = 'sn-net-tile';
+    root.innerHTML =
+      '<div class="sn-net-card">' +
+      '<div class="sn-net-bar"><span id="sn-net-kind">SPACENET</span><b id="sn-net-q">Research</b>' +
+      '<button type="button" id="sn-net-x">×</button></div>' +
+      '<p id="sn-net-brief"></p>' +
+      '<div id="sn-net-rows"></div>' +
+      '<div class="sn-net-hint">open 1 · fly 1 · watch 1 · net close</div></div>';
+    if (!document.getElementById('sn-net-style')) {
+      var st = document.createElement('style');
+      st.id = 'sn-net-style';
+      st.textContent =
+        '#sn-net-tile{position:fixed;z-index:12040;left:50%;top:9%;transform:translateX(-50%);width:min(460px,94vw);display:none;pointer-events:none}' +
+        '#sn-net-tile.open{display:block;pointer-events:auto}' +
+        '#sn-net-tile .sn-net-card{background:linear-gradient(180deg,rgba(4,10,22,.94),rgba(2,6,14,.92));border:1px solid rgba(90,180,255,.38);border-radius:6px;box-shadow:0 18px 50px rgba(0,0,0,.6),0 0 28px rgba(40,140,255,.16),inset 0 0 0 1px rgba(160,220,255,.06);overflow:hidden;backdrop-filter:blur(16px) saturate(1.2);max-height:70vh;display:flex;flex-direction:column}' +
+        '#sn-net-tile .sn-net-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(80,160,255,.18);cursor:grab}' +
+        '#sn-net-tile #sn-net-kind{font:700 9px/1 JetBrains Mono,ui-monospace,monospace;letter-spacing:.2em;color:#7ec8ff}' +
+        '#sn-net-tile #sn-net-q{flex:1;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#f4f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+        '#sn-net-tile #sn-net-x{width:32px;height:28px;border:0;background:transparent;color:#cfe6ff;font-size:18px;cursor:pointer}' +
+        '#sn-net-tile #sn-net-brief{margin:0;padding:10px 14px 6px;font:500 13px/1.45 Inter,system-ui,sans-serif;color:#d5e6ff}' +
+        '#sn-net-tile #sn-net-rows{overflow:auto;padding:4px 8px 8px;display:flex;flex-direction:column;gap:4px;max-height:42vh}' +
+        '#sn-net-tile .sn-net-row{display:flex;gap:8px;text-align:left;padding:8px 10px;border:0;border-radius:4px;background:transparent;color:#c8d8ee;cursor:pointer;font:500 12px/1.35 Inter,system-ui,sans-serif}' +
+        '#sn-net-tile .sn-net-row:hover{background:rgba(61,158,255,.14)}' +
+        '#sn-net-tile .sn-net-n{min-width:16px;color:#3d9eff;font:700 11px JetBrains Mono,monospace}' +
+        '#sn-net-tile .sn-net-row b{display:block;color:#fff;font-weight:600}' +
+        '#sn-net-tile .sn-net-row small{color:#8aa0b8}' +
+        '#sn-net-tile .sn-net-hint{padding:6px 12px 10px;font:500 10px/1.3 JetBrains Mono,ui-monospace,monospace;letter-spacing:.06em;color:#6a829c}';
+      document.head.appendChild(st);
+    }
+    document.body.appendChild(root);
+    document.getElementById('sn-net-x').onclick = function () {
+      closeNet();
+    };
+    return root;
+  }
+
+  function closeNet() {
+    var root = document.getElementById('sn-net-tile');
+    if (root) root.classList.remove('open');
+    NET.open = false;
+  }
+
+  function showNet(senseOut) {
+    senseOut = senseOut || NET.last;
+    if (!senseOut) return;
+    NET.last = senseOut;
+    var root = ensureNetDom();
+    var kindEl = document.getElementById('sn-net-kind');
+    var qEl = document.getElementById('sn-net-q');
+    var briefEl = document.getElementById('sn-net-brief');
+    var rowsEl = document.getElementById('sn-net-rows');
+    if (kindEl) kindEl.textContent = String(senseOut.kind || 'NET').toUpperCase();
+    if (qEl) qEl.textContent = String(senseOut.query || 'Research').slice(0, 72);
+    var brief =
+      (senseOut.wiki && senseOut.wiki.text) ||
+      (senseOut.web && senseOut.web[0] && senseOut.web[0].text) ||
+      senseOut.ask ||
+      '';
+    if (briefEl) briefEl.textContent = String(brief).slice(0, 280);
+    var rows = [];
+    if (senseOut.wiki && senseOut.wiki.title) {
+      rows.push({
+        kind: 'wiki',
+        title: senseOut.wiki.title,
+        sub: (senseOut.wiki.description || 'Wikipedia').slice(0, 80),
+        url: senseOut.wiki.url,
+        lat: senseOut.wiki.lat,
+        lng: senseOut.wiki.lng,
+      });
+    }
+    (senseOut.places || []).slice(0, 3).forEach(function (p) {
+      if (!p || p.lat == null) return;
+      rows.push({
+        kind: 'place',
+        title: p.name || senseOut.query,
+        sub: (p.kind || p.type || 'place') + ' · fly',
+        lat: p.lat,
+        lng: p.lng,
+      });
+    });
+    (senseOut.web || []).slice(0, 5).forEach(function (w) {
+      if (!w || !w.title) return;
+      if (senseOut.wiki && w.title === senseOut.wiki.title) return;
+      rows.push({ kind: 'web', title: w.title, sub: String(w.text || w.url || '').slice(0, 90), url: w.url });
+    });
+    (senseOut.wikiHits || []).slice(0, 3).forEach(function (h) {
+      var title = h.title || h;
+      if (senseOut.wiki && title === senseOut.wiki.title) return;
+      rows.push({ kind: 'wiki', title: title, sub: h.desc || 'Wikipedia', url: h.url });
+    });
+    if (senseOut.kind === 'video') {
+      rows.unshift({
+        kind: 'video',
+        title: 'Open clip · ' + String(senseOut.query).slice(0, 48),
+        sub: 'YouTube',
+        video: senseOut.query,
+      });
+    }
+    NET.rows = rows.slice(0, 8);
+    if (rowsEl) {
+      rowsEl.innerHTML = NET.rows
+        .map(function (r, i) {
+          return (
+            '<button type="button" class="sn-net-row" data-i="' +
+            i +
+            '"><span class="sn-net-n">' +
+            (i + 1) +
+            '</span><span><b>' +
+            escHtml(r.title).slice(0, 72) +
+            '</b><small>' +
+            escHtml(r.sub || r.kind).slice(0, 90) +
+            '</small></span></button>'
+          );
+        })
+        .join('');
+      Array.prototype.forEach.call(rowsEl.querySelectorAll('.sn-net-row'), function (btn) {
+        btn.onclick = function () {
+          openNetIndex(parseInt(btn.getAttribute('data-i'), 10) + 1);
+        };
+      });
+    }
+    root.classList.add('open');
+    NET.open = true;
+  }
+
+  async function openNetIndex(n) {
+    var r = NET.rows[parseInt(n, 10) - 1];
+    if (!r) return { ok: false };
+    if (r.kind === 'video' && global.SNYoutube && SNYoutube.find) {
+      await SNYoutube.find(r.video || NET.last.query);
+      return { ok: true };
+    }
+    if (r.kind === 'place' && r.lat != null && global.SNGlobe && SNGlobe.goToPlace) {
+      SNGlobe.goToPlace(r.lat, r.lng, {
+        tier: 'city',
+        label: String(r.title).slice(0, 28),
+        body: 'earth',
+        pulse: true,
+      });
+      return { ok: true };
+    }
+    if (r.url) {
+      try {
+        global.open(r.url, '_blank', 'noopener');
+      } catch (_) {}
+      return { ok: true };
+    }
+    return { ok: false };
+  }
+
+  async function flyNetIndex(n) {
+    var r = NET.rows[parseInt(n, 10) - 1];
+    if (!r) r = NET.last && NET.last.places && NET.last.places[0];
+    if (!r || r.lat == null) return { ok: false };
+    if (global.SNGlobe && SNGlobe.goToPlace) {
+      SNGlobe.goToPlace(r.lat, r.lng, {
+        tier: 'city',
+        label: String(r.title || r.name || '').slice(0, 28),
+        body: 'earth',
+        pulse: true,
+      });
+      return { ok: true };
+    }
+    return { ok: false };
+  }
+
   async function researchFirst(query, opts) {
     opts = opts || {};
     var q = String(query || '').trim();
@@ -1441,6 +1621,7 @@
     var s = await sense(q);
     s.acted = [];
     s.ask = null;
+    showNet(s);
 
     if (s.kind === 'video') {
       try {
@@ -1470,6 +1651,9 @@
       s.acted.push('fly');
       L((dest.name || q).slice(0, 72), 'ok');
       if (s.wiki && s.wiki.text) L(s.wiki.text.slice(0, 180), 'dim');
+      try {
+        visualize({ places: s.places, wiki: s.wiki, query: q }, { openMap: false });
+      } catch (_) {}
       previewFn((dest.name || q).slice(0, 40));
       return s;
     }
@@ -1524,5 +1708,9 @@
     realFocus,
     researchFirst,
     sense,
+    showResults: showNet,
+    closeResults: closeNet,
+    openResult: openNetIndex,
+    flyResult: flyNetIndex,
   };
 })(window);
