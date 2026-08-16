@@ -73,7 +73,7 @@
         crawled = await SNSearch.crawl(q, {
           visualize: true,
           fly: true,
-          openMap: true,
+          openMap: !(global.SNMap && SNMap.wantsImagery && SNMap.wantsImagery(line)),
           quiet: false,
         });
       }
@@ -86,6 +86,23 @@
         (crawled.hits && crawled.hits.length) ||
         (crawled.places && crawled.places[0] && crawled.places[0].lat != null));
     if (landed) {
+      try {
+        if (
+          global.SNMap &&
+          SNMap.wantsImagery &&
+          SNMap.wantsImagery(line) &&
+          SNMap.showLiveSat &&
+          crawled &&
+          crawled.focus
+        ) {
+          await SNMap.showLiveSat(crawled.focus.lat, crawled.focus.lng, {
+            zoom: 13,
+            pollution: /pollut|sea|chlor|bloom|dirty|stain|θάλασσ|ρύπανσ/i.test(line),
+            plume: false,
+            label: crawled.focus.name || q,
+          });
+        }
+      } catch (_) {}
       try {
         if (global.SNSearch && SNSearch.report && global.SNCli && SNCli.log) {
           SNSearch.report(crawled, SNCli.log);
