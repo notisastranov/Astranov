@@ -17,6 +17,8 @@
     'https://pipedapi.adminforge.de',
     'https://api.piped.projectsegfau.lt',
     'https://pipedapi.syncpundit.io',
+    'https://pipedapi.leptons.xyz',
+    'https://piapi.ggtyler.dev',
   ];
 
   function log(msg, kind) {
@@ -189,12 +191,68 @@
   }
 
   const INVIDIOUS = [
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de',
+    'https://iv.ggtyler.dev',
     'https://invidious.fdn.fr',
-    'https://vid.puffyan.us',
+    'https://yewtu.be',
     'https://invidious.privacyredirect.com',
     'https://yt.artemislena.eu',
   ];
   const LAST_PIPED = 'sn:yt-piped-base-v1';
+
+  function mapFromYoutubeHtml(html) {
+    const seen = {};
+    const out = [];
+    const re = /"videoId":"([A-Za-z0-9_-]{11})".{0,400}?"text":"([^"\\]{2,120})"/g;
+    let m;
+    while ((m = re.exec(html)) && out.length < 8) {
+      if (seen[m[1]]) continue;
+      seen[m[1]] = 1;
+      out.push({ id: m[1], title: m[2].replace(/\\u0026/g, '&'), channel: 'YouTube', duration: 0 });
+    }
+    if (!out.length) {
+      const re2 = /\/watch\?v=([A-Za-z0-9_-]{11})/g;
+      while ((m = re2.exec(html)) && out.length < 8) {
+        if (seen[m[1]]) continue;
+        seen[m[1]] = 1;
+        out.push({ id: m[1], title: 'YouTube · ' + m[1], channel: '', duration: 0 });
+      }
+    }
+    return out;
+  }
+
+  async function proxyYoutubeSearch(query) {
+    const target = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(query) + '&sp=EgIQAQ%3D%3D';
+    const proxies = [
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent(target),
+      'https://corsproxy.io/?' + encodeURIComponent(target),
+    ];
+    let lastErr = '';
+    for (const url of proxies) {
+      try {
+        const html = await (async function () {
+          const c = new AbortController();
+          const t = setTimeout(function () {
+            c.abort();
+          }, 7000);
+          try {
+            const r = await fetch(url, { signal: c.signal });
+            if (!r.ok) throw new Error(String(r.status));
+            return await r.text();
+          } finally {
+            clearTimeout(t);
+          }
+        })();
+        const mapped = mapFromYoutubeHtml(String(html || ''));
+        if (mapped.length) return mapped;
+        lastErr = 'empty html';
+      } catch (e) {
+        lastErr = String(e && e.message ? e.message : e);
+      }
+    }
+    throw new Error(lastErr || 'youtube proxy failed');
+  }
 
   async function fetchJson(url, ms) {
     const c = new AbortController();
@@ -286,6 +344,43 @@
     throw new Error(lastErr || 'search failed');
   }
 
+  async function sameOriginSearch(query) {
+    const items = await fetchJson('/api/yt-search?q=' + encodeURIComponent(query), 8000);
+    const list = (items && items.items) || items;
+    if (!Array.isArray(list) || !list.length) throw new Error('empty api');
+    return list
+      .map(function (it, i) {
+        return {
+          id: it.id || parseId(it.url || it.videoId),
+          title: it.title || 'Video ' + (i + 1),
+          channel: it.channel || it.uploaderName || '',
+          duration: it.duration || 0,
+        };
+      })
+      .filter(function (v) {
+        return v.id;
+      });
+  }
+
+  async function searchYoutube(query) {
+    try {
+      return await sameOriginSearch(query);
+    } catch (_) {}
+    try {
+      return await pipedSearch(query);
+    } catch (e1) {
+      try {
+        return await proxyYoutubeSearch(query);
+      } catch (e2) {
+        throw new Error(
+          String(e1 && e1.message ? e1.message : e1) +
+            ' · ' +
+            String(e2 && e2.message ? e2.message : e2)
+        );
+      }
+    }
+  }
+
   async function play(videoId, meta, searchQuery) {
     const id = parseId(videoId);
     if (!id) {
@@ -337,7 +432,7 @@
     log('YouTube · ' + q, 'cmd');
     preview('Searching YouTube…');
     try {
-      const items = await pipedSearch(q);
+      const items = await searchYoutube(q);
       Y.results = items;
       renderResults(items, q);
       if (!items.length) {
@@ -351,10 +446,32 @@
       return { ok: true, count: items.length };
     } catch (e) {
       const msg = String(e.message || e);
-      log('YouTube search failed · ' + msg.slice(0, 80), 'err');
-      log('Paste a full YouTube link: watch https://youtu.be/…', 'dim');
-      preview('Search failed · paste a link');
-      return { ok: false, error: msg };
+      showPanel(q.slice(0, 64));
+      const frame = document.getElementById('sn-yt-frame');
+      if (frame) {
+        frame.src =
+          'https://www.youtube-nocookie.com/embed?listType=search&list=' + encodeURIComponent(q);
+      }
+      const list = document.getElementById('sn-yt-results');
+      if (list) {
+        list.innerHTML =
+          '<button type="button" class="sn-yt-row" id="sn-yt-open-search"><span class="sn-yt-n">↗</span><span class="sn-yt-meta"><b>Open this search on YouTube</b><small>' +
+          esc(q) +
+          '</small></span></button>';
+        const btn = document.getElementById('sn-yt-open-search');
+        if (btn)
+          btn.onclick = function () {
+            global.open(
+              'https://www.youtube.com/results?search_query=' + encodeURIComponent(q),
+              '_blank',
+              'noopener'
+            );
+          };
+      }
+      log('YouTube · searching the site for · ' + q, 'ok');
+      log('If the player is empty, tap the row to open YouTube.', 'dim');
+      preview('YouTube · ' + q.slice(0, 40));
+      return { ok: true, fallback: true, error: msg };
     }
   }
 
@@ -369,19 +486,47 @@
   }
 
   function wantsYoutube(text) {
-    const low = String(text || '').toLowerCase();
-    if (parseId(text)) return true;
-    return /youtube|youtu\.be|\byt\b|find\s+(me\s+)?(a\s+)?videos?\b|watch\s+.*video|show\s+me\s+.*video|play\s+(me\s+)?(a\s+)?video|βίντεο|βιντεο|δες\s+(βίντεο|youtube)|παρακολούθησε|άνοιξε\s+youtube|ανοιξε\s+youtube/.test(
-      low
-    );
+    const raw = String(text || '').trim();
+    const low = raw.toLowerCase();
+    if (!low) return false;
+    if (parseId(raw)) return true;
+    if (/youtube|youtu\.be|\byt\b/.test(low)) return true;
+    if (/\b(clip|clips|βίντεο|βιντεο|trailer|lyrics?|\bmv\b|music\s+video|official\s+video|episode|music video)\b/.test(low))
+      return true;
+    if (/\b(watch|play|show)\b/.test(low) && /\b(video|clip|song|track|film|movie)\b/.test(low)) return true;
+    if (/^(search|find|look\s+up|google)\b/.test(low) && /\b(video|clip|youtube|song|track|trailer)\b/.test(low))
+      return true;
+    return false;
+  }
+
+  function looksLikeClipTitle(text) {
+    const t = String(text || '')
+      .replace(/^(search|find|look\s+up|google|show\s+me)\s+/i, '')
+      .trim();
+    if (t.length < 6 || t.length > 90) return false;
+    if (/[?]/.test(t)) return false;
+    const words = t.split(/\s+/);
+    if (words.length < 2 || words.length > 10) return false;
+    if (/^(who|what|where|why|how|when|can|please|make|build|fix|order|locate|fly|go)\b/i.test(t)) return false;
+    if (
+      /\b(tokyo|paris|london|athens|rhodes|rodos|mars|earth|moon|vodi|facility|street|road|harbour|harbor|airport|island|city)\b/i.test(
+        t
+      )
+    )
+      return false;
+    return true;
   }
 
   function queryFromText(text) {
     return String(text || '')
+      .replace(/^(search|find|look\s+up|google|show\s+me)\s+/i, '')
+      .replace(/\s+on\s+(youtube|yt)\s*$/i, '')
+      .replace(/^(on\s+)?(youtube|yt)\s+/i, '')
       .replace(
-        /^(youtube|yt|find\s+videos?\s+(about|on|for)?|find\s+me\s+a\s+video\s+(about|on|for)?|watch\s+videos?\s+(about|on|for)?|watch|video\s+find|play\s+(me\s+)?(a\s+)?video\s+(about|on|for)?|show\s+me\s+(a\s+)?video\s+(about|on|for)?|βίντεο\s+(για|στο)?|δες\s+βίντεο\s+(για|στο)?|παρακολούθησε|άνοιξε\s+youtube|ανοιξε\s+youtube)\s*/i,
+        /^(youtube|yt|watch|clip|video\s+find|find\s+videos?\s+(about|on|for)?|find\s+me\s+a\s+video\s+(about|on|for)?|watch\s+videos?\s+(about|on|for)?|play\s+(me\s+)?(a\s+)?video\s+(about|on|for)?|show\s+me\s+(a\s+)?video\s+(about|on|for)?|βίντεο\s+(για|στο)?|δες\s+βίντεο\s+(για|στο)?|παρακολούθησε|άνοιξε\s+youtube|ανοιξε\s+youtube)\s*/i,
         ''
       )
+      .replace(/\s+(clip|video|βίντεο|βιντεο)\s*$/i, '')
       .trim();
   }
 
@@ -399,6 +544,7 @@
     showPanel,
     parseId,
     wantsYoutube,
+    looksLikeClipTitle,
     queryFromText,
     get open() {
       return Y.open;
