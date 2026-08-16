@@ -42,17 +42,13 @@
         if (SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(t)) return false;
       }
     } catch (_) {}
-    if (/^(fly|go|take me|show me|zoom|land|orbit|cruise)\b/.test(low)) return true;
-    try {
-      if (global.SNSearch && SNSearch.looksVisual && SNSearch.looksVisual(t)) return true;
-    } catch (_) {}
+    if (/^(fly|go|take me|zoom|land|orbit)\b/.test(low)) return true;
     if (
-      /\b(earth|mars|moon|jupiter|saturn|venus|city|island|tower|harbour|harbor|beach|port|airport|mountain|cape|temple|bridge|eiffel|tokyo|rome|paris|london|athens|rhodes|rodos)\b/.test(
+      /^(earth|mars|moon|jupiter|saturn|venus|tokyo|paris|london|athens|rhodes|rodos|rome|eiffel)$/.test(
         low
       )
     )
       return true;
-    if (/^[A-ZΑ-Ω][\wα-ω'’\-]+(\s+[A-ZΑ-Ω][\wα-ω'’\-]+){0,4}$/.test(t)) return true;
     return false;
   }
 
