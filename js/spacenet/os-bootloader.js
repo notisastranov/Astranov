@@ -34,13 +34,25 @@
 
   var facts = {
     device: { k: 'Device', text: 'Checking…', state: 'wait', cmd: 'device' },
+    power: { k: 'Power', text: 'Checking…', state: 'wait', cmd: 'battery' },
     network: { k: 'Network', text: 'Checking…', state: 'wait', cmd: 'network' },
-    battery: { k: 'Battery', text: 'Checking…', state: 'wait', cmd: 'battery' },
-    heat: { k: 'Heat', text: 'Checking…', state: 'wait', cmd: 'heat' },
-    place: { k: 'Place', text: 'Tap to locate you', state: 'wait', cmd: 'locate' },
+    place: { k: 'Place', text: 'Tap to share where you are', state: 'wait', cmd: 'locate' },
+    cache: { k: 'Cache', text: 'Clearing old files…', state: 'wait', cmd: 'clear cache' },
+    login: { k: 'Login', text: 'Looking for your last sign-in…', state: 'wait', cmd: 'login' },
+    reset: {
+      k: 'Reset',
+      text: 'Hard reset wipes stored pages and restarts. Tap only if stuck.',
+      state: 'ok',
+      cmd: 'hard boot',
+    },
     graphics: { k: 'Earth', text: 'Waking…', state: 'wait', cmd: 'repair display' },
-    system: { k: 'System', text: 'Starting…', state: 'wait', cmd: 'hard boot' },
+    system: { k: 'System', text: 'Starting…', state: 'wait', cmd: 'enter astranov' },
   };
+  var FACT_GROUPS = [
+    { title: 'This machine', ids: ['device', 'power', 'network', 'place'] },
+    { title: 'This session', ids: ['cache', 'login', 'reset'] },
+    { title: 'The system', ids: ['graphics', 'system'] },
+  ];
   var entered = false;
   var gateReady = false;
   var consoleEl = null;
@@ -84,6 +96,12 @@
     paintFacts();
   }
 
+  function markFor(state) {
+    if (state === 'ok') return '✓';
+    if (state === 'bad') return '✗';
+    return '…';
+  }
+
   function paintFacts() {
     if (!consoleEl) {
       var box = document.getElementById('sn-os-facts');
@@ -91,18 +109,24 @@
       consoleEl = box;
     }
     var html = '';
-    Object.keys(facts).forEach(function (id) {
-      var f = facts[id];
-      html +=
-        '<button type="button" class="sn-boot-line ' +
-        esc(f.state || '') +
-        '" data-fact="' +
-        esc(id) +
-        '"><span class="sn-boot-k">' +
-        esc(f.k) +
-        '</span><span class="sn-boot-v">' +
-        esc(f.text) +
-        '</span></button>';
+    FACT_GROUPS.forEach(function (g) {
+      html += '<div class="sn-boot-sec">' + esc(g.title) + '</div>';
+      g.ids.forEach(function (id) {
+        var f = facts[id];
+        if (!f) return;
+        html +=
+          '<button type="button" class="sn-boot-line ' +
+          esc(f.state || '') +
+          '" data-fact="' +
+          esc(id) +
+          '"><span class="sn-boot-mark" aria-hidden="true">' +
+          markFor(f.state) +
+          '</span><span class="sn-boot-k">' +
+          esc(f.k) +
+          '</span><span class="sn-boot-v">' +
+          esc(f.text) +
+          '</span></button>';
+      });
     });
     consoleEl.innerHTML = html;
     consoleEl.querySelectorAll('[data-fact]').forEach(function (btn) {
@@ -126,14 +150,40 @@
       return;
     }
     if (id === 'system') {
+      if (gateReady) enterSystem();
+      return;
+    }
+    if (id === 'reset') {
+      setFact('reset', 'Restarting · wiping stored pages…', 'wait');
       hardRestart();
+      return;
+    }
+    if (id === 'cache') {
+      setFact('cache', 'Clearing stored pages again…', 'wait');
+      Promise.resolve(claimBrowser()).then(function () {
+        setFact('cache', 'Caches cleared · this build is live. Tap to clear again.', 'ok');
+      });
+      return;
+    }
+    if (id === 'login') {
+      try {
+        if (global.SNAuth && SNAuth.user) {
+          probeLogin();
+          return;
+        }
+        if (global.SNAuth && SNAuth.signInGoogle) void SNAuth.signInGoogle();
+        else if (global.SNAuth && SNAuth.toggle) void SNAuth.toggle();
+        else setFact('login', 'Login module not ready · enter then tap User', 'wait');
+      } catch (_) {
+        setFact('login', 'Login not ready · enter then tap User', 'wait');
+      }
       return;
     }
     if (id === 'network') {
       probeNetwork();
       return;
     }
-    if (id === 'battery' || id === 'heat' || id === 'device') {
+    if (id === 'power' || id === 'device') {
       probeDevice();
     }
   }
@@ -224,42 +274,69 @@
     if (mem) bits.push(mem + ' GB');
     if (cores) bits.push(cores + ' cores');
     setFact('device', bits.join(' · '), 'ok');
+    probePower();
+  }
 
-    if (navigator.getBattery) {
-      navigator.getBattery()
-        .then(function (b) {
-          var pct = Math.round((b.level || 0) * 100);
-          setFact('battery', pct + '% · ' + (b.charging ? 'charging' : 'on battery'), pct < 12 && !b.charging ? 'bad' : 'ok');
-        })
-        .catch(function () {
-          setFact('battery', 'This browser does not report battery', 'wait');
-        });
-    } else {
-      setFact('battery', 'This browser does not report battery', 'wait');
+  function looksLikeFakeBattery(b) {
+    if (!b) return true;
+    var mobile = /Android|iPhone|iPad|Mobile|Tablet/i.test(navigator.userAgent || '');
+    if (mobile) return false;
+    var full = Number(b.level) >= 0.99;
+    var plugged = b.charging === true;
+    var neverDrains = !isFinite(b.dischargingTime);
+    var instant = b.chargingTime === 0 || !isFinite(b.chargingTime);
+    var touch = (navigator.maxTouchPoints || 0) > 0;
+    // Chrome on a desktop with no battery invents 100% / charging / Infinity
+    return plugged && full && neverDrains && instant && !touch;
+  }
+
+  function probePower() {
+    if (!navigator.getBattery) {
+      setFact('power', 'No battery · this computer is on wall power', 'ok');
+      return;
     }
+    navigator.getBattery()
+      .then(function (b) {
+        if (looksLikeFakeBattery(b)) {
+          setFact('power', 'No battery · wall power · this machine does not have one', 'ok');
+          return;
+        }
+        var pct = Math.round((Number(b.level) || 0) * 100);
+        var bits = [pct + '%'];
+        if (b.charging) bits.push('plugged in');
+        else bits.push('on battery');
+        setFact('power', bits.join(' · '), pct < 12 && !b.charging ? 'bad' : 'ok');
+      })
+      .catch(function () {
+        setFact('power', 'No battery report · treat as wall power', 'ok');
+      });
+  }
 
-    var heatSet = false;
+  function probeLogin() {
+    var u = null;
     try {
-      if (typeof PressureObserver === 'function') {
-        var po = new PressureObserver(function (list) {
-          var last = list && list[list.length - 1];
-          if (!last) return;
-          heatSet = true;
-          var st = String(last.state || '');
-          var human =
-            st === 'critical' ? 'Hot · give the device a rest' :
-            st === 'serious' ? 'Warm · heavy load' :
-            st === 'fair' ? 'Warming' : 'Normal';
-          setFact('heat', human, st === 'critical' || st === 'serious' ? 'bad' : 'ok');
-        });
-        po.observe('cpu');
-      }
+      u = global.SNAuth && SNAuth.user;
     } catch (_) {}
-    if (!heatSet) {
-      setTimeout(function () {
-        if (!heatSet) setFact('heat', 'This browser does not report temperature', 'wait');
-      }, 700);
+    if (u) {
+      var name =
+        (u.user_metadata && (u.user_metadata.full_name || u.user_metadata.name)) ||
+        (u.email && String(u.email).split('@')[0]) ||
+        'you';
+      setFact('login', 'Signed in as ' + name, 'ok');
+      try {
+        if (global.SNField && SNField.paintRibbon) SNField.paintRibbon();
+      } catch (_) {}
+      return true;
     }
+    setFact('login', 'Not signed in · tap here or tap User after enter', 'wait');
+    return false;
+  }
+
+  var loginTries = 0;
+  function watchLogin() {
+    if (probeLogin()) return;
+    loginTries++;
+    if (loginTries < 16) setTimeout(watchLogin, 280);
   }
 
   function probePlace(forcePrompt) {
@@ -311,6 +388,9 @@
     probeNetwork();
     probeDevice();
     probePlace(false);
+    setFact('cache', 'Clearing old files so you get this build…', 'wait');
+    setFact('login', 'Looking for your last sign-in…', 'wait');
+    setFact('reset', 'Hard reset wipes stored pages and restarts. Tap only if stuck.', 'ok');
     setFact('system', 'Loading a fresh kernel…', 'wait');
     window.addEventListener('online', probeNetwork);
     window.addEventListener('offline', probeNetwork);
@@ -331,7 +411,8 @@
 
   function claimBrowser() {
     hdr('STAGE · kernel cache');
-    info('hard purge · this browser · build ' + BUILD);
+    info('clear cache · this browser · build ' + BUILD);
+    setFact('cache', 'Clearing old files so you get this build…', 'wait');
     var jobs = [];
     try {
       if (navigator.storage && navigator.storage.persist) {
@@ -399,7 +480,11 @@
         history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
       }
     } catch (_) {}
-    return Promise.all(jobs).catch(function () {});
+    return Promise.all(jobs)
+      .catch(function () {})
+      .then(function () {
+        setFact('cache', 'Caches cleared · this build is live. Tap to clear again.', 'ok');
+      });
   }
 
   /* ───────── Script loader ───────── */
@@ -814,8 +899,11 @@
         try {
           if (global.SNAuth && SNAuth.init) SNAuth.init();
           recordCheck('SNAuth', !!global.SNAuth, 'init', null);
+          loginTries = 0;
+          watchLogin();
         } catch (e) {
           recordCheck('SNAuth', false, e.message || e, null);
+          setFact('login', 'Login module failed · tap User after enter', 'wait');
         }
       })
       .catch(function (e) {
@@ -1018,11 +1106,17 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('Flight computer ready. Name a place.', 'ok', true);
-          SNCli.log('> locate me', 'cmd', true);
-          SNCli.log('> battery', 'cmd', true);
-          SNCli.log('> power on', 'cmd', true);
-          SNCli.log('> help', 'cmd', true);
+          SNCli.log('Flight computer ready.', 'ok', true);
+          FACT_GROUPS.forEach(function (g) {
+            SNCli.log(g.title, 'ok', true);
+            g.ids.forEach(function (id) {
+              var f = facts[id];
+              if (!f) return;
+              var mark = markFor(f.state);
+              SNCli.log(mark + ' ' + f.k + ' · ' + f.text, f.state === 'bad' ? 'err' : 'ok', true);
+            });
+          });
+          SNCli.log('> enter astranov', 'cmd', true);
         }
       } catch (_) {}
       try {
@@ -1107,12 +1201,13 @@
             hardRestart();
           } else if (low === 'enter' || low === 'enter astranov' || low === 'go') {
             enterSystem();
-          } else if (low === 'battery' || low === 'heat' || low === 'device' || low === 'status') {
-            SNCli.log('Device. ' + facts.device.text, 'ok');
-            SNCli.log('Battery. ' + facts.battery.text, 'ok');
-            SNCli.log('Heat. ' + facts.heat.text, 'ok');
-            SNCli.log('Network. ' + facts.network.text, 'ok');
-            SNCli.log('Place. ' + facts.place.text, 'ok');
+          } else if (low === 'battery' || low === 'heat' || low === 'device' || low === 'status' || low === 'power') {
+            SNCli.log('Device · ' + facts.device.text, 'ok', true);
+            SNCli.log('Power · ' + facts.power.text, 'ok', true);
+            SNCli.log('Network · ' + facts.network.text, 'ok', true);
+            SNCli.log('Place · ' + facts.place.text, 'ok', true);
+            SNCli.log('Cache · ' + facts.cache.text, 'ok', true);
+            SNCli.log('Login · ' + facts.login.text, 'ok', true);
           }
           try {
             if (SNCli.endTurn) SNCli.endTurn();
