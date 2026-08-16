@@ -2248,6 +2248,28 @@
       }
 
 
+      if (/^imagine\s+\S/.test(low) && !/^imagine\s+on\b/.test(low)) {
+        const pic = line.replace(/^imagine\s+/i, '').trim();
+        if (global.SNAi && SNAi.imagine) await SNAi.imagine(pic);
+        else log('Imagine is not loaded.', 'err');
+        return;
+      }
+      if (low === 'mind' || low === 'who are you' || low === 'full mind') {
+        let sub = null;
+        try {
+          sub = global.SNSubscription && SNSubscription.status && SNSubscription.status();
+        } catch (_) {}
+        const paid = !!(sub && (sub.owner || sub.active || (sub.giftLeft && sub.giftLeft > 0)));
+        log(
+          paid
+            ? 'Full paid mind · flagship · hands: YouTube, fly, search, imagine. This is not the short free organ.'
+            : 'Guest mind · three tastes then a plan. Type plans. The flagship mind is on the paid key.',
+          'ok'
+        );
+        preview(paid ? 'full paid mind' : 'guest mind');
+        return;
+      }
+
       // Product skin: SpaceXAI default · Astranov electric kept in memory only
       if (
         low === 'skin' ||
