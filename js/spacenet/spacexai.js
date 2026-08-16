@@ -25,7 +25,7 @@
   }
 
   function isSystem(t) {
-    return /^(help|live|fluid|omma|όμμα|locate|login|wallet|pizza|order|donate|layers|code|coders|hard boot|power|battery|subscribe|plans|marina|poly|helper|who are you|rate|mine|call|add|send|cancel|stop)\b/.test(
+    return /^(help|live|fluid|omma|όμμα|locate|login|wallet|pizza|order|donate|layers|code|coders|hard boot|power|battery|subscribe|plans|marina|poly|helper|who are you|rate|mine|call|add|send|cancel|stop|youtube|yt|watch|clip)\b/.test(
       t
     );
   }
@@ -35,6 +35,12 @@
     var low = t.toLowerCase();
     if (t.length < 2 || t.length > 90) return false;
     if (isSystem(low)) return false;
+    try {
+      if (global.SNYoutube) {
+        if (SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(t)) return false;
+        if (SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(t)) return false;
+      }
+    } catch (_) {}
     if (/^(fly|go|take me|show me|zoom|land|orbit|cruise)\b/.test(low)) return true;
     try {
       if (global.SNSearch && SNSearch.looksVisual && SNSearch.looksVisual(t)) return true;
