@@ -191,29 +191,14 @@
   }
 
   function engage() {
-    wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 24000 });
+    wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 20000 });
     H.status = 'listening';
-    log('UNIT · listening · tap again to stop', 'ok');
     try {
       if (global.SNCli && typeof SNCli.toggleHandsfree === 'function') {
         SNCli.toggleHandsfree();
       }
-    } catch (_) {}
-    try {
-      if (global.SNCli && SNCli.speakAi) SNCli.speakAi('Listening.', true);
-    } catch (_) {}
-    var pin =
-      (global.SNSearch && SNSearch._lastPin) ||
-      global._snLastPos ||
-      global._snPhysPos;
-    if (pin && pin.lat != null) {
-      flyTo(pin, {
-        kind: 'listen',
-        label: 'UNIT · WITH YOU',
-        detail: 'on station',
-        status: 'inbound',
-        log: false,
-      });
+    } catch (e) {
+      log('UNIT mic · ' + (e && e.message ? e.message : e), 'err');
     }
     return true;
   }
