@@ -898,7 +898,7 @@
       };
     } catch (_) {}
 
-    if (street && opts.openMap !== false) {
+    if (street && opts.openMap === true && opts.pinsOnly !== false) {
       try {
         var opener = global.SNMap && SNMap.open && SNMap.open(focus.lat, focus.lng, { force: true });
         if (opener && opener.then) {
@@ -1535,10 +1535,7 @@
 
   function closeNet() {
     var root = document.getElementById('sn-net-tile');
-    if (root) {
-      root.classList.remove('open');
-      root.style.display = 'none';
-    }
+    if (root && root.parentNode) root.parentNode.removeChild(root);
     NET.open = false;
   }
 
