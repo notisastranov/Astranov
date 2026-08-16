@@ -850,24 +850,24 @@
     {
       act: 'polygon',
       icon: ICO.polygon,
-      emoji: '⬠',
+      emoji: '🔶',
       text: 'Poly',
-      title: 'Polygon tour · fit whole route · tap again for GPS drive',
+      title: 'Polygon tour · tap again for GPS drive',
       id: 'sn-rib-poly',
     },
     { act: 'user', icon: ICO.user, emoji: '👤', text: 'User', title: 'Sign in / profile', id: 'sn-rib-user' },
     {
       act: 'call',
       icon: ICO.call,
-      emoji: '📹',
+      emoji: '📞',
       text: 'Call',
-      title: 'Video call · place or answer instantly',
+      title: 'Video call · place or answer',
       id: 'sn-rib-call',
     },
     { act: 'add', icon: ICO.add, emoji: '➕', text: 'Add', title: 'Add', id: 'sn-rib-add' },
-    { act: 'layers', icon: ICO.layers, emoji: '🗺', text: 'Layers', title: 'Layers', id: 'sn-rib-layers' },
-    { act: 'handsfree', icon: ICO.ai, emoji: '🎧', text: 'AI', title: 'AI listening', id: 'sn-rib-hf' },
-    { act: 'send', icon: ICO.send, emoji: '➤', text: 'Send', title: 'Send', id: 'sn-rib-send' },
+    { act: 'layers', icon: ICO.layers, emoji: '🗺️', text: 'Layers', title: 'Map layers', id: 'sn-rib-layers' },
+    { act: 'handsfree', icon: ICO.ai, emoji: '🎤', text: 'AI', title: 'Talk to Astranov · mic on', id: 'sn-rib-hf' },
+    { act: 'send', icon: ICO.send, emoji: '📤', text: 'Send', title: 'Send', id: 'sn-rib-send' },
   ];
   /**
    * Context task buttons REMOVED from CLI ribbon.
@@ -1656,37 +1656,19 @@
       );
       return;
     }
-    // AI ribbon = ALWAYS wake Silver hardwire (never silent no-op)
+    // AI ribbon = microphone + listen. Not a dummy Silver load.
     if (act === 'handsfree') {
       try {
-        var woke = false;
-        if (g.SNChromeHelper && typeof SNChromeHelper.activate === 'function') {
-          SNChromeHelper.activate();
-          woke = true;
-        } else if (g.SNSilver && typeof SNSilver.activate === 'function') {
-          SNSilver.activate();
-          woke = true;
+        if (g.SNCli && typeof SNCli.toggleHandsfree === 'function') {
+          SNCli.toggleHandsfree();
+        } else if (g.SNAi && SNAi.listeningOn) {
+          SNAi.listeningOn();
+        } else {
+          if (g.SNCli && SNCli.log) SNCli.log('Mic loading · type in the box, I still hear you.', 'dim');
         }
-        if (!woke) {
-          // load helper then activate
-          var s = document.createElement('script');
-          s.src = '/js/spacenet/chrome-helper.js?v=20260811224500';
-          s.onload = function () {
-            try {
-              if (g.SNChromeHelper && SNChromeHelper.activate) SNChromeHelper.activate();
-            } catch (e2) {
-              console.error(e2);
-            }
-          };
-          document.head.appendChild(s);
-          if (g.SNCli && SNCli.log) SNCli.log('Loading Silver AI…', 'dim');
-        }
-        if (g.SNCli && SNCli.log && woke)
-          SNCli.log('AI · Silver active · type in CLI', 'ok');
       } catch (e) {
-        console.error('[SNField] ai', e);
         try {
-          if (g.SNCli && SNCli.log) SNCli.log('AI button error · ' + (e.message || e), 'err');
+          if (g.SNCli && SNCli.log) SNCli.log('AI mic · ' + (e.message || e), 'err');
         } catch (_) {}
       }
       return;
@@ -1793,10 +1775,19 @@
         ' title="' +
         title +
         '">' +
-        '<span class="sn-rib-icon" aria-hidden="true">' +
+        '<span class="sn-rib-emoji" aria-hidden="true">' +
+        (b._face
+          ? ''
+          : b.act === 'handsfree' && g.SNCli && SNCli.handsfreeOn
+            ? '🎙️'
+            : b.emoji || '') +
+        '</span>' +
+        '<span class="sn-rib-icon' +
+        (b._face ? '' : ' sn-rib-icon-svg') +
+        '" aria-hidden="true">' +
         (b._face
           ? '<img class="sn-rib-face" alt="" src="' + String(b._face).replace(/"/g, '') + '">'
-          : b.icon || '') +
+          : '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
         label +
