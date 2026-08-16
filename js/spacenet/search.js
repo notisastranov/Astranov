@@ -457,6 +457,68 @@
     }
   }
 
+  async function hydrateWikiCoords(hits) {
+    var list = (hits || []).slice(0, 5);
+    var places = [];
+    await Promise.all(
+      list.map(function (h) {
+        if (!h || !h.title) return Promise.resolve();
+        return wiki(h.title)
+          .then(function (w) {
+            if (!w) return;
+            if (w.lat != null && w.lng != null) {
+              h.lat = w.lat;
+              h.lng = w.lng;
+              places.push({
+                name: w.title,
+                lat: w.lat,
+                lng: w.lng,
+                kind: 'wiki',
+                type: w.type || 'wiki',
+              });
+            }
+            if (w.text && !h.text) h.text = w.text;
+          })
+          .catch(function () {});
+      })
+    );
+    return places;
+  }
+
+  function spinEarthToHits(hits) {
+    hits = (hits || []).filter(function (h) {
+      return h && h.lat != null && h.lng != null && isFinite(h.lat) && isFinite(h.lng);
+    });
+    if (!hits.length) return;
+    try {
+      if (global._snEarthTour) clearInterval(global._snEarthTour);
+    } catch (_) {}
+    visualize({ places: hits }, { openMap: false });
+    if (hits.length < 2) return;
+    var i = 0;
+    var n = Math.min(hits.length, 6);
+    global._snEarthTour = setInterval(function () {
+      i = (i + 1) % n;
+      var h = hits[i];
+      if (!h || !global.SNGlobe || !SNGlobe.goToPlace) return;
+      try {
+        SNGlobe.goToPlace(h.lat, h.lng, {
+          tier: n > 3 ? 'regional' : 'national',
+          pulse: true,
+          label: String(h.name || '').slice(0, 22),
+          skipScan: true,
+          openMap: false,
+        });
+        if (global.SNCli && SNCli.preview) SNCli.preview(String(h.name || 'hit').slice(0, 40));
+      } catch (_) {}
+    }, 2600);
+    setTimeout(function () {
+      try {
+        clearInterval(global._snEarthTour);
+      } catch (_) {}
+    }, 2600 * n + 400);
+  }
+
   async function wikidata(q) {
     try {
       const url =
@@ -828,14 +890,12 @@
     } catch (_) {}
 
     try {
-      global._snLastPos = {
+      global.SNSearch._lastFocus = {
         lat: focus.lat,
         lng: focus.lng,
         source: 'search',
-        real: true,
         label: focus.name,
       };
-      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(focus.lat, focus.lng);
     } catch (_) {}
 
     if (street && opts.openMap !== false) {
@@ -1381,28 +1441,33 @@
     ];
 
     var explicitPlace = /^(fly|go|zoom|take me|show me the place|where is|locate)\b/.test(low);
-    var shopWord = /\b(bodega|shop|store|market|vendor|kitchen|cafe|bar|tavern|supermarket|pharmacy|kiosk)\b/.test(
-      low
-    );
-    var shortPlace =
-      q.split(/\s+/).length <= 4 &&
-      !/\d{5,}/.test(q) &&
-      !/\b(cam|clip|video|song|lyrics|feat|drum|concert)\b/i.test(low);
-    var knownCity = false;
-    if (/^(tokyo|paris|london|athens|rhodes|rodos|rome|eiffel|mars|moon|earth|vodi)$/i.test(low))
-      knownCity = true;
     if (opts && opts.forcePlace) explicitPlace = true;
-    if (explicitPlace || knownCity || shopWord || (shortPlace && !/\s/.test(q))) {
-      jobs.push(
-        geocode(q)
-          .then(function (p) {
-            out.places = p || [];
-          })
-          .catch(function () {})
-      );
-    }
+    jobs.push(
+      geocode(q)
+        .then(function (p) {
+          out.places = p || [];
+        })
+        .catch(function () {})
+    );
 
     await Promise.all(jobs);
+    try {
+      var more = await hydrateWikiCoords(out.wikiHits);
+      if (more && more.length) out.places = (out.places || []).concat(more);
+    } catch (_) {}
+    if (out.wiki && out.wiki.lat != null) {
+      out.places = (out.places || []).concat([
+        { name: out.wiki.title, lat: out.wiki.lat, lng: out.wiki.lng, kind: 'wiki' },
+      ]);
+    }
+    var seen = {};
+    out.places = (out.places || []).filter(function (p) {
+      if (!p || p.lat == null) return false;
+      var k = p.lat.toFixed(3) + ',' + p.lng.toFixed(3);
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
 
     var blob =
       ((out.wiki && (out.wiki.description || '') + ' ' + (out.wiki.text || '')) || '') +
@@ -1429,7 +1494,7 @@
     if (hit && looksLikePlaceHit(hit) && out.kind !== 'video' && !isQuestionQuery(q)) {
       var k = String(hit.kind || hit.type || '').toLowerCase();
       var citylike = /city|town|village|country|island|capital|suburb|administrative|hamlet|state/.test(k);
-      if (explicitPlace || citylike || (shortPlace && (hit.importance == null || hit.importance > 0.35))) {
+      if (explicitPlace || citylike || (hit.importance != null && hit.importance > 0.45)) {
         out.kind = 'place';
         out.confidence = explicitPlace ? 0.92 : 0.74;
         out.why = 'geocode is a real place';
@@ -1711,12 +1776,57 @@
     if (!pin && s.kind !== 'video') {
       try {
         var g2 = await geocode(q);
-        if (g2 && g2[0] && looksLikePlaceHit(g2[0])) {
-          s.places = g2;
-          pin = g2[0];
+        if (g2 && g2[0]) {
+          s.places = (s.places || []).concat(g2);
+          if (looksLikePlaceHit(g2[0])) pin = g2[0];
         }
       } catch (_) {}
     }
+
+    if (intentOf(q).weather) {
+      var here = global._snPhysPos || global._snLastPos;
+      var wxAt = pin || (here && here.lat != null ? here : null);
+      if (wxAt) {
+        try {
+          var wx = await weather(wxAt.lat, wxAt.lng);
+          if (wx && wx.text) {
+            L(
+              'Weather · ' +
+                (wxAt.name || wxAt.label || 'here') +
+                ' · ' +
+                wx.text,
+              'ok'
+            );
+            s.weather = wx;
+            s.acted.push('weather');
+          }
+        } catch (_) {}
+        if (!pin) pin = { name: 'weather', lat: wxAt.lat, lng: wxAt.lng, kind: 'weather' };
+      }
+    }
+
+    var earthHits = (s.places || []).slice();
+    if (s.wiki && s.wiki.lat != null)
+      earthHits.unshift({ name: s.wiki.title, lat: s.wiki.lat, lng: s.wiki.lng, kind: 'wiki' });
+    if (earthHits.length) {
+      spinEarthToHits(earthHits);
+      s.acted.push('earth');
+      L(
+        'Earth · ' +
+          earthHits.length +
+          ' hit' +
+          (earthHits.length === 1 ? '' : 's') +
+          ' · ' +
+          earthHits
+            .slice(0, 4)
+            .map(function (h) {
+              return h.name;
+            })
+            .join(' · '),
+        'ok'
+      );
+    }
+
     if (pin && !isQuestionQuery(q) && (s.kind === 'place' || /\b(go|fly|take me|show me|locate|near)\b/i.test(q))) {
       s.kind = 'place';
       await arriveVisual(pin, q, L, previewFn);
@@ -1857,6 +1967,8 @@
     parseSearch,
     looksVisual,
     visualize,
+    spinEarthToHits,
+    hydrateWikiCoords,
     realFocus,
     researchFirst,
     sense,
