@@ -815,6 +815,10 @@
     '/js/spacenet/map.js',
     '/js/spacenet/tasks.js',
     '/js/spacenet/search.js',
+    '/js/spacenet/youtube.js',
+    '/js/spacenet/spacexai.js',
+    '/js/spacenet/omni-engine.js',
+    '/js/spacenet/brain.js',
     '/js/spacenet/market.js',
     '/js/spacenet/task-runner.js',
     '/js/spacenet/field.js',
@@ -1255,10 +1259,21 @@
       } catch (_) {}
       // Ensure globe at GLOBAL if stuck deep without canvas sense
       try {
-        if (global.SNGlobe && SNGlobe.goToTier) SNGlobe.goToTier('global');
+        if (global.SNGlobe) {
+          var face = null;
+          try {
+            face = global._snPhysPos || global._snLastPos;
+          } catch (_) {}
+          var lat = face && face.lat != null ? face.lat : 37.9838;
+          var lng = face && face.lng != null ? face.lng : 23.7275;
+          if (SNGlobe.goToPlace) {
+            SNGlobe.goToPlace(lat, lng, { tier: 'global', label: face ? 'You' : 'Athens', body: 'earth', pulse: true });
+          } else if (SNGlobe.goToTier) {
+            SNGlobe.goToTier('global');
+          }
+        }
       } catch (_) {}
 
-      // Expand CLI with boot transcript
       try {
         if (global.SNCli && SNCli.init) SNCli.init();
       } catch (_) {}
@@ -1275,22 +1290,14 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('Flight computer ready.', 'ok', true);
-          FACT_GROUPS.forEach(function (g) {
-            SNCli.log(g.title, 'ok', true);
-            g.ids.forEach(function (id) {
-              var f = facts[id];
-              if (!f) return;
-              var mark = markFor(f.state);
-              SNCli.log(mark + ' ' + f.k + ' · ' + f.text, f.state === 'bad' ? 'err' : 'ok', true);
-            });
-          });
-          SNCli.log('> enter astranov', 'cmd', true);
+          SNCli.log('SpaceNet online. Name anything.', 'ok', true);
         }
       } catch (_) {}
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'locate · battery · power on · help';
+        if (inp) inp.placeholder = 'tokyo · eiffel · pizza · youtube · anything';
+        var tin = document.getElementById('stc-cmd-in');
+        if (tin) tin.placeholder = 'tokyo · mars · eiffel · vodi · pizza';
       } catch (_) {}
     } catch (_) {}
     killOverlay();
@@ -1406,6 +1413,14 @@
       'os-will': { src: '/js/spacenet/os-will.js', global: 'SNOsWill' },
       auth: { src: '/js/spacenet/auth.js', global: 'SNAuth' },
       youtube: { src: '/js/spacenet/youtube.js', global: 'SNYoutube' },
+      search: { src: '/js/spacenet/search.js', global: 'SNSearch' },
+      omni: { src: '/js/spacenet/omni-engine.js', global: 'SNOmni' },
+      brain: { src: '/js/spacenet/brain.js', global: 'SNBrain' },
+      spacexai: { src: '/js/spacenet/spacexai.js', global: 'SNSpaceXai' },
+      webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+      spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+      'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
+      invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
       helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
       marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
     };
