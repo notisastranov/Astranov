@@ -4080,10 +4080,15 @@ if (
                 }, 23000)
               ),
             ]);
-            if (pow && pow.ok && pow.text) {
+            if (pow && pow.paywall) {
+              preview('subscribe 3');
+              reply = null;
+              usedQuick = true;
+            } else if (pow && pow.ok && pow.text) {
               reply = String(pow.text);
               try {
-                if (pow.via) log('via ' + pow.via + (pow.paid ? ' · paid' : ''), 'dim');
+                if (pow.notice) log(pow.notice, 'dim');
+                else if (pow.via) log('via ' + pow.via + (pow.paid ? ' · paid' : ''), 'dim');
               } catch (_) {}
             }
           }
