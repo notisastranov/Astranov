@@ -165,6 +165,7 @@
     gibs: {
       id: 'gibs',
       label: 'Live sat',
+      emoji: 'LIVE',
       kind: 'gibs',
       desc: 'NASA VIIRS true color · last daily pass',
       layer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
@@ -176,6 +177,7 @@
     chloro: {
       id: 'chloro',
       label: 'Sea color',
+      emoji: 'SEA',
       kind: 'gibs',
       desc: 'NASA VIIRS chlorophyll — bloom, runoff, dirty water',
       layer: 'VIIRS_SNPP_L2_Chlorophyll_A',
@@ -187,6 +189,7 @@
     sst: {
       id: 'sst',
       label: 'Sea temp',
+      emoji: 'TEMP',
       kind: 'gibs',
       desc: 'NASA sea surface temperature',
       layer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
@@ -366,9 +369,9 @@
     st.id = 'sn-map-layer-css';
     st.textContent = [
       /* Layers panel only — opened from CLI ribbon 🗺 Layers (no map-corner button; money HUD is top-right) */
-      '#sn-map-layers{position:absolute;left:12px;bottom:12px;z-index:1000;display:flex;flex-direction:column;',
-      'align-items:flex-start;gap:8px;pointer-events:none}',
-      '#sn-layer-panel{display:none;pointer-events:auto;width:min(300px,calc(100vw - 28px));max-height:min(55vh,420px);overflow:auto;',
+      '#sn-map-layers{position:fixed;left:50%;bottom:calc(168px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:120;display:flex;flex-direction:column;',
+      'align-items:stretch;gap:8px;pointer-events:none;width:min(720px,calc(100vw - 24px))}',
+      '#sn-layer-panel{display:none;pointer-events:auto;width:100%;max-height:min(52vh,420px);overflow:auto;',
       'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.5);border-radius:14px;',
       'padding:10px;box-shadow:0 12px 36px rgba(0,0,0,.55);color:#c8e4ff}',
       '#sn-layer-panel.open{display:block}',
@@ -404,13 +407,16 @@
     if (wrap) wrap.remove();
     wrap = document.createElement('div');
     wrap.id = 'sn-map-layers';
-    // Panel only — no corner Layers button (CLI ribbon 🗺 Layers owns open)
     wrap.innerHTML =
       '<div id="sn-layer-panel" role="dialog" aria-label="Map layers"></div>';
-    map.getContainer().appendChild(wrap);
+    document.body.appendChild(wrap);
     M.layerCtl = wrap;
-    L.DomEvent.disableClickPropagation(wrap);
-    L.DomEvent.disableScrollPropagation(wrap);
+    try {
+      if (typeof L !== 'undefined' && L.DomEvent) {
+        L.DomEvent.disableClickPropagation(wrap);
+        L.DomEvent.disableScrollPropagation(wrap);
+      }
+    } catch (_) {}
     renderLayerPanel();
   }
 
@@ -1750,13 +1756,17 @@
       return M.userHold;
     },
     openLayersPanel: function () {
-      if (!M.map) return false;
       if (!document.getElementById('sn-layer-panel')) buildLayerControl(M.map);
       M.panelOpen = true;
       const p = document.getElementById('sn-layer-panel');
       if (!p) return false;
+      const wrap = document.getElementById('sn-map-layers');
+      if (wrap && wrap.parentNode !== document.body) document.body.appendChild(wrap);
       p.classList.add('open');
       renderLayerPanel();
+      try {
+        if (M.map && M.map.invalidateSize) M.map.invalidateSize();
+      } catch (_) {}
       return true;
     },
     getMap: function () {
