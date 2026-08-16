@@ -1689,6 +1689,38 @@
     if (g.SNCli && SNCli.run) void SNCli.run(act);
   }
 
+  function userFaceUrl() {
+    try {
+      if (g.SNAuth && typeof SNAuth.avatarUrl === 'function') {
+        var a = SNAuth.avatarUrl();
+        if (a) return a;
+      }
+    } catch (_) {}
+    try {
+      var u = g.SNAuth && SNAuth.user;
+      if (!u) return '';
+      var md = u.user_metadata || {};
+      if (md.avatar_url) return md.avatar_url;
+      if (md.picture) return md.picture;
+      if (md.avatar) return md.avatar;
+      var id0 = u.identities && u.identities[0] && u.identities[0].identity_data;
+      if (id0 && (id0.avatar_url || id0.picture)) return id0.avatar_url || id0.picture;
+    } catch (_) {}
+    return '';
+  }
+
+  function userShortName() {
+    try {
+      var u = g.SNAuth && SNAuth.user;
+      if (!u) return '';
+      var md = u.user_metadata || {};
+      var full = md.full_name || md.name || '';
+      if (full) return String(full).split(/\s+/)[0].slice(0, 10);
+      if (u.email) return String(u.email).split('@')[0].slice(0, 10);
+    } catch (_) {}
+    return 'You';
+  }
+
   /**
    * Permanent CLI top shortcut ribbon:
    * 🎯 Locate · 👤 User · ➕ Add · 🗺 Layers · 🎧 AI · ➤ Send
@@ -1710,11 +1742,18 @@
       var label = b.text || b.act;
       var title = b.title || b.text;
       if (b.act === 'user') {
-        label = signedIn ? 'You' : 'Login';
+        var photo = userFaceUrl();
+        var uname = userShortName();
+        label = signedIn ? uname || 'You' : 'Login';
         title = signedIn
-          ? 'Logged in · open your tile + map pin'
+          ? 'Logged in as ' + (uname || 'you') + ' · still signed in'
           : 'Sign in · astranov.eu';
         if (signedIn) onCls += ' on';
+        if (signedIn && photo) {
+          b._face = photo;
+        } else {
+          b._face = '';
+        }
       }
       if (b.act === 'polygon') {
         if (polyNavMode === 'drive') {
@@ -1741,7 +1780,9 @@
         title +
         '">' +
         '<span class="sn-rib-icon" aria-hidden="true">' +
-        (b.icon || '') +
+        (b._face
+          ? '<img class="sn-rib-face" alt="" src="' + String(b._face).replace(/"/g, '') + '">'
+          : b.icon || '') +
         '</span>' +
         '<span class="sn-rib-txt">' +
         label +
