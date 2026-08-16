@@ -25,7 +25,7 @@
   var SN = snApi();
   var TIERS = {
     // GLOBAL = full planet in space (ISS / sats visible). Not a cropped close-up.
-    // Z values are discrete SNAP altitudes — wheel never free-flies between them.
+    // Z is continuous camera distance. Wheel / pinch change Z only — they never rotate.
     solar: { z: 18, label: 'SOLAR' },
     global: { z: 5.6, label: 'GLOBAL' },
     national: { z: 2.85, label: 'NATIONAL' },
@@ -1683,6 +1683,40 @@
     }
   }
 
+  function zoomByDelta(dyPx) {
+    if (!G.camera) return;
+    try {
+      if (dyPx > 8 && global.SNMap && SNMap.active && SNMap.close) SNMap.close();
+    } catch (_) {}
+    var zNow = G.camera.position.z;
+    if (G.phys && G.phys.tZ != null && Math.abs(G.phys.tZ - zNow) < 3) zNow = G.phys.tZ;
+    var nz = zNow * Math.exp(Math.max(-90, Math.min(90, dyPx)) * 0.0024);
+    if (nz < 1.32) nz = 1.32;
+    if (nz > 22) nz = 22;
+    G.flying = false;
+    G.flyGen = (G.flyGen || 0) + 1;
+    G.zoomAnim = false;
+    G.velX = 0;
+    G.velY = 0;
+    G.camera.position.z = nz;
+    if (G.phys) {
+      G.phys.tZ = nz;
+      G.phys.vZ = 0;
+    }
+    G.diveTier = tierFromZ(nz);
+    try {
+      syncDiveStepFromTier(G.diveTier);
+    } catch (_) {}
+    try {
+      setTierLabel();
+    } catch (_) {}
+    try {
+      syncSpaceLayerVis();
+    } catch (_) {}
+    G.lastAct = Date.now();
+    G.lastUserControl = Date.now();
+  }
+
   function bindInput() {
     var canvas = G.renderer.domElement;
     var lx = 0,
@@ -1714,8 +1748,7 @@
     // Sensitivity: calm + distance-scaled (near surface much slower — no flip chaos)
     function rotScale() {
       var z = G.camera && G.camera.position ? G.camera.position.z : 5;
-      // closer → smaller spin per pixel
-      return Math.max(0.0007, Math.min(0.0018, 0.00115 * (z / 4.5)));
+      return Math.max(0.0038, Math.min(0.011, 0.0066 * (z / 4.5)));
     }
 
     function clearHold() {
@@ -1751,62 +1784,12 @@
       return { x: (a.x + b.x) * 0.5, y: (a.y + b.y) * 0.5 };
     }
 
-    /** Zoom OUT always leaves linear street map → 3D globe */
     function doZoomOutStep() {
-      G.lastAct = Date.now();
-      G.lastUserControl = Date.now();
-      G.velX = 0;
-      G.velY = 0;
-      smVx = 0;
-      smVy = 0;
-      G.flyGen = (G.flyGen || 0) + 1;
-      G.flying = false;
-      if (global.SNMap && SNMap.active) {
-        try {
-          SNMap.close();
-        } catch (_) {}
-        // Land on REGIONAL 3D globe — never leave user on flat linear map
-        G.diveTier = 'regional';
-        syncDiveStepFromTier('regional');
-        var f = focusPos() || G.diveAnchor;
-        if (f && f.lat != null) {
-          try {
-            flyNear(f.lat, f.lng, 'regional');
-          } catch (_) {
-            animateZ(TIERS.regional.z, 480);
-          }
-        } else {
-          animateZ(TIERS.regional.z, 480);
-        }
-        setTierLabel();
-        syncSpaceLayerVis();
-        syncNationalLayer();
-        try {
-          setHud('REGIONAL · 3D globe');
-          if (global.SNCli && SNCli.log) SNCli.log('Zoom out · 3D globe · REGIONAL', 'dim');
-        } catch (_) {}
-        return;
-      }
-      zoomOutOne();
+      zoomByDelta(70);
     }
 
-    function doZoomInStep(cx, cy) {
-      G.lastAct = Date.now();
-      G.lastUserControl = Date.now();
-      G.velX = 0;
-      G.velY = 0;
-      var under = null;
-      try {
-        if (cx != null && cy != null) under = pickLatLng(cx, cy);
-      } catch (_) {}
-      var p = under || focusPos();
-      if (p && p.lat != null) {
-        diveInAt(p.lat, p.lng);
-      } else {
-        var cur = currentTier();
-        var idx = ladderIndex(cur);
-        if (idx < LADDER.length - 1) goToTier(LADDER[idx + 1]);
-      }
+    function doZoomInStep() {
+      zoomByDelta(-70);
     }
 
     function beginPinch() {
@@ -1840,34 +1823,12 @@
       var ratio = d / (pinchStartDist || 1);
       var dy = mid.y - pinchStartMidY;
       // Combine pinch scale + vertical two-finger drag (drag down = out, up = in)
-      var score = (1 - ratio) * 220 + dy * 0.55;
+      var score = (1 - ratio) * 260 + dy * 0.7;
       pinchAcc = score;
-      if (Math.abs(score) > 28 || Math.abs(1 - ratio) > 0.08 || Math.abs(dy) > 36) {
-        pinchMoved = true;
-      }
-      var now = Date.now();
-      if (G.zoomAnim || G.flying) {
-        if (e && e.cancelable) e.preventDefault();
-        return;
-      }
-      if (now < (G._pinchCoolUntil || 0)) {
-        if (e && e.cancelable) e.preventDefault();
-        return;
-      }
-      // Threshold for discrete tier step — feels like ladder, not free-fly
-      if (score > 72) {
-        G._pinchCoolUntil = now + 420;
-        pinchStartDist = d;
-        pinchStartMidY = mid.y;
-        pinchAcc = 0;
-        doZoomOutStep();
-      } else if (score < -72) {
-        G._pinchCoolUntil = now + 420;
-        pinchStartDist = d;
-        pinchStartMidY = mid.y;
-        pinchAcc = 0;
-        doZoomInStep(mid.x, mid.y);
-      }
+      if (Math.abs(score) > 16 || Math.abs(1 - ratio) > 0.04) pinchMoved = true;
+      zoomByDelta((1 - ratio) * 140 + dy * 0.35);
+      pinchStartDist = d;
+      pinchStartMidY = mid.y;
       if (e && e.cancelable) e.preventDefault();
     }
 
@@ -1981,7 +1942,7 @@
       var distFromDown = Math.hypot(e.clientX - downX, e.clientY - downY);
       // Deadzone: ignore micro jitter (stops shake on click)
       if (!dragActive) {
-        if (distFromDown < 12 && pathLen < 16) {
+        if (distFromDown < 6 && pathLen < 8) {
           if (e.cancelable) e.preventDefault();
           return;
         }
@@ -2004,13 +1965,13 @@
       }
 
       // Soft low-pass on deltas (anti-shake / anti-flip)
-      var sx = dx * 0.55;
-      var sy = dy * 0.55;
+      var sx = dx * 0.94;
+      var sy = dy * 0.94;
       var k = rotScale();
 
       if (G.spin && G.tilt) {
         G.spin.rotation.y += sx * k;
-        var nx = G.tilt.rotation.x + sy * k * 0.85;
+        var nx = G.tilt.rotation.x + sy * k * 0.92;
         if (nx > TILT_MAX) nx = TILT_MAX;
         if (nx < -TILT_MAX) nx = -TILT_MAX;
         G.tilt.rotation.x = nx;
@@ -2094,14 +2055,14 @@
       // Natural trackball inertia — one-finger turn + fling (PRODUCT sacred)
       // Strong fling so the sphere keeps turning after release
       var flickSpeed = Math.hypot(smVx, smVy);
-      if (wasDrag && flickSpeed > 0.42 && holdMs < 700) {
+      if (wasDrag && flickSpeed > 0.28 && holdMs < 800) {
         var k = rotScale();
-        G.velX = Math.max(-0.008, Math.min(0.008, smVx * k * 2.1));
-        G.velY = Math.max(-0.005, Math.min(0.005, smVy * k * 1.6));
-      } else if (wasDrag && flickSpeed > 0.22) {
+        G.velX = Math.max(-0.022, Math.min(0.022, smVx * k * 5.4));
+        G.velY = Math.max(-0.014, Math.min(0.014, smVy * k * 4.2));
+      } else if (wasDrag && flickSpeed > 0.14) {
         var k2 = rotScale();
-        G.velX = Math.max(-0.0035, Math.min(0.0035, smVx * k2 * 1.15));
-        G.velY = Math.max(-0.0022, Math.min(0.0022, smVy * k2 * 0.9));
+        G.velX = Math.max(-0.012, Math.min(0.012, smVx * k2 * 3.2));
+        G.velY = Math.max(-0.008, Math.min(0.008, smVy * k2 * 2.4));
       } else {
         G.velX = 0;
         G.velY = 0;
@@ -2185,88 +2146,22 @@
     canvas.addEventListener(
       'wheel',
       function (e) {
-        // Mouse / trackpad scroll = ZOOM only — never spin the globe
         if (e.cancelable) e.preventDefault();
         if (e.stopPropagation) e.stopPropagation();
         if (G.gameMode) return;
-
-        // Hard stop any trackball / inertia / fly — wheel must never fling the sphere
-        down = false;
-        dragActive = false;
-        moved = false;
-        holdFired = false;
-        clearHold();
-        ptrId = null;
-        pointers = Object.create(null);
-        endPinch();
-        G.dragging = false;
         G.velX = 0;
         G.velY = 0;
         smVx = 0;
         smVy = 0;
-        // Abort in-flight camera so stacked wheel events cannot fight each other
-        G.flyGen = (G.flyGen || 0) + 1;
         G.flying = false;
+        G.flyGen = (G.flyGen || 0) + 1;
         G.zoomAnim = false;
-        G.lastAct = Date.now();
-        G.lastUserControl = Date.now();
-
-        // Ignore horizontal trackpad pan (that was misread as chaos)
         var dy = e.deltaY;
         var dx = e.deltaX || 0;
         if (e.deltaMode === 1) dy *= 16;
-        if (e.deltaMode === 2) dy *= 32;
-        // If mostly horizontal, ignore (trackpad scroll sideways)
-        if (Math.abs(dx) > Math.abs(dy) * 1.4 && Math.abs(dy) < 12) return;
-
-        G._wheelAcc = (G._wheelAcc || 0) + dy;
-        var now = Date.now();
-        // Longer cool-down: one discrete tier step per gesture, not a spin storm
-        if (now < (G._wheelCoolUntil || 0)) {
-          G._wheelAcc = 0;
-          return;
-        }
-        if (Math.abs(G._wheelAcc) < 28) return;
-        var zoomOut = G._wheelAcc > 0;
-        G._wheelAcc = 0;
-        G._wheelCoolUntil = now + 480;
-
-        // Close truncated street map if open — zoom returns to 3D globe
-        try {
-          if (global.SNMap && SNMap.active && SNMap.close) SNMap.close();
-        } catch (_) {}
-
-        if (zoomOut) {
-          doZoomOutStep();
-          return;
-        }
-        // Zoom in: ladder step only (no openMap). Prefer focus under cursor without wild re-aim every tick.
-        var under = null;
-        try {
-          under = pickLatLng(e.clientX, e.clientY);
-        } catch (_) {}
-        var p = under || focusPos() || G.diveAnchor;
-        if (p && p.lat != null) {
-          // Soft focus once — goToTier path without fly fight
-          setFocus(p.lat, p.lng);
-          var cur = currentTier();
-          if (cur === 'city' || cur === 'regional') {
-            // already deep: gentle Z only
-            animateZ(TIERS.regional ? TIERS.regional.z : 2.2, 420);
-            G.diveTier = 'regional';
-            setTierLabel();
-          } else {
-            diveInAt(p.lat, p.lng);
-          }
-        } else {
-          var cur2 = currentTier();
-          var idx = ladderIndex(cur2);
-          if (idx < LADDER.length - 1) {
-            var next = LADDER[idx + 1];
-            if (next === 'city') next = 'regional';
-            goToTier(next);
-          }
-        }
+        if (e.deltaMode === 2) dy *= window.innerHeight || 800;
+        if (Math.abs(dx) > Math.abs(dy) * 1.6 && Math.abs(dy) < 8) return;
+        zoomByDelta(dy);
       },
       { passive: false }
     );
