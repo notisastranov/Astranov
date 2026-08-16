@@ -4070,8 +4070,12 @@ if (
         await ensureYoutube();
       } catch (_) {}
       if (global.SNSearch && typeof SNSearch.researchFirst === 'function') {
-        const sensed = await SNSearch.researchFirst(line, { log: log, preview: preview });
-        if (sensed && sensed.acted && sensed.acted.length) return;
+        try {
+          const sensed = await SNSearch.researchFirst(line, { log: log, preview: preview });
+          if (sensed && sensed.acted && sensed.acted.length) return;
+        } catch (eRes) {
+          log('Search · ' + (eRes && eRes.message ? eRes.message : eRes), 'err');
+        }
       }
       if (
         global.SNYoutube &&
@@ -4920,20 +4924,29 @@ if (
   }
 
   function init() {
-    // Always kill orphan TTS from prior tab / autoplay
+    if (init._ready) {
+      bindCliForm();
+      return;
+    }
+    init._ready = true;
+    // Always kill orphan TTS from prior tab / autoplay — first boot only
     killSpeech();
     hfSpeakOut = false;
     handsfreeOn = false;
-    // Language core: English base unless user set el/auto
     try {
       if (!localStorage.getItem(VOICE_LANG_KEY)) localStorage.setItem(VOICE_LANG_KEY, 'en');
       global._snLastUserLang = 'en';
     } catch (_) {}
+    bindCliForm();
+  }
+
+  function bindCliForm() {
     const form = $('cli-form');
     const input = $('cli-in');
     const topForm = $('stc-cmd');
     const topIn = $('stc-cmd-in');
-    if (!form || !input || form._snBound) return;
+    if (!form || !input) return;
+    if (form._snBound) return;
     form._snBound = true;
     function syncInputs(from) {
       var a = $('cli-in');
