@@ -852,13 +852,22 @@
       )
     )
       return false;
-    if (/\b(in|at|near|around)\s+[a-zα-ω]/i.test(line)) return true;
+    if (/\b(in|at|near|around)\s+([a-zα-ω][\wα-ω'\-]*)/i.test(line)) {
+      var placeTok = (RegExp.$2 || '').toLowerCase();
+      if (
+        CITIES[placeTok] ||
+        /^(tokyo|paris|london|athens|rhodes|rodos|rome|mars|earth|moon)$/.test(placeTok)
+      )
+        return true;
+    }
     if (
       /\b(earth|mars|moon|jupiter|saturn|venus|city|island|tower|harbour|harbor|beach|port|airport|mountain|cape|temple|bridge|square|plaza)\b/.test(
         t
       )
-    )
+    ) {
+      if (/\b(drum\s*cam|concert|setlist|youtube|clip|video)\b/.test(t)) return false;
       return true;
+    }
     try {
       if (CITIES[t.replace(/\s+/g, '')] || CITIES[t]) return true;
     } catch (_) {}
