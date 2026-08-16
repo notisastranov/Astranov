@@ -1317,7 +1317,13 @@
           last &&
           last.lat != null &&
           !isDemoPin(last.lat, last.lng, last) &&
-          (last.real || last.source === 'gps' || last.source === 'locate')
+          (last.real ||
+            last.source === 'gps' ||
+            last.source === 'locate' ||
+            last.source === 'ip' ||
+            last.source === 'soft' ||
+            last.source === 'cache' ||
+            last.source === 'verified')
         ) {
           pos = last;
         }
