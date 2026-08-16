@@ -313,7 +313,10 @@
     try {
       if (global.SNSubscription && SNSubscription.status) {
         var st = SNSubscription.status();
-        say('You are signed in. The paid mind is on. The key stays on the server.', 'ok');
+        if (!global.__snPaidMindSaid) {
+          global.__snPaidMindSaid = 1;
+          say('You are signed in. The paid mind is on. The key stays on the server.', 'ok');
+        }
       } else {
         say('Architect signed in · paid Grok armed (server key)', 'ok');
       }
