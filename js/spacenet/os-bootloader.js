@@ -1431,6 +1431,17 @@
       invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
       helper: { src: '/js/spacenet/helper.js', global: 'SNHelper' },
       marina: { src: '/js/spacenet/marina-berths.js', global: 'SNMarina' },
+      tasks: { src: '/js/spacenet/tasks.js', global: 'SNTasks' },
+      home: { src: '/js/spacenet/home.js', global: 'SNHome' },
+      wish: { src: '/js/spacenet/wish-inbox.js', global: 'SNWishInbox' },
+      'free-ai': { src: '/js/spacenet/free-ai.js', global: 'SNFreeMind' },
+      'ai-graphics': { src: '/js/spacenet/ai-graphics.js', global: 'SNAIGraphics' },
+      call: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+      earthops: { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
+      'earth-ops': { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
+      gaming: { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
+      game: { src: '/js/spacenet/game-dock.js', global: 'SNGameDock' },
+      ops: { src: '/js/spacenet/earth-ops.js', global: 'SNEarthOps' },
     };
     global.SNLoader = {
       _p: {},
