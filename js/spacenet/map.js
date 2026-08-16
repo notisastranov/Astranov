@@ -1201,6 +1201,15 @@
       const la = e.latlng.lat;
       const lo = e.latlng.lng;
       try {
+        var ev = e.originalEvent || e;
+        if (global.SNHelper && SNHelper.followTap) {
+          SNHelper.followTap(la, lo, {
+            x: ev.clientX,
+            y: ev.clientY,
+          });
+        }
+      } catch (_) {}
+      try {
         if (global.SNTopo && SNTopo.onMapClick && SNTopo.onMapClick(la, lo)) {
           return;
         }
