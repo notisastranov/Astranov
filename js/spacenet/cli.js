@@ -4330,6 +4330,24 @@ if (
     return !!(handsfreeOn || hfSpeakOut);
   }
 
+  function transcript(who, text) {
+    var t = String(text || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!t) return;
+    if (who === 'you') {
+      log('YOU · ' + t, 'cmd');
+      preview('YOU · ' + t.slice(0, 48));
+    } else {
+      String(t)
+        .split('\n')
+        .forEach(function (ln) {
+          if (ln.trim()) log('ASTRANOV · ' + ln.trim(), 'ok');
+        });
+      preview('ASTRANOV · ' + t.slice(0, 48));
+    }
+  }
+
   function setHandsfreeUi(on, label) {
     // Ribbon is the only hands-free control (bottom bar removed)
     const btns = [$('btn-handsfree'), $('sn-rib-hf')].filter(Boolean);
@@ -4351,7 +4369,6 @@ if (
       .replace(/\s+/g, ' ')
       .trim();
     if (!t) return;
-    transcript('ai', t);
     if (/[а-яА-ЯёЁ]/.test(t) && global._snLastUserLang !== 'ru') {
       try {
         log('Blocked accidental Russian TTS · English core', 'dim');
@@ -4359,15 +4376,10 @@ if (
       speakAi("I'm Astranov. English first — I still understand you. How can I help?", true);
       return;
     }
-    if (!talking()) return;
-    speakAi(t);
-      try {
-        log('Blocked accidental Russian TTS · English core', 'dim');
-      } catch (_) {}
-      speakAi("I'm Astranov. English first — I still understand you. How can I help?", true);
+    if (!talking()) {
+      transcript('ai', t);
       return;
     }
-    if (!talking()) return;
     speakAi(t);
   }
 
