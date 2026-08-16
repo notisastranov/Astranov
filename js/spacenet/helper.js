@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=tiny20260816fix';
+  var BUILD_Q = 'v=tiny20260816thrust';
 
   var H = {
     ready: false,
@@ -43,6 +43,7 @@
     loadFailed: false,
     trail: [],
     sparks: [],
+    stars: [],
     wingDust: [],
     ghosts: [],
     rings: [],
@@ -171,7 +172,7 @@
       el.setAttribute('aria-label', 'SpaceX Bot · tap to talk');
       el.title = 'Tap the unit · microphone on · it flies the result';
       el.style.cssText =
-        'position:fixed;z-index:12080;width:120px;height:148px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
+        'position:fixed;z-index:12080;width:80px;height:100px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
       el.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -185,8 +186,8 @@
 
   function placeHit() {
     if (!H.hit) return;
-    H.hit.style.left = Math.max(0, H.x - 60) + 'px';
-    H.hit.style.top = Math.max(0, H.y - 74) + 'px';
+    H.hit.style.left = Math.max(0, H.x - 40) + 'px';
+    H.hit.style.top = Math.max(0, H.y - 52) + 'px';
     H.hit.style.display = H.visible === false ? 'none' : 'block';
   }
 
@@ -405,6 +406,72 @@
       );
     }
     return H.mission;
+  }
+
+  function speakDeep(text) {
+    var line = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+    if (!line) return;
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('UNIT · ' + line, 'ok');
+    } catch (_) {}
+    try {
+      var synth = global.speechSynthesis;
+      if (!synth || !global.SpeechSynthesisUtterance) return;
+      var voices = [];
+      try {
+        voices = synth.getVoices() || [];
+      } catch (_) {}
+      var u = new SpeechSynthesisUtterance(line);
+      u.rate = 0.76;
+      u.pitch = 0.48;
+      u.volume = 1;
+      u.lang = 'en-GB';
+      var deep =
+        voices.filter(function (v) {
+          return /daniel|david|mark|george|ravi|google uk english male|microsoft david|en-gb.*male|male/i.test(
+            v.name + ' ' + (v.lang || '')
+          );
+        })[0] ||
+        voices.filter(function (v) {
+          return /^en/i.test(v.lang || '');
+        })[0];
+      if (deep) {
+        u.voice = deep;
+        if (deep.lang) u.lang = deep.lang;
+      }
+      try {
+        synth.cancel();
+      } catch (_) {}
+      synth.speak(u);
+    } catch (_) {}
+  }
+
+  var TAP_LINES = [
+    'On your mark. Moving.',
+    'Vector locked. I am coming.',
+    'Copy. Flying to contact.',
+    'Acknowledged. Closing now.',
+    'Target acquired. Engaging.',
+    'Roger. On intercept.',
+  ];
+
+  function followTap(lat, lng, screen) {
+    wake({ force: true, label: 'UNIT · VECTOR', showcaseMs: 12000 });
+    var target = screen && screen.x != null ? { x: screen.x, y: screen.y } : { lat: lat, lng: lng };
+    flyTo(target, {
+      kind: 'follow',
+      label: 'UNIT · VECTOR',
+      detail: 'on your mark',
+      status: 'intercept',
+      dur: 1600,
+      log: false,
+      onArrive: function () {
+        H.label = 'UNIT · LOCKED';
+        H.status = 'on point';
+      },
+    });
+    speakDeep(TAP_LINES[Math.floor(Math.random() * TAP_LINES.length)]);
+    return true;
   }
 
   function find(what, pos, opts) {
@@ -771,23 +838,100 @@
       ctx.shadowBlur = 0;
     }
 
-    // Thruster trail (silver + cyan)
-    H.trail.push({ x: H.x, y: H.y + 26, a: 0.9, boost: H.boost });
-    if (H.trail.length > 22) H.trail.shift();
+    // Thruster trail — neon ribbon + starfield
+    H.trail.push({ x: H.x, y: H.y + 18, a: 1, boost: H.boost });
+    if (H.trail.length > 36) H.trail.shift();
+    if (H.boost > 0.12 || H.busy) {
+      var si;
+      for (si = 0; si < 4; si++) {
+        H.stars.push({
+          x: H.x + (Math.random() - 0.5) * 16,
+          y: H.y + 16 + Math.random() * 12,
+          vx: -H.vx * 0.015 + (Math.random() - 0.5) * 1.1,
+          vy: 1.6 + Math.random() * 2.8,
+          a: 0.95,
+          r: 0.5 + Math.random() * 1.8,
+          tw: Math.random() * Math.PI,
+        });
+      }
+    }
+    if (H.stars.length > 90) H.stars.splice(0, H.stars.length - 90);
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    if (H.trail.length > 2) {
+      ctx.beginPath();
+      ctx.moveTo(H.trail[0].x, H.trail[0].y);
+      for (i = 1; i < H.trail.length; i++) {
+        var midX = (H.trail[i - 1].x + H.trail[i].x) / 2;
+        var midY = (H.trail[i - 1].y + H.trail[i].y) / 2;
+        ctx.quadraticCurveTo(H.trail[i - 1].x, H.trail[i - 1].y, midX, midY);
+      }
+      ctx.strokeStyle = 'rgba(40,160,255,0.22)';
+      ctx.lineWidth = 14 + H.boost * 10;
+      ctx.shadowColor = 'rgba(40,140,255,0.85)';
+      ctx.shadowBlur = 22;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(H.trail[0].x, H.trail[0].y);
+      for (i = 1; i < H.trail.length; i++) {
+        ctx.lineTo(H.trail[i].x, H.trail[i].y);
+      }
+      ctx.strokeStyle = 'rgba(180,230,255,0.55)';
+      ctx.lineWidth = 3;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
     for (i = 0; i < H.trail.length; i++) {
       var tr = H.trail[i];
-      tr.a *= 0.87;
-      tr.y += 0.7;
-      var rad = 6 + i * 0.6 + tr.boost * 5;
+      tr.a *= 0.9;
+      tr.y += 0.55;
+      var rad = 5 + i * 0.35 + tr.boost * 6;
       rg = ctx.createRadialGradient(tr.x, tr.y, 0, tr.x, tr.y, rad);
-      rg.addColorStop(0, 'rgba(200,230,255,' + tr.a * 0.75 + ')');
-      rg.addColorStop(0.4, 'rgba(40,130,255,' + tr.a * 0.4 + ')');
-      rg.addColorStop(1, 'rgba(0,40,120,0)');
+      rg.addColorStop(0, 'rgba(210,240,255,' + tr.a * 0.7 + ')');
+      rg.addColorStop(0.35, 'rgba(30,140,255,' + tr.a * 0.45 + ')');
+      rg.addColorStop(1, 'rgba(0,30,90,0)');
       ctx.fillStyle = rg;
       ctx.beginPath();
       ctx.arc(tr.x, tr.y, rad, 0, Math.PI * 2);
       ctx.fill();
     }
+    for (i = H.stars.length - 1; i >= 0; i--) {
+      var st = H.stars[i];
+      st.x += st.vx;
+      st.y += st.vy;
+      st.a *= 0.94;
+      st.tw += 0.35;
+      if (st.a < 0.06) {
+        H.stars.splice(i, 1);
+        continue;
+      }
+      var tw = 0.55 + Math.abs(Math.sin(st.tw)) * 0.45;
+      ctx.save();
+      ctx.translate(st.x, st.y);
+      ctx.rotate(st.tw * 0.25);
+      ctx.globalAlpha = st.a * tw;
+      ctx.fillStyle = '#9ad4ff';
+      ctx.shadowColor = '#3d9eff';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -st.r * 2.2);
+      ctx.lineTo(st.r * 0.45, 0);
+      ctx.lineTo(0, st.r * 2.2);
+      ctx.lineTo(-st.r * 0.45, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-st.r * 2.2, 0);
+      ctx.lineTo(0, st.r * 0.45);
+      ctx.lineTo(st.r * 2.2, 0);
+      ctx.lineTo(0, -st.r * 0.45);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.restore();
 
     // Sparks
     for (i = H.sparks.length - 1; i >= 0; i--) {
@@ -829,11 +973,11 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 0.72 : 1;
-      var scale = (H.busy ? 1.08 : 1) * H.scale * breath * parkScale;
-      if (H.boost > 0.6) scale *= 1.04;
-      var bw = 72 * scale;
-      var bh = 72 * scale;
+      var parkScale = H.parkMode && !H.busy ? 0.5 : 0.78;
+      var scale = (H.busy ? 1.04 : 1) * H.scale * breath * parkScale;
+      if (H.boost > 0.6) scale *= 1.03;
+      var bw = 52 * scale;
+      var bh = 52 * scale;
       // dual bloom: electric blue rim under body
       var bloom = ctx.createRadialGradient(0, 18, 6, 0, 18, bw * 0.48);
       bloom.addColorStop(0, 'rgba(60,140,255,0.28)');
@@ -914,7 +1058,7 @@
     var text = H.label || 'UNIT';
     var tw = ctx.measureText(text).width;
     var lx = H.x - tw / 2 - 14;
-    var ly = H.y + 64 * (H.parkMode && !H.busy ? 0.95 : 1.0);
+    var ly = H.y + 46 * (H.parkMode && !H.busy ? 0.95 : 1.0);
     ctx.shadowColor = 'rgba(0,120,255,0.65)';
     ctx.shadowBlur = 14;
     ctx.fillStyle = 'rgba(0,10,32,0.88)';
@@ -1014,6 +1158,9 @@
     wake: wake,
     sleep: sleep,
     flyTo: flyTo,
+    followTap: followTap,
+    say: speakDeep,
+    speakDeep: speakDeep,
     parkAtMoon: parkAtMoon,
     syncParkVisibility: syncParkVisibility,
     find: find,
