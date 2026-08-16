@@ -46,13 +46,23 @@
       cmd: 'hard boot',
     },
     graphics: { k: 'Earth', text: 'Waking…', state: 'wait', cmd: 'repair display' },
+    wifi: { k: 'Wi-Fi', text: 'Scanning…', state: 'wait', cmd: 'network' },
+    cell: { k: 'Cell', text: 'Scanning…', state: 'wait', cmd: 'network' },
+    blue: { k: 'Bluetooth', text: 'Scanning…', state: 'wait', cmd: 'network' },
+    ports: { k: 'Radio', text: 'Scanning USB / serial…', state: 'wait', cmd: 'network' },
+    mesh: { k: 'Mesh', text: 'Probing SpaceNet…', state: 'wait', cmd: 'peers' },
+    smoke: { k: 'Fallback', text: 'Arming slow path…', state: 'wait', cmd: 'network' },
+    mine: { k: 'Donate', text: 'Judging spare load…', state: 'wait', cmd: 'donate on' },
     system: { k: 'System', text: 'Starting…', state: 'wait', cmd: 'enter astranov' },
   };
   var FACT_GROUPS = [
     { title: 'This machine', ids: ['device', 'power', 'network', 'place'] },
+    { title: 'Links · anything that can carry a packet', ids: ['wifi', 'cell', 'blue', 'ports', 'mesh', 'smoke'] },
     { title: 'This session', ids: ['cache', 'login', 'reset'] },
+    { title: 'Donate to the mesh', ids: ['mine'] },
     { title: 'The system', ids: ['graphics', 'system'] },
   ];
+  var bootScan = { recPct: 5, links: [] };
   var entered = false;
   var gateReady = false;
   var consoleEl = null;
@@ -179,8 +189,17 @@
       }
       return;
     }
-    if (id === 'network') {
+    if (id === 'network' || id === 'wifi' || id === 'cell') {
       probeNetwork();
+      scanLinks();
+      return;
+    }
+    if (id === 'blue' || id === 'ports' || id === 'mesh' || id === 'smoke') {
+      scanLinks();
+      return;
+    }
+    if (id === 'mine') {
+      acceptMineDonate();
       return;
     }
     if (id === 'power' || id === 'device') {
@@ -263,7 +282,153 @@
     if (kind) bits.push(kind);
     if (down) bits.push(down);
     setFact('network', bits.join(' · '), on ? 'ok' : 'bad');
+    scanLinks();
+    recommendMine();
     return on;
+  }
+
+  function connInfo() {
+    return navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+  }
+
+  function scanLinks() {
+    var c = connInfo();
+    var on = navigator.onLine !== false;
+    var type = String(c.type || '').toLowerCase();
+    var et = String(c.effectiveType || '').toLowerCase();
+    var down = c.downlink ? Math.round(c.downlink * 10) / 10 : 0;
+    bootScan.links = [];
+
+    if (type === 'wifi') {
+      setFact('wifi', 'Wi-Fi up' + (down ? ' · ' + down + ' Mb/s' : ''), 'ok');
+      bootScan.links.push('wifi');
+    } else if (type === 'ethernet') {
+      setFact('wifi', 'Cable / ethernet', 'ok');
+      bootScan.links.push('ethernet');
+    } else if (on) {
+      setFact('wifi', 'Online · this browser will not name Wi-Fi vs cable', 'ok');
+    } else {
+      setFact('wifi', 'No Wi-Fi', 'bad');
+    }
+
+    if (type === 'cellular' || /^(slow-2g|2g|3g|4g)$/.test(et)) {
+      var gen = et === '4g' ? '4G-class (5G masts often still report 4G here)' : et === '3g' ? '3G' : et === '2g' || et === 'slow-2g' ? '2G / edge' : 'cellular';
+      setFact('cell', gen + (down ? ' · ' + down + ' Mb/s' : ''), 'ok');
+      bootScan.links.push('cell');
+    } else {
+      setFact('cell', 'No cellular report · phone browsers hide 5G as 4G', on ? 'wait' : 'bad');
+    }
+
+    function setBlue(okB, text) {
+      setFact('blue', text, okB ? 'ok' : 'wait');
+      if (okB) bootScan.links.push('bluetooth');
+    }
+    if (navigator.bluetooth && navigator.bluetooth.getAvailability) {
+      navigator.bluetooth.getAvailability().then(function (avail) {
+        setBlue(!!avail, avail ? 'Bluetooth radio is on · can carry a tiny mesh hop' : 'Bluetooth off or blocked');
+        recommendMine();
+      }).catch(function () {
+        setBlue(false, 'Bluetooth API blocked');
+      });
+    } else if (navigator.bluetooth) {
+      setBlue(true, 'Bluetooth API present · tap to use a nearby hop');
+    } else {
+      setBlue(false, 'No Bluetooth in this browser');
+    }
+
+    if ('serial' in navigator) {
+      setFact('ports', 'USB serial ready · plug Meshtastic, a walkie dongle, or any serial radio', 'ok');
+      bootScan.links.push('serial');
+    } else if ('usb' in navigator) {
+      setFact('ports', 'USB ready · this browser can talk to a radio dongle if you plug one in', 'ok');
+      bootScan.links.push('usb');
+    } else {
+      setFact('ports', 'No USB / serial here · Meshtastic and walkie antennas need a browser that opens ports', 'wait');
+    }
+
+    var rtc = !!(window.RTCPeerConnection || window.webkitRTCPeerConnection);
+    var peers = 0;
+    try {
+      if (global.SNMeshPeers && SNMeshPeers.visible) peers = SNMeshPeers.visible().length || 0;
+    } catch (_) {}
+    if (rtc && on) {
+      setFact(
+        'mesh',
+        peers
+          ? 'SpaceNet mesh up · ' + peers + ' peer' + (peers === 1 ? '' : 's')
+          : 'SpaceNet mesh ready · WebRTC on · waiting for peers',
+        'ok'
+      );
+      bootScan.links.push('mesh');
+    } else if (rtc) {
+      setFact('mesh', 'Mesh engine ready · offline · will pair when any link returns', 'wait');
+    } else {
+      setFact('mesh', 'No peer channel in this browser', 'bad');
+    }
+
+    setFact(
+      'smoke',
+      'Slow path armed · if every radio dies we still queue one-line packets on this machine (the smoke signal)',
+      'ok'
+    );
+    bootScan.links.push('smoke');
+    try {
+      localStorage.setItem('sn:boot-links', JSON.stringify(bootScan.links));
+    } catch (_) {}
+    recommendMine();
+  }
+
+  function recommendMine() {
+    var cores = navigator.hardwareConcurrency || 2;
+    var mem = navigator.deviceMemory || 0;
+    var c = connInfo();
+    var save = !!c.saveData;
+    var et = String(c.effectiveType || '');
+    var mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || '');
+    var wall = !!(facts.power && /No battery|wall power/i.test(facts.power.text));
+    var score = 3;
+    if (cores >= 4) score += 2;
+    if (cores >= 8) score += 2;
+    if (mem >= 8) score += 2;
+    else if (mem && mem < 4) score -= 1;
+    if (wall) score += 2;
+    if (!mobile) score += 1;
+    if (save || et === 'slow-2g' || et === '2g') score -= 3;
+    if (et === '3g') score -= 1;
+    if (score < 3) score = 3;
+    if (score > 13) score = 13;
+    bootScan.recPct = score;
+    try {
+      localStorage.setItem('sn:boot-mine-pct', String(score));
+    } catch (_) {}
+    var why = [];
+    why.push(cores + ' cores');
+    if (mem) why.push(mem + ' GB');
+    if (wall) why.push('wall power');
+    if (mobile) why.push('phone');
+    if (save) why.push('data saver');
+    setFact(
+      'mine',
+      'Recommend ' +
+        score +
+        '% of spare load for SpaceNet mining · ' +
+        why.join(' · ') +
+        '. Tap to donate that share.',
+      'ok'
+    );
+  }
+
+  function acceptMineDonate() {
+    var pct = bootScan.recPct || Number(localStorage.getItem('sn:boot-mine-pct')) || 5;
+    try {
+      localStorage.setItem('astranov_donate_compute', '1');
+      localStorage.setItem('sn:boot-mine-on', '1');
+    } catch (_) {}
+    try {
+      if (global.SNResources && SNResources.setDonate) SNResources.setDonate(true);
+      if (global.SNResources && SNResources.setMining) SNResources.setMining(true);
+    } catch (_) {}
+    setFact('mine', 'Donating ' + pct + '% · spare only · tap again after enter to change', 'ok');
   }
 
   function probeDevice() {
@@ -299,6 +464,7 @@
       .then(function (b) {
         if (looksLikeFakeBattery(b)) {
           setFact('power', 'No battery · wall power · this machine does not have one', 'ok');
+          recommendMine();
           return;
         }
         var pct = Math.round((Number(b.level) || 0) * 100);
@@ -306,6 +472,7 @@
         if (b.charging) bits.push('plugged in');
         else bits.push('on battery');
         setFact('power', bits.join(' · '), pct < 12 && !b.charging ? 'bad' : 'ok');
+        recommendMine();
       })
       .catch(function () {
         setFact('power', 'No battery report · treat as wall power', 'ok');
@@ -391,6 +558,7 @@
     setFact('cache', 'Clearing old files so you get this build…', 'wait');
     setFact('login', 'Looking for your last sign-in…', 'wait');
     setFact('reset', 'Hard reset wipes stored pages and restarts. Tap only if stuck.', 'ok');
+    scanLinks();
     setFact('system', 'Loading a fresh kernel…', 'wait');
     window.addEventListener('online', probeNetwork);
     window.addEventListener('offline', probeNetwork);
