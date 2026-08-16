@@ -133,16 +133,19 @@
         storageKey: 'astranov_auth_v3',
       },
     });
-    A.client.auth.onAuthStateChange((_e, session) => {
+    A.client.auth.onAuthStateChange((evt, session) => {
       A.session = session || null;
       A.user = session?.user || null;
       paint();
       try {
-        if (A.user) armOwnerPaidGrok();
-        else {
+        if (A.user && (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION' || evt === 'USER_UPDATED')) {
+          if (!global.__snPaidMindArmed) armOwnerPaidGrok();
+        } else if (!A.user && evt === 'SIGNED_OUT') {
           try {
             localStorage.removeItem('sn:owner-session');
           } catch (_) {}
+          global.__snPaidMindArmed = 0;
+          global.__snPaidMindSaid = 0;
         }
       } catch (_) {}
     });
@@ -303,6 +306,8 @@
       } catch (_) {}
       return false;
     }
+    if (global.__snPaidMindArmed) return true;
+    global.__snPaidMindArmed = 1;
     try {
       localStorage.setItem('sn:owner-session', '1');
       localStorage.setItem('sn:architect-email', ARCHITECT_EMAIL);
@@ -311,20 +316,11 @@
       if (global.SNUsage && SNUsage.track) SNUsage.track('owner_login_paid_arm', { t: Date.now() });
     } catch (_) {}
     try {
-      if (global.SNSubscription && SNSubscription.status) {
-        var st = SNSubscription.status();
-        if (!global.__snPaidMindSaid) {
-          global.__snPaidMindSaid = 1;
-          say('You are signed in. The paid mind is on. The key stays on the server.', 'ok');
-        }
-      } else {
-        say('Architect signed in · paid Grok armed (server key)', 'ok');
+      if (!global.__snPaidMindSaid) {
+        global.__snPaidMindSaid = 1;
+        say('You are signed in. The paid mind is on.', 'ok');
       }
-    } catch (_) {
-      try {
-        say('Architect signed in · paid Grok armed', 'ok');
-      } catch (__) {}
-    }
+    } catch (_) {}
     return true;
   }
 
