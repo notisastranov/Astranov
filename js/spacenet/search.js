@@ -716,8 +716,10 @@
       /^(search|find|show\s+me|zoom\s+to|visualize|look\s+at|take\s+me\s+to|where\s+is|look\s+up|crawl)\b/i.test(
         String(q || '')
       )
-    )
+    ) {
+      if (/\b(youtube|youtu\.be|clip|video|βίντεο|song|trailer|lyrics)\b/i.test(String(q || ''))) return false;
       return true;
+    }
     if (
       /\b(tower|island|cape|bridge|airport|harbor|harbour|temple|plaza|square|mountain|cathedral|statue)\b/i.test(
         p.q
