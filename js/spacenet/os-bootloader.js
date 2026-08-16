@@ -830,6 +830,7 @@
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
+    '/js/spacenet/webrtc.js',
   ];
   var STAGE_SERVICES = [
     '/js/spacenet/greeklish.js',
