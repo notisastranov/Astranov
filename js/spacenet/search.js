@@ -1668,6 +1668,26 @@
     } catch (_) {}
     if (L) L('ARRIVED · ' + name + ' · live imagery', 'ok');
     previewFn(name);
+    try {
+      if (global.SNHelper) {
+        if (SNHelper.init) SNHelper.init({ autoWake: true });
+        if (SNHelper.flyTo) {
+          SNHelper.flyTo(
+            { lat: lat, lng: lng },
+            {
+              kind: 'arrive',
+              label: 'UNIT · ' + name.slice(0, 18),
+              detail: 'showing result',
+              status: 'inbound',
+              showcaseMs: 20000,
+            }
+          );
+        }
+      }
+    } catch (_) {}
+    try {
+      SNSearch._lastPin = { lat: lat, lng: lng, name: name };
+    } catch (_) {}
     return true;
   }
 
