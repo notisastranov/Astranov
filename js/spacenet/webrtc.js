@@ -37,11 +37,25 @@
     var st = document.createElement('style');
     st.id = 'sn-webrtc-css';
     st.textContent = [
-      '#sn-rtc-layer{position:fixed;inset:0;z-index:12000;display:none;align-items:center;justify-content:center;',
-      'background:rgba(0,4,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}',
-      '#sn-rtc-layer.on{display:flex;}',
-      '#sn-rtc-box{width:min(440px,94vw);border-radius:22px;overflow:hidden;border:1px solid rgba(61,158,255,.45);',
-      'background:linear-gradient(165deg,rgba(8,24,56,.96),rgba(2,8,20,.98));box-shadow:0 20px 60px rgba(0,0,0,.55);position:relative;}',
+      '#sn-rtc-layer{position:fixed;inset:0;z-index:12000;display:none;pointer-events:none;}',
+      '#sn-rtc-layer.on{display:block;}',
+      '#sn-rtc-box{pointer-events:auto;position:fixed;left:50%;top:12%;transform:translateX(-50%);width:min(440px,94vw);',
+      'border-radius:16px;overflow:visible;border:1px solid rgba(61,158,255,.45);',
+      'background:linear-gradient(165deg,rgba(8,24,56,.96),rgba(2,8,20,.98));box-shadow:0 20px 60px rgba(0,0,0,.55);}',
+      '#sn-rtc-layer.min #sn-rtc-vidwrap,#sn-rtc-layer.min #sn-rtc-dial,#sn-rtc-layer.min #sn-rtc-bar{display:none!important}',
+      '#sn-rtc-layer.max #sn-rtc-box{left:3vw;top:10vh;transform:none;width:94vw;height:78vh}',
+      '#sn-rtc-handle{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 14px;cursor:grab;touch-action:none;min-height:44px;border-bottom:1px solid rgba(61,158,255,.2)}',
+      '#sn-rtc-handle .sn-win-title{justify-self:start;font:700 11px/1 system-ui;color:#9ec8ff;letter-spacing:.08em}',
+      '#sn-rtc-handle .sn-win-lights{display:flex;gap:10px;justify-self:center}',
+      '#sn-rtc-handle .sn-win-lights button{width:22px;height:22px;border-radius:50%;border:1px solid transparent;padding:0;cursor:pointer;font:800 12px/1 system-ui}',
+      '#sn-rtc-handle .sn-win-min{background:radial-gradient(circle at 35% 30%,#ffe58a,#e0b000 70%);border-color:#c9a000;color:#3a2c00}',
+      '#sn-rtc-handle .sn-win-x{background:radial-gradient(circle at 35% 30%,#ff8a8a,#c62828 70%);border-color:#ff4444;color:#fff}',
+      '#sn-rtc-handle .sn-win-max{background:radial-gradient(circle at 35% 30%,#8dffb4,#1a9e4a 70%);border-color:#2ecc71;color:#041a0c}',
+      '#sn-rtc-box .sn-win-c{position:absolute;width:22px;height:22px}',
+      '#sn-rtc-box .sn-win-c.nw{top:-4px;left:-4px;cursor:nwse-resize}',
+      '#sn-rtc-box .sn-win-c.ne{top:-4px;right:-4px;cursor:nesw-resize}',
+      '#sn-rtc-box .sn-win-c.sw{bottom:-4px;left:-4px;cursor:nesw-resize}',
+      '#sn-rtc-box .sn-win-c.se{bottom:-4px;right:-4px;cursor:nwse-resize}',
       '#sn-rtc-box video{width:100%;display:block;background:#000;max-height:42vh;object-fit:cover;}',
       '#sn-rtc-remote{min-height:180px;background:#02060e;}',
       '#sn-rtc-local{position:absolute;right:12px;bottom:12px;width:30%;max-width:140px;border-radius:14px;',
@@ -87,7 +101,13 @@
     el.id = 'sn-rtc-layer';
     el.innerHTML =
       '<div id="sn-rtc-box">' +
-      '<button type="button" id="sn-rtc-close-x" aria-label="Close">×</button>' +
+      '<div id="sn-rtc-handle">' +
+      '<span class="sn-win-title">CALL</span>' +
+      '<div class="sn-win-lights">' +
+      '<button type="button" class="sn-win-min" data-win="min" title="Minimize">−</button>' +
+      '<button type="button" class="sn-win-x" id="sn-rtc-close-x" title="Close">×</button>' +
+      '<button type="button" class="sn-win-max" data-win="max" title="Maximize">+</button>' +
+      '</div><span></span></div>' +
       '<div id="sn-rtc-meta">Video call</div>' +
       '<div id="sn-rtc-dial">' +
       '<h3>VIDEO CALL</h3>' +
@@ -116,13 +136,94 @@
       '<button type="button" data-rtc="mute">Mic ON</button>' +
       '<button type="button" data-rtc="cam">Camera ON</button>' +
       '<button type="button" class="hang" data-rtc="hang">Hang up</button>' +
-      '</div></div>';
+      '</div>' +
+      '<i class="sn-win-c nw" data-c="nw"></i><i class="sn-win-c ne" data-c="ne"></i>' +
+      '<i class="sn-win-c sw" data-c="sw"></i><i class="sn-win-c se" data-c="se"></i>' +
+      '</div>';
     document.body.appendChild(el);
 
     el.querySelector('#sn-rtc-close-x').onclick = function () {
       if (state.inCall) hangup();
       else closeUi();
     };
+    var layer = el;
+    var box = el.querySelector('#sn-rtc-box');
+    el.querySelector('[data-win="min"]').onclick = function () {
+      layer.classList.toggle('min');
+      layer.classList.remove('max');
+    };
+    el.querySelector('[data-win="max"]').onclick = function () {
+      layer.classList.toggle('max');
+      layer.classList.remove('min');
+    };
+    (function bindRtcWin() {
+      var handle = el.querySelector('#sn-rtc-handle');
+      if (handle) {
+        handle.addEventListener('pointerdown', function (e) {
+          if (e.target.closest('button')) return;
+          var r = box.getBoundingClientRect();
+          var sx = e.clientX;
+          var sy = e.clientY;
+          var sl = r.left;
+          var st = r.top;
+          function move(ev) {
+            box.style.left = sl + ev.clientX - sx + 'px';
+            box.style.top = st + ev.clientY - sy + 'px';
+            box.style.transform = 'none';
+          }
+          function up() {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+          }
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
+        });
+      }
+      Array.prototype.forEach.call(el.querySelectorAll('.sn-win-c'), function (h) {
+        h.addEventListener('pointerdown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var c = h.getAttribute('data-c');
+          var r = box.getBoundingClientRect();
+          var sx = e.clientX;
+          var sy = e.clientY;
+          var sl = r.left;
+          var st = r.top;
+          var sw = r.width;
+          var sh = r.height;
+          function move(ev) {
+            var dx = ev.clientX - sx;
+            var dy = ev.clientY - sy;
+            var l = sl;
+            var t = st;
+            var w = sw;
+            var ht = sh;
+            if (c.indexOf('e') >= 0) w = Math.max(240, sw + dx);
+            if (c.indexOf('s') >= 0) ht = Math.max(180, sh + dy);
+            if (c.indexOf('w') >= 0) {
+              w = Math.max(240, sw - dx);
+              l = sl + dx;
+            }
+            if (c.indexOf('n') >= 0) {
+              ht = Math.max(180, sh - dy);
+              t = st + dy;
+            }
+            box.style.left = l + 'px';
+            box.style.top = t + 'px';
+            box.style.width = w + 'px';
+            box.style.height = ht + 'px';
+            box.style.transform = 'none';
+            layer.classList.remove('min', 'max');
+          }
+          function up() {
+            document.removeEventListener('pointermove', move);
+            document.removeEventListener('pointerup', up);
+          }
+          document.addEventListener('pointermove', move);
+          document.addEventListener('pointerup', up);
+        });
+      });
+    })();
     el.querySelector('[data-rtc="hang"]').onclick = function () {
       hangup();
     };
