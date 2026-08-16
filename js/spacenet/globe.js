@@ -76,6 +76,7 @@
     gameMode: false, // sacred: never steal trackball unless space-scene armed
     frameCbs: [],
     lastLoopT: 0,
+    phys: { tTilt: null, tSpin: null, tZ: null, vTilt: 0, vSpin: 0, vZ: 0, k: 16, d: 7.2 },
     _pinchCoolUntil: 0,
     /** Last place the user aimed (click / zoom target) — SpaceNet focus */
     focus: null,
@@ -1231,6 +1232,66 @@
     while (a > Math.PI) a -= Math.PI * 2;
     while (a < -Math.PI) a += Math.PI * 2;
     return a;
+  }
+
+  /** Semi-implicit Euler spring — Hooke + damper. dt-based, not tween RAF. */
+  function stepPhys(dt) {
+    var P = G.phys;
+    if (!P || !G.tilt || !G.spin || !G.camera) return;
+    var k = P.k;
+    var dmp = P.d;
+    if (G.dragging) {
+      P.tTilt = null;
+      P.tSpin = null;
+      P.vTilt = 0;
+      P.vSpin = 0;
+    }
+    if (P.tTilt != null) {
+      var eT = P.tTilt - G.tilt.rotation.x;
+      P.vTilt += (k * eT - dmp * P.vTilt) * dt;
+      G.tilt.rotation.x += P.vTilt * dt;
+      if (Math.abs(eT) < 0.002 && Math.abs(P.vTilt) < 0.01) {
+        G.tilt.rotation.x = P.tTilt;
+        P.vTilt = 0;
+        P.tTilt = null;
+      }
+    }
+    if (P.tSpin != null) {
+      var eS = unwrapAngle(P.tSpin - G.spin.rotation.y);
+      P.vSpin += (k * eS - dmp * P.vSpin) * dt;
+      G.spin.rotation.y += P.vSpin * dt;
+      if (Math.abs(eS) < 0.002 && Math.abs(P.vSpin) < 0.01) {
+        G.spin.rotation.y = P.tSpin;
+        P.vSpin = 0;
+        P.tSpin = null;
+      }
+    }
+    if (P.tZ != null) {
+      var eZ = P.tZ - G.camera.position.z;
+      P.vZ += (k * eZ - dmp * P.vZ) * dt;
+      G.camera.position.z += P.vZ * dt;
+      if (Math.abs(eZ) < 0.012 && Math.abs(P.vZ) < 0.02) {
+        G.camera.position.z = P.tZ;
+        P.vZ = 0;
+        P.tZ = null;
+        G.zoomAnim = false;
+        try {
+          syncSpaceLayerVis();
+        } catch (_) {}
+      } else {
+        G.zoomAnim = true;
+      }
+    }
+    G.tilt.rotation.y = 0;
+    G.tilt.rotation.z = 0;
+    G.spin.rotation.x = 0;
+    G.spin.rotation.z = 0;
+    if (P.tTilt == null && P.tSpin == null) {
+      if (G.flying) G.flying = false;
+    } else {
+      G.flying = true;
+      G.lastAct = Date.now();
+    }
   }
 
   function init() {
@@ -2533,6 +2594,12 @@
       return;
     }
     G.frame++;
+    var nowMs = typeof now === 'number' ? now : performance.now();
+    var dt = G.lastLoopT ? (nowMs - G.lastLoopT) / 1000 : 0.016;
+    G.lastLoopT = nowMs;
+    if (dt > 0.033) dt = 0.033;
+    if (dt < 0.001) dt = 0.001;
+    stepPhys(dt);
     var moving =
       G.dragging ||
       G.zoomAnim ||
@@ -2565,7 +2632,7 @@
       G.spin.rotation.z = 0;
       G.tilt.rotation.y = 0;
       G.tilt.rotation.z = 0;
-      var dampN = Math.min(0.96, Math.max(0.92, G.damp || 0.945));
+      var dampN = Math.exp(-4.2 * (dt || 0.016));
       G.velX *= dampN;
       G.velY *= dampN;
       if (Math.abs(G.velX) < 0.00004) G.velX = 0;
@@ -2633,24 +2700,10 @@
   }
 
   function animateZ(toZ, ms) {
-    var from = G.camera.position.z;
-    var t0 = performance.now();
-    var dur = ms || 650;
+    if (!G.camera) return;
+    G.phys.tZ = toZ;
     G.zoomAnim = true;
-    function step(t) {
-      var k = Math.min(1, (t - t0) / dur);
-      var e = k < 0.5 ? 2 * k * k : -1 + (4 - 2 * k) * k;
-      G.camera.position.z = from + (toZ - from) * e;
-      setTierLabel();
-      syncSpaceLayerVis();
-      G.lastAct = Date.now();
-      if (k < 1) requestAnimationFrame(step);
-      else {
-        G.zoomAnim = false;
-        syncSpaceLayerVis();
-      }
-    }
-    requestAnimationFrame(step);
+    G.lastAct = Date.now();
   }
 
   function goToTier(name) {
@@ -2750,43 +2803,17 @@
     G.velX = 0;
     G.velY = 0;
     G.flyGen = (G.flyGen || 0) + 1;
-    var gen = G.flyGen;
     G.flying = true;
     G.lastAct = Date.now();
-
-    var x0 = G.tilt.rotation.x;
     var y0 = G.spin.rotation.y;
     var x1 = (-Number(lat) * Math.PI) / 180;
     var y1 = (-Number(lng) * Math.PI) / 180;
     if (x1 > TILT_MAX) x1 = TILT_MAX;
     if (x1 < -TILT_MAX) x1 = -TILT_MAX;
-    var dyAng = unwrapAngle(y1 - y0);
-
-    var t0 = performance.now();
-    var dur = 780;
-    function step(t) {
-      if (gen !== G.flyGen) return;
-      if (G.dragging) {
-        G.flying = false;
-        bakePivotEuler();
-        return;
-      }
-      var k = Math.min(1, (t - t0) / dur);
-      var e = k * (2 - k);
-      G.tilt.rotation.set(x0 + (x1 - x0) * e, 0, 0);
-      G.spin.rotation.set(0, y0 + dyAng * e, 0);
-      G.lastAct = Date.now();
-      if (k < 1) {
-        requestAnimationFrame(step);
-      } else {
-        setGlobeLatLng(lat, lng);
-        G.velX = 0;
-        G.velY = 0;
-        G.flying = false;
-        G.lastAct = Date.now();
-      }
-    }
-    requestAnimationFrame(step);
+    G.phys.tTilt = x1;
+    G.phys.tSpin = y0 + unwrapAngle(y1 - y0);
+    G.phys.vTilt = 0;
+    G.phys.vSpin = 0;
     if (tierHint && TIERS[tierHint]) animateZ(TIERS[tierHint].z, 650);
   }
 
