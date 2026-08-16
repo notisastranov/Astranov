@@ -15,7 +15,6 @@
       ':root { --sn-chrome-w: min(720px, calc(100vw - 24px)); --top-scroll-min: 96px; --bottom-scroll-min: 148px; }',
       '#sn-leftscroll, #sn-rightscroll, .sn-edgescroll,',
       '#sn-left-panel, #sn-right-panel, #sn-left-rail, #sn-right-rail,',
-      '#sn-game-dock, .sn-game-dock, #sn-earth-ops-chip, #sn-space-hud,',
       '#sn-arch-layer, #sn-device-alert, #sn-silver-rive,',
       '#globe-deck, #aci-hud, #news-ticker, #astranov-logo {',
       '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
