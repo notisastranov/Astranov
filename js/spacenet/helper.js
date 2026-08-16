@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=aaa20260816c';
+  var BUILD_Q = 'v=tiny20260816z';
 
   var H = {
     ready: false,
@@ -51,7 +51,7 @@
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 4.2,
+    scale: 1,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -81,13 +81,12 @@
         var r = p[i];
         var g = p[i + 1];
         var b = p[i + 2];
-        var magenta = r > 170 && b > 170 && g < 110 && Math.min(r, b) - g > 70;
-        var hot = r > 220 && g < 50 && b > 180;
-        if (magenta || hot) {
+        var metal = Math.abs(r - g) < 38 && Math.abs(g - b) < 38;
+        var pink = r > 150 && g < 100 && r - g > 70;
+        var mag = r > 150 && b > 130 && g < 130 && Math.min(r, b) - g > 40;
+        var hot = r > 200 && g < 80 && b > 80;
+        if ((pink || mag || hot) && !metal) {
           p[i + 3] = 0;
-          killed++;
-        } else if (r > 150 && b > 150 && g < 150 && Math.abs(r - b) < 50) {
-          p[i + 3] = Math.min(p[i + 3], 40);
           killed++;
         }
       }
@@ -126,16 +125,11 @@
     }
     if (H._loading) return H._loading;
     H.loaded = false;
-    H._loading = Promise.all(
-      FRAME_URLS.map(loadImg).concat([loadImg(HERO_URL), loadImg(HERO_FALLBACK)])
-    ).then(function (imgs) {
-      H.frames = imgs.slice(0, 4).filter(function (im) {
+    H._loading = Promise.all(FRAME_URLS.map(loadImg)).then(function (imgs) {
+      H.frames = imgs.filter(function (im) {
         return im && (im.naturalWidth > 0 || im.width > 0);
       });
-      var heroRaw = imgs[4] && (imgs[4].naturalWidth || imgs[4].width) ? imgs[4] : null;
-      var fb = imgs[5] && (imgs[5].naturalWidth || imgs[5].width) ? imgs[5] : null;
-      // Prefer clean armor frames over a magenta hero plate
-      H.hero = H.frames[0] || heroRaw || fb || null;
+      H.hero = H.frames[0] || null;
       H.loaded = H.frames.length > 0 || !!H.hero;
       H.loadFailed = !H.loaded;
       H._loading = null;
@@ -177,7 +171,7 @@
       el.setAttribute('aria-label', 'SpaceX Bot · tap to talk');
       el.title = 'Tap the unit · microphone on · it flies the result';
       el.style.cssText =
-        'position:fixed;z-index:12080;width:150px;height:190px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
+        'position:fixed;z-index:12080;width:88px;height:110px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
       el.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -191,8 +185,8 @@
 
   function placeHit() {
     if (!H.hit) return;
-    H.hit.style.left = Math.max(0, H.x - 75) + 'px';
-    H.hit.style.top = Math.max(0, H.y - 100) + 'px';
+    H.hit.style.left = Math.max(0, H.x - 44) + 'px';
+    H.hit.style.top = Math.max(0, H.y - 58) + 'px';
     H.hit.style.display = H.visible === false ? 'none' : 'block';
   }
 
@@ -350,8 +344,8 @@
     var w = window.innerWidth || 360;
     var h = window.innerHeight || 640;
     // upper-right safe perch — full body stays in frame under top chrome
-    H.tx = Math.min(w * 0.76, w - 110);
-    H.ty = Math.max(Math.min(h * 0.28, h - 160), 140);
+    H.tx = Math.min(w * 0.88, w - 56);
+    H.ty = Math.max(Math.min(h * 0.22, h - 80), 108);
     if (!H.forceVisible && Date.now() > (H.showcaseUntil || 0)) {
       H.x = H.tx;
       H.y = H.ty;
@@ -846,12 +840,11 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 1.12 : 1;
-      var scale = (H.busy ? 1.32 : 1.22) * H.scale * breath * parkScale;
-      if (H.boost > 0.6) scale *= 1.06;
-      if (Date.now() < (H.showcaseUntil || 0) && !H.parkMode) scale *= 1.12;
-      var bw = 196 * scale;
-      var bh = 196 * scale;
+      var parkScale = H.parkMode && !H.busy ? 0.9 : 1;
+      var scale = (H.busy ? 1.08 : 1) * H.scale * breath * parkScale;
+      if (H.boost > 0.6) scale *= 1.04;
+      var bw = 96 * scale;
+      var bh = 96 * scale;
       // dual bloom: electric blue rim under body
       var bloom = ctx.createRadialGradient(0, 18, 6, 0, 18, bw * 0.48);
       bloom.addColorStop(0, 'rgba(60,140,255,0.28)');
