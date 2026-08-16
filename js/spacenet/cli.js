@@ -847,7 +847,7 @@
     var t = String(low || '');
     if (t.length < 2 || t.length > 80) return false;
     if (
-      /^(help|locate|login|wallet|rate|mine|donate|layers|order|deliver|drive|task|code|coders|research|pizza|shops|vendors|hard boot|first delivery|play|games)\b/.test(
+      /^(help|locate|login|wallet|rate|mine|donate|layers|order|deliver|drive|task|code|coders|research|pizza|shops|vendors|hard boot|first delivery|play|games|youtube|yt|watch|clip)\b/.test(
         t
       )
     )
@@ -862,8 +862,12 @@
     try {
       if (CITIES[t.replace(/\s+/g, '')] || CITIES[t]) return true;
     } catch (_) {}
-    if (/^[A-ZΑ-Ω][\wα-ω'’\-]+(\s+[A-ZΑ-Ω][\wα-ω'’\-]+){0,3}$/.test(String(line || '').trim()))
+    if (/^[A-ZΑ-Ω][\wα-ω'’\-]+(\s+[A-ZΑ-Ω][\wα-ω'’\-]+){0,3}$/.test(String(line || '').trim())) {
+      try {
+        if (global.SNYoutube && SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(line)) return false;
+      } catch (_) {}
       return true;
+    }
     return false;
   }
 
@@ -1155,6 +1159,38 @@
     const Tasks = global.SNTasks;
     const Globe = global.SNGlobe;
 
+    async function ensureYoutube() {
+      if (global.SNYoutube && SNYoutube.find) return global.SNYoutube;
+      try {
+        if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+      } catch (_) {}
+      if (global.SNYoutube && SNYoutube.find) return global.SNYoutube;
+      await new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = '/js/spacenet/youtube.js?v=' + Date.now();
+        s.onload = resolve;
+        s.onerror = function () {
+          reject(new Error('youtube module missing'));
+        };
+        document.head.appendChild(s);
+      });
+      return global.SNYoutube;
+    }
+
+    async function runYoutubeSearch(raw) {
+      var Yt = await ensureYoutube();
+      if (!Yt || !Yt.find) {
+        log('YouTube is not loaded. Hard refresh.', 'err');
+        return false;
+      }
+      var q = (Yt.queryFromText && Yt.queryFromText(raw)) || String(raw || '').trim();
+      if (!q) q = String(raw || '').trim();
+      preview('Searching YouTube…');
+      log('YouTube · ' + q, 'ok');
+      var r = await Yt.find(q);
+      return !!(r && r.ok);
+    }
+
     try {
       if (low === 'help' || low === '?' || low === 'commands') {
         help();
@@ -1166,6 +1202,28 @@
         } else {
           log("Ómma is not loaded yet. Hard refresh.", 'dim');
         }
+        return;
+      }
+      if (
+        /^play\s+\d+$/.test(low) &&
+        global.SNYoutube &&
+        SNYoutube.results &&
+        SNYoutube.results.length
+      ) {
+        await SNYoutube.playIndex(low.replace(/^play\s+/, ''));
+        return;
+      }
+      if (/^(yt close|youtube close|close youtube|close video)$/.test(low)) {
+        try {
+          if (global.SNYoutube && SNYoutube.close) SNYoutube.close();
+        } catch (_) {}
+        return;
+      }
+      if (
+        /^(youtube|yt|watch|clip)\b/.test(low) ||
+        (global.SNYoutube && SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(line))
+      ) {
+        await runYoutubeSearch(line);
         return;
       }
       if (low === 'live' || low === 'fluid' || low === 'live wire') {
@@ -3744,6 +3802,16 @@ if (
               ''
             )
             .trim() || line;
+        try {
+          await ensureYoutube();
+        } catch (_) {}
+        if (
+          /\b(youtube|youtu\.be|clip|video|βίντεο|song|track|trailer|lyrics)\b/i.test(low) ||
+          (global.SNYoutube && SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(q))
+        ) {
+          await runYoutubeSearch(q);
+          return;
+        }
         const wantFull = /^almighty\b/.test(low);
         const wantKnowledge = /^(who\s+is|what\s+is|look\s+up)\b/.test(low);
         const here =
@@ -3967,7 +4035,18 @@ if (
         return;
       }
 
-      // SpaceXai — words fly. Old pages do not.
+      // SpaceXai — words fly. Old pages do not. Video titles do not fly.
+      try {
+        await ensureYoutube();
+      } catch (_) {}
+      if (
+        global.SNYoutube &&
+        ((SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(line)) ||
+          (SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(line)))
+      ) {
+        await runYoutubeSearch(line);
+        return;
+      }
       if (global.SNSpaceXai && SNSpaceXai.wantsFly && SNSpaceXai.wantsFly(line)) {
         const flew = await SNSpaceXai.fly(line);
         if (flew && flew.ok) return;
