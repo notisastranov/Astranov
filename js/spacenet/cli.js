@@ -4067,7 +4067,7 @@ if (
       } catch (_) {}
       if (global.SNSearch && typeof SNSearch.researchFirst === 'function') {
         const sensed = await SNSearch.researchFirst(line, { log: log, preview: preview });
-        if (sensed && (sensed.acted && sensed.acted.length || sensed.ask)) return;
+        if (sensed && sensed.acted && sensed.acted.length) return;
       }
       if (
         global.SNYoutube &&
