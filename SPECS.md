@@ -194,4 +194,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-15 (not owner OV): **cmdup** — command line sits above the FLIGHT handle and stays visible when collapsed. Build `20260815192500-cmdup`.*
 *Agent note 2026-08-16 (not owner OV): **sat** — Vodi / sea-pollution / imagery opens NASA VIIRS + chlorophyll over Esri satellite, not a street map. Build `20260816080000-sat`.*
 *Agent note 2026-08-16 (not owner OV): **layers** — Layers menu was switching a map hidden under the globe. Globe hides, map comes forward, picks change the picture. Build `20260816085000-layers`.*
+*Agent note 2026-08-16 (not owner OV): **brain** — paid mind on owner key for everyone. 3 gift tastes then plans. Markup 3× live xAI rates. Type `plans`. Build `20260816091000-brain`.*
 
