@@ -997,8 +997,8 @@
       recordCheck('SNTaskRunner', false, e.message || e, 'task-runner.js');
     }
     try {
-      if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
-      recordCheck('SNHelper', !!global.SNHelper, 'sleep', null);
+      if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: true });
+      recordCheck('SNHelper', !!global.SNHelper, 'awake', null);
     } catch (e) {
       recordCheck('SNHelper', false, e.message || e, null);
     }
@@ -1298,6 +1298,13 @@
         if (inp) inp.placeholder = 'tokyo · eiffel · pizza · youtube · anything';
         var tin = document.getElementById('stc-cmd-in');
         if (tin) tin.placeholder = 'tokyo · mars · eiffel · vodi · pizza';
+      } catch (_) {}
+      try {
+        if (global.SNHelper) {
+          if (SNHelper.init) SNHelper.init({ autoWake: true });
+          if (SNHelper.wake)
+            SNHelper.wake({ force: true, label: 'UNIT · SILVER WINGS', showcaseMs: 20000 });
+        }
       } catch (_) {}
     } catch (_) {}
     killOverlay();
