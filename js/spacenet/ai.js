@@ -817,6 +817,9 @@
             return { role: h.role, content: String(h.content || '').slice(0, 800) };
           }),
         });
+        if (pow && pow.paywall) {
+          return 'Three tastes are done. Type plans. Every euro I am billed, the plan charges three.';
+        }
         if (pow && pow.ok && pow.text) {
           try {
             if (pow.notice && global.SNCli && SNCli.log) SNCli.log(pow.notice, 'dim');
@@ -835,7 +838,7 @@
       message: String(message || '').slice(0, opts && opts.long ? 4000 : 1400),
       system: String(systemFor(mode)).slice(0, 3200),
       fast: mode !== 'code' && mode !== 'coders' && !(sub && sub.owner),
-      allow_paid: !!(sub && (sub.owner || (sub.active && sub.remainingApiEur > 0))),
+      allow_paid: !!(sub && (sub.owner || (sub.active && sub.remainingApiEur > 0) || sub.giftLeft > 0)),
       force_paid: !!(sub && sub.owner),
       owner: !!(sub && sub.owner),
       subscription: sub || undefined,
