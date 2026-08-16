@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=tiny20260816z';
+  var BUILD_Q = 'v=tiny20260816fix';
 
   var H = {
     ready: false,
@@ -120,7 +120,7 @@
   }
 
   function ensureSprites() {
-    if (H.loaded && H.frames.length && H.frames[0] && H.frames[0].naturalWidth) {
+    if (H.loaded && H.frames.length && H.frames[0] && (H.frames[0].naturalWidth || H.frames[0].width)) {
       return Promise.resolve(true);
     }
     if (H._loading) return H._loading;
@@ -171,7 +171,7 @@
       el.setAttribute('aria-label', 'SpaceX Bot · tap to talk');
       el.title = 'Tap the unit · microphone on · it flies the result';
       el.style.cssText =
-        'position:fixed;z-index:12080;width:88px;height:110px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
+        'position:fixed;z-index:12080;width:120px;height:148px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;touch-action:manipulation;';
       el.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -185,8 +185,8 @@
 
   function placeHit() {
     if (!H.hit) return;
-    H.hit.style.left = Math.max(0, H.x - 44) + 'px';
-    H.hit.style.top = Math.max(0, H.y - 58) + 'px';
+    H.hit.style.left = Math.max(0, H.x - 60) + 'px';
+    H.hit.style.top = Math.max(0, H.y - 74) + 'px';
     H.hit.style.display = H.visible === false ? 'none' : 'block';
   }
 
@@ -194,7 +194,11 @@
     wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 20000 });
     H.status = 'listening';
     try {
-      if (global.SNCli && typeof SNCli.toggleHandsfree === 'function') {
+      if (global.SNCli && global.SNCli.handsfreeOn) {
+        if (typeof SNCli.stopHandsfree === 'function') SNCli.stopHandsfree('unit tap');
+      } else if (global.SNCli && typeof SNCli.startListen === 'function') {
+        SNCli.startListen();
+      } else if (global.SNCli && typeof SNCli.toggleHandsfree === 'function') {
         SNCli.toggleHandsfree();
       }
     } catch (e) {
@@ -825,11 +829,11 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 0.9 : 1;
+      var parkScale = H.parkMode && !H.busy ? 0.72 : 1;
       var scale = (H.busy ? 1.08 : 1) * H.scale * breath * parkScale;
       if (H.boost > 0.6) scale *= 1.04;
-      var bw = 96 * scale;
-      var bh = 96 * scale;
+      var bw = 72 * scale;
+      var bh = 72 * scale;
       // dual bloom: electric blue rim under body
       var bloom = ctx.createRadialGradient(0, 18, 6, 0, 18, bw * 0.48);
       bloom.addColorStop(0, 'rgba(60,140,255,0.28)');
