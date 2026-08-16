@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260816131500-scan" />
-<meta name="astranov-continuity" content="20260816131500-scan" />
+<meta name="astranov-build" content="20260816133000-mic" />
+<meta name="astranov-continuity" content="20260816133000-mic" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -609,7 +609,18 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(168, 236, 255, 0.14), 0 0 12px rgba(61, 158, 255, 0.18);
 }
-.sn-rib-emoji { display: none !important; }
+.sn-rib-emoji {
+  display: block !important;
+  font-size: 16px;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
+  font-style: normal;
+  font-variant-emoji: emoji;
+  -webkit-text-fill-color: initial;
+  color: initial;
+  filter: none;
+}
+.sn-rib-icon-svg { display: none !important; }
 .sn-rib-icon {
   display: grid;
   width: 16px;
@@ -1395,14 +1406,14 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   <div id="panel" class="collapsed">
     <div id="cli-drag" title="Drag to expand CLI" aria-label="CLI handle"></div>
     <div id="sn-task-ribbon" aria-label="Quick actions">
-      <button type="button" class="sn-rib-btn" data-act="locate" id="sn-rib-locate"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Locate</span></button>
-      <button type="button" class="sn-rib-btn" data-act="polygon" id="sn-rib-poly"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Poly</span></button>
-      <button type="button" class="sn-rib-btn" data-act="user" id="sn-rib-user"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Login</span></button>
-      <button type="button" class="sn-rib-btn" data-act="call" id="sn-rib-call"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Call</span></button>
-      <button type="button" class="sn-rib-btn" data-act="add" id="sn-rib-add"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Add</span></button>
-      <button type="button" class="sn-rib-btn" data-act="layers" id="sn-rib-layers"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Layers</span></button>
-      <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">AI</span></button>
-      <button type="button" class="sn-rib-btn" data-act="send" id="sn-rib-send"><span class="sn-rib-icon" aria-hidden="true"></span><span class="sn-rib-txt">Send</span></button>
+      <button type="button" class="sn-rib-btn" data-act="locate" id="sn-rib-locate"><span class="sn-rib-emoji">📍</span><span class="sn-rib-txt">Locate</span></button>
+      <button type="button" class="sn-rib-btn" data-act="polygon" id="sn-rib-poly"><span class="sn-rib-emoji">🔶</span><span class="sn-rib-txt">Poly</span></button>
+      <button type="button" class="sn-rib-btn" data-act="user" id="sn-rib-user"><span class="sn-rib-emoji">👤</span><span class="sn-rib-txt">Login</span></button>
+      <button type="button" class="sn-rib-btn" data-act="call" id="sn-rib-call"><span class="sn-rib-emoji">📞</span><span class="sn-rib-txt">Call</span></button>
+      <button type="button" class="sn-rib-btn" data-act="add" id="sn-rib-add"><span class="sn-rib-emoji">➕</span><span class="sn-rib-txt">Add</span></button>
+      <button type="button" class="sn-rib-btn" data-act="layers" id="sn-rib-layers"><span class="sn-rib-emoji">🗺️</span><span class="sn-rib-txt">Layers</span></button>
+      <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf"><span class="sn-rib-emoji">🎤</span><span class="sn-rib-txt">AI</span></button>
+      <button type="button" class="sn-rib-btn" data-act="send" id="sn-rib-send"><span class="sn-rib-emoji">📤</span><span class="sn-rib-txt">Send</span></button>
     </div>
     <div id="cli-log" aria-live="polite"></div>
     <form id="cli-form" autocomplete="off">
