@@ -1466,7 +1466,8 @@
       st.textContent =
         '#sn-net-tile{position:fixed;z-index:12040;left:50%;top:9%;transform:translateX(-50%);width:min(460px,94vw);display:none;pointer-events:none}' +
         '#sn-net-tile.open{display:block;pointer-events:auto}' +
-        '#sn-net-tile .sn-net-card{background:linear-gradient(180deg,rgba(4,10,22,.94),rgba(2,6,14,.92));border:1px solid rgba(90,180,255,.38);border-radius:6px;box-shadow:0 18px 50px rgba(0,0,0,.6),0 0 28px rgba(40,140,255,.16),inset 0 0 0 1px rgba(160,220,255,.06);overflow:hidden;backdrop-filter:blur(16px) saturate(1.2);max-height:70vh;display:flex;flex-direction:column}' +
+        '#sn-net-tile .sn-net-card{background:linear-gradient(180deg,rgba(4,10,22,.88),rgba(2,6,14,.86));border:1px solid rgba(90,180,255,.38);border-radius:6px;box-shadow:0 12px 36px rgba(0,0,0,.5);overflow:hidden;backdrop-filter:blur(16px);max-height:28vh;display:flex;flex-direction:column}' +
+        '#sn-net-tile #sn-net-rows{overflow:auto;padding:4px 8px 8px;display:flex;flex-direction:column;gap:4px;max-height:14vh}' +
         '#sn-net-tile .sn-net-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(80,160,255,.18);cursor:grab}' +
         '#sn-net-tile #sn-net-kind{font:700 9px/1 JetBrains Mono,ui-monospace,monospace;letter-spacing:.2em;color:#7ec8ff}' +
         '#sn-net-tile #sn-net-q{flex:1;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#f4f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
@@ -1503,7 +1504,7 @@
     var qEl = document.getElementById('sn-net-q');
     var briefEl = document.getElementById('sn-net-brief');
     var rowsEl = document.getElementById('sn-net-rows');
-    if (kindEl) kindEl.textContent = String(senseOut.kind || 'NET').toUpperCase();
+    if (kindEl) kindEl.textContent = (senseOut.body || senseOut.kind || 'NET').toUpperCase();
     if (qEl) qEl.textContent = String(senseOut.query || 'Research').slice(0, 72);
     var brief =
       (senseOut.wiki && senseOut.wiki.text) ||
@@ -1532,7 +1533,7 @@
         lng: p.lng,
       });
     });
-    (senseOut.web || []).slice(0, 5).forEach(function (w) {
+    (senseOut.web || []).slice(0, 2).forEach(function (w) {
       if (!w || !w.title) return;
       if (senseOut.wiki && w.title === senseOut.wiki.title) return;
       rows.push({ kind: 'web', title: w.title, sub: String(w.text || w.url || '').slice(0, 90), url: w.url });
@@ -1550,7 +1551,7 @@
         video: senseOut.query,
       });
     }
-    NET.rows = rows.slice(0, 8);
+    NET.rows = rows.slice(0, 4);
     if (rowsEl) {
       rowsEl.innerHTML = NET.rows
         .map(function (r, i) {
@@ -1618,17 +1619,89 @@
     return { ok: false };
   }
 
+  function sleep(ms) {
+    return new Promise(function (r) {
+      setTimeout(r, ms);
+    });
+  }
+
+  async function arriveVisual(pin, q, L, previewFn) {
+    var name = String((pin && (pin.name || pin.title)) || q || 'there').slice(0, 40);
+    var lat = Number(pin.lat);
+    var lng = Number(pin.lng);
+    if (!isFinite(lat) || !isFinite(lng)) return false;
+    previewFn('Zoom · ' + name);
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(lat, lng, {
+          tier: 'national',
+          label: name,
+          body: 'earth',
+          pulse: true,
+        });
+      }
+    } catch (_) {}
+    await sleep(380);
+    try {
+      if (global.SNGlobe && SNGlobe.goToPlace) {
+        SNGlobe.goToPlace(lat, lng, {
+          tier: 'city',
+          label: name,
+          body: 'earth',
+          pulse: true,
+          openMap: true,
+        });
+      }
+    } catch (_) {}
+    try {
+      if (global.SNMap && SNMap.showLiveSat) {
+        await SNMap.showLiveSat(lat, lng, {
+          zoom: 15,
+          pollution: /pollut|waste|vodi|sewage|chloro/i.test(String(q || '')),
+          trueColor: true,
+          plume: false,
+          label: name,
+        });
+      } else if (global.SNMap && SNMap.open) {
+        await SNMap.open(lat, lng, { force: true, zoom: 15, basemap: 'satellite' });
+      }
+    } catch (_) {}
+    if (L) L('ARRIVED · ' + name + ' · live imagery', 'ok');
+    previewFn(name);
+    return true;
+  }
+
   async function researchFirst(query, opts) {
     opts = opts || {};
     var q = String(query || '').trim();
     var L = opts.log || function () {};
     var previewFn = opts.preview || function () {};
     previewFn('Research…');
-    L('Research · ' + q, 'cmd');
+    L('Search · ' + q, 'cmd');
 
     var s = await sense(q, opts);
     s.acted = [];
     s.ask = null;
+
+    var bodyHit = String(q || '').match(
+      /\b(earth|mars|moon|luna|jupiter|saturn|venus|mercury|neptune|uranus|europa|titan|io|ganymede|callisto|pluto|sun)\b/i
+    );
+    if (bodyHit && !/\b(clip|video|song|lyrics)\b/i.test(q)) {
+      var bid = bodyHit[1].toLowerCase();
+      if (bid === 'luna') bid = 'moon';
+      try {
+        if (global.SNCosmos && SNCosmos.go) await SNCosmos.go(bid);
+        else if (global.SNGlobe && SNGlobe.setBody) SNGlobe.setBody(bid);
+      } catch (_) {}
+      s.kind = 'place';
+      s.body = bid;
+      s.acted.push('cosmos');
+      L('ARRIVED · ' + bid.toUpperCase() + ' · orbital view', 'ok');
+      previewFn(bid);
+      showNet(s);
+      return s;
+    }
+
     if (opts.forcePlace || /\b(bodega|shop|store|vendor|kitchen)\b/i.test(q)) {
       if (!s.places || !s.places.length) {
         try {
@@ -1645,11 +1718,29 @@
           }
         } catch (_) {}
       }
-      if (s.places && s.places[0] && s.places[0].lat != null) {
-        s.kind = 'place';
-        s.confidence = Math.max(s.confidence || 0, 0.72);
-      }
     }
+
+    var pin = null;
+    if (s.places && s.places[0] && s.places[0].lat != null) pin = s.places[0];
+    if (!pin && s.wiki && s.wiki.lat != null)
+      pin = { name: s.wiki.title, lat: s.wiki.lat, lng: s.wiki.lng, kind: 'wiki' };
+    if (!pin && s.kind !== 'video') {
+      try {
+        var g2 = await geocode(q);
+        if (g2 && g2[0] && looksLikePlaceHit(g2[0])) {
+          s.places = g2;
+          pin = g2[0];
+        }
+      } catch (_) {}
+    }
+    if (pin) {
+      s.kind = 'place';
+      await arriveVisual(pin, q, L, previewFn);
+      s.acted.push('arrive');
+      showNet(s);
+      return s;
+    }
+
     showNet(s);
 
     if (s.kind === 'video') {
@@ -1663,28 +1754,6 @@
         previewFn('YouTube · ' + q.slice(0, 36));
         return s;
       }
-    }
-
-    if (s.kind === 'place' && s.places && s.places[0] && s.places[0].lat != null) {
-      var dest = s.places[0];
-      try {
-        if (global.SNGlobe && SNGlobe.goToPlace) {
-          SNGlobe.goToPlace(dest.lat, dest.lng, {
-            tier: 'city',
-            label: String(dest.name || q).slice(0, 28),
-            body: 'earth',
-            pulse: true,
-          });
-        }
-      } catch (_) {}
-      s.acted.push('fly');
-      L((dest.name || q).slice(0, 72), 'ok');
-      if (s.wiki && s.wiki.text) L(s.wiki.text.slice(0, 180), 'dim');
-      try {
-        visualize({ places: s.places, wiki: s.wiki, query: q }, { openMap: false });
-      } catch (_) {}
-      previewFn((dest.name || q).slice(0, 40));
-      return s;
     }
 
     if (s.kind === 'person' || s.kind === 'thing') {
