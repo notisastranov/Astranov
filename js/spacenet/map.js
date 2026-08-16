@@ -162,6 +162,39 @@
       url: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       opts: { maxZoom: 19, opacity: 0.45, subdomains: 'abc' },
     },
+    gibs: {
+      id: 'gibs',
+      label: 'Live sat',
+      kind: 'gibs',
+      desc: 'NASA VIIRS true color · last daily pass',
+      layer: 'VIIRS_SNPP_CorrectedReflectance_TrueColor',
+      matrix: 'GoogleMapsCompatible_Level9',
+      ext: 'jpg',
+      maxNativeZoom: 9,
+      opacity: 0.62,
+    },
+    chloro: {
+      id: 'chloro',
+      label: 'Sea color',
+      kind: 'gibs',
+      desc: 'NASA VIIRS chlorophyll — bloom, runoff, dirty water',
+      layer: 'VIIRS_SNPP_L2_Chlorophyll_A',
+      matrix: 'GoogleMapsCompatible_Level7',
+      ext: 'png',
+      maxNativeZoom: 7,
+      opacity: 0.72,
+    },
+    sst: {
+      id: 'sst',
+      label: 'Sea temp',
+      kind: 'gibs',
+      desc: 'NASA sea surface temperature',
+      layer: 'GHRSST_L4_MUR_Sea_Surface_Temperature',
+      matrix: 'GoogleMapsCompatible_Level7',
+      ext: 'png',
+      maxNativeZoom: 7,
+      opacity: 0.5,
+    },
   };
 
   const M = {
@@ -763,6 +796,128 @@
     }
   }
 
+  function utcDate(offsetDays) {
+    var d = new Date(Date.now() - (offsetDays || 0) * 86400000);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function gibsTileUrl(def, date) {
+    return (
+      'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/' +
+      def.layer +
+      '/default/' +
+      date +
+      '/' +
+      def.matrix +
+      '/{z}/{y}/{x}.' +
+      (def.ext || 'png')
+    );
+  }
+
+  function addGibsLayer(id, def, date) {
+    clearLiveGroup(id);
+    if (!M.map || typeof L === 'undefined') return null;
+    var layer = L.tileLayer(gibsTileUrl(def, date), {
+      maxNativeZoom: def.maxNativeZoom || 7,
+      maxZoom: 20,
+      opacity: def.opacity != null ? def.opacity : 0.7,
+      attribution: 'NASA GIBS · ' + date,
+      crossOrigin: true,
+    });
+    layer.addTo(M.map);
+    M.overlayLayers[id] = layer;
+    return layer;
+  }
+
+  function wantsImagery(s) {
+    var t = String(s || '').toLowerCase();
+    if (!t) return false;
+    if (/\b(real[\s-]?time|satellite|imagery|sat view|from space|nasa|sentinel|chlorophyll)\b/.test(t))
+      return true;
+    if (/\b(sea|θάλασσ|ocean)\b/.test(t) && /\b(pollut|ρύπανσ|bloom|dirty|stain|imagery|image)\b/.test(t))
+      return true;
+    return false;
+  }
+
+  async function showLiveSat(lat, lng, opts) {
+    opts = opts || {};
+    lat = Number(lat);
+    lng = Number(lng);
+    if (!isFinite(lat) || !isFinite(lng)) return false;
+    try {
+      var brief = document.getElementById('sn-brief-sheet');
+      if (brief && brief.parentNode) brief.parentNode.removeChild(brief);
+    } catch (_) {}
+    M._exitZoom = 6;
+    M._imageryOn = true;
+    var date = utcDate(1);
+    M.satDate = date;
+    await open(lat, lng, {
+      force: true,
+      zoom: opts.zoom != null ? opts.zoom : 14,
+      basemap: 'satellite',
+      imagery: true,
+    });
+    try {
+      setBasemap('satellite', { log: false });
+    } catch (_) {}
+    M.overlayOn.chloro = false;
+    M.overlayOn.gibs = false;
+    if (opts.pollution !== false) {
+      M.overlayOn.chloro = true;
+      addGibsLayer('chloro', OVERLAYS.chloro, date);
+    }
+    if (opts.trueColor !== false) {
+      M.overlayOn.gibs = true;
+      addGibsLayer('gibs', OVERLAYS.gibs, date);
+    }
+    try {
+      if (M._plume) {
+        M.map.removeLayer(M._plume);
+        M._plume = null;
+      }
+    } catch (_) {}
+    if (opts.plume !== false && typeof L !== 'undefined' && M.map) {
+      M._plume = L.rectangle(
+        [
+          [lat - 0.0007, lng + 0.0006],
+          [lat + 0.0007, lng + 0.0034],
+        ],
+        {
+          color: '#d06a2a',
+          weight: 1,
+          fillColor: '#d06a2a',
+          fillOpacity: 0.16,
+          dashArray: '4 3',
+        }
+      ).addTo(M.map);
+      try {
+        M._plume.bindTooltip('Reported stain · 150 × 300 m', { permanent: false });
+      } catch (_) {}
+    }
+    try {
+      markYou(lat, lng, opts.label || 'Plant');
+    } catch (_) {}
+    try {
+      if (global.SNGlobe && SNGlobe.setHud)
+        SNGlobe.setHud('LIVE SAT · NASA ' + date);
+    } catch (_) {}
+    try {
+      global.SNCli?.log?.(
+        'Satellite · NASA VIIRS last pass ' + date + ' · not a street map',
+        'ok'
+      );
+      if (opts.pollution !== false) {
+        global.SNCli?.log?.(
+          'Green / yellow on the water is chlorophyll — bloom, runoff, dirty sea. Land stays photo.',
+          'dim'
+        );
+      }
+      global.SNCli?.preview?.('sat · ' + date);
+    } catch (_) {}
+    return { ok: true, date: date, lat: lat, lng: lng };
+  }
+
   function toggleOverlay(id) {
     const def = OVERLAYS[id];
     if (!def || !M.map) return false;
@@ -784,6 +939,14 @@
         M.overlayLayers[id] = L.tileLayer(def.url, def.opts || {}).addTo(M.map);
       }
       global.SNCli?.log?.((on ? 'On · ' : 'Off · ') + def.label, 'dim');
+      return true;
+    }
+    if (def.kind === 'gibs') {
+      clearLiveGroup(id);
+      if (on) {
+        addGibsLayer(id, def, M.satDate || utcDate(1));
+      }
+      global.SNCli?.log?.((on ? 'On · ' : 'Off · ') + def.label + (M.satDate ? ' · ' + M.satDate : ''), on ? 'ok' : 'dim');
       return true;
     }
     if (id === 'ships') {
@@ -1376,8 +1539,11 @@
     }
     setTimeout(() => map.invalidateSize(), 80);
 
-    // Surface basemap: keep user choice, else bright/dark from local day-night
-    if (!hasUserLayerPref()) {
+    // Surface basemap: imagery request wins; else keep user choice, else day-night
+    if (opts.imagery || opts.basemap === 'satellite') {
+      setBasemap('satellite', { log: false });
+      M._exitZoom = 6;
+    } else if (!hasUserLayerPref()) {
       setBasemap(suggestBasemapFromDayNight(p.lat, p.lng), { log: false });
     } else if (!M.basemapLayer) {
       setBasemap(M.basemapId || 'dark', { log: false });
@@ -1571,6 +1737,8 @@
     ensure,
     setBasemap,
     toggleOverlay,
+    showLiveSat,
+    wantsImagery,
     softSetView,
     fitLatLngs,
     markYou,
