@@ -198,4 +198,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-16 (not owner OV): **boot** — honest power (no fake battery), boot checks in sections with marks, cache/reset/login from boot, User button shows face when signed in. Build `20260816094000-boot`.*
 *Agent note 2026-08-16 (not owner OV): **mesh** — boot link scan (wifi/cell/bt/usb/mesh/slow path) + 3–13% mine recommend from load. Build `20260816095500-mesh`.*
 *Agent note 2026-08-16 (not owner OV): **yt** — clip titles search YouTube (not the globe). youtube.js loaded. Piped + Invidious + YouTube HTML fallback. Type a clip name or `youtube <title>`. Build `20260816113000-yt`.*
+*Agent note 2026-08-16 (not owner OV): **mind** — paid path is flagship (grok-4.6) with hands (YouTube/fly/imagine). Stop chopping replies to 900 chars. Type `mind`. Build `20260816114500-mind`.*
 
