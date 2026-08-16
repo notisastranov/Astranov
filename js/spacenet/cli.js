@@ -4320,8 +4320,10 @@ if (
       btn.classList.toggle('on', !!on);
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       btn.title = on
-        ? 'Astranov listening · tap AI to stop'
-        : 'AI · talk to Astranov (English or Greek)';
+        ? 'Listening · tap AI to stop'
+        : 'Talk to Astranov · microphone';
+      var em = btn.querySelector('.sn-rib-emoji');
+      if (em) em.textContent = on ? '🎙️' : '🎤';
     });
     if (label) preview(label);
   }
