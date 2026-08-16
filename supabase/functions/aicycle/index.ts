@@ -84,6 +84,8 @@ async function callAnthropic(key: string, system: string, messages: Msg[]): Prom
 }
 
 const LLM_TIMEOUT_MS = 14000
+const PAID_TIMEOUT_MS = 28000
+const PAID_MAX_TOKENS = 4096
 
 async function withTimeout<T>(p: Promise<T>, ms = LLM_TIMEOUT_MS): Promise<T | null> {
   try {
@@ -94,21 +96,62 @@ async function withTimeout<T>(p: Promise<T>, ms = LLM_TIMEOUT_MS): Promise<T | n
   } catch { return null }
 }
 
-async function callOpenAICompat(url: string, key: string, model: string, system: string, messages: Msg[], extraHeaders: Record<string, string> = {}): Promise<string | null> {
+async function callOpenAICompat(
+  url: string,
+  key: string,
+  model: string,
+  system: string,
+  messages: Msg[],
+  extraHeaders: Record<string, string> = {},
+  opts: { maxTokens?: number; timeoutMs?: number; tools?: unknown[] } = {},
+): Promise<string | null> {
   try {
     const ctrl = new AbortController()
-    const timer = setTimeout(() => ctrl.abort(), LLM_TIMEOUT_MS)
+    const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs || LLM_TIMEOUT_MS)
+    const body: Record<string, unknown> = {
+      model,
+      max_tokens: opts.maxTokens || 900,
+      messages: [{ role: 'system', content: system }, ...messages],
+    }
+    if (opts.tools && opts.tools.length) {
+      body.tools = opts.tools
+      body.tool_choice = 'auto'
+    }
     const r = await fetch(url, {
       method: 'POST',
       signal: ctrl.signal,
-      headers: { 'Authorization': `Bearer ${key}`, 'content-type': 'application/json', ...extraHeaders },
-      body: JSON.stringify({ model, max_tokens: 900, messages: [{ role: 'system', content: system }, ...messages] }),
+      headers: { Authorization: 'Bearer ' + key, 'content-type': 'application/json', ...extraHeaders },
+      body: JSON.stringify(body),
     })
     clearTimeout(timer)
     if (!r.ok) return null
     const j = await r.json()
-    return j.choices?.[0]?.message?.content || null
-  } catch { return null }
+    const msg = j.choices?.[0]?.message
+    const toolCalls = msg?.tool_calls
+    if (Array.isArray(toolCalls) && toolCalls.length) {
+      const tags: string[] = []
+      for (const c of toolCalls) {
+        const name = String(c?.function?.name || '')
+        let args: Record<string, string> = {}
+        try {
+          args = JSON.parse(c?.function?.arguments || '{}')
+        } catch {
+          args = {}
+        }
+        if (name === 'youtube_search' && args.query) tags.push('[[YOUTUBE:' + String(args.query).slice(0, 160) + ']]')
+        else if ((name === 'fly_earth' || name === 'search_earth') && (args.place || args.query)) {
+          tags.push('[[GO:' + String(args.place || args.query).slice(0, 160) + ']]')
+        } else if (name === 'imagine_image' && args.prompt) {
+          tags.push('[[IMAGINE:' + String(args.prompt).slice(0, 240) + ']]')
+        }
+      }
+      const spoken = String(msg?.content || '').trim()
+      return (spoken ? spoken + '\n' : '') + tags.join(' ')
+    }
+    return msg?.content || null
+  } catch {
+    return null
+  }
 }
 
 async function callOpenRouter(key: string, system: string, messages: Msg[], model?: string): Promise<string | null> {
@@ -116,25 +159,63 @@ async function callOpenRouter(key: string, system: string, messages: Msg[], mode
     'https://openrouter.ai/api/v1/chat/completions',
     key,
     model || Deno.env.get('OPENROUTER_MODEL') || 'meta-llama/llama-3.3-70b-instruct',
-    system, messages,
+    system,
+    messages,
     { 'HTTP-Referer': 'https://astranov.eu', 'X-Title': 'AstranoV' },
   )
 }
 
+const HANDS = [
+  {
+    type: 'function',
+    function: {
+      name: 'youtube_search',
+      description: 'Search YouTube and play the named clip or video.',
+      parameters: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fly_earth',
+      description: 'Fly the live globe to a real place on Earth or a planet.',
+      parameters: { type: 'object', properties: { place: { type: 'string' } }, required: ['place'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'imagine_image',
+      description: 'Generate an image from a description and show it to the user.',
+      parameters: { type: 'object', properties: { prompt: { type: 'string' } }, required: ['prompt'] },
+    },
+  },
+]
+
 async function callXAI(key: string, system: string, messages: Msg[]): Promise<string | null> {
-  // Paid XAI_API_KEY from Supabase secrets
-  const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-3'
+  const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-4.6'
+  const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: HANDS }
   const hit = await callOpenAICompat(
     'https://api.x.ai/v1/chat/completions',
     key,
     primary,
-    system, messages,
+    system,
+    messages,
+    {},
+    paidOpts,
   )
   if (hit) return hit
-  // Model name may vary by plan — try common paid aliases
-  for (const m of ['grok-3-mini', 'grok-2-latest', 'grok-2-1212']) {
+  for (const m of ['grok-4', 'grok-4-0709', 'grok-3']) {
     if (m === primary) continue
-    const t = await callOpenAICompat('https://api.x.ai/v1/chat/completions', key, m, system, messages)
+    const t = await callOpenAICompat(
+      'https://api.x.ai/v1/chat/completions',
+      key,
+      m,
+      system,
+      messages,
+      {},
+      paidOpts,
+    )
     if (t) return t
   }
   return null
@@ -321,6 +402,9 @@ serve(async (req) => {
       system += `\n\n— THINGS THIS PERSON EXPLICITLY ASKED YOU TO REMEMBER —\n` +
         userMemory.slice(0, 6).map((c, i) => `${i + 1}. ${c}`).join('\n')
     }
+    if (mayUsePaidXai) {
+      system += `\n\nHANDS: You are the full paid flagship mind. You have tools. When they name a YouTube clip, call youtube_search. When they name a place, call fly_earth. When they want a picture, call imagine_image. Do the job — do not describe searching. You may write a few sentences, not one clipped line.`
+    }
 
     const histMsgs: Msg[] = (history || []).slice(-8).map(m => ({
       role: m.role === 'assistant' ? 'assistant' : 'user', content: String(m.content).slice(0, 2000),
@@ -334,6 +418,32 @@ serve(async (req) => {
     const XAI_SECRET = mayUsePaidXai ? Deno.env.get('XAI_API_KEY') : undefined
     const ownerImmediatePaid = isOwner && !!XAI_SECRET
     const coderEngine = String(body.coder_engine || '').toLowerCase()
+
+    if (body.imagine === true) {
+      if (!XAI_SECRET) {
+        return json({ ok: false, error: 'imagine needs the paid mind', text: 'Imagine needs a paid session.' }, 402)
+      }
+      try {
+        const ir = await fetch('https://api.x.ai/v1/images/generations', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + XAI_SECRET, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            model: Deno.env.get('XAI_IMAGE_MODEL') || 'grok-2-image',
+            prompt: prompt.slice(0, 1200),
+            n: 1,
+          }),
+        })
+        const ij = await ir.json().catch(() => ({}))
+        const url = ij?.data?.[0]?.url || ij?.data?.[0]?.b64_json || ''
+        if (!url) {
+          return json({ ok: false, error: 'imagine empty', text: 'Imagine did not return a picture.' }, 502)
+        }
+        const src = String(url).indexOf('http') === 0 ? url : 'data:image/png;base64,' + url
+        return json({ ok: true, image: src, text: 'Picture ready.', via: 'xai-imagine', paid: true })
+      } catch (e) {
+        return json({ ok: false, error: String(e), text: 'Imagine failed.' }, 502)
+      }
+    }
 
     let raw: string | null = null
     let via = ''
