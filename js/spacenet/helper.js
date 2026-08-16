@@ -153,7 +153,7 @@
     c.id = 'sn-helper-canvas';
     c.setAttribute('aria-hidden', 'true');
     c.style.cssText =
-      'position:fixed;inset:0;z-index:96;pointer-events:none;width:100%;height:100%;';
+      'position:fixed;inset:0;z-index:98;pointer-events:none;width:100%;height:100%;';
     document.body.appendChild(c);
     H.canvas = c;
     H.ctx = c.getContext('2d', { alpha: true });
