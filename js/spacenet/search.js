@@ -428,6 +428,8 @@
           lat: d.coordinates?.lat,
           lng: d.coordinates?.lon,
           thumb: d.thumbnail?.source || '',
+          description: d.description || '',
+          type: d.type || '',
           source: 'wikipedia',
         };
       }
@@ -632,11 +634,9 @@
       country: /\b(country|nation|capital of|population of)\b/.test(s),
       weather: /\b(weather|temperature|forecast|rain|wind)\b/.test(s),
       map:
-        /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|city|street|pizza|food|vendor|delivery|polygon|route|kitchen|eat|hungry)\b/.test(
+        /\b(near|nearby|map|restaurant|cafe|hotel|shop|pharmacy|around|street|pizza|food|vendor|delivery|polygon|route|kitchen|eat|hungry)\b/.test(
           s
-        ) ||
-        (s.length < 40 &&
-          !/\b(code|github|npm|book|novel|movie|film|author|library|sdk|netflix)\b/.test(s)),
+        ),
       knowledge: /\b(who is|what is|wiki|history|biography)\b/.test(s),
       placeName:
         !/\b(restaurant|cafe|shop|food|pizza|vendor|near|nearby|map|delivery|order)\b/.test(s) &&
@@ -1310,6 +1310,196 @@
     }
   }
 
+  /**
+   * Research first. Do not assume place or action.
+   * Sense from evidence (wiki, web, media, geocode), then act.
+   * Only ask the user if nothing reads clearly.
+   */
+  async function sense(query) {
+    var q = String(query || '').trim();
+    var out = {
+      query: q,
+      kind: 'unknown',
+      confidence: 0,
+      why: '',
+      wiki: null,
+      wikiHits: [],
+      web: [],
+      places: [],
+    };
+    if (!q) return out;
+    var low = q.toLowerCase();
+
+    try {
+      if (global.SNYoutube) {
+        if (SNYoutube.wantsYoutube && SNYoutube.wantsYoutube(q)) {
+          out.kind = 'video';
+          out.confidence = 0.9;
+          out.why = 'media words / clip';
+        } else if (SNYoutube.looksLikeClipTitle && SNYoutube.looksLikeClipTitle(q)) {
+          out.kind = 'video';
+          out.confidence = 0.72;
+          out.why = 'reads like a clip title';
+        }
+      }
+    } catch (_) {}
+
+    if (/\b(drum\s*cam|concert|setlist|lyrics|official\s+video|live\s+at)\b/.test(low)) {
+      out.kind = 'video';
+      out.confidence = Math.max(out.confidence, 0.88);
+      out.why = 'live / cam / setlist';
+    }
+
+    var jobs = [
+      wiki(q)
+        .then(function (w) {
+          out.wiki = w;
+        })
+        .catch(function () {}),
+      wikiSearch(q)
+        .then(function (w) {
+          out.wikiHits = w || [];
+        })
+        .catch(function () {}),
+      webSearch(q)
+        .then(function (w) {
+          out.web = w || [];
+        })
+        .catch(function () {}),
+    ];
+
+    var explicitPlace = /^(fly|go|zoom|take me|show me the place|where is)\b/.test(low);
+    var shortPlace =
+      q.split(/\s+/).length <= 3 &&
+      !/\d{5,}/.test(q) &&
+      !/\b(cam|clip|video|song|lyrics|feat)\b/i.test(low);
+    if (explicitPlace || shortPlace) {
+      jobs.push(
+        geocode(q)
+          .then(function (p) {
+            out.places = p || [];
+          })
+          .catch(function () {})
+      );
+    }
+
+    await Promise.all(jobs);
+
+    var blob =
+      ((out.wiki && (out.wiki.description || '') + ' ' + (out.wiki.text || '')) || '') +
+      ' ' +
+      (out.web[0] && out.web[0].text ? out.web[0].text : '') +
+      ' ' +
+      ((out.wikiHits[0] && (out.wikiHits[0].desc || out.wikiHits[0].title)) || '');
+
+    if (/song|single \(song\)|album|band|musician|singer|film|movie|television|youtuber|music video|concert|drummer|discography/i.test(blob)) {
+      if (out.kind !== 'video' || out.confidence < 0.8) {
+        out.kind = 'video';
+        out.confidence = Math.max(out.confidence, 0.8);
+        out.why = 'wiki/web says media';
+      }
+    } else if (/human|person|politician|scientist|footballer|actor|actress|writer|philosopher/i.test(blob)) {
+      if (out.kind === 'unknown' || out.confidence < 0.7) {
+        out.kind = 'person';
+        out.confidence = 0.8;
+        out.why = 'wiki says a person';
+      }
+    }
+
+    var hit = out.places && out.places[0];
+    if (hit && looksLikePlaceHit(hit) && out.kind !== 'video') {
+      var k = String(hit.kind || hit.type || '').toLowerCase();
+      var citylike = /city|town|village|country|island|capital|suburb|administrative|hamlet|state/.test(k);
+      if (explicitPlace || citylike || (shortPlace && (hit.importance == null || hit.importance > 0.35))) {
+        out.kind = 'place';
+        out.confidence = explicitPlace ? 0.92 : 0.74;
+        out.why = 'geocode is a real place';
+      }
+    }
+
+    if (out.kind === 'unknown' && out.wiki && out.wiki.text) {
+      out.kind = 'thing';
+      out.confidence = 0.66;
+      out.why = 'wiki extract';
+    }
+    if (out.kind === 'unknown' && out.web && out.web[0] && out.web[0].text) {
+      out.kind = 'thing';
+      out.confidence = 0.55;
+      out.why = 'web extract';
+    }
+    return out;
+  }
+
+  async function researchFirst(query, opts) {
+    opts = opts || {};
+    var q = String(query || '').trim();
+    var L = opts.log || function () {};
+    var previewFn = opts.preview || function () {};
+    previewFn('Research…');
+    L('Research · ' + q, 'cmd');
+
+    var s = await sense(q);
+    s.acted = [];
+    s.ask = null;
+
+    if (s.kind === 'video') {
+      try {
+        if (global.SNLoader && SNLoader.ensure) await SNLoader.ensure('youtube');
+      } catch (_) {}
+      if (global.SNYoutube && SNYoutube.find) {
+        await SNYoutube.find(q);
+        s.acted.push('youtube');
+        L('Sensed a clip · opening YouTube', 'ok');
+        previewFn('YouTube · ' + q.slice(0, 36));
+        return s;
+      }
+    }
+
+    if (s.kind === 'place' && s.places && s.places[0] && s.places[0].lat != null) {
+      var dest = s.places[0];
+      try {
+        if (global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(dest.lat, dest.lng, {
+            tier: 'city',
+            label: String(dest.name || q).slice(0, 28),
+            body: 'earth',
+            pulse: true,
+          });
+        }
+      } catch (_) {}
+      s.acted.push('fly');
+      L((dest.name || q).slice(0, 72), 'ok');
+      if (s.wiki && s.wiki.text) L(s.wiki.text.slice(0, 180), 'dim');
+      previewFn((dest.name || q).slice(0, 40));
+      return s;
+    }
+
+    if (s.kind === 'person' || s.kind === 'thing') {
+      if (s.wiki && s.wiki.title) {
+        L(s.wiki.title + (s.wiki.description ? ' · ' + s.wiki.description : ''), 'ok');
+        if (s.wiki.text) L(s.wiki.text.slice(0, 220), 'dim');
+        s.acted.push('wiki');
+      } else if (s.web && s.web[0]) {
+        L((s.web[0].title || q).slice(0, 72), 'ok');
+        if (s.web[0].text) L(String(s.web[0].text).slice(0, 220), 'dim');
+        s.acted.push('web');
+      }
+      if (s.wiki && s.wiki.lat != null && opts.allowPulse !== false) {
+        try {
+          if (global.SNGlobe && SNGlobe.pulse)
+            SNGlobe.pulse(s.wiki.lat, s.wiki.lng, 0x7ec8ff, String(s.wiki.title).slice(0, 16), 8000);
+        } catch (_) {}
+      }
+      previewFn((s.wiki && s.wiki.title) || q.slice(0, 40));
+      return s;
+    }
+
+    s.ask = 'I could not get a clean read. Is that a place, a clip, a person, or something else?';
+    L(s.ask, 'dim');
+    previewFn('Need a hint');
+    return s;
+  }
+
   global.SNSearch = {
     geocode,
     reverse,
@@ -1332,5 +1522,7 @@
     looksVisual,
     visualize,
     realFocus,
+    researchFirst,
+    sense,
   };
 })(window);
