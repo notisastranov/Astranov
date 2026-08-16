@@ -3333,6 +3333,19 @@ if (
         global.SNMap?.userHoldCamera?.('cli');
         return;
       }
+      if (
+        /^locate\s+\S/.test(low) ||
+        (/^find\s+\S/.test(low) && low !== 'find me') ||
+        /^where\s+is\s+\S/.test(low) ||
+        /^where'?s\s+\S/.test(low)
+      ) {
+        const qFind = line.replace(/^(locate|find|where\s+is|where'?s)\s+(the\s+)?/i, '').trim();
+        if (qFind && global.SNSearch && SNSearch.researchFirst) {
+          preview('Finding · ' + qFind);
+          await SNSearch.researchFirst(qFind, { log: log, preview: preview, forcePlace: true });
+          return;
+        }
+      }
       if (low === 'locate' || low === 'gps' || low === 'where am i' || low === 'find me') {
         activity('locating you…', 'work', { label: 'Locate' });
         preview('GPS…');
