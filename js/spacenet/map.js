@@ -382,6 +382,14 @@
       /* Layers panel only — opened from CLI ribbon 🗺 Layers (no map-corner button; money HUD is top-right) */
       '#sn-map-layers{position:fixed;left:50%;bottom:calc(248px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:140;display:flex;flex-direction:column;',
       'align-items:stretch;gap:8px;pointer-events:none;width:min(720px,calc(100vw - 24px))}',
+      '.sn-dot-pin{background:transparent!important;border:0!important}',
+      '.sn-dot{display:block;width:14px;height:14px;border-radius:50%;border:1.5px solid #fff}',
+      '.sn-dot img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}',
+      '.leaflet-marker-icon.sn-target,.leaflet-marker-icon.sn-pin{width:16px!important;height:16px!important}',
+      '.sn-target-inner img,.sn-pin-inner img{max-width:14px!important;max-height:14px!important;object-fit:cover}',
+      '.sn-pin-menu{font:600 12px/1.35 system-ui;color:#e8f4ff}',
+      '.sn-pin-order{margin-top:6px;border:0;border-radius:999px;padding:6px 12px;background:#1a6fd4;color:#fff;font:700 11px system-ui;cursor:pointer}',
+      '#sn-net-tile{display:none!important}',
       '#sn-layer-panel{display:none;pointer-events:auto;width:100%;max-height:min(52vh,420px);overflow:auto;',
       'background:rgba(0,8,20,.96);border:1px solid rgba(61,158,255,.5);border-radius:14px;',
       'padding:10px;box-shadow:0 12px 36px rgba(0,0,0,.55);color:#c8e4ff}',
@@ -1246,19 +1254,19 @@
 
   function avatarIcon(url, color) {
     const c = color || '#3d9eff';
-    const u = url || '';
+    const real = url && /^https?:\/\//i.test(url) && url.indexOf('data:') !== 0;
     return L.divIcon({
-      className: 'sn-target sn-pin',
+      className: 'sn-dot-pin',
       html:
-        '<div class="sn-target-inner sn-pin-inner" style="border-color:' +
+        '<i class="sn-dot" style="background:' +
         c +
-        ';box-shadow:0 0 12px ' +
+        ';box-shadow:0 0 8px ' +
         c +
-        '66">' +
-        (u ? '<img src="' + escapeHtml(u) + '" alt="" />' : '<span>·</span>') +
-        '</div>',
-      iconSize: [36, 36],
-      iconAnchor: [18, 18],
+        '99">' +
+        (real ? '<img src="' + escapeHtml(url) + '" alt="" />' : '') +
+        '</i>',
+      iconSize: [16, 16],
+      iconAnchor: [8, 8],
     });
   }
 
@@ -1467,46 +1475,48 @@
     clearGroup(M.profileMarkers);
     const Prof = global.SNProfiles;
     if (!Prof) return;
-    const list = Prof.list() || [];
+    const list = (Prof.list() || []).filter(function (p) {
+      if (!p || p.lat == null || p.lng == null) return false;
+      if (p.demo || p.npc || p.fake) return false;
+      var id = String(p.id || '');
+      var junk = /^poi_/.test(id) && !(p.menu && p.menu.length) && !p.googlePlaceId && !p.osm_id;
+      if (junk) return false;
+      return !!(p.roles && (p.roles.vendor || p.roles.driver) || p.menu && p.menu.length || p.shopName);
+    });
     list.forEach((p) => {
       if (p.lat == null || p.lng == null) return;
-      const color = Prof.pinColor(p);
+      const color = (Prof.pinColor && Prof.pinColor(p)) || '#3d9eff';
       const m = L.marker([p.lat, p.lng], {
         icon: avatarIcon(p.avatar, color),
-        title: (p.shopName || p.name || 'Tile') + ' ' + roleBadge(p),
-        riseOnHover: true,
+        title: p.shopName || p.name || 'Shop',
         keyboard: true,
       }).addTo(M.map);
       const menuN = (p.menu && p.menu.length) || 0;
       m.bindPopup(
-        '<b>' +
+        '<div class="sn-pin-menu"><b>' +
           escapeHtml(p.shopName || p.name) +
-          '</b> ' +
-          roleBadge(p) +
-          '<br/>' +
-          escapeHtml(hoursLine(p)) +
-          (menuN ? '<br/>Menu · ' + menuN + ' items' : '') +
-          (p.driverOnline ? '<br/>Driver ONLINE' : '') +
-          (p.roles?.worker ? '<br/>Worker available' : '') +
-          (p.roles?.dating ? '<br/>Dating open' : '') +
-          '<br/><small>Tap target again or Close → open full tile</small>'
+          '</b>' +
+          (menuN ? '<br/>' + menuN + ' items' : '') +
+          '<br/><button type="button" class="sn-pin-order" data-pid="' +
+          escapeHtml(p.id) +
+          '">Order</button></div>',
+        { closeButton: true, autoClose: true, maxWidth: 180 }
       );
+      m.on('popupopen', function () {
+        var btn = document.querySelector('.sn-pin-order[data-pid="' + p.id + '"]');
+        if (btn)
+          btn.onclick = function (ev) {
+            ev.preventDefault();
+            try {
+              global.SNTile && SNTile.open && SNTile.open(global.SNProfiles.get(p.id) || p, { tab: 'menu' });
+            } catch (_) {}
+          };
+      });
       m.on('click', (e) => {
         markMarkerHit();
         try {
           L.DomEvent.stopPropagation(e);
-          if (e.originalEvent) {
-            L.DomEvent.preventDefault(e.originalEvent);
-            L.DomEvent.stop(e.originalEvent);
-          }
         } catch (_) {}
-        try {
-          const full = global.SNProfiles?.get?.(p.id) || p;
-          // Always open small peek first — second tap expands for order
-          global.SNTile?.open?.(full, { tab: 'about', forcePeek: false });
-        } catch (err) {
-          global.SNCli?.log?.('Tile open failed · ' + (err.message || err), 'err');
-        }
       });
       M.profileMarkers.push(m);
     });
@@ -1683,44 +1693,50 @@
   }
 
   function plotCrawl(places) {
-    if (!places?.length) return;
-    const Prof = global.SNProfiles;
-    const pos = global.SNTasks?.pos || global._snLastPos;
-    places.forEach((pl) => {
-      if (Prof?.fromCrawlPlace) {
-        Prof.fromCrawlPlace(pl, pos);
-      }
-    });
-    if (M.map) {
-      showProfiles();
-      // also light markers for raw places without profiles
-      places.forEach((p) => {
-        if (p.lat == null || p.lng == null) return;
-        const m = L.circleMarker([p.lat, p.lng], {
-          radius: 6,
-          color: '#ffcc66',
-          fillColor: '#ffaa33',
-          fillOpacity: 0.75,
-          weight: 1,
-        })
-          .addTo(M.map)
-          .on('click', (e) => {
-            markMarkerHit();
+    if (!places?.length || !M.map) return;
+    places.slice(0, 24).forEach((p) => {
+      if (p.lat == null || p.lng == null) return;
+      const isShop = /shop|vendor|restaurant|cafe|food|bar|kitchen|amenity/i.test(
+        String(p.kind || p.type || p.category || '')
+      );
+      const m = L.circleMarker([p.lat, p.lng], {
+        radius: isShop ? 6 : 4,
+        color: isShop ? '#ffcc66' : '#7ec8ff',
+        fillColor: isShop ? '#ffaa33' : '#3d9eff',
+        fillOpacity: 0.9,
+        weight: 1,
+      })
+        .addTo(M.map)
+        .bindPopup(
+          '<div class="sn-pin-menu"><b>' +
+            escapeHtml(p.name || 'Place') +
+            '</b>' +
+            (isShop ? '<br/><button type="button" class="sn-pin-order">Order</button>' : '') +
+            '</div>',
+          { maxWidth: 160 }
+        );
+      if (isShop) {
+        m.on('popupopen', function () {
+          var btn = document.querySelector('.sn-pin-order');
+          if (!btn) return;
+          btn.onclick = function (ev) {
+            ev.preventDefault();
             try {
-              L.DomEvent.stopPropagation(e);
+              var pos = global.SNTasks?.pos || global._snLastPos;
+              var prof = global.SNProfiles?.fromCrawlPlace?.(p, pos);
+              if (prof && global.SNTile) SNTile.open(prof, { tab: 'menu' });
             } catch (_) {}
-            const id =
-              'poi_' +
-              String(p.name || 'x')
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '_')
-                .slice(0, 24);
-            const prof = Prof?.get?.(id) || Prof?.fromCrawlPlace?.(p, pos);
-            if (prof) global.SNTile?.open?.(prof);
-          });
-        M.markers.push(m);
+          };
+        });
+      }
+      m.on('click', (e) => {
+        markMarkerHit();
+        try {
+          L.DomEvent.stopPropagation(e);
+        } catch (_) {}
       });
-    }
+      M.markers.push(m);
+    });
   }
 
   function init() {
