@@ -195,4 +195,5 @@ SOLAR ↔ GLOBAL ↔ NATIONAL ↔ REGIONAL ↔ CITY (Earth street map)
 *Agent note 2026-08-16 (not owner OV): **sat** — Vodi / sea-pollution / imagery opens NASA VIIRS + chlorophyll over Esri satellite, not a street map. Build `20260816080000-sat`.*
 *Agent note 2026-08-16 (not owner OV): **layers** — Layers menu was switching a map hidden under the globe. Globe hides, map comes forward, picks change the picture. Build `20260816085000-layers`.*
 *Agent note 2026-08-16 (not owner OV): **brain** — paid mind on owner key for everyone. 3 gift tastes then plans. Markup 3× live xAI rates. Type `plans`. Build `20260816091000-brain`.*
+*Agent note 2026-08-16 (not owner OV): **boot** — honest power (no fake battery), boot checks in sections with marks, cache/reset/login from boot, User button shows face when signed in. Build `20260816094000-boot`.*
 
