@@ -1315,7 +1315,8 @@
    * Sense from evidence (wiki, web, media, geocode), then act.
    * Only ask the user if nothing reads clearly.
    */
-  async function sense(query) {
+  async function sense(query, opts) {
+    opts = opts || {};
     var q = String(query || '').trim();
     var out = {
       query: q,
@@ -1368,18 +1369,19 @@
         .catch(function () {}),
     ];
 
-    var explicitPlace = /^(fly|go|zoom|take me|show me the place|where is)\b/.test(low);
+    var explicitPlace = /^(fly|go|zoom|take me|show me the place|where is|locate)\b/.test(low);
+    var shopWord = /\b(bodega|shop|store|market|vendor|kitchen|cafe|bar|tavern|supermarket|pharmacy|kiosk)\b/.test(
+      low
+    );
     var shortPlace =
-      q.split(/\s+/).length <= 3 &&
+      q.split(/\s+/).length <= 4 &&
       !/\d{5,}/.test(q) &&
       !/\b(cam|clip|video|song|lyrics|feat|drum|concert)\b/i.test(low);
     var knownCity = false;
-    try {
-      if (global.SNCli && false) knownCity = false;
-    } catch (_) {}
     if (/^(tokyo|paris|london|athens|rhodes|rodos|rome|eiffel|mars|moon|earth|vodi)$/i.test(low))
       knownCity = true;
-    if (explicitPlace || knownCity || (shortPlace && !/\s/.test(q))) {
+    if (opts && opts.forcePlace) explicitPlace = true;
+    if (explicitPlace || knownCity || shopWord || (shortPlace && !/\s/.test(q))) {
       jobs.push(
         geocode(q)
           .then(function (p) {
@@ -1624,9 +1626,30 @@
     previewFn('Research…');
     L('Research · ' + q, 'cmd');
 
-    var s = await sense(q);
+    var s = await sense(q, opts);
     s.acted = [];
     s.ask = null;
+    if (opts.forcePlace || /\b(bodega|shop|store|vendor|kitchen)\b/i.test(q)) {
+      if (!s.places || !s.places.length) {
+        try {
+          var extra = await geocode(q);
+          if (extra && extra.length) s.places = extra;
+        } catch (_) {}
+      }
+      if ((!s.places || !s.places.length) && global._snLastPos && global._snLastPos.lat != null) {
+        try {
+          var nearHits = await nearby(global._snLastPos.lat, global._snLastPos.lng, 9000, q);
+          if (nearHits && nearHits.length) {
+            s.places = nearHits.slice(0, 6);
+            s.why = 'near you';
+          }
+        } catch (_) {}
+      }
+      if (s.places && s.places[0] && s.places[0].lat != null) {
+        s.kind = 'place';
+        s.confidence = Math.max(s.confidence || 0, 0.72);
+      }
+    }
     showNet(s);
 
     if (s.kind === 'video') {
