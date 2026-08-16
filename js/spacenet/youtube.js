@@ -491,11 +491,12 @@
     if (!low) return false;
     if (parseId(raw)) return true;
     if (/youtube|youtu\.be|\byt\b/.test(low)) return true;
-    if (/\b(clip|clips|βίντεο|βιντεο|trailer|lyrics?|\bmv\b|music\s+video|official\s+video|episode|music video)\b/.test(low))
+    if (/\b(clip|clips|βίντεο|βιντεο|trailer|lyrics?|\bmv\b|music\s+video|official\s+video|episode|music video|drum\s*cam|drumcam|setlist|concert|live\s+at|cam\s+\d)\b/.test(low))
       return true;
-    if (/\b(watch|play|show)\b/.test(low) && /\b(video|clip|song|track|film|movie)\b/.test(low)) return true;
-    if (/^(search|find|look\s+up|google)\b/.test(low) && /\b(video|clip|youtube|song|track|trailer)\b/.test(low))
+    if (/\b(watch|play|show)\b/.test(low) && /\b(video|clip|song|track|film|movie|cam)\b/.test(low)) return true;
+    if (/^(search|find|look\s+up|google)\b/.test(low) && /\b(video|clip|youtube|song|track|trailer|cam|concert)\b/.test(low))
       return true;
+    if (/\b\d{9,}\b/.test(low) && /\b(cam|drum|live|set|mix|session)\b/.test(low)) return true;
     return false;
   }
 
