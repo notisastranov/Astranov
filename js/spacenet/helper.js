@@ -51,7 +51,7 @@
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 3.05,
+    scale: 3.55,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -792,8 +792,8 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 0.82 : 1;
-      var scale = (H.busy ? 1.28 : 1.18) * H.scale * breath * parkScale;
+      var parkScale = H.parkMode && !H.busy ? 1.05 : 1;
+      var scale = (H.busy ? 1.32 : 1.22) * H.scale * breath * parkScale;
       if (H.boost > 0.6) scale *= 1.06;
       if (Date.now() < (H.showcaseUntil || 0) && !H.parkMode) scale *= 1.12;
       var bw = 196 * scale;
