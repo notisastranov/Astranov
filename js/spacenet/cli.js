@@ -881,8 +881,10 @@
     return false;
   }
 
-  async function runVodiResearch() {
-    activity('Vodi restoration…', 'work', { label: 'Vodi' });
+  async function runVodiResearch(line) {
+    var raw = String(line || '');
+    var wantImg = !raw || /sat|imager|real[\s-]?time|live|pollut|chlor|sea|θάλασσ|show/i.test(raw);
+    activity('Vodi satellite…', 'work', { label: 'Vodi' });
     try {
       if (global.SNGlobe && SNGlobe.goToPlace) {
         SNGlobe.goToPlace(36.38689, 28.24717, {
@@ -895,14 +897,29 @@
       }
     } catch (_) {}
     try {
-      if (global.SNMap && SNMap.open) await SNMap.open(36.38689, 28.24717, { force: true });
-      if (global.SNMap && SNMap.markYou) SNMap.markYou(36.38689, 28.24717, 'VODI · plant');
+      if (global.SNMap && SNMap.showLiveSat) {
+        await SNMap.showLiveSat(36.38689, 28.24717, {
+          zoom: 12,
+          pollution: true,
+          trueColor: true,
+          plume: true,
+          label: 'VODI · plant',
+        });
+      } else if (global.SNMap && SNMap.open) {
+        await SNMap.open(36.38689, 28.24717, { force: true, imagery: true, basemap: 'satellite' });
+        if (global.SNMap.markYou) SNMap.markYou(36.38689, 28.24717, 'VODI · plant');
+      }
     } catch (_) {}
     shakeEarth();
-    openVodiBrief();
-    log('The island flinched. That stain is 150 by 300 metres of us.', 'ok');
     log('Vodi · cape by Koskinou. The island sewage plant. 36.387 N, 28.247 E', 'ok');
     log('Coast Guard, June–July 2026: human gut bacteria in the sea. Dirty patch about 150 by 300 metres.', 'ok');
+    if (wantImg) {
+      log('You asked for the sea. This is the last NASA pass plus chlorophyll — not a street map.', 'ok');
+      preview('Vodi · live sat');
+      return;
+    }
+    openVodiBrief();
+    log('The island flinched. That stain is 150 by 300 metres of us.', 'ok');
     log('Plant over 90% full. Tanker dumps stopped 13 August. Appointment only: 22410 45300', 'ok');
     log('Plan: cook sludge for plant power and park compost. Trash to benches. Rubble to sidewalks.', 'ok');
     log('Brief is open. Close it when you have read it.', 'dim');
@@ -1552,7 +1569,7 @@
         return;
       }
       if (isVodiResearch(low) || isVodiResearch(line)) {
-        await runVodiResearch();
+        await runVodiResearch(line);
         return;
       }
       // Pending lazy-order location confirm — exact yes/no only
