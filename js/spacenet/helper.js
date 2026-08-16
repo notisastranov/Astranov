@@ -18,7 +18,7 @@
   ];
   var HERO_URL = '/assets/brand/spacex-bot-hero.png';
   var HERO_FALLBACK = '/assets/brand/grokbot-512.png';
-  var BUILD_Q = 'v=haloclean20260816b';
+  var BUILD_Q = 'v=aaa20260816c';
 
   var H = {
     ready: false,
@@ -51,7 +51,7 @@
     lastMissionAt: 0,
     _lastPaint: 0,
     _dpr: 1,
-    scale: 2.28,
+    scale: 3.05,
     forceVisible: false,
     autoWake: true,
     parkMode: true,
@@ -796,8 +796,8 @@
       var scale = (H.busy ? 1.28 : 1.18) * H.scale * breath * parkScale;
       if (H.boost > 0.6) scale *= 1.06;
       if (Date.now() < (H.showcaseUntil || 0) && !H.parkMode) scale *= 1.12;
-      var bw = 156 * scale;
-      var bh = 156 * scale;
+      var bw = 196 * scale;
+      var bh = 196 * scale;
       // dual bloom: electric blue rim under body
       var bloom = ctx.createRadialGradient(0, 18, 6, 0, 18, bw * 0.48);
       bloom.addColorStop(0, 'rgba(60,140,255,0.28)');
