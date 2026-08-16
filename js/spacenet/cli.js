@@ -4712,7 +4712,6 @@ if (
   }
 
   function toggleHandsfree() {
-    const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
     if (handsfreeOn) {
       hfSpeakOut = false;
       try {
@@ -4722,80 +4721,83 @@ if (
       stopHandsfree('ASTRANOV OFF');
       try {
         if (global.SNAi && SNAi.listeningOff) SNAi.listeningOff();
-        else {
-          log('ASTRANOV OFF', 'dim');
-          preview('ASTRANOV OFF');
-          global.SNGlobe?.setHud?.('ASTRANOV OFF');
-        }
-      } catch (_) {
-        log('ASTRANOV OFF', 'dim');
-      }
-      return;
+      } catch (_) {}
+      log('Mic off', 'dim');
+      preview('MIC OFF');
+      return false;
     }
-    // Conversation mode: listen + speak replies (English/Greek only)
+    return startListen();
+  }
+
+  function startListen() {
+    const SR = global.SpeechRecognition || global.webkitSpeechRecognition;
+    if (!global.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      log('Mic needs HTTPS.', 'err');
+      preview('MIC NEEDS HTTPS');
+      return false;
+    }
+    if (!SR) {
+      log('This browser has no speech API. Type in the box.', 'err');
+      preview('NO MIC API');
+      return false;
+    }
+
     hfSpeakOut = true;
     try {
       localStorage.setItem(VOICE_KEY, '1');
     } catch (_) {}
-    try {
-      if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
-      else {
-        log("I'm here. English first · Greek full · every language.", 'ok');
-        preview("I'm here");
-        global.SNGlobe?.setHud?.("I'm here");
-      }
-    } catch (_) {
-      log("I'm here. English first · Greek full · every language.", 'ok');
-      preview("I'm here");
-    }
-    // One short English cue only — perfect English base
-    setTimeout(function () {
-      speakAi('Listening.', true);
-    }, 150);
-    if (!global.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      log('Mic needs HTTPS · type to talk · I still reply in text', 'dim');
-      // keep text voice for typed replies
-      handsfreeOn = false;
-      hfSpeakOut = true;
-      setHandsfreeUi(true, 'TYPE TO TALK');
-      return;
-    }
-    if (!SR) {
-      log('No speech API · type to me · I still reply in text', 'dim');
-      preview('Astranov · type to talk');
-      handsfreeOn = false;
-      hfSpeakOut = true;
-      setHandsfreeUi(true, 'TYPE TO TALK');
-      return;
-    }
+    handsfreeOn = true;
+    hfTtsActive = false;
+    hfMutedUntil = 0;
+    hfBusy = false;
+    hfPending = '';
+    hfRunTimes = [];
+    killSpeech();
 
     try {
-      global.speechSynthesis?.cancel?.();
+      if (speechRec) {
+        speechRec.onend = null;
+        speechRec.abort();
+      }
     } catch (_) {}
+
+    // Permission in THIS tap. Do not await — start() must stay in the gesture.
     try {
-      global.SNTile?.close?.();
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then(function (stream) {
+            try {
+              if (global._snMicStream) {
+                global._snMicStream.getTracks().forEach(function (t) {
+                  try {
+                    t.stop();
+                  } catch (_) {}
+                });
+              }
+            } catch (_) {}
+            global._snMicStream = stream;
+          })
+          .catch(function (err) {
+            log('Mic blocked · click the lock · Allow microphone', 'err');
+            preview('MIC BLOCKED');
+            stopHandsfree('Mic blocked');
+          });
+      }
     } catch (_) {}
 
     speechRec = new SR();
-    // FORCE safe STT language — never ru-*, never random navigator
     speechRec.lang = safeVoiceLang();
     speechRec.interimResults = true;
-    speechRec.continuous = false;
+    speechRec.continuous = true;
     speechRec.maxAlternatives = 1;
-    hfPending = '';
 
-    speechRec.onstart = () => {
-      if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
-        try {
-          speechRec.abort();
-        } catch (_) {}
-        return;
-      }
-      setHandsfreeUi(true, 'ASTRANOV LISTENING');
-      preview('ASTRANOV LISTENING · English base · any language');
+    speechRec.onstart = function () {
+      setHandsfreeUi(true, 'LISTENING');
+      preview('LISTENING · speak');
     };
 
-    speechRec.onresult = (ev) => {
+    speechRec.onresult = function (ev) {
       try {
         if (hfTtsActive || synthSpeaking()) return;
         if (Date.now() < hfMutedUntil) return;
@@ -4828,26 +4830,11 @@ if (
           try {
             if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
           } catch (_) {}
-          const hold =
-            global.SNSpartan && typeof SNSpartan.listenHoldMs === 'function'
-              ? SNSpartan.listenHoldMs()
-              : 1100;
-          const maybeMore =
-            (global.SNSpartan && SNSpartan.mayStillSpeak
-              ? SNSpartan.mayStillSpeak(fin, !!interimText)
-              : !!interimText) || !!interimText;
-          const waitMs = maybeMore ? hold + 500 : hold;
-          preview('…');
           global._snVoiceHoldT = setTimeout(function () {
             if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) return;
             const send = String(hfPending || '').trim();
             if (send && handsfreeOn && !hfBusy) commitVoice(send);
-          }, waitMs);
-        } else if (interimText) {
-          try {
-            if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
-          } catch (_) {}
-          preview('…');
+          }, 700);
         }
       } catch (e) {
         log('Voice result · ' + (e.message || e), 'err');
@@ -4855,81 +4842,55 @@ if (
       }
     };
 
-    speechRec.onerror = (ev) => {
+    speechRec.onerror = function (ev) {
       const code = (ev && ev.error) || 'error';
       if (code === 'aborted') return;
       if (code === 'no-speech') {
-        if (handsfreeOn && !hfBusy && !hfTtsActive) scheduleListenRestart(600);
+        if (handsfreeOn && !hfBusy && !hfTtsActive) scheduleListenRestart(400);
         return;
       }
       if (code === 'not-allowed' || code === 'service-not-allowed') {
         stopHandsfree('Mic blocked');
-        log('Mic denied · allow microphone · then tap AI once · or type in CLI', 'err');
+        log('Mic denied · lock icon · Allow microphone · tap AI again', 'err');
+        preview('MIC DENIED');
         return;
       }
-      if (code === 'network') {
-        log('Voice network error · type in CLI instead', 'dim');
-      }
-      if (handsfreeOn && !hfBusy && !hfTtsActive) scheduleListenRestart(900);
+      if (code === 'network') log('Voice network · type instead', 'dim');
+      if (handsfreeOn && !hfBusy && !hfTtsActive) scheduleListenRestart(600);
     };
 
-    speechRec.onend = () => {
+    speechRec.onend = function () {
+      if (!handsfreeOn || hfBusy) return;
       if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
-        if (handsfreeOn && !hfBusy) scheduleListenRestart(800);
+        scheduleListenRestart(800);
         return;
       }
-      if (handsfreeOn && !hfBusy && hfPending) {
-        try {
-          if (global._snVoiceHoldT) clearTimeout(global._snVoiceHoldT);
-        } catch (_) {}
-        const hold =
-          global.SNSpartan && typeof SNSpartan.listenHoldMs === 'function'
-            ? SNSpartan.listenHoldMs()
-            : 900;
-        global._snVoiceHoldT = setTimeout(function () {
-          if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
-            if (handsfreeOn && !hfBusy) scheduleListenRestart(800);
-            return;
-          }
-          const pending = String(hfPending || '').trim();
-          hfPending = '';
-          if (pending && handsfreeOn && !hfBusy) {
-            if (commitVoice(pending)) return;
-          }
-          if (handsfreeOn && !hfBusy) scheduleListenRestart(500);
-        }, hold);
-        return;
+      if (hfPending) {
+        const pending = String(hfPending || '').trim();
+        hfPending = '';
+        if (pending && !hfBusy) {
+          if (commitVoice(pending)) return;
+        }
       }
-      if (handsfreeOn && !hfBusy) scheduleListenRestart(600);
+      scheduleListenRestart(350);
     };
 
-    handsfreeOn = true;
-    killSpeech();
-    hfRunTimes = [];
-    hfBusy = false;
-    hfPending = '';
-    muteMic(400);
-    setHandsfreeUi(true, 'ASTRANOV LISTENING');
-    warmVoices();
+    setHandsfreeUi(true, 'LISTENING');
+    log('Listening · speak now', 'ok');
+    preview('LISTENING');
     try {
-      // Start listen AFTER greeting mute window
-      setTimeout(function () {
-        if (!handsfreeOn || !speechRec) return;
-        if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) {
-          scheduleListenRestart(800);
-          return;
-        }
-        try {
-          speechRec.start();
-        } catch (_) {}
-      }, 1600);
-      try {
-        if (global.SNUsage?.track) SNUsage.track('handsfree_on', { speakOut: !!hfSpeakOut });
-      } catch (_) {}
-      log('ASTRANOV LISTENING · English base · Greek + all languages · auto-sends', 'ok');
+      speechRec.start();
     } catch (e) {
-      log('Mic soft-fail · type to Astranov', 'dim');
+      scheduleListenRestart(200);
     }
+    try {
+      if (global.SNAi && SNAi.listeningOn) SNAi.listeningOn();
+    } catch (_) {}
+    try {
+      if (global.SNHelper && SNHelper.wake)
+        SNHelper.wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 20000 });
+    } catch (_) {}
+    return true;
   }
 
   function init() {
@@ -5093,6 +5054,7 @@ if (
     isFakeDemoPin,
     ipApproxLocate,
     toggleHandsfree,
+    startListen,
     speakAi,
     stopHandsfree,
     get handsfreeOn() {
