@@ -1450,68 +1450,37 @@
 
   function ensureNetDom() {
     var root = document.getElementById('sn-net-tile');
-    if (root) return root;
-    root = document.createElement('div');
-    root.id = 'sn-net-tile';
-    root.innerHTML =
-      '<div class="sn-net-card">' +
-      '<div class="sn-net-bar"><span id="sn-net-kind">SPACENET</span><b id="sn-net-q">Research</b>' +
-      '<button type="button" id="sn-net-x">×</button></div>' +
-      '<p id="sn-net-brief"></p>' +
-      '<div id="sn-net-rows"></div>' +
-      '<div class="sn-net-hint">open 1 · fly 1 · watch 1 · net close</div></div>';
-    if (!document.getElementById('sn-net-style')) {
-      var st = document.createElement('style');
-      st.id = 'sn-net-style';
-      st.textContent =
-        '#sn-net-tile{position:fixed;z-index:12040;left:50%;top:9%;transform:translateX(-50%);width:min(460px,94vw);display:none;pointer-events:none}' +
-        '#sn-net-tile.open{display:block;pointer-events:auto}' +
-        '#sn-net-tile .sn-net-card{background:linear-gradient(180deg,rgba(4,10,22,.88),rgba(2,6,14,.86));border:1px solid rgba(90,180,255,.38);border-radius:6px;box-shadow:0 12px 36px rgba(0,0,0,.5);overflow:hidden;backdrop-filter:blur(16px);max-height:28vh;display:flex;flex-direction:column}' +
-        '#sn-net-tile #sn-net-rows{overflow:auto;padding:4px 8px 8px;display:flex;flex-direction:column;gap:4px;max-height:14vh}' +
-        '#sn-net-tile .sn-net-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(80,160,255,.18);cursor:grab}' +
-        '#sn-net-tile #sn-net-kind{font:700 9px/1 JetBrains Mono,ui-monospace,monospace;letter-spacing:.2em;color:#7ec8ff}' +
-        '#sn-net-tile #sn-net-q{flex:1;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#f4f8ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
-        '#sn-net-tile #sn-net-x{width:32px;height:28px;border:0;background:transparent;color:#cfe6ff;font-size:18px;cursor:pointer}' +
-        '#sn-net-tile #sn-net-brief{margin:0;padding:10px 14px 6px;font:500 13px/1.45 Inter,system-ui,sans-serif;color:#d5e6ff}' +
-        '#sn-net-tile #sn-net-rows{overflow:auto;padding:4px 8px 8px;display:flex;flex-direction:column;gap:4px;max-height:42vh}' +
-        '#sn-net-tile .sn-net-row{display:flex;gap:8px;text-align:left;padding:8px 10px;border:0;border-radius:4px;background:transparent;color:#c8d8ee;cursor:pointer;font:500 12px/1.35 Inter,system-ui,sans-serif}' +
-        '#sn-net-tile .sn-net-row:hover{background:rgba(61,158,255,.14)}' +
-        '#sn-net-tile .sn-net-n{min-width:16px;color:#3d9eff;font:700 11px JetBrains Mono,monospace}' +
-        '#sn-net-tile .sn-net-row b{display:block;color:#fff;font-weight:600}' +
-        '#sn-net-tile .sn-net-row small{color:#8aa0b8}' +
-        '#sn-net-tile .sn-net-hint{padding:6px 12px 10px;font:500 10px/1.3 JetBrains Mono,ui-monospace,monospace;letter-spacing:.06em;color:#6a829c}';
-      document.head.appendChild(st);
+    if (root) {
+      root.classList.remove('open');
+      root.style.display = 'none';
     }
-    document.body.appendChild(root);
-    document.getElementById('sn-net-x').onclick = function () {
-      closeNet();
-    };
-    return root;
+    return null;
   }
 
   function closeNet() {
     var root = document.getElementById('sn-net-tile');
-    if (root) root.classList.remove('open');
+    if (root) {
+      root.classList.remove('open');
+      root.style.display = 'none';
+    }
     NET.open = false;
   }
 
   function showNet(senseOut) {
+    closeNet();
     senseOut = senseOut || NET.last;
     if (!senseOut) return;
     NET.last = senseOut;
-    var root = ensureNetDom();
-    var kindEl = document.getElementById('sn-net-kind');
-    var qEl = document.getElementById('sn-net-q');
-    var briefEl = document.getElementById('sn-net-brief');
-    var rowsEl = document.getElementById('sn-net-rows');
-    if (kindEl) kindEl.textContent = (senseOut.body || senseOut.kind || 'NET').toUpperCase();
-    if (qEl) qEl.textContent = String(senseOut.query || 'Research').slice(0, 72);
+    var L = function (t, c) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log(t, c || 'ok');
+      } catch (_) {}
+    };
     var brief =
       (senseOut.wiki && senseOut.wiki.text) ||
       (senseOut.web && senseOut.web[0] && senseOut.web[0].text) ||
       senseOut.ask ||
       '';
-    if (briefEl) briefEl.textContent = String(brief).slice(0, 280);
     var rows = [];
     if (senseOut.wiki && senseOut.wiki.title) {
       rows.push({
@@ -1552,30 +1521,14 @@
       });
     }
     NET.rows = rows.slice(0, 4);
-    if (rowsEl) {
-      rowsEl.innerHTML = NET.rows
-        .map(function (r, i) {
-          return (
-            '<button type="button" class="sn-net-row" data-i="' +
-            i +
-            '"><span class="sn-net-n">' +
-            (i + 1) +
-            '</span><span><b>' +
-            escHtml(r.title).slice(0, 72) +
-            '</b><small>' +
-            escHtml(r.sub || r.kind).slice(0, 90) +
-            '</small></span></button>'
-          );
-        })
-        .join('');
-      Array.prototype.forEach.call(rowsEl.querySelectorAll('.sn-net-row'), function (btn) {
-        btn.onclick = function () {
-          openNetIndex(parseInt(btn.getAttribute('data-i'), 10) + 1);
-        };
-      });
-    }
-    root.classList.add('open');
-    NET.open = true;
+    if (brief) L(String(brief).replace(/\s+/g, ' ').trim().slice(0, 360), 'ok');
+    NET.rows.forEach(function (r, i) {
+      L(i + 1 + ' · ' + r.title + (r.sub ? ' · ' + r.sub : ''), 'ok');
+    });
+    if (NET.rows.length) L('open 1 · fly 1 · watch 1', 'dim');
+    try {
+      if (global.SNCli && SNCli.preview) SNCli.preview(String(senseOut.query || 'search').slice(0, 48));
+    } catch (_) {}
   }
 
   async function openNetIndex(n) {
