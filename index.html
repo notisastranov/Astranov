@@ -1,8 +1,0 @@
-<!DOCTYPE html>
-<!-- P0 partial: owner must restore full index from main then apply: chrome-p0-guest in files[] + remove EventSource -->
-<html><head><meta charset="utf-8"><title>RESTORE index from main</title></head>
-<body><p>Branch index was truncated during tool push. Restore:</p>
-<pre>git checkout origin/main -- index.html
-# then insert '/js/spacenet/chrome-p0-guest.js' before os-bootloader.js
-# and remove EventSource('/__reload') block
-</pre></body></html>
