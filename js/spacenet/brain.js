@@ -396,12 +396,19 @@
     var paid = false;
     try {
       if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
-        var r = await SNSubscription.askPowerful(prompt, {
-          mode: opts.mode || 'chat',
-          timeoutMs: opts.timeoutMs || 22000,
-          model: FLAGSHIP,
-          forcePaid: true,
-        });
+        var r = await Promise.race([
+          SNSubscription.askPowerful(prompt, {
+            mode: opts.mode || 'chat',
+            timeoutMs: opts.timeoutMs || 8000,
+            model: FLAGSHIP,
+            forcePaid: true,
+          }),
+          new Promise(function (resolve) {
+            setTimeout(function () {
+              resolve({ ok: false, text: '', timeout: true });
+            }, opts.timeoutMs || 8000);
+          }),
+        ]);
         if (r && r.paywall) {
           return { ok: false, paywall: true, text: 'Paid mind locked. Type plans.', via: 'paywall' };
         }
