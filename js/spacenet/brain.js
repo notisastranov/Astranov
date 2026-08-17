@@ -386,6 +386,9 @@
     opts = opts || {};
     var asked = String(q || '').replace(/\s+/g, ' ').trim();
     if (!asked) return { ok: false, text: '', via: '' };
+    try {
+      if (global.SNStage && SNStage.scan) SNStage.scan(asked);
+    } catch (_) {}
     var prompt = spaceNetPrompt(opts.evidence ? 'Evidence:\n' + String(opts.evidence).slice(0, 900) + '\n' : '') +
       'User: ' + asked;
     var text = '';
