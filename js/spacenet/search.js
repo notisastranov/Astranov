@@ -1864,11 +1864,15 @@
         } catch (_) {}
       }
       previewFn((s.wiki && s.wiki.title) || q.slice(0, 40));
-      try {
-        await consultBrain(q, s, L, previewFn);
-      } catch (_) {}
+      if (!opts.skipBrain) {
+        try {
+          await consultBrain(q, s, L, previewFn);
+        } catch (_) {}
+      }
       return s;
     }
+
+    if (opts.skipBrain) return s;
 
     var mind = await consultBrain(q, s, L, previewFn);
     if (mind) {
