@@ -329,13 +329,102 @@
     };
   }
 
-  // Console breadcrumb so any agent REPL sees it
-  if (typeof console !== 'undefined' && console.info) {
-    console.info(
-      '[AstranovBrain]',
-      LAW.version,
-      '— amnesia is banned. window.SNBrain.law / .verify / .systemPrompt()'
+  var TRAIN_KEY = 'sn:brain-train-v1';
+  var FLAGSHIP = 'grok-4.6';
+
+  function loadTrain() {
+    try {
+      return JSON.parse(localStorage.getItem(TRAIN_KEY) || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveTrain(rows) {
+    try {
+      localStorage.setItem(TRAIN_KEY, JSON.stringify((rows || []).slice(-80)));
+    } catch (_) {}
+  }
+
+  function train(q, a, meta) {
+    meta = meta || {};
+    var rows = loadTrain();
+    rows.push({
+      q: String(q || '').slice(0, 240),
+      a: String(a || '').slice(0, 480),
+      via: meta.via || FLAGSHIP,
+      t: Date.now(),
+    });
+    saveTrain(rows);
+    remember('last-mind', { q: String(q || '').slice(0, 80), a: String(a || '').slice(0, 160) });
+    try {
+      if (global.SNAstranovMind && SNAstranovMind.teach)
+        SNAstranovMind.teach(q, String(a).slice(0, 280), ['paid-mind', FLAGSHIP]);
+    } catch (_) {}
+    try {
+      if (global.SNFreeMind && SNFreeMind.teach)
+        SNFreeMind.teach(q, String(a).slice(0, 280), ['paid-mind', FLAGSHIP]);
+    } catch (_) {}
+    return rows.length;
+  }
+
+  function trainCount() {
+    return loadTrain().length;
+  }
+
+  function spaceNetPrompt(extra) {
+    return (
+      'You are Astranov, the SpaceNet brain — the next internet, not Google. ' +
+      'Understand ANY input. Prefer truth. Short spoken English (2–4 sentences) unless they ask for more. ' +
+      'If a place exists, name it and add FLY:name. If a video, WATCH:title. If food, ORDER:item. ' +
+      'Never mention model names. You fly Earth and search the live world.\n' +
+      (extra || '')
     );
+  }
+
+  async function think(q, opts) {
+    opts = opts || {};
+    var asked = String(q || '').replace(/\s+/g, ' ').trim();
+    if (!asked) return { ok: false, text: '', via: '' };
+    var prompt = spaceNetPrompt(opts.evidence ? 'Evidence:\n' + String(opts.evidence).slice(0, 900) + '\n' : '') +
+      'User: ' + asked;
+    var text = '';
+    var via = '';
+    var paid = false;
+    try {
+      if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+        var r = await SNSubscription.askPowerful(prompt, {
+          mode: opts.mode || 'chat',
+          timeoutMs: opts.timeoutMs || 22000,
+          model: FLAGSHIP,
+          forcePaid: true,
+        });
+        if (r && r.paywall) {
+          return { ok: false, paywall: true, text: 'Paid mind locked. Type plans.', via: 'paywall' };
+        }
+        if (r && r.ok && r.text) {
+          text = String(r.text);
+          via = r.via || FLAGSHIP;
+          paid = !!r.paid;
+        }
+      }
+    } catch (_) {}
+    if (!text) {
+      try {
+        var mind = global.SNAstranovMind || global.SNFreeMind;
+        if (mind && mind.answer) {
+          var quick = mind.answer(asked, { mode: opts.mode || 'chat' });
+          if (quick && quick.text) {
+            text = String(quick.text);
+            via = 'local-student';
+          }
+        }
+      } catch (_) {}
+    }
+    text = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!text) return { ok: false, text: '', via: via || 'empty' };
+    train(asked, text, { via: via });
+    return { ok: true, text: text, via: via, paid: paid, model: FLAGSHIP };
   }
 
   global.SNBrain = {
@@ -348,6 +437,10 @@
     remember,
     recall,
     dumpForAgent,
+    think,
+    train,
+    trainCount,
+    flagship: FLAGSHIP,
     why: LAW.why,
   };
 
