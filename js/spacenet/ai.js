@@ -1861,6 +1861,26 @@
         return null;
       }
 
+      // Flagship paid mind first. Local matcher is the student, not the teacher.
+      try {
+        if (global.SNBrain && typeof SNBrain.think === 'function') {
+          var br = await SNBrain.think(msg, { mode: opts.mode || 'chat' });
+          if (br && br.text) {
+            var bt = brandReply(br.text);
+            pushHist('assistant', bt);
+            showOnGlobe(bt);
+            try {
+              if (global.SNCli && SNCli.preview) SNCli.preview(bt.slice(0, 80));
+            } catch (_) {}
+            busy = false;
+            clearThinkGfx();
+            clearTimeout(watchdog);
+            ask._busySince = 0;
+            return bt;
+          }
+        }
+      } catch (_) {}
+
       // Fast free mind — only when there is no job to do
       try {
         var mind = global.SNAstranovMind || global.SNFreeMind;
