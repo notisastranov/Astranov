@@ -3170,6 +3170,25 @@ if (
         const arg = low.replace(/^(helper|ironman|iron man|robot helper)\s*/, '').trim();
         if (arg === 'off' || arg === 'sleep' || arg === 'hide') {
           H.sleep?.();
+          try {
+            if (H.mindOn) H.mindOn(false);
+          } catch (_) {}
+          log('HELPER · standby off-screen', 'dim');
+          preview('helper off');
+          return;
+        }
+        if (arg === 'mind' || arg === 'listen' || arg === 'talk' || arg === 'ai') {
+          if (H.engage) H.engage();
+          else H.wake?.({ label: 'UNIT · LISTENING' });
+          preview('unit mind');
+          return;
+        }
+        if (arg && !/^(on|wake|come|patrol|sweep|off|sleep|hide)$/.test(arg) && H.askMind) {
+          void H.askMind(arg);
+          preview('unit mind');
+          return;
+        }
+          H.sleep?.();
           log('HELPER · standby off-screen', 'dim');
           preview('helper off');
           return;
@@ -4725,7 +4744,20 @@ if (
           }
         } catch (_) {}
         if (input) input.value = '';
-        await run(t);
+        var unitMind = false;
+        try {
+          unitMind = !!(global.SNHelper && (SNHelper.mindOn === true || (typeof SNHelper.mindOn === 'function' && SNHelper.mindOn())));
+        } catch (_) {}
+        if (unitMind && global.SNHelper && typeof SNHelper.askMind === 'function') {
+          await SNHelper.askMind(t);
+          try {
+            if (global.SNSearch && SNSearch.researchFirst) {
+              await SNSearch.researchFirst(t, { log: log, preview: preview, skipBrain: true });
+            }
+          } catch (_) {}
+        } else {
+          await run(t);
+        }
       } catch (e) {
         log('Voice send · ' + (e.message || e), 'err');
       } finally {
