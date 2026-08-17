@@ -1921,6 +1921,14 @@
 
   function activate(opts) {
     opts = opts || {};
+    var signed = false;
+    try {
+      signed = !!(global.SNAuth && SNAuth.user);
+    } catch (_) {}
+    if (!signed && !opts.force) {
+      log('Sign in and locate to draw a delivery area.', 'ok');
+      return { ok: false, error: 'signin' };
+    }
     var already = active && stack.some(function (x) {
       return x.phase === 'offered' || x.phase === 'claimed' || x.phase === 'underway' || x.phase === 'confirming';
     });
