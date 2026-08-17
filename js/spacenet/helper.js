@@ -247,21 +247,6 @@
     speakDeep(text);
     return text;
   }
-    wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 20000 });
-    H.status = 'listening';
-    try {
-      if (global.SNCli && global.SNCli.handsfreeOn) {
-        if (typeof SNCli.stopHandsfree === 'function') SNCli.stopHandsfree('unit tap');
-      } else if (global.SNCli && typeof SNCli.startListen === 'function') {
-        SNCli.startListen();
-      } else if (global.SNCli && typeof SNCli.toggleHandsfree === 'function') {
-        SNCli.toggleHandsfree();
-      }
-    } catch (e) {
-      log('UNIT mic · ' + (e && e.message ? e.message : e), 'err');
-    }
-    return true;
-  }
 
   function resize() {
     if (!H.canvas) return;
@@ -1216,9 +1201,6 @@
     followTap: followTap,
     askMind: askMind,
     engage: engage,
-    get mindOn() {
-      return !!H.mindOn;
-    },
     mindOn: function (v) {
       if (v === undefined) return !!H.mindOn;
       H.mindOn = !!v;
