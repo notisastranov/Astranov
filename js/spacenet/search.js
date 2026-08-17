@@ -1807,6 +1807,9 @@
       earthHits.unshift({ name: s.wiki.title, lat: s.wiki.lat, lng: s.wiki.lng, kind: 'wiki' });
     if (earthHits.length) {
       spinEarthToHits(earthHits);
+      try {
+        if (global.SNStage && SNStage.research) SNStage.research(earthHits);
+      } catch (_) {}
       s.acted.push('earth');
       L(
         'Earth · ' +
