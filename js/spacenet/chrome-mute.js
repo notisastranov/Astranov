@@ -1,10 +1,10 @@
-/* Astranov mute · Build 20260817093000
+/* Astranov mute · Build 20260817102200
  * Kill alert beeps, oscillator spam, auto speechSynthesis noise.
- * Loads live Supabase delivery wire (vendors/orders) — no demo CLI.
+ * Loads live Supabase delivery wire + guest order gate (Locate + Google).
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260817093000-mute-live-delivery';
+  var BUILD = '20260817102200-mute-live-guest';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -63,21 +63,30 @@
     } catch (_) {}
   }
 
-  function loadLiveDelivery() {
+  function inject(src, attr) {
     try {
-      if (global.SNChromeLiveDelivery) return;
-      if (document.querySelector('script[data-sn-live-delivery]')) return;
+      if (document.querySelector('script[' + attr + ']')) return;
       var s = document.createElement('script');
-      s.src = '/js/spacenet/chrome-live-delivery.js?v=' + BUILD;
+      s.src = src + '?v=' + BUILD;
       s.async = true;
-      s.dataset.snLiveDelivery = '1';
+      s.setAttribute(attr, '1');
       s.onerror = function () {
         try {
-          console.warn('[chrome-mute] live-delivery script miss');
+          console.warn('[chrome-mute] miss ' + src);
         } catch (_) {}
       };
       (document.head || document.documentElement).appendChild(s);
     } catch (_) {}
+  }
+
+  function loadLiveDelivery() {
+    if (global.SNChromeLiveDelivery) return;
+    inject('/js/spacenet/chrome-live-delivery.js', 'data-sn-live-delivery');
+  }
+
+  function loadGuestGate() {
+    if (global.SNChromeGuestOrderGate) return;
+    inject('/js/spacenet/chrome-guest-order-gate.js', 'data-sn-guest-order-gate');
   }
 
   function boot() {
@@ -86,6 +95,7 @@
     patchFieldAlerts();
     softGateHandsfree();
     loadLiveDelivery();
+    loadGuestGate();
   }
 
   boot();
@@ -101,7 +111,14 @@
       silenceSpeech();
   }, 4000);
   setTimeout(loadLiveDelivery, 1200);
+  setTimeout(loadGuestGate, 1400);
   setTimeout(loadLiveDelivery, 4000);
+  setTimeout(loadGuestGate, 4200);
 
-  global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadLiveDelivery: loadLiveDelivery };
+  global.SNChromeMute = {
+    build: BUILD,
+    silence: silenceSpeech,
+    loadLiveDelivery: loadLiveDelivery,
+    loadGuestGate: loadGuestGate,
+  };
 })(typeof window !== 'undefined' ? window : globalThis);
