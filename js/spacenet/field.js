@@ -985,6 +985,7 @@
       '<div class="sn-rib-fly-sheet" id="sn-rib-fly-sheet">' +
       '<div class="sn-rib-fly-head">' +
       ((cfg && cfg.title) || 'Options') +
+      '<button type="button" class="sn-rib-fly-x" data-pick="__close" aria-label="Close">×</button>' +
       '</div>' +
       rows +
       '<button type="button" class="sn-rib-fly-cancel" data-pick="__close">Cancel</button></div>';
@@ -1006,6 +1007,12 @@
       sheet.style.bottom = '120px';
     }
     root.classList.add('open');
+    if (!root._esc) {
+      root._esc = function (ev) {
+        if (ev.key === 'Escape') closeRibbonFlyout();
+      };
+      document.addEventListener('keydown', root._esc);
+    }
     root.querySelectorAll('[data-pick]').forEach(function (btn) {
       btn.addEventListener(
         'click',
@@ -1023,18 +1030,23 @@
 
   function focusPos() {
     return (
+      g._snPhysPos ||
       g._snLastPos ||
       (g.SNTasks && SNTasks.pos) ||
-      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) || {
-        lat: 36.4341,
-        lng: 28.2176,
-      }
+      (g.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      null
     );
   }
 
   function openCityMap(opts) {
     var p = focusPos();
     opts = opts || {};
+    if (!p || p.lat == null) {
+      try {
+        if (g.SNCli && SNCli.log) SNCli.log('Locate first to open streets.', 'ok');
+      } catch (_) {}
+      return Promise.resolve();
+    }
     if (!g.SNMap || !SNMap.open) return Promise.resolve();
     return SNMap.open(p.lat, p.lng, {
       force: true,
@@ -1518,6 +1530,18 @@
     }
     // ⬠ Polygon = cycle: fit whole tour + GPS  ↔  GPS drive follow
     if (act === 'polygon' || act === 'poly' || act === 'tour') {
+      var signedP = false;
+      try {
+        signedP = !!(g.SNAuth && SNAuth.user);
+      } catch (_) {}
+      var hereP = g._snPhysPos || (g.SNCli && SNCli.lastGps && SNCli.lastGps());
+      if (!signedP || !hereP || hereP.lat == null) {
+        try {
+          if (g.SNCli && SNCli.log)
+            SNCli.log('Sign in and locate to draw a delivery area.', 'ok');
+        } catch (_) {}
+        return;
+      }
       void cyclePolyNav();
       return;
     }
@@ -1575,6 +1599,17 @@
     }
     // ➕ Add → upward menu ONLY
     if (act === 'place' || act === 'add' || act === 'target' || act === 'pin') {
+      var signedA = false;
+      try {
+        signedA = !!(g.SNAuth && SNAuth.user);
+      } catch (_) {}
+      if (!signedA) {
+        try {
+          if (g.SNCli && SNCli.log) SNCli.log('Sign in to add a place.', 'ok');
+          if (g.SNAuth && SNAuth.openModal) SNAuth.openModal();
+        } catch (_) {}
+        return;
+      }
       openRibbonFlyout(
         'sn-rib-add',
         {
