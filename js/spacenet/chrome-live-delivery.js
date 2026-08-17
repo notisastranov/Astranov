@@ -1,16 +1,19 @@
 /* Astranov — Wire delivery to live Supabase vendors/orders
- * Build: 20260817093000-live-supabase-delivery
+ * Build: 20260817094500-live-supabase-delivery
  * Law: no new demo CLI · real vendors/orders from project lkoatrkhuigdolnjsbie
+ * DB fact 2026-08-17: vendors 4205 (items=[] every row) · orders 13 stuck seeking_driver since 2026-06-25
  * Guest: prepareFirstTest() enables test-mode + free-credits once (silent)
  * Poly: DRIVER EN ROUTE · me-av · dense route points when OSRM available
+ * Empty DB menus → local ensureOrderableMenu so S path works; network intake stays best-effort
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260817093000-live-supabase-delivery';
+  var BUILD = '20260817094500-live-supabase-delivery';
   var POLL_MS = 14000;
   var guestPrepDone = false;
   var lastPaintKey = '';
   var pollTimer = null;
+  var menuFillOnce = false;
 
   function log(m, c) {
     try {
@@ -104,18 +107,79 @@
     );
   }
 
+  function fillMenusFromDbVendors(rows, pos) {
+    if (!rows || !rows.length || !global.SNProfiles) return 0;
+    var n = 0;
+    var filled = 0;
+    rows.slice(0, 60).forEach(function (v) {
+      if (!v || v.lat == null) return;
+      try {
+        var p =
+          (SNProfiles.fromVendor && SNProfiles.fromVendor(v, pos)) ||
+          (SNProfiles.fromCrawlPlace &&
+            SNProfiles.fromCrawlPlace(
+              {
+                id: v.id,
+                name: v.name,
+                lat: v.lat,
+                lng: v.lng,
+                kind: v.category || 'shop',
+                items: v.items,
+                emoji: v.emoji,
+                real: true,
+                delivery_enabled: v.delivery_enabled,
+              },
+              pos
+            ));
+        if (!p) return;
+        n++;
+        var before = (p.menu && p.menu.length) || 0;
+        if (SNProfiles.ensureOrderableMenu) {
+          p = SNProfiles.ensureOrderableMenu(p) || p;
+        }
+        if (p.menu && p.menu.length > before) filled++;
+      } catch (_) {}
+    });
+    if (!menuFillOnce && n) {
+      menuFillOnce = true;
+      log(
+        'Live · DB vendors ' +
+          n +
+          ' · menus local-filled ' +
+          filled +
+          ' (DB items=[] · S path OK · network intake best-effort)',
+        'ok'
+      );
+    }
+    return n;
+  }
+
   async function ensureLiveVendors(lat, lng) {
     lat = lat != null ? Number(lat) : posNow().lat;
     lng = lng != null ? Number(lng) : posNow().lng;
+    var pos = { lat: lat, lng: lng };
+    var rows = [];
     try {
       if (global.SNCommerce && SNCommerce.loadNear) {
-        var rows = await SNCommerce.loadNear(lat, lng, 15);
-        if (rows && rows.length) return { ok: true, count: rows.length, source: 'db' };
+        rows = (await SNCommerce.loadNear(lat, lng, 15)) || [];
       }
     } catch (_) {}
+    if (rows.length) {
+      fillMenusFromDbVendors(rows, pos);
+      return { ok: true, count: rows.length, source: 'db', menusLocal: true };
+    }
     try {
       if (global.SNCommerce && SNCommerce.ensureSector) {
-        return await SNCommerce.ensureSector(lat, lng, { openMap: false });
+        var r = await SNCommerce.ensureSector(lat, lng, { openMap: false });
+        try {
+          var list = (global.SNProfiles && SNProfiles.list && SNProfiles.list({ role: 'vendor' })) || [];
+          list.slice(0, 40).forEach(function (p) {
+            try {
+              if (SNProfiles.ensureOrderableMenu) SNProfiles.ensureOrderableMenu(p);
+            } catch (_) {}
+          });
+        } catch (_) {}
+        return r;
       }
     } catch (_) {}
     return { ok: false, count: 0 };
@@ -264,8 +328,10 @@
         ) {
           return;
         }
+        var isNet = t.source === 'spacenet-mesh' || (t.id && String(t.id).indexOf('net_') === 0);
         if (
           !testModeOn() &&
+          !isNet &&
           (t.demo || t.fake || /Night Kitchen|test_task_/i.test(String(t.id || '') + String(t.vendorName || '')))
         ) {
           return;
@@ -290,17 +356,34 @@
 
   async function pullAndSync(opts) {
     opts = opts || {};
+    var pull = null;
     try {
       if (global.SNMeshOrders && SNMeshOrders.pullOpenOrders) {
-        await SNMeshOrders.pullOpenOrders({ force: !!opts.force, quiet: true, maxKm: 50 });
+        pull = await SNMeshOrders.pullOpenOrders({
+          force: opts.force !== false,
+          quiet: !opts.verbose,
+          maxKm: 80,
+        });
       }
     } catch (_) {}
     try {
-      if (global.SNMeshOrders && !SNMeshOrders.status().polling && SNMeshOrders.start) {
+      if (global.SNMeshOrders && SNMeshOrders.status && !SNMeshOrders.status().polling && SNMeshOrders.start) {
         SNMeshOrders.start();
       }
     } catch (_) {}
-    syncOffersFromTasks();
+    var synced = syncOffersFromTasks();
+    if (opts.verbose || (pull && pull.imported)) {
+      log(
+        'Live mesh · net ' +
+          ((pull && pull.count) || 0) +
+          ' · imported ' +
+          ((pull && pull.imported) || 0) +
+          ' · offers ' +
+          synced,
+        pull && pull.imported ? 'ok' : 'dim'
+      );
+    }
+    return { pull: pull, synced: synced };
   }
 
   function hookPlaceOrder() {
@@ -315,6 +398,13 @@
               void softGuestPrep({ force: false });
               opts = Object.assign({}, opts, { allowTopUp: true, testMode: true });
             }
+          }
+        } catch (_) {}
+        try {
+          var cart0 = SNProfiles.cart && SNProfiles.cart();
+          if (cart0 && cart0[0] && cart0[0].vendorId && SNProfiles.get && SNProfiles.ensureOrderableMenu) {
+            var v = SNProfiles.get(cart0[0].vendorId);
+            if (v) SNProfiles.ensureOrderableMenu(v);
           }
         } catch (_) {}
         var r = orig(opts);
@@ -401,9 +491,9 @@
 
   function startPoll() {
     if (pollTimer) return;
-    void pullAndSync({ force: true });
+    void pullAndSync({ force: true, verbose: true });
     pollTimer = setInterval(function () {
-      void pullAndSync({ force: false });
+      void pullAndSync({ force: true });
       syncOffersFromTasks();
     }, POLL_MS);
   }
@@ -426,7 +516,7 @@
       hookPlaceOrder();
       hookOrderEngine();
       hookTaskTransitions();
-      void pullAndSync({ force: true });
+      void pullAndSync({ force: true, verbose: true });
     }, 2500);
     setTimeout(function () {
       void pullAndSync({ force: true });
@@ -444,6 +534,7 @@
     build: BUILD,
     softGuestPrep: softGuestPrep,
     ensureLiveVendors: ensureLiveVendors,
+    fillMenusFromDbVendors: fillMenusFromDbVendors,
     paintDriverEnRoute: paintDriverEnRoute,
     pullAndSync: pullAndSync,
     syncOffersFromTasks: syncOffersFromTasks,
