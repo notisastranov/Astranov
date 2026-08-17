@@ -830,6 +830,7 @@
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
+    '/js/spacenet/space-stage.js',
     '/js/spacenet/webrtc.js',
   ];
   var STAGE_SERVICES = [
@@ -1426,6 +1427,8 @@
       brain: { src: '/js/spacenet/brain.js', global: 'SNBrain' },
       spacexai: { src: '/js/spacenet/spacexai.js', global: 'SNSpaceXai' },
       webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
+      stage: { src: '/js/spacenet/space-stage.js', global: 'SNStage' },
+      'space-stage': { src: '/js/spacenet/space-stage.js', global: 'SNStage' },
       spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
