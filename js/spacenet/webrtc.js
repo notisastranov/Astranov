@@ -384,6 +384,11 @@
   /** Instant calls always allowed from CLI Call button */
   function canCall(order, opts) {
     opts = opts || {};
+    var signed = false;
+    try {
+      signed = !!(global.SNAuth && SNAuth.user);
+    } catch (_) {}
+    if (!signed && !opts.force) return { ok: false, reason: 'Sign in to call' };
     if (opts.force || opts.instant || opts.open) return { ok: true, reason: opts.reason || 'CLI call' };
     if (!order) return { ok: true, reason: 'direct call' };
     var limits = order.limits || (order.quote && order.quote.limits) || {};
