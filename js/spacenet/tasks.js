@@ -30,7 +30,7 @@
   const T = {
     tasks: new Map(),
     plans: new Map(),
-    pos: { lat: 36.4341, lng: 28.2176 },
+    pos: null,
   };
 
   function id(prefix) {
