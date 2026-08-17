@@ -1894,29 +1894,21 @@
       ctx += 'Web: ' + s.web[0].title + ' — ' + String(s.web[0].text || '').slice(0, 160) + '\n';
     if (s && s.places && s.places[0] && s.places[0].name)
       ctx += 'Place: ' + s.places[0].name + '\n';
-    var prompt =
-      'You are Astranov, SpaceNet brain. Understand ANY user input. Reply in 2 short sentences. ' +
-      'If it is a place say FLY:name. If a video say WATCH:title. If food/shop say ORDER:item.\n' +
-      'User: ' +
-      q +
-      '\nEvidence:\n' +
-      (ctx || '(none yet)');
     var tip = null;
     try {
-      if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
-        tip = await SNSubscription.askPowerful(prompt, { mode: 'chat' });
-        if (tip && typeof tip === 'object') {
-          if (tip.ok === false) tip = null;
-          else tip = tip.text || tip.reply || null;
-        }
+      if (global.SNBrain && typeof SNBrain.think === 'function') {
+        var br = await SNBrain.think(q, { evidence: ctx, mode: 'chat' });
+        if (br && br.ok && br.text) tip = br.text;
       }
     } catch (_) {}
     if (!tip) {
       try {
-        var mind = global.SNAstranovMind || global.SNFreeMind;
-        if (mind && mind.answer) {
-          var quick = mind.answer(q, { mode: 'chat' });
-          if (quick && quick.text) tip = quick.text;
+        if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+          var raw = await SNSubscription.askPowerful(
+            'You are Astranov SpaceNet. 2 short sentences. User: ' + q + '\n' + ctx,
+            { mode: 'chat', model: 'grok-4.6', forcePaid: true }
+          );
+          if (raw && raw.ok) tip = raw.text;
         }
       } catch (_) {}
     }
