@@ -996,6 +996,10 @@
   async function run(raw) {
     let line = String(raw || '').trim();
     if (!line) return;
+    try {
+      log(line, 'cmd');
+      preview(line.slice(0, 48));
+    } catch (_) {}
     // AI subscription plans
       try {
         if (global.SNSubscription && SNSubscription.handleLine) {
@@ -3183,14 +3187,9 @@ if (
           preview('unit mind');
           return;
         }
-        if (arg && !/^(on|wake|come|patrol|sweep|off|sleep|hide)$/.test(arg) && H.askMind) {
+        if (arg && !/^(on|wake|come|patrol|sweep|off|sleep|hide|mind|listen|talk|ai)$/.test(arg) && H.askMind) {
           void H.askMind(arg);
           preview('unit mind');
-          return;
-        }
-          H.sleep?.();
-          log('HELPER · standby off-screen', 'dim');
-          preview('helper off');
           return;
         }
         if (arg === 'patrol' || arg === 'sweep') {
@@ -5004,6 +5003,12 @@ if (
       topForm.addEventListener('submit', (e) => {
         e.preventDefault();
         submitLine(topIn);
+      });
+      topIn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitLine(topIn);
+        }
       });
       topIn.addEventListener('input', () => {
         syncInputs(topIn);
