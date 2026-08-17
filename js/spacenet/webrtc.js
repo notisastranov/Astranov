@@ -687,24 +687,34 @@
     });
   }
 
-  /** Ribbon / CLI entry — open dialer, answer, or focus call tile */
+  /** Ribbon / CLI entry — globe Athens-line first. Video tile only after a live hop. */
   function openFromRibbon() {
-    ensureDom();
-    bus();
-    if (state.pending) {
-      showRing('Incoming call waiting');
-      return;
-    }
-    if (state.inCall) {
-      showCallUi();
-      return;
-    }
-    showDialer();
+    var signed = false;
     try {
-      if (global.SNCli && SNCli.log) {
-        SNCli.log('CALL · start a video call or wait for incoming', 'ok');
-        SNCli.log('On the call tile: Camera ON/OFF · Mic · Hang up', 'dim');
+      signed = !!(global.SNAuth && SNAuth.user);
+    } catch (_) {}
+    if (!signed) {
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log('Sign in to call. Then the hop draws on Earth.', 'ok');
+        if (global.SNAuth && SNAuth.openModal) SNAuth.openModal();
+        else if (global.SNAuth && SNAuth.open) SNAuth.open();
+        else if (global.SNAuth && SNAuth.login) SNAuth.login();
+      } catch (_) {}
+      return;
+    }
+    var from = (global.SNStage && SNStage.here && SNStage.here()) || { lat: 36.4341, lng: 28.2176, name: 'YOU' };
+    var athens = { lat: 37.9838, lng: 23.7275, name: 'Athens' };
+    try {
+      if (global.SNStage && SNStage.link) {
+        SNStage.link(from, athens, { kind: 'call', color: 0x44e0ff, fromFace: '', toFace: '' });
+      } else if (global.SNGlobe && SNGlobe.drawTourLine) {
+        SNGlobe.drawTourLine([from, athens], { color: 0x44e0ff, pickLabel: 'YOU', dropLabel: 'ATHENS' });
+        if (SNGlobe.flyNear) SNGlobe.flyNear((from.lat + athens.lat) / 2, (from.lng + athens.lng) / 2, 'national');
       }
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log('CALL · live hop on the globe · YOU → Athens', 'ok');
+      if (global.SNCli && SNCli.preview) SNCli.preview('CALL · Athens line');
     } catch (_) {}
   }
 
