@@ -797,7 +797,7 @@
     if (/amenity|shop|cuisine|fast_food|office|building/.test(k)) return false;
     if (/city|town|village|country|island|capital|suburb|administrative|hamlet|state|peak|mountain|sea|ocean|bay|lake/.test(k))
       return true;
-    if (p.importance != null && Number(p.importance) > 0.5) return true;
+    if (p.importance != null && Number(p.importance) > 0.72) return true;
     return false;
   }
 
@@ -1849,7 +1849,12 @@
     var earthHits = (s.places || []).slice();
     if (s.wiki && s.wiki.lat != null)
       earthHits.unshift({ name: s.wiki.title, lat: s.wiki.lat, lng: s.wiki.lng, kind: 'wiki' });
-    if (earthHits.length) {
+    if (earthHits.length && !isQuestionQuery(q)) {
+      earthHits = earthHits.filter(function (h) {
+        return looksLikePlaceHit(h) || (h && h.kind === 'wiki');
+      });
+    }
+    if (earthHits.length && !isQuestionQuery(q)) {
       spinEarthToHits(earthHits);
       try {
         if (global.SNStage && SNStage.research) SNStage.research(earthHits);
