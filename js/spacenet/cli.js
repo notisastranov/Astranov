@@ -350,6 +350,9 @@
    */
   async function gpsLocate(opts) {
     opts = opts || {};
+    try {
+      log('Locate needs your pin for delivery and Earth. Allow location, or stay on the globe.', 'ok');
+    } catch (_) {}
     var allowIp = opts.allowIp !== false;
     var allowSoft = opts.allowSoft !== false;
 
@@ -767,13 +770,21 @@
   }
 
   function help() {
-    log("I'm Astranov. SpaceNet is the net. Name anything — I research first.", 'ok');
-    log('> tokyo ramen', 'cmd');
-    log('> eiffel tower', 'cmd');
-    log('> drum cam at sticky fingers', 'cmd');
-    log('> vodi', 'cmd');
+    log('Name a place, a thing, or an order.', 'ok');
+    log('> tokyo', 'cmd');
     log('> pizza', 'cmd');
-    preview('research · fly · pizza · youtube');
+    log('> what is astranov', 'cmd');
+    var debug = false;
+    try {
+      debug =
+        /(?:\?|&)sn-debug=1\b/.test(location.search || '') ||
+        !!(global.SNAuth && SNAuth.isOwner && SNAuth.isOwner());
+    } catch (_) {}
+    if (debug) {
+      log('> eiffel tower', 'cmd');
+      log('> drum cam at sticky fingers', 'cmd');
+    }
+    preview('place · thing · order');
   }
 
   function closeBrief() {
