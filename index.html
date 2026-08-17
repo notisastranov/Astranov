@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="astranov-build" content="20260817090000-p0-guest-present" />
+<title>Astranov SpaceNet</title>
+<script>
+(function () {
+  /* Branch bootstrap: pull last good full index from main, inject chrome-p0-guest, strip EventSource */
+  var urls = [
+    'https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/index.html',
+    'https://raw.githubusercontent.com/notisastranov/astranov.eu/main/index.html'
+  ];
+  function fix(html) {
+    html = html.replace(/<script>\s*\(function \(\) \{\s*try \{\s*var es = new EventSource\('\/__reload'\);[\s\S]*?<\/script>/, '');
+    if (html.indexOf('chrome-p0-guest.js') < 0) {
+      html = html.replace(
+        "'/js/spacenet/chrome-radar.js',\n    '/js/spacenet/os-bootloader.js'",
+        "'/js/spacenet/chrome-radar.js',\n    '/js/spacenet/chrome-p0-guest.js',\n    '/js/spacenet/os-bootloader.js'"
+      );
+    }
+    return html;
+  }
+  function go(i) {
+    if (i >= urls.length) {
+      document.body.innerHTML = '<p style="color:#8ab4d9;font:14px system-ui;padding:24px">Restore index from main on this branch.</p>';
+      return;
+    }
+    fetch(urls[i], { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('http'); return r.text(); })
+      .then(function (html) {
+        if (!html || html.indexOf('sn-topchrome') < 0) throw new Error('bad');
+        document.open();
+        document.write(fix(html));
+        document.close();
+      })
+      .catch(function () { go(i + 1); });
+  }
+  go(0);
+})();
+</script>
+</head>
+<body style="background:#000105;color:#8ab4d9;font:14px system-ui;padding:24px">Loading SpaceNet…</body>
+</html>
