@@ -1297,15 +1297,17 @@
       } catch (_) {}
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'tokyo · eiffel · pizza · youtube · anything';
+        if (inp) inp.placeholder = 'Name a place, a thing, or an order';
         var tin = document.getElementById('stc-cmd-in');
-        if (tin) tin.placeholder = 'tokyo · mars · eiffel · vodi · pizza';
+        if (tin) tin.placeholder = 'Name a place, a thing, or an order';
       } catch (_) {}
       try {
-        if (global.SNHelper) {
+        var signed = false;
+        try {
+          signed = !!(global.SNAuth && SNAuth.user);
+        } catch (_) {}
+        if (signed && global.SNHelper) {
           if (SNHelper.init) SNHelper.init({ autoWake: true });
-          if (SNHelper.wake)
-            SNHelper.wake({ force: true, label: 'UNIT · SILVER WINGS', showcaseMs: 20000 });
         }
       } catch (_) {}
     } catch (_) {}
