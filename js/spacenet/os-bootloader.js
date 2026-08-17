@@ -830,6 +830,8 @@
     '/js/spacenet/home.js',
     '/js/spacenet/helper.js',
     '/js/spacenet/space-stage.js',
+    '/js/spacenet/live-bridge.js',
+    '/js/spacenet/usage.js',
     '/js/spacenet/webrtc.js',
   ];
   var STAGE_SERVICES = [
@@ -1311,6 +1313,9 @@
           if (SNHelper.init) SNHelper.init({ autoWake: true });
         }
       } catch (_) {}
+      try {
+        if (global.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
+      } catch (_) {}
     } catch (_) {}
     killOverlay();
   }
@@ -1432,6 +1437,9 @@
       webrtc: { src: '/js/spacenet/webrtc.js', global: 'SNWebRTC' },
       stage: { src: '/js/spacenet/space-stage.js', global: 'SNStage' },
       'space-stage': { src: '/js/spacenet/space-stage.js', global: 'SNStage' },
+      bridge: { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
+      'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
+      usage: { src: '/js/spacenet/usage.js', global: 'SNUsage' },
       spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
