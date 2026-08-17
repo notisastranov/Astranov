@@ -431,6 +431,7 @@
       'https://console.cloud.google.com/apis/credentials/oauthclient/' + encodeURIComponent(cid);
     const sbLink =
       'https://supabase.com/dashboard/project/lkoatrkhuigdolnjsbie/auth/providers';
+    const debugAuth = /(?:\?|&)sn-debug=1\b/.test(location.search || '') || isOwner();
     if (!A._modal) {
       const root = document.createElement('div');
       root.id = 'sn-auth-modal';
@@ -441,40 +442,28 @@
         '<div id="sn-auth-card">' +
         '<div class="sn-auth-mark">ASTRANOV</div>' +
         '<h2>Sign in</h2>' +
-        '<p class="sn-auth-domain">' +
-        b.domain +
-        ' · ' +
-        origin +
-        '</p>' +
-        '<p class="sn-auth-copy">You sign in to <b>ASTRANOV</b> on <b>' +
-        b.domain +
-        '</b> only. Google Identity stays on this site.</p>' +
-        '<div class="sn-auth-warn" id="sn-auth-warn">' +
-        '<b>If Google says Access blocked</b> — that is Google Cloud blocking our origin, not a bug in the app. ' +
-        'Open the red button → add <b>' +
-        origin +
-        '</b> under <b>Authorized JavaScript origins</b> → Save → wait a few minutes → hard refresh.' +
-        '</div>' +
-        '<div class="sn-auth-actions">' +
-        '<a class="sn-auth-link hot" id="sn-auth-open-gcp" href="' +
-        gLink +
-        '" target="_blank" rel="noopener">Open Google OAuth client → fix origins</a>' +
-        '<a class="sn-auth-link" id="sn-auth-open-sb" href="' +
-        sbLink +
-        '" target="_blank" rel="noopener">Supabase Google provider</a>' +
-        '</div>' +
-        '<div id="sn-auth-gsi"></div>' +
-        '<p class="sn-auth-note">Secure Google · brand face ' +
-        b.domain +
-        ' · never a third-party project host</p>' +
-        '<div>' +
-        '<button type="button" class="sn-auth-close" id="sn-auth-setup-btn">Full checklist</button>' +
-        '<button type="button" class="sn-auth-close" id="sn-auth-copy-btn">Copy fix steps</button>' +
+        '<p class="sn-auth-copy">Sign in with Google to call, order, and keep your place on Earth.</p>' +
+        '<div class="sn-auth-actions" style="margin:0 0 10px">' +
         '<button type="button" class="sn-auth-close" id="sn-auth-close">Cancel</button>' +
         '</div>' +
+        '<div id="sn-auth-gsi"></div>' +
+        '<p class="sn-auth-note"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>' +
+        (debugAuth
+          ? '<div class="sn-auth-warn" id="sn-auth-warn">Owner debug</div>' +
+            '<div class="sn-auth-actions">' +
+            '<a class="sn-auth-link hot" id="sn-auth-open-gcp" href="' +
+            gLink +
+            '" target="_blank" rel="noopener">Open Google OAuth client</a>' +
+            '<a class="sn-auth-link" id="sn-auth-open-sb" href="' +
+            sbLink +
+            '" target="_blank" rel="noopener">Supabase provider</a>' +
+            '</div>' +
+            '<button type="button" class="sn-auth-close" id="sn-auth-setup-btn">Full checklist</button>' +
+            '<button type="button" class="sn-auth-close" id="sn-auth-copy-btn">Copy fix steps</button>' +
+            '<pre class="sn-auth-setup" id="sn-auth-setup"></pre>' +
+            '<p class="sn-auth-cid" id="sn-auth-cid"></p>'
+          : '') +
         '<p class="sn-auth-err" id="sn-auth-err"></p>' +
-        '<pre class="sn-auth-setup" id="sn-auth-setup"></pre>' +
-        '<p class="sn-auth-cid" id="sn-auth-cid"></p>' +
         '</div>';
       root.addEventListener('click', function (ev) {
         if (ev.target === root) closeModal();
