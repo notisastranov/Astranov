@@ -50,7 +50,11 @@
       '  visibility: visible !important; opacity: 1 !important;',
       '}',
       '#sn-topchrome-panel.collapsed { max-height: 152px !important; min-height: 152px !important; height: 152px !important; }',
-      '#stc-cmd { display: flex !important; visibility: visible !important; opacity: 1 !important; flex: 0 0 auto !important; width: 100% !important; }',
+      'body.sn-guest #stc-cmd { display: none !important; }',
+      'body.sn-guest #sn-helper-canvas, body.sn-guest #sn-helper-hit, body.sn-guest #sn-helper-label { display: none !important; }',
+      'body.sn-guest #sn-topchrome-panel { min-height: 88px !important; max-height: 110px !important; }',
+      'body.sn-guest #sn-topchrome-drag::after { content: \"ASTRANOV\" !important; }',
+      'body.sn-guest #vault, body.sn-guest #sn-vault, body.sn-guest .sn-vault, body.sn-guest #stc-money { opacity: 0.35 !important; }',
       '#stc-compact { max-height: 78px !important; padding: 6px 12px 4px !important; }',
       '#field-radar {',
       '  visibility: visible !important; opacity: 1 !important;',
@@ -270,8 +274,21 @@
     } catch (_) {}
   }
 
+  function markGuest() {
+    var signed = false;
+    try {
+      signed = !!(global.SNAuth && SNAuth.user);
+    } catch (_) {}
+    document.body.classList.toggle('sn-guest', !signed);
+    document.body.classList.toggle('sn-in', !!signed);
+  }
+
   function boot() {
     injectCss();
+    markGuest();
+    try {
+      setInterval(markGuest, 4000);
+    } catch (_) {}
     silenceBeeps();
     killInvented();
     stabilizePanels();
