@@ -652,7 +652,7 @@
     if (gate.ok) {
       return {
         engine: 'paid',
-        forcePaid: false,
+        forcePaid: opts.forcePaid !== false,
         allowPaid: true,
         freeFirst: false,
         remaining: gate.remaining,
@@ -707,8 +707,9 @@
     var body = {
       message: String(message || '').slice(0, 4000),
       mode: opts.mode || 'chat',
+      model: opts.model || RATES.model || 'grok-4.6',
       allow_paid: !!route.allowPaid,
-      force_paid: !!route.forcePaid,
+      force_paid: opts.forcePaid !== false && !!route.forcePaid,
       owner: isOwner(),
       gift: !!route.gift,
       gift_left: route.giftLeft || giftLeft(),
