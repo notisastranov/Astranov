@@ -38,13 +38,20 @@
     mode: 'present', // present | past | future
   };
   try {
-    var _tls = JSON.parse(localStorage.getItem(TL_KEY) || 'null');
-    if (_tls && typeof _tls.offset === 'number') {
-      timeline.offset = Math.max(-80, Math.min(40, _tls.offset));
-      timeline.frozen = !!_tls.frozen;
-    } else {
+    var debugTl = /(?:\?|&)sn-debug=1\b/.test(location.search || '');
+    var ownerTl = false;
+    try {
+      ownerTl = !!(global.SNAuth && SNAuth.isOwner && SNAuth.isOwner());
+    } catch (_) {}
+    if (!debugTl && !ownerTl) {
       timeline.offset = 0;
       timeline.frozen = false;
+    } else {
+      var _tls = JSON.parse(localStorage.getItem(TL_KEY) || 'null');
+      if (_tls && typeof _tls.offset === 'number') {
+        timeline.offset = Math.max(-80, Math.min(40, _tls.offset));
+        timeline.frozen = !!_tls.frozen;
+      }
     }
   } catch (_) {
     timeline.offset = 0;
@@ -5409,8 +5416,6 @@
 
     touchFleetHeartbeat();
     paintRadarZoomLabel();
-    refreshPhysPos();
-    setInterval(refreshPhysPos, (g.SNPerf && SNPerf.lean) ? 90000 : 45000);
     bindTopChrome();
     paint();
     refreshBlips();
