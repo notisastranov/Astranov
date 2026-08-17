@@ -1,1 +1,1 @@
-/* PLACEHOLDER - will replace */
+SEE_ARTIFACT
