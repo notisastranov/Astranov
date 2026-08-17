@@ -1724,8 +1724,52 @@
     var previewFn = opts.preview || function () {};
     previewFn('Research…');
     L('Search · ' + q, 'cmd');
+    if (/\bastranov\b/i.test(q)) {
+      L(
+        'Astranov is SpaceNet — the internet depicted in space. Research, calls, and orders are hops on Earth, not a list of links.',
+        'ok'
+      );
+      previewFn('Astranov · SpaceNet');
+      try {
+        var hq = { lat: 36.4341, lng: 28.2176, name: 'Astranov · Rhodes' };
+        if (global.SNGlobe && SNGlobe.goToPlace)
+          SNGlobe.goToPlace(hq.lat, hq.lng, {
+            tier: 'national',
+            pulse: true,
+            label: 'ASTRANOV',
+            openMap: false,
+          });
+        if (global.SNStage && SNStage.link)
+          SNStage.link(
+            (SNStage.here && SNStage.here()) || { lat: 37.9838, lng: 23.7275, name: 'YOU' },
+            hq,
+            { kind: 'scan', color: 0x7ec8ff }
+          );
+      } catch (_) {}
+    }
 
-    var s = await sense(q, opts);
+    var s;
+    try {
+      s = await Promise.race([
+        sense(q, opts),
+        new Promise(function (resolve) {
+          setTimeout(function () {
+            resolve({
+              query: q,
+              kind: 'unknown',
+              confidence: 0,
+              wiki: null,
+              wikiHits: [],
+              web: [],
+              places: [],
+            });
+          }, 8000);
+        }),
+      ]);
+    } catch (_) {
+      s = { query: q, kind: 'unknown', wiki: null, wikiHits: [], web: [], places: [] };
+    }
+    if (!s) s = { query: q, kind: 'unknown', wiki: null, wikiHits: [], web: [], places: [] };
     s.acted = [];
     s.ask = null;
 
