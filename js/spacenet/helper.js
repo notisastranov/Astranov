@@ -57,6 +57,8 @@
     autoWake: true,
     parkMode: true,
     showcaseUntil: 0,
+    mindOn: false,
+    mindLast: null,
   };
 
   function log(m, c) {
@@ -192,6 +194,59 @@
   }
 
   function engage() {
+    H.mindOn = true;
+    wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 24000 });
+    H.status = 'listening';
+    try {
+      if (global.SNCli && typeof SNCli.startListen === 'function') {
+        if (!SNCli.handsfreeOn) SNCli.startListen();
+      }
+    } catch (e) {
+      log('UNIT mic · ' + (e && e.message ? e.message : e), 'err');
+    }
+    speakDeep('Paid mind online. I am listening.');
+    log('UNIT · paid mind armed · speak', 'ok');
+    return true;
+  }
+
+  async function askMind(q, opts) {
+    opts = opts || {};
+    H.mindOn = true;
+    wake({ force: true, label: 'UNIT · MIND', showcaseMs: 22000 });
+    H.status = 'thinking';
+    H.label = 'UNIT · MIND';
+    var asked = String(q || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+    if (!asked) return '';
+    log('UNIT · thinking · ' + asked.slice(0, 56), 'cmd');
+    var text = '';
+    var via = '';
+    try {
+      if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+        var r = await SNSubscription.askPowerful(
+          'You are the SpaceX Bot unit on Astranov SpaceNet. Answer out loud in at most two short sentences. English. No markdown. User said: ' +
+            asked,
+          { mode: 'chat', timeoutMs: 22000 }
+        );
+        if (r && r.paywall) {
+          text = 'Paid mind is locked. Type plans.';
+          via = 'paywall';
+        } else if (r && r.ok && r.text) {
+          text = String(r.text);
+          via = r.via || (r.paid ? 'paid-grok' : 'mind');
+        }
+      }
+    } catch (e) {
+      log('UNIT mind · ' + (e && e.message ? e.message : e), 'err');
+    }
+    if (!text) text = 'I heard you. Paid mind did not answer. Try again.';
+    text = text.replace(/\s+/g, ' ').trim().slice(0, 280);
+    H.mindLast = { q: asked, text: text, via: via, t: Date.now() };
+    H.label = 'UNIT · REPLY';
+    H.status = 'speaking';
+    log('UNIT · ' + text + (via ? ' · ' + via : ''), 'ok');
+    speakDeep(text);
+    return text;
+  }
     wake({ force: true, label: 'UNIT · LISTENING', showcaseMs: 20000 });
     H.status = 'listening';
     try {
@@ -1159,6 +1214,16 @@
     sleep: sleep,
     flyTo: flyTo,
     followTap: followTap,
+    askMind: askMind,
+    engage: engage,
+    get mindOn() {
+      return !!H.mindOn;
+    },
+    mindOn: function (v) {
+      if (v === undefined) return !!H.mindOn;
+      H.mindOn = !!v;
+      return H.mindOn;
+    },
     say: speakDeep,
     speakDeep: speakDeep,
     parkAtMoon: parkAtMoon,
