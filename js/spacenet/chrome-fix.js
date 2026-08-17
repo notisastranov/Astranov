@@ -118,8 +118,24 @@
       '  flex: 0 0 auto !important; margin: 0 !important;',
       '}',
       '#sn-topchrome { flex-direction: column !important; align-items: center !important; }',
+      '#sn-task-ribbon { flex-wrap: wrap !important; }',
+      '@media (max-width: 430px) {',
+      '  #sn-task-ribbon .sn-rib-txt { display: none !important; }',
+      '  #sn-task-ribbon .sn-rib-btn { min-width: 40px !important; padding: 6px !important; }',
+      '  #panel.collapsed { min-height: 132px !important; }',
+      '}',
+      '#coach {',
+      '  position: fixed !important; left: 50% !important; top: 22% !important;',
+      '  transform: translateX(-50%) !important; z-index: 80 !important;',
+      '  max-width: min(420px, calc(100vw - 32px)) !important;',
+      '  padding: 14px 16px !important; border-radius: 8px !important;',
+      '  background: rgba(0,6,18,0.78) !important; color: #d8e8ff !important;',
+      '  border: 1px solid rgba(61,158,255,0.45) !important;',
+      '  font: 600 14px/1.4 Inter, system-ui, sans-serif !important;',
+      '}',
+      '#coach[hidden] { display: none !important; }',
       '#sn-task-ribbon {',
-      '  display: flex !important; flex-wrap: nowrap !important; gap: 4px !important;',
+      '  display: flex !important; flex-wrap: wrap !important; gap: 4px !important;',
       '  justify-content: space-between !important; align-items: center !important;',
       '  overflow-x: auto !important; overflow-y: hidden !important;',
       '  padding: 4px 10px 6px !important;',
@@ -274,6 +290,26 @@
     } catch (_) {}
   }
 
+  function showCoach() {
+    try {
+      if (localStorage.getItem('sn:coach-done') === '1') return;
+      var el = document.getElementById('coach');
+      if (!el) return;
+      el.hidden = false;
+      el.innerHTML =
+        '<b>SpaceNet</b><br>1 · Locate — pin you on Earth<br>2 · Sign in with Google<br>3 · Name a place, a thing, or an order' +
+        '<div style="margin-top:8px"><button type="button" id="sn-coach-x">Got it</button></div>';
+      var x = document.getElementById('sn-coach-x');
+      if (x)
+        x.onclick = function () {
+          el.hidden = true;
+          try {
+            localStorage.setItem('sn:coach-done', '1');
+          } catch (_) {}
+        };
+    } catch (_) {}
+  }
+
   function markGuest() {
     var signed = false;
     try {
@@ -289,6 +325,7 @@
     try {
       setInterval(markGuest, 4000);
     } catch (_) {}
+    setTimeout(showCoach, 1400);
     silenceBeeps();
     killInvented();
     stabilizePanels();
