@@ -1,10 +1,10 @@
-/* Astranov mute · Build 20260811223000
+/* Astranov mute · Build 20260817093000
  * Kill alert beeps, oscillator spam, auto speechSynthesis noise.
- * SpeechRecognition on Android often triggers keyboard/system beeps — we soft-gate restarts.
+ * Loads live Supabase delivery wire (vendors/orders) — no demo CLI.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811223000-mute';
+  var BUILD = '20260817093000-mute-live-delivery';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -29,7 +29,7 @@
                 try {
                   osc.frequency.value = 0;
                 } catch (_) {}
-                return; // swallow beep
+                return;
               }
               return start.apply(osc, arguments);
             };
@@ -49,14 +49,10 @@
     } catch (_) {}
   }
 
-  /** Soft-gate aggressive handsfree restarts that beep on Android */
   function softGateHandsfree() {
     try {
       if (!global.SNCli || SNCli.__snBeepGate) return;
       SNCli.__snBeepGate = true;
-      // Prefer text when silver is active unless user forced voice
-      var desc = Object.getOwnPropertyDescriptor(SNCli, 'toggleHandsfree');
-      // wrap if function exists
       if (typeof SNCli.toggleHandsfree === 'function') {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
@@ -67,11 +63,29 @@
     } catch (_) {}
   }
 
+  function loadLiveDelivery() {
+    try {
+      if (global.SNChromeLiveDelivery) return;
+      if (document.querySelector('script[data-sn-live-delivery]')) return;
+      var s = document.createElement('script');
+      s.src = '/js/spacenet/chrome-live-delivery.js?v=' + BUILD;
+      s.async = true;
+      s.dataset.snLiveDelivery = '1';
+      s.onerror = function () {
+        try {
+          console.warn('[chrome-mute] live-delivery script miss');
+        } catch (_) {}
+      };
+      (document.head || document.documentElement).appendChild(s);
+    } catch (_) {}
+  }
+
   function boot() {
     patchAudio();
     silenceSpeech();
     patchFieldAlerts();
     softGateHandsfree();
+    loadLiveDelivery();
   }
 
   boot();
@@ -86,6 +100,8 @@
     )
       silenceSpeech();
   }, 4000);
+  setTimeout(loadLiveDelivery, 1200);
+  setTimeout(loadLiveDelivery, 4000);
 
-  global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
+  global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadLiveDelivery: loadLiveDelivery };
 })(typeof window !== 'undefined' ? window : globalThis);
