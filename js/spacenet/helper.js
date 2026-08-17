@@ -206,6 +206,22 @@
     }
     speakDeep('Paid mind online. I am listening.');
     log('UNIT · paid mind armed · speak', 'ok');
+    void (async function () {
+      try {
+        if (!global.SNLiveBridge || !SNLiveBridge.status) {
+          log('UNIT · Grok Build bridge not loaded', 'err');
+          return;
+        }
+        var st = await SNLiveBridge.status();
+        if (st && st.ok) {
+          log('UNIT · Grok Build bridge live', 'ok');
+          speakDeep('Grok Build bridge is live.');
+        } else {
+          log('UNIT · Grok Build bridge weak · ' + (st && st.error ? st.error : 'no remote'), 'err');
+          speakDeep('Grok Build channel is weak. I will still send notes.');
+        }
+      } catch (_) {}
+    })();
     return true;
   }
 
@@ -254,6 +270,17 @@
     H.status = 'speaking';
     log('UNIT · ' + text + (via ? ' · ' + via : ''), 'ok');
     speakDeep(text);
+    try {
+      var wantShip =
+        /\b(grok build|send to grok|tell grok|handoff|diagnostic|fault|broken|cannot connect|fix this)\b/i.test(
+          asked
+        );
+      if (wantShip && global.SNLiveBridge && SNLiveBridge.ownerNote) {
+        void SNLiveBridge.ownerNote('[UNIT] ' + asked + ' → ' + text, { from: 'unit-mind' });
+      } else if (wantShip && global.SNUsage && SNUsage.handoff) {
+        SNUsage.handoff(asked + ' → ' + text, { from: 'unit-mind' });
+      }
+    } catch (_) {}
     return text;
   }
 
