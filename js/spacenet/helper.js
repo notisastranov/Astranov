@@ -221,11 +221,20 @@
     var text = '';
     var via = '';
     try {
-      if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
+      if (global.SNBrain && typeof SNBrain.think === 'function') {
+        var br = await SNBrain.think(asked, { mode: 'chat' });
+        if (br && br.paywall) {
+          text = 'Paid mind is locked. Type plans.';
+          via = 'paywall';
+        } else if (br && br.ok && br.text) {
+          text = String(br.text);
+          via = br.via || 'grok-4.6';
+        }
+      } else if (global.SNSubscription && typeof SNSubscription.askPowerful === 'function') {
         var r = await SNSubscription.askPowerful(
           'You are the SpaceX Bot unit on Astranov SpaceNet. Answer out loud in at most two short sentences. English. No markdown. User said: ' +
             asked,
-          { mode: 'chat', timeoutMs: 22000 }
+          { mode: 'chat', timeoutMs: 22000, model: 'grok-4.6', forcePaid: true }
         );
         if (r && r.paywall) {
           text = 'Paid mind is locked. Type plans.';
