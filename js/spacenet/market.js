@@ -9,11 +9,10 @@
   var PENDING_KEY = 'sn:order-pending-v1';
   var W = { step: 'idle', shopName: '', lastItem: null };
 
-  /** Owner / guest order personality — learned + stated likes */
-  var DEFAULT_PREFS = {
+  var OWNER_PREFS = {
     temper: 'feisty greek guy',
     company: {
-      people: 3, // you + 2 girlfriends (stated)
+      people: 3,
       girlfriends: 2,
       cats: 2,
       dogs: 2,
@@ -27,8 +26,31 @@
       with: ['retsina', 'soda 1.5L'],
     },
     drink: { retsina: true, sodaL: 1.5 },
-    verifiedLoc: null, // { lat, lng, label, t }
+    verifiedLoc: null,
   };
+
+  var EMPTY_PREFS = {
+    temper: '',
+    company: { people: 1, girlfriends: 0, cats: 0, dogs: 0, note: '' },
+    likes: [],
+    pizza: { name: '', pieces: 0, style: '', with: [] },
+    drink: { retsina: false, sodaL: 0 },
+    verifiedLoc: null,
+  };
+
+  function isOwnerPrefs() {
+    try {
+      return !!(global.SNAuth && SNAuth.isOwner && SNAuth.isOwner());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function defaultPrefs() {
+    return JSON.parse(JSON.stringify(isOwnerPrefs() ? OWNER_PREFS : EMPTY_PREFS));
+  }
+
+  var DEFAULT_PREFS = EMPTY_PREFS;
 
   function load() {
     try {
@@ -46,14 +68,14 @@
   function loadPrefs() {
     try {
       var p = JSON.parse(localStorage.getItem(PREFS_KEY) || 'null');
-      if (p && typeof p === 'object') return Object.assign({}, DEFAULT_PREFS, p, {
-        company: Object.assign({}, DEFAULT_PREFS.company, p.company || {}),
-        pizza: Object.assign({}, DEFAULT_PREFS.pizza, p.pizza || {}),
-        drink: Object.assign({}, DEFAULT_PREFS.drink, p.drink || {}),
-        likes: p.likes || DEFAULT_PREFS.likes,
+      if (p && typeof p === 'object') return Object.assign({}, defaultPrefs(), p, {
+        company: Object.assign({}, defaultPrefs().company, p.company || {}),
+        pizza: Object.assign({}, defaultPrefs().pizza, p.pizza || {}),
+        drink: Object.assign({}, defaultPrefs().drink, p.drink || {}),
+        likes: p.likes || defaultPrefs().likes,
       });
     } catch (_) {}
-    return JSON.parse(JSON.stringify(DEFAULT_PREFS));
+    return defaultPrefs();
   }
 
   function savePrefs(p) {
