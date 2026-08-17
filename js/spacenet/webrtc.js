@@ -740,6 +740,19 @@
       openFromRibbon();
       return true;
     }
+    var place = String(raw || '')
+      .replace(/^(call|video|webrtc|rtc|phone)\s+/i, '')
+      .replace(/\b(to|in|at)\s+/i, '')
+      .trim();
+    if (place) {
+      void (async function () {
+        try {
+          if (global.SNStage && SNStage.call) await SNStage.call(null, { place: place, label: place });
+        } catch (_) {}
+        openFromRibbon();
+      })();
+      return true;
+    }
     openFromRibbon();
     return true;
   }
