@@ -59,7 +59,6 @@
     { title: 'This machine', ids: ['device', 'power', 'network', 'place'] },
     { title: 'Links · anything that can carry a packet', ids: ['wifi', 'cell', 'blue', 'ports', 'mesh', 'smoke'] },
     { title: 'This session', ids: ['cache', 'login', 'reset'] },
-    { title: 'Donate to the mesh', ids: ['mine'] },
     { title: 'The system', ids: ['graphics', 'system'] },
   ];
   var bootScan = { recPct: 5, links: [] };
@@ -1035,8 +1034,9 @@
       recordCheck('SNFluid', false, e.message || e, 'fluid.js');
     }
     try {
-      if (global.SNSpaceXai && SNSpaceXai.enter) SNSpaceXai.enter({ quiet: true });
-      recordCheck('SNSpaceXai', !!(global.SNSpaceXai && SNSpaceXai.fly), 'flight', 'spacexai.js');
+      if (global.SNSpaceXai && SNSpaceXai.ready) {
+        recordCheck('flight', true, 'ready', null);
+      }
     } catch (e) {
       recordCheck('SNSpaceXai', false, e.message || e, 'spacexai.js');
     }
@@ -1242,7 +1242,7 @@
       if (global.SNCli && SNCli.init) SNCli.init();
     } catch (_) {}
     installCliHooks();
-    showEnterGate(success);
+    enterSystem();
     global.SNOsBoot = api;
     global.__snBooting = 0;
     try {
@@ -1292,7 +1292,8 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('SpaceNet online. Name anything.', 'ok', true);
+          SNCli.log('Name a place, a thing, or an order.', 'ok', true);
+          SNCli.log('1 Locate · 2 Sign in · 3 Ask or order', 'dim', true);
         }
       } catch (_) {}
       try {
