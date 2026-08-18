@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260818155500-coders" />
-<meta name="astranov-continuity" content="20260818155500-coders" />
+<meta name="astranov-build" content="20260819010500-guardian" />
+<meta name="astranov-continuity" content="20260819010500-guardian" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -1552,12 +1552,37 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
     '/js/spacenet/chrome-mute.js',
     '/js/spacenet/chrome-fix.js',
     '/js/spacenet/chrome-radar.js',
-    '/js/spacenet/os-bootloader.js'
+    '/js/spacenet/os-bootloader.js',
+    '/js/spacenet/guardian.js'
   ];
   function inject(code) {
     var s = document.createElement('script');
     s.text = code;
     document.head.appendChild(s);
+  }
+  function fetchText(url, ms) {
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var to = setTimeout(function () { try { if (ctrl) ctrl.abort(); } catch (_) {} }, ms || 5000);
+    return fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' }, signal: ctrl && ctrl.signal })
+      .then(function (r) {
+        clearTimeout(to);
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.text();
+      })
+      .catch(function (e) {
+        clearTimeout(to);
+        throw e;
+      });
+  }
+  function tag(url) {
+    return new Promise(function (resolve) {
+      var s = document.createElement('script');
+      s.src = url;
+      s.onload = function () { resolve(true); };
+      s.onerror = function () { resolve(false); };
+      document.head.appendChild(s);
+      setTimeout(function () { resolve(false); }, 6000);
+    });
   }
   function load(i) {
     if (i >= files.length) return;
@@ -1565,23 +1590,27 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
     var p = window.__SN_BOOT_PURGE || Promise.resolve();
     p.then(function (st) {
       if (st && st.reloaded) return null;
-      return fetch(url, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }).then(function (r) {
-        if (!r.ok) throw new Error('http ' + r.status);
-        return r.text();
-      });
+      return fetchText(url, 5000);
     }).then(function (code) {
       if (code == null) return;
       inject(code);
       load(i + 1);
     }).catch(function () {
-      var s = document.createElement('script');
-      s.src = url;
-      s.onload = function () { load(i + 1); };
-      s.onerror = function () { load(i + 1); };
-      document.head.appendChild(s);
+      tag(url).then(function () { load(i + 1); });
     });
   }
   load(0);
+  setTimeout(function () {
+    if (window.SNOsBoot || window.SNOsBootloader || window.SNGuardian) return;
+    var s = document.createElement('script');
+    s.src = '/js/spacenet/os-bootloader.js?v=' + encodeURIComponent(BUILD) + '&heal=1';
+    document.head.appendChild(s);
+    var g = document.createElement('script');
+    g.src = '/js/spacenet/guardian.js?v=' + encodeURIComponent(BUILD);
+    document.head.appendChild(g);
+  }, 8000);
+})();
+</script>
 })();
 </script>
 </body>
