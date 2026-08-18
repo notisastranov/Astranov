@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260818140000-guest-p0" />
-<meta name="astranov-continuity" content="20260818140000-guest-p0" />
+<meta name="astranov-build" content="20260818141000-talk-handle" />
+<meta name="astranov-continuity" content="20260818141000-talk-handle" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -401,40 +401,36 @@ html.theme-light #sn-task-launch.mode-standby {
   filter: drop-shadow(0 0 8px rgba(232, 33, 39, 0.85));
 }
 #sn-topchrome-drag {
-  height: 28px;
-  min-height: 28px;
+  height: 14px;
+  min-height: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 0;
   cursor: pointer;
   touch-action: none;
   flex-shrink: 0;
   z-index: 5;
   position: relative;
-  border-top: 1px solid rgba(20, 195, 243, 0.28);
-  background: rgba(0, 6, 18, 0.55);
+  border-top: 0;
+  background: transparent;
   border-radius: 0 0 22px 22px;
   box-shadow: none;
 }
 #sn-topchrome-drag::before {
   content: '';
-  width: 52px;
-  height: 4px;
+  width: 36px;
+  height: 3px;
   border-radius: 999px;
-  background: rgba(61, 158, 255, 0.95);
-  box-shadow: 0 0 12px rgba(61, 158, 255, 0.75);
+  background: #14c3f3;
+  box-shadow: 0 0 8px #14c3f3;
 }
 #sn-topchrome-drag::after {
-  content: 'GADGETS';
-  font: 700 9px/1 var(--font-mono);
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: rgba(180, 220, 255, 0.82);
+  content: none;
 }
 #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 #sn-topchrome-panel.mid #sn-topchrome-drag::after {
-  content: 'STOW';
+  content: none;
 }
 #sn-topchrome-drag:active {
   background: rgba(20, 60, 120, 0.45);
@@ -1034,11 +1030,11 @@ body.spacexai #cli-in::placeholder {
   letter-spacing: 0.06em;
 }
 body.spacexai #sn-topchrome-drag::after {
-  content: 'FLIGHT';
+  content: none;
 }
 body.spacexai #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
-  content: 'STOW';
+  content: none;
 }
 
 /* Both CLIs — same width, same center, no overlap */
