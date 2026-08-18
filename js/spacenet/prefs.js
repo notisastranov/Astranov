@@ -121,6 +121,9 @@
         void SNLiveBridge.ownerNote('[PREF PROPOSE] ' + row.note + ' · ' + pack.name, { from: 'prefs' });
     } catch (_) {}
     log('PREF · proposed · filter · AIs + humans + founder. Not live for everybody yet.', 'ok');
+    try {
+      if (global.SNCurrency && SNCurrency.reward) SNCurrency.reward('improve');
+    } catch (_) {}
     return row;
   }
 
