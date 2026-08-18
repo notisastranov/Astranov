@@ -832,6 +832,7 @@
     '/js/spacenet/space-stage.js',
     '/js/spacenet/live-bridge.js',
     '/js/spacenet/usage.js',
+    '/js/spacenet/scenarios.js',
     '/js/spacenet/webrtc.js',
   ];
   var STAGE_SERVICES = [
@@ -1440,6 +1441,7 @@
       bridge: { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
       'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
       usage: { src: '/js/spacenet/usage.js', global: 'SNUsage' },
+      scenarios: { src: '/js/spacenet/scenarios.js', global: 'SNScenarios' },
       spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
