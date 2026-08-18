@@ -1567,10 +1567,11 @@
     }
     (senseOut.places || []).slice(0, 3).forEach(function (p) {
       if (!p || p.lat == null) return;
+      if (isQuestionQuery(senseOut.query)) return;
       rows.push({
         kind: 'place',
         title: p.name || senseOut.query,
-        sub: (p.kind || p.type || 'place') + ' · fly',
+        sub: (p.kind || p.type || 'place'),
         lat: p.lat,
         lng: p.lng,
       });
@@ -1598,7 +1599,8 @@
     NET.rows.forEach(function (r, i) {
       L(i + 1 + ' · ' + r.title + (r.sub ? ' · ' + r.sub : ''), 'ok');
     });
-    if (NET.rows.length) L('open 1 · fly 1 · watch 1', 'dim');
+    if (NET.rows.length && !isQuestionQuery(senseOut.query)) L('open 1 · fly 1 · watch 1', 'dim');
+    else if (NET.rows.length) L('open 1', 'dim');
     try {
       if (global.SNCli && SNCli.preview) SNCli.preview(String(senseOut.query || 'search').slice(0, 48));
     } catch (_) {}
@@ -1730,22 +1732,34 @@
         'ok'
       );
       previewFn('Astranov · SpaceNet');
+      return {
+        query: q,
+        kind: 'wiki',
+        acted: ['answer'],
+        wiki: { title: 'Astranov', text: 'the internet depicted in space' },
+        places: [],
+      };
+    }
+
+    if (isQuestionQuery(q)) {
+      var qs;
       try {
-        var hq = { lat: 36.4341, lng: 28.2176, name: 'Astranov · Rhodes' };
-        if (global.SNGlobe && SNGlobe.goToPlace)
-          SNGlobe.goToPlace(hq.lat, hq.lng, {
-            tier: 'national',
-            pulse: true,
-            label: 'ASTRANOV',
-            openMap: false,
-          });
-        if (global.SNStage && SNStage.link)
-          SNStage.link(
-            (SNStage.here && SNStage.here()) || { lat: 37.9838, lng: 23.7275, name: 'YOU' },
-            hq,
-            { kind: 'scan', color: 0x7ec8ff }
-          );
-      } catch (_) {}
+        qs = await Promise.race([
+          sense(q, opts),
+          new Promise(function (resolve) {
+            setTimeout(function () {
+              resolve({ query: q, kind: 'unknown', wiki: null, wikiHits: [], web: [], places: [] });
+            }, 8000);
+          }),
+        ]);
+      } catch (_) {
+        qs = { query: q, kind: 'unknown', wiki: null, wikiHits: [], web: [], places: [] };
+      }
+      qs = qs || { query: q, kind: 'unknown' };
+      qs.places = [];
+      qs.acted = ['answer'];
+      showNet(qs);
+      return qs;
     }
 
     var s;
