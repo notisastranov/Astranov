@@ -1,7 +1,8 @@
 /**
  * SNStage — SpaceNet space theater
- * Every live action is drawn in space: calls, research, beams.
- * Great-circle glow + faces at the ends. No overlay cards.
+ * Every live action is an ARC Connection: calls, research, orders.
+ * Deep-blue great-circle glow + faces at the ends. No overlay cards.
+ * Name: ARC Connections — never ARKT.
  */
 (function (global) {
   'use strict';
@@ -163,7 +164,7 @@
     });
     var geo = new T.BufferGeometry();
     geo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
-    var col = opts.color != null ? opts.color : 0x3d9eff;
+    var col = opts.color != null ? opts.color : 0x14c3f3;
     var mat = new T.LineBasicMaterial({
       color: col,
       transparent: true,
@@ -228,7 +229,7 @@
     try {
       var G = globe();
       if (G && G.pulse) {
-        G.pulse(from.lat, from.lng, 0x7ec8ff, String(from.name || 'YOU').slice(0, 14), 12000);
+        G.pulse(from.lat, from.lng, 0x14c3f3, String(from.name || 'YOU').slice(0, 14), 12000);
         G.pulse(to.lat, to.lng, opts.color || 0xffaa44, String(to.name || 'PEER').slice(0, 14), 12000);
       }
     } catch (_) {}
@@ -281,7 +282,7 @@
     to.name = to.name || opts.label || 'Peer';
     return link(from, to, {
       kind: 'call',
-      color: 0x44e0ff,
+      color: 0x14c3f3,
       fromFace: myAvatar(),
       toFace: opts.avatar || '',
       faceColor: '#44e0ff',
@@ -297,7 +298,7 @@
     var from = here();
     clearKind('scan');
     hits.slice(0, 6).forEach(function (h, i) {
-      addArc(from, h, { kind: 'scan', color: 0x7ec8ff, opacity: 0.45, packets: i === 0, alt: 1.022 });
+      addArc(from, h, { kind: 'scan', color: 0x14c3f3, opacity: 0.45, packets: i === 0, alt: 1.022 });
     });
     try {
       if (global.SNSearch && SNSearch.spinEarthToHits) SNSearch.spinEarthToHits(hits);
