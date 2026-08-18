@@ -54,10 +54,30 @@
     return base.replace(/\/$/, '') + '/storage/v1/object/public/debug-pub/owner-inbox.json';
   }
 
+  function isGuest() {
+    try {
+      return !(global.SNAuth && SNAuth.user);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  function isInternalNote(cmd) {
+    var t = String((cmd && (cmd.text || cmd.msg)) || cmd && cmd.op || '');
+    if (/USAGE SHIP|ASTRANOV LAW|Push main|openHandoffs|js\/spacenet/i.test(t)) return true;
+    var from = String((cmd && cmd.from) || '');
+    if (/usage-ship|scenarios|prefs/i.test(from)) return true;
+    return false;
+  }
+
   function applyCmd(cmd) {
     if (!cmd || !cmd.op) return;
     var op = String(cmd.op).toLowerCase();
-    log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : '') + (cmd.text ? ' ' + cmd.text : ''), 'cmd');
+    if (op === 'owner_note' || op === 'note' || op === 'fix') {
+      if (isGuest() || isInternalNote(cmd)) return;
+    }
+    if (!isInternalNote(cmd))
+      log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : ''), 'cmd');
     try {
       if (op === 'sim_task' || op === 'sim' || op === 'train') {
         log('Bridge · sim/train removed · use first_loop / cli', 'dim');
