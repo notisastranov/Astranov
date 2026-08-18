@@ -64,17 +64,17 @@
 
   function isInternalNote(cmd) {
     var t = String((cmd && (cmd.text || cmd.msg)) || cmd && cmd.op || '');
-    if (/USAGE SHIP|ASTRANOV LAW|Push main|openHandoffs|js\/spacenet/i.test(t)) return true;
+    if (/USAGE SHIP|ASTRANOV LAW|Push main|openHandoffs|js\/spacenet|\[SOS\]/i.test(t)) return true;
     var from = String((cmd && cmd.from) || '');
-    if (/usage-ship|scenarios|prefs/i.test(from)) return true;
+    if (/usage-ship|scenarios|prefs|guardian/i.test(from)) return true;
     return false;
   }
 
   function applyCmd(cmd) {
     if (!cmd || !cmd.op) return;
     var op = String(cmd.op).toLowerCase();
-    if (op === 'owner_note' || op === 'note' || op === 'fix') {
-      if (isGuest() || isInternalNote(cmd)) return;
+    if (op === 'owner_note' || op === 'note' || op === 'fix' || op === 'sos') {
+      if (isGuest() || isInternalNote(cmd) || op === 'sos') return;
     }
     if (!isInternalNote(cmd))
       log('Bridge IN · ' + op + (cmd.ms ? ' ' + cmd.ms : ''), 'cmd');
