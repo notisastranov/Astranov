@@ -1023,6 +1023,9 @@
     try {
       if (global.SNScenarios && SNScenarios.handleLine && SNScenarios.handleLine(line)) return true;
     } catch (_) {}
+    try {
+      if (global.SNPrefs && SNPrefs.handleLine && SNPrefs.handleLine(line)) return true;
+    } catch (_) {}
     // AI subscription plans
       try {
         if (global.SNSubscription && SNSubscription.handleLine) {
