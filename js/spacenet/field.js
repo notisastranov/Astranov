@@ -1829,6 +1829,8 @@
         (b.id ? ' id="' + b.id + '"' : '') +
         ' title="' +
         title +
+        '" aria-pressed="' +
+        (onCls ? 'true' : 'false') +
         '">' +
         '<span class="sn-rib-emoji" aria-hidden="true">' +
         (b._face
