@@ -2287,7 +2287,7 @@
     var dSign = delta >= 0 ? '+' : '';
     var C = g.SNCurrency;
     var fmt = function (n) {
-      return C && C.formatCompact ? C.formatCompact(n) : '◈ ' + Number(n).toFixed(2);
+      return C && C.formatCompact ? C.formatCompact(n) : '⭐ ' + Number(n).toFixed(2);
     };
     if (lab) {
       lab.textContent =
@@ -2837,7 +2837,7 @@
     var vault = C && C.platformFees ? C.platformFees() : 0;
     var mined = C && C.mined ? C.mined() : 0;
     var fmt = function (n) {
-      return C && C.formatCompact ? C.formatCompact(n) : '◈ ' + Number(n).toFixed(2);
+      return C && C.formatCompact ? C.formatCompact(n) : '⭐ ' + Number(n).toFixed(2);
     };
     var mb = $('stc-money-bal');
     if (mb) mb.textContent = fmt(bal);
