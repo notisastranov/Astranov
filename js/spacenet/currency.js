@@ -1,6 +1,6 @@
 /**
- * Astranov Coins (Æ) — primary wallet unit, 1:1 with Euro. Display: "9 € / Æ".
- * Fiat/crypto remain secondary quotes only. No "strands".
+ * Astra coins (⭐) — primary wallet. From 18 Aug 2026: 1 ⭐ = 1 EUR.
+ * Display: "9.00 ⭐" or compact "⭐ 9.00". Legacy Æ / S / SpaceNets map 1:1.
  */
 (function (g) {
   'use strict';
@@ -27,11 +27,13 @@
 
   var QK = 'spacenet_currency_v1';
   var WK = 'spacenet_wallet_v1';
-  /** Primary currency: Astranov Coins */
-  var SYM = 'Æ';
-  var NAME = 'Astranov coin';
-  var NAME_PL = 'Astranov coins';
-  var GLYPH = 'Æ';
+  /** Primary currency: Astra coins. 1 ⭐ = 1 EUR from 2026-08-18. */
+  var SYM = '⭐';
+  var NAME = 'Astra coin';
+  var NAME_PL = 'Astra coins';
+  var GLYPH = '⭐';
+  var BORN = '2026-08-18';
+  var REWARD_K = 'sn:astra-rewards-v1';
   var st = {
     networkIndex: 1,
     quotes: { EUR: 1, USD: 1.08, BTC: 0.000015, ETH: 0.00025 },
@@ -70,22 +72,22 @@
 
   function recompute() {
     var n = st.networkIndex;
-    /* Æ is 1:1 with Euro always */
+    /* ⭐ is 1:1 with Euro always — birth peg 2026-08-18 */
     st.quotes.EUR = 1;
     st.quotes.USD = 1.08;
     st.quotes.BTC = n * 0.000015;
     st.quotes.ETH = n * 0.00025;
   }
 
-  /** Display: 9.00 € / Æ  (1 Æ = 1 EUR) */
+  /** Display: 9.00 ⭐  (1 ⭐ = 1 EUR from 2026-08-18) */
   function fmt(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
     var s = Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : n.toFixed(2);
-    return s + ' € / Æ';
+    return s + ' ⭐';
   }
 
-  /** Compact HUD: Æ 12.50 */
+  /** Compact HUD: ⭐ 12.50 */
   function fmtCompact(a) {
     var n = Number(a);
     if (!isFinite(n)) n = 0;
@@ -96,7 +98,7 @@
     var n = Number(perUnit);
     if (!isFinite(n)) n = 0;
     unit = unit || 'day';
-    return n.toFixed(2) + ' € / Æ/' + unit;
+    return n.toFixed(2) + ' ⭐/' + unit;
   }
 
   function credit(a, why) {
@@ -158,6 +160,99 @@
     return fee;
   }
 
+  function rewardLoad() {
+    try {
+      return JSON.parse(localStorage.getItem(REWARD_K) || '{}');
+    } catch (_) {
+      return {};
+    }
+  }
+  function rewardSave(m) {
+    try {
+      localStorage.setItem(REWARD_K, JSON.stringify(m));
+    } catch (_) {}
+  }
+
+  /**
+   * Reward program — donate, use, or improve SpaceNet.
+   * One grant per why-key unless repeatable.
+   * Peg: 1 ⭐ = 1 EUR from BORN.
+   */
+  var REWARD_TABLE = {
+    donate: { amount: 0.1, repeatable: true, note: 'donated spare resources' },
+    locate: { amount: 0.05, repeatable: false, note: 'first locate' },
+    signin: { amount: 0.2, repeatable: false, note: 'signed in' },
+    research: { amount: 0.02, repeatable: true, note: 'used research' },
+    improve: { amount: 0.5, repeatable: true, note: 'proposed a HUD / design' },
+    announce: { amount: 0.01, repeatable: false, note: 'welcome to Astra' },
+  };
+
+  function reward(why, opts) {
+    opts = opts || {};
+    var spec = REWARD_TABLE[why] || { amount: Number(opts.amount) || 0.01, repeatable: !!opts.repeatable, note: why };
+    var bag = rewardLoad();
+    var key = String(why || 'use');
+    if (!spec.repeatable && bag[key]) return { ok: false, skipped: true, balance: st.balance };
+    var amt = Number(opts.amount != null ? opts.amount : spec.amount) || 0;
+    if (amt <= 0) return { ok: false, balance: st.balance };
+    credit(amt, 'reward:' + key);
+    if (!spec.repeatable) {
+      bag[key] = Date.now();
+      rewardSave(bag);
+    } else {
+      bag[key + ':n'] = (Number(bag[key + ':n']) || 0) + 1;
+      if (why === 'donate' && bag[key + ':n'] > 24) return { ok: true, amount: amt, balance: st.balance };
+      rewardSave(bag);
+    }
+    try {
+      if (g.SNCli && SNCli.log)
+        SNCli.log('⭐ +' + amt.toFixed(2) + ' Astra · ' + (spec.note || key) + ' · wallet ' + fmt(st.balance), 'ok');
+    } catch (_) {}
+    return { ok: true, amount: amt, balance: st.balance, why: key };
+  }
+
+  function announce() {
+    try {
+      if (sessionStorage.getItem('sn:astra-announced') === '1') return false;
+      sessionStorage.setItem('sn:astra-announced', '1');
+    } catch (_) {}
+    var lines = [
+      '⭐ ASTRA COINS · new beginning · 18 Aug 2026',
+      '1 ⭐ = 1 Euro. The five-pointed star is the mark.',
+      'Use SpaceNet. Donate spare resources. Improve a HUD. Earn Astra.',
+      'Personal designs stay yours until the founder ships them. Type prefs · donate on · help.',
+    ];
+    try {
+      if (g.SNCli && SNCli.log) {
+        lines.forEach(function (ln) {
+          SNCli.log(ln, 'ok');
+        });
+        if (SNCli.preview) SNCli.preview('⭐ 1 Astra = 1 Euro');
+      }
+    } catch (_) {}
+    try {
+      if (g.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('⭐ ASTRA · 1 = €1');
+    } catch (_) {}
+    reward('announce');
+    return true;
+  }
+
+  function handleLine(raw) {
+    var low = String(raw || '').trim().toLowerCase();
+    if (low === 'astra' || low === 'astra coins' || low === 'rewards' || low === 'rate') {
+      try {
+        if (g.SNCli && SNCli.log) {
+          SNCli.log('⭐ Astra coins · 1 ⭐ = 1 EUR since ' + BORN, 'ok');
+          SNCli.log('Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined), 'ok');
+          SNCli.log('Earn: donate on · locate · sign in · research · propose a HUD', 'dim');
+        }
+      } catch (_) {}
+      announce();
+      return true;
+    }
+    return false;
+  }
+
   load();
 
   g.SNCurrency = {
@@ -165,6 +260,7 @@
     GLYPH: GLYPH,
     NAME: NAME,
     NAME_PL: NAME_PL,
+    BORN: BORN,
     /** @deprecated aliases */
     LEGACY: 'SpaceNets',
     STRAND_LEGACY: 'strands',
@@ -243,15 +339,16 @@
       };
     },
     fees: { platformPct: 3, driverPct: 15 },
+    reward: reward,
+    announce: announce,
+    handleLine: handleLine,
     status: function () {
       return [
-        'ASTRANOV COINS PRIMARY · index ' + st.networkIndex.toFixed(4),
+        '⭐ ASTRA COINS · 1 ⭐ = 1 EUR since ' + BORN,
         'Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined),
-        'Platform fees (your 3%) ' + fmt(st.platformFees || 0) + ' lifetime',
-        '1 AC ~ ' + st.quotes.EUR.toFixed(4) + ' EUR / ' + st.quotes.USD.toFixed(4) + ' USD',
-        'EUR/USD/BTC/ETH = secondary quotes only',
-        'Fees 3% platform → Architect · 15% driver (in AC)',
-        'Mine Astranov coins · no strands',
+        'Platform fees (3%) ' + fmt(st.platformFees || 0) + ' lifetime',
+        'Earn: donate · use · improve · type rewards',
+        'Fees 3% platform · 15% driver · in Astra',
       ];
     },
   };
