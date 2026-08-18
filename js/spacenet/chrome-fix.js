@@ -433,6 +433,9 @@
       stabilizePanels();
       applyHud(2);
       ensureRibbonVisible();
+      try {
+        if (global.SNCurrency && SNCurrency.announce) SNCurrency.announce();
+      } catch (_) {}
     }, 2500);
   }
 
