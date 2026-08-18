@@ -189,6 +189,53 @@
       '#sn-task-launch.mode-standby, #sn-task-launch:not(.mode-on):not(.mode-off) {',
       '  animation: sn-standby-pulse 2.4s ease-in-out infinite !important;',
       '}',
+      ':root { --sn-arc: #14c3f3; --sn-arc-mid: #026cba; --sn-arc-deep: #005098; }',
+      '#sn-wordmark {',
+      '  display: none; position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%;',
+      '  transform: translateX(-50%); z-index: 96; pointer-events: none;',
+      '  align-items: center; gap: 10px; font-family: \"Space Grotesk\", Inter, sans-serif;',
+      '}',
+      'body.sn-quiet #sn-wordmark { display: flex !important; }',
+      '#sn-wordmark .sn-mark-arc {',
+      '  width: 18px; height: 18px; border-radius: 50%;',
+      '  border: 2px solid #14c3f3; box-shadow: 0 0 12px #14c3f3;',
+      '  background: radial-gradient(circle at 35% 30%, #7ee9ff, #026cba 62%, #005098);',
+      '}',
+      '#sn-wordmark .sn-mark-name {',
+      '  font-weight: 800; letter-spacing: 0.28em; font-size: 13px; color: #e8f7ff;',
+      '}',
+      '#sn-wordmark .sn-mark-os {',
+      '  font-weight: 700; letter-spacing: 0.22em; font-size: 11px; color: #14c3f3;',
+      '  text-shadow: 0 0 12px rgba(20,195,243,0.75);',
+      '}',
+      'body.sn-quiet #stc-compact, body.sn-quiet #stc-gadgets, body.sn-quiet #stc-cmd,',
+      'body.sn-quiet #sn-task-ribbon, body.sn-quiet #coach,',
+      'body.sn-quiet #sn-helper-canvas, body.sn-quiet #sn-helper-hit, body.sn-quiet #sn-helper-label,',
+      'body.sn-quiet #sn-game-dock, body.sn-quiet #sn-earth-ops-chip, body.sn-quiet #sn-space-hud,',
+      'body.sn-quiet #sn-map-layers, body.sn-quiet #field-radar, body.sn-quiet #field-nav-meta,',
+      'body.sn-quiet #field-balance-hud, body.sn-quiet #sn-task-launch, body.sn-quiet #vault,',
+      'body.sn-quiet #sn-vault, body.sn-quiet .sn-vault {',
+      '  display: none !important; visibility: hidden !important; pointer-events: none !important;',
+      '}',
+      'body.sn-quiet #sn-topchrome-panel {',
+      '  min-height: 0 !important; max-height: 0 !important; height: 0 !important;',
+      '  overflow: hidden !important; opacity: 0 !important; pointer-events: none !important;',
+      '  border: none !important; background: transparent !important; box-shadow: none !important;',
+      '}',
+      'body.sn-quiet #panel {',
+      '  min-height: 58px !important; max-height: 64px !important;',
+      '  grid-template-rows: 14px 0 0 auto !important;',
+      '  background: rgba(0, 4, 14, 0.42) !important;',
+      '  border-color: rgba(20,195,243,0.35) !important;',
+      '  box-shadow: 0 0 22px rgba(20,195,243,0.18) !important;',
+      '}',
+      'body.sn-quiet #cli-log, body.sn-quiet #sn-task-ribbon { display: none !important; }',
+      'body.sn-quiet.sn-used #panel {',
+      '  min-height: 132px !important; max-height: min(200px, 28vh) !important;',
+      '  grid-template-rows: 14px 0 minmax(56px, 1fr) auto !important;',
+      '}',
+      'body.sn-quiet.sn-used #cli-log { display: block !important; }',
+      'body.sn-hud #sn-wordmark { display: none !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -319,28 +366,85 @@
     document.body.classList.toggle('sn-in', !!signed);
   }
 
+  function hudLevel() {
+    try {
+      return parseInt(localStorage.getItem('sn:hud-level') || '0', 10) || 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  function applyHud(level) {
+    level = Math.max(0, Math.min(2, level == null ? hudLevel() : level));
+    try {
+      localStorage.setItem('sn:hud-level', String(level));
+    } catch (_) {}
+    document.body.classList.toggle('sn-quiet', level < 2);
+    document.body.classList.toggle('sn-used', level >= 1);
+    document.body.classList.toggle('sn-hud', level >= 2);
+    ensureWordmark();
+    return level;
+  }
+
+  function demandHud(why) {
+    var cur = hudLevel();
+    if (cur >= 2) return cur;
+    var next = why === 'type' || why === 'used' ? Math.max(cur, 1) : 2;
+    return applyHud(next);
+  }
+
+  function ensureWordmark() {
+    if (document.getElementById('sn-wordmark')) return;
+    var el = document.createElement('div');
+    el.id = 'sn-wordmark';
+    el.setAttribute('aria-label', 'Astranov SpaceNet');
+    el.innerHTML =
+      '<span class="sn-mark-arc" aria-hidden="true"></span>' +
+      '<span class="sn-mark-name">ASTRANOV</span>' +
+      '<span class="sn-mark-os">SPACENET</span>';
+    document.body.appendChild(el);
+  }
+
+  function handleHudLine(raw) {
+    var low = String(raw || '').trim().toLowerCase();
+    if (low === 'hud' || low === 'hud more' || low === 'more hud' || low === 'show hud') {
+      applyHud(2);
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log('HUD · full', 'ok');
+      } catch (_) {}
+      return true;
+    }
+    if (low === 'hud less' || low === 'quiet' || low === 'hud off') {
+      applyHud(0);
+      try {
+        if (global.SNCli && SNCli.log) SNCli.log('HUD · quiet · name · Earth · CLI', 'ok');
+      } catch (_) {}
+      return true;
+    }
+    return false;
+  }
+
   function boot() {
     injectCss();
     markGuest();
+    applyHud(hudLevel());
     try {
       setInterval(markGuest, 4000);
     } catch (_) {}
-    setTimeout(showCoach, 1400);
     silenceBeeps();
     killInvented();
     stabilizePanels();
     forceStandbyBlue();
-    ensureRibbonVisible();
+    if (hudLevel() >= 2) ensureRibbonVisible();
     setTimeout(function () {
       killInvented();
       stabilizePanels();
-      forceStandbyBlue();
-      ensureRibbonVisible();
+      applyHud(hudLevel());
     }, 800);
     setTimeout(function () {
       killInvented();
       stabilizePanels();
-      ensureRibbonVisible();
+      applyHud(hudLevel());
     }, 2500);
   }
 
@@ -353,5 +457,11 @@
     stabilizePanels: stabilizePanels,
     ensureRibbonVisible: ensureRibbonVisible,
     killInvented: killInvented,
+    applyHud: applyHud,
+    demandHud: demandHud,
+    handleLine: handleHudLine,
+    ARC: '#14c3f3',
+    ARC_MID: '#026cba',
+    ARC_DEEP: '#005098',
   };
 })(typeof window !== 'undefined' ? window : globalThis);
