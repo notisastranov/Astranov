@@ -1356,7 +1356,7 @@
       return {
         ok: false,
         error: 'need locate',
-        reply: 'I need your real place first. Tap Locate, then say pizza again.',
+        reply: 'I need your real place first. Tap Locate and Sign in with Google, then say pizza again.',
         steps: ['locate_fail'],
       };
     }
