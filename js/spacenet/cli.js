@@ -665,6 +665,9 @@
     if (/^theme\b/i.test(t.trim())) return true;
     if (/XAI_API_KEY|paid mind|key stays on the server|Architect ·|Architect confirmed/i.test(t))
       return true;
+    if (/USAGE SHIP|ASTRANOV LAW|Push main|owner_note|Bridge IN · owner|openHandoffs|js\/spacenet\/\* only/i.test(t))
+      return true;
+    if (/Recommendations must obey/i.test(t)) return true;
     return false;
   }
 
@@ -1018,7 +1021,8 @@
       if (global.SNChromeFix && SNChromeFix.demandHud) SNChromeFix.demandHud('type');
     } catch (_) {}
     try {
-      if (global.SNStage && SNStage.scan) SNStage.scan(line.slice(0, 28));
+      if (global.SNStage && SNStage.scan && !/^(what|who|why|how|when|which)\b/i.test(line) && !/\?$/.test(line))
+        SNStage.scan(line.slice(0, 28));
     } catch (_) {}
     try {
       if (global.SNScenarios && SNScenarios.handleLine && SNScenarios.handleLine(line)) return true;
@@ -1733,7 +1737,11 @@
               ? global._snLastPos
               : null);
           if (wantOrder && (!here || here.lat == null)) {
-            log('I need your real place first. Tap locate, then say pizza again.', 'ok');
+            log('I need your real place first. Tap Locate and Sign in with Google, then say pizza again.', 'ok');
+            try {
+              if (global.SNAuth && SNAuth.openModal) SNAuth.openModal();
+              else if (global.SNAuth && SNAuth.open) SNAuth.open();
+            } catch (_) {}
             return;
           }
           activity(
