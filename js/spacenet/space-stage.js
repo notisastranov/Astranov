@@ -136,7 +136,10 @@
     ST.arcs = ST.arcs.filter(function (x) {
       if (kind && x.kind !== kind) return true;
       try {
-        if (pv) pv.remove(x.line);
+        if (pv) {
+          if (x.line) pv.remove(x.line);
+          if (x.mesh) pv.remove(x.mesh);
+        }
       } catch (_) {}
       return false;
     });
@@ -151,44 +154,69 @@
     else ST.packets = [];
   }
 
+  var PRI = { route: 0, order: 1, scan: 2, research: 2, link: 2, call: 3, comm: 3 };
+
   function addArc(from, to, opts) {
     opts = opts || {};
     var T = three();
     var pv = pivot();
     if (!T || !pv || !from || !to) return null;
-    var pts = slerpPts(from, to, opts.steps || 56, opts.alt);
+    var pri = opts.priority != null ? Number(opts.priority) : PRI[opts.kind] || 1;
+    var alt = opts.alt != null ? opts.alt : 1.016 + pri * 0.014;
+    var pts = slerpPts(from, to, opts.steps || 56, alt);
     if (pts.length < 2) return null;
     var verts = [];
+    var vecs = [];
     pts.forEach(function (p) {
       verts.push(p.x, p.y, p.z);
+      if (T.Vector3) vecs.push(new T.Vector3(p.x, p.y, p.z));
     });
+    var col = opts.color != null ? opts.color : 0x14c3f3;
+    var mesh = null;
+    try {
+      if (T.CatmullRomCurve3 && T.TubeGeometry && vecs.length > 2) {
+        var curve = new T.CatmullRomCurve3(vecs);
+        mesh = new T.Mesh(
+          new T.TubeGeometry(curve, 48, 0.0035 + pri * 0.0018, 8, false),
+          new T.MeshBasicMaterial({
+            color: col,
+            transparent: true,
+            opacity: opts.opacity != null ? opts.opacity : 0.55 + pri * 0.08,
+            depthWrite: false,
+          })
+        );
+        mesh.renderOrder = 12 + pri;
+        pv.add(mesh);
+      }
+    } catch (_) {
+      mesh = null;
+    }
     var geo = new T.BufferGeometry();
     geo.setAttribute('position', new T.Float32BufferAttribute(verts, 3));
-    var col = opts.color != null ? opts.color : 0x14c3f3;
     var mat = new T.LineBasicMaterial({
       color: col,
       transparent: true,
-      opacity: opts.opacity != null ? opts.opacity : 0.92,
+      opacity: opts.opacity != null ? opts.opacity : 0.95,
       linewidth: 2,
       depthWrite: false,
     });
     var line = new T.Line(geo, mat);
-    line.renderOrder = 12;
+    line.renderOrder = 13 + pri;
     pv.add(line);
-    ST.arcs.push({ line: line, kind: opts.kind || 'link', pts: pts });
+    ST.arcs.push({ line: line, mesh: mesh, kind: opts.kind || 'link', pts: pts, priority: pri });
     if (opts.packets !== false) {
       var i;
-      for (i = 0; i < 4; i++) {
+      for (i = 0; i < 3 + pri; i++) {
         ST.packets.push({
           pts: pts,
-          t: i / 4,
+          t: i / (3 + pri),
           kind: opts.kind || 'link',
-          speed: 0.004 + Math.random() * 0.003,
+          speed: 0.003 + pri * 0.0015 + Math.random() * 0.002,
           mesh: null,
         });
       }
     }
-    return { line: line, pts: pts };
+    return { line: line, mesh: mesh, pts: pts, priority: pri };
   }
 
   function addFace(p, url, color, kind) {
@@ -283,9 +311,10 @@
     return link(from, to, {
       kind: 'call',
       color: 0x14c3f3,
+      priority: 3,
       fromFace: myAvatar(),
       toFace: opts.avatar || '',
-      faceColor: '#44e0ff',
+      faceColor: '#14c3f3',
     });
   }
 
@@ -298,7 +327,7 @@
     var from = here();
     clearKind('scan');
     hits.slice(0, 6).forEach(function (h, i) {
-      addArc(from, h, { kind: 'scan', color: 0x14c3f3, opacity: 0.45, packets: i === 0, alt: 1.022 });
+      addArc(from, h, { kind: 'scan', color: 0x14c3f3, opacity: 0.5, packets: i === 0, priority: 2 });
     });
     try {
       if (global.SNSearch && SNSearch.spinEarthToHits) SNSearch.spinEarthToHits(hits);
@@ -387,6 +416,7 @@
       clearKind(k);
     },
     here: here,
+    priority: PRI,
   };
 
   try {
