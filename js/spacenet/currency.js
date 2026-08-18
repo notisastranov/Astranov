@@ -220,7 +220,8 @@
       '⭐ ASTRA COINS · new beginning · 18 Aug 2026',
       '1 ⭐ = 1 Euro. The five-pointed star is the mark.',
       'Use SpaceNet. Donate spare resources. Improve a HUD. Earn Astra.',
-      'Personal designs stay yours until the founder ships them. Type prefs · donate on · help.',
+      'PROGRAMMERS WANTED · test and build SpaceNet. Paid in Astra you spend with each other inside the net.',
+      'Type CODERS · personal designs stay yours until the founder ships them.',
     ];
     try {
       if (g.SNCli && SNCli.log) {
@@ -239,12 +240,12 @@
 
   function handleLine(raw) {
     var low = String(raw || '').trim().toLowerCase();
-    if (low === 'astra' || low === 'astra coins' || low === 'rewards' || low === 'rate') {
+    if (low === 'astra' || low === 'astra coins' || low === 'rewards' || low === 'rate' || low === 'coders' || low === 'programmers') {
       try {
         if (g.SNCli && SNCli.log) {
-          SNCli.log('⭐ Astra coins · 1 ⭐ = 1 EUR since ' + BORN, 'ok');
-          SNCli.log('Wallet ' + fmt(st.balance) + ' · mined ' + fmt(st.mined), 'ok');
-          SNCli.log('Earn: donate on · locate · sign in · research · propose a HUD', 'dim');
+          SNCli.log('PROGRAMMERS WANTED · test · build · improve · paid in ⭐ Astra', 'ok');
+          SNCli.log('Spend Astra with each other inside SpaceNet. 1 ⭐ = 1 EUR.', 'ok');
+          SNCli.log('Type donate on · propose · help. astranov.eu', 'dim');
         }
       } catch (_) {}
       announce();
