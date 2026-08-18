@@ -1018,6 +1018,9 @@
       if (global.SNChromeFix && SNChromeFix.demandHud) SNChromeFix.demandHud('type');
     } catch (_) {}
     try {
+      if (global.SNStage && SNStage.scan) SNStage.scan(line.slice(0, 28));
+    } catch (_) {}
+    try {
       if (global.SNScenarios && SNScenarios.handleLine && SNScenarios.handleLine(line)) return true;
     } catch (_) {}
     // AI subscription plans
