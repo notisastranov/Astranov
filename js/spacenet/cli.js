@@ -1007,6 +1007,60 @@
     starbase: [25.997, -97.156],
   };
 
+  function looksLikeTalk(raw) {
+    var s = String(raw || '').trim();
+    if (!s) return false;
+    if (/^(locate|fly|go|pizza|order|poly|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?)\b/i.test(s))
+      return false;
+    if (
+      /^(hi|hey|hello|yo|sup|hiya|howdy|thanks|thank you|please|ok|okay|yes|yeah|yep|nope|listen|talk|speak|chat)\b/i.test(
+        s
+      )
+    )
+      return true;
+    if (/\b(how are you|who are you|what can you do|talk to me|can you hear|are you there|i love you|good (morning|evening|night))\b/i.test(s))
+      return true;
+    if (/^(can you|could you|would you|please |tell me |i (want|need|think|feel|am)|we (should|need))\b/i.test(s))
+      return true;
+    return false;
+  }
+
+  async function talkToMind(line) {
+    log('UNIT · listening', 'dim');
+    var reply = '';
+    try {
+      if (global.SNBrain && SNBrain.think) {
+        var r = await SNBrain.think(line, { mode: 'chat', timeoutMs: 12000 });
+        if (r && r.text) reply = String(r.text);
+      }
+    } catch (_) {}
+    if (!reply) {
+      try {
+        if (global.SNAi && SNAi.ask) reply = await SNAi.ask(line, { mode: 'chat' });
+      } catch (_) {}
+    }
+    if (!reply) {
+      try {
+        var mind = global.SNAstranovMind || global.SNFreeMind;
+        if (mind && mind.answer) {
+          var q = mind.answer(line, { mode: 'chat' });
+          if (q && q.text) reply = q.text;
+        }
+      } catch (_) {}
+    }
+    if (!reply) reply = 'I hear you. Ask a place, an order, or say help.';
+    String(reply)
+      .split('\n')
+      .forEach(function (ln) {
+        if (String(ln).trim()) log(ln, 'ok');
+      });
+    try {
+      if (global.SNHelper && SNHelper.speakDeep) SNHelper.speakDeep(String(reply).slice(0, 180));
+      else if (typeof replyOut === 'function') replyOut(reply);
+    } catch (_) {}
+    return true;
+  }
+
   async function run(raw) {
     let line = String(raw || '').trim();
     if (!line) return;
@@ -1029,6 +1083,12 @@
     } catch (_) {}
     try {
       if (global.SNPrefs && SNPrefs.handleLine && SNPrefs.handleLine(line)) return true;
+    } catch (_) {}
+    try {
+      if (looksLikeTalk(line)) {
+        await talkToMind(line);
+        return true;
+      }
     } catch (_) {}
     // AI subscription plans
       try {
@@ -4783,11 +4843,8 @@ if (
         } catch (_) {}
         if (unitMind && global.SNHelper && typeof SNHelper.askMind === 'function') {
           await SNHelper.askMind(t);
-          try {
-            if (global.SNSearch && SNSearch.researchFirst) {
-              await SNSearch.researchFirst(t, { log: log, preview: preview, skipBrain: true });
-            }
-          } catch (_) {}
+        } else if (looksLikeTalk(t) || /\?$/.test(t) || /^(what|who|why|how|when)\b/i.test(t)) {
+          await talkToMind(t);
         } else {
           await run(t);
         }
