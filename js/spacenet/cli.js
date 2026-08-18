@@ -1085,6 +1085,9 @@
       if (global.SNPrefs && SNPrefs.handleLine && SNPrefs.handleLine(line)) return true;
     } catch (_) {}
     try {
+      if (global.SNCurrency && SNCurrency.handleLine && SNCurrency.handleLine(line)) return true;
+    } catch (_) {}
+    try {
       if (looksLikeTalk(line)) {
         await talkToMind(line);
         return true;
@@ -2650,7 +2653,10 @@
       }
       if (low === 'donate on' || low === 'mesh on' || low === 'seti on') {
         global.SNResources?.setDonate?.(true);
-        log('Donate is on. Spare power on this device can earn you SpaceNets (our money). Like the old SETI science project that used home computers.', 'ok');
+        log('Donate is on. Spare power earns Astra coins. 1 ⭐ = 1 Euro.', 'ok');
+        try {
+          if (global.SNCurrency && SNCurrency.reward) SNCurrency.reward('donate');
+        } catch (_) {}
         return;
       }
       if (low === 'donate off' || low === 'mesh off') {
