@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>SpaceNet — X poster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  .sheet {
+    width: 1080px;
+    height: 1620px;
+    position: relative;
+    overflow: hidden;
+    color: #f4f7ff;
+    font-family: Inter, system-ui, sans-serif;
+    background: #000105 url("../../assets/brand/spacenet-poster-plate.jpg") center top / cover no-repeat;
+  }
+  .sheet::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(0,2,10,0.72) 0%, rgba(0,2,10,0.18) 28%, rgba(0,2,10,0.08) 48%, rgba(0,2,10,0.55) 72%, rgba(0,1,8,0.92) 100%);
+  }
+  .in { position: relative; z-index: 2; height: 100%; box-sizing: border-box; padding: 72px 72px 64px; display: flex; flex-direction: column; }
+  .kicker {
+    font: 700 18px/1 "Space Grotesk", sans-serif;
+    letter-spacing: 0.42em;
+    color: #9ec8ff;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 18px 0 0;
+    font: 800 132px/0.86 "Space Grotesk", sans-serif;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    text-shadow: 0 0 40px rgba(80,170,255,0.35);
+  }
+  .sub {
+    margin: 22px 0 0;
+    font: 700 34px/1.1 "Space Grotesk", sans-serif;
+    letter-spacing: 0.08em;
+    color: #e8f1ff;
+    text-transform: uppercase;
+  }
+  .rule { width: 88px; height: 3px; background: #3d9eff; margin: 36px 0 28px; box-shadow: 0 0 16px #3d9eff; }
+  .lede {
+    max-width: 900px;
+    font: 500 28px/1.35 Inter, sans-serif;
+    color: #d5e4ff;
+  }
+  .grid {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 28px;
+  }
+  .card {
+    background: rgba(0,6,18,0.55);
+    border: 1px solid rgba(126,200,255,0.28);
+    border-radius: 6px;
+    padding: 22px 22px 20px;
+    backdrop-filter: blur(8px);
+  }
+  .card b {
+    display: block;
+    font: 700 16px/1.2 "Space Grotesk", sans-serif;
+    letter-spacing: 0.16em;
+    color: #7ec8ff;
+    margin-bottom: 8px;
+  }
+  .card p { margin: 0; font: 500 22px/1.3 Inter, sans-serif; color: #eef4ff; }
+  .foot {
+    margin-top: 28px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(126,200,255,0.25);
+    font: 500 20px/1.45 Inter, sans-serif;
+    color: #c9dbf5;
+  }
+  .foot strong { color: #fff; font-weight: 700; }
+  .meta {
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font: 700 18px/1 "Space Grotesk", sans-serif;
+    letter-spacing: 0.08em;
+    color: #7ec8ff;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="in">
+      <div class="kicker">Astranov</div>
+      <h1>Space<br>Net</h1>
+      <div class="sub">The internet. Evolved.</div>
+      <div class="rule"></div>
+      <p class="lede">Your real place on Earth is your address. Presence, booking, and comms live on the map — not on leftover www names nobody uses.</p>
+      <div class="grid">
+        <div class="card">
+          <b>The host is the planet</b>
+          <p>Dynamic apps are written by AI where you stand. In space. On the map.</p>
+        </div>
+        <div class="card">
+          <b>Leave the phone empty</b>
+          <p>No cluttered apps. No drained battery. Everything hosts on SpaceNet.</p>
+        </div>
+        <div class="card">
+          <b>Business, evolved</b>
+          <p>Web presence and engines sit on your real location. The network is the storefront.</p>
+        </div>
+        <div class="card">
+          <b>Collective intelligence</b>
+          <p>Humans + Grok Build + Grok Bot + Grok Imagine ship the living OS.</p>
+        </div>
+      </div>
+      <div class="foot">
+        <strong>Astranov is a proud SpaceX shareholder from the first IPO.</strong><br />
+        The whole venture is developed by Grok Build, Grok Bot, and Grok Imagine.
+        <div class="meta"><span>astranov.eu</span><span>SpaceNet OS</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
