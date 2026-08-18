@@ -801,6 +801,7 @@
     '/js/spacenet/game-loop.js',
     '/js/spacenet/profiles.js',
     '/js/spacenet/cli.js',
+    '/js/spacenet/guardian.js',
     '/js/spacenet/ui.js',
   ];
   var STAGE_DISPLAY = [
@@ -1444,6 +1445,7 @@
       usage: { src: '/js/spacenet/usage.js', global: 'SNUsage' },
       scenarios: { src: '/js/spacenet/scenarios.js', global: 'SNScenarios' },
       prefs: { src: '/js/spacenet/prefs.js', global: 'SNPrefs' },
+      guardian: { src: '/js/spacenet/guardian.js', global: 'SNGuardian' },
       spacescene: { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       'space-scene': { src: '/js/spacenet/space-scene.js', global: 'SNSpaceScene' },
       invaders: { src: '/js/spacenet/invaders.js', global: 'SNInvaders' },
@@ -1497,6 +1499,15 @@
     installLoader();
     collectHuman();
     setSub('Checking this device…');
+    setTimeout(function () {
+      if (entered) return;
+      try {
+        if (global.SNGuardian && SNGuardian.sos) SNGuardian.sos('boot-deadline-12s');
+      } catch (_) {}
+      try {
+        enterSystem();
+      } catch (_) {}
+    }, 12000);
 
     try {
       try {
@@ -1504,11 +1515,16 @@
         if (purgeSt && purgeSt.reloaded) return;
         if (purgeSt && purgeSt.wiped != null) info('early purge · caches ' + purgeSt.wiped);
       } catch (_) {}
-      await claimBrowser();
+      await Promise.race([
+        claimBrowser(),
+        new Promise(function (r) {
+          setTimeout(r, 4000);
+        }),
+      ]);
 
       checkDom();
 
-      await loadStage('kernel', STAGE_KERNEL, { soft: false, timeout: 14000 }).catch(async function (e) {
+      await loadStage('kernel', STAGE_KERNEL, { soft: true, timeout: 10000 }).catch(async function (e) {
         fail('kernel hard-fail · ' + (e && e.message ? e.message : e));
         fix('Retry boot · check network · CDN');
         await loadStage('kernel-soft', STAGE_KERNEL, { soft: true });
@@ -1583,16 +1599,20 @@
       }).catch(function () {});
     } catch (e) {
       fail('BOOTLOADER EXCEPTION · ' + (e && e.message ? e.message : e));
-      fix('Retry boot');
-      setActions([
-        { label: '> hard boot', enter: true, fn: function () { location.reload(); } },
-        { label: '> enter anyway', enter: false, fn: function () { entered = true; killOverlay(); } },
-      ]);
+      fix('Enter anyway · guardian paged the builder');
       report.ready = false;
       report.degraded = true;
       try {
-        localStorage.setItem('sn:os-boot-report', JSON.stringify(report));
+        if (global.SNGuardian && SNGuardian.sos) SNGuardian.sos('boot-exception', { message: String(e && e.message ? e.message : e) });
       } catch (_) {}
+      try {
+        enterSystem();
+      } catch (_) {
+        try {
+          entered = true;
+          killOverlay();
+        } catch (__) {}
+      }
     }
   }
 
