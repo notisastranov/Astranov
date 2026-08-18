@@ -694,6 +694,9 @@
 
   /** Ribbon / CLI entry — globe Athens-line first. Video tile only after a live hop. */
   function openFromRibbon() {
+    try {
+      if (global.SNChromeFix && SNChromeFix.demandHud) SNChromeFix.demandHud('call');
+    } catch (_) {}
     var signed = false;
     try {
       signed = !!(global.SNAuth && SNAuth.user);
