@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260818134500-pref-law" />
-<meta name="astranov-continuity" content="20260818134500-pref-law" />
+<meta name="astranov-build" content="20260818135000-no-ruler" />
+<meta name="astranov-continuity" content="20260818135000-no-ruler" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -412,12 +412,10 @@ html.theme-light #sn-task-launch.mode-standby {
   flex-shrink: 0;
   z-index: 5;
   position: relative;
-  border-top: 1px solid rgba(61, 158, 255, 0.32);
-  background:
-    repeating-linear-gradient(90deg, transparent 0 11px, rgba(61, 158, 255, 0.1) 11px 12px),
-    linear-gradient(180deg, rgba(6, 22, 52, 0.15), rgba(4, 14, 36, 0.92));
-  border-radius: 0 0 16px 16px;
-  box-shadow: inset 0 1px 0 rgba(126, 200, 255, 0.12);
+  border-top: 1px solid rgba(20, 195, 243, 0.28);
+  background: rgba(0, 6, 18, 0.55);
+  border-radius: 0 0 22px 22px;
+  box-shadow: none;
 }
 #sn-topchrome-drag::before {
   content: '';
@@ -552,7 +550,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   overflow: hidden;
   transition: background 0.4s ease, border-color 0.4s ease;
 }
-#panel.collapsed { max-height: min(240px, 34vh); min-height: 188px; }
+#panel.collapsed { max-height: none; min-height: 0; }
 #panel.mid { max-height: min(28vh, 220px) !important; }
 #panel.expanded { max-height: 38vh !important; }
 /* Empty log: hide dead space — ribbon + input only */
@@ -673,7 +671,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   grid-template-columns: 1fr !important;
   grid-template-rows: 16px 42px minmax(56px, 1fr) auto !important;
 }
-#panel.collapsed { max-height: min(240px, 34vh) !important; min-height: 188px !important; }
+#panel.collapsed { max-height: none !important; min-height: 0 !important; }
 #sn-topchrome-drag {
   height: 28px !important;
   min-height: 28px !important;
@@ -1069,9 +1067,9 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   flex: 0 0 auto;
 }
 #sn-topchrome-panel.collapsed {
-  min-height: 152px !important;
-  max-height: 152px !important;
-  height: 152px !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
 }
 #stc-body {
   display: flex;
