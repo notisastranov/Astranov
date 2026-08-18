@@ -1840,6 +1840,9 @@
         '<span class="sn-rib-txt">' +
         label +
         '</span>' +
+        '<span class="sn-rib-tip">' +
+        title +
+        '</span>' +
         '</button>';
     }
     if (notice) {
