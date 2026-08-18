@@ -1538,7 +1538,14 @@
       if (!signedP || !hereP || hereP.lat == null) {
         try {
           if (g.SNCli && SNCli.log)
-            SNCli.log('Sign in and locate to draw a delivery area.', 'ok');
+            SNCli.log(
+              signedP
+                ? 'POLYGON · tap Locate first, then Poly again.'
+                : 'POLYGON · Sign in with Google, then Locate, then Poly.',
+              'ok'
+            );
+          if (!signedP && g.SNAuth && (SNAuth.openModal || SNAuth.open))
+            (SNAuth.openModal || SNAuth.open)();
         } catch (_) {}
         return;
       }
