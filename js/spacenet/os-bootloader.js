@@ -607,8 +607,9 @@
       }
     } catch (_) {}
     try {
-      if (navigator.serviceWorker) {
-        jobs.push(
+      setTimeout(function () {
+        try {
+          if (!navigator.serviceWorker) return;
           navigator.serviceWorker
             .register('/sw.js?v=' + encodeURIComponent(BUILD), {
               scope: '/',
@@ -618,18 +619,10 @@
               try {
                 if (reg.active) reg.active.postMessage({ type: 'SN_PURGE', build: BUILD });
               } catch (_) {}
-              try {
-                reg.update();
-              } catch (_) {}
-              ok('service worker · live · no-store kernel');
-              setFact('system', 'Live kernel · ready to enter', 'ok');
-              return reg;
             })
-            .catch(function (e) {
-              warn('service worker · ' + (e && e.message ? e.message : e));
-            })
-        );
-      }
+            .catch(function () {});
+        } catch (_) {}
+      }, 8000);
     } catch (_) {}
     try {
       var u = new URL(location.href);
@@ -1303,9 +1296,9 @@
       } catch (_) {}
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'Name a place, a thing, or an order';
+        if (inp) inp.placeholder = 'Command the HUD · show, hide, or reshape';
         var tin = document.getElementById('stc-cmd-in');
-        if (tin) tin.placeholder = 'Name a place, a thing, or an order';
+        if (tin) tin.placeholder = 'Command the HUD · show, hide, or reshape';
       } catch (_) {}
       try {
         var signed = false;
