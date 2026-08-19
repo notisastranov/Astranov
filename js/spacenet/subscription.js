@@ -720,7 +720,9 @@
     // Prefer same-origin /api/ai (sandbox proxy) then cloud aicycle
     var urls = [];
     try {
-      urls.push(location.origin + '/api/ai');
+      var host = location.hostname || '';
+      if (host === 'localhost' || host === '127.0.0.1' || host === 'astranov.eu' || host === 'www.astranov.eu')
+        urls.push(location.origin + '/api/ai');
     } catch (_) {}
     try {
       var cfg = global.SN_CONFIG || {};
