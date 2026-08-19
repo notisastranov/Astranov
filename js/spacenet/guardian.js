@@ -72,9 +72,30 @@
     } catch (_) {}
   }
 
+  function isMobileChrome() {
+    var ua = String(navigator.userAgent || '');
+    return /Android|iPhone|iPad|CriOS|SamsungBrowser|Mobile/i.test(ua);
+  }
+
+  function lawCss() {
+    if (document.getElementById('sn-trivial-law')) return;
+    var s = document.createElement('style');
+    s.id = 'sn-trivial-law';
+    s.textContent =
+      '#sn-topchrome-drag,#cli-drag{height:10px!important;min-height:10px!important;max-height:10px!important;padding:0!important}' +
+      '#sn-topchrome-drag::after,#cli-drag::after{content:none!important;display:none!important}' +
+      '#panel,#sn-topchrome-panel{min-height:0!important}';
+    document.documentElement.appendChild(s);
+  }
+
   function heal(why) {
+    lawCss();
     sos(why);
     forceEnter();
+    if (isMobileChrome()) {
+      log('Guardian · Chrome · stayed open');
+      return;
+    }
     try {
       if (sessionStorage.getItem(RELOAD_KEY) === '1') {
         log('Guardian · stayed open · paged the builder');
@@ -103,6 +124,7 @@
   function start() {
     if (started) return;
     started = true;
+    lawCss();
     setTimeout(function () {
       if (!alive()) heal('boot-stuck-12s');
     }, 12000);
