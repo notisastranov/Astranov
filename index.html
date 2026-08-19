@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260819210000-hud-10px" />
-<meta name="astranov-continuity" content="20260819210000-hud-10px" />
+<meta name="astranov-build" content="20260819212000-hello" />
+<meta name="astranov-continuity" content="20260819212000-hello" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -283,7 +283,7 @@ body.city-map-on #globe {
 #sn-topchrome-panel.mid,
 #sn-topchrome-panel.expanded {
   max-height: min(72vh, 560px) !important;
-  overflow: hidden !important;
+  overflow: hidden !important; /* inner #stc-gadgets scrolls with one finger */
 }
 #stc-body {
   display: flex;
@@ -554,6 +554,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #panel.collapsed { max-height: none; min-height: 0; }
 #panel.mid { max-height: min(28vh, 220px) !important; }
 #panel.expanded { max-height: 38vh !important; }
+/* Empty log: hide dead space — ribbon + input only */
 #panel.collapsed #cli-log:empty { display: none; }
 #panel.cli-quiet #cli-log { max-height: 0; overflow: hidden; padding: 0; margin: 0; min-height: 0; }
 #cli-log .cli-ops .cli-body { color: #8fd4ff; }
@@ -750,6 +751,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #sn-hub-host, #fbh-econ-graph, #fbh-econ-label {
   display: none !important;
 }
+/* Performance + map timeline — live on top ribbon */
+/* ── Top-scroll gadgets: vertical stack, drag reorder ── */
 #stc-gadgets {
   display: none;
   flex-direction: column;
@@ -830,6 +833,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   flex: 1;
 }
 .stc-g-body { width: 100%; min-width: 0; }
+
+/* Money gadget */
 #stc-money {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -863,6 +868,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   font: 500 9px/1.3 var(--font-ui);
   color: var(--text-soft);
 }
+
+/* Perf gadget full width */
 #stc-perf-wrap {
   display: block !important;
   width: 100%;
@@ -878,6 +885,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   height: 100%;
 }
 #sn-topchrome-panel.expanded #stc-perf-wrap { height: 96px; }
+
+/* Timeline full width */
 #stc-timeline-machine {
   display: flex !important;
   flex-direction: column;
@@ -923,6 +932,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Theme as gadget */
 #stc-theme {
   display: flex;
   flex-direction: column;
@@ -952,6 +963,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 }
 #stc-theme .th-bright input[type="range"] { flex: 1; width: 100%; }
 #stc-theme .th-accent input[type="color"] { width: 42px; height: 32px; border-radius: 10px; }
+
+/* Data as gadget */
 #stc-data {
   display: flex;
   flex-direction: column;
@@ -973,7 +986,12 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   cursor: pointer;
   padding: 8px 12px;
 }
+
+/* Collapsed compact row only — gadgets hidden until expand */
 #sn-topchrome-panel.collapsed #stc-gadgets { display: none !important; }
+
+/* Offer focus */
+/* Offer-focus collapses chrome, but expanded handle must still show gadgets */
 body.sn-offer-focus #sn-topchrome-panel.expanded #stc-gadgets,
 body.sn-offer-focus #sn-topchrome-panel.mid #stc-gadgets {
   display: flex !important;
@@ -991,6 +1009,8 @@ body.sn-offer-focus #dock #panel.collapsed {
 body.sn-offer-focus #sn-poly-root .sn-pt {
   top: 56px;
 }
+
+
 @media (max-width: 480px) {
   #field-radar { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex-basis: 48px; }
   #sn-task-launch { width: 46px; height: 46px; min-width: 46px; min-height: 46px; flex-basis: 46px; }
@@ -999,6 +1019,8 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   #field-nav-meta { display: none; }
   .stc-gadget { padding: 8px; }
 }
+
+/* SpaceXai flight — cockpit, no new buttons */
 body.spacexai #btn-home {
   letter-spacing: 0.36em !important;
 }
@@ -1016,6 +1038,8 @@ body.spacexai #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   content: none;
 }
+
+/* Both CLIs — same width, same center, no overlap */
 #sn-topchrome,
 #dock {
   left: 0 !important;
@@ -1060,7 +1084,7 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   align-items: center;
 }
 #sn-topchrome-drag {
-  flex: 0 0 10px;
+  flex: 0 0 28px;
   margin-top: 0;
 }
 #sn-task-ribbon {
@@ -1084,6 +1108,7 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   #sn-task-ribbon .sn-rib-txt { font-size: 8px; letter-spacing: 0.04em; }
   #sn-task-ribbon .sn-rib-btn { padding: 4px 4px !important; gap: 2px !important; }
 }
+
 #stc-cmd {
   pointer-events: auto;
   display: flex !important;
@@ -1125,10 +1150,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 <script>
 (function () {
   try {
+    /* Same-origin only on the published site. jsDelivr @main was serving yesterday's JS. */
     window.SN_ASSET_BASE = '';
   } catch (e) {}
 })();
 (function () {
+  /* OV-18 · kernel purge BEFORE any module. Never wipe keys / auth / wallet. */
   var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '';
   var FLAG = 'sn:os-hard-reload';
   try {
@@ -1370,8 +1397,8 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="Heads up display command line interface"
+          aria-label="Heads up display command line interface" />
       </label>
     </form>
     <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
@@ -1399,8 +1426,8 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="command line interface"
+          aria-label="command line interface" />
       </label>
     </form>
   </div>
@@ -1566,7 +1593,6 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 </script>
 <style id="sn-trivial-law">
 #sn-topchrome-drag, #cli-drag {
-  flex: 0 0 10px !important;
   height: 10px !important; min-height: 10px !important; max-height: 10px !important;
   padding: 0 !important; margin: 0 !important;
 }
