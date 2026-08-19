@@ -40,7 +40,7 @@
       '  left: auto !important; right: auto !important; top: auto !important; transform: none !important;',
       '  width: var(--sn-chrome-w) !important; max-width: var(--sn-chrome-w) !important;',
       '  min-width: 0 !important; margin: 0 !important; box-sizing: border-box !important;',
-      '  min-height: 152px !important;',
+      '  min-height: 0 !important; height: auto !important; padding-bottom: 0 !important;',
       '  background: rgba(0, 4, 14, 0.72) !important;',
       '  backdrop-filter: blur(20px) saturate(1.25) !important;',
       '  -webkit-backdrop-filter: blur(20px) saturate(1.25) !important;',
@@ -158,10 +158,10 @@
       '  min-width: 42px !important; min-height: 42px !important;',
       '  padding: 0 !important; gap: 0 !important; flex: 0 0 42px !important;',
       '  border: 1px solid rgba(20,195,243,0.55) !important;',
-      '  background: radial-gradient(circle at 35% 30%, rgba(20,195,243,0.28), rgba(3,14,32,0.95)) !important;',
-      '  color: #d4ecff !important; border-radius: 50% !important;',
+      '  background: radial-gradient(circle at 35% 30%, rgba(180,230,255,0.45), rgba(20,195,243,0.22), rgba(3,14,32,0.7)) !important;',
+      '  color: #e8f7ff !important; border-radius: 50% !important;',
       '  visibility: visible !important; opacity: 1 !important;',
-      '  box-shadow: 0 0 12px rgba(20,195,243,0.25) !important;',
+      '  box-shadow: 0 0 10px rgba(160,230,255,0.35) !important;',
       '}',
       '#sn-task-ribbon .sn-rib-emoji { display:block !important; font-size:18px !important; line-height:1 !important; font-family:\"Apple Color Emoji\",\"Segoe UI Emoji\",\"Noto Color Emoji\",sans-serif !important; font-variant-emoji:emoji !important; filter:none !important; color:initial !important; -webkit-text-fill-color:initial !important; }',
       '#sn-task-ribbon .sn-rib-icon-svg { display: none !important; }',
@@ -180,19 +180,30 @@
       '#sn-task-ribbon .sn-rib-btn:focus .sn-rib-tip { display: block !important; }',
       '#stc-cmd, #cli-form {',
       '  display: flex !important; align-items: center !important; gap: 8px !important;',
-      '  padding: 6px 12px 10px !important; min-height: 40px !important;',
-      '  visibility: visible !important;',
+      '  padding: 6px 12px 8px !important; min-height: 0 !important;',
+      '  visibility: visible !important; background: transparent !important;',
       '}',
       '#cli-form { grid-row: 4 !important; }',
       '#stc-cmd .stc-cmd-prefix, #cli-form .cli-prompt-prefix {',
-      '  color: #14c3f3 !important; font-size: 16px !important;',
+      '  color: #14c3f3 !important; font-size: 15px !important; line-height: 1 !important;',
       '  text-shadow: 0 0 10px #14c3f3 !important; flex: 0 0 auto !important;',
+      '  animation: sn-star-blink 1.1s step-end infinite !important;',
+      '}',
+      '@keyframes sn-star-blink {',
+      '  0%, 49% { opacity: 1; text-shadow: 0 0 12px #14c3f3; }',
+      '  50%, 100% { opacity: 0.25; text-shadow: none; }',
       '}',
       '#cli-in, #stc-cmd-in {',
-      '  min-height: 28px !important; font-size: 14px !important;',
+      '  flex: 1 !important; min-width: 0 !important; min-height: 34px !important;',
+      '  font: 500 13px/1.3 \"JetBrains Mono\", ui-monospace, monospace !important;',
       '  color: #d4ecff !important; caret-color: #14c3f3 !important;',
-      '  visibility: visible !important; opacity: 1 !important;',
-      '  animation: sn-caret-glow 1.2s step-end infinite !important;',
+      '  background: rgba(0, 10, 28, 0.72) !important;',
+      '  border: 1px solid rgba(20, 195, 243, 0.45) !important;',
+      '  border-radius: 12px !important; padding: 6px 10px !important;',
+      '  outline: none !important; visibility: visible !important; opacity: 1 !important;',
+      '}',
+      '#cli-in::placeholder, #stc-cmd-in::placeholder {',
+      '  color: #6a8ab8 !important; opacity: 0.85 !important; letter-spacing: 0.02em !important;',
       '}',
       '@keyframes sn-caret-glow {',
       '  0%, 49% { caret-color: #14c3f3; }',
@@ -432,7 +443,10 @@
       applyHud(2);
       ensureRibbonVisible();
       try {
-        if (global.SNCurrency && SNCurrency.announce) SNCurrency.announce();
+        var top = document.getElementById('stc-cmd-in');
+        var bot = document.getElementById('cli-in');
+        if (top) top.placeholder = 'Heads up display command line interface';
+        if (bot) bot.placeholder = 'command line interface';
       } catch (_) {}
     }, 2500);
   }
