@@ -667,6 +667,8 @@
       return true;
     if (/USAGE SHIP|ASTRANOV LAW|Push main|owner_note|Bridge IN · owner|openHandoffs|js\/spacenet\/\* only/i.test(t))
       return true;
+    if (/Name a place|Talk · locate|Command the HUD|Heads up display command/i.test(t))
+      return true;
     if (/Recommendations must obey/i.test(t)) return true;
     return false;
   }
