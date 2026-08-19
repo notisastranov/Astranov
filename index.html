@@ -8,38 +8,48 @@
 <meta name="astranov-build" content="20260819220000-chrome-alive" />
 <meta name="astranov-continuity" content="20260819220000-chrome-alive" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
 <link rel="icon" href="/icon.png" type="image/png" />
-<style>
-html,body{margin:0;height:100%;background:#000105;color:#e8eeff;font:500 14px/1.45 system-ui,sans-serif;overflow:hidden}
-#boot{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#000105}
-#boot.hide{display:none!important}
-.boot-title{font:800 20px/1 system-ui;letter-spacing:0.36em;color:#14c3f3}
-</style>
+<style>html,body{margin:0;height:100%;background:#000105;color:#e8eeff;overflow:hidden;font:500 14px system-ui}#boot{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center}.t{font:800 20px system-ui;letter-spacing:.36em;color:#14c3f3}</style>
 </head>
 <body>
-<div id="boot"><span class="boot-title">ASTRANOV</span></div>
+<div id="boot"><span class="t">ASTRANOV</span></div>
 <script>
-(function () {
-  var BUILD = '20260819220000-chrome-alive';
-  var url = '/index-full.html?v=' + encodeURIComponent(BUILD) + '&t=' + Date.now();
-  fetch(url, { cache: 'no-store', credentials: 'same-origin' })
-    .then(function (r) { if (!r.ok) throw new Error('full ' + r.status); return r.text(); })
-    .then(function (html) {
-      if (!html || html.indexOf('sn-topchrome') < 0) throw new Error('bad full');
-      document.open();
-      document.write(html);
-      document.close();
+(function(){
+  var BUILD='20260819220000-chrome-alive';
+  var RAW='https://raw.githubusercontent.com/notisastranov/astranov.eu/023a4c52efe78090b44700e018ab9b2772be2365/index.html';
+  function applyLaws(html){
+    html=html.replace(/content="20260819212000-hello"/g,'content="'+BUILD+'"');
+    html=html.replace(/placeholder="Heads up display command line interface"/g,'placeholder="Command the HUD · show, hide, or reshape"');
+    html=html.replace(/placeholder="command line interface"/g,'placeholder="Command the HUD · show, hide, or reshape"');
+    html=html.replace(/aria-label="Heads up display command line interface"/g,'aria-label="Command the HUD · show, hide, or reshape"');
+    html=html.replace(/aria-label="command line interface"/g,'aria-label="Command the HUD · show, hide, or reshape"');
+    html=html.replace(/flex: 0 0 28px;/g,'flex: 0 0 10px;');
+    /* Replace dynamic inject with static script src for Chrome Android */
+    var staticScripts=[
+      '<script src="/js/spacenet/chrome-mute.js?v='+BUILD+'"><\/script>',
+      '<script src="/js/spacenet/chrome-fix.js?v='+BUILD+'"><\/script>',
+      '<script src="/js/spacenet/chrome-radar.js?v='+BUILD+'"><\/script>',
+      '<script src="/js/spacenet/os-bootloader.js?v='+BUILD+'"><\/script>',
+      '<script src="/js/spacenet/guardian.js?v='+BUILD+'"><\/script>'
+    ].join('\n');
+    html=html.replace(/<script>\s*\(function \(\) \{[\s\S]*?os-bootloader[\s\S]*?<\/script>/,
+      staticScripts);
+    return html;
+  }
+  fetch(RAW,{cache:'no-store',mode:'cors'})
+    .then(function(r){ if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(function(html){
+      if(html.indexOf('sn-topchrome')<0) throw new Error('bad');
+      html=applyLaws(html);
+      document.open(); document.write(html); document.close();
     })
-    .catch(function () {
-      var s = document.createElement('div');
-      s.innerHTML = '<p style="padding:24px;color:#8ab">SpaceNet shell recovering…</p>';
-      document.body.appendChild(s);
-      ['/js/spacenet/chrome-mute.js','/js/spacenet/chrome-fix.js','/js/spacenet/chrome-radar.js','/js/spacenet/os-bootloader.js','/js/spacenet/guardian.js'].forEach(function (p) {
-        var t = document.createElement('script');
-        t.src = p + '?v=' + BUILD;
-        t.async = false;
-        document.head.appendChild(t);
+    .catch(function(e){
+      document.getElementById('boot').innerHTML='<span class="t">ASTRANOV</span><p style="color:#8ab;font:12px system-ui;margin-top:16px">Loading modules…</p>';
+      ['chrome-mute','chrome-fix','chrome-radar','os-bootloader','guardian'].forEach(function(m){
+        var s=document.createElement('script');
+        s.src='/js/spacenet/'+m+'.js?v='+BUILD;
+        s.async=false;
+        document.head.appendChild(s);
       });
     });
 })();
