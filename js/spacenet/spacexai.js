@@ -130,9 +130,9 @@
     } catch (_) {}
     try {
       var inp = document.getElementById('cli-in');
-      if (inp) inp.placeholder = 'Command the HUD · show, hide, or reshape';
+      if (inp) inp.placeholder = 'command line interface';
       var top = document.getElementById('stc-cmd-in');
-      if (top) top.placeholder = 'Command the HUD · show, hide, or reshape';
+      if (top) top.placeholder = 'Heads up display command line interface';
     } catch (_) {}
     try {
       if (global.SNGlobe && SNGlobe.setHud) SNGlobe.setHud('SPACEXAI · FLY');
