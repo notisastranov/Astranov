@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260819171000-twin-cli" />
-<meta name="astranov-continuity" content="20260819171000-twin-cli" />
+<meta name="astranov-build" content="20260819174000-star-in" />
+<meta name="astranov-continuity" content="20260819174000-star-in" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -692,10 +692,10 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   .sn-rib-txt { font-size: 9px; }
 }
 #cli-log {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   overflow-y: auto;
-  padding: 8px 14px 6px;
-  min-height: 56px;
+  padding: 0;
+  min-height: 0;
   max-height: none;
   grid-row: 3;
   position: relative;
@@ -704,30 +704,24 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   color: var(--text-soft);
   -webkit-overflow-scrolling: touch;
 }
+#cli-log:not(:has(.cli-feed-item)) {
+  display: none;
+  height: 0;
+  padding: 0;
+  min-height: 0;
+}
+#cli-form {
+  display: flex; align-items: center;
+  padding: 4px 12px 10px;
+  border-top: 0;
+  flex: 0 0 auto;
+  grid-row: 4;
+}
 #cli-log .cli-line { margin: 2px 0; word-break: break-word; }
 #cli-log .cli-line.ok .cli-body { color: var(--text); }
 #cli-log .cli-line.cmd .cli-body { color: var(--glow-hot); }
 #cli-log .cli-line.dim .cli-body { color: var(--dim); }
 #cli-log .cli-line.err .cli-body { color: var(--err); }
-#cli-form {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 14px 12px;
-  border-top: 1px solid var(--border);
-  flex: 0 0 auto;
-  grid-row: 4;
-}
-.cli-prompt-prefix { color: var(--glow); font: 700 15px/1 var(--font-mono); }
-#cli-in {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: 500 14px/1.3 var(--font-mono);
-  outline: none;
-  caret-color: var(--glow);
-  min-width: 0;
-  border-radius: var(--r-sm);
-}
 #cli-in::placeholder { color: var(--dim); opacity: 0.7; }
 #sn-poly-root .sn-pt,
 #sn-poly-root .sn-pt-cbtn,
@@ -1400,10 +1394,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       <div id="stc-detail" hidden></div>
     </div>
     <form id="stc-cmd" autocomplete="off" aria-label="Flight command">
-      <span class="stc-cmd-prefix" aria-hidden="true">⭐</span>
-      <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
-        placeholder="Heads up display command line interface"
-        aria-label="Heads up display command line interface" />
+      <label class="sn-cli-field">
+        <span class="sn-cli-star" aria-hidden="true">★</span>
+        <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
+          placeholder="Heads up display command line interface"
+          aria-label="Heads up display command line interface" />
+      </label>
     </form>
     <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
   </div>
@@ -1423,10 +1419,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
     </div>
     <div id="cli-log" aria-live="polite"></div>
     <form id="cli-form" autocomplete="off">
-      <span class="cli-prompt-prefix" aria-hidden="true">⭐</span>
-      <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-        placeholder="command line interface"
-        aria-label="command line interface" />
+      <label class="sn-cli-field">
+        <span class="sn-cli-star" aria-hidden="true">★</span>
+        <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
+          placeholder="command line interface"
+          aria-label="command line interface" />
+      </label>
     </form>
   </div>
 </div>
@@ -1596,7 +1594,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 }
 #sn-topchrome-drag::after, #cli-drag::after { content: none !important; display: none !important; }
 #panel, #sn-topchrome-panel { min-height: 0 !important; height: auto !important; padding-bottom: 0 !important; }
-#panel { grid-template-rows: 10px 42px auto auto !important; }
+#panel { grid-template-rows: 10px 42px minmax(0, auto) auto !important; overflow: visible !important; }
+#cli-log:empty, #cli-log:not(:has(.cli-feed-item)) { display: none !important; height: 0 !important; padding: 0 !important; min-height: 0 !important; }
+.sn-cli-field { display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; min-height: 36px !important; padding: 0 10px !important; background: rgba(0,10,28,0.82) !important; border: 1px solid rgba(20,195,243,0.5) !important; border-radius: 12px !important; }
+.sn-cli-star { color: #14c3f3 !important; text-shadow: 0 0 10px #14c3f3 !important; animation: sn-star-blink 1.1s step-end infinite !important; }
+@keyframes sn-star-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
+#cli-in, #stc-cmd-in { background: transparent !important; border: 0 !important; }
 </style>
 </body>
 </html>
