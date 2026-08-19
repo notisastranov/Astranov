@@ -859,7 +859,9 @@
     try {
       var urls = [];
       try {
-        urls.push(location.origin + '/api/ai');
+        var host = location.hostname || '';
+        if (host === 'localhost' || host === '127.0.0.1' || /astranov\.eu$/i.test(host))
+          urls.push(location.origin + '/api/ai');
       } catch (_) {}
       urls.push(aicycleUrl());
       var text = null;
