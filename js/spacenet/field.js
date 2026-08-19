@@ -2893,7 +2893,7 @@
       var MIN = 54;
       // Expand enough for device + fleet graph gadgets (hub text stays hidden in CSS)
       var FULL = Math.max(MIN + 80, Math.min(Math.round(h * 0.55), h - oppositeReserve()));
-      if (mode === 'collapsed') return 152; // compact + command + handle
+      if (mode === 'collapsed') return 72;
       if (mode === 'expanded') return FULL;
       return Math.max(MIN, Math.min(Math.round(h * 0.38), FULL));
     }
@@ -2942,9 +2942,11 @@
         panel.style.removeProperty('max-height');
         panel.style.removeProperty('height');
         panel.style.removeProperty('min-height');
-        panel.style.minHeight = MIN + 'px';
+        panel.style.setProperty('height', 'auto', 'important');
+        panel.style.setProperty('min-height', '0', 'important');
+        panel.style.setProperty('max-height', 'none', 'important');
         law.textContent =
-          'html body #sn-topchrome #sn-topchrome-panel.collapsed{max-height:152px !important;height:152px !important;min-height:152px !important;}';
+          'html body #sn-topchrome #sn-topchrome-panel.collapsed{max-height:none !important;height:auto !important;min-height:0 !important;}';
         try {
           document.head.appendChild(law);
         } catch (_) {}
@@ -3041,7 +3043,7 @@
         }
         if (next <= MIN + 8) {
           law.textContent =
-            '#sn-topchrome-panel.collapsed{max-height:152px!important;height:152px!important;min-height:152px!important}';
+            '#sn-topchrome-panel.collapsed{max-height:none!important;height:auto!important;min-height:0!important}';
         } else {
           law.textContent =
             '#sn-topchrome-panel.mid,#sn-topchrome-panel.expanded{max-height:' +
