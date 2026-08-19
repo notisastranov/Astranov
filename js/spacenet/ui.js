@@ -123,7 +123,7 @@
     var h = window.innerHeight || 700;
     var third = thirdCeilPx();
     // Collapsed: ribbon + one peek line + input only — stay compact when quiet
-    if (mode === 'collapsed') return Math.max(88, Math.min(108, Math.round(h * 0.13)));
+    if (mode === 'collapsed') return 72;
     // Mid: small useful log peek — not a wall of chrome
     if (mode === 'mid') return Math.min(third, Math.max(120, Math.round(h * 0.22)));
     // "Expanded" is still capped at 1/3 — never half-screen CLI
@@ -156,8 +156,12 @@
     if (mode === 'collapsed') {
       panel.style.removeProperty('max-height');
       panel.style.removeProperty('height');
-      panel.style.maxHeight = px + 'px';
-      law.textContent = '';
+      panel.style.removeProperty('min-height');
+      panel.style.setProperty('height', 'auto', 'important');
+      panel.style.setProperty('min-height', '0', 'important');
+      panel.style.setProperty('max-height', 'none', 'important');
+      law.textContent =
+        '#panel.collapsed{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:10px 40px 0 auto!important}';
     } else {
       panel.style.setProperty('max-height', px + 'px', 'important');
       panel.style.setProperty('height', px + 'px', 'important');
