@@ -1,1 +1,104 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en" class="skin-astranov theme-dark" data-theme-mode="auto">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Astranov SpaceNet Operating System</title>
+<meta name="theme-color" content="#000105" id="meta-theme-color" />
+<meta name="astranov-build" content="20260819220000-chrome-alive" />
+<meta name="astranov-continuity" content="20260819220000-chrome-alive" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
+<link rel="icon" href="/icon.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
+<style>
+:root {
+  --bg: #000105;
+  --bg-elev: #060d1c;
+  --text: #e8eeff;
+  --text-soft: #b8c8e0;
+  --dim: #6a8ab8;
+  --glow: #14c3f3;
+  --glow-hot: #7ee9ff;
+  --glow-rgb: 20, 195, 243;
+  --sn-arc: #14c3f3;
+  --sn-arc-mid: #026cba;
+  --sn-arc-deep: #005098;
+  --mint: #3dd68c;
+  --err: #e82127;
+  --panel: rgba(4, 16, 42, 0.78);
+  --panel-solid: #061028;
+  --border: rgba(50, 140, 255, 0.42);
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 24px;
+  --r-sm: 16px;
+  --r-pill: 999px;
+  --brightness: 1;
+  --chrome-sat: 1.25;
+}
+html.theme-light {
+  --bg: #f2f4f7;
+  --bg-elev: #ffffff;
+  --text: #0b0d10;
+  --text-soft: #3a4250;
+  --dim: #6b7280;
+  --glow: #0b6bcb;
+  --glow-hot: #1a8cff;
+  --glow-rgb: 11, 107, 203;
+  --mint: #0d9f6e;
+  --err: #d61f26;
+  --panel: rgba(255, 255, 255, 0.88);
+  --panel-solid: #ffffff;
+  --border: rgba(15, 23, 42, 0.12);
+  --shadow: 0 12px 36px rgba(15, 23, 42, 0.1);
+  --chrome-sat: 1.05;
+  color-scheme: light;
+}
+html.theme-dark { color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  background: var(--bg);
+  color: var(--text);
+  font: 500 14px/1.45 var(--font-ui);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  transition: background 0.45s ease, color 0.35s ease;
+}
+body { filter: brightness(var(--brightness)); }
+button, [role="button"], input, select {
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: var(--r-pill);
+}
+#boot {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.35s ease, background 0.45s ease;
+}
+#boot.os-mode { align-items: stretch; justify-content: flex-start; }
+#boot.hide {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  display: none !important;
+}
+#boot.os-human {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 18px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+/* truncated for tool limit - will use push_files instead */
+</style>
+</head><body>PLACEHOLDER_FAIL</body></html>
