@@ -1290,8 +1290,8 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('Name a place, a thing, or an order.', 'ok', true);
-          SNCli.log('1 Locate · 2 Sign in · 3 Ask or order', 'dim', true);
+          SNCli.log('Command the HUD. Type what to show, hide, or reshape.', 'ok', true);
+          SNCli.log('Talk · locate · sign in · or an order', 'dim', true);
         }
       } catch (_) {}
       try {
