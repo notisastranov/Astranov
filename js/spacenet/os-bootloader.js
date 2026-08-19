@@ -1290,15 +1290,14 @@
       } catch (_) {}
       try {
         if (global.SNCli && SNCli.log) {
-          SNCli.log('Command the HUD. Type what to show, hide, or reshape.', 'ok', true);
-          SNCli.log('Talk · locate · sign in · or an order', 'dim', true);
+          /* no coach dump — HUD and CLI speak by being used */
         }
       } catch (_) {}
       try {
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'Command the HUD · show, hide, or reshape';
+        if (inp) inp.placeholder = 'command line interface';
         var tin = document.getElementById('stc-cmd-in');
-        if (tin) tin.placeholder = 'Command the HUD · show, hide, or reshape';
+        if (tin) tin.placeholder = 'Heads up display command line interface';
       } catch (_) {}
       try {
         var signed = false;
