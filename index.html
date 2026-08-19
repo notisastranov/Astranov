@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260819181000-hud-placeholder" />
-<meta name="astranov-continuity" content="20260819181000-hud-placeholder" />
+<meta name="astranov-build" content="20260819201000-rib-coach" />
+<meta name="astranov-continuity" content="20260819201000-rib-coach" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -283,7 +283,7 @@ body.city-map-on #globe {
 #sn-topchrome-panel.mid,
 #sn-topchrome-panel.expanded {
   max-height: min(72vh, 560px) !important;
-  overflow: hidden !important;
+  overflow: hidden !important; /* inner #stc-gadgets scrolls with one finger */
 }
 #stc-body {
   display: flex;
@@ -554,6 +554,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #panel.collapsed { max-height: none; min-height: 0; }
 #panel.mid { max-height: min(28vh, 220px) !important; }
 #panel.expanded { max-height: 38vh !important; }
+/* Empty log: hide dead space — ribbon + input only */
 #panel.collapsed #cli-log:empty { display: none; }
 #panel.cli-quiet #cli-log { max-height: 0; overflow: hidden; padding: 0; margin: 0; min-height: 0; }
 #cli-log .cli-ops .cli-body { color: #8fd4ff; }
@@ -671,7 +672,7 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   min-height: 0 !important;
   display: grid !important;
   grid-template-columns: 1fr !important;
-  grid-template-rows: 10px 42px auto auto !important;
+  grid-template-rows: 10px 48px auto minmax(0, auto) auto !important;
 }
 #panel.collapsed { max-height: none !important; min-height: 0 !important; }
 #sn-topchrome-drag, #cli-drag {
@@ -750,6 +751,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 #sn-hub-host, #fbh-econ-graph, #fbh-econ-label {
   display: none !important;
 }
+/* Performance + map timeline — live on top ribbon */
+/* ── Top-scroll gadgets: vertical stack, drag reorder ── */
 #stc-gadgets {
   display: none;
   flex-direction: column;
@@ -830,6 +833,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   flex: 1;
 }
 .stc-g-body { width: 100%; min-width: 0; }
+
+/* Money gadget */
 #stc-money {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -863,6 +868,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   font: 500 9px/1.3 var(--font-ui);
   color: var(--text-soft);
 }
+
+/* Perf gadget full width */
 #stc-perf-wrap {
   display: block !important;
   width: 100%;
@@ -878,6 +885,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   height: 100%;
 }
 #sn-topchrome-panel.expanded #stc-perf-wrap { height: 96px; }
+
+/* Timeline full width */
 #stc-timeline-machine {
   display: flex !important;
   flex-direction: column;
@@ -923,6 +932,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Theme as gadget */
 #stc-theme {
   display: flex;
   flex-direction: column;
@@ -952,6 +963,8 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
 }
 #stc-theme .th-bright input[type="range"] { flex: 1; width: 100%; }
 #stc-theme .th-accent input[type="color"] { width: 42px; height: 32px; border-radius: 10px; }
+
+/* Data as gadget */
 #stc-data {
   display: flex;
   flex-direction: column;
@@ -973,7 +986,12 @@ html.theme-light #stc-theme .th-bright input[type="range"] {
   cursor: pointer;
   padding: 8px 12px;
 }
+
+/* Collapsed compact row only — gadgets hidden until expand */
 #sn-topchrome-panel.collapsed #stc-gadgets { display: none !important; }
+
+/* Offer focus */
+/* Offer-focus collapses chrome, but expanded handle must still show gadgets */
 body.sn-offer-focus #sn-topchrome-panel.expanded #stc-gadgets,
 body.sn-offer-focus #sn-topchrome-panel.mid #stc-gadgets {
   display: flex !important;
@@ -991,6 +1009,8 @@ body.sn-offer-focus #dock #panel.collapsed {
 body.sn-offer-focus #sn-poly-root .sn-pt {
   top: 56px;
 }
+
+
 @media (max-width: 480px) {
   #field-radar { width: 48px; height: 48px; min-width: 48px; min-height: 48px; flex-basis: 48px; }
   #sn-task-launch { width: 46px; height: 46px; min-width: 46px; min-height: 46px; flex-basis: 46px; }
@@ -999,6 +1019,8 @@ body.sn-offer-focus #sn-poly-root .sn-pt {
   #field-nav-meta { display: none; }
   .stc-gadget { padding: 8px; }
 }
+
+/* SpaceXai flight — cockpit, no new buttons */
 body.spacexai #btn-home {
   letter-spacing: 0.36em !important;
 }
@@ -1016,6 +1038,8 @@ body.spacexai #sn-topchrome-panel.expanded #sn-topchrome-drag::after,
 body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   content: none;
 }
+
+/* Both CLIs — same width, same center, no overlap */
 #sn-topchrome,
 #dock {
   left: 0 !important;
@@ -1060,7 +1084,7 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   align-items: center;
 }
 #sn-topchrome-drag {
-  flex: 0 0 10px;
+  flex: 0 0 28px;
   margin-top: 0;
 }
 #sn-task-ribbon {
@@ -1084,6 +1108,7 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   #sn-task-ribbon .sn-rib-txt { font-size: 8px; letter-spacing: 0.04em; }
   #sn-task-ribbon .sn-rib-btn { padding: 4px 4px !important; gap: 2px !important; }
 }
+
 #stc-cmd {
   pointer-events: auto;
   display: flex !important;
@@ -1125,10 +1150,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 <script>
 (function () {
   try {
+    /* Same-origin only on the published site. jsDelivr @main was serving yesterday's JS. */
     window.SN_ASSET_BASE = '';
   } catch (e) {}
 })();
 (function () {
+  /* OV-18 · kernel purge BEFORE any module. Never wipe keys / auth / wallet. */
   var BUILD = (document.querySelector('meta[name="astranov-build"]') || {}).content || '';
   var FLAG = 'sn:os-hard-reload';
   try {
@@ -1370,8 +1397,8 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="Heads up display command line interface"
+          aria-label="Heads up display command line interface" />
       </label>
     </form>
     <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
@@ -1390,13 +1417,17 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
       <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf"><span class="sn-rib-emoji">🎤</span><span class="sn-rib-txt">AI</span></button>
       <button type="button" class="sn-rib-btn" data-act="send" id="sn-rib-send"><span class="sn-rib-emoji">📤</span><span class="sn-rib-txt">Send</span></button>
     </div>
+    <div id="cli-coach" aria-hidden="true">
+      <div>1 · Locate &nbsp; 2 · Sign in &nbsp; 3 · Talk</div>
+      <div>Type a HUD command to show, hide, or reshape</div>
+    </div>
     <div id="cli-log" aria-live="polite"></div>
     <form id="cli-form" autocomplete="off">
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="command line interface"
+          aria-label="command line interface" />
       </label>
     </form>
   </div>
@@ -1484,7 +1515,7 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
   }
   function bind() {
     document.querySelectorAll('#stc-theme .th-mode').forEach(function (b) {
-      b.classEventListener('click', function () {
+      b.addEventListener('click', function () {
         setMode(b.getAttribute('data-mode'));
       });
     });
@@ -1567,8 +1598,12 @@ body.spacexai #sn-topchrome-panel.mid #sn-topchrome-drag::after {
 }
 #sn-topchrome-drag::after, #cli-drag::after { content: none !important; display: none !important; }
 #panel, #sn-topchrome-panel { min-height: 0 !important; height: auto !important; padding-bottom: 0 !important; }
-#panel { grid-template-rows: 10px 42px minmax(0, auto) auto !important; overflow: visible !important; }
-#cli-log:empty, #cli-log:not(:has(.cli-feed-item)) { display: none !important; height: 0 !important; padding: 0 !important; min-height: 0 !important; }
+#panel { grid-template-rows: 10px 48px auto 0 auto !important; overflow: visible !important; }
+#cli-coach { grid-row: 3 !important; display: block !important; padding: 4px 14px 6px !important; font: 600 11px/1.35 Inter, system-ui, sans-serif !important; color: #8ab4d4 !important; }
+#cli-form { grid-row: 5 !important; }
+#cli-log:empty, #cli-log:not(:has(.cli-feed-item)), #panel.collapsed #cli-log { display: none !important; height: 0 !important; padding: 0 !important; min-height: 0 !important; }
+#sn-task-ribbon { min-height: 48px !important; height: 48px !important; overflow: visible !important; }
+#sn-task-ribbon .sn-rib-btn { width: 36px !important; height: 36px !important; min-width: 36px !important; min-height: 36px !important; }
 .sn-cli-field { display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; min-height: 36px !important; padding: 0 10px !important; background: rgba(0,10,28,0.82) !important; border: 1px solid rgba(20,195,243,0.5) !important; border-radius: 12px !important; }
 .sn-cli-star { color: #14c3f3 !important; text-shadow: 0 0 10px #14c3f3 !important; animation: sn-star-blink 1.1s step-end infinite !important; }
 @keyframes sn-star-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.2; } }
