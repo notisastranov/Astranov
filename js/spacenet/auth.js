@@ -140,6 +140,7 @@
       try {
         if (A.user && (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION' || evt === 'USER_UPDATED')) {
           if (!global.__snPaidMindArmed) armOwnerPaidGrok();
+          greetArrival(A.user, evt);
         } else if (!A.user && evt === 'SIGNED_OUT') {
           try {
             localStorage.removeItem('sn:owner-session');
@@ -296,6 +297,31 @@
       if (A.user && A.user.user_metadata && A.user.user_metadata.is_owner === true) return true;
     } catch (_) {}
     return false;
+  }
+
+  function greetArrival(user, evt) {
+    try {
+      if (!user) return;
+      if (evt !== 'SIGNED_IN' && evt !== 'INITIAL_SESSION') return;
+      var id = String(user.id || user.email || '').slice(0, 80);
+      if (!id) return;
+      var key = 'sn:hello-' + id;
+      try {
+        if (sessionStorage.getItem(key) === '1') return;
+        sessionStorage.setItem(key, '1');
+      } catch (_) {}
+      var name =
+        (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) ||
+        (user.email && user.email.split('@')[0]) ||
+        'friend';
+      name = String(name).split(' ')[0];
+      if (isOwner()) {
+        say('Hello ' + name + '. Architect is on deck.', 'ok');
+        return;
+      }
+      say('Hello ' + name + '. Welcome to SpaceNet — tester and trainer.', 'ok');
+      say('Break it. Improve it. Type in the CLI. Paid in ⭐ Astra.', 'dim');
+    } catch (_) {}
   }
 
   /** When Architect signs in → arm paid Grok (server XAI_API_KEY). Never store the key client-side. */
