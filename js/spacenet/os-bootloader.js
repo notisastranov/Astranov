@@ -1294,10 +1294,18 @@
         }
       } catch (_) {}
       try {
+        /* LAW: keep index.html HUD placeholder — never overwrite with place examples or generic CLI text */
+        var HUD_PH = 'Command the HUD · show, hide, or reshape';
         var inp = document.getElementById('cli-in');
-        if (inp) inp.placeholder = 'command line interface';
+        if (inp) {
+          inp.placeholder = HUD_PH;
+          inp.setAttribute('aria-label', HUD_PH);
+        }
         var tin = document.getElementById('stc-cmd-in');
-        if (tin) tin.placeholder = 'Heads up display command line interface';
+        if (tin) {
+          tin.placeholder = HUD_PH;
+          tin.setAttribute('aria-label', HUD_PH);
+        }
       } catch (_) {}
       try {
         var signed = false;
