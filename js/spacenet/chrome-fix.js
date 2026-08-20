@@ -1,5 +1,5 @@
-/* Astranov chrome-fix RESTORE loader · 20260820184500
- * Loads last known-good chrome-fix body, then rib-face P0 clamp.
+/* Astranov chrome-fix RESTORE loader · 20260820185000
+ * Loads last known-good chrome-fix body, then rib-face + p0-ops.
  */
 (function (global) {
   'use strict';
@@ -13,7 +13,6 @@
       if (cb) cb();
     };
     s.onerror = function () {
-      // fallback: raw github
       if (src.indexOf('jsdelivr') !== -1) {
         load(
           'https://raw.githubusercontent.com/notisastranov/astranov.eu/d65905e7ca94cc015e28cfcbee7ce7fe014ee707/js/spacenet/chrome-fix.js',
@@ -23,6 +22,14 @@
     };
     document.head.appendChild(s);
   }
+  function loadPatch(src, flag) {
+    if (document.querySelector('script[' + flag + ']')) return;
+    var s = document.createElement('script');
+    s.src = src;
+    s.setAttribute(flag.replace(/[[\]]/g, '').replace('data-', 'data-'), '1');
+    // flag is like data-sn-rib-face — setAttribute needs the name
+    document.head.appendChild(s);
+  }
   function loadFace() {
     if (document.querySelector('script[data-sn-rib-face]')) return;
     var s = document.createElement('script');
@@ -30,6 +37,18 @@
     s.setAttribute('data-sn-rib-face', '1');
     document.head.appendChild(s);
   }
-  load(GOOD, loadFace);
-  setTimeout(loadFace, 1500);
+  function loadOps() {
+    if (document.querySelector('script[data-sn-p0-ops]')) return;
+    var s = document.createElement('script');
+    s.src = '/js/spacenet/chrome-p0-ops.js?v=20260820185000';
+    s.setAttribute('data-sn-p0-ops', '1');
+    document.head.appendChild(s);
+  }
+  function afterGood() {
+    loadFace();
+    loadOps();
+  }
+  load(GOOD, afterGood);
+  setTimeout(afterGood, 1500);
+  setTimeout(loadOps, 3000);
 })(typeof window !== 'undefined' ? window : globalThis);
