@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260819220000-chrome-alive" />
-<meta name="astranov-continuity" content="20260819220000-chrome-alive" />
+<meta name="astranov-build" content="20260820184000-rib-face" />
+<meta name="astranov-continuity" content="20260820184000-rib-face" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -23,6 +23,12 @@
 #sn-topchrome-drag::after, #cli-drag::after { content: none !important; display: none !important; }
 #panel, #sn-topchrome-panel { min-height: 0 !important; height: auto !important; }
 #panel { grid-template-rows: 10px 48px auto 0 auto !important; overflow: visible !important; }
+#sn-task-ribbon .sn-rib-face, #sn-task-ribbon .sn-rib-icon img, #sn-rib-user img {
+  width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important;
+  border-radius: 50% !important; object-fit: cover !important; display: block !important;
+}
+#sn-task-ribbon .sn-rib-btn { overflow: hidden !important; }
+body.sn-in #cli-coach { display: none !important; }
 </style>
 <style>
 :root{--bg:#000105;--text:#e8eeff;--glow:#14c3f3;--panel:rgba(4,16,42,0.78);--border:rgba(50,140,255,0.42);--font-ui:Inter,system-ui,sans-serif;--font-display:Space Grotesk,system-ui,sans-serif;--font-mono:JetBrains Mono,ui-monospace,monospace;--r:24px}
@@ -76,8 +82,8 @@ html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="Heads up display command line interface"
+          aria-label="Heads up display command line interface" />
       </label>
     </form>
     <div id="sn-topchrome-drag" title="Drag to expand" aria-label="Top scroll handle"></div>
@@ -105,16 +111,17 @@ html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(
       <label class="sn-cli-field">
         <span class="sn-cli-star" aria-hidden="true">★</span>
         <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
-          placeholder="Command the HUD · show, hide, or reshape"
-          aria-label="Command the HUD · show, hide, or reshape" />
+          placeholder="command line interface"
+          aria-label="command line interface" />
       </label>
     </form>
   </div>
 </div>
-<script src="/js/spacenet/chrome-mute.js?v=20260819220000-chrome-alive"></script>
-<script src="/js/spacenet/chrome-fix.js?v=20260819220000-chrome-alive"></script>
-<script src="/js/spacenet/chrome-radar.js?v=20260819220000-chrome-alive"></script>
-<script src="/js/spacenet/os-bootloader.js?v=20260819220000-chrome-alive"></script>
-<script src="/js/spacenet/guardian.js?v=20260819220000-chrome-alive"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260820184000-rib-face"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260820184000-rib-face"></script>
+<script src="/js/spacenet/chrome-rib-face.js?v=20260820184000-rib-face"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260820184000-rib-face"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260820184000-rib-face"></script>
+<script src="/js/spacenet/guardian.js?v=20260820184000-rib-face"></script>
 </body>
 </html>
