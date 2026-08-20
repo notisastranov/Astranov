@@ -1,5 +1,5 @@
-/* Astranov chrome-fix RESTORE loader · 20260820184000
- * Loads last known-good chrome-fix body, then rib-face P0.
+/* Astranov chrome-fix RESTORE loader · 20260820184500
+ * Loads last known-good chrome-fix body, then rib-face P0 clamp.
  */
 (function (global) {
   'use strict';
@@ -26,7 +26,7 @@
   function loadFace() {
     if (document.querySelector('script[data-sn-rib-face]')) return;
     var s = document.createElement('script');
-    s.src = '/js/spacenet/chrome-rib-face.js?v=20260820183500';
+    s.src = '/js/spacenet/chrome-rib-face.js?v=20260820184500';
     s.setAttribute('data-sn-rib-face', '1');
     document.head.appendChild(s);
   }
