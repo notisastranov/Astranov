@@ -24,7 +24,7 @@
     var p = global._snPhysPos || global._snLastPos;
     if (p && p.lat != null && !(Math.abs(p.lat - 36.4341) < 0.02 && Math.abs(p.lng - 28.2176) < 0.02 && p.source !== 'gps'))
       return { lat: Number(p.lat), lng: Number(p.lng), name: p.label || p.name || 'YOU' };
-    return { lat: 37.9838, lng: 23.7275, name: 'Earth' };
+    return { lat: 36.387557, lng: 28.222533, name: 'KALITHEA' };
   }
   function vec(lat, lng, r) {
     var G = globe();

@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821184000-spacex-boot
+/* Astranov chrome-fix body · Build 20260821185500-village-grok
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821184000-spacex-boot';
+  var BUILD = '20260821185500-village-grok';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -29,7 +29,7 @@
       '#sn-topchrome-panel {',
       '  pointer-events: auto !important; width: var(--sn-chrome-w) !important;',
       '  max-width: var(--sn-chrome-w) !important; margin: 0 auto !important;',
-      '  background: rgba(4,16,42,0.78) !important; border: 1px solid rgba(50,140,255,0.42) !important;',
+      '  background: rgba(0,0,0,0.78) !important; border: 1px solid rgba(20,195,243,0.38) !important;',
       '  border-radius: 24px !important; overflow: hidden !important;',
       '  backdrop-filter: blur(16px) !important;',
       '  min-height: 0 !important; height: auto !important;',
@@ -49,7 +49,7 @@
       '  pointer-events: auto !important; position: relative !important;',
       '  width: var(--sn-chrome-w) !important; max-width: var(--sn-chrome-w) !important;',
       '  margin: 0 auto !important; box-sizing: border-box !important;',
-      '  background: rgba(4,16,42,0.82) !important;',
+      '  background: rgba(0,0,0,0.82) !important;',
       '  border: 1px solid rgba(20,195,243,0.42) !important;',
       '  border-radius: 22px !important;',
       '  display: grid !important;',
@@ -98,7 +98,7 @@
       '  display: none !important; position: absolute !important; bottom: 110% !important; left: 50% !important;',
       '  transform: translateX(-50%) !important; white-space: nowrap !important;',
       '  font: 600 10px/1.2 Inter,system-ui,sans-serif !important;',
-      '  background: rgba(4,16,42,0.95) !important; color: #c8dcff !important;',
+      '  background: rgba(0,0,0,0.94) !important; color: #f4f6f8 !important;',
       '  border: 1px solid rgba(20,195,243,0.45) !important; border-radius: 8px !important;',
       '  padding: 4px 8px !important; z-index: 120 !important; pointer-events: none !important;',
       '}',
@@ -108,7 +108,7 @@
       '  width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important;',
       '  border-radius: 50% !important; object-fit: cover !important;',
       '}',
-      '#cli-in::placeholder, #stc-cmd-in::placeholder { color: #6a8ab8 !important; opacity: 0.7 !important; }',
+      '#cli-in::placeholder, #stc-cmd-in::placeholder { color: #7a8a96 !important; opacity: 0.7 !important; }',
       '#cli-form { min-height: 48px !important; padding: 4px 10px 10px !important; }',
       'body:not(.sn-hud-live) #sn-topchrome, body:not(.sn-hud-live) #dock { opacity: 0 !important; }',
       'body.sn-hud-live #sn-topchrome, body.sn-hud-live #dock { opacity: 1 !important; }',

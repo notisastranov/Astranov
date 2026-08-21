@@ -1081,6 +1081,9 @@
       if (global.SNCurrency && SNCurrency.handleLine && SNCurrency.handleLine(line)) return true;
     } catch (_) {}
     try {
+      if (global.SNVillage && SNVillage.handleLine && SNVillage.handleLine(line)) return true;
+    } catch (_) {}
+    try {
       if (looksLikeTalk(line)) {
         await talkToMind(line);
         return true;

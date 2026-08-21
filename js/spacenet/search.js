@@ -1720,6 +1720,13 @@
   }
 
   async function researchFirst(query, opts) {
+
+    try {
+      if (global.SNVillage && SNVillage.isVillageQuery && SNVillage.isVillageQuery(query)) {
+        SNVillage.fly('regional');
+        return { ok: true, query: query, places: [SNVillage.hit()], via: 'hq' };
+      }
+    } catch (_) {}
     opts = opts || {};
     var q = String(query || '').trim();
     var L = opts.log || function () {};

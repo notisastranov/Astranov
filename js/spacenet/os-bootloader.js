@@ -834,6 +834,7 @@
     '/js/spacenet/poly-scheduler.js',
     '/js/spacenet/marina-berths.js',
     '/js/spacenet/home.js',
+    '/js/spacenet/village.js',
     '/js/spacenet/helper.js',
     '/js/spacenet/space-stage.js',
     '/js/spacenet/live-bridge.js',
@@ -1278,10 +1279,10 @@
           try {
             face = global._snPhysPos || global._snLastPos;
           } catch (_) {}
-          var lat = face && face.lat != null ? face.lat : 37.9838;
-          var lng = face && face.lng != null ? face.lng : 23.7275;
+          var lat = face && face.lat != null ? face.lat : 36.387557;
+          var lng = face && face.lng != null ? face.lng : 28.222533;
           if (SNGlobe.goToPlace) {
-            SNGlobe.goToPlace(lat, lng, { tier: 'global', label: face ? 'You' : 'Athens', body: 'earth', pulse: true });
+            SNGlobe.goToPlace(lat, lng, { tier: 'national', label: face ? 'You' : 'KALITHEA', body: 'earth', pulse: true, color: 0x14c3f3 });
           } else if (SNGlobe.goToTier) {
             SNGlobe.goToTier('global');
           }

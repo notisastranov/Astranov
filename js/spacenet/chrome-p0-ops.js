@@ -10,7 +10,7 @@
 (function (global) {
   'use strict';
   var BUILD = '20260820185500-p0-ops-rebuild';
-  var AEGEAN = { lat: 36.4341, lng: 28.2176, name: 'Rhodes' };
+  var AEGEAN = { lat: 36.387557, lng: 28.222533, name: 'Kalithea' };
 
   function isGreekQuery(q) {
     return /\b(rodos|rhodes|ρόδο|ροδοσ|ρόδος|opap|οπαπ|sgourou|σγούρ|mandraki|μανδράκ|lindos|λίνδο|vodi|βόδι)\b/i.test(
