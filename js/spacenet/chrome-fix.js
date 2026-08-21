@@ -1,29 +1,33 @@
-/* Astranov chrome-fix RESTORE loader · 20260820220000-hud-law
- * Loads local chrome-fix body (handles 10px + HUD placeholder law).
- * Never let CDN or late code set place-list or thick handles.
+/* Astranov chrome-fix loader · 20260821181000-chrome-restore
+ * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260820220000-hud-law';
-  var HUD = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260821181000-chrome-restore';
+  var TOP_PH = 'Heads up display command line interface';
+  var BOT_PH = 'command line interface';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
       var bot = document.getElementById('cli-in');
       if (top) {
-        top.placeholder = HUD;
-        top.setAttribute('aria-label', HUD);
+        top.placeholder = TOP_PH;
+        top.setAttribute('aria-label', TOP_PH);
       }
       if (bot) {
-        bot.placeholder = HUD;
-        bot.setAttribute('aria-label', HUD);
+        bot.placeholder = BOT_PH;
+        bot.setAttribute('aria-label', BOT_PH);
       }
-      // kill guest spam in log if present
+      var coach = document.getElementById('cli-coach');
+      if (coach) {
+        coach.innerHTML = '';
+        coach.style.cssText = 'display:none!important;height:0!important;padding:0!important;margin:0!important;';
+      }
       var log = document.getElementById('cli-log');
-      if (log && /SPACEX BOT|owner note|AI art missing/i.test(log.textContent || '')) {
+      if (log && /SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW/i.test(log.textContent || '')) {
         var bad = log.querySelectorAll('.sn-log-line, div, span');
         for (var i = 0; i < bad.length; i++) {
-          if (/SPACEX BOT|AI art missing|owner note/i.test(bad[i].textContent || '')) {
+          if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW/i.test(bad[i].textContent || '')) {
             try { bad[i].remove(); } catch (_) {}
           }
         }
@@ -69,7 +73,6 @@
   setTimeout(afterGood, 1200);
   setTimeout(loadOps, 2500);
   setInterval(enforceHud, 3500);
-  // also early
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', enforceHud);
   } else {
