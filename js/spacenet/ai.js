@@ -1863,44 +1863,21 @@
         return null;
       }
 
-      // Flagship paid mind first. Local matcher is the student, not the teacher.
+      // Paid Grok is the mind. Local student never intercepts talk.
       try {
-        if (global.SNBrain && typeof SNBrain.think === 'function') {
-          var br = await SNBrain.think(msg, { mode: opts.mode || 'chat' });
-          if (br && br.text) {
-            var bt = brandReply(br.text);
-            pushHist('assistant', bt);
-            showOnGlobe(bt);
-            try {
-              if (global.SNCli && SNCli.preview) SNCli.preview(bt.slice(0, 80));
-            } catch (_) {}
-            busy = false;
-            clearThinkGfx();
-            clearTimeout(watchdog);
-            ask._busySince = 0;
-            return bt;
-          }
-        }
-      } catch (_) {}
-
-      // Fast free mind — only when there is no job to do
-      try {
-        var mind = global.SNAstranovMind || global.SNFreeMind;
-        if (mind && mind.answer) {
-          var quick = mind.answer(msg, opts);
-          if (quick && quick.text && (quick.score == null || quick.score >= 0.55)) {
-            var qt = brandReply(quick.text);
-            pushHist('assistant', qt);
-            showOnGlobe(qt);
-            try {
-              if (global.SNCli && SNCli.preview) SNCli.preview(qt.slice(0, 80));
-            } catch (_) {}
-            busy = false;
-            clearThinkGfx();
-            clearTimeout(watchdog);
-            ask._busySince = 0;
-            return qt;
-          }
+        var edgeNow = await callEdge(msg, opts.mode || 'chat', opts);
+        if (edgeNow) {
+          var et = brandReply(edgeNow);
+          pushHist('assistant', et);
+          showOnGlobe(et);
+          try {
+            if (global.SNCli && SNCli.preview) SNCli.preview(et.slice(0, 80));
+          } catch (_) {}
+          busy = false;
+          clearThinkGfx();
+          clearTimeout(watchdog);
+          ask._busySince = 0;
+          return et;
         }
       } catch (_) {}
 

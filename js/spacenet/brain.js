@@ -420,16 +420,7 @@
       }
     } catch (_) {}
     if (!text) {
-      try {
-        var mind = global.SNAstranovMind || global.SNFreeMind;
-        if (mind && mind.answer) {
-          var quick = mind.answer(asked, { mode: opts.mode || 'chat' });
-          if (quick && quick.text) {
-            text = String(quick.text);
-            via = 'local-student';
-          }
-        }
-      } catch (_) {}
+      return { ok: false, text: '', via: 'grok-empty' };
     }
     text = String(text || '').replace(/\s+/g, ' ').trim();
     if (!text) return { ok: false, text: '', via: via || 'empty' };

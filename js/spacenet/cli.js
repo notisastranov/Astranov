@@ -1028,29 +1028,20 @@
   }
 
   async function talkToMind(line) {
-    log('UNIT · listening', 'dim');
+    log('GROK · SpaceNet mind', 'dim');
     var reply = '';
     try {
-      if (global.SNBrain && SNBrain.think) {
-        var r = await SNBrain.think(line, { mode: 'chat', timeoutMs: 12000 });
-        if (r && r.text) reply = String(r.text);
-      }
+      if (global.SNAi && SNAi.ask) reply = await SNAi.ask(line, { mode: 'chat' });
     } catch (_) {}
     if (!reply) {
       try {
-        if (global.SNAi && SNAi.ask) reply = await SNAi.ask(line, { mode: 'chat' });
-      } catch (_) {}
-    }
-    if (!reply) {
-      try {
-        var mind = global.SNAstranovMind || global.SNFreeMind;
-        if (mind && mind.answer) {
-          var q = mind.answer(line, { mode: 'chat' });
-          if (q && q.text) reply = q.text;
+        if (global.SNBrain && SNBrain.think) {
+          var r = await SNBrain.think(line, { mode: 'chat', timeoutMs: 16000 });
+          if (r && r.text) reply = String(r.text);
         }
       } catch (_) {}
     }
-    if (!reply) reply = 'I hear you. Ask a place, an order, or say help.';
+    if (!reply) reply = 'Paid mind did not answer. Say it again, or type plans.';
     String(reply)
       .split('\n')
       .forEach(function (ln) {
