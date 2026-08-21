@@ -124,7 +124,11 @@ async function callOpenAICompat(
       body: JSON.stringify(body),
     })
     clearTimeout(timer)
-    if (!r.ok) return null
+    if (!r.ok) {
+      const errTxt = await r.text().catch(() => '')
+      console.error('llm fail', model, r.status, String(errTxt).slice(0, 180))
+      return null
+    }
     const j = await r.json()
     const msg = j.choices?.[0]?.message
     const toolCalls = msg?.tool_calls
@@ -193,21 +197,14 @@ const HANDS = [
 ]
 
 async function callXAI(key: string, system: string, messages: Msg[]): Promise<string | null> {
-  const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-4.6'
+  const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-4-1-fast-non-reasoning'
   const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: HANDS }
-  const hit = await callOpenAICompat(
-    'https://api.x.ai/v1/chat/completions',
-    key,
-    primary,
-    system,
-    messages,
-    {},
-    paidOpts,
-  )
-  if (hit) return hit
-  for (const m of ['grok-4', 'grok-4-0709', 'grok-3']) {
-    if (m === primary) continue
-    const t = await callOpenAICompat(
+  const models = [primary, 'grok-4-1-fast-non-reasoning', 'grok-4', 'grok-4-0709', 'grok-3']
+  const seen = new Set<string>()
+  for (const m of models) {
+    if (!m || seen.has(m)) continue
+    seen.add(m)
+    const hit = await callOpenAICompat(
       'https://api.x.ai/v1/chat/completions',
       key,
       m,
@@ -216,7 +213,7 @@ async function callXAI(key: string, system: string, messages: Msg[]): Promise<st
       {},
       paidOpts,
     )
-    if (t) return t
+    if (hit) return hit
   }
   return null
 }
@@ -362,8 +359,17 @@ serve(async (req) => {
       }
     }
     const remainingApi = Math.max(0, apiBudgetEur - apiSpentEur)
-    // Owner: always paid Grok. Subscriber: paid while budget remains. Never expose key to client.
-    const mayUsePaidXai = isOwner || gift || (subActive && remainingApi > 0.0001 && (allowPaidClient || forcePaid || true))
+    // Owner law: paid Grok for everyone while the key is in Supabase.
+    // JWT owner always. Guests = gift tastes (client 3 then subscribe). Subscribers = budget.
+    const mayUsePaidXai =
+      !!Deno.env.get('XAI_API_KEY') &&
+      (isOwner ||
+        gift ||
+        allowPaidClient ||
+        forcePaid ||
+        body.owner === true ||
+        !profileId ||
+        (subActive && remainingApi > 0.0001))
 
     const GEMINI = Deno.env.get('GEMINI_API_KEY')
 
@@ -499,8 +505,20 @@ serve(async (req) => {
       return { text: t, via: 'xai-paid-fallback' }
     }
 
+    // Paid XAI FIRST when the Supabase secret is present — never hide it behind architect JWT.
+    if (XAI_SECRET) {
+      const paid = await tryPaidXaiFallback()
+      if (paid.text) {
+        raw = paid.text
+        via = paid.via || 'xai/supabase'
+        paidFallback = true
+        paidNotice = isOwner ? 'Architect · paid Grok' : 'Grok · SpaceNet mind'
+        provider = 'astranov-grok'
+      }
+    }
+
     // Owner (Architect JWT): paid XAI_API_KEY FIRST — no free detour when key present
-    if (ownerImmediatePaid && (forcePaid || body.owner === true || isOwner)) {
+    if (!raw && ownerImmediatePaid && (forcePaid || body.owner === true || isOwner)) {
       const paid = await tryPaidXaiFallback()
       if (paid.text) {
         raw = paid.text

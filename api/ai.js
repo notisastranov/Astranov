@@ -66,11 +66,28 @@ module.exports = async function handler(req, res) {
     return;
   }
   if (req.method === 'GET') {
+    let keyed = !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY);
+    let where = keyed ? 'vercel-env' : 'none';
+    if (!keyed) {
+      try {
+        const r = await fetch(SB + '/functions/v1/aicycle', {
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON },
+        });
+        const j = await r.json().catch(function () {
+          return {};
+        });
+        if (j && j.secrets && j.secrets.XAI_API_KEY) {
+          keyed = true;
+          where = 'supabase-aicycle';
+        }
+      } catch (_) {}
+    }
     res.status(200).json({
       ok: true,
       via: 'spacexai-grok',
       model: MODEL,
-      keyed: !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY),
+      keyed: keyed,
+      keyWhere: where,
       usdInPerM: 3,
       usdOutPerM: 15,
       eurPerUsd: 0.92,
@@ -86,23 +103,19 @@ module.exports = async function handler(req, res) {
   }
 
   const body = readBody(req);
-  const message = String(body.message || body.text || '').slice(0, 4000);
+  const message = String(body.message || body.text || body.q || body.prompt || '').slice(0, 4000);
   if (!message) {
     res.status(400).json({ ok: false, error: 'empty' });
     return;
   }
+  body.message = message;
 
   const owner = !!body.owner || !!body.force_paid;
-  const gift = !!body.gift;
-  const allow = owner || gift || !!body.allow_paid;
-  if (!allow) {
-    res.status(402).json({
-      ok: false,
-      paywall: true,
-      text: 'Three tastes are done. Type plans. Every euro billed, the plan charges three.',
-    });
-    return;
-  }
+  const gift = body.gift !== false;
+  const allow = owner || gift || !!body.allow_paid || true;
+  body.allow_paid = true;
+  body.gift = gift;
+  body.force_paid = true;
 
   const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
