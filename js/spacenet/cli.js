@@ -5190,7 +5190,7 @@ if (
     // Empty feed until YOU speak — live idle
     setActivity('idle');
     setLive(false);
-    preview('type · map follows');
+    preview('');
     try {
       document.querySelectorAll('#cli-log .cli-tile-block').forEach((el) => el.remove());
     } catch (_) {}

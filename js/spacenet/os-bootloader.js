@@ -1278,34 +1278,18 @@
         if (global.SNCli && SNCli.init) SNCli.init();
       } catch (_) {}
       try {
-        if (global.SNUi && SNUi.setSize) SNUi.setSize('mid');
-        else {
-          var panel = document.getElementById('panel');
-          if (panel) {
-            panel.classList.remove('collapsed', 'cli-quiet');
-            panel.classList.add('mid');
-            panel.style.maxHeight = '32vh';
-          }
+        /* stay collapsed — no mid expand, no instructional dump above CLI */
+        var panel = document.getElementById('panel');
+        if (panel) {
+          panel.classList.add('collapsed');
+          panel.classList.remove('mid', 'expanded');
+          panel.style.removeProperty('max-height');
         }
       } catch (_) {}
       try {
-        if (global.SNCli && SNCli.log) {
-          /* no coach dump — HUD and CLI speak by being used */
-        }
-      } catch (_) {}
-      try {
-        /* LAW: keep index.html HUD placeholder — never overwrite with place examples or generic CLI text */
-        var HUD_PH = 'Command the HUD · show, hide, or reshape';
-        var inp = document.getElementById('cli-in');
-        if (inp) {
-          inp.placeholder = HUD_PH;
-          inp.setAttribute('aria-label', HUD_PH);
-        }
-        var tin = document.getElementById('stc-cmd-in');
-        if (tin) {
-          tin.placeholder = HUD_PH;
-          tin.setAttribute('aria-label', HUD_PH);
-        }
+        /* NEVER write coach/instruction into CLI or placeholders */
+        var coach = document.getElementById('cli-coach');
+        if (coach && coach.parentNode) coach.parentNode.removeChild(coach);
       } catch (_) {}
       try {
         var signed = false;
