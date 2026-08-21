@@ -1058,6 +1058,7 @@
     let line = String(raw || '').trim();
     if (!line) return;
     try {
+      beginTurn();
       log(line, 'cmd');
       preview(line.slice(0, 48));
     } catch (_) {}

@@ -161,7 +161,7 @@
       panel.style.setProperty('min-height', '0', 'important');
       panel.style.setProperty('max-height', 'none', 'important');
       law.textContent =
-        '#panel.collapsed{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:10px 44px 0 auto!important}';
+        '#panel.collapsed{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:10px 44px auto auto!important}';
     } else {
       panel.style.setProperty('max-height', px + 'px', 'important');
       panel.style.setProperty('height', px + 'px', 'important');

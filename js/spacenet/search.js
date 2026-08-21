@@ -689,7 +689,7 @@
       code: /\b(code|github|npm|library|sdk|repo|package|javascript|python|rust|typescript)\b/.test(
         s
       ),
-      product: /\b(product|brand|barcode|nutrition|openfood)\b/.test(s),
+      product: /\b(product|brand|barcode|nutrition|openfood|laptop|laptops|macbook|notebook|computer|pc|iphone|android|phone|tablet|gpu|ssd|headphones|earbuds|charger|drone|playstation|xbox|console|camera|watch)\b/.test(s),
       // NEVER bare "show" — matches "show all" and floods TVMaze (Nigerian films etc.)
       media: /\b(movie|film|series|netflix|tv\s*show|actor|actress|cinema)\b/.test(s),
       book: /\b(book|novel|author|isbn)\b/.test(s),
@@ -1442,13 +1442,22 @@
 
     var explicitPlace = /^(fly|go|zoom|take me|show me the place|where is|locate)\b/.test(low);
     if (opts && opts.forcePlace) explicitPlace = true;
-    jobs.push(
-      geocode(q)
-        .then(function (p) {
-          out.places = p || [];
-        })
-        .catch(function () {})
-    );
+    var thingNoun = /\b(laptop|laptops|macbook|notebook|computer|pc|iphone|android|tablet|headphones|earbuds|charger|drone|playstation|xbox|camera)\b/i.test(low)
+      && !/\b(street|city|town|village|island|airport)\b/i.test(low);
+    if (thingNoun) {
+      out.kind = 'thing';
+      out.confidence = 0.8;
+      out.why = 'product / object';
+    }
+    if (explicitPlace || (!thingNoun && !isQuestionQuery(q))) {
+      jobs.push(
+        geocode(q)
+          .then(function (p) {
+            out.places = p || [];
+          })
+          .catch(function () {})
+      );
+    }
 
     await Promise.all(jobs);
     try {
@@ -1875,7 +1884,7 @@
         return looksLikePlaceHit(h) || (h && h.kind === 'wiki');
       });
     }
-    if (earthHits.length && !isQuestionQuery(q)) {
+    if (earthHits.length && !isQuestionQuery(q) && s.kind === 'place') {
       spinEarthToHits(earthHits);
       try {
         if (global.SNStage && SNStage.research) SNStage.research(earthHits);
@@ -1943,6 +1952,34 @@
         } catch (_) {}
       }
       return s;
+    }
+
+    if (s.kind !== 'place' && s.wiki && s.wiki.title && (s.acted || []).indexOf('wiki') < 0) {
+      L(s.wiki.title + (s.wiki.description ? ' · ' + s.wiki.description : ''), 'ok');
+      if (s.wiki.text) L(s.wiki.text.slice(0, 280), 'ok');
+      s.acted.push('wiki');
+    }
+    if (s.kind !== 'place' && s.web && s.web[0] && (s.acted || []).indexOf('web') < 0) {
+      L((s.web[0].title || q).slice(0, 80), 'ok');
+      if (s.web[0].text) L(String(s.web[0].text).slice(0, 220), 'dim');
+      s.acted.push('web');
+    }
+    if (intentOf(q).product && global._snPhysPos && global._snPhysPos.lat != null) {
+      try {
+        var shops = await nearby(global._snPhysPos.lat, global._snPhysPos.lng, 8000, 'electronics');
+        if (shops && shops.length) {
+          L('Shops near you · ' + shops.slice(0, 4).map(function (h) { return h.name; }).join(' · '), 'ok');
+          s.nearby = shops.slice(0, 6);
+          s.acted.push('shops');
+          try {
+            if (global.SNGlobe && SNGlobe.pulse) {
+              shops.slice(0, 5).forEach(function (h) {
+                SNGlobe.pulse(h.lat, h.lng, 0x14c3f3, String(h.name).slice(0, 14), 12000);
+              });
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
     }
 
     if (opts.skipBrain) return s;

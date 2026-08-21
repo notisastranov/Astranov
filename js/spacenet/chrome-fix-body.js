@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821185500-village-grok
+/* Astranov chrome-fix body · Build 20260821191000-real-mind
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821185500-village-grok';
+  var BUILD = '20260821191000-real-mind';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -53,11 +53,11 @@
       '  border: 1px solid rgba(20,195,243,0.42) !important;',
       '  border-radius: 22px !important;',
       '  display: grid !important;',
-      '  grid-template-rows: 10px 44px 0 auto !important;',
+      '  grid-template-rows: 10px 44px auto auto !important;',
       '  overflow: visible !important;',
       '  height: auto !important; min-height: 0 !important; max-height: none !important;',
       '}',
-      '#panel.collapsed { grid-template-rows: 10px 44px 0 auto !important; overflow: visible !important; height: auto !important; min-height: 0 !important; }',
+      '#panel.collapsed { grid-template-rows: 10px 44px auto auto !important; overflow: visible !important; height: auto !important; min-height: 0 !important; }',
       '#cli-drag, #sn-topchrome-drag {',
       '  height: 10px !important; min-height: 10px !important; max-height: 10px !important;',
       '  padding: 0 !important; margin: 0 !important;',
@@ -76,6 +76,8 @@
       '#sn-task-ribbon { grid-row: 2 !important; }',
       '#cli-log { grid-row: 3 !important; }',
       '#cli-form { grid-row: 4 !important; min-height: 48px !important; }',
+      '#cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; }',
+      '#cli-log:not(:empty) { display: block !important; max-height: 26vh !important; overflow-y: auto !important; padding: 4px 10px 8px !important; }',
       '#cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; margin: 0 !important; }',
       '#sn-task-ribbon {',
       '  display: flex !important; align-items: center !important; justify-content: flex-start !important;',
@@ -131,7 +133,7 @@
       killCoach();
       var panel = document.getElementById('panel');
       if (panel) {
-        panel.style.setProperty('grid-template-rows', '10px 44px 0 auto', 'important');
+        panel.style.setProperty('grid-template-rows', '10px 44px auto auto', 'important');
         panel.style.setProperty('overflow', 'visible', 'important');
         panel.style.setProperty('min-height', '0', 'important');
         panel.style.setProperty('height', 'auto', 'important');

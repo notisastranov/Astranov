@@ -1,9 +1,9 @@
-/* Astranov chrome-fix loader · 20260821185500-village-grok
+/* Astranov chrome-fix loader · 20260821191000-real-mind
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821185500-village-grok';
+  var BUILD = '20260821191000-real-mind';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   function enforceHud() {
