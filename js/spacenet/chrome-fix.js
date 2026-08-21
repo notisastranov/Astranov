@@ -1,9 +1,9 @@
-/* Astranov chrome-fix loader · 20260821183000-no-coach
+/* Astranov chrome-fix loader · 20260821184000-spacex-boot
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821183000-no-coach';
+  var BUILD = '20260821184000-spacex-boot';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   function enforceHud() {

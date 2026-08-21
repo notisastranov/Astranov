@@ -67,8 +67,44 @@
   var consoleEl = null;
   var bootEl = document.getElementById('boot');
 
-  /* ───────── Boot console UI ───────── */
+  /* ───────── SpaceX cinematic boot — Earth first, HUD last ───────── */
+  function injectBootCss() {
+    if (document.getElementById('sn-os-cinematic-css')) return;
+    var s = document.createElement('style');
+    s.id = 'sn-os-cinematic-css';
+    s.textContent = [
+      '#boot.os-cinematic{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;',
+      'background:radial-gradient(ellipse at 50% 40%,rgba(20,195,243,.16),#000105 58%);',
+      'transition:background 1.6s ease,opacity 1.25s ease;pointer-events:none;}',
+      '#boot.os-cinematic.os-earth{background:radial-gradient(ellipse at 50% 42%,rgba(20,195,243,.05),rgba(0,1,5,.18) 70%);}',
+      '#boot.os-cinematic.sn-os-reveal{opacity:0;background:transparent;}',
+      '#sn-os-stars{position:absolute;inset:0;overflow:hidden;pointer-events:none;}',
+      '#sn-os-stars i{position:absolute;width:2px;height:2px;border-radius:50%;background:#e8f7ff;',
+      'box-shadow:0 0 6px #14c3f3;opacity:.55;animation:snOsTwinkle 3.2s ease-in-out infinite;}',
+      '@keyframes snOsTwinkle{0%,100%{opacity:.2}50%{opacity:.9}}',
+      '#sn-os-core{position:relative;z-index:2;text-align:center;transform:translateY(-6vh);',
+      'transition:opacity .9s ease,transform 1.1s cubic-bezier(.22,1,.36,1);}',
+      '#boot.sn-os-reveal #sn-os-core{opacity:0;transform:translateY(-18vh) scale(.92);}',
+      '#sn-os-mark{font:800 22px/1 Space Grotesk,system-ui,sans-serif;letter-spacing:.42em;color:#14c3f3;',
+      'text-shadow:0 0 18px rgba(20,195,243,.85),0 0 48px rgba(20,195,243,.35);}',
+      '#sn-os-ring{width:148px;height:2px;margin:22px auto 0;border-radius:999px;overflow:hidden;',
+      'background:rgba(20,195,243,.14);box-shadow:0 0 12px rgba(20,195,243,.35);}',
+      '#sn-os-ring>span{display:block;height:100%;width:18%;background:linear-gradient(90deg,transparent,#14c3f3,#7ee9ff);',
+      'animation:snOsScan 1.6s ease-in-out infinite;}',
+      '@keyframes snOsScan{0%{transform:translateX(-40%)}100%{transform:translateX(540%)}}',
+      '#sn-os-sub{margin-top:16px;font:600 11px/1.3 JetBrains Mono,ui-monospace,monospace;letter-spacing:.28em;',
+      'color:rgba(180,230,255,.72);text-transform:uppercase;}',
+      '#sn-os-facts,#sn-os-actions{display:none!important;}',
+      '#sn-topchrome,#dock{opacity:0;transition:opacity 1.05s ease,transform 1.05s cubic-bezier(.22,1,.36,1);}',
+      '#sn-topchrome{transform:translateY(-14px);}',
+      '#dock{transform:translateY(18px);}',
+      'body.sn-hud-live #sn-topchrome,body.sn-hud-live #dock{opacity:1;transform:none;}',
+    ].join('');
+    document.head.appendChild(s);
+  }
+
   function ensureConsole() {
+    injectBootCss();
     if (!bootEl) {
       bootEl = document.createElement('div');
       bootEl.id = 'boot';
@@ -76,18 +112,39 @@
       document.body.appendChild(bootEl);
     }
     bootEl.classList.remove('hide');
-    bootEl.classList.add('os-mode', 'os-human');
+    bootEl.classList.add('os-cinematic');
     bootEl.style.cssText = '';
+    var dots = '';
+    for (var i = 0; i < 28; i++) {
+      var x = Math.round((i * 37) % 100);
+      var y = Math.round((i * 53) % 100);
+      var d = ((i * 0.11) % 2.4).toFixed(2);
+      dots += '<i style="left:' + x + '%;top:' + y + '%;animation-delay:' + d + 's"></i>';
+    }
     bootEl.innerHTML =
-      '<div id="sn-os-sheet">' +
+      '<div id="sn-os-stars">' + dots + '</div>' +
+      '<div id="sn-os-core">' +
       '<div id="sn-os-mark">ASTRANOV</div>' +
-      '<div id="sn-os-sub">Checking this device…</div>' +
-      '<div id="sn-os-facts"></div>' +
-      '<div id="sn-os-actions"></div>' +
-      '</div>';
+      '<div id="sn-os-ring"><span></span></div>' +
+      '<div id="sn-os-sub">EARTH</div>' +
+      '</div>' +
+      '<div id="sn-os-facts" hidden></div>' +
+      '<div id="sn-os-actions" hidden></div>';
     consoleEl = document.getElementById('sn-os-facts');
-    paintFacts();
     return consoleEl;
+  }
+
+  function revealEarth() {
+    try {
+      if (bootEl) bootEl.classList.add('os-earth');
+      setSub('EARTH ONLINE');
+    } catch (_) {}
+  }
+
+  function materializeHud() {
+    try {
+      document.body.classList.add('sn-hud-live');
+    } catch (_) {}
   }
 
   function esc(s) {
@@ -112,37 +169,7 @@
   }
 
   function paintFacts() {
-    if (!consoleEl) {
-      var box = document.getElementById('sn-os-facts');
-      if (!box) return;
-      consoleEl = box;
-    }
-    var html = '';
-    FACT_GROUPS.forEach(function (g) {
-      html += '<div class="sn-boot-sec">' + esc(g.title) + '</div>';
-      g.ids.forEach(function (id) {
-        var f = facts[id];
-        if (!f) return;
-        html +=
-          '<button type="button" class="sn-boot-line ' +
-          esc(f.state || '') +
-          '" data-fact="' +
-          esc(id) +
-          '"><span class="sn-boot-mark" aria-hidden="true">' +
-          markFor(f.state) +
-          '</span><span class="sn-boot-k">' +
-          esc(f.k) +
-          '</span><span class="sn-boot-v">' +
-          esc(f.text) +
-          '</span></button>';
-      });
-    });
-    consoleEl.innerHTML = html;
-    consoleEl.querySelectorAll('[data-fact]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        runFact(btn.getAttribute('data-fact'));
-      });
-    });
+    /* diagnostics live in CLI (`boot`) — never a gray wall over Earth */
   }
 
   function runFact(id) {
@@ -253,23 +280,8 @@
   }
 
   function setActions(btns) {
-    var box = document.getElementById('sn-os-actions');
-    if (!box) return;
-    box.innerHTML = '';
-    (btns || []).forEach(function (b) {
-      var el = document.createElement('button');
-      el.type = 'button';
-      el.className = 'sn-cli-glow' + (b.enter ? '' : ' alt');
-      el.textContent = b.label;
-      el.addEventListener('click', function () {
-        try {
-          b.fn();
-        } catch (e) {
-          fail('action · ' + (e && e.message ? e.message : e));
-        }
-      });
-      box.appendChild(el);
-    });
+    /* HUD is the only control surface after Earth is up */
+    void btns;
   }
 
   function probeNetwork() {
@@ -939,6 +951,8 @@
       'initGlobe failed · type: repair display'
     );
     recordCheck('globe-init', okG || !!(canvas && cw > 8), okG ? 'init true' : canvas ? 'canvas without init flag' : 'failed', 'repair display');
+    if (canvas && cw > 8) revealEarth();
+    setSub(canvas ? 'EARTH ONLINE' : 'WAKING EARTH');
     // Physics probe
     try {
       if (global.SNGlobe && SNGlobe.getPhysics) {
@@ -1304,23 +1318,28 @@
         if (global.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
       } catch (_) {}
     } catch (_) {}
-    killOverlay();
+    materializeHud();
+    setSub('HUD');
+    try {
+      if (bootEl) bootEl.classList.add('sn-os-reveal', 'os-earth');
+    } catch (_) {}
+    setTimeout(killOverlay, 1250);
   }
 
   function killOverlay() {
     try {
-      var el = document.getElementById('boot');
+      materializeHud();
+      var el = document.getElementById('boot') || bootEl;
       if (!el) return;
-      el.classList.add('hide');
-      el.style.setProperty('opacity', '0', 'important');
-      el.style.setProperty('display', 'none', 'important');
-      el.style.setProperty('pointer-events', 'none', 'important');
+      el.classList.add('sn-os-reveal', 'hide');
       el.setAttribute('aria-busy', 'false');
+      el.style.setProperty('pointer-events', 'none', 'important');
       setTimeout(function () {
         try {
+          el.style.setProperty('display', 'none', 'important');
           el.remove();
         } catch (_) {}
-      }, 180);
+      }, 1300);
     } catch (_) {}
   }
 
@@ -1482,7 +1501,7 @@
     ensureConsole();
     installLoader();
     collectHuman();
-    setSub('Checking this device…');
+    setSub('LINK');
     setTimeout(function () {
       if (entered) return;
       try {
@@ -1515,6 +1534,7 @@
       });
       initKernel();
 
+      setSub('EARTH');
       await loadThree();
       await loadStage('display', STAGE_DISPLAY, { soft: true });
       var displayOk = initDisplay();

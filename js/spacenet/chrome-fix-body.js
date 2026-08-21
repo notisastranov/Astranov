@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821183000-no-coach
+/* Astranov chrome-fix body · Build 20260821184000-spacex-boot
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821183000-no-coach';
+  var BUILD = '20260821184000-spacex-boot';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -110,6 +110,8 @@
       '}',
       '#cli-in::placeholder, #stc-cmd-in::placeholder { color: #6a8ab8 !important; opacity: 0.7 !important; }',
       '#cli-form { min-height: 48px !important; padding: 4px 10px 10px !important; }',
+      'body:not(.sn-hud-live) #sn-topchrome, body:not(.sn-hud-live) #dock { opacity: 0 !important; }',
+      'body.sn-hud-live #sn-topchrome, body.sn-hud-live #dock { opacity: 1 !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }
