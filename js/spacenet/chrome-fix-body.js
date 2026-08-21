@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821181200-chrome-restore
+/* Astranov chrome-fix body · Build 20260821181800-chrome-restore
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821181200-chrome-restore';
+  var BUILD = '20260821181800-chrome-restore';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -72,10 +72,16 @@
       '#cli-drag::after, #sn-topchrome-drag::after { content: none !important; display: none !important; }',
       /* coach dump — always gone, guest and signed-in */
       '#cli-coach, #cli-coach * {',
-      '  display: none !important; height: 0 !important; max-height: 0 !important;',
+      '  height: 0 !important; max-height: 0 !important; min-height: 0 !important;',
       '  padding: 0 !important; margin: 0 !important; overflow: hidden !important;',
       '  visibility: hidden !important; opacity: 0 !important; pointer-events: none !important;',
+      '  border: 0 !important; font-size: 0 !important; line-height: 0 !important;',
       '}',
+      '#cli-drag { grid-row: 1 !important; }',
+      '#sn-task-ribbon { grid-row: 2 !important; }',
+      '#cli-coach { grid-row: 3 !important; }',
+      '#cli-log { grid-row: 4 !important; }',
+      '#cli-form { grid-row: 5 !important; min-height: 48px !important; }',
       '#cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; margin: 0 !important; }',
       '#sn-task-ribbon {',
       '  display: flex !important; align-items: center !important; justify-content: flex-start !important;',
@@ -120,7 +126,7 @@
       if (c) {
         c.innerHTML = '';
         c.setAttribute('hidden', '');
-        c.style.cssText = 'display:none!important;height:0!important;padding:0!important;margin:0!important;';
+        c.style.cssText = 'height:0!important;max-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important;visibility:hidden!important;';
       }
     } catch (_) {}
   }

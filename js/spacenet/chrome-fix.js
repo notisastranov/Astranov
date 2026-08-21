@@ -1,9 +1,9 @@
-/* Astranov chrome-fix loader · 20260821181200-chrome-restore
+/* Astranov chrome-fix loader · 20260821181800-chrome-restore
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821181200-chrome-restore';
+  var BUILD = '20260821181800-chrome-restore';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   function enforceHud() {
@@ -21,7 +21,7 @@
       var coach = document.getElementById('cli-coach');
       if (coach) {
         coach.innerHTML = '';
-        coach.style.cssText = 'display:none!important;height:0!important;padding:0!important;margin:0!important;';
+        coach.style.cssText = 'height:0!important;max-height:0!important;padding:0!important;margin:0!important;overflow:hidden!important;visibility:hidden!important;';
       }
       var log = document.getElementById('cli-log');
       if (log && /SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW/i.test(log.textContent || '')) {
