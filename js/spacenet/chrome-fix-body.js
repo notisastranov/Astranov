@@ -1,11 +1,11 @@
-/* Astranov chrome-fix body · Build 20260821191000-real-mind
+/* Astranov chrome-fix body · Build 20260821200000-hud-law
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821191000-real-mind';
-  var TOP_PH = 'Heads up display command line interface';
-  var BOT_PH = 'command line interface';
+  var BUILD = '20260821200000-hud-law';
+  var TOP_PH = 'Command the HUD · show, hide, or reshape';
+  var BOT_PH = 'Command the HUD · show, hide, or reshape';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
