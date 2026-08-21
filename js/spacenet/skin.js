@@ -7,7 +7,7 @@
 (function (g) {
   'use strict';
   var KEY = 'sn:skin-v1';
-  var DEFAULT = 'astranov';
+  var DEFAULT = 'spacex';
 
   /** Product faces */
   var MEMORY = {
@@ -19,15 +19,15 @@
         '--bg': '#000000',
         '--bg-deep': '#000000',
         '--void': '#000000',
-        '--text': '#e8e8e8',
+        '--text': '#f4f6f8',
         '--text-bright': '#ffffff',
-        '--accent': '#ffffff',
-        '--bright': '#ffffff',
-        '--glow': '#c8c8c8',
-        '--ice': '#a8a8a8',
-        '--electric': '#ffffff',
+        '--accent': '#14c3f3',
+        '--bright': '#7ee9ff',
+        '--glow': '#14c3f3',
+        '--ice': '#9ad8ea',
+        '--electric': '#14c3f3',
         '--err': '#e82127',
-        '--border': 'rgba(255,255,255,0.22)',
+        '--border': 'rgba(20,195,243,0.38)',
       },
     },
     astranov: {
@@ -104,6 +104,12 @@
   }
 
   function boot() {
+    try {
+      if (!localStorage.getItem('sn:skin-v2')) {
+        localStorage.setItem(KEY, 'spacex');
+        localStorage.setItem('sn:skin-v2', 'grok');
+      }
+    } catch (_) {}
     return apply(read(), { silent: true });
   }
 

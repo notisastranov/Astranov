@@ -19,7 +19,7 @@
 
   function log(msg, cls) {
     try {
-      if (global.SNCli && SNCli.log) SNCli.log(msg, cls || 'ok');
+      if (global.SNCli && SNCli.log) SNCli.log(msg, 'ok', true);
     } catch (_) {}
   }
 
