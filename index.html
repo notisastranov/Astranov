@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260821181000-chrome-restore" />
-<meta name="astranov-continuity" content="20260821181000-chrome-restore" />
+<meta name="astranov-build" content="20260821181200-chrome-restore" />
+<meta name="astranov-continuity" content="20260821181200-chrome-restore" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -22,7 +22,7 @@
 }
 #sn-topchrome-drag::after, #cli-drag::after { content: none !important; display: none !important; }
 #panel, #sn-topchrome-panel { min-height: 0 !important; height: auto !important; }
-#panel { grid-template-rows: 10px 44px 0 0 auto !important; overflow: hidden !important; }
+#panel { grid-template-rows: 10px 44px 0 0 auto !important; overflow: visible !important; }
 #sn-task-ribbon .sn-rib-face, #sn-task-ribbon .sn-rib-icon img, #sn-rib-user img {
   width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important;
   border-radius: 50% !important; object-fit: cover !important; display: block !important;
@@ -47,9 +47,9 @@ html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(
 #sn-topchrome-drag::before,#cli-drag::before{content:"";width:36px;height:3px;border-radius:999px;background:rgba(20,195,243,0.55)}
 #sn-topchrome-drag::after,#cli-drag::after{content:none!important;display:none!important}
 #dock{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;justify-content:center;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
-#panel{pointer-events:auto;width:min(720px,100%);background:rgba(4,16,42,0.82);border:1px solid var(--border);border-radius:var(--r);display:grid;grid-template-rows:10px 44px 0 0 auto;overflow:hidden;backdrop-filter:blur(16px)}
+#panel{pointer-events:auto;width:min(720px,100%);background:rgba(4,16,42,0.82);border:1px solid var(--border);border-radius:var(--r);display:grid;grid-template-rows:10px 44px 0 0 auto;overflow:visible;backdrop-filter:blur(16px)}
 .sn-cli-field{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;min-height:36px!important;padding:0 10px!important;background:rgba(0,10,28,0.82)!important;border:1px solid rgba(20,195,243,0.5)!important;border-radius:12px!important}
-#stc-cmd,#cli-form{padding:4px 10px 8px;margin:0}
+#stc-cmd,#cli-form{padding:4px 10px 10px;margin:0;min-height:48px}
 #cli-in,#stc-cmd-in{background:transparent!important;border:0!important;color:#d4ecff;font:500 14px/1.3 var(--font-mono);width:100%;outline:none}
 #cli-in::placeholder,#stc-cmd-in::placeholder{color:#6a8ab8;opacity:0.7}
 #cli-coach{display:none!important;height:0!important;padding:0!important;margin:0!important}
@@ -120,11 +120,11 @@ html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(
     </form>
   </div>
 </div>
-<script src="/js/spacenet/chrome-mute.js?v=20260821181000-chrome-restore"></script>
-<script src="/js/spacenet/chrome-fix.js?v=20260821181000-chrome-restore"></script>
-<script src="/js/spacenet/chrome-rib-face.js?v=20260821181000-chrome-restore"></script>
-<script src="/js/spacenet/chrome-radar.js?v=20260821181000-chrome-restore"></script>
-<script src="/js/spacenet/os-bootloader.js?v=20260821181000-chrome-restore"></script>
-<script src="/js/spacenet/guardian.js?v=20260821181000-chrome-restore"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260821181200-chrome-restore"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260821181200-chrome-restore"></script>
+<script src="/js/spacenet/chrome-rib-face.js?v=20260821181200-chrome-restore"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260821181200-chrome-restore"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260821181200-chrome-restore"></script>
+<script src="/js/spacenet/guardian.js?v=20260821181200-chrome-restore"></script>
 </body>
 </html>

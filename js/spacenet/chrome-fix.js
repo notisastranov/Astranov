@@ -1,9 +1,9 @@
-/* Astranov chrome-fix loader · 20260821181000-chrome-restore
+/* Astranov chrome-fix loader · 20260821181200-chrome-restore
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821181000-chrome-restore';
+  var BUILD = '20260821181200-chrome-restore';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   function enforceHud() {

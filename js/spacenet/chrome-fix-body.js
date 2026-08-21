@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821181000-chrome-restore
+/* Astranov chrome-fix body · Build 20260821181200-chrome-restore
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821181000-chrome-restore';
+  var BUILD = '20260821181200-chrome-restore';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -54,10 +54,10 @@
       '  border-radius: 22px !important;',
       '  display: grid !important;',
       '  grid-template-rows: 10px 44px 0 0 auto !important;',
-      '  overflow: hidden !important;',
+      '  overflow: visible !important;',
       '  height: auto !important; min-height: 0 !important; max-height: none !important;',
       '}',
-      '#panel.collapsed { grid-template-rows: 10px 44px 0 0 auto !important; overflow: hidden !important; height: auto !important; min-height: 0 !important; }',
+      '#panel.collapsed { grid-template-rows: 10px 44px 0 0 auto !important; overflow: visible !important; height: auto !important; min-height: 0 !important; }',
       '#cli-drag, #sn-topchrome-drag {',
       '  height: 10px !important; min-height: 10px !important; max-height: 10px !important;',
       '  padding: 0 !important; margin: 0 !important;',
@@ -109,6 +109,7 @@
       '  border-radius: 50% !important; object-fit: cover !important;',
       '}',
       '#cli-in::placeholder, #stc-cmd-in::placeholder { color: #6a8ab8 !important; opacity: 0.7 !important; }',
+      '#cli-form { min-height: 48px !important; padding: 4px 10px 10px !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }
@@ -131,7 +132,7 @@
       var panel = document.getElementById('panel');
       if (panel) {
         panel.style.setProperty('grid-template-rows', '10px 44px 0 0 auto', 'important');
-        panel.style.setProperty('overflow', 'hidden', 'important');
+        panel.style.setProperty('overflow', 'visible', 'important');
         panel.style.setProperty('min-height', '0', 'important');
         panel.style.setProperty('height', 'auto', 'important');
       }
