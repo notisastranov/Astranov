@@ -1009,47 +1009,116 @@
     starbase: [25.997, -97.156],
   };
 
-  function looksLikeTalk(raw) {
+  function isOsCommand(raw) {
     var s = String(raw || '').trim();
     if (!s) return false;
-    if (/^(locate|fly|go|pizza|order|poly|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?)\b/i.test(s))
-      return false;
-    if (
-      /^(hi|hey|hello|yo|sup|hiya|howdy|thanks|thank you|please|ok|okay|yes|yeah|yep|nope|listen|talk|speak|chat)\b/i.test(
-        s
-      )
-    )
-      return true;
-    if (/\b(how are you|who are you|what can you do|talk to me|can you hear|are you there|i love you|good (morning|evening|night))\b/i.test(s))
-      return true;
-    if (/^(can you|could you|would you|please |tell me |i (want|need|think|feel|am)|we (should|need))\b/i.test(s))
-      return true;
-    return false;
+    return /^(locate|fly|go|pizza|order|poly|polygon|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?|village|kalithea|kallithea|marina|boot|diag|diagnostics|repair|plans?|subscribe|donate|power|helper|hard boot|clear cache|enter|youtube|yt|watch|skin)\b/i.test(
+      s
+    );
   }
 
-  async function talkToMind(line) {
-    log('GROK · SpaceNet mind', 'dim');
-    var reply = '';
+  function looksLikeTalk(raw) {
+    return !isOsCommand(raw);
+  }
+
+  async function grokFetch(line) {
+    var cfg = global.SN_CONFIG || {};
+    var sb = String(cfg.sbUrl || 'https://lkoatrkhuigdolnjsbie.supabase.co').replace(/\/$/, '');
+    var key = cfg.sbKey || '';
+    var headers = { 'Content-Type': 'application/json' };
+    if (key) {
+      headers.apikey = key;
+      headers.Authorization = 'Bearer ' + key;
+    }
     try {
-      if (global.SNAi && SNAi.ask) reply = await SNAi.ask(line, { mode: 'chat' });
+      if (global.SNAuth && SNAuth.authHeaders) {
+        var h = await SNAuth.authHeaders();
+        Object.keys(h).forEach(function (k) {
+          headers[k] = h[k];
+        });
+      }
     } catch (_) {}
-    if (!reply) {
+    var body = JSON.stringify({
+      message: String(line || '').slice(0, 4000),
+      mode: 'chat',
+      allow_paid: true,
+      gift: true,
+      force_paid: true,
+    });
+    var urls = [];
+    try {
+      urls.push(location.origin + '/api/ai');
+    } catch (_) {}
+    urls.push(sb + '/functions/v1/aicycle');
+    var text = '';
+    var via = '';
+    for (var i = 0; i < urls.length && !text; i++) {
       try {
-        if (global.SNBrain && SNBrain.think) {
-          var r = await SNBrain.think(line, { mode: 'chat', timeoutMs: 16000 });
-          if (r && r.text) reply = String(r.text);
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var t = setTimeout(function () {
+          try {
+            if (ctrl) ctrl.abort();
+          } catch (_) {}
+        }, 18000);
+        var r = await fetch(urls[i], { method: 'POST', headers: headers, body: body, signal: ctrl ? ctrl.signal : undefined });
+        clearTimeout(t);
+        var j = await r.json().catch(function () {
+          return {};
+        });
+        var cand = String(j.text || j.response || j.message || '').trim();
+        if (/paid XAI also failed|free tier unavailable|Three tastes are done/i.test(cand)) cand = '';
+        if (cand) {
+          text = cand;
+          via = String(j.via || j.provider || 'grok');
         }
       } catch (_) {}
     }
-    if (!reply) reply = 'Paid mind did not answer. Say it again, or type plans.';
-    String(reply)
-      .split('\n')
-      .forEach(function (ln) {
-        if (String(ln).trim()) log(ln, 'ok');
-      });
+    return { text: text, via: via };
+  }
+
+  async function talkToMind(line) {
+    log('GROK', 'dim');
+    var got = { text: '', via: '' };
     try {
-      if (global.SNHelper && SNHelper.speakDeep) SNHelper.speakDeep(String(reply).slice(0, 180));
-      else if (typeof replyOut === 'function') replyOut(reply);
+      got = await grokFetch(line);
+    } catch (_) {}
+    var reply = String((got && got.text) || '').trim();
+    if (!reply) {
+      try {
+        if (global.SNSearch && SNSearch.researchFirst) {
+          await SNSearch.researchFirst(line, { log: log, preview: preview, skipBrain: true });
+          return true;
+        }
+      } catch (_) {}
+      log('Grok did not answer. Say it again.', 'err');
+      return true;
+    }
+    var spoken = reply
+      .replace(/\[\[(GO|FLY|YOUTUBE|IMAGINE):[^\]]+\]\]/gi, '')
+      .replace(/^FLY:\s*[^\n]+/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    if (spoken) log(spoken, 'ok');
+    try {
+      var go = reply.match(/\[\[(?:GO|FLY):([^\]]+)\]\]/i) || reply.match(/FLY:\s*([^\n.]+)/i);
+      if (go && go[1] && global.SNSearch && SNSearch.geocode) {
+        var hits = await SNSearch.geocode(String(go[1]).trim());
+        if (hits && hits[0] && global.SNGlobe && SNGlobe.goToPlace) {
+          SNGlobe.goToPlace(hits[0].lat, hits[0].lng, {
+            tier: 'regional',
+            pulse: true,
+            color: 0x14c3f3,
+            label: String(hits[0].name || go[1]).slice(0, 18),
+            openMap: false,
+          });
+        }
+      }
+      var yt = reply.match(/\[\[YOUTUBE:([^\]]+)\]\]/i);
+      if (yt && yt[1] && global.SNYoutube && SNYoutube.find) await SNYoutube.find(String(yt[1]).trim());
+    } catch (_) {}
+    try {
+      if (global.SNHelper && SNHelper.speakDeep) SNHelper.speakDeep(spoken.slice(0, 180));
+      else if (typeof replyOut === 'function') replyOut(spoken);
     } catch (_) {}
     return true;
   }

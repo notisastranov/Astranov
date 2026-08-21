@@ -1,9 +1,9 @@
-/* Astranov chrome-fix loader · 20260821200000-hud-law
+/* Astranov chrome-fix loader · 20260821200500-grok-mind
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821200000-hud-law';
+  var BUILD = '20260821200500-grok-mind';
   var HUD = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
     try {

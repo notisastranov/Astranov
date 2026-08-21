@@ -844,8 +844,9 @@
       message: String(message || '').slice(0, opts && opts.long ? 4000 : 1400),
       system: String(systemFor(mode)).slice(0, 3200),
       fast: mode !== 'code' && mode !== 'coders' && !(sub && sub.owner),
-      allow_paid: !!(sub && (sub.owner || (sub.active && sub.remainingApiEur > 0) || sub.giftLeft > 0)),
-      force_paid: !!(sub && sub.owner),
+      allow_paid: true,
+      gift: true,
+      force_paid: true,
       owner: !!(sub && sub.owner),
       subscription: sub || undefined,
     };

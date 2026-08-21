@@ -1,9 +1,9 @@
-/* Astranov chrome-fix body · Build 20260821200000-hud-law
+/* Astranov chrome-fix body · Build 20260821200500-grok-mind
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821200000-hud-law';
+  var BUILD = '20260821200500-grok-mind';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
 
