@@ -1609,17 +1609,6 @@
     }
     // ➕ Add → upward menu ONLY
     if (act === 'place' || act === 'add' || act === 'target' || act === 'pin') {
-      var signedA = false;
-      try {
-        signedA = !!(g.SNAuth && SNAuth.user);
-      } catch (_) {}
-      if (!signedA) {
-        try {
-          if (g.SNCli && SNCli.log) SNCli.log('Sign in to add a place.', 'ok');
-          if (g.SNAuth && SNAuth.openModal) SNAuth.openModal();
-        } catch (_) {}
-        return;
-      }
       openRibbonFlyout(
         'sn-rib-add',
         {
@@ -1637,9 +1626,12 @@
           try {
             if (g.SNTopo && SNTopo.runAddOption) SNTopo.runAddOption(id);
             else if (g.SNTopo && SNTopo.openAddMenu) {
-              // Fallback: open topo menu then can't auto-pick — call internal if exposed
               if (typeof SNTopo._runAdd === 'function') SNTopo._runAdd(id);
               else if (g.SNCli && SNCli.log) SNCli.log('Add · ' + id + ' · hard refresh for full tool', 'dim');
+            } else if (g.SNField && SNField.runAddOption) {
+              SNField.runAddOption(id);
+            } else if (g.SNCli && SNCli.log) {
+              SNCli.log('Add · ' + id + ' · type: list shop  |  pin  |  post', 'ok');
             }
           } catch (e) {
             console.error('[SNField] add pick', e);

@@ -244,6 +244,169 @@
     }
   }
 
+  function viewSize() {
+    var el = document.getElementById('globe');
+    var vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    var w = Math.round((vv && vv.width) || (el && el.clientWidth) || window.innerWidth || 390);
+    var h = Math.round((vv && vv.height) || (el && el.clientHeight) || window.innerHeight || 844);
+    if (w < 64) w = window.innerWidth || 390;
+    if (h < 64) h = window.innerHeight || 844;
+    return { w: w, h: h };
+  }
+
+  function fitRenderer() {
+    if (!G.renderer || !G.camera) return;
+    var s = viewSize();
+    var cap = (global.SNPerf && SNPerf.dprCap) || (G._lite ? 1.15 : 2);
+    G.camera.aspect = s.w / Math.max(1, s.h);
+    G.camera.updateProjectionMatrix();
+    try {
+      G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, cap));
+    } catch (_) {}
+    G.renderer.setSize(s.w, s.h, true);
+    var c = G.renderer.domElement;
+    if (c && c.style) {
+      c.style.position = 'absolute';
+      c.style.left = '0';
+      c.style.top = '0';
+      c.style.width = '100%';
+      c.style.height = '100%';
+      c.style.display = 'block';
+      c.style.touchAction = 'none';
+    }
+  }
+
+  function paintNow() {
+    try {
+      if (G.renderer && G.scene && G.camera && !G._ctxLost) G.renderer.render(G.scene, G.camera);
+    } catch (_) {}
+    revealWebglIfAlive();
+  }
+
+  function revealWebglIfAlive() {
+    if (!G._lite || !G.renderer || G._webglShown || G._webglDead) return;
+    try {
+      var gl = G.renderer.getContext();
+      var c = G.renderer.domElement;
+      if (!gl || !c || G._ctxLost) {
+        if (c) c.style.opacity = '0';
+        return;
+      }
+      var buf = new Uint8Array(4);
+      gl.readPixels((c.width / 2) | 0, (c.height / 2) | 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+      var sum = buf[0] + buf[1] + buf[2];
+      var mx = Math.max(buf[0], buf[1], buf[2]);
+      if (sum > 90 && mx > 40) {
+        c.style.opacity = '1';
+        G._webglShown = true;
+      } else {
+        c.style.opacity = '0';
+        if (G._born && Date.now() - G._born > 1800) G._webglDead = true;
+      }
+    } catch (_) {
+      try { G.renderer.domElement.style.opacity = '0'; } catch (_) {}
+      G._webglDead = true;
+    }
+  }
+
+  function makeProceduralEarthTexture() {
+    var c = document.createElement('canvas');
+    c.width = 1024;
+    c.height = 512;
+    var ctx = c.getContext('2d');
+    var grd = ctx.createLinearGradient(0, 0, 0, 512);
+    grd.addColorStop(0, '#d8eefc');
+    grd.addColorStop(0.12, '#2a86c8');
+    grd.addColorStop(0.5, '#0a4a9a');
+    grd.addColorStop(0.88, '#2a86c8');
+    grd.addColorStop(1, '#d8eefc');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 1024, 512);
+    function blob(color, x, y, rx, ry) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    blob('#2f9a4a', 180, 220, 70, 90);
+    blob('#3aaa55', 200, 340, 40, 70);
+    blob('#2f8a45', 530, 175, 70, 38);
+    blob('#3a9a40', 560, 280, 95, 110);
+    blob('#348b3e', 720, 200, 160, 70);
+    blob('#2f8a45', 820, 330, 70, 40);
+    blob('#eef6fb', 300, 62, 95, 28);
+    blob('#eef6fb', 512, 492, 230, 22);
+    ctx.fillStyle = 'rgba(20,195,243,0.22)';
+    ctx.fillRect(0, 248, 1024, 14);
+    var tex;
+    try { tex = new THREE.CanvasTexture(c); } catch (_) { tex = new THREE.Texture(c); }
+    try {
+      if (!G._lite && THREE.sRGBEncoding) tex.encoding = THREE.sRGBEncoding;
+    } catch (_) {}
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function drawFallbackEarth(el) {
+    el = el || document.getElementById('globe');
+    if (!el) return null;
+    var d = document.getElementById('sn-earth-fallback');
+    if (!d) {
+      d = document.createElement('canvas');
+      d.id = 'sn-earth-fallback';
+      d.setAttribute('aria-hidden', 'true');
+      d.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;display:block';
+      el.appendChild(d);
+    }
+    var s = viewSize();
+    var w = Math.max(64, s.w);
+    var h = Math.max(64, s.h);
+    d.width = w;
+    d.height = h;
+    var ctx = d.getContext('2d');
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, w, h);
+    var cx = w / 2, cy = h / 2, r = Math.min(w, h) * 0.34;
+    var g = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+    g.addColorStop(0, '#4db0e8');
+    g.addColorStop(0.55, '#0b4a96');
+    g.addColorStop(1, '#041428');
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.fillStyle = '#2f9a4a';
+    function land(dx, dy, rx, ry) {
+      ctx.beginPath();
+      ctx.ellipse(cx + dx * r, cy + dy * r, rx * r, ry * r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    land(-0.35, -0.05, 0.18, 0.32);
+    land(-0.28, 0.28, 0.1, 0.22);
+    land(0.08, -0.22, 0.16, 0.1);
+    land(0.12, 0.08, 0.2, 0.28);
+    land(0.42, -0.12, 0.28, 0.14);
+    land(0.5, 0.22, 0.14, 0.08);
+    ctx.fillStyle = 'rgba(245,250,255,0.9)';
+    land(0, -0.82, 0.28, 0.08);
+    land(0, 0.88, 0.5, 0.07);
+    ctx.strokeStyle = 'rgba(20,195,243,0.55)';
+    ctx.lineWidth = Math.max(2, r * 0.018);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+    ctx.stroke();
+    /* stars */
+    ctx.fillStyle = '#ffffff';
+    for (var i = 0; i < 80; i++) {
+      var x = (i * 97) % w, y = (i * 53) % h;
+      if ((x - cx) * (x - cx) + (y - cy) * (y - cy) < r * r * 1.15) continue;
+      ctx.globalAlpha = 0.35 + (i % 5) * 0.12;
+      ctx.fillRect(x, y, 1.5, 1.5);
+    }
+    ctx.globalAlpha = 1;
+    return d;
+  }
+
   function latLngToVec(lat, lng, r) {
     r = r == null ? 1 : r;
     var phi = ((90 - lat) * Math.PI) / 180;
@@ -1313,8 +1476,10 @@
 
     var touch = isTouch();
     var lite = !!(global._snLite || (global.SNPerf && SNPerf.lite) || touch);
-    var w = el.clientWidth || window.innerWidth;
-    var h = el.clientHeight || window.innerHeight;
+    G._lite = lite;
+    var s0 = viewSize();
+    var w = s0.w;
+    var h = s0.h;
 
     G.scene = new THREE.Scene();
     G.scene.background = new THREE.Color(0x000000);
@@ -1326,29 +1491,60 @@
 
     G.renderer = new THREE.WebGLRenderer({
       antialias: !lite,
-      alpha: false,
-      powerPreference: lite ? 'low-power' : 'high-performance',
+      alpha: !!lite,
+      powerPreference: lite ? 'default' : 'high-performance',
       stencil: false,
       depth: true,
+      failIfMajorPerformanceCaveat: false,
+      preserveDrawingBuffer: !!lite,
     });
-    G.renderer.setSize(w, h, false);
-    var dprCap = (global.SNPerf && SNPerf.dprCap) || (lite ? 1.25 : 2);
-    G.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, dprCap));
-    try {
-      if (THREE.sRGBEncoding) G.renderer.outputEncoding = THREE.sRGBEncoding;
-      if (THREE.ACESFilmicToneMapping) G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      else if (THREE.ReinhardToneMapping) G.renderer.toneMapping = THREE.ReinhardToneMapping;
-      G.renderer.toneMappingExposure = 1.18;
-    } catch (_) {}
-    // Avoid auto-clear thrash
+    try { G.renderer.setClearColor(lite ? 0x000000 : 0x000000, lite ? 0 : 1); } catch (_) {}
+    if (!lite) {
+      try {
+        if (THREE.sRGBEncoding) G.renderer.outputEncoding = THREE.sRGBEncoding;
+        if (THREE.ACESFilmicToneMapping) G.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        else if (THREE.ReinhardToneMapping) G.renderer.toneMapping = THREE.ReinhardToneMapping;
+        G.renderer.toneMappingExposure = 1.18;
+      } catch (_) {}
+    } else {
+      try {
+        G.renderer.toneMapping = THREE.NoToneMapping || 0;
+        G.renderer.toneMappingExposure = 1;
+      } catch (_) {}
+    }
     try {
       G.renderer.sortObjects = false;
     } catch (_) {}
-    el.innerHTML = '';
+    try {
+      var keep = el.querySelector('#sn-earth-fallback');
+      el.querySelectorAll('canvas').forEach(function (n) {
+        if (n.id !== 'sn-earth-fallback') n.remove();
+      });
+      if (!keep) keep = drawFallbackEarth(el);
+    } catch (_) {
+      try { el.innerHTML = ''; } catch (_) {}
+    }
     el.appendChild(G.renderer.domElement);
+    try {
+      G.renderer.domElement.style.zIndex = '2';
+      if (lite) G.renderer.domElement.style.opacity = '0';
+    } catch (_) {}
+    fitRenderer();
+    try {
+      var canvasEl = G.renderer.domElement;
+      canvasEl.addEventListener('webglcontextlost', function (ev) {
+        try { ev.preventDefault(); } catch (_) {}
+        G._ctxLost = true;
+      }, false);
+      canvasEl.addEventListener('webglcontextrestored', function () {
+        G._ctxLost = false;
+        fitRenderer();
+        paintNow();
+      }, false);
+    } catch (_) {}
 
-    var amb = new THREE.AmbientLight(0x1a2838, 0.22);
-    var sun = new THREE.DirectionalLight(0xfff3d6, 1.85);
+    var amb = new THREE.AmbientLight(lite ? 0x9ec4e6 : 0x1a2838, lite ? 1 : 0.22);
+    var sun = new THREE.DirectionalLight(0xfff3d6, lite ? 1.45 : 1.85);
     sun.position.set(5.4, 1.6, 2.8);
     var fill = new THREE.DirectionalLight(0x4a7cff, 0.35);
     fill.position.set(-4.2, -0.6, -2.2);
@@ -1375,13 +1571,21 @@
     var cloudUrl =
       'https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/planets/earth_clouds_1024.png';
 
-    var mat = new THREE.MeshPhongMaterial({
-      color: 0x1a4a78,
-      specular: 0x446688,
-      shininess: 28,
-      // Instant solid Earth — textures stream in (no white stall)
-      emissive: new THREE.Color(0x041018),
-    });
+    var procTex = null;
+    try { procTex = makeProceduralEarthTexture(); } catch (_) {}
+    var mat;
+    if (lite) {
+      mat = new THREE.MeshBasicMaterial({ color: 0xffffff, map: procTex || null });
+      if (!procTex) mat.color.set(0x2a86c8);
+    } else {
+      mat = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        specular: 0x6688aa,
+        shininess: 18,
+        emissive: new THREE.Color(0x041018),
+        map: procTex || null,
+      });
+    }
     G.earthMat = mat;
     G.earth = new THREE.Mesh(new THREE.SphereGeometry(1, segs, segs), mat);
     G.spin.add(G.earth);
@@ -1411,22 +1615,30 @@
           G.renderer.capabilities.getMaxAnisotropy()) ||
           1
       );
+      function applyDay(tex) {
+        mat.map = tex;
+        mat.color.set(0xffffff);
+        mat.needsUpdate = true;
+        G.earth.material = mat;
+        G.earthMat = mat;
+        G.dayNightReady = false;
+        paintNow();
+      }
       function tryShader() {
         if (!dayTex) return;
-        // Prefer day/night blend when night map ready; else Phong day only
-        if (nightTex) {
-          var sm = makeDayNightMaterial(dayTex, nightTex);
-          G.earth.material = sm;
-          G.earthMat = sm;
-          G.dayNightReady = true;
-          updateDayNight();
-        } else {
-          mat.map = dayTex;
-          mat.color.set(0xffffff);
-          mat.needsUpdate = true;
-          G.earth.material = mat;
-          G.earthMat = mat;
+        // Custom ShaderMaterial goes black on many phone GPUs. Lite stays Basic/Phong.
+        if (nightTex && !G._lite) {
+          try {
+            var sm = makeDayNightMaterial(dayTex, nightTex);
+            G.earth.material = sm;
+            G.earthMat = sm;
+            G.dayNightReady = true;
+            updateDayNight();
+            paintNow();
+            return;
+          } catch (_) {}
         }
+        applyDay(dayTex);
       }
       loader.load(
         earthUrl,
@@ -1456,7 +1668,7 @@
         }
       );
     }
-    applyEarthTextures();
+    if (!lite) applyEarthTextures();
     G._applyEarthTextures = applyEarthTextures;
 
     if (!lite) {
@@ -1561,6 +1773,17 @@
     setSpaceLive(true);
     setTierLabel();
     ensureGlobeEngine();
+    G._born = Date.now();
+    paintNow();
+    try { requestAnimationFrame(paintNow); } catch (_) {}
+    try {
+      if (window.visualViewport && !G._vvBound) {
+        G._vvBound = true;
+        window.visualViewport.addEventListener('resize', onResize, { passive: true });
+      }
+    } catch (_) {}
+    setTimeout(paintNow, 50);
+    setTimeout(paintNow, 250);
     return true;
   }
 
@@ -2246,8 +2469,9 @@
     G.diveTier = cell;
     if (wantMap) {
       try {
-        setHud('CITY · streets · shops');
-        if (global.SNCli && SNCli.log) SNCli.log('CITY · streets open · shops and orders on the map', 'ok');
+        setHud('CITY · shops · menus · delivery');
+        if (global.SNCli && SNCli.log)
+          SNCli.log('CITY · streets · tap a shop for menu and prices · + to add shop or pin · locate to drive', 'ok');
       } catch (_) {}
     }
 
@@ -2452,13 +2676,8 @@
   }
 
   function onResize() {
-    if (!G.renderer) return;
-    var el = document.getElementById('globe');
-    var w = el.clientWidth || window.innerWidth;
-    var h = el.clientHeight || window.innerHeight;
-    G.camera.aspect = w / h;
-    G.camera.updateProjectionMatrix();
-    G.renderer.setSize(w, h, false);
+    fitRenderer();
+    paintNow();
   }
 
 
@@ -2484,7 +2703,7 @@
 
   function loop(dtMs, now) {
     // When called from RAF fallback, no args — when from SNEngine, dtMs is set
-    if (!G.ready || document.hidden) return;
+    if (!G.ready || G._ctxLost) return;
     // Full-rate game scene: frame callbacks own tick/render
     if (G.gameMode) {
       var nowGm = performance.now();
@@ -2528,9 +2747,11 @@
       Math.abs(G.velX) > 0.00005 ||
       Math.abs(G.velY) > 0.00005;
     var idle = Date.now() - G.lastAct > 2400;
-    var idleSkip = (global.SNPerf && SNPerf.idleSkip) || (G._lite ? 4 : 3);
+    var idleSkip = (global.SNPerf && SNPerf.idleSkip) || (G._lite ? 2 : 3);
+    var bornMs = G._born ? Date.now() - G._born : 99999;
     // Never skip frames while user drags or inertia runs (skip was causing jump/shake)
-    if (!moving) {
+    // First 2.5s always paint so phones get a visible Earth immediately.
+    if (!moving && bornMs > 2500) {
       var skip = idle ? idleSkip : 2;
       if (G.frame % skip !== 0) return;
     }
@@ -3031,5 +3252,8 @@
       return G.diveAnchor;
     },
     latLngToVec: latLngToVec,
+    fit: fitRenderer,
+    paint: paintNow,
+    get webglLive() { return !!G._webglShown; },
   };
 })(typeof window !== 'undefined' ? window : globalThis);

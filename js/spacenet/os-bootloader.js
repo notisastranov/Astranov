@@ -818,6 +818,8 @@
   ];
   var STAGE_DRIVERS = [
     '/js/spacenet/map.js',
+    '/js/spacenet/topo.js',
+    '/js/spacenet/tile.js',
     '/js/spacenet/tasks.js',
     '/js/spacenet/search.js',
     '/js/spacenet/youtube.js',
@@ -825,11 +827,18 @@
     '/js/spacenet/omni-engine.js',
     '/js/spacenet/brain.js',
     '/js/spacenet/market.js',
+    '/js/spacenet/chrome-market.js',
+    '/js/spacenet/places-business.js',
+    '/js/spacenet/commerce.js',
     '/js/spacenet/task-runner.js',
     '/js/spacenet/field.js',
+    '/js/spacenet/routing.js',
     '/js/spacenet/delivery-rules.js',
+    '/js/spacenet/order-engine.js',
+    '/js/spacenet/offer-stack.js',
     '/js/spacenet/poly-engine.js',
     '/js/spacenet/reassign-engine.js',
+    '/js/spacenet/mesh-orders.js',
     '/js/spacenet/wish-inbox.js',
     '/js/spacenet/poly-scheduler.js',
     '/js/spacenet/marina-berths.js',
@@ -842,6 +851,7 @@
     '/js/spacenet/scenarios.js',
     '/js/spacenet/prefs.js',
     '/js/spacenet/webrtc.js',
+    '/js/spacenet/chrome-p0-ops.js',
   ];
   var STAGE_SERVICES = [
     '/js/spacenet/greeklish.js',
@@ -962,7 +972,13 @@
       }
     } catch (_) {}
     try {
-      if (global.SNSkyBodies && SNSkyBodies.init) {
+      var liteSky = !!(global._snLite || (global.SNPerf && SNPerf.lite));
+      if (liteSky) {
+        recordCheck('SNSkyBodies', !!global.SNSkyBodies, 'deferred on phone', null);
+        setTimeout(function () {
+          try { if (global.SNSkyBodies && SNSkyBodies.init) SNSkyBodies.init(); } catch (_) {}
+        }, 1800);
+      } else if (global.SNSkyBodies && SNSkyBodies.init) {
         SNSkyBodies.init();
         recordCheck('SNSkyBodies', true, 'live sky · sun moon planets', null);
       } else recordCheck('SNSkyBodies', !!global.SNSkyBodies, 'module', 'ephemeris.js + sky-bodies.js');
@@ -989,6 +1005,11 @@
       }
     }
     softInit('SNField', global.SNField, 'init');
+    try { recordCheck('SNTopo', !!global.SNTopo, global.SNTopo ? 'add shop/pin/social' : 'missing', 'topo.js'); } catch (_) {}
+    try { recordCheck('SNTile', !!global.SNTile, global.SNTile ? 'vendor menus' : 'missing', 'tile.js'); } catch (_) {}
+    try { recordCheck('SNRouting', !!global.SNRouting, global.SNRouting ? 'osrm' : 'missing', 'routing.js'); } catch (_) {}
+    try { recordCheck('SNOrderEngine', !!global.SNOrderEngine, global.SNOrderEngine ? 'orders' : 'missing', 'order-engine.js'); } catch (_) {}
+    softInit('SNOfferStack', global.SNOfferStack, 'init');
     softInit('SNPolyScheduler', global.SNPolyScheduler, 'init');
     softInit('SNPolyEngine', global.SNPolyEngine, 'init');
     softInit('SNReassignEngine', global.SNReassignEngine, 'init');
@@ -1547,9 +1568,13 @@
         displayOk = !!document.querySelector('#globe canvas');
       }
       setFact('graphics', displayOk ? 'Earth ready' : 'Earth not ready · tap to repair', displayOk ? 'ok' : 'bad');
+      try { if (global.SNGlobe && SNGlobe.paint) SNGlobe.paint(); } catch (_) {}
 
-      await loadStage('drivers', STAGE_DRIVERS, { soft: true });
-      initDrivers();
+      // Phone: show Earth NOW. Drivers (shops / delivery / city map) load in background.
+      var driversP = loadStage('drivers', STAGE_DRIVERS, { soft: true }).then(function () {
+        try { initDrivers(); } catch (e) { warn('drivers init · ' + (e && e.message ? e.message : e)); }
+      });
+
       // Guard: boot must be GLOBAL globe, not a random city dive
     try {
       if (global.SNGlobe && SNGlobe.goToTier && SNGlobe.currentTier) {

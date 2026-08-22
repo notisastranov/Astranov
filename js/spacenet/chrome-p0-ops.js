@@ -204,7 +204,14 @@
       return;
     }
     if (id === 'vendor' || id === 'shop') {
-      cliLog('VENDOR · type in CLI: vendor <name>  or  shop <name> near me', 'ok');
+      if (global.SNTopo && SNTopo.runAddOption) {
+        SNTopo.runAddOption('vendor');
+        return;
+      }
+      try {
+        if (global.SNCli && SNCli.run) void SNCli.run('list shop My Shop');
+      } catch (_) {}
+      cliLog('VENDOR · shop listing started · add menu items next', 'ok');
       return;
     }
     if (id === 'social' || id === 'post' || id === 'cast') {
@@ -269,13 +276,8 @@
               });
               return;
             }
-            var signed = !!(global.SNAuth && SNAuth.user);
-            if (!signed) {
-              cliLog('Sign in to add a place.', 'ok');
-              try {
-                if (global.SNAuth && (SNAuth.openModal || SNAuth.open))
-                  (SNAuth.openModal || SNAuth.open)();
-              } catch (_) {}
+            if (global.SNTopo && SNTopo.openAddMenu) {
+              SNTopo.openAddMenu();
               return;
             }
             cliLog('ADD · choose in CLI:  pin  |  post  |  task  |  vendor  |  poly', 'ok');
