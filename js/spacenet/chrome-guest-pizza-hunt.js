@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822200000-release-drag
+ * Guest pizza hunt — Build 20260822203000-earth-parent
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -7,25 +7,22 @@
  *   / No delivery shops near view · type Locate once
  *   No Kalithea 36.388 list. No Google wall.
  *
- * HONEST FAIL (20260822190000 left viewLatLng at SA):
- *   stopMotion NOT exported; SNGlobe.dragging is NOT internal G.dragging;
- *   setting SNGlobe.dragging=false does nothing; flyNear returns if G.dragging;
- *   while G.dragging, stepPhys CLEARS tTilt/tSpin and stuck pointer rewrites rotation.
+ * HONEST FAIL (20260822200000-release-drag):
+ *   Astranov.Eu: dragging=false map=false ready=true tiltX=-0.6360 spinY=-0.4925
+ *   (correct Rhodes euler) but viewLatLng still -32.998,-61.780.
+ *   getTilt/getSpin are NOT pickLatLng's nodes. fly rhodes CITY line is a lie.
+ *   viewLatLng = pickLatLng(canvas center) → raycast getEarth() → worldToLocal.
  *
- * FIX 20260822200000-release-drag:
- *   1) unfreeze: dispatch pointerup + pointercancel + lostpointercapture on
- *      SNGlobe.getRenderer().domElement and on #globe canvas so trackball ends
- *      (that is how G.dragging is cleared from outside).
- *   2) Snap: euler from getTilt/getSpin (x=-lat*PI/180, y=-lng*PI/180, clamp 1.05),
- *      set quaternions, updateMatrixWorld(true) on tilt/spin/earth/pivot, then paint().
- *   3) Then flyNear + goToPlace(openMap:false, skipScan:true).
- *   4) Do NOT set SNGlobe.dragging; do NOT use missing stopMotion as only unfreeze.
- *   5) On fly fail: one diagnostic line dragging=getPhysics().dragging map=!!SNMap.active
- *      ready=SNGlobe.ready tiltX=getTilt().rotation.x spinY=getSpin().rotation.y view=viewLatLng.
- *      Still no huntAt, no Pins, no lastFly.
- *   6) STOP intercepting `fly rhodes` (let cli.js openCityAt run); KEEP intercepting
- *      `show rhodes` with new unfreeze+snap. After successful CLI fly, pizza may hunt.
- *   7) Optional: after show-rhodes success only, pulse >=10 Earth meshes.
+ * FIX 20260822203000-earth-parent flyGlobeTo:
+ *   1) pointerup/cancel on canvas (release trackball).
+ *   2) walk getEarth() parents; apply Rhodes euler+quat to LIVE chain +
+ *      getTilt/getSpin/getPivot; updateMatrixWorld; paint.
+ *   3) if still SA rotate earth mesh so latLngToVec(36.44,28.22) points at camera; paint.
+ *   4) success only if viewLatLng within 2.5 deg then log Rhodes. globe camera.
+ *      then pulse >=10 Meshes.
+ *   5) fail: Fly failed + parent names + view. No hunt. No lastFly.
+ *      Swallow CITY Rhodes while hunting.
+ *   Do NOT log Earth.CITY.Rhodes unless viewLatLng ~= 36.44,28.22.
  *
  * REAL SNGlobe exports: init, pulse, clearMarkers, flyNear, goToPlace, goToTier,
  *   viewLatLng, pickLatLng, setFocus, focusPos, getTilt, getSpin, getPivot, getEarth,
@@ -37,7 +34,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822200000-release-drag';
+  var BUILD = '20260822203000-earth-parent';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -76,7 +73,9 @@
 
   function log(m, c) {
     try {
-      if (G.SNCli && SNCli.log) SNCli.log(String(m).slice(0, 420), c || 'ok', true);
+      var s = String(m).slice(0, 420);
+      if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, 2.5, 2.5)) return;
+      if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
     } catch (_) {}
   }
   function preview(m) {
@@ -536,13 +535,16 @@
       }
     } catch (_) {}
     try {
-      if (G.SNCli && typeof SNCli.log === 'function' && !SNCli.__snPizzaLogGuard) {
+      if (G.SNCli && typeof SNCli.log === 'function' && SNCli.__snPizzaLogGuard !== 'earth-parent') {
         var prevLog = SNCli.log.bind(SNCli);
         SNCli.log = function (m, c, force) {
-          if (globeOnly() && POI_DUMP_RE.test(String(m || ''))) return;
+          var s = String(m || '');
+          if (globeOnly() && POI_DUMP_RE.test(s)) return;
+          // Swallow Earth.CITY.Rhodes lie unless the mesh actually faces Rhodes.
+          if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, 2.5, 2.5)) return;
           return prevLog(m, c, force);
         };
-        SNCli.__snPizzaLogGuard = true;
+        SNCli.__snPizzaLogGuard = 'earth-parent';
       }
     } catch (_) {}
   }
@@ -567,48 +569,319 @@
     } catch (_) {}
   }
 
+  /** True if a CLI line is the lying Earth.CITY.Rhodes claim. */
+  function isCityRhodesLine(m) {
+    var s = String(m || '');
+    if (!s) return false;
+    if (/Earth\s*[·.]\s*CITY/i.test(s) && /rhodes|rodos|ρόδος/i.test(s)) return true;
+    if (/\bCITY\s*[·.]\s*(Rhodes|Rodos)\b/i.test(s)) return true;
+    if (/Earth\.CITY\.(Rhodes|Rodos)/i.test(s)) return true;
+    return false;
+  }
+
+  /** Globe.js latLngToVec — local unit vector on the earth mesh. */
+  function latLngToVecLocal(lat, lng, r) {
+    r = r == null ? 1 : r;
+    try {
+      if (G.SNGlobe && typeof SNGlobe.latLngToVec === 'function') {
+        var v = SNGlobe.latLngToVec(lat, lng, r);
+        if (v) return v;
+      }
+    } catch (_) {}
+    var phi = ((90 - lat) * Math.PI) / 180;
+    var theta = ((lng + 180) * Math.PI) / 180;
+    var x = -r * Math.sin(phi) * Math.cos(theta);
+    var y = r * Math.cos(phi);
+    var z = r * Math.sin(phi) * Math.sin(theta);
+    try {
+      var earth0 = G.SNGlobe && typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      if (earth0 && earth0.position && earth0.position.clone) {
+        return earth0.position.clone().set(x, y, z);
+      }
+    } catch (_) {}
+    return { x: x, y: y, z: z };
+  }
+
+  /** Walk getEarth() → parent → … (the nodes pickLatLng actually uses). */
+  function walkEarthChain() {
+    var out = { nodes: [], names: [] };
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.getEarth !== 'function') return out;
+      var n = SNGlobe.getEarth();
+      var hops = 0;
+      while (n && hops < 14) {
+        out.nodes.push(n);
+        var nm = 'obj';
+        try {
+          if (n.name) nm = String(n.name);
+          else if (n.type) nm = String(n.type);
+          else if (n.isMesh) nm = 'Mesh';
+          else if (n.isScene) nm = 'Scene';
+          else if (n.isCamera) nm = 'Camera';
+          else nm = 'Object3D';
+        } catch (_) {}
+        out.names.push(String(nm).slice(0, 28));
+        try {
+          n = n.parent;
+        } catch (_) {
+          n = null;
+        }
+        hops++;
+      }
+    } catch (_) {}
+    return out;
+  }
+
+  function nodeIsSceneOrCam(n) {
+    if (!n) return true;
+    try {
+      if (n.isScene || n.type === 'Scene') return true;
+      if (n.isCamera || (n.type && String(n.type).indexOf('Camera') >= 0)) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function writeEulerQuat(node, x, y, z) {
+    if (!node || !node.rotation) return;
+    try {
+      if (node.rotation.set) node.rotation.set(x, y, z);
+      else {
+        node.rotation.x = x;
+        node.rotation.y = y;
+        node.rotation.z = z;
+      }
+    } catch (_) {}
+    try {
+      if (node.quaternion && node.quaternion.setFromEuler) node.quaternion.setFromEuler(node.rotation);
+    } catch (_) {}
+    try {
+      node.matrixAutoUpdate = true;
+    } catch (_) {}
+    try {
+      if (node.updateMatrix) node.updateMatrix();
+    } catch (_) {}
+  }
+
   /**
-   * Snap mesh via getTilt/getSpin + updateMatrixWorld, then paint.
-   * x = -lat*PI/180, y = -lng*PI/180, clamp tilt 1.05.
-   * Do NOT set SNGlobe.dragging (useless). setGlobeLatLng NOT exported.
+   * Apply polar euler+quat to LIVE getEarth() parent chain AND getTilt/getSpin/getPivot.
+   * getTilt/getSpin are NOT pickLatLng's nodes — writing them alone leaves viewLatLng at SA.
    */
-  function snapTiltSpin(lat, lng) {
+  function snapLiveChain(lat, lng) {
     try {
       if (!G.SNGlobe) return;
+      var TILT_MAX = 1.05;
+      var x = (-lat * Math.PI) / 180;
+      var y = (-lng * Math.PI) / 180;
+      if (x > TILT_MAX) x = TILT_MAX;
+      if (x < -TILT_MAX) x = -TILT_MAX;
+
+      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
       var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
       var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
-      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
       var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
-      if (tilt && spin) {
-        var TILT_MAX = 1.05;
-        var x = (-lat * Math.PI) / 180;
-        var y = (-lng * Math.PI) / 180;
-        if (x > TILT_MAX) x = TILT_MAX;
-        if (x < -TILT_MAX) x = -TILT_MAX;
+      var walk = walkEarthChain();
+
+      var seen = [];
+      function add(n) {
+        if (!n) return;
+        if (seen.indexOf(n) >= 0) return;
+        seen.push(n);
+      }
+      var i;
+      for (i = 0; i < walk.nodes.length; i++) add(walk.nodes[i]);
+      add(tilt);
+      add(spin);
+      add(pivot);
+
+      var liveParents = [];
+      for (i = 0; i < walk.nodes.length; i++) {
+        var pn = walk.nodes[i];
+        if (pn === earth) continue;
+        if (nodeIsSceneOrCam(pn)) continue;
+        liveParents.push(pn);
+      }
+
+      for (i = 0; i < seen.length; i++) {
+        var node = seen[i];
+        if (!node || node === earth) continue;
+        if (nodeIsSceneOrCam(node)) continue;
+        var nm = '';
         try {
-          tilt.rotation.set(x, 0, 0);
-          spin.rotation.set(0, y, 0);
-          if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
-          if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
+          nm = String(node.name || node.type || '');
         } catch (_) {}
+        var rx = 0;
+        var ry = 0;
         try {
-          if (tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
-          if (spin.updateMatrixWorld) spin.updateMatrixWorld(true);
-          if (earth && earth.updateMatrixWorld) earth.updateMatrixWorld(true);
-          if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
+          if (node.rotation) {
+            rx = Math.abs(+node.rotation.x || 0);
+            ry = Math.abs(+node.rotation.y || 0);
+          }
+        } catch (_) {}
+        var isTilt =
+          node === tilt || /tilt/i.test(nm) || (rx >= ry + 0.02 && rx > 0.01);
+        var isSpin =
+          node === spin ||
+          node === pivot ||
+          /spin|pivot/i.test(nm) ||
+          (ry > rx + 0.02);
+        var liveIdx = liveParents.indexOf(node);
+        var nLive = liveParents.length;
+        if (node === tilt) {
+          writeEulerQuat(node, x, 0, 0);
+        } else if (node === spin && node !== pivot) {
+          writeEulerQuat(node, 0, y, 0);
+        } else if (node === pivot && nLive <= 1) {
+          // pivot is the only live rotator (getTilt/getSpin are detached) — both axes
+          writeEulerQuat(node, x, y, 0);
+        } else if (node === spin || node === pivot || (isSpin && !isTilt)) {
+          writeEulerQuat(node, 0, y, 0);
+        } else if (isTilt && !isSpin) {
+          writeEulerQuat(node, x, 0, 0);
+        } else if (nLive === 1 && liveIdx === 0) {
+          writeEulerQuat(node, x, y, 0);
+        } else if (liveIdx === 0) {
+          writeEulerQuat(node, 0, y, 0);
+        } else if (liveIdx === 1) {
+          writeEulerQuat(node, x, 0, 0);
+        } else {
+          writeEulerQuat(node, x, y, 0);
+        }
+      }
+
+      // matrices: root → leaf so worldToLocal in pickLatLng is current
+      for (i = walk.nodes.length - 1; i >= 0; i--) {
+        try {
+          if (walk.nodes[i] && walk.nodes[i].updateMatrixWorld) walk.nodes[i].updateMatrixWorld(true);
         } catch (_) {}
       }
+      try {
+        if (tilt && tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        if (spin && spin.updateMatrixWorld) spin.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        if (earth && earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        var cam = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+        if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
+      } catch (_) {}
       if (typeof SNGlobe.paint === 'function') SNGlobe.paint();
     } catch (_) {}
   }
 
   /**
-   * REQUIRED flyGlobeTo (Build 20260822200000-release-drag):
-   * 1) unfreeze via pointer events (clears internal G.dragging)
-   * 2) snap euler + updateMatrixWorld + paint
-   * 3) flyNear + goToPlace(openMap:false, skipScan:true)
-   * 4) poll viewLatLng ≤3s; success ONLY near target
-   * Set lastFly ONLY on verified success. On fail clear lastFly.
+   * Rotate the LIVE earth mesh so latLngToVec(lat,lng) points at the camera.
+   * This is what pickLatLng/viewLatLng actually raycast.
+   */
+  function faceEarthAtCamera(lat, lng) {
+    try {
+      if (!G.SNGlobe) return;
+      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      var camera = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (!earth || !camera) return;
+      try {
+        if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
+      } catch (_) {}
+
+      var local = latLngToVecLocal(lat, lng, 1);
+      if (!local || local.x == null) return;
+      var worldPt;
+      try {
+        worldPt = earth.localToWorld(local.clone ? local.clone() : local);
+      } catch (_) {
+        return;
+      }
+      var origin;
+      try {
+        origin = earth.position.clone();
+        if (earth.getWorldPosition) earth.getWorldPosition(origin);
+      } catch (_) {
+        return;
+      }
+      var currentDir;
+      try {
+        currentDir = worldPt.sub(origin);
+        if (currentDir.lengthSq && currentDir.lengthSq() < 1e-12) return;
+        currentDir.normalize();
+      } catch (_) {
+        return;
+      }
+      var camPos;
+      try {
+        camPos = camera.position.clone();
+        if (camera.getWorldPosition) camera.getWorldPosition(camPos);
+      } catch (_) {
+        return;
+      }
+      var desiredDir;
+      try {
+        desiredDir = camPos.sub(origin);
+        if (desiredDir.lengthSq && desiredDir.lengthSq() < 1e-12) return;
+        desiredDir.normalize();
+      } catch (_) {
+        return;
+      }
+      var qDelta;
+      try {
+        qDelta = earth.quaternion.clone();
+        if (!qDelta.setFromUnitVectors) return;
+        qDelta.setFromUnitVectors(currentDir, desiredDir);
+      } catch (_) {
+        return;
+      }
+      try {
+        var worldQ = earth.quaternion.clone();
+        if (earth.getWorldQuaternion) earth.getWorldQuaternion(worldQ);
+        var newWorld = qDelta.clone().multiply(worldQ);
+        if (earth.parent && earth.parent.getWorldQuaternion) {
+          var pQ = earth.quaternion.clone();
+          earth.parent.getWorldQuaternion(pQ);
+          if (pQ.invert) pQ.invert();
+          else if (pQ.inverse) pQ.inverse();
+          earth.quaternion.copy(pQ.multiply(newWorld));
+        } else {
+          earth.quaternion.copy(newWorld);
+        }
+        if (earth.rotation && earth.rotation.setFromQuaternion) {
+          earth.rotation.setFromQuaternion(earth.quaternion);
+        }
+        try {
+          earth.matrixAutoUpdate = true;
+        } catch (_) {}
+        if (earth.updateMatrix) earth.updateMatrix();
+        if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+      } catch (_) {}
+      try {
+        var cam2 = camera;
+        if (cam2 && cam2.updateMatrixWorld) cam2.updateMatrixWorld(true);
+      } catch (_) {}
+      if (typeof SNGlobe.paint === 'function') SNGlobe.paint();
+    } catch (_) {}
+  }
+
+  function paintGlobe() {
+    try {
+      if (G.SNGlobe && typeof SNGlobe.paint === 'function') SNGlobe.paint();
+    } catch (_) {}
+  }
+
+  /**
+   * REQUIRED flyGlobeTo (Build 20260822203000-earth-parent):
+   * 1) pointerup/cancel on canvas
+   * 2) walk getEarth() parents; apply euler+quat to LIVE chain + getTilt/getSpin/getPivot;
+   *    updateMatrixWorld; paint
+   * 3) if still SA rotate earth mesh so latLngToVec(target) points at camera; paint
+   * 4) success only if viewLatLng within 2.5 deg
+   * 5) fail: caller logs Fly failed + parent names + view. No lastFly.
+   * Do NOT call goToPlace (that logs the lying Earth.CITY.Rhodes line).
    */
   async function flyGlobeTo(lat, lng, label) {
     lat = +lat;
@@ -620,60 +893,59 @@
       G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
     } catch (_) {}
 
-    // 1) Unfreeze trackball (pointer events) + close map
+    // 1) pointerup / pointercancel on canvas (clears internal G.dragging)
     unfreezeGlobe();
 
-    // 2) setFocus
     try {
       if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
     } catch (_) {}
 
-    // Instant snap via getTilt/getSpin + matrix + paint
-    snapTiltSpin(lat, lng);
+    // 2) LIVE parent chain + exported tilt/spin/pivot; matrices; paint
+    snapLiveChain(lat, lng);
+    paintGlobe();
 
-    // 3) flyNear — primary mesh mover (phys.tTilt / phys.tSpin); may no-op if still dragging
+    // flyNear may set phys.tTilt/tSpin on the exported nodes; does not log CITY
     try {
       if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
         SNGlobe.flyNear(lat, lng, 'city');
       }
     } catch (_) {}
 
-    // 4) goToPlace (calls flyNear again; openMap/skipScan forced)
-    try {
-      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
-        SNGlobe.goToPlace(lat, lng, {
-          tier: 'city',
-          openMap: false,
-          skipScan: true,
-          pulse: false,
-          body: 'earth',
-        });
-      }
-    } catch (_) {}
+    snapLiveChain(lat, lng);
+    paintGlobe();
 
-    // Snap + paint again after fly starts
-    snapTiltSpin(lat, lng);
+    // 3) if view still not at target, rotate the earth mesh itself toward camera
+    if (!viewNear(lat, lng, 2.5, 2.5)) {
+      faceEarthAtCamera(lat, lng);
+      paintGlobe();
+    }
+
     try {
       if (G.SNMap) {
         try { SNMap.active = false; } catch (_) {}
       }
     } catch (_) {}
 
-    // 5) Poll viewLatLng every 100ms up to 3s; success ONLY near target
+    // 4) Poll viewLatLng every 100ms up to 3s; success ONLY near target
     var t0 = Date.now();
+    var usedFace = false;
     while (Date.now() - t0 < 3000) {
       if (viewNear(lat, lng, 2.5, 2.5)) {
         lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
         return true;
       }
-      // re-release pointer + re-snap mid-poll in case map loop re-activated
       try {
         if (G.SNMap) {
           try { SNMap.active = false; } catch (_) {}
         }
       } catch (_) {}
       unfreezeGlobe();
-      snapTiltSpin(lat, lng);
+      snapLiveChain(lat, lng);
+      if (!usedFace || !viewNear(lat, lng, 2.5, 2.5)) {
+        faceEarthAtCamera(lat, lng);
+        usedFace = true;
+      }
+      paintGlobe();
       await sleep(100);
     }
     var finalOk = viewNear(lat, lng, 2.5, 2.5);
@@ -1139,37 +1411,11 @@
   }
 
   function flyFailDiag() {
-    var drag = '?';
-    var mapA = false;
-    var ready = false;
-    var tiltX = '?';
-    var spinY = '?';
+    var names = '?';
     var viewS = '?';
     try {
-      if (G.SNGlobe && typeof SNGlobe.getPhysics === 'function') {
-        var phys = SNGlobe.getPhysics();
-        if (phys && phys.dragging != null) drag = String(!!phys.dragging);
-      } else if (G.SNGlobe && G.SNGlobe.dragging != null) {
-        drag = String(!!G.SNGlobe.dragging);
-      }
-    } catch (_) {}
-    try {
-      mapA = !!(G.SNMap && SNMap.active);
-    } catch (_) {}
-    try {
-      ready = !!(G.SNGlobe && G.SNGlobe.ready);
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.getTilt === 'function') {
-        var t = SNGlobe.getTilt();
-        if (t && t.rotation) tiltX = Number(t.rotation.x).toFixed(4);
-      }
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.getSpin === 'function') {
-        var s = SNGlobe.getSpin();
-        if (s && s.rotation) spinY = Number(s.rotation.y).toFixed(4);
-      }
+      var walk = walkEarthChain();
+      if (walk.names && walk.names.length) names = walk.names.join('>');
     } catch (_) {}
     try {
       if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') {
@@ -1178,28 +1424,15 @@
           viewS = Number(ll.lat).toFixed(3) + ',' + Number(ll.lng).toFixed(3);
       }
     } catch (_) {}
-    return (
-      'Fly failed - dragging=' +
-      drag +
-      ' map=' +
-      mapA +
-      ' ready=' +
-      ready +
-      ' tiltX=' +
-      tiltX +
-      ' spinY=' +
-      spinY +
-      ' view=' +
-      viewS
-    );
+    return 'Fly failed - parents=' + names + ' view=' + viewS;
   }
 
   /**
-   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via unfreeze + snap + verify.
+   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via live parent chain.
    * preferCameraUntil + lastFly set ONLY after viewLatLng confirms success.
-   * On fail: ONE diagnostic line, clear lastFly, NO huntAt, NO Pins log, NO preferCameraUntil.
+   * On fail: Fly failed + parent names + view. No huntAt, no Pins, no lastFly.
    * First "show rhodes" works even if huntSession false.
-   * `fly rhodes` is NOT intercepted — cli.js openCityAt runs.
+   * Swallow Earth.CITY.Rhodes unless viewLatLng ~= 36.44,28.22.
    */
   async function showRhodes(raw) {
     beginGlobeHunt();
@@ -1222,9 +1455,10 @@
     var ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
 
     if (!ok) {
-      // One more hard attempt after extra unfreeze + snap
       unfreezeGlobe();
-      snapTiltSpin(RHODES.lat, RHODES.lng);
+      snapLiveChain(RHODES.lat, RHODES.lng);
+      faceEarthAtCamera(RHODES.lat, RHODES.lng);
+      paintGlobe();
       ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     }
 
