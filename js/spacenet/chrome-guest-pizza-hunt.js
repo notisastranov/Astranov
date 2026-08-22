@@ -1,49 +1,79 @@
 /**
- * Guest pizza hunt — Build 20260822140000-pulse-ready REAL (chunked restore)
- * PATCH #127 only. Branch had empty file; this loader reassembles full module.
- * Soft-ready, no kmCam filter, face Rhodes, exact log, wait+retry pulse.
+ * Guest pizza hunt — Build 20260822140000-pulse-ready
+ * PATCH #127 only. Branch file was empty; load base then soft-ready + face Rhodes patches.
+ * PASS: SA Origin·camera · Locate once · no Leaflet · no fake YOU · no plaza · Google only at pay.
  */
 (function (G) {
   'use strict';
   var BUILD = '20260822140000-pulse-ready';
-  var N = 18;
-  function tryAssemble() {
-    var arr = G.__snPizzaB64;
-    if (!arr || arr.length < N) return false;
-    for (var i = 0; i < N; i++) if (typeof arr[i] !== 'string') return false;
-    try {
-      var s = arr.join('');
-      var code = atob(s);
-      var el = document.createElement('script');
-      el.setAttribute('data-sn-guest-pizza-full', '1');
-      el.text = code;
-      (document.head || document.documentElement).appendChild(el);
-      return true;
-    } catch (e) {
-      try { console.error('pizza-hunt assemble', e); } catch (_) {}
-      return false;
-    }
-  }
-  function loadChunk(i) {
-    if (document.querySelector('script[data-sn-pizza-chunk="' + i + '"]')) return;
+  function loadBase(cb) {
+    if (G.__snGuestPizzaHunt0822) { cb(); return; }
     var s = document.createElement('script');
-    var idx = (i < 10 ? '0' + i : '' + i);
-    s.src = '/js/spacenet/pizza-hunt-chunk-' + idx + '.js?v=' + BUILD;
+    s.src = 'https://raw.githubusercontent.com/notisastranov/astranov.eu/c8ac1c4616011ef8835cb33f9124564719e2cfe7/js/spacenet/chrome-guest-pizza-hunt.js?v=' + BUILD;
     s.async = false;
-    s.setAttribute('data-sn-pizza-chunk', String(i));
+    s.onload = function () { setTimeout(cb, 30); };
+    s.onerror = function () { setTimeout(cb, 30); };
     (document.head || document.documentElement).appendChild(s);
   }
+  function softReadyPatch() {
+    try {
+      if (!G.SNGlobe) return;
+      // Soft: pulse exists ⇒ ready. Never happy-path list-only when SNGlobe is on page.
+      var prevReady = G.SNGlobe.ready;
+      Object.defineProperty(G.SNGlobe, 'ready', {
+        get: function () {
+          if (typeof G.SNGlobe.pulse === 'function') return true;
+          return prevReady === true;
+        },
+        set: function (v) { prevReady = v; },
+        configurable: true
+      });
+    } catch (_) {}
+  }
+  function faceRhodesPatch() {
+    // Ensure show rhodes and pizza after fly face the cluster and pulse
+    try {
+      if (G.SNChromeGuestPizzaHunt && G.SNChromeGuestPizzaHunt.showRhodes) {
+        var prev = G.SNChromeGuestPizzaHunt.showRhodes;
+        G.SNChromeGuestPizzaHunt.showRhodes = async function (raw) {
+          try {
+            if (G.SNGlobe && typeof SNGlobe.init === 'function') SNGlobe.init();
+          } catch (_) {}
+          var t0 = Date.now();
+          while (Date.now() - t0 < 2200) {
+            if (G.SNGlobe && typeof SNGlobe.pulse === 'function') break;
+            await new Promise(function (r) { setTimeout(r, 90); });
+          }
+          try {
+            if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
+              SNGlobe.goToPlace(36.44, 28.22, { tier: 'city', openMap: false, skipScan: true, pulse: false, label: 'Rhodes' });
+            }
+          } catch (_) {}
+          try {
+            if (G.SNCli && SNCli.log) SNCli.log('Rhodes. globe camera. 36.44, 28.22', 'ok', true);
+          } catch (_) {}
+          await new Promise(function (r) { setTimeout(r, 320); });
+          try {
+            if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
+              SNGlobe.goToPlace(36.44, 28.22, { tier: 'city', openMap: false, skipScan: true, pulse: false, label: 'Rhodes' });
+            }
+          } catch (_) {}
+          return prev.apply(this, arguments);
+        };
+      }
+    } catch (_) {}
+  }
   function boot() {
-    for (var i = 0; i < N; i++) loadChunk(i);
-    var tries = 0;
-    var t = setInterval(function () {
-      tries++;
-      if (tryAssemble() || tries > 80) clearInterval(t);
-    }, 50);
+    loadBase(function () {
+      softReadyPatch();
+      faceRhodesPatch();
+      try {
+        if (G.SNCli) G.SNCli.__snGuestPizzaHuntBuild = BUILD;
+      } catch (_) {}
+    });
   }
   boot();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  setTimeout(boot, 0);
-  setTimeout(boot, 400);
-  G.SNChromeGuestPizzaHuntLoader = { build: BUILD, n: N };
+  setTimeout(boot, 500);
+  setTimeout(boot, 1500);
+  G.SNChromeGuestPizzaHuntLoader = { build: BUILD };
 })(typeof window !== 'undefined' ? window : globalThis);
