@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260822151600-mesh-fly
+/* Astranov mute · Build 20260822170000-restore-then-pulse
  * Kill beeps + load:
  *   - chrome-cli-answer (twin CLI + cli-log paint + answers)  ← #126 keep
  *   - chrome-guest-pizza-hunt (vendors bbox pins · Google only at pay)
@@ -6,7 +6,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822151600-mesh-fly';
+  var BUILD = '20260822170000-restore-then-pulse';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 

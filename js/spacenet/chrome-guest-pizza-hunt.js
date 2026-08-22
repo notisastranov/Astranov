@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822151600-mesh-fly
+ * Guest pizza hunt — Build 20260822170000-restore-then-pulse
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -26,11 +26,12 @@
  *   - twin CLIs stay
  *
  * Product law: if it is not on the globe it is not shipped.
+ * NEVER swap this file for a stub because pulse isn't ready — wait and retry.
  */
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822151600-mesh-fly';
+  var BUILD = '20260822170000-restore-then-pulse';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -914,7 +915,7 @@
       return true;
     }
 
-    // Wait for globe ready so pulses land (soft)
+    // Wait for globe ready so pulses land (soft). NEVER stub the file.
     await waitGlobeReady(1800);
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
