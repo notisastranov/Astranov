@@ -1,6 +1,20 @@
 /**
- * Guest pizza hunt — Build 20260822114500-show-clean
- * PATCH #127 only · origin + pin-tap + NO Leaflet + clean show place.
+ * Guest pizza hunt — Build 20260822120000-no-fake-you
+ * PATCH #127 only · keep PASS · fix FAIL leftovers from 20260822110000-origin-tap.
+ *
+ * PASS (do not regress):
+ *   pizza over South America → Origin · camera · -32.946, -61.777
+ *   / No delivery shops near view · type Locate once
+ *   No Kalithea 36.388 list. No Google wall.
+ *
+ * FAIL 1: never SNMap.open / showLiveSat / Leaflet during the hunt — WebGL globe only.
+ * FAIL 2: after/during hunt, `show rhodes` flies camera to ~36.44,28.22 and pins vendors.
+ *         Never plaza/POI crawler dump (Πλατεία Αθηνάς / 18 POIs / 80 real shops).
+ * FAIL 3: YOU is ONLY _snPhysPos + _snLocatedThisSession from an explicit GPS grant.
+ *         Never IP, never city geocode, never Leaflet center, never San Jose, never Kalithea.
+ *         No grant → origin is the camera, never a silent "you".
+ * FAIL 4: pins only after a real in-view hunt via SNGlobe.pulse + consumeClick.
+ *         No grey placeholder glyphs on empty South America.
  *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
@@ -11,62 +25,35 @@
  *   - no Astranov Kitchen · no 85-pt · no Mesh Alpha
  *   - twin CLIs stay
  *
- * ORIGIN LAW (20260822110000):
- *   YOU = window._snPhysPos / real GPS ONLY if user located THIS session.
- *   Else current camera look-at (viewLatLng / focusPos).
- *   NEVER Kalithea 36.387557,28.222533 · NEVER silent Rhodes 36.43,28.22 as you.
- *   _snLastPos is polluted by setFocus (village/HQ) — NEVER treat as YOU alone.
- *   Empty ocean / SA / no vendors in bbox → CLI Locate CTA only · zero shop list · zero fake you.
- *
- * GLOBE-ONLY LAW (20260822113000):
- *   FORBID any SNMap.open / showLiveSat / Leaflet / street overlay for the whole hunt.
- *   Stay WebGL globe only. No San Jose / Columbus Park / OSM street takeover during wait.
- *
- * SHOW LAW (20260822114500):
- *   After/during pizza hunt, `show rhodes` (or any show <place>) MUST only fly the
- *   WebGL camera and pin vendors. NEVER run plaza/POI crawler dump
- *   (Πλατεία Αθηνάς / 18 POIs / 80 real shops).
- *
- * After successful hunt: face pin cluster if pins are off current camera,
- * or keep camera and only pin vendors already in view.
- *
- * PIN TAP: vendor pulse → SNCli.log name·km·⭐ only.
- * Block plaza/POI dump. No camera drift to SA.
- *
  * Product law: if it is not on the globe it is not shipped.
  */
 (function (G) {
   'use strict';
-  // Force re-install of this build even if older pizza-hunt already bound
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822114500-show-clean';
+  var BUILD = '20260822120000-no-fake-you';
   var hunting = false;
+  var huntSession = false;
   var lastPins = [];
   var pinMeshes = [];
   var clickUnsub = null;
   var askedLocate = false;
   var suppressPoiUntil = 0;
   var canvasTapBound = false;
-  var mapGuardInstalled = false;
-  var pizzaLiveUntil = 0; // after successful hunt, keep show-intercept active for a while
+  var preferCameraUntil = 0;
+  var lastFly = null;
 
-  // Known fake / HQ defaults that must NEVER be reported as YOU
+  var RHODES = { lat: 36.44, lng: 28.22, name: 'Rhodes' };
+
+  // Known fake / HQ / IP leaks that must NEVER be reported as YOU
   var FAKE_YOU = [
-    { lat: 36.387557, lng: 28.222533, r: 0.02, name: 'Kalithea' },
+    { lat: 36.387557, lng: 28.222533, r: 0.03, name: 'Kalithea' },
     { lat: 36.434, lng: 28.217, r: 0.06, name: 'Rhodes silent' },
     { lat: 36.43, lng: 28.22, r: 0.05, name: 'Rhodes center' },
     { lat: 36.443, lng: 28.226, r: 0.04, name: 'Rhodes town' },
+    { lat: 37.339, lng: -121.895, r: 0.12, name: 'San Jose IP' },
+    { lat: 37.338, lng: -121.886, r: 0.12, name: 'Columbus Park' },
+    { lat: 37.33, lng: -121.89, r: 0.12, name: 'San Jose' },
   ];
-
-  // Simple place → lat/lng for clean show (no POI crawl)
-  var KNOWN_PLACES = {
-    rhodes: { lat: 36.4341, lng: 28.2176, name: 'Rhodes' },
-    rhodos: { lat: 36.4341, lng: 28.2176, name: 'Rhodes' },
-    'rhodes town': { lat: 36.443, lng: 28.226, name: 'Rhodes town' },
-    kalithea: { lat: 36.3876, lng: 28.2225, name: 'Kalithea' },
-    athens: { lat: 37.9838, lng: 23.7275, name: 'Athens' },
-    athina: { lat: 37.9838, lng: 23.7275, name: 'Athens' },
-  };
 
   var FOOD =
     /restaurant|fast_food|cafe|bar|pub|food|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert|market/i;
@@ -74,7 +61,10 @@
     /\b(order\s+(me\s+)?(a\s+)?pizza|pizza\s*(please|order|near|nearby|delivery)?|get\s+(me\s+)?pizza|i\s+want\s+(a\s+)?pizza|find\s+pizza|pizza\s+shops?|hungry\s+for\s+pizza)\b/i;
   var ORDER_FOOD_RE =
     /\b(order\s+(me\s+)?(a\s+)?(food|meal|burger|souvlaki|kebab|sushi)|food\s+delivery|deliver\s+(me\s+)?(food|pizza))\b/i;
-  var SHOW_RE = /^show\s+(.+)$/i;
+  var SHOW_RHODES_RE =
+    /^(show|fly|go(?:\s+to)?|zoom(?:\s+to)?|take\s+me\s+to|look\s+at)\s+(the\s+)?(island\s+(of\s+)?)?(rhodes|rodos|ρόδος|ρόδο|ροδος|ροδοσ)\b/i;
+  var POI_DUMP_RE =
+    /Πλατεία|Πλατεια|πλατεία|\b\d+\s+POIs?\b|\b\d+\s+real shops\b|80 real shops|18 POIs/i;
 
   function log(m, c) {
     try {
@@ -102,6 +92,10 @@
     }
   }
 
+  function globeOnly() {
+    return hunting || huntSession;
+  }
+
   function nearFake(lat, lng) {
     if (!isFinite(lat) || !isFinite(lng)) return true;
     for (var i = 0; i < FAKE_YOU.length; i++) {
@@ -111,65 +105,79 @@
     return null;
   }
 
-  /** True only when user actually Located this browser session. */
+  function isIpOrSoftSource(pos) {
+    if (!pos) return true;
+    if (pos.fallback) return true;
+    if (pos.fromIp || pos.ip || pos.soft) return true;
+    var src = String(pos.source || pos.from || '').toLowerCase();
+    if (!src) return false;
+    return /ip|soft|cache|leaflet|map|geocode|city|nominatim|photon|approx|look|verified/.test(src);
+  }
+
+  /** YOU = _snPhysPos + _snLocatedThisSession from an explicit GPS grant this session. */
   function hasSessionLocate() {
     try {
-      if (G._snLocatedThisSession) return true;
-    } catch (_) {}
+      if (!G._snLocatedThisSession) return false;
+    } catch (_) {
+      return false;
+    }
     try {
-      if (G._snPhysPos && (G._snPhysPos.fromGps || G._snPhysPos.session || G._snPhysPos.ts)) {
-        if (!nearFake(+G._snPhysPos.lat, +G._snPhysPos.lng)) return true;
-      }
+      var p = G._snPhysPos;
+      if (!p || p.lat == null || p.lng == null) return false;
+      var lat = +p.lat;
+      var lng = +p.lng;
+      if (!isFinite(lat) || !isFinite(lng)) return false;
+      if (nearFake(lat, lng)) return false;
+      if (isIpOrSoftSource(p)) return false;
+      var src = String(p.source || '').toLowerCase();
+      var granted =
+        p.fromGps === true ||
+        p.real === true ||
+        p.session === true ||
+        src === 'gps' ||
+        src === 'gps-watch';
+      if (!granted) return false;
+      return true;
     } catch (_) {}
     return false;
   }
 
   function markSessionLocate(lat, lng, extra) {
+    extra = extra || {};
+    if (extra.fallback || extra.fromIp || extra.ip || extra.soft) return;
+    if (isIpOrSoftSource(extra)) return;
+    if (nearFake(+lat, +lng)) return;
     try {
       G._snLocatedThisSession = true;
-      var row = Object.assign(
-        { lat: +lat, lng: +lng, fromGps: true, session: true, ts: Date.now() },
-        extra || {}
-      );
+      var row = {
+        lat: +lat,
+        lng: +lng,
+        fromGps: true,
+        session: true,
+        real: true,
+        fallback: false,
+        source: 'gps',
+        ts: Date.now(),
+        accuracy: extra.accuracy,
+      };
       G._snPhysPos = row;
       G._snLastPos = row;
     } catch (_) {}
   }
 
-  function resolveOrigin() {
+  function scrubFakeYou() {
     try {
-      if (hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
-        var plat = +G._snPhysPos.lat;
-        var plng = +G._snPhysPos.lng;
-        if (isFinite(plat) && isFinite(plng) && !nearFake(plat, plng)) {
-          return { lat: plat, lng: plng, source: 'you' };
+      var p = G._snPhysPos;
+      if (!p) {
+        G._snLocatedThisSession = false;
+        return;
+      }
+      if (nearFake(+p.lat, +p.lng) || isIpOrSoftSource(p) || !G._snLocatedThisSession) {
+        if (nearFake(+p.lat, +p.lng) || isIpOrSoftSource(p)) {
+          G._snLocatedThisSession = false;
         }
       }
     } catch (_) {}
-
-    try {
-      if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') {
-        var look = SNGlobe.viewLatLng();
-        if (look && look.lat != null && look.lng != null && isFinite(look.lat)) {
-          return { lat: +look.lat, lng: +look.lng, source: 'camera' };
-        }
-      }
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.focusPos === 'function') {
-        var f = SNGlobe.focusPos();
-        if (f && f.lat != null && f.lng != null && isFinite(f.lat)) {
-          return { lat: +f.lat, lng: +f.lng, source: 'focus' };
-        }
-      }
-    } catch (_) {}
-    try {
-      if (G._snGlobeFocus && G._snGlobeFocus.lat != null) {
-        return { lat: +G._snGlobeFocus.lat, lng: +G._snGlobeFocus.lng, source: 'focus-cache' };
-      }
-    } catch (_) {}
-
-    return null;
   }
 
   function cameraLook() {
@@ -185,6 +193,63 @@
         if (f && f.lat != null && isFinite(f.lat)) return { lat: +f.lat, lng: +f.lng };
       }
     } catch (_) {}
+    try {
+      if (G._snGlobeFocus && G._snGlobeFocus.lat != null) {
+        return { lat: +G._snGlobeFocus.lat, lng: +G._snGlobeFocus.lng };
+      }
+    } catch (_) {}
+    if (lastFly && lastFly.lat != null && Date.now() - lastFly.ts < 15000) {
+      return { lat: lastFly.lat, lng: lastFly.lng };
+    }
+    return null;
+  }
+
+  /**
+   * Origin for bbox hunt.
+   *   1) After show-rhodes (preferCameraUntil) → that camera, never YOU
+   *   2) real YOU only if located THIS session (GPS grant)
+   *   3) current camera look-at
+   * NEVER invent Kalithea / silent Rhodes / San Jose IP as you.
+   * NEVER trust bare _snLastPos (setFocus / Leaflet / IP pollute it).
+   */
+  function resolveOrigin() {
+    scrubFakeYou();
+
+    if (Date.now() < preferCameraUntil) {
+      if (lastFly && lastFly.lat != null) {
+        return { lat: lastFly.lat, lng: lastFly.lng, source: 'camera' };
+      }
+      var camR = cameraLook();
+      if (camR) return { lat: camR.lat, lng: camR.lng, source: 'camera' };
+    }
+
+    try {
+      if (hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
+        var plat = +G._snPhysPos.lat;
+        var plng = +G._snPhysPos.lng;
+        if (isFinite(plat) && isFinite(plng) && !nearFake(plat, plng) && !isIpOrSoftSource(G._snPhysPos)) {
+          return { lat: plat, lng: plng, source: 'you' };
+        }
+      }
+    } catch (_) {}
+
+    var cam = cameraLook();
+    if (cam) return { lat: cam.lat, lng: cam.lng, source: 'camera' };
+
+    try {
+      if (G.SNGlobe && typeof SNGlobe.focusPos === 'function') {
+        var f = SNGlobe.focusPos();
+        if (f && f.lat != null && f.lng != null && isFinite(f.lat)) {
+          return { lat: +f.lat, lng: +f.lng, source: 'focus' };
+        }
+      }
+    } catch (_) {}
+    try {
+      if (G._snGlobeFocus && G._snGlobeFocus.lat != null) {
+        return { lat: +G._snGlobeFocus.lat, lng: +G._snGlobeFocus.lng, source: 'focus-cache' };
+      }
+    } catch (_) {}
+
     return null;
   }
 
@@ -223,6 +288,7 @@
     if (/Mesh\s*Alpha|Mesh\s*Beta|Mesh\s*Gamma/i.test(n)) return true;
     if (/Rai\s*Mesone|Rai\s*drone/i.test(n)) return true;
     if (/85[\s\-]?pt|DRIVER\s+EN\s+ROUTE/i.test(n)) return true;
+    if (/Πλατεία|Πλατεια|πλατεία/i.test(n)) return true;
     return false;
   }
   function isFoodOrShop(v) {
@@ -241,6 +307,184 @@
       ' ' +
       (Array.isArray(v.tags) ? v.tags.join(' ') : String(v.tags || ''));
     return FOOD.test(blob) || v.delivery_enabled === true;
+  }
+
+  function hideLeaflet() {
+    try {
+      if (G.SNMap && typeof SNMap.close === 'function') SNMap.close();
+    } catch (_) {}
+    try {
+      var nodes = document.querySelectorAll(
+        '.leaflet-container, .leaflet-pane, .leaflet-marker-icon, .leaflet-marker-shadow, .leaflet-control-container, #sn-map, #sn-map-root, #map'
+      );
+      for (var i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        el.style.setProperty('display', 'none', 'important');
+        el.style.setProperty('visibility', 'hidden', 'important');
+        el.style.setProperty('opacity', '0', 'important');
+        el.style.setProperty('pointer-events', 'none', 'important');
+        el.style.setProperty('z-index', '-1', 'important');
+      }
+    } catch (_) {}
+  }
+
+  function installMapGuard() {
+    try {
+      if (G.SNMap) {
+        if (typeof SNMap.open === 'function' && !SNMap.__snPizzaOpenGuard) {
+          var prevOpen = SNMap.open.bind(SNMap);
+          SNMap.open = function () {
+            if (globeOnly()) {
+              hideLeaflet();
+              return Promise.resolve(null);
+            }
+            return prevOpen.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaOpenGuard = true;
+        }
+        if (typeof SNMap.showLiveSat === 'function' && !SNMap.__snPizzaSatGuard) {
+          var prevSat = SNMap.showLiveSat.bind(SNMap);
+          SNMap.showLiveSat = function () {
+            if (globeOnly()) {
+              hideLeaflet();
+              return Promise.resolve(null);
+            }
+            return prevSat.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaSatGuard = true;
+        }
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function' && !SNGlobe.__snPizzaGoGuard) {
+        var prevGo = SNGlobe.goToPlace.bind(SNGlobe);
+        SNGlobe.goToPlace = function (lat, lng, opts) {
+          opts = Object.assign({}, opts || {});
+          if (globeOnly()) {
+            opts.openMap = false;
+            opts.skipScan = true;
+          }
+          return prevGo(lat, lng, opts);
+        };
+        SNGlobe.__snPizzaGoGuard = true;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.locate === 'function' && !SNGlobe.__snPizzaLocGuard) {
+        var prevLoc = SNGlobe.locate.bind(SNGlobe);
+        SNGlobe.locate = function () {
+          if (globeOnly()) {
+            return Promise.resolve({
+              lat: null,
+              lng: null,
+              fallback: true,
+              reason: 'hunt-globe-only',
+            });
+          }
+          return prevLoc.apply(SNGlobe, arguments);
+        };
+        SNGlobe.__snPizzaLocGuard = true;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNCli && typeof SNCli.gpsLocate === 'function' && !SNCli.__snPizzaGpsGuard) {
+        var prevGps = SNCli.gpsLocate.bind(SNCli);
+        SNCli.gpsLocate = function (opts) {
+          if (globeOnly()) {
+            opts = Object.assign({}, opts || {}, { allowIp: false, allowSoft: false });
+          }
+          return prevGps(opts);
+        };
+        SNCli.__snPizzaGpsGuard = true;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNSearch && typeof SNSearch.crawl === 'function' && !SNSearch.__snPizzaCrawlGuard) {
+        var prevCrawl = SNSearch.crawl.bind(SNSearch);
+        SNSearch.crawl = function (q, opts) {
+          if (globeOnly()) {
+            return Promise.resolve({
+              places: [],
+              nearby: [],
+              web: [],
+              wiki: null,
+              wikiHits: [],
+              acted: ['pizza-hunt-block'],
+            });
+          }
+          return prevCrawl(q, opts);
+        };
+        SNSearch.__snPizzaCrawlGuard = true;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNCosmos && typeof SNCosmos.scan === 'function' && !SNCosmos.__snPizzaScanGuard) {
+        var prevScan = SNCosmos.scan.bind(SNCosmos);
+        SNCosmos.scan = function () {
+          if (globeOnly()) return Promise.resolve({ lines: [], nearby: [], shops: 0 });
+          return prevScan.apply(SNCosmos, arguments);
+        };
+        SNCosmos.__snPizzaScanGuard = true;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNCli && typeof SNCli.log === 'function' && !SNCli.__snPizzaLogGuard) {
+        var prevLog = SNCli.log.bind(SNCli);
+        SNCli.log = function (m, c, force) {
+          if (globeOnly() && POI_DUMP_RE.test(String(m || ''))) return;
+          return prevLog(m, c, force);
+        };
+        SNCli.__snPizzaLogGuard = true;
+      }
+    } catch (_) {}
+  }
+
+  function beginGlobeHunt() {
+    huntSession = true;
+    hunting = true;
+    G.__snPizzaHuntLive = true;
+    installMapGuard();
+    hideLeaflet();
+    suppressPoiUntil = Date.now() + 4000;
+    try {
+      if (G.SNGlobe) G.SNGlobe.consumeClick = true;
+    } catch (_) {}
+  }
+
+  function endGlobeHunt() {
+    hunting = false;
+    hideLeaflet();
+    try {
+      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
+    } catch (_) {}
+  }
+
+  function flyGlobeTo(lat, lng, label) {
+    lat = +lat;
+    lng = +lng;
+    if (!isFinite(lat) || !isFinite(lng)) return;
+    lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
+    try {
+      G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
+    } catch (_) {}
+    hideLeaflet();
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
+        SNGlobe.goToPlace(lat, lng, {
+          tier: 'city',
+          body: 'earth',
+          pulse: false,
+          openMap: false,
+          skipScan: true,
+          label: label || '',
+        });
+      } else if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
+        SNGlobe.flyNear(lat, lng, 'city');
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
+    } catch (_) {}
   }
 
   function blockAuthModalOnPizza() {
@@ -272,119 +516,13 @@
     } catch (_) {}
   }
 
-  function forceGlobeOnly() {
-    try {
-      if (G.SNMap) {
-        if (typeof SNMap.close === 'function') SNMap.close();
-        if (typeof SNMap.hide === 'function') SNMap.hide();
-        if (typeof SNMap.closeStreet === 'function') SNMap.closeStreet();
-        if (typeof SNMap.closeLive === 'function') SNMap.closeLive();
-        SNMap.active = false;
-      }
-    } catch (_) {}
-    try {
-      var sels = [
-        '#sn-map',
-        '#map',
-        '.leaflet-container',
-        '.sn-street',
-        '.sn-live-sat',
-        '#live-sat',
-        '[data-sn-map]',
-        '.mapboxgl-map',
-      ];
-      sels.forEach(function (sel) {
-        try {
-          document.querySelectorAll(sel).forEach(function (el) {
-            el.style.setProperty('display', 'none', 'important');
-            el.style.setProperty('visibility', 'hidden', 'important');
-            el.style.setProperty('opacity', '0', 'important');
-            el.style.setProperty('pointer-events', 'none', 'important');
-            el.setAttribute('aria-hidden', 'true');
-          });
-        } catch (_) {}
-      });
-    } catch (_) {}
-  }
-
-  function installMapGuard() {
-    if (mapGuardInstalled) return;
-    mapGuardInstalled = true;
-    try {
-      if (G.SNMap) {
-        if (typeof SNMap.open === 'function' && !SNMap.__snPizzaGuardOpen) {
-          var prevOpen = SNMap.open.bind(SNMap);
-          SNMap.open = function () {
-            if (hunting || Date.now() < pizzaLiveUntil) {
-              forceGlobeOnly();
-              return;
-            }
-            return prevOpen.apply(SNMap, arguments);
-          };
-          SNMap.__snPizzaGuardOpen = true;
-        }
-        if (typeof SNMap.show === 'function' && !SNMap.__snPizzaGuardShow) {
-          var prevShow = SNMap.show.bind(SNMap);
-          SNMap.show = function () {
-            if (hunting || Date.now() < pizzaLiveUntil) {
-              forceGlobeOnly();
-              return;
-            }
-            return prevShow.apply(SNMap, arguments);
-          };
-          SNMap.__snPizzaGuardShow = true;
-        }
-        if (typeof SNMap.showLiveSat === 'function' && !SNMap.__snPizzaGuardLive) {
-          var prevLive = SNMap.showLiveSat.bind(SNMap);
-          SNMap.showLiveSat = function () {
-            if (hunting || Date.now() < pizzaLiveUntil) {
-              forceGlobeOnly();
-              return;
-            }
-            return prevLive.apply(SNMap, arguments);
-          };
-          SNMap.__snPizzaGuardLive = true;
-        }
-        if (typeof SNMap.goToStreet === 'function' && !SNMap.__snPizzaGuardStreet) {
-          var prevStreet = SNMap.goToStreet.bind(SNMap);
-          SNMap.goToStreet = function () {
-            if (hunting || Date.now() < pizzaLiveUntil) {
-              forceGlobeOnly();
-              return;
-            }
-            return prevStreet.apply(SNMap, arguments);
-          };
-          SNMap.__snPizzaGuardStreet = true;
-        }
-      }
-    } catch (_) {}
-    try {
-      if (typeof G.showLiveSat === 'function' && !G.__snPizzaMapGuard) {
-        var prevG = G.showLiveSat.bind(G);
-        G.showLiveSat = function () {
-          if (hunting || Date.now() < pizzaLiveUntil) {
-            forceGlobeOnly();
-            return;
-          }
-          return prevG.apply(G, arguments);
-        };
-        G.__snPizzaMapGuard = true;
-      }
-    } catch (_) {}
-  }
-
   function stayPutSoft(nearest) {
-    forceGlobeOnly();
+    hideLeaflet();
     if (!nearest || nearest.lat == null || nearest.lng == null) return;
+    if (Date.now() < preferCameraUntil) return;
     try {
       if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
         SNGlobe.flyNear(+nearest.lat, +nearest.lng, null);
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
-        SNGlobe.pulse(+nearest.lat, +nearest.lng, 0xff9f43, nearest.name || 'shop', 8000);
       }
     } catch (_) {}
   }
@@ -395,6 +533,7 @@
     try {
       if (G.SNGlobe && typeof SNGlobe.clearMarkers === 'function') SNGlobe.clearMarkers();
     } catch (_) {}
+    hideLeaflet();
   }
 
   function paintPins(rows, origin) {
@@ -402,13 +541,17 @@
     if (!rows || !rows.length) return 0;
     var painted = 0;
     var ready = !!(G.SNGlobe && G.SNGlobe.ready && typeof SNGlobe.pulse === 'function');
+    var cam = cameraLook() || origin;
 
     rows.slice(0, 24).forEach(function (v, i) {
       if (!v || v.lat == null || v.lng == null) return;
       var lat = +v.lat;
       var lng = +v.lng;
       if (!isFinite(lat) || !isFinite(lng)) return;
-      var km = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
+      var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
+      if (kmOrigin != null && kmOrigin > 18) return;
+      var kmCam = cam ? haversineKm(cam, { lat: lat, lng: lng }) : kmOrigin;
+      if (kmCam != null && kmCam > 80) return;
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? 0xff9f43 : 0x5ad4ff;
       lastPins.push({
@@ -416,7 +559,7 @@
         name: v.name,
         lat: lat,
         lng: lng,
-        km: km,
+        km: kmOrigin,
         emoji: v.emoji || '🍕',
       });
 
@@ -428,27 +571,13 @@
               mesh.userData = mesh.userData || {};
               mesh.userData.snVendor = true;
               mesh.userData.snName = v.name;
-              mesh.userData.snKm = km;
+              mesh.userData.snKm = kmOrigin;
             } catch (_) {}
             pinMeshes.push(mesh);
             painted++;
           }
         } catch (_) {}
       }
-
-      try {
-        if (G.SNSpaceLinks && typeof SNSpaceLinks.addFieldPin === 'function') {
-          SNSpaceLinks.addFieldPin(
-            { lat: lat, lng: lng },
-            { label: label, kind: 'vendor', color: color, ms: 180000 }
-          );
-        }
-      } catch (_) {}
-      try {
-        if (G.SNField && typeof SNField.dropPin === 'function') {
-          SNField.dropPin(lat, lng, { label: v.name, kind: 'vendor' });
-        }
-      } catch (_) {}
     });
 
     installPinTap();
@@ -492,6 +621,7 @@
     try {
       if (G.SNGlobe) G.SNGlobe.consumeClick = true;
     } catch (_) {}
+    hideLeaflet();
     log(
       'Shop · ' +
         String(hit.name || 'vendor').slice(0, 36) +
@@ -529,7 +659,10 @@
     try {
       if (canvasTapBound) return;
       var canvas =
-        (G.SNGlobe && G.SNGlobe.getRenderer && G.SNGlobe.getRenderer() && G.SNGlobe.getRenderer().domElement) ||
+        (G.SNGlobe &&
+          G.SNGlobe.getRenderer &&
+          G.SNGlobe.getRenderer() &&
+          G.SNGlobe.getRenderer().domElement) ||
         document.querySelector('#globe canvas') ||
         document.querySelector('canvas');
       if (!canvas) return;
@@ -599,7 +732,7 @@
 
   function listInCli(rows, origin) {
     if (!rows || !rows.length) {
-      log('No delivery shops near view · type Locate to hunt near you', 'dim');
+      log('No delivery shops near view · type Locate once', 'dim');
       return;
     }
     var scored = rows
@@ -607,10 +740,17 @@
         var km = origin ? haversineKm(origin, { lat: +v.lat, lng: +v.lng }) : 99;
         return { v: v, km: km };
       })
+      .filter(function (s) {
+        return s.km <= 18;
+      })
       .sort(function (a, b) {
         return a.km - b.km;
       })
       .slice(0, 10);
+    if (!scored.length) {
+      log('No delivery shops near view · type Locate once', 'dim');
+      return;
+    }
     log('Pizza hunt · ' + scored.length + ' shops · public.vendors · on globe', 'ok');
     scored.forEach(function (s, i) {
       var name = String(s.v.name || 'shop').slice(0, 32);
@@ -622,48 +762,19 @@
   }
 
   function askLocateOnce() {
+    hideLeaflet();
     if (askedLocate) {
       log('Still no origin · type Locate (GPS) then pizza again', 'dim');
       return;
     }
     askedLocate = true;
-    log('Camera has no local shops · type Locate once (no Google wall)', 'ok');
+    log('No delivery shops near view · type Locate once', 'dim');
     preview('Locate → then pizza');
-    try {
-      if (G.SNGlobe && typeof SNGlobe.locate === 'function') {
-        void SNGlobe.locate().then(function (row) {
-          if (row && row.lat != null) {
-            markSessionLocate(row.lat, row.lng, { fallback: !!row.fallback });
-            log(
-              'Located · ' +
-                (+row.lat).toFixed(3) +
-                ', ' +
-                (+row.lng).toFixed(3) +
-                (row.fallback ? ' (approx)' : '') +
-                ' · type pizza again',
-              'ok'
-            );
-          } else {
-            log('Locate failed · grant GPS or spin globe over a town then pizza', 'dim');
-          }
-        });
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (G.SNCli && typeof SNCli.gpsLocate === 'function') {
-        void SNCli.gpsLocate({ allowIp: true, allowSoft: true }).then(function (row) {
-          if (row && row.lat != null) {
-            markSessionLocate(row.lat, row.lng, { soft: true });
-            log('Located · type pizza again', 'ok');
-          }
-        });
-      }
-    } catch (_) {}
   }
 
   function faceClusterIfNeeded(use, origin) {
     if (!use || !use.length) return;
+    if (Date.now() < preferCameraUntil) return;
     var cam = cameraLook();
     var nearest = use
       .map(function (v) {
@@ -675,77 +786,110 @@
           camKm: cam ? haversineKm(cam, { lat: +v.lat, lng: +v.lng }) : 0,
         };
       })
+      .filter(function (n) {
+        return n.km <= 18;
+      })
       .sort(function (a, b) {
         return a.km - b.km;
       })[0];
     if (!nearest) return;
-
-    if (cam && nearest.camKm < 80) {
-      if (nearest.km < 40) stayPutSoft(nearest);
-      return;
-    }
+    if (cam && nearest.camKm < 80) return;
+    if (origin && origin.source === 'camera') return;
     stayPutSoft(nearest);
   }
 
-  /** Clean show <place>: fly globe + pin vendors only. Never POI dump. */
-  async function cleanShowPlace(placeName) {
-    forceGlobeOnly();
-    var key = String(placeName || '')
-      .trim()
-      .toLowerCase();
-    var place = KNOWN_PLACES[key];
-    if (!place) {
-      // Unknown place — still block POI dump, just log and stay
-      log('Show · ' + placeName + ' · (no plaza dump) · type Locate or pizza', 'dim');
+  function sleep(ms) {
+    return new Promise(function (r) {
+      setTimeout(r, ms);
+    });
+  }
+
+  async function fetchNear(origin) {
+    var rows = [];
+    try {
+      rows = await queryVendorsBbox(origin.lat, origin.lng, 16);
+    } catch (e) {
+      log('Vendors bbox · ' + (e && e.message ? e.message : e), 'dim');
+      try {
+        if (G.SNCommerce && SNCommerce.loadNear) {
+          rows = ((await SNCommerce.loadNear(origin.lat, origin.lng, 16)) || []).filter(isFoodOrShop);
+        }
+      } catch (_) {}
+    }
+    rows = (rows || []).filter(function (v) {
+      if (!v || v.lat == null) return false;
+      return haversineKm(origin, { lat: +v.lat, lng: +v.lng }) <= 16.5;
+    });
+    var pizzaish = rows.filter(function (v) {
+      return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
+        String(v.name || '') + ' ' + String(v.category || '')
+      );
+    });
+    return pizzaish.length
+      ? pizzaish.concat(
+          rows.filter(function (v) {
+            return pizzaish.indexOf(v) < 0;
+          })
+        )
+      : rows;
+  }
+
+  async function huntAt(origin, raw) {
+    if (!origin) {
+      clearPizzaPins();
+      log('No origin yet · type Locate once (GPS)', 'dim');
+      askLocateOnce();
       return true;
     }
 
-    log('Show · ' + place.name + ' · fly + vendor pins only (no POI dump)', 'ok');
-    preview(place.name + ' · pins');
-
-    // Fly camera
-    try {
-      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
-        SNGlobe.flyNear(place.lat, place.lng, null);
-      } else if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
-        SNGlobe.pulse(place.lat, place.lng, 0x5ad4ff, place.name, 12000);
+    if (origin.source === 'you' && nearFake(origin.lat, origin.lng)) {
+      var cam2 = cameraLook();
+      if (cam2) origin = { lat: cam2.lat, lng: cam2.lng, source: 'camera' };
+      else {
+        clearPizzaPins();
+        askLocateOnce();
+        return true;
       }
-    } catch (_) {}
-
-    // Pin vendors at that place (same path as pizza hunt)
-    var origin = { lat: place.lat, lng: place.lng, source: 'show' };
-    var rows = [];
-    try {
-      rows = await queryVendorsBbox(place.lat, place.lng, 16);
-    } catch (_) {}
-    forceGlobeOnly();
-
-    if (rows.length) {
-      var n = paintPins(rows, origin);
-      listInCli(rows, origin);
-      if (n > 0) log('Pins on globe · ' + n + ' shops · tap a pin', 'ok');
-      pizzaLiveUntil = Date.now() + 120000;
-    } else {
-      log('No delivery shops near ' + place.name + ' · try pizza after Locate', 'dim');
     }
-    forceGlobeOnly();
+
+    log(
+      'Origin · ' + origin.source + ' · ' + origin.lat.toFixed(3) + ', ' + origin.lng.toFixed(3),
+      'dim'
+    );
+
+    var use = await fetchNear(origin);
+
+    if (!use.length) {
+      clearPizzaPins();
+      if (origin.source === 'you' && hasSessionLocate()) {
+        log('No delivery shops in 16 km · spin globe or try another area', 'dim');
+      } else {
+        log('No delivery shops near view · type Locate once', 'dim');
+        preview('Locate → then pizza');
+        askedLocate = true;
+      }
+      return true;
+    }
+
+    var nPainted = paintPins(use, origin);
+    listInCli(use, origin);
+    if (nPainted > 0) {
+      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
+    } else {
+      log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
+    }
+
+    faceClusterIfNeeded(use, origin);
+
+    if (isGuest() && raw) {
+      log('Guest browse · sign in only when you HOLD ⭐ / pay', 'dim');
+    }
     return true;
-  }
-
-  function isShowLine(line) {
-    var m = SHOW_RE.exec(String(line || '').trim());
-    return m ? m[1].trim() : null;
-  }
-
-  function pizzaIsLive() {
-    return hunting || lastPins.length > 0 || Date.now() < pizzaLiveUntil;
   }
 
   async function huntPizza(raw) {
     if (hunting) return true;
-    hunting = true;
-    installMapGuard();
-    forceGlobeOnly();
+    beginGlobeHunt();
     blockAuthModalOnPizza();
     try {
       if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
@@ -759,99 +903,39 @@
 
     log(String(raw || 'pizza').slice(0, 80), 'cmd');
 
-    var origin = resolveOrigin();
-    if (!origin) {
-      clearPizzaPins();
-      log('No origin yet · type Locate once (GPS)', 'dim');
-      askLocateOnce();
-      hunting = false;
-      forceGlobeOnly();
-      return true;
-    }
-
-    if (origin.source === 'you' && nearFake(origin.lat, origin.lng)) {
-      var cam2 = cameraLook();
-      if (cam2) origin = { lat: cam2.lat, lng: cam2.lng, source: 'camera' };
-      else {
-        clearPizzaPins();
-        askLocateOnce();
-        hunting = false;
-        forceGlobeOnly();
-        return true;
-      }
-    }
-
-    log(
-      'Origin · ' + origin.source + ' · ' + origin.lat.toFixed(3) + ', ' + origin.lng.toFixed(3),
-      'dim'
-    );
-
-    forceGlobeOnly();
-    var rows = [];
     try {
-      rows = await queryVendorsBbox(origin.lat, origin.lng, 16);
-    } catch (e) {
-      log('Vendors bbox · ' + (e && e.message ? e.message : e), 'dim');
-      try {
-        if (G.SNCommerce && SNCommerce.loadNear) {
-          rows = ((await SNCommerce.loadNear(origin.lat, origin.lng, 16)) || []).filter(isFoodOrShop);
-        }
-      } catch (_) {}
+      var origin = resolveOrigin();
+      await huntAt(origin, raw);
+    } finally {
+      endGlobeHunt();
     }
-    forceGlobeOnly();
+    return true;
+  }
 
-    var pizzaish = rows.filter(function (v) {
-      return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
-        String(v.name || '') + ' ' + String(v.category || '')
-      );
-    });
-    var use = pizzaish.length
-      ? pizzaish.concat(
-          rows.filter(function (v) {
-            return pizzaish.indexOf(v) < 0;
-          })
-        )
-      : rows;
-
-    if (!use.length) {
-      clearPizzaPins();
-      log('No delivery shops near view · type Locate to hunt near you', 'dim');
-      preview('Locate → then pizza');
-      if (origin.source === 'camera' || origin.source === 'focus' || origin.source === 'focus-cache') {
-        askLocateOnce();
-      } else if (!hasSessionLocate()) {
-        askLocateOnce();
-      } else {
-        log('No delivery shops in 16 km · spin globe or try another area', 'dim');
-      }
-      hunting = false;
-      forceGlobeOnly();
-      try {
-        if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
-      } catch (_) {}
-      return true;
-    }
-
-    var nPainted = paintPins(use, origin);
-    listInCli(use, origin);
-    if (nPainted > 0) {
-      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
-    } else {
-      log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
-    }
-
-    faceClusterIfNeeded(use, origin);
-    forceGlobeOnly();
-
-    if (isGuest()) {
-      log('Guest browse · sign in only when you HOLD ⭐ / pay', 'dim');
-    }
-    hunting = false;
-    pizzaLiveUntil = Date.now() + 180000; // keep show-clean active after hunt
-    forceGlobeOnly();
+  async function showRhodes(raw) {
+    beginGlobeHunt();
+    blockAuthModalOnPizza();
     try {
       if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
     } catch (_) {}
+    try {
+      var a = document.getElementById('cli-in');
+      if (a) a.value = '';
+      var b = document.getElementById('stc-cmd-in');
+      if (b) b.value = '';
+    } catch (_) {}
+
+    log(String(raw || 'show rhodes').slice(0, 80), 'cmd');
+    preferCameraUntil = Date.now() + 180000;
+    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    log('Rhodes · globe camera · ' + RHODES.lat.toFixed(2) + ', ' + RHODES.lng.toFixed(2), 'ok');
+    preview('Rhodes · globe');
+    await sleep(280);
+    try {
+      await huntAt({ lat: RHODES.lat, lng: RHODES.lng, source: 'camera' }, null);
+    } finally {
+      endGlobeHunt();
+    }
     return true;
   }
 
@@ -864,6 +948,22 @@
     return false;
   }
 
+  function isShowRhodes(line) {
+    var s = String(line || '').trim();
+    if (!s) return false;
+    if (SHOW_RHODES_RE.test(s)) return true;
+    if (/^(rhodes|rodos|ρόδος|ρόδο)$/i.test(s)) return true;
+    return false;
+  }
+
+  function isBareLocate(line) {
+    var s = String(line || '').trim();
+    if (!s) return false;
+    if (/^(locate|gps|where am i|find me)$/i.test(s)) return true;
+    if (/^locate$/i.test(s) || /^gps$/i.test(s)) return true;
+    return false;
+  }
+
   function isPayHold(line) {
     var s = String(line || '')
       .trim()
@@ -871,9 +971,67 @@
     return /^(pay|hold\s*⭐|hold\s*star|checkout|confirm\s+order|buy\s+now)\b/.test(s);
   }
 
+  async function grantLocateGps() {
+    hideLeaflet();
+    log('Locate · GPS grant only · globe stays', 'dim');
+    preview('GPS…');
+    if (!navigator.geolocation) {
+      log('No geolocation · spin globe over a town then pizza', 'dim');
+      return;
+    }
+    var pos = await new Promise(function (resolve) {
+      var done = false;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        resolve(null);
+      }, 12000);
+      try {
+        navigator.geolocation.getCurrentPosition(
+          function (p) {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            resolve(p);
+          },
+          function () {
+            if (done) return;
+            done = true;
+            clearTimeout(to);
+            resolve(null);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      } catch (_) {
+        clearTimeout(to);
+        resolve(null);
+      }
+    });
+    if (pos && pos.coords && isFinite(pos.coords.latitude)) {
+      var lat = +pos.coords.latitude;
+      var lng = +pos.coords.longitude;
+      if (nearFake(lat, lng)) {
+        log('Locate rejected fake pin · spin globe then pizza', 'dim');
+        return;
+      }
+      markSessionLocate(lat, lng, {
+        source: 'gps',
+        real: true,
+        fallback: false,
+        fromGps: true,
+        accuracy: pos.coords.accuracy,
+      });
+      log('Located · ' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ' · type pizza again', 'ok');
+      flyGlobeTo(lat, lng, 'You');
+    } else {
+      log('Locate failed · grant GPS or spin globe over a town then pizza', 'dim');
+    }
+  }
+
   function install() {
     blockAuthModalOnPizza();
     installMapGuard();
+    scrubFakeYou();
     if (!G.SNCli || typeof SNCli.run !== 'function') return;
     if (SNCli.__snGuestPizzaHuntBuild === BUILD) return;
     SNCli.__snGuestPizzaHuntBuild = BUILD;
@@ -882,25 +1040,39 @@
     SNCli.run = function (raw) {
       try {
         var s = String(raw || '').trim();
-        if (/^locate\b/i.test(s) || /^gps\b/i.test(s)) {
+        if (isBareLocate(s) && globeOnly()) {
+          void grantLocateGps();
+          return Promise.resolve(true);
+        }
+        if (isBareLocate(s)) {
           var p = prev(raw);
           setTimeout(function () {
             try {
-              if (G._snPhysPos && G._snPhysPos.lat != null && !nearFake(+G._snPhysPos.lat, +G._snPhysPos.lng)) {
-                markSessionLocate(G._snPhysPos.lat, G._snPhysPos.lng);
+              var pos = G._snPhysPos;
+              if (
+                pos &&
+                pos.lat != null &&
+                !nearFake(+pos.lat, +pos.lng) &&
+                !isIpOrSoftSource(pos) &&
+                (pos.fromGps === true || pos.real === true || String(pos.source || '') === 'gps')
+              ) {
+                markSessionLocate(pos.lat, pos.lng, {
+                  source: 'gps',
+                  real: true,
+                  fallback: false,
+                  fromGps: true,
+                });
               }
             } catch (_) {}
-          }, 1200);
+          }, 1400);
           return p;
         }
         if (isPizzaLine(s)) {
           void huntPizza(s);
           return Promise.resolve(true);
         }
-        // After / during pizza hunt: show <place> = clean fly + pins only (never POI dump)
-        var place = isShowLine(s);
-        if (place && pizzaIsLive()) {
-          void cleanShowPlace(place);
+        if (isShowRhodes(s) && (huntSession || hunting)) {
+          void showRhodes(s);
           return Promise.resolve(true);
         }
         if (isGuest() && isPayHold(s)) {
@@ -923,31 +1095,28 @@
       function capture(ev, el) {
         var v = String((el && el.value) || '').trim();
         if (!v) return false;
+        var handled = false;
         if (isPizzaLine(v)) {
-          try {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-          } catch (_) {}
-          if (el) el.value = '';
+          handled = true;
           void huntPizza(v);
-          return true;
+        } else if (isShowRhodes(v) && (huntSession || hunting)) {
+          handled = true;
+          void showRhodes(v);
+        } else if (isBareLocate(v) && globeOnly()) {
+          handled = true;
+          void grantLocateGps();
         }
-        var place = isShowLine(v);
-        if (place && pizzaIsLive()) {
-          try {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-          } catch (_) {}
-          if (el) el.value = '';
-          void cleanShowPlace(place);
-          return true;
-        }
-        return false;
+        if (!handled) return false;
+        try {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        } catch (_) {}
+        if (el) el.value = '';
+        return true;
       }
-      if (form && input && !input._snPizzaHunt110) {
-        input._snPizzaHunt110 = 1;
+      if (form && input && !input._snPizzaHunt120) {
+        input._snPizzaHunt120 = 1;
         form.addEventListener(
           'submit',
           function (ev) {
@@ -963,8 +1132,8 @@
           true
         );
       }
-      if (topIn && !topIn._snPizzaHunt110) {
-        topIn._snPizzaHunt110 = 1;
+      if (topIn && !topIn._snPizzaHunt120) {
+        topIn._snPizzaHunt120 = 1;
         topIn.addEventListener(
           'keydown',
           function (ev) {
@@ -977,7 +1146,7 @@
 
     try {
       if (G.SNMarket && typeof SNMarket.fulfillFoodIntent === 'function') {
-        if (!SNMarket._snPizzaHunt110) {
+        if (!SNMarket._snPizzaHunt120) {
           var ful = SNMarket.fulfillFoodIntent.bind(SNMarket);
           SNMarket.fulfillFoodIntent = async function (q, opts) {
             var line = String(q || (opts && opts.text) || '');
@@ -991,13 +1160,14 @@
             }
             return ful(q, opts);
           };
-          SNMarket._snPizzaHunt110 = true;
+          SNMarket._snPizzaHunt120 = true;
         }
       }
     } catch (_) {}
   }
 
   function boot() {
+    scrubFakeYou();
     install();
     blockAuthModalOnPizza();
     installMapGuard();
@@ -1013,12 +1183,13 @@
   setInterval(function () {
     install();
     blockAuthModalOnPizza();
-    installMapGuard();
+    if (globeOnly()) hideLeaflet();
   }, 8000);
 
   G.SNChromeGuestPizzaHunt = {
     build: BUILD,
     hunt: huntPizza,
+    showRhodes: showRhodes,
     queryVendorsBbox: queryVendorsBbox,
     resolveOrigin: resolveOrigin,
     lastPins: function () {
