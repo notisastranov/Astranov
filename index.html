@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Astranov SpaceNet Operating System</title>
 <meta name="theme-color" content="#000105" id="meta-theme-color" />
-<meta name="astranov-build" content="20260821200500-grok-mind" />
-<meta name="astranov-continuity" content="20260821200500-grok-mind" />
+<meta name="astranov-build" content="20260822154400-star-hud" />
+<meta name="astranov-continuity" content="20260822154400-star-hud" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
@@ -45,7 +45,7 @@
 #globe.city-hidden { visibility:hidden !important; pointer-events:none !important; }
 </style>
 <style>
-:root{--bg:#000000;--text:#f4f6f8;--glow:#14c3f3;--panel:rgba(0,0,0,0.78);--border:rgba(20,195,243,0.38);--font-ui:Inter,system-ui,sans-serif;--font-display:Space Grotesk,system-ui,sans-serif;--font-mono:JetBrains Mono,ui-monospace,monospace;--r:24px}
+:root{--bg:#000105;--text:#eaf4ff;--glow:#1c8cff;--glow-hot:#7ec8ff;--panel:rgba(3,10,32,0.32);--border:rgba(50,160,255,0.62);--font-ui:Inter,system-ui,sans-serif;--font-display:Space Grotesk,system-ui,sans-serif;--font-mono:JetBrains Mono,ui-monospace,monospace;--r:24px}
 html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(--text);font:500 14px/1.45 var(--font-ui);overflow:hidden;-webkit-font-smoothing:antialiased;touch-action:manipulation}
 #boot{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center}
 #boot.hide{opacity:0!important;pointer-events:none!important;visibility:hidden!important;display:none!important}
@@ -55,24 +55,24 @@ html,body{margin:0;height:100%;min-height:100dvh;background:var(--bg);color:var(
 body.sn-hud-live #sn-topchrome,body.sn-hud-live #dock{opacity:1;transform:none}
 #globe{position:fixed;inset:0;z-index:1}
 #sn-topchrome{position:fixed;top:0;left:0;right:0;z-index:95;display:flex;justify-content:center;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none}
-#sn-topchrome-panel{pointer-events:auto;width:min(720px,100%);background:var(--panel);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;backdrop-filter:blur(18px) saturate(1.1)}
+#sn-topchrome-panel{pointer-events:auto;width:min(720px,100%);background:linear-gradient(180deg,rgba(8,22,64,0.28),rgba(0,6,22,0.36));border:1px solid var(--border);border-radius:var(--r);overflow:hidden;backdrop-filter:blur(11px) saturate(1.4);box-shadow:0 0 0 1px rgba(40,120,255,0.22),0 0 24px rgba(28,140,255,0.28),inset 0 0 28px rgba(12,50,160,0.16)}
 #sn-topchrome-drag,#cli-drag{height:10px!important;min-height:10px!important;max-height:10px!important;padding:0!important;margin:0!important;display:flex;align-items:center;justify-content:center;cursor:ns-resize}
-#sn-topchrome-drag::before,#cli-drag::before{content:"";width:36px;height:3px;border-radius:999px;background:rgba(20,195,243,0.55)}
+#sn-topchrome-drag::before,#cli-drag::before{content:"";width:36px;height:3px;border-radius:999px;background:linear-gradient(90deg,transparent,#1c8cff,#7ec8ff,#1c8cff,transparent);box-shadow:0 0 10px #1c8cff}
 #sn-topchrome-drag::after,#cli-drag::after{content:none!important;display:none!important}
 #dock{position:fixed;left:0;right:0;bottom:0;z-index:100;display:flex;justify-content:center;padding:0 10px calc(10px + env(safe-area-inset-bottom,0px));pointer-events:none}
-#panel{pointer-events:auto;width:min(720px,100%);background:rgba(0,0,0,0.82);border:1px solid var(--border);border-radius:var(--r);display:grid;grid-template-rows:10px 44px auto auto;overflow:visible;backdrop-filter:blur(18px) saturate(1.1)}
-.sn-cli-field{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;min-height:36px!important;padding:0 10px!important;background:rgba(0,0,0,0.88)!important;border:1px solid rgba(20,195,243,0.45)!important;border-radius:12px!important}
+#panel{pointer-events:auto;width:min(720px,100%);background:linear-gradient(180deg,rgba(6,18,52,0.30),rgba(0,4,18,0.38));border:1px solid var(--border);border-radius:var(--r);display:grid;grid-template-rows:10px 44px auto auto;overflow:visible;backdrop-filter:blur(11px) saturate(1.4);box-shadow:0 0 0 1px rgba(40,120,255,0.22),0 0 24px rgba(28,140,255,0.28),inset 0 0 28px rgba(12,50,160,0.16)}
+.sn-cli-field{display:flex!important;align-items:center!important;gap:8px!important;width:100%!important;min-height:36px!important;padding:0 10px!important;background:rgba(0,10,32,0.42)!important;border:1px solid rgba(80,180,255,0.55)!important;border-radius:12px!important;box-shadow:inset 0 0 12px rgba(20,90,220,0.18),0 0 10px rgba(28,140,255,0.18)!important}
 #stc-cmd,#cli-form{padding:4px 10px 10px;margin:0;min-height:48px}
 #cli-in,#stc-cmd-in{background:transparent!important;border:0!important;color:#f4f6f8;font:500 14px/1.3 var(--font-mono);width:100%;outline:none}
 #cli-in::placeholder,#stc-cmd-in::placeholder{color:#7a8a96;opacity:0.65}
 #cli-coach{display:none!important;height:0!important}
 #sn-task-ribbon{display:flex;gap:6px;padding:4px 8px;height:44px;min-height:44px;max-height:44px;align-items:center;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch}
-.sn-rib-btn{flex:0 0 36px;width:36px;height:36px;min-width:36px;max-width:36px;padding:0;border-radius:50%;border:1px solid rgba(20,195,243,0.4);background:#000;color:#f4f6f8;font:600 14px/1 var(--font-ui);overflow:hidden;display:inline-flex;align-items:center;justify-content:center}
-.sn-cli-star{color:#14c3f3;text-shadow:0 0 10px #14c3f3}
+.sn-rib-btn{flex:0 0 36px;width:36px;height:36px;min-width:36px;max-width:36px;padding:0;border-radius:50%;border:1px solid rgba(80,180,255,0.55);background:rgba(0,12,40,0.35);color:#eaf4ff;font:600 14px/1 var(--font-ui);overflow:hidden;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(28,140,255,0.25)}
+.sn-cli-star{color:#7ec8ff;text-shadow:0 0 10px #1c8cff}
 #stc-compact{display:grid;grid-template-columns:auto 1fr auto;align-items:center;padding:4px 10px;min-height:52px;max-height:56px}
-#field-radar{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(20,195,243,0.25),#060d1c)}
-#btn-home{font:800 15px/1.1 var(--font-display);letter-spacing:0.28em;color:#14c3f3;background:transparent;border:0;text-shadow:0 0 12px rgba(20,195,243,.55)}
-#field-balance-hud{padding:6px 12px;border-radius:16px;border:1px solid var(--border)}
+#field-radar{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(80,180,255,0.35),#020617);box-shadow:0 0 12px rgba(28,140,255,0.35)}
+#btn-home{font:800 15px/1.1 var(--font-display);letter-spacing:0.28em;color:#7ec8ff;background:transparent;border:0;text-shadow:0 0 14px rgba(28,140,255,.7)}
+#field-balance-hud{padding:6px 12px;border-radius:16px;border:1px solid var(--border);background:rgba(0,10,32,0.28)}
 #sn-task-launch{width:40px;height:40px;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,rgba(20,195,243,0.35),#060d1c)}
 </style>
 </head>
@@ -132,10 +132,10 @@ body.sn-hud-live #sn-topchrome,body.sn-hud-live #dock{opacity:1;transform:none}
     </form>
   </div>
 </div>
-<script src="/js/spacenet/chrome-mute.js?v=20260822153400-no-coach"></script>
-<script src="/js/spacenet/chrome-fix.js?v=20260822153400-no-coach"></script>
-<script src="/js/spacenet/chrome-rib-face.js?v=20260822153400-no-coach"></script>
-<script src="/js/spacenet/chrome-radar.js?v=20260822153400-no-coach"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260822154400-star-hud"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260822154400-star-hud"></script>
+<script src="/js/spacenet/chrome-rib-face.js?v=20260822154400-star-hud"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260822154400-star-hud"></script>
 <script src="/js/spacenet/os-bootloader.js?v=20260821200500-grok-mind"></script>
 <script src="/js/spacenet/guardian.js?v=20260821200500-grok-mind"></script>
 </body>

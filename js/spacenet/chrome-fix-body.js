@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822153400-no-coach';
+  var BUILD = '20260822154400-star-hud';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
 
@@ -13,7 +13,7 @@
     var css = document.createElement('style');
     css.id = 'sn-chrome-fix-css';
     css.textContent = [
-      ':root { --sn-chrome-w: min(720px, calc(100vw - 24px)); }',
+      ':root { --sn-chrome-w: min(720px, calc(100vw - 24px)); --glow: #1c8cff; --glow-hot: #7ec8ff; --panel: rgba(3,10,32,0.32); --border: rgba(50,160,255,0.62); }',
       '#sn-leftscroll, #sn-rightscroll, .sn-edgescroll,',
       '#sn-left-panel, #sn-right-panel, #sn-left-rail, #sn-right-rail,',
       '#sn-arch-layer, #sn-device-alert, #sn-silver-rive,',
@@ -29,9 +29,11 @@
       '#sn-topchrome-panel {',
       '  pointer-events: auto !important; width: var(--sn-chrome-w) !important;',
       '  max-width: var(--sn-chrome-w) !important; margin: 0 auto !important;',
-      '  background: rgba(0,0,0,0.78) !important; border: 1px solid rgba(20,195,243,0.38) !important;',
+      '  background: linear-gradient(180deg, rgba(8,22,64,0.28), rgba(0,6,22,0.36)) !important;',
+      '  border: 1px solid rgba(70,170,255,0.58) !important;',
       '  border-radius: 24px !important; overflow: hidden !important;',
-      '  backdrop-filter: blur(16px) !important;',
+      '  backdrop-filter: blur(11px) saturate(1.4) !important;',
+      '  box-shadow: 0 0 0 1px rgba(40,120,255,0.22), 0 0 24px rgba(28,140,255,0.28), inset 0 0 28px rgba(12,50,160,0.16) !important;',
       '  min-height: 0 !important; height: auto !important;',
       '}',
       '#stc-compact { max-height: 56px !important; min-height: 52px !important; padding: 4px 10px !important; }',
@@ -49,9 +51,11 @@
       '  pointer-events: auto !important; position: relative !important;',
       '  width: var(--sn-chrome-w) !important; max-width: var(--sn-chrome-w) !important;',
       '  margin: 0 auto !important; box-sizing: border-box !important;',
-      '  background: rgba(0,0,0,0.82) !important;',
-      '  border: 1px solid rgba(20,195,243,0.42) !important;',
+      '  background: linear-gradient(180deg, rgba(6,18,52,0.30), rgba(0,4,18,0.38)) !important;',
+      '  border: 1px solid rgba(70,170,255,0.58) !important;',
       '  border-radius: 22px !important;',
+      '  box-shadow: 0 0 0 1px rgba(40,120,255,0.22), 0 0 24px rgba(28,140,255,0.28), inset 0 0 28px rgba(12,50,160,0.16) !important;',
+      '  backdrop-filter: blur(11px) saturate(1.4) !important;',
       '  display: grid !important;',
       '  grid-template-rows: 10px 44px auto auto !important;',
       '  overflow: visible !important;',
@@ -67,7 +71,8 @@
       '#cli-drag::before, #sn-topchrome-drag::before {',
       '  content: "" !important; display: block !important;',
       '  width: 36px !important; height: 3px !important; border-radius: 999px !important;',
-      '  background: rgba(20,195,243,0.55) !important;',
+      '  background: linear-gradient(90deg, transparent, #1c8cff, #7ec8ff, #1c8cff, transparent) !important;',
+      '  box-shadow: 0 0 10px #1c8cff !important;',
       '}',
       '#cli-drag::after, #sn-topchrome-drag::after { content: none !important; display: none !important; }',
       /* coach dump — always gone, guest and signed-in */
@@ -101,6 +106,9 @@
       '  border-radius: 50% !important; object-fit: cover !important;',
       '}',
       '#cli-in::placeholder, #stc-cmd-in::placeholder { color: #7a8a96 !important; opacity: 0.7 !important; }',
+      '.sn-cli-field { background: rgba(0,10,32,0.42) !important; border: 1px solid rgba(80,180,255,0.55) !important; box-shadow: inset 0 0 12px rgba(20,90,220,0.18), 0 0 10px rgba(28,140,255,0.18) !important; }',
+      '.sn-rib-btn { border-color: rgba(80,180,255,0.55) !important; background: rgba(0,12,40,0.35) !important; box-shadow: 0 0 8px rgba(28,140,255,0.25) !important; }',
+      '.sn-cli-star, #btn-home { color: #7ec8ff !important; text-shadow: 0 0 12px #1c8cff !important; }',
       '#cli-form { min-height: 48px !important; padding: 4px 10px 10px !important; }',
       'body:not(.sn-hud-live) #sn-topchrome, body:not(.sn-hud-live) #dock { opacity: 0 !important; }',
       'body.sn-hud-live #sn-topchrome, body.sn-hud-live #dock { opacity: 1 !important; }',
