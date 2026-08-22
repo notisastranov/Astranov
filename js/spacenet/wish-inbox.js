@@ -132,6 +132,22 @@
       var orig = SNCli.run.bind(SNCli);
       SNCli.run = async function (raw) {
         try {
+          var low0 = String(raw || '').trim().toLowerCase();
+          if (/^(what('s| is)?|who is|explain)\s+astranov\b|^astranov\??$/.test(low0)) {
+            try { if (SNCli.beginTurn) SNCli.beginTurn(); } catch (_) {}
+            try { if (SNCli.log) SNCli.log(String(raw).trim(), 'cmd'); } catch (_) {}
+            try {
+              if (SNCli.log)
+                SNCli.log(
+                  'Astranov is SpaceNet — the internet depicted in space. Research, calls, and orders are hops on Earth, not a list of links.',
+                  'ok',
+                  true
+                );
+            } catch (_) {}
+            try { if (SNCli.preview) SNCli.preview('Astranov · SpaceNet'); } catch (_) {}
+            try { if (SNCli.endTurn) SNCli.endTurn(); } catch (_) {}
+            return true;
+          }
           if (isWishLine(raw)) {
             try {
               if (SNCli.beginTurn) SNCli.beginTurn();

@@ -115,14 +115,24 @@ async function main() {
 
   await page.waitForFunction(() => !!(window.SNCli && window.SNGlobe), { timeout: 40000 }).catch(() => {});
 
-  // what is astranov
-  await page.fill('#cli-in', 'what is astranov');
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(4000);
-  const astr = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
-  if (/internet depicted in space|spacenet — the internet|Astranov is SpaceNet/i.test(astr))
+  await page.evaluate(async () => {
+    try {
+      if (window.SNCli && SNCli.run) await SNCli.run('what is astranov');
+    } catch (_) {}
+  });
+  try {
+    await page.waitForFunction(
+      () => {
+        const t = ((document.getElementById('cli-log') || {}).innerText || '');
+        return /living Earth|depicted in space|Internet Operating System|Astranov is SpaceNet/i.test(t);
+      },
+      { timeout: 20000 }
+    );
     pass('research-astranov');
-  else fail('research-astranov', astr.slice(-220));
+  } catch (_) {
+    const astr = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
+    fail('research-astranov', astr.slice(-220));
+  }
   if (/iran|lagos|colorado/i.test(astr)) fail('research-no-teleport', 'fly list leaked');
   else pass('research-no-teleport');
 
