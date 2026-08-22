@@ -1,20 +1,20 @@
 /**
  * SpaceNet CALL = glowing great-circle on the live SNGlobe.
- * Build: 20260822234500-call-chrome
+ * Build: 20260823000000-hud-twin
  *
  * Guest tap/type "call" → ONLY Google GIS sign-in.
  *   no u-xxxx room, no me-av avatar, no plaza fallback, no VIDEO CALL modal.
  * Signed-in → arc between me pin and them (or a demo peer pin).
  * CLI line: "Call name arc"
  * Camera may ease/rotate to frame the arc. Never teleport. Never pulse/flyGlobeTo/projectPin.
- * Twin-law chrome: HUD "Heads up display..." · bottom "command line interface".
+ * Twin-law chrome: HUD "Heads up display command line interface" · bottom "command line interface".
  * Dock 📞 aria-label: "Call · place or answer".
  */
 (function (G) {
   'use strict';
   if (G.__snCallArc234500) return;
   G.__snCallArc234500 = 1;
-  var BUILD = '20260822234500-call-chrome';
+  var BUILD = '20260823000000-hud-twin';
   var CALL_LABEL = 'Call · place or answer';
 
   var RHODES = { lat: 36.4341, lng: 28.2176 };

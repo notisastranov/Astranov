@@ -1,11 +1,11 @@
-/* Astranov chrome-fix loader · 20260822234500-call-chrome
- * Loads chrome-fix-body. Twin-law copy: HUD "Heads up display..." · bottom "command line interface".
+/* Astranov chrome-fix loader · 20260823000000-hud-twin
+ * Loads chrome-fix-body. Twin-law copy: HUD "Heads up display command line interface" · bottom "command line interface".
  * Call dock: "Call · place or answer". Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822234500-call-chrome';
-  var TOP_PH = 'Heads up display...';
+  var BUILD = '20260823000000-hud-twin';
+  var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   var CALL_LABEL = 'Call · place or answer';
   function enforceHud() {

@@ -1,10 +1,10 @@
-/* Astranov mute · Build 20260822234500-call-chrome
+/* Astranov mute · Build 20260823000000-hud-twin
  * Kill beeps + load CALL great-circle overlay (chrome-call-arc).
  * Twin-law copy via chrome-fix. Does not touch chrome-guest-pizza-hunt / flyGlobeTo / pulse / projectPin.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822234500-call-chrome';
+  var BUILD = '20260823000000-hud-twin';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
