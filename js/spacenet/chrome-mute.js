@@ -1,8 +1,9 @@
-/* Astranov mute · Build 20260822223000-probe-signs (cache-bust pizza-hunt)
+/* Astranov mute · Build 20260822223000-probe-signs (cache-bust pizza-hunt · vercel-rebuild)
  * Kill beeps + load:
  *   - chrome-cli-answer (twin CLI + cli-log paint + answers)  ← #126 keep
  *   - chrome-guest-pizza-hunt (vendors bbox pins · Google only at pay)
  * Does NOT load guest-pass oneCli hide. Currency ⭐ path via answer module.
+ * Query: /js/spacenet/chrome-guest-pizza-hunt.js?v=20260822223000-probe-signs
  */
 (function (global) {
   'use strict';
