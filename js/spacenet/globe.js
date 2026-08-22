@@ -31,6 +31,8 @@
     national: { z: 2.85, label: 'NATIONAL' },
     regional: { z: 1.95, label: 'REGIONAL' },
     city: { z: 1.48, label: 'CITY' },
+    local: { z: 1.48, label: 'CITY' },
+    street: { z: 1.42, label: 'STREET' },
   };
 
   // Sync dramatic Z from SPACENET law when present
@@ -1713,6 +1715,14 @@
     try {
       syncSpaceLayerVis();
     } catch (_) {}
+    if (nz <= TIERS.city.z + 0.04) {
+      try {
+        var f = focusPos() || G.diveAnchor || global._snLastPos;
+        if (f && f.lat != null && global.SNMap && SNMap.open && !SNMap.active) {
+          void SNMap.open(f.lat, f.lng, { force: true, zoom: 15 });
+        }
+      } catch (_) {}
+    }
     G.lastAct = Date.now();
     G.lastUserControl = Date.now();
   }
@@ -2205,27 +2215,20 @@
     G.velX = 0;
     G.velY = 0;
 
-    // Street map is OPT-IN only (CLI "city map" / locate path) — zoom never truncates to flat map
-    var openMap = false;
-    try {
-      if (global.SNMap && SNMap.active) {
-        // already on map · keep 3D path for zoom-out
-      }
-    } catch (_) {}
-
+    // Street map is the city zoom-in — shops, orders, delivery live here
+    var wantMap = cell === 'city';
     var ok = goToPlace(lat, lng, {
-      tier: cell === 'city' ? 'regional' : cell, // keep 3D globe; city tier label via diveTier below
-      openMap: false,
+      tier: wantMap ? 'city' : cell,
+      openMap: wantMap,
       pulse: false,
       body: G.bodyId || 'earth',
-      skipScan: cell === 'city' ? false : cell === 'global',
+      skipScan: cell === 'global',
     });
-    // Remember intended cell without forcing Leaflet
-    G.diveTier = cell === 'city' ? 'regional' : cell;
-    if (cell === 'city') {
+    G.diveTier = cell;
+    if (wantMap) {
       try {
-        setHud('CITY · 3D · type city map for streets');
-        if (global.SNCli && SNCli.log) SNCli.log('City depth · 3D globe (no truncated map) · city map for streets', 'dim');
+        setHud('CITY · streets · shops');
+        if (global.SNCli && SNCli.log) SNCli.log('CITY · streets open · shops and orders on the map', 'ok');
       } catch (_) {}
     }
 
@@ -2354,6 +2357,7 @@
     setDiveAnchor(lat, lng);
     var tier = opts.tier || 'national';
     if (tier === 'center') tier = 'global';
+    if (tier === 'local' || tier === 'street' || tier === 'map') tier = 'city';
     if (!TIERS[tier]) tier = 'national';
     G.diveTier = tier;
     // Align SPACENET cell index with explicit tier
@@ -2610,7 +2614,7 @@
     var t = TIERS[key] || TIERS.global;
     G.diveTier = key in TIERS ? key : 'global';
     syncDiveStepFromTier(G.diveTier);
-    if (key !== 'city') {
+    if (key !== 'city' && key !== 'street' && key !== 'local') {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
@@ -2627,6 +2631,14 @@
     setTierLabel();
     syncSpaceLayerVis();
     G.tier = G.diveTier;
+    if (key === 'city' || key === 'street' || key === 'local') {
+      try {
+        var f = focusPos() || G.diveAnchor || global._snLastPos;
+        if (f && f.lat != null && global.SNMap && SNMap.open) {
+          void SNMap.open(f.lat, f.lng, { force: true, zoom: 15 });
+        }
+      } catch (_) {}
+    }
     var hud =
       key === 'global'
         ? 'GLOBAL · full Earth in space · ISS + sats'

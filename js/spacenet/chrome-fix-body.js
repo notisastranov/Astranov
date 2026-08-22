@@ -104,6 +104,11 @@
       '#cli-form { min-height: 48px !important; padding: 4px 10px 10px !important; }',
       'body:not(.sn-hud-live) #sn-topchrome, body:not(.sn-hud-live) #dock { opacity: 0 !important; }',
       'body.sn-hud-live #sn-topchrome, body.sn-hud-live #dock { opacity: 1 !important; }',
+      '#city-map { position:fixed !important; inset:0 !important; z-index:40 !important; opacity:0 !important; pointer-events:none !important; background:#000 !important; }',
+      '#city-map.active { z-index:80 !important; opacity:1 !important; pointer-events:auto !important; }',
+      '#city-map .leaflet-container { width:100% !important; height:100% !important; min-height:100% !important; background:#05080f !important; }',
+      '#globe.city-hidden { visibility:hidden !important; pointer-events:none !important; }',
+      'body.city-map-on #city-map { opacity:1 !important; pointer-events:auto !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }

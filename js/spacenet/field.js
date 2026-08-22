@@ -1522,7 +1522,7 @@
           } catch (_) {}
           try {
             if (g.SNGlobe && SNGlobe.pulse) SNGlobe.pulse(pp.lat, pp.lng, 0x44ffaa, 'YOU', 12000);
-            if (g.SNGlobe && SNGlobe.flyNear) SNGlobe.flyNear(pp.lat, pp.lng);
+            if (g.SNGlobe && SNGlobe.flyNear) SNGlobe.flyNear(pp.lat, pp.lng, 'city');
           } catch (_) {}
         });
       } catch (_) {}

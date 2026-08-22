@@ -39,6 +39,10 @@
 #cli-coach { display: none !important; height: 0 !important; }
 #cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; }
 #cli-log:not(:empty) { display: block !important; max-height: 26vh !important; overflow-y: auto !important; padding: 4px 10px 8px !important; font: 500 13px/1.35 var(--font-mono); color: #d7eef7; }
+#city-map { position:fixed !important; inset:0 !important; z-index:40; opacity:0; pointer-events:none; background:#000; }
+#city-map.active { z-index:80 !important; opacity:1 !important; pointer-events:auto !important; }
+#city-map .leaflet-container { width:100% !important; height:100% !important; background:#05080f; }
+#globe.city-hidden { visibility:hidden !important; pointer-events:none !important; }
 </style>
 <style>
 :root{--bg:#000000;--text:#f4f6f8;--glow:#14c3f3;--panel:rgba(0,0,0,0.78);--border:rgba(20,195,243,0.38);--font-ui:Inter,system-ui,sans-serif;--font-display:Space Grotesk,system-ui,sans-serif;--font-mono:JetBrains Mono,ui-monospace,monospace;--r:24px}

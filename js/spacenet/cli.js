@@ -1012,7 +1012,7 @@
   function isOsCommand(raw) {
     var s = String(raw || '').trim();
     if (!s) return false;
-    return /^(locate|fly|go|pizza|order|poly|polygon|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?|village|kalithea|kallithea|marina|boot|diag|diagnostics|repair|plans?|subscribe|donate|power|helper|hard boot|clear cache|enter|youtube|yt|watch|skin|shape|reshape|evolve|live|fluid)\b/i.test(
+    return /^(locate|fly|go|pizza|order|poly|polygon|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?|village|kalithea|kallithea|marina|boot|diag|diagnostics|repair|plans?|subscribe|donate|power|helper|hard boot|clear cache|enter|youtube|yt|watch|skin|shape|reshape|evolve|live|fluid|city|national|regional|shops|vendors)\b/i.test(
       s
     );
   }
@@ -2844,7 +2844,12 @@
       }
       if (low === 'national' || low === 'country' || low === 'zoom national') {
         global.SNMap?.close?.();
-        Globe?.goToTier?.('national');
+        const np = Tasks?.pos || global._snLastPos || { lat: 36.387557, lng: 28.222533 };
+        try {
+          Globe?.goToPlace?.(np.lat, np.lng, { tier: 'national', pulse: true, label: 'NATIONAL', openMap: false });
+        } catch (_) {
+          Globe?.goToTier?.('national');
+        }
         log('SPACENET · NATIONAL', 'ok');
         return;
       }
@@ -2854,11 +2859,20 @@
         log('SPACENET · REGIONAL', 'ok');
         return;
       }
-      if (low === 'zoom city' || low === 'zoom street' || low === 'city zoom') {
-        const p = Tasks?.pos || global._snLastPos || { lat: 36.43, lng: 28.22 };
-        Globe?.goToTier?.('city');
-        await global.SNMap?.open?.(p.lat, p.lng);
-        log('SPACENET · CITY / street map', 'ok');
+      if (low === 'city' || low === 'city map' || low === 'streets' || low === 'street map') {
+        const p = Tasks?.pos || global._snLastPos || (Globe && Globe.focusPos && Globe.focusPos()) || { lat: 36.387557, lng: 28.222533 };
+        try { Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', pulse: true, label: 'CITY', openMap: true }); } catch (_) {}
+        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 15 }); } catch (_) {}
+        try { if (global.SNCommerce && SNCommerce.ensureSector) await SNCommerce.ensureSector(p.lat, p.lng, { openMap: true }); } catch (_) {}
+        log('CITY · streets · shops on the map', 'ok');
+        return;
+      }
+      if (low === 'shops' || low === 'vendors' || low === 'list shops') {
+        const p = Tasks?.pos || global._snLastPos || (Globe && Globe.focusPos && Globe.focusPos()) || { lat: 36.387557, lng: 28.222533 };
+        try { Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', pulse: true, label: 'SHOPS', openMap: true }); } catch (_) {}
+        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 15 }); } catch (_) {}
+        try { if (global.SNCommerce && SNCommerce.ensureSector) await SNCommerce.ensureSector(p.lat, p.lng, { openMap: true }); } catch (_) {}
+        log('SHOPS · city map · tap a pin to order', 'ok');
         return;
       }
       // Surface layers panel / basemap / overlays

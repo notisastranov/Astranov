@@ -1545,6 +1545,8 @@
     if (wrap) {
       wrap.classList.add('active');
       wrap.setAttribute('aria-hidden', 'false');
+      wrap.style.cssText =
+        'position:fixed;inset:0;z-index:80;opacity:1;pointer-events:auto;background:#000;';
     }
     if (globe) globe.classList.add('city-hidden');
     document.body.classList.add('city-map-on');
