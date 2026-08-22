@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260819010500-guardian';
+  var BUILD = '20260822172200-sos-filter';
   var SOS_KEY = 'sn:guardian-sos-v1';
   var RELOAD_KEY = 'sn:guardian-reloaded';
   var started = false;
@@ -61,7 +61,7 @@
     try {
       if (global.SNLiveBridge && SNLiveBridge.ownerNote) {
         void SNLiveBridge.ownerNote(
-          '[SOS] ' + payload.why + ' · ' + payload.build + ' · auto-page Grok Build',
+          '[SOS] ' + payload.why + (payload.extra && payload.extra.message ? ' · ' + payload.extra.message : '') + ' · ' + payload.build,
           { from: 'guardian', sos: true, silent: true }
         );
       }
@@ -137,7 +137,18 @@
       });
       global.addEventListener('unhandledrejection', function (ev) {
         var r = ev && ev.reason;
-        sos('promise-reject', { message: String(r && r.message ? r.message : r).slice(0, 160) });
+        var msg = String((r && r.message) || r || '').slice(0, 160);
+        if (
+          /AbortError|The operation was aborted|Failed to fetch|Load failed|NetworkError|NotAllowedError|NotSupportedError|InvalidStateError|play\(\)|The play\(\)|user aborted|getBattery|wakeLock|ResizeObserver|Script error/i.test(
+            msg
+          )
+        ) {
+          try {
+            if (ev && ev.preventDefault) ev.preventDefault();
+          } catch (_) {}
+          return;
+        }
+        sos('promise-reject', { message: msg });
       });
     } catch (_) {}
   }

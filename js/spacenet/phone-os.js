@@ -159,7 +159,7 @@
         var island = document.getElementById('sn-os-island');
         if (island) island.setAttribute('data-bat', pct + '%');
         paintIsland();
-      });
+      }).catch(function () {});
     } catch (_) {}
   }
 
