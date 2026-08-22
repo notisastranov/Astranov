@@ -126,7 +126,7 @@
       '<div id="sn-os-core">' +
       '<div id="sn-os-mark">ASTRANOV</div>' +
       '<div id="sn-os-ring"><span></span></div>' +
-      '<div id="sn-os-sub">EARTH</div>' +
+      '<div id="sn-os-sub">SPACEX PHONE OS</div>' +
       '</div>' +
       '<div id="sn-os-facts" hidden></div>' +
       '<div id="sn-os-actions" hidden></div>';
@@ -862,6 +862,7 @@
     '/js/spacenet/omma.js',
     '/js/spacenet/fluid.js',
     '/js/spacenet/pulse.js',
+    '/js/spacenet/phone-os.js',
     '/js/spacenet/spacexai.js',
     '/js/spacenet/youtube.js',
     '/js/spacenet/os-will.js',
@@ -1343,6 +1344,9 @@
         if (global.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
       } catch (_) {}
       try {
+        if (global.SNPhoneOS && SNPhoneOS.boot) SNPhoneOS.boot();
+      } catch (_) {}
+      try {
         if (global.SNPulse && SNPulse.boot) {
           var on = false;
           try {
@@ -1481,6 +1485,8 @@
       'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
       pulse: { src: '/js/spacenet/pulse.js', global: 'SNPulse' },
       fluid: { src: '/js/spacenet/fluid.js', global: 'SNFluid' },
+      phone: { src: '/js/spacenet/phone-os.js', global: 'SNPhoneOS' },
+      'phone-os': { src: '/js/spacenet/phone-os.js', global: 'SNPhoneOS' },
       usage: { src: '/js/spacenet/usage.js', global: 'SNUsage' },
       scenarios: { src: '/js/spacenet/scenarios.js', global: 'SNScenarios' },
       prefs: { src: '/js/spacenet/prefs.js', global: 'SNPrefs' },

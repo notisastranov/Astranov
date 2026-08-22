@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822164000-earth';
+  var BUILD = '20260822170000-phoneos';
   var TOP_PH = 'Heads up display command line interface';
   var BOT_PH = 'command line interface';
   function enforceHud() {

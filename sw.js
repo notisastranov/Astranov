@@ -1,5 +1,5 @@
 /* Astranov service worker — network-only OS kernel. Never serve a stale build. */
-const CACHE = 'astranov-v58-sharp';
+const CACHE = 'astranov-v59-phoneos';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();

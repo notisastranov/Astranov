@@ -147,6 +147,11 @@
       '  display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important;',
       '}',
       '#sn-helper-canvas { z-index: 45 !important; pointer-events: none !important; }',
+      'body.sn-phone-os #sn-topchrome { padding-top: calc(36px + env(safe-area-inset-top, 0px)) !important; }',
+      'body.sn-phone-os #sn-topchrome-panel, body.sn-phone-os #panel {',
+      '  backdrop-filter: blur(14px) saturate(1.5) !important;',
+      '  -webkit-backdrop-filter: blur(14px) saturate(1.5) !important;',
+      '}',
       '#sn-helper-hit { width: 52px !important; height: 64px !important; z-index: 46 !important; }',
     ].join('\n');
     document.head.appendChild(css);

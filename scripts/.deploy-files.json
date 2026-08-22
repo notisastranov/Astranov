@@ -26,6 +26,7 @@
     "js/spacenet/home.js",
     "js/spacenet/live-bridge.js",
     "js/spacenet/pulse.js",
+    "js/spacenet/phone-os.js",
     "js/spacenet/fluid.js",
     "js/spacenet/map.js",
     "js/spacenet/market-live.js",
