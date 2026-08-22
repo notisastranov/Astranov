@@ -1,32 +1,51 @@
-/* Astranov chrome-fix loader · 20260821200500-grok-mind
+/* Astranov chrome-fix loader · 20260822153400-no-coach
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821200500-grok-mind';
-  var HUD = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260822153400-no-coach';
+  var TOP_PH = 'Heads up display command line interface';
+  var BOT_PH = 'command line interface';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
       var bot = document.getElementById('cli-in');
       if (top) {
-        top.placeholder = HUD;
-        top.setAttribute('aria-label', HUD);
+        top.placeholder = TOP_PH;
+        top.setAttribute('aria-label', TOP_PH);
       }
       if (bot) {
-        bot.placeholder = HUD;
-        bot.setAttribute('aria-label', HUD);
+        bot.placeholder = BOT_PH;
+        bot.setAttribute('aria-label', BOT_PH);
       }
       var coach = document.getElementById('cli-coach');
       if (coach && coach.parentNode) coach.parentNode.removeChild(coach);
+      var preview = document.getElementById('cli-preview');
+      if (preview) {
+        preview.textContent = '';
+        preview.style.display = 'none';
+      }
       var log = document.getElementById('cli-log');
-      if (log && /SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW/i.test(log.textContent || '')) {
-        var bad = log.querySelectorAll('.sn-log-line, div, span');
-        for (var i = 0; i < bad.length; i++) {
-          if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW/i.test(bad[i].textContent || '')) {
-            try { bad[i].remove(); } catch (_) {}
+      if (log) {
+        if (/SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW|Command the HUD|type what|Talk ·|Locate ·/i.test(log.textContent || '')) {
+          var bad = log.querySelectorAll('.sn-log-line, .cli-feed-item, div, span');
+          for (var i = 0; i < bad.length; i++) {
+            if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW|Command the HUD|type what|Talk ·|Locate ·/i.test(bad[i].textContent || '')) {
+              try { bad[i].remove(); } catch (_) {}
+            }
           }
         }
+        if (!String(log.textContent || '').trim()) {
+          log.innerHTML = '';
+          log.style.setProperty('display', 'none', 'important');
+          log.style.setProperty('height', '0', 'important');
+          log.style.setProperty('min-height', '0', 'important');
+          log.style.setProperty('padding', '0', 'important');
+        }
+      }
+      var panel = document.getElementById('panel');
+      if (panel && log && !String(log.textContent || '').trim()) {
+        panel.style.setProperty('grid-template-rows', '10px 44px 0 auto', 'important');
       }
     } catch (_) {}
   }

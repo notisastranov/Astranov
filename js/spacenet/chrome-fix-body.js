@@ -1,11 +1,11 @@
-/* Astranov chrome-fix body · Build 20260821200500-grok-mind
+/* Astranov chrome-fix body · Build 20260822153400-no-coach
  * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260821200500-grok-mind';
-  var TOP_PH = 'Command the HUD · show, hide, or reshape';
-  var BOT_PH = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260822153400-no-coach';
+  var TOP_PH = 'Heads up display command line interface';
+  var BOT_PH = 'command line interface';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
@@ -57,7 +57,7 @@
       '  overflow: visible !important;',
       '  height: auto !important; min-height: 0 !important; max-height: none !important;',
       '}',
-      '#panel.collapsed { grid-template-rows: 10px 44px auto auto !important; overflow: visible !important; height: auto !important; min-height: 0 !important; }',
+      '#panel.collapsed { grid-template-rows: 10px 44px 0 auto !important; overflow: visible !important; height: auto !important; min-height: 0 !important; }',
       '#cli-drag, #sn-topchrome-drag {',
       '  height: 10px !important; min-height: 10px !important; max-height: 10px !important;',
       '  padding: 0 !important; margin: 0 !important;',
@@ -76,9 +76,8 @@
       '#sn-task-ribbon { grid-row: 2 !important; }',
       '#cli-log { grid-row: 3 !important; }',
       '#cli-form { grid-row: 4 !important; min-height: 48px !important; }',
-      '#cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; }',
+      '#cli-log:empty { display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }',
       '#cli-log:not(:empty) { display: block !important; max-height: 26vh !important; overflow-y: auto !important; padding: 4px 10px 8px !important; }',
-      '#cli-log:empty { display: none !important; height: 0 !important; padding: 0 !important; margin: 0 !important; }',
       '#sn-task-ribbon {',
       '  display: flex !important; align-items: center !important; justify-content: flex-start !important;',
       '  gap: 6px !important; padding: 4px 8px !important;',
@@ -96,16 +95,7 @@
       '  display: inline-flex !important; align-items: center !important; justify-content: center !important;',
       '}',
       '#sn-task-ribbon .sn-rib-txt { display: none !important; }',
-      '#sn-task-ribbon .sn-rib-tip {',
-      '  display: none !important; position: absolute !important; bottom: 110% !important; left: 50% !important;',
-      '  transform: translateX(-50%) !important; white-space: nowrap !important;',
-      '  font: 600 10px/1.2 Inter,system-ui,sans-serif !important;',
-      '  background: rgba(0,0,0,0.94) !important; color: #f4f6f8 !important;',
-      '  border: 1px solid rgba(20,195,243,0.45) !important; border-radius: 8px !important;',
-      '  padding: 4px 8px !important; z-index: 120 !important; pointer-events: none !important;',
-      '}',
-      '#sn-task-ribbon .sn-rib-btn:hover .sn-rib-tip,',
-      '#sn-task-ribbon .sn-rib-btn:focus .sn-rib-tip { display: block !important; }',
+      '#sn-task-ribbon .sn-rib-tip { display: none !important; }',
       '#sn-task-ribbon .sn-rib-face, #sn-task-ribbon .sn-rib-icon img, #sn-rib-user img, #sn-task-ribbon img {',
       '  width: 28px !important; height: 28px !important; max-width: 28px !important; max-height: 28px !important;',
       '  border-radius: 50% !important; object-fit: cover !important;',
