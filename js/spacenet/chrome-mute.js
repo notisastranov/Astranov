@@ -1,5 +1,5 @@
-/* Astranov mute · Build 20260823013000-laptop-hunt
- * Kill beeps + load chrome-guest-laptop-hunt (real electronics/computer
+/* Astranov mute · Build 20260823020000-laptop-fix
+ * Kill beeps + load chrome-guest-laptop-hunt (real OSM electronics/computer
  * shops on the globe · unique pins · Google only at pay).
  * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
  * chrome-nairobi-ladder (#130), or chrome-kalithea-village (#131).
@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823013000-laptop-hunt';
+  var BUILD = '20260823020000-laptop-fix';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
