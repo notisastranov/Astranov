@@ -24,15 +24,14 @@
   }
   var SN = snApi();
   var TIERS = {
-    // GLOBAL = full planet in space (ISS / sats visible). Not a cropped close-up.
-    // Z is continuous camera distance. Wheel / pinch change Z only — they never rotate.
-    solar: { z: 18, label: 'SOLAR' },
-    global: { z: 5.6, label: 'GLOBAL' },
-    national: { z: 2.85, label: 'NATIONAL' },
-    regional: { z: 1.95, label: 'REGIONAL' },
-    city: { z: 1.48, label: 'CITY' },
-    local: { z: 1.48, label: 'CITY' },
-    street: { z: 1.42, label: 'STREET' },
+    // Closer = country/city. Old 2.85 "national" still looked like space.
+    solar: { z: 12, label: 'SOLAR' },
+    global: { z: 5.4, label: 'GLOBAL' },
+    national: { z: 2.05, label: 'NATIONAL' },
+    regional: { z: 1.42, label: 'REGIONAL' },
+    city: { z: 1.16, label: 'CITY' },
+    local: { z: 1.16, label: 'CITY' },
+    street: { z: 1.08, label: 'STREET' },
   };
 
   // Sync dramatic Z from SPACENET law when present
@@ -432,10 +431,11 @@
     var S = snApi();
     if (S && S.tierFromZ) return S.tierFromZ(z);
     if (z >= 8.2) return 'solar';
-    if (z >= 4.0) return 'global';
-    if (z >= 2.35) return 'national';
-    if (z >= 1.7) return 'regional';
-    return 'city';
+    if (z >= 3.5) return 'global';
+    if (z >= 1.7) return 'national';
+    if (z >= 1.28) return 'regional';
+    if (z >= 1.11) return 'city';
+    return 'street';
   }
 
   function ladderIndex(name) {
@@ -1473,6 +1473,14 @@
     if (G.ready || typeof THREE === 'undefined') return false;
     var el = document.getElementById('globe');
     if (!el) return false;
+    try {
+      var S0 = snApi();
+      if (S0 && S0.Z) {
+        Object.keys(TIERS).forEach(function (k) {
+          if (S0.Z[k] != null) TIERS[k].z = S0.Z[k];
+        });
+      }
+    } catch (_) {}
 
     var touch = isTouch();
     var lite = !!(global._snLite || (global.SNPerf && SNPerf.lite) || touch);
@@ -1483,7 +1491,7 @@
 
     G.scene = new THREE.Scene();
     G.scene.background = new THREE.Color(0x000000);
-    G.camera = new THREE.PerspectiveCamera(42, w / h, 0.05, 800);
+    G.camera = new THREE.PerspectiveCamera(42, w / h, 0.02, 800);
     // Full-Earth space overview (whole sphere + stars around it)
     G.camera.position.set(0, 0.06, TIERS.global.z);
     G.tier = 'global';
@@ -1925,8 +1933,8 @@
     } catch (_) {}
     var zNow = G.camera.position.z;
     if (G.phys && G.phys.tZ != null && Math.abs(G.phys.tZ - zNow) < 3) zNow = G.phys.tZ;
-    var nz = zNow * Math.exp(Math.max(-90, Math.min(90, dyPx)) * 0.0024);
-    if (nz < 1.32) nz = 1.32;
+    var nz = zNow * Math.exp(Math.max(-140, Math.min(140, dyPx)) * 0.0048);
+    if (nz < 1.07) nz = 1.07;
     if (nz > 22) nz = 22;
     G.flying = false;
     G.flyGen = (G.flyGen || 0) + 1;
@@ -1948,7 +1956,8 @@
     try {
       syncSpaceLayerVis();
     } catch (_) {}
-    if (nz <= TIERS.city.z + 0.04) {
+    // Streets only after CITY 3D — one more pinch past city. National/regional stay on the globe.
+    if (nz <= TIERS.street.z + 0.015) {
       try {
         var look = viewLatLng();
         if (
@@ -2075,7 +2084,7 @@
       var score = (1 - ratio) * 260 + dy * 0.7;
       pinchAcc = score;
       if (Math.abs(score) > 16 || Math.abs(1 - ratio) > 0.04) pinchMoved = true;
-      zoomByDelta((1 - ratio) * 140 + dy * 0.35);
+      zoomByDelta((1 - ratio) * 240 + dy * 0.55);
       pinchStartDist = d;
       pinchStartMidY = mid.y;
       if (e && e.cancelable) e.preventDefault();

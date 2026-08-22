@@ -23,11 +23,12 @@
    * REGIONAL = metro cluster. CITY = street map handoff.
    */
   var Z = {
-    solar: 11.5,
-    global: 5.6,
-    national: 2.85,
-    regional: 1.95,
-    city: 1.48,
+    solar: 12,
+    global: 5.4,
+    national: 2.05,
+    regional: 1.42,
+    city: 1.16,
+    street: 1.08,
   };
 
 
@@ -53,10 +54,11 @@
     if (z == null || !isFinite(z)) return 'global';
     // Midpoints between snapped Z values
     if (z >= 8.2) return 'solar';
-    if (z >= 4.0) return 'global';
-    if (z >= 2.35) return 'national';
-    if (z >= 1.7) return 'regional';
-    return 'city';
+    if (z >= 3.5) return 'global';
+    if (z >= 1.7) return 'national';
+    if (z >= 1.28) return 'regional';
+    if (z >= 1.11) return 'city';
+    return 'street';
   }
 
   function cellIndex(name) {
