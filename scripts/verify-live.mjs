@@ -130,10 +130,11 @@ async function main() {
     );
     pass('research-astranov');
   } catch (_) {
-    const astr = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
-    fail('research-astranov', astr.slice(-220));
+    const astrFail = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
+    fail('research-astranov', astrFail.slice(-220));
   }
-  if (/iran|lagos|colorado/i.test(astr)) fail('research-no-teleport', 'fly list leaked');
+  const astrLog = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
+  if (/iran|lagos|colorado/i.test(astrLog)) fail('research-no-teleport', 'fly list leaked');
   else pass('research-no-teleport');
 
   // laptop is a thing
