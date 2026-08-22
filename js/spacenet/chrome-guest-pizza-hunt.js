@@ -1,18 +1,19 @@
 /**
- * Guest pizza hunt — Build 20260822223000-probe-signs
+ * Guest pizza hunt — Build 20260822230000-pin-spread
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
  *   pizza over South America → Origin · camera · -32.946, -61.777
  *   / No delivery shops near view · type Locate once
  *   No Kalithea 36.388 list. No Google wall.
+ *   FLY PASS locked (viewLatLng ~36.41, 28.10). flyGlobeTo / probe-signs UNCHANGED.
  *
- * LIVE FAIL 20260822220000-tilt-spin-only:
+ * LIVE FAIL 20260822220000-tilt-spin-only (locked, do not reopen):
  *   CLI logged "Fly failed" at -56.720,28.220 (dropped the minus sign).
  *   LIVE viewLatLng was -56.7197, -28.22. Lat barely moved from prior -56.75.
  *   Cause: x += -dLat blindly — that tilt/spin mapping is wrong for this scene.
  *
- * FIX 20260822223000-probe-signs:
+ * FIX 20260822223000-probe-signs (LOCKED — do not edit flyGlobeTo):
  *   globe.js stopMotion + zeroInertia left exactly as-is (do not edit globe.js).
  *   flyGlobeTo:
  *     (1) stopMotion + zeroInertia + pointercancel first
@@ -27,16 +28,35 @@
  *     (7) Fail: Fly failed + LIVE lat,lng (minus sign kept) + sLat,sLng + parent chain.
  *         No hunt, no Pins.
  *
+ * TAP FAIL (this build): 24 snVendor pulse meshes exist (Argiro, Golfer, Pavo…)
+ *   but all project to the SAME CSS coords (~641,328) under the CLI panel.
+ *   Click re-aims the camera (once -37.25,-136.40) and never announces Shop · name · km · ⭐.
+ *
+ * FIX 20260822230000-pin-spread:
+ *   (1) After SNGlobe.pulse, if meshes share one world/screen position, ALSO add each
+ *       pin as a child of SNGlobe.getEarth() at SNGlobe.latLngToVec(lat,lng,1.012).
+ *   (2) projectPin(lat,lng): world = latLngToVec applied through earth.matrixWorld
+ *       (or pivot); ndc = world.project(camera); unique css left/top; skip if
+ *       behind globe (dot with camera < 0).
+ *   (3) #sn-pizza-pins overlay (pointer-events auto, z-index above #panel CLI)
+ *       with one button/dot per shop; click → announce Shop · name · km · ⭐,
+ *       preventDefault, SNGlobe.consumeClick=true; do NOT diveInAt.
+ *   (4) Canvas pointerup: pickLatLng → nearest of lastPins within 12 km at city;
+ *       announce that shop; consumeClick=true; stopImmediatePropagation.
+ *   (5) Never log "Pins on globe" unless ≥2 meshes have distinct world positions
+ *       OR the overlay has distinct CSS (spread > 20px).
+ *
  * Product law: if it is not on the globe it is not shipped. Full module, no stub.
  */
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822223000-probe-signs';
+  var BUILD = '20260822230000-pin-spread';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
   var pinMeshes = [];
+  var earthPinMeshes = [];
   var clickUnsub = null;
   var askedLocate = false;
   var suppressPoiUntil = 0;
@@ -44,6 +64,9 @@
   var preferCameraUntil = 0;
   var lastFly = null;
   var lastProbe = { sLat: 0, sLng: 0 };
+  var overlayRaf = 0;
+  var lastOverlaySpread = 0;
+  var lastWorldDistinct = false;
 
   var RHODES = { lat: 36.44, lng: 28.22, name: 'Rhodes' };
   // Success settle: 0.15 deg lat AND 0.15 deg unwrapped lng. 38.204 MUST fail
@@ -1288,19 +1311,490 @@
     } catch (_) {}
   }
 
+  function threeNS() {
+    try {
+      if (G.THREE) return G.THREE;
+    } catch (_) {}
+    try {
+      if (typeof THREE !== 'undefined') return THREE;
+    } catch (_) {}
+    return null;
+  }
+
+  function stopOverlayRaf() {
+    if (!overlayRaf) return;
+    try {
+      cancelAnimationFrame(overlayRaf);
+    } catch (_) {}
+    overlayRaf = 0;
+  }
+
+  function clearEarthPins() {
+    var i;
+    for (i = 0; i < earthPinMeshes.length; i++) {
+      try {
+        var m = earthPinMeshes[i];
+        if (m && m.parent && typeof m.parent.remove === 'function') m.parent.remove(m);
+      } catch (_) {}
+    }
+    earthPinMeshes = [];
+  }
+
+  function clearPinOverlayDom() {
+    try {
+      var el = document.getElementById('sn-pizza-pins');
+      if (el) {
+        el.innerHTML = '';
+        el.style.display = 'none';
+      }
+    } catch (_) {}
+    lastOverlaySpread = 0;
+  }
+
   function clearPizzaPins() {
     lastPins = [];
     pinMeshes = [];
+    lastWorldDistinct = false;
+    stopOverlayRaf();
+    clearEarthPins();
+    clearPinOverlayDom();
     try {
       if (G.SNGlobe && typeof SNGlobe.clearMarkers === 'function') SNGlobe.clearMarkers();
     } catch (_) {}
     hideLeaflet();
   }
 
+  function worldPosOf(mesh) {
+    if (!mesh) return null;
+    try {
+      var T = threeNS();
+      var v = T && T.Vector3 ? new T.Vector3() : null;
+      if (mesh.getWorldPosition) {
+        if (v) {
+          mesh.getWorldPosition(v);
+          return v;
+        }
+        var tmp = { x: 0, y: 0, z: 0 };
+        mesh.getWorldPosition(tmp);
+        return tmp;
+      }
+      if (mesh.position) return { x: +mesh.position.x, y: +mesh.position.y, z: +mesh.position.z };
+    } catch (_) {}
+    return null;
+  }
+
+  function maxWorldSpread(meshes) {
+    if (!meshes || meshes.length < 2) return 0;
+    var pts = [];
+    var i, j;
+    for (i = 0; i < meshes.length; i++) {
+      var p = worldPosOf(meshes[i]);
+      if (p && isFinite(p.x) && isFinite(p.y) && isFinite(p.z)) pts.push(p);
+    }
+    if (pts.length < 2) return 0;
+    var maxD = 0;
+    for (i = 0; i < pts.length; i++) {
+      for (j = i + 1; j < pts.length; j++) {
+        var dx = pts[i].x - pts[j].x;
+        var dy = pts[i].y - pts[j].y;
+        var dz = pts[i].z - pts[j].z;
+        var d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (d > maxD) maxD = d;
+      }
+    }
+    return maxD;
+  }
+
+  function projectWorldToCss(world, camera, canvas) {
+    if (!world || !camera || !canvas || typeof world.project !== 'function') return null;
+    try {
+      var ndc = world.clone ? world.clone() : world;
+      ndc.project(camera);
+      var rect = canvas.getBoundingClientRect();
+      var left = ((ndc.x + 1) / 2) * rect.width + rect.left;
+      var top = ((-ndc.y + 1) / 2) * rect.height + rect.top;
+      if (!isFinite(left) || !isFinite(top)) return null;
+      return { left: left, top: top };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function maxScreenSpread(meshes) {
+    if (!meshes || meshes.length < 2) return 0;
+    var camera = null;
+    var canvas = null;
+    try {
+      camera = G.SNGlobe && typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      var ren = G.SNGlobe && typeof SNGlobe.getRenderer === 'function' ? SNGlobe.getRenderer() : null;
+      canvas =
+        (ren && ren.domElement) ||
+        document.querySelector('#globe canvas') ||
+        document.querySelector('canvas');
+    } catch (_) {}
+    if (!camera || !canvas) return 0;
+    var pts = [];
+    var i, j;
+    for (i = 0; i < meshes.length; i++) {
+      var w = worldPosOf(meshes[i]);
+      var css = w ? projectWorldToCss(w, camera, canvas) : null;
+      if (css) pts.push(css);
+    }
+    if (pts.length < 2) return 0;
+    var maxD = 0;
+    for (i = 0; i < pts.length; i++) {
+      for (j = i + 1; j < pts.length; j++) {
+        var d = Math.hypot(pts[i].left - pts[j].left, pts[i].top - pts[j].top);
+        if (d > maxD) maxD = d;
+      }
+    }
+    return maxD;
+  }
+
+  function meshesShareOneSpot(meshes) {
+    if (!meshes || meshes.length < 2) return true;
+    if (maxWorldSpread(meshes) < 1e-4) return true;
+    if (maxScreenSpread(meshes) < 4) return true;
+    return false;
+  }
+
+  /**
+   * world = latLngToVec applied through earth.matrixWorld (or pivot);
+   * ndc = world.project(camera); unique css left/top;
+   * skip if behind globe (dot with camera < 0).
+   */
+  function projectPin(lat, lng) {
+    try {
+      if (!G.SNGlobe) return null;
+      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+      var camera = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      var renderer = typeof SNGlobe.getRenderer === 'function' ? SNGlobe.getRenderer() : null;
+      if (!camera) return null;
+      var frame = earth || pivot;
+      if (!frame) return null;
+      try {
+        if (frame.updateMatrixWorld) frame.updateMatrixWorld(true);
+      } catch (_) {}
+      var local = null;
+      try {
+        if (typeof SNGlobe.latLngToVec === 'function') local = SNGlobe.latLngToVec(lat, lng, 1.012);
+      } catch (_) {}
+      if (!local) local = latLngToVecLocal(lat, lng, 1.012);
+      if (!local || local.x == null || !isFinite(local.x)) return null;
+      var world = null;
+      try {
+        world = local.clone ? local.clone() : null;
+        if (world && frame.matrixWorld && world.applyMatrix4) {
+          world.applyMatrix4(frame.matrixWorld);
+        } else if (frame.localToWorld && local.clone) {
+          world = frame.localToWorld(local.clone());
+        }
+      } catch (_) {
+        world = null;
+      }
+      if (!world || world.x == null) return null;
+      var camPos = null;
+      try {
+        camPos = camera.position.clone ? camera.position.clone() : null;
+        if (camera.getWorldPosition && camPos) camera.getWorldPosition(camPos);
+      } catch (_) {
+        camPos = camera.position;
+      }
+      if (!camPos) return null;
+      var dot = world.x * camPos.x + world.y * camPos.y + world.z * camPos.z;
+      if (dot < 0) return null;
+      var ndc = null;
+      try {
+        ndc = world.clone ? world.clone() : world;
+        if (typeof ndc.project !== 'function') return null;
+        ndc.project(camera);
+      } catch (_) {
+        return null;
+      }
+      var canvas =
+        (renderer && renderer.domElement) ||
+        document.querySelector('#globe canvas') ||
+        document.querySelector('canvas');
+      if (!canvas) return null;
+      var rect = canvas.getBoundingClientRect();
+      var left = ((ndc.x + 1) / 2) * rect.width + rect.left;
+      var top = ((-ndc.y + 1) / 2) * rect.height + rect.top;
+      if (!isFinite(left) || !isFinite(top)) return null;
+      return { left: left, top: top, ndc: ndc, world: world };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function attachEarthPin(pin, color) {
+    if (!pin || pin.lat == null || pin.lng == null) return null;
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.getEarth !== 'function') return null;
+      var earth = SNGlobe.getEarth();
+      if (!earth || typeof earth.add !== 'function') return null;
+      var vec = null;
+      try {
+        if (typeof SNGlobe.latLngToVec === 'function') vec = SNGlobe.latLngToVec(pin.lat, pin.lng, 1.012);
+      } catch (_) {}
+      if (!vec) vec = latLngToVecLocal(pin.lat, pin.lng, 1.012);
+      if (!vec || vec.x == null) return null;
+      var mesh = null;
+      var T = threeNS();
+      if (T && T.Mesh && T.SphereGeometry) {
+        mesh = new T.Mesh(
+          new T.SphereGeometry(0.01, 10, 10),
+          new T.MeshBasicMaterial({
+            color: color != null ? color : 0xff9f43,
+            depthTest: true,
+            transparent: true,
+            opacity: 0.95,
+          })
+        );
+      } else if (pinMeshes[0] && typeof pinMeshes[0].clone === 'function') {
+        mesh = pinMeshes[0].clone();
+      }
+      if (!mesh) return null;
+      try {
+        if (mesh.position.copy && vec.clone) mesh.position.copy(vec);
+        else if (mesh.position.set) mesh.position.set(vec.x, vec.y, vec.z);
+        else {
+          mesh.position.x = vec.x;
+          mesh.position.y = vec.y;
+          mesh.position.z = vec.z;
+        }
+      } catch (_) {}
+      try {
+        mesh.userData = mesh.userData || {};
+        mesh.userData.snVendor = true;
+        mesh.userData.snEarthPin = true;
+        mesh.userData.snName = pin.name;
+        mesh.userData.snKm = pin.km;
+      } catch (_) {}
+      earth.add(mesh);
+      earthPinMeshes.push(mesh);
+      return mesh;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function ensureEarthPinsIfStacked() {
+    if (!lastPins.length) return;
+    var stacked = meshesShareOneSpot(pinMeshes) || pinMeshes.length < 2;
+    if (!stacked && maxWorldSpread(earthPinMeshes) > 1e-4) return;
+    if (earthPinMeshes.length) clearEarthPins();
+    var i;
+    for (i = 0; i < lastPins.length; i++) {
+      attachEarthPin(lastPins[i], i === 0 ? 0xff9f43 : 0x5ad4ff);
+    }
+    try {
+      var earth = G.SNGlobe && typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      if (earth && earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+    } catch (_) {}
+  }
+
+  function cssSpreadOf(points) {
+    if (!points || points.length < 2) return 0;
+    var minL = 1e9;
+    var maxL = -1e9;
+    var minT = 1e9;
+    var maxT = -1e9;
+    var i;
+    for (i = 0; i < points.length; i++) {
+      var p = points[i];
+      if (!p || !isFinite(p.left) || !isFinite(p.top)) continue;
+      if (p.left < minL) minL = p.left;
+      if (p.left > maxL) maxL = p.left;
+      if (p.top < minT) minT = p.top;
+      if (p.top > maxT) maxT = p.top;
+    }
+    if (minL === 1e9) return 0;
+    return Math.hypot(maxL - minL, maxT - minT);
+  }
+
+  function fanCss(points, minPx) {
+    minPx = minPx || 24;
+    if (!points || points.length < 2) return points;
+    if (cssSpreadOf(points) > 20) return points;
+    var cx = 0;
+    var cy = 0;
+    var n = 0;
+    var i;
+    for (i = 0; i < points.length; i++) {
+      if (!points[i] || !isFinite(points[i].left)) continue;
+      cx += points[i].left;
+      cy += points[i].top;
+      n++;
+    }
+    if (!n) return points;
+    cx /= n;
+    cy /= n;
+    var r = Math.max(36, (n * minPx) / (2 * Math.PI));
+    for (i = 0; i < points.length; i++) {
+      if (!points[i] || !isFinite(points[i].left)) continue;
+      var a = (i / points.length) * Math.PI * 2 - Math.PI / 2;
+      points[i].left = cx + Math.cos(a) * r;
+      points[i].top = cy + Math.sin(a) * r;
+    }
+    return points;
+  }
+
+  function pinOverlayEl() {
+    var el = document.getElementById('sn-pizza-pins');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = 'sn-pizza-pins';
+    el.setAttribute('data-sn-build', BUILD);
+    el.style.cssText =
+      'position:fixed;left:0;top:0;width:0;height:0;overflow:visible;' +
+      'pointer-events:auto;z-index:80;margin:0;padding:0;border:0;';
+    try {
+      (document.body || document.documentElement).appendChild(el);
+    } catch (_) {}
+    return el;
+  }
+
+  function hexColor(n, fallback) {
+    try {
+      var v = Number(n);
+      if (!isFinite(v)) return fallback || '#5ad4ff';
+      return '#' + ('000000' + (v >>> 0).toString(16)).slice(-6);
+    } catch (_) {
+      return fallback || '#5ad4ff';
+    }
+  }
+
+  function paintPinOverlay() {
+    lastOverlaySpread = 0;
+    lastWorldDistinct =
+      maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
+    if (!lastPins.length) {
+      clearPinOverlayDom();
+      return;
+    }
+    var points = [];
+    var i;
+    for (i = 0; i < lastPins.length; i++) {
+      var pin = lastPins[i];
+      if (!pin || pin.lat == null) continue;
+      var proj = projectPin(pin.lat, pin.lng);
+      if (!proj) continue;
+      points.push({
+        left: proj.left,
+        top: proj.top,
+        pin: pin,
+        idx: i,
+        color: i === 0 ? 0xff9f43 : 0x5ad4ff,
+      });
+    }
+    fanCss(points, 24);
+    lastOverlaySpread = cssSpreadOf(points);
+    var root = pinOverlayEl();
+    if (!root) return;
+    root.style.display = points.length ? 'block' : 'none';
+    root.style.setProperty('pointer-events', 'auto', 'important');
+    root.style.setProperty('z-index', '80', 'important');
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        var z = parseInt(window.getComputedStyle(panel).zIndex, 10);
+        if (isFinite(z) && z >= 80) root.style.setProperty('z-index', String(z + 20), 'important');
+      }
+    } catch (_) {}
+
+    var existing = root.querySelectorAll('button[data-sn-pin]');
+    if (existing.length === points.length && points.length > 0) {
+      for (i = 0; i < points.length; i++) {
+        existing[i].style.left = (points[i].left - 11).toFixed(1) + 'px';
+        existing[i].style.top = (points[i].top - 11).toFixed(1) + 'px';
+        existing[i].style.display = 'block';
+      }
+      return;
+    }
+
+    root.innerHTML = '';
+    for (i = 0; i < points.length; i++) {
+      (function (pt) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.setAttribute('data-sn-pin', String(pt.idx));
+        var name = String(pt.pin.name || 'shop').slice(0, 36);
+        btn.title = name;
+        btn.setAttribute('aria-label', name);
+        btn.style.cssText =
+          'position:absolute;left:' +
+          (pt.left - 11).toFixed(1) +
+          'px;top:' +
+          (pt.top - 11).toFixed(1) +
+          'px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:' +
+          hexColor(pt.color, pt.idx === 0 ? '#ff9f43' : '#5ad4ff') +
+          ';pointer-events:auto;cursor:pointer;padding:0;margin:0;' +
+          'box-shadow:0 0 10px rgba(255,159,67,.85);z-index:1;';
+        function onPinTap(ev) {
+          try {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          } catch (_) {}
+          try {
+            if (G.SNGlobe) G.SNGlobe.consumeClick = true;
+          } catch (_) {}
+          var row = lastPins[pt.idx] || pt.pin;
+          announceVendor(row);
+        }
+        btn.addEventListener('pointerdown', onPinTap, true);
+        btn.addEventListener('pointerup', onPinTap, true);
+        btn.addEventListener('click', onPinTap, true);
+        root.appendChild(btn);
+      })(points[i]);
+    }
+  }
+
+  function startOverlayRaf() {
+    stopOverlayRaf();
+    if (!lastPins.length) return;
+    function tick() {
+      overlayRaf = 0;
+      if (!lastPins.length) return;
+      paintPinOverlay();
+      try {
+        overlayRaf = requestAnimationFrame(tick);
+      } catch (_) {}
+    }
+    tick();
+  }
+
+  function canLogPinsOnGlobe(nPainted) {
+    if (!(nPainted > 0)) return false;
+    lastWorldDistinct =
+      maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
+    if (lastWorldDistinct) return true;
+    if (lastOverlaySpread > 20) return true;
+    return false;
+  }
+
+  function installDiveGuard() {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.diveInAt !== 'function') return;
+      if (SNGlobe.__snPizzaDiveGuard === 'pin-spread') return;
+      var prev = SNGlobe.diveInAt.bind(SNGlobe);
+      SNGlobe.diveInAt = function (lat, lng) {
+        try {
+          if (G.SNGlobe && G.SNGlobe.consumeClick) return false;
+          if (lastPins.length && Date.now() < suppressPoiUntil) return false;
+        } catch (_) {}
+        return prev(lat, lng);
+      };
+      SNGlobe.__snPizzaDiveGuard = 'pin-spread';
+    } catch (_) {}
+  }
+
   /**
    * Paint pins — count ONLY truthy Mesh returns from SNGlobe.pulse (not null, not pure sprites).
-   * Caller logs "Pins on globe" only when N >= 10 or N === shops.length.
-   * Pulse needs SNGlobe.ready; if pulse returns null do not count sprites.
+   * After pulse, if meshes share one world/screen position, ALSO parent each pin
+   * onto getEarth() at latLngToVec(lat,lng,1.012). Overlay #sn-pizza-pins on top of CLI.
+   * Caller logs "Pins on globe" only when meshes are distinct OR overlay CSS spread > 20px.
    */
   function paintPins(rows, origin) {
     clearPizzaPins();
@@ -1338,15 +1832,15 @@
               mesh.userData.snKm = kmOrigin;
             } catch (_) {}
             pinMeshes.push(mesh);
-            // Count only Mesh-like (isMesh / type Mesh / has geometry+material, not pure Sprite)
             var isMesh = false;
             try {
-              isMesh =
-                !!(mesh.isMesh ||
-                  (mesh.type && String(mesh.type).indexOf('Mesh') >= 0) ||
-                  (mesh.geometry && mesh.material && !mesh.isSprite));
+              isMesh = !!(
+                mesh.isMesh ||
+                (mesh.type && String(mesh.type).indexOf('Mesh') >= 0) ||
+                (mesh.geometry && mesh.material && !mesh.isSprite)
+              );
             } catch (_) {
-              isMesh = true; // truthy non-null → allow if shape unknown
+              isMesh = true;
             }
             if (isMesh) painted++;
           }
@@ -1354,6 +1848,23 @@
       }
     });
 
+    try {
+      if (G.SNGlobe && typeof SNGlobe.getEarth === 'function') {
+        var earth0 = SNGlobe.getEarth();
+        if (earth0 && earth0.updateMatrixWorld) earth0.updateMatrixWorld(true);
+      }
+    } catch (_) {}
+
+    if (lastPins.length) {
+      if (meshesShareOneSpot(pinMeshes) || pinMeshes.length < 2) {
+        ensureEarthPinsIfStacked();
+      }
+      paintPinOverlay();
+      startOverlayRaf();
+    }
+
+    lastWorldDistinct =
+      maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
     installPinTap();
     return painted;
   }
@@ -1373,11 +1884,12 @@
               hit = p;
             }
           });
-          var tol = 45;
+          // 12 km at city (TAP FAIL: 8 km was too tight / stacked CSS never hit)
+          var tol = 12;
           try {
             if (G.SNGlobe && typeof SNGlobe.currentTier === 'function') {
               var t = String(SNGlobe.currentTier() || '');
-              if (t === 'city' || t === 'street' || t === 'local') tol = 8;
+              if (t === 'city' || t === 'street' || t === 'local') tol = 12;
               else if (t === 'regional') tol = 18;
               else if (t === 'national') tol = 35;
             }
@@ -1404,14 +1916,11 @@
       'ok'
     );
     preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
-    try {
-      if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
-        SNGlobe.pulse(hit.lat, hit.lng, 0xff9f43, hit.name || 'shop', 12000);
-      }
-    } catch (_) {}
+    // do NOT diveInAt — shop tap must not re-aim the camera
   }
 
   function installPinTap() {
+    installDiveGuard();
     try {
       if (clickUnsub) {
         try {
@@ -1419,15 +1928,19 @@
         } catch (_) {}
         clickUnsub = null;
       }
-      if (!G.SNGlobe || typeof SNGlobe.onClick !== 'function') return;
-      clickUnsub = SNGlobe.onClick(function (cx, cy) {
-        if (!lastPins.length) return false;
-        if (Date.now() < suppressPoiUntil) return true;
-        var hit = hitVendorAt(cx, cy);
-        if (!hit) return false;
-        announceVendor(hit);
-        return true;
-      });
+      if (G.SNGlobe && typeof SNGlobe.onClick === 'function') {
+        clickUnsub = SNGlobe.onClick(function (cx, cy) {
+          if (!lastPins.length) return false;
+          if (Date.now() < suppressPoiUntil) return true;
+          var hit = hitVendorAt(cx, cy);
+          if (!hit) return false;
+          try {
+            if (G.SNGlobe) G.SNGlobe.consumeClick = true;
+          } catch (_) {}
+          announceVendor(hit);
+          return true;
+        });
+      }
     } catch (_) {}
 
     try {
@@ -1465,6 +1978,9 @@
             e.preventDefault();
             e.stopPropagation();
             if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          } catch (_) {}
+          try {
+            if (G.SNGlobe) G.SNGlobe.consumeClick = true;
           } catch (_) {}
           announceVendor(hit);
         },
@@ -1651,21 +2167,23 @@
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
 
-    // Log Pins ONLY if truthy mesh count is solid
-    var want = Math.min(10, use.length);
-    if (nPainted >= 10 || nPainted === use.length || (nPainted >= want && nPainted > 0)) {
-      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
-    } else if (nPainted > 0) {
-      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
-    } else {
+    // Log Pins ONLY if ≥2 meshes have distinct world positions OR overlay CSS spread > 20px
+    if (nPainted <= 0) {
       await sleep(400);
       await waitGlobeReady(1200);
       nPainted = paintPins(use, origin);
-      if (nPainted >= 10 || nPainted === use.length || nPainted > 0) {
-        log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
-      } else {
-        log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
-      }
+    }
+    if (nPainted > 0 && !canLogPinsOnGlobe(nPainted)) {
+      ensureEarthPinsIfStacked();
+      paintPinOverlay();
+      startOverlayRaf();
+    }
+    if (canLogPinsOnGlobe(nPainted)) {
+      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
+    } else if (nPainted > 0) {
+      log('Globe pulse unavailable · list only (pins stacked)', 'dim');
+    } else {
+      log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
     }
 
     faceClusterIfNeeded(use, origin);
@@ -1782,7 +2300,7 @@
 
     try {
       await huntAt({ lat: RHODES.lat, lng: RHODES.lng, source: 'camera' }, null);
-      // After show-rhodes success only: pulse >=10 Earth meshes
+      // After show-rhodes success only: pulse >=10 Earth meshes, then spread onto getEarth()
       if (pinMeshes.length < 10 && isGlobeReady()) {
         try {
           var extra = lastPins.slice(0, 16);
@@ -1795,6 +2313,11 @@
           });
         } catch (_) {}
       }
+      try {
+        ensureEarthPinsIfStacked();
+        paintPinOverlay();
+        startOverlayRaf();
+      } catch (_) {}
     } finally {
       endGlobeHunt();
     }
@@ -2035,6 +2558,7 @@
     install();
     blockAuthModalOnPizza();
     installMapGuard();
+    installDiveGuard();
     installPinTap();
   }
 
@@ -2056,6 +2580,7 @@
     showRhodes: showRhodes,
     queryVendorsBbox: queryVendorsBbox,
     resolveOrigin: resolveOrigin,
+    projectPin: projectPin,
     lastPins: function () {
       return lastPins.slice();
     },
