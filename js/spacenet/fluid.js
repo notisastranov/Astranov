@@ -43,8 +43,8 @@
     if (!el) {
       el = document.createElement('style');
       el.id = id;
-      document.head.appendChild(el);
     }
+    document.head.appendChild(el);
     return el;
   }
 
