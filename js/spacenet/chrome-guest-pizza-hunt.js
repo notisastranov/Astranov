@@ -1,6 +1,6 @@
 /**
- * Guest pizza hunt — Build 20260822151200-fly-pulse
- * PATCH #127 only · keep PASS · edit-in-place on full restored c8ac1c46 module.
+ * Guest pizza hunt — Build 20260822151600-mesh-fly
+ * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
  *   pizza over South America → Origin · camera · -32.946, -61.777
@@ -8,7 +8,7 @@
  *   No Kalithea 36.388 list. No Google wall.
  *
  * FAIL 1: never SNMap.open / showLiveSat / Leaflet during the hunt — WebGL globe only.
- * FAIL 2: after/during hunt, `show rhodes` flies camera to ~36.44,28.22 and pins vendors.
+ * FAIL 2: after/during hunt, `show rhodes` flies camera/MESH to ~36.44,28.22 and pins vendors.
  *         Never plaza/POI crawler dump (Πλατεία Αθηνάς / 18 POIs / 80 real shops).
  * FAIL 3: YOU is ONLY _snPhysPos + _snLocatedThisSession from an explicit GPS grant.
  *         Never IP, never city geocode, never Leaflet center, never San Jose, never Kalithea.
@@ -30,7 +30,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822151200-fly-pulse';
+  var BUILD = '20260822151600-mesh-fly';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -198,7 +198,7 @@
         return { lat: +G._snGlobeFocus.lat, lng: +G._snGlobeFocus.lng };
       }
     } catch (_) {}
-    if (lastFly && lastFly.lat != null && Date.now() - lastFly.ts < 15000) {
+    if (lastFly && lastFly.lat != null && Date.now() - lastFly.ts < 20000) {
       return { lat: lastFly.lat, lng: lastFly.lng };
     }
     return null;
@@ -481,6 +481,7 @@
     } catch (_) {}
   }
 
+  /** Force the visible Earth mesh / camera to lat,lng. Must actually move the globe. */
   function flyGlobeTo(lat, lng, label) {
     lat = +lat;
     lng = +lng;
@@ -490,22 +491,43 @@
       G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
     } catch (_) {}
     hideLeaflet();
+
+    var opts = {
+      tier: 'city',
+      body: 'earth',
+      pulse: false,
+      openMap: false,
+      skipScan: true,
+      label: label || '',
+    };
+
+    // Primary: goToPlace must move the MESH
     try {
       if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
-        SNGlobe.goToPlace(lat, lng, {
-          tier: 'city',
-          body: 'earth',
-          pulse: false,
-          openMap: false,
-          skipScan: true,
-          label: label || '',
-        });
-      } else if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
+        SNGlobe.goToPlace(lat, lng, opts);
+      }
+    } catch (_) {}
+
+    // Fallbacks so the visible globe actually moves
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
         SNGlobe.flyNear(lat, lng, 'city');
       }
     } catch (_) {}
     try {
-      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
+      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') {
+        SNGlobe.setFocus(lat, lng);
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.lookAt === 'function') {
+        SNGlobe.lookAt(lat, lng);
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goTo === 'function') {
+        SNGlobe.goTo(lat, lng, opts);
+      }
     } catch (_) {}
   }
 
@@ -564,7 +586,6 @@
     var painted = 0;
     // Soft ready: pulse exists ⇒ ready (no hard .ready gate that killed pins)
     var ready = isGlobeReady();
-    var cam = cameraLook() || origin;
 
     rows.slice(0, 24).forEach(function (v, i) {
       if (!v || v.lat == null || v.lng == null) return;
@@ -573,7 +594,7 @@
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
       if (kmOrigin != null && kmOrigin > 18) return;
-      // Dropped kmCam > 80 filter — it killed Rhodes pins while camera settled from SA
+      // No kmCam filter — pins must appear after SA→Rhodes settle
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? 0xff9f43 : 0x5ad4ff;
       lastPins.push({
@@ -944,6 +965,10 @@
     return true;
   }
 
+  /**
+   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via goToPlace,
+   * then pulse vendors. Exact log required.
+   */
   async function showRhodes(raw) {
     beginGlobeHunt();
     blockAuthModalOnPizza();
@@ -960,14 +985,20 @@
     log(String(raw || 'show rhodes').slice(0, 80), 'cmd');
     preferCameraUntil = Date.now() + 180000;
 
-    // Stronger fly: wait ready, multi-fly, exact log
+    // Force mesh fly: wait ready → sequential goToPlace so the visible globe moves
     await waitGlobeReady(2200);
+    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    await sleep(350);
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     await sleep(280);
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+
+    // Exact required log
     log('Rhodes. globe camera. 36.44, 28.22', 'ok');
     preview('Rhodes · globe');
-    await sleep(320);
+
+    await sleep(400);
+    // Final fly then hunt + pulse at camera origin
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
 
     try {
