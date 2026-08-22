@@ -1,35 +1,29 @@
 /**
- * Guest laptop hunt — Build 20260823020000-laptop-fix
+ * Guest laptop hunt — Build 20260823022000-laptop-osm
  * PATCH #132 only. Never edit chrome-guest-pizza-hunt.js (#127).
  * Do not touch #127 (pizza), #129 (CALL), #130 (nairobi), #131 (kalithea).
  *
- * QA FAIL 20260823013000-laptop-hunt (this build):
- *   (1) `rhodes` set the focus LABEL to 36.427, 28.220 but the RENDERED
- *       globe stayed on South America; next Origin was still -32.98, -61.78.
- *       Cause: laptop hunt did not intercept `rhodes`, so cli.js setFocus
- *       without flyGlobeTo. viewLatLng and the camera never matched.
- *   (2) "shops. 0 real - db" then "Laptop hunt · 1 shops (Zona Multimedia
- *       12.0km)" — SYNTHETIC db/vendors shop, a single white canvas dot,
- *       not an OSM electronics shop at Rhodes.
- *   (3) Pin tap: no "Shop · name · km · ⭐"; consumeClick missed; diveInAt
- *       flung -32.98,-61.78 → -31.06,-66.10 → 34.5,-156 Pacific.
- *       Cause: #sn-laptop-pins was 0×0 under the CLI, so the tap hit the
- *       globe canvas and dove.
+ * QA FAIL 20260823020000-laptop-fix (this build):
+ *   Camera PASS on Rhodes view (36.332, 28.079) but Hunt FAILS twice
+ *   ("Hunt failed / map search failed") and #sn-laptop-pins never appears.
+ *   Root cause: Overpass was too narrow (around:16km + shop=electronics
+ *   subset), 14s timeout, only overpass-api.de + kumi (CORS/timeout/502),
+ *   then HUNT_KM 16.5 dropped island shops. Rhodes DOES have real OSM
+ *   electronics (Public, Germanos, Κωτσόβολος, MediaMarkt, Expert…).
  *
- * FIX 20260823020000-laptop-fix:
- *   (1) Intercept `rhodes` / `show rhodes` (NOT pizza/nairobi/kalithea/CALL).
- *       Honest flyGlobeTo + probe-signs settle (same as #127). After
- *       `rhodes` the RENDERED globe is Rhodes (viewLatLng ~36.41, 28.10).
- *       Never a stale South America camera. Prefer SNGlobe.flyGlobeTo if
- *       #127 already defined it; else attach the same helper (do NOT overwrite).
- *   (2) Ban fake/db/synthetic shops. Hunt ONLY real OSM Overpass
- *       electronics/computer shops near the RENDERED view. No supabase
- *       vendors, no SNCommerce, no Nominatim filler. If none: "Hunt failed"
- *       + empty pins. Rhodes view → Rhodes OSM only.
- *   (3) Unique overlay pins in #sn-laptop-pins, full-viewport, z-index
- *       above the CLI. One button at each shop's real lat/lng. Tap →
- *       Shop · name · km · ⭐, SNGlobe.consumeClick=true, stopImmediatePropagation,
- *       NEVER diveInAt.
+ * FIX 20260823022000-laptop-osm:
+ *   (1) Hunt the RENDERED SNGlobe.viewLatLng only — never a stale focus
+ *       or camera target. Rhodes view → bbox 36.0–36.5N, 27.7–28.4E first,
+ *       expand to the whole island if empty.
+ *   (2) OSM Overpass tags: shop=electronics|computer|mobile_phone|hifi|
+ *       appliance|telecommunication and amenity=internet_cafe. Public
+ *       endpoints (overpass-api.de, kumi, maps.mail.ru), retry next on
+ *       fail, timeout 28s (>25s). GET fallback if POST CORS-fails.
+ *   (3) No synthetic/db/fake shops (Zona Multimedia stays gone). Genuine
+ *       0 after retries → Hunt failed + empty pins.
+ *   (4) Unique #sn-laptop-pins overlay; tap → Shop · name · km · ⭐,
+ *       consumeClick + stopImmediatePropagation; never diveInAt.
+ *   (5) South America view: laptop stays put, Hunt failed.
  *
  * PASS (keep): `laptop` on SA → Origin · camera · -32.946, -61.777,
  * Hunt failed, no electronics near view, no Google, no DRIVER EN ROUTE.
@@ -38,10 +32,10 @@
  */
 (function (G) {
   'use strict';
-  if (G.__snGuestLaptopHunt20260823020000) return;
-  G.__snGuestLaptopHunt20260823020000 = 1;
+  if (G.__snGuestLaptopHunt20260823022000) return;
+  G.__snGuestLaptopHunt20260823022000 = 1;
 
-  var BUILD = '20260823020000-laptop-fix';
+  var BUILD = '20260823022000-laptop-osm';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -70,7 +64,16 @@
   var PIN_HIT_PX = 22;
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
   var RHODES = { lat: 36.44, lng: 28.22, name: 'Rhodes' };
+  var RHODES_VIEW_BOX = { latMin: 36.0, latMax: 36.5, lngMin: 27.7, lngMax: 28.4 };
   var RHODES_BOX = { latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 };
+  var OSM_SHOP_TAGS = ['electronics', 'computer', 'mobile_phone', 'hifi', 'appliance', 'telecommunication'];
+  var OVERPASS_TIMEOUT_S = 28;
+  var OVERPASS_FETCH_MS = 32000;
+  var OVERPASS_ENDPOINTS = [
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+  ];
 
   var PLACES = [
     { name: 'Rhodes', latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 },
@@ -90,13 +93,13 @@
   ];
 
   var TECH =
-    /electronics|computer|laptop|notebook|macbook|pc\b|desktop|notebook|smartphone|mobile_phone|mobile phone|hifi|hi-fi|telecom|telecommunication|plaisio|kotsovolos|germanos|media\s*markt|best\s*buy|currys|fnac|saturn|apple\s*store|microsoft|public\b|multirama|electro\b|tech\s*shop|computer_shop|computershop/i;
-  var TECH_SHOP_OSM = /^(computer|electronics|mobile_phone|hifi|telecommunication|appliance)$/i;
+    /electronics|computer|laptop|notebook|macbook|pc\b|desktop|notebook|smartphone|mobile_phone|mobile phone|hifi|hi-fi|telecom|telecommunication|internet_cafe|internet cafe|plaisio|kotsovolos|germanos|media\s*markt|best\s*buy|currys|fnac|saturn|apple\s*store|microsoft|public\b|multirama|electro\b|tech\s*shop|computer_shop|computershop/i;
+  var TECH_SHOP_OSM = /^(computer|electronics|mobile_phone|hifi|telecommunication|appliance|internet_cafe)$/i;
   var FOOD_BLOCK =
-    /restaurant|fast_food|cafe|bar|pub|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert/i;
+    /restaurant|fast_food|\bcafe\b|bar|pub|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert/i;
   var FAKE_OPS_RE = /DRIVER\s+EN\s+ROUTE|SEEKING\s+DRIVER|\bme-av\b|\bme_av\b|\bmeav\b/i;
   var POI_DUMP_RE =
-    /Πλατεία|Πλατεια|πλατεία|\b\d+\s+POIs?\b|\b\d+\s+real shops\b|80 real shops|18 POIs|shops\.\s*0 real|\b0 real\b.*\bdb\b|\b- db\b/i;
+    /Πλατεία|Πλατεια|πλατεία|\b\d+\s+POIs?\b|\b\d+\s+real shops\b|80 real shops|18 POIs|shops\.\s*0 real|\b0 real\b.*\bdb\b|\b- db\b|map search failed/i;
   var SYNTHETIC_NAME_RE =
     /zona\s*multimedia|mesh\s*(alpha|beta|gamma)|astranov\s*kitchen|demo\s*shop|fake\s*shop|synthetic/i;
   var LAPTOP_RE =
@@ -379,25 +382,20 @@
   }
 
   /**
-   * Origin for bbox hunt = the RENDERED camera, never a stale focus label.
-   *   1) After verified rhodes fly (preferCameraUntil) → LIVE view if it
-   *      actually settled on Rhodes. Never hunt Rhodes while the globe is SA.
-   *   2) real YOU only if located THIS session (GPS grant)
-   *   3) current LIVE camera look-at
+   * Origin for bbox hunt = the RENDERED camera (SNGlobe.viewLatLng), never
+   * a stale focus label or lastFly target that the globe did not actually show.
+   *   1) LIVE viewLatLng if it is a real number pair
+   *   2) real YOU only if located THIS session (GPS grant) AND the live
+   *      view has settled on that YOU (otherwise hunt the rendered view)
    * NEVER invent Kalithea / silent Rhodes / San Jose IP as you.
    * NEVER trust bare _snLastPos or a focus label that does not match viewLatLng.
    */
   function resolveOrigin() {
     scrubFakeYou();
 
-    if (Date.now() < preferCameraUntil) {
-      var liveR = liveViewLatLng();
-      if (liveR && viewNear(RHODES.lat, RHODES.lng, 0.6, 0.6)) {
-        return { lat: liveR.lat, lng: liveR.lng, source: 'camera' };
-      }
-      if (lastFly && lastFly.lat != null && viewNear(lastFly.lat, lastFly.lng, 0.6, 0.6)) {
-        return { lat: lastFly.lat, lng: lastFly.lng, source: 'camera' };
-      }
+    var live = liveViewLatLng();
+    if (live) {
+      return { lat: live.lat, lng: live.lng, source: 'camera' };
     }
 
     try {
@@ -407,23 +405,6 @@
         if (isFinite(plat) && isFinite(plng) && !nearFake(plat, plng) && !isIpOrSoftSource(G._snPhysPos)) {
           return { lat: plat, lng: plng, source: 'you' };
         }
-      }
-    } catch (_) {}
-    var live = liveViewLatLng();
-    if (live) return { lat: live.lat, lng: live.lng, source: 'camera' };
-    var cam = cameraLook();
-    if (cam) return { lat: cam.lat, lng: cam.lng, source: 'camera' };
-    try {
-      if (G.SNGlobe && typeof SNGlobe.focusPos === 'function') {
-        var f = SNGlobe.focusPos();
-        if (f && f.lat != null && f.lng != null && isFinite(f.lat)) {
-          return { lat: +f.lat, lng: +f.lng, source: 'focus' };
-        }
-      }
-    } catch (_) {}
-    try {
-      if (G._snGlobeFocus && G._snGlobeFocus.lat != null) {
-        return { lat: +G._snGlobeFocus.lat, lng: +G._snGlobeFocus.lng, source: 'focus-cache' };
       }
     } catch (_) {}
     return null;
@@ -495,9 +476,10 @@
     if (isBannedName(v.name)) return false;
     if (String(v.id || '').indexOf('demo-') === 0 || String(v.id || '').indexOf('kitchen_') === 0)
       return false;
+    var shop = String(v.shop || v.shopKind || v.category || '');
+    if (TECH_SHOP_OSM.test(shop)) return true;
     var blob = shopBlob(v);
     if (FOOD_BLOCK.test(blob) && !TECH.test(blob)) return false;
-    if (v.shop && TECH_SHOP_OSM.test(String(v.shop))) return true;
     return TECH.test(blob);
   }
 
@@ -1488,7 +1470,8 @@
       var lng = +v.lng;
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
-      if (kmOrigin != null && kmOrigin > 18) return;
+      var kmCap = origin && inRhodes(origin.lat, origin.lng) ? 80 : 18;
+      if (kmOrigin != null && kmOrigin > kmCap) return;
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? PIN_COLOR_A : PIN_COLOR_B;
       var pin = {
@@ -1713,13 +1696,15 @@
   function constrainToPlace(origin, rows) {
     rows = rows || [];
     var place = origin ? placeOf(origin.lat, origin.lng) : null;
+    var kmCap = place === 'Rhodes' ? 80 : HUNT_KM;
     return rows.filter(function (v) {
       if (!v || v.lat == null || v.lng == null) return false;
-      if (haversineKm(origin, { lat: +v.lat, lng: +v.lng }) > HUNT_KM) return false;
+      if (place === 'Rhodes') {
+        return inRhodes(v.lat, v.lng);
+      }
+      if (haversineKm(origin, { lat: +v.lat, lng: +v.lng }) > kmCap) return false;
       var shopPlace = placeOf(v.lat, v.lng);
       if (place && shopPlace && shopPlace !== place) return false;
-      if (place === 'Rhodes' && !inRhodes(v.lat, v.lng)) return false;
-      if (place && !shopPlace && place === 'Rhodes') return false;
       return true;
     });
   }
@@ -1768,6 +1753,7 @@
     var name = tags.name || tags.brand || tags['name:en'] || tags['name:el'] || '';
     if (!name) {
       if (tags.shop) name = String(tags.shop).replace(/_/g, ' ');
+      else if (tags.amenity) name = String(tags.amenity).replace(/_/g, ' ');
       else return null;
     }
     if (isBannedName(name)) return null;
@@ -1792,75 +1778,138 @@
     return row;
   }
 
+  function overpassBboxQL(box) {
+    var s = Number(box.latMin).toFixed(4);
+    var w = Number(box.lngMin).toFixed(4);
+    var n = Number(box.latMax).toFixed(4);
+    var e = Number(box.lngMax).toFixed(4);
+    var bb = '(' + s + ',' + w + ',' + n + ',' + e + ')';
+    var parts = [];
+    var i;
+    for (i = 0; i < OSM_SHOP_TAGS.length; i++) {
+      var tag = OSM_SHOP_TAGS[i];
+      parts.push('node["shop"="' + tag + '"]' + bb + ';');
+      parts.push('way["shop"="' + tag + '"]' + bb + ';');
+    }
+    parts.push('node["amenity"="internet_cafe"]' + bb + ';');
+    parts.push('way["amenity"="internet_cafe"]' + bb + ';');
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + parts.join('') + ');out center 80;';
+  }
+
+  function localBoxAround(lat, lng, radiusKm) {
+    var rKm = Number(radiusKm) > 0 ? Number(radiusKm) : 20;
+    var dLat = rKm / 111;
+    var dLng = rKm / (111 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+    return {
+      latMin: lat - dLat,
+      latMax: lat + dLat,
+      lngMin: lng - dLng,
+      lngMax: lng + dLng,
+    };
+  }
+
+  function boxesForOrigin(origin) {
+    if (!origin || !isFinite(origin.lat) || !isFinite(origin.lng)) return [];
+    if (inRhodes(origin.lat, origin.lng)) {
+      return [RHODES_VIEW_BOX, RHODES_BOX];
+    }
+    return [localBoxAround(origin.lat, origin.lng, 20)];
+  }
+
+  async function fetchOverpassOnce(url, body, ms) {
+    async function one(method) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var to = setTimeout(function () {
+        try {
+          if (ctrl) ctrl.abort();
+        } catch (_) {}
+      }, ms);
+      try {
+        var opts = {
+          method: method,
+          headers: { Accept: 'application/json' },
+          signal: ctrl ? ctrl.signal : undefined,
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+        };
+        var href = url;
+        if (method === 'POST') {
+          opts.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+          opts.body = 'data=' + encodeURIComponent(body);
+        } else {
+          href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'data=' + encodeURIComponent(body);
+        }
+        var res = await fetch(href, opts);
+        return res || null;
+      } catch (_) {
+        return null;
+      } finally {
+        try {
+          clearTimeout(to);
+        } catch (_) {}
+      }
+    }
+    var posted = await one('POST');
+    if (posted && posted.ok) return posted;
+    if (posted) return posted;
+    return one('GET');
+  }
+
+  function parseOverpassElements(els) {
+    var rows = [];
+    var k;
+    for (k = 0; k < (els || []).length; k++) {
+      var shop = osmElToShop(els[k]);
+      if (shop) rows.push(shop);
+    }
+    return rows;
+  }
+
+  async function queryOverpassBbox(box) {
+    if (!box) return [];
+    var body = overpassBboxQL(box);
+    var lastErr = null;
+    var sawOk = false;
+    var i;
+    for (i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
+      try {
+        var res = await fetchOverpassOnce(OVERPASS_ENDPOINTS[i], body, OVERPASS_FETCH_MS);
+        if (!res || !res.ok) {
+          lastErr = new Error('overpass HTTP ' + (res ? res.status : 'fail'));
+          continue;
+        }
+        var j = await res.json();
+        sawOk = true;
+        var rows = parseOverpassElements((j && j.elements) || []);
+        if (rows.length) return rows;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (sawOk) return [];
+    throw lastErr || new Error('overpass failed');
+  }
+
   async function queryOverpass(lat, lng, radiusKm) {
     lat = Number(lat);
     lng = Number(lng);
     if (!isFinite(lat) || !isFinite(lng)) return [];
-    var r = Math.round((Number(radiusKm) > 0 ? Number(radiusKm) : 16) * 1000);
-    var around = '(around:' + r + ',' + lat.toFixed(5) + ',' + lng.toFixed(5) + ')';
-    var body =
-      '[out:json][timeout:14];(' +
-      'node["shop"="computer"]' +
-      around +
-      ';' +
-      'node["shop"="electronics"]' +
-      around +
-      ';' +
-      'node["shop"="mobile_phone"]' +
-      around +
-      ';' +
-      'node["shop"="hifi"]' +
-      around +
-      ';' +
-      'node["shop"="telecommunication"]' +
-      around +
-      ';' +
-      'way["shop"="computer"]' +
-      around +
-      ';' +
-      'way["shop"="electronics"]' +
-      around +
-      ';' +
-      'way["shop"="mobile_phone"]' +
-      around +
-      ';' +
-      ');out center 40;';
-    var endpoints = [
-      'https://overpass-api.de/api/interpreter',
-      'https://overpass.kumi.systems/api/interpreter',
-    ];
+    var boxes = inRhodes(lat, lng)
+      ? [RHODES_VIEW_BOX, RHODES_BOX]
+      : [localBoxAround(lat, lng, Number(radiusKm) > 0 ? Number(radiusKm) : 20)];
+    var lastErr = null;
     var i;
-    for (i = 0; i < endpoints.length; i++) {
+    for (i = 0; i < boxes.length; i++) {
       try {
-        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        var to = setTimeout(function () {
-          try {
-            if (ctrl) ctrl.abort();
-          } catch (_) {}
-        }, 14000);
-        var res = await fetch(endpoints[i], {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            Accept: 'application/json',
-          },
-          body: 'data=' + encodeURIComponent(body),
-          signal: ctrl ? ctrl.signal : undefined,
-        });
-        clearTimeout(to);
-        if (!res.ok) continue;
-        var j = await res.json();
-        var els = (j && j.elements) || [];
-        var rows = [];
-        var k;
-        for (k = 0; k < els.length; k++) {
-          var shop = osmElToShop(els[k]);
-          if (shop) rows.push(shop);
-        }
-        return rows;
-      } catch (_) {}
+        var rows = await queryOverpassBbox(boxes[i]);
+        if (rows && rows.length) return rows;
+      } catch (e) {
+        lastErr = e;
+      }
     }
-    throw new Error('overpass failed');
+    if (lastErr) throw lastErr;
+    return [];
   }
 
   async function queryVendorsBbox(lat, lng, radiusKm) {
@@ -1878,7 +1927,8 @@
         return { v: v, km: km };
       })
       .filter(function (s) {
-        return s.km <= 18;
+        var cap = origin && inRhodes(origin.lat, origin.lng) ? 80 : 18;
+        return s.km <= cap;
       })
       .sort(function (a, b) {
         return a.km - b.km;
@@ -1909,9 +1959,9 @@
   async function fetchNear(origin) {
     var rows = [];
     try {
-      rows = await queryOverpass(origin.lat, origin.lng, 16);
+      rows = await queryOverpass(origin.lat, origin.lng, 20);
     } catch (e) {
-      throw new Error('hunt failed · ' + (e && e.message ? e.message : 'overpass'));
+      throw new Error('map search failed · ' + (e && e.message ? e.message : 'overpass'));
     }
     rows = constrainToPlace(origin, rows || []).filter(isRealOsmElectronics);
     rows = dedupeShops(rows);
@@ -1939,6 +1989,15 @@
         failHunt('Hunt failed · no origin · type Locate once');
         return true;
       }
+    }
+
+    var liveNow = liveViewLatLng();
+    if (liveNow) {
+      origin = {
+        lat: liveNow.lat,
+        lng: liveNow.lng,
+        source: origin && origin.source === 'you' ? 'you' : 'camera',
+      };
     }
 
     log(
@@ -2105,30 +2164,38 @@
         return true;
       }
 
-      var origin = resolveOrigin();
       attachFlyHelper();
 
-      if (origin && origin.source === 'you') {
-        var fly = getFly();
-        var ok = false;
-        try {
-          ok = await fly(origin.lat, origin.lng, 'You');
-        } catch (_) {
-          ok = false;
+      // Hunt the RENDERED globe. Never a stale focus / lastFly / GPS pin
+      // that the camera is not actually showing.
+      var cam = liveViewLatLng();
+      var origin = cam ? { lat: cam.lat, lng: cam.lng, source: 'camera' } : null;
+
+      if (!origin && hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
+        var youLat = +G._snPhysPos.lat;
+        var youLng = +G._snPhysPos.lng;
+        if (isFinite(youLat) && isFinite(youLng) && !nearFake(youLat, youLng) && !isIpOrSoftSource(G._snPhysPos)) {
+          var fly = getFly();
+          var ok = false;
+          try {
+            ok = await fly(youLat, youLng, 'You');
+          } catch (_) {
+            ok = false;
+          }
+          if (ok && !viewNear(youLat, youLng, SETTLE_DEG, SETTLE_DEG)) ok = false;
+          if (!ok) {
+            log('Fly failed', 'err');
+            log(flyFailDiag(), 'dim');
+            preview('Fly failed');
+            clearLaptopPins();
+            huntFailed = true;
+            return true;
+          }
+          var afterYou = liveViewLatLng();
+          origin = afterYou
+            ? { lat: afterYou.lat, lng: afterYou.lng, source: 'you' }
+            : { lat: youLat, lng: youLng, source: 'you' };
         }
-        if (ok && !viewNear(origin.lat, origin.lng, SETTLE_DEG, SETTLE_DEG)) ok = false;
-        if (!ok) {
-          log('Fly failed', 'err');
-          log(flyFailDiag(), 'dim');
-          preview('Fly failed');
-          clearLaptopPins();
-          huntFailed = true;
-          return true;
-        }
-        origin = { lat: origin.lat, lng: origin.lng, source: 'you' };
-      } else {
-        var cam = liveViewLatLng();
-        if (cam) origin = { lat: cam.lat, lng: cam.lng, source: 'camera' };
       }
 
       if (!origin) {
@@ -2315,8 +2382,8 @@
     try {
       var form = document.getElementById('cli-form') || document.querySelector('#panel form');
       var input = document.getElementById('cli-in');
-      if (form && input && !input._snLaptopHuntFix) {
-        input._snLaptopHuntFix = 1;
+      if (form && input && !input._snLaptopHuntOsm) {
+        input._snLaptopHuntOsm = 1;
         form.addEventListener(
           'submit',
           function (ev) {
@@ -2333,8 +2400,8 @@
         );
       }
       var topIn = document.getElementById('stc-cmd-in');
-      if (topIn && !topIn._snLaptopHuntFix) {
-        topIn._snLaptopHuntFix = 1;
+      if (topIn && !topIn._snLaptopHuntOsm) {
+        topIn._snLaptopHuntOsm = 1;
         topIn.addEventListener(
           'keydown',
           function (ev) {
@@ -2349,7 +2416,7 @@
   function patchMarket() {
     try {
       if (!G.SNMarket || typeof SNMarket.fulfillFoodIntent !== 'function') return;
-      if (SNMarket._snLaptopHuntFix) return;
+      if (SNMarket._snLaptopHuntOsm) return;
       var ful = SNMarket.fulfillFoodIntent.bind(SNMarket);
       SNMarket.fulfillFoodIntent = async function (q, opts) {
         var line = String(q || (opts && opts.text) || '');
@@ -2363,7 +2430,7 @@
         }
         return ful(q, opts);
       };
-      SNMarket._snLaptopHuntFix = true;
+      SNMarket._snLaptopHuntOsm = true;
     } catch (_) {}
   }
 
