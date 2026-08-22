@@ -1817,8 +1817,28 @@
             idempotencyKey: idem,
             vendor: best,
             pos: pos,
+            drop: pos,
           });
         }
+        try {
+          if (orderResult && orderResult.ok && global.SNMeshOrders && SNMeshOrders.afterLocalOrder) {
+            var meshR = await SNMeshOrders.afterLocalOrder(orderResult, {
+              vendor: best,
+              drop: pos,
+              pos: pos,
+            });
+            if (meshR && meshR.live && (meshR.live.short || meshR.live.id)) {
+              log(
+                'LIVE · ' +
+                  (meshR.live.short || String(meshR.live.id).slice(0, 8)) +
+                  ' · shop ' +
+                  (best.shopName || best.name) +
+                  ' · customer YOU · seeking driver',
+                'ok'
+              );
+            }
+          }
+        } catch (_) {}
         if (orderResult && orderResult.ok) {
           log('HOLD ⭐ · shop + driver paid on delivery confirm · vault 3% now', 'ok');
           try {

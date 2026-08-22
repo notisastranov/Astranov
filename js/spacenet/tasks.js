@@ -343,6 +343,11 @@
     refreshPlan(task.planId);
     save();
     paint(task);
+    try {
+      if (task.networkId && global.SNMeshOrders && SNMeshOrders.claimLive) {
+        void SNMeshOrders.claimLive(task, who);
+      }
+    } catch (_) {}
     return { ok: true, task: task };
   }
 
@@ -383,6 +388,11 @@
     if (global.SNGlobe && SNGlobe.pulse) {
       SNGlobe.pulse(task.lat, task.lng, 0xffffff, 'done', 6000);
     }
+    try {
+      if (task.networkId && global.SNMeshOrders && SNMeshOrders.deliverLive) {
+        void SNMeshOrders.deliverLive(task);
+      }
+    } catch (_) {}
     try {
       if (task.kind === 'delivery' && global.SNUsage && SNUsage.flag) {
         SNUsage.flag('firstDeliveryDone', true);
@@ -970,6 +980,7 @@
     create: create,
     get: get,
     list: list,
+    save: save,
     getByShort: getByShort,
     expireOldTasks: expireOldTasks,
     claim: claim,

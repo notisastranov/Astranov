@@ -217,8 +217,211 @@
     return { ok: true, count: near.length, imported: imported, total: rows.length };
   }
 
+  async function upsertVendor(vendor) {
+    if (!vendor || !base()) return null;
+    var osm =
+      vendor.osm_id ||
+      vendor.osmId ||
+      (vendor.id && String(vendor.id).indexOf('osm:') === 0 ? String(vendor.id).slice(4) : null);
+    var vid = String(
+      vendor.dbId ||
+        (isUuid(vendor.id) ? vendor.id : '') ||
+        (osm ? 'osm:' + String(osm).replace(/[^\w:-]/g, '') : '') ||
+        'shop-' +
+          String(vendor.shopName || vendor.name || 'shop')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .slice(0, 24)
+    );
+    var row = {
+      id: vid,
+      name: String(vendor.shopName || vendor.name || 'Shop').slice(0, 80),
+      emoji: vendor.emoji || '🍕',
+      category: vendor.shopKind || vendor.category || 'pizza',
+      lat: Number(vendor.lat),
+      lng: Number(vendor.lng),
+      is_active: true,
+      delivery_enabled: true,
+      delivery_radius_km: 8,
+      items: vendor.menu || vendor.items || [],
+    };
+    if (osm) row.osm_id = String(osm);
+    try {
+      var r = await fetch(base() + '/rest/v1/vendors?on_conflict=id', {
+        method: 'POST',
+        headers: Object.assign(headers(true), {
+          Prefer: 'resolution=merge-duplicates,return=representation',
+        }),
+        body: JSON.stringify(row),
+      });
+      var j = await r.json().catch(function () {
+        return null;
+      });
+      if (r.ok) {
+        var saved = Array.isArray(j) ? j[0] : j;
+        if (saved && saved.id) return saved.id;
+      }
+    } catch (_) {}
+    return vid;
+  }
+
+  async function postLiveOrder(orderResult, meta) {
+    meta = meta || {};
+    if (!orderResult || !orderResult.ok || !base()) return { ok: false, error: 'no network' };
+    var task = orderResult.task;
+    if (task && task.networkId) return { ok: true, replay: true, id: task.networkId, short: task.networkShort };
+    if (task && task._livePosting) {
+      return { ok: false, error: 'posting' };
+    }
+    if (task) task._livePosting = true;
+    var vendor = orderResult.vendor || meta.vendor || null;
+    var drop = orderResult.drop || meta.pos || meta.drop || pos();
+    var items = orderResult.items || (task && task.items) || [];
+    var total = Number(orderResult.total != null ? orderResult.total : task && task.total_s) || 0;
+    var vid = null;
+    try {
+      vid = await upsertVendor(vendor);
+    } catch (_) {}
+    if (!vid && vendor) vid = String(vendor.id || vendor.shopName || 'shop');
+    var uid = null;
+    try {
+      uid =
+        (global.SNAuth && SNAuth.user && (SNAuth.user.id || SNAuth.user.sub)) ||
+        (global.SNAuth && SNAuth.uid && SNAuth.uid()) ||
+        null;
+    } catch (_) {}
+    var body = {
+      vendor_id: vid,
+      vendor_name: (vendor && (vendor.shopName || vendor.name)) || (task && task.vendorName) || 'Shop',
+      vendor_lat: vendor && vendor.lat != null ? Number(vendor.lat) : null,
+      vendor_lng: vendor && vendor.lng != null ? Number(vendor.lng) : null,
+      items: (items || []).map(function (i) {
+        return { name: i.name, qty: i.qty || 1, price: Number(i.price) || 0 };
+      }),
+      calc: {
+        currency: 'AC',
+        symbol: '⭐',
+        total: total,
+        platform_fee_s: orderResult.platformFee,
+        driver_s: orderResult.driverCut,
+        vendor_s: orderResult.vendorCut,
+        hold: true,
+        pay_on_delivery: true,
+        spacenet: true,
+        local_task: task && task.id,
+      },
+      status: 'seeking_driver',
+      delivery_lat: drop && drop.lat != null ? Number(drop.lat) : null,
+      delivery_lng: drop && drop.lng != null ? Number(drop.lng) : null,
+      notes: 'SpaceNet live · ⭐ hold · shop + driver paid on deliver · task ' + ((task && task.id) || ''),
+      pay_on_delivery: true,
+      channel: 'spacenet',
+    };
+    if (uid && isUuid(uid)) body.customer_id = uid;
+    try {
+      var r = await fetch(base() + '/rest/v1/orders', {
+        method: 'POST',
+        headers: Object.assign(headers(true), { Prefer: 'return=representation' }),
+        body: JSON.stringify(body),
+      });
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      var row = Array.isArray(j) ? j[0] : j && j.id ? j : null;
+      if (!r.ok || !row) {
+        return { ok: false, error: (j && (j.message || j.error || j.hint)) || 'HTTP ' + r.status };
+      }
+      if (task) {
+        task.networkId = row.id;
+        task.networkShort = row.short_id;
+        task.networkStatus = row.status || 'seeking_driver';
+        task.vendorId = vid || task.vendorId;
+        try {
+          if (global.SNTasks && SNTasks.save) SNTasks.save();
+        } catch (_) {}
+      }
+      log(
+        'LIVE ORDER ' +
+          (row.short_id || String(row.id).slice(0, 8)) +
+          ' · ' +
+          body.vendor_name +
+          ' · SEEKING DRIVER · type driver online then claim',
+        'ok'
+      );
+      return { ok: true, order: row, id: row.id, short: row.short_id };
+    } catch (e) {
+      return { ok: false, error: (e && e.message) || 'post fail' };
+    }
+  }
+
+  async function claimLive(task, who) {
+    if (!task || !task.networkId || !base()) return { ok: false };
+    var uid = null;
+    try {
+      uid =
+        (who && who.id && isUuid(who.id) && who.id) ||
+        (global.SNAuth && SNAuth.user && (SNAuth.user.id || SNAuth.user.sub)) ||
+        null;
+    } catch (_) {}
+    var patch = {
+      status: 'assigned',
+      driver_name: (who && (who.name || who.shopName)) || 'Driver',
+      driver_accepted_at: new Date().toISOString(),
+    };
+    if (uid && isUuid(uid)) patch.driver_id = uid;
+    try {
+      var r = await fetch(base() + '/rest/v1/orders?id=eq.' + encodeURIComponent(task.networkId), {
+        method: 'PATCH',
+        headers: Object.assign(headers(true), { Prefer: 'return=representation' }),
+        body: JSON.stringify(patch),
+      });
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      if (!r.ok) return { ok: false, error: (j && (j.message || j.error)) || 'claim HTTP ' + r.status };
+      var row = Array.isArray(j) ? j[0] : j;
+      if (task) {
+        task.networkStatus = 'assigned';
+        task.driverName = patch.driver_name;
+        task.driverId = patch.driver_id || task.driverId;
+      }
+      log('CLAIMED · ' + (task.networkShort || task.networkId) + ' · driver ' + patch.driver_name, 'ok');
+      return { ok: true, order: row };
+    } catch (e) {
+      return { ok: false, error: e.message || 'claim fail' };
+    }
+  }
+
+  async function deliverLive(task) {
+    if (!task || !task.networkId || !base()) return { ok: false };
+    try {
+      var r = await fetch(base() + '/rest/v1/orders?id=eq.' + encodeURIComponent(task.networkId), {
+        method: 'PATCH',
+        headers: Object.assign(headers(true), { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          status: 'delivered',
+          delivered_at: new Date().toISOString(),
+        }),
+      });
+      var j = await r.json().catch(function () {
+        return {};
+      });
+      if (!r.ok) return { ok: false, error: (j && (j.message || j.error)) || 'deliver HTTP ' + r.status };
+      if (task) task.networkStatus = 'delivered';
+      log(
+        'DELIVERED · ' +
+          (task.networkShort || task.networkId) +
+          ' · ⭐ shop + driver paid',
+        'ok'
+      );
+      return { ok: true, order: Array.isArray(j) ? j[0] : j };
+    } catch (e) {
+      return { ok: false, error: e.message || 'deliver fail' };
+    }
+  }
+
   /**
-   * After local placeOrder — announce on mesh + best-effort network intake.
+   * After local placeOrder — announce on mesh + write the live row.
    */
   async function fetchIntakeRetry(url, init, tries) {
     tries = tries || 3;
@@ -246,6 +449,18 @@
     var drop = orderResult.drop || meta.drop || pos();
     var items = orderResult.items || [];
     var total = orderResult.total;
+
+    var live = null;
+    try {
+      live = await postLiveOrder(orderResult, meta);
+      if (live && live.ok && live.short) {
+        /* already logged */
+      } else if (live && !live.ok && live.error) {
+        log('Mesh · live row · ' + live.error, 'dim');
+      }
+    } catch (eLive) {
+      log('Mesh · live row · ' + ((eLive && eLive.message) || eLive), 'dim');
+    }
 
     // 1) Live-bridge publish (other clients can inject notice)
     try {
@@ -330,7 +545,7 @@
       await pullOpenOrders({ quiet: true, pos: drop });
     } catch (_) {}
 
-    return { ok: true, intake: intake, task: task };
+    return { ok: true, intake: intake, live: live, task: task };
   }
 
   /** Warm real vendors into DB (edge crawler) then local sector */
@@ -405,6 +620,10 @@
   global.SNMeshOrders = {
     pullOpenOrders: pullOpenOrders,
     afterLocalOrder: afterLocalOrder,
+    postLiveOrder: postLiveOrder,
+    claimLive: claimLive,
+    deliverLive: deliverLive,
+    upsertVendor: upsertVendor,
     warmSector: warmSector,
     start: start,
     stop: stop,

@@ -2026,9 +2026,45 @@
         );
         return;
       }
-      if (low === 'drive on' || low === 'driver on' || low === 'go online') {
+      if (low === 'first order' || low === 'real order' || low === 'first live order') {
+        log('FIRST LIVE ORDER · shop × driver × you', 'ok');
+        const pin = global._snPhysPos || global._snLastPos;
+        if (!pin || pin.lat == null) {
+          try {
+            const g = await gpsLocate({ allowIp: true, allowSoft: true });
+            if (g && g.lat != null) commitRealGps(g);
+          } catch (_) {}
+        }
+        const here =
+          global._snPhysPos ||
+          (global._snLastPos && global._snLastPos.lat != null ? global._snLastPos : null);
+        if (!here || here.lat == null) {
+          log('Tap locate, then say first order again.', 'ok');
+          return;
+        }
+        activity('first live order…', 'food', { label: 'PIZZA' });
+        const r = await global.SNMarket.fulfillFoodIntent('pizza', {
+          autoOrder: true,
+          quiet: false,
+          judgeAll: true,
+          skipLocConfirm: true,
+          allowSelfCourier: true,
+          softHome: true,
+        });
+        if (r?.reply) log(r.reply, r.ok ? 'ok' : 'err');
+        if (r?.ok) {
+          try {
+            global.SNMarket.goDriverOnline && SNMarket.goDriverOnline();
+          } catch (_) {}
+          log('Shop accepted · you are also the courier for this first live proof.', 'ok');
+          log('Type deliver me when the pizza lands — ⭐ shop + driver get paid then.', 'ok');
+        }
+        preview(r?.ok ? 'LIVE ORDER' : 'order failed');
+        return;
+      }
+      if (low === 'drive on' || low === 'driver on' || low === 'go online' || low === 'driver online') {
         const r = global.SNMarket?.goDriverOnline?.();
-        log(r?.ok ? 'Driver ONLINE · next: deliver me' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
+        log(r?.ok ? 'Driver ONLINE · next: claim / deliver me' : r?.error || 'fail', r?.ok ? 'ok' : 'err');
         return;
       }
       if (low === 'deliver me' || low === 'claim and deliver' || low === 'finish delivery') {
