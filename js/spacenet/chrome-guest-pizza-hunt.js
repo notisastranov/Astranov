@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822210000-rhodes-settle
+ * Guest pizza hunt — Build 20260822213000-closed-loop
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -7,28 +7,30 @@
  *   / No delivery shops near view · type Locate once
  *   No Kalithea 36.388 list. No Google wall.
  *
- * HONEST FAIL (20260822203000-earth-parent):
- *   After "show rhodes" viewLatLng stayed STABLE at 38.204, 28.301
- *   (Aydin, ~196 km N of Rhodes). diveAnchor was Kalithea 36.387557,28.222533
- *   but the camera never settled there. CLI reported FALSE SUCCESS because
- *   the 2.5 deg gate accepted |38.204-36.44|=1.764. No "Fly failed", no parent
- *   names; it logged Rhodes, globe camera, Origin 36.440, Pins 24.
+ * LIVE FAIL 20260822210000-rhodes-settle:
+ *   After "show rhodes" viewLatLng stayed STABLE at 39.245, 28.270
+ *   (dLat +2.805 deg north of 36.44). Open-loop absolute euler
+ *   -36.44*PI/180 each retry overshoots the same way (camera y-offset).
+ *   CLI: "Fly failed - viewLatLng still 39.245,28.270"
+ *   parents=Mesh>Object3D>Object3D>Scene.
+ *   Pizza SA reports Origin · camera plus Locate once.
  *
- * FIX 20260822210000-rhodes-settle (KEEP earth-parent walk + origin PASSes):
- *   1) viewNear success = 0.15 deg lat AND 0.15 deg unwrapped lng from
- *      36.44, 28.22. 38.204 MUST fail.
- *   2) Retry parent-chain + earth-mesh aim up to 4 times or ~3s until the
- *      0.15 check. Do NOT set lastFly, preferCameraUntil, huntAt or Pins
- *      until it does.
- *   3) If |delta| still >0.15: log "Fly failed - viewLatLng still LAT,LNG"
- *      plus parent names. Do NOT log Rhodes / globe camera. Do NOT hunt.
- *      Do NOT log Pins 24.
- *   4) Swallow Earth.CITY.Rhodes from goToPlace unless view is already
- *      verified at 0.15 deg.
- *   5) Never set diveAnchor/focus to Kalithea 36.387557 unless GPS-located
- *      there. show rhodes aims 36.44, 28.22 only.
- *   6) On real success: log Rhodes, globe camera, 36.44, 28.22, hunt,
- *      pulse >=10 Earth meshes, tap Shop · name · km · ⭐.
+ * FIX 20260822213000-closed-loop (KEEP origin PASSes + mesh-moved walk):
+ *   After unfreeze + ONE parent-chain snap, LOOP up to ~12 steps or 4s:
+ *     v = SNGlobe.viewLatLng();
+ *     if |v.lat-36.44|<0.15 AND unwrap|v.lng-28.22|<0.15 → success
+ *     else dLat = 36.44 - v.lat, dLng = unwrap(28.22 - v.lng)
+ *     INCREMENTAL euler on LIVE chain from getEarth()
+ *     (the Mesh and its two Object3D parents):
+ *       x += -dLat*PI/180, y += -dLng*PI/180
+ *       (same sign convention as globe.js setGlobeLatLng)
+ *     then updateMatrixWorld and paint.
+ *   Pulls 39.245 DOWN toward 36.44. NEVER reset to absolute
+ *   -36.44*PI/180 each step (that overshoots again).
+ *   On success: "Rhodes. globe camera. 36.44, 28.22" then hunt +
+ *   pulse >=10 Earth meshes + tap Shop · name · km · ⭐.
+ *   On fail: "Fly failed" + actual view + parents; no hunt, no lastFly, no Pins.
+ *   Never claim Kalithea as YOU/diveAnchor unless GPS this session.
  *
  * REAL SNGlobe exports: init, pulse, clearMarkers, flyNear, goToPlace, goToTier,
  *   viewLatLng, pickLatLng, setFocus, focusPos, getTilt, getSpin, getPivot, getEarth,
@@ -40,7 +42,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822210000-rhodes-settle';
+  var BUILD = '20260822213000-closed-loop';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -272,6 +274,15 @@
     while (d > 180) d -= 360;
     while (d < -180) d += 360;
     return Math.abs(d);
+  }
+
+  /** Signed longitude unwrap (degrees). 28.22 - 28.270 → -0.05, not 359.95. */
+  function unwrapDeg(d) {
+    d = Number(d);
+    if (!isFinite(d)) return 0;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return d;
   }
 
   function viewNear(targetLat, targetLng, tolLat, tolLng) {
@@ -569,7 +580,7 @@
       }
     } catch (_) {}
     try {
-      if (G.SNCli && typeof SNCli.log === 'function' && SNCli.__snPizzaLogGuard !== 'rhodes-settle') {
+      if (G.SNCli && typeof SNCli.log === 'function' && SNCli.__snPizzaLogGuard !== 'closed-loop') {
         var prevLog = SNCli.log.bind(SNCli);
         SNCli.log = function (m, c, force) {
           var s = String(m || '');
@@ -578,22 +589,22 @@
           if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) return;
           return prevLog(m, c, force);
         };
-        SNCli.__snPizzaLogGuard = 'rhodes-settle';
+        SNCli.__snPizzaLogGuard = 'closed-loop';
       }
     } catch (_) {}
     // Never park diveAnchor/focus on Kalithea HQ unless this session's GPS is there.
     try {
-      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function' && SNGlobe.__snPizzaFocusGuard !== 'rhodes-settle') {
+      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function' && SNGlobe.__snPizzaFocusGuard !== 'closed-loop') {
         var prevFocus = SNGlobe.setFocus.bind(SNGlobe);
         SNGlobe.setFocus = function (lat, lng) {
           if (isKalitheaCoord(lat, lng) && !gpsAtKalithea()) return;
           return prevFocus(lat, lng);
         };
-        SNGlobe.__snPizzaFocusGuard = 'rhodes-settle';
+        SNGlobe.__snPizzaFocusGuard = 'closed-loop';
       }
     } catch (_) {}
     try {
-      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function' && SNGlobe.__snPizzaGoPlaceGuard !== 'rhodes-settle') {
+      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function' && SNGlobe.__snPizzaGoPlaceGuard !== 'closed-loop') {
         var prevGo = SNGlobe.goToPlace.bind(SNGlobe);
         SNGlobe.goToPlace = function (lat, lng, opts) {
           // Block HQ pin: never write diveAnchor/focus to Kalithea unless GPS there.
@@ -601,7 +612,7 @@
           if (isKalitheaCoord(lat, lng) && !gpsAtKalithea()) return false;
           return prevGo(lat, lng, opts);
         };
-        SNGlobe.__snPizzaGoPlaceGuard = 'rhodes-settle';
+        SNGlobe.__snPizzaGoPlaceGuard = 'closed-loop';
       }
     } catch (_) {}
   }
@@ -831,6 +842,155 @@
     } catch (_) {}
   }
 
+  function liveEarthChain() {
+    var chain = [];
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.getEarth !== 'function') return chain;
+      var n = SNGlobe.getEarth();
+      var hops = 0;
+      // Mesh + two Object3D parents; stop before Scene
+      while (n && hops < 3) {
+        if (nodeIsSceneOrCam(n)) break;
+        chain.push(n);
+        try {
+          n = n.parent;
+        } catch (_) {
+          n = null;
+        }
+        hops++;
+      }
+    } catch (_) {}
+    return chain;
+  }
+
+  function paintLiveChain(chain) {
+    chain = chain || liveEarthChain();
+    var i;
+    try {
+      var walk = walkEarthChain();
+      for (i = walk.nodes.length - 1; i >= 0; i--) {
+        try {
+          if (walk.nodes[i] && walk.nodes[i].updateMatrixWorld) walk.nodes[i].updateMatrixWorld(true);
+        } catch (_) {}
+      }
+    } catch (_) {}
+    for (i = chain.length - 1; i >= 0; i--) {
+      try {
+        if (chain[i] && chain[i].updateMatrixWorld) chain[i].updateMatrixWorld(true);
+      } catch (_) {}
+    }
+    try {
+      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+      if (tilt && tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      if (spin && spin.updateMatrixWorld) spin.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+      if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var cam = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
+    } catch (_) {}
+    paintGlobe();
+  }
+
+  /**
+   * INCREMENTAL euler on the LIVE chain from getEarth()
+   * (the Mesh and its two Object3D parents).
+   * Same sign as globe.js setGlobeLatLng:
+   *   x += -dLat*PI/180, y += -dLng*PI/180
+   * NEVER write absolute -lat*PI/180 here — that parks 2.8° north of Rhodes.
+   *
+   * Polar split (gain 1): outer Object3D = tilt X, inner Object3D = spin Y.
+   * Mesh also gets the increment when it already carries rotation or a parent
+   * is missing; otherwise Mesh is still in the chain for updateMatrixWorld.
+   * Pulls view 39.245 DOWN toward 36.44.
+   */
+  function nudgeLiveChain(dLat, dLng) {
+    try {
+      if (!G.SNGlobe) return;
+      var dx = (-Number(dLat) * Math.PI) / 180;
+      var dy = (-Number(dLng) * Math.PI) / 180;
+      if (!isFinite(dx)) dx = 0;
+      if (!isFinite(dy)) dy = 0;
+      if (dx === 0 && dy === 0) return;
+
+      var TILT_MAX = 1.05;
+      var chain = liveEarthChain();
+      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+
+      function addInc(node, addX, addY) {
+        if (!node || !node.rotation) return;
+        var nx = +node.rotation.x || 0;
+        var ny = +node.rotation.y || 0;
+        var nz = +node.rotation.z || 0;
+        if (addX) nx += dx;
+        if (addY) ny += dy;
+        if (nx > TILT_MAX) nx = TILT_MAX;
+        if (nx < -TILT_MAX) nx = -TILT_MAX;
+        writeEulerQuat(node, nx, ny, nz);
+      }
+
+      var mesh = chain.length ? chain[0] : earth;
+      var inner = chain.length > 1 ? chain[1] : null;
+      var outer = chain.length > 2 ? chain[2] : null;
+
+      var meshRx = 0;
+      var meshRy = 0;
+      try {
+        if (mesh && mesh.rotation) {
+          meshRx = Math.abs(+mesh.rotation.x || 0);
+          meshRy = Math.abs(+mesh.rotation.y || 0);
+        }
+      } catch (_) {}
+      var meshCarries = meshRx > 0.002 || meshRy > 0.002;
+
+      // Mesh
+      if (mesh && (meshCarries || !inner || !outer)) {
+        addInc(mesh, true, true);
+      }
+      // Inner Object3D = spin (longitude Y) — same as setGlobeLatLng y
+      if (inner && !meshCarries) addInc(inner, false, true);
+      // Outer Object3D = tilt (latitude X) — same as setGlobeLatLng x
+      if (outer && !meshCarries) addInc(outer, true, false);
+
+      // Detached exports (only if they were not the live parents)
+      if (tilt && tilt !== outer && tilt !== inner && tilt !== mesh) addInc(tilt, true, false);
+      if (spin && spin !== outer && spin !== inner && spin !== mesh && spin !== tilt) addInc(spin, false, true);
+      if (pivot && pivot !== spin && pivot !== outer && pivot !== inner && pivot !== mesh) {
+        addInc(pivot, false, true);
+      }
+
+      paintLiveChain(chain);
+      holdPhysToLiveEuler();
+    } catch (_) {}
+  }
+
+  /**
+   * Point flyNear's hidden phys.tTilt/tSpin at the LIVE euler so stepPhys
+   * holds the closed-loop pose instead of springing back to absolute Rhodes
+   * (which is the 39.245 north overshoot).
+   */
+  function holdPhysToLiveEuler() {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.flyNear !== 'function') return;
+      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      if (!tilt || !tilt.rotation || !spin || !spin.rotation) return;
+      var holdLat = (-(+tilt.rotation.x || 0) * 180) / Math.PI;
+      var holdLng = (-(+spin.rotation.y || 0) * 180) / Math.PI;
+      if (!isFinite(holdLat) || !isFinite(holdLng)) return;
+      SNGlobe.flyNear(holdLat, holdLng, null);
+    } catch (_) {}
+  }
+
   /**
    * Rotate the LIVE earth mesh so latLngToVec(lat,lng) points at the camera.
    * This is what pickLatLng/viewLatLng actually raycast.
@@ -931,18 +1091,22 @@
   }
 
   /**
-   * REQUIRED flyGlobeTo (Build 20260822210000-rhodes-settle):
-   * KEEP earth-parent walk (getEarth parents + earth-mesh aim).
-   * 1) pointerup/cancel on canvas
-   * 2) walk getEarth() parents; apply euler+quat to LIVE chain + getTilt/getSpin/getPivot;
-   *    updateMatrixWorld; paint
-   * 3) rotate earth mesh so latLngToVec(target) points at camera; paint
-   * 4) Retry parent-chain + earth-mesh aim up to 4 times or ~3s.
-   *    Success ONLY if |dLat|<0.15 AND unwrapped |dLng|<0.15.
-   *    38.204 vs 36.44 MUST fail. Do NOT set lastFly until that check.
-   * 5) fail: caller logs Fly failed - viewLatLng still LAT,LNG + parents. No lastFly.
+   * REQUIRED flyGlobeTo (Build 20260822213000-closed-loop):
+   * 1) unfreeze (pointerup/cancel on canvas)
+   * 2) ONE parent-chain snap (open-loop initial guess). Do NOT repeat this.
+   * 3) Closed-loop ≤12 steps or 4s:
+   *      v = SNGlobe.viewLatLng()
+   *      if |v.lat-target|<0.15 AND unwrap|v.lng-target|<0.15 → success
+   *      else dLat = targetLat - v.lat, dLng = unwrap(targetLng - v.lng)
+   *      INCREMENTAL euler on live chain (Mesh + two Object3D parents):
+   *        x += -dLat*PI/180, y += -dLng*PI/180
+   *      updateMatrixWorld + paint
+   *    Pulls 39.245 DOWN toward 36.44. Never absolute -36.44*PI/180 in the loop.
+   * 4) Success ONLY at 0.15 deg. Do NOT set lastFly until that check.
+   * 5) fail: caller logs Fly failed + view + parents. No lastFly, no hunt, no Pins.
    * Never set diveAnchor/focus to Kalithea unless GPS-located there.
    * Do NOT call goToPlace (that logs the lying Earth.CITY.Rhodes line).
+   * Do NOT add another open-loop Rhodes euler (no snap/flyNear/face in the loop).
    */
   async function flyGlobeTo(lat, lng, label) {
     lat = +lat;
@@ -973,49 +1137,49 @@
       } catch (_) {}
     }
 
-    function oneAim() {
-      // 2) LIVE parent chain + exported tilt/spin/pivot; matrices; paint
-      snapLiveChain(lat, lng);
-      paintGlobe();
-      // flyNear may set phys.tTilt/tSpin on the exported nodes; does not log CITY
-      try {
-        if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
-          SNGlobe.flyNear(lat, lng, 'city');
-        }
-      } catch (_) {}
-      snapLiveChain(lat, lng);
-      paintGlobe();
-      // 3) earth-mesh aim — what pickLatLng/viewLatLng actually raycast
-      if (!viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG)) {
-        faceEarthAtCamera(lat, lng);
-        paintGlobe();
+    try {
+      if (G.SNMap) {
+        try { SNMap.active = false; } catch (_) {}
       }
-      try {
-        if (G.SNMap) {
-          try { SNMap.active = false; } catch (_) {}
-        }
-      } catch (_) {}
+    } catch (_) {}
+
+    // 2) ONE parent-chain snap (open-loop initial guess). Never again in the loop.
+    snapLiveChain(lat, lng);
+    paintGlobe();
+    holdPhysToLiveEuler();
+
+    if (viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG)) {
+      lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
+      return true;
     }
 
-    // 4) Retry parent-chain + earth-mesh aim up to 4 times or ~3s; 0.15 deg only
+    // 3) Closed-loop settle — incremental euler only. ≤12 steps or 4s.
     var t0 = Date.now();
-    var attempt = 0;
-    while (attempt < 4 && Date.now() - t0 < 3000) {
-      attempt++;
-      unfreezeGlobe();
-      oneAim();
-      var sliceEnd = Math.min(Date.now() + 750, t0 + 3000);
-      while (Date.now() < sliceEnd) {
-        if (viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG)) {
+    var step = 0;
+    var maxSteps = 12;
+    var maxMs = 4000;
+    while (step < maxSteps && Date.now() - t0 < maxMs) {
+      step++;
+      var v = null;
+      try {
+        if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') v = SNGlobe.viewLatLng();
+      } catch (_) {}
+      if (v && v.lat != null && isFinite(v.lat) && isFinite(v.lng)) {
+        var dLatAbs = Math.abs(+v.lat - lat);
+        var dLngAbs = lngDelta(v.lng, lng);
+        if (dLatAbs < SETTLE_DEG && dLngAbs < SETTLE_DEG) {
           lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
           return true;
         }
-        unfreezeGlobe();
-        snapLiveChain(lat, lng);
-        faceEarthAtCamera(lat, lng);
-        paintGlobe();
-        await sleep(100);
+        // dLat = 36.44 - 39.245 = -2.805 → x += -(-2.805)*PI/180 pulls NORTH overshoot DOWN
+        var dLat = lat - +v.lat;
+        var dLng = unwrapDeg(lng - +v.lng);
+        nudgeLiveChain(dLat, dLng);
+        try {
+          if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
+        } catch (_) {}
       }
+      await sleep(120);
     }
     var finalOk = viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG);
     if (finalOk) {
@@ -1497,12 +1661,14 @@
   }
 
   /**
-   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via live parent chain.
+   * show rhodes: MUST settle the visible Earth mesh to 36.44,28.22 via closed-loop.
+   * After unfreeze + one parent-chain snap, incremental euler until 0.15 deg.
    * preferCameraUntil + lastFly + huntAt + Pins set ONLY after 0.15 deg verify.
    * On fail: "Fly failed - viewLatLng still LAT,LNG" + parent names.
    *   Do NOT log Rhodes / globe camera. Do NOT hunt. Do NOT log Pins.
    * First "show rhodes" works even if huntSession false.
    * Swallow Earth.CITY.Rhodes unless viewLatLng is already 0.15-verified.
+   * Never claim Kalithea as YOU/diveAnchor unless GPS this session.
    */
   async function showRhodes(raw) {
     beginGlobeHunt();
@@ -1522,7 +1688,7 @@
 
     await waitGlobeReady(2200);
 
-    // flyGlobeTo retries parent-chain + earth-mesh aim up to 4 times or ~3s
+    // flyGlobeTo: unfreeze + one snap + closed-loop incremental settle ≤12 steps / 4s
     var ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     if (ok && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) ok = false;
 
