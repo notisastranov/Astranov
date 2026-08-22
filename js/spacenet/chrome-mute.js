@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260822213000-closed-loop (cache-bust -all3)
+/* Astranov mute · Build 20260822223000-probe-signs (cache-bust pizza-hunt)
  * Kill beeps + load:
  *   - chrome-cli-answer (twin CLI + cli-log paint + answers)  ← #126 keep
  *   - chrome-guest-pizza-hunt (vendors bbox pins · Google only at pay)
@@ -6,7 +6,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822213000-closed-loop';
+  var BUILD = '20260822223000-probe-signs';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -69,7 +69,7 @@
     try {
       if (document.querySelector('script[' + mark + ']')) return;
       var s = document.createElement('script');
-      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + BUILD + '-all3';
+      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + BUILD;
       s.async = false;
       s.setAttribute(mark, '1');
       (document.head || document.documentElement).appendChild(s);
