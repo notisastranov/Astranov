@@ -1374,6 +1374,24 @@
     G.lastUserControl = Date.now();
   }
 
+  /**
+   * Kill trackball + phys springs so a closed-loop fly is not fought by idle spin.
+   * Exported for chrome-guest-pizza-hunt flyGlobeTo (Build 20260822220000-tilt-spin-only).
+   */
+  function zeroInertia() {
+    G.velX = 0;
+    G.velY = 0;
+    if (G.phys) {
+      G.phys.vTilt = 0;
+      G.phys.vSpin = 0;
+      G.phys.tTilt = null;
+      G.phys.tSpin = null;
+    }
+    G.dragging = false;
+    G.lastUserControl = Date.now();
+    G.lastAct = Date.now();
+  }
+
   var TILT_MAX = 1.05; // ~60° — stable poles, less shake near extreme tilt
 
   /** Keep dual axes clean: tilt.X only · spin.Y only · never Z (polar axis law) */
@@ -3217,6 +3235,8 @@
     frameRoute: frameRoute,
     locate: locate,
     flyNear: flyNear,
+    stopMotion: stopMotion,
+    zeroInertia: zeroInertia,
     goToTier: goToTier,
     goToPlace: goToPlace,
     diveInAt: diveInAt,
