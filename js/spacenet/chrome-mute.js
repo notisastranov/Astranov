@@ -1,6 +1,6 @@
-/* Astranov mute · Build 20260823022000-laptop-osm
- * Kill beeps + load chrome-guest-laptop-hunt (real OSM electronics/computer
- * shops on the globe · unique pins · Google only at pay).
+/* Astranov mute · Build 20260823024000-laptop-spread
+ * Kill beeps + load chrome-guest-laptop-hunt (real OSM electronics ·
+ * CITY altitude before pins · #127 pin-spread spiral · tap Shop · name · km · ⭐).
  * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
  * chrome-nairobi-ladder (#130), or chrome-kalithea-village (#131).
  * Does NOT overwrite SNGlobe.flyGlobeTo when #127 already defined it.
@@ -8,7 +8,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823022000-laptop-osm';
+  var BUILD = '20260823024000-laptop-spread';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 

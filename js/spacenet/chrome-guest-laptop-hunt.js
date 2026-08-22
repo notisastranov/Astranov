@@ -1,41 +1,40 @@
 /**
- * Guest laptop hunt — Build 20260823022000-laptop-osm
+ * Guest laptop hunt — Build 20260823024000-laptop-spread
  * PATCH #132 only. Never edit chrome-guest-pizza-hunt.js (#127).
  * Do not touch #127 (pizza), #129 (CALL), #130 (nairobi), #131 (kalithea).
  *
- * QA FAIL 20260823020000-laptop-fix (this build):
- *   Camera PASS on Rhodes view (36.332, 28.079) but Hunt FAILS twice
- *   ("Hunt failed / map search failed") and #sn-laptop-pins never appears.
- *   Root cause: Overpass was too narrow (around:16km + shop=electronics
- *   subset), 14s timeout, only overpass-api.de + kumi (CORS/timeout/502),
- *   then HUNT_KM 16.5 dropped island shops. Rhodes DOES have real OSM
- *   electronics (Public, Germanos, Κωτσόβολος, MediaMarkt, Expert…).
+ * KEEP (locked PASS of 20260823022000-laptop-osm):
+ *   OSM hunt = 24 real Rhodes electronics (Public, Germanos, Κωτσόβολος…).
+ *   No synthetic/db/fake shops. Camera: SA stays put. `rhodes` renders
+ *   ~36.33, 28.08 via probe-sign flyGlobeTo. No Google. No DRIVER EN ROUTE.
  *
- * FIX 20260823022000-laptop-osm:
- *   (1) Hunt the RENDERED SNGlobe.viewLatLng only — never a stale focus
- *       or camera target. Rhodes view → bbox 36.0–36.5N, 27.7–28.4E first,
- *       expand to the whole island if empty.
- *   (2) OSM Overpass tags: shop=electronics|computer|mobile_phone|hifi|
- *       appliance|telecommunication and amenity=internet_cafe. Public
- *       endpoints (overpass-api.de, kumi, maps.mail.ru), retry next on
- *       fail, timeout 28s (>25s). GET fallback if POST CORS-fails.
- *   (3) No synthetic/db/fake shops (Zona Multimedia stays gone). Genuine
- *       0 after retries → Hunt failed + empty pins.
- *   (4) Unique #sn-laptop-pins overlay; tap → Shop · name · km · ⭐,
- *       consumeClick + stopImmediatePropagation; never diveInAt.
- *   (5) South America view: laptop stays put, Hunt failed.
+ * QA FAIL of 20260823022000-laptop-osm:
+ *   (a) #sn-laptop-pins has 24 children piled at left 625-628 / top 311-315
+ *       because the island is one pixel at continent zoom.
+ *   (b) Tap GNet / Rodos Digital announces nothing (no "Shop · name · km ⭐").
+ *   (c) SA laptop CLI is silent instead of printing "Hunt failed".
  *
- * PASS (keep): `laptop` on SA → Origin · camera · -32.946, -61.777,
- * Hunt failed, no electronics near view, no Google, no DRIVER EN ROUTE.
+ * FIX 20260823024000-laptop-spread:
+ *   (1) After a successful Rhodes/electronics hunt, flyGlobeTo the island
+ *       (same settle as #127 pizza after "show rhodes", view ~36.41, 28.10)
+ *       AND drop to CITY altitude BEFORE painting pins — do not stay at
+ *       continent zoom. Empty hunt (SA) never flies.
+ *   (2) projectPin like #127 pin-spread: unique CSS left/top per shop
+ *       lat/lng, skip pins behind the globe, and if two project <20px
+ *       apart offset the overlay in a small spiral (world positions stay
+ *       honest).
+ *   (3) Overlay z-index above the CLI, pointer-events auto, consumeClick,
+ *       stopImmediatePropagation; tap → Shop · name · km · ⭐. No dive/fling.
+ *   (4) Empty results: a visible CLI line "Hunt failed".
  *
  * Product law: if it is not on the globe it is not shipped.
  */
 (function (G) {
   'use strict';
-  if (G.__snGuestLaptopHunt20260823022000) return;
-  G.__snGuestLaptopHunt20260823022000 = 1;
+  if (G.__snGuestLaptopHunt20260823024000) return;
+  G.__snGuestLaptopHunt20260823024000 = 1;
 
-  var BUILD = '20260823022000-laptop-osm';
+  var BUILD = '20260823024000-laptop-spread';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -51,6 +50,7 @@
   var overlayRaf = 0;
   var lastOverlaySpread = 0;
   var lastWorldDistinct = false;
+  var lastOverlayPoints = [];
   var cliWrap = null;
   var huntFailed = false;
   var preferCameraUntil = 0;
@@ -116,10 +116,49 @@
   function log(m, c) {
     try {
       var s = String(m == null ? '' : m).slice(0, 420);
+      if (/^Hunt failed/i.test(s)) {
+        paintCliLine(s, c || 'ok');
+        return;
+      }
       if (FAKE_OPS_RE.test(s)) return;
       if (POI_DUMP_RE.test(s) && globeOnly()) return;
       if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) return;
       if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
+    } catch (_) {}
+  }
+
+  function paintCliLine(s, c) {
+    s = String(s == null ? '' : s).slice(0, 420);
+    try {
+      if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
+    } catch (_) {}
+    try {
+      var el = document.getElementById('cli-log');
+      if (el) {
+        var has = false;
+        try {
+          has = el.textContent && el.textContent.indexOf(s) >= 0;
+        } catch (__) {}
+        if (!has) {
+          var d = document.createElement('div');
+          d.setAttribute('data-sn-laptop-cli', '1');
+          d.textContent = s;
+          el.appendChild(d);
+          try {
+            el.scrollTop = el.scrollHeight;
+          } catch (__) {}
+        }
+      }
+    } catch (_) {}
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.add('sn-open', 'open');
+        panel.classList.remove('collapsed', 'sn-quiet');
+      }
+    } catch (_) {}
+    try {
+      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
     } catch (_) {}
   }
 
@@ -892,6 +931,83 @@
     );
   }
 
+  function cameraZ() {
+    try {
+      var cam = G.SNGlobe && typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.position && isFinite(+cam.position.z)) return +cam.position.z;
+    } catch (_) {}
+    return 99;
+  }
+
+  function cityAltitudeZ() {
+    try {
+      if (G.SNGlobe && SNGlobe.TIERS && SNGlobe.TIERS.city && isFinite(+SNGlobe.TIERS.city.z)) {
+        return +SNGlobe.TIERS.city.z;
+      }
+    } catch (_) {}
+    return 1.16;
+  }
+
+  function dropToCityAltitude() {
+    var cityZ = cityAltitudeZ();
+    try {
+      var phys = G.SNGlobe && typeof SNGlobe.getPhysics === 'function' ? SNGlobe.getPhysics() : null;
+      if (phys) {
+        phys.tZ = cityZ;
+        phys.vZ = 0;
+      }
+    } catch (_) {}
+    try {
+      var cam = G.SNGlobe && typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.position && +cam.position.z > cityZ + 0.04) {
+        if (typeof SNGlobe.goToTier === 'function') SNGlobe.goToTier('city');
+      }
+    } catch (_) {}
+    hideLeaflet();
+    markConsume();
+  }
+
+  async function waitCityAltitude(ms) {
+    var limit = typeof ms === 'number' && ms > 0 ? ms : 1100;
+    var t0 = Date.now();
+    var cityZ = cityAltitudeZ();
+    while (Date.now() - t0 < limit) {
+      if (cameraZ() <= cityZ + 0.14) return true;
+      await sleep(50);
+    }
+    return cameraZ() <= 2.2;
+  }
+
+  /**
+   * After a successful electronics hunt: settle lat/lng with the same
+   * probe-sign flyGlobeTo as #127 pizza ("show rhodes" → ~36.41, 28.10)
+   * then drop to CITY altitude so shops get distinct screen positions.
+   * Never call this on an empty hunt (SA stays put).
+   */
+  async function flyToIslandCity(origin) {
+    var lat = origin && isFinite(origin.lat) ? +origin.lat : RHODES.lat;
+    var lng = origin && isFinite(origin.lng) ? +origin.lng : RHODES.lng;
+    if (inRhodes(lat, lng)) {
+      lat = RHODES.lat;
+      lng = RHODES.lng;
+    }
+    attachFlyHelper();
+    var fly = getFly();
+    try {
+      await fly(lat, lng, inRhodes(lat, lng) ? 'Rhodes' : '');
+    } catch (_) {}
+    dropToCityAltitude();
+    await waitCityAltitude(1100);
+    callZeroInertia();
+    try {
+      paintGlobe();
+    } catch (_) {}
+    try {
+      var earth = G.SNGlobe && typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      if (earth && earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+    } catch (_) {}
+  }
+
   function isCityRhodesLine(m) {
     var s = String(m || '');
     if (!s) return false;
@@ -962,6 +1078,7 @@
         var prevLog = SNCli.log.bind(SNCli);
         SNCli.log = function (m, c, force) {
           var s = String(m || '');
+          if (/^Hunt failed/i.test(s)) return prevLog(s, c || 'ok', true);
           if (FAKE_OPS_RE.test(s)) return;
           if (globeOnly() && POI_DUMP_RE.test(s)) return;
           if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) return;
@@ -1059,6 +1176,7 @@
     lastPins = [];
     pinMeshes = [];
     lastWorldDistinct = false;
+    lastOverlayPoints = [];
     stopOverlayRaf();
     clearEarthPins();
     clearPinOverlayDom();
@@ -1249,8 +1367,50 @@
     return Math.hypot(maxL - minL, maxT - minT);
   }
 
+  /**
+   * #127 pin-spread: world lat/lng stay honest; if two projected points
+   * sit less than 20px apart, walk the later pin out on a small golden
+   * spiral so each overlay button is hittable.
+   */
+  function spiralSpread(points, minPx) {
+    minPx = minPx || 20;
+    if (!points || points.length < 2) return points;
+    var GOLD = Math.PI * (3 - Math.sqrt(5));
+    var i;
+    for (i = 0; i < points.length; i++) {
+      if (!points[i] || !isFinite(points[i].left)) continue;
+      if (points[i].baseLeft == null) {
+        points[i].baseLeft = points[i].left;
+        points[i].baseTop = points[i].top;
+      }
+    }
+    for (i = 0; i < points.length; i++) {
+      if (!points[i] || !isFinite(points[i].left)) continue;
+      var tries = 0;
+      while (tries < 28) {
+        var clash = false;
+        var j;
+        for (j = 0; j < i; j++) {
+          if (!points[j] || !isFinite(points[j].left)) continue;
+          var d = Math.hypot(points[i].left - points[j].left, points[i].top - points[j].top);
+          if (d < minPx) {
+            clash = true;
+            break;
+          }
+        }
+        if (!clash) break;
+        tries++;
+        var r = minPx * (0.65 + tries * 0.42);
+        var a = tries * GOLD - Math.PI / 2;
+        points[i].left = points[i].baseLeft + Math.cos(a) * r;
+        points[i].top = points[i].baseTop + Math.sin(a) * r;
+      }
+    }
+    return points;
+  }
+
   function overlayZ() {
-    var z = 160;
+    var z = 220;
     try {
       var dock = document.getElementById('dock');
       var panel = document.getElementById('panel');
@@ -1260,7 +1420,7 @@
         var v = parseInt(window.getComputedStyle(el).zIndex, 10);
         return isFinite(v) ? v : 0;
       }
-      z = Math.max(z, readZ(dock) + 20, readZ(panel) + 20, readZ(top) + 20);
+      z = Math.max(z, readZ(dock) + 40, readZ(panel) + 40, readZ(top) + 40);
     } catch (_) {}
     return z;
   }
@@ -1276,13 +1436,14 @@
       } catch (_) {}
     }
     el.setAttribute('data-sn-build', BUILD);
+    var z = overlayZ();
     el.style.cssText =
-      'position:fixed;inset:0;left:0;top:0;width:100%;height:100%;overflow:visible;' +
-      'pointer-events:none;z-index:' +
-      overlayZ() +
+      'position:fixed;left:0;top:0;width:0;height:0;overflow:visible;' +
+      'pointer-events:auto;z-index:' +
+      z +
       ';margin:0;padding:0;border:0;';
-    el.style.setProperty('pointer-events', 'none', 'important');
-    el.style.setProperty('z-index', String(overlayZ()), 'important');
+    el.style.setProperty('pointer-events', 'auto', 'important');
+    el.style.setProperty('z-index', String(z), 'important');
     return el;
   }
 
@@ -1308,6 +1469,7 @@
     lastWorldDistinct =
       maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
     if (!lastPins.length) {
+      lastOverlayPoints = [];
       clearPinOverlayDom();
       return;
     }
@@ -1321,17 +1483,22 @@
       points.push({
         left: proj.left,
         top: proj.top,
+        baseLeft: proj.left,
+        baseTop: proj.top,
         pin: pin,
         idx: i,
         color: i === 0 ? PIN_COLOR_A : PIN_COLOR_B,
       });
     }
+    spiralSpread(points, 20);
+    lastOverlayPoints = points;
     lastOverlaySpread = cssSpreadOf(points);
     var root = pinOverlayEl();
     if (!root) return;
+    var z = overlayZ();
     root.style.display = points.length ? 'block' : 'none';
-    root.style.setProperty('pointer-events', 'none', 'important');
-    root.style.setProperty('z-index', String(overlayZ()), 'important');
+    root.style.setProperty('pointer-events', 'auto', 'important');
+    root.style.setProperty('z-index', String(z), 'important');
 
     var existing = root.querySelectorAll('button[data-sn-laptop-pin]');
     if (existing.length === points.length && points.length > 0) {
@@ -1340,6 +1507,7 @@
         existing[i].style.top = (points[i].top - 14).toFixed(1) + 'px';
         existing[i].style.display = 'block';
         existing[i].style.setProperty('pointer-events', 'auto', 'important');
+        existing[i].style.setProperty('z-index', String(2 + i), 'important');
       }
       return;
     }
@@ -1361,12 +1529,13 @@
           'px;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:' +
           hexColor(pt.color, pt.idx === 0 ? '#7ee9ff' : '#b48eff') +
           ';pointer-events:auto;cursor:pointer;padding:0;margin:0;' +
-          'box-shadow:0 0 12px rgba(126,233,255,.95);z-index:2;';
+          'box-shadow:0 0 12px rgba(126,233,255,.95);z-index:' +
+          (2 + pt.idx) +
+          ';';
         btn.style.setProperty('pointer-events', 'auto', 'important');
         function onPinTap(ev) {
           consumePointer(ev);
           var row = lastPins[pt.idx] || pt.pin;
-          if (ev.type === 'pointerup' || ev.type === 'click') return;
           announceVendor(row);
         }
         btn.addEventListener('pointerdown', onPinTap, true);
@@ -1430,7 +1599,7 @@
       SNGlobe.diveInAt = function (lat, lng) {
         try {
           if (G.SNGlobe && G.SNGlobe.consumeClick) return false;
-          if (lastPins.length && Date.now() < suppressPoiUntil) return false;
+          if (lastPins.length) return false;
         } catch (_) {}
         return prev(lat, lng);
       };
@@ -1443,7 +1612,7 @@
       SNGlobe.goToPlace = function (lat, lng, opts) {
         try {
           if (G.SNGlobe && G.SNGlobe.consumeClick) return false;
-          if (lastPins.length && Date.now() < suppressPoiUntil) return false;
+          if (lastPins.length) return false;
         } catch (_) {}
         return prevGo(lat, lng, opts);
       };
@@ -1542,14 +1711,27 @@
     var best = null;
     var bestD = PIN_HIT_PX;
     var i;
+    var pts = lastOverlayPoints && lastOverlayPoints.length ? lastOverlayPoints : null;
+    if (pts) {
+      for (i = 0; i < pts.length; i++) {
+        var p = pts[i];
+        if (!p || !isFinite(p.left)) continue;
+        var d = Math.hypot(cx - p.left, cy - p.top);
+        if (d <= bestD) {
+          bestD = d;
+          best = p.pin || (isFinite(p.idx) ? lastPins[p.idx] : null);
+        }
+      }
+      return best;
+    }
     for (i = 0; i < lastPins.length; i++) {
       var pin = lastPins[i];
       if (!pin || pin.lat == null) continue;
       var proj = projectPin(pin.lat, pin.lng);
       if (!proj) continue;
-      var d = Math.hypot(cx - proj.left, cy - proj.top);
-      if (d <= bestD) {
-        bestD = d;
+      var d2 = Math.hypot(cx - proj.left, cy - proj.top);
+      if (d2 <= bestD) {
+        bestD = d2;
         best = pin;
       }
     }
@@ -1597,8 +1779,8 @@
     hideLeaflet();
     var kmBit =
       hit.km != null && isFinite(hit.km) ? ' · ' + Number(hit.km).toFixed(1) + 'km' : '';
-    log('Shop · ' + String(hit.name || 'vendor').slice(0, 36) + kmBit + ' · ' + starLabel(hit), 'ok');
-    preview(String(hit.name || 'shop').slice(0, 40) + ' · ' + starLabel(hit));
+    log('Shop · ' + String(hit.name || 'vendor').slice(0, 36) + kmBit + ' · ⭐', 'ok');
+    preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
   }
 
   function installOverlayTap() {
@@ -1623,7 +1805,7 @@
       if (!hit) hit = hitPinAtCss(ev.clientX, ev.clientY);
       if (!hit) return;
       consumePointer(ev);
-      if (ev.type === 'pointerdown') announceVendor(hit);
+      announceVendor(hit);
     }
     document.addEventListener('pointerdown', onDocPtr, true);
     document.addEventListener('pointerup', onDocPtr, true);
@@ -1918,7 +2100,7 @@
 
   function listInCli(rows, origin) {
     if (!rows || !rows.length) {
-      log('Hunt failed · no electronics shops near view', 'dim');
+      paintCliLine('Hunt failed', 'ok');
       return;
     }
     var scored = rows
@@ -1935,7 +2117,7 @@
       })
       .slice(0, 10);
     if (!scored.length) {
-      log('Hunt failed · no electronics shops near view', 'dim');
+      paintCliLine('Hunt failed', 'ok');
       return;
     }
     var place = origin ? placeOf(origin.lat, origin.lng) : null;
@@ -1971,8 +2153,16 @@
   function failHunt(msg) {
     huntFailed = true;
     clearLaptopPins();
-    log(msg || 'Hunt failed', 'dim');
+    paintCliLine('Hunt failed', 'ok');
     preview('Hunt failed');
+    try {
+      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
+    } catch (_) {}
+    if (msg && String(msg) !== 'Hunt failed' && !/map search failed/i.test(String(msg))) {
+      try {
+        if (G.SNCli && SNCli.preview) SNCli.preview(String(msg).slice(0, 90));
+      } catch (_) {}
+    }
   }
 
   async function huntAt(origin, raw) {
@@ -2014,16 +2204,13 @@
     }
 
     if (!use.length) {
-      if (origin.source === 'you' && hasSessionLocate()) {
-        failHunt('Hunt failed · no electronics shops in 16 km');
-      } else {
-        failHunt('Hunt failed · no electronics shops near view · type Locate once');
-        askedLocate = true;
-      }
+      failHunt('Hunt failed');
+      askedLocate = !(origin.source === 'you' && hasSessionLocate());
       return true;
     }
 
     await waitGlobeReady(1800);
+    await flyToIslandCity(origin);
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
 
