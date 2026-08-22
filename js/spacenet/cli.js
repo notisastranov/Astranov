@@ -1012,7 +1012,7 @@
   function isOsCommand(raw) {
     var s = String(raw || '').trim();
     if (!s) return false;
-    return /^(locate|fly|go|pizza|order|poly|polygon|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?|village|kalithea|kallithea|marina|boot|diag|diagnostics|repair|plans?|subscribe|donate|power|helper|hard boot|clear cache|enter|youtube|yt|watch|skin)\b/i.test(
+    return /^(locate|fly|go|pizza|order|poly|polygon|layers|call|login|wallet|help|hud|quiet|prefs?|scenarios?|village|kalithea|kallithea|marina|boot|diag|diagnostics|repair|plans?|subscribe|donate|power|helper|hard boot|clear cache|enter|youtube|yt|watch|skin|shape|reshape|evolve|live|fluid)\b/i.test(
       s
     );
   }
@@ -1155,6 +1155,12 @@
     } catch (_) {}
     try {
       if (global.SNVillage && SNVillage.handleLine && SNVillage.handleLine(line)) return true;
+    } catch (_) {}
+    try {
+      if (global.SNFluid && SNFluid.isWish && SNFluid.isWish(line)) {
+        await SNFluid.wish(line);
+        return true;
+      }
     } catch (_) {}
     try {
       if (looksLikeTalk(line)) {
@@ -1433,6 +1439,10 @@
       }
       if (low === 'live now' || low === 'live apply' || low === 'fluid now') {
         if (global.SNFluid && SNFluid.pull) await SNFluid.pull({ speak: true, force: true });
+        return;
+      }
+      if (global.SNFluid && SNFluid.isWish && SNFluid.isWish(line)) {
+        await SNFluid.wish(line);
         return;
       }
       if (low === 'spacexai' || low === 'flight' || low === 'fly mode') {
@@ -4918,6 +4928,8 @@ if (
         } catch (_) {}
         if (unitMind && global.SNHelper && typeof SNHelper.askMind === 'function') {
           await SNHelper.askMind(t);
+        } else if (global.SNFluid && SNFluid.isWish && SNFluid.isWish(t)) {
+          await SNFluid.wish(t);
         } else if (looksLikeTalk(t) || /\?$/.test(t) || /^(what|who|why|how|when)\b/i.test(t)) {
           await talkToMind(t);
         } else {
