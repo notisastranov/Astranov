@@ -1,11 +1,11 @@
-/* Astranov chrome-fix loader · 20260822153400-no-coach
+/* Astranov chrome-fix loader · 20260822161000-hud-law
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822161000-verify';
-  var TOP_PH = 'Heads up display command line interface';
-  var BOT_PH = 'command line interface';
+  var BUILD = '20260822161000-hud-law';
+  var TOP_PH = 'Command the HUD · show, hide, or reshape';
+  var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
@@ -27,10 +27,10 @@
       }
       var log = document.getElementById('cli-log');
       if (log) {
-        if (/SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW|Command the HUD|type what|Talk ·|Locate ·/i.test(log.textContent || '')) {
+        if (/SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·/i.test(log.textContent || '')) {
           var bad = log.querySelectorAll('.sn-log-line, .cli-feed-item, div, span');
           for (var i = 0; i < bad.length; i++) {
-            if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW|Command the HUD|type what|Talk ·|Locate ·/i.test(bad[i].textContent || '')) {
+            if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·/i.test(bad[i].textContent || '')) {
               try { bad[i].remove(); } catch (_) {}
             }
           }
