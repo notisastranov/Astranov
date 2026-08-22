@@ -256,7 +256,7 @@
   function fitRenderer() {
     if (!G.renderer || !G.camera) return;
     var s = viewSize();
-    var cap = (global.SNPerf && SNPerf.dprCap) || (G._lite ? 1.15 : 2);
+    var cap = (global.SNPerf && SNPerf.dprCap) || (G._lite ? 2 : 2);
     G.camera.aspect = s.w / Math.max(1, s.h);
     G.camera.updateProjectionMatrix();
     try {
@@ -298,6 +298,10 @@
       if (sum > 90 && mx > 40) {
         c.style.opacity = '1';
         G._webglShown = true;
+        try {
+          var fb = document.getElementById('sn-earth-fallback');
+          if (fb && fb.parentNode) fb.parentNode.removeChild(fb);
+        } catch (_) {}
       } else {
         c.style.opacity = '0';
         if (G._born && Date.now() - G._born > 1800) G._webglDead = true;
@@ -1504,9 +1508,9 @@
       stencil: false,
       depth: true,
       failIfMajorPerformanceCaveat: false,
-      preserveDrawingBuffer: !!lite,
+      preserveDrawingBuffer: false,
     });
-    try { G.renderer.setClearColor(lite ? 0x000000 : 0x000000, lite ? 0 : 1); } catch (_) {}
+    try { G.renderer.setClearColor(0x000000, 1); } catch (_) {}
     if (!lite) {
       try {
         if (THREE.sRGBEncoding) G.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -1535,7 +1539,7 @@
     el.appendChild(G.renderer.domElement);
     try {
       G.renderer.domElement.style.zIndex = '2';
-      if (lite) G.renderer.domElement.style.opacity = '0';
+      G.renderer.domElement.style.opacity = '1';
     } catch (_) {}
     fitRenderer();
     try {
