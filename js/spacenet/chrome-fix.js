@@ -1,11 +1,11 @@
-/* Astranov chrome-fix loader · 20260822161000-hud-law
+/* Astranov chrome-fix loader · 20260822170500-hud-law
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822170000-phoneos';
-  var TOP_PH = 'Heads up display command line interface';
-  var BOT_PH = 'command line interface';
+  var BUILD = '20260822170500-hud-law';
+  var TOP_PH = 'Command the HUD · show, hide, or reshape';
+  var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
