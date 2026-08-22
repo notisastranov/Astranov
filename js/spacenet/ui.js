@@ -161,17 +161,15 @@
       panel.style.setProperty('min-height', '0', 'important');
       panel.style.setProperty('max-height', 'none', 'important');
       law.textContent =
-        '#panel.collapsed{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:10px 44px auto auto!important}';
+        '#panel.collapsed{height:auto!important;min-height:0!important;max-height:none!important;grid-template-rows:10px 44px 0 auto!important}';
     } else {
       panel.style.setProperty('max-height', px + 'px', 'important');
-      panel.style.setProperty('height', px + 'px', 'important');
-      panel.style.setProperty('min-height', Math.min(px, 120) + 'px', 'important');
+      panel.style.setProperty('height', 'auto', 'important');
+      panel.style.setProperty('min-height', '0', 'important');
       law.textContent =
         'html body #dock #panel.mid,html body #dock #panel.expanded{max-height:' +
         px +
-        'px !important;height:' +
-        px +
-        'px !important;}' +
+        'px !important;height:auto !important;min-height:0!important;}' +
         'html body #dock{top:auto !important;bottom:0 !important;justify-content:center !important;align-items:flex-end !important;}';
       try {
         document.head.appendChild(law);
@@ -214,7 +212,7 @@
     panel.style.width = '';
     panel.style.maxHeight = '';
     panel.style.height = '';
-    setSize('mid', true);
+    setSize('collapsed', false);
     try {
       global.SNTile?.close?.();
     } catch (_) {}
@@ -623,8 +621,7 @@
     // Focus expands mid so field is usable, without fighting grab
     $('cli-in') &&
       $('cli-in').addEventListener('focus', function () {
-        var p = $('panel');
-        if (p && p.classList.contains('collapsed')) setSize('mid', true);
+        /* stay collapsed until there is a real log */
       });
     $('btn-expand') &&
       $('btn-expand').addEventListener('click', function () {

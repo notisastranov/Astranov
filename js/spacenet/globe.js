@@ -515,7 +515,7 @@
       action: cell,
       cell: cell,
       step: i,
-      openMap: cell === 'city',
+      openMap: cell === 'street',
       same: true,
       hint: cell.toUpperCase(),
     };
@@ -1303,12 +1303,11 @@
         '  vec3 dayC = texture2D(dayMap, vUv).rgb;',
         '  vec3 nightC = texture2D(nightMap, vUv).rgb;',
         '  // City lights on night side; mute day texture in dark',
-        '  vec3 nightLit = nightC * 1.15 + vec3(0.01, 0.02, 0.04);',
-        '  vec3 dayLit = dayC * (0.55 + 0.55 * max(d, 0.0));',
+        '  vec3 nightLit = nightC * 2.2 + vec3(0.02, 0.06, 0.12);',
+        '  vec3 dayLit = dayC * (0.42 + 0.68 * max(d, 0.0));',
         '  vec3 col = mix(nightLit, dayLit, blend);',
-        '  // Soft terminator glow',
-        '  float term = exp(-pow(d * 8.0, 2.0)) * 0.12;',
-        '  col += vec3(0.2, 0.45, 0.9) * term;',
+        '  float term = exp(-pow(d * 6.0, 2.0)) * 0.28;',
+        '  col += vec3(0.05, 0.62, 0.98) * term;',
         '  gl_FragColor = vec4(col, 1.0);',
         '}',
       ].join('\n'),
@@ -1704,9 +1703,9 @@
       new THREE.Mesh(
         new THREE.SphereGeometry(1.045, lite ? Math.max(24, segs - 8) : segs, lite ? Math.max(24, segs - 8) : segs),
         new THREE.MeshBasicMaterial({
-          color: 0x4a9fff,
+          color: 0x14c3f3,
           transparent: true,
-          opacity: 0.12,
+          opacity: 0.22,
           side: THREE.BackSide,
         })
       )
@@ -2471,7 +2470,7 @@
     G.velY = 0;
 
     // Street map is the city zoom-in — shops, orders, delivery live here
-    var wantMap = cell === 'city';
+    var wantMap = cell === 'street';
     var ok = goToPlace(lat, lng, {
       tier: wantMap ? 'city' : cell,
       openMap: wantMap,
@@ -2867,7 +2866,7 @@
     var t = TIERS[key] || TIERS.global;
     G.diveTier = key in TIERS ? key : 'global';
     syncDiveStepFromTier(G.diveTier);
-    if (key !== 'city' && key !== 'street' && key !== 'local') {
+    if (key !== 'street' && key !== 'local') {
       try {
         if (global.SNMap && SNMap.close) SNMap.close();
       } catch (_) {}
@@ -2884,11 +2883,11 @@
     setTierLabel();
     syncSpaceLayerVis();
     G.tier = G.diveTier;
-    if (key === 'city' || key === 'street' || key === 'local') {
+    if (key === 'street' || key === 'local') {
       try {
         var lookC = viewLatLng() || focusPos() || G.diveAnchor;
         if (lookC && lookC.lat != null && global.SNMap && SNMap.open) {
-          void SNMap.open(lookC.lat, lookC.lng, { force: true, zoom: 14, fromLook: true });
+          void SNMap.open(lookC.lat, lookC.lng, { force: true, zoom: 15, fromLook: true });
         }
       } catch (_) {}
     }
@@ -2992,12 +2991,12 @@
             }
             try {
               goToPlace(row.lat, row.lng, {
-                tier: 'city',
+                tier: 'regional',
                 pulse: true,
-                color: row.fallback ? 0xffc83d : 0x3d9eff,
+                color: row.fallback ? 0xffc83d : 0x14c3f3,
                 label: row.fallback ? (row.source === 'ip' ? 'You (approx)' : 'You (soft)') : 'You',
                 skipScan: false,
-                openMap: true,
+                openMap: false,
               });
             } catch (_) {}
             resolve({
@@ -3022,12 +3021,12 @@
         }
         try {
           goToPlace(lat, lng, {
-            tier: 'city',
+            tier: 'regional',
             pulse: true,
-            color: fallback ? 0xffc83d : 0x3d9eff,
+            color: fallback ? 0xffc83d : 0x14c3f3,
             label: fallback ? 'You (soft)' : 'You',
             skipScan: false,
-            openMap: true,
+            openMap: false,
           });
         } catch (_) {}
         resolve({

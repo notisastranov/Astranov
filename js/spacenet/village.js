@@ -188,19 +188,9 @@
 
   function ensureMapThenPaint() {
     try {
-      if (global.SNMap && typeof SNMap.open === 'function') {
-        var p = SNMap.open();
-        if (p && typeof p.then === 'function') {
-          p.then(function () {
-            setTimeout(paintMap, 400);
-          }).catch(function () {
-            setTimeout(paintMap, 600);
-          });
-          return;
-        }
-      }
+      if (!(global.SNMap && SNMap.active)) return;
+      setTimeout(paintMap, 300);
     } catch (_) {}
-    setTimeout(paintMap, 500);
   }
 
   function pulseGlobe() {
@@ -214,16 +204,17 @@
   }
 
   function fly(tier) {
-    tier = tier || 'city';
+    tier = tier || 'regional';
+    var streets = /street|map|shops/.test(String(tier));
     try {
       if (global.SNGlobe && SNGlobe.goToPlace) {
         SNGlobe.goToPlace(HQ.lat, HQ.lng, {
-          tier: tier,
+          tier: streets ? 'city' : tier,
           pulse: true,
           color: 0x14c3f3,
           label: HQ.short,
           ms: 24000,
-          openMap: true,
+          openMap: !!streets,
           body: 'earth',
         });
       }
@@ -241,7 +232,7 @@
     log('ASTRANOV · Kalithea Sustainable Village · 36.387557°N 28.222533°E');
     log('Lake · ' + ISLANDS.length + ' islets · ' + OLIVES.length + ' olive trees');
     pulseGlobe();
-    ensureMapThenPaint();
+    if (streets) ensureMapThenPaint();
     return true;
   }
 

@@ -410,8 +410,9 @@
     var w = window.innerWidth || 360;
     var h = window.innerHeight || 640;
     // upper-right safe perch — full body stays in frame under top chrome
-    H.tx = Math.min(w * 0.88, w - 56);
-    H.ty = Math.max(Math.min(h * 0.22, h - 80), 108);
+    H.tx = Math.min(w * 0.84, w - 48);
+    H.ty = Math.max(h * 0.52, 160);
+    H.ty = Math.min(H.ty, h - 170);
     if (!H.forceVisible && Date.now() > (H.showcaseUntil || 0)) {
       H.x = H.tx;
       H.y = H.ty;
@@ -1049,7 +1050,7 @@
       ctx.translate(H.x, H.y);
       ctx.rotate(H.angle * 0.24);
       var breath = 1 + Math.sin(now * 0.0045) * 0.04;
-      var parkScale = H.parkMode && !H.busy ? 0.5 : 0.78;
+      var parkScale = H.parkMode && !H.busy ? 0.36 : 0.62;
       var scale = (H.busy ? 1.04 : 1) * H.scale * breath * parkScale;
       if (H.boost > 0.6) scale *= 1.03;
       var bw = 52 * scale;
@@ -1128,36 +1129,33 @@
       ctx.restore();
     }
 
-    // Gaming label plate — deep neon blue edge
-    ctx.save();
-    ctx.font = '700 12px "Space Grotesk",system-ui,sans-serif';
-    var text = H.label || 'UNIT';
-    var tw = ctx.measureText(text).width;
-    var lx = H.x - tw / 2 - 14;
-    var ly = H.y + 46 * (H.parkMode && !H.busy ? 0.95 : 1.0);
-    ctx.shadowColor = 'rgba(0,120,255,0.65)';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = 'rgba(0,10,32,0.88)';
-    ctx.strokeStyle = 'rgba(70,160,255,0.85)';
-    ctx.lineWidth = 1.4;
-    if (ctx.roundRect) {
-      ctx.beginPath();
-      ctx.roundRect(lx, ly, tw + 28, 22, 11);
-      ctx.fill();
-      ctx.stroke();
-    } else {
-      ctx.fillRect(lx, ly, tw + 28, 22);
-      ctx.strokeRect(lx, ly, tw + 28, 22);
+    // Gaming label plate — only while on a job
+    if (!(H.parkMode && !H.busy)) {
+      ctx.save();
+      ctx.font = '700 12px "Space Grotesk",system-ui,sans-serif';
+      var text = H.label || 'UNIT';
+      var tw = ctx.measureText(text).width;
+      var lx = H.x - tw / 2 - 14;
+      var ly = H.y + 46;
+      ctx.shadowColor = 'rgba(0,120,255,0.65)';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = 'rgba(0,10,32,0.88)';
+      ctx.strokeStyle = 'rgba(70,160,255,0.85)';
+      ctx.lineWidth = 1.4;
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(lx, ly, tw + 28, 22, 11);
+        ctx.fill();
+        ctx.stroke();
+      } else {
+        ctx.fillRect(lx, ly, tw + 28, 22);
+        ctx.strokeRect(lx, ly, tw + 28, 22);
+      }
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#dceeff';
+      ctx.fillText(text, H.x - tw / 2, ly + 15);
+      ctx.restore();
     }
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#dceeff';
-    ctx.fillText(text, H.x - tw / 2, ly + 15);
-    if (H.status && H.status !== 'idle' && H.status !== 'parked') {
-      ctx.font = '600 10px system-ui,sans-serif';
-      ctx.fillStyle = 'rgba(120,200,255,0.95)';
-      ctx.fillText(String(H.status).toUpperCase(), H.x - 34, ly + 36);
-    }
-    ctx.restore();
   }
 
   function init(opts) {
@@ -1173,8 +1171,8 @@
     }
     // Lean default: load sprites only when first mission needs them
     H.autoWake = opts.autoWake !== false;
-    H.x = (window.innerWidth || 400) * 0.72;
-    H.y = (window.innerHeight || 700) * 0.26;
+    H.x = (window.innerWidth || 400) * 0.82;
+    H.y = (window.innerHeight || 700) * 0.55;
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
@@ -1187,7 +1185,6 @@
       ensureCanvas();
       bindHit();
       parkAtMoon();
-      wake({ force: true, label: 'UNIT · SILVER WINGS', showcaseMs: 16000 });
     } catch (_) {}
     // Rare visibility sync only when something is running
     try {

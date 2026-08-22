@@ -128,6 +128,26 @@
       '  box-shadow: 0 0 14px #1c8cff, 0 0 4px #7ec8ff !important;',
       '  border-color: #7ec8ff !important;',
       '}',
+      /* HOME = globe. Street map is a zoom-in, never the first screen. */
+      'body:not(.city-map-on):not(.sn-order-live) #city-map,',
+      'body:not(.city-map-on):not(.sn-order-live) #city-map.active {',
+      '  display: none !important; opacity: 0 !important; pointer-events: none !important; z-index: 0 !important;',
+      '}',
+      'body:not(.city-map-on) #globe, #globe {',
+      '  visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;',
+      '}',
+      'body:not(.city-map-on) #globe.city-hidden { visibility: visible !important; pointer-events: auto !important; }',
+      '.leaflet-control-attribution { display: none !important; }',
+      'body.city-map-on .leaflet-control-attribution { display: block !important; }',
+      '#sn-topchrome-panel, #sn-topchrome-panel.collapsed {',
+      '  height: auto !important; max-height: 128px !important; min-height: 0 !important;',
+      '}',
+      '#stc-body { min-height: 0 !important; height: auto !important; }',
+      '#cli-log:not(:has(.cli-feed-item)), #cli-log:has(#cli-feed-search-hint:only-child) {',
+      '  display: none !important; height: 0 !important; min-height: 0 !important; padding: 0 !important;',
+      '}',
+      '#sn-helper-canvas { z-index: 45 !important; pointer-events: none !important; }',
+      '#sn-helper-hit { width: 52px !important; height: 64px !important; z-index: 46 !important; }',
     ].join('\n');
     document.head.appendChild(css);
   }

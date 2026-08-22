@@ -3,9 +3,9 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822161000-hud-law';
-  var TOP_PH = 'Command the HUD · show, hide, or reshape';
-  var BOT_PH = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260822164000-earth';
+  var TOP_PH = 'Heads up display command line interface';
+  var BOT_PH = 'command line interface';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
@@ -79,19 +79,47 @@
     s.setAttribute('data-sn-p0-ops', '1');
     document.head.appendChild(s);
   }
+  function earthHome() {
+    try {
+      if (document.body.classList.contains('sn-order-live')) return;
+      var globe = document.getElementById('globe');
+      if (globe) {
+        globe.classList.remove('city-hidden');
+        globe.style.visibility = 'visible';
+        globe.style.opacity = '1';
+      }
+      var top = document.getElementById('sn-topchrome-panel');
+      if (top && !top.classList.contains('expanded')) {
+        top.style.setProperty('max-height', '128px', 'important');
+        top.style.setProperty('height', 'auto', 'important');
+      }
+      var panel = document.getElementById('panel');
+      if (panel && panel.classList.contains('collapsed')) {
+        panel.style.setProperty('height', 'auto', 'important');
+        panel.style.setProperty('min-height', '0', 'important');
+      }
+    } catch (_) {}
+  }
   function afterGood() {
     loadFace();
     loadOps();
     enforceHud();
+    earthHome();
   }
   load('/js/spacenet/chrome-fix-body.js?v=' + BUILD, afterGood);
   setTimeout(afterGood, 1200);
   setTimeout(loadOps, 2500);
+  setTimeout(earthHome, 1800);
+  setTimeout(earthHome, 4000);
   setInterval(enforceHud, 3500);
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', enforceHud);
+    document.addEventListener('DOMContentLoaded', function () {
+      enforceHud();
+      earthHome();
+    });
   } else {
     enforceHud();
+    earthHome();
   }
-  global.SNChromeFixLoader = { build: BUILD, enforceHud: enforceHud };
+  global.SNChromeFixLoader = { build: BUILD, enforceHud: enforceHud, earthHome: earthHome };
 })(typeof window !== 'undefined' ? window : globalThis);
