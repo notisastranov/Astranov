@@ -1555,8 +1555,12 @@
       wrap.style.cssText =
         'position:fixed;inset:0;z-index:80;opacity:1;pointer-events:auto;background:#000;';
     }
-    if (globe) globe.classList.add('city-hidden');
+    if (globe) {
+      if (opts.keepGlobe || opts.split) globe.classList.remove('city-hidden');
+      else globe.classList.add('city-hidden');
+    }
     document.body.classList.add('city-map-on');
+    if (opts.split) document.body.classList.add('sn-order-live');
     const wasActive = M.active;
     M.active = true;
     // Recenter only if autopilot OR forced (user CLI / first open / locate)
@@ -1695,6 +1699,7 @@
     if (wrap) {
       wrap.classList.remove('active');
       wrap.setAttribute('aria-hidden', 'true');
+      wrap.style.cssText = '';
     }
     if (globe) globe.classList.remove('city-hidden');
     document.body.classList.remove('city-map-on');

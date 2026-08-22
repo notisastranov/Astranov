@@ -1820,7 +1820,7 @@
           });
         }
         if (orderResult && orderResult.ok) {
-          log('PAID · ' + fmt(orderResult.total) + ' · vault 3% · driver 15% on deliver', 'ok');
+          log('HOLD ⭐ · shop + driver paid on delivery confirm · vault 3% now', 'ok');
           try {
             if (global.SNAstranovMind && SNAstranovMind.teach) {
               SNAstranovMind.teach(
@@ -2035,7 +2035,7 @@
             waypoints: waypts,
             label: '🛵 ' + String(best.shopName || best.name || 'Shop').slice(0, 14),
             driver: (driver && driver.name) || 'Courier',
-            color: 'rgba(0,220,255,0.95)',
+            color: 'rgba(28,140,255,0.95)',
             etaMin: eta.totalMin,
           });
         } else if (global.SNField && SNField.showRoute) {
@@ -2046,6 +2046,24 @@
             osrm: true,
           });
         }
+        try {
+          if (global.SNMap && SNMap.open) {
+            await SNMap.open(pos.lat, pos.lng, { force: true, zoom: 14, split: true, keepGlobe: true });
+          }
+        } catch (_) {}
+        try {
+          if (global.SNStage && SNStage.order) {
+            SNStage.order(
+              { lat: best.lat, lng: best.lng, name: best.shopName || best.name },
+              { lat: pos.lat, lng: pos.lng, name: 'YOU' },
+              {
+                etaMin: eta.totalMin,
+                stage: driver ? 'EN ROUTE' : 'SEEKING DRIVER',
+                item: (menuItem && menuItem.name) || food,
+              }
+            );
+          }
+        } catch (_) {}
         if (global.SNMap && SNMap.markYou) SNMap.markYou(pos.lat, pos.lng, 'YOU · drop');
         if (global.SNMap && SNMap.showProfiles) SNMap.showProfiles();
         if (global.SNMap && SNMap.showTasks) SNMap.showTasks();

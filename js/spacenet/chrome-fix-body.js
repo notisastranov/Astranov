@@ -117,6 +117,11 @@
       '#city-map .leaflet-container { width:100% !important; height:100% !important; min-height:100% !important; background:#05080f !important; }',
       '#globe.city-hidden { visibility:hidden !important; pointer-events:none !important; }',
       'body.city-map-on #city-map { opacity:1 !important; pointer-events:auto !important; }',
+      'body.sn-order-live #globe { visibility:visible !important; pointer-events:auto !important; top:0 !important; height:42% !important; bottom:auto !important; }',
+      'body.sn-order-live #globe.city-hidden { visibility:visible !important; pointer-events:auto !important; }',
+      'body.sn-order-live #city-map, body.sn-order-live #city-map.active { top:42% !important; inset:auto 0 0 0 !important; height:58% !important; z-index:80 !important; opacity:1 !important; pointer-events:auto !important; }',
+      '#sn-order-hud { display:none; position:fixed; left:50%; top:42%; transform:translate(-50%,-110%); z-index:90; pointer-events:none; padding:6px 14px; border-radius:999px; font:700 12px/1.2 Inter,system-ui,sans-serif; letter-spacing:.06em; color:#eaf4ff; background:rgba(2,10,32,0.55); border:1px solid rgba(80,180,255,0.65); box-shadow:0 0 18px rgba(28,140,255,0.35), inset 0 0 12px rgba(20,80,220,0.2); text-shadow:0 0 8px #1c8cff; }',
+      'body.sn-order-live #sn-order-hud { display:block; }',
     ].join('\n');
     document.head.appendChild(css);
   }

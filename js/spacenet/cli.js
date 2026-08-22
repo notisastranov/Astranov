@@ -1874,17 +1874,33 @@
           const here =
             global._snPhysPos ||
             (global._snLastPos &&
-            !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos) &&
-            (global._snLastPos.real || global._snLastPos.source === 'gps')
+            !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos)
               ? global._snLastPos
               : null);
           if (wantOrder && (!here || here.lat == null)) {
-            log('I need your real place first. Tap Locate and Sign in with Google, then say pizza again.', 'ok');
             try {
-              if (global.SNAuth && SNAuth.openModal) SNAuth.openModal();
-              else if (global.SNAuth && SNAuth.open) SNAuth.open();
+              const pin = await gpsLocate({ allowIp: true, allowSoft: true });
+              if (pin && pin.lat != null && !isFakeDemoPin(pin.lat, pin.lng, pin)) {
+                commitRealGps(pin);
+              }
             } catch (_) {}
+          }
+          const here2 =
+            global._snPhysPos ||
+            (global._snLastPos &&
+            !isFakeDemoPin(global._snLastPos.lat, global._snLastPos.lng, global._snLastPos)
+              ? global._snLastPos
+              : here);
+          if (wantOrder && (!here2 || here2.lat == null)) {
+            log('I need your real place first. Tap locate, then say pizza again.', 'ok');
             return;
+          }
+          if (wantOrder && !(global.SNAuth && SNAuth.user)) {
+            log('Sign in with Google to pay. I still hunt the pizza now.', 'ok');
+            try {
+              if (global.SNAuth && SNAuth.signInGoogleGis) void SNAuth.signInGoogleGis();
+              else if (global.SNAuth && SNAuth.openModal) SNAuth.openModal();
+            } catch (_) {}
           }
           activity(
             (wantOrder ? 'ordering ' : 'finding ') + (fi.food || 'food') + '…',

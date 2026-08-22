@@ -323,6 +323,50 @@
     });
   }
 
+  function order(shop, drop, opts) {
+    opts = opts || {};
+    if (!shop || shop.lat == null || !drop || drop.lat == null) return null;
+    shop.name = shop.name || 'SHOP';
+    drop.name = drop.name || 'YOU';
+    var eta = opts.etaMin != null ? Number(opts.etaMin) : null;
+    var stage = String(opts.stage || 'ORDER').toUpperCase();
+    var item = String(opts.item || 'order').slice(0, 22);
+    var arc = link(shop, drop, {
+      kind: 'order',
+      color: 0x1c8cff,
+      priority: 1,
+      fromFace: opts.shopFace || '',
+      toFace: myAvatar(),
+      faceColor: '#7ec8ff',
+    });
+    try {
+      document.body.classList.add('sn-order-live');
+    } catch (_) {}
+    var hud =
+      item +
+      ' · ' +
+      stage +
+      (eta && isFinite(eta) ? ' · ' + Math.max(1, Math.round(eta)) + ' min' : '');
+    try {
+      if (globe() && globe().setHud) globe().setHud(hud);
+    } catch (_) {}
+    try {
+      var chip = document.getElementById('sn-order-hud');
+      if (!chip) {
+        chip = document.createElement('div');
+        chip.id = 'sn-order-hud';
+        document.body.appendChild(chip);
+      }
+      chip.textContent = hud;
+      chip.setAttribute('data-stage', stage);
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.log)
+        SNCli.log('ARC · ' + shop.name + ' → YOU · ' + hud, 'ok', true);
+    } catch (_) {}
+    return arc;
+  }
+
   function research(hits, opts) {
     opts = opts || {};
     hits = (hits || []).filter(function (h) {
@@ -414,6 +458,7 @@
     init: init,
     link: link,
     call: call,
+    order: order,
     research: research,
     scan: scan,
     resolvePlace: resolvePlace,
