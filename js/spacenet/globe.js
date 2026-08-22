@@ -1152,14 +1152,24 @@
     if (lat == null || lng == null || !isFinite(lat) || !isFinite(lng)) return;
     G.focus = { lat: lat, lng: lng };
     global._snGlobeFocus = G.focus;
-    try {
-      global._snLastPos = { lat: lat, lng: lng };
-      if (global.SNTasks && SNTasks.setPos) SNTasks.setPos(lat, lng);
-    } catch (_) {}
   }
 
   function focusPos() {
-    return G.focus || global._snGlobeFocus || global._snLastPos || global.SNTasks?.pos || null;
+    return G.focus || global._snGlobeFocus || null;
+  }
+
+  /** Lat/lng under the camera — the land you are actually looking at. Never GPS. Never Athens. */
+  function viewLatLng() {
+    try {
+      if (!G.renderer || !G.renderer.domElement) return focusPos();
+      var r = G.renderer.domElement.getBoundingClientRect();
+      var ll = pickLatLng(r.left + r.width * 0.5, r.top + r.height * 0.5);
+      if (ll && ll.lat != null) {
+        setFocus(ll.lat, ll.lng);
+        return ll;
+      }
+    } catch (_) {}
+    return focusPos();
   }
 
   /**
@@ -1717,9 +1727,15 @@
     } catch (_) {}
     if (nz <= TIERS.city.z + 0.04) {
       try {
-        var f = focusPos() || G.diveAnchor || global._snLastPos;
-        if (f && f.lat != null && global.SNMap && SNMap.open && !SNMap.active) {
-          void SNMap.open(f.lat, f.lng, { force: true, zoom: 15 });
+        var look = viewLatLng();
+        if (
+          look &&
+          look.lat != null &&
+          global.SNMap &&
+          SNMap.open &&
+          !SNMap.active
+        ) {
+          void SNMap.open(look.lat, look.lng, { force: true, zoom: 14, fromLook: true });
         }
       } catch (_) {}
     }
@@ -2080,6 +2096,9 @@
       smVx = 0;
       smVy = 0;
       bakePivotEuler();
+      try {
+        viewLatLng();
+      } catch (_) {}
 
       // Single tap: planet/agent first, else dive. Never dive if the collective planet was hit.
       if (!wasDrag && !wasHold && !wasPinch && holdMs < 280) {
@@ -2633,9 +2652,9 @@
     G.tier = G.diveTier;
     if (key === 'city' || key === 'street' || key === 'local') {
       try {
-        var f = focusPos() || G.diveAnchor || global._snLastPos;
-        if (f && f.lat != null && global.SNMap && SNMap.open) {
-          void SNMap.open(f.lat, f.lng, { force: true, zoom: 15 });
+        var lookC = viewLatLng() || focusPos() || G.diveAnchor;
+        if (lookC && lookC.lat != null && global.SNMap && SNMap.open) {
+          void SNMap.open(lookC.lat, lookC.lng, { force: true, zoom: 14, fromLook: true });
         }
       } catch (_) {}
     }
@@ -2970,6 +2989,7 @@
     zoomOutOne: zoomOutOne,
     setBody: setBody,
     pickLatLng: pickLatLng,
+    viewLatLng: viewLatLng,
     setFocus: setFocus,
     focusPos: focusPos,
     setHud: setHud,

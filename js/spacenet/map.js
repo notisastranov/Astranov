@@ -1536,10 +1536,17 @@
     const force = opts.force === true;
     const map = await ensure();
     bindUserCameraLock(map);
+    const look =
+      (global.SNGlobe && SNGlobe.viewLatLng && SNGlobe.viewLatLng()) ||
+      (global.SNGlobe && SNGlobe.focusPos && SNGlobe.focusPos()) ||
+      null;
     const p = {
-      lat: lat != null ? lat : global.SNTasks?.pos?.lat || 36.43,
-      lng: lng != null ? lng : global.SNTasks?.pos?.lng || 28.22,
+      lat: lat != null ? Number(lat) : look && look.lat != null ? look.lat : null,
+      lng: lng != null ? Number(lng) : look && look.lng != null ? look.lng : null,
     };
+    if (p.lat == null || p.lng == null || !isFinite(p.lat) || !isFinite(p.lng)) {
+      return M.map;
+    }
     const wrap = document.getElementById('city-map');
     const globe = document.getElementById('globe');
     if (wrap) {
@@ -1800,8 +1807,13 @@
         return true;
       }
       if (!M.map && typeof self.open === 'function') {
-        var pin = global._snLastPos || global._snPhysPos || { lat: 37.9838, lng: 23.7275 };
-        return Promise.resolve(self.open(pin.lat, pin.lng))
+        var pin =
+          (global.SNGlobe && SNGlobe.viewLatLng && SNGlobe.viewLatLng()) ||
+          global._snGlobeFocus ||
+          global._snPhysPos ||
+          global._snLastPos;
+        if (!pin || pin.lat == null) return show();
+        return Promise.resolve(self.open(pin.lat, pin.lng, { force: true }))
           .then(show)
           .catch(show);
       }

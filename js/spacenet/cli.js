@@ -2860,19 +2860,21 @@
         return;
       }
       if (low === 'city' || low === 'city map' || low === 'streets' || low === 'street map') {
-        const p = Tasks?.pos || global._snLastPos || (Globe && Globe.focusPos && Globe.focusPos()) || { lat: 36.387557, lng: 28.222533 };
+        const look = (Globe && Globe.viewLatLng && Globe.viewLatLng()) || (Globe && Globe.focusPos && Globe.focusPos());
+        const p = look || Tasks?.pos || global._snPhysPos || global._snLastPos || { lat: 36.387557, lng: 28.222533 };
         try { Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', pulse: true, label: 'CITY', openMap: true }); } catch (_) {}
-        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 15 }); } catch (_) {}
+        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 14, fromLook: true }); } catch (_) {}
         try { if (global.SNCommerce && SNCommerce.ensureSector) await SNCommerce.ensureSector(p.lat, p.lng, { openMap: true }); } catch (_) {}
-        log('CITY · streets · shops on the map', 'ok');
+        log('CITY · ' + Number(p.lat).toFixed(3) + ', ' + Number(p.lng).toFixed(3) + ' · streets', 'ok');
         return;
       }
       if (low === 'shops' || low === 'vendors' || low === 'list shops') {
-        const p = Tasks?.pos || global._snLastPos || (Globe && Globe.focusPos && Globe.focusPos()) || { lat: 36.387557, lng: 28.222533 };
+        const look = (Globe && Globe.viewLatLng && Globe.viewLatLng()) || (Globe && Globe.focusPos && Globe.focusPos());
+        const p = look || Tasks?.pos || global._snPhysPos || global._snLastPos || { lat: 36.387557, lng: 28.222533 };
         try { Globe?.goToPlace?.(p.lat, p.lng, { tier: 'city', pulse: true, label: 'SHOPS', openMap: true }); } catch (_) {}
-        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 15 }); } catch (_) {}
+        try { await global.SNMap?.open?.(p.lat, p.lng, { force: true, zoom: 14, fromLook: true }); } catch (_) {}
         try { if (global.SNCommerce && SNCommerce.ensureSector) await SNCommerce.ensureSector(p.lat, p.lng, { openMap: true }); } catch (_) {}
-        log('SHOPS · city map · tap a pin to order', 'ok');
+        log('SHOPS · ' + Number(p.lat).toFixed(3) + ', ' + Number(p.lng).toFixed(3) + ' · tap a pin', 'ok');
         return;
       }
       // Surface layers panel / basemap / overlays
