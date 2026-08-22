@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822170000-restore-then-pulse
+ * Guest pizza hunt — Build 20260822155100-force-mesh-fly
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -16,6 +16,14 @@
  * FAIL 4: pins only after a real in-view hunt via SNGlobe.pulse + consumeClick.
  *         No grey placeholder glyphs on empty South America.
  *
+ * REAL SNGlobe API (production globe.js — do not invent):
+ *   flyNear(lat, lng, tierHint) — moves mesh via phys.tTilt / phys.tSpin; returns if G.dragging
+ *   goToPlace(lat, lng, {tier, openMap:false, skipScan:true, pulse:false}) → calls flyNear
+ *   setFocus(lat, lng)
+ *   viewLatLng() = pickLatLng of screen center (verification source of truth)
+ *   pulse(lat, lng, color, label, ms) requires SNGlobe.ready, returns mesh or null
+ *   setGlobeLatLng is internal — reimplemented via getTilt/getSpin when needed
+ *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
  *   - drops tap-able pulse pins on SNGlobe at each vendor lat/lng
@@ -31,7 +39,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822170000-restore-then-pulse';
+  var BUILD = '20260822155100-force-mesh-fly';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -482,7 +490,12 @@
     } catch (_) {}
   }
 
-  /** Force the visible Earth mesh / camera to lat,lng. Must actually move the globe. */
+  /**
+   * Force the visible Earth mesh / camera to lat,lng.
+   * Production path: flyNear sets phys.tTilt / phys.tSpin (the only thing that rotates the mesh).
+   * flyNear early-returns if G.dragging — so we also do an instant tilt/spin write via getTilt/getSpin
+   * (same math as internal setGlobeLatLng) so viewLatLng cannot stay on South America.
+   */
   function flyGlobeTo(lat, lng, label) {
     lat = +lat;
     lng = +lng;
@@ -493,41 +506,51 @@
     } catch (_) {}
     hideLeaflet();
 
-    var opts = {
-      tier: 'city',
-      body: 'earth',
-      pulse: false,
-      openMap: false,
-      skipScan: true,
-      label: label || '',
-    };
-
-    // Primary: goToPlace must move the MESH
+    // Instant mesh write (internal setGlobeLatLng equivalent). Bypasses dragging gate.
     try {
-      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
-        SNGlobe.goToPlace(lat, lng, opts);
+      if (G.SNGlobe) {
+        var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+        var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+        if (tilt && spin) {
+          var TILT_MAX = 1.05;
+          var x = (-lat * Math.PI) / 180;
+          var y = (-lng * Math.PI) / 180;
+          if (x > TILT_MAX) x = TILT_MAX;
+          if (x < -TILT_MAX) x = -TILT_MAX;
+          try {
+            tilt.rotation.set(x, 0, 0);
+            spin.rotation.set(0, y, 0);
+            if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
+            if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
+          } catch (_) {}
+        }
       }
     } catch (_) {}
 
-    // Fallbacks so the visible globe actually moves
+    // Primary: flyNear is what moves phys.tTilt / phys.tSpin
     try {
       if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
         SNGlobe.flyNear(lat, lng, 'city');
       }
     } catch (_) {}
+
+    // goToPlace → flyNear + setFocus + tier (openMap/skipScan forced for hunt)
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
+        SNGlobe.goToPlace(lat, lng, {
+          tier: 'city',
+          body: 'earth',
+          pulse: false,
+          openMap: false,
+          skipScan: true,
+          label: label || '',
+        });
+      }
+    } catch (_) {}
+
     try {
       if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') {
         SNGlobe.setFocus(lat, lng);
-      }
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.lookAt === 'function') {
-        SNGlobe.lookAt(lat, lng);
-      }
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.goTo === 'function') {
-        SNGlobe.goTo(lat, lng, opts);
       }
     } catch (_) {}
   }
@@ -967,8 +990,8 @@
   }
 
   /**
-   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via goToPlace,
-   * then pulse vendors. Exact log required.
+   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via flyNear + instant tilt/spin,
+   * then pulse vendors. Exact log required. viewLatLng must leave SA.
    */
   async function showRhodes(raw) {
     beginGlobeHunt();
@@ -986,10 +1009,11 @@
     log(String(raw || 'show rhodes').slice(0, 80), 'cmd');
     preferCameraUntil = Date.now() + 180000;
 
-    // Force mesh fly: wait ready → sequential goToPlace so the visible globe moves
     await waitGlobeReady(2200);
+
+    // Multi-fly so mesh actually rotates (flyNear can early-return while dragging)
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
-    await sleep(350);
+    await sleep(320);
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     await sleep(280);
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
@@ -998,7 +1022,26 @@
     log('Rhodes. globe camera. 36.44, 28.22', 'ok');
     preview('Rhodes · globe');
 
-    await sleep(400);
+    await sleep(450);
+
+    // Verify source of truth: viewLatLng must be near Rhodes, not SA
+    var look = null;
+    try {
+      if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') look = SNGlobe.viewLatLng();
+    } catch (_) {}
+    var stillSa =
+      !look ||
+      look.lat == null ||
+      (Math.abs(+look.lat - (-32.99)) < 8 && Math.abs(+look.lng - (-61.78)) < 12) ||
+      (Math.abs(+look.lat - RHODES.lat) > 12 || Math.abs(+look.lng - RHODES.lng) > 12);
+
+    if (stillSa) {
+      // Hard force again — instant tilt/spin + flyNear
+      flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+      await sleep(400);
+      flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    }
+
     // Final fly then hunt + pulse at camera origin
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
 
