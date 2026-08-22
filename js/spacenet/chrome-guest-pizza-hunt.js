@@ -842,155 +842,6 @@
     } catch (_) {}
   }
 
-  function liveEarthChain() {
-    var chain = [];
-    try {
-      if (!G.SNGlobe || typeof SNGlobe.getEarth !== 'function') return chain;
-      var n = SNGlobe.getEarth();
-      var hops = 0;
-      // Mesh + two Object3D parents; stop before Scene
-      while (n && hops < 3) {
-        if (nodeIsSceneOrCam(n)) break;
-        chain.push(n);
-        try {
-          n = n.parent;
-        } catch (_) {
-          n = null;
-        }
-        hops++;
-      }
-    } catch (_) {}
-    return chain;
-  }
-
-  function paintLiveChain(chain) {
-    chain = chain || liveEarthChain();
-    var i;
-    try {
-      var walk = walkEarthChain();
-      for (i = walk.nodes.length - 1; i >= 0; i--) {
-        try {
-          if (walk.nodes[i] && walk.nodes[i].updateMatrixWorld) walk.nodes[i].updateMatrixWorld(true);
-        } catch (_) {}
-      }
-    } catch (_) {}
-    for (i = chain.length - 1; i >= 0; i--) {
-      try {
-        if (chain[i] && chain[i].updateMatrixWorld) chain[i].updateMatrixWorld(true);
-      } catch (_) {}
-    }
-    try {
-      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
-      if (tilt && tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
-      if (spin && spin.updateMatrixWorld) spin.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
-      if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      var cam = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
-      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
-    } catch (_) {}
-    paintGlobe();
-  }
-
-  /**
-   * INCREMENTAL euler on the LIVE chain from getEarth()
-   * (the Mesh and its two Object3D parents).
-   * Same sign as globe.js setGlobeLatLng:
-   *   x += -dLat*PI/180, y += -dLng*PI/180
-   * NEVER write absolute -lat*PI/180 here — that parks 2.8° north of Rhodes.
-   *
-   * Polar split (gain 1): outer Object3D = tilt X, inner Object3D = spin Y.
-   * Mesh also gets the increment when it already carries rotation or a parent
-   * is missing; otherwise Mesh is still in the chain for updateMatrixWorld.
-   * Pulls view 39.245 DOWN toward 36.44.
-   */
-  function nudgeLiveChain(dLat, dLng) {
-    try {
-      if (!G.SNGlobe) return;
-      var dx = (-Number(dLat) * Math.PI) / 180;
-      var dy = (-Number(dLng) * Math.PI) / 180;
-      if (!isFinite(dx)) dx = 0;
-      if (!isFinite(dy)) dy = 0;
-      if (dx === 0 && dy === 0) return;
-
-      var TILT_MAX = 1.05;
-      var chain = liveEarthChain();
-      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
-      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
-      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
-      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
-
-      function addInc(node, addX, addY) {
-        if (!node || !node.rotation) return;
-        var nx = +node.rotation.x || 0;
-        var ny = +node.rotation.y || 0;
-        var nz = +node.rotation.z || 0;
-        if (addX) nx += dx;
-        if (addY) ny += dy;
-        if (nx > TILT_MAX) nx = TILT_MAX;
-        if (nx < -TILT_MAX) nx = -TILT_MAX;
-        writeEulerQuat(node, nx, ny, nz);
-      }
-
-      var mesh = chain.length ? chain[0] : earth;
-      var inner = chain.length > 1 ? chain[1] : null;
-      var outer = chain.length > 2 ? chain[2] : null;
-
-      var meshRx = 0;
-      var meshRy = 0;
-      try {
-        if (mesh && mesh.rotation) {
-          meshRx = Math.abs(+mesh.rotation.x || 0);
-          meshRy = Math.abs(+mesh.rotation.y || 0);
-        }
-      } catch (_) {}
-      var meshCarries = meshRx > 0.002 || meshRy > 0.002;
-
-      // Mesh
-      if (mesh && (meshCarries || !inner || !outer)) {
-        addInc(mesh, true, true);
-      }
-      // Inner Object3D = spin (longitude Y) — same as setGlobeLatLng y
-      if (inner && !meshCarries) addInc(inner, false, true);
-      // Outer Object3D = tilt (latitude X) — same as setGlobeLatLng x
-      if (outer && !meshCarries) addInc(outer, true, false);
-
-      // Detached exports (only if they were not the live parents)
-      if (tilt && tilt !== outer && tilt !== inner && tilt !== mesh) addInc(tilt, true, false);
-      if (spin && spin !== outer && spin !== inner && spin !== mesh && spin !== tilt) addInc(spin, false, true);
-      if (pivot && pivot !== spin && pivot !== outer && pivot !== inner && pivot !== mesh) {
-        addInc(pivot, false, true);
-      }
-
-      paintLiveChain(chain);
-      holdPhysToLiveEuler();
-    } catch (_) {}
-  }
-
-  /**
-   * Point flyNear's hidden phys.tTilt/tSpin at the LIVE euler so stepPhys
-   * holds the closed-loop pose instead of springing back to absolute Rhodes
-   * (which is the 39.245 north overshoot).
-   */
-  function holdPhysToLiveEuler() {
-    try {
-      if (!G.SNGlobe || typeof SNGlobe.flyNear !== 'function') return;
-      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
-      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
-      if (!tilt || !tilt.rotation || !spin || !spin.rotation) return;
-      var holdLat = (-(+tilt.rotation.x || 0) * 180) / Math.PI;
-      var holdLng = (-(+spin.rotation.y || 0) * 180) / Math.PI;
-      if (!isFinite(holdLat) || !isFinite(holdLng)) return;
-      SNGlobe.flyNear(holdLat, holdLng, null);
-    } catch (_) {}
-  }
-
   /**
    * Rotate the LIVE earth mesh so latLngToVec(lat,lng) points at the camera.
    * This is what pickLatLng/viewLatLng actually raycast.
@@ -1090,6 +941,182 @@
     } catch (_) {}
   }
 
+  function liveEarthChain() {
+    var chain = [];
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.getEarth !== 'function') return chain;
+      var n = SNGlobe.getEarth();
+      var hops = 0;
+      // Mesh + two Object3D parents; stop before Scene
+      while (n && hops < 3) {
+        if (nodeIsSceneOrCam(n)) break;
+        chain.push(n);
+        try {
+          n = n.parent;
+        } catch (_) {
+          n = null;
+        }
+        hops++;
+      }
+    } catch (_) {}
+    return chain;
+  }
+
+  function paintLiveChain(chain) {
+    chain = chain || liveEarthChain();
+    var i;
+    try {
+      var walk = walkEarthChain();
+      for (i = walk.nodes.length - 1; i >= 0; i--) {
+        try {
+          if (walk.nodes[i] && walk.nodes[i].updateMatrixWorld) walk.nodes[i].updateMatrixWorld(true);
+        } catch (_) {}
+      }
+    } catch (_) {}
+    for (i = chain.length - 1; i >= 0; i--) {
+      try {
+        if (chain[i] && chain[i].updateMatrixWorld) chain[i].updateMatrixWorld(true);
+      } catch (_) {}
+    }
+    try {
+      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+      if (tilt && tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      if (spin && spin.updateMatrixWorld) spin.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+      if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var cam = typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
+    } catch (_) {}
+    paintGlobe();
+  }
+
+  function snapshotLiveEuler(chain) {
+    var out = [];
+    var i;
+    for (i = 0; i < chain.length; i++) {
+      var n = chain[i];
+      var rx = 0;
+      var ry = 0;
+      var rz = 0;
+      try {
+        if (n && n.rotation) {
+          rx = +n.rotation.x || 0;
+          ry = +n.rotation.y || 0;
+          rz = +n.rotation.z || 0;
+        }
+      } catch (_) {}
+      out.push({ node: n, x: rx, y: ry, z: rz });
+    }
+    return out;
+  }
+
+  function restoreLiveEuler(shot) {
+    if (!shot) return;
+    var i;
+    for (i = 0; i < shot.length; i++) {
+      var row = shot[i];
+      if (!row || !row.node) continue;
+      writeEulerQuat(row.node, row.x, row.y, row.z);
+    }
+  }
+
+  /**
+   * INCREMENTAL euler on the LIVE chain from getEarth()
+   * (the Mesh and its two Object3D parents).
+   * Same sign as globe.js setGlobeLatLng:
+   *   x += -dLat*PI/180, y += -dLng*PI/180
+   * NEVER write absolute -lat*PI/180 here — that parks 2.8° north of Rhodes.
+   * Pulls view 39.245 DOWN toward 36.44.
+   */
+  function nudgeLiveChain(dLat, dLng) {
+    try {
+      if (!G.SNGlobe) return;
+      dLat = Number(dLat);
+      dLng = Number(dLng);
+      if (!isFinite(dLat)) dLat = 0;
+      if (!isFinite(dLng)) dLng = 0;
+      if (dLat === 0 && dLng === 0) return;
+
+      var TILT_MAX = 1.05;
+      var chain = liveEarthChain();
+      var i;
+      for (i = 0; i < chain.length; i++) {
+        var node = chain[i];
+        if (!node || !node.rotation) continue;
+        var x = +node.rotation.x || 0;
+        var y = +node.rotation.y || 0;
+        var z = +node.rotation.z || 0;
+        // exact setGlobeLatLng sign, incremental — never absolute -36.44*PI/180
+        x += (-dLat * Math.PI) / 180;
+        y += (-dLng * Math.PI) / 180;
+        if (x > TILT_MAX) x = TILT_MAX;
+        if (x < -TILT_MAX) x = -TILT_MAX;
+        writeEulerQuat(node, x, y, z);
+      }
+      paintLiveChain(chain);
+    } catch (_) {}
+  }
+
+  /**
+   * Point flyNear's hidden phys.tTilt/tSpin at the LIVE euler so stepPhys
+   * holds the closed-loop pose instead of springing back to absolute Rhodes
+   * (which is the 39.245 north overshoot). Used AFTER the loop only.
+   */
+  function holdPhysToLiveEuler() {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.flyNear !== 'function') return;
+      var chain = liveEarthChain();
+      var inner = chain.length > 1 ? chain[1] : null;
+      var outer = chain.length > 2 ? chain[2] : null;
+      var tilt = outer || (typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null);
+      var spin = inner || (typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null);
+      if (!tilt || !tilt.rotation || !spin || !spin.rotation) return;
+      var holdLat = (-(+tilt.rotation.x || 0) * 180) / Math.PI;
+      var holdLng = (-(+spin.rotation.y || 0) * 180) / Math.PI;
+      if (!isFinite(holdLat) || !isFinite(holdLng)) return;
+      SNGlobe.flyNear(holdLat, holdLng, null);
+    } catch (_) {}
+  }
+
+  function freezePhysSettle(on) {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.setGameMode !== 'function') return;
+      if (on) {
+        if (!G.__snPizzaPrevGameMode) {
+          G.__snPizzaPrevGameMode = { on: true, prev: !!SNGlobe.gameMode };
+        }
+        if (!SNGlobe.gameMode) SNGlobe.setGameMode(true);
+      } else if (G.__snPizzaPrevGameMode) {
+        var prev = G.__snPizzaPrevGameMode.prev;
+        G.__snPizzaPrevGameMode = null;
+        if (!prev) SNGlobe.setGameMode(false);
+      }
+    } catch (_) {}
+  }
+
+  function viewErr(lat, lng) {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.viewLatLng !== 'function') return null;
+      var v = SNGlobe.viewLatLng();
+      if (!v || v.lat == null || !isFinite(v.lat) || !isFinite(v.lng)) return null;
+      return {
+        v: v,
+        dLat: lat - +v.lat,
+        dLng: unwrapDeg(lng - +v.lng),
+        abs: Math.abs(lat - +v.lat) + lngDelta(v.lng, lng),
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
   /**
    * REQUIRED flyGlobeTo (Build 20260822213000-closed-loop):
    * 1) unfreeze (pointerup/cancel on canvas)
@@ -1146,43 +1173,55 @@
     // 2) ONE parent-chain snap (open-loop initial guess). Never again in the loop.
     snapLiveChain(lat, lng);
     paintGlobe();
-    holdPhysToLiveEuler();
 
     if (viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG)) {
       lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
+      holdPhysToLiveEuler();
       return true;
     }
+
+    // Freeze stepPhys so it cannot spring back to absolute -36.44*PI/180
+    freezePhysSettle(true);
 
     // 3) Closed-loop settle — incremental euler only. ≤12 steps or 4s.
     var t0 = Date.now();
     var step = 0;
     var maxSteps = 12;
     var maxMs = 4000;
+    var scale = 1;
     while (step < maxSteps && Date.now() - t0 < maxMs) {
       step++;
-      var v = null;
-      try {
-        if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') v = SNGlobe.viewLatLng();
-      } catch (_) {}
-      if (v && v.lat != null && isFinite(v.lat) && isFinite(v.lng)) {
-        var dLatAbs = Math.abs(+v.lat - lat);
-        var dLngAbs = lngDelta(v.lng, lng);
-        if (dLatAbs < SETTLE_DEG && dLngAbs < SETTLE_DEG) {
-          lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
-          return true;
-        }
+      var err = viewErr(lat, lng);
+      if (err && err.abs < SETTLE_DEG * 2 && Math.abs(err.dLat) < SETTLE_DEG && Math.abs(err.dLng) < SETTLE_DEG) {
+        freezePhysSettle(false);
+        holdPhysToLiveEuler();
+        lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
+        return true;
+      }
+      if (err) {
         // dLat = 36.44 - 39.245 = -2.805 → x += -(-2.805)*PI/180 pulls NORTH overshoot DOWN
-        var dLat = lat - +v.lat;
-        var dLng = unwrapDeg(lng - +v.lng);
+        var dLat = err.dLat * scale;
+        var dLng = err.dLng * scale;
+        var chain = liveEarthChain();
+        var shot = snapshotLiveEuler(chain);
         nudgeLiveChain(dLat, dLng);
-        try {
-          if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
-        } catch (_) {}
+        var err2 = viewErr(lat, lng);
+        if (err2 && err2.abs > err.abs * 1.02) {
+          // stacked Mesh+parents overshot — revert and take a smaller step
+          restoreLiveEuler(shot);
+          paintLiveChain(chain);
+          scale = Math.max(0.28, scale * 0.4);
+          nudgeLiveChain(err.dLat * scale, err.dLng * scale);
+        } else if (err2 && err2.abs < err.abs) {
+          scale = Math.min(1, scale * 1.15);
+        }
       }
       await sleep(120);
     }
+    freezePhysSettle(false);
     var finalOk = viewNear(lat, lng, SETTLE_DEG, SETTLE_DEG);
     if (finalOk) {
+      holdPhysToLiveEuler();
       lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
     } else {
       lastFly = null;
