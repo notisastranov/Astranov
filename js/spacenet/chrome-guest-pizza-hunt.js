@@ -1,6 +1,6 @@
 /**
- * Guest pizza hunt — Build 20260822113000-no-leaflet
- * PATCH #127 only · origin + pin-tap + NO Leaflet during hunt.
+ * Guest pizza hunt — Build 20260822114500-show-clean
+ * PATCH #127 only · origin + pin-tap + NO Leaflet + clean show place.
  *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
@@ -22,11 +22,16 @@
  *   FORBID any SNMap.open / showLiveSat / Leaflet / street overlay for the whole hunt.
  *   Stay WebGL globe only. No San Jose / Columbus Park / OSM street takeover during wait.
  *
+ * SHOW LAW (20260822114500):
+ *   After/during pizza hunt, `show rhodes` (or any show <place>) MUST only fly the
+ *   WebGL camera and pin vendors. NEVER run plaza/POI crawler dump
+ *   (Πλατεία Αθηνάς / 18 POIs / 80 real shops).
+ *
  * After successful hunt: face pin cluster if pins are off current camera,
  * or keep camera and only pin vendors already in view.
  *
  * PIN TAP: vendor pulse → SNCli.log name·km·⭐ only.
- * Block plaza/POI dump (Πλατεία…, 18 POIs, 80 real shops). No camera drift to SA.
+ * Block plaza/POI dump. No camera drift to SA.
  *
  * Product law: if it is not on the globe it is not shipped.
  */
@@ -34,7 +39,7 @@
   'use strict';
   // Force re-install of this build even if older pizza-hunt already bound
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822113000-no-leaflet';
+  var BUILD = '20260822114500-show-clean';
   var hunting = false;
   var lastPins = [];
   var pinMeshes = [];
@@ -43,6 +48,7 @@
   var suppressPoiUntil = 0;
   var canvasTapBound = false;
   var mapGuardInstalled = false;
+  var pizzaLiveUntil = 0; // after successful hunt, keep show-intercept active for a while
 
   // Known fake / HQ defaults that must NEVER be reported as YOU
   var FAKE_YOU = [
@@ -52,12 +58,23 @@
     { lat: 36.443, lng: 28.226, r: 0.04, name: 'Rhodes town' },
   ];
 
+  // Simple place → lat/lng for clean show (no POI crawl)
+  var KNOWN_PLACES = {
+    rhodes: { lat: 36.4341, lng: 28.2176, name: 'Rhodes' },
+    rhodos: { lat: 36.4341, lng: 28.2176, name: 'Rhodes' },
+    'rhodes town': { lat: 36.443, lng: 28.226, name: 'Rhodes town' },
+    kalithea: { lat: 36.3876, lng: 28.2225, name: 'Kalithea' },
+    athens: { lat: 37.9838, lng: 23.7275, name: 'Athens' },
+    athina: { lat: 37.9838, lng: 23.7275, name: 'Athens' },
+  };
+
   var FOOD =
     /restaurant|fast_food|cafe|bar|pub|food|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert|market/i;
   var PIZZA_RE =
     /\b(order\s+(me\s+)?(a\s+)?pizza|pizza\s*(please|order|near|nearby|delivery)?|get\s+(me\s+)?pizza|i\s+want\s+(a\s+)?pizza|find\s+pizza|pizza\s+shops?|hungry\s+for\s+pizza)\b/i;
   var ORDER_FOOD_RE =
     /\b(order\s+(me\s+)?(a\s+)?(food|meal|burger|souvlaki|kebab|sushi)|food\s+delivery|deliver\s+(me\s+)?(food|pizza))\b/i;
+  var SHOW_RE = /^show\s+(.+)$/i;
 
   function log(m, c) {
     try {
@@ -119,14 +136,6 @@
     } catch (_) {}
   }
 
-  /**
-   * Origin for bbox hunt.
-   * Priority:
-   *   1) real YOU only if located THIS session (_snPhysPos + session flag)
-   *   2) current camera look-at (viewLatLng → focusPos)
-   * NEVER invent Kalithea / silent Rhodes as you.
-   * NEVER trust bare _snLastPos (setFocus pollutes it from village/HQ).
-   */
   function resolveOrigin() {
     try {
       if (hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
@@ -263,7 +272,6 @@
     } catch (_) {}
   }
 
-  /** Nuclear: close any Leaflet/OSM/street map and keep it closed while hunting. */
   function forceGlobeOnly() {
     try {
       if (G.SNMap) {
@@ -275,12 +283,6 @@
       }
     } catch (_) {}
     try {
-      if (G.showLiveSat && typeof G.showLiveSat === 'function' && !G.__snPizzaMapGuard) {
-        // will be guarded below
-      }
-    } catch (_) {}
-    try {
-      // Hide any live Leaflet containers that might have been injected
       var sels = [
         '#sn-map',
         '#map',
@@ -313,7 +315,7 @@
         if (typeof SNMap.open === 'function' && !SNMap.__snPizzaGuardOpen) {
           var prevOpen = SNMap.open.bind(SNMap);
           SNMap.open = function () {
-            if (hunting) {
+            if (hunting || Date.now() < pizzaLiveUntil) {
               forceGlobeOnly();
               return;
             }
@@ -324,7 +326,7 @@
         if (typeof SNMap.show === 'function' && !SNMap.__snPizzaGuardShow) {
           var prevShow = SNMap.show.bind(SNMap);
           SNMap.show = function () {
-            if (hunting) {
+            if (hunting || Date.now() < pizzaLiveUntil) {
               forceGlobeOnly();
               return;
             }
@@ -335,7 +337,7 @@
         if (typeof SNMap.showLiveSat === 'function' && !SNMap.__snPizzaGuardLive) {
           var prevLive = SNMap.showLiveSat.bind(SNMap);
           SNMap.showLiveSat = function () {
-            if (hunting) {
+            if (hunting || Date.now() < pizzaLiveUntil) {
               forceGlobeOnly();
               return;
             }
@@ -346,7 +348,7 @@
         if (typeof SNMap.goToStreet === 'function' && !SNMap.__snPizzaGuardStreet) {
           var prevStreet = SNMap.goToStreet.bind(SNMap);
           SNMap.goToStreet = function () {
-            if (hunting) {
+            if (hunting || Date.now() < pizzaLiveUntil) {
               forceGlobeOnly();
               return;
             }
@@ -360,7 +362,7 @@
       if (typeof G.showLiveSat === 'function' && !G.__snPizzaMapGuard) {
         var prevG = G.showLiveSat.bind(G);
         G.showLiveSat = function () {
-          if (hunting) {
+          if (hunting || Date.now() < pizzaLiveUntil) {
             forceGlobeOnly();
             return;
           }
@@ -685,6 +687,60 @@
     stayPutSoft(nearest);
   }
 
+  /** Clean show <place>: fly globe + pin vendors only. Never POI dump. */
+  async function cleanShowPlace(placeName) {
+    forceGlobeOnly();
+    var key = String(placeName || '')
+      .trim()
+      .toLowerCase();
+    var place = KNOWN_PLACES[key];
+    if (!place) {
+      // Unknown place — still block POI dump, just log and stay
+      log('Show · ' + placeName + ' · (no plaza dump) · type Locate or pizza', 'dim');
+      return true;
+    }
+
+    log('Show · ' + place.name + ' · fly + vendor pins only (no POI dump)', 'ok');
+    preview(place.name + ' · pins');
+
+    // Fly camera
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
+        SNGlobe.flyNear(place.lat, place.lng, null);
+      } else if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
+        SNGlobe.pulse(place.lat, place.lng, 0x5ad4ff, place.name, 12000);
+      }
+    } catch (_) {}
+
+    // Pin vendors at that place (same path as pizza hunt)
+    var origin = { lat: place.lat, lng: place.lng, source: 'show' };
+    var rows = [];
+    try {
+      rows = await queryVendorsBbox(place.lat, place.lng, 16);
+    } catch (_) {}
+    forceGlobeOnly();
+
+    if (rows.length) {
+      var n = paintPins(rows, origin);
+      listInCli(rows, origin);
+      if (n > 0) log('Pins on globe · ' + n + ' shops · tap a pin', 'ok');
+      pizzaLiveUntil = Date.now() + 120000;
+    } else {
+      log('No delivery shops near ' + place.name + ' · try pizza after Locate', 'dim');
+    }
+    forceGlobeOnly();
+    return true;
+  }
+
+  function isShowLine(line) {
+    var m = SHOW_RE.exec(String(line || '').trim());
+    return m ? m[1].trim() : null;
+  }
+
+  function pizzaIsLive() {
+    return hunting || lastPins.length > 0 || Date.now() < pizzaLiveUntil;
+  }
+
   async function huntPizza(raw) {
     if (hunting) return true;
     hunting = true;
@@ -730,7 +786,6 @@
       'dim'
     );
 
-    // Keep map closed during the async wait
     forceGlobeOnly();
     var rows = [];
     try {
@@ -792,6 +847,7 @@
       log('Guest browse · sign in only when you HOLD ⭐ / pay', 'dim');
     }
     hunting = false;
+    pizzaLiveUntil = Date.now() + 180000; // keep show-clean active after hunt
     forceGlobeOnly();
     try {
       if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
@@ -841,6 +897,12 @@
           void huntPizza(s);
           return Promise.resolve(true);
         }
+        // After / during pizza hunt: show <place> = clean fly + pins only (never POI dump)
+        var place = isShowLine(s);
+        if (place && pizzaIsLive()) {
+          void cleanShowPlace(place);
+          return Promise.resolve(true);
+        }
         if (isGuest() && isPayHold(s)) {
           try {
             if (G.SNAuth && typeof SNAuth.openModal === 'function') {
@@ -860,15 +922,29 @@
       var topIn = document.getElementById('stc-cmd-in');
       function capture(ev, el) {
         var v = String((el && el.value) || '').trim();
-        if (!v || !isPizzaLine(v)) return false;
-        try {
-          ev.preventDefault();
-          ev.stopPropagation();
-          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
-        } catch (_) {}
-        if (el) el.value = '';
-        void huntPizza(v);
-        return true;
+        if (!v) return false;
+        if (isPizzaLine(v)) {
+          try {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          } catch (_) {}
+          if (el) el.value = '';
+          void huntPizza(v);
+          return true;
+        }
+        var place = isShowLine(v);
+        if (place && pizzaIsLive()) {
+          try {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+          } catch (_) {}
+          if (el) el.value = '';
+          void cleanShowPlace(place);
+          return true;
+        }
+        return false;
       }
       if (form && input && !input._snPizzaHunt110) {
         input._snPizzaHunt110 = 1;
