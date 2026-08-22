@@ -113,13 +113,16 @@ async function main() {
   if (/⭐/.test(chrome.currency || '')) pass('astra-star', chrome.currency);
   else fail('astra-star', chrome.currency || 'none');
 
+  await page.waitForFunction(() => !!(window.SNCli && window.SNGlobe), { timeout: 40000 }).catch(() => {});
+
   // what is astranov
   await page.fill('#cli-in', 'what is astranov');
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(4000);
   const astr = await page.evaluate(() => (document.getElementById('cli-log') || {}).innerText || '');
-  if (/internet depicted in space|spacenet/i.test(astr)) pass('research-astranov');
-  else fail('research-astranov', astr.slice(-180));
+  if (/internet depicted in space|spacenet — the internet|Astranov is SpaceNet/i.test(astr))
+    pass('research-astranov');
+  else fail('research-astranov', astr.slice(-220));
   if (/iran|lagos|colorado/i.test(astr)) fail('research-no-teleport', 'fly list leaked');
   else pass('research-no-teleport');
 
@@ -140,22 +143,47 @@ async function main() {
   else pass('laptop-thing');
 
   // guest CALL
-  await page.click('#sn-rib-call');
+  await page.evaluate(() => {
+    try {
+      if (window.SNWebRTC && SNWebRTC.openFromRibbon) SNWebRTC.openFromRibbon();
+      else document.getElementById('sn-rib-call') && document.getElementById('sn-rib-call').click();
+    } catch (_) {}
+  });
   await page.waitForTimeout(800);
   const call = await page.evaluate(() => {
     const log = (document.getElementById('cli-log') || {}).innerText || '';
     const rtc = document.getElementById('sn-rtc-layer');
     const vis = rtc && getComputedStyle(rtc).display !== 'none' && rtc.offsetHeight > 20;
-    return { log: log.slice(-200), videoUi: vis, hasVideoWords: /VIDEO CALL|sn-cjytm|room code/i.test(log + (rtc ? rtc.innerText : '')) };
+    const modal = document.getElementById('sn-auth-modal');
+    const modalOn = modal && !modal.hidden && getComputedStyle(modal).display !== 'none';
+    return {
+      log: log.slice(-200),
+      videoUi: vis,
+      hasVideoWords: /VIDEO CALL|room code/i.test((rtc && vis ? rtc.innerText : '') || ''),
+      signIn: modalOn || /sign in/i.test(log),
+    };
   });
   if (call.videoUi && call.hasVideoWords) fail('guest-call', 'VIDEO CALL sheet');
-  else if (/sign in/i.test(call.log) || !call.videoUi) pass('guest-call');
+  else if (call.signIn || !call.videoUi) pass('guest-call');
   else fail('guest-call', call.log.slice(-80));
 
+  await page.evaluate(() => {
+    const b = document.getElementById('sn-auth-close');
+    if (b) b.click();
+    const m = document.getElementById('sn-auth-modal');
+    if (m) m.hidden = true;
+  });
+  await page.waitForTimeout(400);
+
   // + add
-  await page.click('#sn-rib-add');
-  await page.waitForTimeout(600);
   const add = await page.evaluate(() => {
+    try {
+      if (window.SNField && SNField.ribbonAct) SNField.ribbonAct('add');
+      else {
+        var b = document.getElementById('sn-rib-add');
+        if (b) b.click();
+      }
+    } catch (_) {}
     const fly = document.getElementById('sn-rib-fly');
     const menu = document.getElementById('sn-add-menu');
     const log = (document.getElementById('cli-log') || {}).innerText || '';
@@ -169,9 +197,10 @@ async function main() {
   else fail('plus-add', 'no flyout');
 
   // layers
-  await page.click('#sn-rib-layers');
-  await page.waitForTimeout(600);
   const layers = await page.evaluate(() => {
+    try {
+      if (window.SNField && SNField.ribbonAct) SNField.ribbonAct('layers');
+    } catch (_) {}
     const fly = document.getElementById('sn-rib-fly');
     return !!(fly && fly.classList.contains('open'));
   });

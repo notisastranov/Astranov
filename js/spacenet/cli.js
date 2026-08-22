@@ -1352,6 +1352,15 @@
     const Tasks = global.SNTasks;
     const Globe = global.SNGlobe;
 
+    if (/^(what('s| is)?|who is|explain)\s+astranov\b|^astranov\??$/.test(low)) {
+      log(
+        'Astranov is SpaceNet — the internet depicted in space. Research, calls, and orders are hops on Earth, not a list of links.',
+        'ok'
+      );
+      preview('Astranov · SpaceNet');
+      return;
+    }
+
     async function ensureYoutube() {
       if (global.SNYoutube && SNYoutube.find) return global.SNYoutube;
       try {
