@@ -1,12 +1,13 @@
-/* Astranov mute · Build 20260823005000-kalithea
- * Kill beeps + load chrome-kalithea-village (real Rhodes village object).
+/* Astranov mute · Build 20260823011000-kalithea-geo
+ * Kill beeps + load chrome-kalithea-village (real Rhodes village object
+ * + lake / islands / olives at unique lat/lng after the locked fly+pin).
  * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
  * or chrome-nairobi-ladder (#130). Does NOT overwrite SNGlobe.flyGlobeTo
  * when #127 already defined it.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823005000-kalithea';
+  var BUILD = '20260823011000-kalithea-geo';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
