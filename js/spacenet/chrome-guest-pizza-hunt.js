@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822190000-unfreeze-snap
+ * Guest pizza hunt — Build 20260822200000-release-drag
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -7,33 +7,37 @@
  *   / No delivery shops near view · type Locate once
  *   No Kalithea 36.388 list. No Google wall.
  *
- * HONEST FAIL fixed this build:
- *   "pizza" then "show rhodes" → Fly failed (view still SA) yet still logged Origin/Pins (FORBIDDEN).
- *   Root: flyNear returns if G.dragging; SNMap.active stays true → stepPhys skipped, mesh frozen;
- *   hideLeaflet only CSS; lastFly set at START of fly before verify; preferCameraUntil early.
+ * HONEST FAIL (20260822190000 left viewLatLng at SA):
+ *   stopMotion NOT exported; SNGlobe.dragging is NOT internal G.dragging;
+ *   setting SNGlobe.dragging=false does nothing; flyNear returns if G.dragging;
+ *   while G.dragging, stepPhys CLEARS tTilt/tSpin and stuck pointer rewrites rotation.
  *
- * FIX:
- *   1) Before any fly: SNMap.close + force SNMap.active=false; SNGlobe.dragging=false; stopMotion.
- *   2) Snap via getTilt/getSpin (x=-lat*PI/180, y=-lng*PI/180, clamp 1.05) + SNGlobe.paint();
- *      also flyNear + goToPlace(city, openMap:false, skipScan:true, pulse:false, body:earth).
- *      setGlobeLatLng NOT exported — do not call.
- *   3) Poll viewLatLng ≤3s; success ONLY |lat-36.44|<2.5 && unwrapped |lng-28.22|<2.5.
- *   4) On fly fail: no huntAt, no Pins log, do NOT set preferCameraUntil/lastFly to Rhodes;
- *      log "Fly failed" only; clear lastFly.
- *   5) On success: THEN set prefer/lastFly, log Rhodes, hunt + pulse; count only truthy Mesh;
- *      log Pins only if N>=10.
- *   6) Pulse needs SNGlobe.ready; null/sprite do not count as Mesh pins.
+ * FIX 20260822200000-release-drag:
+ *   1) unfreeze: dispatch pointerup + pointercancel + lostpointercapture on
+ *      SNGlobe.getRenderer().domElement and on #globe canvas so trackball ends
+ *      (that is how G.dragging is cleared from outside).
+ *   2) Snap: euler from getTilt/getSpin (x=-lat*PI/180, y=-lng*PI/180, clamp 1.05),
+ *      set quaternions, updateMatrixWorld(true) on tilt/spin/earth/pivot, then paint().
+ *   3) Then flyNear + goToPlace(openMap:false, skipScan:true).
+ *   4) Do NOT set SNGlobe.dragging; do NOT use missing stopMotion as only unfreeze.
+ *   5) On fly fail: one diagnostic line dragging=getPhysics().dragging map=!!SNMap.active
+ *      ready=SNGlobe.ready tiltX=getTilt().rotation.x spinY=getSpin().rotation.y view=viewLatLng.
+ *      Still no huntAt, no Pins, no lastFly.
+ *   6) STOP intercepting `fly rhodes` (let cli.js openCityAt run); KEEP intercepting
+ *      `show rhodes` with new unfreeze+snap. After successful CLI fly, pizza may hunt.
+ *   7) Optional: after show-rhodes success only, pulse >=10 Earth meshes.
  *
- * REAL SNGlobe exports (do not invent): init, pulse, clearMarkers, flyNear, goToPlace, goToTier,
- *   viewLatLng, pickLatLng, setFocus, focusPos, getTilt, getSpin, getPivot, getEarth, getCamera,
- *   getRenderer, paint, ready, lastPos. setGlobeLatLng NOT exported.
+ * REAL SNGlobe exports: init, pulse, clearMarkers, flyNear, goToPlace, goToTier,
+ *   viewLatLng, pickLatLng, setFocus, focusPos, getTilt, getSpin, getPivot, getEarth,
+ *   getCamera, getRenderer, paint, ready, lastPos, getPhysics (if present).
+ *   setGlobeLatLng NOT exported. stopMotion NOT exported.
  *
  * Product law: if it is not on the globe it is not shipped. Full module, no stub.
  */
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822190000-unfreeze-snap';
+  var BUILD = '20260822200000-release-drag';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -64,8 +68,9 @@
     /\b(order\s+(me\s+)?(a\s+)?pizza|pizza\s*(please|order|near|nearby|delivery)?|get\s+(me\s+)?pizza|i\s+want\s+(a\s+)?pizza|find\s+pizza|pizza\s+shops?|hungry\s+for\s+pizza)\b/i;
   var ORDER_FOOD_RE =
     /\b(order\s+(me\s+)?(a\s+)?(food|meal|burger|souvlaki|kebab|sushi)|food\s+delivery|deliver\s+(me\s+)?(food|pizza))\b/i;
+  // SHOW only — do NOT intercept `fly rhodes` (cli.js openCityAt must run)
   var SHOW_RHODES_RE =
-    /^(show|fly|go(?:\s+to)?|zoom(?:\s+to)?|take\s+me\s+to|look\s+at)\s+(the\s+)?(island\s+(of\s+)?)?(rhodes|rodos|ρόδος|ρόδο|ροδος|ροδοσ)\b/i;
+    /^(show|go(?:\s+to)?|zoom(?:\s+to)?|take\s+me\s+to|look\s+at)\s+(the\s+)?(island\s+(of\s+)?)?(rhodes|rodos|ρόδος|ρόδο|ροδος|ροδοσ)\b/i;
   var POI_DUMP_RE =
     /Πλατεία|Πλατεια|πλατεία|\b\d+\s+POIs?\b|\b\d+\s+real shops\b|80 real shops|18 POIs/i;
 
@@ -379,7 +384,12 @@
     } catch (_) {}
   }
 
-  /** Force mesh animation path: kill SNMap.active loop that skips stepPhys, clear dragging. */
+  /**
+   * Release trackball so internal G.dragging clears.
+   * LIVE: SNGlobe.dragging is NOT G.dragging; stopMotion is NOT exported.
+   * Dispatch pointerup + pointercancel + lostpointercapture on the renderer
+   * canvas (and #globe canvas) — that is how G.dragging ends from outside.
+   */
   function unfreezeGlobe() {
     try {
       if (G.SNMap && typeof SNMap.close === 'function') SNMap.close();
@@ -390,15 +400,51 @@
         try { if ('active' in SNMap) SNMap.active = false; } catch (_) {}
       }
     } catch (_) {}
+
+    function releasePointer(el) {
+      if (!el) return;
+      try {
+        var opts = { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true };
+        try {
+          el.dispatchEvent(new PointerEvent('pointerup', opts));
+        } catch (_) {
+          try {
+            el.dispatchEvent(new Event('pointerup', { bubbles: true, cancelable: true }));
+          } catch (__) {}
+        }
+        try {
+          el.dispatchEvent(new PointerEvent('pointercancel', opts));
+        } catch (_) {
+          try {
+            el.dispatchEvent(new Event('pointercancel', { bubbles: true, cancelable: true }));
+          } catch (__) {}
+        }
+        try {
+          if (typeof el.releasePointerCapture === 'function') el.releasePointerCapture(1);
+        } catch (_) {}
+        try {
+          el.dispatchEvent(new Event('lostpointercapture', { bubbles: true }));
+        } catch (_) {}
+      } catch (_) {}
+    }
+
+    try {
+      var ren = G.SNGlobe && typeof SNGlobe.getRenderer === 'function' ? SNGlobe.getRenderer() : null;
+      if (ren && ren.domElement) releasePointer(ren.domElement);
+    } catch (_) {}
+    try {
+      var canvas =
+        document.querySelector('#globe canvas') ||
+        document.querySelector('#globe') ||
+        document.querySelector('canvas');
+      if (canvas) releasePointer(canvas);
+    } catch (_) {}
+
+    // stopMotion is NOT exported on live globe.js — call only if present, never rely on it alone
     try {
       if (G.SNGlobe && typeof SNGlobe.stopMotion === 'function') SNGlobe.stopMotion();
     } catch (_) {}
-    try {
-      if (G.SNGlobe) G.SNGlobe.dragging = false;
-    } catch (_) {}
-    try {
-      if (G.SNGlobe && SNGlobe.dragging) SNGlobe.dragging = false;
-    } catch (_) {}
+
     hideLeaflet();
   }
 
@@ -522,14 +568,47 @@
   }
 
   /**
-   * REQUIRED flyGlobeTo (Build 20260822190000-unfreeze-snap):
-   * Before any fly: SNMap.close + force SNMap.active=false; SNGlobe.dragging=false; stopMotion.
-   * Snap via getTilt/getSpin (x=-lat*PI/180, y=-lng*PI/180, clamp tilt 1.05) + paint().
-   * flyNear(lat,lng,'city') + goToPlace(..., {tier:'city',openMap:false,skipScan:true,pulse:false,body:'earth'}).
-   * setGlobeLatLng NOT exported — never call.
-   * Poll viewLatLng ≤3s; success ONLY |lat-target|<2.5 && unwrapped |lng-target|<2.5.
+   * Snap mesh via getTilt/getSpin + updateMatrixWorld, then paint.
+   * x = -lat*PI/180, y = -lng*PI/180, clamp tilt 1.05.
+   * Do NOT set SNGlobe.dragging (useless). setGlobeLatLng NOT exported.
+   */
+  function snapTiltSpin(lat, lng) {
+    try {
+      if (!G.SNGlobe) return;
+      var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      var earth = typeof SNGlobe.getEarth === 'function' ? SNGlobe.getEarth() : null;
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+      if (tilt && spin) {
+        var TILT_MAX = 1.05;
+        var x = (-lat * Math.PI) / 180;
+        var y = (-lng * Math.PI) / 180;
+        if (x > TILT_MAX) x = TILT_MAX;
+        if (x < -TILT_MAX) x = -TILT_MAX;
+        try {
+          tilt.rotation.set(x, 0, 0);
+          spin.rotation.set(0, y, 0);
+          if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
+          if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
+        } catch (_) {}
+        try {
+          if (tilt.updateMatrixWorld) tilt.updateMatrixWorld(true);
+          if (spin.updateMatrixWorld) spin.updateMatrixWorld(true);
+          if (earth && earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+          if (pivot && pivot.updateMatrixWorld) pivot.updateMatrixWorld(true);
+        } catch (_) {}
+      }
+      if (typeof SNGlobe.paint === 'function') SNGlobe.paint();
+    } catch (_) {}
+  }
+
+  /**
+   * REQUIRED flyGlobeTo (Build 20260822200000-release-drag):
+   * 1) unfreeze via pointer events (clears internal G.dragging)
+   * 2) snap euler + updateMatrixWorld + paint
+   * 3) flyNear + goToPlace(openMap:false, skipScan:true)
+   * 4) poll viewLatLng ≤3s; success ONLY near target
    * Set lastFly ONLY on verified success. On fail clear lastFly.
-   * Returns true only when viewLatLng confirms the mesh moved.
    */
   async function flyGlobeTo(lat, lng, label) {
     lat = +lat;
@@ -541,45 +620,18 @@
       G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
     } catch (_) {}
 
-    // 1) Unfreeze: close map, force active=false, stopMotion, clear dragging
+    // 1) Unfreeze trackball (pointer events) + close map
     unfreezeGlobe();
-    try {
-      if (G.SNGlobe && typeof SNGlobe.stopMotion === 'function') SNGlobe.stopMotion();
-    } catch (_) {}
-    try {
-      if (G.SNGlobe) G.SNGlobe.dragging = false;
-    } catch (_) {}
 
     // 2) setFocus
     try {
       if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
     } catch (_) {}
 
-    // Instant snap via getTilt/getSpin (same math as internal setGlobeLatLng) + paint
-    function snapTiltSpin() {
-      try {
-        if (!G.SNGlobe) return;
-        var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
-        var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
-        if (tilt && spin) {
-          var TILT_MAX = 1.05;
-          var x = (-lat * Math.PI) / 180;
-          var y = (-lng * Math.PI) / 180;
-          if (x > TILT_MAX) x = TILT_MAX;
-          if (x < -TILT_MAX) x = -TILT_MAX;
-          try {
-            tilt.rotation.set(x, 0, 0);
-            spin.rotation.set(0, y, 0);
-            if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
-            if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
-          } catch (_) {}
-        }
-        if (typeof SNGlobe.paint === 'function') SNGlobe.paint();
-      } catch (_) {}
-    }
-    snapTiltSpin();
+    // Instant snap via getTilt/getSpin + matrix + paint
+    snapTiltSpin(lat, lng);
 
-    // 3) flyNear — primary mesh mover (phys.tTilt / phys.tSpin); may no-op if dragging (we cleared)
+    // 3) flyNear — primary mesh mover (phys.tTilt / phys.tSpin); may no-op if still dragging
     try {
       if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
         SNGlobe.flyNear(lat, lng, 'city');
@@ -599,8 +651,8 @@
       }
     } catch (_) {}
 
-    // Snap + paint again after fly starts (mesh may still be frozen if SNMap.active was true)
-    snapTiltSpin();
+    // Snap + paint again after fly starts
+    snapTiltSpin(lat, lng);
     try {
       if (G.SNMap) {
         try { SNMap.active = false; } catch (_) {}
@@ -614,16 +666,14 @@
         lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
         return true;
       }
-      // re-unfreeze + re-snap mid-poll in case map loop re-activated
+      // re-release pointer + re-snap mid-poll in case map loop re-activated
       try {
         if (G.SNMap) {
           try { SNMap.active = false; } catch (_) {}
         }
       } catch (_) {}
-      try {
-        if (G.SNGlobe) G.SNGlobe.dragging = false;
-      } catch (_) {}
-      snapTiltSpin();
+      unfreezeGlobe();
+      snapTiltSpin(lat, lng);
       await sleep(100);
     }
     var finalOk = viewNear(lat, lng, 2.5, 2.5);
@@ -1088,11 +1138,68 @@
     return true;
   }
 
+  function flyFailDiag() {
+    var drag = '?';
+    var mapA = false;
+    var ready = false;
+    var tiltX = '?';
+    var spinY = '?';
+    var viewS = '?';
+    try {
+      if (G.SNGlobe && typeof SNGlobe.getPhysics === 'function') {
+        var phys = SNGlobe.getPhysics();
+        if (phys && phys.dragging != null) drag = String(!!phys.dragging);
+      } else if (G.SNGlobe && G.SNGlobe.dragging != null) {
+        drag = String(!!G.SNGlobe.dragging);
+      }
+    } catch (_) {}
+    try {
+      mapA = !!(G.SNMap && SNMap.active);
+    } catch (_) {}
+    try {
+      ready = !!(G.SNGlobe && G.SNGlobe.ready);
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.getTilt === 'function') {
+        var t = SNGlobe.getTilt();
+        if (t && t.rotation) tiltX = Number(t.rotation.x).toFixed(4);
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.getSpin === 'function') {
+        var s = SNGlobe.getSpin();
+        if (s && s.rotation) spinY = Number(s.rotation.y).toFixed(4);
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') {
+        var ll = SNGlobe.viewLatLng();
+        if (ll && ll.lat != null)
+          viewS = Number(ll.lat).toFixed(3) + ',' + Number(ll.lng).toFixed(3);
+      }
+    } catch (_) {}
+    return (
+      'Fly failed - dragging=' +
+      drag +
+      ' map=' +
+      mapA +
+      ' ready=' +
+      ready +
+      ' tiltX=' +
+      tiltX +
+      ' spinY=' +
+      spinY +
+      ' view=' +
+      viewS
+    );
+  }
+
   /**
    * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via unfreeze + snap + verify.
    * preferCameraUntil + lastFly set ONLY after viewLatLng confirms success.
-   * On fail: log Fly failed only, clear lastFly, NO huntAt, NO Pins log, NO preferCameraUntil.
+   * On fail: ONE diagnostic line, clear lastFly, NO huntAt, NO Pins log, NO preferCameraUntil.
    * First "show rhodes" works even if huntSession false.
+   * `fly rhodes` is NOT intercepted — cli.js openCityAt runs.
    */
   async function showRhodes(raw) {
     beginGlobeHunt();
@@ -1115,19 +1222,14 @@
     var ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
 
     if (!ok) {
-      // One more hard attempt after extra unfreeze
+      // One more hard attempt after extra unfreeze + snap
       unfreezeGlobe();
+      snapTiltSpin(RHODES.lat, RHODES.lng);
       ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     }
 
     if (!ok) {
-      var look = null;
-      try {
-        if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') look = SNGlobe.viewLatLng();
-      } catch (_) {}
-      var latS = look && look.lat != null ? Number(look.lat).toFixed(3) : '?';
-      var lngS = look && look.lng != null ? Number(look.lng).toFixed(3) : '?';
-      log('Fly failed - viewLatLng still ' + latS + ',' + lngS, 'dim');
+      log(flyFailDiag(), 'dim');
       preview('Fly failed');
       lastFly = null;
       // deliberately leave preferCameraUntil untouched (do not point at Rhodes)
@@ -1143,6 +1245,19 @@
 
     try {
       await huntAt({ lat: RHODES.lat, lng: RHODES.lng, source: 'camera' }, null);
+      // Optional: after show-rhodes success only, ensure pulse >=10 Earth meshes
+      if (pinMeshes.length < 10 && isGlobeReady()) {
+        try {
+          var extra = lastPins.slice(0, 12);
+          extra.forEach(function (p, i) {
+            if (!p || p.lat == null) return;
+            try {
+              var m = SNGlobe.pulse(p.lat, p.lng, i === 0 ? 0xff9f43 : 0x5ad4ff, p.name || 'shop', 180000);
+              if (m) pinMeshes.push(m);
+            } catch (_) {}
+          });
+        } catch (_) {}
+      }
     } finally {
       endGlobeHunt();
     }
@@ -1161,8 +1276,9 @@
   function isShowRhodes(line) {
     var s = String(line || '').trim();
     if (!s) return false;
+    // Only SHOW path — never intercept `fly rhodes`
     if (SHOW_RHODES_RE.test(s)) return true;
-    if (/^(rhodes|rodos|ρόδος|ρόδο)$/i.test(s)) return true;
+    if (/^(show\s+)?(rhodes|rodos|ρόδος|ρόδο)$/i.test(s) && !/^fly\b/i.test(s)) return true;
     return false;
   }
 
@@ -1281,7 +1397,7 @@
           void huntPizza(s);
           return Promise.resolve(true);
         }
-        // show rhodes works even when huntSession is false (first command)
+        // show rhodes ONLY — fly rhodes goes to prev (cli.js openCityAt)
         if (isShowRhodes(s)) {
           void showRhodes(s);
           return Promise.resolve(true);
