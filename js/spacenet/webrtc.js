@@ -1,11 +1,11 @@
 /**
  * SNWebRTC — instant video/voice from CLI Call button
  * Call · answer · mute · camera on/off on the call tile
- * Build: 20260811221500-call-ribbon
+ * Build: 20260822150000-call-live
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811221500-call-ribbon';
+  var BUILD = '20260822150000-call-live';
   var ICE = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
@@ -23,12 +23,20 @@
     micOn: true,
     peerLabel: '',
     pending: null, // incoming offer
+    audioOnly: true,
   };
   var bc = null;
+  var sbCh = null;
 
   function log(m, c) {
     try {
+      if (global.SNCli && SNCli.beginTurn) SNCli.beginTurn();
+    } catch (_) {}
+    try {
       if (global.SNCli && SNCli.log) SNCli.log(String(m).slice(0, 240), c || 'ok', true);
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.preview) SNCli.preview(String(m).slice(0, 80));
     } catch (_) {}
   }
 
@@ -284,6 +292,13 @@
   }
 
   function showCallUi() {
+    if (state.audioOnly) {
+      try {
+        var btn = document.getElementById('sn-rib-call');
+        if (btn) btn.classList.add('on');
+      } catch (_) {}
+      return;
+    }
     showLayer();
     var dial = document.getElementById('sn-rtc-dial');
     var ring = document.getElementById('sn-rtc-ring');
@@ -372,12 +387,40 @@
     } catch (_) {
       bc = { postMessage: function () {}, close: function () {} };
     }
+    try {
+      netBus();
+    } catch (_) {}
     return bc;
   }
 
-  function post(msg) {
+  async function netBus() {
     try {
-      bus().postMessage(Object.assign({ t: Date.now(), room: state.room }, msg));
+      if (sbCh) return sbCh;
+      if (global.SNAuth && SNAuth.ensureClient) await SNAuth.ensureClient();
+      var sb = global.SNAuth && SNAuth.client;
+      if (!sb || typeof sb.channel !== 'function') return null;
+      var ch = sb.channel('sn-calls', { config: { broadcast: { ack: false, self: false } } });
+      ch.on('broadcast', { event: 'signal' }, function (e) {
+        var payload = (e && e.payload) || {};
+        void onSignal(payload);
+      });
+      await ch.subscribe();
+      sbCh = ch;
+      return sbCh;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function post(msg) {
+    var payload = Object.assign({ t: Date.now(), room: state.room }, msg);
+    try {
+      bus().postMessage(payload);
+    } catch (_) {}
+    try {
+      if (sbCh && typeof sbCh.send === 'function') {
+        sbCh.send({ type: 'broadcast', event: 'signal', payload: payload });
+      }
     } catch (_) {}
   }
 
@@ -495,6 +538,7 @@
     state.peerLabel = opts.label || (order && (order.vendorName || order.clientName)) || 'Call';
     state.camOn = !opts.audioOnly;
     state.micOn = true;
+    state.audioOnly = !!opts.audioOnly;
     try {
       state.localStream = await getMedia({ audioOnly: !!opts.audioOnly });
       // if no video track, mark cam off
@@ -507,10 +551,11 @@
       if (lv) lv.srcObject = state.localStream;
       showCallUi();
       var meta = document.getElementById('sn-rtc-meta');
-      if (meta)
+      if (meta && !state.audioOnly)
         meta.textContent =
           state.peerLabel + ' · connecting · room ' + state.room;
       bus();
+      void netBus();
       var offer = await state.pc.createOffer({
         offerToReceiveAudio: true,
         offerToReceiveVideo: true,
@@ -520,7 +565,9 @@
       state.inCall = true;
       paintMediaButtons();
       log(
-        'Video call open · room ' + state.room + ' · share code so they can join',
+        (state.audioOnly ? 'CALL live · audio · ' : 'Video call open · ') +
+          (state.peerLabel || 'peer') +
+          ' · type hang to end',
         'ok'
       );
       try {
@@ -629,8 +676,12 @@
     state.pending = null;
     state.camOn = true;
     state.micOn = true;
+    state.audioOnly = true;
     var layer = document.getElementById('sn-rtc-layer');
     if (layer) layer.classList.remove('on');
+    try {
+      if (global.SNStage && SNStage.clear) SNStage.clear('call');
+    } catch (_) {}
     try {
       var btn = document.getElementById('sn-rib-call');
       if (btn) btn.classList.remove('on');
@@ -692,38 +743,69 @@
     });
   }
 
-  /** Ribbon / CLI entry — globe Athens-line first. Video tile only after a live hop. */
+  /** Ribbon / CLI entry — globe hop + live audio. Guest = Google sign-in. Video tile only on "call video". */
   function openFromRibbon() {
     try {
       if (global.SNChromeFix && SNChromeFix.demandHud) SNChromeFix.demandHud('call');
+    } catch (_) {}
+    try {
+      if (global.SNCli && SNCli.beginTurn) SNCli.beginTurn();
     } catch (_) {}
     var signed = false;
     try {
       signed = !!(global.SNAuth && SNAuth.user);
     } catch (_) {}
     if (!signed) {
+      log('Sign in with Google to call. Then the hop draws on Earth.', 'ok');
       try {
-        if (global.SNCli && SNCli.log) SNCli.log('Sign in to call. Then the hop draws on Earth.', 'ok');
-        if (global.SNAuth && SNAuth.openModal) SNAuth.openModal();
-        else if (global.SNAuth && SNAuth.open) SNAuth.open();
-        else if (global.SNAuth && SNAuth.login) SNAuth.login();
-      } catch (_) {}
+        if (global.SNAuth && SNAuth.signInGoogleGis) {
+          void SNAuth.signInGoogleGis().catch(function (e) {
+            log('Sign in · ' + ((e && e.message) || 'try again'), 'err');
+          });
+        } else if (global.SNAuth && SNAuth.openModal) {
+          SNAuth.openModal();
+        }
+      } catch (e) {
+        log('Sign in failed · ' + (e.message || e), 'err');
+      }
       return;
     }
-    var from = (global.SNStage && SNStage.here && SNStage.here()) || { lat: 36.4341, lng: 28.2176, name: 'YOU' };
-    var athens = { lat: 37.9838, lng: 23.7275, name: 'Athens' };
+    if (state.inCall) {
+      log('Already in a call · type hang to end', 'dim');
+      return;
+    }
+    var from =
+      (global.SNStage && SNStage.here && SNStage.here()) ||
+      global._snPhysPos ||
+      { lat: 36.387557, lng: 28.222533, name: 'KALITHEA' };
+    var to = null;
+    try {
+      if (global.SNVillage && SNVillage.HQ)
+        to = { lat: SNVillage.HQ.lat, lng: SNVillage.HQ.lng, name: SNVillage.HQ.short || 'KALITHEA' };
+    } catch (_) {}
+    if (!to) to = { lat: 37.9838, lng: 23.7275, name: 'Athens' };
     try {
       if (global.SNStage && SNStage.link) {
-        SNStage.link(from, athens, { kind: 'call', color: 0x44e0ff, fromFace: '', toFace: '' });
-      } else if (global.SNGlobe && SNGlobe.drawTourLine) {
-        SNGlobe.drawTourLine([from, athens], { color: 0x44e0ff, pickLabel: 'YOU', dropLabel: 'ATHENS' });
-        if (SNGlobe.flyNear) SNGlobe.flyNear((from.lat + athens.lat) / 2, (from.lng + athens.lng) / 2, 'national');
+        SNStage.link(from, to, { kind: 'call', color: 0x14c3f3, fromFace: '', toFace: '' });
+      } else if (global.SNGlobe && SNGlobe.pulse) {
+        SNGlobe.pulse(from.lat, from.lng, 0x14c3f3, 'YOU', 20000);
+        SNGlobe.pulse(to.lat, to.lng, 0x14c3f3, to.name, 20000);
       }
     } catch (_) {}
+    log('CALL · hop on Earth · ' + (from.name || 'YOU') + ' → ' + to.name + ' · audio', 'ok');
+    var uid = '';
     try {
-      if (global.SNCli && SNCli.log) SNCli.log('CALL · live hop on the globe · YOU → Athens', 'ok');
-      if (global.SNCli && SNCli.preview) SNCli.preview('CALL · Athens line');
+      uid = String((global.SNAuth.user && (SNAuth.user.id || SNAuth.user.email)) || '').slice(0, 12);
     } catch (_) {}
+    void startCall(null, {
+      force: true,
+      instant: true,
+      open: true,
+      audioOnly: true,
+      room: 'u-' + (uid || Math.random().toString(36).slice(2, 8)),
+      label: to.name,
+      reason: 'ribbon call',
+    });
   }
 
   function handleLine(raw) {
@@ -755,6 +837,15 @@
     }
     // open dialer or instant
     if (/instant|now|start|open/.test(low) || low === 'call' || low === 'video' || low === 'video call') {
+      if (/video/.test(low) && !/audio/.test(low)) {
+        var signedV = !!(global.SNAuth && SNAuth.user);
+        if (!signedV) {
+          openFromRibbon();
+          return true;
+        }
+        void startCall(null, { force: true, instant: true, audioOnly: false, label: 'Video', open: true });
+        return true;
+      }
       openFromRibbon();
       return true;
     }
@@ -764,10 +855,22 @@
       .trim();
     if (place) {
       void (async function () {
+        var peer = null;
         try {
-          if (global.SNStage && SNStage.call) await SNStage.call(null, { place: place, label: place });
+          if (global.SNStage && SNStage.call) peer = await SNStage.call(null, { place: place, label: place });
         } catch (_) {}
-        openFromRibbon();
+        var signedP = !!(global.SNAuth && SNAuth.user);
+        if (!signedP) {
+          openFromRibbon();
+          return;
+        }
+        void startCall(null, {
+          force: true,
+          instant: true,
+          audioOnly: !/video/.test(low),
+          label: place,
+          room: 'p-' + String(place).toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 12),
+        });
       })();
       return true;
     }
@@ -795,6 +898,7 @@
     ensureCss();
     installCli();
     bus();
+    void netBus();
     setTimeout(installCli, 1500);
   }
 

@@ -1019,6 +1019,8 @@
     try {
       if (global.SNGlobe && SNGlobe.setGameMode) SNGlobe.setGameMode(false);
     } catch (_) {}
+    softInit('SNWebRTC', global.SNWebRTC, 'init');
+    softInit('SNStage', global.SNStage, 'init');
   }
 
   function initServices() {

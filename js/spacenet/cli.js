@@ -1135,6 +1135,9 @@
       if (global.SNChromeFix && SNChromeFix.handleLine && SNChromeFix.handleLine(line)) return true;
     } catch (_) {}
     try {
+      if (global.SNWebRTC && SNWebRTC.handleLine && SNWebRTC.handleLine(line)) return true;
+    } catch (_) {}
+    try {
       if (global.SNChromeFix && SNChromeFix.demandHud) SNChromeFix.demandHud('type');
     } catch (_) {}
     try {

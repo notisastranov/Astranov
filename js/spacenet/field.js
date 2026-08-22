@@ -1564,6 +1564,9 @@
     // 📹 Call = first-class CLI ribbon · instant place / answer
     if (act === 'call' || act === 'video' || act === 'webrtc' || act === 'phone') {
       try {
+        try {
+          if (g.SNCli && SNCli.beginTurn) SNCli.beginTurn();
+        } catch (_) {}
         function openCall() {
           if (g.SNWebRTC && (SNWebRTC.openFromRibbon || SNWebRTC.open)) {
             (SNWebRTC.openFromRibbon || SNWebRTC.open)();

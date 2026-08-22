@@ -910,6 +910,9 @@
     get session() {
       return A.session;
     },
+    get client() {
+      return A.client;
+    },
     get owner() {
       return isOwner();
     },

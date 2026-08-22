@@ -306,7 +306,12 @@
     var from = here();
     var to = peer;
     if (!to || to.lat == null) to = await resolvePlace(opts.place || opts.label || peer);
-    if (!to || to.lat == null) to = { lat: 1.2, lng: 17.8, name: opts.label || 'Peer' };
+    if (!to || to.lat == null) {
+      var hq = global.SNVillage && SNVillage.HQ;
+      to = hq
+        ? { lat: hq.lat, lng: hq.lng, name: hq.short || 'KALITHEA' }
+        : { lat: 36.387557, lng: 28.222533, name: opts.label || 'KALITHEA' };
+    }
     to.name = to.name || opts.label || 'Peer';
     return link(from, to, {
       kind: 'call',
