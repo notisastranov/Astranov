@@ -1,6 +1,6 @@
 /**
- * Guest pizza hunt — Build 20260822110000-origin-tap
- * PATCH #127 only · origin + pin-tap hard fix.
+ * Guest pizza hunt — Build 20260822113000-no-leaflet
+ * PATCH #127 only · origin + pin-tap + NO Leaflet during hunt.
  *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
@@ -18,6 +18,10 @@
  *   _snLastPos is polluted by setFocus (village/HQ) — NEVER treat as YOU alone.
  *   Empty ocean / SA / no vendors in bbox → CLI Locate CTA only · zero shop list · zero fake you.
  *
+ * GLOBE-ONLY LAW (20260822113000):
+ *   FORBID any SNMap.open / showLiveSat / Leaflet / street overlay for the whole hunt.
+ *   Stay WebGL globe only. No San Jose / Columbus Park / OSM street takeover during wait.
+ *
  * After successful hunt: face pin cluster if pins are off current camera,
  * or keep camera and only pin vendors already in view.
  *
@@ -30,7 +34,7 @@
   'use strict';
   // Force re-install of this build even if older pizza-hunt already bound
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822110000-origin-tap';
+  var BUILD = '20260822113000-no-leaflet';
   var hunting = false;
   var lastPins = [];
   var pinMeshes = [];
@@ -38,6 +42,7 @@
   var askedLocate = false;
   var suppressPoiUntil = 0;
   var canvasTapBound = false;
+  var mapGuardInstalled = false;
 
   // Known fake / HQ defaults that must NEVER be reported as YOU
   var FAKE_YOU = [
@@ -258,10 +263,116 @@
     } catch (_) {}
   }
 
-  function stayPutSoft(nearest) {
+  /** Nuclear: close any Leaflet/OSM/street map and keep it closed while hunting. */
+  function forceGlobeOnly() {
     try {
-      if (G.SNMap && SNMap.active && typeof SNMap.close === 'function') SNMap.close();
+      if (G.SNMap) {
+        if (typeof SNMap.close === 'function') SNMap.close();
+        if (typeof SNMap.hide === 'function') SNMap.hide();
+        if (typeof SNMap.closeStreet === 'function') SNMap.closeStreet();
+        if (typeof SNMap.closeLive === 'function') SNMap.closeLive();
+        SNMap.active = false;
+      }
     } catch (_) {}
+    try {
+      if (G.showLiveSat && typeof G.showLiveSat === 'function' && !G.__snPizzaMapGuard) {
+        // will be guarded below
+      }
+    } catch (_) {}
+    try {
+      // Hide any live Leaflet containers that might have been injected
+      var sels = [
+        '#sn-map',
+        '#map',
+        '.leaflet-container',
+        '.sn-street',
+        '.sn-live-sat',
+        '#live-sat',
+        '[data-sn-map]',
+        '.mapboxgl-map',
+      ];
+      sels.forEach(function (sel) {
+        try {
+          document.querySelectorAll(sel).forEach(function (el) {
+            el.style.setProperty('display', 'none', 'important');
+            el.style.setProperty('visibility', 'hidden', 'important');
+            el.style.setProperty('opacity', '0', 'important');
+            el.style.setProperty('pointer-events', 'none', 'important');
+            el.setAttribute('aria-hidden', 'true');
+          });
+        } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
+  function installMapGuard() {
+    if (mapGuardInstalled) return;
+    mapGuardInstalled = true;
+    try {
+      if (G.SNMap) {
+        if (typeof SNMap.open === 'function' && !SNMap.__snPizzaGuardOpen) {
+          var prevOpen = SNMap.open.bind(SNMap);
+          SNMap.open = function () {
+            if (hunting) {
+              forceGlobeOnly();
+              return;
+            }
+            return prevOpen.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaGuardOpen = true;
+        }
+        if (typeof SNMap.show === 'function' && !SNMap.__snPizzaGuardShow) {
+          var prevShow = SNMap.show.bind(SNMap);
+          SNMap.show = function () {
+            if (hunting) {
+              forceGlobeOnly();
+              return;
+            }
+            return prevShow.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaGuardShow = true;
+        }
+        if (typeof SNMap.showLiveSat === 'function' && !SNMap.__snPizzaGuardLive) {
+          var prevLive = SNMap.showLiveSat.bind(SNMap);
+          SNMap.showLiveSat = function () {
+            if (hunting) {
+              forceGlobeOnly();
+              return;
+            }
+            return prevLive.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaGuardLive = true;
+        }
+        if (typeof SNMap.goToStreet === 'function' && !SNMap.__snPizzaGuardStreet) {
+          var prevStreet = SNMap.goToStreet.bind(SNMap);
+          SNMap.goToStreet = function () {
+            if (hunting) {
+              forceGlobeOnly();
+              return;
+            }
+            return prevStreet.apply(SNMap, arguments);
+          };
+          SNMap.__snPizzaGuardStreet = true;
+        }
+      }
+    } catch (_) {}
+    try {
+      if (typeof G.showLiveSat === 'function' && !G.__snPizzaMapGuard) {
+        var prevG = G.showLiveSat.bind(G);
+        G.showLiveSat = function () {
+          if (hunting) {
+            forceGlobeOnly();
+            return;
+          }
+          return prevG.apply(G, arguments);
+        };
+        G.__snPizzaMapGuard = true;
+      }
+    } catch (_) {}
+  }
+
+  function stayPutSoft(nearest) {
+    forceGlobeOnly();
     if (!nearest || nearest.lat == null || nearest.lng == null) return;
     try {
       if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
@@ -577,6 +688,8 @@
   async function huntPizza(raw) {
     if (hunting) return true;
     hunting = true;
+    installMapGuard();
+    forceGlobeOnly();
     blockAuthModalOnPizza();
     try {
       if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
@@ -596,6 +709,7 @@
       log('No origin yet · type Locate once (GPS)', 'dim');
       askLocateOnce();
       hunting = false;
+      forceGlobeOnly();
       return true;
     }
 
@@ -606,6 +720,7 @@
         clearPizzaPins();
         askLocateOnce();
         hunting = false;
+        forceGlobeOnly();
         return true;
       }
     }
@@ -615,6 +730,8 @@
       'dim'
     );
 
+    // Keep map closed during the async wait
+    forceGlobeOnly();
     var rows = [];
     try {
       rows = await queryVendorsBbox(origin.lat, origin.lng, 16);
@@ -626,6 +743,7 @@
         }
       } catch (_) {}
     }
+    forceGlobeOnly();
 
     var pizzaish = rows.filter(function (v) {
       return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
@@ -652,6 +770,7 @@
         log('No delivery shops in 16 km · spin globe or try another area', 'dim');
       }
       hunting = false;
+      forceGlobeOnly();
       try {
         if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
       } catch (_) {}
@@ -667,11 +786,13 @@
     }
 
     faceClusterIfNeeded(use, origin);
+    forceGlobeOnly();
 
     if (isGuest()) {
       log('Guest browse · sign in only when you HOLD ⭐ / pay', 'dim');
     }
     hunting = false;
+    forceGlobeOnly();
     try {
       if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
     } catch (_) {}
@@ -696,6 +817,7 @@
 
   function install() {
     blockAuthModalOnPizza();
+    installMapGuard();
     if (!G.SNCli || typeof SNCli.run !== 'function') return;
     if (SNCli.__snGuestPizzaHuntBuild === BUILD) return;
     SNCli.__snGuestPizzaHuntBuild = BUILD;
@@ -802,6 +924,7 @@
   function boot() {
     install();
     blockAuthModalOnPizza();
+    installMapGuard();
     installPinTap();
   }
 
@@ -814,6 +937,7 @@
   setInterval(function () {
     install();
     blockAuthModalOnPizza();
+    installMapGuard();
   }, 8000);
 
   G.SNChromeGuestPizzaHunt = {
